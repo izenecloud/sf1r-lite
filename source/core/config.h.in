@@ -1,0 +1,24 @@
+#ifndef SF1R_CONFIG_H
+#define SF1R_CONFIG_H
+
+#ifndef HAVE_INTTYPES_H
+#cmakedefine HAVE_INTTYPES_H
+#endif
+
+#ifndef HAVE_STDINT_H
+#cmakedefine HAVE_STDINT_H
+#endif
+
+#ifndef HAVE_SYS_TYPES_H
+#cmakedefine HAVE_SYS_TYPES_H
+#endif
+
+#ifndef HAVE_STDDEF_H
+#cmakedefine HAVE_STDDEF_H
+#endif
+
+#ifndef HAVE_SIGNAL_H
+#cmakedefine HAVE_SIGNAL_H
+#endif
+
+#endif // SF1R_CONFIG_H

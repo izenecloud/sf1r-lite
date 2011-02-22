@@ -11,6 +11,7 @@
 tags
 /build
 /source/cmake
+/source/core/config.h
 /testbin
 dump
 dump.*
