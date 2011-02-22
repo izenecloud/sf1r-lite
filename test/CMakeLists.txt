@@ -1,5 +1,6 @@
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${SF1RENGINE_ROOT}/testbin")
 INCLUDE_DIRECTORIES(
+  ${CMAKE_SOURCE_DIR}/core/
   ${CMAKE_CURRENT_SOURCE_DIR}
 
   ${izenelib_INCLUDE_DIRS}
@@ -11,5 +12,9 @@ CONFIGURE_FILE(
   ESCAPE_QUOTES @ONLY
   )
 
-#ADD_SUBDIRECTORY(document-manager)
-
+ADD_SUBDIRECTORY(document-manager)
+ADD_SUBDIRECTORY(ranking-manager)
+ADD_SUBDIRECTORY(query-manager) 
+ADD_SUBDIRECTORY(log-manager) 
+ADD_SUBDIRECTORY(license-manager) 
+ADD_SUBDIRECTORY(configuration-manager) 
