@@ -1,0 +1,44 @@
+INCLUDE_DIRECTORIES(
+    ${CMAKE_SOURCE_DIR}/core/
+    )
+
+SET(Boost_USE_STATIC_LIBS OFF)
+FIND_PACKAGE(Boost ${Boost_FIND_VERSION}
+    COMPONENTS unit_test_framework)
+
+IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
+    INCLUDE_DIRECTORIES(
+        ${Boost_INCLUDE_DIRS}
+        )
+    ADD_EXECUTABLE(t_license_manager
+        Runner.cpp
+        t_LicenseClient.cpp
+        t_LicenseEncryptor.cpp
+        t_LicenseTool.cpp
+        t_LicenseRequestFileGenerator.cpp
+        )
+    TARGET_LINK_LIBRARIES(t_license_manager 
+        sf1r_license_manager
+        sf1r_log_manager
+        sf1r_common
+        sf1r_query_manager
+        sf1r_la_manager
+        sf1r_configuration_manager
+        ${Glog_LIBRARIES}
+        ${Boost_LIBRARIES}
+        ${ilplib_LIBRARIES}
+        ${wisekma_LIBRARIES}
+        ${izenecma_LIBRARIES}
+        ${izenelib_LIBRARIES}
+        ${xml2_LIBRARIES}
+        sqlite3
+        )
+    SET_TARGET_PROPERTIES(t_license_manager
+        PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY 
+        ${SF1RENGINE_ROOT}/testbin
+        )
+    ADD_TEST(license_manager 
+        "${SF1RENGINE_ROOT}/testbin/t_license_manager"
+        )
+ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
