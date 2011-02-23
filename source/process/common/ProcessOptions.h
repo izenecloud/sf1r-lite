@@ -59,9 +59,9 @@ public:
      * @brief   Gets the location of the configuration file
      * @return  The configuration file path
      */
-    const std::string& getConfigFileName() const
+    const std::string& getConfigFileDirectory() const
     {
-        return configFileName_;
+        return configFileDir_;
     }
 
     bool isVerboseOn() const
@@ -93,7 +93,7 @@ private:
     boost::program_options::options_description cobraProcessDescription_;
 
     /// @brief  The file name (path) of the configuration file
-    std::string configFileName_;
+    std::string configFileDir_;
 
     ///@brief used to recognize the additional unused parameters/words
     boost::program_options::positional_options_description additional_;

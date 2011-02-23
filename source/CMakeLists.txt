@@ -224,6 +224,10 @@ CONFIGURE_FILE(
   "${SF1RENGINE_ROOT}/bin/config/sf1config.xml"
   ESCAPE_QUOTES @ONLY)
 
+CONFIGURE_FILE( "${SF1RENGINE_ROOT}/bin/config/example.xml.in"
+  "${SF1RENGINE_ROOT}/bin/config/example.xml"
+  ESCAPE_QUOTES @ONLY) 
+  
 CONFIGURE_FILE(
   "${SF1RENGINE_ROOT}/source/core/config.h.in"
   "${SF1RENGINE_ROOT}/source/core/config.h"

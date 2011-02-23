@@ -165,24 +165,24 @@ bool XmlConfigParser::getAttribute(
 
 izenelib::util::UString::EncodingType XmlConfigParser::parseEncodingType(const std::string& encoding)
 {
-  izenelib::util::UString::EncodingType eType = izenelib::util::UString::UTF_8;
-  if ( encoding == "utf-8" || encoding == "utf8" )
-      eType = izenelib::util::UString::UTF_8;
-  else if ( encoding == "euc-kr" || encoding == "euckr" )
-      eType = izenelib::util::UString::EUC_KR;
-  else if ( encoding == "cp949" )
-      eType = izenelib::util::UString::CP949;
-  else if ( encoding == "euc-jp" || encoding == "eucjp" )
-      eType = izenelib::util::UString::EUC_JP;
-  else if ( encoding == "sjis" )
-      eType = izenelib::util::UString::SJIS;
-  else if ( encoding == "gb2312" )
-      eType = izenelib::util::UString::GB2312;
-  else if ( encoding == "big5" )
-      eType = izenelib::util::UString::BIG5;
-  else if ( encoding == "iso8859-15" )
-      eType = izenelib::util::UString::ISO8859_15;
-  return eType;
+    izenelib::util::UString::EncodingType eType = izenelib::util::UString::UTF_8;
+    if ( encoding == "utf-8" || encoding == "utf8" )
+        eType = izenelib::util::UString::UTF_8;
+    else if ( encoding == "euc-kr" || encoding == "euckr" )
+        eType = izenelib::util::UString::EUC_KR;
+    else if ( encoding == "cp949" )
+        eType = izenelib::util::UString::CP949;
+    else if ( encoding == "euc-jp" || encoding == "eucjp" )
+        eType = izenelib::util::UString::EUC_JP;
+    else if ( encoding == "sjis" )
+        eType = izenelib::util::UString::SJIS;
+    else if ( encoding == "gb2312" )
+        eType = izenelib::util::UString::GB2312;
+    else if ( encoding == "big5" )
+        eType = izenelib::util::UString::BIG5;
+    else if ( encoding == "iso8859-15" )
+        eType = izenelib::util::UString::ISO8859_15;
+    return eType;
 }
 
 
@@ -792,7 +792,7 @@ CollectionConfig::~CollectionConfig()
 {
 }
 
-bool CollectionConfig::parseConfigFile( const string & fileName ) throw( XmlConfigParserException  )
+bool CollectionConfig::parseConfigFile( const string& collectionName ,const string & fileName ) throw( XmlConfigParserException  )
 {
     namespace bf=boost::filesystem;
     
@@ -856,6 +856,7 @@ bool CollectionConfig::parseConfigFile( const string & fileName ) throw( XmlConf
         }
 
         CollectionMeta collectionMeta;
+        collectionMeta.setName(collectionName);
         parseCollectionSettings( collection, collectionMeta );
 	
         SF1Config::get()->collectionMetaList_.push_back( collectionMeta );
@@ -919,7 +920,6 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
     std::string name, encoding, ranking, wildcardtype, classifierlanguage;
     izenelib::util::UString::EncodingType eType;        //converts the encoding string into EncodingType
     
-    getAttribute( collection, "name", name );
     CollectionParameterConfig collection_param(SF1Config::get()->default_parameter_);
     collection_param.LoadXML(getUniqChildElement(collection, "Parameter"), true);
     

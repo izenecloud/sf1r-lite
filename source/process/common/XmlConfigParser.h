@@ -470,25 +470,33 @@ public:
     
     const std::map<std::string, CollectionMeta>& getCollectionMetaMap()
     {
-      return collectionMetaMap_;
+        return collectionMetaMap_;
     }
     
     bool IsMiningOpen() const
     {
-      return mining_switch_;
+        return mining_switch_;
     }
     
     std::string getIndexRecommendCronString()
     {
-      return cronIndexRecommend_;
+        return cronIndexRecommend_;
     }
     
     std::string getIndexerCronString()
     {
-      return cronIndexer_;
+        return cronIndexer_;
     }
     
-    
+    void setHomeDirectory(const std::string& homeDir)
+    {
+        homeDir_ = homeDir;
+    }
+
+    std::string getHomeDirectory()
+    {
+        return homeDir_;
+    }
 private:
     /// @brief                  Parse <System> settings
     /// @param system           Pointer to the Element
@@ -610,6 +618,9 @@ private:
     std::string cronIndexRecommend_;
     std::string cronIndexer_;
 
+    /// @bried home of configuration files
+    std::string homeDir_;
+
     friend class CollectionConfig;    
 };
 
@@ -617,8 +628,6 @@ private:
 class CollectionConfig : boost::noncopyable, XmlConfigParser
 {
 public:
-    //----------------------------  PUBLIC FUNCTIONS  ----------------------------
-
     CollectionConfig();
     ~CollectionConfig(); 
 
@@ -630,10 +639,8 @@ public:
     /// @brief           Starts parsing the configruation file
     /// @param fileName  The path of the configuration file
     /// @details
-    /// The configuration file <System>, <Environment>, and"<Document> are processed
     /// 
-    bool parseConfigFile( const std::string & fileName ) throw(XmlConfigParserException );
-
+    bool parseConfigFile( const string& collectionName , const std::string & fileName ) throw(XmlConfigParserException );
 
 private:
     /// @brief                  Parse <Collection> settings

@@ -26,7 +26,7 @@ int main(int argc, char * argv[])
         std::vector<std::string> args(argv + 1, argv + argc);
         if (po.setCobraProcessArgs(args))
         {
-            filePath = po.getConfigFileName() ;
+            filePath = po.getConfigFileDirectory() ;
             string pidFile = po.getPidFile();
             if (pidFile.empty())
             {

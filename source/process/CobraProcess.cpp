@@ -29,17 +29,36 @@ using namespace izenelib::util;
 
 namespace bfs = boost::filesystem;
 
-bool CobraProcess::initialize(const std::string& configFilePath)
+bool CobraProcess::initialize(const std::string& configFileDir)
 {
+    if( !exists(configFileDir) || !is_directory(configFileDir) ) return false;
     bfs::path logPath(bfs::path(".") / "log" / "COBRA");
-    if( !sflog->init( logPath.string() ) )
-        return false;
+    if( !sflog->init( logPath.string() ) ) return false;
     try
     {
-        if( !SF1Config::get()->parseConfigFile( configFilePath ) )
+        boost::filesystem::path p(configFileDir); 
+        SF1Config::get()->setHomeDirectory(p.string());
+        if( !SF1Config::get()->parseConfigFile( bfs::path(p/"sf1config.xml").string() ) )
         {
             return false;
         }
+        bfs::directory_iterator iter(configFileDir), end_iter;
+        for(; iter!= end_iter; ++iter)
+        {
+            if(bfs::is_regular_file(*iter))
+            {
+                if(iter->filename().rfind(".xml") == (iter->filename().length() - std::string(".xml").length()))
+                    if(iter->filename() != "sf1config.xml")
+                    {
+                        std::string collectionName = iter->filename().substr(0,iter->filename().rfind(".xml"));
+                        if(CollectionConfig::get()->parseConfigFile(collectionName, iter->string()))
+                        {
+                            //TODO
+                        }
+                    }
+             }
+        }		
+
     }
     catch ( izenelib::util::ticpp::Exception & e )
     {
@@ -47,7 +66,7 @@ bool CobraProcess::initialize(const std::string& configFilePath)
         return false;
     }
     SF1Config::get()->getCobraConfig(config_);
-    config_.setConfigPath( configFilePath );
+    config_.setConfigPath( configFileDir );
 
     return true;
 } // end - in

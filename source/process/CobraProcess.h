@@ -10,7 +10,7 @@ class CobraProcess
 public:
     CobraProcess() {}
     int run();
-    bool initialize(const std::string& configFilePath);
+    bool initialize(const std::string& configFileDir);
 private:
     CobraConfig config_;	
 };

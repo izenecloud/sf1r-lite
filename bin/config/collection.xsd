@@ -1,18 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- edited with XMLSpy v2011 (http://www.altova.com) by YF (izenesoft) -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.izenesoft.com" xmlns:t="http://www.izenesoft.com" targetNamespace="http://www.izenesoft.com" elementFormDefault="qualified">
-	<xs:simpleType name="EncodingType">
-		<xs:restriction base="xs:string">
-			<xs:enumeration value="UTF-8"/>
-			<xs:enumeration value="EUC-KR"/>
-			<xs:enumeration value="GBK"/>
-		</xs:restriction>
-	</xs:simpleType>
-	<xs:simpleType name="YesNoType">
-		<xs:restriction base="xs:string">
-			<xs:pattern value="yes|no|y|n"/>
-		</xs:restriction>
-	</xs:simpleType>
+    <xs:include schemaLocation="types.xsd"/>
+	
 	<xs:element name="Path">
 		<xs:complexType>
 			<xs:sequence minOccurs="0">
@@ -40,10 +30,6 @@
 	</xs:element>
 	<xs:element name="settings">
 		<xs:complexType>
-			<xs:attribute name="dictionarypath"/>
-			<xs:attribute name="mode" type="xs:NCName"/>
-			<xs:attribute name="option"/>
-			<xs:attribute name="specialchar"/>
 			<xs:attribute name="summarynum" type="xs:integer"/>
 		</xs:complexType>
 	</xs:element>

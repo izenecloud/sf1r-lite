@@ -92,7 +92,7 @@ ProcessOptions::ProcessOptions()
     ("help", "Display help message");
 
     configFile.add_options()
-    ("config-file,F", po::value<String>(), "Path to the configuration file");
+    ("config-directory,F", po::value<String>(), "Path to the directory contained configuration files");
 
     cobraProcessDescription_.add(base).add(verbose).add(logPrefix).add( configFile ).add(pidFile);
 }
@@ -100,9 +100,9 @@ ProcessOptions::ProcessOptions()
 
 void ProcessOptions::setProcessOptions()
 {
-    if ( variableMap_.count("config-file") ) //-F in BA
+    if ( variableMap_.count("config-directory") ) //-F in BA
     {
-        configFileName_ = variableMap_["config-file"].as<String>().str;
+        configFileDir_ = variableMap_["config-directory"].as<String>().str;
     }
 
     if ( variableMap_.count("log-prefix")  )
@@ -123,7 +123,7 @@ void ProcessOptions::setProcessOptions()
 
 bool ProcessOptions::setCobraProcessArgs(const std::vector<std::string>& args)
 {
-    std::string cobraProcessSample = "Example: ./CobraProcess -F ./config/default_sf1config.xml";
+    std::string cobraProcessSample = "Example: ./CobraProcess -F ./config";
     try
     {
         po::store(po::command_line_parser(args).options(cobraProcessDescription_).positional(additional_).run(), variableMap_);
