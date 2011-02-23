@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Collection xmlns="http://www.izenesoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+           xsi:schemaLocation="http://www.izenesoft.com collection.xsd">
+    <!-- format: none_time_t, time_t, utc_sec, no_date -->
+    <Date format="none_time_t"/>
+
+    <Path basepath="@SF1RENGINE_ROOT@/bin/collection/chinese-wiki">
+      <!-- The default location can be overwritten -->
+      <SCD path=""/>          <!-- default: basepath/scd -->
+      <CollectionData path=""/>       <!-- default: basepath/collection-data -->
+      <Query path=""/>        <!-- default: basepath/query-data -->
+    </Path>
+
+    <Parameter />
+
+    <DocumentSchema>
+
+      <Property name="DOCID" type="string" index="no" />
+
+      <Property name="DATE" type="string" index="no" />
+
+      <Property name="Title" type="string" index="yes" mining="yes">
+        <Indexing filter="no" multivalue="no" doclen="yes" analyzer="la_sia" tokenizer="" rankweight="heavy"/>
+      </Property>
+
+      <Property name="Content" type="string" index="yes" mining="yes">
+        <Display length="160" snippet="yes" summary="no" >
+          <settings summarynum="2"/>
+        </Display>
+        <Indexing filter="no" multivalue="no" doclen="yes" analyzer="la_sia" tokenizer="tok_divide, tok_unite" rankweight="normal"/>
+      </Property>
+
+    </DocumentSchema>
+
+    <MiningSchema>
+      <TaxonomyGeneration> 
+        <Property name="Title" />
+        <Property name="Content" />
+      </TaxonomyGeneration>
+      <DuplicateDetection>
+        <Property name="Title" />
+        <Property name="Content" />
+      </DuplicateDetection>
+      <QueryRecommend>
+        <TG/>
+        <QueryLog />
+      </QueryRecommend>
+      <Similarity>
+        <Property name="Title" />
+        <Property name="Content" />
+      </Similarity>
+      <Faceted>
+        <Property name="Title" />
+        <Property name="Content" />
+      </Faceted>
+    </MiningSchema>
+
+</Collection>
