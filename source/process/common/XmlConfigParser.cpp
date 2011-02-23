@@ -1,6 +1,6 @@
 /**
  * @file XmlConfigParser.cpp
- * @brief Implements XmlConfigParser class, which is a XML configuration file parser for SF-1 v5.0
+ * @brief Implements SF1Config class, which is a XML configuration file parser for SF-1 v5.0
  * @author MyungHyun (Kent)
  * @date 2008-09-05
  */
@@ -23,15 +23,180 @@ using namespace izenelib::util::ticpp;
 namespace sf1r
 {
 
-XmlConfigParser::XmlConfigParser()
+//------------------------- HELPER FUNCTIONS -------------------------
+
+bool checkIntFormat( const std::string & str )
+{
+    std::size_t pos = str.find_first_not_of( "0123456789", 0 );
+    if( pos != std::string::npos )
+    {
+        /*
+        // the value is a negative number
+        if( pos == 0 && str[pos] == '-' )
+        {
+            pos = str.find_first_not_of( "0123456789", pos+1 );
+            if( pos == string::npos )
+                return true;
+            else
+                return false;
+        }
+        */
+
+        return false;
+    }
+    return true;
+}
+
+void downCase( std::string & str )
+{
+    for ( string::iterator it = str.begin(); it != str.end(); it++ )
+    {
+        *it = tolower(*it);
+    }
+}
+
+int parseTruth( const string & str )
+{
+    std::string temp = str;
+    downCase( temp );
+
+    if( temp == "y" || temp == "yes" )
+        return 1;
+    else if( temp == "n" || temp == "no" )
+        return 0;
+    else
+        return -1;
+}
+
+void parseByComma( const string & str, vector<string> & subStrList )
+{
+    subStrList.clear();
+
+    std::size_t startIndex=0, endIndex=0;
+
+
+    while ( (startIndex = str.find_first_not_of( " ,\t", startIndex )) != std::string::npos )
+    {
+        endIndex = str.find_first_of( " ,\t", startIndex + 1 );
+
+        if ( endIndex == string::npos )
+        {
+            endIndex = str.length();
+        }
+
+        std::string substr = str.substr( startIndex, endIndex - startIndex );
+        startIndex = endIndex + 1;
+
+        subStrList.push_back( substr );
+    }
+}
+
+// ------------------------- HELPER MEMBER FUNCTIONS of XmlConfigParser -------------------------
+
+ticpp::Element * XmlConfigParser::getUniqChildElement(
+        const ticpp::Element * ele, const std::string & name, bool throwIfNoElement ) const
+{
+    ticpp::Element * temp = NULL;
+    temp = ele->FirstChildElement( name, false );
+
+
+    if( temp == NULL )
+    {
+        if( throwIfNoElement )
+            throw_NoElement( name );
+        else
+            return NULL;
+    }
+
+    if ( temp->NextSibling( name, false ) != NULL )
+    {
+        throw_MultipleElement( name );
+    }
+
+    return temp;
+}
+
+inline bool XmlConfigParser::getAttribute(
+        const ticpp::Element * ele,
+        const std::string & name,
+        std::string & val,
+        bool throwIfNoAttribute ) const
+{
+    val = ele->GetAttribute( name );
+
+    if( val.empty() )
+    {
+        if( throwIfNoAttribute )
+            throw_NoAttribute( ele, name );
+        else
+            return false;
+    }
+
+    return true;
+}
+
+
+bool XmlConfigParser::getAttribute(
+        const ticpp::Element * ele,
+        const std::string & name,
+        bool & val,
+        bool throwIfNoAttribute ) const
+{
+    std::string temp;
+
+    if( !getAttribute( ele, name, temp, throwIfNoAttribute ) )
+        return false;
+
+    switch( parseTruth(temp) )
+    {
+        case 1:
+            val = true;
+            break;
+        case 0:
+            val = false;
+            break;
+        case -1:
+            throw_TypeMismatch( ele, name, temp );
+            break;
+    }
+
+    return true;
+}
+
+izenelib::util::UString::EncodingType XmlConfigParser::parseEncodingType(const std::string& encoding)
+{
+  izenelib::util::UString::EncodingType eType = izenelib::util::UString::UTF_8;
+  if ( encoding == "utf-8" || encoding == "utf8" )
+      eType = izenelib::util::UString::UTF_8;
+  else if ( encoding == "euc-kr" || encoding == "euckr" )
+      eType = izenelib::util::UString::EUC_KR;
+  else if ( encoding == "cp949" )
+      eType = izenelib::util::UString::CP949;
+  else if ( encoding == "euc-jp" || encoding == "eucjp" )
+      eType = izenelib::util::UString::EUC_JP;
+  else if ( encoding == "sjis" )
+      eType = izenelib::util::UString::SJIS;
+  else if ( encoding == "gb2312" )
+      eType = izenelib::util::UString::GB2312;
+  else if ( encoding == "big5" )
+      eType = izenelib::util::UString::BIG5;
+  else if ( encoding == "iso8859-15" )
+      eType = izenelib::util::UString::ISO8859_15;
+  return eType;
+}
+
+
+// ------------------------- SF1Config-------------------------
+
+SF1Config::SF1Config()
 {
 }
 
-XmlConfigParser::~XmlConfigParser()
+SF1Config::~SF1Config()
 {
 }
 
-bool XmlConfigParser::parseConfigFile( const string & fileName ) throw( XmlConfigParserException  )
+bool SF1Config::parseConfigFile( const string & fileName ) throw( XmlConfigParserException  )
 {
     namespace bf=boost::filesystem;
     
@@ -39,19 +204,19 @@ bool XmlConfigParser::parseConfigFile( const string & fileName ) throw( XmlConfi
     {
         if( !boost::filesystem::exists(fileName) )
         {
-            std::cerr << "[XmlConfigParser] Config File doesn't exist." << std::endl;
+            std::cerr << "[SF1Config] Config File doesn't exist." << std::endl;
             return false;
         }
         
         /** schema validate begin */
          bf::path config_file(fileName);
          bf::path config_dir = config_file.parent_path();
-         bf::path schema_file = config_dir/"sf1r-config.xsd";
+         bf::path schema_file = config_dir/"sf1config.xsd";
          std::string schema_file_string = schema_file.file_string();
          std::cout<<"XML Schema File: "<<schema_file_string<<std::endl;
          if( !boost::filesystem::exists(schema_file_string) )
          {
-             std::cerr << "[XmlConfigParser] Schema File doesn't exist." << std::endl;
+             std::cerr << "[SF1Config] Schema File doesn't exist." << std::endl;
              return false;
          }
          
@@ -98,84 +263,11 @@ bool XmlConfigParser::parseConfigFile( const string & fileName ) throw( XmlConfi
 
         parseSystemSettings( getUniqChildElement( sf1config, "System" ) );
 
-        //#2 Environment
-//         parseEnvironmentSettings( getUniqChildElement( sf1config, "Environment" ) );
-
-        if( sf1config->FirstChild( "Collection", false ) == NULL )
-        {
-            throw_NoElement( "Collectioin" );
-        }
-
-        //#3 Collection
-        Iterator<Element> collection( "Collection" );
-        for ( collection = collection.begin(sf1config); collection != collection.end(); collection++ )
-        {
-            CollectionMeta collectionMeta;
-            parseCollectionSettings( collection.Get(), collectionMeta );
-
-            collectionMetaList_.push_back( collectionMeta );
-            collectionMetaMap_.insert(std::make_pair( collectionMeta.getName(), collectionMeta));
-        }
-
-
-        //---------- SETTING COLLECTION DATA ----------
-
-        // get the property weight information by each collection
-        for ( unsigned int i = 0; i< collectionMetaList_.size(); i++ )
-        {
-            // map<property name, weight>
-            map<string, float> propertyWeightMap;
-
-            std::set<PropertyConfig, PropertyComp> schema = collectionMetaList_[i].getDocumentSchema();
-            std::set<PropertyConfig, PropertyComp>::iterator it;
-
-
-            for ( it = schema.begin(); it != schema.end(); it++ )
-            {
-                if ( it->getRankWeight() >= 0.0f )
-                {
-                    propertyWeightMap.insert( pair<string, float>(it->getName(), it->getRankWeight()) );
-                }
-            }
-
-            if ( propertyWeightMap.empty() == false )
-            {
-                rankingManagerConfig_.propertyWeightMapByProperty_.insert(
-                    pair<string, map<string, float> >( collectionMetaList_[i].getName(), propertyWeightMap )
-                );
-            }
-        }
-
-        
-
         ticpp::Element *cobra = getUniqChildElement( sf1config, "Deployment" ) ;
         if( cobra == NULL )
         	cobra = getUniqChildElement( sf1config, "Cobra" ) ;
         assert(cobra != NULL );
         parseDeploymentSettings( cobra );
-
-        
-        //add collection-meta for 3 config manager, why?
-//         if (!addCollectionMeta(collectionMetaList_.begin(),
-//                                collectionMetaList_.end(),
-//                                docManagerConfig_))
-//         {
-//             throw XmlConfigParserException( "Duplicate Collection names" );
-//         }
-// 
-//         if (!addCollectionMeta(collectionMetaList_.begin(),
-//                                collectionMetaList_.end(),
-//                                queryManagerConfig_))
-//         {
-//             throw XmlConfigParserException( "Duplicate Collection names" );
-//         }
-// 
-//         if (!addCollectionMeta(collectionMetaList_.begin(),
-//                                collectionMetaList_.end(),
-//                                brokerAgentConfig_))
-//         {
-//             throw XmlConfigParserException( "Duplicate Collection names" );
-//         }
 
     }
     catch( ticpp::Exception err )
@@ -199,12 +291,12 @@ bool XmlConfigParser::parseConfigFile( const string & fileName ) throw( XmlConfi
     }
 
     return true;
-} // END - XmlConfigParser::parseConfigFile()
+} // END - SF1Config::parseConfigFile()
 
 
 // 1. SYSTEM SETTINGS  -------------------------------------
 
-void XmlConfigParser::parseSystemSettings( const ticpp::Element * system )
+void SF1Config::parseSystemSettings( const ticpp::Element * system )
 {
   parseBrokerAgent( getUniqChildElement( system, "BrokerAgent" ) );
   //get resource dir
@@ -250,20 +342,13 @@ void XmlConfigParser::parseSystemSettings( const ticpp::Element * system )
       }
     }
   }
-  
 
-    
 }
 
 
 
-
-
-
-
-
 // 1.3. BrokerAgent  -------------------------------------
-void XmlConfigParser::parseBrokerAgent( const ticpp::Element * brokerAgent )
+void SF1Config::parseBrokerAgent( const ticpp::Element * brokerAgent )
 {
     const size_t MAX_THREAD_NUM = 200;
     bool bUseCache = false;
@@ -289,7 +374,7 @@ void XmlConfigParser::parseBrokerAgent( const ticpp::Element * brokerAgent )
 
 
 // 1.4. QuerySupport -------------------------------------
-void XmlConfigParser::parseQuerySupport( const ticpp::Element * querySupport )
+void SF1Config::parseQuerySupport( const ticpp::Element * querySupport )
 {
 
     getAttribute( querySupport, "updatetime", query_support_config_.update_time );
@@ -305,12 +390,11 @@ void XmlConfigParser::parseQuerySupport( const ticpp::Element * querySupport )
     getAttribute( settings, "enableCN", query_support_config_.query_correction_enableCN );
     settings = getUniqChildElement( querySupport, "AutoFillPara" );
     getAttribute( settings, "num", query_support_config_.autofill_num );
-    
 
 }
 
 // 1.5. FireWall -------------------------------------
-void XmlConfigParser::parseFirewall( const ticpp::Element * fireElement )
+void SF1Config::parseFirewall( const ticpp::Element * fireElement )
 {
     Iterator<Element> allow_it("Allow");
     for ( allow_it = allow_it.begin( fireElement ); allow_it != allow_it.end(); allow_it++ )
@@ -343,13 +427,13 @@ void XmlConfigParser::parseFirewall( const ticpp::Element * fireElement )
 
 
 // 1.5. FireWall -------------------------------------
-void XmlConfigParser::parseParametersDefault( const ticpp::Element * element )
+void SF1Config::parseParametersDefault( const ticpp::Element * element )
 {
-  default_parameter_.LoadXML(element, false);
+    default_parameter_.LoadXML(element, false);
 }
 
 // 2.1 Tokenizer -------------------------------------
-void XmlConfigParser::parseTokenizer( const ticpp::Element * tokenizing )
+void SF1Config::parseTokenizer( const ticpp::Element * tokenizing )
 {
     string id, method, value, code;
 
@@ -394,7 +478,7 @@ void XmlConfigParser::parseTokenizer( const ticpp::Element * tokenizing )
 
 
 // 2.2 LanguageAnalyzer -------------------------------------
-void XmlConfigParser::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
+void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
 {
     // 1. <LanguageAnalyzer>
     string dictionaryPath;
@@ -616,10 +700,10 @@ void XmlConfigParser::parseLanguageAnalyzer( const ticpp::Element * languageAnal
 
     }// for all the <Method> elements. (the LAConfigUnits)
 
-} // END - XmlConfigParser::parseLanguageAnalyzer()
+} // END - SF1Config::parseLanguageAnalyzer()
 
 // 2.3 Ranking -------------------------------------
-void XmlConfigParser::parseRanking( const ticpp::Element * ranking )
+void SF1Config::parseRanking( const ticpp::Element * ranking )
 {
     //string variables to parse the config file
     string id;
@@ -680,26 +764,163 @@ void XmlConfigParser::parseRanking( const ticpp::Element * ranking )
 
     }//for all the ranking units that are set
 
-} // END - XmlConfigParser::parseRanking()
+} // END - SF1Config::parseRanking()
 
 
 // 2.4 LanguageIdentifier -------------------------------------
-void XmlConfigParser::parseLanguageIdentifier( const ticpp::Element * langid )
+void SF1Config::parseLanguageIdentifier( const ticpp::Element * langid )
 {
     string dbpath;
     getAttribute( langid, "dbpath", dbpath );
 
     docManagerConfig_.languageIdentifierDbPath_ = dbpath;
-} // END - XmlConfigParser::parseLanguageIdentifier()
+} // END - SF1Config::parseLanguageIdentifier()
 
-// 3. COLLECTION SETTINGS  -------------------------------------
-void XmlConfigParser::parseCollectionSettings( const ticpp::Element * collection, CollectionMeta & collectionMeta )
+void SF1Config::parseDeploymentSettings(const ticpp::Element * deploy) 
+{
+    Element * ba_node = NULL;
+    ba_node = getUniqChildElement(deploy, "BA");
+    getPortNumber(ba_node, "port", cobraConfig_.baPort, false);
+}
+
+// ------------------------- CollectionConfig-------------------------
+CollectionConfig::CollectionConfig()
+{
+}
+
+CollectionConfig::~CollectionConfig()
+{
+}
+
+bool CollectionConfig::parseConfigFile( const string & fileName ) throw( XmlConfigParserException  )
+{
+    namespace bf=boost::filesystem;
+    
+    try
+    {
+        if( !boost::filesystem::exists(fileName) )
+        {
+            std::cerr << "[SF1Config] Config File doesn't exist." << std::endl;
+            return false;
+        }
+        
+        /** schema validate begin */
+         bf::path config_file(fileName);
+         bf::path config_dir = config_file.parent_path();
+         bf::path schema_file = config_dir/"collection.xsd";
+         std::string schema_file_string = schema_file.file_string();
+         std::cout<<"XML Schema File: "<<schema_file_string<<std::endl;
+         if( !boost::filesystem::exists(schema_file_string) )
+         {
+             std::cerr << "[SF1Config] Schema File doesn't exist." << std::endl;
+             return false;
+         }
+         
+         XmlSchema schema(schema_file_string);
+         bool schema_valid = schema.validate(fileName);
+         std::list<std::string> schema_warning = schema.getSchemaValidityWarnings();
+         if(schema_warning.size()>0)
+         {
+           std::list<std::string>::iterator it = schema_warning.begin();
+           while( it!= schema_warning.end() )
+           {
+             std::cout<<"[Schema-Waring] "<<*it<<std::endl;
+             it++;
+           }
+         }
+         if( !schema_valid )
+         {
+           //output schema errors
+           std::list<std::string> schema_error = schema.getSchemaValidityErrors();
+           if(schema_error.size()>0)
+           {
+             std::list<std::string>::iterator it = schema_error.begin();
+             while( it!= schema_error.end() )
+             {
+               std::cerr<<"[Schema-Error] "<<*it<<std::endl;
+               it++;
+             }
+           }
+           return false;
+         }
+        /** schema validate end */
+
+        ticpp::Document configDocument(fileName.c_str());
+        configDocument.LoadFile();
+
+        // make sure the top level element is "SF1Config"; if it isn't, an exception is thrown
+        Element * collection = NULL;
+        if( (collection =  configDocument.FirstChildElement( "Collection", false )) == NULL )
+        {
+            throw_NoElement( "Collection" );
+        }
+
+        CollectionMeta collectionMeta;
+        parseCollectionSettings( collection, collectionMeta );
+	
+        SF1Config::get()->collectionMetaList_.push_back( collectionMeta );
+        SF1Config::get()->collectionMetaMap_.insert(std::make_pair( collectionMeta.getName(), collectionMeta));
+        SF1Config::get()->cobraConfig_.collections.insert( collectionMeta.getName() );
+	
+        //---------- SETTING COLLECTION DATA ----------
+	
+        // get the property weight information by each collection
+        for ( unsigned int i = 0; i< SF1Config::get()->collectionMetaList_.size(); i++ )
+        {
+            // map<property name, weight>
+            map<string, float> propertyWeightMap;
+
+            std::set<PropertyConfig, PropertyComp> schema = SF1Config::get()->collectionMetaList_[i].getDocumentSchema();
+            std::set<PropertyConfig, PropertyComp>::iterator it;
+	
+            for ( it = schema.begin(); it != schema.end(); it++ )
+            {
+                if ( it->getRankWeight() >= 0.0f )
+                {
+                    propertyWeightMap.insert( pair<string, float>(it->getName(), it->getRankWeight()) );
+                }
+            }
+	
+            if ( propertyWeightMap.empty() == false )
+            {
+                SF1Config::get()->rankingManagerConfig_.propertyWeightMapByProperty_.insert(
+                    pair<string, map<string, float> >( SF1Config::get()->collectionMetaList_[i].getName(), propertyWeightMap )
+                    );
+            }
+        }
+
+    }
+    catch( ticpp::Exception err )
+    {
+        size_t substart = err.m_details.find( "\nDescription: " );
+        substart = substart + strlen("\nDescription: ");
+
+
+        string msg = err.m_details.substr( substart);
+        size_t pos = 0;
+
+        while( (pos = msg.find("\n", pos )) != string::npos )
+        {
+            msg.replace( pos, 1, " ");
+            pos++;
+        }
+
+        msg.insert( 0, "Exception occured while parsing file: " );
+
+        throw XmlConfigParserException( msg );
+    }
+
+    return true;
+} // END - CollectionConfig::parseConfigFile()
+
+
+void CollectionConfig::parseCollectionSettings( const ticpp::Element * collection, CollectionMeta & collectionMeta )
 {
     std::string name, encoding, ranking, wildcardtype, classifierlanguage;
     izenelib::util::UString::EncodingType eType;        //converts the encoding string into EncodingType
     
     getAttribute( collection, "name", name );
-    CollectionParameterConfig collection_param(default_parameter_);
+    CollectionParameterConfig collection_param(SF1Config::get()->default_parameter_);
     collection_param.LoadXML(getUniqChildElement(collection, "Parameter"), true);
     
     collection_param.GetString("CollectionMeta/encoding", encoding);
@@ -707,8 +928,8 @@ void XmlConfigParser::parseCollectionSettings( const ticpp::Element * collection
     collection_param.GetString("CollectionMeta/wildcardtype", wildcardtype, "unigram");
     collection_param.GetString( "CollectionMeta/generalclassifierlanguage", classifierlanguage, "chinese");
     //for ranking
-    std::map<std::string, RankingConfigUnit>::iterator it = rankingConfigNameMap_.find( ranking );
-    rankingManagerConfig_.addRankingConfig( name, it->second );
+    std::map<std::string, RankingConfigUnit>::iterator it = SF1Config::get()->rankingConfigNameMap_.find( ranking );
+    SF1Config::get()->rankingManagerConfig_.addRankingConfig( name, it->second );
     downCase(encoding);
     eType = parseEncodingType(encoding);
     
@@ -1031,10 +1252,10 @@ void XmlConfigParser::parseCollectionSettings( const ticpp::Element * collection
         collectionMeta.aclDeny(aclDeny);
     }
 
-} // END - XmlConfigParser::parseCollectionSettings
+} // END - CollectionConfig::parseCollectionSettings
 
 // 3.1. Path -------------------------------------
-void XmlConfigParser::parseCollectionPath( const ticpp::Element * path, CollectionMeta & collectionMeta )
+void CollectionConfig::parseCollectionPath( const ticpp::Element * path, CollectionMeta & collectionMeta )
 {
     CollectionPath collPath;
     string basepath;
@@ -1075,11 +1296,11 @@ void XmlConfigParser::parseCollectionPath( const ticpp::Element * path, Collecti
 //     }
 
     collectionMeta.setCollectionPath( collPath );
-} // END - XmlConfigParser::parseCollectionPath()
+} // END - CollectionConfig::parseCollectionPath()
 
 
 // 3.2. Property -------------------------------------
-void XmlConfigParser::parseProperty(
+void CollectionConfig::parseProperty(
         const ticpp::Element * property,
         CollectionMeta & collectionMeta,
         set<string> & propertyNameList )
@@ -1216,14 +1437,14 @@ void XmlConfigParser::parseProperty(
 
             // if( collectionMeta.isUnigramWildcard() )
             {
-                if ( (laConfigIdNameMap_.find( "la_unigram" )) == laConfigIdNameMap_.end() ) {
+                if ( (SF1Config::get()->laConfigIdNameMap_.find( "la_unigram" )) == SF1Config::get()->laConfigIdNameMap_.end() ) {
                     throw XmlConfigParserException("Undefined analyzer configuration id, \"la_unigram\"");
                 }
 
                 /// TODO, add a hidden alias here
                 AnalysisInfo analysisInfo;
                 analysisInfo.analyzerId_ = "la_unigram";
-                analysisPairList_.insert( analysisInfo );
+                SF1Config::get()->analysisPairList_.insert( analysisInfo );
 
                 propertyConfig.setName(propertyName+"_unigram");
                 propertyConfig.setAnalysisInfo(analysisInfo);
@@ -1255,11 +1476,11 @@ void XmlConfigParser::parseProperty(
 
     //add this property setting(alias) to DocumentSchema
     collectionMeta.insertPropertyConfig( propertyConfig );
-} // END - XmlConfigParser::parseProperty()
+} // END - CollectionConfig::parseProperty()
 
 
 // 3.2.1 Display -------------------------------------
-void XmlConfigParser::parseProperty_Display( const ticpp::Element * display, PropertyConfig & propertyConfig )
+void CollectionConfig::parseProperty_Display( const ticpp::Element * display, PropertyConfig & propertyConfig )
 {
     int length = 0;
     bool bSnippet = false, bSummary = false;
@@ -1290,10 +1511,10 @@ void XmlConfigParser::parseProperty_Display( const ticpp::Element * display, Pro
             propertyConfig.setSummaryNum( summaryNum );
         }
     }
-} // END - XmlConfigParser::parseProperty_Display()
+} // END - CollectionConfig::parseProperty_Display()
 
 // 3.2.2 Indexing -------------------------------------
-void XmlConfigParser::parseProperty_Indexing( const ticpp::Element * indexing, PropertyConfig & propertyConfig )
+void CollectionConfig::parseProperty_Indexing( const ticpp::Element * indexing, PropertyConfig & propertyConfig )
 {
     string alias, analyzer, tokenizers, rankWeightTmp;
     bool bFilter = false;
@@ -1356,7 +1577,7 @@ void XmlConfigParser::parseProperty_Indexing( const ticpp::Element * indexing, P
     {
         analysisInfo.analyzerId_ = analyzer;
 
-        if ( (laConfigIdNameMap_.find( analyzer )) == laConfigIdNameMap_.end() )
+        if ( (SF1Config::get()->laConfigIdNameMap_.find( analyzer )) == SF1Config::get()->laConfigIdNameMap_.end() )
         {
             stringstream msg;
             msg << "Undefined analyzer configuration id, \"" << analyzer << "\"";
@@ -1369,7 +1590,7 @@ void XmlConfigParser::parseProperty_Indexing( const ticpp::Element * indexing, P
         unsigned int i = 0;
         for ( i = 0; i < tokenizerIdList.size(); i++ )
         {
-            if ( (tokenizerConfigNameMap_.find( tokenizerIdList[i] )) == tokenizerConfigNameMap_.end() )
+            if ( (SF1Config::get()->tokenizerConfigNameMap_.find( tokenizerIdList[i] )) == SF1Config::get()->tokenizerConfigNameMap_.end() )
             {
                 stringstream msg;
                 msg << "Undefined tokenizer configuration id, \"" << tokenizerIdList[i] << "\"";
@@ -1396,7 +1617,6 @@ void XmlConfigParser::parseProperty_Indexing( const ticpp::Element * indexing, P
     }
 
 
-
     if( !validateID(alias) ) throw_TypeMismatch( indexing, "alias", alias, "Alphabets, Numbers, Dot(.), Dash(-) and Underscore(_)");
     // add alias name if any
     if ( !alias.empty() )
@@ -1410,209 +1630,11 @@ void XmlConfigParser::parseProperty_Indexing( const ticpp::Element * indexing, P
 
 
     // push to the list of all analysis Information in the configuration file.
-    analysisPairList_.insert( analysisInfo );
+    SF1Config::get()->analysisPairList_.insert( analysisInfo );
 
-} // END  XmlConfigParser::parseProperty_Indexing()
-
-
-//------------------------- HELPER FUNCTIONS -------------------------
-
-bool checkIntFormat( const std::string & str )
-{
-    std::size_t pos = str.find_first_not_of( "0123456789", 0 );
-    if( pos != std::string::npos )
-    {
-        /*
-        // the value is a negative number
-        if( pos == 0 && str[pos] == '-' )
-        {
-            pos = str.find_first_not_of( "0123456789", pos+1 );
-            if( pos == string::npos )
-                return true;
-            else
-                return false;
-        }
-        */
-
-        return false;
-    }
-    return true;
-}
-
-void downCase( std::string & str )
-{
-    for ( string::iterator it = str.begin(); it != str.end(); it++ )
-    {
-        *it = tolower(*it);
-    }
-}
-
-int parseTruth( const string & str )
-{
-    std::string temp = str;
-    downCase( temp );
-
-    if( temp == "y" || temp == "yes" )
-        return 1;
-    else if( temp == "n" || temp == "no" )
-        return 0;
-    else
-        return -1;
-}
-
-void parseByComma( const string & str, vector<string> & subStrList )
-{
-    subStrList.clear();
-
-    std::size_t startIndex=0, endIndex=0;
-
-
-    while ( (startIndex = str.find_first_not_of( " ,\t", startIndex )) != std::string::npos )
-    {
-        endIndex = str.find_first_of( " ,\t", startIndex + 1 );
-
-        if ( endIndex == string::npos )
-        {
-            endIndex = str.length();
-        }
-
-        std::string substr = str.substr( startIndex, endIndex - startIndex );
-        startIndex = endIndex + 1;
-
-        subStrList.push_back( substr );
-    }
-}
+} // END  CollectionConfig::parseProperty_Indexing()
 
 
 
+} // END - namespace sf1r
 
-// ------------------------- HELPER MEMBER FUNCTIONS -------------------------
-
-ticpp::Element * XmlConfigParser::getUniqChildElement(
-        const ticpp::Element * ele, const std::string & name, bool throwIfNoElement ) const
-{
-    ticpp::Element * temp = NULL;
-    temp = ele->FirstChildElement( name, false );
-
-
-    if( temp == NULL )
-    {
-        if( throwIfNoElement )
-            throw_NoElement( name );
-        else
-            return NULL;
-    }
-
-    if ( temp->NextSibling( name, false ) != NULL )
-    {
-        throw_MultipleElement( name );
-    }
-
-    return temp;
-}
-
-inline bool XmlConfigParser::getAttribute(
-        const ticpp::Element * ele,
-        const std::string & name,
-        std::string & val,
-        bool throwIfNoAttribute ) const
-{
-    val = ele->GetAttribute( name );
-
-    if( val.empty() )
-    {
-        if( throwIfNoAttribute )
-            throw_NoAttribute( ele, name );
-        else
-            return false;
-    }
-
-    return true;
-}
-
-
-bool XmlConfigParser::getAttribute(
-        const ticpp::Element * ele,
-        const std::string & name,
-        bool & val,
-        bool throwIfNoAttribute ) const
-{
-    std::string temp;
-
-    if( !getAttribute( ele, name, temp, throwIfNoAttribute ) )
-        return false;
-
-    switch( parseTruth(temp) )
-    {
-        case 1:
-            val = true;
-            break;
-        case 0:
-            val = false;
-            break;
-        case -1:
-            throw_TypeMismatch( ele, name, temp );
-            break;
-    }
-
-    return true;
-}
-void XmlConfigParser::parseDeploymentSettings(const ticpp::Element * deploy) {
-	//string sf[] = { "SIA", "MIA", "SMIA" };
-	string sf[] = { "SMIA" };
-
-	Element * ctr_node = NULL;
-	Element * ba_node = NULL;
-	ctr_node = getUniqChildElement(deploy, "Controller");
-	getPortNumber(ctr_node, "port", cobraConfig_.ctrPort, false);
-	ba_node = getUniqChildElement(deploy, "BA");
-	getPortNumber(ba_node, "port", cobraConfig_.baPort, false);
-	getPortNumber(ba_node, "config_port", cobraConfig_.baConfigPort, false);
-	for (unsigned int i=0; i<1; i++) {
-		Iterator<Element> node_it( sf[i] );
-		for (node_it = node_it.begin(deploy); node_it != node_it.end(); node_it++) {
-			string collectionName, port;
-			getPortNumber(node_it.Get(), "port", port, true);
-			getAttribute(node_it.Get(), "collection", collectionName, true);
-
-
-			//cout<<collectionName<<"  "<<port<<endl;
-			cobraConfig_.collections.insert( collectionName );
-// 			if (sf[i] == "SIA") {
-// 				cobraConfig_.siaPortMap.insert(make_pair(collectionName, port) );
-// 			}
-// 			if (sf[i] == "MIA") {
-// 				cobraConfig_.miaPortMap.insert(make_pair(collectionName, port) );
-// 			}
-			if (sf[i] == "SMIA") {
-				cobraConfig_.smiaPortMap.insert(make_pair(collectionName, port) );
-			}
-		}
-	}
-}
-
-
-
-izenelib::util::UString::EncodingType XmlConfigParser::parseEncodingType(const std::string& encoding)
-{
-  izenelib::util::UString::EncodingType eType = izenelib::util::UString::UTF_8;
-  if ( encoding == "utf-8" || encoding == "utf8" )
-      eType = izenelib::util::UString::UTF_8;
-  else if ( encoding == "euc-kr" || encoding == "euckr" )
-      eType = izenelib::util::UString::EUC_KR;
-  else if ( encoding == "cp949" )
-      eType = izenelib::util::UString::CP949;
-  else if ( encoding == "euc-jp" || encoding == "eucjp" )
-      eType = izenelib::util::UString::EUC_JP;
-  else if ( encoding == "sjis" )
-      eType = izenelib::util::UString::SJIS;
-  else if ( encoding == "gb2312" )
-      eType = izenelib::util::UString::GB2312;
-  else if ( encoding == "big5" )
-      eType = izenelib::util::UString::BIG5;
-  else if ( encoding == "iso8859-15" )
-      eType = izenelib::util::UString::ISO8859_15;
-  return eType;
-}
-
-} // END - namespace sf1v5

@@ -1,5 +1,9 @@
 #include "CobraProcess.h"
+#include <common/SFLogger.h>
+#include <la-manager/LAPool.h>
+
 #include <OnSignal.h>
+#include <XmlConfigParser.h>
 
 #include <util/ustring/UString.h>
 #include <util/thread-pool/ThreadObjectPool.h>
@@ -27,13 +31,12 @@ namespace bfs = boost::filesystem;
 
 bool CobraProcess::initialize(const std::string& configFilePath)
 {
-/*
-    bfs::path logPath("." / "log" / "COBRA");
+    bfs::path logPath(bfs::path(".") / "log" / "COBRA");
     if( !sflog->init( logPath.string() ) )
         return false;
     try
     {
-    if( !SF1Config::get()->parseConfigFile( configFilePath ) )
+        if( !SF1Config::get()->parseConfigFile( configFilePath ) )
         {
             return false;
         }
@@ -45,14 +48,14 @@ bool CobraProcess::initialize(const std::string& configFilePath)
     }
     SF1Config::get()->getCobraConfig(config_);
     config_.setConfigPath( configFilePath );
-*/	
+
     return true;
 } // end - in
 
 
 int CobraProcess::run()
 {
-    //atexit(&LAPool::destroy);
+    atexit(&LAPool::destroy);
 
     bool caughtException = false;
 

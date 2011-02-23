@@ -1,6 +1,6 @@
 /**
  * @file XmlConfigParser.h
- * @brief Defines XmlConfigParser class, which is a XML configuration file parser for SF-1 v5.0
+ * @brief Defines SF1Config class, which is a XML configuration file parser for SF-1 v5.0
  * @author MyungHyun (Kent)
  * @date 2008-09-05
  */
@@ -55,8 +55,6 @@ int parseTruth( const string & str );
 void parseByComma( const std::string & str, std::vector<std::string> & subStrList );
 
 
-
-
 ///@ brief  The exception class
 class XmlConfigParserException : public std::exception
 {
@@ -76,296 +74,10 @@ class XmlConfigParserException : public std::exception
 		std::string details_; 
 };
 
-
-/// @brief   This class parses a SF-1 v5.0 configuration file, in the form of a xml file
-/// 
-class XmlConfigParser : boost::noncopyable
+class XmlConfigParser
 {
-
-public:
-    //----------------------------  PUBLIC FUNCTIONS  ----------------------------
-
-    XmlConfigParser();
-    ~XmlConfigParser(); 
-
-    static XmlConfigParser* get()
-    {
-      return izenelib::util::Singleton<XmlConfigParser>::get();
-    }
-    
-    /// @brief           Starts parsing the configruation file
-    /// @param fileName  The path of the configuration file
-    /// @details
-    /// The configuration file <System>, <Environment>, and"<Document> are processed
-    /// 
-    bool parseConfigFile( const std::string & fileName ) throw(XmlConfigParserException );
-
-
-    
-    std::string getResourceDir() const
-    {
-      return resource_dir_;
-    }
-    
-    /// @brief                  Gets the configuration related to LAManager
-    /// @return                 The settings for LAManager
-    /// 
-    const LAManagerConfig & getLAManagerConfig()
-    {
-        //laManagerConfig_.setAnalysisPairList( analysisPairList_ );
-        boost::unordered_set<AnalysisInfo>::iterator it;
-        for( it = analysisPairList_.begin(); it != analysisPairList_.end(); it++ )
-        {
-            laManagerConfig_.addAnalysisPair( *it );
-        }
-        return laManagerConfig_;
-    }
-
-    /// @brief                  Gets the configuration related to LAManager
-    /// @param laManagerConfig  The settings for LAManager
-    void getLAManagerConfig( LAManagerConfig & laManagerConfig )
-    {
-        laManagerConfig = getLAManagerConfig();
-    }
-
-
-    /// @brief                      Gets the configuration related to BrokerAgent
-    /// @return                     The settings for BrokerAgent
-    const BrokerAgentConfig & getBrokerAgentConfig()
-    {
-        return brokerAgentConfig_;
-    }
-
-    /// @brief                      Gets the configuration related to BrokerAgent
-    /// @param brokerAgentConfig    The settings for BrokerAgent
-    void getBrokerAgentConfig( BrokerAgentConfig& brokerAgentConfig )
-    {
-        brokerAgentConfig = brokerAgentConfig_;
-    }
-
-
-    /// @brief                      Gets the configuration related to DocumentManager
-    /// @return                     The settings for DocumentManager
-    const DocumentManagerConfig & getDocumentManagerConfig( )
-    {
-        return docManagerConfig_;
-    }
-
-    /// @brief                      Gets the configuration related to DocumentManager
-    /// @param docManagerConfig     The settings for DocumentManager
-    void getDocumentManagerConfig( DocumentManagerConfig & docManagerConfig )
-    {
-        docManagerConfig = docManagerConfig_;
-    }
-
-
-
-
-    const QuerySupportConfig & getQuerySupportConfig( )
-    {
-        return query_support_config_;
-    }
-
-
-    void getQuerySupportConfig( QuerySupportConfig & query_support_config )
-    {
-        query_support_config = query_support_config_;
-    }
-
-
-    /// @brief                      Gets the configuration related to RankingManager
-    /// @return                     The settings for RankingManager
-    const RankingManagerConfig & getRankingManagerConfig( )
-    {
-        return rankingManagerConfig_;
-    }
-
-    /// @brief                      Gets the configuration related to RankingManager
-    /// @param logManagerConfig     The settings for RankingManager
-    void getRankingManagerConfig( RankingManagerConfig & rankingManagerConfig )
-    {
-        rankingManagerConfig = rankingManagerConfig_;
-    }
-
-    
-     
-    /// @brief                      Gets the configuration related to Firewall
-    /// @return                     The settings for Firewall
-    const FirewallConfig& getFirewallConfig( )
-    {
-        return firewallConfig_;
-    }
-
-    /// @brief                      Gets the configuration related to Firewall
-    /// @param logManagerConfig     The settings for Firewall
-    void getFirewallConfig( FirewallConfig & firewallConfig)
-    {
-        firewallConfig = firewallConfig;
-    }
-     /// @brief                      Gets the configuration related to Cobra
-    /// @paramCobraConfig     The settings for Cobra
-    void getCobraConfig( CobraConfig & cobraConfig)
-    {
-        cobraConfig = cobraConfig_;
-    }
-    
-    bool getCollectionMetaByName(
-        const std::string& collectionName,
-        CollectionMeta& collectionMeta
-    ) const
-    {
-        std::map<std::string, CollectionMeta>::const_iterator it =
-            collectionMetaMap_.find(collectionName);
-
-        if(it != collectionMetaMap_.end())
-        {
-            collectionMeta = it->second;
-            return true;
-        }
-
-        return false;
-    }
-    
-    const std::map<std::string, CollectionMeta>& getCollectionMetaMap()
-    {
-      return collectionMetaMap_;
-    }
-    
-    bool IsMiningOpen() const
-    {
-      return mining_switch_;
-    }
-    
-    std::string getIndexRecommendCronString()
-    {
-      return cronIndexRecommend_;
-    }
-    
-    std::string getIndexerCronString()
-    {
-      return cronIndexer_;
-    }
-    
-    
-private:
-    //----------------------------  PRIVATE FUNCTIONS  ----------------------------
-
-
-    // 1. <System> parsing -------------
-
-    /// @brief                  Parse <System> settings
-    /// @param system           Pointer to the Element
-    /// @details
-    /// Hierarchy of <System> configurations
-    /// - <System>
-    ///     - <SiaProcess>
-    ///     - <MiningProcess>
-    ///     - <BrokerAgent>
-    ///     - <QuerySupport>
-    ///     - <FireWall>
-    void parseSystemSettings( const ticpp::Element * system );
-
-    /// @brief                  Parse <SiaProcess> settings
-    /// @param system           Pointer to the Element
-    void parseSMiaProcess( const ticpp::Element * siaProcess );
-
-    /// @brief                  Parse <MiningParameter> settings
-    /// @param system           Pointer to the Element
-    void parseMiningParameter( const ticpp::Element * miningParameter );
-
-    /// @brief                  Parse <BrokerAgnet> settings
-    /// @param system           Pointer to the Element
-    void parseBrokerAgent( const ticpp::Element * brokerAgent );
-
-    /// @brief                  Parse <QuerySupport> settings
-    /// @param system           Pointer to the Element
-    void parseQuerySupport( const ticpp::Element * querySupport );
-
-    /// @brief                  Parse <FireWall> settings
-    /// @param system           Pointer to the Element
-    void parseFirewall( const ticpp::Element * tgElement );
-
-    void parseParametersDefault( const ticpp::Element * element );
-
-    // 2. <Environment> parsing ------------------
-
-    /// @brief                  Parse <Environment> settings
-    /// @param system           Pointer to the Element
-    /// @details
-    /// Hierarchy of <Environment> configurations
-    /// - <Environment>
-    ///     - <Tokenizer>
-    ///     - <LanguageAnalyzer>
-    ///     - <Ranking>
-    void parseEnvironmentSettings( const ticpp::Element * environment );
-
-    /// @brief                  Parse <Tokenizer> settings
-    /// @param system           Pointer to the Element
-    void parseTokenizer( const ticpp::Element * tokenizer );
-
-    /// @brief                  Parse <LanguageAnalyzer> settings
-    /// @param system           Pointer to the Element
-    void parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer );
-
-    /// @brief                  Parse <Ranking> settings
-    /// @param system           Pointer to the Element
-    void parseRanking( const ticpp::Element * ranking );
-
-    /// @brief                  Parse <LanguageIdentifier> settings
-    /// @param system           Pointer to the Element
-    void parseLanguageIdentifier( const ticpp::Element * langid );
-
-
-    void parseDeploymentSettings( const ticpp::Element * environment );
-
-
-    // 3. <Collection> parsing ------------------
-
-    /// @brief                  Parse <Collection> settings
-    /// @param system           Pointer to the Element
-    /// @details
-    /// Hierarchy of <Collection> configurations
-    /// - <Collection>
-    ///     - <Path>
-    ///     - <DocumentSchema> (not parsed)
-    ///         - <Property>
-    ///             - <Display>
-    ///             - <Indexing>
-    ///             - <Mining>
-    void parseCollectionSettings( const ticpp::Element * collection, CollectionMeta & collectionMeta );
-
-    /// @brief                  Parse <Path> settings
-    /// @param system           Pointer to the Element
-    void parseCollectionPath( const ticpp::Element * path, CollectionMeta & collectionMeta );
-
-
-    // 3.3 <Property> parsing --------
-    /// @brief                  Parse <Property> settings
-    /// @param system           Pointer to the Element
-    void parseProperty(
-        const ticpp::Element * property,
-        CollectionMeta & collectionMeta,
-        std::set<std::string> & propertyNameList
-    );
-
-    /// @brief                  Parse <Display> settings
-    /// @param system           Pointer to the Element
-    /// @param propertyConfig   Property settings
-    /// 
-    void parseProperty_Display( const ticpp::Element * display, PropertyConfig & propertyConfig );
-
-    /// @brief                  Parse <Indexing> settings
-    /// @param system           Pointer to the Element
-    /// @param propertyConfig   Property settings
-    /// 
-    void parseProperty_Indexing( const ticpp::Element * indexing, PropertyConfig & propertyConfig );
-    
-    izenelib::util::UString::EncodingType parseEncodingType(const std::string& encoding_str);
-
-private:
+protected:
     //---------------------------- HELPER FUNCTIONS -------------------------------
-
-
     /// @brief  Gets a single child element. There should be no multiple definitions of the element
     /// @param ele                  The parent element
     /// @param name                 The name of the Child element
@@ -505,7 +217,6 @@ private:
         return true;
     }
 
-private:
     // ----------------------------- THROW METHODS -----------------------------
 
     // 1. ELEMENTS ---------------
@@ -527,8 +238,6 @@ private:
         msg << "Definitions of element <" << name << "> is missing";
         throw XmlConfigParserException( msg.str() );
     }
-
-
 
     // 2. ATTRIBUTES ---------------
 
@@ -598,6 +307,8 @@ private:
         throw XmlConfigParserException( msg.str() );
     }
 
+    izenelib::util::UString::EncodingType parseEncodingType(const std::string& encoding_str);
+
     /// @brief Return true if given id only consists of alphabets, numbers, dash(-) and underscore(_)
     /// @param id The string to be checked
     /// @return true if given id consists of alaphabets, numbers, dash(-) and underscore(_)
@@ -613,11 +324,219 @@ private:
         return true;
     }
 
+};
+
+/// @brief   This class parses a SF-1 v5.0 configuration file, in the form of a xml file
+/// 
+class SF1Config : boost::noncopyable, XmlConfigParser
+{
+public:
+    //----------------------------  PUBLIC FUNCTIONS  ----------------------------
+
+    SF1Config();
+    ~SF1Config(); 
+
+    static SF1Config* get()
+    {
+      return izenelib::util::Singleton<SF1Config>::get();
+    }
+    
+    /// @brief           Starts parsing the configruation file
+    /// @param fileName  The path of the configuration file
+    /// @details
+    /// The configuration file <System>, <Environment>, and"<Document> are processed
+    /// 
+    bool parseConfigFile( const std::string & fileName ) throw(XmlConfigParserException );
+
+    std::string getResourceDir() const
+    {
+      return resource_dir_;
+    }
+    
+    /// @brief                  Gets the configuration related to LAManager
+    /// @return                 The settings for LAManager
+    /// 
+    const LAManagerConfig & getLAManagerConfig()
+    {
+        //laManagerConfig_.setAnalysisPairList( analysisPairList_ );
+        boost::unordered_set<AnalysisInfo>::iterator it;
+        for( it = analysisPairList_.begin(); it != analysisPairList_.end(); it++ )
+        {
+            laManagerConfig_.addAnalysisPair( *it );
+        }
+        return laManagerConfig_;
+    }
+
+    /// @brief                  Gets the configuration related to LAManager
+    /// @param laManagerConfig  The settings for LAManager
+    void getLAManagerConfig( LAManagerConfig & laManagerConfig )
+    {
+        laManagerConfig = getLAManagerConfig();
+    }
+
+
+    /// @brief                      Gets the configuration related to BrokerAgent
+    /// @return                     The settings for BrokerAgent
+    const BrokerAgentConfig & getBrokerAgentConfig()
+    {
+        return brokerAgentConfig_;
+    }
+
+    /// @brief                      Gets the configuration related to BrokerAgent
+    /// @param brokerAgentConfig    The settings for BrokerAgent
+    void getBrokerAgentConfig( BrokerAgentConfig& brokerAgentConfig )
+    {
+        brokerAgentConfig = brokerAgentConfig_;
+    }
+
+
+    /// @brief                      Gets the configuration related to DocumentManager
+    /// @return                     The settings for DocumentManager
+    const DocumentManagerConfig & getDocumentManagerConfig( )
+    {
+        return docManagerConfig_;
+    }
+
+    /// @brief                      Gets the configuration related to DocumentManager
+    /// @param docManagerConfig     The settings for DocumentManager
+    void getDocumentManagerConfig( DocumentManagerConfig & docManagerConfig )
+    {
+        docManagerConfig = docManagerConfig_;
+    }
+
+    const QuerySupportConfig & getQuerySupportConfig( )
+    {
+        return query_support_config_;
+    }
+
+
+    void getQuerySupportConfig( QuerySupportConfig & query_support_config )
+    {
+        query_support_config = query_support_config_;
+    }
+
+
+    /// @brief                      Gets the configuration related to RankingManager
+    /// @return                     The settings for RankingManager
+    const RankingManagerConfig & getRankingManagerConfig( )
+    {
+        return rankingManagerConfig_;
+    }
+
+    /// @brief                      Gets the configuration related to RankingManager
+    /// @param logManagerConfig     The settings for RankingManager
+    void getRankingManagerConfig( RankingManagerConfig & rankingManagerConfig )
+    {
+        rankingManagerConfig = rankingManagerConfig_;
+    }
+    
+     
+    /// @brief                      Gets the configuration related to Firewall
+    /// @return                     The settings for Firewall
+    const FirewallConfig& getFirewallConfig( )
+    {
+        return firewallConfig_;
+    }
+
+    /// @brief                      Gets the configuration related to Firewall
+    /// @param logManagerConfig     The settings for Firewall
+    void getFirewallConfig( FirewallConfig & firewallConfig)
+    {
+        firewallConfig = firewallConfig;
+    }
+     /// @brief                      Gets the configuration related to Cobra
+    /// @paramCobraConfig     The settings for Cobra
+    void getCobraConfig( CobraConfig & cobraConfig)
+    {
+        cobraConfig = cobraConfig_;
+    }
+    
+    bool getCollectionMetaByName(
+        const std::string& collectionName,
+        CollectionMeta& collectionMeta
+    ) const
+    {
+        std::map<std::string, CollectionMeta>::const_iterator it =
+            collectionMetaMap_.find(collectionName);
+
+        if(it != collectionMetaMap_.end())
+        {
+            collectionMeta = it->second;
+            return true;
+        }
+
+        return false;
+    }
+    
+    const std::map<std::string, CollectionMeta>& getCollectionMetaMap()
+    {
+      return collectionMetaMap_;
+    }
+    
+    bool IsMiningOpen() const
+    {
+      return mining_switch_;
+    }
+    
+    std::string getIndexRecommendCronString()
+    {
+      return cronIndexRecommend_;
+    }
+    
+    std::string getIndexerCronString()
+    {
+      return cronIndexer_;
+    }
+    
+    
+private:
+    /// @brief                  Parse <System> settings
+    /// @param system           Pointer to the Element
+    void parseSystemSettings( const ticpp::Element * system );
+
+    /// @brief                  Parse <SiaProcess> settings
+    /// @param system           Pointer to the Element
+    void parseSMiaProcess( const ticpp::Element * siaProcess );
+
+    /// @brief                  Parse <MiningParameter> settings
+    /// @param system           Pointer to the Element
+    void parseMiningParameter( const ticpp::Element * miningParameter );
+
+    /// @brief                  Parse <BrokerAgnet> settings
+    /// @param system           Pointer to the Element
+    void parseBrokerAgent( const ticpp::Element * brokerAgent );
+
+    /// @brief                  Parse <QuerySupport> settings
+    /// @param system           Pointer to the Element
+    void parseQuerySupport( const ticpp::Element * querySupport );
+
+    /// @brief                  Parse <FireWall> settings
+    /// @param system           Pointer to the Element
+    void parseFirewall( const ticpp::Element * tgElement );
+
+    void parseParametersDefault( const ticpp::Element * element );
+
+    /// @brief                  Parse <Tokenizer> settings
+    /// @param system           Pointer to the Element
+    void parseTokenizer( const ticpp::Element * tokenizer );
+
+    /// @brief                  Parse <LanguageAnalyzer> settings
+    /// @param system           Pointer to the Element
+    void parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer );
+
+    /// @brief                  Parse <Ranking> settings
+    /// @param system           Pointer to the Element
+    void parseRanking( const ticpp::Element * ranking );
+
+    /// @brief                  Parse <LanguageIdentifier> settings
+    /// @param system           Pointer to the Element
+    void parseLanguageIdentifier( const ticpp::Element * langid );
+
+
+    void parseDeploymentSettings( const ticpp::Element * environment );
 
 private:
     //----------------------------  PRIVATE MEMBER VARIABLES  ----------------------------
-
-
     // STATIC VALUES -----------------
 
     /// @brief  Rank value representing "light" setting
@@ -677,7 +596,6 @@ private:
     std::map<std::string, RankingConfigUnit> rankingConfigNameMap_;
 
 
-
     // LISTS ----------------------------
 
     /// @brief  Stores all the CollectionMeta objects created while parsing
@@ -691,18 +609,81 @@ private:
     
     std::string cronIndexRecommend_;
     std::string cronIndexer_;
-    
+
+    friend class CollectionConfig;    
 };
 
-typedef XmlConfigParser SF1Config;
+
+class CollectionConfig : boost::noncopyable, XmlConfigParser
+{
+public:
+    //----------------------------  PUBLIC FUNCTIONS  ----------------------------
+
+    CollectionConfig();
+    ~CollectionConfig(); 
+
+    static CollectionConfig* get()
+    {
+      return izenelib::util::Singleton<CollectionConfig>::get();
+    }
+    
+    /// @brief           Starts parsing the configruation file
+    /// @param fileName  The path of the configuration file
+    /// @details
+    /// The configuration file <System>, <Environment>, and"<Document> are processed
+    /// 
+    bool parseConfigFile( const std::string & fileName ) throw(XmlConfigParserException );
 
 
+private:
+    /// @brief                  Parse <Collection> settings
+    /// @param system           Pointer to the Element
+    void parseCollectionSettings( const ticpp::Element * collection, CollectionMeta & collectionMeta );
+
+    /// @brief                  Parse <Path> settings
+    /// @param system           Pointer to the Element
+    void parseCollectionPath( const ticpp::Element * path, CollectionMeta & collectionMeta );
+
+    // 3.3 <Property> parsing --------
+    /// @brief                  Parse <Property> settings
+    /// @param system           Pointer to the Element
+    void parseProperty(
+        const ticpp::Element * property,
+        CollectionMeta & collectionMeta,
+        std::set<std::string> & propertyNameList
+    );
+
+    /// @brief                  Parse <Display> settings
+    /// @param system           Pointer to the Element
+    /// @param propertyConfig   Property settings
+    /// 
+    void parseProperty_Display( const ticpp::Element * display, PropertyConfig & propertyConfig );
+
+    /// @brief                  Parse <Indexing> settings
+    /// @param system           Pointer to the Element
+    /// @param propertyConfig   Property settings
+    /// 
+    void parseProperty_Indexing( const ticpp::Element * indexing, PropertyConfig & propertyConfig );
+    
+private:
+    //----------------------------  PRIVATE MEMBER VARIABLES  ----------------------------
+    // STATIC VALUES -----------------
+
+    /// @brief  Rank value representing "light" setting
+    static const float  RANK_LIGHT  = 0.5f;
+    /// @brief  Rank value representing "normal" setting
+    static const float  RANK_NORMAL = 1.0f;
+    /// @brief  Rank value representing "heavy" setting
+    static const float  RANK_HEAVY  = 2.0f;
+    /// @brief  Rank value representing "max" setting
+    static const float  RANK_MAX    = 4.0f;
+
+    /// @brief  Max length for <Date> field
+    static const int DATE_MAXLEN = 1024;
+};
 
 
-} // namespace sf1v5
+} // namespace sf1r
 
 #endif //_XML_CONFIG_PARSER_H_
-
-//eof
-
 

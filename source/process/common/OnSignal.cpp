@@ -1,5 +1,5 @@
 /**
- * @file process/new-trinity/common/OnSignal.cpp
+ * @file process/common/OnSignal.cpp
  * @author Ian Yang
  * @date Created <2009-10-29 13:19:47>
  * @date Updated <2010-08-19 10:16:59>
@@ -134,6 +134,6 @@ void registerExceptionSignal(int signal)
 #endif
 }
 
-} // namespace sf1v5
+} // namespace sf1r
 
 
