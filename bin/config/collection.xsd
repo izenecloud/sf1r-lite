@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2011 (http://www.altova.com) by YF (izenesoft) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.izenesoft.com" xmlns:t="http://www.izenesoft.com" targetNamespace="http://www.izenesoft.com" elementFormDefault="qualified">
+	<xs:simpleType name="EncodingType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="UTF-8"/>
+			<xs:enumeration value="EUC-KR"/>
+			<xs:enumeration value="GBK"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="YesNoType">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="yes|no|y|n"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="Path">
+		<xs:complexType>
+			<xs:sequence minOccurs="0">
+				<xs:element ref="SCD"/>
+				<xs:element ref="CollectionData"/>
+				<xs:element ref="Query"/>
+			</xs:sequence>
+			<xs:attribute name="basepath" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="SCD">
+		<xs:complexType>
+			<xs:attribute name="path" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="CollectionData">
+		<xs:complexType>
+			<xs:attribute name="path" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Query">
+		<xs:complexType>
+			<xs:attribute name="path" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="settings">
+		<xs:complexType>
+			<xs:attribute name="dictionarypath"/>
+			<xs:attribute name="mode" type="xs:NCName"/>
+			<xs:attribute name="option"/>
+			<xs:attribute name="specialchar"/>
+			<xs:attribute name="summarynum" type="xs:integer"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Collection">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Date" minOccurs="0"/>
+				<xs:element ref="Path"/>
+				<xs:element ref="Parameter"/>
+				<xs:element ref="DocumentSchema"/>
+				<xs:element ref="MiningSchema"/>
+                <xs:element ref="ACL" minOccurs="0"/>
+			</xs:sequence>
+			<xs:attribute name="name" type="xs:NCName"/>
+		</xs:complexType>
+		<xs:key name="propertyNameKey">
+			<xs:selector xpath="t:DocumentSchema/t:Property"/>
+			<xs:field xpath="@name"/>
+		</xs:key>
+		<xs:keyref name="tgPropertyNameKeyRef" refer="propertyNameKey">
+			<xs:selector xpath="t:MiningSchema/t:TaxonomyGeneration/t:Property"/>
+			<xs:field xpath="@name"/>
+		</xs:keyref>
+		<xs:keyref name="ddPropertyNameKeyRef" refer="propertyNameKey">
+			<xs:selector xpath="t:MiningSchema/t:DuplicateDetection/t:Property"/>
+			<xs:field xpath="@name"/>
+		</xs:keyref>
+		<xs:keyref name="qrPropertyNameKeyRef" refer="propertyNameKey">
+			<xs:selector xpath="t:MiningSchema/t:QueryRecommend/t:Property"/>
+			<xs:field xpath="@name"/>
+		</xs:keyref>
+		<xs:keyref name="similarityPropertyNameKeyRef" refer="propertyNameKey">
+			<xs:selector xpath="t:MiningSchema/t:Similarity/t:Property"/>
+			<xs:field xpath="@name"/>
+		</xs:keyref>
+		<xs:keyref name="dcPropertyNameKeyRef" refer="propertyNameKey">
+			<xs:selector xpath="t:MiningSchema/t:DocumentClassification/t:Property"/>
+			<xs:field xpath="@name"/>
+		</xs:keyref>
+	</xs:element>
+	<xs:element name="DocumentSchema">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Property" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="MiningSchema">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="TaxonomyGeneration" minOccurs="0"/>
+				<xs:element ref="DuplicateDetection" minOccurs="0"/>
+				<xs:element ref="QueryRecommend" minOccurs="0"/>
+				<xs:element ref="Similarity" minOccurs="0"/>
+				<xs:element ref="DocumentClassification" minOccurs="0"/>
+                                <xs:element ref="Faceted" minOccurs="0"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="TaxonomyGeneration">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Property" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="DuplicateDetection">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Property" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="QueryRecommend">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="TG" minOccurs="0"/>
+				<xs:element ref="Property" minOccurs="0" maxOccurs="unbounded"/>
+				<xs:element ref="QueryLog" minOccurs="0"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="TG">
+		<xs:complexType/>
+	</xs:element>
+	<xs:element name="QueryLog">
+		<xs:complexType/>
+	</xs:element>
+	<xs:element name="Similarity">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Property" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+        <xs:element name="DocumentClassification">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Property" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Faceted">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Property" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Parameter">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="CollectionMeta" type="CollectionMetaType" minOccurs="0"/>
+				<xs:element name="IndexStrategy" type="IndexStrategyType" minOccurs="0"/>
+				<xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="0"/>
+				<xs:element name="Sia" type="SiaType" minOccurs="0"/>
+				<xs:element name="TaxonomyPara" type="TaxonomyParaType" minOccurs="0"/>
+				<xs:element name="RecommendPara" type="RecommendParaType" minOccurs="0"/>
+				<xs:element name="SimilarityPara" type="SimilarityParaType" minOccurs="0"/>
+				<xs:element name="ClassificationPara" type="ClassificationParaType" minOccurs="0"/>
+				<xs:element name="IsePara" type="IseParaType" minOccurs="0"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Date">
+		<xs:complexType>
+			<xs:attribute name="format" type="xs:NCName" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Property">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Display" minOccurs="0"/>
+				<xs:element ref="Indexing" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+			<xs:attribute name="index" type="YesNoType"/>
+			<xs:attribute name="mining" type="YesNoType"/>
+			<xs:attribute name="name" type="xs:string" use="required"/>
+			<xs:attribute name="type">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="string"/>
+						<xs:enumeration value="int"/>
+						<xs:enumeration value="float"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Display">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="settings"/>
+			</xs:sequence>
+			<xs:attribute name="length" use="required">
+				<xs:simpleType>
+					<xs:restriction base="xs:integer">
+						<xs:minInclusive value="140"/>
+						<xs:maxInclusive value="200"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+			<xs:attribute name="snippet" type="YesNoType" use="required"/>
+			<xs:attribute name="summary" type="YesNoType" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Indexing">
+		<xs:complexType>
+			<xs:attribute name="alias" type="xs:NCName"/>
+			<xs:attribute name="analyzer" type="xs:NCName" use="optional"/>
+			<xs:attribute name="filter" type="YesNoType" use="required"/>
+			<xs:attribute name="multivalue" type="YesNoType" use="optional"/>
+			<xs:attribute name="doclen" type="YesNoType" use="optional"/>
+			<xs:attribute name="rankweight" use="optional">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="light"/>
+						<xs:enumeration value="normal"/>
+						<xs:enumeration value="heavy"/>
+						<xs:enumeration value="max"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+			<xs:attribute name="tokenizer" use="optional"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="ACL">
+		<xs:complexType>
+			<xs:attribute name="allow" type="xs:string" />
+			<xs:attribute name="deny" type="xs:string" />
+			<xs:attribute name="action" type="xs:string" />
+		</xs:complexType>
+	</xs:element>
+</xs:schema>	

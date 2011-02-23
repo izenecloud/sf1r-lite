@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!-- configuration for SF-11 Revolution -->
+<SF1Config xmlns="http://www.izenesoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+           xsi:schemaLocation="http://www.izenesoft.com sf1config.xsd">
+  <!-- ======== SYSTEM CONFIGURATIONS ======== -->
+  <!-- 
+       DESCRIPTION: Sets up system settings.
+  -->
+  <System>
+    <BrokerAgent usecache="n" threadnum="50" enabletest="y" />
+    <Resource path="@SF1RENGINE_ROOT@/package/resource"/> 
+    
+    <QuerySupport updatetime="3600" logdays="7">
+      <Path basepath="@SF1RENGINE_ROOT@/bin/query-support" />
+      <QueryCorrectionPara enableEK="y" enableCN="y"/>
+      <AutoFillPara num="10"/> 
+    </QuerySupport>
+    
+    <MiningSwitch enable="y" /> <!-- For test propose -->
+
+    <ParametersDefault>
+      <CollectionMeta encoding="UTF-8" rankingmodel="ranker1" wildcardtype="unigram" />
+      <IndexStrategy memorypoolsize="128000000" indexpolicy="default" />
+      <!-- Specify multiple index directory to support backup and
+           directory rotating -->
+      <CollectionDataDirectory>default-collection-dir</CollectionDataDirectory>
+      <!-- <CollectionDataDirectory>collection-dir-A</CollectionDataDirectory> -->
+      <!-- <CollectionDataDirectory>collection-dir-B</CollectionDataDirectory> -->
+      <Sia triggerqa="n" threadnum="25" doccachenum="20000" />
+      
+      
+      <TaxonomyPara topdocnum="100" levels="3" perlevelnum="8" candlabelnum="250" enablenec="n" maxpeopnum="20" maxlocnum="20" maxorgnum="20" />
+      <RecommendPara recommendnum="9" popularnum="20" realtimenum="5" />
+      <SimilarityPara docnumlimit="100" termnumlimit="400000" />
+      <ClassificationPara customizetraining="n" trainingencoding="UTF-8" />
+      <!-- index mode for image search
+           enableise: whether enable ise. 
+           buildimageindex: whether build the image representation in indexing.
+           storeimagelocally: whether the image will be copied and stored locally in the server. 
+      -->
+      <IsePara buildimageindex="y" storeimagelocally="n" maximagenum="1000000" relatedimagenum="50"/>
+
+    </ParametersDefault>
+
+    <!-- NOT IMPLEMENTED FOR CURRENT VERSION
+         <NumeralRecognition>
+         <Dictionary name="price" path="@SF1RENGINE_ROOT@/bin/dictionary/price.txt"/>
+         <Dictionary name="weight" path="@SF1RENGINE_ROOT@/bin/dictionary/weight.txt"/>
+         </NumeralRecognition>
+    -->
+    
+    <Firewall>
+      <!-- Allow and Deny ip can have four types 
+           (Full IP type is called class D in this configuration file)
+           1. class A type : value="121"       That is 121.*.*.*
+           2. class B type : value="121.2"     That is 121.2.*.*
+           3. class C type : value="121.2.0"   That is 121.2.0.*
+           4. class D type : value="121.2.0.3" 
+
+      # Sample #
+      <Allow value="211"/>
+      <Allow value="127.0"/>
+      <Deny  value="127.0.0.1"/>
+      <Deny  value="211.39.140.111"/> -->
+    </Firewall>
+
+    <Tokenizing>
+      <Tokenizer id="tok_divide" method="divide" value="@#$" code=""/>
+      <Tokenizer id="tok_unite" method="unite" value="/" code=""/>
+    </Tokenizing>
+
+
+    <!-- ** NEED TO EDIT DICTIONARY PATH ** -->
+    <!-- analysis types: token, ngram, like, all, noun, label -->
+    <LanguageAnalyzer dictionarypath="@wisekma_KNOWLEDGE@">
+
+      <Method id="la_token" analysis="token"/>
+      <Method id="la_char" analysis="char"/>
+      <Method id="la_unigram" analysis="char"/>
+      <Method id="la_ngram" analysis="ngram" min="2" max="3" maxno="2194967296" apart="n" idxflag="second" schflag="second"/>
+      <Method id="la_matrix" analysis="matrix" prefix="yes" suffix="yes"/>
+      <Method id="la_eng" analysis="english">
+        <settings mode="all" option="S+" dictionarypath=""/>
+      </Method>
+      <Method id="la_korall" analysis="korean">
+        <settings mode="all" option="R+S+" specialchar="#" dictionarypath=""/>
+      </Method>
+      <Method id="inner_la_korall_mia" analysis="korean" casesensitive="yes" >
+        <settings mode="label" option="R1S-" specialchar="#" dictionarypath=""/>
+      </Method>
+      <Method id="la_mia" analysis="multilang" advoption="default,inner_la_korall_mia;cn,la_char" casesensitive="yes" lower="no">
+        <settings mode="label" />
+      </Method>
+      <Method id="la_bigram" analysis="ngram" min="2" max="2" maxno="2194967296" apart="n" idxflag="second"/>
+      <Method id="la_bi_mia" analysis="multilang" advoption="default,inner_la_korall_mia;cn,la_bigram" casesensitive="yes" lower="no"/>
+      <Method id="inner_la_korall_sia" analysis="korean" casesensitive="yes" >
+        <settings mode="label" option="R+S+" specialchar="#" dictionarypath=""/>
+      </Method>
+      <Method id="inner_la_cnall_sia" analysis="chinese" casesensitive="yes" >
+        <settings mode="label" option="R+S+T3" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
+      </Method>
+      <Method id="la_sia" analysis="multilang" advoption="default,inner_la_korall_sia;en,la_eng;cn,inner_la_cnall_sia"/>
+      <Method id="la_kornoun" analysis="korean">
+        <settings mode="all" option="R+S+" specialchar="#" dictionarypath=""/>
+      </Method>
+
+      <!--
+          DESCRIPTION: analysis=auto
+          A property can be set to use a "auto" analyzer. 
+          The analyzer is assigned multiple method ids of other analyzers, which are analyzers like "all" or "noun".
+          Only on method id can be assigned for on language, so both "la_allkor" and "la_nounkor" cannot be assigned 
+          to one "auto" analyzer at a time. Only one is allowed.
+      -->
+      <!--Method id="auto_la" analysis="auto" ref="la_allkor,la_nouneng"/-->
+
+    </LanguageAnalyzer>
+
+    <Ranking>
+      <RankingModel id="ranker1" qd_text_model="plm"/>
+    </Ranking>
+
+    <LanguageIdentifier dbpath="@ilplib_LANGUAGEIDENTIFIER_DB@" />
+    
+    <CronIndexRecommend value="0 2 * * *" />
+    
+    <CronIndexer value="0 3 * * *" />
+    
+    
+  </System>
+
+
+  <Deployment>
+    <BA port="18181" />
+  </Deployment>
+
+</SF1Config>
+
+

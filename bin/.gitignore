@@ -2,7 +2,5 @@
 !/.gitignore
 !/*.rb
 !/*.sh
-!/config
-!/config/sf1config_*.xml
-!/config/default_sf1config_en.xml.in
-!/config/default_sf1config_cn.xml.in
+!/config/*.xsd
+!/config/sf1config.xml.in

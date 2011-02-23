@@ -219,17 +219,10 @@ ENDIF(ENABLE_TEST)
 ##################################################
 # Config
 #####
-#IF( USE_IZENECMA )
-#CONFIGURE_FILE(
-#  "${SF1RENGINE_ROOT}/bin/config/default_sf1config_cn.xml.in"
-#  "${SF1RENGINE_ROOT}/bin/config/default_sf1config.xml"
-#  ESCAPE_QUOTES @ONLY)
-#ELSE( USE_IZENECMA )
-#CONFIGURE_FILE(
-#  "${SF1RENGINE_ROOT}/bin/config/default_sf1config_en.xml.in"
-#  "${SF1RENGINE_ROOT}/bin/config/default_sf1config.xml"
-#  ESCAPE_QUOTES @ONLY)
-#ENDIF( USE_IZENECMA )
+CONFIGURE_FILE(
+  "${SF1RENGINE_ROOT}/bin/config/sf1config.xml.in"
+  "${SF1RENGINE_ROOT}/bin/config/sf1config.xml"
+  ESCAPE_QUOTES @ONLY)
 
 CONFIGURE_FILE(
   "${SF1RENGINE_ROOT}/source/core/config.h.in"

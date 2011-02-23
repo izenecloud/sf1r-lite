@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2011 (http://www.altova.com) by YF (izenesoft) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.izenesoft.com" xmlns:t="http://www.izenesoft.com" targetNamespace="http://www.izenesoft.com" elementFormDefault="qualified">
+	<xs:simpleType name="EncodingType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="UTF-8"/>
+			<xs:enumeration value="EUC-KR"/>
+			<xs:enumeration value="GBK"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="YesNoType">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="yes|no|y|n"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="PortType">
+		<xs:restriction base="xs:integer">
+			<xs:minInclusive value="1025"/>
+			<xs:maxInclusive value="65535"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="CollectionMetaType">
+		<xs:attribute name="encoding" type="EncodingType" use="required"/>
+		<xs:attribute name="rankingmodel" type="xs:NCName" use="required"/>
+		<xs:attribute name="wildcardtype" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="unigram"/>
+					<xs:enumeration value="trie"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="IndexStrategyType">
+		<xs:attribute name="indexpolicy" type="xs:string" use="required"/>
+		<xs:attribute name="memorypoolsize" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="5000000"/>
+					<xs:maxInclusive value="1024000000"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:simpleType name="CollectionDataDirectoryType">
+		<xs:restriction base="xs:string"/>
+	</xs:simpleType>
+	<xs:complexType name="SiaType">
+		<xs:attribute name="doccachenum" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="100"/>
+					<xs:maxInclusive value="100000"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="threadnum" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="1"/>
+					<xs:maxInclusive value="50"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="triggerqa" type="YesNoType" use="required"/>
+	</xs:complexType>
+	<xs:complexType name="TaxonomyParaType">
+		<xs:attribute name="candlabelnum" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="100"/>
+					<xs:maxInclusive value="400"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="enablenec" type="YesNoType" use="required"/>
+		<xs:attribute name="levels" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="1"/>
+					<xs:maxInclusive value="3"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="maxlocnum" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="1"/>
+					<xs:maxInclusive value="50"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="maxorgnum" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="1"/>
+					<xs:maxInclusive value="50"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="maxpeopnum" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="1"/>
+					<xs:maxInclusive value="50"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="perlevelnum" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="2"/>
+					<xs:maxInclusive value="20"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="topdocnum" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="50"/>
+					<xs:maxInclusive value="300"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="RecommendParaType">
+		<xs:attribute name="popularnum" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="1"/>
+					<xs:maxInclusive value="50"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="realtimenum" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="1"/>
+					<xs:maxInclusive value="50"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="recommendnum" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="1"/>
+					<xs:maxInclusive value="50"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="SimilarityParaType">
+		<xs:attribute name="docnumlimit" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="100"/>
+					<xs:maxInclusive value="500"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="termnumlimit" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="100"/>
+					<xs:maxInclusive value="500000"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="ClassificationParaType">
+		<xs:attribute name="customizetraining" type="YesNoType" use="required"/>
+		<xs:attribute name="trainingencoding" type="EncodingType" use="required"/>
+	</xs:complexType>
+	<xs:complexType name="IseParaType">
+		<xs:attribute name="buildimageindex" type="YesNoType" use="required"/>
+		<xs:attribute name="maximagenum" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="1"/>
+					<xs:maxInclusive value="1000000"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="relatedimagenum" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="1"/>
+					<xs:maxInclusive value="100"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="storeimagelocally" type="YesNoType" use="required"/>
+	</xs:complexType>
+	<xs:element name="SF1Config">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="System"/>
+				<xs:element ref="Deployment"/>
+			</xs:sequence>
+		</xs:complexType>
+		<xs:key name="analyzerKey">
+			<xs:selector xpath="t:System/t:LanguageAnalyzer/t:Method"/>
+			<xs:field xpath="@id"/>
+		</xs:key>
+		<xs:keyref name="analyzerKeyRef" refer="analyzerKey">
+			<xs:selector xpath="t:Collection/t:DocumentSchema/t:Property/t:Indexing"/>
+			<xs:field xpath="@analyzer"/>
+		</xs:keyref>
+		<xs:key name="rankerKey">
+			<xs:selector xpath="t:System/t:Ranking/t:RankingModel"/>
+			<xs:field xpath="@id"/>
+		</xs:key>
+		<xs:keyref name="defaultRankerKeyRef" refer="rankerKey">
+			<xs:selector xpath="t:System/t:ParametersDefault/t:CollectionMeta"/>
+			<xs:field xpath="@rankingmodel"/>
+		</xs:keyref>
+		<xs:keyref name="rankerKeyRef" refer="rankerKey">
+			<xs:selector xpath="t:Collection/t:Parameter/t:CollectionMeta"/>
+			<xs:field xpath="@rankingmodel"/>
+		</xs:keyref>
+		<xs:key name="collectionNameKey">
+			<xs:selector xpath="t:Collection"/>
+			<xs:field xpath="@name"/>
+		</xs:key>
+		<xs:keyref name="collectionNameKeyRef" refer="collectionNameKey">
+			<xs:selector xpath="t:Deployment/t:SMIA"/>
+			<xs:field xpath="@collection"/>
+		</xs:keyref>
+	</xs:element>
+	<xs:element name="System">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="BrokerAgent"/>
+				<xs:element ref="Resource"/>
+				<xs:element ref="QuerySupport"/>
+				<xs:element ref="MiningSwitch"/>
+				<xs:element ref="ParametersDefault"/>
+				<xs:element ref="Firewall"/>
+				<xs:element ref="Tokenizing"/>
+				<xs:element ref="LanguageAnalyzer"/>
+				<xs:element ref="Ranking"/>
+				<xs:element ref="LanguageIdentifier"/>
+                                <xs:element ref="CronIndexRecommend"/>
+				<xs:element ref="CronIndexer"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="BrokerAgent">
+		<xs:complexType>
+			<xs:attribute name="enabletest" type="YesNoType" use="required"/>
+			<xs:attribute name="threadnum" use="required">
+				<xs:simpleType>
+					<xs:restriction base="xs:integer">
+						<xs:minInclusive value="1"/>
+						<xs:maxInclusive value="100"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+			<xs:attribute name="usecache" type="YesNoType" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Resource">
+		<xs:complexType>
+			<xs:attribute name="path" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="QuerySupport">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Path"/>
+				<xs:element ref="QueryCorrectionPara"/>
+				<xs:element ref="AutoFillPara"/>
+			</xs:sequence>
+			<xs:attribute name="logdays" use="required">
+				<xs:simpleType>
+					<xs:restriction base="xs:integer">
+						<xs:minInclusive value="1"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+			<xs:attribute name="updatetime" use="required">
+				<xs:simpleType>
+					<xs:restriction base="xs:integer">
+						<xs:minInclusive value="1"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Path">
+		<xs:complexType>
+			<xs:attribute name="basepath" use="required"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="QueryCorrectionPara">
+		<xs:complexType>
+			<xs:attribute name="enableCN" type="YesNoType" use="required"/>
+			<xs:attribute name="enableEK" type="YesNoType" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="AutoFillPara">
+		<xs:complexType>
+			<xs:attribute name="num" type="xs:integer" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="MiningSwitch">
+		<xs:complexType>
+			<xs:attribute name="enable" type="YesNoType" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="ParametersDefault">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="CollectionMeta" type="CollectionMetaType" minOccurs="1"/>
+				<xs:element name="IndexStrategy" type="IndexStrategyType" minOccurs="1"/>
+				<xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="1" maxOccurs="2"/>
+				<xs:element name="Sia" type="SiaType" minOccurs="1"/>
+				<xs:element name="TaxonomyPara" type="TaxonomyParaType" minOccurs="1"/>
+				<xs:element name="RecommendPara" type="RecommendParaType" minOccurs="1"/>
+				<xs:element name="SimilarityPara" type="SimilarityParaType" minOccurs="1"/>
+				<xs:element name="ClassificationPara" type="ClassificationParaType" minOccurs="1"/>
+				<xs:element name="IsePara" type="IseParaType" minOccurs="1"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Firewall"/>
+	<xs:element name="Tokenizing">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Tokenizer" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Tokenizer">
+		<xs:complexType>
+			<xs:attribute name="code" use="required"/>
+			<xs:attribute name="id" type="xs:NCName" use="required"/>
+			<xs:attribute name="method" use="required">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="divide"/>
+						<xs:enumeration value="unite"/>
+						<xs:enumeration value="allow"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+			<xs:attribute name="value" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="LanguageAnalyzer">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Method" maxOccurs="unbounded"/>
+			</xs:sequence>
+			<xs:attribute name="dictionarypath" use="required"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="settings">
+		<xs:complexType>
+			<xs:attribute name="dictionarypath"/>
+			<xs:attribute name="mode" type="xs:NCName"/>
+			<xs:attribute name="option"/>
+			<xs:attribute name="specialchar"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Method">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="settings" minOccurs="0"/>
+			</xs:sequence>
+			
+			<xs:attribute name="advoption"/>
+			<xs:attribute name="analysis" use="required">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="ID"/>
+						<xs:enumeration value="token"/>
+						<xs:enumeration value="char"/>
+						<xs:enumeration value="ngram"/>
+						<xs:enumeration value="matrix"/>
+						<xs:enumeration value="chinese"/>
+						<xs:enumeration value="korean"/>
+						<xs:enumeration value="english"/>
+						<xs:enumeration value="multilang"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+			<xs:attribute name="apart" type="xs:NCName"/>
+			<xs:attribute name="casesensitive" type="YesNoType"/>
+			<xs:attribute name="id" type="xs:NCName" use="required"/>
+			<xs:attribute name="idxflag">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="all"/>
+						<xs:enumeration value="prime"/>
+						<xs:enumeration value="second"/>
+						<xs:enumeration value="none"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+			<xs:attribute name="lower" type="xs:NCName"/>
+			<xs:attribute name="max" type="xs:integer"/>
+			<xs:attribute name="maxno" type="xs:integer"/>
+			<xs:attribute name="min" type="xs:integer"/>
+			<xs:attribute name="prefix" type="YesNoType"/>
+			<xs:attribute name="schflag">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="all"/>
+						<xs:enumeration value="prime"/>
+						<xs:enumeration value="second"/>
+						<xs:enumeration value="none"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+			<xs:attribute name="suffix" type="YesNoType"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Ranking">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="RankingModel"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="RankingModel">
+		<xs:complexType>
+			<xs:attribute name="id" type="xs:NCName" use="required"/>
+			<xs:attribute name="qd_text_model" type="xs:NCName" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="LanguageIdentifier">
+		<xs:complexType>
+			<xs:attribute name="dbpath" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="CronIndexRecommend">
+		<xs:complexType>
+			<xs:attribute name="value" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="CronIndexer">
+		<xs:complexType>
+			<xs:attribute name="value" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Deployment">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="BA"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="BA">
+		<xs:complexType>
+			<xs:attribute name="port" type="PortType" use="required"/>
+		</xs:complexType>
+	</xs:element>
+
+</xs:schema>
