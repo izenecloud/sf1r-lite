@@ -11,48 +11,57 @@
       <Query path=""/>        <!-- default: basepath/query-data -->
     </Path>
 
-    <Parameter />
-
     <DocumentSchema>
 
-      <Property name="DOCID" type="string" index="no" />
+      <Property name="DOCID" type="string" />
 
-      <Property name="DATE" type="string" index="no" />
+      <Property name="DATE" type="string"/>
 
-      <Property name="Title" type="string" index="yes" mining="yes">
-        <Indexing filter="no" multivalue="no" doclen="yes" analyzer="la_sia" tokenizer="" rankweight="heavy"/>
-      </Property>
+      <Property name="Title" type="string" />
 
-      <Property name="Content" type="string" index="yes" mining="yes">
-        <Display length="160" snippet="yes" summary="no" >
-          <settings summarynum="2"/>
-        </Display>
-        <Indexing filter="no" multivalue="no" doclen="yes" analyzer="la_sia" tokenizer="tok_divide, tok_unite" rankweight="normal"/>
-      </Property>
+      <Property name="Content" type="string"/>
 
     </DocumentSchema>
 
-    <MiningSchema>
-      <TaxonomyGeneration> 
-        <Property name="Title" />
-        <Property name="Content" />
-      </TaxonomyGeneration>
-      <DuplicateDetection>
-        <Property name="Title" />
-        <Property name="Content" />
-      </DuplicateDetection>
-      <QueryRecommend>
-        <TG/>
-        <QueryLog />
-      </QueryRecommend>
-      <Similarity>
-        <Property name="Title" />
-        <Property name="Content" />
-      </Similarity>
-      <Faceted>
-        <Property name="Title" />
-        <Property name="Content" />
-      </Faceted>
-    </MiningSchema>
+    
+    <IndexBundle>
+      <Schema>
+        <Property name="Title">
+          <Indexing filter="no" multivalue="no" doclen="yes" analyzer="la_sia" tokenizer="" rankweight="heavy" />
+        </Property>
+
+        <Property name="Content">
+          <Display length="160" snippet="yes" summary="no" >
+            <settings summarynum="2"/>
+          </Display>
+          <Indexing filter="no" multivalue="no" doclen="yes" analyzer="la_sia" tokenizer="tok_divide, tok_unite" rankweight="normal"/>
+        </Property>
+      </Schema>
+    </IndexBundle>
+
+    <MiningBundle>
+      <Schema>
+        <TaxonomyGeneration> 
+          <Property name="Title" />
+          <Property name="Content" />
+        </TaxonomyGeneration>
+        <DuplicateDetection>
+          <Property name="Title" />
+          <Property name="Content" />
+        </DuplicateDetection>
+        <QueryRecommend>
+          <TG/>
+          <QueryLog />
+        </QueryRecommend>
+        <Similarity>
+          <Property name="Title" />
+          <Property name="Content" />
+        </Similarity>
+        <Faceted>
+          <Property name="Title" />
+          <Property name="Content" />
+        </Faceted>
+      </Schema>
+    </MiningBundle>
 
 </Collection>

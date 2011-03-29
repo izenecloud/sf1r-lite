@@ -16,13 +16,12 @@ namespace sf1r {
 
     SearchKeywordOperation::SearchKeywordOperation(
             const KeywordSearchActionItem& actionItem,
-            const CollectionMeta& collectionMeta,
+            bool unigramFlag,
             boost::shared_ptr<LAManager>& laManager,
             boost::shared_ptr<izenelib::ir::idmanager::IDManager>& idManager):
         actionItem_(actionItem),
         noError_(true),
-        collectionMeta_(collectionMeta),
-        unigramFlag_(collectionMeta_.isUnigramWildcard()),
+        unigramFlag_(unigramFlag),
         queryParser_(laManager, idManager)
     {
     } // end - SearchKeywordOperation()
@@ -30,54 +29,6 @@ namespace sf1r {
     SearchKeywordOperation::~SearchKeywordOperation()
     {
     } // end - ~SearchKeywordOperation()
-
-    bool SearchKeywordOperation::buildQueryTree(std::string& btqError)
-    {
-        clear();
-
-        // Build raw Query Tree
-        UString::EncodingType encodingType =
-            UString::convertEncodingTypeFromStringToEnum(
-                    actionItem_.env_.encodingType_.c_str() );
-        UString queryUStr(actionItem_.env_.queryString_, encodingType);
-        if ( !queryParser_.parseQuery( queryUStr, rawQueryTree_, unigramFlag_ ) )
-            return false;
-rawQueryTree_->print();
-
-        // Build property query map
-        bool applyLA = actionItem_.languageAnalyzerInfo_.applyLA_;
-
-        std::vector<std::string>::const_iterator propertyIter = actionItem_.searchPropertyList_.begin();
-        for(; propertyIter != actionItem_.searchPropertyList_.end(); propertyIter++)
-        {
-            // If there's already processed query, skip processing of this property..
-            if ( queryTreeMap_.find( *propertyIter ) != queryTreeMap_.end()
-                    && propertyTermInfo_.find( *propertyIter ) != propertyTermInfo_.end() )
-                continue;
-
-            QueryTreePtr tmpQueryTree;
-            if( applyLA )
-            {
-                AnalysisInfo analysisInfo;
-                std::string analysis, language;
-                collectionMeta_.getAnalysisInfo( *propertyIter, analysisInfo, analysis, language );
-
-                if ( !queryParser_.getAnalyzedQueryTree(
-                            actionItem_.languageAnalyzerInfo_.synonymExtension_,
-                            analysisInfo, queryUStr, tmpQueryTree, unigramFlag_ ))
-                    return false;
-            } // end - if
-            else // store raw query's info into it.
-                tmpQueryTree = rawQueryTree_;
-std::cout << "Property " << *propertyIter << std::endl;
-tmpQueryTree->print();
-            queryTreeMap_.insert( std::make_pair(*propertyIter,tmpQueryTree) );
-            PropertyTermInfo ptInfo; tmpQueryTree->getPropertyTermInfo(ptInfo);
-            propertyTermInfo_.insert( std::make_pair(*propertyIter,ptInfo) );
-
-        } // end - for
-        return true;
-    } // end - buildQueryTree()
 
     bool SearchKeywordOperation::getQueryTree(const std::string& propertyName, QueryTreePtr& propertyQueryTree) const
     {

@@ -20,36 +20,11 @@
 
 namespace sf1r {
 
-// QueryManager Static variables & functions 
-// ----------------------------------------------------------------------------------
-// boost::shared_ptr<QueryCorrectionSubmanager> QueryManager::queryCorrectionSubManager_;
-// boost::shared_ptr<AutoFillSubManager> QueryManager::autoFillSubManager_;
 std::map<QueryManager::CollPropertyKey_T, sf1r::PropertyDataType> QueryManager::collectionPropertyInfoMap_;
 const std::string QueryManager::seperatorString("!#$%&()*+,-./:;<=>?@[]^_`{|}~ ");
 QueryManager::DPM_T QueryManager::displayPropertyMap_;
 QueryManager::SPS_T QueryManager::searchPropertySet_;
 boost::shared_mutex QueryManager::dpmSM_;
-
-
-bool QueryManager::checkCollectionExist(const std::string& collectionName)
-{
-    /// iterator to find
-    CollectionMeta cmeta;
-    //return SF1Config::get()->getCollectionMetaByName(collectionName, cmeta);
-    ///TODO !!! Yingfeng 2011-02-22
-    return false;
-}
-
-CollectionMeta QueryManager::getQueryManagerCollectionMeta(const string& collectionName)
-{
-    static const CollectionMeta kDefaultMeta;
-    CollectionMeta result;
-    //bool b = SF1Config::get()->getCollectionMetaByName(collectionName, result);
-    ///TODO !!! Yingfeng 2011-02-22
-    bool b = false;
-    if(b) return result;
-    else return kDefaultMeta;
-}
 
 void QueryManager::setCollectionPropertyInfoMap(std::map<QueryManager::CollPropertyKey_T, 
         sf1r::PropertyDataType>& collectionPropertyInfoMap )
@@ -176,7 +151,7 @@ QueryManager::QueryManager()
 
 QueryManager::~QueryManager()
 {
-} // end - Querymanager::~QueryManager()
+}
 
 
 } // end - namespace sf1r

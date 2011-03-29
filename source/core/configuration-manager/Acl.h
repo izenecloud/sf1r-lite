@@ -3,7 +3,8 @@
 
 #include <boost/unordered_set.hpp>
 
-namespace sf1r {
+namespace sf1r
+{
 
 /**
  * @brief ACL rule

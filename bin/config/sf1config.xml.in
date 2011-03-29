@@ -9,40 +9,51 @@
        DESCRIPTION: Sets up system settings.
   -->
   <System>
-    <BrokerAgent usecache="n" threadnum="50" enabletest="y" />
     <Resource path="@SF1RENGINE_ROOT@/package/resource"/> 
     
-    <QuerySupport updatetime="3600" logdays="7">
-      <Path basepath="@SF1RENGINE_ROOT@/bin/query-support" />
-      <QueryCorrectionPara enableEK="y" enableCN="y"/>
-      <AutoFillPara num="10"/> 
-    </QuerySupport>
-    
-    <MiningSwitch enable="y" /> <!-- For test propose -->
+    <BundlesDefault>
+      <!-- QueryCorrection Bundle Default -->
+      <QueryLogBundle>
+        <Parameter>
+          <Path basepath="@SF1RENGINE_ROOT@/bin/query-support" />
+          <QuerySupport logdays="7" />
+          <QueryCorrectionPara enableEK="y" enableCN="y"/>
+          <AutoFillPara num="10"/> 
+          <CronIndexRecommend value="0 2 * * *" />
+        </Parameter>
+      </QueryLogBundle>
 
-    <ParametersDefault>
-      <CollectionMeta encoding="UTF-8" rankingmodel="ranker1" wildcardtype="unigram" />
-      <IndexStrategy memorypoolsize="128000000" indexpolicy="default" />
-      <!-- Specify multiple index directory to support backup and
-           directory rotating -->
-      <CollectionDataDirectory>default-collection-dir</CollectionDataDirectory>
-      <!-- <CollectionDataDirectory>collection-dir-A</CollectionDataDirectory> -->
-      <!-- <CollectionDataDirectory>collection-dir-B</CollectionDataDirectory> -->
-      <Sia triggerqa="n" threadnum="25" doccachenum="20000" />
-      
-      
-      <TaxonomyPara topdocnum="100" levels="3" perlevelnum="8" candlabelnum="250" enablenec="n" maxpeopnum="20" maxlocnum="20" maxorgnum="20" />
-      <RecommendPara recommendnum="9" popularnum="20" realtimenum="5" />
-      <SimilarityPara docnumlimit="100" termnumlimit="400000" />
-      <ClassificationPara customizetraining="n" trainingencoding="UTF-8" />
-      <!-- index mode for image search
-           enableise: whether enable ise. 
-           buildimageindex: whether build the image representation in indexing.
-           storeimagelocally: whether the image will be copied and stored locally in the server. 
-      -->
-      <IsePara buildimageindex="y" storeimagelocally="n" maximagenum="1000000" relatedimagenum="50"/>
+      <!-- Index Bundle Default -->
+      <IndexBundle>
+        <Parameter>
+          <!-- Specify multiple index directory to support backup and directory rotating -->
+          <CollectionDataDirectory>default-collection-dir</CollectionDataDirectory>
+          <!-- <CollectionDataDirectory>collection-dir-A</CollectionDataDirectory> -->
+          <!-- <CollectionDataDirectory>collection-dir-B</CollectionDataDirectory> -->
+          <IndexStrategy memorypoolsize="128000000" indexpolicy="default" cron="0 3 * * *" />
 
-    </ParametersDefault>
+          <Sia triggerqa="n" doccachenum="20000" encoding="UTF-8" wildcardtype="unigram" />
+          
+          <LanguageIdentifier dbpath="@ilplib_LANGUAGEIDENTIFIER_DB@"/>
+
+        </Parameter>
+      </IndexBundle>
+
+      <MiningBundle> 
+        <Parameter>
+          <TaxonomyPara topdocnum="100" levels="3" perlevelnum="8" candlabelnum="250" enablenec="n" maxpeopnum="20" maxlocnum="20" maxorgnum="20" />
+          <RecommendPara recommendnum="9" popularnum="20" realtimenum="5" />
+          <SimilarityPara docnumlimit="100" termnumlimit="400000" />
+          <ClassificationPara customizetraining="n" trainingencoding="UTF-8" />
+          <!-- index mode for image search
+               enableise: whether enable ise. 
+               buildimageindex: whether build the image representation in indexing.
+               storeimagelocally: whether the image will be copied and stored locally in the server. 
+          -->
+          <IsePara buildimageindex="y" storeimagelocally="n" maximagenum="1000000" relatedimagenum="50"/>
+        </Parameter>
+      </MiningBundle>
+    </BundlesDefault>
 
     <!-- NOT IMPLEMENTED FOR CURRENT VERSION
          <NumeralRecognition>
@@ -117,22 +128,11 @@
 
     </LanguageAnalyzer>
 
-    <Ranking>
-      <RankingModel id="ranker1" qd_text_model="plm"/>
-    </Ranking>
-
-    <LanguageIdentifier dbpath="@ilplib_LANGUAGEIDENTIFIER_DB@" />
-    
-    <CronIndexRecommend value="0 2 * * *" />
-    
-    <CronIndexer value="0 3 * * *" />
-    
-    
   </System>
 
 
   <Deployment>
-    <BA port="18181" />
+    <BrokerAgent usecache="n" threadnum="50" enabletest="y" port="18181" />
   </Deployment>
 
 </SF1Config>

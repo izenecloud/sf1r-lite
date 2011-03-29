@@ -15,7 +15,8 @@
 #include <sstream>
 #include <string>
 
-namespace sf1r {
+namespace sf1r
+{
 using namespace sf1r::RankingType;
 /**
  * @brief This class describes one ranking setting.
@@ -24,17 +25,23 @@ class RankingConfigUnit
 {
 public:
     RankingConfigUnit()
-    : id_()
-    , textRankingModel_(NotUseTextRanker)
+            : id_()
+            , textRankingModel_(NotUseTextRanker)
     {}
 
     RankingConfigUnit(const std::string& id)
-    : id_(id)
-    , textRankingModel_(NotUseTextRanker)
+            : id_(id)
+            , textRankingModel_(NotUseTextRanker)
     {}
 
-    void setId( const std::string & id ) { id_ = id; }
-    const std::string& getId() const { return id_; }
+    void setId( const std::string & id )
+    {
+        id_ = id;
+    }
+    const std::string& getId() const
+    {
+        return id_;
+    }
     void setTextRankingModel( const TextRankingType & model )
     {
         textRankingModel_ = model;
@@ -62,7 +69,7 @@ public:
     )
     {
         out << "Ranking Configuration: id=" << unit.id_
-            << " textmodel=" << unit.textRankingModel_;
+        << " textmodel=" << unit.textRankingModel_;
         return out;
     }
 

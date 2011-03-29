@@ -17,8 +17,6 @@
 
 #include "ActionItem.h"
 
-#include <configuration-manager/CollectionMeta.h>
-
 #include <util/ticpp/tinyxml.h>
 
 #include <boost/unordered_set.hpp>
@@ -44,11 +42,6 @@ class QueryManager
         ~QueryManager();
 
     public: // public static ()
-
-        
-        static bool checkCollectionExist(const std::string& collectionName);
-
-        static CollectionMeta getQueryManagerCollectionMeta(const std::string& collectionName);
 
         static void setCollectionPropertyInfoMap(std::map<CollPropertyKey_T, 
                 sf1r::PropertyDataType>& collectionPropertyInfoMap );

@@ -8,7 +8,6 @@
 #ifndef _SEARCHKEYWORDOPERATION_H_
 #define _SEARCHKEYWORDOPERATION_H_
 
-#include <configuration-manager/CollectionMeta.h>
 #include "ActionItem.h"
 #include "QueryTree.h"
 #include "QueryParser.h"
@@ -27,7 +26,7 @@ namespace sf1r {
         public:
             SearchKeywordOperation(
                     const KeywordSearchActionItem& actionItem,
-                    const CollectionMeta& collectionMeta,
+                    bool unigramFlag,
                     boost::shared_ptr<LAManager>& laManager,
                     boost::shared_ptr<izenelib::ir::idmanager::IDManager>& idManager);
 
@@ -38,7 +37,7 @@ namespace sf1r {
             /// @param[btqError] a string which contains error message during building query tree.
             /// @return true if success, or false.
             ///
-            bool buildQueryTree(std::string& btqError);
+            //bool buildQueryTree(std::string& btqError);
 
             ///
             /// @brief get query tree map.
@@ -76,16 +75,12 @@ namespace sf1r {
         public:
             KeywordSearchActionItem actionItem_;
 
-        private:
             bool noError_;
             QueryTreePtr rawQueryTree_;
             boost::unordered_map<std::string,QueryTreePtr> queryTreeMap_;
             std::map<std::string,PropertyTermInfo> propertyTermInfo_;
-            CollectionMeta collectionMeta_;
             bool unigramFlag_;
             QueryParser queryParser_;
-
-
     }; // end - class SearchKeywordOperation
 
 } // end - namespace sf1vt

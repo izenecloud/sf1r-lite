@@ -9,11 +9,12 @@
 #include <boost/algorithm/string/finder.hpp>
 #include <boost/algorithm/string/compare.hpp>
 
-namespace sf1r {
+namespace sf1r
+{
 
 Acl::Acl()
-: allowedTokens_()
-, deniedTokens_()
+        : allowedTokens_()
+        , deniedTokens_()
 {
     // empty
 }
@@ -68,7 +69,7 @@ bool Acl::check(const token_set_type& userTokens) const
     }
 
     for (const_iterator it = deniedTokensBegin();
-         it != deniedTokensEnd(); ++it)
+            it != deniedTokensEnd(); ++it)
     {
         // false if user holds any denied token
         if (userTokens.count(*it) != 0)
@@ -81,7 +82,7 @@ bool Acl::check(const token_set_type& userTokens) const
     if (!allowedTokens_.empty())
     {
         for (const_iterator it = allowedTokensBegin();
-             it != allowedTokensEnd(); ++it)
+                it != allowedTokensEnd(); ++it)
         {
             if (userTokens.count(*it) != 0)
             {
@@ -101,7 +102,7 @@ bool Acl::check(const token_set_type& userTokens) const
 void Acl::insertTokensTo(const std::string& tokens, token_set_type& set)
 {
     typedef boost::algorithm::split_iterator<std::string::const_iterator>
-        string_split_iterator;
+    string_split_iterator;
     using boost::algorithm::first_finder;
     using boost::algorithm::is_equal;
 

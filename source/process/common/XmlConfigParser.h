@@ -12,16 +12,14 @@
 #include <configuration-manager/LAConfigUnit.h>
 #include <configuration-manager/RankingConfigUnit.h>
 #include <configuration-manager/LAManagerConfig.h>
-#include <configuration-manager/DocumentManagerConfig.h>
-#include <configuration-manager/IndexManagerConfig.h>
 #include <configuration-manager/QuerySupportConfig.h>
-#include <configuration-manager/RankingManagerConfig.h>
-#include <configuration-manager/MiningConfig.h>
 #include <configuration-manager/BrokerAgentConfig.h>
-#include <configuration-manager/SMiaConfig.h>
 #include <configuration-manager/FirewallConfig.h>
 #include <configuration-manager/CollectionParameterConfig.h>
-#include <configuration-manager/CobraConfig.h>
+
+#include <bundles/querylog/QueryLogBundleConfiguration.h>
+
+#include "CollectionMeta.h"
 
 #include <util/singleton.h>
 #include <util/ticpp/ticpp.h>
@@ -46,7 +44,7 @@ bool checkIntFormat( const std::string & str );
 void downCase( std::string & str );
 
 /// 
-/// @brief   The method finds out if the string is true(y, yes) or false(n, no), or neither
+/// @brief The method finds out if the string is true(y, yes) or false(n, no), or neither
 /// @return  -1:false, 0:neither,  1:true
 /// 
 int parseTruth( const string & str );
@@ -58,20 +56,21 @@ void parseByComma( const std::string & str, std::vector<std::string> & subStrLis
 ///@ brief  The exception class
 class XmlConfigParserException : public std::exception
 {
-	public:
-		XmlConfigParserException( const std::string & details )
-            : details_(details)
-        { }
-		~XmlConfigParserException() throw()
-        { }
+public:
+    XmlConfigParserException( const std::string & details )
+    : details_(details)
+    {}
 
-		/// Override std::exception::what() to return details_
-        const char* what() const throw()
-        {
-            return details_.c_str();
-        }
+    ~XmlConfigParserException() throw()
+    {}
 
-		std::string details_; 
+    /// Override std::exception::what() to return details_
+    const char* what() const throw()
+    {
+        return details_.c_str();
+    }
+
+    std::string details_; 
 };
 
 class XmlConfigParser
@@ -79,23 +78,23 @@ class XmlConfigParser
 protected:
     //---------------------------- HELPER FUNCTIONS -------------------------------
     /// @brief  Gets a single child element. There should be no multiple definitions of the element
-    /// @param ele                  The parent element
-    /// @param name                 The name of the Child element
-    /// @param throwIfNoElement     If set to "true", the method will throw exception if there is 
-    ///                             no Child Element
+    /// @param ele The parent element
+    /// @param name The name of the Child element
+    /// @param throwIfNoElement If set to "true", the method will throw exception if there is 
+    ///              no Child Element
     inline ticpp::Element * getUniqChildElement( 
             const ticpp::Element * ele, const std::string & name, bool throwIfNoElement = true ) const;
 
 
-    /// @brief      The internal method for getAttribute_* methods. Checks if a value exists and retrieves in
+    /// @brief The internal method for getAttribute_* methods. Checks if a value exists and retrieves in
     ///             std::string form if it exists. User can decide if the attribute is essential with the 
     ///             attribute throwIfNoAttribute
-    /// @param ele                  The element that holds the attribute
-    /// @param name                 The name of the attribute
-    /// @param val                  The return container of the attribute
+    /// @param ele The element that holds the attribute
+    /// @param name The name of the attribute
+    /// @param val The return container of the attribute
     /// @param torhowIfNoAttribute  Throws exception if attribute does not exist.
-    /// @return     Returns true  if the attribute is found and has a value. 
-    //                      false if the attribute is not found or has no value.
+    /// @return Returns true  if the attribute is found and has a value. 
+    //               false if the attribute is not found or has no value.
     bool getAttribute( 
             const ticpp::Element * ele, 
             const std::string & name, 
@@ -104,13 +103,13 @@ protected:
 
 
     /// @brief  Gets a integer type attribute. User can decide if the attribute is essential 
-    ///         with the attribute throwIfNoAttribute
-    /// @param ele                  The element that holds the attribute
-    /// @param name                 The name of the attribute
-    /// @param val                  The return container of the attribute
+    /// with the attribute throwIfNoAttribute
+    /// @param ele The element that holds the attribute
+    /// @param name The name of the attribute
+    /// @param val The return container of the attribute
     /// @param torhowIfNoAttribute  Throws exception if attribute does not exist.
-    /// @return     Returns true  if the attribute is found and has a value. 
-    //                      false if the attribute is not found or has no value.
+    /// @return Returns true  if the attribute is found and has a value. 
+    //               false if the attribute is not found or has no value.
     template <class Type>
     inline bool getAttribute_IntType( 
             const ticpp::Element * ele, 
@@ -195,28 +194,6 @@ protected:
             bool & val, 
             bool throwIfNoAttribute = true ) const;
 
-
-
-    inline bool getPortNumber(
-            const ticpp::Element * ele, 
-            const std::string & name, 
-            std::string& val, 
-            bool throwIfNoAttribute = true ) const
-    {
-        int portNo;
-        std::string temp;
-        getAttribute(ele, name, temp, throwIfNoAttribute);
-        stringstream ss;
-        ss << temp;
-        ss >> portNo;
-
-        if ( portNo < 0 || portNo > 65535 )
-            throw_TypeMismatch(ele, name, temp, "0 to 65535");
-
-        val.swap( temp );
-        return true;
-    }
-
     // ----------------------------- THROW METHODS -----------------------------
 
     // 1. ELEMENTS ---------------
@@ -244,8 +221,8 @@ protected:
     // TODO: suggest type, e.g. "yes|y|no|n", "integer type"
     /// @brief          Throws an exception when an attribute is given the wrong data type
     /// @param ele      The Element which holds the attribute
-    /// @param name     The name of the attribute
-    /// @param valuStr  The value parsed for the attribute, which was incorrect
+    /// @param name The name of the attribute
+    /// @param valuStr The value parsed for the attribute, which was incorrect
     inline void throw_TypeMismatch( 
             const ticpp::Element * ele, 
             const std::string & name, 
@@ -258,10 +235,10 @@ protected:
         throw XmlConfigParserException( msg.str() );
     }
 
-    /// @brief          Throws an exception when an attribute is given the wrong data type
-    /// @param ele      The Element which holds the attribute
-    /// @param name     The name of the attribute
-    /// @param valuStr  The value parsed for the attribute, which was incorrect
+    /// @brief Throws an exception when an attribute is given the wrong data type
+    /// @param ele The Element which holds the attribute
+    /// @param name The name of the attribute
+    /// @param valuStr The value parsed for the attribute, which was incorrect
     /// @param validValuStr  The value(s) which are valid for the attribute
     inline void throw_TypeMismatch( 
             const ticpp::Element * ele, 
@@ -297,9 +274,9 @@ protected:
         throw XmlConfigParserException( msg.str() );
     }
 
-    /// @brief  Throws an exception when an attribute does not exist
-    /// @param ele      The Element which holds the attribute
-    /// @param name     The name of the attribute
+    /// @brief Throws an exception when an attribute does not exist
+    /// @param ele The Element which holds the attribute
+    /// @param name The name of the attribute
     inline void throw_NoAttribute( const ticpp::Element * ele, const std::string & name ) const
     {
         stringstream msg;
@@ -341,7 +318,7 @@ public:
       return izenelib::util::Singleton<SF1Config>::get();
     }
     
-    /// @brief           Starts parsing the configruation file
+    /// @brief Starts parsing the configruation file
     /// @param fileName  The path of the configuration file
     /// @details
     /// The configuration file <System>, <Environment>, and"<Document> are processed
@@ -353,8 +330,8 @@ public:
       return resource_dir_;
     }
     
-    /// @brief                  Gets the configuration related to LAManager
-    /// @return                 The settings for LAManager
+    /// @brief Gets the configuration related to LAManager
+    /// @return The settings for LAManager
     /// 
     const LAManagerConfig & getLAManagerConfig()
     {
@@ -367,7 +344,7 @@ public:
         return laManagerConfig_;
     }
 
-    /// @brief                  Gets the configuration related to LAManager
+    /// @brief Gets the configuration related to LAManager
     /// @param laManagerConfig  The settings for LAManager
     void getLAManagerConfig( LAManagerConfig & laManagerConfig )
     {
@@ -375,14 +352,14 @@ public:
     }
 
 
-    /// @brief                      Gets the configuration related to BrokerAgent
-    /// @return                     The settings for BrokerAgent
+    /// @brief Gets the configuration related to BrokerAgent
+    /// @return The settings for BrokerAgent
     const BrokerAgentConfig & getBrokerAgentConfig()
     {
         return brokerAgentConfig_;
     }
 
-    /// @brief                      Gets the configuration related to BrokerAgent
+    /// @brief Gets the configuration related to BrokerAgent
     /// @param brokerAgentConfig    The settings for BrokerAgent
     void getBrokerAgentConfig( BrokerAgentConfig& brokerAgentConfig )
     {
@@ -390,49 +367,8 @@ public:
     }
 
 
-    /// @brief                      Gets the configuration related to DocumentManager
-    /// @return                     The settings for DocumentManager
-    const DocumentManagerConfig & getDocumentManagerConfig( )
-    {
-        return docManagerConfig_;
-    }
-
-    /// @brief                      Gets the configuration related to DocumentManager
-    /// @param docManagerConfig     The settings for DocumentManager
-    void getDocumentManagerConfig( DocumentManagerConfig & docManagerConfig )
-    {
-        docManagerConfig = docManagerConfig_;
-    }
-
-    const QuerySupportConfig & getQuerySupportConfig( )
-    {
-        return query_support_config_;
-    }
-
-
-    void getQuerySupportConfig( QuerySupportConfig & query_support_config )
-    {
-        query_support_config = query_support_config_;
-    }
-
-
-    /// @brief                      Gets the configuration related to RankingManager
-    /// @return                     The settings for RankingManager
-    const RankingManagerConfig & getRankingManagerConfig( )
-    {
-        return rankingManagerConfig_;
-    }
-
-    /// @brief                      Gets the configuration related to RankingManager
-    /// @param logManagerConfig     The settings for RankingManager
-    void getRankingManagerConfig( RankingManagerConfig & rankingManagerConfig )
-    {
-        rankingManagerConfig = rankingManagerConfig_;
-    }
-    
-     
-    /// @brief                      Gets the configuration related to Firewall
-    /// @return                     The settings for Firewall
+    /// @brief Gets the configuration related to Firewall
+    /// @return The settings for Firewall
     const FirewallConfig& getFirewallConfig( )
     {
         return firewallConfig_;
@@ -443,12 +379,6 @@ public:
     void getFirewallConfig( FirewallConfig & firewallConfig)
     {
         firewallConfig = firewallConfig;
-    }
-     /// @brief                      Gets the configuration related to Cobra
-    /// @paramCobraConfig     The settings for Cobra
-    void getCobraConfig( CobraConfig & cobraConfig)
-    {
-        cobraConfig = cobraConfig_;
     }
     
     bool getCollectionMetaByName(
@@ -467,25 +397,20 @@ public:
 
         return false;
     }
+
+    bool checkCollectionExist(const std::string& collectionName)
+    {
+        std::map<std::string, CollectionMeta>::const_iterator it =
+            collectionMetaMap_.find(collectionName);
+
+        if(it != collectionMetaMap_.end())
+            return true;
+        return false;
+    }
     
     const std::map<std::string, CollectionMeta>& getCollectionMetaMap()
     {
         return collectionMetaMap_;
-    }
-    
-    bool IsMiningOpen() const
-    {
-        return mining_switch_;
-    }
-    
-    std::string getIndexRecommendCronString()
-    {
-        return cronIndexRecommend_;
-    }
-    
-    std::string getIndexerCronString()
-    {
-        return cronIndexer_;
     }
     
     void setHomeDirectory(const std::string& homeDir)
@@ -502,27 +427,17 @@ private:
     /// @param system           Pointer to the Element
     void parseSystemSettings( const ticpp::Element * system );
 
-    /// @brief                  Parse <SiaProcess> settings
-    /// @param system           Pointer to the Element
-    void parseSMiaProcess( const ticpp::Element * siaProcess );
+    /// @brief Parse <BundlesDefault>
+    /// @param Pointer to the Element
+    void parseBundlesDefault(const ticpp::Element * bundles);
 
-    /// @brief                  Parse <MiningParameter> settings
+    /// @brief                  Parse <QueryLogBundle> settings
     /// @param system           Pointer to the Element
-    void parseMiningParameter( const ticpp::Element * miningParameter );
-
-    /// @brief                  Parse <BrokerAgnet> settings
-    /// @param system           Pointer to the Element
-    void parseBrokerAgent( const ticpp::Element * brokerAgent );
-
-    /// @brief                  Parse <QuerySupport> settings
-    /// @param system           Pointer to the Element
-    void parseQuerySupport( const ticpp::Element * querySupport );
+    void parseQueryLogBundleParam(const ticpp::Element * querylog);
 
     /// @brief                  Parse <FireWall> settings
     /// @param system           Pointer to the Element
     void parseFirewall( const ticpp::Element * tgElement );
-
-    void parseParametersDefault( const ticpp::Element * element );
 
     /// @brief                  Parse <Tokenizer> settings
     /// @param system           Pointer to the Element
@@ -532,16 +447,12 @@ private:
     /// @param system           Pointer to the Element
     void parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer );
 
-    /// @brief                  Parse <Ranking> settings
+    /// @brief                  Parse <Deploy> settings
     /// @param system           Pointer to the Element
-    void parseRanking( const ticpp::Element * ranking );
-
-    /// @brief                  Parse <LanguageIdentifier> settings
-    /// @param system           Pointer to the Element
-    void parseLanguageIdentifier( const ticpp::Element * langid );
-
-
     void parseDeploymentSettings( const ticpp::Element * environment );
+    /// @brief                  Parse <BrokerAgnet> settings
+    /// @param system           Pointer to the Element
+    void parseBrokerAgent( const ticpp::Element * brokerAgent );
 
 private:
     //----------------------------  PRIVATE MEMBER VARIABLES  ----------------------------
@@ -561,33 +472,27 @@ private:
 
     // CONFIGURATION ITEMS ---------------
     
+    std::string resource_dir_;
+
     /// @brief  Configurations for BrokerAgent
     BrokerAgentConfig brokerAgentConfig_;
-    
-    std::string resource_dir_;
-    
-    /// @brief  Configurations for query support
-    QuerySupportConfig query_support_config_;
-    
-    bool mining_switch_;
 
-    CollectionParameterConfig default_parameter_;
-    
+    /// @brief QueryLogBundleConfig
+    QueryLogBundleConfiguration queryLogBundleConfig_;
+
+    /// @brief default IndexBundleConfig
+    CollectionParameterConfig defaultIndexBundleParam_;
+
+    /// @brief default MiningBundleConfig
+    CollectionParameterConfig defaultMiningBundleParam_;
+
     /// @brief  Configurations for FireWall
     FirewallConfig firewallConfig_;
     
     /// @brief  Configuraitons for LAManager
     LAManagerConfig laManagerConfig_;
 
-    /// @brief  Configurations for RankingManager
-    RankingManagerConfig rankingManagerConfig_;
-
-    /// @brief  Configuraitons for DocumentManager
-    DocumentManagerConfig docManagerConfig_;
-
-    CobraConfig cobraConfig_;
-
-    // MAPPING TABLES  ----------------------
+     // MAPPING TABLES  ----------------------
 
     // used to check duplicates 
 
@@ -599,25 +504,14 @@ private:
     ///         Used when assigning units in document settings
     std::map<std::string, LAConfigUnit> laConfigIdNameMap_;
 
-    /// @brief  Maps ranking unit IDs to their instances.
-    ///         Used when assigning units in document settings
-    std::map<std::string, RankingConfigUnit> rankingConfigNameMap_;
-
-
     // LISTS ----------------------------
 
-    /// @brief  Stores all the CollectionMeta objects created while parsing
-    std::vector<CollectionMeta> collectionMetaList_;
-    
     std::map<std::string, CollectionMeta> collectionMetaMap_;
 
     /// @brief  Stores all the analyzer-tokenizer pairs that are applied to Properties in
-    ///         the configuration. 
+    /// the configuration. 
     boost::unordered_set<AnalysisInfo> analysisPairList_;
     
-    std::string cronIndexRecommend_;
-    std::string cronIndexer_;
-
     /// @bried home of configuration files
     std::string homeDir_;
 
@@ -629,20 +523,38 @@ class CollectionConfig : boost::noncopyable, XmlConfigParser
 {
 public:
     CollectionConfig();
+
     ~CollectionConfig(); 
 
     static CollectionConfig* get()
     {
-      return izenelib::util::Singleton<CollectionConfig>::get();
+        return izenelib::util::Singleton<CollectionConfig>::get();
     }
     
     /// @brief           Starts parsing the configruation file
     /// @param fileName  The path of the configuration file
     /// @details
     /// 
-    bool parseConfigFile( const string& collectionName , const std::string & fileName ) throw(XmlConfigParserException );
+    bool parseConfigFile( const string& collectionName , const std::string & fileName, CollectionMeta collectionMeta) throw(XmlConfigParserException );
 
 private:
+
+    /// @brief                  Parse <IndexBundle> <Parameter> 
+    /// @param index           Pointer to the Element
+    void parseIndexBundleParam(const ticpp::Element * index, CollectionMeta & collectionMeta);
+
+    /// @brief                  Parse <IndexBundle> <Schema> 
+    /// @param index           Pointer to the Element
+    void parseIndexBundleSchema(const ticpp::Element * index, CollectionMeta & collectionMeta);
+
+    /// @brief                  Parse <MiningBundle> <Parameter> 
+    /// @param mining           Pointer to the Element
+    void parseMiningBundleParam(const ticpp::Element * mining, CollectionMeta & collectionMeta);
+
+    /// @brief                  Parse <MiningBundle> <Schema> 
+    /// @param mining           Pointer to the Element
+    void parseMiningBundleSchema(const ticpp::Element * mining, CollectionMeta & collectionMeta);
+
     /// @brief                  Parse <Collection> settings
     /// @param system           Pointer to the Element
     void parseCollectionSettings( const ticpp::Element * collection, CollectionMeta & collectionMeta );
@@ -651,14 +563,14 @@ private:
     /// @param system           Pointer to the Element
     void parseCollectionPath( const ticpp::Element * path, CollectionMeta & collectionMeta );
 
-    // 3.3 <Property> parsing --------
+    /// @brief                  Parse <DocumentSchema> settings
+    /// @param system           Pointer to the Element
+    void parseCollectionSchema( const ticpp::Element * documentSchema, CollectionMeta & collectionMeta );
+
+    /// Helper functions for IndexSchema
     /// @brief                  Parse <Property> settings
     /// @param system           Pointer to the Element
-    void parseProperty(
-        const ticpp::Element * property,
-        CollectionMeta & collectionMeta,
-        std::set<std::string> & propertyNameList
-    );
+    void parseProperty(const ticpp::Element * property, CollectionMeta & collectionMeta);
 
     /// @brief                  Parse <Display> settings
     /// @param system           Pointer to the Element

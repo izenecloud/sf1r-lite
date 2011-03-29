@@ -13,7 +13,7 @@
 #ifndef _RESULTTYPE_H_
 #define _RESULTTYPE_H_
 
-#include "type_defs.h"
+#include <common/type_defs.h>
 
 #include <mining-manager/taxonomy-generation-submanager/TgTypes.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
@@ -63,7 +63,7 @@ namespace sf1r {
           , snippetTextOfDocumentInPage_(), rawTextOfSummaryInPage_()
           , numberOfDuplicatedDocs_(), numberOfSimilarDocs_()
           , docCategories_(), imgs_(), taxonomyString_(), numOfTGDocs_()
-          , tgDocIdList_(), taxonomyLevel_(), neList_()
+          , tgDocIdList_(), taxonomyLevel_(), neList_(), onto_rep_()
           , relatedQueryList_(), rqScore_()
           {
           }
@@ -90,8 +90,6 @@ namespace sf1r {
             /// A list of rank scores. The sequence is following \c topKDocs_.
             std::vector<float> topKRankScoreList_;
 
-            
-            
             std::size_t start_;
 
             /// @brief number of documents in current page
@@ -170,6 +168,8 @@ namespace sf1r {
 
             ne_result_list_type neList_;
             // --------------------------------[ Related Query ]
+            
+            sf1r::faceted::OntologyRep onto_rep_;
 
             /// A list of related query string.
             std::deque<izenelib::util::UString> relatedQueryList_;
@@ -186,7 +186,7 @@ namespace sf1r {
                     &start_&count_&fullTextOfDocumentInPage_
                     &snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_
                     &errno_&error_
-                    &numberOfDuplicatedDocs_&numberOfSimilarDocs_&docCategories_&imgs_&taxonomyString_&numOfTGDocs_&taxonomyLevel_&tgDocIdList_&neList_&relatedQueryList_&rqScore_)
+                    &numberOfDuplicatedDocs_&numberOfSimilarDocs_&docCategories_&imgs_&taxonomyString_&numOfTGDocs_&taxonomyLevel_&tgDocIdList_&neList_&onto_rep_&relatedQueryList_&rqScore_)
     };
 
 
@@ -220,6 +220,8 @@ namespace sf1r {
 
             /// internal IDs of the documents
             std::vector<docid_t> idList_;
+            
+            
 
             //LOG: changed the names for consistentcy with KeywordResultItem
             //DATA_IO_LOAD_SAVE(RawTextResultFromSIA, 

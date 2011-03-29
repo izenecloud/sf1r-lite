@@ -12,27 +12,29 @@
 #include <boost/unordered_map.hpp>
 
 
-namespace sf1r {
-namespace config_tool {
+namespace sf1r
+{
+namespace config_tool
+{
 
-    ///
-    /// @brief  Defines property alias type. 
-    ///         Key is Original Property name and Value is the vector of property name.
-    ///
-    typedef boost::unordered_map< 
-        std::string, 
-        std::vector<PropertyConfig> 
-            > PROPERTY_ALIAS_MAP_T;
+///
+/// @brief  Defines property alias type.
+///         Key is Original Property name and Value is the vector of property name.
+///
+typedef boost::unordered_map<
+std::string,
+std::vector<PropertyConfig>
+> PROPERTY_ALIAS_MAP_T;
 
-    ///
-    /// @brief Builds property alias map by using property Config set.
-    /// @param propertyList Property set which stores information of property name.
-    /// @param propertyAliasMap Result data of this function.
-    /// @return true    Success to build property alias map.
-    /// @return false   Fail to build property alias map.
-    ///
-    bool buildPropertyAliasMap( const std::set<PropertyConfig , PropertyComp>& propertyList, 
-            PROPERTY_ALIAS_MAP_T&  propertyAliasMap );
+///
+/// @brief Builds property alias map by using property Config set.
+/// @param propertyList Property set which stores information of property name.
+/// @param propertyAliasMap Result data of this function.
+/// @return true    Success to build property alias map.
+/// @return false   Fail to build property alias map.
+///
+bool buildPropertyAliasMap( const std::set<PropertyConfig , PropertyComp>& propertyList,
+                            PROPERTY_ALIAS_MAP_T&  propertyAliasMap );
 
 } // end - namespace config_tool
 } // end - namespace sf1r

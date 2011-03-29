@@ -1,15 +1,19 @@
 #include "CobraProcess.h"
+#include "RouterInitializer.h"
+
 #include <common/SFLogger.h>
 #include <la-manager/LAPool.h>
+#include <license-manager/LicenseManager.h>
 
 #include <OnSignal.h>
-#include <XmlConfigParser.h>
+#include <common/XmlConfigParser.h>
+#include <common/CollectionManager.h>
+#include <controllers/Sf1Controller.h>
 
 #include <util/ustring/UString.h>
-#include <util/thread-pool/ThreadObjectPool.h>
-#include <util/profiler/ProfilerGroup.h>
+#include <util/driver/IPRestrictor.h>
+#include <util/driver/DriverConnectionFirewall.h>
 
-#include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
@@ -26,8 +30,11 @@
 using namespace sf1r;
 using namespace boost::filesystem;
 using namespace izenelib::util;
+using namespace izenelib::driver;
 
 namespace bfs = boost::filesystem;
+
+#define ipRestrictor ::izenelib::driver::IPRestrictor::getInstance()
 
 bool CobraProcess::initialize(const std::string& configFileDir)
 {
@@ -36,41 +43,117 @@ bool CobraProcess::initialize(const std::string& configFileDir)
     if( !sflog->init( logPath.string() ) ) return false;
     try
     {
+        configDir_ = configFileDir;
         boost::filesystem::path p(configFileDir); 
         SF1Config::get()->setHomeDirectory(p.string());
         if( !SF1Config::get()->parseConfigFile( bfs::path(p/"sf1config.xml").string() ) )
         {
             return false;
         }
-        bfs::directory_iterator iter(configFileDir), end_iter;
-        for(; iter!= end_iter; ++iter)
-        {
-            if(bfs::is_regular_file(*iter))
-            {
-                if(iter->filename().rfind(".xml") == (iter->filename().length() - std::string(".xml").length()))
-                    if(iter->filename() != "sf1config.xml")
-                    {
-                        std::string collectionName = iter->filename().substr(0,iter->filename().rfind(".xml"));
-                        if(CollectionConfig::get()->parseConfigFile(collectionName, iter->string()))
-                        {
-                            //TODO
-                        }
-                    }
-             }
-        }		
-
     }
     catch ( izenelib::util::ticpp::Exception & e )
     {
         cerr << e.what() << endl;
         return false;
     }
-    SF1Config::get()->getCobraConfig(config_);
-    config_.setConfigPath( configFileDir );
+
+    if(!initFireWall()) return false;
+
+    if(!initLicenseManager()) return false;
+
+    initDriverServer();
 
     return true;
-} // end - in
+}
 
+bool CobraProcess::initLicenseManager()
+{
+#ifdef COBRA_RESTRICT
+    boost::shared_ptr<LicenseManager> licenseManager;
+    // license manager initialization.
+    char* home = getenv("HOME");
+    std::string licenseDir = home; licenseDir += "/sf1-license/";
+    try { // If license directory is not exist, create it.
+        if ( !boost::filesystem::exists(licenseDir) ) {
+            std::cout << "[Warning] : " << licenseDir << " is Created." << std::endl;
+            boost::filesystem::create_directories(licenseDir);
+        }
+    } catch (boost::filesystem::filesystem_error& e) {
+        std::cerr << "Error : " << e.what() << std::endl;
+        return false;
+    }
+    std::string path = licenseDir + LicenseManager::LICENSE_KEY_FILENAME;
+    licenseManager.reset( new LicenseManager("1.0.0", path, false) );
+
+    path = licenseDir + LicenseManager::LICENSE_REQUEST_FILENAME;
+    if ( !licenseManager->createLicenseRequestFile(path) )
+    {
+        sflog->error(SFL_INIT, "License Request File is failed to generated. Please check if you're a sudoer");
+        return false;
+    }
+
+    if ( !licenseManager->validateLicenseFile() )
+    {
+        std::cerr << "[Warning] : license is invalid. Now sf1 will be worked on trial mode." << std::endl;
+        sflog->error(SFL_INIT, "license is invalid. Now sf1 will be worked on trial mode.");
+        LicenseManager::continueIndex_ = false;
+    }
+
+//    We do not need to monitor Index Size for license now.
+//    // ------------------------------ [ License Manager ]
+//    // Extract collectionDataPathList from collectionMeta in baConfig
+//    std::vector<std::string> collDataPathList;
+//    const std::map<std::string, CollectionMeta>&
+//    collectionMetaMap = SF1Config::get()->getCollectionMetaMap();
+//    std::map<std::string, CollectionMeta>::const_iterator
+//        collectionIter = collectionMetaMap.begin();
+//    for(; collectionIter != collectionMetaMap.end(); collectionIter++)
+//    {
+//        collDataPathList.push_back( collectionIter->second.getCollectionPath().getCollectionDataPath() );
+//        collDataPathList.push_back( collectionIter->second.getCollectionPath().getQueryDataPath() );
+//    }
+//    boost::thread bgThread(boost::bind(&LicenseManager::startBGWork,*licenseManager, collDataPathList));
+
+#endif // COBRA_RESTRICT
+    return true;
+}
+
+bool CobraProcess::initFireWall()
+{
+    const FirewallConfig& fwConfig = SF1Config::get()->getFirewallConfig();
+    std::vector<std::string>::const_iterator iter;
+    for(iter = fwConfig.allowIPList_.begin(); iter != fwConfig.allowIPList_.end(); iter++)
+        if ( !ipRestrictor->registerAllowIP( *iter ) )
+            return false;
+    for(iter = fwConfig.denyIPList_.begin(); iter != fwConfig.denyIPList_.end(); iter++)
+        if ( !ipRestrictor->registerDenyIP( *iter ) )
+            return false;
+    return true;
+}
+
+bool CobraProcess::initDriverServer()
+{
+    const BrokerAgentConfig& baConfig = SF1Config::get()->getBrokerAgentConfig();
+    std::size_t threadPoolSize = baConfig.threadNum_;
+    bool enableTest = baConfig.enableTest_;
+    unsigned int port = baConfig.port_;
+
+    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(),port);
+
+    // init Router
+    router_.reset(new ::izenelib::driver::Router);
+    initializeDriverRouter(*router_, enableTest);
+
+    boost::shared_ptr<DriverConnectionFactory> factory(
+        new DriverConnectionFactory(router_)
+    );
+    factory->setFirewall(DriverConnectionFirewall());
+
+    driverServer_.reset(
+        new DriverServer(endpoint, factory, threadPoolSize)
+    );
+    return true;
+}
 
 int CobraProcess::run()
 {
@@ -80,6 +163,24 @@ int CobraProcess::run()
 
     try
     {
+
+
+        bfs::directory_iterator iter(configDir_), end_iter;
+        for(; iter!= end_iter; ++iter)
+        {
+            if(bfs::is_regular_file(*iter))
+            {
+                if(iter->filename().rfind(".xml") == (iter->filename().length() - std::string(".xml").length()))
+                    if(iter->filename() != "sf1config.xml")
+                    {
+                        std::string collectionName = iter->filename().substr(0,iter->filename().rfind(".xml"));
+                        CollectionManager::get()->startCollection(collectionName, iter->string());
+                    }
+            }
+        }		
+
+
+    
 /*    
         // initialize BA
         boost::shared_ptr<BAMain> ba(new BAMain);

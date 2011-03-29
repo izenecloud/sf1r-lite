@@ -211,7 +211,7 @@ bool SF1Config::parseConfigFile( const string & fileName ) throw( XmlConfigParse
         /** schema validate begin */
          bf::path config_file(fileName);
          bf::path config_dir = config_file.parent_path();
-         bf::path schema_file = config_dir/"sf1config.xsd";
+         bf::path schema_file = config_dir/"schema"/"sf1config.xsd";
          std::string schema_file_string = schema_file.file_string();
          std::cout<<"XML Schema File: "<<schema_file_string<<std::endl;
          if( !boost::filesystem::exists(schema_file_string) )
@@ -259,16 +259,8 @@ bool SF1Config::parseConfigFile( const string & fileName ) throw( XmlConfigParse
             throw_NoElement( "SF1Config" );
         }
 
-        //#1 System
-
         parseSystemSettings( getUniqChildElement( sf1config, "System" ) );
-
-        ticpp::Element *cobra = getUniqChildElement( sf1config, "Deployment" ) ;
-        if( cobra == NULL )
-        	cobra = getUniqChildElement( sf1config, "Cobra" ) ;
-        assert(cobra != NULL );
-        parseDeploymentSettings( cobra );
-
+        parseDeploymentSettings( getUniqChildElement( sf1config, "Deployment" ));
     }
     catch( ticpp::Exception err )
     {
@@ -298,16 +290,10 @@ bool SF1Config::parseConfigFile( const string & fileName ) throw( XmlConfigParse
 
 void SF1Config::parseSystemSettings( const ticpp::Element * system )
 {
-  parseBrokerAgent( getUniqChildElement( system, "BrokerAgent" ) );
   //get resource dir
   getAttribute( getUniqChildElement( system, "Resource" ), "path", resource_dir_);
-  
-  parseQuerySupport( getUniqChildElement( system, "QuerySupport" ) );
-  
-  //mining switch, for test
-  getAttribute( getUniqChildElement( system, "MiningSwitch" ), "enable", mining_switch_, true);
-  
-  parseParametersDefault( getUniqChildElement( system, "ParametersDefault" ) );
+
+  parseBundlesDefault(getUniqChildElement( system, "BundlesDefault" ));
   
   parseFirewall( getUniqChildElement( system, "Firewall" ) );
   
@@ -315,85 +301,43 @@ void SF1Config::parseSystemSettings( const ticpp::Element * system )
 
   parseLanguageAnalyzer( getUniqChildElement( system, "LanguageAnalyzer" ) );
 
-  parseRanking( getUniqChildElement( system, "Ranking" ) );
-
-  parseLanguageIdentifier( getUniqChildElement( system, "LanguageIdentifier" ) );
-  
-  //parse crontab
-  {
-    ticpp::Element* cron = getUniqChildElement( system, "CronIndexRecommend" );
-    if(cron!=NULL)
-    {
-      std::string value;
-      if(getAttribute(cron, "value", value))
-      {
-        cronIndexRecommend_ = value;
-      }
-    }
-  }
-  {
-    ticpp::Element* cron = getUniqChildElement( system, "CronIndexer" );
-    if(cron!=NULL)
-    {
-      std::string value;
-      if(getAttribute(cron, "value", value))
-      {
-        cronIndexer_ = value;
-      }
-    }
-  }
-
 }
 
-
-
-// 1.3. BrokerAgent  -------------------------------------
 void SF1Config::parseBrokerAgent( const ticpp::Element * brokerAgent )
 {
-    const size_t MAX_THREAD_NUM = 200;
-    bool bUseCache = false;
-    size_t threadNum = 1;
-    bool bEnableTest = false;
-
-    getAttribute( brokerAgent, "usecache", bUseCache, false );
-    getAttribute( brokerAgent, "enabletest", bEnableTest, false );
-    brokerAgentConfig_.setUseCache( bUseCache );
-    if ( !getAttribute( brokerAgent, "threadnum", threadNum, false ) ||
-            threadNum > MAX_THREAD_NUM || threadNum == 0 )
-    {
-        stringstream ss;
-        ss << "Thread Num is invalid format or out of valid range(1 < THREAD_NUM < " << MAX_THREAD_NUM << "). Change the value to " << MAX_THREAD_NUM;
-        cerr << "[Warning] : " << ss.str() << endl;
-        sflog->warn( SFL_INIT, ss.str().c_str() );
-        threadNum = MAX_THREAD_NUM;
-    }
-    brokerAgentConfig_.setThreadNums( threadNum );
-    brokerAgentConfig_.setEnableTest( bEnableTest );
-
-} // end - parseBrokerAgent()
-
-
-// 1.4. QuerySupport -------------------------------------
-void SF1Config::parseQuerySupport( const ticpp::Element * querySupport )
-{
-
-    getAttribute( querySupport, "updatetime", query_support_config_.update_time );
-    getAttribute( querySupport, "logdays", query_support_config_.log_days );
-    
-
-    Element * settings = NULL;
-
-    settings = getUniqChildElement( querySupport, "Path" );
-    getAttribute( settings, "basepath", query_support_config_.basepath );
-    settings = getUniqChildElement( querySupport, "QueryCorrectionPara" );
-    getAttribute( settings, "enableEK", query_support_config_.query_correction_enableEK );
-    getAttribute( settings, "enableCN", query_support_config_.query_correction_enableCN );
-    settings = getUniqChildElement( querySupport, "AutoFillPara" );
-    getAttribute( settings, "num", query_support_config_.autofill_num );
-
+    getAttribute( brokerAgent, "usecache", brokerAgentConfig_.useCache_, false );
+    getAttribute( brokerAgent, "enabletest", brokerAgentConfig_.enableTest_,false );
+    getAttribute( brokerAgent, "threadnum", brokerAgentConfig_.threadNum_,false );
+    getAttribute( brokerAgent, "port", brokerAgentConfig_.port_,false );	
 }
 
-// 1.5. FireWall -------------------------------------
+void SF1Config::parseBundlesDefault(const ticpp::Element * bundles)
+{
+    Element * bundle = NULL;
+    bundle = getUniqChildElement( bundles, "QueryLogBundle" );
+    parseQueryLogBundleParam(getUniqChildElement( bundle, "Parameter" ));
+    bundle = getUniqChildElement( bundles, "IndexBundle" );
+    defaultIndexBundleParam_.LoadXML(getUniqChildElement( bundle, "Parameter" ), false);	
+    bundle = getUniqChildElement( bundles, "MiningBundle" );
+    defaultMiningBundleParam_.LoadXML(getUniqChildElement( bundle, "Parameter" ), false);	
+}
+
+void SF1Config::parseQueryLogBundleParam(const ticpp::Element * queryLog)
+{
+    Element * settings = NULL;
+    settings = getUniqChildElement( queryLog, "Path" );
+    getAttribute( settings, "basepath", queryLogBundleConfig_.basepath );
+    settings = getUniqChildElement( queryLog, "QuerySupport" );
+    getAttribute( queryLog, "logdays", queryLogBundleConfig_.log_days );
+    settings = getUniqChildElement( queryLog, "QueryCorrectionPara" );
+    getAttribute( settings, "enableEK", queryLogBundleConfig_.query_correction_enableEK );
+    getAttribute( settings, "enableCN", queryLogBundleConfig_.query_correction_enableCN );
+    settings = getUniqChildElement( queryLog, "AutoFillPara" );
+    getAttribute( settings, "num", queryLogBundleConfig_.autofill_num );
+    settings = getUniqChildElement( queryLog, "CronIndexRecommend" );
+    getAttribute( settings, "value", queryLogBundleConfig_.cronIndexRecommend_);
+}
+
 void SF1Config::parseFirewall( const ticpp::Element * fireElement )
 {
     Iterator<Element> allow_it("Allow");
@@ -424,15 +368,6 @@ void SF1Config::parseFirewall( const ticpp::Element * fireElement )
 }
 
 
-
-
-// 1.5. FireWall -------------------------------------
-void SF1Config::parseParametersDefault( const ticpp::Element * element )
-{
-    default_parameter_.LoadXML(element, false);
-}
-
-// 2.1 Tokenizer -------------------------------------
 void SF1Config::parseTokenizer( const ticpp::Element * tokenizing )
 {
     string id, method, value, code;
@@ -477,7 +412,6 @@ void SF1Config::parseTokenizer( const ticpp::Element * tokenizing )
 }
 
 
-// 2.2 LanguageAnalyzer -------------------------------------
 void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
 {
     // 1. <LanguageAnalyzer>
@@ -702,85 +636,9 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
 
 } // END - SF1Config::parseLanguageAnalyzer()
 
-// 2.3 Ranking -------------------------------------
-void SF1Config::parseRanking( const ticpp::Element * ranking )
-{
-    //string variables to parse the config file
-    string id;
-    string qd_text_model;
-    string ignore;
-
-    //enum variables to contain the actual settings of their string representatives above
-    TextRankingType e_qd_text_model = NotUseTextRanker;
-
-    Iterator<Element> ranker_it( "RankingModel" );
-
-    //iterate through <RankingModel> elements
-    for ( ranker_it = ranker_it.begin(ranking); ranker_it!= ranker_it.end(); ranker_it++ )
-    {
-        //parse values
-        getAttribute( ranker_it.Get(), "id", id );
-        getAttribute( ranker_it.Get(), "qd_text_model", qd_text_model  );
-
-        if( !validateID(id) ) throw_TypeMismatch( ranker_it.Get(), "id", id, "Alphabets, Numbers, Dot(.), Dash(-) and Underscore(_)");
-        //create one RankingConfigUnit
-        RankingConfigUnit rankingUnit( id );
-
-        //query dependent text model
-        if ( qd_text_model == "default" )
-        {
-            e_qd_text_model = RankingType::DefaultTextRanker;
-        }
-        else if ( qd_text_model == "bm25" )
-        {
-            e_qd_text_model = RankingType::BM25;
-        }
-        else if ( qd_text_model == "kl" )
-        {
-            e_qd_text_model = RankingType::KL;
-        }
-        else if ( qd_text_model == "plm" )
-        {
-            e_qd_text_model = RankingType::PLM;
-        }
-        else if ( qd_text_model == "none" )
-        {
-            e_qd_text_model = NotUseTextRanker;
-        }
-        else
-        {
-            throw_TypeMismatch( ranker_it.Get(), "qd_text_model", e_qd_text_model, "\"default\", \"bm25\", \"kl\", \"plm\", or \"none\"" );
-        }
-
-
-        //set the enum variables
-        rankingUnit.setTextRankingModel( e_qd_text_model );
-
-        if ( rankingConfigNameMap_.insert( pair<string, RankingConfigUnit>(id, rankingUnit) ).second == false )
-        {
-            throw XmlConfigParserException( "Duplicate <RankingModel> IDs" );
-        }
-
-
-    }//for all the ranking units that are set
-
-} // END - SF1Config::parseRanking()
-
-
-// 2.4 LanguageIdentifier -------------------------------------
-void SF1Config::parseLanguageIdentifier( const ticpp::Element * langid )
-{
-    string dbpath;
-    getAttribute( langid, "dbpath", dbpath );
-
-    docManagerConfig_.languageIdentifierDbPath_ = dbpath;
-} // END - SF1Config::parseLanguageIdentifier()
-
 void SF1Config::parseDeploymentSettings(const ticpp::Element * deploy) 
 {
-    Element * ba_node = NULL;
-    ba_node = getUniqChildElement(deploy, "BA");
-    getPortNumber(ba_node, "port", cobraConfig_.baPort, false);
+    parseBrokerAgent( getUniqChildElement( deploy, "BrokerAgent" ) );
 }
 
 // ------------------------- CollectionConfig-------------------------
@@ -792,7 +650,7 @@ CollectionConfig::~CollectionConfig()
 {
 }
 
-bool CollectionConfig::parseConfigFile( const string& collectionName ,const string & fileName ) throw( XmlConfigParserException  )
+bool CollectionConfig::parseConfigFile( const string& collectionName ,const string & fileName, CollectionMeta collectionMeta) throw( XmlConfigParserException  )
 {
     namespace bf=boost::filesystem;
     
@@ -807,7 +665,7 @@ bool CollectionConfig::parseConfigFile( const string& collectionName ,const stri
         /** schema validate begin */
          bf::path config_file(fileName);
          bf::path config_dir = config_file.parent_path();
-         bf::path schema_file = config_dir/"collection.xsd";
+         bf::path schema_file = config_dir/"schema"/"collection.xsd";
          std::string schema_file_string = schema_file.file_string();
          std::cout<<"XML Schema File: "<<schema_file_string<<std::endl;
          if( !boost::filesystem::exists(schema_file_string) )
@@ -855,41 +713,10 @@ bool CollectionConfig::parseConfigFile( const string& collectionName ,const stri
             throw_NoElement( "Collection" );
         }
 
-        CollectionMeta collectionMeta;
         collectionMeta.setName(collectionName);
         parseCollectionSettings( collection, collectionMeta );
 	
-        SF1Config::get()->collectionMetaList_.push_back( collectionMeta );
         SF1Config::get()->collectionMetaMap_.insert(std::make_pair( collectionMeta.getName(), collectionMeta));
-        SF1Config::get()->cobraConfig_.collections.insert( collectionMeta.getName() );
-	
-        //---------- SETTING COLLECTION DATA ----------
-	
-        // get the property weight information by each collection
-        for ( unsigned int i = 0; i< SF1Config::get()->collectionMetaList_.size(); i++ )
-        {
-            // map<property name, weight>
-            map<string, float> propertyWeightMap;
-
-            std::set<PropertyConfig, PropertyComp> schema = SF1Config::get()->collectionMetaList_[i].getDocumentSchema();
-            std::set<PropertyConfig, PropertyComp>::iterator it;
-	
-            for ( it = schema.begin(); it != schema.end(); it++ )
-            {
-                if ( it->getRankWeight() >= 0.0f )
-                {
-                    propertyWeightMap.insert( pair<string, float>(it->getName(), it->getRankWeight()) );
-                }
-            }
-	
-            if ( propertyWeightMap.empty() == false )
-            {
-                SF1Config::get()->rankingManagerConfig_.propertyWeightMapByProperty_.insert(
-                    pair<string, map<string, float> >( SF1Config::get()->collectionMetaList_[i].getName(), propertyWeightMap )
-                    );
-            }
-        }
-
     }
     catch( ticpp::Exception err )
     {
@@ -912,193 +739,276 @@ bool CollectionConfig::parseConfigFile( const string& collectionName ,const stri
     }
 
     return true;
-} // END - CollectionConfig::parseConfigFile()
-
+} 
 
 void CollectionConfig::parseCollectionSettings( const ticpp::Element * collection, CollectionMeta & collectionMeta )
 {
-    std::string name, encoding, ranking, wildcardtype, classifierlanguage;
-    izenelib::util::UString::EncodingType eType;        //converts the encoding string into EncodingType
-    
-    CollectionParameterConfig collection_param(SF1Config::get()->default_parameter_);
-    collection_param.LoadXML(getUniqChildElement(collection, "Parameter"), true);
-    
-    collection_param.GetString("CollectionMeta/encoding", encoding);
-    collection_param.GetString("CollectionMeta/rankingmodel", ranking);
-    collection_param.GetString("CollectionMeta/wildcardtype", wildcardtype, "unigram");
-    collection_param.GetString( "CollectionMeta/generalclassifierlanguage", classifierlanguage, "chinese");
-    //for ranking
-    std::map<std::string, RankingConfigUnit>::iterator it = SF1Config::get()->rankingConfigNameMap_.find( ranking );
-    SF1Config::get()->rankingManagerConfig_.addRankingConfig( name, it->second );
-    downCase(encoding);
-    eType = parseEncodingType(encoding);
-    
-    collectionMeta.setName( name );
-    collectionMeta.setEncoding( eType );
-    collectionMeta.setRankingMethod( ranking );
-    collectionMeta.setWildcardType( wildcardtype );
-    collectionMeta.setGeneralClassifierLanguage( classifierlanguage );
+    parseCollectionPath( getUniqChildElement( collection, "Path" ), collectionMeta );
 
-    IndexManagerConfig indexmanager_config;
-    
+    parseCollectionSchema( getUniqChildElement( collection, "DocumentSchema" ), collectionMeta );
+
+    // ACL
+    Iterator<Element> aclIterator("ACL");
+    for (aclIterator = aclIterator.begin(collection);
+         aclIterator != aclIterator.end(); ++aclIterator)
+    {
+        std::string aclAllow;
+        std::string aclDeny;
+        getAttribute(aclIterator.Get(), "allow", aclAllow, false);
+        getAttribute(aclIterator.Get(), "deny", aclDeny, false);
+
+        collectionMeta.aclAllow(aclAllow);
+        collectionMeta.aclDeny(aclDeny);
+    }
+
+    // IndexBundle
+    Element* indexBundle = getUniqChildElement( collection, "IndexBundle" );
+    Element* indexParam = getUniqChildElement( indexBundle, "Parameter" );
+    if(indexParam) parseIndexBundleParam(indexParam, collectionMeta);
+    parseIndexBundleSchema(getUniqChildElement( indexBundle, "Schema" ), collectionMeta);
+
+    // MiningBundle
+    Element* miningBundle = getUniqChildElement( collection, "MiningBundle" );
+    if(miningBundle) 
+    {
+        Element* miningSchema = getUniqChildElement( miningBundle, "Schema" );
+        if(miningSchema) parseMiningBundleSchema(miningSchema, collectionMeta);
+        Element* miningParam = getUniqChildElement( miningBundle, "Parameter" );
+        if(miningParam) parseMiningBundleParam(miningParam, collectionMeta);
+    }
+}
+
+
+void CollectionConfig::parseCollectionPath( const ticpp::Element * path, CollectionMeta & collectionMeta )
+{
+    CollectionPath collPath;
+    string basepath;
+
+    getAttribute( path, "basepath", basepath );
+
+    Element * specificPath = NULL;
+    string subPath;
+
+    collPath.setBasePath( basepath );
+
+    specificPath = getUniqChildElement( path, "SCD", false );
+    if( specificPath != NULL )
+    {
+        getAttribute( specificPath, "path", subPath, false );
+        collPath.setScdPath( subPath );
+    }
+
+    specificPath = getUniqChildElement( path, "CollectionData", false );
+    if( specificPath != NULL )
+    {
+        getAttribute( specificPath, "path", subPath, false );
+        collPath.setCollectionDataPath( subPath );
+    }
+
+    specificPath = getUniqChildElement( path, "Query", false );
+    if( specificPath != NULL )
+    {
+        getAttribute( specificPath, "path", subPath, false );
+        collPath.setQueryDataPath( subPath );
+    }
+
+    collectionMeta.setCollectionPath( collPath );
+}
+
+void CollectionConfig::parseCollectionSchema( const ticpp::Element * documentSchema, CollectionMeta & collectionMeta )
+{
+    //used to check duplicate property names
+    set<string> propertyNameList;
+
+    Iterator<Element> property( "Property" );
+
+    bool hasDate = false;
+
+    for ( property = property.begin( documentSchema ); property != property.end(); property++ )
+    {
+        try
+        {
+            //holds all the configuration data of this property
+            PropertyConfigBase propertyConfig;
+		 
+            string propertyName, type;
+            PropertyDataType dataType = UNKNOWN_DATA_PROPERTY_TYPE;
+		 
+            getAttribute( property.Get(), "name", propertyName );
+            getAttribute( property.Get(), "type", type );
+		 
+            downCase( type );
+		 
+            if( !validateID(propertyName) ) 
+                throw XmlConfigParserException( "Alphabets, Numbers, Dot(.), Dash(-) and Underscore(_)");			
+            if ( (( propertyNameList.insert(propertyConfig.propertyName_) ).second) == false )
+            {
+                throw XmlConfigParserException( "Duplicate property names" );
+            }
+
+            // find right data type
+            if ( type == "string" )
+            {
+                dataType = STRING_PROPERTY_TYPE;
+            }
+            else if ( type == "int" )
+            {
+                dataType = INT_PROPERTY_TYPE;
+            }
+            else if ( type == "float" )
+            {
+                dataType = FLOAT_PROPERTY_TYPE;
+            }
+            else
+            {
+                throw_TypeMismatch( property.Get(), "name", type, "\"string\", \"int\" or \"float\"" );
+            }
+            collectionMeta.insertProperty( propertyConfig );
+			
+            boost::to_lower(propertyName);
+            if(propertyName == "date" )
+                hasDate = true;
+         }
+         catch ( XmlConfigParserException & e )
+         {
+              throw e;
+          }
+     } //property iteration
+
+    if( hasDate == false )
+    {
+	PropertyConfigBase propertyConfig;
+	propertyConfig.propertyName_ = "DATE";
+	propertyConfig.propertyType_ = STRING_PROPERTY_TYPE;
+	collectionMeta.insertProperty( propertyConfig );
+    }
+
+    ///we set property Id here
+    collectionMeta.numberProperty();
+}
+
+void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, CollectionMeta & collectionMeta)
+{
+    CollectionParameterConfig params(SF1Config::get()->defaultIndexBundleParam_);
+    params.LoadXML(index, true);
+
+    std::string encoding;
+
+    params.GetString("Sia/encoding", encoding);
+    downCase(encoding);
+    IndexBundleConfiguration& indexBundleConfig = *collectionMeta.indexBundleConfig_;
+    indexBundleConfig.encoding_ = parseEncodingType(encoding);
+    params.GetString("Sia/wildcardtype", indexBundleConfig.wildcardType_, "unigram");
+
+    ///TODO for ranking
+    ///ranking is not configed right now, although we keep such interface here
+    RankingConfigUnit& rankingUnit = indexBundleConfig.rankingManagerConfig_.rankingConfigUnit_;
+    TextRankingType e_qd_text_model = RankingType::DefaultTextRanker;
+    rankingUnit.setTextRankingModel( e_qd_text_model );
+
     //Index strategy
-    int64_t memorypool = 0;
-    collection_param.Get<int64_t>("IndexStrategy/memorypoolsize", memorypool);
+    izenelib::ir::indexmanager::IndexManagerConfig& indexmanager_config = indexBundleConfig.indexConfig_;
     
+    int64_t memorypool = 0;
+    params.Get<int64_t>("IndexStrategy/memorypoolsize", memorypool);
     indexmanager_config.indexStrategy_.memory_ = memorypool;
     indexmanager_config.indexStrategy_.indexDocLength_ = true;
     indexmanager_config.indexStrategy_.skipInterval_ = 8;
     indexmanager_config.indexStrategy_.maxSkipLevel_ = 3;
     indexmanager_config.storeStrategy_.param_ = "file";
-
-    std::string indexpolicy("default");
-    collection_param.GetString("IndexStrategy/indexpolicy", indexpolicy, "default");
-    
-    indexmanager_config.indexStrategy_.indexMode_ = indexpolicy;
+    params.GetString("IndexStrategy/indexpolicy", indexmanager_config.indexStrategy_.indexMode_, "default");
     indexmanager_config.mergeStrategy_.param_ = "dbt";
+    params.GetString("IndexStrategy/cron", indexBundleConfig.cronIndexer_, "");
 
     std::set<std::string> directories;
-    collection_param.Get("CollectionDataDirectory", directories);
-    
-    SMiaConfig smia_config;
+    params.Get("CollectionDataDirectory", directories);
+		
     if(!directories.empty())
     {
-//       std::cout<<"data dir size: "<<directories.size()<<std::endl;
-      indexmanager_config.indexStrategy_.indexLocations_.assign(directories.begin(), directories.end());
-      smia_config.collectionDataDirectories().assign(directories.begin(), directories.end());
+        // std::cout<<"data dir size: "<<directories.size()<<std::endl;
+        indexmanager_config.indexStrategy_.indexLocations_.assign(directories.begin(), directories.end());
+        indexBundleConfig.collectionDataDirectories_.assign(directories.begin(), directories.end());
     }
 
-    collectionMeta.setIndexManagerConfig(indexmanager_config);
-    
-    bool triggerqa = false;
-    std::size_t threadNum = 3;
-    std::size_t docCacheNum = 1000;
-    collection_param.Get("Sia/triggerqa", triggerqa);
-    collection_param.Get<std::size_t>("Sia/threadnum", threadNum);
-    collection_param.Get<std::size_t>("Sia/doccachenum", docCacheNum);
-    smia_config.setTriggerQA( triggerqa );
-    smia_config.setThreadNums( threadNum );
-    smia_config.setDocumentCacheNum(docCacheNum);
-    collectionMeta.setSMiaConfig(smia_config);
-    
+    params.Get("Sia/triggerqa", indexBundleConfig.bTriggerQA_);
+    params.Get<std::size_t>("Sia/doccachenum", indexBundleConfig.documentCacheNum_);
+    params.GetString("LanguageIdentifier/dbpath", indexBundleConfig.languageIdentifierDbPath_, "");
+}
+
+void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema, CollectionMeta & collectionMeta)
+{
+    IndexBundleConfiguration& indexBundleConfig = *(collectionMeta.indexBundleConfig_);
+    indexBundleConfig.setSchema(collectionMeta.schema_);	
+
+    Iterator<Element> property( "Property" );
+
+    for ( property = property.begin( indexSchema ); property != property.end(); property++ )
+    {
+	try
+	{
+	    parseProperty( property.Get(), collectionMeta);
+	}
+	catch ( XmlConfigParserException & e )
+	{
+	    throw e;
+	}
+    }
+
+    ///we update property Id here
+    ///It is because that IndexBundle might add properties "xx_unigram", in this case, we must keep the propertyId consistent 
+    ///between IndexBundle and other bundles
+    collectionMeta.numberProperty();
+    indexBundleConfig.numberProperty();
+
+    // map<property name, weight>
+    std::map<string, float>& propertyWeightMap = collectionMeta.indexBundleConfig_->rankingManagerConfig_.propertyWeightMapByProperty_;
+    std::set<PropertyConfig, PropertyComp>& schema = collectionMeta.indexBundleConfig_->schema_;
+    std::set<PropertyConfig, PropertyComp>::iterator it = schema.begin();
+
+    for (; it != schema.end(); it++ )
+    {
+        if ( it->getRankWeight() >= 0.0f )
+        {
+            propertyWeightMap.insert( pair<string, float>(it->getName(), it->getRankWeight()) );
+        }
+    }
+}
+
+void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, CollectionMeta & collectionMeta)
+{
+    CollectionParameterConfig params(SF1Config::get()->defaultMiningBundleParam_);
+    params.LoadXML(mining, true);
+
     // PARSING MINING CONFIG
-    MiningConfig mining_config;
+    MiningConfig& mining_config = collectionMeta.miningBundleConfig_->mining_config_;
     //for TG
-    collection_param.Get<uint32_t>("TaxonomyPara/topdocnum", mining_config.taxonomy_param.top_docnum);
-    collection_param.Get<uint32_t>("TaxonomyPara/levels", mining_config.taxonomy_param.levels);
-    collection_param.Get<uint32_t>("TaxonomyPara/perlevelnum", mining_config.taxonomy_param.per_levelnum);
-    collection_param.Get<uint32_t>("TaxonomyPara/candlabelnum", mining_config.taxonomy_param.candidate_labelnum);
-    collection_param.Get("TaxonomyPara/enablenec", mining_config.taxonomy_param.enable_nec);
-    collection_param.Get<uint32_t>("TaxonomyPara/maxpeopnum", mining_config.taxonomy_param.max_peopnum);
-    collection_param.Get<uint32_t>("TaxonomyPara/maxlocnum", mining_config.taxonomy_param.max_locnum);
-    collection_param.Get<uint32_t>("TaxonomyPara/maxorgnum", mining_config.taxonomy_param.max_orgnum);
+    params.Get<uint32_t>("TaxonomyPara/topdocnum", mining_config.taxonomy_param.top_docnum);
+    params.Get<uint32_t>("TaxonomyPara/levels", mining_config.taxonomy_param.levels);
+    params.Get<uint32_t>("TaxonomyPara/perlevelnum", mining_config.taxonomy_param.per_levelnum);
+    params.Get<uint32_t>("TaxonomyPara/candlabelnum", mining_config.taxonomy_param.candidate_labelnum);
+    params.Get("TaxonomyPara/enablenec", mining_config.taxonomy_param.enable_nec);
+    params.Get<uint32_t>("TaxonomyPara/maxpeopnum", mining_config.taxonomy_param.max_peopnum);
+    params.Get<uint32_t>("TaxonomyPara/maxlocnum", mining_config.taxonomy_param.max_locnum);
+    params.Get<uint32_t>("TaxonomyPara/maxorgnum", mining_config.taxonomy_param.max_orgnum);
     //for recommend
-    collection_param.Get<uint32_t>("RecommendPara/recommendnum", mining_config.recommend_param.recommend_num);
-    collection_param.Get<uint32_t>("RecommendPara/popularnum", mining_config.recommend_param.popular_num);
-    collection_param.Get<uint32_t>("RecommendPara/realtimenum", mining_config.recommend_param.realtime_num);
+    params.Get<uint32_t>("RecommendPara/recommendnum", mining_config.recommend_param.recommend_num);
+    params.Get<uint32_t>("RecommendPara/popularnum", mining_config.recommend_param.popular_num);
+    params.Get<uint32_t>("RecommendPara/realtimenum", mining_config.recommend_param.realtime_num);
     //for similarity
-    collection_param.Get<uint32_t>("SimilarityPara/docnumlimit", mining_config.similarity_param.docnum_limit);
-    collection_param.Get<uint32_t>("SimilarityPara/termnumlimit", mining_config.similarity_param.termnum_limit);
+    params.Get<uint32_t>("SimilarityPara/docnumlimit", mining_config.similarity_param.docnum_limit);
+    params.Get<uint32_t>("SimilarityPara/termnumlimit", mining_config.similarity_param.termnum_limit);
     //for DC
-    collection_param.Get("ClassificationPara/customizetraining", mining_config.dc_param.customize_training);
+    params.Get("ClassificationPara/customizetraining", mining_config.dc_param.customize_training);
     std::string encoding_str;
     downCase(encoding_str);
-    collection_param.GetString("ClassificationPara/trainingencoding", encoding_str); mining_config.dc_param.encoding_type = parseEncodingType(encoding_str);
-    collectionMeta.setMiningConfig(mining_config);
-    // ---------------- PARSING <Path> CONFIGURATION
-    parseCollectionPath( getUniqChildElement( collection, "Path" ), collectionMeta );
+    params.GetString("ClassificationPara/trainingencoding", encoding_str); 
+    mining_config.dc_param.encoding_type = parseEncodingType(encoding_str);
+}
 
-    
-
-    // ---------------- PARSING <DocumentSchema> CONFIGURATION
-
-    //counts the number of document schema defined in one Collection
-    unsigned int docSchemaCount = 0;
-    bool hasDate = false;
-
-    Iterator<Element> documentSchema( "DocumentSchema" );
-
-
-    // only iterates once
-    for ( documentSchema = documentSchema.begin( collection ); documentSchema != documentSchema.end(); documentSchema++ )
-    {
-        //used to check duplicate property names
-        set<string> propertyNameList;
-
-        if ( docSchemaCount > 1 )
-        {
-            throw XmlConfigParserException( "Too many document schema definitions in one Collection") ;
-        }
-
-
-        Iterator<Element> property( "Property" );
-
-        for ( property = property.begin( documentSchema.Get() ); property != property.end(); property++ )
-        {
-            try
-            {
-                //PARSING PROPERTY CONFIGURATIOINS
-                parseProperty( property.Get(), collectionMeta, propertyNameList );
-
-            }
-            catch ( XmlConfigParserException & e )
-            {
-                stringstream message;
-                message << "<" << name << "> ";
-
-                e.details_.insert( 0, message.str() );
-
-                throw e;
-            }
-
-        } //property iteration
-
-        for( CollectionMeta::property_config_iterator it = collectionMeta.propertyConfigBegin();
-                it != collectionMeta.propertyConfigEnd();
-                it++ )
-        {
-            string pName = it->getName();
-            downCase(pName);
-            if(pName == "date" )
-            {
-                hasDate = true;
-                // always index and filterable
-                PropertyConfig updatedDatePropertyConfig = *it;
-                updatedDatePropertyConfig.setIsIndex(true);
-                updatedDatePropertyConfig.setIsFilter(true);
-                collectionMeta.erasePropertyConfig(it->getName());
-                collectionMeta.insertPropertyConfig(updatedDatePropertyConfig);
-                break;
-            }
-        }
-
-        if( hasDate == false )
-        {
-            PropertyConfig propertyConfig;
-
-            propertyConfig.setName( "DATE");
-            propertyConfig.setOriginalName( "DATE" );
-            propertyConfig.setType( STRING_PROPERTY_TYPE );
-            propertyConfig.setIsIndex(true);
-            propertyConfig.setIsFilter(true);
-            
-            collectionMeta.insertPropertyConfig( propertyConfig );
-        }
-
-        docSchemaCount++;
-
-    } // document schema iteration
-
-    if ( docSchemaCount < 1 )
-    {
-        stringstream  message;
-        message << "Collection \"" << name << "\": Need one <DocumentSchema> definition in one Collection";
-        throw XmlConfigParserException( message.str() );
-    }
-    
+void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_schema_node, CollectionMeta & collectionMeta)
+{
     //** PARSE MINING SCHEMA BEGIN
-    MiningSchema mining_schema;
-    ticpp::Element * mining_schema_node = getUniqChildElement( collection, "MiningSchema", false );
+    MiningSchema& mining_schema = collectionMeta.miningBundleConfig_->mining_schema_;
     PropertyDataType property_type;
     if( mining_schema_node!= NULL )
     {
@@ -1236,117 +1146,30 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
       }
     }
     
-    collectionMeta.setMiningSchema(mining_schema);
-
-    // ACL
-    Iterator<Element> aclIterator("ACL");
-    for (aclIterator = aclIterator.begin(collection);
-         aclIterator != aclIterator.end(); ++aclIterator)
-    {
-        std::string aclAllow;
-        std::string aclDeny;
-        getAttribute(aclIterator.Get(), "allow", aclAllow, false);
-        getAttribute(aclIterator.Get(), "deny", aclDeny, false);
-
-        collectionMeta.aclAllow(aclAllow);
-        collectionMeta.aclDeny(aclDeny);
-    }
-
-} // END - CollectionConfig::parseCollectionSettings
-
-// 3.1. Path -------------------------------------
-void CollectionConfig::parseCollectionPath( const ticpp::Element * path, CollectionMeta & collectionMeta )
-{
-    CollectionPath collPath;
-    string basepath;
-
-    getAttribute( path, "basepath", basepath );
-
-    Element * specificPath = NULL;
-    string subPath;
-
-    collPath.setBasePath( basepath );
-
-    specificPath = getUniqChildElement( path, "SCD", false );
-    if( specificPath != NULL )
-    {
-        getAttribute( specificPath, "path", subPath, false );
-        collPath.setScdPath( subPath );
-    }
-
-    specificPath = getUniqChildElement( path, "CollectionData", false );
-    if( specificPath != NULL )
-    {
-        getAttribute( specificPath, "path", subPath, false );
-        collPath.setCollectionDataPath( subPath );
-    }
-
-    specificPath = getUniqChildElement( path, "Query", false );
-    if( specificPath != NULL )
-    {
-        getAttribute( specificPath, "path", subPath, false );
-        collPath.setQueryDataPath( subPath );
-    }
-
-//     specificPath = getUniqChildElement( path, "Log", false );
-//     if( specificPath != NULL )
-//     {
-//         getAttribute( specificPath, "path", subPath, false );
-//         collPath.setLogPath( subPath );
-//     }
-
-    collectionMeta.setCollectionPath( collPath );
-} // END - CollectionConfig::parseCollectionPath()
+}
 
 
-// 3.2. Property -------------------------------------
 void CollectionConfig::parseProperty(
         const ticpp::Element * property,
-        CollectionMeta & collectionMeta,
-        set<string> & propertyNameList )
+        CollectionMeta & collectionMeta)
 {
-    //holds all the configuration data of this property
-    PropertyConfig propertyConfig;
+    std::set<PropertyConfig, PropertyComp>& indexSchema = collectionMeta.indexBundleConfig_->schema_;
 
-    string propertyName, type;
-    bool bIndex = false;
-    PropertyDataType dataType = UNKNOWN_DATA_PROPERTY_TYPE;
+    //holds all the configuration data of this property
+
+    string propertyName;
 
     getAttribute( property, "name", propertyName );
-    getAttribute( property, "type", type );
+    PropertyConfig p;
+    p.setName(propertyName);
 
-    downCase( type );
+    std::set<PropertyConfig, PropertyComp>::iterator sp = indexSchema.find(p);
+    indexSchema.erase(*sp);
+    PropertyConfig propertyConfig;
 
-    if( !validateID(propertyName) ) throw_TypeMismatch( property, "name", propertyName, "Alphabets, Numbers, Dot(.), Dash(-) and Underscore(_)");
-
-    // find right data type
-    if ( type == "string" )
-    {
-        dataType = STRING_PROPERTY_TYPE;
-    }
-    else if ( type == "int" )
-    {
-        dataType = INT_PROPERTY_TYPE;
-    }
-    else if ( type == "float" )
-    {
-        dataType = FLOAT_PROPERTY_TYPE;
-    }
-    else
-    {
-        throw_TypeMismatch( property, "name", type, "\"string\", \"int\" or \"float\"" );
-    }
-
-    getAttribute( property, "index", bIndex, false );
-    
     //set data --------------------------------------
-    propertyConfig.setName( propertyName );
     propertyConfig.setOriginalName( propertyName );
-    propertyConfig.setType( dataType );
-    propertyConfig.setIsIndex( bIndex );
-    
-
-
+    propertyConfig.setIsIndex( true );
 
     //--- parse optional settings for "Property"
 
@@ -1357,7 +1180,9 @@ void CollectionConfig::parseProperty(
     // the setting is optional
     if ( display != NULL )
     {
-        if( propertyConfig.getType() != STRING_PROPERTY_TYPE )
+        PropertyDataType dataType;
+        collectionMeta.getPropertyType(propertyName, dataType);
+        if( dataType != STRING_PROPERTY_TYPE )
         {
             stringstream message;
             message << "\"" << propertyName << "\": Only a string type property can have <Display> option";
@@ -1377,90 +1202,76 @@ void CollectionConfig::parseProperty(
         }
     }
 
-
-    
     //================== INDEXING ==================
     //TODO: if the property is set index="no", then no <Indexing> options???
     //there are several cases where it is allowed. Need to identify & narrow the cases
-
-
     Element * indexing = property->FirstChildElement( "Indexing", false );
 
     //if <Indexing> element  exists
     if ( indexing != NULL )
     {
-        if ( !bIndex )
+        //the number of original names. One alias name has to be the same as the original name
+        int nOriginalName = 0;
+
+        Iterator<Element> indexing_it( "Indexing" );
+
+        // for all the <indexing> config
+        for ( indexing_it = indexing_it.begin( property ); indexing_it != indexing_it.end(); indexing_it++ )
         {
-            stringstream ss;
-            ss << "<Indexing> configuration will be ignored "
-                << "for Property \"" << propertyName << "\"";
-            sflog->warn(SFL_INIT, 30601, ss.str().c_str() );
+            try
+            {
+                parseProperty_Indexing( indexing_it.Get(), propertyConfig );
+            }
+            catch ( ticpp::Exception & e )
+            {
+                stringstream ss;
+                ss << " in \"" << propertyName << "\"";
+                //e.m_details = e.m_details.substr( 0, e.m_details.find_last_of( "ticpp" ) - 5 );
+                e.m_details += ss.str();
+                throw e;
+            }
+
+            if ( propertyConfig.getName() == propertyConfig.getOriginalName() )
+            {
+                nOriginalName++;
+            }
+
+            //add this property setting(alias) to DocumentSchema
+            indexSchema.insert( propertyConfig );
         }
-        else
+
+        // if( collectionMeta.isUnigramWildcard() )
         {
-            //the number of original names. One alias name has to be the same as the original name
-            int nOriginalName = 0;
-
-            Iterator<Element> indexing_it( "Indexing" );
-
-            // for all the <indexing> config
-            for ( indexing_it = indexing_it.begin( property ); indexing_it != indexing_it.end(); indexing_it++ )
-            {
-                try
-                {
-                    parseProperty_Indexing( indexing_it.Get(), propertyConfig );
-                }
-                catch ( ticpp::Exception & e )
-                {
-                    stringstream ss;
-                    ss << " in \"" << propertyName << "\"";
-
-                    //e.m_details = e.m_details.substr( 0, e.m_details.find_last_of( "ticpp" ) - 5 );
-                    e.m_details += ss.str();
-                    throw e;
-                }
-
-                //if there are duplicate property names(including alias)
-                if ( (( propertyNameList.insert(propertyConfig.getName()) ).second) == false )
-                {
-                    throw XmlConfigParserException( "Duplicate property names (including alias)" );
-                }
-
-                if ( propertyConfig.getName() == propertyConfig.getOriginalName() )
-                {
-                    nOriginalName++;
-                }
-
-                //add this property setting(alias) to DocumentSchema
-                collectionMeta.insertPropertyConfig( propertyConfig );
+            if ( (SF1Config::get()->laConfigIdNameMap_.find( "la_unigram" )) == SF1Config::get()->laConfigIdNameMap_.end() ) {
+                throw XmlConfigParserException("Undefined analyzer configuration id, \"la_unigram\"");
             }
 
-            // if( collectionMeta.isUnigramWildcard() )
-            {
-                if ( (SF1Config::get()->laConfigIdNameMap_.find( "la_unigram" )) == SF1Config::get()->laConfigIdNameMap_.end() ) {
-                    throw XmlConfigParserException("Undefined analyzer configuration id, \"la_unigram\"");
-                }
+            /// TODO, add a hidden alias here
+            AnalysisInfo analysisInfo;
+            analysisInfo.analyzerId_ = "la_unigram";
+            SF1Config::get()->analysisPairList_.insert( analysisInfo );
 
-                /// TODO, add a hidden alias here
-                AnalysisInfo analysisInfo;
-                analysisInfo.analyzerId_ = "la_unigram";
-                SF1Config::get()->analysisPairList_.insert( analysisInfo );
+            propertyConfig.setName(propertyName+"_unigram");
+            propertyConfig.setAnalysisInfo(analysisInfo);
+            indexSchema.insert(propertyConfig );
 
-                propertyConfig.setName(propertyName+"_unigram");
-                propertyConfig.setAnalysisInfo(analysisInfo);
-                collectionMeta.insertPropertyConfig(propertyConfig );
-            }
+            /// Attention
+            /// update CollectionMeta
+            PropertyConfigBase propertyConfigBase;
+            propertyConfigBase.propertyName_ = propertyName+"_unigram";
+            propertyConfigBase.propertyType_ = propertyConfig.getType();
+            collectionMeta.insertProperty( propertyConfigBase );
+        }
 
-            if ( nOriginalName == 0 )
-            {
-                throw XmlConfigParserException( "[Property : " +  propertyConfig.getName()
-                        + "] No <Indexing> setting for the original property name. (only alias?)" );
-            }
-            else if ( nOriginalName != 1 )
-            {
-                throw XmlConfigParserException( "[Property : " +  propertyConfig.getName()
-                        + "Only one alias name has to be the same as the property name" );
-            }
+        if ( nOriginalName == 0 )
+        {
+            throw XmlConfigParserException( "[Property : " +  propertyConfig.getName()
+                    + "] No <Indexing> setting for the original property name. (only alias?)" );
+        }
+        else if ( nOriginalName != 1 )
+        {
+            throw XmlConfigParserException( "[Property : " +  propertyConfig.getName()
+                    + "Only one alias name has to be the same as the property name" );
         }
     }
     else
@@ -1475,11 +1286,9 @@ void CollectionConfig::parseProperty(
 
 
     //add this property setting(alias) to DocumentSchema
-    collectionMeta.insertPropertyConfig( propertyConfig );
-} // END - CollectionConfig::parseProperty()
+    indexSchema.insert( propertyConfig );
+}
 
-
-// 3.2.1 Display -------------------------------------
 void CollectionConfig::parseProperty_Display( const ticpp::Element * display, PropertyConfig & propertyConfig )
 {
     int length = 0;
@@ -1616,7 +1425,6 @@ void CollectionConfig::parseProperty_Indexing( const ticpp::Element * indexing, 
             throw_TypeMismatch( indexing, "rankweight", rankWeightTmp );
     }
 
-
     if( !validateID(alias) ) throw_TypeMismatch( indexing, "alias", alias, "Alphabets, Numbers, Dot(.), Dash(-) and Underscore(_)");
     // add alias name if any
     if ( !alias.empty() )
@@ -1632,8 +1440,7 @@ void CollectionConfig::parseProperty_Indexing( const ticpp::Element * indexing, 
     // push to the list of all analysis Information in the configuration file.
     SF1Config::get()->analysisPairList_.insert( analysisInfo );
 
-} // END  CollectionConfig::parseProperty_Indexing()
-
+}
 
 
 } // END - namespace sf1r

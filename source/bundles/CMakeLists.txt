@@ -1,10 +1,8 @@
 INCLUDE_DIRECTORIES(
-  include
-
-  ${CMAKE_SOURCE_DIR}/core
-
+  ${CMAKE_SOURCE_DIR}/core/
+  ${CMAKE_SOURCE_DIR}/bundles/
+  
   ${izenelib_INCLUDE_DIRS}
-  ${wiselib_INCLUDE_DIRS}
   ${wisekma_INCLUDE_DIRS}
   ${izenecma_INCLUDE_DIRS}
   ${ilplib_INCLUDE_DIRS}
@@ -16,17 +14,20 @@ INCLUDE_DIRECTORIES(
   ${Glog_INCLUDE_DIRS}
   )
 
+FILE(GLOB_RECURSE index_SRC "index/*.cpp")
+FILE(GLOB_RECURSE querylog_SRC "querylog/*.cpp")
+FILE(GLOB_RECURSE mining_SRC "mining/*.cpp")
 
-#FILE(GLOB document_SRC
-#  "document-manager/*.cpp"
-#  )
+ADD_LIBRARY(sf1r_bundle_index ${index_SRC})
+ADD_LIBRARY(sf1r_bundle_querylog ${querylog_SRC})
+ADD_LIBRARY(sf1r_bundle_mining ${mining_SRC})
 
-#ADD_LIBRARY(sf1v5_document_manager ${document_SRC})
-
-#INSTALL(TARGETS 
-#    sf1v5_document_manager 
-#    LIBRARY DESTINATION lib
-#    ARCHIVE DESTINATION lib
-#    COMPONENT sf1r_libraries)
+INSTALL(TARGETS 
+    sf1r_bundle_index 
+    sf1r_bundle_querylog
+    sf1r_bundle_mining
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    COMPONENT sf1r_libraries)
 
 
