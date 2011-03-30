@@ -42,5 +42,10 @@ bool IndexSearchService::getInternalDocumentId(
     return true;
 }
 
+bool IndexSearchService::getIndexStatus(Status& status)
+{
+    return true;
+}
+
 }
 

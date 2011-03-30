@@ -145,11 +145,11 @@ bool SelectParser::parse(const Value& select)
         }
 
         // if user has specified, do not append ACL fields
-        if (shouldAddAclAllow && properties_[i].propertyString_[0] == 'ACL_ALLOW')
+        if (shouldAddAclAllow && properties_[i].propertyString_ == "ACL_ALLOW")
         {
             shouldAddAclAllow = false;
         }
-        else if (shouldAddAclDeny && properties_[i].propertyString_[0] == 'ACL_DENY')
+        else if (shouldAddAclDeny && properties_[i].propertyString_ == "ACL_DENY")
         {
             shouldAddAclDeny = false;
         }

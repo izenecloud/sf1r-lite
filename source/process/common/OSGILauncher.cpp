@@ -1,4 +1,6 @@
 #include "OSGILauncher.h"
+#include <bundles/index/IndexTaskService.h>
+
 #include <util/osgi/BundleInfo.h>
 #include <util/osgi/ServiceInfo.h>
 
@@ -35,19 +37,16 @@ void OSGILauncher::start(boost::shared_ptr<BundleConfiguration> bundleConfig)
 
 IService* OSGILauncher::getService(const std::string& bundleName, const std::string& serviceName)
 {
-/*
-    std::vector<ServiceInfoPtr> services = 
-        this->getRegistry()->getBundleInfo(bundleName)->getRegisteredServices();
+    std::vector<ServiceInfoPtr> services = this->getRegistry().getBundleInfo(bundleName)->getRegisteredServices();
 
     for(size_t i = 0; i < services.size(); ++i)
     {
         if(services[i]->getServiceName() == serviceName)
         {
-            IndexTaskService* indexService = static_cast<IndexTaskService*>(services[i]->getService());
-            return indexService;
+            IService* service = services[i]->getService();
+            return service;
 	}
     }
-*/	
     return NULL;
 }
 

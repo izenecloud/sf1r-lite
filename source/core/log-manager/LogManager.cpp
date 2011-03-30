@@ -40,6 +40,7 @@ namespace sf1r
 
     bool LogManager::init(const std::string& pathParam, const std::string& language)
     {
+        logPath = pathParam;
         path logPath(pathParam);
         path logDir = logPath.parent_path();
         if(exists(logDir)) {
@@ -63,6 +64,18 @@ namespace sf1r
 
     LogManager::~LogManager()
     {
+    }
+
+    bool LogManager::del_database()
+    {
+         string order = "rm " + logPath;
+
+         DbConnection::instance().close();
+         std::system(order.c_str());
+         if(!init(logPath))
+             return false;
+
+         return true;
     }
 
     void LogManager::writeEventLog( LOG_TYPE type, int nStatus, int nErrCode, va_list & vlist)

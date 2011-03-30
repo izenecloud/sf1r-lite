@@ -8,13 +8,14 @@
 #include <common/XmlConfigParser.h>
 #include <common/CollectionManager.h>
 
-namespace sf1r {
+namespace sf1r
+{
 
 using driver::Keys;
 using namespace izenelib::driver;
 
 Sf1Controller::Sf1Controller()
-    : collectionHandler_(0)
+        : collectionHandler_(0)
 {
 }
 
@@ -33,13 +34,13 @@ Sf1Controller::~Sf1Controller()
 bool Sf1Controller::checkCollectionAcl()
 {
     Value::StringType collection = asString(
-        this->request()[Keys::collection]
-    );
+                                       this->request()[Keys::collection]
+                                   );
     // check only collection meta info can be found
     CollectionMeta meta;
     bool b = SF1Config::get()->getCollectionMetaByName(collection,meta);
 
-    if(!b) 
+    if (!b)
     {
         this->response().addError(
             "Failed to send request to given collection."

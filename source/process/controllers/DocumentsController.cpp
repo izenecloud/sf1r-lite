@@ -9,7 +9,8 @@
 
 #include <common/Keys.h>
 
-namespace sf1r {
+namespace sf1r
+{
 
 using namespace izenelib::driver;
 using driver::Keys;
@@ -296,7 +297,7 @@ void DocumentsController::duplicate_with()
  *
  * @section request
  *
- * - @b collection* (@c String): Create document in this collection. 
+ * - @b collection* (@c String): Create document in this collection.
  * - @b resource* (@c Object): A document resource. Property key name is used as
  *   key. The corresponding value is the content of the property. Property @b
  *   DOCID is required, which is a unique document identifier specified by

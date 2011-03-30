@@ -9,11 +9,13 @@
 #include <vector>
 #include <string>
 
-namespace sf1r {
+namespace sf1r
+{
 
 using driver::Keys;
 
-void QueryCorrectionController::index() {
+void QueryCorrectionController::index()
+{
     std::string collectionName = asString(request()[Keys::collection]);
     std::string queryString = asString( request()[Keys::keywords] );
 
@@ -21,12 +23,12 @@ void QueryCorrectionController::index() {
     UString refinedQueryString;
 
     QueryCorrectionSubmanager::getInstance().getRefinedQuery(
-			collectionName, queryUString,
-			refinedQueryString);
+        collectionName, queryUString,
+        refinedQueryString);
 
     std::string convertBuffer;
     refinedQueryString.convertString(convertBuffer,
-			izenelib::util::UString::UTF_8);
+                                     izenelib::util::UString::UTF_8);
     response()[Keys::refined_query] = convertBuffer;
 }
 

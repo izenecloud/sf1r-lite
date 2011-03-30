@@ -14,7 +14,8 @@
 #include <vector>
 #include <string>
 
-namespace sf1r {
+namespace sf1r
+{
 
 using driver::Keys;
 using namespace izenelib::driver;

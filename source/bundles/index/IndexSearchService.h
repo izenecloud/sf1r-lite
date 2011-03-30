@@ -5,6 +5,7 @@
 
 #include <common/sf1_serialization_types.h>
 #include <common/type_defs.h>
+#include <common/Status.h>
 
 #include <configuration-manager/SiaConfig.h>
 
@@ -28,6 +29,8 @@ public:
     bool getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem);
 
     bool getInternalDocumentId(const izenelib::util::UString& scdDocumentId, uint32_t& internalId);
+
+    bool getIndexStatus(Status& status);
 
 };
 

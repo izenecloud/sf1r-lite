@@ -34,15 +34,17 @@
 #include <algorithm>
 #include <functional>
 
-namespace sf1r {
+namespace sf1r
+{
 using driver::Keys;
 using namespace izenelib::driver;
 
-namespace detail {
+namespace detail
+{
 struct DocumentsSearchKeywordsLogger
 {
     DocumentsSearchKeywordsLogger()
-    : start_(boost::posix_time::microsec_clock::local_time())
+            : start_(boost::posix_time::microsec_clock::local_time())
     {}
 
     void log(const KeywordSearchActionItem& actionItem,
@@ -60,20 +62,18 @@ extern int TOP_K_NUM;
 DocumentsSearchHandler::DocumentsSearchHandler(
     ::izenelib::driver::Request& request,
     ::izenelib::driver::Response& response,
-    IndexSearchService* indexSearchService,
-    MiningSearchService* miningSearchService,
-    const IndexBundleSchema& indexSchema
-    )
-: request_(request), 
-  response_(response), 
-  indexSearchService_(indexSearchService),
-  miningSearchService_(miningSearchService), 
-  indexSchema_(indexSchema),
-  actionItem_()
+    const CollectionHandler& collectionHandler
+)
+        : request_(request),
+        response_(response),
+        indexSearchService_(collectionHandler.indexSearchService_),
+        miningSearchService_(collectionHandler.miningSearchService_),
+        indexSchema_(collectionHandler.indexSchema_),
+        actionItem_()
 {
     actionItem_.env_.encodingType_ = "UTF-8";
     actionItem_.env_.ipAddress_ = request.header()[Keys::remote_ip].getString();
-    actionItem_.collectionName_ = asString(request[Keys::collection]);	
+    actionItem_.collectionName_ = asString(request[Keys::collection]);
 }
 
 void DocumentsSearchHandler::search()
@@ -86,7 +86,7 @@ void DocumentsSearchHandler::search()
         int startOffset = (actionItem_.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
 
         if (actionItem_.env_.taxonomyLabel_.empty() &&
-            actionItem_.env_.nameEntityItem_.empty())
+                actionItem_.env_.nameEntityItem_.empty())
         {
             // initialize before search to record start time.
             detail::DocumentsSearchKeywordsLogger keywordsLogger;
@@ -107,7 +107,7 @@ void DocumentsSearchHandler::search()
             catch (const std::exception& e)
             {
                 DLOG(ERROR) << "[documents/search] Failed to log keywords: "
-                            << e.what() << std::endl;
+                << e.what() << std::endl;
             }
         }
         else
@@ -116,7 +116,7 @@ void DocumentsSearchHandler::search()
 
             // Page Info is used to get raw text for documents with the
             // specified label.
-            
+
             unsigned start = actionItem_.pageInfo_.start_ - startOffset;
             unsigned count = actionItem_.pageInfo_.count_;
 
@@ -133,20 +133,20 @@ void DocumentsSearchHandler::search()
                 if (!actionItem_.env_.taxonomyLabel_.empty())
                 {
                     totalCount = getDocumentIdListInLabel(
-                        searchResult,
-                        start,
-                        count,
-                        getActionItem.idList_
-                    );
+                                     searchResult,
+                                     start,
+                                     count,
+                                     getActionItem.idList_
+                                 );
                 }
                 else // !actionItem_.env_.nameEntityItem_.empty()
                 {
                     totalCount = getDocumentIdListInNameEntityItem(
-                        searchResult,
-                        start,
-                        count,
-                        getActionItem.idList_
-                    );
+                                     searchResult,
+                                     start,
+                                     count,
+                                     getActionItem.idList_
+                                 );
                 }
 
                 if (!getActionItem.idList_.empty())
@@ -156,7 +156,7 @@ void DocumentsSearchHandler::search()
                         actionItem_.languageAnalyzerInfo_;
                     getActionItem.collectionName_ = actionItem_.collectionName_;
                     getActionItem.displayPropertyList_
-                        = actionItem_.displayPropertyList_;
+                    = actionItem_.displayPropertyList_;
 
                     if (doGet(getActionItem, rawTextResult))
                     {
@@ -265,8 +265,8 @@ bool DocumentsSearchHandler::doGet(
 )
 {
     bool requestSent = indexSearchService_->getDocumentsByIds(
-        getActionItem, rawTextResult
-    );
+                           getActionItem, rawTextResult
+                       );
 
     if (!requestSent)
     {
@@ -401,7 +401,7 @@ bool DocumentsSearchHandler::doSearch(
 
     // Return analyzer result even when result validation fails.
     if (returnAnalyzerResult_ &&
-        searchResult.analyzedQuery_.size() == actionItem_.searchPropertyList_.size())
+            searchResult.analyzedQuery_.size() == actionItem_.searchPropertyList_.size())
     {
         std::string convertBuffer;
         Value& analyzerResult = response_[Keys::analyzer_result];
@@ -428,20 +428,20 @@ bool DocumentsSearchHandler::doSearch(
 //        );
 //        QueryCorrectionSubmanager::getInstance().getRefinedQuery(
 //            actionItem_.collectionName_,
-//            queryUString,           
+//            queryUString,
 //            actionItem_.refinedQueryString_
 //        );
 //    }
 
-     if (miningSearchService_)
-     {
-         if (!miningSearchService_->getSearchResult(searchResult))
-         {
-             response_.addWarning("Failed to get mining result.");
-             // render without mining result
-             return false;
-         }
-     }
+    if (miningSearchService_)
+    {
+        if (!miningSearchService_->getSearchResult(searchResult))
+        {
+            response_.addWarning("Failed to get mining result.");
+            // render without mining result
+            return false;
+        }
+    }
 
     return true;
 }
@@ -463,8 +463,8 @@ bool DocumentsSearchHandler::validateSearchResult(
 
     typedef std::vector<DisplayProperty>::const_iterator iterator;
     for (iterator it = actionItem_.displayPropertyList_.begin(),
-               itEnd = actionItem_.displayPropertyList_.end();
-         it != itEnd; ++it)
+            itEnd = actionItem_.displayPropertyList_.end();
+            it != itEnd; ++it)
     {
         if (it->isSummaryOn_)
         {
@@ -480,12 +480,12 @@ bool DocumentsSearchHandler::validateSearchResult(
     if ( !validateTextList(siaResult.fullTextOfDocumentInPage_,
                            siaResult.count_,
                            displayPropertySize) ||
-         !validateTextList(siaResult.snippetTextOfDocumentInPage_,
-                           siaResult.count_,
-                           displayPropertySize) ||
-         !validateTextList(siaResult.rawTextOfSummaryInPage_,
-                           siaResult.count_,
-                           summaryPropertySize))
+            !validateTextList(siaResult.snippetTextOfDocumentInPage_,
+                              siaResult.count_,
+                              displayPropertySize) ||
+            !validateTextList(siaResult.rawTextOfSummaryInPage_,
+                              siaResult.count_,
+                              summaryPropertySize))
     {
         const bool kMalformedSearchResult = false;
         BOOST_ASSERT(kMalformedSearchResult);
@@ -536,7 +536,7 @@ bool DocumentsSearchHandler::validateTextList(
 //         response_.addWarning(miaResult.error_);
 //         return false;
 //     }
-// 
+//
 //     return true;
 // }
 
@@ -577,7 +577,7 @@ void DocumentsSearchHandler::renderMiningResult(
 //             miaResult,
 //             response_[Keys::popular_queries]
 //         );
-// 
+//
 //         renderer_.renderRealTimeQueries(
 //             miaResult,
 //             response_[Keys::realtime_queries]
@@ -592,7 +592,7 @@ void DocumentsSearchHandler::renderMiningResult(
             miaResult,
             response_[Keys::name_entity]
         );
-        
+
         renderer_.renderFaceted(
             miaResult,
             response_[Keys::faceted]
@@ -616,13 +616,13 @@ void DocumentsSearchHandler::addAclFilters()
 {
     PropertyConfig config;
     bool hasAclAllow = getPropertyConfig(indexSchema_, "ACL_ALLOW", config)
-                             && config.isIndex()
-                             && config.getIsFilter()
-                             && config.getIsMultiValue();
+                       && config.isIndex()
+                       && config.getIsFilter()
+                       && config.getIsMultiValue();
     bool hasAclDeny = getPropertyConfig(indexSchema_, "ACL_DENY", config)
-                            && config.isIndex()
-                            && config.getIsFilter()
-                            && config.getIsMultiValue();
+                      && config.isIndex()
+                      && config.getIsFilter()
+                      && config.getIsMultiValue();
 
     if (!hasAclAllow && !hasAclDeny)
     {
@@ -668,7 +668,8 @@ void DocumentsSearchHandler::addAclFilters()
     }
 }
 
-namespace detail {
+namespace detail
+{
 void DocumentsSearchKeywordsLogger::log(
     const KeywordSearchActionItem& actionItem,
     const KeywordSearchResult& searchResult,

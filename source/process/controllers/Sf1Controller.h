@@ -11,7 +11,8 @@
 
 #include "CollectionHandler.h"
 
-namespace sf1r {
+namespace sf1r
+{
 
 /**
  * @brief Base controller for all controllers

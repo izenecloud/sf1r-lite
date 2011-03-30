@@ -15,17 +15,21 @@ using namespace std;
 using namespace boost;
 using namespace boost::posix_time;
 
-namespace sf1r {
+namespace sf1r
+{
 
 using driver::Keys;
 using namespace izenelib::driver;
 std::string LogAnalysisController::parseSelect()
 {
     vector<string> results;
-    if (!nullValue(request()[Keys::select])) {
+    if (!nullValue(request()[Keys::select]))
+    {
         const Value::ArrayType* array = request()[Keys::select].getPtr<Value::ArrayType>();
-        if (array) {
-            for (std::size_t i = 0; i < array->size(); ++i) {
+        if (array)
+        {
+            for (std::size_t i = 0; i < array->size(); ++i)
+            {
                 std::string column = asString((*array)[i]);
                 boost::to_lower(column);
                 results.push_back(column);
@@ -39,11 +43,13 @@ std::string LogAnalysisController::parseOrder()
 {
     vector<string> results;
     OrderArrayParser orderArrayParser;
-    if (!nullValue(request()[Keys::sort])) {
+    if (!nullValue(request()[Keys::sort]))
+    {
         orderArrayParser.parse(request()[Keys::sort]);
-        for( vector<OrderParser>::const_iterator it = orderArrayParser.parsedOrders().begin();
-            it != orderArrayParser.parsedOrders().end(); it++ ) {
-                results.push_back( str_concat(it->property(), " ", it->ascendant() ? "ASC" : "DESC") );
+        for ( vector<OrderParser>::const_iterator it = orderArrayParser.parsedOrders().begin();
+                it != orderArrayParser.parsedOrders().end(); it++ )
+        {
+            results.push_back( str_concat(it->property(), " ", it->ascendant() ? "ASC" : "DESC") );
         }
     }
     return str_join(results, ",");
@@ -53,26 +59,34 @@ std::string LogAnalysisController::parseConditions()
 {
     vector<string> results;
     ConditionArrayParser conditonArrayParser;
-    if (!nullValue(request()[Keys::conditions])) {
+    if (!nullValue(request()[Keys::conditions]))
+    {
         conditonArrayParser.parse(request()[Keys::conditions]);
-        for( vector<ConditionParser>::const_iterator it = conditonArrayParser.parsedConditions().begin();
-            it != conditonArrayParser.parsedConditions().end(); it++ ) {
-                if( (it->op() == "=" || it->op() == "<"  || it->op() == ">" ||
-                    it->op() == "<>" || it->op() == ">=" || it->op() == "<=") && it->size() == 1 ) {
-                    results.push_back( str_concat(it->property(), it->op(), to_str((*it)(0))) );
-                } else if (it->op() == "between" && it->size() == 2 ) {
-                    stringstream ss;
-                    ss << it->property() << " between " << to_str((*it)(0)) << " and " << to_str((*it)(1));
-                    results.push_back( ss.str() );
-                } else if (it->op() == "in" && it->size() > 0 ) {
-                    stringstream ss;
-                    ss << it->property() << " in(";
-                    for(size_t i=0; i<it->size()-1; i++) {
-                        ss << to_str((*it)(i)) << ",";
-                    }
-                    ss <<  to_str((*it)(it->size()-1)) << ")";
-                    results.push_back(ss.str());
+        for ( vector<ConditionParser>::const_iterator it = conditonArrayParser.parsedConditions().begin();
+                it != conditonArrayParser.parsedConditions().end(); it++ )
+        {
+            if ( (it->op() == "=" || it->op() == "<"  || it->op() == ">" ||
+                    it->op() == "<>" || it->op() == ">=" || it->op() == "<=") && it->size() == 1 )
+            {
+                results.push_back( str_concat(it->property(), it->op(), to_str((*it)(0))) );
+            }
+            else if (it->op() == "between" && it->size() == 2 )
+            {
+                stringstream ss;
+                ss << it->property() << " between " << to_str((*it)(0)) << " and " << to_str((*it)(1));
+                results.push_back( ss.str() );
+            }
+            else if (it->op() == "in" && it->size() > 0 )
+            {
+                stringstream ss;
+                ss << it->property() << " in(";
+                for (size_t i=0; i<it->size()-1; i++)
+                {
+                    ss << to_str((*it)(i)) << ",";
                 }
+                ss <<  to_str((*it)(it->size()-1)) << ")";
+                results.push_back(ss.str());
+            }
         }
     }
     return str_join(results, " and ");
@@ -122,7 +136,8 @@ void LogAnalysisController::system_events()
     string order = parseOrder();
     vector<SystemEvent> results;
 
-    if( !SystemEvent::find(select, conditions, order, results) ) {
+    if ( !SystemEvent::find(select, conditions, order, results) )
+    {
         response().addError("[LogManager] Fail to process such a request");
         return;
     }
@@ -132,10 +147,10 @@ void LogAnalysisController::system_events()
     for (vector<SystemEvent>::iterator it = results.begin(); it != results.end(); it ++ )
     {
         Value& systemEvent = systemEvents();
-        if(it->hasLevel()) systemEvent[Keys::level] = it->getLevel();
-        if(it->hasSource()) systemEvent[Keys::source] = it->getSource();
-        if(it->hasContent()) systemEvent[Keys::content] = it->getContent();
-        if(it->hasTimeStamp()) systemEvent[Keys::timestamp] = to_simple_string(it->getTimeStamp());
+        if (it->hasLevel()) systemEvent[Keys::level] = it->getLevel();
+        if (it->hasSource()) systemEvent[Keys::source] = it->getSource();
+        if (it->hasContent()) systemEvent[Keys::content] = it->getContent();
+        if (it->hasTimeStamp()) systemEvent[Keys::timestamp] = to_simple_string(it->getTimeStamp());
     }
 }
 
@@ -161,7 +176,8 @@ void LogAnalysisController::user_queries()
     string order = parseOrder();
     vector<UserQuery> results;
 
-    if( !UserQuery::find(select, conditions, order, results) ) {
+    if ( !UserQuery::find(select, conditions, order, results) )
+    {
         response().addError("[LogManager] Fail to process such a request");
         return;
     }
@@ -171,14 +187,14 @@ void LogAnalysisController::user_queries()
     for ( vector<UserQuery>::iterator it = results.begin(); it != results.end(); it ++ )
     {
         Value& userQuery = userQueries();
-        if(it->hasQuery()) userQuery[Keys::query] = it->getQuery();
-        if(it->hasCollection()) userQuery[Keys::collection] = it->getCollection();
-        if(it->hasHitDocsNum()) userQuery[Keys::hit_docs_num] = it->getHitDocsNum();
-        if(it->hasPageStart()) userQuery[Keys::page_start] = it->getPageStart();
-        if(it->hasPageCount()) userQuery[Keys::page_count] = it->getPageCount();
-        if(it->hasSessionId()) userQuery[Keys::session_id] = it->getSessionId();
-        if(it->hasDuration()) userQuery[Keys::duration] = to_simple_string(it->getDuration());
-        if(it->hasTimeStamp()) userQuery[Keys::timestamp] = to_simple_string(it->getTimeStamp());
+        if (it->hasQuery()) userQuery[Keys::query] = it->getQuery();
+        if (it->hasCollection()) userQuery[Keys::collection] = it->getCollection();
+        if (it->hasHitDocsNum()) userQuery[Keys::hit_docs_num] = it->getHitDocsNum();
+        if (it->hasPageStart()) userQuery[Keys::page_start] = it->getPageStart();
+        if (it->hasPageCount()) userQuery[Keys::page_count] = it->getPageCount();
+        if (it->hasSessionId()) userQuery[Keys::session_id] = it->getSessionId();
+        if (it->hasDuration()) userQuery[Keys::duration] = to_simple_string(it->getDuration());
+        if (it->hasTimeStamp()) userQuery[Keys::timestamp] = to_simple_string(it->getTimeStamp());
     }
 }
 
@@ -187,7 +203,7 @@ void LogAnalysisController::user_queries()
  *
  * @section request
  *
- * The request format is identical with the response of \b user_queries. 
+ * The request format is identical with the response of \b user_queries.
  *
  * - @b user_queries (@c Array): Array of queries with following fields
  *   - @b query* (@c String): keywords.
@@ -287,6 +303,85 @@ void LogAnalysisController::inject_user_queries()
 
             queryLog.save();
         }
+    }
+}
+
+/**
+ * @brief Action \b delete_record_from_system_events.
+ *
+ * @section request
+ *
+ * - @b conditions (@c Array): Record deleted conditions. See driver::ConditionArrayParser.
+ *
+ * @section response
+ *
+ * - @b No extra fields.
+ *
+ * @section example
+ *
+ * Request
+ * @code
+ * {
+ *   "conditions"=>[
+        {"property":"timestamp", "operator":"range", "value":[1.0, 10.0]},
+        {"property":"level", "operator":"in", "value":["warn", "error"]}
+     ]
+ * }
+ * @endcode
+ *
+ */
+void LogAnalysisController::delete_record_from_system_events()
+{
+    string conditions = parseConditions();
+
+    if ( !SystemEvent::del_record(conditions) )
+    {
+        response().addError("[LogManager] Fail to process such a request");
+        return;
+    }
+}
+
+/**
+ * @brief Action \b delete_record_from_user_queries.
+ *
+ * @section request
+ *
+ * - @b conditions (@c Array): Record deleted conditions. See driver::ConditionArrayParser.
+ *
+ * @section response
+ *
+ * - @b No extra fields.
+ *
+ * @section example
+ *
+ * Request
+ * @code
+ * {
+ *   "conditions"=>[
+        {"property":"timestamp", "operator":"range", "value":[1.0, 10.0]},
+        {"property":"level", "operator":"in", "value":["warn", "error"]}
+     ]
+ * }
+ * @endcode
+ *
+ */
+void LogAnalysisController::delete_record_from_user_queries()
+{
+    string conditions = parseConditions();
+
+    if ( !UserQuery::del_record(conditions) )
+    {
+        response().addError("[LogManager] Fail to process such a request");
+        return;
+    }
+}
+
+void LogAnalysisController::delete_database()
+{
+    if (!sflog->del_database())
+    {
+        response().addError("[LogManager] Fail to process such a request");
+        return;
     }
 }
 

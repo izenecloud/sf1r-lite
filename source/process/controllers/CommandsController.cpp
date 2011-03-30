@@ -11,7 +11,8 @@
 
 #include <common/Keys.h>
 
-namespace sf1r {
+namespace sf1r
+{
 
 using driver::Keys;
 
@@ -61,7 +62,7 @@ void CommandsController::index()
     // 0 indicates no limit
     Value::UintType documentCount = asUint(request()[Keys::document_count]);
 
-    if(!SF1Config::get()->checkCollectionExist(collection_))
+    if (!SF1Config::get()->checkCollectionExist(collection_))
     {
         response().addError(
             "Failed to send command to given collection."
@@ -70,8 +71,8 @@ void CommandsController::index()
     }
     std::string bundleName = collection_ + "-index";
     IndexTaskService* indexService = static_cast<IndexTaskService*>(
-		CollectionManager::get()->getOSGILauncher().getService(bundleName, "IndexTaskService"));
-    if(!indexService)
+                                         CollectionManager::get()->getOSGILauncher().getService(bundleName, "IndexTaskService"));
+    if (!indexService)
     {
         response().addError(
             "Failed to send command to given collection."
@@ -96,7 +97,7 @@ void CommandsController::index()
  */
 void CommandsController::index_recommend()
 {
-    
+
 }
 
 /**
@@ -123,7 +124,7 @@ void CommandsController::optimize_index()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
 
-    if(!SF1Config::get()->checkCollectionExist(collection_))
+    if (!SF1Config::get()->checkCollectionExist(collection_))
     {
         response().addError(
             "Failed to send command to given collection."
@@ -132,8 +133,8 @@ void CommandsController::optimize_index()
     }
     std::string bundleName = collection_ + "-index";
     IndexTaskService* indexService = static_cast<IndexTaskService*>(
-		CollectionManager::get()->getOSGILauncher().getService(bundleName, "TaskService"));
-    if(!indexService)
+                                         CollectionManager::get()->getOSGILauncher().getService(bundleName, "IndexTaskService"));
+    if (!indexService)
     {
         response().addError(
             "Failed to send command to given collection."
@@ -144,5 +145,5 @@ void CommandsController::optimize_index()
     JobScheduler::get()->addTask(task);
 }
 
-} // namespace sf1v5
+} // namespace sf1r
 

@@ -14,7 +14,8 @@
 #include <util/driver/Response.h>
 #include <util/driver/Value.h>
 
-namespace sf1r {
+namespace sf1r
+{
 
 /**
  * @brief CollectionHandler
@@ -59,7 +60,7 @@ public:
     {
         indexSchema_ = schema;
     }
-protected:
+public:
     std::string collection_;
 
     IndexSearchService* indexSearchService_;

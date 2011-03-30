@@ -31,6 +31,16 @@ public:
         return true;
     }
 
+    static bool delete_by_sql(const std::string & sql)
+    {
+        if( ! DbConnection::instance().exec(sql) )
+        {
+            return false;
+        }
+        return true;
+    }
+
+
     /// Save record into a map
     virtual void save( std::map<std::string, std::string> & ) = 0;
 
@@ -123,6 +133,29 @@ static bool find(const std::string & select,
     return false;
 }
 
+template <typename DbRecordType >
+static bool del_record(const std::string & conditions)
+{
+    std::stringstream sql;
+
+    sql << "delete ";
+    sql << " from " << DbRecordType::TableName ;
+
+    if(!conditions.empty())
+    {
+        sql << " where " << conditions;
+    }
+    sql << ";";
+    std::cerr<< sql.str() << std::endl;
+
+    if( DbRecordType::delete_by_sql(sql.str()) == true && DbConnection::instance().exec("vacuum") == true)
+        return true;
+
+    return false;
+}
+
+
+
 #define DEFINE_DB_RECORD_COMMON_ROUTINES(ClassName) \
     static void createTable() { \
         ::sf1r::createTable<ClassName>(); \
@@ -137,6 +170,10 @@ static bool find(const std::string & select,
     \
     void save() { \
         ::sf1r::save(*this); \
+    }\
+    \
+    static bool del_record(const std::string & conditions) {\
+        return ::sf1r::del_record<ClassName>(conditions); \
     }
 
 

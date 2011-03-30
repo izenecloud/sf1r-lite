@@ -7,9 +7,7 @@
  */
 #include <common/inttypes.h> // docid_t
 
-#include <bundles/index/IndexSearchService.h>
-#include <bundles/index/IndexBundleConfiguration.h>
-#include <bundles/mining/MiningSearchService.h>
+#include "CollectionHandler.h"
 
 #include <common/renderers/DocumentsRenderer.h>
 
@@ -23,7 +21,8 @@
 #include <vector>
 #include <string>
 
-namespace sf1r {
+namespace sf1r
+{
 
 class DocumentsSearchHandler
 {
@@ -33,10 +32,8 @@ public:
     DocumentsSearchHandler(
         ::izenelib::driver::Request& request,
         ::izenelib::driver::Response& response,
-        IndexSearchService* indexSearchService,
-        MiningSearchService* miningSearchService,
-        const IndexBundleSchema& indexSchema
-        );
+        const CollectionHandler& collectionHandler
+    );
 
     /// @internal
     /// @brief handler documents/search

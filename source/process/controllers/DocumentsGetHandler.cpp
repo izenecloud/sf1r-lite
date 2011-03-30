@@ -17,7 +17,8 @@
 
 #include <util/swap.h>
 
-namespace sf1r {
+namespace sf1r
+{
 
 using driver::Keys;
 
@@ -26,20 +27,17 @@ const std::size_t DocumentsGetHandler::kMaxSimilarDocumentCount = 200;
 DocumentsGetHandler::DocumentsGetHandler(
     ::izenelib::driver::Request& request,
     ::izenelib::driver::Response& response,
-    IndexSearchService* indexSearchService,
-    MiningSearchService* miningSearchService,
-    IndexBundleSchema& indexSchema
-    )
-: request_(request), 
-  response_(response), 
-  indexSearchService_(indexSearchService),
-  miningSearchService_(miningSearchService), 
-  indexSchema_(indexSchema),
-  actionItem_()
+    const CollectionHandler& collectionHandler
+)
+        : request_(request),
+        response_(response),
+        indexSearchService_(collectionHandler.indexSearchService_),
+        miningSearchService_(collectionHandler.miningSearchService_),
+        indexSchema_(collectionHandler.indexSchema_),
+        actionItem_()
 {
     actionItem_.env_.encodingType_ = "UTF-8";
     actionItem_.env_.ipAddress_ = request.header()[Keys::remote_ip].getString();
-    actionItem_.collectionName_ = asString(request[Keys::collection]);	
 }
 
 void DocumentsGetHandler::get()
@@ -56,16 +54,16 @@ void DocumentsGetHandler::get()
 void DocumentsGetHandler::similar_to()
 {
     if (parseSelect() &&
-        parseSearchSession() &&
-        parsePageInfo() &&
-        parseDocumentId(request_[Keys::similar_to]))
+            parseSearchSession() &&
+            parsePageInfo() &&
+            parseDocumentId(request_[Keys::similar_to]))
     {
         std::vector<std::pair<docid_t, float> > similarDocuments;
         bool success = miningSearchService_->getSimilarDocIdList(
-            internalId_,
-            kMaxSimilarDocumentCount,
-            similarDocuments
-        );
+                           internalId_,
+                           kMaxSimilarDocumentCount,
+                           similarDocuments
+                       );
 
         // TODO, cache similarDocuments ?
 
@@ -98,15 +96,15 @@ void DocumentsGetHandler::similar_to()
 void DocumentsGetHandler::duplicate_with()
 {
     if (parseSelect() &&
-        parseSearchSession() &&
-        parsePageInfo() &&
-        parseDocumentId(request_[Keys::duplicate_with]))
+            parseSearchSession() &&
+            parsePageInfo() &&
+            parseDocumentId(request_[Keys::duplicate_with]))
     {
         std::vector<uint32_t> duplicateDocuments;
         bool success = miningSearchService_->getDuplicateDocIdList(
-            internalId_,
-            duplicateDocuments
-        );
+                           internalId_,
+                           duplicateDocuments
+                       );
 
         // TODO, cache duplicateDocuments ?
 
@@ -139,8 +137,8 @@ void DocumentsGetHandler::duplicate_with()
 void DocumentsGetHandler::similar_to_image()
 {
     if (parseSelect() &&
-        parseSearchSession() &&
-        parsePageInfo())
+            parseSearchSession() &&
+            parsePageInfo())
     {
         const std::string imageURI = asString(request_[Keys::similar_to_image]);
         if (imageURI.empty())
@@ -151,9 +149,9 @@ void DocumentsGetHandler::similar_to_image()
 
         SimilarImageDocIdList similarDocuments;
         bool success = miningSearchService_->getSimilarImageDocIdList(
-            imageURI,
-            similarDocuments
-        );
+                           imageURI,
+                           similarDocuments
+                       );
 
         // TODO, cache similarDocuments ?
 
@@ -287,8 +285,8 @@ bool DocumentsGetHandler::parseDocumentId(const Value& inputId)
         scdDocumentId, izenelib::util::UString::UTF_8
     );
     bool success = indexSearchService_->getInternalDocumentId(
-        unicodeScdDocuemntId, internalId_
-    );
+                       unicodeScdDocuemntId, internalId_
+                   );
 
     if (!success)
     {
@@ -338,7 +336,7 @@ bool DocumentsGetHandler::getIdListFromConditions()
     const ConditionParser& theOnlyCondition =
         conditionsParser.parsedConditions(0);
     if (theOnlyCondition.op() != "in" &&
-        theOnlyCondition.op() != "=")
+            theOnlyCondition.op() != "=")
     {
         response_.addError(kCodnitionErrorMessage);
         return false;
@@ -347,7 +345,7 @@ bool DocumentsGetHandler::getIdListFromConditions()
     if (theOnlyCondition.property() == Keys::_id)
     {
         for (std::size_t i = 0;
-             i < theOnlyCondition.size(); ++i)
+                i < theOnlyCondition.size(); ++i)
         {
             actionItem_.idList_.push_back(asUint(theOnlyCondition(i)));
         }
@@ -356,7 +354,7 @@ bool DocumentsGetHandler::getIdListFromConditions()
     {
         std::vector<std::string> ids;
         for (std::size_t i = 0;
-             i < theOnlyCondition.size(); ++i)
+                i < theOnlyCondition.size(); ++i)
         {
             actionItem_.docIdList_.push_back(asString(theOnlyCondition(i)));
         }
@@ -419,7 +417,7 @@ void DocumentsGetHandler::aclFilter()
     }
 
     if ((*resources)[0].hasKey("ACL_ALLOW")
-        || (*resources)[0].hasKey("ACL_DENY"))
+            || (*resources)[0].hasKey("ACL_DENY"))
     {
         // document level ACL is enabled
         Value::ArrayType filteredResult;

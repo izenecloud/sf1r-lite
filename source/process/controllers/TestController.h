@@ -8,7 +8,8 @@
 
 #include "Sf1Controller.h"
 
-namespace sf1r {
+namespace sf1r
+{
 
 /// @addtogroup controllers
 /// @{

@@ -47,6 +47,9 @@ namespace sf1r {
              **/
             bool init(const std::string& logPath, const std::string& language = "english");
 
+            /// delete whole database file
+            bool del_database();
+
             #define LOG_info  LOG_INFO
             #define LOG_error LOG_ERR
             #define LOG_warn  LOG_WARN
@@ -98,6 +101,9 @@ namespace sf1r {
             void writeEventLog( LOG_TYPE type, int nStatus, int nErrCode, va_list & vlist );
 
             void writeEventLog( LOG_TYPE type, int nStatus, const char* msg, va_list & vlist);
+
+        private:
+            string logPath;
 
     };
 

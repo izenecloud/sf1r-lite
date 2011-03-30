@@ -1,10 +1,11 @@
-#ifndef BA_PROCESS_CONTROLLERS_QUERY_CORRECTION_CONTROLLER_H
-#define BA_PROCESS_CONTROLLERS_QUERY_CORRECTION_CONTROLLER_H
+#ifndef PROCESS_CONTROLLERS_QUERY_CORRECTION_CONTROLLER_H
+#define PROCESS_CONTROLLERS_QUERY_CORRECTION_CONTROLLER_H
 
 
 #include "Sf1Controller.h"
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
-namespace sf1r {
+namespace sf1r
+{
 
 /// @addtogroup controllers
 /// @{
@@ -24,4 +25,4 @@ public:
 
 } // namespace sf1r
 
-#endif // BA_PROCESS_CONTROLLERS_QUERY_CORRECTION_CONTROLLER_H
+#endif // PROCESS_CONTROLLERS_QUERY_CORRECTION_CONTROLLER_H

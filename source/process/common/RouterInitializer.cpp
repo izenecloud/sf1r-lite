@@ -19,15 +19,148 @@
 #include <controllers/LogAnalysisController.h>
 #include <controllers/AutoFillController.h>
 #include <controllers/QueryCorrectionController.h>
+#include <controllers/KeywordsController.h>
+#include <controllers/StatusController.h>
+#include <controllers/FacetedController.h>
+#include <controllers/TopicController.h>
 
 
-namespace sf1r {
+namespace sf1r
+{
 ///////////////////////////////////////////////////////
 // Only initialize collection irrelevant controllers
 ///////////////////////////////////////////////////////
 
 void initializeDriverRouter(::izenelib::driver::Router& router, bool enableTest)
 {
+
+    {
+        FacetedController faceted;
+        const std::string controllerName("faceted");
+        typedef ::izenelib::driver::ActionHandler<FacetedController> handler_type;
+        typedef std::auto_ptr<handler_type> handler_ptr;
+
+        handler_ptr clickHandler(
+            new handler_type(
+                faceted,
+                &FacetedController::click
+            )
+        );
+
+        router.map(
+            controllerName,
+            "click",
+            clickHandler.get()
+        );
+        clickHandler.release();
+
+        handler_ptr get_ontologyHandler(
+            new handler_type(
+                faceted,
+                &FacetedController::get_ontology
+            )
+        );
+
+        router.map(
+            controllerName,
+            "get_ontology",
+            get_ontologyHandler.get()
+        );
+        get_ontologyHandler.release();
+
+        handler_ptr get_repHandler(
+            new handler_type(
+                faceted,
+                &FacetedController::get_rep
+            )
+        );
+
+        router.map(
+            controllerName,
+            "get_rep",
+            get_repHandler.get()
+        );
+        get_repHandler.release();
+
+        handler_ptr get_static_repHandler(
+            new handler_type(
+                faceted,
+                &FacetedController::get_static_rep
+            )
+        );
+
+        router.map(
+            controllerName,
+            "get_static_rep",
+            get_static_repHandler.get()
+        );
+        get_static_repHandler.release();
+
+        handler_ptr manmadeHandler(
+            new handler_type(
+                faceted,
+                &FacetedController::manmade
+            )
+        );
+
+        router.map(
+            controllerName,
+            "manmade",
+            manmadeHandler.get()
+        );
+        manmadeHandler.release();
+
+        handler_ptr set_ontologyHandler(
+            new handler_type(
+                faceted,
+                &FacetedController::set_ontology
+            )
+        );
+
+        router.map(
+            controllerName,
+            "set_ontology",
+            set_ontologyHandler.get()
+        );
+        set_ontologyHandler.release();
+
+        handler_ptr static_clickHandler(
+            new handler_type(
+                faceted,
+                &FacetedController::static_click
+            )
+        );
+
+        router.map(
+            controllerName,
+            "static_click",
+            static_clickHandler.get()
+        );
+        static_clickHandler.release();
+    }
+
+    {
+        TopicController topic;
+        const std::string controllerName("topic");
+        typedef ::izenelib::driver::ActionHandler<TopicController> handler_type;
+        typedef std::auto_ptr<handler_type> handler_ptr;
+
+        handler_ptr get_similarHandler(
+            new handler_type(
+                topic,
+                &TopicController::get_similar
+            )
+        );
+
+        router.map(
+            controllerName,
+            "get_similar",
+            get_similarHandler.get()
+        );
+        get_similarHandler.release();
+    }
+
+
     {
         QueryCorrectionController query_correction;
         const std::string controllerName("query_correction");
@@ -337,7 +470,49 @@ void initializeDriverRouter(::izenelib::driver::Router& router, bool enableTest)
         updateHandler.release();
     }
 
+    {
+        StatusController status;
+        const std::string controllerName("status");
+        typedef ::izenelib::driver::ActionHandler<StatusController> handler_type;
+        typedef std::auto_ptr<handler_type> handler_ptr;
+
+        handler_ptr indexHandler(
+            new handler_type(
+                status,
+                &StatusController::index
+            )
+        );
+
+        router.map(
+            controllerName,
+            "index",
+            indexHandler.get()
+        );
+        indexHandler.release();
+    }
+
+    {
+        KeywordsController keywords;
+        const std::string controllerName("keywords");
+        typedef ::izenelib::driver::ActionHandler<KeywordsController> handler_type;
+        typedef std::auto_ptr<handler_type> handler_ptr;
+
+        handler_ptr indexHandler(
+            new handler_type(
+                keywords,
+                &KeywordsController::index
+            )
+        );
+
+        router.map(
+            controllerName,
+            "index",
+            indexHandler.get()
+        );
+        indexHandler.release();
+    }
+
 }
 
-} // namespace sf1v5
+} // namespace sf1r
 

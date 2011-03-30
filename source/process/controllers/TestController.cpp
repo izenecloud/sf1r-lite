@@ -9,7 +9,8 @@
 
 #include <unistd.h>
 
-namespace sf1r {
+namespace sf1r
+{
 
 using driver::Keys;
 

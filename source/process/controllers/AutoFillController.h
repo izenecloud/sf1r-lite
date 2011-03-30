@@ -1,13 +1,14 @@
-#ifndef BA_PROCESS_CONTROLLERS_AUTO_FILL_CONTROLLER_H
-#define BA_PROCESS_CONTROLLERS_AUTO_FILL_CONTROLLER_H
+#ifndef PROCESS_CONTROLLERS_AUTO_FILL_CONTROLLER_H
+#define PROCESS_CONTROLLERS_AUTO_FILL_CONTROLLER_H
 /**
- * @file ba-process/controllers/AutoFillController.h
+ * @file process/controllers/AutoFillController.h
  * @author Ian Yang
  * @date Created <2010-05-31 14:11:35>
  */
 #include "Sf1Controller.h"
 
-namespace sf1r {
+namespace sf1r
+{
 
 /// @addtogroup controllers
 /// @{
@@ -20,10 +21,12 @@ namespace sf1r {
 class AutoFillController : public Sf1Controller
 {
 public:
-    enum {
+    enum
+    {
         kDefaultCount = 8       /**< Default count of result */
     };
-    enum {
+    enum
+    {
         kMaxCount = 100         /**< Max count of result */
     };
 
@@ -34,4 +37,4 @@ public:
 
 } // namespace sf1r
 
-#endif // BA_PROCESS_CONTROLLERS_AUTO_FILL_CONTROLLER_H
+#endif // PROCESS_CONTROLLERS_AUTO_FILL_CONTROLLER_H
