@@ -32,8 +32,6 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND AND Boost_SERIALIZATION_FOUND
 
   ADD_EXECUTABLE(t_configuration_manager
     Runner.cpp
-    t_BrokerAgentConfig.cpp
-    t_CollectionMeta.cpp
     t_CollectionPath.cpp
     t_PropertyConfig.cpp
     t_ConfigurationTool.cpp

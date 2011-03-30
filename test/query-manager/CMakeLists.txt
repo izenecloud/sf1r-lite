@@ -24,9 +24,6 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     t_QueryParser.cpp
     t_SearchKeywordOperation.cpp
     )
-  ADD_EXECUTABLE(t_query_manager_crash
-    t_QueryParserCrash.cpp
-    )
   TARGET_LINK_LIBRARIES(t_query_manager 
       ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
       sf1r_log_manager
@@ -51,25 +48,6 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
       ${TokyoCabinet_LIBRARIES}
       ${Glog_LIBRARIES}
       ${sqlite3_LIBRARIES}
-      )
-
-  TARGET_LINK_LIBRARIES(t_query_manager_crash
-      sf1r_log_manager
-      sf1r_query_manager
-      sf1r_la_manager
-      sf1r_configuration_manager
-      sf1r_common
-      ${ilplib_LIBRARIES}
-      ${idmlib_LIBRARIES}
-      ${imllib_LIBRARIES}
-      ${wisekma_LIBRARIES}
-      ${izenecma_LIBRARIES}
-      ${izenelib_LIBRARIES}
-
-      ${Boost_LIBRARIES}
-      ${Glog_LIBRARIES}
-      ${sqlite3_LIBRARIES}
-      ${xml2_LIBRARIES}
       )
 
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
