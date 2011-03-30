@@ -8,7 +8,8 @@
  * @brief
  */
 
-namespace sf1r {
+namespace sf1r
+{
 class TaxonomyRep;
 class TaxonomyInfo;
 class TaxonomyGenerationSubManager;

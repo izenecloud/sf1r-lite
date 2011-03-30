@@ -36,8 +36,8 @@ public:
 
 
 public:
-    
-    
+
+
     /**
      * @brief Get the ranked query recommendation list for a given query. It will also consider the result of taxonomy generation.
      * @param queryStr the submitted query
@@ -45,11 +45,11 @@ public:
      * @param maxNum the max number of recommended items
      * @param queryList the resulted recommended items
      */
-    void getRecommendQuery(const izenelib::util::UString& queryStr, 
-            const std::vector<docid_t>& topDocIdList, unsigned int maxNum,
-                            QueryRecommendRep& queryList);
+    void getRecommendQuery(const izenelib::util::UString& queryStr,
+                           const std::vector<docid_t>& topDocIdList, unsigned int maxNum,
+                           QueryRecommendRep& queryList);
 
-                            
+
     /**
      * @brief Get the ranked query recommendation list for a given query with the session information
      * @param session the session identifier
@@ -59,13 +59,13 @@ public:
      * @param queryList the resulted recommended items
      */
     bool getReminderQuery(std::vector<izenelib::util::UString>& popularQueries, std::vector<izenelib::util::UString>& realTimeQueries);
-                            
 
-    
+
+
 private:
 
     boost::shared_ptr<RecommendManager> rmDb_;
-    
+
 
 };
 

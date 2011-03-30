@@ -27,42 +27,44 @@
 #include <idmlib/util/idm_analyzer.h>
 #include <idmlib/concept-clustering/algorithm.hpp>
 
-namespace sf1r{
-    
-class TaxonomyGenerationSubManager : public boost::noncopyable {
+namespace sf1r
+{
+
+class TaxonomyGenerationSubManager : public boost::noncopyable
+{
 
 
-    
+
 public:
     TaxonomyGenerationSubManager(
-            const TaxonomyPara& taxonomy_param,
-            const boost::shared_ptr<LabelManager>& labelManager,
-            idmlib::util::IDMAnalyzer* analyzer);
+        const TaxonomyPara& taxonomy_param,
+        const boost::shared_ptr<LabelManager>& labelManager,
+        idmlib::util::IDMAnalyzer* analyzer);
     ~TaxonomyGenerationSubManager();
-    
+
 public:
     /// @brief Given a query, get the query specific taxonomy information to display.
-    /// 
+    ///
     /// @param docIdList The top doc id list to be taxonomy.
     /// @param queryTermIdList The query term id list, used for label ranking.
     /// @param docQueryPosition Query term position in doc id list.
     /// @param idManager The idManager, to convert id to ustring.
     /// @param taxonomyRep The output parameter.
-    /// 
+    ///
     /// @return If succ.
     bool getQuerySpecificTaxonomyInfo(
-            const std::vector<docid_t>& docIdList,
-            const izenelib::util::UString& queryStr,
-            uint32_t totalCount,
-            uint32_t numberFromSia,
-            TaxonomyRep& taxonomyRep
-            ,ne_result_list_type& neList);
+        const std::vector<docid_t>& docIdList,
+        const izenelib::util::UString& queryStr,
+        uint32_t totalCount,
+        uint32_t numberFromSia,
+        TaxonomyRep& taxonomyRep
+        ,ne_result_list_type& neList);
 
-    
+
 private:
-    
+
     void getNEList_(std::vector<std::pair<labelid_t, docid_t> >& inputPairList
-    , const std::vector<uint32_t>& docIdList, uint32_t totalDocCount,uint32_t max, std::vector<ne_item_type >& neList);
+                    , const std::vector<uint32_t>& docIdList, uint32_t totalDocCount,uint32_t max, std::vector<ne_item_type >& neList);
 
 private:
     TaxonomyPara taxonomy_param_;
@@ -79,7 +81,7 @@ private:
     static const unsigned int default_perLevelNum_=8;
     static const unsigned int default_candLabelNum_=250;
 
-        
+
 };
 }
 

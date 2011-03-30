@@ -17,33 +17,34 @@
 NS_FACETED_BEGIN
 
 
-class OntologyNodeValue {
+class OntologyNodeValue
+{
 
-typedef std::list<CategoryIdType> ChildrenType;
+    typedef std::list<CategoryIdType> ChildrenType;
 public:
-  OntologyNodeValue():children(), parent_id(0), name()
-  {
-  }
-  
-  OntologyNodeValue(CategoryIdType par_parent_id, const CategoryNameType& par_name):children(), parent_id(par_parent_id), name(par_name)
-  {
-  }
-  
-  friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int version)
-  {
-      ar & children & parent_id & name & rule;
-  }
-  
-  
+    OntologyNodeValue():children(), parent_id(0), name()
+    {
+    }
+
+    OntologyNodeValue(CategoryIdType par_parent_id, const CategoryNameType& par_name):children(), parent_id(par_parent_id), name(par_name)
+    {
+    }
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & children & parent_id & name & rule;
+    }
+
+
 public:
-  ChildrenType children;
-  CategoryIdType parent_id;
-  CategoryNameType name;
-  OntologyNodeRule rule;
-  
-    
+    ChildrenType children;
+    CategoryIdType parent_id;
+    CategoryNameType name;
+    OntologyNodeRule rule;
+
+
 };
 NS_FACETED_END
-#endif 
+#endif

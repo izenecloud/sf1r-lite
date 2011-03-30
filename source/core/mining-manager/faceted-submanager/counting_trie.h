@@ -16,22 +16,23 @@
 NS_FACETED_BEGIN
 
 
-class CountingTrie {
+class CountingTrie
+{
 
-typedef uint32_t KeyType;
-typedef uint32_t TermIdType;
-typedef uint32_t ValueType;
+    typedef uint32_t KeyType;
+    typedef uint32_t TermIdType;
+    typedef uint32_t ValueType;
 public:
-  CountingTrie();
-  void Append(const std::vector<TermIdType>& terms);
-  ValueType Count(const std::vector<TermIdType>& terms);
-  
-  
+    CountingTrie();
+    void Append(const std::vector<TermIdType>& terms);
+    ValueType Count(const std::vector<TermIdType>& terms);
+
+
 private:
-  izenelib::am::rde_hash<std::pair<KeyType,TermIdType>, std::pair<KeyType,ValueType> > trie_;
-  KeyType key_;
-  
-    
+    izenelib::am::rde_hash<std::pair<KeyType,TermIdType>, std::pair<KeyType,ValueType> > trie_;
+    KeyType key_;
+
+
 };
 NS_FACETED_END
-#endif 
+#endif

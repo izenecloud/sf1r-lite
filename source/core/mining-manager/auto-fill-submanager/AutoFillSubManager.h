@@ -39,10 +39,10 @@ class AutoFillSubManager: public boost::noncopyable
 {
     typedef std::pair<count_t, izenelib::util::UString> ItemValueType;
     typedef WordCompletionTable<count_t> Trie_;
-    
+
 public:
-  explicit AutoFillSubManager();
-  ~AutoFillSubManager();
+    explicit AutoFillSubManager();
+    ~AutoFillSubManager();
 
 private:
     std::string fillSupportPath_;
@@ -59,25 +59,25 @@ private:
     boost::shared_mutex mutex_;
     idmlib::util::DirectorySwitcher* dir_switcher_;
 public:
-    
+
     static AutoFillSubManager* get()
     {
-      return izenelib::util::Singleton<AutoFillSubManager>::get();
+        return izenelib::util::Singleton<AutoFillSubManager>::get();
     }
-    
+
     bool Init(const std::string& fillSupportPath, uint32_t top=10, uint32_t queryUpdateTime=24);
 
-	   
+
     /**
      * @brief build the B-tree index for the collection and query log.
      * @param queryList The recent queries got from query log.
      */
     bool buildIndex(const std::list<std::pair<izenelib::util::UString, uint32_t> >& queryList,
-                     const std::vector<boost::shared_ptr<LabelManager> >& label_manager_list);
+                    const std::vector<boost::shared_ptr<LabelManager> >& label_manager_list);
 
-	bool buildIndex(const std::list<std::pair<izenelib::util::UString, uint32_t> >& queryList	);
-    
-	
+    bool buildIndex(const std::list<std::pair<izenelib::util::UString, uint32_t> >& queryList	);
+
+
     /**
      * @brief Get the autocompletion list for a give query.
      * @param query The given query from BA.
@@ -86,18 +86,18 @@ public:
     bool getAutoFillList(const izenelib::util::UString& query, std::vector<izenelib::util::UString>& list);
 
 private:
-	
+
 
     // worker for update the query log information.
 //     void updateLogWorker();
-// 
+//
 //     void updateRecentLog();
 
     void updateTrie(Trie_* trie, const izenelib::util::UString& key , const ItemValueType& value);
 
     void buildTrieItem(Trie_* trie, const izenelib::util::UString& key , uint32_t value);
     void buildTrieItem(Trie_* trie, const izenelib::util::UString& key, const ItemValueType& item);
-    
+
 };
 } // end - namespace sf1r
 #endif // _AUTO_FILL_SUBMANAGER_

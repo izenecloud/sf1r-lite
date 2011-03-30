@@ -8,19 +8,22 @@
 #include "JMSmoother.h"
 
 JMSmoother::JMSmoother(uint32_t docTermCount ,uint32_t collectionTermCount,
-		 double bkgCoefficient, double dirichletCoefficient):
-	  docTermCount_(docTermCount),collectionTermCount_(collectionTermCount)
-	 ,bkgCoefficient_(bkgCoefficient),dirichletCoefficient_(dirichletCoefficient){
-   }
-
-JMSmoother::~JMSmoother() {
-	// TODO Auto-generated destructor stub
+                       double bkgCoefficient, double dirichletCoefficient):
+        docTermCount_(docTermCount),collectionTermCount_(collectionTermCount)
+        ,bkgCoefficient_(bkgCoefficient),dirichletCoefficient_(dirichletCoefficient)
+{
 }
 
-double JMSmoother::computeSmoothedProb(uint32_t dtf,uint32_t qtf) {
-	// TODO Auto-generated destructor stub
-	double collectionProb=bkgCoefficient_* qtf/collectionTermCount_;
-	return dtf*(1-bkgCoefficient_)/docTermCount_+collectionProb;
+JMSmoother::~JMSmoother()
+{
+    // TODO Auto-generated destructor stub
+}
+
+double JMSmoother::computeSmoothedProb(uint32_t dtf,uint32_t qtf)
+{
+    // TODO Auto-generated destructor stub
+    double collectionProb=bkgCoefficient_* qtf/collectionTermCount_;
+    return dtf*(1-bkgCoefficient_)/docTermCount_+collectionProb;
 
 }
 

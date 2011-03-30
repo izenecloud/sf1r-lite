@@ -16,27 +16,28 @@
 NS_FACETED_BEGIN
 
 
-class OntologyNodeRule {
+class OntologyNodeRule
+{
 
 public:
-  OntologyNodeRule():labels()
-  {
-  }
-  
-  friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int version)
-  {
-      ar & labels & description;
-  }
-  
-  
+    OntologyNodeRule():labels()
+    {
+    }
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & labels & description;
+    }
+
+
 public:
-  std::vector<izenelib::util::UString> labels;
-  izenelib::util::UString description;
-  
-  
-    
+    std::vector<izenelib::util::UString> labels;
+    izenelib::util::UString description;
+
+
+
 };
 NS_FACETED_END
-#endif 
+#endif

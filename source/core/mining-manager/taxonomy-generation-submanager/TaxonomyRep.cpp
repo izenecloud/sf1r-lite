@@ -2,12 +2,14 @@
 #include <boost/foreach.hpp>
 using namespace sf1r;
 
-TaxonomyRep::TaxonomyRep():result_(), error_("") {
-    
+TaxonomyRep::TaxonomyRep():result_(), error_("")
+{
+
 }
 
-TaxonomyRep::~TaxonomyRep() {
-    
+TaxonomyRep::~TaxonomyRep()
+{
+
 }
 
 void TaxonomyRep::fill(KeywordSearchResult& searchResult)
@@ -16,7 +18,7 @@ void TaxonomyRep::fill(KeywordSearchResult& searchResult)
     searchResult.numOfTGDocs_.clear();
     searchResult.tgDocIdList_.clear();
     searchResult.taxonomyLevel_.clear();
-    if(error_ != "")
+    if (error_ != "")
     {
         searchResult.error_ += "[TG:"+error_+"]";
     }
@@ -32,7 +34,7 @@ void TaxonomyRep::fill_(KeywordSearchResult& searchResult, boost::shared_ptr<TgC
     searchResult.numOfTGDocs_.push_back( (cluster->docContain_).size() );
     searchResult.tgDocIdList_.push_back( cluster->docContain_ );
     searchResult.taxonomyLevel_.push_back(level);
-    if( (cluster->children_).size()>0)
+    if ( (cluster->children_).size()>0)
     {
         BOOST_FOREACH(boost::shared_ptr<TgClusterRep>& _cluster, cluster->children_)
         {

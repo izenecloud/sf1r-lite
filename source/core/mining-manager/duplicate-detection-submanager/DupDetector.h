@@ -17,7 +17,8 @@
 #include <boost/thread/mutex.hpp>
 //#include <wiselib/IntTypes.h>
 
-namespace sf1r{
+namespace sf1r
+{
 
 /**
  * @brief The interface of duplicate detection.
@@ -25,91 +26,92 @@ namespace sf1r{
  * aims to eliminate the duplicate and near-duplicate documents from the collection and
  * search result.
   */
-class DupDetector {
-  typedef izenelib::am::IntegerDynArray<uint64_t> Vector64;
-  typedef izenelib::am::IntegerDynArray<uint32_t> Vector32;
-  
-  typedef uint32_t FP_TYPE;
-  typedef izenelib::ir::FpIndex<1, FP_TYPE, 12> DupIndex;
-  typedef izenelib::am::IntegerDynArray<FP_TYPE> VectorFP;
-  
-public:
-	DupDetector(unsigned int collectionId, float threshold, const char* filenm="./dupd");
-	DupDetector(unsigned int collectionId, const char* filenm="./dupd");
-	~DupDetector();
-    
-	/**
-	 * @brief Perform an initialization process and load necessary data.
-	 */
-	//bool init();
+class DupDetector
+{
+    typedef izenelib::am::IntegerDynArray<uint64_t> Vector64;
+    typedef izenelib::am::IntegerDynArray<uint32_t> Vector32;
 
-	/**
-	 * @brief Get a unique document id list with duplicated ones excluded.
-	 */
-	bool getUniqueDocIdList(std::vector<unsigned int>& docIdList);
+    typedef uint32_t FP_TYPE;
+    typedef izenelib::ir::FpIndex<1, FP_TYPE, 12> DupIndex;
+    typedef izenelib::am::IntegerDynArray<FP_TYPE> VectorFP;
+
+public:
+    DupDetector(unsigned int collectionId, float threshold, const char* filenm="./dupd");
+    DupDetector(unsigned int collectionId, const char* filenm="./dupd");
+    ~DupDetector();
+
+    /**
+     * @brief Perform an initialization process and load necessary data.
+     */
+    //bool init();
+
+    /**
+     * @brief Get a unique document id list with duplicated ones excluded.
+     */
+    bool getUniqueDocIdList(std::vector<unsigned int>& docIdList);
 
     /**
      * @brief Get a duplicated document list to a given document.
      */
-	bool getDuplicatedDocIdList(unsigned int docId, std::vector<unsigned int>& docIdList);
+    bool getDuplicatedDocIdList(unsigned int docId, std::vector<unsigned int>& docIdList);
 
     /**
      * @brief Tell two documents belonging to the same collections are duplicated.
      */
-	bool isDuplicated( unsigned int docId1, unsigned int docId2);
+    bool isDuplicated( unsigned int docId1, unsigned int docId2);
 
     /**
      * @brief Conduct a duplicate detection analysis for a given collection.
      * After this function succeeds, we should be able to get intended results in getUniqueDocIdList(),
      * getDuplicatedDocIdList() and isDuplicated().
      */
-	bool runDuplicateDetectionAnalysis();
+    bool runDuplicateDetectionAnalysis();
 
     /**
      * @brief Whether need to analyze the collection.
      */
-	bool needToAnalyze();
+    bool needToAnalyze();
 
     /**
      * @brief Insert new documents to a collection
      */
-	bool insertDocuments(const std::vector<unsigned int>& docIdList,
-	        const std::vector<std::vector<unsigned int> >& documentList);
+    bool insertDocuments(const std::vector<unsigned int>& docIdList,
+                         const std::vector<std::vector<unsigned int> >& documentList);
 
     /**
      * @brief Insert new documents to a collection. If a document already exists, it is ignored.
      */
-	bool insertDocument(uint32_t docid, const std::vector<std::string >& term_list);
+    bool insertDocument(uint32_t docid, const std::vector<std::string >& term_list);
 
     /**
      * @brief Update contents of documents.
      */
-	bool updateDocument(uint32_t docid, const std::vector<std::string >& term_list);
+    bool updateDocument(uint32_t docid, const std::vector<std::string >& term_list);
 
     /**
      * @brief Remove documents from a collection. From now, those documents should be excluded in the result.
      */
-	bool removeDocument(unsigned int docid);
+    bool removeDocument(unsigned int docid);
 
     /**
      * @brief Get the collection id for which this detector is running;
      */
-	unsigned int getCollectionId() const;
+    unsigned int getCollectionId() const;
 
     /**
      * @brief prepare for insert operation.
      */
     inline void ready_for_insert()
     {
-      if (fp_index_)
-        fp_index_->ready_for_insert();
+        if (fp_index_)
+            fp_index_->ready_for_insert();
 
-      doc_num_ = fp_index_->doc_num();
+        doc_num_ = fp_index_->doc_num();
 
-      if (ndAlgo == NULL)
-        ndAlgo = new CharikarAlgo(nm_.c_str());
+        if (ndAlgo == NULL)
+            ndAlgo = new CharikarAlgo(nm_.c_str());
     }
-    
+
     /**
      * @brief Release allocated resource, including the  _docBitMap for the whole collection.
      */
@@ -120,48 +122,48 @@ public:
      */
     bool clear();
 
- protected:
+protected:
 
-    
+
 public:
-	/**
-	 * @brief The parameter, the algorithm to use, bloom filter could not be used on termId representation of a doc.
-	 * BRODER=0, CHARIKAR=1.
-	 */
-	static DUP_ALG _alg;
+    /**
+     * @brief The parameter, the algorithm to use, bloom filter could not be used on termId representation of a doc.
+     * BRODER=0, CHARIKAR=1.
+     */
+    static DUP_ALG _alg;
 
 private:
-	static bool isFirstInstance;
+    static bool isFirstInstance;
 
 protected:
 
-	/**
-	 * @brief the fingerprint index.
-	 */
+    /**
+     * @brief the fingerprint index.
+     */
     DupIndex* fp_index_;
 
     /**
      * @brief whether the collection needs to be analyzed.
      */
-	bool _needAnalyze;
+    bool _needAnalyze;
 
-	/**
-	 * @brief the near duplicate detection algorithm chosen.
-	 */
-	CharikarAlgo* ndAlgo;
+    /**
+     * @brief the near duplicate detection algorithm chosen.
+     */
+    CharikarAlgo* ndAlgo;
 
-	/**
-	 * @brief the number of documents
-	 */
+    /**
+     * @brief the number of documents
+     */
     uint32_t doc_num_;
 
     /**
      * @brief the collectionID to run dup detection.
      */
-   unsigned int _collectionId;
-   std::string nm_;
+    unsigned int _collectionId;
+    std::string nm_;
 
-   boost::shared_mutex read_write_mutex_;
+    boost::shared_mutex read_write_mutex_;
 
 };
 

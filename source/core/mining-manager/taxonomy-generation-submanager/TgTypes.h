@@ -37,9 +37,10 @@
 #include <common/type_defs.h>
 #include <util/izene_serialization.h>
 #include <idmlib/concept-clustering/cc_types.h>
-namespace sf1r {
-    
-#define TG_VAR_DEF(var,path) var(path+"/"+#var+".tg")	
+namespace sf1r
+{
+
+#define TG_VAR_DEF(var,path) var(path+"/"+#var+".tg")
 typedef std::pair<izenelib::util::UString, std::vector<uint32_t> > ne_item_type;
 
 struct ne_result_type
@@ -56,15 +57,15 @@ struct ne_result_type
     DATA_IO_LOAD_SAVE(ne_result_type, &type_&itemList_);
 };
 
-typedef std::vector<ne_result_type> ne_result_list_type; 
+typedef std::vector<ne_result_type> ne_result_list_type;
 typedef std::vector<termid_t> TIL;
 typedef idmlib::cc::ClusterRep TgClusterRep;
 
 // typedef idmlib::util::IDMTerm TgTerm;
-// 
-// 
-// 
-// 
+//
+//
+//
+//
 // class TgDocStatus
 // {
 //     public:
@@ -80,26 +81,26 @@ typedef idmlib::cc::ClusterRep TgClusterRep;
 //             ar & docId_;
 //         }
 // };
-// 
+//
 // typedef uint32_t TgLabelId;
-// 
+//
 // class TgLabelCache
 // {
 //     public:
 //         std::vector<termid_t> termIdList_;
-//         
+//
 //         friend class boost::serialization::access;
 //         template<class Archive>
 //         void serialize(Archive & ar, const unsigned int version)
 //         {
 //             ar & termIdList_ ;
-//             
+//
 //         }
 //         DATA_IO_LOAD_SAVE(TgLabelCache, &termIdList_)
-//         
+//
 // };
-// 
-// 
+//
+//
 // template <typename T = TIL>
 // class TgLabelInDoc
 // {
@@ -119,12 +120,12 @@ typedef idmlib::cc::ClusterRep TgClusterRep;
 //         {
 //             ar & labelId_;
 //             ar & value_;
-//             
+//
 //         }
 //         DATA_IO_LOAD_SAVE(TgLabelInDoc, &labelId_&value_)
 // };
-// 
-// 
+//
+//
 // class TgWordPairKey
 // {
 //     public:
@@ -138,7 +139,7 @@ typedef idmlib::cc::ClusterRep TgClusterRep;
 //         uint32_t id1_;
 //         uint32_t id2_;
 //         uint8_t indicator_;
-// 
+//
 //         inline int compare(const TgWordPairKey& rightItem) const
 //         {
 //            if(this->id1_!=rightItem.id1_)
@@ -147,7 +148,7 @@ typedef idmlib::cc::ClusterRep TgClusterRep;
 //                return((int)this->id2_-(int)rightItem.id2_);
 //            return((int)this->indicator_-(int)rightItem.indicator_);
 //         }
-// 
+//
 //         friend class boost::serialization::access;
 //         template<class Archive>
 //         void serialize(Archive & ar, const unsigned int version)
@@ -155,12 +156,12 @@ typedef idmlib::cc::ClusterRep TgClusterRep;
 //             ar & id1_;
 //             ar & id2_;
 //             ar & indicator_;
-// 
+//
 //         }
 //         DATA_IO_LOAD_SAVE(TgWordPairKey, &id1_&id2_&indicator_)
 // };
-// 
-// 
+//
+//
 // class CandidateTerm
 // {
 //     public:
@@ -173,33 +174,33 @@ typedef idmlib::cc::ClusterRep TgClusterRep;
 //         loc_t pos_;
 //         char postag_;
 // };
-// 
-// 
+//
+//
 class TgLabelInfo
 {
-    public:
-        TgLabelInfo():min_query_distance_(10)
-        {}
-        TgLabelInfo(uint32_t docCount):doc_invert_(docCount), label_score_(1.0), min_query_distance_(10)
-        {}
-        ~TgLabelInfo(){}
-        
-        inline void set(uint32_t i)
-        {
-            doc_invert_.set(i);
-        }
-        uint32_t label_id_;
-        std::vector<izenelib::util::UString> termList_;
-        std::vector<termid_t> termIdList_;
-        izenelib::util::UString name_;
-        boost::dynamic_bitset<> doc_invert_;
-        double label_score_;
-        loc_t min_query_distance_;
-        uint32_t originLabelId_;
-        
+public:
+    TgLabelInfo():min_query_distance_(10)
+    {}
+    TgLabelInfo(uint32_t docCount):doc_invert_(docCount), label_score_(1.0), min_query_distance_(10)
+    {}
+    ~TgLabelInfo() {}
+
+    inline void set(uint32_t i)
+    {
+        doc_invert_.set(i);
+    }
+    uint32_t label_id_;
+    std::vector<izenelib::util::UString> termList_;
+    std::vector<termid_t> termIdList_;
+    izenelib::util::UString name_;
+    boost::dynamic_bitset<> doc_invert_;
+    double label_score_;
+    loc_t min_query_distance_;
+    uint32_t originLabelId_;
+
 };
 
-   
+
 }
 
 

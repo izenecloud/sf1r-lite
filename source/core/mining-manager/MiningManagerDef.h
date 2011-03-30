@@ -40,14 +40,14 @@ typedef izenelib::ir::irdb::PureIRDatabase  TIRDatabase;
 typedef izenelib::ir::irdb::PureIRDocument  TIRDocument;
 
 typedef izenelib::ir::idmanager::_IDManager<izenelib::util::UString, uint32_t,
-    izenelib::util::NullLock, izenelib::ir::idmanager::EmptyWildcardQueryHandler<
-    izenelib::util::UString, uint32_t>,
-    izenelib::ir::idmanager::HashIDGenerator<izenelib::util::UString, uint32_t>,
-    izenelib::ir::idmanager::EmptyIDStorage<izenelib::util::UString, uint32_t>,
-    izenelib::ir::idmanager::EmptyIDGenerator<izenelib::util::UString, uint32_t>,
-    izenelib::ir::idmanager::EmptyIDStorage<izenelib::util::UString, uint32_t> >
-    MiningStrIDManager;
-    
+izenelib::util::NullLock, izenelib::ir::idmanager::EmptyWildcardQueryHandler<
+izenelib::util::UString, uint32_t>,
+izenelib::ir::idmanager::HashIDGenerator<izenelib::util::UString, uint32_t>,
+izenelib::ir::idmanager::EmptyIDStorage<izenelib::util::UString, uint32_t>,
+izenelib::ir::idmanager::EmptyIDGenerator<izenelib::util::UString, uint32_t>,
+izenelib::ir::idmanager::EmptyIDStorage<izenelib::util::UString, uint32_t> >
+MiningStrIDManager;
+
 //     typedef izenelib::ir::idmanager::_IDManager<izenelib::util::UString, uint32_t,
 //     izenelib::util::NullLock,
 //     izenelib::ir::idmanager::EmptyWildcardQueryHandler<
@@ -56,8 +56,8 @@ typedef izenelib::ir::idmanager::_IDManager<izenelib::util::UString, uint32_t,
 //     izenelib::ir::idmanager::EmptyIDStorage<izenelib::util::UString, uint32_t>,
 //     izenelib::ir::idmanager::UniqueIDGenerator<izenelib::util::UString, uint32_t>,
 //     izenelib::ir::idmanager::TCIDStorage<izenelib::util::UString, uint32_t> > DocIDManager;
-    
-    typedef izenelib::ir::idmanager::IDManager DocIDManager;
+
+typedef izenelib::ir::idmanager::IDManager DocIDManager;
 
 
 // class IDManagerForQS : public boost::noncopyable
@@ -66,30 +66,30 @@ typedef izenelib::ir::idmanager::_IDManager<izenelib::util::UString, uint32_t,
 //         IDManagerForQS()
 //         {
 //         }
-//   
+//
 //         ~IDManagerForQS()
 //         {
 //         }
-//         
-//         
-// 
+//
+//
+//
 //         void getAnalysisTermIdList(const izenelib::util::UString& str, std::vector<uint32_t>& termIdList)
 //         {
-// 
+//
 //             TermUtil::getAnalysisTermIdListForRecommend(str, termIdList);
 //         }
-//         
+//
 //         void getAnalysisTermIdList(const izenelib::util::UString& str, std::vector<izenelib::util::UString>& strList, std::vector<uint32_t>& termIdList)
 //         {
-// 
+//
 //             TermUtil::getAnalysisTermIdListForRecommend( str, strList, termIdList);
 //         }
-// 
-//         
-//         
-//     private:        
+//
+//
+//
+//     private:
 //         MiningIDManager* miningIdManager_;
-//         
+//
 // };
 
 }

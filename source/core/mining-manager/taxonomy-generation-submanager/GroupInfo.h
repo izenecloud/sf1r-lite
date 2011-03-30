@@ -64,11 +64,11 @@ private:
     bool addSimilarLabelPair(uint32_t labelId1, uint32_t labelId2);
 
     bool makeWordPair(uint32_t wordId1,
-            uint32_t wordId2,
-            std::pair<uint32_t, uint32_t>& wordPair);
+                      uint32_t wordId2,
+                      std::pair<uint32_t, uint32_t>& wordPair);
     bool makeWordPair(uint32_t wordId1,
-            uint32_t wordId2,
-            TgWordPairKey& wordPair);
+                      uint32_t wordId2,
+                      TgWordPairKey& wordPair);
 
 
 private:
@@ -78,11 +78,11 @@ private:
     typedef izenelib::util::NullLock lock_type;
     typedef izenelib::am::sdb_btree<TgWordPairKey, tag_type, lock_type>  container_type;
     typedef izenelib::hdb::HugeDB<
-        TgWordPairKey,
-        uint16_t,
-        lock_type,
-        container_type,
-        true
+    TgWordPairKey,
+    uint16_t,
+    lock_type,
+    container_type,
+    true
     > HDBType;
     typedef izenelib::am::sdb_fixedhash<pair_type, uint16_t> INT_FIXED_HASH;
 

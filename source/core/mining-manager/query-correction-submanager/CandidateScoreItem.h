@@ -13,28 +13,29 @@
 #include <util/ustring/UString.h>
 #include <boost/serialization/serialization.hpp>
 
-class CandidateScoreItem {
+class CandidateScoreItem
+{
 public:
-	CandidateScoreItem() : path_(), score_(-1.0)
+    CandidateScoreItem() : path_(), score_(-1.0)
     {
     }
     ///  Added a new constructor.
     CandidateScoreItem(const izenelib::util::UString& path, float score) : path_(path), score_(score)
     {
     }
-    
+
     ///the candidate
-	izenelib::util::UString path_;
-	///the document's score.
-	double score_;
-    
-	///For sorting the scoreItem in ascending order of score.
-	bool operator<(const CandidateScoreItem& rightItem) const;
+    izenelib::util::UString path_;
+    ///the document's score.
+    double score_;
+
+    ///For sorting the scoreItem in ascending order of score.
+    bool operator<(const CandidateScoreItem& rightItem) const;
 
 private:
     /// For serialization
     friend class boost::serialization::access;
-     ///boost serialization
+    ///boost serialization
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
     {

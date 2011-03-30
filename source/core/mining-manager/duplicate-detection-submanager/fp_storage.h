@@ -9,20 +9,21 @@
 #include <vector>
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/serialization.hpp>
-namespace sf1r{
+namespace sf1r
+{
 class FpStorage
 {
 public:
-  FpStorage(const std::string& dir);
-  
-  bool GetFpByTableId(uint32_t id, std::vector<FpItem>& fp);
-  
-  bool SetFpByTableId(uint32_t id, const std::vector<FpItem>& fp);
+    FpStorage(const std::string& dir);
+
+    bool GetFpByTableId(uint32_t id, std::vector<FpItem>& fp);
+
+    bool SetFpByTableId(uint32_t id, const std::vector<FpItem>& fp);
 
 private:
-  std::string dir_;
+    std::string dir_;
 };
-  
+
 }
 
 #endif

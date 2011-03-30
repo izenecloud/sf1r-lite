@@ -12,7 +12,8 @@
 #include <util/ustring/ustr_tool.h>
 
 
-namespace sf1r {
+namespace sf1r
+{
 
 //Check if one word is pure english word
 bool isEnglishWord(const UString& queryToken);

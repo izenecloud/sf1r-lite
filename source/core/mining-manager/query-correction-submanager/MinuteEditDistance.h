@@ -17,16 +17,17 @@
 #define __MINUTE_EDIT_DISTANCE_H_
 
 
-namespace sf1r{
-class MinuteEditDistance 
+namespace sf1r
 {
-	public:
-		static unsigned int getDistance(const char* s1, const char* s2);
+class MinuteEditDistance
+{
+public:
+    static unsigned int getDistance(const char* s1, const char* s2);
 
-	private:
-		MinuteEditDistance(void);
+private:
+    MinuteEditDistance(void);
 
-		static unsigned int min(unsigned int v1, unsigned int v2);
+    static unsigned int min(unsigned int v1, unsigned int v2);
 };
 }
 #endif/*__MINUTE_EDIT_DISTANCE_H_*/

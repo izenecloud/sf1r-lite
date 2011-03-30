@@ -18,19 +18,20 @@ NS_FACETED_BEGIN
 
 
 /// @brief The memory representation form of a taxonomy.
-class ManmadeDocCategory {
+class ManmadeDocCategory
+{
 public:
     ManmadeDocCategory(const std::string& dir);
     ~ManmadeDocCategory();
     bool Open();
     bool Add(const std::vector<ManmadeDocCategoryItem>& items);
-    
+
     bool Get(std::vector<ManmadeDocCategoryItem>& items);
 
 private:
-  std::string dir_;
-  std::vector<ManmadeDocCategoryItem> items_;
-  boost::mutex mutex_;
+    std::string dir_;
+    std::vector<ManmadeDocCategoryItem> items_;
+    boost::mutex mutex_;
 };
 NS_FACETED_END
 #endif

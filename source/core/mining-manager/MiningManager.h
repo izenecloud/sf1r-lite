@@ -8,7 +8,7 @@
 /// - Log
 ///   Move RawMapworker from SIA to MIA, so that MIA is indepentant from SIA.
 ///   -- by Peisheng Wang 2009-11-10
-/// 
+///
 ///   Refined on: 2009-11-25
 ///       Author: Jinglei
 
@@ -62,7 +62,7 @@ namespace sf1r
  */
 class MiningManager : public boost::noncopyable
 {
-typedef DupDetector2 DupDType;
+    typedef DupDetector2 DupDType;
 
 public:
     /**
@@ -72,23 +72,23 @@ public:
      * @param docIdManager used for generating docIds in parsing the SCD file.
      */
     MiningManager(const std::string& collectionDataPath, const std::string& queryDataPath,
-            const boost::shared_ptr<LAManager>& laManager,
-            const boost::shared_ptr<DocumentManager>& documentManager,
-            const boost::shared_ptr<IndexManager>& index_manager,
-            const std::string& collectionName, 
-            const schema_type& schema,
-            const MiningConfig& miningConfig,
-            const MiningSchema& miningSchema);
+                  const boost::shared_ptr<LAManager>& laManager,
+                  const boost::shared_ptr<DocumentManager>& documentManager,
+                  const boost::shared_ptr<IndexManager>& index_manager,
+                  const std::string& collectionName,
+                  const schema_type& schema,
+                  const MiningConfig& miningConfig,
+                  const MiningSchema& miningSchema);
 
     MiningManager(const std::string& collectionDataPath, const std::string& queryDataPath,
-               const boost::shared_ptr<LAManager>& laManager,
-               const boost::shared_ptr<DocumentManager>& documentManager,
-               const boost::shared_ptr<IndexManager>& index_manager,
-               const std::string& collectionName,
-               const schema_type& schema,
-               const MiningConfig& miningConfig,
-               const MiningSchema& miningSchema,
-               const boost::shared_ptr<IDManager>idManager);
+                  const boost::shared_ptr<LAManager>& laManager,
+                  const boost::shared_ptr<DocumentManager>& documentManager,
+                  const boost::shared_ptr<IndexManager>& index_manager,
+                  const std::string& collectionName,
+                  const schema_type& schema,
+                  const MiningConfig& miningConfig,
+                  const MiningSchema& miningSchema,
+                  const boost::shared_ptr<IDManager>idManager);
 
     ~MiningManager();
 
@@ -97,7 +97,7 @@ public:
 //     void setConfigClient(const boost::shared_ptr<ConfigurationManagerClient>& configClient);
 
     bool DoMiningCollection();
-    
+
 
     /**
      * @brief The online querying interface.
@@ -112,16 +112,16 @@ public:
         SimilarImageDocIdList& imageDocIdList
     );
 
-           
+
     bool getReminderQuery(std::vector<izenelib::util::UString>& popularQueries,
-                        std::vector<izenelib::util::UString>& realtimeQueries);
+                          std::vector<izenelib::util::UString>& realtimeQueries);
     /**
      * @brief Get the unique document list that eliminates duplicates from the result.
      * @param docIdList the docs inputed.
      * @param removedDocs the docs removed.
      */
     bool getUniqueDocIdList(const std::vector<uint32_t>& docIdList,
-            std::vector<uint32_t>& cleanDocs);
+                            std::vector<uint32_t>& cleanDocs);
 
     /**
      * @brief Get the duplicated documents for a given document.
@@ -129,7 +129,7 @@ public:
      * @param docIdList the duplicates of this document.
      */
     bool getDuplicateDocIdList(uint32_t docId,
-            std::vector<uint32_t>& docIdList);
+                               std::vector<uint32_t>& docIdList);
 
 
     /**
@@ -139,38 +139,38 @@ public:
      * @param result the resulted similar docs.
      */
     bool getSimilarDocIdList(uint32_t documentId, uint32_t maxNum, std::vector<
-            std::pair<uint32_t, float> >& result);
+                             std::pair<uint32_t, float> >& result);
 
-            
+
     bool getSimilarLabelList(uint32_t label_id, std::vector<uint32_t>& sim_list);
-    
+
     bool getSimilarLabelStringList(uint32_t label_id, std::vector<izenelib::util::UString>& sim_list);
-    
+
     bool getLabelListByDocId(uint32_t docid, std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list);
-    
-    bool getLabelListWithSimByDocId(uint32_t docid, 
-    std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > >& label_list);
+
+    bool getLabelListWithSimByDocId(uint32_t docid,
+                                    std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > >& label_list);
 
 //     void getMiningStatus(Status& status);
-            
+
     void close();
-    
+
     boost::shared_ptr<faceted::OntologyManager> GetFaceted()
     {
-      return faceted_;
+        return faceted_;
     }
 private:
-    
-  
+
+
     void printSimilarLabelResult_(uint32_t label_id);
-  
+
     /**
      * @brief The offline computation interface used for similarity clustering.
      */
     bool computeSimilarity_(izenelib::ir::indexmanager::IndexReader* pIndexReader, const std::vector<std::string>& property_names);
-    
+
 //     void classifyCollection_(izenelib::ir::indexmanager::IndexReader* pIndexReader);
-    
+
     /// Add Tg result.
     bool addTgResult_(KeywordSearchResult& miaInput);
 
@@ -181,8 +181,8 @@ private:
     bool addSimilarityResult_(KeywordSearchResult& miaInput);
 
     bool addFacetedResult_(KeywordSearchResult& miaInput);
-   
-            
+
+
     /**
      *@brief The online querying interface for query recommendation.
      *@param primaryTermIdList The primary terms in the query.
@@ -191,32 +191,32 @@ private:
      *@param queryList The recommended queries as the result.
      */
     bool getRecommendQuery_(const izenelib::util::UString& queryStr,
-            const std::vector<sf1r::docid_t>& topDocIdList, QueryRecommendRep & recommendRep);
-            
+                            const std::vector<sf1r::docid_t>& topDocIdList, QueryRecommendRep & recommendRep);
+
     bool isMiningProperty_(const std::string& name);
-    
+
     bool isRecommendProperty_(const std::string& name);
-    
+
     void getAllMiningProperties_(const Document& document, std::vector<izenelib::util::UString>& values, std::vector<izenelib::util::UString>& recommendValues, std::string& imgUrl);
-    
-    
+
+
 //     void analyzeLabelRelation();
 
     void replicatingLabel_();
-    
-    
+
+
 
     void normalTermList_(const izenelib::util::UString& text,
-            std::vector<termid_t>& termList);
-    
+                         std::vector<termid_t>& termList);
+
     void doIDManagerRelease_();
-    
+
     void doIDManagerInit_();
-    
-   
-    
+
+
+
     bool doTgInfoInit_();
-    
+
     void doTgInfoRelease_();
 
 public:
@@ -224,7 +224,7 @@ public:
     std::string system_resource_path_;
 
 private:
-    
+
     /** Global variables */
     std::string collectionDataPath_;
     std::string queryDataPath_;
@@ -237,19 +237,19 @@ private:
     std::string basicPath_;
     std::string mainPath_;
     std::string backupPath_;
-    
+
     /** Global status */
 //     boost::shared_ptr<MiningStatus> status_;
 //     bool bProcessBroken_;
-    
+
     /**id manager */
     boost::shared_ptr<LAManager> laManager_;
     idmlib::util::IDMAnalyzer* analyzer_;
     idmlib::util::IDMAnalyzer* kpe_analyzer_;
 //     MiningIDManager* idManager_;
-    
+
     std::string id_path_;
-    
+
     boost::shared_ptr<DocumentManager> document_manager_;
     boost::shared_ptr<IndexManager> index_manager_;
     /** TG */
@@ -261,16 +261,16 @@ private:
     std::string tg_label_path_;
     std::string tg_label_sim_path_;
     std::string tg_label_sim_table_path_;
-    
+
     /** QR */
     boost::shared_ptr<RecommendManager> rmDb_;
     boost::shared_ptr<QueryRecommendSubmanager> qrManager_;
     std::string qr_path_;
-    
+
     /** DUPD */
     boost::shared_ptr<DupDType> dupManager_;
     std::string dupd_path_;
-    
+
     /** SIM */
 //     TIRDatabase* termIndex_;
     boost::shared_ptr<SimilarityIndex> similarityIndex_;

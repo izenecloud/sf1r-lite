@@ -7,17 +7,20 @@
 
 #include "DirichletSmoother.h"
 DirichletSmoother::DirichletSmoother(uint32_t docTermCount ,uint32_t collectionTermCount,
-		 double bkgCoefficient, double dirichletCoefficient):
-	  docTermCount_(docTermCount),collectionTermCount_(collectionTermCount)
-	 ,bkgCoefficient_(bkgCoefficient),dirichletCoefficient_(dirichletCoefficient){
-  }
-
-DirichletSmoother::~DirichletSmoother() {
-	// TODO Auto-generated destructor stub
+                                     double bkgCoefficient, double dirichletCoefficient):
+        docTermCount_(docTermCount),collectionTermCount_(collectionTermCount)
+        ,bkgCoefficient_(bkgCoefficient),dirichletCoefficient_(dirichletCoefficient)
+{
 }
-double DirichletSmoother::computeSmoothedProb(uint32_t dtf,uint32_t qtf) {
 
-	double collectionProb=dirichletCoefficient_* qtf/collectionTermCount_;
-	return (dtf+collectionProb)/(docTermCount_+dirichletCoefficient_);
+DirichletSmoother::~DirichletSmoother()
+{
+    // TODO Auto-generated destructor stub
+}
+double DirichletSmoother::computeSmoothedProb(uint32_t dtf,uint32_t qtf)
+{
+
+    double collectionProb=dirichletCoefficient_* qtf/collectionTermCount_;
+    return (dtf+collectionProb)/(docTermCount_+dirichletCoefficient_);
 
 }

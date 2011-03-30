@@ -16,18 +16,19 @@
 NS_FACETED_BEGIN
 
 
-class OntologyParser {
+class OntologyParser
+{
 
 public:
-  static bool Parse(Ontology* ontology, const std::string& xml);
-  
-  
+    static bool Parse(Ontology* ontology, const std::string& xml);
+
+
 public:
-  std::vector<izenelib::util::UString> labels;
-  izenelib::util::UString description;
-  
-  
-    
+    std::vector<izenelib::util::UString> labels;
+    izenelib::util::UString description;
+
+
+
 };
 NS_FACETED_END
-#endif 
+#endif

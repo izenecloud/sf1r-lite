@@ -15,7 +15,7 @@ class MiningUtil
 {
 
 private:
-    MiningUtil(){}
+    MiningUtil() {}
 public:
     static void encodeIntegers( const std::vector<uint32_t>& ints,char* data, uint32_t& len);
 };

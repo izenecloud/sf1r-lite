@@ -16,33 +16,34 @@
 NS_FACETED_BEGIN
 
 
-class OntologyDocsOp {
+class OntologyDocsOp
+{
 public:
-  enum OP {INS, DEL};
-  
-  OP op;
-  CategoryIdType cid;
-  uint32_t docid;
-  
-  static bool op_cid_less(const OntologyDocsOp& op1, const OntologyDocsOp& op2)
-  {
-    return op1.cid<op2.cid;
-  }
+    enum OP {INS, DEL};
 
-  static bool op_docid_less(const OntologyDocsOp& op1, const OntologyDocsOp& op2)
-  {
-    return op1.docid<op2.docid;
-  }
+    OP op;
+    CategoryIdType cid;
+    uint32_t docid;
 
-  static bool op_docid_greater(const OntologyDocsOp& op1, const OntologyDocsOp& op2)
-  {
-    return op1.docid>op2.docid;
-  }
-    
+    static bool op_cid_less(const OntologyDocsOp& op1, const OntologyDocsOp& op2)
+    {
+        return op1.cid<op2.cid;
+    }
+
+    static bool op_docid_less(const OntologyDocsOp& op1, const OntologyDocsOp& op2)
+    {
+        return op1.docid<op2.docid;
+    }
+
+    static bool op_docid_greater(const OntologyDocsOp& op1, const OntologyDocsOp& op2)
+    {
+        return op1.docid>op2.docid;
+    }
+
 };
 
 
 
 
 NS_FACETED_END
-#endif 
+#endif

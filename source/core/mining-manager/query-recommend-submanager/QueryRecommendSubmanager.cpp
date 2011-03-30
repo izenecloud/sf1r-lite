@@ -20,7 +20,7 @@
 using namespace sf1r;
 
 QueryRecommendSubmanager::QueryRecommendSubmanager(const boost::shared_ptr<RecommendManager>& rmDb) :
-    rmDb_(rmDb)
+        rmDb_(rmDb)
 {
 
 }
@@ -37,7 +37,7 @@ void QueryRecommendSubmanager::getRecommendQuery(const izenelib::util::UString& 
 {
     rmDb_->getRelatedConcepts(query, maxNum, recommendRep.recommendQueries_);
     recommendRep.scores_.resize(recommendRep.recommendQueries_.size());
-    for(uint32_t i=0;i<recommendRep.scores_.size();i++)
+    for (uint32_t i=0;i<recommendRep.scores_.size();i++)
     {
         recommendRep.scores_[i] = 1.0;
     }
@@ -51,9 +51,9 @@ bool QueryRecommendSubmanager::getReminderQuery(std::vector<izenelib::util::UStr
     {
         rmDb_->getReminderQuery(popularQueries, realTimeQueries);
     }
-    catch( std::exception& ex)
+    catch ( std::exception& ex)
     {
-        
+
         return false;
     }
     return true;

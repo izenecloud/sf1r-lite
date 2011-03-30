@@ -26,55 +26,55 @@ namespace sf1r
 {
 class MiningIDManager : public boost::noncopyable
 {
-    public:
-        MiningIDManager(const std::string& path, boost::shared_ptr<LAManager>& laManager);
-  
-        ~MiningIDManager();
-        
-        
-        uint32_t getTermIdByTermString(const izenelib::util::UString& ustr, char tag);
+public:
+    MiningIDManager(const std::string& path, boost::shared_ptr<LAManager>& laManager);
 
-        bool getTermIdByTermString(const izenelib::util::UString& ustr, char tag, uint32_t& termId);
+    ~MiningIDManager();
 
-        bool getTermStringByTermId(uint32_t termId, izenelib::util::UString& ustr);
 
-        void put(uint32_t termId, const izenelib::util::UString& ustr);
+    uint32_t getTermIdByTermString(const izenelib::util::UString& ustr, char tag);
 
-        bool isKP(uint32_t termId);
-        
-        void getAnalysisTermIdList(const izenelib::util::UString& ustr, std::vector<uint32_t>& termIdList);
-        
-        void getAnalysisTermIdList2(const izenelib::util::UString& ustr, std::vector<uint32_t>& termIdList);
-        
-        void getAnalysisTermStringList(const izenelib::util::UString& ustr, std::vector<izenelib::util::UString>& termStrList);
-        
-        void getFilteredAnalysisTermStringList(const izenelib::util::UString& ustr, std::vector<izenelib::util::UString>& termStrList);
-        
-        void getAnalysisTermList(const izenelib::util::UString& ustr, std::vector<izenelib::util::UString>& strList, std::vector<uint32_t>& termIdList);
-        
-        void getAnalysisTermList(const izenelib::util::UString& str, std::vector<izenelib::util::UString>& termList, std::vector<char>& posInfoList, std::vector<uint32_t>& positionList);
+    bool getTermIdByTermString(const izenelib::util::UString& ustr, char tag, uint32_t& termId);
 
-        void getAnalysisTermIdList(const izenelib::util::UString& str, std::vector<izenelib::util::UString>& termList, std::vector<uint32_t>& idList, std::vector<char>& posInfoList, std::vector<uint32_t>& positionList);
-        
-        void getAnalysisTermIdListForMatch(const izenelib::util::UString& ustr, std::vector<uint32_t>& idList);
+    bool getTermStringByTermId(uint32_t termId, izenelib::util::UString& ustr);
 
-        void flush();
+    void put(uint32_t termId, const izenelib::util::UString& ustr);
 
-        void close();
-        
-        bool isAutoInsert();
-        
-    private:
-        static char getTagChar_( const std::string& posStr);
-        
-        
-    private:        
-        izenelib::ir::idmanager::HDBIDStorage< izenelib::util::UString, uint32_t>* strStorage_;
-        boost::mutex mutex_;
-        string path_;
-        boost::shared_ptr<LAManager> laManager_;
-        AnalysisInfo analysisInfo_;
-        AnalysisInfo analysisInfo2_;
+    bool isKP(uint32_t termId);
+
+    void getAnalysisTermIdList(const izenelib::util::UString& ustr, std::vector<uint32_t>& termIdList);
+
+    void getAnalysisTermIdList2(const izenelib::util::UString& ustr, std::vector<uint32_t>& termIdList);
+
+    void getAnalysisTermStringList(const izenelib::util::UString& ustr, std::vector<izenelib::util::UString>& termStrList);
+
+    void getFilteredAnalysisTermStringList(const izenelib::util::UString& ustr, std::vector<izenelib::util::UString>& termStrList);
+
+    void getAnalysisTermList(const izenelib::util::UString& ustr, std::vector<izenelib::util::UString>& strList, std::vector<uint32_t>& termIdList);
+
+    void getAnalysisTermList(const izenelib::util::UString& str, std::vector<izenelib::util::UString>& termList, std::vector<char>& posInfoList, std::vector<uint32_t>& positionList);
+
+    void getAnalysisTermIdList(const izenelib::util::UString& str, std::vector<izenelib::util::UString>& termList, std::vector<uint32_t>& idList, std::vector<char>& posInfoList, std::vector<uint32_t>& positionList);
+
+    void getAnalysisTermIdListForMatch(const izenelib::util::UString& ustr, std::vector<uint32_t>& idList);
+
+    void flush();
+
+    void close();
+
+    bool isAutoInsert();
+
+private:
+    static char getTagChar_( const std::string& posStr);
+
+
+private:
+    izenelib::ir::idmanager::HDBIDStorage< izenelib::util::UString, uint32_t>* strStorage_;
+    boost::mutex mutex_;
+    string path_;
+    boost::shared_ptr<LAManager> laManager_;
+    AnalysisInfo analysisInfo_;
+    AnalysisInfo analysisInfo2_;
 };
 }
 #endif

@@ -18,39 +18,40 @@ NS_FACETED_BEGIN
 
 
 /// @brief The memory representation form of a taxonomy.
-class ManmadeDocCategoryItem {
+class ManmadeDocCategoryItem
+{
 public:
     ManmadeDocCategoryItem():docid(0), cid(0)
     {
     }
     ManmadeDocCategoryItem(uint32_t pdocid, const izenelib::util::UString& pstr_docid, const CategoryNameType& pcname)
-    :docid(pdocid), str_docid(pstr_docid), cname(pcname)
+            :docid(pdocid), str_docid(pstr_docid), cname(pcname)
     {
     }
     uint32_t docid;
     izenelib::util::UString str_docid;
     CategoryIdType cid;
     CategoryNameType cname;
-    
+
     bool ValidInput() const
     {
-      if(docid>0&&str_docid.length()>0&&cid>0&&cname.length()>0)
-      {
-        return true;
-      }
-      return false;
+        if (docid>0&&str_docid.length()>0&&cid>0&&cname.length()>0)
+        {
+            return true;
+        }
+        return false;
     }
-    
+
     static bool CompareStrDocId(const ManmadeDocCategoryItem& item1, const ManmadeDocCategoryItem& item2)
     {
-      return item1.str_docid<item2.str_docid;
+        return item1.str_docid<item2.str_docid;
     }
-    
+
 //     bool operator==(const OntologyRepItem& item) const
 //     {
 //       return level==item.level&&text==item.text&&id==item.id&&doc_count==item.doc_count;
 //     }
-    
+
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
@@ -60,4 +61,4 @@ public:
 
 };
 NS_FACETED_END
-#endif 
+#endif

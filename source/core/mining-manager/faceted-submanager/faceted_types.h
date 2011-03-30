@@ -9,7 +9,7 @@
 #define SF1R_FACETED_TYPES_H_
 
 #define NS_FACETED_BEGIN namespace sf1r{ namespace faceted {
-  
+
 #define NS_FACETED_END }}
 
 NS_FACETED_BEGIN

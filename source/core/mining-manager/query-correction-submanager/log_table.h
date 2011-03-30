@@ -17,38 +17,38 @@
 namespace sf1r
 {
 
-  /**
-     @class LogTable
-   */ 
-  class LogTable
-  {
-    
+/**
+   @class LogTable
+ */
+class LogTable
+{
+
     std::string filenm_;
     izenelib::ir::StrStrTable<> pinyin2words_;
     izenelib::ir::TermFrequency<> word_freq_;
-    
-  public:
+
+public:
 
     LogTable(const char* filenm)
-      :filenm_(filenm),pinyin2words_((filenm_+".pinyin").c_str())
+            :filenm_(filenm),pinyin2words_((filenm_+".pinyin").c_str())
     {
     }
 
     ~LogTable()
     {
-      flush();
+        flush();
     }
 
     void flush()const;
 
     bool load();
-    
+
     std::vector<std::string> get_correction(const std::string& query)const;
 
     void add_word(const std::string& pinyin, std::string word);
-  }
-  ;
-  
+}
+;
+
 }//namespace
 
 

@@ -32,54 +32,54 @@ namespace sf1r
 
 class LabelSimilarity
 {
-  typedef std::pair<uint32_t, uint32_t> id2count_t;
+    typedef std::pair<uint32_t, uint32_t> id2count_t;
 public:
-typedef idmlib::sim::TermSimilarity<> TermSimilarityType;
-typedef TermSimilarityType::SimTableType SimTableType;
+    typedef idmlib::sim::TermSimilarity<> TermSimilarityType;
+    typedef TermSimilarityType::SimTableType SimTableType;
     LabelSimilarity(const std::string& path, const std::string& rig_path, boost::shared_ptr<SimTableType> table)
-    :sim_(new TermSimilarityType(path, rig_path, table.get(), 5, 0.4))
-    , table_(table)
+            :sim_(new TermSimilarityType(path, rig_path, table.get(), 5, 0.4))
+            , table_(table)
     {
-    }
-    
-    ~LabelSimilarity()
-    {
-      delete sim_;
-    }
-                    
-    bool Open(uint32_t context_max)
-    {
-      if(!sim_->Open()) return false;
-      if(!sim_->SetContextMax(context_max)) return false;
-      return true;
-    }
-    
-        
-    void Append(
-    uint32_t label_id,
-    const izenelib::util::UString& label_str,
-    const std::vector<id2count_t>& doc_item_list, 
-    uint8_t type,
-    uint8_t score)
-    {
-      if(!sim_->Append(label_id, doc_item_list))
-      {
-        std::cerr<<"label similarity append "<<label_id<<" failed"<<std::endl;
-      }
-    }
-    
-    bool Compute()
-    {
-      return sim_->Compute();
     }
 
-       
+    ~LabelSimilarity()
+    {
+        delete sim_;
+    }
+
+    bool Open(uint32_t context_max)
+    {
+        if (!sim_->Open()) return false;
+        if (!sim_->SetContextMax(context_max)) return false;
+        return true;
+    }
+
+
+    void Append(
+        uint32_t label_id,
+        const izenelib::util::UString& label_str,
+        const std::vector<id2count_t>& doc_item_list,
+        uint8_t type,
+        uint8_t score)
+    {
+        if (!sim_->Append(label_id, doc_item_list))
+        {
+            std::cerr<<"label similarity append "<<label_id<<" failed"<<std::endl;
+        }
+    }
+
+    bool Compute()
+    {
+        return sim_->Compute();
+    }
+
+
 private:
     TermSimilarityType* sim_;
     boost::shared_ptr<SimTableType> table_;
-    
+
 };
-    
+
 }
 
 #endif

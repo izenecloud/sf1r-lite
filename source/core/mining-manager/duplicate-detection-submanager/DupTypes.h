@@ -11,11 +11,12 @@
 #include <ext/hash_map>
 #include <util/CBitArray.h>
 
-namespace sf1r{
+namespace sf1r
+{
 /**
  * The types for dup detection.
  */
-enum DUP_ALG{BRODER=0,CHARIKAR=1};
+enum DUP_ALG {BRODER=0,CHARIKAR=1};
 //typedef __gnu_cxx::hash_multimap<uint32_t,NearDuplicateSignature > MULTI_MAP_T;
 typedef __gnu_cxx::hash_map<unsigned int, izenelib::util::CBitArray> DOC_BIT_MAP;
 typedef pair<unsigned int, unsigned int> DUP_PAIR;

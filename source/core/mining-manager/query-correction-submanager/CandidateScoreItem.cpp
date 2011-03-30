@@ -11,5 +11,5 @@
 ///For sorting the scoreItem in ascending order of score.
 bool CandidateScoreItem::operator<(const CandidateScoreItem& rightItem) const
 {
-	return(this->score_>rightItem.score_);
+    return(this->score_>rightItem.score_);
 }

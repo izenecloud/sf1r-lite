@@ -41,73 +41,75 @@
 #include <idmlib/nec/NameEntityDict.h>
 #include <idmlib/nec/NameEntityManager.h>
 #include <idmlib/util/file_object.h>
-namespace sf1r{
-        
-class TaxonomyInfo : public boost::noncopyable {
+namespace sf1r
+{
 
-typedef std::pair<uint32_t, uint32_t> id2count_t;
-typedef std::pair<izenelib::util::UString, uint32_t> str2count_t;
-typedef idmlib::kpe::KPEOutput<true, true, true> OutputType ;
-typedef OutputType::function_type function_type ;
+class TaxonomyInfo : public boost::noncopyable
+{
+
+    typedef std::pair<uint32_t, uint32_t> id2count_t;
+    typedef std::pair<izenelib::util::UString, uint32_t> str2count_t;
+    typedef idmlib::kpe::KPEOutput<true, true, true> OutputType ;
+    typedef OutputType::function_type function_type ;
 public:
-typedef idmlib::kpe::KPEAlgorithm<OutputType> kpe_type;
+    typedef idmlib::kpe::KPEAlgorithm<OutputType> kpe_type;
 
     TaxonomyInfo(const std::string& tgPath,
-            const TaxonomyPara& taxonomy_param,
-            boost::shared_ptr<LabelManager> labelManager,
-            idmlib::util::IDMAnalyzer* analyzer,
-            const std::string& sys_res_path);
+                 const TaxonomyPara& taxonomy_param,
+                 boost::shared_ptr<LabelManager> labelManager,
+                 idmlib::util::IDMAnalyzer* analyzer,
+                 const std::string& sys_res_path);
     ~TaxonomyInfo();
-    
+
 public:
-    
+
     bool Open();
-  
+
     uint32_t GetMaxDocId()
     {
-      return max_docid_;
+        return max_docid_;
     }
-  
+
     void setKPECacheSize( uint32_t size)
     {
-      kpeCacheSize_ = size;
+        kpeCacheSize_ = size;
     }
-  
+
     /**
     * @brief Insert one document.
     * @param docid The document id.
     * @param termList The input term list.
     */
     void addDocument(uint32_t docid, const izenelib::util::UString& text);
-    
+
     /**
     * @brief Delete one document.
     * @param docid The document id.
     * @return if is exist and deleted.
     */
     bool deleteDocument(uint32_t docid);
-    
+
     /**
     * @brief Finish all update.
     */
     void finish();
-    
+
     void ReleaseResource();
-    
-   
+
+
 private:
-  
-   
+
+
     kpe_type* initKPE_();
-  
+
     void callback_(
-    const izenelib::util::UString& str
-    , const std::vector<id2count_t>& id2countList
-    , uint8_t score
-    , const std::vector<id2count_t>& leftTermList
-    , const std::vector<id2count_t>& rightTermList);
+        const izenelib::util::UString& str
+        , const std::vector<id2count_t>& id2countList
+        , uint8_t score
+        , const std::vector<id2count_t>& leftTermList
+        , const std::vector<id2count_t>& rightTermList);
 //     bool addDocument_(uint32_t docid, const std::vector<TgTerm>& termList, uint32_t& iBegin);
-    
+
 private:
     std::string path_;
     TaxonomyPara taxonomy_param_;
@@ -127,9 +129,9 @@ private:
     uint32_t insert_count_;
     uint32_t label_processed_;
     idmlib::util::FileObject<uint32_t> max_docid_file_;
-    
+
 };
-    
-    
+
+
 }
 #endif

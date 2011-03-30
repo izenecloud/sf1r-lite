@@ -8,8 +8,8 @@
  * 2009.02.23 Peisheng Wang
  *   --Using log-manager to enhance queryCorrection Manager
  *   --Integrate Chinese query correcion
- *  
- *  
+ *
+ *
  */
 #ifndef _QUERY_CORRECTION_SUBMANAGER_H_
 #define _QUERY_CORRECTION_SUBMANAGER_H_
@@ -20,7 +20,8 @@
 #include <boost/noncopyable.hpp>
 #include <sdb/SequentialDB.h>
 
-namespace sf1r {
+namespace sf1r
+{
 
 class _QueryCorrectionSubmanagerParam
 {
@@ -39,12 +40,12 @@ class QueryCorrectionSubmanagerParam
 {
 public:
     static _QueryCorrectionSubmanagerParam param_;
-    
+
     static _QueryCorrectionSubmanagerParam& get()
     {
         return param_;
     }
-    
+
     static void set(const std::string& path, const std::string& workingPath, bool enableEK, bool enableChn)
     {
         param_.path_ = path;
@@ -55,72 +56,73 @@ public:
 };
 
 
-class QueryCorrectionSubmanager : public boost::noncopyable {
-	static const int DEFAULT_MAX_EDITDISTANCE_ = 2;
+class QueryCorrectionSubmanager : public boost::noncopyable
+{
+    static const int DEFAULT_MAX_EDITDISTANCE_ = 2;
 private:
-	QueryCorrectionSubmanager(const string& path, const std::string& workingPath, bool enableEK, bool enableChn, int ed=DEFAULT_MAX_EDITDISTANCE_);
+    QueryCorrectionSubmanager(const string& path, const std::string& workingPath, bool enableEK, bool enableChn, int ed=DEFAULT_MAX_EDITDISTANCE_);
 public:
-    
+
     static QueryCorrectionSubmanager& getInstance();
-    
-	~QueryCorrectionSubmanager();
-	
-	/**
-	 * @brief The main interface to refine a user query,the query can be set of tokens
-	 * @param queryUString         the inputed query of the user.
-	 * @param refinedQueryUString  the corrected query, if no correction is done, this string is returned empty.
-	 * @return true if success false if failed.
-	 */
+
+    ~QueryCorrectionSubmanager();
+
+    /**
+     * @brief The main interface to refine a user query,the query can be set of tokens
+     * @param queryUString         the inputed query of the user.
+     * @param refinedQueryUString  the corrected query, if no correction is done, this string is returned empty.
+     * @return true if success false if failed.
+     */
 
     bool getRefinedQuery(const UString& queryUString,
-            UString& refinedQueryUString);
+                         UString& refinedQueryUString);
 
     bool getRefinedQuery(const std::string& collectionName, const UString& queryUString,
-            UString& refinedQueryUString);
-	
-	bool getPinyin(const izenelib::util::UString& hanzis,
-	        std::vector<izenelib::util::UString>& pinyin);
-	
-	bool pinyinSegment(const string& str,
-		vector<string>& result) ;
+                         UString& refinedQueryUString);
 
-	bool isPinyin(const izenelib::util::UString& str);
-    
+    bool getPinyin(const izenelib::util::UString& hanzis,
+                   std::vector<izenelib::util::UString>& pinyin);
+
+    bool pinyinSegment(const string& str,
+                       vector<string>& result) ;
+
+    bool isPinyin(const izenelib::util::UString& str);
+
     void updateCogramAndDict(const std::list<std::pair<izenelib::util::UString, uint32_t> >& recentQueryList);
-    
+
     void updateCogramAndDict(const std::string& collectionName, const std::list<std::pair<izenelib::util::UString, uint32_t> >& recentQueryList);
 
 protected:
-	
+
     /**
-     * @brief Initialize some member variables  
+     * @brief Initialize some member variables
      * @return true if success false if failed.
      */
     bool initialize();
 
-	bool stopHere(const izenelib::util::UString& query);	
+    bool stopHere(const izenelib::util::UString& query);
 
-	bool inDict_(const izenelib::util::UString& ustr);
-	
+    bool inDict_(const izenelib::util::UString& ustr);
+
 private:
     std::string path_;
     std::string workingPath_;
     bool enableEK_;
     bool enableChn_;
 
-	/**
-	 *  max edit distance used to canididae generation
-	 */
-	bool activate_;
+    /**
+     *  max edit distance used to canididae generation
+     */
+    bool activate_;
 
-	boost::mutex logMutex_;
-	
-	//Chinese CorrectionManager mgr_;
-	ChineseQueryCorrection cmgr_;
+    boost::mutex logMutex_;
 
-	//English or Korean Query CorrectionManager
+    //Chinese CorrectionManager mgr_;
+    ChineseQueryCorrection cmgr_;
+
+    //English or Korean Query CorrectionManager
     EkQueryCorrection ekmgr_;
-    
+
 };
 
 }

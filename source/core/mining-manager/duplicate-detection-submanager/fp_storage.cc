@@ -7,53 +7,53 @@
 using namespace sf1r;
 
 FpStorage::FpStorage(const std::string& dir)
-:dir_(dir)
+        :dir_(dir)
 {
-  
+
 }
-  
+
 bool FpStorage::GetFpByTableId(uint32_t id, std::vector<FpItem>& fp)
 {
-  fp.resize(0);
-  std::string file = dir_+"/"+boost::lexical_cast<std::string>(id);
-  try
-  {
-    if( boost::filesystem::exists(file) )
+    fp.resize(0);
+    std::string file = dir_+"/"+boost::lexical_cast<std::string>(id);
+    try
     {
-      std::ifstream ifs(file.c_str(), std::ios::binary);
-      if( ifs.fail()) return false;
-      {
-        boost::archive::text_iarchive ia(ifs);
-        ia >> fp ;
-      }
-      ifs.close();
-      if( ifs.fail() )
-      {
-        return false;
-      }
+        if ( boost::filesystem::exists(file) )
+        {
+            std::ifstream ifs(file.c_str(), std::ios::binary);
+            if ( ifs.fail()) return false;
+            {
+                boost::archive::text_iarchive ia(ifs);
+                ia >> fp ;
+            }
+            ifs.close();
+            if ( ifs.fail() )
+            {
+                return false;
+            }
+        }
     }
-  }
-  catch(std::exception& ex)
-  {
-    return false;
-  }
-  return true;
+    catch (std::exception& ex)
+    {
+        return false;
+    }
+    return true;
 }
 
 bool FpStorage::SetFpByTableId(uint32_t id, const std::vector<FpItem>& fp)
 {
-  std::string file = dir_+"/"+boost::lexical_cast<std::string>(id);
-  std::ofstream ofs(file.c_str());
-  if( ofs.fail()) return false;
-  {
-    boost::archive::text_oarchive oa(ofs);
-    oa << fp ;
-  }
-  ofs.close();
-  if( ofs.fail() )
-  {
-    return false;
-  }
-  return true;
+    std::string file = dir_+"/"+boost::lexical_cast<std::string>(id);
+    std::ofstream ofs(file.c_str());
+    if ( ofs.fail()) return false;
+    {
+        boost::archive::text_oarchive oa(ofs);
+        oa << fp ;
+    }
+    ofs.close();
+    if ( ofs.fail() )
+    {
+        return false;
+    }
+    return true;
 }
 
