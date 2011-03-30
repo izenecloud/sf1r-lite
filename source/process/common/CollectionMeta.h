@@ -8,7 +8,6 @@
 #include <common/type_defs.h>
 
 #include <configuration-manager/PropertyConfig.h>
-#include <configuration-manager/CollectionPath.h>
 #include <configuration-manager/Acl.h>
 
 #include <bundles/index/IndexBundleConfiguration.h>

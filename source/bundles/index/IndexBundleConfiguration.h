@@ -3,6 +3,7 @@
 
 #include <configuration-manager/PropertyConfig.h>
 #include <configuration-manager/RankingManagerConfig.h>
+#include <configuration-manager/CollectionPath.h>
 
 #include <ir/index_manager/utility/IndexManagerConfig.h>
 
@@ -25,6 +26,8 @@ public:
 
     const bool isTrieWildcard() {return wildcardType_ == "trie"; }
 
+    bool getPropertyConfig(const std::string& name, PropertyConfig& config) const;
+
     bool getAnalysisInfo(
         const std::string& propertyName,
         AnalysisInfo& analysisInfo,
@@ -42,7 +45,10 @@ private:
     }
 
 public:
+    std::string collectionName_;
 
+    CollectionPath collPath_;
+	
     /// Schema
     std::set<PropertyConfig, PropertyComp> schema_;
 

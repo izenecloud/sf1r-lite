@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2011 (http://www.altova.com) by YF (izenesoft) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.izenesoft.com" xmlns:t="http://www.izenesoft.com" targetNamespace="http://www.izenesoft.com" elementFormDefault="qualified">
+    <xs:include schemaLocation="common.xsd"/>
+
+	<xs:element name="QueryLogBundle">
+		<xs:complexType>
+			<xs:sequence>
+                <xs:element name="Parameter">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element ref="Path"/>
+                      <xs:element ref="QuerySupport" />
+                      <xs:element ref="QueryCorrectionPara" />
+                      <xs:element ref="AutoFillPara" />
+                      <xs:element ref="CronIndexRecommend" />
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Path">
+		<xs:complexType>
+			<xs:attribute name="basepath" use="required"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="QuerySupport">
+		<xs:complexType>
+			<xs:attribute name="logdays" use="required">
+				<xs:simpleType>
+					<xs:restriction base="xs:integer">
+						<xs:minInclusive value="1"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+
+	<xs:element name="QueryCorrectionPara">
+		<xs:complexType>
+			<xs:attribute name="enableCN" type="YesNoType" use="required"/>
+			<xs:attribute name="enableEK" type="YesNoType" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="AutoFillPara">
+		<xs:complexType>
+			<xs:attribute name="num" type="xs:integer" use="required"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="CronIndexRecommend">
+		<xs:complexType>
+			<xs:attribute name="value" use="required"/>
+		</xs:complexType>
+	</xs:element>
+
+</xs:schema>

@@ -813,6 +813,8 @@ void CollectionConfig::parseCollectionPath( const ticpp::Element * path, Collect
     }
 
     collectionMeta.setCollectionPath( collPath );
+    collectionMeta.indexBundleConfig_->collPath_ = collPath;
+    collectionMeta.miningBundleConfig_->collPath_ = collPath;
 }
 
 void CollectionConfig::parseCollectionSchema( const ticpp::Element * documentSchema, CollectionMeta & collectionMeta )

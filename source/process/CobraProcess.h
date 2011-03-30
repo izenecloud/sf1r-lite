@@ -20,6 +20,10 @@ public:
 private:
     bool initLicenseManager();
 
+    bool initLAManager();
+
+    bool initQuery();
+
     bool initFireWall();
 
     bool initDriverServer();

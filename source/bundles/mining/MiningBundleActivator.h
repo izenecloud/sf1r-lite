@@ -1,5 +1,5 @@
-#ifndef INDEX_BUNDLE_ACTIVATOR_H
-#define INDEX_BUNDLE_ACTIVATOR_H
+#ifndef MINING_BUNDLE_ACTIVATOR_H
+#define MINING_BUNDLE_ACTIVATOR_H
 
 #include "MiningBundleConfiguration.h"
 

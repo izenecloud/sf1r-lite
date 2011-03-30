@@ -2,6 +2,33 @@
 
 namespace sf1r
 {
+
+void assembleConjunction(std::vector<izenelib::util::UString> keywords, std::string& result)
+{
+    result.clear();
+    int size = keywords.size();
+    for(int i = 0; i < size; ++i)
+    {
+        std::string str;
+        keywords[i].convertString(str, izenelib::util::UString::UTF_8);
+        result += str;
+        result += " ";
+    }
+}
+
+void assembleDisjunction(std::vector<izenelib::util::UString> keywords, std::string& result)
+{
+    result.clear();
+    int size = keywords.size();
+    for(int i = 0; i < size; ++i)
+    {
+        std::string str;
+        keywords[i].convertString(str, izenelib::util::UString::UTF_8);
+        result += str;
+        result += "|";
+    }
+}
+
 bool buildQueryTree(SearchKeywordOperation&action, IndexBundleConfiguration& bundleConfig, std::string& btqError)
 {
     action.clear();

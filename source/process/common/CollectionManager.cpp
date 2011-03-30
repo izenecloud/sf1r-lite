@@ -1,6 +1,9 @@
 #include "CollectionManager.h"
 #include "CollectionMeta.h"
 
+#include <bundles/index/IndexBundleActivator.h>
+#include <bundles/mining/MiningBundleActivator.h>
+
 namespace sf1r
 {
 
@@ -21,19 +24,21 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
     CollectionConfig::get()->parseConfigFile(collectionName, configFileName, collectionMeta);
 
     indexBundleConfig->setSchema(collectionMeta.getDocumentSchema());
+    collectionHandler->setBundleSchema(indexBundleConfig->schema_);
 
     ///createIndexBundle
     std::string bundleName = collectionName + "-index";
+    DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, IndexBundleActivator);
+    osgiLauncher_.start(indexBundleConfig);
     IndexSearchService* indexSearchService = static_cast<IndexSearchService*>(osgiLauncher_.getService(bundleName, "IndexSearchService"));
     collectionHandler->registerService(indexSearchService);
-    osgiLauncher_.start(indexBundleConfig);
-    collectionHandler->setBundleSchema(indexBundleConfig->schema_);
 
     ///createMiningBundle
     bundleName = collectionName + "-mining";
+    DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, MiningBundleActivator);	
+    osgiLauncher_.start(miningBundleConfig);
     MiningSearchService* miningSearchService = static_cast<MiningSearchService*>(osgiLauncher_.getService(bundleName, "MiningSearchService"));
     collectionHandler->registerService(miningSearchService);
-    osgiLauncher_.start(miningBundleConfig);
 
     // insert first, then assign to ensure exception safe
     std::pair<handler_map_type::iterator, bool> insertResult =

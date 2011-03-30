@@ -6,6 +6,7 @@ namespace sf1r
 {
 IndexBundleConfiguration::IndexBundleConfiguration(const std::string& collectionName)
     : ::izenelib::osgi::BundleConfiguration(collectionName+"-index", "IndexBundleActivator" )
+    , collectionName_(collectionName)
     , encoding_(izenelib::util::UString::UNKNOWN)
     , wildcardType_("unigram")
 {}
@@ -43,6 +44,23 @@ void IndexBundleConfiguration::numberProperty()
         PropertyConfig& config = const_cast<PropertyConfig&>(*it);
         config.setPropertyId(id++);
     }
+}
+
+bool IndexBundleConfiguration::getPropertyConfig(
+    const std::string& name, 
+    PropertyConfig& config
+) const
+{
+    PropertyConfig byName;
+    byName.setName(name);
+
+    IndexBundleSchema::const_iterator it(schema_.find(byName));
+    if (it != schema_.end())
+    {
+        config = *it;
+        return true;
+    }
+    return false;
 }
 
 bool IndexBundleConfiguration::getAnalysisInfo( 

@@ -13,6 +13,9 @@
 #include <util/ustring/UString.h>
 #include <util/driver/IPRestrictor.h>
 #include <util/driver/DriverConnectionFirewall.h>
+#include <util/singleton.h>
+
+#include <question-answering/QuestionAnalysis.h>
 
 #include <boost/thread.hpp>
 #include <boost/asio.hpp>
@@ -57,11 +60,52 @@ bool CobraProcess::initialize(const std::string& configFileDir)
         return false;
     }
 
+    if(!initLAManager()) return false;
+
+    if(!initQuery()) return false;
+
     if(!initFireWall()) return false;
 
     if(!initLicenseManager()) return false;
 
     initDriverServer();
+
+    return true;
+}
+
+bool CobraProcess::initLAManager()
+{
+    const LAManagerConfig & laConfig = SF1Config::get()->getLAManagerConfig();
+
+    if (! LAPool::getInstance()->init(laConfig))
+        return false;
+    LAPool::getInstance()->set_kma_path(laConfig.kma_path_);
+    //start dynamic update
+    std::string kma_path;
+    LAPool::getInstance()->get_kma_path(kma_path);
+    
+    std::string restrictDictPath = kma_path + "/restrict.txt";
+    boost::shared_ptr<UpdatableRestrictDict> urd;
+    unsigned int lastModifiedTime = static_cast<unsigned int>(
+            la::getFileLastModifiedTime( restrictDictPath.c_str() ) );
+    urd.reset( new UpdatableRestrictDict( lastModifiedTime ) );
+    la::UpdateDictThread::staticUDT.addRelatedDict( restrictDictPath.c_str(), urd );
+    la::UpdateDictThread::staticUDT.setCheckInterval(300);
+    la::UpdateDictThread::staticUDT.start();
+
+    return true;
+}
+
+bool CobraProcess::initQuery()
+{
+    ilplib::qa::QuestionAnalysis* pQA = Singleton<ilplib::qa::QuestionAnalysis>::get();
+    std::string qahome = SF1Config::get()->getResourceDir();
+    bfs::path path(bfs::path(qahome) / "qa" / "questionwords.txt");
+    std::string qaPath = path.string();
+    if( boost::filesystem::exists(qaPath) )
+    {
+        pQA->load(qaPath);
+    }
 
     return true;
 }

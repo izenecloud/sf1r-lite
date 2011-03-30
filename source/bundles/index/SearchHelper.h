@@ -7,7 +7,8 @@
 namespace sf1r
 {
 bool buildQueryTree(SearchKeywordOperation&action, IndexBundleConfiguration& bundleConfig, std::string& btqError);
-
+void assembleConjunction(std::vector<izenelib::util::UString> keywords, std::string& result);
+void assembleDisjunction(std::vector<izenelib::util::UString> keywords, std::string& result);
 }
 
 #endif

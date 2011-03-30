@@ -1,5 +1,7 @@
 #include "QueryLogBundleActivator.h"
 
+#include <util/osgi/ObjectCreator.h>
+
 #include <boost/shared_ptr.hpp>
 
 namespace sf1r
@@ -40,6 +42,7 @@ void QueryLogBundleActivator::removedService( const ServiceReference& ref )
 
 }
 
+REGISTER_BUNDLE_ACTIVATOR_CLASS( "QueryLogBundle", QueryLogBundleActivator )
 
 }
 

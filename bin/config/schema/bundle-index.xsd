@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2011 (http://www.altova.com) by YF (izenesoft) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.izenesoft.com" xmlns:t="http://www.izenesoft.com" targetNamespace="http://www.izenesoft.com" elementFormDefault="qualified">
+    <xs:include schemaLocation="common.xsd"/>
+
+	<xs:simpleType name="CollectionDataDirectoryType">
+		<xs:restriction base="xs:string"/>
+	</xs:simpleType>
+
+	<xs:element name="IndexBundle">
+		<xs:complexType>
+			<xs:sequence>
+            	<xs:element name="Schema" minOccurs="0">
+            		<xs:complexType>
+			            <xs:sequence>
+                        	<xs:element name="Property" maxOccurs="unbounded" >
+		                        <xs:complexType>
+                        			<xs:sequence>
+			                        	<xs:element ref="Display" minOccurs="0"/>
+                        				<xs:element ref="Indexing" minOccurs="0" maxOccurs="unbounded"/>
+                        			</xs:sequence>
+                        			<xs:attribute name="name" type="xs:string" use="required"/>
+                        		</xs:complexType>
+                        	</xs:element>
+            			</xs:sequence>
+            		</xs:complexType>
+            	</xs:element>
+
+                <xs:element name="Parameter" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="1" maxOccurs="2"/>
+                            <xs:element ref="IndexStrategy"/>
+                            <xs:element ref="Sia"/>
+                            <xs:element ref="LanguageIdentifier"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+    <xs:element name="IndexStrategy">
+	    <xs:complexType>
+	    	<xs:attribute name="indexpolicy" type="xs:string" use="required"/>
+	    	<xs:attribute name="memorypoolsize" use="required">
+	    		<xs:simpleType>
+	    			<xs:restriction base="xs:integer">
+	    				<xs:minInclusive value="5000000"/>
+	    				<xs:maxInclusive value="1024000000"/>
+	    			</xs:restriction>
+	    		</xs:simpleType>
+	    	</xs:attribute>
+            <xs:attribute name="cron" type="xs:string"/>
+    	</xs:complexType>
+	</xs:element>
+
+    <xs:element name="Sia">
+	    <xs:complexType>
+	    	<xs:attribute name="doccachenum" use="required">
+	    		<xs:simpleType>
+	    			<xs:restriction base="xs:integer">
+	    				<xs:minInclusive value="100"/>
+	    				<xs:maxInclusive value="100000"/>
+	    			</xs:restriction>
+	    		</xs:simpleType>
+	    	</xs:attribute>
+	    	<xs:attribute name="triggerqa" type="YesNoType" use="required"/>
+	    	<xs:attribute name="encoding" type="EncodingType" use="required"/>
+	    	<xs:attribute name="wildcardtype" use="required">
+    			<xs:simpleType>
+	    			<xs:restriction base="xs:string">
+	    				<xs:enumeration value="unigram"/>
+	    				<xs:enumeration value="trie"/>
+	    			</xs:restriction>
+	    		</xs:simpleType>
+	    	</xs:attribute>
+    	</xs:complexType>
+	</xs:element>
+
+	<xs:element name="LanguageIdentifier">
+		<xs:complexType>
+			<xs:attribute name="dbpath" use="required"/>
+		</xs:complexType>
+	</xs:element>
+
+
+	<xs:element name="Display">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="settings"/>
+			</xs:sequence>
+			<xs:attribute name="length" use="required">
+				<xs:simpleType>
+					<xs:restriction base="xs:integer">
+						<xs:minInclusive value="140"/>
+						<xs:maxInclusive value="200"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+			<xs:attribute name="snippet" type="YesNoType" use="required"/>
+			<xs:attribute name="summary" type="YesNoType" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Indexing">
+		<xs:complexType>
+			<xs:attribute name="alias" type="xs:NCName"/>
+			<xs:attribute name="analyzer" type="xs:NCName" use="optional"/>
+			<xs:attribute name="filter" type="YesNoType" use="required"/>
+			<xs:attribute name="multivalue" type="YesNoType" use="optional"/>
+			<xs:attribute name="doclen" type="YesNoType" use="optional"/>
+			<xs:attribute name="rankweight" use="optional">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="light"/>
+						<xs:enumeration value="normal"/>
+						<xs:enumeration value="heavy"/>
+						<xs:enumeration value="max"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+			<xs:attribute name="tokenizer" use="optional"/>
+		</xs:complexType>
+	</xs:element>
+
+
+</xs:schema>
