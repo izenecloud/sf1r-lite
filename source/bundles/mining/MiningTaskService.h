@@ -14,9 +14,7 @@ public:
 
     ~MiningTaskService();
 
-    void buildCollection(unsigned int numdoc);
-
-    void optimizeIndex();
+    void DoMiningCollection();
 
 private:
     boost::shared_ptr<MiningManager> miningManager_;

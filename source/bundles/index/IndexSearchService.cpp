@@ -1,5 +1,5 @@
 #include "IndexSearchService.h"
-#include "SearchHelper.h"
+#include "IndexBundleHelper.h"
 #include <bundles/mining/MiningSearchService.h>
 
 #include <common/SFLogger.h>

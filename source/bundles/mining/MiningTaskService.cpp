@@ -10,12 +10,9 @@ MiningTaskService::~MiningTaskService()
 {
 }
 
-void MiningTaskService::buildCollection(unsigned int numdoc)
+void MiningTaskService::DoMiningCollection()
 {
-}
-
-void MiningTaskService::optimizeIndex()
-{
+    miningManager_->DoMiningCollection();
 }
 
 }

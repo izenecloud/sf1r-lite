@@ -22,7 +22,8 @@ class IndexBundleActivator : public IBundleActivator, public IServiceTrackerCust
 {
 private:
     ServiceTracker* searchTracker_;
-    
+    ServiceTracker* taskTracker_;
+
     IBundleContext* context_;
     IndexSearchService* searchService_;
     IServiceRegistration* searchServiceReg_;
@@ -31,10 +32,6 @@ private:
 
     IndexBundleConfiguration* config_;
     std::string currentCollectionDataName_;
-
-
-    PropertyConfig dateProperty_;
-    config_tool::PROPERTY_ALIAS_MAP_T propertyAliasMap_;
 
     boost::shared_ptr<LAManager> laManager_;
     boost::shared_ptr<IDManager> idManager_;

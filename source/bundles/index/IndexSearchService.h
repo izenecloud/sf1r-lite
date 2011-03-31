@@ -7,12 +7,10 @@
 #include <common/type_defs.h>
 #include <common/Status.h>
 
-#include <directory-manager/DirectoryRotator.h>
 #include <search-manager/SearchManager.h>
 #include <ranking-manager/RankingManager.h>
 #include <query-manager/ActionItem.h>
 #include <index-manager/IndexManager.h>
-#include <configuration-manager/ConfigurationTool.h>
 #include <document-manager/Document.h>
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>

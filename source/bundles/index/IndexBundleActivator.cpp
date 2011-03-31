@@ -6,12 +6,8 @@
 #include <util/singleton.h>
 
 #include <boost/filesystem.hpp>
-#include <boost/algorithm/string/case_conv.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <memory> // for auto_ptr
-#include <protect/RestrictMacro.h>
 
 namespace bfs = boost::filesystem;
 using namespace izenelib::util;
@@ -22,6 +18,7 @@ namespace sf1r
 using namespace izenelib::osgi;
 IndexBundleActivator::IndexBundleActivator()
     :searchTracker_(0)
+    ,taskTracker_(0)
     ,context_(0)
     ,searchService_(0)
     ,searchServiceReg_(0)
@@ -49,6 +46,8 @@ void IndexBundleActivator::start( IBundleContext::ConstPtr context )
     taskServiceReg_ = context->registerService( "IndexTaskService", taskService_, props );
     searchTracker_ = new ServiceTracker( context, "MiningSearchService", this );
     searchTracker_->startTracking();
+    taskTracker_ = new ServiceTracker( context, "MiningTaskService", this );
+    taskTracker_->startTracking();
 }
 
 void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
@@ -58,6 +57,12 @@ void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
         searchTracker_->stopTracking();
         delete searchTracker_;
         searchTracker_ = 0;
+    }
+    if(taskTracker_)
+    {
+        taskTracker_->stopTracking();
+        delete taskTracker_;
+        taskTracker_ = 0;
     }
     if(searchServiceReg_)
     {
@@ -88,6 +93,21 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
             MiningSearchService* service = reinterpret_cast<MiningSearchService*> ( const_cast<IService*>(ref.getService()) );
             cout << "[IndexBundleActivator#addingService] Calling MiningSearchService..." << endl;
             searchService_->miningSearchService_ = service;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else if ( ref.getServiceName() == "MiningTaskService" )	
+    {
+        Properties props = ref.getServiceProperties();
+        if ( props.get( "collection" ) == config_->collectionName_)
+        {
+            MiningTaskService* service = reinterpret_cast<MiningTaskService*> ( const_cast<IService*>(ref.getService()) );
+            cout << "[IndexBundleActivator#addingService] Calling MiningTaskService..." << endl;
+            taskService_->miningTaskService_= service;
             return true;
         }
         else
@@ -134,6 +154,7 @@ bool IndexBundleActivator::init_()
 
     searchService_ = new IndexSearchService;
 
+    searchService_->bundleConfig_ = config_;
     searchService_->laManager_ = laManager_;
     searchService_->idManager_ = idManager_;
     searchService_->documentManager_ = documentManager_;
@@ -142,7 +163,7 @@ bool IndexBundleActivator::init_()
     searchService_->searchManager_ = searchManager_;
     searchService_->pQA_ = pQA_;
 
-    taskService_ = new IndexTaskService;
+    taskService_ = new IndexTaskService(config_, directoryRotator_);
 
     taskService_->indexManager_ = indexManager_;
     taskService_->idManager_ = idManager_;
@@ -294,11 +315,6 @@ IndexBundleActivator::createSearchManager_() const
             )
         );
     }
-    else
-    {
-        sflog->info( SFL_IDX, 10218); 
-    }
-
     return ret;
 }
 
