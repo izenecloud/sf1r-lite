@@ -454,7 +454,7 @@ private:
     /// @param system           Pointer to the Element
     void parseBrokerAgent( const ticpp::Element * brokerAgent );
 
-private:
+public:
     //----------------------------  PRIVATE MEMBER VARIABLES  ----------------------------
     // STATIC VALUES -----------------
 
@@ -515,7 +515,6 @@ private:
     /// @bried home of configuration files
     std::string homeDir_;
 
-    friend class CollectionConfig;    
 };
 
 

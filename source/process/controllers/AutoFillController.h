@@ -6,6 +6,7 @@
  * @date Created <2010-05-31 14:11:35>
  */
 #include "Sf1Controller.h"
+#include <bundles/querylog/QueryLogSearchService.h>
 
 namespace sf1r
 {
@@ -21,6 +22,10 @@ namespace sf1r
 class AutoFillController : public Sf1Controller
 {
 public:
+    AutoFillController();
+
+    AutoFillController(const AutoFillController& controller);
+
     enum
     {
         kDefaultCount = 8       /**< Default count of result */
@@ -29,8 +34,14 @@ public:
     {
         kMaxCount = 100         /**< Max count of result */
     };
+    void setService(QueryLogSearchService* queryLogSearchService)
+    {
+        queryLogSearchService_ = queryLogSearchService;
+    }
 
     void index();
+private:
+    QueryLogSearchService* queryLogSearchService_;
 };
 
 /// @}

@@ -7,8 +7,6 @@
 
 #include <common/Keys.h>
 
-#include <mining-manager/auto-fill-submanager/AutoFillSubManager.h>
-
 #include <util/ustring/UString.h>
 
 #include <vector>
@@ -19,6 +17,18 @@ namespace sf1r
 
 using driver::Keys;
 using namespace izenelib::driver;
+
+AutoFillController::AutoFillController()
+    :queryLogSearchService_(NULL)
+{
+}
+
+AutoFillController::AutoFillController(const AutoFillController& controller)
+    :queryLogSearchService_(controller.queryLogSearchService_)
+{
+}
+
+
 /**
  * @brief Action \b index. Gets list of logged keywords starting with specified
  * prefix.
@@ -78,7 +88,7 @@ void AutoFillController::index()
 
     izenelib::util::UString query(prefix, izenelib::util::UString::UTF_8);
     std::vector<izenelib::util::UString> result;
-    AutoFillSubManager::get()->getAutoFillList(query, result);
+    queryLogSearchService_->getAutoFillList(query, result);
 
     Value::UintType count = result.size();
     if (limit < count)

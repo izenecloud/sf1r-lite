@@ -5,6 +5,9 @@
 #include <la-manager/LAPool.h>
 #include <license-manager/LicenseManager.h>
 
+#include <bundles/querylog/QueryLogBundleConfiguration.h>
+#include <bundles/querylog/QueryLogBundleActivator.h>
+
 #include <OnSignal.h>
 #include <common/XmlConfigParser.h>
 #include <common/CollectionManager.h>
@@ -22,6 +25,7 @@
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -62,8 +66,6 @@ bool CobraProcess::initialize(const std::string& configFileDir)
 
     if(!initLAManager()) return false;
 
-    if(!initQuery()) return false;
-
     if(!initFireWall()) return false;
 
     if(!initLicenseManager()) return false;
@@ -96,7 +98,7 @@ bool CobraProcess::initLAManager()
     return true;
 }
 
-bool CobraProcess::initQuery()
+QueryLogSearchService* CobraProcess::initQuery()
 {
     ilplib::qa::QuestionAnalysis* pQA = Singleton<ilplib::qa::QuestionAnalysis>::get();
     std::string qahome = SF1Config::get()->getResourceDir();
@@ -107,7 +109,17 @@ bool CobraProcess::initQuery()
         pQA->load(qaPath);
     }
 
-    return true;
+    ///create QueryLogBundle
+    boost::shared_ptr<QueryLogBundleConfiguration> queryLogBundleConfig
+    (new QueryLogBundleConfiguration(SF1Config::get()->queryLogBundleConfig_));
+
+    ///createIndexBundle
+    std::string bundleName = "QueryLog";
+    OSGILauncher& launcher = CollectionManager::get()->getOSGILauncher();
+    launcher.start(queryLogBundleConfig);
+    QueryLogSearchService* service = static_cast<QueryLogSearchService*>(launcher.getService(bundleName, "QueryLogSearchService"));
+
+    return service;
 }
 
 bool CobraProcess::initLicenseManager()
@@ -187,6 +199,9 @@ bool CobraProcess::initDriverServer()
     // init Router
     router_.reset(new ::izenelib::driver::Router);
     initializeDriverRouter(*router_, enableTest);
+
+    QueryLogSearchService* service = initQuery();
+    initializeDriverRouter(*router_, service);
 
     boost::shared_ptr<DriverConnectionFactory> factory(
         new DriverConnectionFactory(router_)

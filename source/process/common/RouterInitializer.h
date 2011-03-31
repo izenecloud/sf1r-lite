@@ -7,10 +7,12 @@
  */
 
 #include <util/driver/Router.h>
+#include <util/osgi/IService.h>
 
 namespace sf1r {
-
+using namespace izenelib::osgi;
 void initializeDriverRouter(::izenelib::driver::Router& router, bool enableTest = false);
+void initializeDriverRouter(::izenelib::driver::Router& router, IService* service);
 
 } // namespace sf1r
 

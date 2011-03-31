@@ -3,7 +3,9 @@
 
 
 #include "Sf1Controller.h"
-#include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
+
+#include <bundles/querylog/QueryLogSearchService.h>
+
 namespace sf1r
 {
 
@@ -18,7 +20,19 @@ namespace sf1r
 class QueryCorrectionController : public Sf1Controller
 {
 public:
+    QueryCorrectionController();
+
+    QueryCorrectionController(const QueryCorrectionController& controller);
+
+    void setService(QueryLogSearchService* queryLogSearchService)
+    {
+        queryLogSearchService_ = queryLogSearchService;
+    }
+	
     void index();
+
+private:
+    QueryLogSearchService* queryLogSearchService_;
 };
 
 /// @}

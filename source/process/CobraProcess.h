@@ -1,6 +1,8 @@
 #ifndef COBRAPROCESS_H_
 #define COBRAPROCESS_H_
 
+#include <bundles/querylog/QueryLogSearchService.h>
+
 #include <util/driver/DriverServer.h>
 
 #include <boost/scoped_ptr.hpp>
@@ -22,7 +24,7 @@ private:
 
     bool initLAManager();
 
-    bool initQuery();
+    QueryLogSearchService* initQuery();
 
     bool initFireWall();
 

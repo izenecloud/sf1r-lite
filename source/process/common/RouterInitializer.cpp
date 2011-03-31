@@ -160,49 +160,6 @@ void initializeDriverRouter(::izenelib::driver::Router& router, bool enableTest)
         get_similarHandler.release();
     }
 
-
-    {
-        QueryCorrectionController query_correction;
-        const std::string controllerName("query_correction");
-        typedef ::izenelib::driver::ActionHandler<QueryCorrectionController> handler_type;
-        typedef std::auto_ptr<handler_type> handler_ptr;
-
-        handler_ptr indexHandler(
-            new handler_type(
-                query_correction,
-                &QueryCorrectionController::index
-            )
-        );
-
-        router.map(
-            controllerName,
-            "index",
-            indexHandler.get()
-        );
-        indexHandler.release();
-    }
-
-    {
-        AutoFillController auto_fill;
-        const std::string controllerName("auto_fill");
-        typedef ::izenelib::driver::ActionHandler<AutoFillController> handler_type;
-        typedef std::auto_ptr<handler_type> handler_ptr;
-
-        handler_ptr indexHandler(
-            new handler_type(
-                auto_fill,
-                &AutoFillController::index
-            )
-        );
-
-        router.map(
-            controllerName,
-            "index",
-            indexHandler.get()
-        );
-        indexHandler.release();
-    }
-
     {
         CommandsController commands;
         const std::string controllerName("commands");
@@ -512,6 +469,53 @@ void initializeDriverRouter(::izenelib::driver::Router& router, bool enableTest)
         indexHandler.release();
     }
 
+}
+
+void initializeDriverRouter(::izenelib::driver::Router& router, IService* service)
+{
+    {
+        AutoFillController auto_fill;
+        auto_fill.setService(static_cast<QueryLogSearchService*>(service));
+        const std::string controllerName("auto_fill");
+        typedef ::izenelib::driver::ActionHandler<AutoFillController> handler_type;
+        typedef std::auto_ptr<handler_type> handler_ptr;
+
+        handler_ptr indexHandler(
+            new handler_type(
+                auto_fill,
+                &AutoFillController::index
+            )
+        );
+
+        router.map(
+            controllerName,
+            "index",
+            indexHandler.get()
+        );
+        indexHandler.release();
+    }
+
+    {
+        QueryCorrectionController query_correction;
+        query_correction.setService(static_cast<QueryLogSearchService*>(service));		
+        const std::string controllerName("query_correction");
+        typedef ::izenelib::driver::ActionHandler<QueryCorrectionController> handler_type;
+        typedef std::auto_ptr<handler_type> handler_ptr;
+
+        handler_ptr indexHandler(
+            new handler_type(
+                query_correction,
+                &QueryCorrectionController::index
+            )
+        );
+
+	router.map(
+            controllerName,
+            "index",
+            indexHandler.get()
+	);
+	indexHandler.release();
+    }
 }
 
 } // namespace sf1r

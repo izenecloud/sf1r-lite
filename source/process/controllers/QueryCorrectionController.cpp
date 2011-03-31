@@ -2,8 +2,6 @@
 
 #include <common/Keys.h>
 
-#include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
-
 #include <util/ustring/UString.h>
 
 #include <vector>
@@ -14,6 +12,17 @@ namespace sf1r
 
 using driver::Keys;
 
+QueryCorrectionController::QueryCorrectionController()
+    :queryLogSearchService_(NULL)
+{}
+
+QueryCorrectionController::QueryCorrectionController(
+    const QueryCorrectionController& controller
+)
+    :queryLogSearchService_(controller.queryLogSearchService_)
+{
+}
+
 void QueryCorrectionController::index()
 {
     std::string collectionName = asString(request()[Keys::collection]);
@@ -22,7 +31,7 @@ void QueryCorrectionController::index()
     UString queryUString(queryString, UString::UTF_8);
     UString refinedQueryString;
 
-    QueryCorrectionSubmanager::getInstance().getRefinedQuery(
+    queryLogSearchService_->getRefinedQuery(
         collectionName, queryUString,
         refinedQueryString);
 
