@@ -201,10 +201,18 @@ namespace sf1r
                     tmpNormString.push_back(' ');
                 break;
             case '"': // Skip all things inside the exact bracket.
-                tmpNormString.push_back('"');
-                while ( ++iter != iterEnd && *iter != '"') tmpNormString.push_back( *iter );
-                tmpNormString.push_back( *iter++ ); // insert last "
-                break;
+                { // "keyword -> keyword
+                    std::string left(iter, iterEnd);
+                    if (left.find('"', 1) == std::string::npos) {
+                        while(++iter != iterEnd && *iter == ' ');
+                        break;
+                    }
+                    tmpNormString.push_back('"');
+                    while ( ++iter != iterEnd && *iter != '"') tmpNormString.push_back( *iter );
+                    if (iter != iterEnd)
+                        tmpNormString.push_back( *iter++ ); // insert last "
+                    break;
+                }
             default: // Store char && add space if openBracket is attached to the back of closeBracket.
                 //prevIter = iter;
                 tmpNormString.push_back( *iter++ );
