@@ -16,7 +16,7 @@
       <QueryLogBundle>
         <Parameter>
           <Path basepath="@SF1RENGINE_ROOT@/bin/query-support" />
-          <QuerySupport logdays="7" />
+          <QuerySupport updatetime="3600" logdays="7" />
           <QueryCorrectionPara enableEK="y" enableCN="y"/>
           <AutoFillPara num="10"/> 
           <CronIndexRecommend value="0 2 * * *" />

@@ -12,6 +12,8 @@ class QueryLogBundleConfiguration : public ::izenelib::osgi::BundleConfiguration
 public:
     QueryLogBundleConfiguration();
 
+    uint32_t update_time;
+
     uint32_t log_days;
 
     std::string basepath;

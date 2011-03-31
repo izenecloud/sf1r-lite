@@ -29,6 +29,13 @@
 
 	<xs:element name="QuerySupport">
 		<xs:complexType>
+			<xs:attribute name="updatetime" use="required">
+				<xs:simpleType>
+					<xs:restriction base="xs:integer">
+						<xs:minInclusive value="1"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
 			<xs:attribute name="logdays" use="required">
 				<xs:simpleType>
 					<xs:restriction base="xs:integer">

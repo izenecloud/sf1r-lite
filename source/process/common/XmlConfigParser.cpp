@@ -328,7 +328,8 @@ void SF1Config::parseQueryLogBundleParam(const ticpp::Element * queryLog)
     settings = getUniqChildElement( queryLog, "Path" );
     getAttribute( settings, "basepath", queryLogBundleConfig_.basepath );
     settings = getUniqChildElement( queryLog, "QuerySupport" );
-    getAttribute( queryLog, "logdays", queryLogBundleConfig_.log_days );
+    getAttribute( settings, "updatetime", queryLogBundleConfig_.update_time );
+    getAttribute( settings, "logdays", queryLogBundleConfig_.log_days );
     settings = getUniqChildElement( queryLog, "QueryCorrectionPara" );
     getAttribute( settings, "enableEK", queryLogBundleConfig_.query_correction_enableEK );
     getAttribute( settings, "enableCN", queryLogBundleConfig_.query_correction_enableCN );

@@ -119,6 +119,8 @@ QueryLogSearchService* CobraProcess::initQuery()
     launcher.start(queryLogBundleConfig);
     QueryLogSearchService* service = static_cast<QueryLogSearchService*>(launcher.getService(bundleName, "QueryLogSearchService"));
 
+    addExitHook(boost::bind(&OSGILauncher::stop, launcher));
+
     return service;
 }
 
@@ -154,21 +156,6 @@ bool CobraProcess::initLicenseManager()
         sflog->error(SFL_INIT, "license is invalid. Now sf1 will be worked on trial mode.");
         LicenseManager::continueIndex_ = false;
     }
-
-//    We do not need to monitor Index Size for license now.
-//    // ------------------------------ [ License Manager ]
-//    // Extract collectionDataPathList from collectionMeta in baConfig
-//    std::vector<std::string> collDataPathList;
-//    const std::map<std::string, CollectionMeta>&
-//    collectionMetaMap = SF1Config::get()->getCollectionMetaMap();
-//    std::map<std::string, CollectionMeta>::const_iterator
-//        collectionIter = collectionMetaMap.begin();
-//    for(; collectionIter != collectionMetaMap.end(); collectionIter++)
-//    {
-//        collDataPathList.push_back( collectionIter->second.getCollectionPath().getCollectionDataPath() );
-//        collDataPathList.push_back( collectionIter->second.getCollectionPath().getQueryDataPath() );
-//    }
-//    boost::thread bgThread(boost::bind(&LicenseManager::startBGWork,*licenseManager, collDataPathList));
 
 #endif // COBRA_RESTRICT
     return true;
@@ -211,19 +198,29 @@ bool CobraProcess::initDriverServer()
     driverServer_.reset(
         new DriverServer(endpoint, factory, threadPoolSize)
     );
+
+    addExitHook(boost::bind(&CobraProcess::stopDriver, this));
+
     return true;
+}
+
+void CobraProcess::stopDriver()
+{
+    if (driverServer_)
+    {
+        driverServer_->stop();
+    }
 }
 
 int CobraProcess::run()
 {
     atexit(&LAPool::destroy);
+    setupDefaultSignalHandlers();
 
     bool caughtException = false;
 
     try
     {
-
-
         bfs::directory_iterator iter(configDir_), end_iter;
         for(; iter!= end_iter; ++iter)
         {
@@ -238,67 +235,7 @@ int CobraProcess::run()
             }
         }		
 
-
-    
-/*    
-        // initialize BA
-        boost::shared_ptr<BAMain> ba(new BAMain);
-        if (!ba->init(config_.getBAParams()))
-        {
-            std::cerr << "BA Initialization Failed. "
-                      "Please check error log file."
-                      << std::endl;
-            return 1;
-        }
-        addExitHook(boost::bind(&BAMain::stop, ba));
-
-        std::size_t collectionCount = config_.collections.size();
-        std::vector<boost::shared_ptr<SMIAProcess> > smiaList(collectionCount);
-
-        std::set<std::string>::const_iterator collectionIt
-        = config_.collections.begin();
-        for (std::size_t i = 0; i < collectionCount; ++i, ++collectionIt)
-        {
-            const std::string& collection = *collectionIt;
-
-            smiaList[i].reset(new SMIAProcess);
-            if (!smiaList[i]->init(config_.getSMIAParams(collection)))
-            {
-                std::cerr << "SMIA (" << collection
-                          << ") Initialization Failed. "
-                          << "Please check error log file."
-                          << std::endl;
-                return 1;
-            }
-            addExitHook(boost::bind(&SMIAProcess::stop, smiaList[i]));
-        }
-
-        //do some static work
-        if ( collectionCount>0 )
-        {
-            QuerySupportConfig query_support_config = SF1Config::get()->getQuerySupportConfig();
-
-            MiningQueryLogHandler* handler = MiningQueryLogHandler::getInstance();
-            handler->SetParam(query_support_config.update_time, query_support_config.log_days);
-            std::string recommend_cron_string = SF1Config::get()->getIndexRecommendCronString();
-            if ( !handler->cronStart(recommend_cron_string) )
-            {
-                std::cout<<"Can not start cron job for recommend, cron_string: "<<recommend_cron_string<<std::endl;
-            }
-        }
-*/
-        setupDefaultSignalHandlers();
-
-        // Starts processes in threads
-        boost::thread_group threads;
-/*		
-        threads.create_thread(boost::bind(&BAMain::run, ba));
-        for (std::size_t i = 0; i < collectionCount; ++i)
-        {
-            threads.create_thread(boost::bind(&SMIAProcess::run, smiaList[i]));
-        }
-*/
-        threads.join_all();
+        driverServer_->run();
     }
     catch (const std::exception& e)
     {

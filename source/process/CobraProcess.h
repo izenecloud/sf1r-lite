@@ -30,6 +30,8 @@ private:
 
     bool initDriverServer();
 
+    void stopDriver();
+
 private:
     std::string configDir_;
 
