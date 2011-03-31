@@ -1005,12 +1005,24 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     downCase(encoding_str);
     params.GetString("ClassificationPara/trainingencoding", encoding_str); 
     mining_config.dc_param.encoding_type = parseEncodingType(encoding_str);
+
+    std::set<std::string> directories;
+    params.Get("CollectionDataDirectory", directories);
+	
+    if(!directories.empty())
+    {
+        collectionMeta.miningBundleConfig_->collectionDataDirectories_.assign(directories.begin(), directories.end());
+    }
+
 }
 
 void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_schema_node, CollectionMeta & collectionMeta)
 {
     //** PARSE MINING SCHEMA BEGIN
-    MiningSchema& mining_schema = collectionMeta.miningBundleConfig_->mining_schema_;
+    MiningBundleConfiguration& miningBundleConfig = *(collectionMeta.miningBundleConfig_);
+    miningBundleConfig.schema_ = collectionMeta.schema_;
+
+    MiningSchema& mining_schema = miningBundleConfig.mining_schema_;
     PropertyDataType property_type;
     if( mining_schema_node!= NULL )
     {

@@ -4,6 +4,7 @@
 #include <configuration-manager/MiningConfig.h>
 #include <configuration-manager/MiningSchema.h>
 #include <configuration-manager/CollectionPath.h>
+#include <configuration-manager/PropertyConfig.h>
 
 #include <util/osgi/BundleConfiguration.h>
 
@@ -17,6 +18,10 @@ public:
     std::string collectionName_;
 
     CollectionPath collPath_;
+
+    std::vector<std::string> collectionDataDirectories_;
+
+    schema_type schema_;
 
     MiningConfig mining_config_;
 

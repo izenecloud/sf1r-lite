@@ -21,7 +21,7 @@ namespace sf1r
 
 using namespace izenelib::osgi;
 IndexBundleActivator::IndexBundleActivator()
-    :tracker_(0)
+    :searchTracker_(0)
     ,context_(0)
     ,searchService_(0)
     ,searchServiceReg_(0)
@@ -44,24 +44,61 @@ void IndexBundleActivator::start( IBundleContext::ConstPtr context )
     init_();
 
     Properties props;
-    props.put( "instance", "1" );
+    props.put( "collection", config_->collectionName_);
     searchServiceReg_ = context->registerService( "IndexSearchService", searchService_, props );
-    taskServiceReg_ = context->registerService( "TaskSearchService", taskService_, props );
+    taskServiceReg_ = context->registerService( "IndexTaskService", taskService_, props );
+    searchTracker_ = new ServiceTracker( context, "MiningSearchService", this );
+    searchTracker_->startTracking();
 }
 
 void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
 {
-    searchServiceReg_->unregister();
-    taskServiceReg_->unregister();
-    delete searchService_;
-    delete taskService_;
-    delete searchServiceReg_;
-    delete taskServiceReg_;
+    if(searchTracker_)
+    {
+        searchTracker_->stopTracking();
+        delete searchTracker_;
+        searchTracker_ = 0;
+    }
+    if(searchServiceReg_)
+    {
+        searchServiceReg_->unregister();
+        delete searchServiceReg_;
+        delete searchService_;
+        searchServiceReg_ = 0;
+        searchService_ = 0;
+    }
+
+    if(taskServiceReg_)
+    {
+        taskServiceReg_->unregister();
+        delete taskServiceReg_;
+        delete taskService_;
+        taskServiceReg_ = 0;
+        taskService_ = 0;
+    }
 }
 
 bool IndexBundleActivator::addingService( const ServiceReference& ref )
 {
-    return true;
+    if ( ref.getServiceName() == "MiningSearchService" )
+    {
+        Properties props = ref.getServiceProperties();
+        if ( props.get( "collection" ) == config_->collectionName_)
+        {
+            MiningSearchService* service = reinterpret_cast<MiningSearchService*> ( const_cast<IService*>(ref.getService()) );
+            cout << "[IndexBundleActivator#addingService] Calling MiningSearchService..." << endl;
+            searchService_->miningSearchService_ = service;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else
+    {
+        return false;
+    }
 }
 
 void IndexBundleActivator::removedService( const ServiceReference& ref )
@@ -160,8 +197,6 @@ bool IndexBundleActivator::openDataDirectories_()
     {
 	bfs::path p = newest->path();
 	currentCollectionDataName_ = p.filename();
-	sflog->info( SFL_IDX, 10206, getCurrentCollectionDataPath_().c_str() ); 
-
 	//std::cout << "Current Index Directory: " << indexPath_() << std::endl;
 	return true;
     }

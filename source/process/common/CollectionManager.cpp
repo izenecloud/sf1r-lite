@@ -32,6 +32,8 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
     osgiLauncher_.start(indexBundleConfig);
     IndexSearchService* indexSearchService = static_cast<IndexSearchService*>(osgiLauncher_.getService(bundleName, "IndexSearchService"));
     collectionHandler->registerService(indexSearchService);
+    IndexTaskService* indexTaskService = static_cast<IndexTaskService*>(osgiLauncher_.getService(bundleName, "IndexTaskService"));
+    collectionHandler->registerService(indexTaskService);
 
     ///createMiningBundle
     bundleName = collectionName + "-mining";

@@ -18,5 +18,11 @@ void IndexTaskService::optimizeIndex()
 {
 }
 
+bool IndexTaskService::getIndexStatus(Status& status)
+{
+    return true;
+}
+
+
 }
 

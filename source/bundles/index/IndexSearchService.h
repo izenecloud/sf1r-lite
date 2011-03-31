@@ -25,6 +25,7 @@
 
 namespace sf1r
 {
+class MiningSearchService;
 class IndexSearchService : public ::izenelib::osgi::IService
 {
 public:
@@ -39,7 +40,6 @@ public:
 
     bool getInternalDocumentId(const izenelib::util::UString& scdDocumentId, uint32_t& internalId);
 
-    bool getIndexStatus(Status& status);
 
 private:
 
@@ -55,8 +55,13 @@ private:
     bool  getResultItem(ActionItemT& actionItem, const std::vector<sf1r::docid_t>& docsInPage,
         const vector<vector<izenelib::util::UString> >& propertyQueryTermList, ResultItemT& resultItem);
 
+    bool removeDuplicateDocs( 
+            KeywordSearchActionItem& actionItem,
+            KeywordSearchResult& resultItem);
+
 private:
     IndexBundleConfiguration* bundleConfig_;
+    MiningSearchService* miningSearchService_;
     boost::shared_ptr<LAManager> laManager_;
     boost::shared_ptr<IDManager> idManager_;
     boost::shared_ptr<DocumentManager> documentManager_;
@@ -68,6 +73,7 @@ private:
     AnalysisInfo analysisInfo_;
 
     friend class IndexBundleActivator;
+    friend class MiningBundleActivator;
 };
 
 }

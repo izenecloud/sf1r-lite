@@ -5,7 +5,7 @@
  */
 #include "StatusController.h"
 
-#include <bundles/index/IndexSearchService.h>
+#include <bundles/index/IndexTaskService.h>
 
 #include <common/Status.h>
 #include <common/Keys.h>
@@ -55,7 +55,7 @@ void StatusController::index()
     indexStatusResponse[Keys::document_count] = 0;
 
     Status indexStatus;
-    IndexSearchService* service = collectionHandler_->indexSearchService_;	
+    IndexTaskService* service = collectionHandler_->indexTaskService_;	
 
     if (service->getIndexStatus(indexStatus))
     {

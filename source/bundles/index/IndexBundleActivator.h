@@ -21,7 +21,8 @@ using namespace izenelib::osgi;
 class IndexBundleActivator : public IBundleActivator, public IServiceTrackerCustomizer
 {
 private:
-    ServiceTracker* tracker_;
+    ServiceTracker* searchTracker_;
+    
     IBundleContext* context_;
     IndexSearchService* searchService_;
     IServiceRegistration* searchServiceReg_;

@@ -1,8 +1,8 @@
 #include "IndexSearchService.h"
 #include "SearchHelper.h"
+#include <bundles/mining/MiningSearchService.h>
 
 #include <common/SFLogger.h>
-#include <common/Status.h>
 
 #include <query-manager/QMCommonFunc.h>
 #include <common/type_defs.h>
@@ -21,6 +21,7 @@ int TOP_K_NUM = 1000;
 
 IndexSearchService::IndexSearchService()
 {
+    miningSearchService_ = NULL;
 }
 
 IndexSearchService::~IndexSearchService()
@@ -129,7 +130,7 @@ bool IndexSearchService::getSearchResult(
 
 FinishSearch:
     // Remove duplicated docs from the result if the option is on.
-    //removeDuplicateDocs(actionItem, resultItem);
+    removeDuplicateDocs(actionItem, resultItem);
 
     //set top K document in resultItem t
     resultItem.start_ = actionItem.pageInfo_.start_;
@@ -179,6 +180,10 @@ FinishSearch:
 
     cout << "[IndexSearchService] keywordSearch process Done" << endl; // XXX
 
+    if( miningSearchService_ )
+    {
+        miningSearchService_->getSearchResult(resultItem);
+    }
 
     return true;
 }
@@ -390,12 +395,73 @@ bool  IndexSearchService::getResultItem(ActionItemT& actionItem, const std::vect
     return ret;
 }
 
+bool IndexSearchService::removeDuplicateDocs(
+    KeywordSearchActionItem& actionItem,
+    KeywordSearchResult& resultItem
+)
+{
+    // Remove duplicated docs from the result if the option is on.
+    if( miningSearchService_)
+    {
+      if ( actionItem.removeDuplicatedDocs_ && (resultItem.topKDocs_.size() != 0) )
+      {
+          std::vector<sf1r::docid_t> dupRemovedDocs;
+          bool ret = miningSearchService_->getUniqueDocIdList(resultItem.topKDocs_, dupRemovedDocs);
+          if ( ret )
+          {
+              resultItem.topKDocs_.swap(dupRemovedDocs);
+          }
+      }
+    }
+    return true;
+}
+
 bool IndexSearchService::getDocumentsByIds(
     const GetDocumentsByIdsActionItem& actionItem, 
     RawTextResultFromSIA& resultItem
 )
 {
-    return true;
+    const izenelib::util::UString::EncodingType kEncodingType =
+        izenelib::util::UString::convertEncodingTypeFromStringToEnum(
+            actionItem.env_.encodingType_.c_str()
+        );
+
+    std::vector<sf1r::docid_t> idList = actionItem.idList_;
+
+    // append docIdList_ at the end of idList_.
+    typedef std::vector<std::string>::const_iterator docid_iterator;
+    izenelib::util::UString unicodeDocId;
+    sf1r::docid_t internalId;
+    for (docid_iterator it = actionItem.docIdList_.begin();
+         it != actionItem.docIdList_.end(); ++it)
+    {
+        unicodeDocId.assign(*it, kEncodingType);
+        idManager_->getDocIdByDocName(unicodeDocId, internalId);
+        idList.push_back(internalId);
+    }
+
+    // get query terms
+   
+    izenelib::util::UString rawQueryUStr(
+        izenelib::util::UString(        
+        actionItem.env_.queryString_, kEncodingType
+        )
+    );
+
+    // Just let empty propertyQueryTermList to getResultItem() for using only raw query term list.
+    vector<vector<izenelib::util::UString> > propertyQueryTermList;
+
+    //fill rawText in result Item
+    if (getResultItem(actionItem, idList, propertyQueryTermList, resultItem))
+    {
+        resultItem.idList_.swap(idList);
+        return true;
+    }
+
+    resultItem.fullTextOfDocumentInPage_.clear();
+    resultItem.snippetTextOfDocumentInPage_.clear();
+    resultItem.rawTextOfSummaryInPage_.clear();
+    return false;
 }
 
 bool IndexSearchService::getInternalDocumentId(
@@ -403,16 +469,9 @@ bool IndexSearchService::getInternalDocumentId(
     uint32_t& internalId
 )
 {
-    //izenelib::util::UString scdDocumentId;
-
-    //std::string str;
-    //scdDocumentId.convertString(str, izenelib::util::UString::UTF_8);
-    //idManager_->getDocIdByDocName(scdDocumentId, internalId);
-    return true;
-}
-
-bool IndexSearchService::getIndexStatus(Status& status)
-{
+    std::string str;
+    scdDocumentId.convertString(str, izenelib::util::UString::UTF_8);
+    idManager_->getDocIdByDocName(scdDocumentId, internalId);
     return true;
 }
 

@@ -16,7 +16,7 @@ bool MiningSearchService::getSearchResult(
     KeywordSearchResult& resultItem
 )
 {
-    return true;
+    return miningManager_->getMiningResult(resultItem);
 }
 
 bool MiningSearchService::getSimilarDocIdList(
@@ -25,7 +25,7 @@ bool MiningSearchService::getSimilarDocIdList(
     std::vector<std::pair<uint32_t, float> >& result
 )
 {
-    return true;
+    return miningManager_->getSimilarDocIdList(documentId, maxNum, result);
 }
 
 bool MiningSearchService::getDuplicateDocIdList(
@@ -33,7 +33,7 @@ bool MiningSearchService::getDuplicateDocIdList(
     std::vector<uint32_t>& docIdList
 )
 {
-    return true;
+    return miningManager_->getDuplicateDocIdList(docId,docIdList);
 }
 
 bool MiningSearchService::getSimilarImageDocIdList(
@@ -49,7 +49,7 @@ bool MiningSearchService::getReminderQuery(
     std::vector<izenelib::util::UString>& realtimeQueries
 )
 {
-    return true;
+    return miningManager_->getReminderQuery(popularQueries, realtimeQueries);
 }
 
 bool MiningSearchService::getSimilarLabelStringList(
@@ -57,26 +57,60 @@ bool MiningSearchService::getSimilarLabelStringList(
     std::vector<izenelib::util::UString>& label_list 
 )
 {
-    return true;
+    return miningManager_->getSimilarLabelStringList(label_id, label_list);
+}
+
+bool MiningSearchService::getUniqueDocIdList(
+    const std::vector<uint32_t>& docIdList, 
+    std::vector<uint32_t>& cleanDocs
+)
+{
+    return miningManager_->getUniqueDocIdList(docIdList, cleanDocs);
 }
 
 bool MiningSearchService::SetOntology(const std::string& xml)
 {
+    boost::shared_ptr<faceted::OntologyManager> faceted = miningManager_->GetFaceted();
+    if(!faceted)
+    {
+        return false;
+    }
+    faceted->SetXML(xml);
     return true;
 }
 
 bool MiningSearchService::GetOntology(std::string& xml)
 {
+    boost::shared_ptr<faceted::OntologyManager> faceted = miningManager_->GetFaceted();
+    if(!faceted)
+    {
+        return false;
+    }
+    faceted->GetXML(xml);
     return true;
 }
 
 bool MiningSearchService::GetStaticOntologyRepresentation(faceted::OntologyRep& rep)
 {
+    boost::shared_ptr<faceted::OntologyManager> faceted = miningManager_->GetFaceted();
+    if(!faceted)
+    {
+        return false;
+    }
+    faceted::OntologySearcher* searcher = faceted->GetSearcher();
+    searcher->GetStaticRepresentation(rep);
     return true;
 }
 
 bool MiningSearchService::OntologyStaticClick(uint32_t cid, std::list<uint32_t>& docid_list)
 {
+    boost::shared_ptr<faceted::OntologyManager> faceted = miningManager_->GetFaceted();
+    if(!faceted)
+    {
+        return false;
+    }
+    faceted::OntologySearcher* searcher = faceted->GetSearcher();
+    searcher->StaticClick(cid, docid_list);
     return true;
 }
 
@@ -85,6 +119,13 @@ bool MiningSearchService::GetOntologyRepresentation(
     faceted::OntologyRep& rep
 )
 {
+    boost::shared_ptr<faceted::OntologyManager> faceted = miningManager_->GetFaceted();
+    if(!faceted)
+    {
+        return false;
+    }
+    faceted::OntologySearcher* searcher = faceted->GetSearcher();
+    searcher->GetRepresentation(search_result, rep);
     return true;
 }
 
@@ -94,6 +135,13 @@ bool MiningSearchService::OntologyClick(
     std::list<uint32_t>& docid_list
 )
 {
+    boost::shared_ptr<faceted::OntologyManager> faceted = miningManager_->GetFaceted();
+    if(!faceted)
+    {
+        return false;
+    }
+    faceted::OntologySearcher* searcher = faceted->GetSearcher();
+    searcher->Click(search_result, cid, docid_list);
     return true;
 }
 
@@ -101,6 +149,12 @@ bool MiningSearchService::DefineDocCategory(
     const std::vector<faceted::ManmadeDocCategoryItem>& items
 )
 {
+    boost::shared_ptr<faceted::OntologyManager> faceted = miningManager_->GetFaceted();
+    if(!faceted)
+    {
+        return false;
+    }
+    faceted->DefineDocCategory(items);
     return true;
 }
 

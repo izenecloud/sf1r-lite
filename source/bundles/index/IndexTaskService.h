@@ -6,6 +6,7 @@
 #include <document-manager/DocumentManager.h>
 #include <document-manager/text-summarization-submanager/TextSummarizationSubManager.h>
 #include <la-manager/LAManager.h>
+#include <common/Status.h>
 
 #include <ir/id_manager/IDManager.h>
 
@@ -26,6 +27,9 @@ public:
     void buildCollection(unsigned int numdoc);
 
     void optimizeIndex();
+
+    bool getIndexStatus(Status& status);
+
 private:
 
     boost::shared_ptr<LAManager> laManager_;

@@ -3,6 +3,8 @@
 
 #include <util/osgi/IService.h>
 
+#include <mining-manager/MiningManager.h>
+
 namespace sf1r
 {
 class MiningTaskService : public ::izenelib::osgi::IService
@@ -16,6 +18,10 @@ public:
 
     void optimizeIndex();
 
+private:
+    boost::shared_ptr<MiningManager> miningManager_;
+
+    friend class MiningBundleActivator;
 };
 
 }

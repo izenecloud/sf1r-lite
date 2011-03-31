@@ -6,8 +6,9 @@
  * @date Created <2011-01-25 17:30:12>
  */
 
-#include <bundles/index/IndexSearchService.h>
 #include <bundles/index/IndexBundleConfiguration.h>
+#include <bundles/index/IndexSearchService.h>
+#include <bundles/index/IndexTaskService.h>
 #include <bundles/mining/MiningSearchService.h>
 
 #include <util/driver/Request.h>
@@ -51,6 +52,11 @@ public:
         indexSearchService_ = service;
     }
 
+    void registerService(IndexTaskService* service)
+    {
+        indexTaskService_ = service;
+    }
+
     void registerService(MiningSearchService* service)
     {
         miningSearchService_ = service;
@@ -64,6 +70,8 @@ public:
     std::string collection_;
 
     IndexSearchService* indexSearchService_;
+
+    IndexTaskService* indexTaskService_;
 
     MiningSearchService* miningSearchService_;
 

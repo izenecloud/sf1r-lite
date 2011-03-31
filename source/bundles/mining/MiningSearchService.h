@@ -9,6 +9,8 @@
 #include <query-manager/ActionItem.h>
 #include <mining-manager/MiningManager.h>
 
+#include <boost/shared_ptr.hpp>
+
 namespace sf1r
 {
 class MiningSearchService : public ::izenelib::osgi::IService
@@ -31,6 +33,9 @@ public:
 
     bool getSimilarLabelStringList(uint32_t label_id, std::vector<izenelib::util::UString>& label_list );
 
+    bool getUniqueDocIdList(const std::vector<uint32_t>& docIdList, std::vector<uint32_t>& cleanDocs);
+
+
     ///faceted api
     bool SetOntology(const std::string& xml);
 
@@ -46,6 +51,10 @@ public:
 
     bool DefineDocCategory(const std::vector<faceted::ManmadeDocCategoryItem>& items);
 
+private:
+    boost::shared_ptr<MiningManager> miningManager_;
+
+    friend class MiningBundleActivator;
 };
 
 }
