@@ -128,15 +128,15 @@ void IndexBundleActivator::removedService( const ServiceReference& ref )
 
 bool IndexBundleActivator::init_()
 {
-    laManager_ = createLAManager_();
-    SF1R_ENSURE_INIT(laManager_);
-    SF1R_ENSURE_INIT(initializeQueryManager_());
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open data directories.."<<std::endl;
     bool bOpenDataDir = openDataDirectories_();
     SF1R_ENSURE_INIT(bOpenDataDir);
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open id manager.."<<std::endl;
     idManager_ = createIDManager_();
     SF1R_ENSURE_INIT(idManager_);
+    laManager_ = createLAManager_();
+    SF1R_ENSURE_INIT(laManager_);
+    SF1R_ENSURE_INIT(initializeQueryManager_());
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open index manager.."<<std::endl;
     indexManager_ = createIndexManager_();
     SF1R_ENSURE_INIT(indexManager_);

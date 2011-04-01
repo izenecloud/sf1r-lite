@@ -27,7 +27,7 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
     collectionHandler->setBundleSchema(indexBundleConfig->schema_);
 
     ///createIndexBundle
-    std::string bundleName = collectionName + "-index";
+    std::string bundleName = "IndexBundle-" + collectionName;
     DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, IndexBundleActivator);
     osgiLauncher_.start(indexBundleConfig);
     IndexSearchService* indexSearchService = static_cast<IndexSearchService*>(osgiLauncher_.getService(bundleName, "IndexSearchService"));
@@ -36,7 +36,7 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
     collectionHandler->registerService(indexTaskService);
 
     ///createMiningBundle
-    bundleName = collectionName + "-mining";
+    bundleName = "MiningBundle-" + collectionName;
     DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, MiningBundleActivator);	
     osgiLauncher_.start(miningBundleConfig);
     MiningSearchService* miningSearchService = static_cast<MiningSearchService*>(osgiLauncher_.getService(bundleName, "MiningSearchService"));

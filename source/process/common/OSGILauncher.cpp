@@ -16,6 +16,7 @@ void OSGILauncher::start(boost::shared_ptr<BundleConfiguration> bundleConfig)
                 bundleConfig->getLibraryPath(), bundleConfig->getClassName() );
 
     IBundleActivator* bundleActivator = NULL;
+
     try
     {
         bundleActivator = this->objectCreator_.createObject( bundleConfig->getClassName() );
@@ -24,6 +25,13 @@ void OSGILauncher::start(boost::shared_ptr<BundleConfiguration> bundleConfig)
     {
         std::string msg( exc.what() );
         logger_.log( Logger::LOG_ERROR, "[Launcher#start] Error during loading bundle activator, exc: %1", msg );
+        try{
+            bundleActivator = this->objectCreator_.createObject( bundleConfig->getBundleName() );
+        }catch ( ObjectCreationException &exc )
+        {
+            std::string msg( exc.what() );
+            logger_.log( Logger::LOG_ERROR, "[Launcher#start] Error during loading bundle activator, exc: %1", msg );
+        }
     }
 
     IBundleContext* bundleCtxt = this->createBundleContext( bundleConfig->getBundleName() );

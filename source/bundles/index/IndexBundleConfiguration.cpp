@@ -5,7 +5,7 @@
 namespace sf1r
 {
 IndexBundleConfiguration::IndexBundleConfiguration(const std::string& collectionName)
-    : ::izenelib::osgi::BundleConfiguration(collectionName+"-index", "IndexBundleActivator" )
+    : ::izenelib::osgi::BundleConfiguration("IndexBundle-"+collectionName, "IndexBundleActivator" )
     , collectionName_(collectionName)
     , encoding_(izenelib::util::UString::UNKNOWN)
     , wildcardType_("unigram")

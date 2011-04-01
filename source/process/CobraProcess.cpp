@@ -114,12 +114,12 @@ QueryLogSearchService* CobraProcess::initQuery()
     (new QueryLogBundleConfiguration(SF1Config::get()->queryLogBundleConfig_));
 
     ///createIndexBundle
-    std::string bundleName = "QueryLog";
+    std::string bundleName = "QueryLogBundle";
     OSGILauncher& launcher = CollectionManager::get()->getOSGILauncher();
     launcher.start(queryLogBundleConfig);
     QueryLogSearchService* service = static_cast<QueryLogSearchService*>(launcher.getService(bundleName, "QueryLogSearchService"));
 
-    addExitHook(boost::bind(&OSGILauncher::stop, launcher));
+//    addExitHook(boost::bind(&OSGILauncher::stop, launcher));
 
     return service;
 }

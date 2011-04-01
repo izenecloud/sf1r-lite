@@ -763,18 +763,18 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
     }
 
     // IndexBundle
-    Element* indexBundle = getUniqChildElement( collection, "IndexBundle" );
-    Element* indexParam = getUniqChildElement( indexBundle, "Parameter" );
+    Element* indexBundle = getUniqChildElement( collection, "IndexBundle", false  );
+    Element* indexParam = getUniqChildElement( indexBundle, "Parameter", false );
     if(indexParam) parseIndexBundleParam(indexParam, collectionMeta);
     parseIndexBundleSchema(getUniqChildElement( indexBundle, "Schema" ), collectionMeta);
 
     // MiningBundle
-    Element* miningBundle = getUniqChildElement( collection, "MiningBundle" );
+    Element* miningBundle = getUniqChildElement( collection, "MiningBundle" , false );
     if(miningBundle) 
     {
-        Element* miningSchema = getUniqChildElement( miningBundle, "Schema" );
+        Element* miningSchema = getUniqChildElement( miningBundle, "Schema", false  );
         if(miningSchema) parseMiningBundleSchema(miningSchema, collectionMeta);
-        Element* miningParam = getUniqChildElement( miningBundle, "Parameter" );
+        Element* miningParam = getUniqChildElement( miningBundle, "Parameter", false  );
         if(miningParam) parseMiningBundleParam(miningParam, collectionMeta);
     }
 }
@@ -844,7 +844,7 @@ void CollectionConfig::parseCollectionSchema( const ticpp::Element * documentSch
 		 
             if( !validateID(propertyName) ) 
                 throw XmlConfigParserException( "Alphabets, Numbers, Dot(.), Dash(-) and Underscore(_)");			
-            if ( (( propertyNameList.insert(propertyConfig.propertyName_) ).second) == false )
+            if ( (( propertyNameList.insert(propertyName) ).second) == false )
             {
                 throw XmlConfigParserException( "Duplicate property names" );
             }
@@ -866,6 +866,8 @@ void CollectionConfig::parseCollectionSchema( const ticpp::Element * documentSch
             {
                 throw_TypeMismatch( property.Get(), "name", type, "\"string\", \"int\" or \"float\"" );
             }
+            propertyConfig.propertyName_ = propertyName;
+            propertyConfig.propertyType_ = dataType;
             collectionMeta.insertProperty( propertyConfig );
 			
             boost::to_lower(propertyName);
@@ -949,7 +951,7 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
     {
 	try
 	{
-	    parseProperty( property.Get(), collectionMeta);
+	    parseIndexSchemaProperty( property.Get(), collectionMeta);
 	}
 	catch ( XmlConfigParserException & e )
 	{
@@ -1164,7 +1166,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
 }
 
 
-void CollectionConfig::parseProperty(
+void CollectionConfig::parseIndexSchemaProperty(
         const ticpp::Element * property,
         CollectionMeta & collectionMeta)
 {
@@ -1179,8 +1181,8 @@ void CollectionConfig::parseProperty(
     p.setName(propertyName);
 
     std::set<PropertyConfig, PropertyComp>::iterator sp = indexSchema.find(p);
+    PropertyConfig propertyConfig(*sp);
     indexSchema.erase(*sp);
-    PropertyConfig propertyConfig;
 
     //set data --------------------------------------
     propertyConfig.setOriginalName( propertyName );

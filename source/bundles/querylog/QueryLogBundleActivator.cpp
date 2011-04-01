@@ -51,7 +51,7 @@ void QueryLogBundleActivator::removedService( const ServiceReference& ref )
 
 }
 
-REGISTER_BUNDLE_ACTIVATOR_CLASS( "QueryLogBundle", QueryLogBundleActivator )
+REGISTER_BUNDLE_ACTIVATOR_CLASS( "QueryLogBundleActivator", QueryLogBundleActivator )
 
 }
 

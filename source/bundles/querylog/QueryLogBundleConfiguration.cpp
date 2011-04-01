@@ -3,7 +3,7 @@
 namespace sf1r
 {
 QueryLogBundleConfiguration::QueryLogBundleConfiguration()
-    : ::izenelib::osgi::BundleConfiguration("querlog-index", "QueryLogBundleActivator" )
+    : ::izenelib::osgi::BundleConfiguration("QueryLogBundle", "QueryLogBundleActivator" )
 {
 }
 }

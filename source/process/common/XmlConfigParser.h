@@ -569,7 +569,7 @@ private:
     /// Helper functions for IndexSchema
     /// @brief                  Parse <Property> settings
     /// @param system           Pointer to the Element
-    void parseProperty(const ticpp::Element * property, CollectionMeta & collectionMeta);
+    void parseIndexSchemaProperty(const ticpp::Element * property, CollectionMeta & collectionMeta);
 
     /// @brief                  Parse <Display> settings
     /// @param system           Pointer to the Element
