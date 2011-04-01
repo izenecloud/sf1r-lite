@@ -1014,6 +1014,7 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     {
         collectionMeta.miningBundleConfig_->collectionDataDirectories_.assign(directories.begin(), directories.end());
     }
+    collectionMeta.miningBundleConfig_->system_resource_path_ = SF1Config::get()->getResourceDir();
 
 }
 

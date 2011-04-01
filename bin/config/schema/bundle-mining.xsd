@@ -151,6 +151,7 @@
                 <xs:element name="Parameter" minOccurs="0">
                   <xs:complexType>
                     <xs:sequence>
+                      <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="1" maxOccurs="2"/>                    
                       <xs:element name="TaxonomyPara" type="TaxonomyParaType" minOccurs="1"/>
                       <xs:element name="RecommendPara" type="RecommendParaType" minOccurs="1"/>
                       <xs:element name="SimilarityPara" type="SimilarityParaType" minOccurs="1"/>

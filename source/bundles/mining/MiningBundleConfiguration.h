@@ -19,6 +19,8 @@ public:
 
     CollectionPath collPath_;
 
+    std::string system_resource_path_;
+
     std::vector<std::string> collectionDataDirectories_;
 
     schema_type schema_;

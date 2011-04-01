@@ -128,6 +128,21 @@ bool MiningBundleActivator::openDataDirectories_()
         return false;
     }
     directoryRotator_.setCapacity(directories.size());
+    typedef std::vector<std::string>::const_iterator iterator;
+    for (iterator it = directories.begin(); it != directories.end(); ++it)
+    {
+        bfs::path dataDir = bfs::path( getCollectionDataPath_() ) / *it;
+        if (!directoryRotator_.appendDirectory(dataDir))
+	{
+	  std::string msg = dataDir.file_string() + " corrupted, delete it!";
+	  sflog->error( SFL_SYS, msg.c_str() ); 
+	  std::cout<<msg<<std::endl;
+	  //clean the corrupt dir
+	  boost::filesystem::remove_all( dataDir );
+	  directoryRotator_.appendDirectory(dataDir);
+	}
+    }
+
     directoryRotator_.rotateToNewest();
     boost::shared_ptr<Directory> newest = directoryRotator_.currentDirectory();
     if (newest)
@@ -161,6 +176,9 @@ MiningBundleActivator::createMiningManager_(IndexSearchService* indexService) co
            // ,indexService->idManager_
         )
     );
+
+    ret->system_resource_path_ = config_->system_resource_path_;
+
     bool succ = ret->open();
     if(!succ)
     {

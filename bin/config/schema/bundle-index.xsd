@@ -3,10 +3,6 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.izenesoft.com" xmlns:t="http://www.izenesoft.com" targetNamespace="http://www.izenesoft.com" elementFormDefault="qualified">
     <xs:include schemaLocation="common.xsd"/>
 
-	<xs:simpleType name="CollectionDataDirectoryType">
-		<xs:restriction base="xs:string"/>
-	</xs:simpleType>
-
 	<xs:element name="IndexBundle">
 		<xs:complexType>
 			<xs:sequence>

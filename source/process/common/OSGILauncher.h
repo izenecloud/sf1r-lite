@@ -10,7 +10,7 @@
 namespace sf1r
 {
 using namespace izenelib::osgi;
-class OSGILauncher : public Launcher<ReadWriteLock>
+class OSGILauncher : public Launcher<RecursiveLock>
 {
 public:
     void start(boost::shared_ptr<BundleConfiguration> bundleConfig);
