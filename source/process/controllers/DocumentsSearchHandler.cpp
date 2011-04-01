@@ -69,6 +69,7 @@ DocumentsSearchHandler::DocumentsSearchHandler(
         indexSearchService_(collectionHandler.indexSearchService_),
         miningSearchService_(collectionHandler.miningSearchService_),
         indexSchema_(collectionHandler.indexSchema_),
+        miningSchema_(collectionHandler.miningSchema_),
         actionItem_()
 {
     actionItem_.env_.encodingType_ = "UTF-8";
@@ -85,8 +86,9 @@ void DocumentsSearchHandler::search()
 
         int startOffset = (actionItem_.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
 
-        if (actionItem_.env_.taxonomyLabel_.empty() &&
-                actionItem_.env_.nameEntityItem_.empty())
+        if (actionItem_.env_.taxonomyLabel_.empty()
+            && actionItem_.env_.nameEntityItem_.empty()
+            && actionItem_.env_.groupLabel_.second.empty())
         {
             // initialize before search to record start time.
             detail::DocumentsSearchKeywordsLogger keywordsLogger;
@@ -139,7 +141,7 @@ void DocumentsSearchHandler::search()
                                      getActionItem.idList_
                                  );
                 }
-                else // !actionItem_.env_.nameEntityItem_.empty()
+                else if (!actionItem_.env_.nameEntityItem_.empty())
                 {
                     totalCount = getDocumentIdListInNameEntityItem(
                                      searchResult,
@@ -148,7 +150,24 @@ void DocumentsSearchHandler::search()
                                      getActionItem.idList_
                                  );
                 }
+                else if (!actionItem_.env_.groupLabel_.second.empty())
+                {
+                    totalCount = getDocumentIdListInGroup(
+                        searchResult,
+                        start,
+                        count,
+                        getActionItem.idList_
+                    );
+                }
+                else
+                {
+                    const bool kInvalidSearchInLabel = false;
+                    BOOST_ASSERT(kInvalidSearchInLabel);
+                    response_.addError("Invalid search in label.");
+                    return;
+                }
 
+                bool isSuccess = true;
                 if (!getActionItem.idList_.empty())
                 {
                     getActionItem.env_ = actionItem_.env_;
@@ -160,12 +179,21 @@ void DocumentsSearchHandler::search()
 
                     if (doGet(getActionItem, rawTextResult))
                     {
-                        response_[Keys::total_count] = totalCount;
-
                         renderDocuments(rawTextResult);
                         renderMiningResult(searchResult);
                         renderRefinedQuery();
                     }
+                    else
+                    {
+                        isSuccess = false;
+                    }
+                }
+
+                if (isSuccess)
+                {
+                    // top_k_count equals to total_count when search in label/ne
+                    response_[Keys::total_count] = totalCount;
+                    response_[Keys::top_k_count] = totalCount; 
                 }
             }
         }
@@ -259,6 +287,60 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInNameEntityItem(
     return totalCount;
 }
 
+std::size_t DocumentsSearchHandler::getDocumentIdListInGroup(
+    const KeywordSearchResult& miaResult,
+    unsigned start,
+    unsigned count,
+    std::vector<sf1r::docid_t>& idListInPage
+)
+{
+    izenelib::util::UString propName(
+        actionItem_.env_.groupLabel_.first,
+        izenelib::util::UString::UTF_8
+    );
+    izenelib::util::UString propValue(
+        actionItem_.env_.groupLabel_.second,
+        izenelib::util::UString::UTF_8
+    );
+    BOOST_ASSERT(!propName.empty() && !propValue.empty());
+
+    std::size_t totalCount = 0;
+
+    typedef std::list<sf1r::faceted::OntologyRepItem> GroupRepList;
+    const GroupRepList& groupList = miaResult.groupRep_.item_list;
+    GroupRepList::const_iterator groupIt =
+        std::find_if(groupList.begin(), groupList.end(),
+            boost::bind(&sf1r::faceted::OntologyRepItem::level, _1) == 0 &&
+            boost::bind(&sf1r::faceted::OntologyRepItem::text, _1) == propName);
+
+    if (groupIt != groupList.end())
+    {
+        ++groupIt;
+        groupIt = std::find_if(groupIt, groupList.end(),
+            boost::bind(&sf1r::faceted::OntologyRepItem::level, _1) == 0 ||
+            boost::bind(&sf1r::faceted::OntologyRepItem::text, _1) == propValue);
+
+        if (groupIt != groupList.end() && groupIt->level != 0)
+        {
+            const std::vector<docid_t>& groupDocList = groupIt->doc_id_list;
+            totalCount = groupDocList.size();
+            if (start < totalCount)
+            {
+                std::vector<docid_t>::const_iterator startIt = groupDocList.begin();
+                std::vector<docid_t>::const_iterator endIt = startIt + count;
+                if (endIt > groupDocList.end())
+                {
+                    endIt = groupDocList.end();
+                }
+
+                idListInPage.insert(idListInPage.begin(), startIt, endIt);
+            }
+        }
+    }
+
+    return totalCount;
+}
+
 bool DocumentsSearchHandler::doGet(
     const GetDocumentsByIdsActionItem& getActionItem,
     RawTextResultFromSIA& rawTextResult
@@ -308,7 +390,7 @@ bool DocumentsSearchHandler::parse()
     parsers.push_back(&pageInfoParser);
     values.push_back(&request_.get());
 
-    GroupingParser groupingParser(indexSchema_);
+    GroupingParser groupingParser(miningSchema_);
     parsers.push_back(&groupingParser);
     values.push_back(&request_[Keys::group]);
 
@@ -320,6 +402,18 @@ bool DocumentsSearchHandler::parse()
             return false;
         }
         response_.addWarning(parsers[i]->warningMessage());
+    }
+
+    // check consistency between SearchParser and GroupingParser
+    const std::pair<std::string, std::string>& groupLabel = searchParser.mutableGroupLabel();
+    if (!groupLabel.first.empty())
+    {
+        const std::vector<std::string>& groups = groupingParser.groupPropertyList();
+        if (std::find(groups.begin(), groups.end(), groupLabel.first) == groups.end())
+        {
+            response_.addError("the property \"" + groupLabel.first + "\" in request[\"search\"][\"group_label\"] must be also specified in request[\"group\"].");
+            return false;
+        }
     }
 
     parseOptions();
@@ -351,6 +445,10 @@ bool DocumentsSearchHandler::parse()
         searchParser.mutableNameEntityType()
     );
     swap(
+        actionItem_.env_.groupLabel_,
+        searchParser.mutableGroupLabel()
+    );
+    swap(
         actionItem_.searchPropertyList_,
         searchParser.mutableProperties()
     );
@@ -376,8 +474,8 @@ bool DocumentsSearchHandler::parse()
 
     // groupingParser
     swap(
-        actionItem_.groupingList_,
-        groupingParser.mutableGroupingOptions()
+        actionItem_.groupPropertyList_,
+        groupingParser.mutableGroupPropertyList()
     );
 
     return true;
@@ -596,6 +694,11 @@ void DocumentsSearchHandler::renderMiningResult(
         renderer_.renderFaceted(
             miaResult,
             response_[Keys::faceted]
+        );
+
+        renderer_.renderGroup(
+            miaResult,
+            response_[Keys::group]
         );
     }
 }

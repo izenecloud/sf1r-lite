@@ -5,7 +5,7 @@
  */
 #include "DocumentsGetHandler.h"
 
-#include <common/renderers/DocumentsRenderer.h>
+#include <renderers/DocumentsRenderer.h>
 #include <parsers/SearchParser.h>
 #include <parsers/SelectParser.h>
 #include <common/parsers/PageInfoParser.h>

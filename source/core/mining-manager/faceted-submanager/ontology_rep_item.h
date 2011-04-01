@@ -18,29 +18,35 @@ NS_FACETED_BEGIN
 
 
 /// @brief The memory representation form of a taxonomy.
-class OntologyRepItem
-{
+class OntologyRepItem {
 public:
-    OntologyRepItem() {}
-    OntologyRepItem(uint8_t plevel, const CategoryNameType& ptext, CategoryIdType pid, uint32_t pdoc_count)
-            :level(plevel), text(ptext), id(pid), doc_count(pdoc_count)
+    OntologyRepItem()
+    :level(0), id(0), doc_count(0)
     {
     }
+
+    OntologyRepItem(uint8_t plevel, const CategoryNameType& ptext, CategoryIdType pid, uint32_t pdoc_count)
+    :level(plevel), text(ptext), id(pid), doc_count(pdoc_count)
+    {
+    }
+
     uint8_t level;
     CategoryNameType text;
     CategoryIdType id;
     uint32_t doc_count;
-
+    std::vector<docid_t> doc_id_list;
+    
     bool operator==(const OntologyRepItem& item) const
     {
-        return level==item.level&&text==item.text&&id==item.id&&doc_count==item.doc_count;
+      return level==item.level && text==item.text && id==item.id &&
+             doc_count==item.doc_count && doc_id_list==item.doc_id_list;
     }
-
+    
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
     {
-        ar & level & text & id & doc_count;
+        ar & level & text & id & doc_count && doc_id_list;
     }
 
 };

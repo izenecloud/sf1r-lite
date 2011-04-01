@@ -126,72 +126,6 @@ inline bool operator==( const DisplayProperty& a, const DisplayProperty& b)
 } // end - operator==()
 
 ///
-/// @brief This class is used for grouping option in the keyword search query.
-///        One Grouping Option class has one grouping rule and it targets one property.
-///
-class GroupingOption
-{
-    public:
-        GroupingOption(): num_(0) {};
-
-        bool operator== (const GroupingOption& obj) const
-        {
-            return propertyString_ == obj.propertyString_
-                && from_ == obj.from_
-                && to_ == obj.to_
-                && num_ == obj.num_;
-        } // end - oerator==
-
-        void print(ostream& out = std::cout) const
-        {
-            stringstream ss;
-            ss << "GroupOption" << endl;
-            ss << "\tPropertyString_ : " << propertyString_ << endl;
-            ss << "\tfrom_ : " << from_ << endl;
-            ss << "\tto_ : " << to_ << endl;
-            ss << "\tnum_ : " << num_ << endl;
-            out << ss.str();
-        } // end - print()
-
-        ///
-        /// @grief a Name string of grouping target property.
-        ///
-        std::string   propertyString_;
-
-        ///
-        /// @brief one of the grouping range value. 
-        ///        Property value can be selected if its value is greater than from_.
-        ///
-        PropertyValue from_;
-
-        ///
-        /// @brief one of the grouping range value. 
-        ///        Property value can be selected if its value is less than to_.
-        ///
-        PropertyValue to_;
-
-        ///
-        /// @brief The limit number of documents of the group.
-        ///
-        size_t        num_;
-
-        DATA_IO_LOAD_SAVE( GroupingOption, &propertyString_&from_&to_&num_);
-
-    private:
-        friend class boost::serialization::access;
-        template<class Archive>
-        void serialize(Archive& ar, const unsigned int version)
-        {
-            ar & propertyString_;
-            ar & from_;
-            ar & to_;
-            ar & num_;
-        }
-}; // end - GroupingOption
-
-
-
-///
 /// @brief This class contains environment values of query requester. 
 ///        It is stored in most of the ActionItems.
 ///
@@ -213,6 +147,7 @@ class RequesterEnvironment
             ss << "taxonomyLabel_   : " << taxonomyLabel_   << endl;
             ss << "nameEntityItem_  : " << nameEntityItem_  << endl;
             ss << "nameEntityType_  : " << nameEntityType_  << endl;
+            ss << "groupLabel_      : (" << groupLabel_.first << ", " << groupLabel_.second << ")" << endl;
             ss << "ipAddress_       : " << ipAddress_       << endl;
             out << ss.str();
         }
@@ -246,13 +181,19 @@ class RequesterEnvironment
         std::string nameEntityType_;
 
         ///
+        /// @brief a selected group label with a pair of property name and value.
+        ///        It is used only in Label Click Query.
+        ///
+        std::pair<std::string, std::string> groupLabel_;
+
+        ///
         /// @brief ip address of requester.
         ///
         std::string     ipAddress_;
 
         DATA_IO_LOAD_SAVE(RequesterEnvironment, 
                 &isLogging_&encodingType_&queryString_&taxonomyLabel_
-                &nameEntityItem_&nameEntityType_&ipAddress_);
+                &nameEntityItem_&nameEntityType_&groupLabel_.first&groupLabel_.second&ipAddress_);
 
     private:
         // Log : 2009.09.08
@@ -267,6 +208,7 @@ class RequesterEnvironment
             ar & taxonomyLabel_;
             ar & nameEntityItem_;
             ar & nameEntityType_;
+            ar & groupLabel_;
             ar & ipAddress_;
         } 
 }; // end - queryEnvironment
@@ -280,6 +222,7 @@ inline bool operator==(
         && a.encodingType_ == b.encodingType_
         && a.queryString_ == b.queryString_
         && a.taxonomyLabel_ == b.taxonomyLabel_
+        && a.groupLabel_ == b.groupLabel_
         && a.ipAddress_ == b.ipAddress_;
 }
 
@@ -380,7 +323,7 @@ class KeywordSearchActionItem
             displayPropertyList_(obj.displayPropertyList_),
             sortPriorityList_   (obj.sortPriorityList_),
             filteringList_(obj.filteringList_),
-            groupingList_(obj.groupingList_) {}
+            groupPropertyList_(obj.groupPropertyList_) {}
 
 
         KeywordSearchActionItem& operator=(const KeywordSearchActionItem& obj)
@@ -396,7 +339,7 @@ class KeywordSearchActionItem
             displayPropertyList_ = obj.displayPropertyList_;
             sortPriorityList_    = obj.sortPriorityList_;
             filteringList_ = obj.filteringList_;
-            groupingList_ = obj.groupingList_;
+            groupPropertyList_ = obj.groupPropertyList_;
 
             return (*this);
         }
@@ -414,7 +357,7 @@ class KeywordSearchActionItem
                 && displayPropertyList_ == obj.displayPropertyList_
                 && sortPriorityList_    == obj.sortPriorityList_
                 && filteringList_ == obj.filteringList_
-                && groupingList_ == obj.groupingList_;
+                && groupPropertyList_ == obj.groupPropertyList_;
         }
 
         void print(std::ostream& out = std::cout) const
@@ -453,11 +396,11 @@ class KeywordSearchActionItem
                     ss << *iter << endl;
                 ss << "------------------------------------------------" << endl;
             }
-            ss << endl << "Grouping Option" << endl;
+            ss << endl << "Grouping Property :" << endl;
             ss << "------------------------------------------------" << endl;
-            for(size_t i = 0; i < groupingList_.size(); i++)
+            for(size_t i = 0; i < groupPropertyList_.size(); i++)
             {
-                groupingList_[i].print( ss );
+                ss << "\tPropertyString_ : " << groupPropertyList_[i] << endl;
             }
             ss << "------------------------------------------------" << endl;
 
@@ -474,7 +417,7 @@ class KeywordSearchActionItem
         /// @brief a string of corrected query. It will be filled by query-correction-sub-manager
         ///        if it needs to be modified.
         ///
-        izenelib::util::UString                     refinedQueryString_;
+        izenelib::util::UString           refinedQueryString_;
 
         ///
         /// @brief a collection name.
@@ -523,9 +466,9 @@ class KeywordSearchActionItem
         std::vector<QueryFiltering::FilteringType>      filteringList_;
 
         ///
-        /// @brief a list of grouping option.
+        /// @brief a list of grouping property.
         ///
-        std::vector<GroupingOption>     groupingList_;
+        std::vector<std::string>     groupPropertyList_;
 
         ///
         /// @brief a list of property query terms.
@@ -533,7 +476,7 @@ class KeywordSearchActionItem
 
         DATA_IO_LOAD_SAVE(KeywordSearchActionItem, &env_&refinedQueryString_&collectionName_
                 &rankingType_&pageInfo_&languageAnalyzerInfo_&searchPropertyList_&removeDuplicatedDocs_
-                &displayPropertyList_&sortPriorityList_&filteringList_&groupingList_);
+                &displayPropertyList_&sortPriorityList_&filteringList_&groupPropertyList_);
 
     private:
         
@@ -554,7 +497,7 @@ class KeywordSearchActionItem
             ar & displayPropertyList_;
             ar & sortPriorityList_;
             ar & filteringList_;
-            ar & groupingList_;
+            ar & groupPropertyList_;
         }
 
 }; // end - class KeywordSearchActionItem
@@ -573,6 +516,7 @@ class GetDocumentsByIdsActionItem
 
         /// @brief Collection name.
         std::string collectionName_;
+        
 
         /// @brief List of display properties which is shown in the result.
         std::vector<DisplayProperty> displayPropertyList_;

@@ -60,6 +60,22 @@ bool MiningSearchService::getSimilarLabelStringList(
     return miningManager_->getSimilarLabelStringList(label_id, label_list);
 }
 
+bool MiningSearchService::getDocLabelList(
+    uint32_t docid, 
+    std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list 
+)
+{
+    return miningManager_->getLabelListByDocId(docid, label_list);
+}
+
+bool MiningSearchService::getLabelListWithSimByDocId(
+    uint32_t docid,  
+    std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > >& label_list
+)
+{
+    return miningManager_->getLabelListWithSimByDocId(docid, label_list);
+}
+
 bool MiningSearchService::getUniqueDocIdList(
     const std::vector<uint32_t>& docIdList, 
     std::vector<uint32_t>& cleanDocs
@@ -156,6 +172,15 @@ bool MiningSearchService::DefineDocCategory(
     }
     faceted->DefineDocCategory(items);
     return true;
+}
+
+bool MiningSearchService::getGroupRep(
+    const std::vector<unsigned int>& docIdList, 
+    const std::vector<std::string>& groupPropertyList, 
+    faceted::OntologyRep& groupRep
+)
+{
+    return miningManager_->getGroupRep(docIdList, groupPropertyList, groupRep);
 }
 
 }

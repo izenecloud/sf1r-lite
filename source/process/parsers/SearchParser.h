@@ -15,6 +15,7 @@
 
 #include <string>
 #include <vector>
+#include <utility>
 
 namespace sf1r {
 /// @addtogroup parsers
@@ -69,6 +70,15 @@ public:
         return nameEntityType_;
     }
 
+    std::pair<std::string, std::string>& mutableGroupLabel()
+    {
+        return groupLabel_;
+    }
+    const std::pair<std::string, std::string>& mutableGroupLabel() const
+    {
+        return groupLabel_;
+    }
+
     bool logKeywords() const
     {
         return logKeywords_;
@@ -100,6 +110,7 @@ private:
     std::string taxonomyLabel_;
     std::string nameEntityType_;
     std::string nameEntityItem_;
+    std::pair<std::string, std::string> groupLabel_; // <property name, value>
     bool logKeywords_;
     std::vector<std::string> properties_;
     RankingType::TextRankingType rankingModel_;

@@ -40,7 +40,8 @@ public:
     void create();
     void update();
     void destroy();
-
+    void get_topic();
+    void get_topic_with_sim();
 private:
     bool requireDOCID();
     bool setLimit();

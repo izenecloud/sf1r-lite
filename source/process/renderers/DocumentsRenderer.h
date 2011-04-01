@@ -58,6 +58,8 @@ public:
     void renderFaceted(const KeywordSearchResult& miaResult,
                           Value& facetedEntity);
 
+    void renderGroup(const KeywordSearchResult& miaResult,
+                          Value& groupResult);
 };
 
 } // namespace sf1r

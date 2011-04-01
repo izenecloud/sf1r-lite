@@ -19,6 +19,7 @@ public:
             , sim_enable(false), sim_properties()
             , dc_enable(false), dc_properties()
             , faceted_enable(false), faceted_properties()
+            , group_enable(false), group_properties()
             , ise_enable(false), ise_property()
             , recommend_tg(false), recommend_querylog(true), recommend_properties()
     {
@@ -38,6 +39,7 @@ private:
         ar & dc_enable & dc_properties & faceted_enable & faceted_properties;
         ar & ise_enable & ise_property;
         ar & recommend_tg & recommend_querylog & recommend_properties;
+        ar & group_enable & group_properties;
     }
 public:
     bool tg_enable;
@@ -50,6 +52,8 @@ public:
     std::vector<std::string> dc_properties;
     bool faceted_enable;
     std::vector<std::string> faceted_properties;
+    bool group_enable;
+    std::vector<std::string> group_properties;
     bool ise_enable;
     std::string ise_property;
 

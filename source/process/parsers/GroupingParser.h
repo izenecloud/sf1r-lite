@@ -8,13 +8,12 @@
 #include <util/driver/Parser.h>
 #include <util/driver/Value.h>
 
-#include <bundles/index/IndexBundleConfiguration.h>
+#include <bundles/mining/MiningBundleConfiguration.h>
 
 #include <string>
 #include <vector>
 
 namespace sf1r {
-class GroupingOption;
 
 /// @addtogroup parsers
 /// @{
@@ -26,29 +25,24 @@ using namespace izenelib::driver;
 class GroupingParser : public ::izenelib::driver::Parser
 {
 public:
-    explicit GroupingParser(const IndexBundleSchema& indexSchema)
-    : indexSchema_(indexSchema)
+    explicit GroupingParser(const MiningSchema& miningSchema)
+    : miningSchema_(miningSchema)
     {}
 
     bool parse(const Value& grouping);
 
-    std::vector<GroupingOption>& mutableGroupingOptions()
+    std::vector<std::string>& mutableGroupPropertyList()
     {
-        return options_;
+        return propertyList_;
     }
-    const std::vector<GroupingOption>& groupingOptions() const
+    const std::vector<std::string>& groupPropertyList() const
     {
-        return options_;
+        return propertyList_;
     }
-
 private:
-    bool parse(
-               const Value& groupingRule,
-               GroupingOption& option);
+    const MiningSchema& miningSchema_;
 
-    const IndexBundleSchema& indexSchema_;
-
-    std::vector<GroupingOption> options_;
+    std::vector<std::string> propertyList_;
 };
 
 /// @}

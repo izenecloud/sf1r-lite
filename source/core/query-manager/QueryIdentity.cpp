@@ -20,7 +20,6 @@ void makeQueryIdentity(
     identity.rankingType = item.rankingType_;
     identity.laInfo = item.languageAnalyzerInfo_;
     identity.properties = item.searchPropertyList_;
-    identity.groupInfo = item.groupingList_;
     identity.sortInfo = item.sortPriorityList_;
     identity.filterInfo = item.filteringList_;
     identity.start = start;

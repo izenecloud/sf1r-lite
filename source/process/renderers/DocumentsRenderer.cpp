@@ -13,10 +13,11 @@
 
 namespace sf1r {
 
-using ::sf1r::driver::Keys;
+using driver::Keys;
 
 const izenelib::util::UString::EncodingType DocumentsRenderer::kEncoding =
     izenelib::util::UString::UTF_8;
+extern int TOP_K_NUM;
 
 /**
  * @brief Render documents in response
@@ -84,10 +85,9 @@ void DocumentsRenderer::renderDocuments(
 {
     std::string strBuffer;
 
-    std::size_t indexInTopK = searchResult.start_;
+    std::size_t indexInTopK = searchResult.start_ % TOP_K_NUM;
 
     BOOST_ASSERT(indexInTopK + searchResult.count_ <= searchResult.topKDocs_.size());
-    BOOST_ASSERT(indexInTopK + searchResult.count_ <= searchResult.topKRankScoreList_.size());
     for (std::size_t i = 0; i < searchResult.count_; ++i, ++indexInTopK)
     {
         Value& newResource = resources();
@@ -306,6 +306,50 @@ void DocumentsRenderer::renderFaceted(
       parents[nextLevel] = &newLabel[Keys::sub_labels];
       ++it;
   }
+}
+
+void DocumentsRenderer::renderGroup(
+const KeywordSearchResult& miaResult,
+Value& groupResult)
+{
+    const std::list<sf1r::faceted::OntologyRepItem>& item_list = miaResult.groupRep_.item_list;
+    if (item_list.empty())
+    {
+        return;
+    }
+
+    std::string convertBuffer;
+
+    std::vector<Value*> parents;
+    parents.push_back(&groupResult);
+    for (std::list<sf1r::faceted::OntologyRepItem>::const_iterator it = item_list.begin();
+            it != item_list.end(); ++it)
+    {
+        const sf1r::faceted::OntologyRepItem& item = *it;
+        // group level start from 0
+        std::size_t currentLevel = item.level;
+        BOOST_ASSERT(currentLevel < parents.size());
+
+        Value& parent = *(parents[currentLevel]);
+        Value& newLabel = parent();
+        item.text.convertString(convertBuffer, kEncoding);
+
+        // alternative for the parent of next level
+        std::size_t nextLevel = currentLevel + 1;
+        parents.resize(nextLevel + 1);
+        if (currentLevel == 0)
+        {
+            newLabel[Keys::property] = convertBuffer;
+            newLabel[Keys::document_count] = item.doc_count;
+            parents[nextLevel] = &newLabel[Keys::labels];
+        }
+        else
+        {
+            newLabel[Keys::label] = convertBuffer;
+            newLabel[Keys::document_count] = item.doc_count;
+            parents[nextLevel] = &newLabel[Keys::sub_labels];
+        }
+    }
 }
 
 } // namespace sf1r

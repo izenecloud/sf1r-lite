@@ -9,7 +9,7 @@
 
 #include "CollectionHandler.h"
 
-#include <common/renderers/DocumentsRenderer.h>
+#include <renderers/DocumentsRenderer.h>
 
 #include <util/driver/Request.h>
 #include <util/driver/Response.h>
@@ -97,6 +97,21 @@ private:
         std::vector<sf1r::docid_t>& idListInPage
     );
 
+    /// @internal
+    /// @brief Get document id list in group from MIA result.
+    /// @param smiaResult Result form MIA
+    /// @param start Page start offset
+    /// @param count Limit of the result in page
+    /// @param[out] idListInPage Id list of documents with the group label
+    ///                          (property value) and in the page.
+    /// @return total documents count in result
+    std::size_t getDocumentIdListInGroup(
+        const KeywordSearchResult& miaResult,
+        unsigned start,
+        unsigned count,
+        std::vector<sf1r::docid_t>& idListInPage
+    );
+
     void renderDocuments(const RawTextResultFromSIA& rawTextResult);
     void renderDocuments(
         const KeywordSearchResult& siaResult
@@ -120,6 +135,7 @@ private:
     IndexSearchService* indexSearchService_;
     MiningSearchService* miningSearchService_;
     const IndexBundleSchema& indexSchema_;
+    const MiningSchema& miningSchema_;
 
     KeywordSearchActionItem actionItem_;
 

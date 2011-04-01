@@ -183,6 +183,7 @@ FinishSearch:
     if( miningSearchService_ )
     {
         miningSearchService_->getSearchResult(resultItem);
+        miningSearchService_->getGroupRep(resultItem.topKDocs_, actionItem.groupPropertyList_, resultItem.groupRep_);		
     }
 
     return true;

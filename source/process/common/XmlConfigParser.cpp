@@ -1103,18 +1103,38 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
       mining_schema.faceted_enable = false;
       if( task_node!= NULL )
       {
-        Iterator<Element> it( "Property" );
-        for ( it = it.begin( task_node ); it != it.end(); it++ )
-        {
-            getAttribute( it.Get(), "name", property_name );
-            bool gottype = collectionMeta.getPropertyType(property_name, property_type);
-            if( !gottype || property_type != STRING_PROPERTY_TYPE )
-            {
-              throw XmlConfigParserException("Property ["+property_name+"] used in DocumentClassification is not string type.");
-            }
-            mining_schema.faceted_properties.push_back(property_name);
-        }
-        mining_schema.faceted_enable = true;
+          Iterator<Element> it( "Property" );
+          for ( it = it.begin( task_node ); it != it.end(); it++ )
+          {
+              getAttribute( it.Get(), "name", property_name );
+              bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+              if( !gottype || property_type != STRING_PROPERTY_TYPE )
+              {
+                  throw XmlConfigParserException("Property ["+property_name+"] used in Faceted is not string type.");
+              }
+              mining_schema.faceted_properties.push_back(property_name);
+          }
+          mining_schema.faceted_enable = true;
+      }
+
+      task_node = getUniqChildElement( mining_schema_node, "Group", false );
+      mining_schema.group_enable = false;
+      if( task_node!= NULL )
+      {
+          Iterator<Element> it( "Property" );
+          for ( it = it.begin( task_node ); it != it.end(); it++ )
+          {
+              getAttribute( it.Get(), "name", property_name );
+              bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+              if( !gottype || (property_type != STRING_PROPERTY_TYPE
+                               && property_type != INT_PROPERTY_TYPE
+                               && property_type != FLOAT_PROPERTY_TYPE))
+              {
+                  throw XmlConfigParserException("Property ["+property_name+"] used in Group is not string, int or float type.");
+              }
+              mining_schema.group_properties.push_back(property_name);
+          }
+          mining_schema.group_enable = true;
       }
       
       task_node = getUniqChildElement( mining_schema_node, "IISE", false );

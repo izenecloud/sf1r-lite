@@ -41,6 +41,7 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
     osgiLauncher_.start(miningBundleConfig);
     MiningSearchService* miningSearchService = static_cast<MiningSearchService*>(osgiLauncher_.getService(bundleName, "MiningSearchService"));
     collectionHandler->registerService(miningSearchService);
+    collectionHandler->setBundleSchema(miningBundleConfig->mining_schema_);
 
     // insert first, then assign to ensure exception safe
     std::pair<handler_map_type::iterator, bool> insertResult =

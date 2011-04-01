@@ -14,6 +14,10 @@
 #include "taxonomy-generation-submanager/LabelManager.h"
 #include "similarity-detection-submanager/PrunedSortedTermInvertedIndexReader.h"
 #include "similarity-detection-submanager/DocWeightListPrunedInvertedIndexReader.h"
+#include "faceted-submanager/ontology_rep_item.h"
+#include "faceted-submanager/ontology_rep.h"
+#include "faceted-submanager/group_manager.h"
+
 #include "LabelSynchronizer.h"
 
 #include <directory-manager/DirectoryCookie.h>
@@ -60,6 +64,7 @@ MiningManager::MiningManager(const std::string& collectionDataPath, const std::s
         ,collectionName_(collectionName), schema_(schema), miningConfig_(miningConfig), mining_schema_(miningSchema)
         , laManager_(laManager), document_manager_(documentManager), index_manager_(index_manager)
         , tgInfo_(NULL)
+        , groupManager_(NULL)
 {
 }
 MiningManager::MiningManager(const std::string& collectionDataPath, const std::string& queryDataPath,
@@ -76,6 +81,7 @@ MiningManager::MiningManager(const std::string& collectionDataPath, const std::s
         , laManager_(laManager), document_manager_(documentManager), index_manager_(index_manager)
         , tgInfo_(NULL)
         , idManager_(idManager)
+	, groupManager_(NULL)
 {
 }
 // void MiningManager::setConfigClient(const boost::shared_ptr<ConfigurationManagerClient>& configClient)
@@ -85,6 +91,7 @@ MiningManager::MiningManager(const std::string& collectionDataPath, const std::s
 
 MiningManager::~MiningManager()
 {
+    if(groupManager_) delete groupManager_;
     //close();
 }
 
@@ -100,6 +107,7 @@ bool MiningManager::open()
     std::cout<<"DO_DUPD : "<<(int)mining_schema_.dupd_enable<<std::endl;
     std::cout<<"DO_SIM : "<<(int)mining_schema_.sim_enable<<std::endl;
     std::cout<<"DO_FACETED : "<<(int)mining_schema_.faceted_enable<<std::endl;
+    std::cout<<"DO_GROUP : "<<(int)mining_schema_.group_enable<<std::endl;
     std::cout<<"DO_IISE : "<<(int)mining_schema_.ise_enable<<std::endl;
 
     /** Global variables **/
@@ -227,6 +235,20 @@ bool MiningManager::open()
 
         }
 
+
+        /** group */
+        if( mining_schema_.group_enable )
+        {
+            if(groupManager_) delete groupManager_;
+            std::string groupPath = prefix_path + "/group";
+		
+            groupManager_ = new faceted::GroupManager(document_manager_.get(), groupPath);
+            if (! groupManager_->open(mining_schema_.group_properties))
+            {
+                std::cerr << "open GROUP failed" << std::endl;
+                return false;
+            }
+        }
 
         //do mining continue;
         try
@@ -356,6 +378,12 @@ bool MiningManager::DoMiningCollection()
     if ( mining_schema_.faceted_enable )
     {
         faceted_->ProcessCollection(false);
+    }
+
+    //do group
+    if( mining_schema_.group_enable )
+    {
+        groupManager_->processCollection();
     }
 
     //do Similarity
@@ -942,6 +970,33 @@ bool MiningManager::addFacetedResult_(KeywordSearchResult& miaInput)
 //    boost::mutex::scoped_lock lock(sim_mtx_);
     if ( !faceted_ ) return true;
     faceted_->GetSearcher()->GetRepresentation(miaInput.topKDocs_, miaInput.onto_rep_);
+
+    return true;
+}
+
+bool MiningManager::getGroupRep(
+    const std::vector<unsigned int>& docIdList,
+    const std::vector<std::string>& groupPropertyList,
+    faceted::OntologyRep& groupRep
+)
+{
+    if (mining_schema_.group_enable && !docIdList.empty() && !groupPropertyList.empty())
+    {
+        CREATE_SCOPED_PROFILER(groupby, "MIAProcess", "ProcessGetGroupRep");
+
+        struct timeval tv_start;
+        struct timeval tv_end;
+        gettimeofday(&tv_start, NULL);
+
+        bool result = groupManager_->getGroupRep(docIdList, groupPropertyList, groupRep);
+
+        gettimeofday(&tv_end, NULL);
+        double timespend = (double) tv_end.tv_sec - (double) tv_start.tv_sec
+            + ((double) tv_end.tv_usec - (double) tv_start.tv_usec) / 1000000;
+        std::cout << "groupby cost " << timespend << " seconds." << std::endl;
+
+        return result;
+    }
 
     return true;
 }

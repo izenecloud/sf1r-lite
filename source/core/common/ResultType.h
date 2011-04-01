@@ -171,6 +171,9 @@ namespace sf1r {
             
             sf1r::faceted::OntologyRep onto_rep_;
 
+            // a list, each element is a label tree for a property
+            sf1r::faceted::OntologyRep groupRep_;
+
             /// A list of related query string.
             std::deque<izenelib::util::UString> relatedQueryList_;
 
@@ -186,7 +189,7 @@ namespace sf1r {
                     &start_&count_&fullTextOfDocumentInPage_
                     &snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_
                     &errno_&error_
-                    &numberOfDuplicatedDocs_&numberOfSimilarDocs_&docCategories_&imgs_&taxonomyString_&numOfTGDocs_&taxonomyLevel_&tgDocIdList_&neList_&onto_rep_&relatedQueryList_&rqScore_)
+                    &numberOfDuplicatedDocs_&numberOfSimilarDocs_&docCategories_&imgs_&taxonomyString_&numOfTGDocs_&taxonomyLevel_&tgDocIdList_&neList_&onto_rep_&groupRep_&relatedQueryList_&rqScore_)
     };
 
 

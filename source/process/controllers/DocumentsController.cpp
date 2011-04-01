@@ -28,7 +28,10 @@ const std::size_t DocumentsController::kDefaultPageCount = 20;
  * - @b conditions (@c Array): Result filtering conditions. See
  *   driver::ConditionArrayParser.
  * - @b sort (@c Array): Sort result. See SortParser.
- * - @b group (@c Array): Group result. See GroupingParser.
+ * - @b group (@c Array): Group property values.
+ *   - @b property* (@c String): Property name, whose group result (doc count for
+ *     each property value) would be supplied in response["group"]. The property
+ *     type must be string, int or float.
  * - @b limit (@c Uint = 20): Limit the count of returned documents.
  * - @b offset (@c Uint = 0): Index offset of the first returned documents in
  *   all result. It is used together with @b limit in result paging. If every
@@ -85,6 +88,17 @@ const std::size_t DocumentsController::kDefaultPageCount = 20;
  *       this item.
  * - @b refined_query (@c String): Refined query if the result count is less
  *   than the threshold.
+ * - @b group (@c Array): Every item represents the group result of one property.
+ *   - @b property (@c String): Property name.
+ *   - @b document_count (@c Uint): Number of result documents whose value on
+ *     this property is not empty.
+ *   - @b labels (@c Array): Group labels. Every item is an object
+ *     representing a label for a property value. Labels are organized as a tree.
+ *     The item has following fields.
+ *     - @b label (@c String): Name of this label, it represents a property value.
+ *     - @b document_count (@c Uint): Number of result documents in this label.
+ *     - @b sub_labels (@c Array): Array of sub labels. It has the same
+ *       structure of the top @b labels field.
  *
  * @section example
  *
@@ -385,6 +399,150 @@ void DocumentsController::destroy()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
     collectionHandler_->destroy(request()[Keys::resource]);
+}
+
+/**
+ * @brief Action @b get_topic. Get topics of specific document
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Find topics in this collection.
+ * - @b resource* (@c Object): Only field @b DOCID is used to find the document.
+ *
+ * @section response
+ *
+ * - @b resources (@c Array): Every item is a topic.
+ *   - @b id (@c Uint): The id of topic
+ *   - @b name (@c String): The name of topic
+ *
+ *
+ * @section example
+ *
+ * @code
+ * {
+ *   "collection": "ChnWiki",
+ *   "resource" => {
+ *     "DOCID": "docid-1",
+ *   }
+ * }
+ * @endcode
+ */
+void DocumentsController::get_topic()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
+  
+    uint32_t internal_id = 0;
+    Value& input = request()[Keys::resource];
+    Value& docid_value = input[Keys::DOCID];
+    std::string sdocid = asString(docid_value);
+    izenelib::util::UString udocid(sdocid, izenelib::util::UString::UTF_8);
+    bool success = collectionHandler_->indexSearchService_->getInternalDocumentId(udocid, internal_id);
+    if (!success || internal_id==0)
+    {
+        response().addError("Cannot convert DOCID to internal ID");
+        return;
+    }
+  
+    std::vector<std::pair<uint32_t, izenelib::util::UString> > label_list;
+    bool requestSent = collectionHandler_->miningSearchService_->getDocLabelList(
+        internal_id, label_list
+    );
+
+    if (!requestSent)
+    {
+        response().addError(
+            "Failed to send request to given collection."
+        );
+        return;
+    }
+    Value& resources = response()[Keys::resources];
+    resources.reset<Value::ArrayType>();
+    for(uint32_t i=0;i<label_list.size();i++)
+    {
+      Value& new_resource = resources();
+      new_resource[Keys::id] = label_list[i].first;
+      std::string str;
+      label_list[i].second.convertString(str, izenelib::util::UString::UTF_8);
+      new_resource[Keys::name] = str;
+    }
+}
+
+/**
+ * @brief Action @b get_topic_with_sim. Get topics with their similar topics of specific document
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Find topics in this collection.
+ * - @b resource* (@c Object): Only field @b DOCID is used to find the document.
+ *
+ * @section response
+ *
+ * - @b resources (@c Array): Every item is a topic.
+ *   - @b name (@c String): The name of topic
+ *   - @b sim_list (@c Array): The list of similar topics
+ *     - @b name (@c String): The name of topic
+ *
+ *
+ * @section example
+ *
+ * @code
+ * {
+ *   "collection": "ChnWiki",
+ *   "resource" => {
+ *     "DOCID": "docid-1",
+ *   }
+ * }
+ * @endcode
+ */
+void DocumentsController::get_topic_with_sim()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
+  
+    uint32_t internal_id = 0;
+    Value& input = request()[Keys::resource];
+    Value& docid_value = input[Keys::DOCID];
+    std::string sdocid = asString(docid_value);
+    izenelib::util::UString udocid(sdocid, izenelib::util::UString::UTF_8);
+    bool success = collectionHandler_->indexSearchService_->getInternalDocumentId(
+          udocid, internal_id
+      );
+    if (!success || internal_id==0)
+    {
+        response().addError("Cannot convert DOCID to internal ID");
+        return;
+    }
+  
+    std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > > label_list;
+    bool requestSent = collectionHandler_->miningSearchService_->getLabelListWithSimByDocId(
+        internal_id, label_list
+    );
+
+    if (!requestSent)
+    {
+        response().addError(
+            "Failed to send request to given collection."
+        );
+        return;
+    }
+    Value& resources = response()[Keys::resources];
+    resources.reset<Value::ArrayType>();
+    for(uint32_t i=0;i<label_list.size();i++)
+    {
+      Value& new_resource = resources();
+      std::string name;
+      label_list[i].first.convertString(name, izenelib::util::UString::UTF_8);
+      new_resource[Keys::name] = name;
+      Value& sim_list = new_resource[Keys::sim_list];
+      sim_list.reset<Value::ArrayType>();
+      for(uint32_t j=0;j<label_list[i].second.size();j++)
+      {
+        Value& new_sim = sim_list();
+        std::string str;
+        label_list[i].second[j].convertString(str, izenelib::util::UString::UTF_8);
+        new_sim[Keys::name] = str;
+      }
+    
+    }
 }
 
 bool DocumentsController::requireDOCID()

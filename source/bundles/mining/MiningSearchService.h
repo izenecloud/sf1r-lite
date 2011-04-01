@@ -31,7 +31,11 @@ public:
 
     bool getReminderQuery(std::vector<izenelib::util::UString>& popularQueries, std::vector<izenelib::util::UString>& realtimeQueries);
 
+    bool getDocLabelList(uint32_t docid, std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list );
+
     bool getSimilarLabelStringList(uint32_t label_id, std::vector<izenelib::util::UString>& label_list );
+
+    bool getLabelListWithSimByDocId(uint32_t docid,  std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > >& label_list);
 
     bool getUniqueDocIdList(const std::vector<uint32_t>& docIdList, std::vector<uint32_t>& cleanDocs);
 
@@ -50,6 +54,8 @@ public:
     bool OntologyClick(const std::vector<uint32_t>& search_result, uint32_t cid, std::list<uint32_t>& docid_list);
 
     bool DefineDocCategory(const std::vector<faceted::ManmadeDocCategoryItem>& items);
+
+    bool getGroupRep(const std::vector<unsigned int>& docIdList, const std::vector<std::string>& groupPropertyList, faceted::OntologyRep& groupRep);
 
 private:
     boost::shared_ptr<MiningManager> miningManager_;

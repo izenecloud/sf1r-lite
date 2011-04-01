@@ -54,6 +54,11 @@ using namespace izenelib::ir::idmanager;
 namespace sf1r
 {
 
+namespace faceted
+{
+class GroupManager;
+}
+
 /**
  * @brief MiningManager manages all the data mining tasks.
  * Those tasks needs heavy offline mining computation. Also, it manages the online query to
@@ -150,6 +155,20 @@ public:
 
     bool getLabelListWithSimByDocId(uint32_t docid,
                                     std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > >& label_list);
+
+    /**
+     * @brief Get group representation for a property list.
+     * @param docIdList a list of doc id, in which doc count is calculated for each property value
+     * @param groupPropertyList a list of property name.
+     * @param groupRep a list, each element is a label tree for a property,
+     *				   each label contains doc count for a property value.
+     * @return true for success, false for failure.
+     */
+    bool getGroupRep(
+        const std::vector<unsigned int>& docIdList,
+        const std::vector<std::string>& groupPropertyList,
+        faceted::OntologyRep& groupRep
+    );
 
 //     void getMiningStatus(Status& status);
 
@@ -280,6 +299,8 @@ private:
     std::string faceted_path_;
     boost::shared_ptr<IDManager>idManager_;
 
+    /** GROUP BY */
+    faceted::GroupManager* groupManager_;
 };
 
 }

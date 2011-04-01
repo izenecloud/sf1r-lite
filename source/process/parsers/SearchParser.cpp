@@ -36,6 +36,13 @@ using driver::Keys;
  * - @b name_entity_item (@c Object): Only get documents in the specified name
  *   entity item. Must be used with @b name_entity_type together and cannot be
  *   used with @b taxonomy_label.
+ * - @b group_label (@c Object): Only get documents in the specified group. It cannot
+ *   be used with @b taxonomy_label, @b name_entity_type and @b name_entity_item
+ *   together.
+ *   - @b property* (@c String): the property name, this name must be also specified
+ *   in request["group"].
+ *   - @b value* (@c String): the property value, only those documents with this
+ *   property value would be returned.
  * - @b ranking_model (@c String): How to rank the search result. Result with
  *   high ranking score is considered has high relevance. Now SF1 supports
  *   following ranking models.

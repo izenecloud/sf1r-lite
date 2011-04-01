@@ -9,6 +9,7 @@
 #include <bundles/index/IndexBundleConfiguration.h>
 #include <bundles/index/IndexSearchService.h>
 #include <bundles/index/IndexTaskService.h>
+#include <bundles/mining/MiningBundleConfiguration.h>
 #include <bundles/mining/MiningSearchService.h>
 
 #include <util/driver/Request.h>
@@ -66,6 +67,11 @@ public:
     {
         indexSchema_ = schema;
     }
+
+    void setBundleSchema(MiningSchema& schema)
+    {
+	miningSchema_ = schema;
+    }
 public:
     std::string collection_;
 
@@ -76,6 +82,8 @@ public:
     MiningSearchService* miningSearchService_;
 
     IndexBundleSchema indexSchema_;
+
+    MiningSchema miningSchema_;
 };
 
 } // namespace sf1r

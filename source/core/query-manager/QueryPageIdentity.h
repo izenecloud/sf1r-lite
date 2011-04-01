@@ -1,5 +1,5 @@
-#ifndef SF1V5_QUERY_MANAGER_QUERY_PAGE_IDENTITY_H
-#define SF1V5_QUERY_MANAGER_QUERY_PAGE_IDENTITY_H
+#ifndef SF1R_QUERY_MANAGER_QUERY_PAGE_IDENTITY_H
+#define SF1R_QUERY_MANAGER_QUERY_PAGE_IDENTITY_H
 /**
  * @file query-manager/QueryPageIdentity.h
  * @author Ian Yang
@@ -44,4 +44,4 @@ inline bool operator!=(const QueryPageIdentity& a,
 }
 
 } // namespace sf1r
-#endif // SF1V5_QUERY_MANAGER_QUERY_PAGE_IDENTITY_H
+#endif // SF1R_QUERY_MANAGER_QUERY_PAGE_IDENTITY_H
