@@ -33,7 +33,10 @@ class IndexTaskService : public ::izenelib::osgi::IService
 {
     typedef uint32_t CharacterOffset;
 public:
-    IndexTaskService(IndexBundleConfiguration* bundleConfig, DirectoryRotator& directoryRotator);
+    IndexTaskService(
+        IndexBundleConfiguration* bundleConfig, 
+        DirectoryRotator& directoryRotator,
+        boost::shared_ptr<IndexManager> indexManager);
 
     ~IndexTaskService();
 
@@ -76,8 +79,6 @@ private:
     DirectoryRotator& directoryRotator_;
     MiningTaskService* miningTaskService_;
 
-    unsigned int collectionId_;
-
     PropertyConfig dateProperty_;
     config_tool::PROPERTY_ALIAS_MAP_T propertyAliasMap_;
 
@@ -88,6 +89,7 @@ private:
     TextSummarizationSubManager summarizer_;
     boost::shared_ptr<SearchManager> searchManager_;
 
+    unsigned int collectionId_;
     docid_t maxDocId_;
     IndexingProgress indexProgress_;
     bool checkInsert_;

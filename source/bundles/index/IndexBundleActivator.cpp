@@ -163,9 +163,8 @@ bool IndexBundleActivator::init_()
     searchService_->searchManager_ = searchManager_;
     searchService_->pQA_ = pQA_;
 
-    taskService_ = new IndexTaskService(config_, directoryRotator_);
+    taskService_ = new IndexTaskService(config_, directoryRotator_, indexManager_);
 
-    taskService_->indexManager_ = indexManager_;
     taskService_->idManager_ = idManager_;
     taskService_->documentManager_ = documentManager_;
     taskService_->summarizer_.init(documentManager_->getLangId(), idManager_);
@@ -267,6 +266,28 @@ IndexBundleActivator::createIndexManager_() const
     {
         IndexManagerConfig config(config_->indexConfig_);
         config.indexStrategy_.indexLocation_ = dir;
+
+
+        IndexerCollectionMeta indexCollectionMeta;
+        indexCollectionMeta.setName(config_->collectionName_);
+        typedef IndexBundleSchema::iterator prop_iterator;
+        for (prop_iterator iter = config_->schema_.begin(),
+                                   iterEnd = config_->schema_.end();
+               iter != iterEnd; ++iter)
+        {
+            IndexerPropertyConfig indexerPropertyConfig(
+                iter->getPropertyId(),
+                iter->getName(),
+                iter->isIndex(),
+                iter->isAnalyzed()
+            );
+            indexerPropertyConfig.setIsFilter(iter->getIsFilter());
+            indexerPropertyConfig.setIsMultiValue(iter->getIsMultiValue());
+            indexerPropertyConfig.setIsStoreDocLen(iter->getIsStoreDocLen());
+            indexCollectionMeta.addPropertyConfig(indexerPropertyConfig);
+        }
+		
+        config.addCollectionMeta(indexCollectionMeta);
 
         std::map<std::string, unsigned int> collectionIdMapping;
         collectionIdMapping[config_->collectionName_] = 1;

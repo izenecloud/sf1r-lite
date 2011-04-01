@@ -21,10 +21,14 @@ using namespace izenelib::driver;
 
 namespace sf1r
 {
-IndexTaskService::IndexTaskService(IndexBundleConfiguration* bundleConfig, DirectoryRotator& directoryRotator)
+IndexTaskService::IndexTaskService(
+    IndexBundleConfiguration* bundleConfig, 
+    DirectoryRotator& directoryRotator,
+    boost::shared_ptr<IndexManager> indexManager)
     : bundleConfig_(bundleConfig)
     , directoryRotator_(directoryRotator)
     , miningTaskService_(NULL)
+    , indexManager_(indexManager)
     , collectionId_(1)
     , maxDocId_(0)
     , indexProgress_()

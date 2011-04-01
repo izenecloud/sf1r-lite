@@ -765,7 +765,7 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
     // IndexBundle
     Element* indexBundle = getUniqChildElement( collection, "IndexBundle", false  );
     Element* indexParam = getUniqChildElement( indexBundle, "Parameter", false );
-    if(indexParam) parseIndexBundleParam(indexParam, collectionMeta);
+    parseIndexBundleParam(indexParam, collectionMeta);
     parseIndexBundleSchema(getUniqChildElement( indexBundle, "Schema" ), collectionMeta);
 
     // MiningBundle
@@ -775,7 +775,7 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
         Element* miningSchema = getUniqChildElement( miningBundle, "Schema", false  );
         if(miningSchema) parseMiningBundleSchema(miningSchema, collectionMeta);
         Element* miningParam = getUniqChildElement( miningBundle, "Parameter", false  );
-        if(miningParam) parseMiningBundleParam(miningParam, collectionMeta);
+        parseMiningBundleParam(miningParam, collectionMeta);
     }
 }
 
@@ -895,7 +895,7 @@ void CollectionConfig::parseCollectionSchema( const ticpp::Element * documentSch
 void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, CollectionMeta & collectionMeta)
 {
     CollectionParameterConfig params(SF1Config::get()->defaultIndexBundleParam_);
-    params.LoadXML(index, true);
+    if(index) params.LoadXML(index, true);
 
     std::string encoding;
 
@@ -930,7 +930,6 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
 		
     if(!directories.empty())
     {
-        // std::cout<<"data dir size: "<<directories.size()<<std::endl;
         indexmanager_config.indexStrategy_.indexLocations_.assign(directories.begin(), directories.end());
         indexBundleConfig.collectionDataDirectories_.assign(directories.begin(), directories.end());
     }
@@ -982,8 +981,7 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
 void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, CollectionMeta & collectionMeta)
 {
     CollectionParameterConfig params(SF1Config::get()->defaultMiningBundleParam_);
-    params.LoadXML(mining, true);
-
+    if(mining) params.LoadXML(mining, true);
     // PARSING MINING CONFIG
     MiningConfig& mining_config = collectionMeta.miningBundleConfig_->mining_config_;
     //for TG
