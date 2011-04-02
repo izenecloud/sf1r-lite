@@ -260,7 +260,7 @@ bool MiningManager::open()
                 DoMiningCollection();
             }
         }
-        catch (std::exception ex)
+        catch (std::exception& ex)
         {
             std::cerr<<ex.what()<<std::endl;
         }

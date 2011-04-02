@@ -20,6 +20,8 @@ namespace
 {
 const PropValueTable::pvid_t MAX_PV_ID = -1;
 
+const unsigned int MAX_PV_COUNT = MAX_PV_ID + 1;
+
 const char* PROP_STR_FILE_EXTEND = ".map";
 
 const char* PROP_ID_FILE_EXTEND = ".table";
@@ -65,16 +67,19 @@ PropValueTable::pvid_t PropValueTable::propValueId(const izenelib::util::UString
 
     if (result.second)
     {
-        if (pvId == MAX_PV_ID)
+        if (pvId != 0)
         {
+            propStrVec_.push_back(value);
+        }
+        else
+        {
+            // overflow
             throw MiningException(
-                "the number of property values is out of range:",
-                boost::lexical_cast<std::string>(pvId),
+                "property value count is out of range",
+                boost::lexical_cast<std::string>(propStrVec_.size()),
                 "PropValueTable::propValueId"
             );
         }
-
-        propStrVec_.push_back(value);
     }
     else
     {
@@ -104,7 +109,13 @@ bool PropValueTable::open()
             }
 
             savePropStrNum_ = propStrVec_.size();
-            assert(savePropStrNum_ <= MAX_PV_ID);
+
+            if (savePropStrNum_ > MAX_PV_COUNT)
+            {
+                LOG(ERROR) << "property value count is out of range: " << savePropStrNum_
+                           << ", fileName: " << fileName;
+                return false;
+            }
 
             for (unsigned int i = 0; i < propStrVec_.size(); ++i)
             {
@@ -186,7 +197,7 @@ bool PropValueTable::flush()
         }
 
         savePropStrNum_ = propStrVec_.size();
-        assert(savePropStrNum_ <= MAX_PV_ID);
+        assert(savePropStrNum_ <= MAX_PV_COUNT);
     }
 
     if (savePropIdNum_ < propIdVec_.size())

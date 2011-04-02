@@ -1,6 +1,7 @@
 #include "group_manager.h"
 #include <mining-manager/util/FSUtil.hpp>
 #include <document-manager/DocumentManager.h>
+#include <mining-manager/MiningException.hpp>
 
 #include <iostream>
 
@@ -69,10 +70,15 @@ bool GroupManager::processCollection()
         std::vector<PropValueTable::pvid_t>& idTable = pvTable.propIdTable();
         assert(! idTable.empty() && "id 0 should have been reserved in PropValueTable constructor");
 
-        const docid_t maxDocId = documentManager_->getMaxDocId();
-        idTable.reserve(maxDocId + 1);
+        const docid_t startDocId = idTable.size();
+        const docid_t endDocId = documentManager_->getMaxDocId();
+        idTable.reserve(endDocId + 1);
 
-        for (docid_t docId = idTable.size(); docId <= maxDocId; ++docId)
+        LOG(INFO) << "start building property: " << propName
+                  << ", start doc id: " << startDocId
+                  << ", end doc id: " << endDocId;
+
+        for (docid_t docId = startDocId; docId <= endDocId; ++docId)
         {
             Document doc;
             PropValueTable::pvid_t pvId = 0;
@@ -83,7 +89,15 @@ bool GroupManager::processCollection()
                 if (it != doc.propertyEnd())
                 {
                     const izenelib::util::UString& value = it->second.get<izenelib::util::UString>();
-                    pvId = pvTable.propValueId(value);
+                    try
+                    {
+                        pvId = pvTable.propValueId(value);
+                    }
+                    catch(MiningException& e)
+                    {
+                        LOG(ERROR) << "exception: " << e.what()
+                                   << ", doc id: " << docId;
+                    }
                 }
                 else
                 {
@@ -97,6 +111,11 @@ bool GroupManager::processCollection()
             }
 
             idTable.push_back(pvId);
+
+            if (docId % 100000 == 0)
+            {
+                LOG(INFO) << "inserted doc id: " << docId;
+            }
         }
 
         if (!pvTable.flush())
