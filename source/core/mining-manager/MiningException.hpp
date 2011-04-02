@@ -21,6 +21,7 @@ public:
     MiningException(const std::string& msg, const std::string& parameter, const std::string& thrower="#")
     : msg_(msg), parameter_(parameter), thrower_(thrower)
     {
+        what_ = msg_ + " : " + parameter_ + " (" + thrower_ + ")";
     }
     
     ~MiningException() throw ()
@@ -45,13 +46,14 @@ public:
     
     const char* toString() const
     {
-        return (msg_+" : "+parameter_+" ("+thrower_+")").c_str();
+        return what_.c_str();
     }
     
 private:
     std::string msg_;
     std::string parameter_;
     std::string thrower_;
+    std::string what_;
 };
 
 class NotEnoughMemoryException : public std::bad_alloc
@@ -60,6 +62,7 @@ public:
     NotEnoughMemoryException(const std::string& thrower="#")
     :std::bad_alloc(), thrower_(thrower)
     {
+        what_ = "Not enough memory (" + thrower_ + ")";
     }
     
     ~NotEnoughMemoryException() throw ()
@@ -68,7 +71,7 @@ public:
     
     virtual const char* what() const throw()
     {
-        return "Not enough memory";
+        return toString();
     }
 
     
@@ -77,15 +80,15 @@ public:
         return thrower_;
     }
     
-    const char* toString()
+    const char* toString() const
     {
-        return ("Not enough memory ("+thrower_+")").c_str();
+        return what_.c_str();
     }
     
 private:
-
     std::string thrower_;
 
+    std::string what_;
 };
 
 

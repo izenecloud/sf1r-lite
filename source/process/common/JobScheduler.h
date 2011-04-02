@@ -5,6 +5,7 @@
 #include <util/singleton.h>
 
 #include <boost/thread.hpp>
+#include <boost/function.hpp>
 
 typedef boost::function0<void> task_type;
 
