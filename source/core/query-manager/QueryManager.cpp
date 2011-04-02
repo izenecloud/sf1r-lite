@@ -36,6 +36,31 @@ void QueryManager::setCollectionPropertyInfoMap(std::map<QueryManager::CollPrope
     }
 }
 
+void QueryManager::addCollectionPropertyInfo(CollPropertyKey_T colPropertyKey, 
+        sf1r::PropertyDataType  colPropertyData )
+{
+    static boost::mutex localMutex;
+    {
+        boost::mutex::scoped_lock localLock( localMutex );
+        QueryManager::collectionPropertyInfoMap_[colPropertyKey] = colPropertyData;
+    }
+}
+
+void QueryManager::addCollectionDisplayProperty(CollPropertyKey_T colPropertyKey, 
+        DisplayProperty& displayProperty )
+{
+    boost::upgrade_lock<boost::shared_mutex> lock(dpmSM_);
+    boost::upgrade_to_unique_lock<boost::shared_mutex> uniqueLock(lock);
+    displayPropertyMap_[colPropertyKey] = displayProperty;
+}
+
+void QueryManager::addCollectionSearchProperty(CollPropertyKey_T colPropertyKey)
+{
+    boost::upgrade_lock<boost::shared_mutex> lock(dpmSM_);
+    boost::upgrade_to_unique_lock<boost::shared_mutex> uniqueLock(lock);
+    searchPropertySet_.insert(colPropertyKey);
+}
+
 const std::map<QueryManager::CollPropertyKey_T, 
       sf1r::PropertyDataType>& QueryManager::getCollectionPropertyInfoMap(void)
 {

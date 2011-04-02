@@ -43,7 +43,11 @@ bool buildQueryTree(SearchKeywordOperation&action, IndexBundleConfiguration& bun
             action.actionItem_.env_.encodingType_.c_str() );
     UString queryUStr(action.actionItem_.env_.queryString_, encodingType);
     if ( !action.queryParser_.parseQuery( queryUStr, action.rawQueryTree_, action.unigramFlag_ ) )
+    	{
+        std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  " << std::endl;            	
+    	
         return false;
+    	}
     action.rawQueryTree_->print();
 
     // Build property query map
@@ -67,7 +71,10 @@ bool buildQueryTree(SearchKeywordOperation&action, IndexBundleConfiguration& bun
             if ( !action.queryParser_.getAnalyzedQueryTree(
                         action.actionItem_.languageAnalyzerInfo_.synonymExtension_,
                         analysisInfo, queryUStr, tmpQueryTree, action.unigramFlag_ ))
+            	{
+        std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Property " << *propertyIter << std::endl;            	
                 return false;
+            	}
         } // end - if
         else // store raw query's info into it.
             tmpQueryTree = action.rawQueryTree_;

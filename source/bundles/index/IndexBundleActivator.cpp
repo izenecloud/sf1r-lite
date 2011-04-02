@@ -2,6 +2,7 @@
 
 #include <common/SFLogger.h>
 #include <la-manager/LAPool.h>
+#include <query-manager/QueryManager.h>
 
 #include <util/singleton.h>
 
@@ -355,12 +356,32 @@ IndexBundleActivator::createLAManager_() const
 bool IndexBundleActivator::initializeQueryManager_() const
 {
     // initialize Query Parser
-    QueryParser::initOnlyOnce();
 
     std::string kma_path;
     LAPool::getInstance()->get_kma_path(kma_path);
     std::string restrictDictPath = kma_path + "/restrict.txt";
     QueryUtility::buildRestrictTermDictionary( restrictDictPath, idManager_);
+
+    IndexBundleSchema::const_iterator docSchemaIter = config_->schema_.begin();
+    for(; docSchemaIter != config_->schema_.end(); docSchemaIter++)
+    {
+        QueryManager::CollPropertyKey_T key( make_pair(config_->collectionName_, docSchemaIter->getName() ) );
+
+        // Set Search Property
+        if ( docSchemaIter->isIndex() )
+            QueryManager::addCollectionSearchProperty(key);
+
+        // Set Display Property
+        QueryManager::addCollectionPropertyInfo(key, docSchemaIter->getType() );
+
+        DisplayProperty displayProperty(docSchemaIter->getName());
+        displayProperty.isSnippetOn_ = docSchemaIter->bSnippet_;
+        displayProperty.isSummaryOn_ = docSchemaIter->bSummary_;
+        displayProperty.summarySentenceNum_ = docSchemaIter->summaryNum_;
+        displayProperty.isHighlightOn_ = docSchemaIter->bHighlight_;
+
+        QueryManager::addCollectionDisplayProperty(key, displayProperty); 
+    }
 
     return true;
 }

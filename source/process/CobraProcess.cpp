@@ -4,6 +4,7 @@
 #include <common/SFLogger.h>
 #include <la-manager/LAPool.h>
 #include <license-manager/LicenseManager.h>
+#include <query-manager/QueryParser.h>
 
 #include <bundles/querylog/QueryLogBundleConfiguration.h>
 #include <bundles/querylog/QueryLogBundleActivator.h>
@@ -137,6 +138,7 @@ QueryLogSearchService* CobraProcess::initQuery()
     {
         pQA->load(qaPath);
     }
+    QueryParser::initOnlyOnce();
 
     ///create QueryLogBundle
     boost::shared_ptr<QueryLogBundleConfiguration> queryLogBundleConfig
