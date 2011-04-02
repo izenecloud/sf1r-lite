@@ -337,6 +337,7 @@ void SF1Config::parseQueryLogBundleParam(const ticpp::Element * queryLog)
     getAttribute( settings, "num", queryLogBundleConfig_.autofill_num );
     settings = getUniqChildElement( queryLog, "CronIndexRecommend" );
     getAttribute( settings, "value", queryLogBundleConfig_.cronIndexRecommend_);
+    queryLogBundleConfig_.resource_dir_ = resource_dir_;
 }
 
 void SF1Config::parseFirewall( const ticpp::Element * fireElement )

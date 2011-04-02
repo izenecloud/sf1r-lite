@@ -26,6 +26,8 @@ public:
     uint32_t autofill_num;
 
     std::string cronIndexRecommend_;
+
+    std::string resource_dir_;
 };
 
 }
