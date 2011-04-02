@@ -152,10 +152,10 @@ void split_float(const izenelib::util::UString& szText, std::list<PropertyType>&
         {
             if (n != nOld)
             {
-                double value = 0;
+                float value = 0;
                 try
                 {
-                    value = boost::lexical_cast< double >( str.substr(nOld, n-nOld) );
+                    value = boost::lexical_cast< float >( str.substr(nOld, n-nOld) );
                     out.push_back(value);
                 }
                 catch( const boost::bad_lexical_cast & )
@@ -166,10 +166,10 @@ void split_float(const izenelib::util::UString& szText, std::list<PropertyType>&
         }
     }
 
-    double value = 0;
+    float value = 0;
     try
     {
-        value = boost::lexical_cast< double >( str.substr(nOld, str.length()-nOld) );
+        value = boost::lexical_cast< float >( str.substr(nOld, str.length()-nOld) );
         out.push_back(value);
     }
     catch( const boost::bad_lexical_cast & )

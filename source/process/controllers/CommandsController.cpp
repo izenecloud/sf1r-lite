@@ -69,7 +69,7 @@ void CommandsController::index()
         );
         return;
     }
-    std::string bundleName = collection_ + "-index";
+    std::string bundleName = "IndexBundle-" + collection_;
     IndexTaskService* indexService = static_cast<IndexTaskService*>(
                                          CollectionManager::get()->getOSGILauncher().getService(bundleName, "IndexTaskService"));
     if (!indexService)
@@ -131,7 +131,7 @@ void CommandsController::optimize_index()
         );
         return;
     }
-    std::string bundleName = collection_ + "-index";
+    std::string bundleName = "IndexBundle-" + collection_;
     IndexTaskService* indexService = static_cast<IndexTaskService*>(
                                          CollectionManager::get()->getOSGILauncher().getService(bundleName, "IndexTaskService"));
     if (!indexService)

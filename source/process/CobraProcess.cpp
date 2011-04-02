@@ -77,7 +77,36 @@ bool CobraProcess::initialize(const std::string& configFileDir)
 
 bool CobraProcess::initLAManager()
 {
-    const LAManagerConfig & laConfig = SF1Config::get()->getLAManagerConfig();
+    LAManagerConfig laConfig;
+    SF1Config::get()->getLAManagerConfig(laConfig);
+
+    ///TODO 
+    /// Ugly here, to be optimized through better configuration
+    LAConfigUnit config;
+    config.setId( "la_mia" );
+    config.setAnalysis( "korean" );
+    config.setMode( "label" );
+    config.setDictionaryPath( laConfig.kma_path_ ); // defined macro
+	
+    laConfig.addLAConfig(config);
+	
+    AnalysisInfo analysisInfo;
+    analysisInfo.analyzerId_ = "la_mia";
+    analysisInfo.tokenizerNameList_.insert("tok_divide");
+    laConfig.addAnalysisPair(analysisInfo);
+	
+    LAConfigUnit config2;
+    config2.setId( "la_sia" );
+    config2.setAnalysis( "korean" );
+    config2.setMode( "label" );
+    config2.setDictionaryPath( laConfig.kma_path_ ); // defined macro
+	
+    laConfig.addLAConfig(config2);
+	
+    AnalysisInfo analysisInfo2;
+    analysisInfo2.analyzerId_ = "la_sia";
+    analysisInfo2.tokenizerNameList_.insert("tok_divide");
+    laConfig.addAnalysisPair(analysisInfo2);
 
     if (! LAPool::getInstance()->init(laConfig))
         return false;
@@ -231,6 +260,11 @@ int CobraProcess::run()
                     {
                         std::string collectionName = iter->filename().substr(0,iter->filename().rfind(".xml"));
                         CollectionManager::get()->startCollection(collectionName, iter->string());
+
+                        ///update LA here
+                        LAManagerConfig laConfig;
+                        SF1Config::get()->getLAManagerConfig(laConfig);
+                        LAPool::getInstance()->init(laConfig);
                     }
             }
         }		

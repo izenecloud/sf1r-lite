@@ -166,7 +166,9 @@ bool IndexBundleActivator::init_()
     taskService_ = new IndexTaskService(config_, directoryRotator_, indexManager_);
 
     taskService_->idManager_ = idManager_;
+    taskService_->laManager_ = laManager_;
     taskService_->documentManager_ = documentManager_;
+    taskService_->searchManager_ = searchManager_;
     taskService_->summarizer_.init(documentManager_->getLangId(), idManager_);
 
     return true;

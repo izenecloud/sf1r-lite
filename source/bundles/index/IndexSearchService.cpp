@@ -22,6 +22,13 @@ int TOP_K_NUM = 1000;
 IndexSearchService::IndexSearchService()
 {
     miningSearchService_ = NULL;
+    ///LA can only be got from a pool because it is not thread safe
+    ///For some situation, we need to get the la not according to the property
+    ///So we had to hard code here. A better solution is to set a default
+    ///LA for each collection.
+    analysisInfo_.analyzerId_ = "la_sia";
+    analysisInfo_.tokenizerNameList_.insert("tok_divide");
+    analysisInfo_.tokenizerNameList_.insert("tok_unite");
 }
 
 IndexSearchService::~IndexSearchService()

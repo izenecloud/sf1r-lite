@@ -12,6 +12,8 @@
 
 #include <boost/filesystem.hpp>
 
+#include <glog/logging.h>
+
 #include <memory> // for auto_ptr
 #include <signal.h>
 #include <protect/RestrictMacro.h>
@@ -731,8 +733,7 @@ bool IndexTaskService::prepareDocument_(SCDDoc& doc, Document& document,
                         laInputs_[iter->getPropertyId()]->setDocId(docId);
                         if (makeForwardIndex_(propertyValueU, iter->getPropertyId(), analysisInfo) == false)
                         {
-                            sflog->warn(SFL_IDX, 10127,__LINE__);
-                            //cout << "makeForwardIndex() failed " << endl;
+                            DLOG(ERROR) << "Forward Indexing Failed Error Line : "<< __LINE__ << endl;
                             return false;
                         }
                         if (iter->getIsFilter())
@@ -801,7 +802,7 @@ bool IndexTaskService::prepareDocument_(SCDDoc& doc, Document& document,
                                                       vecIter->getPropertyId(),
                                                       aliasAnalysisInfo) == false)
                                 {
-                                    sflog->error(SFL_IDX, 10128,__LINE__);
+                                    DLOG(ERROR) << "Forward Indexing Failed Error Line : "<< __LINE__ << endl;
                                     return false;
                                 }
                                 IndexerPropertyConfig
@@ -877,10 +878,10 @@ bool IndexTaskService::prepareDocument_(SCDDoc& doc, Document& document,
                     {
                         std::string str("");
                         propertyValueU.convertString(str, encoding);
-                        double value = 0;
+                        float value = 0;
                         try
                         {
-                            value = boost::lexical_cast< double >( str );
+                            value = boost::lexical_cast< float >( str );
                         }
                         catch( const boost::bad_lexical_cast & )
                         {
