@@ -2,6 +2,7 @@
 #define QUERYLOG_BUNDLE_CONFIGURATION_H
 
 #include <util/osgi/BundleConfiguration.h>
+#include <common/inttypes.h> // uint32_t
 
 #include <string>
 
