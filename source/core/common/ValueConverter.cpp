@@ -88,6 +88,9 @@ void ValueConverter::driverValue2PropertyValue(
         propertyValue = (int64_t)asInt(driverValue);
         break;
     case FLOAT_PROPERTY_TYPE:
+        propertyValue = (float)asDouble(driverValue);
+        break;
+    case DOUBLE_PROPERTY_TYPE:
         propertyValue = asDouble(driverValue);
         break;
     default:
