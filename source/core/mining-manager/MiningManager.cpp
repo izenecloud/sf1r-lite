@@ -62,7 +62,8 @@ MiningManager::MiningManager(const std::string& collectionDataPath, const std::s
                             )
         :collectionDataPath_(collectionDataPath), queryDataPath_(queryDataPath)
         ,collectionName_(collectionName), schema_(schema), miningConfig_(miningConfig), mining_schema_(miningSchema)
-        , laManager_(laManager), document_manager_(documentManager), index_manager_(index_manager)
+        , laManager_(laManager), analyzer_(NULL), kpe_analyzer_(NULL)
+        , document_manager_(documentManager), index_manager_(index_manager)
         , tgInfo_(NULL)
         , groupManager_(NULL)
 {
@@ -78,7 +79,8 @@ MiningManager::MiningManager(const std::string& collectionDataPath, const std::s
                              const boost::shared_ptr<IDManager>idManager)
         :collectionDataPath_(collectionDataPath), queryDataPath_(queryDataPath)
         ,collectionName_(collectionName), schema_(schema), miningConfig_(miningConfig), mining_schema_(miningSchema)
-        , laManager_(laManager), document_manager_(documentManager), index_manager_(index_manager)
+        , laManager_(laManager), analyzer_(NULL), kpe_analyzer_(NULL)
+        , document_manager_(documentManager), index_manager_(index_manager)
         , tgInfo_(NULL)
         , idManager_(idManager)
 	, groupManager_(NULL)
@@ -91,6 +93,8 @@ MiningManager::MiningManager(const std::string& collectionDataPath, const std::s
 
 MiningManager::~MiningManager()
 {
+    if(analyzer_) delete analyzer_;
+    if(kpe_analyzer_) delete kpe_analyzer_;
     if(groupManager_) delete groupManager_;
     //close();
 }
