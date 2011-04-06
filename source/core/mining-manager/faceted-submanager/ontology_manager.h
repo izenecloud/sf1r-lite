@@ -53,7 +53,7 @@ public:
         boost::shared_ptr<IndexManager>& index_manager,
         boost::shared_ptr<LabelManager>& labelManager,
         boost::shared_ptr<IDManager>& idManager,
-        LabelManager::LabelDistributeSSFType::ReaderType* reader,
+        boost::shared_ptr<LabelManager::LabelDistributeSSFType::ReaderType> reader,
         boost::shared_ptr<LAManager>& laManager
     );
     ~OntologyManager();
@@ -112,7 +112,7 @@ private:
     boost::shared_ptr<IndexManager> index_manager_;
     boost::shared_ptr<LabelManager> labelManager_;
     boost::shared_ptr<IDManager> idManager_;
-    LabelManager::LabelDistributeSSFType::ReaderType* reader_;
+    boost::shared_ptr<LabelManager::LabelDistributeSSFType::ReaderType> reader_;
     boost::shared_ptr<LAManager> laManager_;
     idmlib::util::FileObject<uint32_t> max_docid_file_;
     idmlib::util::FileObject<std::vector<std::list<uint32_t> > > docItemListFile_;

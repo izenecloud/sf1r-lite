@@ -220,8 +220,9 @@ bool MiningManager::open()
         {
             faceted_path_ = prefix_path + "/faceted";
             FSUtil::createDir(faceted_path_);
+/*			
             std::string reader_dir = tg_label_path_+"/labeldistribute";
-            LabelManager::LabelDistributeSSFType::ReaderType* reader = new LabelManager::LabelDistributeSSFType::ReaderType(reader_dir);
+            boost::shared_ptr<LabelManager::LabelDistributeSSFType::ReaderType> reader(new LabelManager::LabelDistributeSSFType::ReaderType(reader_dir));
             faceted_.reset(new faceted::OntologyManager(faceted_path_,
                            tg_label_path_,
                            collectionName_,
@@ -234,7 +235,8 @@ bool MiningManager::open()
                            idManager_,
                            reader,
                            laManager_));
-            //faceted_.reset(new faceted::OntologyManager(faceted_path_, document_manager_, mining_schema_.faceted_properties, analyzer_));
+*/			
+            faceted_.reset(new faceted::OntologyManager(faceted_path_, document_manager_, mining_schema_.faceted_properties, analyzer_));
             faceted_->Open();
 
         }

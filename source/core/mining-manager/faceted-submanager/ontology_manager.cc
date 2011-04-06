@@ -48,7 +48,7 @@ OntologyManager::OntologyManager(
     boost::shared_ptr<IndexManager>& index_manager,
     boost::shared_ptr<LabelManager>&  labelManager,
     boost::shared_ptr<IDManager>& idManager,
-    LabelManager::LabelDistributeSSFType::ReaderType* reader,
+    boost::shared_ptr<LabelManager::LabelDistributeSSFType::ReaderType> reader,
     boost::shared_ptr<LAManager>& laManager
 )
         : container_(facetedPath)
