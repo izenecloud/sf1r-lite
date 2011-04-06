@@ -47,7 +47,7 @@ EkQueryCorrection::EkQueryCorrection(const string& path,
         dictEN_(path_ + "/dictionary_english"), dictKR_(path_
                 + "/dictionary_korean"), dictENHash_(), dictKRHash_()
 {
-    initialize();
+    //initialize();
 }
 
 void EkQueryCorrection::initDictHash(izenelib::am::rde_hash<

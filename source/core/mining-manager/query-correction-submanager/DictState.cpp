@@ -38,7 +38,7 @@ DictState::~DictState(void)
     trans_vec::iterator t = outTrans.begin();
     for (; t != outTrans.end(); t++)
     {
-        if (t->getTarget()->hit(-1) == 0)
+        //if (t->getTarget()->hit(-1) == 0)
             delete t->getTarget();
         --TOTAL_STATES;
     }

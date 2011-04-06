@@ -23,6 +23,7 @@ DictState* DAutomata::buildTrie(string dictFileName, vector<mychar>& phonemes,
     std::string w;
     int num = 0;
     ifstream input(dictFileName.c_str());
+        cout << "build trie File(" << dictFileName << ") is opened!!!!!!!!!!!!!!!!!!!!!!!!!!!!." << endl;	
     if ( !input.is_open() )
     {
         cout << "Error : File(" << dictFileName << ") is not opened." << endl;

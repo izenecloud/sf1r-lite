@@ -72,6 +72,7 @@ IService* OSGILauncher::getService(const std::string& bundleName, const std::str
 
 void OSGILauncher::stop()
 {
+    this->registry_->removeAllBundleInfos();
 }
 
 }

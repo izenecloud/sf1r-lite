@@ -124,6 +124,8 @@ bool CobraProcess::initLAManager()
     la::UpdateDictThread::staticUDT.setCheckInterval(300);
     la::UpdateDictThread::staticUDT.start();
 
+    atexit(&LAPool::destroy);
+
     return true;
 }
 
@@ -241,7 +243,6 @@ void CobraProcess::stopDriver()
 
 int CobraProcess::run()
 {
-    atexit(&LAPool::destroy);
     setupDefaultSignalHandlers();
 
     bool caughtException = false;
