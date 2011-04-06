@@ -48,18 +48,23 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
         collectionHandlers_.insert(std::make_pair(collectionName, kEmptyHandler_));
     insertResult.first->second = collectionHandler.release();
 
+    ///update LA here
+    LAManagerConfig laConfig;
+    SF1Config::get()->getLAManagerConfig(laConfig);
+    LAPool::getInstance()->init(laConfig);
+
     return collectionHandler;
 }
 
 void CollectionManager::stopCollection(const std::string& collectionName)
 {
-    std::string bundleName = collectionName + "-index";
+    std::string bundleName = "IndexBundle-" + collectionName;
     //boost::shared_ptr<BundleConfiguration> bundleConfigPtr = 
     //    osgiLauncher_->getBundleInfo(bundleName)->getBundleContext()->getBundleConfig();
     //config_ = dynamic_cast<IndexBundleConfiguration*>(bundleConfigPtr.get());
 
     osgiLauncher_.stopBundle(bundleName);
-    bundleName = collectionName + "-mining";
+    bundleName = "MiningBundle-" + collectionName;
     osgiLauncher_.stopBundle(bundleName);
 }
 

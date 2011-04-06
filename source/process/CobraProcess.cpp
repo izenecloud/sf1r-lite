@@ -4,7 +4,6 @@
 #include <common/SFLogger.h>
 #include <la-manager/LAPool.h>
 #include <license-manager/LicenseManager.h>
-#include <query-manager/QueryParser.h>
 
 #include <bundles/querylog/QueryLogBundleConfiguration.h>
 #include <bundles/querylog/QueryLogBundleActivator.h>
@@ -142,14 +141,12 @@ QueryLogSearchService* CobraProcess::initQuery()
     ///create QueryLogBundle
     boost::shared_ptr<QueryLogBundleConfiguration> queryLogBundleConfig
     (new QueryLogBundleConfiguration(SF1Config::get()->queryLogBundleConfig_));
-
-    ///createIndexBundle
     std::string bundleName = "QueryLogBundle";
     OSGILauncher& launcher = CollectionManager::get()->getOSGILauncher();
     launcher.start(queryLogBundleConfig);
     QueryLogSearchService* service = static_cast<QueryLogSearchService*>(launcher.getService(bundleName, "QueryLogSearchService"));
 
-//    addExitHook(boost::bind(&OSGILauncher::stop, launcher));
+    //addExitHook(boost::bind(&OSGILauncher::stop, launcher));
 
     return service;
 }
@@ -261,11 +258,6 @@ int CobraProcess::run()
                     {
                         std::string collectionName = iter->filename().substr(0,iter->filename().rfind(".xml"));
                         CollectionManager::get()->startCollection(collectionName, iter->string());
-
-                        ///update LA here
-                        LAManagerConfig laConfig;
-                        SF1Config::get()->getLAManagerConfig(laConfig);
-                        LAPool::getInstance()->init(laConfig);
                     }
             }
         }		

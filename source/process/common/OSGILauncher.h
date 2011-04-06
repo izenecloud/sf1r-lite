@@ -13,9 +13,15 @@ using namespace izenelib::osgi;
 class OSGILauncher : public Launcher<RecursiveLock>
 {
 public:
+    OSGILauncher();
+
+    virtual ~OSGILauncher();
+
     void start(boost::shared_ptr<BundleConfiguration> bundleConfig);
 
     IService* getService(const std::string& bundleName, const std::string& serviceName);
+
+    void stop();
 };
 
 }

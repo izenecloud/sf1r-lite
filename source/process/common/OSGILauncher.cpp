@@ -1,4 +1,6 @@
 #include "OSGILauncher.h"
+#include "OnSignal.h"
+
 #include <bundles/index/IndexTaskService.h>
 
 #include <util/osgi/BundleInfo.h>
@@ -6,6 +8,16 @@
 
 namespace sf1r
 {
+OSGILauncher::OSGILauncher()
+{
+    addExitHook(boost::bind(&OSGILauncher::stop, this));
+}
+
+OSGILauncher::~OSGILauncher()
+{
+}
+
+
 void OSGILauncher::start(boost::shared_ptr<BundleConfiguration> bundleConfig)
 {
     logger_.log( Logger::LOG_DEBUG, "[Launcher#start] Called." );
@@ -56,6 +68,10 @@ IService* OSGILauncher::getService(const std::string& bundleName, const std::str
 	}
     }
     return NULL;
+}
+
+void OSGILauncher::stop()
+{
 }
 
 }
