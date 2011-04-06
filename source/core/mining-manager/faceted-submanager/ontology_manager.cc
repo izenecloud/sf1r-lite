@@ -96,6 +96,7 @@ OntologyManager::~OntologyManager()
 {
     if (service_!=NULL) delete service_;
     delete searcher_;
+    delete manmade_;
 }
 
 bool OntologyManager::Open()
