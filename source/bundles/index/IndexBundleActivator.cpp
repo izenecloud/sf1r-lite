@@ -356,6 +356,7 @@ IndexBundleActivator::createLAManager_() const
 bool IndexBundleActivator::initializeQueryManager_() const
 {
     // initialize Query Parser
+    QueryParser::initOnlyOnce();
 
     std::string kma_path;
     LAPool::getInstance()->get_kma_path(kma_path);

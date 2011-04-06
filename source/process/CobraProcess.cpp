@@ -138,7 +138,6 @@ QueryLogSearchService* CobraProcess::initQuery()
     {
         pQA->load(qaPath);
     }
-    QueryParser::initOnlyOnce();
 
     ///create QueryLogBundle
     boost::shared_ptr<QueryLogBundleConfiguration> queryLogBundleConfig

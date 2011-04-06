@@ -73,10 +73,11 @@ bool IndexBundleConfiguration::getAnalysisInfo(
     PropertyConfig config;
     config.setName(propertyName);
 
-    if (schema_.find(config) != schema_.end() )
-    {
-        analysisInfo = config.getAnalysisInfo();
+    IndexBundleSchema::iterator iter = schema_.find(config);
 
+    if (iter != schema_.end() )
+    {
+        analysisInfo = iter->analysisInfo_;
         analysis = analysisInfo.analyzerId_;
         language = "";
 
