@@ -17,6 +17,7 @@ DupDetector2::DupDetector2(const std::string& container)
         , maxk_(0), partition_num_(0)
         , algo_(NULL)
         , fp_storage_(container+"/fp")
+        , group_(NULL)
         , process_start_docid_(0), process_max_docid_(0)
         , max_docid_(0)
 {
@@ -29,6 +30,7 @@ DupDetector2::DupDetector2(const std::string& container, const boost::shared_ptr
         , maxk_(0), partition_num_(0)
         , algo_(NULL)
         , fp_storage_(container+"/fp")
+        , group_(NULL)
         , process_start_docid_(0), process_max_docid_(0)
         , max_docid_(0)
 {
@@ -67,6 +69,8 @@ DupDetector2::~DupDetector2()
     delete file_info_;
     if (algo_)
         delete algo_;
+    if(group_)
+        delete group_;
 }
 
 bool DupDetector2::Open()
