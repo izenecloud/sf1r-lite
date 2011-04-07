@@ -94,7 +94,7 @@
       <Method id="la_unigram" analysis="char"/>
       <Method id="la_ngram" analysis="ngram" min="2" max="3" maxno="2194967296" apart="n" idxflag="second" schflag="second"/>
       <Method id="la_matrix" analysis="matrix" prefix="yes" suffix="yes"/>
-      <Method id="la_eng" analysis="english">
+      <Method id="la_eng" analysis="english" casesensitive="yes">
         <settings mode="all" option="S+" dictionarypath=""/>
       </Method>
       <Method id="la_korall" analysis="korean">
