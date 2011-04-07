@@ -983,6 +983,7 @@ bool MiningManager::addFacetedResult_(KeywordSearchResult& miaInput)
 bool MiningManager::getGroupRep(
     const std::vector<unsigned int>& docIdList,
     const std::vector<std::string>& groupPropertyList,
+    const std::vector<std::pair<std::string, std::string> >& groupLabelList,
     faceted::OntologyRep& groupRep
 )
 {
@@ -994,7 +995,7 @@ bool MiningManager::getGroupRep(
         struct timeval tv_end;
         gettimeofday(&tv_start, NULL);
 
-        bool result = groupManager_->getGroupRep(docIdList, groupPropertyList, groupRep);
+        bool result = groupManager_->getGroupRep(docIdList, groupPropertyList, groupLabelList, groupRep);
 
         gettimeofday(&tv_end, NULL);
         double timespend = (double) tv_end.tv_sec - (double) tv_start.tv_sec

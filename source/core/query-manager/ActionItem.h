@@ -147,7 +147,12 @@ class RequesterEnvironment
             ss << "taxonomyLabel_   : " << taxonomyLabel_   << endl;
             ss << "nameEntityItem_  : " << nameEntityItem_  << endl;
             ss << "nameEntityType_  : " << nameEntityType_  << endl;
-            ss << "groupLabel_      : (" << groupLabel_.first << ", " << groupLabel_.second << ")" << endl;
+            ss << "groupLabels_     : ";
+            for (std::size_t i = 0; i < groupLabels_.size(); ++i)
+            {
+                ss << "(" << groupLabels_[i].first << ", " << groupLabels_[i].second << "), ";
+            }
+            ss << endl;
             ss << "ipAddress_       : " << ipAddress_       << endl;
             out << ss.str();
         }
@@ -181,10 +186,10 @@ class RequesterEnvironment
         std::string nameEntityType_;
 
         ///
-        /// @brief a selected group label with a pair of property name and value.
+        /// @brief multiple selected group labels, each label is a pair of property name and value.
         ///        It is used only in Label Click Query.
         ///
-        std::pair<std::string, std::string> groupLabel_;
+        std::vector<std::pair<std::string, std::string> > groupLabels_;
 
         ///
         /// @brief ip address of requester.
@@ -193,7 +198,7 @@ class RequesterEnvironment
 
         DATA_IO_LOAD_SAVE(RequesterEnvironment, 
                 &isLogging_&encodingType_&queryString_&taxonomyLabel_
-                &nameEntityItem_&nameEntityType_&groupLabel_.first&groupLabel_.second&ipAddress_);
+                &nameEntityItem_&nameEntityType_&groupLabels_&ipAddress_);
 
     private:
         // Log : 2009.09.08
@@ -208,7 +213,7 @@ class RequesterEnvironment
             ar & taxonomyLabel_;
             ar & nameEntityItem_;
             ar & nameEntityType_;
-            ar & groupLabel_;
+            ar & groupLabels_;
             ar & ipAddress_;
         } 
 }; // end - queryEnvironment
@@ -222,7 +227,7 @@ inline bool operator==(
         && a.encodingType_ == b.encodingType_
         && a.queryString_ == b.queryString_
         && a.taxonomyLabel_ == b.taxonomyLabel_
-        && a.groupLabel_ == b.groupLabel_
+        && a.groupLabels_ == b.groupLabels_
         && a.ipAddress_ == b.ipAddress_;
 }
 

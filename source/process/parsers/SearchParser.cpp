@@ -36,9 +36,10 @@ using driver::Keys;
  * - @b name_entity_item (@c Object): Only get documents in the specified name
  *   entity item. Must be used with @b name_entity_type together and cannot be
  *   used with @b taxonomy_label.
- * - @b group_label (@c Object): Only get documents in the specified group. It cannot
- *   be used with @b taxonomy_label, @b name_entity_type and @b name_entity_item
- *   together.
+ * - @b group_label (@c Array): Only get documents in the specified groups. Multiple
+ *   groups could be specified, so that the documents returned must be contained
+ *   in each groups. It cannot be used with @b taxonomy_label, @b name_entity_type
+ *   and @b name_entity_item together.
  *   - @b property* (@c String): the property name, this name must be also specified
  *   in request["group"].
  *   - @b value* (@c String): the property value, only those documents with this
@@ -89,11 +90,17 @@ bool SearchParser::parse(const Value& search)
         return false;
     }
 
-    if (search.hasKey(Keys::taxonomy_label) &&
-        (search.hasKey(Keys::name_entity_item) ||
-         search.hasKey(Keys::name_entity_type)))
+    int labelCount = 0;
+    if (search.hasKey(Keys::taxonomy_label))
+        ++labelCount;
+    if (search.hasKey(Keys::name_entity_item) ||
+         search.hasKey(Keys::name_entity_type))
+        ++labelCount;
+    if (search.hasKey(Keys::group_label))
+        ++labelCount;
+    if (labelCount > 1)
     {
-        error() = "Cannot specify both taxonomy label and name entity item.";
+        error() = "At most one label type (taxonomy label, name entity item and group label) can be specided.";
         return false;
     }
 
@@ -106,6 +113,34 @@ bool SearchParser::parse(const Value& search)
     {
         error() = "Name entity type and name entity item must be used together";
         return false;
+    }
+
+    // group label
+    const Value& groupNode = search[Keys::group_label];
+    if (! nullValue(groupNode))
+    {
+        if (groupNode.type() == Value::kArrayType)
+        {
+            groupLabels_.resize(groupNode.size());
+
+            for (std::size_t i = 0; i < groupNode.size(); ++i)
+            {
+                const Value& groupPair = groupNode(i);
+                groupLabels_[i].first = asString(groupPair[Keys::property]);
+                groupLabels_[i].second = asString(groupPair[Keys::value]);
+
+                if (groupLabels_[i].first.empty() || groupLabels_[i].second.empty())
+                {
+                    error() = "Must specify both property name and value for group label";
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            error() = "Require an array for group labels.";
+            return false;
+        }
     }
 
     logKeywords_ = asBoolOr(search[Keys::log_keywords], true);

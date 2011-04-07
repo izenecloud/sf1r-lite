@@ -88,7 +88,7 @@ void DocumentsSearchHandler::search()
 
         if (actionItem_.env_.taxonomyLabel_.empty()
             && actionItem_.env_.nameEntityItem_.empty()
-            && actionItem_.env_.groupLabel_.second.empty())
+            && actionItem_.env_.groupLabels_.empty())
         {
             // initialize before search to record start time.
             detail::DocumentsSearchKeywordsLogger keywordsLogger;
@@ -150,7 +150,7 @@ void DocumentsSearchHandler::search()
                                      getActionItem.idList_
                                  );
                 }
-                else if (!actionItem_.env_.groupLabel_.second.empty())
+                else if (!actionItem_.env_.groupLabels_.empty())
                 {
                     totalCount = getDocumentIdListInGroup(
                         searchResult,
@@ -294,12 +294,14 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInGroup(
     std::vector<sf1r::docid_t>& idListInPage
 )
 {
+    BOOST_ASSERT(!actionItem_.env_.groupLabels_.empty());
+
     izenelib::util::UString propName(
-        actionItem_.env_.groupLabel_.first,
+        actionItem_.env_.groupLabels_[0].first,
         izenelib::util::UString::UTF_8
     );
     izenelib::util::UString propValue(
-        actionItem_.env_.groupLabel_.second,
+        actionItem_.env_.groupLabels_[0].second,
         izenelib::util::UString::UTF_8
     );
     BOOST_ASSERT(!propName.empty() && !propValue.empty());
@@ -405,14 +407,17 @@ bool DocumentsSearchHandler::parse()
     }
 
     // check consistency between SearchParser and GroupingParser
-    const std::pair<std::string, std::string>& groupLabel = searchParser.mutableGroupLabel();
-    if (!groupLabel.first.empty())
+    const std::vector<std::pair<std::string, std::string> >& groupLabels = searchParser.groupLabels();
+    if (!groupLabels.empty())
     {
         const std::vector<std::string>& groups = groupingParser.groupPropertyList();
-        if (std::find(groups.begin(), groups.end(), groupLabel.first) == groups.end())
+        for (std::size_t i = 0; i < groupLabels.size(); ++i)
         {
-            response_.addError("the property \"" + groupLabel.first + "\" in request[\"search\"][\"group_label\"] must be also specified in request[\"group\"].");
-            return false;
+            if (std::find(groups.begin(), groups.end(), groupLabels[i].first) == groups.end())
+            {
+                response_.addError("the property \"" + groupLabels[i].first + "\" in request[\"search\"][\"group_label\"] must be also specified in request[\"group\"].");
+                return false;
+            }
         }
     }
 
@@ -445,8 +450,8 @@ bool DocumentsSearchHandler::parse()
         searchParser.mutableNameEntityType()
     );
     swap(
-        actionItem_.env_.groupLabel_,
-        searchParser.mutableGroupLabel()
+        actionItem_.env_.groupLabels_,
+        searchParser.mutableGroupLabels()
     );
     swap(
         actionItem_.searchPropertyList_,

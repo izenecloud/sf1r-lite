@@ -177,10 +177,11 @@ bool MiningSearchService::DefineDocCategory(
 bool MiningSearchService::getGroupRep(
     const std::vector<unsigned int>& docIdList, 
     const std::vector<std::string>& groupPropertyList, 
+    const std::vector<std::pair<std::string, std::string> >& groupLabelList,
     faceted::OntologyRep& groupRep
 )
 {
-    return miningManager_->getGroupRep(docIdList, groupPropertyList, groupRep);
+    return miningManager_->getGroupRep(docIdList, groupPropertyList, groupLabelList, groupRep);
 }
 
 }

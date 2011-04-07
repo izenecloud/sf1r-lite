@@ -70,13 +70,13 @@ public:
         return nameEntityType_;
     }
 
-    std::pair<std::string, std::string>& mutableGroupLabel()
+    std::vector<std::pair<std::string, std::string> >& mutableGroupLabels()
     {
-        return groupLabel_;
+        return groupLabels_;
     }
-    const std::pair<std::string, std::string>& mutableGroupLabel() const
+    const std::vector<std::pair<std::string, std::string> >& groupLabels() const
     {
-        return groupLabel_;
+        return groupLabels_;
     }
 
     bool logKeywords() const
@@ -110,7 +110,7 @@ private:
     std::string taxonomyLabel_;
     std::string nameEntityType_;
     std::string nameEntityItem_;
-    std::pair<std::string, std::string> groupLabel_; // <property name, value>
+    std::vector<std::pair<std::string, std::string> > groupLabels_; // <property name, value>
     bool logKeywords_;
     std::vector<std::string> properties_;
     RankingType::TextRankingType rankingModel_;

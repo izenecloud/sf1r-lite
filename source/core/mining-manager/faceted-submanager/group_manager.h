@@ -47,6 +47,7 @@ public:
      * @brief Get group representation for a property list.
      * @param docIdList a list of doc id, in which doc count is calculated for each property value
      * @param groupPropertyList a list of property name.
+     * @param groupLabelList a label list, each label is a pair of property name and property value
      * @param groupRep a list, each element is a label tree for a property,
      *                 each label contains doc count for a property value.
      * @return true for success, false for failure.
@@ -54,6 +55,7 @@ public:
     bool getGroupRep(
         const std::vector<unsigned int>& docIdList,
         const std::vector<std::string>& groupPropertyList,
+        const std::vector<std::pair<std::string, std::string> >& groupLabelList,
         faceted::OntologyRep& groupRep
     );
 
@@ -64,6 +66,7 @@ private:
     bool getGroupRepFromDocumentManager(
         const std::vector<unsigned int>& docIdList,
         const std::vector<std::string>& groupPropertyList,
+        const std::vector<std::pair<std::string, std::string> >& groupLabelList,
         faceted::OntologyRep& groupRep
     );
 
@@ -73,6 +76,7 @@ private:
     bool getGroupRepFromTable(
         const std::vector<unsigned int>& docIdList,
         const std::vector<std::string>& groupPropertyList,
+        const std::vector<std::pair<std::string, std::string> >& groupLabelList,
         faceted::OntologyRep& groupRep
     );
 

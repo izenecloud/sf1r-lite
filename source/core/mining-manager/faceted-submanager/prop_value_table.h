@@ -39,6 +39,10 @@ public:
 
     bool flush();
 
+    const char* propName() const {
+        return propName_.c_str();
+    }
+
     std::vector<pvid_t>& propIdTable() {
         return propIdVec_;
     }
@@ -52,6 +56,18 @@ public:
     }
 
     pvid_t propValueId(const izenelib::util::UString& value);
+
+    pvid_t propValueId(const izenelib::util::UString& value) const {
+        pvid_t pvId = 0;
+
+        std::map<izenelib::util::UString, pvid_t>::const_iterator it = propStrMap_.find(value);
+        if (it != propStrMap_.end())
+        {
+            pvId = it->second; 
+        }
+
+        return pvId;
+    }
 
 private:
     /** directory path */

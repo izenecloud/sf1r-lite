@@ -159,14 +159,18 @@ public:
     /**
      * @brief Get group representation for a property list.
      * @param docIdList a list of doc id, in which doc count is calculated for each property value
-     * @param groupPropertyList a list of property name.
-     * @param groupRep a list, each element is a label tree for a property,
-     *				   each label contains doc count for a property value.
+     * @param groupPropertyList a list of property name, e.g. ["Price", "Area", "Color"].
+     * @param groupLabelList a label list, each label is a pair of property name and property value, e.g. [("Price", "5"), ("Area", "Shanghai")].
+     * @param groupRep a group representation list, each element is a label tree for a property spcified in @p groupPropertyList, e.g. [PriceTree, AreaTree, ColorTree]
+     *                 each label contains doc count for a property value, e.g. the doc count for "Price value 5" is 10,
+     *                 for each property tree, the property values (except the tree property) of these docs must be equal to the values specified in @p groupLabelList,
+     *                 e.g. for the docs in PriceTree, their values of the property "Area" must be "Shanghai".
      * @return true for success, false for failure.
      */
     bool getGroupRep(
         const std::vector<unsigned int>& docIdList,
         const std::vector<std::string>& groupPropertyList,
+        const std::vector<std::pair<std::string, std::string> >& groupLabelList,
         faceted::OntologyRep& groupRep
     );
 

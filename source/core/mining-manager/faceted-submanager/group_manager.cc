@@ -131,19 +131,21 @@ bool GroupManager::processCollection()
 bool GroupManager::getGroupRep(
     const std::vector<unsigned int>& docIdList,
     const std::vector<std::string>& groupPropertyList,
+    const std::vector<std::pair<std::string, std::string> >& groupLabelList,
     faceted::OntologyRep& groupRep
 )
 {
 #if DEBUG_GROUPREP_FROM_DM
-    return getGroupRepFromDocumentManager(docIdList, groupPropertyList, groupRep);
+    return getGroupRepFromDocumentManager(docIdList, groupPropertyList, groupLabelList, groupRep);
 #else
-    return getGroupRepFromTable(docIdList, groupPropertyList, groupRep);
+    return getGroupRepFromTable(docIdList, groupPropertyList, groupLabelList, groupRep);
 #endif
 }
 
 bool GroupManager::getGroupRepFromDocumentManager(
     const std::vector<unsigned int>& docIdList,
     const std::vector<std::string>& groupPropertyList,
+    const std::vector<std::pair<std::string, std::string> >& groupLabelList,
     faceted::OntologyRep& groupRep
 )
 {
@@ -151,6 +153,16 @@ bool GroupManager::getGroupRepFromDocumentManager(
     typedef std::map<izenelib::util::UString, DocIdList> DocIdMap;
     typedef std::map<std::string, DocIdMap> PropertyMap;
     PropertyMap propertyMap;
+
+    // condition list, each is a pair of property name and value
+    typedef std::vector<std::pair<std::string, izenelib::util::UString> > CondList;
+    CondList condList;
+    condList.resize(groupLabelList.size());
+    for (std::size_t i = 0; i < groupLabelList.size(); ++i)
+    {
+        condList[i].first = groupLabelList[i].first;
+        condList[i].second.assign(groupLabelList[i].second, izenelib::util::UString::UTF_8);
+    }
 
     for (std::vector<unsigned int>::const_iterator docIt = docIdList.begin();
         docIt != docIdList.end(); ++docIt)
@@ -165,11 +177,30 @@ bool GroupManager::getGroupRepFromDocumentManager(
             for (std::vector<std::string>::const_iterator propIt = groupPropertyList.begin();
                 propIt != groupPropertyList.end(); ++propIt)
             {
-                Document::property_iterator it = doc.findProperty(*propIt);
-                if (it != doc.propertyEnd())
+                Document::property_iterator docPropIt = doc.findProperty(*propIt);
+                if (docPropIt != doc.propertyEnd())
                 {
-                    const izenelib::util::UString& value = it->second.get<izenelib::util::UString>();
-                    propertyMap[*propIt][value].push_back(*docIt);
+                    bool isMeetCond = true;
+                    for (CondList::const_iterator condIt = condList.begin();
+                        condIt != condList.end(); ++condIt)
+                    {
+                        if (condIt->first != *propIt)
+                        {
+                            Document::property_iterator condPropIt = doc.findProperty(condIt->first);
+                            if (condPropIt != doc.propertyEnd()
+                               && condPropIt->second.get<izenelib::util::UString>() != condIt->second)
+                            {
+                                isMeetCond = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (isMeetCond)
+                    {
+                        const izenelib::util::UString& value = docPropIt->second.get<izenelib::util::UString>();
+                        propertyMap[*propIt][value].push_back(*docIt);
+                    }
 
 #if DEBUG_PRINT_GROUP
                     std::string utf8Str;
@@ -229,11 +260,31 @@ bool GroupManager::getGroupRepFromDocumentManager(
 bool GroupManager::getGroupRepFromTable(
     const std::vector<unsigned int>& docIdList,
     const std::vector<std::string>& groupPropertyList,
+    const std::vector<std::pair<std::string, std::string> >& groupLabelList,
     faceted::OntologyRep& groupRep
 )
 {
     typedef std::vector<docid_t> DocIdList;
     typedef std::map<PropValueTable::pvid_t, DocIdList> DocIdMap;
+
+    // a condition pair of value table and target value id
+    typedef std::pair<const PropValueTable*, PropValueTable::pvid_t> CondPair;
+    typedef std::vector<CondPair> CondList;
+    CondList condList;
+    for (std::size_t i = 0; i < groupLabelList.size(); ++i)
+    {
+        PropValueMap::const_iterator pvIt = propValueMap_.find(groupLabelList[i].first);
+        if (pvIt == propValueMap_.end())
+        {
+            LOG(ERROR) << "in GroupManager::getGroupRepFromTable: group index file is not loaded for label property " << groupLabelList[i].first;
+            return false;
+        }
+
+        const PropValueTable& pvTable = pvIt->second;
+        izenelib::util::UString ustr(groupLabelList[i].second, izenelib::util::UString::UTF_8);
+        PropValueTable::pvid_t pvId = pvTable.propValueId(ustr);
+        condList.push_back(CondPair(&pvTable, pvId));
+    }
 
     std::list<sf1r::faceted::OntologyRepItem>& itemList = groupRep.item_list;
 
@@ -243,7 +294,7 @@ bool GroupManager::getGroupRepFromTable(
         PropValueMap::const_iterator pvIt = propValueMap_.find(*nameIt);
         if (pvIt == propValueMap_.end())
         {
-            LOG(ERROR) << "in GroupManager::getGroupRepFromTable: group index file is not loaded for property " << *nameIt;
+            LOG(ERROR) << "in GroupManager::getGroupRepFromTable: group index file is not loaded for group property " << *nameIt;
             return false;
         }
 
@@ -260,7 +311,26 @@ bool GroupManager::getGroupRepFromTable(
                 PropValueTable::pvid_t pvId = idTable[docId];
                 if (pvId != 0)
                 {
-                    docIdMap[pvId].push_back(docId);
+                    bool isMeetCond = true;
+                    for (CondList::const_iterator condIt = condList.begin();
+                        condIt != condList.end(); ++condIt)
+                    {
+                        const PropValueTable* condPVTable = condIt->first;
+                        if (*nameIt != condPVTable->propName())
+                        {
+                            const std::vector<PropValueTable::pvid_t>& condIdTable = condPVTable->propIdTable();
+                            if (docId < condIdTable.size() && condIdTable[docId] != condIt->second)
+                            {
+                                isMeetCond = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (isMeetCond)
+                    {
+                        docIdMap[pvId].push_back(docId);
+                    }
                 }
             }
         }

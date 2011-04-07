@@ -55,7 +55,7 @@ public:
 
     bool DefineDocCategory(const std::vector<faceted::ManmadeDocCategoryItem>& items);
 
-    bool getGroupRep(const std::vector<unsigned int>& docIdList, const std::vector<std::string>& groupPropertyList, faceted::OntologyRep& groupRep);
+    bool getGroupRep(const std::vector<unsigned int>& docIdList, const std::vector<std::string>& groupPropertyList, const std::vector<std::pair<std::string, std::string> >& groupLabelList, faceted::OntologyRep& groupRep);
 
 private:
     boost::shared_ptr<MiningManager> miningManager_;
