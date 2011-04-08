@@ -2,6 +2,8 @@
 #define SF1V5_MINING_SCHEMA_H_
 
 
+#include "GroupConfig.h"
+
 #include <stdint.h>
 #include <string>
 #include <map>
@@ -53,7 +55,7 @@ public:
     bool faceted_enable;
     std::vector<std::string> faceted_properties;
     bool group_enable;
-    std::vector<std::string> group_properties;
+    std::vector<GroupConfig> group_properties;
     bool ise_enable;
     std::string ise_property;
 

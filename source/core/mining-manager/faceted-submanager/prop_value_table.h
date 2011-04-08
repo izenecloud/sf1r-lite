@@ -13,6 +13,7 @@
 #include <common/inttypes.h>
 #include <util/ustring/UString.h>
 #include "faceted_types.h"
+#include "ontology_rep.h"
 
 #include <vector>
 #include <string>
@@ -55,8 +56,19 @@ public:
         return propStrVec_[pvId];
     }
 
+    /**
+     * Get property value id.
+     * @param value property string
+     * @exception MiningException when the new id created is overflow
+     * @return value id, if @p value is not inserted before, its new id is created and returned
+     */
     pvid_t propValueId(const izenelib::util::UString& value);
 
+    /**
+     * Get property value id.
+     * @param value property string
+     * @return value id, if @p value is not inserted before, 0 is returned
+     */
     pvid_t propValueId(const izenelib::util::UString& value) const {
         pvid_t pvId = 0;
 
@@ -67,6 +79,22 @@ public:
         }
 
         return pvId;
+    }
+
+    /**
+     * Set the value tree, it defines the hierachical levels for values,
+     * so that the group values could be returned in the form of this tree.
+     * @param valueTree the value tree
+     * @attention before calling this function, @c open() must be called to load all values.
+     */
+    void setValueTree(const faceted::OntologyRep& valueTree);
+
+    const faceted::OntologyRep& valueTree() const {
+        return valueTree_;
+    }
+
+    const std::vector<pvid_t>& parentIdTable() const {
+        return parentIdVec_;
     }
 
 private:
@@ -90,6 +118,12 @@ private:
 
     /** the number of value ids saved in file */
     unsigned int savePropIdNum_;
+
+    /** the values configured in hierachical levels */
+    faceted::OntologyRep valueTree_;
+
+    /** mapping from value id to parent value id */
+    std::vector<pvid_t> parentIdVec_;
 };
 
 NS_FACETED_END

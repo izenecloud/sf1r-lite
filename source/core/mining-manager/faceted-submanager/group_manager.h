@@ -10,6 +10,7 @@
 
 #include "ontology_rep.h"
 #include "prop_value_table.h"
+#include <configuration-manager/GroupConfig.h>
 #include <util/ustring/UString.h>
 
 #include <vector>
@@ -32,10 +33,10 @@ public:
 
     /**
      * @brief Open the properties which need group result.
-     * @param properties the property names
+     * @param configVec the property configs
      * @return true for success, false for failure
      */
-    bool open(const std::vector<std::string>& properties);
+    bool open(const std::vector<GroupConfig>& configVec);
 
     /**
      * @brief Build group index data for the whole collection.

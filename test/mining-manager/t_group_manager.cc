@@ -375,7 +375,15 @@ void checkGroupManager(
 {
     faceted::GroupManager* groupManager = new faceted::GroupManager(documentManager, groupPath);
 
-    BOOST_CHECK(groupManager->open(propNameVec));
+    vector<GroupConfig> configVec;
+    for (vector<string>::const_iterator it = propNameVec.begin();
+        it != propNameVec.end(); ++it)
+    {
+        configVec.push_back(GroupConfig());
+        configVec.back().propName = *it;
+    }
+
+    BOOST_CHECK(groupManager->open(configVec));
 
     if (isProcessCollection)
     {
@@ -384,7 +392,7 @@ void checkGroupManager(
 
     vector<unsigned int> docIdList;
     for (vector<DocInput>::const_iterator it = docInputVec.begin();
-            it != docInputVec.end(); ++it)
+        it != docInputVec.end(); ++it)
     {
         docIdList.push_back(it->docId_);
     }

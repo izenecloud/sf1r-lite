@@ -229,3 +229,32 @@ bool PropValueTable::flush()
 
     return true;
 }
+void PropValueTable::setValueTree(const faceted::OntologyRep& valueTree)
+{
+    valueTree_ = valueTree;
+
+    parentIdVec_.assign(propStrVec_.size(), 0);
+    std::list<OntologyRepItem>& itemList = valueTree_.item_list;
+
+    // mapping from level to value id
+    std::vector<pvid_t> path;
+    path.push_back(0);
+    for (std::list<faceted::OntologyRepItem>::iterator it = itemList.begin();
+        it != itemList.end(); ++it)
+    {
+        faceted::OntologyRepItem& item = *it;
+        std::size_t currentLevel = item.level;
+        BOOST_ASSERT(currentLevel >= 1 && currentLevel <= path.size());
+        path.resize(currentLevel + 1);
+
+        pvid_t pvId = propValueId(item.text);
+        item.id = pvId;
+        path[currentLevel] = pvId;
+
+        if (pvId >= parentIdVec_.size())
+        {
+            parentIdVec_.resize(pvId+1);
+        }
+        parentIdVec_[pvId] = path[currentLevel-1];
+    }
+}

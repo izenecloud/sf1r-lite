@@ -16,6 +16,7 @@
 #include <configuration-manager/BrokerAgentConfig.h>
 #include <configuration-manager/FirewallConfig.h>
 #include <configuration-manager/CollectionParameterConfig.h>
+#include <mining-manager/faceted-submanager/ontology_rep_item.h>
 
 #include <bundles/querylog/QueryLogBundleConfiguration.h>
 
@@ -285,6 +286,16 @@ protected:
     }
 
     izenelib::util::UString::EncodingType parseEncodingType(const std::string& encoding_str);
+
+    /// @brief                  Parse <TreeNode> settings recursively
+    /// @param ele              The parent element
+    /// @param level            The level of current <TreeNode>
+    /// @param itemList         The tree item list, each <TreeNode> is parsed out and append to this list
+    void parseGroupTreeNode(
+        const ticpp::Element* ele,
+        int level,
+        std::list<faceted::OntologyRepItem>& itemList
+    ) const;
 
     /// @brief Return true if given id only consists of alphabets, numbers, dash(-) and underscore(_)
     /// @param id The string to be checked

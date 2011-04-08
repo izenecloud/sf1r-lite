@@ -21,27 +21,30 @@ GroupManager::GroupManager(
 {
 }
 
-bool GroupManager::open(const std::vector<std::string>& properties)
+bool GroupManager::open(const std::vector<GroupConfig>& configVec)
 {
     propValueMap_.clear();
 
-    for (std::vector<std::string>::const_iterator it = properties.begin();
-        it != properties.end(); ++it)
+    for (std::vector<GroupConfig>::const_iterator it = configVec.begin();
+        it != configVec.end(); ++it)
     {
         std::pair<PropValueMap::iterator, bool> res =
-            propValueMap_.insert(PropValueMap::value_type(*it, PropValueTable(dirPath_, *it)));
+            propValueMap_.insert(PropValueMap::value_type(it->propName, PropValueTable(dirPath_, it->propName)));
 
         if (res.second)
         {
-            if (!res.first->second.open())
+            PropValueTable& pvTable = res.first->second;
+            if (!pvTable.open())
             {
-                LOG(ERROR) << "PropValueTable::open() failed, property name: " << res.first->first;
+                LOG(ERROR) << "PropValueTable::open() failed, property name: " << it->propName;
                 return false;
             }
+
+            pvTable.setValueTree(it->valueTree);
         }
         else
         {
-            LOG(WARNING) << "the group property " << *it << " is opened already.";
+            LOG(WARNING) << "the group property " << it->propName << " is opened already.";
         }
     }
 
@@ -300,6 +303,7 @@ bool GroupManager::getGroupRepFromTable(
 
         const PropValueTable& pvTable = pvIt->second;
         const std::vector<PropValueTable::pvid_t>& idTable = pvTable.propIdTable();
+        const std::vector<PropValueTable::pvid_t>& parentTable = pvTable.parentIdTable();
         DocIdMap docIdMap;
 
         for (std::vector<unsigned int>::const_iterator docIt = docIdList.begin();
@@ -330,15 +334,49 @@ bool GroupManager::getGroupRepFromTable(
                     if (isMeetCond)
                     {
                         docIdMap[pvId].push_back(docId);
+
+                        if (pvId < parentTable.size())
+                        {
+                            pvId = parentTable[pvId];
+                            while (pvId != 0)
+                            {
+                                docIdMap[pvId].push_back(docId);
+                                pvId = parentTable[pvId];
+                            }
+                        }
                     }
                 }
             }
         }
 
+        // property name as root node
         itemList.push_back(sf1r::faceted::OntologyRepItem());
         sf1r::faceted::OntologyRepItem& propItem = itemList.back();
         propItem.text.assign(*nameIt, izenelib::util::UString::UTF_8);
 
+        // nodes at configured level
+        const std::list<OntologyRepItem>& treeList = pvTable.valueTree().item_list;
+        for (std::list<OntologyRepItem>::const_iterator it = treeList.begin();
+            it != treeList.end(); ++it)
+        {
+            DocIdMap::iterator mapIt = docIdMap.find(it->id);
+            if (mapIt != docIdMap.end())
+            {
+                itemList.push_back(*it);
+                faceted::OntologyRepItem& valueItem = itemList.back();
+                valueItem.doc_id_list.swap(mapIt->second);
+                valueItem.doc_count = valueItem.doc_id_list.size();
+
+                if (valueItem.level == 1)
+                {
+                    propItem.doc_count += valueItem.doc_count;
+                }
+
+                docIdMap.erase(mapIt);
+            }
+        }
+
+        // other nodes are appended as level 1
         for (DocIdMap::iterator docListIt = docIdMap.begin();
             docListIt != docIdMap.end(); ++docListIt)
         {

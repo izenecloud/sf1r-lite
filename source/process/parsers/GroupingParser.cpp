@@ -8,6 +8,7 @@
 #include <common/ValueConverter.h>
 #include <common/IndexBundleSchemaHelpers.h>
 #include <common/Keys.h>
+#include <configuration-manager/MiningSchema.h>
 
 namespace sf1r {
 using driver::Keys;
@@ -42,7 +43,6 @@ bool GroupingParser::parse(const Value& grouping)
     if (grouping.type() == Value::kArrayType)
     {
         propertyList_.resize(grouping.size());
-        const std::vector<std::string>& groupProps = miningSchema_.group_properties;
 
         for (std::size_t i = 0; i < grouping.size(); ++i)
         {
@@ -58,7 +58,12 @@ bool GroupingParser::parse(const Value& grouping)
                 property = asString(groupingRule);
             }
 
-            if (std::find(groupProps.begin(), groupProps.end(), property) == groupProps.end())
+            const std::vector<GroupConfig> groupProps = miningSchema_.group_properties;
+            std::vector<GroupConfig>::const_iterator configIt =
+                std::find_if(groupProps.begin(), groupProps.end(),
+                    boost::bind(&GroupConfig::propName, _1) == property);
+
+            if (configIt == groupProps.end())
             {
                 error() = "\"" + property + "\" is not GroupBy property, it should be configured in <MiningSchema>::<Group>.";
                 return false;
