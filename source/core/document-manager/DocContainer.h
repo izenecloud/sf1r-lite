@@ -20,7 +20,7 @@
 
 #include <compression/minilzo/minilzo.h>
 //#include "bmz.h"
-
+#define output_block_size(input_block_size) input_block_size + (input_block_size / 16) + 64 + 3
 
 namespace sf1r {
 
@@ -30,7 +30,10 @@ public:
 	DocContainer(const std::string&path) :
 		path_(path),
 		fileName_(path + "DocumentPropertyTable"),
-		maxDocIdDb_(path + "MaxDocID.xml"){
+		maxDocIdDb_(path + "MaxDocID.xml"),
+                containerPtr_(NULL),
+                maxDocID_(0)
+        {
 		containerPtr_ = new containerType(Lux::IO::NONCLUSTER);
 		containerPtr_->set_noncluster_params(Lux::IO::Linked);
 		restoreMaxDocDb_();
@@ -73,8 +76,9 @@ public:
 
 		lzo_uint tmpTarLen;
 		//unsigned char* p = new unsigned char[sz];	
-		boost::scoped_alloc alloc(recycle_);
-		unsigned char* p = BOOST_NEW_ARRAY(alloc, unsigned char, sz + sizeof(uint32_t));
+		//boost::scoped_alloc alloc(recycle_);
+		//unsigned char* p = BOOST_NEW_ARRAY(alloc, unsigned char, sz + sizeof(uint32_t));
+		unsigned char* p = new unsigned char[sz + sizeof(uint32_t)];
                 *reinterpret_cast<uint32_t*>(p) = sz;
 
 		int re = lzo1x_1_compress((unsigned char*)ptr, sz, p + sizeof(uint32_t), &tmpTarLen, wrkmem);
@@ -88,7 +92,7 @@ public:
 		
 		bool ret = containerPtr_->put(docId, p, nsz + sizeof(uint32_t), Lux::IO::APPEND);
 		//delete []wrkmem;
-		//delete [] p;
+		delete [] p;
 		if(ret)
 		{
 			unsigned int id = docId;
@@ -115,7 +119,7 @@ public:
                 const uint32_t allocSize = *reinterpret_cast<const uint32_t*>(val_p->data);
 		boost::scoped_alloc alloc;
 		//unsigned char* p = new unsigned char[allocSize];
-		unsigned char* p = BOOST_NEW_ARRAY(alloc, unsigned char, allocSize);
+		unsigned char* p = BOOST_NEW_ARRAY(alloc, unsigned char, output_block_size(allocSize));
 		lzo_uint tmpTarLen;
 		int re = lzo1x_decompress((const unsigned char*)val_p->data + sizeof(uint32_t), val_p->size - sizeof(uint32_t), p, &tmpTarLen, NULL);
 		//int re = bmz_unpack(val_p->data, val_p->size, p, &tmpTarLen, NULL);
@@ -123,7 +127,7 @@ public:
 		if (re != LZO_E_OK)
 			return false;
 
-                BOOST_ASSERT(tmpTarLen == allocSize);
+		BOOST_ASSERT(tmpTarLen == allocSize);
 
 		nsz = tmpTarLen; //
 		//char *p =(char*)_tc_bzdecompress((const char*)val_p->data, val_p->size, &nsz);
