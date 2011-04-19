@@ -6,7 +6,7 @@
  * @date Created <2010-03-19 12:42:56>
  */
 
-#ifndef SF1V5_NO_CONFIG_H
+#ifndef SF1R_NO_CONFIG_H
 #include <config.h>
 #endif
 
