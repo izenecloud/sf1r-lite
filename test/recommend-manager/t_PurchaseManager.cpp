@@ -27,7 +27,7 @@ namespace
 {
 const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
 const char* TEST_DIR_STR = "recommend_test";
-const char* PURCHASE_DB_STR = "visit.db";
+const char* PURCHASE_DB_STR = "purchase.db";
 }
 
 typedef map<userid_t, Purchase> PurchaseMap;
