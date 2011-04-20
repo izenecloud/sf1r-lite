@@ -536,15 +536,15 @@ bool DocumentsSearchHandler::doSearch(
 //        );
 //    }
 
-    if (miningSearchService_)
-    {
-        if (!miningSearchService_->getSearchResult(searchResult))
-        {
-            response_.addWarning("Failed to get mining result.");
-            // render without mining result
-            return false;
-        }
-    }
+//    if (miningSearchService_)
+//    {
+//        if (!miningSearchService_->getSearchResult(searchResult))
+//        {
+//            response_.addWarning("Failed to get mining result.");
+//            // render without mining result
+//            return false;
+//        }
+//    }
 
     return true;
 }
