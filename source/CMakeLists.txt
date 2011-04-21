@@ -171,7 +171,7 @@ MACRO_SET_DEFAULT_BUILD_TYPE(RelWithDebInfo)
 
 INCLUDE(SetCompilerWarningAll)
 # Write to cache
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" CACHE STRING
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated" CACHE STRING
   "Flags used by the compiler during all build types." FORCE)
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}" CACHE STRING
   "Flags used by the compiler during all build types." FORCE)
