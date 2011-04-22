@@ -1,5 +1,7 @@
 #include "PurchaseManager.h"
 
+#include <glog/logging.h>
+
 namespace sf1r
 {
 
@@ -11,7 +13,14 @@ PurchaseManager::PurchaseManager(const std::string& path)
 
 void PurchaseManager::flush()
 {
-    container_.flush();
+    try
+    {
+        container_.flush();
+    }
+    catch(izenelib::util::IZENELIBException& e)
+    {
+        LOG(ERROR) << "exception in SDB::flush(): " << e.what();
+    }
 }
 
 bool PurchaseManager::addPurchaseItem(
@@ -56,16 +65,33 @@ bool PurchaseManager::addPurchaseItem(
 
     purchase.itemIdSet_.insert(itemId);
 
-    return container_.update(userId, purchase);
+    bool result = false;
+    try
+    {
+        result = container_.update(userId, purchase);
+    }
+    catch(izenelib::util::IZENELIBException& e)
+    {
+        LOG(ERROR) << "exception in SDB::update(): " << e.what();
+    }
+
+    return result;
 }
 
 bool PurchaseManager::getPurchaseItemSet(userid_t userId, ItemIdSet& itemIdSet)
 {
-    Purchase purchase;
-    if (container_.getValue(userId, purchase))
+    try
     {
-        itemIdSet = purchase.itemIdSet_;
-        return true;
+        Purchase purchase;
+        if (container_.getValue(userId, purchase))
+        {
+            itemIdSet = purchase.itemIdSet_;
+            return true;
+        }
+    }
+    catch(izenelib::util::IZENELIBException& e)
+    {
+        LOG(ERROR) << "exception in SDB::getValue(): " << e.what();
     }
 
     return false;
@@ -73,11 +99,18 @@ bool PurchaseManager::getPurchaseItemSet(userid_t userId, ItemIdSet& itemIdSet)
 
 bool PurchaseManager::getPurchaseOrderVec(userid_t userId, OrderVec& orderVec)
 {
-    Purchase purchase;
-    if (container_.getValue(userId, purchase))
+    try
     {
-        orderVec = purchase.orderVec_;
-        return true;
+        Purchase purchase;
+        if (container_.getValue(userId, purchase))
+        {
+            orderVec = purchase.orderVec_;
+            return true;
+        }
+    }
+    catch(izenelib::util::IZENELIBException& e)
+    {
+        LOG(ERROR) << "exception in SDB::getValue(): " << e.what();
     }
 
     return false;

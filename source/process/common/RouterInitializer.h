@@ -11,8 +11,7 @@
 
 namespace sf1r {
 using namespace izenelib::osgi;
-void initializeDriverRouter(::izenelib::driver::Router& router, bool enableTest = false);
-void initializeDriverRouter(::izenelib::driver::Router& router, IService* service);
+void initializeDriverRouter(::izenelib::driver::Router& router, IService* service, bool enableTest = false);
 
 } // namespace sf1r
 

@@ -214,10 +214,8 @@ bool CobraProcess::initDriverServer()
 
     // init Router
     router_.reset(new ::izenelib::driver::Router);
-    initializeDriverRouter(*router_, enableTest);
-
     QueryLogSearchService* service = initQuery();
-    initializeDriverRouter(*router_, service);
+    initializeDriverRouter(*router_, service, enableTest);
 
     boost::shared_ptr<DriverConnectionFactory> factory(
         new DriverConnectionFactory(router_)

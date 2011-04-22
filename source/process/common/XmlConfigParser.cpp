@@ -342,6 +342,8 @@ void SF1Config::parseBundlesDefault(const ticpp::Element * bundles)
     defaultIndexBundleParam_.LoadXML(getUniqChildElement( bundle, "Parameter" ), false);	
     bundle = getUniqChildElement( bundles, "MiningBundle" );
     defaultMiningBundleParam_.LoadXML(getUniqChildElement( bundle, "Parameter" ), false);	
+    bundle = getUniqChildElement( bundles, "RecommendBundle" );
+    defaultRecommendBundleParam_.LoadXML(getUniqChildElement( bundle, "Parameter" ), false);	
 }
 
 void SF1Config::parseQueryLogBundleParam(const ticpp::Element * queryLog)
@@ -800,6 +802,19 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
         Element* miningParam = getUniqChildElement( miningBundle, "Parameter", false  );
         parseMiningBundleParam(miningParam, collectionMeta);
     }
+
+    // RecommendBundle
+    Element* recommendBundle = getUniqChildElement( collection, "RecommendBundle" , false );
+    Element* recommendParam = NULL;
+    if(recommendBundle) 
+    {
+        Element* recommendSchema = getUniqChildElement( recommendBundle, "Schema", false  );
+        if(recommendSchema) parseRecommendBundleSchema(recommendSchema, collectionMeta);
+        recommendParam = getUniqChildElement( recommendBundle, "Parameter", false  );
+    }
+    // also load recommend param in <BundlesDefault>
+    // even when "RecommendBundle" is not configured in <Collection>
+    parseRecommendBundleParam(recommendParam, collectionMeta);
 }
 
 
@@ -839,6 +854,7 @@ void CollectionConfig::parseCollectionPath( const ticpp::Element * path, Collect
     collectionMeta.setCollectionPath( collPath );
     collectionMeta.indexBundleConfig_->collPath_ = collPath;
     collectionMeta.miningBundleConfig_->collPath_ = collPath;
+    collectionMeta.recommendBundleConfig_->collPath_ = collPath;
 }
 
 void CollectionConfig::parseCollectionSchema( const ticpp::Element * documentSchema, CollectionMeta & collectionMeta )
@@ -1215,6 +1231,60 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
     
 }
 
+void CollectionConfig::parseRecommendBundleParam(const ticpp::Element * recParamNode, CollectionMeta & collectionMeta)
+{
+    CollectionParameterConfig params(SF1Config::get()->defaultRecommendBundleParam_);
+    if(recParamNode) params.LoadXML(recParamNode, true);
+    // PARSING RECOMMEND CONFIG
+    // TODO get recommend param if necessary
+    //RecommendParam& recommendParam = collectionMeta.recommendBundleConfig_->recommendParam;
+
+    std::set<std::string> directories;
+    params.Get("CollectionDataDirectory", directories);
+	
+    if(!directories.empty())
+    {
+        collectionMeta.recommendBundleConfig_->collectionDataDirectories_.assign(directories.begin(), directories.end());
+    }
+}
+
+void CollectionConfig::parseRecommendBundleSchema(const ticpp::Element * recSchemaNode, CollectionMeta & collectionMeta)
+{
+    if (recSchemaNode == NULL)
+        return;
+
+    //** PARSE RECOMMEND SCHEMA BEGIN
+    RecommendBundleConfiguration& recommendBundleConfig = *(collectionMeta.recommendBundleConfig_);
+    RecommendSchema& recommendSchema = recommendBundleConfig.recommendSchema_;
+
+    // get user schema
+    Element* userSchemaNode = getUniqChildElement( recSchemaNode, "User", false  );
+    if (userSchemaNode)
+    {
+        Iterator<Element> property("Property");
+
+        for (property = property.begin(userSchemaNode); property != property.end(); ++property)
+        {
+            try
+            {
+                string propName;
+                getAttribute(property.Get(), "name", propName);
+
+                // ignore default property
+                if (propName != "USERID")
+                {
+                    RecommendProperty recommendProperty;
+                    recommendProperty.propertyName_ = propName;
+                    recommendSchema.userSchema_.push_back(recommendProperty);
+                }
+            }
+            catch ( XmlConfigParserException & e )
+            {
+                throw e;
+            }
+        } //property iteration
+    }
+}
 
 void CollectionConfig::parseIndexSchemaProperty(
         const ticpp::Element * property,

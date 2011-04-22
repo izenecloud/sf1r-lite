@@ -40,10 +40,12 @@ TARGET_LINK_LIBRARIES(CobraProcess
   sf1r_index_manager
   sf1r_directory_manager
   sf1r_common
+  sf1r_recommend_manager
 
   sf1r_bundle_index 
   sf1r_bundle_querylog
   sf1r_bundle_mining
+  sf1r_bundle_recommend
 
   ${iise_LIBRARIES}
   ${idmlib_LIBRARIES}

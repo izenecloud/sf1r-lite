@@ -1,5 +1,7 @@
 #include "UserManager.h"
 
+#include <glog/logging.h>
+
 namespace sf1r
 {
 
@@ -11,27 +13,74 @@ UserManager::UserManager(const std::string& path)
 
 void UserManager::flush()
 {
-    container_.flush();
+    try
+    {
+        container_.flush();
+    }
+    catch(izenelib::util::IZENELIBException& e)
+    {
+        LOG(ERROR) << "exception in SDB::flush(): " << e.what();
+    }
 }
 
 bool UserManager::addUser(const User& user)
 {
-    return container_.insertValue(user.id_, user);
+    bool result = false;
+    try
+    {
+        result = container_.insertValue(user.id_, user);
+    }
+    catch(izenelib::util::IZENELIBException& e)
+    {
+        LOG(ERROR) << "exception in SDB::insertValue(): " << e.what();
+    }
+
+    return result;
 }
 
 bool UserManager::updateUser(const User& user)
 {
-    return container_.update(user.id_, user);
+    bool result = false;
+    try
+    {
+        result = container_.update(user.id_, user);
+    }
+    catch(izenelib::util::IZENELIBException& e)
+    {
+        LOG(ERROR) << "exception in SDB::update(): " << e.what();
+    }
+
+    return result;
 }
 
 bool UserManager::removeUser(userid_t userId)
 {
-    return container_.del(userId);
+    bool result = false;
+    try
+    {
+        result = container_.del(userId);
+    }
+    catch(izenelib::util::IZENELIBException& e)
+    {
+        LOG(ERROR) << "exception in SDB::del(): " << e.what();
+    }
+
+    return result;
 }
 
 bool UserManager::getUser(userid_t userId, User& user)
 {
-    return container_.getValue(userId, user);
+    bool result = false;
+    try
+    {
+        result = container_.getValue(userId, user);
+    }
+    catch(izenelib::util::IZENELIBException& e)
+    {
+        LOG(ERROR) << "exception in SDB::getValue(): " << e.what();
+    }
+
+    return result;
 }
 
 unsigned int UserManager::userNum()

@@ -497,6 +497,9 @@ public:
     /// @brief default MiningBundleConfig
     CollectionParameterConfig defaultMiningBundleParam_;
 
+    /// @brief default RecommendBundleConfig
+    CollectionParameterConfig defaultRecommendBundleParam_;
+
     /// @brief  Configurations for FireWall
     FirewallConfig firewallConfig_;
     
@@ -564,6 +567,14 @@ private:
     /// @brief                  Parse <MiningBundle> <Schema> 
     /// @param mining           Pointer to the Element
     void parseMiningBundleSchema(const ticpp::Element * mining, CollectionMeta & collectionMeta);
+
+    /// @brief                  Parse <RecommendBundle> <Parameter> 
+    /// @param recParamNode           Pointer to the Element
+    void parseRecommendBundleParam(const ticpp::Element * recParamNode, CollectionMeta & collectionMeta);
+
+    /// @brief                  Parse <RecommendBundle> <Schema> 
+    /// @param recSchemaNode           Pointer to the Element
+    void parseRecommendBundleSchema(const ticpp::Element * recSchemaNode, CollectionMeta & collectionMeta);
 
     /// @brief                  Parse <Collection> settings
     /// @param system           Pointer to the Element

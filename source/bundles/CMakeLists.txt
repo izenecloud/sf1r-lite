@@ -18,15 +18,18 @@ INCLUDE_DIRECTORIES(
 FILE(GLOB_RECURSE index_SRC "index/*.cpp")
 FILE(GLOB_RECURSE querylog_SRC "querylog/*.cpp")
 FILE(GLOB_RECURSE mining_SRC "mining/*.cpp")
+FILE(GLOB_RECURSE recommend_SRC "recommend/*.cpp")
 
 ADD_LIBRARY(sf1r_bundle_index ${index_SRC})
 ADD_LIBRARY(sf1r_bundle_querylog ${querylog_SRC})
 ADD_LIBRARY(sf1r_bundle_mining ${mining_SRC})
+ADD_LIBRARY(sf1r_bundle_recommend ${recommend_SRC})
 
 INSTALL(TARGETS 
     sf1r_bundle_index 
     sf1r_bundle_querylog
     sf1r_bundle_mining
+    sf1r_bundle_recommend
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
     COMPONENT sf1r_libraries)

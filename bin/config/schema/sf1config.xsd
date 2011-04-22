@@ -5,6 +5,7 @@
     <xs:include schemaLocation="bundle-querylog.xsd"/>
     <xs:include schemaLocation="bundle-index.xsd"/>
     <xs:include schemaLocation="bundle-mining.xsd"/>
+    <xs:include schemaLocation="bundle-recommend.xsd"/>
         
 	<xs:simpleType name="PortType">
 		<xs:restriction base="xs:integer">
@@ -59,6 +60,7 @@
                 <xs:element ref="QueryLogBundle"/>
                 <xs:element ref="IndexBundle"/>
                 <xs:element ref="MiningBundle"/>
+                <xs:element ref="RecommendBundle"/>
 			</xs:sequence>
 		</xs:complexType>
 	</xs:element>

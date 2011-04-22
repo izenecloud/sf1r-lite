@@ -7,6 +7,8 @@
 #include "DocumentsGetHandler.h"
 #include "DocumentsSearchHandler.h"
 
+#include <bundles/recommend/RecommendTaskService.h>
+#include <bundles/recommend/RecommendSearchService.h>
 
 namespace sf1r
 {
@@ -15,6 +17,8 @@ CollectionHandler::CollectionHandler(const string& collection)
         : collection_(collection)
         , indexSearchService_(0)
         , miningSearchService_(0)
+        , recommendTaskService_(0)
+        , recommendSearchService_(0)
 {
 }
 

@@ -1,0 +1,78 @@
+headers:
+  - controllers/AutoFillController.h
+  - controllers/CommandsController.h
+  - controllers/KeywordsController.h
+  - controllers/DocumentsController.h
+  - controllers/TestController.h
+  - controllers/StatusController.h
+  - controllers/LogAnalysisController.h
+  - controllers/FacetedController.h
+  - controllers/QueryCorrectionController.h
+  - controllers/TopicController.h
+  - controllers/RecommendController.h
+
+controllers:
+  AutoFillController:
+    service: true
+  
+  QueryCorrectionController:
+    service: true
+
+  CommandsController:
+    actions:
+      - index
+      - index_recommend
+      - optimize_index
+
+  KeywordsController: ~
+
+  DocumentsController:
+    actions:
+      - index
+      - get
+      - search
+      - create
+      - update
+      - destroy
+      - similar_to
+      - duplicate_with
+      - similar_to_image
+      - get_topic
+      - get_topic_with_sim
+
+  StatusController: ~
+
+  TestController:
+    test: true
+    actions:
+      - echo
+      - sleep
+
+  LogAnalysisController:
+    actions:
+      - system_events
+      - user_queries
+      - inject_user_queries
+      - delete_record_from_system_events
+      - delete_record_from_user_queries
+      - delete_database
+
+  FacetedController:
+    actions:
+      - set_ontology
+      - get_ontology
+      - get_static_rep
+      - static_click
+      - get_rep
+      - click
+      - manmade
+
+  TopicController:
+    actions:
+      - get_similar
+
+  RecommendController:
+    actions:
+      - add_user
+      - get_user
+

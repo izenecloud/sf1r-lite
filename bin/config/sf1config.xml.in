@@ -55,6 +55,13 @@
           <IsePara buildimageindex="y" storeimagelocally="n" maximagenum="1000000" relatedimagenum="50"/>
         </Parameter>
       </MiningBundle>
+
+      <RecommendBundle> 
+        <Parameter>
+          <!-- Specify multiple index directory to support backup and directory rotating -->
+          <CollectionDataDirectory>default-collection-dir</CollectionDataDirectory>
+        </Parameter>
+      </RecommendBundle> 
     </BundlesDefault>
 
     <!-- NOT IMPLEMENTED FOR CURRENT VERSION

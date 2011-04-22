@@ -12,6 +12,7 @@
 
 #include <bundles/index/IndexBundleConfiguration.h>
 #include <bundles/mining/MiningBundleConfiguration.h>
+#include <bundles/recommend/RecommendBundleConfiguration.h>
 
 #include <util/ustring/UString.h>
 
@@ -157,6 +158,8 @@ public:
     boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig_;
 
     boost::shared_ptr<MiningBundleConfiguration> miningBundleConfig_;
+
+    boost::shared_ptr<RecommendBundleConfiguration> recommendBundleConfig_;
 
     /// @brief Collection level acl_
     Acl acl_;

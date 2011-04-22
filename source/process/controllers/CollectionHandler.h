@@ -11,6 +11,7 @@
 #include <bundles/index/IndexTaskService.h>
 #include <bundles/mining/MiningBundleConfiguration.h>
 #include <bundles/mining/MiningSearchService.h>
+#include <bundles/recommend/RecommendSchema.h>
 
 #include <util/driver/Request.h>
 #include <util/driver/Response.h>
@@ -18,6 +19,9 @@
 
 namespace sf1r
 {
+
+class RecommendTaskService;
+class RecommendSearchService;
 
 /**
  * @brief CollectionHandler
@@ -63,6 +67,16 @@ public:
         miningSearchService_ = service;
     }
 
+    void registerService(RecommendTaskService* service)
+    {
+        recommendTaskService_ = service;
+    }
+
+    void registerService(RecommendSearchService* service)
+    {
+        recommendSearchService_ = service;
+    }
+
     void setBundleSchema(IndexBundleSchema& schema)
     {
         indexSchema_ = schema;
@@ -71,6 +85,11 @@ public:
     void setBundleSchema(MiningSchema& schema)
     {
 	miningSchema_ = schema;
+    }
+
+    void setBundleSchema(RecommendSchema& schema)
+    {
+	recommendSchema_ = schema;
     }
 public:
     std::string collection_;
@@ -81,9 +100,15 @@ public:
 
     MiningSearchService* miningSearchService_;
 
+    RecommendTaskService* recommendTaskService_;
+
+    RecommendSearchService* recommendSearchService_;
+
     IndexBundleSchema indexSchema_;
 
     MiningSchema miningSchema_;
+
+    RecommendSchema recommendSchema_;
 };
 
 } // namespace sf1r

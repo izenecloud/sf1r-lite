@@ -3,6 +3,7 @@
 
 #include <bundles/index/IndexBundleActivator.h>
 #include <bundles/mining/MiningBundleActivator.h>
+#include <bundles/recommend/RecommendBundleActivator.h>
 
 namespace sf1r
 {
@@ -16,10 +17,12 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
 
     boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig(new IndexBundleConfiguration(collectionName));
     boost::shared_ptr<MiningBundleConfiguration> miningBundleConfig(new MiningBundleConfiguration(collectionName));
+    boost::shared_ptr<RecommendBundleConfiguration> recommendBundleConfig(new RecommendBundleConfiguration(collectionName));
 
     CollectionMeta collectionMeta;
     collectionMeta.indexBundleConfig_ = indexBundleConfig;
     collectionMeta.miningBundleConfig_ = miningBundleConfig;
+    collectionMeta.recommendBundleConfig_ = recommendBundleConfig;
 
     CollectionConfig::get()->parseConfigFile(collectionName, configFileName, collectionMeta);
 
@@ -42,6 +45,16 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
     MiningSearchService* miningSearchService = static_cast<MiningSearchService*>(osgiLauncher_.getService(bundleName, "MiningSearchService"));
     collectionHandler->registerService(miningSearchService);
     collectionHandler->setBundleSchema(miningBundleConfig->mining_schema_);
+
+    ///createRecommendBundle
+    bundleName = "RecommendBundle-" + collectionName;
+    DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, RecommendBundleActivator);	
+    osgiLauncher_.start(recommendBundleConfig);
+    RecommendTaskService* recommendTaskService = static_cast<RecommendTaskService*>(osgiLauncher_.getService(bundleName, "RecommendTaskService"));
+    collectionHandler->registerService(recommendTaskService);
+    RecommendSearchService* recommendSearchService = static_cast<RecommendSearchService*>(osgiLauncher_.getService(bundleName, "RecommendSearchService"));
+    collectionHandler->registerService(recommendSearchService);
+    collectionHandler->setBundleSchema(recommendBundleConfig->recommendSchema_);
 
     // insert first, then assign to ensure exception safe
     std::pair<handler_map_type::iterator, bool> insertResult =

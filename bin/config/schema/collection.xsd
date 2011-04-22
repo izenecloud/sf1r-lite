@@ -4,6 +4,7 @@
     <xs:include schemaLocation="common.xsd"/>
     <xs:include schemaLocation="bundle-index.xsd"/>
     <xs:include schemaLocation="bundle-mining.xsd"/>
+    <xs:include schemaLocation="bundle-recommend.xsd"/>
     	
 	<xs:element name="Path">
 		<xs:complexType>
@@ -44,6 +45,7 @@
                 <xs:element ref="ACL" minOccurs="0"/>
 				<xs:element ref="IndexBundle"/>
 				<xs:element ref="MiningBundle" minOccurs="0"/>
+				<xs:element ref="RecommendBundle" minOccurs="0"/>
 			</xs:sequence>
 		</xs:complexType>
 		<!-- Key and KeyRef should be put together -->

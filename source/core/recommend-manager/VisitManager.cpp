@@ -1,5 +1,7 @@
 #include "VisitManager.h"
 
+#include <glog/logging.h>
+
 namespace sf1r
 {
 
@@ -11,7 +13,14 @@ VisitManager::VisitManager(const std::string& path)
 
 void VisitManager::flush()
 {
-    container_.flush();
+    try
+    {
+        container_.flush();
+    }
+    catch(izenelib::util::IZENELIBException& e)
+    {
+        LOG(ERROR) << "exception in SDB::flush(): " << e.what();
+    }
 }
 
 bool VisitManager::addVisitItem(userid_t userId, itemid_t itemId)
@@ -22,7 +31,17 @@ bool VisitManager::addVisitItem(userid_t userId, itemid_t itemId)
     // not visited yet
     if (res.second)
     {
-        return container_.update(userId, itemIdSet);
+        bool result = false;
+        try
+        {
+            result = container_.update(userId, itemIdSet);
+        }
+        catch(izenelib::util::IZENELIBException& e)
+        {
+            LOG(ERROR) << "exception in SDB::update(): " << e.what();
+        }
+
+        return result;
     }
 
     // already visited
@@ -31,7 +50,17 @@ bool VisitManager::addVisitItem(userid_t userId, itemid_t itemId)
 
 bool VisitManager::getVisitItemSet(userid_t userId, ItemIdSet& itemIdSet)
 {
-    return container_.getValue(userId, itemIdSet);
+    bool result = false;
+    try
+    {
+        result = container_.getValue(userId, itemIdSet);
+    }
+    catch(izenelib::util::IZENELIBException& e)
+    {
+        LOG(ERROR) << "exception in SDB::getValue(): " << e.what();
+    }
+
+    return result;
 }
 
 unsigned int VisitManager::visitUserNum()

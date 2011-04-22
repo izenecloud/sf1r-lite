@@ -309,8 +309,9 @@ void DocumentsRenderer::renderFaceted(
 }
 
 void DocumentsRenderer::renderGroup(
-const KeywordSearchResult& miaResult,
-Value& groupResult)
+    const KeywordSearchResult& miaResult,
+    Value& groupResult
+)
 {
     const std::list<sf1r::faceted::OntologyRepItem>& item_list = miaResult.groupRep_.item_list;
     if (item_list.empty())
