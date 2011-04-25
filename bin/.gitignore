@@ -2,6 +2,8 @@
 !/.gitignore
 !/*.rb
 !/*.sh
+!/config
+!/config/schema
 !/config/schema/*
 !/config/sf1config.xml.in
 !/config/example.xml.in

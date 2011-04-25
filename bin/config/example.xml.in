@@ -64,4 +64,13 @@
       </Schema>
     </MiningBundle>
 
+    <RecommendBundle>
+      <Schema>
+        <User>
+          <Property name="gender" />
+          <Property name="age" />
+          <Property name="area" />
+        </User>
+      </Schema>
+    </RecommendBundle>
 </Collection>
