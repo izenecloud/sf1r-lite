@@ -24,7 +24,10 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
     collectionMeta.miningBundleConfig_ = miningBundleConfig;
     collectionMeta.recommendBundleConfig_ = recommendBundleConfig;
 
-    CollectionConfig::get()->parseConfigFile(collectionName, configFileName, collectionMeta);
+    if (!CollectionConfig::get()->parseConfigFile(collectionName, configFileName, collectionMeta))
+    {
+        throw XmlConfigParserException("error in parsing " + configFileName);
+    }
 
     indexBundleConfig->setSchema(collectionMeta.getDocumentSchema());
     collectionHandler->setBundleSchema(indexBundleConfig->schema_);
