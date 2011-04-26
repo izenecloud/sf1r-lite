@@ -24,8 +24,8 @@ public:
 
     void flush();
 
-    bool addUser(const User& user);
-    bool updateUser(const User& user);
+    bool addUser(userid_t userId, const User& user);
+    bool updateUser(userid_t userId, const User& user);
     bool removeUser(userid_t userId);
 
     bool getUser(userid_t userId, User& user);

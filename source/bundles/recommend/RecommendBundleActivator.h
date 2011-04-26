@@ -11,6 +11,7 @@
 #include "RecommendTaskService.h"
 #include "RecommendSearchService.h"
 
+#include <recommend-manager/RecTypes.h>
 #include <directory-manager/DirectoryRotator.h>
 #include <util/osgi/IBundleActivator.h>
 #include <util/osgi/IBundleContext.h>
@@ -53,6 +54,7 @@ private:
     VisitManager* visitManager_;
     PurchaseManager* purchaseManager_;
     RecommendManager* recommendManager_;
+    RecIdGenerator* userIdGenerator_;
 
     bool init_();
 

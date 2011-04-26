@@ -7,6 +7,8 @@
 #ifndef RECOMMEND_TASK_SERVICE_H
 #define RECOMMEND_TASK_SERVICE_H
 
+#include <recommend-manager/RecTypes.h>
+
 #include <util/osgi/IService.h>
 
 #include <string>
@@ -22,7 +24,8 @@ class RecommendTaskService : public ::izenelib::osgi::IService
 public:
     RecommendTaskService(
         RecommendBundleConfiguration* bundleConfig,
-        UserManager* userManager
+        UserManager* userManager,
+        RecIdGenerator* userIdGenerator
     );
 
     /**
@@ -48,6 +51,7 @@ public:
 private:
     RecommendBundleConfiguration* bundleConfig_;
     UserManager* userManager_;
+    RecIdGenerator* userIdGenerator_;
 };
 
 } // namespace sf1r

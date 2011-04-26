@@ -120,7 +120,99 @@ void RecommendController::add_user()
 }
 
 /**
- * @brief Action @b get_user. Gets user from SF1 by user id.
+ * @brief Action @b update_user. Update a user profile.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Add user in this collection.
+ * - @b resource* (@c Object): A user resource. Property key name is used as
+ *   key. The corresponding value is the content of the property. Property @b
+ *   USERID is required, which is a unique user identifier specified by
+ *   client.
+ *
+ * @section response
+ *
+ * - @b head* (@c Object): Property @b success gives the result, true or false.
+ *
+ * @section example
+ *
+ * Request
+ * @code
+ * {
+ *   "resource" => {
+ *     "USERID": "user_001",
+ *     "gender": "male",
+ *     "age": "20",
+ *     "area": "Shanghai"
+ *   }
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true}
+ * }
+ * @endcode
+ */
+void RecommendController::update_user()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(requireUSERID());
+
+    User user;
+    IZENELIB_DRIVER_BEFORE_HOOK(value2User(request()[Keys::resource], user));
+
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    if (!service->updateUser(user))
+    {
+        response().addError("Failed to update user to given collection.");
+    }
+}
+
+/**
+ * @brief Action @b remove_user. Remove user by user id.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Search in this collection.
+ * - @b resource* (@c Object): Only field @b USERID is used to remove the user.
+ *
+ * @section response
+ *
+ * - @b head* (@c Object): Property @b success gives the result, true or false.
+ *
+ * @section example
+ *
+ * Request
+ * @code
+ * {
+ *   "resource" => {
+ *     "USERID": "user_001"
+ *   }
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true}
+ * }
+ * @endcode
+ */
+void RecommendController::remove_user()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(requireUSERID());
+    std::string userIdStr = asString(request()[Keys::resource][Keys::USERID]);
+
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    if (!service->removeUser(userIdStr))
+    {
+        response().addError("Failed to remove user from given collection.");
+    }
+}
+
+/**
+ * @brief Action @b get_user. Get user from SF1 by user id.
  *
  * @section request
  *
