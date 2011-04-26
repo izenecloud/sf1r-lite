@@ -523,4 +523,56 @@ void RecommendController::get_item()
     }
 }
 
+/**
+ * @brief Action @b visit_item. Add a visit item event.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Add visit item event in this collection.
+ * - @b resource* (@c Object): A visit resource. Property key name is used as
+ *   key. The corresponding value is the content of the property. Property @b
+ *   USERID and @b ITEMID is required, which is a unique user identifier and
+ *   an item identifier specified by client, meaning the event of user @b USERID
+ *   has visited item @b ITEMID. Please note that the user @b USERID must have
+ *   been added by @b add_user(), and item @b ITEMID must have been added by
+ *   @b add_item() previously.
+ *
+ * @section response
+ *
+ * - @b head* (@c Object): Property @b success gives the result, true or false.
+ *
+ * @section example
+ *
+ * Request
+ * @code
+ * {
+ *   "resource" => {
+ *     "USERID": "user_001",
+ *     "ITEMID": "item_001"
+ *   }
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true}
+ * }
+ * @endcode
+ */
+void RecommendController::visit_item()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
+    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::ITEMID));
+
+    std::string userIdStr = asString(request()[Keys::resource][Keys::USERID]);
+    std::string itemIdStr = asString(request()[Keys::resource][Keys::ITEMID]);
+
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    if (!service->visitItem(userIdStr, itemIdStr))
+    {
+        response().addError("Failed to add visit to given collection.");
+    }
+}
+
 } // namespace sf1r

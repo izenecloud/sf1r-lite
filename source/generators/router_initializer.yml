@@ -81,4 +81,5 @@ controllers:
       - get_item
       - update_item
       - remove_item
+      - visit_item
 

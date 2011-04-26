@@ -19,6 +19,7 @@ class User;
 class Item;
 class UserManager;
 class ItemManager;
+class VisitManager;
 class RecommendBundleConfiguration;
 
 class RecommendTaskService : public ::izenelib::osgi::IService
@@ -28,6 +29,7 @@ public:
         RecommendBundleConfiguration* bundleConfig,
         UserManager* userManager,
         ItemManager* itemManager,
+        VisitManager* visitManager,
         RecIdGenerator* userIdGenerator,
         RecIdGenerator* itemIdGenerator
     );
@@ -67,10 +69,16 @@ public:
      */
     bool removeItem(const std::string& itemIdStr);
 
+    /**
+     * @p userIdStr and @p itemIdStr must not be empty.
+     */
+    bool visitItem(const std::string& userIdStr, const std::string& itemIdStr);
+
 private:
     RecommendBundleConfiguration* bundleConfig_;
     UserManager* userManager_;
     ItemManager* itemManager_;
+    VisitManager* visitManager_;
     RecIdGenerator* userIdGenerator_;
     RecIdGenerator* itemIdGenerator_;
 };

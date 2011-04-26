@@ -4,6 +4,7 @@
 #include <recommend-manager/Item.h>
 #include <recommend-manager/UserManager.h>
 #include <recommend-manager/ItemManager.h>
+#include <recommend-manager/VisitManager.h>
 
 #include <glog/logging.h>
 
@@ -14,12 +15,14 @@ RecommendTaskService::RecommendTaskService(
     RecommendBundleConfiguration* bundleConfig,
     UserManager* userManager,
     ItemManager* itemManager,
+    VisitManager* visitManager,
     RecIdGenerator* userIdGenerator,
     RecIdGenerator* itemIdGenerator
 )
     :bundleConfig_(bundleConfig)
     ,userManager_(userManager)
     ,itemManager_(itemManager)
+    ,visitManager_(visitManager)
     ,userIdGenerator_(userIdGenerator)
     ,itemIdGenerator_(itemIdGenerator)
 {
@@ -129,6 +132,30 @@ bool RecommendTaskService::removeItem(const std::string& itemIdStr)
     }
 
     return itemManager_->removeItem(itemId);
+}
+
+bool RecommendTaskService::visitItem(const std::string& userIdStr, const std::string& itemIdStr)
+{
+    if (userIdStr.empty() || itemIdStr.empty())
+    {
+        return false;
+    }
+
+    userid_t userId = 0;
+    if (userIdGenerator_->conv(userIdStr, userId, false) == false)
+    {
+        LOG(ERROR) << "error in visitItem(), user id " << userIdStr << " not yet added before";
+        return false;
+    }
+
+    itemid_t itemId = 0;
+    if (itemIdGenerator_->conv(itemIdStr, itemId, false) == false)
+    {
+        LOG(ERROR) << "error in visitItem(), item id " << itemIdStr << " not yet added before";
+        return false;
+    }
+
+    return visitManager_->addVisitItem(userId, itemId);
 }
 
 } // namespace sf1r
