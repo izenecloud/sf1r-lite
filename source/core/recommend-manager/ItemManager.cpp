@@ -23,12 +23,12 @@ void ItemManager::flush()
     }
 }
 
-bool ItemManager::addItem(const Item& item)
+bool ItemManager::addItem(itemid_t itemId, const Item& item)
 {
     bool result = false;
     try
     {
-        result = container_.insertValue(item.id_, item);
+        result = container_.insertValue(itemId, item);
     }
     catch(izenelib::util::IZENELIBException& e)
     {
@@ -38,12 +38,12 @@ bool ItemManager::addItem(const Item& item)
     return result;
 }
 
-bool ItemManager::updateItem(const Item& item)
+bool ItemManager::updateItem(itemid_t itemId, const Item& item)
 {
     bool result = false;
     try
     {
-        result = container_.update(item.id_, item);
+        result = container_.update(itemId, item);
     }
     catch(izenelib::util::IZENELIBException& e)
     {

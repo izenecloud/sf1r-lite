@@ -55,6 +55,7 @@ private:
     PurchaseManager* purchaseManager_;
     RecommendManager* recommendManager_;
     RecIdGenerator* userIdGenerator_;
+    RecIdGenerator* itemIdGenerator_;
 
     bool init_();
 

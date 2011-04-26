@@ -77,4 +77,8 @@ controllers:
       - get_user
       - update_user
       - remove_user
+      - add_item
+      - get_item
+      - update_item
+      - remove_item
 

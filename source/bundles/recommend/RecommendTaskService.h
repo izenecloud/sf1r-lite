@@ -16,7 +16,9 @@
 namespace sf1r
 {
 class User;
+class Item;
 class UserManager;
+class ItemManager;
 class RecommendBundleConfiguration;
 
 class RecommendTaskService : public ::izenelib::osgi::IService
@@ -25,7 +27,9 @@ public:
     RecommendTaskService(
         RecommendBundleConfiguration* bundleConfig,
         UserManager* userManager,
-        RecIdGenerator* userIdGenerator
+        ItemManager* itemManager,
+        RecIdGenerator* userIdGenerator,
+        RecIdGenerator* itemIdGenerator
     );
 
     /**
@@ -48,10 +52,27 @@ public:
      */
     bool removeUser(const std::string& userIdStr);
 
+    /**
+     * @p item.idStr_ must not be empty.
+     */
+    bool addItem(const Item& item);
+
+    /**
+     * @p item.idStr_ must not be empty.
+     */
+    bool updateItem(const Item& item);
+
+    /**
+     * @p itemIdStr must not be empty.
+     */
+    bool removeItem(const std::string& itemIdStr);
+
 private:
     RecommendBundleConfiguration* bundleConfig_;
     UserManager* userManager_;
+    ItemManager* itemManager_;
     RecIdGenerator* userIdGenerator_;
+    RecIdGenerator* itemIdGenerator_;
 };
 
 } // namespace sf1r

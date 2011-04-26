@@ -28,12 +28,14 @@ struct RecommendProperty : public PropertyConfigBase
      * if true, this property is optional, so that the record without this property value is valid,
      * if false, the record without this property value could not be added.
      */
-    bool isOption_; 
+    bool isOption_;
 };
 
 struct RecommendSchema
 {
     std::vector<RecommendProperty> userSchema_;
+
+    std::vector<RecommendProperty> itemSchema_;
 
     /**
      * Find user property by @p name.
@@ -42,6 +44,14 @@ struct RecommendSchema
      * @return true for found, false for not found
      */
     bool getUserProperty(const std::string& name, RecommendProperty& property) const;
+
+    /**
+     * Find item property by @p name.
+     * @p name the property name in item schema
+     * @p property the object store the result
+     * @return true for found, false for not found
+     */
+    bool getItemProperty(const std::string& name, RecommendProperty& property) const;
 };
 
 } // namespace sf1r

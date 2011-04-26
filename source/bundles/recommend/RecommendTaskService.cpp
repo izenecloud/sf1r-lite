@@ -1,7 +1,9 @@
 #include "RecommendTaskService.h"
 #include "RecommendBundleConfiguration.h"
 #include <recommend-manager/User.h>
+#include <recommend-manager/Item.h>
 #include <recommend-manager/UserManager.h>
+#include <recommend-manager/ItemManager.h>
 
 #include <glog/logging.h>
 
@@ -11,11 +13,15 @@ namespace sf1r
 RecommendTaskService::RecommendTaskService(
     RecommendBundleConfiguration* bundleConfig,
     UserManager* userManager,
-    RecIdGenerator* userIdGenerator
+    ItemManager* itemManager,
+    RecIdGenerator* userIdGenerator,
+    RecIdGenerator* itemIdGenerator
 )
     :bundleConfig_(bundleConfig)
     ,userManager_(userManager)
+    ,itemManager_(itemManager)
     ,userIdGenerator_(userIdGenerator)
+    ,itemIdGenerator_(itemIdGenerator)
 {
 }
 
@@ -70,6 +76,59 @@ bool RecommendTaskService::removeUser(const std::string& userIdStr)
     }
 
     return userManager_->removeUser(userId);
+}
+
+bool RecommendTaskService::addItem(const Item& item)
+{
+    if (item.idStr_.empty())
+    {
+        return false;
+    }
+
+    itemid_t itemId = 0;
+
+    if (itemIdGenerator_->conv(item.idStr_, itemId))
+    {
+        LOG(WARNING) << "in addItem(), item id " << item.idStr_ << " already exists";
+    }
+
+    return itemManager_->addItem(itemId, item);
+}
+
+bool RecommendTaskService::updateItem(const Item& item)
+{
+    if (item.idStr_.empty())
+    {
+        return false;
+    }
+
+    itemid_t itemId = 0;
+
+    if (itemIdGenerator_->conv(item.idStr_, itemId, false) == false)
+    {
+        LOG(ERROR) << "error in updateItem(), item id " << item.idStr_ << " not yet added before";
+        return false;
+    }
+
+    return itemManager_->updateItem(itemId, item);
+}
+
+bool RecommendTaskService::removeItem(const std::string& itemIdStr)
+{
+    if (itemIdStr.empty())
+    {
+        return false;
+    }
+
+    itemid_t itemId = 0;
+
+    if (itemIdGenerator_->conv(itemIdStr, itemId, false) == false)
+    {
+        LOG(ERROR) << "error in removeItem(), item id " << itemIdStr << " not yet added before";
+        return false;
+    }
+
+    return itemManager_->removeItem(itemId);
 }
 
 } // namespace sf1r

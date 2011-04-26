@@ -24,8 +24,8 @@ public:
 
     void flush();
 
-    bool addItem(const Item& item);
-    bool updateItem(const Item& item);
+    bool addItem(itemid_t itemId, const Item& item);
+    bool updateItem(itemid_t itemId, const Item& item);
     bool removeItem(itemid_t itemId);
 
     bool getItem(itemid_t itemId, Item& item);

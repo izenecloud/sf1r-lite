@@ -16,21 +16,29 @@
 namespace sf1r
 {
 class User;
+class Item;
 class UserManager;
+class ItemManager;
 
 class RecommendSearchService : public ::izenelib::osgi::IService
 {
 public:
     RecommendSearchService(
         UserManager* userManager,
-        RecIdGenerator* userIdGenerator
+        ItemManager* itemManager,
+        RecIdGenerator* userIdGenerator,
+        RecIdGenerator* itemIdGenerator
     );
 
     bool getUser(const std::string& userIdStr, User& user);
 
+    bool getItem(const std::string& itemIdStr, Item& item);
+
 private:
     UserManager* userManager_;
+    ItemManager* itemManager_;
     RecIdGenerator* userIdGenerator_;
+    RecIdGenerator* itemIdGenerator_;
 };
 
 } // namespace sf1r

@@ -12,6 +12,7 @@
 namespace sf1r
 {
 class User;
+class Item;
 
 /// @addtogroup controllers
 /// @{
@@ -42,8 +43,9 @@ public:
     void do_recommend();
 
 private:
-    bool requireUSERID();
+    bool requireProperty(const std::string& propName);
     bool value2User(const izenelib::driver::Value& value, User& user);
+    bool value2Item(const izenelib::driver::Value& value, Item& item);
 };
 
 /// @}

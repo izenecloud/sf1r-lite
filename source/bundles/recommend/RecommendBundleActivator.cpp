@@ -26,6 +26,7 @@ RecommendBundleActivator::RecommendBundleActivator()
     ,purchaseManager_(NULL)
     ,recommendManager_(NULL)
     ,userIdGenerator_(NULL)
+    ,itemIdGenerator_(NULL)
 {
 }
 
@@ -74,12 +75,14 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
     delete purchaseManager_;
     delete recommendManager_;
     delete userIdGenerator_;
+    delete itemIdGenerator_;
     userManager_ = NULL;
     itemManager_ = NULL;
     visitManager_ = NULL;
     purchaseManager_ = NULL;
     recommendManager_ = NULL;
     userIdGenerator_ = NULL;
+    itemIdGenerator_ = NULL;
 }
 
 bool RecommendBundleActivator::init_()
@@ -106,15 +109,19 @@ bool RecommendBundleActivator::init_()
     std::string userIdPath = dir + "userid";
     auto_ptr<RecIdGenerator> userIdGeneratorPtr(new RecIdGenerator(userIdPath));
 
+    std::string itemIdPath = dir + "itemid";
+    auto_ptr<RecIdGenerator> itemIdGeneratorPtr(new RecIdGenerator(itemIdPath));
+
     userManager_ = userManagerPtr.release();
     itemManager_ = itemManagerPtr.release();
     visitManager_ = visitManagerPtr.release();
     purchaseManager_ = purchaseManagerPtr.release();
     recommendManager_ = recommendManagerPtr.release();
     userIdGenerator_ = userIdGeneratorPtr.release();
+    itemIdGenerator_ = itemIdGeneratorPtr.release();
 
-    taskService_ = new RecommendTaskService(config_, userManager_, userIdGenerator_);
-    searchService_ = new RecommendSearchService(userManager_, userIdGenerator_);
+    taskService_ = new RecommendTaskService(config_, userManager_, itemManager_, userIdGenerator_, itemIdGenerator_);
+    searchService_ = new RecommendSearchService(userManager_, itemManager_, userIdGenerator_, itemIdGenerator_);
 
     return true;
 }

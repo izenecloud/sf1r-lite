@@ -71,6 +71,12 @@
           <Property name="age" />
           <Property name="area" />
         </User>
+        <Item>
+          <Property name="name" />
+          <Property name="link" />
+          <Property name="price" />
+          <Property name="category" />
+        </User>
       </Schema>
     </RecommendBundle>
 </Collection>
