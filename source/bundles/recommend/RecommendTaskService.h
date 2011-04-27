@@ -12,6 +12,7 @@
 #include <util/osgi/IService.h>
 
 #include <string>
+#include <vector>
 
 namespace sf1r
 {
@@ -20,6 +21,7 @@ class Item;
 class UserManager;
 class ItemManager;
 class VisitManager;
+class PurchaseManager;
 class RecommendBundleConfiguration;
 
 class RecommendTaskService : public ::izenelib::osgi::IService
@@ -30,6 +32,7 @@ public:
         UserManager* userManager,
         ItemManager* itemManager,
         VisitManager* visitManager,
+        PurchaseManager* purchaseManager,
         RecIdGenerator* userIdGenerator,
         RecIdGenerator* itemIdGenerator
     );
@@ -74,11 +77,39 @@ public:
      */
     bool visitItem(const std::string& userIdStr, const std::string& itemIdStr);
 
+    struct OrderItem
+    {
+        OrderItem(const std::string& itemIdStr, int quantity, double price)
+            :itemIdStr_(itemIdStr)
+            ,quantity_(quantity)
+            ,price_(price)
+        {}
+
+        std::string itemIdStr_;
+        int quantity_;
+        double price_;
+    };
+    typedef std::vector<OrderItem> OrderItemVec;
+
+    /**
+     * Add a purchase event.
+     * @param userIdStr the user id, it must not be empty.
+     * @param orderItemVec the items in the order, each item's id must not be empty
+     * @param orderIdStr the order id
+     * @return true for succcess, false for failure
+     */
+    bool purchaseItem(
+        const std::string& userIdStr,
+        const OrderItemVec& orderItemVec,
+        const std::string& orderIdStr
+    );
+
 private:
     RecommendBundleConfiguration* bundleConfig_;
     UserManager* userManager_;
     ItemManager* itemManager_;
     VisitManager* visitManager_;
+    PurchaseManager* purchaseManager_;
     RecIdGenerator* userIdGenerator_;
     RecIdGenerator* itemIdGenerator_;
 };

@@ -37,8 +37,8 @@ public:
     void remove_item();
     void get_item();
 
-    void purchase_item();
     void visit_item();
+    void purchase_item();
 
     void do_recommend();
 

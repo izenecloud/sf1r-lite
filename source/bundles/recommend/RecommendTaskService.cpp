@@ -5,6 +5,7 @@
 #include <recommend-manager/UserManager.h>
 #include <recommend-manager/ItemManager.h>
 #include <recommend-manager/VisitManager.h>
+#include <recommend-manager/PurchaseManager.h>
 
 #include <glog/logging.h>
 
@@ -16,6 +17,7 @@ RecommendTaskService::RecommendTaskService(
     UserManager* userManager,
     ItemManager* itemManager,
     VisitManager* visitManager,
+    PurchaseManager* purchaseManager,
     RecIdGenerator* userIdGenerator,
     RecIdGenerator* itemIdGenerator
 )
@@ -23,6 +25,7 @@ RecommendTaskService::RecommendTaskService(
     ,userManager_(userManager)
     ,itemManager_(itemManager)
     ,visitManager_(visitManager)
+    ,purchaseManager_(purchaseManager)
     ,userIdGenerator_(userIdGenerator)
     ,itemIdGenerator_(itemIdGenerator)
 {
@@ -156,6 +159,46 @@ bool RecommendTaskService::visitItem(const std::string& userIdStr, const std::st
     }
 
     return visitManager_->addVisitItem(userId, itemId);
+}
+
+bool RecommendTaskService::purchaseItem(
+    const std::string& userIdStr,
+    const OrderItemVec& orderItemVec,
+    const std::string& orderIdStr
+)
+{
+    if (userIdStr.empty())
+    {
+        return false;
+    }
+
+    userid_t userId = 0;
+    if (userIdGenerator_->conv(userIdStr, userId, false) == false)
+    {
+        LOG(ERROR) << "error in purchaseItem(), user id " << userIdStr << " not yet added before";
+        return false;
+    }
+
+    PurchaseManager::OrderItemVec newOrderItemVec;
+    for (OrderItemVec::const_iterator it = orderItemVec.begin();
+        it != orderItemVec.end(); ++it)
+    {
+        if (it->itemIdStr_.empty())
+        {
+            return false;
+        }
+
+        itemid_t itemId = 0;
+        if (itemIdGenerator_->conv(it->itemIdStr_, itemId, false) == false)
+        {
+            LOG(ERROR) << "error in purchaseItem(), item id " << it->itemIdStr_ << " not yet added before";
+            return false;
+        }
+
+        newOrderItemVec.push_back(PurchaseManager::OrderItem(itemId, it->quantity_, it->price_));
+    }
+
+    return purchaseManager_->addPurchaseItem(userId, newOrderItemVec, orderIdStr);
 }
 
 } // namespace sf1r

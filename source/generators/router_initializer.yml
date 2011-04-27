@@ -82,4 +82,5 @@ controllers:
       - update_item
       - remove_item
       - visit_item
+      - purchase_item
 

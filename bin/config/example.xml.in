@@ -76,7 +76,7 @@
           <Property name="link" />
           <Property name="price" />
           <Property name="category" />
-        </User>
+        </Item>
       </Schema>
     </RecommendBundle>
 </Collection>

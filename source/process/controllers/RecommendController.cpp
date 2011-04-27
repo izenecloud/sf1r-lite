@@ -529,13 +529,10 @@ void RecommendController::get_item()
  * @section request
  *
  * - @b collection* (@c String): Add visit item event in this collection.
- * - @b resource* (@c Object): A visit resource. Property key name is used as
- *   key. The corresponding value is the content of the property. Property @b
- *   USERID and @b ITEMID is required, which is a unique user identifier and
- *   an item identifier specified by client, meaning the event of user @b USERID
- *   has visited item @b ITEMID. Please note that the user @b USERID must have
- *   been added by @b add_user(), and item @b ITEMID must have been added by
- *   @b add_item() previously.
+ * - @b resource* (@c Object): A resource for a visit event, that is, user
+ *   @b USERID visited item @b ITEMID.
+ *   - @b USERID* (@c String): a unique user identifier.
+ *   - @b ITEMID* (@c String): a unique item identifier.
  *
  * @section response
  *
@@ -572,6 +569,87 @@ void RecommendController::visit_item()
     if (!service->visitItem(userIdStr, itemIdStr))
     {
         response().addError("Failed to add visit to given collection.");
+    }
+}
+
+/**
+ * @brief Action @b purchase_item. Add a purchase item event.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Add purchase item event in this collection.
+ * - @b resource* (@c Object): A resource for a purchase event, that is, user
+ *   @b USERID purchased @b items.
+ *   - @b USERID* (@c String): a unique user identifier.
+ *   - @b items* (@c Array): each is an item purchased.
+ *     - @b ITEMID* (@c String): a unique item identifier.
+ *     - @b price (@c Double): the price of each item.
+ *     - @b quantity (@c Uint): the number of items purchased.
+ *   - @b order_id (@c String): the order id.
+ *
+ * @section response
+ *
+ * - @b head* (@c Object): Property @b success gives the result, true or false.
+ *
+ * @section example
+ *
+ * Request
+ * @code
+ * {
+ *   "resource" => {
+ *     "USERID": "user_001",
+ *     "items": [
+ *       {"ITEMID": "item_001", "price": 100, "quantity": 1},
+ *       {"ITEMID": "item_002", "price": 200, "quantity": 2},
+ *       {"ITEMID": "item_003", "price": 300, "quantity": 3}
+ *     ],
+ *     "order_id": "order_001"
+ *   }
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true}
+ * }
+ * @endcode
+ */
+void RecommendController::purchase_item()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
+
+    std::string userIdStr = asString(request()[Keys::resource][Keys::USERID]);
+    std::string orderIdStr = asString(request()[Keys::resource][Keys::order_id]);
+
+    const izenelib::driver::Value& itemsValue = request()[Keys::resource][Keys::items];
+    if (nullValue(itemsValue) || itemsValue.type() != izenelib::driver::Value::kArrayType)
+    {
+        response().addError("Require an array of items in request[resource][items].");
+        return;
+    }
+
+    RecommendTaskService::OrderItemVec orderItemVec;
+    for (std::size_t i = 0; i < itemsValue.size(); ++i)
+    {
+        const Value& itemValue = itemsValue(i);
+
+        std::string itemIdStr = asString(itemValue[Keys::ITEMID]);
+        if (itemIdStr.empty())
+        {
+            response().addError("Require property " + Keys::ITEMID + " for each item in request[resource][items].");
+            return;
+        }
+
+        int quantity = asUint(itemValue[Keys::quantity]);
+        double price = asDouble(itemValue[Keys::price]);
+        orderItemVec.push_back(RecommendTaskService::OrderItem(itemIdStr, quantity, price));
+    }
+
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    if (!service->purchaseItem(userIdStr, orderItemVec, orderIdStr))
+    {
+        response().addError("Failed to add purchase to given collection.");
     }
 }
 

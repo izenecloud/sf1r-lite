@@ -25,95 +25,53 @@ void PurchaseManager::flush()
 
 bool PurchaseManager::addPurchaseItem(
     userid_t userId,
-    itemid_t itemId,
-    double price,
-    int quantity,
+    const OrderItemVec& orderItemVec,
     const std::string& orderIdStr
 )
 {
-    Purchase purchase;
-    container_.getValue(userId, purchase);
+    ItemIdSet itemIdSet;
+    container_.getValue(userId, itemIdSet);
 
-    Order* order = NULL;
-    bool isFind = false;
-    if (!orderIdStr.empty())
+    const std::size_t oldNum = itemIdSet.size();
+    for (OrderItemVec::const_iterator it = orderItemVec.begin();
+        it != orderItemVec.end(); ++it)
     {
-        for (OrderVec::reverse_iterator rit = purchase.orderVec_.rbegin();
-            rit != purchase.orderVec_.rend(); ++rit)
+        itemIdSet.insert(it->itemId_);
+    }
+
+    // not purchased yet
+    if (itemIdSet.size() > oldNum)
+    {
+        bool result = false;
+        try
         {
-            if (!rit->orderIdStr_.empty() && rit->orderIdStr_ == orderIdStr)
-            {
-                order = &*rit;
-                isFind = true;
-                break;
-            }
+            result = container_.update(userId, itemIdSet);
         }
+        catch(izenelib::util::IZENELIBException& e)
+        {
+            LOG(ERROR) << "exception in SDB::update(): " << e.what();
+        }
+
+        return result;
     }
 
-    if (!isFind)
-    {
-        purchase.orderVec_.push_back(Order());
-        order = &purchase.orderVec_.back();
-        order->orderIdStr_ = orderIdStr;
-    }
-
-    order->orderItemVec_.push_back(OrderItem());
-    OrderItem& orderItem = order->orderItemVec_.back();
-    orderItem.itemId_ = itemId;
-    orderItem.price_ = price;
-    orderItem.quantity_ = quantity;
-
-    purchase.itemIdSet_.insert(itemId);
-
-    bool result = false;
-    try
-    {
-        result = container_.update(userId, purchase);
-    }
-    catch(izenelib::util::IZENELIBException& e)
-    {
-        LOG(ERROR) << "exception in SDB::update(): " << e.what();
-    }
-
-    return result;
+    // already purchased
+    return true;
 }
 
 bool PurchaseManager::getPurchaseItemSet(userid_t userId, ItemIdSet& itemIdSet)
 {
+    bool result = false;
     try
     {
-        Purchase purchase;
-        if (container_.getValue(userId, purchase))
-        {
-            itemIdSet = purchase.itemIdSet_;
-            return true;
-        }
+        result = container_.getValue(userId, itemIdSet);
     }
     catch(izenelib::util::IZENELIBException& e)
     {
         LOG(ERROR) << "exception in SDB::getValue(): " << e.what();
     }
 
-    return false;
-}
-
-bool PurchaseManager::getPurchaseOrderVec(userid_t userId, OrderVec& orderVec)
-{
-    try
-    {
-        Purchase purchase;
-        if (container_.getValue(userId, purchase))
-        {
-            orderVec = purchase.orderVec_;
-            return true;
-        }
-    }
-    catch(izenelib::util::IZENELIBException& e)
-    {
-        LOG(ERROR) << "exception in SDB::getValue(): " << e.what();
-    }
-
-    return false;
+    return result;
 }
 
 unsigned int PurchaseManager::purchaseUserNum()

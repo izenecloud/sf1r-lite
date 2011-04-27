@@ -120,7 +120,7 @@ bool RecommendBundleActivator::init_()
     userIdGenerator_ = userIdGeneratorPtr.release();
     itemIdGenerator_ = itemIdGeneratorPtr.release();
 
-    taskService_ = new RecommendTaskService(config_, userManager_, itemManager_, visitManager_, userIdGenerator_, itemIdGenerator_);
+    taskService_ = new RecommendTaskService(config_, userManager_, itemManager_, visitManager_, purchaseManager_, userIdGenerator_, itemIdGenerator_);
     searchService_ = new RecommendSearchService(userManager_, itemManager_, userIdGenerator_, itemIdGenerator_);
 
     return true;
