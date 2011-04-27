@@ -68,6 +68,21 @@ bool ItemManager::removeItem(itemid_t itemId)
     return result;
 }
 
+bool ItemManager::hasItem(itemid_t itemId)
+{
+    bool result = false;
+    try
+    {
+        result = container_.hasKey(itemId);
+    }
+    catch(izenelib::util::IZENELIBException& e)
+    {
+        LOG(ERROR) << "exception in SDB::hasKey(): " << e.what();
+    }
+
+    return result;
+}
+
 bool ItemManager::getItem(itemid_t itemId, Item& item)
 {
     bool result = false;

@@ -28,6 +28,7 @@ public:
     bool updateItem(itemid_t itemId, const Item& item);
     bool removeItem(itemid_t itemId);
 
+    bool hasItem(itemid_t itemId);
     bool getItem(itemid_t itemId, Item& item);
     unsigned int itemNum();
 

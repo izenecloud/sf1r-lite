@@ -145,7 +145,9 @@ BOOST_AUTO_TEST_CASE(checkItem)
         iterateItemManager(idVec, itemVec, itemManager);
 
         BOOST_TEST_MESSAGE("remove item...");
+        BOOST_CHECK(itemManager.hasItem(idVec.front()));
         BOOST_CHECK(itemManager.removeItem(idVec.front()));
+        BOOST_CHECK(itemManager.hasItem(idVec.front()) == false);
         itemVec.erase(itemVec.begin());
         idVec.erase(idVec.begin());
         checkItemManager(idVec, itemVec, itemManager);
