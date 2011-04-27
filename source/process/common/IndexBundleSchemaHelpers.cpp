@@ -171,9 +171,9 @@ sf1r::PropertyDataType getPropertyDataType(
         PropertyConfig propertyConfig;
         propertyConfig.setName(property);
         IndexBundleSchema::iterator it = schema.find(propertyConfig);
-        if (it == schema.end())
+        if (it != schema.end())
         {
-            it->propertyType_;
+            return it->propertyType_;
         }
     }
 

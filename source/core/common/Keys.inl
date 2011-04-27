@@ -10,6 +10,7 @@
 (DOCID)\
 (USERID)\
 (_categories)\
+(_custom_rank)\
 (_duplicated_document_count)\
 (_id)\
 (_image_id)\
@@ -25,6 +26,7 @@
 (conditions)\
 (content)\
 (counter)\
+(custom_rank)\
 (doccount)\
 (docid)\
 (docid_list)\
@@ -33,6 +35,7 @@
 (duplicate_with)\
 (duration)\
 (elapsed_time)\
+(expression)\
 (faceted)\
 (group)\
 (group_label)\
@@ -63,6 +66,7 @@
 (order)\
 (page_count)\
 (page_start)\
+(params)\
 (popular)\
 (popular_queries)\
 (prefix)\

@@ -48,6 +48,7 @@ public:
     bool search(SearchKeywordOperation& actionOperation,
                 std::vector<unsigned int>& docIdList,
                 std::vector<float>& rankScoreList,
+                std::vector<float>& customRankScoreList,
                 std::size_t& totalCount,
                 int topK = 200,
                 int start = 0);
@@ -65,6 +66,7 @@ private:
     bool doSearch_(SearchKeywordOperation& actionOperation,
                    std::vector<unsigned int>& docIdList,
                    std::vector<float>& rankScoreList,
+                   std::vector<float>& customRankScoreList,
                    std::size_t& totalCount,
                    int topK,
                    int start);

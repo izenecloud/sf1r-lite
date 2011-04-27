@@ -27,10 +27,17 @@ struct QueryIdentity
     std::vector<std::pair<std::string , bool> > sortInfo;
 
     std::vector<QueryFiltering::FilteringType> filterInfo;
+
+    /// @breif custom ranking info
+    std::string strExp;
+    std::map<std::string, double> paramConstValueMap;
+    std::map<std::string, std::string> paramPropertyValueMap;
+
     /// search results offset after topK
     int start;
 
-    DATA_IO_LOAD_SAVE(QueryIdentity, &query&rankingType&laInfo&properties&sortInfo&filterInfo&start);
+    DATA_IO_LOAD_SAVE(QueryIdentity, &query&rankingType&laInfo&properties&sortInfo&filterInfo
+            &strExp&paramConstValueMap&paramPropertyValueMap&start);
 
     template<class Archive>
     void serialize(Archive& ar, const unsigned version)
@@ -41,6 +48,9 @@ struct QueryIdentity
         ar & properties;
         ar & sortInfo;
         ar & filterInfo;
+        ar & strExp;
+        ar & paramConstValueMap;
+        ar & paramPropertyValueMap;
         ar & start;
     }
 };
@@ -60,6 +70,9 @@ inline bool operator==(const QueryIdentity& a,
         && a.properties == b.properties
         && a.sortInfo == b.sortInfo
         && a.filterInfo == b.filterInfo
+        && a.strExp == b.strExp
+        && a.paramConstValueMap == b.paramConstValueMap
+        && a.paramPropertyValueMap == b.paramPropertyValueMap
         && a.start == b.start;
 }
 

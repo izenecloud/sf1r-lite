@@ -80,6 +80,7 @@ bool IndexSearchService::getSearchResult(
                 actionOperation,
                 resultItem.topKDocs_,
                 resultItem.topKRankScoreList_,
+                resultItem.topKCustomRankScoreList_,
                 resultItem.totalCount_,
                 TOP_K_NUM,
                 startOffset
@@ -103,6 +104,7 @@ bool IndexSearchService::getSearchResult(
                                         actionOperation,
                                         resultItem.topKDocs_,
                                         resultItem.topKRankScoreList_,
+                                        resultItem.topKCustomRankScoreList_,
                                         resultItem.totalCount_,
                                         TOP_K_NUM,
                                         startOffset
@@ -126,6 +128,7 @@ bool IndexSearchService::getSearchResult(
                                     actionOperation,
                                     resultItem.topKDocs_,
                                     resultItem.topKRankScoreList_,
+                                    resultItem.topKCustomRankScoreList_,
                                     resultItem.totalCount_,
                                     TOP_K_NUM,
                                     startOffset

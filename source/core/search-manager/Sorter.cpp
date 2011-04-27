@@ -149,6 +149,38 @@ void SortPropertyCache::loadSortData(const std::string& property, PropertyDataTy
     }
 }
 
+bool SortPropertyCache::getSortPropertyData(const std::string& propertyName, PropertyDataType propertyType, void* &data)
+{
+    boost::mutex::scoped_lock lock(this->mutex_);
+
+    if (dirty_)
+    {
+        for (std::map<std::string, std::pair<PropertyDataType,void*> >::iterator iter = sortDataCache_.begin();
+                iter != sortDataCache_.end(); ++iter)
+        {
+            cout<<"dirty "<<iter->first<<endl;
+            loadSortData(iter->first, iter->second.first);
+        }
+        dirty_ = false;
+    }
+
+    std::map<std::string, std::pair<PropertyDataType,void*> >::iterator iter = sortDataCache_.find(propertyName) ;
+    if (iter == sortDataCache_.end())
+    {
+        void* data = NULL;
+        sortDataCache_[propertyName] = make_pair(propertyType, data);
+        cout<<"first load "<<propertyName<<endl;
+        loadSortData(propertyName, propertyType);
+    }
+
+    data = sortDataCache_[propertyName].second;
+
+    if (data != NULL)
+        return true;
+    else
+        return false;
+}
+
 SortPropertyComparator* SortPropertyCache::getComparator(SortProperty* pSortProperty)
 {
     boost::mutex::scoped_lock lock(this->mutex_);
@@ -226,7 +258,7 @@ void Sorter::getComparators()
                 pSortProperty->pComparator_ = pCache_->getComparator(pSortProperty);
                 break;
             case SortProperty::CUSTOM:
-                assert(pSortProperty->pComparator_);
+                pSortProperty->pComparator_ = new SortPropertyComparator(CUSTOM_RANKING_PROPERTY_TYPE);
                 break;
             }
         }
