@@ -84,6 +84,8 @@ public:
 
     SortPropertyComparator* getComparator(SortProperty* pSortProperty);
 
+    bool getSortPropertyData(const std::string& propertyName, PropertyDataType propertyType, void* &data);
+
 private:
     void loadSortData(const std::string& property, PropertyDataType type);
 

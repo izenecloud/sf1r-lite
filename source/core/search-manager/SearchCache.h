@@ -22,6 +22,7 @@ public:
     struct value_type
     {
         std::vector<float> scores;
+        std::vector<float> customScores;
         std::vector<unsigned int> docIdList;
         std::size_t totalCount;
     };
@@ -36,6 +37,7 @@ public:
      */
     bool get(const key_type& key,
              std::vector<float>& scores,
+             std::vector<float>& customScores,
              std::vector<unsigned int>& docIdList,
              std::size_t& totalCount)
     {
@@ -43,6 +45,7 @@ public:
         if (cache_.getValueNoInsert(key, value))
         {
             scores.swap(value.scores);
+            customScores.swap(value.customScores);
             docIdList.swap(value.docIdList);
             totalCount = value.totalCount;
 
@@ -54,11 +57,13 @@ public:
 
     void set(const key_type& key,
              std::vector<float> scores,
+             std::vector<float> customScores,
              std::vector<unsigned int> docIdList,
              std::size_t totalCount)
     {
         value_type value;
         scores.swap(value.scores);
+        customScores.swap(value.customScores);
         docIdList.swap(value.docIdList);
         value.totalCount = totalCount;
         cache_.insertValue(key, value);

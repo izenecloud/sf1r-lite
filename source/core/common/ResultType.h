@@ -8,6 +8,7 @@
 ///     - 2009.08.27 Added DocumentClickResultFromMIA by Dohyun Yun
 ///     - 2009.08.31 Added RawTextResultFromSIA by Dohyun Yun
 ///     - 2009.12.02 Added ErrorInfo class by Dohyun Yun
+///     - 2011.04.22 Added topKCustomRankScoreList_ in KeywordSearchResult by Zhongxia Li
 ///     
 
 #ifndef _RESULTTYPE_H_
@@ -58,7 +59,7 @@ namespace sf1r {
           KeywordSearchResult()
           :rawQueryString_(""), encodingType_(izenelib::util::UString::UTF_8)
           , collectionName_(""), analyzedQuery_(), queryTermIdList_()
-          , totalCount_(0), topKDocs_(0), topKRankScoreList_(0)
+          , totalCount_(0), topKDocs_(0), topKRankScoreList_(0), topKCustomRankScoreList_(0)
           , start_(0), count_(0), fullTextOfDocumentInPage_()
           , snippetTextOfDocumentInPage_(), rawTextOfSummaryInPage_()
           , numberOfDuplicatedDocs_(), numberOfSimilarDocs_()
@@ -89,6 +90,9 @@ namespace sf1r {
 
             /// A list of rank scores. The sequence is following \c topKDocs_.
             std::vector<float> topKRankScoreList_;
+
+            /// A list of custom ranking scores. The sequence is following \c topKDocs_.
+            std::vector<float> topKCustomRankScoreList_;
 
             std::size_t start_;
 
@@ -185,7 +189,7 @@ namespace sf1r {
             DATA_IO_LOAD_SAVE(KeywordSearchResult,
                     &rawQueryString_&encodingType_&collectionName_&analyzedQuery_
                     &queryTermIdList_&totalCount_
-                    &topKDocs_&topKRankScoreList_
+                    &topKDocs_&topKRankScoreList_&topKCustomRankScoreList_
                     &start_&count_&fullTextOfDocumentInPage_
                     &snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_
                     &errno_&error_

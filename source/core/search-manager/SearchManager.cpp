@@ -6,6 +6,7 @@
 #include <common/SFLogger.h>
 
 #include "SearchManager.h"
+#include "CustomRanker.h"
 #include "SearchCache.h"
 
 #include <util/swap.h>
@@ -77,6 +78,7 @@ void SearchManager::chdir(const boost::shared_ptr<IDManager>& idManager,
 bool SearchManager::search(SearchKeywordOperation& actionOperation,
                            std::vector<unsigned int>& docIdList,
                            std::vector<float>& rankScoreList,
+                           std::vector<float>& customRankScoreList,
                            std::size_t& totalCount,
                            int topK,
                            int start)
@@ -88,7 +90,7 @@ START_PROFILER ( cacheoverhead )
     QueryIdentity identity;
     makeQueryIdentity(identity, actionOperation.actionItem_, start);
 
-    if (cache_->get(identity, rankScoreList, docIdList, totalCount))
+    if (cache_->get(identity, rankScoreList, customRankScoreList, docIdList, totalCount))
     {
         // cache hit, ignore topK
 #if 0 ///commonSet is not required any more
@@ -107,12 +109,13 @@ STOP_PROFILER ( cacheoverhead )
     if (doSearch_(actionOperation,
                   docIdList,
                   rankScoreList,
+                  customRankScoreList,
                   totalCount,
                   topK,
                   start))
     {
  START_PROFILER ( cacheoverhead )
-        cache_->set(identity, rankScoreList, docIdList, totalCount);
+        cache_->set(identity, rankScoreList, customRankScoreList, docIdList, totalCount);
  STOP_PROFILER ( cacheoverhead )
         return true;
     }
@@ -123,6 +126,7 @@ STOP_PROFILER ( cacheoverhead )
 bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                               std::vector<unsigned int>& docIdList,
                               std::vector<float>& rankScoreList,
+                              std::vector<float>& customRankScoreList,
                               std::size_t& totalCount,
                               int topK,
                               int start)
@@ -297,6 +301,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
 
         START_PROFILER ( preparegroupby )
         ///constructing sorter
+        CustomRankerPtr customRanker;
         Sorter* pSorter = NULL;
         try
         {
@@ -307,6 +312,25 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                 {
                     std::string fieldNameL = iter->first;
                     boost::to_lower(fieldNameL);
+                    // sort by custom ranking
+                    if (fieldNameL == "custom_rank")
+                    {
+                        // prepare custom ranker
+                        cout << "[SearchManager] add custom_rank property to Sorter .." << endl; //
+                        customRanker = actionOperation.actionItem_.customRanker_;
+                        customRanker->printESTree(); //test
+                        if (!customRanker->setPropertyData(pSorterCache_)) {
+                            // error info
+                            cout << customRanker->getErrorInfo() << endl;
+                            return false;
+                        }
+                        customRanker->printESTree(); //test
+
+                        if (!pSorter) pSorter = new Sorter(pSorterCache_);
+                        SortProperty* pSortProperty = new SortProperty("CUSTOM_RANK", CUSTOM_RANKING_PROPERTY_TYPE, SortProperty::CUSTOM, iter->second);
+                        pSorter->addSortProperty(pSortProperty);
+                        continue;
+                    }
                     // sort by rank
                     if (fieldNameL == "_rank")
                     {
@@ -405,6 +429,14 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                     propertyRankers
                 );
                 STOP_PROFILER ( computerankscore )
+
+                START_PROFILER ( computecustomrankscore )
+                if (customRanker.get())
+                {
+                    scoreItem.custom_score = customRanker->evaluate(scoreItem.docId);
+                }
+                START_PROFILER ( computecustomrankscore )
+
                 scoreItemQueue->insert(scoreItem);
                 START_PROFILER ( dociterating )
             }
@@ -413,6 +445,10 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             size_t count = start > 0 ? (scoreItemQueue->size() - start) : scoreItemQueue->size();
             docIdList.resize(count);
             rankScoreList.resize(count);
+            if (customRanker.get())
+            {
+                customRankScoreList.resize(count);
+            }
 
             ///Attention
             ///Given default lessthan() for prorityqueue
@@ -425,6 +461,11 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                 ScoreDoc pScoreItem = scoreItemQueue->pop();
                 docIdList[count - i - 1] = pScoreItem.docId;
                 rankScoreList[count - i - 1] = pScoreItem.score;
+                if (customRanker.get())
+                {
+                    customRankScoreList[count - i - 1] = pScoreItem.custom_score; // should not be normalized
+                }
+
                 if (pScoreItem.score < min)
                 {
                     min = pScoreItem.score;

@@ -13,6 +13,7 @@
 ///     - 2009.09.01 Add operator =  in KeywordSearchActionItem to get the values from LabelClickActionItem
 ///     - 2009.09.08 Add serialize() function to KeywordSearchActionItem for using it to the MLRUCacue.
 ///     - 2009.10.10 Add search priority in KeywordSearchActionItem.
+///     - 2011.04.19 Add custom ranking information in KeywordSearchActionItem by Zhongxia Li
 ///
 
 #ifndef _ACTIONITEM_H_
@@ -25,9 +26,14 @@
 
 #include <ranking-manager/RankingEnumerator.h>
 
+#include <search-manager/CustomRanker.h>
+
 #include <util/izene_serialization.h>
 #include <sstream>
 #include <vector>
+#include <utility>
+
+#include <boost/shared_ptr.hpp>
 
 namespace sf1r {
 
@@ -328,7 +334,11 @@ class KeywordSearchActionItem
             displayPropertyList_(obj.displayPropertyList_),
             sortPriorityList_   (obj.sortPriorityList_),
             filteringList_(obj.filteringList_),
-            groupPropertyList_(obj.groupPropertyList_) {}
+            groupPropertyList_(obj.groupPropertyList_),
+            strExp_(obj.strExp_),
+            paramConstValueMap_(obj.paramConstValueMap_),
+            paramPropertyValueMap_(obj.paramPropertyValueMap_),
+            customRanker_(obj.customRanker_) {}
 
 
         KeywordSearchActionItem& operator=(const KeywordSearchActionItem& obj)
@@ -345,6 +355,10 @@ class KeywordSearchActionItem
             sortPriorityList_    = obj.sortPriorityList_;
             filteringList_ = obj.filteringList_;
             groupPropertyList_ = obj.groupPropertyList_;
+            strExp_ = obj.strExp_;
+            paramConstValueMap_ = obj.paramConstValueMap_;
+            paramPropertyValueMap_ = obj.paramPropertyValueMap_;
+            customRanker_ = obj.customRanker_;
 
             return (*this);
         }
@@ -362,7 +376,11 @@ class KeywordSearchActionItem
                 && displayPropertyList_ == obj.displayPropertyList_
                 && sortPriorityList_    == obj.sortPriorityList_
                 && filteringList_ == obj.filteringList_
-                && groupPropertyList_ == obj.groupPropertyList_;
+                && groupPropertyList_ == obj.groupPropertyList_
+                && strExp_ == obj.strExp_
+                && paramConstValueMap_ == obj.paramConstValueMap_
+                && paramPropertyValueMap_ == obj.paramPropertyValueMap_
+                && customRanker_ == obj.customRanker_;
         }
 
         void print(std::ostream& out = std::cout) const
@@ -406,6 +424,20 @@ class KeywordSearchActionItem
             for(size_t i = 0; i < groupPropertyList_.size(); i++)
             {
                 ss << "\tPropertyString_ : " << groupPropertyList_[i] << endl;
+            }
+            ss << "------------------------------------------------" << endl;
+            ss << endl << "Custom Ranking :" << endl;
+            ss << "------------------------------------------------" << endl;
+            ss << "\tExpression : " << strExp_ << endl;
+            std::map<std::string, double>::const_iterator diter;
+            for(diter = paramConstValueMap_.begin(); diter != paramConstValueMap_.end(); diter++)
+            {
+                ss << "\tParameter : " << diter->first << ", Value : " << diter->second << endl;
+            }
+            std::map<std::string, std::string>::const_iterator siter;
+            for(siter = paramPropertyValueMap_.begin(); siter != paramPropertyValueMap_.end(); siter++)
+            {
+                ss << "\tParameter : " << siter->first << ", Value : " << siter->second << endl;
             }
             ss << "------------------------------------------------" << endl;
 
@@ -479,9 +511,23 @@ class KeywordSearchActionItem
         /// @brief a list of property query terms.
         ///
 
+        ///
+        /// @brief custom ranking information
+        ///
+        std::string strExp_;
+        std::map<std::string, double> paramConstValueMap_;
+        std::map<std::string, std::string> paramPropertyValueMap_;
+
+        ///
+        /// @brief custom ranking information(2)
+        /// Avoid a second parsing by passing a reference to CustomRanker object.
+        ///
+        boost::shared_ptr<CustomRanker> customRanker_;
+
         DATA_IO_LOAD_SAVE(KeywordSearchActionItem, &env_&refinedQueryString_&collectionName_
                 &rankingType_&pageInfo_&languageAnalyzerInfo_&searchPropertyList_&removeDuplicatedDocs_
-                &displayPropertyList_&sortPriorityList_&filteringList_&groupPropertyList_);
+                &displayPropertyList_&sortPriorityList_&filteringList_&groupPropertyList_
+                &strExp_&paramConstValueMap_&paramPropertyValueMap_);
 
     private:
         
@@ -503,6 +549,9 @@ class KeywordSearchActionItem
             ar & sortPriorityList_;
             ar & filteringList_;
             ar & groupPropertyList_;
+            ar & strExp_;
+            ar & paramConstValueMap_;
+            ar & paramPropertyValueMap_;
         }
 
 }; // end - class KeywordSearchActionItem

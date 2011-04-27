@@ -94,6 +94,12 @@ void DocumentsRenderer::renderDocuments(
         newResource[Keys::_id] = searchResult.topKDocs_[indexInTopK];
         newResource[Keys::_rank] = searchResult.topKRankScoreList_[indexInTopK];
 
+        if (searchResult.topKCustomRankScoreList_.size()
+                == searchResult.topKDocs_.size())
+        {
+            newResource[Keys::_custom_rank] = searchResult.topKCustomRankScoreList_[indexInTopK];
+        }
+
         // full text and snippet properties
         std::size_t summaryIndex = 0;
         std::string propertyValueBuffer;

@@ -16,6 +16,7 @@
 #include <parsers/GroupingParser.h>
 #include <parsers/SearchParser.h>
 #include <parsers/SortParser.h>
+#include <parsers/CustomRankingParser.h>
 #include <common/IndexBundleSchemaHelpers.h>
 
 #include <common/Keys.h>
@@ -384,7 +385,15 @@ bool DocumentsSearchHandler::parse()
     parsers.push_back(&filteringParser);
     values.push_back(&request_[Keys::conditions]);
 
+    CustomRankingParser customrRankingParser(indexSchema_);
+    parsers.push_back(&customrRankingParser);
+    values.push_back(&request_[Keys::custom_rank]);
+
     SortParser sortParser(indexSchema_);
+    Value& customRankingValue = request_[Keys::custom_rank];
+    if (customRankingValue.type() != Value::kNullType) {
+        sortParser.validateCustomRank(true);
+    }
     parsers.push_back(&sortParser);
     values.push_back(&request_[Keys::sort]);
 
@@ -466,6 +475,15 @@ bool DocumentsSearchHandler::parse()
         actionItem_.filteringList_,
         filteringParser.mutableFilteringRules()
     );
+
+    // CustomRankingParser
+    swap(
+        actionItem_.customRanker_,
+        customrRankingParser.getCustomRanker() // null after swap
+    );
+    actionItem_.strExp_ = actionItem_.customRanker_->getExpression();
+    actionItem_.paramConstValueMap_ = actionItem_.customRanker_->getConstParamMap();
+    actionItem_.paramPropertyValueMap_ = actionItem_.customRanker_->getPropertyParamMap();
 
     // orderArrayParser
     swap(

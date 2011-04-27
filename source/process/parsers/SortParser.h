@@ -28,6 +28,7 @@ class SortParser : public OrderArrayParser
 public:
     explicit SortParser(const IndexBundleSchema& indexSchema)
     : indexSchema_(indexSchema)
+    , bCustomRank_(false)
     {}
 
     bool parse(const Value& orders);
@@ -44,8 +45,15 @@ public:
         return sortPriorityList_;
     }
 
+    void validateCustomRank(bool valid = true)
+    {
+        bCustomRank_ = valid;
+    }
+
 private:
     const IndexBundleSchema& indexSchema_;
+
+    bool bCustomRank_;
 
     std::vector<std::pair<std::string , bool> > sortPriorityList_;
 };

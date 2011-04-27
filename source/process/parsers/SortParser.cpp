@@ -45,7 +45,14 @@ bool SortParser::parse(const Value& orders)
     sortPriorityList_.resize(parsedOrderCount());
     for (std::size_t i = 0; i < parsedOrderCount(); ++i)
     {
-        if (!isPropertySortable(indexSchema_, parsedOrders(i).property()))
+        if (parsedOrders(i).property() == "custom_rank")
+        {
+            if (!bCustomRank_) {
+                error() = "Please make sure \"custom_rank\" field is available, which is set as a sort property.";
+                return false;
+            }
+        }
+        else if (!isPropertySortable(indexSchema_, parsedOrders(i).property()))
         {
             error() = "Property is not sortable: " + parsedOrders(i).property();
             return false;
@@ -53,6 +60,13 @@ bool SortParser::parse(const Value& orders)
 
         sortPriorityList_[i].first = parsedOrders(i).property();
         sortPriorityList_[i].second = parsedOrders(i).ascendant();
+    }
+
+    // sort by custom rank if empty and custom rank available
+    if (sortPriorityList_.empty() && bCustomRank_)
+    {
+        static const std::pair<std::string , bool> kDefaultOrder("custom_rank", false);
+        sortPriorityList_.push_back(kDefaultOrder);
     }
 
     // sort by RANK if empty

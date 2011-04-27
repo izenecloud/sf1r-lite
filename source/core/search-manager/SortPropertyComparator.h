@@ -9,14 +9,18 @@
 
 #include <common/type_defs.h>
 #include "ScoreDoc.h"
+#include "CustomRanker.h"
 
 namespace sf1r{
+
+class CustomRanker;
 
 class SortPropertyComparator
 {
 public:
     SortPropertyComparator():type_(UNKNOWN_DATA_PROPERTY_TYPE){}
     SortPropertyComparator(void* data, PropertyDataType type):data_(data), type_(type){}
+    SortPropertyComparator(PropertyDataType dataType): type_(dataType) {}
     ~SortPropertyComparator() {}
 public:
     int compare(ScoreDoc doc1, ScoreDoc doc2)
@@ -66,6 +70,12 @@ public:
                 return 0;
             }
             break;
+        case CUSTOM_RANKING_PROPERTY_TYPE:
+            {
+                if (doc1.custom_score < doc2.custom_score) return -1;
+                if (doc1.custom_score > doc2.custom_score) return 1;
+                return 0;
+            }
         default:
             break;
         }

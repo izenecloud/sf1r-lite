@@ -37,6 +37,7 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   am
   lzo
   boost_memory
+  beansdb
   )
 
 FIND_PACKAGE(ilplib REQUIRED COMPONENTS
