@@ -109,59 +109,59 @@ IF (CMAKE_COMPILER_IS_GNUCXX)
 
   MACRO_SET_BUILD_TYPES(
     RelWithDebInfo
-    "-O2 -g"
+    "-O2 -g -Wno-deprecated"
     "Flags used by the compiler during Release with Debug Info builds."
 
     Release
-    "-O3 -DNDEBUG"
+    "-O3 -Wno-deprecated -DNDEBUG"
     "Flags used by the compiler during release builds"
 
     MinSizeRel
-    "-Os -DNDEBUG"
+    "-Os -Wno-deprecated -DNDEBUG"
     "Flags used by the compiler during release minsize builds."
 
     Debug
-    "-g -O0 -fno-reorder-blocks -fno-schedule-insns -fno-inline"
+    "-g -O0 -fno-reorder-blocks -fno-schedule-insns -fno-inline -Wno-deprecated"
     "Flags used by the compiler during debug builds."
 
     Profile
-    "-g3 -fno-inline -ftest-coverage -fprofile-arcs"
+    "-g3 -fno-inline -ftest-coverage -fprofile-arcs -Wno-deprecated"
     "Profile build type"
 
     SF1DEBUG
-    "-O3 -g -DSF1_DEBUG"
+    "-O3 -g -Wno-deprecated -DSF1_DEBUG"
     "Sf1 Debug build type"
 
     SF1TIMECHECK
-    "-O3 -DDEBUG -g -DSF1_TIME_CHECK"
+    "-O3 -DDEBUG -g -Wno-deprecated -DSF1_TIME_CHECK"
     "Sf1 time check build type"
 
     SF1PCHECK
-    "-O3 -DNDEBUG -DSF1_TIME_CHECK"
+    "-O3 -Wno-deprecated -DNDEBUG -DSF1_TIME_CHECK"
     "Sf1 performance check build type"
 
     COBRARELWITHDEBINFO
-    "-O2 -g"
+    "-O2 -g -Wno-deprecated"
     "Flags used by the compiler during Release with Debug Info builds for Cobra."
 
     COBRARELEASE
-    "-O3 -DNDEBUG"
+    "-O3 -Wno-deprecated -DNDEBUG"
     "Flags used by the compiler during release builds [CORBAR]"
 
     COBRADEBUG
-    "-O0 -DDEBUG -g -fno-reorder-blocks -fno-schedule-insns -fno-inline"
+    "-O0 -DDEBUG -g -fno-reorder-blocks -fno-schedule-insns -fno-inline -Wno-deprecated"
     "Flags used by the compiler during debug builds.[CORBAR]"
 
     COBRARESTRICTRELEASE
-    "-O3 -DNDEBUG -DCOBRA_RESTRICT "
+    "-O3 -Wno-deprecated -DNDEBUG -DCOBRA_RESTRICT "
     "Flags used by the compiler during debug builds.[CORBAR]"
 
     COBRARESTRICT
-    "-O2 -g -DCOBRA_RESTRICT "
+    "-O2 -g -Wno-deprecated -DCOBRA_RESTRICT "
     "Flags used by the compiler during debug builds.[CORBAR]"
 
     COBRASF1TIMECHECK
-    "-O3 -DDEBUG -g -DSF1_TIME_CHECK "
+    "-O3 -DDEBUG -g  -Wno-deprecated -DSF1_TIME_CHECK "
     "Sf1 time check build type"
     )
 ENDIF (CMAKE_COMPILER_IS_GNUCXX)
@@ -171,7 +171,7 @@ MACRO_SET_DEFAULT_BUILD_TYPE(RelWithDebInfo)
 
 INCLUDE(SetCompilerWarningAll)
 # Write to cache
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated" CACHE STRING
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" CACHE STRING
   "Flags used by the compiler during all build types." FORCE)
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}" CACHE STRING
   "Flags used by the compiler during all build types." FORCE)
