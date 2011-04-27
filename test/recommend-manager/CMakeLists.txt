@@ -53,6 +53,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   INCLUDE_DIRECTORIES(
     ${Boost_INCLUDE_DIRS}
   )
+
   ADD_EXECUTABLE(t_UserManager
     Runner.cpp
     t_UserManager.cpp
@@ -92,6 +93,16 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
   ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_PurchaseManager")
+
+  ADD_EXECUTABLE(t_IDGenerator
+    Runner.cpp
+    t_IDGenerator.cpp
+  )
+  TARGET_LINK_LIBRARIES(t_IDGenerator ${libs})
+  SET_TARGET_PROPERTIES(t_IDGenerator PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_IDGenerator")
 
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
 

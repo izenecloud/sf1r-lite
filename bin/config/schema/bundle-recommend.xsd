@@ -11,6 +11,7 @@
             		<xs:complexType>
             			<xs:sequence>
 	            			<xs:element ref="User" minOccurs="0"/>
+	            			<xs:element ref="Item" minOccurs="0"/>
             			</xs:sequence>
             		</xs:complexType>
             	</xs:element>
@@ -28,6 +29,14 @@
 	</xs:element>
 
 	<xs:element name="User">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Item">
 		<xs:complexType>
 			<xs:sequence>
 				<xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="unbounded"/>

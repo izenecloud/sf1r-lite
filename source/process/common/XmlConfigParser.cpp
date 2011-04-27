@@ -1284,6 +1284,34 @@ void CollectionConfig::parseRecommendBundleSchema(const ticpp::Element * recSche
             }
         } //property iteration
     }
+
+    // get item schema
+    Element* itemSchemaNode = getUniqChildElement( recSchemaNode, "Item", false  );
+    if (itemSchemaNode)
+    {
+        Iterator<Element> property("Property");
+
+        for (property = property.begin(itemSchemaNode); property != property.end(); ++property)
+        {
+            try
+            {
+                string propName;
+                getAttribute(property.Get(), "name", propName);
+
+                // ignore default property
+                if (propName != "ITEMID")
+                {
+                    RecommendProperty recommendProperty;
+                    recommendProperty.propertyName_ = propName;
+                    recommendSchema.itemSchema_.push_back(recommendProperty);
+                }
+            }
+            catch ( XmlConfigParserException & e )
+            {
+                throw e;
+            }
+        } //property iteration
+    }
 }
 
 void CollectionConfig::parseIndexSchemaProperty(

@@ -26,7 +26,10 @@
 # endif
 #endif
 
+#include <ir/id_manager/IDGenerator.h>
+
 #include <set>
+#include <string>
 
 namespace sf1r
 {
@@ -35,6 +38,7 @@ typedef uint32_t userid_t;
 typedef uint32_t itemid_t;
 
 typedef std::set<itemid_t> ItemIdSet;
+typedef izenelib::ir::idmanager::UniqueIDGenerator<std::string, uint32_t, ReadWriteLock> RecIdGenerator;
 } // namespace sf1r
 
 #endif // REC_TYPES_H

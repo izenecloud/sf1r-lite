@@ -23,12 +23,12 @@ void UserManager::flush()
     }
 }
 
-bool UserManager::addUser(const User& user)
+bool UserManager::addUser(userid_t userId, const User& user)
 {
     bool result = false;
     try
     {
-        result = container_.insertValue(user.id_, user);
+        result = container_.insertValue(userId, user);
     }
     catch(izenelib::util::IZENELIBException& e)
     {
@@ -38,12 +38,12 @@ bool UserManager::addUser(const User& user)
     return result;
 }
 
-bool UserManager::updateUser(const User& user)
+bool UserManager::updateUser(userid_t userId, const User& user)
 {
     bool result = false;
     try
     {
-        result = container_.update(user.id_, user);
+        result = container_.update(userId, user);
     }
     catch(izenelib::util::IZENELIBException& e)
     {
