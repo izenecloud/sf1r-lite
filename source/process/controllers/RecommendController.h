@@ -46,6 +46,7 @@ private:
     bool requireProperty(const std::string& propName);
     bool value2User(const izenelib::driver::Value& value, User& user);
     bool value2Item(const izenelib::driver::Value& value, Item& item);
+    bool value2ItemIdVec(const std::string& propName, std::vector<std::string>& itemIdVec);
 };
 
 /// @}
