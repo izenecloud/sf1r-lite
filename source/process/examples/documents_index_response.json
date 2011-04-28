@@ -1,0 +1,71 @@
+{
+  "header": { "success": true },
+  "errors": [
+    "Error message 1",
+    "Error message 2"
+  ],
+
+  "resources": [
+    { "title": "xxx",
+      "content": "xxx"},
+    { "title": "yyy",
+      "content": "yyy"}
+  ],
+
+  "popular_queries": ["a", "b"],
+  "realtime_queries": ["a", "b"],
+  "related_queries": ["a", "b"],
+
+  "name_entity": [
+    { "type": "xxx"
+      "name_entity_list": [
+        { "name_entity_item": "yyy", "document_support_count": 10 },
+        { "name_entity_item": "zzz", "document_support_count": 2 }
+      ],
+    }
+  ],
+
+  "taxonomy": {
+    "labels": [
+      { "label": "animal",
+        "document_count": 10,
+        "sub_labels": [
+          { "label": "dog",
+            "document_count": 6 },
+          { "label": "cat",
+            "document_count": 4 }
+        ]
+      },
+      { "label": "music",
+        "document_count": 5 }
+    ]
+  },
+
+  "group": [
+    { "document_count": 10,
+      "property": "area",
+      "labels": [
+        { "label": "China",
+          "document_count": 7,
+          "sub_labels": [
+            { "label": "Shanghai",
+              "document_count": 5 },
+            { "label": "Beijing",
+              "document_count": 2 }
+          ]
+        },
+        { "label": "America",
+          "document_count": 3 }
+      ]
+    },
+    { "document_count": 10,
+      "property": "price",
+      "labels": [
+        { "label": "100",
+          "document_count": 4 },
+        { "label": "200",
+          "document_count": 6 }
+      ]
+    }
+  ]
+}

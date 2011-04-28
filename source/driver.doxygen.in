@@ -38,7 +38,7 @@ PROJECT_NUMBER         =
 # If a relative path is entered, it will be relative to the location
 # where doxygen was started. If left blank the current directory will be used.
 
-OUTPUT_DIRECTORY       = @SF1V5_DRIVER_DOCS_ROOT@
+OUTPUT_DIRECTORY       = @SF1R_DRIVER_DOCS_ROOT@
 
 # If the CREATE_SUBDIRS tag is set to YES, then doxygen will create
 # 4096 sub-directories (in 2 levels) under the output directory of each output
@@ -581,7 +581,7 @@ WARN_LOGFILE           = @CMAKE_BINARY_DIR@/driver.doxygen.log
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = @CMAKE_SOURCE_DIR@/core/include/sf1v5/driver/parsers/ @CMAKE_SOURCE_DIR@/core/driver/parsers/ @CMAKE_SOURCE_DIR@/process/new-trinity/ba-process/parsers @CMAKE_SOURCE_DIR@/process/new-trinity/ba-process/controllers
+INPUT                  = @CMAKE_SOURCE_DIR@/core/common/parsers @CMAKE_SOURCE_DIR@/process/controllers @CMAKE_SOURCE_DIR@/process/parsers
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is
@@ -638,7 +638,7 @@ EXCLUDE_SYMBOLS        =
 # directories that contain example code fragments that are included (see
 # the \include command).
 
-EXAMPLE_PATH           = @CMAKE_SOURCE_DIR@/protocols/
+EXAMPLE_PATH           = @CMAKE_SOURCE_DIR@/process/examples
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp

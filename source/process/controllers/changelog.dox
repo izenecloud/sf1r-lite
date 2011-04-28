@@ -1,0 +1,70 @@
+/**
+ * @page changelog Change Log
+ *
+ * @section log_20110428_jun_jiang 2011-04-28 Jun Jiang
+ *
+ * - @b sf1r::RecommendController : Add controller for recommendation.
+ *
+ * @section log_20100712_ian_yang 2010-07-12 Ian Yang
+ *
+ * - @b sf1v5::GroupingParser : Validate and convert property value
+ *   according to the type specified in configuration file.
+ * - @b sf1v5::driver::ConditionArrayParser : Add operator not_in.
+ * - @b sf1v5::driver::ConditionArrayParser : Validate and convert property
+ *   value according to the type specified in configuration file.
+ * - @b sf1v5::SortParser : Wrapper of sf1v5::driver::OrderArrayParser. Add
+ *   schema validation.
+ * - @b sf1v5::SelectParser : Add schema validation in select. If select is not
+ *   specified, use all properties in document schema in configuration file.
+ * - @b sf1v5::SearchParser : search/in is not required field now. The default
+ *   values are all indexed properties.
+ *
+ * @section log_20100709_ian_yang 2010-07-09 Ian Yang
+ *
+ * - @b sf1v5::SchemaController : Controller to return collection schema info.
+ * - @b sf1v5::HelloController : Removed. Use sf1v5::SchemaController to get
+ *   collection list.
+ *
+ * @section log_20100708_ian_yang 2010-07-08 Ian Yang
+ *
+ * - Add @b time_check flag in header. Timers are returned for profiling if the
+ *   flag is enabled.
+ * - @b sf1v5::KeywordsController::index() : Integrate recent keywords and
+ *   popluar keywords, realtime keywords in one action. Original
+ *   RecentKeywordsController is removed.
+ *
+ * @section log_20100707_ian_yang 2010-07-07 Ian Yang
+ *
+ * - @b sf1v5::StatusController::index() : Tells the index and mining status.
+ *
+ * @section log_20100706_ian_yang 2010-07-06 Ian Yang
+ *
+ * - Add field warnings in response for warning messages.
+ *
+ * @section log_20100705_ian_yang 2010-07-05 Ian Yang
+ *
+ * - @b sf1v5::DocumentsController::search() : Add flag analyzer_result and
+ *   mining_result.
+ *
+ * @section log_20100701_ian_yang 2010-07-01 Ian Yang
+ *
+ * - @b sf1v5::DocumentsController::similar_to_image() : Add action handler to
+ *   get documents similar to specified image. 
+ * - @b sf1v5::SearchParser : Parse @c taxonomy_label. It is used to only get
+ *   documents with that label in the search result.
+ * - @b sf1v5::DocumentsController::duplicate_with() : Add action handler
+ *   similar_to to process similar documents search.
+ *
+ * @section log_20100630_ian_yang 2010-06-30 Ian Yang
+ *
+ * - @b sf1v5::DocumentsController::similar_to() : Add action handler similar_to
+ *   to process similar documents search.
+ *
+ * @section log_20100629_ian_yang 2010-06-29 Ian Yang
+ *
+ * - @b sf1v5::SearchParser : Set default value of log_keywords to true.
+ * - @b sf1v5::DocumentsController::search() : Add query log.
+ * - @b sf1v5::SearchParser : Set default value of apply_la in search to true.
+ * - @b sf1v5::DocumentsController : Split documents/index into documents/search
+ *   and documents/get
+ */

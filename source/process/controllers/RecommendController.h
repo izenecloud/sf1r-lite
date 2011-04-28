@@ -18,7 +18,7 @@ class Item;
 /// @{
 
 /**
- * @brief Controller \b documents
+ * @brief Controller \b recommend
  *
  * Add, update, remove or fetch users and items,
  * add purchase and visit events,
