@@ -2,6 +2,7 @@
 #include "IndexBundleHelper.h"
 
 #include <bundles/mining/MiningTaskService.h>
+#include <bundles/recommend/RecommendTaskService.h>
 
 #include <common/SFLogger.h>
 #include <common/Utilities.h>
@@ -30,6 +31,7 @@ IndexTaskService::IndexTaskService(
     : bundleConfig_(bundleConfig)
     , directoryRotator_(directoryRotator)
     , miningTaskService_(NULL)
+    , recommendTaskService_(NULL)
     , indexManager_(indexManager)
     , collectionId_(1)
     , maxDocId_(0)
@@ -255,6 +257,13 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
           miningTaskService_->DoMiningCollection();
           indexManager_->resumeMerge();
         }
+        // Will be called by "commands/index_recommend"
+//        if( recommendTaskService_ )
+//        {
+//            indexManager_->pauseMerge();
+//            recommendTaskService_->buildCollection();
+//            indexManager_->resumeMerge();
+//        }
     }
     catch (std::exception& e)
     {

@@ -24,6 +24,9 @@ private:
     ServiceTracker* searchTracker_;
     ServiceTracker* taskTracker_;
 
+    ServiceTracker* recommendSearchTracker_;
+    ServiceTracker* recommendTaskTracker_;
+
     IBundleContext* context_;
     IndexSearchService* searchService_;
     IServiceRegistration* searchServiceReg_;

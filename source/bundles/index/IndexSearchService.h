@@ -24,6 +24,7 @@
 namespace sf1r
 {
 class MiningSearchService;
+class RecommendSearchService;
 class IndexSearchService : public ::izenelib::osgi::IService
 {
 public:
@@ -60,6 +61,7 @@ private:
 private:
     IndexBundleConfiguration* bundleConfig_;
     MiningSearchService* miningSearchService_;
+    RecommendSearchService* recommendSearchService_;
     boost::shared_ptr<LAManager> laManager_;
     boost::shared_ptr<IDManager> idManager_;
     boost::shared_ptr<DocumentManager> documentManager_;

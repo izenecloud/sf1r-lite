@@ -1,10 +1,12 @@
 #include "IndexSearchService.h"
 #include "IndexBundleHelper.h"
 #include <bundles/mining/MiningSearchService.h>
+#include <bundles/recommend/RecommendSearchService.h>
 
 #include <common/SFLogger.h>
 
 #include <query-manager/QMCommonFunc.h>
+#include <recommend-manager/User.h>
 #include <common/type_defs.h>
 #include <la-manager/LAPool.h>
 
@@ -22,6 +24,7 @@ int TOP_K_NUM = 1000;
 IndexSearchService::IndexSearchService()
 {
     miningSearchService_ = NULL;
+    recommendSearchService_ = NULL;
     ///LA can only be got from a pool because it is not thread safe
     ///For some situation, we need to get the la not according to the property
     ///So we had to hard code here. A better solution is to set a default
@@ -194,6 +197,24 @@ FinishSearch:
     {
         miningSearchService_->getSearchResult(resultItem);
         miningSearchService_->getGroupRep(resultItem.topKDocs_, actionItem.groupPropertyList_, actionItem.env_.groupLabels_, resultItem.groupRep_);		
+    }
+
+    if( recommendSearchService_ )
+    {
+        User user;
+        if (recommendSearchService_->getUser("user_001", user)) // XXX
+        {
+            cout << "Got User profile: user_001" << endl;
+            User::PropValueMap::iterator iter;
+            for (iter = user.propValueMap_.begin(); iter != user.propValueMap_.end(); iter ++)
+            {
+                cout << iter->first << " : " << iter->second << endl;
+            }
+        }
+        else
+        {
+            cout << "failed to get User profile: user_001 " << endl;
+        }
     }
 
     return true;
