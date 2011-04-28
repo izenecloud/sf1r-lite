@@ -22,21 +22,21 @@ using ::sf1r::driver::Keys;
  * @class CustomRankingParser
  *
  * Field \b custom_rank is an object, which specifies how to evaluate custom ranking score
- * based on user defined expression over sort properties.
- * Note that, if \b sort field is not set, "custom_rank" is set as a sort property in descending order by default.
+ * based on user defined expression over sortable properties. <br />
+ * Note that, if \b sort field is not set, "custom_rank" is set as a sort property in descending order by default. <br />
  * But if \b sort field is explicitly set, "custom_rank" should be set as a sort property manually to enable custom
  * ranking feature.
  *
  * - @b custom_rank (@c Object): Custom Ranking request information.
- *   The @b expression is required, params is optional.
- *   - @b expression (@c String): Arithmetic expression which is used to evaluating custom ranking score.
- *     The expression is consist of operators, parameters.
+ *   The @b expression is required, @b params is optional.
+ *   - @b expression (@c String): Arithmetic expression used to evaluate custom ranking score.
+ *     An expression is consist of operators, parameters.
  *     - operators: +, -, *, /, log(x), sqrt(x), pow(x,y)
  *     - parameters: see @b params, constant value or property name also can be used directly in expression.
- *   - @b params (@c Array): setting of parameter values occurred in expression
+ *   - @b params (@c Array): parameters occurred in expression
  *     - @b name (@c String): parameter name, include alphabets, numbers or '_', start with an alphabet or '_'.
- *       @b type (@c String): parameter type, "CONSTANT" or "PROPERTY".
- *       @b value (@c String):
+ *     - @b type (@c String): parameter type, "CONSTANT" or "PROPERTY".
+ *     - @b value (@c String):
  *       - "CONSTANT": real number.
  *       - "PROPERTY": property name of a numeric data field (sortable property).
  *
@@ -61,7 +61,7 @@ using ::sf1r::driver::Keys;
  *       {
  *         "name":"x",
  *         "type":"PROPERTY",
- *         "value":"price"
+ *         "value":"Price"
  *       }
  *     ]
  *   }
