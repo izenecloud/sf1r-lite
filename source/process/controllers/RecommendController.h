@@ -18,7 +18,7 @@ class Item;
 /// @{
 
 /**
- * @brief Controller \b documents
+ * @brief Controller \b recommend
  *
  * Add, update, remove or fetch users and items,
  * add purchase and visit events,
@@ -46,6 +46,7 @@ private:
     bool requireProperty(const std::string& propName);
     bool value2User(const izenelib::driver::Value& value, User& user);
     bool value2Item(const izenelib::driver::Value& value, Item& item);
+    bool value2ItemIdVec(const std::string& propName, std::vector<std::string>& itemIdVec);
 };
 
 /// @}

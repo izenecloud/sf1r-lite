@@ -39,6 +39,18 @@ typedef uint32_t itemid_t;
 
 typedef std::set<itemid_t> ItemIdSet;
 typedef izenelib::ir::idmanager::UniqueIDGenerator<std::string, uint32_t, ReadWriteLock> RecIdGenerator;
+
+enum RecommendType
+{
+    FREQUENT_BUY_TOGETHER = 0,
+    BUY_ALSO_BUY,
+    VIEW_ALSO_VIEW,
+    BASED_ON_PURCHASE_HISTORY,
+    BASED_ON_BROWSE_HISTORY,
+    BASED_ON_SHOP_CART,
+    RECOMMEND_TYPE_NUM
+};
+
 } // namespace sf1r
 
 #endif // REC_TYPES_H

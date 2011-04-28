@@ -83,4 +83,5 @@ controllers:
       - remove_item
       - visit_item
       - purchase_item
+      - do_recommend
 

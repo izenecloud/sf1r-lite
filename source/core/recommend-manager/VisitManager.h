@@ -8,8 +8,8 @@
 #define VISIT_MANAGER_H
 
 #include "RecTypes.h"
-#include "SDBCursorIterator.h"
 #include <sdb/SequentialDB.h>
+#include <sdb/SDBCursorIterator.h>
 
 #include <string>
 
@@ -34,7 +34,7 @@ public:
     unsigned int visitUserNum();
 
     typedef izenelib::sdb::unordered_sdb_tc<userid_t, ItemIdSet, ReadWriteLock> SDBType;
-    typedef SDBCursorIterator<SDBType> SDBIterator;
+    typedef izenelib::sdb::SDBCursorIterator<SDBType> SDBIterator;
     SDBIterator begin();
     SDBIterator end();
 

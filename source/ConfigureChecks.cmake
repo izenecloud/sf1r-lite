@@ -103,8 +103,8 @@ FIND_PACKAGE(LibCURL REQUIRED)
 ##################################################
 # Driver Docs
 #####
-GET_FILENAME_COMPONENT(SF1V5_PARENT_DIR "${SF1V5_ROOT}" PATH)
-SET(SF1V5_DRIVER_DOCS_ROOT "${SF1V5_PARENT_DIR}/sf1-driver-docs/")
+GET_FILENAME_COMPONENT(SF1R_PARENT_DIR "${SF1RENGINE_ROOT}" PATH)
+SET(SF1R_DRIVER_DOCS_ROOT "${SF1R_PARENT_DIR}/sf1-driver-docs/")
 
 ##################################################
 # Doxygen
