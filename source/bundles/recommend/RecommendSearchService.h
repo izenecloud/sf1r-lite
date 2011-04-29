@@ -12,6 +12,7 @@
 #include <util/osgi/IService.h>
 
 #include <string>
+#include <vector>
 
 namespace sf1r
 {
@@ -19,6 +20,7 @@ class User;
 class Item;
 class UserManager;
 class ItemManager;
+class RecommendManager;
 
 class RecommendSearchService : public ::izenelib::osgi::IService
 {
@@ -26,6 +28,7 @@ public:
     RecommendSearchService(
         UserManager* userManager,
         ItemManager* itemManager,
+        RecommendManager* recommendManager,
         RecIdGenerator* userIdGenerator,
         RecIdGenerator* itemIdGenerator
     );
@@ -34,9 +37,27 @@ public:
 
     bool getItem(const std::string& itemIdStr, Item& item);
 
+    bool recommend(
+        RecommendType recType,
+        int maxRecNum,
+        const std::string& userIdStr,
+        const std::vector<std::string>& inputItemVec,
+        const std::vector<std::string>& includeItemVec,
+        const std::vector<std::string>& excludeItemVec,
+        std::vector<Item>& recItemVec,
+        std::vector<double> recWeightVec
+    );
+
+private:
+    bool convertItemId(
+        const std::vector<std::string>& inputItemVec,
+        std::vector<itemid_t>& outputItemVec
+    );
+
 private:
     UserManager* userManager_;
     ItemManager* itemManager_;
+    RecommendManager* recommendManager_;
     RecIdGenerator* userIdGenerator_;
     RecIdGenerator* itemIdGenerator_;
 };

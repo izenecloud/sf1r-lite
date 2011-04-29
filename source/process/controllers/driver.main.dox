@@ -1,0 +1,122 @@
+/**
+ * @defgroup controllers Controllers
+ * @defgroup parsers Parsers
+ */
+
+
+/**
+
+   @mainpage SF1 Driver Specification
+
+   @section controller_action Controller & Action
+
+   SF1 Driver RPC is grouped into @ref controllers. Every RPC is an
+   action in one controller.
+
+   The client must specify the controller and action to send the request
+   message. For example, following code shows how to index collection ChnWiki.
+
+   @code
+
+   c = Sf1::Driver::Connection.new("localhost", 18181)
+   request_message = {:collection => "ChnWiki"}
+   pp c.send("/commands/index", request_message)
+
+   @endcode
+
+   In @c "/commands/index", @c "commands" is the name of controller and @c
+   "index" is action name.
+
+   If the action name is "index", it can be omitted.
+
+   @section convention Specification Convention
+
+   The request and response messages are all objects.
+
+   An object is a key value map, where key is of type string.
+
+   An array is a collection of values.
+
+   A value can be one of the following types:
+
+   - @b Object
+   - @b Array
+   - @b Int. Signed integer.
+   - @b Uint. Unsigned integer.
+   - @b Double. Float point number.
+   - @b Bool. Boolean values @c true and @c false.
+   - @b String
+   - @b Null. A special type which can only take value @c null.
+
+   The value is a nested data structure because value can be an Object or an
+   Array. This intermediate data structure is referred as Driver Value. See
+   detailed documentation in <a
+   href="https://git.izenesoft.cn/sf1-revolution/sf1-revolution/blobs/raw/master/docs/pdf/sf1-r-driver-tr.pdf">Sf1
+   Driver TR</a>.
+
+   In the specification, a request or response message is documented as a
+   list. Every list corresponds to one key value pair in the top object. The
+   list item is documented as
+
+   @par
+   @b key_name (@c type): description
+
+   If it is required, an asterisk (*) is appended at the end of @b key_name. If
+   when the field is omitted, a default value is used, the default value is
+   added after type like:
+
+   @par
+   @b key_name (@c type = @c default): description
+
+   If the item is an object, it will has a nested sub list for its key value
+   pairs.
+
+   In example, request and response are represented as JSON, because JSON has
+   the same data format and it is the default serialization back end. However,
+   user can use any back end that can be converted to and from Driver Value.
+
+   @section general_request General Request Specification
+
+   The header has some flags can be enabled.
+
+   - @b header (@c Object)
+     - @b check_time (@c Bool = @c false): Returns timers in response.
+
+   @section general_response General Response Specification
+
+   All response contains following two fields.
+
+   - @b header (@c Object)
+     - @b success (@c Bool): tells whether the request has been processed
+       successfully.
+   - @b errors (@c Array): An array of strings. Every string is an error
+     message. Driver client can check error messages here if @b success is set
+     to @c false.
+   - @b warnings (@c Array): An array of strings. Every string is a warning
+     message. This array may contains warnings even when @b success is set to @c
+     true.
+   - @b timers (@c Object): Timers if @b check_timer is enabled in request
+     @b header.
+     - @b process_time (@c Double): Action handler process time in seconds.
+     - @b total_server_time (@c Double): Total time to handle the request in
+       server. It includes @c process_time and overhead such as IO and
+       scheduling. But the response serialization and write time is not counted
+       because the timer should be set before that.
+     - @b total_client_time (@c Double): Total time recorded in client. Driver
+       client should start the timer before sending the request, and set this
+       timer after receiving response.
+
+     Apparently, process_time < total_server_time < total_client_time.
+
+     Controller may add its own timers in it.
+
+   These fields will not repeated in the detailed response specification
+   documentations.
+
+   @section specification Specification
+
+   - Specifications grouped by @ref controllers.
+   - @ref changelog.
+
+**/
+

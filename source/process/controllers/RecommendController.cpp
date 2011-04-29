@@ -8,6 +8,7 @@
 #include <bundles/recommend/RecommendSearchService.h>
 #include <recommend-manager/User.h>
 #include <recommend-manager/Item.h>
+#include <recommend-manager/RecTypes.h>
 
 #include <common/Keys.h>
 
@@ -104,6 +105,47 @@ bool RecommendController::value2Item(const izenelib::driver::Value& value, Item&
     return true;
 }
 
+bool RecommendController::value2ItemIdVec(const std::string& propName, std::vector<std::string>& itemIdVec)
+{
+    const izenelib::driver::Value& itemVecValue = request()[Keys::resource][propName];
+
+    if (nullValue(itemVecValue))
+    {
+        return true;
+    }
+
+    if (itemVecValue.type() != izenelib::driver::Value::kArrayType)
+    {
+        response().addError("Require an array of items in request[resource][" + propName + "].");
+        return false;
+    }
+
+    for (std::size_t i = 0; i < itemVecValue.size(); ++i)
+    {
+        const Value& itemValue = itemVecValue(i);
+
+        std::string itemIdStr;
+        if (itemValue.type() == Value::kObjectType)
+        {
+            itemIdStr = asString(itemValue[Keys::ITEMID]);
+        }
+        else
+        {
+            itemIdStr = asString(itemValue);
+        }
+
+        if (itemIdStr.empty())
+        {
+            response().addError("Require property " + Keys::ITEMID + " for each item in request[resource][" + propName + "].");
+            return false;
+        }
+
+        itemIdVec.push_back(itemIdStr);
+    }
+
+    return true;
+}
+
 /**
  * @brief Action @b add_user. Add a user profile.
  *
@@ -117,7 +159,7 @@ bool RecommendController::value2Item(const izenelib::driver::Value& value, Item&
  *
  * @section response
  *
- * - @b head* (@c Object): Property @b success gives the result, true or false.
+ * - @b header (@c Object): Property @b success gives the result, true or false.
  *
  * @section example
  *
@@ -167,7 +209,7 @@ void RecommendController::add_user()
  *
  * @section response
  *
- * - @b head* (@c Object): Property @b success gives the result, true or false.
+ * - @b header (@c Object): Property @b success gives the result, true or false.
  *
  * @section example
  *
@@ -214,7 +256,7 @@ void RecommendController::update_user()
  *
  * @section response
  *
- * - @b head* (@c Object): Property @b success gives the result, true or false.
+ * - @b header (@c Object): Property @b success gives the result, true or false.
  *
  * @section example
  *
@@ -257,8 +299,8 @@ void RecommendController::remove_user()
  *
  * @section response
  *
- * - @b head* (@c Object): Property @b success gives the result, true or false.
- * - @b resource* (@c Object): A user resource. Property key name is used as
+ * - @b header (@c Object): Property @b success gives the result, true or false.
+ * - @b resource (@c Object): A user resource. Property key name is used as
  *   key. The corresponding value is the content of the property.
  *
  * @section example
@@ -325,7 +367,7 @@ void RecommendController::get_user()
  *
  * @section response
  *
- * - @b head* (@c Object): Property @b success gives the result, true or false.
+ * - @b header (@c Object): Property @b success gives the result, true or false.
  *
  * @section example
  *
@@ -376,7 +418,7 @@ void RecommendController::add_item()
  *
  * @section response
  *
- * - @b head* (@c Object): Property @b success gives the result, true or false.
+ * - @b header (@c Object): Property @b success gives the result, true or false.
  *
  * @section example
  *
@@ -424,7 +466,7 @@ void RecommendController::update_item()
  *
  * @section response
  *
- * - @b head* (@c Object): Property @b success gives the result, true or false.
+ * - @b header (@c Object): Property @b success gives the result, true or false.
  *
  * @section example
  *
@@ -467,8 +509,8 @@ void RecommendController::remove_item()
  *
  * @section response
  *
- * - @b head* (@c Object): Property @b success gives the result, true or false.
- * - @b resource* (@c Object): An item resource. Property key name is used as
+ * - @b header (@c Object): Property @b success gives the result, true or false.
+ * - @b resource (@c Object): An item resource. Property key name is used as
  *   key. The corresponding value is the content of the property.
  *
  * @section example
@@ -536,7 +578,7 @@ void RecommendController::get_item()
  *
  * @section response
  *
- * - @b head* (@c Object): Property @b success gives the result, true or false.
+ * - @b header (@c Object): Property @b success gives the result, true or false.
  *
  * @section example
  *
@@ -589,7 +631,7 @@ void RecommendController::visit_item()
  *
  * @section response
  *
- * - @b head* (@c Object): Property @b success gives the result, true or false.
+ * - @b header (@c Object): Property @b success gives the result, true or false.
  *
  * @section example
  *
@@ -650,6 +692,162 @@ void RecommendController::purchase_item()
     if (!service->purchaseItem(userIdStr, orderItemVec, orderIdStr))
     {
         response().addError("Failed to add purchase to given collection.");
+    }
+}
+
+/**
+ * @brief Action @b do_recommend. Get recommendation result.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Get recommendation result in this collection.
+ * - @b resource* (@c Object): A resource of the request for recommendation result.
+ *   - @b rec_type_id* (@c Uint): recommendation type, now 6 types are supported, each with the id below:
+ *     - @b 0 (<b>Frequently Bought Together</b>): get the items frequently bought together with @b input_items in one order
+ *     - @b 1 (<b>Bought Also Bought</b>): get the items also bought by the users who have bought @b input_items
+ *     - @b 2 (<b>Viewed Also View</b>): get the items also viewed by the users who have viewed @b input_items
+ *     - @b 3 (<b>Based on Purchase History</b>): get the recommendation items based on the purchase history of user @b USERID
+ *     - @b 4 (<b>Based on Browse History</b>): get the recommendation items based on the browse history of user @b USERID
+ *     - @b 5 (<b>Based on Shopping Cart</b>): get the recommendation items based on the shopping cart of user @b USERID,
+ *       @b input_items is required as the items in shopping cart. If @b USERID is not specified for anonymous users, only
+ *       @b input_items is used for recommendation.
+ *   - @b max_count (@c Uint = 10): max item number allowed in recommendation result.
+ *   - @b USERID (@c String): a unique user identifier.
+ *   - @b input_items (@c Array): the input items for recommendation.
+ *     - @b ITEMID* (@c String): a unique item identifier.
+ *   - @b include_items (@c Array): the items must be included in recommendation result.
+ *     - @b ITEMID* (@c String): a unique item identifier.
+ *   - @b exclude_items (@c Array): the items must be excluded in recommendation result.
+ *     - @b ITEMID* (@c String): a unique item identifier.
+ *
+ * @section response
+ *
+ * - @b header (@c Object): Property @b success gives the result, true or false.
+ * - @b resources (@c Array): each is an item in recommendation result.
+ *   - @b ITEMID (@c String): a unique item identifier.
+ *   - @b weight (@c Double): the recommendation weight, if this value is available, the items would be sorted by this value decreasingly.
+ *   - each item properties in add_item() would also be included here. Property key name is used as key.
+ *   The corresponding value is the content of the property.
+ *
+ * @section example
+ *
+ * Request
+ * @code
+ * {
+ *   "resource" => {
+ *     "rec_type_id": "3",
+ *     "max_count": "20",
+ *     "USERID": "user_001"
+ *   }
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ *   "resources" => [
+ *     {"ITEMID": "item_001", "weight": 0.9, "name": "iphone", "link": "www.shop.com/product/item_001", "price": "5000", "category": "digital"},
+ *     {"ITEMID": "item_002", "weight": 0.8, "name": "ipad", "link": "www.shop.com/product/item_002", "price": "6000", "category": "digital"},
+ *     {"ITEMID": "item_003", "weight": 0.7, "name": "imac", "link": "www.shop.com/product/item_003", "price": "20000", "category": "digital"}
+ *     ...
+ *   ]
+ * }
+ * @endcode
+ */
+void RecommendController::do_recommend()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::rec_type_id));
+
+    int maxCount = kDefaultRecommendCount;
+    const izenelib::driver::Value& maxCountValue = request()[Keys::resource][Keys::max_count];
+    if (!nullValue(maxCountValue))
+    {
+        maxCount = asUint(maxCountValue);
+    }
+    if (maxCount <= 0)
+    {
+        response().addError("Require a positive value in request[resource][max_count].");
+        return;
+    }
+
+    std::vector<std::string> inputItemVec;
+    std::vector<std::string> includeItemVec;
+    std::vector<std::string> excludeItemVec;
+    if (!value2ItemIdVec(Keys::input_items, inputItemVec)
+        || !value2ItemIdVec(Keys::include_items, includeItemVec)
+        || !value2ItemIdVec(Keys::exclude_items, excludeItemVec))
+    {
+        return;
+    }
+
+    std::string userIdStr = asString(request()[Keys::resource][Keys::USERID]);
+    int recTypeId = asUint(request()[Keys::resource][Keys::rec_type_id]);
+    switch (recTypeId)
+    {
+        case FREQUENT_BUY_TOGETHER:
+        case BUY_ALSO_BUY:
+        case VIEW_ALSO_VIEW:
+        case BASED_ON_SHOP_CART:
+        {
+            if (inputItemVec.empty())
+            {
+                response().addError("This recommendation type requires items sepcified in request[resource][input_items].");
+                return;
+            }
+            break;
+        }
+
+        case BASED_ON_PURCHASE_HISTORY:
+        case BASED_ON_BROWSE_HISTORY:
+        {
+            if (userIdStr.empty())
+            {
+                response().addError("This recommendation type requires user id sepcified in request[resource][USERID].");
+                return;
+            }
+            break;
+        }
+
+        default:
+        {
+            response().addError("Unknown recommendation type in request[resource][rec_type_id].");
+            return;
+        }
+    }
+
+    std::vector<Item> recItemVec;
+    std::vector<double> recWeightVec;
+    RecommendSearchService* service = collectionHandler_->recommendSearchService_;
+    if (service->recommend(static_cast<RecommendType>(recTypeId), maxCount, userIdStr,
+                           inputItemVec, includeItemVec, excludeItemVec,
+                           recItemVec, recWeightVec))
+    {
+        if (recItemVec.size() != recWeightVec.size())
+        {
+            response().addError("Failed to get recommendation result from given collection (unequal size of item and weight array).");
+        }
+
+        Value& resources = response()[Keys::resources];
+        for (std::size_t i = 0; i < recItemVec.size(); ++i)
+        {
+            Value& itemValue = resources();
+            itemValue[Keys::weight] = recWeightVec[i];
+
+            Item& item = recItemVec[i];
+            itemValue[Keys::ITEMID] = item.idStr_;
+            std::string convertBuffer;
+            for (Item::PropValueMap::const_iterator it = item.propValueMap_.begin();
+                it != item.propValueMap_.end(); ++it)
+            {
+                it->second.convertString(convertBuffer, kEncoding);
+                itemValue[it->first] = convertBuffer;
+            }
+        }
+    }
+    else
+    {
+        response().addError("Failed to get recommendation result from given collection.");
     }
 }
 

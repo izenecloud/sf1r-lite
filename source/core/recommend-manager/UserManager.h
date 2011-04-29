@@ -9,8 +9,8 @@
 
 #include "RecTypes.h"
 #include "User.h"
-#include "SDBCursorIterator.h"
 #include <sdb/SequentialDB.h>
+#include <sdb/SDBCursorIterator.h>
 
 #include <string>
 
@@ -32,7 +32,7 @@ public:
     unsigned int userNum();
 
     typedef izenelib::sdb::unordered_sdb_tc<userid_t, User, ReadWriteLock> SDBType;
-    typedef SDBCursorIterator<SDBType> SDBIterator;
+    typedef izenelib::sdb::SDBCursorIterator<SDBType> SDBIterator;
     SDBIterator begin();
     SDBIterator end();
 

@@ -1,0 +1,61 @@
+{
+  "collection": "ChnWiki",
+
+  "search": {
+    "keywords": "test",
+    "log_keywords": true,
+    "ranking_model": "plm",
+    "analyzer": {
+      "use_synonym_extension": true,
+      "apply_la": true,
+      "use_original_keyword": true
+    },
+    "in": [
+      {"property": "title"},
+      {"property": "content"}
+    ]
+  },
+
+  "group": [
+    {"property": "area"},
+    {"property": "price"}
+  ],
+
+  // operator list
+  // - equal, =
+  // - not_equal, <>
+  // - greater_than, >
+  // - greater_than_or_equal, >=
+  // - less_than, <
+  // - less_than_or_equal, <=
+  // - in
+  // - between
+  // - starts_with
+  // - ends_with
+  // - contains
+  "conditions": [
+    {"property": "id", "operator": "equal", "value": 10},
+    {"property": "id", "operator": "in", "value": [10, 20, 30]}
+    {"property": "price", "operator": "between", "value": [10.0, 20.0]}
+  ],
+
+  "select": [
+    { "property": "title" }
+    { "property": "content",
+      "highlight": false,
+      "snippet": true,
+      "summary": false,
+      "summary_sentence_count": 3,
+      "summary_property_alias": "content.summary" }
+  ],
+
+  "sort": [
+    { "property": "title" },
+    { "property": "content", "order": "ASC"},
+    { "property": "_rank", "order": "DESC"}
+  ],
+
+  "limit": "20",
+  "offset": "0",
+  "remove_duplicated_result": true,
+}
