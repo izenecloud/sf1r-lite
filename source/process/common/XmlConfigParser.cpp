@@ -1490,7 +1490,7 @@ void CollectionConfig::parseProperty_Display( const ticpp::Element * display, Pr
 // 3.2.2 Indexing -------------------------------------
 void CollectionConfig::parseProperty_Indexing( const ticpp::Element * indexing, PropertyConfig & propertyConfig )
 {
-    string alias, analyzer, tokenizers, rankWeightTmp;
+    string alias, analyzer, tokenizers;
     bool bFilter = false;
     bool bMultiValue = false;
     bool bStoreDocLen = true;
@@ -1505,7 +1505,7 @@ void CollectionConfig::parseProperty_Indexing( const ticpp::Element * indexing, 
     getAttribute( indexing, "multivalue", bMultiValue, false );
     getAttribute( indexing, "doclen", bStoreDocLen, false );
     getAttribute( indexing, "tokenizer", tokenizers, false );
-    getAttribute( indexing, "rankweight", rankWeightTmp, false );
+    getAttribute_FloatType( indexing, "rankweight", rankWeight, false );
 
     downCase( analyzer );
     downCase( tokenizers );
@@ -1574,21 +1574,6 @@ void CollectionConfig::parseProperty_Indexing( const ticpp::Element * indexing, 
         }
     }
 
-    // save rankweight
-    //
-    if( !rankWeightTmp.empty() )
-    {
-        if( rankWeightTmp == "light" )
-            rankWeight = RANK_LIGHT;
-        else if( rankWeightTmp == "normal" )
-            rankWeight = RANK_NORMAL;
-        else if( rankWeightTmp == "heavy" )
-            rankWeight = RANK_HEAVY;
-        else if( rankWeightTmp == "max" )
-            rankWeight = RANK_MAX;
-        else
-            throw_TypeMismatch( indexing, "rankweight", rankWeightTmp );
-    }
 
     if( !validateID(alias) ) throw_TypeMismatch( indexing, "alias", alias, "Alphabets, Numbers, Dot(.), Dash(-) and Underscore(_)");
     // add alias name if any

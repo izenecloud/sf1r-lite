@@ -105,16 +105,7 @@
 			<xs:attribute name="filter" type="YesNoType" use="required"/>
 			<xs:attribute name="multivalue" type="YesNoType" use="optional"/>
 			<xs:attribute name="doclen" type="YesNoType" use="optional"/>
-			<xs:attribute name="rankweight" use="optional">
-				<xs:simpleType>
-					<xs:restriction base="xs:string">
-						<xs:enumeration value="light"/>
-						<xs:enumeration value="normal"/>
-						<xs:enumeration value="heavy"/>
-						<xs:enumeration value="max"/>
-					</xs:restriction>
-				</xs:simpleType>
-			</xs:attribute>
+			<xs:attribute name="rankweight" type="xs:float" use="optional"/>
 			<xs:attribute name="tokenizer" use="optional"/>
 		</xs:complexType>
 	</xs:element>

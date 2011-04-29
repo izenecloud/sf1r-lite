@@ -27,14 +27,14 @@
     <IndexBundle>
       <Schema>
         <Property name="Title">
-          <Indexing filter="no" multivalue="no" doclen="yes" analyzer="la_sia" tokenizer="" rankweight="heavy" />
+          <Indexing filter="no" multivalue="no" doclen="yes" analyzer="la_sia" tokenizer="" rankweight="0.8" />
         </Property>
 
         <Property name="Content">
           <Display length="160" snippet="yes" summary="no" >
             <settings summarynum="2"/>
           </Display>
-          <Indexing filter="no" multivalue="no" doclen="yes" analyzer="la_sia" tokenizer="tok_divide, tok_unite" rankweight="normal"/>
+          <Indexing filter="no" multivalue="no" doclen="yes" analyzer="la_sia" tokenizer="tok_divide, tok_unite" rankweight="0.2"/>
         </Property>
       </Schema>
     </IndexBundle>

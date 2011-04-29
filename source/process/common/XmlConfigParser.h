@@ -103,6 +103,23 @@ protected:
             bool throwIfNoAttribute = true ) const;
 
 
+    inline bool getAttribute_FloatType(
+                const ticpp::Element * ele,
+                const std::string & name,
+                float & val,
+                bool throwIfNoAttribute = true ) const
+        {
+            std::string temp;
+
+            if( !getAttribute( ele, name, temp, throwIfNoAttribute ) )
+                return false;
+
+            stringstream ss;
+            ss << temp;
+            ss >> val;
+
+            return true;
+        }
     /// @brief  Gets a integer type attribute. User can decide if the attribute is essential 
     /// with the attribute throwIfNoAttribute
     /// @param ele The element that holds the attribute
