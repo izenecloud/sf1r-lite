@@ -43,6 +43,16 @@ public:
         return keywords_;
     }
 
+    std::string& mutableUserID()
+    {
+        return userID_;
+    }
+
+    const std::string& userID() const
+    {
+        return userID_;
+    }
+
     std::string& mutableTaxonomyLabel()
     {
         return taxonomyLabel_;
@@ -107,6 +117,7 @@ private:
     const IndexBundleSchema& indexSchema_;
 
     std::string keywords_;
+    std::string userID_;
     std::string taxonomyLabel_;
     std::string nameEntityType_;
     std::string nameEntityItem_;

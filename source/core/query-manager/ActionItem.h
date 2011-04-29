@@ -180,6 +180,12 @@ class RequesterEnvironment
         std::string     queryString_;
 
         ///
+        /// @brief a user id. The user id is accompanied with the query string
+        ///          in a search request.
+        ///
+        std::string     userID_;
+
+        ///
         /// @brief a string value of selected taxonomy label. It is used
         ///        only in Label Click Query.
         ///

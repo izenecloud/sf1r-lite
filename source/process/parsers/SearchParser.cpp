@@ -63,6 +63,7 @@ using driver::Keys;
  * @code
  * {
  *   "keywords": "test",
+ *   "userID": "56",
  *   "in": [
  *     {"property": "title"},
  *     {"property": "content"}
@@ -87,6 +88,13 @@ bool SearchParser::parse(const Value& search)
     if (keywords_.empty())
     {
         error() = "Require keywords in search.";
+        return false;
+    }
+
+    userID_ = asString(search[Keys::userID]);
+    if ( userID_.empty() )
+    {
+        error() = "Require userID in search.";
         return false;
     }
 

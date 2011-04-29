@@ -447,6 +447,10 @@ bool DocumentsSearchHandler::parse()
         searchParser.mutableKeywords()
     );
     swap(
+        actionItem_.env_.userID_,
+        searchParser.mutableUserID()
+    );
+    swap(
         actionItem_.env_.taxonomyLabel_,
         searchParser.mutableTaxonomyLabel()
     );
