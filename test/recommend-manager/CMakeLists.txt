@@ -62,7 +62,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   SET_TARGET_PROPERTIES(t_UserManager PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
-  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_UserManager")
+  ADD_TEST(recommend-manager "${SF1RENGINE_ROOT}/testbin/t_UserManager")
 
   ADD_EXECUTABLE(t_ItemManager
     Runner.cpp
@@ -72,7 +72,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   SET_TARGET_PROPERTIES(t_ItemManager PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
-  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_ItemManager")
+  ADD_TEST(recommend-manager "${SF1RENGINE_ROOT}/testbin/t_ItemManager")
 
   ADD_EXECUTABLE(t_VisitManager
     Runner.cpp
@@ -82,7 +82,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   SET_TARGET_PROPERTIES(t_VisitManager PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
-  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_VisitManager")
+  ADD_TEST(recommend-manager "${SF1RENGINE_ROOT}/testbin/t_VisitManager")
 
   ADD_EXECUTABLE(t_PurchaseManager
     Runner.cpp
@@ -92,7 +92,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   SET_TARGET_PROPERTIES(t_PurchaseManager PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
-  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_PurchaseManager")
+  ADD_TEST(recommend-manager "${SF1RENGINE_ROOT}/testbin/t_PurchaseManager")
 
   ADD_EXECUTABLE(t_IDGenerator
     Runner.cpp
@@ -102,7 +102,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   SET_TARGET_PROPERTIES(t_IDGenerator PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
-  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_IDGenerator")
+  ADD_TEST(recommend-manager "${SF1RENGINE_ROOT}/testbin/t_IDGenerator")
 
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
 
