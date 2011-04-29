@@ -53,6 +53,12 @@ public:
         return currDoc;
     }
 	
+    /// score evaluated while iterating, for, e.g., used for query boosting.
+    virtual double score()
+    {
+        return 0;
+    }
+
     void setCurrent(bool current){ current_ = current; }
 	
     bool isCurrent(){ return current_; }

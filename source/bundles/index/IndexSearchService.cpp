@@ -70,8 +70,39 @@ bool IndexSearchService::getSearchResult(
         }
     }
 
+    // Get Personalized Search information (user profile)
+    PersonalSearchInfo personalSearchInfo;
+    personalSearchInfo.enabled = false;
+
+    User& user = personalSearchInfo.user;
+    //user.idStr_ = "user_001";  // TODO, from query request
+    if( recommendSearchService_ )
+    {
+        personalSearchInfo.enabled = recommendSearchService_->getUser(user.idStr_, user);
+
+#if 1
+        if (personalSearchInfo.enabled)
+        {
+            cout << "[ Got User profile by user id: " << user.idStr_ << endl;
+            User::PropValueMap::iterator iter;
+            for (iter = user.propValueMap_.begin(); iter != user.propValueMap_.end(); iter ++)
+            {
+                cout << "Item: "<< iter->first << " : " << iter->second << endl;
+            }
+        }
+        else
+        {
+            cout << "[ Failed to get User profile by user id: " << user.idStr_ << endl;
+        }
+#endif
+    }
+    else
+    {
+        // Recommend Search Service is not available, xxx
+    }
+
     std::vector<std::vector<izenelib::util::UString> > propertyQueryTermList;
-    if(!buildQuery(actionOperation, propertyQueryTermList, resultItem))
+    if(!buildQuery(actionOperation, propertyQueryTermList, resultItem, personalSearchInfo))
     {
         return false;
     }
@@ -99,7 +130,7 @@ bool IndexSearchService::getSearchResult(
             assembleConjunction(keywords, newQuery);
             actionOperation.actionItem_.env_.queryString_ = newQuery;
             propertyQueryTermList.clear();
-            if(!buildQuery(actionOperation, propertyQueryTermList, resultItem))
+            if(!buildQuery(actionOperation, propertyQueryTermList, resultItem, personalSearchInfo))
             {
                 return false;
             }
@@ -122,7 +153,7 @@ bool IndexSearchService::getSearchResult(
         //cout<<"new Query "<<newQuery<<endl;
         actionOperation.actionItem_.env_.queryString_ = newQuery;
         propertyQueryTermList.clear();
-        if(!buildQuery(actionOperation, propertyQueryTermList, resultItem))
+        if(!buildQuery(actionOperation, propertyQueryTermList, resultItem, personalSearchInfo))
         {
             return false;
         }
@@ -199,24 +230,6 @@ FinishSearch:
         miningSearchService_->getGroupRep(resultItem.topKDocs_, actionItem.groupPropertyList_, actionItem.env_.groupLabels_, resultItem.groupRep_);		
     }
 
-    if( recommendSearchService_ )
-    {
-        User user;
-        if (recommendSearchService_->getUser("user_001", user)) // XXX
-        {
-            cout << "Got User profile: user_001" << endl;
-            User::PropValueMap::iterator iter;
-            for (iter = user.propValueMap_.begin(); iter != user.propValueMap_.end(); iter ++)
-            {
-                cout << iter->first << " : " << iter->second << endl;
-            }
-        }
-        else
-        {
-            cout << "failed to get User profile: user_001 " << endl;
-        }
-    }
-
     return true;
 }
 
@@ -250,7 +263,8 @@ void IndexSearchService::analyze_(const std::string& qstr, std::vector<izenelib:
 bool IndexSearchService::buildQuery(
     SearchKeywordOperation& actionOperation,
     std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList,
-    KeywordSearchResult& resultItem
+    KeywordSearchResult& resultItem,
+    PersonalSearchInfo& personalSearchInfo
 )
 {
     CREATE_PROFILER ( buildQueryTree, "IndexSearchService", "processGetSearchResults: build query tree");
@@ -261,7 +275,7 @@ bool IndexSearchService::buildQuery(
 
     START_PROFILER ( buildQueryTree );
     std::string errorMessage;
-    bool buildSuccess = buildQueryTree(actionOperation, *bundleConfig_, resultItem.error_);
+    bool buildSuccess = buildQueryTree(actionOperation, *bundleConfig_, resultItem.error_, personalSearchInfo);
     STOP_PROFILER ( buildQueryTree );
 
     if (!buildSuccess)

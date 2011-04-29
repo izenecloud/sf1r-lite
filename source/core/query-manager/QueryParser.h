@@ -15,6 +15,7 @@
 #include "QMCommonFunc.h"
 
 #include <la-manager/LAManager.h>
+#include <search-manager/PersonalizedSearchInfo.h>
 #include <ir/id_manager/IDManager.h>
 
 #include <boost/spirit/include/classic_core.hpp>
@@ -174,7 +175,20 @@ namespace sf1r {
                     const AnalysisInfo& analysisInfo,
                     const izenelib::util::UString& rawUStr,
                     QueryTreePtr& analyzedQueryTree,
-                    bool unigramFlag);
+                    bool unigramFlag,
+                    PersonalSearchInfo& personalSearchInfo);
+
+            bool getAnalyzedQueryTree(
+                                bool synonymExtension,
+                                const AnalysisInfo& analysisInfo,
+                                const izenelib::util::UString& rawUStr,
+                                QueryTreePtr& analyzedQueryTree,
+                                bool unigramFlag)
+            {
+                PersonalSearchInfo personalSearchInfo;
+                personalSearchInfo.enabled = false;
+                getAnalyzedQueryTree(synonymExtension, analysisInfo, rawUStr, analyzedQueryTree, unigramFlag, personalSearchInfo);
+            }
 
         private:
 
@@ -194,6 +208,14 @@ namespace sf1r {
             bool extendTrieWildcardTree(QueryTreePtr& queryTree);
 
             ///
+            /// @brief extends query tree with personal search information
+            /// @param[queryTree] keyword query tree
+            /// @param[userTermList] user profile info
+            /// @return true if success, or false.
+            ///
+            bool extendPersonlSearchTree(QueryTreePtr& queryTree, std::vector<UString>& userTermList);
+
+            ///
             /// @brief extends keyword query tree by using language analysis.
             /// @param[queryTree] query tree which is the target of extension.
             /// @param[laInfo] language analysis information which is used to extend keyword.
@@ -201,7 +223,8 @@ namespace sf1r {
             ///
             bool recursiveQueryTreeExtension(
                     QueryTreePtr& queryTree, 
-                    const LAEXInfo& laInfo);
+                    const LAEXInfo& laInfo,
+                    PersonalSearchInfo& personalSearchInfo);
 
             static void initOnlyOnceCore();
 

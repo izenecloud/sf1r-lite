@@ -72,6 +72,12 @@ namespace sf1r {
             case QueryTree::OR:
                 ss << "OR       : ]" << endl;
                 break;
+            case QueryTree::PERSONAL_AND:
+                ss << "PERSONAL_AND      : ]" << endl;
+                break;
+            case QueryTree::PERSONAL_OR:
+                ss << "PERSONAL_OR       : ]" << endl;
+                break;
             case QueryTree::NOT:
                 ss << "NOT      : ]" << endl;
                 break;
