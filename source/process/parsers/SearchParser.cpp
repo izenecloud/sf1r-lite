@@ -91,12 +91,7 @@ bool SearchParser::parse(const Value& search)
         return false;
     }
 
-    userID_ = asString(search[Keys::userID]);
-    if ( userID_.empty() )
-    {
-        error() = "Require userID in search.";
-        return false;
-    }
+    userID_ = asString(search[Keys::USERID]);
 
     int labelCount = 0;
     if (search.hasKey(Keys::taxonomy_label))
