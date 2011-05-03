@@ -1,12 +1,19 @@
 #include "PurchaseManager.h"
+#include <common/JobScheduler.h>
 
 #include <glog/logging.h>
 
 namespace sf1r
 {
 
-PurchaseManager::PurchaseManager(const std::string& path)
+PurchaseManager::PurchaseManager(
+    const std::string& path,
+    JobScheduler* jobScheduler,
+    ItemCFManager* itemCFManager
+)
     : container_(path)
+    , jobScheduler_(jobScheduler)
+    , itemCFManager_(itemCFManager)
 {
     container_.open();
 }

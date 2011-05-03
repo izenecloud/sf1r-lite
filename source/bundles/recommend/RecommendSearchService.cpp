@@ -80,7 +80,7 @@ bool RecommendSearchService::recommend(
     const std::vector<std::string>& includeItemVec,
     const std::vector<std::string>& excludeItemVec,
     std::vector<Item>& recItemVec,
-    std::vector<double> recWeightVec
+    std::vector<double>& recWeightVec
 )
 {
     userid_t userId = 0;

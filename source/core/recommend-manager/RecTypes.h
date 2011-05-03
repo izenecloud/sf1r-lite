@@ -27,6 +27,8 @@
 #endif
 
 #include <ir/id_manager/IDGenerator.h>
+#include <idmlib/resys/ItemCoVisitation.h>
+#include <idmlib/resys/incremcf/IncrementalItemCF.h>
 
 #include <set>
 #include <string>
@@ -36,9 +38,6 @@ namespace sf1r
 
 typedef uint32_t userid_t;
 typedef uint32_t itemid_t;
-
-typedef std::set<itemid_t> ItemIdSet;
-typedef izenelib::ir::idmanager::UniqueIDGenerator<std::string, uint32_t, ReadWriteLock> RecIdGenerator;
 
 enum RecommendType
 {
@@ -50,6 +49,12 @@ enum RecommendType
     BASED_ON_SHOP_CART,
     RECOMMEND_TYPE_NUM
 };
+
+typedef std::set<itemid_t> ItemIdSet;
+typedef izenelib::ir::idmanager::UniqueIDGenerator<std::string, uint32_t, ReadWriteLock> RecIdGenerator;
+
+typedef idmlib::recommender::ItemCoVisitation<idmlib::recommender::CoVisitFreq> CoVisitManager;
+typedef idmlib::recommender::IncrementalItemCF ItemCFManager;
 
 } // namespace sf1r
 
