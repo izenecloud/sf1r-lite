@@ -18,11 +18,16 @@
 
 namespace sf1r
 {
+class JobScheduler;
 
 class PurchaseManager
 {
 public:
-    PurchaseManager(const std::string& path);
+    PurchaseManager(
+        const std::string& path,
+        JobScheduler* jobScheduler,
+        ItemCFManager* itemCFManager
+    );
 
     void flush();
 
@@ -67,6 +72,8 @@ public:
 
 private:
     SDBType container_;
+    JobScheduler* jobScheduler_;
+    ItemCFManager* itemCFManager_;
 };
 
 } // namespace sf1r

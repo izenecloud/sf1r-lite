@@ -15,27 +15,27 @@ INCLUDE_DIRECTORIES(
 # if a dpendes b, a must precede b
 SET(libs
 
-  #sf1r_query_manager
-  #sf1r_search_manager
-  #sf1r_ranking_manager
-  #sf1r_document_manager
-  #sf1r_mining_manager
-  #sf1r_directory_manager
+  sf1r_query_manager
+  sf1r_search_manager
+  sf1r_ranking_manager
+  sf1r_document_manager
+  sf1r_mining_manager
+  sf1r_directory_manager
 
-  #sf1r_log_manager
-  #sf1r_license_manager
-  #sf1r_la_manager
-  #sf1r_configuration_manager
-  #sf1r_index_manager
-  #sf1r_common
+  sf1r_log_manager
+  sf1r_license_manager
+  sf1r_la_manager
+  sf1r_configuration_manager
+  sf1r_index_manager
+  sf1r_common
   sf1r_recommend_manager
 
-  #${ilplib_LIBRARIES}
-  #${idmlib_LIBRARIES}
-  #${imllib_LIBRARIES}
-  #${wisekma_LIBRARIES}
-  #${izenecma_LIBRARIES}
-  #${iise_LIBRARIES}
+  ${ilplib_LIBRARIES}
+  ${idmlib_LIBRARIES}
+  ${imllib_LIBRARIES}
+  ${wisekma_LIBRARIES}
+  ${izenecma_LIBRARIES}
+  ${iise_LIBRARIES}
   ${izenelib_LIBRARIES}
 
   #external

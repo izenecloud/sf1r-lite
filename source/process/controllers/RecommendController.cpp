@@ -705,7 +705,9 @@ void RecommendController::purchase_item()
  *   - @b rec_type_id* (@c Uint): recommendation type, now 6 types are supported, each with the id below:
  *     - @b 0 (<b>Frequently Bought Together</b>): get the items frequently bought together with @b input_items in one order
  *     - @b 1 (<b>Bought Also Bought</b>): get the items also bought by the users who have bought @b input_items
- *     - @b 2 (<b>Viewed Also View</b>): get the items also viewed by the users who have viewed @b input_items
+ *     - @b 2 (<b>Viewed Also View</b>): get the items also viewed by the users who have viewed @b input_items,
+ *       in current version, it supports recommending items based on only one input item,
+ *       that is, only @b input_items[0] is used as input , and the rest items in @b input_items are ignored
  *     - @b 3 (<b>Based on Purchase History</b>): get the recommendation items based on the purchase history of user @b USERID
  *     - @b 4 (<b>Based on Browse History</b>): get the recommendation items based on the browse history of user @b USERID
  *     - @b 5 (<b>Based on Shopping Cart</b>): get the recommendation items based on the shopping cart of user @b USERID,
@@ -826,6 +828,7 @@ void RecommendController::do_recommend()
         if (recItemVec.size() != recWeightVec.size())
         {
             response().addError("Failed to get recommendation result from given collection (unequal size of item and weight array).");
+            return;
         }
 
         Value& resources = response()[Keys::resources];

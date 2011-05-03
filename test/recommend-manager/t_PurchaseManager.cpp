@@ -6,6 +6,7 @@
 
 #include <util/ustring/UString.h>
 #include <recommend-manager/PurchaseManager.h>
+#include <common/JobScheduler.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
@@ -27,6 +28,7 @@ namespace
 const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
 const char* TEST_DIR_STR = "recommend_test";
 const char* PURCHASE_DB_STR = "purchase.db";
+const char* CF_DIR_STR = "cf";
 }
 
 typedef map<userid_t, set<itemid_t> > PurchaseMap;
@@ -96,10 +98,18 @@ BOOST_AUTO_TEST_CASE(checkPurchase)
 
     PurchaseMap purchaseMap;
 
+    JobScheduler* jobScheduler = new JobScheduler();
+    bfs::path cfPath(bfs::path(TEST_DIR_STR) / CF_DIR_STR);
+    string cfPathStr = cfPath.string();
+    ItemCFManager* itemCFManager = new ItemCFManager(cfPathStr + "/covisit", 1000,
+                                                     cfPathStr + "/sim", 1000,
+                                                     cfPathStr + "/nb", 30,
+                                                     cfPathStr + "/rec", 1000);
+
     {
         BOOST_TEST_MESSAGE("add purchase...");
 
-        PurchaseManager purchaseManager(purchasePath.string());
+        PurchaseManager purchaseManager(purchasePath.string(), jobScheduler, itemCFManager);
         OrderItemVec orderItemVec;
 
         orderItemVec.push_back(OrderItem(20, 5, 13.5));
@@ -146,7 +156,7 @@ BOOST_AUTO_TEST_CASE(checkPurchase)
     {
         BOOST_TEST_MESSAGE("continue add purchase...");
 
-        PurchaseManager purchaseManager(purchasePath.string());
+        PurchaseManager purchaseManager(purchasePath.string(), jobScheduler, itemCFManager);
         checkPurchaseManager(purchaseMap, purchaseManager);
         iteratePurchaseManager(purchaseMap, purchaseManager);
 
@@ -172,6 +182,9 @@ BOOST_AUTO_TEST_CASE(checkPurchase)
 
         purchaseManager.flush();
     }
+
+    delete jobScheduler;
+    delete itemCFManager;
 }
 
 BOOST_AUTO_TEST_SUITE_END() 
