@@ -268,7 +268,8 @@ namespace sf1r
         const AnalysisInfo& analysisInfo,
         const izenelib::util::UString& rawUStr,
         QueryTreePtr& analyzedQueryTree,
-        bool unigramFlag
+        bool unigramFlag,
+        PersonalSearchInfo& personalSearchInfo
     )
     {
         QueryTreePtr tmpQueryTree;
@@ -276,7 +277,7 @@ namespace sf1r
 
         // Apply escaped operator.
         QueryParser::parseQuery( rawUStr, tmpQueryTree, unigramFlag );
-        bool ret = recursiveQueryTreeExtension( tmpQueryTree, laInfo );
+        bool ret = recursiveQueryTreeExtension( tmpQueryTree, laInfo , personalSearchInfo);
         if ( ret )
         {
             tmpQueryTree->postProcess();
@@ -345,7 +346,53 @@ namespace sf1r
         return true;
     } // end - extendWildcardTree
 
-    bool QueryParser::recursiveQueryTreeExtension(QueryTreePtr& queryTree, const LAEXInfo& laInfo)
+    bool QueryParser::extendPersonlSearchTree(QueryTreePtr& queryTree, std::vector<UString>& userTermList)
+    {
+        std::vector<UString>::iterator ustrIter;
+        QueryTreePtr extendChild;
+
+        switch ( queryTree->type_ )
+        {
+            case QueryTree::AND:
+            case QueryTree::OR:
+            {
+                if (queryTree->type_ == QueryTree::AND)
+                {
+                    extendChild.reset(new QueryTree(QueryTree::PERSONAL_AND));
+                }
+                else // QueryTree::OR
+                {
+                    extendChild.reset(new QueryTree(QueryTree::PERSONAL_OR));
+                }
+
+                ustrIter = userTermList.begin();
+                for ( ; ustrIter != userTermList.end(); ustrIter++)
+                {
+                    QueryTreePtr subChild( new QueryTree(QueryTree::KEYWORD) );
+                    if ( !setKeyword(subChild, *ustrIter) ) {
+                        string str;
+                        (*ustrIter).convertString(str, UString::UTF_8);
+                        cout << "[QueryParser::extendPersonlSearchTree] Failed to set keyword: " << str << endl;
+                        continue; // todo, apply LA
+                    }
+                    extendChild->insertChild( subChild );
+                }
+
+                queryTree->insertChild(extendChild);
+
+                break;
+            }
+            default:
+            {
+                cout << "[QueryParser::extendPersonlSearchTree] Error type of query tree." << endl;
+                return false;
+            }
+        }
+
+        return true;
+    } // end - extendPersonlSearchTree
+
+    bool QueryParser::recursiveQueryTreeExtension(QueryTreePtr& queryTree, const LAEXInfo& laInfo, PersonalSearchInfo& personalSearchInfo)
     {
         switch (queryTree->type_)
         {
@@ -365,6 +412,27 @@ namespace sf1r
             if (!QueryParser::parseQuery(analyzedUStr, tmpQueryTree, laInfo.unigramFlag_, false))
                 return false;
             queryTree = tmpQueryTree;
+
+            // Extend query tree for personalized search
+            if (personalSearchInfo.enabled)
+            {
+                cout << "[QueryParser] Extend query tree for personalized search " << endl;
+
+                User& user = personalSearchInfo.user;
+                for (User::PropValueMap::iterator iter = user.propValueMap_.begin();
+                        iter != user.propValueMap_.end(); iter ++)
+                {
+                    UString itemValue = iter->second; // apply LA ? xxx
+
+                    std::vector<UString> userTermList;
+                    userTermList.push_back(itemValue);
+
+                    if (!extendPersonlSearchTree(queryTree, userTermList)) {
+                        //return false;
+                    }
+                }
+            }
+
             break;
         }
         // Skip Language Analyzing
@@ -385,7 +453,7 @@ namespace sf1r
         default:
             for (QTIter iter = queryTree->children_.begin();
                     iter != queryTree->children_.end(); iter++)
-                recursiveQueryTreeExtension(*iter, laInfo);
+                recursiveQueryTreeExtension(*iter, laInfo, personalSearchInfo);
         } // end - switch(queryTree->type_)
         return true;
     } // end - recursiveQueryTreeExtension()

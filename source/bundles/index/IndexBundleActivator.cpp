@@ -49,6 +49,11 @@ void IndexBundleActivator::start( IBundleContext::ConstPtr context )
     searchTracker_->startTracking();
     taskTracker_ = new ServiceTracker( context, "MiningTaskService", this );
     taskTracker_->startTracking();
+
+    recommendSearchTracker_ = new ServiceTracker( context, "RecommendSearchService", this );
+    recommendSearchTracker_->startTracking();
+    recommendTaskTracker_ = new ServiceTracker( context, "RecommendTaskService", this );
+    recommendTaskTracker_->startTracking();
 }
 
 void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
@@ -65,6 +70,20 @@ void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
         delete taskTracker_;
         taskTracker_ = 0;
     }
+
+    if(recommendSearchTracker_)
+    {
+        recommendSearchTracker_->stopTracking();
+        delete recommendSearchTracker_;
+        recommendSearchTracker_ = 0;
+    }
+    if(recommendTaskTracker_)
+    {
+        recommendTaskTracker_->stopTracking();
+        delete recommendTaskTracker_;
+        recommendTaskTracker_ = 0;
+    }
+
     if(searchServiceReg_)
     {
         searchServiceReg_->unregister();
@@ -73,7 +92,6 @@ void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
         searchServiceReg_ = 0;
         searchService_ = 0;
     }
-
     if(taskServiceReg_)
     {
         taskServiceReg_->unregister();
@@ -109,6 +127,36 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
             MiningTaskService* service = reinterpret_cast<MiningTaskService*> ( const_cast<IService*>(ref.getService()) );
             cout << "[IndexBundleActivator#addingService] Calling MiningTaskService..." << endl;
             taskService_->miningTaskService_= service;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    if ( ref.getServiceName() == "RecommendSearchService" )
+    {
+        Properties props = ref.getServiceProperties();
+        if ( props.get( "collection" ) == config_->collectionName_)
+        {
+            RecommendSearchService* service = reinterpret_cast<RecommendSearchService*> ( const_cast<IService*>(ref.getService()) );
+            cout << "[IndexBundleActivator#addingService] Calling RecommendSearchService..." << endl;
+            searchService_->recommendSearchService_ = service;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else if ( ref.getServiceName() == "RecommendTaskService" )
+    {
+        Properties props = ref.getServiceProperties();
+        if ( props.get( "collection" ) == config_->collectionName_)
+        {
+            RecommendTaskService* service = reinterpret_cast<RecommendTaskService*> ( const_cast<IService*>(ref.getService()) );
+            cout << "[IndexBundleActivator#addingService] Calling RecommendTaskService..." << endl;
+            taskService_->recommendTaskService_= service;
             return true;
         }
         else

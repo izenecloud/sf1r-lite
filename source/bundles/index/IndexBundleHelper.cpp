@@ -32,7 +32,7 @@ void assembleDisjunction(std::vector<izenelib::util::UString> keywords, std::str
     }
 }
 
-bool buildQueryTree(SearchKeywordOperation&action, IndexBundleConfiguration& bundleConfig, std::string& btqError)
+bool buildQueryTree(SearchKeywordOperation&action, IndexBundleConfiguration& bundleConfig, std::string& btqError,  PersonalSearchInfo& personalSearchInfo)
 {
     action.clear();
     KeywordSearchActionItem actionItem = action.actionItem_;
@@ -66,7 +66,7 @@ bool buildQueryTree(SearchKeywordOperation&action, IndexBundleConfiguration& bun
 
             if ( !action.queryParser_.getAnalyzedQueryTree(
                         action.actionItem_.languageAnalyzerInfo_.synonymExtension_,
-                        analysisInfo, queryUStr, tmpQueryTree, action.unigramFlag_ ))
+                        analysisInfo, queryUStr, tmpQueryTree, action.unigramFlag_, personalSearchInfo))
                 return false;
         } // end - if
         else // store raw query's info into it.

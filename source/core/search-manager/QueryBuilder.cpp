@@ -8,6 +8,7 @@
 #include "ExactPhraseDocumentIterator.h"
 #include "OrderedPhraseDocumentIterator.h"
 #include "NearbyPhraseDocumentIterator.h"
+#include "PersonalSearchDocumentIterator.h"
 #include "FilterCache.h"
 
 #include <ir/index_manager/utility/BitVector.h>
@@ -514,6 +515,76 @@ namespace sf1r
                 delete pIterator;
             break;
         } // end - QueryTree::OR
+        case QueryTree::PERSONAL_AND:
+        {
+#ifdef VERBOSE_SERACH_MANAGER
+            cout<<"AND personal query "<<property<<endl;
+#endif
+            DocumentIterator* pIterator = new PersonalSearchDocumentIterator(true);
+            bool ret = false;
+            for (QTIter andChildIter = queryTree->children_.begin();
+                    andChildIter != queryTree->children_.end(); ++andChildIter)
+            {
+                ret = do_prepare_for_property_(
+                          *andChildIter,
+                          colID,
+                          property,
+                          propertyId,
+                          readPositions,
+                          termIndexMapInProperty,
+                          pIterator,
+                          termDocReaders
+                      );
+                if (!ret)
+                {
+                    delete pIterator;
+                    return false;
+                }
+            }
+            if (! static_cast<PersonalSearchDocumentIterator*>(pIterator)->empty())
+                if (NULL == pDocIterator)
+                    pDocIterator = pIterator;
+                else
+                    pDocIterator->add(pIterator);
+            else
+                delete pIterator;
+            break;
+        }
+        case QueryTree::PERSONAL_OR:
+        {
+#ifdef VERBOSE_SERACH_MANAGER
+            cout<<"OR personal query "<<property<<endl;
+#endif
+            DocumentIterator* pIterator = new PersonalSearchDocumentIterator(false);
+            bool ret = false;
+            for (QTIter orChildIter = queryTree->children_.begin();
+                    orChildIter != queryTree->children_.end(); ++orChildIter)
+            {
+                ret |= do_prepare_for_property_(
+                           *orChildIter,
+                           colID,
+                           property,
+                           propertyId,
+                           readPositions,
+                           termIndexMapInProperty,
+                           pIterator,
+                           termDocReaders
+                       );
+            }
+            if (!ret)
+            {
+                delete pIterator;
+                return false;
+            }
+            if (! static_cast<PersonalSearchDocumentIterator*>(pIterator)->empty())
+                if (NULL == pDocIterator)
+                    pDocIterator = pIterator;
+                else
+                    pDocIterator->add(pIterator);
+            else
+                delete pIterator;
+            break;
+        }
         case QueryTree::EXACT:
         {
 #ifdef VERBOSE_SERACH_MANAGER

@@ -8,6 +8,7 @@
 #include <common/Status.h>
 
 #include <search-manager/SearchManager.h>
+#include <search-manager/PersonalizedSearchInfo.h>
 #include <ranking-manager/RankingManager.h>
 #include <query-manager/ActionItem.h>
 #include <index-manager/IndexManager.h>
@@ -24,6 +25,8 @@
 namespace sf1r
 {
 class MiningSearchService;
+class RecommendSearchService;
+class User;
 class IndexSearchService : public ::izenelib::osgi::IService
 {
 public:
@@ -44,7 +47,8 @@ private:
     bool buildQuery(
         SearchKeywordOperation& actionOperation,
         std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList,
-        KeywordSearchResult& resultItem
+        KeywordSearchResult& resultItem,
+        PersonalSearchInfo& personalSearchInfo
     );
 
     void analyze_(const std::string& qstr, std::vector<izenelib::util::UString>& results);
@@ -60,6 +64,7 @@ private:
 private:
     IndexBundleConfiguration* bundleConfig_;
     MiningSearchService* miningSearchService_;
+    RecommendSearchService* recommendSearchService_;
     boost::shared_ptr<LAManager> laManager_;
     boost::shared_ptr<IDManager> idManager_;
     boost::shared_ptr<DocumentManager> documentManager_;

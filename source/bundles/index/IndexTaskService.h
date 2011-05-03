@@ -29,6 +29,7 @@ namespace sf1r
 using izenelib::ir::idmanager::IDManager;
 
 class MiningTaskService;
+class RecommendTaskService;
 class IndexTaskService : public ::izenelib::osgi::IService
 {
     typedef uint32_t CharacterOffset;
@@ -78,6 +79,7 @@ private:
     IndexBundleConfiguration* bundleConfig_;
     DirectoryRotator& directoryRotator_;
     MiningTaskService* miningTaskService_;
+    RecommendTaskService* recommendTaskService_;
 
     PropertyConfig dateProperty_;
     config_tool::PROPERTY_ALIAS_MAP_T propertyAliasMap_;
