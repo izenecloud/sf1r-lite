@@ -2,13 +2,29 @@
 
 #include <glog/logging.h>
 
+#include <fstream>
+#include <boost/thread/locks.hpp>
+
 namespace sf1r
 {
 
-ItemManager::ItemManager(const std::string& path)
+ItemManager::ItemManager(const std::string& path, const std::string& maxIdPath)
     : container_(path)
+    , maxItemId_(0)
+    , maxIdPath_(maxIdPath)
 {
     container_.open();
+
+    std::ifstream ifs(maxIdPath_.c_str());
+    if (ifs)
+    {
+        ifs >> maxItemId_;
+    }
+}
+
+ItemManager::~ItemManager()
+{
+    flush();
 }
 
 void ItemManager::flush()
@@ -21,6 +37,16 @@ void ItemManager::flush()
     {
         LOG(ERROR) << "exception in SDB::flush(): " << e.what();
     }
+
+    std::ofstream ofs(maxIdPath_.c_str());
+    if (ofs)
+    {
+        ofs << maxItemId_;
+    }
+    else
+    {
+        LOG(ERROR) << "failed to write file " << maxIdPath_;
+    }
 }
 
 bool ItemManager::addItem(itemid_t itemId, const Item& item)
@@ -29,6 +55,15 @@ bool ItemManager::addItem(itemid_t itemId, const Item& item)
     try
     {
         result = container_.insertValue(itemId, item);
+
+        if (result)
+        {
+            boost::mutex::scoped_lock lock(maxIdMutex_);
+            if (itemId > maxItemId_)
+            {
+                maxItemId_ = itemId;
+            }
+        }
     }
     catch(izenelib::util::IZENELIBException& e)
     {

@@ -7,7 +7,7 @@
 #ifndef ITEM_FILTER_H
 #define ITEM_FILTER_H
 
-#include <idmlib//resys/ItemRescorer.h>
+#include <idmlib/resys/ItemRescorer.h>
 #include "RecTypes.h"
 #include "ItemManager.h"
 

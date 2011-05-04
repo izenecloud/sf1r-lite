@@ -107,12 +107,14 @@ bool RecommendBundleActivator::init_()
     auto_ptr<UserManager> userManagerPtr(new UserManager(userPath));
 
     std::string itemPath = dir + "item.db";
-    auto_ptr<ItemManager> itemManagerPtr(new ItemManager(itemPath));
+    std::string maxIdPath = dir + "max_itemid.txt";
+    auto_ptr<ItemManager> itemManagerPtr(new ItemManager(itemPath, maxIdPath));
 
     std::string covisitPath = dir + "covisit";
     auto_ptr<CoVisitManager> coVisitManagerPtr(new CoVisitManager(covisitPath));
 
     std::string cfPath = dir + "cf";
+    boost::filesystem::create_directories(cfPath);
     auto_ptr<ItemCFManager> itemCFManagerPtr(new ItemCFManager(cfPath + "/covisit", 1000,
                                                                cfPath + "/sim", 1000,
                                                                cfPath + "/nb", 30,
@@ -122,7 +124,7 @@ bool RecommendBundleActivator::init_()
     auto_ptr<VisitManager> visitManagerPtr(new VisitManager(visitPath, jobScheduler_, coVisitManagerPtr.get()));
 
     std::string purchasePath = dir + "purchase.db";
-    auto_ptr<PurchaseManager> purchaseManagerPtr(new PurchaseManager(purchasePath, jobScheduler_, itemCFManagerPtr.get()));
+    auto_ptr<PurchaseManager> purchaseManagerPtr(new PurchaseManager(purchasePath, jobScheduler_, itemCFManagerPtr.get(), itemManagerPtr.get()));
 
     auto_ptr<RecommendManager> recommendManagerPtr(new RecommendManager(itemManagerPtr.get(), coVisitManagerPtr.get(), itemCFManagerPtr.get()));
 

@@ -1,7 +1,55 @@
 #include "PurchaseManager.h"
+#include "ItemManager.h"
+#include "ItemIterator.h"
 #include <common/JobScheduler.h>
 
 #include <glog/logging.h>
+
+namespace
+{
+
+class CFTask
+{
+public:
+    CFTask(
+        sf1r::ItemCFManager* itemCFManager,
+        sf1r::userid_t userId,
+        sf1r::itemid_t maxItemId,
+        std::list<sf1r::itemid_t>& oldItems,
+        std::list<sf1r::itemid_t>& newItems
+    )
+    : itemCFManager_(itemCFManager)
+    , userId_(userId)
+    , maxItemId_(maxItemId)
+    {
+        oldItems_.swap(oldItems);
+        newItems_.swap(newItems);
+    }
+
+    CFTask(const CFTask& cfTask)
+    : itemCFManager_(cfTask.itemCFManager_)
+    , userId_(cfTask.userId_)
+    , maxItemId_(cfTask.maxItemId_)
+    {
+        oldItems_.swap(cfTask.oldItems_);
+        newItems_.swap(cfTask.newItems_);
+    }
+
+    void purchase()
+    {
+        sf1r::ItemIterator itemIterator(1, maxItemId_);
+        itemCFManager_->incrementalBuild(userId_, oldItems_, newItems_, itemIterator);
+    }
+
+private:
+    sf1r::ItemCFManager* itemCFManager_;
+    sf1r::userid_t userId_;
+    sf1r::itemid_t maxItemId_;
+    mutable std::list<sf1r::itemid_t> oldItems_;
+    mutable std::list<sf1r::itemid_t> newItems_;
+};
+
+}
 
 namespace sf1r
 {
@@ -9,11 +57,13 @@ namespace sf1r
 PurchaseManager::PurchaseManager(
     const std::string& path,
     JobScheduler* jobScheduler,
-    ItemCFManager* itemCFManager
+    ItemCFManager* itemCFManager,
+    const ItemManager* itemManager
 )
     : container_(path)
     , jobScheduler_(jobScheduler)
     , itemCFManager_(itemCFManager)
+    , itemManager_(itemManager)
 {
     container_.open();
 }
@@ -39,15 +89,21 @@ bool PurchaseManager::addPurchaseItem(
     ItemIdSet itemIdSet;
     container_.getValue(userId, itemIdSet);
 
-    const std::size_t oldNum = itemIdSet.size();
+    std::list<sf1r::itemid_t> oldItems(itemIdSet.begin(), itemIdSet.end());
+    std::list<sf1r::itemid_t> newItems;
+
     for (OrderItemVec::const_iterator it = orderItemVec.begin();
         it != orderItemVec.end(); ++it)
     {
-        itemIdSet.insert(it->itemId_);
+        std::pair<ItemIdSet::iterator, bool> res = itemIdSet.insert(it->itemId_);
+        if (res.second)
+        {
+            newItems.push_back(it->itemId_);
+        }
     }
 
     // not purchased yet
-    if (itemIdSet.size() > oldNum)
+    if (! newItems.empty())
     {
         bool result = false;
         try
@@ -57,6 +113,12 @@ bool PurchaseManager::addPurchaseItem(
         catch(izenelib::util::IZENELIBException& e)
         {
             LOG(ERROR) << "exception in SDB::update(): " << e.what();
+        }
+
+        if (result)
+        {
+            CFTask task(itemCFManager_, userId, itemManager_->maxItemId(), oldItems, newItems);
+            jobScheduler_->addTask(boost::bind(&CFTask::purchase, task));
         }
 
         return result;
