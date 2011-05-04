@@ -6,6 +6,7 @@
 
 #include <util/ustring/UString.h>
 #include <recommend-manager/PurchaseManager.h>
+#include <recommend-manager/ItemManager.h>
 #include <common/JobScheduler.h>
 
 #include <boost/test/unit_test.hpp>
@@ -29,6 +30,8 @@ const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UStr
 const char* TEST_DIR_STR = "recommend_test";
 const char* PURCHASE_DB_STR = "purchase.db";
 const char* CF_DIR_STR = "cf";
+const char* ITEM_DB_STR = "item.db";
+const char* MAX_ID_STR = "max_itemid.txt";
 }
 
 typedef map<userid_t, set<itemid_t> > PurchaseMap;
@@ -94,6 +97,12 @@ BOOST_AUTO_TEST_CASE(checkPurchase)
 {
     bfs::path purchasePath(bfs::path(TEST_DIR_STR) / PURCHASE_DB_STR);
     boost::filesystem::remove(purchasePath);
+
+    bfs::path itemPath(bfs::path(TEST_DIR_STR) / ITEM_DB_STR);
+    bfs::path maxIdPath(bfs::path(TEST_DIR_STR) / MAX_ID_STR);
+    boost::filesystem::remove(itemPath);
+    boost::filesystem::remove(maxIdPath);
+
     bfs::create_directories(TEST_DIR_STR);
 
     PurchaseMap purchaseMap;
@@ -101,15 +110,24 @@ BOOST_AUTO_TEST_CASE(checkPurchase)
     JobScheduler* jobScheduler = new JobScheduler();
     bfs::path cfPath(bfs::path(TEST_DIR_STR) / CF_DIR_STR);
     string cfPathStr = cfPath.string();
+    bfs::create_directories(cfPath);
     ItemCFManager* itemCFManager = new ItemCFManager(cfPathStr + "/covisit", 1000,
                                                      cfPathStr + "/sim", 1000,
                                                      cfPathStr + "/nb", 30,
                                                      cfPathStr + "/rec", 1000);
 
+    // add items first
+    ItemManager* itemManager = new ItemManager(itemPath.string(), maxIdPath.string());
+    const itemid_t MAX_ITEM_ID = 50;
+    for (itemid_t i = 1; i <= MAX_ITEM_ID; ++i)
+    {
+        BOOST_CHECK(itemManager->addItem(i, Item()));
+    }
+
     {
         BOOST_TEST_MESSAGE("add purchase...");
 
-        PurchaseManager purchaseManager(purchasePath.string(), jobScheduler, itemCFManager);
+        PurchaseManager purchaseManager(purchasePath.string(), jobScheduler, itemCFManager, itemManager);
         OrderItemVec orderItemVec;
 
         orderItemVec.push_back(OrderItem(20, 5, 13.5));
@@ -156,7 +174,7 @@ BOOST_AUTO_TEST_CASE(checkPurchase)
     {
         BOOST_TEST_MESSAGE("continue add purchase...");
 
-        PurchaseManager purchaseManager(purchasePath.string(), jobScheduler, itemCFManager);
+        PurchaseManager purchaseManager(purchasePath.string(), jobScheduler, itemCFManager, itemManager);
         checkPurchaseManager(purchaseMap, purchaseManager);
         iteratePurchaseManager(purchaseMap, purchaseManager);
 
@@ -185,6 +203,7 @@ BOOST_AUTO_TEST_CASE(checkPurchase)
 
     delete jobScheduler;
     delete itemCFManager;
+    delete itemManager;
 }
 
 BOOST_AUTO_TEST_SUITE_END() 

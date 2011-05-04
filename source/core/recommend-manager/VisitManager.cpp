@@ -98,8 +98,11 @@ bool VisitManager::addVisitItem(userid_t userId, itemid_t itemId)
             LOG(ERROR) << "exception in SDB::update(): " << e.what();
         }
 
-        CoVisitTask task(coVisitManager_, itemIdSet, itemId);
-        jobScheduler_->addTask(boost::bind(&CoVisitTask::visit, task));
+        if (result)
+        {
+            CoVisitTask task(coVisitManager_, itemIdSet, itemId);
+            jobScheduler_->addTask(boost::bind(&CoVisitTask::visit, task));
+        }
 
         return result;
     }
