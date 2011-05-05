@@ -117,7 +117,7 @@ bool RecommendBundleActivator::init_()
     boost::filesystem::create_directories(cfPath);
     auto_ptr<ItemCFManager> itemCFManagerPtr(new ItemCFManager(cfPath + "/covisit", 1000,
                                                                cfPath + "/sim", 1000,
-                                                               cfPath + "/nb", 30,
+                                                               cfPath + "/nb.sdb", 30,
                                                                cfPath + "/rec", 1000));
 
     std::string visitPath = dir + "visit.db";
@@ -126,7 +126,7 @@ bool RecommendBundleActivator::init_()
     std::string purchasePath = dir + "purchase.db";
     auto_ptr<PurchaseManager> purchaseManagerPtr(new PurchaseManager(purchasePath, jobScheduler_, itemCFManagerPtr.get(), itemManagerPtr.get()));
 
-    auto_ptr<RecommendManager> recommendManagerPtr(new RecommendManager(itemManagerPtr.get(), coVisitManagerPtr.get(), itemCFManagerPtr.get()));
+    auto_ptr<RecommendManager> recommendManagerPtr(new RecommendManager(itemManagerPtr.get(), visitManagerPtr.get(), coVisitManagerPtr.get(), itemCFManagerPtr.get()));
 
     std::string userIdPath = dir + "userid";
     auto_ptr<RecIdGenerator> userIdGeneratorPtr(new RecIdGenerator(userIdPath));
