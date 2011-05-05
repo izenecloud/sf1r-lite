@@ -3,6 +3,7 @@
 #include <search-manager/ANDDocumentIterator.h>
 #include <search-manager/TermDocumentIterator.h>
 
+#include <boost/filesystem.hpp>
 #include <glog/logging.h>
 
 namespace sf1r
@@ -12,6 +13,7 @@ ItemIndex::ItemIndex(const std::string& path)
         : property_("content")
         , propertyId_(1)
 {
+    boost::filesystem::create_directories(boost::filesystem::path(path));
     indexer_.reset(new iii::Indexer);
     iii::IndexManagerConfig indexManagerConfig;
     indexManagerConfig.indexStrategy_.indexLocation_ = path;
@@ -135,6 +137,38 @@ bool ItemIndex::get(std::list<uint32_t>& itemIds, std::list<ItemIndexDocIDType>&
     }
 
     return true;
+}
+
+uint32_t ItemIndex::get(std::list<uint32_t>& itemIds)
+{
+    iii::IndexReader* pIndexReader = indexer_->getIndexReader();
+
+    ANDDocumentIterator* pAndDocIterator = new ANDDocumentIterator();
+
+    for (std::list<uint32_t>::iterator p = itemIds.begin(); p != itemIds.end(); p++)
+    {
+        TermDocumentIterator* pTermDocIterator =
+            new TermDocumentIterator(
+            (*p),
+            1,
+            pIndexReader,
+            property_,
+            propertyId_,
+            1,
+            false);
+        if (pTermDocIterator->accept())
+        {
+            pAndDocIterator->add(pTermDocIterator);
+        }
+    }
+
+    if(pAndDocIterator->empty()) return 0;
+
+    uint32_t count = 0;
+    while(pAndDocIterator->next())
+        ++count;
+
+    return count;
 }
 
 } // namespace sf1r

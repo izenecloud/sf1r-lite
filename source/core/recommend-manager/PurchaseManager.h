@@ -8,6 +8,7 @@
 #define PURCHASE_MANAGER_H
 
 #include "RecTypes.h"
+#include "OrderManager.h"
 #include <sdb/SequentialDB.h>
 #include <sdb/SDBCursorIterator.h>
 
@@ -30,6 +31,8 @@ public:
         ItemCFManager* itemCFManager,
         const ItemManager* itemManager
     );
+
+    ~PurchaseManager();
 
     void flush();
 
@@ -74,9 +77,13 @@ public:
 
 private:
     SDBType container_;
+    std::string orderManagerPath_;
+    OrderManager orderManager_;
     JobScheduler* jobScheduler_;
     ItemCFManager* itemCFManager_;
     const ItemManager* itemManager_;
+    std::string orderIdPath_;
+    orderid_t orderId_;
 };
 
 } // namespace sf1r

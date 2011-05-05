@@ -3,6 +3,8 @@
 #include "ItemIterator.h"
 #include <common/JobScheduler.h>
 
+#include <boost/filesystem.hpp>
+#include <fstream>
 #include <glog/logging.h>
 
 namespace
@@ -13,14 +15,18 @@ class CFTask
 public:
     CFTask(
         sf1r::ItemCFManager* itemCFManager,
+        sf1r::OrderManager& orderManager,
         sf1r::userid_t userId,
         sf1r::itemid_t maxItemId,
+        sf1r::orderid_t orderId,
         std::list<sf1r::itemid_t>& oldItems,
         std::list<sf1r::itemid_t>& newItems
     )
     : itemCFManager_(itemCFManager)
+    , orderManager_(orderManager)
     , userId_(userId)
     , maxItemId_(maxItemId)
+    , orderId_(orderId)
     {
         oldItems_.swap(oldItems);
         newItems_.swap(newItems);
@@ -28,6 +34,7 @@ public:
 
     CFTask(const CFTask& cfTask)
     : itemCFManager_(cfTask.itemCFManager_)
+    , orderManager_(cfTask.orderManager_)
     , userId_(cfTask.userId_)
     , maxItemId_(cfTask.maxItemId_)
     {
@@ -39,12 +46,15 @@ public:
     {
         sf1r::ItemIterator itemIterator(1, maxItemId_);
         itemCFManager_->incrementalBuild(userId_, oldItems_, newItems_, itemIterator);
+        orderManager_.addOrder(orderId_, newItems_);
     }
 
 private:
     sf1r::ItemCFManager* itemCFManager_;
+    sf1r::OrderManager& orderManager_;
     sf1r::userid_t userId_;
     sf1r::itemid_t maxItemId_;
+    sf1r::orderid_t orderId_;
     mutable std::list<sf1r::itemid_t> oldItems_;
     mutable std::list<sf1r::itemid_t> newItems_;
 };
@@ -61,11 +71,25 @@ PurchaseManager::PurchaseManager(
     const ItemManager* itemManager
 )
     : container_(path)
+    , orderManagerPath_(boost::filesystem::path(boost::filesystem::path(path).parent_path()/"order").string())
+    , orderManager_(orderManagerPath_)
     , jobScheduler_(jobScheduler)
     , itemCFManager_(itemCFManager)
     , itemManager_(itemManager)
+    , orderIdPath_(boost::filesystem::path(boost::filesystem::path(orderManagerPath_)/"orderId.txt").string())
 {
     container_.open();
+    std::ifstream ifs(orderIdPath_.c_str());
+    if (ifs)
+    {
+        ifs >> orderId_;
+    }
+
+}
+
+PurchaseManager::~PurchaseManager()
+{
+    flush();
 }
 
 void PurchaseManager::flush()
@@ -77,6 +101,16 @@ void PurchaseManager::flush()
     catch(izenelib::util::IZENELIBException& e)
     {
         LOG(ERROR) << "exception in SDB::flush(): " << e.what();
+    }
+
+    std::ofstream ofs(orderIdPath_.c_str());
+    if (ofs)
+    {
+        ofs << orderId_;
+    }
+    else
+    {
+        LOG(ERROR) << "failed to write file " << orderIdPath_;
     }
 }
 
@@ -117,7 +151,7 @@ bool PurchaseManager::addPurchaseItem(
 
         if (result)
         {
-            CFTask task(itemCFManager_, userId, itemManager_->maxItemId(), oldItems, newItems);
+            CFTask task(itemCFManager_, orderManager_, userId, itemManager_->maxItemId(), ++orderId_, oldItems, newItems);
             jobScheduler_->addTask(boost::bind(&CFTask::purchase, task));
         }
 

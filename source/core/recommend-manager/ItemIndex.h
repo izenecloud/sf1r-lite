@@ -24,7 +24,7 @@ namespace sf1r
 
 namespace iii = izenelib::ir::indexmanager;
 typedef uint32_t ItemIndexDocIDType;
-typedef std::vector<uint32_t> DataVectorType;
+typedef std::list<uint32_t> DataVectorType;
 
 class ItemIndex
 {
@@ -42,6 +42,8 @@ public:
     bool del(ItemIndexDocIDType docId);
 
     bool get(std::list<uint32_t>& itemIds, std::list<ItemIndexDocIDType>& docs);
+
+    uint32_t get(std::list<uint32_t>& itemIds);
 
 private:
     inline static uint32_t kStartFieldId()
