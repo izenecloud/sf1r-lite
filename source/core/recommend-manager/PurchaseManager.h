@@ -60,6 +60,13 @@ public:
         const std::string& orderIdStr
     );
 
+    /**
+     * Get @p itemIdSet purchased by @p userId.
+     * @param userId user id
+     * @param itemidSet item id set purchased by @p userId, it would be empty if @p userId
+     *                  has not purchased any item.
+     * @return true for success, false for error happened.
+     */
     bool getPurchaseItemSet(userid_t userId, ItemIdSet& itemIdSet);
 
     /**

@@ -14,12 +14,14 @@
 namespace sf1r
 {
 class ItemManager;
+class VisitManager;
 
 class RecommendManager
 {
 public:
     RecommendManager(
         ItemManager* itemManager,
+        VisitManager* visitManager,
         CoVisitManager* coVisitManager,
         ItemCFManager* itemCFManager
     );
@@ -38,6 +40,7 @@ public:
 
 private:
     ItemManager* itemManager_;
+    VisitManager* visitManager_;
     CoVisitManager* coVisitManager_;
     ItemCFManager* itemCFManager_;
 };

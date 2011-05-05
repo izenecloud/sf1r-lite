@@ -1,5 +1,6 @@
 #include "RecommendManager.h"
 #include "ItemManager.h"
+#include "VisitManager.h"
 #include <recommend-manager/ItemFilter.h>
 
 #include <glog/logging.h>
@@ -8,10 +9,12 @@ namespace sf1r
 {
 RecommendManager::RecommendManager(
     ItemManager* itemManager,
+    VisitManager* visitManager,
     CoVisitManager* coVisitManager,
     ItemCFManager* itemCFManager
 )
     : itemManager_(itemManager)
+    , visitManager_(visitManager)
     , coVisitManager_(coVisitManager)
     , itemCFManager_(itemCFManager)
 {
@@ -47,11 +50,39 @@ bool RecommendManager::recommend(
     maxRecNum -= includeNum;
 
     // filter both include and exclude items
-    std::vector<itemid_t> filterItemVec(includeItemVec);
-    filterItemVec.insert(filterItemVec.end(), excludeItemVec.begin(), excludeItemVec.end());
-    ItemFilter filter(itemManager_, filterItemVec);
+    ItemFilter filter(itemManager_);
+    filter.insert(includeItemVec.begin(), includeItemVec.end());
+    filter.insert(excludeItemVec.begin(), excludeItemVec.end());
 
     typedef std::list<idmlib::recommender::RecommendedItem> RecItemList;
+
+    if (type == BASED_ON_BROWSE_HISTORY || type == BASED_ON_SHOP_CART)
+    {
+        if (userId == 0)
+        {
+            // for code reuse
+            type = BUY_ALSO_BUY;
+        }
+        else
+        {
+            filter.insert(inputItemVec.begin(), inputItemVec.end());
+
+            if (type == BASED_ON_BROWSE_HISTORY)
+            {
+                // filter items in browse history
+                ItemIdSet itemIdSet;
+                if (!visitManager_->getVisitItemSet(userId, itemIdSet))
+                {
+                    LOG(ERROR) << "failed to get visited items for user id " << userId;
+                    return false;
+                }
+                filter.insert(itemIdSet.begin(), itemIdSet.end());
+            }
+
+            // for code reuse
+            type = BASED_ON_PURCHASE_HISTORY;
+        }
+    }
 
     if (type == VIEW_ALSO_VIEW)
     {

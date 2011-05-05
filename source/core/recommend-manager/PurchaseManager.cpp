@@ -133,7 +133,9 @@ bool PurchaseManager::getPurchaseItemSet(userid_t userId, ItemIdSet& itemIdSet)
     bool result = false;
     try
     {
-        result = container_.getValue(userId, itemIdSet);
+        itemIdSet.clear();
+        container_.getValue(userId, itemIdSet);
+        result = true;
     }
     catch(izenelib::util::IZENELIBException& e)
     {
