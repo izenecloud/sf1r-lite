@@ -32,7 +32,9 @@ double MultiPropertyScorer::score(
                     rankQueryProperties[i],
                     rankDocumentProperty_
                 );
-                //STOP_PROFILER ( compute_score )				
+                //STOP_PROFILER ( compute_score )
+
+                //pEntry->queryBoosting(score, weight); ///xxx
             }
         }
     }
@@ -45,3 +47,17 @@ double MultiPropertyScorer::score(
     return score;
 }
 
+void MultiPropertyScorer::print(int level)
+{
+    cout << std::string(level*4, ' ') << "|--[ "<< "MultiPropertyScorer current: " << current_<<" "<< currDoc_ << " ]"<< endl;
+
+    DocumentIterator* pEntry;
+    for (size_t i = 0; i < docIteratorList_.size(); ++i)
+    {
+        pEntry = docIteratorList_[i];
+        if (pEntry/* && pEntry->isCurrent()*/)
+        {
+            pEntry->print(level+1);
+        }
+    }
+}

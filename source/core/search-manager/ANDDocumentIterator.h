@@ -37,6 +37,8 @@ public:
     count_t tf();
 
     bool empty() { return docIterList_.empty(); }
+
+    void print(int level = 0);
 #if SKIP_ENABLED
     docid_t skipTo(docid_t target);
 private:
@@ -46,9 +48,6 @@ private:
     inline bool do_next();
 
     inline bool move_together_with_not();
-
-    void print(int level = 0);
-
 
 private:
     docid_t currDoc_;

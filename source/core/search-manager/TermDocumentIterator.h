@@ -91,7 +91,7 @@ public:
     void print(int level=0)
     {
         cout << std::string(level*4, ' ') << "|--[ "
-                << "TermIter "
+                << "TermIter " << current_
                 << " - termid: " << termId_ << " " << property_<<" ]"<< endl;
     }
 

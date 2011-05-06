@@ -15,10 +15,12 @@ class PersonalSearchDocumentIterator : public ANDDocumentIterator
 {
 public:
     explicit PersonalSearchDocumentIterator(bool nextResponse)
-    : nextResponse_(nextResponse) {}
+    : nextResponse_(nextResponse)
+    , hasNext_(true)
+    {
+    }
 
 public:
-
     /**
      * Personalized Search DocumentIterator for user profile terms
      * @details The return value is designed to not affecting AND or OR semantic of searching:
@@ -29,19 +31,60 @@ public:
      */
     bool next()
     {
-        // do next
-        ANDDocumentIterator::next();
+        if (!hasNext_) {
+            hasNext_ = ANDDocumentIterator::next();
+        }
 
+        cout << " [ PersonalSearchDocumentIterator::next() ] " << nextResponse_ << endl;
         return nextResponse_;
     }
 
-    double score()
+    void doc_item(RankDocumentProperty& rankDocumentProperty)
     {
+        // ignore
+        cout << " [ PersonalSearchDocumentIterator::doc_item() ] " << endl;
+    }
+
+    void df_ctf(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties& ctfmap)
+    {
+        // ignore
+        cout << " [ PersonalSearchDocumentIterator::df_ctf() ] " << endl;
+    }
+
+    count_t tf()
+    {
+        // ignore
         return 0;
+    }
+
+    void print(int level=0)
+    {
+        cout << std::string(level*4, ' ') << "|--[ "<< "PersonalIter " << "" << endl;
+
+        ANDDocumentIterator::print(level);
+    }
+
+public:
+
+    void queryBoosting(double& score, double& weight)
+    {
+        score_method(score, weight);
+    }
+
+private:
+    /**
+     * score of user profile terms to current document property.
+     * @return score
+     */
+    void score_method(double& score, double& weight)
+    {
+        score += tf() * weight;
+        cout << "queryBoosting: " << tf() << "  " << score << endl;
     }
 
 private:
     bool nextResponse_;
+    bool hasNext_;
 };
 
 

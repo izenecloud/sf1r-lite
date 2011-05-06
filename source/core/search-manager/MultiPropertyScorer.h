@@ -59,6 +59,8 @@ public:
         const std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers
     );
 
+    void print(int level=0);
+
 private:
     size_t getIndexOfProperty_(propertyid_t propertyId)
     {
