@@ -14,13 +14,17 @@
 
 #include <string>
 
+#include <boost/thread/mutex.hpp>
+
 namespace sf1r
 {
 
 class ItemManager
 {
 public:
-    ItemManager(const std::string& path);
+    ItemManager(const std::string& dbPath, const std::string& maxIdPath);
+
+    ~ItemManager();
 
     void flush();
 
@@ -32,6 +36,10 @@ public:
     bool getItem(itemid_t itemId, Item& item);
     unsigned int itemNum();
 
+    itemid_t maxItemId() const {
+        return maxItemId_;
+    }
+
     typedef izenelib::sdb::unordered_sdb_tc<itemid_t, Item, ReadWriteLock> SDBType;
     typedef izenelib::sdb::SDBCursorIterator<SDBType> SDBIterator;
     SDBIterator begin();
@@ -39,6 +47,9 @@ public:
 
 private:
     SDBType container_;
+    itemid_t maxItemId_;
+    std::string maxIdPath_;
+    boost::mutex maxIdMutex_;
 };
 
 } // namespace sf1r

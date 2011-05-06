@@ -187,7 +187,7 @@ namespace sf1r {
             {
                 PersonalSearchInfo personalSearchInfo;
                 personalSearchInfo.enabled = false;
-                getAnalyzedQueryTree(synonymExtension, analysisInfo, rawUStr, analyzedQueryTree, unigramFlag, personalSearchInfo);
+                return getAnalyzedQueryTree(synonymExtension, analysisInfo, rawUStr, analyzedQueryTree, unigramFlag, personalSearchInfo);
             }
 
         private:

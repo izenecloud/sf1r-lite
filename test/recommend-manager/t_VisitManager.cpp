@@ -7,6 +7,7 @@
 
 #include <util/ustring/UString.h>
 #include <recommend-manager/VisitManager.h>
+#include <common/JobScheduler.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
@@ -26,8 +27,9 @@ namespace bfs = boost::filesystem;
 namespace
 {
 const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
-const char* TEST_DIR_STR = "recommend_test";
+const char* TEST_DIR_STR = "recommend_test/t_VisitManager";
 const char* VISIT_DB_STR = "visit.db";
+const char* COVISIT_DIR_STR = "covisit";
 }
 
 typedef map<userid_t, set<itemid_t> > VisitMap;
@@ -72,9 +74,10 @@ BOOST_AUTO_TEST_SUITE(VisitManagerTest)
 
 BOOST_AUTO_TEST_CASE(checkVisit)
 {
-    bfs::path visitPath(bfs::path(TEST_DIR_STR) / VISIT_DB_STR);
-    boost::filesystem::remove(visitPath);
+    bfs::remove_all(TEST_DIR_STR);
     bfs::create_directories(TEST_DIR_STR);
+
+    bfs::path visitPath(bfs::path(TEST_DIR_STR) / VISIT_DB_STR);
 
     typedef pair<userid_t, itemid_t> VisitPair;
     vector<VisitPair> visitVec;
@@ -97,9 +100,13 @@ BOOST_AUTO_TEST_CASE(checkVisit)
         visitMap[it->first].insert(it->second);
     }
 
+    JobScheduler* jobScheduler = new JobScheduler();
+    bfs::path covisitPath(bfs::path(TEST_DIR_STR) / COVISIT_DIR_STR);
+    CoVisitManager* coVisitManager = new CoVisitManager(covisitPath.string());
+
     {
         BOOST_TEST_MESSAGE("add visit...");
-        VisitManager visitManager(visitPath.string());
+        VisitManager visitManager(visitPath.string(), jobScheduler, coVisitManager);
         for (vector<VisitPair>::const_iterator it = visitVec.begin();
                 it != visitVec.end(); ++it)
         {
@@ -115,7 +122,7 @@ BOOST_AUTO_TEST_CASE(checkVisit)
     {
         BOOST_TEST_MESSAGE("continue add visit...");
 
-        VisitManager visitManager(visitPath.string());
+        VisitManager visitManager(visitPath.string(), jobScheduler, coVisitManager);
         checkVisitManager(visitMap, visitManager);
         iterateVisitManager(visitMap, visitManager);
 
@@ -142,6 +149,9 @@ BOOST_AUTO_TEST_CASE(checkVisit)
 
         visitManager.flush();
     }
+
+    delete jobScheduler;
+    delete coVisitManager;
 }
 
 BOOST_AUTO_TEST_SUITE_END() 

@@ -703,14 +703,21 @@ void RecommendController::purchase_item()
  * - @b collection* (@c String): Get recommendation result in this collection.
  * - @b resource* (@c Object): A resource of the request for recommendation result.
  *   - @b rec_type_id* (@c Uint): recommendation type, now 6 types are supported, each with the id below:
- *     - @b 0 (<b>Frequently Bought Together</b>): get the items frequently bought together with @b input_items in one order
- *     - @b 1 (<b>Bought Also Bought</b>): get the items also bought by the users who have bought @b input_items
- *     - @b 2 (<b>Viewed Also View</b>): get the items also viewed by the users who have viewed @b input_items
- *     - @b 3 (<b>Based on Purchase History</b>): get the recommendation items based on the purchase history of user @b USERID
- *     - @b 4 (<b>Based on Browse History</b>): get the recommendation items based on the browse history of user @b USERID
+ *     - @b 0 (<b>Frequently Bought Together</b>): get the items frequently bought together with @b input_items in one order.
+ *     - @b 1 (<b>Bought Also Bought</b>): get the items also bought by the users who have bought @b input_items.
+ *     - @b 2 (<b>Viewed Also View</b>): get the items also viewed by the users who have viewed @b input_items,
+ *       in current version, it supports recommending items based on only one input item,
+ *       that is, only <b> input_items[0]</b> is used as input , and the rest items in @b input_items are ignored.
+ *     - @b 3 (<b>Based on Purchase History</b>): get the recommendation items based on the purchase history of user @b USERID.
+ *       The purchase history is the items added in purchase_item() with the same @b USERID.
+ *     - @b 4 (<b>Based on Browse History</b>): get the recommendation items based on the browse history of user @b USERID.
+ *       @b input_items could be specified as browse history. If @b USERID is specified, both @b input_items and the items
+ *       added in visit_item() with the same @b USERID would be excluded in recommendation result. Otherwise, if @b USERID
+ *       is not specified for anonymous users, the recommendation would be based on @b input_items instead.
  *     - @b 5 (<b>Based on Shopping Cart</b>): get the recommendation items based on the shopping cart of user @b USERID,
- *       @b input_items is required as the items in shopping cart. If @b USERID is not specified for anonymous users, only
- *       @b input_items is used for recommendation.
+ *       @b input_items could be specified as the items in shopping cart. If @b USERID is specified, @b input_items would be
+ *       excluded in recommendation result. Otherwise, if @b USERID is not specified for anonymous users, the recommendation
+ *       would be based on @b input_items instead.
  *   - @b max_count (@c Uint = 10): max item number allowed in recommendation result.
  *   - @b USERID (@c String): a unique user identifier.
  *   - @b input_items (@c Array): the input items for recommendation.
@@ -788,7 +795,6 @@ void RecommendController::do_recommend()
         case FREQUENT_BUY_TOGETHER:
         case BUY_ALSO_BUY:
         case VIEW_ALSO_VIEW:
-        case BASED_ON_SHOP_CART:
         {
             if (inputItemVec.empty())
             {
@@ -799,11 +805,21 @@ void RecommendController::do_recommend()
         }
 
         case BASED_ON_PURCHASE_HISTORY:
-        case BASED_ON_BROWSE_HISTORY:
         {
             if (userIdStr.empty())
             {
                 response().addError("This recommendation type requires user id sepcified in request[resource][USERID].");
+                return;
+            }
+            break;
+        }
+
+        case BASED_ON_BROWSE_HISTORY:
+        case BASED_ON_SHOP_CART:
+        {
+            if (userIdStr.empty() && inputItemVec.empty())
+            {
+                response().addError("This recommendation type requires either USERID or input_items sepcified in request[resource].");
                 return;
             }
             break;
@@ -826,6 +842,7 @@ void RecommendController::do_recommend()
         if (recItemVec.size() != recWeightVec.size())
         {
             response().addError("Failed to get recommendation result from given collection (unequal size of item and weight array).");
+            return;
         }
 
         Value& resources = response()[Keys::resources];

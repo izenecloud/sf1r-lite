@@ -8,6 +8,7 @@
 #define PURCHASE_MANAGER_H
 
 #include "RecTypes.h"
+#include "OrderManager.h"
 #include <sdb/SequentialDB.h>
 #include <sdb/SDBCursorIterator.h>
 
@@ -15,14 +16,24 @@
 #include <vector>
 
 #include <boost/serialization/set.hpp> // serialize ItemIdSet
+#include <boost/thread/mutex.hpp>
 
 namespace sf1r
 {
+class ItemManager;
+class JobScheduler;
 
 class PurchaseManager
 {
 public:
-    PurchaseManager(const std::string& path);
+    PurchaseManager(
+        const std::string& path,
+        JobScheduler* jobScheduler,
+        ItemCFManager* itemCFManager,
+        const ItemManager* itemManager
+    );
+
+    ~PurchaseManager();
 
     void flush();
 
@@ -53,6 +64,13 @@ public:
         const std::string& orderIdStr
     );
 
+    /**
+     * Get @p itemIdSet purchased by @p userId.
+     * @param userId user id
+     * @param itemidSet item id set purchased by @p userId, it would be empty if @p userId
+     *                  has not purchased any item.
+     * @return true for success, false for error happened.
+     */
     bool getPurchaseItemSet(userid_t userId, ItemIdSet& itemIdSet);
 
     /**
@@ -66,7 +84,18 @@ public:
     SDBIterator end();
 
 private:
+    orderid_t newOrderId();
+
+private:
     SDBType container_;
+    std::string orderManagerPath_;
+    OrderManager orderManager_;
+    JobScheduler* jobScheduler_;
+    ItemCFManager* itemCFManager_;
+    const ItemManager* itemManager_;
+    std::string orderIdPath_;
+    orderid_t orderId_;
+    boost::mutex orderIdMutex_;
 };
 
 } // namespace sf1r

@@ -16,6 +16,7 @@
 #include <util/osgi/IBundleActivator.h>
 #include <util/osgi/IBundleContext.h>
 #include <util/osgi/IServiceRegistration.h>
+#include <common/JobScheduler.h>
 
 #include <string>
 
@@ -56,6 +57,10 @@ private:
     RecommendManager* recommendManager_;
     RecIdGenerator* userIdGenerator_;
     RecIdGenerator* itemIdGenerator_;
+    JobScheduler* jobScheduler_;
+
+    CoVisitManager* coVisitManager_;
+    ItemCFManager* itemCFManager_;
 
     bool init_();
 

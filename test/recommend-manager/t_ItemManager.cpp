@@ -24,8 +24,9 @@ namespace bfs = boost::filesystem;
 namespace
 {
 const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
-const char* TEST_DIR_STR = "recommend_test";
+const char* TEST_DIR_STR = "recommend_test/t_ItemManager";
 const char* ITEM_DB_STR = "item.db";
+const char* MAX_ID_STR = "max_itemid.txt";
 }
 
 void checkItem(const Item& item1, const Item& item2)
@@ -87,9 +88,11 @@ BOOST_AUTO_TEST_SUITE(ItemManagerTest)
 
 BOOST_AUTO_TEST_CASE(checkItem)
 {
-    bfs::path itemPath(bfs::path(TEST_DIR_STR) / ITEM_DB_STR);
-    boost::filesystem::remove(itemPath);
+    bfs::remove_all(TEST_DIR_STR);
     bfs::create_directories(TEST_DIR_STR);
+
+    bfs::path itemPath(bfs::path(TEST_DIR_STR) / ITEM_DB_STR);
+    bfs::path maxIdPath(bfs::path(TEST_DIR_STR) / MAX_ID_STR);
 
     vector<itemid_t> idVec;
     vector<Item> itemVec;
@@ -103,7 +106,7 @@ BOOST_AUTO_TEST_CASE(checkItem)
     item1.propValueMap_["price"].assign("23.5", ENCODING_TYPE);
     item1.propValueMap_["image"].assign("http://www.e-commerce.com/item1/image", ENCODING_TYPE);
 
-    idVec.push_back(51);
+    idVec.push_back(2);
     itemVec.push_back(Item());
     Item& item2 = itemVec.back();
     item2.idStr_ = "aaa_51";
@@ -112,9 +115,11 @@ BOOST_AUTO_TEST_CASE(checkItem)
     item2.propValueMap_["price"].assign("80", ENCODING_TYPE);
     item2.propValueMap_["image"].assign("http://www.e-commerce.com/item51/image", ENCODING_TYPE);
 
+    itemid_t maxItemId = idVec.back();
+
     {
         BOOST_TEST_MESSAGE("add item...");
-        ItemManager itemManager(itemPath.string());
+        ItemManager itemManager(itemPath.string(), maxIdPath.string());
         for (size_t i = 0; i < itemVec.size(); ++i)
         {
             BOOST_CHECK(itemManager.addItem(idVec[i], itemVec[i]));
@@ -125,14 +130,18 @@ BOOST_AUTO_TEST_CASE(checkItem)
         checkItemManager(idVec, itemVec, itemManager);
         iterateItemManager(idVec, itemVec, itemManager);
 
+        BOOST_CHECK_EQUAL(itemManager.maxItemId(), maxItemId);
+
         itemManager.flush();
     }
 
     {
         BOOST_TEST_MESSAGE("update item...");
-        ItemManager itemManager(itemPath.string());
+        ItemManager itemManager(itemPath.string(), maxIdPath.string());
 
         checkItemManager(idVec, itemVec, itemManager);
+
+        BOOST_CHECK_EQUAL(itemManager.maxItemId(), maxItemId);
 
         Item& item2 = itemVec.back();
         item2.propValueMap_["name"].assign("商品22222", ENCODING_TYPE);
@@ -153,12 +162,16 @@ BOOST_AUTO_TEST_CASE(checkItem)
         checkItemManager(idVec, itemVec, itemManager);
         iterateItemManager(idVec, itemVec, itemManager);
 
+        BOOST_CHECK_EQUAL(itemManager.maxItemId(), maxItemId);
+
         itemManager.flush();
     }
 
     {
         BOOST_TEST_MESSAGE("empty item...");
-        ItemManager itemManager(itemPath.string());
+        ItemManager itemManager(itemPath.string(), maxIdPath.string());
+
+        BOOST_CHECK_EQUAL(itemManager.maxItemId(), maxItemId);
 
         checkItemManager(idVec, itemVec, itemManager);
         iterateItemManager(idVec, itemVec, itemManager);
@@ -168,6 +181,8 @@ BOOST_AUTO_TEST_CASE(checkItem)
         idVec.erase(idVec.begin());
         checkItemManager(idVec, itemVec, itemManager);
         iterateItemManager(idVec, itemVec, itemManager);
+
+        BOOST_CHECK_EQUAL(itemManager.maxItemId(), maxItemId);
 
         itemManager.flush();
     }

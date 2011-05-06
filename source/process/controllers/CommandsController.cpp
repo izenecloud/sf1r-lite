@@ -4,7 +4,7 @@
  * @date Created <2010-06-01 10:26:16>
  */
 #include "CommandsController.h"
-#include <process/common/JobScheduler.h>
+#include <common/JobScheduler.h>
 #include <process/common/XmlConfigParser.h>
 #include <process/common/CollectionManager.h>
 #include <bundles/index/IndexTaskService.h>

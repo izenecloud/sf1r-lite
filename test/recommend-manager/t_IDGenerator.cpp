@@ -23,8 +23,7 @@ namespace bfs = boost::filesystem;
 
 namespace
 {
-const char* TEST_DIR_STR = "recommend_test";
-const char* ID_DB_STR = "id_name.sdb";
+const char* TEST_DIR_STR = "recommend_test/t_IDGenerator";
 const char* ID_DB_NAME = "id";
 }
 
@@ -32,8 +31,7 @@ BOOST_AUTO_TEST_SUITE(IDGeneratorTest)
 
 BOOST_AUTO_TEST_CASE(test_UniqueIDGenerator)
 {
-    bfs::path idPath(bfs::path(TEST_DIR_STR) / ID_DB_STR);
-    boost::filesystem::remove(idPath);
+    bfs::remove_all(TEST_DIR_STR);
     bfs::create_directories(TEST_DIR_STR);
 
     bfs::path idName(bfs::path(TEST_DIR_STR) / ID_DB_NAME);
