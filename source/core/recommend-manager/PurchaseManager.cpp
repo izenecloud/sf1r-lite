@@ -4,6 +4,7 @@
 #include <common/JobScheduler.h>
 
 #include <boost/filesystem.hpp>
+#include <boost/thread/locks.hpp>
 #include <fstream>
 #include <glog/logging.h>
 
@@ -15,18 +16,14 @@ class CFTask
 public:
     CFTask(
         sf1r::ItemCFManager* itemCFManager,
-        sf1r::OrderManager& orderManager,
         sf1r::userid_t userId,
         sf1r::itemid_t maxItemId,
-        sf1r::orderid_t orderId,
         std::list<sf1r::itemid_t>& oldItems,
         std::list<sf1r::itemid_t>& newItems
     )
     : itemCFManager_(itemCFManager)
-    , orderManager_(orderManager)
     , userId_(userId)
     , maxItemId_(maxItemId)
-    , orderId_(orderId)
     {
         oldItems_.swap(oldItems);
         newItems_.swap(newItems);
@@ -34,7 +31,6 @@ public:
 
     CFTask(const CFTask& cfTask)
     : itemCFManager_(cfTask.itemCFManager_)
-    , orderManager_(cfTask.orderManager_)
     , userId_(cfTask.userId_)
     , maxItemId_(cfTask.maxItemId_)
     {
@@ -46,17 +42,46 @@ public:
     {
         sf1r::ItemIterator itemIterator(1, maxItemId_);
         itemCFManager_->incrementalBuild(userId_, oldItems_, newItems_, itemIterator);
-        orderManager_.addOrder(orderId_, newItems_);
     }
 
 private:
     sf1r::ItemCFManager* itemCFManager_;
-    sf1r::OrderManager& orderManager_;
     sf1r::userid_t userId_;
     sf1r::itemid_t maxItemId_;
-    sf1r::orderid_t orderId_;
     mutable std::list<sf1r::itemid_t> oldItems_;
     mutable std::list<sf1r::itemid_t> newItems_;
+};
+
+class OrderTask
+{
+public:
+    OrderTask(
+        sf1r::OrderManager& orderManager,
+        sf1r::orderid_t orderId,
+        std::list<sf1r::itemid_t>& orderItems
+    )
+    : orderManager_(orderManager)
+    , orderId_(orderId)
+    {
+        orderItems_.swap(orderItems);
+    }
+
+    OrderTask(const OrderTask& orderTask)
+    : orderManager_(orderTask.orderManager_)
+    , orderId_(orderTask.orderId_)
+    {
+        orderItems_.swap(orderTask.orderItems_);
+    }
+
+    void purchase()
+    {
+        orderManager_.addOrder(orderId_, orderItems_);
+    }
+
+private:
+    sf1r::OrderManager& orderManager_;
+    sf1r::orderid_t orderId_;
+    mutable std::list<sf1r::itemid_t> orderItems_;
 };
 
 }
@@ -77,6 +102,7 @@ PurchaseManager::PurchaseManager(
     , itemCFManager_(itemCFManager)
     , itemManager_(itemManager)
     , orderIdPath_(boost::filesystem::path(boost::filesystem::path(orderManagerPath_)/"orderId.txt").string())
+    , orderId_(0)
 {
     container_.open();
     std::ifstream ifs(orderIdPath_.c_str());
@@ -125,6 +151,7 @@ bool PurchaseManager::addPurchaseItem(
 
     std::list<sf1r::itemid_t> oldItems(itemIdSet.begin(), itemIdSet.end());
     std::list<sf1r::itemid_t> newItems;
+    std::list<sf1r::itemid_t> orderItems;
 
     for (OrderItemVec::const_iterator it = orderItemVec.begin();
         it != orderItemVec.end(); ++it)
@@ -134,6 +161,13 @@ bool PurchaseManager::addPurchaseItem(
         {
             newItems.push_back(it->itemId_);
         }
+
+        orderItems.push_back(it->itemId_);
+    }
+
+    {
+        OrderTask task(orderManager_, newOrderId(), orderItems);
+        jobScheduler_->addTask(boost::bind(&OrderTask::purchase, task));
     }
 
     // not purchased yet
@@ -151,7 +185,7 @@ bool PurchaseManager::addPurchaseItem(
 
         if (result)
         {
-            CFTask task(itemCFManager_, orderManager_, userId, itemManager_->maxItemId(), ++orderId_, oldItems, newItems);
+            CFTask task(itemCFManager_, userId, itemManager_->maxItemId(), oldItems, newItems);
             jobScheduler_->addTask(boost::bind(&CFTask::purchase, task));
         }
 
@@ -192,6 +226,12 @@ PurchaseManager::SDBIterator PurchaseManager::begin()
 PurchaseManager::SDBIterator PurchaseManager::end()
 {
     return SDBIterator();
+}
+
+orderid_t PurchaseManager::newOrderId()
+{
+    boost::mutex::scoped_lock lock(orderIdMutex_);
+    return ++orderId_;
 }
 
 } // namespace sf1r

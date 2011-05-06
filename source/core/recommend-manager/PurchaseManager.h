@@ -16,6 +16,7 @@
 #include <vector>
 
 #include <boost/serialization/set.hpp> // serialize ItemIdSet
+#include <boost/thread/mutex.hpp>
 
 namespace sf1r
 {
@@ -83,6 +84,9 @@ public:
     SDBIterator end();
 
 private:
+    orderid_t newOrderId();
+
+private:
     SDBType container_;
     std::string orderManagerPath_;
     OrderManager orderManager_;
@@ -91,6 +95,7 @@ private:
     const ItemManager* itemManager_;
     std::string orderIdPath_;
     orderid_t orderId_;
+    boost::mutex orderIdMutex_;
 };
 
 } // namespace sf1r

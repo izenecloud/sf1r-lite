@@ -11,9 +11,7 @@
 #include "ItemIndex.h"
 
 #include <string>
-#include <vector>
-
-#include <boost/serialization/set.hpp> // serialize ItemIdSet
+#include <list>
 
 namespace sf1r
 {
