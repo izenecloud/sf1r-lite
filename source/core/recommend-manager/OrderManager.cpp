@@ -16,6 +16,8 @@
 #include <memory>
 #include <algorithm>
 
+using namespace std;
+
 namespace sf1r
 {
 
@@ -133,7 +135,7 @@ bool OrderManager::_getOrder(
     {
     izenelib::util::ScopedReadLock<izenelib::util::ReadWriteLock> lock(db_lock_);
     fseek(order_key_, orderId, SEEK_SET);
-    fread(&pos, 1, 4, order_key_);
+    fread(&pos, 1, sizeof(off_t), order_key_);
     }
     size_t bytes_read;
     uint32_t vector_size;
@@ -210,8 +212,11 @@ void OrderManager::_findFrequentItemsets()
         for(std::vector<std::string>::iterator it = item_strs.begin();
               it != item_strs.end(); ++it)
         {
-            itemid_t itemId = boost::lexical_cast< itemid_t >( *it );
-            max_itemset.push_back(itemId);
+            try
+            {
+                itemid_t itemId = boost::lexical_cast< itemid_t >( *it );
+                max_itemset.push_back(itemId);
+            }catch( const boost::bad_lexical_cast & ){}
         }
         _judgeFrequentItemset(max_itemset, frequentItemsets);
     }
@@ -225,7 +230,7 @@ void OrderManager::_judgeFrequentItemset(
     FrequentItemSetResultType& frequent_itemsets)
 {
     std::vector<itemid_t> sub_itemset(max_itemset.size());
-    std::vector<itemid_t>::iterator last_item = max_itemset.begin();
+    std::vector<itemid_t>::iterator last_item = sub_itemset.begin();
     while ( 
         ( last_item = izenelib::util::next_subset( max_itemset.begin(), max_itemset.end(),
                      sub_itemset.begin(), last_item ) )
