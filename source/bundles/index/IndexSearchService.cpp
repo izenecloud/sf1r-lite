@@ -75,7 +75,7 @@ bool IndexSearchService::getSearchResult(
     personalSearchInfo.enabled = false;
 
     User& user = personalSearchInfo.user;
-    //user.idStr_ = "user_001";  // TODO, from query request
+    user.idStr_ = actionItem.env_.userID_;
     if( recommendSearchService_ )
     {
         personalSearchInfo.enabled = recommendSearchService_->getUser(user.idStr_, user);

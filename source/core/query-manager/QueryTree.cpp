@@ -72,11 +72,11 @@ namespace sf1r {
             case QueryTree::OR:
                 ss << "OR       : ]" << endl;
                 break;
-            case QueryTree::PERSONAL_AND:
-                ss << "PERSONAL_AND      : ]" << endl;
+            case QueryTree::AND_PERSONAL:
+                ss << "AND_PERSONAL      : ]" << endl;
                 break;
-            case QueryTree::PERSONAL_OR:
-                ss << "PERSONAL_OR       : ]" << endl;
+            case QueryTree::OR_PERSONAL:
+                ss << "OR_PERSONAL       : ]" << endl;
                 break;
             case QueryTree::NOT:
                 ss << "NOT      : ]" << endl;
@@ -119,6 +119,10 @@ namespace sf1r {
             queryTermIdList.push_back( keywordId_ );
             propertyTermInfo.dealWithTerm( keywordUString_ , keywordId_ , pos++);
         } // if
+        else if( type_ == QueryTree::AND_PERSONAL || type_ == QueryTree::OR_PERSONAL )
+        {
+            // ignore sub trees
+        }
         else if (children_.size() > 0 )
         {
             for(QTIter childIter = children_.begin();

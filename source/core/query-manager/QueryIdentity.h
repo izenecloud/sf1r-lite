@@ -16,6 +16,9 @@ struct QueryIdentity
     /// @brief original query string
     std::string query;
 
+    /// @brief user id, todo, whole user info may be needed.
+    std::string userId;
+
     /// @brief ranking type, should be sorting mechanism in future
     RankingType::TextRankingType rankingType;
 
@@ -36,13 +39,14 @@ struct QueryIdentity
     /// search results offset after topK
     int start;
 
-    DATA_IO_LOAD_SAVE(QueryIdentity, &query&rankingType&laInfo&properties&sortInfo&filterInfo
+    DATA_IO_LOAD_SAVE(QueryIdentity, &query&userId&rankingType&laInfo&properties&sortInfo&filterInfo
             &strExp&paramConstValueMap&paramPropertyValueMap&start);
 
     template<class Archive>
     void serialize(Archive& ar, const unsigned version)
     {
         ar & query;
+        ar & userId;
         ar & rankingType;
         ar & laInfo;
         ar & properties;
@@ -66,6 +70,7 @@ inline bool operator==(const QueryIdentity& a,
 {
     return a.rankingType == b.rankingType
         && a.query == b.query
+        && a.userId == b.userId
         && a.laInfo == b.laInfo
         && a.properties == b.properties
         && a.sortInfo == b.sortInfo

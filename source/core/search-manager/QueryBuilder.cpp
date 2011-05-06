@@ -515,10 +515,12 @@ namespace sf1r
                 delete pIterator;
             break;
         } // end - QueryTree::OR
-        case QueryTree::PERSONAL_AND:
+        case QueryTree::AND_PERSONAL:
         {
+            /// always return true in this case,
+            /// it's tolerable that personal items are not indexed.
 #ifdef VERBOSE_SERACH_MANAGER
-            cout<<"AND personal query "<<property<<endl;
+            cout<<"AND-Personal query "<<property<<endl;
 #endif
             DocumentIterator* pIterator = new PersonalSearchDocumentIterator(true);
             bool ret = false;
@@ -538,7 +540,8 @@ namespace sf1r
                 if (!ret)
                 {
                     delete pIterator;
-                    return false;
+                    ///return false;
+                    return true;
                 }
             }
             if (! static_cast<PersonalSearchDocumentIterator*>(pIterator)->empty())
@@ -549,18 +552,21 @@ namespace sf1r
             else
                 delete pIterator;
             break;
-        }
-        case QueryTree::PERSONAL_OR:
+        } // end - QueryTree::AND_PERSONAL
+        case QueryTree::OR_PERSONAL:
         {
+            /// always return true in this case,
+            /// it's tolerable that personal items are not indexed.
+            /// OR_PERSONAL iterator is an AND semantic, but a child of OR.
 #ifdef VERBOSE_SERACH_MANAGER
-            cout<<"OR personal query "<<property<<endl;
+            cout<<"OR-Personal query "<<property<<endl;
 #endif
             DocumentIterator* pIterator = new PersonalSearchDocumentIterator(false);
             bool ret = false;
             for (QTIter orChildIter = queryTree->children_.begin();
                     orChildIter != queryTree->children_.end(); ++orChildIter)
             {
-                ret |= do_prepare_for_property_(
+                ret = do_prepare_for_property_(
                            *orChildIter,
                            colID,
                            property,
@@ -570,11 +576,12 @@ namespace sf1r
                            pIterator,
                            termDocReaders
                        );
-            }
-            if (!ret)
-            {
-                delete pIterator;
-                return false;
+                if (!ret)
+                {
+                    delete pIterator;
+                    ///return false;
+                    return true;
+                }
             }
             if (! static_cast<PersonalSearchDocumentIterator*>(pIterator)->empty())
                 if (NULL == pDocIterator)
@@ -584,7 +591,7 @@ namespace sf1r
             else
                 delete pIterator;
             break;
-        }
+        } // end - QueryTree::OR_PERSONAL
         case QueryTree::EXACT:
         {
 #ifdef VERBOSE_SERACH_MANAGER

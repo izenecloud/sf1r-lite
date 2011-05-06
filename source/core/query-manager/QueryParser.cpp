@@ -353,16 +353,23 @@ namespace sf1r
 
         switch ( queryTree->type_ )
         {
+            case QueryTree::KEYWORD:
+            {
+                QueryTreePtr tmpQueryTree( new QueryTree(QueryTree::AND) );
+                tmpQueryTree->insertChild(queryTree);
+                queryTree = tmpQueryTree;
+                // no break;
+            }
             case QueryTree::AND:
             case QueryTree::OR:
             {
                 if (queryTree->type_ == QueryTree::AND)
                 {
-                    extendChild.reset(new QueryTree(QueryTree::PERSONAL_AND));
+                    extendChild.reset(new QueryTree(QueryTree::AND_PERSONAL));
                 }
                 else // QueryTree::OR
                 {
-                    extendChild.reset(new QueryTree(QueryTree::PERSONAL_OR));
+                    extendChild.reset(new QueryTree(QueryTree::OR_PERSONAL));
                 }
 
                 ustrIter = userTermList.begin();
