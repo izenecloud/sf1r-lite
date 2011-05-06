@@ -88,6 +88,13 @@ public:
 
     termid_t termId() {return termId_;}
 
+    void print(int level=0)
+    {
+        cout << std::string(level*4, ' ') << "|--[ "
+                << "TermIter "
+                << " - termid: " << termId_ << " " << property_<<" ]"<< endl;
+    }
+
 private:
     termid_t termId_;
 

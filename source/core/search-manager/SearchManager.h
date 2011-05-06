@@ -79,6 +79,12 @@ private:
     propertyid_t getPropertyIdByName(const std::string& name) const;
 
 private:
+    /**
+     * @brief for testing
+     */
+    void printDFCTF(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties ctfmap);
+
+private:
     boost::unordered_map<std::string, PropertyConfig> schemaMap_;
     boost::shared_ptr<IndexManager> indexManagerPtr_;
     boost::shared_ptr<DocumentManager> documentManagerPtr_;

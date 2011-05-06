@@ -47,6 +47,8 @@ private:
 
     inline bool move_together_with_not();
 
+    void print(int level = 0);
+
 
 private:
     docid_t currDoc_;
@@ -61,7 +63,6 @@ private:
 
     std::list<DocumentIterator*> docIterList_;
 };
-
 
 inline bool ANDDocumentIterator::move_together_with_not()
 {

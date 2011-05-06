@@ -54,6 +54,8 @@ public:
 
     bool empty() { return docIteratorList_.empty(); }
 
+    void print(int level=0);
+
 #if SKIP_ENABLED
     docid_t skipTo(docid_t target); 
 
@@ -64,6 +66,7 @@ protected:
     virtual void initDocIteratorQueue();
 
     bool do_next();
+
 
 private:
     inline bool move_together_with_not();

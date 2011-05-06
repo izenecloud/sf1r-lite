@@ -12,6 +12,9 @@
 
 #include <boost/assert.hpp>
 
+#include <iostream>
+#include <sstream>
+
 namespace sf1r {
 
 /**
@@ -160,6 +163,31 @@ public:
         return freqsOrPositionsVector_.endAt(i);
     }
 
+    ///@brief for testing
+    void print(std::ostream& out = std::cout)
+    {
+        using namespace std;
+        stringstream ss;
+        ss << "[RankQueryProperty]" << endl
+           << "documents in collection: " << numDocs_ << endl
+           << "terms in property: " << totalPropertyLength_ << endl
+           << "length of query: " << length_ << endl
+
+           << "terms info of collection (id, tf, df): " << endl;
+        std::vector<data_t>::iterator iter;
+        for (iter = attributes_.begin(); iter != attributes_.end(); iter++)
+        {
+            ss << iter->term << ", " << iter->documentFreq << ", " << iter->totalTermFreq << endl;
+        }
+
+        ss << "terms info of query (id, tf)" << endl;
+        for (size_t i = 0; i < attributes_.size(); i++)
+        {
+            ss << attributes_[i].term << freqsOrPositionsVector_.freqAt(i) << endl;
+        }
+
+        out << ss.str();
+    }
 private:
     std::vector<data_t> attributes_;
 

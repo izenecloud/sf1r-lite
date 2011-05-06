@@ -155,3 +155,17 @@ count_t ANDDocumentIterator::tf()
 
     return mintf;
 }
+
+void ANDDocumentIterator::print(int level)
+{
+    cout << std::string(level*4, ' ') << "|--[ "<< "ANDIter current: " <<current_ <<" "<<  currDoc_ << " ]"<< endl;
+
+    DocumentIterator* pEntry;
+    std::list<DocumentIterator*>::iterator iter = docIterList_.begin();
+    for (; iter != docIterList_.end(); ++iter)
+    {
+        pEntry = (*iter);
+        if (pEntry)
+            pEntry->print(level+1);
+    }
+}

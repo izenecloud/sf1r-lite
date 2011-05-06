@@ -53,11 +53,12 @@ public:
         return currDoc;
     }
 	
-    /// score evaluated while iterating, for, e.g., used for query boosting.
-    virtual double score()
+    virtual void queryBoosting(double& score, double& weight)
     {
-        return 0;
+        return;
     }
+
+    virtual void print(int level = 0) {}
 
     void setCurrent(bool current){ current_ = current; }
 	
