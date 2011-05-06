@@ -27,7 +27,7 @@ namespace bfs = boost::filesystem;
 namespace
 {
 const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
-const char* TEST_DIR_STR = "recommend_test";
+const char* TEST_DIR_STR = "recommend_test/t_PurchaseManager";
 const char* PURCHASE_DB_STR = "purchase.db";
 const char* CF_DIR_STR = "cf";
 const char* ITEM_DB_STR = "item.db";
@@ -95,13 +95,12 @@ BOOST_AUTO_TEST_SUITE(PurchaseManagerTest)
 
 BOOST_AUTO_TEST_CASE(checkPurchase)
 {
-    bfs::path purchasePath(bfs::path(TEST_DIR_STR) / PURCHASE_DB_STR);
-    boost::filesystem::remove(purchasePath);
+    bfs::remove_all(TEST_DIR_STR);
+    bfs::create_directories(TEST_DIR_STR);
 
+    bfs::path purchasePath(bfs::path(TEST_DIR_STR) / PURCHASE_DB_STR);
     bfs::path itemPath(bfs::path(TEST_DIR_STR) / ITEM_DB_STR);
     bfs::path maxIdPath(bfs::path(TEST_DIR_STR) / MAX_ID_STR);
-    boost::filesystem::remove(itemPath);
-    boost::filesystem::remove(maxIdPath);
 
     bfs::create_directories(TEST_DIR_STR);
 

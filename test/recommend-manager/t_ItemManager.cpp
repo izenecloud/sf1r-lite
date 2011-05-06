@@ -24,7 +24,7 @@ namespace bfs = boost::filesystem;
 namespace
 {
 const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
-const char* TEST_DIR_STR = "recommend_test";
+const char* TEST_DIR_STR = "recommend_test/t_ItemManager";
 const char* ITEM_DB_STR = "item.db";
 const char* MAX_ID_STR = "max_itemid.txt";
 }
@@ -88,11 +88,11 @@ BOOST_AUTO_TEST_SUITE(ItemManagerTest)
 
 BOOST_AUTO_TEST_CASE(checkItem)
 {
+    bfs::remove_all(TEST_DIR_STR);
+    bfs::create_directories(TEST_DIR_STR);
+
     bfs::path itemPath(bfs::path(TEST_DIR_STR) / ITEM_DB_STR);
     bfs::path maxIdPath(bfs::path(TEST_DIR_STR) / MAX_ID_STR);
-    boost::filesystem::remove(itemPath);
-    boost::filesystem::remove(maxIdPath);
-    bfs::create_directories(TEST_DIR_STR);
 
     vector<itemid_t> idVec;
     vector<Item> itemVec;

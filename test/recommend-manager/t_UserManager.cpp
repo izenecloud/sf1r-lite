@@ -24,7 +24,7 @@ namespace bfs = boost::filesystem;
 namespace
 {
 const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
-const char* TEST_DIR_STR = "recommend_test";
+const char* TEST_DIR_STR = "recommend_test/t_UserManager";
 const char* USER_DB_STR = "user.db";
 }
 
@@ -87,9 +87,10 @@ BOOST_AUTO_TEST_SUITE(UserManagerTest)
 
 BOOST_AUTO_TEST_CASE(checkUser)
 {
-    bfs::path userPath(bfs::path(TEST_DIR_STR) / USER_DB_STR);
-    boost::filesystem::remove(userPath);
+    bfs::remove_all(TEST_DIR_STR);
     bfs::create_directories(TEST_DIR_STR);
+
+    bfs::path userPath(bfs::path(TEST_DIR_STR) / USER_DB_STR);
 
     vector<userid_t> idVec;
     vector<User> userVec;

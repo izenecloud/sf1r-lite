@@ -27,7 +27,7 @@ namespace bfs = boost::filesystem;
 namespace
 {
 const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
-const char* TEST_DIR_STR = "recommend_test";
+const char* TEST_DIR_STR = "recommend_test/t_VisitManager";
 const char* VISIT_DB_STR = "visit.db";
 const char* COVISIT_DIR_STR = "covisit";
 }
@@ -74,9 +74,10 @@ BOOST_AUTO_TEST_SUITE(VisitManagerTest)
 
 BOOST_AUTO_TEST_CASE(checkVisit)
 {
-    bfs::path visitPath(bfs::path(TEST_DIR_STR) / VISIT_DB_STR);
-    boost::filesystem::remove(visitPath);
+    bfs::remove_all(TEST_DIR_STR);
     bfs::create_directories(TEST_DIR_STR);
+
+    bfs::path visitPath(bfs::path(TEST_DIR_STR) / VISIT_DB_STR);
 
     typedef pair<userid_t, itemid_t> VisitPair;
     vector<VisitPair> visitVec;

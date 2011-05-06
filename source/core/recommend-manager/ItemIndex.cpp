@@ -63,6 +63,7 @@ bool ItemIndex::add(ItemIndexDocIDType docId, DataVectorType& doc)
     boost::shared_ptr<iii::LAInput> laInput(new iii::LAInput);
     laInput->setDocId(docId);
     laInput->reserve(1024);
+    document.insertProperty(propertyConfig, laInput);
 
     uint32_t pos = 0;
     for (DataVectorType::iterator it = doc.begin(); it != doc.end(); ++it)
@@ -73,7 +74,6 @@ bool ItemIndex::add(ItemIndexDocIDType docId, DataVectorType& doc)
         unit.wordOffset_ = pos++;
         document.add_to_property(unit);
     }
-    document.insertProperty(propertyConfig, laInput);
 
     return indexer_->insertDocument(document);;
 }
