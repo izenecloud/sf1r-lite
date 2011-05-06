@@ -43,7 +43,9 @@ public:
 
     bool get(std::list<uint32_t>& itemIds, std::list<ItemIndexDocIDType>& docs);
 
-    uint32_t get(std::list<uint32_t>& itemIds);
+    uint32_t get(std::vector<uint32_t>& itemIds);
+
+    size_t getNumItems();
 
 private:
     inline static uint32_t kStartFieldId()

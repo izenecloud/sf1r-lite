@@ -139,13 +139,13 @@ bool ItemIndex::get(std::list<uint32_t>& itemIds, std::list<ItemIndexDocIDType>&
     return true;
 }
 
-uint32_t ItemIndex::get(std::list<uint32_t>& itemIds)
+uint32_t ItemIndex::get(std::vector<uint32_t>& itemIds)
 {
     iii::IndexReader* pIndexReader = indexer_->getIndexReader();
 
     ANDDocumentIterator* pAndDocIterator = new ANDDocumentIterator();
 
-    for (std::list<uint32_t>::iterator p = itemIds.begin(); p != itemIds.end(); p++)
+    for (std::vector<uint32_t>::iterator p = itemIds.begin(); p != itemIds.end(); p++)
     {
         TermDocumentIterator* pTermDocIterator =
             new TermDocumentIterator(
@@ -169,6 +169,12 @@ uint32_t ItemIndex::get(std::list<uint32_t>& itemIds)
         ++count;
 
     return count;
+}
+
+size_t ItemIndex::getNumItems()
+{
+    iii::IndexReader* pIndexReader = indexer_->getIndexReader();
+    return pIndexReader->getDistinctNumTerms(1,property_);
 }
 
 } // namespace sf1r
