@@ -287,6 +287,19 @@ count_t ORDocumentIterator::tf()
     return maxtf;
 }
 
+void ORDocumentIterator::queryBoosting(double& score, double& weight)
+{
+    DocumentIterator* pEntry;
+    for (size_t i = 0; i < pDocIteratorQueue_->size(); ++i)
+    {
+        pEntry = pDocIteratorQueue_->getAt(i);
+        if (pEntry->isCurrent())
+        {
+        	pEntry->queryBoosting(score, weight);
+        }
+    }
+}
+
 void ORDocumentIterator::print(int level)
 {
     cout << std::string(level*4, ' ') << "|--[ "<< "ORIter current: " << current_<<" "<< currDoc_ << " ]"<< endl;

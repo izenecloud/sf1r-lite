@@ -54,6 +54,8 @@ public:
 
     bool empty() { return docIteratorList_.empty(); }
 
+    void queryBoosting(double& score, double& weight);
+
     void print(int level=0);
 
 #if SKIP_ENABLED

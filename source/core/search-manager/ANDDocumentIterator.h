@@ -38,7 +38,10 @@ public:
 
     bool empty() { return docIterList_.empty(); }
 
+    void queryBoosting(double& score, double& weight);
+
     void print(int level = 0);
+
 #if SKIP_ENABLED
     docid_t skipTo(docid_t target);
 private:
@@ -49,7 +52,7 @@ private:
 
     inline bool move_together_with_not();
 
-private:
+protected:
     docid_t currDoc_;
 
     bool hasNot_;

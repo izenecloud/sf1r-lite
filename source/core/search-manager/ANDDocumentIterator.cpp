@@ -156,6 +156,18 @@ count_t ANDDocumentIterator::tf()
     return mintf;
 }
 
+void ANDDocumentIterator::queryBoosting(double& score, double& weight)
+{
+    DocumentIterator* pEntry;
+    std::list<DocumentIterator*>::iterator iter = docIterList_.begin();
+    for (; iter != docIterList_.end(); ++iter)
+    {
+    	pEntry = (*iter);
+    	if (pEntry)
+    	    pEntry->queryBoosting(score, weight);
+    }
+}
+
 void ANDDocumentIterator::print(int level)
 {
     cout << std::string(level*4, ' ') << "|--[ "<< "ANDIter current: " <<current_ <<" "<<  currDoc_ << " ]"<< endl;

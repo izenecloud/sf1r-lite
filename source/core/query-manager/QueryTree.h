@@ -2,6 +2,8 @@
 /// @brief  header file of Query Tree Structure
 /// @author Dohyun Yun
 /// @date   2010.06.16 (First Created)
+/// - Log
+///     - 2011.05.06 Extend tree node types for personalized search by Zhongxia Li
 ///
 
 #ifndef _QUERY_TREE_H_

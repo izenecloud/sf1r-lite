@@ -2,7 +2,7 @@
  * @file PersonalSearchDocumentIterator.h
  * @author Zhongxia Li
  * @date Apr 29, 2011
- * @brief Personalized Search
+ * @brief Personalized Search DocumentIterator for user profile terms
  */
 #ifndef PERSONAL_SEARCH_DOCUMENT_ITERATOR_H
 #define PERSONAL_SEARCH_DOCUMENT_ITERATOR_H
@@ -11,6 +11,12 @@
 
 namespace sf1r{
 
+/**
+ * @brief PersonalSearchDocumentIterator is designed to not affecting normal search logic and scoring.
+ * It used to calculate personal score related to each document while searching,
+ * personal score is used to boosting normal ranking score,
+ * if personal items did not occur in a document, personal scoring is ignored.
+ */
 class PersonalSearchDocumentIterator : public ANDDocumentIterator
 {
 public:
@@ -18,11 +24,12 @@ public:
     : nextResponse_(nextResponse)
     , hasNext_(true)
     {
+    	currDoc_ = 0; // needed
     }
 
 public:
     /**
-     * Personalized Search DocumentIterator for user profile terms
+     * Next action of Personalized Search
      * @details The return value is designed to not affecting AND or OR semantic of searching:
      * if PersonalSearchDocumentIterator is a sub iterator of AND Iterator, return value is always true;
      * or if it's a sub iterator of OR Iterator, return value is always false.
@@ -34,57 +41,85 @@ public:
         if (!hasNext_) {
             hasNext_ = ANDDocumentIterator::next();
         }
+        personal_current_ = hasNext_;
 
-        cout << " [ PersonalSearchDocumentIterator::next() ] " << nextResponse_ << endl;
+        //cout << " [ PersonalSearchDocumentIterator::next() ] " << nextResponse_ << endl;
         return nextResponse_;
     }
 
     void doc_item(RankDocumentProperty& rankDocumentProperty)
     {
         // ignore
-        cout << " [ PersonalSearchDocumentIterator::doc_item() ] " << endl;
+        //cout << " [ PersonalSearchDocumentIterator::doc_item() ] " << endl;
     }
 
     void df_ctf(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties& ctfmap)
     {
         // ignore
-        cout << " [ PersonalSearchDocumentIterator::df_ctf() ] " << endl;
+        //cout << " [ PersonalSearchDocumentIterator::df_ctf() ] " << endl;
     }
 
-    count_t tf()
+#if SKIP_ENABLED
+    /**
+     * The return value is always target, so that not affecting normal search logic
+     */
+    docid_t skipTo(docid_t target)
     {
-        // ignore
-        return 0;
-    }
+    	if (target > currDoc_) {
+    		currDoc_ = ANDDocumentIterator::skipTo(target);
+    	}
 
-    void print(int level=0)
-    {
-        cout << std::string(level*4, ' ') << "|--[ "<< "PersonalIter " << "" << endl;
+    	if (target == currDoc_)
+    		personal_current_ = true;
+    	else
+    		personal_current_ = false;
 
-        ANDDocumentIterator::print(level);
+    	//cout << " [ PersonalSearchDocumentIterator::skipTo() ] "<<target<<" - current:"<<currDoc_<< endl;
+    	return target;
     }
+#endif
 
 public:
 
     void queryBoosting(double& score, double& weight)
     {
-        score_method(score, weight);
+    	if (personal_current_)
+    	{
+    		score_method(score, weight);
+    	}
+    }
+
+    void print(int level=0)
+    {
+        cout << std::string(level*4, ' ') << "|--[ "
+        		<< "PersonalSearchIter "<< personal_current_<<" "<<  currDoc_<<" ]"<< endl;
+
+        DocumentIterator* pEntry;
+        std::list<DocumentIterator*>::iterator iter = docIterList_.begin();
+        for (; iter != docIterList_.end(); ++iter)
+        {
+            pEntry = (*iter);
+            if (pEntry)
+                pEntry->print(level+1);
+        }
     }
 
 private:
     /**
-     * score of user profile terms to current document property.
-     * @return score
+     * score method, matching.
      */
     void score_method(double& score, double& weight)
     {
-        score += tf() * weight;
-        cout << "queryBoosting: " << tf() << "  " << score << endl;
+        score += tf() * weight * 0.1;
+        //cout << "Query Boosting for doc " << currDoc_ << " : "
+        //		<< tf() << " * " << weight * 0.1 << " = " << tf() * weight * 0.1 << endl;
     }
 
 private:
     bool nextResponse_;
+
     bool hasNext_;
+    bool personal_current_; // current_ may be changed outside
 };
 
 

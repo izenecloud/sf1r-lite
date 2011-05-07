@@ -409,6 +409,8 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
 
         STOP_PROFILER ( preparesort )
 
+        //pDocIterator->print();
+
         START_PROFILER ( dociterating )
         try
         {

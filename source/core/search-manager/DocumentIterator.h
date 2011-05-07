@@ -53,10 +53,7 @@ public:
         return currDoc;
     }
 	
-    virtual void queryBoosting(double& score, double& weight)
-    {
-        return;
-    }
+    virtual void queryBoosting(double& score, double& weight) {}
 
     virtual void print(int level = 0) {}
 

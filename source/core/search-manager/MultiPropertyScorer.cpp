@@ -34,7 +34,9 @@ double MultiPropertyScorer::score(
                 );
                 //STOP_PROFILER ( compute_score )
 
-                //pEntry->queryBoosting(score, weight); ///xxx
+                //cout << i << " - " << weight << " * " << propertyRankers[i]->getScore(rankQueryProperties[i], rankDocumentProperty_) <<endl;
+
+                pEntry->queryBoosting(score, weight); // if personal search available
             }
         }
     }
