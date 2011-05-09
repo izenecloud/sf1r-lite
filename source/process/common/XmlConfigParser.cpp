@@ -947,7 +947,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     ///TODO for ranking
     ///ranking is not configed right now, although we keep such interface here
     RankingConfigUnit& rankingUnit = indexBundleConfig.rankingManagerConfig_.rankingConfigUnit_;
-    TextRankingType e_qd_text_model = RankingType::DefaultTextRanker;
+    TextRankingType e_qd_text_model = RankingType::BM25;
     rankingUnit.setTextRankingModel( e_qd_text_model );
 
     //Index strategy
