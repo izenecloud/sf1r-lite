@@ -103,7 +103,8 @@ BOOST_AUTO_TEST_CASE(checkOrder)
 
     orderManager.flush();
     orderManager.buildFreqItemsets();
-    FrequentItemSetResultType& results = orderManager.getAllFreqItemSets();
+    FrequentItemSetResultType results;
+    orderManager.getAllFreqItemSets(results, 2);
     for(FrequentItemSetResultType::iterator resultIt = results.begin(); resultIt != results.end(); ++resultIt)
     {
         std::vector<itemid_t>& items = resultIt->first;

@@ -17,6 +17,7 @@
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/archive_exception.hpp>
 #include <boost/assert.hpp>
+#include <boost/scoped_array.hpp>
 
 #include <compression/minilzo/minilzo.h>
 //#include "bmz.h"
@@ -59,46 +60,30 @@ public:
 
 	}
 	bool insert(const unsigned int docId, const Document& doc) {
-		CREATE_SCOPED_PROFILER(insert_document, "Index:SIAProcess", "Indexer : insert_document")
-		CREATE_PROFILER(proDocumentCompression, "Index:SIAProcess", "Indexer : DocumentCompression")
-		maxDocID_ = docId>maxDocID_? docId:maxDocID_;
-		izene_serialization<Document> izs(doc);
-		char* ptr;
-		size_t sz;
-		izs.write_image(ptr, sz);
-		
-		int nsz=0;		
-		START_PROFILER( proDocumentCompression )
-			
-		static lzo_align_t __LZO_MMODEL
-		wrkmem [((LZO1X_1_MEM_COMPRESS)+(sizeof(lzo_align_t)-1))/sizeof(lzo_align_t)];
-		//  void* wrkmem = new char[sz*2];
+            CREATE_SCOPED_PROFILER(insert_document, "Index:SIAProcess", "Indexer : insert_document")
+            CREATE_PROFILER(proDocumentCompression, "Index:SIAProcess", "Indexer : DocumentCompression")
+            maxDocID_ = docId>maxDocID_? docId:maxDocID_;
+            izene_serialization<Document> izs(doc);
+            char* src;
+            size_t srcLen;
+            izs.write_image(src, srcLen);
+            
+            size_t destLen = 0;
+            boost::scoped_array<unsigned char> destPtr(new unsigned char[srcLen + sizeof(uint32_t)]);
+            *reinterpret_cast<uint32_t*>(destPtr.get()) = srcLen;
 
-		lzo_uint tmpTarLen;
-		//unsigned char* p = new unsigned char[sz];	
-		//boost::scoped_alloc alloc(recycle_);
-		//unsigned char* p = BOOST_NEW_ARRAY(alloc, unsigned char, sz + sizeof(uint32_t));
-		unsigned char* p = new unsigned char[sz + sizeof(uint32_t)];
-                *reinterpret_cast<uint32_t*>(p) = sz;
+            START_PROFILER( proDocumentCompression )
+            if (compress(src, srcLen, destPtr.get() + sizeof(uint32_t), destLen) == false)
+                return false;
+            STOP_PROFILER( proDocumentCompression ) 
 
-		int re = lzo1x_1_compress((unsigned char*)ptr, sz, p + sizeof(uint32_t), &tmpTarLen, wrkmem);
-		//int re = bmz_pack(ptr, sz, p, &tmpTarLen, 0, 50, (1 << 24), wrkmem);
-		if ( re != LZO_E_OK )
-			return false;
-		nsz = tmpTarLen;
-		//char *p =(char*)_tc_bzcompress(ptr, sz, &nsz);
-		
-		STOP_PROFILER( proDocumentCompression ) 
-		
-		bool ret = containerPtr_->put(docId, p, nsz + sizeof(uint32_t), Lux::IO::APPEND);
-		//delete []wrkmem;
-		delete [] p;
-		if(ret)
-		{
-			unsigned int id = docId;
-			containerPtr_->put(0, &id, sizeof(unsigned int), Lux::IO::OVERWRITE);
-		}
-		return ret;
+            bool ret = containerPtr_->put(docId, destPtr.get(), destLen + sizeof(uint32_t), Lux::IO::APPEND);
+            if(ret)
+            {
+                    unsigned int id = docId;
+                    containerPtr_->put(0, &id, sizeof(unsigned int), Lux::IO::OVERWRITE);
+            }
+            return ret;
 	}
 	bool get(const unsigned int docId, Document& doc) {
 		//CREATE_SCOPED_PROFILER(get_document, "Index:SIAProcess", "Indexer : get_document")
@@ -145,19 +130,25 @@ public:
 			return false;
 		return containerPtr_->del(docId);
 	}
-	bool update(const unsigned int docId, const Document& doc) {
-		if(docId > maxDocID_) return false;
-		izene_serialization<Document> izs(doc);
-		char* ptr;
-		size_t sz;
-		izs.write_image(ptr, sz);
-		
-		int nsz=0;
-		char *p =(char*)_tc_bzcompress(ptr, sz, &nsz);
-		bool ret = containerPtr_->put(docId, p, nsz, Lux::IO::OVERWRITE);
-		delete p;
-		return ret;
-	}
+        bool update(const unsigned int docId, const Document& doc) {
+            if(docId > maxDocID_)
+                return false;
+
+            izene_serialization<Document> izs(doc);
+            char* src;
+            size_t srcLen;
+            izs.write_image(src, srcLen);
+
+            size_t destLen = 0;
+            boost::scoped_array<unsigned char> destPtr(new unsigned char[srcLen + sizeof(uint32_t)]);
+            *reinterpret_cast<uint32_t*>(destPtr.get()) = srcLen;
+
+            if (compress(src, srcLen, destPtr.get() + sizeof(uint32_t), destLen) == false)
+                return false;
+
+            bool ret = containerPtr_->put(docId, destPtr.get(), destLen + sizeof(uint32_t), Lux::IO::OVERWRITE);
+            return ret;
+        }
 
 	docid_t getMaxDocId() {
 		return maxDocID_;
@@ -209,6 +200,18 @@ private:
 		}
 	}
 
+        bool compress(char* src, size_t srcLen, unsigned char* dest, size_t& destLen) {
+            static lzo_align_t __LZO_MMODEL
+                wrkmem [((LZO1X_1_MEM_COMPRESS)+(sizeof(lzo_align_t)-1))/sizeof(lzo_align_t)];
+
+            lzo_uint tmpTarLen;
+            int re = lzo1x_1_compress((unsigned char*)src, srcLen, dest, &tmpTarLen, wrkmem);
+            if ( re != LZO_E_OK )
+                return false;
+
+            destLen = tmpTarLen;
+            return true;
+        }
 
 private:
 	std::string path_;

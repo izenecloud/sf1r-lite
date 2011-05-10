@@ -34,6 +34,11 @@ public:
     }
 };
 
+bool itemSetCompare (std::pair<std::vector<itemid_t>, size_t > p1,std::pair<std::vector<itemid_t>, size_t > p2)
+{
+    return (p1.second > p2.second);
+}
+
 OrderManager::OrderManager(const std::string& path)
     :item_order_index_(path+"/index")
     ,order_key_path_(boost::filesystem::path(boost::filesystem::path(path)/"orderdb.key").string())
@@ -101,6 +106,22 @@ bool OrderManager::getFreqItemSets(
     }
 
     return false;
+}
+
+void OrderManager::getAllFreqItemSets(
+    FrequentItemSetResultType& freq_itemsets,
+    size_t threshold
+)
+{
+    izenelib::util::ScopedReadLock<izenelib::util::ReadWriteLock> lock(result_lock_);
+    for(FrequentItemSetResultType::iterator freqIt = frequent_itemsets_.begin();
+          freqIt != frequent_itemsets_.end(); ++freqIt)
+    {
+        if(freqIt->second >= threshold)
+        {
+            freq_itemsets.push_back(*freqIt);
+        }
+    }
 }
 
 void OrderManager::flush()
@@ -220,6 +241,7 @@ void OrderManager::_findFrequentItemsets()
         }
         _judgeFrequentItemset(max_itemset, frequentItemsets);
     }
+    std::sort(frequentItemsets.begin(), frequentItemsets.end(), itemSetCompare);
     izenelib::util::ScopedWriteLock<izenelib::util::ReadWriteLock> lock(result_lock_);
     frequent_itemsets_.clear();
     frequent_itemsets_.swap(frequentItemsets);
