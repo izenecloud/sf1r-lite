@@ -42,12 +42,9 @@ public:
         std::list<sf1r::itemid_t>& results);
 
 
-    FrequentItemSetResultType& 
-    getAllFreqItemSets()
-    {
-        izenelib::util::ScopedReadLock<izenelib::util::ReadWriteLock> lock(result_lock_);
-        return frequent_itemsets_;
-    }
+    void getAllFreqItemSets(
+        FrequentItemSetResultType& freq_itemsets,
+        size_t threshold);
 
     void flush();
 
