@@ -15,6 +15,7 @@
 #include <fstream>
 #include <memory>
 #include <algorithm>
+#include <map>
 
 using namespace std;
 
@@ -73,20 +74,33 @@ bool OrderManager::getFreqItemSets(
     if(item_order_index_.get( items, orders))
     {
         ItemIdSet itemIdSet(items.begin(),items.end());
+        FilterItems filterItems(itemIdSet);
+        std::map<itemid_t, int> itemFreqMap;
         for(std::list<orderid_t>::iterator orderIt = orders.begin();
               orderIt != orders.end(); ++orderIt)
         {
             std::vector<itemid_t> items_in_order;
             if(_getOrder(*orderIt,items_in_order))
             {
-                results.resize(results.size() + items_in_order.size());
-                std::copy(items_in_order.begin(), items_in_order.end(), results.begin());
+                for(std::vector<itemid_t>::const_iterator itemIt = items_in_order.begin();
+                    itemIt != items_in_order.end(); ++itemIt)
+                {
+                    if(filterItems(*itemIt) == false)
+                    {
+                        ++itemFreqMap[*itemIt];
+                    }
+                }
             }
         }
-        results.remove_if( FilterItems(itemIdSet));
+        for(std::map<itemid_t, int>::const_iterator mapIt = itemFreqMap.begin();
+            mapIt != itemFreqMap.end(); ++mapIt)
+        {
+            results.push_back(mapIt->first);
+        }
         return true;
     }
-    else return false;
+
+    return false;
 }
 
 void OrderManager::flush()
@@ -134,49 +148,35 @@ bool OrderManager::_getOrder(
     off_t pos;
     {
     izenelib::util::ScopedReadLock<izenelib::util::ReadWriteLock> lock(db_lock_);
-    fseek(order_key_, orderId, SEEK_SET);
+    fseek(order_key_, orderId*sizeof(off_t), SEEK_SET);
     fread(&pos, 1, sizeof(off_t), order_key_);
     }
-    size_t bytes_read;
-    uint32_t vector_size;
 
     FILE* order_db = fopen(order_db_path_.c_str(), "rb" );
     fseek(order_db, pos, SEEK_SET);
-    while ((bytes_read = fread(&orderId, 1, 4, order_db)) == 4)
+
+    sf1r::orderid_t tempOrderId = 0;
+    bool result = false;
+    size_t bytes_read;
+    if ((bytes_read = fread(&tempOrderId, 1, 4, order_db)) == 4
+        && tempOrderId == orderId)
     {
+        uint32_t vector_size;
         bytes_read = fread(&vector_size, 1, 4, order_db);
-        if (bytes_read != 4)
+        if (bytes_read == 4)
         {
-            if (ferror(order_db))
-                break;
-            return -1;
+            items.resize(vector_size);
+            bytes_read = fread(&(items[0]), 1, sizeof(itemid_t) * vector_size, order_db);
+            if (bytes_read == sizeof(itemid_t) * vector_size)
+            {
+                result = true;
+            }
         }
-        items.resize(vector_size);
-        bytes_read = fread(&(items[0]), 1, sizeof(itemid_t) * vector_size, order_db);
-        if (bytes_read != sizeof(itemid_t) * vector_size)
-        {
-            if (ferror(order_db))
-                break;
-            fclose(order_db);
-            return false;
-        }
-        fclose(order_db);
-        return true;
-    }
-    if (ferror(order_db))
-    {
-        fclose(order_db);
-        return false;
-    }
-    if (bytes_read != 0)
-    {
-        fclose(order_db);
-        return false;
     }
 
-    return false;
+    fclose(order_db);
+    return result;
 }
-
 
 void OrderManager::_findMaxItemsets()
 {
