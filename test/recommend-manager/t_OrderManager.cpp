@@ -14,6 +14,9 @@
 #include <list>
 #include <map>
 #include <set>
+#include <algorithm>
+#include <iterator>
+#include <sstream>
 
 using namespace std;
 using namespace boost;
@@ -25,6 +28,48 @@ namespace
 {
 const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
 const char* ORDER_HOME_STR = "recommend_test/t_OrderManager";
+ostream_iterator<itemid_t> COUT_ITER(cout, ",");
+
+template <class OutputIterator>
+void splitItems(const char* inputStr, OutputIterator result)
+{
+    uint32_t itemId;
+    stringstream ss(inputStr);
+    while (ss >> itemId)
+    {
+        *result++ = itemId;
+    }
+}
+
+void checkGetFreqItemSets(OrderManager& orderManager, const char* inputItemStr, const char* goldItemStr)
+{
+    std::list<itemid_t> inputItems;
+    vector<itemid_t> goldResult;
+    splitItems(inputItemStr, back_insert_iterator< list<itemid_t> >(inputItems));
+    splitItems(goldItemStr, back_insert_iterator< vector<itemid_t> >(goldResult));
+
+    std::list<itemid_t> resultList;
+    orderManager.getFreqItemSets(inputItems, resultList);
+
+    cout << "given input items (";
+    copy(inputItems.begin(), inputItems.end(), COUT_ITER);
+    cout << "), get other items in one order (";
+    copy(resultList.begin(), resultList.end(), COUT_ITER);
+    cout << "), expected items (";
+    copy(goldResult.begin(), goldResult.end(), COUT_ITER);
+    cout << ")";
+    cout << endl;
+
+    // sort gold items
+    sort(goldResult.begin(), goldResult.end());
+
+    // check recommend items
+    vector<itemid_t> resultVec(resultList.begin(), resultList.end());
+    sort(resultVec.begin(), resultVec.end());
+    BOOST_CHECK_EQUAL_COLLECTIONS(resultVec.begin(), resultVec.end(),
+                                  goldResult.begin(), goldResult.end());
+}
+
 }
 
 
@@ -63,25 +108,20 @@ BOOST_AUTO_TEST_CASE(checkOrder)
     {
         std::vector<itemid_t>& items = resultIt->first;
         cout<<"ItemSets: freq: "<<resultIt->second<<" items: ";
-        for(std::vector<itemid_t>::iterator itemIt = items.begin(); itemIt != items.end(); ++itemIt)
-        {
-            cout<<*itemIt<<",";
-        }
+        copy(items.begin(), items.end(), COUT_ITER);
         cout<<endl;
     }
 
-    {
-    itemid_t myints[] = {1,2};
-    std::list<itemid_t> inputItems (myints, myints + sizeof(myints) / sizeof(itemid_t) );
-    std::list<itemid_t> results;
-    orderManager.getFreqItemSets(inputItems, results);
-    cout<<"ItemSet:";
-    for(std::list<itemid_t>::iterator it = results.begin(); it != results.end(); ++it)
-    {
-        cout<<*it<<",";
-    }
-    cout<<endl;
-    }
+    checkGetFreqItemSets(orderManager, "1 2 3", "4");
+    checkGetFreqItemSets(orderManager, "1 2", "3 4");
+    checkGetFreqItemSets(orderManager, "2 3 4", "1");
+    checkGetFreqItemSets(orderManager, "3 4", "1 2 5");
+    checkGetFreqItemSets(orderManager, "4 5", "3");
+    checkGetFreqItemSets(orderManager, "1", "2 3 4");
+    checkGetFreqItemSets(orderManager, "2", "1 3 4");
+    checkGetFreqItemSets(orderManager, "3", "1 2 4 5");
+    checkGetFreqItemSets(orderManager, "4", "1 2 3 5");
+    checkGetFreqItemSets(orderManager, "5", "3 4");
 }
 
 BOOST_AUTO_TEST_SUITE_END() 
