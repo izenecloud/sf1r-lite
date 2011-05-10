@@ -34,9 +34,34 @@ public:
     }
 };
 
-bool itemSetCompare (std::pair<std::vector<itemid_t>, size_t > p1,std::pair<std::vector<itemid_t>, size_t > p2)
+/**
+ * @return true for the frequency value of @p p1 is higher than that of @p p2,
+ *         if their frequency values are equal, true if the items in @p p1 compares
+ *         lexicographically less than the items in @p p2.
+ * @pre the items in @p p1 and @p p2 are already sorted by item id
+ */
+bool itemSetCompare (const std::pair<std::vector<itemid_t>, size_t >& p1, const std::pair<std::vector<itemid_t>, size_t >& p2)
 {
-    return (p1.second > p2.second);
+    if (p1.second > p2.second)
+        return true;
+
+    if (p1.second < p2.second)
+        return false;
+
+    return std::lexicographical_compare(p1.first.begin(), p1.first.end(),
+                                        p2.first.begin(), p2.first.end());
+}
+
+/**
+ * @return true for the same items and frequency value.
+ * @pre the items in @p p1 and @p p2 are already sorted by item id
+ */
+bool itemSetPredicate (const std::pair<std::vector<itemid_t>, size_t >& p1, const std::pair<std::vector<itemid_t>, size_t >& p2)
+{
+    if (p1.second != p2.second || p1.first.size() != p2.first.size())
+        return false;
+
+    return std::equal(p1.first.begin(), p1.first.end(), p2.first.begin());
 }
 
 OrderManager::OrderManager(const std::string& path)
@@ -120,6 +145,11 @@ void OrderManager::getAllFreqItemSets(
         if(freqIt->second >= threshold)
         {
             freq_itemsets.push_back(*freqIt);
+        }
+        else
+        {
+            // assume frequent_itemsets_ is sorted by frequence
+            break;
         }
     }
 }
@@ -242,8 +272,9 @@ void OrderManager::_findFrequentItemsets()
         _judgeFrequentItemset(max_itemset, frequentItemsets);
     }
     std::sort(frequentItemsets.begin(), frequentItemsets.end(), itemSetCompare);
+    FrequentItemSetResultType::iterator uniqueEnd = std::unique(frequentItemsets.begin(), frequentItemsets.end(), itemSetPredicate);
+    frequentItemsets.resize(uniqueEnd - frequentItemsets.begin());
     izenelib::util::ScopedWriteLock<izenelib::util::ReadWriteLock> lock(result_lock_);
-    frequent_itemsets_.clear();
     frequent_itemsets_.swap(frequentItemsets);
 }
 
