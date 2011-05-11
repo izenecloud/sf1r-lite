@@ -137,21 +137,20 @@ IF(NOT ENV_ONLY_PACKAGE_SF1)
     COMPONENT sf1r_packings
     )
 
-
-  INSTALL( DIRECTORY "${CMAKE_SOURCE_DIR}/../scripts/lib"
-    DESTINATION "scripts"
+  INSTALL( DIRECTORY "${CMAKE_SOURCE_DIR}/../bin/config"
+    DESTINATION "."
     COMPONENT sf1r_packings
+    REGEX ".xml.in" EXCLUDE
     )
   INSTALL( PROGRAMS 
-    ${CMAKE_SOURCE_DIR}/../bin/sf1 
-    ${CMAKE_SOURCE_DIR}/../bin/sf1-agent
+    ${CMAKE_SOURCE_DIR}/../bin/sf1r-engine 
+    ${CMAKE_SOURCE_DIR}/../bin/clean.query 
     DESTINATION "bin"
     COMPONENT sf1r_packings
     )
-  INSTALL( DIRECTORY "${CMAKE_SOURCE_DIR}/../package/config"
+  INSTALL( DIRECTORY "${CMAKE_SOURCE_DIR}/../instances"
     DESTINATION "."
     COMPONENT sf1r_packings
-    REGEX ".gitignore" EXCLUDE
     )
   INSTALL( DIRECTORY "${CMAKE_SOURCE_DIR}/../package/resource"
     DESTINATION "."
@@ -181,6 +180,7 @@ SET(CPACK_PACKAGE_VENDOR "Wisenut" )
 SET(CPACK_PACKAGE_VERSION "alpha")
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "SF-1 Revolution QC candidate" )
 SET(CPACK_PACKAGE_FILE_NAME "SF-1R-${CPACK_PACKAGE_VERSION}-x86_64-Linux-GCC4.1.2" )
+SET(CPACK_PACKAGE_FILE_NAME "sf1r-engine" )
 
 ENDIF( USE_MF_LIGHT )
 
