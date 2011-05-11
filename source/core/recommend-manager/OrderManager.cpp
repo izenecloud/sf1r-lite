@@ -3,6 +3,7 @@
 #include <idmlib/itemset/all-maximal-sets-satelite.h>
 #include <idmlib/itemset/data-source-iterator.h>
 #include <util/nextsubset.h>
+#include <util/PriorityQueue.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp> 
@@ -18,6 +19,28 @@
 #include <map>
 
 using namespace std;
+
+namespace
+{
+
+typedef std::pair<sf1r::itemid_t, int> ItemFreq;
+
+class ItemFreqQueue : public izenelib::util::PriorityQueue<ItemFreq>
+{
+public:
+    ItemFreqQueue(size_t size)
+    {
+        this->initialize(size);
+    }
+
+protected:
+    bool lessThan(ItemFreq p1, ItemFreq p2)
+    {
+        return (p1.second < p2.second);
+    }
+};
+
+}
 
 namespace sf1r
 {
@@ -88,8 +111,8 @@ OrderManager::~OrderManager()
 }
 
 void OrderManager::addOrder(
-	sf1r::orderid_t orderId,
-	std::list<sf1r::itemid_t>& items
+    sf1r::orderid_t orderId,
+    std::list<sf1r::itemid_t>& items
 )
 {
     item_order_index_.add(orderId, items);
@@ -97,8 +120,10 @@ void OrderManager::addOrder(
 }
 
 bool OrderManager::getFreqItemSets(
+    int howmany, 
     std::list<sf1r::itemid_t>& items, 
-    std::list<sf1r::itemid_t>& results)
+    std::list<sf1r::itemid_t>& results,
+    idmlib::recommender::ItemRescorer* rescorer)
 {
     std::list<orderid_t> orders;
     if(item_order_index_.get( items, orders))
@@ -115,17 +140,23 @@ bool OrderManager::getFreqItemSets(
                 for(std::vector<itemid_t>::const_iterator itemIt = items_in_order.begin();
                     itemIt != items_in_order.end(); ++itemIt)
                 {
-                    if(filterItems(*itemIt) == false)
+                    if(filterItems(*itemIt) == false
+                      && (!rescorer || !rescorer->isFiltered(*itemIt)))
                     {
                         ++itemFreqMap[*itemIt];
                     }
                 }
             }
         }
+        ItemFreqQueue queue(howmany);
         for(std::map<itemid_t, int>::const_iterator mapIt = itemFreqMap.begin();
             mapIt != itemFreqMap.end(); ++mapIt)
         {
-            results.push_back(mapIt->first);
+            queue.insert(*mapIt);
+        }
+        while(queue.size() > 0)
+        {
+            results.push_front(queue.pop().first);
         }
         return true;
     }
@@ -134,8 +165,9 @@ bool OrderManager::getFreqItemSets(
 }
 
 void OrderManager::getAllFreqItemSets(
-    FrequentItemSetResultType& freq_itemsets,
-    size_t threshold
+    int howmany, 
+    size_t threshold,
+    FrequentItemSetResultType& results
 )
 {
     izenelib::util::ScopedReadLock<izenelib::util::ReadWriteLock> lock(result_lock_);
@@ -144,7 +176,12 @@ void OrderManager::getAllFreqItemSets(
     {
         if(freqIt->second >= threshold)
         {
-            freq_itemsets.push_back(*freqIt);
+            results.push_back(*freqIt);
+
+            if(static_cast<int>(results.size()) >= howmany)
+            {
+                break;
+            }
         }
         else
         {

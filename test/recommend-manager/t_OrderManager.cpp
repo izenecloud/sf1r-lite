@@ -49,7 +49,7 @@ void checkGetFreqItemSets(OrderManager& orderManager, const char* inputItemStr, 
     splitItems(goldItemStr, back_insert_iterator< vector<itemid_t> >(goldResult));
 
     std::list<itemid_t> resultList;
-    orderManager.getFreqItemSets(inputItems, resultList);
+    orderManager.getFreqItemSets(goldResult.size(), inputItems, resultList);
 
     cout << "given input items (";
     copy(inputItems.begin(), inputItems.end(), COUT_ITER);
@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE(checkOrder)
     orderManager.flush();
     orderManager.buildFreqItemsets();
     FrequentItemSetResultType results;
-    orderManager.getAllFreqItemSets(results, 2);
+    orderManager.getAllFreqItemSets(100, 2, results);
     for(FrequentItemSetResultType::iterator resultIt = results.begin(); resultIt != results.end(); ++resultIt)
     {
         std::vector<itemid_t>& items = resultIt->first;

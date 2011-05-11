@@ -11,6 +11,7 @@
 #include "ItemIndex.h"
 
 #include <util/ThreadModel.h>
+#include <idmlib/resys/ItemRescorer.h>
 
 #include <string>
 #include <vector>
@@ -37,14 +38,30 @@ public:
         sf1r::orderid_t orderId,
         std::list<sf1r::itemid_t>& items);
 
+    /**
+     * Get @p howmany items which is most frequently appeared with @p items in the same order.
+     * @param howmany the number of items to get
+     * @param items the input items
+     * @param results the items returned
+     * @param rescorer if not NULL, the items filtered by @p rescorer would not appear in @p results
+     */
     bool getFreqItemSets(
+        int howmany, 
         std::list<sf1r::itemid_t>& items, 
-        std::list<sf1r::itemid_t>& results);
+        std::list<sf1r::itemid_t>& results,
+        idmlib::recommender::ItemRescorer* rescorer = NULL);
 
 
+    /**
+     * Get @p howmany item sets which frequency is not less than @p threshold.
+     * @param howmany the number of item sets to get
+     * @param threshold the minimum frequency value
+     * @param results the item sets returned
+     */
     void getAllFreqItemSets(
-        FrequentItemSetResultType& freq_itemsets,
-        size_t threshold);
+        int howmany, 
+        size_t threshold,
+        FrequentItemSetResultType& results);
 
     void flush();
 
