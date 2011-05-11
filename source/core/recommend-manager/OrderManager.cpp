@@ -97,7 +97,7 @@ OrderManager::OrderManager(
     ,order_db_path_(boost::filesystem::path(boost::filesystem::path(path)/"orderdb.data").string())
     ,max_itemsets_results_path_(boost::filesystem::path(boost::filesystem::path(path)/"maxitemsets.txt").string())
     ,frequent_itemsets_results_path_(boost::filesystem::path(boost::filesystem::path(path)/"frequentitemsets.db").string())
-    ,threshold_(5)
+    ,threshold_(1)
     ,itemManager_(itemManager)
 {
     _restoreFreqItemsetDb();

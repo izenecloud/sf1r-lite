@@ -168,4 +168,30 @@ bool RecommendManager::recommend(
     return true;
 }
 
+bool RecommendManager::topItemBundle(
+    int maxRecNum,
+    int minFreq,
+    std::vector<vector<itemid_t> >& bundleVec,
+    std::vector<int>& freqVec
+)
+{
+    // TODO instead of building freq item sets for each request,
+    // we should schedule the build in task
+    orderManager_->buildFreqItemsets();
+
+    FrequentItemSetResultType results;
+    orderManager_->getAllFreqItemSets(maxRecNum, minFreq, results);
+
+    const std::size_t resultNum = results.size();
+    bundleVec.resize(resultNum);
+    freqVec.resize(resultNum);
+    for (std::size_t i = 0; i < resultNum; ++i)
+    {
+        bundleVec[i].swap(results[i].first);
+        freqVec[i] = results[i].second;
+    }
+
+    return true;
+}
+
 } // namespace sf1r

@@ -48,6 +48,13 @@ public:
         std::vector<double>& recWeightVec
     );
 
+    bool topItemBundle(
+        int maxRecNum,
+        int minFreq,
+        std::vector<vector<Item> >& bundleVec,
+        std::vector<int>& freqVec
+    );
+
 private:
     bool convertItemId(
         const std::vector<std::string>& inputItemVec,

@@ -40,6 +40,13 @@ public:
         std::vector<double>& recWeightVec
     );
 
+    bool topItemBundle(
+        int maxRecNum,
+        int minFreq,
+        std::vector<vector<itemid_t> >& bundleVec,
+        std::vector<int>& freqVec
+    );
+
 private:
     ItemManager* itemManager_;
     VisitManager* visitManager_;
