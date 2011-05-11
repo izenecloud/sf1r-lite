@@ -97,7 +97,7 @@ PurchaseManager::PurchaseManager(
 )
     : container_(path)
     , orderManagerPath_(boost::filesystem::path(boost::filesystem::path(path).parent_path()/"order").string())
-    , orderManager_(orderManagerPath_)
+    , orderManager_(orderManagerPath_, itemManager)
     , jobScheduler_(jobScheduler)
     , itemCFManager_(itemCFManager)
     , itemManager_(itemManager)

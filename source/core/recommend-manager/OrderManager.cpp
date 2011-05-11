@@ -1,4 +1,5 @@
 #include "OrderManager.h"
+#include "ItemManager.h"
 
 #include <idmlib/itemset/all-maximal-sets-satelite.h>
 #include <idmlib/itemset/data-source-iterator.h>
@@ -87,13 +88,17 @@ bool itemSetPredicate (const std::pair<std::vector<itemid_t>, size_t >& p1, cons
     return std::equal(p1.first.begin(), p1.first.end(), p2.first.begin());
 }
 
-OrderManager::OrderManager(const std::string& path)
+OrderManager::OrderManager(
+    const std::string& path,
+    const ItemManager* itemManager
+)
     :item_order_index_(path+"/index")
     ,order_key_path_(boost::filesystem::path(boost::filesystem::path(path)/"orderdb.key").string())
     ,order_db_path_(boost::filesystem::path(boost::filesystem::path(path)/"orderdb.data").string())
     ,max_itemsets_results_path_(boost::filesystem::path(boost::filesystem::path(path)/"maxitemsets.txt").string())
     ,frequent_itemsets_results_path_(boost::filesystem::path(boost::filesystem::path(path)/"frequentitemsets.db").string())
     ,threshold_(5)
+    ,itemManager_(itemManager)
 {
     _restoreFreqItemsetDb();
 
@@ -226,6 +231,8 @@ void OrderManager::_writeRecord(
         sf1r::itemid_t itemId = *iter;
         fwrite(&itemId, sizeof(sf1r::itemid_t), 1, order_db_); //itemId
     }
+    ///flush for the new order could be fetched in _getOrder()
+    fflush(order_db_);
 }
 
 bool OrderManager::_getOrder(
@@ -272,10 +279,9 @@ void OrderManager::_findMaxItemsets()
     max_itemsets_results.open (max_itemsets_results_path_.c_str(), fstream::out/* | fstream::app*/);
     std::auto_ptr<idmlib::DataSourceIterator> data(idmlib::DataSourceIterator::Get(order_db_path_.c_str()));	
     idmlib::AllMaximalSetsSateLite ap;
-    size_t numItems = item_order_index_.getNumItems();
     bool result = ap.FindAllMaximalSets(
         data.get(),
-        numItems+1,
+        itemManager_->maxItemId()+1,
         1000000000/*max_items_in_ram*/,
         max_itemsets_results);
     if (!result) 

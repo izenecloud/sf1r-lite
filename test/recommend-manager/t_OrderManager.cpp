@@ -3,7 +3,7 @@
 
 #include <util/ustring/UString.h>
 #include <recommend-manager/OrderManager.h>
-#include <common/JobScheduler.h>
+#include <recommend-manager/ItemManager.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
@@ -28,6 +28,8 @@ namespace
 {
 const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
 const char* ORDER_HOME_STR = "recommend_test/t_OrderManager";
+const char* ITEM_DB_STR = "item.db";
+const char* MAX_ID_STR = "max_itemid.txt";
 ostream_iterator<itemid_t> COUT_ITER(cout, ",");
 
 template <class OutputIterator>
@@ -80,7 +82,17 @@ BOOST_AUTO_TEST_CASE(checkOrder)
     bfs::remove_all(ORDER_HOME_STR);
     bfs::create_directories(ORDER_HOME_STR);
 
-    OrderManager orderManager(ORDER_HOME_STR);
+    // add items first
+    bfs::path itemPath(bfs::path(ORDER_HOME_STR) / ITEM_DB_STR);
+    bfs::path maxIdPath(bfs::path(ORDER_HOME_STR) / MAX_ID_STR);
+    ItemManager itemManager(itemPath.string(), maxIdPath.string());
+    const itemid_t MAX_ITEM_ID = 50;
+    for (itemid_t i = 1; i <= MAX_ITEM_ID; ++i)
+    {
+        BOOST_CHECK(itemManager.addItem(i, Item()));
+    }
+
+    OrderManager orderManager(ORDER_HOME_STR, &itemManager);
     orderManager.setMinThreshold(1);
     orderid_t orderId = 0;
     {
@@ -101,7 +113,9 @@ BOOST_AUTO_TEST_CASE(checkOrder)
     orderManager.addOrder(++orderId, transaction);
     }
 
-    orderManager.flush();
+    // no need to flush as the items and orders could be fetched in realtime
+    //orderManager.flush();
+
     orderManager.buildFreqItemsets();
     FrequentItemSetResultType results;
     orderManager.getAllFreqItemSets(100, 2, results);

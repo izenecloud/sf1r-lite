@@ -19,12 +19,15 @@
 
 namespace sf1r
 {
+class ItemManager;
+
 typedef std::vector<std::pair<std::vector<itemid_t>, size_t > > FrequentItemSetResultType;
 class OrderManager
 {
 public:
     OrderManager(
-        const std::string& path
+        const std::string& path,
+        const ItemManager* itemManager
     );
 
     ~OrderManager();
@@ -56,12 +59,19 @@ public:
      * @param howmany the number of item sets to get
      * @param threshold the minimum frequency value
      * @param results the item sets returned
+     * @note to get latest result, you have to call @c buildFreqItemsets() beforehand.
      */
     void getAllFreqItemSets(
         int howmany, 
         size_t threshold,
         FrequentItemSetResultType& results);
 
+    /**
+     * Flush the orders and items into disk files.
+     * @note you need not call this function explicitly,
+     *       as in @c getFreqItemSets() and @c buildFreqItemsets(),
+     *       the latest orders and items could be fetched in realtime.
+     */
     void flush();
 
     void buildFreqItemsets();
@@ -99,6 +109,7 @@ private:
     FILE* order_db_;
     izenelib::util::ReadWriteLock result_lock_;
     FrequentItemSetResultType frequent_itemsets_;
+    const ItemManager* itemManager_; // for max item id
 };
 
 } // namespace sf1r
