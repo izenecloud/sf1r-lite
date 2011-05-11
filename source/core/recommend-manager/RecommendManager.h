@@ -15,6 +15,7 @@ namespace sf1r
 {
 class ItemManager;
 class VisitManager;
+class OrderManager;
 
 class RecommendManager
 {
@@ -23,7 +24,8 @@ public:
         ItemManager* itemManager,
         VisitManager* visitManager,
         CoVisitManager* coVisitManager,
-        ItemCFManager* itemCFManager
+        ItemCFManager* itemCFManager,
+        OrderManager* orderManager
     );
 
     bool recommend(
@@ -43,6 +45,7 @@ private:
     VisitManager* visitManager_;
     CoVisitManager* coVisitManager_;
     ItemCFManager* itemCFManager_;
+    OrderManager* orderManager_;
 };
 
 } // namespace sf1r

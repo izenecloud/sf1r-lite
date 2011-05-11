@@ -83,6 +83,10 @@ public:
     SDBIterator begin();
     SDBIterator end();
 
+    OrderManager* getOrderManager() {
+        return &orderManager_;
+    }
+
 private:
     orderid_t newOrderId();
 

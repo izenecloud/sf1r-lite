@@ -1,9 +1,12 @@
 #include "RecommendManager.h"
 #include "ItemManager.h"
 #include "VisitManager.h"
+#include "OrderManager.h"
 #include <recommend-manager/ItemFilter.h>
 
 #include <glog/logging.h>
+
+#include <list>
 
 namespace sf1r
 {
@@ -11,12 +14,14 @@ RecommendManager::RecommendManager(
     ItemManager* itemManager,
     VisitManager* visitManager,
     CoVisitManager* coVisitManager,
-    ItemCFManager* itemCFManager
+    ItemCFManager* itemCFManager,
+    OrderManager* orderManager
 )
     : itemManager_(itemManager)
     , visitManager_(visitManager)
     , coVisitManager_(coVisitManager)
     , itemCFManager_(itemCFManager)
+    , orderManager_(orderManager)
 {
 }
 
@@ -130,6 +135,25 @@ bool RecommendManager::recommend(
             recItemVec.push_back(it->itemId);
             recWeightVec.push_back(it->value);
         }
+    }
+    else if (type == FREQUENT_BUY_TOGETHER)
+    {
+        if (inputItemVec.empty())
+        {
+            LOG(ERROR) << "failed to recommend for empty input items";
+            return false;
+        }
+
+        std::list<itemid_t> inputItemList(inputItemVec.begin(), inputItemVec.end());
+        std::list<itemid_t> results;
+        if (orderManager_->getFreqItemSets(maxRecNum, inputItemList, results, &filter) == false)
+        {
+            LOG(ERROR) << "failed in OrderManager::getFreqItemSets()";
+            return false;
+        }
+
+        recItemVec.assign(results.begin(), results.end());
+        recWeightVec.assign(recItemVec.size(), 1);
     }
     else
     {

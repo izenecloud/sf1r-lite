@@ -51,7 +51,6 @@ public:
         std::list<sf1r::itemid_t>& results,
         idmlib::recommender::ItemRescorer* rescorer = NULL);
 
-
     /**
      * Get @p howmany item sets which frequency is not less than @p threshold.
      * @param howmany the number of item sets to get
