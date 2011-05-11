@@ -122,4 +122,39 @@ bool RecommendSearchService::recommend(
     return true;
 }
 
+bool RecommendSearchService::topItemBundle(
+    int maxRecNum,
+    int minFreq,
+    std::vector<vector<Item> >& bundleVec,
+    std::vector<int>& freqVec
+)
+{
+    std::vector<vector<itemid_t> > bundleIdVec;
+    if (!recommendManager_->topItemBundle(maxRecNum, minFreq,
+                                          bundleIdVec, freqVec))
+    {
+        LOG(ERROR) << "error in RecommendManager::topItemBundle()";
+        return false;
+    }
+
+    bundleVec.resize(bundleIdVec.size());
+    for (std::size_t i = 0; i < bundleIdVec.size(); ++i)
+    {
+        const vector<itemid_t>& idVec = bundleIdVec[i];
+        vector<Item>& itemVec = bundleVec[i];
+        itemVec.resize(idVec.size());
+
+        for (std::size_t j = 0; j < idVec.size(); ++j)
+        {
+            if (!itemManager_->getItem(idVec[j], itemVec[j]))
+            {
+                LOG(ERROR) << "error in ItemManager::getItem(), item id: " << idVec[j];
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 } // namespace sf1r

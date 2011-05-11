@@ -17,6 +17,9 @@ namespace
 /// @brief default count of recommended items in each request.
 const std::size_t kDefaultRecommendCount = 10;
 
+/// @brief default min frequency of each bundle in @p top_item_bundle().
+const std::size_t kDefaultMinFreq = 1;
+
 const izenelib::util::UString::EncodingType kEncoding = izenelib::util::UString::UTF_8;
 }
 
@@ -166,7 +169,7 @@ bool RecommendController::value2ItemIdVec(const std::string& propName, std::vect
  * Request
  * @code
  * {
- *   "resource" => {
+ *   "resource": {
  *     "USERID": "user_001",
  *     "gender": "male",
  *     "age": "20",
@@ -216,7 +219,7 @@ void RecommendController::add_user()
  * Request
  * @code
  * {
- *   "resource" => {
+ *   "resource": {
  *     "USERID": "user_001",
  *     "gender": "male",
  *     "age": "20",
@@ -263,7 +266,7 @@ void RecommendController::update_user()
  * Request
  * @code
  * {
- *   "resource" => {
+ *   "resource": {
  *     "USERID": "user_001"
  *   }
  * }
@@ -308,7 +311,7 @@ void RecommendController::remove_user()
  * Request
  * @code
  * {
- *   "resource" => {
+ *   "resource": {
  *     "USERID": "user_001"
  *   }
  * }
@@ -318,7 +321,7 @@ void RecommendController::remove_user()
  * @code
  * {
  *   "header": {"success": true},
- *   "resource" => {
+ *   "resource": {
  *     "USERID": "user_001",
  *     "gender": "male",
  *     "age": "20",
@@ -374,7 +377,7 @@ void RecommendController::get_user()
  * Request
  * @code
  * {
- *   "resource" => {
+ *   "resource": {
  *     "ITEMID": "item_001",
  *     "name": "iphone",
  *     "link": "www.shop.com/product/item_001",
@@ -425,7 +428,7 @@ void RecommendController::add_item()
  * Request
  * @code
  * {
- *   "resource" => {
+ *   "resource": {
  *     "ITEMID": "item_001",
  *     "name": "iphone",
  *     "link": "www.shop.com/product/item_001",
@@ -473,7 +476,7 @@ void RecommendController::update_item()
  * Request
  * @code
  * {
- *   "resource" => {
+ *   "resource": {
  *     "ITEMID": "item_001"
  *   }
  * }
@@ -518,7 +521,7 @@ void RecommendController::remove_item()
  * Request
  * @code
  * {
- *   "resource" => {
+ *   "resource": {
  *     "ITEMID": "item_001"
  *   }
  * }
@@ -528,7 +531,7 @@ void RecommendController::remove_item()
  * @code
  * {
  *   "header": {"success": true},
- *   "resource" => {
+ *   "resource": {
  *     "ITEMID": "item_001",
  *     "name": "iphone",
  *     "link": "www.shop.com/product/item_001",
@@ -585,7 +588,7 @@ void RecommendController::get_item()
  * Request
  * @code
  * {
- *   "resource" => {
+ *   "resource": {
  *     "USERID": "user_001",
  *     "ITEMID": "item_001"
  *   }
@@ -638,7 +641,7 @@ void RecommendController::visit_item()
  * Request
  * @code
  * {
- *   "resource" => {
+ *   "resource": {
  *     "USERID": "user_001",
  *     "items": [
  *       {"ITEMID": "item_001", "price": 100, "quantity": 1},
@@ -734,16 +737,16 @@ void RecommendController::purchase_item()
  *   - @b ITEMID (@c String): a unique item identifier.
  *   - @b weight (@c Double): the recommendation weight, if this value is available, the items would be sorted by this value decreasingly.
  *   - each item properties in add_item() would also be included here. Property key name is used as key.
- *   The corresponding value is the content of the property.
+ *     The corresponding value is the content of the property.
  *
  * @section example
  *
  * Request
  * @code
  * {
- *   "resource" => {
- *     "rec_type_id": "3",
- *     "max_count": "20",
+ *   "resource": {
+ *     "rec_type_id": 3,
+ *     "max_count": 20,
  *     "USERID": "user_001"
  *   }
  * }
@@ -753,7 +756,7 @@ void RecommendController::purchase_item()
  * @code
  * {
  *   "header": {"success": true},
- *   "resources" => [
+ *   "resources": [
  *     {"ITEMID": "item_001", "weight": 0.9, "name": "iphone", "link": "www.shop.com/product/item_001", "price": "5000", "category": "digital"},
  *     {"ITEMID": "item_002", "weight": 0.8, "name": "ipad", "link": "www.shop.com/product/item_002", "price": "6000", "category": "digital"},
  *     {"ITEMID": "item_003", "weight": 0.7, "name": "imac", "link": "www.shop.com/product/item_003", "price": "20000", "category": "digital"}
@@ -846,6 +849,7 @@ void RecommendController::do_recommend()
         }
 
         Value& resources = response()[Keys::resources];
+        std::string convertBuffer;
         for (std::size_t i = 0; i < recItemVec.size(); ++i)
         {
             Value& itemValue = resources();
@@ -853,7 +857,6 @@ void RecommendController::do_recommend()
 
             Item& item = recItemVec[i];
             itemValue[Keys::ITEMID] = item.idStr_;
-            std::string convertBuffer;
             for (Item::PropValueMap::const_iterator it = item.propValueMap_.begin();
                 it != item.propValueMap_.end(); ++it)
             {
@@ -865,6 +868,122 @@ void RecommendController::do_recommend()
     else
     {
         response().addError("Failed to get recommendation result from given collection.");
+    }
+}
+
+/**
+ * @brief Action @b top_item_bundle. Get the most frequent item bundles, with each bundle containing the items frequently bought together in one order.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Get recommendation result in this collection.
+ * - @b resource* (@c Object): A resource of the request for recommendation result.
+ *   - @b max_count (@c Uint = 10): at most how many bundles allowed in result.
+ *   - @b min_freq (@c Uint = 1): the min frequency for each bundle in result.
+ *
+ * @section response
+ *
+ * - @b header (@c Object): Property @b success gives the result, true or false.
+ * - @b resources (@c Array): each is a bundle, sorted by @b freq decreasingly.
+ *   - @b freq (@c Uint): the frequency of the bundle, that is, how many times this bundle is contained in all orders.
+ *   - @b items (@c Array): each is an item in the bundle.
+ *     - @b ITEMID (@c String): a unique item identifier.
+ *     - each item properties in add_item() would also be included here. Property key name is used as key.
+ *       The corresponding value is the content of the property.
+ *
+ * @section example
+ *
+ * Request
+ * @code
+ * {
+ *   "resource": {
+ *     "max_count": 20,
+ *     "min_freq": 10
+ *   }
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ *   "resources": [
+ *     { "freq": 90,
+ *       "items": [
+ *         {"ITEMID": "item_001", "name": "iphone", "link": "www.shop.com/product/item_001", "price": "5000", "category": "digital"},
+ *         {"ITEMID": "item_002", "name": "ipad", "link": "www.shop.com/product/item_002", "price": "6000", "category": "digital"}
+ *       ]
+ *     },
+ *     { "freq": 85,
+ *       "items": [
+ *         {"ITEMID": "item_002", "name": "ipad", "link": "www.shop.com/product/item_002", "price": "6000", "category": "digital"},
+ *         {"ITEMID": "item_003", "name": "imac", "link": "www.shop.com/product/item_003", "price": "30000", "category": "digital"}
+ *       ]
+ *     }
+ *     ...
+ *   ]
+ * }
+ * @endcode
+ */
+void RecommendController::top_item_bundle()
+{
+    int maxCount = kDefaultRecommendCount;
+    const izenelib::driver::Value& maxCountValue = request()[Keys::resource][Keys::max_count];
+    if (!nullValue(maxCountValue))
+    {
+        maxCount = asUint(maxCountValue);
+    }
+    if (maxCount <= 0)
+    {
+        response().addError("Require a positive value in request[resource][max_count].");
+        return;
+    }
+
+    int minFreq = kDefaultMinFreq;
+    const izenelib::driver::Value& minFreqValue = request()[Keys::resource][Keys::min_freq];
+    if (!nullValue(minFreqValue))
+    {
+        minFreq = asUint(minFreqValue);
+    }
+
+    std::vector<vector<Item> > bundleVec;
+    std::vector<int> freqVec;
+    RecommendSearchService* service = collectionHandler_->recommendSearchService_;
+    if (service->topItemBundle(maxCount, minFreq,
+                               bundleVec, freqVec))
+    {
+        if (bundleVec.size() != freqVec.size())
+        {
+            response().addError("Failed to get top item bundle from given collection (unequal size of bundle and freq array).");
+            return;
+        }
+
+        Value& resources = response()[Keys::resources];
+        std::string convertBuffer;
+        for (std::size_t i = 0; i < bundleVec.size(); ++i)
+        {
+            Value& bundleValue = resources();
+            bundleValue[Keys::freq] = freqVec[i];
+
+            Value& itemsValue = bundleValue[Keys::items];
+            const std::vector<Item>& itemVec = bundleVec[i];
+            for (std::size_t j = 0; j < itemVec.size(); ++j)
+            {
+                Value& itemValue = itemsValue();
+                const Item& item = itemVec[j];
+                itemValue[Keys::ITEMID] = item.idStr_;
+                for (Item::PropValueMap::const_iterator it = item.propValueMap_.begin();
+                    it != item.propValueMap_.end(); ++it)
+                {
+                    it->second.convertString(convertBuffer, kEncoding);
+                    itemValue[it->first] = convertBuffer;
+                }
+            }
+        }
+    }
+    else
+    {
+        response().addError("Failed to get top item bundle from given collection.");
     }
 }
 

@@ -1,9 +1,12 @@
 #include "RecommendManager.h"
 #include "ItemManager.h"
 #include "VisitManager.h"
+#include "OrderManager.h"
 #include <recommend-manager/ItemFilter.h>
 
 #include <glog/logging.h>
+
+#include <list>
 
 namespace sf1r
 {
@@ -11,12 +14,14 @@ RecommendManager::RecommendManager(
     ItemManager* itemManager,
     VisitManager* visitManager,
     CoVisitManager* coVisitManager,
-    ItemCFManager* itemCFManager
+    ItemCFManager* itemCFManager,
+    OrderManager* orderManager
 )
     : itemManager_(itemManager)
     , visitManager_(visitManager)
     , coVisitManager_(coVisitManager)
     , itemCFManager_(itemCFManager)
+    , orderManager_(orderManager)
 {
 }
 
@@ -131,6 +136,25 @@ bool RecommendManager::recommend(
             recWeightVec.push_back(it->value);
         }
     }
+    else if (type == FREQUENT_BUY_TOGETHER)
+    {
+        if (inputItemVec.empty())
+        {
+            LOG(ERROR) << "failed to recommend for empty input items";
+            return false;
+        }
+
+        std::list<itemid_t> inputItemList(inputItemVec.begin(), inputItemVec.end());
+        std::list<itemid_t> results;
+        if (orderManager_->getFreqItemSets(maxRecNum, inputItemList, results, &filter) == false)
+        {
+            LOG(ERROR) << "failed in OrderManager::getFreqItemSets()";
+            return false;
+        }
+
+        recItemVec.assign(results.begin(), results.end());
+        recWeightVec.assign(recItemVec.size(), 1);
+    }
     else
     {
         LOG(ERROR) << "currently the RecommendType " << type << " is not supported yet";
@@ -140,6 +164,32 @@ bool RecommendManager::recommend(
     // insert include items at the front of result
     recItemVec.insert(recItemVec.begin(), includeItemVec.begin(), includeItemVec.begin() + includeNum);
     recWeightVec.insert(recWeightVec.begin(), includeNum, 1);
+
+    return true;
+}
+
+bool RecommendManager::topItemBundle(
+    int maxRecNum,
+    int minFreq,
+    std::vector<vector<itemid_t> >& bundleVec,
+    std::vector<int>& freqVec
+)
+{
+    // TODO instead of building freq item sets for each request,
+    // we should schedule the build in task
+    orderManager_->buildFreqItemsets();
+
+    FrequentItemSetResultType results;
+    orderManager_->getAllFreqItemSets(maxRecNum, minFreq, results);
+
+    const std::size_t resultNum = results.size();
+    bundleVec.resize(resultNum);
+    freqVec.resize(resultNum);
+    for (std::size_t i = 0; i < resultNum; ++i)
+    {
+        bundleVec[i].swap(results[i].first);
+        freqVec[i] = results[i].second;
+    }
 
     return true;
 }

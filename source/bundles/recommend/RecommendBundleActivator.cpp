@@ -126,7 +126,11 @@ bool RecommendBundleActivator::init_()
     std::string purchasePath = dir + "purchase.db";
     auto_ptr<PurchaseManager> purchaseManagerPtr(new PurchaseManager(purchasePath, jobScheduler_, itemCFManagerPtr.get(), itemManagerPtr.get()));
 
-    auto_ptr<RecommendManager> recommendManagerPtr(new RecommendManager(itemManagerPtr.get(), visitManagerPtr.get(), coVisitManagerPtr.get(), itemCFManagerPtr.get()));
+    auto_ptr<RecommendManager> recommendManagerPtr(new RecommendManager(itemManagerPtr.get(),
+                                                                        visitManagerPtr.get(),
+                                                                        coVisitManagerPtr.get(),
+                                                                        itemCFManagerPtr.get(),
+                                                                        purchaseManagerPtr.get()->getOrderManager()));
 
     std::string userIdPath = dir + "userid";
     auto_ptr<RecIdGenerator> userIdGeneratorPtr(new RecIdGenerator(userIdPath));

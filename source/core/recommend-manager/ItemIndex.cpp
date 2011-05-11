@@ -17,7 +17,7 @@ ItemIndex::ItemIndex(const std::string& path)
     indexer_.reset(new iii::Indexer);
     iii::IndexManagerConfig indexManagerConfig;
     indexManagerConfig.indexStrategy_.indexLocation_ = path;
-    indexManagerConfig.indexStrategy_.indexMode_ = "default";
+    indexManagerConfig.indexStrategy_.indexMode_ = "realtime";
     indexManagerConfig.indexStrategy_.memory_ = 10000000;
     indexManagerConfig.indexStrategy_.indexDocLength_ = false;
     indexManagerConfig.indexStrategy_.isIndexBTree_ = false;
