@@ -329,7 +329,7 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInGroup(
             totalCount = groupDocList.size();
             if (start < totalCount)
             {
-                std::vector<docid_t>::const_iterator startIt = groupDocList.begin();
+                std::vector<docid_t>::const_iterator startIt = groupDocList.begin() + start;
                 std::vector<docid_t>::const_iterator endIt = startIt + count;
                 if (endIt > groupDocList.end())
                 {
