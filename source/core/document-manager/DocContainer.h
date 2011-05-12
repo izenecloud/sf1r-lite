@@ -90,8 +90,7 @@ public:
 		//CREATE_PROFILER(proDocumentDecompression, "Index:SIAProcess", "Indexer : DocumentDecompression")
 		if (docId > maxDocID_ )
 			return false;
-		Lux::IO::data_t val_data;
-		Lux::IO::data_t *val_p = &val_data;
+		Lux::IO::data_t *val_p = NULL;
 		if(false == containerPtr_->get(docId, &val_p, Lux::IO::SYSTEM))
 		{
 			containerPtr_->clean_data(val_p);
