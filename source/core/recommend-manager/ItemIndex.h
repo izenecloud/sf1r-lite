@@ -45,6 +45,8 @@ public:
 
     uint32_t get(std::vector<uint32_t>& itemIds);
 
+    size_t itemFreq(uint32_t itemId);
+
     size_t getNumItems();
 
 private:

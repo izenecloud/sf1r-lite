@@ -177,5 +177,16 @@ size_t ItemIndex::getNumItems()
     return pIndexReader->getDistinctNumTerms(1,property_);
 }
 
+size_t ItemIndex::itemFreq(uint32_t itemId)
+{
+    iii::IndexReader* pIndexReader = indexer_->getIndexReader();
+    iii::Term term(property_.c_str(),itemId);
+    iii::TermReader* pTermReader = pIndexReader->getTermReader(1);
+    if(pTermReader->seek(&term))
+        return pTermReader->docFreq(&term);
+    else
+        return 0;
+}
+
 } // namespace sf1r
 
