@@ -119,6 +119,17 @@ namespace sf1r {
         bool updateDocument(const Document& document);
 
         /**
+         * @brief updates an existing document.
+         * @return \c true if document has been updated successfully, \c false
+         *         otherwise.
+         * @warn the new properties will be added in the old document.
+         * @warn the property length is not updated in current implementation.
+         * @warn current implementation will inserted the document if the id does
+         *       not exist.
+         */
+        bool updatePartialDocument(const Document& document);
+
+        /**
          * @brief deletes a document by given id.
          * @return \c true if document has been deleted successfully, \c false
          *         otherwise.

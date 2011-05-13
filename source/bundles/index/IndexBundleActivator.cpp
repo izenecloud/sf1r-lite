@@ -383,7 +383,8 @@ IndexBundleActivator::createSearchManager_() const
                 idManager_,
                 documentManager_,
                 indexManager_,
-                rankingManager_
+                rankingManager_,
+                config_
             )
         );
     }

@@ -1,5 +1,6 @@
 INCLUDE_DIRECTORIES(
   ${CMAKE_SOURCE_DIR}/core/
+  ${CMAKE_SOURCE_DIR}
   
   ${izenelib_INCLUDE_DIRS}
   ${wisekma_INCLUDE_DIRS}

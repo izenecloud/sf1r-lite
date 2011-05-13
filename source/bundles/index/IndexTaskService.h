@@ -59,7 +59,15 @@ private:
     bool prepareDocument_(SCDDoc& doc,
                           Document& document,
                           IndexerDocument& indexDocument,
+                          bool& rType,
+                          std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
                           bool insert = true);
+
+    bool preparePartialDocument_(Document& document, IndexerDocument& oldIndexDocument);
+
+    void checkRtype_(SCDDoc& doc,
+                     bool& rType,
+                     std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
 
     bool makeSentenceBlocks_(const izenelib::util::UString& text,
                              unsigned int propertyId,

@@ -16,6 +16,7 @@
 #include <util/driver/Request.h>
 #include <util/driver/Response.h>
 #include <util/driver/Value.h>
+#include <util/driver/Controller.h>
 
 namespace sf1r
 {
@@ -44,10 +45,9 @@ public:
     void similar_to(::izenelib::driver::Request& request, ::izenelib::driver::Response& response);
     void duplicate_with(::izenelib::driver::Request& request, ::izenelib::driver::Response& response);
     void similar_to_image(::izenelib::driver::Request& request, ::izenelib::driver::Response& response);
-    void create(const ::izenelib::driver::Value& document);
-    void update(const ::izenelib::driver::Value& document);
-    void destroy(const ::izenelib::driver::Value& document);
-
+    bool create(const std::string& collectionName, const ::izenelib::driver::Value& document);
+    bool update(const std::string& collectionName, const ::izenelib::driver::Value& document);
+    bool destroy(const std::string& collectionName, const ::izenelib::driver::Value& document);
 
     //////////////////////////////////////////
     //    Helpers

@@ -17,6 +17,7 @@
 #include "QueryBuilder.h"
 #include "Sorter.h"
 #include "HitQueue.h"
+#include <util/ustring/UString.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -40,7 +41,8 @@ public:
         const boost::shared_ptr<IDManager>& idManager,
         const boost::shared_ptr<DocumentManager>& documentManager,
         const boost::shared_ptr<IndexManager>& indexManager,
-        const boost::shared_ptr<RankingManager>& rankingManager
+        const boost::shared_ptr<RankingManager>& rankingManager,
+        IndexBundleConfiguration* config
     );
 
     ~SearchManager();
@@ -54,12 +56,13 @@ public:
                 int start = 0);
 
 
-    void reset_cache();
+    void reset_cache(bool rType, docid_t id, const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
 
     /// @brief change working dir by setting new underlying componenets
     void chdir(const boost::shared_ptr<IDManager>& idManager,
                const boost::shared_ptr<DocumentManager>& documentManager,
-               const boost::shared_ptr<IndexManager>& indexManager
+               const boost::shared_ptr<IndexManager>& indexManager,
+               IndexBundleConfiguration* config
                );
 
 private:

@@ -335,8 +335,19 @@ void DocumentsController::duplicate_with()
  */
 void DocumentsController::create()
 {
+    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
-    collectionHandler_->create(request()[Keys::resource]);
+    bool requestSent = collectionHandler_->create(
+            collection_, request()[Keys::resource]
+    );
+
+    if (!requestSent)
+    {
+        response().addError(
+                "Failed to send request to given collection."
+        );
+        return;
+    }
 }
 
 /**
@@ -368,8 +379,19 @@ void DocumentsController::create()
  */
 void DocumentsController::update()
 {
+    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
-    collectionHandler_->update(request()[Keys::resource]);
+    bool requestSent = collectionHandler_->update(
+        collection_, request()[Keys::resource]
+    );
+
+    if (!requestSent)
+    {
+        response().addError(
+            "Failed to send request to given collection."
+        );
+        return;
+    }
 }
 
 /**
@@ -397,8 +419,20 @@ void DocumentsController::update()
  */
 void DocumentsController::destroy()
 {
+    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
-    collectionHandler_->destroy(request()[Keys::resource]);
+
+    bool requestSent = collectionHandler_->destroy(
+        collection_, request()[Keys::resource]
+    );
+
+    if (!requestSent)
+    {
+        response().addError(
+            "Failed to send request to given collection."
+        );
+        return;
+    }
 }
 
 /**
@@ -562,6 +596,18 @@ bool DocumentsController::setLimit()
     if (nullValue(request()[Keys::limit]))
     {
         request()[Keys::limit] = kDefaultPageCount;
+    }
+
+    return true;
+}
+
+bool DocumentsController::parseCollection()
+{
+    collection_ = asString(request()[Keys::collection]);
+    if (collection_.empty())
+    {
+        response().addError("Require field collection in request.");
+        return false;
     }
 
     return true;

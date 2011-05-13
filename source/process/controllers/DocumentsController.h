@@ -45,6 +45,9 @@ public:
 private:
     bool requireDOCID();
     bool setLimit();
+    bool parseCollection();
+
+    std::string collection_;
 };
 
 /// @}
