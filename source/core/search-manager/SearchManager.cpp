@@ -26,7 +26,8 @@ SearchManager::SearchManager(std::set<PropertyConfig, PropertyComp> schema,
                              const boost::shared_ptr<IDManager>& idManager,
                              const boost::shared_ptr<DocumentManager>& documentManager,
                              const boost::shared_ptr<IndexManager>& indexManager,
-                             const boost::shared_ptr<RankingManager>& rankingManager
+                             const boost::shared_ptr<RankingManager>& rankingManager,
+                             IndexBundleConfiguration* config
                             )
         : schemaMap_()
         , indexManagerPtr_(indexManager)
@@ -38,7 +39,7 @@ SearchManager::SearchManager(std::set<PropertyConfig, PropertyComp> schema,
     for (std::set<PropertyConfig, PropertyComp>::iterator iter = schema.begin(); iter != schema.end(); ++iter)
         schemaMap_[iter->getName()] = *iter;
 
-    pSorterCache_ = new SortPropertyCache(indexManagerPtr_.get());
+    pSorterCache_ = new SortPropertyCache(indexManagerPtr_.get(), config);
     queryBuilder_.reset(new QueryBuilder(indexManager,documentManager,idManager,schemaMap_));
     cache_.reset(new SearchCache(SEARCH_MANAGER_CACHE_SIZE));
     rankingManagerPtr_->getPropertyWeightMap(propertyWeightMap_);
@@ -51,9 +52,17 @@ SearchManager::~SearchManager()
 }
 
 
-void SearchManager::reset_cache()
+void SearchManager::reset_cache(bool rType, docid_t id, const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue)
 {
-    pSorterCache_->setDirty(true);
+    if ( !rType )
+    {
+        pSorterCache_->setDirty(true);
+    }
+    else
+    {
+        pSorterCache_->updateSortData(id, rTypeFieldValue);
+    }
+
     cache_->clear();
     queryBuilder_->reset_cache();
 }
@@ -61,7 +70,8 @@ void SearchManager::reset_cache()
 /// @brief change working dir by setting new underlying componenets
 void SearchManager::chdir(const boost::shared_ptr<IDManager>& idManager,
                           const boost::shared_ptr<DocumentManager>& documentManager,
-                          const boost::shared_ptr<IndexManager>& indexManager)
+                          const boost::shared_ptr<IndexManager>& indexManager,
+                          IndexBundleConfiguration* config)
 {
     indexManagerPtr_ = indexManager;
     documentManagerPtr_ = documentManager;
@@ -71,7 +81,7 @@ void SearchManager::chdir(const boost::shared_ptr<IDManager>& idManager,
 
     // clear cache
     delete pSorterCache_;
-    pSorterCache_ = new SortPropertyCache(indexManagerPtr_.get());
+    pSorterCache_ = new SortPropertyCache(indexManagerPtr_.get(), config);
     cache_.reset(new SearchCache(SEARCH_MANAGER_CACHE_SIZE));
 }
 

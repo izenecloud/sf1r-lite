@@ -135,6 +135,33 @@ bool DocumentManager::updateDocument(const Document& document) {
 	return false;
 }
 
+bool DocumentManager::updatePartialDocument(const Document& document) {
+    docid_t docId = document.getId();
+    Document oldDoc;
+
+    if (!getDocument(docId, oldDoc))
+    {
+        return false;
+    }
+
+    typedef Document::property_const_iterator iterator;
+
+    for (iterator it = document.propertyBegin(), itEnd = document.propertyEnd(); it
+                != itEnd; ++it) {
+         const propertyid_t* pid = propertyIdMapper_.findIdByValue(it->first);
+         if (!pid) {
+             // not in config, skip
+             continue;
+         }
+
+         if (it->first != "DOCID" && it->first != "DATE") {
+             oldDoc.updateProperty(it->first, it->second);
+         }
+    }
+
+    return updateDocument(oldDoc);
+}
+
 bool DocumentManager::isDeleted(docid_t docId) {
 
 	int64_t delIndicator=1;

@@ -9,6 +9,8 @@
 
 #include <index-manager/IndexManager.h>
 #include "SortPropertyComparator.h"
+#include <util/ustring/UString.h>
+#include <bundles/index/IndexBundleConfiguration.h>
 
 #include <boost/thread.hpp>
 
@@ -75,7 +77,7 @@ private:
 class SortPropertyCache
 {
 public:
-    SortPropertyCache(IndexManager* pIndexer);
+    SortPropertyCache(IndexManager* pIndexer, IndexBundleConfiguration* config);
 
     ~SortPropertyCache();
 public:
@@ -83,6 +85,8 @@ public:
     void setDirty(bool dirty) { dirty_ = dirty;}
 
     SortPropertyComparator* getComparator(SortProperty* pSortProperty);
+
+    void updateSortData(docid_t id, const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
 
     bool getSortPropertyData(const std::string& propertyName, PropertyDataType propertyType, void* &data);
 
@@ -105,6 +109,8 @@ private:
     std::map<std::string, std::pair<PropertyDataType,void*> > sortDataCache_;
 
     boost::mutex mutex_;	
+
+    IndexBundleConfiguration* config_;
 };
 
 /*
