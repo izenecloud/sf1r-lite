@@ -22,6 +22,12 @@ namespace bfs = boost::filesystem;
 
 using namespace izenelib::driver;
 
+namespace
+{
+/** the directory for scd file backup */
+const char* SCD_BACKUP_DIR = "backup";
+}
+
 namespace sf1r
 {
 IndexTaskService::IndexTaskService(
@@ -132,18 +138,21 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
     static const bfs::directory_iterator kItrEnd;
     for (bfs::directory_iterator itr(scdPath); itr != kItrEnd; ++itr)
     {
-        std::string fileName = itr->path().filename();
+        if (bfs::is_regular_file(itr->status()))
+        {
+            std::string fileName = itr->path().filename();
 
-        if (parser.checkSCDFormat(fileName) )
-        {
-            scdList.push_back(itr->path().string() );
+            if (parser.checkSCDFormat(fileName) )
+            {
+                scdList.push_back(itr->path().string() );
+                parser.load(scdPath+fileName);
+                indexProgress_.totalFileSize_ += parser.getFileSize();
+            }
+            else
+            {
+                sflog->warn(SFL_SCD, 10103, fileName.c_str() );
+            }
         }
-        else
-        {
-            sflog->warn(SFL_SCD, 10103, fileName.c_str() );
-        }
-        parser.load(scdPath+fileName);
-        indexProgress_.totalFileSize_ += parser.getFileSize();
     }
 
     indexProgress_.totalFileNum = scdList.size();
@@ -268,6 +277,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
     }
     catch (std::exception& e)
     {
+        LOG(WARNING) << "exception in indexing or mining: " << e.what();
         indexProgress_.getIndexingStatus(indexStatus_);
         indexProgress_.reset();
 //         documentManager_->flush();
@@ -276,6 +286,22 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
 //         miningManager_->flush();
         return false;
     }
+
+    bfs::path bkDir = bfs::path(scdPath) / SCD_BACKUP_DIR;
+    bfs::create_directory(bkDir);
+    DLOG(INFO) << "moving " << scdList.size() << " SCD files to directory " << bkDir;
+    for (scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
+    {
+        try
+        {
+            bfs::rename(*scd_it, bkDir / bfs::path(*scd_it).filename());
+        }
+        catch(bfs::filesystem_error& e)
+        {
+            LOG(WARNING) << "exception in rename file " << *scd_it << ": " << e.what();
+        }
+    }
+
     indexProgress_.getIndexingStatus(indexStatus_);
     sflog->info(SFL_IDX, 10109,
                 documentManager_->getMaxDocId(), numDeletedDocs_, numUpdatedDocs_) ;
