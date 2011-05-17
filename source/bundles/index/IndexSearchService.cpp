@@ -168,7 +168,7 @@ bool IndexSearchService::getSearchResult(
                                     startOffset
                                     ))
         {
-            return false;
+            return true;
         }
     }
 
@@ -282,7 +282,6 @@ bool IndexSearchService::buildQuery(
     {
         return false;
     }
-
     // Get queries for each property and build propertyTermInfo
     // ----------------------------------------------------------
     START_PROFILER ( analyzeQuery );

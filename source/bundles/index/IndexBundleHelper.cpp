@@ -1,6 +1,7 @@
 #include "IndexBundleHelper.h"
 
 #include <boost/algorithm/string/case_conv.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/lexical_cast.hpp>
 
 namespace sf1r
@@ -30,6 +31,7 @@ void assembleDisjunction(std::vector<izenelib::util::UString> keywords, std::str
         result += str;
         result += "|";
     }
+    boost::trim_right_if(result,is_any_of("|"));	
 }
 
 bool buildQueryTree(SearchKeywordOperation&action, IndexBundleConfiguration& bundleConfig, std::string& btqError,  PersonalSearchInfo& personalSearchInfo)
