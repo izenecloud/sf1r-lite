@@ -75,6 +75,11 @@ bool MiningBundleActivator::addingService( const ServiceReference& ref )
             cout << "[MiningBundleActivator#addingService] Calling IndexSearchService..." << endl;
             openDataDirectories_();
             miningManager_ = createMiningManager_(service);
+            if (!miningManager_)
+            {
+                cerr << "error: failed in creating MiningManager" << endl;
+                return false;
+            }
             searchService_ = new MiningSearchService;
             searchService_->miningManager_ = miningManager_;
             taskService_ = new MiningTaskService;
