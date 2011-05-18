@@ -77,7 +77,11 @@ bool GroupManager::open(const std::vector<GroupConfig>& configVec)
                 return false;
             }
 
-            pvTable.setValueTree(it->valueTree);
+            if (!pvTable.setValueTree(it->valueTree))
+            {
+                LOG(ERROR) << "PropValueTable::setValueTree() failed, property name: " << it->propName;
+                return false;
+            }
         }
         else
         {

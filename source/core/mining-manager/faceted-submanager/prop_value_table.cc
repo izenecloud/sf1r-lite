@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <cassert>
+#include <set>
 
 #include <boost/filesystem.hpp>
 #include <boost/archive/text_oarchive.hpp>
@@ -229,7 +230,8 @@ bool PropValueTable::flush()
 
     return true;
 }
-void PropValueTable::setValueTree(const faceted::OntologyRep& valueTree)
+
+bool PropValueTable::setValueTree(const faceted::OntologyRep& valueTree)
 {
     valueTree_ = valueTree;
 
@@ -239,6 +241,7 @@ void PropValueTable::setValueTree(const faceted::OntologyRep& valueTree)
     // mapping from level to value id
     std::vector<pvid_t> path;
     path.push_back(0);
+    std::set<pvid_t> treeIdSet;
     for (std::list<faceted::OntologyRepItem>::iterator it = itemList.begin();
         it != itemList.end(); ++it)
     {
@@ -255,6 +258,20 @@ void PropValueTable::setValueTree(const faceted::OntologyRep& valueTree)
         {
             parentIdVec_.resize(pvId+1);
         }
-        parentIdVec_[pvId] = path[currentLevel-1];
+
+        if (treeIdSet.insert(pvId).second)
+        {
+            parentIdVec_[pvId] = path[currentLevel-1];
+        }
+        else
+        {
+            std::string utf8Str;
+            item.text.convertString(utf8Str, izenelib::util::UString::UTF_8);
+            LOG(ERROR) << "in <MiningSchema>::<Group>::<Property> \"" << propName_
+                       << "\", duplicate <TreeNode> value \"" << utf8Str << "\"";
+            return false;
+        }
     }
+
+    return true;
 }

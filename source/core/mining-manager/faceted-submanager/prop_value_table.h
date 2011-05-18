@@ -85,9 +85,10 @@ public:
      * Set the value tree, it defines the hierachical levels for values,
      * so that the group values could be returned in the form of this tree.
      * @param valueTree the value tree
+     * @return true for success, false for error in parsing @p valueTree
      * @attention before calling this function, @c open() must be called to load all values.
      */
-    void setValueTree(const faceted::OntologyRep& valueTree);
+    bool setValueTree(const faceted::OntologyRep& valueTree);
 
     const faceted::OntologyRep& valueTree() const {
         return valueTree_;
