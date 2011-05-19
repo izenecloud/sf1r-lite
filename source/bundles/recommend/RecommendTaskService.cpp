@@ -43,6 +43,8 @@ bool RecommendTaskService::addUser(const User& user)
     if (userIdGenerator_->conv(user.idStr_, userId))
     {
         LOG(WARNING) << "in addUser(), user id " << user.idStr_ << " already exists";
+        // not return false here, if the user id was once removed in userManager_,
+        // it would still exists in userIdGenerator_
     }
 
     return userManager_->addUser(userId, user);
@@ -199,6 +201,13 @@ bool RecommendTaskService::purchaseItem(
     }
 
     return purchaseManager_->addPurchaseItem(userId, newOrderItemVec, orderIdStr);
+}
+
+bool RecommendTaskService::buildCollection()
+{
+    LOG(INFO) << "=> RecommendTaskService::buildCollection()";
+    LOG(INFO) << "user scd path: " << bundleConfig_->userSCDPath();
+    return true;
 }
 
 } // namespace sf1r

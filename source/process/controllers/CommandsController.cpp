@@ -8,6 +8,7 @@
 #include <process/common/XmlConfigParser.h>
 #include <process/common/CollectionManager.h>
 #include <bundles/index/IndexTaskService.h>
+#include <bundles/recommend/RecommendTaskService.h>
 
 #include <common/Keys.h>
 
@@ -84,20 +85,50 @@ void CommandsController::index()
 }
 
 /**
- * @brief Action \b index_recommend. Sends command "index_recommend" to rebuild index for recommend manager include autofill
- * SCD files.
+ * @brief Action \b index_recommend. Sends command "index_recommend" to load SCD files (user, item, order) into recommend manager.
  *
  * @section request
  *
+ * - @b collection* (@c String): Collection name.
  *
  * @section response
  *
  * No extra fields.
  *
+ * @section example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection": "ChnWiki",
+ * }
+ * @endcode
  */
 void CommandsController::index_recommend()
 {
+    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
 
+    if (!SF1Config::get()->checkCollectionExist(collection_))
+    {
+        response().addError(
+            "Failed to send command to given collection."
+        );
+        return;
+    }
+
+    std::string bundleName = "RecommendBundle-" + collection_;
+    RecommendTaskService* taskService = static_cast<RecommendTaskService*>(
+                                        CollectionManager::get()->getOSGILauncher().getService(bundleName, "RecommendTaskService"));
+    if (!taskService)
+    {
+        response().addError(
+            "Failed to send command to given service."
+        );
+        return;
+    }
+
+    task_type task = boost::bind(&RecommendTaskService::buildCollection, taskService);
+    JobScheduler::get()->addTask(task);
 }
 
 /**

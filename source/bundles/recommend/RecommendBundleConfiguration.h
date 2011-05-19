@@ -24,7 +24,7 @@ public:
     std::string collectionName_;
 
     CollectionPath collPath_;
-	
+
     std::vector<std::string> collectionDataDirectories_;
 
     // TODO recommend parameter in "sf1config.xml"
@@ -32,6 +32,22 @@ public:
 
     // recommend schema in "collection.xml"
     RecommendSchema recommendSchema_;
+
+    std::string userSCDPath() const
+    {
+        return collPath_.getScdPath() + "/recommend/user/";
+    }
+
+    std::string itemSCDPath() const
+    {
+        return collPath_.getScdPath() + "/recommend/item/";
+    }
+
+    std::string orderSCDPath() const
+    {
+        return collPath_.getScdPath() + "/recommend/order/";
+    }
+
 };
 
 } // namespace sf1r

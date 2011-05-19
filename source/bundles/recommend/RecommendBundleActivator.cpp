@@ -96,8 +96,13 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
 
 bool RecommendBundleActivator::init_()
 {
-    openDataDirectories_();
+    // create SCD directories
+    boost::filesystem::create_directories(config_->userSCDPath());
+    boost::filesystem::create_directories(config_->itemSCDPath());
+    boost::filesystem::create_directories(config_->orderSCDPath());
 
+    // create data directory
+    openDataDirectories_();
     std::string dir = getCurrentCollectionDataPath_() + "/recommend/";
     boost::filesystem::create_directories(dir);
 
