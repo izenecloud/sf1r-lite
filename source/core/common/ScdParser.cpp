@@ -96,11 +96,15 @@ struct scd_grammar
 };
 
 ScdParser::ScdParser()
-        :size_(0), encodingType_(izenelib::util::UString::UTF_8)
+        :size_(0), encodingType_(izenelib::util::UString::UTF_8), docDelimiter_("<DOCID>")
 {}
 
 ScdParser::ScdParser( const izenelib::util::UString::EncodingType & encodingType )
-        :size_(0), encodingType_(encodingType)
+        :size_(0), encodingType_(encodingType), docDelimiter_("<DOCID>")
+{}
+
+ScdParser::ScdParser(const izenelib::util::UString::EncodingType & encodingType, const char* docDelimiter)
+        :size_(0), encodingType_(encodingType), docDelimiter_(docDelimiter)
 {}
 
 ScdParser::~ScdParser()
@@ -377,6 +381,7 @@ ScdParser::iterator::iterator(long offset)
 }
 
 ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc)
+        :docDelimiter_(pScdParser->docDelimiter_)
 {
     pfs_ = &(pScdParser->fs_);
     pfs_->clear();
@@ -384,7 +389,7 @@ ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc)
     codingType_ = pScdParser->getEncodingType();
     offset_ = 0;
     buffer_.reset(new izenelib::util::izene_streambuf);
-    readLength_ = izenelib::util::izene_read_until(*pfs_,*buffer_,"<DOCID>");
+    readLength_ = izenelib::util::izene_read_until(*pfs_,*buffer_,docDelimiter_);
     if (readLength_ > 0)
     {
         buffer_->consume(readLength_);
@@ -408,7 +413,9 @@ ScdParser::iterator::iterator(const iterator& other)
         ,prevOffset_(other.prevOffset_)
         ,offset_(other.offset_)
         ,doc_(other.doc_)
+        ,codingType_(other.codingType_)
         ,buffer_(other.buffer_)
+        ,docDelimiter_(other.docDelimiter_)
 {
 }
 
@@ -425,6 +432,7 @@ ScdParser::iterator& ScdParser::iterator::operator=(const iterator& other)
     doc_ = other.doc_;
     codingType_ = other.codingType_;
     buffer_	 = other.buffer_;
+    docDelimiter_ = other.docDelimiter_;
     return *this;
 }
 
@@ -481,8 +489,8 @@ SCDDoc* ScdParser::iterator::getDoc()
     CREATE_PROFILER ( proScdParsing, "Index:SIAProcess", "Scd Parsing : parse SCD file");
 
     START_PROFILER ( proScdParsing );
-    readLength_ = izenelib::util::izene_read_until(*pfs_,*buffer_,"<DOCID>");
-    string str("<DOCID>");
+    readLength_ = izenelib::util::izene_read_until(*pfs_,*buffer_,docDelimiter_);
+    string str(docDelimiter_);
     static const boost::regex pattern("\n|$");
     if (readLength_ > 0)
     {
@@ -505,7 +513,7 @@ SCDDoc* ScdParser::iterator::getDoc()
         prevOffset_  = -1;
     }
     SCDDoc* doc = new SCDDoc;
-    if (str == "<DOCID>")
+    if (str == docDelimiter_)
         return doc;
     scd_grammar g(*doc, codingType_);
     parse_info<> pi = parse(str.c_str(), g, space_p);

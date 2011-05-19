@@ -36,6 +36,7 @@ class ScdParser
 public:
     ScdParser();
     ScdParser(const izenelib::util::UString::EncodingType & encodingType);
+    ScdParser(const izenelib::util::UString::EncodingType & encodingType, const char* docDelimiter);
     virtual ~ScdParser();
 
     static bool checkSCDFormat( const string & file );
@@ -111,6 +112,8 @@ public:
         izenelib::util::UString::EncodingType codingType_;
 
         boost::shared_ptr<izenelib::util::izene_streambuf> buffer_;
+
+        std::string docDelimiter_;
     };  // class iterator
 
     iterator begin(unsigned int start_doc = 0);
@@ -126,6 +129,8 @@ private:
     izenelib::util::UString::EncodingType encodingType_;
 
     izenelib::am::rde_hash<izenelib::util::UString, long> docOffsetList_;
+
+    const std::string docDelimiter_; /// the boundary between each docs
 };
 
 
