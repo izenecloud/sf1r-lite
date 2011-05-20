@@ -102,33 +102,33 @@ bool RecommendBundleActivator::init_()
     boost::filesystem::create_directories(config_->orderSCDPath());
 
     // create data directory
-    openDataDirectories_();
-    std::string dir = getCurrentCollectionDataPath_() + "/recommend/";
+    std::string dir;
+    openDataDirectory_(dir);
     boost::filesystem::create_directories(dir);
 
     jobScheduler_ = new JobScheduler();
 
-    std::string userPath = dir + "user.db";
+    std::string userPath = dir + "/user.db";
     auto_ptr<UserManager> userManagerPtr(new UserManager(userPath));
 
-    std::string itemPath = dir + "item.db";
-    std::string maxIdPath = dir + "max_itemid.txt";
+    std::string itemPath = dir + "/item.db";
+    std::string maxIdPath = dir + "/max_itemid.txt";
     auto_ptr<ItemManager> itemManagerPtr(new ItemManager(itemPath, maxIdPath));
 
-    std::string covisitPath = dir + "covisit";
+    std::string covisitPath = dir + "/covisit";
     auto_ptr<CoVisitManager> coVisitManagerPtr(new CoVisitManager(covisitPath));
 
-    std::string cfPath = dir + "cf";
+    std::string cfPath = dir + "/cf";
     boost::filesystem::create_directories(cfPath);
     auto_ptr<ItemCFManager> itemCFManagerPtr(new ItemCFManager(cfPath + "/covisit", 1000,
                                                                cfPath + "/sim", 1000,
                                                                cfPath + "/nb.sdb", 30,
                                                                cfPath + "/rec", 1000));
 
-    std::string visitPath = dir + "visit.db";
+    std::string visitPath = dir + "/visit.db";
     auto_ptr<VisitManager> visitManagerPtr(new VisitManager(visitPath, jobScheduler_, coVisitManagerPtr.get()));
 
-    std::string purchasePath = dir + "purchase.db";
+    std::string purchasePath = dir + "/purchase.db";
     auto_ptr<PurchaseManager> purchaseManagerPtr(new PurchaseManager(purchasePath, jobScheduler_, itemCFManagerPtr.get(), itemManagerPtr.get()));
 
     auto_ptr<RecommendManager> recommendManagerPtr(new RecommendManager(itemManagerPtr.get(),
@@ -137,10 +137,10 @@ bool RecommendBundleActivator::init_()
                                                                         itemCFManagerPtr.get(),
                                                                         purchaseManagerPtr.get()->getOrderManager()));
 
-    std::string userIdPath = dir + "userid";
+    std::string userIdPath = dir + "/userid";
     auto_ptr<RecIdGenerator> userIdGeneratorPtr(new RecIdGenerator(userIdPath));
 
-    std::string itemIdPath = dir + "itemid";
+    std::string itemIdPath = dir + "/itemid";
     auto_ptr<RecIdGenerator> itemIdGeneratorPtr(new RecIdGenerator(itemIdPath));
 
     userManager_ = userManagerPtr.release();
@@ -155,13 +155,13 @@ bool RecommendBundleActivator::init_()
     coVisitManager_ = coVisitManagerPtr.release();
     itemCFManager_ = itemCFManagerPtr.release();
 
-    taskService_ = new RecommendTaskService(config_, userManager_, itemManager_, visitManager_, purchaseManager_, userIdGenerator_, itemIdGenerator_);
+    taskService_ = new RecommendTaskService(config_, &directoryRotator_, userManager_, itemManager_, visitManager_, purchaseManager_, userIdGenerator_, itemIdGenerator_);
     searchService_ = new RecommendSearchService(userManager_, itemManager_, recommendManager_, userIdGenerator_, itemIdGenerator_);
 
     return true;
 }
 
-bool RecommendBundleActivator::openDataDirectories_()
+bool RecommendBundleActivator::openDataDirectory_(std::string& dataDir)
 {
     std::vector<std::string>& directories = config_->collectionDataDirectories_;
     if (directories.size() == 0)
@@ -191,17 +191,11 @@ bool RecommendBundleActivator::openDataDirectories_()
     boost::shared_ptr<Directory> newest = directoryRotator_.currentDirectory();
     if (newest)
     {
-	bfs::path p = newest->path();
-	currentCollectionDataName_ = p.filename();
+	dataDir = newest->path().string();
 	return true;
     }
 
     return false;
-}
-
-std::string RecommendBundleActivator::getCurrentCollectionDataPath_() const
-{
-    return config_->collPath_.getCollectionDataPath()+"/"+currentCollectionDataName_;
 }
 
 } // namespace sf1r

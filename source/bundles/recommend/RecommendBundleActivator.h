@@ -46,8 +46,6 @@ private:
     IServiceRegistration* searchServiceReg_;
 
     RecommendBundleConfiguration* config_;
-    std::string currentCollectionDataName_;
-
     DirectoryRotator directoryRotator_;
 
     UserManager* userManager_;
@@ -63,10 +61,7 @@ private:
     ItemCFManager* itemCFManager_;
 
     bool init_();
-
-    bool openDataDirectories_();
-
-    std::string getCurrentCollectionDataPath_() const;
+    bool openDataDirectory_(std::string& dataDir);
 };
 
 } // namespace sf1r

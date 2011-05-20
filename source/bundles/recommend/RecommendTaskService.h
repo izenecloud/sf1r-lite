@@ -24,11 +24,17 @@ class VisitManager;
 class PurchaseManager;
 class RecommendBundleConfiguration;
 
+namespace directory
+{
+class DirectoryRotator;
+}
+
 class RecommendTaskService : public ::izenelib::osgi::IService
 {
 public:
     RecommendTaskService(
         RecommendBundleConfiguration* bundleConfig,
+        directory::DirectoryRotator* directoryRotator,
         UserManager* userManager,
         ItemManager* itemManager,
         VisitManager* visitManager,
@@ -79,6 +85,11 @@ public:
 
     struct OrderItem
     {
+        OrderItem()
+            :quantity_(0)
+            ,price_(0.0)
+        {}
+
         OrderItem(const std::string& itemIdStr, int quantity, double price)
             :itemIdStr_(itemIdStr)
             ,quantity_(quantity)
@@ -94,18 +105,45 @@ public:
     /**
      * Add a purchase event.
      * @param userIdStr the user id, it must not be empty.
-     * @param orderItemVec the items in the order, each item's id must not be empty
      * @param orderIdStr the order id
+     * @param orderItemVec the items in the order, each item's id must not be empty
      * @return true for succcess, false for failure
      */
     bool purchaseItem(
         const std::string& userIdStr,
-        const OrderItemVec& orderItemVec,
-        const std::string& orderIdStr
+        const std::string& orderIdStr,
+        const OrderItemVec& orderItemVec
     );
 
 private:
+    /**
+     * Load user SCD files.
+     */
+    bool loadUserSCD_();
+
+    /**
+     * Load item SCD files.
+     */
+    bool loadItemSCD_();
+
+    /**
+     * Load order SCD files.
+     */
+    bool loadOrderSCD_();
+
+    /** user id, order id */
+    typedef std::pair<string, string> OrderKey;
+    typedef std::map<OrderKey, OrderItemVec> OrderMap;
+
+    /**
+     * Load the orders in @p orderMap.
+     * @param orderMap the orders
+     */
+    void loadOrderMap_(const OrderMap& orderMap);
+
+private:
     RecommendBundleConfiguration* bundleConfig_;
+    directory::DirectoryRotator* directoryRotator_;
     UserManager* userManager_;
     ItemManager* itemManager_;
     VisitManager* visitManager_;

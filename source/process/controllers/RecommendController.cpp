@@ -692,7 +692,7 @@ void RecommendController::purchase_item()
     }
 
     RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
-    if (!service->purchaseItem(userIdStr, orderItemVec, orderIdStr))
+    if (!service->purchaseItem(userIdStr, orderIdStr, orderItemVec))
     {
         response().addError("Failed to add purchase to given collection.");
     }

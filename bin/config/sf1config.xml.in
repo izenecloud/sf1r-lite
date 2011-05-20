@@ -59,7 +59,7 @@
       <RecommendBundle> 
         <Parameter>
           <!-- Specify multiple index directory to support backup and directory rotating -->
-          <CollectionDataDirectory>default-collection-dir</CollectionDataDirectory>
+          <CollectionDataDirectory>default-recommend-dir</CollectionDataDirectory>
         </Parameter>
       </RecommendBundle> 
     </BundlesDefault>
