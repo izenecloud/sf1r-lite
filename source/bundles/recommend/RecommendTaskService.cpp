@@ -433,18 +433,18 @@ bool RecommendTaskService::purchaseItem(
         return false;
     }
 
-    DLOG(INFO) << "RecommendTaskService::purchaseItem()"
-              << ", user id: " << userIdStr
-              << ", orderIdStr: " << orderIdStr
-              << ", item num: " << orderItemVec.size();
+    //DLOG(INFO) << "RecommendTaskService::purchaseItem()"
+              //<< ", user id: " << userIdStr
+              //<< ", orderIdStr: " << orderIdStr
+              //<< ", item num: " << orderItemVec.size();
 
     PurchaseManager::OrderItemVec newOrderItemVec;
     for (OrderItemVec::const_iterator it = orderItemVec.begin();
         it != orderItemVec.end(); ++it)
     {
-        DLOG(INFO) << "item id: " << it->itemIdStr_
-                  << ", quantity: " << it->quantity_
-                  << ", price: " << it->price_;
+        //DLOG(INFO) << "item id: " << it->itemIdStr_
+                  //<< ", quantity: " << it->quantity_
+                  //<< ", price: " << it->price_;
 
         if (it->itemIdStr_.empty())
         {
@@ -676,6 +676,7 @@ bool RecommendTaskService::loadOrderSCD_()
         return true;
     }
 
+    int docNum = 0;
     for (std::vector<string>::const_iterator scdIt = scdList.begin();
         scdIt != scdList.end(); ++scdIt)
     {
@@ -694,11 +695,13 @@ bool RecommendTaskService::loadOrderSCD_()
         }
 
         OrderMap orderMap;
-        int docNum = 0;
         for (ScdParser::iterator docIter = orderParser.begin();
             docIter != orderParser.end(); ++docIter)
         {
-            ++docNum;
+            if (++docNum % 10000 == 0)
+            {
+                std::cout << "\rloading orders, total docNum: " << docNum << ", SCD file: " << *scdIt << std::flush;
+            }
 
             SCDDocPtr docPtr = (*docIter);
             const SCDDoc& doc = *docPtr;
@@ -709,7 +712,10 @@ bool RecommendTaskService::loadOrderSCD_()
             OrderItem orderItem;
             if (doc2Order(doc, userIdStr, orderIdStr, dateStr, orderItem) == false)
             {
-                LOG(ERROR) << "error in parsing Order, docNum: " << docNum << ", SCD file: " << *scdIt;
+                LOG(ERROR) << "error in parsing Order, SCD file: " << *scdIt
+                           << ", userId: " << userIdStr
+                           << ", orderId: " << orderIdStr
+                           << ", date: " << dateStr;
                 continue;
             }
 
@@ -749,6 +755,8 @@ bool RecommendTaskService::loadOrderSCD_()
 
         loadOrderMap_(orderMap);
     }
+
+    std::cout << "\rloading orders, total docNum: " << docNum << std::endl;
 
     backupSCDFiles(scdDir, scdList);
 
