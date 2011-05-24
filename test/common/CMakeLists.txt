@@ -1,3 +1,7 @@
+INCLUDE_DIRECTORIES(		 
+  ${Boost_INCLUDE_DIRS}
+  )
+
 SET(libs
   sf1r_common
 
