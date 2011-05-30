@@ -100,7 +100,9 @@ void save( DbRecordType & record )
 template <typename DbRecordType >
 static bool find(const std::string & select,
                  const std::string & conditions,
+                 const std::string & group,
                  const std::string & order,
+                 const std::string & limit,
                  std::vector<DbRecordType> & records)
 {
     std::stringstream sql;
@@ -111,9 +113,17 @@ static bool find(const std::string & select,
     {
         sql << " where " << conditions;
     }
+    if ( group.size() )
+    {
+        sql << " group by " << group;
+    }
     if ( order.size() )
     {
         sql << " order by " << order;
+    }
+    if ( limit.size() )
+    {
+        sql << " limit " << limit;
     }
     sql << ";";
     std::cerr << sql.str() << std::endl;
@@ -163,9 +173,11 @@ static bool del_record(const std::string & conditions)
     \
     static bool find(const std::string & select, \
                      const std::string & conditions, \
+                     const std::string & group, \
                      const std::string & order, \
+                     const std::string & limit, \
                      std::vector<ClassName> & records) { \
-        return ::sf1r::find(select, conditions, order, records); \
+        return ::sf1r::find(select, conditions, group, order, limit, records); \
     } \
     \
     void save() { \

@@ -41,11 +41,13 @@ public:
 
 private:
 
-    std::string parseSelect();
+    std::string parseSelect(bool & isExistAggregateFunc);
 
     std::string parseOrder();
 
     std::string parseConditions();
+
+    std::string parseGroupBy();
 
     static std::string str_join( const std::vector<std::string> & list , const std::string & separator)
     {

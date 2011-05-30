@@ -4,6 +4,7 @@
 #include <log-manager/UserQuery.h>
 #include <common/parsers/OrderArrayParser.h>
 #include <common/parsers/ConditionArrayParser.h>
+#include <common/parsers/SelectArrayParser.h>
 
 #include <list>
 #include <vector>
@@ -20,19 +21,25 @@ namespace sf1r
 
 using driver::Keys;
 using namespace izenelib::driver;
-std::string LogAnalysisController::parseSelect()
+
+std::string LogAnalysisController::parseSelect(bool & isExistAggregateFunc)
 {
     vector<string> results;
+    SelectArrayParser selectArrayParser;
     if (!nullValue(request()[Keys::select]))
     {
-        const Value::ArrayType* array = request()[Keys::select].getPtr<Value::ArrayType>();
-        if (array)
+        selectArrayParser.parse(request()[Keys::select]);
+        for ( vector<SelectFieldParser>::const_iterator it = selectArrayParser.parsedSelect().begin();
+                it != selectArrayParser.parsedSelect().end(); it++ )
         {
-            for (std::size_t i = 0; i < array->size(); ++i)
+            if (!(it->func()).empty())
             {
-                std::string column = asString((*array)[i]);
-                boost::to_lower(column);
-                results.push_back(column);
+                isExistAggregateFunc = true;
+                 results.push_back( str_concat(it->func(), "(", it->property(), ") as count") );
+            }
+            else
+            {
+                 results.push_back(it->property());
             }
         }
     }
@@ -92,6 +99,25 @@ std::string LogAnalysisController::parseConditions()
     return str_join(results, " and ");
 }
 
+std::string LogAnalysisController::parseGroupBy()
+{
+    vector<string> results;
+    if (!nullValue(request()[Keys::groupby]))
+    {
+            const Value::ArrayType* array = request()[Keys::groupby].getPtr<Value::ArrayType>();
+            if (array)
+            {
+                for (std::size_t i = 0; i < array->size(); ++i)
+                {
+                    std::string column = asString((*array)[i]);
+                    boost::to_lower(column);
+                    results.push_back(column);
+                }
+            }
+     }
+     return str_join(results, ",");
+}
+
 /**
  * @brief Action \b system_events.
  *
@@ -131,12 +157,15 @@ std::string LogAnalysisController::parseConditions()
  */
 void LogAnalysisController::system_events()
 {
-    string select = parseSelect();
+    bool isExistAggregateFunc = false;
+    string select = parseSelect(isExistAggregateFunc);
     string conditions = parseConditions();
+    string group = parseGroupBy();
     string order = parseOrder();
+    string limit = asString(request()[Keys::limit]);
     vector<SystemEvent> results;
 
-    if ( !SystemEvent::find(select, conditions, order, results) )
+    if ( !SystemEvent::find(select, conditions, group, order, limit, results) )
     {
         response().addError("[LogManager] Fail to process such a request");
         return;
@@ -171,30 +200,81 @@ void LogAnalysisController::system_events()
 
 void LogAnalysisController::user_queries()
 {
-    string select = parseSelect();
+    bool isExistAggregateFunc = false;
+    string select = parseSelect(isExistAggregateFunc);
     string conditions = parseConditions();
+    string group = parseGroupBy();
     string order = parseOrder();
+    string limit = asString(request()[Keys::limit]);
     vector<UserQuery> results;
+    std::list< std::map<std::string, std::string> > sqlResults;
 
-    if ( !UserQuery::find(select, conditions, order, results) )
+    if ( !UserQuery::find(select, conditions, group, order, limit, results) )
     {
         response().addError("[LogManager] Fail to process such a request");
         return;
     }
 
+    if (isExistAggregateFunc)
+    {
+        std::stringstream sql;
+
+        sql << "select " << (select.size() ? select : "*");
+        sql << " from " << UserQuery::TableName ;
+        if ( conditions.size() )
+        {
+             sql << " where " << conditions;
+        }
+        if ( group.size() )
+        {
+             sql << " group by " << group;
+        }
+        if ( order.size() )
+        {
+             sql << " order by " << order;
+        }
+        if ( limit.size() )
+        {
+            sql << " limit " << limit;
+        }
+        sql << ";";
+        UserQuery::find_by_sql(sql.str(), sqlResults);
+    }
+
     Value& userQueries = response()[Keys::user_queries];
     userQueries.reset<Value::ArrayType>();
-    for ( vector<UserQuery>::iterator it = results.begin(); it != results.end(); it ++ )
+    std::size_t i = 0;
+    if (isExistAggregateFunc)
     {
-        Value& userQuery = userQueries();
-        if (it->hasQuery()) userQuery[Keys::query] = it->getQuery();
-        if (it->hasCollection()) userQuery[Keys::collection] = it->getCollection();
-        if (it->hasHitDocsNum()) userQuery[Keys::hit_docs_num] = it->getHitDocsNum();
-        if (it->hasPageStart()) userQuery[Keys::page_start] = it->getPageStart();
-        if (it->hasPageCount()) userQuery[Keys::page_count] = it->getPageCount();
-        if (it->hasSessionId()) userQuery[Keys::session_id] = it->getSessionId();
-        if (it->hasDuration()) userQuery[Keys::duration] = to_simple_string(it->getDuration());
-        if (it->hasTimeStamp()) userQuery[Keys::timestamp] = to_simple_string(it->getTimeStamp());
+        for (std::list< std::map<std::string, std::string> >::iterator it = sqlResults.begin();
+                it!=sqlResults.end() && i < results.size(); it++, i++)
+        {
+            Value& userQuery = userQueries();
+            if (results[i].hasQuery()) userQuery[Keys::query] = results[i].getQuery();
+            if (results[i].hasCollection()) userQuery[Keys::collection] = results[i].getCollection();
+            if (results[i].hasHitDocsNum()) userQuery[Keys::hit_docs_num] = results[i].getHitDocsNum();
+            if (results[i].hasPageStart()) userQuery[Keys::page_start] = results[i].getPageStart();
+            if (results[i].hasPageCount()) userQuery[Keys::page_count] = results[i].getPageCount();
+            if (results[i].hasSessionId()) userQuery[Keys::session_id] = results[i].getSessionId();
+            if (results[i].hasDuration()) userQuery[Keys::duration] = to_simple_string(results[i].getDuration());
+            if (results[i].hasTimeStamp()) userQuery[Keys::timestamp] = to_simple_string(results[i].getTimeStamp());
+            userQuery[Keys::count] = (*it)["count"];
+        }
+    }
+    else
+    {
+        for (std::vector<UserQuery>::iterator it = results.begin(); it != results.end(); it++)
+        {
+            Value& userQuery = userQueries();
+            if (it->hasQuery()) userQuery[Keys::query] = it->getQuery();
+            if (it->hasCollection()) userQuery[Keys::collection] = it->getCollection();
+            if (it->hasHitDocsNum()) userQuery[Keys::hit_docs_num] = it->getHitDocsNum();
+            if (it->hasPageStart()) userQuery[Keys::page_start] = it->getPageStart();
+            if (it->hasPageCount()) userQuery[Keys::page_count] = it->getPageCount();
+            if (it->hasSessionId()) userQuery[Keys::session_id] = it->getSessionId();
+            if (it->hasDuration()) userQuery[Keys::duration] = to_simple_string(it->getDuration());
+            if (it->hasTimeStamp()) userQuery[Keys::timestamp] = to_simple_string(it->getTimeStamp());
+        }
     }
 }
 
@@ -359,7 +439,7 @@ void LogAnalysisController::delete_record_from_system_events()
  * {
  *   "conditions"=>[
         {"property":"timestamp", "operator":"range", "value":[1.0, 10.0]},
-        {"property":"level", "operator":"in", "value":["warn", "error"]}
+        {"property":"query", "operator":"in", "value":["中国", "人民"]}
      ]
  * }
  * @endcode
