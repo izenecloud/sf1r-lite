@@ -7,7 +7,6 @@
 
 #include <util/ustring/UString.h>
 #include <recommend-manager/VisitManager.h>
-#include <common/JobScheduler.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
@@ -100,13 +99,12 @@ BOOST_AUTO_TEST_CASE(checkVisit)
         visitMap[it->first].insert(it->second);
     }
 
-    JobScheduler* jobScheduler = new JobScheduler();
     bfs::path covisitPath(bfs::path(TEST_DIR_STR) / COVISIT_DIR_STR);
     CoVisitManager* coVisitManager = new CoVisitManager(covisitPath.string());
 
     {
         BOOST_TEST_MESSAGE("add visit...");
-        VisitManager visitManager(visitPath.string(), jobScheduler, coVisitManager);
+        VisitManager visitManager(visitPath.string(), coVisitManager);
         for (vector<VisitPair>::const_iterator it = visitVec.begin();
                 it != visitVec.end(); ++it)
         {
@@ -122,7 +120,7 @@ BOOST_AUTO_TEST_CASE(checkVisit)
     {
         BOOST_TEST_MESSAGE("continue add visit...");
 
-        VisitManager visitManager(visitPath.string(), jobScheduler, coVisitManager);
+        VisitManager visitManager(visitPath.string(), coVisitManager);
         checkVisitManager(visitMap, visitManager);
         iterateVisitManager(visitMap, visitManager);
 
@@ -150,7 +148,6 @@ BOOST_AUTO_TEST_CASE(checkVisit)
         visitManager.flush();
     }
 
-    delete jobScheduler;
     delete coVisitManager;
 }
 

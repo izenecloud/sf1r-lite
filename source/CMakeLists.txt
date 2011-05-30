@@ -109,7 +109,7 @@ IF (CMAKE_COMPILER_IS_GNUCXX)
 
   MACRO_SET_BUILD_TYPES(
     RelWithDebInfo
-    "-O2 -g -Wno-deprecated"
+    "-O2 -g -Wno-deprecated -DNDEBUG"
     "Flags used by the compiler during Release with Debug Info builds."
 
     Release
@@ -141,7 +141,7 @@ IF (CMAKE_COMPILER_IS_GNUCXX)
     "Sf1 performance check build type"
 
     COBRARELWITHDEBINFO
-    "-O2 -g -Wno-deprecated"
+    "-O2 -g -Wno-deprecated -DNDEBUG"
     "Flags used by the compiler during Release with Debug Info builds for Cobra."
 
     COBRARELEASE

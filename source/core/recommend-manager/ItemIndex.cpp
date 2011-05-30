@@ -54,7 +54,7 @@ void ItemIndex::optimize()
     indexer_->optimizeIndex();
 }
 
-bool ItemIndex::add(ItemIndexDocIDType docId, DataVectorType& doc)
+bool ItemIndex::add(ItemIndexDocIDType docId, const DataVectorType& doc)
 {
     iii::IndexerDocument document;
     document.setDocId(docId,1);
@@ -66,7 +66,7 @@ bool ItemIndex::add(ItemIndexDocIDType docId, DataVectorType& doc)
     document.insertProperty(propertyConfig, laInput);
 
     uint32_t pos = 0;
-    for (DataVectorType::iterator it = doc.begin(); it != doc.end(); ++it)
+    for (DataVectorType::const_iterator it = doc.begin(); it != doc.end(); ++it)
     {
         iii::LAInputUnit unit;
         unit.termid_ = *it;
@@ -78,7 +78,7 @@ bool ItemIndex::add(ItemIndexDocIDType docId, DataVectorType& doc)
     return indexer_->insertDocument(document);;
 }
 
-bool ItemIndex::update(ItemIndexDocIDType docId, DataVectorType& doc)
+bool ItemIndex::update(ItemIndexDocIDType docId, const DataVectorType& doc)
 {
     iii::IndexerDocument document;
     document.setDocId(docId,1);
@@ -88,7 +88,7 @@ bool ItemIndex::update(ItemIndexDocIDType docId, DataVectorType& doc)
     laInput->setDocId(docId);
 
     uint32_t pos = 0;
-    for (DataVectorType::iterator it = doc.begin(); it != doc.end(); ++it)
+    for (DataVectorType::const_iterator it = doc.begin(); it != doc.end(); ++it)
     {
         iii::LAInputUnit unit;
         unit.termid_ = *it;

@@ -94,23 +94,22 @@ BOOST_AUTO_TEST_CASE(checkOrder)
 
     OrderManager orderManager(ORDER_HOME_STR, &itemManager);
     orderManager.setMinThreshold(1);
-    orderid_t orderId = 0;
     {
     itemid_t myints[] = {1,2,3,4};
-    std::list<itemid_t> transaction (myints, myints + sizeof(myints) / sizeof(itemid_t) );
-    orderManager.addOrder(++orderId, transaction);
+    std::vector<itemid_t> transaction (myints, myints + sizeof(myints) / sizeof(itemid_t) );
+    orderManager.addOrder(transaction);
     }
 
     {
     itemid_t myints[] = {2,3};
-    std::list<itemid_t> transaction (myints, myints + sizeof(myints) / sizeof(itemid_t) );
-    orderManager.addOrder(++orderId, transaction);
+    std::vector<itemid_t> transaction (myints, myints + sizeof(myints) / sizeof(itemid_t) );
+    orderManager.addOrder(transaction);
     }
 
     {
     itemid_t myints[] = {3,4,5};
-    std::list<itemid_t> transaction (myints, myints + sizeof(myints) / sizeof(itemid_t) );
-    orderManager.addOrder(++orderId, transaction);
+    std::vector<itemid_t> transaction (myints, myints + sizeof(myints) / sizeof(itemid_t) );
+    orderManager.addOrder(transaction);
     }
 
     // no need to flush as the items and orders could be fetched in realtime

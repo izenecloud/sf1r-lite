@@ -17,6 +17,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <list>
+#include <vector>
 #include <string>
 
 namespace sf1r
@@ -24,7 +25,7 @@ namespace sf1r
 
 namespace iii = izenelib::ir::indexmanager;
 typedef uint32_t ItemIndexDocIDType;
-typedef std::list<uint32_t> DataVectorType;
+typedef std::vector<uint32_t> DataVectorType;
 
 class ItemIndex
 {
@@ -35,9 +36,9 @@ public:
 
     void optimize();
 
-    bool add(ItemIndexDocIDType docId, DataVectorType& doc);
+    bool add(ItemIndexDocIDType docId, const DataVectorType& doc);
 
-    bool update(ItemIndexDocIDType docId, DataVectorType& doc);
+    bool update(ItemIndexDocIDType docId, const DataVectorType& doc);
 
     bool del(ItemIndexDocIDType docId);
 

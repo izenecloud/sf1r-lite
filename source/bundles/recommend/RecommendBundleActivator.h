@@ -16,7 +16,6 @@
 #include <util/osgi/IBundleActivator.h>
 #include <util/osgi/IBundleContext.h>
 #include <util/osgi/IServiceRegistration.h>
-#include <common/JobScheduler.h>
 
 #include <string>
 
@@ -28,6 +27,7 @@ class UserManager;
 class ItemManager;
 class VisitManager;
 class PurchaseManager;
+class OrderManager;
 class RecommendManager;
 
 class RecommendBundleActivator : public IBundleActivator
@@ -52,10 +52,10 @@ private:
     ItemManager* itemManager_;
     VisitManager* visitManager_;
     PurchaseManager* purchaseManager_;
+    OrderManager* orderManager_;
     RecommendManager* recommendManager_;
     RecIdGenerator* userIdGenerator_;
     RecIdGenerator* itemIdGenerator_;
-    JobScheduler* jobScheduler_;
 
     CoVisitManager* coVisitManager_;
     ItemCFManager* itemCFManager_;

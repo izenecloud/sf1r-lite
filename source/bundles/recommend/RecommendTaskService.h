@@ -10,6 +10,7 @@
 #include <recommend-manager/RecTypes.h>
 
 #include <util/osgi/IService.h>
+#include <sdb/SequentialDB.h>
 
 #include <string>
 #include <vector>
@@ -22,7 +23,9 @@ class UserManager;
 class ItemManager;
 class VisitManager;
 class PurchaseManager;
+class OrderManager;
 class RecommendBundleConfiguration;
+class JobScheduler;
 
 namespace directory
 {
@@ -39,9 +42,12 @@ public:
         ItemManager* itemManager,
         VisitManager* visitManager,
         PurchaseManager* purchaseManager,
+        OrderManager* orderManager,
         RecIdGenerator* userIdGenerator,
         RecIdGenerator* itemIdGenerator
     );
+
+    ~RecommendTaskService();
 
     /**
      * Build collection from 3 types of SCD files: user, item, purchase record.
@@ -135,11 +141,36 @@ private:
     typedef std::pair<string, string> OrderKey;
     typedef std::map<OrderKey, OrderItemVec> OrderMap;
 
+    /** the container to collect item ids for each user id by scanning SCD files */
+    typedef izenelib::sdb::unordered_sdb_tc<userid_t, ItemIdSet> UserItemMap;
+
     /**
      * Load the orders in @p orderMap.
      * @param orderMap the orders
+     * @param userItemMap store item ids for each user id
      */
-    void loadOrderMap_(const OrderMap& orderMap);
+    void loadOrderMap_(
+        const OrderMap& orderMap,
+        UserItemMap& userItemMap
+    );
+
+    bool loadOrder_(
+        const std::string& userIdStr,
+        const OrderItemVec& orderItemVec,
+        UserItemMap& userItemMap
+    );
+
+    /**
+     * Convert from @p userIdStr to @p userId,
+     * and from @p orderItemVec to @p itemIdVec.
+     * @return true for success, false for failure.
+     */
+    bool convertUserItemId_(
+        const std::string& userIdStr,
+        const OrderItemVec& orderItemVec,
+        userid_t& userId,
+        std::vector<itemid_t>& itemIdVec
+    );
 
 private:
     RecommendBundleConfiguration* bundleConfig_;
@@ -148,8 +179,10 @@ private:
     ItemManager* itemManager_;
     VisitManager* visitManager_;
     PurchaseManager* purchaseManager_;
+    OrderManager* orderManager_;
     RecIdGenerator* userIdGenerator_;
     RecIdGenerator* itemIdGenerator_;
+    JobScheduler* jobScheduler_;
 };
 
 } // namespace sf1r
