@@ -60,26 +60,24 @@ bool PurchaseManager::addPurchaseItem(
     // not purchased yet
     if (! newItems.empty())
     {
-        bool result = false;
         try
         {
-            result = container_.update(userId, itemIdSet);
+            if (container_.update(userId, itemIdSet) == false)
+            {
+                return false;
+            }
         }
         catch(izenelib::util::IZENELIBException& e)
         {
             LOG(ERROR) << "exception in SDB::update(): " << e.what();
         }
 
-        if (result)
         {
             ItemIterator itemIterator(1, itemManager_->maxItemId());
             itemCFManager_->incrementalBuild(userId, oldItems, newItems, itemIterator);
         }
-
-        return result;
     }
 
-    // already purchased
     return true;
 }
 

@@ -80,7 +80,7 @@ void backupSCDFiles(const std::string& scdDir, const std::vector<string>& scdLis
     bfs::path bkDir = bfs::path(scdDir) / SCD_BACKUP_DIR;
     bfs::create_directory(bkDir);
 
-    DLOG(INFO) << "moving " << scdList.size() << " SCD files to directory " << bkDir;
+    LOG(INFO) << "moving " << scdList.size() << " SCD files to directory " << bkDir;
     for (std::vector<string>::const_iterator scdIt = scdList.begin();
         scdIt != scdList.end(); ++scdIt)
     {
@@ -752,6 +752,22 @@ bool RecommendTaskService::loadOrderSCD_()
         return true;
     }
 
+    // clear old file
+    std::string mapFileName = directoryRotator_->currentDirectory()->path().string() + "/user_item.sdb.tmp";
+    bfs::remove(mapFileName);
+
+    // collect item ids for each user
+    UserItemMap userItemMap(mapFileName);
+    // adjust the bucket array number in TC hash
+    const unsigned int USER_NUM = userManager_->userNum();
+    const unsigned int DEFAULT_BNUM = 1 << 17; // default bucket array number
+    if (USER_NUM > DEFAULT_BNUM)
+    {
+        izenelib::am::tc_hash<userid_t, ItemIdSet>& tcHash = userItemMap.getContainer();
+        tcHash.tune(USER_NUM, -1, -1, 0);
+    }
+    userItemMap.open();
+
     int docNum = 0;
     for (std::vector<string>::const_iterator scdIt = scdList.begin();
         scdIt != scdList.end(); ++scdIt)
@@ -801,7 +817,7 @@ bool RecommendTaskService::loadOrderSCD_()
             {
                 OrderItemVec orderItemVec;
                 orderItemVec.push_back(orderItem);
-                if (loadOrder_(userIdStr, orderItemVec) == false)
+                if (loadOrder_(userIdStr, orderItemVec, userItemMap) == false)
                 {
                     LOG(ERROR) << "error in loading order, USERID: " << userIdStr
                                << ", order id: " << orderIdStr
@@ -820,7 +836,7 @@ bool RecommendTaskService::loadOrderSCD_()
                 {
                     if (orderMap.size() >= MAX_ORDER_NUM)
                     {
-                        loadOrderMap_(orderMap);
+                        loadOrderMap_(orderMap, userItemMap);
                         orderMap.clear();
                     }
 
@@ -829,30 +845,97 @@ bool RecommendTaskService::loadOrderSCD_()
             }
         }
 
-        loadOrderMap_(orderMap);
+        loadOrderMap_(orderMap, userItemMap);
     }
-
-    // TODO: add below from TC storage
-    //purchaseManager_->addPurchaseItem(userId, itemIdVec);
-
     std::cout << "\rloading orders, total docNum: " << docNum << std::endl;
+
+    LOG(INFO) << "loading the purchased items for " << userItemMap.numItems() << " users...";
+    typedef izenelib::sdb::SDBCursorIterator<UserItemMap> UserItemIterator;
+    UserItemIterator itEnd;
+    int userNum = 0;
+    for (UserItemIterator it = UserItemIterator(userItemMap); it != itEnd; ++it)
+    { 
+        if (++userNum % 100 == 0)
+        {
+            std::cout << "\rloading user num: " << userNum << std::flush;
+        }
+
+        std::vector<itemid_t> itemVec(it->second.begin(), it->second.end());
+        if (purchaseManager_->addPurchaseItem(it->first, itemVec) == false)
+        {
+            LOG(ERROR) << "error in PurchaseManager::addPurchaseItem(), user id: " << it->first
+                       << ", item num: " << itemVec.size();
+        }
+    }
+    std::cout << "\rloading user num: " << userNum << std::endl;
 
     backupSCDFiles(scdDir, scdList);
 
     return true;
 }
 
-void RecommendTaskService::loadOrderMap_(const OrderMap& orderMap)
+void RecommendTaskService::loadOrderMap_(
+    const OrderMap& orderMap,
+    UserItemMap& userItemMap
+)
 {
     for (OrderMap::const_iterator it = orderMap.begin(); it != orderMap.end(); ++it)
     {
-        if (loadOrder_(it->first.first, it->second) == false)
+        if (loadOrder_(it->first.first, it->second, userItemMap) == false)
         {
             LOG(ERROR) << "error in adding order, USERID: " << it->first.first
                        << ", order id: " << it->first.second
                        << ", item num: " << it->second.size();
         }
     }
+}
+
+bool RecommendTaskService::loadOrder_(
+    const std::string& userIdStr,
+    const OrderItemVec& orderItemVec,
+    UserItemMap& userItemMap
+)
+{
+    userid_t userId = 0;
+    std::vector<itemid_t> itemIdVec;
+
+    if (convertUserItemId_(userIdStr, orderItemVec, userId, itemIdVec) == false)
+    {
+        return false;
+    }
+
+    orderManager_->addOrder(itemIdVec);
+
+    // collect items for each user
+    ItemIdSet itemIdSet;
+    userItemMap.getValue(userId, itemIdSet);
+    bool needUpdate = false;
+    for (std::vector<itemid_t>::const_iterator it = itemIdVec.begin();
+        it != itemIdVec.end(); ++it)
+    {
+        if (itemIdSet.insert(*it).second && needUpdate == false)
+        {
+            needUpdate = true;
+        }
+    }
+
+    // not purchased yet
+    if (needUpdate)
+    {
+        try
+        {
+            if (userItemMap.update(userId, itemIdSet) == false)
+            {
+                return false;
+            }
+        }
+        catch(izenelib::util::IZENELIBException& e)
+        {
+            LOG(ERROR) << "exception in SDB::update(): " << e.what();
+        }
+    }
+
+    return true;
 }
 
 bool RecommendTaskService::convertUserItemId_(
@@ -890,27 +973,6 @@ bool RecommendTaskService::convertUserItemId_(
 
         itemIdVec.push_back(itemId);
     }
-
-    return true;
-}
-
-bool RecommendTaskService::loadOrder_(
-    const std::string& userIdStr,
-    const OrderItemVec& orderItemVec
-)
-{
-    userid_t userId = 0;
-    std::vector<itemid_t> itemIdVec;
-
-    if (convertUserItemId_(userIdStr, orderItemVec, userId, itemIdVec) == false)
-    {
-        return false;
-    }
-
-    orderManager_->addOrder(itemIdVec);
-
-    // TODO: change below to TC store
-    purchaseManager_->addPurchaseItem(userId, itemIdVec);
 
     return true;
 }
