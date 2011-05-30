@@ -39,7 +39,7 @@ public:
         threshold_ = threshold;
     }
 
-    void addOrder(std::list<sf1r::itemid_t>& items);
+    void addOrder(const std::vector<sf1r::itemid_t>& items);
 
     /**
      * Get @p howmany items which is most frequently appeared with @p items in the same order.
@@ -83,7 +83,7 @@ private:
 
     void _writeRecord(
         sf1r::orderid_t orderId,
-        std::list<sf1r::itemid_t>& items);
+        const std::vector<sf1r::itemid_t>& items);
 
     bool _getOrder(
         sf1r::orderid_t orderId,

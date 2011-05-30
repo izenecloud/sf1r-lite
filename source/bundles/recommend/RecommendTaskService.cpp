@@ -289,11 +289,11 @@ class OrderTask
 public:
     OrderTask(
         sf1r::OrderManager& orderManager,
-        std::list<sf1r::itemid_t>& orderItems
+        std::vector<sf1r::itemid_t>& orderItems
     )
     : orderManager_(orderManager)
+    , orderItems_(orderItems)
     {
-        orderItems_.swap(orderItems);
     }
 
     OrderTask(const OrderTask& orderTask)
@@ -309,7 +309,7 @@ public:
 
 private:
     sf1r::OrderManager& orderManager_;
-    mutable std::list<sf1r::itemid_t> orderItems_;
+    mutable std::vector<sf1r::itemid_t> orderItems_;
 };
 
 class PurchaseTask
@@ -519,55 +519,21 @@ bool RecommendTaskService::purchaseItem(
     const OrderItemVec& orderItemVec
 )
 {
-    if (userIdStr.empty() || orderItemVec.empty())
-    {
-        return false;
-    }
-
     userid_t userId = 0;
-    if (userIdGenerator_->conv(userIdStr, userId, false) == false)
+    std::vector<itemid_t> itemIdVec;
+
+    if (convertUserItemId_(userIdStr, orderItemVec, userId, itemIdVec) == false)
     {
-        LOG(ERROR) << "error in purchaseItem(), user id " << userIdStr << " not yet added before";
         return false;
     }
 
-    //DLOG(INFO) << "RecommendTaskService::purchaseItem()"
-              //<< ", user id: " << userIdStr
-              //<< ", orderIdStr: " << orderIdStr
-              //<< ", item num: " << orderItemVec.size();
-
-    std::vector<itemid_t> newOrderItemVec;
-    std::list<itemid_t> orderItemList;
-    for (OrderItemVec::const_iterator it = orderItemVec.begin();
-        it != orderItemVec.end(); ++it)
     {
-        //DLOG(INFO) << "item id: " << it->itemIdStr_
-                  //<< ", quantity: " << it->quantity_
-                  //<< ", price: " << it->price_;
-
-        if (it->itemIdStr_.empty())
-        {
-            return false;
-        }
-
-        itemid_t itemId = 0;
-        if (itemIdGenerator_->conv(it->itemIdStr_, itemId, false) == false)
-        {
-            LOG(ERROR) << "error in purchaseItem(), item id " << it->itemIdStr_ << " not yet added before";
-            return false;
-        }
-
-        newOrderItemVec.push_back(itemId);
-        orderItemList.push_back(itemId);
-    }
-
-    {
-        PurchaseTask task(*purchaseManager_, userId, newOrderItemVec);
+        PurchaseTask task(*purchaseManager_, userId, itemIdVec);
         jobScheduler_->addTask(boost::bind(&PurchaseTask::purchase, task));
     }
 
     {
-        OrderTask task(*orderManager_, orderItemList);
+        OrderTask task(*orderManager_, itemIdVec);
         jobScheduler_->addTask(boost::bind(&OrderTask::purchase, task));
     }
 
@@ -835,11 +801,11 @@ bool RecommendTaskService::loadOrderSCD_()
             {
                 OrderItemVec orderItemVec;
                 orderItemVec.push_back(orderItem);
-                if (purchaseItem(userIdStr, orderIdStr, orderItemVec) == false)
+                if (loadOrder_(userIdStr, orderItemVec) == false)
                 {
-                    LOG(ERROR) << "error in adding order, USERID: " << userIdStr
-                        << ", order id: " << orderIdStr
-                        << ", item num: " << orderItemVec.size();
+                    LOG(ERROR) << "error in loading order, USERID: " << userIdStr
+                               << ", order id: " << orderIdStr
+                               << ", item num: " << orderItemVec.size();
                 }
             }
             else
@@ -866,6 +832,9 @@ bool RecommendTaskService::loadOrderSCD_()
         loadOrderMap_(orderMap);
     }
 
+    // TODO: add below from TC storage
+    //purchaseManager_->addPurchaseItem(userId, itemIdVec);
+
     std::cout << "\rloading orders, total docNum: " << docNum << std::endl;
 
     backupSCDFiles(scdDir, scdList);
@@ -877,13 +846,73 @@ void RecommendTaskService::loadOrderMap_(const OrderMap& orderMap)
 {
     for (OrderMap::const_iterator it = orderMap.begin(); it != orderMap.end(); ++it)
     {
-        if (purchaseItem(it->first.first, it->first.second, it->second) == false)
+        if (loadOrder_(it->first.first, it->second) == false)
         {
             LOG(ERROR) << "error in adding order, USERID: " << it->first.first
                        << ", order id: " << it->first.second
                        << ", item num: " << it->second.size();
         }
     }
+}
+
+bool RecommendTaskService::convertUserItemId_(
+    const std::string& userIdStr,
+    const OrderItemVec& orderItemVec,
+    userid_t& userId,
+    std::vector<itemid_t>& itemIdVec
+)
+{
+    if (userIdStr.empty() || orderItemVec.empty())
+    {
+        return false;
+    }
+
+    if (userIdGenerator_->conv(userIdStr, userId, false) == false)
+    {
+        LOG(ERROR) << "error in convertUserItemId(), user id " << userIdStr << " not yet added before";
+        return false;
+    }
+
+    for (OrderItemVec::const_iterator it = orderItemVec.begin();
+        it != orderItemVec.end(); ++it)
+    {
+        if (it->itemIdStr_.empty())
+        {
+            return false;
+        }
+
+        itemid_t itemId = 0;
+        if (itemIdGenerator_->conv(it->itemIdStr_, itemId, false) == false)
+        {
+            LOG(ERROR) << "error in convertUserItemId(), item id " << it->itemIdStr_ << " not yet added before";
+            return false;
+        }
+
+        itemIdVec.push_back(itemId);
+    }
+
+    return true;
+}
+
+bool RecommendTaskService::loadOrder_(
+    const std::string& userIdStr,
+    const OrderItemVec& orderItemVec
+)
+{
+    userid_t userId = 0;
+    std::vector<itemid_t> itemIdVec;
+
+    if (convertUserItemId_(userIdStr, orderItemVec, userId, itemIdVec) == false)
+    {
+        return false;
+    }
+
+    orderManager_->addOrder(itemIdVec);
+
+    // TODO: change below to TC store
+    purchaseManager_->addPurchaseItem(userId, itemIdVec);
+
+    return true;
 }
 
 } // namespace sf1r

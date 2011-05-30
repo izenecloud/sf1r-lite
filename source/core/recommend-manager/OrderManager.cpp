@@ -134,7 +134,7 @@ OrderManager::~OrderManager()
     fclose(order_db_);
 }
 
-void OrderManager::addOrder(std::list<sf1r::itemid_t>& items)
+void OrderManager::addOrder(const std::vector<sf1r::itemid_t>& items)
 {
     orderid_t orderId = _newOrderId();
 
@@ -230,7 +230,7 @@ void OrderManager::buildFreqItemsets()
 
 void OrderManager::_writeRecord(
         sf1r::orderid_t orderId,
-        std::list<sf1r::itemid_t>& items)
+        const std::vector<sf1r::itemid_t>& items)
 {
     {
     ///write keys
@@ -243,7 +243,7 @@ void OrderManager::_writeRecord(
     fwrite(&orderId, sizeof(sf1r::orderid_t), 1, order_db_); // recordId
     uint32_t size = items.size();
     fwrite(&size, sizeof(uint32_t), 1, order_db_); // size
-    for(std::list<sf1r::itemid_t>::iterator iter = items.begin(); 
+    for(std::vector<sf1r::itemid_t>::const_iterator iter = items.begin(); 
           iter != items.end(); ++iter)
     {
         sf1r::itemid_t itemId = *iter;

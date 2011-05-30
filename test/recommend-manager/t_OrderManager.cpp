@@ -96,19 +96,19 @@ BOOST_AUTO_TEST_CASE(checkOrder)
     orderManager.setMinThreshold(1);
     {
     itemid_t myints[] = {1,2,3,4};
-    std::list<itemid_t> transaction (myints, myints + sizeof(myints) / sizeof(itemid_t) );
+    std::vector<itemid_t> transaction (myints, myints + sizeof(myints) / sizeof(itemid_t) );
     orderManager.addOrder(transaction);
     }
 
     {
     itemid_t myints[] = {2,3};
-    std::list<itemid_t> transaction (myints, myints + sizeof(myints) / sizeof(itemid_t) );
+    std::vector<itemid_t> transaction (myints, myints + sizeof(myints) / sizeof(itemid_t) );
     orderManager.addOrder(transaction);
     }
 
     {
     itemid_t myints[] = {3,4,5};
-    std::list<itemid_t> transaction (myints, myints + sizeof(myints) / sizeof(itemid_t) );
+    std::vector<itemid_t> transaction (myints, myints + sizeof(myints) / sizeof(itemid_t) );
     orderManager.addOrder(transaction);
     }
 

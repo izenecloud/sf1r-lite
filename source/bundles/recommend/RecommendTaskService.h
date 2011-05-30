@@ -146,6 +146,23 @@ private:
      */
     void loadOrderMap_(const OrderMap& orderMap);
 
+    /**
+     * Convert from @p userIdStr to @p userId,
+     * and from @p orderItemVec to @p itemIdVec.
+     * @return true for success, false for failure.
+     */
+    bool convertUserItemId_(
+        const std::string& userIdStr,
+        const OrderItemVec& orderItemVec,
+        userid_t& userId,
+        std::vector<itemid_t>& itemIdVec
+    );
+
+    bool loadOrder_(
+        const std::string& userIdStr,
+        const OrderItemVec& orderItemVec
+    );
+
 private:
     RecommendBundleConfiguration* bundleConfig_;
     directory::DirectoryRotator* directoryRotator_;
