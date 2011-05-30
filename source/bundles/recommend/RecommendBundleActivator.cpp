@@ -3,6 +3,7 @@
 #include <recommend-manager/ItemManager.h>
 #include <recommend-manager/VisitManager.h>
 #include <recommend-manager/PurchaseManager.h>
+#include <recommend-manager/OrderManager.h>
 #include <recommend-manager/RecommendManager.h>
 
 #include <common/SFLogger.h>
@@ -24,10 +25,10 @@ RecommendBundleActivator::RecommendBundleActivator()
     ,itemManager_(NULL)
     ,visitManager_(NULL)
     ,purchaseManager_(NULL)
+    ,orderManager_(NULL)
     ,recommendManager_(NULL)
     ,userIdGenerator_(NULL)
     ,itemIdGenerator_(NULL)
-    ,jobScheduler_(NULL)
     ,coVisitManager_(NULL)
     ,itemCFManager_(NULL)
 {
@@ -76,20 +77,20 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
     delete itemManager_;
     delete visitManager_;
     delete purchaseManager_;
+    delete orderManager_;
     delete recommendManager_;
     delete userIdGenerator_;
     delete itemIdGenerator_;
-    delete jobScheduler_;
     delete coVisitManager_;
     delete itemCFManager_;
     userManager_ = NULL;
     itemManager_ = NULL;
     visitManager_ = NULL;
     purchaseManager_ = NULL;
+    orderManager_ = NULL;
     recommendManager_ = NULL;
     userIdGenerator_ = NULL;
     itemIdGenerator_ = NULL;
-    jobScheduler_ = NULL;
     coVisitManager_ = NULL;
     itemCFManager_ = NULL;
 }
@@ -105,8 +106,6 @@ bool RecommendBundleActivator::init_()
     std::string dir;
     openDataDirectory_(dir);
     boost::filesystem::create_directories(dir);
-
-    jobScheduler_ = new JobScheduler();
 
     std::string userPath = dir + "/user.db";
     auto_ptr<UserManager> userManagerPtr(new UserManager(userPath));
@@ -126,16 +125,19 @@ bool RecommendBundleActivator::init_()
                                                                cfPath + "/rec", 1000));
 
     std::string visitPath = dir + "/visit.db";
-    auto_ptr<VisitManager> visitManagerPtr(new VisitManager(visitPath, jobScheduler_, coVisitManagerPtr.get()));
+    auto_ptr<VisitManager> visitManagerPtr(new VisitManager(visitPath, coVisitManagerPtr.get()));
 
     std::string purchasePath = dir + "/purchase.db";
-    auto_ptr<PurchaseManager> purchaseManagerPtr(new PurchaseManager(purchasePath, jobScheduler_, itemCFManagerPtr.get(), itemManagerPtr.get()));
+    auto_ptr<PurchaseManager> purchaseManagerPtr(new PurchaseManager(purchasePath, itemCFManagerPtr.get(), itemManagerPtr.get()));
+
+    std::string orderPath = dir + "/order";
+    auto_ptr<OrderManager> orderManagerPtr(new OrderManager(orderPath, itemManagerPtr.get()));
 
     auto_ptr<RecommendManager> recommendManagerPtr(new RecommendManager(itemManagerPtr.get(),
                                                                         visitManagerPtr.get(),
                                                                         coVisitManagerPtr.get(),
                                                                         itemCFManagerPtr.get(),
-                                                                        purchaseManagerPtr.get()->getOrderManager()));
+                                                                        orderManagerPtr.get()));
 
     std::string userIdPath = dir + "/userid";
     auto_ptr<RecIdGenerator> userIdGeneratorPtr(new RecIdGenerator(userIdPath));
@@ -147,6 +149,7 @@ bool RecommendBundleActivator::init_()
     itemManager_ = itemManagerPtr.release();
     visitManager_ = visitManagerPtr.release();
     purchaseManager_ = purchaseManagerPtr.release();
+    orderManager_ = orderManagerPtr.release();
     recommendManager_ = recommendManagerPtr.release();
 
     userIdGenerator_ = userIdGeneratorPtr.release();
@@ -155,7 +158,7 @@ bool RecommendBundleActivator::init_()
     coVisitManager_ = coVisitManagerPtr.release();
     itemCFManager_ = itemCFManagerPtr.release();
 
-    taskService_ = new RecommendTaskService(config_, &directoryRotator_, userManager_, itemManager_, visitManager_, purchaseManager_, userIdGenerator_, itemIdGenerator_);
+    taskService_ = new RecommendTaskService(config_, &directoryRotator_, userManager_, itemManager_, visitManager_, purchaseManager_, orderManager_, userIdGenerator_, itemIdGenerator_);
     searchService_ = new RecommendSearchService(userManager_, itemManager_, recommendManager_, userIdGenerator_, itemIdGenerator_);
 
     return true;

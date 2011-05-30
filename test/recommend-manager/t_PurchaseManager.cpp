@@ -7,7 +7,6 @@
 #include <util/ustring/UString.h>
 #include <recommend-manager/PurchaseManager.h>
 #include <recommend-manager/ItemManager.h>
-#include <common/JobScheduler.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
@@ -35,23 +34,20 @@ const char* MAX_ID_STR = "max_itemid.txt";
 }
 
 typedef map<userid_t, set<itemid_t> > PurchaseMap;
-typedef PurchaseManager::OrderItem OrderItem;
-typedef PurchaseManager::OrderItemVec OrderItemVec;
 
 void addPurchaseItem(
     PurchaseManager& purchaseManager,
     PurchaseMap& purchaseMap,
     userid_t userId,
-    const OrderItemVec& orderItemVec,
-    const std::string& orderIdStr
+    const std::vector<itemid_t>& orderItemVec
 )
 {
-    BOOST_CHECK(purchaseManager.addPurchaseItem(userId, orderItemVec, orderIdStr));
+    BOOST_CHECK(purchaseManager.addPurchaseItem(userId, orderItemVec));
 
     set<itemid_t>& itemIdSet = purchaseMap[userId];
     for (unsigned int i = 0; i < orderItemVec.size(); ++i)
     {
-        itemIdSet.insert(orderItemVec[i].itemId_);
+        itemIdSet.insert(orderItemVec[i]);
     }
 }
 
@@ -106,7 +102,6 @@ BOOST_AUTO_TEST_CASE(checkPurchase)
 
     PurchaseMap purchaseMap;
 
-    JobScheduler* jobScheduler = new JobScheduler();
     bfs::path cfPath(bfs::path(TEST_DIR_STR) / CF_DIR_STR);
     string cfPathStr = cfPath.string();
     bfs::create_directories(cfPath);
@@ -126,43 +121,43 @@ BOOST_AUTO_TEST_CASE(checkPurchase)
     {
         BOOST_TEST_MESSAGE("add purchase...");
 
-        PurchaseManager purchaseManager(purchasePath.string(), jobScheduler, itemCFManager, itemManager);
-        OrderItemVec orderItemVec;
+        PurchaseManager purchaseManager(purchasePath.string(), itemCFManager, itemManager);
+        std::vector<itemid_t> orderItemVec;
 
-        orderItemVec.push_back(OrderItem(20, 5, 13.5));
-        orderItemVec.push_back(OrderItem(10, 3, 50));
-        orderItemVec.push_back(OrderItem(40, 1, 1000));
-        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec, "order1_10");
-
-        orderItemVec.clear();
-        orderItemVec.push_back(OrderItem(10, 1, 7.0));
-        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec, "");
+        orderItemVec.push_back(20);
+        orderItemVec.push_back(10);
+        orderItemVec.push_back(40);
+        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec);
 
         orderItemVec.clear();
-        orderItemVec.push_back(OrderItem(20, 10, 20.0));
-        orderItemVec.push_back(OrderItem(30, 8, 200.0));
-        addPurchaseItem(purchaseManager, purchaseMap, 2, orderItemVec, "order2_20");
+        orderItemVec.push_back(10);
+        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec);
 
         orderItemVec.clear();
-        orderItemVec.push_back(OrderItem(30, 10, 100));
-        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec, "order1_30");
+        orderItemVec.push_back(20);
+        orderItemVec.push_back(30);
+        addPurchaseItem(purchaseManager, purchaseMap, 2, orderItemVec);
 
         orderItemVec.clear();
-        orderItemVec.push_back(OrderItem(30, 4, 500));
-        orderItemVec.push_back(OrderItem(20, 9, 22.2));
-        addPurchaseItem(purchaseManager, purchaseMap, 3, orderItemVec, "order3_30");
+        orderItemVec.push_back(30);
+        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec);
 
         orderItemVec.clear();
-        orderItemVec.push_back(OrderItem(10, 3, 50));
-        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec, "");
+        orderItemVec.push_back(30);
+        orderItemVec.push_back(20);
+        addPurchaseItem(purchaseManager, purchaseMap, 3, orderItemVec);
 
         orderItemVec.clear();
-        orderItemVec.push_back(OrderItem(20, 2, 20));
-        addPurchaseItem(purchaseManager, purchaseMap, 2, orderItemVec, "");
+        orderItemVec.push_back(10);
+        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec);
 
         orderItemVec.clear();
-        orderItemVec.push_back(OrderItem(30, 4, 500));
-        addPurchaseItem(purchaseManager, purchaseMap, 3, orderItemVec, "");
+        orderItemVec.push_back(20);
+        addPurchaseItem(purchaseManager, purchaseMap, 2, orderItemVec);
+
+        orderItemVec.clear();
+        orderItemVec.push_back(30);
+        addPurchaseItem(purchaseManager, purchaseMap, 3, orderItemVec);
 
         checkPurchaseManager(purchaseMap, purchaseManager);
         iteratePurchaseManager(purchaseMap, purchaseManager);
@@ -173,26 +168,26 @@ BOOST_AUTO_TEST_CASE(checkPurchase)
     {
         BOOST_TEST_MESSAGE("continue add purchase...");
 
-        PurchaseManager purchaseManager(purchasePath.string(), jobScheduler, itemCFManager, itemManager);
+        PurchaseManager purchaseManager(purchasePath.string(), itemCFManager, itemManager);
         checkPurchaseManager(purchaseMap, purchaseManager);
         iteratePurchaseManager(purchaseMap, purchaseManager);
 
-        OrderItemVec orderItemVec;
+        std::vector<itemid_t> orderItemVec;
 
-        orderItemVec.push_back(OrderItem(40, 3, 50));
-        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec, "order1_40");
-
-        orderItemVec.clear();
-        orderItemVec.push_back(OrderItem(40, 2, 20));
-        addPurchaseItem(purchaseManager, purchaseMap, 2, orderItemVec, "");
+        orderItemVec.push_back(40);
+        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec);
 
         orderItemVec.clear();
-        orderItemVec.push_back(OrderItem(40, 4, 500));
-        addPurchaseItem(purchaseManager, purchaseMap, 3, orderItemVec, "");
+        orderItemVec.push_back(40);
+        addPurchaseItem(purchaseManager, purchaseMap, 2, orderItemVec);
 
         orderItemVec.clear();
-        orderItemVec.push_back(OrderItem(40, 5, 34));
-        addPurchaseItem(purchaseManager, purchaseMap, 4, orderItemVec, "order4_40");
+        orderItemVec.push_back(40);
+        addPurchaseItem(purchaseManager, purchaseMap, 3, orderItemVec);
+
+        orderItemVec.clear();
+        orderItemVec.push_back(40);
+        addPurchaseItem(purchaseManager, purchaseMap, 4, orderItemVec);
 
         checkPurchaseManager(purchaseMap, purchaseManager);
         iteratePurchaseManager(purchaseMap, purchaseManager);
@@ -200,7 +195,6 @@ BOOST_AUTO_TEST_CASE(checkPurchase)
         purchaseManager.flush();
     }
 
-    delete jobScheduler;
     delete itemCFManager;
     delete itemManager;
 }

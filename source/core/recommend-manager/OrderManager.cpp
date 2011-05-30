@@ -13,6 +13,7 @@
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/archive_exception.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/thread/locks.hpp>
 
 #include <fstream>
 #include <memory>
@@ -93,12 +94,14 @@ OrderManager::OrderManager(
     const ItemManager* itemManager
 )
     :item_order_index_(path+"/index")
-    ,order_key_path_(boost::filesystem::path(boost::filesystem::path(path)/"orderdb.key").string())
-    ,order_db_path_(boost::filesystem::path(boost::filesystem::path(path)/"orderdb.data").string())
-    ,max_itemsets_results_path_(boost::filesystem::path(boost::filesystem::path(path)/"maxitemsets.txt").string())
-    ,frequent_itemsets_results_path_(boost::filesystem::path(boost::filesystem::path(path)/"frequentitemsets.db").string())
+    ,order_key_path_(path+"/orderdb.key")
+    ,order_db_path_(path+"/orderdb.data")
+    ,max_itemsets_results_path_(path+"/maxitemsets.txt")
+    ,frequent_itemsets_results_path_(path+"/frequentitemsets.db")
     ,threshold_(1)
     ,itemManager_(itemManager)
+    ,orderIdPath_(path+"/orderId.txt")
+    ,orderId_(0)
 {
     _restoreFreqItemsetDb();
 
@@ -107,19 +110,34 @@ OrderManager::OrderManager(
     order_key_ = fopen(order_key_path_.c_str(), creating ? "w+b" : "r+b");
     creating = stat(order_db_path_.c_str(), &statbuf);
     order_db_ = fopen(order_db_path_.c_str(), "ab");
+
+    std::ifstream ifs(orderIdPath_.c_str());
+    if (ifs)
+    {
+        ifs >> orderId_;
+    }
 }
 
 OrderManager::~OrderManager()
 {
+    std::ofstream ofs(orderIdPath_.c_str());
+    if (ofs)
+    {
+        ofs << orderId_;
+    }
+    else
+    {
+        LOG(ERROR) << "failed to write file " << orderIdPath_;
+    }
+
     fclose(order_key_);
     fclose(order_db_);
 }
 
-void OrderManager::addOrder(
-    sf1r::orderid_t orderId,
-    std::list<sf1r::itemid_t>& items
-)
+void OrderManager::addOrder(std::list<sf1r::itemid_t>& items)
 {
+    orderid_t orderId = _newOrderId();
+
     item_order_index_.add(orderId, items);
     _writeRecord(orderId, items);
 }
@@ -383,6 +401,12 @@ bool OrderManager::_restoreFreqItemsetDb()
         LOG(ERROR) << "IO ERROR:: Can not restore frequent itemset DB";
         return false;
     }
+}
+
+orderid_t OrderManager::_newOrderId()
+{
+    boost::mutex::scoped_lock lock(orderIdMutex_);
+    return ++orderId_;
 }
 
 }

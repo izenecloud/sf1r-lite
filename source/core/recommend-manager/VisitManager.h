@@ -17,14 +17,12 @@
 
 namespace sf1r
 {
-class JobScheduler;
 
 class VisitManager
 {
 public:
     VisitManager(
         const std::string& path,
-        JobScheduler* jobScheduler,
         CoVisitManager* coVisitManager
     );
 
@@ -53,7 +51,6 @@ public:
 
 private:
     SDBType container_;
-    JobScheduler* jobScheduler_;
     CoVisitManager* coVisitManager_;
 };
 

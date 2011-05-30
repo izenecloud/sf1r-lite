@@ -17,6 +17,8 @@
 #include <vector>
 #include <set>
 
+#include <boost/thread/mutex.hpp>
+
 namespace sf1r
 {
 class ItemManager;
@@ -37,9 +39,7 @@ public:
         threshold_ = threshold;
     }
 
-    void addOrder(
-        sf1r::orderid_t orderId,
-        std::list<sf1r::itemid_t>& items);
+    void addOrder(std::list<sf1r::itemid_t>& items);
 
     /**
      * Get @p howmany items which is most frequently appeared with @p items in the same order.
@@ -97,6 +97,8 @@ private:
         std::vector<itemid_t>& max_itemset , 
         FrequentItemSetResultType& frequent_itemsets);
 
+    orderid_t _newOrderId();
+
 private:
     ItemIndex item_order_index_;
     std::string order_key_path_;
@@ -110,6 +112,9 @@ private:
     izenelib::util::ReadWriteLock result_lock_;
     FrequentItemSetResultType frequent_itemsets_;
     const ItemManager* itemManager_; // for max item id
+    std::string orderIdPath_;
+    orderid_t orderId_;
+    boost::mutex orderIdMutex_;
 };
 
 } // namespace sf1r

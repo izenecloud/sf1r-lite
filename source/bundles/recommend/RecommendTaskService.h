@@ -22,7 +22,9 @@ class UserManager;
 class ItemManager;
 class VisitManager;
 class PurchaseManager;
+class OrderManager;
 class RecommendBundleConfiguration;
+class JobScheduler;
 
 namespace directory
 {
@@ -39,9 +41,12 @@ public:
         ItemManager* itemManager,
         VisitManager* visitManager,
         PurchaseManager* purchaseManager,
+        OrderManager* orderManager,
         RecIdGenerator* userIdGenerator,
         RecIdGenerator* itemIdGenerator
     );
+
+    ~RecommendTaskService();
 
     /**
      * Build collection from 3 types of SCD files: user, item, purchase record.
@@ -148,8 +153,10 @@ private:
     ItemManager* itemManager_;
     VisitManager* visitManager_;
     PurchaseManager* purchaseManager_;
+    OrderManager* orderManager_;
     RecIdGenerator* userIdGenerator_;
     RecIdGenerator* itemIdGenerator_;
+    JobScheduler* jobScheduler_;
 };
 
 } // namespace sf1r

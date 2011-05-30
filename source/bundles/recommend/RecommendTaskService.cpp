@@ -6,9 +6,11 @@
 #include <recommend-manager/ItemManager.h>
 #include <recommend-manager/VisitManager.h>
 #include <recommend-manager/PurchaseManager.h>
+#include <recommend-manager/OrderManager.h>
 #include <common/ScdParser.h>
 #include <directory-manager/Directory.h>
 #include <directory-manager/DirectoryRotator.h>
+#include <common/JobScheduler.h>
 
 #include <map>
 #include <cassert>
@@ -257,6 +259,91 @@ bool doc2Order(
     return true;
 }
 
+class VisitTask
+{
+public:
+    VisitTask(
+        sf1r::VisitManager& visitManager,
+        sf1r::userid_t userId,
+        sf1r::itemid_t itemId
+    )
+    : visitManager_(visitManager)
+    , userId_(userId)
+    , itemId_(itemId)
+    {
+    }
+
+    void visit()
+    {
+        visitManager_.addVisitItem(userId_, itemId_);
+    }
+
+private:
+    sf1r::VisitManager& visitManager_;
+    sf1r::userid_t userId_;
+    sf1r::itemid_t itemId_;
+};
+
+class OrderTask
+{
+public:
+    OrderTask(
+        sf1r::OrderManager& orderManager,
+        std::list<sf1r::itemid_t>& orderItems
+    )
+    : orderManager_(orderManager)
+    {
+        orderItems_.swap(orderItems);
+    }
+
+    OrderTask(const OrderTask& orderTask)
+    : orderManager_(orderTask.orderManager_)
+    {
+        orderItems_.swap(orderTask.orderItems_);
+    }
+
+    void purchase()
+    {
+        orderManager_.addOrder(orderItems_);
+    }
+
+private:
+    sf1r::OrderManager& orderManager_;
+    mutable std::list<sf1r::itemid_t> orderItems_;
+};
+
+class PurchaseTask
+{
+public:
+    PurchaseTask(
+        sf1r::PurchaseManager& purchaseManager,
+        sf1r::userid_t userId,
+        std::vector<sf1r::itemid_t>& itemVec
+    )
+    : purchaseManager_(purchaseManager)
+    , userId_(userId)
+    {
+        itemVec_.swap(itemVec);
+    }
+
+    PurchaseTask(const PurchaseTask& task)
+    : purchaseManager_(task.purchaseManager_)
+    , userId_(task.userId_)
+    {
+        itemVec_.swap(task.itemVec_);
+    }
+
+    void purchase()
+    {
+        purchaseManager_.addPurchaseItem(userId_, itemVec_);
+    }
+
+private:
+    sf1r::PurchaseManager& purchaseManager_;
+    sf1r::userid_t userId_;
+    mutable std::vector<sf1r::itemid_t> itemVec_;
+};
+
 }
 
 namespace sf1r
@@ -269,6 +356,7 @@ RecommendTaskService::RecommendTaskService(
     ItemManager* itemManager,
     VisitManager* visitManager,
     PurchaseManager* purchaseManager,
+    OrderManager* orderManager,
     RecIdGenerator* userIdGenerator,
     RecIdGenerator* itemIdGenerator
 )
@@ -278,9 +366,16 @@ RecommendTaskService::RecommendTaskService(
     ,itemManager_(itemManager)
     ,visitManager_(visitManager)
     ,purchaseManager_(purchaseManager)
+    ,orderManager_(orderManager)
     ,userIdGenerator_(userIdGenerator)
     ,itemIdGenerator_(itemIdGenerator)
+    ,jobScheduler_(new JobScheduler())
 {
+}
+
+RecommendTaskService::~RecommendTaskService()
+{
+    delete jobScheduler_;
 }
 
 bool RecommendTaskService::addUser(const User& user)
@@ -412,7 +507,10 @@ bool RecommendTaskService::visitItem(const std::string& userIdStr, const std::st
         return false;
     }
 
-    return visitManager_->addVisitItem(userId, itemId);
+    VisitTask task(*visitManager_, userId, itemId);
+    jobScheduler_->addTask(boost::bind(&VisitTask::visit, task));
+
+    return true;
 }
 
 bool RecommendTaskService::purchaseItem(
@@ -438,7 +536,8 @@ bool RecommendTaskService::purchaseItem(
               //<< ", orderIdStr: " << orderIdStr
               //<< ", item num: " << orderItemVec.size();
 
-    PurchaseManager::OrderItemVec newOrderItemVec;
+    std::vector<itemid_t> newOrderItemVec;
+    std::list<itemid_t> orderItemList;
     for (OrderItemVec::const_iterator it = orderItemVec.begin();
         it != orderItemVec.end(); ++it)
     {
@@ -458,10 +557,21 @@ bool RecommendTaskService::purchaseItem(
             return false;
         }
 
-        newOrderItemVec.push_back(PurchaseManager::OrderItem(itemId, it->quantity_, it->price_));
+        newOrderItemVec.push_back(itemId);
+        orderItemList.push_back(itemId);
     }
 
-    return purchaseManager_->addPurchaseItem(userId, newOrderItemVec, orderIdStr);
+    {
+        PurchaseTask task(*purchaseManager_, userId, newOrderItemVec);
+        jobScheduler_->addTask(boost::bind(&PurchaseTask::purchase, task));
+    }
+
+    {
+        OrderTask task(*orderManager_, orderItemList);
+        jobScheduler_->addTask(boost::bind(&OrderTask::purchase, task));
+    }
+
+    return true;
 }
 
 bool RecommendTaskService::buildCollection()
