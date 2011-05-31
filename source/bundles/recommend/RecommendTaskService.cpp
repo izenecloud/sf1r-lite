@@ -55,6 +55,7 @@ bool scanSCDFiles(const std::string& scdDir, std::vector<string>& scdList)
     }
 
     // search the directory for files
+    LOG(INFO) << "scanning SCD files in " << scdDir;
     const bfs::directory_iterator kItrEnd;
     for (bfs::directory_iterator itr(scdDir); itr != kItrEnd; ++itr)
     {
@@ -74,7 +75,11 @@ bool scanSCDFiles(const std::string& scdDir, std::vector<string>& scdList)
     }
 
     // sort files
-    sort(scdList.begin(), scdList.end(), ScdParser::compareSCD);
+    if (scdList.empty() == false)
+    {
+        LOG(INFO) << "sorting " << scdList.size() << " SCD file names...";
+        sort(scdList.begin(), scdList.end(), ScdParser::compareSCD);
+    }
 
     return true;
 }
@@ -595,6 +600,7 @@ bool RecommendTaskService::loadUserSCD_()
         return true;
     }
 
+    LOG(INFO) << "Start loading " << scdList.size() << " user SCD files...";
     for (std::vector<string>::const_iterator scdIt = scdList.begin();
         scdIt != scdList.end(); ++scdIt)
     {
@@ -679,6 +685,7 @@ bool RecommendTaskService::loadItemSCD_()
         return true;
     }
 
+    LOG(INFO) << "Start loading " << scdList.size() << " item SCD files...";
     for (std::vector<string>::const_iterator scdIt = scdList.begin();
         scdIt != scdList.end(); ++scdIt)
     {
@@ -780,6 +787,7 @@ bool RecommendTaskService::loadOrderSCD_()
     userItemMap.open();
 
     int docNum = 0;
+    LOG(INFO) << "Start loading " << scdList.size() << " order SCD files...";
     for (std::vector<string>::const_iterator scdIt = scdList.begin();
         scdIt != scdList.end(); ++scdIt)
     {
