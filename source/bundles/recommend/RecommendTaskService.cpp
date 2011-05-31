@@ -12,11 +12,15 @@
 #include <directory-manager/DirectoryRotator.h>
 #include <common/JobScheduler.h>
 
+#include <sdb/SDBCursorIterator.h>
+#include <util/scheduler.h>
+
 #include <map>
 #include <cassert>
 
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/thread/locks.hpp>
 
 #include <glog/logging.h>
 
@@ -371,6 +375,13 @@ RecommendTaskService::RecommendTaskService(
     ,itemIdGenerator_(itemIdGenerator)
     ,jobScheduler_(new JobScheduler())
 {
+    if (cronExpression_.setExpression(bundleConfig_->cronStr_))
+    {
+        izenelib::util::Scheduler::addJob("RecommendTaskService",
+                                          60*1000, // each minute
+                                          0, // start from now
+                                          boost::bind(&RecommendTaskService::cronJob_, this));
+    }
 }
 
 RecommendTaskService::~RecommendTaskService()
@@ -869,6 +880,8 @@ bool RecommendTaskService::loadOrderSCD_()
     }
     std::cout << "\rloading user num: " << userNum << std::endl;
 
+    buildFreqItemSet_();
+
     backupSCDFiles(scdDir, scdList);
 
     return true;
@@ -975,6 +988,30 @@ bool RecommendTaskService::convertUserItemId_(
     }
 
     return true;
+}
+
+void RecommendTaskService::buildFreqItemSet_()
+{
+    LOG(INFO) << "building frequent item set...";
+
+    boost::mutex::scoped_try_lock lock(freqItemMutex_);
+    if (lock.owns_lock() == false)
+    {
+        LOG(INFO) << "exit frequent item set building as it has already been started...";
+        return;
+    }
+
+    orderManager_->buildFreqItemsets();
+
+    LOG(INFO) << "finish frequent item set building";
+}
+
+void RecommendTaskService::cronJob_()
+{
+    if (cronExpression_.matches_now())
+    {
+        buildFreqItemSet_();
+    }
 }
 
 } // namespace sf1r

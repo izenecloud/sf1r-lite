@@ -13,6 +13,8 @@
 
 #include <util/osgi/BundleConfiguration.h>
 
+#include <string>
+
 namespace sf1r
 {
 
@@ -27,8 +29,8 @@ public:
 
     std::vector<std::string> collectionDataDirectories_;
 
-    // TODO recommend parameter in "sf1config.xml"
-    /*RecommendParam recommendParam_;*/
+    // <CronPara> in "sf1config.xml"
+    std::string cronStr_;
 
     // recommend schema in "collection.xml"
     RecommendSchema recommendSchema_;

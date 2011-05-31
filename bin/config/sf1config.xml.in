@@ -60,6 +60,7 @@
         <Parameter>
           <!-- Specify multiple index directory to support backup and directory rotating -->
           <CollectionDataDirectory>default-recommend-dir</CollectionDataDirectory>
+          <CronPara value="0 0 * * *" />
         </Parameter>
       </RecommendBundle> 
     </BundlesDefault>

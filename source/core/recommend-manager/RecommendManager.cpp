@@ -175,10 +175,6 @@ bool RecommendManager::topItemBundle(
     std::vector<int>& freqVec
 )
 {
-    // TODO instead of building freq item sets for each request,
-    // we should schedule the build in task
-    orderManager_->buildFreqItemsets();
-
     FrequentItemSetResultType results;
     orderManager_->getAllFreqItemSets(maxRecNum, minFreq, results);
 

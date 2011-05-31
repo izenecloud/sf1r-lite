@@ -11,9 +11,12 @@
 
 #include <util/osgi/IService.h>
 #include <sdb/SequentialDB.h>
+#include <util/cronexpression.h>
 
 #include <string>
 #include <vector>
+
+#include <boost/thread/mutex.hpp>
 
 namespace sf1r
 {
@@ -172,6 +175,9 @@ private:
         std::vector<itemid_t>& itemIdVec
     );
 
+    void buildFreqItemSet_();
+    void cronJob_();
+
 private:
     RecommendBundleConfiguration* bundleConfig_;
     directory::DirectoryRotator* directoryRotator_;
@@ -183,6 +189,8 @@ private:
     RecIdGenerator* userIdGenerator_;
     RecIdGenerator* itemIdGenerator_;
     JobScheduler* jobScheduler_;
+    boost::mutex freqItemMutex_; // for build freq item set
+    izenelib::util::CronExpression cronExpression_;
 };
 
 } // namespace sf1r

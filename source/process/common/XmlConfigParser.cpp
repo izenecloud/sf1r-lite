@@ -806,7 +806,7 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
     // RecommendBundle
     Element* recommendBundle = getUniqChildElement( collection, "RecommendBundle" , false );
     Element* recommendParam = NULL;
-    if(recommendBundle) 
+    if(recommendBundle)
     {
         Element* recommendSchema = getUniqChildElement( recommendBundle, "Schema", false  );
         if(recommendSchema) parseRecommendBundleSchema(recommendSchema, collectionMeta);
@@ -1234,18 +1234,20 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
 void CollectionConfig::parseRecommendBundleParam(const ticpp::Element * recParamNode, CollectionMeta & collectionMeta)
 {
     CollectionParameterConfig params(SF1Config::get()->defaultRecommendBundleParam_);
-    if(recParamNode) params.LoadXML(recParamNode, true);
-    // PARSING RECOMMEND CONFIG
-    // TODO get recommend param if necessary
-    //RecommendParam& recommendParam = collectionMeta.recommendBundleConfig_->recommendParam;
+    if(recParamNode)
+    {
+        params.LoadXML(recParamNode, true);
+    }
 
     std::set<std::string> directories;
     params.Get("CollectionDataDirectory", directories);
-	
     if(!directories.empty())
     {
         collectionMeta.recommendBundleConfig_->collectionDataDirectories_.assign(directories.begin(), directories.end());
     }
+
+    params.Get("CronPara/value", collectionMeta.recommendBundleConfig_->cronStr_);
+    LOG(INFO) << "RecommendBundle CronPara: " << collectionMeta.recommendBundleConfig_->cronStr_;
 }
 
 void CollectionConfig::parseRecommendBundleSchema(const ticpp::Element * recSchemaNode, CollectionMeta & collectionMeta)
