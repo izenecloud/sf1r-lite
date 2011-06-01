@@ -36,7 +36,6 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   ticpp
   am
   lzo
-  boost_memory
   beansdb
   )
 
