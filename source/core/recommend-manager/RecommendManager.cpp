@@ -2,6 +2,7 @@
 #include "ItemManager.h"
 #include "VisitManager.h"
 #include "OrderManager.h"
+#include "ItemCondition.h"
 #include <recommend-manager/ItemFilter.h>
 
 #include <glog/logging.h>
@@ -32,7 +33,7 @@ bool RecommendManager::recommend(
     const std::vector<itemid_t>& inputItemVec,
     const std::vector<itemid_t>& includeItemVec,
     const std::vector<itemid_t>& excludeItemVec,
-    /*const std::vector<ItemCategory>& filterCategoryVec,*/
+    const ItemCondition& condition,
     std::vector<itemid_t>& recItemVec,
     std::vector<double>& recWeightVec
 )
@@ -58,6 +59,7 @@ bool RecommendManager::recommend(
     ItemFilter filter(itemManager_);
     filter.insert(includeItemVec.begin(), includeItemVec.end());
     filter.insert(excludeItemVec.begin(), excludeItemVec.end());
+    filter.setCondition(condition);
 
     typedef std::list<idmlib::recommender::RecommendedItem> RecItemList;
 

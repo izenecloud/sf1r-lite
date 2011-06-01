@@ -10,6 +10,7 @@
 #include <idmlib/resys/ItemRescorer.h>
 #include "RecTypes.h"
 #include "ItemManager.h"
+#include "ItemCondition.h"
 
 #include <vector>
 
@@ -36,7 +37,20 @@ public:
      */
     bool isFiltered(itemid_t itemId)
     {
-        return filterSet_.find(itemId) != filterSet_.end() || !itemManager_->hasItem(itemId);
+        // check filter set first
+        if (filterSet_.find(itemId) != filterSet_.end())
+            return true;
+
+        // no condition
+        if (condition_.propName_.empty())
+            return itemManager_->hasItem(itemId) == false;
+
+        // not exist
+        Item item;
+        if (itemManager_->getItem(itemId, item) == false)
+            return true;
+
+        return condition_.checkItem(item) == false;
     }
 
     /**
@@ -58,9 +72,19 @@ public:
         filterSet_.insert(first, last);
     }
 
+    /**
+     * Set the condition for item property value.
+     * @param condition the item condition, if the item meet the condition, @c isFiltered() returns false.
+     */
+    void setCondition(const ItemCondition& condition)
+    {
+        condition_ = condition;
+    }
+
 private:
     ItemManager* itemManager_;
     std::set<itemid_t> filterSet_;
+    ItemCondition condition_;
 };
 
 } // namespace sf1r

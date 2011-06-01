@@ -1,6 +1,7 @@
 #include "RecommendSearchService.h"
 #include <recommend-manager/User.h>
 #include <recommend-manager/Item.h>
+#include <recommend-manager/ItemCondition.h>
 #include <recommend-manager/UserManager.h>
 #include <recommend-manager/ItemManager.h>
 #include <recommend-manager/RecommendManager.h>
@@ -79,6 +80,7 @@ bool RecommendSearchService::recommend(
     const std::vector<std::string>& inputItemVec,
     const std::vector<std::string>& includeItemVec,
     const std::vector<std::string>& excludeItemVec,
+    const ItemCondition& condition,
     std::vector<Item>& recItemVec,
     std::vector<double>& recWeightVec
 )
@@ -102,7 +104,7 @@ bool RecommendSearchService::recommend(
 
     std::vector<itemid_t> recIdVec;
     if (!recommendManager_->recommend(recType, maxRecNum, userId,
-                             inputIdVec, includeIdVec, excludeIdVec,
+                             inputIdVec, includeIdVec, excludeIdVec, condition,
                              recIdVec, recWeightVec))
     {
         LOG(ERROR) << "error in RecommendManager::recommend()";

@@ -16,6 +16,7 @@ namespace sf1r
 class ItemManager;
 class VisitManager;
 class OrderManager;
+class ItemCondition;
 
 class RecommendManager
 {
@@ -35,7 +36,7 @@ public:
         const std::vector<itemid_t>& inputItemVec,
         const std::vector<itemid_t>& includeItemVec,
         const std::vector<itemid_t>& excludeItemVec,
-        /*const std::vector<ItemCategory>& filterCategoryVec,*/
+        const ItemCondition& condition,
         std::vector<itemid_t>& recItemVec,
         std::vector<double>& recWeightVec
     );

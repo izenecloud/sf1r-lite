@@ -21,6 +21,7 @@ class Item;
 class UserManager;
 class ItemManager;
 class RecommendManager;
+class ItemCondition;
 
 class RecommendSearchService : public ::izenelib::osgi::IService
 {
@@ -44,6 +45,7 @@ public:
         const std::vector<std::string>& inputItemVec,
         const std::vector<std::string>& includeItemVec,
         const std::vector<std::string>& excludeItemVec,
+        const ItemCondition& condition,
         std::vector<Item>& recItemVec,
         std::vector<double>& recWeightVec
     );

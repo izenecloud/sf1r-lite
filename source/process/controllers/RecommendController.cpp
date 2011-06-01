@@ -8,6 +8,7 @@
 #include <bundles/recommend/RecommendSearchService.h>
 #include <recommend-manager/User.h>
 #include <recommend-manager/Item.h>
+#include <recommend-manager/ItemCondition.h>
 #include <recommend-manager/RecTypes.h>
 
 #include <common/Keys.h>
@@ -144,6 +145,66 @@ bool RecommendController::value2ItemIdVec(const std::string& propName, std::vect
         }
 
         itemIdVec.push_back(itemIdStr);
+    }
+
+    return true;
+}
+
+bool RecommendController::value2ItemCondition(ItemCondition& itemCondition)
+{
+    const izenelib::driver::Value& condValue = request()[Keys::resource][Keys::condition];
+
+    if (nullValue(condValue))
+    {
+        return true;
+    }
+
+    if (condValue.type() != izenelib::driver::Value::kObjectType)
+    {
+        response().addError("Require a map in request[resource][condition].");
+        return false;
+    }
+
+    std::string propName = asString(condValue[Keys::property]);
+    if (propName.empty())
+    {
+        response().addError("Require \"" + Keys::property + "\" in request[resource][condition].");
+        return false;
+    }
+    itemCondition.propName_ = propName;
+
+    RecommendProperty recommendProperty;
+    const RecommendSchema& recommendSchema = collectionHandler_->recommendSchema_;	
+    if (recommendSchema.getItemProperty(propName, recommendProperty) == false)
+    {
+        response().addError("Unknown item property " + propName + " in request[resource][condition].");
+        return false;
+    }
+
+    const izenelib::driver::Value& arrayValue = condValue[Keys::value];
+    if (arrayValue.type() != izenelib::driver::Value::kArrayType)
+    {
+        response().addError("Require an array of property values in request[resource][condition][value].");
+        return false;
+    }
+
+    for (std::size_t i = 0; i < arrayValue.size(); ++i)
+    {
+        std::string valueStr = asString(arrayValue(i));
+
+        if (valueStr.empty())
+        {
+            response().addError("Invalid property value in request[resource][condition][value].");
+            return false;
+        }
+
+        itemCondition.propValueSet_.insert(izenelib::util::UString(valueStr, kEncoding));
+    }
+
+    if (itemCondition.propValueSet_.empty())
+    {
+        response().addError("No property values in request[resource][condition][value].");
+        return false;
     }
 
     return true;
@@ -729,6 +790,9 @@ void RecommendController::purchase_item()
  *     - @b ITEMID* (@c String): a unique item identifier.
  *   - @b exclude_items (@c Array): the items must be excluded in recommendation result.
  *     - @b ITEMID* (@c String): a unique item identifier.
+ *   - @b condition (@c Object): specify the condition that recommendation results must meet.
+ *     - @b property* (@c String): item property name, such as @b ITEMID, @b category, etc
+ *     - @b value* (@c Array): the property values, each recommendation result must match one of the property value in this array.
  *
  * @section response
  *
@@ -791,6 +855,12 @@ void RecommendController::do_recommend()
         return;
     }
 
+    ItemCondition itemCondition;
+    if (!value2ItemCondition(itemCondition))
+    {
+        return;
+    }
+
     std::string userIdStr = asString(request()[Keys::resource][Keys::USERID]);
     int recTypeId = asUint(request()[Keys::resource][Keys::rec_type_id]);
     switch (recTypeId)
@@ -839,7 +909,7 @@ void RecommendController::do_recommend()
     std::vector<double> recWeightVec;
     RecommendSearchService* service = collectionHandler_->recommendSearchService_;
     if (service->recommend(static_cast<RecommendType>(recTypeId), maxCount, userIdStr,
-                           inputItemVec, includeItemVec, excludeItemVec,
+                           inputItemVec, includeItemVec, excludeItemVec, itemCondition,
                            recItemVec, recWeightVec))
     {
         if (recItemVec.size() != recWeightVec.size())
