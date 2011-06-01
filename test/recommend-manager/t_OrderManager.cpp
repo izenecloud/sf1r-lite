@@ -138,5 +138,54 @@ BOOST_AUTO_TEST_CASE(checkOrder)
     checkGetFreqItemSets(orderManager, "5", "3 4");
 }
 
+BOOST_AUTO_TEST_CASE(freqItemset)
+{
+    bfs::remove_all(ORDER_HOME_STR);
+    bfs::create_directories(ORDER_HOME_STR);
+
+    // add items first
+    bfs::path itemPath(bfs::path(ORDER_HOME_STR) / ITEM_DB_STR);
+    bfs::path maxIdPath(bfs::path(ORDER_HOME_STR) / MAX_ID_STR);
+    ItemManager itemManager(itemPath.string(), maxIdPath.string());
+    const itemid_t MAX_ITEM_ID = 50;
+    for (itemid_t i = 1; i <= MAX_ITEM_ID; ++i)
+    {
+        BOOST_CHECK(itemManager.addItem(i, Item()));
+    }
+
+    OrderManager orderManager(ORDER_HOME_STR, &itemManager);
+    orderManager.setMinThreshold(1);
+    for (int i=0; i<1000; ++i)
+    {
+    itemid_t myints[] = {1};
+    std::vector<itemid_t> transaction (myints, myints + sizeof(myints) / sizeof(itemid_t) );
+    orderManager.addOrder(transaction);
+    }
+
+    for (int i=0; i<5000; ++i)
+    {
+    itemid_t myints[] = {2};
+    std::vector<itemid_t> transaction (myints, myints + sizeof(myints) / sizeof(itemid_t) );
+    orderManager.addOrder(transaction);
+    }
+
+    {
+    itemid_t myints[] = {2,3};
+    std::vector<itemid_t> transaction (myints, myints + sizeof(myints) / sizeof(itemid_t) );
+    orderManager.addOrder(transaction);
+    }
+
+    orderManager.buildFreqItemsets();
+    FrequentItemSetResultType results;
+    orderManager.getAllFreqItemSets(100, 1, results);
+    for(FrequentItemSetResultType::iterator resultIt = results.begin(); resultIt != results.end(); ++resultIt)
+    {
+        std::vector<itemid_t>& items = resultIt->first;
+        cout<<"ItemSets: freq: "<<resultIt->second<<" items: ";
+        copy(items.begin(), items.end(), COUT_ITER);
+        cout<<endl;
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END() 
 
