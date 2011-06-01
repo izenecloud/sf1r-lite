@@ -4,6 +4,8 @@
 #include <search-manager/TermDocumentIterator.h>
 
 #include <boost/filesystem.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <memory> // auto_ptr
 #include <glog/logging.h>
 
 namespace sf1r
@@ -110,11 +112,11 @@ bool ItemIndex::get(std::list<uint32_t>& itemIds, std::list<ItemIndexDocIDType>&
 {
     iii::IndexReader* pIndexReader = indexer_->getIndexReader();
 
-    ANDDocumentIterator* pAndDocIterator = new ANDDocumentIterator();
+    boost::scoped_ptr<ANDDocumentIterator> pAndDocIterator(new ANDDocumentIterator);
 
     for (std::list<uint32_t>::iterator p = itemIds.begin(); p != itemIds.end(); p++)
     {
-        TermDocumentIterator* pTermDocIterator =
+        std::auto_ptr<TermDocumentIterator> pTermDocIterator(
             new TermDocumentIterator(
             (*p),
             1,
@@ -122,10 +124,11 @@ bool ItemIndex::get(std::list<uint32_t>& itemIds, std::list<ItemIndexDocIDType>&
             property_,
             propertyId_,
             1,
-            false);
+            false)
+        );
         if (pTermDocIterator->accept())
         {
-            pAndDocIterator->add(pTermDocIterator);
+            pAndDocIterator->add(pTermDocIterator.release());
         }
     }
 
@@ -143,11 +146,11 @@ uint32_t ItemIndex::get(std::vector<uint32_t>& itemIds)
 {
     iii::IndexReader* pIndexReader = indexer_->getIndexReader();
 
-    ANDDocumentIterator* pAndDocIterator = new ANDDocumentIterator();
+    boost::scoped_ptr<ANDDocumentIterator> pAndDocIterator(new ANDDocumentIterator);
 
     for (std::vector<uint32_t>::iterator p = itemIds.begin(); p != itemIds.end(); p++)
     {
-        TermDocumentIterator* pTermDocIterator =
+        std::auto_ptr<TermDocumentIterator> pTermDocIterator(
             new TermDocumentIterator(
             (*p),
             1,
@@ -155,10 +158,11 @@ uint32_t ItemIndex::get(std::vector<uint32_t>& itemIds)
             property_,
             propertyId_,
             1,
-            false);
+            false)
+        );
         if (pTermDocIterator->accept())
         {
-            pAndDocIterator->add(pTermDocIterator);
+            pAndDocIterator->add(pTermDocIterator.release());
         }
     }
 
