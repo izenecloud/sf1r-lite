@@ -11,6 +11,7 @@
 #include <boost/spirit/include/classic.hpp>
 #include <boost/spirit/include/classic_while.hpp>
 #include <boost/spirit/include/classic_core.hpp>
+#include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -347,10 +348,44 @@ ScdParser::iterator ScdParser::begin(unsigned int start_doc)
     return iterator(this, start_doc);
 }
 
+ScdParser::iterator ScdParser::begin(const std::vector<string>& propertyNameList, unsigned int start_doc)
+{
+    fs_.clear();
+    fs_.seekg(0, ios::beg);
+    return iterator(this, start_doc, propertyNameList);
+}
+
 ScdParser::iterator ScdParser::end()
 {
     //return iterator(size_);
     return iterator(-1);
+}
+
+ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc, const std::vector<string>& propertyNameList)
+{
+    propertyNameList_ = propertyNameList;
+
+    pfs_ = &(pScdParser->fs_);
+    pfs_->clear();
+    readLength_ = 0;
+    codingType_ = pScdParser->getEncodingType();
+    offset_ = 0;
+    buffer_.reset(new izenelib::util::izene_streambuf);
+    readLength_ = izenelib::util::izene_read_until(*pfs_,*buffer_,"<DOCID>");
+    if(readLength_ > 0)
+    {
+        buffer_->consume(readLength_);
+        doc_.reset(getDoc());
+        if(start_doc > 0)
+        {
+            for(unsigned int i = 0; i < start_doc; ++i)
+                operator++();
+        }
+    }
+    else
+    {
+        offset_ = prevOffset_ = -1;
+    }
 }
 
 bool ScdParser::getDoc( const izenelib::util::UString & docId, SCDDoc& doc )
@@ -515,8 +550,77 @@ SCDDoc* ScdParser::iterator::getDoc()
     SCDDoc* doc = new SCDDoc;
     if (str == docDelimiter_)
         return doc;
+
+    /// It's recommended to handle this processing in application by which SCD is created.
+    preProcessDoc(str);
+
     scd_grammar g(*doc, codingType_);
     parse_info<> pi = parse(str.c_str(), g, space_p);
     STOP_PROFILER ( proScdParsing );
     return doc;
+}
+
+void ScdParser::iterator::preProcessDoc(string& strDoc)
+{
+    if (propertyNameList_.empty())
+        return;
+
+    string tmpStr;
+    size_t docLen = strDoc.size();
+    size_t tagLen, tagEnd;
+    bool matchName;
+    char ch;
+    for (size_t i = 0; i < docLen; )
+    {
+        ch = strDoc[i];
+
+        if (ch == '<')
+        {
+            // match property name between '<' and '>'
+            matchName = false;
+            for (size_t t = 0; t < propertyNameList_.size(); t ++)
+            {
+                tagLen = propertyNameList_[t].size();
+                tagEnd = i+tagLen+1;
+
+                if ( tagEnd < docLen && strDoc[tagEnd] == '>'
+                        && boost::iequals(string(strDoc, i+1, tagLen), propertyNameList_[t])) // case insensitively
+                {
+                    matchName = true;
+                    // keep property name tag
+                    while (i < tagEnd + 1)
+                    {
+                        tmpStr.push_back(strDoc[i]);
+                        i ++;
+                    }
+                    break;
+                }
+            }
+
+            // replace '<' with "&lt;" if not matched
+            if (!matchName)
+            {
+                i ++;
+                tmpStr.push_back('&');
+                tmpStr.push_back('l');
+                tmpStr.push_back('t');
+                tmpStr.push_back(';');
+            }
+        }
+        else if (ch == '>')
+        {
+            i ++;
+            tmpStr.push_back('&');
+            tmpStr.push_back('g');
+            tmpStr.push_back('t');
+            tmpStr.push_back(';');
+        }
+        else
+        {
+            i ++;
+            tmpStr.push_back(ch);
+        }
+    }
+
+    strDoc.swap(tmpStr);
 }

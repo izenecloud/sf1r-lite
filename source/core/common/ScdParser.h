@@ -77,6 +77,8 @@ public:
 
         iterator(ScdParser* pScdParser, unsigned int start_doc);
 
+        iterator(ScdParser* pScdParser, unsigned int start_doc, const std::vector<string>& propertyNameList);
+
         iterator(const iterator& other);
 
         ~iterator();
@@ -98,6 +100,10 @@ public:
     private:
         SCDDoc* getDoc();
 
+        /// @brief
+        /// It's recommended to handle this processing in application by which SCD is created
+        void preProcessDoc(string& strDoc);
+
     private:
         std::ifstream* pfs_;
 
@@ -114,9 +120,13 @@ public:
         boost::shared_ptr<izenelib::util::izene_streambuf> buffer_;
 
         std::string docDelimiter_;
+
+        std::vector<string> propertyNameList_;
     };  // class iterator
 
     iterator begin(unsigned int start_doc = 0);
+
+    iterator begin(const std::vector<string>& propertyNameList, unsigned int start_doc = 0);
 
     iterator end();
 

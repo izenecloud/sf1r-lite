@@ -13,6 +13,8 @@
 
 #include <boost/filesystem.hpp>
 
+#include <la/util/UStringUtil.h>
+
 #include <glog/logging.h>
 
 #include <memory> // for auto_ptr
@@ -608,10 +610,33 @@ bool IndexTaskService::doBuildCollection_(const std::string& fileName, int op, u
     {
         config_tool::buildPropertyAliasMap(bundleConfig_->schema_,
                                        propertyAliasMap_);
+
+        // make propertyNameList for ScdParser::iterator
+        std::vector<string> propertyNameList;
+        std::set<PropertyConfig, PropertyComp>::const_iterator propertyIter;
+        const std::set<PropertyConfig, PropertyComp>& propertyList = bundleConfig_->schema_;
+        for(propertyIter = propertyList.begin(); propertyIter != propertyList.end(); propertyIter++)
+        {
+            if (propertyIter->getName() == propertyIter->getOriginalName())
+            {
+                string propertyName = propertyIter->getName();
+                boost::to_lower(propertyName);
+                propertyNameList.push_back(propertyName);
+            }
+        }
+        if ( find(propertyNameList.begin(), propertyNameList.end(), "docid") == propertyNameList.end() )
+        {
+            propertyNameList.push_back("docid");
+        }
+        if ( find(propertyNameList.begin(), propertyNameList.end(), "date") == propertyNameList.end() )
+        {
+            propertyNameList.push_back("date");
+        }
+
         uint32_t n = 0;
         long lastOffset = 0;
         bool isInsert = (op == 1)?true:false;
-        for (ScdParser::iterator doc_iter = parser.begin(); doc_iter
+        for (ScdParser::iterator doc_iter = parser.begin(propertyNameList); doc_iter
                 != parser.end(); ++doc_iter, ++n)
         {
             if (*doc_iter == NULL)
