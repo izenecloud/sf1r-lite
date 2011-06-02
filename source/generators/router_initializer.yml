@@ -70,6 +70,8 @@ controllers:
   TopicController:
     actions:
       - get_similar
+      - get_in_date_range
+      - get_temporal_similar
 
   RecommendController:
     actions:

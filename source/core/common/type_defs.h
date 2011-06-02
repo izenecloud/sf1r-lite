@@ -60,6 +60,7 @@ typedef std::deque<loc_t> offsets;
 typedef boost::shared_ptr<const offsets> offsetsPtr;
 
 typedef std::pair<std::string , size_t> string_size_pair_t;
+typedef std::pair<uint32_t,izenelib::util::UString> id2name_t;
 
 typedef izenelib::am::rde_hash<termid_t,izenelib::util::UString> WCMAP_T; // wild card map type
 typedef boost::unordered_map<std::string , std::set<termid_t> > QTISM_T; // query term id set map type

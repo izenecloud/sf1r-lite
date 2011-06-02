@@ -63,7 +63,7 @@ bool SimilarityIndex::addDocument(
 uint32_t SimilarityIndex::getSimilarDocNum(uint32_t documentId) const
 {
     boost::shared_lock<boost::shared_mutex> lg(mutex_);
-    uint8_t result;
+    uint8_t result = 0;
 	simCount_->get(documentId, result);
 	return (uint32_t)result;
 }

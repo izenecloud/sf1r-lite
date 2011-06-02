@@ -11,7 +11,7 @@
 
 #include <common/type_defs.h>
 #include <common/SFLogger.h>
-
+#include <sf1v5/la-manager/LAPool.h>
 #include <boost/filesystem.hpp>
 
 #include <glog/logging.h>
@@ -588,10 +588,20 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
                 if ( !dictionaryPath_inner.empty() )
                 {
                     laUnit.setDictionaryPath( dictionaryPath_inner );
+                    if(analysis == "chinese")
+                    {
+                        LAPool::getInstance()->set_cma_path(dictionaryPath_inner );
+                        std::cout<<"set_cma_path : "<<dictionaryPath_inner<<std::endl;
+                    }
                 }
                 else if ( !dictionaryPath.empty() && dictionaryPath_inner.empty() )
                 {
                     laUnit.setDictionaryPath( dictionaryPath );
+                    if(analysis == "chinese")
+                    {
+                        LAPool::getInstance()->set_cma_path(dictionaryPath );
+                        std::cout<<"set_cma_path : "<<dictionaryPath<<std::endl;
+                    }
                 }
                 else
                 {
@@ -1182,6 +1192,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                         << ", tree node num: " << itemList.size();
           }
           mining_schema.group_enable = true;
+      }
+      
+
+      task_node = getUniqChildElement( mining_schema_node, "TDT", false );
+      mining_schema.tdt_enable = false;
+      if( task_node!= NULL )
+      {
+          mining_schema.tdt_enable = true;
       }
 
       task_node = getUniqChildElement( mining_schema_node, "IISE", false );

@@ -67,6 +67,7 @@ namespace sf1r {
         typedef uint32_t CharacterOffset;
 
         public:
+        typedef Document DocumentType;
         /**
          * @brief initializes manager with @a path as working directory.
          *

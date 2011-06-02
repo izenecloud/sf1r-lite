@@ -145,6 +145,7 @@
             				<xs:element ref="DocumentClassification" minOccurs="0"/>
             				<xs:element ref="Faceted" minOccurs="0"/>
             				<xs:element ref="Group" minOccurs="0"/>
+                            <xs:element ref="TDT" minOccurs="0"/>
             			</xs:sequence>
             		</xs:complexType>
             	</xs:element>
@@ -230,6 +231,11 @@
 			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
+    
+    <xs:element name="TDT">
+        <xs:complexType>
+        </xs:complexType>
+    </xs:element>
 
 
 </xs:schema>

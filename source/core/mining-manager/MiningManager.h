@@ -42,6 +42,8 @@
 #include <util/izene_log.h>
 #include <idmlib/util/idm_analyzer.h>
 #include <idmlib/similarity/term_similarity.h>
+#include <idmlib/tdt/integrator.h>
+#include <idmlib/util/container_switch.h>
 #include <ir/id_manager/IDManager.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
@@ -67,8 +69,11 @@ class GroupManager;
  */
 class MiningManager : public boost::noncopyable
 {
-    typedef DupDetector2 DupDType;
-
+typedef DupDetector2 DupDType;
+typedef idmlib::util::ContainerSwitch<idmlib::tdt::Storage> TdtStorageType;
+typedef idmlib::sim::TermSimilarityTable<uint32_t> SimTableType;
+typedef idmlib::sim::SimOutputCollector<SimTableType> SimCollectorType;
+typedef idmlib::sim::TermSimilarity<SimCollectorType> TermSimilarityType;
 public:
     /**
      * @brief The constructor of MiningManager.
@@ -173,6 +178,12 @@ public:
         const std::vector<std::pair<std::string, std::string> >& groupLabelList,
         faceted::OntologyRep& groupRep
     );
+    
+    bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
+    
+    bool GetTdtInTimeRange(const idmlib::tdt::TimeIdType& start, const idmlib::tdt::TimeIdType& end, std::vector<izenelib::util::UString>& topic_list);
+    
+    bool GetTdtTopicInfo(const izenelib::util::UString& text, idmlib::tdt::TopicInfoType& info);
 
 //     void getMiningStatus(Status& status);
 
@@ -260,6 +271,8 @@ private:
     std::string basicPath_;
     std::string mainPath_;
     std::string backupPath_;
+    std::string kpe_res_path_;
+    std::string rig_path_;
 
     /** Global status */
 //     boost::shared_ptr<MiningStatus> status_;
@@ -268,6 +281,7 @@ private:
     /**id manager */
     boost::shared_ptr<LAManager> laManager_;
     idmlib::util::IDMAnalyzer* analyzer_;
+    idmlib::util::IDMAnalyzer* cma_analyzer_;
     idmlib::util::IDMAnalyzer* kpe_analyzer_;
 //     MiningIDManager* idManager_;
 
@@ -279,7 +293,7 @@ private:
     TaxonomyInfo* tgInfo_;
     boost::shared_ptr<LabelManager> labelManager_;
     boost::shared_ptr<TaxonomyGenerationSubManager> tgManager_;
-    boost::shared_ptr<LabelSimilarity::SimTableType> label_sim_table_;
+    boost::shared_ptr<SimCollectorType> label_sim_collector_;
     std::string tg_path_;
     std::string tg_label_path_;
     std::string tg_label_sim_path_;
@@ -305,6 +319,10 @@ private:
 
     /** GROUP BY */
     faceted::GroupManager* groupManager_;
+    
+    /** TDT */
+    std::string tdt_path_;
+    TdtStorageType* tdt_storage_;
 };
 
 }

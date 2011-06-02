@@ -112,6 +112,7 @@ bool MiningManager::open()
     std::cout<<"DO_SIM : "<<(int)mining_schema_.sim_enable<<std::endl;
     std::cout<<"DO_FACETED : "<<(int)mining_schema_.faceted_enable<<std::endl;
     std::cout<<"DO_GROUP : "<<(int)mining_schema_.group_enable<<std::endl;
+    std::cout<<"DO_TDT : "<<(int)mining_schema_.tdt_enable<<std::endl;
     std::cout<<"DO_IISE : "<<(int)mining_schema_.ise_enable<<std::endl;
 
     /** Global variables **/
@@ -133,19 +134,37 @@ bool MiningManager::open()
 
         std::string prefix_path  = collectionDataPath_;
         FSUtil::createDir(prefix_path);
-//       status_.reset(new MiningStatus(prefix_path+"/mining_status") );
-        std::string kpe_res_path = system_resource_path_+"/kpe";
+        kpe_res_path_ = system_resource_path+"/kpe";
+        rig_path_ = system_resource_path+"/sim/rig";
         /** analyzer */
 
         std::string kma_path;
         LAPool::getInstance()->get_kma_path(kma_path );
         analyzer_ = new idmlib::util::IDMAnalyzer(kma_path);
-        if ( !analyzer_->LoadT2SMapFile(kpe_res_path+"/cs_ct") )
+        if ( !analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct") )
         {
             return false;
         }
+        
+        std::string cma_path;
+        LAPool::getInstance()->get_cma_path(cma_path );
+        if(cma_path!="")
+        {
+            cma_analyzer_ = new idmlib::util::IDMAnalyzer(cma_path, la::ChineseAnalyzer::maximum_entropy);
+            if( !cma_analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct") )
+            {
+                return false;
+            }
+        }
+        else
+        {
+            std::cout<<"cma analyzer init failed."<<std::endl;
+            return false;
+        }
+        
+        
         kpe_analyzer_ = new idmlib::util::IDMAnalyzer(kma_path);
-        if ( !kpe_analyzer_->LoadT2SMapFile(kpe_res_path+"/cs_ct") )
+        if ( !kpe_analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct") )
         {
             return false;
         }
@@ -170,10 +189,10 @@ bool MiningManager::open()
 
             tgManager_.reset(new TaxonomyGenerationSubManager(miningConfig_.taxonomy_param,labelManager_, analyzer_));
 
-            label_sim_table_.reset(new LabelSimilarity::SimTableType(tg_label_sim_table_path_));
-            if (!label_sim_table_->Open())
+            label_sim_collector_.reset(new SimCollectorType(tg_label_sim_table_path_, 10));
+            if(!label_sim_collector_->Open())
             {
-                std::cerr<<"open label sim table failed"<<std::endl;
+                std::cerr<<"open label sim collector failed"<<std::endl;
             }
         }
 
@@ -196,7 +215,7 @@ bool MiningManager::open()
         {
             dupd_path_ = prefix_path + "/dupd/";
             FSUtil::createDir(dupd_path_);
-            dupManager_.reset(new DupDType(dupd_path_, document_manager_, mining_schema_.dupd_properties, analyzer_));
+            dupManager_.reset(new DupDType(dupd_path_, document_manager_, mining_schema_.dupd_properties, cma_analyzer_));
             if (!dupManager_->Open())
             {
                 std::cerr<<"open DD failed"<<std::endl;
@@ -252,6 +271,20 @@ bool MiningManager::open()
             if (! groupManager_->open(mining_schema_.group_properties))
             {
                 std::cerr << "open GROUP failed" << std::endl;
+                return false;
+            }
+        }
+        
+        /** tdt **/
+        if( mining_schema_.tdt_enable )
+        {
+            tdt_path_ = prefix_path + "/tdt";
+            boost::filesystem::create_directories(tdt_path_);
+            std::string tdt_storage_path = tdt_path_+"/storage";
+            tdt_storage_ = new TdtStorageType(tdt_storage_path);
+            if(!tdt_storage_->Open())
+            {
+                std::cerr<<"tdt init failed"<<std::endl;
                 return false;
             }
         }
@@ -312,6 +345,7 @@ bool MiningManager::open()
 
 bool MiningManager::DoMiningCollection()
 {
+    MEMLOG("[Mining] DoMiningCollection");
     //do TG
     if ( mining_schema_.tg_enable )
     {
@@ -329,7 +363,7 @@ bool MiningManager::DoMiningCollection()
 
             std::string rig_path = system_resource_path_+"/sim/rig";
             std::cout<<"rig path : "<<rig_path<<std::endl;
-            LabelSimilarity label_sim(tg_label_sim_path_, rig_path, label_sim_table_);
+            LabelSimilarity label_sim(tg_label_sim_path_, rig_path, label_sim_collector_);
             if (!label_sim.Open(dm_maxid))
             {
                 std::cerr<<"open label sim failed : "<<dm_maxid<<std::endl;
@@ -367,8 +401,8 @@ bool MiningManager::DoMiningCollection()
             {
                 std::cerr<<"label sim compute failed"<<std::endl;
             }
-            printSimilarLabelResult_(1);
-            printSimilarLabelResult_(2);
+//             printSimilarLabelResult_(1);
+//             printSimilarLabelResult_(2);
         }
         labelManager_->ClearAllTask();
         MEMLOG("[Mining] TG finished.");
@@ -390,6 +424,39 @@ bool MiningManager::DoMiningCollection()
     if( mining_schema_.group_enable )
     {
         groupManager_->processCollection();
+    }
+    
+    //do tdt
+    if( mining_schema_.tdt_enable )
+    {
+        idmlib::tdt::Storage* next_storage = tdt_storage_->Next();
+        if(next_storage==NULL)
+        {
+            std::cerr<<"can not get next tdt storage"<<std::endl;
+        }
+        else
+        {
+            std::string tdt_working_path = tdt_path_+"/working";
+            idmlib::tdt::Integrator<DocumentManager> tdt_manager(tdt_working_path, rig_path_, kpe_res_path_, analyzer_);
+            DocumentManager* p_dm = document_manager_.get();
+            std::cout<<"got dm"<<std::endl;
+            tdt_manager.SetDataSource(p_dm);
+            tdt_manager.Process(next_storage);
+            if(!tdt_storage_->EnsureSwitch())
+            {
+                std::cerr<<"can not switch tdt storage"<<std::endl;
+            }
+    //         boost::gregorian::date start = boost::gregorian::from_string("2011-03-01");
+    //         boost::gregorian::date end = boost::gregorian::from_string("2011-03-31");
+    //         std::vector<izenelib::util::UString> topic_list;
+    //         GetTdtInTimeRange(start, end, topic_list);
+    //         for(uint32_t i=0;i<topic_list.size();i++)
+    //         {
+    //             std::string str;
+    //             topic_list[i].convertString(str, izenelib::util::UString::UTF_8);
+    //             std::cout<<"find topic in date range : "<<str<<std::endl;
+    //         }
+        }
     }
 
     //do Similarity
@@ -737,8 +804,8 @@ bool MiningManager::getSimilarDocIdList(uint32_t documentId, uint32_t maxNum,
 }
 bool MiningManager::getSimilarLabelList(uint32_t label_id, std::vector<uint32_t>& sim_list)
 {
-    if (!label_sim_table_) return false;
-    return label_sim_table_->Get(label_id, sim_list);
+    if(!label_sim_collector_) return false;
+    return label_sim_collector_->GetContainer()->Get(label_id, sim_list);
 
 }
 
@@ -955,17 +1022,13 @@ bool MiningManager::addSimilarityResult_(KeywordSearchResult& miaInput)
 //    boost::mutex::scoped_lock lock(sim_mtx_);
     if ( !similarityIndex_ ) return true;
     miaInput.numberOfSimilarDocs_.resize(miaInput.topKDocs_.size());
-    std::vector<count_t>::iterator result =
-        miaInput.numberOfSimilarDocs_.begin();
-    typedef std::vector<docid_t>::const_iterator iterator;
-
-    for (iterator i = miaInput.topKDocs_.begin(); i != miaInput.topKDocs_.end(); ++i)
+    
+    
+    for(uint32_t i=0;i<miaInput.topKDocs_.size();i++)
     {
-        //		std::vector<std::pair<uint32_t, float> > simResult;
-        //		simResult.resize(0);
-        //		getSimilarDocIdList(*i, 30, simResult);
-        *result++ = similarityIndex_->getSimilarDocNum(*i);
-        //		*result++ =simResult.size();
+        uint32_t docid = miaInput.topKDocs_[i];
+        uint32_t count = similarityIndex_->getSimilarDocNum(docid);
+        miaInput.numberOfSimilarDocs_[i] = count;
     }
 
     return true;
@@ -1006,6 +1069,49 @@ bool MiningManager::getGroupRep(
     }
 
     return true;
+}
+
+bool MiningManager::GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list)
+{
+    idmlib::tdt::TimeIdType start_date;
+    if(!idmlib::util::TimeUtil::GetDateByUString(start, start_date))
+    {
+        std::string start_str;
+        start.convertString(start_str, izenelib::util::UString::UTF_8);
+        std::cout<<"parse date error on "<<start_str<<std::endl;
+        return false;
+    }
+    idmlib::tdt::TimeIdType end_date;
+    if(!idmlib::util::TimeUtil::GetDateByUString(end, end_date))
+    {
+        std::string end_str;
+        end.convertString(end_str, izenelib::util::UString::UTF_8);
+        std::cout<<"parse date error on "<<end_str<<std::endl;
+        return false;
+    }
+    return GetTdtInTimeRange(start_date, end_date, topic_list);
+}
+
+bool MiningManager::GetTdtInTimeRange(const idmlib::tdt::TimeIdType& start, const idmlib::tdt::TimeIdType& end, std::vector<izenelib::util::UString>& topic_list)
+{
+    idmlib::tdt::Storage* storage = tdt_storage_->Current();
+    if(storage==NULL)
+    {
+        std::cerr<<"can not get current storage for tdt"<<std::endl;
+        return false;
+    }
+    return storage->GetTopicsInTimeRange(start, end, topic_list);
+}
+    
+bool MiningManager::GetTdtTopicInfo(const izenelib::util::UString& text, idmlib::tdt::TopicInfoType& info)
+{
+    idmlib::tdt::Storage* storage = tdt_storage_->Current();
+    if(storage==NULL)
+    {
+        std::cerr<<"can not get current storage for tdt"<<std::endl;
+        return false;
+    }
+    return storage->GetTopicInfo(text, info);
 }
 
 // bool MiningManager::addDcResult_(KeywordSearchResult& miaInput)

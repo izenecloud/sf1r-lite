@@ -31,10 +31,23 @@ public:
     }
 
     void get_similar();
+    
+    void get_in_date_range();
+    
+    void get_temporal_similar();
 
 private:
     bool requireTID_();
+    bool requireDateRange_();
+    bool requireTopicText_();
+    
+private:
     uint32_t tid_;
+    izenelib::util::UString start_date_;
+    izenelib::util::UString end_date_;
+    boost::gregorian::date start_;
+    boost::gregorian::date end_;
+    izenelib::util::UString topic_text_;
 };
 
 /// @}

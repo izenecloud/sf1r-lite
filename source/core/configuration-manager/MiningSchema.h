@@ -39,9 +39,11 @@ private:
         ar & dupd_enable & dupd_properties;
         ar & sim_enable & sim_properties;
         ar & dc_enable & dc_properties & faceted_enable & faceted_properties;
+        ar & group_enable & group_properties;
+        ar & tdt_enable;
         ar & ise_enable & ise_property;
         ar & recommend_tg & recommend_querylog & recommend_properties;
-        ar & group_enable & group_properties;
+        
     }
 public:
     bool tg_enable;
@@ -56,6 +58,7 @@ public:
     std::vector<std::string> faceted_properties;
     bool group_enable;
     std::vector<GroupConfig> group_properties;
+    bool tdt_enable;
     bool ise_enable;
     std::string ise_property;
 

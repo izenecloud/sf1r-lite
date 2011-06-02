@@ -105,6 +105,16 @@ namespace sf1r
             {
               path=  kma_path_;
             }
+            
+            void set_cma_path(const std::string& path)
+            {
+                cma_path_ = path;
+            }
+            
+            void get_cma_path(std::string& path)
+            {
+                path=  cma_path_;
+            }
 
         private:
 
@@ -130,6 +140,8 @@ namespace sf1r
             
             /// @brief resource path for KMA
             std::string kma_path_;
+            
+            std::string cma_path_;
     };
 
 } // namespace sf1r

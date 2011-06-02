@@ -184,5 +184,15 @@ bool MiningSearchService::getGroupRep(
     return miningManager_->getGroupRep(docIdList, groupPropertyList, groupLabelList, groupRep);
 }
 
+bool MiningSearchService::GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list)
+{
+    return miningManager_->GetTdtInTimeRange(start, end, topic_list);
+}
+
+bool MiningSearchService::GetTdtTopicInfo(const izenelib::util::UString& text, idmlib::tdt::TopicInfoType& topic_info)
+{
+    return miningManager_->GetTdtInTimeRange(text, topic_info);
+}
+
 }
 
