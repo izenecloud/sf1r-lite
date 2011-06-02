@@ -33,23 +33,6 @@ struct User
         ar & idStr_;
         ar & propValueMap_;
     }
-
-    bool operator==(User& other) const
-    {
-        if (propValueMap_.size() != other.propValueMap_.size()) {
-            return false;
-        }
-
-        for (PropValueMap::const_iterator iter = propValueMap_.begin();
-                iter != propValueMap_.end(); iter ++)
-        {
-            if (other.propValueMap_[(iter->first)] != iter->second) {
-                return false;
-            }
-        }
-
-        return true;
-    }
 };
 
 } // namespace sf1r
