@@ -134,8 +134,8 @@ bool RecommendManager::RebuildForAll()
 {
     bool succ = RebuildForRecommend();
     if (!succ) return false;
-    succ = RebuildForReminder();
-    if (!succ) return false;
+//     succ = RebuildForReminder();
+//     if (!succ) return false;
     succ = RebuildForCorrection();
     if (!succ) return false;
     succ = RebuildForAutofill();

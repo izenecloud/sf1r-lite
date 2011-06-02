@@ -49,7 +49,8 @@ bool MiningSearchService::getReminderQuery(
     std::vector<izenelib::util::UString>& realtimeQueries
 )
 {
-    return miningManager_->getReminderQuery(popularQueries, realtimeQueries);
+    return true;
+//     return miningManager_->getReminderQuery(popularQueries, realtimeQueries);
 }
 
 bool MiningSearchService::getSimilarLabelStringList(
@@ -191,7 +192,7 @@ bool MiningSearchService::GetTdtInTimeRange(const izenelib::util::UString& start
 
 bool MiningSearchService::GetTdtTopicInfo(const izenelib::util::UString& text, idmlib::tdt::TopicInfoType& topic_info)
 {
-    return miningManager_->GetTdtInTimeRange(text, topic_info);
+    return miningManager_->GetTdtTopicInfo(text, topic_info);
 }
 
 }

@@ -6,28 +6,18 @@
 /// @date Updated 2011-03-23
 
 
-#ifndef _SF1V5_LABELSIMILARITY_H_
-#define _SF1V5_LABELSIMILARITY_H_
+#ifndef _SF1R_LABELSIMILARITY_H_
+#define _SF1R_LABELSIMILARITY_H_
 
 #include <string>
 #include "../MiningManagerDef.h"
-#include "../doc_table.hpp"
-#include <boost/thread/shared_mutex.hpp>
-#include <boost/random.hpp>
-#include <am/sdb_btree/sdb_bptree.h>
-#include <3rdparty/am/rde_hashmap/hash_map.h>
-#include <am/external_sort/alpha_sort.hpp>
-#include <am/external_sort/izene_sort.hpp>
-#include <am/sequence_file/SimpleSequenceFile.hpp>
-#include <am/sequence_file/SequenceFile.hpp>
-#include <ir/ir_database/IRDatabase.hpp>
-#include <sf1v5/mining-manager/taxonomy-generation-submanager/TgTypes.h>
-#include <sf1v5/mining-manager/concept-id-manager.h>
+
+#include "TgTypes.h"
 #include <util/error_handler.h>
 #include <idmlib/util/file_object.h>
 #include <boost/serialization/vector.hpp>
 #include <idmlib/similarity/term_similarity.h>
-namespace sf1v5
+namespace sf1r
 {
 
 class LabelSimilarity

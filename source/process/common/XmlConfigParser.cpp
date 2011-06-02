@@ -11,7 +11,7 @@
 
 #include <common/type_defs.h>
 #include <common/SFLogger.h>
-#include <sf1v5/la-manager/LAPool.h>
+#include <la-manager/LAPool.h>
 #include <boost/filesystem.hpp>
 
 #include <glog/logging.h>

@@ -134,8 +134,8 @@ bool MiningManager::open()
 
         std::string prefix_path  = collectionDataPath_;
         FSUtil::createDir(prefix_path);
-        kpe_res_path_ = system_resource_path+"/kpe";
-        rig_path_ = system_resource_path+"/sim/rig";
+        kpe_res_path_ = system_resource_path_+"/kpe";
+        rig_path_ = system_resource_path_+"/sim/rig";
         /** analyzer */
 
         std::string kma_path;

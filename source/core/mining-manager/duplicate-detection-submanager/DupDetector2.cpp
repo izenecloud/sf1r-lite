@@ -12,7 +12,7 @@
 // #define DUPD_FP_DEBUG;
 
 using namespace std;
-namespace sf1v5{
+namespace sf1r{
 
 DupDetector2::DupDetector2(const std::string& container)
 :container_(container), document_manager_(), analyzer_(NULL) 

@@ -204,7 +204,7 @@ void TopicController::get_temporal_similar()
 
 bool TopicController::requireTID_()
 {
-  if(!sf1v5::driver::nullValue( request()[Keys::similar_to] ) )
+  if(!izenelib::driver::nullValue( request()[Keys::similar_to] ) )
   {
     Value& similar_to = request()[Keys::similar_to];
     tid_ = asUint(similar_to[Keys::id]);
@@ -220,7 +220,7 @@ bool TopicController::requireTID_()
 
 bool TopicController::requireDateRange_()
 {
-    if(!sf1v5::driver::nullValue( request()[Keys::date_range] ) )
+    if(!izenelib::driver::nullValue( request()[Keys::date_range] ) )
     {
         Value& date_range = request()[Keys::date_range];
         start_date_ = izenelib::util::UString(asString(date_range[Keys::start]), izenelib::util::UString::UTF_8);
