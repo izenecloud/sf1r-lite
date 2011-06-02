@@ -20,6 +20,7 @@
                   <xs:complexType>
                     <xs:sequence>
                       <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="1" maxOccurs="2"/>                    
+                      <xs:element ref="CronPara" minOccurs="0"/>
                     </xs:sequence>
                   </xs:complexType>
                 </xs:element>
@@ -41,6 +42,12 @@
 			<xs:sequence>
 				<xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="unbounded"/>
 			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="CronPara">
+		<xs:complexType>
+			<xs:attribute name="value" use="required"/>
 		</xs:complexType>
 	</xs:element>
 
