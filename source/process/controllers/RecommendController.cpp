@@ -12,6 +12,7 @@
 #include <recommend-manager/RecTypes.h>
 
 #include <common/Keys.h>
+#include <common/Utilities.h> // Utilities::toUpper()
 
 namespace
 {
@@ -30,11 +31,21 @@ namespace sf1r
 using namespace izenelib::driver;
 using driver::Keys;
 
+RecommendController::RecommendController()
+{
+    recTypeMap_["FBT"] = FREQUENT_BUY_TOGETHER;
+    recTypeMap_["BAB"] = BUY_ALSO_BUY;
+    recTypeMap_["VAV"] = VIEW_ALSO_VIEW;
+    recTypeMap_["BOP"] = BASED_ON_PURCHASE_HISTORY;
+    recTypeMap_["BOB"] = BASED_ON_BROWSE_HISTORY;
+    recTypeMap_["BOS"] = BASED_ON_SHOP_CART;
+}
+
 bool RecommendController::requireProperty(const std::string& propName)
 {
     if (!request()[Keys::resource].hasKey(propName))
     {
-        response().addError("Require property " + propName + " in request[resource].");
+        response().addError("Require property \"" + propName + "\" in request[resource].");
         return false;
     }
 
@@ -66,7 +77,7 @@ bool RecommendController::value2User(const izenelib::driver::Value& value, User&
             }
             else
             {
-                response().addError("Unknown user property " + propName + " in request[resource].");
+                response().addError("Unknown user property \"" + propName + "\" in request[resource].");
                 return false;
             }
         }
@@ -100,7 +111,7 @@ bool RecommendController::value2Item(const izenelib::driver::Value& value, Item&
             }
             else
             {
-                response().addError("Unknown item property " + propName + " in request[resource].");
+                response().addError("Unknown item property \"" + propName + "\" in request[resource].");
                 return false;
             }
         }
@@ -140,7 +151,7 @@ bool RecommendController::value2ItemIdVec(const std::string& propName, std::vect
 
         if (itemIdStr.empty())
         {
-            response().addError("Require property " + Keys::ITEMID + " for each item in request[resource][" + propName + "].");
+            response().addError("Require property \"" + Keys::ITEMID + "\" for each item in request[resource][" + propName + "].");
             return false;
         }
 
@@ -175,9 +186,10 @@ bool RecommendController::value2ItemCondition(ItemCondition& itemCondition)
 
     RecommendProperty recommendProperty;
     const RecommendSchema& recommendSchema = collectionHandler_->recommendSchema_;	
-    if (recommendSchema.getItemProperty(propName, recommendProperty) == false)
+    if (propName != Keys::ITEMID
+        && recommendSchema.getItemProperty(propName, recommendProperty) == false)
     {
-        response().addError("Unknown item property " + propName + " in request[resource][condition].");
+        response().addError("Unknown item property \"" + propName + "\" in request[resource][condition].");
         return false;
     }
 
@@ -743,7 +755,7 @@ void RecommendController::purchase_item()
         std::string itemIdStr = asString(itemValue[Keys::ITEMID]);
         if (itemIdStr.empty())
         {
-            response().addError("Require property " + Keys::ITEMID + " for each item in request[resource][items].");
+            response().addError("Require property \"" + Keys::ITEMID + "\" for each item in request[resource][items].");
             return;
         }
 
@@ -766,19 +778,19 @@ void RecommendController::purchase_item()
  *
  * - @b collection* (@c String): Get recommendation result in this collection.
  * - @b resource* (@c Object): A resource of the request for recommendation result.
- *   - @b rec_type_id* (@c Uint): recommendation type, now 6 types are supported, each with the id below:
- *     - @b 0 (<b>Frequently Bought Together</b>): get the items frequently bought together with @b input_items in one order.
- *     - @b 1 (<b>Bought Also Bought</b>): get the items also bought by the users who have bought @b input_items.
- *     - @b 2 (<b>Viewed Also View</b>): get the items also viewed by the users who have viewed @b input_items,
+ *   - @b rec_type* (@c String): Specify one of the 6 recommendation types, each with the acronym below:
+ *     - @b FBT (<b>Frequently Bought Together</b>): get the items frequently bought together with @b input_items in one order.
+ *     - @b BAB (<b>Bought Also Bought</b>): get the items also bought by the users who have bought @b input_items.
+ *     - @b VAV (<b>Viewed Also View</b>): get the items also viewed by the users who have viewed @b input_items,
  *       in current version, it supports recommending items based on only one input item,
  *       that is, only <b> input_items[0]</b> is used as input , and the rest items in @b input_items are ignored.
- *     - @b 3 (<b>Based on Purchase History</b>): get the recommendation items based on the purchase history of user @b USERID.
+ *     - @b BOP (<b>Based on Purchase History</b>): get the recommendation items based on the purchase history of user @b USERID.
  *       The purchase history is the items added in purchase_item() with the same @b USERID.
- *     - @b 4 (<b>Based on Browse History</b>): get the recommendation items based on the browse history of user @b USERID.
+ *     - @b BOB (<b>Based on Browse History</b>): get the recommendation items based on the browse history of user @b USERID.
  *       @b input_items could be specified as browse history. If @b USERID is specified, both @b input_items and the items
  *       added in visit_item() with the same @b USERID would be excluded in recommendation result. Otherwise, if @b USERID
  *       is not specified for anonymous users, the recommendation would be based on @b input_items instead.
- *     - @b 5 (<b>Based on Shopping Cart</b>): get the recommendation items based on the shopping cart of user @b USERID,
+ *     - @b BOS (<b>Based on Shopping Cart</b>): get the recommendation items based on the shopping cart of user @b USERID,
  *       @b input_items could be specified as the items in shopping cart. If @b USERID is specified, @b input_items would be
  *       excluded in recommendation result. Otherwise, if @b USERID is not specified for anonymous users, the recommendation
  *       would be based on @b input_items instead.
@@ -809,7 +821,7 @@ void RecommendController::purchase_item()
  * @code
  * {
  *   "resource": {
- *     "rec_type_id": 3,
+ *     "rec_type": "BOP",
  *     "max_count": 20,
  *     "USERID": "user_001"
  *   }
@@ -831,7 +843,7 @@ void RecommendController::purchase_item()
  */
 void RecommendController::do_recommend()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::rec_type_id));
+    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::rec_type));
 
     int maxCount = kDefaultRecommendCount;
     const izenelib::driver::Value& maxCountValue = request()[Keys::resource][Keys::max_count];
@@ -862,7 +874,15 @@ void RecommendController::do_recommend()
     }
 
     std::string userIdStr = asString(request()[Keys::resource][Keys::USERID]);
-    int recTypeId = asUint(request()[Keys::resource][Keys::rec_type_id]);
+    std::string recTypeStr = asString(request()[Keys::resource][Keys::rec_type]);
+    std::map<std::string, int>::const_iterator mapIt = recTypeMap_.find(Utilities::toUpper(recTypeStr));
+    if (mapIt == recTypeMap_.end())
+    {
+        response().addError("Unknown recommendation type \"" + recTypeStr + "\" in request[resource][rec_type].");
+        return;
+    }
+
+    RecommendType recTypeId = static_cast<RecommendType>(mapIt->second);
     switch (recTypeId)
     {
         case FREQUENT_BUY_TOGETHER:
@@ -900,7 +920,7 @@ void RecommendController::do_recommend()
 
         default:
         {
-            response().addError("Unknown recommendation type in request[resource][rec_type_id].");
+            response().addError("Unknown recommendation type \"" + recTypeStr + "\" in request[resource][rec_type].");
             return;
         }
     }
@@ -908,7 +928,7 @@ void RecommendController::do_recommend()
     std::vector<Item> recItemVec;
     std::vector<double> recWeightVec;
     RecommendSearchService* service = collectionHandler_->recommendSearchService_;
-    if (service->recommend(static_cast<RecommendType>(recTypeId), maxCount, userIdStr,
+    if (service->recommend(recTypeId, maxCount, userIdStr,
                            inputItemVec, includeItemVec, excludeItemVec, itemCondition,
                            recItemVec, recWeightVec))
     {

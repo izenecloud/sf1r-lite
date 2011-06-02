@@ -100,10 +100,10 @@ public:
 		
 		//START_PROFILER(proDocumentDecompression)
 
-                const uint32_t allocSize = *reinterpret_cast<const uint32_t*>(val_p->data);
-		boost::scoped_alloc alloc;
-		//unsigned char* p = new unsigned char[allocSize];
-		unsigned char* p = BOOST_NEW_ARRAY(alloc, unsigned char, output_block_size(allocSize));
+		const uint32_t allocSize = *reinterpret_cast<const uint32_t*>(val_p->data);
+		//boost::scoped_alloc alloc;
+		unsigned char* p = new unsigned char[allocSize];
+		//unsigned char* p = BOOST_NEW_ARRAY(alloc, unsigned char, output_block_size(allocSize));
 		lzo_uint tmpTarLen;
 		int re = lzo1x_decompress((const unsigned char*)val_p->data + sizeof(uint32_t), val_p->size - sizeof(uint32_t), p, &tmpTarLen, NULL);
 		//int re = bmz_unpack(val_p->data, val_p->size, p, &tmpTarLen, NULL);
@@ -119,7 +119,7 @@ public:
 		
 		izene_deserialization<Document> izd((char*)p, nsz);
 		izd.read_image(doc);
-		//delete[] p;
+		delete[] p;
 		containerPtr_->clean_data(val_p);
 		return true;
 	}

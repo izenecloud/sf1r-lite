@@ -8,6 +8,7 @@
 #include "Sf1Controller.h"
 
 #include <string>
+#include <map>
 
 namespace sf1r
 {
@@ -28,6 +29,8 @@ class ItemCondition;
 class RecommendController : public Sf1Controller
 {
 public:
+    RecommendController();
+
     void add_user();
     void update_user();
     void remove_user();
@@ -51,6 +54,9 @@ private:
     bool value2Item(const izenelib::driver::Value& value, Item& item);
     bool value2ItemIdVec(const std::string& propName, std::vector<std::string>& itemIdVec);
     bool value2ItemCondition(ItemCondition& itemCondition);
+
+private:
+    std::map<std::string, int> recTypeMap_; /// mapping from recommendation type string to type id
 };
 
 /// @}
