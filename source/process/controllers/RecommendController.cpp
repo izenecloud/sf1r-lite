@@ -34,7 +34,7 @@ bool RecommendController::requireProperty(const std::string& propName)
 {
     if (!request()[Keys::resource].hasKey(propName))
     {
-        response().addError("Require property " + propName + " in request[resource].");
+        response().addError("Require property \"" + propName + "\" in request[resource].");
         return false;
     }
 
@@ -66,7 +66,7 @@ bool RecommendController::value2User(const izenelib::driver::Value& value, User&
             }
             else
             {
-                response().addError("Unknown user property " + propName + " in request[resource].");
+                response().addError("Unknown user property \"" + propName + "\" in request[resource].");
                 return false;
             }
         }
@@ -100,7 +100,7 @@ bool RecommendController::value2Item(const izenelib::driver::Value& value, Item&
             }
             else
             {
-                response().addError("Unknown item property " + propName + " in request[resource].");
+                response().addError("Unknown item property \"" + propName + "\" in request[resource].");
                 return false;
             }
         }
@@ -140,7 +140,7 @@ bool RecommendController::value2ItemIdVec(const std::string& propName, std::vect
 
         if (itemIdStr.empty())
         {
-            response().addError("Require property " + Keys::ITEMID + " for each item in request[resource][" + propName + "].");
+            response().addError("Require property \"" + Keys::ITEMID + "\" for each item in request[resource][" + propName + "].");
             return false;
         }
 
@@ -175,9 +175,10 @@ bool RecommendController::value2ItemCondition(ItemCondition& itemCondition)
 
     RecommendProperty recommendProperty;
     const RecommendSchema& recommendSchema = collectionHandler_->recommendSchema_;	
-    if (recommendSchema.getItemProperty(propName, recommendProperty) == false)
+    if (propName != Keys::ITEMID
+        && recommendSchema.getItemProperty(propName, recommendProperty) == false)
     {
-        response().addError("Unknown item property " + propName + " in request[resource][condition].");
+        response().addError("Unknown item property \"" + propName + "\" in request[resource][condition].");
         return false;
     }
 
@@ -743,7 +744,7 @@ void RecommendController::purchase_item()
         std::string itemIdStr = asString(itemValue[Keys::ITEMID]);
         if (itemIdStr.empty())
         {
-            response().addError("Require property " + Keys::ITEMID + " for each item in request[resource][items].");
+            response().addError("Require property \"" + Keys::ITEMID + "\" for each item in request[resource][items].");
             return;
         }
 
