@@ -102,7 +102,7 @@
       <Method id="la_unigram" analysis="char"/>
       <Method id="la_ngram" analysis="ngram" min="2" max="3" maxno="2194967296" apart="n" idxflag="second" schflag="second"/>
       <Method id="la_matrix" analysis="matrix" prefix="yes" suffix="yes"/>
-      <Method id="la_eng" analysis="english" casesensitive="yes">
+      <Method id="la_eng" analysis="english" casesensitive="no">
         <settings mode="all" option="S+" dictionarypath=""/>
       </Method>
       <Method id="la_korall" analysis="korean">
@@ -119,7 +119,7 @@
       <Method id="inner_la_korall_sia" analysis="korean" casesensitive="yes" >
         <settings mode="label" option="R+S+" specialchar="#" dictionarypath=""/>
       </Method>
-      <Method id="inner_la_cnall_sia" analysis="chinese" casesensitive="yes" >
+      <Method id="inner_la_cnall_sia" analysis="chinese" casesensitive="no" >
         <settings mode="label" option="R+S+T3" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
       <Method id="la_sia" analysis="multilang" advoption="default,inner_la_korall_sia;en,la_eng;cn,inner_la_cnall_sia"/>
