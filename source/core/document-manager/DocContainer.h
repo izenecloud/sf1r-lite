@@ -9,7 +9,6 @@
 #include <util/bzip.h>
 
 #include <ir/index_manager/utility/BitVector.h>
-#include <boost/memory.hpp>
 
 #include <boost/filesystem.hpp>
 #include <boost/shared_ptr.hpp>
@@ -101,9 +100,7 @@ public:
 		//START_PROFILER(proDocumentDecompression)
 
 		const uint32_t allocSize = *reinterpret_cast<const uint32_t*>(val_p->data);
-		//boost::scoped_alloc alloc;
 		unsigned char* p = new unsigned char[allocSize];
-		//unsigned char* p = BOOST_NEW_ARRAY(alloc, unsigned char, output_block_size(allocSize));
 		lzo_uint tmpTarLen;
 		int re = lzo1x_decompress((const unsigned char*)val_p->data + sizeof(uint32_t), val_p->size - sizeof(uint32_t), p, &tmpTarLen, NULL);
 		//int re = bmz_unpack(val_p->data, val_p->size, p, &tmpTarLen, NULL);
@@ -218,8 +215,6 @@ private:
 	std::string maxDocIdDb_;
 	containerType* containerPtr_;
 	docid_t maxDocID_;
-	
-	NS_BOOST_MEMORY::block_pool recycle_;
 };
 
 }
