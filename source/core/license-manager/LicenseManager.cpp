@@ -25,6 +25,10 @@ bool LicenseManager::continueIndex_(true);
 const std::string LicenseManager::LICENSE_REQUEST_FILENAME = "sf1-license-request.dat";
 const std::string LicenseManager::LICENSE_KEY_FILENAME = "sf1-license-key.dat";
 
+const std::string LicenseManager::TOKEN_FILENAME = "token.dat";
+const std::string LicenseManager::STOP_SERVICE_TOKEN = "@@ALL@@";
+const std::string LicenseManager::START_SERVICE_TOKEN = "@@NO@@";
+
 LicenseManager::LicenseManager(const std::string& sf1Version, const std::string& licenseFilePath, bool systemInfoType):
     systemInfoType_(systemInfoType)
 {
@@ -154,3 +158,62 @@ void LicenseManager::getLicenseLimitation(LicenseGrade grade, license_module::li
             maxSize             = 0;
     }
 }
+
+bool LicenseManager::extract_token_from(const std::string& filePath, std::string& token)
+{
+    int len;
+    LICENSE_DATA_T tmpData;
+    ifstream fpin( filePath.c_str() , ios::binary );
+
+    // Get length of file
+    fpin.seekg ( 0 , ios::end );
+    len = fpin.tellg();
+    if ( len == -1 )
+    {
+        fpin.close();
+        return false;
+    }
+    fpin.seekg ( 0, ios::beg );
+
+    // Read binary data of given file.
+    tmpData.reset(new unsigned char [len]);
+    fpin.read((char*)tmpData.get(), len);
+    fpin.close();
+
+    size_t decSize;
+    LICENSE_DATA_T decData;
+
+    LicenseEncryptor licenseEncryptor;
+    licenseEncryptor.decryptData(len, tmpData, decSize, decData);
+
+    // Extract token
+    uint64_t tokenCode;
+    size_t tokenCodeSize = sizeof(uint64_t);
+    char tmp[tokenCodeSize];
+    memcpy( &tokenCode, decData.get(), decSize );
+    memcpy(tmp, &tokenCode, sizeof(uint64_t));
+    token = tmp;
+    return true;
+}
+
+void LicenseManager::write_token_to(const std::string filePath, const std::string& token)
+{
+    uint64_t tokenCode;
+    size_t tokenCodeSize = sizeof(uint64_t);
+    memcpy(&tokenCode, token.c_str(), tokenCodeSize);
+
+    LICENSE_DATA_T tokenData(new unsigned char[TOKEN_MAX_LENGTH]);
+    memcpy(tokenData.get(), &tokenCode, tokenCodeSize);
+
+    /// Encrypt token data
+    size_t encSize;
+    LICENSE_DATA_T encData;
+    LicenseEncryptor licenseEncryptor;
+    licenseEncryptor.encryptData(tokenCodeSize, tokenData, encSize, encData);
+
+    /// Write data into file
+    ofstream fpout(filePath.c_str());
+    fpout.write( (char*)(encData.get()), encSize );
+    fpout.close();
+}
+
