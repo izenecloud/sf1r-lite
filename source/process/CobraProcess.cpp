@@ -259,7 +259,34 @@ int CobraProcess::run()
                         CollectionManager::get()->startCollection(collectionName, iter->string());
                     }
             }
-        }		
+        }
+
+
+#ifdef  EXIST_LICENSE
+            char* home = getenv("HOME");
+            std::string licenseDir = home; licenseDir += "/sf1-license/";
+
+            {
+                std::string filePath = licenseDir + LicenseManager::TOKEN_FILENAME;
+                std::string token("");
+                if ( !LicenseManager::extract_token_from(filePath, token) )
+                {
+                    return false;
+                }
+
+                ///Insert the extracted token into the deny control lists for all collections
+                std::map<std::string, CollectionMeta>&
+                    collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
+                std::map<std::string, CollectionMeta>::iterator
+                    collectionIter = collectionMetaMap.begin();
+
+                for(; collectionIter != collectionMetaMap.end(); collectionIter++)
+                {
+                    CollectionMeta& collectionMeta = collectionIter->second;
+                    collectionMeta.aclDeny(token);
+                }
+            }
+#endif
 
         driverServer_->run();
     }

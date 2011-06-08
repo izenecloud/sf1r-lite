@@ -23,6 +23,8 @@ public:
 
     static void insertTokensTo(const std::string& tokens, token_set_type& set);
 
+    static void deleteTokenFrom(const std::string& token, token_set_type& set);
+
     Acl();
 
     ~Acl();
@@ -30,6 +32,10 @@ public:
     Acl& allow(const std::string& tokens);
 
     Acl& deny(const std::string& tokens);
+
+    Acl& deleteTokenFromDeny(const std::string& token);
+
+    Acl& deleteTokenFromAllow(const std::string& token);
 
     Acl& merge(const Acl& anotherAcl);
 
@@ -72,6 +78,9 @@ public:
         allowedTokens_.swap(anotherAcl.allowedTokens_);
         deniedTokens_.swap(anotherAcl.deniedTokens_);
     }
+
+public:
+    static const std::string STOP_SERVICE_TOKEN;
 
 private:
     token_set_type allowedTokens_;

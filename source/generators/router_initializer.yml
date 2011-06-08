@@ -10,6 +10,7 @@ headers:
   - controllers/QueryCorrectionController.h
   - controllers/TopicController.h
   - controllers/RecommendController.h
+  - controllers/ServiceController.h
 
 controllers:
   AutoFillController:
@@ -87,4 +88,9 @@ controllers:
       - purchase_item
       - do_recommend
       - top_item_bundle
+      
+  ServiceController:
+    actions:
+      - process_overdue
+      - renew
 
