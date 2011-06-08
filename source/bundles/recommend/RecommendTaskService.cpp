@@ -16,6 +16,7 @@
 #include <util/scheduler.h>
 
 #include <map>
+#include <set>
 #include <cassert>
 
 #include <boost/filesystem.hpp>
@@ -986,6 +987,10 @@ bool RecommendTaskService::convertUserItemId_(
         return false;
     }
 
+    // if there is duplicated items in any order,
+    // it would lead forever loop in OrderManager::_judgeFrequentItemset() in finding all subsets,
+    // so we use a set here to ensure unique items in each order
+    std::set<itemid_t> itemIdSet;
     for (OrderItemVec::const_iterator it = orderItemVec.begin();
         it != orderItemVec.end(); ++it)
     {
@@ -1001,7 +1006,10 @@ bool RecommendTaskService::convertUserItemId_(
             return false;
         }
 
-        itemIdVec.push_back(itemId);
+        if (itemIdSet.insert(itemId).second)
+        {
+            itemIdVec.push_back(itemId);
+        }
     }
 
     return true;
