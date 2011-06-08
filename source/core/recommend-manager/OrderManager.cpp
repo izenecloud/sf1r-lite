@@ -120,15 +120,7 @@ OrderManager::OrderManager(
 
 OrderManager::~OrderManager()
 {
-    std::ofstream ofs(orderIdPath_.c_str());
-    if (ofs)
-    {
-        ofs << orderId_;
-    }
-    else
-    {
-        LOG(ERROR) << "failed to write file " << orderIdPath_;
-    }
+    flush();
 
     fclose(order_key_);
     fclose(order_db_);
@@ -216,6 +208,16 @@ void OrderManager::getAllFreqItemSets(
 
 void OrderManager::flush()
 {
+    std::ofstream ofs(orderIdPath_.c_str());
+    if (ofs)
+    {
+        ofs << orderId_;
+    }
+    else
+    {
+        LOG(ERROR) << "failed to write file " << orderIdPath_;
+    }
+
     item_order_index_.flush();
     fflush(order_key_);
     fflush(order_db_);
