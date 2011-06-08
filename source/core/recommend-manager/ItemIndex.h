@@ -25,7 +25,7 @@ namespace sf1r
 
 namespace iii = izenelib::ir::indexmanager;
 typedef uint32_t ItemIndexDocIDType;
-typedef std::vector<uint32_t> DataVectorType;
+typedef std::vector<uint32_t>::const_iterator DataVectorIterator;
 
 class ItemIndex
 {
@@ -36,9 +36,9 @@ public:
 
     void optimize();
 
-    bool add(ItemIndexDocIDType docId, const DataVectorType& doc);
+    bool add(ItemIndexDocIDType docId, DataVectorIterator firstIt, DataVectorIterator lastIt);
 
-    bool update(ItemIndexDocIDType docId, const DataVectorType& doc);
+    bool update(ItemIndexDocIDType docId, DataVectorIterator firstIt, DataVectorIterator lastIt);
 
     bool del(ItemIndexDocIDType docId);
 

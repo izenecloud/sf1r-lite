@@ -25,6 +25,15 @@ using namespace std;
 namespace
 {
 
+/**
+ * max item nums allowed in each order.
+ * As the time cost in @c _judgeFrequentItemset() is exponential to item number in each order,
+ * we have to limit the max number of items in each order by this value.
+ * If the item number is larger than this value, in @c addOrder(),
+ * it would split the items into smaller orders.
+ */
+const int MAX_ORDER_ITEM_NUM = 10;
+
 typedef std::pair<sf1r::itemid_t, int> ItemFreq;
 
 class ItemFreqQueue : public izenelib::util::PriorityQueue<ItemFreq>
@@ -128,10 +137,25 @@ OrderManager::~OrderManager()
 
 void OrderManager::addOrder(const std::vector<sf1r::itemid_t>& items)
 {
-    orderid_t orderId = _newOrderId();
+    std::vector<sf1r::itemid_t>::const_iterator firstIt = items.begin();
+    std::vector<sf1r::itemid_t>::const_iterator lastIt;
+    while (firstIt != items.end())
+    {
+        if (firstIt + MAX_ORDER_ITEM_NUM < items.end())
+        {
+            lastIt = firstIt + MAX_ORDER_ITEM_NUM;
+        }
+        else
+        {
+            lastIt = items.end();
+        }
 
-    item_order_index_.add(orderId, items);
-    _writeRecord(orderId, items);
+        orderid_t orderId = _newOrderId();
+        item_order_index_.add(orderId, firstIt, lastIt);
+        _writeRecord(orderId, firstIt, lastIt);
+
+        firstIt = lastIt;
+    }
 }
 
 bool OrderManager::getFreqItemSets(
@@ -232,7 +256,8 @@ void OrderManager::buildFreqItemsets()
 
 void OrderManager::_writeRecord(
         sf1r::orderid_t orderId,
-        const std::vector<sf1r::itemid_t>& items)
+        std::vector<sf1r::itemid_t>::const_iterator firstItemIt,
+        std::vector<sf1r::itemid_t>::const_iterator lastItemIt)
 {
     {
     ///write keys
@@ -243,10 +268,10 @@ void OrderManager::_writeRecord(
     }
     ///write values
     fwrite(&orderId, sizeof(sf1r::orderid_t), 1, order_db_); // recordId
-    uint32_t size = items.size();
+    uint32_t size = lastItemIt - firstItemIt;
     fwrite(&size, sizeof(uint32_t), 1, order_db_); // size
-    for(std::vector<sf1r::itemid_t>::const_iterator iter = items.begin(); 
-          iter != items.end(); ++iter)
+    for(std::vector<sf1r::itemid_t>::const_iterator iter = firstItemIt;
+          iter != lastItemIt; ++iter)
     {
         sf1r::itemid_t itemId = *iter;
         fwrite(&itemId, sizeof(sf1r::itemid_t), 1, order_db_); //itemId
@@ -312,12 +337,18 @@ void OrderManager::_findMaxItemsets()
 
 void OrderManager::_findFrequentItemsets()
 {
+    LOG(INFO) << "starting OrderManager::_findFrequentItemsets()...";
     std::fstream max_itemsets_results;
     max_itemsets_results.open (max_itemsets_results_path_.c_str(), fstream::in);
     std::string line;
     FrequentItemSetResultType frequentItemsets;
+    int lineNum = 0;
     while(std::getline(max_itemsets_results, line))
     {
+        if (++lineNum % 100 == 0)
+        {
+            std::cout << "\rloading item set num: " << lineNum << std::flush;
+        }
         std::vector<std::string> item_strs;
         boost::algorithm::split( item_strs, line, boost::algorithm::is_any_of(" ") );
         if(item_strs.size() <= 1) continue; 
@@ -334,11 +365,15 @@ void OrderManager::_findFrequentItemsets()
         }
         _judgeFrequentItemset(max_itemset, frequentItemsets);
     }
+    std::cout << "\rloading item set num: " << lineNum << std::endl;
+
     std::sort(frequentItemsets.begin(), frequentItemsets.end(), itemSetCompare);
     FrequentItemSetResultType::iterator uniqueEnd = std::unique(frequentItemsets.begin(), frequentItemsets.end(), itemSetPredicate);
     frequentItemsets.resize(uniqueEnd - frequentItemsets.begin());
     izenelib::util::ScopedWriteLock<izenelib::util::ReadWriteLock> lock(result_lock_);
     frequent_itemsets_.swap(frequentItemsets);
+
+    LOG(INFO) << "finish OrderManager::_findFrequentItemsets()";
 }
 
 void OrderManager::_judgeFrequentItemset(
