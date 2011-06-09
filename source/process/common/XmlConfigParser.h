@@ -441,6 +441,11 @@ public:
         return collectionMetaMap_;
     }
     
+    std::map<std::string, CollectionMeta>& mutableCollectionMetaMap()
+    {
+        return collectionMetaMap_;
+    }
+
     void setHomeDirectory(const std::string& homeDir)
     {
         homeDir_ = homeDir;

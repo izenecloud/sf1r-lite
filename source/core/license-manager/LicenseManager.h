@@ -54,6 +54,10 @@ class LicenseManager
                 license_module::license_max_doc_t& maxDocSize, 
                 license_module::license_max_index_data_size_t& maxSize);
 
+        static bool extract_token_from(const std::string& filePath, std::string& token);
+
+        static void write_token_to(const std::string filePath, const std::string& token);
+
     private:
 
         // Background process interface.
@@ -75,6 +79,11 @@ class LicenseManager
         static const license_module::license_max_index_data_size_t TRIAL_MAX_SIZE = 1024 * 1024 * 1024;
         static const std::string LICENSE_REQUEST_FILENAME;
         static const std::string LICENSE_KEY_FILENAME;
+
+        static const std::string TOKEN_FILENAME;
+        static const std::string STOP_SERVICE_TOKEN;
+        static const std::string START_SERVICE_TOKEN;
+        static const size_t TOKEN_MAX_LENGTH = 50;
 
     private:
 

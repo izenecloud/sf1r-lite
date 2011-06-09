@@ -9,9 +9,11 @@
 #include <boost/algorithm/string/finder.hpp>
 #include <boost/algorithm/string/compare.hpp>
 
+#include <iostream>
+
 namespace sf1r
 {
-
+const std::string Acl::STOP_SERVICE_TOKEN = "@@ALL@@";
 Acl::Acl()
         : allowedTokens_()
         , deniedTokens_()
@@ -34,6 +36,20 @@ Acl& Acl::allow(const std::string& tokens)
 Acl& Acl::deny(const std::string& tokens)
 {
     insertTokensTo(tokens, deniedTokens_);
+
+    return *this;
+}
+
+Acl& Acl::deleteTokenFromAllow(const std::string& token)
+{
+    deleteTokenFrom(token, allowedTokens_);
+
+    return *this;
+}
+
+Acl& Acl::deleteTokenFromDeny(const std::string& token)
+{
+    deleteTokenFrom(token, deniedTokens_);
 
     return *this;
 }
@@ -66,6 +82,15 @@ bool Acl::check(const token_set_type& userTokens) const
     if (empty())
     {
         return true;
+    }
+
+    for (const_iterator it = deniedTokensBegin();
+             it != deniedTokensEnd(); ++it)
+    {
+        if (*it == STOP_SERVICE_TOKEN)
+        {
+            return false;
+        }
     }
 
     for (const_iterator it = deniedTokensBegin();
@@ -118,6 +143,11 @@ void Acl::insertTokensTo(const std::string& tokens, token_set_type& set)
             set.insert(token);
         }
     }
+}
+
+void Acl::deleteTokenFrom(const std::string& token, token_set_type& set)
+{
+    set.erase(token);
 }
 
 } // namespace sf1r

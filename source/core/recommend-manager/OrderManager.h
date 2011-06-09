@@ -83,7 +83,8 @@ private:
 
     void _writeRecord(
         sf1r::orderid_t orderId,
-        const std::vector<sf1r::itemid_t>& items);
+        std::vector<sf1r::itemid_t>::const_iterator firstItemIt,
+        std::vector<sf1r::itemid_t>::const_iterator lastItemIt);
 
     bool _getOrder(
         sf1r::orderid_t orderId,

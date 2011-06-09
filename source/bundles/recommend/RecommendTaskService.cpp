@@ -16,6 +16,7 @@
 #include <util/scheduler.h>
 
 #include <map>
+#include <set>
 #include <cassert>
 
 #include <boost/filesystem.hpp>
@@ -618,11 +619,11 @@ bool RecommendTaskService::loadUserSCD_()
             continue;
         }
 
-        int docNum = 0;
+        int userNum = 0;
         for (ScdParser::iterator docIter = userParser.begin();
             docIter != userParser.end(); ++docIter)
         {
-            ++docNum;
+            ++userNum;
 
             SCDDocPtr docPtr = (*docIter);
             const SCDDoc& doc = *docPtr;
@@ -630,7 +631,7 @@ bool RecommendTaskService::loadUserSCD_()
             User user;
             if (doc2User(doc, user, bundleConfig_->recommendSchema_) == false)
             {
-                LOG(ERROR) << "error in parsing User, docNum: " << docNum << ", SCD file: " << *scdIt;
+                LOG(ERROR) << "error in parsing User, userNum: " << userNum << ", SCD file: " << *scdIt;
                 continue;
             }
 
@@ -663,6 +664,9 @@ bool RecommendTaskService::loadUserSCD_()
             }
         }
     }
+
+    userIdGenerator_->flush();
+    userManager_->flush();
 
     backupSCDFiles(scdDir, scdList);
 
@@ -703,11 +707,11 @@ bool RecommendTaskService::loadItemSCD_()
             continue;
         }
 
-        int docNum = 0;
+        int itemNum = 0;
         for (ScdParser::iterator docIter = itemParser.begin();
             docIter != itemParser.end(); ++docIter)
         {
-            ++docNum;
+            ++itemNum;
 
             SCDDocPtr docPtr = (*docIter);
             const SCDDoc& doc = *docPtr;
@@ -715,7 +719,7 @@ bool RecommendTaskService::loadItemSCD_()
             Item item;
             if (doc2Item(doc, item, bundleConfig_->recommendSchema_) == false)
             {
-                LOG(ERROR) << "error in parsing item, docNum: " << docNum << ", SCD file: " << *scdIt;
+                LOG(ERROR) << "error in parsing item, itemNum: " << itemNum << ", SCD file: " << *scdIt;
                 continue;
             }
 
@@ -748,6 +752,9 @@ bool RecommendTaskService::loadItemSCD_()
             }
         }
     }
+
+    itemIdGenerator_->flush();
+    itemManager_->flush();
 
     backupSCDFiles(scdDir, scdList);
 
@@ -786,7 +793,7 @@ bool RecommendTaskService::loadOrderSCD_()
     }
     userItemMap.open();
 
-    int docNum = 0;
+    int orderNum = 0;
     LOG(INFO) << "Start loading " << scdList.size() << " order SCD files...";
     for (std::vector<string>::const_iterator scdIt = scdList.begin();
         scdIt != scdList.end(); ++scdIt)
@@ -809,9 +816,9 @@ bool RecommendTaskService::loadOrderSCD_()
         for (ScdParser::iterator docIter = orderParser.begin();
             docIter != orderParser.end(); ++docIter)
         {
-            if (++docNum % 10000 == 0)
+            if (++orderNum % 10000 == 0)
             {
-                std::cout << "\rloading orders, total docNum: " << docNum << ", SCD file: " << *scdIt << std::flush;
+                std::cout << "\rloading orders, total order num: " << orderNum << ", SCD file: " << *scdIt << std::flush;
             }
 
             SCDDocPtr docPtr = (*docIter);
@@ -866,7 +873,7 @@ bool RecommendTaskService::loadOrderSCD_()
 
         loadOrderMap_(orderMap, userItemMap);
     }
-    std::cout << "\rloading orders, total docNum: " << docNum << std::endl;
+    std::cout << "\rloading orders, total order num: " << orderNum << std::endl;
 
     LOG(INFO) << "loading the purchased items for " << userItemMap.numItems() << " users...";
     typedef izenelib::sdb::SDBCursorIterator<UserItemMap> UserItemIterator;
@@ -889,6 +896,9 @@ bool RecommendTaskService::loadOrderSCD_()
     std::cout << "\rloading user num: " << userNum << std::endl;
 
     buildFreqItemSet_();
+
+    purchaseManager_->flush();
+    orderManager_->flush();
 
     backupSCDFiles(scdDir, scdList);
 
@@ -977,6 +987,10 @@ bool RecommendTaskService::convertUserItemId_(
         return false;
     }
 
+    // if there is duplicated items in any order,
+    // it would lead forever loop in OrderManager::_judgeFrequentItemset() in finding all subsets,
+    // so we use a set here to ensure unique items in each order
+    std::set<itemid_t> itemIdSet;
     for (OrderItemVec::const_iterator it = orderItemVec.begin();
         it != orderItemVec.end(); ++it)
     {
@@ -992,7 +1006,10 @@ bool RecommendTaskService::convertUserItemId_(
             return false;
         }
 
-        itemIdVec.push_back(itemId);
+        if (itemIdSet.insert(itemId).second)
+        {
+            itemIdVec.push_back(itemId);
+        }
     }
 
     return true;

@@ -135,6 +135,16 @@ public:
         acl_.deny(tokens);
     }
 
+    void deleteTokenFromAclAllow(const string& token)
+    {
+        acl_.deleteTokenFromAllow(token);
+    }
+
+    void deleteTokenFromAclDeny(const string& token)
+    {
+        acl_.deleteTokenFromDeny(token);
+    }
+
     const Acl& getAcl() const
     {
         return acl_;

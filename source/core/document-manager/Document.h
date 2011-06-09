@@ -14,11 +14,13 @@
 #include <map>
 #include <string>
 
-namespace sf1r {
+namespace sf1r
+{
 
 /// @brief This class implements Document that stores a document identifier and
 /// a list of document properties.
-class Document {
+class Document
+{
     typedef std::map<std::string, PropertyValue> property_named_map;
     typedef property_named_map::iterator property_mutable_iterator;
 
@@ -27,15 +29,15 @@ public:
     typedef property_named_map::iterator property_iterator;
 
     Document()
-    : id_(0)
-    , propertyList_()
+            : id_(0)
+            , propertyList_()
     {
     }
 
     /// Construct a document with predefined document identifier
     explicit Document(docid_t id)
-    : id_(id)
-    , propertyList_()
+            : id_(id)
+            , propertyList_()
     {
     }
 
@@ -69,8 +71,8 @@ public:
                         const PropertyValue& propertyValue)
     {
         return propertyList_.insert(
-            std::make_pair(propertyName, propertyValue)
-        ).second;
+                   std::make_pair(propertyName, propertyValue)
+               ).second;
     }
 
     /// Set a new value to a property of the document.
@@ -119,9 +121,10 @@ public:
         id_ = 0;
         propertyList_.clear();
     }
-    
-    bool isEmpty(){
-    	return ( propertyList_.size() == 0 );
+
+    bool isEmpty()
+    {
+        return ( propertyList_.size() == 0 );
     }
 
     void swap(Document& rhs)

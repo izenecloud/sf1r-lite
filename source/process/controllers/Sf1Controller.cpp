@@ -37,16 +37,21 @@ bool Sf1Controller::checkCollectionAcl()
                                        this->request()[Keys::collection]
                                    );
     // check only collection meta info can be found
-    CollectionMeta meta;
-    bool b = SF1Config::get()->getCollectionMetaByName(collection,meta);
-
-    if (!b)
+    if (!SF1Config::get()->checkCollectionExist(collection))
     {
-        this->response().addError(
-            "Failed to send request to given collection."
-        );
-        return false;
+        return true;
     }
+
+    CollectionMeta meta;
+    SF1Config::get()->getCollectionMetaByName(collection,meta);
+
+    //if (!b)
+    //{
+    //    this->response().addError(
+    //        "Failed to send request to given collection."
+     //   );
+     //   return false;
+    //}
 
     collectionHandler_ = CollectionManager::get()->findHandler(collection);
 
