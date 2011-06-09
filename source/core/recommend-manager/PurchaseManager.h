@@ -41,8 +41,15 @@ public:
      */
     bool addPurchaseItem(
         userid_t userId,
-        const std::vector<itemid_t>& itemVec
+        const std::vector<itemid_t>& itemVec,
+        bool isBuildUserResult = true
     );
+
+    /**
+     * Build recommend items for user.
+     * @param userId the user id
+     */
+    void buildUserResult(userid_t userId);
 
     /**
      * Get @p itemIdSet purchased by @p userId.
