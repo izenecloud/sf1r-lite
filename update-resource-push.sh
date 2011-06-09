@@ -4,7 +4,7 @@ password='izene123'
 
 usage() {
   echo "usage: update-resource-push.sh <branchname> [--all|--kpe|--nec|--speller-support|--ise|--sim]"
-  echo "      <branchname> will include 'owl-1', 'owl-2', etc.."
+  echo "      <branchname> will include 'kite-1', 'kite-2', etc.."
   echo "      no module specific means all(--all)"
 }
 

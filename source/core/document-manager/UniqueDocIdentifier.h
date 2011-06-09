@@ -8,7 +8,8 @@
 
 #include <common/type_defs.h>
 
-namespace sf1r {
+namespace sf1r
+{
 
 class UniqueDocIdentifier
 {
@@ -17,7 +18,7 @@ public:
     docid_t docId;
 
     UniqueDocIdentifier()
-    : collId(0), docId(0)
+            : collId(0), docId(0)
     {
     }
 
@@ -25,7 +26,7 @@ public:
         collectionid_t collectionId,
         docid_t documentId
     )
-    : collId(collectionId), docId(documentId)
+            : collId(collectionId), docId(documentId)
     {
     }
 
@@ -51,7 +52,7 @@ inline bool operator<(const UniqueDocIdentifier& a,
                       const UniqueDocIdentifier& b)
 {
     return a.collId < b.collId
-        || (!(b.collId < a.collId) && a.docId < b.docId);
+           || (!(b.collId < a.collId) && a.docId < b.docId);
 }
 inline bool operator==(const UniqueDocIdentifier& a,
                        const UniqueDocIdentifier& b)
@@ -59,7 +60,7 @@ inline bool operator==(const UniqueDocIdentifier& a,
     return a.collId == b.collId && a.docId == b.docId;
 }
 inline bool operator<=(const UniqueDocIdentifier& a,
-                      const UniqueDocIdentifier& b)
+                       const UniqueDocIdentifier& b)
 {
     return !(b < a);
 }

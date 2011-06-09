@@ -3,7 +3,8 @@
 
 #include <string>
 
-namespace sf1r {
+namespace sf1r
+{
 
 class DocumentLog
 {
