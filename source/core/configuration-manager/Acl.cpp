@@ -9,8 +9,6 @@
 #include <boost/algorithm/string/finder.hpp>
 #include <boost/algorithm/string/compare.hpp>
 
-#include <iostream>
-
 namespace sf1r
 {
 const std::string Acl::STOP_SERVICE_TOKEN = "@@ALL@@";

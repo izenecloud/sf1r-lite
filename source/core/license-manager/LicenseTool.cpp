@@ -386,6 +386,36 @@ namespace license_tool {
         return true;
     } // end - cvtStrToArr()
 
+    bool arrToStr(size_t inputSize, const LICENSE_DATA_T& inputData, std::string& outputStr)
+    {
+        char buf[2]={0,0};
+        std::string tmpStr;
+
+        for(size_t i = 0; i < inputSize; i++)
+        {
+            sprintf(buf, "%c", inputData[i]);
+            tmpStr += buf;
+        }
+        tmpStr.swap(outputStr);
+        return true;
+    } // end - arrToStr()
+
+    bool strToArr(const std::string& inputStr, size_t& outputSize, LICENSE_DATA_T& outputData)
+    {
+        char buf[2] = {0,0};
+        size_t tmpSize = inputStr.size();
+        boost::shared_array<unsigned char> tmpData(new unsigned char[tmpSize]);
+
+        for(size_t i = 0; i < tmpSize; i++)
+        {
+            buf[0] = inputStr[i];
+            sscanf(buf, "%c", &tmpData[i]);
+        }
+        outputSize = tmpSize;
+        outputData = tmpData;
+        return true;
+    } // end - strToArr()
+
     uintmax_t dirSize(const std::string& dirPath, bool recursive)
     {
         using namespace boost::filesystem;

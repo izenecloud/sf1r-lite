@@ -18,11 +18,6 @@ void ServiceController::process_overdue()
 #ifdef  EXIST_LICENSE
     char* home = getenv("HOME");
     std::string licenseDir = home; licenseDir += "/sf1-license/";
-    // Check whether license directory is exist
-   // if ( !boost::filesystem::exists(licenseDir) )
-    //{
-      //  return;
-    //}
 
     /// Write token file
     std::string path = licenseDir + LicenseManager::TOKEN_FILENAME;
@@ -49,11 +44,6 @@ void ServiceController::renew()
 #ifdef  EXIST_LICENSE
     char* home = getenv("HOME");
     std::string licenseDir = home; licenseDir += "/sf1-license/";
-    // Check whether license directory is exist
-    //if ( !boost::filesystem::exists(licenseDir) )
-    //{
-      //  return;
-    //}
 
     // Write token file
     std::string path = licenseDir + LicenseManager::TOKEN_FILENAME;

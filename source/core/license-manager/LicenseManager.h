@@ -83,7 +83,6 @@ class LicenseManager
         static const std::string TOKEN_FILENAME;
         static const std::string STOP_SERVICE_TOKEN;
         static const std::string START_SERVICE_TOKEN;
-        static const size_t TOKEN_MAX_LENGTH = 50;
 
     private:
 

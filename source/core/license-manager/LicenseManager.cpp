@@ -7,6 +7,7 @@
 
 #include "LicenseManager.h"
 #include "LicenseRequestFileGenerator.h"
+#include "LicenseTool.h"
 
 #include <common/SFLogger.h>
 
@@ -27,7 +28,7 @@ const std::string LicenseManager::LICENSE_KEY_FILENAME = "sf1-license-key.dat";
 
 const std::string LicenseManager::TOKEN_FILENAME = "token.dat";
 const std::string LicenseManager::STOP_SERVICE_TOKEN = "@@ALL@@";
-const std::string LicenseManager::START_SERVICE_TOKEN = "@@NO@@";
+const std::string LicenseManager::START_SERVICE_TOKEN = "@@NONE@@";
 
 LicenseManager::LicenseManager(const std::string& sf1Version, const std::string& licenseFilePath, bool systemInfoType):
     systemInfoType_(systemInfoType)
@@ -187,29 +188,21 @@ bool LicenseManager::extract_token_from(const std::string& filePath, std::string
     licenseEncryptor.decryptData(len, tmpData, decSize, decData);
 
     // Extract token
-    uint64_t tokenCode;
-    size_t tokenCodeSize = sizeof(uint64_t);
-    char tmp[tokenCodeSize];
-    memcpy( &tokenCode, decData.get(), decSize );
-    memcpy(tmp, &tokenCode, sizeof(uint64_t));
-    token = tmp;
+    license_tool::arrToStr(decSize, decData, token);
     return true;
 }
 
 void LicenseManager::write_token_to(const std::string filePath, const std::string& token)
 {
-    uint64_t tokenCode;
-    size_t tokenCodeSize = sizeof(uint64_t);
-    memcpy(&tokenCode, token.c_str(), tokenCodeSize);
-
-    LICENSE_DATA_T tokenData(new unsigned char[TOKEN_MAX_LENGTH]);
-    memcpy(tokenData.get(), &tokenCode, tokenCodeSize);
+    size_t tokenSize;
+    LICENSE_DATA_T tokenData;
+    license_tool::strToArr(token, tokenSize, tokenData);
 
     /// Encrypt token data
     size_t encSize;
     LICENSE_DATA_T encData;
     LicenseEncryptor licenseEncryptor;
-    licenseEncryptor.encryptData(tokenCodeSize, tokenData, encSize, encData);
+    licenseEncryptor.encryptData(tokenSize, tokenData, encSize, encData);
 
     /// Write data into file
     ofstream fpout(filePath.c_str());

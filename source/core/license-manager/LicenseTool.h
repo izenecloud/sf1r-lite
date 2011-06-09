@@ -234,6 +234,24 @@ namespace license_tool {
     bool cvtStrToArr(const std::string& inputStr, size_t& outputSize, LICENSE_DATA_T& outputData);
 
     ///
+    /// @brief converts data array to string.
+    /// @param[inputSize] size of input array.
+    /// @param[inputData] array of input data.
+    /// @param[outputStr] an output string which contains characters.
+    /// @return true if success, or false.
+    ///
+    bool arrToStr(size_t inputSize, const LICENSE_DATA_T& inputData, std::string& outputStr);
+
+    ///
+    /// @brief converts data string to data array.
+    /// @param[inputStr] an input string which contains characters.
+    /// @param[outputSize] output size of data array.
+    /// @param[outputData] array of output.
+    /// @return true if success, or false.
+    ///
+    bool strToArr(const std::string& inputStr, size_t& outputSize, LICENSE_DATA_T& outputData);
+
+    ///
     /// @brief calculates size of directory
     /// @param[dirpath] The path of target directory to calculate size.
     /// @param[recursive] recursive flag option. It will calculate size of sub directories if this option is on.
@@ -244,8 +262,6 @@ namespace license_tool {
 
     // For DEBUG
     void printLicenseData(const std::string& title, size_t licenseSize, const LICENSE_DATA_T& licenseData, std::ostream& out=std::cerr);
-
-
 
 
 
