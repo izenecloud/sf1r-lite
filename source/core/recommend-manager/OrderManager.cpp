@@ -380,6 +380,11 @@ void OrderManager::_judgeFrequentItemset(
     std::vector<itemid_t>& max_itemset , 
     FrequentItemSetResultType& frequent_itemsets)
 {
+    // as itemSetCompare() compares item set in lexicographical order,
+    // the items in each subset should be sorted,
+    // so the original item set is sorted here.
+    std::sort(max_itemset.begin(), max_itemset.end());
+
     std::vector<itemid_t> sub_itemset(max_itemset.size());
     std::vector<itemid_t>::iterator last_item = sub_itemset.begin();
     while ( 
