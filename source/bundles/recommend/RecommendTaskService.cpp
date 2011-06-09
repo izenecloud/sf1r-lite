@@ -878,6 +878,8 @@ bool RecommendTaskService::loadOrderSCD_()
     LOG(INFO) << "loading the purchased items for " << userItemMap.numItems() << " users...";
     typedef izenelib::sdb::SDBCursorIterator<UserItemMap> UserItemIterator;
     UserItemIterator itEnd;
+
+    // update matrixes in IncrementalItemCF
     int userNum = 0;
     for (UserItemIterator it = UserItemIterator(userItemMap); it != itEnd; ++it)
     { 
@@ -887,13 +889,26 @@ bool RecommendTaskService::loadOrderSCD_()
         }
 
         std::vector<itemid_t> itemVec(it->second.begin(), it->second.end());
-        if (purchaseManager_->addPurchaseItem(it->first, itemVec) == false)
+        if (purchaseManager_->addPurchaseItem(it->first, itemVec, false) == false)
         {
             LOG(ERROR) << "error in PurchaseManager::addPurchaseItem(), user id: " << it->first
                        << ", item num: " << itemVec.size();
         }
     }
     std::cout << "\rloading user num: " << userNum << std::endl;
+
+    // build recommend result for each user
+    userNum = 0;
+    for (UserItemIterator it = UserItemIterator(userItemMap); it != itEnd; ++it)
+    { 
+        if (++userNum % 100 == 0)
+        {
+            std::cout << "\rbuilding recommend result for user num: " << userNum << std::flush;
+        }
+
+        purchaseManager_->buildUserResult(it->first);
+    }
+    std::cout << "\rbuilding recommend result for user num: " << userNum << std::endl;
 
     buildFreqItemSet_();
 

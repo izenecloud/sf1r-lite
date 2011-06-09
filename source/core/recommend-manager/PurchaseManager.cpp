@@ -39,7 +39,8 @@ void PurchaseManager::flush()
 
 bool PurchaseManager::addPurchaseItem(
     userid_t userId,
-    const std::vector<itemid_t>& itemVec
+    const std::vector<itemid_t>& itemVec,
+    bool isBuildUserResult
 )
 {
     ItemIdSet itemIdSet;
@@ -74,11 +75,30 @@ bool PurchaseManager::addPurchaseItem(
 
         {
             ItemIterator itemIterator(1, itemManager_->maxItemId());
-            itemCFManager_->incrementalBuild(userId, oldItems, newItems, itemIterator);
+            itemCFManager_->buildMatrix(oldItems, newItems);
+
+            if (isBuildUserResult)
+            {
+                itemCFManager_->buildUserRecommendItems(userId, oldItems, itemIterator);
+            }
         }
     }
 
     return true;
+}
+
+void PurchaseManager::buildUserResult(userid_t userId)
+{
+    ItemIdSet itemIdSet;
+    container_.getValue(userId, itemIdSet);
+
+    if (! itemIdSet.empty())
+    {
+        std::list<sf1r::itemid_t> items(itemIdSet.begin(), itemIdSet.end());
+
+        ItemIterator itemIterator(1, itemManager_->maxItemId());
+        itemCFManager_->buildUserRecommendItems(userId, items, itemIterator);
+    }
 }
 
 bool PurchaseManager::getPurchaseItemSet(userid_t userId, ItemIdSet& itemIdSet)
