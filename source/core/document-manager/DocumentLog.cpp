@@ -5,11 +5,13 @@
 
 #include "DocumentLog.h"
 
-namespace sf1r {
+namespace sf1r
+{
 
 using namespace std;
 
-const string DocumentLog::logTypeStrings_[6] = {
+const string DocumentLog::logTypeStrings_[6] =
+{
     "info", "debug", "warn", "error", "crit", "perf"
 };
 
@@ -30,9 +32,9 @@ bool DocumentLog::print(LogType             type,
     time_t t = time(NULL);
     struct tm* local = localtime(&t);
     os  << "[" << (1900+ local->tm_year) << "-" << (1 + local->tm_mon) << "-" << local->tm_mday \
-        << " " << local->tm_hour << ":" << local->tm_min << ":" << local->tm_sec \
-        << "][DocumentManager][" << module << "][" << logTypeStrings_[type] \
-        << "][" << message << "]" << endl;
+    << " " << local->tm_hour << ":" << local->tm_min << ":" << local->tm_sec \
+    << "][DocumentManager][" << module << "][" << logTypeStrings_[type] \
+    << "][" << message << "]" << endl;
     return true;
 }
 
