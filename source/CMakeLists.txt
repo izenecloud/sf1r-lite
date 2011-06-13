@@ -157,7 +157,7 @@ IF (CMAKE_COMPILER_IS_GNUCXX)
     "Flags used by the compiler during debug builds.[CORBAR]"
 
     COBRARESTRICTRELEASE
-    "-O3 -Wno-deprecated -DNDEBUG -DCOBRA_RESTRICT "
+    "-O3 -g -Wno-deprecated -DNDEBUG -DCOBRA_RESTRICT "
     "Flags used by the compiler during debug builds.[CORBAR]"
 
     COBRARESTRICT
