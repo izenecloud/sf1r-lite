@@ -26,6 +26,8 @@ public:
 
     const bool isTrieWildcard() {return wildcardType_ == "trie"; }
 
+    const bool hasUnigramProperty() { return addUnigramPropety_; }
+
     bool getPropertyConfig(const std::string& name, PropertyConfig& config) const;
 
     bool getAnalysisInfo(
@@ -51,6 +53,9 @@ public:
 	
     /// Schema
     std::set<PropertyConfig, PropertyComp> schema_;
+
+    /// @brief whether add unigram properties
+    bool addUnigramPropety_;
 
     std::string languageIdentifierDbPath_;
     /// Parameters

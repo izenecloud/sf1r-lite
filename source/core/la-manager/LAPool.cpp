@@ -691,7 +691,17 @@ namespace sf1r
         }
         else if(analysis == "char")
         {
-            analyzer.reset(new CharAnalyzer());
+            CharAnalyzer* pChAnalyzer = new CharAnalyzer();
+
+            string option = laConfigUnitIter->second.getAdvOption();
+            if (option == "part") {
+                pChAnalyzer->setSeparateAll(false);
+            }
+            else {
+                pChAnalyzer->setSeparateAll(true);
+            }
+
+            analyzer.reset(pChAnalyzer);
         }
         else if(analysis == "ngram")
         {

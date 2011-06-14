@@ -523,6 +523,9 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
         }
         else if( analysis == "char" )
         {
+            string advOption;
+            getAttribute( analyzer_it.Get(), "advoption", advOption, false);
+            laUnit.setAdvOption( advOption );
         }
         else if( analysis == "ngram" )
         {
@@ -953,6 +956,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     IndexBundleConfiguration& indexBundleConfig = *collectionMeta.indexBundleConfig_;
     indexBundleConfig.encoding_ = parseEncodingType(encoding);
     params.GetString("Sia/wildcardtype", indexBundleConfig.wildcardType_, "unigram");
+    params.Get("Sia/addunigramproperty", indexBundleConfig.addUnigramPropety_);
 
     ///TODO for ranking
     ///ranking is not configed right now, although we keep such interface here
@@ -1426,6 +1430,7 @@ void CollectionConfig::parseIndexSchemaProperty(
         }
 
         // if( collectionMeta.isUnigramWildcard() )
+        if ( collectionMeta.indexBundleConfig_->addUnigramPropety_ )
         {
             if ( (SF1Config::get()->laConfigIdNameMap_.find( "la_unigram" )) == SF1Config::get()->laConfigIdNameMap_.end() ) {
                 throw XmlConfigParserException("Undefined analyzer configuration id, \"la_unigram\"");

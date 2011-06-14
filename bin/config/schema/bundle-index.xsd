@@ -71,6 +71,7 @@
 	    			</xs:restriction>
 	    		</xs:simpleType>
 	    	</xs:attribute>
+        	<xs:attribute name="addunigramproperty" type="YesNoType" use="required"/>
     	</xs:complexType>
 	</xs:element>
 
