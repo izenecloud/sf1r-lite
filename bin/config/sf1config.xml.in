@@ -32,7 +32,10 @@
           <!-- <CollectionDataDirectory>collection-dir-B</CollectionDataDirectory> -->
           <IndexStrategy memorypoolsize="128000000" indexpolicy="default" cron="0 3 * * *" />
 
-          <Sia triggerqa="n" doccachenum="20000" encoding="UTF-8" wildcardtype="unigram" addunigramproperty="y" />
+          <!-- Whether searchunigramterm="y" or not, ranking terms are always word segments. 
+               If searchunigramterm="y", please ensure unigram terms are indexed (LA for indexing property is "la_sia_with_unigram").
+          -->
+          <Sia triggerqa="n" doccachenum="20000" encoding="UTF-8" wildcardtype="unigram" indexunigramproperty="y" searchunigramterm="n" />
           
           <LanguageIdentifier dbpath="@ilplib_LANGUAGEIDENTIFIER_DB@"/>
 
@@ -99,7 +102,7 @@
 
       <Method id="la_token" analysis="token"/>
       <Method id="la_char" analysis="char"/>
-      <Method id="la_unigram_en" analysis="char" advoption="all" />
+      <Method id="la_unigram_all" analysis="char" advoption="all" />
       <Method id="la_unigram" analysis="char" advoption="part" />
       <Method id="la_ngram" analysis="ngram" min="2" max="3" maxno="2194967296" apart="n" idxflag="second" schflag="second"/>
       <Method id="la_matrix" analysis="matrix" prefix="yes" suffix="yes"/>
@@ -123,7 +126,11 @@
       <Method id="inner_la_cnall_sia" analysis="chinese" casesensitive="no" >
         <settings mode="label" option="R+S+T3" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
+      <Method id="inner_la_cnall_index" analysis="chinese" casesensitive="no" >
+        <settings mode="label" option="R+S+T4" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
+      </Method>
       <Method id="la_sia" analysis="multilang" advoption="default,inner_la_korall_sia;en,la_eng;cn,inner_la_cnall_sia"/>
+      <Method id="la_sia_with_unigram" analysis="multilang" advoption="default,inner_la_korall_sia;en,la_eng;cn,inner_la_cnall_index"/>
       <Method id="la_kornoun" analysis="korean">
         <settings mode="all" option="R+S+" specialchar="#" dictionarypath=""/>
       </Method>

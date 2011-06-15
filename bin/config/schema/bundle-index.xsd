@@ -71,7 +71,16 @@
 	    			</xs:restriction>
 	    		</xs:simpleType>
 	    	</xs:attribute>
-        	<xs:attribute name="addunigramproperty" type="YesNoType" use="required"/>
+        	<xs:attribute name="indexunigramproperty" type="YesNoType" use="required"/>
+        	<xs:attribute name="searchunigramterm" type="YesNoType" use="required"/>
+		<xs:attribute name="searchterm" use="optional">
+			<xs:simpleType>
+				<xs:restriction base="xs:NCName">
+					<xs:enumeration value="unigram"/>
+					<xs:enumeration value="wordseg"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
     	</xs:complexType>
 	</xs:element>
 

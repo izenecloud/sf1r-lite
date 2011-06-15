@@ -956,7 +956,8 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     IndexBundleConfiguration& indexBundleConfig = *collectionMeta.indexBundleConfig_;
     indexBundleConfig.encoding_ = parseEncodingType(encoding);
     params.GetString("Sia/wildcardtype", indexBundleConfig.wildcardType_, "unigram");
-    params.Get("Sia/addunigramproperty", indexBundleConfig.addUnigramPropety_);
+    params.Get("Sia/indexunigramproperty", indexBundleConfig.bIndexUnigramProperty_);
+    params.Get("Sia/searchunigramterm", indexBundleConfig.bSearchUnigramTerm_);
 
     ///TODO for ranking
     ///ranking is not configed right now, although we keep such interface here
@@ -1430,7 +1431,7 @@ void CollectionConfig::parseIndexSchemaProperty(
         }
 
         // if( collectionMeta.isUnigramWildcard() )
-        if ( collectionMeta.indexBundleConfig_->addUnigramPropety_ )
+        if ( collectionMeta.indexBundleConfig_->bIndexUnigramProperty_ )
         {
             if ( (SF1Config::get()->laConfigIdNameMap_.find( "la_unigram" )) == SF1Config::get()->laConfigIdNameMap_.end() ) {
                 throw XmlConfigParserException("Undefined analyzer configuration id, \"la_unigram\"");
