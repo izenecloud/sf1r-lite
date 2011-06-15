@@ -62,7 +62,7 @@ ELSEIF( ${UPPER_MODE} STREQUAL "KR" )
     MESSAGE( STATUS "KR mode: uses KMA")
 ELSEIF( ${UPPER_MODE} STREQUAL "MULTI" )
     SET( USE_IZENECMA TRUE )
-    SET( USE_IISE TRUE )
+    SET( USE_IISE FALSE )
     SET( USE_WISEKMA TRUE)
     MESSAGE( STATUS "MULTI mode: uses iCMA and KMA." )
 ELSE( ${UPPER_MODE} STREQUAL "CN" )
@@ -157,7 +157,7 @@ IF (CMAKE_COMPILER_IS_GNUCXX)
     "Flags used by the compiler during debug builds.[CORBAR]"
 
     COBRARESTRICTRELEASE
-    "-O3 -Wno-deprecated -DNDEBUG -DCOBRA_RESTRICT "
+    "-O3 -g -Wno-deprecated -DNDEBUG -DCOBRA_RESTRICT "
     "Flags used by the compiler during debug builds.[CORBAR]"
 
     COBRARESTRICT

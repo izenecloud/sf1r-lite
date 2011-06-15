@@ -28,7 +28,7 @@ const std::string LicenseManager::LICENSE_KEY_FILENAME = "sf1-license-key.dat";
 
 const std::string LicenseManager::TOKEN_FILENAME = "token.dat";
 const std::string LicenseManager::STOP_SERVICE_TOKEN = "@@ALL@@";
-const std::string LicenseManager::START_SERVICE_TOKEN = "@@NONE@@";
+const std::string LicenseManager::START_SERVICE_TOKEN = "@@NONEdfetfhhhrrer@@";
 
 LicenseManager::LicenseManager(const std::string& sf1Version, const std::string& licenseFilePath, bool systemInfoType):
     systemInfoType_(systemInfoType)
@@ -188,15 +188,17 @@ bool LicenseManager::extract_token_from(const std::string& filePath, std::string
     licenseEncryptor.decryptData(len, tmpData, decSize, decData);
 
     // Extract token
-    license_tool::arrToStr(decSize, decData, token);
+    char tmp[decSize];
+    memcpy(tmp, decData.get(), decSize);
+    token.assign(tmp, decSize);
     return true;
 }
 
 void LicenseManager::write_token_to(const std::string filePath, const std::string& token)
 {
-    size_t tokenSize;
-    LICENSE_DATA_T tokenData;
-    license_tool::strToArr(token, tokenSize, tokenData);
+    size_t tokenSize = token.size();
+    LICENSE_DATA_T tokenData(new unsigned char[tokenSize]);
+    memcpy(tokenData.get(), token.c_str(), tokenSize);
 
     /// Encrypt token data
     size_t encSize;
