@@ -910,10 +910,10 @@ bool RecommendTaskService::loadOrderSCD_()
     }
     std::cout << "\rbuilding recommend result for user num: " << userNum << std::endl;
 
-    buildFreqItemSet_();
-
     purchaseManager_->flush();
     orderManager_->flush();
+
+    buildFreqItemSet_();
 
     backupSCDFiles(scdDir, scdList);
 
