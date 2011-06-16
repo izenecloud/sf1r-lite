@@ -58,6 +58,7 @@ bool buildQueryTree(SearchKeywordOperation&action, IndexBundleConfiguration& bun
         if ( action.queryTreeMap_.find( *propertyIter ) != action.queryTreeMap_.end()
                 && action.propertyTermInfo_.find( *propertyIter ) != action.propertyTermInfo_.end() )
             continue;
+        std::cout << "----------------->  processing query for Property : " << *propertyIter << std::endl;
 
         QueryTreePtr tmpQueryTree;
         if ( applyLA )
@@ -66,14 +67,23 @@ bool buildQueryTree(SearchKeywordOperation&action, IndexBundleConfiguration& bun
             std::string analysis, language;
             bundleConfig.getAnalysisInfo( *propertyIter, analysisInfo, analysis, language );
 
+            bool isSearchUnigramTerm = action.isSearchUnigramTerm_;
+            if ((*propertyIter).size() > 8 && (*propertyIter).rfind("_unigram") == ((*propertyIter).size()-8))
+            {
+                // only unigram terms indexed for property with unigram Alias, so
+                // it will fail if use word segments as rank terms in unigram searching mode.
+                isSearchUnigramTerm = false;
+            }
+
             if ( !action.queryParser_.getAnalyzedQueryTree(
                         action.actionItem_.languageAnalyzerInfo_.synonymExtension_,
-                        analysisInfo, queryUStr, tmpQueryTree, action.unigramFlag_, personalSearchInfo))
+                        analysisInfo, queryUStr, tmpQueryTree, action.unigramFlag_, isSearchUnigramTerm, personalSearchInfo))
                 return false;
+
         } // end - if
         else // store raw query's info into it.
             tmpQueryTree = action.rawQueryTree_;
-        std::cout << "Property " << *propertyIter << std::endl;
+
         tmpQueryTree->print();
         action.queryTreeMap_.insert( std::make_pair(*propertyIter,tmpQueryTree) );
         PropertyTermInfo ptInfo;

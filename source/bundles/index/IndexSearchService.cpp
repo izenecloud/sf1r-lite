@@ -56,6 +56,8 @@ bool IndexSearchService::getSearchResult(
         );
     SearchKeywordOperation actionOperation(actionItem, bundleConfig_->isUnigramWildcard(),
                     laManager_, idManager_);
+    actionOperation.hasUnigramProperty_ = bundleConfig_->hasUnigramProperty();
+    actionOperation.isSearchUnigramTerm_ = bundleConfig_->isSearchUnigramTerm();
 
     std::vector<izenelib::util::UString> keywords;
     std::string newQuery;

@@ -23,13 +23,16 @@ namespace sf1r {
         children_.push_back( childQueryTree );
     } // end - insertChild()
 
-    void QueryTree::postProcess()
+    void QueryTree::postProcess(bool hasRankTerm)
     {
         unsigned int pos = 0;
         queryTermIdSet_.clear();
         queryTermIdList_.clear();
         propertyTermInfo_.clear();
-        recursivePreProcess(queryTermIdSet_, queryTermIdList_, propertyTermInfo_, pos);
+        if ( !hasRankTerm )
+            recursivePreProcess(queryTermIdSet_, queryTermIdList_, propertyTermInfo_, pos);
+        else
+            recursivePreProcessRankTerm(queryTermIdSet_, queryTermIdList_, propertyTermInfo_, pos);
     } // end - postProcess()
 
     void QueryTree::getQueryTermIdSet(std::set<termid_t>& queryTermIdSet) const
@@ -59,6 +62,9 @@ namespace sf1r {
         {
             case QueryTree::KEYWORD:
                 ss << "KEYWORD  : (" << keyword_ << "," << keywordId_ << ") ]" << endl;
+                break;
+            case QueryTree::RANK_KEYWORD:
+                ss << "RANK_KEYWORD  : (" << keyword_ << "," << keywordId_ << ") ]" << endl;
                 break;
             case QueryTree::UNIGRAM_WILDCARD:
                 ss << "UNIGRAM WILDCARD :" << keyword_ << "]" << endl;
@@ -118,7 +124,7 @@ namespace sf1r {
             queryTermIdSet.insert( keywordId_ );
             queryTermIdList.push_back( keywordId_ );
             propertyTermInfo.dealWithTerm( keywordUString_ , keywordId_ , pos++);
-        } // if
+        }
         else if( type_ == QueryTree::AND_PERSONAL || type_ == QueryTree::OR_PERSONAL )
         {
             // ignore sub trees
@@ -130,6 +136,30 @@ namespace sf1r {
                 (*childIter)->recursivePreProcess( queryTermIdSet , queryTermIdList, propertyTermInfo , pos );
         } // end - else if
     } // end - recursivePreProcess()
+
+    void QueryTree::recursivePreProcessRankTerm(
+            std::set<termid_t>& queryTermIdSet,
+            std::vector<termid_t>& queryTermIdList,
+            PropertyTermInfo& propertyTermInfo,
+            unsigned int& pos)
+    {
+        if (type_ == QueryTree::RANK_KEYWORD)
+        {
+            queryTermIdSet.insert( keywordId_ );
+            queryTermIdList.push_back( keywordId_ );
+            propertyTermInfo.dealWithTerm( keywordUString_ , keywordId_ , pos++);
+        }
+        else if( type_ == QueryTree::AND_PERSONAL || type_ == QueryTree::OR_PERSONAL )
+        {
+            // nothing
+        }
+        else if (children_.size() > 0 )
+        {
+            for(QTIter childIter = children_.begin();
+                    childIter != children_.end(); childIter++)
+                (*childIter)->recursivePreProcessRankTerm( queryTermIdSet , queryTermIdList, propertyTermInfo , pos );
+        }
+    } // end - recursivePreProcessRankTerm()
 
 } // end - namespace sf1r
 

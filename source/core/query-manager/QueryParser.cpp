@@ -269,6 +269,7 @@ namespace sf1r
         const izenelib::util::UString& rawUStr,
         QueryTreePtr& analyzedQueryTree,
         bool unigramFlag,
+        bool isSearchUnigramTerm,
         PersonalSearchInfo& personalSearchInfo
     )
     {
@@ -277,10 +278,10 @@ namespace sf1r
 
         // Apply escaped operator.
         QueryParser::parseQuery( rawUStr, tmpQueryTree, unigramFlag );
-        bool ret = recursiveQueryTreeExtension( tmpQueryTree, laInfo , personalSearchInfo);
+        bool ret = recursiveQueryTreeExtension(tmpQueryTree, laInfo, isSearchUnigramTerm, personalSearchInfo);
         if ( ret )
         {
-            tmpQueryTree->postProcess();
+            tmpQueryTree->postProcess(isSearchUnigramTerm);
             analyzedQueryTree = tmpQueryTree;
         }
         return ret;
@@ -346,6 +347,38 @@ namespace sf1r
         return true;
     } // end - extendWildcardTree
 
+    bool QueryParser::extendRankKeywords(QueryTreePtr& queryTree, la::TermList& termList)
+    {
+        QueryTreePtr rankQueryTree;
+        //la::TermList::iterator termIter;
+
+        switch ( queryTree->type_ )
+        {
+            case QueryTree::KEYWORD:
+            {
+                QueryTreePtr tmpQueryTree( new QueryTree(QueryTree::AND) );
+                tmpQueryTree->insertChild(queryTree);
+                queryTree = tmpQueryTree;
+                // no break;
+            }
+            case QueryTree::AND:
+            case QueryTree::OR:
+            {
+                for (la::TermList::iterator termIter = termList.begin(); termIter != termList.end(); termIter++)
+                {
+                    QueryTreePtr child( new QueryTree(QueryTree::RANK_KEYWORD) );
+                    if ( !setKeyword(child, termIter->text_) )
+                        return false;
+                    queryTree->insertChild( child );
+                }
+                break;
+            }
+            default:
+                return false;
+        }
+        return true;
+    } // end - extendKeyWordTree
+
     bool QueryParser::extendPersonlSearchTree(QueryTreePtr& queryTree, std::vector<UString>& userTermList)
     {
         std::vector<UString>::iterator ustrIter;
@@ -399,17 +432,30 @@ namespace sf1r
         return true;
     } // end - extendPersonlSearchTree
 
-    bool QueryParser::recursiveQueryTreeExtension(QueryTreePtr& queryTree, const LAEXInfo& laInfo, PersonalSearchInfo& personalSearchInfo)
+    bool QueryParser::recursiveQueryTreeExtension(QueryTreePtr& queryTree, const LAEXInfo& laInfo, bool isSearchUnigramTerm, PersonalSearchInfo& personalSearchInfo)
     {
         switch (queryTree->type_)
         {
         case QueryTree::KEYWORD:
         {
             QueryTreePtr tmpQueryTree;
+            UString keywordString = queryTree->keywordUString_;
             UString analyzedUStr;
+            AnalysisInfo analysisInfo;
+            if (!isSearchUnigramTerm || laInfo.analysisInfo_.analyzerId_.empty())
+            {
+                // case la is empty: DATE
+                analysisInfo = laInfo.analysisInfo_;
+            }
+            else
+            {
+                // search is based on unigram terms
+                analysisInfo.analyzerId_ = "la_unigram";
+            }
+
             laManager_->getExpandedQuery(
                 queryTree->keywordUString_,
-                laInfo.analysisInfo_,
+                analysisInfo,
                 true,
                 laInfo.synonymExtension_,
                 analyzedUStr);
@@ -419,6 +465,24 @@ namespace sf1r
             if (!QueryParser::parseQuery(analyzedUStr, tmpQueryTree, laInfo.unigramFlag_, false))
                 return false;
             queryTree = tmpQueryTree;
+
+            // Extend query tree with word segment terms for ranking, while search will perform on unigram terms
+            if ( isSearchUnigramTerm )
+            {
+                std::cout<<"* Extend rank keywords."<<std::endl;
+                analysisInfo = laInfo.analysisInfo_;
+                if (!laInfo.analysisInfo_.analyzerId_.empty())
+                    analysisInfo.analyzerId_ = "la_sia"; //xxx
+
+                la::TermList termList;
+                bool ret = laManager_->getTermList(keywordString, analysisInfo, termList);
+
+                if (!extendRankKeywords(queryTree, termList))
+                {
+                    std::cout<<"** failed to extend rank keywords."<<std::endl;
+                    return false;
+                }
+            }
 
             // Extend query tree for personalized search
             if (personalSearchInfo.enabled)
@@ -460,7 +524,7 @@ namespace sf1r
         default:
             for (QTIter iter = queryTree->children_.begin();
                     iter != queryTree->children_.end(); iter++)
-                recursiveQueryTreeExtension(*iter, laInfo, personalSearchInfo);
+                recursiveQueryTreeExtension(*iter, laInfo, isSearchUnigramTerm, personalSearchInfo);
         } // end - switch(queryTree->type_)
         return true;
     } // end - recursiveQueryTreeExtension()

@@ -22,7 +22,9 @@ namespace sf1r {
         actionItem_(actionItem),
         noError_(true),
         unigramFlag_(unigramFlag),
-        queryParser_(laManager, idManager)
+        queryParser_(laManager, idManager),
+        hasUnigramProperty_(true),
+        isSearchUnigramTerm_(false)
     {
     } // end - SearchKeywordOperation()
 

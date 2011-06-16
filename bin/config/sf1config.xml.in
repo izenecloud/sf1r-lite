@@ -32,8 +32,8 @@
           <!-- <CollectionDataDirectory>collection-dir-B</CollectionDataDirectory> -->
           <IndexStrategy memorypoolsize="128000000" indexpolicy="default" cron="0 3 * * *" />
 
-          <!-- Whether searchunigramterm="y" or not, ranking terms are always word segments. 
-               If searchunigramterm="y", please ensure unigram terms are indexed (LA for indexing property is "la_sia_with_unigram").
+          <!-- In unigram searching mode (searchunigramterm="y"), searching performs on unigram terms, while ranking performs on word segments. 
+               Make sure unigram terms have been indexed for Property (LA for Indexing is "la_sia_with_unigram"), or search(retrieve) may fail.
           -->
           <Sia triggerqa="n" doccachenum="20000" encoding="UTF-8" wildcardtype="unigram" indexunigramproperty="y" searchunigramterm="n" />
           

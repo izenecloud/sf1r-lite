@@ -26,7 +26,7 @@ namespace sf1r {
             ///
             /// @brief  a variable which indicates type of current query node.
             ///
-            enum QueryType { KEYWORD, UNIGRAM_WILDCARD, TRIE_WILDCARD, AND, OR, NOT, EXACT, ORDER, NEARBY, ASTERISK, QUESTION_MARK, AND_PERSONAL, OR_PERSONAL, UNKNOWN } type_;
+            enum QueryType { KEYWORD, RANK_KEYWORD, UNIGRAM_WILDCARD, TRIE_WILDCARD, AND, OR, NOT, EXACT, ORDER, NEARBY, ASTERISK, QUESTION_MARK, AND_PERSONAL, OR_PERSONAL, UNKNOWN } type_;
 
             ///
             /// @brief keyword string of current query node.
@@ -81,7 +81,7 @@ namespace sf1r {
             ///
             /// @brief build query term id set & property term info map.
             ///
-            void postProcess();
+            void postProcess(bool hasRankTerm = false);
 
             ///
             /// @brief gets query term id set.
@@ -111,6 +111,12 @@ namespace sf1r {
             /// @brief fills property term info
             ///
             void recursivePreProcess(
+                    std::set<termid_t>& queryTermIdSet,
+                    std::vector<termid_t>& queryTermIdList,
+                    PropertyTermInfo& propertyTermInfo,
+                    unsigned int& pos);
+
+            void recursivePreProcessRankTerm(
                     std::set<termid_t>& queryTermIdSet,
                     std::vector<termid_t>& queryTermIdList,
                     PropertyTermInfo& propertyTermInfo,

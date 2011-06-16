@@ -176,8 +176,10 @@ namespace sf1r {
                     const izenelib::util::UString& rawUStr,
                     QueryTreePtr& analyzedQueryTree,
                     bool unigramFlag,
+                    bool isSearchUnigramTerm,
                     PersonalSearchInfo& personalSearchInfo);
 
+            /// @brief for testing
             bool getAnalyzedQueryTree(
                                 bool synonymExtension,
                                 const AnalysisInfo& analysisInfo,
@@ -187,7 +189,7 @@ namespace sf1r {
             {
                 PersonalSearchInfo personalSearchInfo;
                 personalSearchInfo.enabled = false;
-                return getAnalyzedQueryTree(synonymExtension, analysisInfo, rawUStr, analyzedQueryTree, unigramFlag, personalSearchInfo);
+                return getAnalyzedQueryTree(synonymExtension, analysisInfo, rawUStr, analyzedQueryTree, unigramFlag, false, personalSearchInfo);
             }
 
         private:
@@ -208,6 +210,11 @@ namespace sf1r {
             bool extendTrieWildcardTree(QueryTreePtr& queryTree);
 
             ///
+            /// @brief extends query tree with rank keywords
+            ///
+            bool extendRankKeywords(QueryTreePtr& queryTree, la::TermList& termList);
+
+            ///
             /// @brief extends query tree with personal search information
             /// @param[queryTree] keyword query tree
             /// @param[userTermList] user profile info
@@ -224,6 +231,7 @@ namespace sf1r {
             bool recursiveQueryTreeExtension(
                     QueryTreePtr& queryTree, 
                     const LAEXInfo& laInfo,
+                    bool isSearchUnigramTerm,
                     PersonalSearchInfo& personalSearchInfo);
 
             static void initOnlyOnceCore();

@@ -79,8 +79,11 @@ namespace sf1r {
             QueryTreePtr rawQueryTree_;
             boost::unordered_map<std::string,QueryTreePtr> queryTreeMap_;
             std::map<std::string,PropertyTermInfo> propertyTermInfo_;
-            bool unigramFlag_;
+            bool unigramFlag_; // wildcard type
             QueryParser queryParser_;
+
+            bool hasUnigramProperty_;
+            bool isSearchUnigramTerm_;
     }; // end - class SearchKeywordOperation
 
 } // end - namespace sf1vt
