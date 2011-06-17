@@ -1431,7 +1431,6 @@ void CollectionConfig::parseIndexSchemaProperty(
         }
 
         // if( collectionMeta.isUnigramWildcard() )
-        if ( collectionMeta.indexBundleConfig_->bIndexUnigramProperty_ )
         {
             if ( (SF1Config::get()->laConfigIdNameMap_.find( "la_unigram" )) == SF1Config::get()->laConfigIdNameMap_.end() ) {
                 throw XmlConfigParserException("Undefined analyzer configuration id, \"la_unigram\"");
@@ -1442,16 +1441,19 @@ void CollectionConfig::parseIndexSchemaProperty(
             analysisInfo.analyzerId_ = "la_unigram";
             SF1Config::get()->analysisPairList_.insert( analysisInfo );
 
-            propertyConfig.setName(propertyName+"_unigram");
-            propertyConfig.setAnalysisInfo(analysisInfo);
-            indexSchema.insert(propertyConfig );
+            if ( collectionMeta.indexBundleConfig_->bIndexUnigramProperty_ )
+            {
+                propertyConfig.setName(propertyName+"_unigram");
+                propertyConfig.setAnalysisInfo(analysisInfo);
+                indexSchema.insert(propertyConfig );
 
-            /// Attention
-            /// update CollectionMeta
-            PropertyConfigBase propertyConfigBase;
-            propertyConfigBase.propertyName_ = propertyName+"_unigram";
-            propertyConfigBase.propertyType_ = propertyConfig.getType();
-            collectionMeta.insertProperty( propertyConfigBase );
+                /// Attention
+                /// update CollectionMeta
+                PropertyConfigBase propertyConfigBase;
+                propertyConfigBase.propertyName_ = propertyName+"_unigram";
+                propertyConfigBase.propertyType_ = propertyConfig.getType();
+                collectionMeta.insertProperty( propertyConfigBase );
+            }
         }
 
         if ( nOriginalName == 0 )

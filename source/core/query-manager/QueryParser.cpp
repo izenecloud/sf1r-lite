@@ -453,12 +453,15 @@ namespace sf1r
                 analysisInfo.analyzerId_ = "la_unigram";
             }
 
-            laManager_->getExpandedQuery(
+            if ( !laManager_->getExpandedQuery(
                 queryTree->keywordUString_,
                 analysisInfo,
                 true,
                 laInfo.synonymExtension_,
-                analyzedUStr);
+                analyzedUStr))
+            {
+                std::cout<<"Error LA not found: "<<analysisInfo.toString()<<endl;
+            }
             std::string escAddedStr;
             analyzedUStr.convertString(escAddedStr, UString::UTF_8);
             analyzedUStr.assign(escAddedStr, UString::UTF_8);
@@ -475,7 +478,10 @@ namespace sf1r
                     analysisInfo.analyzerId_ = "la_sia"; //xxx
 
                 la::TermList termList;
-                bool ret = laManager_->getTermList(keywordString, analysisInfo, termList);
+                if ( !laManager_->getTermList(keywordString, analysisInfo, termList) )
+                {
+                    std::cout<<"Error LA not found: "<<analysisInfo.toString()<<endl;
+                }
 
                 if (!extendRankKeywords(queryTree, termList))
                 {
