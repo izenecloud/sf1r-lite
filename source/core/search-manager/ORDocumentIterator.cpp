@@ -305,9 +305,9 @@ void ORDocumentIterator::print(int level)
     cout << std::string(level*4, ' ') << "|--[ "<< "ORIter current: " << current_<<" "<< currDoc_ << " ]"<< endl;
 
     DocumentIterator* pEntry;
-    for (size_t i = 0; i < pDocIteratorQueue_->size(); ++i)
+    for (size_t i = 0; i < docIteratorList_.size(); ++i)
     {
-        pEntry = pDocIteratorQueue_->getAt(i);
+        pEntry = docIteratorList_[i];
         if (pEntry)
             pEntry->print(level+1);
     }

@@ -38,7 +38,7 @@ public:
      */
     bool next()
     {
-        if (!hasNext_) {
+        if (hasNext_) {
             hasNext_ = ANDDocumentIterator::next();
         }
         personal_current_ = hasNext_;
