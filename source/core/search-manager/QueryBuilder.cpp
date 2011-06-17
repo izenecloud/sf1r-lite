@@ -210,6 +210,7 @@ namespace sf1r
                 termIndexMapInProperty,
                 pIter,
                 termDocReaders,
+                actionOperation.hasUnigramProperty_,
                 actionOperation.isUnigramSearchMode_
             );
 
@@ -240,6 +241,7 @@ namespace sf1r
         const std::map<termid_t, unsigned>& termIndexMapInProperty,
         DocumentIteratorPointer& pDocIterator,
         std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >& termDocReaders,
+        bool hasUnigramProperty,
         bool isUnigramSearchMode,
         int parentAndOrFlag
     )
@@ -420,7 +422,12 @@ namespace sf1r
                 }
             }
 
-            std::string unigramProperty = property + "_unigram";
+            // if there is no unigram alias-ed property, perform on original property
+            std::string unigramProperty = property;
+            if (hasUnigramProperty)
+            {
+                unigramProperty += "_unigram";
+            }
             unsigned int unigramPropertyId = 0;
             typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
             iterator found = schemaMap_.find(unigramProperty);
@@ -503,6 +510,7 @@ namespace sf1r
                           termIndexMapInProperty,
                           pIterator,
                           termDocReaders,
+                          hasUnigramProperty,
                           isUnigramSearchMode,
                           1
                       );
@@ -540,6 +548,7 @@ namespace sf1r
                            termIndexMapInProperty,
                            pIterator,
                            termDocReaders,
+                           hasUnigramProperty,
                            isUnigramSearchMode,
                            0
                        );
@@ -651,7 +660,12 @@ namespace sf1r
                 termIndexes
             );
 
-            std::string unigramProperty = property + "_unigram";
+            // if there is no unigram alias-ed property, perform on original property
+            std::string unigramProperty = property;
+            if (hasUnigramProperty)
+            {
+                unigramProperty += "_unigram";
+            }
             unsigned int unigramPropertyId = 0;
             typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
             iterator found = schemaMap_.find(unigramProperty);

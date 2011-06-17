@@ -87,6 +87,7 @@ private:
             const std::map<termid_t, unsigned>& termIndexMapInProperty,
             DocumentIterator* &pDocIterator,
             std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >& termDocReaders,
+            bool hasUnigramProperty = true,
             bool isUnigramSearchMode = false,
             int parentAndOrFlag = -1);
 
