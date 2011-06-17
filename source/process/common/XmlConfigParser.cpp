@@ -957,7 +957,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     indexBundleConfig.encoding_ = parseEncodingType(encoding);
     params.GetString("Sia/wildcardtype", indexBundleConfig.wildcardType_, "unigram");
     params.Get("Sia/indexunigramproperty", indexBundleConfig.bIndexUnigramProperty_);
-    params.Get("Sia/searchunigramterm", indexBundleConfig.bSearchUnigramTerm_);
+    params.Get("Sia/unigramsearchmode", indexBundleConfig.bUnigramSearchMode_);
 
     ///TODO for ranking
     ///ranking is not configed right now, although we keep such interface here

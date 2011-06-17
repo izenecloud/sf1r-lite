@@ -83,7 +83,7 @@ namespace sf1r {
             QueryParser queryParser_;
 
             bool hasUnigramProperty_;
-            bool isSearchUnigramTerm_;
+            bool isUnigramSearchMode_;
     }; // end - class SearchKeywordOperation
 
 } // end - namespace sf1vt

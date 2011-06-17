@@ -24,7 +24,7 @@ namespace sf1r {
         unigramFlag_(unigramFlag),
         queryParser_(laManager, idManager),
         hasUnigramProperty_(true),
-        isSearchUnigramTerm_(false)
+        isUnigramSearchMode_(false)
     {
     } // end - SearchKeywordOperation()
 

@@ -210,7 +210,7 @@ namespace sf1r
                 termIndexMapInProperty,
                 pIter,
                 termDocReaders,
-                actionOperation.isSearchUnigramTerm_
+                actionOperation.isUnigramSearchMode_
             );
 
         if (pIter)

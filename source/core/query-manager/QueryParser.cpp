@@ -269,7 +269,7 @@ namespace sf1r
         const izenelib::util::UString& rawUStr,
         QueryTreePtr& analyzedQueryTree,
         bool unigramFlag,
-        bool isSearchUnigramTerm,
+        bool isUnigramSearchMode,
         PersonalSearchInfo& personalSearchInfo
     )
     {
@@ -278,10 +278,10 @@ namespace sf1r
 
         // Apply escaped operator.
         QueryParser::parseQuery( rawUStr, tmpQueryTree, unigramFlag );
-        bool ret = recursiveQueryTreeExtension(tmpQueryTree, laInfo, isSearchUnigramTerm, personalSearchInfo);
+        bool ret = recursiveQueryTreeExtension(tmpQueryTree, laInfo, isUnigramSearchMode, personalSearchInfo);
         if ( ret )
         {
-            tmpQueryTree->postProcess(isSearchUnigramTerm);
+            tmpQueryTree->postProcess(isUnigramSearchMode);
             analyzedQueryTree = tmpQueryTree;
         }
         return ret;
@@ -432,7 +432,7 @@ namespace sf1r
         return true;
     } // end - extendPersonlSearchTree
 
-    bool QueryParser::recursiveQueryTreeExtension(QueryTreePtr& queryTree, const LAEXInfo& laInfo, bool isSearchUnigramTerm, PersonalSearchInfo& personalSearchInfo)
+    bool QueryParser::recursiveQueryTreeExtension(QueryTreePtr& queryTree, const LAEXInfo& laInfo, bool isUnigramSearchMode, PersonalSearchInfo& personalSearchInfo)
     {
         switch (queryTree->type_)
         {
@@ -442,7 +442,7 @@ namespace sf1r
             UString keywordString = queryTree->keywordUString_;
             UString analyzedUStr;
             AnalysisInfo analysisInfo;
-            if (!isSearchUnigramTerm || laInfo.analysisInfo_.analyzerId_.empty())
+            if (!isUnigramSearchMode || laInfo.analysisInfo_.analyzerId_.empty())
             {
                 // case la is empty: DATE
                 analysisInfo = laInfo.analysisInfo_;
@@ -470,7 +470,7 @@ namespace sf1r
             queryTree = tmpQueryTree;
 
             // Extend query tree with word segment terms for ranking, while search will perform on unigram terms
-            if ( isSearchUnigramTerm )
+            if ( isUnigramSearchMode )
             {
                 std::cout<<"* Extend rank keywords."<<std::endl;
                 analysisInfo = laInfo.analysisInfo_;
@@ -530,7 +530,7 @@ namespace sf1r
         default:
             for (QTIter iter = queryTree->children_.begin();
                     iter != queryTree->children_.end(); iter++)
-                recursiveQueryTreeExtension(*iter, laInfo, isSearchUnigramTerm, personalSearchInfo);
+                recursiveQueryTreeExtension(*iter, laInfo, isUnigramSearchMode, personalSearchInfo);
         } // end - switch(queryTree->type_)
         return true;
     } // end - recursiveQueryTreeExtension()

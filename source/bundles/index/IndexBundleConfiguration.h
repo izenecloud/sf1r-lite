@@ -28,7 +28,7 @@ public:
 
     const bool hasUnigramProperty() { return bIndexUnigramProperty_; }
 
-    const bool isSearchUnigramTerm() { return bSearchUnigramTerm_; }
+    const bool isUnigramSearchMode() { return bUnigramSearchMode_; }
 
     bool getPropertyConfig(const std::string& name, PropertyConfig& config) const;
 
@@ -60,7 +60,7 @@ public:
     bool bIndexUnigramProperty_;
 
     /// @brief whether search based on unigram index terms
-    bool bSearchUnigramTerm_;
+    bool bUnigramSearchMode_;
 
     std::string languageIdentifierDbPath_;
     /// Parameters

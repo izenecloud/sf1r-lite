@@ -176,7 +176,7 @@ namespace sf1r {
                     const izenelib::util::UString& rawUStr,
                     QueryTreePtr& analyzedQueryTree,
                     bool unigramFlag,
-                    bool isSearchUnigramTerm,
+                    bool isUnigramSearchMode,
                     PersonalSearchInfo& personalSearchInfo);
 
             /// @brief for testing
@@ -231,7 +231,7 @@ namespace sf1r {
             bool recursiveQueryTreeExtension(
                     QueryTreePtr& queryTree, 
                     const LAEXInfo& laInfo,
-                    bool isSearchUnigramTerm,
+                    bool isUnigramSearchMode,
                     PersonalSearchInfo& personalSearchInfo);
 
             static void initOnlyOnceCore();

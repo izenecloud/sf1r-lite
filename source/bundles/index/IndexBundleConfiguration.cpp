@@ -8,7 +8,7 @@ IndexBundleConfiguration::IndexBundleConfiguration(const std::string& collection
     : ::izenelib::osgi::BundleConfiguration("IndexBundle-"+collectionName, "IndexBundleActivator" )
     , collectionName_(collectionName)
     , bIndexUnigramProperty_(true)
-    , bSearchUnigramTerm_(false)
+    , bUnigramSearchMode_(false)
     , encoding_(izenelib::util::UString::UNKNOWN)
     , wildcardType_("unigram")
 {}
