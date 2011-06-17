@@ -22,7 +22,7 @@ namespace sf1r {
 class DocumentIterator
 {
 public:
-    DocumentIterator():not_(false){}
+    DocumentIterator():current_(false), not_(false){}
 
     virtual ~DocumentIterator(){}
 

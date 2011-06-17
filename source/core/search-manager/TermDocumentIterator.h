@@ -95,7 +95,7 @@ public:
                 << " - termid: " << termId_ << " " << property_<<" ]"<< endl;
     }
 
-private:
+protected:
     termid_t termId_;
 
     collectionid_t colID_;

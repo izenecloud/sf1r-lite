@@ -1,5 +1,7 @@
 #include "QueryBuilder.h"
 #include "TermDocumentIterator.h"
+#include "SearchTermDocumentIterator.h"
+#include "RankTermDocumentIterator.h"
 #include "ANDDocumentIterator.h"
 #include "ORDocumentIterator.h"
 #include "NOTDocumentIterator.h"
@@ -207,7 +209,8 @@ namespace sf1r
                 readPositions,
                 termIndexMapInProperty,
                 pIter,
-                termDocReaders
+                termDocReaders,
+                actionOperation.isSearchUnigramTerm_
             );
 
         if (pIter)
@@ -236,12 +239,15 @@ namespace sf1r
         bool readPositions,
         const std::map<termid_t, unsigned>& termIndexMapInProperty,
         DocumentIteratorPointer& pDocIterator,
-        std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >& termDocReaders
+        std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >& termDocReaders,
+        bool isUnigramSearchMode,
+        int parentAndOrFlag
     )
     {
         switch (queryTree->type_)
         {
         case QueryTree::KEYWORD:
+        case QueryTree::RANK_KEYWORD:
         {
             termid_t keywordId = queryTree->keywordId_;
             unsigned termIndex = izenelib::util::getOr(
@@ -249,14 +255,47 @@ namespace sf1r
                                      keywordId,
                                      (std::numeric_limits<unsigned>::max) ()
                                  );
-            TermDocumentIterator* pIterator =
-                new TermDocumentIterator(keywordId,
-                                         colID,
-                                         pIndexReader_,
-                                         property,
-                                         propertyId,
-                                         termIndex,
-                                         readPositions);
+
+            TermDocumentIterator* pIterator = NULL;
+            if (!isUnigramSearchMode)
+            {
+                pIterator = new TermDocumentIterator(
+                                             keywordId,
+                                             colID,
+                                             pIndexReader_,
+                                             property,
+                                             propertyId,
+                                             termIndex,
+                                             readPositions);
+            }
+            else
+            {
+                // term for searching
+                if (queryTree->type_ == QueryTree::KEYWORD)
+                {
+                    // termIndex is invalid in this case, it will not be used
+                    pIterator = new SearchTermDocumentIterator(keywordId,
+                                        colID,
+                                        pIndexReader_,
+                                        property,
+                                        propertyId,
+                                        termIndex,
+                                        readPositions);
+                }
+                // term for ranking
+                else //if(queryTree->type_ == QueryTree::RANK_KEYWORD)
+                {
+                    pIterator = new RankTermDocumentIterator(keywordId,
+                                        colID,
+                                        pIndexReader_,
+                                        property,
+                                        propertyId,
+                                        termIndex,
+                                        readPositions,
+                                        (parentAndOrFlag == 1));
+                }
+            }
+
 #if PREFETCH_TERMID
             std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >::iterator constIt
             = termDocReaders.find(keywordId);
@@ -463,7 +502,9 @@ namespace sf1r
                           readPositions,
                           termIndexMapInProperty,
                           pIterator,
-                          termDocReaders
+                          termDocReaders,
+                          isUnigramSearchMode,
+                          1
                       );
                 if (!ret)
                 {
@@ -498,7 +539,9 @@ namespace sf1r
                            readPositions,
                            termIndexMapInProperty,
                            pIterator,
-                           termDocReaders
+                           termDocReaders,
+                           isUnigramSearchMode,
+                           0
                        );
             }
             if (!ret)
