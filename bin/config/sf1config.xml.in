@@ -48,7 +48,7 @@
           <CollectionDataDirectory>default-collection-dir</CollectionDataDirectory>
           <TaxonomyPara topdocnum="100" levels="3" perlevelnum="8" candlabelnum="250" enablenec="n" maxpeopnum="20" maxlocnum="20" maxorgnum="20" />
           <RecommendPara recommendnum="9" popularnum="20" realtimenum="5" />
-          <SimilarityPara docnumlimit="100" termnumlimit="400000" />
+          <SimilarityPara docnumlimit="100" termnumlimit="400000" enableesa="n" />
           <ClassificationPara customizetraining="n" trainingencoding="UTF-8" />
           <!-- index mode for image search
                enableise: whether enable ise. 

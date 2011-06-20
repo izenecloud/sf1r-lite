@@ -203,6 +203,11 @@ private:
      */
     bool computeSimilarity_(izenelib::ir::indexmanager::IndexReader* pIndexReader, const std::vector<std::string>& property_names);
 
+    /**
+     * @brief use explicit semantic analysis for similarity
+     */
+    bool computeSimilarityESA_(const std::vector<std::string>& property_names);
+
 //     void classifyCollection_(izenelib::ir::indexmanager::IndexReader* pIndexReader);
 
     /// Add Tg result.

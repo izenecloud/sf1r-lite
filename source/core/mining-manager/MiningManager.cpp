@@ -18,6 +18,14 @@
 #include "faceted-submanager/ontology_rep.h"
 #include "faceted-submanager/group_manager.h"
 
+#include <idmlib/semantic_space/esa/DocumentRepresentor.h>
+#include <idmlib/semantic_space/esa/ExplicitSemanticInterpreter.h>
+#include <idmlib/similarity/all-pairs-similarity-search/data_set_iterator.h>
+#include <idmlib/similarity/all-pairs-similarity-search/all_pairs_search.h>
+#include <idmlib/similarity/all-pairs-similarity-search/all_pairs_output.h>
+//#include <process/common/CollectionMeta.h>
+//#include <process/common/XmlConfigParser.h>
+
 #include "LabelSynchronizer.h"
 
 #include <directory-manager/DirectoryCookie.h>
@@ -346,6 +354,7 @@ bool MiningManager::open()
 bool MiningManager::DoMiningCollection()
 {
     MEMLOG("[Mining] DoMiningCollection");
+#if 0 /////test
     //do TG
     if ( mining_schema_.tg_enable )
     {
@@ -458,12 +467,19 @@ bool MiningManager::DoMiningCollection()
     //         }
         }
     }
-
+#endif
     //do Similarity
     if ( mining_schema_.sim_enable )
     {
         MEMLOG("[Mining] SIM starting..");
-        computeSimilarity_(index_manager_->getIndexReader(), mining_schema_.sim_properties);
+        if ( miningConfig_.similarity_param.enable_esa == false )
+        {
+        	computeSimilarity_(index_manager_->getIndexReader(), mining_schema_.sim_properties);
+        }
+        else
+        {
+        	computeSimilarityESA_(mining_schema_.sim_properties);
+        }
         MEMLOG("[Mining] SIM finished.");
     }
     return true;
@@ -783,6 +799,64 @@ bool MiningManager::computeSimilarity_(izenelib::ir::indexmanager::IndexReader* 
     }
     return true;
 }
+
+bool MiningManager::computeSimilarityESA_(const std::vector<std::string>& property_names)
+{
+	using namespace idmlib::ssp;
+	using namespace idmlib::sim;
+
+	std::cout << "Start to compute similarity index (ESA), please wait..."<< std::endl;
+	try
+	{
+		std::string colBasePath = sim_path_;
+        size_t pos = colBasePath.find("/collection-data");
+        colBasePath = colBasePath.replace(pos, colBasePath.length(), ""); // xxx
+//		CollectionMeta colMeta;
+//		SF1Config::get()->getCollectionMetaByName(collectionName_,colMeta);
+//		colBasePath = colMeta.getCollectionPath().getBasePath();
+
+        std::string cmaPath;
+        LAPool::getInstance()->get_cma_path(cmaPath);
+
+        std::string esaSimPath = sim_path_+"/esa";
+        std::string esaSimTmpPath = esaSimPath+"/tmp";
+
+        cout <<cmaPath<<endl;
+        cout <<colBasePath<<endl;
+        cout <<esaSimPath<<endl;
+
+        // document representation
+        size_t maxDoc = 0;
+		DocumentRepresentor docRepresentor(colBasePath, cmaPath, esaSimTmpPath, maxDoc);
+		docRepresentor.represent();
+
+		// interpretation
+		std::string wikiIndexdir = system_resource_path_ + "/sim/esa";
+		cout <<wikiIndexdir<<endl;
+		ExplicitSemanticInterpreter esInter(wikiIndexdir, esaSimTmpPath);
+		esInter.interpret(10000, maxDoc);
+
+		// all pairs similarity search
+		string datafile = esaSimTmpPath+"/doc_int.vec1";
+	    boost::shared_ptr<DataSetIterator> dataSetIterator(new SparseVectorSetIterator(datafile));
+	    boost::shared_ptr<DocSimOutput> output(new DocSimOutput(esaSimPath));
+
+	    float thresholdSim = 0.8;
+	    AllPairsSearch allPairs(output, thresholdSim);
+	    allPairs.findAllSimilarPairs(dataSetIterator, maxDoc);
+
+//	    std::vector<boost::shared_ptr<DataSetIterator> > dataSetIteratorList;
+//	    getDataSetIterators(docSetPath, dataSetIteratorList);
+	}
+	catch(std::exception& ex)
+	{
+		std::cerr<<"Exception:"<<ex.what()<<std::endl;
+	}
+	std::cout << "Finish computing similarity index (ESA)." << std::endl;
+
+	return true;
+}
+
 
 bool MiningManager::getSimilarDocIdList(uint32_t documentId, uint32_t maxNum,
                                         std::vector<std::pair<uint32_t, float> >& result)

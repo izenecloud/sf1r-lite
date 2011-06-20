@@ -105,6 +105,7 @@
 				</xs:restriction>
 			</xs:simpleType>
 		</xs:attribute>
+		<xs:attribute name="enableesa" type="YesNoType" use="optional"/>
 	</xs:complexType>
 	<xs:complexType name="ClassificationParaType">
 		<xs:attribute name="customizetraining" type="YesNoType" use="required"/>

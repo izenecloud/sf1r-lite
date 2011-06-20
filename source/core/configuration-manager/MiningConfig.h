@@ -106,12 +106,15 @@ private:
     {
         ar & docnum_limit;
         ar & termnum_limit;
+        ar & enable_esa;
     }
 public:
     /// @brief  the number of docs in idf accumulators.
     uint32_t docnum_limit;
     /// @brief the number of terms in tf accumulators.
     uint32_t termnum_limit;
+    /// @brief whether enable Explicit Semantic Analysis(ESA) for similarity
+    bool enable_esa;
 };
 
 /**
