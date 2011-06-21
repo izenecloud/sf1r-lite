@@ -354,7 +354,6 @@ bool MiningManager::open()
 bool MiningManager::DoMiningCollection()
 {
     MEMLOG("[Mining] DoMiningCollection");
-#if 0 /////test
     //do TG
     if ( mining_schema_.tg_enable )
     {
@@ -467,7 +466,7 @@ bool MiningManager::DoMiningCollection()
     //         }
         }
     }
-#endif
+
     //do Similarity
     if ( mining_schema_.sim_enable )
     {
