@@ -1,4 +1,5 @@
 #include "TopicController.h"
+#include "CollectionHandler.h"
 
 #include <common/Keys.h>
 

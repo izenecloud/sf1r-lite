@@ -5,6 +5,8 @@
  */
 #include "AutoFillController.h"
 
+#include <bundles/querylog/QueryLogSearchService.h>
+
 #include <common/Keys.h>
 
 #include <util/ustring/UString.h>

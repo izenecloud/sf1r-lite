@@ -2,6 +2,8 @@
 
 #include <common/Keys.h>
 
+#include <bundles/querylog/QueryLogSearchService.h>
+
 #include <util/ustring/UString.h>
 
 #include <vector>

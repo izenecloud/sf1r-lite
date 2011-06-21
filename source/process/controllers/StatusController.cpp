@@ -4,6 +4,7 @@
  * @date Created <2010-07-07 10:12:15>
  */
 #include "StatusController.h"
+#include "CollectionHandler.h"
 
 #include <bundles/index/IndexTaskService.h>
 

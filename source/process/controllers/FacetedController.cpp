@@ -1,4 +1,5 @@
 #include "FacetedController.h"
+#include "CollectionHandler.h"
 
 #include <common/Keys.h>
 

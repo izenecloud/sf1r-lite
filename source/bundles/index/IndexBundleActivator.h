@@ -18,6 +18,12 @@ namespace sf1r
 {
 using namespace izenelib::osgi;
 
+class IndexManager;
+class DocumentManager;
+class LAManager;
+class SearchManager;
+class RankingManager;
+
 class IndexBundleActivator : public IBundleActivator, public IServiceTrackerCustomizer
 {
 private:

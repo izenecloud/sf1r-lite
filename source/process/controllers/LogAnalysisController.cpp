@@ -2,6 +2,7 @@
 
 #include <log-manager/SystemEvent.h>
 #include <log-manager/UserQuery.h>
+#include <common/SFLogger.h>
 #include <common/parsers/OrderArrayParser.h>
 #include <common/parsers/ConditionArrayParser.h>
 #include <common/parsers/SelectArrayParser.h>

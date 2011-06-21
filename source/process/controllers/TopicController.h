@@ -7,6 +7,8 @@
  */
 #include "Sf1Controller.h"
 
+#include <util/ustring/UString.h>
+
 #include <string>
 
 namespace sf1r

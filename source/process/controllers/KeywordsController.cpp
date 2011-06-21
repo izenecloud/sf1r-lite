@@ -4,6 +4,7 @@
  * @date Created <2010-06-01 16:04:55>
  */
 #include "KeywordsController.h"
+#include "CollectionHandler.h"
 
 #include <common/Keys.h>
 

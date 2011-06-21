@@ -4,12 +4,8 @@
 #include "IndexBundleConfiguration.h"
 
 #include <directory-manager/DirectoryRotator.h>
-#include <index-manager/IndexManager.h>
 #include <document-manager/Document.h>
-#include <document-manager/DocumentManager.h>
 #include <document-manager/text-summarization-submanager/TextSummarizationSubManager.h>
-#include <la-manager/LAManager.h>
-#include <search-manager/SearchManager.h>
 #include <configuration-manager/PropertyConfig.h>
 #include <configuration-manager/ConfigurationTool.h>
 #include <common/Status.h>
@@ -30,6 +26,10 @@ using izenelib::ir::idmanager::IDManager;
 
 class MiningTaskService;
 class RecommendTaskService;
+class IndexManager;
+class DocumentManager;
+class LAManager;
+class SearchManager;
 class IndexTaskService : public ::izenelib::osgi::IService
 {
     typedef uint32_t CharacterOffset;

@@ -4,6 +4,8 @@
  * @date Created <2011-04-21>
  */
 #include "RecommendController.h"
+#include "CollectionHandler.h"
+
 #include <bundles/recommend/RecommendTaskService.h>
 #include <bundles/recommend/RecommendSearchService.h>
 #include <recommend-manager/User.h>

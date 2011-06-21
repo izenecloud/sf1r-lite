@@ -7,14 +7,10 @@
 #include <common/type_defs.h>
 #include <common/Status.h>
 
-#include <search-manager/SearchManager.h>
-#include <search-manager/PersonalizedSearchInfo.h>
-#include <ranking-manager/RankingManager.h>
+#include <query-manager/SearchKeywordOperation.h>
 #include <query-manager/ActionItem.h>
-#include <index-manager/IndexManager.h>
 #include <document-manager/Document.h>
-#include <document-manager/DocumentManager.h>
-#include <la-manager/LAManager.h>
+
 #include <ir/id_manager/IDManager.h>
 #include <question-answering/QuestionAnalysis.h>
 
@@ -22,11 +18,19 @@
 
 #include <boost/shared_ptr.hpp>
 
+
 namespace sf1r
 {
+using izenelib::ir::idmanager::IDManager;
+
 class MiningSearchService;
 class RecommendSearchService;
 class User;
+class IndexManager;
+class DocumentManager;
+class LAManager;
+class SearchManager;
+class RankingManager;
 class IndexSearchService : public ::izenelib::osgi::IService
 {
 public:

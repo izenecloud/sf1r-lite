@@ -4,6 +4,8 @@
  * @date Created <2011-01-25 18:40:12>
  */
 #include "Sf1Controller.h"
+#include "CollectionHandler.h"
+
 #include <common/Keys.h>
 #include <common/XmlConfigParser.h>
 #include <common/CollectionManager.h>
@@ -15,7 +17,7 @@ using driver::Keys;
 using namespace izenelib::driver;
 
 Sf1Controller::Sf1Controller()
-        : collectionHandler_(0)
+    : collectionHandler_(0)
 {
 }
 

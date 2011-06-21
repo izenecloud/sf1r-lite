@@ -9,6 +9,9 @@
 // boost::date_time
 #include <boost/date_time.hpp>
 
+#include <bundles/index/IndexSearchService.h>
+#include <bundles/mining/MiningSearchService.h>
+
 #include "DocumentsSearchHandler.h"
 
 #include <parsers/SelectParser.h>

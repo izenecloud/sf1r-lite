@@ -6,7 +6,6 @@
  * @date Created <2010-05-31 14:11:35>
  */
 #include "Sf1Controller.h"
-#include <bundles/querylog/QueryLogSearchService.h>
 
 namespace sf1r
 {
@@ -19,6 +18,7 @@ namespace sf1r
  *
  * Gets list of popular keywords starting with specified prefix.
  */
+class QueryLogSearchService; 
 class AutoFillController : public Sf1Controller
 {
 public:

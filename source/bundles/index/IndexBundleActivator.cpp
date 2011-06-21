@@ -1,8 +1,14 @@
 #include "IndexBundleActivator.h"
 
 #include <common/SFLogger.h>
-#include <la-manager/LAPool.h>
 #include <query-manager/QueryManager.h>
+#include <index-manager/IndexManager.h>
+#include <search-manager/SearchManager.h>
+#include <search-manager/PersonalizedSearchInfo.h>
+#include <ranking-manager/RankingManager.h>
+#include <document-manager/DocumentManager.h>
+#include <la-manager/LAManager.h>
+#include <la-manager/LAPool.h>
 
 #include <util/singleton.h>
 

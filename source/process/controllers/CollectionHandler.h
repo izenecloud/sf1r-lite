@@ -7,10 +7,7 @@
  */
 
 #include <bundles/index/IndexBundleConfiguration.h>
-#include <bundles/index/IndexSearchService.h>
-#include <bundles/index/IndexTaskService.h>
 #include <bundles/mining/MiningBundleConfiguration.h>
-#include <bundles/mining/MiningSearchService.h>
 #include <bundles/recommend/RecommendSchema.h>
 
 #include <util/driver/Request.h>
@@ -20,10 +17,11 @@
 
 namespace sf1r
 {
-
 class RecommendTaskService;
 class RecommendSearchService;
-
+class IndexTaskService;
+class IndexSearchService;
+class MiningSearchService;
 /**
  * @brief CollectionHandler
  *

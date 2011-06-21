@@ -13,6 +13,8 @@
 
 #include <memory> // for std::auto_ptr
 
+#include <bundles/querylog/QueryLogSearchService.h>
+
 #include "controllers/AutoFillController.h"
 #include "controllers/CommandsController.h"
 #include "controllers/KeywordsController.h"
@@ -25,6 +27,7 @@
 #include "controllers/TopicController.h"
 #include "controllers/RecommendController.h"
 #include "controllers/ServiceController.h"
+
 
 namespace sf1r
 {

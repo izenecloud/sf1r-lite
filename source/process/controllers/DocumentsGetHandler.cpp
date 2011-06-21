@@ -3,6 +3,9 @@
  * @author Ian Yang
  * @date Created <2010-06-02 16:15:39>
  */
+#include <bundles/index/IndexSearchService.h>
+#include <bundles/mining/MiningSearchService.h>
+
 #include "DocumentsGetHandler.h"
 
 #include <renderers/DocumentsRenderer.h>

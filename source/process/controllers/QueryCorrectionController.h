@@ -4,8 +4,6 @@
 
 #include "Sf1Controller.h"
 
-#include <bundles/querylog/QueryLogSearchService.h>
-
 namespace sf1r
 {
 
@@ -17,6 +15,7 @@ namespace sf1r
  *
  * Gets list of popular keywords starting with specified prefix.
  */
+class  QueryLogSearchService;
 class QueryCorrectionController : public Sf1Controller
 {
 public:

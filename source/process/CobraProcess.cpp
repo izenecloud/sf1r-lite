@@ -4,6 +4,7 @@
 #include <common/SFLogger.h>
 #include <la-manager/LAPool.h>
 #include <license-manager/LicenseManager.h>
+#include <query-manager/QMCommonFunc.h>
 
 #include <bundles/querylog/QueryLogBundleConfiguration.h>
 #include <bundles/querylog/QueryLogBundleActivator.h>
@@ -11,6 +12,7 @@
 #include <OnSignal.h>
 #include <common/XmlConfigParser.h>
 #include <common/CollectionManager.h>
+#include <controllers/CollectionHandler.h>
 #include <controllers/Sf1Controller.h>
 
 #include <util/ustring/UString.h>

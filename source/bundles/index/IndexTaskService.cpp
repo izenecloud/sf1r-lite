@@ -1,6 +1,11 @@
 #include "IndexTaskService.h"
 #include "IndexBundleHelper.h"
 
+#include <index-manager/IndexManager.h>
+#include <document-manager/DocumentManager.h>
+#include <la-manager/LAManager.h>
+#include <search-manager/SearchManager.h>
+
 #include <bundles/mining/MiningTaskService.h>
 #include <bundles/recommend/RecommendTaskService.h>
 

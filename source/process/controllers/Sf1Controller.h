@@ -7,10 +7,6 @@
  */
 #include <util/driver/Controller.h>
 
-#include <bundles/index/IndexSearchService.h>
-
-#include "CollectionHandler.h"
-
 namespace sf1r
 {
 
@@ -24,6 +20,7 @@ namespace sf1r
  * - preprocess
  *   - checkCollectionAcl : Check collection level ACL
  */
+class CollectionHandler; 
 class Sf1Controller : public ::izenelib::driver::Controller
 {
 public:

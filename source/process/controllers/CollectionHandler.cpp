@@ -3,14 +3,19 @@
  * @author Ian Yang
  * @date Created <2011-01-25 18:40:12>
  */
-#include "CollectionHandler.h"
-#include "DocumentsGetHandler.h"
-#include "DocumentsSearchHandler.h"
 #include <process/common/XmlConfigParser.h>
 #include <process/common/CollectionManager.h>
 
+#include <bundles/index/IndexSearchService.h>
+#include <bundles/index/IndexTaskService.h>
+#include <bundles/mining/MiningSearchService.h>
 #include <bundles/recommend/RecommendTaskService.h>
 #include <bundles/recommend/RecommendSearchService.h>
+
+#include "CollectionHandler.h"
+#include "DocumentsGetHandler.h"
+#include "DocumentsSearchHandler.h"
+
 #include <common/Keys.h>
 #include <common/JobScheduler.h>
 

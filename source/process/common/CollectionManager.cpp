@@ -1,5 +1,6 @@
 #include "CollectionManager.h"
 #include "CollectionMeta.h"
+#include <controllers/CollectionHandler.h>
 
 #include <bundles/index/IndexBundleActivator.h>
 #include <bundles/mining/MiningBundleActivator.h>
