@@ -8,6 +8,8 @@
 #include <common/Utilities.h>
 #include <document-manager/DocumentLog.h>
 #include <license-manager/LicenseManager.h>
+#include <process/common/CollectionMeta.h>
+#include <process/common/XmlConfigParser.h>
 
 #include <util/profiler/ProfilerGroup.h>
 
@@ -613,25 +615,18 @@ bool IndexTaskService::doBuildCollection_(const std::string& fileName, int op, u
 
         // make propertyNameList for ScdParser::iterator
         std::vector<string> propertyNameList;
-        std::set<PropertyConfig, PropertyComp>::const_iterator propertyIter;
-        const std::set<PropertyConfig, PropertyComp>& propertyList = bundleConfig_->schema_;
+        CollectionMeta meta;
+        SF1Config::get()->getCollectionMetaByName(bundleConfig_->collectionName_, meta);
+
+        const std::set<PropertyConfigBase, PropertyBaseComp>& propertyList = meta.schema_;
+        std::set<PropertyConfigBase, PropertyBaseComp>::const_iterator propertyIter;
         for(propertyIter = propertyList.begin(); propertyIter != propertyList.end(); propertyIter++)
         {
-            if (propertyIter->getName() == propertyIter->getOriginalName())
-            {
-                string propertyName = propertyIter->getName();
-                boost::to_lower(propertyName);
-                propertyNameList.push_back(propertyName);
-            }
+            string propertyName = propertyIter->propertyName_;
+            boost::to_lower(propertyName);
+            propertyNameList.push_back(propertyName);
         }
-        if ( find(propertyNameList.begin(), propertyNameList.end(), "docid") == propertyNameList.end() )
-        {
-            propertyNameList.push_back("docid");
-        }
-        if ( find(propertyNameList.begin(), propertyNameList.end(), "date") == propertyNameList.end() )
-        {
-            propertyNameList.push_back("date");
-        }
+
 
         uint32_t n = 0;
         long lastOffset = 0;
