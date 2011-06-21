@@ -1015,7 +1015,7 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
     ///we update property Id here
     ///It is because that IndexBundle might add properties "xx_unigram", in this case, we must keep the propertyId consistent 
     ///between IndexBundle and other bundles
-    collectionMeta.numberProperty();
+    ///collectionMeta.numberProperty();
     indexBundleConfig.numberProperty();
 
     // map<property name, weight>
@@ -1450,10 +1450,7 @@ void CollectionConfig::parseIndexSchemaProperty(
 
                 /// Attention
                 /// update CollectionMeta
-                PropertyConfigBase propertyConfigBase;
-                propertyConfigBase.propertyName_ = propertyName+"_unigram";
-                propertyConfigBase.propertyType_ = propertyConfig.getType();
-                collectionMeta.insertProperty( propertyConfigBase );
+                /// xxx, Alais-ed property no need to be insert into collectionMeta
             }
         }
 
