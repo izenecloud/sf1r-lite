@@ -435,7 +435,28 @@ public:
             return true;
         return false;
     }
-    
+
+    bool checkCollectionAndACL(
+        const std::string& collectionName,
+        const std::string& aclTokens)
+    {
+        std::map<std::string, CollectionMeta>::const_iterator it =
+            collectionMetaMap_.find(collectionName);
+
+        if(it != collectionMetaMap_.end())
+        {
+            if(!aclTokens.empty())
+            {
+                if(!it->second.getAcl().check(aclTokens))
+                    return false;
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+	
     const std::map<std::string, CollectionMeta>& getCollectionMetaMap()
     {
         return collectionMetaMap_;

@@ -36,32 +36,13 @@ bool Sf1Controller::checkCollectionAcl()
     Value::StringType collection = asString(
                                        this->request()[Keys::collection]
                                    );
-    // check only collection meta info can be found
-    if (!SF1Config::get()->checkCollectionExist(collection))
-    {
-        this->response().addError("Collection does not exist");
-        return false;
-    }
-
-    CollectionMeta meta;
-    SF1Config::get()->getCollectionMetaByName(collection,meta);
-
-    //if (!b)
-    //{
-    //    this->response().addError(
-    //        "Failed to send request to given collection."
-     //   );
-     //   return false;
-    //}
-
-    collectionHandler_ = CollectionManager::get()->findHandler(collection);
-
-    if (!meta.getAcl().check(this->request().aclTokens()))
+    if (!SF1Config::get()->checkCollectionAndACL(collection, this->request().aclTokens()))
     {
         this->response().addError("Collection access denied");
         return false;
     }
 
+    collectionHandler_ = CollectionManager::get()->findHandler(collection);
     return true;
 }
 
