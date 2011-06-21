@@ -39,7 +39,8 @@ bool Sf1Controller::checkCollectionAcl()
     // check only collection meta info can be found
     if (!SF1Config::get()->checkCollectionExist(collection))
     {
-        return true;
+        this->response().addError("Collection does not exist");
+        return false;
     }
 
     CollectionMeta meta;
