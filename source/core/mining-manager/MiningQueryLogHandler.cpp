@@ -23,6 +23,7 @@ MiningQueryLogHandler::MiningQueryLogHandler()
 
 MiningQueryLogHandler::~MiningQueryLogHandler()
 {
+    izenelib::util::Scheduler::removeJob("MiningQueryLogHandler");
 }
 
 void MiningQueryLogHandler::SetParam(uint32_t wait_sec, uint32_t days)

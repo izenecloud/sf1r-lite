@@ -392,6 +392,7 @@ RecommendTaskService::RecommendTaskService(
 
 RecommendTaskService::~RecommendTaskService()
 {
+    izenelib::util::Scheduler::removeJob("RecommendTaskService");
     delete jobScheduler_;
 }
 
