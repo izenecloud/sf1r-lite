@@ -24,7 +24,7 @@ namespace sf1r
  */
 using driver::Keys;
 using namespace ::izenelib::driver;
-class LogAnalysisController : public Sf1Controller
+class LogAnalysisController : public ::izenelib::driver::Controller
 {
 public:
     void system_events();

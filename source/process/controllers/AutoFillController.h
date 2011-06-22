@@ -19,7 +19,7 @@ namespace sf1r
  * Gets list of popular keywords starting with specified prefix.
  */
 class QueryLogSearchService; 
-class AutoFillController : public Sf1Controller
+class AutoFillController : public ::izenelib::driver::Controller
 {
 public:
     AutoFillController();

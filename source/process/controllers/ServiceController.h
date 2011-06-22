@@ -19,7 +19,7 @@ namespace sf1r {
 /**
  * @brief Controller \b service
  */
-class ServiceController : public Sf1Controller
+class ServiceController : public ::izenelib::driver::Controller
 {
 public:
     void process_overdue();

@@ -16,7 +16,7 @@ namespace sf1r
  * Gets list of popular keywords starting with specified prefix.
  */
 class  QueryLogSearchService;
-class QueryCorrectionController : public Sf1Controller
+class QueryCorrectionController : public ::izenelib::driver::Controller
 {
 public:
     QueryCorrectionController();
