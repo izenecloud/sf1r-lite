@@ -113,7 +113,7 @@ bool IndexSearchService::getSearchResult(
     std::vector<std::vector<izenelib::util::UString> > propertyQueryTermList;
     if(!buildQuery(actionOperation, propertyQueryTermList, resultItem, personalSearchInfo))
     {
-        return false;
+        return true;
     }
 
     START_PROFILER ( searchIndex );
@@ -141,7 +141,7 @@ bool IndexSearchService::getSearchResult(
             propertyQueryTermList.clear();
             if(!buildQuery(actionOperation, propertyQueryTermList, resultItem, personalSearchInfo))
             {
-                return false;
+                return true;
             }
             if(! searchManager_->search(
                                         actionOperation,
@@ -164,7 +164,7 @@ bool IndexSearchService::getSearchResult(
         propertyQueryTermList.clear();
         if(!buildQuery(actionOperation, propertyQueryTermList, resultItem, personalSearchInfo))
         {
-            return false;
+            return true;
         }
 
         if(! searchManager_->search(
