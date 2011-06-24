@@ -19,7 +19,7 @@ namespace sf1r
  *
  * Various features for test
  */
-class TestController : public Sf1Controller
+class TestController : public ::izenelib::driver::Controller
 {
 public:
     void echo();
