@@ -27,6 +27,7 @@
 
 #include <log-manager/UserQuery.h>
 #include <query-manager/QueryManager.h>
+#include <mining-manager/faceted-submanager/group_label_result.h>
 
 #include <util/swap.h>
 
@@ -300,48 +301,21 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInGroup(
 {
     BOOST_ASSERT(!actionItem_.env_.groupLabels_.empty());
 
-    izenelib::util::UString propName(
-        actionItem_.env_.groupLabels_[0].first,
-        izenelib::util::UString::UTF_8
-    );
-    izenelib::util::UString propValue(
-        actionItem_.env_.groupLabels_[0].second,
-        izenelib::util::UString::UTF_8
-    );
-    BOOST_ASSERT(!propName.empty() && !propValue.empty());
+    faceted::GroupLabelResult labelResult(miaResult.groupRep_);
+    const std::pair<std::string, std::string>& labelPair = actionItem_.env_.groupLabels_[0];
+    const std::vector<docid_t>& groupDocList = labelResult.selectLabel(labelPair.first, labelPair.second);
 
-    std::size_t totalCount = 0;
-
-    typedef std::list<sf1r::faceted::OntologyRepItem> GroupRepList;
-    const GroupRepList& groupList = miaResult.groupRep_.item_list;
-    GroupRepList::const_iterator groupIt =
-        std::find_if(groupList.begin(), groupList.end(),
-            boost::bind(&sf1r::faceted::OntologyRepItem::level, _1) == 0 &&
-            boost::bind(&sf1r::faceted::OntologyRepItem::text, _1) == propName);
-
-    if (groupIt != groupList.end())
+    std::size_t totalCount = groupDocList.size();
+    if (start < totalCount)
     {
-        ++groupIt;
-        groupIt = std::find_if(groupIt, groupList.end(),
-            boost::bind(&sf1r::faceted::OntologyRepItem::level, _1) == 0 ||
-            boost::bind(&sf1r::faceted::OntologyRepItem::text, _1) == propValue);
-
-        if (groupIt != groupList.end() && groupIt->level != 0)
+        std::vector<docid_t>::const_iterator startIt = groupDocList.begin() + start;
+        std::vector<docid_t>::const_iterator endIt = startIt + count;
+        if (endIt > groupDocList.end())
         {
-            const std::vector<docid_t>& groupDocList = groupIt->doc_id_list;
-            totalCount = groupDocList.size();
-            if (start < totalCount)
-            {
-                std::vector<docid_t>::const_iterator startIt = groupDocList.begin() + start;
-                std::vector<docid_t>::const_iterator endIt = startIt + count;
-                if (endIt > groupDocList.end())
-                {
-                    endIt = groupDocList.end();
-                }
-
-                idListInPage.insert(idListInPage.begin(), startIt, endIt);
-            }
+            endIt = groupDocList.end();
         }
+
+        idListInPage.insert(idListInPage.begin(), startIt, endIt);
     }
 
     return totalCount;

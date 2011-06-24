@@ -1,4 +1,5 @@
 #include "group_manager.h"
+#include "group_label.h"
 #include <mining-manager/util/FSUtil.hpp>
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningException.hpp>
@@ -10,42 +11,11 @@
 using namespace sf1r::faceted;
 
 #define DEBUG_PRINT_GROUP 0
-#define DEBUG_GROUPREP_FROM_DM 0
 
 namespace
 {
 
-/**
- * Check whether @p v1 is the parent node of @p v2.
- * @param parentTable table containing parent node for each node, 0 for root node
- * @param v1 node 1
- * @param v2 node 2
- * @return true for @p v1 is the parent node of @p v2, otherwise false is returned,
- *         when @p v1 equals to @p v2, true is returned,
- *         when either @p v1 or @p v2 is zero for invalid id, false is returned.
- */
-bool isParentValue(
-    const std::vector<PropValueTable::pvid_t>& parentTable,
-    PropValueTable::pvid_t v1,
-    PropValueTable::pvid_t v2
-)
-{
-    if (v1 == 0 || v2 == 0)
-        return false;
-
-    if (v2 >= parentTable.size())
-        return (v2 == v1);
-
-    while (v2 != 0)
-    {
-        if (v2 == v1)
-            return true;
-
-        v2 = parentTable[v2];
-    }
-
-    return false;
-}
+const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
 
 }
 
@@ -175,15 +145,102 @@ bool GroupManager::processCollection()
 bool GroupManager::getGroupRep(
     const std::vector<unsigned int>& docIdList,
     const std::vector<std::string>& groupPropertyList,
-    const std::vector<std::pair<std::string, std::string> >& groupLabelList,
+    const GroupLabel* groupLabel,
     faceted::OntologyRep& groupRep
 )
 {
-#if DEBUG_GROUPREP_FROM_DM
-    return getGroupRepFromDocumentManager(docIdList, groupPropertyList, groupLabelList, groupRep);
-#else
-    return getGroupRepFromTable(docIdList, groupPropertyList, groupLabelList, groupRep);
-#endif
+    typedef std::vector<docid_t> DocIdList;
+    typedef std::map<PropValueTable::pvid_t, DocIdList> DocIdMap;
+
+    std::list<sf1r::faceted::OntologyRepItem>& itemList = groupRep.item_list;
+
+    for (std::vector<std::string>::const_iterator nameIt = groupPropertyList.begin();
+        nameIt != groupPropertyList.end(); ++nameIt)
+    {
+        PropValueMap::const_iterator pvIt = propValueMap_.find(*nameIt);
+        if (pvIt == propValueMap_.end())
+        {
+            LOG(ERROR) << "in GroupManager::getGroupRepFromTable: group index file is not loaded for group property " << *nameIt;
+            return false;
+        }
+
+        const PropValueTable& pvTable = pvIt->second;
+        const std::vector<PropValueTable::pvid_t>& idTable = pvTable.propIdTable();
+        const std::vector<PropValueTable::pvid_t>& parentTable = pvTable.parentIdTable();
+        DocIdMap docIdMap;
+
+        for (std::vector<unsigned int>::const_iterator docIt = docIdList.begin();
+            docIt != docIdList.end(); ++docIt)
+        {
+            docid_t docId = *docIt;
+
+            // this doc has not built group index data
+            if (docId >= idTable.size())
+                continue;
+
+            PropValueTable::pvid_t pvId = idTable[docId];
+            if (pvId != 0)
+            {
+                if (!groupLabel || groupLabel->checkDocExceptProp(docId, *nameIt))
+                {
+                    docIdMap[pvId].push_back(docId);
+
+                    if (pvId < parentTable.size())
+                    {
+                        pvId = parentTable[pvId];
+                        while (pvId != 0)
+                        {
+                            docIdMap[pvId].push_back(docId);
+                            pvId = parentTable[pvId];
+                        }
+                    }
+                }
+            }
+        }
+
+        // property name as root node
+        itemList.push_back(sf1r::faceted::OntologyRepItem());
+        sf1r::faceted::OntologyRepItem& propItem = itemList.back();
+        propItem.text.assign(*nameIt, ENCODING_TYPE);
+
+        // nodes at configured level
+        const std::list<OntologyRepItem>& treeList = pvTable.valueTree().item_list;
+        for (std::list<OntologyRepItem>::const_iterator it = treeList.begin();
+            it != treeList.end(); ++it)
+        {
+            DocIdMap::iterator mapIt = docIdMap.find(it->id);
+            if (mapIt != docIdMap.end())
+            {
+                itemList.push_back(*it);
+                faceted::OntologyRepItem& valueItem = itemList.back();
+                valueItem.doc_id_list.swap(mapIt->second);
+                valueItem.doc_count = valueItem.doc_id_list.size();
+
+                if (valueItem.level == 1)
+                {
+                    propItem.doc_count += valueItem.doc_count;
+                }
+
+                docIdMap.erase(mapIt);
+            }
+        }
+
+        // other nodes are appended as level 1
+        for (DocIdMap::iterator docListIt = docIdMap.begin();
+            docListIt != docIdMap.end(); ++docListIt)
+        {
+            itemList.push_back(sf1r::faceted::OntologyRepItem());
+            sf1r::faceted::OntologyRepItem& valueItem = itemList.back();
+            valueItem.level = 1;
+            valueItem.text = pvTable.propValueStr(docListIt->first);
+            valueItem.doc_id_list.swap(docListIt->second);
+            valueItem.doc_count = valueItem.doc_id_list.size();
+
+            propItem.doc_count += valueItem.doc_count;
+        }
+    }
+
+    return true;
 }
 
 bool GroupManager::getGroupRepFromDocumentManager(
@@ -205,7 +262,7 @@ bool GroupManager::getGroupRepFromDocumentManager(
     for (std::size_t i = 0; i < groupLabelList.size(); ++i)
     {
         condList[i].first = groupLabelList[i].first;
-        condList[i].second.assign(groupLabelList[i].second, izenelib::util::UString::UTF_8);
+        condList[i].second.assign(groupLabelList[i].second, ENCODING_TYPE);
     }
 
     for (std::vector<unsigned int>::const_iterator docIt = docIdList.begin();
@@ -248,7 +305,7 @@ bool GroupManager::getGroupRepFromDocumentManager(
 
 #if DEBUG_PRINT_GROUP
                     std::string utf8Str;
-                    value.convertString(utf8Str, izenelib::util::UString::UTF_8);
+                    value.convertString(utf8Str, ENCODING_TYPE);
                     std::cout << *propIt << " value: " << utf8Str
                               << ", doc count: " << propertyMap[*propIt][value].size() << std::endl;
 #endif
@@ -277,7 +334,7 @@ bool GroupManager::getGroupRepFromDocumentManager(
     {
         itemList.push_back(sf1r::faceted::OntologyRepItem());
         sf1r::faceted::OntologyRepItem& propItem = itemList.back();
-        propItem.text.assign(*nameIt, izenelib::util::UString::UTF_8);
+        propItem.text.assign(*nameIt, ENCODING_TYPE);
 
         PropertyMap::iterator propMapIt = propertyMap.find(*nameIt);
         if (propMapIt != propertyMap.end())
@@ -301,137 +358,32 @@ bool GroupManager::getGroupRepFromDocumentManager(
     return true;
 }
 
-bool GroupManager::getGroupRepFromTable(
-    const std::vector<unsigned int>& docIdList,
-    const std::vector<std::string>& groupPropertyList,
-    const std::vector<std::pair<std::string, std::string> >& groupLabelList,
-    faceted::OntologyRep& groupRep
-)
+GroupLabel* GroupManager::createGroupLabel(
+    const std::vector<std::pair<std::string, std::string> >& groupLabelList
+) const
 {
-    typedef std::vector<docid_t> DocIdList;
-    typedef std::map<PropValueTable::pvid_t, DocIdList> DocIdMap;
-
     // a condition pair of value table and target value id
-    typedef std::pair<const PropValueTable*, PropValueTable::pvid_t> CondPair;
-    typedef std::vector<CondPair> CondList;
-    CondList condList;
+    GroupLabel::CondList condList;
     for (std::size_t i = 0; i < groupLabelList.size(); ++i)
     {
         PropValueMap::const_iterator pvIt = propValueMap_.find(groupLabelList[i].first);
         if (pvIt == propValueMap_.end())
         {
             LOG(ERROR) << "in GroupManager::getGroupRepFromTable: group index file is not loaded for label property " << groupLabelList[i].first;
-            return false;
+            break;
         }
 
         const PropValueTable& pvTable = pvIt->second;
-        izenelib::util::UString ustr(groupLabelList[i].second, izenelib::util::UString::UTF_8);
+        izenelib::util::UString ustr(groupLabelList[i].second, ENCODING_TYPE);
         PropValueTable::pvid_t pvId = pvTable.propValueId(ustr);
-        condList.push_back(CondPair(&pvTable, pvId));
+        condList.push_back(GroupLabel::CondPair(&pvTable, pvId));
     }
 
-    std::list<sf1r::faceted::OntologyRepItem>& itemList = groupRep.item_list;
-
-    for (std::vector<std::string>::const_iterator nameIt = groupPropertyList.begin();
-        nameIt != groupPropertyList.end(); ++nameIt)
+    if (!condList.empty())
     {
-        PropValueMap::const_iterator pvIt = propValueMap_.find(*nameIt);
-        if (pvIt == propValueMap_.end())
-        {
-            LOG(ERROR) << "in GroupManager::getGroupRepFromTable: group index file is not loaded for group property " << *nameIt;
-            return false;
-        }
-
-        const PropValueTable& pvTable = pvIt->second;
-        const std::vector<PropValueTable::pvid_t>& idTable = pvTable.propIdTable();
-        const std::vector<PropValueTable::pvid_t>& parentTable = pvTable.parentIdTable();
-        DocIdMap docIdMap;
-
-        for (std::vector<unsigned int>::const_iterator docIt = docIdList.begin();
-            docIt != docIdList.end(); ++docIt)
-        {
-            docid_t docId = *docIt;
-            if (docId < idTable.size())
-            {
-                PropValueTable::pvid_t pvId = idTable[docId];
-                if (pvId != 0)
-                {
-                    bool isMeetCond = true;
-                    for (CondList::const_iterator condIt = condList.begin();
-                        condIt != condList.end(); ++condIt)
-                    {
-                        const PropValueTable* condPVTable = condIt->first;
-                        if (*nameIt != condPVTable->propName())
-                        {
-                            const std::vector<PropValueTable::pvid_t>& condIdTable = condPVTable->propIdTable();
-                            if (docId < condIdTable.size()
-                                && isParentValue(condPVTable->parentIdTable(), condIt->second, condIdTable[docId]) == false)
-                            {
-                                isMeetCond = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (isMeetCond)
-                    {
-                        docIdMap[pvId].push_back(docId);
-
-                        if (pvId < parentTable.size())
-                        {
-                            pvId = parentTable[pvId];
-                            while (pvId != 0)
-                            {
-                                docIdMap[pvId].push_back(docId);
-                                pvId = parentTable[pvId];
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // property name as root node
-        itemList.push_back(sf1r::faceted::OntologyRepItem());
-        sf1r::faceted::OntologyRepItem& propItem = itemList.back();
-        propItem.text.assign(*nameIt, izenelib::util::UString::UTF_8);
-
-        // nodes at configured level
-        const std::list<OntologyRepItem>& treeList = pvTable.valueTree().item_list;
-        for (std::list<OntologyRepItem>::const_iterator it = treeList.begin();
-            it != treeList.end(); ++it)
-        {
-            DocIdMap::iterator mapIt = docIdMap.find(it->id);
-            if (mapIt != docIdMap.end())
-            {
-                itemList.push_back(*it);
-                faceted::OntologyRepItem& valueItem = itemList.back();
-                valueItem.doc_id_list.swap(mapIt->second);
-                valueItem.doc_count = valueItem.doc_id_list.size();
-
-                if (valueItem.level == 1)
-                {
-                    propItem.doc_count += valueItem.doc_count;
-                }
-
-                docIdMap.erase(mapIt);
-            }
-        }
-
-        // other nodes are appended as level 1
-        for (DocIdMap::iterator docListIt = docIdMap.begin();
-            docListIt != docIdMap.end(); ++docListIt)
-        {
-            itemList.push_back(sf1r::faceted::OntologyRepItem());
-            sf1r::faceted::OntologyRepItem& valueItem = itemList.back();
-            valueItem.level = 1;
-            valueItem.text = pvTable.propValueStr(docListIt->first);
-            valueItem.doc_id_list.swap(docListIt->second);
-            valueItem.doc_count = valueItem.doc_id_list.size();
-
-            propItem.doc_count += valueItem.doc_count;
-        }
+        return new GroupLabel(condList);
     }
 
-    return true;
+    return NULL;
 }
+

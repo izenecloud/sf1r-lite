@@ -61,5 +61,15 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
   ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_group_manager")
+
+  ADD_EXECUTABLE(t_attr_manager
+    Runner.cpp
+    t_attr_manager.cc
+  )
+  TARGET_LINK_LIBRARIES(t_attr_manager ${libs})
+  SET_TARGET_PROPERTIES(t_attr_manager PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_attr_manager")
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
 

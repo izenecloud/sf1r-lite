@@ -9,6 +9,7 @@
 #include <document-manager/DocumentManager.h>
 #include <document-manager/Document.h>
 #include <mining-manager/faceted-submanager/group_manager.h>
+#include <mining-manager/faceted-submanager/group_label.h>
 
 #include <stdlib.h>
 
@@ -17,6 +18,7 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include <string>
 #include <vector>
@@ -25,7 +27,6 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
-#include <map>
 
 using namespace std;
 using namespace boost;
@@ -266,8 +267,6 @@ void makeSchema(std::set<PropertyConfig, PropertyComp>& propertyConfig)
 DocumentManager*
 createDocumentManager()
 {
-    boost::filesystem::remove_all(TEST_DIR_STR);
-
     bfs::path dmPath(bfs::path(TEST_DIR_STR) / "dm/");
     bfs::create_directories(dmPath);
     std::set<PropertyConfig, PropertyComp> propertyConfig;
@@ -402,7 +401,8 @@ void checkGroupManager(
     std::vector<std::pair<std::string, std::string> > labelList;
     BOOST_TEST_MESSAGE("check label size: " << labelList.size());
     faceted::OntologyRep groupRep;
-    BOOST_CHECK(groupManager->getGroupRep(docIdList, getPropList, labelList, groupRep));
+    boost::scoped_ptr<faceted::GroupLabel> groupLabelPtr(groupManager->createGroupLabel(labelList));
+    BOOST_CHECK(groupManager->getGroupRep(docIdList, getPropList, groupLabelPtr.get(), groupRep));
 
     PropertyMap propMap;
     createPropertyMap(docInputVec, labelList, propMap);
@@ -413,7 +413,8 @@ void checkGroupManager(
     labelList.push_back(std::pair<std::string, std::string>(PROP_NAME_GROUP_INT, "2"));
     BOOST_TEST_MESSAGE("check label size: " << labelList.size());
     groupRep.item_list.clear();
-    BOOST_CHECK(groupManager->getGroupRep(docIdList, getPropList, labelList, groupRep));
+    groupLabelPtr.reset(groupManager->createGroupLabel(labelList));
+    BOOST_CHECK(groupManager->getGroupRep(docIdList, getPropList, groupLabelPtr.get(), groupRep));
 
     propMap.clear();
     createPropertyMap(docInputVec, labelList, propMap);
@@ -428,6 +429,8 @@ BOOST_AUTO_TEST_SUITE(GroupManager_test)
 
 BOOST_AUTO_TEST_CASE(getGroupRep)
 {
+    boost::filesystem::remove_all(TEST_DIR_STR);
+
     DocumentManager* documentManager = createDocumentManager();
     BOOST_REQUIRE(documentManager != NULL);
 
