@@ -68,4 +68,27 @@
       ]
     }
   ]
+
+  "attr": [
+    { "document_count": 10,
+      "attr_name": "品牌",
+      "labels": [
+        { "label": "阿依莲",
+          "document_count": 7},
+        { "label": "淑女屋",
+          "document_count": 3}
+      ]
+    },
+    { "document_count": 8,
+      "attr_name": "尺码",
+      "labels": [
+        { "label": "L",
+          "document_count": 5},
+        { "label": "M",
+          "document_count": 4},
+        { "label": "XL",
+          "document_count": 3}
+      ]
+    }
+  ]
 }

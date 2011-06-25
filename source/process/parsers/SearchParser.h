@@ -89,6 +89,15 @@ public:
         return groupLabels_;
     }
 
+    std::vector<std::pair<std::string, std::string> >& mutableAttrLabels()
+    {
+        return attrLabels_;
+    }
+    const std::vector<std::pair<std::string, std::string> >& attrLabels() const
+    {
+        return attrLabels_;
+    }
+
     bool logKeywords() const
     {
         return logKeywords_;
@@ -122,6 +131,7 @@ private:
     std::string nameEntityType_;
     std::string nameEntityItem_;
     std::vector<std::pair<std::string, std::string> > groupLabels_; // <property name, value>
+    std::vector<std::pair<std::string, std::string> > attrLabels_; // <attribute name, value>
     bool logKeywords_;
     std::vector<std::string> properties_;
     RankingType::TextRankingType rankingModel_;

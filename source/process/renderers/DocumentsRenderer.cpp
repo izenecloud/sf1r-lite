@@ -359,4 +359,42 @@ void DocumentsRenderer::renderGroup(
     }
 }
 
+void DocumentsRenderer::renderAttr(
+    const KeywordSearchResult& miaResult,
+    Value& attrResult
+)
+{
+    const std::list<sf1r::faceted::OntologyRepItem>& item_list = miaResult.attrRep_.item_list;
+    if (item_list.empty())
+    {
+        return;
+    }
+
+    std::string convertBuffer;
+    Value* parent = NULL;
+    for (std::list<sf1r::faceted::OntologyRepItem>::const_iterator it = item_list.begin();
+        it != item_list.end(); ++it)
+    {
+        const sf1r::faceted::OntologyRepItem& item = *it;
+        item.text.convertString(convertBuffer, kEncoding);
+
+        // attribute name
+        if (item.level == 0)
+        {
+            Value& newLabel = attrResult();
+            newLabel[Keys::attr_name] = convertBuffer;
+            newLabel[Keys::document_count] = item.doc_count;
+            parent = &newLabel[Keys::labels];
+        }
+        // attribute value
+        else
+        {
+            BOOST_ASSERT(parent);
+            Value& newLabel = (*parent)();
+            newLabel[Keys::label] = convertBuffer;
+            newLabel[Keys::document_count] = item.doc_count;
+        }
+    }
+}
+
 } // namespace sf1r

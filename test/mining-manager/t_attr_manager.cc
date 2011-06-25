@@ -68,7 +68,7 @@ struct ValueMap
     ValueMap(): docCount_(0) {}
 
     map<string, DocIdList> docIdMap_; // key: attribute value
-    int docCount_;
+    unsigned int docCount_;
 };
 typedef map<string, ValueMap> AttrMap; // key: attribute name
 
@@ -185,7 +185,7 @@ void checkGroupRep(
             BOOST_TEST_MESSAGE("check attribute name: " << attrName
                                << ", doc count: " << item.doc_count);
             BOOST_CHECK_EQUAL(item.doc_count, attrMap[attrName].docCount_);
-            BOOST_CHECK_EQUAL(item.doc_id_list.size(), 0);
+            BOOST_CHECK_EQUAL(item.doc_id_list.size(), 0U);
         }
         else
         {
@@ -341,7 +341,7 @@ void checkAttrManager(
 
     std::vector<std::pair<std::string, std::string> > labelList;
     faceted::OntologyRep groupRep;
-    BOOST_CHECK(attrManager->getGroupRep(docIdList, labelList, NULL, groupRep));
+    BOOST_CHECK(attrManager->getGroupRep(docIdList, labelList, NULL, 0, groupRep));
 
     AttrMap attrMap;
     createAttrMap(docInputVec, attrMap);
@@ -383,14 +383,14 @@ BOOST_AUTO_TEST_CASE(splitAttrPair)
         izenelib::util::UString src(",,:,", ENCODING_TYPE);
         vector<faceted::AttrManager::AttrPair> attrPairs;
         faceted::AttrManager::splitAttrPair(src, attrPairs);
-        BOOST_CHECK_EQUAL(attrPairs.size(), 0);
+        BOOST_CHECK_EQUAL(attrPairs.size(), 0U);
     }
 
     {
         izenelib::util::UString src("abcde:", ENCODING_TYPE);
         vector<faceted::AttrManager::AttrPair> attrPairs;
         faceted::AttrManager::splitAttrPair(src, attrPairs);
-        BOOST_CHECK_EQUAL(attrPairs.size(), 0);
+        BOOST_CHECK_EQUAL(attrPairs.size(), 0U);
     }
 
     {

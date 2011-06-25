@@ -21,6 +21,10 @@
     {"property": "price"}
   ],
 
+  "attr": {
+    "attr_result": true
+  }
+
   // operator list
   // - equal, =
   // - not_equal, <>

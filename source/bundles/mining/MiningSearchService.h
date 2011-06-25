@@ -55,7 +55,16 @@ public:
 
     bool DefineDocCategory(const std::vector<faceted::ManmadeDocCategoryItem>& items);
 
-    bool getGroupRep(const std::vector<unsigned int>& docIdList, const std::vector<std::string>& groupPropertyList, const std::vector<std::pair<std::string, std::string> >& groupLabelList, faceted::OntologyRep& groupRep);
+    bool getGroupRep(
+        const std::vector<unsigned int>& docIdList,
+        const std::vector<std::string>& groupPropertyList,
+        const std::vector<std::pair<std::string, std::string> >& groupLabelList,
+        faceted::OntologyRep& groupRep,
+        bool isAttrGroup,
+        int attrGroupNum,
+        const std::vector<std::pair<std::string, std::string> >& attrLabelList,
+        faceted::OntologyRep& attrRep
+    );
     
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
     bool GetTdtTopicInfo(const izenelib::util::UString& text, idmlib::tdt::TopicInfoType& topic_info);

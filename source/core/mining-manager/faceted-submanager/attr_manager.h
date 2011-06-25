@@ -50,6 +50,7 @@ public:
      * @param docIdList a list of doc id, in which doc count is calculated for each attribute value
      * @param attrLabelList a label list, each label is a pair of attribute name and attribute value
      * @param groupLabel check each doc whether belongs to the group labels selected
+     * @param groupNum limit the list size in @p groupRep, zero for no limit on the list size
      * @param groupRep a list, each element is a label for attribute name or attribute value,
      *                 each label contains doc count.
      * @return true for success, false for failure.
@@ -58,6 +59,7 @@ public:
         const std::vector<unsigned int>& docIdList,
         const std::vector<std::pair<std::string, std::string> >& attrLabelList,
         const GroupLabel* groupLabel,
+        int groupNum,
         faceted::OntologyRep& groupRep
     );
 

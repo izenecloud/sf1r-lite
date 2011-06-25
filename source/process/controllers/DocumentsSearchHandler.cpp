@@ -17,6 +17,7 @@
 #include <parsers/SelectParser.h>
 #include <parsers/FilteringParser.h>
 #include <parsers/GroupingParser.h>
+#include <parsers/AttrParser.h>
 #include <parsers/SearchParser.h>
 #include <parsers/SortParser.h>
 #include <parsers/CustomRankingParser.h>
@@ -93,7 +94,8 @@ void DocumentsSearchHandler::search()
 
         if (actionItem_.env_.taxonomyLabel_.empty()
             && actionItem_.env_.nameEntityItem_.empty()
-            && actionItem_.env_.groupLabels_.empty())
+            && actionItem_.env_.groupLabels_.empty()
+            && actionItem_.env_.attrLabels_.empty())
         {
             // initialize before search to record start time.
             detail::DocumentsSearchKeywordsLogger keywordsLogger;
@@ -158,6 +160,15 @@ void DocumentsSearchHandler::search()
                 else if (!actionItem_.env_.groupLabels_.empty())
                 {
                     totalCount = getDocumentIdListInGroup(
+                        searchResult,
+                        start,
+                        count,
+                        getActionItem.idList_
+                    );
+                }
+                else if (!actionItem_.env_.attrLabels_.empty())
+                {
+                    totalCount = getDocumentIdListInAttr(
                         searchResult,
                         start,
                         count,
@@ -321,6 +332,35 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInGroup(
     return totalCount;
 }
 
+std::size_t DocumentsSearchHandler::getDocumentIdListInAttr(
+    const KeywordSearchResult& miaResult,
+    unsigned start,
+    unsigned count,
+    std::vector<sf1r::docid_t>& idListInPage
+)
+{
+    BOOST_ASSERT(!actionItem_.env_.attrLabels_.empty());
+
+    faceted::GroupLabelResult labelResult(miaResult.attrRep_);
+    const std::pair<std::string, std::string>& labelPair = actionItem_.env_.attrLabels_[0];
+    const std::vector<docid_t>& groupDocList = labelResult.selectLabel(labelPair.first, labelPair.second);
+
+    std::size_t totalCount = groupDocList.size();
+    if (start < totalCount)
+    {
+        std::vector<docid_t>::const_iterator startIt = groupDocList.begin() + start;
+        std::vector<docid_t>::const_iterator endIt = startIt + count;
+        if (endIt > groupDocList.end())
+        {
+            endIt = groupDocList.end();
+        }
+
+        idListInPage.insert(idListInPage.begin(), startIt, endIt);
+    }
+
+    return totalCount;
+}
+
 bool DocumentsSearchHandler::doGet(
     const GetDocumentsByIdsActionItem& getActionItem,
     RawTextResultFromSIA& rawTextResult
@@ -381,6 +421,10 @@ bool DocumentsSearchHandler::parse()
     GroupingParser groupingParser(miningSchema_);
     parsers.push_back(&groupingParser);
     values.push_back(&request_[Keys::group]);
+
+    AttrParser attrParser(miningSchema_);
+    parsers.push_back(&attrParser);
+    values.push_back(&request_[Keys::attr]);
 
     for (std::size_t i = 0; i < parsers.size(); ++i)
     {
@@ -444,6 +488,10 @@ bool DocumentsSearchHandler::parse()
         searchParser.mutableGroupLabels()
     );
     swap(
+        actionItem_.env_.attrLabels_,
+        searchParser.mutableAttrLabels()
+    );
+    swap(
         actionItem_.searchPropertyList_,
         searchParser.mutableProperties()
     );
@@ -481,6 +529,10 @@ bool DocumentsSearchHandler::parse()
         actionItem_.groupPropertyList_,
         groupingParser.mutableGroupPropertyList()
     );
+
+    // attrParser
+    actionItem_.isAttrGroup_ = attrParser.attrResult();
+    actionItem_.attrGroupNum_ = attrParser.attrTop();
 
     return true;
 }
@@ -703,6 +755,11 @@ void DocumentsSearchHandler::renderMiningResult(
         renderer_.renderGroup(
             miaResult,
             response_[Keys::group]
+        );
+
+        renderer_.renderAttr(
+            miaResult,
+            response_[Keys::attr]
         );
     }
 }

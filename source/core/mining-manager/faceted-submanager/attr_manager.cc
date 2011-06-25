@@ -4,7 +4,10 @@
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningException.hpp>
 
-#include <iostream>
+#include <util/PriorityQueue.h>
+
+#include <set>
+#include <list>
 
 #include <glog/logging.h>
 
@@ -39,6 +42,54 @@ struct AttrNameResult
     DocIdMap docIdMap_;
 };
 typedef std::map<AttrTable::nid_t, AttrNameResult> AttrGroupResult;
+
+/** attribute name id, and its doc count */
+typedef std::pair<AttrTable::nid_t, int> AttrFreq;
+
+class AttrFreqQueue : public izenelib::util::PriorityQueue<AttrFreq>
+{
+    public:
+        AttrFreqQueue(size_t size)
+        {
+            this->initialize(size);
+        }
+
+    protected:
+        bool lessThan(AttrFreq p1, AttrFreq p2)
+        {
+            return (p1.second < p2.second);
+        }
+};
+
+/**
+ * get attribute name ids with top freq.
+ * @param groupResult the attribute group results
+ * @param topNum limit the size of @p topResult, zero for not limit size
+ * @param topResult store the top attribute name ids
+ */
+void getTopAttrFreq(
+    const AttrGroupResult& groupResult,
+    int topNum,
+    std::list<AttrTable::nid_t>& topResult
+)
+{
+    if (topNum == 0)
+    {
+        topNum = groupResult.size();
+    }
+
+    AttrFreqQueue queue(topNum);
+    for (AttrGroupResult::const_iterator groupIt = groupResult.begin();
+        groupIt != groupResult.end(); ++groupIt)
+    {
+        queue.insert(AttrFreq(groupIt->first, groupIt->second.docCount_));
+    }
+
+    while(queue.size() > 0)
+    {   
+        topResult.push_front(queue.pop().first);
+    }
+}
 
 /**
  * scans from @p first to @p last until any character in @p delimStr is reached,
@@ -280,6 +331,7 @@ bool AttrManager::getGroupRep(
     const std::vector<unsigned int>& docIdList,
     const std::vector<std::pair<std::string, std::string> >& attrLabelList,
     const GroupLabel* groupLabel,
+    int groupNum,
     faceted::OntologyRep& groupRep
 )
 {
@@ -300,8 +352,7 @@ bool AttrManager::getGroupRep(
 
     AttrGroupResult groupResult;
 
-    typedef std::set<AttrTable::vid_t> ValueIdSet;
-    typedef std::map<AttrTable::nid_t, ValueIdSet> NameIdMap;
+    typedef std::map<AttrTable::nid_t, AttrTable::ValueIdList> NameIdMap;
 
     const AttrTable::ValueIdTable& valueIdTable = constAttrTable.valueIdTable();
 
@@ -319,26 +370,27 @@ bool AttrManager::getGroupRep(
             continue;
 
         NameIdMap nameIdMap;
+        std::set<AttrTable::vid_t> docValueSet;
         const AttrTable::ValueIdList& valueIdList = valueIdTable[docId];
         for (AttrTable::ValueIdList::const_iterator valueIt = valueIdList.begin();
             valueIt != valueIdList.end(); ++valueIt)
         {
             AttrTable::nid_t nameId = constAttrTable.valueId2NameId(*valueIt);
-            nameIdMap[nameId].insert(*valueIt);
+            nameIdMap[nameId].push_back(*valueIt);
+            docValueSet.insert(*valueIt);
         }
 
         for (NameIdMap::const_iterator nameIt = nameIdMap.begin();
             nameIt != nameIdMap.end(); ++nameIt)
         {
             AttrTable::nid_t nameId = nameIt->first;
-            const ValueIdSet& valueIdSet = nameIt->second;
 
             bool isMeetCond = true;
             for (CondList::const_iterator condIt = condList.begin();
                 condIt != condList.end(); ++condIt)
             {
                 if (nameId != condIt->first
-                    && valueIdSet.find(condIt->second) == valueIdSet.end())
+                    && docValueSet.find(condIt->second) == docValueSet.end())
                 {
                     isMeetCond = false;
                     break;
@@ -350,27 +402,33 @@ bool AttrManager::getGroupRep(
                 AttrNameResult& nameResult = groupResult[nameId];
                 ++nameResult.docCount_;
 
-                for (ValueIdSet::const_iterator setIt = valueIdSet.begin();
-                    setIt != valueIdSet.end(); ++setIt)
+                const AttrTable::ValueIdList& idList = nameIt->second;
+                for (AttrTable::ValueIdList::const_iterator it = idList.begin();
+                    it != idList.end(); ++it)
                 {
-                    nameResult.docIdMap_[*setIt].push_back(docId);
+                    nameResult.docIdMap_[*it].push_back(docId);
                 }
             }
         }
     }
 
+    std::list<AttrTable::nid_t> topResult;
+    getTopAttrFreq(groupResult, groupNum, topResult);
+
     std::list<sf1r::faceted::OntologyRepItem>& itemList = groupRep.item_list;
-    for (AttrGroupResult::iterator groupIt = groupResult.begin();
-        groupIt != groupResult.end(); ++groupIt)
+    for (std::list<AttrTable::nid_t>::const_iterator listIt = topResult.begin();
+        listIt != topResult.end(); ++listIt)
     {
+        AttrNameResult& nameResult = groupResult[*listIt];
+
         // attribute name as root node
         itemList.push_back(sf1r::faceted::OntologyRepItem());
         sf1r::faceted::OntologyRepItem& nameItem = itemList.back();
-        nameItem.text = constAttrTable.nameStr(groupIt->first);
-        nameItem.doc_count = groupIt->second.docCount_;
+        nameItem.text = constAttrTable.nameStr(*listIt);
+        nameItem.doc_count = nameResult.docCount_;
 
         // attribute values are appended as level 1
-        DocIdMap& docIdMap = groupIt->second.docIdMap_;
+        DocIdMap& docIdMap = nameResult.docIdMap_;
         for (DocIdMap::iterator mapIt = docIdMap.begin();
             mapIt != docIdMap.end(); ++mapIt)
         {

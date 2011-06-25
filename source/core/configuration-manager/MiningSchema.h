@@ -3,6 +3,7 @@
 
 
 #include "GroupConfig.h"
+#include "AttrConfig.h"
 
 #include <stdint.h>
 #include <string>
@@ -22,6 +23,7 @@ public:
             , dc_enable(false), dc_properties()
             , faceted_enable(false), faceted_properties()
             , group_enable(false), group_properties()
+            , attr_enable(false), attr_property()
             , ise_enable(false), ise_property()
             , recommend_tg(false), recommend_querylog(true), recommend_properties()
     {
@@ -40,6 +42,7 @@ private:
         ar & sim_enable & sim_properties;
         ar & dc_enable & dc_properties & faceted_enable & faceted_properties;
         ar & group_enable & group_properties;
+        ar & attr_enable & attr_property;
         ar & tdt_enable;
         ar & ise_enable & ise_property;
         ar & recommend_tg & recommend_querylog & recommend_properties;
@@ -58,6 +61,8 @@ public:
     std::vector<std::string> faceted_properties;
     bool group_enable;
     std::vector<GroupConfig> group_properties;
+    bool attr_enable;
+    AttrConfig attr_property;
     bool tdt_enable;
     bool ise_enable;
     std::string ise_property;

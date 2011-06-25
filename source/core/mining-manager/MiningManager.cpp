@@ -18,6 +18,8 @@
 #include "faceted-submanager/ontology_rep.h"
 #include "faceted-submanager/group_manager.h"
 #include "faceted-submanager/group_label.h"
+#include "faceted-submanager/group_label_result.h"
+#include "faceted-submanager/attr_manager.h"
 
 #include <idmlib/semantic_space/esa/DocumentRepresentor.h>
 #include <idmlib/semantic_space/esa/ExplicitSemanticInterpreter.h>
@@ -76,6 +78,8 @@ MiningManager::MiningManager(const std::string& collectionDataPath, const std::s
         , document_manager_(documentManager), index_manager_(index_manager)
         , tgInfo_(NULL)
         , groupManager_(NULL)
+        , attrManager_(NULL)
+        , tdt_storage_(NULL)
 {
 }
 MiningManager::MiningManager(const std::string& collectionDataPath, const std::string& queryDataPath,
@@ -94,6 +98,8 @@ MiningManager::MiningManager(const std::string& collectionDataPath, const std::s
         , tgInfo_(NULL)
         , idManager_(idManager)
 	, groupManager_(NULL)
+        , attrManager_(NULL)
+        , tdt_storage_(NULL)
 {
 }
 // void MiningManager::setConfigClient(const boost::shared_ptr<ConfigurationManagerClient>& configClient)
@@ -106,6 +112,8 @@ MiningManager::~MiningManager()
     if(analyzer_) delete analyzer_;
     if(kpe_analyzer_) delete kpe_analyzer_;
     if(groupManager_) delete groupManager_;
+    if(attrManager_) delete attrManager_;
+    if(tdt_storage_) delete tdt_storage_;
     //close();
 }
 
@@ -122,6 +130,7 @@ bool MiningManager::open()
     std::cout<<"DO_SIM : "<<(int)mining_schema_.sim_enable<<std::endl;
     std::cout<<"DO_FACETED : "<<(int)mining_schema_.faceted_enable<<std::endl;
     std::cout<<"DO_GROUP : "<<(int)mining_schema_.group_enable<<std::endl;
+    std::cout<<"DO_ATTR : "<<(int)mining_schema_.attr_enable<<std::endl;
     std::cout<<"DO_TDT : "<<(int)mining_schema_.tdt_enable<<std::endl;
     std::cout<<"DO_IISE : "<<(int)mining_schema_.ise_enable<<std::endl;
 
@@ -270,7 +279,6 @@ bool MiningManager::open()
 
         }
 
-
         /** group */
         if( mining_schema_.group_enable )
         {
@@ -284,7 +292,21 @@ bool MiningManager::open()
                 return false;
             }
         }
-        
+
+        /** attr */
+        if( mining_schema_.attr_enable )
+        {
+            if(attrManager_) delete attrManager_;
+            std::string attrPath = prefix_path + "/attr";
+		
+            attrManager_ = new faceted::AttrManager(document_manager_.get(), attrPath);
+            if (! attrManager_->open(mining_schema_.attr_property))
+            {
+                std::cerr << "open ATTR failed" << std::endl;
+                return false;
+            }
+        }
+
         /** tdt **/
         if( mining_schema_.tdt_enable )
         {
@@ -434,6 +456,12 @@ bool MiningManager::DoMiningCollection()
     if( mining_schema_.group_enable )
     {
         groupManager_->processCollection();
+    }
+    
+    //do attr
+    if( mining_schema_.attr_enable )
+    {
+        attrManager_->processCollection();
     }
     
     //do tdt
@@ -1118,21 +1146,15 @@ bool MiningManager::addFacetedResult_(KeywordSearchResult& miaInput)
     return true;
 }
 
-/*bool MiningManager::getGroupRep(
-    const std::vector<unsigned int>& docIdList,
-    const std::vector<std::string>& groupPropertyList,
-    const std::vector<std::pair<std::string, std::string> >& groupLabelList,
-    faceted::OntologyRep& groupRep,
-    bool isAttr,
-    int attrTopK,
-    const std::vector<std::pair<std::string, std::string> >& attrLabelList,
-    faceted::OntologyRep& attrRep
-)*/
 bool MiningManager::getGroupRep(
     const std::vector<unsigned int>& docIdList,
     const std::vector<std::string>& groupPropertyList,
     const std::vector<std::pair<std::string, std::string> >& groupLabelList,
-    faceted::OntologyRep& groupRep
+    faceted::OntologyRep& groupRep,
+    bool isAttrGroup,
+    int attrGroupNum,
+    const std::vector<std::pair<std::string, std::string> >& attrLabelList,
+    faceted::OntologyRep& attrRep
 )
 {
     CREATE_SCOPED_PROFILER(groupby, "MIAProcess", "ProcessGetGroupRep");
@@ -1146,27 +1168,27 @@ bool MiningManager::getGroupRep(
     }
 
     bool result = false;
-    /*if (isAttr && mining_schema_.attr_enable)
+    if (isAttrGroup && mining_schema_.attr_enable)
     {
         izenelib::util::ClockTimer timer;
-        result = attrManager_->getGroupRep(docIdList, attrLabelList, groupLabelPtr.get(), attrTopK, attrRep);
+        result = attrManager_->getGroupRep(docIdList, attrLabelList, groupLabelPtr.get(), attrGroupNum, attrRep);
         LOG(INFO) << "attrby cost " << timer.elapsed() << " seconds";
-    }*/
+    }
 
     if (doGroup)
     {
         izenelib::util::ClockTimer timer;
 
-        /*if (result && !attrLabelList.empty())
+        if (result && !attrLabelList.empty())
         {
             // get doc id list filter by attribute labels
             faceted::GroupLabelResult labelResult(attrRep);
             const std::pair<std::string, std::string>& labelPair = attrLabelList[0];
             const std::vector<docid_t>& attrDocList = labelResult.selectLabel(labelPair.first, labelPair.second);
 
-            result = groupManager_->getGroupRep(attrDocIdList, groupPropertyList, groupLabelPtr.get(), groupRep);
+            result = groupManager_->getGroupRep(attrDocList, groupPropertyList, groupLabelPtr.get(), groupRep);
         }
-        else*/
+        else
         {
             result = groupManager_->getGroupRep(docIdList, groupPropertyList, groupLabelPtr.get(), groupRep);
         }
