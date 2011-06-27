@@ -174,11 +174,12 @@ MiningBundleActivator::createMiningManager_(IndexSearchService* indexService) co
             indexService->laManager_,
             indexService->documentManager_,
             indexService->indexManager_,
+            indexService->searchManager_,
+            indexService->idManager_,
             config_->collectionName_,
             config_->schema_,
             config_->mining_config_,
             config_->mining_schema_
-           // ,indexService->idManager_
         )
     );
 

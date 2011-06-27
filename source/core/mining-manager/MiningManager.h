@@ -85,20 +85,12 @@ public:
                   const boost::shared_ptr<LAManager>& laManager,
                   const boost::shared_ptr<DocumentManager>& documentManager,
                   const boost::shared_ptr<IndexManager>& index_manager,
+                  const boost::shared_ptr<SearchManager>& searchManager,
+                  const boost::shared_ptr<IDManager>& idManager,
                   const std::string& collectionName,
                   const schema_type& schema,
                   const MiningConfig& miningConfig,
                   const MiningSchema& miningSchema);
-
-    MiningManager(const std::string& collectionDataPath, const std::string& queryDataPath,
-                  const boost::shared_ptr<LAManager>& laManager,
-                  const boost::shared_ptr<DocumentManager>& documentManager,
-                  const boost::shared_ptr<IndexManager>& index_manager,
-                  const std::string& collectionName,
-                  const schema_type& schema,
-                  const MiningConfig& miningConfig,
-                  const MiningSchema& miningSchema,
-                  const boost::shared_ptr<IDManager>idManager);
 
     ~MiningManager();
 
@@ -294,6 +286,7 @@ private:
 
     boost::shared_ptr<DocumentManager> document_manager_;
     boost::shared_ptr<IndexManager> index_manager_;
+    boost::shared_ptr<SearchManager> searchManager_;	
     /** TG */
     TaxonomyInfo* tgInfo_;
     boost::shared_ptr<LabelManager> labelManager_;
