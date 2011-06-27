@@ -86,30 +86,6 @@ MiningManager::MiningManager(const std::string& collectionDataPath, const std::s
         , tdt_storage_(NULL)
 {
 }
-MiningManager::MiningManager(const std::string& collectionDataPath, const std::string& queryDataPath,
-                             const boost::shared_ptr<LAManager>& laManager,
-                             const boost::shared_ptr<DocumentManager>& documentManager,
-                             const boost::shared_ptr<IndexManager>& index_manager,
-                             const std::string& collectionName,
-                             const schema_type& schema,
-                             const MiningConfig& miningConfig,
-                             const MiningSchema& miningSchema,
-                             const boost::shared_ptr<IDManager>idManager)
-        :collectionDataPath_(collectionDataPath), queryDataPath_(queryDataPath)
-        ,collectionName_(collectionName), schema_(schema), miningConfig_(miningConfig), mining_schema_(miningSchema)
-        , laManager_(laManager), analyzer_(NULL), kpe_analyzer_(NULL)
-        , document_manager_(documentManager), index_manager_(index_manager)
-        , tgInfo_(NULL)
-        , idManager_(idManager)
-	, groupManager_(NULL)
-        , attrManager_(NULL)
-        , tdt_storage_(NULL)
-{
-}
-// void MiningManager::setConfigClient(const boost::shared_ptr<ConfigurationManagerClient>& configClient)
-// {
-// 	configClient_ = configClient;
-// }
 
 MiningManager::~MiningManager()
 {
