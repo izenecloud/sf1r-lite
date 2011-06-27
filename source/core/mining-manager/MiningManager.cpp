@@ -80,7 +80,9 @@ MiningManager::MiningManager(const std::string& collectionDataPath, const std::s
         ,collectionName_(collectionName), schema_(schema), miningConfig_(miningConfig), mining_schema_(miningSchema)
         , laManager_(laManager), analyzer_(NULL), kpe_analyzer_(NULL)
         , document_manager_(documentManager), index_manager_(index_manager)
+        , searchManager_(searchManager)
         , tgInfo_(NULL)
+        , idManager_(idManager)
         , groupManager_(NULL)
         , attrManager_(NULL)
         , tdt_storage_(NULL)
@@ -776,9 +778,9 @@ bool MiningManager::computeSimilarity_(izenelib::ir::indexmanager::IndexReader* 
             else assert(false);
             property_ids[i] = property_config.propertyId_;
         }
-//        SemanticKernel simBuilders(sim_path_+"/semantic",document_manager_, index_manager_, laManager_, idManager_, searchManager_);
-//        simBuilders.setSchema( property_ids, property_names, "Title", "Source");
-//        simBuilders.doSearch();
+        //SemanticKernel simBuilders(sim_path_+"/semantic",document_manager_, index_manager_, laManager_, idManager_, searchManager_);
+        //simBuilders.setSchema( property_ids, property_names, "Title", "Source");
+        //simBuilders.doSearch();
 
         // customize the concrete reader
         typedef sim::PrunedSortedTermInvertedIndexReader base_reader_type;
