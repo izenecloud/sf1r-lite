@@ -44,6 +44,14 @@ using driver::Keys;
  *   in request["group"].
  *   - @b value* (@c String): the property value, only those documents with this
  *   property value would be returned.
+ * - @b attr_label (@c Array): Only get documents in the specified attribute groups.
+ *   Multiple labels could be specified. It could also be used with @b group_label
+ *   together, so that the documents returned must be contained in each label in
+ *   @b attr_label and @b group_label. It cannot be used with @b taxonomy_label,
+ *   @b name_entity_type and @b name_entity_item together.
+ *   - @b attr_name* (@c String): the attribute name
+ *   - @b attr_value* (@c String): the attribute value, only those documents with this
+ *   attribute value would be returned.
  * - @b ranking_model (@c String): How to rank the search result. Result with
  *   high ranking score is considered has high relevance. Now SF1 supports
  *   following ranking models.
@@ -99,11 +107,12 @@ bool SearchParser::parse(const Value& search)
     if (search.hasKey(Keys::name_entity_item) ||
          search.hasKey(Keys::name_entity_type))
         ++labelCount;
-    if (search.hasKey(Keys::group_label))
+    if (search.hasKey(Keys::group_label)
+        || search.hasKey(Keys::attr_label))
         ++labelCount;
     if (labelCount > 1)
     {
-        error() = "At most one label type (taxonomy label, name entity item and group label) can be specided.";
+        error() = "At most one label type (taxonomy label, name entity item and group/attr label) can be specided.";
         return false;
     }
 
@@ -142,6 +151,34 @@ bool SearchParser::parse(const Value& search)
         else
         {
             error() = "Require an array for group labels.";
+            return false;
+        }
+    }
+
+    // attr label
+    const Value& attrNode = search[Keys::attr_label];
+    if (! nullValue(attrNode))
+    {
+        if (attrNode.type() == Value::kArrayType)
+        {
+            attrLabels_.resize(attrNode.size());
+
+            for (std::size_t i = 0; i < attrNode.size(); ++i)
+            {
+                const Value& attrPair = attrNode(i);
+                attrLabels_[i].first = asString(attrPair[Keys::attr_name]);
+                attrLabels_[i].second = asString(attrPair[Keys::attr_value]);
+
+                if (attrLabels_[i].first.empty() || attrLabels_[i].second.empty())
+                {
+                    error() = "Must specify both attribute name and value for attr label";
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            error() = "Require an array for attr labels.";
             return false;
         }
     }

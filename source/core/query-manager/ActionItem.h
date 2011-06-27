@@ -159,6 +159,12 @@ class RequesterEnvironment
                 ss << "(" << groupLabels_[i].first << ", " << groupLabels_[i].second << "), ";
             }
             ss << endl;
+            ss << "attrLabels_     : ";
+            for (std::size_t i = 0; i < attrLabels_.size(); ++i)
+            {
+                ss << "(" << attrLabels_[i].first << ", " << attrLabels_[i].second << "), ";
+            }
+            ss << endl;
             ss << "ipAddress_       : " << ipAddress_       << endl;
             out << ss.str();
         }
@@ -204,13 +210,19 @@ class RequesterEnvironment
         std::vector<std::pair<std::string, std::string> > groupLabels_;
 
         ///
+        /// @brief multiple selected attribute labels, each label is a pair of attribute name and attribute value.
+        ///        It is used only in Label Click Query.
+        ///
+        std::vector<std::pair<std::string, std::string> > attrLabels_;
+
+        ///
         /// @brief ip address of requester.
         ///
         std::string     ipAddress_;
 
         DATA_IO_LOAD_SAVE(RequesterEnvironment, 
                 &isLogging_&encodingType_&queryString_&taxonomyLabel_
-                &nameEntityItem_&nameEntityType_&groupLabels_&ipAddress_);
+                &nameEntityItem_&nameEntityType_&groupLabels_&attrLabels_&ipAddress_);
 
     private:
         // Log : 2009.09.08
@@ -226,6 +238,7 @@ class RequesterEnvironment
             ar & nameEntityItem_;
             ar & nameEntityType_;
             ar & groupLabels_;
+            ar & attrLabels_;
             ar & ipAddress_;
         } 
 }; // end - queryEnvironment
@@ -240,6 +253,7 @@ inline bool operator==(
         && a.queryString_ == b.queryString_
         && a.taxonomyLabel_ == b.taxonomyLabel_
         && a.groupLabels_ == b.groupLabels_
+        && a.attrLabels_ == b.attrLabels_
         && a.ipAddress_ == b.ipAddress_;
 }
 
@@ -341,6 +355,8 @@ class KeywordSearchActionItem
             sortPriorityList_   (obj.sortPriorityList_),
             filteringList_(obj.filteringList_),
             groupPropertyList_(obj.groupPropertyList_),
+            isAttrGroup_(obj.isAttrGroup_),
+            attrGroupNum_(obj.attrGroupNum_),
             strExp_(obj.strExp_),
             paramConstValueMap_(obj.paramConstValueMap_),
             paramPropertyValueMap_(obj.paramPropertyValueMap_),
@@ -361,6 +377,8 @@ class KeywordSearchActionItem
             sortPriorityList_    = obj.sortPriorityList_;
             filteringList_ = obj.filteringList_;
             groupPropertyList_ = obj.groupPropertyList_;
+            isAttrGroup_ = obj.isAttrGroup_;
+            attrGroupNum_ = obj.attrGroupNum_;
             strExp_ = obj.strExp_;
             paramConstValueMap_ = obj.paramConstValueMap_;
             paramPropertyValueMap_ = obj.paramPropertyValueMap_;
@@ -383,6 +401,8 @@ class KeywordSearchActionItem
                 && sortPriorityList_    == obj.sortPriorityList_
                 && filteringList_ == obj.filteringList_
                 && groupPropertyList_ == obj.groupPropertyList_
+                && isAttrGroup_ == obj.isAttrGroup_
+                && attrGroupNum_ == obj.attrGroupNum_
                 && strExp_ == obj.strExp_
                 && paramConstValueMap_ == obj.paramConstValueMap_
                 && paramPropertyValueMap_ == obj.paramPropertyValueMap_
@@ -431,6 +451,10 @@ class KeywordSearchActionItem
             {
                 ss << "\tPropertyString_ : " << groupPropertyList_[i] << endl;
             }
+            ss << endl << "Attr Options:" << endl;
+            ss << "------------------------------------------------" << endl;
+            ss << "\tisAttrGroup_ : " << isAttrGroup_ << endl;
+            ss << "\tattrGroupNum_ : " << attrGroupNum_ << endl;
             ss << "------------------------------------------------" << endl;
             ss << endl << "Custom Ranking :" << endl;
             ss << "------------------------------------------------" << endl;
@@ -514,6 +538,12 @@ class KeywordSearchActionItem
         std::vector<std::string>     groupPropertyList_;
 
         ///
+        /// @brief options for group by attribute.
+        ///
+        bool isAttrGroup_; /// true for group by attribute
+        int attrGroupNum_; /// the number of attributes to return
+
+        ///
         /// @brief a list of property query terms.
         ///
 
@@ -533,6 +563,7 @@ class KeywordSearchActionItem
         DATA_IO_LOAD_SAVE(KeywordSearchActionItem, &env_&refinedQueryString_&collectionName_
                 &rankingType_&pageInfo_&languageAnalyzerInfo_&searchPropertyList_&removeDuplicatedDocs_
                 &displayPropertyList_&sortPriorityList_&filteringList_&groupPropertyList_
+                &isAttrGroup_&attrGroupNum_
                 &strExp_&paramConstValueMap_&paramPropertyValueMap_);
 
     private:
@@ -555,6 +586,8 @@ class KeywordSearchActionItem
             ar & sortPriorityList_;
             ar & filteringList_;
             ar & groupPropertyList_;
+            ar & isAttrGroup_;
+            ar & attrGroupNum_;
             ar & strExp_;
             ar & paramConstValueMap_;
             ar & paramPropertyValueMap_;

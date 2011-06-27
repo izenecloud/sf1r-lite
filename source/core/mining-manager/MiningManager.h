@@ -59,6 +59,7 @@ namespace sf1r
 namespace faceted
 {
 class GroupManager;
+class AttrManager;
 }
 
 /**
@@ -154,21 +155,34 @@ public:
                                     std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > >& label_list);
 
     /**
-     * @brief Get group representation for a property list.
-     * @param docIdList a list of doc id, in which doc count is calculated for each property value
+     * @brief Get group representation by property/attribute.
+     * @param docIdList a list of doc id, in which doc count is calculated for each property/attribute value
      * @param groupPropertyList a list of property name, e.g. ["Price", "Area", "Color"].
      * @param groupLabelList a label list, each label is a pair of property name and property value, e.g. [("Price", "5"), ("Area", "Shanghai")].
      * @param groupRep a group representation list, each element is a label tree for a property spcified in @p groupPropertyList, e.g. [PriceTree, AreaTree, ColorTree]
      *                 each label contains doc count for a property value, e.g. the doc count for "Price value 5" is 10,
-     *                 for each property tree, the property values (except the tree property) of these docs must be equal to the values specified in @p groupLabelList,
-     *                 e.g. for the docs in PriceTree, their values of the property "Area" must be "Shanghai".
+     *                 for each property tree, the property values (except the tree property) of these docs must be equal to the values specified in @p groupLabelList and @p attrLabelList,
+     *                 e.g. for the docs in PriceTree, their values of the property "Area" must be "Shanghai",
+     *                 values of attribute "品牌" must be "阿依莲", values of attribute "尺码" must be "L".
+     * @param isAttrGroup true for return group representation by attribute in @p attrRep, false for not to group by attribute
+     * @param attrGroupNum limit the list size in @p attrRep, zero for no limit on the list size.
+     * @param attrLabelList a label list, each label is a pair of attribute name and attribute value, e.g. [("品牌", "阿依莲"), ("尺码", "L")].
+     * @param attrRep a group representation list, each element is a label list for an attribute name, e.g. [labels for "品牌", labels for "尺码"]
+     *                 each label contains doc count for an property value, e.g. the doc count for "阿依莲" is 10,
+     *                 for each label list, the attribute values (except the list attribute) of these docs must be equal to the values specified in @p attrLabelList and @p groupLabelList,
+     *                 e.g. for the docs in labels of "品牌", their values of the attribute "尺码" must be "L",
+     *                 values of the property "Price" must be "5", values of the property "Area" must be "Shanghai".
      * @return true for success, false for failure.
      */
     bool getGroupRep(
         const std::vector<unsigned int>& docIdList,
         const std::vector<std::string>& groupPropertyList,
         const std::vector<std::pair<std::string, std::string> >& groupLabelList,
-        faceted::OntologyRep& groupRep
+        faceted::OntologyRep& groupRep,
+        bool isAttrGroup,
+        int attrGroupNum,
+        const std::vector<std::pair<std::string, std::string> >& attrLabelList,
+        faceted::OntologyRep& attrRep
     );
     
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
@@ -317,7 +331,10 @@ private:
 
     /** GROUP BY */
     faceted::GroupManager* groupManager_;
-    
+
+    /** ATTR BY */
+    faceted::AttrManager* attrManager_;
+
     /** TDT */
     std::string tdt_path_;
     TdtStorageType* tdt_storage_;

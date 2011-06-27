@@ -36,6 +36,12 @@ const std::size_t DocumentsController::kDefaultPageCount = 20;
  *   - @b property* (@c String): Property name, whose group result (doc count for
  *     each property value) would be supplied in response["group"]. The property
  *     type must be string, int or float.
+ * - @b attr (@c Object): Options for group by attribute values
+ *   - @b attr_result (@c Bool = @c false): If true, response["attr"] would be
+ *     returned as search results grouped by attribute values.
+ *   - @b attr_top (@c Uint = 0): Limit the array size in response["attr"].
+ *     If zero, all attribute groups would be returned.
+ *     Otherwise, at most @b attr_top elements would be returned in response["attr"].
  * - @b limit (@c Uint = 20): Limit the count of returned documents.
  * - @b offset (@c Uint = 0): Index offset of the first returned documents in
  *   all result. It is used together with @b limit in result paging. If every
@@ -103,6 +109,15 @@ const std::size_t DocumentsController::kDefaultPageCount = 20;
  *     - @b document_count (@c Uint): Number of result documents in this label.
  *     - @b sub_labels (@c Array): Array of sub labels. It has the same
  *       structure of the top @b labels field.
+ * - @b attr (@c Array): Every item represents the group result for one attribute.
+ *   They are sorted by @b document_count decreasingly.
+ *   - @b attr_name (@c String): Attribute name.
+ *   - @b document_count (@c Uint): Number of result documents which has value on
+ *     this attribute.
+ *   - @b labels (@c Array): Group labels. Every item is an object representing
+ *     a label for an attribute value. The item has following fields.
+ *     - @b label (@c String): Name of this label, it represents an attribute value.
+ *     - @b document_count (@c Uint): Number of result documents in this label.
  *
  * @section example
  *

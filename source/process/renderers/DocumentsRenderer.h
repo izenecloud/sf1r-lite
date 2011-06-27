@@ -60,6 +60,9 @@ public:
 
     void renderGroup(const KeywordSearchResult& miaResult,
                           Value& groupResult);
+
+    void renderAttr(const KeywordSearchResult& miaResult,
+                          Value& attrResult);
 };
 
 } // namespace sf1r
