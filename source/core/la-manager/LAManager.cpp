@@ -102,13 +102,13 @@ namespace sf1r
 
         removeStopwords( termList, stopDict_ );
 
-        for(TermList::iterator it = termList.begin(); it!=termList.end(); it++ ) {
+        /*for(TermList::iterator it = termList.begin(); it!=termList.end(); it++ ) {
             cout << "^^^^" << la::to_utf8(it->text_) << endl;
-        }
+        }*/
 
          expQuery = toExpandedString( termList );
 
-        cout << "##########################" << la::to_utf8(expQuery) << endl;
+        //cout << "##########################" << la::to_utf8(expQuery) << endl;
 
 
         if( isMultiThreadEnv_ )
