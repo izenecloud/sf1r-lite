@@ -14,6 +14,8 @@
 #include "taxonomy-generation-submanager/LabelManager.h"
 #include "similarity-detection-submanager/PrunedSortedTermInvertedIndexReader.h"
 #include "similarity-detection-submanager/DocWeightListPrunedInvertedIndexReader.h"
+#include "similarity-detection-submanager/SemanticKernel.h"
+
 #include "faceted-submanager/ontology_rep_item.h"
 #include "faceted-submanager/ontology_rep.h"
 #include "faceted-submanager/group_manager.h"
@@ -67,6 +69,8 @@ MiningManager::MiningManager(const std::string& collectionDataPath, const std::s
                              const boost::shared_ptr<LAManager>& laManager,
                              const boost::shared_ptr<DocumentManager>& documentManager,
                              const boost::shared_ptr<IndexManager>& index_manager,
+                             const boost::shared_ptr<SearchManager>& searchManager,
+                             const boost::shared_ptr<IDManager>& idManager,
                              const std::string& collectionName,
                              const schema_type& schema,
                              const MiningConfig& miningConfig,
@@ -76,36 +80,14 @@ MiningManager::MiningManager(const std::string& collectionDataPath, const std::s
         ,collectionName_(collectionName), schema_(schema), miningConfig_(miningConfig), mining_schema_(miningSchema)
         , laManager_(laManager), analyzer_(NULL), kpe_analyzer_(NULL)
         , document_manager_(documentManager), index_manager_(index_manager)
+        , searchManager_(searchManager)
         , tgInfo_(NULL)
+        , idManager_(idManager)
         , groupManager_(NULL)
         , attrManager_(NULL)
         , tdt_storage_(NULL)
 {
 }
-MiningManager::MiningManager(const std::string& collectionDataPath, const std::string& queryDataPath,
-                             const boost::shared_ptr<LAManager>& laManager,
-                             const boost::shared_ptr<DocumentManager>& documentManager,
-                             const boost::shared_ptr<IndexManager>& index_manager,
-                             const std::string& collectionName,
-                             const schema_type& schema,
-                             const MiningConfig& miningConfig,
-                             const MiningSchema& miningSchema,
-                             const boost::shared_ptr<IDManager>idManager)
-        :collectionDataPath_(collectionDataPath), queryDataPath_(queryDataPath)
-        ,collectionName_(collectionName), schema_(schema), miningConfig_(miningConfig), mining_schema_(miningSchema)
-        , laManager_(laManager), analyzer_(NULL), kpe_analyzer_(NULL)
-        , document_manager_(documentManager), index_manager_(index_manager)
-        , tgInfo_(NULL)
-        , idManager_(idManager)
-	, groupManager_(NULL)
-        , attrManager_(NULL)
-        , tdt_storage_(NULL)
-{
-}
-// void MiningManager::setConfigClient(const boost::shared_ptr<ConfigurationManagerClient>& configClient)
-// {
-// 	configClient_ = configClient;
-// }
 
 MiningManager::~MiningManager()
 {
@@ -796,6 +778,10 @@ bool MiningManager::computeSimilarity_(izenelib::ir::indexmanager::IndexReader* 
             else assert(false);
             property_ids[i] = property_config.propertyId_;
         }
+        //SemanticKernel simBuilders(sim_path_+"/semantic",document_manager_, index_manager_, laManager_, idManager_, searchManager_);
+        //simBuilders.setSchema( property_ids, property_names, "Title", "Source");
+        //simBuilders.doSearch();
+
         // customize the concrete reader
         typedef sim::PrunedSortedTermInvertedIndexReader base_reader_type;
         typedef sim::DocWeightListPrunedInvertedIndexReader<base_reader_type>

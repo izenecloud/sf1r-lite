@@ -145,7 +145,6 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
     CREATE_PROFILER ( preparedociter, "SearchManager", "doSearch_: SearchManager_search : build doc iterator");
     CREATE_PROFILER ( preparerank, "SearchManager", "doSearch_: prepare ranker");
     CREATE_PROFILER ( preparesort, "SearchManager", "doSearch_: prepare sort");
-    CREATE_PROFILER ( preparegroupby, "SearchManager", "doSearch_: prepare group by");
     CREATE_PROFILER ( computerankscore, "SearchManager", "doSearch_: overall time for scoring a doc");
 
     unsigned int collectionId = 1;
@@ -309,7 +308,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
 
         STOP_PROFILER ( preparerank )
 
-        START_PROFILER ( preparegroupby )
+        START_PROFILER ( preparesort )
         ///constructing sorter
         CustomRankerPtr customRanker;
         Sorter* pSorter = NULL;
@@ -326,9 +325,8 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                     if (fieldNameL == "custom_rank")
                     {
                         // prepare custom ranker
-                        cout << "[SearchManager] add custom_rank property to Sorter .." << endl; //
                         customRanker = actionOperation.actionItem_.customRanker_;
-                        customRanker->printESTree(); //test
+                        //customRanker->printESTree(); //test
                         if (!customRanker->setPropertyData(pSorterCache_)) {
                             // error info
                             cout << customRanker->getErrorInfo() << endl;
@@ -387,7 +385,6 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                             break;
                         }
                         default:
-                            sflog->error(SFL_SRCH, 110101, "Sort by properties other than int, float, double type");
                             DLOG(ERROR) << "Sort by properties other than int, float, double type"; // TODO : Log
                             break;
                     }
@@ -401,11 +398,6 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             if (pFilter) delete pFilter;
             return false;
         }
-
-        STOP_PROFILER ( preparegroupby )
-
-        START_PROFILER ( preparesort )
-
         ///constructing collector
         HitQueue* scoreItemQueue = NULL;
 
