@@ -35,6 +35,7 @@ SearchManager::SearchManager(std::set<PropertyConfig, PropertyComp> schema,
         , rankingManagerPtr_(rankingManager)
         , queryBuilder_()
         , pSorterCache_(0)
+        , reranker_(0)
 {
     for (std::set<PropertyConfig, PropertyComp>::iterator iter = schema.begin(); iter != schema.end(); ++iter)
         schemaMap_[iter->getName()] = *iter;
@@ -506,6 +507,19 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             {
                 std::fill(rankScoreList.begin(), rankScoreList.end(), 1.0F);
             }
+
+            std::vector<std::pair<std::string , bool> >& sortPropertyList = actionOperation.actionItem_.sortPriorityList_;
+            bool rerank = false;
+            if(!pSorter) rerank = true;
+            else if (sortPropertyList.size() == 1)
+            {
+                std::string fieldNameL = sortPropertyList[0].first;
+                boost::to_lower(fieldNameL);
+                if (fieldNameL == "_rank")
+                    rerank = true;
+	     }
+            ///rerank is only used for pure ranking
+            if(rerank && reranker_) reranker_(docIdList,rankScoreList);
         }
         catch (std::exception& e)
         {

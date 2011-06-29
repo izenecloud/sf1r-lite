@@ -1224,6 +1224,39 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
           }
       }
 
+      task_node = getUniqChildElement( mining_schema_node, "Rerank", false );
+      mining_schema.property_rerank_enable = false;
+      if( task_node!= NULL )
+      {
+          int propNum = 0;
+          Iterator<Element> it( "Property" );
+          for ( it = it.begin( task_node ); it != it.end(); it++ )
+          {
+              if (++propNum > 1)
+              {
+                  throw XmlConfigParserException("in <Rerank> Config, at most one <Property> is allowed.");
+              }
+
+              getAttribute( it.Get(), "name", property_name );
+              std::vector<GroupConfig>& group_properties = mining_schema.group_properties;
+              bool gottype = false;
+              for(std::vector<GroupConfig>::iterator git = group_properties.begin(); git != group_properties.end(); ++git)
+              	{
+              	    if(git->propName == property_name)
+              	    {
+              	        gottype = true;
+                       break;
+              	    }
+              	}
+              if( !gottype )
+              {
+                  throw XmlConfigParserException("<Property> ["+property_name+"] in <Rerank> is not string type.");
+              }
+              mining_schema.prop_rerank_property.propName = property_name;
+              mining_schema.property_rerank_enable = true;
+          }
+      }
+
       task_node = getUniqChildElement( mining_schema_node, "TDT", false );
       mining_schema.tdt_enable = false;
       if( task_node!= NULL )

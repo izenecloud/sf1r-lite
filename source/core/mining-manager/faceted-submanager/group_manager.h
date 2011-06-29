@@ -89,6 +89,8 @@ private:
 
     typedef std::map<std::string, PropValueTable> PropValueMap;
     PropValueMap propValueMap_;
+
+    friend class PropertyDiversityReranker;
 };
 
 NS_FACETED_END

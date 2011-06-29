@@ -22,6 +22,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/function.hpp>
 
 #include <vector>
 #include <deque>
@@ -36,6 +37,7 @@ class SearchManager
     typedef izenelib::ir::idmanager::IDManager IDManager;
 
 public:
+    typedef boost::function< void( std::vector<unsigned int>&, std::vector<float>& ) > reranker_t;
     SearchManager(
         std::set<PropertyConfig, PropertyComp> schema,
         const boost::shared_ptr<IDManager>& idManager,
@@ -64,6 +66,10 @@ public:
                const boost::shared_ptr<IndexManager>& indexManager,
                IndexBundleConfiguration* config
                );
+
+    void set_reranker(reranker_t reranker){
+        reranker_ = reranker;
+    }
 
 private:
     bool doSearch_(SearchKeywordOperation& actionOperation,
@@ -97,6 +103,8 @@ private:
 
     boost::scoped_ptr<SearchCache> cache_;
     SortPropertyCache* pSorterCache_;
+
+    reranker_t reranker_;
 };
 
 } // end - namespace sf1r

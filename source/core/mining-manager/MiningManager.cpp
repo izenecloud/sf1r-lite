@@ -22,6 +22,9 @@
 #include "faceted-submanager/group_label.h"
 #include "faceted-submanager/group_label_result.h"
 #include "faceted-submanager/attr_manager.h"
+#include "faceted-submanager/property_diversity_reranker.h"
+
+#include <search-manager/SearchManager.h>
 
 #include <idmlib/semantic_space/esa/DocumentRepresentor.h>
 #include <idmlib/semantic_space/esa/ExplicitSemanticInterpreter.h>
@@ -85,6 +88,7 @@ MiningManager::MiningManager(const std::string& collectionDataPath, const std::s
         , idManager_(idManager)
         , groupManager_(NULL)
         , attrManager_(NULL)
+        , groupReranker_(NULL)
         , tdt_storage_(NULL)
 {
 }
@@ -95,6 +99,7 @@ MiningManager::~MiningManager()
     if(kpe_analyzer_) delete kpe_analyzer_;
     if(groupManager_) delete groupManager_;
     if(attrManager_) delete attrManager_;
+    if(groupReranker_) delete groupReranker_;
     if(tdt_storage_) delete tdt_storage_;
     //close();
 }
@@ -287,6 +292,13 @@ bool MiningManager::open()
                 std::cerr << "open ATTR failed" << std::endl;
                 return false;
             }
+        }
+
+        /** property_rerank **/
+        if( mining_schema_.group_enable)
+        {
+            groupReranker_ = new faceted::PropertyDiversityReranker(mining_schema_.prop_rerank_property.propName, groupManager_);
+            searchManager_->set_reranker(boost::bind(&faceted::PropertyDiversityReranker::rerank,groupReranker_,_1,_2));
         }
 
         /** tdt **/

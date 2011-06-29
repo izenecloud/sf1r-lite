@@ -60,6 +60,7 @@ namespace faceted
 {
 class GroupManager;
 class AttrManager;
+class PropertyDiversityReranker;
 }
 
 /**
@@ -334,6 +335,9 @@ private:
 
     /** ATTR BY */
     faceted::AttrManager* attrManager_;
+
+    /** GROUP RERANKER */
+    faceted::PropertyDiversityReranker* groupReranker_;
 
     /** TDT */
     std::string tdt_path_;
