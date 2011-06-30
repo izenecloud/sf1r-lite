@@ -295,7 +295,6 @@ private:
     idmlib::util::IDMAnalyzer* analyzer_;
     idmlib::util::IDMAnalyzer* cma_analyzer_;
     idmlib::util::IDMAnalyzer* kpe_analyzer_;
-//     MiningIDManager* idManager_;
 
     std::string id_path_;
 

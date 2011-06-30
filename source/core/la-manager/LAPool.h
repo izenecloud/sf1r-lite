@@ -41,6 +41,9 @@ namespace sf1r
     typedef la::ChineseAnalyzer NChineseAnalyzer;
 #endif
 
+#ifdef USE_IZENEJMA
+    typedef la::JapaneseAnalyzer NJapaneseAnalyzer;
+#endif
     ///
     /// @brief
     /// This class looks up the configuration of LA and creates Extractor classes.

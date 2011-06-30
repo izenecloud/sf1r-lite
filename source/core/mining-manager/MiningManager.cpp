@@ -1240,53 +1240,6 @@ bool MiningManager::GetTdtTopicInfo(const izenelib::util::UString& text, idmlib:
     return storage->GetTopicInfo(text, info);
 }
 
-// bool MiningManager::addDcResult_(KeywordSearchResult& miaInput)
-// {
-//     if( !dcSubManager_ ) return true;
-//     std::cout<<"Start to add DC result"<<std::endl;
-//     miaInput.docCategories_.resize(miaInput.topKDocs_.size());
-//     std::vector< std::vector<izenelib::util::UString> >::iterator result =
-//             miaInput.docCategories_.begin();
-//     typedef std::vector<docid_t>::const_iterator iterator;
-//
-//     std::vector<izenelib::util::UString> catList;
-//     for (iterator i = miaInput.topKDocs_.begin(); i != miaInput.topKDocs_.end(); ++i)
-//     {
-//         dcSubManager_->getCategoryResult(*i, catList);
-// //         for(unsigned int j=0;j<catList.size();j++)
-// //         {
-// //             catList[j].displayStringValue(izenelib::util::UString::UTF_8);
-// //         }
-// //         std::cout<<::std::endl;
-//         *result++ = catList;
-//         catList.clear();
-//     }
-//
-//     return true;
-// }
-
-
-// void MiningManager::doIDManagerInit_()
-// {
-//     if(idManager_ == NULL)
-//     {
-//         std::string termid_path = id_path_+"/termid";
-//         boost::filesystem::create_directories(termid_path);
-//         idManager_ = new MiningIDManager(termid_path, laManager_);
-//
-//     }
-// }
-//
-// void MiningManager::doIDManagerRelease_()
-// {
-//     if(idManager_ != NULL)
-//     {
-//         delete idManager_;
-//         idManager_ = NULL;
-//     }
-// }
-
-
 
 bool MiningManager::doTgInfoInit_()
 {

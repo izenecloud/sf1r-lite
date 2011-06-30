@@ -10,6 +10,7 @@ INCLUDE_DIRECTORIES(
   ${ilplib_INCLUDE_DIRS}
   ${wisekma_INCLUDE_DIRS}
   ${izenecma_INCLUDE_DIRS}
+  ${izenejma_INCLUDE_DIRS}  
   ${izenelib_INCLUDE_DIRS}
   ${iise_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
@@ -53,6 +54,7 @@ TARGET_LINK_LIBRARIES(CobraProcess
   ${ilplib_LIBRARIES}
   ${wisekma_LIBRARIES}
   ${izenecma_LIBRARIES}
+  ${izenejma_LIBRARIES}  
   ${izenelib_LIBRARIES}
   ${xml2_LIBRARIES}
 

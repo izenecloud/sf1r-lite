@@ -22,6 +22,7 @@ finder.find_imllib
 #finder.find_iise
 finder.find_kma
 finder.find_icma
+finder.find_ijma
 finder.find_idmlib
 
 require "izenesoft/tasks"

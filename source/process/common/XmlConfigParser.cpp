@@ -564,6 +564,9 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
 #ifdef USE_IZENECMA
                 || analysis == "chinese"
 #endif
+#ifdef USE_IZENEJMA
+                || analysis == "japanese"
+#endif
             )
         {
             Element * settings = NULL;
@@ -654,6 +657,9 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
             message << "\"" << id << "\": Wrong analysis name. Should be one of "
 #ifdef USE_IZENECMA
                 << "\"chinese\", "
+#endif
+#ifdef USE_IZENEJMA
+                << "\"japanese\", "
 #endif
 #ifdef USE_WISEKMA
                 << "\"korean\", "

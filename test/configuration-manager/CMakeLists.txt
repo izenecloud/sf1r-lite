@@ -15,6 +15,7 @@ SET(libs
   ${ilplib_LIBRARIES}
   ${wisekma_LIBRARIES}
   ${izenecma_LIBRARIES}
+  ${izenejma_LIBRARIES}
   ${izenelib_LIBRARIES}
 
   # #external
