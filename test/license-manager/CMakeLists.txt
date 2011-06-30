@@ -29,6 +29,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
         ${ilplib_LIBRARIES}
         ${wisekma_LIBRARIES}
         ${izenecma_LIBRARIES}
+        ${izenejma_LIBRARIES}
         ${izenelib_LIBRARIES}
         ${xml2_LIBRARIES}
         sqlite3

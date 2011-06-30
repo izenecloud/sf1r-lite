@@ -50,19 +50,24 @@ public:
     * pDocIterator is required to be set to NULL before prepare is called. This design is not good,
     * but it has to reuse the existing PropertyExpr structure
     */
-    bool prepare_dociterator(SearchKeywordOperation& actionOperation,
-                 collectionid_t colID,
-                 const property_weight_map& propertyWeightMap_,
-                 const std::vector<std::string>& properties,
-                 const std::vector<unsigned int>& propertyIds,
-                 bool readPositions,
-                 const std::vector<std::map<termid_t, unsigned> >& termIndexMaps,
-                 MultiPropertyScorer* &pDocIterator);
+    bool prepare_dociterator(
+        SearchKeywordOperation& actionOperation,
+        collectionid_t colID,
+        const property_weight_map& propertyWeightMap_,
+        const std::vector<std::string>& properties,
+        const std::vector<unsigned int>& propertyIds,
+        bool readPositions,
+        const std::vector<std::map<termid_t, unsigned> >& termIndexMaps,
+        MultiPropertyScorer* &pDocIterator
+    );
 
     /*
     *@brief Generate Filter, filter will be released by the user.
     */
-    bool prepare_filter(const std::vector<QueryFiltering::FilteringType>& filtingList, Filter* &filter);
+    bool prepare_filter(
+        const std::vector<QueryFiltering::FilteringType>& filtingList, 
+        Filter* &filter
+    );
 
     void reset_cache();
 private:
@@ -79,17 +84,19 @@ private:
 
     /// @param parentAndOrFlag, parent node type, available when isUnigramSearchMode = true.
     ///        1 AND, 0 OR, -1 Other/not defined.
-    bool do_prepare_for_property_(QueryTreePtr& queryTree,
-            collectionid_t colID,
-            const std::string& property,
-            unsigned int propertyId,
-            bool readPositions,
-            const std::map<termid_t, unsigned>& termIndexMapInProperty,
-            DocumentIterator* &pDocIterator,
-            std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >& termDocReaders,
-            bool hasUnigramProperty = true,
-            bool isUnigramSearchMode = false,
-            int parentAndOrFlag = -1);
+    bool do_prepare_for_property_(
+        QueryTreePtr& queryTree,
+        collectionid_t colID,
+        const std::string& property,
+        unsigned int propertyId,
+        bool readPositions,
+        const std::map<termid_t, unsigned>& termIndexMapInProperty,
+        DocumentIterator* &pDocIterator,
+        std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >& termDocReaders,
+        bool hasUnigramProperty = true,
+        bool isUnigramSearchMode = false,
+        int parentAndOrFlag = -1
+    );
 
     void getTermIdsAndIndexesOfSiblings(
         QueryTreePtr& queryTree,

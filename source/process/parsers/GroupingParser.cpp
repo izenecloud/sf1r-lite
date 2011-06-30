@@ -8,7 +8,6 @@
 #include <common/ValueConverter.h>
 #include <common/IndexBundleSchemaHelpers.h>
 #include <common/Keys.h>
-#include <configuration-manager/MiningSchema.h>
 
 namespace sf1r {
 using driver::Keys;
@@ -36,7 +35,7 @@ bool GroupingParser::parse(const Value& grouping)
 
     if (!miningSchema_.group_enable)
     {
-        error() = "The GroupBy properties have not been configured in <MiningSchema>::<Group> yet.";
+        error() = "The GroupBy properties have not been configured in <MiningBundle>::<Schema>::<Group> yet.";
         return false;
     }
 
@@ -65,7 +64,7 @@ bool GroupingParser::parse(const Value& grouping)
 
             if (configIt == groupProps.end())
             {
-                error() = "\"" + property + "\" is not GroupBy property, it should be configured in <MiningSchema>::<Group>.";
+                error() = "\"" + property + "\" is not GroupBy property, it should be configured in <MiningBundle>::<Schema>::<Group>.";
                 return false;
             }
         }

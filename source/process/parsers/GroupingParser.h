@@ -8,7 +8,7 @@
 #include <util/driver/Parser.h>
 #include <util/driver/Value.h>
 
-#include <bundles/mining/MiningBundleConfiguration.h>
+#include <configuration-manager/MiningSchema.h>
 
 #include <string>
 #include <vector>

@@ -6,6 +6,7 @@ INCLUDE_DIRECTORIES(
   ${imllib_INCLUDE_DIRS}
   ${wisekma_INCLUDE_DIRS}
   ${izenecma_INCLUDE_DIRS}
+  ${izenejma_INCLUDE_DIRS}  
   ${Boost_INCLUDE_DIRS}
   ${TokyoCabinet_INCLUDE_DIRS}
   ${Glog_INCLUDE_DIRS}
@@ -30,6 +31,7 @@ SET(libs
   ${imllib_LIBRARIES}
   ${wisekma_LIBRARIES}
   ${izenecma_LIBRARIES}
+  ${izenejma_LIBRARIES}
   ${iise_LIBRARIES}
   ${izenelib_LIBRARIES}
 

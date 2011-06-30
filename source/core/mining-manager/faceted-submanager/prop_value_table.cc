@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <cassert>
 #include <set>
 
@@ -192,7 +191,7 @@ bool PropValueTable::flush()
         }
         catch(boost::archive::archive_exception& e)
         {
-            LOG(ERROR) << "exception in boost::archive::text_iarchive: " << e.what()
+            LOG(ERROR) << "exception in boost::archive::text_oarchive: " << e.what()
                        << ", fileName: " << fileName;
             return false;
         }

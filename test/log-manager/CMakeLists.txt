@@ -6,6 +6,7 @@ INCLUDE_DIRECTORIES(
   ${ilplib_INCLUDE_DIRS}
   ${wisekma_INCLUDE_DIRS}
   ${izenecma_INCLUDE_DIRS}
+  ${izenejma_INCLUDE_DIRS}  
   ${izenelib_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
   ${TokyoCabinet_INCLUDE_DIRS}
@@ -30,6 +31,7 @@ SET(libs
   ${iise_LIBRARIES}
   ${wisekma_LIBRARIES}
   ${izenecma_LIBRARIES}
+  ${izenejma_LIBRARIES}
   ${izenelib_LIBRARIES}
   ${xml2_LIBRARIES}
 

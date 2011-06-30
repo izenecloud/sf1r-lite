@@ -546,13 +546,14 @@ bool RecommendTaskService::purchaseItem(
     }
 
     {
-        PurchaseTask task(*purchaseManager_, userId, itemIdVec);
-        jobScheduler_->addTask(boost::bind(&PurchaseTask::purchase, task));
+        OrderTask task(*orderManager_, itemIdVec);
+        jobScheduler_->addTask(boost::bind(&OrderTask::purchase, task));
     }
 
     {
-        OrderTask task(*orderManager_, itemIdVec);
-        jobScheduler_->addTask(boost::bind(&OrderTask::purchase, task));
+        // note: itemIdVec is empty now as it's swapped into PurchaseTask
+        PurchaseTask task(*purchaseManager_, userId, itemIdVec);
+        jobScheduler_->addTask(boost::bind(&PurchaseTask::purchase, task));
     }
 
     return true;

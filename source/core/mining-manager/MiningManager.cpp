@@ -14,9 +14,17 @@
 #include "taxonomy-generation-submanager/LabelManager.h"
 #include "similarity-detection-submanager/PrunedSortedTermInvertedIndexReader.h"
 #include "similarity-detection-submanager/DocWeightListPrunedInvertedIndexReader.h"
+#include "similarity-detection-submanager/SemanticKernel.h"
+
 #include "faceted-submanager/ontology_rep_item.h"
 #include "faceted-submanager/ontology_rep.h"
 #include "faceted-submanager/group_manager.h"
+#include "faceted-submanager/group_label.h"
+#include "faceted-submanager/group_label_result.h"
+#include "faceted-submanager/attr_manager.h"
+#include "faceted-submanager/property_diversity_reranker.h"
+
+#include <search-manager/SearchManager.h>
 
 #include <idmlib/semantic_space/esa/DocumentRepresentor.h>
 #include <idmlib/semantic_space/esa/ExplicitSemanticInterpreter.h>
@@ -43,6 +51,7 @@
 #include <boost/bind.hpp>
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/timer.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include <fstream>
 #include <iterator>
@@ -62,6 +71,8 @@ MiningManager::MiningManager(const std::string& collectionDataPath, const std::s
                              const boost::shared_ptr<LAManager>& laManager,
                              const boost::shared_ptr<DocumentManager>& documentManager,
                              const boost::shared_ptr<IndexManager>& index_manager,
+                             const boost::shared_ptr<SearchManager>& searchManager,
+                             const boost::shared_ptr<IDManager>& idManager,
                              const std::string& collectionName,
                              const schema_type& schema,
                              const MiningConfig& miningConfig,
@@ -71,38 +82,24 @@ MiningManager::MiningManager(const std::string& collectionDataPath, const std::s
         ,collectionName_(collectionName), schema_(schema), miningConfig_(miningConfig), mining_schema_(miningSchema)
         , laManager_(laManager), analyzer_(NULL), kpe_analyzer_(NULL)
         , document_manager_(documentManager), index_manager_(index_manager)
-        , tgInfo_(NULL)
-        , groupManager_(NULL)
-{
-}
-MiningManager::MiningManager(const std::string& collectionDataPath, const std::string& queryDataPath,
-                             const boost::shared_ptr<LAManager>& laManager,
-                             const boost::shared_ptr<DocumentManager>& documentManager,
-                             const boost::shared_ptr<IndexManager>& index_manager,
-                             const std::string& collectionName,
-                             const schema_type& schema,
-                             const MiningConfig& miningConfig,
-                             const MiningSchema& miningSchema,
-                             const boost::shared_ptr<IDManager>idManager)
-        :collectionDataPath_(collectionDataPath), queryDataPath_(queryDataPath)
-        ,collectionName_(collectionName), schema_(schema), miningConfig_(miningConfig), mining_schema_(miningSchema)
-        , laManager_(laManager), analyzer_(NULL), kpe_analyzer_(NULL)
-        , document_manager_(documentManager), index_manager_(index_manager)
+        , searchManager_(searchManager)
         , tgInfo_(NULL)
         , idManager_(idManager)
-	, groupManager_(NULL)
+        , groupManager_(NULL)
+        , attrManager_(NULL)
+        , groupReranker_(NULL)
+        , tdt_storage_(NULL)
 {
 }
-// void MiningManager::setConfigClient(const boost::shared_ptr<ConfigurationManagerClient>& configClient)
-// {
-// 	configClient_ = configClient;
-// }
 
 MiningManager::~MiningManager()
 {
     if(analyzer_) delete analyzer_;
     if(kpe_analyzer_) delete kpe_analyzer_;
     if(groupManager_) delete groupManager_;
+    if(attrManager_) delete attrManager_;
+    if(groupReranker_) delete groupReranker_;
+    if(tdt_storage_) delete tdt_storage_;
     //close();
 }
 
@@ -119,6 +116,7 @@ bool MiningManager::open()
     std::cout<<"DO_SIM : "<<(int)mining_schema_.sim_enable<<std::endl;
     std::cout<<"DO_FACETED : "<<(int)mining_schema_.faceted_enable<<std::endl;
     std::cout<<"DO_GROUP : "<<(int)mining_schema_.group_enable<<std::endl;
+    std::cout<<"DO_ATTR : "<<(int)mining_schema_.attr_enable<<std::endl;
     std::cout<<"DO_TDT : "<<(int)mining_schema_.tdt_enable<<std::endl;
     std::cout<<"DO_IISE : "<<(int)mining_schema_.ise_enable<<std::endl;
 
@@ -267,7 +265,6 @@ bool MiningManager::open()
 
         }
 
-
         /** group */
         if( mining_schema_.group_enable )
         {
@@ -281,7 +278,28 @@ bool MiningManager::open()
                 return false;
             }
         }
-        
+
+        /** attr */
+        if( mining_schema_.attr_enable )
+        {
+            if(attrManager_) delete attrManager_;
+            std::string attrPath = prefix_path + "/attr";
+		
+            attrManager_ = new faceted::AttrManager(document_manager_.get(), attrPath);
+            if (! attrManager_->open(mining_schema_.attr_property))
+            {
+                std::cerr << "open ATTR failed" << std::endl;
+                return false;
+            }
+        }
+
+        /** property_rerank **/
+        if( mining_schema_.group_enable)
+        {
+            groupReranker_ = new faceted::PropertyDiversityReranker(mining_schema_.prop_rerank_property.propName, groupManager_);
+            searchManager_->set_reranker(boost::bind(&faceted::PropertyDiversityReranker::rerank,groupReranker_,_1,_2));
+        }
+
         /** tdt **/
         if( mining_schema_.tdt_enable )
         {
@@ -431,6 +449,12 @@ bool MiningManager::DoMiningCollection()
     if( mining_schema_.group_enable )
     {
         groupManager_->processCollection();
+    }
+    
+    //do attr
+    if( mining_schema_.attr_enable )
+    {
+        attrManager_->processCollection();
     }
     
     //do tdt
@@ -760,6 +784,10 @@ bool MiningManager::computeSimilarity_(izenelib::ir::indexmanager::IndexReader* 
             else assert(false);
             property_ids[i] = property_config.propertyId_;
         }
+        //SemanticKernel simBuilders(sim_path_+"/semantic",document_manager_, index_manager_, laManager_, idManager_, searchManager_);
+        //simBuilders.setSchema( property_ids, property_names, "Title", "Source");
+        //simBuilders.doSearch();
+
         // customize the concrete reader
         typedef sim::PrunedSortedTermInvertedIndexReader base_reader_type;
         typedef sim::DocWeightListPrunedInvertedIndexReader<base_reader_type>
@@ -1102,28 +1130,53 @@ bool MiningManager::getGroupRep(
     const std::vector<unsigned int>& docIdList,
     const std::vector<std::string>& groupPropertyList,
     const std::vector<std::pair<std::string, std::string> >& groupLabelList,
-    faceted::OntologyRep& groupRep
+    faceted::OntologyRep& groupRep,
+    bool isAttrGroup,
+    int attrGroupNum,
+    const std::vector<std::pair<std::string, std::string> >& attrLabelList,
+    faceted::OntologyRep& attrRep
 )
 {
+    CREATE_SCOPED_PROFILER(groupby, "MIAProcess", "ProcessGetGroupRep");
+
+    boost::scoped_ptr<faceted::GroupLabel> groupLabelPtr;
+    bool doGroup = false;
     if (mining_schema_.group_enable && !docIdList.empty() && !groupPropertyList.empty())
     {
-        CREATE_SCOPED_PROFILER(groupby, "MIAProcess", "ProcessGetGroupRep");
-
-        struct timeval tv_start;
-        struct timeval tv_end;
-        gettimeofday(&tv_start, NULL);
-
-        bool result = groupManager_->getGroupRep(docIdList, groupPropertyList, groupLabelList, groupRep);
-
-        gettimeofday(&tv_end, NULL);
-        double timespend = (double) tv_end.tv_sec - (double) tv_start.tv_sec
-            + ((double) tv_end.tv_usec - (double) tv_start.tv_usec) / 1000000;
-        std::cout << "groupby cost " << timespend << " seconds." << std::endl;
-
-        return result;
+        doGroup = true;
+        groupLabelPtr.reset(groupManager_->createGroupLabel(groupLabelList));
     }
 
-    return true;
+    bool result = false;
+    if (isAttrGroup && mining_schema_.attr_enable)
+    {
+        izenelib::util::ClockTimer timer;
+        result = attrManager_->getGroupRep(docIdList, attrLabelList, groupLabelPtr.get(), attrGroupNum, attrRep);
+        LOG(INFO) << "attrby cost " << timer.elapsed() << " seconds";
+    }
+
+    if (doGroup)
+    {
+        izenelib::util::ClockTimer timer;
+
+        if (result && !attrLabelList.empty())
+        {
+            // get doc id list filter by attribute labels
+            faceted::GroupLabelResult labelResult(attrRep);
+            const std::pair<std::string, std::string>& labelPair = attrLabelList[0];
+            const std::vector<docid_t>& attrDocList = labelResult.selectLabel(labelPair.first, labelPair.second);
+
+            result = groupManager_->getGroupRep(attrDocList, groupPropertyList, groupLabelPtr.get(), groupRep);
+        }
+        else
+        {
+            result = groupManager_->getGroupRep(docIdList, groupPropertyList, groupLabelPtr.get(), groupRep);
+        }
+
+        LOG(INFO) << "groupby cost " << timer.elapsed() << " seconds";
+    }
+
+    return result;
 }
 
 bool MiningManager::GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list)
@@ -1168,53 +1221,6 @@ bool MiningManager::GetTdtTopicInfo(const izenelib::util::UString& text, idmlib:
     }
     return storage->GetTopicInfo(text, info);
 }
-
-// bool MiningManager::addDcResult_(KeywordSearchResult& miaInput)
-// {
-//     if( !dcSubManager_ ) return true;
-//     std::cout<<"Start to add DC result"<<std::endl;
-//     miaInput.docCategories_.resize(miaInput.topKDocs_.size());
-//     std::vector< std::vector<izenelib::util::UString> >::iterator result =
-//             miaInput.docCategories_.begin();
-//     typedef std::vector<docid_t>::const_iterator iterator;
-//
-//     std::vector<izenelib::util::UString> catList;
-//     for (iterator i = miaInput.topKDocs_.begin(); i != miaInput.topKDocs_.end(); ++i)
-//     {
-//         dcSubManager_->getCategoryResult(*i, catList);
-// //         for(unsigned int j=0;j<catList.size();j++)
-// //         {
-// //             catList[j].displayStringValue(izenelib::util::UString::UTF_8);
-// //         }
-// //         std::cout<<::std::endl;
-//         *result++ = catList;
-//         catList.clear();
-//     }
-//
-//     return true;
-// }
-
-
-// void MiningManager::doIDManagerInit_()
-// {
-//     if(idManager_ == NULL)
-//     {
-//         std::string termid_path = id_path_+"/termid";
-//         boost::filesystem::create_directories(termid_path);
-//         idManager_ = new MiningIDManager(termid_path, laManager_);
-//
-//     }
-// }
-//
-// void MiningManager::doIDManagerRelease_()
-// {
-//     if(idManager_ != NULL)
-//     {
-//         delete idManager_;
-//         idManager_ = NULL;
-//     }
-// }
-
 
 
 bool MiningManager::doTgInfoInit_()

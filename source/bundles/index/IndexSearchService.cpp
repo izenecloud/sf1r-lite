@@ -236,7 +236,9 @@ FinishSearch:
     if( miningSearchService_ )
     {
         miningSearchService_->getSearchResult(resultItem);
-        miningSearchService_->getGroupRep(resultItem.topKDocs_, actionItem.groupPropertyList_, actionItem.env_.groupLabels_, resultItem.groupRep_);		
+        miningSearchService_->getGroupRep(resultItem.topKDocs_,
+                                          actionItem.groupPropertyList_, actionItem.env_.groupLabels_, resultItem.groupRep_,
+                                          actionItem.isAttrGroup_, actionItem.attrGroupNum_, actionItem.env_.attrLabels_, resultItem.attrRep_);
     }
 
     return true;
@@ -250,6 +252,7 @@ void IndexSearchService::analyze_(const std::string& qstr, std::vector<izenelib:
 
     la::LA* pLA = LAPool::getInstance()->popSearchLA( analysisInfo_);
 //    pLA->process_search(question, termList);
+    if(!pLA) return;
     pLA->process(question, termList);
     LAPool::getInstance()->pushSearchLA( analysisInfo_, pLA );
 

@@ -132,8 +132,6 @@ bool ItemIndex::get(std::list<uint32_t>& itemIds, std::list<ItemIndexDocIDType>&
         }
     }
 
-    if(pAndDocIterator->empty()) return false;
-
     while(pAndDocIterator->next())
     {
         docs.push_back(pAndDocIterator->doc());

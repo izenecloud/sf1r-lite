@@ -123,6 +123,7 @@
 						<xs:enumeration value="matrix"/>
 						<xs:enumeration value="chinese"/>
 						<xs:enumeration value="korean"/>
+						<xs:enumeration value="japanese"/>
 						<xs:enumeration value="english"/>
 						<xs:enumeration value="multilang"/>
 					</xs:restriction>

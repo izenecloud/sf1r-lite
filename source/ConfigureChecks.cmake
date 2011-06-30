@@ -74,6 +74,15 @@ ELSE( USE_IZENECMA )
   SET( izenecma_LIBRARY_DIRS "" )
 ENDIF( USE_IZENECMA )
 
+IF( USE_IZENEJMA )
+  FIND_PACKAGE(izenejma REQUIRED)
+  ADD_DEFINITIONS( -DUSE_IZENEJMA=TRUE )
+ELSE( USE_IZENEJMA )
+  SET( izenejma_INCLUDE_DIRS "" )
+  SET( izenejma_LIBRARIES "" )
+  SET( izenejma_LIBRARY_DIRS "" )
+ENDIF( USE_IZENEJMA )
+
 ##################################################
 # Other Libraries
 #####
