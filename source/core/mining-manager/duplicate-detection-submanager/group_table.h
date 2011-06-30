@@ -28,6 +28,11 @@ public:
     void Find(uint32_t docid, std::vector<uint32_t>& list);
 
     void PrintStat() const;
+    
+    const std::vector<std::vector<uint32_t> >& GetGroupInfo() const
+    {
+        return group_info_;
+    }
 
 private:
     std::string file_;

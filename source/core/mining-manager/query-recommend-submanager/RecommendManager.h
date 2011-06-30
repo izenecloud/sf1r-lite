@@ -41,7 +41,6 @@
 
 #include <util/functional.h>
 
-#include <idmlib/query-suggestion/Reminder.h>
 #include <idmlib/util/file_object.h>
 #include <idmlib/util/idm_analyzer.h>
 #include <idmlib/util/directory_switcher.h>
@@ -64,8 +63,7 @@ class RecommendManager : public boost::noncopyable
     typedef izenelib::am::SSFType<uint8_t, izenelib::util::UString , uint32_t, false> PropertySSFType;
     typedef PropertySSFType::WriterType property_writer_t;
     typedef izenelib::am::SSFType<uint64_t, std::pair<izenelib::util::UString, uint32_t> , uint32_t, false> QueryLogSSFType;
-    typedef idmlib::Reminder<MiningIDManager> ReminderType;
-    typedef izenelib::am::tc_hash<uint8_t, std::vector<izenelib::util::UString> > ReminderStorageType;
+    
 public:
     RecommendManager(const std::string& path,
                      const std::string& collection_name,
@@ -88,8 +86,7 @@ public:
 
     void insertQuery(const izenelib::util::UString& queryStr, uint32_t freq = 1);
 
-    void insertQuerySlice(uint32_t timeId, const std::list<std::pair<izenelib::util::UString,uint32_t> >& logItems, bool isLastestTimeId=false);
-
+    
     void insertProperty(const izenelib::util::UString& queryStr, uint32_t docid);
 
     /**
@@ -100,15 +97,12 @@ public:
         uint32_t maxNum,
         std::deque<izenelib::util::UString>& queries);
 
-    void getReminderQuery(std::vector<izenelib::util::UString>& popularQueries, std::vector<izenelib::util::UString>& realTimeQueries);
-
+    
 //     void rebuild();
 
     bool RebuildForAll();
 
     bool RebuildForRecommend();
-
-    bool RebuildForReminder();
 
     bool RebuildForCorrection();
 
@@ -133,10 +127,6 @@ private:
     uint8_t QueryLogScore_(uint32_t freq);
 
     bool AddRecommendItem_(MIRDatabase* db, uint32_t item_id, const izenelib::util::UString& text, uint8_t type, uint32_t score);
-
-
-
-    void initReminder_();
 
 
     bool getConceptStringByConceptId_(uint32_t id, izenelib::util::UString& ustr);
@@ -166,8 +156,6 @@ private:
     boost::shared_ptr<LabelManager> labelManager_;
     uint32_t max_labelid_in_recommend_;
     idmlib::util::IDMAnalyzer* analyzer_;
-    ReminderType* reminder_;
-    ReminderStorageType* reminderStorage_;
     uint32_t logdays_;
     boost::shared_mutex mutex_;
     boost::shared_mutex reminderMutex_;

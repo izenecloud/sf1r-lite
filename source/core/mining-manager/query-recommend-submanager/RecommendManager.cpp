@@ -35,7 +35,6 @@ RecommendManager::RecommendManager(
         recommend_db_(NULL), concept_id_manager_(NULL),
         labelManager_(labelManager),
         analyzer_(analyzer),
-        reminder_(NULL),
         logdays_(logdays),
         dir_switcher_(path),
         max_docid_(0), max_docid_file_(path+"/max_id")
@@ -85,9 +84,6 @@ bool RecommendManager::open()
     {
         //TODO
     }
-    reminderStorage_ = new ReminderStorageType(path_+"/reminder_storage");
-    reminderStorage_->setCacheSize(10);
-    reminderStorage_->open();
     isOpen_ = true;
     return true;
 }
@@ -109,33 +105,16 @@ void RecommendManager::close()
             delete concept_id_manager_;
             concept_id_manager_ = NULL;
         }
-        if ( reminderStorage_!= NULL )
-        {
-            reminderStorage_->close();
-            delete reminderStorage_;
-            reminderStorage_ = NULL;
-        }
         isOpen_ = false;
     }
 }
 
-void RecommendManager::initReminder_()
-{
-    if ( reminder_ == NULL )
-    {
-        boost::filesystem::remove_all( path_+"/reminder" );
-        boost::filesystem::create_directories( path_+"/reminder" );
-        reminder_ = new ReminderType(analyzer_, path_+"/reminder", recommend_param_.realtime_num, recommend_param_.popular_num);
-    }
-}
 
 
 bool RecommendManager::RebuildForAll()
 {
     bool succ = RebuildForRecommend();
     if (!succ) return false;
-//     succ = RebuildForReminder();
-//     if (!succ) return false;
     succ = RebuildForCorrection();
     if (!succ) return false;
     succ = RebuildForAutofill();
@@ -335,94 +314,6 @@ bool RecommendManager::RebuildForRecommend()
     return true;
 }
 
-bool RecommendManager::RebuildForReminder()
-{
-    boost::posix_time::ptime time_now = boost::posix_time::second_clock::local_time();
-    uint32_t days = logdays_;
-    boost::gregorian::days dd(days+1);
-    boost::posix_time::ptime p = time_now-dd;
-    std::string time_string = boost::posix_time::to_iso_string(p);
-    std::string now_time_string = boost::posix_time::to_iso_string(time_now);
-//   std::cout<<"{{{322 "<<now_time_string.substr(0,8)<<std::endl;
-    uint32_t now_day = boost::lexical_cast<uint32_t>( now_time_string.substr(0,8) );
-
-    std::string slice_sql = "select substr(TimeStamp,1,8) as day, query , count(*) as freq from user_queries where collection='"+collection_name_+"' and TimeStamp >='"+time_string+"' group by day, query order by day asc";
-    std::list<std::map<std::string, std::string> > slice_records;
-    UserQuery::find_by_sql(slice_sql, slice_records);
-    std::list<std::map<std::string, std::string> >::iterator it = slice_records.begin();
-
-    std::list<std::pair<izenelib::util::UString,uint32_t> > logItems;
-    uint32_t last_day = 0;
-    for ( ;it!=slice_records.end();++it )
-    {
-//       std::cout<<"{{{333 "<<(*it)["day"]<<","<<(*it)["freq"]<<std::endl;
-        uint32_t day = boost::lexical_cast<uint32_t>( (*it)["day"] );
-        uint32_t freq = boost::lexical_cast<uint32_t>( (*it)["freq"] );
-        izenelib::util::UString uquery( (*it)["query"], izenelib::util::UString::UTF_8);
-
-
-        if ( day != last_day && logItems.size()>0 )
-        {
-            bool isLast = false;
-            if ( now_day >= last_day )
-            {
-                if ( now_day - last_day <= 1 ) isLast = true;
-            }
-//             std::cout<<"*XX* "<<now_day<<" "<<last_day<<" "<<isLast<<std::endl;
-            insertQuerySlice( last_day, logItems, isLast );
-            logItems.resize(0);
-        }
-
-        if ( !QueryUtility::isRestrictWord( uquery ) )
-        {
-            logItems.push_back( std::make_pair(uquery, freq) );
-        }
-
-
-        last_day = day;
-    }
-    if ( logItems.size()>0 )
-    {
-        bool isLast = false;
-        if ( now_day >= last_day )
-        {
-            if ( now_day - last_day <= 1 ) isLast = true;
-        }
-//         std::cout<<"*XX* "<<now_day<<" "<<last_day<<" "<<isLast<<std::endl;
-        insertQuerySlice( last_day, logItems, isLast );
-    }
-    if ( reminder_ != NULL )
-    {
-        reminder_->indexQuery();
-        std::vector<izenelib::util::UString> popularQueries;
-        std::vector<izenelib::util::UString> realTimeQueries;
-        reminder_->getPopularQuery( popularQueries );
-        reminder_->getRealTimeQuery( realTimeQueries );
-        {
-            boost::lock_guard<boost::shared_mutex> lock(reminderMutex_);
-            reminderStorage_->update( 1, popularQueries );
-            reminderStorage_->update( 2, realTimeQueries );
-            reminderStorage_->flush();
-        }
-        std::string str;
-        std::cout<<"[Popular query:]"<<std::endl;
-        for (uint32_t i=0;i<popularQueries.size();i++)
-        {
-            popularQueries[i].convertString( str, izenelib::util::UString::UTF_8);
-            std::cout<<str<<std::endl;
-        }
-        std::cout<<"[Realtime query:]"<<std::endl;
-        for (uint32_t i=0;i<realTimeQueries.size();i++)
-        {
-            realTimeQueries[i].convertString( str, izenelib::util::UString::UTF_8);
-            std::cout<<str<<std::endl;
-        }
-        delete reminder_;
-        reminder_ = NULL;
-        boost::filesystem::remove_all( path_+"/reminder" );
-    }
-    return true;
-}
 
 bool RecommendManager::RebuildForCorrection()
 {
@@ -460,23 +351,6 @@ bool RecommendManager::RebuildForAutofill()
     return true;
 }
 
-
-
-
-void RecommendManager::insertQuerySlice(uint32_t timeId, const std::list<std::pair<izenelib::util::UString,uint32_t> >& logItems, bool isLastestTimeId)
-{
-    if ( logItems.size()==0 ) return;
-    initReminder_();
-    reminder_->indexQueryLog(timeId, logItems, isLastestTimeId);
-}
-
-void RecommendManager::getReminderQuery(std::vector<izenelib::util::UString>& popularQueries, std::vector<izenelib::util::UString>& realTimeQueries)
-{
-    if ( reminderStorage_ == NULL ) return;
-    boost::shared_lock<boost::shared_mutex> mLock(reminderMutex_);
-    reminderStorage_->get(1, popularQueries);
-    reminderStorage_->get(2, realTimeQueries);
-}
 
 uint32_t RecommendManager::getRelatedConcepts(const izenelib::util::UString& queryStr, uint32_t maxNum, std::deque<izenelib::util::UString>& queries)
 {

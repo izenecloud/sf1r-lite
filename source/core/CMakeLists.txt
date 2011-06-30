@@ -37,6 +37,7 @@ FILE(GLOB document_SRC
 
 FILE(GLOB mining_SRC
   "mining-manager/*.cpp"
+  "mining-manager/*.cc"
   "mining-manager/util/*.cpp"
   "mining-manager/taxonomy-generation-submanager/*.cpp"
   "mining-manager/duplicate-detection-submanager/*.cpp"

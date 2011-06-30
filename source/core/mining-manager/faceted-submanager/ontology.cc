@@ -180,7 +180,7 @@ bool Ontology::DelCategory(CategoryIdType id)
 bool Ontology::InsertDoc(CategoryIdType cid, uint32_t doc_id)
 {
     boost::lock_guard<boost::shared_mutex> lock(mutex_);
-//   std::cout<<"[C2D] find docid "<<doc_id<<" , cid: "<<cid<<std::endl;
+//     std::cout<<"[C2D] find docid "<<doc_id<<" , cid: "<<cid<<std::endl;
     return docs_storage_->InsertDoc(cid, doc_id);
 }
 
@@ -486,6 +486,7 @@ bool Ontology::GetXmlNode_(izenelib::util::ticpp::Element* node, XmlNode& xml_no
 
 bool Ontology::SetXML(const std::string& xml)
 {
+    std::cout<<"Ontology::SetXML"<<std::endl;
     using namespace izenelib::util::ticpp;
 
     std::vector<CategoryIdType> delete_list;
@@ -530,7 +531,11 @@ bool Ontology::SetXML(const std::string& xml)
             return false;
         }
         xml_nodes.push_back(xml_node);
-//     std::cout<<"P:"<<xml_node.parent_name<<", T:"<<xml_node.name<<std::endl;
+//         std::string ps;
+//         std::string ns;
+//         xml_node.parent_name.convertString(ps, izenelib::util::UString::UTF_8);
+//         xml_node.name.convertString(ns, izenelib::util::UString::UTF_8);
+//         std::cout<<"P:"<<ps<<", T:"<<ns<<std::endl;
 //     if( !docs_storage_->DelCategory(cid)) return false;
     }
 
@@ -557,7 +562,14 @@ bool Ontology::SetXML(const std::string& xml)
                     std::cerr<<"Add category node failed."<<std::endl;
                     return false;
                 }
-//         std::cout<<"P:"<<xml_nodes[i].parent_name<<", "<<*pid<<", T:"<<xml_nodes[i].name<<", I:"<<id<<std::endl;
+                
+                {
+                    std::string ps;
+                    std::string ns;
+                    xml_nodes[i].parent_name.convertString(ps, izenelib::util::UString::UTF_8);
+                    xml_nodes[i].name.convertString(ns, izenelib::util::UString::UTF_8);
+                    std::cout<<"P:"<<ps<<", "<<*pid<<", T:"<<ns<<", I:"<<id<<std::endl;
+                }
                 candidate_parent.push_back(std::make_pair(xml_nodes[i].name, id));
                 //set rule if any
                 SetCategoryRule(id, xml_nodes[i].rule);
@@ -573,7 +585,6 @@ bool Ontology::SetXML(const std::string& xml)
             }
         }
     }
-
     if (!SetName(name))
     {
         std::cerr<<"Can not set name to "<<name<<std::endl;

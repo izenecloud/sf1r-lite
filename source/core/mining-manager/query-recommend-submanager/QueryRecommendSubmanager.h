@@ -50,15 +50,6 @@ public:
                            QueryRecommendRep& queryList);
 
 
-    /**
-     * @brief Get the ranked query recommendation list for a given query with the session information
-     * @param session the session identifier
-     * @param queryStr the submitted query
-     * @param topDocIdList the top docs from the search result
-     * @param maxNum the max number of recommended items
-     * @param queryList the resulted recommended items
-     */
-    bool getReminderQuery(std::vector<izenelib::util::UString>& popularQueries, std::vector<izenelib::util::UString>& realTimeQueries);
 
 
 

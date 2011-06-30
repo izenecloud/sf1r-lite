@@ -239,11 +239,6 @@ private:
     void getAllMiningProperties_(const Document& document, std::vector<izenelib::util::UString>& values, std::vector<izenelib::util::UString>& recommendValues, std::string& imgUrl);
 
 
-//     void analyzeLabelRelation();
-
-    void replicatingLabel_();
-
-
 
     void normalTermList_(const izenelib::util::UString& text,
                          std::vector<termid_t>& termList);

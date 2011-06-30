@@ -89,6 +89,10 @@ public:
     {
         return ontology_;
     }
+    
+    bool GetCategoryName(uint32_t docid, std::vector<CategoryNameType>& name_list);
+  
+    void OutputDocCategoryToFile(const std::string& file, uint32_t min_docid, uint32_t max_docid);
 
 private:
 

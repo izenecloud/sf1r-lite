@@ -26,7 +26,6 @@
 //#include <process/common/CollectionMeta.h>
 //#include <process/common/XmlConfigParser.h>
 
-#include "LabelSynchronizer.h"
 
 #include <directory-manager/DirectoryCookie.h>
 #include <pwd.h>
@@ -158,7 +157,7 @@ bool MiningManager::open()
         LAPool::getInstance()->get_cma_path(cma_path );
         if(cma_path!="")
         {
-            cma_analyzer_ = new idmlib::util::IDMAnalyzer(cma_path, la::ChineseAnalyzer::maximum_entropy);
+            cma_analyzer_ = new idmlib::util::IDMAnalyzer(cma_path, la::ChineseAnalyzer::maximum_match, false);
             if( !cma_analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct") )
             {
                 return false;
@@ -715,12 +714,7 @@ bool MiningManager::getReminderQuery(
     std::vector<izenelib::util::UString>& popularQueries,
     std::vector<izenelib::util::UString>& realtimeQueries)
 {
-    if ( qrManager_ )
-    {
-        bool r = qrManager_->getReminderQuery(popularQueries,realtimeQueries);
-        return r;
-    }
-    return false;
+    return true;
 }
 
 bool MiningManager::getUniqueDocIdList(const std::vector<uint32_t>& docIdList,
@@ -957,18 +951,6 @@ bool MiningManager::getLabelListByDocId(uint32_t docid, std::vector<std::pair<ui
         }
     }
     return true;
-}
-
-void MiningManager::replicatingLabel_()
-{
-    RsyncInfo rinfo;
-    struct passwd *pwd = getpwuid(getuid());
-    rinfo.setUser(pwd->pw_name);
-
-    rinfo.collectionName =collectionName_;
-    rinfo.srcFilePath = boost::filesystem::system_complete(tg_label_path_ + "/" + "label.stream").file_string();
-    rinfo.srcFileSize = boost::filesystem::file_size( rinfo.srcFilePath );
-    //TODO to rsync the label.
 }
 
 

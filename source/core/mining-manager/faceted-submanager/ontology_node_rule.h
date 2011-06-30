@@ -36,8 +36,21 @@ public:
     std::vector<izenelib::util::UString> labels;
     izenelib::util::UString description;
 
+};
+
+class OntologyNodeRuleInt
+{
+
+public:
+     
+    
+
+public:
+    std::vector<izenelib::util::UString> labels;
+    std::vector<std::vector<uint32_t> > labels_int;
 
 
 };
+
 NS_FACETED_END
 #endif
