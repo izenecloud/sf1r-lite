@@ -84,19 +84,6 @@ bool CobraProcess::initLAManager()
 
     ///TODO 
     /// Ugly here, to be optimized through better configuration
-    LAConfigUnit config;
-    config.setId( "la_mia" );
-    config.setAnalysis( "korean" );
-    config.setMode( "label" );
-    config.setDictionaryPath( laConfig.kma_path_ ); // defined macro
-	
-    laConfig.addLAConfig(config);
-	
-    AnalysisInfo analysisInfo;
-    analysisInfo.analyzerId_ = "la_mia";
-    analysisInfo.tokenizerNameList_.insert("tok_divide");
-    laConfig.addAnalysisPair(analysisInfo);
-	
     LAConfigUnit config2;
     config2.setId( "la_sia" );
     config2.setAnalysis( "korean" );

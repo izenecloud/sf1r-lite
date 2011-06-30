@@ -599,6 +599,11 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
                         LAPool::getInstance()->set_cma_path(dictionaryPath_inner );
                         std::cout<<"set_cma_path : "<<dictionaryPath_inner<<std::endl;
                     }
+                    else if(analysis == "japanese")
+                    {
+                        LAPool::getInstance()->set_jma_path(dictionaryPath_inner );
+                        std::cout<<"set_jma_path : "<<dictionaryPath_inner<<std::endl;
+                    }						
                 }
                 else if ( !dictionaryPath.empty() && dictionaryPath_inner.empty() )
                 {
@@ -608,6 +613,11 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
                         LAPool::getInstance()->set_cma_path(dictionaryPath );
                         std::cout<<"set_cma_path : "<<dictionaryPath<<std::endl;
                     }
+                    else if(analysis == "japanese")
+                    {
+                        LAPool::getInstance()->set_jma_path(dictionaryPath_inner );
+                        std::cout<<"set_jma_path : "<<dictionaryPath_inner<<std::endl;
+                    }						
                 }
                 else
                 {
@@ -964,6 +974,9 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     params.GetString("Sia/wildcardtype", indexBundleConfig.wildcardType_, "unigram");
     params.Get("Sia/indexunigramproperty", indexBundleConfig.bIndexUnigramProperty_);
     params.Get("Sia/unigramsearchmode", indexBundleConfig.bUnigramSearchMode_);
+    std::string multilangGranualarity;
+    params.GetString("Sia/multilanggranularity", multilangGranualarity, "field");
+    indexBundleConfig.setIndexMultiLangGranularity(multilangGranualarity);
 
     ///TODO for ranking
     ///ranking is not configed right now, although we keep such interface here
