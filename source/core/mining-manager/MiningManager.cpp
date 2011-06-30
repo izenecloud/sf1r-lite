@@ -230,9 +230,17 @@ bool MiningManager::open()
         {
             sim_path_ = prefix_path + "/sim";
             FSUtil::createDir(sim_path_);
-            std::string hdb_path = sim_path_ + "/hdb";
-            boost::filesystem::create_directories(hdb_path);
-            similarityIndex_.reset(new SimilarityIndex(sim_path_, hdb_path));
+
+            if ( miningConfig_.similarity_param.enable_esa == false )
+            {
+                std::string hdb_path = sim_path_ + "/hdb";
+                boost::filesystem::create_directories(hdb_path);
+                similarityIndex_.reset(new SimilarityIndex(sim_path_, hdb_path));
+            }
+            else
+            {
+                similarityIndexEsa_.reset(new idmlib::sim::DocSimOutput(sim_path_+"/esa"));
+            }
         }
 
         /** faceted */
@@ -836,32 +844,54 @@ bool MiningManager::computeSimilarityESA_(const std::vector<std::string>& proper
         std::string esaSimPath = sim_path_+"/esa";
         std::string esaSimTmpPath = esaSimPath+"/tmp";
 
-        cout <<cmaPath<<endl;
-        cout <<colBasePath<<endl;
-        cout <<esaSimPath<<endl;
+//        cout <<cmaPath<<endl;
+//        cout <<colBasePath<<endl;
+//        cout <<esaSimPath<<endl;
 
         // document representation
         size_t maxDoc = 0;
-		DocumentRepresentor docRepresentor(colBasePath, cmaPath, esaSimTmpPath, maxDoc);
+		DocumentRepresentor docRepresentor(colBasePath, cmaPath, esaSimTmpPath, property_names, maxDoc);
 		docRepresentor.represent();
 
 		// interpretation
 		std::string wikiIndexdir = system_resource_path_ + "/sim/esa";
 		cout <<wikiIndexdir<<endl;
 		ExplicitSemanticInterpreter esInter(wikiIndexdir, esaSimTmpPath);
+		if (!esInter.getWikiIndexState()) {
+		    std::cerr << "WikiIndex load failed! \n"<< std::endl;
+		    return false;
+		}
 		esInter.interpret(10000, maxDoc);
 
 		// all pairs similarity search
-		string datafile = esaSimTmpPath+"/doc_int.vec1";
-	    boost::shared_ptr<DataSetIterator> dataSetIterator(new SparseVectorSetIterator(datafile));
-	    boost::shared_ptr<DocSimOutput> output(new DocSimOutput(esaSimPath));
+        boost::shared_ptr<DocSimOutput> output(new DocSimOutput(esaSimPath));
+        float thresholdSim = 0.8; // TODO
+        AllPairsSearch allPairs(output, thresholdSim);
 
-	    float thresholdSim = 0.8;
-	    AllPairsSearch allPairs(output, thresholdSim);
-	    allPairs.findAllSimilarPairs(dataSetIterator, maxDoc);
+        /// single input file (build inverted index in memory)
+		///string datafile = esaSimTmpPath+"/doc_int.vec1";
+	    ///boost::shared_ptr<DataSetIterator> dataSetIterator(new SparseVectorSetIterator(datafile));
+	    ///allPairs.findAllSimilarPairs(dataSetIterator, maxDoc);
 
-//	    std::vector<boost::shared_ptr<DataSetIterator> > dataSetIteratorList;
-//	    getDataSetIterators(docSetPath, dataSetIteratorList);
+        /// multiple input file
+	    std::vector<boost::shared_ptr<DataSetIterator> > dataSetIteratorList;
+	    {
+	        directory_iterator iterEnd;
+	        for (directory_iterator iter(esaSimTmpPath); iter != iterEnd; iter ++)
+	        {
+	            string datafile = iter->path().string();
+	            if (datafile.find("doc_int.vec") != string::npos)
+	            {
+	                //cout << "file path : "<<datafile << endl;
+	                boost::shared_ptr<DataSetIterator> dataSetIterator(new SparseVectorSetIterator(datafile));
+	                dataSetIteratorList.push_back(dataSetIterator);
+	            }
+	        }
+	    }
+	    allPairs.findAllSimilarPairs(dataSetIteratorList, maxDoc);
+
+	    // remove tmp files
+	    boost::filesystem::remove_all(esaSimTmpPath);
 	}
 	catch(std::exception& ex)
 	{
@@ -876,7 +906,7 @@ bool MiningManager::computeSimilarityESA_(const std::vector<std::string>& proper
 bool MiningManager::getSimilarDocIdList(uint32_t documentId, uint32_t maxNum,
                                         std::vector<std::pair<uint32_t, float> >& result)
 {
-    if (!similarityIndex_)
+    if (!similarityIndex_ && !similarityIndexEsa_)
     {
         // TODO display warning message
         cerr << "[MiningManager] Warning - similarity index is not executed"
@@ -885,9 +915,16 @@ bool MiningManager::getSimilarDocIdList(uint32_t documentId, uint32_t maxNum,
     }
 
     result.clear();
-    similarityIndex_->getSimilarDocIdScoreList(documentId, maxNum,
-            std::back_inserter(result));
-
+    if ( miningConfig_.similarity_param.enable_esa == false )
+    {
+        similarityIndex_->getSimilarDocIdScoreList(documentId, maxNum,
+                std::back_inserter(result));
+    }
+    else
+    {
+        similarityIndexEsa_->getSimilarDocIdScoreList(documentId, maxNum,
+                result);
+    }
 
     return true;
 }
@@ -1109,14 +1146,22 @@ bool MiningManager::addDupResult_(KeywordSearchResult& miaInput)
 bool MiningManager::addSimilarityResult_(KeywordSearchResult& miaInput)
 {
 //    boost::mutex::scoped_lock lock(sim_mtx_);
-    if ( !similarityIndex_ ) return true;
+    if ( !similarityIndex_ && !similarityIndexEsa_) return true;
     miaInput.numberOfSimilarDocs_.resize(miaInput.topKDocs_.size());
     
     
     for(uint32_t i=0;i<miaInput.topKDocs_.size();i++)
     {
         uint32_t docid = miaInput.topKDocs_[i];
-        uint32_t count = similarityIndex_->getSimilarDocNum(docid);
+        uint32_t count = 0;
+        if ( miningConfig_.similarity_param.enable_esa == false )
+        {
+            count = similarityIndex_->getSimilarDocNum(docid);
+        }
+        else
+        {
+            count = similarityIndexEsa_->getSimilarDocNum(docid);
+        }
         miaInput.numberOfSimilarDocs_[i] = count;
     }
 

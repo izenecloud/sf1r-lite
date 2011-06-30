@@ -1054,6 +1054,7 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     //for similarity
     params.Get<uint32_t>("SimilarityPara/docnumlimit", mining_config.similarity_param.docnum_limit);
     params.Get<uint32_t>("SimilarityPara/termnumlimit", mining_config.similarity_param.termnum_limit);
+    mining_config.similarity_param.enable_esa = false; // default value
     params.Get("SimilarityPara/enableesa", mining_config.similarity_param.enable_esa);
     //for DC
     params.Get("ClassificationPara/customizetraining", mining_config.dc_param.customize_training);
