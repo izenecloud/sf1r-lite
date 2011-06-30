@@ -22,6 +22,9 @@
 #include "faceted-submanager/group_label.h"
 #include "faceted-submanager/group_label_result.h"
 #include "faceted-submanager/attr_manager.h"
+#include "faceted-submanager/property_diversity_reranker.h"
+
+#include <search-manager/SearchManager.h>
 
 #include <idmlib/semantic_space/esa/DocumentRepresentor.h>
 #include <idmlib/semantic_space/esa/ExplicitSemanticInterpreter.h>
@@ -31,7 +34,6 @@
 //#include <process/common/CollectionMeta.h>
 //#include <process/common/XmlConfigParser.h>
 
-#include "LabelSynchronizer.h"
 
 #include <directory-manager/DirectoryCookie.h>
 #include <pwd.h>
@@ -85,6 +87,7 @@ MiningManager::MiningManager(const std::string& collectionDataPath, const std::s
         , idManager_(idManager)
         , groupManager_(NULL)
         , attrManager_(NULL)
+        , groupReranker_(NULL)
         , tdt_storage_(NULL)
 {
 }
@@ -95,6 +98,7 @@ MiningManager::~MiningManager()
     if(kpe_analyzer_) delete kpe_analyzer_;
     if(groupManager_) delete groupManager_;
     if(attrManager_) delete attrManager_;
+    if(groupReranker_) delete groupReranker_;
     if(tdt_storage_) delete tdt_storage_;
     //close();
 }
@@ -151,7 +155,7 @@ bool MiningManager::open()
         LAPool::getInstance()->get_cma_path(cma_path );
         if(cma_path!="")
         {
-            cma_analyzer_ = new idmlib::util::IDMAnalyzer(cma_path, la::ChineseAnalyzer::maximum_entropy);
+            cma_analyzer_ = new idmlib::util::IDMAnalyzer(cma_path, la::ChineseAnalyzer::maximum_match, false);
             if( !cma_analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct") )
             {
                 return false;
@@ -295,6 +299,13 @@ bool MiningManager::open()
                 std::cerr << "open ATTR failed" << std::endl;
                 return false;
             }
+        }
+
+        /** property_rerank **/
+        if( mining_schema_.group_enable)
+        {
+            groupReranker_ = new faceted::PropertyDiversityReranker(mining_schema_.prop_rerank_property.propName, groupManager_);
+            searchManager_->set_reranker(boost::bind(&faceted::PropertyDiversityReranker::rerank,groupReranker_,_1,_2));
         }
 
         /** tdt **/
@@ -735,12 +746,7 @@ bool MiningManager::getReminderQuery(
     std::vector<izenelib::util::UString>& popularQueries,
     std::vector<izenelib::util::UString>& realtimeQueries)
 {
-    if ( qrManager_ )
-    {
-        bool r = qrManager_->getReminderQuery(popularQueries,realtimeQueries);
-        return r;
-    }
-    return false;
+    return true;
 }
 
 bool MiningManager::getUniqueDocIdList(const std::vector<uint32_t>& docIdList,
@@ -1012,18 +1018,6 @@ bool MiningManager::getLabelListByDocId(uint32_t docid, std::vector<std::pair<ui
     return true;
 }
 
-void MiningManager::replicatingLabel_()
-{
-    RsyncInfo rinfo;
-    struct passwd *pwd = getpwuid(getuid());
-    rinfo.setUser(pwd->pw_name);
-
-    rinfo.collectionName =collectionName_;
-    rinfo.srcFilePath = boost::filesystem::system_complete(tg_label_path_ + "/" + "label.stream").file_string();
-    rinfo.srcFileSize = boost::filesystem::file_size( rinfo.srcFilePath );
-    //TODO to rsync the label.
-}
-
 
 // void MiningManager::tgTermList_(const izenelib::util::UString& text, std::vector<TgTerm>& termList)
 // {
@@ -1272,53 +1266,6 @@ bool MiningManager::GetTdtTopicInfo(const izenelib::util::UString& text, idmlib:
     }
     return storage->GetTopicInfo(text, info);
 }
-
-// bool MiningManager::addDcResult_(KeywordSearchResult& miaInput)
-// {
-//     if( !dcSubManager_ ) return true;
-//     std::cout<<"Start to add DC result"<<std::endl;
-//     miaInput.docCategories_.resize(miaInput.topKDocs_.size());
-//     std::vector< std::vector<izenelib::util::UString> >::iterator result =
-//             miaInput.docCategories_.begin();
-//     typedef std::vector<docid_t>::const_iterator iterator;
-//
-//     std::vector<izenelib::util::UString> catList;
-//     for (iterator i = miaInput.topKDocs_.begin(); i != miaInput.topKDocs_.end(); ++i)
-//     {
-//         dcSubManager_->getCategoryResult(*i, catList);
-// //         for(unsigned int j=0;j<catList.size();j++)
-// //         {
-// //             catList[j].displayStringValue(izenelib::util::UString::UTF_8);
-// //         }
-// //         std::cout<<::std::endl;
-//         *result++ = catList;
-//         catList.clear();
-//     }
-//
-//     return true;
-// }
-
-
-// void MiningManager::doIDManagerInit_()
-// {
-//     if(idManager_ == NULL)
-//     {
-//         std::string termid_path = id_path_+"/termid";
-//         boost::filesystem::create_directories(termid_path);
-//         idManager_ = new MiningIDManager(termid_path, laManager_);
-//
-//     }
-// }
-//
-// void MiningManager::doIDManagerRelease_()
-// {
-//     if(idManager_ != NULL)
-//     {
-//         delete idManager_;
-//         idManager_ = NULL;
-//     }
-// }
-
 
 
 bool MiningManager::doTgInfoInit_()

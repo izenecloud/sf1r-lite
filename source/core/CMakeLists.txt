@@ -5,6 +5,7 @@ INCLUDE_DIRECTORIES(
   ${izenelib_INCLUDE_DIRS}
   ${wisekma_INCLUDE_DIRS}
   ${izenecma_INCLUDE_DIRS}
+  ${izenejma_INCLUDE_DIRS}  
   ${ilplib_INCLUDE_DIRS}
   ${idmlib_INCLUDE_DIRS}
   ${imllib_INCLUDE_DIRS}
@@ -37,6 +38,7 @@ FILE(GLOB document_SRC
 
 FILE(GLOB mining_SRC
   "mining-manager/*.cpp"
+  "mining-manager/*.cc"
   "mining-manager/util/*.cpp"
   "mining-manager/taxonomy-generation-submanager/*.cpp"
   "mining-manager/duplicate-detection-submanager/*.cpp"

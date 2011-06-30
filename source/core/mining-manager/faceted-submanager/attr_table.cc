@@ -145,16 +145,6 @@ AttrTable::AttrTable(
 , valueIdTable_(1)
 , saveDocIdNum_(0)
 {
-/*    const izenelib::util::UString emptyStr;
-    const nid_t nameId = 0;
-    const vid_t valueId = 0;
-
-    nameStrVec_.push_back(emptyStr);
-    valueStrTable_.push_back(ValueStrMap());
-    valueStrVec_.push_back(emptyStr);
-    nameIdVec_.push_back(nameId);
-    nameStrMap_[emptyStr] = nameId;
-    valueIdTable_.push_back(ValueIdList());*/
 }
 
 AttrTable::nid_t AttrTable::nameId(const izenelib::util::UString& name)

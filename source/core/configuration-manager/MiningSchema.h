@@ -4,6 +4,7 @@
 
 #include "GroupConfig.h"
 #include "AttrConfig.h"
+#include "PropertyRerankConfig.h"
 
 #include <stdint.h>
 #include <string>
@@ -24,6 +25,7 @@ public:
             , faceted_enable(false), faceted_properties()
             , group_enable(false), group_properties()
             , attr_enable(false), attr_property()
+            , property_rerank_enable(false), prop_rerank_property()
             , ise_enable(false), ise_property()
             , recommend_tg(false), recommend_querylog(true), recommend_properties()
     {
@@ -43,6 +45,7 @@ private:
         ar & dc_enable & dc_properties & faceted_enable & faceted_properties;
         ar & group_enable & group_properties;
         ar & attr_enable & attr_property;
+        ar & property_rerank_enable & prop_rerank_property;
         ar & tdt_enable;
         ar & ise_enable & ise_property;
         ar & recommend_tg & recommend_querylog & recommend_properties;
@@ -63,6 +66,8 @@ public:
     std::vector<GroupConfig> group_properties;
     bool attr_enable;
     AttrConfig attr_property;
+    bool property_rerank_enable;
+    PropertyRerankConfig prop_rerank_property;
     bool tdt_enable;
     bool ise_enable;
     std::string ise_property;

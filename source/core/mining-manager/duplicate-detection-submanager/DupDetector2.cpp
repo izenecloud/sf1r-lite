@@ -2,15 +2,17 @@
 #include "dd_constants.h"
 #include <util/CBitArray.h>
 #include <util/ClockTimer.h>
+#include <util/url_util.h>
 #include <utility>
 
 #include <boost/lexical_cast.hpp>
+#include <idmlib/similarity/term_similarity.h>
 
 // #define DUPD_GROUP_DEBUG;
 // #define DUPD_TEXT_DEBUG;
 // #define DUPD_DEBUG;
 // #define DUPD_FP_DEBUG;
-
+// #define NO_IN_SITE;
 using namespace std;
 namespace sf1r{
 
@@ -103,9 +105,61 @@ bool DupDetector2::Open()
   {
     std::cerr<<"Load group info failed"<<std::endl;
   }
-  std::string continue_file = container_+"/continue";
+  
+  
+  
   try
   {
+    std::string output_group_file = container_+"/output_group.txt";
+    if(boost::filesystem::exists(output_group_file))
+    {
+        std::ifstream ifs(output_group_file.c_str());
+        std::string line;
+        std::vector<uint32_t> in_group;
+        while ( getline ( ifs,line ) )
+        {
+            boost::algorithm::trim(line);
+            if(line.length()==0 && in_group.size()>0)
+            {
+                //process in_group
+                for(uint32_t i=1;i<in_group.size();i++)
+                {
+                    group_->AddDoc(in_group[0], in_group[i]);
+                }
+                
+                in_group.resize(0);
+                continue;
+            }
+            if(line.length()>0)
+            {
+                std::vector<std::string> vec;
+                boost::algorithm::split( vec, line, boost::algorithm::is_any_of("\t") );
+//                 std::cout<<"XXX "<<vec[0]<<std::endl;
+                uint32_t docid = boost::lexical_cast<uint32_t>(vec[0]);
+                in_group.push_back(docid);
+            }
+            
+        }
+        ifs.close();
+        //process in_group
+        if(in_group.size()>0)
+        {
+            for(uint32_t i=1;i<in_group.size();i++)
+            {
+                group_->AddDoc(in_group[0], in_group[i]);
+            }
+        }
+        group_->Flush();
+        std::cout<<"updated group by "<<output_group_file<<std::endl;
+//         boost::filesystem::remove_all(output_group_file);
+//         std::string reoutput_file = container_+"/re_output_group.txt";
+//         OutputResult_(reoutput_file);
+    }
+    
+     
+      
+      
+    std::string continue_file = container_+"/continue";
     if(boost::filesystem::exists(continue_file))
     {
       boost::filesystem::remove_all(continue_file);
@@ -238,6 +292,29 @@ bool DupDetector2::IsDuplicated_(const FpItem& item1, const FpItem& item2)
   if( c.GetCount() <= k )
   {
     result = true;
+#ifdef NO_IN_SITE
+    std::string url_property = "Url";
+    std::string url1;
+    std::string url2;
+    GetPropertyString_(item1.docid, url_property, url1);
+    GetPropertyString_(item2.docid, url_property, url2);
+    
+    std::string base_site1;
+    std::string base_site2;
+    if(!izenelib::util::UrlUtil::GetBaseSite(url1, base_site1))
+    {
+        std::cout<<"get base site error for "<<url1<<std::endl;
+        return false;
+    }
+    if(!izenelib::util::UrlUtil::GetBaseSite(url2, base_site2))
+    {
+        std::cout<<"get base site error for "<<url2<<std::endl;
+        return false;
+    }
+//     std::cout<<"SITE: "<<url1<<" -> "<<base_site1<<std::endl;
+//     std::cout<<"SITE: "<<url2<<" -> "<<base_site2<<std::endl;
+    if(base_site1==base_site2) result = false;
+#endif
   }
 #ifdef DUPD_DEBUG
   if(result)
@@ -291,7 +368,231 @@ uint32_t DupDetector2::GetProcessedMaxId_()
   return max_docid_;
 }
 
+bool DupDetector2::ProcessCollectionBySim_()
+{
+  process_start_docid_ = GetProcessedMaxId_()+1;
+  process_max_docid_ = document_manager_->getMaxDocId();
+  if(process_max_docid_<process_start_docid_)
+  {
+    std::cout<<"No document need to processed: from "<<process_start_docid_<<" to "<<process_max_docid_<<std::endl;
+    return true;
+  }
+  uint32_t total_doc_count = process_max_docid_-process_start_docid_+1;
+  std::cout<<"Will processing from "<<process_start_docid_<<" to "<<process_max_docid_<<std::endl;
+
+  uint32_t process_count = 0;
+  Document doc;
+  typedef izenelib::am::SparseVector<double, uint32_t> SparseType;
+  izenelib::am::ssf::Writer<> matrix_writer1(container_+"/matrix1");
+  matrix_writer1.Open();
+  izenelib::am::rde_hash<izenelib::util::UString, uint32_t > term_id_map;
+  izenelib::am::rde_hash<uint32_t, uint32_t > term_df_map;
+  uint32_t avail_term_id = 1;
+  uint32_t docid = 0;
+  for( docid = process_start_docid_; docid<=process_max_docid_; docid++)
+  {
+    process_count++;
+    if( process_count %1000 == 0 )
+    {
+      MEMLOG("[DUPD2] inserted %d. docid: %d", process_count, docid);
+    }
+    bool b = document_manager_->getDocument(docid, doc);
+    if(!b) continue;
+    Document::property_iterator property_it = doc.propertyBegin();
+    
+#ifdef DUPD_TEXT_DEBUG
+    std::cout<<"["<<docid<<"]"<<std::endl;;
+#endif
+    izenelib::util::CBitArray bit_array;
+    
+    SparseType sparse_vec;
+    while(property_it != doc.propertyEnd() )
+    {
+      if( dd_properties_.find( property_it->first)!= NULL)
+      {
+        const izenelib::util::UString& content = property_it->second.get<izenelib::util::UString>();
+        std::vector<izenelib::util::UString> termStrList;
+        analyzer_->GetStringList( content, termStrList );
+#ifdef DUPD_TEXT_DEBUG
+        std::string content_str;
+        content.convertString(content_str, izenelib::util::UString::UTF_8);
+        std::cout<<"["<<property_it->first<<"] "<<content_str<<std::endl;
+#endif
+        for(uint32_t u=0;u<termStrList.size();u++)
+        {
+            termStrList[u].toLowerString();
+            if(termStrList[u]== izenelib::util::UString("-", izenelib::util::UString::UTF_8))
+            {
+                continue;
+            }
+            if(termStrList[u]== izenelib::util::UString(" ", izenelib::util::UString::UTF_8))
+            {
+                continue;
+            }
+#ifdef DUPD_TEXT_DEBUG
+            std::string display;
+            termStrList[u].convertString(display, izenelib::util::UString::UTF_8);
+            std::cout<<display<<",";
+#endif
+            uint32_t* p_term_id = term_id_map.find(termStrList[u]);
+            uint32_t term_id = 0;
+            if( p_term_id== NULL)
+            {
+                term_id = avail_term_id;
+                avail_term_id++;
+                term_id_map.insert(termStrList[u], term_id);
+            }
+            else
+            {
+                term_id = *p_term_id;
+            }
+            sparse_vec.value.push_back(std::make_pair(term_id, 1.0));
+            
+        }
+#ifdef DUPD_TEXT_DEBUG
+        std::cout<<std::endl;
+#endif
+      }
+      property_it++;
+    }
+
+    uint32_t doc_length = sparse_vec.value.size();
+    idmlib::ssp::VectorUtil::Flush(sparse_vec);
+    for(uint32_t i=0;i<sparse_vec.value.size();i++)
+    {
+        sparse_vec.value[i].second /= doc_length;
+        uint32_t id = sparse_vec.value[i].first;
+        uint32_t* p_term_df = term_df_map.find(id);
+        if( p_term_df== NULL)
+        {
+            term_df_map.insert(id, 1);
+        }
+        else
+        {
+            term_df_map.update(id, (*p_term_df)+1);
+        }
+    }
+    matrix_writer1.Append(docid, sparse_vec);
+    
+  }
+  matrix_writer1.Close();
+  //DO tdidf and normalization
+  izenelib::am::ssf::Writer<> matrix_writer2(container_+"/matrix2");
+  matrix_writer2.Open();
+  izenelib::am::ssf::Reader<> matrix_reader(container_+"/matrix1");
+  matrix_reader.Open();
+  SparseType sparse_vec;
+  while(matrix_reader.Next(docid, sparse_vec))
+  {
+      for(uint32_t i=0;i<sparse_vec.value.size();i++)
+      {
+          uint32_t* df = term_df_map.find(sparse_vec.value[i].first);
+          double idf = std::log( (double)total_doc_count/(*df));
+          sparse_vec.value[i].second *= idf;
+      }
+      SparseType normal_vec;
+      idmlib::ssp::Normalizer::Normalize(sparse_vec, normal_vec);
+//       std::cout<<"[N] ";
+//       for(uint32_t i=0;i<normal_vec.value.size();i++)
+//       {
+//           std::cout<<normal_vec.value[i].first<<"-"<<normal_vec.value[i].second<<",";
+//       }
+//       std::cout<<std::endl;
+      matrix_writer2.Append(docid, normal_vec);
+  }
+  matrix_reader.Close();
+  matrix_writer2.Close();
+  
+  typedef idmlib::ssp::Apss<uint32_t, uint32_t> ApssType;
+  ApssType apss(0.9, boost::bind( &DupDetector2::FindSim_, this, _1, _2, _3), avail_term_id );
+  SparseType normal_vec;
+  apss.Compute(container_+"/matrix2", docid, normal_vec);
+  
+  //output to text file for manually review
+  std::string output_txt_file = container_+"/output_group.txt";
+  OutputResult_(output_txt_file);
+  return true;
+}
+
+void DupDetector2::OutputResult_(const std::string& file)
+{
+  std::string title_property = "Title";
+  std::string url_property = "Url";
+  std::ofstream ofs( file.c_str() );
+  const std::vector<std::vector<uint32_t> >& group_info = group_->GetGroupInfo();
+  std::cout<<"[TOTAL GROUP SIZE] : "<<group_info.size()<<std::endl;
+  for(uint32_t group_id = 0;group_id<group_info.size();group_id++)
+  {
+      const std::vector<uint32_t>& in_group = group_info[group_id];
+      for(uint32_t i=0;i<in_group.size();i++)
+      {
+          uint32_t docid = in_group[i];
+          std::string title;
+          std::string url;
+          GetPropertyString_(docid, title_property, title);
+          GetPropertyString_(docid, url_property, url);
+          ofs<<docid<<"\t"<<title<<"\t"<<url<<std::endl;
+      }
+      ofs<<std::endl<<std::endl;
+  }
+  ofs.close();
+}
+
+void DupDetector2::FindSim_(uint32_t docid1, uint32_t docid2, double score)
+{
+    std::string title_property = "Title";
+    std::string url_property = "Url";
+    std::string url1;
+    std::string url2;
+    GetPropertyString_(docid1, url_property, url1);
+    GetPropertyString_(docid2, url_property, url2);
+    
+    std::string base_site1;
+    std::string base_site2;
+    if(!izenelib::util::UrlUtil::GetBaseSite(url1, base_site1))
+    {
+        std::cout<<"get base site error for "<<url1<<std::endl;
+        return;
+    }
+    if(!izenelib::util::UrlUtil::GetBaseSite(url2, base_site2))
+    {
+        std::cout<<"get base site error for "<<url2<<std::endl;
+        return;
+    }
+//     std::cout<<"SITE: "<<url1<<" -> "<<base_site1<<std::endl;
+//     std::cout<<"SITE: "<<url2<<" -> "<<base_site2<<std::endl;
+    if(base_site1==base_site2) return;
+    
+
+    std::string title1;
+    std::string title2;
+    GetPropertyString_(docid1, title_property, title1);
+    GetPropertyString_(docid2, title_property, title2);
+    
+//     std::cout<<"[DUPD2-FINDSIM] "<<title1<<" *|* "<<title2<<" : "<<score<<std::endl;
+    
+    boost::lock_guard<boost::shared_mutex> lock(read_write_mutex_);
+    group_->AddDoc( docid1, docid2 );
+}
+
+bool DupDetector2::GetPropertyString_(uint32_t docid, const std::string& property, std::string& value)
+{
+    Document doc;
+    if(!document_manager_->getDocument(docid, doc)) return false;
+    Document::property_iterator property_it = doc.findProperty(property);
+    if(property_it==doc.propertyEnd()) return false;
+    const izenelib::util::UString& ustr = property_it->second.get<izenelib::util::UString>();
+    ustr.convertString(value, izenelib::util::UString::UTF_8);
+    return true;
+}
+
 bool DupDetector2::ProcessCollection()
+{
+    return ProcessCollectionBySimhash_();
+//     return ProcessCollectionBySim_();
+}
+
+bool DupDetector2::ProcessCollectionBySimhash_()
 {
   process_start_docid_ = GetProcessedMaxId_()+1;
   process_max_docid_ = document_manager_->getMaxDocId();
@@ -331,10 +632,9 @@ bool DupDetector2::ProcessCollection()
         const izenelib::util::UString& content = property_it->second.get<izenelib::util::UString>();
         std::vector<izenelib::util::UString> termStrList;
         analyzer_->GetFilteredStringList( content, termStrList );
+//         analyzer_->GetStringList( content, termStrList );
         for(uint32_t u=0;u<termStrList.size();u++)
         {
-            if(termStrList[u].length()==1) continue;
-            termStrList[u].toLowerString();
             std::string display;
             termStrList[u].convertString(display, izenelib::util::UString::UTF_8);
 #ifdef DUPD_TEXT_DEBUG
@@ -373,51 +673,6 @@ bool DupDetector2::ProcessCollection()
   return runDuplicateDetectionAnalysis();
   
   
-  //end
-//   double sort_time = 0.0;
-//   std::vector<std::pair<uint32_t, izenelib::util::CBitArray> > sorted_vec;
-//   std::vector<std::pair<uint32_t, izenelib::util::CBitArray> > vec_all;
-//   std::vector<std::pair<uint32_t, izenelib::util::CBitArray> >* data_vec = &vec_all;
-//   for( uint32_t i=0; i<group_num;i++)
-//   {
-//     clocker.restart();
-//     std::sort( vec.begin(), vec.end(), compare_obj_[i] );
-//     if( boost::filesystem::exists( fp_groups_[i] ) )
-//     {
-//       ReaderType reader(fp_groups_[i]);
-//       reader.open();
-//       sorted_vec.resize(reader.getItemCount() );
-//       uint32_t count = 0;
-//       while( reader.next(docid, bitArray) )
-//       {
-//         sorted_vec[count] = std::make_pair(docid, bitArray);
-//         count++;
-//       }
-//       reader.close();
-//       vec_all.resize( sorted_vec.size()+vec.size() );
-//       std::merge( sorted_vec.begin(), sorted_vec.end(), vec.begin(), vec.end(), vec_all.begin(), compare_obj_[i]);
-//     }
-//     else
-//     {
-//       sorted_vec.resize(0);
-//       data_vec = &vec;
-//     }
-//     
-//     sort_time += clocker.elapsed();
-//     DataDupd(*data_vec, i, min_docid);
-//     boost::filesystem::remove_all( fp_groups_[i]);
-//     WriterType writer(fp_groups_[i]);
-//     writer.open();
-//     for( uint32_t j=0;j<(*data_vec).size(); j++)
-//     {
-//       writer.append( (*data_vec)[j].first, (*data_vec)[j].second);
-//     }
-//     writer.close();
-//   }
-//   
-//   
-//   std::cout<<"Sorting on fingerprints cost : "<<sort_time<<std::endl;
-//   InitWriter_();
   
 }
 
@@ -551,6 +806,9 @@ bool DupDetector2::runDuplicateDetectionAnalysis(bool force)
   file_info_->SetValue(max_docid_);
   file_info_->Save();
   group_->PrintStat();
+  //output to text file for manually review
+//   std::string output_txt_file = container_+"/output_group_dd.txt";
+//   OutputResult_(output_txt_file);
   return true;
 }
 

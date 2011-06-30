@@ -134,6 +134,42 @@ bool OntologySearcher::Click(const std::vector<uint32_t>& search_result, Categor
     return true;
 }
 
+bool OntologySearcher::GetCategoryName(uint32_t docid, std::vector<CategoryNameType>& name_list)
+{
+    OntologyRep rep;
+    std::vector<uint32_t> search_result(1, docid);
+    if(!GetRepresentation(search_result, rep)) return false;
+    OntologyRep::item_iterator it = rep.Begin();
+    while( it!=rep.End())
+    {
+        name_list.push_back(it->text);
+        ++it;
+    }
+    return true;
+}
+  
+void OntologySearcher::OutputDocCategoryToFile(const std::string& file, uint32_t min_docid, uint32_t max_docid)
+{
+    std::ofstream ofs(file.c_str());
+    std::vector<CategoryNameType> name_list;
+    for(uint32_t docid = min_docid; docid<=max_docid; docid++)
+    {
+        name_list.resize(0);
+        if(!GetCategoryName(docid, name_list)) continue;
+        if(name_list.empty()) continue;
+        std::string c;
+        std::string str;
+        for(uint32_t i=0;i<name_list.size();i++)
+        {
+            name_list[i].convertString(str, izenelib::util::UString::UTF_8);
+            if(i>0) c+="|";
+            c+=str;
+        }
+        ofs<<docid<<"\t"<<c<<std::endl;
+    }
+    ofs.close();
+}
+
 bool OntologySearcher::AddToRep_(OntologyRep& rep, std::list<NodePath>& all_nodes, izenelib::am::rde_hash<CategoryIdType, ListIteratorPair>& parent_scope, CategoryIdType parent_id, uint8_t depth)
 {
     if (ontology_==NULL) return false;

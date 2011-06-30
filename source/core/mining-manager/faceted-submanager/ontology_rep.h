@@ -20,11 +20,23 @@ NS_FACETED_BEGIN
 class OntologyRep
 {
 public:
+    typedef std::list<OntologyRepItem>::iterator item_iterator;
     OntologyRep() {}
     ~OntologyRep() {}
 
     std::list<OntologyRepItem> item_list;
 
+    item_iterator Begin()
+    {
+        return item_list.begin();
+    }
+    
+    item_iterator End()
+    {
+        return item_list.end();
+    }
+    
+    
     bool operator==(const OntologyRep& rep) const
     {
         if (item_list.size()!=rep.item_list.size()) return false;

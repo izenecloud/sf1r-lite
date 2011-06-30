@@ -61,12 +61,12 @@ public:
     bool Open();
     bool close();
     bool ProcessCollection(bool rebuild = false);
-    bool ProcessDocuments(bool rebuild = false);
-    bool ProcessCollectionWithSmooth(bool rebuild = false);
+
     bool GetXML(std::string& xml);
 
     bool SetXML(const std::string& xml);
-    bool SetXMLNew(const std::string& xml);
+    
+    
     Ontology* GetOntology()
     {
         return service_;
@@ -83,14 +83,19 @@ public:
 private:
     void  calculateCoOccurenceByIndexManager(Ontology* ontology);
     uint32_t GetProcessedMaxId_();
-    bool ProcessCollection_(bool rebuild = false);
-    bool ProcessDocuments_(bool rebuild = false);
+    
+    bool ProcessCollectionSimple_(bool rebuild = false);
+    bool ProcessCollectionWithSmooth_(bool rebuild);
+    
+    bool SetXMLSimple_(const std::string& xml);
+    bool SetXMLWithSmooth_(const std::string& xml);
+    
     //void readDocsFromFile(const std::string& file, vector<Document> &docs);
     int getCollectionTermsCount();
     int getTFInDoc(izenelib::util::UString& label,Document& doc );
     int getTFInCollection(izenelib::util::UString& label);
     int getDocTermsCount(Document& doc);
-    bool ProcessCollectionWithSmooth_(bool rebuild);
+    
     void getDocumentFrequency(boost::shared_ptr<DocumentManager>& document_manager,
                               uint32_t last_docid,Ontology* ontology,
                               std::map<uint32_t, uint32_t> &topicDF,

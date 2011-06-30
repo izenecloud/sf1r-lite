@@ -174,6 +174,83 @@ void setOptions( const std::string & option, ChineseAnalyzer * ka, bool outputLo
     }
 }
 
+void setOptions( const std::string & option, JapaneseAnalyzer * ka, bool outputLog = true )
+{
+    const char* o = option.c_str();
+    set<char> hisSet;
+    while (*o)
+    {
+        char origChar = *o;
+        char upperType = toupper( origChar );
+
+        bool checkDupl = true;
+        bool errorVal = false;
+        switch (*o)
+        {
+            case 'R': case 'r':
+                ++o;
+                if (*o == '+')
+                {
+                    ka->setNBest( 2 );
+                }
+                else if (*o == '0' || *o == '-')
+                {
+                    ka->setNBest( 0 );
+                }
+                else if ((*o >= '1') && (*o <= '9'))
+                {
+                    ka->setNBest( atoi(o) );
+                }
+                else
+                {
+                    if( outputLog )
+                        sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA option value for Option 'R': %c", *o);
+                    errorVal = true;
+                }
+                break;
+            case 'S': case 's':
+                ++o;
+                if (*o == '+')
+                {
+                    ka->setExtractEngStem( true );
+                }
+                else if (*o == '-')
+                {
+                    ka->setExtractEngStem( false );
+                }
+                else
+                {
+                    if( outputLog )
+                        sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA option value for Option 'S': %c", *o);
+                    errorVal = true;
+                }
+                break;
+            case ' ':
+                checkDupl = false;
+                break;
+
+            default:
+                if( outputLog )
+                    sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA Option \"%c\"", *o );
+                checkDupl = false;
+                break;
+        }
+        if( checkDupl )
+        {
+            if( hisSet.find( upperType ) != hisSet.end() )
+            {
+                if( !errorVal && outputLog )
+                    sflog->warn( SFL_LA, "SF-070104: Duplicated LanguageLA option \"%c\", it would overwrite the previous setting.", origChar );
+            }
+            else
+                hisSet.insert( upperType );
+        }
+
+        if( *o == 0 )
+            break;
+        o++;
+    }
+}
 
 // std::map<char, char> parse_lasetting_options(const std::string& option)
 // {
@@ -879,6 +956,67 @@ namespace sf1r
             //static_cast<NChineseAnalyzer*>(analyzer.get())->setSpecialChars(laConfigUnitIter->second.getSpecialChar());
         }
 #endif
+
+#ifdef USE_IZENEJMA
+        else if( analysis == "japanese" )
+        {
+            analyzer.reset( new NJapaneseAnalyzer( laConfigUnitIter->second.getDictionaryPath()) );
+
+            if( laConfigUnitIter->second.getMode() == "all" )
+            {
+                static_cast<NJapaneseAnalyzer*>(analyzer.get())->setIndexMode();
+            }
+            else if( laConfigUnitIter->second.getMode() == "noun" )
+            {
+                static_cast<NJapaneseAnalyzer*>(analyzer.get())->setIndexMode();
+            }
+            else if( laConfigUnitIter->second.getMode() == "label" )
+            {
+                static_cast<NJapaneseAnalyzer*>(analyzer.get())->setLabelMode();
+            }
+
+            if(mode) {
+                static_cast<NJapaneseAnalyzer*>(analyzer.get())->setCaseSensitive(
+                    laConfigUnitIter->second.getCaseSensitive(), laConfigUnitIter->second.getLower());
+            } else {
+                static_cast<NJapaneseAnalyzer*>(analyzer.get())->setCaseSensitive(
+                    laConfigUnitIter->second.getCaseSensitive(), false);
+            }
+
+            setOptions( laConfigUnitIter->second.getOption(), static_cast<NJapaneseAnalyzer*>(analyzer.get()) );
+
+            if(!mode) {
+                static_cast<NJapaneseAnalyzer*>(analyzer.get())->setNBest(1);
+            }
+
+            //check the special char here, only accept 0x0000 to 0x007F in ucs encoding
+            UString::EncodingType defEncoding = UString::UTF_8;
+            UString origSpeU( laConfigUnitIter->second.getSpecialChar().c_str(), defEncoding );
+            string speU; // after remove invalid characters
+            for( size_t i = 0; i < origSpeU.length(); ++i )
+            {
+                unsigned int c = static_cast<unsigned int>( origSpeU.at(i) );
+                if( c > 0x007F )
+                {
+                    string invalidStr;
+                    origSpeU.substr( i, 1 ).convertString( invalidStr, defEncoding );
+                    if( outputLog )
+                    {
+                        sflog->warn( SFL_LA, "SF-070105: Invalid special char \"%s\" for analyzer \"%s\" (accept 0x0000 to 0x007F).",
+                                invalidStr.c_str(), analysisInfo.analyzerId_.c_str() );
+                    }
+                }
+                else
+                    speU.append( 1, static_cast<char>(c) );
+            }
+
+            // need to adjust tokenizer settings if there is "specialchar" settings
+            tokenConfig.addAllows( speU );
+            // ignore special char for Chinese now as Chinese don't have such POS
+            //static_cast<NJapaneseAnalyzer*>(analyzer.get())->setSpecialChars(laConfigUnitIter->second.getSpecialChar());
+        }
+#endif
+
 //        else if( analysis == "danish"
 //                || analysis == "dutch"
 //                || analysis == "english"

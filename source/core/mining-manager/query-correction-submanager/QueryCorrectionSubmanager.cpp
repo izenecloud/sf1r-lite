@@ -120,7 +120,7 @@ bool QueryCorrectionSubmanager::inDict_(const izenelib::util::UString& ustr)
 //Initialize some member variables
 bool QueryCorrectionSubmanager::initialize()
 {
-
+    std::cout<< "!!Start Speller construction!" << std::endl;
     DLOG(INFO) << "Start Speller construction!" << std::endl;
     activate_ = true;
     if (!boost::filesystem::exists(path_) || !boost::filesystem::is_directory(

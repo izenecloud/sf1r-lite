@@ -44,18 +44,3 @@ void QueryRecommendSubmanager::getRecommendQuery(const izenelib::util::UString& 
 
 }
 
-
-bool QueryRecommendSubmanager::getReminderQuery(std::vector<izenelib::util::UString>& popularQueries, std::vector<izenelib::util::UString>& realTimeQueries)
-{
-    try
-    {
-        rmDb_->getReminderQuery(popularQueries, realTimeQueries);
-    }
-    catch ( std::exception& ex)
-    {
-
-        return false;
-    }
-    return true;
-}
-

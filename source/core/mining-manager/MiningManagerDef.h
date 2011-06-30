@@ -32,7 +32,6 @@
 #include <limits>
 #include "taxonomy-generation-submanager/TgTypes.h"
 #include "MiningException.hpp"
-#include "MiningIDManager.h"
 namespace sf1r
 {
 
