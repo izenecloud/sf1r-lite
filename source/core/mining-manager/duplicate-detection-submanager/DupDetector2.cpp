@@ -807,8 +807,8 @@ bool DupDetector2::runDuplicateDetectionAnalysis(bool force)
   file_info_->Save();
   group_->PrintStat();
   //output to text file for manually review
-  std::string output_txt_file = container_+"/output_group_dd.txt";
-  OutputResult_(output_txt_file);
+//   std::string output_txt_file = container_+"/output_group_dd.txt";
+//   OutputResult_(output_txt_file);
   return true;
 }
 
