@@ -778,6 +778,8 @@ namespace sf1r
                 pChAnalyzer->setSeparateAll(true);
             }
 
+            pChAnalyzer->setCaseSensitive(laConfigUnitIter->second.getCaseSensitive());
+
             analyzer.reset(pChAnalyzer);
         }
         else if(analysis == "ngram")
