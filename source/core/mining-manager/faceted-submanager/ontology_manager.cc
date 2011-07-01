@@ -1132,23 +1132,25 @@ bool OntologyManager::DefineDocCategory(const std::vector<ManmadeDocCategoryItem
 //     ++it;
 //
 //   }
-    //sort and unique items
-    std::vector<ManmadeDocCategoryItem> sorted(items);
 
-    std::stable_sort(sorted.begin(), sorted.end(), ManmadeDocCategoryItem::CompareStrDocId );
-    std::vector<ManmadeDocCategoryItem> input;
-    izenelib::util::UString last_str_docid;
-    for (uint32_t i=0;i<sorted.size();i++)
-    {
-        if (sorted[i].str_docid!=last_str_docid&&i>0)
-        {
-            if (sorted[i-1].ValidInput())
-                input.push_back(sorted[i-1]);
-        }
-        last_str_docid = sorted[i].str_docid;
-    }
-    if (sorted.back().ValidInput())
-        input.push_back(sorted.back());
+
+    std::vector<ManmadeDocCategoryItem> input(items);
+    //sort and unique items
+//     std::vector<ManmadeDocCategoryItem> sorted(items);
+//     std::stable_sort(sorted.begin(), sorted.end(), ManmadeDocCategoryItem::CompareStrDocId );
+//     
+//     izenelib::util::UString last_str_docid;
+//     for (uint32_t i=0;i<sorted.size();i++)
+//     {
+//         if (sorted[i].str_docid!=last_str_docid&&i>0)
+//         {
+//             if (sorted[i-1].ValidInput())
+//                 input.push_back(sorted[i-1]);
+//         }
+//         last_str_docid = sorted[i].str_docid;
+//     }
+//     if (sorted.back().ValidInput())
+//         input.push_back(sorted.back());
     if (input.empty())
     {
         std::cerr<<"No valid input data"<<std::endl;
