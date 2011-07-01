@@ -549,7 +549,7 @@ bool DocumentsSearchHandler::doSearch(
 {
     if (!indexSearchService_->getSearchResult(actionItem_, searchResult))
     {
-        response_.addError("Failed to send search request.");
+        response_.addError("Request Failed.");
         return false;
     }
 

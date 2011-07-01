@@ -66,7 +66,7 @@ void CommandsController::index()
     if (!SF1Config::get()->checkCollectionExist(collection_))
     {
         response().addError(
-            "Failed to send command to given collection."
+            "Request Failed."
         );
         return;
     }
@@ -76,7 +76,7 @@ void CommandsController::index()
     if (!indexService)
     {
         response().addError(
-            "Failed to send command to given collection."
+            "Request Failed."
         );
         return;
     }
@@ -111,7 +111,7 @@ void CommandsController::index_recommend()
     if (!SF1Config::get()->checkCollectionExist(collection_))
     {
         response().addError(
-            "Failed to send command to given collection."
+            "Request Failed."
         );
         return;
     }
@@ -122,7 +122,7 @@ void CommandsController::index_recommend()
     if (!taskService)
     {
         response().addError(
-            "Failed to send command to given service."
+            "Request Failed."
         );
         return;
     }
@@ -158,7 +158,7 @@ void CommandsController::optimize_index()
     if (!SF1Config::get()->checkCollectionExist(collection_))
     {
         response().addError(
-            "Failed to send command to given collection."
+            "Request Failed."
         );
         return;
     }
@@ -168,7 +168,7 @@ void CommandsController::optimize_index()
     if (!indexService)
     {
         response().addError(
-            "Failed to send command to given collection."
+            "Request Failed."
         );
         return;
     }

@@ -363,7 +363,7 @@ void DocumentsController::create()
     if (!requestSent)
     {
         response().addError(
-                "Failed to send request to given collection."
+                "Request Failed."
         );
         return;
     }
@@ -407,7 +407,7 @@ void DocumentsController::update()
     if (!requestSent)
     {
         response().addError(
-            "Failed to send request to given collection."
+            "Request Failed."
         );
         return;
     }
@@ -448,7 +448,7 @@ void DocumentsController::destroy()
     if (!requestSent)
     {
         response().addError(
-            "Failed to send request to given collection."
+            "Request Failed."
         );
         return;
     }
@@ -504,7 +504,7 @@ void DocumentsController::get_topic()
     if (!requestSent)
     {
         response().addError(
-            "Failed to send request to given collection."
+            "Request Failed."
         );
         return;
     }
@@ -573,7 +573,7 @@ void DocumentsController::get_topic_with_sim()
     if (!requestSent)
     {
         response().addError(
-            "Failed to send request to given collection."
+            "Request Failed."
         );
         return;
     }

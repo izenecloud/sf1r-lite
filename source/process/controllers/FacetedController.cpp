@@ -53,7 +53,7 @@ void FacetedController::set_ontology()
     if (!requestSent)
     {
         response().addError(
-            "Failed to send request to given collection."
+            "Request Failed."
         );
         return;
     }
@@ -97,7 +97,7 @@ void FacetedController::get_ontology()
     if (!requestSent)
     {
         response().addError(
-            "Failed to send request to given collection."
+            "Request Failed."
         );
         return;
     }
@@ -141,7 +141,7 @@ void FacetedController::get_static_rep()
     if (!requestSent)
     {
         response().addError(
-            "Failed to send request to given collection."
+            "Request Failed."
         );
         return;
     }
@@ -204,7 +204,7 @@ void FacetedController::static_click()
     if (!requestSent)
     {
         response().addError(
-            "Failed to send request to given collection."
+            "Request Failed."
         );
         return;
     }
@@ -258,7 +258,7 @@ void FacetedController::get_rep()
     if (!requestSent)
     {
         response().addError(
-            "Failed to send request to given collection."
+            "Request Failed."
         );
         return;
     }
@@ -321,7 +321,7 @@ void FacetedController::click()
     if (!requestSent)
     {
         response().addError(
-            "Failed to send request to given collection."
+            "Request Failed."
         );
         return;
     }
@@ -403,7 +403,7 @@ void FacetedController::manmade()
     if (!requestSent)
     {
         response().addError(
-            "Failed to send request to given collection."
+            "Request Failed."
         );
         return;
     }

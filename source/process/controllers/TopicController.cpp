@@ -47,7 +47,7 @@ void TopicController::get_similar()
     if (!requestSent)
     {
         response().addError(
-            "Failed to send request to given collection."
+            "Request Failed."
         );
         return;
     }
@@ -103,7 +103,7 @@ void TopicController::get_in_date_range()
     if (!requestSent)
     {
         response().addError(
-            "Failed to send request to given collection."
+            "Request Failed."
         );
         return;
     }
@@ -166,7 +166,7 @@ void TopicController::get_temporal_similar()
     if (!requestSent)
     {
         response().addError(
-            "Failed to send request to given collection."
+            "Request Failed."
         );
         return;
     }

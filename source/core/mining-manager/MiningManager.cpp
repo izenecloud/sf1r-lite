@@ -1247,6 +1247,7 @@ bool MiningManager::GetTdtInTimeRange(const izenelib::util::UString& start, cons
 
 bool MiningManager::GetTdtInTimeRange(const idmlib::tdt::TimeIdType& start, const idmlib::tdt::TimeIdType& end, std::vector<izenelib::util::UString>& topic_list)
 {
+    if( !mining_schema_.tdt_enable || tdt_storage_== NULL) return false;
     idmlib::tdt::Storage* storage = tdt_storage_->Current();
     if(storage==NULL)
     {
@@ -1258,6 +1259,7 @@ bool MiningManager::GetTdtInTimeRange(const idmlib::tdt::TimeIdType& start, cons
     
 bool MiningManager::GetTdtTopicInfo(const izenelib::util::UString& text, idmlib::tdt::TopicInfoType& info)
 {
+    if( !mining_schema_.tdt_enable || tdt_storage_== NULL) return false;
     idmlib::tdt::Storage* storage = tdt_storage_->Current();
     if(storage==NULL)
     {
