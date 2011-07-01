@@ -712,7 +712,7 @@ bool IndexTaskService::doBuildCollection_(
                 {
                     if (!documentManager_->removeDocument(oldId))
                     {
-                        LOG(WARNING) << "Error happen when deleting document " << oldId;
+                        LOG(WARNING) << "document " << oldId << " is already deleted";
                     }
                     if (documentManager_->insertDocument(document) == false)
                     {
@@ -951,14 +951,20 @@ bool IndexTaskService::prepareDocument_(
             {
                 //R-type check
                 checkRtype_(doc, rType, rTypeFieldValue);
+                bool ret = false;
                 if ( !rType )
                 {
-                    idManager_->updateDocIdByDocName(propertyValueU, Id, docId);
+                    ret = idManager_->updateDocIdByDocName(propertyValueU, Id, docId);
                 }
                 else
                 {
-                    idManager_->getDocIdByDocName(propertyValueU, Id, false);
+                    ret = idManager_->getDocIdByDocName(propertyValueU, Id, false);
                     docId = Id;
+                }
+                if (!ret)
+                {
+                    LOG(WARNING) << "it is not allowed to update the doc which has not been inserted before!";
+                    return false;
                 }
             }
 
