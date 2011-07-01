@@ -21,6 +21,9 @@ using driver::Keys;
  * documents. The search object has following fields:
  *
  * - @b keywords* (@c String): Keywords used in the search.
+ * - @b USERID (@c String): USERID is used to get the user info, which assists
+ *   to get personalized search result. This item is not required to set. if it
+ *   is not set, the result is the normal ranking search result.
  * - @b in (@c Array): Which properties the search is performed in. Every item
  *   can be an Object or an String. If it is an Object, the \b property field is
  *   used as the property name, otherwise, the String itself is used as property
@@ -71,7 +74,7 @@ using driver::Keys;
  * @code
  * {
  *   "keywords": "test",
- *   "userID": "56",
+ *   "USERID": "56",
  *   "in": [
  *     {"property": "title"},
  *     {"property": "content"}

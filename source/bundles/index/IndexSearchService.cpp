@@ -85,7 +85,7 @@ bool IndexSearchService::getSearchResult(
 
     User& user = personalSearchInfo.user;
     user.idStr_ = actionItem.env_.userID_;
-    if( recommendSearchService_ )
+    if( recommendSearchService_  && (!user.idStr_.empty()))
     {
         personalSearchInfo.enabled = recommendSearchService_->getUser(user.idStr_, user);
 
