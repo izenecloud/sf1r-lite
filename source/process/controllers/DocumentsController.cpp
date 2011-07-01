@@ -29,8 +29,7 @@ const std::size_t DocumentsController::kDefaultPageCount = 20;
  * - @b collection* (@c String): Search in this collection.
  * - @b search* (@c Object): Full text search specification. See SearchParser.
  * - @b select (@c Array): Select properties in search result. See SelectParser.
- * - @b conditions (@c Array): Result filtering conditions. See
- *   driver::ConditionArrayParser.
+ * - @b conditions (@c Array): Result filtering conditions. See ConditionArrayParser.
  * - @b sort (@c Array): Sort result. See SortParser.
  * - @b group (@c Array): Group property values.
  *   - @b property* (@c String): Property name, whose group result (doc count for
