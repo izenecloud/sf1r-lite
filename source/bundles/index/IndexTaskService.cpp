@@ -712,8 +712,7 @@ bool IndexTaskService::doBuildCollection_(
                 {
                     if (!documentManager_->removeDocument(oldId))
                     {
-                        sflog->warn(SFL_SCD, 10116, oldId);
-                        continue;
+                        LOG(WARNING) << "Error happen when deleting document " << oldId;
                     }
                     if (documentManager_->insertDocument(document) == false)
                     {
@@ -1008,7 +1007,7 @@ bool IndexTaskService::prepareDocument_(
                     else
                     {
                         laInputs_[iter->getPropertyId()]->setDocId(docId);
-                        if (makeForwardIndex_(propertyValueU, iter->getPropertyId(), analysisInfo) == false)
+                        if (makeForwardIndex_(propertyValueU, fieldStr, iter->getPropertyId(), analysisInfo) == false)
                         {
                             DLOG(ERROR) << "Forward Indexing Failed Error Line : "<< __LINE__ << endl;
                             return false;
@@ -1076,6 +1075,7 @@ bool IndexTaskService::prepareDocument_(
                                     vecIter->getAnalysisInfo();
                                 laInputs_[vecIter->getPropertyId()]->setDocId(docId);
                                 if (makeForwardIndex_(propertyValueU,
+                                                      fieldStr,
                                                       vecIter->getPropertyId(),
                                                       aliasAnalysisInfo) == false)
                                 {
@@ -1201,6 +1201,7 @@ bool IndexTaskService::prepareDocument_(
 /// You have to get a proper AnalysisInfo value from the configuration. (Currently not implemented.)
 bool IndexTaskService::makeForwardIndex_(
     const izenelib::util::UString& text,
+    const std::string& propertyName,
     unsigned int propertyId,
     const AnalysisInfo& analysisInfo
 )
@@ -1209,52 +1210,54 @@ bool IndexTaskService::makeForwardIndex_(
 
 //    la::TermIdList termIdList;
     laInputs_[propertyId]->resize(0);
+	text.displayStringValue(UString::UTF_8);
+	std::cout<<std::endl;
 
     START_PROFILER(proTermExtracting);
     // Remove the spaces between two Chinese Characters
 //    izenelib::util::UString refinedText;
 //    la::removeRedundantSpaces( text, refinedText );
 //    if (laManager_->getTermList(refinedText, analysisInfo, true, termList, true ) == false)
-
-    switch(bundleConfig_->indexMultilangGranularity_)
+    bool sentenceLevelIndexing = bundleConfig_->indexMultilangGranularity_ == SENTENCE_LEVEL ? true:false;
+    if(sentenceLevelIndexing)
     {
-    case SENTENCE_LEVEL:
+        if(bundleConfig_->bIndexUnigramProperty_)
         {
-            ::ilplib::langid::Analyzer* langIdAnalyzer = documentManager_->getLangId();
-            std::string utf8_text;
-            text.convertString(utf8_text, izenelib::util::UString::UTF_8);
-            const char* p = utf8_text.c_str();
-            std::size_t pos = 0;
-            while (int len = langIdAnalyzer->sentenceLength(p))
-            {
-                UString sentence;
-                sentence.assign(p, len, izenelib::util::UString::UTF_8);
-                LAInput sentenceLaInput;
-                if (laManager_->getTermIdList(idManager_.get(), sentence, analysisInfo, sentenceLaInput) == false)
-                    return false;
-
-                std::size_t sentenceLaSize = sentenceLaInput.size();
-                if(pos > 0)
-                {
-                    for(std::size_t i = 0; i < sentenceLaSize; ++i)
-                        sentenceLaInput[i].wordOffset_ += pos;
-                }
-                std::size_t currSize = pos;
-                pos += sentenceLaSize;
-                laInputs_[propertyId]->resize(pos);
-                std::copy(sentenceLaInput.begin(), sentenceLaInput.end(), laInputs_[propertyId]->begin()+currSize);
-                p += len;	
-            }
+            if(propertyName.find("_unigram") != std::string::npos)
+                sentenceLevelIndexing = false;  /// for unigram property, we do not need sentence level indexing
         }
-        break;
-    case FIELD_LEVEL:
-    default:
-        if (laManager_->getTermIdList(idManager_.get(), text, analysisInfo, (*laInputs_[propertyId]) ) == false)
-        {
-            return false;
-        }
-        break;
     }
+
+    if(sentenceLevelIndexing)
+    {
+        ::ilplib::langid::Analyzer* langIdAnalyzer = documentManager_->getLangId();
+        std::string utf8_text;
+        text.convertString(utf8_text, izenelib::util::UString::UTF_8);
+        const char* p = utf8_text.c_str();
+        std::size_t lastpos, pos = 0;
+        while (int len = langIdAnalyzer->sentenceLength(p))
+        {
+            UString sentence;
+            sentence.assign(p, len, izenelib::util::UString::UTF_8);
+            lastpos = pos;
+
+            if (laManager_->getTermIdList(idManager_.get(), sentence, analysisInfo, (*laInputs_[propertyId]) ) == false)
+                return false;
+
+            pos = (*laInputs_[propertyId]).size();
+            if(lastpos > 0)
+            {
+                LAInput& laInput = (*laInputs_[propertyId]);
+                for(std::size_t i = lastpos; i < pos; ++i)
+                    laInput[i].wordOffset_ += lastpos;
+            }
+            p += len;	
+        }
+    }
+    else
+        if (laManager_->getTermIdList(idManager_.get(), text, analysisInfo, (*laInputs_[propertyId]) ) == false)
+            return false;
+
     STOP_PROFILER(proTermExtracting);
     return true;
 }

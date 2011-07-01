@@ -89,6 +89,7 @@ private:
 
     bool makeForwardIndex_(
         const izenelib::util::UString& text,
+        const std::string& propertyName,
         unsigned int propertyId,
         const AnalysisInfo& analysisInfo
     );
