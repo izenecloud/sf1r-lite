@@ -44,6 +44,7 @@
 #include <idmlib/similarity/term_similarity.h>
 #include <idmlib/tdt/integrator.h>
 #include <idmlib/util/container_switch.h>
+#include <idmlib/similarity/all-pairs-similarity-search/all_pairs_output.h>
 #include <ir/id_manager/IDManager.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
@@ -319,6 +320,7 @@ private:
 //     TIRDatabase* termIndex_;
     boost::shared_ptr<SimilarityIndex> similarityIndex_;
     std::string sim_path_;
+    boost::shared_ptr<idmlib::sim::DocSimOutput> similarityIndexEsa_;
     /** FACETED */
     boost::shared_ptr<faceted::OntologyManager> faceted_;
     std::string faceted_path_;
