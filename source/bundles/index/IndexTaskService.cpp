@@ -11,7 +11,6 @@
 
 #include <common/SFLogger.h>
 #include <common/Utilities.h>
-#include <document-manager/DocumentLog.h>
 #include <license-manager/LicenseManager.h>
 #include <process/common/CollectionMeta.h>
 #include <process/common/XmlConfigParser.h>
@@ -30,6 +29,7 @@
 namespace bfs = boost::filesystem;
 
 using namespace izenelib::driver;
+using izenelib::util::UString;
 
 namespace
 {
@@ -491,7 +491,10 @@ bool IndexTaskService::updateDocument(const Value& documentValue)
     return false;
 }
 
-bool IndexTaskService::preparePartialDocument_(Document& document, IndexerDocument& oldIndexDocument)
+bool IndexTaskService::preparePartialDocument_(
+    Document& document, 
+    IndexerDocument& oldIndexDocument
+)
 {
     // Store the old property value.
     sf1r::docid_t docId = document.getId();
@@ -599,7 +602,11 @@ bool IndexTaskService::destroyDocument(const Value& documentValue)
     return false;
 }
 
-bool IndexTaskService::doBuildCollection_(const std::string& fileName, int op, uint32_t numdoc)
+bool IndexTaskService::doBuildCollection_(
+    const std::string& fileName, 
+    int op, 
+    uint32_t numdoc
+)
 {
     CREATE_PROFILER(proDocumentIndexing, "Index:SIAProcess", "Indexer : InsertDocument")
     CREATE_PROFILER(proIndexing, "Index:SIAProcess", "Indexer : indexing")
@@ -705,8 +712,7 @@ bool IndexTaskService::doBuildCollection_(const std::string& fileName, int op, u
                 {
                     if (!documentManager_->removeDocument(oldId))
                     {
-                        sflog->warn(SFL_SCD, 10116, oldId);
-                        continue;
+                        LOG(WARNING) << "Error happen when deleting document " << oldId;
                     }
                     if (documentManager_->insertDocument(document) == false)
                     {
@@ -814,8 +820,11 @@ bool IndexTaskService::doBuildCollection_(const std::string& fileName, int op, u
     return true;
 }
 
-void IndexTaskService::checkRtype_(SCDDoc& doc, bool& rType,
-        std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue)
+void IndexTaskService::checkRtype_(
+    SCDDoc& doc, 
+    bool& rType,
+    std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue
+)
 {
     //R-type check
     PropertyDataType dataType;
@@ -870,10 +879,14 @@ void IndexTaskService::checkRtype_(SCDDoc& doc, bool& rType,
     }
 }
 
-bool IndexTaskService::prepareDocument_(SCDDoc& doc, Document& document,
-                                    IndexerDocument& indexDocument, bool& rType,
-                                    std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
-                                    bool insert)
+bool IndexTaskService::prepareDocument_(
+    SCDDoc& doc, 
+    Document& document,
+    IndexerDocument& indexDocument, 
+    bool& rType,
+    std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
+    bool insert
+)
 {
     sf1r::docid_t docId = 0;
     sf1r::docid_t Id = 0;///old doc id for update
@@ -994,7 +1007,7 @@ bool IndexTaskService::prepareDocument_(SCDDoc& doc, Document& document,
                     else
                     {
                         laInputs_[iter->getPropertyId()]->setDocId(docId);
-                        if (makeForwardIndex_(propertyValueU, iter->getPropertyId(), analysisInfo) == false)
+                        if (makeForwardIndex_(propertyValueU, fieldStr, iter->getPropertyId(), analysisInfo) == false)
                         {
                             DLOG(ERROR) << "Forward Indexing Failed Error Line : "<< __LINE__ << endl;
                             return false;
@@ -1038,7 +1051,7 @@ bool IndexTaskService::prepareDocument_(SCDDoc& doc, Document& document,
                                     numOfSummary = 1; //atleast one sentence required for summary
                             }
 
-                            if (makeSentenceBlocks_(propertyValueU, iter->getPropertyId(), iter->getDisplayLength(),
+                            if (makeSentenceBlocks_(propertyValueU, iter->getDisplayLength(),
                                                     numOfSummary, sentenceOffsetList) == false)
                             {
                                 sflog->error(SFL_IDX, 10129);
@@ -1062,6 +1075,7 @@ bool IndexTaskService::prepareDocument_(SCDDoc& doc, Document& document,
                                     vecIter->getAnalysisInfo();
                                 laInputs_[vecIter->getPropertyId()]->setDocId(docId);
                                 if (makeForwardIndex_(propertyValueU,
+                                                      fieldStr,
                                                       vecIter->getPropertyId(),
                                                       aliasAnalysisInfo) == false)
                                 {
@@ -1185,67 +1199,78 @@ bool IndexTaskService::prepareDocument_(SCDDoc& doc, Document& document,
 /// @desc Make a forward index of a given text.
 /// You can specify an Language Analysis option through AnalysisInfo parameter.
 /// You have to get a proper AnalysisInfo value from the configuration. (Currently not implemented.)
-bool IndexTaskService::makeForwardIndex_(const izenelib::util::UString& text,
-                           unsigned int propertyId,
-                           const AnalysisInfo& analysisInfo)
+bool IndexTaskService::makeForwardIndex_(
+    const izenelib::util::UString& text,
+    const std::string& propertyName,
+    unsigned int propertyId,
+    const AnalysisInfo& analysisInfo
+)
 {
-    CREATE_PROFILER(proTermExtracting, "IndexTaskService:SIAProcess",
-                    "Forward Index Building : extracting Terms");
-    CREATE_PROFILER(proRawMap, "IndexTaskService:SIAProcess",
-                    "Forward Index Building : inserting raw map");
-    CREATE_PROFILER(proTermIdGeneration, "IndexTaskService:SIAProcess",
-                    "Forward Index Building : creating IDs");
-    CREATE_PROFILER(proInsertOffset, "IndexTaskService:SIAProcess",
-                    "Forward Index Building : insert offset in FI ");
+    CREATE_PROFILER(proTermExtracting, "IndexTaskService:SIAProcess", "Forward Index Building : extracting Terms");
 
 //    la::TermIdList termIdList;
     laInputs_[propertyId]->resize(0);
+	text.displayStringValue(UString::UTF_8);
+	std::cout<<std::endl;
 
     START_PROFILER(proTermExtracting);
     // Remove the spaces between two Chinese Characters
 //    izenelib::util::UString refinedText;
 //    la::removeRedundantSpaces( text, refinedText );
 //    if (laManager_->getTermList(refinedText, analysisInfo, true, termList, true ) == false)
-
-    if (laManager_->getTermIdList(idManager_.get(), text, analysisInfo, (*laInputs_[propertyId]) ) == false)
+    bool sentenceLevelIndexing = bundleConfig_->indexMultilangGranularity_ == SENTENCE_LEVEL ? true:false;
+    if(sentenceLevelIndexing)
     {
-        //DocumentLog::print(DocumentLog::TYPE_ERROR, "", "getTermsByKoreanLanguageExtractor() failed.");
-        return false;
+        if(bundleConfig_->bIndexUnigramProperty_)
+        {
+            if(propertyName.find("_unigram") != std::string::npos)
+                sentenceLevelIndexing = false;  /// for unigram property, we do not need sentence level indexing
+        }
     }
-    STOP_PROFILER(proTermExtracting);
-/*
-    unsigned int id = 0;
 
-    for (la::TermIdList::iterator p = termIdList.begin(); p != termIdList.end(); p++)
+    if(sentenceLevelIndexing)
     {
-        //TODO:substitute p->byteOffset instead of 0 for ensuring range of Word offsets for the terms processed through regulators
-        START_PROFILER(proTermIdGeneration);
-//        idManager_->getTermIdByTermString(p->text_, id);
+        ::ilplib::langid::Analyzer* langIdAnalyzer = documentManager_->getLangId();
+        std::string utf8_text;
+        text.convertString(utf8_text, izenelib::util::UString::UTF_8);
+        const char* p = utf8_text.c_str();
+        std::size_t lastpos, pos = 0;
+        while (int len = langIdAnalyzer->sentenceLength(p))
+        {
+            UString sentence;
+            sentence.assign(p, len, izenelib::util::UString::UTF_8);
+            lastpos = pos;
 
-        //std::cout<<",";p->text_.displayStringInfo( izenelib::util::UString::UTF_8);
-//        /// TODO, disable if the collection uses unigram wildcard
-//        if( collectionMeta_.isTrieWildcard() ) {
-//            idManager_->addWildcardCandidate(p->text_);
-//        }
+            if (laManager_->getTermIdList(idManager_.get(), sentence, analysisInfo, (*laInputs_[propertyId]) ) == false)
+                return false;
 
-        STOP_PROFILER(proTermIdGeneration);
-        START_PROFILER(proInsertOffset);
-        laInput->push_back(LAInputUnit(p->termid_, p->wordOffset_));
-        STOP_PROFILER(proInsertOffset);
-    }//std::cout<<std::endl<<std::endl;
-*/
+            pos = (*laInputs_[propertyId]).size();
+            if(lastpos > 0)
+            {
+                LAInput& laInput = (*laInputs_[propertyId]);
+                for(std::size_t i = lastpos; i < pos; ++i)
+                    laInput[i].wordOffset_ += lastpos;
+            }
+            p += len;	
+        }
+    }
+    else
+        if (laManager_->getTermIdList(idManager_.get(), text, analysisInfo, (*laInputs_[propertyId]) ) == false)
+            return false;
+
+    STOP_PROFILER(proTermExtracting);
     return true;
 }
 
-bool IndexTaskService::makeSentenceBlocks_(const izenelib::util::UString & text,
-                                       unsigned int propertyId,
-                                       const unsigned int maxDisplayLength,
-                                       const unsigned int numOfSummary,
-                                       vector<CharacterOffset>& sentenceOffsetList)
+bool IndexTaskService::makeSentenceBlocks_(
+    const izenelib::util::UString & text,
+    const unsigned int maxDisplayLength,
+    const unsigned int numOfSummary,
+    vector<CharacterOffset>& sentenceOffsetList
+)
 {
     sentenceOffsetList.clear();
-    if (summarizer_.getOffsetPairs(text, *laInputs_[propertyId], maxDisplayLength, numOfSummary,
-                                   sentenceOffsetList) == false)
+    if (summarizer_.getOffsetPairs(text, maxDisplayLength, numOfSummary, sentenceOffsetList) == false)
     {
         return false;
     }

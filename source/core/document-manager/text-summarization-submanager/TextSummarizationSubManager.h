@@ -55,7 +55,6 @@ public:
      * @brief get requests for getting summary, snippet offsets, when given a text
      *
      * @param textBody              The text subject to be summarized.
-     * @param forwardIndex          The forward index data for the terms in the textbody
      * @param maxDisplayLength      Display length of sentence as defined in configuration
      * @param numOfSentence         Number of sentences to be produced as a part of summary
      *                              snippet offset block generator do not use this @param numOfSentence
@@ -65,39 +64,10 @@ public:
      */
     bool getOffsetPairs(
         const izenelib::util::UString& textBody,
-        const LAInput& laInput,
         const unsigned int maxDisplayLength,
         const unsigned int numOfSentence,
         std::vector<CharacterOffset>& offsetPairs
     );
-
-
-private:
-    /**
-     * @brief Returns termIds of sentences in the order of sentence. Used for
-     * summarization algorithm
-     * @param sentenceWordLength    Holds number of words that each sentence contain
-     * @param forwardIndex          Holds the offset information of each unique term
-     *                              in the text. Produced by LAManager
-     * @param sentenceListInTermId  The text represented as a sequence of sentences,
-     *                              which are of a sequence of TermIDs
-     */
-    void getSentenceListInTermId(
-        const vector<WordOffset>&  sentenceWordLength,
-        const LAInput& laInput,
-        vector<vector<TermId> >& sentenceListInTermId
-    ) const;
-
-    /**
-     * @brief                       returns start, end pair of character offset of sentences.
-     *                              summarization algorithm
-     * @param sentenceText          holds pair of startOffset and sentence
-     * @param sentenceOffsetPairs   start, end pair of sentences in sentenceText
-     */
-    void getSentencesOffsetPairs(
-        const std::vector<pair<CharacterOffset, izenelib::util::UString> >& sentenceText,
-        std::vector<std::pair<CharacterOffset, CharacterOffset> >& sentencesOffsetPairs
-    ) const;
 
 public:
     ilplib::langid::Analyzer* langIdAnalyzer_;

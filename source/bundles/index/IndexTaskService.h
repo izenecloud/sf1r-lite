@@ -54,34 +54,52 @@ public:
     bool getIndexStatus(Status& status);
 
 private:
-    bool doBuildCollection_(const std::string& scdFile, int op, uint32_t numdoc);
+    bool doBuildCollection_(
+        const std::string& scdFile, 
+        int op, 
+        uint32_t numdoc
+    );
     
-    bool prepareDocument_(SCDDoc& doc,
-                          Document& document,
-                          IndexerDocument& indexDocument,
-                          bool& rType,
-                          std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
-                          bool insert = true);
+    bool prepareDocument_(
+        SCDDoc& doc,
+        Document& document,
+        IndexerDocument& indexDocument,
+        bool& rType,
+        std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
+        bool insert = true
+    );
 
-    bool preparePartialDocument_(Document& document, IndexerDocument& oldIndexDocument);
+    bool preparePartialDocument_(
+        Document& document, 
+        IndexerDocument& oldIndexDocument
+    );
 
-    void checkRtype_(SCDDoc& doc,
-                     bool& rType,
-                     std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
+    void checkRtype_(
+        SCDDoc& doc,
+        bool& rType,
+        std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue
+    );
 
-    bool makeSentenceBlocks_(const izenelib::util::UString& text,
-                             unsigned int propertyId,
-                             const unsigned int numOfSummary,
-                             const unsigned int maxDisplayLength,
-                             std::vector<CharacterOffset>& sentenceOffsetList);
+    bool makeSentenceBlocks_(
+        const izenelib::util::UString& text,
+        const unsigned int numOfSummary,
+        const unsigned int maxDisplayLength,
+        std::vector<CharacterOffset>& sentenceOffsetList
+    );
 
-    bool makeForwardIndex_(const izenelib::util::UString& text,
-                           unsigned int propertyId,
-                           const AnalysisInfo& analysisInfo);
+    bool makeForwardIndex_(
+        const izenelib::util::UString& text,
+        const std::string& propertyName,
+        unsigned int propertyId,
+        const AnalysisInfo& analysisInfo
+    );
 
     bool backup_();
 
-    static void value2SCDDoc(const ::izenelib::driver::Value& value, SCDDoc& scddoc);
+    static void value2SCDDoc(
+        const ::izenelib::driver::Value& value, 
+        SCDDoc& scddoc
+    );
 
 private:
     IndexBundleConfiguration* bundleConfig_;

@@ -13,6 +13,13 @@
 namespace sf1r
 {
 typedef std::set<PropertyConfig, PropertyComp> IndexBundleSchema;
+
+enum IndexMultilangGranularity {
+    FIELD_LEVEL, /// Each field adopts same language analzyer
+    SENTENCE_LEVEL, /// Each sentence adopts same language analyzer
+    BLOCK_LEVEL ///unsupported yet, which means reorganize text so that each block contains same language
+}; 
+
 class IndexBundleConfiguration : public ::izenelib::osgi::BundleConfiguration
 {
 public:
@@ -29,6 +36,8 @@ public:
     const bool hasUnigramProperty() { return bIndexUnigramProperty_; }
 
     const bool isUnigramSearchMode() { return bUnigramSearchMode_; }
+
+    void setIndexMultiLangGranularity(const std::string& granularity);
 
     bool getPropertyConfig(const std::string& name, PropertyConfig& config) const;
 
@@ -61,6 +70,9 @@ public:
 
     /// @brief whether search based on unigram index terms
     bool bUnigramSearchMode_;
+
+    /// @brief the granularity of multi language support during indexing
+    IndexMultilangGranularity indexMultilangGranularity_;
 
     std::string languageIdentifierDbPath_;
     /// Parameters

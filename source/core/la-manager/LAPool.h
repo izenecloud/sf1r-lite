@@ -119,6 +119,16 @@ namespace sf1r
                 path=  cma_path_;
             }
 
+            void set_jma_path(const std::string& path)
+            {
+                jma_path_ = path;
+            }
+		
+            void get_jma_path(std::string& path)
+            {
+                path=  jma_path_;
+            }
+
         private:
 
             ///
@@ -145,6 +155,8 @@ namespace sf1r
             std::string kma_path_;
             
             std::string cma_path_;
+
+            std::string jma_path_;
     };
 
 } // namespace sf1r
