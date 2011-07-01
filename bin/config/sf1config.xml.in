@@ -102,8 +102,8 @@
 
       <Method id="la_token" analysis="token"/>
       <Method id="la_char" analysis="char"/>
-      <Method id="la_unigram_all" analysis="char" advoption="all" />
-      <Method id="la_unigram" analysis="char" advoption="part" />
+      <Method id="la_unigram_all" analysis="char" advoption="all" casesensitive="no" />
+      <Method id="la_unigram" analysis="char" advoption="part" casesensitive="no" />
       <Method id="la_ngram" analysis="ngram" min="2" max="3" maxno="2194967296" apart="n" idxflag="second" schflag="second"/>
       <Method id="la_bigram" analysis="ngram" min="2" max="2" maxno="2194967296" apart="n" idxflag="second"/>
       <Method id="la_eng" analysis="english" casesensitive="no">
