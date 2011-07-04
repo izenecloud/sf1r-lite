@@ -444,8 +444,12 @@ namespace sf1r
             AnalysisInfo analysisInfo;
             if (!isUnigramSearchMode || laInfo.analysisInfo_.analyzerId_.empty())
             {
-                // case la is empty: DATE
+                // the addtional case that la is empty: e.g. DATE property
                 analysisInfo = laInfo.analysisInfo_;
+                if (analysisInfo.analyzerId_ == "la_sia_with_unigram")
+                {
+                    analysisInfo.analyzerId_ = "la_sia";
+                }
             }
             else
             {

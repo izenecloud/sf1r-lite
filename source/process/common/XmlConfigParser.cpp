@@ -1692,6 +1692,12 @@ void CollectionConfig::parseProperty_Indexing( const ticpp::Element * indexing, 
     // push to the list of all analysis Information in the configuration file.
     SF1Config::get()->analysisPairList_.insert( analysisInfo );
 
+    // xxx, "la_sia_with_unigram" used for indexing, add "la_sia" for searching
+    if (analyzer == "la_sia_with_unigram")
+    {
+        analysisInfo.analyzerId_ = "la_sia";
+    }
+    SF1Config::get()->analysisPairList_.insert( analysisInfo );
 }
 
 
