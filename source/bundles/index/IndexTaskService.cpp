@@ -1216,8 +1216,6 @@ bool IndexTaskService::makeForwardIndex_(
 
 //    la::TermIdList termIdList;
     laInputs_[propertyId]->resize(0);
-	text.displayStringValue(UString::UTF_8);
-	std::cout<<std::endl;
 
     START_PROFILER(proTermExtracting);
     // Remove the spaces between two Chinese Characters
