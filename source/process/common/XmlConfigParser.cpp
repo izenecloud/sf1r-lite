@@ -1522,6 +1522,7 @@ void CollectionConfig::parseIndexSchemaProperty(
             {
                 propertyConfig.setName(propertyName+"_unigram");
                 propertyConfig.setAnalysisInfo(analysisInfo);
+                propertyConfig.setIsFilter(false);
                 indexSchema.insert(propertyConfig );
 
                 /// Attention
