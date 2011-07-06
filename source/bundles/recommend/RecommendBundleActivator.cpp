@@ -119,8 +119,8 @@ bool RecommendBundleActivator::init_()
 
     std::string cfPath = dir + "/cf";
     boost::filesystem::create_directories(cfPath);
-    auto_ptr<ItemCFManager> itemCFManagerPtr(new ItemCFManager(cfPath + "/covisit", 1000,
-                                                               cfPath + "/sim", 1000,
+    auto_ptr<ItemCFManager> itemCFManagerPtr(new ItemCFManager(cfPath + "/covisit", 500*1024*1024,
+                                                               cfPath + "/sim", 500*1024*1024,
                                                                cfPath + "/nb.sdb", 30,
                                                                cfPath + "/rec", 1000));
 

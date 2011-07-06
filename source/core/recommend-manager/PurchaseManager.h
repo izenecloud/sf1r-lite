@@ -72,7 +72,6 @@ public:
 
 private:
     SDBType container_;
-    std::string orderManagerPath_;
     ItemCFManager* itemCFManager_;
     const ItemManager* itemManager_;
 };

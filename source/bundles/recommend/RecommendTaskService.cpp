@@ -795,6 +795,22 @@ bool RecommendTaskService::loadOrderSCD_()
     }
     userItemMap.open();
 
+    loadUserItemMap_(scdList, userItemMap);
+
+    loadPurchaseItem_(userItemMap);
+
+    buildFreqItemSet_();
+
+    backupSCDFiles(scdDir, scdList);
+
+    return true;
+}
+
+void RecommendTaskService::loadUserItemMap_(
+    const std::vector<string>& scdList,
+    UserItemMap& userItemMap
+)
+{
     int orderNum = 0;
     LOG(INFO) << "Start loading " << scdList.size() << " order SCD files...";
     for (std::vector<string>::const_iterator scdIt = scdList.begin();
@@ -877,7 +893,13 @@ bool RecommendTaskService::loadOrderSCD_()
     }
     std::cout << "\rloading orders, total order num: " << orderNum << std::endl;
 
+    orderManager_->flush();
+}
+
+void RecommendTaskService::loadPurchaseItem_(UserItemMap& userItemMap)
+{
     LOG(INFO) << "loading the purchased items for " << userItemMap.numItems() << " users...";
+
     typedef izenelib::sdb::SDBCursorIterator<UserItemMap> UserItemIterator;
     UserItemIterator itEnd;
 
@@ -913,13 +935,6 @@ bool RecommendTaskService::loadOrderSCD_()
     std::cout << "\rbuilding recommend result for user num: " << userNum << std::endl;
 
     purchaseManager_->flush();
-    orderManager_->flush();
-
-    buildFreqItemSet_();
-
-    backupSCDFiles(scdDir, scdList);
-
-    return true;
 }
 
 void RecommendTaskService::loadOrderMap_(

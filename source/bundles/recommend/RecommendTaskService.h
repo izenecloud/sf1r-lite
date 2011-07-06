@@ -148,7 +148,26 @@ private:
     typedef izenelib::sdb::unordered_sdb_tc<userid_t, ItemIdSet> UserItemMap;
 
     /**
-     * Load the orders in @p orderMap.
+     * Load the SCD files in @p scdList,
+     * add each order into @c orderManager_,
+     * store item ids of each user into @p userItemMap.
+     * @param scdList the SCD file paths
+     * @param userItemMap store item ids for each user id
+     */
+    void loadUserItemMap_(
+        const std::vector<string>& scdList,
+        UserItemMap& userItemMap
+    );
+
+    /**
+     * For the item ids of each user from @p userItemMap,
+     * add them into @c purchaseManager_.
+     * @param userItemMap the item ids for each user id
+     */
+    void loadPurchaseItem_(UserItemMap& userItemMap);
+
+    /**
+     * For each order in @p orderMap, add it into @c orderManager_ and @p userItemMap.
      * @param orderMap the orders
      * @param userItemMap store item ids for each user id
      */
@@ -157,6 +176,13 @@ private:
         UserItemMap& userItemMap
     );
 
+    /**
+     * Add the items from @p orderItemVec into @c orderManager_,
+     * and add them into @p userItemMap.
+     * @param userIdStr the string of user id
+     * @param orderItemVec the array of item id string
+     * @param userItemMap store item ids for each user id
+     */
     bool loadOrder_(
         const std::string& userIdStr,
         const OrderItemVec& orderItemVec,

@@ -30,6 +30,7 @@ void PurchaseManager::flush()
     try
     {
         container_.flush();
+        itemCFManager_->flush();
     }
     catch(izenelib::util::IZENELIBException& e)
     {
