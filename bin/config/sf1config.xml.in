@@ -152,6 +152,14 @@
 
   <Deployment>
     <BrokerAgent usecache="n" threadnum="50" enabletest="y" port="18181" />
+    <Broker>
+       <Aggregator name="example" />
+    </Broker>
+
+    <RemoteAgent>
+       <Worker host="0.0.0.0" port="18111" />
+       <Worker host="0.0.0.0" port="18112" />
+    </RemoteAgent>
   </Deployment>
 
 </SF1Config>
