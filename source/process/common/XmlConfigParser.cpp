@@ -331,16 +331,13 @@ void SF1Config::parseBrokerAgent( const ticpp::Element * brokerAgent )
     getAttribute( brokerAgent, "enabletest", brokerAgentConfig_.enableTest_,false );
     getAttribute( brokerAgent, "threadnum", brokerAgentConfig_.threadNum_,false );
     getAttribute( brokerAgent, "port", brokerAgentConfig_.port_,false );	
-}
 
-void SF1Config::parseBroker( const ticpp::Element * broker )
-{
     Iterator<Element> aggregator_it( "Aggregator" );
-    for (aggregator_it = aggregator_it.begin(broker); aggregator_it != aggregator_it.end(); aggregator_it++)
+    for (aggregator_it = aggregator_it.begin(brokerAgent); aggregator_it != aggregator_it.end(); aggregator_it++)
     {
         AggregatorConfigUnit aggregatorConfig;
         getAttribute(aggregator_it.Get(), "name", aggregatorConfig.name_, false);
-        brokerConfig_.addAggregatorConfig(aggregatorConfig);
+        brokerAgentConfig_.addAggregatorConfig(aggregatorConfig);
     }
 }
 
@@ -718,8 +715,6 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
 void SF1Config::parseDeploymentSettings(const ticpp::Element * deploy) 
 {
     parseBrokerAgent( getUniqChildElement( deploy, "BrokerAgent" ) );
-
-    parseBroker( getUniqChildElement( deploy, "Broker" ) );
 
     parseRemoteAgent( getUniqChildElement( deploy, "RemoteAgent" ) );
 }

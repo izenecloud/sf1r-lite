@@ -389,11 +389,6 @@ public:
         return brokerAgentConfig_;
     }
 
-    const BrokerConfig& getBrokerConfig()
-    {
-        return brokerConfig_;
-    }
-
     const net::aggregator::AggregatorConfig& getAggregatorConfig()
     {
         return aggregatorConfig_;
@@ -549,9 +544,6 @@ public:
 
     /// @brief  Configurations for BrokerAgent
     BrokerAgentConfig brokerAgentConfig_;
-
-    /// @brief Configurations for Broker (Aggregators)
-    BrokerConfig brokerConfig_;
 
     /// @brief Congiguations for Aggregator (Workers' server info, etc)
     net::aggregator::AggregatorConfig aggregatorConfig_;

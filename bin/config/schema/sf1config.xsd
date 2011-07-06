@@ -164,13 +164,16 @@
 		<xs:complexType>
 			<xs:sequence>
 				<xs:element ref="BrokerAgent"/>
-				<xs:element ref="Broker"/>
 				<xs:element ref="RemoteAgent"/>
 			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
 	<xs:element name="BrokerAgent">
 		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Aggregator" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+
 			<xs:attribute name="enabletest" type="YesNoType" use="required"/>
 			<xs:attribute name="threadnum" use="required">
 				<xs:simpleType>
@@ -184,13 +187,6 @@
 			<xs:attribute name="port" type="PortType" use="required"/>
 		</xs:complexType>
 	</xs:element>
-	<xs:element name="Broker">
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element ref="Aggregator" maxOccurs="unbounded"/>
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
 	<xs:element name="Aggregator">
 		<xs:complexType>
 			<xs:attribute name="name" type="xs:NCName" use="required"/>
@@ -199,7 +195,7 @@
 	<xs:element name="RemoteAgent">
 		<xs:complexType>
 			<xs:sequence>
-				<xs:element ref="Worker" maxOccurs="unbounded"/>
+				<xs:element ref="Worker" minOccurs="0" maxOccurs="unbounded"/>
 			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
