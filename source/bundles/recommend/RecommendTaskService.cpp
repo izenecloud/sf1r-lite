@@ -898,12 +898,10 @@ void RecommendTaskService::loadUserItemMap_(
 
 void RecommendTaskService::loadPurchaseItem_(UserItemMap& userItemMap)
 {
-    LOG(INFO) << "loading the purchased items for " << userItemMap.numItems() << " users...";
-
     typedef izenelib::sdb::SDBCursorIterator<UserItemMap> UserItemIterator;
     UserItemIterator itEnd;
 
-    // update matrixes in IncrementalItemCF
+    LOG(INFO) << "start loading purchased items for " << userItemMap.numItems() << " users...";
     int userNum = 0;
     for (UserItemIterator it = UserItemIterator(userItemMap); it != itEnd; ++it)
     { 
@@ -921,18 +919,22 @@ void RecommendTaskService::loadPurchaseItem_(UserItemMap& userItemMap)
     }
     std::cout << "\rloading user num: " << userNum << std::endl;
 
-    // build recommend result for each user
+    LOG(INFO) << "start building whole similarity matrix for " << itemManager_->itemNum() << " items...";
+    purchaseManager_->buildSimMatrix();
+
+    LOG(INFO) << "start building recommend result for " << userItemMap.numItems() << " users...";
     userNum = 0;
     for (UserItemIterator it = UserItemIterator(userItemMap); it != itEnd; ++it)
     { 
         if (++userNum % 100 == 0)
         {
-            std::cout << "\rbuilding recommend result for user num: " << userNum << std::flush;
+            std::cout << "\rbuilding user num: " << userNum << std::flush;
         }
 
         purchaseManager_->buildUserResult(it->first);
     }
-    std::cout << "\rbuilding recommend result for user num: " << userNum << std::endl;
+    std::cout << "\rbuilding user num: " << userNum << std::endl;
+    LOG(INFO) << "finish building recommend result";
 
     purchaseManager_->flush();
 }

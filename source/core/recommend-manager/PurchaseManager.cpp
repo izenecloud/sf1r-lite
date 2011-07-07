@@ -74,18 +74,24 @@ bool PurchaseManager::addPurchaseItem(
             LOG(ERROR) << "exception in SDB::update(): " << e.what();
         }
 
+        if (isBuildUserResult)
         {
             ItemIterator itemIterator(1, itemManager_->maxItemId());
             itemCFManager_->buildMatrix(oldItems, newItems);
-
-            if (isBuildUserResult)
-            {
-                itemCFManager_->buildUserRecommendItems(userId, oldItems, itemIterator);
-            }
+            itemCFManager_->buildUserRecommendItems(userId, oldItems, itemIterator);
+        }
+        else
+        {
+            itemCFManager_->updateVisitMatrix(oldItems, newItems);
         }
     }
 
     return true;
+}
+
+void PurchaseManager::buildSimMatrix()
+{
+    itemCFManager_->buildSimMatrix();
 }
 
 void PurchaseManager::buildUserResult(userid_t userId)
