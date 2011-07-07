@@ -25,6 +25,8 @@
 #include <util/singleton.h>
 #include <util/ticpp/ticpp.h>
 
+#include <net/aggregator/AggregatorConfig.h>
+
 #include <boost/unordered_set.hpp>
 #include <boost/utility.hpp>
 
@@ -387,6 +389,11 @@ public:
         return brokerAgentConfig_;
     }
 
+    const net::aggregator::AggregatorConfig& getAggregatorConfig()
+    {
+        return aggregatorConfig_;
+    }
+
     /// @brief Gets the configuration related to BrokerAgent
     /// @param brokerAgentConfig    The settings for BrokerAgent
     void getBrokerAgentConfig( BrokerAgentConfig& brokerAgentConfig )
@@ -508,6 +515,13 @@ private:
     /// @param system           Pointer to the Element
     void parseBrokerAgent( const ticpp::Element * brokerAgent );
 
+    /// @brief                  Parse <Broker> settings
+    /// @param system           Pointer to the Element
+    void parseBroker(const ticpp::Element * broker);
+    /// @brief                  Parse <RemoteAgent> settings
+    /// @param system           Pointer to the Element
+    void parseRemoteAgent(const ticpp::Element * remoteAgent);
+
 public:
     //----------------------------  PRIVATE MEMBER VARIABLES  ----------------------------
     // STATIC VALUES -----------------
@@ -530,6 +544,9 @@ public:
 
     /// @brief  Configurations for BrokerAgent
     BrokerAgentConfig brokerAgentConfig_;
+
+    /// @brief Congiguations for Aggregator (Workers' server info, etc)
+    net::aggregator::AggregatorConfig aggregatorConfig_;
 
     /// @brief QueryLogBundleConfig
     QueryLogBundleConfiguration queryLogBundleConfig_;
