@@ -62,7 +62,7 @@ void iterateItemManager(const vector<itemid_t>& idVec, const vector<Item>& itemV
     BOOST_CHECK_EQUAL(idVec.size(), itemVec.size());
     BOOST_CHECK_EQUAL(itemManager.itemNum(), itemVec.size());
 
-    int iterNum = 0;
+    unsigned int iterNum = 0;
     for (ItemManager::SDBIterator itemIt = itemManager.begin();
         itemIt != itemManager.end(); ++itemIt)
     {

@@ -904,8 +904,8 @@ void RecommendTaskService::loadPurchaseItem_(UserItemMap& userItemMap)
     LOG(INFO) << "start loading purchased items for " << userItemMap.numItems() << " users...";
     int userNum = 0;
     for (UserItemIterator it = UserItemIterator(userItemMap); it != itEnd; ++it)
-    { 
-        if (++userNum % 100 == 0)
+    {
+        if (++userNum % 1000 == 0)
         {
             std::cout << "\rloading user num: " << userNum << std::flush;
         }
@@ -919,14 +919,13 @@ void RecommendTaskService::loadPurchaseItem_(UserItemMap& userItemMap)
     }
     std::cout << "\rloading user num: " << userNum << std::endl;
 
-    LOG(INFO) << "start building whole similarity matrix for " << itemManager_->itemNum() << " items...";
     purchaseManager_->buildSimMatrix();
 
     LOG(INFO) << "start building recommend result for " << userItemMap.numItems() << " users...";
     userNum = 0;
     for (UserItemIterator it = UserItemIterator(userItemMap); it != itEnd; ++it)
-    { 
-        if (++userNum % 100 == 0)
+    {
+        if (++userNum % 1000 == 0)
         {
             std::cout << "\rbuilding user num: " << userNum << std::flush;
         }
