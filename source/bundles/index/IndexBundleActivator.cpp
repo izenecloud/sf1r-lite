@@ -140,7 +140,7 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
             return false;
         }
     }
-    if ( ref.getServiceName() == "RecommendSearchService" )
+    else if ( ref.getServiceName() == "RecommendSearchService" )
     {
         Properties props = ref.getServiceProperties();
         if ( props.get( "collection" ) == config_->collectionName_)

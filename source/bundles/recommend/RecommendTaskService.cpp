@@ -380,19 +380,24 @@ RecommendTaskService::RecommendTaskService(
     ,userIdGenerator_(userIdGenerator)
     ,itemIdGenerator_(itemIdGenerator)
     ,jobScheduler_(new JobScheduler())
+    ,cronJobName_("RecommendTaskService-" + bundleConfig->collectionName_)
 {
     if (cronExpression_.setExpression(bundleConfig_->cronStr_))
     {
-        izenelib::util::Scheduler::addJob("RecommendTaskService",
-                                          60*1000, // each minute
-                                          0, // start from now
-                                          boost::bind(&RecommendTaskService::cronJob_, this));
+        bool result = izenelib::util::Scheduler::addJob(cronJobName_,
+                                                        60*1000, // each minute
+                                                        0, // start from now
+                                                        boost::bind(&RecommendTaskService::cronJob_, this));
+        if (!result)
+        {
+            LOG(ERROR) << "failed in izenelib::util::Scheduler::addJob(), cron job name: " << cronJobName_;
+        }
     }
 }
 
 RecommendTaskService::~RecommendTaskService()
 {
-    izenelib::util::Scheduler::removeJob("RecommendTaskService");
+    izenelib::util::Scheduler::removeJob(cronJobName_);
     delete jobScheduler_;
 }
 

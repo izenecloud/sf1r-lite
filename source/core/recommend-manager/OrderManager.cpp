@@ -338,6 +338,7 @@ void OrderManager::_findMaxItemsets()
 void OrderManager::_findFrequentItemsets()
 {
     LOG(INFO) << "starting OrderManager::_findFrequentItemsets()...";
+    LOG(INFO) << "max_itemsets_results_path_: " << max_itemsets_results_path_;
     std::fstream max_itemsets_results;
     max_itemsets_results.open (max_itemsets_results_path_.c_str(), fstream::in);
     std::string line;

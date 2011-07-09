@@ -217,6 +217,7 @@ private:
     JobScheduler* jobScheduler_;
     boost::mutex freqItemMutex_; // for build freq item set
     izenelib::util::CronExpression cronExpression_;
+    const std::string cronJobName_;
 };
 
 } // namespace sf1r
