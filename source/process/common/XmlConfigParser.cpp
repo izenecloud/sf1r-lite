@@ -331,6 +331,7 @@ void SF1Config::parseBrokerAgent( const ticpp::Element * brokerAgent )
     getAttribute( brokerAgent, "enabletest", brokerAgentConfig_.enableTest_,false );
     getAttribute( brokerAgent, "threadnum", brokerAgentConfig_.threadNum_,false );
     getAttribute( brokerAgent, "port", brokerAgentConfig_.port_,false );	
+    getAttribute( brokerAgent, "workerport", brokerAgentConfig_.workerport_,false );
 
     Iterator<Element> aggregator_it( "Aggregator" );
     for (aggregator_it = aggregator_it.begin(brokerAgent); aggregator_it != aggregator_it.end(); aggregator_it++)
@@ -358,6 +359,7 @@ void SF1Config::parseBundlesDefault(const ticpp::Element * bundles)
 {
     Element * bundle = NULL;
     bundle = getUniqChildElement( bundles, "QueryLogBundle" );
+    getAttribute( bundle, "enableworker", queryLogBundleConfig_.enable_worker_, false ); // worker
     parseQueryLogBundleParam(getUniqChildElement( bundle, "Parameter" ));
     bundle = getUniqChildElement( bundles, "IndexBundle" );
     defaultIndexBundleParam_.LoadXML(getUniqChildElement( bundle, "Parameter" ), false);	
@@ -369,6 +371,7 @@ void SF1Config::parseBundlesDefault(const ticpp::Element * bundles)
 
 void SF1Config::parseQueryLogBundleParam(const ticpp::Element * queryLog)
 {
+
     Element * settings = NULL;
     settings = getUniqChildElement( queryLog, "Path" );
     getAttribute( settings, "basepath", queryLogBundleConfig_.basepath );
@@ -728,7 +731,7 @@ CollectionConfig::~CollectionConfig()
 {
 }
 
-bool CollectionConfig::parseConfigFile( const string& collectionName ,const string & fileName, CollectionMeta collectionMeta) throw( XmlConfigParserException  )
+bool CollectionConfig::parseConfigFile( const string& collectionName ,const string & fileName, CollectionMeta& collectionMeta) throw( XmlConfigParserException  )
 {
     namespace bf=boost::filesystem;
     
@@ -821,6 +824,9 @@ bool CollectionConfig::parseConfigFile( const string& collectionName ,const stri
 
 void CollectionConfig::parseCollectionSettings( const ticpp::Element * collection, CollectionMeta & collectionMeta )
 {
+    // Worker
+    getAttribute( collection, "enableworker", collectionMeta.enableWorkerServer_, false);
+
     parseCollectionPath( getUniqChildElement( collection, "Path" ), collectionMeta );
 
     parseCollectionSchema( getUniqChildElement( collection, "DocumentSchema" ), collectionMeta );

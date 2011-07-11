@@ -608,7 +608,7 @@ public:
     /// @param fileName  The path of the configuration file
     /// @details
     /// 
-    bool parseConfigFile( const string& collectionName , const std::string & fileName, CollectionMeta collectionMeta) throw(XmlConfigParserException );
+    bool parseConfigFile( const string& collectionName , const std::string & fileName, CollectionMeta& collectionMeta) throw(XmlConfigParserException );
 
 private:
 

@@ -13,7 +13,7 @@
     
     <BundlesDefault>
       <!-- QueryCorrection Bundle Default -->
-      <QueryLogBundle>
+      <QueryLogBundle enableworker="n">
         <Parameter>
           <Path basepath="@SF1RENGINE_ROOT@/bin/query-support" />
           <QuerySupport updatetime="3600" logdays="7" />
@@ -151,7 +151,7 @@
 
 
   <Deployment>
-    <BrokerAgent usecache="n" threadnum="50" enabletest="y" port="18181">
+    <BrokerAgent usecache="n" threadnum="50" enabletest="y" port="18181" workerport="18111">
         <!--
         <Aggregator name="example" />
         -->

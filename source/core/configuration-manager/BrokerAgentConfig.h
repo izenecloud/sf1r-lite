@@ -17,6 +17,7 @@ struct BrokerAgentConfig
     size_t threadNum_;
     bool enableTest_;
     unsigned int port_;
+    unsigned int workerport_;
 
     std::map<std::string, AggregatorConfigUnit> aggregatorUnitMap_;
 

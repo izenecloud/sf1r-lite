@@ -185,6 +185,7 @@
 			</xs:attribute>
 			<xs:attribute name="usecache" type="YesNoType" use="required"/>
 			<xs:attribute name="port" type="PortType" use="required"/>
+			<xs:attribute name="workerport" type="PortType" use="required"/>
 		</xs:complexType>
 	</xs:element>
 	<xs:element name="Aggregator">

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Collection xmlns="http://www.izenesoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-           xsi:schemaLocation="http://www.izenesoft.com collection.xsd">
+           xsi:schemaLocation="http://www.izenesoft.com collection.xsd" enableworker="no">
+
     <!-- format: none_time_t, time_t, utc_sec, no_date -->
     <Date format="none_time_t"/>
 
