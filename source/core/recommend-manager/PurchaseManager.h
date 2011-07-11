@@ -37,7 +37,7 @@ public:
      * Add a purchase event.
      * @param userId the user id
      * @param itemVec the items in the order
-     * @param isBuildUserResult true for call @p ItemCFManager::buildMatrix(), and @p buildUserRecommendItems(),
+     * @param isBuildUserResult true for call @p ItemCFManager::buildMatrix(), and @p buildUserRecItems(),
      *                          false for call @p ItemCFManager::updateVisitMatrix().
      * @return true for succcess, false for failure
      */

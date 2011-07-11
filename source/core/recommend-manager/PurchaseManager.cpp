@@ -76,7 +76,7 @@ bool PurchaseManager::addPurchaseItem(
         if (isBuildUserResult)
         {
             itemCFManager_->buildMatrix(oldItems, newItems);
-            itemCFManager_->buildUserRecommendItems(userId, itemIdSet);
+            itemCFManager_->buildUserRecItems(userId, itemIdSet);
         }
         else
         {
@@ -99,7 +99,7 @@ void PurchaseManager::buildUserResult(userid_t userId)
 
     if (! itemIdSet.empty())
     {
-        itemCFManager_->buildUserRecommendItems(userId, itemIdSet);
+        itemCFManager_->buildUserRecItems(userId, itemIdSet);
     }
 }
 
