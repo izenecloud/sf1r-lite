@@ -61,7 +61,7 @@ void iterateUserManager(const vector<userid_t>& idVec, const vector<User>& userV
     BOOST_CHECK_EQUAL(idVec.size(), userVec.size());
     BOOST_CHECK_EQUAL(userManager.userNum(), userVec.size());
 
-    int iterNum = 0;
+    unsigned int iterNum = 0;
     for (UserManager::SDBIterator userIt = userManager.begin();
         userIt != userManager.end(); ++userIt)
     {

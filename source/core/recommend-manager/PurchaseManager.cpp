@@ -1,6 +1,5 @@
 #include "PurchaseManager.h"
 #include "ItemManager.h"
-#include "ItemIterator.h"
 
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
@@ -76,9 +75,8 @@ bool PurchaseManager::addPurchaseItem(
 
         if (isBuildUserResult)
         {
-            ItemIterator itemIterator(1, itemManager_->maxItemId());
             itemCFManager_->buildMatrix(oldItems, newItems);
-            itemCFManager_->buildUserRecommendItems(userId, oldItems, itemIterator);
+            itemCFManager_->buildUserRecItems(userId, itemIdSet);
         }
         else
         {
@@ -101,10 +99,7 @@ void PurchaseManager::buildUserResult(userid_t userId)
 
     if (! itemIdSet.empty())
     {
-        std::list<sf1r::itemid_t> items(itemIdSet.begin(), itemIdSet.end());
-
-        ItemIterator itemIterator(1, itemManager_->maxItemId());
-        itemCFManager_->buildUserRecommendItems(userId, items, itemIterator);
+        itemCFManager_->buildUserRecItems(userId, itemIdSet);
     }
 }
 

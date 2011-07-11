@@ -69,7 +69,7 @@ void iteratePurchaseManager(const PurchaseMap& purchaseMap, PurchaseManager& pur
 {
     BOOST_CHECK_EQUAL(purchaseManager.purchaseUserNum(), purchaseMap.size());
 
-    int iterNum = 0;
+    unsigned int iterNum = 0;
     for (PurchaseManager::SDBIterator purchaseIt = purchaseManager.begin();
         purchaseIt != purchaseManager.end(); ++purchaseIt)
     {

@@ -380,19 +380,24 @@ RecommendTaskService::RecommendTaskService(
     ,userIdGenerator_(userIdGenerator)
     ,itemIdGenerator_(itemIdGenerator)
     ,jobScheduler_(new JobScheduler())
+    ,cronJobName_("RecommendTaskService-" + bundleConfig->collectionName_)
 {
     if (cronExpression_.setExpression(bundleConfig_->cronStr_))
     {
-        izenelib::util::Scheduler::addJob("RecommendTaskService",
-                                          60*1000, // each minute
-                                          0, // start from now
-                                          boost::bind(&RecommendTaskService::cronJob_, this));
+        bool result = izenelib::util::Scheduler::addJob(cronJobName_,
+                                                        60*1000, // each minute
+                                                        0, // start from now
+                                                        boost::bind(&RecommendTaskService::cronJob_, this));
+        if (!result)
+        {
+            LOG(ERROR) << "failed in izenelib::util::Scheduler::addJob(), cron job name: " << cronJobName_;
+        }
     }
 }
 
 RecommendTaskService::~RecommendTaskService()
 {
-    izenelib::util::Scheduler::removeJob("RecommendTaskService");
+    izenelib::util::Scheduler::removeJob(cronJobName_);
     delete jobScheduler_;
 }
 
@@ -904,8 +909,8 @@ void RecommendTaskService::loadPurchaseItem_(UserItemMap& userItemMap)
     LOG(INFO) << "start loading purchased items for " << userItemMap.numItems() << " users...";
     int userNum = 0;
     for (UserItemIterator it = UserItemIterator(userItemMap); it != itEnd; ++it)
-    { 
-        if (++userNum % 100 == 0)
+    {
+        if (++userNum % 1000 == 0)
         {
             std::cout << "\rloading user num: " << userNum << std::flush;
         }
@@ -919,14 +924,13 @@ void RecommendTaskService::loadPurchaseItem_(UserItemMap& userItemMap)
     }
     std::cout << "\rloading user num: " << userNum << std::endl;
 
-    LOG(INFO) << "start building whole similarity matrix for " << itemManager_->itemNum() << " items...";
     purchaseManager_->buildSimMatrix();
 
     LOG(INFO) << "start building recommend result for " << userItemMap.numItems() << " users...";
     userNum = 0;
     for (UserItemIterator it = UserItemIterator(userItemMap); it != itEnd; ++it)
-    { 
-        if (++userNum % 100 == 0)
+    {
+        if (++userNum % 1000 == 0)
         {
             std::cout << "\rbuilding user num: " << userNum << std::flush;
         }

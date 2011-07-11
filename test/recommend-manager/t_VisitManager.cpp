@@ -51,7 +51,7 @@ void iterateVisitManager(const VisitMap& visitMap, VisitManager& visitManager)
 {
     BOOST_CHECK_EQUAL(visitManager.visitUserNum(), visitMap.size());
 
-    int iterNum = 0;
+    unsigned int iterNum = 0;
     for (VisitManager::SDBIterator visitIt = visitManager.begin();
         visitIt != visitManager.end(); ++visitIt)
     {

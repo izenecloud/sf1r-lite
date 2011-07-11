@@ -61,8 +61,6 @@ bool RecommendManager::recommend(
     filter.insert(excludeItemVec.begin(), excludeItemVec.end());
     filter.setCondition(condition);
 
-    typedef std::list<idmlib::recommender::RecommendedItem> RecItemList;
-
     if (type == BASED_ON_BROWSE_HISTORY || type == BASED_ON_SHOP_CART)
     {
         if (userId == 0)
@@ -110,14 +108,14 @@ bool RecommendManager::recommend(
             return false;
         }
 
-        RecItemList topItems;
-        itemCFManager_->getTopItems(maxRecNum, inputItemVec, topItems, &filter);
+        idmlib::recommender::RecommendItemVec recItems;
+        itemCFManager_->getRecByItem(maxRecNum, inputItemVec, recItems, &filter);
 
-        for (RecItemList::const_iterator it = topItems.begin();
-            it != topItems.end(); ++it)
+        for (idmlib::recommender::RecommendItemVec::const_iterator it = recItems.begin();
+            it != recItems.end(); ++it)
         {
-            recItemVec.push_back(it->itemId);
-            recWeightVec.push_back(it->value);
+            recItemVec.push_back(it->itemId_);
+            recWeightVec.push_back(it->weight_);
         }
     }
     else if (type == BASED_ON_PURCHASE_HISTORY)
@@ -128,14 +126,14 @@ bool RecommendManager::recommend(
             return false;
         }
 
-        RecItemList topItems;
-        itemCFManager_->getTopItems(maxRecNum, userId, topItems, &filter);
+        idmlib::recommender::RecommendItemVec recItems;
+        itemCFManager_->getRecByUser(maxRecNum, userId, recItems, &filter);
 
-        for (RecItemList::const_iterator it = topItems.begin();
-            it != topItems.end(); ++it)
+        for (idmlib::recommender::RecommendItemVec::const_iterator it = recItems.begin();
+            it != recItems.end(); ++it)
         {
-            recItemVec.push_back(it->itemId);
-            recWeightVec.push_back(it->value);
+            recItemVec.push_back(it->itemId_);
+            recWeightVec.push_back(it->weight_);
         }
     }
     else if (type == FREQUENT_BUY_TOGETHER)

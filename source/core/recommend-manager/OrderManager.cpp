@@ -9,8 +9,8 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp> 
 #include <boost/lexical_cast.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/archive_exception.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/thread/locks.hpp>
@@ -338,6 +338,7 @@ void OrderManager::_findMaxItemsets()
 void OrderManager::_findFrequentItemsets()
 {
     LOG(INFO) << "starting OrderManager::_findFrequentItemsets()...";
+    LOG(INFO) << "max_itemsets_results_path_: " << max_itemsets_results_path_;
     std::fstream max_itemsets_results;
     max_itemsets_results.open (max_itemsets_results_path_.c_str(), fstream::in);
     std::string line;
@@ -406,15 +407,15 @@ bool OrderManager::_saveFreqItemsetDb() const
 {
     try
     {
+        LOG(INFO) << "start saving frequent itemsets, count: " << frequent_itemsets_.size();
         std::ofstream ofs(frequent_itemsets_results_path_.c_str());
         if (ofs)
         {
-            boost::archive::xml_oarchive oa(ofs);
-            oa << boost::serialization::make_nvp(
-                "FreqItemSets", frequent_itemsets_
-            );
+            boost::archive::text_oarchive oa(ofs);
+            oa << frequent_itemsets_;
         }
 
+        LOG(INFO) << "finish saving frequent itemsets";
         return ofs;
     }
     catch(boost::archive::archive_exception& e)
@@ -428,14 +429,16 @@ bool OrderManager::_restoreFreqItemsetDb()
 {
     try
     {
+        LOG(INFO) << "start loading frequent itemsets";
+
         std::ifstream ifs(frequent_itemsets_results_path_.c_str());
         if (ifs)
         {
-            boost::archive::xml_iarchive ia(ifs);
-            ia >> boost::serialization::make_nvp(
-                    "FreqItemSets", frequent_itemsets_
-                    );
+            boost::archive::text_iarchive ia(ifs);
+            ia >> frequent_itemsets_;
         }
+
+        LOG(INFO) << "finish loading frequent itemsets, count: " << frequent_itemsets_.size();
         return ifs;
     }
     catch(boost::archive::archive_exception& e)
