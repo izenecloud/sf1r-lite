@@ -64,11 +64,12 @@ void PropertyDiversityReranker::rerank(
     }
     if(docIdMap.size() <= 1) return; // single property or empty
     do{
-        for(DocIdMap::iterator mapIt = docIdMap.begin(); mapIt != docIdMap.end(); ++mapIt)
+        DocIdMap::iterator mapIt = docIdMap.begin();
+        while(mapIt != docIdMap.end())
         {
             if(mapIt->second.empty()) 
             {
-                docIdMap.erase(mapIt);
+                docIdMap.erase(mapIt++);
             }
             else
             {
@@ -76,6 +77,7 @@ void PropertyDiversityReranker::rerank(
                 mapIt->second.pop_front();
                 newDocIdList.push_back(element.first);
                 newScoreList.push_back(element.second);
+                ++mapIt;
             }
         }
     }while(!docIdMap.empty());
