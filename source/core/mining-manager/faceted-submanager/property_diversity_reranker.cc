@@ -68,7 +68,7 @@ void PropertyDiversityReranker::rerank(
         {
             if(mapIt->second.empty()) 
             {
-                docIdMap.erase(mapIt++);
+                docIdMap.erase(mapIt);
             }
             else
             {
