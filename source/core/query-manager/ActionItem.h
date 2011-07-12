@@ -28,6 +28,7 @@
 
 #include <search-manager/CustomRanker.h>
 
+//#include <3rdparty/msgpack/msgpack.hpp>
 #include <util/izene_serialization.h>
 #include <sstream>
 #include <vector>
@@ -566,6 +567,7 @@ class KeywordSearchActionItem
                 &isAttrGroup_&attrGroupNum_
                 &strExp_&paramConstValueMap_&paramPropertyValueMap_);
 
+
     private:
         
         // Log : 2009.09.08
@@ -619,6 +621,10 @@ class GetDocumentsByIdsActionItem
 
         /// @brief User specified DOCID list.
         std::vector<std::string> docIdList_;
+
+        /// @brief Property name, and values list
+        std::string propertyName_;
+        std::vector<std::string> propertyValueList_;
 
         /// @brief filtering options
         std::vector<QueryFiltering::FilteringType> filteringList_;
