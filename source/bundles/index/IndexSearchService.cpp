@@ -10,6 +10,8 @@
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
 
+//#include <aggregator-manager/AggregatorManager.h>
+
 #include <common/SFLogger.h>
 
 #include <query-manager/QMCommonFunc.h>
@@ -495,6 +497,21 @@ bool IndexSearchService::getDocumentsByIds(
         unicodeDocId.assign(*it, kEncodingType);
         idManager_->getDocIdByDocName(unicodeDocId, internalId);
         idList.push_back(internalId);
+    }
+
+    // get docids by property value
+    collectionid_t colId = 1;
+    if (!actionItem.propertyName_.empty())
+    {
+        std::vector<std::string>::const_iterator property_value;
+        for (property_value = actionItem.propertyValueList_.begin();
+             property_value != actionItem.propertyValueList_.end(); ++property_value)
+        {
+            std::string value = *property_value;
+            izenelib::ir::indexmanager::trim(value);
+            PropertyType propertyValue = izenelib::util::UString(value, izenelib::util::UString::UTF_8);
+            indexManager_->getDocsByPropertyValue(colId, actionItem.propertyName_, propertyValue, idList);
+        }
     }
 
     // get query terms

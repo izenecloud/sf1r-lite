@@ -15,6 +15,7 @@
 #include <common/parsers/ConditionArrayParser.h>
 #include <common/Keys.h>
 #include <common/ResultType.h>
+#include <common/IndexBundleSchemaHelpers.h>
 
 #include <configuration-manager/Acl.h>
 
@@ -328,7 +329,7 @@ bool DocumentsGetHandler::getIdListFromConditions()
     // TODO: filtering is not supported
     static const std::string kCodnitionErrorMessage =
         "Require exactly one condition with operator = or in on property " +
-        Keys::_id + " or " + Keys::DOCID + ".";
+        Keys::_id + " or " + Keys::DOCID + " or Property Name(available and filterable)" + ".";
 
     if (conditionsParser.parsedConditionCount() != 1)
     {
@@ -345,6 +346,7 @@ bool DocumentsGetHandler::getIdListFromConditions()
         return false;
     }
 
+    actionItem_.propertyName_.clear();
     if (theOnlyCondition.property() == Keys::_id)
     {
         for (std::size_t i = 0;
@@ -364,8 +366,18 @@ bool DocumentsGetHandler::getIdListFromConditions()
     }
     else
     {
-        response_.addError(kCodnitionErrorMessage);
-        return false;
+        actionItem_.propertyName_ = theOnlyCondition.property();
+        for (std::size_t i = 0;
+                i < theOnlyCondition.size(); ++i)
+        {
+            actionItem_.propertyValueList_.push_back(asString(theOnlyCondition(i)));
+        }
+
+        if (!isPropertyFilterable(indexSchema_, actionItem_.propertyName_))
+        {
+            response_.addError(kCodnitionErrorMessage);
+            return false;
+        }
     }
 
     return true;
