@@ -14,6 +14,7 @@
 #include "FilterCache.h"
 
 #include <ir/index_manager/utility/BitVector.h>
+#include <ir/index_manager/utility/Ewah.h>
 
 #include <util/get.h>
 
@@ -62,7 +63,10 @@ bool QueryBuilder::prepare_filter(
     Filter* &pFilter
 )
 {
-    boost::shared_ptr<BitVector> pDocIdSet;
+    boost::shared_ptr<EWAHBoolArray<uword32> > pDocIdSet;
+    boost::shared_ptr<BitVector> pBitVector;
+    unsigned int bitsNum = pIndexReader_->numDocs() + 1;
+    unsigned int wordsNum = bitsNum/(sizeof(uword32) * 8) + (bitsNum % (sizeof(uword32) * 8) == 0 ? 0 : 1);
 
     if (filtingList.size() == 1)
     {
@@ -72,16 +76,20 @@ bool QueryBuilder::prepare_filter(
         const std::vector<PropertyValue>& filterParam = filteringItem.second;
         if (!filterCache_->get(filteringItem, pDocIdSet))
         {
-            pDocIdSet.reset(new BitVector(pIndexReader_->numDocs()+1));
-            indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pDocIdSet);
+            pDocIdSet.reset(new EWAHBoolArray<uword32>());
+            pBitVector.reset(new BitVector(bitsNum));
+            indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pBitVector);
+            //Compress bit vector
+            pBitVector->compressed(*pDocIdSet);
             filterCache_->set(filteringItem, pDocIdSet);
         }
     }
     else
     {
-        pDocIdSet.reset(new BitVector(pIndexReader_->numDocs()+1));
-        pDocIdSet->setAll();
-        boost::shared_ptr<BitVector> pDocIdSet2;
+        pDocIdSet.reset(new EWAHBoolArray<uword32>());
+        pDocIdSet->addStreamOfEmptyWords(true, wordsNum);
+        boost::shared_ptr<EWAHBoolArray<uword32> > pDocIdSet2;
+        boost::shared_ptr<EWAHBoolArray<uword32> > pDocIdSet3;
         try
         {
             std::vector<QueryFiltering::FilteringType>::const_iterator iter = filtingList.begin();
@@ -92,11 +100,15 @@ bool QueryBuilder::prepare_filter(
                 const std::vector<PropertyValue>& filterParam = iter->second;
                 if (!filterCache_->get(*iter, pDocIdSet2))
                 {
-                    pDocIdSet2.reset(new BitVector(pIndexReader_->numDocs()+1));
-                    indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pDocIdSet2);
+                    pDocIdSet2.reset(new EWAHBoolArray<uword32>());
+                    pBitVector.reset(new BitVector(bitsNum));
+                    indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pBitVector);
+                    pBitVector->compressed(*pDocIdSet2);
                     filterCache_->set(*iter, pDocIdSet2);
                 }
-                (*pDocIdSet)&=(*pDocIdSet2);
+                pDocIdSet3.reset(new EWAHBoolArray<uword32>());
+                (*pDocIdSet).rawlogicaland(*pDocIdSet2, *pDocIdSet3);
+                (*pDocIdSet).swap(*pDocIdSet3);
             }
         }
         catch (std::exception& e)
