@@ -11,11 +11,12 @@
 #include <renderers/DocumentsRenderer.h>
 #include <parsers/SearchParser.h>
 #include <parsers/SelectParser.h>
+#include <common/ValueConverter.h>
+#include <common/IndexBundleSchemaHelpers.h>
 #include <common/parsers/PageInfoParser.h>
 #include <common/parsers/ConditionArrayParser.h>
 #include <common/Keys.h>
 #include <common/ResultType.h>
-#include <common/IndexBundleSchemaHelpers.h>
 
 #include <configuration-manager/Acl.h>
 
@@ -367,16 +368,20 @@ bool DocumentsGetHandler::getIdListFromConditions()
     else
     {
         actionItem_.propertyName_ = theOnlyCondition.property();
-        for (std::size_t i = 0;
-                i < theOnlyCondition.size(); ++i)
-        {
-            actionItem_.propertyValueList_.push_back(asString(theOnlyCondition(i)));
-        }
-
         if (!isPropertyFilterable(indexSchema_, actionItem_.propertyName_))
         {
             response_.addError(kCodnitionErrorMessage);
             return false;
+        }
+
+        sf1r::PropertyDataType dataType = getPropertyDataType(indexSchema_, actionItem_.propertyName_);
+
+        for (std::size_t i = 0;
+                i < theOnlyCondition.size(); ++i)
+        {
+            PropertyValue propertyValue;
+            ValueConverter::driverValue2PropertyValue(dataType, theOnlyCondition(i), propertyValue);
+            actionItem_.propertyValueList_.push_back(propertyValue);
         }
     }
 

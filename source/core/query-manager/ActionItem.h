@@ -624,7 +624,7 @@ class GetDocumentsByIdsActionItem
 
         /// @brief Property name, and values list
         std::string propertyName_;
-        std::vector<std::string> propertyValueList_;
+        std::vector<PropertyValue> propertyValueList_;
 
         /// @brief filtering options
         std::vector<QueryFiltering::FilteringType> filteringList_;

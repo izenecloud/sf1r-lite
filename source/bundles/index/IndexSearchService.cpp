@@ -503,14 +503,14 @@ bool IndexSearchService::getDocumentsByIds(
     collectionid_t colId = 1;
     if (!actionItem.propertyName_.empty())
     {
-        std::vector<std::string>::const_iterator property_value;
+        std::vector<PropertyValue>::const_iterator property_value;
         for (property_value = actionItem.propertyValueList_.begin();
              property_value != actionItem.propertyValueList_.end(); ++property_value)
         {
-            std::string value = *property_value;
-            izenelib::ir::indexmanager::trim(value);
-            PropertyType propertyValue = izenelib::util::UString(value, izenelib::util::UString::UTF_8);
-            indexManager_->getDocsByPropertyValue(colId, actionItem.propertyName_, propertyValue, idList);
+            PropertyType value;
+            PropertyValue2IndexPropertyType converter(value);
+            boost::apply_visitor(converter, (*property_value).getVariant());
+            indexManager_->getDocsByPropertyValue(colId, actionItem.propertyName_, value, idList);
         }
     }
 

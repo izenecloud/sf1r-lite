@@ -133,7 +133,7 @@ void DocumentsController::search()
 }
 
 /**
- * @brief Action @b get. Gets documents from SF1 by ids.
+ * @brief Action @b get. Gets documents from SF1 by ids (or property values).
  *
  * @section request
  *
@@ -142,9 +142,10 @@ void DocumentsController::search()
  * - @b search_session (@c Object): Trace last search. See SearchParser.
  * - @b conditions* (@c String): Get documents by filtering conditions. See
  *   driver::ConditionArrayParser, Now the action @b get only supports exactly
- *   one condition on property _id or DOCID using operator = or in.
+ *   one condition on property _id or DOCID or <Property Name> using operator = or in.
  *   - _id: sf1 internal ID.
  *   - DOCID: Documents ID.
+ *   - <Property Name>: which is a filterable property. (get docs by property value)
  *
  * @b search_session is required to highlight keywords in the result. Just copy
  * the @b search field from request message for "documents/search".
