@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-COLLECTION=m18
+COLLECTION=chinese-wiki
 
 rm -r collection/$COLLECTION/collection-data/default-recommend-dir
 mv collection/$COLLECTION/scd/recommend/item/backup/* collection/$COLLECTION/scd/recommend/item/

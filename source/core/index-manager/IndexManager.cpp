@@ -1,6 +1,5 @@
 #include "IndexManager.h"
 
-#include <common/SFLogger.h>
 #include <ir/index_manager/utility/StringUtils.h>
 
 #include <common/Utilities.h>
@@ -19,56 +18,6 @@ IndexManager::IndexManager()
 IndexManager::~IndexManager()
 {
 }
-
-namespace { // {anonymous}
-
-struct PropertyValue2IndexPropertyType
-: public boost::static_visitor<>
-{
-
-    PropertyValue2IndexPropertyType(PropertyType& out)
-    : out_(out)
-    {
-    }
-
-    template<typename T>
-    void operator()(const T& value)
-    {
-        sflog->error(SFL_IDX, 70101);
-        throw std::runtime_error("Type not supported in PropertyType");
-    }
-    void operator()(int64_t value)
-    {
-        out_ = static_cast<int64_t>(value);
-    }
-    void operator()(uint64_t value)
-    {
-        out_ = static_cast<int64_t>(value);
-    }
-    void operator()(float value)
-    {
-        out_ = value;
-    }
-    void operator()(double value)
-    {
-        out_ = value;
-    }
-    void operator()(const std::string& value)
-    {
-        izenelib::ir::indexmanager::trim(const_cast<std::string&>(value));
-        out_ = izenelib::util::UString(value,izenelib::util::UString::UTF_8);
-    }
-    void operator()(const izenelib::util::UString& value)
-    {
-        izenelib::ir::indexmanager::trim(const_cast<izenelib::util::UString&>(value));
-        out_ = value;
-    }
-
-private:
-    PropertyType& out_;
-};
-
-} // namespace {anonymous}
 
 void IndexManager::convertData(const std::string& property, const PropertyValue& in, PropertyType& out)
 {
