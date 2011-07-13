@@ -6,7 +6,7 @@
 #ifndef FILTER_H
 #define FILTER_H
 
-#include <ir/index_manager/utility/BitVector.h>
+#include <ir/index_manager/utility/Ewah.h>
 
 #include <vector>
 
@@ -24,12 +24,16 @@ namespace sf1r{
 class Filter
 {
 public:
-    Filter(boost::shared_ptr<BitVector> docIdSet) : docIdSet_(docIdSet){}
+    Filter(boost::shared_ptr<EWAHBoolArray<uword32> > docIdSet) : docIdSet_(docIdSet){
+        uncompressedIDSet_.reset(new BoolArray<uword32>());
+        (*uncompressedIDSet_) = docIdSet_->toBoolArray();
+    }
     virtual ~Filter(){}
 public:
-    bool test(docid_t docId){return docIdSet_->test(docId); }
+    bool test(docid_t docId){ return uncompressedIDSet_->get(docId); }
 private:
-    boost::shared_ptr<BitVector> docIdSet_;
+    boost::shared_ptr<EWAHBoolArray<uword32> > docIdSet_;
+    boost::shared_ptr<BoolArray<uword32> > uncompressedIDSet_;
 };
 
 }
