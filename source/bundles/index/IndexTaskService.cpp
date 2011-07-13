@@ -893,11 +893,12 @@ bool IndexTaskService::prepareDocument_(
     string fieldStr;
     vector<CharacterOffset> sentenceOffsetList;
     AnalysisInfo analysisInfo;
+    if(doc.empty()) return false;
     // the iterator is not const because the p-second value may change
     // due to the maxlen setting
+    
     vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
     bool dateExistInSCD = false;
-
     for (p = doc.begin(); p != doc.end(); p++)
     {
         bool extraProperty = false;
