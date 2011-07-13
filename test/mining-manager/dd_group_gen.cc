@@ -1,4 +1,5 @@
 #include <mining-manager/duplicate-detection-submanager/group_table.h>
+#include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/split.hpp>
 using namespace sf1r;
