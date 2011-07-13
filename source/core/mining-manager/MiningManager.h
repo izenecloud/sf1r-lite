@@ -286,10 +286,10 @@ private:
 //     boost::shared_ptr<MiningStatus> status_;
 //     bool bProcessBroken_;
 
-    /**id manager */
+    /**all analyzer used in mining manager */
     boost::shared_ptr<LAManager> laManager_;
     idmlib::util::IDMAnalyzer* analyzer_;
-    idmlib::util::IDMAnalyzer* cma_analyzer_;
+    idmlib::util::IDMAnalyzer* c_analyzer_;
     idmlib::util::IDMAnalyzer* kpe_analyzer_;
 
     std::string id_path_;
