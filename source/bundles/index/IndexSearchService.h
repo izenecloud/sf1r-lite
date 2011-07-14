@@ -10,6 +10,7 @@
 #include <query-manager/SearchKeywordOperation.h>
 #include <query-manager/ActionItem.h>
 #include <document-manager/Document.h>
+#include <aggregator-manager/WorkerService.h>
 
 #include <ir/id_manager/IDManager.h>
 #include <question-answering/QuestionAnalysis.h>
@@ -31,6 +32,7 @@ class DocumentManager;
 class LAManager;
 class SearchManager;
 class RankingManager;
+class AggregatorManager;
 class IndexSearchService : public ::izenelib::osgi::IService
 {
 public:
@@ -45,6 +47,18 @@ public:
 
     bool getInternalDocumentId(const izenelib::util::UString& scdDocumentId, uint32_t& internalId);
 
+private:
+
+    bool processSearchAction(
+            KeywordSearchActionItem& actionItem,
+            KeywordSearchResult& resultItem,
+            std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList);
+
+    // todo
+    bool getSummaryMiningResult(
+            KeywordSearchActionItem& actionItem,
+            KeywordSearchResult& resultItem,
+            std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList);
 
 private:
 
@@ -75,10 +89,13 @@ private:
     boost::shared_ptr<IndexManager> indexManager_;
     boost::shared_ptr<RankingManager> rankingManager_;
     boost::shared_ptr<SearchManager> searchManager_;
+    boost::shared_ptr<AggregatorManager> aggregatorManager_;
+    boost::shared_ptr<WorkerService> workerService_;
     ilplib::qa::QuestionAnalysis* pQA_;
 
     AnalysisInfo analysisInfo_;
 
+    friend class WorkerService;
     friend class IndexBundleActivator;
     friend class MiningBundleActivator;
 };

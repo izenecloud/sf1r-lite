@@ -37,6 +37,7 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   am
   lzo
   beansdb
+  msgpack
   )
 
 FIND_PACKAGE(ilplib REQUIRED COMPONENTS

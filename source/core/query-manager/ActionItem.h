@@ -28,7 +28,7 @@
 
 #include <search-manager/CustomRanker.h>
 
-//#include <3rdparty/msgpack/msgpack.hpp>
+#include <3rdparty/msgpack/msgpack.hpp>
 #include <util/izene_serialization.h>
 #include <sstream>
 #include <vector>
@@ -567,6 +567,8 @@ class KeywordSearchActionItem
                 &isAttrGroup_&attrGroupNum_
                 &strExp_&paramConstValueMap_&paramPropertyValueMap_);
 
+        /// msgpack serializtion
+        MSGPACK_DEFINE(collectionName_);
 
     private:
         

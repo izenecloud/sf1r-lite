@@ -42,6 +42,7 @@ TARGET_LINK_LIBRARIES(CobraProcess
   sf1r_directory_manager
   sf1r_common
   sf1r_recommend_manager
+  sf1r_aggregator_manager
 
   sf1r_bundle_index 
   sf1r_bundle_querylog

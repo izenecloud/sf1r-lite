@@ -22,6 +22,7 @@
 #include <mining-manager/faceted-submanager/manmade_doc_category_item.h>
 #include <util/ustring/UString.h>
 #include <util/izene_serialization.h>
+#include <3rdparty/msgpack/msgpack.hpp>
 
 #include <sstream>
 #include <vector>
@@ -188,6 +189,8 @@ namespace sf1r {
             /// A list of related query rank score.
             std::vector<float> rqScore_;
 
+            /// msgpack serializtion
+            MSGPACK_DEFINE(rawQueryString_,totalCount_);
            
             
             DATA_IO_LOAD_SAVE(KeywordSearchResult,
