@@ -145,35 +145,33 @@ bool MiningManager::open()
 
         std::string kma_path;
         LAPool::getInstance()->get_kma_path(kma_path );
-        analyzer_ = new idmlib::util::IDMAnalyzer(kma_path);
+        std::string cma_path;
+        LAPool::getInstance()->get_cma_path(cma_path );
+        std::string jma_path;
+        LAPool::getInstance()->get_jma_path(jma_path );
+        
+        
+        IDMAnalyzerConfig config1 = idmlib::util::IDMAnalyzerConfig::GetCommonConfig(kma_path,"",jma_path);
+        analyzer_ = new idmlib::util::IDMAnalyzer(config1);
         if ( !analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct") )
         {
             return false;
         }
         
-        std::string cma_path;
-        LAPool::getInstance()->get_cma_path(cma_path );
-        if(cma_path!="")
+        IDMAnalyzerConfig config2 = idmlib::util::IDMAnalyzerConfig::GetCommonConfig(kma_path,cma_path,jma_path);
+        c_analyzer_ = new idmlib::util::IDMAnalyzer(config2);
+        if( !c_analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct") )
         {
-            cma_analyzer_ = new idmlib::util::IDMAnalyzer(cma_path, la::ChineseAnalyzer::maximum_match, false);
-            if( !cma_analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct") )
-            {
-                return false;
-            }
-        }
-        else
-        {
-            std::cout<<"cma analyzer init failed."<<std::endl;
             return false;
         }
         
-        
-        kpe_analyzer_ = new idmlib::util::IDMAnalyzer(kma_path);
+        IDMAnalyzerConfig config3 = idmlib::util::IDMAnalyzerConfig::GetCommonTgConfig(kma_path,"",jma_path);
+        kpe_analyzer_ = new idmlib::util::IDMAnalyzer(config3);
         if ( !kpe_analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct") )
         {
             return false;
         }
-        kpe_analyzer_->ExtractSymbols();
+        
 //       id_path_ = prefix_path + "/id";
 //       FSUtil::createDir(id_path_);
 //       doIDManagerInit_();
@@ -220,7 +218,7 @@ bool MiningManager::open()
         {
             dupd_path_ = prefix_path + "/dupd/";
             FSUtil::createDir(dupd_path_);
-            dupManager_.reset(new DupDType(dupd_path_, document_manager_, mining_schema_.dupd_properties, cma_analyzer_));
+            dupManager_.reset(new DupDType(dupd_path_, document_manager_, mining_schema_.dupd_properties, c_analyzer_));
             if (!dupManager_->Open())
             {
                 std::cerr<<"open DD failed"<<std::endl;
@@ -943,6 +941,7 @@ bool MiningManager::getSimilarLabelList(uint32_t label_id, std::vector<uint32_t>
 
 bool MiningManager::getSimilarLabelStringList(uint32_t label_id, std::vector<izenelib::util::UString>& sim_list)
 {
+    if(!labelManager_) return false;
     std::vector<uint32_t> sim_id_list;
     if (!getSimilarLabelList(label_id, sim_id_list)) return false;
     for (uint32_t i=0;i<sim_id_list.size();i++)
@@ -1002,6 +1001,7 @@ void MiningManager::printSimilarLabelResult_(uint32_t label_id)
 
 bool MiningManager::getLabelListByDocId(uint32_t docid, std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list)
 {
+    if(!labelManager_) return false;
     std::vector<uint32_t> label_id_list;
     if (!labelManager_->getSortedLabelsByDocId(docid, label_id_list))
     {

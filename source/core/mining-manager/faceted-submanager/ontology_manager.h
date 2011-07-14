@@ -76,11 +76,15 @@ public:
     {
         return searcher_;
     }
+    
+    
+    
 
     bool DefineDocCategory(const std::vector<ManmadeDocCategoryItem>& items);
     typedef izenelib::ir::indexmanager::termid_t izene_termid_t;
     int getCoOccurence(uint32_t labelTermId,uint32_t topicTermId);
 private:
+    void OutputToFile_(const std::string& file, Ontology* ontology);
     void  calculateCoOccurenceByIndexManager(Ontology* ontology);
     uint32_t GetProcessedMaxId_();
     

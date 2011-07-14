@@ -930,7 +930,8 @@ bool OntologyManager::ProcessCollectionSimple_(bool rebuild)
                 ontology->GetCategoryName(c, cn);
                 std::string cns;
                 cn.convertString(cns, izenelib::util::UString::UTF_8);
-                std::cout<<"[cr] "<<t<<" <-> "<<cns<<std::endl;
+                std::cout<<"[Title] "<<t<<std::endl;
+                std::cout<<"[Category] "<<cns<<std::endl;
                 ontology->InsertDoc(c, docid);
             }
         }
@@ -946,6 +947,7 @@ bool OntologyManager::ProcessCollectionSimple_(bool rebuild)
     max_docid_file_.Save();
 
     MEMLOG("[Mining] FACETED finished.");
+    OutputToFile_(container_+"/text_output.txt", ontology);
     return true;
 }
 
@@ -1192,6 +1194,58 @@ uint32_t OntologyManager::GetProcessedMaxId_()
     }
     return 0;
 }
+
+void OntologyManager::OutputToFile_(const std::string& file, Ontology* ontology)
+{
+    std::ofstream ofs(file.c_str());
+    Document doc;
+    
+    for ( uint32_t docid = 1; docid<=document_manager_->getMaxDocId(); docid++)
+    {
+        
+        if ( docid %1000 == 0 )
+        {
+            MEMLOG("[FACETED-OUTPUT] docid: %d", docid);
+        }
+        bool b = document_manager_->getDocument(docid, doc);
+        if (!b) continue;
+//     std::cout<<"Processing docid: "<<docid<<std::endl;
+        Document::property_iterator property_it = doc.findProperty("DOCID");
+        if (property_it!=doc.propertyEnd())
+        {
+            izenelib::util::UString str_docid = property_it->second.get<izenelib::util::UString>();
+            std::string s_docid;
+            str_docid.convertString(s_docid, izenelib::util::UString::UTF_8);
+            std::list<uint32_t> cid_list;
+            ontology->GetCategories(docid, cid_list);
+            if(cid_list.size()==0) continue;
+            ofs<<s_docid<<"\t";
+            std::list<uint32_t>::iterator it = cid_list.begin();
+            bool first = true;
+            while(it!=cid_list.end())
+            {
+                uint32_t cid = *it;
+                ++it;
+                izenelib::util::UString name;
+                if(!ontology->GetCategoryName(cid, name)) continue;
+                std::string s_name;
+                name.convertString(s_name, izenelib::util::UString::UTF_8);
+                if(first)
+                {
+                    first = false;
+                }
+                else
+                {
+                    ofs<<",";
+                }
+                ofs<<s_name;
+            }
+            ofs<<std::endl;
+        }
+    }
+    ofs.close();
+}
+
 
 
 

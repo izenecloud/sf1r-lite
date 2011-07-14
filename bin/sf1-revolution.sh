@@ -1,10 +1,10 @@
 #!/bin/bash
-export LD_LIBRARY_PATH="/home/lscm/codebase/sf1r-engine/lib:/home/lscm/codebase/sf1r-engine/lib-thirdparty"
 NAME=SF1r
 
 CONSOLE_LOG_DIR="./consolelog"
 mkdir -p $CONSOLE_LOG_DIR
 TIMENOW=`date +%m-%d.%H%M`
+LOG_FILE=$CONSOLE_LOG_DIR/log.$TIMENOW.log
  case "$1" in
   start)
 	PROCESS_NUM=`ps -ef|grep "CobraProcess"|grep -v grep|wc -l`
@@ -14,14 +14,14 @@ TIMENOW=`date +%m-%d.%H%M`
 	    exit 0
 	  else
 	    echo -e "Starting $NAME..."
-	    ./CobraProcess -F config > $CONSOLE_LOG_DIR/log.$TIMENOW.log 2>&1 &
+	    ./CobraProcess -F config > $LOG_FILE 2>&1 &
 	    sleep 4
 	    PROCESS_NUM=`ps -ef|grep "CobraProcess"|grep -v grep|wc -l`
 	    if [ $PROCESS_NUM -eq 1 ]
 	      then
-	        echo -e "Success. \nTo monitor the log file, type: 'tail -f log'\n"
+	        echo -e "Success. \nTo monitor the log file, type: 'tail -f $LOG_FILE'\n"
 	      else
-	        echo -e "Fail.\nCheck log for more detail.\n"
+	        echo -e "Fail.\nCheck log $LOG_FILE for more detail.\n"
 	    fi
 	fi
 	;;
@@ -35,14 +35,14 @@ TIMENOW=`date +%m-%d.%H%M`
 	echo -e "Restarting $NAME..."
 	ps -ef|grep "CobraProcess"|grep -v grep|awk '{print $2}'|xargs kill -9 2>/dev/null
 	sleep 1
-	./CobraProcess -F config > $CONSOLE_LOG_DIR/log.$TIMENOW.log 2>&1 &
+	./CobraProcess -F config > $LOG_FILE 2>&1 &
 	sleep 4
 	PROCESS_NUM=`ps -ef|grep "CobraProcess"|grep -v grep|wc -l`
 	if [ $PROCESS_NUM -eq 1 ]
 	  then
-	    echo -e "Success.\n"
+	    echo -e "Success. \nTo monitor the log file, type: 'tail -f $LOG_FILE'\n"
 	  else
-	    echo -e "Fail.\nCheck log for more detail.\n"
+	    echo -e "Fail.\nCheck log $LOG_FILE for more detail.\n"
 	fi
 	;;
   *)
