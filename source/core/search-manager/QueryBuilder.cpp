@@ -24,7 +24,6 @@
 
 #include <boost/token_iterator.hpp>
 
-#define FILTER_CACHE_SIZE 1000
 //#define VERBOSE_SERACH_MANAGER 1
 
 using namespace std;
