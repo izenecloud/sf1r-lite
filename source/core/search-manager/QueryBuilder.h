@@ -39,7 +39,8 @@ public:
         boost::shared_ptr<IndexManager> indexManager,
         boost::shared_ptr<DocumentManager> documentManager,
         boost::shared_ptr<IDManager> idManager,
-        boost::unordered_map<std::string, PropertyConfig>& schemaMap
+        boost::unordered_map<std::string, PropertyConfig>& schemaMap,
+        size_t filterCacheNum
         );
 
     ~QueryBuilder();

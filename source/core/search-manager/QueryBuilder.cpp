@@ -24,7 +24,6 @@
 
 #include <boost/token_iterator.hpp>
 
-#define FILTER_CACHE_SIZE 1000
 //#define VERBOSE_SERACH_MANAGER 1
 
 using namespace std;
@@ -38,7 +37,8 @@ QueryBuilder::QueryBuilder(
     boost::shared_ptr<IndexManager> indexManager,
     boost::shared_ptr<DocumentManager> documentManager,
     boost::shared_ptr<IDManager> idManager,
-    boost::unordered_map<std::string, PropertyConfig>& schemaMap
+    boost::unordered_map<std::string, PropertyConfig>& schemaMap,
+    size_t filterCacheNum
 )
     :indexManagerPtr_(indexManager)
     ,documentManagerPtr_(documentManager)
@@ -46,7 +46,7 @@ QueryBuilder::QueryBuilder(
     ,schemaMap_(schemaMap)
 {
     pIndexReader_ = indexManager->pIndexReader_;
-    filterCache_.reset(new FilterCache(FILTER_CACHE_SIZE));
+    filterCache_.reset(new FilterCache(filterCacheNum));
 }
 
 QueryBuilder::~QueryBuilder()

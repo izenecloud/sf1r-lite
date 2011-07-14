@@ -1038,6 +1038,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
 
     params.Get("Sia/triggerqa", indexBundleConfig.bTriggerQA_);
     params.Get<std::size_t>("Sia/doccachenum", indexBundleConfig.documentCacheNum_);
+    params.Get<std::size_t>("Sia/filtercachenum", indexBundleConfig.filterCacheNum_);
     params.GetString("LanguageIdentifier/dbpath", indexBundleConfig.languageIdentifierDbPath_, "");
 }
 
