@@ -433,6 +433,34 @@ public:
         return false;
     }
 
+    bool checkCollectionWorkerServer(const std::string& collectionName)
+    {
+        std::map<std::string, CollectionMeta>::const_iterator it =
+            collectionMetaMap_.find(collectionName);
+
+        if(it != collectionMetaMap_.end())
+        {
+            return it->second.enableWorkerServer_;
+        }
+
+        return false;
+    }
+
+    bool isEnableWorkerServer()
+    {
+        bool ret = false;
+
+        std::map<std::string, CollectionMeta>::const_iterator it;
+        for(it = collectionMetaMap_.begin(); it != collectionMetaMap_.end(); it++)
+        {
+            ret |= it->second.enableWorkerServer_;
+        }
+
+        ret |= queryLogBundleConfig_ .enable_worker_;
+
+        return ret;
+    }
+
     bool checkCollectionExist(const std::string& collectionName)
     {
         std::map<std::string, CollectionMeta>::const_iterator it =
