@@ -13,6 +13,7 @@
 #define _CONDITION_INFO_
 
 #include <util/izene_serialization.h>
+#include <3rdparty/msgpack/msgpack.hpp>
 
 #include <vector>
 #include <string>
@@ -59,6 +60,8 @@ class PageInfo
                 ar & start_;
                 ar & count_;
             }
+
+        MSGPACK_DEFINE(start_,count_);
 };
 
 inline bool operator==(const PageInfo& a, const PageInfo& b)
@@ -94,6 +97,8 @@ class LanguageAnalyzerInfo
         void clear(void);
 
         DATA_IO_LOAD_SAVE(LanguageAnalyzerInfo, &applyLA_&useOriginalKeyword_&synonymExtension_)
+
+        MSGPACK_DEFINE(applyLA_,useOriginalKeyword_,synonymExtension_);
 
     private:
             // Log : 2009.09.08

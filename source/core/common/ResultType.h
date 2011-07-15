@@ -52,6 +52,8 @@ namespace sf1r {
 
             DATA_IO_LOAD_SAVE(ErrorInfo, &errno_&error_);
 
+            MSGPACK_DEFINE(errno_,error_);
+
     }; // end - class ErrorInfo
 
     class KeywordSearchResult : public ErrorInfo
@@ -188,10 +190,6 @@ namespace sf1r {
 
             /// A list of related query rank score.
             std::vector<float> rqScore_;
-
-            /// msgpack serializtion
-            MSGPACK_DEFINE(rawQueryString_,totalCount_);
-           
             
             DATA_IO_LOAD_SAVE(KeywordSearchResult,
                     &rawQueryString_&encodingType_&collectionName_&analyzedQuery_
@@ -201,6 +199,15 @@ namespace sf1r {
                     &snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_
                     &errno_&error_
                     &numberOfDuplicatedDocs_&numberOfSimilarDocs_&docCategories_&imgs_&taxonomyString_&numOfTGDocs_&taxonomyLevel_&tgDocIdList_&neList_&onto_rep_&groupRep_&attrRep_&relatedQueryList_&rqScore_)
+
+            MSGPACK_DEFINE(
+                    rawQueryString_,/*encodingType_, TODO*/collectionName_,analyzedQuery_,
+                    queryTermIdList_,totalCount_,topKDocs_,topKRankScoreList_,
+                    topKCustomRankScoreList_,start_,count_,fullTextOfDocumentInPage_,
+                    snippetTextOfDocumentInPage_,rawTextOfSummaryInPage_,errno_,error_,
+                    numberOfDuplicatedDocs_,numberOfSimilarDocs_,docCategories_,imgs_,
+                    taxonomyString_,numOfTGDocs_,taxonomyLevel_,tgDocIdList_,//neList_, TODO
+                    /*onto_rep_,groupRep_,attrRep_, TODO*/relatedQueryList_,rqScore_,errno_,error_);
     };
 
 
@@ -245,6 +252,9 @@ namespace sf1r {
                     &fullTextOfDocumentInPage_&snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_
                     &errno_&error_
                     );
+
+            MSGPACK_DEFINE(fullTextOfDocumentInPage_,snippetTextOfDocumentInPage_,rawTextOfSummaryInPage_,
+                    idList_,errno_,error_);
     }; // end - class RawTextResultFromSIA
 
     /// @brief similar document id list and accompanying image id list.
@@ -279,6 +289,8 @@ namespace sf1r {
             } // end - clear()
 
             DATA_IO_LOAD_SAVE(SimilarImageDocIdList,&imageIdList_&docIdList_);
+
+            MSGPACK_DEFINE(imageIdList_, docIdList_);
     };
 
 } // end - namespace sf1r
