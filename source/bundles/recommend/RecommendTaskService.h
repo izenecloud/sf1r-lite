@@ -88,9 +88,13 @@ public:
     bool removeItem(const std::string& itemIdStr);
 
     /**
-     * @p userIdStr and @p itemIdStr must not be empty.
+     * @p sessionIdStr, @p userIdStr and @p itemIdStr must not be empty.
      */
-    bool visitItem(const std::string& userIdStr, const std::string& itemIdStr);
+    bool visitItem(
+        const std::string& sessionIdStr,
+        const std::string& userIdStr,
+        const std::string& itemIdStr
+    );
 
     struct OrderItem
     {

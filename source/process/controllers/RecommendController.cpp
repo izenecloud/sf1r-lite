@@ -651,6 +651,10 @@ void RecommendController::get_item()
  * - @b collection* (@c String): Add visit item event in this collection.
  * - @b resource* (@c Object): A resource for a visit event, that is, user
  *   @b USERID visited item @b ITEMID.
+ *   - @b session_id* (@c String): a session id.
+ *     For each user, the session id should not be changed until the user logout.
+ *     In each session, the items visited by the user would be used to recommend items
+ *     for the type @b VAV in @b do_recommend.
  *   - @b USERID* (@c String): a unique user identifier.
  *   - @b ITEMID* (@c String): a unique item identifier.
  *
@@ -664,6 +668,7 @@ void RecommendController::get_item()
  * @code
  * {
  *   "resource": {
+ *     "session_id": "session_001",
  *     "USERID": "user_001",
  *     "ITEMID": "item_001"
  *   }
@@ -679,14 +684,16 @@ void RecommendController::get_item()
  */
 void RecommendController::visit_item()
 {
+    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::session_id));
     IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
     IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::ITEMID));
 
+    std::string sessionIdStr = asString(request()[Keys::resource][Keys::session_id]);
     std::string userIdStr = asString(request()[Keys::resource][Keys::USERID]);
     std::string itemIdStr = asString(request()[Keys::resource][Keys::ITEMID]);
 
     RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
-    if (!service->visitItem(userIdStr, itemIdStr))
+    if (!service->visitItem(sessionIdStr, userIdStr, itemIdStr))
     {
         response().addError("Failed to add visit to given collection.");
     }
@@ -783,8 +790,8 @@ void RecommendController::purchase_item()
  *   - @b rec_type* (@c String): Specify one of the 6 recommendation types, each with the acronym below:
  *     - @b FBT (<b>Frequently Bought Together</b>): get the items frequently bought together with @b input_items in one order.
  *     - @b BAB (<b>Bought Also Bought</b>): get the items also bought by the users who have bought @b input_items.
- *     - @b VAV (<b>Viewed Also View</b>): get the items also viewed by the users who have viewed @b input_items,
- *       in current version, it supports recommending items based on only one input item,
+ *     - @b VAV (<b>Viewed Also View</b>): get the items also viewed by the users who have viewed @b input_items.
+ *       In current version, it supports recommending items based on only one input item,
  *       that is, only <b> input_items[0]</b> is used as input , and the rest items in @b input_items are ignored.
  *     - @b BOP (<b>Based on Purchase History</b>): get the recommendation items based on the purchase history of user @b USERID.
  *       The purchase history is the items added in purchase_item() with the same @b USERID.

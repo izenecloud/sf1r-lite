@@ -114,9 +114,6 @@ bool RecommendBundleActivator::init_()
     std::string maxIdPath = dir + "/max_itemid.txt";
     auto_ptr<ItemManager> itemManagerPtr(new ItemManager(itemPath, maxIdPath));
 
-    std::string covisitPath = dir + "/covisit";
-    auto_ptr<CoVisitManager> coVisitManagerPtr(new CoVisitManager(covisitPath));
-
     std::string cfPath = dir + "/cf";
     boost::filesystem::create_directories(cfPath);
     auto_ptr<ItemCFManager> itemCFManagerPtr(new ItemCFManager(cfPath + "/covisit", 500*1024*1024,
@@ -124,8 +121,12 @@ bool RecommendBundleActivator::init_()
                                                                cfPath + "/nb.sdb", 30,
                                                                cfPath + "/rec", 1000));
 
-    std::string visitPath = dir + "/visit.db";
-    auto_ptr<VisitManager> visitManagerPtr(new VisitManager(visitPath, coVisitManagerPtr.get()));
+    std::string visitPath = dir + "/visit";
+    boost::filesystem::create_directories(visitPath);
+    auto_ptr<CoVisitManager> coVisitManagerPtr(new CoVisitManager(visitPath + "/covisit"));
+    auto_ptr<VisitManager> visitManagerPtr(new VisitManager(visitPath + "/visit.db",
+                                                            visitPath + "/session.db",
+                                                            coVisitManagerPtr.get()));
 
     std::string purchasePath = dir + "/purchase.db";
     auto_ptr<PurchaseManager> purchaseManagerPtr(new PurchaseManager(purchasePath, itemCFManagerPtr.get(), itemManagerPtr.get()));

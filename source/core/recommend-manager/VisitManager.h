@@ -14,21 +14,43 @@
 #include <string>
 
 #include <boost/serialization/set.hpp> // serialize ItemIdSet
+#include <boost/serialization/access.hpp>
 
 namespace sf1r
 {
+
+/**
+ * user's current session.
+ */
+struct VisitSession
+{
+    std::string sessionId_; /// current session id
+    ItemIdSet itemSet_; /// the items visited in current session
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & sessionId_;
+        ar & itemSet_;
+    }
+};
 
 class VisitManager
 {
 public:
     VisitManager(
-        const std::string& path,
+        const std::string& visitDBPath,
+        const std::string& sessionDBPath,
         CoVisitManager* coVisitManager
     );
 
     void flush();
 
-    bool addVisitItem(userid_t userId, itemid_t itemId);
+    bool addVisitItem(
+        const std::string& sessionId,
+        userid_t userId,
+        itemid_t itemId
+    );
 
     /**
      * Get @p itemIdSet visited by @p userId.
@@ -50,7 +72,23 @@ public:
     SDBIterator end();
 
 private:
-    SDBType container_;
+    bool updateVisitDB_(
+        userid_t userId,
+        itemid_t itemId
+    );
+
+    bool updateSessionDB_(
+        const std::string& sessionId,
+        userid_t userId,
+        itemid_t itemId
+    );
+
+private:
+    SDBType visitDB_;
+
+    typedef izenelib::sdb::unordered_sdb_tc<userid_t, VisitSession, ReadWriteLock> SessionDBType;
+    SessionDBType sessionDB_;
+
     CoVisitManager* coVisitManager_;
 };
 

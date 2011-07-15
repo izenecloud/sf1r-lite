@@ -274,10 +274,12 @@ class VisitTask
 public:
     VisitTask(
         sf1r::VisitManager& visitManager,
+        const std::string& sessionId,
         sf1r::userid_t userId,
         sf1r::itemid_t itemId
     )
     : visitManager_(visitManager)
+    , sessionId_(sessionId)
     , userId_(userId)
     , itemId_(itemId)
     {
@@ -285,11 +287,12 @@ public:
 
     void visit()
     {
-        visitManager_.addVisitItem(userId_, itemId_);
+        visitManager_.addVisitItem(sessionId_, userId_, itemId_);
     }
 
 private:
     sf1r::VisitManager& visitManager_;
+    std::string sessionId_;
     sf1r::userid_t userId_;
     sf1r::itemid_t itemId_;
 };
@@ -509,9 +512,13 @@ bool RecommendTaskService::removeItem(const std::string& itemIdStr)
     return itemManager_->removeItem(itemId);
 }
 
-bool RecommendTaskService::visitItem(const std::string& userIdStr, const std::string& itemIdStr)
+bool RecommendTaskService::visitItem(
+    const std::string& sessionIdStr,
+    const std::string& userIdStr,
+    const std::string& itemIdStr
+)
 {
-    if (userIdStr.empty() || itemIdStr.empty())
+    if (sessionIdStr.empty() || userIdStr.empty() || itemIdStr.empty())
     {
         return false;
     }
@@ -530,7 +537,7 @@ bool RecommendTaskService::visitItem(const std::string& userIdStr, const std::st
         return false;
     }
 
-    VisitTask task(*visitManager_, userId, itemId);
+    VisitTask task(*visitManager_, sessionIdStr, userId, itemId);
     jobScheduler_->addTask(boost::bind(&VisitTask::visit, task));
 
     return true;
