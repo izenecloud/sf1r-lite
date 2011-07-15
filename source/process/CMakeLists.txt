@@ -25,6 +25,7 @@ SET(TGTrainerBridge_SRC tools/TGTrainerBridge.cpp)
 SET(TGTrainer_SRC tools/TGTrainer.cpp)
 
 FILE(GLOB_RECURSE cobra_SRC "common/*.cpp" "controllers/*.cpp" "parsers/*.cpp" "renders/*.cpp" "*.cpp")
+ADD_DEFINITIONS("-fno-strict-aliasing") 
 ADD_EXECUTABLE(CobraProcess ${cobra_SRC})
 
 TARGET_LINK_LIBRARIES(CobraProcess
