@@ -129,10 +129,10 @@
       </Method>
 
       <Method id="inner_la_cnall_sia" analysis="chinese" casesensitive="no" >
-        <settings mode="label" option="R+S+T3" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
+        <settings mode="label" option="R+S+V+T3" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
       <Method id="inner_la_cnall_index" analysis="chinese" casesensitive="no" >
-        <settings mode="label" option="R+S+T4" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
+        <settings mode="label" option="R+S+V+T4" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
 
       <Method id="la_sia" analysis="multilang" advoption="default,inner_la_korall_sia;en,la_eng;cn,inner_la_cnall_sia"/>

@@ -146,7 +146,23 @@ void setOptions( const std::string & option, ChineseAnalyzer * ka, bool outputLo
                     errorVal = true;
                 }
                 break;
-
+            case 'V': case 'v': // load synonym dictionary or not
+                ++o;
+                if (*o == '+')
+                {
+                    ka->setExtractSynonym( true );
+                }
+                else if (*o == '-')
+                {
+                    ka->setExtractSynonym( false );
+                }
+                else
+                {
+                    if( outputLog )
+                        sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA option value for Option 'V': %c", *o);
+                    errorVal = true;
+                }
+                break;
             case ' ':
                 checkDupl = false;
                 break;
