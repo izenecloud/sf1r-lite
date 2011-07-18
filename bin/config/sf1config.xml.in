@@ -98,7 +98,7 @@
 
     <!-- ** NEED TO EDIT DICTIONARY PATH ** -->
     <!-- analysis types: token, ngram, like, all, noun, label -->
-    <LanguageAnalyzer dictionarypath="@wisekma_KNOWLEDGE@">
+    <LanguageAnalyzer dictionarypath="@wisekma_KNOWLEDGE@" updatedictinterval="300">
 
       <Method id="la_token" analysis="token"/>
       <Method id="la_char" analysis="char"/>
@@ -111,13 +111,13 @@
       </Method>
       <!--
       <Method id="la_korall" analysis="korean">
-        <settings mode="all" option="R+S+" specialchar="#" dictionarypath=""/>
+        <settings mode="all" option="R+S+" specialchar="#" dictionarypath="@wisekma_KNOWLEDGE@"/>
       </Method>
       <Method id="la_kornoun" analysis="korean">
-        <settings mode="all" option="R+S+" specialchar="#" dictionarypath=""/>
+        <settings mode="all" option="R+S+" specialchar="#" dictionarypath="@wisekma_KNOWLEDGE@"/>
       </Method>
       <Method id="inner_la_korall_mia" analysis="korean" casesensitive="yes" >
-        <settings mode="label" option="R1S-" specialchar="#" dictionarypath=""/>
+        <settings mode="label" option="R1S-" specialchar="#" dictionarypath="@wisekma_KNOWLEDGE@"/>
       </Method>
       <Method id="la_bi_mia" analysis="multilang" advoption="default,inner_la_korall_mia;cn,la_bigram" casesensitive="yes" lower="no"/>
       <Method id="la_mia" analysis="multilang" advoption="default,inner_la_korall_mia;cn,la_char" casesensitive="yes" lower="no">

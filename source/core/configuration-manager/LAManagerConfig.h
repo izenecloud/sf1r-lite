@@ -137,7 +137,7 @@ private:
         ar & tokenizerConfigUnitMap_;
         ar & laConfigUnitMap_;
         ar & analysisPairList_;
-        ar & kma_path_;
+        ar & updateDictInterval_;
         ar & bUseCache_;
     }
 
@@ -160,7 +160,7 @@ private:
         ar & tokenizerConfigUnitMap_;
         ar & laConfigUnitMap_;
         ar & analysisPairList_;
-        ar & kma_path_;
+        ar & updateDictInterval_;
         ar & bUseCache_;
     }
 
@@ -181,6 +181,8 @@ public:
     std::vector<AnalysisInfo> analysisPairList_;
     /// @brief recode the dictionarypath provided in config file.
     std::string kma_path_;
+    /// @brief update dictionary interval (seconds)
+    unsigned int updateDictInterval_;
     /// @brief
     bool bUseCache_;
 };
