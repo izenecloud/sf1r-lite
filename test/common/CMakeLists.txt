@@ -5,7 +5,6 @@ INCLUDE_DIRECTORIES(
 SET(libs
   sf1r_common
 
-  ${ilplib_LIBRARIES}
   ${izenelib_LIBRARIES}
 
   # #external
