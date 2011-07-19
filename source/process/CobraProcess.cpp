@@ -243,22 +243,22 @@ int CobraProcess::run()
 
             {
                 std::string filePath = licenseDir + LicenseManager::TOKEN_FILENAME;
-                std::string token("");
-                if ( !LicenseManager::extract_token_from(filePath, token) )
+                if( boost::filesystem::exists(filePath) )
                 {
-                    return false;
-                }
+                    std::string token("");
+                    LicenseManager::extract_token_from(filePath, token);
 
-                ///Insert the extracted token into the deny control lists for all collections
-                std::map<std::string, CollectionMeta>&
-                    collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
-                std::map<std::string, CollectionMeta>::iterator
-                    collectionIter = collectionMetaMap.begin();
+                    ///Insert the extracted token into the deny control lists for all collections
+                    std::map<std::string, CollectionMeta>&
+                        collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
+                    std::map<std::string, CollectionMeta>::iterator
+                        collectionIter = collectionMetaMap.begin();
 
-                for(; collectionIter != collectionMetaMap.end(); collectionIter++)
-                {
-                    CollectionMeta& collectionMeta = collectionIter->second;
-                    collectionMeta.aclDeny(token);
+                    for(; collectionIter != collectionMetaMap.end(); collectionIter++)
+                    {
+                        CollectionMeta& collectionMeta = collectionIter->second;
+                        collectionMeta.aclDeny(token);
+                    }
                 }
             }
 #endif
