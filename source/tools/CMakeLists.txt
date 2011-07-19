@@ -25,10 +25,12 @@ ADD_EXECUTABLE(LicenseFileGenerator
     )
 
 TARGET_LINK_LIBRARIES(LicenseFileGenerator
+  sf1r_configuration_manager
+  sf1r_la_manager
+  sf1r_query_manager
+  sf1r_log_manager
   sf1r_license_manager
-
   sf1r_common
-
   ${idmlib_LIBRARIES}
   ${imllib_LIBRARIES}
   ${ilplib_LIBRARIES}
