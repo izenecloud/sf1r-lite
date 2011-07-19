@@ -1,6 +1,7 @@
 #include <common/SFLogger.h>
 #include "LAPool.h"
 #include "AnalysisInformation.h"
+#include <query-manager/QMCommonFunc.h>
 
 #include <boost/tokenizer.hpp>
 
@@ -672,6 +673,10 @@ namespace sf1r
             }
         }
 
+        //start dynamic update
+        la::UpdateDictThread::staticUDT.setCheckInterval(laManagerConfig.updateDictInterval_);
+        la::UpdateDictThread::staticUDT.start();
+
         return true;
     } // end - init()
 
@@ -828,6 +833,12 @@ namespace sf1r
             analyzer.reset( new NKoreanAnalyzer( laConfigUnitIter->second.getDictionaryPath() ) );
             //static_cast<NKoreanAnalyzer*>(analyzer.get())->setGenerateCompNoun( true );
 
+            std::string restrictDictPath = laConfigUnitIter->second.getDictionaryPath() + "/restrict.txt";
+            boost::shared_ptr<UpdatableRestrictDict> urd;
+            unsigned int lastModifiedTime = static_cast<unsigned int>(
+                la::getFileLastModifiedTime( restrictDictPath.c_str() ) );
+            urd.reset( new UpdatableRestrictDict( lastModifiedTime ) );
+            la::UpdateDictThread::staticUDT.addRelatedDict( restrictDictPath.c_str(), urd );
 
             if( laConfigUnitIter->second.getMode() == "all" )
             {
