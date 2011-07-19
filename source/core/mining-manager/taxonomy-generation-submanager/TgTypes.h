@@ -37,6 +37,7 @@
 #include <common/type_defs.h>
 #include <util/izene_serialization.h>
 #include <idmlib/concept-clustering/cc_types.h>
+#include <3rdparty/msgpack/msgpack.hpp>
 namespace sf1r
 {
 
@@ -55,6 +56,8 @@ struct ne_result_type
         ar & itemList_;
     }
     DATA_IO_LOAD_SAVE(ne_result_type, &type_&itemList_);
+
+    MSGPACK_DEFINE(type_,itemList_);
 };
 
 typedef std::vector<ne_result_type> ne_result_list_type;
