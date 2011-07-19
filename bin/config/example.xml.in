@@ -22,6 +22,8 @@
 
       <Property name="Content" type="string"/>
 
+      <Property name="URL" type="string"/>
+
     </DocumentSchema>
 
     

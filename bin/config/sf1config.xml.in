@@ -129,14 +129,17 @@
       </Method>
 
       <Method id="inner_la_cnall_sia" analysis="chinese" casesensitive="no" >
-        <settings mode="label" option="R+S+V+T3" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
+        <settings mode="label" option="R+S+V-T3" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
-      <Method id="inner_la_cnall_index" analysis="chinese" casesensitive="no" >
-        <settings mode="label" option="R+S+V+T4" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
+      <Method id="inner_la_cnall_ia" analysis="chinese" casesensitive="no" >
+        <settings mode="label" option="R+S+V-T4" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
+      </Method>
+      <Method id="inner_la_cnall_sa" analysis="chinese" casesensitive="no" >
+        <settings mode="label" option="R+S+T5" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
 
-      <Method id="la_sia" analysis="multilang" advoption="default,inner_la_korall_sia;en,la_eng;cn,inner_la_cnall_sia"/>
-      <Method id="la_sia_with_unigram" analysis="multilang" advoption="default,inner_la_korall_sia;en,la_eng;cn,inner_la_cnall_index"/>
+      <Method id="la_sia" analysis="multilang" advoption="default,inner_la_korall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_sia"/>
+      <Method id="la_sia_with_unigram" analysis="multilang" advoption="default,inner_la_korall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_ia"/>
 
       <!--
       <Method id="inner_la_jpall_sia" analysis="japanese" casesensitive="no" >
