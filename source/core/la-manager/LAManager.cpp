@@ -87,6 +87,9 @@ namespace sf1r
         {
 //            if( config.getAnalysis() == "korean" )
 //                static_cast<NKoreanAnalyzer*>(pLA->getAnalyzer().get())->setSearchSynonym(isSynonymInclude);
+
+            if (config.getAnalysis() == "multilang" )
+                static_cast<MultiLanguageAnalyzer*>(pLA->getAnalyzer().get())->setExtractSynonym(isSynonymInclude);
         }
 
         /*if( isCaseSensitive )
