@@ -54,6 +54,13 @@ namespace sf1r
             return false;
         }
 
+        LAConfigUnit config;
+        if(laPool_->getLAConfigUnit( analysisInfo.analyzerId_, config ))
+        {
+            if (config.getAnalysis() == "multilang" )
+                static_cast<la::MultiLanguageAnalyzer*>(pLA->getAnalyzer().get())->setExtractSynonym(false);
+        }
+
         pLA->process( text, termList );
 
         if( isMultiThreadEnv_ )
