@@ -75,22 +75,23 @@ bool Acl::check(const std::string& userTokens) const
     return check(userTokenSet);
 }
 
+bool Acl::checkDenyList() const
+{
+    bool returnvalue = true;
+    for (const_iterator it = deniedTokensBegin();
+                 it != deniedTokensEnd(); ++it)
+    {
+         if (*it == STOP_SERVICE_TOKEN)
+         {
+              returnvalue = false;
+              break;
+         }
+    }
+    return returnvalue;
+}
+
 bool Acl::check(const token_set_type& userTokens) const
 {
-    if (empty())
-    {
-        return true;
-    }
-
-    for (const_iterator it = deniedTokensBegin();
-             it != deniedTokensEnd(); ++it)
-    {
-        if (*it == STOP_SERVICE_TOKEN)
-        {
-            return false;
-        }
-    }
-
     for (const_iterator it = deniedTokensBegin();
             it != deniedTokensEnd(); ++it)
     {
