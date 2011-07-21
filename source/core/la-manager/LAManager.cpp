@@ -92,16 +92,15 @@ namespace sf1r
         LAConfigUnit config;
         if( laPool_->getLAConfigUnit( analysisInfo.analyzerId_, config ) )
         {
-//            if( config.getAnalysis() == "korean" )
-//                static_cast<NKoreanAnalyzer*>(pLA->getAnalyzer().get())->setSearchSynonym(isSynonymInclude);
-
-            if (config.getAnalysis() == "multilang" )
-                static_cast<MultiLanguageAnalyzer*>(pLA->getAnalyzer().get())->setExtractSynonym(isSynonymInclude);
+//            if (config.getAnalysis() == "multilang" )
+//                static_cast<MultiLanguageAnalyzer*>(pLA->getAnalyzer().get())->setExtractSynonym(isSynonymInclude);
         }
 
         /*if( isCaseSensitive )
         {*/
             pLA->process( text, termList );
+            if (isSynonymInclude)
+                pLA->processSynonym( termList );
         /*}
         else
         {
@@ -112,13 +111,13 @@ namespace sf1r
 
         removeStopwords( termList, stopDict_ );
 
-        /*for(TermList::iterator it = termList.begin(); it!=termList.end(); it++ ) {
+        for(TermList::iterator it = termList.begin(); it!=termList.end(); it++ ) {
             cout << "^^^^" << la::to_utf8(it->text_) << endl;
-        }*/
+        }
 
          expQuery = toExpandedString( termList );
 
-        //cout << "##########################" << la::to_utf8(expQuery) << endl;
+        cout << "##########################" << la::to_utf8(expQuery) << endl;
 
 
         if( isMultiThreadEnv_ )
