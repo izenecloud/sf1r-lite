@@ -1212,6 +1212,20 @@ namespace sf1r
                     }
                     else
                     {
+                        // if (analyzerId.find("cn") != string::npos)
+                        if (language == MultiLanguageAnalyzer::CHINESE || language == MultiLanguageAnalyzer::ENGLISH)
+                        {
+                            // create a duplicated inner analyzer, en: use chinese
+                            LA* inla = createLA( innerInfo, outputLog, mode );
+                            if (NULL != inla)
+                            {
+                                boost::shared_ptr<la::Analyzer> inan = inla->getAnalyzer();
+                                static_cast<NChineseAnalyzer*>(inan.get())->setExtractSynonym( false );
+                                static_cast<NChineseAnalyzer*>(inan.get())->setAnalysisType(ChineseAnalyzer::minimum_match_no_overlap);
+                                innerAN->setInnerAnalyzer(inan);
+                            }
+                        }
+
                         mla->setAnalyzer( language, innerAN );
                         // set the ProcessMode again if ProcessMode is MA_PM
 //                        mla->setProcessMode( language, processMode );

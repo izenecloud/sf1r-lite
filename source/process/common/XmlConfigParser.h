@@ -480,6 +480,8 @@ public:
 
         if(it != collectionMetaMap_.end())
         {
+            if(!it->second.getAcl().checkDenyList())
+                return false;
             if(!aclTokens.empty())
             {
                 if(!it->second.getAcl().check(aclTokens))

@@ -53,7 +53,7 @@ namespace sf1r {
                     rootQuery = root_node_d[eps_p] >> +boolQuery;
 
                     boolQuery = (stringQuery | notQuery | priorQuery | exactQuery | orderedQuery | nearbyQuery)
-                        >> !( (root_node_d[ch_p(' ')] >> boolQuery) | (root_node_d[ch_p('|')] >> boolQuery) );
+                        >> !( (root_node_d[ch_p('&')] >> boolQuery) | (root_node_d[ch_p('|')] >> boolQuery) );
                     notQuery = root_node_d[ch_p('!')] >> (stringQuery | priorQuery);
 
                     stringQuery = leaf_node_d[ lexeme_d[+(~chset_p(operStr_.c_str()))] ];

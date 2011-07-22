@@ -74,6 +74,8 @@ IndexTaskService::IndexTaskService(
 
     indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
 
+    config_tool::buildPropertyAliasMap(bundleConfig_->schema_, propertyAliasMap_);
+
     ///propertyId starts from 1
     laInputs_.resize(bundleConfig_->schema_.size() + 1);
 
@@ -622,9 +624,6 @@ bool IndexTaskService::doBuildCollection_(
     indexProgress_.currentFilePos_ = 0;
     if( op <= 2 ) // insert or update
     {
-        config_tool::buildPropertyAliasMap(bundleConfig_->schema_,
-                                       propertyAliasMap_);
-
         // make propertyNameList for ScdParser::iterator
         std::vector<string> propertyNameList;
         CollectionMeta meta;
