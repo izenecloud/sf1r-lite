@@ -12,9 +12,11 @@ int main(int ac, char** av)
     std::ifstream ifs(input.c_str());
     std::string line;
     std::vector<uint32_t> in_group;
+    izenelib::am::rde_hash<uint32_t, bool> apps;
     while ( getline ( ifs,line ) )
     {
         boost::algorithm::trim(line);
+//         std::cout<<line<<std::endl;
         if(line.length()>0 && line[0]=='#' ) line = "";
         if(line.length()==0 && in_group.size()>0)
         {
@@ -31,8 +33,12 @@ int main(int ac, char** av)
         {
             std::vector<std::string> vec;
             boost::algorithm::split( vec, line, boost::algorithm::is_any_of("\t") );
-//                 std::cout<<"XXX "<<vec[0]<<std::endl;
             uint32_t docid = boost::lexical_cast<uint32_t>(vec[0]);
+            if( apps.find(docid)!=NULL )
+            {
+                std::cout<<"!!!! docid "<<docid<<" duplicated in file."<<std::endl;
+            }
+            apps.insert(docid, 1);
             in_group.push_back(docid);
         }
         
@@ -47,4 +53,23 @@ int main(int ac, char** av)
         }
     }
     group.Flush();
+    
+    apps.clear();
+    const std::vector<std::vector<uint32_t> >& group_info = group.GetGroupInfo();
+    std::cout<<"[TOTAL GROUP SIZE] : "<<group_info.size()<<std::endl;
+    for(uint32_t group_id = 0;group_id<group_info.size();group_id++)
+    {
+        const std::vector<uint32_t>& in_group = group_info[group_id];
+        for(uint32_t i=0;i<in_group.size();i++)
+        {
+            uint32_t docid = in_group[i];
+            if( apps.find(docid)!=NULL )
+            {
+                std::cout<<"???? docid "<<docid<<" duplicated in file."<<std::endl;
+            }
+            apps.insert(docid, 1);
+            std::cout<<docid<<std::endl;
+        }
+        std::cout<<std::endl<<std::endl;
+    }
 }

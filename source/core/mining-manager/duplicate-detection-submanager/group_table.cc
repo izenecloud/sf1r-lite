@@ -1,5 +1,8 @@
 #include "group_table.h"
 #include <boost/serialization/deque.hpp>
+
+// #define GT_DEBUG
+
 using namespace sf1r;
 GroupTable::GroupTable(const std::string& file):file_(file)
 {
@@ -71,14 +74,22 @@ void GroupTable::AddDoc(uint32_t docid1, uint32_t docid2)
                 this_group[0] = docid1;
                 this_group[1] = docid2;
                 group_info_.push_back(this_group);
+#ifdef GT_DEBUG
+                std::cout<<"[c1] "<<group_id<<","<<docid1<<","<<docid2<<std::endl;
+#endif
             }
             else
             {
                 group_id = valid_groupid_.front();
                 valid_groupid_.pop_front();
+                docid_group_.insert(docid1, group_id);
+                docid_group_.insert(docid2, group_id);
                 group_info_[group_id].resize(2);
                 group_info_[group_id][0] = docid1;
                 group_info_[group_id][1] = docid2;
+#ifdef GT_DEBUG
+                std::cout<<"[c1-1] "<<group_id<<","<<docid1<<","<<docid2<<std::endl;
+#endif
             }
         }
         else
@@ -86,6 +97,9 @@ void GroupTable::AddDoc(uint32_t docid1, uint32_t docid2)
             group_id = *value2;
             docid_group_.insert(docid1, group_id);
             group_info_[group_id].push_back(docid1);
+#ifdef GT_DEBUG
+                std::cout<<"[c2] "<<group_id<<","<<docid1<<","<<docid2<<std::endl;
+#endif
         }
     }
     else
@@ -95,6 +109,9 @@ void GroupTable::AddDoc(uint32_t docid1, uint32_t docid2)
             group_id = *value1;
             docid_group_.insert(docid2, group_id);
             group_info_[group_id].push_back(docid2);
+#ifdef GT_DEBUG
+                std::cout<<"[c3] "<<group_id<<","<<docid1<<","<<docid2<<std::endl;
+#endif
         }
         else
         {
@@ -119,6 +136,9 @@ void GroupTable::AddDoc(uint32_t docid1, uint32_t docid2)
                 }
                 group_info_[from].resize(0);
                 valid_groupid_.push_back(from);
+#ifdef GT_DEBUG
+                std::cout<<"[c4] "<<to<<","<<docid1<<","<<docid2<<std::endl;
+#endif
             }
         }
     }
