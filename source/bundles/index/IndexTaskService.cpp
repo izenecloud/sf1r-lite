@@ -993,6 +993,14 @@ bool IndexTaskService::prepareDocument_(
             if (iter->getType() == STRING_PROPERTY_TYPE)
             {
                 ///process for properties that requires forward index to be created
+                if(propertyValueU.empty())
+                {
+                    if (!extraProperty)
+                    {
+                        document.property(fieldStr) = propertyValueU;
+                    }
+                    continue;
+                }
                 if ( (iter->isIndex() == true) && (!extraProperty))
                 {
                     analysisInfo.clear();
