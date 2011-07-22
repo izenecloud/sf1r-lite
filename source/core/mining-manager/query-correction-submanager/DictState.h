@@ -16,7 +16,7 @@
 namespace sf1r
 {
 typedef uint16_t mychar;
-typedef	izenelib::util::UString	UString;
+using izenelib::util::UString;
 
 class DictState;
 /** @brief	Defination of class transition used for constructing

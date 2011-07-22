@@ -28,7 +28,7 @@
 
 #include <search-manager/CustomRanker.h>
 
-//#include <3rdparty/msgpack/msgpack.hpp>
+#include <3rdparty/msgpack/msgpack.hpp>
 #include <util/izene_serialization.h>
 #include <sstream>
 #include <vector>
@@ -107,6 +107,8 @@ class DisplayProperty
         std::string propertyString_;
 
         DATA_IO_LOAD_SAVE(DisplayProperty, &isSnippetOn_&isSummaryOn_&summarySentenceNum_&summaryPropertyAlias_&isHighlightOn_&propertyString_);
+
+        MSGPACK_DEFINE(isSnippetOn_,isSummaryOn_,summarySentenceNum_,summaryPropertyAlias_,isHighlightOn_,propertyString_);
 
     private:
         friend class boost::serialization::access;
@@ -225,6 +227,9 @@ class RequesterEnvironment
                 &isLogging_&encodingType_&queryString_&taxonomyLabel_
                 &nameEntityItem_&nameEntityType_&groupLabels_&attrLabels_&ipAddress_);
 
+        MSGPACK_DEFINE(isLogging_,encodingType_,queryString_,userID_,taxonomyLabel_,nameEntityItem_,
+                nameEntityItem_,nameEntityType_,groupLabels_,attrLabels_,ipAddress_);
+
     private:
         // Log : 2009.09.08
         // ---------------------------------------
@@ -302,6 +307,8 @@ class IndexCommandActionItem
         std::vector<std::string>        collectionNameList_;
 
         DATA_IO_LOAD_SAVE(IndexCommandActionItem, &env_&numOfDocs_&collectionNameList_)
+
+        MSGPACK_DEFINE(env_,numOfDocs_,collectionNameList_);
 }; // end - class IndexCommandActionItem
 
 
@@ -324,6 +331,8 @@ class OptimizeIndexCommandActionItem
         std::vector<std::string>        collectionNameList_;
 
         DATA_IO_LOAD_SAVE(OptimizeIndexCommandActionItem, &env_&collectionNameList_)
+
+        MSGPACK_DEFINE(env_,collectionNameList_);
 }; // end - class IndexCommandActionItem
 
 
@@ -558,7 +567,7 @@ class KeywordSearchActionItem
         ///
         /// @brief custom ranking information(2)
         /// Avoid a second parsing by passing a reference to CustomRanker object.
-        ///
+        /// TODO, abandon this, serialization needed for remoted call
         boost::shared_ptr<CustomRanker> customRanker_;
 
         DATA_IO_LOAD_SAVE(KeywordSearchActionItem, &env_&refinedQueryString_&collectionName_
@@ -567,6 +576,10 @@ class KeywordSearchActionItem
                 &isAttrGroup_&attrGroupNum_
                 &strExp_&paramConstValueMap_&paramPropertyValueMap_);
 
+        /// msgpack serializtion
+        MSGPACK_DEFINE(env_,refinedQueryString_,collectionName_,/*rankingType_, TODO*/pageInfo_,languageAnalyzerInfo_,
+                searchPropertyList_,removeDuplicatedDocs_,displayPropertyList_,sortPriorityList_,/*filteringList_, TODO*/
+                groupPropertyList_,isAttrGroup_,attrGroupNum_,strExp_,paramConstValueMap_,paramPropertyValueMap_);
 
     private:
         
@@ -635,6 +648,9 @@ class GetDocumentsByIdsActionItem
             &idList_&docIdList_&filteringList_
         )
 
+        MSGPACK_DEFINE(env_,languageAnalyzerInfo_,collectionName_,displayPropertyList_,
+                idList_,docIdList_,propertyName_/*,propertyValueList_,filteringList_ TODO*/);
+
     private:
         friend class boost::serialization::access;
         template<class Archive>
@@ -669,6 +685,8 @@ class MiningCommandActionItem
 
         DATA_IO_LOAD_SAVE(MiningCommandActionItem, &env_&numOfDocs_&collectionNameList_)
 
+        MSGPACK_DEFINE(env_,numOfDocs_,collectionNameList_);
+
 }; // end - class MiningCommandActionItem
 
 ///
@@ -697,6 +715,8 @@ class RecentKeywordActionItem
         std::vector< std::vector<izenelib::util::UString> > recentKeywordList_;
 
         DATA_IO_LOAD_SAVE(RecentKeywordActionItem, &env_&collectionNameKeywordNoList_&recentKeywordList_);
+
+        MSGPACK_DEFINE(env_,collectionNameKeywordNoList_,recentKeywordList_);
 }; // end - class RecentKeywordActionItem
 
 } // end - namespace sf1r

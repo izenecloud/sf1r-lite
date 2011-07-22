@@ -59,6 +59,14 @@ public:
             return false;
         }
 
+        LAConfigUnit config;
+        if(laPool_->getLAConfigUnit( analysisInfo.analyzerId_, config ))
+        {
+            // do not index synonym
+            if (config.getAnalysis() == "multilang" )
+                static_cast<la::MultiLanguageAnalyzer*>(pLA->getAnalyzer().get())->setExtractSynonym(false);
+        }
+
         pLA->process( idm, text, termIdList );
 
         if( isMultiThreadEnv_ )

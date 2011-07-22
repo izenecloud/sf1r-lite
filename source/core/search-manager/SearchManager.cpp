@@ -41,7 +41,7 @@ SearchManager::SearchManager(std::set<PropertyConfig, PropertyComp> schema,
         schemaMap_[iter->getName()] = *iter;
 
     pSorterCache_ = new SortPropertyCache(indexManagerPtr_.get(), config);
-    queryBuilder_.reset(new QueryBuilder(indexManager,documentManager,idManager,schemaMap_));
+    queryBuilder_.reset(new QueryBuilder(indexManager,documentManager,idManager,schemaMap_, config->filterCacheNum_));
     cache_.reset(new SearchCache(SEARCH_MANAGER_CACHE_SIZE));
     rankingManagerPtr_->getPropertyWeightMap(propertyWeightMap_);
 }
@@ -78,7 +78,7 @@ void SearchManager::chdir(const boost::shared_ptr<IDManager>& idManager,
     documentManagerPtr_ = documentManager;
 
     // init query builder
-    queryBuilder_.reset(new QueryBuilder(indexManager, documentManager, idManager, schemaMap_));
+    queryBuilder_.reset(new QueryBuilder(indexManager, documentManager, idManager, schemaMap_, config->filterCacheNum_));
 
     // clear cache
     delete pSorterCache_;

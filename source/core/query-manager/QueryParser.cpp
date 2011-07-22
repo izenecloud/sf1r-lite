@@ -38,11 +38,11 @@ namespace sf1r
 
     void QueryParser::initOnlyOnceCore()
     {
-        operStr_.assign(" |!(){}[]^\"");
+        operStr_.assign("&|!(){}[]^\"");
         escOperStr_ = operStr_; escOperStr_ += '\\';
 
         operEncodeDic_.insert( make_pair( "\\\\"    , "::$OP_SL$::" ) ); // "\\" : Operator Slash
-        operEncodeDic_.insert( make_pair( "\\ "     , "::$OP_AN$::" ) ); // "\ " : Operator AND
+        operEncodeDic_.insert( make_pair( "\\&"     , "::$OP_AN$::" ) ); // "\ " : Operator AND
         operEncodeDic_.insert( make_pair( "\\|"     , "::$OP_OR$::" ) ); // "\|" : Operator OR
         operEncodeDic_.insert( make_pair( "\\!"     , "::$OP_NT$::" ) ); // "\!" : Operator NOT
         operEncodeDic_.insert( make_pair( "\\("     , "::$OP_BO$::" ) ); // "\(" : Operator Opening Bracket
@@ -55,7 +55,7 @@ namespace sf1r
         operEncodeDic_.insert( make_pair( "\\\""    , "::$OP_EX$::" ) ); // "\"" : Operator Exact Bracket
 
         operDecodeDic_.insert( make_pair( "::$OP_SL$::" , "\\" ) ); // "\" : Operator Slash
-        operDecodeDic_.insert( make_pair( "::$OP_AN$::" , " "  ) ); // " " : Operator AND
+        operDecodeDic_.insert( make_pair( "::$OP_AN$::" , "&"  ) ); // " " : Operator AND
         operDecodeDic_.insert( make_pair( "::$OP_OR$::" , "|"  ) ); // "|" : Operator OR
         operDecodeDic_.insert( make_pair( "::$OP_NT$::" , "!"  ) ); // "!" : Operator NOT
         operDecodeDic_.insert( make_pair( "::$OP_BO$::" , "("  ) ); // "(" : Operator Opening Bracket
@@ -240,7 +240,8 @@ namespace sf1r
         queryUStr.convertString(queryString, izenelib::util::UString::UTF_8);
 
         processEscapeOperator(queryString);
-        normalizeQuery(queryString, normQueryString);
+        ///normalizeQuery(queryString, normQueryString);
+        normQueryString = queryString;
 
         // Remove redundant space for chinese character.
         if ( removeChineseSpace )
@@ -694,7 +695,7 @@ namespace sf1r
         QueryTree::QueryType queryType;
         switch ( *(i->value.begin() ) )
         {
-        case ' ':
+        case '&':
             queryType = QueryTree::AND;
             break;
         case '|':

@@ -4,7 +4,6 @@
 #include <common/SFLogger.h>
 #include <la-manager/LAPool.h>
 #include <license-manager/LicenseManager.h>
-#include <query-manager/QMCommonFunc.h>
 
 #include <bundles/querylog/QueryLogBundleConfiguration.h>
 #include <bundles/querylog/QueryLogBundleActivator.h>
@@ -99,19 +98,6 @@ bool CobraProcess::initLAManager()
 
     if (! LAPool::getInstance()->init(laConfig))
         return false;
-    LAPool::getInstance()->set_kma_path(laConfig.kma_path_);
-    //start dynamic update
-    std::string kma_path;
-    LAPool::getInstance()->get_kma_path(kma_path);
-    
-    std::string restrictDictPath = kma_path + "/restrict.txt";
-    boost::shared_ptr<UpdatableRestrictDict> urd;
-    unsigned int lastModifiedTime = static_cast<unsigned int>(
-            la::getFileLastModifiedTime( restrictDictPath.c_str() ) );
-    urd.reset( new UpdatableRestrictDict( lastModifiedTime ) );
-    la::UpdateDictThread::staticUDT.addRelatedDict( restrictDictPath.c_str(), urd );
-    la::UpdateDictThread::staticUDT.setCheckInterval(300);
-    la::UpdateDictThread::staticUDT.start();
 
     atexit(&LAPool::destroy);
 
@@ -257,22 +243,22 @@ int CobraProcess::run()
 
             {
                 std::string filePath = licenseDir + LicenseManager::TOKEN_FILENAME;
-                std::string token("");
-                if ( !LicenseManager::extract_token_from(filePath, token) )
+                if( boost::filesystem::exists(filePath) )
                 {
-                    return false;
-                }
+                    std::string token("");
+                    LicenseManager::extract_token_from(filePath, token);
 
-                ///Insert the extracted token into the deny control lists for all collections
-                std::map<std::string, CollectionMeta>&
-                    collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
-                std::map<std::string, CollectionMeta>::iterator
-                    collectionIter = collectionMetaMap.begin();
+                    ///Insert the extracted token into the deny control lists for all collections
+                    std::map<std::string, CollectionMeta>&
+                        collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
+                    std::map<std::string, CollectionMeta>::iterator
+                        collectionIter = collectionMetaMap.begin();
 
-                for(; collectionIter != collectionMetaMap.end(); collectionIter++)
-                {
-                    CollectionMeta& collectionMeta = collectionIter->second;
-                    collectionMeta.aclDeny(token);
+                    for(; collectionIter != collectionMetaMap.end(); collectionIter++)
+                    {
+                        CollectionMeta& collectionMeta = collectionIter->second;
+                        collectionMeta.aclDeny(token);
+                    }
                 }
             }
 #endif

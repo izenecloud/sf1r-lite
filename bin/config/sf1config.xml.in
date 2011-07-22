@@ -35,7 +35,7 @@
           <!-- In unigram searching mode (unigramsearchmode="y"), searching performs on unigram terms, while ranking performs on word segments. 
                Make sure unigram terms have been indexed for Property (LA for Indexing is "la_sia_with_unigram"), or search(retrieve) may fail.
           -->
-          <Sia triggerqa="n" doccachenum="20000" encoding="UTF-8" wildcardtype="unigram" indexunigramproperty="y" unigramsearchmode="n" multilanggranularity="field" />
+          <Sia triggerqa="n" doccachenum="20000" filtercachenum="1000" encoding="UTF-8" wildcardtype="unigram" indexunigramproperty="y" unigramsearchmode="n" multilanggranularity="field" />
           
           <LanguageIdentifier dbpath="@ilplib_LANGUAGEIDENTIFIER_DB@"/>
 
@@ -98,7 +98,7 @@
 
     <!-- ** NEED TO EDIT DICTIONARY PATH ** -->
     <!-- analysis types: token, ngram, like, all, noun, label -->
-    <LanguageAnalyzer dictionarypath="@wisekma_KNOWLEDGE@">
+    <LanguageAnalyzer dictionarypath="@wisekma_KNOWLEDGE@" updatedictinterval="300">
 
       <Method id="la_token" analysis="token"/>
       <Method id="la_char" analysis="char"/>
@@ -111,13 +111,13 @@
       </Method>
       <!--
       <Method id="la_korall" analysis="korean">
-        <settings mode="all" option="R+S+" specialchar="#" dictionarypath=""/>
+        <settings mode="all" option="R+S+" specialchar="#" dictionarypath="@wisekma_KNOWLEDGE@"/>
       </Method>
       <Method id="la_kornoun" analysis="korean">
-        <settings mode="all" option="R+S+" specialchar="#" dictionarypath=""/>
+        <settings mode="all" option="R+S+" specialchar="#" dictionarypath="@wisekma_KNOWLEDGE@"/>
       </Method>
       <Method id="inner_la_korall_mia" analysis="korean" casesensitive="yes" >
-        <settings mode="label" option="R1S-" specialchar="#" dictionarypath=""/>
+        <settings mode="label" option="R1S-" specialchar="#" dictionarypath="@wisekma_KNOWLEDGE@"/>
       </Method>
       <Method id="la_bi_mia" analysis="multilang" advoption="default,inner_la_korall_mia;cn,la_bigram" casesensitive="yes" lower="no"/>
       <Method id="la_mia" analysis="multilang" advoption="default,inner_la_korall_mia;cn,la_char" casesensitive="yes" lower="no">
@@ -129,14 +129,17 @@
       </Method>
 
       <Method id="inner_la_cnall_sia" analysis="chinese" casesensitive="no" >
-        <settings mode="label" option="R+S+T3" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
+        <settings mode="label" option="R+S-V-T3" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
-      <Method id="inner_la_cnall_index" analysis="chinese" casesensitive="no" >
-        <settings mode="label" option="R+S+T4" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
+      <Method id="inner_la_cnall_ia" analysis="chinese" casesensitive="no" >
+        <settings mode="label" option="R+S-V-T4" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
+      </Method>
+      <Method id="inner_la_cnall_sa" analysis="chinese" casesensitive="no" >
+        <settings mode="label" option="R+S-T5" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
 
-      <Method id="la_sia" analysis="multilang" advoption="default,inner_la_korall_sia;en,la_eng;cn,inner_la_cnall_sia"/>
-      <Method id="la_sia_with_unigram" analysis="multilang" advoption="default,inner_la_korall_sia;en,la_eng;cn,inner_la_cnall_index"/>
+      <Method id="la_sia" analysis="multilang" advoption="default,inner_la_korall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_sia"/>
+      <Method id="la_sia_with_unigram" analysis="multilang" advoption="default,inner_la_korall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_ia"/>
 
       <!--
       <Method id="inner_la_jpall_sia" analysis="japanese" casesensitive="no" >

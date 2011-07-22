@@ -20,7 +20,7 @@ bool buildPropertyAliasMap( const std::set<PropertyConfig , PropertyComp>& prope
     for (propertyIter = propertyList.begin(); propertyIter != propertyList.end(); propertyIter++)
     {
         std::string originalName( propertyIter->getOriginalName() );
-        if ( originalName == propertyIter->getName() )
+        if ( originalName.empty() || originalName == propertyIter->getName() )
             continue;
 
         PROPERTY_ALIAS_MAP_T::iterator propertyMapIter

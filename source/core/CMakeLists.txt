@@ -26,6 +26,7 @@ FILE(GLOB_RECURSE directory_SRC "directory-manager/*.cpp")
 FILE(GLOB_RECURSE search_SRC "search-manager/*.cpp")
 FILE(GLOB_RECURSE query_SRC "query-manager/*.cpp")
 FILE(GLOB_RECURSE recommend_SRC "recommend-manager/*.cpp")
+FILE(GLOB_RECURSE aggregator_SRC "aggregator-manager/*.cpp")
 
 FILE(GLOB document_SRC
   "document-manager/*.cpp"
@@ -52,7 +53,7 @@ FILE(GLOB mining_SRC
   "mining-manager/auto-fill-submanager/*.cpp"
   "mining-manager/faceted-submanager/*.cc"
   )
-
+ADD_DEFINITIONS("-fno-strict-aliasing") 
 ADD_LIBRARY(sf1r_configuration_manager ${configuration_SRC})
 ADD_LIBRARY(sf1r_la_manager ${la_SRC})
 ADD_LIBRARY(sf1r_license_manager ${license_SRC})
@@ -66,6 +67,7 @@ ADD_LIBRARY(sf1r_search_manager ${search_SRC})
 ADD_LIBRARY(sf1r_mining_manager ${mining_SRC})
 ADD_LIBRARY(sf1r_document_manager ${document_SRC})
 ADD_LIBRARY(sf1r_recommend_manager ${recommend_SRC})
+ADD_LIBRARY(sf1r_aggregator_manager ${aggregator_SRC})
 
 INSTALL(TARGETS 
     sf1r_configuration_manager 
@@ -81,6 +83,7 @@ INSTALL(TARGETS
     sf1r_mining_manager 
     sf1r_document_manager 
     sf1r_recommend_manager
+    sf1r_aggregator_manager
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
     COMPONENT sf1r_libraries)

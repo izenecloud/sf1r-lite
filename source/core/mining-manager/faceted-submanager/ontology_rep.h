@@ -10,6 +10,7 @@
 
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/serialization.hpp>
+#include <3rdparty/msgpack/msgpack.hpp>
 #include <common/type_defs.h>
 #include "faceted_types.h"
 #include "ontology_rep_item.h"
@@ -73,6 +74,7 @@ public:
         ar & item_list;
     }
 
+    MSGPACK_DEFINE(item_list);
 };
 NS_FACETED_END
 #endif /* SF1R_ONTOLOGY_REP_H_ */

@@ -1,6 +1,7 @@
 #include <common/SFLogger.h>
 #include "LAPool.h"
 #include "AnalysisInformation.h"
+#include <query-manager/QMCommonFunc.h>
 
 #include <boost/tokenizer.hpp>
 
@@ -146,7 +147,23 @@ void setOptions( const std::string & option, ChineseAnalyzer * ka, bool outputLo
                     errorVal = true;
                 }
                 break;
-
+            case 'V': case 'v': // load synonym dictionary or not
+                ++o;
+                if (*o == '+')
+                {
+                    ka->setExtractSynonym( true );
+                }
+                else if (*o == '-')
+                {
+                    ka->setExtractSynonym( false );
+                }
+                else
+                {
+                    if( outputLog )
+                        sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA option value for Option 'V': %c", *o);
+                    errorVal = true;
+                }
+                break;
             case ' ':
                 checkDupl = false;
                 break;
@@ -656,6 +673,10 @@ namespace sf1r
             }
         }
 
+        //start dynamic update
+        la::UpdateDictThread::staticUDT.setCheckInterval(laManagerConfig.updateDictInterval_);
+        la::UpdateDictThread::staticUDT.start();
+
         return true;
     } // end - init()
 
@@ -812,6 +833,12 @@ namespace sf1r
             analyzer.reset( new NKoreanAnalyzer( laConfigUnitIter->second.getDictionaryPath() ) );
             //static_cast<NKoreanAnalyzer*>(analyzer.get())->setGenerateCompNoun( true );
 
+            std::string restrictDictPath = laConfigUnitIter->second.getDictionaryPath() + "/restrict.txt";
+            boost::shared_ptr<UpdatableRestrictDict> urd;
+            unsigned int lastModifiedTime = static_cast<unsigned int>(
+                la::getFileLastModifiedTime( restrictDictPath.c_str() ) );
+            urd.reset( new UpdatableRestrictDict( lastModifiedTime ) );
+            la::UpdateDictThread::staticUDT.addRelatedDict( restrictDictPath.c_str(), urd );
 
             if( laConfigUnitIter->second.getMode() == "all" )
             {
@@ -1185,6 +1212,20 @@ namespace sf1r
                     }
                     else
                     {
+                        // if (analyzerId.find("cn") != string::npos)
+                        if (language == MultiLanguageAnalyzer::CHINESE || language == MultiLanguageAnalyzer::ENGLISH)
+                        {
+                            // create a duplicated inner analyzer, en: use chinese
+                            LA* inla = createLA( innerInfo, outputLog, mode );
+                            if (NULL != inla)
+                            {
+                                boost::shared_ptr<la::Analyzer> inan = inla->getAnalyzer();
+                                static_cast<NChineseAnalyzer*>(inan.get())->setExtractSynonym( false );
+                                static_cast<NChineseAnalyzer*>(inan.get())->setAnalysisType(ChineseAnalyzer::minimum_match_no_overlap);
+                                innerAN->setInnerAnalyzer(inan);
+                            }
+                        }
+
                         mla->setAnalyzer( language, innerAN );
                         // set the ProcessMode again if ProcessMode is MA_PM
 //                        mla->setProcessMode( language, processMode );

@@ -469,9 +469,12 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
 
     getAttribute( languageAnalyzer, "dictionarypath", dictionaryPath );
 
-    laManagerConfig_.kma_path_ = dictionaryPath;
-    std::cout<<"set KMA path: "<<dictionaryPath<<std::endl;
+    unsigned int  updateDictInterval;
 
+    getAttribute( languageAnalyzer, "updatedictinterval", updateDictInterval );
+
+    laManagerConfig_.updateDictInterval_ = updateDictInterval;
+    std::cout<<"set update LA dictionary interval: "<<updateDictInterval<<std::endl;
 
     // 2. <Method>
 
@@ -1038,6 +1041,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
 
     params.Get("Sia/triggerqa", indexBundleConfig.bTriggerQA_);
     params.Get<std::size_t>("Sia/doccachenum", indexBundleConfig.documentCacheNum_);
+    params.Get<std::size_t>("Sia/filtercachenum", indexBundleConfig.filterCacheNum_);
     params.GetString("LanguageIdentifier/dbpath", indexBundleConfig.languageIdentifierDbPath_, "");
 }
 

@@ -30,7 +30,6 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
         throw XmlConfigParserException("error in parsing " + configFileName);
     }
 
-    indexBundleConfig->setSchema(collectionMeta.getDocumentSchema());
     collectionHandler->setBundleSchema(indexBundleConfig->schema_);
 
     ///createIndexBundle

@@ -94,6 +94,7 @@
 				<xs:element ref="Method" maxOccurs="unbounded"/>
 			</xs:sequence>
 			<xs:attribute name="dictionarypath" use="required"/>
+			<xs:attribute name="updatedictinterval" type="xs:integer" use="required"/>
 		</xs:complexType>
 	</xs:element>
 

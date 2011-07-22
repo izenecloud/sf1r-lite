@@ -28,7 +28,7 @@ const std::string LicenseManager::LICENSE_KEY_FILENAME = "sf1-license-key.dat";
 
 const std::string LicenseManager::TOKEN_FILENAME = "token.dat";
 const std::string LicenseManager::STOP_SERVICE_TOKEN = "@@ALL@@";
-const std::string LicenseManager::START_SERVICE_TOKEN = "@@NONEdfetfhhhrrer@@";
+const std::string LicenseManager::START_SERVICE_TOKEN = "@@NONE@@";
 
 LicenseManager::LicenseManager(const std::string& sf1Version, const std::string& licenseFilePath, bool systemInfoType):
     systemInfoType_(systemInfoType)

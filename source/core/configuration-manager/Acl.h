@@ -44,6 +44,8 @@ public:
 
     bool check(const token_set_type& userTokens) const;
 
+    bool checkDenyList() const;
+
     const_iterator allowedTokensBegin() const
     {
         return allowedTokens_.begin();

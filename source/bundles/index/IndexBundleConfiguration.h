@@ -88,6 +88,9 @@ public:
     /// @brief document cache number
     size_t documentCacheNum_;
 
+    /// @brief filter cache number
+    size_t filterCacheNum_;
+
     /// @brief The encoding type of the Collection
     izenelib::util::UString::EncodingType encoding_;
 

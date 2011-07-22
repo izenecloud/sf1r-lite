@@ -20,37 +20,17 @@ INCLUDE_DIRECTORIES(
   ${sqlite3_INCLUDE_DIRS}
   )
 
-SET(POSCharExtractor_SRC tools/POSCharExtractor.cpp)
-SET(TGTrainerBridge_SRC tools/TGTrainerBridge.cpp)
-SET(TGTrainer_SRC tools/TGTrainer.cpp)
+ADD_EXECUTABLE(LicenseFileGenerator
+    license-file-generator/LicenseFileGenerator.cpp
+    )
 
-FILE(GLOB_RECURSE cobra_SRC "common/*.cpp" "controllers/*.cpp" "parsers/*.cpp" "renders/*.cpp" "*.cpp")
-ADD_DEFINITIONS("-fno-strict-aliasing") 
-ADD_EXECUTABLE(CobraProcess ${cobra_SRC})
-
-TARGET_LINK_LIBRARIES(CobraProcess
-  sf1r_mining_manager
-  sf1r_license_manager
-
-  sf1r_log_manager
-  sf1r_document_manager
-  sf1r_ranking_manager
-  sf1r_search_manager
-  sf1r_query_manager
-  sf1r_la_manager
+TARGET_LINK_LIBRARIES(LicenseFileGenerator
   sf1r_configuration_manager
-  sf1r_index_manager
-  sf1r_directory_manager
+  sf1r_la_manager
+  sf1r_query_manager
+  sf1r_log_manager
+  sf1r_license_manager
   sf1r_common
-  sf1r_recommend_manager
-  sf1r_aggregator_manager
-
-  sf1r_bundle_index 
-  sf1r_bundle_querylog
-  sf1r_bundle_mining
-  sf1r_bundle_recommend
-
-  ${iise_LIBRARIES}
   ${idmlib_LIBRARIES}
   ${imllib_LIBRARIES}
   ${ilplib_LIBRARIES}
@@ -66,10 +46,4 @@ TARGET_LINK_LIBRARIES(CobraProcess
   ${Glog_LIBRARIES}
   ${sqlite3_LIBRARIES}
 )
-
-
-INSTALL(TARGETS 
-    CobraProcess 
-    RUNTIME DESTINATION bin
-    COMPONENT sf1r_apps)    
 
