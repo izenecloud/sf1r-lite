@@ -15,12 +15,10 @@
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/archive_exception.hpp>
-#include <boost/assert.hpp>
 #include <boost/scoped_array.hpp>
 
 #include <compression/minilzo/minilzo.h>
-//#include "bmz.h"
-#define output_block_size(input_block_size) input_block_size + (input_block_size / 16) + 64 + 3
+#define OUTPUT_BLOCK_SIZE(input_block_size) (input_block_size + (input_block_size / 16) + 64 + 3)
 
 namespace sf1r
 {
@@ -78,12 +76,13 @@ public:
         size_t srcLen;
         izs.write_image(src, srcLen);
 
+        const size_t allocSize = OUTPUT_BLOCK_SIZE(srcLen);
         size_t destLen = 0;
-        boost::scoped_array<unsigned char> destPtr(new unsigned char[srcLen + sizeof(uint32_t)]);
+        boost::scoped_array<unsigned char> destPtr(new unsigned char[allocSize + sizeof(uint32_t)]);
         *reinterpret_cast<uint32_t*>(destPtr.get()) = srcLen;
 
         START_PROFILER( proDocumentCompression )
-        if (compress(src, srcLen, destPtr.get() + sizeof(uint32_t), destLen) == false)
+        if (compress_(src, srcLen, destPtr.get() + sizeof(uint32_t), allocSize, destLen) == false)
             return false;
         STOP_PROFILER( proDocumentCompression )
 
@@ -117,10 +116,8 @@ public:
         int re = lzo1x_decompress((const unsigned char*)val_p->data + sizeof(uint32_t), val_p->size - sizeof(uint32_t), p, &tmpTarLen, NULL);
         //int re = bmz_unpack(val_p->data, val_p->size, p, &tmpTarLen, NULL);
 
-        if (re != LZO_E_OK)
+        if (re != LZO_E_OK || tmpTarLen != allocSize)
             return false;
-
-        BOOST_ASSERT(tmpTarLen == allocSize);
 
         nsz = tmpTarLen; //
         //char *p =(char*)_tc_bzdecompress((const char*)val_p->data, val_p->size, &nsz);
@@ -149,11 +146,12 @@ public:
         size_t srcLen;
         izs.write_image(src, srcLen);
 
+        const size_t allocSize = OUTPUT_BLOCK_SIZE(srcLen);
         size_t destLen = 0;
-        boost::scoped_array<unsigned char> destPtr(new unsigned char[srcLen + sizeof(uint32_t)]);
+        boost::scoped_array<unsigned char> destPtr(new unsigned char[allocSize + sizeof(uint32_t)]);
         *reinterpret_cast<uint32_t*>(destPtr.get()) = srcLen;
 
-        if (compress(src, srcLen, destPtr.get() + sizeof(uint32_t), destLen) == false)
+        if (compress_(src, srcLen, destPtr.get() + sizeof(uint32_t), allocSize, destLen) == false)
             return false;
 
         bool ret = containerPtr_->put(docId, destPtr.get(), destLen + sizeof(uint32_t), Lux::IO::OVERWRITE);
@@ -213,14 +211,14 @@ private:
         }
     }
 
-    bool compress(char* src, size_t srcLen, unsigned char* dest, size_t& destLen)
+    bool compress_(char* src, size_t srcLen, unsigned char* dest, size_t destAllocSize, size_t& destLen)
     {
         static lzo_align_t __LZO_MMODEL
         wrkmem [((LZO1X_1_MEM_COMPRESS)+(sizeof(lzo_align_t)-1))/sizeof(lzo_align_t)];
 
         lzo_uint tmpTarLen;
         int re = lzo1x_1_compress((unsigned char*)src, srcLen, dest, &tmpTarLen, wrkmem);
-        if ( re != LZO_E_OK )
+        if ( re != LZO_E_OK || tmpTarLen > destAllocSize )
             return false;
 
         destLen = tmpTarLen;
