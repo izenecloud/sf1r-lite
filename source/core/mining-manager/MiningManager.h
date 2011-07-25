@@ -57,6 +57,8 @@ using namespace izenelib::ir::idmanager;
 namespace sf1r
 {
 
+class GroupLabelLogger;
+
 namespace faceted
 {
 class GroupManager;
@@ -186,7 +188,38 @@ public:
         const std::vector<std::pair<std::string, std::string> >& attrLabelList,
         faceted::OntologyRep& attrRep
     );
-    
+
+    /**
+     * Log the group label click.
+     * @param query user query
+     * @param propName the property name of the group label
+     * @param propValue the property value of the group label
+     * @return true for success, false for failure
+     */
+    bool clickGroupLabel(
+        const std::string& query,
+        const std::string& propName,
+        const std::string& propValue
+    );
+
+    /**
+     * Get the most frequently clicked group labels.
+     * @param query user query
+     * @param propName the property name for the group labels to get
+     * @param limit the max number of labels to get
+     * @param propValueVec store the property values of each group label
+     * @param freqVec the click count for each group label
+     * @return true for success, false for failure
+     * @post @p freqVec is sorted in descending order.
+     */
+    bool getFreqGroupLabel(
+        const std::string& query,
+        const std::string& propName,
+        int limit,
+        std::vector<std::string>& propValueVec,
+        std::vector<int>& freqVec
+    );
+
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
     
     bool GetTdtInTimeRange(const idmlib::tdt::TimeIdType& start, const idmlib::tdt::TimeIdType& end, std::vector<izenelib::util::UString>& topic_list);
@@ -334,6 +367,10 @@ private:
 
     /** GROUP RERANKER */
     faceted::PropertyDiversityReranker* groupReranker_;
+
+    /** property name => group label click logger */
+    typedef std::map<std::string, GroupLabelLogger*> GroupLabelLoggerMap;
+    GroupLabelLoggerMap groupLabelLoggerMap_;
 
     /** TDT */
     std::string tdt_path_;

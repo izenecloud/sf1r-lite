@@ -269,6 +269,21 @@ FinishSearch:
         miningSearchService_->getGroupRep(resultItem.topKDocs_,
                                           actionItem.groupPropertyList_, actionItem.env_.groupLabels_, resultItem.groupRep_,
                                           actionItem.isAttrGroup_, actionItem.attrGroupNum_, actionItem.env_.attrLabels_, resultItem.attrRep_);
+
+        if (actionItem.env_.isLogGroupLabels_)
+        {
+            typedef std::vector<std::pair<std::string, std::string> > LabelVec;
+            const LabelVec& groupLabels = actionItem.env_.groupLabels_;
+            for (LabelVec::const_iterator it = groupLabels.begin();
+                it != groupLabels.end(); ++it)
+            {
+                if (miningSearchService_->clickGroupLabel(actionItem.env_.queryString_, it->first, it->second) == false)
+                {
+                    LOG(ERROR) << "error in log group label click, query: " << actionItem.env_.queryString_
+                               << ", property name: " << it->first << ", property value: " << it->second;
+                }
+            }
+        }
     }
 
     return true;

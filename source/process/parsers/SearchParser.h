@@ -103,6 +103,11 @@ public:
         return logKeywords_;
     }
 
+    bool logGroupLabels() const
+    {
+        return logGroupLabels_;
+    }
+
     std::vector<std::string>& mutableProperties()
     {
         return properties_;
@@ -133,6 +138,7 @@ private:
     std::vector<std::pair<std::string, std::string> > groupLabels_; // <property name, value>
     std::vector<std::pair<std::string, std::string> > attrLabels_; // <attribute name, value>
     bool logKeywords_;
+    bool logGroupLabels_;
     std::vector<std::string> properties_;
     RankingType::TextRankingType rankingModel_;
     LanguageAnalyzerInfo analyzerInfo_;

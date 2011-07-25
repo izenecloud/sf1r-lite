@@ -344,7 +344,7 @@ void DocumentsController::duplicate_with()
  *
  * @code
  * {
- *   "resource" => {
+ *   "resource": {
  *     "DOCID": "post.1",
  *     "title": "Hello, World",
  *     "content": "This is a test post."
@@ -388,7 +388,7 @@ void DocumentsController::create()
  *
  * @code
  * {
- *   "resource" => {
+ *   "resource": {
  *     "DOCID": "post.1",
  *     "title": "Hello, World (revision)",
  *     "content": "This is a revised test post."
@@ -430,7 +430,7 @@ void DocumentsController::update()
  *
  * @code
  * {
- *   "resource" => {
+ *   "resource": {
  *     "DOCID": "post.1",
  *   }
  * }
@@ -474,7 +474,7 @@ void DocumentsController::destroy()
  * @code
  * {
  *   "collection": "ChnWiki",
- *   "resource" => {
+ *   "resource": {
  *     "DOCID": "docid-1",
  *   }
  * }
@@ -541,7 +541,7 @@ void DocumentsController::get_topic()
  * @code
  * {
  *   "collection": "ChnWiki",
- *   "resource" => {
+ *   "resource": {
  *     "DOCID": "docid-1",
  *   }
  * }
@@ -595,6 +595,91 @@ void DocumentsController::get_topic_with_sim()
         new_sim[Keys::name] = str;
       }
     
+    }
+}
+
+/**
+ * @brief Action @b get_freq_group_labels. Get frequent clicked group labels.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): collection name.
+ * - @b resource* (@c Object): specify the keywords, property name, etc.
+ *   - @b keywords* (@c String): user query
+ *   - @b group_property* (@c String): the group property name
+ *   - @b limit (@c Uint = 1): Limit the count of returned labels
+ *
+ * @section response
+ *
+ * - @b resources (@c Array): Every item is a group label, sorted by @b freq decreasingly.
+ *   - @b freq (@c Uint): the frequency count
+ *   - @b group_label (@c String): the property value of the group label
+ *
+ *
+ * @section example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection": "ChnWiki",
+ *   "resource": {
+ *     "keywords": "iphone4"，
+ *     "group_property": "Category",
+ *     "limit": "2"
+ *   }
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "resources": [
+ *     { "freq": 10,
+ *       "group_label": "手机" },
+ *     { "freq": 5,
+ *       "group_label": "数码配件" }
+ *   ]
+ * }
+ * @endcode
+ */
+void DocumentsController::get_freq_group_labels()
+{
+    Value& input = request()[Keys::resource];
+
+    if (!input.hasKey(Keys::keywords))
+    {
+        response().addError("Require resource[keywords] as user query.");
+        return;
+    }
+    std::string query = asString(input[Keys::keywords]);
+
+    if (!input.hasKey(Keys::group_property))
+    {
+        response().addError("Require resource[group_property] as group property name.");
+        return;
+    }
+    std::string propName = asString(input[Keys::group_property]);
+
+    int limit = asUintOr(input[Keys::limit], 1);
+
+    std::vector<std::string> propValueVec;
+    std::vector<int> freqVec;
+    if (!collectionHandler_->miningSearchService_->getFreqGroupLabel(
+        query, propName, limit, propValueVec, freqVec))
+    {
+        response().addError(
+            "Request Failed."
+        );
+        return;
+    }
+
+    Value& resources = response()[Keys::resources];
+    resources.reset<Value::ArrayType>();
+    for (std::size_t i=0; i<propValueVec.size(); ++i)
+    {
+        Value& new_resource = resources();
+        new_resource[Keys::group_label] = propValueVec[i];
+        new_resource[Keys::freq] = freqVec[i];
     }
 }
 

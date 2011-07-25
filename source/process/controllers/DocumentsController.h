@@ -42,6 +42,7 @@ public:
     void destroy();
     void get_topic();
     void get_topic_with_sim();
+    void get_freq_group_labels();
 private:
     bool requireDOCID();
     bool setLimit();

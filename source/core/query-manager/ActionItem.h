@@ -142,7 +142,7 @@ class RequesterEnvironment
 {
     public:
 
-        RequesterEnvironment() : isLogging_(false) {};
+        RequesterEnvironment() : isLogging_(false), isLogGroupLabels_(false) {};
 
         void print(std::ostream& out = std::cout) const
         {
@@ -151,6 +151,7 @@ class RequesterEnvironment
             ss << "RequesterEnvironment"                    << endl;
             ss << "------------------------------"          << endl;
             ss << "isLogging        : " << isLogging_       << endl;
+            ss << "isLogGroupLabels_: " << isLogGroupLabels_<< endl;
             ss << "encodingType_    : " << encodingType_    << endl;
             ss << "queryString_     : " << queryString_     << endl;
             ss << "taxonomyLabel_   : " << taxonomyLabel_   << endl;
@@ -176,6 +177,11 @@ class RequesterEnvironment
         /// @brief a flag if current query should be logged.
         ///
         bool            isLogging_;
+
+        ///
+        /// @brief a flag if current query should be logged.
+        ///
+        bool            isLogGroupLabels_;
 
         ///
         /// @brief encoding type string.
@@ -224,10 +230,10 @@ class RequesterEnvironment
         std::string     ipAddress_;
 
         DATA_IO_LOAD_SAVE(RequesterEnvironment, 
-                &isLogging_&encodingType_&queryString_&taxonomyLabel_
+                &isLogging_&isLogGroupLabels_&encodingType_&queryString_&taxonomyLabel_
                 &nameEntityItem_&nameEntityType_&groupLabels_&attrLabels_&ipAddress_);
 
-        MSGPACK_DEFINE(isLogging_,encodingType_,queryString_,userID_,taxonomyLabel_,nameEntityItem_,
+        MSGPACK_DEFINE(isLogging_,isLogGroupLabels_,encodingType_,queryString_,userID_,taxonomyLabel_,nameEntityItem_,
                 nameEntityItem_,nameEntityType_,groupLabels_,attrLabels_,ipAddress_);
 
     private:
@@ -238,6 +244,7 @@ class RequesterEnvironment
         void serialize(Archive& ar, const unsigned int version)
         {
             ar & isLogging_;
+            ar & isLogGroupLabels_;
             ar & encodingType_;
             ar & queryString_;
             ar & taxonomyLabel_;
@@ -255,6 +262,7 @@ inline bool operator==(
 )
 {
     return a.isLogging_ == b.isLogging_
+        && a.isLogGroupLabels_ == b.isLogGroupLabels_
         && a.encodingType_ == b.encodingType_
         && a.queryString_ == b.queryString_
         && a.taxonomyLabel_ == b.taxonomyLabel_
