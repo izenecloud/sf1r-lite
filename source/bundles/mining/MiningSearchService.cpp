@@ -191,6 +191,26 @@ bool MiningSearchService::getGroupRep(
                                        isAttrGroup, attrGroupNum, attrLabelList, attrRep);
 }
 
+bool MiningSearchService::clickGroupLabel(
+    const std::string& query,
+    const std::string& propName,
+    const std::string& propValue
+)
+{
+    return miningManager_->clickGroupLabel(query, propName, propValue);
+}
+
+bool MiningSearchService::getFreqGroupLabel(
+    const std::string& query,
+    const std::string& propName,
+    int limit,
+    std::vector<std::string>& propValueVec,
+    std::vector<int>& freqVec
+)
+{
+    return miningManager_->getFreqGroupLabel(query, propName, limit, propValueVec, freqVec);
+}
+
 bool MiningSearchService::GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list)
 {
     return miningManager_->GetTdtInTimeRange(start, end, topic_list);

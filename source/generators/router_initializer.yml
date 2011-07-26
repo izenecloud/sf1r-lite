@@ -8,6 +8,7 @@ headers:
   - controllers/LogAnalysisController.h
   - controllers/FacetedController.h
   - controllers/QueryCorrectionController.h
+  - querylog/QueryLogSearchService.h
   - controllers/TopicController.h
   - controllers/RecommendController.h
   - controllers/ServiceController.h
@@ -40,6 +41,7 @@ controllers:
       - similar_to_image
       - get_topic
       - get_topic_with_sim
+      - get_freq_group_labels
 
   StatusController: ~
 

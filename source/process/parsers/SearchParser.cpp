@@ -65,6 +65,8 @@ using driver::Keys;
  *   is used (In Collection node attribute).
  * - @b log_keywords (@c Bool = @c true): Whether the keywords should be
  *   logged.
+ * - @b log_group_labels (@c Bool = @c true): Whether the @b group_label should be
+ *   logged.
  * - @b analyzer (@c Object): Keywords analyzer options
  *   - @b apply_la (@c Bool = @c true): TODO
  *   - @b use_synonym_extension (@c Bool = @c false): TODO
@@ -187,6 +189,7 @@ bool SearchParser::parse(const Value& search)
     }
 
     logKeywords_ = asBoolOr(search[Keys::log_keywords], true);
+    logGroupLabels_ = asBoolOr(search[Keys::log_group_labels], true);
 
     // properties
     const Value& propertiesNode = search[Keys::in];

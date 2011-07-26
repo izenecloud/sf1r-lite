@@ -24,6 +24,8 @@
 #include "faceted-submanager/attr_manager.h"
 #include "faceted-submanager/property_diversity_reranker.h"
 
+#include "group-label-logger/GroupLabelLogger.h"
+
 #include <search-manager/SearchManager.h>
 
 #include <idmlib/semantic_space/esa/DocumentRepresentor.h>
@@ -62,6 +64,7 @@
 #include <signal.h>
 
 #include <algorithm>
+#include <memory> // auto_ptr
 
 using namespace boost::filesystem;
 
@@ -100,17 +103,23 @@ MiningManager::~MiningManager()
     if(attrManager_) delete attrManager_;
     if(groupReranker_) delete groupReranker_;
     if(tdt_storage_) delete tdt_storage_;
-    //close();
+    close();
 }
 
 void MiningManager::close()
 {
-
-//     doIDManagerRelease_();
+    for (GroupLabelLoggerMap::iterator it = groupLabelLoggerMap_.begin();
+        it != groupLabelLoggerMap_.end(); ++it)
+    {
+        delete it->second;
+    }
+    groupLabelLoggerMap_.clear();
 }
 
 bool MiningManager::open()
 {
+    close();
+
     std::cout<<"DO_TG : "<<(int)mining_schema_.tg_enable<<std::endl;
     std::cout<<"DO_DUPD : "<<(int)mining_schema_.dupd_enable<<std::endl;
     std::cout<<"DO_SIM : "<<(int)mining_schema_.sim_enable<<std::endl;
@@ -304,6 +313,42 @@ bool MiningManager::open()
         {
             groupReranker_ = new faceted::PropertyDiversityReranker(mining_schema_.prop_rerank_property.propName, groupManager_);
             searchManager_->set_reranker(boost::bind(&faceted::PropertyDiversityReranker::rerank,groupReranker_,_1,_2));
+        }
+
+        /** group label log */
+        if( mining_schema_.group_enable )
+        {
+            std::string logPath = prefix_path + "/group_label_log";
+            try
+            {
+                FSUtil::createDir(logPath);
+            }
+            catch(FileOperationException& e)
+            {
+                LOG(ERROR) << "exception in FSUtil::createDir: " << e.what();
+                return false;
+            }
+
+            for (std::vector<GroupConfig>::const_iterator it = mining_schema_.group_properties.begin();
+                it != mining_schema_.group_properties.end(); ++it)
+            {
+                if (groupLabelLoggerMap_[it->propName] == NULL)
+                {
+                    std::auto_ptr<GroupLabelLogger> loggerPtr(new GroupLabelLogger(logPath, it->propName));
+                    if (! loggerPtr->open())
+                    {
+                        std::cerr << "failed in openning label logger on group property: " << it->propName << std::endl;
+                        return false;
+                    }
+                    groupLabelLoggerMap_[it->propName] = loggerPtr.release();
+                }
+                else
+                {
+                    std::cerr << "the label logger on group property " << it->propName
+                              << " is already opened before" << std::endl;
+                    return false;
+                }
+            }
         }
 
         /** tdt **/
@@ -1222,6 +1267,44 @@ bool MiningManager::getGroupRep(
     }
 
     return result;
+}
+
+bool MiningManager::clickGroupLabel(
+    const std::string& query,
+    const std::string& propName,
+    const std::string& propValue
+)
+{
+    GroupLabelLogger* logger = groupLabelLoggerMap_[propName];
+    if(logger)
+    {
+        return logger->logLabel(query, propValue);
+    }
+    else
+    {
+        LOG(ERROR) << "the logger is not initialized for group property: " << propName;
+        return false;
+    }
+}
+
+bool MiningManager::getFreqGroupLabel(
+    const std::string& query,
+    const std::string& propName,
+    int limit,
+    std::vector<std::string>& propValueVec,
+    std::vector<int>& freqVec
+)
+{
+    GroupLabelLogger* logger = groupLabelLoggerMap_[propName];
+    if(logger)
+    {
+        return logger->getFreqLabel(query, limit, propValueVec, freqVec);
+    }
+    else
+    {
+        LOG(ERROR) << "the logger is not initialized for group property: " << propName;
+        return false;
+    }
 }
 
 bool MiningManager::GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list)
