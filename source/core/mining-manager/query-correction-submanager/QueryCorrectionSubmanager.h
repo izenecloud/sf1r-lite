@@ -15,7 +15,8 @@
 #define _QUERY_CORRECTION_SUBMANAGER_H_
 #include <log-manager/LogManager.h>
 #include <query-manager/QueryManager.h>
-#include "ChineseQueryCorrection.h"
+// #include "ChineseQueryCorrection.h"
+#include <idmlib/query-correction/cn_query_correction.h>
 #include "EkQueryCorrection.h"
 #include <boost/noncopyable.hpp>
 #include <sdb/SequentialDB.h>
@@ -82,12 +83,12 @@ public:
 
     bool getPinyin(const izenelib::util::UString& hanzis,
                    std::vector<izenelib::util::UString>& pinyin);
-
-    bool pinyinSegment(const string& str,
-                       vector<string>& result) ;
-
+// 
+//     bool pinyinSegment(const string& str,
+//                        vector<string>& result) ;
+// 
     bool isPinyin(const izenelib::util::UString& str);
-
+// 
     void updateCogramAndDict(const std::list<std::pair<izenelib::util::UString, uint32_t> >& recentQueryList);
 
     void updateCogramAndDict(const std::string& collectionName, const std::list<std::pair<izenelib::util::UString, uint32_t> >& recentQueryList);
@@ -100,9 +101,11 @@ protected:
      */
     bool initialize();
 
-    bool stopHere(const izenelib::util::UString& query);
+//     bool stopHere(const izenelib::util::UString& query);
+    
+    bool getRefinedToken_(const std::string& collectionName, const izenelib::util::UString& token, izenelib::util::UString& result);
 
-    bool inDict_(const izenelib::util::UString& ustr);
+    
 
 private:
     std::string path_;
@@ -117,8 +120,8 @@ private:
 
     boost::mutex logMutex_;
 
-    //Chinese CorrectionManager mgr_;
-    ChineseQueryCorrection cmgr_;
+    idmlib::qc::CnQueryCorrection cmgr_;
+//     ChineseQueryCorrection cmgr_;
 
     //English or Korean Query CorrectionManager
     EkQueryCorrection ekmgr_;
