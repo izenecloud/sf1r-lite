@@ -67,8 +67,6 @@ public:
     );
 
 private:
-    std::string dirPath_;
-
     typedef izenelib::sdb::unordered_sdb_tc<std::string, LabelCounter, ReadWriteLock> DBType;
     DBType container_;
 };

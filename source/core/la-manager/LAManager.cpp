@@ -98,9 +98,10 @@ namespace sf1r
 
         /*if( isCaseSensitive )
         {*/
-            pLA->process( text, termList );
             if (isSynonymInclude)
-                pLA->processSynonym( termList );
+                pLA->processSynonym( text, termList );
+            else
+                pLA->process( text, termList );
         /*}
         else
         {

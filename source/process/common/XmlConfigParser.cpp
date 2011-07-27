@@ -1041,6 +1041,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
 
     params.Get("Sia/triggerqa", indexBundleConfig.bTriggerQA_);
     params.Get<std::size_t>("Sia/doccachenum", indexBundleConfig.documentCacheNum_);
+    params.Get<std::size_t>("Sia/searchcachenum", indexBundleConfig.searchCacheNum_);	
     params.Get<std::size_t>("Sia/filtercachenum", indexBundleConfig.filterCacheNum_);
     params.GetString("LanguageIdentifier/dbpath", indexBundleConfig.languageIdentifierDbPath_, "");
 }
@@ -1285,11 +1286,6 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
           Iterator<Element> it( "Property" );
           for ( it = it.begin( task_node ); it != it.end(); it++ )
           {
-              if (++propNum > 1)
-              {
-                  throw XmlConfigParserException("in <Rerank> Config, at most one <Property> is allowed.");
-              }
-
               getAttribute( it.Get(), "name", property_name );
               std::vector<GroupConfig>& group_properties = mining_schema.group_properties;
               bool gottype = false;
@@ -1307,6 +1303,27 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
               }
               mining_schema.prop_rerank_property.propName = property_name;
               mining_schema.property_rerank_enable = true;
+          }
+          propNum = 0;
+          Iterator<Element> bit( "Boosting" );
+          for ( bit = bit.begin( task_node ); bit != bit.end(); bit++ )
+          {
+              getAttribute( bit.Get(), "name", property_name );
+              std::vector<GroupConfig>& group_properties = mining_schema.group_properties;
+              bool gottype = false;
+              for(std::vector<GroupConfig>::iterator git = group_properties.begin(); git != group_properties.end(); ++git)
+              	{
+              	    if(git->propName == property_name)
+              	    {
+              	        gottype = true;
+                       break;
+              	    }
+              	}
+              if( !gottype )
+              {
+                  throw XmlConfigParserException("<Boosting> ["+property_name+"] in <Rerank> is not string type.");
+              }
+              mining_schema.prop_rerank_property.boostingPropName = property_name;
           }
       }
 

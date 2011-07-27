@@ -15,7 +15,8 @@ class PropertyRerankConfig
 public:
     /// property name
     std::string propName;
-
+    /// boosting property name
+    std::string boostingPropName;
 private:
     friend class boost::serialization::access;
 
@@ -23,6 +24,7 @@ private:
     void serialize( Archive & ar, const unsigned int version )
     {
         ar & propName;
+        ar & boostingPropName;
     }
 };
 

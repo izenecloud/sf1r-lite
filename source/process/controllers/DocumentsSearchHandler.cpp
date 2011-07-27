@@ -177,8 +177,6 @@ void DocumentsSearchHandler::search()
                 }
                 else
                 {
-                    const bool kInvalidSearchInLabel = false;
-                    BOOST_ASSERT(kInvalidSearchInLabel);
                     response_.addError("Invalid search in label.");
                     return;
                 }
@@ -662,8 +660,6 @@ bool DocumentsSearchHandler::validateSearchResult(
                               siaResult.count_,
                               summaryPropertySize))
     {
-        const bool kMalformedSearchResult = false;
-        BOOST_ASSERT(kMalformedSearchResult);
         response_.addError("Malformed search result.");
         return false;
     }

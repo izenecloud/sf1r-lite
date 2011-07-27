@@ -246,7 +246,8 @@
 	<xs:element name="Rerank">
 		<xs:complexType>
 			<xs:sequence>
-				<xs:element name="Property" type="PropertyType" minOccurs="0" maxOccurs="1"/>
+				<xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="1"/>
+				<xs:element name="Boosting" type="PropertyType" minOccurs="0" maxOccurs="1"/>
 			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
