@@ -308,13 +308,6 @@ bool MiningManager::open()
             }
         }
 
-        /** property_rerank **/
-        if( mining_schema_.group_enable)
-        {
-            groupReranker_ = new faceted::PropertyDiversityReranker(mining_schema_.prop_rerank_property.propName, groupManager_);
-            searchManager_->set_reranker(boost::bind(&faceted::PropertyDiversityReranker::rerank,groupReranker_,_1,_2));
-        }
-
         /** group label log */
         if( mining_schema_.group_enable )
         {
@@ -348,6 +341,23 @@ bool MiningManager::open()
                               << " is already opened before" << std::endl;
                     return false;
                 }
+            }
+        }
+
+        /** property_rerank **/
+        if( mining_schema_.group_enable)
+        {
+            std::string boostingProperty = mining_schema_.prop_rerank_property.boostingPropName;
+            groupReranker_ = new faceted::PropertyDiversityReranker(mining_schema_.prop_rerank_property.propName, groupManager_,boostingProperty);
+            GroupLabelLogger* logger = groupLabelLoggerMap_[boostingProperty];
+            if(logger) 
+            {
+                groupReranker_->setGroupLabelLogger(logger);
+                searchManager_->set_dynamic_reranker(boost::bind(&faceted::PropertyDiversityReranker::rerank,groupReranker_,_1,_2,_3));
+            }
+            else
+            {
+                searchManager_->set_static_reranker(boost::bind(&faceted::PropertyDiversityReranker::simplererank,groupReranker_,_1,_2));				
             }
         }
 

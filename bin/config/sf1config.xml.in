@@ -35,7 +35,7 @@
           <!-- In unigram searching mode (unigramsearchmode="y"), searching performs on unigram terms, while ranking performs on word segments. 
                Make sure unigram terms have been indexed for Property (LA for Indexing is "la_sia_with_unigram"), or search(retrieve) may fail.
           -->
-          <Sia triggerqa="n" doccachenum="20000" filtercachenum="1000" encoding="UTF-8" wildcardtype="unigram" indexunigramproperty="y" unigramsearchmode="n" multilanggranularity="field" />
+          <Sia triggerqa="n" doccachenum="20000" searchcachenum="1000" filtercachenum="1000" encoding="UTF-8" wildcardtype="unigram" indexunigramproperty="y" unigramsearchmode="n" multilanggranularity="field" />
           
           <LanguageIdentifier dbpath="@ilplib_LANGUAGEIDENTIFIER_DB@"/>
 
