@@ -392,7 +392,7 @@ void DocumentsGetHandler::doGet()
 {
     // TODO: cache
 
-    RawTextResultFromSIA result;
+    RawTextResultFromMIA result;
 
     if (!indexSearchService_->getDocumentsByIds(actionItem_, result))
     {

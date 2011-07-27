@@ -30,7 +30,7 @@ class DocumentsRenderer : public driver::Renderer
 public:
     void renderDocuments(
         const std::vector<DisplayProperty> propertyList,
-        const RawTextResultFromSIA& siaResult,
+        const RawTextResultFromMIA& result,
         Value& resources
     );
 
