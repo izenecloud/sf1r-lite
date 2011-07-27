@@ -8,6 +8,7 @@
 *.orig
 *.jar
 *.class
+*.vim
 tags
 /build
 /source/cmake
