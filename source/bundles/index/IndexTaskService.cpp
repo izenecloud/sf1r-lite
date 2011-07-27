@@ -1176,7 +1176,8 @@ bool IndexTaskService::prepareDocument_(
                         }
                         catch( const boost::bad_lexical_cast & )
                         {
-                            sflog->error(SFL_IDX,10140, docId);
+                            LOG(WARNING) << "Float casting error : "<<str<<" in doc "<<docId;
+
                         }
                         indexDocument.insertProperty(indexerPropertyConfig, value);
                     }

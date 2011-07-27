@@ -88,6 +88,9 @@ public:
     /// @brief document cache number
     size_t documentCacheNum_;
 
+    /// @brief searchmanager cache number
+    size_t searchCacheNum_;
+
     /// @brief filter cache number
     size_t filterCacheNum_;
 

@@ -20,7 +20,27 @@
 namespace sf1r
 {
 
-const unsigned SEARCH_MANAGER_CACHE_SIZE = 1000;
+bool action_rerankable(SearchKeywordOperation& actionOperation)
+{
+    bool rerank = false;
+    if (actionOperation.actionItem_.env_.taxonomyLabel_.empty() &&
+	actionOperation.actionItem_.env_.nameEntityItem_.empty() &&
+	actionOperation.actionItem_.env_.groupLabels_.empty() &&
+	actionOperation.actionItem_.env_.attrLabels_.empty())
+    {
+        std::vector<std::pair<std::string , bool> >& sortPropertyList = actionOperation.actionItem_.sortPriorityList_;
+        if(sortPropertyList.empty())
+            rerank = true;
+        else if (sortPropertyList.size() == 1)
+        {
+            std::string fieldNameL = sortPropertyList[0].first;
+            boost::to_lower(fieldNameL);
+            if (fieldNameL == "_rank")
+                rerank = true;
+        }
+    }
+    return rerank;
+}
 
 SearchManager::SearchManager(std::set<PropertyConfig, PropertyComp> schema,
                              const boost::shared_ptr<IDManager>& idManager,
@@ -35,14 +55,15 @@ SearchManager::SearchManager(std::set<PropertyConfig, PropertyComp> schema,
         , rankingManagerPtr_(rankingManager)
         , queryBuilder_()
         , pSorterCache_(0)
-        , reranker_(0)
+        , dynamic_reranker_(0)
+        , static_reranker_(0)
 {
     for (std::set<PropertyConfig, PropertyComp>::iterator iter = schema.begin(); iter != schema.end(); ++iter)
         schemaMap_[iter->getName()] = *iter;
 
     pSorterCache_ = new SortPropertyCache(indexManagerPtr_.get(), config);
     queryBuilder_.reset(new QueryBuilder(indexManager,documentManager,idManager,schemaMap_, config->filterCacheNum_));
-    cache_.reset(new SearchCache(SEARCH_MANAGER_CACHE_SIZE));
+    cache_.reset(new SearchCache(config->searchCacheNum_));
     rankingManagerPtr_->getPropertyWeightMap(propertyWeightMap_);
 }
 
@@ -83,7 +104,7 @@ void SearchManager::chdir(const boost::shared_ptr<IDManager>& idManager,
     // clear cache
     delete pSorterCache_;
     pSorterCache_ = new SortPropertyCache(indexManagerPtr_.get(), config);
-    cache_.reset(new SearchCache(SEARCH_MANAGER_CACHE_SIZE));
+    cache_.reset(new SearchCache(config->searchCacheNum_));
 }
 
 bool SearchManager::search(SearchKeywordOperation& actionOperation,
@@ -103,14 +124,13 @@ START_PROFILER ( cacheoverhead )
 
     if (cache_->get(identity, rankScoreList, customRankScoreList, docIdList, totalCount))
     {
-        // cache hit, ignore topK
-#if 0 ///commonSet is not required any more
-        docIdList.resize(commonSet.size());
-        std::transform(commonSet.begin(), commonSet.end(),
-                       docIdList.begin(),
-                       boost::bind(&DocumentItem::id, _1));
-#endif
 STOP_PROFILER ( cacheoverhead )
+        // for dynamic reranker, the cached search results require to be performed      
+        if(dynamic_reranker_ &&
+            customRankScoreList.empty() &&
+            action_rerankable(actionOperation))
+            dynamic_reranker_(docIdList,rankScoreList,actionOperation.actionItem_.env_.queryString_);           
+
         return true;
     }
 
@@ -508,7 +528,8 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                 std::fill(rankScoreList.begin(), rankScoreList.end(), 1.0F);
             }
 
-            std::vector<std::pair<std::string , bool> >& sortPropertyList = actionOperation.actionItem_.sortPriorityList_;
+            ///rerank is only used for pure ranking
+            std::vector<std::pair<std::string , bool> >& sortPropertyList = actionOperation.actionItem_.sortPriorityList_;            
             bool rerank = false;
             if(!pSorter) rerank = true;
             else if (sortPropertyList.size() == 1)
@@ -517,9 +538,14 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                 boost::to_lower(fieldNameL);
                 if (fieldNameL == "_rank")
                     rerank = true;
-	     }
-            ///rerank is only used for pure ranking
-            if(rerank && reranker_) reranker_(docIdList,rankScoreList);
+             }
+            if(rerank)
+            {
+		if(dynamic_reranker_) 
+                  dynamic_reranker_(docIdList,rankScoreList,actionOperation.actionItem_.env_.queryString_);
+		else if(static_reranker_) 
+                  static_reranker_(docIdList,rankScoreList);
+            }
         }
         catch (std::exception& e)
         {
