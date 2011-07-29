@@ -44,6 +44,7 @@ IndexSearchService::IndexSearchService()
     analysisInfo_.tokenizerNameList_.insert("tok_divide");
     analysisInfo_.tokenizerNameList_.insert("tok_unite");
 
+#ifdef DISTRIBUTED_SEARCH
     workerService_.reset(new WorkerService(this));
     if (sf1r::SF1Config::get()->isEnableWorkerServer())
     {
@@ -55,6 +56,7 @@ IndexSearchService::IndexSearchService()
     aggregatorManager_.reset(new AggregatorManager());
     aggregatorManager_->setWorkerListConfig(sf1r::SF1Config::get()->getAggregatorConfig());
     aggregatorManager_->setLocalWorkerService(workerService_);
+#endif
 }
 
 IndexSearchService::~IndexSearchService()
