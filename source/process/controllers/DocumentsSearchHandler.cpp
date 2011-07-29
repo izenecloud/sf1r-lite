@@ -136,7 +136,7 @@ void DocumentsSearchHandler::search()
             if (doSearch(searchResult))
             {
                 GetDocumentsByIdsActionItem getActionItem;
-                RawTextResultFromSIA rawTextResult;
+                RawTextResultFromMIA rawTextResult;
                 std::size_t totalCount = 0;
 
                 if (!actionItem_.env_.taxonomyLabel_.empty())
@@ -359,20 +359,40 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInAttr(
     return totalCount;
 }
 
+void DocumentsSearchHandler::filterDocIdList(const KeywordSearchResult& origin, const std::vector<sf1r::docid_t>& id_list, KeywordSearchResult& new_result)
+{
+    
+}
+
 bool DocumentsSearchHandler::doGet(
     const GetDocumentsByIdsActionItem& getActionItem,
-    RawTextResultFromSIA& rawTextResult
+    RawTextResultFromMIA& rawTextResult
 )
 {
-    bool requestSent = indexSearchService_->getDocumentsByIds(
-                           getActionItem, rawTextResult
-                       );
-
+    bool requestSent = indexSearchService_->getDocumentsByIds(getActionItem, rawTextResult);
     if (!requestSent)
     {
         response_.addError("Internal communication error.");
         return false;
     }
+    //add dd result
+    rawTextResult.numberOfDuplicatedDocs_.resize(rawTextResult.idList_.size());
+    for(uint32_t i=0;i<rawTextResult.idList_.size();i++)
+    {
+        uint32_t docid = rawTextResult.idList_[i];
+        std::vector<uint32_t> dd_list;
+        requestSent = miningSearchService_->getDuplicateDocIdList(docid, dd_list);
+        if (!requestSent)
+        {
+            response_.addError("Internal communication error.");
+            return false;
+        }
+        rawTextResult.numberOfDuplicatedDocs_[i] = dd_list.size();
+    }
+    
+    //TODO add other information
+    
+    
 
     if (!rawTextResult.error_.empty())
     {
@@ -692,7 +712,7 @@ bool DocumentsSearchHandler::validateTextList(
 // }
 
 void DocumentsSearchHandler::renderDocuments(
-    const RawTextResultFromSIA& rawTextResult
+    const RawTextResultFromMIA& rawTextResult
 )
 {
     renderer_.renderDocuments(

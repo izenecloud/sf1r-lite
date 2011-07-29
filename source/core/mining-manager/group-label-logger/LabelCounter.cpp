@@ -48,15 +48,13 @@ void LabelCounter::increment(const std::string& propValue)
         topValue_ = propValue;
         topFreq_ = newFreq;
     }
-
-    DLOG(INFO) << "propValue: " << propValue << ", newFreq: " << newFreq;
 }
 
 void LabelCounter::getFreqLabel(
     int limit,
     std::vector<std::string>& propValueVec,
     std::vector<int>& freqVec
-)
+) const
 {
     if (limit < 1)
         return;
@@ -67,8 +65,6 @@ void LabelCounter::getFreqLabel(
         {
             propValueVec.push_back(topValue_);
             freqVec.push_back(topFreq_);
-
-            DLOG(INFO) << "topValue_: " << topValue_ << ", topFreq_: " << topFreq_;
         }
         return;
     }

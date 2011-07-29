@@ -38,7 +38,7 @@ public:
         int limit,
         std::vector<std::string>& propValueVec,
         std::vector<int>& freqVec
-    );
+    ) const;
 
     template<class Archive>
     void serialize(Archive& ar, const unsigned int version)

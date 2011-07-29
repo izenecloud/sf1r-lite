@@ -73,6 +73,16 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
   ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_attr_manager")
+
+  ADD_EXECUTABLE(t_GroupLabelLogger
+    Runner.cpp
+    t_GroupLabelLogger.cpp
+  )
+  TARGET_LINK_LIBRARIES(t_GroupLabelLogger ${libs})
+  SET_TARGET_PROPERTIES(t_GroupLabelLogger PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_GroupLabelLogger")
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
 
 INCLUDE_DIRECTORIES(

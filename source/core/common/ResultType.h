@@ -249,13 +249,38 @@ namespace sf1r {
             //        &fullTextOfDocumentInOnePage_&rawTextOfDocument_&rawTextOfSummary_
             
             DATA_IO_LOAD_SAVE(RawTextResultFromSIA, 
-                    &fullTextOfDocumentInPage_&snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_
+                    &fullTextOfDocumentInPage_&snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_&idList_
                     &errno_&error_
                     );
 
             MSGPACK_DEFINE(fullTextOfDocumentInPage_,snippetTextOfDocumentInPage_,rawTextOfSummaryInPage_,
                     idList_,errno_,error_);
     }; // end - class RawTextResultFromSIA
+    
+    
+    class RawTextResultFromMIA : public RawTextResultFromSIA // Log : 2011.07.27
+    {
+        public:
+
+            std::vector<count_t> numberOfDuplicatedDocs_;
+
+            std::vector<count_t> numberOfSimilarDocs_;
+            
+            
+
+            //LOG: changed the names for consistentcy with KeywordResultItem
+            //DATA_IO_LOAD_SAVE(RawTextResultFromSIA, 
+            //        &fullTextOfDocumentInOnePage_&rawTextOfDocument_&rawTextOfSummary_
+            
+            DATA_IO_LOAD_SAVE(RawTextResultFromMIA, 
+                    &fullTextOfDocumentInPage_&snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_&idList_
+                    &numberOfDuplicatedDocs_&numberOfSimilarDocs_
+                    &errno_&error_
+                    );
+
+            MSGPACK_DEFINE(fullTextOfDocumentInPage_,snippetTextOfDocumentInPage_,rawTextOfSummaryInPage_,                    idList_, numberOfDuplicatedDocs_, numberOfSimilarDocs_
+            ,errno_,error_);
+    }; // end - class RawTextResultFromMIA
 
     /// @brief similar document id list and accompanying image id list.
     class SimilarImageDocIdList

@@ -26,17 +26,17 @@ extern int TOP_K_NUM;
  */
 void DocumentsRenderer::renderDocuments(
     const std::vector<DisplayProperty> propertyList,
-    const RawTextResultFromSIA& siaResult,
+    const RawTextResultFromMIA& result,
     Value& resources
 )
 {
-    std::size_t resultCount = siaResult.idList_.size();
+    std::size_t resultCount = result.idList_.size();
 
     for (std::size_t i = 0; i < resultCount; ++i)
     {
         Value& newResource = resources();
 
-        newResource[Keys::_id] = siaResult.idList_[i];
+        newResource[Keys::_id] = result.idList_[i];
 
         // full text and snippet properties
         std::size_t summaryIndex = 0;
@@ -45,7 +45,7 @@ void DocumentsRenderer::renderDocuments(
         {
             const std::string& propertyName = propertyList[p].propertyString_;
 
-            siaResult.snippetTextOfDocumentInPage_[p][i].convertString(
+            result.snippetTextOfDocumentInPage_[p][i].convertString(
                 propertyValueBuffer, kEncoding
             );
 
@@ -59,8 +59,8 @@ void DocumentsRenderer::renderDocuments(
 
             if (propertyList[p].isSummaryOn_)
             {
-                BOOST_ASSERT(summaryIndex < siaResult.rawTextOfSummaryInPage_.size());
-                siaResult.rawTextOfSummaryInPage_[summaryIndex][i].convertString(
+                BOOST_ASSERT(summaryIndex < result.rawTextOfSummaryInPage_.size());
+                result.rawTextOfSummaryInPage_[summaryIndex][i].convertString(
                     propertyValueBuffer, kEncoding
                 );
                 const std::string& summaryPropertyName =
@@ -68,6 +68,12 @@ void DocumentsRenderer::renderDocuments(
                 newResource[summaryPropertyName] = propertyValueBuffer;
                 ++summaryIndex;
             }
+        }
+        if (result.numberOfDuplicatedDocs_.size()
+            == result.idList_.size())
+        {
+            newResource[Keys::_duplicated_document_count] =
+                result.numberOfDuplicatedDocs_[i];
         }
     }
 }

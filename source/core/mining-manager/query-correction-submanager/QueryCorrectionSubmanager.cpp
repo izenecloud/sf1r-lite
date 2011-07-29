@@ -182,7 +182,14 @@ bool QueryCorrectionSubmanager::getRefinedToken_(const std::string& collectionNa
     {
         if ( ekmgr_.getRefinedQuery(collectionName, token, result) )
         {
-            return true;
+            if(result.length()>0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
     return false;
