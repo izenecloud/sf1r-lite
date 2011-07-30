@@ -24,6 +24,7 @@
 #include  <list>
 #include  <common/SFLogger.h>
 #include  <fstream>
+#include <boost/algorithm/string/trim.hpp>
 namespace
 {
 
@@ -62,11 +63,9 @@ void EkQueryCorrection::initDictHash(izenelib::am::rde_hash<
         return;
     }
     std::string w;
-    while (input.good())
+    while (getline(input, w))
     {
-        getline(input, w);
-        if (w.find("\r") != std::string::npos)
-            w = w.substr(0, w.length() - 1);
+        boost::algorithm::trim(w);
         izenelib::util::UString srcWord(w, izenelib::util::UString::UTF_8);
         srcWord.toLowerString();
         hashdb.insert(srcWord, true);
@@ -116,6 +115,55 @@ void EkQueryCorrection::constructDAutoMata(const std::string& path)
 
 }
 
+bool EkQueryCorrection::ReloadEnResource()
+{
+    boost::lock_guard<boost::shared_mutex> lock(mutex_);
+    dictENHash_.clear();
+    initDictHash(dictENHash_, dictEN_);
+    
+    if(s_!=NULL)
+    {
+        delete s_;
+        s_ = NULL;
+    }
+    DAutomata autoMataD;
+    s_ = autoMataD.buildTrie(dictEN_, letters_, alphabet_, lexicon_);
+    if (!s_)
+    {
+        DLOG(WARNING)
+        << "[Waring]: english dictionary automata build failed. Please ensure that you set the path SpellerSupport correctly in the configuration file."
+        << " And ensure the file dictionary_english is putted there."
+        << std::endl;
+        activate_ = false;
+        return false;
+    }
+    return true;
+}
+    
+bool EkQueryCorrection::ReloadKrResource()
+{
+    boost::lock_guard<boost::shared_mutex> lock(mutex_);
+    dictKRHash_.clear();
+    initDictHash(dictKRHash_, dictKR_);
+    if(s_k_!=NULL)
+    {
+        delete s_k_;
+        s_k_ = NULL;
+    }
+    DAutomata autoMataD;
+    s_k_ = autoMataD.buildTrie(dictKR_, jomas_, jomaMap_, lexicon_);
+    if (!s_k_)
+    {
+        DLOG(WARNING)
+        << "[Waring]: korean dictionary automata build failed. Please ensure that you set the path SpellerSupport correctly in the configuration file."
+        << " And ensure the file dictionary_korean is putted there."
+        << std::endl;
+        activate_ = false;
+        return false;
+    }
+    return true;
+}
+
 //Initialize some member variables
 bool EkQueryCorrection::initialize()
 {
@@ -134,9 +182,35 @@ bool EkQueryCorrection::initialize()
         activate_ = false;
         return false;
     }
-    initDictHash(dictENHash_, dictEN_);
-    initDictHash(dictKRHash_, dictKR_);
-    constructDAutoMata( path_);
+    
+    matrix_ = path_ + "/Matrix.txt";
+    model_.assignMatrix(matrix_.c_str());
+    UAutomata autoMataU(max_ed_);
+    autoMataU.buildAutomaton(states_, autoMaton_);
+    
+    if(!ReloadEnResource())
+    {
+        std::cout<<"Load En Resource failed"<<std::endl;
+        activate_ = false;
+        return false;
+    }
+    if(!ReloadKrResource())
+    {
+        std::cout<<"Load Kr Resource failed"<<std::endl;
+        activate_ = false;
+        return false;
+    }
+    
+    //start update
+    uint32_t interval = 30;
+    update_thread_.setCheckInterval(interval);
+    boost::shared_ptr<la::UpdatableDict> updater(new EnUpdatableDict(this) );
+    update_thread_.addRelatedDict(dictEN_.c_str(), updater);
+    update_thread_.start();
+    std::cout<<"Start checking English dictionary on interval "<<interval<<std::endl;
+//     initDictHash(dictENHash_, dictEN_);
+//     initDictHash(dictKRHash_, dictKR_);
+//     constructDAutoMata( path_);
 
     return true;
 }
@@ -155,6 +229,7 @@ EkQueryCorrection::~EkQueryCorrection()
 bool EkQueryCorrection::getRefinedQuery(const std::string& collectionName,
                                         const UString& queryUString, UString& refinedQueryUString)
 {
+    boost::shared_lock<boost::shared_mutex> lock(mutex_);
     std::vector<UString> queryTokens;
     Tokenize(queryUString, queryTokens);
     bool needCorrect = false;
@@ -430,8 +505,7 @@ void EkQueryCorrection::updateCogramAndDict(
     const std::string& collectionName,
     const std::list<std::pair<izenelib::util::UString, uint32_t> >& recentQueryList)
 {
-    boost::mutex::scoped_lock scopedLock(logMutex_);
-
+    boost::lock_guard<boost::shared_mutex> lock(mutex_);
     DLOG(INFO) << "updateCogramAndDict..." << endl;
     const std::list<std::pair<izenelib::util::UString, uint32_t> >& queryList =
         recentQueryList;

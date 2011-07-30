@@ -12,8 +12,10 @@
 #include "DAutomata.h"
 #include "CandidateScoreItem.h"
 #include "ErrorModel.h"
+#include "en_updatable_dict.h"
 #include <boost/noncopyable.hpp>
 #include <sdb/SequentialDB.h>
+#include <la/dict/UpdateDictThread.h>
 
 namespace sf1r
 {
@@ -63,6 +65,10 @@ public:
     {
         cogram_->fillCache();
     }
+    
+    bool ReloadEnResource();
+    
+    bool ReloadKrResource();
 
 protected:
 
@@ -236,8 +242,10 @@ private:
     izenelib::am::rde_hash<izenelib::util::UString, bool> dictENHash_;
 
     izenelib::am::rde_hash<izenelib::util::UString, bool> dictKRHash_;
+    
+    la::UpdateDictThread update_thread_;
 
-    boost::mutex logMutex_;
+    boost::shared_mutex mutex_;
 
 };
 

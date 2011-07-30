@@ -28,6 +28,7 @@
 #include <search-manager/CustomRanker.h>
 #include <mining-manager/faceted-submanager/GroupParam.h>
 
+#include <common/sf1_msgpack_serialization_types.h>
 #include <3rdparty/msgpack/msgpack.hpp>
 #include <util/izene_serialization.h>
 #include <sstream>
@@ -536,8 +537,8 @@ class KeywordSearchActionItem
                 &strExp_&paramConstValueMap_&paramPropertyValueMap_);
 
         /// msgpack serializtion
-        MSGPACK_DEFINE(env_,refinedQueryString_,collectionName_,/*rankingType_, TODO*/pageInfo_,languageAnalyzerInfo_,
-                searchPropertyList_,removeDuplicatedDocs_,displayPropertyList_,sortPriorityList_,/*filteringList_, TODO*/
+        MSGPACK_DEFINE(env_,refinedQueryString_,collectionName_,rankingType_,pageInfo_,languageAnalyzerInfo_,
+                searchPropertyList_,removeDuplicatedDocs_,displayPropertyList_,sortPriorityList_,filteringList_,
                 groupParam_,strExp_,paramConstValueMap_,paramPropertyValueMap_);
 
     private:
@@ -606,7 +607,7 @@ class GetDocumentsByIdsActionItem
         )
 
         MSGPACK_DEFINE(env_,languageAnalyzerInfo_,collectionName_,displayPropertyList_,
-                idList_,docIdList_,propertyName_/*,propertyValueList_,filteringList_ TODO*/);
+                idList_,docIdList_,propertyName_,propertyValueList_,filteringList_);
 
     private:
         friend class boost::serialization::access;
