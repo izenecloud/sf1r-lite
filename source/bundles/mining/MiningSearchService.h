@@ -55,17 +55,6 @@ public:
 
     bool DefineDocCategory(const std::vector<faceted::ManmadeDocCategoryItem>& items);
 
-    bool getGroupRep(
-        const std::vector<unsigned int>& docIdList,
-        const std::vector<std::string>& groupPropertyList,
-        const std::vector<std::pair<std::string, std::string> >& groupLabelList,
-        faceted::OntologyRep& groupRep,
-        bool isAttrGroup,
-        int attrGroupNum,
-        const std::vector<std::pair<std::string, std::string> >& attrLabelList,
-        faceted::OntologyRep& attrRep
-    );
-
     /**
      * Log the group label click.
      * @param query user query

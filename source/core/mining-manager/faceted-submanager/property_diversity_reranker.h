@@ -24,14 +24,12 @@ class GroupLabelLogger;
 
 NS_FACETED_BEGIN
 
-using sf1r::faceted::GroupManager;
-
 class PropertyDiversityReranker
 {
 public:
     PropertyDiversityReranker(
         const std::string& property,
-        GroupManager* groupManager,
+        const GroupManager::PropValueMap& propValueMap,
         const std::string& boostingProperty
     );
 
@@ -53,7 +51,7 @@ public:
     }
 private:
     std::string property_;
-    GroupManager* groupManager_;
+    const GroupManager::PropValueMap& propValueMap_;
     GroupLabelLogger* groupLabelLogger_;
     std::string boostingProperty_;
 };

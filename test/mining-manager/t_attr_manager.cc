@@ -9,8 +9,11 @@
 #include <document-manager/DocumentManager.h>
 #include <document-manager/Document.h>
 #include <mining-manager/faceted-submanager/attr_manager.h>
+#include <mining-manager/faceted-submanager/GroupParam.h>
+#include <mining-manager/faceted-submanager/GroupFilterBuilder.h>
+#include <mining-manager/faceted-submanager/GroupFilter.h>
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
@@ -152,6 +155,29 @@ void createAttrMap(
     }
 }
 
+void createGroupRep(
+    const vector<unsigned int>& docIdList,
+    const faceted::AttrManager* attrManager,
+    faceted::OntologyRep& attrRep
+)
+{
+    faceted::GroupFilterBuilder filterBuilder(NULL, attrManager);
+    faceted::GroupParam groupParam;
+    groupParam.isAttrGroup_ = true;
+
+    faceted::GroupFilter* filter = filterBuilder.createFilter(groupParam);
+    for (vector<unsigned int>::const_iterator it = docIdList.begin();
+        it != docIdList.end(); ++it)
+    {
+        BOOST_CHECK(filter->test(*it));
+    }
+
+    faceted::OntologyRep groupRep;
+    filter->getGroupRep(groupRep, attrRep);
+
+    delete filter;
+}
+
 void checkGroupRep(
     const faceted::OntologyRep& groupRep,
     AttrMap& attrMap
@@ -185,7 +211,6 @@ void checkGroupRep(
             BOOST_TEST_MESSAGE("check attribute name: " << attrName
                                << ", doc count: " << item.doc_count);
             BOOST_CHECK_EQUAL(item.doc_count, attrMap[attrName].docCount_);
-            BOOST_CHECK_EQUAL(item.doc_id_list.size(), 0U);
         }
         else
         {
@@ -196,8 +221,6 @@ void checkGroupRep(
                                << ", value: " << convertBuffer
                                << ", doc count: " << item.doc_count);
             BOOST_CHECK_EQUAL(item.doc_count, docIdList.size());
-            BOOST_CHECK_EQUAL_COLLECTIONS(item.doc_id_list.begin(), item.doc_id_list.end(),
-                                          docIdList.begin(), docIdList.end());
         }
     }
 }
@@ -339,9 +362,8 @@ void checkAttrManager(
         docIdList.push_back(it->docId_);
     }
 
-    std::vector<std::pair<std::string, std::string> > labelList;
     faceted::OntologyRep groupRep;
-    BOOST_CHECK(attrManager->getGroupRep(docIdList, labelList, NULL, 0, groupRep));
+    createGroupRep(docIdList, attrManager, groupRep);
 
     AttrMap attrMap;
     createAttrMap(docInputVec, attrMap);

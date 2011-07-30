@@ -30,7 +30,7 @@ using namespace izenelib::util;
 
 namespace sf1r
 {
-int TOP_K_NUM = 2000;
+int TOP_K_NUM = 1000;
 
 IndexSearchService::IndexSearchService()
 {
@@ -155,6 +155,8 @@ bool IndexSearchService::getSearchResult(
                 resultItem.topKRankScoreList_,
                 resultItem.topKCustomRankScoreList_,
                 resultItem.totalCount_,
+                resultItem.groupRep_,
+                resultItem.attrRep_,
                 TOP_K_NUM,
                 startOffset
                 ))
@@ -179,6 +181,8 @@ bool IndexSearchService::getSearchResult(
                                         resultItem.topKRankScoreList_,
                                         resultItem.topKCustomRankScoreList_,
                                         resultItem.totalCount_,
+                                        resultItem.groupRep_,
+                                        resultItem.attrRep_,
                                         TOP_K_NUM,
                                         startOffset
                                         ))
@@ -203,6 +207,8 @@ bool IndexSearchService::getSearchResult(
                                     resultItem.topKRankScoreList_,
                                     resultItem.topKCustomRankScoreList_,
                                     resultItem.totalCount_,
+                                    resultItem.groupRep_,
+                                    resultItem.attrRep_,
                                     TOP_K_NUM,
                                     startOffset
                                     ))
@@ -266,14 +272,11 @@ FinishSearch:
     if( miningSearchService_ )
     {
         miningSearchService_->getSearchResult(resultItem);
-        miningSearchService_->getGroupRep(resultItem.topKDocs_,
-                                          actionItem.groupPropertyList_, actionItem.env_.groupLabels_, resultItem.groupRep_,
-                                          actionItem.isAttrGroup_, actionItem.attrGroupNum_, actionItem.env_.attrLabels_, resultItem.attrRep_);
 
         if (actionItem.env_.isLogGroupLabels_)
         {
             typedef std::vector<std::pair<std::string, std::string> > LabelVec;
-            const LabelVec& groupLabels = actionItem.env_.groupLabels_;
+            const LabelVec& groupLabels = actionItem.groupParam_.groupLabels_;
             for (LabelVec::const_iterator it = groupLabels.begin();
                 it != groupLabels.end(); ++it)
             {
@@ -364,6 +367,8 @@ bool IndexSearchService::processSearchAction(
                 resultItem.topKRankScoreList_,
                 resultItem.topKCustomRankScoreList_,
                 resultItem.totalCount_,
+                resultItem.groupRep_,
+                resultItem.attrRep_,
                 TOP_K_NUM,
                 startOffset
                 ))
@@ -388,6 +393,8 @@ bool IndexSearchService::processSearchAction(
                                         resultItem.topKRankScoreList_,
                                         resultItem.topKCustomRankScoreList_,
                                         resultItem.totalCount_,
+                                        resultItem.groupRep_,
+                                        resultItem.attrRep_,
                                         TOP_K_NUM,
                                         startOffset
                                         ))
@@ -412,6 +419,8 @@ bool IndexSearchService::processSearchAction(
                                     resultItem.topKRankScoreList_,
                                     resultItem.topKCustomRankScoreList_,
                                     resultItem.totalCount_,
+                                    resultItem.groupRep_,
+                                    resultItem.attrRep_,
                                     TOP_K_NUM,
                                     startOffset
                                     ))
@@ -483,9 +492,6 @@ bool IndexSearchService::getSummaryMiningResult(
     if( miningSearchService_ )
     {
         miningSearchService_->getSearchResult(resultItem);
-        miningSearchService_->getGroupRep(resultItem.topKDocs_,
-                                          actionItem.groupPropertyList_, actionItem.env_.groupLabels_, resultItem.groupRep_,
-                                          actionItem.isAttrGroup_, actionItem.attrGroupNum_, actionItem.env_.attrLabels_, resultItem.attrRep_);
     }
 
     return true;

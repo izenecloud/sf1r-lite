@@ -23,6 +23,7 @@ void makeQueryIdentity(
     identity.properties = item.searchPropertyList_;
     identity.sortInfo = item.sortPriorityList_;
     identity.filterInfo = item.filteringList_;
+    identity.groupParam = item.groupParam_;
     identity.strExp = item.strExp_;
     identity.paramConstValueMap = item.paramConstValueMap_;
     identity.paramPropertyValueMap = item.paramPropertyValueMap_;

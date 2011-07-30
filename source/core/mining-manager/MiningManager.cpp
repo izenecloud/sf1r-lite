@@ -19,10 +19,9 @@
 #include "faceted-submanager/ontology_rep_item.h"
 #include "faceted-submanager/ontology_rep.h"
 #include "faceted-submanager/group_manager.h"
-#include "faceted-submanager/group_label.h"
-#include "faceted-submanager/group_label_result.h"
 #include "faceted-submanager/attr_manager.h"
 #include "faceted-submanager/property_diversity_reranker.h"
+#include "faceted-submanager/GroupFilterBuilder.h"
 
 #include "group-label-logger/GroupLabelLogger.h"
 
@@ -308,6 +307,12 @@ bool MiningManager::open()
             }
         }
 
+        if (groupManager_ || attrManager_)
+        {
+            faceted::GroupFilterBuilder* filterBuilder = new faceted::GroupFilterBuilder(groupManager_, attrManager_);
+            searchManager_->setGroupFilterBuilder(filterBuilder);
+        }
+
         /** group label log */
         if( mining_schema_.group_enable )
         {
@@ -348,7 +353,7 @@ bool MiningManager::open()
         if( mining_schema_.group_enable)
         {
             std::string boostingProperty = mining_schema_.prop_rerank_property.boostingPropName;
-            groupReranker_ = new faceted::PropertyDiversityReranker(mining_schema_.prop_rerank_property.propName, groupManager_,boostingProperty);
+            groupReranker_ = new faceted::PropertyDiversityReranker(mining_schema_.prop_rerank_property.propName, groupManager_->getPropValueMap(),boostingProperty);
             GroupLabelLogger* logger = groupLabelLoggerMap_[boostingProperty];
             if(logger) 
             {
@@ -1224,59 +1229,6 @@ bool MiningManager::addFacetedResult_(KeywordSearchResult& miaInput)
     faceted_->GetSearcher()->GetRepresentation(miaInput.topKDocs_, miaInput.onto_rep_);
 
     return true;
-}
-
-bool MiningManager::getGroupRep(
-    const std::vector<unsigned int>& docIdList,
-    const std::vector<std::string>& groupPropertyList,
-    const std::vector<std::pair<std::string, std::string> >& groupLabelList,
-    faceted::OntologyRep& groupRep,
-    bool isAttrGroup,
-    int attrGroupNum,
-    const std::vector<std::pair<std::string, std::string> >& attrLabelList,
-    faceted::OntologyRep& attrRep
-)
-{
-    CREATE_SCOPED_PROFILER(groupby, "MIAProcess", "ProcessGetGroupRep");
-
-    boost::scoped_ptr<faceted::GroupLabel> groupLabelPtr;
-    bool doGroup = false;
-    if (mining_schema_.group_enable && !docIdList.empty() && !groupPropertyList.empty())
-    {
-        doGroup = true;
-        groupLabelPtr.reset(groupManager_->createGroupLabel(groupLabelList));
-    }
-
-    bool result = false;
-    if (isAttrGroup && mining_schema_.attr_enable)
-    {
-        izenelib::util::ClockTimer timer;
-        result = attrManager_->getGroupRep(docIdList, attrLabelList, groupLabelPtr.get(), attrGroupNum, attrRep);
-        LOG(INFO) << "attrby cost " << timer.elapsed() << " seconds";
-    }
-
-    if (doGroup)
-    {
-        izenelib::util::ClockTimer timer;
-
-        if (result && !attrLabelList.empty())
-        {
-            // get doc id list filter by attribute labels
-            faceted::GroupLabelResult labelResult(attrRep);
-            const std::pair<std::string, std::string>& labelPair = attrLabelList[0];
-            const std::vector<docid_t>& attrDocList = labelResult.selectLabel(labelPair.first, labelPair.second);
-
-            result = groupManager_->getGroupRep(attrDocList, groupPropertyList, groupLabelPtr.get(), groupRep);
-        }
-        else
-        {
-            result = groupManager_->getGroupRep(docIdList, groupPropertyList, groupLabelPtr.get(), groupRep);
-        }
-
-        LOG(INFO) << "groupby cost " << timer.elapsed() << " seconds";
-    }
-
-    return result;
 }
 
 bool MiningManager::clickGroupLabel(

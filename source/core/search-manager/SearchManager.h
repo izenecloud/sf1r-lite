@@ -32,6 +32,12 @@ namespace sf1r {
 
 class SearchCache;
 
+namespace faceted
+{
+class GroupFilterBuilder;
+class OntologyRep;
+}
+
 class SearchManager
 {
     typedef izenelib::ir::idmanager::IDManager IDManager;
@@ -55,6 +61,8 @@ public:
                 std::vector<float>& rankScoreList,
                 std::vector<float>& customRankScoreList,
                 std::size_t& totalCount,
+                faceted::OntologyRep& groupRep,
+                faceted::OntologyRep& attrRep,
                 int topK = 200,
                 int start = 0);
 
@@ -76,12 +84,16 @@ public:
         static_reranker_ = reranker;
     }
 
+    void setGroupFilterBuilder(faceted::GroupFilterBuilder* builder);
+
 private:
     bool doSearch_(SearchKeywordOperation& actionOperation,
                    std::vector<unsigned int>& docIdList,
                    std::vector<float>& rankScoreList,
                    std::vector<float>& customRankScoreList,
                    std::size_t& totalCount,
+                   faceted::OntologyRep& groupRep,
+                   faceted::OntologyRep& attrRep,
                    int topK,
                    int start);
 
@@ -111,6 +123,8 @@ private:
 
     dynamic_reranker_t dynamic_reranker_;
     static_reranker_t	 static_reranker_;
+
+    boost::scoped_ptr<faceted::GroupFilterBuilder> groupFilterBuilder_;
 };
 
 } // end - namespace sf1r

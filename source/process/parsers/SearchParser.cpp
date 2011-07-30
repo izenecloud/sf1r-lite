@@ -41,8 +41,7 @@ using driver::Keys;
  *   used with @b taxonomy_label.
  * - @b group_label (@c Array): Only get documents in the specified groups. Multiple
  *   groups could be specified, so that the documents returned must be contained
- *   in each groups. It cannot be used with @b taxonomy_label, @b name_entity_type
- *   and @b name_entity_item together.
+ *   in each groups.
  *   - @b property* (@c String): the property name, this name must be also specified
  *   in request["group"].
  *   - @b value* (@c String): the property value, only those documents with this
@@ -50,8 +49,7 @@ using driver::Keys;
  * - @b attr_label (@c Array): Only get documents in the specified attribute groups.
  *   Multiple labels could be specified. It could also be used with @b group_label
  *   together, so that the documents returned must be contained in each label in
- *   @b attr_label and @b group_label. It cannot be used with @b taxonomy_label,
- *   @b name_entity_type and @b name_entity_item together.
+ *   @b attr_label and @b group_label.
  *   - @b attr_name* (@c String): the attribute name
  *   - @b attr_value* (@c String): the attribute value, only those documents with this
  *   attribute value would be returned.
@@ -112,12 +110,9 @@ bool SearchParser::parse(const Value& search)
     if (search.hasKey(Keys::name_entity_item) ||
          search.hasKey(Keys::name_entity_type))
         ++labelCount;
-    if (search.hasKey(Keys::group_label)
-        || search.hasKey(Keys::attr_label))
-        ++labelCount;
     if (labelCount > 1)
     {
-        error() = "At most one label type (taxonomy label, name entity item and group/attr label) can be specided.";
+        error() = "At most one label type (taxonomy label, name entity label) can be specided.";
         return false;
     }
 

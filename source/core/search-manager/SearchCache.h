@@ -7,6 +7,7 @@
  * @date Updated <2010-03-24 15:43:04>
  */
 #include <query-manager/QueryIdentity.h>
+#include <mining-manager/faceted-submanager/ontology_rep.h>
 
 #include <cache/IzeneCache.h>
 
@@ -25,6 +26,8 @@ public:
         std::vector<float> customScores;
         std::vector<unsigned int> docIdList;
         std::size_t totalCount;
+        faceted::OntologyRep groupRep;
+        faceted::OntologyRep attrRep;
     };
     typedef QueryIdentity key_type;
 
@@ -39,7 +42,9 @@ public:
              std::vector<float>& scores,
              std::vector<float>& customScores,
              std::vector<unsigned int>& docIdList,
-             std::size_t& totalCount)
+             std::size_t& totalCount,
+             faceted::OntologyRep& groupRep,
+             faceted::OntologyRep& attrRep)
     {
         value_type value;
         if (cache_.getValueNoInsert(key, value))
@@ -48,6 +53,8 @@ public:
             customScores.swap(value.customScores);
             docIdList.swap(value.docIdList);
             totalCount = value.totalCount;
+            groupRep.swap(value.groupRep);
+            attrRep.swap(value.attrRep);
 
             return true;
         }
@@ -59,13 +66,17 @@ public:
              std::vector<float> scores,
              std::vector<float> customScores,
              std::vector<unsigned int> docIdList,
-             std::size_t totalCount)
+             std::size_t totalCount,
+             faceted::OntologyRep groupRep,
+             faceted::OntologyRep attrRep)
     {
         value_type value;
         scores.swap(value.scores);
         customScores.swap(value.customScores);
         docIdList.swap(value.docIdList);
         value.totalCount = totalCount;
+        groupRep.swap(value.groupRep);
+        attrRep.swap(value.attrRep);
         cache_.insertValue(key, value);
     }
 

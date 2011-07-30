@@ -56,6 +56,10 @@ public:
         return propStrVec_[pvId];
     }
 
+    std::size_t propValueNum() const {
+        return propStrVec_.size();
+    }
+
     /**
      * Get property value id.
      * @param value property string
