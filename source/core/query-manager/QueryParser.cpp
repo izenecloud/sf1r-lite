@@ -282,6 +282,7 @@ namespace sf1r
         const AnalysisInfo& analysisInfo,
         const izenelib::util::UString& rawUStr,
         QueryTreePtr& analyzedQueryTree,
+        std::string& expandedQueryString,
         bool unigramFlag,
         bool isUnigramSearchMode,
         PersonalSearchInfo& personalSearchInfo
@@ -292,7 +293,7 @@ namespace sf1r
 
         // Apply escaped operator.
         QueryParser::parseQuery( rawUStr, tmpQueryTree, unigramFlag );
-        bool ret = recursiveQueryTreeExtension(tmpQueryTree, laInfo, isUnigramSearchMode, personalSearchInfo);
+        bool ret = recursiveQueryTreeExtension(tmpQueryTree, laInfo, isUnigramSearchMode, personalSearchInfo, expandedQueryString);
         if ( ret )
         {
             tmpQueryTree->postProcess(isUnigramSearchMode);
@@ -446,7 +447,8 @@ namespace sf1r
         return true;
     } // end - extendPersonlSearchTree
 
-    bool QueryParser::recursiveQueryTreeExtension(QueryTreePtr& queryTree, const LAEXInfo& laInfo, bool isUnigramSearchMode, PersonalSearchInfo& personalSearchInfo)
+    bool QueryParser::recursiveQueryTreeExtension(QueryTreePtr& queryTree, const LAEXInfo& laInfo, bool isUnigramSearchMode,
+            PersonalSearchInfo& personalSearchInfo, std::string& expandedQueryString)
     {
         switch (queryTree->type_)
         {
@@ -482,6 +484,7 @@ namespace sf1r
             }
             std::string escAddedStr;
             analyzedUStr.convertString(escAddedStr, UString::UTF_8);
+            expandedQueryString = escAddedStr; // for search cache identity
             analyzedUStr.assign(escAddedStr, UString::UTF_8);
             if (!QueryParser::parseQuery(analyzedUStr, tmpQueryTree, laInfo.unigramFlag_, false))
                 return false;
@@ -548,7 +551,7 @@ namespace sf1r
         default:
             for (QTIter iter = queryTree->children_.begin();
                     iter != queryTree->children_.end(); iter++)
-                recursiveQueryTreeExtension(*iter, laInfo, isUnigramSearchMode, personalSearchInfo);
+                recursiveQueryTreeExtension(*iter, laInfo, isUnigramSearchMode, personalSearchInfo, expandedQueryString);
         } // end - switch(queryTree->type_)
         return true;
     } // end - recursiveQueryTreeExtension()

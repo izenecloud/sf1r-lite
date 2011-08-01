@@ -17,6 +17,7 @@ void makeQueryIdentity(
 )
 {
     identity.query = item.env_.queryString_;
+    identity.expandedQueryString = item.env_.expandedQueryString_;
     identity.userId = item.env_.userID_;
     identity.rankingType = item.rankingType_;
     identity.laInfo = item.languageAnalyzerInfo_;

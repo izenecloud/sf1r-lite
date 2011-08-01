@@ -175,6 +175,7 @@ namespace sf1r {
                     const AnalysisInfo& analysisInfo,
                     const izenelib::util::UString& rawUStr,
                     QueryTreePtr& analyzedQueryTree,
+                    std::string& expandedQueryString,
                     bool unigramFlag,
                     bool isUnigramSearchMode,
                     PersonalSearchInfo& personalSearchInfo);
@@ -187,9 +188,11 @@ namespace sf1r {
                                 QueryTreePtr& analyzedQueryTree,
                                 bool unigramFlag)
             {
+                std::string expandedQueryString;
                 PersonalSearchInfo personalSearchInfo;
                 personalSearchInfo.enabled = false;
-                return getAnalyzedQueryTree(synonymExtension, analysisInfo, rawUStr, analyzedQueryTree, unigramFlag, false, personalSearchInfo);
+                return getAnalyzedQueryTree(synonymExtension, analysisInfo, rawUStr, analyzedQueryTree, expandedQueryString,
+                        unigramFlag, false, personalSearchInfo);
             }
 
         private:
@@ -232,7 +235,8 @@ namespace sf1r {
                     QueryTreePtr& queryTree, 
                     const LAEXInfo& laInfo,
                     bool isUnigramSearchMode,
-                    PersonalSearchInfo& personalSearchInfo);
+                    PersonalSearchInfo& personalSearchInfo,
+                    std::string& expandedQueryString);
 
             static void initOnlyOnceCore();
 
