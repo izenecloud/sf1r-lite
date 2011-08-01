@@ -77,7 +77,8 @@ bool buildQueryTree(SearchKeywordOperation&action, IndexBundleConfiguration& bun
 
             if ( !action.queryParser_.getAnalyzedQueryTree(
                         action.actionItem_.languageAnalyzerInfo_.synonymExtension_,
-                        analysisInfo, queryUStr, tmpQueryTree, action.unigramFlag_, isUnigramSearchMode, personalSearchInfo))
+                        analysisInfo, queryUStr, tmpQueryTree, action.actionItem_.env_.expandedQueryString_,
+                        action.unigramFlag_, isUnigramSearchMode, personalSearchInfo))
                 return false;
 
         } // end - if
