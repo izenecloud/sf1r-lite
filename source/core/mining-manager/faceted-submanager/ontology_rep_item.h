@@ -35,22 +35,21 @@ public:
     CategoryNameType text;
     CategoryIdType id;
     uint32_t doc_count;
-    std::vector<docid_t> doc_id_list;
     
     bool operator==(const OntologyRepItem& item) const
     {
       return level==item.level && text==item.text && id==item.id &&
-             doc_count==item.doc_count && doc_id_list==item.doc_id_list;
+             doc_count==item.doc_count;
     }
     
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
     {
-        ar & level & text & id & doc_count && doc_id_list;
+        ar & level & text & id & doc_count;
     }
 
-    MSGPACK_DEFINE(level,text,id,doc_count,doc_id_list);
+    MSGPACK_DEFINE(level,text,id,doc_count);
 };
 NS_FACETED_END
 #endif /* SF1R_ONTOLOGY_REP_ITEM_H_ */

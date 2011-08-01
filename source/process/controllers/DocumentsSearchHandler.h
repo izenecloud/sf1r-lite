@@ -97,36 +97,6 @@ private:
         std::vector<sf1r::docid_t>& idListInPage
     );
 
-    /// @internal
-    /// @brief Get document id list in group from MIA result.
-    /// @param miaResult Result form MIA
-    /// @param start Page start offset
-    /// @param count Limit of the result in page
-    /// @param[out] idListInPage Id list of documents with the group label
-    ///                          (property value) and in the page.
-    /// @return total documents count in result
-    std::size_t getDocumentIdListInGroup(
-        const KeywordSearchResult& miaResult,
-        unsigned start,
-        unsigned count,
-        std::vector<sf1r::docid_t>& idListInPage
-    );
-
-    /// @internal
-    /// @brief Get document id list in attribute group from MIA result.
-    /// @param miaResult Result form MIA
-    /// @param start Page start offset
-    /// @param count Limit of the result in page
-    /// @param[out] idListInPage Id list of documents with the group label
-    ///                          (attribute value) and in the page.
-    /// @return total documents count in result
-    std::size_t getDocumentIdListInAttr(
-        const KeywordSearchResult& miaResult,
-        unsigned start,
-        unsigned count,
-        std::vector<sf1r::docid_t>& idListInPage
-    );
-    
     void filterDocIdList(const KeywordSearchResult& origin, const std::vector<sf1r::docid_t>& id_list, KeywordSearchResult& new_result);
 
     void renderDocuments(const RawTextResultFromMIA& rawTextResult);

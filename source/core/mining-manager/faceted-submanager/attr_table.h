@@ -73,6 +73,14 @@ public:
         return valueStrVec_[valueId];
     }
 
+    std::size_t nameNum() const {
+        return nameStrVec_.size();
+    }
+
+    std::size_t valueNum() const {
+        return valueStrVec_.size();
+    }
+
     /**
      * Get attribute name id.
      * @param name attribute name string

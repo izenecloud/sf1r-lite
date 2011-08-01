@@ -8,6 +8,9 @@
 #ifndef SF1R_FACETED_TYPES_H_
 #define SF1R_FACETED_TYPES_H_
 
+#include <common/inttypes.h>
+#include <util/ustring/UString.h>
+
 #define NS_FACETED_BEGIN namespace sf1r{ namespace faceted {
 
 #define NS_FACETED_END }}

@@ -5,6 +5,7 @@
 #include <search-manager/SearchManager.h>
 #include <la-manager/LAManager.h>
 #include <query-manager/ActionItem.h>
+#include <mining-manager/faceted-submanager/ontology_rep.h>
 
 #include <idmlib/similarity/all-pairs-similarity-search/data_set_iterator.h>
 #include <idmlib/similarity/all-pairs-similarity-search/all_pairs_search.h>
@@ -178,6 +179,8 @@ void SemanticKernel::doSearch()
                 std::vector<float> topKRankScoreList;
                 std::vector<float> topKCustomRankScoreList;
                 std::size_t totalCount;
+                faceted::OntologyRep groupRep;
+                faceted::OntologyRep attrRep;
 
                 if(searchManager_->search(
                     actionOperation,
@@ -185,6 +188,8 @@ void SemanticKernel::doSearch()
                     topKRankScoreList,
                     topKCustomRankScoreList,
                     totalCount,
+                    groupRep,
+                    attrRep,
                     100,
                     0
                  ))

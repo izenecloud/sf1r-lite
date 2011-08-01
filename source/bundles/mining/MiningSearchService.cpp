@@ -175,22 +175,6 @@ bool MiningSearchService::DefineDocCategory(
     return true;
 }
 
-bool MiningSearchService::getGroupRep(
-    const std::vector<unsigned int>& docIdList, 
-    const std::vector<std::string>& groupPropertyList, 
-    const std::vector<std::pair<std::string, std::string> >& groupLabelList,
-    faceted::OntologyRep& groupRep,
-    bool isAttrGroup,
-    int attrGroupNum,
-    const std::vector<std::pair<std::string, std::string> >& attrLabelList,
-    faceted::OntologyRep& attrRep
-)
-{
-    return miningManager_->getGroupRep(docIdList,
-                                       groupPropertyList, groupLabelList, groupRep,
-                                       isAttrGroup, attrGroupNum, attrLabelList, attrRep);
-}
-
 bool MiningSearchService::clickGroupLabel(
     const std::string& query,
     const std::string& propName,

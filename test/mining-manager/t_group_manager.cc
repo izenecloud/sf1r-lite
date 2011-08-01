@@ -9,9 +9,11 @@
 #include <document-manager/DocumentManager.h>
 #include <document-manager/Document.h>
 #include <mining-manager/faceted-submanager/group_manager.h>
-#include <mining-manager/faceted-submanager/group_label.h>
+#include <mining-manager/faceted-submanager/GroupParam.h>
+#include <mining-manager/faceted-submanager/GroupFilterBuilder.h>
+#include <mining-manager/faceted-submanager/GroupFilter.h>
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
@@ -184,6 +186,36 @@ void createPropertyMap(
     }
 }
 
+void createGroupRep(
+    const vector<unsigned int>& docIdList,
+    const vector<string>& propNameVec,
+    const vector<pair<string, string> >& labelVec,
+    const faceted::GroupManager* groupManager,
+    faceted::OntologyRep& groupRep
+)
+{
+    faceted::GroupFilterBuilder filterBuilder(groupManager, NULL);
+    faceted::GroupParam groupParam;
+    groupParam.groupProps_ = propNameVec;
+    groupParam.groupLabels_ = labelVec;
+
+    faceted::GroupFilter* filter = filterBuilder.createFilter(groupParam);
+    for (vector<unsigned int>::const_iterator it = docIdList.begin();
+        it != docIdList.end(); ++it)
+    {
+        bool pass = filter->test(*it);
+        if (labelVec.empty())
+        {
+            BOOST_CHECK(pass);
+        }
+    }
+
+    faceted::OntologyRep attrRep;
+    filter->getGroupRep(groupRep, attrRep);
+
+    delete filter;
+}
+
 void checkGroupRep(
     const faceted::OntologyRep& groupRep,
     const vector<string>& propNameList,
@@ -207,6 +239,8 @@ void checkGroupRep(
 
     string propName, convertBuffer;
     vector<string>::const_iterator propNameIt = propNameList.begin();
+    int propDocCount = 0;
+    int valueDocSum = 0;
     for (RepItemList::const_iterator it = itemList.begin();
             it != itemList.end(); ++it)
     {
@@ -219,6 +253,10 @@ void checkGroupRep(
             BOOST_CHECK(propNameIt != propNameList.end());
             BOOST_CHECK_EQUAL(propName, *propNameIt);
             ++propNameIt;
+
+            BOOST_CHECK_EQUAL(valueDocSum, propDocCount);
+            propDocCount = item.doc_count;
+            valueDocSum = 0;
         }
         else
         {
@@ -229,10 +267,11 @@ void checkGroupRep(
                                << ", value: " << convertBuffer
                                << ", doc count: " << docIdList.size());
             BOOST_CHECK_EQUAL(item.doc_count, docIdList.size());
-            BOOST_CHECK_EQUAL_COLLECTIONS(item.doc_id_list.begin(), item.doc_id_list.end(),
-                                          docIdList.begin(), docIdList.end());
+
+            valueDocSum += item.doc_count;
         }
     }
+    BOOST_CHECK_EQUAL(valueDocSum, propDocCount);
 }
 
 void makeSchema(std::set<PropertyConfig, PropertyComp>& propertyConfig)
@@ -396,29 +435,26 @@ void checkGroupManager(
         docIdList.push_back(it->docId_);
     }
 
-    
-    vector<string> getPropList(propNameVec);
-    std::vector<std::pair<std::string, std::string> > labelList;
+
+    vector<pair<string, string> > labelList;
     BOOST_TEST_MESSAGE("check label size: " << labelList.size());
     faceted::OntologyRep groupRep;
-    boost::scoped_ptr<faceted::GroupLabel> groupLabelPtr(groupManager->createGroupLabel(labelList));
-    BOOST_CHECK(groupManager->getGroupRep(docIdList, getPropList, groupLabelPtr.get(), groupRep));
+    createGroupRep(docIdList, propNameVec, labelList, groupManager, groupRep);
 
     PropertyMap propMap;
     createPropertyMap(docInputVec, labelList, propMap);
-    checkGroupRep(groupRep, getPropList, propMap);
+    checkGroupRep(groupRep, propNameVec, propMap);
 
 
     labelList.push_back(std::pair<std::string, std::string>(PROP_NAME_GROUP_STR, "aaa"));
     labelList.push_back(std::pair<std::string, std::string>(PROP_NAME_GROUP_INT, "2"));
     BOOST_TEST_MESSAGE("check label size: " << labelList.size());
     groupRep.item_list.clear();
-    groupLabelPtr.reset(groupManager->createGroupLabel(labelList));
-    BOOST_CHECK(groupManager->getGroupRep(docIdList, getPropList, groupLabelPtr.get(), groupRep));
+    createGroupRep(docIdList, propNameVec, labelList, groupManager, groupRep);
 
     propMap.clear();
     createPropertyMap(docInputVec, labelList, propMap);
-    checkGroupRep(groupRep, getPropList, propMap);
+    checkGroupRep(groupRep, propNameVec, propMap);
 
     delete groupManager;
 }

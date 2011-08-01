@@ -16,6 +16,9 @@ struct QueryIdentity
     /// @brief original query string
     std::string query;
 
+    /// @brief expanded query string
+    std::string expandedQueryString;
+
     /// @brief user id, todo, whole user info may be needed.
     std::string userId;
 
@@ -31,7 +34,10 @@ struct QueryIdentity
 
     std::vector<QueryFiltering::FilteringType> filterInfo;
 
-    /// @breif custom ranking info
+    /// @brief param for group filter
+    faceted::GroupParam groupParam;
+
+    /// @brief custom ranking info
     std::string strExp;
     std::map<std::string, double> paramConstValueMap;
     std::map<std::string, std::string> paramPropertyValueMap;
@@ -39,7 +45,7 @@ struct QueryIdentity
     /// search results offset after topK
     int start;
 
-    DATA_IO_LOAD_SAVE(QueryIdentity, &query&userId&rankingType&laInfo&properties&sortInfo&filterInfo
+    DATA_IO_LOAD_SAVE(QueryIdentity, &query&userId&rankingType&laInfo&properties&sortInfo&filterInfo&groupParam
             &strExp&paramConstValueMap&paramPropertyValueMap&start);
 
     template<class Archive>
@@ -52,6 +58,7 @@ struct QueryIdentity
         ar & properties;
         ar & sortInfo;
         ar & filterInfo;
+        ar & groupParam;
         ar & strExp;
         ar & paramConstValueMap;
         ar & paramPropertyValueMap;
@@ -75,6 +82,7 @@ inline bool operator==(const QueryIdentity& a,
         && a.properties == b.properties
         && a.sortInfo == b.sortInfo
         && a.filterInfo == b.filterInfo
+        && a.groupParam == b.groupParam
         && a.strExp == b.strExp
         && a.paramConstValueMap == b.paramConstValueMap
         && a.paramPropertyValueMap == b.paramPropertyValueMap

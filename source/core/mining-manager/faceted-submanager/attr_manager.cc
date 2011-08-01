@@ -1,19 +1,11 @@
 #include "attr_manager.h"
-#include "group_label.h"
 #include <mining-manager/util/FSUtil.hpp>
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningException.hpp>
 
-#include <util/PriorityQueue.h>
-
-#include <set>
-#include <list>
-
 #include <glog/logging.h>
 
 using namespace sf1r::faceted;
-
-#define DEBUG_PRINT_GROUP 0
 
 namespace
 {
@@ -31,65 +23,6 @@ const izenelib::util::UString COMMA_VL(",|", ENCODING_TYPE);
 
 /** quote to embed escape characters */
 const izenelib::util::UString QUOTE("\"", ENCODING_TYPE);
-
-/** types used in @c getGroupRep() */
-typedef std::vector<docid_t> DocIdList;
-typedef std::map<AttrTable::vid_t, DocIdList> DocIdMap;
-struct AttrNameResult
-{
-    AttrNameResult(): docCount_(0) {}
-    int docCount_;
-    DocIdMap docIdMap_;
-};
-typedef std::map<AttrTable::nid_t, AttrNameResult> AttrGroupResult;
-
-/** attribute name id, and its doc count */
-typedef std::pair<AttrTable::nid_t, int> AttrFreq;
-
-class AttrFreqQueue : public izenelib::util::PriorityQueue<AttrFreq>
-{
-    public:
-        AttrFreqQueue(size_t size)
-        {
-            this->initialize(size);
-        }
-
-    protected:
-        bool lessThan(AttrFreq p1, AttrFreq p2)
-        {
-            return (p1.second < p2.second);
-        }
-};
-
-/**
- * get attribute name ids with top freq.
- * @param groupResult the attribute group results
- * @param topNum limit the size of @p topResult, zero for not limit size
- * @param topResult store the top attribute name ids
- */
-void getTopAttrFreq(
-    const AttrGroupResult& groupResult,
-    int topNum,
-    std::list<AttrTable::nid_t>& topResult
-)
-{
-    if (topNum == 0)
-    {
-        topNum = groupResult.size();
-    }
-
-    AttrFreqQueue queue(topNum);
-    for (AttrGroupResult::const_iterator groupIt = groupResult.begin();
-        groupIt != groupResult.end(); ++groupIt)
-    {
-        queue.insert(AttrFreq(groupIt->first, groupIt->second.docCount_));
-    }
-
-    while(queue.size() > 0)
-    {   
-        topResult.push_front(queue.pop().first);
-    }
-}
 
 /**
  * scans from @p first to @p last until any character in @p delimStr is reached,
@@ -324,122 +257,5 @@ bool AttrManager::processCollection()
     }
 
     LOG(INFO) << "finished building attr index data";
-    return true;
-}
-
-bool AttrManager::getGroupRep(
-    const std::vector<unsigned int>& docIdList,
-    const std::vector<std::pair<std::string, std::string> >& attrLabelList,
-    const GroupLabel* groupLabel,
-    int groupNum,
-    faceted::OntologyRep& groupRep
-)
-{
-    // a condition pair of attribute name id and attribute value id
-    typedef std::pair<AttrTable::nid_t, AttrTable::vid_t> CondPair;
-    typedef std::vector<CondPair> CondList;
-    CondList condList;
-    const AttrTable& constAttrTable = attrTable_;
-    for (std::size_t i = 0; i < attrLabelList.size(); ++i)
-    {
-        izenelib::util::UString nameUStr(attrLabelList[i].first, ENCODING_TYPE);
-        izenelib::util::UString valueUStr(attrLabelList[i].second, ENCODING_TYPE);
-
-        AttrTable::nid_t nameId = constAttrTable.nameId(nameUStr);
-        AttrTable::vid_t valueId = constAttrTable.valueId(nameId, valueUStr);
-        condList.push_back(CondPair(nameId, valueId));
-    }
-
-    AttrGroupResult groupResult;
-
-    typedef std::map<AttrTable::nid_t, AttrTable::ValueIdList> NameIdMap;
-
-    const AttrTable::ValueIdTable& valueIdTable = constAttrTable.valueIdTable();
-
-    for (std::vector<unsigned int>::const_iterator docIt = docIdList.begin();
-        docIt != docIdList.end(); ++docIt)
-    {
-        docid_t docId = *docIt;
-
-        // filter out doc not belongs to selected group label
-        if (groupLabel && !groupLabel->checkDoc(docId))
-            continue;
-
-        // this doc has not built attribute index data
-        if (docId >= valueIdTable.size())
-            continue;
-
-        NameIdMap nameIdMap;
-        std::set<AttrTable::vid_t> docValueSet;
-        const AttrTable::ValueIdList& valueIdList = valueIdTable[docId];
-        for (AttrTable::ValueIdList::const_iterator valueIt = valueIdList.begin();
-            valueIt != valueIdList.end(); ++valueIt)
-        {
-            AttrTable::nid_t nameId = constAttrTable.valueId2NameId(*valueIt);
-            nameIdMap[nameId].push_back(*valueIt);
-            docValueSet.insert(*valueIt);
-        }
-
-        for (NameIdMap::const_iterator nameIt = nameIdMap.begin();
-            nameIt != nameIdMap.end(); ++nameIt)
-        {
-            AttrTable::nid_t nameId = nameIt->first;
-
-            bool isMeetCond = true;
-            for (CondList::const_iterator condIt = condList.begin();
-                condIt != condList.end(); ++condIt)
-            {
-                if (nameId != condIt->first
-                    && docValueSet.find(condIt->second) == docValueSet.end())
-                {
-                    isMeetCond = false;
-                    break;
-                }
-            }
-
-            if (isMeetCond)
-            {
-                AttrNameResult& nameResult = groupResult[nameId];
-                ++nameResult.docCount_;
-
-                const AttrTable::ValueIdList& idList = nameIt->second;
-                for (AttrTable::ValueIdList::const_iterator it = idList.begin();
-                    it != idList.end(); ++it)
-                {
-                    nameResult.docIdMap_[*it].push_back(docId);
-                }
-            }
-        }
-    }
-
-    std::list<AttrTable::nid_t> topResult;
-    getTopAttrFreq(groupResult, groupNum, topResult);
-
-    std::list<sf1r::faceted::OntologyRepItem>& itemList = groupRep.item_list;
-    for (std::list<AttrTable::nid_t>::const_iterator listIt = topResult.begin();
-        listIt != topResult.end(); ++listIt)
-    {
-        AttrNameResult& nameResult = groupResult[*listIt];
-
-        // attribute name as root node
-        itemList.push_back(sf1r::faceted::OntologyRepItem());
-        sf1r::faceted::OntologyRepItem& nameItem = itemList.back();
-        nameItem.text = constAttrTable.nameStr(*listIt);
-        nameItem.doc_count = nameResult.docCount_;
-
-        // attribute values are appended as level 1
-        DocIdMap& docIdMap = nameResult.docIdMap_;
-        for (DocIdMap::iterator mapIt = docIdMap.begin();
-            mapIt != docIdMap.end(); ++mapIt)
-        {
-            itemList.push_back(sf1r::faceted::OntologyRepItem());
-            sf1r::faceted::OntologyRepItem& valueItem = itemList.back();
-            valueItem.level = 1;
-            valueItem.text = constAttrTable.valueStr(mapIt->first);
-            valueItem.doc_id_list.swap(mapIt->second);
-            valueItem.doc_count = valueItem.doc_id_list.size();
-        }
-    }
-
     return true;
 }

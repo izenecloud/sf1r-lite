@@ -24,10 +24,10 @@ class DocumentManager;
 
 NS_FACETED_BEGIN
 
-class GroupLabel;
-
 class GroupManager {
 public:
+    typedef std::map<std::string, PropValueTable> PropValueMap;
+
     GroupManager(
         DocumentManager* documentManager,
         const std::string& dirPath
@@ -46,51 +46,16 @@ public:
      */
     bool processCollection();
 
-    /**
-     * @brief Get group representation for a property list.
-     * @param docIdList a list of doc id, in which doc count is calculated for each property value
-     * @param groupPropertyList a list of property name.
-     * @param groupLabel check each doc whether belongs to the group labels selected
-     * @param groupRep a list, each element is a label tree for a property,
-     *                 each label contains doc count for a property value.
-     * @return true for success, false for failure.
-     */
-    bool getGroupRep(
-        const std::vector<unsigned int>& docIdList,
-        const std::vector<std::string>& groupPropertyList,
-        const GroupLabel* groupLabel,
-        faceted::OntologyRep& groupRep
-    );
-
-    /**
-     * @brief Create the instance to check whether doc belongs to group labels.
-     * @param groupLabelList a label list, each label is a pair of property name and property value
-     * @return the instance used to check conditions
-     * @note the caller is responsible to delete the instance returned
-     */
-    GroupLabel* createGroupLabel(
-        const std::vector<std::pair<std::string, std::string> >& groupLabelList
-    ) const;
-
-private:
-    /**
-     * @brief Get group representation by reading property value from document manager.
-     */
-    bool getGroupRepFromDocumentManager(
-        const std::vector<unsigned int>& docIdList,
-        const std::vector<std::string>& groupPropertyList,
-        const std::vector<std::pair<std::string, std::string> >& groupLabelList,
-        faceted::OntologyRep& groupRep
-    );
+    const PropValueMap& getPropValueMap() const
+    {
+        return propValueMap_;
+    }
 
 private:
     sf1r::DocumentManager* documentManager_;
     std::string dirPath_;
 
-    typedef std::map<std::string, PropValueTable> PropValueMap;
     PropValueMap propValueMap_;
-
-    friend class PropertyDiversityReranker;
 };
 
 NS_FACETED_END

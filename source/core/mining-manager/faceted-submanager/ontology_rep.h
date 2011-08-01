@@ -31,13 +31,17 @@ public:
     {
         return item_list.begin();
     }
-    
+
     item_iterator End()
     {
         return item_list.end();
     }
-    
-    
+
+    void swap(OntologyRep& rep)
+    {
+        item_list.swap(rep.item_list);
+    }
+
     bool operator==(const OntologyRep& rep) const
     {
         if (item_list.size()!=rep.item_list.size()) return false;

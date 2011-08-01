@@ -25,9 +25,10 @@
 #include "ConditionInfo.h"
 
 #include <ranking-manager/RankingEnumerator.h>
-
 #include <search-manager/CustomRanker.h>
+#include <mining-manager/faceted-submanager/GroupParam.h>
 
+#include <common/sf1_msgpack_serialization_types.h>
 #include <3rdparty/msgpack/msgpack.hpp>
 #include <util/izene_serialization.h>
 #include <sstream>
@@ -157,18 +158,6 @@ class RequesterEnvironment
             ss << "taxonomyLabel_   : " << taxonomyLabel_   << endl;
             ss << "nameEntityItem_  : " << nameEntityItem_  << endl;
             ss << "nameEntityType_  : " << nameEntityType_  << endl;
-            ss << "groupLabels_     : ";
-            for (std::size_t i = 0; i < groupLabels_.size(); ++i)
-            {
-                ss << "(" << groupLabels_[i].first << ", " << groupLabels_[i].second << "), ";
-            }
-            ss << endl;
-            ss << "attrLabels_     : ";
-            for (std::size_t i = 0; i < attrLabels_.size(); ++i)
-            {
-                ss << "(" << attrLabels_[i].first << ", " << attrLabels_[i].second << "), ";
-            }
-            ss << endl;
             ss << "ipAddress_       : " << ipAddress_       << endl;
             out << ss.str();
         }
@@ -195,6 +184,11 @@ class RequesterEnvironment
         std::string     queryString_;
 
         ///
+        /// @brief the expanded query string.
+        ///
+        std::string expandedQueryString_;
+
+        ///
         /// @brief a user id. The user id is accompanied with the query string
         ///          in a search request.
         ///
@@ -213,28 +207,16 @@ class RequesterEnvironment
         std::string nameEntityType_;
 
         ///
-        /// @brief multiple selected group labels, each label is a pair of property name and value.
-        ///        It is used only in Label Click Query.
-        ///
-        std::vector<std::pair<std::string, std::string> > groupLabels_;
-
-        ///
-        /// @brief multiple selected attribute labels, each label is a pair of attribute name and attribute value.
-        ///        It is used only in Label Click Query.
-        ///
-        std::vector<std::pair<std::string, std::string> > attrLabels_;
-
-        ///
         /// @brief ip address of requester.
         ///
         std::string     ipAddress_;
 
         DATA_IO_LOAD_SAVE(RequesterEnvironment, 
-                &isLogging_&isLogGroupLabels_&encodingType_&queryString_&taxonomyLabel_
-                &nameEntityItem_&nameEntityType_&groupLabels_&attrLabels_&ipAddress_);
+                &isLogging_&isLogGroupLabels_&encodingType_&queryString_&expandedQueryString_
+                &userID_&taxonomyLabel_&nameEntityItem_&nameEntityType_&ipAddress_);
 
-        MSGPACK_DEFINE(isLogging_,isLogGroupLabels_,encodingType_,queryString_,userID_,taxonomyLabel_,nameEntityItem_,
-                nameEntityItem_,nameEntityType_,groupLabels_,attrLabels_,ipAddress_);
+        MSGPACK_DEFINE(isLogging_,isLogGroupLabels_,encodingType_,queryString_,expandedQueryString_,
+                userID_,taxonomyLabel_,nameEntityItem_,nameEntityItem_,nameEntityType_,ipAddress_);
 
     private:
         // Log : 2009.09.08
@@ -247,11 +229,11 @@ class RequesterEnvironment
             ar & isLogGroupLabels_;
             ar & encodingType_;
             ar & queryString_;
+            ar & expandedQueryString_;
+            ar & userID_;
             ar & taxonomyLabel_;
             ar & nameEntityItem_;
             ar & nameEntityType_;
-            ar & groupLabels_;
-            ar & attrLabels_;
             ar & ipAddress_;
         } 
 }; // end - queryEnvironment
@@ -266,8 +248,6 @@ inline bool operator==(
         && a.encodingType_ == b.encodingType_
         && a.queryString_ == b.queryString_
         && a.taxonomyLabel_ == b.taxonomyLabel_
-        && a.groupLabels_ == b.groupLabels_
-        && a.attrLabels_ == b.attrLabels_
         && a.ipAddress_ == b.ipAddress_;
 }
 
@@ -372,9 +352,7 @@ class KeywordSearchActionItem
             displayPropertyList_(obj.displayPropertyList_),
             sortPriorityList_   (obj.sortPriorityList_),
             filteringList_(obj.filteringList_),
-            groupPropertyList_(obj.groupPropertyList_),
-            isAttrGroup_(obj.isAttrGroup_),
-            attrGroupNum_(obj.attrGroupNum_),
+            groupParam_(obj.groupParam_),
             strExp_(obj.strExp_),
             paramConstValueMap_(obj.paramConstValueMap_),
             paramPropertyValueMap_(obj.paramPropertyValueMap_),
@@ -394,9 +372,7 @@ class KeywordSearchActionItem
             displayPropertyList_ = obj.displayPropertyList_;
             sortPriorityList_    = obj.sortPriorityList_;
             filteringList_ = obj.filteringList_;
-            groupPropertyList_ = obj.groupPropertyList_;
-            isAttrGroup_ = obj.isAttrGroup_;
-            attrGroupNum_ = obj.attrGroupNum_;
+            groupParam_ = obj.groupParam_;
             strExp_ = obj.strExp_;
             paramConstValueMap_ = obj.paramConstValueMap_;
             paramPropertyValueMap_ = obj.paramPropertyValueMap_;
@@ -418,9 +394,7 @@ class KeywordSearchActionItem
                 && displayPropertyList_ == obj.displayPropertyList_
                 && sortPriorityList_    == obj.sortPriorityList_
                 && filteringList_ == obj.filteringList_
-                && groupPropertyList_ == obj.groupPropertyList_
-                && isAttrGroup_ == obj.isAttrGroup_
-                && attrGroupNum_ == obj.attrGroupNum_
+                && groupParam_ == obj.groupParam_
                 && strExp_ == obj.strExp_
                 && paramConstValueMap_ == obj.paramConstValueMap_
                 && paramPropertyValueMap_ == obj.paramPropertyValueMap_
@@ -463,16 +437,8 @@ class KeywordSearchActionItem
                     ss << *iter << endl;
                 ss << "------------------------------------------------" << endl;
             }
-            ss << endl << "Grouping Property :" << endl;
             ss << "------------------------------------------------" << endl;
-            for(size_t i = 0; i < groupPropertyList_.size(); i++)
-            {
-                ss << "\tPropertyString_ : " << groupPropertyList_[i] << endl;
-            }
-            ss << endl << "Attr Options:" << endl;
-            ss << "------------------------------------------------" << endl;
-            ss << "\tisAttrGroup_ : " << isAttrGroup_ << endl;
-            ss << "\tattrGroupNum_ : " << attrGroupNum_ << endl;
+            ss << groupParam_;
             ss << "------------------------------------------------" << endl;
             ss << endl << "Custom Ranking :" << endl;
             ss << "------------------------------------------------" << endl;
@@ -551,15 +517,9 @@ class KeywordSearchActionItem
         std::vector<QueryFiltering::FilteringType>      filteringList_;
 
         ///
-        /// @brief a list of grouping property.
+        /// @brief group filter parameter
         ///
-        std::vector<std::string>     groupPropertyList_;
-
-        ///
-        /// @brief options for group by attribute.
-        ///
-        bool isAttrGroup_; /// true for group by attribute
-        int attrGroupNum_; /// the number of attributes to return
+        faceted::GroupParam groupParam_;
 
         ///
         /// @brief a list of property query terms.
@@ -580,14 +540,13 @@ class KeywordSearchActionItem
 
         DATA_IO_LOAD_SAVE(KeywordSearchActionItem, &env_&refinedQueryString_&collectionName_
                 &rankingType_&pageInfo_&languageAnalyzerInfo_&searchPropertyList_&removeDuplicatedDocs_
-                &displayPropertyList_&sortPriorityList_&filteringList_&groupPropertyList_
-                &isAttrGroup_&attrGroupNum_
+                &displayPropertyList_&sortPriorityList_&filteringList_&groupParam_
                 &strExp_&paramConstValueMap_&paramPropertyValueMap_);
 
         /// msgpack serializtion
-        MSGPACK_DEFINE(env_,refinedQueryString_,collectionName_,/*rankingType_, TODO*/pageInfo_,languageAnalyzerInfo_,
-                searchPropertyList_,removeDuplicatedDocs_,displayPropertyList_,sortPriorityList_,/*filteringList_, TODO*/
-                groupPropertyList_,isAttrGroup_,attrGroupNum_,strExp_,paramConstValueMap_,paramPropertyValueMap_);
+        MSGPACK_DEFINE(env_,refinedQueryString_,collectionName_,rankingType_,pageInfo_,languageAnalyzerInfo_,
+                searchPropertyList_,removeDuplicatedDocs_,displayPropertyList_,sortPriorityList_,filteringList_,
+                groupParam_,strExp_,paramConstValueMap_,paramPropertyValueMap_);
 
     private:
         
@@ -608,9 +567,7 @@ class KeywordSearchActionItem
             ar & displayPropertyList_;
             ar & sortPriorityList_;
             ar & filteringList_;
-            ar & groupPropertyList_;
-            ar & isAttrGroup_;
-            ar & attrGroupNum_;
+            ar & groupParam_;
             ar & strExp_;
             ar & paramConstValueMap_;
             ar & paramPropertyValueMap_;
@@ -657,7 +614,7 @@ class GetDocumentsByIdsActionItem
         )
 
         MSGPACK_DEFINE(env_,languageAnalyzerInfo_,collectionName_,displayPropertyList_,
-                idList_,docIdList_,propertyName_/*,propertyValueList_,filteringList_ TODO*/);
+                idList_,docIdList_,propertyName_,propertyValueList_,filteringList_);
 
     private:
         friend class boost::serialization::access;

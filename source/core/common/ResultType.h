@@ -201,13 +201,13 @@ namespace sf1r {
                     &numberOfDuplicatedDocs_&numberOfSimilarDocs_&docCategories_&imgs_&taxonomyString_&numOfTGDocs_&taxonomyLevel_&tgDocIdList_&neList_&onto_rep_&groupRep_&attrRep_&relatedQueryList_&rqScore_)
 
             MSGPACK_DEFINE(
-                    rawQueryString_,/*encodingType_, TODO*/collectionName_,analyzedQuery_,
+                    rawQueryString_,encodingType_,collectionName_,analyzedQuery_,
                     queryTermIdList_,totalCount_,topKDocs_,topKRankScoreList_,
                     topKCustomRankScoreList_,start_,count_,fullTextOfDocumentInPage_,
                     snippetTextOfDocumentInPage_,rawTextOfSummaryInPage_,errno_,error_,
                     numberOfDuplicatedDocs_,numberOfSimilarDocs_,docCategories_,imgs_,
-                    taxonomyString_,numOfTGDocs_,taxonomyLevel_,tgDocIdList_,//neList_, TODO
-                    /*onto_rep_,groupRep_,attrRep_, TODO*/relatedQueryList_,rqScore_,errno_,error_);
+                    taxonomyString_,numOfTGDocs_,taxonomyLevel_,tgDocIdList_,neList_,
+                    onto_rep_,groupRep_,attrRep_,relatedQueryList_,rqScore_,errno_,error_);
     };
 
 

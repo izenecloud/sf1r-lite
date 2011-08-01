@@ -12,11 +12,11 @@ NS_FACETED_BEGIN
 
 PropertyDiversityReranker::PropertyDiversityReranker(
     const std::string& property,
-    GroupManager* groupManager,
+    const GroupManager::PropValueMap& propValueMap,
     const std::string& boostingProperty
 )
     :property_(property)
-    ,groupManager_(groupManager)
+    ,propValueMap_(propValueMap)
     ,groupLabelLogger_(NULL)
     ,boostingProperty_(boostingProperty)
 {
@@ -34,8 +34,8 @@ void PropertyDiversityReranker::simplererank(
     typedef std::list<std::pair<unsigned int,float> > DocIdList;
     typedef std::map<PropValueTable::pvid_t, DocIdList> DocIdMap;
 
-    GroupManager::PropValueMap::const_iterator pvIt = groupManager_->propValueMap_.find(property_);
-    if (pvIt == groupManager_->propValueMap_.end())
+    GroupManager::PropValueMap::const_iterator pvIt = propValueMap_.find(property_);
+    if (pvIt == propValueMap_.end())
     {
         LOG(ERROR) << "in GroupManager: group index file is not loaded for group property " << property_;
         return;
@@ -121,8 +121,8 @@ void PropertyDiversityReranker::rerank(
     {
         std::string& boostingCategoryLabel = propValueVec[0];
         //std::cout<<"boosting category "<<boostingCategoryLabel<<std::endl;		
-        GroupManager::PropValueMap::const_iterator pvIt = groupManager_->propValueMap_.find(boostingProperty_);
-        if (pvIt == groupManager_->propValueMap_.end())
+        GroupManager::PropValueMap::const_iterator pvIt = propValueMap_.find(boostingProperty_);
+        if (pvIt == propValueMap_.end())
         {
             LOG(ERROR) << "in GroupManager: group index file is not loaded for group property " << boostingProperty_;
             simplererank(docIdList, rankScoreList);

@@ -43,6 +43,7 @@ bool GroupingParser::parse(const Value& grouping)
     {
         propertyList_.resize(grouping.size());
 
+        const std::vector<GroupConfig> groupProps = miningSchema_.group_properties;
         for (std::size_t i = 0; i < grouping.size(); ++i)
         {
             const Value& groupingRule = grouping(i);
@@ -57,7 +58,6 @@ bool GroupingParser::parse(const Value& grouping)
                 property = asString(groupingRule);
             }
 
-            const std::vector<GroupConfig> groupProps = miningSchema_.group_properties;
             std::vector<GroupConfig>::const_iterator configIt =
                 std::find_if(groupProps.begin(), groupProps.end(),
                     boost::bind(&GroupConfig::propName, _1) == property);

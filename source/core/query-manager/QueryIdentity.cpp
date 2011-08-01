@@ -17,12 +17,14 @@ void makeQueryIdentity(
 )
 {
     identity.query = item.env_.queryString_;
+    identity.expandedQueryString = item.env_.expandedQueryString_;
     identity.userId = item.env_.userID_;
     identity.rankingType = item.rankingType_;
     identity.laInfo = item.languageAnalyzerInfo_;
     identity.properties = item.searchPropertyList_;
     identity.sortInfo = item.sortPriorityList_;
     identity.filterInfo = item.filteringList_;
+    identity.groupParam = item.groupParam_;
     identity.strExp = item.strExp_;
     identity.paramConstValueMap = item.paramConstValueMap_;
     identity.paramPropertyValueMap = item.paramPropertyValueMap_;
