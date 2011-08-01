@@ -484,7 +484,7 @@ namespace sf1r
             }
             std::string escAddedStr;
             analyzedUStr.convertString(escAddedStr, UString::UTF_8);
-            expandedQueryString = escAddedStr; // for search cache identity
+            expandedQueryString += escAddedStr; // for search cache identity
             analyzedUStr.assign(escAddedStr, UString::UTF_8);
             if (!QueryParser::parseQuery(analyzedUStr, tmpQueryTree, laInfo.unigramFlag_, false))
                 return false;
