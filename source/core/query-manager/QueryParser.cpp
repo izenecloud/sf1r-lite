@@ -148,14 +148,20 @@ namespace sf1r
                 // (   hello kity   ) -> ( hello kity )
                 // (  hello     | kity ) -> ( hello| kitty )
                 while ( ++iter != iterEnd && *iter == ' ' );
-                if ( iter != iterEnd && *iter != '|')
+                if ( iter != iterEnd && *iter != '|' && *iter != '&')
                     tmpString.push_back(' ');
             }
-            else if ( *iter == '|' )
+            else if ( *iter == '|')
             {
                 // (Hello|  kity) -> (Hello|kity)
                 while ( ++iter != iterEnd && *iter == ' ' );
                 tmpString.push_back('|');
+            } // end - else if
+            else if ( *iter == '&')
+            {
+                // (Hello&  kity) -> (Hello&kity)
+                while ( ++iter != iterEnd && *iter == ' ' );
+                tmpString.push_back('&');
             } // end - else if
             else tmpString.push_back( *iter++ );
         } // end - while
@@ -168,6 +174,7 @@ namespace sf1r
             switch (*iter)
             {
             case '!':
+            case '&':
             case '|':
             case '(':
             case '[':
@@ -179,10 +186,10 @@ namespace sf1r
                 break;
             case ')':
             case ']':
-                // (test keyword)attach -> (test keyword) attach
+                // (test keyword)attach -> (test keyword)&attach
                 tmpNormString.push_back( *iter++ );
-                if ( iter != iterEnd && *iter != ' ' && *iter != '|')
-                    tmpNormString.push_back(' ');
+                if ( iter != iterEnd && (*iter != '&' && *iter != '|') && (*iter != ')' && *iter != ']'))
+                    tmpNormString.push_back('&');
                 break;
             case '^':
                 // Remove space between ^ and number and add space between number and open bracket.
@@ -193,20 +200,26 @@ namespace sf1r
                 while ( iter != iterEnd && isdigit(*iter) ) // Store digit
                     tmpNormString.push_back( *iter++ );
 
-                if ( openBracket_[*iter] ) // if first char after digit is open bracket, insert space.
-                    tmpNormString.push_back(' ');
+                while ( iter != iterEnd && *iter == ' ') iter ++;
+                if ( iter != iterEnd && *iter != '&' && *iter != '|')
+                    tmpNormString.push_back('&');
+
+                //if ( openBracket_[*iter] ) // if first char after digit is open bracket, insert space.
+                //    tmpNormString.push_back(' ');
                 break;
             case ' ': // (hello world ) -> (hello world)
                 if ( ++iter != iterEnd && !closeBracket_[*iter] )
                     tmpNormString.push_back(' ');
                 break;
             case '"': // Skip all things inside the exact bracket.
-                { // "keyword -> keyword
-                    std::string left(iter, iterEnd);
-                    if (left.find('"', 1) == std::string::npos) {
+                {
+                    // "keyword -> keyword
+                    std::string right(iter, iterEnd);
+                    if (right.find('"', 1) == std::string::npos) {
                         while(++iter != iterEnd && *iter == ' ');
                         break;
                     }
+
                     tmpNormString.push_back('"');
                     while ( ++iter != iterEnd && *iter != '"') tmpNormString.push_back( *iter );
                     if (iter != iterEnd)
@@ -217,7 +230,7 @@ namespace sf1r
                 //prevIter = iter;
                 tmpNormString.push_back( *iter++ );
                 if ( (iter != iterEnd) && (openBracket_[*iter] || *iter == '!') )
-                    tmpNormString.push_back(' ');
+                    tmpNormString.push_back('&');
             } // end - switch()
         } // end - while
 
@@ -269,6 +282,7 @@ namespace sf1r
         const AnalysisInfo& analysisInfo,
         const izenelib::util::UString& rawUStr,
         QueryTreePtr& analyzedQueryTree,
+        std::string& expandedQueryString,
         bool unigramFlag,
         bool isUnigramSearchMode,
         PersonalSearchInfo& personalSearchInfo
@@ -279,7 +293,7 @@ namespace sf1r
 
         // Apply escaped operator.
         QueryParser::parseQuery( rawUStr, tmpQueryTree, unigramFlag );
-        bool ret = recursiveQueryTreeExtension(tmpQueryTree, laInfo, isUnigramSearchMode, personalSearchInfo);
+        bool ret = recursiveQueryTreeExtension(tmpQueryTree, laInfo, isUnigramSearchMode, personalSearchInfo, expandedQueryString);
         if ( ret )
         {
             tmpQueryTree->postProcess(isUnigramSearchMode);
@@ -433,7 +447,8 @@ namespace sf1r
         return true;
     } // end - extendPersonlSearchTree
 
-    bool QueryParser::recursiveQueryTreeExtension(QueryTreePtr& queryTree, const LAEXInfo& laInfo, bool isUnigramSearchMode, PersonalSearchInfo& personalSearchInfo)
+    bool QueryParser::recursiveQueryTreeExtension(QueryTreePtr& queryTree, const LAEXInfo& laInfo, bool isUnigramSearchMode,
+            PersonalSearchInfo& personalSearchInfo, std::string& expandedQueryString)
     {
         switch (queryTree->type_)
         {
@@ -469,6 +484,7 @@ namespace sf1r
             }
             std::string escAddedStr;
             analyzedUStr.convertString(escAddedStr, UString::UTF_8);
+            expandedQueryString = escAddedStr; // for search cache identity
             analyzedUStr.assign(escAddedStr, UString::UTF_8);
             if (!QueryParser::parseQuery(analyzedUStr, tmpQueryTree, laInfo.unigramFlag_, false))
                 return false;
@@ -535,7 +551,7 @@ namespace sf1r
         default:
             for (QTIter iter = queryTree->children_.begin();
                     iter != queryTree->children_.end(); iter++)
-                recursiveQueryTreeExtension(*iter, laInfo, isUnigramSearchMode, personalSearchInfo);
+                recursiveQueryTreeExtension(*iter, laInfo, isUnigramSearchMode, personalSearchInfo, expandedQueryString);
         } // end - switch(queryTree->type_)
         return true;
     } // end - recursiveQueryTreeExtension()
@@ -633,7 +649,7 @@ namespace sf1r
 
         // Use default tokenizer
         AnalysisInfo analysisInfo;
-        int distance;
+        int distance = 20;
         if ( queryType == QueryTree::NEARBY )
         {
             // Store distance

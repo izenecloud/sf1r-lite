@@ -1,4 +1,6 @@
 #include "MiningBundleActivator.h"
+
+#include <common/SFLogger.h>
 #include <bundles/index/IndexSearchService.h>
 
 #include <boost/shared_ptr.hpp>

@@ -16,6 +16,9 @@ struct QueryIdentity
     /// @brief original query string
     std::string query;
 
+    /// @brief expanded query string
+    std::string expandedQueryString;
+
     /// @brief user id, todo, whole user info may be needed.
     std::string userId;
 

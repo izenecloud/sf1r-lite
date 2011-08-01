@@ -3,6 +3,7 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/filesystem.hpp>
 using namespace sf1r::faceted;
 
 OntologyDocs::OntologyDocs():is_open_(false),cid2doc_(NULL)

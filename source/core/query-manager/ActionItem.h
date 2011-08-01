@@ -184,6 +184,11 @@ class RequesterEnvironment
         std::string     queryString_;
 
         ///
+        /// @brief the expanded query string.
+        ///
+        std::string expandedQueryString_;
+
+        ///
         /// @brief a user id. The user id is accompanied with the query string
         ///          in a search request.
         ///
@@ -207,11 +212,11 @@ class RequesterEnvironment
         std::string     ipAddress_;
 
         DATA_IO_LOAD_SAVE(RequesterEnvironment, 
-                &isLogging_&isLogGroupLabels_&encodingType_&queryString_&taxonomyLabel_
-                &nameEntityItem_&nameEntityType_&ipAddress_);
+                &isLogging_&isLogGroupLabels_&encodingType_&queryString_&expandedQueryString_
+                &userID_&taxonomyLabel_&nameEntityItem_&nameEntityType_&ipAddress_);
 
-        MSGPACK_DEFINE(isLogging_,isLogGroupLabels_,encodingType_,queryString_,userID_,taxonomyLabel_,nameEntityItem_,
-                nameEntityItem_,nameEntityType_,ipAddress_);
+        MSGPACK_DEFINE(isLogging_,isLogGroupLabels_,encodingType_,queryString_,expandedQueryString_,
+                userID_,taxonomyLabel_,nameEntityItem_,nameEntityItem_,nameEntityType_,ipAddress_);
 
     private:
         // Log : 2009.09.08
@@ -224,6 +229,8 @@ class RequesterEnvironment
             ar & isLogGroupLabels_;
             ar & encodingType_;
             ar & queryString_;
+            ar & expandedQueryString_;
+            ar & userID_;
             ar & taxonomyLabel_;
             ar & nameEntityItem_;
             ar & nameEntityType_;

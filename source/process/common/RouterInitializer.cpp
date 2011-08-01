@@ -10,7 +10,8 @@
 
 #include "RouterInitializer.h"
 #include <util/driver/ActionHandler.h>
-
+#include <am/tokyo_cabinet/tc_hash.h>
+#include <boost/type_traits.hpp>
 #include <memory> // for std::auto_ptr
 
 #include "controllers/AutoFillController.h"

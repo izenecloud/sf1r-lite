@@ -8,7 +8,8 @@
 
 #include <query-manager/ActionItem.h>
 #include <mining-manager/MiningManager.h>
-
+#include <mining-manager/faceted-submanager/manmade_doc_category_item.h>
+#include <idmlib/tdt/tdt_types.h>
 #include <boost/shared_ptr.hpp>
 
 namespace sf1r
