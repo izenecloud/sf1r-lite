@@ -1,4 +1,4 @@
-#if !defined(_TEXT_SUMMARIZATION_SUBMANAGER_H_)
+#ifndef _TEXT_SUMMARIZATION_SUBMANAGER_H_
 #define _TEXT_SUMMARIZATION_SUBMANAGER_H_
 
 /**
@@ -26,8 +26,7 @@
 
 using namespace izenelib::ir::indexmanager;
 
-namespace sf1r
-{
+namespace sf1r{
 
 /**
  * @brief class of TextSummarizationSubManager returns summary and snippet

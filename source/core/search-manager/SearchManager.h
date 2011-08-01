@@ -1,22 +1,14 @@
-/// @file SearchManager.h
-/// @brief header file of SearchManager class
-/// @author KyungHoon & Dohyun Yun
-/// @date 2008-06-05
-/// @details
-///     - 2009.08.05 Change the constructor and add indexManagerPtr_
-///     - 2009.08.06 Added document manager parameter in the constructor by Dohyun Yun.
-///     - 2009.09.23 Change for the new query evaluation flow by Yingfeng Zhang
-#if !defined(_SEARCH_MANAGER_)
+#ifndef _SEARCH_MANAGER_
 #define _SEARCH_MANAGER_
+
+//TODO Bad Smell Here
+#include <bundles/index/IndexBundleConfiguration.h>
 
 #include <configuration-manager/PropertyConfig.h>
 #include <query-manager/SearchKeywordOperation.h>
 #include <query-manager/ActionItem.h>
-#include <ranking-manager/RankingManager.h>
-#include <document-manager/DocumentManager.h>
-#include "QueryBuilder.h"
-#include "Sorter.h"
-#include "HitQueue.h"
+
+#include <ir/id_manager/IDManager.h>
 #include <util/ustring/UString.h>
 
 #include <boost/shared_ptr.hpp>
@@ -31,6 +23,10 @@
 namespace sf1r {
 
 class SearchCache;
+class QueryBuilder;
+class DocumentManager;
+class RankingManager;
+class IndexManager;
 
 namespace faceted
 {
@@ -116,7 +112,7 @@ private:
     boost::shared_ptr<DocumentManager> documentManagerPtr_;
     boost::shared_ptr<RankingManager> rankingManagerPtr_;
     boost::shared_ptr<QueryBuilder> queryBuilder_;
-    property_weight_map propertyWeightMap_;
+    std::map<propertyid_t, float> propertyWeightMap_;
 
     boost::scoped_ptr<SearchCache> cache_;
     SortPropertyCache* pSorterCache_;

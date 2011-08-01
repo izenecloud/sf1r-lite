@@ -22,7 +22,8 @@
 
 using namespace std;
 using namespace izenelib::util;
-using namespace sf1r;
+
+namespace sf1r{
 
 const unsigned int SnippetGeneratorSubManager::NUM_OF_SENTENCES = 2;
 const unsigned int SnippetGeneratorSubManager::NUM_OF_PREFIX_WORD = 2;
@@ -313,3 +314,4 @@ double SnippetGeneratorSubManager::computeScore_(
     return score;
 }
 
+}

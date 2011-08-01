@@ -7,15 +7,13 @@
 
 #include <common/SFLogger.h>
 #include "DocumentManager.h"
+#include "DocContainer.h"
+#include "highlighter/Highlighter.h"
+#include "snippet-generation-submanager/SnippetGeneratorSubManager.h"
 #include "text-summarization-submanager/TextSummarizationSubManager.h"
 #include <configuration-manager/ConfigurationTool.h>
 #include <util/profiler/ProfilerGroup.h>
 #include <license-manager/LicenseManager.h>
-
-#include <langid/language_id.h>
-#include <langid/factory.h>
-#include <langid/knowledge.h>
-#include <langid/analyzer.h>
 
 #include <fstream>
 #include <boost/archive/xml_oarchive.hpp>
@@ -28,30 +26,36 @@
 namespace sf1r
 {
 
-const std::string DocumentManager::INDEX_FILE = "DocumentPropertyTable_2mm";
 const std::string DocumentManager::ACL_FILE = "ACLTable";
-const std::string DocumentManager::PROPERTY_LENGTH_FILE =
-    "PropertyLengthDb.xml";
+const std::string DocumentManager::PROPERTY_LENGTH_FILE = "PropertyLengthDb.xml";
 const std::string DocumentManager::PROPERTY_BLOCK_SUFFIX = ".blocks";
 
 ilplib::langid::Factory* DocumentManager::langIdFactory = ilplib::langid::Factory::instance();
 
-DocumentManager::DocumentManager(const std::string& path,
-                                 const std::set<PropertyConfig, PropertyComp>& schema,
-                                 const izenelib::util::UString::EncodingType encodingType,
-                                 size_t documentCacheNum) :
-        path_(path), propertyValueTable_(path),//propertyValueTable_(path + INDEX_FILE), //aclTable_(path + ACL_FILE),
-        documentCache_(100),
-        schema_(schema),
-        encodingType_(encodingType), propertyLengthDb_(),
-        propertyIdMapper_(), propertyAliasMap_(), displayLengthMap_(),
-        maxSnippetLength_(200), snippetGenerator_(), highlighter_(), threadPool_(20)
+DocumentManager::DocumentManager(
+    const std::string& path,
+    const std::set<PropertyConfig, PropertyComp>& schema,
+    const izenelib::util::UString::EncodingType encodingType,
+    size_t documentCacheNum
+)
+    :path_(path)
+    ,documentCache_(100)
+    ,schema_(schema)
+    ,encodingType_(encodingType)
+    ,propertyLengthDb_()
+    ,propertyIdMapper_()
+    ,propertyAliasMap_()
+    ,displayLengthMap_()
+    ,maxSnippetLength_(200)
+    ,threadPool_(20)
 {
-    //propertyValueTable_.setCacheSize(documentCacheNum);
-    propertyValueTable_.open();
+    propertyValueTable_ = new DocContainer(path);
+    propertyValueTable_->open();
     buildPropertyIdMapper_();
     restorePropertyLengthDb_();
     //aclTable_.open();
+    snippetGenerator_ = new SnippetGeneratorSubManager;
+    highlighter_ = new Highlighter;
 
     langIdAnalyzer_ = langIdFactory->createAnalyzer();
     langIdKnowledge_ = langIdFactory->createKnowledge();
@@ -59,13 +63,16 @@ DocumentManager::DocumentManager(const std::string& path,
 
 DocumentManager::~DocumentManager()
 {
+    if(propertyValueTable_) delete propertyValueTable_;
+    if(snippetGenerator_) delete snippetGenerator_;
+    if(highlighter_) delete highlighter_;
     if (langIdKnowledge_)  delete langIdKnowledge_;
     if (langIdAnalyzer_) delete langIdAnalyzer_;
 }
 
 bool DocumentManager::flush()
 {
-    propertyValueTable_.flush();
+    propertyValueTable_->flush();
     return savePropertyLengthDb_();
 }
 
@@ -115,9 +122,8 @@ bool DocumentManager::insertDocument(const Document& document)
         COBRA_RESTRICT_EXCEED_N_RETURN_FALSE( document.getId(), LicenseManager::TRIAL_MAX_DOC, 0 );
     }
 
-    if (!propertyValueTable_.insert(document.getId(), document))
+    if (!propertyValueTable_->insert(document.getId(), document))
     {
-        sflog->error(SFL_IDX, 50101, (INDEX_FILE).c_str());
         return false;
     }
 
@@ -137,7 +143,7 @@ bool DocumentManager::updateDocument(const Document& document)
         COBRA_RESTRICT_EXCEED_N_RETURN_FALSE( document.getId(), LicenseManager::TRIAL_MAX_DOC, 0 );
     }
 
-    if (propertyValueTable_.update(document.getId(), document))
+    if (propertyValueTable_->update(document.getId(), document))
     {
         documentCache_.del(document.getId());
         return true;
@@ -193,7 +199,7 @@ bool DocumentManager::isDeleted(docid_t docId)
 bool DocumentManager::removeDocument(docid_t docId)
 {
     //if(acl_) aclTable_.del(docId);
-    return propertyValueTable_.del(docId);
+    return propertyValueTable_->del(docId);
     return true;
 }
 
@@ -216,8 +222,11 @@ std::size_t DocumentManager::getTotalPropertyLength(const std::string& property)
     return 0;
 }
 
-bool DocumentManager::getPropertyValue(docid_t docId,
-                                       const std::string& propertyName, PropertyValue& result)
+bool DocumentManager::getPropertyValue(
+    docid_t docId,
+    const std::string& propertyName, 
+    PropertyValue& result
+)
 {
 
     Document doc;
@@ -246,10 +255,13 @@ bool DocumentManager::getPropertyValue(docid_t docId,
     return true;
 }
 
-bool DocumentManager::getDocument(docid_t docId, Document& document)
+bool DocumentManager::getDocument(
+    docid_t docId, 
+    Document& document
+)
 {
     CREATE_SCOPED_PROFILER ( getDocument, "DocumentManager", "DocumentManager::getDocument");
-    return propertyValueTable_.get(docId, document);
+    return propertyValueTable_->get(docId, document);
 }
 
 bool DocumentManager::getDocumentAsync(docid_t docId)
@@ -261,16 +273,18 @@ bool DocumentManager::getDocumentAsync(docid_t docId)
     return true;
 }
 
-
-bool DocumentManager::getDocument_impl(docid_t docId, Document& document,
-                                       boost::detail::atomic_count* finishedJobs)
+bool DocumentManager::getDocument_impl(
+    docid_t docId, 
+    Document& document,
+    boost::detail::atomic_count* finishedJobs
+)
 {
     if (documentCache_.getValue(docId, document) )
     {
         ++(*finishedJobs);
         return true;
     }
-    if ( propertyValueTable_.get(docId, document) )
+    if ( propertyValueTable_->get(docId, document) )
     {
         documentCache_.insertValue(docId, document);
         ++(*finishedJobs);
@@ -282,16 +296,7 @@ bool DocumentManager::getDocument_impl(docid_t docId, Document& document,
 
 docid_t DocumentManager::getMaxDocId()
 {
-    /*
-    	DM_SDBCursor locn = propertyValueTable_.get_last_locn();
-    	docid_t did;
-    	Document doc;
-    	if(propertyValueTable_.get(locn, did, doc ) )
-    		return did;
-    	else
-    		return 0;
-    */
-    return propertyValueTable_.getMaxDocId();
+    return propertyValueTable_->getMaxDocId();
 }
 
 void DocumentManager::buildPropertyIdMapper_()
@@ -462,8 +467,10 @@ bool DocumentManager::getRawTextOfDocuments(
     }
 }
 
-bool DocumentManager::getDocumentsParallel(const std::vector<unsigned int>& ids,
-        vector<Document>& docs)
+bool DocumentManager::getDocumentsParallel(
+    const std::vector<unsigned int>& ids,
+    vector<Document>& docs
+)
 {
     docs.resize(ids.size() );
     boost::detail::atomic_count finishedJobs(0);
@@ -476,7 +483,8 @@ bool DocumentManager::getDocumentsParallel(const std::vector<unsigned int>& ids,
 }
 
 bool DocumentManager::getRawTextOfDocuments(
-    const std::vector<docid_t>& docIdList, const string& propertyName,
+    const std::vector<docid_t>& docIdList, 
+    const string& propertyName,
     const unsigned int option,
     const std::vector<izenelib::util::UString>& queryTerms,
     std::vector<izenelib::util::UString>& rawTextList,
@@ -514,10 +522,14 @@ bool DocumentManager::getRawTextOfDocuments(
     return true;
 }
 
-bool DocumentManager::getRawTextOfOneDocument_(const docid_t docId,
-        const string& propertyName, const unsigned int option,
-        const std::vector<izenelib::util::UString>& queryTerms,
-        izenelib::util::UString& outSnippet, izenelib::util::UString& rawText)
+bool DocumentManager::getRawTextOfOneDocument_(
+    const docid_t docId,
+    const string& propertyName, 
+    const unsigned int option,
+    const std::vector<izenelib::util::UString>& queryTerms,
+    izenelib::util::UString& outSnippet, 
+    izenelib::util::UString& rawText
+)
 {
 
     if (!getPropertyValue(docId, propertyName, rawText))
@@ -550,11 +562,13 @@ bool DocumentManager::getRawTextOfOneDocument_(const docid_t docId,
 
 }
 
-bool DocumentManager::processOptionForRawText(const unsigned int option,
-        const std::vector<izenelib::util::UString>& queryTerms,
-        const izenelib::util::UString& rawText,
-        const std::vector<CharacterOffset>& sentenceOffsets,
-        izenelib::util::UString& result)
+bool DocumentManager::processOptionForRawText(
+    const unsigned int option,
+    const std::vector<izenelib::util::UString>& queryTerms,
+    const izenelib::util::UString& rawText,
+    const std::vector<CharacterOffset>& sentenceOffsets,
+    izenelib::util::UString& result
+)
 {
     switch (option)
     {
@@ -563,28 +577,31 @@ bool DocumentManager::processOptionForRawText(const unsigned int option,
         break;
 
     case O_RAWTEXT:
-        highlighter_.getHighlightedText(rawText, queryTerms, encodingType_,
+        highlighter_->getHighlightedText(rawText, queryTerms, encodingType_,
                                         result);
         break;
 
     case X_SNIPPET:
-        snippetGenerator_.getSnippet(rawText, sentenceOffsets, queryTerms,
+        snippetGenerator_->getSnippet(rawText, sentenceOffsets, queryTerms,
                                      maxSnippetLength_, false, encodingType_, result);
         break;
 
     case O_SNIPPET:
-        snippetGenerator_.getSnippet(rawText, sentenceOffsets, queryTerms,
+        snippetGenerator_->getSnippet(rawText, sentenceOffsets, queryTerms,
                                      maxSnippetLength_, true, encodingType_, result);
         break;
     }
     return true;
 }
 
-bool DocumentManager::getSummary(const izenelib::util::UString& rawText,
-                                 const std::vector<CharacterOffset>& sentenceOffsets,
-                                 unsigned int numSentences, const unsigned int option,
-                                 const std::vector<izenelib::util::UString>& queryTerms,
-                                 izenelib::util::UString& summary)
+bool DocumentManager::getSummary(
+    const izenelib::util::UString& rawText,
+    const std::vector<CharacterOffset>& sentenceOffsets,
+    unsigned int numSentences, 
+    const unsigned int option,
+    const std::vector<izenelib::util::UString>& queryTerms,
+    izenelib::util::UString& summary
+)
 {
     uint32_t offsetIndex = 1;
     uint32_t summaryCount = 0;
@@ -611,7 +628,7 @@ bool DocumentManager::getSummary(const izenelib::util::UString& rawText,
             break;
         case O_RAWTEXT: //Do highlight
         case O_SNIPPET:
-            if (highlighter_.getHighlightedText(sentence, queryTerms,
+            if (highlighter_->getHighlightedText(sentence, queryTerms,
                                                 encodingType_, result) == false)
             {
                 result = sentence;
@@ -636,15 +653,18 @@ unsigned int DocumentManager::getDisplayLength_(const string& propertyName)
     return 0;
 }
 
-bool DocumentManager::highlightText(const izenelib::util::UString& text,
-                                    const std::vector<izenelib::util::UString> queryTerms, izenelib::util::UString& outText)
+bool DocumentManager::highlightText(
+    const izenelib::util::UString& text,
+    const std::vector<izenelib::util::UString> queryTerms, 
+    izenelib::util::UString& outText
+)
 {
     izenelib::util::UString highlightedText;
-    highlighter_.getHighlightedText(text, queryTerms, encodingType_,
+    highlighter_->getHighlightedText(text, queryTerms, encodingType_,
                                     highlightedText);
     outText.swap(highlightedText);
     return true;
 }
 
 }
-// end - namespace sf1r
+

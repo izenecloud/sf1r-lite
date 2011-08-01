@@ -16,6 +16,8 @@
 using namespace std;
 using namespace izenelib::util;
 
+namespace sf1r{
+
 const unsigned int Highlighter::START_FLAG = 0;
 const unsigned int Highlighter::END_FLAG = 1;
 
@@ -211,3 +213,4 @@ void Highlighter::setHighlightTags(
     }
 }
 
+}
