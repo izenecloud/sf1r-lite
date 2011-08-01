@@ -13,57 +13,89 @@
 ///       Author: Jinglei
 
 
-#ifndef _MINING_MANAGER_H_
-#define _MINING_MANAGER_H_
+#ifndef SF1R_MINING_MANAGER_H_
+#define SF1R_MINING_MANAGER_H_
 
-
-#include "MiningManagerDef.h"
-#include "status.h"
-#include "MiningQueryLogHandler.h"
-#include "duplicate-detection-submanager/DupDetector2.h"
-#include "query-recommend-submanager/QueryRecommendSubmanager.h"
-#include "query-recommend-submanager/RecommendManager.h"
-#include "taxonomy-generation-submanager/TaxonomyGenerationSubManager.h"
-#include "taxonomy-generation-submanager/TaxonomyInfo.h"
-#include "taxonomy-generation-submanager/label_similarity.h"
-#include "similarity-detection-submanager/SimilarityIndex.h"
-#include "query-correction-submanager/QueryCorrectionSubmanager.h"
-#include "faceted-submanager/ontology_manager.h"
-#include "MiningManagerDef.h"
 #include <common/ResultType.h>
-#include <common/Status.h>
-#include <query-manager/ActionItem.h>
 #include <configuration-manager/PropertyConfig.h>
+#include <query-manager/ActionItem.h>
 #include <configuration-manager/MiningConfig.h>
-#include <document-manager/Document.h>
-#include <index-manager/IndexManager.h>
-#include <am/3rdparty/rde_hash.h>
-#include <am/sdb_hash/sdb_hash.h>
-#include <util/izene_log.h>
-#include <idmlib/util/idm_analyzer.h>
-#include <idmlib/similarity/term_similarity.h>
-#include <idmlib/tdt/integrator.h>
-#include <idmlib/util/container_switch.h>
-#include <idmlib/similarity/all-pairs-similarity-search/all_pairs_output.h>
+#include <configuration-manager/MiningSchema.h>
 #include <ir/id_manager/IDManager.h>
 #include <boost/shared_ptr.hpp>
-#include <boost/optional.hpp>
-
+#include <boost/date_time/gregorian/gregorian.hpp>
+#include <boost/thread/mutex.hpp>
 #include <string>
 #include <map>
-#include <boost/thread/mutex.hpp>
 
-using namespace izenelib::ir::idmanager;
+
+
+namespace izenelib
+{
+namespace ir
+{
+namespace indexmanager
+{
+class IndexReader;   
+}
+
+}
+}
+
+
+namespace idmlib
+{
+namespace tdt
+{
+class Storage;
+class TrackResult;
+}
+
+namespace sim
+{
+template <typename T> class TermSimilarityTable;
+template <class T> class SimOutputCollector;
+template <class T, typename A, typename B, typename C> class TermSimilarity;
+class DocSimOutput;
+}
+
+namespace util
+{
+template <class T> class ContainerSwitch;
+class IDMAnalyzer;
+}
+
+}
+
+
 namespace sf1r
 {
 
+class DupDetector2;
 class GroupLabelLogger;
+class QueryRecommendSubmanager;
+class QueryRecommendRep;
+class RecommendManager;
+class LabelManager;
+class TaxonomyGenerationSubManager;
+class TaxonomyInfo;
+class LAManager;
+class Document;
+class DocumentManager;
+class IndexManager;
+class SearchManager;
+
+namespace sim
+{
+class SimilarityIndex;    
+}
 
 namespace faceted
 {
 class GroupManager;
 class AttrManager;
 class PropertyDiversityReranker;
+class OntologyManager;
 }
 
 /**
@@ -78,7 +110,7 @@ typedef DupDetector2 DupDType;
 typedef idmlib::util::ContainerSwitch<idmlib::tdt::Storage> TdtStorageType;
 typedef idmlib::sim::TermSimilarityTable<uint32_t> SimTableType;
 typedef idmlib::sim::SimOutputCollector<SimTableType> SimCollectorType;
-typedef idmlib::sim::TermSimilarity<SimCollectorType> TermSimilarityType;
+typedef idmlib::sim::TermSimilarity<SimCollectorType, uint32_t, uint32_t, uint32_t> TermSimilarityType;
 public:
     /**
      * @brief The constructor of MiningManager.
@@ -91,7 +123,7 @@ public:
                   const boost::shared_ptr<DocumentManager>& documentManager,
                   const boost::shared_ptr<IndexManager>& index_manager,
                   const boost::shared_ptr<SearchManager>& searchManager,
-                  const boost::shared_ptr<IDManager>& idManager,
+                  const boost::shared_ptr<izenelib::ir::idmanager::IDManager>& idManager,
                   const std::string& collectionName,
                   const schema_type& schema,
                   const MiningConfig& miningConfig,
@@ -222,9 +254,9 @@ public:
 
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
     
-    bool GetTdtInTimeRange(const idmlib::tdt::TimeIdType& start, const idmlib::tdt::TimeIdType& end, std::vector<izenelib::util::UString>& topic_list);
+    bool GetTdtInTimeRange(const boost::gregorian::date& start, const boost::gregorian::date& end, std::vector<izenelib::util::UString>& topic_list);
     
-    bool GetTdtTopicInfo(const izenelib::util::UString& text, idmlib::tdt::TopicInfoType& info);
+    bool GetTdtTopicInfo(const izenelib::util::UString& text, std::pair<idmlib::tdt::TrackResult, std::vector<izenelib::util::UString> >& info);
 
 //     void getMiningStatus(Status& status);
 
@@ -351,13 +383,13 @@ private:
 
     /** SIM */
 //     TIRDatabase* termIndex_;
-    boost::shared_ptr<SimilarityIndex> similarityIndex_;
+    boost::shared_ptr<sim::SimilarityIndex> similarityIndex_;
     std::string sim_path_;
     boost::shared_ptr<idmlib::sim::DocSimOutput> similarityIndexEsa_;
     /** FACETED */
     boost::shared_ptr<faceted::OntologyManager> faceted_;
     std::string faceted_path_;
-    boost::shared_ptr<IDManager>idManager_;
+    boost::shared_ptr<izenelib::ir::idmanager::IDManager> idManager_;
 
     /** GROUP BY */
     faceted::GroupManager* groupManager_;

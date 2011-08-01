@@ -8,6 +8,8 @@
 #ifndef SF1R_ONTOLOGY_H_
 #define SF1R_ONTOLOGY_H_
 
+#include <stack>
+#include <queue>
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/serialization.hpp>
 #include <boost/thread/shared_mutex.hpp>

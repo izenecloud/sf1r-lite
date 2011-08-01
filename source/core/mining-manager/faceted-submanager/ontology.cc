@@ -2,7 +2,8 @@
 #include "manmade_doc_category_item.h"
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
-#include <boost/algorithm/string/split.hpp>
+// #include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string.hpp>
 #include <util/filesystem.h>
 
 

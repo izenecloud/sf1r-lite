@@ -8,6 +8,8 @@
 #ifndef SF1R_ONTOLOGY_DOCS_H_
 #define SF1R_ONTOLOGY_DOCS_H_
 
+#include <am/tokyo_cabinet/tc_hash.h>
+
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/serialization.hpp>
 
