@@ -188,6 +188,7 @@ namespace sf1r
             case ']':
                 // (test keyword)attach -> (test keyword)&attach
                 tmpNormString.push_back( *iter++ );
+                if ( iter != iterEnd && *iter == ' ' ) iter++;
                 if ( iter != iterEnd && (*iter != '&' && *iter != '|') && (*iter != ')' && *iter != ']'))
                     tmpNormString.push_back('&');
                 break;
@@ -200,7 +201,7 @@ namespace sf1r
                 while ( iter != iterEnd && isdigit(*iter) ) // Store digit
                     tmpNormString.push_back( *iter++ );
 
-                while ( iter != iterEnd && *iter == ' ') iter ++;
+                if ( iter != iterEnd && *iter == ' ') iter ++;
                 if ( iter != iterEnd && *iter != '&' && *iter != '|')
                     tmpNormString.push_back('&');
 
@@ -208,8 +209,13 @@ namespace sf1r
                 //    tmpNormString.push_back(' ');
                 break;
             case ' ': // (hello world ) -> (hello world)
-                if ( ++iter != iterEnd && !closeBracket_[*iter] )
-                    tmpNormString.push_back(' ');
+                if ( ++iter != iterEnd )
+                {
+                    if ( operStr_.find(*iter) == string::npos )
+                        tmpNormString.push_back(' ');
+                    else if ( *iter != '&' && *iter != '|' && (!closeBracket_[*iter] || *iter == '"') )
+                        tmpNormString.push_back('&');
+                }
                 break;
             case '"': // Skip all things inside the exact bracket.
                 {
@@ -224,6 +230,10 @@ namespace sf1r
                     while ( ++iter != iterEnd && *iter != '"') tmpNormString.push_back( *iter );
                     if (iter != iterEnd)
                         tmpNormString.push_back( *iter++ ); // insert last "
+
+                    if ( iter != iterEnd && *iter == ' ' ) iter++;
+                    if ( *iter != '&' && *iter != '|')
+                        tmpNormString.push_back('&');
                     break;
                 }
             default: // Store char && add space if openBracket is attached to the back of closeBracket.
@@ -253,8 +263,7 @@ namespace sf1r
         queryUStr.convertString(queryString, izenelib::util::UString::UTF_8);
 
         processEscapeOperator(queryString);
-        ///normalizeQuery(queryString, normQueryString);
-        normQueryString = queryString;
+        normalizeQuery(queryString, normQueryString);
 
         // Remove redundant space for chinese character.
         if ( removeChineseSpace )
