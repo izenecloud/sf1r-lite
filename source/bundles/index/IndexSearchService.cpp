@@ -767,7 +767,6 @@ bool IndexSearchService::getDocumentsByIds(
         }
     }
 
-    vector<sf1r::docid_t> tmpIdList;
     BitVector* bitVector = indexManager_->getIndexReader()->getDocFilter();
     if (bitVector)
     {
