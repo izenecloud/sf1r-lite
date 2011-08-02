@@ -5,6 +5,7 @@ using namespace std;
 
 NOTDocumentIterator::NOTDocumentIterator()
 {
+   setNot(true);
 }
 
 NOTDocumentIterator::~NOTDocumentIterator()
