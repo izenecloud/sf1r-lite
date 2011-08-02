@@ -3,12 +3,22 @@
 ///     - 2009.08.27 change variable names. (topKDocs_ -> topKDocs_ , topKDocItemList_ -> topKDocItemList_) by Dohyun Yun
 ///     - 2009.11.25 refine the code writing -Jinglei
 
-#include <common/SFLogger.h>
-#include <log-manager/LogManager.h>
-#include "util/FSUtil.hpp"
-#include "util/TermUtil.hpp"
-#include "util/MUtil.hpp"
+#include <la-manager/LAManager.h>
+#include <configuration-manager/PropertyConfig.h>
+#include <document-manager/Document.h>
 #include "MiningManager.h"
+#include "MiningQueryLogHandler.h"
+#include "duplicate-detection-submanager/DupDetector2.h"
+#include "query-recommend-submanager/QueryRecommendSubmanager.h"
+#include "query-recommend-submanager/RecommendManager.h"
+#include "query-recommend-submanager/QueryRecommendRep.h"
+#include "taxonomy-generation-submanager/TaxonomyGenerationSubManager.h"
+#include "taxonomy-generation-submanager/TaxonomyInfo.h"
+#include "taxonomy-generation-submanager/label_similarity.h"
+#include "similarity-detection-submanager/SimilarityIndex.h"
+#include "faceted-submanager/ontology_manager.h"
+#include <idmlib/tdt/integrator.h>
+#include <idmlib/util/container_switch.h>
 #include "taxonomy-generation-submanager/TaxonomyRep.h"
 #include "taxonomy-generation-submanager/TaxonomyInfo.h"
 #include "taxonomy-generation-submanager/LabelManager.h"
@@ -26,20 +36,17 @@
 #include "group-label-logger/GroupLabelLogger.h"
 
 #include <search-manager/SearchManager.h>
+#include <index-manager/IndexManager.h>
 
+#include <idmlib/util/idm_analyzer.h>
 #include <idmlib/semantic_space/esa/DocumentRepresentor.h>
 #include <idmlib/semantic_space/esa/ExplicitSemanticInterpreter.h>
 #include <idmlib/similarity/all-pairs-similarity-search/data_set_iterator.h>
 #include <idmlib/similarity/all-pairs-similarity-search/all_pairs_search.h>
 #include <idmlib/similarity/all-pairs-similarity-search/all_pairs_output.h>
-//#include <process/common/CollectionMeta.h>
-//#include <process/common/XmlConfigParser.h>
-
-
+#include <idmlib/similarity/term_similarity.h>
+#include <idmlib/tdt/tdt_types.h>
 #include <directory-manager/DirectoryCookie.h>
-#include <pwd.h>
-
-#include <util/profiler/ProfilerGroup.h>
 #include <ir/index_manager/index/IndexReader.h>
 #include <am/3rdparty/rde_hash.h>
 #include <util/ClockTimer.h>
@@ -66,7 +73,7 @@
 #include <memory> // auto_ptr
 
 using namespace boost::filesystem;
-
+using namespace izenelib::ir::idmanager;
 using namespace sf1r;
 namespace bfs = boost::filesystem;
 MiningManager::MiningManager(const std::string& collectionDataPath, const std::string& queryDataPath,
@@ -245,7 +252,7 @@ bool MiningManager::open()
             {
                 std::string hdb_path = sim_path_ + "/hdb";
                 boost::filesystem::create_directories(hdb_path);
-                similarityIndex_.reset(new SimilarityIndex(sim_path_, hdb_path));
+                similarityIndex_.reset(new sim::SimilarityIndex(sim_path_, hdb_path));
             }
             else
             {

@@ -18,8 +18,8 @@
 
 #include <mining-manager/taxonomy-generation-submanager/TgTypes.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
-#include <idmlib/tdt/tdt_types.h>
-#include <mining-manager/faceted-submanager/manmade_doc_category_item.h>
+// #include <idmlib/tdt/tdt_types.h>
+// #include <mining-manager/faceted-submanager/manmade_doc_category_item.h>
 #include <util/ustring/UString.h>
 #include <util/izene_serialization.h>
 #include <3rdparty/msgpack/msgpack.hpp>

@@ -1,7 +1,10 @@
 #include <common/SFLogger.h>
+
+#include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
 #include <query-manager/QueryIdentity.h>
 #include <query-manager/ActionItem.h>
+#include <ranking-manager/RankingManager.h>
 #include <ranking-manager/RankQueryProperty.h>
 #include <mining-manager/faceted-submanager/GroupFilterBuilder.h>
 #include <mining-manager/faceted-submanager/GroupFilter.h>
@@ -11,6 +14,9 @@
 #include "SearchManager.h"
 #include "CustomRanker.h"
 #include "SearchCache.h"
+#include "QueryBuilder.h"
+#include "Sorter.h"
+#include "HitQueue.h"
 
 #include <util/swap.h>
 #include <util/get.h>

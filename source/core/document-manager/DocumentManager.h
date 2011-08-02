@@ -16,14 +16,10 @@
 #include <util/profiler/ProfilerGroup.h>
 #include <common/PropertyKey.h>
 #include <common/PropertyValue.h>
-#include "Document.h"
-#include "DocContainer.h"
 
-#include "snippet-generation-submanager/SnippetGeneratorSubManager.h"
-#include "highlighter/Highlighter.h"
+#include "Document.h"
 
 #include <configuration-manager/PropertyConfig.h>
-#include <sdb/SequentialDB.h>
 #include <util/IdMapper.h>
 
 #include <ir/id_manager/IDManager.h>
@@ -39,7 +35,6 @@
 #include <set>
 #include <vector>
 #include <deque>
-//#include <cache/IzeneCache.h>
 
 #include <boost/thread.hpp>
 #include <boost/threadpool.hpp>
@@ -57,17 +52,13 @@ enum DMOptionFlag
     O_SNIPPET = 3,
 };
 
+class SnippetGeneratorSubManager;
+class Highlighter;
+class DocContainer;
+
 class DocumentManager
 {
-
-    typedef izenelib::sdb::ordered_sdb_storage<
-    docid_t,
-    Document,
-    izenelib::util::ReadWriteLock>	DM_SDB;
-
-    typedef DM_SDB::SDBCursor DM_SDBCursor;
     typedef uint32_t CharacterOffset;
-
 public:
     typedef Document DocumentType;
     /**
@@ -76,10 +67,12 @@ public:
      * @param path working directory, all disk files should reside here
      * @param propertyConfigs property specification read from config file.
      */
-    DocumentManager(const std::string& path,
-                    const std::set<PropertyConfig, PropertyComp>& schema,
-                    izenelib::util::UString::EncodingType encondingType,
-                    size_t documentCacheNum = 20000);
+    DocumentManager(
+        const std::string& path,
+        const std::set<PropertyConfig, PropertyComp>& schema,
+        izenelib::util::UString::EncodingType encondingType,
+        size_t documentCacheNum = 20000
+    );
     /**
      * @brief a destructor
      */
@@ -157,23 +150,19 @@ public:
      * @return \c true if the document existed, and \a document has set to the
      *         correct value, \c false otherwise.
      */
-    bool getDocument(docid_t docId, Document& document);
+    bool getDocument(
+        docid_t docId, 
+        Document& document
+    );
 
     bool getDocumentAsync(docid_t docId);
 
-    bool getDocument_impl(docid_t docId, Document& document, boost::detail::atomic_count* finishedJobs);
-    /*
-    		DM_SDBCursor get_first_locn() {
-    			return propertyValueTable_.get_first_locn();
-    		}
-    		bool search(docid_t docId, DM_SDBCursor& locn){
-    			return propertyValueTable_.search( docId, locn );
-    		}
+    bool getDocument_impl(
+        docid_t docId, 
+        Document& document, 
+        boost::detail::atomic_count* finishedJobs
+    );
 
-            bool seq(DM_SDBCursor& locn){
-    			return propertyValueTable_.seq( locn );
-            }
-    */
     /**
      * @brief gets total \c propertyLength_[i] in \c propertyDb_[i]
      * @param property property name
@@ -189,8 +178,11 @@ public:
      * @param[out] result fetched value if return \c true.
      * @return \c true if property has been found
      */
-    bool getPropertyValue(docid_t docId, const std::string& propertyName,
-                          PropertyValue& result);
+    bool getPropertyValue(
+        docid_t docId, 
+        const std::string& propertyName,
+        PropertyValue& result
+    );
 
     /**
      * @brief get property value and convert to type \c T
@@ -250,7 +242,8 @@ public:
         const std::vector<izenelib::util::UString>& queryTermString,
         std::vector<izenelib::util::UString>& outSnippetList,
         std::vector<izenelib::util::UString>& outRawSummaryList,
-        std::vector<izenelib::util::UString>& outFullTextList);
+        std::vector<izenelib::util::UString>& outFullTextList
+    );
 
     /**
      * @brief handles snippet and highlight with options: Method needs
@@ -273,12 +266,14 @@ public:
      *                             presentation manager for mining operation and retrieval.
      * @return \c true if fetching rawtext for given property is successful
      */
-    bool getRawTextOfDocuments(const std::vector<docid_t>& docIdList,
-                               const string& propertyName,
-                               const unsigned int option,
-                               const std::vector<izenelib::util::UString>& queryTerms,
-                               std::vector<izenelib::util::UString>& outSnippetList,
-                               std::vector<izenelib::util::UString>& outFullTextList);
+    bool getRawTextOfDocuments(
+        const std::vector<docid_t>& docIdList,
+        const string& propertyName,
+        const unsigned int option,
+        const std::vector<izenelib::util::UString>& queryTerms,
+        std::vector<izenelib::util::UString>& outSnippetList,
+        std::vector<izenelib::util::UString>& outFullTextList
+    );
 
     /**
      * @brief  returns the maximum doc Id value managed by document manager. The docId
@@ -325,12 +320,14 @@ private:
      *                             presentation manager for mining operation and retrieval.
      * @return returns true if getting @a document is successful
      */
-    bool getRawTextOfOneDocument_(const docid_t docId,
-                                  const string& propertyName,
-                                  const unsigned int option,
-                                  const std::vector<izenelib::util::UString>& queryTerms,
-                                  izenelib::util::UString& outSnippetList,
-                                  izenelib::util::UString& outFullTextList);
+    bool getRawTextOfOneDocument_(
+        const docid_t docId,
+        const string& propertyName,
+        const unsigned int option,
+        const std::vector<izenelib::util::UString>& queryTerms,
+        izenelib::util::UString& outSnippetList,
+        izenelib::util::UString& outFullTextList
+    );
 
     /**
      * @brief process options for summary, snippet and highlight for getRawText
@@ -369,16 +366,21 @@ private:
      *                      highlighted as stated by \c option
      * @return returns true when summary is generated.
      */
-    bool getSummary(const izenelib::util::UString& rawText,
-                    const std::vector<CharacterOffset>& sentenceOffsets,
-                    unsigned int numSentences,
-                    const unsigned int option,
-                    const std::vector<izenelib::util::UString>& queryTerms,
-                    izenelib::util::UString& summary);
+    bool getSummary(
+        const izenelib::util::UString& rawText,
+        const std::vector<CharacterOffset>& sentenceOffsets,
+        unsigned int numSentences,
+        const unsigned int option,
+        const std::vector<izenelib::util::UString>& queryTerms,
+        izenelib::util::UString& summary
+    );
 
     unsigned int getDisplayLength_(const string& propertyName);
 
-    bool getDocumentsParallel(const std::vector<unsigned int>& ids, vector<Document>& docs);
+    bool getDocumentsParallel(
+        const std::vector<unsigned int>& ids, 
+        vector<Document>& docs
+    );
 
 private:
     /// @brief path for the index property file
@@ -387,9 +389,7 @@ private:
     bool acl_;
 
     /// @brief SDB file that holds all corresponding property and files
-    //DM_SDB propertyValueTable_;
-
-    DocContainer  propertyValueTable_;
+    DocContainer* propertyValueTable_;
 
     /// @brief document cache holds the retrieved property values of document
     izenelib::cache::IzeneCache<docid_t, Document, izenelib::util::ReadWriteLock> documentCache_;
@@ -417,10 +417,10 @@ private:
     unsigned int maxSnippetLength_;
 
     /// @brief used for calling snippet generation submanager to generate snippet
-    SnippetGeneratorSubManager snippetGenerator_;
+    SnippetGeneratorSubManager* snippetGenerator_;
 
     /// @brief used for highlighting the rawtext snippet
-    Highlighter highlighter_;
+    Highlighter* highlighter_;
 
     boost::mutex mutex_;
 

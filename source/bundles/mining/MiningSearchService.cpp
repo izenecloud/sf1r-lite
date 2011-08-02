@@ -1,5 +1,5 @@
 #include "MiningSearchService.h"
-
+#include <mining-manager/faceted-submanager/ontology_manager.h>
 namespace sf1r
 {
 

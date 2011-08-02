@@ -767,6 +767,19 @@ bool IndexSearchService::getDocumentsByIds(
         }
     }
 
+    BitVector* bitVector = indexManager_->getIndexReader()->getDocFilter();
+    if (bitVector)
+    {
+        vector<sf1r::docid_t> tmpIdList;
+        for(size_t i = 0; i < idList.size(); i++)
+        {
+            if(!bitVector->test(idList[i]))
+                tmpIdList.push_back(idList[i]);
+        }
+
+        idList.swap(tmpIdList);
+    }
+
     // get query terms
    
     izenelib::util::UString rawQueryUStr(

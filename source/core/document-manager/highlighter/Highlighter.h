@@ -17,7 +17,7 @@
 #include <util/ustring/UString.h>
 #include <vector>
 
-using namespace sf1r;
+namespace sf1r{
 
 class Highlighter
 {
@@ -84,4 +84,5 @@ private:
     static const unsigned int END_FLAG;
 };
 
+}
 #endif //_HIGHLIGHTER_H_
