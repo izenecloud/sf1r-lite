@@ -39,7 +39,7 @@ public:
     }
 
     inline void setQuery( const std::string & query ) {
-        query_ = boost::replace_all_copy(query, "\"", "\\\"");
+        query_ = boost::replace_all_copy(query, "\"", "\"\"");
         queryPresent_ = true;
     }
 
