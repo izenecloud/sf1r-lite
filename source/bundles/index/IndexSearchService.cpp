@@ -169,6 +169,8 @@ bool IndexSearchService::getSearchResult(
             assembleDisjunction(keywords, newQuery);
         else
         {
+            return true;
+#if 0
             analyze_(actionOperation.actionItem_.env_.queryString_, keywords);
             assembleConjunction(keywords, newQuery);
             actionOperation.actionItem_.env_.queryString_ = newQuery;
@@ -193,6 +195,7 @@ bool IndexSearchService::getSearchResult(
             }
             else
                 goto FinishSearch;
+#endif
         }
 
         //cout<<"new Query "<<newQuery<<endl;
@@ -381,6 +384,8 @@ bool IndexSearchService::processSearchAction(
             assembleDisjunction(keywords, newQuery);
         else
         {
+            return true;
+#if 0        
             analyze_(actionOperation.actionItem_.env_.queryString_, keywords);
             assembleConjunction(keywords, newQuery);
             actionOperation.actionItem_.env_.queryString_ = newQuery;
@@ -405,6 +410,7 @@ bool IndexSearchService::processSearchAction(
             }
             else
                 goto FinishSearch;
+#endif			
         }
 
         //cout<<"new Query "<<newQuery<<endl;
