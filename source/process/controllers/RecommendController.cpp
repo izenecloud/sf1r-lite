@@ -230,10 +230,9 @@ bool RecommendController::value2ItemCondition(ItemCondition& itemCondition)
  * @section request
  *
  * - @b collection* (@c String): Add user in this collection.
- * - @b resource* (@c Object): A user resource. Property key name is used as
- *   key. The corresponding value is the content of the property. Property @b
- *   USERID is required, which is a unique user identifier specified by
- *   client.
+ * - @b resource* (@c Object): A user resource.@n
+ *   Property key name is used as key. The corresponding value is the content of the property.@n
+ *   Property @b USERID is required, which is a unique user identifier specified by client.
  *
  * @section response
  *
@@ -280,10 +279,9 @@ void RecommendController::add_user()
  * @section request
  *
  * - @b collection* (@c String): Update user in this collection.
- * - @b resource* (@c Object): A user resource. Property key name is used as
- *   key. The corresponding value is the content of the property. Property @b
- *   USERID is required, which is a unique user identifier specified by
- *   client.
+ * - @b resource* (@c Object): A user resource.@n
+ *   Property key name is used as key. The corresponding value is the content of the property.@n
+ *   Property @b USERID is required, which is a unique user identifier specified by client.
  *
  * @section response
  *
@@ -378,8 +376,8 @@ void RecommendController::remove_user()
  * @section response
  *
  * - @b header (@c Object): Property @b success gives the result, true or false.
- * - @b resource (@c Object): A user resource. Property key name is used as
- *   key. The corresponding value is the content of the property.
+ * - @b resource (@c Object): A user resource.@n
+ *   Property key name is used as key. The corresponding value is the content of the property.
  *
  * @section example
  *
@@ -438,10 +436,9 @@ void RecommendController::get_user()
  * @section request
  *
  * - @b collection* (@c String): Add item in this collection.
- * - @b resource* (@c Object): An item resource. Property key name is used as
- *   key. The corresponding value is the content of the property. Property @b
- *   ITEMID is required, which is a unique item identifier specified by
- *   client.
+ * - @b resource* (@c Object): An item resource.@n
+ *   Property key name is used as key. The corresponding value is the content of the property.@n
+ *   Property @b ITEMID is required, which is a unique item identifier specified by client.
  *
  * @section response
  *
@@ -489,10 +486,9 @@ void RecommendController::add_item()
  * @section request
  *
  * - @b collection* (@c String): Update item in this collection.
- * - @b resource* (@c Object): An item resource. Property key name is used as
- *   key. The corresponding value is the content of the property. Property @b
- *   ITEMID is required, which is a unique item identifier specified by
- *   client.
+ * - @b resource* (@c Object): An item resource.@n
+ *   Property key name is used as key. The corresponding value is the content of the property.@n
+ *   Property @b ITEMID is required, which is a unique item identifier specified by client.@n
  *
  * @section response
  *
@@ -588,8 +584,8 @@ void RecommendController::remove_item()
  * @section response
  *
  * - @b header (@c Object): Property @b success gives the result, true or false.
- * - @b resource (@c Object): An item resource. Property key name is used as
- *   key. The corresponding value is the content of the property.
+ * - @b resource (@c Object): An item resource.@n
+ *   Property key name is used as key. The corresponding value is the content of the property.
  *
  * @section example
  *
@@ -649,12 +645,10 @@ void RecommendController::get_item()
  * @section request
  *
  * - @b collection* (@c String): Add visit item event in this collection.
- * - @b resource* (@c Object): A resource for a visit event, that is, user
- *   @b USERID visited item @b ITEMID.
- *   - @b session_id* (@c String): a session id.
- *     For each user, the session id should not be changed until the user logout.
- *     In each session, the items visited by the user would be used to recommend items
- *     for the type @b VAV in @b do_recommend.
+ * - @b resource* (@c Object): A resource for a visit event, that is, user @b USERID visited item @b ITEMID.
+ *   - @b session_id* (@c String): a session id.@n
+ *     For each user, the session id should not be changed until the user logout.@n
+ *     In each session, the items visited by the user would be used to recommend items for the type @b VAV in @c do_recommend().
  *   - @b USERID* (@c String): a unique user identifier.
  *   - @b ITEMID* (@c String): a unique item identifier.
  *
@@ -705,8 +699,7 @@ void RecommendController::visit_item()
  * @section request
  *
  * - @b collection* (@c String): Add purchase item event in this collection.
- * - @b resource* (@c Object): A resource for a purchase event, that is, user
- *   @b USERID purchased @b items.
+ * - @b resource* (@c Object): A resource for a purchase event, that is, user @b USERID purchased @b items.
  *   - @b USERID* (@c String): a unique user identifier.
  *   - @b items* (@c Array): each is an item purchased.
  *     - @b ITEMID* (@c String): a unique item identifier.
@@ -790,19 +783,19 @@ void RecommendController::purchase_item()
  *   - @b rec_type* (@c String): Specify one of the 6 recommendation types, each with the acronym below:
  *     - @b FBT (<b>Frequently Bought Together</b>): get the items frequently bought together with @b input_items in one order.
  *     - @b BAB (<b>Bought Also Bought</b>): get the items also bought by the users who have bought @b input_items.
- *     - @b VAV (<b>Viewed Also View</b>): get the items also viewed by the users who have viewed @b input_items.
- *       In current version, it supports recommending items based on only one input item,
- *       that is, only <b> input_items[0]</b> is used as input , and the rest items in @b input_items are ignored.
- *     - @b BOP (<b>Based on Purchase History</b>): get the recommendation items based on the purchase history of user @b USERID.
- *       The purchase history is the items added in purchase_item() with the same @b USERID.
- *     - @b BOB (<b>Based on Browse History</b>): get the recommendation items based on the browse history of user @b USERID.
- *       @b input_items could be specified as browse history. If @b USERID is specified, both @b input_items and the items
- *       added in visit_item() with the same @b USERID would be excluded in recommendation result. Otherwise, if @b USERID
- *       is not specified for anonymous users, the recommendation would be based on @b input_items instead.
- *     - @b BOS (<b>Based on Shopping Cart</b>): get the recommendation items based on the shopping cart of user @b USERID,
- *       @b input_items could be specified as the items in shopping cart. If @b USERID is specified, @b input_items would be
- *       excluded in recommendation result. Otherwise, if @b USERID is not specified for anonymous users, the recommendation
- *       would be based on @b input_items instead.
+ *     - @b VAV (<b>Viewed Also View</b>): get the items also viewed by the users who have viewed @b input_items.@n
+ *       In current version, it supports recommending items based on only one input item,@n
+ *       that is, only <b> input_items[0]</b> is used as input, and the rest items in @b input_items are ignored.
+ *     - @b BOP (<b>Based on Purchase History</b>): get the recommendation items based on the purchase history of user @b USERID.@n
+ *       The purchase history is the items added in @c purchase_item() with the same @b USERID.
+ *     - @b BOB (<b>Based on Browse History</b>): get the recommendation items based on the browse history of user @b USERID.@n
+ *       @b input_items could be specified as browse history.@n
+ *       If @b USERID is specified, both @b input_items and the items added in @c visit_item() with the same @b USERID would be excluded in recommendation result.@n
+ *       Otherwise, if @b USERID is not specified for anonymous users, the recommendation would be based on @b input_items instead.
+ *     - @b BOS (<b>Based on Shopping Cart</b>): get the recommendation items based on the shopping cart of user @b USERID.@n
+ *       @b input_items could be specified as the items in shopping cart.@n
+ *       If @b USERID is specified, @b input_items would be excluded in recommendation result.@n
+ *       Otherwise, if @b USERID is not specified for anonymous users, the recommendation would be based on @b input_items instead.
  *   - @b max_count (@c Uint = 10): max item number allowed in recommendation result.
  *   - @b USERID (@c String): a unique user identifier.
  *   - @b input_items (@c Array): the input items for recommendation.
@@ -821,8 +814,14 @@ void RecommendController::purchase_item()
  * - @b resources (@c Array): each is an item in recommendation result.
  *   - @b ITEMID (@c String): a unique item identifier.
  *   - @b weight (@c Double): the recommendation weight, if this value is available, the items would be sorted by this value decreasingly.
- *   - each item properties in add_item() would also be included here. Property key name is used as key.
- *     The corresponding value is the content of the property.
+ *   - @b reason (@c Array): the reason why this item is recommended. Each is a @c String of @b ITEMID, which item has a major influence on recommending the result.@n
+ *     In the case of @b BOP rec_type, it is one of the items in the user's purchase history.@n
+ *     In the case of @b BOB rec_type, it is one of the items in the user's browse history.@n
+ *     In the case of @b BOS rec_type, it is one of the items in shopping cart.@n
+ *     In the case of @b BAB rec_type, it is one of the items in @b input_items.@n
+ *     For other rec_type, the @b reason result would not be returned.
+ *   - The item properties added by @c add_item() would also be returned here.@n
+ *     Property key name is used as key. The corresponding value is the content of that property.
  *
  * @section example
  *
@@ -842,9 +841,9 @@ void RecommendController::purchase_item()
  * {
  *   "header": {"success": true},
  *   "resources": [
- *     {"ITEMID": "item_001", "weight": 0.9, "name": "iphone", "link": "www.shop.com/product/item_001", "price": "5000", "category": "digital"},
- *     {"ITEMID": "item_002", "weight": 0.8, "name": "ipad", "link": "www.shop.com/product/item_002", "price": "6000", "category": "digital"},
- *     {"ITEMID": "item_003", "weight": 0.7, "name": "imac", "link": "www.shop.com/product/item_003", "price": "20000", "category": "digital"}
+ *     {"ITEMID": "item_001", "weight": 0.9, "reason" : ["item_011", "item_021"], "name": "iphone", "link": "www.shop.com/product/item_001", "price": "5000", "category": "digital"},
+ *     {"ITEMID": "item_002", "weight": 0.8, "reason" : ["item_012", "item_022"], "name": "ipad", "link": "www.shop.com/product/item_002", "price": "6000", "category": "digital"},
+ *     {"ITEMID": "item_003", "weight": 0.7, "reason" : ["item_013", "item_023"], "name": "imac", "link": "www.shop.com/product/item_003", "price": "20000", "category": "digital"}
  *     ...
  *   ]
  * }
@@ -934,33 +933,40 @@ void RecommendController::do_recommend()
         }
     }
 
-    std::vector<Item> recItemVec;
-    std::vector<double> recWeightVec;
+    typedef std::vector<RecommendSearchService::RecommendItem> RecommendItemVec;
+    RecommendItemVec recItemVec;
     RecommendSearchService* service = collectionHandler_->recommendSearchService_;
     if (service->recommend(recTypeId, maxCount, userIdStr,
                            inputItemVec, includeItemVec, excludeItemVec, itemCondition,
-                           recItemVec, recWeightVec))
+                           recItemVec))
     {
-        if (recItemVec.size() != recWeightVec.size())
-        {
-            response().addError("Failed to get recommendation result from given collection (unequal size of item and weight array).");
-            return;
-        }
-
         Value& resources = response()[Keys::resources];
         std::string convertBuffer;
-        for (std::size_t i = 0; i < recItemVec.size(); ++i)
+        for (RecommendItemVec::const_iterator recIt = recItemVec.begin();
+            recIt != recItemVec.end(); ++recIt)
         {
             Value& itemValue = resources();
-            itemValue[Keys::weight] = recWeightVec[i];
+            itemValue[Keys::weight] = recIt->weight_;
 
-            Item& item = recItemVec[i];
+            const Item& item = recIt->item_;
             itemValue[Keys::ITEMID] = item.idStr_;
+
             for (Item::PropValueMap::const_iterator it = item.propValueMap_.begin();
                 it != item.propValueMap_.end(); ++it)
             {
                 it->second.convertString(convertBuffer, kEncoding);
                 itemValue[it->first] = convertBuffer;
+            }
+
+            const std::vector<Item>& reasonItems = recIt->reasonItems_;
+            if (reasonItems.empty() == false)
+            {
+                Value& reasonValue = itemValue[Keys::reason];
+                for (std::vector<Item>::const_iterator it = reasonItems.begin();
+                    it != reasonItems.end(); ++it)
+                {
+                    reasonValue() = it->idStr_;
+                }
             }
         }
     }
@@ -987,8 +993,8 @@ void RecommendController::do_recommend()
  *   - @b freq (@c Uint): the frequency of the bundle, that is, how many times this bundle is contained in all orders.
  *   - @b items (@c Array): each is an item in the bundle.
  *     - @b ITEMID (@c String): a unique item identifier.
- *     - each item properties in add_item() would also be included here. Property key name is used as key.
- *       The corresponding value is the content of the property.
+ *     - each item properties in @c add_item() would also be included here.@n
+ *       Property key name is used as key. The corresponding value is the content of the property.
  *
  * @section example
  *

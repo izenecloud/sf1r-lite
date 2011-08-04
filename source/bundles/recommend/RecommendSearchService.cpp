@@ -1,6 +1,5 @@
 #include "RecommendSearchService.h"
 #include <recommend-manager/User.h>
-#include <recommend-manager/Item.h>
 #include <recommend-manager/ItemCondition.h>
 #include <recommend-manager/UserManager.h>
 #include <recommend-manager/ItemManager.h>
@@ -81,8 +80,7 @@ bool RecommendSearchService::recommend(
     const std::vector<std::string>& includeItemVec,
     const std::vector<std::string>& excludeItemVec,
     const ItemCondition& condition,
-    std::vector<Item>& recItemVec,
-    std::vector<double>& recWeightVec
+    std::vector<RecommendItem>& recItemVec
 )
 {
     userid_t userId = 0;
@@ -102,22 +100,38 @@ bool RecommendSearchService::recommend(
         return false;
     }
 
-    std::vector<itemid_t> recIdVec;
+    idmlib::recommender::RecommendItemVec recIdVec;
     if (!recommendManager_->recommend(recType, maxRecNum, userId,
                              inputIdVec, includeIdVec, excludeIdVec, condition,
-                             recIdVec, recWeightVec))
+                             recIdVec))
     {
         LOG(ERROR) << "error in RecommendManager::recommend()";
         return false;
     }
 
-    for (std::size_t i = 0; i < recIdVec.size(); ++i)
+    for (idmlib::recommender::RecommendItemVec::const_iterator it = recIdVec.begin();
+        it != recIdVec.end(); ++it)
     {
-        recItemVec.push_back(Item());
-        if (!itemManager_->getItem(recIdVec[i], recItemVec.back()))
+        recItemVec.push_back(RecommendItem());
+        RecommendItem& recItem = recItemVec.back();
+        recItem.weight_ = it->weight_;
+
+        if (!itemManager_->getItem(it->itemId_, recItem.item_))
         {
-            LOG(ERROR) << "error in ItemManager::getItem(), item id: " << recIdVec[i];
+            LOG(ERROR) << "error in ItemManager::getItem(), item id: " << it->itemId_;
             return false;
+        }
+
+        const std::vector<itemid_t>& reasonIds = it->reasonItemIds_;
+        for (std::vector<itemid_t>::const_iterator reasonIt = reasonIds.begin();
+            reasonIt != reasonIds.end(); ++reasonIt)
+        {
+            recItem.reasonItems_.push_back(Item());
+            if (!itemManager_->getItem(*reasonIt, recItem.reasonItems_.back()))
+            {
+                LOG(ERROR) << "error in ItemManager::getItem(), item id: " << *reasonIt;
+                return false;
+            }
         }
     }
 

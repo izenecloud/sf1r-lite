@@ -8,6 +8,7 @@
 #include <glog/logging.h>
 
 #include <list>
+#include <cassert>
 
 namespace sf1r
 {
@@ -34,8 +35,7 @@ bool RecommendManager::recommend(
     const std::vector<itemid_t>& includeItemVec,
     const std::vector<itemid_t>& excludeItemVec,
     const ItemCondition& condition,
-    std::vector<itemid_t>& recItemVec,
-    std::vector<double>& recWeightVec
+    idmlib::recommender::RecommendItemVec& recItemVec
 )
 {
     if (maxRecNum <= 0)
@@ -44,16 +44,28 @@ bool RecommendManager::recommend(
         return false;
     }
 
+    // insert include items at the front of result
     int includeNum = includeItemVec.size();
     if (includeNum >= maxRecNum)
     {
-        recItemVec.assign(includeItemVec.begin(), includeItemVec.begin() + maxRecNum);
-        recWeightVec.assign(maxRecNum, 1);
-
-        return true;
+        includeNum = maxRecNum;
+    }
+    recItemVec.clear();
+    idmlib::recommender::RecommendItem recItem;
+    recItem.weight_ = 1;
+    for (int i = 0; i < includeNum; ++i)
+    {
+        recItem.itemId_ = includeItemVec[i];
+        recItemVec.push_back(recItem);
     }
 
+    // whether need to recommend
     maxRecNum -= includeNum;
+    assert(maxRecNum >= 0);
+    if (maxRecNum == 0)
+    {
+        return true;
+    }
 
     // filter both include and exclude items
     ItemFilter filter(itemManager_);
@@ -97,8 +109,15 @@ bool RecommendManager::recommend(
             return false;
         }
 
-        coVisitManager_->getCoVisitation(maxRecNum, inputItemVec[0], recItemVec, &filter);
-        recWeightVec.assign(recItemVec.size(), 1);
+        std::vector<itemid_t> results;
+        coVisitManager_->getCoVisitation(maxRecNum, inputItemVec[0], results, &filter);
+
+        for (std::vector<itemid_t>::const_iterator it = results.begin();
+            it != results.end(); ++it)
+        {
+            recItem.itemId_ = *it;
+            recItemVec.push_back(recItem);
+        }
     }
     else if (type == BUY_ALSO_BUY)
     {
@@ -108,15 +127,10 @@ bool RecommendManager::recommend(
             return false;
         }
 
-        idmlib::recommender::RecommendItemVec recItems;
-        itemCFManager_->getRecByItem(maxRecNum, inputItemVec, recItems, &filter);
+        idmlib::recommender::RecommendItemVec results;
+        itemCFManager_->getRecByItem(maxRecNum, inputItemVec, results, &filter);
 
-        for (idmlib::recommender::RecommendItemVec::const_iterator it = recItems.begin();
-            it != recItems.end(); ++it)
-        {
-            recItemVec.push_back(it->itemId_);
-            recWeightVec.push_back(it->weight_);
-        }
+        recItemVec.insert(recItemVec.end(), results.begin(), results.end());
     }
     else if (type == BASED_ON_PURCHASE_HISTORY)
     {
@@ -126,15 +140,10 @@ bool RecommendManager::recommend(
             return false;
         }
 
-        idmlib::recommender::RecommendItemVec recItems;
-        itemCFManager_->getRecByUser(maxRecNum, userId, recItems, &filter);
+        idmlib::recommender::RecommendItemVec results;
+        itemCFManager_->getRecByUser(maxRecNum, userId, results, &filter);
 
-        for (idmlib::recommender::RecommendItemVec::const_iterator it = recItems.begin();
-            it != recItems.end(); ++it)
-        {
-            recItemVec.push_back(it->itemId_);
-            recWeightVec.push_back(it->weight_);
-        }
+        recItemVec.insert(recItemVec.end(), results.begin(), results.end());
     }
     else if (type == FREQUENT_BUY_TOGETHER)
     {
@@ -152,18 +161,18 @@ bool RecommendManager::recommend(
             return false;
         }
 
-        recItemVec.assign(results.begin(), results.end());
-        recWeightVec.assign(recItemVec.size(), 1);
+        for (std::list<itemid_t>::const_iterator it = results.begin();
+            it != results.end(); ++it)
+        {
+            recItem.itemId_ = *it;
+            recItemVec.push_back(recItem);
+        }
     }
     else
     {
         LOG(ERROR) << "currently the RecommendType " << type << " is not supported yet";
         return false;
     }
-
-    // insert include items at the front of result
-    recItemVec.insert(recItemVec.begin(), includeItemVec.begin(), includeItemVec.begin() + includeNum);
-    recWeightVec.insert(recWeightVec.begin(), includeNum, 1);
 
     return true;
 }

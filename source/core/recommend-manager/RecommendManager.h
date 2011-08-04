@@ -37,8 +37,7 @@ public:
         const std::vector<itemid_t>& includeItemVec,
         const std::vector<itemid_t>& excludeItemVec,
         const ItemCondition& condition,
-        std::vector<itemid_t>& recItemVec,
-        std::vector<double>& recWeightVec
+        idmlib::recommender::RecommendItemVec& recItemVec
     );
 
     bool topItemBundle(
