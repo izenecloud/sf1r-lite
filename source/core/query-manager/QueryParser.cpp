@@ -130,45 +130,17 @@ namespace sf1r
 
     void QueryParser::normalizeQuery(const std::string& queryString, std::string& normString)
     {
-        std::string tmpString, tmpNormString;
-        std::string::const_iterator iter, iterEnd, prevIter;
+        std::string tmpNormString;
+        std::string::const_iterator iter, iterEnd;
 
-        // -----[ Step 1 : Remove first & end spaces, change continuous spaces into one and the space before and after | ]
+        // -----[ Step 1 : Remove initial and trailing spaces ]
         iter = queryString.begin();
         iterEnd = queryString.end();
 
-        // Remove first spaces
-        if ( *iter == ' ' )
-            while( ++iter != iterEnd && *iter == ' ');
+        while ( iter != iterEnd && *iter == ' ' ) iter++;
+        while ( iterEnd != iter && *(iterEnd - 1) == ' ' ) iterEnd--;
 
-        while ( iter != iterEnd )
-        {
-            if ( *iter == ' ' )
-            {
-                // (   hello kity   ) -> ( hello kity )
-                // (  hello     | kity ) -> ( hello| kitty )
-                while ( ++iter != iterEnd && *iter == ' ' );
-                if ( iter != iterEnd && *iter != '|' && *iter != '&')
-                    tmpString.push_back(' ');
-            }
-            else if ( *iter == '|')
-            {
-                // (Hello|  kity) -> (Hello|kity)
-                while ( ++iter != iterEnd && *iter == ' ' );
-                tmpString.push_back('|');
-            } // end - else if
-            else if ( *iter == '&')
-            {
-                // (Hello&  kity) -> (Hello&kity)
-                while ( ++iter != iterEnd && *iter == ' ' );
-                tmpString.push_back('&');
-            } // end - else if
-            else tmpString.push_back( *iter++ );
-        } // end - while
-
-        // -----[ Step 2 : Remove or add space after or behind of specific operator ]
-        iter = tmpString.begin();
-        iterEnd = tmpString.end();
+        // -----[ Step 2 : Remove redundant spaces and do some more tricks ]
         while (iter != iterEnd)
         {
             switch (*iter)
@@ -182,13 +154,13 @@ namespace sf1r
             case '}':
                 // ( hello world) -> (hello world)
                 tmpNormString.push_back( *iter++ );
-                if ( iter != iterEnd && *iter == ' ' ) iter++;
+                while ( iter != iterEnd && *iter == ' ' ) iter++;
                 break;
             case ')':
             case ']':
                 // (test keyword)attach -> (test keyword)&attach
                 tmpNormString.push_back( *iter++ );
-                if ( iter != iterEnd && *iter == ' ' ) iter++;
+                while ( iter != iterEnd && *iter == ' ' ) iter++;
                 if ( iter != iterEnd && (*iter != '&' && *iter != '|') && (*iter != ')' && *iter != ']'))
                     tmpNormString.push_back('&');
                 break;
@@ -196,7 +168,7 @@ namespace sf1r
                 // Remove space between ^ and number and add space between number and open bracket.
                 // {Test case}^ 123(case) -> {Test case}^123 (case)
                 tmpNormString.push_back( *iter++ );
-                if ( iter != iterEnd && *iter == ' ' ) iter++;
+                while ( iter != iterEnd && *iter == ' ' ) iter++;
 
                 while ( iter != iterEnd && isdigit(*iter) ) // Store digit
                     tmpNormString.push_back( *iter++ );
@@ -222,24 +194,24 @@ namespace sf1r
                     // "keyword -> keyword
                     std::string right(iter, iterEnd);
                     if (right.find('"', 1) == std::string::npos) {
-                        while(++iter != iterEnd && *iter == ' ');
+                        while ( ++iter != iterEnd && *iter == ' ');
                         break;
                     }
 
                     tmpNormString.push_back('"');
-                    while ( ++iter != iterEnd && *iter != '"') tmpNormString.push_back( *iter );
+                    while ( ++iter != iterEnd && *iter != '"' ) // Store exact string
+                        tmpNormString.push_back( *iter );
                     if (iter != iterEnd)
-                        tmpNormString.push_back( *iter++ ); // insert last "
+                        tmpNormString.push_back( *iter++ ); // insert closing "
 
-                    if ( iter != iterEnd && *iter == ' ' ) iter++;
-                    if ( *iter != '&' && *iter != '|')
+                    while ( iter != iterEnd && *iter == ' ' ) iter++;
+                    if ( iter != iterEnd && *iter != '&' && *iter != '|')
                         tmpNormString.push_back('&');
                     break;
                 }
-            default: // Store char && add space if openBracket is attached to the back of closeBracket.
-                //prevIter = iter;
+            default: // Store char and insert "&" if an openBracket is attached to the back of a closeBracket.
                 tmpNormString.push_back( *iter++ );
-                if ( (iter != iterEnd) && (openBracket_[*iter] || *iter == '!') )
+                if ( iter != iterEnd && (openBracket_[*iter] || *iter == '!') )
                     tmpNormString.push_back('&');
             } // end - switch()
         } // end - while

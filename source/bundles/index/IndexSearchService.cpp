@@ -165,37 +165,10 @@ bool IndexSearchService::getSearchResult(
     {
         std::string newQuery;
 
-        if(bundleConfig_->bTriggerQA_)
-            assembleDisjunction(keywords, newQuery);
-        else
-        {
-            analyze_(actionOperation.actionItem_.env_.queryString_, keywords);
-            assembleConjunction(keywords, newQuery);
-            actionOperation.actionItem_.env_.queryString_ = newQuery;
-            propertyQueryTermList.clear();
-            if(!buildQuery(actionOperation, propertyQueryTermList, resultItem, personalSearchInfo))
-            {
-                return true;
-            }
-            if(! searchManager_->search(
-                                        actionOperation,
-                                        resultItem.topKDocs_,
-                                        resultItem.topKRankScoreList_,
-                                        resultItem.topKCustomRankScoreList_,
-                                        resultItem.totalCount_,
-                                        resultItem.groupRep_,
-                                        resultItem.attrRep_,
-                                        TOP_K_NUM,
-                                        startOffset
-                                        ))
-            {
-                assembleDisjunction(keywords, newQuery);
-            }
-            else
-                goto FinishSearch;
-        }
+        if(!bundleConfig_->bTriggerQA_)
+            return true;
+        assembleDisjunction(keywords, newQuery);
 
-        //cout<<"new Query "<<newQuery<<endl;
         actionOperation.actionItem_.env_.queryString_ = newQuery;
         propertyQueryTermList.clear();
         if(!buildQuery(actionOperation, propertyQueryTermList, resultItem, personalSearchInfo))
@@ -219,7 +192,6 @@ bool IndexSearchService::getSearchResult(
         }
     }
 
-FinishSearch:
     // Remove duplicated docs from the result if the option is on.
     removeDuplicateDocs(actionItem, resultItem);
 
@@ -377,37 +349,10 @@ bool IndexSearchService::processSearchAction(
     {
         std::string newQuery;
 
-        if(bundleConfig_->bTriggerQA_)
-            assembleDisjunction(keywords, newQuery);
-        else
-        {
-            analyze_(actionOperation.actionItem_.env_.queryString_, keywords);
-            assembleConjunction(keywords, newQuery);
-            actionOperation.actionItem_.env_.queryString_ = newQuery;
-            propertyQueryTermList.clear();
-            if(!buildQuery(actionOperation, propertyQueryTermList, resultItem, personalSearchInfo))
-            {
-                return true;
-            }
-            if(! searchManager_->search(
-                                        actionOperation,
-                                        resultItem.topKDocs_,
-                                        resultItem.topKRankScoreList_,
-                                        resultItem.topKCustomRankScoreList_,
-                                        resultItem.totalCount_,
-                                        resultItem.groupRep_,
-                                        resultItem.attrRep_,
-                                        TOP_K_NUM,
-                                        startOffset
-                                        ))
-            {
-                assembleDisjunction(keywords, newQuery);
-            }
-            else
-                goto FinishSearch;
-        }
+        if(!bundleConfig_->bTriggerQA_)
+            return true;
+        assembleDisjunction(keywords, newQuery);
 
-        //cout<<"new Query "<<newQuery<<endl;
         actionOperation.actionItem_.env_.queryString_ = newQuery;
         propertyQueryTermList.clear();
         if(!buildQuery(actionOperation, propertyQueryTermList, resultItem, personalSearchInfo))
@@ -431,7 +376,6 @@ bool IndexSearchService::processSearchAction(
         }
     }
 
-FinishSearch:
     // Remove duplicated docs from the result if the option is on.
     removeDuplicateDocs(actionItem, resultItem);
 
