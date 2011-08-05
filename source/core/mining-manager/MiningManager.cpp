@@ -1142,18 +1142,18 @@ bool MiningManager::addTgResult_(KeywordSearchResult& miaInput)
 {
     std::cout << "[MiningManager::getTGResult]" << std::endl;
     if ( miaInput.topKDocs_.size()==0 ) return true;
-    uint32_t top_docs_count = miningConfig_.taxonomy_param.top_docnum;
-    if (top_docs_count > miaInput.topKDocs_.size())
-    {
-        top_docs_count = miaInput.topKDocs_.size();
-    }
-    std::vector<docid_t> topDocIdList;
-    topDocIdList.assign(miaInput.topKDocs_.begin(), miaInput.topKDocs_.begin()+top_docs_count);
-    std::cout << "Use top " << top_docs_count <<" docs for TG, getting "<<miaInput.topKDocs_.size()<<std::endl;
-
+//     uint32_t top_docs_count = miningConfig_.taxonomy_param.top_docnum;
+//     if (top_docs_count > miaInput.topKDocs_.size())
+//     {
+//         top_docs_count = miaInput.topKDocs_.size();
+//     }
+//     std::vector<docid_t> topDocIdList;
+//     topDocIdList.assign(miaInput.topKDocs_.begin(), miaInput.topKDocs_.begin()+top_docs_count);
+//     std::cout << "Use top " << top_docs_count <<" docs for TG, getting "<<miaInput.topKDocs_.size()<<std::endl;
+    izenelib::util::UString query(miaInput.rawQueryString_, miaInput.encodingType_);
     TaxonomyRep taxonomyRep;
-    bool ret = tgManager_->getQuerySpecificTaxonomyInfo(topDocIdList,
-               izenelib::util::UString(miaInput.rawQueryString_, miaInput.encodingType_), miaInput.totalCount_, miaInput.topKDocs_.size(), taxonomyRep, miaInput.neList_);
+    
+    bool ret = tgManager_->GetResult(miaInput.topKDocs_, query, miaInput.totalCount_, taxonomyRep, miaInput.neList_);
     if (!ret)
     {
         std::string msg = "error at getting taxonomy";

@@ -159,7 +159,7 @@ namespace sf1r {
             std::vector<count_t> numOfTGDocs_;
 
             /// A list which stores the id list of documents which are related to the specific TG item.
-            std::vector<std::vector<docid_t> > tgDocIdList_;
+            std::vector<std::vector<uint64_t> > tgDocIdList_;
 
             /// TaxnomyLevel is used for displaying hierarchical taxonomy result. It will start from 0.
             ///
