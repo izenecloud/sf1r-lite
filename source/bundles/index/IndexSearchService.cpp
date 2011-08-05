@@ -110,6 +110,7 @@ bool IndexSearchService::getSearchResult(
     for (witer = resultMap.begin(); witer != resultMap.end(); witer++)
     {
         boost::shared_ptr<KeywordSearchResult>& subResult = witer->second;
+        workeridList.clear();
         workeridList.push_back(witer->first);
         aggregatorManager_->sendRequest<KeywordSearchActionItem, KeywordSearchResult>(
                 "getSummaryResult", actionItem, *subResult, workeridList);
