@@ -13,12 +13,12 @@
 
 #include "WorkerService.h"
 
-#include <common/ResultType.h>
-
 using namespace net::aggregator;
 
 namespace sf1r
 {
+
+class KeywordSearchResult;
 
 class AggregatorManager : public JobAggregator<AggregatorManager>
 {
@@ -82,7 +82,22 @@ private:
 
     void mergeSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
 
-    // todo, mining result
+public:
+
+    /**
+     * @param result [IN]
+     * @param resultList [OUT]
+     */
+    void splitResultByWorkerid(const KeywordSearchResult& result, std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >& resultMap);
+
+    /**
+     *
+     * @param result [OUT]
+     * @param resultList [IN]
+     */
+    void mergeSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > >& resultList);
+
+    void mergeMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > >& resultList);
 };
 
 
