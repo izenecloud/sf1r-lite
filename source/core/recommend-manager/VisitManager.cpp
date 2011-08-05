@@ -65,6 +65,22 @@ bool VisitManager::getVisitItemSet(userid_t userId, ItemIdSet& itemIdSet)
     return result;
 }
 
+bool VisitManager::getVisitSession(userid_t userId, VisitSession& visitSession)
+{
+    bool result = false;
+    try
+    {
+        sessionDB_.getValue(userId, visitSession);
+        result = true;
+    }
+    catch(izenelib::util::IZENELIBException& e)
+    {
+        LOG(ERROR) << "exception in SDB::getValue(): " << e.what();
+    }
+
+    return result;
+}
+
 unsigned int VisitManager::visitUserNum()
 {
     return visitDB_.numItems();

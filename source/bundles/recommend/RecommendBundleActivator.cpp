@@ -136,6 +136,7 @@ bool RecommendBundleActivator::init_()
 
     auto_ptr<RecommendManager> recommendManagerPtr(new RecommendManager(itemManagerPtr.get(),
                                                                         visitManagerPtr.get(),
+                                                                        purchaseManagerPtr.get(),
                                                                         coVisitManagerPtr.get(),
                                                                         itemCFManagerPtr.get(),
                                                                         orderManagerPtr.get()));
