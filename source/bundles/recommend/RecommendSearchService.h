@@ -53,6 +53,7 @@ public:
         RecommendType recType,
         int maxRecNum,
         const std::string& userIdStr,
+        const std::string& sessionIdStr,
         const std::vector<std::string>& inputItemVec,
         const std::vector<std::string>& includeItemVec,
         const std::vector<std::string>& excludeItemVec,

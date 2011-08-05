@@ -647,7 +647,8 @@ void RecommendController::get_item()
  * - @b collection* (@c String): Add visit item event in this collection.
  * - @b resource* (@c Object): A resource for a visit event, that is, user @b USERID visited item @b ITEMID.
  *   - @b session_id* (@c String): a session id.@n
- *     For each user, the session id should not be changed until the user logout.@n
+ *     A session id is a unique identifier to identify the user's current interaction session.@n
+ *     For each session between user logging in and logging out, the session id should be unique and not changed.@n
  *     In each session, the items visited by the user would be used to recommend items for the type @b VAV in @c do_recommend().
  *   - @b USERID* (@c String): a unique user identifier.
  *   - @b ITEMID* (@c String): a unique item identifier.
@@ -789,15 +790,16 @@ void RecommendController::purchase_item()
  *     - @b BOP (<b>Based on Purchase History</b>): get the recommendation items based on the purchase history of user @b USERID.@n
  *       The purchase history is the items added in @c purchase_item() with the same @b USERID.
  *     - @b BOB (<b>Based on Browse History</b>): get the recommendation items based on the browse history of user @b USERID.@n
- *       @b input_items could be specified as browse history.@n
- *       If @b USERID is specified, both @b input_items and the items added in @c visit_item() with the same @b USERID would be excluded in recommendation result.@n
- *       Otherwise, if @b USERID is not specified for anonymous users, the recommendation would be based on @b input_items instead.
+ *       If @b input_items is specified, the @b input_items would be used as the user's browse history.@n
+ *       Otherwise, you have to specify both @b USERID and @b session_id, then the items added in @c visit_item() with the same @b USERID and @b session_id would be used as browse history.@n
  *     - @b BOS (<b>Based on Shopping Cart</b>): get the recommendation items based on the shopping cart of user @b USERID.@n
- *       @b input_items could be specified as the items in shopping cart.@n
- *       If @b USERID is specified, @b input_items would be excluded in recommendation result.@n
- *       Otherwise, if @b USERID is not specified for anonymous users, the recommendation would be based on @b input_items instead.
+ *       You have to specify @b input_items as the items in user's current shopping cart.@n
  *   - @b max_count (@c Uint = 10): max item number allowed in recommendation result.
  *   - @b USERID (@c String): a unique user identifier.
+ *   - @b session_id (@c String): a session id.@n
+ *     A session id is a unique identifier to identify the user's current interaction session.@n
+ *     For each session between user logging in and logging out, the session id should be unique and not changed.@n
+ *     In current version, this parameter is only used in @b BOB rec_type.
  *   - @b input_items (@c Array): the input items for recommendation.
  *     - @b ITEMID* (@c String): a unique item identifier.
  *   - @b include_items (@c Array): the items must be included in recommendation result.
@@ -815,10 +817,10 @@ void RecommendController::purchase_item()
  *   - @b ITEMID (@c String): a unique item identifier.
  *   - @b weight (@c Double): the recommendation weight, if this value is available, the items would be sorted by this value decreasingly.
  *   - @b reason (@c Array): the reason why this item is recommended. Each is a @c String of @b ITEMID, which item has a major influence on recommending the result.@n
+ *     In the case of @b BAB rec_type, it is one of the items in @b input_items.@n
  *     In the case of @b BOP rec_type, it is one of the items in the user's purchase history.@n
  *     In the case of @b BOB rec_type, it is one of the items in the user's browse history.@n
  *     In the case of @b BOS rec_type, it is one of the items in shopping cart.@n
- *     In the case of @b BAB rec_type, it is one of the items in @b input_items.@n
  *     For other rec_type, the @b reason result would not be returned.
  *   - The item properties added by @c add_item() would also be returned here.@n
  *     Property key name is used as key. The corresponding value is the content of that property.
@@ -882,6 +884,8 @@ void RecommendController::do_recommend()
     }
 
     std::string userIdStr = asString(request()[Keys::resource][Keys::USERID]);
+    std::string sessionIdStr = asString(request()[Keys::resource][Keys::session_id]);
+
     std::string recTypeStr = asString(request()[Keys::resource][Keys::rec_type]);
     std::map<std::string, int>::const_iterator mapIt = recTypeMap_.find(Utilities::toUpper(recTypeStr));
     if (mapIt == recTypeMap_.end())
@@ -899,7 +903,7 @@ void RecommendController::do_recommend()
         {
             if (inputItemVec.empty())
             {
-                response().addError("This recommendation type requires items sepcified in request[resource][input_items].");
+                response().addError("This recommendation type requires input_items in request[resource].");
                 return;
             }
             break;
@@ -909,18 +913,30 @@ void RecommendController::do_recommend()
         {
             if (userIdStr.empty())
             {
-                response().addError("This recommendation type requires user id sepcified in request[resource][USERID].");
+                response().addError("This recommendation type requires USERID sepcified in request[resource].");
                 return;
             }
             break;
         }
 
         case BASED_ON_BROWSE_HISTORY:
+        {
+            if (inputItemVec.empty())
+            {
+                if (userIdStr.empty() || sessionIdStr.empty())
+                {
+                    response().addError("This recommendation type requires either input_items or both USERID and session_id in request[resource].");
+                    return;
+                }
+            }
+            break;
+        }
+
         case BASED_ON_SHOP_CART:
         {
-            if (userIdStr.empty() && inputItemVec.empty())
+            if (inputItemVec.empty())
             {
-                response().addError("This recommendation type requires either USERID or input_items sepcified in request[resource].");
+                response().addError("This recommendation type requires input_items in request[resource].");
                 return;
             }
             break;
@@ -936,7 +952,8 @@ void RecommendController::do_recommend()
     typedef std::vector<RecommendSearchService::RecommendItem> RecommendItemVec;
     RecommendItemVec recItemVec;
     RecommendSearchService* service = collectionHandler_->recommendSearchService_;
-    if (service->recommend(recTypeId, maxCount, userIdStr,
+    if (service->recommend(recTypeId, maxCount,
+                           userIdStr, sessionIdStr,
                            inputItemVec, includeItemVec, excludeItemVec, itemCondition,
                            recItemVec))
     {

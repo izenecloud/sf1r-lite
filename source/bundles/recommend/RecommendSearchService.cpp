@@ -76,6 +76,7 @@ bool RecommendSearchService::recommend(
     RecommendType recType,
     int maxRecNum,
     const std::string& userIdStr,
+    const std::string& sessionIdStr,
     const std::vector<std::string>& inputItemVec,
     const std::vector<std::string>& includeItemVec,
     const std::vector<std::string>& excludeItemVec,
@@ -101,9 +102,10 @@ bool RecommendSearchService::recommend(
     }
 
     idmlib::recommender::RecommendItemVec recIdVec;
-    if (!recommendManager_->recommend(recType, maxRecNum, userId,
-                             inputIdVec, includeIdVec, excludeIdVec, condition,
-                             recIdVec))
+    if (!recommendManager_->recommend(recType, maxRecNum,
+                                      userId, sessionIdStr,
+                                      inputIdVec, includeIdVec, excludeIdVec, condition,
+                                      recIdVec))
     {
         LOG(ERROR) << "error in RecommendManager::recommend()";
         return false;
