@@ -27,7 +27,7 @@
 #include <util/ustring/UString.h>
 #include <vector>
 
-using namespace sf1r;
+namespace sf1r{
 
 /**
  * @brief Generates snippets (query-biased summary) from a given text
@@ -154,4 +154,5 @@ private:
 
 };
 
+}
 #endif //_SNIPPET_GENERATOR_SUBMANAGER_H

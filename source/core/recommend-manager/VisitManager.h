@@ -62,6 +62,14 @@ public:
     bool getVisitItemSet(userid_t userId, ItemIdSet& itemIdSet);
 
     /**
+     * Get the current visit session by @p userId.
+     * @param userId user id
+     * @param visitSession store the current visit session
+     * @return true for success, false for error happened.
+     */
+    bool getVisitSession(userid_t userId, VisitSession& visitSession);
+
+    /**
      * The number of users who have visited items.
      */
     unsigned int visitUserNum();

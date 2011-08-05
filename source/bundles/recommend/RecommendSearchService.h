@@ -8,6 +8,7 @@
 #define RECOMMEND_SEARCH_SERVICE_H
 
 #include <recommend-manager/RecTypes.h>
+#include <recommend-manager/Item.h>
 
 #include <util/osgi/IService.h>
 
@@ -17,7 +18,6 @@
 namespace sf1r
 {
 class User;
-class Item;
 class UserManager;
 class ItemManager;
 class RecommendManager;
@@ -38,16 +38,27 @@ public:
 
     bool getItem(const std::string& itemIdStr, Item& item);
 
+    struct RecommendItem
+    {
+        Item item_;
+        double weight_;
+        std::vector<Item> reasonItems_;
+
+        RecommendItem()
+            : weight_(0)
+        {}
+    };
+
     bool recommend(
         RecommendType recType,
         int maxRecNum,
         const std::string& userIdStr,
+        const std::string& sessionIdStr,
         const std::vector<std::string>& inputItemVec,
         const std::vector<std::string>& includeItemVec,
         const std::vector<std::string>& excludeItemVec,
         const ItemCondition& condition,
-        std::vector<Item>& recItemVec,
-        std::vector<double>& recWeightVec
+        std::vector<RecommendItem>& recItemVec
     );
 
     bool topItemBundle(

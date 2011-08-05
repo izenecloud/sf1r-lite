@@ -28,6 +28,7 @@
 using namespace izenelib::util;
 
 
+
 namespace sf1r
 {
 int TOP_K_NUM = 1000;
@@ -48,9 +49,16 @@ IndexSearchService::IndexSearchService()
     workerService_.reset(new WorkerService(this));
     if (sf1r::SF1Config::get()->isEnableWorkerServer())
     {
-        uint16_t port = SF1Config::get()->brokerAgentConfig_.workerport_;
-        workerService_->startServer("localhost", port);
-        cout << "#[Worker Server] started, listening at localhost:"<<port<<" ..."<<endl;
+        try
+        {
+            uint16_t port = SF1Config::get()->brokerAgentConfig_.workerport_;
+            workerService_->startServer("localhost", port);
+            cout << "#[Worker Server] started, listening at localhost:"<<port<<" ..."<<endl;
+        }
+        catch (std::exception& e)
+        {
+            cout << e.what() << endl;
+        }
     }
 
     aggregatorManager_.reset(new AggregatorManager());
@@ -75,15 +83,45 @@ bool IndexSearchService::getSearchResult(
 
 #ifdef DISTRIBUTED_SEARCH
 
+    ///actionItem.print();
+
+    // set basic info for result
+    resultItem.collectionName_ = actionItem.collectionName_;
+    resultItem.encodingType_ = izenelib::util::UString::convertEncodingTypeFromStringToEnum(
+            actionItem.env_.encodingType_.c_str() );
+    resultItem.start_ = actionItem.pageInfo_.start_;
+    resultItem.count_ = actionItem.pageInfo_.count_;
+    resultItem.rawQueryString_ = actionItem.env_.queryString_;
+
+    // get and merge mutliple results
+    std::vector<workerid_t> workeridList;
+    ///getWorkersByCollectionName(actionItem.collectionName_, workeridList);
     aggregatorManager_->sendRequest<KeywordSearchActionItem, KeywordSearchResult>(
-            "getSearchResult", actionItem, resultItem);
+            "getSearchResult", actionItem, resultItem, workeridList);
 
-    // todo, get summary from each worker according workerids
-//    std::vector<workerid_t> workeridList;
-//    aggregatorManager_->sendRequest<KeywordSearchResult, KeywordSearchResult>(
-//            "getSummaryResult", resultItem, resultItem, workeridList);
+    //resultItem.print();
 
-    return true; //xxx
+    // xxx split & get summary, mining result by workers.
+    std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> > resultMap;
+    aggregatorManager_->splitResultByWorkerid(resultItem, resultMap);
+    std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >::iterator witer;
+
+    std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > > resultList;
+    for (witer = resultMap.begin(); witer != resultMap.end(); witer++)
+    {
+        boost::shared_ptr<KeywordSearchResult>& subResult = witer->second;
+        workeridList.push_back(witer->first);
+        aggregatorManager_->sendRequest<KeywordSearchActionItem, KeywordSearchResult>(
+                "getSummaryResult", actionItem, *subResult, workeridList);
+
+        resultList.push_back(std::make_pair(witer->first, subResult));
+    }
+
+    // merge summary, mining results
+    aggregatorManager_->mergeSummaryResult(resultItem, resultList);
+    aggregatorManager_->mergeMiningResult(resultItem, resultList);
+
+    return true;
 
 #endif
 
@@ -150,6 +188,11 @@ bool IndexSearchService::getSearchResult(
 
     START_PROFILER ( searchIndex );
     int startOffset = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
+    //int gap = actionItem.pageInfo_.start_ + actionItem.pageInfo_.count_ - startOffset + TOP_K_NUM;
+    //if (gap > 0)
+    //{
+    //    startOffset += gap;
+    //}
 
     if(! searchManager_->search(
                 actionOperation,
@@ -165,37 +208,10 @@ bool IndexSearchService::getSearchResult(
     {
         std::string newQuery;
 
-        if(bundleConfig_->bTriggerQA_)
-            assembleDisjunction(keywords, newQuery);
-        else
-        {
-            analyze_(actionOperation.actionItem_.env_.queryString_, keywords);
-            assembleConjunction(keywords, newQuery);
-            actionOperation.actionItem_.env_.queryString_ = newQuery;
-            propertyQueryTermList.clear();
-            if(!buildQuery(actionOperation, propertyQueryTermList, resultItem, personalSearchInfo))
-            {
-                return true;
-            }
-            if(! searchManager_->search(
-                                        actionOperation,
-                                        resultItem.topKDocs_,
-                                        resultItem.topKRankScoreList_,
-                                        resultItem.topKCustomRankScoreList_,
-                                        resultItem.totalCount_,
-                                        resultItem.groupRep_,
-                                        resultItem.attrRep_,
-                                        TOP_K_NUM,
-                                        startOffset
-                                        ))
-            {
-                assembleDisjunction(keywords, newQuery);
-            }
-            else
-                goto FinishSearch;
-        }
+        if(!bundleConfig_->bTriggerQA_)
+            return true;
+        assembleDisjunction(keywords, newQuery);
 
-        //cout<<"new Query "<<newQuery<<endl;
         actionOperation.actionItem_.env_.queryString_ = newQuery;
         propertyQueryTermList.clear();
         if(!buildQuery(actionOperation, propertyQueryTermList, resultItem, personalSearchInfo))
@@ -219,7 +235,6 @@ bool IndexSearchService::getSearchResult(
         }
     }
 
-FinishSearch:
     // Remove duplicated docs from the result if the option is on.
     removeDuplicateDocs(actionItem, resultItem);
 
@@ -299,6 +314,8 @@ bool IndexSearchService::processSearchAction(
         KeywordSearchResult& resultItem,
         std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList)
 {
+    CREATE_PROFILER ( searchIndex, "IndexSearchService", "processGetSearchResults: search index");
+
     // Set basic info for response
     resultItem.collectionName_ = actionItem.collectionName_;
     resultItem.encodingType_ =
@@ -361,7 +378,9 @@ bool IndexSearchService::processSearchAction(
     }
 
     START_PROFILER ( searchIndex );
-    int startOffset = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
+    // TODO: how many docs should be retrieved from 1 server
+    int startOffset = 0;
+    int top_k_num = actionItem.pageInfo_.start_ + actionItem.pageInfo_.count_;
 
     if(! searchManager_->search(
                 actionOperation,
@@ -371,43 +390,16 @@ bool IndexSearchService::processSearchAction(
                 resultItem.totalCount_,
                 resultItem.groupRep_,
                 resultItem.attrRep_,
-                TOP_K_NUM,
+                top_k_num,
                 startOffset
                 ))
     {
         std::string newQuery;
 
-        if(bundleConfig_->bTriggerQA_)
-            assembleDisjunction(keywords, newQuery);
-        else
-        {
-            analyze_(actionOperation.actionItem_.env_.queryString_, keywords);
-            assembleConjunction(keywords, newQuery);
-            actionOperation.actionItem_.env_.queryString_ = newQuery;
-            propertyQueryTermList.clear();
-            if(!buildQuery(actionOperation, propertyQueryTermList, resultItem, personalSearchInfo))
-            {
-                return true;
-            }
-            if(! searchManager_->search(
-                                        actionOperation,
-                                        resultItem.topKDocs_,
-                                        resultItem.topKRankScoreList_,
-                                        resultItem.topKCustomRankScoreList_,
-                                        resultItem.totalCount_,
-                                        resultItem.groupRep_,
-                                        resultItem.attrRep_,
-                                        TOP_K_NUM,
-                                        startOffset
-                                        ))
-            {
-                assembleDisjunction(keywords, newQuery);
-            }
-            else
-                goto FinishSearch;
-        }
+        if(!bundleConfig_->bTriggerQA_)
+            return true;
+        assembleDisjunction(keywords, newQuery);
 
-        //cout<<"new Query "<<newQuery<<endl;
         actionOperation.actionItem_.env_.queryString_ = newQuery;
         propertyQueryTermList.clear();
         if(!buildQuery(actionOperation, propertyQueryTermList, resultItem, personalSearchInfo))
@@ -431,24 +423,8 @@ bool IndexSearchService::processSearchAction(
         }
     }
 
-FinishSearch:
     // Remove duplicated docs from the result if the option is on.
     removeDuplicateDocs(actionItem, resultItem);
-
-    //set top K document in resultItem t
-    resultItem.start_ = actionItem.pageInfo_.start_;
-    resultItem.count_ = actionItem.pageInfo_.count_;
-
-    std::size_t overallSearchResultSize = startOffset + resultItem.topKDocs_.size();
-
-    if(resultItem.start_ > overallSearchResultSize)
-    {
-        resultItem.start_ = overallSearchResultSize;
-    }
-    else if(resultItem.start_ + resultItem.count_ > overallSearchResultSize)
-    {
-        resultItem.count_ = overallSearchResultSize - resultItem.start_;
-    }
 
     //set query term and Id List
     resultItem.rawQueryString_ = actionItem.env_.queryString_;
@@ -468,25 +444,23 @@ bool IndexSearchService::getSummaryMiningResult(
         KeywordSearchResult& resultItem,
         std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList)
 {
+    CREATE_PROFILER ( getSummary, "IndexSearchService", "processGetSearchResults: get raw text, snippets, summarization");
+    START_PROFILER ( getSummary );
+
     DLOG(INFO) << "[SIAServiceHandler] RawText,Summarization,Snippet" << endl;
 
-    START_PROFILER ( getSummary );
     if (resultItem.count_ > 0)
     {
         // id of documents in current page
         std::vector<sf1r::docid_t> docsInPage;
-        std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin() + resultItem.start_%TOP_K_NUM;
-        for(size_t i=0 ; it != resultItem.topKDocs_.end() && i<resultItem.count_; i++, it++)
-        {
-          docsInPage.push_back(*it);
-        }
+        docsInPage = resultItem.topKDocs_;
         resultItem.count_ = docsInPage.size();
 
         getResultItem( actionItem, docsInPage, propertyQueryTermList, resultItem);
     }
 
     STOP_PROFILER ( getSummary );
-    STOP_PROFILER ( query );
+
     REPORT_PROFILE_TO_FILE( "PerformanceQueryResult.SIAProcess" );
 
     cout << "[IndexSearchService] keywordSearch process Done" << endl; // XXX
@@ -765,6 +739,19 @@ bool IndexSearchService::getDocumentsByIds(
             boost::apply_visitor(converter, (*property_value).getVariant());
             indexManager_->getDocsByPropertyValue(colId, actionItem.propertyName_, value, idList);
         }
+    }
+
+    BitVector* bitVector = indexManager_->getIndexReader()->getDocFilter();
+    if (bitVector)
+    {
+        vector<sf1r::docid_t> tmpIdList;
+        for(size_t i = 0; i < idList.size(); i++)
+        {
+            if(!bitVector->test(idList[i]))
+                tmpIdList.push_back(idList[i]);
+        }
+
+        idList.swap(tmpIdList);
     }
 
     // get query terms

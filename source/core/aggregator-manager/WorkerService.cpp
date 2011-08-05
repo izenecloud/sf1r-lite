@@ -6,7 +6,7 @@ namespace sf1r
 
 bool WorkerService::processGetSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
-    cout << "#[WorkerService] received request from: " << actionItem.collectionName_ << endl;
+    cout << "#[WorkerService::processGetSearchResult] " << actionItem.collectionName_ << endl;
 
     std::vector<std::vector<izenelib::util::UString> > propertyQueryTermList;
 
@@ -16,14 +16,27 @@ bool WorkerService::processGetSearchResult(const KeywordSearchActionItem& action
         return false;
     }
 
-    // todo, get by a second request
+    resultItem.propertyQueryTermList_ = propertyQueryTermList;
+
+    //resultItem.print();
+
+    return true;
+}
+
+bool WorkerService::processGetSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+{
+    cout << "#[WorkerService::processGetSummaryResult] " << actionItem.collectionName_ << endl;
+
     if (!indexSearchService_->getSummaryMiningResult(
-            const_cast<KeywordSearchActionItem&>(actionItem), resultItem, propertyQueryTermList))
+            const_cast<KeywordSearchActionItem&>(actionItem), resultItem, resultItem.propertyQueryTermList_))
     {
         return false;
     }
 
+    //resultItem.print();
+
     return true;
 }
+
 
 }

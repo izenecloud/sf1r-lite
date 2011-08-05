@@ -1,7 +1,10 @@
 #include <common/SFLogger.h>
+
+#include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
 #include <query-manager/QueryIdentity.h>
 #include <query-manager/ActionItem.h>
+#include <ranking-manager/RankingManager.h>
 #include <ranking-manager/RankQueryProperty.h>
 #include <mining-manager/faceted-submanager/GroupFilterBuilder.h>
 #include <mining-manager/faceted-submanager/GroupFilter.h>
@@ -11,6 +14,9 @@
 #include "SearchManager.h"
 #include "CustomRanker.h"
 #include "SearchCache.h"
+#include "QueryBuilder.h"
+#include "Sorter.h"
+#include "HitQueue.h"
 
 #include <util/swap.h>
 #include <util/get.h>
@@ -540,6 +546,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             //delete pScoreItem;
         }
 
+#ifndef DISTRIBUTED_SEARCH
         // normalize rank score to [0, 1]
         float range = max - min;
         if (range != 0)
@@ -556,6 +563,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
         {
             std::fill(rankScoreList.begin(), rankScoreList.end(), 1.0F);
         }
+#endif
 
         ///rerank is only used for pure ranking
         std::vector<std::pair<std::string , bool> >& sortPropertyList = actionOperation.actionItem_.sortPriorityList_;            

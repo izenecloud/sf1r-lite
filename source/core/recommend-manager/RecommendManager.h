@@ -15,8 +15,10 @@ namespace sf1r
 {
 class ItemManager;
 class VisitManager;
+class PurchaseManager;
 class OrderManager;
 class ItemCondition;
+class ItemFilter;
 
 class RecommendManager
 {
@@ -24,6 +26,7 @@ public:
     RecommendManager(
         ItemManager* itemManager,
         VisitManager* visitManager,
+        PurchaseManager* purchaseManager,
         CoVisitManager* coVisitManager,
         ItemCFManager* itemCFManager,
         OrderManager* orderManager
@@ -33,12 +36,12 @@ public:
         RecommendType type,
         int maxRecNum,
         userid_t userId,
+        const std::string& sessionIdStr,
         const std::vector<itemid_t>& inputItemVec,
         const std::vector<itemid_t>& includeItemVec,
         const std::vector<itemid_t>& excludeItemVec,
         const ItemCondition& condition,
-        std::vector<itemid_t>& recItemVec,
-        std::vector<double>& recWeightVec
+        idmlib::recommender::RecommendItemVec& recItemVec
     );
 
     bool topItemBundle(
@@ -49,8 +52,55 @@ public:
     );
 
 private:
+    bool recommend_vav_(
+        int maxRecNum,
+        const std::vector<itemid_t>& inputItemVec,
+        ItemFilter& filter,
+        idmlib::recommender::RecommendItemVec& recItemVec
+    );
+
+    bool recommend_bab_(
+        int maxRecNum,
+        const std::vector<itemid_t>& inputItemVec,
+        ItemFilter& filter,
+        idmlib::recommender::RecommendItemVec& recItemVec
+    );
+
+    bool recommend_bop_(
+        int maxRecNum,
+        userid_t userId,
+        ItemFilter& filter,
+        idmlib::recommender::RecommendItemVec& recItemVec
+    );
+
+    bool recommend_bob_(
+        int maxRecNum,
+        userid_t userId,
+        const std::string& sessionIdStr,
+        const std::vector<itemid_t>& inputItemVec,
+        ItemFilter& filter,
+        idmlib::recommender::RecommendItemVec& recItemVec
+    );
+
+    bool recommend_bos_(
+        int maxRecNum,
+        userid_t userId,
+        const std::vector<itemid_t>& inputItemVec,
+        ItemFilter& filter,
+        idmlib::recommender::RecommendItemVec& recItemVec
+    );
+
+    bool recommend_fbt_(
+        int maxRecNum,
+        const std::vector<itemid_t>& inputItemVec,
+        ItemFilter& filter,
+        idmlib::recommender::RecommendItemVec& recItemVec
+    );
+
+private:
     ItemManager* itemManager_;
     VisitManager* visitManager_;
+    PurchaseManager* purchaseManager_;
     CoVisitManager* coVisitManager_;
     ItemCFManager* itemCFManager_;
     OrderManager* orderManager_;
