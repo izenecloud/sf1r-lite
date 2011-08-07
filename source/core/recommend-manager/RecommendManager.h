@@ -16,6 +16,7 @@ namespace sf1r
 class ItemManager;
 class VisitManager;
 class PurchaseManager;
+class CartManager;
 class OrderManager;
 class ItemCondition;
 class ItemFilter;
@@ -27,6 +28,7 @@ public:
         ItemManager* itemManager,
         VisitManager* visitManager,
         PurchaseManager* purchaseManager,
+        CartManager* cartManager,
         CoVisitManager* coVisitManager,
         ItemCFManager* itemCFManager,
         OrderManager* orderManager
@@ -97,10 +99,23 @@ private:
         idmlib::recommender::RecommendItemVec& recItemVec
     );
 
+    /**
+     * recommend user with @p inputItemVec as input items,
+     * and filter out the purchased items by @p userId.
+     */
+    bool recUserByItem_(
+        int maxRecNum,
+        userid_t userId,
+        const std::vector<itemid_t>& inputItemVec,
+        ItemFilter& filter,
+        idmlib::recommender::RecommendItemVec& recItemVec
+    );
+
 private:
     ItemManager* itemManager_;
     VisitManager* visitManager_;
     PurchaseManager* purchaseManager_;
+    CartManager* cartManager_;
     CoVisitManager* coVisitManager_;
     ItemCFManager* itemCFManager_;
     OrderManager* orderManager_;

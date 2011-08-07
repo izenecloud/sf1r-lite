@@ -7,6 +7,7 @@
 #include <recommend-manager/VisitManager.h>
 #include <recommend-manager/PurchaseManager.h>
 #include <recommend-manager/OrderManager.h>
+#include <recommend-manager/CartManager.h>
 #include <common/ScdParser.h>
 #include <directory-manager/Directory.h>
 #include <directory-manager/DirectoryRotator.h>
@@ -335,8 +336,8 @@ public:
     )
     : purchaseManager_(purchaseManager)
     , userId_(userId)
+    , itemVec_(itemVec)
     {
-        itemVec_.swap(itemVec);
     }
 
     PurchaseTask(const PurchaseTask& task)
@@ -357,6 +358,38 @@ private:
     mutable std::vector<sf1r::itemid_t> itemVec_;
 };
 
+class CartTask
+{
+public:
+    CartTask(
+        sf1r::CartManager& cartManager,
+        sf1r::userid_t userId,
+        std::vector<sf1r::itemid_t>& itemVec
+    )
+    : cartManager_(cartManager)
+    , userId_(userId)
+    {
+        itemVec_.swap(itemVec);
+    }
+
+    CartTask(const CartTask& task)
+    : cartManager_(task.cartManager_)
+    , userId_(task.userId_)
+    {
+        itemVec_.swap(task.itemVec_);
+    }
+
+    void updateCart()
+    {
+        cartManager_.updateCart(userId_, itemVec_);
+    }
+
+private:
+    sf1r::CartManager& cartManager_;
+    sf1r::userid_t userId_;
+    mutable std::vector<sf1r::itemid_t> itemVec_;
+};
+
 }
 
 namespace sf1r
@@ -369,6 +402,7 @@ RecommendTaskService::RecommendTaskService(
     ItemManager* itemManager,
     VisitManager* visitManager,
     PurchaseManager* purchaseManager,
+    CartManager* cartManager,
     OrderManager* orderManager,
     RecIdGenerator* userIdGenerator,
     RecIdGenerator* itemIdGenerator
@@ -379,6 +413,7 @@ RecommendTaskService::RecommendTaskService(
     ,itemManager_(itemManager)
     ,visitManager_(visitManager)
     ,purchaseManager_(purchaseManager)
+    ,cartManager_(cartManager)
     ,orderManager_(orderManager)
     ,userIdGenerator_(userIdGenerator)
     ,itemIdGenerator_(itemIdGenerator)
@@ -563,9 +598,29 @@ bool RecommendTaskService::purchaseItem(
     }
 
     {
-        // note: itemIdVec is empty now as it's swapped into PurchaseTask
         PurchaseTask task(*purchaseManager_, userId, itemIdVec);
         jobScheduler_->addTask(boost::bind(&PurchaseTask::purchase, task));
+    }
+
+    return true;
+}
+
+bool RecommendTaskService::updateShoppingCart(
+    const std::string& userIdStr,
+    const OrderItemVec& cartItemVec
+)
+{
+    userid_t userId = 0;
+    std::vector<itemid_t> itemIdVec;
+
+    if (convertUserItemId_(userIdStr, cartItemVec, userId, itemIdVec) == false)
+    {
+        return false;
+    }
+
+    {
+        CartTask task(*cartManager_, userId, itemIdVec);
+        jobScheduler_->addTask(boost::bind(&CartTask::updateCart, task));
     }
 
     return true;

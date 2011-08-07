@@ -27,6 +27,7 @@ class UserManager;
 class ItemManager;
 class VisitManager;
 class PurchaseManager;
+class CartManager;
 class OrderManager;
 class RecommendManager;
 
@@ -52,6 +53,7 @@ private:
     ItemManager* itemManager_;
     VisitManager* visitManager_;
     PurchaseManager* purchaseManager_;
+    CartManager* cartManager_;
     OrderManager* orderManager_;
     RecommendManager* recommendManager_;
     RecIdGenerator* userIdGenerator_;
