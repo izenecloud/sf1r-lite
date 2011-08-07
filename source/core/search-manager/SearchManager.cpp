@@ -546,6 +546,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             //delete pScoreItem;
         }
 
+#ifndef DISTRIBUTED_SEARCH
         // normalize rank score to [0, 1]
         float range = max - min;
         if (range != 0)
@@ -562,6 +563,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
         {
             std::fill(rankScoreList.begin(), rankScoreList.end(), 1.0F);
         }
+#endif
 
         ///rerank is only used for pure ranking
         std::vector<std::pair<std::string , bool> >& sortPropertyList = actionOperation.actionItem_.sortPriorityList_;            

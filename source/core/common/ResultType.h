@@ -73,8 +73,138 @@ namespace sf1r {
           {
           }
           
+          void print(std::ostream& out = std::cout) const
+          {
+              stringstream ss;
+              ss << endl;
+              ss << "==== Class KeywordSearchResult ====" << endl;
+              ss << "-----------------------------------" << endl;
+              ss << "rawQueryString_    : " << rawQueryString_ << endl;
+              ss << "encodingType_      : " << encodingType_ << endl;
+              ss << "collectionName_    : " << collectionName_ << endl;
+              ss << "analyzedQuery_     : " ;
+              for (size_t i = 0; i < analyzedQuery_.size(); i ++)
+              {
+                  string s;
+                  analyzedQuery_[i].convertString(s, izenelib::util::UString::UTF_8);
+                  ss << s << ", ";
+              }
+              ss << endl;
+              ss << "queryTermIdList_   : " << endl;
+              for (size_t i = 0; i < queryTermIdList_.size(); i ++)
+              {
+                  ss << queryTermIdList_[i] << ", ";
+              }
+              ss << endl;
+              ss << "totalCount_        : " << totalCount_ << endl;
+              ss << "topKDocs_          : " << topKDocs_.size() << endl;
+              for (size_t i = 0; i < topKDocs_.size(); i ++)
+              {
+                  ss << "0x"<< hex<< topKDocs_[i] << ", ";
+              }
+              ss << dec<< endl;
+              ss << "topKWorkerIds_      : " << topKWorkerIds_.size() << endl;
+                for (size_t i = 0; i < topKWorkerIds_.size(); i ++)
+                {
+                    ss << topKWorkerIds_[i] << ", ";
+                }
+                ss << endl;
+              ss << "topKRankScoreList_      : " << topKRankScoreList_.size() << endl;
+              for (size_t i = 0; i < topKRankScoreList_.size(); i ++)
+              {
+                  ss << topKRankScoreList_[i] << ", ";
+              }
+              ss << endl;
+              ss << "topKCustomRankScoreList_: " << endl;
+              for (size_t i = 0; i < topKCustomRankScoreList_.size(); i ++)
+              {
+                  ss << topKCustomRankScoreList_[i] << ", ";
+              }
+              ss << endl;
+              ss << "page start_    : " << start_ << " count_   : " << count_ << endl;
+
+              ss << "propertyQueryTermList_ : " << endl;
+              for (size_t i = 0; i < propertyQueryTermList_.size(); i++)
+              {
+                  for (size_t j = 0; j < propertyQueryTermList_[i].size(); j++)
+                  {
+                      string s;
+                      propertyQueryTermList_[i][j].convertString(s, izenelib::util::UString::UTF_8);
+                      ss << s << ", ";
+                  }
+                  ss << endl;
+              }
+              ss << endl;
+
+              ss << "fullTextOfDocumentInPage_      : " << fullTextOfDocumentInPage_.size() << endl;
+              ss << "snippetTextOfDocumentInPage_   : " << snippetTextOfDocumentInPage_.size() << endl;
+              /*
+              for (size_t i = 0; i < snippetTextOfDocumentInPage_.size(); i++)
+              {
+                  for (size_t j = 0; j < snippetTextOfDocumentInPage_[i].size(); j++)
+                  {
+                      string s;
+                      snippetTextOfDocumentInPage_[i][j].convertString(s, izenelib::util::UString::UTF_8);
+                      ss << s << ", ";
+                  }
+                  ss << endl;
+              }
+              ss << endl; */
+              ss << "rawTextOfSummaryInPage_        : " << rawTextOfSummaryInPage_.size() << endl;
+
+              ss << "numberOfDuplicatedDocs_        : " << numberOfDuplicatedDocs_.size() << endl;
+              for (size_t i = 0; i < numberOfDuplicatedDocs_.size(); i ++)
+              {
+                  ss << numberOfDuplicatedDocs_[i] << ", ";
+              }
+              ss << endl;
+              ss << "numberOfSimilarDocs_           : " << numberOfSimilarDocs_.size() << endl;
+              for (size_t i = 0; i < numberOfSimilarDocs_.size(); i ++)
+              {
+                  ss << numberOfSimilarDocs_[i] << ", ";
+              }
+              ss << endl;
+              ss << "docCategories_          : " << endl;
+              for (size_t i = 0; i < docCategories_.size(); i++)
+              {
+                  for (size_t j = 0; j < docCategories_[i].size(); j++)
+                  {
+                      string s;
+                      docCategories_[i][j].convertString(s, izenelib::util::UString::UTF_8);
+                      ss << s << ", ";
+                  }
+                  ss << endl;
+              }
+              ss << endl;
+              ss << "imgs_        : " << imgs_.size() << endl;
+              for (size_t i = 0; i < imgs_.size(); i ++)
+              {
+                  ss << imgs_[i] << ", ";
+              }
+              ss << endl;
+
+              ss << "taxonomyString_    : " << taxonomyString_.size() << endl;
+              for (size_t i = 0; i < taxonomyString_.size(); i++)
+              {
+                  string s;
+                  taxonomyString_[i].convertString(s, izenelib::util::UString::UTF_8);
+                  ss << s << ", ";
+              }
+              ss << endl;
+
+              ss << "numOfTGDocs_    : " << numOfTGDocs_.size() << endl;
+              for (size_t i = 0; i < numOfTGDocs_.size(); i++)
+              {
+                  ss << numOfTGDocs_[i] << ", ";
+              }
+              ss << endl;
+
+              ss << "===================================" << endl;
+              out << ss.str();
+          }
+
             std::string rawQueryString_;
-            
+
             ///
             /// @brief encoding type of rawQueryString
             ///
@@ -92,6 +222,9 @@ namespace sf1r {
             /// A list of ranked docId. First docId gets high rank score.
             std::vector<docid_t> topKDocs_;
 
+            /// A list of workerids. The sequence is following \c topKDocs_.
+            std::vector<uint32_t> topKWorkerIds_;
+
             /// A list of rank scores. The sequence is following \c topKDocs_.
             std::vector<float> topKRankScoreList_;
 
@@ -102,6 +235,9 @@ namespace sf1r {
 
             /// @brief number of documents in current page
             std::size_t count_;
+
+            ///
+            std::vector<std::vector<izenelib::util::UString> > propertyQueryTermList_;
 
             /// @brief Full text of documents in one page. It will be used for
             /// caching in BA when "DocumentClick" query occurs.
@@ -194,8 +330,8 @@ namespace sf1r {
             DATA_IO_LOAD_SAVE(KeywordSearchResult,
                     &rawQueryString_&encodingType_&collectionName_&analyzedQuery_
                     &queryTermIdList_&totalCount_
-                    &topKDocs_&topKRankScoreList_&topKCustomRankScoreList_
-                    &start_&count_&fullTextOfDocumentInPage_
+                    &topKDocs_&topKWorkerIds_&topKRankScoreList_&topKCustomRankScoreList_
+                    &start_&count_&propertyQueryTermList_&fullTextOfDocumentInPage_
                     &snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_
                     &errno_&error_
                     &numberOfDuplicatedDocs_&numberOfSimilarDocs_&docCategories_&imgs_&taxonomyString_&numOfTGDocs_&taxonomyLevel_&tgDocIdList_&neList_&onto_rep_&groupRep_&attrRep_&relatedQueryList_&rqScore_)
@@ -203,7 +339,7 @@ namespace sf1r {
             MSGPACK_DEFINE(
                     rawQueryString_,encodingType_,collectionName_,analyzedQuery_,
                     queryTermIdList_,totalCount_,topKDocs_,topKRankScoreList_,
-                    topKCustomRankScoreList_,start_,count_,fullTextOfDocumentInPage_,
+                    topKCustomRankScoreList_,start_,count_,propertyQueryTermList_,fullTextOfDocumentInPage_,
                     snippetTextOfDocumentInPage_,rawTextOfSummaryInPage_,errno_,error_,
                     numberOfDuplicatedDocs_,numberOfSimilarDocs_,docCategories_,imgs_,
                     taxonomyString_,numOfTGDocs_,taxonomyLevel_,tgDocIdList_,neList_,
@@ -278,8 +414,8 @@ namespace sf1r {
                     &errno_&error_
                     );
 
-            MSGPACK_DEFINE(fullTextOfDocumentInPage_,snippetTextOfDocumentInPage_,rawTextOfSummaryInPage_,                    idList_, numberOfDuplicatedDocs_, numberOfSimilarDocs_
-            ,errno_,error_);
+            MSGPACK_DEFINE(fullTextOfDocumentInPage_,snippetTextOfDocumentInPage_,rawTextOfSummaryInPage_,
+                    idList_, numberOfDuplicatedDocs_, numberOfSimilarDocs_,errno_,error_);
     }; // end - class RawTextResultFromMIA
 
     /// @brief similar document id list and accompanying image id list.

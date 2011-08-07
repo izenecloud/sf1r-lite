@@ -133,14 +133,15 @@ namespace sf1r
         std::string tmpNormString;
         std::string::const_iterator iter, iterEnd;
 
-        // -----[ Step 1 : Remove initial and trailing spaces ]
+        // -----[ Step 1 : Remove initial and trailing spaces and boolean operators. ]
         iter = queryString.begin();
         iterEnd = queryString.end();
 
-        while ( iter != iterEnd && *iter == ' ' ) iter++;
-        while ( iterEnd != iter && *(iterEnd - 1) == ' ' ) iterEnd--;
+        while ( iter != iterEnd && ( *iter == ' ' || *iter == '&' || *iter == '|' ) ) iter++;
+        while ( iterEnd != iter && ( *(iterEnd - 1) == ' ' || *(iterEnd - 1) == '&' || *(iterEnd - 1) == '|' || *(iterEnd - 1) == '!' ) ) iterEnd--;
 
         // -----[ Step 2 : Remove redundant spaces and do some more tricks ]
+        std::stack<char> bracketStack;
         while (iter != iterEnd)
         {
             switch (*iter)
@@ -148,21 +149,61 @@ namespace sf1r
             case '!':
             case '&':
             case '|':
-            case '(':
-            case '[':
-            case '{':
-            case '}':
                 // ( hello world) -> (hello world)
                 tmpNormString.push_back( *iter++ );
                 while ( iter != iterEnd && *iter == ' ' ) iter++;
                 break;
-            case ')':
-            case ']':
-                // (test keyword)attach -> (test keyword)&attach
+            case '(':
                 tmpNormString.push_back( *iter++ );
                 while ( iter != iterEnd && *iter == ' ' ) iter++;
-                if ( iter != iterEnd && (*iter != '&' && *iter != '|') && (*iter != ')' && *iter != ']'))
+                if ( bracketStack.empty() || bracketStack.top() == '(' )
+                    bracketStack.push('(');
+                break;
+            case '[':
+                tmpNormString.push_back( *iter++ );
+                while ( iter != iterEnd && *iter == ' ' ) iter++;
+                if ( bracketStack.empty() || bracketStack.top() == '(' )
+                    bracketStack.push('[');
+                break;
+            case '{':
+                tmpNormString.push_back( *iter++ );
+                while ( iter != iterEnd && *iter == ' ' ) iter++;
+                if ( bracketStack.empty() || bracketStack.top() == '(' )
+                    bracketStack.push('{');
+                break;
+            case ')':
+                if ( !bracketStack.empty() )
+                {
+                    tmpNormString.push_back( *iter );
+                    if ( bracketStack.top() == '(' )
+                        bracketStack.pop();
+                }
+                iter++;
+                while ( iter != iterEnd && *iter == ' ' ) iter++;
+                if ( iter != iterEnd && *iter != '&' && *iter != '|' && *iter != ')' && *iter != ']' && *iter != '}' )
                     tmpNormString.push_back('&');
+                break;
+            case ']':
+                if ( !bracketStack.empty() && bracketStack.top() != '(' )
+                {
+                    tmpNormString.push_back( *iter );
+                    if ( bracketStack.top() == '[' )
+                        bracketStack.pop();
+                }
+                iter++;
+                while ( iter != iterEnd && *iter == ' ' ) iter++;
+                if ( iter != iterEnd && *iter != '&' && *iter != '|' && *iter != ')' && *iter != ']' && *iter != '}' )
+                    tmpNormString.push_back('&');
+                break;
+            case '}':
+                if ( !bracketStack.empty() && bracketStack.top() != '(' )
+                {
+                    tmpNormString.push_back( *iter );
+                    if ( bracketStack.top() == '{' )
+                        bracketStack.pop();
+                }
+                iter++;
+                while ( iter != iterEnd && *iter == ' ' ) iter++;
                 break;
             case '^':
                 // Remove space between ^ and number and add space between number and open bracket.
@@ -181,14 +222,14 @@ namespace sf1r
                 //    tmpNormString.push_back(' ');
                 break;
             case ' ': // (hello world ) -> (hello world)
-                if ( ++iter != iterEnd )
                 {
+                    while ( *(++iter) == ' ' );
                     if ( operStr_.find(*iter) == string::npos )
                         tmpNormString.push_back(' ');
                     else if ( *iter != '&' && *iter != '|' && (!closeBracket_[*iter] || *iter == '"') )
                         tmpNormString.push_back('&');
+                    break;
                 }
-                break;
             case '"': // Skip all things inside the exact bracket.
                 {
                     // "keyword -> keyword
@@ -215,6 +256,24 @@ namespace sf1r
                     tmpNormString.push_back('&');
             } // end - switch()
         } // end - while
+
+        // -----[ Step 3 : Match the unclosed brackets ]
+        while ( !bracketStack.empty() )
+        {
+            switch (bracketStack.top())
+            {
+            case '(':
+                tmpNormString.push_back(')');
+                break;
+            case '[':
+                tmpNormString.push_back(']');
+                break;
+            case '{':
+                tmpNormString.push_back('}');
+                break;
+            }
+            bracketStack.pop();
+        }
 
         normString.swap( tmpNormString );
 
@@ -248,14 +307,14 @@ namespace sf1r
 
         tree_parse_info<> info = ast_parse(normQueryString.c_str(), *this);
 
-        if ( info.full )
+        if ( info.match )
         {
             if ( !getQueryTree(info.trees.begin(), queryTree, unigramFlag) )
                 return false;
             queryTree->postProcess();
         }
 
-        return info.full;
+        return info.match;
     } // end - parseQuery()
 
     bool QueryParser::getAnalyzedQueryTree(

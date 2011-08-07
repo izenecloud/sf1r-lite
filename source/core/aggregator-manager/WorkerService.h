@@ -61,12 +61,12 @@ public:
     bool getSearchResult(JobRequest& req)
     {
         WORKER_HANDLE_1_1(req, KeywordSearchActionItem, processGetSearchResult, KeywordSearchResult)
-        return true; // xxx
+        return true;
     }
 
     bool getSummaryResult(JobRequest& req)
     {
-        // xxx
+        WORKER_HANDLE_1_1(req, KeywordSearchActionItem, processGetSummaryResult, KeywordSearchResult)
         return true;
     }
 
@@ -105,10 +105,7 @@ public:
 private:
     bool processGetSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
-    bool processGetSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
-    {
-        return false;
-    }
+    bool processGetSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
 
 private:

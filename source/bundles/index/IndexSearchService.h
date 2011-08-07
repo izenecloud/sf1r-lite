@@ -11,6 +11,7 @@
 #include <query-manager/ActionItem.h>
 #include <document-manager/Document.h>
 #include <aggregator-manager/WorkerService.h>
+#include <configuration-manager/BrokerAgentConfig.h>
 
 #include <ir/id_manager/IDManager.h>
 #include <question-answering/QuestionAnalysis.h>
@@ -48,6 +49,8 @@ public:
     bool getInternalDocumentId(const izenelib::util::UString& scdDocumentId, uint32_t& internalId);
 
 private:
+
+    void getWorkersByCollectionName(std::string& collectionName, std::vector<workerid_t>& workeridList);
 
     bool processSearchAction(
             KeywordSearchActionItem& actionItem,
@@ -94,6 +97,8 @@ private:
     ilplib::qa::QuestionAnalysis* pQA_;
 
     AnalysisInfo analysisInfo_;
+
+    std::map<std::string, AggregatorConfigUnit> aggregatorUnitMap_;
 
     friend class WorkerService;
     friend class IndexBundleActivator;
