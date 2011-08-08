@@ -114,16 +114,9 @@ BOOST_AUTO_TEST_CASE(checkCart)
         updateCart(cartManager, cartMap, 1, cartItemVec);
 
         cartItemVec.clear();
-        cartItemVec.push_back(12);
-        cartItemVec.push_back(14);
-        cartItemVec.push_back(16);
         updateCart(cartManager, cartMap, 10, cartItemVec);
 
         cartItemVec.clear();
-        cartItemVec.push_back(103);
-        cartItemVec.push_back(104);
-        cartItemVec.push_back(105);
-        cartItemVec.push_back(106);
         updateCart(cartManager, cartMap, 100, cartItemVec);
 
         cartItemVec.clear();
@@ -131,6 +124,13 @@ BOOST_AUTO_TEST_CASE(checkCart)
         cartItemVec.push_back(1010);
         cartItemVec.push_back(1100);
         updateCart(cartManager, cartMap, 1000, cartItemVec);
+
+        cartItemVec.clear();
+        cartItemVec.push_back(10003);
+        cartItemVec.push_back(10004);
+        cartItemVec.push_back(10005);
+        cartItemVec.push_back(10006);
+        updateCart(cartManager, cartMap, 10000, cartItemVec);
 
         checkCartManager(cartMap, cartManager);
     }
