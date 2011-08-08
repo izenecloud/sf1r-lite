@@ -1076,7 +1076,7 @@ bool RecommendTaskService::convertUserItemId_(
     std::vector<itemid_t>& itemIdVec
 )
 {
-    if (userIdStr.empty() || orderItemVec.empty())
+    if (userIdStr.empty())
     {
         return false;
     }
