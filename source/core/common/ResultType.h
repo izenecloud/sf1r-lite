@@ -122,6 +122,13 @@ namespace sf1r {
               }
               ss << endl;
               ss << "page start_    : " << start_ << " count_   : " << count_ << endl;
+              ss << endl;
+              ss << "topKPostionList_          : " << topKPostionList_.size() << endl;
+              for (size_t i = 0; i < topKPostionList_.size(); i ++)
+              {
+                  ss << topKPostionList_[i] << ", ";
+              }
+              ss << endl << endl;
 
               ss << "propertyQueryTermList_ : " << endl;
               for (size_t i = 0; i < propertyQueryTermList_.size(); i++)
@@ -137,20 +144,35 @@ namespace sf1r {
               ss << endl;
 
               ss << "fullTextOfDocumentInPage_      : " << fullTextOfDocumentInPage_.size() << endl;
+              for (size_t i = 0; i < fullTextOfDocumentInPage_.size(); i++)
+              {
+                  for (size_t j = 0; j < fullTextOfDocumentInPage_[i].size(); j++)
+                  {
+                  }
+                  ss << fullTextOfDocumentInPage_[i].size() << endl;
+              }
+              ss << endl;
               ss << "snippetTextOfDocumentInPage_   : " << snippetTextOfDocumentInPage_.size() << endl;
-              /*
               for (size_t i = 0; i < snippetTextOfDocumentInPage_.size(); i++)
               {
                   for (size_t j = 0; j < snippetTextOfDocumentInPage_[i].size(); j++)
                   {
-                      string s;
-                      snippetTextOfDocumentInPage_[i][j].convertString(s, izenelib::util::UString::UTF_8);
-                      ss << s << ", ";
+                      //string s;
+                      //snippetTextOfDocumentInPage_[i][j].convertString(s, izenelib::util::UString::UTF_8);
+                      //ss << s << ", ";
                   }
-                  ss << endl;
+                  ss << snippetTextOfDocumentInPage_[i].size() << endl;
               }
-              ss << endl; */
+              ss << endl;
               ss << "rawTextOfSummaryInPage_        : " << rawTextOfSummaryInPage_.size() << endl;
+              for (size_t i = 0; i < rawTextOfSummaryInPage_.size(); i++)
+              {
+                  for (size_t j = 0; j < rawTextOfSummaryInPage_[i].size(); j++)
+                  {
+                  }
+                  ss << rawTextOfSummaryInPage_[i].size() << endl;
+              }
+              ss << endl;
 
               ss << "numberOfDuplicatedDocs_        : " << numberOfDuplicatedDocs_.size() << endl;
               for (size_t i = 0; i < numberOfDuplicatedDocs_.size(); i ++)
@@ -235,6 +257,9 @@ namespace sf1r {
 
             /// @brief number of documents in current page
             std::size_t count_;
+
+            /// For sub result, indecates the ordered postions in overall topk list.
+            std::vector<size_t> topKPostionList_;
 
             /// property query terms
             std::vector<std::vector<izenelib::util::UString> > propertyQueryTermList_;
@@ -339,7 +364,7 @@ namespace sf1r {
             MSGPACK_DEFINE(
                     rawQueryString_,encodingType_,collectionName_,analyzedQuery_,
                     queryTermIdList_,totalCount_,topKDocs_,topKWorkerIds_,topKRankScoreList_,
-                    topKCustomRankScoreList_,start_,count_,propertyQueryTermList_,fullTextOfDocumentInPage_,
+                    topKCustomRankScoreList_,start_,count_,topKPostionList_,propertyQueryTermList_,fullTextOfDocumentInPage_,
                     snippetTextOfDocumentInPage_,rawTextOfSummaryInPage_,
                     errno_,error_,
                     numberOfDuplicatedDocs_,numberOfSimilarDocs_,docCategories_,imgs_,

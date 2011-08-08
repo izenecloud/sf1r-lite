@@ -93,13 +93,11 @@ bool IndexSearchService::getSearchResult(
     resultItem.count_ = actionItem.pageInfo_.count_;
     resultItem.rawQueryString_ = actionItem.env_.queryString_;
 
-    // get and merge mutliple results
+    // get and merge mutliple keyword search result
     std::vector<workerid_t> workeridList;
     ///getWorkersByCollectionName(actionItem.collectionName_, workeridList);
     aggregatorManager_->sendRequest<KeywordSearchActionItem, KeywordSearchResult>(
             "getSearchResult", actionItem, resultItem, workeridList);
-
-    //resultItem.print();
 
     // xxx split & get summary, mining result by workers.
     std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> > resultMap;
@@ -109,13 +107,17 @@ bool IndexSearchService::getSearchResult(
     std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > > resultList;
     for (witer = resultMap.begin(); witer != resultMap.end(); witer++)
     {
-        boost::shared_ptr<KeywordSearchResult>& subResult = witer->second;
         workeridList.clear();
         workeridList.push_back(witer->first);
+
+        boost::shared_ptr<KeywordSearchResult>& subResult = witer->second;
+
         aggregatorManager_->sendRequest<KeywordSearchActionItem, KeywordSearchResult>(
                 "getSummaryResult", actionItem, *subResult, workeridList);
 
         resultList.push_back(std::make_pair(witer->first, subResult));
+
+        subResult->print();
     }
 
     // merge summary, mining results
@@ -450,7 +452,7 @@ bool IndexSearchService::getSummaryMiningResult(
 
     DLOG(INFO) << "[SIAServiceHandler] RawText,Summarization,Snippet" << endl;
 
-    if (resultItem.count_ > 0)
+    if (resultItem.topKDocs_.size() > 0)
     {
         // id of documents in current page
         std::vector<sf1r::docid_t> docsInPage;

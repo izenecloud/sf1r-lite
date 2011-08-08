@@ -18,8 +18,6 @@ bool WorkerService::processGetSearchResult(const KeywordSearchActionItem& action
 
     resultItem.propertyQueryTermList_ = propertyQueryTermList;
 
-    //resultItem.print();
-
     return true;
 }
 
@@ -32,8 +30,6 @@ bool WorkerService::processGetSummaryResult(const KeywordSearchActionItem& actio
     {
         return false;
     }
-
-    //resultItem.print();
 
     return true;
 }
