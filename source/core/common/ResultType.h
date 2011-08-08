@@ -236,7 +236,7 @@ namespace sf1r {
             /// @brief number of documents in current page
             std::size_t count_;
 
-            ///
+            /// property query terms
             std::vector<std::vector<izenelib::util::UString> > propertyQueryTermList_;
 
             /// @brief Full text of documents in one page. It will be used for
@@ -338,12 +338,13 @@ namespace sf1r {
 
             MSGPACK_DEFINE(
                     rawQueryString_,encodingType_,collectionName_,analyzedQuery_,
-                    queryTermIdList_,totalCount_,topKDocs_,topKRankScoreList_,
+                    queryTermIdList_,totalCount_,topKDocs_,topKWorkerIds_,topKRankScoreList_,
                     topKCustomRankScoreList_,start_,count_,propertyQueryTermList_,fullTextOfDocumentInPage_,
-                    snippetTextOfDocumentInPage_,rawTextOfSummaryInPage_,errno_,error_,
+                    snippetTextOfDocumentInPage_,rawTextOfSummaryInPage_,
+                    errno_,error_,
                     numberOfDuplicatedDocs_,numberOfSimilarDocs_,docCategories_,imgs_,
-                    taxonomyString_,numOfTGDocs_,taxonomyLevel_,tgDocIdList_,neList_,
-                    onto_rep_,groupRep_,attrRep_,relatedQueryList_,rqScore_,errno_,error_);
+                    taxonomyString_,numOfTGDocs_,taxonomyLevel_,tgDocIdList_,
+                    neList_,onto_rep_,groupRep_,attrRep_,relatedQueryList_,rqScore_);
     };
 
 
