@@ -24,6 +24,7 @@
 namespace sf1r
 {
 using izenelib::ir::idmanager::IDManager;
+using namespace net::aggregator;
 
 class MiningSearchService;
 class RecommendSearchService;
@@ -100,6 +101,7 @@ private:
 
     std::map<std::string, AggregatorConfigUnit> aggregatorUnitMap_;
 
+    friend class WorkerServer;
     friend class WorkerService;
     friend class IndexBundleActivator;
     friend class MiningBundleActivator;

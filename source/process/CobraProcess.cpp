@@ -214,6 +214,42 @@ void CobraProcess::stopDriver()
     }
 }
 
+bool CobraProcess::checkAndStartWorkerServer()
+{
+    // WorkerServer should be checked after all collections have been started
+    if (sf1r::SF1Config::get()->isEnableWorkerServer())
+    {
+        try
+        {
+            std::string host = "localhost";
+            uint16_t port = SF1Config::get()->brokerAgentConfig_.workerport_;
+            std::size_t threadNum = SF1Config::get()->brokerAgentConfig_.threadNum_;
+
+            workerServer_.reset(new WorkerServer(host, port, threadNum));
+            workerServer_->start();
+
+            cout << "#[Worker Server] enabled, listening at localhost:"<<port<<" ..."<<endl;
+        }
+        catch (std::exception& e)
+        {
+            cout << e.what() << endl;
+        }
+    }
+
+    addExitHook(boost::bind(&CobraProcess::stopWorkerServer, this));
+
+    return true;
+}
+
+void CobraProcess::stopWorkerServer()
+{
+    if (workerServer_)
+    {
+        //workerServer_->join();
+        workerServer_->end();
+    }
+}
+
 int CobraProcess::run()
 {
     setupDefaultSignalHandlers();
@@ -262,6 +298,9 @@ int CobraProcess::run()
                 }
             }
 #endif
+
+        // check after collections have been started
+        checkAndStartWorkerServer();
 
         driverServer_->run();
     }

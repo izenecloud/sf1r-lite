@@ -47,19 +47,6 @@ IndexSearchService::IndexSearchService()
 
 #ifdef DISTRIBUTED_SEARCH
     workerService_.reset(new WorkerService(this));
-    if (sf1r::SF1Config::get()->isEnableWorkerServer())
-    {
-        try
-        {
-            uint16_t port = SF1Config::get()->brokerAgentConfig_.workerport_;
-            workerService_->startServer("localhost", port);
-            cout << "#[Worker Server] started, listening at localhost:"<<port<<" ..."<<endl;
-        }
-        catch (std::exception& e)
-        {
-            cout << e.what() << endl;
-        }
-    }
 
     aggregatorManager_.reset(new AggregatorManager());
     aggregatorManager_->setWorkerListConfig(sf1r::SF1Config::get()->getAggregatorConfig());
