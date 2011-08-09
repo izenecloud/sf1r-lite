@@ -775,6 +775,80 @@ void RecommendController::purchase_item()
 }
 
 /**
+ * @brief Action @b update_shopping_cart. Update the item in shopping cart.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Add event on updating shopping cart in this collection.
+ * - @b resource* (@c Object): A resource for a shopping cart event, that is, the shopping cart of user @b USERID contains @b items.
+ *   Please note that whenever there is any update in user's shopping cart, you have to specify @b items as all the items in the shopping cart.
+ *   When the shopping cart becomes empty, you have to add this event by calling @c update_shopping_cart() with an empty @b items.
+ *   - @b USERID* (@c String): a unique user identifier.
+ *   - @b items* (@c Array): each is an item in shopping cart.
+ *     - @b ITEMID* (@c String): a unique item identifier.
+ *
+ * @section response
+ *
+ * - @b header (@c Object): Property @b success gives the result, true or false.
+ *
+ * @section example
+ *
+ * Request
+ * @code
+ * {
+ *   "resource": {
+ *     "USERID": "user_001",
+ *     "items": [
+ *       {"ITEMID": "item_001"},
+ *       {"ITEMID": "item_002"},
+ *       {"ITEMID": "item_003"}
+ *     ]
+ *   }
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true}
+ * }
+ * @endcode
+ */
+void RecommendController::update_shopping_cart()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
+    std::string userIdStr = asString(request()[Keys::resource][Keys::USERID]);
+
+    const izenelib::driver::Value& itemsValue = request()[Keys::resource][Keys::items];
+    if (nullValue(itemsValue) || itemsValue.type() != izenelib::driver::Value::kArrayType)
+    {
+        response().addError("Require an array of items in request[resource][items].");
+        return;
+    }
+
+    RecommendTaskService::OrderItemVec cartItemVec;
+    for (std::size_t i = 0; i < itemsValue.size(); ++i)
+    {
+        const Value& itemValue = itemsValue(i);
+
+        std::string itemIdStr = asString(itemValue[Keys::ITEMID]);
+        if (itemIdStr.empty())
+        {
+            response().addError("Require property \"" + Keys::ITEMID + "\" for each item in request[resource][items].");
+            return;
+        }
+
+        cartItemVec.push_back(RecommendTaskService::OrderItem(itemIdStr));
+    }
+
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    if (!service->updateShoppingCart(userIdStr, cartItemVec))
+    {
+        response().addError("Failed to update shopping cart to given collection.");
+    }
+}
+
+/**
  * @brief Action @b do_recommend. Get recommendation result.
  *
  * @section request
@@ -793,7 +867,8 @@ void RecommendController::purchase_item()
  *       If @b input_items is specified, the @b input_items would be used as the user's browse history.@n
  *       Otherwise, you have to specify both @b USERID and @b session_id, then the items added in @c visit_item() with the same @b USERID and @b session_id would be used as browse history.@n
  *     - @b BOS (<b>Based on Shopping Cart</b>): get the recommendation items based on the shopping cart of user @b USERID.@n
- *       You have to specify @b input_items as the items in user's current shopping cart.@n
+ *       If @b input_items is specified, the @b input_items would be used as the items in user's shopping cart.@n
+ *       Otherwise, the items added in @c update_shopping_cart() with the same @b USERID would be used as shoppint cart.@n
  *   - @b max_count (@c Uint = 10): max item number allowed in recommendation result.
  *   - @b USERID (@c String): a unique user identifier.
  *   - @b session_id (@c String): a session id.@n
@@ -934,9 +1009,9 @@ void RecommendController::do_recommend()
 
         case BASED_ON_SHOP_CART:
         {
-            if (inputItemVec.empty())
+            if (inputItemVec.empty() && userIdStr.empty())
             {
-                response().addError("This recommendation type requires input_items in request[resource].");
+                response().addError("This recommendation type requires either input_items or USERID in request[resource].");
                 return;
             }
             break;

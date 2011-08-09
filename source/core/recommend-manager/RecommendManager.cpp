@@ -2,6 +2,7 @@
 #include "ItemManager.h"
 #include "VisitManager.h"
 #include "PurchaseManager.h"
+#include "CartManager.h"
 #include "OrderManager.h"
 #include "ItemCondition.h"
 #include <recommend-manager/ItemFilter.h>
@@ -17,6 +18,7 @@ RecommendManager::RecommendManager(
     ItemManager* itemManager,
     VisitManager* visitManager,
     PurchaseManager* purchaseManager,
+    CartManager* cartManager,
     CoVisitManager* coVisitManager,
     ItemCFManager* itemCFManager,
     OrderManager* orderManager
@@ -24,6 +26,7 @@ RecommendManager::RecommendManager(
     : itemManager_(itemManager)
     , visitManager_(visitManager)
     , purchaseManager_(purchaseManager)
+    , cartManager_(cartManager)
     , coVisitManager_(coVisitManager)
     , itemCFManager_(itemCFManager)
     , orderManager_(orderManager)
@@ -228,13 +231,7 @@ bool RecommendManager::recommend_bob_(
     idmlib::recommender::RecommendItemVec& recItemVec
 )
 {
-    std::vector<itemid_t> newInputItemVec;
-    if (inputItemVec.empty() == false)
-    {
-        // use input items as browse history
-        newInputItemVec = inputItemVec;
-    }
-    else
+    if (inputItemVec.empty())
     {
         // use visit session items as browse history
         if (userId && sessionIdStr.empty() == false)
@@ -246,19 +243,24 @@ bool RecommendManager::recommend_bob_(
                 return false;
             }
 
+            std::vector<itemid_t> browseItemVec;
             if (visitSession.sessionId_ == sessionIdStr)
             {
-                newInputItemVec.assign(visitSession.itemSet_.begin(), visitSession.itemSet_.end());
+                browseItemVec.assign(visitSession.itemSet_.begin(), visitSession.itemSet_.end());
             }
+            return recUserByItem_(maxRecNum, userId, browseItemVec, filter, recItemVec);
         }
         else
         {
-            LOG(ERROR) << "failed to recommend with no browse history input";
+            LOG(ERROR) << "failed to recommend with empty browse history";
             return false;
         }
     }
-
-    return recommend_bos_(maxRecNum, userId, newInputItemVec, filter, recItemVec);
+    else
+    {
+        // use input items as browse history
+        return recUserByItem_(maxRecNum, userId, inputItemVec, filter, recItemVec);
+    }
 }
 
 bool RecommendManager::recommend_bos_(
@@ -269,24 +271,31 @@ bool RecommendManager::recommend_bos_(
     idmlib::recommender::RecommendItemVec& recItemVec
 )
 {
-    // filter purchase history
-    if (userId)
+    if (inputItemVec.empty())
     {
-        ItemIdSet purchaseItemSet;
-        if (purchaseManager_->getPurchaseItemSet(userId, purchaseItemSet) == false)
+        // use cart items as shopping cart
+        if (userId)
         {
-            LOG(ERROR) << "failed to get purchased items for user id " << userId;
+            std::vector<itemid_t> cartItemVec;
+            if (cartManager_->getCart(userId, cartItemVec) == false)
+            {
+                LOG(ERROR) << "failed to get shopping cart items for user id " << userId;
+                return false;
+            }
+
+            return recUserByItem_(maxRecNum, userId, cartItemVec, filter, recItemVec);
+        }
+        else
+        {
+            LOG(ERROR) << "failed to recommend with empty shopping cart and empty user id";
             return false;
         }
-        filter.insert(purchaseItemSet.begin(), purchaseItemSet.end());
     }
-
-    idmlib::recommender::RecommendItemVec results;
-    itemCFManager_->getRecByItem(maxRecNum, inputItemVec, results, &filter);
-
-    recItemVec.insert(recItemVec.end(), results.begin(), results.end());
-
-    return true;
+    else
+    {
+        // use input items as shopping cart
+        return recUserByItem_(maxRecNum, userId, inputItemVec, filter, recItemVec);
+    }
 }
 
 bool RecommendManager::recommend_fbt_(
@@ -318,6 +327,34 @@ bool RecommendManager::recommend_fbt_(
         recItem.itemId_ = *it;
         recItemVec.push_back(recItem);
     }
+
+    return true;
+}
+
+bool RecommendManager::recUserByItem_(
+    int maxRecNum,
+    userid_t userId,
+    const std::vector<itemid_t>& inputItemVec,
+    ItemFilter& filter,
+    idmlib::recommender::RecommendItemVec& recItemVec
+)
+{
+    // filter purchase history
+    if (userId)
+    {
+        ItemIdSet purchaseItemSet;
+        if (purchaseManager_->getPurchaseItemSet(userId, purchaseItemSet) == false)
+        {
+            LOG(ERROR) << "failed to get purchased items for user id " << userId;
+            return false;
+        }
+        filter.insert(purchaseItemSet.begin(), purchaseItemSet.end());
+    }
+
+    idmlib::recommender::RecommendItemVec results;
+    itemCFManager_->getRecByItem(maxRecNum, inputItemVec, results, &filter);
+
+    recItemVec.insert(recItemVec.end(), results.begin(), results.end());
 
     return true;
 }
