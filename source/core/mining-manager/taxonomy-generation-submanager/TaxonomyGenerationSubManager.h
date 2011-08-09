@@ -65,7 +65,7 @@ public:
     bool GetConceptsByDocidList(const std::vector<docid_t>& docIdList, const izenelib::util::UString& queryStr,
         uint32_t totalCount, idmlib::cc::CCInput32& input);
         
-    bool GetResult(const idmlib::cc::CCInput64& input, TaxonomyRep& taxonomyRep ,ne_result_list_type& neList);
+    bool GetResult(const idmlib::cc::CCInput64& input, TaxonomyRep& taxonomyRep ,NEResultList& neList);
     
     
     void AggregateInput(const std::vector<std::pair<uint32_t, idmlib::cc::CCInput32> >& input_list, idmlib::cc::CCInput64& result);
@@ -80,19 +80,20 @@ public:
     /// @param taxonomyRep The output parameter.
     ///
     /// @return If succ.
-    bool getQuerySpecificTaxonomyInfo(
-        const std::vector<docid_t>& docIdList,
-        const izenelib::util::UString& queryStr,
-        uint32_t totalCount,
-        uint32_t numberFromSia,
-        TaxonomyRep& taxonomyRep
-        ,ne_result_list_type& neList);
+//     bool getQuerySpecificTaxonomyInfo(
+//         const std::vector<docid_t>& docIdList,
+//         const izenelib::util::UString& queryStr,
+//         uint32_t totalCount,
+//         uint32_t numberFromSia,
+//         TaxonomyRep& taxonomyRep
+//         ,NEResultList& neList);
 
 
 private:
     
     void CombineConceptItem_(const idmlib::cc::ConceptItem& from, idmlib::cc::ConceptItem& to);
     
+    void GetNEResult_(const idmlib::cc::CCInput64& input, const std::vector<wdocid_t>& doc_list, std::vector<NEItem>& item_list);
 
     void getNEList_(std::vector<std::pair<labelid_t, docid_t> >& inputPairList
                     , const std::vector<uint32_t>& docIdList, uint32_t totalDocCount,uint32_t max, std::vector<ne_item_type >& neList);

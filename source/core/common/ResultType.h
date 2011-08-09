@@ -339,7 +339,7 @@ namespace sf1r {
             /// numOfTGDocs_ = { 0 , 1 , 2 , 0 };
             std::vector<uint32_t> taxonomyLevel_; // Start From 0
 
-            ne_result_list_type neList_;
+            NEResultList neList_;
             // --------------------------------[ Related Query ]
             
             sf1r::faceted::OntologyRep onto_rep_;

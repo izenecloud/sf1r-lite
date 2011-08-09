@@ -237,7 +237,7 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInNameEntityItem(
     const KeywordSearchResult& miaResult,
     unsigned start,
     unsigned count,
-    std::vector<sf1r::docid_t>& idListInPage
+    std::vector<sf1r::wdocid_t>& idListInPage
 )
 {
     izenelib::util::UString type(
@@ -250,21 +250,21 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInNameEntityItem(
     );
 
     std::size_t totalCount = 0;
-    typedef ne_result_list_type::const_iterator ne_result_list_iterator;
+    typedef NEResultList::const_iterator ne_result_list_iterator;
     ne_result_list_iterator resultOfType =
         std::find_if(miaResult.neList_.begin(), miaResult.neList_.end(),
-                     boost::bind(&ne_result_type::type_, _1) == type);
+                     boost::bind(&NEResult::type, _1) == type);
     if (resultOfType != miaResult.neList_.end())
     {
-        typedef std::vector<ne_item_type>::const_iterator item_iterator;
+        typedef std::vector<NEItem>::const_iterator item_iterator;
         item_iterator foundItem =
-            std::find_if(resultOfType->itemList_.begin(),
-                         resultOfType->itemList_.end(),
-                         boost::bind(&ne_item_type::first, _1) == name);
+            std::find_if(resultOfType->item_list.begin(),
+                         resultOfType->item_list.end(),
+                         boost::bind(&NEItem::text, _1) == name);
 
-        if (foundItem != resultOfType->itemList_.end())
+        if (foundItem != resultOfType->item_list.end())
         {
-            totalCount = foundItem->second.size();
+            totalCount = foundItem->doc_list.size();
             std::size_t end = start + count;
             if (end > totalCount)
             {
@@ -272,7 +272,7 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInNameEntityItem(
             }
             for (std::size_t i = start; i < end; ++i)
             {
-                idListInPage.push_back(foundItem->second[i]);
+                idListInPage.push_back(foundItem->doc_list[i]);
             }
         }
     }

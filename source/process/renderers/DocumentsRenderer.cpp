@@ -260,19 +260,19 @@ void DocumentsRenderer::renderNameEntity(
     {
         Value& newNameEntity = nameEntity();
 
-        miaResult.neList_[i].type_.convertString(convertBuffer, kEncoding);
+        miaResult.neList_[i].type.convertString(convertBuffer, kEncoding);
         newNameEntity[Keys::type] = convertBuffer;
 
         Value& nameEntityList = newNameEntity[Keys::name_entity_list];
         typedef std::vector<ne_item_type>::const_iterator const_iterator;
-        for (const_iterator item = miaResult.neList_[i].itemList_.begin(),
-                         itemEnd = miaResult.neList_[i].itemList_.end();
+        for (const_iterator item = miaResult.neList_[i].item_list.begin(),
+                         itemEnd = miaResult.neList_[i].item_list.end();
              item != itemEnd; ++item)
         {
             Value& newNameEntityItem = nameEntityList();
-            item->first.convertString(convertBuffer, kEncoding);
+            item->text.convertString(convertBuffer, kEncoding);
             newNameEntityItem[Keys::name_entity_item] = convertBuffer;
-            newNameEntityItem[Keys::document_support_count] = item->second.size();
+            newNameEntityItem[Keys::document_support_count] = item->doc_list.size();
         }
     }
 }

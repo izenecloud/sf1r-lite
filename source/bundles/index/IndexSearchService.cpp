@@ -715,7 +715,7 @@ bool IndexSearchService::getDocumentsByIds(
             actionItem.env_.encodingType_.c_str()
         );
 
-    std::vector<sf1r::docid_t> idList = actionItem.idList_;
+    std::vector<sf1r::wdocid_t> idList = actionItem.idList_;
 
     // append docIdList_ at the end of idList_.
     typedef std::vector<std::string>::const_iterator docid_iterator;

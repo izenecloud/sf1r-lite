@@ -228,11 +228,50 @@ uint32_t totalDocCount, idmlib::cc::CCInput32& input)
     return true;
 }
 
-bool TaxonomyGenerationSubManager::GetResult(const idmlib::cc::CCInput64& input, TaxonomyRep& taxonomyRep ,ne_result_list_type& neList)
+bool TaxonomyGenerationSubManager::GetResult(const idmlib::cc::CCInput64& input, TaxonomyRep& taxonomyRep ,NEResultList& neList)
 {
     algorithm_.DoClustering(input, tgParams_, taxonomyRep.result_);
     //TODO NE result
-    
+    neList.resize(3);
+    neList[0].type = izenelib::util::UString("PEOPLE", izenelib::util::UString::UTF_8);
+    neList[1].type = izenelib::util::UString("LOCATION", izenelib::util::UString::UTF_8);
+    neList[2].type = izenelib::util::UString("ORGANIZATION", izenelib::util::UString::UTF_8);
+    if ( taxonomy_param_.enable_nec )
+    {
+        idmlib::cc::CCInput64 peop_input;
+        idmlib::cc::CCInput64 loc_input;
+        idmlib::cc::CCInput64 org_input;
+        for(uint32_t i=0;i<input.concept_list.size();i++)
+        {
+            if(input.concept_list[i].type == LabelManager::PEOP )
+            {
+                peop_input.concept_list.push_back(input.concept_list[i]);
+            }
+            else if(input.concept_list[i].type == LabelManager::LOC )
+            {
+                loc_input.concept_list.push_back(input.concept_list[i]);
+            }
+            else if(input.concept_list[i].type == LabelManager::ORG )
+            {
+                org_input.concept_list.push_back(input.concept_list[i]);
+            }
+        }
+        
+        if(!peop_input.concept_list.empty())
+        {
+            GetNEResult_(peop_input, input.doc_list, neList[0].item_list);
+        }
+        
+        if(!loc_input.concept_list.empty())
+        {
+            GetNEResult_(loc_input, input.doc_list, neList[1].item_list);
+        }
+        
+        if(!org_input.concept_list.empty())
+        {
+            GetNEResult_(org_input, input.doc_list, neList[2].item_list);
+        }
+    }
     return true;
 }
 
@@ -299,6 +338,25 @@ void TaxonomyGenerationSubManager::CombineConceptItem_(const idmlib::cc::Concept
     to.doc_invert ^= from.doc_invert;
     if(from.score > to.score) to.score = from.score;
     if(from.min_query_distance < to.min_query_distance ) to.min_query_distance = from.min_query_distance;
+}
+
+void TaxonomyGenerationSubManager::GetNEResult_(const idmlib::cc::CCInput64& input, const std::vector<wdocid_t>& doc_list, std::vector<NEItem>& item_list)
+{
+    item_list.resize(input.concept_list.size());
+    for(uint32_t i=0;i<item_list.size();i++)
+    {
+        item_list[i].text = input.concept_list[i].text;
+        item_list[i].doc_list.resize(input.concept_list[i].doc_invert.count());
+        uint32_t p = 0;
+        for(uint32_t j=0; j<doc_list.size(); j++)
+        {
+            if( input.concept_list[i].doc_invert[j] )
+            {
+                item_list[i].doc_list[p] = doc_list[j];
+                ++p;
+            }
+        }
+    }
 }
 
 

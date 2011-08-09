@@ -595,7 +595,7 @@ class GetDocumentsByIdsActionItem
         std::vector<DisplayProperty> displayPropertyList_;
 
         /// @brief Internal document id list.
-        std::vector<docid_t> idList_;
+        std::vector<wdocid_t> idList_;
 
         /// @brief User specified DOCID list.
         std::vector<std::string> docIdList_;
