@@ -49,9 +49,16 @@ public:
     {
         cout << "#[WorkerServer::preHandle] key : " << key<<endl;
 
+        if (!sf1r::SF1Config::get()->checkCollectionWorkerServer(key))
+        {
+            return false;
+        }
+
         CollectionHandler* collectionHandler_ = CollectionManager::get()->findHandler(key);
         if (!collectionHandler_)
+        {
             return false;
+        }
 
         workerService_ = collectionHandler_->indexSearchService_->workerService_;
         return true;
