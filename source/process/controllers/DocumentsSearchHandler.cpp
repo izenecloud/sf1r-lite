@@ -197,7 +197,7 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInLabel(
     const KeywordSearchResult& miaResult,
     unsigned start,
     unsigned count,
-    std::vector<sf1r::docid_t>& idListInPage
+    std::vector<sf1r::wdocid_t>& idListInPage
 )
 {
     izenelib::util::UString taxonomyLabel(
@@ -215,7 +215,7 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInLabel(
     std::size_t totalCount = 0;
     if (taxonomyIndex < miaResult.tgDocIdList_.size())
     {
-        const std::vector<sf1r::docid_t>& tgDocIdList =
+        const std::vector<sf1r::wdocid_t>& tgDocIdList =
             miaResult.tgDocIdList_[taxonomyIndex];
         totalCount = tgDocIdList.size();
 

@@ -15,13 +15,14 @@
 #define _RESULTTYPE_H_
 
 #include <common/type_defs.h>
-
+#include <common/sf1_msgpack_serialization_types.h>
 #include <mining-manager/taxonomy-generation-submanager/TgTypes.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
-// #include <idmlib/tdt/tdt_types.h>
+#include <idmlib/concept-clustering/cc_types.h>
 // #include <mining-manager/faceted-submanager/manmade_doc_category_item.h>
 #include <util/ustring/UString.h>
 #include <util/izene_serialization.h>
+
 #include <3rdparty/msgpack/msgpack.hpp>
 
 #include <sstream>
@@ -31,6 +32,7 @@
 
 namespace sf1r {
 
+    
     ///
     /// @brief This class is inheritable type of every result type in this file.
     ///
@@ -67,7 +69,7 @@ namespace sf1r {
           , start_(0), count_(0), fullTextOfDocumentInPage_()
           , snippetTextOfDocumentInPage_(), rawTextOfSummaryInPage_()
           , numberOfDuplicatedDocs_(), numberOfSimilarDocs_()
-          , docCategories_(), imgs_(), taxonomyString_(), numOfTGDocs_()
+          , docCategories_()/*, imgs_()*/, taxonomyString_(), numOfTGDocs_()
           , tgDocIdList_(), taxonomyLevel_(), neList_(), onto_rep_()
           , relatedQueryList_(), rqScore_()
           {
@@ -176,12 +178,12 @@ namespace sf1r {
                   ss << endl;
               }
               ss << endl;
-              ss << "imgs_        : " << imgs_.size() << endl;
-              for (size_t i = 0; i < imgs_.size(); i ++)
-              {
-                  ss << imgs_[i] << ", ";
-              }
-              ss << endl;
+//               ss << "imgs_        : " << imgs_.size() << endl;
+//               for (size_t i = 0; i < imgs_.size(); i ++)
+//               {
+//                   ss << imgs_[i] << ", ";
+//               }
+//               ss << endl;
 
               ss << "taxonomyString_    : " << taxonomyString_.size() << endl;
               for (size_t i = 0; i < taxonomyString_.size(); i++)
@@ -284,9 +286,11 @@ namespace sf1r {
 
             std::vector< std::vector<izenelib::util::UString> > docCategories_;
 
-            std::vector< uint32_t> imgs_;
+//             std::vector< uint32_t> imgs_;
 
             // --------------------------------[ Taxonomy List ]
+            
+            idmlib::cc::CCInput32 tg_input;
 
             /// Taxonomy string list.
             std::vector<izenelib::util::UString> taxonomyString_;
@@ -327,22 +331,22 @@ namespace sf1r {
             /// A list of related query rank score.
             std::vector<float> rqScore_;
             
-            DATA_IO_LOAD_SAVE(KeywordSearchResult,
-                    &rawQueryString_&encodingType_&collectionName_&analyzedQuery_
-                    &queryTermIdList_&totalCount_
-                    &topKDocs_&topKWorkerIds_&topKRankScoreList_&topKCustomRankScoreList_
-                    &start_&count_&propertyQueryTermList_&fullTextOfDocumentInPage_
-                    &snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_
-                    &errno_&error_
-                    &numberOfDuplicatedDocs_&numberOfSimilarDocs_&docCategories_&imgs_&taxonomyString_&numOfTGDocs_&taxonomyLevel_&tgDocIdList_&neList_&onto_rep_&groupRep_&attrRep_&relatedQueryList_&rqScore_)
+//             DATA_IO_LOAD_SAVE(KeywordSearchResult,
+//                     &rawQueryString_&encodingType_&collectionName_&analyzedQuery_
+//                     &queryTermIdList_&totalCount_
+//                     &topKDocs_&topKWorkerIds_&topKRankScoreList_&topKCustomRankScoreList_
+//                     &start_&count_&propertyQueryTermList_&fullTextOfDocumentInPage_
+//                     &snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_
+//                     &errno_&error_
+//                     &numberOfDuplicatedDocs_&numberOfSimilarDocs_&docCategories_&imgs_&taxonomyString_&numOfTGDocs_&taxonomyLevel_&tgDocIdList_&neList_&onto_rep_&groupRep_&attrRep_&relatedQueryList_&rqScore_)
 
             MSGPACK_DEFINE(
                     rawQueryString_,encodingType_,collectionName_,analyzedQuery_,
                     queryTermIdList_,totalCount_,topKDocs_,topKRankScoreList_,
                     topKCustomRankScoreList_,start_,count_,propertyQueryTermList_,fullTextOfDocumentInPage_,
                     snippetTextOfDocumentInPage_,rawTextOfSummaryInPage_,errno_,error_,
-                    numberOfDuplicatedDocs_,numberOfSimilarDocs_,docCategories_,imgs_,
-                    taxonomyString_,numOfTGDocs_,taxonomyLevel_,tgDocIdList_,neList_,
+                    numberOfDuplicatedDocs_,numberOfSimilarDocs_,docCategories_,/*imgs_,*/
+                    tg_input, taxonomyString_,numOfTGDocs_,taxonomyLevel_,tgDocIdList_,neList_,
                     onto_rep_,groupRep_,attrRep_,relatedQueryList_,rqScore_,errno_,error_);
     };
 

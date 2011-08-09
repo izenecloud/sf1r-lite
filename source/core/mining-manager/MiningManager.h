@@ -235,6 +235,12 @@ public:
     {
         return faceted_;
     }
+    
+    boost::shared_ptr<TaxonomyGenerationSubManager> GetTgManager()
+    {
+        return tgManager_;
+    }
+    
 private:
 
 

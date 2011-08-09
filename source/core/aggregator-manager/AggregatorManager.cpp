@@ -1,7 +1,9 @@
 #include "AggregatorManager.h"
 
 #include <common/ResultType.h>
-
+#include <mining-manager/MiningManager.h>
+#include <mining-manager/taxonomy-generation-submanager/TaxonomyRep.h>
+#include <mining-manager/taxonomy-generation-submanager/TaxonomyGenerationSubManager.h>
 namespace sf1r
 {
 
@@ -148,7 +150,35 @@ void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const st
 
 void AggregatorManager::mergeMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > >& resultList)
 {
+    if(!mining_manager_) return;
+    boost::shared_ptr<TaxonomyGenerationSubManager> tg_manager = mining_manager_->GetTgManager();
+    if(tg_manager)
+    {
+        std::vector<std::pair<uint32_t, idmlib::cc::CCInput32> > input_list;
+        for(uint32_t i=0;i<resultList.size();i++)
+        {
+            const idmlib::cc::CCInput32& tg_input = resultList[i].second->tg_input;
+            if(tg_input.concept_list.size()>0)
+            {
+                input_list.push_back(std::make_pair(resultList[i].first, tg_input) );
+            }
+        }
+        if( input_list.size()>0)
+        {
+            idmlib::cc::CCInput64 input;
+            tg_manager->AggregateInput(input_list, input);
+            TaxonomyRep taxonomyRep;
+            if( tg_manager->GetResult(input, taxonomyRep, result.neList_) )
+            {
+                taxonomyRep.fill(result);
+            }
+        }
+    }
+}
 
+void AggregatorManager::SetMiningManager(const boost::shared_ptr<MiningManager>& mining_manager)
+{
+    mining_manager_ = mining_manager;
 }
 
 }

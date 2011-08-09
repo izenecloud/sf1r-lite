@@ -19,6 +19,7 @@ namespace sf1r
 {
 
 class KeywordSearchResult;
+class MiningManager;
 
 class AggregatorManager : public JobAggregator<AggregatorManager>
 {
@@ -98,6 +99,12 @@ public:
     void mergeSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > >& resultList);
 
     void mergeMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > >& resultList);
+    
+    void SetMiningManager(const boost::shared_ptr<MiningManager>& mining_manager);
+    
+private:
+    
+    boost::shared_ptr<MiningManager> mining_manager_;
 };
 
 

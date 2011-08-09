@@ -22,6 +22,7 @@
 #include <am/cccr_hash/cccr_hash.h>
 #include <am/tokyo_cabinet/tc_hash.h>
 #include <common/type_defs.h>
+
 #include "LabelManager.h"
 #include <am/3rdparty/rde_hash.h>
 #include <idmlib/util/idm_analyzer.h>
@@ -62,16 +63,13 @@ public:
 public:
     
     bool GetConceptsByDocidList(const std::vector<docid_t>& docIdList, const izenelib::util::UString& queryStr,
-        uint32_t totalCount, idmlib::cc::ConceptClusteringInput& input);
+        uint32_t totalCount, idmlib::cc::CCInput32& input);
         
-    bool GetResult(const idmlib::cc::ConceptClusteringInput& input, TaxonomyRep& taxonomyRep ,ne_result_list_type& neList);
+    bool GetResult(const idmlib::cc::CCInput64& input, TaxonomyRep& taxonomyRep ,ne_result_list_type& neList);
     
-    bool GetResult(const std::vector<docid_t>& docIdList, const izenelib::util::UString& queryStr,
-        uint32_t totalCount, TaxonomyRep& taxonomyRep ,ne_result_list_type& neList);
     
-    void AggregateInput(const std::vector<std::pair<uint32_t, idmlib::cc::ConceptClusteringInput> >& input_list, idmlib::cc::ConceptClusteringInput& result);
+    void AggregateInput(const std::vector<std::pair<uint32_t, idmlib::cc::CCInput32> >& input_list, idmlib::cc::CCInput64& result);
     
-    bool GetResult(const std::vector<std::pair<uint32_t, idmlib::cc::ConceptClusteringInput> >& input_list, TaxonomyRep& taxonomyRep ,ne_result_list_type& neList);
     
     /// @brief Given a query, get the query specific taxonomy information to display.
     ///
@@ -104,7 +102,7 @@ private:
     std::string path_;
     boost::shared_ptr<LabelManager> labelManager_;
     idmlib::util::IDMAnalyzer* analyzer_;
-    idmlib::cc::ConceptClustering algorithm_;
+    idmlib::cc::ConceptClustering<wdocid_t> algorithm_;
 //     idmlib::cc::Algorithm<LabelManager> algorithm_;
     idmlib::cc::Parameters tgParams_;
 //     idmlib::cc::Parameters peopParams_;

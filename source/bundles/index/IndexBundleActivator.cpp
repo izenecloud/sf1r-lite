@@ -1,5 +1,5 @@
 #include "IndexBundleActivator.h"
-
+#include "../mining/MiningSearchService.h"
 #include <common/SFLogger.h>
 #include <query-manager/QueryManager.h>
 #include <index-manager/IndexManager.h>
@@ -9,7 +9,7 @@
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
 #include <la-manager/LAPool.h>
-
+#include <aggregator-manager/AggregatorManager.h>
 #include <util/singleton.h>
 
 #include <boost/filesystem.hpp>
@@ -118,6 +118,7 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
             MiningSearchService* service = reinterpret_cast<MiningSearchService*> ( const_cast<IService*>(ref.getService()) );
             cout << "[IndexBundleActivator#addingService] Calling MiningSearchService..." << endl;
             searchService_->miningSearchService_ = service;
+            searchService_->aggregatorManager_->SetMiningManager(service->GetMiningManager());
             return true;
         }
         else

@@ -73,7 +73,7 @@ TaxonomyGenerationSubManager::~TaxonomyGenerationSubManager()
 }
 
 bool TaxonomyGenerationSubManager::GetConceptsByDocidList(const std::vector<uint32_t>& rawDocIdList, const izenelib::util::UString& queryStr,
-uint32_t totalDocCount, idmlib::cc::ConceptClusteringInput& input)
+uint32_t totalDocCount, idmlib::cc::CCInput32& input)
 {
     std::vector<uint32_t> docIdList(rawDocIdList);
     if(docIdList.size()> tgParams_.topDocNum_ )
@@ -225,9 +225,10 @@ uint32_t totalDocCount, idmlib::cc::ConceptClusteringInput& input)
         concept_list[i].score = score_items[i].score;
         
     }
+    return true;
 }
 
-bool TaxonomyGenerationSubManager::GetResult(const idmlib::cc::ConceptClusteringInput& input, TaxonomyRep& taxonomyRep ,ne_result_list_type& neList)
+bool TaxonomyGenerationSubManager::GetResult(const idmlib::cc::CCInput64& input, TaxonomyRep& taxonomyRep ,ne_result_list_type& neList)
 {
     algorithm_.DoClustering(input, tgParams_, taxonomyRep.result_);
     //TODO NE result
@@ -235,16 +236,8 @@ bool TaxonomyGenerationSubManager::GetResult(const idmlib::cc::ConceptClustering
     return true;
 }
 
-bool TaxonomyGenerationSubManager::GetResult(const std::vector<uint32_t>& docIdList, const izenelib::util::UString& queryStr,
-uint32_t totalCount, TaxonomyRep& taxonomyRep ,ne_result_list_type& neList)
-{
-    idmlib::cc::ConceptClusteringInput input;
-    if(!GetConceptsByDocidList(docIdList, queryStr, totalCount, input)) return false;
-    if(!GetResult(input, taxonomyRep, neList)) return false;
-    return true;
-}
 
-void TaxonomyGenerationSubManager::AggregateInput(const std::vector<std::pair<uint32_t, idmlib::cc::ConceptClusteringInput> >& input_list, idmlib::cc::ConceptClusteringInput& result)
+void TaxonomyGenerationSubManager::AggregateInput(const std::vector<std::pair<uint32_t, idmlib::cc::CCInput32> >& input_list, idmlib::cc::CCInput64& result)
 {
     if(input_list.empty()) return;
     //set some basic info
@@ -263,12 +256,12 @@ void TaxonomyGenerationSubManager::AggregateInput(const std::vector<std::pair<ui
     izenelib::am::rde_hash<izenelib::util::UString, uint32_t> app_concept;
 //     std::vector<std::pair<double, uint32_t> > score_list;
     
-    uint32_t p = 0;
+//     uint32_t p = 0;
     for(uint32_t i=0;i<input_list.size();i++)
     {
         uint32_t worker_id = input_list[i].first;
-        const idmlib::cc::ConceptClusteringInput& input = input_list[i].second;
-        const std::vector<uint64_t>& doc_list = input.doc_list;
+        const idmlib::cc::CCInput32& input = input_list[i].second;
+        const std::vector<uint32_t>& doc_list = input.doc_list;
         //expand doc_list
         uint32_t current_doc_size = r_doc_list.size();
         r_doc_list.resize(current_doc_size+doc_list.size());
@@ -306,13 +299,6 @@ void TaxonomyGenerationSubManager::CombineConceptItem_(const idmlib::cc::Concept
     to.doc_invert ^= from.doc_invert;
     if(from.score > to.score) to.score = from.score;
     if(from.min_query_distance < to.min_query_distance ) to.min_query_distance = from.min_query_distance;
-}
-    
-bool TaxonomyGenerationSubManager::GetResult(const std::vector<std::pair<uint32_t, idmlib::cc::ConceptClusteringInput> >& input_list, TaxonomyRep& taxonomyRep ,ne_result_list_type& neList)
-{
-    idmlib::cc::ConceptClusteringInput input;
-    AggregateInput(input_list, input);
-    return GetResult(input, taxonomyRep, neList);
 }
 
 

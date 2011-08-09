@@ -84,9 +84,11 @@ bool MiningBundleActivator::addingService( const ServiceReference& ref )
             }
             searchService_ = new MiningSearchService;
             searchService_->miningManager_ = miningManager_;
+            
+            
             taskService_ = new MiningTaskService;
             taskService_->miningManager_ = miningManager_;
-
+            
             Properties props;
             props.put( "collection", config_->collectionName_);
             searchServiceReg_ = context_->registerService( "MiningSearchService", searchService_, props );
