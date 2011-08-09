@@ -26,6 +26,7 @@ class UserManager;
 class ItemManager;
 class VisitManager;
 class PurchaseManager;
+class CartManager;
 class OrderManager;
 class RecommendBundleConfiguration;
 class JobScheduler;
@@ -45,6 +46,7 @@ public:
         ItemManager* itemManager,
         VisitManager* visitManager,
         PurchaseManager* purchaseManager,
+        CartManager* cartManager,
         OrderManager* orderManager,
         RecIdGenerator* userIdGenerator,
         RecIdGenerator* itemIdGenerator
@@ -103,6 +105,12 @@ public:
             ,price_(0.0)
         {}
 
+        OrderItem(const std::string& itemIdStr)
+            :itemIdStr_(itemIdStr)
+            ,quantity_(0)
+            ,price_(0.0)
+        {}
+
         OrderItem(const std::string& itemIdStr, int quantity, double price)
             :itemIdStr_(itemIdStr)
             ,quantity_(quantity)
@@ -126,6 +134,18 @@ public:
         const std::string& userIdStr,
         const std::string& orderIdStr,
         const OrderItemVec& orderItemVec
+    );
+
+    /**
+     * Update shopping cart event.
+     * @param userIdStr the user id, it must not be empty.
+     * @param cartItemVec the items in the user's shopping cart, each item id must not be empty,
+     *                    an empty @p cartItemVec means the shopping cart is empty.
+     * @return true for succcess, false for failure
+     */
+    bool updateShoppingCart(
+        const std::string& userIdStr,
+        const OrderItemVec& cartItemVec
     );
 
 private:
@@ -215,6 +235,7 @@ private:
     ItemManager* itemManager_;
     VisitManager* visitManager_;
     PurchaseManager* purchaseManager_;
+    CartManager* cartManager_;
     OrderManager* orderManager_;
     RecIdGenerator* userIdGenerator_;
     RecIdGenerator* itemIdGenerator_;

@@ -19,7 +19,7 @@ void AggregatorManager::mergeSearchResult(KeywordSearchResult& result, const std
     if (workerNum == 1)
     {
         result = resultList[0].second;
-        ///result.workerIdList_.resize(result.topKDocs_.size(), resultList[0].first);
+        result.topKWorkerIds_.resize(result.topKDocs_.size(), resultList[0].first);
         return;
     }
 
@@ -73,7 +73,7 @@ void AggregatorManager::mergeSearchResult(KeywordSearchResult& result, const std
             }
         }
 
-        cout << "max: " << max <<", maxi: "<< maxi<<", iter[maxi]: " << iter[maxi]<<endl;
+        //cout << "max: " << max <<", maxi: "<< maxi<<", iter[maxi]: " << iter[maxi]<<endl;
         if (maxi == size_t(-1))
         {
             break;
@@ -137,6 +137,8 @@ void AggregatorManager::splitResultByWorkerid(const KeywordSearchResult& result,
         }
 
         subResult->topKDocs_.push_back(result.topKDocs_[i]);
+        subResult->topKWorkerIds_.push_back(curWorkerid);
+        subResult->topKPostionList_.push_back(i);
     }
 }
 
@@ -144,7 +146,70 @@ void AggregatorManager::splitResultByWorkerid(const KeywordSearchResult& result,
 
 void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > >& resultList)
 {
+    cout << "#[AggregatorManager::mergeSummaryResult] " << endl;
 
+    size_t subResultNum = resultList.size();
+
+    if (subResultNum <= 0)
+        return;
+
+    size_t topk = result.topKDocs_.size();
+    size_t displayPropertyNum = resultList[0].second->snippetTextOfDocumentInPage_.size(); //xxx
+    size_t isSummaryOn = resultList[0].second->rawTextOfSummaryInPage_.size(); //xxx
+
+    // initialize summary info for result
+    result.snippetTextOfDocumentInPage_.resize(displayPropertyNum);
+    result.fullTextOfDocumentInPage_.resize(displayPropertyNum);
+    if (isSummaryOn)
+        result.rawTextOfSummaryInPage_.resize(displayPropertyNum);
+    for (size_t dis = 0; dis < displayPropertyNum; dis++)
+    {
+        result.snippetTextOfDocumentInPage_[dis].resize(topk);
+        result.fullTextOfDocumentInPage_[dis].resize(topk);
+        if (isSummaryOn)
+            result.rawTextOfSummaryInPage_[dis].resize(topk);
+    }
+
+    // merge
+    //size_t curPos;
+    size_t curSub;
+    size_t* iter = new size_t[subResultNum];
+    memset(iter, 0, sizeof(size_t)*subResultNum);
+
+    for (size_t i = 0; i < topk; i++)
+    {
+        //curPos = 0;
+        curSub = size_t(-1);
+        for (size_t sub = 0; sub < subResultNum; sub++)
+        {
+            const std::vector<size_t>& subTopKPosList = resultList[sub].second->topKPostionList_;
+            if (iter[sub] < subTopKPosList.size() && subTopKPosList[iter[sub]] == i)
+            {
+                //curPos = subTopKPosList[iter[sub]];
+                curSub = sub;
+                break;
+            }
+        }
+
+        if (curSub == size_t(-1))
+            continue;
+        //cout << "curPos: " << i <<", curSub: "<< curSub<<", iter[curSub]: " << iter[curSub]<<endl;
+
+        // get a result
+        const boost::shared_ptr<KeywordSearchResult>& subResult = resultList[curSub].second;
+        for (size_t dis = 0; dis < displayPropertyNum; dis++)
+        {
+            result.snippetTextOfDocumentInPage_[dis][i] = subResult->snippetTextOfDocumentInPage_[dis][iter[curSub]];
+            result.fullTextOfDocumentInPage_[dis][i] = subResult->fullTextOfDocumentInPage_[dis][iter[curSub]];
+            if (isSummaryOn)
+                result.rawTextOfSummaryInPage_[dis][i] = subResult->rawTextOfSummaryInPage_[dis][iter[curSub]];
+        }
+
+        // next
+        iter[curSub] ++;
+    }
+
+    delete[] iter;
 }
 
 

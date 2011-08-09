@@ -96,6 +96,16 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   ADD_TEST(recommend-manager "${SF1RENGINE_ROOT}/testbin/t_PurchaseManager")
 
+  ADD_EXECUTABLE(t_CartManager
+    Runner.cpp
+    t_CartManager.cpp
+  )
+  TARGET_LINK_LIBRARIES(t_CartManager ${libs})
+  SET_TARGET_PROPERTIES(t_CartManager PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(recommend-manager "${SF1RENGINE_ROOT}/testbin/t_CartManager")
+
   ADD_EXECUTABLE(t_OrderManager
     Runner.cpp
     t_OrderManager.cpp

@@ -3,6 +3,7 @@
 #include <recommend-manager/ItemManager.h>
 #include <recommend-manager/VisitManager.h>
 #include <recommend-manager/PurchaseManager.h>
+#include <recommend-manager/CartManager.h>
 #include <recommend-manager/OrderManager.h>
 #include <recommend-manager/RecommendManager.h>
 
@@ -25,6 +26,7 @@ RecommendBundleActivator::RecommendBundleActivator()
     ,itemManager_(NULL)
     ,visitManager_(NULL)
     ,purchaseManager_(NULL)
+    ,cartManager_(NULL)
     ,orderManager_(NULL)
     ,recommendManager_(NULL)
     ,userIdGenerator_(NULL)
@@ -77,6 +79,7 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
     delete itemManager_;
     delete visitManager_;
     delete purchaseManager_;
+    delete cartManager_;
     delete orderManager_;
     delete recommendManager_;
     delete userIdGenerator_;
@@ -87,6 +90,7 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
     itemManager_ = NULL;
     visitManager_ = NULL;
     purchaseManager_ = NULL;
+    cartManager_ = NULL;
     orderManager_ = NULL;
     recommendManager_ = NULL;
     userIdGenerator_ = NULL;
@@ -105,52 +109,66 @@ bool RecommendBundleActivator::init_()
     // create data directory
     std::string dir;
     openDataDirectory_(dir);
-    boost::filesystem::create_directories(dir);
+    boost::filesystem::path dataDir(dir);
+    boost::filesystem::create_directories(dataDir);
 
-    std::string userPath = dir + "/user.db";
-    auto_ptr<UserManager> userManagerPtr(new UserManager(userPath));
+    boost::filesystem::path userDir = dataDir / "user";
+    boost::filesystem::create_directory(userDir);
+    auto_ptr<UserManager> userManagerPtr(new UserManager((userDir / "user.db").string()));
 
-    std::string itemPath = dir + "/item.db";
-    std::string maxIdPath = dir + "/max_itemid.txt";
-    auto_ptr<ItemManager> itemManagerPtr(new ItemManager(itemPath, maxIdPath));
+    boost::filesystem::path itemDir = dataDir / "item";
+    boost::filesystem::create_directory(itemDir);
+    auto_ptr<ItemManager> itemManagerPtr(new ItemManager((itemDir / "item.db").string(),
+                                                         (itemDir / "max_itemid.txt").string()));
 
-    std::string cfPath = dir + "/cf";
-    boost::filesystem::create_directories(cfPath);
-    auto_ptr<ItemCFManager> itemCFManagerPtr(new ItemCFManager(cfPath + "/covisit", 500*1024*1024,
-                                                               cfPath + "/sim", 500*1024*1024,
-                                                               cfPath + "/nb.sdb", 30,
-                                                               cfPath + "/rec", 1000));
+    boost::filesystem::path miningDir = dataDir / "mining";
+    boost::filesystem::create_directory(miningDir);
 
-    std::string visitPath = dir + "/visit";
-    boost::filesystem::create_directories(visitPath);
-    auto_ptr<CoVisitManager> coVisitManagerPtr(new CoVisitManager(visitPath + "/covisit"));
-    auto_ptr<VisitManager> visitManagerPtr(new VisitManager(visitPath + "/visit.db",
-                                                            visitPath + "/session.db",
+    boost::filesystem::path cfPath = miningDir / "cf";
+    boost::filesystem::create_directory(cfPath);
+    auto_ptr<ItemCFManager> itemCFManagerPtr(new ItemCFManager((cfPath / "covisit").string(), 500*1024*1024,
+                                                               (cfPath / "sim").string(), 500*1024*1024,
+                                                               (cfPath / "nb.sdb").string(), 30,
+                                                               (cfPath / "rec").string(), 1000));
+
+    auto_ptr<CoVisitManager> coVisitManagerPtr(new CoVisitManager((miningDir / "covisit").string()));
+
+    boost::filesystem::path eventDir = dataDir / "event";
+    boost::filesystem::create_directory(eventDir);
+
+    auto_ptr<VisitManager> visitManagerPtr(new VisitManager((eventDir / "visit.db").string(),
+                                                            (eventDir / "visit_session.db").string(),
                                                             coVisitManagerPtr.get()));
 
-    std::string purchasePath = dir + "/purchase.db";
-    auto_ptr<PurchaseManager> purchaseManagerPtr(new PurchaseManager(purchasePath, itemCFManagerPtr.get(), itemManagerPtr.get()));
+    auto_ptr<PurchaseManager> purchaseManagerPtr(new PurchaseManager((eventDir / "purchase.db").string(),
+                                                                     itemCFManagerPtr.get(),
+                                                                     itemManagerPtr.get()));
 
-    std::string orderPath = dir + "/order";
-    auto_ptr<OrderManager> orderManagerPtr(new OrderManager(orderPath, itemManagerPtr.get()));
+    auto_ptr<CartManager> cartManagerPtr(new CartManager((eventDir / "cart.db").string()));
+
+    boost::filesystem::path orderDir = dataDir / "order";
+    boost::filesystem::create_directory(orderDir);
+    auto_ptr<OrderManager> orderManagerPtr(new OrderManager(orderDir.string(), itemManagerPtr.get()));
 
     auto_ptr<RecommendManager> recommendManagerPtr(new RecommendManager(itemManagerPtr.get(),
                                                                         visitManagerPtr.get(),
                                                                         purchaseManagerPtr.get(),
+                                                                        cartManagerPtr.get(),
                                                                         coVisitManagerPtr.get(),
                                                                         itemCFManagerPtr.get(),
                                                                         orderManagerPtr.get()));
 
-    std::string userIdPath = dir + "/userid";
-    auto_ptr<RecIdGenerator> userIdGeneratorPtr(new RecIdGenerator(userIdPath));
+    boost::filesystem::path idDir = dataDir / "id";
+    boost::filesystem::create_directory(idDir);
 
-    std::string itemIdPath = dir + "/itemid";
-    auto_ptr<RecIdGenerator> itemIdGeneratorPtr(new RecIdGenerator(itemIdPath));
+    auto_ptr<RecIdGenerator> userIdGeneratorPtr(new RecIdGenerator((idDir / "userid").string()));
+    auto_ptr<RecIdGenerator> itemIdGeneratorPtr(new RecIdGenerator((idDir / "itemid").string()));
 
     userManager_ = userManagerPtr.release();
     itemManager_ = itemManagerPtr.release();
     visitManager_ = visitManagerPtr.release();
     purchaseManager_ = purchaseManagerPtr.release();
+    cartManager_ = cartManagerPtr.release();
     orderManager_ = orderManagerPtr.release();
     recommendManager_ = recommendManagerPtr.release();
 
@@ -160,7 +178,7 @@ bool RecommendBundleActivator::init_()
     coVisitManager_ = coVisitManagerPtr.release();
     itemCFManager_ = itemCFManagerPtr.release();
 
-    taskService_ = new RecommendTaskService(config_, &directoryRotator_, userManager_, itemManager_, visitManager_, purchaseManager_, orderManager_, userIdGenerator_, itemIdGenerator_);
+    taskService_ = new RecommendTaskService(config_, &directoryRotator_, userManager_, itemManager_, visitManager_, purchaseManager_, cartManager_, orderManager_, userIdGenerator_, itemIdGenerator_);
     searchService_ = new RecommendSearchService(userManager_, itemManager_, recommendManager_, userIdGenerator_, itemIdGenerator_);
 
     return true;
@@ -177,18 +195,18 @@ bool RecommendBundleActivator::openDataDirectory_(std::string& dataDir)
     directoryRotator_.setCapacity(directories.size());
     typedef std::vector<std::string>::const_iterator iterator;
     namespace bfs = boost::filesystem;
-    bfs::path dataPath = config_->collPath_.getCollectionDataPath();
+    boost::filesystem::path dataPath = config_->collPath_.getCollectionDataPath();
     for (iterator it = directories.begin(); it != directories.end(); ++it)
     {
-        bfs::path dataDir = dataPath / *it;
-        if (!directoryRotator_.appendDirectory(dataDir))
+        boost::filesystem::path dir = dataPath / *it;
+        if (!directoryRotator_.appendDirectory(dir))
 	{
-	  std::string msg = dataDir.file_string() + " corrupted, delete it!";
+	  std::string msg = dir.file_string() + " corrupted, delete it!";
 	  sflog->error( SFL_SYS, msg.c_str() ); 
 	  std::cout<<msg<<std::endl;
 	  //clean the corrupt dir
-	  boost::filesystem::remove_all( dataDir );
-	  directoryRotator_.appendDirectory(dataDir);
+	  boost::filesystem::remove_all(dir);
+	  directoryRotator_.appendDirectory(dir);
 	}
     }
 
