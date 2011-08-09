@@ -243,15 +243,15 @@ bool TaxonomyGenerationSubManager::GetResult(const idmlib::cc::CCInput64& input,
         idmlib::cc::CCInput64 org_input;
         for(uint32_t i=0;i<input.concept_list.size();i++)
         {
-            if(input.concept_list[i].type == LabelManager::PEOP )
+            if(input.concept_list[i].type == LabelManager::LABEL_TYPE::PEOP )
             {
                 peop_input.concept_list.push_back(input.concept_list[i]);
             }
-            else if(input.concept_list[i].type == LabelManager::LOC )
+            else if(input.concept_list[i].type == LabelManager::LABEL_TYPE::LOC )
             {
                 loc_input.concept_list.push_back(input.concept_list[i]);
             }
-            else if(input.concept_list[i].type == LabelManager::ORG )
+            else if(input.concept_list[i].type == LabelManager::LABEL_TYPE::ORG )
             {
                 org_input.concept_list.push_back(input.concept_list[i]);
             }
@@ -486,71 +486,71 @@ void TaxonomyGenerationSubManager::GetNEResult_(const idmlib::cc::CCInput64& inp
 // }
 
 
-void TaxonomyGenerationSubManager::getNEList_(std::vector<std::pair<labelid_t, docid_t> >& inputPairList
-        , const std::vector<uint32_t>& docIdList, uint32_t totalDocCount, uint32_t max, std::vector<ne_item_type >& neItemList)
-{
-    std::sort(inputPairList.begin(), inputPairList.end() );
-    uint32_t distinctCount = 0;
-    uint32_t lastConceptId = 0;
-
-    for ( std::size_t i=0;i<inputPairList.size();i++ )
-    {
-        if (inputPairList[i].first!=lastConceptId)
-        {
-            ++distinctCount;
-            lastConceptId = inputPairList[i].first;
-        }
-
-    }
-    //label str, partialDF, global DF
-    typedef boost::tuple<izenelib::util::UString, boost::dynamic_bitset<>, uint32_t> NEInfo;
-    std::vector<std::pair<double, NEInfo> > neList(distinctCount, std::make_pair(0.0, boost::make_tuple(izenelib::util::UString("",izenelib::util::UString::UTF_8),boost::dynamic_bitset<>(docIdList.size()),0) ) );
-    if ( neList.size() == 0 ) return;
-    lastConceptId = 0;
-    uint32_t p=0;
-    for ( std::size_t i=0;i<inputPairList.size();i++ )
-    {
-        if ( inputPairList[i].first != lastConceptId )
-        {
-            labelManager_->getLabelStringByLabelId(inputPairList[i].first, neList[p].second.get<0>() );
-
-            uint32_t globalDF = 0;
-            labelManager_->getLabelDF( inputPairList[i].first, globalDF );
-            neList[p].second.get<2>() = globalDF;
-            ++p;
-        }
-
-        neList[p-1].second.get<1>().set(inputPairList[i].second);
-        lastConceptId = inputPairList[i].first;
-    }
-    for ( std::size_t i=0;i<neList.size();i++ )
-    {
-        neList[i].first = NERRanking::getScore( neList[i].second.get<0>(), neList[i].second.get<1>().count(),
-                                                neList[i].second.get<2>(), totalDocCount);
-//         std::cout<<"score : "<<neList[i].first<<std::endl;
-    }
-    std::sort(neList.begin(), neList.end(), std::greater<std::pair<double, NEInfo> >() );
-    uint32_t size = neList.size();
-    for (uint32_t i=neList.size(); i>0;i--)
-    {
-        if (neList[i-1].first > 0.0) break;
-        size--;
-    }
-    uint32_t count = max>size?size:max;
-    neItemList.resize(count);
-    for (uint32_t i=0;i<count;i++)
-    {
-        neItemList[i].first = neList[i].second.get<0>();
-        neItemList[i].second.resize( neList[i].second.get<1>().count() );
-        uint32_t index = 0;
-        for (uint32_t p=0;p<docIdList.size();p++)
-        {
-            if ( neList[i].second.get<1>()[p] )
-            {
-                neItemList[i].second[index] = docIdList[p];
-                ++index;
-            }
-        }
-    }
-}
+// void TaxonomyGenerationSubManager::getNEList_(std::vector<std::pair<labelid_t, docid_t> >& inputPairList
+//         , const std::vector<uint32_t>& docIdList, uint32_t totalDocCount, uint32_t max, std::vector<ne_item_type >& neItemList)
+// {
+//     std::sort(inputPairList.begin(), inputPairList.end() );
+//     uint32_t distinctCount = 0;
+//     uint32_t lastConceptId = 0;
+// 
+//     for ( std::size_t i=0;i<inputPairList.size();i++ )
+//     {
+//         if (inputPairList[i].first!=lastConceptId)
+//         {
+//             ++distinctCount;
+//             lastConceptId = inputPairList[i].first;
+//         }
+// 
+//     }
+//     //label str, partialDF, global DF
+//     typedef boost::tuple<izenelib::util::UString, boost::dynamic_bitset<>, uint32_t> NEInfo;
+//     std::vector<std::pair<double, NEInfo> > neList(distinctCount, std::make_pair(0.0, boost::make_tuple(izenelib::util::UString("",izenelib::util::UString::UTF_8),boost::dynamic_bitset<>(docIdList.size()),0) ) );
+//     if ( neList.size() == 0 ) return;
+//     lastConceptId = 0;
+//     uint32_t p=0;
+//     for ( std::size_t i=0;i<inputPairList.size();i++ )
+//     {
+//         if ( inputPairList[i].first != lastConceptId )
+//         {
+//             labelManager_->getLabelStringByLabelId(inputPairList[i].first, neList[p].second.get<0>() );
+// 
+//             uint32_t globalDF = 0;
+//             labelManager_->getLabelDF( inputPairList[i].first, globalDF );
+//             neList[p].second.get<2>() = globalDF;
+//             ++p;
+//         }
+// 
+//         neList[p-1].second.get<1>().set(inputPairList[i].second);
+//         lastConceptId = inputPairList[i].first;
+//     }
+//     for ( std::size_t i=0;i<neList.size();i++ )
+//     {
+//         neList[i].first = NERRanking::getScore( neList[i].second.get<0>(), neList[i].second.get<1>().count(),
+//                                                 neList[i].second.get<2>(), totalDocCount);
+// //         std::cout<<"score : "<<neList[i].first<<std::endl;
+//     }
+//     std::sort(neList.begin(), neList.end(), std::greater<std::pair<double, NEInfo> >() );
+//     uint32_t size = neList.size();
+//     for (uint32_t i=neList.size(); i>0;i--)
+//     {
+//         if (neList[i-1].first > 0.0) break;
+//         size--;
+//     }
+//     uint32_t count = max>size?size:max;
+//     neItemList.resize(count);
+//     for (uint32_t i=0;i<count;i++)
+//     {
+//         neItemList[i].first = neList[i].second.get<0>();
+//         neItemList[i].second.resize( neList[i].second.get<1>().count() );
+//         uint32_t index = 0;
+//         for (uint32_t p=0;p<docIdList.size();p++)
+//         {
+//             if ( neList[i].second.get<1>()[p] )
+//             {
+//                 neItemList[i].second[index] = docIdList[p];
+//                 ++index;
+//             }
+//         }
+//     }
+// }
 

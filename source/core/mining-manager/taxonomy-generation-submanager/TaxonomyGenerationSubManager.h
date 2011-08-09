@@ -95,8 +95,8 @@ private:
     
     void GetNEResult_(const idmlib::cc::CCInput64& input, const std::vector<wdocid_t>& doc_list, std::vector<NEItem>& item_list);
 
-    void getNEList_(std::vector<std::pair<labelid_t, docid_t> >& inputPairList
-                    , const std::vector<uint32_t>& docIdList, uint32_t totalDocCount,uint32_t max, std::vector<ne_item_type >& neList);
+//     void getNEList_(std::vector<std::pair<labelid_t, docid_t> >& inputPairList
+//                     , const std::vector<uint32_t>& docIdList, uint32_t totalDocCount,uint32_t max, std::vector<ne_item_type >& neList);
 
 private:
     TaxonomyPara taxonomy_param_;
