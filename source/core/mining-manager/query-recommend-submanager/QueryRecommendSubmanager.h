@@ -31,9 +31,14 @@ class QueryRecommendSubmanager : public boost::noncopyable
 {
 public:
 
-    QueryRecommendSubmanager(const boost::shared_ptr<RecommendManager>& rmDb);
+    QueryRecommendSubmanager(const boost::shared_ptr<RecommendManager>& rmDb, const std::string& inject_file);
     ~QueryRecommendSubmanager();
 
+    bool Load();
+    
+    void Inject(const izenelib::util::UString& query, const izenelib::util::UString& result);
+    
+    void FinishInject();
 
 public:
 
@@ -56,7 +61,9 @@ public:
 private:
 
     boost::shared_ptr<RecommendManager> rmDb_;
-
+    std::string inject_file_;
+    boost::unordered_map<izenelib::util::UString, std::vector<izenelib::util::UString> > inject_data_;
+    bool has_new_inject_;
 
 };
 
