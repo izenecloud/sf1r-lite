@@ -47,7 +47,7 @@ public:
 
     virtual bool preHandle(const std::string& key)
     {
-        cout << "#[WorkerServer::preHandle] key : " << key<<endl;
+        //cout << "#[WorkerServer::preHandle] key : " << key<<endl;
 
         if (!sf1r::SF1Config::get()->checkCollectionWorkerServer(key))
         {
@@ -61,6 +61,7 @@ public:
         }
 
         workerService_ = collectionHandler_->indexSearchService_->workerService_;
+
         return true;
     }
 
