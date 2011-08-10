@@ -80,6 +80,12 @@
           <Property name="price" />
           <Property name="category" />
         </Item>
+        <Track>
+          <Event name="wish_list" />
+          <Event name="own" />
+          <Event name="like" />
+          <Event name="favorite" />
+        </Track>
       </Schema>
     </RecommendBundle>
 </Collection>

@@ -9,6 +9,7 @@
 
 #include <recommend-manager/RecTypes.h>
 #include <recommend-manager/Item.h>
+#include <recommend-manager/RecommendItem.h>
 
 #include <util/osgi/IService.h>
 
@@ -37,17 +38,6 @@ public:
     bool getUser(const std::string& userIdStr, User& user);
 
     bool getItem(const std::string& itemIdStr, Item& item);
-
-    struct RecommendItem
-    {
-        Item item_;
-        double weight_;
-        std::vector<Item> reasonItems_;
-
-        RecommendItem()
-            : weight_(0)
-        {}
-    };
 
     bool recommend(
         RecommendType recType,
