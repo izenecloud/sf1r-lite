@@ -26,27 +26,30 @@ void AggregatorManager::mergeSearchResult(KeywordSearchResult& result, const std
     cout << "resultPage(original) start: " << result.start_ << ", count: " << result.count_ << endl;
 
     // get basic info
-    size_t overallTotalCount = 0;
+    result.totalCount_ = 0;
     size_t overallResultCount = 0;
 
     for (size_t i = 0; i < workerNum; i++)
     {
         const KeywordSearchResult& wResult = resultList[i].second;
-        overallTotalCount += wResult.totalCount_;
+        //result.totalCount_ += ((wResult.totalCount_ > TOP_K_NUM) ? TOP_K_NUM : wResult.totalCount_);
+        result.totalCount_ += wResult.totalCount_;
         overallResultCount += wResult.topKDocs_.size();
     }
-    cout << "overallTotalCount: " << overallTotalCount << ",  overallResultCount: " << overallResultCount<<endl;
+    cout << "result.totalCount_: " << result.totalCount_ << ",  overallResultCount: " << overallResultCount<<endl;
 
     // get page count info
-    size_t resultCount = result.start_ + result.count_; // xxx
-    if (result.start_ > overallResultCount)
+    if (result.start_ >= overallResultCount)
     {
-        result.start_ = overallResultCount;
+        // page offset over flow
+        return;
     }
-    if (resultCount > overallResultCount)
+    if (result.start_ + result.count_ > overallResultCount)
     {
         result.count_ = overallResultCount - result.start_;
     }
+    size_t resultCount = result.start_ + result.count_;
+
     cout << "resultPage      start: " << result.start_ << ", count: " << result.count_ << endl;
 
     result.topKDocs_.resize(resultCount);

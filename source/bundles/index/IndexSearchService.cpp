@@ -87,6 +87,10 @@ bool IndexSearchService::getSearchResult(
     aggregatorManager_->sendRequest<KeywordSearchActionItem, KeywordSearchResult>(
             actionItem.collectionName_, "getSearchResult", actionItem, resultItem, workeridList);
 
+    DLOG(INFO) << "Total count: " << resultItem.totalCount_ << endl;
+    DLOG(INFO) << "Top K count: " << resultItem.topKDocs_.size() << endl;
+    DLOG(INFO) << "Page Count: " << resultItem.count_ << endl;
+
     // xxx split & get summary, mining result by workers.
     std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> > resultMap;
     aggregatorManager_->splitResultByWorkerid(resultItem, resultMap);
@@ -369,9 +373,16 @@ bool IndexSearchService::processSearchAction(
     }
 
     START_PROFILER ( searchIndex );
-    // TODO: how many docs should be retrieved from 1 server
+    // xxx, the page start(offset) for result is measured in results over all nodes based on sort condition.
+    // In one node, we don't know how many results should be retrieved. The extreme case is, all results of
+    // the requested page located in one node. (maybe can pre-fetch some statistical info to improve.)
+    //int startOffset = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
     int startOffset = 0;
     int top_k_num = actionItem.pageInfo_.start_ + actionItem.pageInfo_.count_;
+    if (top_k_num > TOP_K_NUM)
+    {
+        top_k_num = TOP_K_NUM;
+    }
 
     if(! searchManager_->search(
                 actionOperation,
@@ -416,6 +427,10 @@ bool IndexSearchService::processSearchAction(
 
     // Remove duplicated docs from the result if the option is on.
     removeDuplicateDocs(actionItem, resultItem);
+
+    //set page info in resultItem t
+    resultItem.start_ = actionItem.pageInfo_.start_;
+    resultItem.count_ = actionItem.pageInfo_.count_;
 
     //set query term and Id List
     resultItem.rawQueryString_ = actionItem.env_.queryString_;
