@@ -42,6 +42,7 @@ controllers:
       - get_topic
       - get_topic_with_sim
       - get_freq_group_labels
+      - set_top_group_label
 
   StatusController: ~
 

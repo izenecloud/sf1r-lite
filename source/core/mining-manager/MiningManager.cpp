@@ -1276,6 +1276,24 @@ bool MiningManager::getFreqGroupLabel(
     }
 }
 
+bool MiningManager::setTopGroupLabel(
+    const std::string& query,
+    const std::string& propName,
+    const std::string& propValue
+)
+{
+    GroupLabelLogger* logger = groupLabelLoggerMap_[propName];
+    if(logger)
+    {
+        return logger->setTopLabel(query, propValue);
+    }
+    else
+    {
+        LOG(ERROR) << "the logger is not initialized for group property: " << propName;
+        return false;
+    }
+}
+
 bool MiningManager::GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list)
 {
     idmlib::tdt::TimeIdType start_date;

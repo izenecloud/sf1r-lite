@@ -75,4 +75,26 @@ bool GroupLabelLogger::getFreqLabel(
     return true;
 }
 
+bool GroupLabelLogger::setTopLabel(
+    const std::string& query,
+    const std::string& propValue
+)
+{
+    LabelCounter labelCounter;
+    container_.getValue(query, labelCounter);
+    labelCounter.setTopLabel(propValue);
+
+    bool result = false;
+    try
+    {
+        result = container_.update(query, labelCounter);
+    }
+    catch(izenelib::util::IZENELIBException& e)
+    {
+        LOG(ERROR) << "exception in SDB::update(): " << e.what();
+    }
+
+    return result;
+}
+
 }
