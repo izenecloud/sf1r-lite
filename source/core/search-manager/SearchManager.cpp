@@ -546,7 +546,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             //delete pScoreItem;
         }
 
-#ifndef DISTRIBUTED_SEARCH
+#if 0
         // normalize rank score to [0, 1]
         float range = max - min;
         if (range != 0)

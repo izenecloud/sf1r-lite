@@ -9,31 +9,20 @@
 #define WORKER_SERVICE_H_
 
 #include <net/aggregator/JobInfo.h>
-#include <net/aggregator/JobWorker.h>
-#include <net/aggregator/WorkerHandler.h>
-
-#include <util/singleton.h>
 
 #include <query-manager/ActionItem.h>
 #include <common/ResultType.h>
 
 #include <boost/shared_ptr.hpp>
 
-using namespace net::aggregator;
-
 namespace sf1r
 {
 
 class IndexSearchService;
 
-class WorkerService : public JobWorker<WorkerService>
+class WorkerService
 {
 public:
-//    static WorkerService* get()
-//    {
-//        return izenelib::util::Singleton<WorkerService>::get();
-//    }
-
     WorkerService(IndexSearchService* indexSearchService)
     :indexSearchService_(indexSearchService)
     {
@@ -41,38 +30,7 @@ public:
     }
 
 public:
-    /**
-     * interfaces for handling remote request
-     * @{
-     */
 
-    /*pure virtual*/
-    void addHandlers()
-    {
-        ADD_WORKER_HANDLER_LIST_BEGIN( WorkerService )
-
-        ADD_WORKER_HANDLER( getSearchResult )
-        ADD_WORKER_HANDLER( getSummaryResult )
-        // todo, add more ...
-
-        ADD_WORKER_HANDLER_LIST_END()
-    }
-
-    bool getSearchResult(JobRequest& req)
-    {
-        WORKER_HANDLE_1_1(req, KeywordSearchActionItem, processGetSearchResult, KeywordSearchResult)
-        return true;
-    }
-
-    bool getSummaryResult(JobRequest& req)
-    {
-        WORKER_HANDLE_1_1(req, KeywordSearchActionItem, processGetSummaryResult, KeywordSearchResult)
-        return true;
-    }
-
-    /** @}*/
-
-public:
     /**
      * interfaces for handling local request (call directly)
      * @{
@@ -110,6 +68,8 @@ private:
 
 private:
     IndexSearchService* indexSearchService_;
+
+    friend class WorkerServer;
 };
 
 }

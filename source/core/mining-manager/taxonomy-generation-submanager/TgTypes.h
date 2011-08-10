@@ -45,7 +45,7 @@ struct ne_result_type
 
 typedef std::vector<ne_result_type> ne_result_list_type;
 typedef std::vector<termid_t> TIL;
-typedef idmlib::cc::ClusterRep TgClusterRep;
+typedef idmlib::cc::ClusterRep<uint32_t> TgClusterRep;
 
 class TgLabelInfo
 {
