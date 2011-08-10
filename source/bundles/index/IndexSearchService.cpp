@@ -51,6 +51,7 @@ IndexSearchService::IndexSearchService()
     aggregatorManager_.reset(new AggregatorManager());
     aggregatorManager_->setWorkerListConfig(sf1r::SF1Config::get()->getAggregatorConfig());
     aggregatorManager_->setLocalWorkerService(workerService_);
+    aggregatorManager_->SetMiningManager(miningSearchService_->GetMiningManager());
 #endif
 }
 
@@ -702,7 +703,9 @@ bool IndexSearchService::getDocumentsByIds(
             actionItem.env_.encodingType_.c_str()
         );
 
-    std::vector<sf1r::wdocid_t> idList = actionItem.idList_;
+    std::vector<sf1r::docid_t> idList;
+    std::vector<sf1r::workerid_t> workeridList;
+    const_cast<GetDocumentsByIdsActionItem&>(actionItem).getDocWorkerIdLists(idList, workeridList);
 
     // append docIdList_ at the end of idList_.
     typedef std::vector<std::string>::const_iterator docid_iterator;

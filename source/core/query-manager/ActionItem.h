@@ -31,6 +31,8 @@
 #include <common/sf1_msgpack_serialization_types.h>
 #include <3rdparty/msgpack/msgpack.hpp>
 #include <util/izene_serialization.h>
+#include <net/aggregator/Util.h>
+
 #include <sstream>
 #include <vector>
 #include <utility>
@@ -615,6 +617,17 @@ class GetDocumentsByIdsActionItem
 
         MSGPACK_DEFINE(env_,languageAnalyzerInfo_,collectionName_,displayPropertyList_,
                 idList_,docIdList_,propertyName_,propertyValueList_,filteringList_);
+
+    public:
+        void getDocWorkerIdLists(std::vector<sf1r::docid_t>& docidList, std::vector<sf1r::workerid_t>& workeridList)
+        {
+            for (size_t i = 0; i < idList_.size(); i++)
+            {
+                std::pair<sf1r::workerid_t, docid_t> p = net::aggregator::Util::GetWorkerAndDocId(idList_[i]);
+                workeridList.push_back(p.first);
+                docidList.push_back(p.second);
+            }
+        }
 
     private:
         friend class boost::serialization::access;

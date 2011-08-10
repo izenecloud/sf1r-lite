@@ -7,7 +7,7 @@
 namespace sf1r
 {
 
-//int TOP_K_NUM = 1000;
+extern int TOP_K_NUM;
 
 void AggregatorManager::mergeSearchResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
 {

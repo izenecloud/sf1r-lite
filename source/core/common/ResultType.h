@@ -311,7 +311,7 @@ namespace sf1r {
 
             std::vector< std::vector<izenelib::util::UString> > docCategories_;
 
-//             std::vector< uint32_t> imgs_;
+             std::vector< uint32_t> imgs_;
 
             // --------------------------------[ Taxonomy List ]
             

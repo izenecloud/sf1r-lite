@@ -264,7 +264,7 @@ void DocumentsRenderer::renderNameEntity(
         newNameEntity[Keys::type] = convertBuffer;
 
         Value& nameEntityList = newNameEntity[Keys::name_entity_list];
-        typedef std::vector<ne_item_type>::const_iterator const_iterator;
+        typedef std::vector<NEItem>::const_iterator const_iterator;
         for (const_iterator item = miaResult.neList_[i].item_list.begin(),
                          itemEnd = miaResult.neList_[i].item_list.end();
              item != itemEnd; ++item)
