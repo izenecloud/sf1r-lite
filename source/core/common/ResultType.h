@@ -24,6 +24,7 @@
 #include <util/izene_serialization.h>
 
 #include <3rdparty/msgpack/msgpack.hpp>
+#include <net/aggregator/Util.h>
 
 #include <sstream>
 #include <vector>
@@ -106,11 +107,19 @@ namespace sf1r {
               }
               ss << dec<< endl;
               ss << "topKWorkerIds_      : " << topKWorkerIds_.size() << endl;
-                for (size_t i = 0; i < topKWorkerIds_.size(); i ++)
-                {
-                    ss << topKWorkerIds_[i] << ", ";
-                }
-                ss << endl;
+              for (size_t i = 0; i < topKWorkerIds_.size(); i ++)
+              {
+                  ss << topKWorkerIds_[i] << ", ";
+              }
+              ss << endl;
+              std::vector<sf1r::wdocid_t> topKWDocs;
+              const_cast<KeywordSearchResult*>(this)->getTopKWDocs(topKWDocs);
+              ss << "topKWDocs          : " << topKWDocs.size() << endl;
+              for (size_t i = 0; i < topKWDocs.size(); i ++)
+              {
+                  ss << "0x"<< hex<< topKWDocs[i] << ", ";
+              }
+              ss << dec<< endl;
               ss << "topKRankScoreList_      : " << topKRankScoreList_.size() << endl;
               for (size_t i = 0; i < topKRankScoreList_.size(); i ++)
               {
@@ -226,6 +235,17 @@ namespace sf1r {
               ss << "===================================" << endl;
               out << ss.str();
           }
+
+            void getTopKWDocs(std::vector<sf1r::wdocid_t>& topKWDocs)
+            {
+                if (topKWorkerIds_.size() == 0)
+                    topKWorkerIds_.resize(topKDocs_.size(), 0);
+
+                for (size_t i = 0; i < topKDocs_.size(); i++)
+                {
+                    topKWDocs.push_back(net::aggregator::Util::GetWDocId(topKWorkerIds_[i], topKDocs_[i]));
+                }
+            }
 
             std::string rawQueryString_;
 
