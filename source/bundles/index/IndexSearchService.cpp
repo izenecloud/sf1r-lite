@@ -28,7 +28,6 @@
 using namespace izenelib::util;
 
 
-
 namespace sf1r
 {
 int TOP_K_NUM = 1000;
@@ -51,7 +50,6 @@ IndexSearchService::IndexSearchService()
     aggregatorManager_.reset(new AggregatorManager());
     aggregatorManager_->setWorkerListConfig(sf1r::SF1Config::get()->getAggregatorConfig());
     aggregatorManager_->setLocalWorkerService(workerService_);
-    aggregatorManager_->SetMiningManager(miningSearchService_->GetMiningManager());
 #endif
 }
 
