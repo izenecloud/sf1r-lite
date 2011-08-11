@@ -13,7 +13,7 @@
 #include "QueryCorrectionSubmanager.h"
 #include <common/SFLogger.h>
 #include <util/ustring/ustr_tool.h>
-#include <boost/algorithm/string/trim.hpp>
+#include <boost/algorithm/string.hpp>
 
 namespace
 {
