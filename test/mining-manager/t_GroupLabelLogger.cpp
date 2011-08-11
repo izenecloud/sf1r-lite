@@ -10,6 +10,7 @@
 #include <string>
 #include <map>
 #include <set>
+#include <algorithm> // min
 
 #include <climits> // INT_MAX
 
@@ -73,25 +74,39 @@ private:
         //}
         //cout << endl;
 
+
         BOOST_CHECK_EQUAL(propValueVec.size(), freqVec.size());
         BOOST_CHECK_LE(propValueVec.size(), limit);
-        BOOST_CHECK_GT(propValueVec.size(), 0);
 
-        const GroupCountMap& groupCountMap = groupCounter.countMap_;
         set<string> checkedSet;
         size_t i = 0;
+        const GroupCountMap& groupCountMap = groupCounter.countMap_;
+        int totalCount = groupCountMap.size();
+
+        // check top label set manually
         if (groupCounter.manualTop_.empty() == false)
         {
             const string& groupStr = groupCounter.manualTop_;
             BOOST_CHECK_EQUAL(propValueVec[0], groupStr);
 
             GroupCountMap::const_iterator findIt = groupCountMap.find(groupStr);
-            BOOST_CHECK_EQUAL(freqVec[0], (findIt != groupCountMap.end()) ? findIt->second : 0);
+            if (findIt != groupCountMap.end())
+            {
+                BOOST_CHECK_EQUAL(freqVec[0], findIt->second);
+            }
+            else
+            {
+                BOOST_CHECK_EQUAL(freqVec[0], 0);
+                ++totalCount;
+            }
 
             BOOST_CHECK(checkedSet.insert(groupStr).second);
 
             ++i;
         }
+
+        // check result size
+        BOOST_CHECK_EQUAL(propValueVec.size(), min(totalCount, limit));
 
         int maxFreq = INT_MAX;
         for (; i<propValueVec.size(); ++i)
@@ -200,14 +215,13 @@ public:
 
 BOOST_AUTO_TEST_SUITE(GroupLabelLogger_test)
 
-BOOST_AUTO_TEST_CASE(getFreqLabel)
+BOOST_AUTO_TEST_CASE(logLabel)
 {
     bfs::remove_all(TEST_DIR_STR);
     bfs::create_directory(TEST_DIR_STR);
 
     LogChecker logChecker(100, 10); // query range, group range
     const int LOG_NUM = 10000; // log number
-    const int TOP_NUM = 1000; // set top label number
 
     {
         GroupLabelLogger logger(TEST_DIR_STR, PROP_NAME_STR);
@@ -217,6 +231,41 @@ BOOST_AUTO_TEST_CASE(getFreqLabel)
         logChecker.checkLog(logger);
 
         BOOST_TEST_MESSAGE("create log 1st time");
+        logChecker.createLog(logger, LOG_NUM);
+        logChecker.checkLog(logger);
+    }
+
+    {
+        GroupLabelLogger logger(TEST_DIR_STR, PROP_NAME_STR);
+        BOOST_CHECK(logger.open());
+
+        BOOST_TEST_MESSAGE("check loaded log");
+        logChecker.checkLog(logger);
+
+        BOOST_TEST_MESSAGE("create log 2nd time");
+        logChecker.createLog(logger, LOG_NUM);
+        logChecker.checkLog(logger);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(setTopLabel)
+{
+    bfs::remove_all(TEST_DIR_STR);
+    bfs::create_directory(TEST_DIR_STR);
+
+    LogChecker logChecker(50, 7); // query range, group range
+    const int LOG_NUM = 3000; // log number
+    const int TOP_NUM = 500; // set top label number
+
+    {
+        GroupLabelLogger logger(TEST_DIR_STR, PROP_NAME_STR);
+        BOOST_CHECK(logger.open());
+
+        BOOST_TEST_MESSAGE("set top label");
+        logChecker.setTopLabel(logger, TOP_NUM);
+        logChecker.checkLog(logger);
+
+        BOOST_TEST_MESSAGE("create log");
         logChecker.createLog(logger, LOG_NUM);
         logChecker.setTopLabel(logger, TOP_NUM);
         logChecker.checkLog(logger);
@@ -230,8 +279,8 @@ BOOST_AUTO_TEST_CASE(getFreqLabel)
         logChecker.checkLog(logger);
 
         BOOST_TEST_MESSAGE("create log 2nd time");
-        logChecker.createLog(logger, LOG_NUM);
         logChecker.setTopLabel(logger, TOP_NUM);
+        logChecker.createLog(logger, LOG_NUM);
         logChecker.checkLog(logger);
     }
 }
