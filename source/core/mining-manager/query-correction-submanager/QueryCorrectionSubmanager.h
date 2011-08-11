@@ -130,7 +130,7 @@ private:
     //English or Korean Query CorrectionManager
     EkQueryCorrection ekmgr_;
     
-    boost::unordered_map<izenelib::util::UString, izenelib::util::UString> inject_data_;
+    boost::unordered_map<std::string, izenelib::util::UString> inject_data_;
     bool has_new_inject_;
 
 };

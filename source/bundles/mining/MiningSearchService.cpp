@@ -205,5 +205,15 @@ bool MiningSearchService::GetTdtTopicInfo(const izenelib::util::UString& text, i
     return miningManager_->GetTdtTopicInfo(text, topic_info);
 }
 
+void MiningSearchService::InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result)
+{
+    miningManager_->InjectQueryRecommend(query, result);
+}
+    
+void MiningSearchService::FinishQueryRecommendInject()
+{
+    miningManager_->FinishQueryRecommendInject();
+}
+
 }
 

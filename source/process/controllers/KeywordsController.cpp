@@ -7,9 +7,10 @@
 #include "CollectionHandler.h"
 
 #include <common/Keys.h>
-
+#include <common/XmlConfigParser.h>
+#include <common/CollectionManager.h>
 #include <bundles/mining/MiningSearchService.h>
-
+#include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 #include <log-manager/LogManager.h>
 #include <log-manager/LogAnalysis.h>
 
@@ -62,7 +63,7 @@ using namespace izenelib::driver;
  */
 void KeywordsController::index()
 {
-    Value::StringType collection = asString(request()[Keys::collection]);
+    std::string collection = asString(request()[Keys::collection]);
     Value::UintType limit = asUintOr(request()[Keys::limit], kDefaultCount);
 
     if (collection.empty())
@@ -70,6 +71,12 @@ void KeywordsController::index()
         response().addError("Require field collection in request.");
         return;
     }
+    if (!SF1Config::get()->checkCollectionAndACL(collection, request().aclTokens()))
+    {
+        response().addError("Collection access denied");
+        return;
+    }
+    CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
 
     bool getAllLists = true;
     std::set<std::string> selectedTypes;
@@ -130,7 +137,7 @@ void KeywordsController::index()
         std::vector<izenelib::util::UString> popularKeywords;
         std::vector<izenelib::util::UString> realtimeKeywords;
 
-        MiningSearchService* service = collectionHandler_->miningSearchService_;
+        MiningSearchService* service = collectionHandler->miningSearchService_;
 
         bool success = service->getReminderQuery(popularKeywords, realtimeKeywords);
 
@@ -189,5 +196,100 @@ void KeywordsController::index()
         }
     }
 }
+
+void KeywordsController::inject_query_correction()
+{
+    Value& resources = response()[Keys::resource];
+    std::vector<std::pair<izenelib::util::UString,izenelib::util::UString> > input;
+    for(uint32_t i=0;i<resources.size();i++)
+    {
+        Value& resource = resources(i);
+        std::string str_query = asString(resource[Keys::query]);
+        if (str_query.empty())
+        {
+            response().addError("Require field query in request.");
+            return;
+        }
+        std::string str_result = asString(resource[Keys::result]);
+        if (str_result.empty())
+        {
+            response().addError("Require field result in request.");
+            return;
+        }
+        izenelib::util::UString query(str_query, izenelib::util::UString::UTF_8);
+        izenelib::util::UString result(str_result, izenelib::util::UString::UTF_8);
+        input.push_back(std::make_pair(query, result) );
+        
+    }
+    if(!input.empty())
+    {
+        for(uint32_t i=0;i<input.size();i++)
+        {
+            QueryCorrectionSubmanager::getInstance().Inject(input[i].first, input[i].second);
+        }
+        QueryCorrectionSubmanager::getInstance().FinishInject();
+    }
+}
+
+void KeywordsController::inject_query_recommend()
+{
+    std::string collection = asString(request()[Keys::collection]);
+    if (collection.empty())
+    {
+        response().addError("Require field collection in request.");
+        return;
+    }
+    if (!SF1Config::get()->checkCollectionAndACL(collection, request().aclTokens()))
+    {
+        response().addError("Collection access denied");
+        return;
+    }
+    CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
+    MiningSearchService* service = collectionHandler->miningSearchService_;
+    Value& resources = response()[Keys::resource];
+    std::vector<std::pair<izenelib::util::UString,izenelib::util::UString> > input;
+    for(uint32_t i=0;i<resources.size();i++)
+    {
+        Value& resource = resources(i);
+        std::string str_query = asString(resource[Keys::query]);
+        if (str_query.empty())
+        {
+            response().addError("Require field query in request.");
+            return;
+        }
+        std::string str_result = asString(resource[Keys::result]);
+        if (str_result.empty())
+        {
+            response().addError("Require field result in request.");
+            return;
+        }
+        izenelib::util::UString query(str_query, izenelib::util::UString::UTF_8);
+        izenelib::util::UString result(str_result, izenelib::util::UString::UTF_8);
+        input.push_back(std::make_pair(query, result) );
+        
+    }
+    if(!input.empty())
+    {
+        for(uint32_t i=0;i<input.size();i++)
+        {
+            service->InjectQueryRecommend(input[i].first, input[i].second);
+        }
+        service->FinishQueryRecommendInject();
+    }
+
+}
+
+// void KeywordsController::finish_inject()
+// {
+//     QueryCorrectionSubmanager::getInstance().FinishInject();
+//     CollectionManager::handler_const_iterator it = CollectionManager::get()->handlerBegin();
+//     while( it!= CollectionManager::get()->handlerEnd() )
+//     {
+//         CollectionHandler* collectionHandler = it->second;
+//         MiningSearchService* service = collectionHandler->miningSearchService_;
+//         service->FinishQueryRecommendInject();
+//         ++it;
+//     }
+// }
 
 } // namespace sf1r

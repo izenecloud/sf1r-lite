@@ -15,7 +15,6 @@
 #include "QueryRecommendSubmanager.h"
 #include <boost/algorithm/string/split.hpp>
 #include <boost/foreach.hpp>
-#include <am/3rdparty/rde_hash.h>
 #include <boost/timer.hpp>
 using namespace sf1r;
 
@@ -26,7 +25,6 @@ QueryRecommendSubmanager::QueryRecommendSubmanager(const boost::shared_ptr<Recom
 }
 
 QueryRecommendSubmanager::~QueryRecommendSubmanager()
-:has_new_inject_(false)
 {
 
 }
@@ -46,8 +44,10 @@ bool QueryRecommendSubmanager::Load()
             if(str_list.size()>=2)
             {
                 izenelib::util::UString query = str_list[0];
+                std::string str_query;
+                query.convertString(str_query, izenelib::util::UString::UTF_8);
                 std::vector<izenelib::util::UString> result_list(str_list.begin()+1, str_list.end());
-                inject_data_.insert(std::make_pair(query, result_list));
+                inject_data_.insert(std::make_pair(str_query, result_list));
             }
             str_list.resize(0);
             continue;
@@ -59,14 +59,21 @@ bool QueryRecommendSubmanager::Load()
     if(str_list.size()>=2)
     {
         izenelib::util::UString query = str_list[0];
+        std::string str_query;
+        query.convertString(str_query, izenelib::util::UString::UTF_8);
         std::vector<izenelib::util::UString> result_list(str_list.begin()+1, str_list.end());
-        inject_data_.insert(std::make_pair(query, result_list));
+        inject_data_.insert(std::make_pair(str_query, result_list));
     }
-    
+    return true;
 }
     
 void QueryRecommendSubmanager::Inject(const izenelib::util::UString& query, const izenelib::util::UString& result)
 {
+    std::string str_query;
+    query.convertString(str_query, izenelib::util::UString::UTF_8);
+    boost::algorithm::trim(str_query);
+    if(str_query.empty()) return;
+    boost::algorithm::to_lower(str_query);
     std::string str_result;
     result.convertString(str_result, izenelib::util::UString::UTF_8);
     std::vector<std::string> vec_result;
@@ -81,8 +88,8 @@ void QueryRecommendSubmanager::Inject(const izenelib::util::UString& query, cons
     }
     if(vec_ustr.size()>0)
     {
-        inject_data_.erase( query );
-        inject_data_.insert(std::make_pair( query, vec_ustr) );
+        inject_data_.erase( str_query );
+        inject_data_.insert(std::make_pair( str_query, vec_ustr) );
         has_new_inject_ = true;
     }
 }
@@ -96,12 +103,10 @@ void QueryRecommendSubmanager::FinishInject()
         boost::filesystem::remove_all( inject_file_);
     }
     std::ofstream ofs(inject_file_.c_str());
-    boost::unordered_map<izenelib::util::UString, std::vector<izenelib::util::UString> >::iterator it = inject_data_.begin();
+    boost::unordered_map<std::string, std::vector<izenelib::util::UString> >::iterator it = inject_data_.begin();
     while(it!= inject_data_.end())
     {
-        std::string query;
-        it->first.convertString(query, izenelib::util::UString::UTF_8);
-        ofs<<query<<std::endl;
+        ofs<<it->first<<std::endl;
         for(uint32_t i=0;i<it->second.size();i++)
         {
             std::string result;
@@ -120,7 +125,18 @@ void QueryRecommendSubmanager::getRecommendQuery(const izenelib::util::UString& 
         const std::vector<docid_t>& topDocIdList, unsigned int maxNum,
         QueryRecommendRep& recommendRep)
 {
-    rmDb_->getRelatedConcepts(query, maxNum, recommendRep.recommendQueries_);
+    std::string str_query;
+    query.convertString(str_query, izenelib::util::UString::UTF_8);
+    boost::algorithm::to_lower(str_query);
+    boost::unordered_map<std::string, std::vector<izenelib::util::UString> >::iterator it = inject_data_.find(str_query);
+    if(it!=inject_data_.end())
+    {
+        recommendRep.recommendQueries_.assign(it->second.begin(), it->second.end());
+    }
+    else
+    {
+        rmDb_->getRelatedConcepts(query, maxNum, recommendRep.recommendQueries_);
+    }
     recommendRep.scores_.resize(recommendRep.recommendQueries_.size());
     for (uint32_t i=0;i<recommendRep.scores_.size();i++)
     {

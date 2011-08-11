@@ -62,7 +62,7 @@ private:
 
     boost::shared_ptr<RecommendManager> rmDb_;
     std::string inject_file_;
-    boost::unordered_map<izenelib::util::UString, std::vector<izenelib::util::UString> > inject_data_;
+    boost::unordered_map<std::string, std::vector<izenelib::util::UString> > inject_data_;
     bool has_new_inject_;
 
 };

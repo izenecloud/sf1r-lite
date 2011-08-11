@@ -168,7 +168,9 @@ bool QueryCorrectionSubmanager::initialize()
             //do with str_list;
             if(str_list.size()>=2)
             {
-                inject_data_.insert(std::make_pair(str_list[0], str_list[1]));
+                std::string str_query;
+                str_list[0].convertString(str_query, izenelib::util::UString::UTF_8);
+                inject_data_.insert(std::make_pair(str_query, str_list[1]));
             }
             str_list.resize(0);
             continue;
@@ -179,7 +181,9 @@ bool QueryCorrectionSubmanager::initialize()
     //do with str_list;
     if(str_list.size()>=2)
     {
-        inject_data_.insert(std::make_pair(str_list[0], str_list[1]));
+        std::string str_query;
+        str_list[0].convertString(str_query, izenelib::util::UString::UTF_8);
+        inject_data_.insert(std::make_pair(str_query, str_list[1]));
     }
     std::cout << "End Speller construction!" << std::endl;
 
@@ -246,7 +250,16 @@ bool QueryCorrectionSubmanager::getRefinedQuery(
 //         
 //     }
 //     return false;
-    
+
+    std::string str_query;
+    queryUString.convertString(str_query, izenelib::util::UString::UTF_8);
+    boost::algorithm::to_lower(str_query);
+    boost::unordered_map<std::string, izenelib::util::UString>::iterator it = inject_data_.find(str_query);
+    if(it!=inject_data_.end())
+    {
+        refinedQueryUString = it->second;
+        return true;
+    }
     if (queryUString.empty() || !activate_)
     {
         return false;
@@ -366,18 +379,20 @@ void QueryCorrectionSubmanager::updateCogramAndDict(const std::string& collectio
     const std::list < std :: pair < izenelib::util::UString, uint32_t> >& queryList = recentQueryList;
     std::list < std :: pair < izenelib::util::UString, uint32_t> >::const_iterator lit;
     //no collection independent
-    cmgr_.updateNgram(queryList);
+    cmgr_.Update(queryList);
 
 }
 
 void QueryCorrectionSubmanager::Inject(const izenelib::util::UString& query, const izenelib::util::UString& result)
 {
-    boost::unordered_map<izenelib::util::UString, izenelib::util::UString>::iterator it = inject_data_.find(query);
-    if(it==inject_data_.end())
-    {
-        inject_data_.insert(std::make_pair(query, result));
-        has_new_inject_ = true;
-    }
+    std::string str_query;
+    query.convertString(str_query, izenelib::util::UString::UTF_8);
+    boost::algorithm::trim(str_query);
+    if(str_query.empty()) return;
+    boost::algorithm::to_lower(str_query);
+    inject_data_.erase( str_query );
+    inject_data_.insert(std::make_pair( str_query, result) );
+    has_new_inject_ = true;
 }
 
 void QueryCorrectionSubmanager::FinishInject()
@@ -389,14 +404,12 @@ void QueryCorrectionSubmanager::FinishInject()
         boost::filesystem::remove_all( inject_file);
     }
     std::ofstream ofs(inject_file.c_str());
-    boost::unordered_map<izenelib::util::UString, izenelib::util::UString>::iterator it = inject_data_.begin();
+    boost::unordered_map<std::string, izenelib::util::UString>::iterator it = inject_data_.begin();
     while(it!= inject_data_.end())
     {
-        std::string query;
-        it->first.convertString(query, izenelib::util::UString::UTF_8);
         std::string result;
         it->second.convertString(result, izenelib::util::UString::UTF_8);
-        ofs<<query<<std::endl;
+        ofs<<it->first<<std::endl;
         ofs<<result<<std::endl;
         ofs<<std::endl;
         ++it;
