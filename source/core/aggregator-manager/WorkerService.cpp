@@ -138,7 +138,17 @@ bool WorkerService::processGetDocumentsByIds(const GetDocumentsByIdsActionItem& 
     return false;
 }
 
-/// private methods
+bool WorkerService::clickGroupLabel(const clickGroupLabelActionItem& actionItem, bool& ret)
+{
+    ret = miningSearchService_->clickGroupLabel(
+            actionItem.queryString_,
+            actionItem.propName_,
+            actionItem.propValue_);
+
+    return ret;
+}
+
+/// private methods ////////////////////////////////////////////////////////////
 
 bool WorkerService::getSearchResult(
         KeywordSearchActionItem& actionItem,

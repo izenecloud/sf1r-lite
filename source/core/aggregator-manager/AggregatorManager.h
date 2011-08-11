@@ -74,6 +74,14 @@ public:
     	}
     }
 
+    void join_impl(const std::string& func, bool& ret, const std::vector<std::pair<workerid_t, bool> >& resultList)
+    {
+        if (func == "clickGroupLabel")
+        {
+            // nothing
+        }
+    }
+
     /** @}*/
 
 public:

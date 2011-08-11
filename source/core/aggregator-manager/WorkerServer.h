@@ -75,6 +75,7 @@ public:
         ADD_WORKER_HANDLER( getSearchResult )
         ADD_WORKER_HANDLER( getSummaryResult )
         ADD_WORKER_HANDLER( getDocumentsByIds )
+        ADD_WORKER_HANDLER( clickGroupLabel )
         // todo, add services
 
         ADD_WORKER_HANDLER_LIST_END()
@@ -82,8 +83,9 @@ public:
 
     /**
      * Publish worker services to remote procedure (as remote server)
-     * @(
+     * @{
      */
+
     bool getSearchResult(JobRequest& req)
     {
         WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, KeywordSearchResult, workerService_, processGetSearchResult)
@@ -102,7 +104,13 @@ public:
     	return true;
     }
 
-    /** @) */
+    bool clickGroupLabel(JobRequest& req)
+    {
+        WORKER_HANDLE_REQUEST_1_1(req, clickGroupLabelActionItem, bool, workerService_, clickGroupLabel)
+        return true;
+    }
+
+    /** @} */
 };
 
 }

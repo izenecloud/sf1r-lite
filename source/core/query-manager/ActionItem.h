@@ -619,7 +619,9 @@ class GetDocumentsByIdsActionItem
                 idList_,docIdList_,propertyName_,propertyValueList_,filteringList_);
 
     public:
-        std::set<sf1r::workerid_t> getDocWorkerIdLists(std::vector<sf1r::docid_t>& docidList, std::vector<sf1r::workerid_t>& workeridList)
+        std::set<sf1r::workerid_t> getDocWorkerIdLists(
+                std::vector<sf1r::docid_t>& docidList,
+                std::vector<sf1r::workerid_t>& workeridList)
         {
             std::set<sf1r::workerid_t> workerSet;
             for (size_t i = 0; i < idList_.size(); i++)
@@ -643,6 +645,32 @@ class GetDocumentsByIdsActionItem
                 &idList_&docIdList_&filteringList_;
         }
 }; // end - class GetDocumentsByIdsActionItem
+
+///
+/// @brief Information for click group label.
+///
+class clickGroupLabelActionItem
+{
+public:
+    clickGroupLabelActionItem() {}
+
+    clickGroupLabelActionItem(
+            const std::string& queryString,
+            const std::string& propName,
+            const std::string& propValue)
+    :queryString_(queryString),
+     propName_(propName),
+     propValue_(propValue)
+    {}
+
+    std::string queryString_;
+
+    std::string propName_;
+
+    std::string propValue_;
+
+    MSGPACK_DEFINE(queryString_, propName_, propValue_);
+};
 
 ///
 /// @brief This class has information to start mining.

@@ -75,6 +75,23 @@ public:
             return processGetDocumentsByIds(request, result);
         }
 
+        error = "no method!";
+        return false;
+    }
+
+    bool call(
+            const std::string& func,
+            const clickGroupLabelActionItem& request,
+            bool& result,
+            std::string& error)
+    {
+        if (func == "clickGroupLabel")
+        {
+            clickGroupLabel(request, result);
+            return result;
+        }
+
+        error = "no method!";
         return false;
     }
 
@@ -91,6 +108,8 @@ public:
     bool processGetSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
     bool processGetDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem);
+
+    bool clickGroupLabel(const clickGroupLabelActionItem& actionItem, bool& ret);
 
     /** @} */
 
