@@ -317,32 +317,32 @@ bool RecommendManager::RebuildForRecommend()
 
 bool RecommendManager::RebuildForCorrection()
 {
-    boost::posix_time::ptime time_now = boost::posix_time::second_clock::local_time();
-    uint32_t days = logdays_;
-    boost::gregorian::days dd(days);
-    boost::posix_time::ptime p = time_now-dd;
-    std::string time_string = boost::posix_time::to_iso_string(p);
-    std::string query_sql = "select query, count(*) as freq from user_queries where collection='"+collection_name_+"' and TimeStamp >='"+time_string+"' group by query";
-    std::list<std::map<std::string, std::string> > query_records;
-    UserQuery::find_by_sql(query_sql, query_records);
-    std::list<std::map<std::string, std::string> >::iterator it = query_records.begin();
-
-    std::list<std::pair<izenelib::util::UString,uint32_t> > logItems;
-    for ( ;it!=query_records.end();++it )
-    {
-        izenelib::util::UString uquery( (*it)["query"], izenelib::util::UString::UTF_8);
-        if ( QueryUtility::isRestrictWord( uquery ) )
-        {
-            continue;
-        }
-//       std::cout<<"{{{421 "<<(*it)["freq"]<<std::endl;
-        uint32_t freq = boost::lexical_cast<uint32_t>( (*it)["freq"] );
-        logItems.push_back( std::make_pair(uquery, freq) );
-    }
-    if (logItems.size()>0)
-    {
-        QueryCorrectionSubmanager::getInstance().updateCogramAndDict(collection_name_, logItems);
-    }
+//     boost::posix_time::ptime time_now = boost::posix_time::second_clock::local_time();
+//     uint32_t days = logdays_;
+//     boost::gregorian::days dd(days);
+//     boost::posix_time::ptime p = time_now-dd;
+//     std::string time_string = boost::posix_time::to_iso_string(p);
+//     std::string query_sql = "select query, count(*) as freq from user_queries where collection='"+collection_name_+"' and TimeStamp >='"+time_string+"' group by query";
+//     std::list<std::map<std::string, std::string> > query_records;
+//     UserQuery::find_by_sql(query_sql, query_records);
+//     std::list<std::map<std::string, std::string> >::iterator it = query_records.begin();
+// 
+//     std::list<std::pair<izenelib::util::UString,uint32_t> > logItems;
+//     for ( ;it!=query_records.end();++it )
+//     {
+//         izenelib::util::UString uquery( (*it)["query"], izenelib::util::UString::UTF_8);
+//         if ( QueryUtility::isRestrictWord( uquery ) )
+//         {
+//             continue;
+//         }
+// //       std::cout<<"{{{421 "<<(*it)["freq"]<<std::endl;
+//         uint32_t freq = boost::lexical_cast<uint32_t>( (*it)["freq"] );
+//         logItems.push_back( std::make_pair(uquery, freq) );
+//     }
+//     if (logItems.size()>0)
+//     {
+//         QueryCorrectionSubmanager::getInstance().updateCogramAndDict(collection_name_, logItems);
+//     }
     return true;
 }
 

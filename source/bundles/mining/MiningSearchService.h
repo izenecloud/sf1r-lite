@@ -103,6 +103,9 @@ public:
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
     bool GetTdtTopicInfo(const izenelib::util::UString& text, idmlib::tdt::TopicInfoType& topic_info);
     
+    void InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result);
+    
+    void FinishQueryRecommendInject();
     
 
 private:

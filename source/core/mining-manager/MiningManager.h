@@ -240,7 +240,9 @@ public:
     
     bool GetTdtTopicInfo(const izenelib::util::UString& text, std::pair<idmlib::tdt::TrackResult, std::vector<izenelib::util::UString> >& info);
 
-//     void getMiningStatus(Status& status);
+    void InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result);
+    
+    void FinishQueryRecommendInject();
 
     void close();
 

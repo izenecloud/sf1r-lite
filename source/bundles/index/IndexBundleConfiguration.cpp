@@ -9,7 +9,7 @@ IndexBundleConfiguration::IndexBundleConfiguration(const std::string& collection
     , collectionName_(collectionName)
     , bIndexUnigramProperty_(true)
     , bUnigramSearchMode_(false)
-    , indexMultilangGranularity_(FIELD_LEVEL)
+    , indexMultilangGranularity_(la::FIELD_LEVEL)
     , encoding_(izenelib::util::UString::UNKNOWN)
     , wildcardType_("unigram")
 {}
@@ -41,9 +41,9 @@ void IndexBundleConfiguration::setIndexMultiLangGranularity(
     const std::string& granularity
 )
 {
-    if(! granularity.compare("sentence")) indexMultilangGranularity_ = SENTENCE_LEVEL;		
-    else if(! granularity.compare("block")) indexMultilangGranularity_ = BLOCK_LEVEL;
-    else indexMultilangGranularity_ = FIELD_LEVEL;
+    if(! granularity.compare("sentence")) indexMultilangGranularity_ = la::SENTENCE_LEVEL;		
+    else if(! granularity.compare("block")) indexMultilangGranularity_ = la::BLOCK_LEVEL;
+    else indexMultilangGranularity_ = la::FIELD_LEVEL;
 }
 
 void IndexBundleConfiguration::numberProperty()

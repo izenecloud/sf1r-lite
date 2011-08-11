@@ -26,7 +26,11 @@ controllers:
       - index_recommend
       - optimize_index
 
-  KeywordsController: ~
+  KeywordsController:
+    actions:
+      - index
+      - inject_query_correction
+      - inject_query_recommend
 
   DocumentsController:
     actions:

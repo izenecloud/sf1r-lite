@@ -92,6 +92,10 @@ public:
     void updateCogramAndDict(const std::list<std::pair<izenelib::util::UString, uint32_t> >& recentQueryList);
 
     void updateCogramAndDict(const std::string& collectionName, const std::list<std::pair<izenelib::util::UString, uint32_t> >& recentQueryList);
+    
+    void Inject(const izenelib::util::UString& query, const izenelib::util::UString& result);
+    
+    void FinishInject();
 
 protected:
 
@@ -125,6 +129,9 @@ private:
 
     //English or Korean Query CorrectionManager
     EkQueryCorrection ekmgr_;
+    
+    boost::unordered_map<std::string, izenelib::util::UString> inject_data_;
+    bool has_new_inject_;
 
 };
 

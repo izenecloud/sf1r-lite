@@ -18,7 +18,7 @@ namespace sf1r
  *
  * Gets list of keywords.
  */
-class KeywordsController : public Sf1Controller
+class KeywordsController : public ::izenelib::driver::Controller
 {
 public:
     enum
@@ -27,6 +27,12 @@ public:
     };
 
     void index();
+    
+    void inject_query_correction();
+    
+    void inject_query_recommend();
+    
+//     void finish_inject();
 };
 
 /// @}
@@ -34,3 +40,5 @@ public:
 } // namespace sf1r
 
 #endif // PROCESS_CONTROLLERS_KEYWORDS_CONTROLLER_H
+
+
