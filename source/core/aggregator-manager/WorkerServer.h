@@ -79,28 +79,17 @@ public:
 
     bool getSearchResult(JobRequest& req)
     {
-        WORKER_HANDLE_1_1(req, KeywordSearchActionItem, processGetSearchResult, KeywordSearchResult)
+        WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, KeywordSearchResult, workerService_, processGetSearchResult)
         return true;
     }
 
     bool getSummaryResult(JobRequest& req)
     {
-        WORKER_HANDLE_1_1(req, KeywordSearchActionItem, processGetSummaryResult, KeywordSearchResult)
+        WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, KeywordSearchResult, workerService_, processGetSummaryResult)
         return true;
     }
 
     /** @}*/
-
-private:
-    bool processGetSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
-    {
-        workerService_->processGetSearchResult(actionItem, resultItem);
-    }
-
-    bool processGetSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
-    {
-        workerService_->processGetSummaryResult(actionItem, resultItem);
-    }
 };
 
 }
