@@ -39,6 +39,7 @@
     <xs:element name="IndexStrategy">
 	    <xs:complexType>
 	    	<xs:attribute name="indexpolicy" type="xs:string" use="required"/>
+	    	<xs:attribute name="mergepolicy" type="xs:string" use="required"/>
 	    	<xs:attribute name="memorypoolsize" use="required">
 	    		<xs:simpleType>
 	    			<xs:restriction base="xs:integer">
