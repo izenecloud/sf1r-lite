@@ -1231,44 +1231,17 @@ bool IndexTaskService::makeForwardIndex_(
 //    izenelib::util::UString refinedText;
 //    la::removeRedundantSpaces( text, refinedText );
 //    if (laManager_->getTermList(refinedText, analysisInfo, true, termList, true ) == false)
-    bool sentenceLevelIndexing = bundleConfig_->indexMultilangGranularity_ == SENTENCE_LEVEL ? true:false;
-    if(sentenceLevelIndexing)
+    la::MultilangGranularity indexingLevel = bundleConfig_->indexMultilangGranularity_;
+    if (indexingLevel == la::SENTENCE_LEVEL)
     {
         if(bundleConfig_->bIndexUnigramProperty_)
         {
             if(propertyName.find("_unigram") != std::string::npos)
-                sentenceLevelIndexing = false;  /// for unigram property, we do not need sentence level indexing
+                indexingLevel = la::FIELD_LEVEL;  /// for unigram property, we do not need sentence level indexing
         }
     }
 
-    if(sentenceLevelIndexing)
-    {
-        ::ilplib::langid::Analyzer* langIdAnalyzer = documentManager_->getLangId();
-        std::string utf8_text;
-        text.convertString(utf8_text, izenelib::util::UString::UTF_8);
-        const char* p = utf8_text.c_str();
-        std::size_t lastpos, pos = 0;
-        while (int len = langIdAnalyzer->sentenceLength(p))
-        {
-            UString sentence;
-            sentence.assign(p, len, izenelib::util::UString::UTF_8);
-            lastpos = pos;
-
-            if (laManager_->getTermIdList(idManager_.get(), sentence, analysisInfo, (*laInputs_[propertyId]) ) == false)
-                return false;
-
-            pos = (*laInputs_[propertyId]).size();
-            if(lastpos > 0)
-            {
-                LAInput& laInput = (*laInputs_[propertyId]);
-                for(std::size_t i = lastpos; i < pos; ++i)
-                    laInput[i].wordOffset_ += lastpos;
-            }
-            p += len;	
-        }
-    }
-    else
-        if (laManager_->getTermIdList(idManager_.get(), text, analysisInfo, (*laInputs_[propertyId]) ) == false)
+    if (laManager_->getTermIdList(idManager_.get(), text, analysisInfo, (*laInputs_[propertyId]), indexingLevel) == false)
             return false;
 
     STOP_PROFILER(proTermExtracting);

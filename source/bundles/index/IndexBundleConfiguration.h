@@ -10,15 +10,11 @@
 #include <util/osgi/BundleConfiguration.h>
 #include <util/ustring/UString.h>
 
+#include <la/analyzer/MultiLanguageAnalyzer.h>
+
 namespace sf1r
 {
 typedef std::set<PropertyConfig, PropertyComp> IndexBundleSchema;
-
-enum IndexMultilangGranularity {
-    FIELD_LEVEL, /// Each field adopts same language analzyer
-    SENTENCE_LEVEL, /// Each sentence adopts same language analyzer
-    BLOCK_LEVEL ///unsupported yet, which means reorganize text so that each block contains same language
-}; 
 
 class IndexBundleConfiguration : public ::izenelib::osgi::BundleConfiguration
 {
@@ -72,7 +68,7 @@ public:
     bool bUnigramSearchMode_;
 
     /// @brief the granularity of multi language support during indexing
-    IndexMultilangGranularity indexMultilangGranularity_;
+    la::MultilangGranularity indexMultilangGranularity_;
 
     std::string languageIdentifierDbPath_;
     /// Parameters
