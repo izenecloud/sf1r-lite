@@ -47,6 +47,7 @@
 (duration)\
 (elapsed_time)\
 (end)\
+(event)\
 (exclude_items)\
 (expression)\
 (faceted)\
@@ -63,6 +64,7 @@
 (include_items)\
 (index)\
 (input_items)\
+(is_add)\
 (items)\
 (keywords)\
 (label)\
@@ -102,7 +104,7 @@
 (ranking_model)\
 (realtime)\
 (realtime_queries)\
-(reason)\
+(reasons)\
 (rec_type)\
 (recent)\
 (refined_query)\
@@ -350,6 +352,11 @@ elapsed_time
 
 end
   process/controllers/TopicController.cpp:228
+
+event
+  process/controllers/RecommendController.cpp:898
+  process/controllers/RecommendController.cpp:904
+  process/controllers/RecommendController.cpp:1130
 
 exclude_items
   process/controllers/RecommendController.cpp:950
@@ -651,6 +658,37 @@ resource
   process/controllers/DocumentsController.cpp:555
   process/controllers/DocumentsController.cpp:647
   process/controllers/DocumentsController.cpp:689
+<<<<<<< HEAD
+=======
+  process/controllers/RecommendController.cpp:48
+  process/controllers/RecommendController.cpp:127
+  process/controllers/RecommendController.cpp:168
+  process/controllers/RecommendController.cpp:267
+  process/controllers/RecommendController.cpp:316
+  process/controllers/RecommendController.cpp:359
+  process/controllers/RecommendController.cpp:411
+  process/controllers/RecommendController.cpp:416
+  process/controllers/RecommendController.cpp:474
+  process/controllers/RecommendController.cpp:524
+  process/controllers/RecommendController.cpp:567
+  process/controllers/RecommendController.cpp:620
+  process/controllers/RecommendController.cpp:625
+  process/controllers/RecommendController.cpp:686
+  process/controllers/RecommendController.cpp:687
+  process/controllers/RecommendController.cpp:688
+  process/controllers/RecommendController.cpp:743
+  process/controllers/RecommendController.cpp:744
+  process/controllers/RecommendController.cpp:746
+  process/controllers/RecommendController.cpp:820
+  process/controllers/RecommendController.cpp:822
+  process/controllers/RecommendController.cpp:902
+  process/controllers/RecommendController.cpp:1002
+  process/controllers/RecommendController.cpp:1029
+  process/controllers/RecommendController.cpp:1030
+  process/controllers/RecommendController.cpp:1032
+  process/controllers/RecommendController.cpp:1199
+  process/controllers/RecommendController.cpp:1211
+>>>>>>> 61371599d8a33fb68b9fa4c78cf9d7433fe4615c
 
 resources
   process/controllers/DocumentsSearchHandler.cpp:642
@@ -660,6 +698,16 @@ resources
   process/controllers/TopicController.cpp:55
   process/controllers/TopicController.cpp:111
   process/controllers/TopicController.cpp:180
+<<<<<<< HEAD
+=======
+  process/controllers/DocumentsSearchHandler.cpp:642
+  process/controllers/DocumentsSearchHandler.cpp:653
+  process/controllers/DocumentsController.cpp:511
+  process/controllers/DocumentsController.cpp:580
+  process/controllers/DocumentsController.cpp:676
+  process/controllers/RecommendController.cpp:1103
+  process/controllers/RecommendController.cpp:1229
+>>>>>>> 61371599d8a33fb68b9fa4c78cf9d7433fe4615c
   process/controllers/FacetedController.cpp:148
   process/controllers/FacetedController.cpp:211
   process/controllers/FacetedController.cpp:265
@@ -701,6 +749,12 @@ session_id
   process/controllers/RecommendController.cpp:962
   process/controllers/LogAnalysisController.cpp:259
   process/controllers/LogAnalysisController.cpp:275
+<<<<<<< HEAD
+=======
+  process/controllers/RecommendController.cpp:682
+  process/controllers/RecommendController.cpp:686
+  process/controllers/RecommendController.cpp:1030
+>>>>>>> 61371599d8a33fb68b9fa4c78cf9d7433fe4615c
 
 sim_list
   process/controllers/DocumentsController.cpp:588
@@ -816,6 +870,10 @@ value
   process/parsers/CustomRankingParser.cpp:152
 
 weight
+<<<<<<< HEAD
   process/controllers/RecommendController.cpp:1041
+=======
+  process/controllers/RecommendController.cpp:1109
+>>>>>>> 61371599d8a33fb68b9fa4c78cf9d7433fe4615c
 
 */

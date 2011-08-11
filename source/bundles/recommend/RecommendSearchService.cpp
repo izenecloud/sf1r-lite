@@ -101,37 +101,31 @@ bool RecommendSearchService::recommend(
         return false;
     }
 
-    idmlib::recommender::RecommendItemVec recIdVec;
     if (!recommendManager_->recommend(recType, maxRecNum,
                                       userId, sessionIdStr,
                                       inputIdVec, includeIdVec, excludeIdVec, condition,
-                                      recIdVec))
+                                      recItemVec))
     {
         LOG(ERROR) << "error in RecommendManager::recommend()";
         return false;
     }
 
-    for (idmlib::recommender::RecommendItemVec::const_iterator it = recIdVec.begin();
-        it != recIdVec.end(); ++it)
+    for (std::vector<RecommendItem>::iterator it = recItemVec.begin();
+        it != recItemVec.end(); ++it)
     {
-        recItemVec.push_back(RecommendItem());
-        RecommendItem& recItem = recItemVec.back();
-        recItem.weight_ = it->weight_;
-
-        if (!itemManager_->getItem(it->itemId_, recItem.item_))
+        if (!itemManager_->getItem(it->itemId_, it->item_))
         {
             LOG(ERROR) << "error in ItemManager::getItem(), item id: " << it->itemId_;
             return false;
         }
 
-        const std::vector<itemid_t>& reasonIds = it->reasonItemIds_;
-        for (std::vector<itemid_t>::const_iterator reasonIt = reasonIds.begin();
-            reasonIt != reasonIds.end(); ++reasonIt)
+        std::vector<ReasonItem>& reasonItems = it->reasonItems_;
+        for (std::vector<ReasonItem>::iterator reasonIt = reasonItems.begin();
+            reasonIt != reasonItems.end(); ++reasonIt)
         {
-            recItem.reasonItems_.push_back(Item());
-            if (!itemManager_->getItem(*reasonIt, recItem.reasonItems_.back()))
+            if (!itemManager_->getItem(reasonIt->itemId_, reasonIt->item_))
             {
-                LOG(ERROR) << "error in ItemManager::getItem(), item id: " << *reasonIt;
+                LOG(ERROR) << "error in ItemManager::getItem(), item id: " << reasonIt->itemId_;
                 return false;
             }
         }

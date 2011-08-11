@@ -66,7 +66,19 @@ public:
         std::vector<int>& freqVec
     );
 
+    /**
+     * Set the most frequently clicked group label.
+     * @param query user query
+     * @param propValue the property value of group label
+     * @return true for success, false for failure
+     */
+    bool setTopLabel(
+        const std::string& query,
+        const std::string& propValue
+    );
+
 private:
+    /** query => LabelCounter */
     typedef izenelib::sdb::unordered_sdb_tc<std::string, LabelCounter, ReadWriteLock> DBType;
     DBType container_;
 };
