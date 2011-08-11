@@ -23,6 +23,8 @@ void AggregatorManager::aggregateSearchResult(KeywordSearchResult& result, const
         return;
     }
 
+    //cout << "resultPage(request)    start: " << result.start_ << ", count: " << result.count_ << endl;
+
     // get basic info
     result.totalCount_ = 0;
     size_t overallResultCount = 0;
@@ -167,7 +169,20 @@ void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const st
     if (subResultNum <= 0)
         return;
 
-    size_t pageCount = result.count_;
+    size_t pageCount = 0;
+    for (size_t i = 0; i < subResultNum; i++)
+    {
+        pageCount += resultList[i].second->count_;
+    }
+    if (result.count_ > pageCount)
+    {
+        result.count_ = pageCount;
+    }
+    else
+    {
+        pageCount = result.count_;
+    }
+
     size_t displayPropertyNum = resultList[0].second->snippetTextOfDocumentInPage_.size(); //xxx
     size_t isSummaryOn = resultList[0].second->rawTextOfSummaryInPage_.size(); //xxx
 
@@ -205,7 +220,7 @@ void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const st
         }
 
         if (curSub == size_t(-1))
-            continue;
+            break;
         //cout << "index,pos:" << i <<","<< pos <<"   curSub:"<< curSub<<"  iter[curSub]:" << iter[curSub]<<endl;
 
         // get a result

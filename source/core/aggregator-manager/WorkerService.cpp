@@ -191,6 +191,17 @@ bool WorkerService::getSearchResult(
     resultItem.start_ = actionItem.pageInfo_.start_;
     resultItem.count_ = actionItem.pageInfo_.count_;
 
+    std::size_t overallSearchResultSize = startOffset + resultItem.topKDocs_.size();
+
+    if(resultItem.start_ > overallSearchResultSize)
+    {
+        resultItem.start_ = overallSearchResultSize;
+    }
+    else if(resultItem.start_ + resultItem.count_ > overallSearchResultSize)
+    {
+        resultItem.count_ = overallSearchResultSize - resultItem.start_;
+    }
+
     //set query term and Id List
     resultItem.rawQueryString_ = actionItem.env_.queryString_;
     actionOperation.getRawQueryTermIdList(resultItem.queryTermIdList_);
