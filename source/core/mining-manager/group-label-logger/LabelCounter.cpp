@@ -53,9 +53,12 @@ void LabelCounter::setTopLabel(const std::string& propValue)
 {
     if (propValue.empty())
     {
-        // reset to top freq
         if (isSetTopLabel_())
         {
+            topValue_.clear();
+            topFreq_ = 0;
+
+            // reset to top freq
             for (ValueFreqMap::const_iterator it = valueFreqMap_.begin();
                 it != valueFreqMap_.end(); ++it)
             {
