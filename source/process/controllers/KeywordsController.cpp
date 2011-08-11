@@ -197,9 +197,42 @@ void KeywordsController::index()
     }
 }
 
+
+/**
+ * @brief Action \b inject_query_correction. inject query correction result.
+ *
+ * @section request
+ *
+ * - @b resource (@c Array): all inject queries.
+ *   - @b query (@c String) : inject query
+ *   - @b result (@c String) : inject result to query
+ *
+ * @section response
+ *
+ * whether it is success.
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "resource": [
+ *       { "query" : "chinesa", "result" : "Chinese" },
+ *       { "query" : "iphone", "result" : "" }
+ *   ]
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true}
+ * }
+ * @endcode
+ */
 void KeywordsController::inject_query_correction()
 {
-    Value& resources = response()[Keys::resource];
+    Value& resources = request()[Keys::resource];
     std::vector<std::pair<izenelib::util::UString,izenelib::util::UString> > input;
     for(uint32_t i=0;i<resources.size();i++)
     {
@@ -211,11 +244,11 @@ void KeywordsController::inject_query_correction()
             return;
         }
         std::string str_result = asString(resource[Keys::result]);
-        if (str_result.empty())
-        {
-            response().addError("Require field result in request.");
-            return;
-        }
+//         if (str_result.empty())
+//         {
+//             response().addError("Require field result in request.");
+//             return;
+//         }
         izenelib::util::UString query(str_query, izenelib::util::UString::UTF_8);
         izenelib::util::UString result(str_result, izenelib::util::UString::UTF_8);
         input.push_back(std::make_pair(query, result) );
@@ -231,6 +264,41 @@ void KeywordsController::inject_query_correction()
     }
 }
 
+
+/**
+ * @brief Action \b inject_query_recommend. inject query recommend result.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b resource* (@c Array): all inject queries.
+ *   - @b query (@c String) : inject query
+ *   - @b result (@c String) : results to query, splited by '|'
+ *
+ * @section response
+ *
+ * whether it is success.
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection" : "intel",
+ *   "resource": [
+ *       { "query" : "canon", "result" : "canon printer|canon d600" },
+ *       { "query" : "iphone", "result" : "iphone4" }
+ *   ]
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true}
+ * }
+ * @endcode
+ */
 void KeywordsController::inject_query_recommend()
 {
     std::string collection = asString(request()[Keys::collection]);
@@ -246,7 +314,7 @@ void KeywordsController::inject_query_recommend()
     }
     CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
     MiningSearchService* service = collectionHandler->miningSearchService_;
-    Value& resources = response()[Keys::resource];
+    Value& resources = request()[Keys::resource];
     std::vector<std::pair<izenelib::util::UString,izenelib::util::UString> > input;
     for(uint32_t i=0;i<resources.size();i++)
     {
@@ -258,11 +326,11 @@ void KeywordsController::inject_query_recommend()
             return;
         }
         std::string str_result = asString(resource[Keys::result]);
-        if (str_result.empty())
-        {
-            response().addError("Require field result in request.");
-            return;
-        }
+//         if (str_result.empty())
+//         {
+//             response().addError("Require field result in request.");
+//             return;
+//         }
         izenelib::util::UString query(str_query, izenelib::util::UString::UTF_8);
         izenelib::util::UString result(str_result, izenelib::util::UString::UTF_8);
         input.push_back(std::make_pair(query, result) );

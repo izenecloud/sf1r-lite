@@ -41,7 +41,7 @@ bool QueryRecommendSubmanager::Load()
         if(line.length()==0)
         {
             //do with str_list;
-            if(str_list.size()>=2)
+            if(str_list.size()>=1)
             {
                 izenelib::util::UString query = str_list[0];
                 std::string str_query;
@@ -55,15 +55,7 @@ bool QueryRecommendSubmanager::Load()
         str_list.push_back( izenelib::util::UString(line, izenelib::util::UString::UTF_8));
     }
     ifs.close();
-    //do with str_list;
-    if(str_list.size()>=2)
-    {
-        izenelib::util::UString query = str_list[0];
-        std::string str_query;
-        query.convertString(str_query, izenelib::util::UString::UTF_8);
-        std::vector<izenelib::util::UString> result_list(str_list.begin()+1, str_list.end());
-        inject_data_.insert(std::make_pair(str_query, result_list));
-    }
+
     return true;
 }
     
@@ -74,6 +66,7 @@ void QueryRecommendSubmanager::Inject(const izenelib::util::UString& query, cons
     boost::algorithm::trim(str_query);
     if(str_query.empty()) return;
     boost::algorithm::to_lower(str_query);
+    std::cout<<"Inject query recommend : "<<str_query<<std::endl;
     std::string str_result;
     result.convertString(str_result, izenelib::util::UString::UTF_8);
     std::vector<std::string> vec_result;
@@ -86,12 +79,9 @@ void QueryRecommendSubmanager::Inject(const izenelib::util::UString& query, cons
             vec_ustr.push_back( izenelib::util::UString( vec_result[i], izenelib::util::UString::UTF_8) );
         }
     }
-    if(vec_ustr.size()>0)
-    {
-        inject_data_.erase( str_query );
-        inject_data_.insert(std::make_pair( str_query, vec_ustr) );
-        has_new_inject_ = true;
-    }
+    inject_data_.erase( str_query );
+    inject_data_.insert(std::make_pair( str_query, vec_ustr) );
+    has_new_inject_ = true;
 }
 
 void QueryRecommendSubmanager::FinishInject()
@@ -118,6 +108,7 @@ void QueryRecommendSubmanager::FinishInject()
     }
     ofs.close();
     has_new_inject_ = false;
+    std::cout<<"Finish inject query recommend."<<std::endl;
 }
 
 

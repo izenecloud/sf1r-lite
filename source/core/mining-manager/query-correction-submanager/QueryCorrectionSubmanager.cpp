@@ -166,11 +166,16 @@ bool QueryCorrectionSubmanager::initialize()
         if(line.length()==0)
         {
             //do with str_list;
-            if(str_list.size()>=2)
+            if(str_list.size()>=1)
             {
                 std::string str_query;
                 str_list[0].convertString(str_query, izenelib::util::UString::UTF_8);
-                inject_data_.insert(std::make_pair(str_query, str_list[1]));
+                izenelib::util::UString result;
+                if(str_list.size()>=2)
+                {
+                    result = str_list[1];
+                }
+                inject_data_.insert(std::make_pair(str_query, result));
             }
             str_list.resize(0);
             continue;
@@ -178,13 +183,7 @@ bool QueryCorrectionSubmanager::initialize()
         str_list.push_back( izenelib::util::UString(line, izenelib::util::UString::UTF_8));
     }
     ifs.close();
-    //do with str_list;
-    if(str_list.size()>=2)
-    {
-        std::string str_query;
-        str_list[0].convertString(str_query, izenelib::util::UString::UTF_8);
-        inject_data_.insert(std::make_pair(str_query, str_list[1]));
-    }
+
     std::cout << "End Speller construction!" << std::endl;
 
     return true;
@@ -390,6 +389,7 @@ void QueryCorrectionSubmanager::Inject(const izenelib::util::UString& query, con
     boost::algorithm::trim(str_query);
     if(str_query.empty()) return;
     boost::algorithm::to_lower(str_query);
+    std::cout<<"Inject query correction : "<<str_query<<std::endl;
     inject_data_.erase( str_query );
     inject_data_.insert(std::make_pair( str_query, result) );
     has_new_inject_ = true;
@@ -416,6 +416,7 @@ void QueryCorrectionSubmanager::FinishInject()
     }
     ofs.close();
     has_new_inject_ = false;
+    std::cout<<"Finish inject query correction."<<std::endl;
 }
 
 }/*namespace sf1r*/

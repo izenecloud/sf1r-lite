@@ -27,7 +27,7 @@ controllers:
       - optimize_index
 
   KeywordsController:
-    action:
+    actions:
       - index
       - inject_query_correction
       - inject_query_recommend
