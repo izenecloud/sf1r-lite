@@ -619,14 +619,19 @@ class GetDocumentsByIdsActionItem
                 idList_,docIdList_,propertyName_,propertyValueList_,filteringList_);
 
     public:
-        void getDocWorkerIdLists(std::vector<sf1r::docid_t>& docidList, std::vector<sf1r::workerid_t>& workeridList)
+        std::set<sf1r::workerid_t> getDocWorkerIdLists(std::vector<sf1r::docid_t>& docidList, std::vector<sf1r::workerid_t>& workeridList)
         {
+            std::set<sf1r::workerid_t> workerSet;
             for (size_t i = 0; i < idList_.size(); i++)
             {
-                std::pair<sf1r::workerid_t, docid_t> p = net::aggregator::Util::GetWorkerAndDocId(idList_[i]);
-                workeridList.push_back(p.first);
-                docidList.push_back(p.second);
+                std::pair<sf1r::workerid_t, docid_t> wd = net::aggregator::Util::GetWorkerAndDocId(idList_[i]);
+                workeridList.push_back(wd.first);
+                docidList.push_back(wd.second);
+
+                workerSet.insert(wd.first);
             }
+
+            return workerSet;
         }
 
     private:

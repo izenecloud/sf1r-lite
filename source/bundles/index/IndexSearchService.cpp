@@ -78,6 +78,7 @@ bool IndexSearchService::getSearchResult(
     aggregatorManager_->sendRequest<KeywordSearchActionItem, KeywordSearchResult>(
             actionItem.collectionName_, "getSearchResult", actionItem, resultItem, workeridList);
 
+
     DLOG(INFO) << "Total count: " << resultItem.totalCount_ << endl;
     DLOG(INFO) << "Top K count: " << resultItem.topKDocs_.size() << endl;
     DLOG(INFO) << "Page Count: " << resultItem.count_ << endl;
@@ -100,7 +101,7 @@ bool IndexSearchService::getSearchResult(
 
         resultList.push_back(std::make_pair(witer->first, subResult));
 
-        subResult->print();
+        //subResult->print();
     }
 
     // merge summary, mining results
@@ -110,6 +111,8 @@ bool IndexSearchService::getSearchResult(
     }
 
     aggregatorManager_->mergeMiningResult(resultItem, resultList);
+
+    //resultItem.print();
 
     return true;
 
@@ -533,6 +536,71 @@ bool IndexSearchService::getDocumentsByIds(
     RawTextResultFromSIA& resultItem
 )
 {
+#ifdef DISTRIBUTED_SEARCH
+
+    std::vector<workerid_t> workerReqList;
+    std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> > actionItemMap;
+
+    ///if (getWorkersByCollectionName(actionItem.collectionName_))
+
+    std::pair<bool, workerid_t> ret = aggregatorManager_->splitGetDocsActionItemByWorkerid(actionItem, actionItemMap);
+    if (ret.first == false)
+    {
+        // only request one worker, or request all workers if workerReqList is empty.
+        if (ret.second != workerid_t(-1))
+        {
+            workerReqList.push_back(ret.second);
+        }
+        aggregatorManager_->sendRequest<GetDocumentsByIdsActionItem, RawTextResultFromSIA>(
+                actionItem.collectionName_, "getDocumentsByIds", actionItem, resultItem, workerReqList);
+    }
+    else
+    {
+        // asynchronously request to each workers
+        std::vector<std::pair<workerid_t, boost::shared_ptr<WorkerFutureHolder> > > futureList;
+
+        std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >::iterator iter;
+        for (iter = actionItemMap.begin(); iter != actionItemMap.end(); iter++)
+        {
+            workerid_t workerid = iter->first;
+            boost::shared_ptr<GetDocumentsByIdsActionItem>& subActionItem = iter->second;
+
+            boost::shared_ptr<WorkerFutureHolder> workerFuture(new WorkerFutureHolder);
+            workerReqList.clear();
+            workerReqList.push_back(workerid);
+
+            aggregatorManager_->sendRequest<GetDocumentsByIdsActionItem, RawTextResultFromSIA>(
+                    *workerFuture, subActionItem->collectionName_, "getDocumentsByIds", *subActionItem, resultItem, workerReqList);
+
+            futureList.push_back(std::make_pair(workerid, workerFuture));
+        }
+
+        // get results
+        std::vector<std::pair<workerid_t, RawTextResultFromSIA> > resultList;
+        for (size_t i = 0; i < futureList.size(); i++)
+        {
+            workerid_t curWorkerid = futureList[i].first;
+            boost::shared_ptr<WorkerFutureHolder>& workerFuture = futureList[i].second;
+
+            boost::shared_ptr<GetDocumentsByIdsActionItem>& subActionItem = actionItemMap[curWorkerid];
+            RawTextResultFromSIA subResultItem;
+            workerReqList.clear();
+            workerReqList.push_back(curWorkerid);
+
+            aggregatorManager_->getResult<GetDocumentsByIdsActionItem, RawTextResultFromSIA>(
+                    *workerFuture, "getDocumentsByIds", *subActionItem, subResultItem, workerReqList);
+
+            resultList.push_back(std::make_pair(curWorkerid, subResultItem));
+        }
+
+        // aggregate results
+        aggregatorManager_->aggregateDocumentsResult(resultItem, resultList);
+    }
+
+	return true;
+
+#else
+
     const izenelib::util::UString::EncodingType kEncodingType =
         izenelib::util::UString::convertEncodingTypeFromStringToEnum(
             actionItem.env_.encodingType_.c_str()
@@ -604,6 +672,8 @@ bool IndexSearchService::getDocumentsByIds(
     resultItem.snippetTextOfDocumentInPage_.clear();
     resultItem.rawTextOfSummaryInPage_.clear();
     return false;
+
+#endif
 }
 
 bool IndexSearchService::getInternalDocumentId(

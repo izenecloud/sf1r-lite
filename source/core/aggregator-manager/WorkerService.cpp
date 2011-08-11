@@ -63,7 +63,79 @@ bool WorkerService::processGetSummaryResult(const KeywordSearchActionItem& actio
 
 bool WorkerService::processGetDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem)
 {
-	return true;
+    cout << "#[WorkerService::processGetDocumentsByIds] " <<endl;
+
+    const izenelib::util::UString::EncodingType kEncodingType =
+        izenelib::util::UString::convertEncodingTypeFromStringToEnum(
+            actionItem.env_.encodingType_.c_str()
+        );
+
+    std::vector<sf1r::docid_t> idList;
+    std::vector<sf1r::workerid_t> workeridList;
+    const_cast<GetDocumentsByIdsActionItem&>(actionItem).getDocWorkerIdLists(idList, workeridList);
+
+    // append docIdList_ at the end of idList_.
+    typedef std::vector<std::string>::const_iterator docid_iterator;
+    izenelib::util::UString unicodeDocId;
+    sf1r::docid_t internalId;
+    for (docid_iterator it = actionItem.docIdList_.begin();
+         it != actionItem.docIdList_.end(); ++it)
+    {
+        unicodeDocId.assign(*it, kEncodingType);
+        idManager_->getDocIdByDocName(unicodeDocId, internalId);
+        idList.push_back(internalId);
+    }
+
+    // get docids by property value
+    collectionid_t colId = 1;
+    if (!actionItem.propertyName_.empty())
+    {
+        std::vector<PropertyValue>::const_iterator property_value;
+        for (property_value = actionItem.propertyValueList_.begin();
+             property_value != actionItem.propertyValueList_.end(); ++property_value)
+        {
+            PropertyType value;
+            PropertyValue2IndexPropertyType converter(value);
+            boost::apply_visitor(converter, (*property_value).getVariant());
+            indexManager_->getDocsByPropertyValue(colId, actionItem.propertyName_, value, idList);
+        }
+    }
+
+    BitVector* bitVector = indexManager_->getIndexReader()->getDocFilter();
+    if (bitVector)
+    {
+        vector<sf1r::docid_t> tmpIdList;
+        for(size_t i = 0; i < idList.size(); i++)
+        {
+            if(!bitVector->test(idList[i]))
+                tmpIdList.push_back(idList[i]);
+        }
+
+        idList.swap(tmpIdList);
+    }
+
+    // get query terms
+
+    izenelib::util::UString rawQueryUStr(
+        izenelib::util::UString(
+        actionItem.env_.queryString_, kEncodingType
+        )
+    );
+
+    // Just let empty propertyQueryTermList to getResultItem() for using only raw query term list.
+    vector<vector<izenelib::util::UString> > propertyQueryTermList;
+
+    //fill rawText in result Item
+    if (getResultItem(actionItem, idList, propertyQueryTermList, resultItem))
+    {
+        resultItem.idList_.swap(idList);
+        return true;
+    }
+
+    resultItem.fullTextOfDocumentInPage_.clear();
+    resultItem.snippetTextOfDocumentInPage_.clear();
+    resultItem.rawTextOfSummaryInPage_.clear();
+    return false;
 }
 
 /// private methods

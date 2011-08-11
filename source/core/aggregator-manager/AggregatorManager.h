@@ -76,7 +76,7 @@ public:
 
     /** @}*/
 
-private:
+public:
     void aggregateSearchResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
 
     void aggregateSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
@@ -96,6 +96,7 @@ public:
     }
 
     /**
+     * Split data by workerid to sub data for requesting different workers.
      * @param result [IN]
      * @param resultList [OUT]
      */
@@ -103,6 +104,16 @@ public:
 
     /**
      *
+     * @param actionItem [IN]
+     * @param actionItemMap [OUT]
+     * @return <false, workerid> if only one worker, <false, -1> if no workerid(request all), else <true, -1>.
+     */
+    std::pair<bool, workerid_t> splitGetDocsActionItemByWorkerid(
+            const GetDocumentsByIdsActionItem& actionItem,
+            std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >& actionItemMap);
+
+    /**
+     * Merge data got from different workers.
      * @param result [OUT]
      * @param resultList [IN]
      */

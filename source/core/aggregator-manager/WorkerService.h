@@ -74,6 +74,8 @@ public:
         {
             return processGetDocumentsByIds(request, result);
         }
+
+        return false;
     }
 
     /** @}*/

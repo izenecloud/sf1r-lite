@@ -117,7 +117,48 @@ void AggregatorManager::aggregateSummaryResult(KeywordSearchResult& result, cons
 
 void AggregatorManager::aggregateDocumentsResult(RawTextResultFromSIA& result, const std::vector<std::pair<workerid_t, RawTextResultFromSIA> >& resultList)
 {
+    cout << "#[AggregatorManager::aggregateDocumentsResult] " << resultList.size() << endl;
 
+    size_t workerNum = resultList.size();
+
+    // only one result
+    if (workerNum == 1)
+    {
+        result = resultList[0].second;
+        return;
+    }
+
+    result.idList_.clear();
+
+    for (size_t w = 0; w < workerNum; w++)
+    {
+        //workerid_t workerid = resultList[w].first;
+        const RawTextResultFromSIA& wResult = resultList[w].second;
+
+        for (size_t i = 0; i < wResult.idList_.size(); i++)
+        {
+            if (result.idList_.empty())
+            {
+                size_t displayPropertySize = wResult.fullTextOfDocumentInPage_.size();
+                result.fullTextOfDocumentInPage_.resize(displayPropertySize);
+                result.snippetTextOfDocumentInPage_.resize(displayPropertySize);
+                result.rawTextOfSummaryInPage_.resize(wResult.rawTextOfSummaryInPage_.size());
+            }
+
+            result.idList_.push_back(wResult.idList_[i]);
+
+            for (size_t p = 0; p < wResult.fullTextOfDocumentInPage_.size(); p++)
+            {
+                result.fullTextOfDocumentInPage_[p].push_back(wResult.fullTextOfDocumentInPage_[p][i]);
+                result.snippetTextOfDocumentInPage_[p].push_back(wResult.snippetTextOfDocumentInPage_[p][i]);
+            }
+
+            for (size_t s = 0; s <wResult.rawTextOfSummaryInPage_.size(); s++)
+            {
+                result.snippetTextOfDocumentInPage_[s].push_back(wResult.snippetTextOfDocumentInPage_[s][i]);
+            }
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -160,6 +201,51 @@ void AggregatorManager::splitResultByWorkerid(const KeywordSearchResult& result,
     }
 }
 
+std::pair<bool, workerid_t> AggregatorManager::splitGetDocsActionItemByWorkerid(
+        const GetDocumentsByIdsActionItem& actionItem,
+        std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >& actionItemMap)
+{
+    cout << "#[AggregatorManager::splitGetDocsActionItemByWorkerid] " <<endl;
+
+    std::vector<sf1r::docid_t> idList;
+    std::vector<sf1r::workerid_t> workeridList;
+    std::set<sf1r::workerid_t> ret =
+            const_cast<GetDocumentsByIdsActionItem&>(actionItem).getDocWorkerIdLists(idList, workeridList);
+
+    if (ret.size() == 0)
+    {
+        return std::pair<bool, workerid_t>(false, workerid_t(-1));
+    }
+
+    if (ret.size() == 1)
+    {
+        return std::pair<bool, workerid_t>(false, *ret.begin());
+    }
+
+    // split
+    boost::shared_ptr<GetDocumentsByIdsActionItem> subActionItem;
+    for (size_t i = 0; i < workeridList.size(); i++)
+    {
+        workerid_t& curWorkerid = workeridList[i];
+        if (actionItemMap.find(curWorkerid) == actionItemMap.end())
+        {
+            subActionItem.reset(new GetDocumentsByIdsActionItem());
+            *subActionItem = actionItem;
+            subActionItem->idList_.clear();
+            actionItemMap.insert(std::make_pair(curWorkerid, subActionItem));
+        }
+        else
+        {
+            subActionItem = actionItemMap[curWorkerid];
+        }
+
+        subActionItem->idList_.push_back(actionItem.idList_[i]);
+    }
+
+    return std::pair<bool, workerid_t>(true, workerid_t(-1));
+}
+
+
 void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > >& resultList)
 {
     cout << "#[AggregatorManager::mergeSummaryResult] " << endl;
@@ -190,13 +276,16 @@ void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const st
     result.snippetTextOfDocumentInPage_.resize(displayPropertyNum);
     result.fullTextOfDocumentInPage_.resize(displayPropertyNum);
     if (isSummaryOn)
-        result.rawTextOfSummaryInPage_.resize(displayPropertyNum);
+        result.rawTextOfSummaryInPage_.resize(isSummaryOn);
+
     for (size_t dis = 0; dis < displayPropertyNum; dis++)
     {
         result.snippetTextOfDocumentInPage_[dis].resize(pageCount);
         result.fullTextOfDocumentInPage_[dis].resize(pageCount);
-        if (isSummaryOn)
-            result.rawTextOfSummaryInPage_[dis].resize(pageCount);
+    }
+    for (size_t dis = 0; dis < isSummaryOn; dis++)
+    {
+        result.rawTextOfSummaryInPage_[dis].resize(pageCount);
     }
 
     // merge
@@ -229,8 +318,10 @@ void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const st
         {
             result.snippetTextOfDocumentInPage_[dis][i] = subResult->snippetTextOfDocumentInPage_[dis][iter[curSub]];
             result.fullTextOfDocumentInPage_[dis][i] = subResult->fullTextOfDocumentInPage_[dis][iter[curSub]];
-            if (isSummaryOn)
-                result.rawTextOfSummaryInPage_[dis][i] = subResult->rawTextOfSummaryInPage_[dis][iter[curSub]];
+        }
+        for (size_t dis = 0; dis < isSummaryOn; dis++)
+        {
+            result.rawTextOfSummaryInPage_[dis][i] = subResult->rawTextOfSummaryInPage_[dis][iter[curSub]];
         }
 
         // next
