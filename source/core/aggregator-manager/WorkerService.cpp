@@ -214,11 +214,15 @@ bool WorkerService::getSummaryMiningResult(
 
     DLOG(INFO) << "[SIAServiceHandler] RawText,Summarization,Snippet" << endl;
 
-    if (resultItem.topKDocs_.size() > 0)
+    if (resultItem.count_ > 0)
     {
         // id of documents in current page
         std::vector<sf1r::docid_t> docsInPage;
-        docsInPage = resultItem.topKDocs_;
+        std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin() + resultItem.start_; //%TOP_K_NUM;
+        for(size_t i=0 ; it != resultItem.topKDocs_.end() && i<resultItem.count_; i++, it++)
+        {
+          docsInPage.push_back(*it);
+        }
         resultItem.count_ = docsInPage.size();
 
         getResultItem( actionItem, docsInPage, propertyQueryTermList, resultItem);

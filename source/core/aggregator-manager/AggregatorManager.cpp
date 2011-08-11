@@ -118,22 +118,23 @@ void AggregatorManager::aggregateDocumentsResult(RawTextResultFromSIA& result, c
 
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 void AggregatorManager::splitResultByWorkerid(const KeywordSearchResult& result, std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >& resultMap)
 {
     const std::vector<uint32_t>& topKWorkerIds = result.topKWorkerIds_;
 
     // split docs of current page by worker
     boost::shared_ptr<KeywordSearchResult> subResult;
-    for (size_t i = result.start_; i < topKWorkerIds.size(); i ++)
+    for (size_t i = 0; i < topKWorkerIds.size(); i ++)
     {
-        if (i >= result.start_ + result.count_)
-            break;
-
         workerid_t curWorkerid = topKWorkerIds[i];
         if (resultMap.find(curWorkerid) == resultMap.end())
         {
             subResult.reset(new KeywordSearchResult());
             // xxx, here just copy info needed for getting summary, mining result.
+            subResult->start_ = size_t(-1);
+            subResult->count_ = 0;
             subResult->propertyQueryTermList_ = result.propertyQueryTermList_;
             resultMap.insert(std::make_pair(curWorkerid, subResult));
         }
@@ -144,11 +145,18 @@ void AggregatorManager::splitResultByWorkerid(const KeywordSearchResult& result,
 
         subResult->topKDocs_.push_back(result.topKDocs_[i]);
         subResult->topKWorkerIds_.push_back(curWorkerid);
-        subResult->topKPostionList_.push_back(i);
+
+        if (i >= result.start_ && i < result.start_+result.count_)
+        {
+            subResult->topKPostionList_.push_back(i);
+            if (subResult->start_ == size_t(-1))
+            {
+                subResult->start_ = subResult->topKDocs_.size() - 1;
+            }
+            subResult->count_ += 1;
+        }
     }
 }
-
-////////////////////////////
 
 void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > >& resultList)
 {
@@ -159,7 +167,7 @@ void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const st
     if (subResultNum <= 0)
         return;
 
-    size_t topk = result.topKDocs_.size();
+    size_t pageCount = result.count_;
     size_t displayPropertyNum = resultList[0].second->snippetTextOfDocumentInPage_.size(); //xxx
     size_t isSummaryOn = resultList[0].second->rawTextOfSummaryInPage_.size(); //xxx
 
@@ -170,28 +178,27 @@ void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const st
         result.rawTextOfSummaryInPage_.resize(displayPropertyNum);
     for (size_t dis = 0; dis < displayPropertyNum; dis++)
     {
-        result.snippetTextOfDocumentInPage_[dis].resize(topk);
-        result.fullTextOfDocumentInPage_[dis].resize(topk);
+        result.snippetTextOfDocumentInPage_[dis].resize(pageCount);
+        result.fullTextOfDocumentInPage_[dis].resize(pageCount);
         if (isSummaryOn)
-            result.rawTextOfSummaryInPage_[dis].resize(topk);
+            result.rawTextOfSummaryInPage_[dis].resize(pageCount);
     }
 
     // merge
-    //size_t curPos;
+    // each sub result provided part of docs for result page, and they kept the doc postions
+    // in topKDocs of result for that page.
     size_t curSub;
     size_t* iter = new size_t[subResultNum];
     memset(iter, 0, sizeof(size_t)*subResultNum);
 
-    for (size_t i = 0; i < topk; i++)
+    for (size_t i = 0, pos = result.start_; i < pageCount; i++, pos++)
     {
-        //curPos = 0;
         curSub = size_t(-1);
         for (size_t sub = 0; sub < subResultNum; sub++)
         {
             const std::vector<size_t>& subTopKPosList = resultList[sub].second->topKPostionList_;
-            if (iter[sub] < subTopKPosList.size() && subTopKPosList[iter[sub]] == i)
+            if (iter[sub] < subTopKPosList.size() && subTopKPosList[iter[sub]] == pos)
             {
-                //curPos = subTopKPosList[iter[sub]];
                 curSub = sub;
                 break;
             }
@@ -199,7 +206,7 @@ void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const st
 
         if (curSub == size_t(-1))
             continue;
-        //cout << "curPos: " << i <<", curSub: "<< curSub<<", iter[curSub]: " << iter[curSub]<<endl;
+        //cout << "index,pos:" << i <<","<< pos <<"   curSub:"<< curSub<<"  iter[curSub]:" << iter[curSub]<<endl;
 
         // get a result
         const boost::shared_ptr<KeywordSearchResult>& subResult = resultList[curSub].second;

@@ -280,7 +280,7 @@ namespace sf1r {
             /// @brief number of documents in current page
             std::size_t count_;
 
-            /// For sub result, indecates the ordered postions in overall topk list.
+            /// For results in page in one node, indicates corresponding postions in topk results overall nodes.
             std::vector<size_t> topKPostionList_;
 
             /// property query terms
