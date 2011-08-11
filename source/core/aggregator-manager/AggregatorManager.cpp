@@ -23,8 +23,6 @@ void AggregatorManager::mergeSearchResult(KeywordSearchResult& result, const std
         return;
     }
 
-    cout << "resultPage(original) start: " << result.start_ << ", count: " << result.count_ << endl;
-
     // get basic info
     result.totalCount_ = 0;
     size_t overallResultCount = 0;
@@ -48,9 +46,9 @@ void AggregatorManager::mergeSearchResult(KeywordSearchResult& result, const std
     {
         result.count_ = overallResultCount - result.start_;
     }
-    size_t resultCount = result.start_ + result.count_;
+    size_t resultCount = overallResultCount < size_t(TOP_K_NUM) ? overallResultCount : TOP_K_NUM;
 
-    cout << "resultPage      start: " << result.start_ << ", count: " << result.count_ << endl;
+    //cout << "resultPage      start: " << result.start_ << ", count: " << result.count_ << endl;
 
     result.topKDocs_.resize(resultCount);
     result.topKWorkerIds_.resize(resultCount);

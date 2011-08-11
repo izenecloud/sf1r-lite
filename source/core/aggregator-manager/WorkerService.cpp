@@ -138,11 +138,6 @@ bool WorkerService::getSearchResult(
     // the requested page located in one node. (maybe can pre-fetch some statistical info to improve.)
     //int startOffset = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
     int startOffset = 0;
-    int top_k_num = actionItem.pageInfo_.start_ + actionItem.pageInfo_.count_;
-    if (top_k_num > TOP_K_NUM)
-    {
-        top_k_num = TOP_K_NUM;
-    }
 
     if(! searchManager_->search(
                 actionOperation,
@@ -152,7 +147,7 @@ bool WorkerService::getSearchResult(
                 resultItem.totalCount_,
                 resultItem.groupRep_,
                 resultItem.attrRep_,
-                top_k_num,
+                TOP_K_NUM,
                 startOffset
                 ))
     {

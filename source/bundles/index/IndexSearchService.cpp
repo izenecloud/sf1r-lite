@@ -104,7 +104,11 @@ bool IndexSearchService::getSearchResult(
     }
 
     // merge summary, mining results
-    aggregatorManager_->mergeSummaryResult(resultItem, resultList);
+    if (resultItem.count_ > 0)
+    {
+        aggregatorManager_->mergeSummaryResult(resultItem, resultList);
+    }
+
     aggregatorManager_->mergeMiningResult(resultItem, resultList);
 
     return true;
