@@ -40,11 +40,11 @@ public:
     {}
 
 public:
-    /**
-     * interfaces for handling remote request
-     * @{
-     */
 
+    /**
+     * Pre-process before dispatch (handle) a received request,
+     * key is info such as collection, bundle name.
+     */
     virtual bool preHandle(const std::string& key)
     {
         //cout << "#[WorkerServer::preHandle] key : " << key<<endl;
@@ -65,18 +65,25 @@ public:
         return true;
     }
 
-    /*pure virtual*/
-    void addHandlers()
+    /**
+     * Handlers for processing received remote requests.
+     */
+    virtual void addHandlers()
     {
         ADD_WORKER_HANDLER_LIST_BEGIN( WorkerServer )
 
         ADD_WORKER_HANDLER( getSearchResult )
         ADD_WORKER_HANDLER( getSummaryResult )
-        // todo, add more ...
+        ADD_WORKER_HANDLER( getDocumentsByIds )
+        // todo, add services
 
         ADD_WORKER_HANDLER_LIST_END()
     }
 
+    /**
+     * Publish worker services to remote procedure (as remote server)
+     * @(
+     */
     bool getSearchResult(JobRequest& req)
     {
         WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, KeywordSearchResult, workerService_, processGetSearchResult)
@@ -89,7 +96,13 @@ public:
         return true;
     }
 
-    /** @}*/
+    bool getDocumentsByIds(JobRequest& req)
+    {
+        WORKER_HANDLE_REQUEST_1_1(req, GetDocumentsByIdsActionItem, RawTextResultFromSIA, workerService_, processGetDocumentsByIds)
+    	return true;
+    }
+
+    /** @) */
 };
 
 }

@@ -61,6 +61,10 @@ bool WorkerService::processGetSummaryResult(const KeywordSearchActionItem& actio
     return true;
 }
 
+bool WorkerService::processGetDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem)
+{
+	return true;
+}
 
 /// private methods
 

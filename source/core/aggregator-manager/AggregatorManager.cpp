@@ -9,9 +9,9 @@ namespace sf1r
 
 extern int TOP_K_NUM;
 
-void AggregatorManager::mergeSearchResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
+void AggregatorManager::aggregateSearchResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
 {
-    cout << "#[AggregatorManager::mergeSearchResult] " << resultList.size() << endl;
+    cout << "#[AggregatorManager::aggregateSearchResult] " << resultList.size() << endl;
 
     size_t workerNum = resultList.size();
 
@@ -48,7 +48,7 @@ void AggregatorManager::mergeSearchResult(KeywordSearchResult& result, const std
     }
     size_t resultCount = overallResultCount < size_t(TOP_K_NUM) ? overallResultCount : TOP_K_NUM;
 
-    //cout << "resultPage      start: " << result.start_ << ", count: " << result.count_ << endl;
+    cout << "resultPage      start: " << result.start_ << ", count: " << result.count_ << endl;
 
     result.topKDocs_.resize(resultCount);
     result.topKWorkerIds_.resize(resultCount);
@@ -98,9 +98,9 @@ void AggregatorManager::mergeSearchResult(KeywordSearchResult& result, const std
 
 }
 
-void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
+void AggregatorManager::aggregateSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
 {
-    cout << "#[AggregatorManager::mergeSummaryResult] " << resultList.size() << endl;
+    cout << "#[AggregatorManager::aggregateSummaryResult] " << resultList.size() << endl;
 
     size_t workerNum = resultList.size();
 
@@ -111,6 +111,11 @@ void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const st
         ///result.workerIdList_.resize(result.topKDocs_.size(), resultList[0].first);
         return;
     }
+}
+
+void AggregatorManager::aggregateDocumentsResult(RawTextResultFromSIA& result, const std::vector<std::pair<workerid_t, RawTextResultFromSIA> >& resultList)
+{
+
 }
 
 void AggregatorManager::splitResultByWorkerid(const KeywordSearchResult& result, std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >& resultMap)
@@ -240,11 +245,6 @@ void AggregatorManager::mergeMiningResult(KeywordSearchResult& result, const std
             }
         }
     }
-}
-
-void AggregatorManager::SetMiningManager(const boost::shared_ptr<MiningManager>& mining_manager)
-{
-    mining_manager_ = mining_manager;
 }
 
 }

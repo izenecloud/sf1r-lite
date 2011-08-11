@@ -2,8 +2,7 @@
  * @file WorkerService.h
  * @author Zhongxia Li
  * @date Jul 5, 2011
- * @brief Worker Service provides services of local SF1 server.
- * It can work as a RPC Server by calling startServer(host,port,threadnum), which provides remote services for Aggregator(client).
+ * @brief Worker Service provide services of local SF1 server.
  */
 #ifndef WORKER_SERVICE_H_
 #define WORKER_SERVICE_H_
@@ -39,7 +38,7 @@ public:
 
 public:
     /**
-     * interfaces for handling local request (call directly)
+     * Publish services to local procedure (in-process server).
      * @{
      */
 
@@ -65,17 +64,31 @@ public:
         return false;
     }
 
+    bool call(
+    		const std::string& func,
+            const GetDocumentsByIdsActionItem& request,
+            RawTextResultFromSIA& result,
+            std::string& error)
+    {
+        if (func == "getDocumentsByIds")
+        {
+            return processGetDocumentsByIds(request, result);
+        }
+    }
+
     /** @}*/
 
 public:
     /**
-     * Services for publication
+     * Services (interfaces) for publication
      * @{
      */
 
     bool processGetSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
     bool processGetSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
+
+    bool processGetDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem);
 
     /** @} */
 

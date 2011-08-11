@@ -23,15 +23,8 @@ class MiningManager;
 
 class AggregatorManager : public JobAggregator<AggregatorManager>
 {
-private:
-    boost::shared_ptr<WorkerService> localWorkerService_;
 
 public:
-    void setLocalWorkerService(const boost::shared_ptr<WorkerService>& localWorkerService)
-    {
-        localWorkerService_ = localWorkerService;
-    }
-
     /**
      * Interface which encapsulate calls to local service directly
      */
@@ -56,34 +49,51 @@ public:
 
 public:
     /**
-     * Functoin for merging results
-     * @details Overload join_impl() to aggregate different results from multiple nodes
+     * TODO, overload join_impl() to aggregate result(s) got from server node(s).
+     *
      * @{
      */
 
-    /** keyword search result */
     void join_impl(const std::string& func, KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
     {
         if (func == "getSearchResult")
         {
-            mergeSearchResult(result, resultList);
+        	aggregateSearchResult(result, resultList);
         }
         else if (func == "getSummaryResult")
         {
-            mergeSummaryResult(result, resultList);
+        	aggregateSummaryResult(result, resultList);
         }
     }
 
-    /** todo, mining result */
+    void join_impl(const std::string& func, RawTextResultFromSIA& result, const std::vector<std::pair<workerid_t, RawTextResultFromSIA> >& resultList)
+    {
+    	if (func == "getDocumentsByIds")
+    	{
+    		aggregateDocumentsResult(result, resultList);
+    	}
+    }
 
     /** @}*/
 
 private:
-    void mergeSearchResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
+    void aggregateSearchResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
 
-    void mergeSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
+    void aggregateSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
+
+    void aggregateDocumentsResult(RawTextResultFromSIA& result, const std::vector<std::pair<workerid_t, RawTextResultFromSIA> >& resultList);
+
 
 public:
+    void setLocalWorkerService(const boost::shared_ptr<WorkerService>& localWorkerService)
+    {
+        localWorkerService_ = localWorkerService;
+    }
+
+    void SetMiningManager(const boost::shared_ptr<MiningManager>& mining_manager)
+    {
+    	mining_manager_ = mining_manager;
+    }
 
     /**
      * @param result [IN]
@@ -100,9 +110,10 @@ public:
 
     void mergeMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > >& resultList);
     
-    void SetMiningManager(const boost::shared_ptr<MiningManager>& mining_manager);
     
+
 private:
+    boost::shared_ptr<WorkerService> localWorkerService_;
     
     boost::shared_ptr<MiningManager> mining_manager_;
 };
