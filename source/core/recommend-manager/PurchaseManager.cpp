@@ -40,7 +40,7 @@ void PurchaseManager::flush()
 bool PurchaseManager::addPurchaseItem(
     userid_t userId,
     const std::vector<itemid_t>& itemVec,
-    bool isBuildUserResult
+    bool isUpdateSimMatrix
 )
 {
     ItemIdSet itemIdSet;
@@ -73,10 +73,9 @@ bool PurchaseManager::addPurchaseItem(
             LOG(ERROR) << "exception in SDB::update(): " << e.what();
         }
 
-        if (isBuildUserResult)
+        if (isUpdateSimMatrix)
         {
-            itemCFManager_->buildMatrix(oldItems, newItems);
-            itemCFManager_->buildUserRecItems(userId, itemIdSet);
+            itemCFManager_->updateMatrix(oldItems, newItems);
         }
         else
         {
@@ -90,17 +89,6 @@ bool PurchaseManager::addPurchaseItem(
 void PurchaseManager::buildSimMatrix()
 {
     itemCFManager_->buildSimMatrix();
-}
-
-void PurchaseManager::buildUserResult(userid_t userId)
-{
-    ItemIdSet itemIdSet;
-    container_.getValue(userId, itemIdSet);
-
-    if (! itemIdSet.empty())
-    {
-        itemCFManager_->buildUserRecItems(userId, itemIdSet);
-    }
 }
 
 bool PurchaseManager::getPurchaseItemSet(userid_t userId, ItemIdSet& itemIdSet)
