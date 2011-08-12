@@ -104,5 +104,15 @@ CollectionHandler* CollectionManager::findHandler(const std::string& key) const
     }
 }
 
+CollectionManager::handler_const_iterator CollectionManager::handlerBegin() const
+{
+    return collectionHandlers_.begin();
+}
+
+CollectionManager::handler_const_iterator CollectionManager::handlerEnd() const
+{
+    return collectionHandlers_.end();
+}
+
 }
 

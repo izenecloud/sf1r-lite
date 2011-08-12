@@ -4,6 +4,6 @@
 !/*.sh
 !/config
 !/config/schema
-!/config/schema/*
+!/config/schema/*.xsd
 !/config/sf1config.xml.in
 !/config/example.xml.in

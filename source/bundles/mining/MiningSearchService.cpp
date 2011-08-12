@@ -195,6 +195,15 @@ bool MiningSearchService::getFreqGroupLabel(
     return miningManager_->getFreqGroupLabel(query, propName, limit, propValueVec, freqVec);
 }
 
+bool MiningSearchService::setTopGroupLabel(
+    const std::string& query,
+    const std::string& propName,
+    const std::string& propValue
+)
+{
+    return miningManager_->setTopGroupLabel(query, propName, propValue);
+}
+
 bool MiningSearchService::GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list)
 {
     return miningManager_->GetTdtInTimeRange(start, end, topic_list);
@@ -203,6 +212,16 @@ bool MiningSearchService::GetTdtInTimeRange(const izenelib::util::UString& start
 bool MiningSearchService::GetTdtTopicInfo(const izenelib::util::UString& text, idmlib::tdt::TopicInfoType& topic_info)
 {
     return miningManager_->GetTdtTopicInfo(text, topic_info);
+}
+
+void MiningSearchService::InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result)
+{
+    miningManager_->InjectQueryRecommend(query, result);
+}
+    
+void MiningSearchService::FinishQueryRecommendInject()
+{
+    miningManager_->FinishQueryRecommendInject();
 }
 
 }

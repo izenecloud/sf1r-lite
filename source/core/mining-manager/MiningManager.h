@@ -221,13 +221,28 @@ public:
         std::vector<int>& freqVec
     );
 
+    /**
+     * Set the most frequently clicked group label.
+     * @param query user query
+     * @param propName the property name for the group labels to get
+     * @param propValue the property value of group label
+     * @return true for success, false for failure
+     */
+    bool setTopGroupLabel(
+        const std::string& query,
+        const std::string& propName,
+        const std::string& propValue
+    );
+
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
     
     bool GetTdtInTimeRange(const boost::gregorian::date& start, const boost::gregorian::date& end, std::vector<izenelib::util::UString>& topic_list);
     
     bool GetTdtTopicInfo(const izenelib::util::UString& text, std::pair<idmlib::tdt::TrackResult, std::vector<izenelib::util::UString> >& info);
 
-//     void getMiningStatus(Status& status);
+    void InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result);
+    
+    void FinishQueryRecommendInject();
 
     void close();
 

@@ -12,6 +12,7 @@
             			<xs:sequence>
 	            			<xs:element ref="User" minOccurs="0"/>
 	            			<xs:element ref="Item" minOccurs="0"/>
+	            			<xs:element ref="Track" minOccurs="0"/>
             			</xs:sequence>
             		</xs:complexType>
             	</xs:element>
@@ -44,6 +45,18 @@
 			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
+
+	<xs:element name="Track">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="Event" type="EventType" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:complexType name="EventType">
+		<xs:attribute name="name" type="xs:string" use="required"/>
+	</xs:complexType>
 
 	<xs:element name="CronPara">
 		<xs:complexType>

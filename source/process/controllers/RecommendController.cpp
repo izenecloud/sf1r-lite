@@ -10,6 +10,7 @@
 #include <bundles/recommend/RecommendSearchService.h>
 #include <recommend-manager/User.h>
 #include <recommend-manager/Item.h>
+#include <recommend-manager/RecommendItem.h>
 #include <recommend-manager/ItemCondition.h>
 #include <recommend-manager/RecTypes.h>
 
@@ -38,7 +39,7 @@ RecommendController::RecommendController()
     recTypeMap_["FBT"] = FREQUENT_BUY_TOGETHER;
     recTypeMap_["BAB"] = BUY_ALSO_BUY;
     recTypeMap_["VAV"] = VIEW_ALSO_VIEW;
-    recTypeMap_["BOP"] = BASED_ON_PURCHASE_HISTORY;
+    recTypeMap_["BOE"] = BASED_ON_EVENT;
     recTypeMap_["BOB"] = BASED_ON_BROWSE_HISTORY;
     recTypeMap_["BOS"] = BASED_ON_SHOP_CART;
 }
@@ -849,6 +850,76 @@ void RecommendController::update_shopping_cart()
 }
 
 /**
+ * @brief Action @b track_event. Track an event of user behavior.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Track user behavior in this collection.
+ * - @b resource* (@c Object): A resource for a user behavior.
+ *   - @b is_add (@c Bool = @c true): @c true for add this event, @c false for remove this event.
+ *   - @b event* (@c String): the event type, it could be one of below values:@n
+ *     - @b wish_list: user @b USERID added @b ITEMID in his/her wish list.
+ *     - @b own: user @b USERID already owns @b ITEMID.
+ *     - @b like: user @b USERID likes @b ITEMID.
+ *     - @b favorite: user @b USERID added @b ITEMID into his/her favorite items.@n
+ *     The above events are configured in <tt> <RecommendBundle><Schema><Track> </tt> in collection config file (such as <tt>config/example.xml</tt>),@n
+ *     you could modify or add more events in configuration.@n
+ *     Below event types are supported by default, they are used to exclude items:
+ *     - @b not_rec_result: exclude @b ITEMID from being one of the recommendation results for @b USERID.
+ *     - @b not_rec_input: exclude @b ITEMID from being used in making recommendation for @b USERID.
+ *   - @b USERID* (@c String): a unique user identifier.
+ *   - @b ITEMID* (@c String): a unique item identifier.
+ *
+ * @section response
+ *
+ * - @b header (@c Object): Property @b success gives the result, true or false.
+ *
+ * @section example
+ *
+ * Request
+ * @code
+ * {
+ *   "resource": {
+ *     "event": "wish_list",
+ *     "USERID": "user_001",
+ *     "ITEMID": "item_001"
+ *   }
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true}
+ * }
+ * @endcode
+ */
+void RecommendController::track_event()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::event));
+    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
+    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::ITEMID));
+
+    izenelib::driver::Value& resourceValue = request()[Keys::resource];
+    bool isAdd = asBoolOr(resourceValue[Keys::is_add], true);
+    std::string eventStr = asString(resourceValue[Keys::event]);
+    std::string userIdStr = asString(resourceValue[Keys::USERID]);
+    std::string itemIdStr = asString(resourceValue[Keys::ITEMID]);
+
+    if (!collectionHandler_->recommendSchema_.hasEvent(eventStr))
+    {
+        response().addError("Unknown event type \"" + eventStr + "\" in request[resource].");
+        return;
+    }
+
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    if (!service->trackEvent(isAdd, eventStr, userIdStr, itemIdStr))
+    {
+        response().addError("Failed to track event in given collection.");
+    }
+}
+
+/**
  * @brief Action @b do_recommend. Get recommendation result.
  *
  * @section request
@@ -861,14 +932,16 @@ void RecommendController::update_shopping_cart()
  *     - @b VAV (<b>Viewed Also View</b>): get the items also viewed by the users who have viewed @b input_items.@n
  *       In current version, it supports recommending items based on only one input item,@n
  *       that is, only <b> input_items[0]</b> is used as input, and the rest items in @b input_items are ignored.
- *     - @b BOP (<b>Based on Purchase History</b>): get the recommendation items based on the purchase history of user @b USERID.@n
- *       The purchase history is the items added in @c purchase_item() with the same @b USERID.
+ *     - @b BOE (<b>Based on Event</b>): get the recommendation items based on the user events by @b USERID.@n
+ *       The user events are added by @c purchase_item(), @c update_shopping_cart() and @c track_event().
  *     - @b BOB (<b>Based on Browse History</b>): get the recommendation items based on the browse history of user @b USERID.@n
  *       If @b input_items is specified, the @b input_items would be used as the user's browse history.@n
  *       Otherwise, you have to specify both @b USERID and @b session_id, then the items added in @c visit_item() with the same @b USERID and @b session_id would be used as browse history.@n
+ *       In the recommendation results, the items added by @c purchase_item(), @c update_shopping_cart() and @c track_event() would be excluded.
  *     - @b BOS (<b>Based on Shopping Cart</b>): get the recommendation items based on the shopping cart of user @b USERID.@n
  *       If @b input_items is specified, the @b input_items would be used as the items in user's shopping cart.@n
  *       Otherwise, the items added in @c update_shopping_cart() with the same @b USERID would be used as shoppint cart.@n
+ *       In the recommendation results, the items added by @c purchase_item(), @c update_shopping_cart() and @c track_event() would be excluded.
  *   - @b max_count (@c Uint = 10): max item number allowed in recommendation result.
  *   - @b USERID (@c String): a unique user identifier.
  *   - @b session_id (@c String): a session id.@n
@@ -891,12 +964,10 @@ void RecommendController::update_shopping_cart()
  * - @b resources (@c Array): each is an item in recommendation result.
  *   - @b ITEMID (@c String): a unique item identifier.
  *   - @b weight (@c Double): the recommendation weight, if this value is available, the items would be sorted by this value decreasingly.
- *   - @b reason (@c Array): the reason why this item is recommended. Each is a @c String of @b ITEMID, which item has a major influence on recommending the result.@n
- *     In the case of @b BAB rec_type, it is one of the items in @b input_items.@n
- *     In the case of @b BOP rec_type, it is one of the items in the user's purchase history.@n
- *     In the case of @b BOB rec_type, it is one of the items in the user's browse history.@n
- *     In the case of @b BOS rec_type, it is one of the items in shopping cart.@n
- *     For other rec_type, the @b reason result would not be returned.
+ *   - @b reasons (@c Array): the reasons why this item is recommended. Each is an event which has major influence on recommendation.@n
+ *     Please note that the @b reasons result would only  be returned for rec_type of @b BAB, @b BOE, @b BOB, @b BOS.
+ *     - @b event (@c String): the event type, it could be @b purchase, @b shopping_cart, @b browse, or the event values in @c track_event().
+ *     - @b ITEMID (@c String): a unique item identifier, which item appears in the above event.
  *   - The item properties added by @c add_item() would also be returned here.@n
  *     Property key name is used as key. The corresponding value is the content of that property.
  *
@@ -906,7 +977,7 @@ void RecommendController::update_shopping_cart()
  * @code
  * {
  *   "resource": {
- *     "rec_type": "BOP",
+ *     "rec_type": "BOE",
  *     "max_count": 20,
  *     "USERID": "user_001"
  *   }
@@ -918,9 +989,9 @@ void RecommendController::update_shopping_cart()
  * {
  *   "header": {"success": true},
  *   "resources": [
- *     {"ITEMID": "item_001", "weight": 0.9, "reason" : ["item_011", "item_021"], "name": "iphone", "link": "www.shop.com/product/item_001", "price": "5000", "category": "digital"},
- *     {"ITEMID": "item_002", "weight": 0.8, "reason" : ["item_012", "item_022"], "name": "ipad", "link": "www.shop.com/product/item_002", "price": "6000", "category": "digital"},
- *     {"ITEMID": "item_003", "weight": 0.7, "reason" : ["item_013", "item_023"], "name": "imac", "link": "www.shop.com/product/item_003", "price": "20000", "category": "digital"}
+ *     {"ITEMID": "item_001", "weight": 0.9, "reasons": [{"event": "purchase"}, {"ITEMID": "item_011"}], "name": "iphone", "link": "www.shop.com/product/item_001", "price": "5000", "category": "digital"},
+ *     {"ITEMID": "item_002", "weight": 0.8, "reasons": [{"event": "shopping_cart"}, {"ITEMID": "item_012"}], "name": "ipad", "link": "www.shop.com/product/item_002", "price": "6000", "category": "digital"},
+ *     {"ITEMID": "item_003", "weight": 0.7, "reasons": [{"event": "wish_list"}, {"ITEMID": "item_013"}], "name": "imac", "link": "www.shop.com/product/item_003", "price": "20000", "category": "digital"}
  *     ...
  *   ]
  * }
@@ -984,7 +1055,7 @@ void RecommendController::do_recommend()
             break;
         }
 
-        case BASED_ON_PURCHASE_HISTORY:
+        case BASED_ON_EVENT:
         {
             if (userIdStr.empty())
             {
@@ -1024,8 +1095,7 @@ void RecommendController::do_recommend()
         }
     }
 
-    typedef std::vector<RecommendSearchService::RecommendItem> RecommendItemVec;
-    RecommendItemVec recItemVec;
+    std::vector<RecommendItem> recItemVec;
     RecommendSearchService* service = collectionHandler_->recommendSearchService_;
     if (service->recommend(recTypeId, maxCount,
                            userIdStr, sessionIdStr,
@@ -1034,13 +1104,13 @@ void RecommendController::do_recommend()
     {
         Value& resources = response()[Keys::resources];
         std::string convertBuffer;
-        for (RecommendItemVec::const_iterator recIt = recItemVec.begin();
+        for (std::vector<RecommendItem>::const_iterator recIt = recItemVec.begin();
             recIt != recItemVec.end(); ++recIt)
         {
             Value& itemValue = resources();
-            itemValue[Keys::weight] = recIt->weight_;
-
             const Item& item = recIt->item_;
+
+            itemValue[Keys::weight] = recIt->weight_;
             itemValue[Keys::ITEMID] = item.idStr_;
 
             for (Item::PropValueMap::const_iterator it = item.propValueMap_.begin();
@@ -1050,14 +1120,16 @@ void RecommendController::do_recommend()
                 itemValue[it->first] = convertBuffer;
             }
 
-            const std::vector<Item>& reasonItems = recIt->reasonItems_;
+            const std::vector<ReasonItem>& reasonItems = recIt->reasonItems_;
             if (reasonItems.empty() == false)
             {
-                Value& reasonValue = itemValue[Keys::reason];
-                for (std::vector<Item>::const_iterator it = reasonItems.begin();
+                Value& reasonsValue = itemValue[Keys::reasons];
+                for (std::vector<ReasonItem>::const_iterator it = reasonItems.begin();
                     it != reasonItems.end(); ++it)
                 {
-                    reasonValue() = it->idStr_;
+                    Value& value = reasonsValue();
+                    value[Keys::event] = it->event_;
+                    value[Keys::ITEMID] = it->item_.idStr_;
                 }
             }
         }

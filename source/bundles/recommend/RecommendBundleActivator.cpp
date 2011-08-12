@@ -4,6 +4,7 @@
 #include <recommend-manager/VisitManager.h>
 #include <recommend-manager/PurchaseManager.h>
 #include <recommend-manager/CartManager.h>
+#include <recommend-manager/EventManager.h>
 #include <recommend-manager/OrderManager.h>
 #include <recommend-manager/RecommendManager.h>
 
@@ -27,6 +28,7 @@ RecommendBundleActivator::RecommendBundleActivator()
     ,visitManager_(NULL)
     ,purchaseManager_(NULL)
     ,cartManager_(NULL)
+    ,eventManager_(NULL)
     ,orderManager_(NULL)
     ,recommendManager_(NULL)
     ,userIdGenerator_(NULL)
@@ -80,6 +82,7 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
     delete visitManager_;
     delete purchaseManager_;
     delete cartManager_;
+    delete eventManager_;
     delete orderManager_;
     delete recommendManager_;
     delete userIdGenerator_;
@@ -91,6 +94,7 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
     visitManager_ = NULL;
     purchaseManager_ = NULL;
     cartManager_ = NULL;
+    eventManager_ = NULL;
     orderManager_ = NULL;
     recommendManager_ = NULL;
     userIdGenerator_ = NULL;
@@ -128,8 +132,7 @@ bool RecommendBundleActivator::init_()
     boost::filesystem::create_directory(cfPath);
     auto_ptr<ItemCFManager> itemCFManagerPtr(new ItemCFManager((cfPath / "covisit").string(), 500*1024*1024,
                                                                (cfPath / "sim").string(), 500*1024*1024,
-                                                               (cfPath / "nb.sdb").string(), 30,
-                                                               (cfPath / "rec").string(), 1000));
+                                                               (cfPath / "nb.sdb").string(), 30));
 
     auto_ptr<CoVisitManager> coVisitManagerPtr(new CoVisitManager((miningDir / "covisit").string()));
 
@@ -146,14 +149,18 @@ bool RecommendBundleActivator::init_()
 
     auto_ptr<CartManager> cartManagerPtr(new CartManager((eventDir / "cart.db").string()));
 
+    auto_ptr<EventManager> eventManagerPtr(new EventManager((eventDir / "event.db").string()));
+
     boost::filesystem::path orderDir = dataDir / "order";
     boost::filesystem::create_directory(orderDir);
     auto_ptr<OrderManager> orderManagerPtr(new OrderManager(orderDir.string(), itemManagerPtr.get()));
 
-    auto_ptr<RecommendManager> recommendManagerPtr(new RecommendManager(itemManagerPtr.get(),
+    auto_ptr<RecommendManager> recommendManagerPtr(new RecommendManager(config_->recommendSchema_,
+                                                                        itemManagerPtr.get(),
                                                                         visitManagerPtr.get(),
                                                                         purchaseManagerPtr.get(),
                                                                         cartManagerPtr.get(),
+                                                                        eventManagerPtr.get(),
                                                                         coVisitManagerPtr.get(),
                                                                         itemCFManagerPtr.get(),
                                                                         orderManagerPtr.get()));
@@ -169,6 +176,7 @@ bool RecommendBundleActivator::init_()
     visitManager_ = visitManagerPtr.release();
     purchaseManager_ = purchaseManagerPtr.release();
     cartManager_ = cartManagerPtr.release();
+    eventManager_ = eventManagerPtr.release();
     orderManager_ = orderManagerPtr.release();
     recommendManager_ = recommendManagerPtr.release();
 
@@ -178,7 +186,7 @@ bool RecommendBundleActivator::init_()
     coVisitManager_ = coVisitManagerPtr.release();
     itemCFManager_ = itemCFManagerPtr.release();
 
-    taskService_ = new RecommendTaskService(config_, &directoryRotator_, userManager_, itemManager_, visitManager_, purchaseManager_, cartManager_, orderManager_, userIdGenerator_, itemIdGenerator_);
+    taskService_ = new RecommendTaskService(config_, &directoryRotator_, userManager_, itemManager_, visitManager_, purchaseManager_, cartManager_, eventManager_, orderManager_, userIdGenerator_, itemIdGenerator_);
     searchService_ = new RecommendSearchService(userManager_, itemManager_, recommendManager_, userIdGenerator_, itemIdGenerator_);
 
     return true;

@@ -27,6 +27,7 @@ class ItemManager;
 class VisitManager;
 class PurchaseManager;
 class CartManager;
+class EventManager;
 class OrderManager;
 class RecommendBundleConfiguration;
 class JobScheduler;
@@ -47,6 +48,7 @@ public:
         VisitManager* visitManager,
         PurchaseManager* purchaseManager,
         CartManager* cartManager,
+        EventManager* eventManager,
         OrderManager* orderManager,
         RecIdGenerator* userIdGenerator,
         RecIdGenerator* itemIdGenerator
@@ -148,6 +150,21 @@ public:
         const OrderItemVec& cartItemVec
     );
 
+    /**
+     * Track a user event.
+     * @param isAdd true for add this event, false for remove this event
+     * @param eventStr the event type
+     * @param userIdStr the user id
+     * @param itemIdStr the item id
+     * @return true for succcess, false for failure
+     */
+    bool trackEvent(
+        bool isAdd,
+        const std::string& eventStr,
+        const std::string& userIdStr,
+        const std::string& itemIdStr
+    );
+
 private:
     /**
      * Load user SCD files.
@@ -236,6 +253,7 @@ private:
     VisitManager* visitManager_;
     PurchaseManager* purchaseManager_;
     CartManager* cartManager_;
+    EventManager* eventManager_;
     OrderManager* orderManager_;
     RecIdGenerator* userIdGenerator_;
     RecIdGenerator* itemIdGenerator_;

@@ -107,9 +107,7 @@ BOOST_AUTO_TEST_CASE(checkPurchase)
     bfs::create_directories(cfPath);
     ItemCFManager* itemCFManager = new ItemCFManager(cfPathStr + "/covisit", 1000,
                                                      cfPathStr + "/sim", 1000,
-                                                     cfPathStr + "/nb", 30,
-                                                     cfPathStr + "/rec", 1000);
-
+                                                     cfPathStr + "/nb", 30);
     // add items first
     ItemManager* itemManager = new ItemManager(itemPath.string(), maxIdPath.string());
     const itemid_t MAX_ITEM_ID = 50;

@@ -1004,6 +1004,12 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     indexmanager_config.indexStrategy_.maxSkipLevel_ = 3;
     indexmanager_config.storeStrategy_.param_ = "file";
     params.GetString("IndexStrategy/indexpolicy", indexmanager_config.indexStrategy_.indexMode_, "default");
+    std::string indexMergePolicy;
+    params.GetString("IndexStrategy/mergepolicy",indexMergePolicy, "file");
+    if(indexMergePolicy == "memory")
+        indexmanager_config.mergeStrategy_.requireIntermediateFileForMerging_ = false;
+    else
+        indexmanager_config.mergeStrategy_.requireIntermediateFileForMerging_ = true;
     indexmanager_config.mergeStrategy_.param_ = "dbt";
     params.GetString("IndexStrategy/cron", indexBundleConfig.cronIndexer_, "");
 
@@ -1440,6 +1446,27 @@ void CollectionConfig::parseRecommendBundleSchema(const ticpp::Element * recSche
                 throw e;
             }
         } //property iteration
+    }
+
+    // get track schema
+    Element* trackSchemaNode = getUniqChildElement( recSchemaNode, "Track", false  );
+    if (trackSchemaNode)
+    {
+        Iterator<Element> event("Event");
+
+        for (event = event.begin(trackSchemaNode); event != event.end(); ++event)
+        {
+            try
+            {
+                string eventName;
+                getAttribute(event.Get(), "name", eventName);
+                recommendSchema.eventSet_.insert(eventName);
+            }
+            catch ( XmlConfigParserException & e )
+            {
+                throw e;
+            }
+        } //event iteration
     }
 }
 

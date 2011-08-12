@@ -1,8 +1,10 @@
 #include "RecommendManager.h"
+#include <bundles/recommend/RecommendSchema.h>
 #include "ItemManager.h"
 #include "VisitManager.h"
 #include "PurchaseManager.h"
 #include "CartManager.h"
+#include "EventManager.h"
 #include "OrderManager.h"
 #include "ItemCondition.h"
 #include <recommend-manager/ItemFilter.h>
@@ -12,21 +14,49 @@
 #include <list>
 #include <cassert>
 
+namespace
+{
+const char* EVENT_PURCHASE = "purchase";
+const char* EVENT_BROWSE = "browse";
+const char* EVENT_CART = "shopping_cart";
+
+void setReasonEvent(
+    std::vector<sf1r::RecommendItem>& recItemVec,
+    const char* eventName
+)
+{
+    for (std::vector<sf1r::RecommendItem>::iterator recIt = recItemVec.begin();
+        recIt != recItemVec.end(); ++recIt)
+    {
+        for (std::vector<sf1r::ReasonItem>::iterator reasonIt = recIt->reasonItems_.begin();
+            reasonIt != recIt->reasonItems_.end(); ++reasonIt)
+        {
+            reasonIt->event_ = eventName;
+        }
+    }
+}
+
+}
+
 namespace sf1r
 {
 RecommendManager::RecommendManager(
+    const RecommendSchema& schema,
     ItemManager* itemManager,
     VisitManager* visitManager,
     PurchaseManager* purchaseManager,
     CartManager* cartManager,
+    EventManager* eventManager,
     CoVisitManager* coVisitManager,
     ItemCFManager* itemCFManager,
     OrderManager* orderManager
 )
-    : itemManager_(itemManager)
+    : recommendSchema_(schema)
+    , itemManager_(itemManager)
     , visitManager_(visitManager)
     , purchaseManager_(purchaseManager)
     , cartManager_(cartManager)
+    , eventManager_(eventManager)
     , coVisitManager_(coVisitManager)
     , itemCFManager_(itemCFManager)
     , orderManager_(orderManager)
@@ -42,7 +72,7 @@ bool RecommendManager::recommend(
     const std::vector<itemid_t>& includeItemVec,
     const std::vector<itemid_t>& excludeItemVec,
     const ItemCondition& condition,
-    idmlib::recommender::RecommendItemVec& recItemVec
+    std::vector<RecommendItem>& recItemVec
 )
 {
     if (maxRecNum <= 0)
@@ -58,7 +88,7 @@ bool RecommendManager::recommend(
         includeNum = maxRecNum;
     }
     recItemVec.clear();
-    idmlib::recommender::RecommendItem recItem;
+    RecommendItem recItem;
     recItem.weight_ = 1;
     for (int i = 0; i < includeNum; ++i)
     {
@@ -101,9 +131,9 @@ bool RecommendManager::recommend(
             break;
         }
 
-        case BASED_ON_PURCHASE_HISTORY:
+        case BASED_ON_EVENT:
         {
-            result = recommend_bop_(maxRecNum, userId, filter, recItemVec);
+            result = recommend_boe_(maxRecNum, userId, filter, recItemVec);
             break;
         }
 
@@ -156,7 +186,7 @@ bool RecommendManager::recommend_vav_(
     int maxRecNum,
     const std::vector<itemid_t>& inputItemVec,
     ItemFilter& filter,
-    idmlib::recommender::RecommendItemVec& recItemVec
+    std::vector<RecommendItem>& recItemVec
 )
 {
     if (inputItemVec.empty())
@@ -168,7 +198,7 @@ bool RecommendManager::recommend_vav_(
     std::vector<itemid_t> results;
     coVisitManager_->getCoVisitation(maxRecNum, inputItemVec[0], results, &filter);
 
-    idmlib::recommender::RecommendItem recItem;
+    RecommendItem recItem;
     recItem.weight_ = 1;
     for (std::vector<itemid_t>::const_iterator it = results.begin();
         it != results.end(); ++it)
@@ -184,7 +214,7 @@ bool RecommendManager::recommend_bab_(
     int maxRecNum,
     const std::vector<itemid_t>& inputItemVec,
     ItemFilter& filter,
-    idmlib::recommender::RecommendItemVec& recItemVec
+    std::vector<RecommendItem>& recItemVec
 )
 {
     if (inputItemVec.empty())
@@ -194,18 +224,20 @@ bool RecommendManager::recommend_bab_(
     }
 
     idmlib::recommender::RecommendItemVec results;
-    itemCFManager_->getRecByItem(maxRecNum, inputItemVec, results, &filter);
+    itemCFManager_->recommend(maxRecNum, inputItemVec, results, &filter);
 
     recItemVec.insert(recItemVec.end(), results.begin(), results.end());
+
+    setReasonEvent(recItemVec, EVENT_PURCHASE);
 
     return true;
 }
 
-bool RecommendManager::recommend_bop_(
+bool RecommendManager::recommend_boe_(
     int maxRecNum,
     userid_t userId,
     ItemFilter& filter,
-    idmlib::recommender::RecommendItemVec& recItemVec
+    std::vector<RecommendItem>& recItemVec
 )
 {
     if (userId == 0)
@@ -214,10 +246,29 @@ bool RecommendManager::recommend_bop_(
         return false;
     }
 
-    idmlib::recommender::RecommendItemVec results;
-    itemCFManager_->getRecByUser(maxRecNum, userId, results, &filter);
+    std::vector<itemid_t> inputItemVec;
+    ItemEventMap itemEventMap;
+    ItemIdSet notRecInputSet;
 
-    recItemVec.insert(recItemVec.end(), results.begin(), results.end());
+    if (addUserEvent_(userId, inputItemVec, itemEventMap, filter, notRecInputSet) == false)
+    {
+        LOG(ERROR) << "failed to add user event for user id " << userId;
+        return false;
+    }
+
+    // get recommend result
+    recByItem_(maxRecNum, inputItemVec, notRecInputSet, filter, recItemVec);
+
+    // set event type
+    for (std::vector<sf1r::RecommendItem>::iterator recIt = recItemVec.begin();
+        recIt != recItemVec.end(); ++recIt)
+    {
+        for (std::vector<sf1r::ReasonItem>::iterator reasonIt = recIt->reasonItems_.begin();
+            reasonIt != recIt->reasonItems_.end(); ++reasonIt)
+        {
+            reasonIt->event_ = itemEventMap[reasonIt->itemId_];
+        }
+    }
 
     return true;
 }
@@ -228,9 +279,10 @@ bool RecommendManager::recommend_bob_(
     const std::string& sessionIdStr,
     const std::vector<itemid_t>& inputItemVec,
     ItemFilter& filter,
-    idmlib::recommender::RecommendItemVec& recItemVec
+    std::vector<RecommendItem>& recItemVec
 )
 {
+    bool result = false;
     if (inputItemVec.empty())
     {
         // use visit session items as browse history
@@ -248,7 +300,7 @@ bool RecommendManager::recommend_bob_(
             {
                 browseItemVec.assign(visitSession.itemSet_.begin(), visitSession.itemSet_.end());
             }
-            return recUserByItem_(maxRecNum, userId, browseItemVec, filter, recItemVec);
+            result = recByUser_(maxRecNum, userId, browseItemVec, filter, recItemVec);
         }
         else
         {
@@ -259,8 +311,15 @@ bool RecommendManager::recommend_bob_(
     else
     {
         // use input items as browse history
-        return recUserByItem_(maxRecNum, userId, inputItemVec, filter, recItemVec);
+        result = recByUser_(maxRecNum, userId, inputItemVec, filter, recItemVec);
     }
+
+    if (result)
+    {
+        setReasonEvent(recItemVec, EVENT_BROWSE);
+    }
+
+    return result;
 }
 
 bool RecommendManager::recommend_bos_(
@@ -268,9 +327,10 @@ bool RecommendManager::recommend_bos_(
     userid_t userId,
     const std::vector<itemid_t>& inputItemVec,
     ItemFilter& filter,
-    idmlib::recommender::RecommendItemVec& recItemVec
+    std::vector<RecommendItem>& recItemVec
 )
 {
+    bool result = false;
     if (inputItemVec.empty())
     {
         // use cart items as shopping cart
@@ -283,7 +343,7 @@ bool RecommendManager::recommend_bos_(
                 return false;
             }
 
-            return recUserByItem_(maxRecNum, userId, cartItemVec, filter, recItemVec);
+            result = recByUser_(maxRecNum, userId, cartItemVec, filter, recItemVec);
         }
         else
         {
@@ -294,15 +354,22 @@ bool RecommendManager::recommend_bos_(
     else
     {
         // use input items as shopping cart
-        return recUserByItem_(maxRecNum, userId, inputItemVec, filter, recItemVec);
+        result = recByUser_(maxRecNum, userId, inputItemVec, filter, recItemVec);
     }
+
+    if (result)
+    {
+        setReasonEvent(recItemVec, EVENT_CART);
+    }
+
+    return result;
 }
 
 bool RecommendManager::recommend_fbt_(
     int maxRecNum,
     const std::vector<itemid_t>& inputItemVec,
     ItemFilter& filter,
-    idmlib::recommender::RecommendItemVec& recItemVec
+    std::vector<RecommendItem>& recItemVec
 )
 {
     if (inputItemVec.empty())
@@ -319,7 +386,7 @@ bool RecommendManager::recommend_fbt_(
         return false;
     }
 
-    idmlib::recommender::RecommendItem recItem;
+    RecommendItem recItem;
     recItem.weight_ = 1;
     for (std::list<itemid_t>::const_iterator it = results.begin();
         it != results.end(); ++it)
@@ -331,32 +398,182 @@ bool RecommendManager::recommend_fbt_(
     return true;
 }
 
-bool RecommendManager::recUserByItem_(
+bool RecommendManager::recByUser_(
     int maxRecNum,
     userid_t userId,
     const std::vector<itemid_t>& inputItemVec,
     ItemFilter& filter,
-    idmlib::recommender::RecommendItemVec& recItemVec
+    std::vector<RecommendItem>& recItemVec
 )
 {
-    // filter purchase history
+    ItemIdSet notRecInputSet;
     if (userId)
     {
-        ItemIdSet purchaseItemSet;
-        if (purchaseManager_->getPurchaseItemSet(userId, purchaseItemSet) == false)
+        if (filterUserEvent_(userId, filter, notRecInputSet) == false)
         {
-            LOG(ERROR) << "failed to get purchased items for user id " << userId;
+            LOG(ERROR) << "failed to filter user event for user id " << userId;
             return false;
         }
-        filter.insert(purchaseItemSet.begin(), purchaseItemSet.end());
     }
 
-    idmlib::recommender::RecommendItemVec results;
-    itemCFManager_->getRecByItem(maxRecNum, inputItemVec, results, &filter);
-
-    recItemVec.insert(recItemVec.end(), results.begin(), results.end());
+    recByItem_(maxRecNum, inputItemVec, notRecInputSet, filter, recItemVec);
 
     return true;
+}
+
+bool RecommendManager::addUserEvent_(
+    userid_t userId,
+    std::vector<itemid_t>& inputItemVec,
+    ItemEventMap& itemEventMap,
+    ItemFilter& filter,
+    ItemIdSet& notRecInputSet
+)
+{
+    assert(userId);
+
+    // purchase history
+    ItemIdSet purchaseItemSet;
+    if (purchaseManager_->getPurchaseItemSet(userId, purchaseItemSet) == false)
+    {
+        LOG(ERROR) << "failed to get purchased items for user id " << userId;
+        return false;
+    }
+    for (ItemIdSet::const_iterator it = purchaseItemSet.begin();
+        it != purchaseItemSet.end(); ++it)
+    {
+        if (itemEventMap.insert(ItemEventMap::value_type(*it, EVENT_PURCHASE)).second)
+        {
+            inputItemVec.push_back(*it);
+        }
+    }
+
+    // cart items
+    std::vector<itemid_t> cartItemVec;
+    if (cartManager_->getCart(userId, cartItemVec) == false)
+    {
+        LOG(ERROR) << "failed to get shopping cart items for user id " << userId;
+        return false;
+    }
+    for (std::vector<itemid_t>::const_iterator it = cartItemVec.begin();
+        it != cartItemVec.end(); ++it)
+    {
+        if (itemEventMap.insert(ItemEventMap::value_type(*it, EVENT_CART)).second)
+        {
+            inputItemVec.push_back(*it);
+        }
+    }
+
+    // user events
+    EventManager::EventItemMap eventItemMap;
+    if (eventManager_->getEvent(userId, eventItemMap) == false)
+    {
+        LOG(ERROR) << "failed to get events for user id " << userId;
+        return false;
+    }
+    for (EventManager::EventItemMap::const_iterator eventIt = eventItemMap.begin();
+        eventIt != eventItemMap.end(); ++eventIt)
+    {
+        if (eventIt->first != recommendSchema_.notRecResultEvent_
+            && eventIt->first != recommendSchema_.notRecInputEvent_)
+        {
+            for (ItemIdSet::const_iterator it = eventIt->second.begin();
+                it != eventIt->second.end(); ++it)
+            {
+                if (itemEventMap.insert(ItemEventMap::value_type(*it, eventIt->first)).second)
+                {
+                    inputItemVec.push_back(*it);
+                }
+            }
+        }
+        else
+        {
+            // events "not_rec_result" or "not_rec_input"
+            filter.insert(eventIt->second.begin(), eventIt->second.end());
+        }
+    }
+
+    // "not_rec_input" event
+    notRecInputSet.swap(eventItemMap[recommendSchema_.notRecInputEvent_]);
+
+    return true;
+}
+
+bool RecommendManager::filterUserEvent_(
+    userid_t userId,
+    ItemFilter& filter,
+    ItemIdSet& notRecInputSet
+)
+{
+    assert(userId);
+
+    // filter purchase history
+    ItemIdSet purchaseItemSet;
+    if (purchaseManager_->getPurchaseItemSet(userId, purchaseItemSet) == false)
+    {
+        LOG(ERROR) << "failed to get purchased items for user id " << userId;
+        return false;
+    }
+    filter.insert(purchaseItemSet.begin(), purchaseItemSet.end());
+
+    // filter cart items
+    std::vector<itemid_t> cartItemVec;
+    if (cartManager_->getCart(userId, cartItemVec) == false)
+    {
+        LOG(ERROR) << "failed to get shopping cart items for user id " << userId;
+        return false;
+    }
+    filter.insert(cartItemVec.begin(), cartItemVec.end());
+
+    // filter all events
+    EventManager::EventItemMap eventItemMap;
+    if (eventManager_->getEvent(userId, eventItemMap) == false)
+    {
+        LOG(ERROR) << "failed to get events for user id " << userId;
+        return false;
+    }
+    for (EventManager::EventItemMap::const_iterator it = eventItemMap.begin();
+        it != eventItemMap.end(); ++it)
+    {
+        filter.insert(it->second.begin(), it->second.end());
+    }
+
+    // "not_rec_input" event
+    notRecInputSet.swap(eventItemMap[recommendSchema_.notRecInputEvent_]);
+
+    return true;
+}
+
+void RecommendManager::recByItem_(
+    int maxRecNum,
+    const std::vector<itemid_t>& inputItemVec,
+    const ItemIdSet& notRecInputSet,
+    ItemFilter& filter,
+    std::vector<RecommendItem>& recItemVec
+)
+{
+    idmlib::recommender::RecommendItemVec results;
+
+    if (notRecInputSet.empty())
+    {
+        itemCFManager_->recommend(maxRecNum, inputItemVec, results, &filter);
+    }
+    else
+    {
+        // exclude "notRecInputSet" in input items
+        std::vector<itemid_t> newInputItemVec;
+        for (std::vector<itemid_t>::const_iterator it = inputItemVec.begin(); 
+            it != inputItemVec.end(); ++it)
+        {
+            if (notRecInputSet.find(*it) == notRecInputSet.end())
+            {
+                newInputItemVec.push_back(*it);
+            }
+        }
+
+        itemCFManager_->recommend(maxRecNum, newInputItemVec, results, &filter);
+    }
+
+    recItemVec.insert(recItemVec.end(), results.begin(), results.end());
 }
 
 } // namespace sf1r

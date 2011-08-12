@@ -37,26 +37,20 @@ public:
      * Add a purchase event.
      * @param userId the user id
      * @param itemVec the items in the order
-     * @param isBuildUserResult true for call @p ItemCFManager::buildMatrix(), and @p buildUserRecItems(),
-     *                          false for call @p ItemCFManager::updateVisitMatrix().
+     * @param isUpdateSimMatrix true for call @p ItemCFManager::updateMatrix() to also update similarity matrix,
+     *                          false for call @p ItemCFManager::updateVisitMatrix() to only update visit matrix.
      * @return true for succcess, false for failure
      */
     bool addPurchaseItem(
         userid_t userId,
         const std::vector<itemid_t>& itemVec,
-        bool isBuildUserResult = true
+        bool isUpdateSimMatrix = true
     );
 
     /**
      * Rebuild the whole similarity matrix in batch mode.
      */
     void buildSimMatrix();
-
-    /**
-     * Build recommend items for user.
-     * @param userId the user id
-     */
-    void buildUserResult(userid_t userId);
 
     /**
      * Get @p itemIdSet purchased by @p userId.

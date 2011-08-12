@@ -44,6 +44,7 @@ public:
     void visit_item();
     void purchase_item();
     void update_shopping_cart();
+    void track_event();
 
     void do_recommend();
 

@@ -8,6 +8,7 @@
 #include <recommend-manager/PurchaseManager.h>
 #include <recommend-manager/OrderManager.h>
 #include <recommend-manager/CartManager.h>
+#include <recommend-manager/EventManager.h>
 #include <common/ScdParser.h>
 #include <directory-manager/Directory.h>
 #include <directory-manager/DirectoryRotator.h>
@@ -358,38 +359,6 @@ private:
     mutable std::vector<sf1r::itemid_t> itemVec_;
 };
 
-class CartTask
-{
-public:
-    CartTask(
-        sf1r::CartManager& cartManager,
-        sf1r::userid_t userId,
-        std::vector<sf1r::itemid_t>& itemVec
-    )
-    : cartManager_(cartManager)
-    , userId_(userId)
-    {
-        itemVec_.swap(itemVec);
-    }
-
-    CartTask(const CartTask& task)
-    : cartManager_(task.cartManager_)
-    , userId_(task.userId_)
-    {
-        itemVec_.swap(task.itemVec_);
-    }
-
-    void updateCart()
-    {
-        cartManager_.updateCart(userId_, itemVec_);
-    }
-
-private:
-    sf1r::CartManager& cartManager_;
-    sf1r::userid_t userId_;
-    mutable std::vector<sf1r::itemid_t> itemVec_;
-};
-
 }
 
 namespace sf1r
@@ -403,6 +372,7 @@ RecommendTaskService::RecommendTaskService(
     VisitManager* visitManager,
     PurchaseManager* purchaseManager,
     CartManager* cartManager,
+    EventManager* eventManager,
     OrderManager* orderManager,
     RecIdGenerator* userIdGenerator,
     RecIdGenerator* itemIdGenerator
@@ -414,6 +384,7 @@ RecommendTaskService::RecommendTaskService(
     ,visitManager_(visitManager)
     ,purchaseManager_(purchaseManager)
     ,cartManager_(cartManager)
+    ,eventManager_(eventManager)
     ,orderManager_(orderManager)
     ,userIdGenerator_(userIdGenerator)
     ,itemIdGenerator_(itemIdGenerator)
@@ -447,7 +418,6 @@ bool RecommendTaskService::addUser(const User& user)
     }
 
     userid_t userId = 0;
-
     if (userIdGenerator_->conv(user.idStr_, userId))
     {
         LOG(WARNING) << "in addUser(), user id " << user.idStr_ << " already exists";
@@ -460,13 +430,7 @@ bool RecommendTaskService::addUser(const User& user)
 
 bool RecommendTaskService::updateUser(const User& user)
 {
-    if (user.idStr_.empty())
-    {
-        return false;
-    }
-
     userid_t userId = 0;
-
     if (userIdGenerator_->conv(user.idStr_, userId, false) == false)
     {
         LOG(ERROR) << "error in updateUser(), user id " << user.idStr_ << " not yet added before";
@@ -478,13 +442,7 @@ bool RecommendTaskService::updateUser(const User& user)
 
 bool RecommendTaskService::removeUser(const std::string& userIdStr)
 {
-    if (userIdStr.empty())
-    {
-        return false;
-    }
-
     userid_t userId = 0;
-
     if (userIdGenerator_->conv(userIdStr, userId, false) == false)
     {
         LOG(ERROR) << "error in removeUser(), user id " << userIdStr << " not yet added before";
@@ -502,7 +460,6 @@ bool RecommendTaskService::addItem(const Item& item)
     }
 
     itemid_t itemId = 0;
-
     if (itemIdGenerator_->conv(item.idStr_, itemId))
     {
         LOG(WARNING) << "in addItem(), item id " << item.idStr_ << " already exists";
@@ -513,13 +470,7 @@ bool RecommendTaskService::addItem(const Item& item)
 
 bool RecommendTaskService::updateItem(const Item& item)
 {
-    if (item.idStr_.empty())
-    {
-        return false;
-    }
-
     itemid_t itemId = 0;
-
     if (itemIdGenerator_->conv(item.idStr_, itemId, false) == false)
     {
         LOG(ERROR) << "error in updateItem(), item id " << item.idStr_ << " not yet added before";
@@ -531,13 +482,7 @@ bool RecommendTaskService::updateItem(const Item& item)
 
 bool RecommendTaskService::removeItem(const std::string& itemIdStr)
 {
-    if (itemIdStr.empty())
-    {
-        return false;
-    }
-
     itemid_t itemId = 0;
-
     if (itemIdGenerator_->conv(itemIdStr, itemId, false) == false)
     {
         LOG(ERROR) << "error in removeItem(), item id " << itemIdStr << " not yet added before";
@@ -553,8 +498,9 @@ bool RecommendTaskService::visitItem(
     const std::string& itemIdStr
 )
 {
-    if (sessionIdStr.empty() || userIdStr.empty() || itemIdStr.empty())
+    if (sessionIdStr.empty())
     {
+        LOG(ERROR) << "error in visitItem(), session id is empty";
         return false;
     }
 
@@ -618,12 +564,41 @@ bool RecommendTaskService::updateShoppingCart(
         return false;
     }
 
+    return cartManager_->updateCart(userId, itemIdVec);
+}
+
+bool RecommendTaskService::trackEvent(
+    bool isAdd,
+    const std::string& eventStr,
+    const std::string& userIdStr,
+    const std::string& itemIdStr
+)
+{
+    userid_t userId = 0;
+    if (userIdGenerator_->conv(userIdStr, userId, false) == false)
     {
-        CartTask task(*cartManager_, userId, itemIdVec);
-        jobScheduler_->addTask(boost::bind(&CartTask::updateCart, task));
+        LOG(ERROR) << "error in trackEvent(), user id " << userIdStr << " not yet added before";
+        return false;
     }
 
-    return true;
+    itemid_t itemId = 0;
+    if (itemIdGenerator_->conv(itemIdStr, itemId, false) == false)
+    {
+        LOG(ERROR) << "error in trackEvent(), item id " << itemIdStr << " not yet added before";
+        return false;
+    }
+
+    bool result = false;
+    if (isAdd)
+    {
+        result = eventManager_->addEvent(eventStr, userId, itemId);
+    }
+    else
+    {
+        result = eventManager_->removeEvent(eventStr, userId, itemId);
+    }
+
+    return result;
 }
 
 bool RecommendTaskService::buildCollection()
@@ -987,21 +962,6 @@ void RecommendTaskService::loadPurchaseItem_(UserItemMap& userItemMap)
     std::cout << "\rloading user num: " << userNum << std::endl;
 
     purchaseManager_->buildSimMatrix();
-
-    LOG(INFO) << "start building recommend result for " << userItemMap.numItems() << " users...";
-    userNum = 0;
-    for (UserItemIterator it = UserItemIterator(userItemMap); it != itEnd; ++it)
-    {
-        if (++userNum % 1000 == 0)
-        {
-            std::cout << "\rbuilding user num: " << userNum << std::flush;
-        }
-
-        purchaseManager_->buildUserResult(it->first);
-    }
-    std::cout << "\rbuilding user num: " << userNum << std::endl;
-    LOG(INFO) << "finish building recommend result";
-
     purchaseManager_->flush();
 }
 
@@ -1076,11 +1036,6 @@ bool RecommendTaskService::convertUserItemId_(
     std::vector<itemid_t>& itemIdVec
 )
 {
-    if (userIdStr.empty())
-    {
-        return false;
-    }
-
     if (userIdGenerator_->conv(userIdStr, userId, false) == false)
     {
         LOG(ERROR) << "error in convertUserItemId(), user id " << userIdStr << " not yet added before";
@@ -1094,11 +1049,6 @@ bool RecommendTaskService::convertUserItemId_(
     for (OrderItemVec::const_iterator it = orderItemVec.begin();
         it != orderItemVec.end(); ++it)
     {
-        if (it->itemIdStr_.empty())
-        {
-            return false;
-        }
-
         itemid_t itemId = 0;
         if (itemIdGenerator_->conv(it->itemIdStr_, itemId, false) == false)
         {

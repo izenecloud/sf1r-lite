@@ -31,7 +31,7 @@ using namespace izenelib::util;
 
 namespace sf1r
 {
-int TOP_K_NUM = 1000;
+int TOP_K_NUM = 4000;
 
 IndexSearchService::IndexSearchService()
 {
