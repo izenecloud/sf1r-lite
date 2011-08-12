@@ -226,8 +226,8 @@ bool MiningManager::open()
         MiningQueryLogHandler* handler = MiningQueryLogHandler::getInstance();
         handler->addCollection(collectionName_, rmDb_);
 
-        qrManager_.reset(new QueryRecommendSubmanager(rmDb_));
-
+        qrManager_.reset(new QueryRecommendSubmanager(rmDb_, qr_path_+"/recommend_inject.txt"));
+        qrManager_->Load();
         /** DUPD */
         if ( mining_schema_.dupd_enable )
         {
@@ -1270,6 +1270,24 @@ bool MiningManager::getFreqGroupLabel(
     }
 }
 
+bool MiningManager::setTopGroupLabel(
+    const std::string& query,
+    const std::string& propName,
+    const std::string& propValue
+)
+{
+    GroupLabelLogger* logger = groupLabelLoggerMap_[propName];
+    if(logger)
+    {
+        return logger->setTopLabel(query, propValue);
+    }
+    else
+    {
+        LOG(ERROR) << "the logger is not initialized for group property: " << propName;
+        return false;
+    }
+}
+
 bool MiningManager::GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list)
 {
     idmlib::tdt::TimeIdType start_date;
@@ -1313,6 +1331,18 @@ bool MiningManager::GetTdtTopicInfo(const izenelib::util::UString& text, idmlib:
         return false;
     }
     return storage->GetTopicInfo(text, info);
+}
+
+void MiningManager::InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result)
+{
+    if(!qrManager_) return;
+    qrManager_->Inject(query, result);
+}
+    
+void MiningManager::FinishQueryRecommendInject()
+{
+    if(!qrManager_) return;
+    qrManager_->FinishInject();
 }
 
 

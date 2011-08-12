@@ -26,7 +26,11 @@ controllers:
       - index_recommend
       - optimize_index
 
-  KeywordsController: ~
+  KeywordsController:
+    actions:
+      - index
+      - inject_query_correction
+      - inject_query_recommend
 
   DocumentsController:
     actions:
@@ -42,6 +46,7 @@ controllers:
       - get_topic
       - get_topic_with_sim
       - get_freq_group_labels
+      - set_top_group_label
 
   StatusController: ~
 
@@ -89,6 +94,7 @@ controllers:
       - visit_item
       - purchase_item
       - update_shopping_cart
+      - track_event
       - do_recommend
       - top_item_bundle
       

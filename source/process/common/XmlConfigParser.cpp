@@ -1464,6 +1464,27 @@ void CollectionConfig::parseRecommendBundleSchema(const ticpp::Element * recSche
             }
         } //property iteration
     }
+
+    // get track schema
+    Element* trackSchemaNode = getUniqChildElement( recSchemaNode, "Track", false  );
+    if (trackSchemaNode)
+    {
+        Iterator<Element> event("Event");
+
+        for (event = event.begin(trackSchemaNode); event != event.end(); ++event)
+        {
+            try
+            {
+                string eventName;
+                getAttribute(event.Get(), "name", eventName);
+                recommendSchema.eventSet_.insert(eventName);
+            }
+            catch ( XmlConfigParserException & e )
+            {
+                throw e;
+            }
+        } //event iteration
+    }
 }
 
 void CollectionConfig::parseIndexSchemaProperty(

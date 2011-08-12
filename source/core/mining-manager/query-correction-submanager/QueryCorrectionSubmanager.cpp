@@ -13,7 +13,7 @@
 #include "QueryCorrectionSubmanager.h"
 #include <common/SFLogger.h>
 #include <util/ustring/ustr_tool.h>
-
+#include <boost/algorithm/string.hpp>
 
 namespace
 {
@@ -33,11 +33,13 @@ namespace sf1r
 
 _QueryCorrectionSubmanagerParam QueryCorrectionSubmanagerParam::param_;
 
-QueryCorrectionSubmanager::QueryCorrectionSubmanager(const string& path,
-        const std::string& workingPath, bool enableEK, bool enableChn, int ed) :
-        path_(path), workingPath_(workingPath), enableEK_(enableEK), enableChn_(
-            enableChn), activate_(false), cmgr_(), ekmgr_(
-                path, workingPath, ed)
+QueryCorrectionSubmanager::QueryCorrectionSubmanager
+(const string& path, const std::string& workingPath, bool enableEK, bool enableChn, int ed)
+:path_(path), workingPath_(workingPath)
+, enableEK_(enableEK), enableChn_(enableChn)
+, activate_(false)
+, cmgr_(path_+"/cn", workingPath_), ekmgr_(path, workingPath, ed)
+, has_new_inject_(false)
 {
     initialize();
 }
@@ -136,7 +138,7 @@ bool QueryCorrectionSubmanager::initialize()
 
     if (enableChn_)
     {
-        if(!cmgr_.Load(path_+"/cn"))
+        if(!cmgr_.Load())
         {
             std::cerr<<"Load failed for Chinese query correction"<<std::endl;
             activate_ = false;
@@ -152,6 +154,35 @@ bool QueryCorrectionSubmanager::initialize()
         }
 
     }
+    
+    //load inject
+    std::string inject_file = workingPath_+"/inject_data.txt";
+    std::vector<izenelib::util::UString> str_list;
+    std::ifstream ifs(inject_file.c_str());
+    std::string line;
+    while( getline(ifs, line) )
+    {
+        boost::algorithm::trim(line);
+        if(line.length()==0)
+        {
+            //do with str_list;
+            if(str_list.size()>=1)
+            {
+                std::string str_query;
+                str_list[0].convertString(str_query, izenelib::util::UString::UTF_8);
+                izenelib::util::UString result;
+                if(str_list.size()>=2)
+                {
+                    result = str_list[1];
+                }
+                inject_data_.insert(std::make_pair(str_query, result));
+            }
+            str_list.resize(0);
+            continue;
+        }
+        str_list.push_back( izenelib::util::UString(line, izenelib::util::UString::UTF_8));
+    }
+    ifs.close();
 
     std::cout << "End Speller construction!" << std::endl;
 
@@ -218,7 +249,16 @@ bool QueryCorrectionSubmanager::getRefinedQuery(
 //         
 //     }
 //     return false;
-    
+
+    std::string str_query;
+    queryUString.convertString(str_query, izenelib::util::UString::UTF_8);
+    boost::algorithm::to_lower(str_query);
+    boost::unordered_map<std::string, izenelib::util::UString>::iterator it = inject_data_.find(str_query);
+    if(it!=inject_data_.end())
+    {
+        refinedQueryUString = it->second;
+        return true;
+    }
     if (queryUString.empty() || !activate_)
     {
         return false;
@@ -327,28 +367,56 @@ bool QueryCorrectionSubmanager::isPinyin(const izenelib::util::UString& str)
 // 
 void QueryCorrectionSubmanager::updateCogramAndDict(const std::list<std::pair<izenelib::util::UString, uint32_t> >& recentQueryList)
 {
-//     updateCogramAndDict("", recentQueryList);
+    updateCogramAndDict("", recentQueryList);
 }
 
 void QueryCorrectionSubmanager::updateCogramAndDict(const std::string& collectionName, const std::list<std::pair<izenelib::util::UString, uint32_t> >& recentQueryList)
 {
-//     boost::mutex::scoped_lock scopedLock(logMutex_);
-// 
-//     DLOG(INFO)<<"updateCogramAndDict..."<<endl;
-//     const std::list < std :: pair < izenelib::util::UString, uint32_t> >& queryList = recentQueryList;
-//     std::list < std :: pair < izenelib::util::UString, uint32_t> >::const_iterator lit;
-// //  LogManager::getRecentQueryList(queryList);
-//     //update Chinese Ngram
-//     if ( collectionName == "" )
-//     {
-//         cmgr_.updateNgram(queryList);
-//         //ekmgr_.updateCogram(queryList);
-//     }
-//     else
-//     {
-//         cmgr_.updateNgram(collectionName, queryList);
-//         //ekmgr_.updateCogram(queryList);
-//     }
+    boost::mutex::scoped_lock scopedLock(logMutex_);
+
+    DLOG(INFO)<<"updateCogramAndDict..."<<endl;
+    const std::list < std :: pair < izenelib::util::UString, uint32_t> >& queryList = recentQueryList;
+    std::list < std :: pair < izenelib::util::UString, uint32_t> >::const_iterator lit;
+    //no collection independent
+    cmgr_.Update(queryList);
+
+}
+
+void QueryCorrectionSubmanager::Inject(const izenelib::util::UString& query, const izenelib::util::UString& result)
+{
+    std::string str_query;
+    query.convertString(str_query, izenelib::util::UString::UTF_8);
+    boost::algorithm::trim(str_query);
+    if(str_query.empty()) return;
+    boost::algorithm::to_lower(str_query);
+    std::cout<<"Inject query correction : "<<str_query<<std::endl;
+    inject_data_.erase( str_query );
+    inject_data_.insert(std::make_pair( str_query, result) );
+    has_new_inject_ = true;
+}
+
+void QueryCorrectionSubmanager::FinishInject()
+{
+    if(!has_new_inject_) return;
+    std::string inject_file = workingPath_+"/inject_data.txt";
+    if(boost::filesystem::exists( inject_file) )
+    {
+        boost::filesystem::remove_all( inject_file);
+    }
+    std::ofstream ofs(inject_file.c_str());
+    boost::unordered_map<std::string, izenelib::util::UString>::iterator it = inject_data_.begin();
+    while(it!= inject_data_.end())
+    {
+        std::string result;
+        it->second.convertString(result, izenelib::util::UString::UTF_8);
+        ofs<<it->first<<std::endl;
+        ofs<<result<<std::endl;
+        ofs<<std::endl;
+        ++it;
+    }
+    ofs.close();
+    has_new_inject_ = false;
+    std::cout<<"Finish inject query correction."<<std::endl;
 }
 
 }/*namespace sf1r*/

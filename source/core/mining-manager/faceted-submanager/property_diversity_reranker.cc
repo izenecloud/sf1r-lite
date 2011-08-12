@@ -120,7 +120,7 @@ void PropertyDiversityReranker::rerank(
     if(!propValueVec.empty())
     {
         std::string& boostingCategoryLabel = propValueVec[0];
-        //std::cout<<"boosting category "<<boostingCategoryLabel<<std::endl;		
+        std::cout<<"boosting category "<<boostingCategoryLabel<<std::endl;		
         GroupManager::PropValueMap::const_iterator pvIt = propValueMap_.find(boostingProperty_);
         if (pvIt == propValueMap_.end())
         {

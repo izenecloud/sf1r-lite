@@ -611,7 +611,9 @@ void DocumentsController::get_topic_with_sim()
  *
  * @section response
  *
- * - @b resources (@c Array): Every item is a group label, sorted by @b freq decreasingly.
+ * - @b resources (@c Array): Every item is a group label, sorted by @b freq decreasingly.@n
+ *   Please note that if @c set_top_group_label() is called previously with a non-empty @b group_label,@n
+ *   then that label would always be ranked at the 1st in the result, regardless of its frequency count.
  *   - @b freq (@c Uint): the frequency count
  *   - @b group_label (@c String): the property value of the group label
  *
@@ -680,6 +682,70 @@ void DocumentsController::get_freq_group_labels()
         Value& new_resource = resources();
         new_resource[Keys::group_label] = propValueVec[i];
         new_resource[Keys::freq] = freqVec[i];
+    }
+}
+
+/**
+ * @brief Action @b set_top_group_label. Set the most frequently clicked group label.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): collection name.
+ * - @b resource* (@c Object): specify the keywords, property name and label value.
+ *   - @b keywords* (@c String): user query
+ *   - @b group_property* (@c String): the group property name
+ *   - @b group_label* (@c String): the property value of the group label.@n
+ *     If @b group_label is non-empty value, this label would always be ranked at the 1st in the result of @c get_freq_group_labels() with the same values of @b keywords and @b group_property.@n
+ *     Otherwise, if @b group_label is empty value "", then the label with the largest frequency count would be ranked at the 1st as original.
+ *
+ * @section response
+ *
+ * No extra fields.
+ *
+ * @section example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection": "ChnWiki",
+ *   "resource": {
+ *     "keywords": "iphone4"，
+ *     "group_property": "Category",
+ *     "group_label": "手机"
+ *   }
+ * }
+ * @endcode
+ */
+void DocumentsController::set_top_group_label()
+{
+    Value& input = request()[Keys::resource];
+
+    if (!input.hasKey(Keys::keywords))
+    {
+        response().addError("Require resource[keywords] as user query.");
+        return;
+    }
+    std::string query = asString(input[Keys::keywords]);
+
+    if (!input.hasKey(Keys::group_property))
+    {
+        response().addError("Require resource[group_property] as group property name.");
+        return;
+    }
+    std::string propName = asString(input[Keys::group_property]);
+
+    if (!input.hasKey(Keys::group_label))
+    {
+        response().addError("Require resource[group_label] as group label value.");
+        return;
+    }
+    std::string propValue = asString(input[Keys::group_label]);
+
+    if (!collectionHandler_->miningSearchService_->setTopGroupLabel(
+        query, propName, propValue))
+    {
+        response().addError("Request Failed.");
+        return;
     }
 }
 
