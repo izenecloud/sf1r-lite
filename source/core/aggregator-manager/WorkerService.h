@@ -8,8 +8,10 @@
 #define WORKER_SERVICE_H_
 
 #include <query-manager/ActionItem.h>
+#include <query-manager/DistributeActionItem.h>
 #include <la-manager/AnalysisInformation.h>
 #include <common/ResultType.h>
+#include <common/DistributeResultType.h>
 
 #include <net/aggregator/JobInfo.h>
 #include <ir/id_manager/IDManager.h>
@@ -102,6 +104,8 @@ public:
      * Services (interfaces) for publication
      * @{
      */
+
+    bool getPreSearchResult(const KeywordSearchActionItem& actionItem, KeywordPreSearchResult& resultItem);
 
     bool processGetSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 

@@ -27,7 +27,7 @@
 
 using namespace izenelib::util;
 
-
+#define DISTRIBUTED_SEARCH
 
 namespace sf1r
 {

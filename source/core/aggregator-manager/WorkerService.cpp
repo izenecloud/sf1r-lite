@@ -31,7 +31,13 @@ WorkerService::WorkerService()
     analysisInfo_.tokenizerNameList_.insert("tok_unite");
 }
 
-/// public services
+/// public service interfaces
+
+bool WorkerService::getPreSearchResult(const KeywordSearchActionItem& actionItem, KeywordPreSearchResult& resultItem)
+{
+
+    return true;
+}
 
 bool WorkerService::processGetSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {

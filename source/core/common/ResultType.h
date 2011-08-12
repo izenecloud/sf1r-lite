@@ -59,6 +59,8 @@ namespace sf1r {
 
     }; // end - class ErrorInfo
 
+    typedef ErrorInfo ResultBase;
+
     class KeywordSearchResult : public ErrorInfo
     {
         public:
