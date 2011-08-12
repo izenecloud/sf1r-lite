@@ -26,29 +26,6 @@ namespace sf1r
 {
 
 //------------------------- HELPER FUNCTIONS -------------------------
-
-bool checkIntFormat( const std::string & str )
-{
-    std::size_t pos = str.find_first_not_of( "0123456789", 0 );
-    if( pos != std::string::npos )
-    {
-        /*
-        // the value is a negative number
-        if( pos == 0 && str[pos] == '-' )
-        {
-            pos = str.find_first_not_of( "0123456789", pos+1 );
-            if( pos == string::npos )
-                return true;
-            else
-                return false;
-        }
-        */
-
-        return false;
-    }
-    return true;
-}
-
 void downCase( std::string & str )
 {
     for ( string::iterator it = str.begin(); it != str.end(); it++ )
@@ -1027,6 +1004,12 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     indexmanager_config.indexStrategy_.maxSkipLevel_ = 3;
     indexmanager_config.storeStrategy_.param_ = "file";
     params.GetString("IndexStrategy/indexpolicy", indexmanager_config.indexStrategy_.indexMode_, "default");
+    std::string indexMergePolicy;
+    params.GetString("IndexStrategy/mergepolicy",indexMergePolicy, "file");
+    if(indexMergePolicy == "memory")
+        indexmanager_config.mergeStrategy_.requireIntermediateFileForMerging_ = false;
+    else
+        indexmanager_config.mergeStrategy_.requireIntermediateFileForMerging_ = true;
     indexmanager_config.mergeStrategy_.param_ = "dbt";
     params.GetString("IndexStrategy/cron", indexBundleConfig.cronIndexer_, "");
 

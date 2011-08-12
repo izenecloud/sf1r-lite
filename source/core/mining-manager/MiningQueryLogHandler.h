@@ -61,7 +61,7 @@ public:
 private:
     void cronJob_();
 
-    void processAutofill_(const boost::posix_time::ptime& nowTime);
+    void processCollectionIndependent_(const boost::posix_time::ptime& nowTime);
 
 
 

@@ -962,21 +962,6 @@ void RecommendTaskService::loadPurchaseItem_(UserItemMap& userItemMap)
     std::cout << "\rloading user num: " << userNum << std::endl;
 
     purchaseManager_->buildSimMatrix();
-
-    LOG(INFO) << "start building recommend result for " << userItemMap.numItems() << " users...";
-    userNum = 0;
-    for (UserItemIterator it = UserItemIterator(userItemMap); it != itEnd; ++it)
-    {
-        if (++userNum % 1000 == 0)
-        {
-            std::cout << "\rbuilding user num: " << userNum << std::flush;
-        }
-
-        purchaseManager_->buildUserResult(it->first);
-    }
-    std::cout << "\rbuilding user num: " << userNum << std::endl;
-    LOG(INFO) << "finish building recommend result";
-
     purchaseManager_->flush();
 }
 

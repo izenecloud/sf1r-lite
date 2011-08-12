@@ -12,9 +12,12 @@
 #include "NearbyPhraseDocumentIterator.h"
 #include "PersonalSearchDocumentIterator.h"
 #include "FilterCache.h"
+#include "BTreeTermDocIterator.h"
+
+#include <common/TermTypeDetector.h>
 
 #include <ir/index_manager/utility/BitVector.h>
-#include <ir/index_manager/utility/Ewah.h>
+#include <ir/index_manager/utility/BitMapIterator.h>
 
 #include <util/get.h>
 
@@ -175,53 +178,132 @@ void QueryBuilder::prepare_for_property_(
 )
 {
     std::map<termid_t, std::vector<TermDocFreqs*> > termDocReaders;
-#if PREFETCH_TERMID
-    std::vector<termid_t> termIds;
-    actionOperation.getQueryTermIdList(property, termIds);
-    TermReader* pTermReader
-    = pIndexReader_->getTermReader(colID);
-    if (!pTermReader)
-        return;
-//        if (pIndexReader_->isDirty())
-//        {
-//            if (pTermReader) delete pTermReader;
-//            return;
-//        }
 
-    std::sort(termIds.begin(), termIds.end());
-    for (std::vector<termid_t>::const_iterator it = termIds.begin();
-            it != termIds.end(); ++it)
+    bool isNumericFilter = false;
+    sf1r::PropertyDataType dataType = STRING_PROPERTY_TYPE;
+    vector<pair<termid_t, string> > numericTermList;
+
+    typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
+        iterator found = schemaMap_.find(property);
+    if (found != schemaMap_.end())
     {
-        Term term(property.c_str(),*it);
-        bool find = pTermReader->seek(&term);
+        dataType = found->second.getType();
+        if(found->second.isIndex() && found->second.getIsFilter()
+                        && found->second.getType() != STRING_PROPERTY_TYPE)
+             isNumericFilter = true;
 
-//            if (pIndexReader_->isDirty())
-//            {
-//                if (pTermReader) delete pTermReader;
-//                return;
-//            }
-
-        if (find)
+        if (isNumericFilter)
         {
-            TermDocFreqs* pTermDocReader = 0;
-            if (readPositions)
-                pTermDocReader = pTermReader->termPositions();
-            else
-                pTermDocReader = pTermReader->termDocFreqs();
-            termDocReaders[*it].push_back(pTermDocReader);
+            std::vector<pair<termid_t, string> > termInfoList;
+            actionOperation.getQueryTermInfoList(property, termInfoList);
+            for (std::vector<pair<termid_t, string> >::const_iterator it = termInfoList.begin();
+                                                            it != termInfoList.end(); ++it)
+            {
+                const string& term = (*it).second;
+                if ( TermTypeDetector::isTypeMatch(term, dataType) )
+                    numericTermList.push_back(*it);
+            }
+        }
+    }
+#if PREFETCH_TERMID
+
+        if(isNumericFilter)
+        {
+            boost::shared_ptr<EWAHBoolArray<uword32> > pDocIdSet;
+            boost::shared_ptr<BitVector> pBitVector;
+
+            for (std::vector<pair<termid_t, string> >::const_iterator it = numericTermList.begin();
+                        it != numericTermList.end(); ++it)
+            {
+                termid_t termID = (*it).first;
+                const string& term = (*it).second;
+                PropertyValue propertyValue;
+                switch (dataType)
+                {
+                    case UNSIGNED_INT_PROPERTY_TYPE:
+                        propertyValue = boost::lexical_cast< uint64_t >( term );
+                        break;
+                    case INT_PROPERTY_TYPE:
+                        propertyValue = boost::lexical_cast< int64_t >( term );
+                        break;
+                    case FLOAT_PROPERTY_TYPE:
+                        propertyValue = boost::lexical_cast< float >( term );
+                        break;
+                    default:
+                        break;
+                }
+
+                PropertyType value;
+                PropertyValue2IndexPropertyType converter(value);
+                boost::apply_visitor(converter, propertyValue.getVariant());
+                pDocIdSet.reset(new EWAHBoolArray<uword32>());
+                pBitVector.reset(new BitVector(pIndexReader_->numDocs() + 1));
+                indexManagerPtr_->getDocsByPropertyValue(colID, property, value, *pBitVector);
+                if (pBitVector->any())
+                {
+                    pBitVector->compressed(*pDocIdSet);
+                    TermDocFreqs* pTermDocReader = 0;
+                    vector<uint> idList;
+                    pDocIdSet->appendRowIDs(idList);
+                    pTermDocReader = new BitMapIterator(idList);
+                    termDocReaders[termID].push_back(pTermDocReader);
+                }
+            }
+        }
+        else
+        {
+            std::vector<termid_t> termIds;
+            actionOperation.getQueryTermIdList(property, termIds);
+            TermReader* pTermReader
+            = pIndexReader_->getTermReader(colID);
+            if (!pTermReader)
+                    return;
+
+            std::sort(termIds.begin(), termIds.end());
+            for (std::vector<termid_t>::const_iterator it = termIds.begin();
+                    it != termIds.end(); ++it)
+            {
+                Term term(property.c_str(),*it);
+                bool find = pTermReader->seek(&term);
+
+                if (find)
+                {
+                    TermDocFreqs* pTermDocReader = 0;
+                    if (readPositions)
+                        pTermDocReader = pTermReader->termPositions();
+                    else
+                        pTermDocReader = pTermReader->termDocFreqs();
+                    termDocReaders[*it].push_back(pTermDocReader);
+                }
+
+             }
+             delete pTermReader;
         }
 
-    }
-    delete pTermReader;
 #endif
     DocumentIterator* pIter = NULL;
     QueryTreePtr queryTree;
-    if ( actionOperation.getQueryTree(property, queryTree) )
+    if(isNumericFilter)
+    {
+        if( numericTermList.size() == 1 )
+        {
+            queryTree.reset(new QueryTree(QueryTree::BTREEKEYWORD));
+            string& term = numericTermList[0].second;
+            queryTree->keyword_ = term;
+            queryTree->keywordUString_.assign( term , izenelib::util::UString::UTF_8 );
+            idManagerPtr_->getTermIdByTermString( queryTree->keywordUString_ , queryTree->keywordId_ );
+        }
+    }
+    else
+        actionOperation.getQueryTree(property, queryTree);
+
+    if(queryTree)
         do_prepare_for_property_(
             queryTree,
             colID,
             property,
             propertyId,
+            dataType,
             readPositions,
             termIndexMapInProperty,
             pIter,
@@ -255,6 +337,7 @@ bool QueryBuilder::do_prepare_for_property_(
     collectionid_t colID,
     const std::string& property,
     unsigned int propertyId,
+    PropertyDataType propertyDataType,
     bool readPositions,
     const std::map<termid_t, unsigned>& termIndexMapInProperty,
     DocumentIteratorPointer& pDocIterator,
@@ -266,6 +349,69 @@ bool QueryBuilder::do_prepare_for_property_(
 {
     switch (queryTree->type_)
     {
+    case QueryTree::BTREEKEYWORD:
+    {
+        termid_t keywordId = queryTree->keywordId_;
+        string keyword = queryTree->keyword_;
+        BTreeTermDocIterator* pIterator = NULL;
+
+        pIterator = new BTreeTermDocIterator(
+                        keywordId,
+                        keyword,
+                        colID,
+                        pIndexReader_,
+                        property,
+                        propertyId,
+                        propertyDataType,
+                        indexManagerPtr_);
+
+#if PREFETCH_TERMID
+        std::map<termid_t, std::vector<TermDocFreqs*> >::iterator constIt
+        = termDocReaders.find(keywordId);
+        if (constIt != termDocReaders.end() && !constIt->second.empty() )
+        {
+#ifdef VERBOSE_SERACH_MANAGER
+            cout<<"have term  property "<<property<<" keyword ";
+            queryTree->keywordUString_.displayStringValue(izenelib::util::UString::UTF_8);
+            cout<<endl;
+#endif
+            pIterator->set(constIt->second.back() );
+            if (NULL == pDocIterator)
+                pDocIterator = pIterator;
+            else
+                pDocIterator->add(pIterator);
+
+            constIt->second.pop_back();
+        }
+        else
+#endif
+        {
+            if (pIterator->accept())
+            {
+#ifdef VERBOSE_SERACH_MANAGER
+                cout<<"have term  property "<<property<<" keyword ";
+                queryTree->keywordUString_.displayStringValue(izenelib::util::UString::UTF_8);
+                cout<<endl;
+#endif
+                if (NULL == pDocIterator)
+                      pDocIterator = pIterator;
+                else
+                    pDocIterator->add(pIterator);
+            }
+            else
+            {
+#ifdef VERBOSE_SERACH_MANAGER
+                cout<<"do not have term property "<<property<<" ";
+                queryTree->keywordUString_.displayStringValue(izenelib::util::UString::UTF_8);
+                cout<<endl;
+#endif
+                delete pIterator;
+                return false;
+            }
+        }
+        return true;
+        break;
+    }
     case QueryTree::KEYWORD:
     case QueryTree::RANK_KEYWORD:
     {
@@ -525,6 +671,7 @@ bool QueryBuilder::do_prepare_for_property_(
                       colID,
                       property,
                       propertyId,
+                      propertyDataType,
                       readPositions,
                       termIndexMapInProperty,
                       pIterator,
@@ -563,6 +710,7 @@ bool QueryBuilder::do_prepare_for_property_(
                        colID,
                        property,
                        propertyId,
+                       propertyDataType,
                        readPositions,
                        termIndexMapInProperty,
                        pIterator,
@@ -603,6 +751,7 @@ bool QueryBuilder::do_prepare_for_property_(
                       colID,
                       property,
                       propertyId,
+                      propertyDataType,
                       readPositions,
                       termIndexMapInProperty,
                       pIterator,
@@ -642,6 +791,7 @@ bool QueryBuilder::do_prepare_for_property_(
                       colID,
                       property,
                       propertyId,
+                      propertyDataType,
                       readPositions,
                       termIndexMapInProperty,
                       pIterator,

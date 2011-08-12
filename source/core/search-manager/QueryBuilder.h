@@ -71,6 +71,7 @@ public:
     );
 
     void reset_cache();
+
 private:
     void prepare_for_property_(
         MultiPropertyScorer* pScorer,
@@ -90,6 +91,7 @@ private:
         collectionid_t colID,
         const std::string& property,
         unsigned int propertyId,
+        PropertyDataType propertyDataType,
         bool readPositions,
         const std::map<termid_t, unsigned>& termIndexMapInProperty,
         DocumentIterator* &pDocIterator,

@@ -132,8 +132,7 @@ bool RecommendBundleActivator::init_()
     boost::filesystem::create_directory(cfPath);
     auto_ptr<ItemCFManager> itemCFManagerPtr(new ItemCFManager((cfPath / "covisit").string(), 500*1024*1024,
                                                                (cfPath / "sim").string(), 500*1024*1024,
-                                                               (cfPath / "nb.sdb").string(), 30,
-                                                               (cfPath / "rec").string(), 1000));
+                                                               (cfPath / "nb.sdb").string(), 30));
 
     auto_ptr<CoVisitManager> coVisitManagerPtr(new CoVisitManager((miningDir / "covisit").string()));
 

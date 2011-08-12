@@ -26,6 +26,7 @@ class CollectionManager
 {
 public:
     typedef boost::unordered_map<std::string, CollectionHandler*> handler_map_type;
+    typedef boost::unordered_map<std::string, CollectionHandler*>::const_iterator handler_const_iterator;
     static CollectionManager* get()
     {
         return ::izenelib::util::Singleton<CollectionManager>::get();
@@ -44,6 +45,9 @@ public:
     void deleteCollection(const std::string& collectionName);
 
     CollectionHandler* findHandler(const std::string& key) const;
+    
+    handler_const_iterator handlerBegin() const;
+    handler_const_iterator handlerEnd() const;
 
 private:
     OSGILauncher osgiLauncher_;
