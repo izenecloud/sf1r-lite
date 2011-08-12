@@ -498,16 +498,16 @@ bool IndexSearchService::buildQuery(
     PersonalSearchInfo& personalSearchInfo
 )
 {
-    CREATE_PROFILER ( buildQueryTree, "IndexSearchService", "processGetSearchResults: build query tree");
+    CREATE_PROFILER ( buildQuery, "IndexSearchService", "processGetSearchResults: build query tree");
     CREATE_PROFILER ( analyzeQuery, "IndexSearchService", "processGetSearchResults: analyze query");
 
     propertyQueryTermList.resize(0);
     resultItem.analyzedQuery_.resize(0);
 
-    START_PROFILER ( buildQueryTree );
+    START_PROFILER ( buildQuery );
     std::string errorMessage;
     bool buildSuccess = buildQueryTree(actionOperation, *bundleConfig_, resultItem.error_, personalSearchInfo);
-    STOP_PROFILER ( buildQueryTree );
+    STOP_PROFILER ( buildQuery );
 
     if (!buildSuccess)
     {
