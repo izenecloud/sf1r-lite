@@ -182,6 +182,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
     CREATE_PROFILER ( preparerank, "SearchManager", "doSearch_: prepare ranker");
     CREATE_PROFILER ( preparesort, "SearchManager", "doSearch_: prepare sort");
     CREATE_PROFILER ( computerankscore, "SearchManager", "doSearch_: overall time for scoring a doc");
+    CREATE_PROFILER ( computecustomrankscore, "SearchManager", "doSearch_: overall time for scoring customized score for a doc");
 
     unsigned int collectionId = 1;
     std::vector<std::string> indexPropertyList( actionOperation.actionItem_.searchPropertyList_ );
@@ -490,7 +491,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             {
                 scoreItem.custom_score = customRanker->evaluate(scoreItem.docId);
             }
-            START_PROFILER ( computecustomrankscore )
+            STOP_PROFILER ( computecustomrankscore )
 
             scoreItemQueue->insert(scoreItem);
             START_PROFILER ( dociterating )
