@@ -234,6 +234,7 @@ bool MiningManager::open()
             dupd_path_ = prefix_path + "/dupd/";
             FSUtil::createDir(dupd_path_);
             dupManager_.reset(new DupDType(dupd_path_, document_manager_, mining_schema_.dupd_properties, c_analyzer_));
+            dupManager_->SetIDManager(idManager_);
             if (!dupManager_->Open())
             {
                 std::cerr<<"open DD failed"<<std::endl;

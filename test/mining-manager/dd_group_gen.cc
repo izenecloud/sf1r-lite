@@ -2,17 +2,19 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/filesystem.hpp>
 using namespace sf1r;
 int main(int ac, char** av)
 {
     std::string input(av[1]);
     std::string output(av[2]);
+    boost::filesystem::remove_all(output);
     GroupTable group(output);
     group.Load();
     std::ifstream ifs(input.c_str());
     std::string line;
     std::vector<uint32_t> in_group;
-    izenelib::am::rde_hash<uint32_t, bool> apps;
+    izenelib::am::rde_hash<uint32_t, std::string> apps;
     while ( getline ( ifs,line ) )
     {
         boost::algorithm::trim(line);
@@ -38,7 +40,7 @@ int main(int ac, char** av)
             {
                 std::cout<<"!!!! docid "<<docid<<" duplicated in file."<<std::endl;
             }
-            apps.insert(docid, 1);
+            apps.insert(docid, line);
             in_group.push_back(docid);
         }
         
@@ -54,7 +56,7 @@ int main(int ac, char** av)
     }
     group.Flush();
     
-    apps.clear();
+//     apps.clear();
     const std::vector<std::vector<uint32_t> >& group_info = group.GetGroupInfo();
     std::cout<<"[TOTAL GROUP SIZE] : "<<group_info.size()<<std::endl;
     for(uint32_t group_id = 0;group_id<group_info.size();group_id++)
@@ -63,12 +65,18 @@ int main(int ac, char** av)
         for(uint32_t i=0;i<in_group.size();i++)
         {
             uint32_t docid = in_group[i];
-            if( apps.find(docid)!=NULL )
+            std::string* line = apps.find(docid);
+            if( line!=NULL )
             {
-                std::cout<<"???? docid "<<docid<<" duplicated in file."<<std::endl;
+                std::cout<<*line<<std::endl;
+                
             }
-            apps.insert(docid, 1);
-            std::cout<<docid<<std::endl;
+            else
+            {
+                std::cout<<"???? docid "<<docid<<" error."<<std::endl;
+            }
+            
+            
         }
         std::cout<<std::endl<<std::endl;
     }
