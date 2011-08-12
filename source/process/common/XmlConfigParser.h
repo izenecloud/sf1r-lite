@@ -17,8 +17,6 @@
 #include <configuration-manager/FirewallConfig.h>
 #include <configuration-manager/CollectionParameterConfig.h>
 #include <mining-manager/faceted-submanager/ontology_rep_item.h>
-#include <search-manager/QueryBuilder.h>
-#include <core/common/TermTypeDetector.h>
 
 #include <bundles/querylog/QueryLogBundleConfiguration.h>
 
@@ -41,6 +39,9 @@ namespace sf1r
 namespace ticpp = izenelib::util::ticpp;
 
 // ------------------------- HELPER FUNCTIONS --------------------------
+
+/// @brief  Checks if a given string can be converted to integer form
+bool checkIntFormat( const std::string & str );
 
 /// @brief  Converts the given string to lower-case letters (only for ascii)
 void downCase( std::string & str );
@@ -104,14 +105,6 @@ protected:
             bool throwIfNoAttribute = true ) const;
 
 
-    /// @brief  Gets a float type attribute. User can decide if the attribute is essential
-    /// with the attribute throwIfNoAttribute
-    /// @param ele The element that holds the attribute
-    /// @param name The name of the attribute
-    /// @param val The return container of the attribute
-    /// @param torhowIfNoAttribute  Throws exception if attribute does not exist.
-    /// @return Returns true  if the attribute is found and has a value.
-    //               false if the attribute is not found or has no value.
     inline bool getAttribute_FloatType(
                 const ticpp::Element * ele,
                 const std::string & name,
@@ -123,21 +116,12 @@ protected:
             if( !getAttribute( ele, name, temp, throwIfNoAttribute ) )
                 return false;
 
-            if ( TermTypeDetector::checkFloatFormat(temp) )
-            {
-                stringstream ss;
-                ss << temp;
-                ss >> val;
-            }
-            else
-            {
-                 throw_TypeMismatch( ele, name, temp );
-            }
+            stringstream ss;
+            ss << temp;
+            ss >> val;
 
             return true;
         }
-
-
     /// @brief  Gets a integer type attribute. User can decide if the attribute is essential 
     /// with the attribute throwIfNoAttribute
     /// @param ele The element that holds the attribute
@@ -158,7 +142,7 @@ protected:
         if( !getAttribute( ele, name, temp, throwIfNoAttribute ) )
             return false;
 
-        if( TermTypeDetector::checkUnsignedIntFormat(temp) )
+        if( checkIntFormat(temp) )
         {
             stringstream ss;
             ss << temp;

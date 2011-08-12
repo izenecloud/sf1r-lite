@@ -28,12 +28,11 @@ namespace sf1r {
         unsigned int pos = 0;
         queryTermIdSet_.clear();
         queryTermIdList_.clear();
-        queryTermInfoList_.clear();
         propertyTermInfo_.clear();
         if ( !hasRankTerm )
-            recursivePreProcess(queryTermIdSet_, queryTermIdList_, queryTermInfoList_, propertyTermInfo_, pos);
+            recursivePreProcess(queryTermIdSet_, queryTermIdList_, propertyTermInfo_, pos);
         else
-            recursivePreProcessRankTerm(queryTermIdSet_, queryTermIdList_, queryTermInfoList_, propertyTermInfo_, pos);
+            recursivePreProcessRankTerm(queryTermIdSet_, queryTermIdList_, propertyTermInfo_, pos);
     } // end - postProcess()
 
     void QueryTree::getQueryTermIdSet(std::set<termid_t>& queryTermIdSet) const
@@ -51,10 +50,6 @@ namespace sf1r {
         leafTermIdList = queryTermIdList_;
     } // end - getLeafTermIdList()
 
-    void QueryTree::getQueryTermInfoList(std::vector<pair<termid_t, std::string> >& queryTermInfoList) const
-    {
-        queryTermInfoList = queryTermInfoList_;
-    }// end - getQueryTermInfoList()
 
     void QueryTree::print(std::ostream& out, int tabLevel) const
     {
@@ -121,7 +116,6 @@ namespace sf1r {
     void QueryTree::recursivePreProcess(
             std::set<termid_t>& queryTermIdSet,
             std::vector<termid_t>& queryTermIdList,
-            std::vector<pair<termid_t, std::string> >& queryTermInfoList,
             PropertyTermInfo& propertyTermInfo,
             unsigned int& pos)
     {
@@ -129,10 +123,6 @@ namespace sf1r {
         {
             queryTermIdSet.insert( keywordId_ );
             queryTermIdList.push_back( keywordId_ );
-            pair<termid_t, std::string> idTermPair;
-            idTermPair.first = keywordId_;
-            idTermPair.second = keyword_;
-            queryTermInfoList.push_back( idTermPair );
             propertyTermInfo.dealWithTerm( keywordUString_ , keywordId_ , pos++);
         }
         else if( type_ == QueryTree::AND_PERSONAL || type_ == QueryTree::OR_PERSONAL )
@@ -143,14 +133,13 @@ namespace sf1r {
         {
             for(QTIter childIter = children_.begin();
                     childIter != children_.end(); childIter++)
-                (*childIter)->recursivePreProcess( queryTermIdSet , queryTermIdList, queryTermInfoList, propertyTermInfo , pos );
+                (*childIter)->recursivePreProcess( queryTermIdSet , queryTermIdList, propertyTermInfo , pos );
         } // end - else if
     } // end - recursivePreProcess()
 
     void QueryTree::recursivePreProcessRankTerm(
             std::set<termid_t>& queryTermIdSet,
             std::vector<termid_t>& queryTermIdList,
-            std::vector<pair<termid_t, std::string> >& queryTermInfoList,
             PropertyTermInfo& propertyTermInfo,
             unsigned int& pos)
     {
@@ -158,10 +147,6 @@ namespace sf1r {
         {
             queryTermIdSet.insert( keywordId_ );
             queryTermIdList.push_back( keywordId_ );
-            pair<termid_t, std::string> idTermPair;
-            idTermPair.first = keywordId_;
-            idTermPair.second = keyword_;
-            queryTermInfoList.push_back( idTermPair );
             propertyTermInfo.dealWithTerm( keywordUString_ , keywordId_ , pos++);
         }
         else if( type_ == QueryTree::AND_PERSONAL || type_ == QueryTree::OR_PERSONAL )
@@ -172,7 +157,7 @@ namespace sf1r {
         {
             for(QTIter childIter = children_.begin();
                     childIter != children_.end(); childIter++)
-                (*childIter)->recursivePreProcessRankTerm( queryTermIdSet , queryTermIdList, queryTermInfoList, propertyTermInfo , pos );
+                (*childIter)->recursivePreProcessRankTerm( queryTermIdSet , queryTermIdList, propertyTermInfo , pos );
         }
     } // end - recursivePreProcessRankTerm()
 

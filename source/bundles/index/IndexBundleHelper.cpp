@@ -66,16 +66,6 @@ bool buildQueryTree(SearchKeywordOperation&action, IndexBundleConfiguration& bun
             AnalysisInfo analysisInfo;
             std::string analysis, language;
             bundleConfig.getAnalysisInfo( *propertyIter, analysisInfo, analysis, language );
-            PropertyConfig propertyConfig;
-            propertyConfig.propertyName_ = *propertyIter;
-            IndexBundleSchema::const_iterator it = bundleConfig.schema_.find(propertyConfig);
-            if (it != bundleConfig.schema_.end() && (*it).isIndex() && (*it).getIsFilter())
-            {
-                    analysisInfo.analyzerId_ = "la_sia";
-                    analysisInfo.tokenizerNameList_.insert("tok_divide");
-                    analysisInfo.tokenizerNameList_.insert("tok_unite");
-             }
-
 
             bool isUnigramSearchMode = action.isUnigramSearchMode_;
             if ((*propertyIter).size() > 8 && (*propertyIter).rfind("_unigram") == ((*propertyIter).size()-8))

@@ -55,11 +55,6 @@ namespace sf1r {
             bool getQueryTermIdList(const std::string& propertyName, std::vector<termid_t>& queryTermIdList) const;
 
             ///
-            /// @brief get query term list
-            ///
-            bool getQueryTermInfoList(const std::string& propertyName, std::vector<pair<termid_t, std::string> >& queryTermInfoList) const;
-
-            ///
             /// @brief get property term info map < property name - PropertyTermInfo class >
             ///
             const std::map<std::string,PropertyTermInfo>& getPropertyTermInfoMap() const;
