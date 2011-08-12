@@ -88,6 +88,10 @@ public:
 // 	        const std::vector<std::vector<unsigned int> >& documentList);
 
 
+    void SetIDManager(const boost::shared_ptr<izenelib::ir::idmanager::IDManager>& id_manager)
+    {
+        id_manager_ = id_manager;
+    }
 
 
 private:
@@ -123,6 +127,7 @@ private:
 
     std::string container_;
     boost::shared_ptr<DocumentManager> document_manager_;
+    boost::shared_ptr<izenelib::ir::idmanager::IDManager> id_manager_;
     izenelib::am::rde_hash<std::string, bool> dd_properties_;
     idmlib::util::IDMAnalyzer* analyzer_;
     FileObjectType* file_info_;
