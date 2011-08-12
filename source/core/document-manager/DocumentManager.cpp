@@ -14,6 +14,7 @@
 #include <configuration-manager/ConfigurationTool.h>
 #include <util/profiler/ProfilerGroup.h>
 #include <license-manager/LicenseManager.h>
+#include <la/analyzer/MultiLanguageAnalyzer.h>
 
 #include <fstream>
 #include <boost/archive/xml_oarchive.hpp>
@@ -59,6 +60,7 @@ DocumentManager::DocumentManager(
 
     langIdAnalyzer_ = langIdFactory->createAnalyzer();
     langIdKnowledge_ = langIdFactory->createKnowledge();
+    la::MultiLanguageAnalyzer::langIdAnalyzer_ = langIdAnalyzer_;
 }
 
 DocumentManager::~DocumentManager()

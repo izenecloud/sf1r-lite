@@ -224,7 +224,7 @@ bool RecommendManager::recommend_bab_(
     }
 
     idmlib::recommender::RecommendItemVec results;
-    itemCFManager_->getRecByItem(maxRecNum, inputItemVec, results, &filter);
+    itemCFManager_->recommend(maxRecNum, inputItemVec, results, &filter);
 
     recItemVec.insert(recItemVec.end(), results.begin(), results.end());
 
@@ -555,7 +555,7 @@ void RecommendManager::recByItem_(
 
     if (notRecInputSet.empty())
     {
-        itemCFManager_->getRecByItem(maxRecNum, inputItemVec, results, &filter);
+        itemCFManager_->recommend(maxRecNum, inputItemVec, results, &filter);
     }
     else
     {
@@ -570,7 +570,7 @@ void RecommendManager::recByItem_(
             }
         }
 
-        itemCFManager_->getRecByItem(maxRecNum, newInputItemVec, results, &filter);
+        itemCFManager_->recommend(maxRecNum, newInputItemVec, results, &filter);
     }
 
     recItemVec.insert(recItemVec.end(), results.begin(), results.end());
