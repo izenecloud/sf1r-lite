@@ -55,7 +55,7 @@ namespace sf1r {
         if ( iter == queryTreeMap_.end() ) return false;
         iter->second->getQueryTermIdSet(queryTermIdSet);
         return true;
-    } // end - getQueryTermIdSetMap()
+    } // end - getQueryTermIdSet()
 
     bool SearchKeywordOperation::getQueryTermIdList(const std::string& propertyName, std::vector<termid_t>& queryTermIdList) const
     {
@@ -63,7 +63,15 @@ namespace sf1r {
         if ( iter == queryTreeMap_.end() ) return false;
         iter->second->getLeafTermIdList(queryTermIdList);
         return true;
-    } // end - getQueryTermIdSetMap()
+    } // end - getQueryTermIdList()
+
+    bool SearchKeywordOperation::getQueryTermInfoList(const std::string& propertyName, std::vector<pair<termid_t, std::string> >& queryTermInfoList) const
+    {
+         boost::unordered_map<std::string,QueryTreePtr>::const_iterator iter = queryTreeMap_.find( propertyName );
+         if ( iter == queryTreeMap_.end() ) return false;
+         iter->second->getQueryTermInfoList(queryTermInfoList);
+         return true;
+    } // end - getQueryTermList()
 
     const std::map<std::string,PropertyTermInfo>& SearchKeywordOperation::getPropertyTermInfoMap() const
     {

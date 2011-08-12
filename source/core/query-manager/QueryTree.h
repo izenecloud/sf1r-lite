@@ -26,7 +26,7 @@ namespace sf1r {
             ///
             /// @brief  a variable which indicates type of current query node.
             ///
-            enum QueryType { KEYWORD, RANK_KEYWORD, UNIGRAM_WILDCARD, TRIE_WILDCARD, AND, OR, NOT, EXACT, ORDER, NEARBY, ASTERISK, QUESTION_MARK, AND_PERSONAL, OR_PERSONAL, UNKNOWN } type_;
+            enum QueryType { KEYWORD, RANK_KEYWORD, UNIGRAM_WILDCARD, TRIE_WILDCARD, AND, OR, NOT, EXACT, ORDER, NEARBY, ASTERISK, QUESTION_MARK, AND_PERSONAL, OR_PERSONAL, UNKNOWN, BTREEKEYWORD } type_;
 
             ///
             /// @brief keyword string of current query node.
@@ -64,6 +64,11 @@ namespace sf1r {
             std::vector<termid_t> queryTermIdList_;
 
             ///
+            /// @brief term list of current tree node.
+            ///
+            std::vector<pair<termid_t, std::string> > queryTermInfoList_;
+
+            ///
             /// @brief property term information of current node
             ///
             PropertyTermInfo propertyTermInfo_;
@@ -99,6 +104,11 @@ namespace sf1r {
             void getLeafTermIdList(std::vector<termid_t>& leafTermIdList) const;
 
             ///
+            /// @brief gets term info list of leaves in the query.
+            ///
+            void getQueryTermInfoList(std::vector<pair<termid_t, std::string> >& queryTermInfoList) const;
+
+            ///
             /// @brief display content of current tree node from root to leaf.
             /// @param[out] ostream where content of tree is displayed.
             /// @param[tabLevel] This parameter indicates how many tabs are used before displaying current node.
@@ -113,12 +123,14 @@ namespace sf1r {
             void recursivePreProcess(
                     std::set<termid_t>& queryTermIdSet,
                     std::vector<termid_t>& queryTermIdList,
+                    std::vector<pair<termid_t, std::string> >& queryTermInfoList,
                     PropertyTermInfo& propertyTermInfo,
                     unsigned int& pos);
 
             void recursivePreProcessRankTerm(
                     std::set<termid_t>& queryTermIdSet,
                     std::vector<termid_t>& queryTermIdList,
+                    std::vector<pair<termid_t, std::string> >& queryTermInfoList,
                     PropertyTermInfo& propertyTermInfo,
                     unsigned int& pos);
 
