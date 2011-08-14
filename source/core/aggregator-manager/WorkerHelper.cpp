@@ -40,7 +40,7 @@ bool buildQuery(
     SearchKeywordOperation& actionOperation,
     IndexBundleConfiguration& bundleConfig,
     std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList,
-    KeywordSearchResult& resultItem,
+    KeywordRealSearchResult& resultItem,
     PersonalSearchInfo& personalSearchInfo
 )
 {

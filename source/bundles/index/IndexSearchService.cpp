@@ -27,7 +27,6 @@
 
 using namespace izenelib::util;
 
-#define DISTRIBUTED_SEARCH
 
 namespace sf1r
 {
@@ -74,10 +73,12 @@ bool IndexSearchService::getSearchResult(
 
     // get and merge mutliple keyword search result
     std::vector<workerid_t> workeridList;
+    KeywordRealSearchResult ksResultItem;
     ///getWorkersByCollectionName(actionItem.collectionName_, workeridList);
-    aggregatorManager_->sendRequest<KeywordSearchActionItem, KeywordSearchResult>(
-            actionItem.collectionName_, "getSearchResult", actionItem, resultItem, workeridList);
+    aggregatorManager_->sendRequest<KeywordSearchActionItem, KeywordRealSearchResult>(
+            actionItem.collectionName_, "getSearchResult", actionItem, ksResultItem, workeridList);
 
+    copySearchResult(resultItem, ksResultItem);
 
     DLOG(INFO) << "Total count: " << resultItem.totalCount_ << endl;
     DLOG(INFO) << "Top K count: " << resultItem.topKDocs_.size() << endl;

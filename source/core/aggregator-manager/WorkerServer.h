@@ -88,7 +88,7 @@ public:
 
     bool getSearchResult(JobRequest& req)
     {
-        WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, KeywordSearchResult, workerService_, processGetSearchResult)
+        WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, KeywordRealSearchResult, workerService_, processGetSearchResult)
         return true;
     }
 

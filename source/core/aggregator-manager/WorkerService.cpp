@@ -35,22 +35,23 @@ WorkerService::WorkerService()
 
 bool WorkerService::getPreSearchResult(const KeywordSearchActionItem& actionItem, KeywordPreSearchResult& resultItem)
 {
+	KeywordRealSearchResult fakeResultItem;
+	fakeResultItem.preSearchResult_.preResultType_ = KeywordPreSearchResult::RESULT_TYPE_FECTH;
 
+    getSearchResult(const_cast<KeywordSearchActionItem&>(actionItem), fakeResultItem);
+
+	resultItem = fakeResultItem.preSearchResult_;
     return true;
 }
 
-bool WorkerService::processGetSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+bool WorkerService::processGetSearchResult(const KeywordSearchActionItem& actionItem, KeywordRealSearchResult& resultItem)
 {
     cout << "#[WorkerService::processGetSearchResult] " << actionItem.collectionName_ << endl;
 
-    std::vector<std::vector<izenelib::util::UString> > propertyQueryTermList;
-
-    if (! getSearchResult(const_cast<KeywordSearchActionItem&>(actionItem), resultItem, propertyQueryTermList))
+    if (! getSearchResult(const_cast<KeywordSearchActionItem&>(actionItem), resultItem))
     {
         return false;
     }
-
-    resultItem.propertyQueryTermList_ = propertyQueryTermList;
 
     return true;
 }
@@ -59,7 +60,7 @@ bool WorkerService::processGetSummaryResult(const KeywordSearchActionItem& actio
 {
     cout << "#[WorkerService::processGetSummaryResult] " << actionItem.collectionName_ << endl;
 
-    if (!getSummaryMiningResult(const_cast<KeywordSearchActionItem&>(actionItem), resultItem, resultItem.propertyQueryTermList_))
+    if (!getSummaryMiningResult(const_cast<KeywordSearchActionItem&>(actionItem), resultItem))
     {
         return false;
     }
@@ -158,8 +159,7 @@ bool WorkerService::clickGroupLabel(const clickGroupLabelActionItem& actionItem,
 
 bool WorkerService::getSearchResult(
         KeywordSearchActionItem& actionItem,
-        KeywordSearchResult& resultItem,
-        std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList)
+        KeywordRealSearchResult& resultItem)
 {
     CREATE_PROFILER ( searchIndex, "IndexSearchService", "processGetSearchResults: search index");
 
@@ -219,7 +219,7 @@ bool WorkerService::getSearchResult(
     }
 
     //std::vector<std::vector<izenelib::util::UString> > propertyQueryTermList;
-    if(!buildQuery(actionOperation, *bundleConfig_, propertyQueryTermList, resultItem, personalSearchInfo))
+    if(!buildQuery(actionOperation, *bundleConfig_, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
     {
         return true;
     }
@@ -240,7 +240,8 @@ bool WorkerService::getSearchResult(
                 resultItem.groupRep_,
                 resultItem.attrRep_,
                 TOP_K_NUM,
-                startOffset
+                startOffset,
+                resultItem.preSearchResult_
                 ))
     {
         std::string newQuery;
@@ -250,8 +251,8 @@ bool WorkerService::getSearchResult(
         assembleDisjunction(keywords, newQuery);
 
         actionOperation.actionItem_.env_.queryString_ = newQuery;
-        propertyQueryTermList.clear();
-        if(!buildQuery(actionOperation, *bundleConfig_, propertyQueryTermList, resultItem, personalSearchInfo))
+        resultItem.propertyQueryTermList_.clear();
+        if(!buildQuery(actionOperation, *bundleConfig_, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
         {
             return true;
         }
@@ -265,7 +266,8 @@ bool WorkerService::getSearchResult(
                                     resultItem.groupRep_,
                                     resultItem.attrRep_,
                                     TOP_K_NUM,
-                                    startOffset
+                                    startOffset,
+                                    resultItem.preSearchResult_
                                     ))
         {
             return true;
@@ -305,8 +307,7 @@ bool WorkerService::getSearchResult(
 
 bool WorkerService::getSummaryMiningResult(
         KeywordSearchActionItem& actionItem,
-        KeywordSearchResult& resultItem,
-        std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList)
+        KeywordSearchResult& resultItem)
 {
     CREATE_PROFILER ( getSummary, "IndexSearchService", "processGetSearchResults: get raw text, snippets, summarization");
     START_PROFILER ( getSummary );
@@ -324,7 +325,7 @@ bool WorkerService::getSummaryMiningResult(
         }
         resultItem.count_ = docsInPage.size();
 
-        getResultItem( actionItem, docsInPage, propertyQueryTermList, resultItem);
+        getResultItem( actionItem, docsInPage, resultItem.propertyQueryTermList_, resultItem);
     }
 
     STOP_PROFILER ( getSummary );
@@ -483,7 +484,7 @@ bool  WorkerService::getResultItem(ActionItemT& actionItem, const std::vector<sf
 
 bool WorkerService::removeDuplicateDocs(
     KeywordSearchActionItem& actionItem,
-    KeywordSearchResult& resultItem
+    KeywordRealSearchResult& resultItem
 )
 {
     // Remove duplicated docs from the result if the option is on.

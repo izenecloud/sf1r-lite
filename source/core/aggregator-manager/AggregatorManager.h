@@ -54,13 +54,17 @@ public:
      * @{
      */
 
-    void join_impl(const std::string& func, KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
+    void join_impl(const std::string& func,KeywordRealSearchResult& result, const std::vector<std::pair<workerid_t, KeywordRealSearchResult> >& resultList)
     {
         if (func == "getSearchResult")
         {
         	aggregateSearchResult(result, resultList);
         }
-        else if (func == "getSummaryResult")
+    }
+
+    void join_impl(const std::string& func, KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
+    {
+    	if (func == "getSummaryResult")
         {
         	aggregateSummaryResult(result, resultList);
         }
@@ -85,7 +89,7 @@ public:
     /** @}*/
 
 public:
-    void aggregateSearchResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
+    void aggregateSearchResult(KeywordRealSearchResult& result, const std::vector<std::pair<workerid_t, KeywordRealSearchResult> >& resultList);
 
     void aggregateSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
 

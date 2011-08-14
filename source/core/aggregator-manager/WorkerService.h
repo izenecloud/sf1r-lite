@@ -47,14 +47,38 @@ public:
     bool call(
             const std::string& func,
             const KeywordSearchActionItem& request,
-            KeywordSearchResult& result,
+            KeywordPreSearchResult& result,
+            std::string& error)
+    {
+        if (func == "getPreSearchResult")
+        {
+            return getPreSearchResult(request, result);
+        }
+
+        return false;
+    }
+
+    bool call(
+            const std::string& func,
+            const KeywordSearchActionItem& request,
+            KeywordRealSearchResult& result,
             std::string& error)
     {
         if (func == "getSearchResult")
         {
             return processGetSearchResult(request, result);
         }
-        else if (func == "getSummaryResult")
+
+        return false;
+    }
+
+    bool call(
+            const std::string& func,
+            const KeywordSearchActionItem& request,
+            KeywordSearchResult& result,
+            std::string& error)
+    {
+        if (func == "getSummaryResult")
         {
             return processGetSummaryResult(request, result);
         }
@@ -107,7 +131,7 @@ public:
 
     bool getPreSearchResult(const KeywordSearchActionItem& actionItem, KeywordPreSearchResult& resultItem);
 
-    bool processGetSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
+    bool processGetSearchResult(const KeywordSearchActionItem& actionItem, KeywordRealSearchResult& resultItem);
 
     bool processGetSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
@@ -120,13 +144,11 @@ public:
 private:
     bool getSearchResult(
             KeywordSearchActionItem& actionItem,
-            KeywordSearchResult& resultItem,
-            std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList);
+            KeywordRealSearchResult& resultItem);
 
     bool getSummaryMiningResult(
             KeywordSearchActionItem& actionItem,
-            KeywordSearchResult& resultItem,
-            std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList);
+            KeywordSearchResult& resultItem);
 
     void analyze_(const std::string& qstr, std::vector<izenelib::util::UString>& results);
 
@@ -136,7 +158,7 @@ private:
 
     bool removeDuplicateDocs(
             KeywordSearchActionItem& actionItem,
-            KeywordSearchResult& resultItem);
+            KeywordRealSearchResult& resultItem);
 
 
 private:

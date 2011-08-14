@@ -9,7 +9,7 @@ namespace sf1r
 
 extern int TOP_K_NUM;
 
-void AggregatorManager::aggregateSearchResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
+void AggregatorManager::aggregateSearchResult(KeywordRealSearchResult& result, const std::vector<std::pair<workerid_t, KeywordRealSearchResult> >& resultList)
 {
     cout << "#[AggregatorManager::aggregateSearchResult] " << resultList.size() << endl;
 
@@ -31,7 +31,7 @@ void AggregatorManager::aggregateSearchResult(KeywordSearchResult& result, const
 
     for (size_t i = 0; i < workerNum; i++)
     {
-        const KeywordSearchResult& wResult = resultList[i].second;
+        const KeywordRealSearchResult& wResult = resultList[i].second;
         //result.totalCount_ += ((wResult.totalCount_ > TOP_K_NUM) ? TOP_K_NUM : wResult.totalCount_);
         result.totalCount_ += wResult.totalCount_;
         overallResultCount += wResult.topKDocs_.size();
@@ -84,7 +84,7 @@ void AggregatorManager::aggregateSearchResult(KeywordSearchResult& result, const
 
         // get a result
         const workerid_t& workerid = resultList[maxi].first;
-        const KeywordSearchResult& wResult = resultList[maxi].second;
+        const KeywordRealSearchResult& wResult = resultList[maxi].second;
 
         result.topKDocs_[cnt] = wResult.topKDocs_[iter[maxi]];
         result.topKWorkerIds_[cnt] = workerid;
