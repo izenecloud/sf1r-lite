@@ -7,11 +7,11 @@
 namespace sf1r
 {
 
-//int TOP_K_NUM = 1000;
+extern int TOP_K_NUM;
 
-void AggregatorManager::mergeSearchResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
+void AggregatorManager::aggregateSearchResult(KeywordRealSearchResult& result, const std::vector<std::pair<workerid_t, KeywordRealSearchResult> >& resultList)
 {
-    cout << "#[AggregatorManager::mergeSearchResult] " << resultList.size() << endl;
+    cout << "#[AggregatorManager::aggregateSearchResult] " << resultList.size() << endl;
 
     size_t workerNum = resultList.size();
 
@@ -23,30 +23,33 @@ void AggregatorManager::mergeSearchResult(KeywordSearchResult& result, const std
         return;
     }
 
-    cout << "resultPage(original) start: " << result.start_ << ", count: " << result.count_ << endl;
+    //cout << "resultPage(request)    start: " << result.start_ << ", count: " << result.count_ << endl;
 
     // get basic info
-    size_t overallTotalCount = 0;
+    result.totalCount_ = 0;
     size_t overallResultCount = 0;
 
     for (size_t i = 0; i < workerNum; i++)
     {
-        const KeywordSearchResult& wResult = resultList[i].second;
-        overallTotalCount += wResult.totalCount_;
+        const KeywordRealSearchResult& wResult = resultList[i].second;
+        //result.totalCount_ += ((wResult.totalCount_ > TOP_K_NUM) ? TOP_K_NUM : wResult.totalCount_);
+        result.totalCount_ += wResult.totalCount_;
         overallResultCount += wResult.topKDocs_.size();
     }
-    cout << "overallTotalCount: " << overallTotalCount << ",  overallResultCount: " << overallResultCount<<endl;
+    cout << "result.totalCount_: " << result.totalCount_ << ",  overallResultCount: " << overallResultCount<<endl;
 
     // get page count info
-    size_t resultCount = result.start_ + result.count_; // xxx
-    if (result.start_ > overallResultCount)
+    if (result.start_ >= overallResultCount)
     {
-        result.start_ = overallResultCount;
+        // page offset over flow
+        return;
     }
-    if (resultCount > overallResultCount)
+    if (result.start_ + result.count_ > overallResultCount)
     {
         result.count_ = overallResultCount - result.start_;
     }
+    size_t resultCount = overallResultCount < size_t(TOP_K_NUM) ? overallResultCount : TOP_K_NUM;
+
     cout << "resultPage      start: " << result.start_ << ", count: " << result.count_ << endl;
 
     result.topKDocs_.resize(resultCount);
@@ -81,7 +84,7 @@ void AggregatorManager::mergeSearchResult(KeywordSearchResult& result, const std
 
         // get a result
         const workerid_t& workerid = resultList[maxi].first;
-        const KeywordSearchResult& wResult = resultList[maxi].second;
+        const KeywordRealSearchResult& wResult = resultList[maxi].second;
 
         result.topKDocs_[cnt] = wResult.topKDocs_[iter[maxi]];
         result.topKWorkerIds_[cnt] = workerid;
@@ -97,9 +100,9 @@ void AggregatorManager::mergeSearchResult(KeywordSearchResult& result, const std
 
 }
 
-void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
+void AggregatorManager::aggregateSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
 {
-    cout << "#[AggregatorManager::mergeSummaryResult] " << resultList.size() << endl;
+    cout << "#[AggregatorManager::aggregateSummaryResult] " << resultList.size() << endl;
 
     size_t workerNum = resultList.size();
 
@@ -112,22 +115,69 @@ void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const st
     }
 }
 
+void AggregatorManager::aggregateDocumentsResult(RawTextResultFromSIA& result, const std::vector<std::pair<workerid_t, RawTextResultFromSIA> >& resultList)
+{
+    cout << "#[AggregatorManager::aggregateDocumentsResult] " << resultList.size() << endl;
+
+    size_t workerNum = resultList.size();
+
+    // only one result
+    if (workerNum == 1)
+    {
+        result = resultList[0].second;
+        return;
+    }
+
+    result.idList_.clear();
+
+    for (size_t w = 0; w < workerNum; w++)
+    {
+        //workerid_t workerid = resultList[w].first;
+        const RawTextResultFromSIA& wResult = resultList[w].second;
+
+        for (size_t i = 0; i < wResult.idList_.size(); i++)
+        {
+            if (result.idList_.empty())
+            {
+                size_t displayPropertySize = wResult.fullTextOfDocumentInPage_.size();
+                result.fullTextOfDocumentInPage_.resize(displayPropertySize);
+                result.snippetTextOfDocumentInPage_.resize(displayPropertySize);
+                result.rawTextOfSummaryInPage_.resize(wResult.rawTextOfSummaryInPage_.size());
+            }
+
+            result.idList_.push_back(wResult.idList_[i]);
+
+            for (size_t p = 0; p < wResult.fullTextOfDocumentInPage_.size(); p++)
+            {
+                result.fullTextOfDocumentInPage_[p].push_back(wResult.fullTextOfDocumentInPage_[p][i]);
+                result.snippetTextOfDocumentInPage_[p].push_back(wResult.snippetTextOfDocumentInPage_[p][i]);
+            }
+
+            for (size_t s = 0; s <wResult.rawTextOfSummaryInPage_.size(); s++)
+            {
+                result.snippetTextOfDocumentInPage_[s].push_back(wResult.snippetTextOfDocumentInPage_[s][i]);
+            }
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 void AggregatorManager::splitResultByWorkerid(const KeywordSearchResult& result, std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >& resultMap)
 {
     const std::vector<uint32_t>& topKWorkerIds = result.topKWorkerIds_;
 
     // split docs of current page by worker
     boost::shared_ptr<KeywordSearchResult> subResult;
-    for (size_t i = result.start_; i < topKWorkerIds.size(); i ++)
+    for (size_t i = 0; i < topKWorkerIds.size(); i ++)
     {
-        if (i >= result.start_ + result.count_)
-            break;
-
         workerid_t curWorkerid = topKWorkerIds[i];
         if (resultMap.find(curWorkerid) == resultMap.end())
         {
             subResult.reset(new KeywordSearchResult());
             // xxx, here just copy info needed for getting summary, mining result.
+            subResult->start_ = size_t(-1);
+            subResult->count_ = 0;
             subResult->propertyQueryTermList_ = result.propertyQueryTermList_;
             resultMap.insert(std::make_pair(curWorkerid, subResult));
         }
@@ -138,11 +188,63 @@ void AggregatorManager::splitResultByWorkerid(const KeywordSearchResult& result,
 
         subResult->topKDocs_.push_back(result.topKDocs_[i]);
         subResult->topKWorkerIds_.push_back(curWorkerid);
-        subResult->topKPostionList_.push_back(i);
+
+        if (i >= result.start_ && i < result.start_+result.count_)
+        {
+            subResult->topKPostionList_.push_back(i);
+            if (subResult->start_ == size_t(-1))
+            {
+                subResult->start_ = subResult->topKDocs_.size() - 1;
+            }
+            subResult->count_ += 1;
+        }
     }
 }
 
-////////////////////////////
+std::pair<bool, workerid_t> AggregatorManager::splitGetDocsActionItemByWorkerid(
+        const GetDocumentsByIdsActionItem& actionItem,
+        std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >& actionItemMap)
+{
+    cout << "#[AggregatorManager::splitGetDocsActionItemByWorkerid] " <<endl;
+
+    std::vector<sf1r::docid_t> idList;
+    std::vector<sf1r::workerid_t> workeridList;
+    std::set<sf1r::workerid_t> ret =
+            const_cast<GetDocumentsByIdsActionItem&>(actionItem).getDocWorkerIdLists(idList, workeridList);
+
+    if (ret.size() == 0)
+    {
+        return std::pair<bool, workerid_t>(false, workerid_t(-1));
+    }
+
+    if (ret.size() == 1)
+    {
+        return std::pair<bool, workerid_t>(false, *ret.begin());
+    }
+
+    // split
+    boost::shared_ptr<GetDocumentsByIdsActionItem> subActionItem;
+    for (size_t i = 0; i < workeridList.size(); i++)
+    {
+        workerid_t& curWorkerid = workeridList[i];
+        if (actionItemMap.find(curWorkerid) == actionItemMap.end())
+        {
+            subActionItem.reset(new GetDocumentsByIdsActionItem());
+            *subActionItem = actionItem;
+            subActionItem->idList_.clear();
+            actionItemMap.insert(std::make_pair(curWorkerid, subActionItem));
+        }
+        else
+        {
+            subActionItem = actionItemMap[curWorkerid];
+        }
+
+        subActionItem->idList_.push_back(actionItem.idList_[i]);
+    }
+
+    return std::pair<bool, workerid_t>(true, workerid_t(-1));
+}
+
 
 void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > >& resultList)
 {
@@ -153,7 +255,20 @@ void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const st
     if (subResultNum <= 0)
         return;
 
-    size_t topk = result.topKDocs_.size();
+    size_t pageCount = 0;
+    for (size_t i = 0; i < subResultNum; i++)
+    {
+        pageCount += resultList[i].second->count_;
+    }
+    if (result.count_ > pageCount)
+    {
+        result.count_ = pageCount;
+    }
+    else
+    {
+        pageCount = result.count_;
+    }
+
     size_t displayPropertyNum = resultList[0].second->snippetTextOfDocumentInPage_.size(); //xxx
     size_t isSummaryOn = resultList[0].second->rawTextOfSummaryInPage_.size(); //xxx
 
@@ -161,39 +276,41 @@ void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const st
     result.snippetTextOfDocumentInPage_.resize(displayPropertyNum);
     result.fullTextOfDocumentInPage_.resize(displayPropertyNum);
     if (isSummaryOn)
-        result.rawTextOfSummaryInPage_.resize(displayPropertyNum);
+        result.rawTextOfSummaryInPage_.resize(isSummaryOn);
+
     for (size_t dis = 0; dis < displayPropertyNum; dis++)
     {
-        result.snippetTextOfDocumentInPage_[dis].resize(topk);
-        result.fullTextOfDocumentInPage_[dis].resize(topk);
-        if (isSummaryOn)
-            result.rawTextOfSummaryInPage_[dis].resize(topk);
+        result.snippetTextOfDocumentInPage_[dis].resize(pageCount);
+        result.fullTextOfDocumentInPage_[dis].resize(pageCount);
+    }
+    for (size_t dis = 0; dis < isSummaryOn; dis++)
+    {
+        result.rawTextOfSummaryInPage_[dis].resize(pageCount);
     }
 
     // merge
-    //size_t curPos;
+    // each sub result provided part of docs for result page, and they kept the doc postions
+    // in topKDocs of result for that page.
     size_t curSub;
     size_t* iter = new size_t[subResultNum];
     memset(iter, 0, sizeof(size_t)*subResultNum);
 
-    for (size_t i = 0; i < topk; i++)
+    for (size_t i = 0, pos = result.start_; i < pageCount; i++, pos++)
     {
-        //curPos = 0;
         curSub = size_t(-1);
         for (size_t sub = 0; sub < subResultNum; sub++)
         {
             const std::vector<size_t>& subTopKPosList = resultList[sub].second->topKPostionList_;
-            if (iter[sub] < subTopKPosList.size() && subTopKPosList[iter[sub]] == i)
+            if (iter[sub] < subTopKPosList.size() && subTopKPosList[iter[sub]] == pos)
             {
-                //curPos = subTopKPosList[iter[sub]];
                 curSub = sub;
                 break;
             }
         }
 
         if (curSub == size_t(-1))
-            continue;
-        //cout << "curPos: " << i <<", curSub: "<< curSub<<", iter[curSub]: " << iter[curSub]<<endl;
+            break;
+        //cout << "index,pos:" << i <<","<< pos <<"   curSub:"<< curSub<<"  iter[curSub]:" << iter[curSub]<<endl;
 
         // get a result
         const boost::shared_ptr<KeywordSearchResult>& subResult = resultList[curSub].second;
@@ -201,8 +318,10 @@ void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const st
         {
             result.snippetTextOfDocumentInPage_[dis][i] = subResult->snippetTextOfDocumentInPage_[dis][iter[curSub]];
             result.fullTextOfDocumentInPage_[dis][i] = subResult->fullTextOfDocumentInPage_[dis][iter[curSub]];
-            if (isSummaryOn)
-                result.rawTextOfSummaryInPage_[dis][i] = subResult->rawTextOfSummaryInPage_[dis][iter[curSub]];
+        }
+        for (size_t dis = 0; dis < isSummaryOn; dis++)
+        {
+            result.rawTextOfSummaryInPage_[dis][i] = subResult->rawTextOfSummaryInPage_[dis][iter[curSub]];
         }
 
         // next
@@ -239,11 +358,6 @@ void AggregatorManager::mergeMiningResult(KeywordSearchResult& result, const std
             }
         }
     }
-}
-
-void AggregatorManager::SetMiningManager(const boost::shared_ptr<MiningManager>& mining_manager)
-{
-    mining_manager_ = mining_manager;
 }
 
 }

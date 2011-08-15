@@ -13,9 +13,10 @@
 #include <string>
 #include <vector>
 
+#include <boost/serialization/vector.hpp> // serialize std::vector
+
 namespace sf1r
 {
-class ItemManager;
 
 class CartManager
 {
@@ -44,7 +45,6 @@ public:
      * @return true for success, false for error happened.
      */
     bool getCart(userid_t userId, std::vector<itemid_t>& itemVec);
-
 
 private:
     typedef izenelib::sdb::unordered_sdb_tc<userid_t, std::vector<itemid_t>, ReadWriteLock> SDBType;

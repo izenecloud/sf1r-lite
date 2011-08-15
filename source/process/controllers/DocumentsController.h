@@ -43,6 +43,8 @@ public:
     void get_topic();
     void get_topic_with_sim();
     void get_freq_group_labels();
+    void set_top_group_label();
+
 private:
     bool requireDOCID();
     bool setLimit();

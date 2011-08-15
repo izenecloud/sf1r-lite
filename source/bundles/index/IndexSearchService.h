@@ -53,17 +53,6 @@ private:
 
     void getWorkersByCollectionName(std::string& collectionName, std::vector<workerid_t>& workeridList);
 
-    bool processSearchAction(
-            KeywordSearchActionItem& actionItem,
-            KeywordSearchResult& resultItem,
-            std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList);
-
-    // todo
-    bool getSummaryMiningResult(
-            KeywordSearchActionItem& actionItem,
-            KeywordSearchResult& resultItem,
-            std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList);
-
 private:
 
     bool buildQuery(
@@ -102,7 +91,6 @@ private:
     std::map<std::string, AggregatorConfigUnit> aggregatorUnitMap_;
 
     friend class WorkerServer;
-    friend class WorkerService;
     friend class IndexBundleActivator;
     friend class MiningBundleActivator;
 };

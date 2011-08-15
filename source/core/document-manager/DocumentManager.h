@@ -26,10 +26,7 @@
 
 #include <util/ustring/UString.h>
 
-#include <langid/language_id.h>
-#include <langid/factory.h>
-#include <langid/knowledge.h>
-#include <langid/analyzer.h>
+#include <langid/langid.h>
 
 #include <string>
 #include <set>

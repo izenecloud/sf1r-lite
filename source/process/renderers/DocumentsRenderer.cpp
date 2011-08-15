@@ -94,10 +94,13 @@ void DocumentsRenderer::renderDocuments(
     std::size_t indexInTopK = searchResult.start_ % TOP_K_NUM;
 
     BOOST_ASSERT(indexInTopK + searchResult.count_ <= searchResult.topKDocs_.size());
+    std::vector<sf1r::wdocid_t> topKWDocs;
+    const_cast<KeywordSearchResult&>(searchResult).getTopKWDocs(topKWDocs);
+
     for (std::size_t i = 0; i < searchResult.count_; ++i, ++indexInTopK)
     {
         Value& newResource = resources();
-        newResource[Keys::_id] = searchResult.topKDocs_[indexInTopK];
+        newResource[Keys::_id] = topKWDocs[indexInTopK];
         newResource[Keys::_rank] = searchResult.topKRankScoreList_[indexInTopK];
 
         if (searchResult.topKCustomRankScoreList_.size()
@@ -264,7 +267,7 @@ void DocumentsRenderer::renderNameEntity(
         newNameEntity[Keys::type] = convertBuffer;
 
         Value& nameEntityList = newNameEntity[Keys::name_entity_list];
-        typedef std::vector<ne_item_type>::const_iterator const_iterator;
+        typedef std::vector<NEItem>::const_iterator const_iterator;
         for (const_iterator item = miaResult.neList_[i].item_list.begin(),
                          itemEnd = miaResult.neList_[i].item_list.end();
              item != itemEnd; ++item)

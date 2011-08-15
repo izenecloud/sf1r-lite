@@ -58,8 +58,8 @@ void MiningQueryLogHandler::runEvents()
         mlit->second->RebuildForAll();
     }
 
-    //for autofill
-    processAutofill_(now);
+    //for autofill and query correction
+    processCollectionIndependent_(now);
     std::cout<<"[Updated query information]"<<std::endl;
 }
 
@@ -83,7 +83,7 @@ void MiningQueryLogHandler::cronJob_()
     }
 }
 
-void MiningQueryLogHandler::processAutofill_(const boost::posix_time::ptime& nowTime)
+void MiningQueryLogHandler::processCollectionIndependent_(const boost::posix_time::ptime& nowTime)
 {
     boost::gregorian::days dd(days_);
     boost::posix_time::ptime p = nowTime-dd;
@@ -115,8 +115,9 @@ void MiningQueryLogHandler::processAutofill_(const boost::posix_time::ptime& now
             label_manager_list.push_back(label_manager);
         }
     }
+    QueryCorrectionSubmanager::getInstance().updateCogramAndDict(logItems);
     AutoFillSubManager::get()->buildIndex(logItems, label_manager_list);
-
+    
 }
 
 

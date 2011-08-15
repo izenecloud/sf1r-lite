@@ -40,14 +40,14 @@ public:
     {}
 
 public:
-    /**
-     * interfaces for handling remote request
-     * @{
-     */
 
+    /**
+     * Pre-process before dispatch (handle) a received request,
+     * key is info such as collection, bundle name.
+     */
     virtual bool preHandle(const std::string& key)
     {
-        cout << "#[WorkerServer::preHandle] key : " << key<<endl;
+        //cout << "#[WorkerServer::preHandle] key : " << key<<endl;
 
         if (!sf1r::SF1Config::get()->checkCollectionWorkerServer(key))
         {
@@ -61,45 +61,56 @@ public:
         }
 
         workerService_ = collectionHandler_->indexSearchService_->workerService_;
+
         return true;
     }
 
-    /*pure virtual*/
-    void addHandlers()
+    /**
+     * Handlers for processing received remote requests.
+     */
+    virtual void addHandlers()
     {
         ADD_WORKER_HANDLER_LIST_BEGIN( WorkerServer )
 
         ADD_WORKER_HANDLER( getSearchResult )
         ADD_WORKER_HANDLER( getSummaryResult )
-        // todo, add more ...
+        ADD_WORKER_HANDLER( getDocumentsByIds )
+        ADD_WORKER_HANDLER( clickGroupLabel )
+        // todo, add services
 
         ADD_WORKER_HANDLER_LIST_END()
     }
 
+    /**
+     * Publish worker services to remote procedure (as remote server)
+     * @{
+     */
+
     bool getSearchResult(JobRequest& req)
     {
-        WORKER_HANDLE_1_1(req, KeywordSearchActionItem, processGetSearchResult, KeywordSearchResult)
+        WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, KeywordRealSearchResult, workerService_, processGetSearchResult)
         return true;
     }
 
     bool getSummaryResult(JobRequest& req)
     {
-        WORKER_HANDLE_1_1(req, KeywordSearchActionItem, processGetSummaryResult, KeywordSearchResult)
+        WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, KeywordSearchResult, workerService_, processGetSummaryResult)
         return true;
     }
 
-    /** @}*/
-
-private:
-    bool processGetSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+    bool getDocumentsByIds(JobRequest& req)
     {
-        workerService_->processGetSearchResult(actionItem, resultItem);
+        WORKER_HANDLE_REQUEST_1_1(req, GetDocumentsByIdsActionItem, RawTextResultFromSIA, workerService_, processGetDocumentsByIds)
+    	return true;
     }
 
-    bool processGetSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+    bool clickGroupLabel(JobRequest& req)
     {
-        workerService_->processGetSummaryResult(actionItem, resultItem);
+        WORKER_HANDLE_REQUEST_1_1(req, clickGroupLabelActionItem, bool, workerService_, clickGroupLabel)
+        return true;
     }
+
+    /** @} */
 };
 
 }

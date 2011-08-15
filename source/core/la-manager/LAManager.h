@@ -46,7 +46,8 @@ public:
     bool getTermIdList( IDManagerType * idm,
         const izenelib::util::UString & text,
         const AnalysisInfo& analysisInfo,
-        TermIdList& termIdList )
+        TermIdList& termIdList,
+        la::MultilangGranularity indexingLevel = la::FIELD_LEVEL)
     {
         la::LA * pLA = NULL;
 
@@ -67,7 +68,7 @@ public:
                 static_cast<la::MultiLanguageAnalyzer*>(pLA->getAnalyzer().get())->setExtractSynonym(false);
         }
 
-        pLA->process( idm, text, termIdList );
+        pLA->process( idm, text, termIdList, indexingLevel );
 
         if( isMultiThreadEnv_ )
             laPool_->pushSearchLA(analysisInfo, pLA);

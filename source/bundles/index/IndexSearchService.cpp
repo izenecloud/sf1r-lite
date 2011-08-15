@@ -28,10 +28,9 @@
 using namespace izenelib::util;
 
 
-
 namespace sf1r
 {
-int TOP_K_NUM = 1000;
+int TOP_K_NUM = 4000;
 
 IndexSearchService::IndexSearchService()
 {
@@ -44,14 +43,6 @@ IndexSearchService::IndexSearchService()
     analysisInfo_.analyzerId_ = "la_sia";
     analysisInfo_.tokenizerNameList_.insert("tok_divide");
     analysisInfo_.tokenizerNameList_.insert("tok_unite");
-
-#ifdef DISTRIBUTED_SEARCH
-    workerService_.reset(new WorkerService(this));
-
-    aggregatorManager_.reset(new AggregatorManager());
-    aggregatorManager_->setWorkerListConfig(sf1r::SF1Config::get()->getAggregatorConfig());
-    aggregatorManager_->setLocalWorkerService(workerService_);
-#endif
 }
 
 IndexSearchService::~IndexSearchService()
@@ -82,9 +73,16 @@ bool IndexSearchService::getSearchResult(
 
     // get and merge mutliple keyword search result
     std::vector<workerid_t> workeridList;
+    KeywordRealSearchResult ksResultItem;
     ///getWorkersByCollectionName(actionItem.collectionName_, workeridList);
-    aggregatorManager_->sendRequest<KeywordSearchActionItem, KeywordSearchResult>(
-            actionItem.collectionName_, "getSearchResult", actionItem, resultItem, workeridList);
+    aggregatorManager_->sendRequest<KeywordSearchActionItem, KeywordRealSearchResult>(
+            actionItem.collectionName_, "getSearchResult", actionItem, ksResultItem, workeridList);
+
+    copySearchResult(resultItem, ksResultItem);
+
+    DLOG(INFO) << "Total count: " << resultItem.totalCount_ << endl;
+    DLOG(INFO) << "Top K count: " << resultItem.topKDocs_.size() << endl;
+    DLOG(INFO) << "Page Count: " << resultItem.count_ << endl;
 
     // xxx split & get summary, mining result by workers.
     std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> > resultMap;
@@ -104,12 +102,18 @@ bool IndexSearchService::getSearchResult(
 
         resultList.push_back(std::make_pair(witer->first, subResult));
 
-        subResult->print();
+        //subResult->print();
     }
 
     // merge summary, mining results
-    aggregatorManager_->mergeSummaryResult(resultItem, resultList);
+    if (resultItem.count_ > 0)
+    {
+        aggregatorManager_->mergeSummaryResult(resultItem, resultList);
+    }
+
     aggregatorManager_->mergeMiningResult(resultItem, resultList);
+
+    //resultItem.print();
 
     return true;
 
@@ -292,172 +296,16 @@ bool IndexSearchService::getSearchResult(
                     LOG(ERROR) << "error in log group label click, query: " << actionItem.env_.queryString_
                                << ", property name: " << it->first << ", property value: " << it->second;
                 }
+
+                if (aggregatorManager_)
+                {
+                    clickGroupLabelActionItem cglActionItem(actionItem.env_.queryString_, it->first, it->second);
+                    bool ret = true;
+                    aggregatorManager_->sendRequest<clickGroupLabelActionItem, bool>(
+                                actionItem.collectionName_, "clickGroupLabel", cglActionItem, ret);
+                }
             }
         }
-    }
-
-    return true;
-}
-
-bool IndexSearchService::processSearchAction(
-        KeywordSearchActionItem& actionItem,
-        KeywordSearchResult& resultItem,
-        std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList)
-{
-    CREATE_PROFILER ( searchIndex, "IndexSearchService", "processGetSearchResults: search index");
-
-    // Set basic info for response
-    resultItem.collectionName_ = actionItem.collectionName_;
-    resultItem.encodingType_ =
-        izenelib::util::UString::convertEncodingTypeFromStringToEnum(
-            actionItem.env_.encodingType_.c_str()
-        );
-    SearchKeywordOperation actionOperation(actionItem, bundleConfig_->isUnigramWildcard(),
-                    laManager_, idManager_);
-    actionOperation.hasUnigramProperty_ = bundleConfig_->hasUnigramProperty();
-    actionOperation.isUnigramSearchMode_ = bundleConfig_->isUnigramSearchMode();
-
-    std::vector<izenelib::util::UString> keywords;
-    std::string newQuery;
-    if(bundleConfig_->bTriggerQA_)
-    {
-        if(pQA_->isQuestion(actionOperation.actionItem_.env_.queryString_))
-        {
-            analyze_(actionOperation.actionItem_.env_.queryString_, keywords);
-            assembleConjunction(keywords, newQuery);
-            //cout<<"new Query "<<newQuery<<endl;
-            actionOperation.actionItem_.env_.queryString_ = newQuery;
-        }
-    }
-
-    // Get Personalized Search information (user profile)
-    PersonalSearchInfo personalSearchInfo;
-    personalSearchInfo.enabled = false;
-
-    User& user = personalSearchInfo.user;
-    user.idStr_ = actionItem.env_.userID_;
-    if( recommendSearchService_  && (!user.idStr_.empty()))
-    {
-        personalSearchInfo.enabled = recommendSearchService_->getUser(user.idStr_, user);
-
-#if 1
-        if (personalSearchInfo.enabled)
-        {
-            cout << "[ Got User profile by user id: " << user.idStr_ << endl;
-            User::PropValueMap::iterator iter;
-            for (iter = user.propValueMap_.begin(); iter != user.propValueMap_.end(); iter ++)
-            {
-                cout << "Item: "<< iter->first << " : " << iter->second << endl;
-            }
-        }
-        else
-        {
-            cout << "[ Failed to get User profile by user id: " << user.idStr_ << endl;
-        }
-#endif
-    }
-    else
-    {
-        // Recommend Search Service is not available, xxx
-    }
-
-    //std::vector<std::vector<izenelib::util::UString> > propertyQueryTermList;
-    if(!buildQuery(actionOperation, propertyQueryTermList, resultItem, personalSearchInfo))
-    {
-        return true;
-    }
-
-    START_PROFILER ( searchIndex );
-    // TODO: how many docs should be retrieved from 1 server
-    int startOffset = 0;
-    int top_k_num = actionItem.pageInfo_.start_ + actionItem.pageInfo_.count_;
-
-    if(! searchManager_->search(
-                actionOperation,
-                resultItem.topKDocs_,
-                resultItem.topKRankScoreList_,
-                resultItem.topKCustomRankScoreList_,
-                resultItem.totalCount_,
-                resultItem.groupRep_,
-                resultItem.attrRep_,
-                top_k_num,
-                startOffset
-                ))
-    {
-        std::string newQuery;
-
-        if(!bundleConfig_->bTriggerQA_)
-            return true;
-        assembleDisjunction(keywords, newQuery);
-
-        actionOperation.actionItem_.env_.queryString_ = newQuery;
-        propertyQueryTermList.clear();
-        if(!buildQuery(actionOperation, propertyQueryTermList, resultItem, personalSearchInfo))
-        {
-            return true;
-        }
-
-        if(! searchManager_->search(
-                                    actionOperation,
-                                    resultItem.topKDocs_,
-                                    resultItem.topKRankScoreList_,
-                                    resultItem.topKCustomRankScoreList_,
-                                    resultItem.totalCount_,
-                                    resultItem.groupRep_,
-                                    resultItem.attrRep_,
-                                    TOP_K_NUM,
-                                    startOffset
-                                    ))
-        {
-            return true;
-        }
-    }
-
-    // Remove duplicated docs from the result if the option is on.
-    removeDuplicateDocs(actionItem, resultItem);
-
-    //set query term and Id List
-    resultItem.rawQueryString_ = actionItem.env_.queryString_;
-    actionOperation.getRawQueryTermIdList(resultItem.queryTermIdList_);
-
-    STOP_PROFILER ( searchIndex );
-
-    DLOG(INFO) << "Total count: " << resultItem.totalCount_ << endl;
-    DLOG(INFO) << "Top K count: " << resultItem.topKDocs_.size() << endl;
-    DLOG(INFO) << "Page Count: " << resultItem.count_ << endl;
-
-    return true;
-}
-
-bool IndexSearchService::getSummaryMiningResult(
-        KeywordSearchActionItem& actionItem,
-        KeywordSearchResult& resultItem,
-        std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList)
-{
-    CREATE_PROFILER ( getSummary, "IndexSearchService", "processGetSearchResults: get raw text, snippets, summarization");
-    START_PROFILER ( getSummary );
-
-    DLOG(INFO) << "[SIAServiceHandler] RawText,Summarization,Snippet" << endl;
-
-    if (resultItem.topKDocs_.size() > 0)
-    {
-        // id of documents in current page
-        std::vector<sf1r::docid_t> docsInPage;
-        docsInPage = resultItem.topKDocs_;
-        resultItem.count_ = docsInPage.size();
-
-        getResultItem( actionItem, docsInPage, propertyQueryTermList, resultItem);
-    }
-
-    STOP_PROFILER ( getSummary );
-
-    REPORT_PROFILE_TO_FILE( "PerformanceQueryResult.SIAProcess" );
-
-    cout << "[IndexSearchService] keywordSearch process Done" << endl; // XXX
-
-    if( miningSearchService_ )
-    {
-        miningSearchService_->getSearchResult(resultItem);
     }
 
     return true;
@@ -697,12 +545,79 @@ bool IndexSearchService::getDocumentsByIds(
     RawTextResultFromSIA& resultItem
 )
 {
+#ifdef DISTRIBUTED_SEARCH
+
+    std::vector<workerid_t> workerReqList;
+    std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> > actionItemMap;
+
+    ///if (getWorkersByCollectionName(actionItem.collectionName_))
+
+    std::pair<bool, workerid_t> ret = aggregatorManager_->splitGetDocsActionItemByWorkerid(actionItem, actionItemMap);
+    if (ret.first == false)
+    {
+        // only request one worker, or request all workers if workerReqList is empty.
+        if (ret.second != workerid_t(-1))
+        {
+            workerReqList.push_back(ret.second);
+        }
+        aggregatorManager_->sendRequest<GetDocumentsByIdsActionItem, RawTextResultFromSIA>(
+                actionItem.collectionName_, "getDocumentsByIds", actionItem, resultItem, workerReqList);
+    }
+    else
+    {
+        // asynchronously request to each workers
+        std::vector<std::pair<workerid_t, boost::shared_ptr<WorkerFutureHolder> > > futureList;
+
+        std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >::iterator iter;
+        for (iter = actionItemMap.begin(); iter != actionItemMap.end(); iter++)
+        {
+            workerid_t workerid = iter->first;
+            boost::shared_ptr<GetDocumentsByIdsActionItem>& subActionItem = iter->second;
+
+            boost::shared_ptr<WorkerFutureHolder> workerFuture(new WorkerFutureHolder);
+            workerReqList.clear();
+            workerReqList.push_back(workerid);
+
+            aggregatorManager_->sendRequest<GetDocumentsByIdsActionItem, RawTextResultFromSIA>(
+                    *workerFuture, subActionItem->collectionName_, "getDocumentsByIds", *subActionItem, resultItem, workerReqList);
+
+            futureList.push_back(std::make_pair(workerid, workerFuture));
+        }
+
+        // get results
+        std::vector<std::pair<workerid_t, RawTextResultFromSIA> > resultList;
+        for (size_t i = 0; i < futureList.size(); i++)
+        {
+            workerid_t curWorkerid = futureList[i].first;
+            boost::shared_ptr<WorkerFutureHolder>& workerFuture = futureList[i].second;
+
+            boost::shared_ptr<GetDocumentsByIdsActionItem>& subActionItem = actionItemMap[curWorkerid];
+            RawTextResultFromSIA subResultItem;
+            workerReqList.clear();
+            workerReqList.push_back(curWorkerid);
+
+            aggregatorManager_->getResult<GetDocumentsByIdsActionItem, RawTextResultFromSIA>(
+                    *workerFuture, "getDocumentsByIds", *subActionItem, subResultItem, workerReqList);
+
+            resultList.push_back(std::make_pair(curWorkerid, subResultItem));
+        }
+
+        // aggregate results
+        aggregatorManager_->aggregateDocumentsResult(resultItem, resultList);
+    }
+
+	return true;
+
+#else
+
     const izenelib::util::UString::EncodingType kEncodingType =
         izenelib::util::UString::convertEncodingTypeFromStringToEnum(
             actionItem.env_.encodingType_.c_str()
         );
 
-    std::vector<sf1r::wdocid_t> idList = actionItem.idList_;
+    std::vector<sf1r::docid_t> idList;
+    std::vector<sf1r::workerid_t> workeridList;
+    const_cast<GetDocumentsByIdsActionItem&>(actionItem).getDocWorkerIdLists(idList, workeridList);
 
     // append docIdList_ at the end of idList_.
     typedef std::vector<std::string>::const_iterator docid_iterator;
@@ -766,6 +681,8 @@ bool IndexSearchService::getDocumentsByIds(
     resultItem.snippetTextOfDocumentInPage_.clear();
     resultItem.rawTextOfSummaryInPage_.clear();
     return false;
+
+#endif
 }
 
 bool IndexSearchService::getInternalDocumentId(

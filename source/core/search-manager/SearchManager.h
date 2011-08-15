@@ -7,6 +7,7 @@
 #include <configuration-manager/PropertyConfig.h>
 #include <query-manager/SearchKeywordOperation.h>
 #include <query-manager/ActionItem.h>
+#include <common/DistributeResultType.h>
 
 #include <ir/id_manager/IDManager.h>
 #include <util/ustring/UString.h>
@@ -60,7 +61,8 @@ public:
                 faceted::OntologyRep& groupRep,
                 faceted::OntologyRep& attrRep,
                 int topK = 200,
-                int start = 0);
+                int start = 0,
+                KeywordPreSearchResult& preSearchResult = kDefaultPreSearchResult_);
 
 
     void reset_cache(bool rType, docid_t id, const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
@@ -91,7 +93,8 @@ private:
                    faceted::OntologyRep& groupRep,
                    faceted::OntologyRep& attrRep,
                    int topK,
-                   int start);
+                   int start,
+                   KeywordPreSearchResult& preSearchResult  = kDefaultPreSearchResult_);
 
     /**
      * @brief get corresponding id of the property, returns 0 if the property
@@ -119,6 +122,8 @@ private:
 
     dynamic_reranker_t dynamic_reranker_;
     static_reranker_t	 static_reranker_;
+
+    static KeywordPreSearchResult kDefaultPreSearchResult_;
 
     boost::scoped_ptr<faceted::GroupFilterBuilder> groupFilterBuilder_;
 };

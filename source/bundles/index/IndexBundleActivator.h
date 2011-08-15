@@ -23,6 +23,7 @@ class DocumentManager;
 class LAManager;
 class SearchManager;
 class RankingManager;
+class AggregatorManager;
 
 class IndexBundleActivator : public IBundleActivator, public IServiceTrackerCustomizer
 {
@@ -48,6 +49,8 @@ private:
     boost::shared_ptr<IndexManager> indexManager_;
     boost::shared_ptr<RankingManager> rankingManager_;
     boost::shared_ptr<SearchManager> searchManager_;
+    boost::shared_ptr<WorkerService> workerService_;
+    boost::shared_ptr<AggregatorManager> aggregatorManager_;
     ilplib::qa::QuestionAnalysis* pQA_;
     DirectoryRotator directoryRotator_;
 
@@ -70,6 +73,8 @@ private:
     boost::shared_ptr<SearchManager> createSearchManager_() const;
 
     boost::shared_ptr<LAManager> createLAManager_() const;
+
+    boost::shared_ptr<AggregatorManager> createAggregatorManager_() const;
 
     bool initializeQueryManager_() const;
 

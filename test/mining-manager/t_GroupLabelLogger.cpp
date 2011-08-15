@@ -10,6 +10,7 @@
 #include <string>
 #include <map>
 #include <set>
+#include <algorithm> // min
 
 #include <climits> // INT_MAX
 
@@ -48,7 +49,13 @@ private:
     boost::variate_generator<mt19937, uniform_int<> > limitRandom_;
 
     typedef map<string, int> GroupCountMap;
-    typedef map<string, GroupCountMap> QueryGroupMap;
+    struct GroupCounter
+    {
+        GroupCountMap countMap_;
+        string manualTop_;
+    };
+
+    typedef map<string, GroupCounter> QueryGroupMap;
     QueryGroupMap queryGroupMap_;
 
 private:
@@ -56,7 +63,7 @@ private:
         int limit,
         const std::vector<std::string>& propValueVec,
         const std::vector<int>& freqVec,
-        const GroupCountMap& groupCountMap
+        const GroupCounter& groupCounter
     )
     {
         //cout << "checkGroup_(), limit: " << limit
@@ -67,13 +74,42 @@ private:
         //}
         //cout << endl;
 
+
         BOOST_CHECK_EQUAL(propValueVec.size(), freqVec.size());
         BOOST_CHECK_LE(propValueVec.size(), limit);
-        BOOST_CHECK_GT(propValueVec.size(), 0);
 
         set<string> checkedSet;
+        size_t i = 0;
+        const GroupCountMap& groupCountMap = groupCounter.countMap_;
+        int totalCount = groupCountMap.size();
+
+        // check top label set manually
+        if (groupCounter.manualTop_.empty() == false)
+        {
+            const string& groupStr = groupCounter.manualTop_;
+            BOOST_CHECK_EQUAL(propValueVec[0], groupStr);
+
+            GroupCountMap::const_iterator findIt = groupCountMap.find(groupStr);
+            if (findIt != groupCountMap.end())
+            {
+                BOOST_CHECK_EQUAL(freqVec[0], findIt->second);
+            }
+            else
+            {
+                BOOST_CHECK_EQUAL(freqVec[0], 0);
+                ++totalCount;
+            }
+
+            BOOST_CHECK(checkedSet.insert(groupStr).second);
+
+            ++i;
+        }
+
+        // check result size
+        BOOST_CHECK_EQUAL(propValueVec.size(), min(totalCount, limit));
+
         int maxFreq = INT_MAX;
-        for (size_t i=0; i<propValueVec.size(); ++i)
+        for (; i<propValueVec.size(); ++i)
         {
             const string& groupStr = propValueVec[i];
             const int freqValue = freqVec[i];
@@ -125,8 +161,28 @@ public:
 
             //cout << "create log: " << query << ", " << group << endl;
 
-            ++queryGroupMap_[query][group];
+            ++queryGroupMap_[query].countMap_[group];
             BOOST_CHECK(logger.logLabel(query, group));
+        }
+    }
+
+    void setTopLabel(GroupLabelLogger& logger, int topNum)
+    {
+        for (int i=0; i<topNum; ++i)
+        {
+            string query = "query_" + lexical_cast<string>(queryRandom_());
+            string group;
+
+            // in 50% test, "group" would be empty to reset the top label
+            if (i % 2 == 0)
+            {
+                group = "group_" + lexical_cast<string>(groupRandom_());
+            }
+
+            //cout << "set top label: " << query << ", " << group << endl;
+
+            queryGroupMap_[query].manualTop_ = group;
+            BOOST_CHECK(logger.setTopLabel(query, group));
         }
     }
 
@@ -136,7 +192,7 @@ public:
             queryIt != queryGroupMap_.end(); ++queryIt)
         {
             const string& query = queryIt->first;
-            const GroupCountMap& groupCountMap = queryIt->second;
+            const GroupCounter& groupCounter = queryIt->second;
 
             int limit = limitRandom_();
             // in 80% test, "limit" value would be 1,
@@ -150,7 +206,7 @@ public:
             BOOST_CHECK(logger.getFreqLabel(query, limit, propValueVec, freqVec));
 
             //cout << "check query: " << query << endl;
-            checkGroup_(limit, propValueVec, freqVec, groupCountMap);
+            checkGroup_(limit, propValueVec, freqVec, groupCounter);
         }
     }
 };
@@ -159,7 +215,7 @@ public:
 
 BOOST_AUTO_TEST_SUITE(GroupLabelLogger_test)
 
-BOOST_AUTO_TEST_CASE(getFreqLabel)
+BOOST_AUTO_TEST_CASE(logLabel)
 {
     bfs::remove_all(TEST_DIR_STR);
     bfs::create_directory(TEST_DIR_STR);
@@ -187,6 +243,43 @@ BOOST_AUTO_TEST_CASE(getFreqLabel)
         logChecker.checkLog(logger);
 
         BOOST_TEST_MESSAGE("create log 2nd time");
+        logChecker.createLog(logger, LOG_NUM);
+        logChecker.checkLog(logger);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(setTopLabel)
+{
+    bfs::remove_all(TEST_DIR_STR);
+    bfs::create_directory(TEST_DIR_STR);
+
+    LogChecker logChecker(50, 7); // query range, group range
+    const int LOG_NUM = 3000; // log number
+    const int TOP_NUM = 500; // set top label number
+
+    {
+        GroupLabelLogger logger(TEST_DIR_STR, PROP_NAME_STR);
+        BOOST_CHECK(logger.open());
+
+        BOOST_TEST_MESSAGE("set top label");
+        logChecker.setTopLabel(logger, TOP_NUM);
+        logChecker.checkLog(logger);
+
+        BOOST_TEST_MESSAGE("create log");
+        logChecker.createLog(logger, LOG_NUM);
+        logChecker.setTopLabel(logger, TOP_NUM);
+        logChecker.checkLog(logger);
+    }
+
+    {
+        GroupLabelLogger logger(TEST_DIR_STR, PROP_NAME_STR);
+        BOOST_CHECK(logger.open());
+
+        BOOST_TEST_MESSAGE("check loaded log");
+        logChecker.checkLog(logger);
+
+        BOOST_TEST_MESSAGE("create log 2nd time");
+        logChecker.setTopLabel(logger, TOP_NUM);
         logChecker.createLog(logger, LOG_NUM);
         logChecker.checkLog(logger);
     }
