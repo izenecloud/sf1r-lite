@@ -10,7 +10,7 @@
   -->
   <System>
     <Resource path="@SF1RENGINE_ROOT@/package/resource"/> 
-    
+    <LogConnection str="sqlite3://./log/COBRA" />
     <BundlesDefault>
       <!-- QueryCorrection Bundle Default -->
       <QueryLogBundle enableworker="n">

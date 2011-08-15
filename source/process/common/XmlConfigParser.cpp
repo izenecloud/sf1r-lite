@@ -314,6 +314,8 @@ void SF1Config::parseSystemSettings( const ticpp::Element * system )
 {
   //get resource dir
   getAttribute( getUniqChildElement( system, "Resource" ), "path", resource_dir_);
+  
+  getAttribute( getUniqChildElement( system, "LogConnection" ), "str", log_conn_str_);
 
   parseBundlesDefault(getUniqChildElement( system, "BundlesDefault" ));
   

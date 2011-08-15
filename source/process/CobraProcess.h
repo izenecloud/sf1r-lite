@@ -22,6 +22,8 @@ public:
     bool initialize(const std::string& configFileDir);
 
 private:
+    bool initLogManager();
+    
     bool initLicenseManager();
 
     bool initLAManager();
