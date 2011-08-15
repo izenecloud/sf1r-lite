@@ -335,6 +335,7 @@ void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const st
 void AggregatorManager::mergeMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > >& resultList)
 {
     if(!mining_manager_) return;
+    std::cout<<"call mergeMiningResult"<<std::endl;
     boost::shared_ptr<TaxonomyGenerationSubManager> tg_manager = mining_manager_->GetTgManager();
     if(tg_manager)
     {
@@ -349,8 +350,12 @@ void AggregatorManager::mergeMiningResult(KeywordSearchResult& result, const std
         }
         if( input_list.size()>0)
         {
+            std::vector<sf1r::wdocid_t> top_wdoclist;
+            result.getTopKWDocs(top_wdoclist);
             idmlib::cc::CCInput64 input;
-            tg_manager->AggregateInput(input_list, input);
+            std::cout<<"before merging, size : "<<input_list.size()<<std::endl;
+            tg_manager->AggregateInput(top_wdoclist, input_list, input);
+            std::cout<<"after merging, concept size : "<<input.concept_list.size()<<" , doc size : "<<input.doc_list.size()<<std::endl;
             TaxonomyRep taxonomyRep;
             if( tg_manager->GetResult(input, taxonomyRep, result.neList_) )
             {

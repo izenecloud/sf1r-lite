@@ -276,7 +276,7 @@ bool TaxonomyGenerationSubManager::GetResult(const idmlib::cc::CCInput64& input,
 }
 
 
-void TaxonomyGenerationSubManager::AggregateInput(const std::vector<std::pair<uint32_t, idmlib::cc::CCInput32> >& input_list, idmlib::cc::CCInput64& result)
+void TaxonomyGenerationSubManager::AggregateInput(const std::vector<wdocid_t>& top_wdoclist, const std::vector<std::pair<uint32_t, idmlib::cc::CCInput32> >& input_list, idmlib::cc::CCInput64& result)
 {
     if(input_list.empty()) return;
     //set some basic info
@@ -284,37 +284,53 @@ void TaxonomyGenerationSubManager::AggregateInput(const std::vector<std::pair<ui
     result.query_term_list = input_list[0].second.query_term_list;
     result.query_termid_list = input_list[0].second.query_termid_list;
     
-    uint32_t all_docid_count = 0;
-    for(uint32_t i=0;i<input_list.size();i++)
-    {
-        all_docid_count += input_list[i].second.doc_list.size();
-    }
     
-    std::vector<idmlib::cc::ConceptItem>& r_concept_list = result.concept_list;
-    std::vector<uint64_t>& r_doc_list = result.doc_list;
-    izenelib::am::rde_hash<izenelib::util::UString, uint32_t> app_concept;
-//     std::vector<std::pair<double, uint32_t> > score_list;
-    
-//     uint32_t p = 0;
+    izenelib::am::rde_hash<wdocid_t, bool> wdoc_valid;
     for(uint32_t i=0;i<input_list.size();i++)
     {
         uint32_t worker_id = input_list[i].first;
         const idmlib::cc::CCInput32& input = input_list[i].second;
-        const std::vector<uint32_t>& doc_list = input.doc_list;
-        //expand doc_list
-        uint32_t current_doc_size = r_doc_list.size();
-        r_doc_list.resize(current_doc_size+doc_list.size());
-        for(uint32_t j=0;j<doc_list.size();j++)
+        for(uint32_t j=0;j<input.doc_list.size();j++)
         {
-            r_doc_list[current_doc_size+j] = net::aggregator::Util::GetWDocId(worker_id, doc_list[j]);
+            wdocid_t wdocid = net::aggregator::Util::GetWDocId(worker_id, input.doc_list[j]);
+            wdoc_valid.insert(wdocid, 1);
         }
-        
+    }
+    std::vector<wdocid_t>& valid_wdoclist = result.doc_list;
+    izenelib::am::rde_hash<wdocid_t, uint32_t> wdoc_pos;
+    for(uint32_t i=0;i<top_wdoclist.size();i++)
+    {
+        if(wdoc_valid.find(top_wdoclist[i])!=NULL)
+        {
+            valid_wdoclist.push_back( top_wdoclist[i] );
+            wdoc_pos.insert( top_wdoclist[i], valid_wdoclist.size()-1);
+            if(valid_wdoclist.size()>=tgParams_.topDocNum_) break;
+        }
+    }
+    std::vector<idmlib::cc::ConceptItem>& r_concept_list = result.concept_list;
+    izenelib::am::rde_hash<izenelib::util::UString, uint32_t> app_concept;
+    for(uint32_t i=0;i<input_list.size();i++)
+    {
+        const idmlib::cc::CCInput32& input = input_list[i].second;
         const std::vector<idmlib::cc::ConceptItem>& concept_list = input.concept_list;
         for(uint32_t j=0;j<concept_list.size();j++)
         {
             idmlib::cc::ConceptItem new_concept_item(concept_list[j]);
-            new_concept_item.doc_invert.resize(all_docid_count);
-            new_concept_item.doc_invert = new_concept_item.doc_invert<<=current_doc_size;
+            new_concept_item.doc_invert.resize(0);
+            new_concept_item.doc_invert.resize(valid_wdoclist.size());
+            for(uint32_t k=0;k<input.doc_list.size();k++)
+            {
+                if( concept_list[j].doc_invert[k] )
+                {
+                    wdocid_t thisid = input.doc_list[k];
+                    uint32_t* p_pos = wdoc_pos.find(thisid);
+                    if(p_pos!=NULL)
+                    {
+                        new_concept_item.doc_invert.set(*p_pos);
+                    }
+                }
+            }
+            
             uint32_t* same_one = app_concept.find(concept_list[j].text);
             if(same_one!=NULL)
             {
@@ -325,9 +341,44 @@ void TaxonomyGenerationSubManager::AggregateInput(const std::vector<std::pair<ui
                 r_concept_list.push_back(new_concept_item);
                 app_concept.insert( concept_list[j].text, r_concept_list.size()-1 );
             }
-
         }
     }
+    
+//     std::vector<idmlib::cc::ConceptItem>& r_concept_list = result.concept_list;
+//     std::vector<uint64_t>& r_doc_list = result.doc_list;
+//     
+//     for(uint32_t i=0;i<input_list.size();i++)
+//     {
+//         uint32_t worker_id = input_list[i].first;
+//         const idmlib::cc::CCInput32& input = input_list[i].second;
+//         const std::vector<uint32_t>& doc_list = input.doc_list;
+//         //expand doc_list
+//         uint32_t current_doc_size = r_doc_list.size();
+//         r_doc_list.resize(current_doc_size+doc_list.size());
+//         for(uint32_t j=0;j<doc_list.size();j++)
+//         {
+//             r_doc_list[current_doc_size+j] = net::aggregator::Util::GetWDocId(worker_id, doc_list[j]);
+//         }
+//         
+//         const std::vector<idmlib::cc::ConceptItem>& concept_list = input.concept_list;
+//         for(uint32_t j=0;j<concept_list.size();j++)
+//         {
+//             idmlib::cc::ConceptItem new_concept_item(concept_list[j]);
+//             new_concept_item.doc_invert.resize(all_docid_count);
+//             new_concept_item.doc_invert = new_concept_item.doc_invert<<=current_doc_size;
+//             uint32_t* same_one = app_concept.find(concept_list[j].text);
+//             if(same_one!=NULL)
+//             {
+//                 CombineConceptItem_(new_concept_item, r_concept_list[*same_one] );
+//             }
+//             else
+//             {
+//                 r_concept_list.push_back(new_concept_item);
+//                 app_concept.insert( concept_list[j].text, r_concept_list.size()-1 );
+//             }
+// 
+//         }
+//     }
     
     
     

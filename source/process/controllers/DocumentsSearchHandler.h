@@ -64,6 +64,7 @@ private:
     /// @param[out] rawTextResult Raw text.
     bool doGet(
         const GetDocumentsByIdsActionItem& getActionItem,
+        const KeywordSearchResult& miaResult,
         RawTextResultFromMIA& rawTextResult
     );
 
