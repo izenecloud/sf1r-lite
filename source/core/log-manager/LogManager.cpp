@@ -40,18 +40,6 @@ namespace sf1r
 
     bool LogManager::init(const std::string& pathParam, const std::string& language)
     {
-        logPath = pathParam;
-        path logPath(pathParam);
-        path logDir = logPath.parent_path();
-        if(exists(logDir)) {
-            if (!is_directory(logDir)) {
-                cerr << "Log Directory " << logDir << " is a file" << endl;
-                return false;
-            }
-        } else {
-            create_directories(logDir);
-        }
-
         SFLogMessage::initLogMsg(language);
 
         if( !DbConnection::instance().init(pathParam) )
@@ -68,12 +56,13 @@ namespace sf1r
 
     bool LogManager::del_database()
     {
-         string order = "rm " + logPath;
-
-         DbConnection::instance().close();
-         std::system(order.c_str());
-         if(!init(logPath))
-             return false;
+        //do not delete it on file
+//          string order = "rm " + logPath;
+// 
+//          DbConnection::instance().close();
+//          std::system(order.c_str());
+//          if(!init(logPath))
+//              return false;
 
          return true;
     }

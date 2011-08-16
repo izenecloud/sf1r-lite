@@ -73,9 +73,25 @@ bool MysqlDbConnection::init(const std::string& str )
         }
         mysql_options(mysql, MYSQL_SET_CHARSET_NAME, default_charset.c_str());
         
-        if (!mysql_real_connect(mysql, host.c_str(), username.c_str(), password.c_str(), schema.c_str(), port, NULL, flags))
+        if (!mysql_real_connect(mysql, host.c_str(), username.c_str(), password.c_str(), NULL, port, NULL, flags))
         {
             printf("Couldn't connect mysql : %d:(%s) %s", mysql_errno(mysql), mysql_sqlstate(mysql), mysql_error(mysql));
+            mysql_close(mysql);
+            return false;
+        }
+        
+        mysql_query(mysql, "SET NAMES utf8");
+        
+        std::string create_db_query = "create database IF NOT EXISTS "+schema+" default character set utf8";
+        if ( mysql_query(mysql, create_db_query.c_str())>0 ) {
+            printf("Error %u: %s\n", mysql_errno(mysql), mysql_error(mysql));
+            mysql_close(mysql);
+            return false;
+        }
+        
+        std::string use_db_query = "use "+schema;
+        if ( mysql_query(mysql, use_db_query.c_str())>0 ) {
+            printf("Error %u: %s\n", mysql_errno(mysql), mysql_error(mysql));
             mysql_close(mysql);
             return false;
         }
@@ -117,15 +133,15 @@ bool MysqlDbConnection::exec(const std::string & sql, bool omitError)
 
     if( mysql_real_query(db, sql.c_str(), sql.length()) >0 && mysql_errno(db) )
     {
-        printf("Couldn't connect mysql : %d:(%s) %s", mysql_errno(db), mysql_sqlstate(db), mysql_error(db));
+        printf("Error : %d:(%s) %s", mysql_errno(db), mysql_sqlstate(db), mysql_error(db));
         ret = false; 
     }
-    if(ret)
-    {
-        uint32_t field_count = mysql_field_count(db);
-        std::cout<<"mysql exec field_count : "<<field_count<<std::endl;
-        if ( field_count<= 0) ret = false;
-    }
+//     if(ret)
+//     {
+//         uint32_t field_count = mysql_field_count(db);
+//         std::cout<<"mysql exec field_count : "<<field_count<<std::endl;
+//         if ( field_count<= 0) ret = false;
+//     }
     putDb(db);
     return ret;
 }
@@ -143,7 +159,7 @@ bool MysqlDbConnection::exec(const std::string & sql,
     
     if( mysql_real_query(db, sql.c_str(), sql.length()) >0 && mysql_errno(db) )
     {
-        printf("Couldn't connect mysql : %d:(%s) %s", mysql_errno(db), mysql_sqlstate(db), mysql_error(db));
+        printf("Error : %d:(%s) %s", mysql_errno(db), mysql_sqlstate(db), mysql_error(db));
         ret = false; 
     }
     else

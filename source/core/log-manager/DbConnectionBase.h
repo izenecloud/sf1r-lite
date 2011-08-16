@@ -15,7 +15,7 @@ public:
     virtual ~DbConnectionBase(){}
 
     
-    virtual bool init(const std::string& str ){}
+    virtual bool init(const std::string& str ){return true;}
 
     virtual void close(){}
 

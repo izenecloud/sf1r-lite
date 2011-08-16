@@ -1,5 +1,5 @@
 #include "Sqlite3DbConnection.h"
-
+#include <boost/filesystem.hpp>
 using namespace std;
 
 namespace sf1r {
@@ -25,6 +25,16 @@ void Sqlite3DbConnection::close()
 
 bool Sqlite3DbConnection::init(const std::string & path )
 {
+    boost::filesystem::path log_path(path);
+    boost::filesystem::path log_dir = log_path.parent_path();
+    if(boost::filesystem::exists(log_dir)) {
+        if (!boost::filesystem::is_directory(log_dir)) {
+            std::cerr << "Log Directory " << log_dir << " is a file" << std::endl;
+            return false;
+        }
+    } else {
+        boost::filesystem::create_directories(log_dir);
+    }
     bool ret = true;
     mutex_.acquire_write_lock();
     for(int i=0; i<PoolSize; i++) {

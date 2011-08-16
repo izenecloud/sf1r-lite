@@ -45,7 +45,12 @@ bool DbConnection::init(const std::string& str )
         std::string mysql_str = str.substr(mysql_prefix.length());
         return impl_->init(mysql_str);
     }
-    return false;
+    else
+    {
+        std::cerr<<"[DbConnection::init] "<<str<<" unrecognized"<<std::endl;
+        return false;
+    }
+    
 }
 
 

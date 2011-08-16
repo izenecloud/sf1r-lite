@@ -85,6 +85,7 @@ bool CobraProcess::initLogManager()
         std::cerr<<"Init LogManager with "<<log_conn<<" failed!"<<std::endl;
         return false;
     }
+    return true;
 }
 
 bool CobraProcess::initLAManager()
