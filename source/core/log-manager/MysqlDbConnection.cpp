@@ -1,5 +1,10 @@
 #include "MysqlDbConnection.h"
 
+#include <vector>
+
+#include <boost/lexical_cast.hpp>
+
+#include <cstdio>
 
 namespace sf1r {
 
