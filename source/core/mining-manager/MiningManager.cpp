@@ -32,6 +32,7 @@
 #include "faceted-submanager/attr_manager.h"
 #include "faceted-submanager/property_diversity_reranker.h"
 #include "faceted-submanager/GroupFilterBuilder.h"
+#include "faceted-submanager/ctr_manager.h"
 
 #include "group-label-logger/GroupLabelLogger.h"
 
@@ -285,6 +286,26 @@ bool MiningManager::open()
             faceted_.reset(new faceted::OntologyManager(faceted_path_, document_manager_, mining_schema_.faceted_properties, analyzer_));
             faceted_->Open();
 
+        }
+
+        /** CTR */
+        if ( true )
+        {
+            std::string ctr_path = prefix_path + "/ctr";
+            FSUtil::createDir(ctr_path);
+
+            size_t docNum = 0;
+            if (index_manager_)
+            {
+                docNum = index_manager_->getIndexReader()->maxDoc() + 1;
+            }
+
+            ctrManager_.reset(new faceted::CTRManager(ctr_path, docNum));
+            if (!ctrManager_->open())
+            {
+                std::cerr << "open CRT failed" << std::endl;
+                return false;
+            }
         }
 
         /** group */
@@ -1237,6 +1258,16 @@ bool MiningManager::addFacetedResult_(KeywordSearchResult& miaInput)
     faceted_->GetSearcher()->GetRepresentation(miaInput.topKDocs_, miaInput.onto_rep_);
 
     return true;
+}
+
+bool MiningManager::visitDoc(uint32_t docId)
+{
+    if (!ctrManager_)
+    {
+        return true;
+    }
+
+    return ctrManager_->update(docId);
 }
 
 bool MiningManager::clickGroupLabel(

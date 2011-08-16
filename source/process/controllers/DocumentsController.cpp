@@ -749,6 +749,54 @@ void DocumentsController::set_top_group_label()
     }
 }
 
+/**
+ * @brief Action @b visit. Visit a spedified document, for updating click-through rate (CTR).
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Visit document in this collection.
+ * - @b resource* (@c Object): Only field @b DOCID is used to find the document
+ *   to be visited.
+ *
+ * @section response
+ *
+ * No extra fields.
+ *
+ * @section example
+ *
+ * @code
+ * {
+ *   "collection": "ChnWiki",
+ *   "resource": {
+ *     "DOCID": "post.1",
+ *   }
+ * }
+ * @endcode
+ */
+void DocumentsController::visit()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
+    IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
+
+    uint32_t internalId = 0;
+    Value& docidValue = request()[Keys::resource][Keys::DOCID];
+    std::string docidStr = asString(docidValue);
+    izenelib::util::UString docidUStr(docidStr, izenelib::util::UString::UTF_8);
+
+    if (collectionHandler_->indexSearchService_->getInternalDocumentId(docidUStr, internalId)
+            && internalId != 0)
+    {
+        if (!collectionHandler_->miningSearchService_->visitDoc(internalId))
+        {
+            response().addError("Failed to visit document");
+        }
+    }
+    else
+    {
+        response().addError("Cannot convert DOCID to internal ID");
+    }
+}
+
 bool DocumentsController::requireDOCID()
 {
 

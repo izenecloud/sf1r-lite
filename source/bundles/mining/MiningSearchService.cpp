@@ -175,6 +175,11 @@ bool MiningSearchService::DefineDocCategory(
     return true;
 }
 
+bool MiningSearchService::visitDoc(uint32_t docId)
+{
+    return miningManager_->visitDoc(docId);
+}
+
 bool MiningSearchService::clickGroupLabel(
     const std::string& query,
     const std::string& propName,

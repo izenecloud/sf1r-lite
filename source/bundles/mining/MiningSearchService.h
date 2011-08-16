@@ -56,6 +56,9 @@ public:
 
     bool DefineDocCategory(const std::vector<faceted::ManmadeDocCategoryItem>& items);
 
+    /// visit document
+    bool visitDoc(uint32_t docId);
+
     /**
      * Log the group label click.
      * @param query user query

@@ -44,6 +44,7 @@ public:
     void get_topic_with_sim();
     void get_freq_group_labels();
     void set_top_group_label();
+    void visit();
 
 private:
     bool requireDOCID();
