@@ -1,31 +1,8 @@
 #include "TaxonomyGenerationSubManager.h"
 #include "NERRanking.hpp"
-#include <mining-manager/duplicate-detection-submanager/IntergerHashFunction.h>
-#include <mining-manager/util/MUtil.hpp>
-#include <mining-manager/util/TermUtil.hpp>
-
-#include <boost/timer.hpp>
-#include <ir/index_manager/index/CommonItem.h>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/trim.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/foreach.hpp>
-#include <algorithm>
-#include <boost/timer.hpp>
-#include <boost/foreach.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/algorithm/string/case_conv.hpp>
-#include <boost/algorithm/string/erase.hpp>
-#include <cstdlib>
-#include <ctype.h>
-#include <la/stem/Stemmer.h>
+#include <boost/bind.hpp>
 #include <net/aggregator/Util.h>
-#include <document-manager/UniqueDocIdentifier.h>
 #include <cmath>
-#include <boost/filesystem.hpp>
-#include <boost/interprocess/sync/file_lock.hpp>
-#include <mining-manager/util/LabelDistance.h>
-#include <list>
 using namespace sf1r;
 
 TaxonomyGenerationSubManager::TaxonomyGenerationSubManager(
@@ -343,6 +320,16 @@ void TaxonomyGenerationSubManager::AggregateInput(const std::vector<wdocid_t>& t
             }
         }
     }
+    
+    std::sort( r_concept_list.begin(), r_concept_list.end(), 
+    boost::bind(&idmlib::cc::ConceptItem::score, _1) > boost::bind(&idmlib::cc::ConceptItem::score, _2) );
+    
+    if( r_concept_list.size()>tgParams_.canConceptNum_)
+    {
+        r_concept_list.resize(tgParams_.canConceptNum_);
+    }
+    
+   
     
 //     std::vector<idmlib::cc::ConceptItem>& r_concept_list = result.concept_list;
 //     std::vector<uint64_t>& r_doc_list = result.doc_list;
