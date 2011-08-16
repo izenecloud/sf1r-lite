@@ -79,41 +79,41 @@ DupDetector2::~DupDetector2() {
 
 bool DupDetector2::Open()
 {
-  std::string fp_dir = container_+"/fp";
-  try
-  {
-    boost::filesystem::create_directories(container_);
-    boost::filesystem::create_directories(fp_dir);
-  }
-  catch(std::exception& ex)
-  {
-    std::cerr<<ex.what()<<std::endl;
-    return false;
-  }
-  
-  if( file_info_->Load() )
-  {
-    max_docid_ = file_info_->GetValue();
-//     maxk_ = file_info_.GetValue().second;
-  }
-  algo_ = new CharikarAlgo(container_.c_str(), DdConstants::f, 0.95);
-  FpTables tables;
-  tables.GenTables(DdConstants::f, maxk_, partition_num_, table_list_);
-  std::cout<<"Generated "<<table_list_.size()<<" tables for maxk="<<(int)maxk_<<std::endl;
-  group_ = new GroupType( (container_+"/group").c_str() );
-  if(!group_->Load())
-  {
-    std::cerr<<"Load group info failed"<<std::endl;
-  }
-  
-  
-  
-  try
-  {
-    std::string output_group_file = container_+"/output_group.txt";
-    if(boost::filesystem::exists(output_group_file))
+    std::string fp_dir = container_+"/fp";
+    try
     {
-        std::ifstream ifs(output_group_file.c_str());
+        boost::filesystem::create_directories(container_);
+        boost::filesystem::create_directories(fp_dir);
+    }
+    catch(std::exception& ex)
+    {
+        std::cerr<<ex.what()<<std::endl;
+        return false;
+    }
+
+    if( file_info_->Load() )
+    {
+        max_docid_ = file_info_->GetValue();
+    //     maxk_ = file_info_.GetValue().second;
+    }
+    algo_ = new CharikarAlgo(container_.c_str(), DdConstants::f, 0.95);
+    FpTables tables;
+    tables.GenTables(DdConstants::f, maxk_, partition_num_, table_list_);
+    std::cout<<"Generated "<<table_list_.size()<<" tables for maxk="<<(int)maxk_<<std::endl;
+
+    std::string inject_file = container_+"/inject.txt";
+    std::string group_file = container_+"/group";
+
+    if(id_manager_ && boost::filesystem::exists(inject_file))
+    {
+        std::cout<<"start inject data to DD result"<<std::endl;
+        boost::filesystem::remove_all(group_file);
+        group_ = new GroupType( group_file );
+        if(!group_->Load())
+        {
+            std::cerr<<"Load group info failed"<<std::endl;
+        }
+        std::ifstream ifs(inject_file.c_str());
         std::string line;
         std::vector<uint32_t> in_group;
         while ( getline ( ifs,line ) )
@@ -134,9 +134,19 @@ bool DupDetector2::Open()
             {
                 std::vector<std::string> vec;
                 boost::algorithm::split( vec, line, boost::algorithm::is_any_of("\t") );
-//                 std::cout<<"XXX "<<vec[0]<<std::endl;
-                uint32_t docid = boost::lexical_cast<uint32_t>(vec[0]);
-                in_group.push_back(docid);
+    //                 std::cout<<"XXX "<<vec[0]<<std::endl;
+                izenelib::util::UString str_docid(vec[0], izenelib::util::UString::UTF_8);
+                
+                uint32_t docid = 0;
+                if(id_manager_->getDocIdByDocName(str_docid, docid,false) )
+                {
+                    in_group.push_back(docid);
+                }
+                else
+                {
+                    std::cout<<"docid "<<vec[0]<<" does not exists."<<std::endl;
+                }
+                
             }
             
         }
@@ -150,36 +160,28 @@ bool DupDetector2::Open()
             }
         }
         group_->Flush();
-        std::cout<<"updated group by "<<output_group_file<<std::endl;
-//         boost::filesystem::remove_all(output_group_file);
-//         std::string reoutput_file = container_+"/re_output_group.txt";
-//         OutputResult_(reoutput_file);
+        boost::filesystem::remove_all(inject_file);
+        std::cout<<"updated dd by "<<inject_file<<std::endl;
+    //         boost::filesystem::remove_all(output_group_file);
+    //         std::string reoutput_file = container_+"/re_output_group.txt";
+    //         OutputResult_(reoutput_file);
     }
-    
-     
-      
-      
+    else
+    {
+        group_ = new GroupType( group_file );
+        if(!group_->Load())
+        {
+            std::cerr<<"Load group info failed"<<std::endl;
+        }
+    }
     std::string continue_file = container_+"/continue";
     if(boost::filesystem::exists(continue_file))
     {
       boost::filesystem::remove_all(continue_file);
       runDuplicateDetectionAnalysis(true);
     }
-  }
-  catch(std::exception& ex)
-  {
-    std::cerr<<ex.what()<<std::endl;
-  }
-  return true;
-//   uint8_t sort_count = FPCompareType::GetSortCount();
-//   fp_groups_.resize(sort_count);
-//   compare_obj_.resize(sort_count);
-//   for( uint32_t i=0;i<sort_count;i++)
-//   {
-//     compare_obj_[i] = FPCompareType(i);
-//     fp_groups_[i] = nm_+"/fp_group"+boost::lexical_cast<std::string>(i+1);
-//     
-//   }
+    return true;
+
 }
 
 void DupDetector2::Resize(uint32_t size)
