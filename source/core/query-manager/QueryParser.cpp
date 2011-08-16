@@ -224,9 +224,7 @@ namespace sf1r
             case ' ': // (hello world ) -> (hello world)
                 {
                     while ( *(++iter) == ' ' );
-                    if ( operStr_.find(*iter) == string::npos )
-                        tmpNormString.push_back(' ');
-                    else if ( *iter != '&' && *iter != '|' && (!closeBracket_[*iter] || *iter == '"') )
+                    if ( *iter != '&' && *iter != '|' && (!closeBracket_[*iter] || *iter == '"') )
                         tmpNormString.push_back('&');
                     break;
                 }
