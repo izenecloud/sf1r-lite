@@ -30,9 +30,6 @@ bool CTRManager::open()
         return false;
     }
 
-    if (docClickCountList_.size() < docNum_+1)
-        docClickCountList_.resize(docNum_+1, 0);
-
     size_t nums = db_->num_items();
     if (nums > 0)
     {
@@ -66,6 +63,26 @@ bool CTRManager::update(uint32_t docId)
     updateDB(docId, docClickCountList_[docId]);
 
     return true;
+}
+
+void CTRManager::getClickCountListByDocIdList(
+        const std::vector<unsigned int>& docIdList,
+        std::vector<std::pair<size_t, count_t> >& posClickCountList)
+{
+    if (docClickCountList_.size() <= 0)
+        return;
+
+    for (size_t pos = 0; pos < docIdList.size(); pos++)
+    {
+        const unsigned int& docId = docIdList[pos];
+        if (docId < docClickCountList_.size())
+        {
+            if (docClickCountList_[docId] > 0)
+            {
+                posClickCountList.push_back(std::make_pair(pos, docClickCountList_[docId]));
+            }
+        }
+    }
 }
 
 /// private

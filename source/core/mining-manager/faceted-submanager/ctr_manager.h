@@ -37,6 +37,15 @@ public:
      */
     bool update(uint32_t docId);
 
+    /**
+     * Get click-count for each document.
+     * @param docIdList [IN]
+     * @param posClickCountList [OUT]
+     */
+    void getClickCountListByDocIdList(
+            const std::vector<unsigned int>& docIdList,
+            std::vector<std::pair<size_t, count_t> >& posClickCountList);
+
 private:
     bool updateDB(uint32_t docId, count_t clickCount);
 
