@@ -26,29 +26,6 @@ namespace sf1r
 {
 
 //------------------------- HELPER FUNCTIONS -------------------------
-
-bool checkIntFormat( const std::string & str )
-{
-    std::size_t pos = str.find_first_not_of( "0123456789", 0 );
-    if( pos != std::string::npos )
-    {
-        /*
-        // the value is a negative number
-        if( pos == 0 && str[pos] == '-' )
-        {
-            pos = str.find_first_not_of( "0123456789", pos+1 );
-            if( pos == string::npos )
-                return true;
-            else
-                return false;
-        }
-        */
-
-        return false;
-    }
-    return true;
-}
-
 void downCase( std::string & str )
 {
     for ( string::iterator it = str.begin(); it != str.end(); it++ )
