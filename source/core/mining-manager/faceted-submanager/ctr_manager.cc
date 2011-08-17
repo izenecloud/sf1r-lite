@@ -23,6 +23,8 @@ CTRManager::~CTRManager()
 
 bool CTRManager::open()
 {
+    boost::lock_guard<boost::shared_mutex> lg(mutex_);
+
     db_ = new DBType(filePath_);
 
     if (!db_ || !db_->open())
@@ -53,6 +55,8 @@ bool CTRManager::open()
 
 bool CTRManager::update(uint32_t docId)
 {
+    boost::lock_guard<boost::shared_mutex> lg(mutex_);
+
     if (docId >= docClickCountList_.size())
     {
         return false;
@@ -69,6 +73,8 @@ void CTRManager::getClickCountListByDocIdList(
         const std::vector<unsigned int>& docIdList,
         std::vector<std::pair<size_t, count_t> >& posClickCountList)
 {
+    boost::lock_guard<boost::shared_mutex> lg(mutex_);
+
     if (docClickCountList_.size() <= 0)
         return;
 
@@ -84,6 +90,51 @@ void CTRManager::getClickCountListByDocIdList(
         }
     }
 }
+
+void CTRManager::getClickCountListByDocIdList(
+        const std::vector<unsigned int>& docIdList,
+        std::vector<count_t>& clickCountList)
+{
+    boost::lock_guard<boost::shared_mutex> lg(mutex_);
+
+    clickCountList.resize(docIdList.size(), 0);
+
+    for (size_t i = 0; i < docIdList.size(); i++)
+    {
+        const unsigned int& docId = docIdList[i];
+        if (docId < docClickCountList_.size())
+        {
+            clickCountList[i] = docClickCountList_[docId];
+        }
+    }
+}
+
+count_t CTRManager::getClickCountByDocId(uint32_t docId)
+{
+    boost::lock_guard<boost::shared_mutex> lg(mutex_);
+
+    if (docId < docClickCountList_.size())
+    {
+        return docClickCountList_[docId];
+    }
+
+    return 0;
+}
+
+bool CTRManager::getClickCountByDocId(uint32_t docId, count_t& clickCount)
+{
+    boost::lock_guard<boost::shared_mutex> lg(mutex_);
+
+    if (docId < docClickCountList_.size())
+    {
+        clickCount = docClickCountList_[docId];
+        return true;
+    }
+
+    clickCount = 0;
+    return false;
+}
+
 
 /// private
 
