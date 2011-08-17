@@ -54,6 +54,16 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   INCLUDE_DIRECTORIES(
     ${Boost_INCLUDE_DIRS}
   )
+  ADD_EXECUTABLE(t_split_ustr
+    Runner.cpp
+    t_split_ustr.cpp
+  )
+  TARGET_LINK_LIBRARIES(t_split_ustr ${libs})
+  SET_TARGET_PROPERTIES(t_split_ustr PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_split_ustr")
+
   ADD_EXECUTABLE(t_group_manager
     Runner.cpp
     t_group_manager.cc

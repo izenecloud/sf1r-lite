@@ -11,7 +11,6 @@
 #include "ontology_rep.h"
 #include "prop_value_table.h"
 #include <configuration-manager/GroupConfig.h>
-#include <util/ustring/UString.h>
 
 #include <vector>
 #include <string>

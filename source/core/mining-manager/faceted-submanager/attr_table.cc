@@ -1,4 +1,5 @@
 #include "attr_table.h"
+#include <mining-manager/util/fcontainer.h>
 #include <mining-manager/MiningException.hpp>
 
 #include <iostream>
@@ -6,131 +7,11 @@
 #include <cassert>
 #include <set>
 
-#include <boost/filesystem.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/archive_exception.hpp>
-#include <boost/serialization/vector.hpp>
-
 #include <boost/lexical_cast.hpp>
 
 #include <glog/logging.h>
 
 using namespace sf1r::faceted;
-
-namespace
-{
-
-template<class T> bool saveFile(
-    const std::string& dirPath,
-    const std::string& fileName,
-    const T& container,
-    unsigned int& count,
-    bool binary = false
-)
-{
-    if (count < container.size())
-    {
-        boost::filesystem::path filePath(dirPath);
-        filePath /= fileName;
-        std::string pathStr = filePath.string();
-
-        LOG(INFO) << "saving file: " << pathStr
-                  << ", element num: " << container.size();
-
-        std::ios_base::openmode openMode = std::ios_base::out;
-        if (binary)
-        {
-            openMode |= std::ios_base::binary;
-        }
-
-        std::ofstream ofs(pathStr.c_str(), openMode);
-        if (! ofs)
-        {
-            LOG(ERROR) << "failed opening file " << pathStr;
-            return false;
-        }
-
-        try
-        {
-            if (binary)
-            {
-                boost::archive::binary_oarchive oa(ofs);
-                oa << container;
-            }
-            else
-            {
-                boost::archive::text_oarchive oa(ofs);
-                oa << container;
-            }
-        }
-        catch(boost::archive::archive_exception& e)
-        {
-            LOG(ERROR) << "exception in boost::archive::text_oarchive or binary_oarchive: " << e.what()
-                       << ", pathStr: " << pathStr;
-            return false;
-        }
-
-        count = container.size();
-    }
-
-    return true;
-}
-
-template<class T> bool loadFile(
-    const std::string& dirPath,
-    const std::string& fileName,
-    T& container,
-    unsigned int& count,
-    bool binary = false
-)
-{
-    boost::filesystem::path filePath(dirPath);
-    filePath /= fileName;
-    std::string pathStr = filePath.string();
-
-    std::ios_base::openmode openMode = std::ios_base::in;
-    if (binary)
-    {
-        openMode |= std::ios_base::binary;
-    }
-
-    std::ifstream ifs(pathStr.c_str(), openMode);
-    if (ifs)
-    {
-        LOG(INFO) << "start loading file : " << pathStr;
-
-        try
-        {
-            if (binary)
-            {
-                boost::archive::binary_iarchive ia(ifs);
-                ia >> container;
-            }
-            else
-            {
-                boost::archive::text_iarchive ia(ifs);
-                ia >> container;
-            }
-        }
-        catch(boost::archive::archive_exception& e)
-        {
-            LOG(ERROR) << "exception in boost::archive::text_iarchive or binary_iarchive: " << e.what()
-                       << ", pathStr: " << pathStr;
-            return false;
-        }
-
-        count = container.size();
-
-        LOG(INFO) << "finished loading , element num: " << count;
-    }
-
-    return true;
-}
-
-}
 
 // as id 0 is reserved for empty value
 // members are initialized to size 1
@@ -228,10 +109,10 @@ bool AttrTable::open(
     dirPath_ = dirPath;
     propName_ = propName;
 
-    if (!loadFile(dirPath_, propName_ + ".name.map", nameStrVec_, saveNameStrNum_)
-        || !loadFile(dirPath_, propName_ + ".value.map", valueStrVec_, saveValueStrNum_)
-        || !loadFile(dirPath_, propName_ + ".name.table", nameIdVec_, saveNameIdNum_, true)
-        || !loadFile(dirPath_, propName_ + ".value.table", valueIdTable_, saveDocIdNum_, true))
+    if (!load_container(dirPath_, propName_ + ".name.map", nameStrVec_, saveNameStrNum_)
+        || !load_container(dirPath_, propName_ + ".value.map", valueStrVec_, saveValueStrNum_)
+        || !load_container(dirPath_, propName_ + ".name.table", nameIdVec_, saveNameIdNum_, true)
+        || !load_container(dirPath_, propName_ + ".value.table", valueIdTable_, saveDocIdNum_, true))
     {
         return false;
     }
@@ -256,10 +137,10 @@ bool AttrTable::open(
 
 bool AttrTable::flush()
 {
-    if (!saveFile(dirPath_, propName_ + ".name.map", nameStrVec_, saveNameStrNum_)
-        || !saveFile(dirPath_, propName_ + ".value.map", valueStrVec_, saveValueStrNum_)
-        || !saveFile(dirPath_, propName_ + ".name.table", nameIdVec_, saveNameIdNum_, true)
-        || !saveFile(dirPath_, propName_ + ".value.table", valueIdTable_, saveDocIdNum_, true))
+    if (!save_container(dirPath_, propName_ + ".name.map", nameStrVec_, saveNameStrNum_)
+        || !save_container(dirPath_, propName_ + ".value.map", valueStrVec_, saveValueStrNum_)
+        || !save_container(dirPath_, propName_ + ".name.table", nameIdVec_, saveNameIdNum_, true)
+        || !save_container(dirPath_, propName_ + ".value.table", valueIdTable_, saveDocIdNum_, true))
     {
         return false;
     }

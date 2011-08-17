@@ -42,7 +42,7 @@ void PropertyDiversityReranker::simplererank(
     }
 
     const PropValueTable& pvTable = pvIt->second;
-    const std::vector<PropValueTable::pvid_t>& idTable = pvTable.propIdTable();
+    const PropValueTable::ValueIdTable& idTable = pvTable.valueIdTable();
 
     std::size_t numDoc = docIdList.size();
     std::vector<unsigned int> newDocIdList;
@@ -60,14 +60,16 @@ void PropertyDiversityReranker::simplererank(
         if (docId >= idTable.size())
             continue;
 	
-        PropValueTable::pvid_t pvId = idTable[docId];
-        if (pvId != 0)
+        const PropValueTable::ValueIdList& valueIdList = idTable[docId];
+        if (valueIdList.empty())
         {
-            docIdMap[pvId].push_back(std::make_pair(docId, rankScoreList[i]));
+            missDocs.push_back(std::make_pair(docId, rankScoreList[i]));
         }
         else
         {
-            missDocs.push_back(std::make_pair(docId, rankScoreList[i]));
+            // use 1st group value
+            PropValueTable::pvid_t pvId = valueIdList[0];
+            docIdMap[pvId].push_back(std::make_pair(docId, rankScoreList[i]));
         }
     }
     if(docIdMap.size() <= 1) return; // single property or empty
@@ -129,8 +131,6 @@ void PropertyDiversityReranker::rerank(
             return;
         }
         const PropValueTable& pvTable = pvIt->second;
-        const std::vector<PropValueTable::pvid_t>& idTable = pvTable.propIdTable();
-        const std::vector<PropValueTable::pvid_t>& parentTable = pvTable.parentIdTable();
         izenelib::util::UString labelUStr(boostingCategoryLabel, izenelib::util::UString::UTF_8);
         PropValueTable::pvid_t labelId = pvTable.propValueId(labelUStr);
         if (labelId == 0)
@@ -156,25 +156,7 @@ void PropertyDiversityReranker::rerank(
         {
             docid_t docId = docIdList[i];
 
-            // this doc has not built group index data
-            if (docId >= idTable.size())
-                continue;
-
-            PropValueTable::pvid_t pvId = idTable[docId];
-
-            // check whether pvId is the child (or itself) of labelId
-            bool isChild = false;
-            while (pvId != 0)
-            {
-                if (pvId == labelId)
-                {
-                    isChild = true;
-                    break;
-                }
-                pvId = parentTable[pvId];
-            }
-
-            if (isChild)
+            if (pvTable.testDoc(docId, labelId))
             {
                 boostingDocIdList.push_back(docId);
                 boostingScoreList.push_back(rankScoreList[i]);

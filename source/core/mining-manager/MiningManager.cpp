@@ -460,6 +460,12 @@ bool MiningManager::open()
         sflog->crit(SFL_MINE, ex.what());
         return false;
     }
+    catch (std::exception& ex)
+    {
+        sflog->crit(SFL_MINE, ex.what());
+        std::cerr << "std::exception: " << ex.what() << std::endl;
+        return false;
+    }
     return true;
 }
 
