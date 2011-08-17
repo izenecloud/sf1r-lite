@@ -9,6 +9,7 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
+#include <algorithm>
 
 namespace sf1r
 {
@@ -277,10 +278,10 @@ namespace sf1r
 
     } // end - normalizeQuery()
 
-    bool QueryParser::parseQuery( 
-            const izenelib::util::UString& queryUStr, 
-            QueryTreePtr& queryTree, 
-            bool unigramFlag, 
+    bool QueryParser::parseQuery(
+            const izenelib::util::UString& queryUStr,
+            QueryTreePtr& queryTree,
+            bool unigramFlag,
             bool removeChineseSpace
             )
     {
@@ -345,29 +346,45 @@ namespace sf1r
         std::string wildStr( queryTree->keyword_ );
         transform(wildStr.begin(), wildStr.end(), wildStr.begin(), ::tolower);
         UString wildcardUStringQuery(wildStr, UString::UTF_8);
+        size_t pos, lastpos = 0;
+        bool ret;
 
-        for (UString::iterator iter = wildcardUStringQuery.begin(); iter!= wildcardUStringQuery.end(); iter++)
+        while (lastpos < wildcardUStringQuery.size())
         {
-            if (*iter == '*')
+            pos = min(wildcardUStringQuery.find('*', lastpos), wildcardUStringQuery.find('?', lastpos));
+            if (pos > lastpos)
             {
-                queryTree->insertChild(QueryTreePtr(new QueryTree(QueryTree::ASTERISK)));
-            }
-            else if ( *iter == '?' )
-            {
-                queryTree->insertChild(QueryTreePtr(new QueryTree(QueryTree::QUESTION_MARK)));
-            }
-            else
-            {
-                QueryTreePtr child(new QueryTree(QueryTree::KEYWORD));
+                la::TermList termList;
+                AnalysisInfo analysisInfo;
+                UString tmpUString(wildcardUStringQuery, lastpos, pos - lastpos);
 
-                child->keywordUString_ = *iter;
-                // Skip the restrict term
-                if ( !setKeyword(child, child->keywordUString_) )
-                    continue;
+                analysisInfo.analyzerId_ = "la_unigram";
+                ret = laManager_->getTermList(
+                    tmpUString,
+                    analysisInfo,
+                    termList );
+                if ( !ret ) return false;
 
-                queryTree->insertChild(child);
+                la::TermList::iterator termIter = termList.begin();
+
+                while(termIter != termList.end() ) {
+                    QueryTreePtr child(new QueryTree(QueryTree::KEYWORD));
+                    child->keywordUString_ = termIter->text_;
+                    setKeyword(child, child->keywordUString_);
+                    queryTree->insertChild(child);
+                    termIter ++;
+                }
             }
+            if (pos != UString::npos)
+            {
+                if (wildcardUStringQuery[pos] == '*')
+                    queryTree->insertChild(QueryTreePtr(new QueryTree(QueryTree::ASTERISK)));
+                else // if ( wildcardUStringQuery[pos] == '?' )
+                    queryTree->insertChild(QueryTreePtr(new QueryTree(QueryTree::QUESTION_MARK)));
+            }
+            lastpos = pos + 1;
         }
+
         return true;
     } // end - extendWildcardTree
 
@@ -653,7 +670,7 @@ namespace sf1r
         AnalysisInfo analysisInfo;
 
         // Unigram analyzing is used for any kinds of query for "EXACT" query.
-        analysisInfo.analyzerId_ = "la_unigram"; 
+        analysisInfo.analyzerId_ = "la_unigram";
         ret = laManager_->getTermList(
             tmpQueryTree->keywordUString_,
             analysisInfo,
