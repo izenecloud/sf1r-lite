@@ -10,6 +10,12 @@ using sf1r::GroupLabelLogger;
 
 NS_FACETED_BEGIN
 
+
+bool CompareSecond(const std::pair<size_t, count_t>& r1, const std::pair<size_t, count_t>& r2)
+{
+    return (r1.second > r2.second);
+}
+
 PropertyDiversityReranker::PropertyDiversityReranker(
     const std::string& property,
     const GroupManager::PropValueMap& propValueMap,
@@ -31,76 +37,138 @@ void PropertyDiversityReranker::simplererank(
     std::vector<float>& rankScoreList
 )
 {
+    std::size_t numDoc = docIdList.size();
+    std::vector<unsigned int> newDocIdList;
+    std::vector<float> newScoreList;
+    newDocIdList.reserve(numDoc);
+    newScoreList.reserve(numDoc);
+
+    // rerank by group
     typedef std::list<std::pair<unsigned int,float> > DocIdList;
     typedef std::map<PropValueTable::pvid_t, DocIdList> DocIdMap;
 
+    bool successGroup = true;
     GroupManager::PropValueMap::const_iterator pvIt = propValueMap_.find(property_);
     if (pvIt == propValueMap_.end())
     {
         LOG(ERROR) << "in GroupManager: group index file is not loaded for group property " << property_;
-        return;
+        successGroup = false;
     }
-
-    const PropValueTable& pvTable = pvIt->second;
-    const PropValueTable::ValueIdTable& idTable = pvTable.valueIdTable();
-
-    std::size_t numDoc = docIdList.size();
-    std::vector<unsigned int> newDocIdList;
-    std::vector<float> newScoreList;	
-    newDocIdList.reserve(numDoc);
-    newScoreList.reserve(numDoc);
-
-    DocIdMap docIdMap;
-    DocIdList missDocs;
-    for (std::size_t i = 0; i < numDoc; ++i)
+    else
     {
-        docid_t docId = docIdList[i];
-	
-        // this doc has not built group index data
-        if (docId >= idTable.size())
-            continue;
-	
-        const PropValueTable::ValueIdList& valueIdList = idTable[docId];
-        if (valueIdList.empty())
+        const PropValueTable& pvTable = pvIt->second;
+        const PropValueTable::ValueIdTable& idTable = pvTable.valueIdTable();
+
+        DocIdMap docIdMap;
+        DocIdList missDocs;
+        for (std::size_t i = 0; i < numDoc; ++i)
         {
-            missDocs.push_back(std::make_pair(docId, rankScoreList[i]));
-        }
-        else
-        {
-            // use 1st group value
-            PropValueTable::pvid_t pvId = valueIdList[0];
-            docIdMap[pvId].push_back(std::make_pair(docId, rankScoreList[i]));
-        }
-    }
-    if(docIdMap.size() <= 1) return; // single property or empty
-    do{
-        DocIdMap::iterator mapIt = docIdMap.begin();
-        while(mapIt != docIdMap.end())
-        {
-            if(mapIt->second.empty()) 
+            docid_t docId = docIdList[i];
+            
+            // this doc has not built group index data
+            if (docId >= idTable.size())
+                continue;
+            
+            const PropValueTable::ValueIdList& valueIdList = idTable[docId];
+            if (valueIdList.empty())
             {
-                docIdMap.erase(mapIt++);
+                missDocs.push_back(std::make_pair(docId, rankScoreList[i]));
             }
             else
             {
-                std::pair<unsigned int, float> element = mapIt->second.front();
-                mapIt->second.pop_front();
-                newDocIdList.push_back(element.first);
-                newScoreList.push_back(element.second);
-                ++mapIt;
+                // use 1st group value
+                PropValueTable::pvid_t pvId = valueIdList[0];
+                docIdMap[pvId].push_back(std::make_pair(docId, rankScoreList[i]));
             }
         }
-    }while(!docIdMap.empty());
 
-    for(DocIdList::iterator missIt = missDocs.begin(); missIt != missDocs.end(); ++missIt)
-    {
-        newDocIdList.push_back(missIt->first);
-        newScoreList.push_back(missIt->second);
+        if(docIdMap.size() <= 1) // single property or empty
+            successGroup = false;
+        else
+        {
+            do{
+                DocIdMap::iterator mapIt = docIdMap.begin();
+                while(mapIt != docIdMap.end())
+                {
+                    if(mapIt->second.empty())
+                    {
+                        docIdMap.erase(mapIt++);
+                    }
+                    else
+                    {
+                        std::pair<unsigned int, float> element = mapIt->second.front();
+                        mapIt->second.pop_front();
+                        newDocIdList.push_back(element.first);
+                        newScoreList.push_back(element.second);
+                        ++mapIt;
+                    }
+                }
+            }while(!docIdMap.empty());
+
+            for(DocIdList::iterator missIt = missDocs.begin(); missIt != missDocs.end(); ++missIt)
+            {
+                newDocIdList.push_back(missIt->first);
+                newScoreList.push_back(missIt->second);
+            }
+        }
     }
 
-    using std::swap;
-    swap(docIdList, newDocIdList);
-    swap(rankScoreList, newScoreList);
+    // boosting by CTR
+    std::vector<std::pair<size_t, count_t> > posClickCountList;
+    if (ctrManager_)
+    {
+        if (successGroup)
+            ctrManager_->getClickCountListByDocIdList(newDocIdList, posClickCountList);
+        else
+            ctrManager_->getClickCountListByDocIdList(docIdList, posClickCountList);
+    }
+
+    size_t boostDocNum = posClickCountList.size();
+    if (boostDocNum > 0)
+    {
+        if (!successGroup)
+        {
+            for (size_t i = 0; i < numDoc; i++)
+            {
+                newDocIdList.push_back(docIdList[i]);
+                newScoreList.push_back(rankScoreList[i]);
+            }
+        }
+
+        // sort by click-count
+        std::sort(posClickCountList.begin(), posClickCountList.end(), CompareSecond);
+
+        std::vector<std::pair<size_t, count_t> >::iterator it;
+        size_t i = 0;
+        for (it = posClickCountList.begin(); it != posClickCountList.end(); it++)
+        {
+            size_t& pos = it->first;
+            docIdList[i] = newDocIdList[pos];
+            rankScoreList[i] = newScoreList[pos];
+
+            newDocIdList[pos] = 0;
+            i++;
+        }
+
+        for (size_t pos = 0; pos < newDocIdList.size(); pos++)
+        {
+            if (newDocIdList[pos] != 0)
+            {
+                docIdList[i] = newDocIdList[pos];
+                rankScoreList[i] = newScoreList[pos];
+                i++;
+            }
+        }
+    }
+    else
+    {
+        if (successGroup)
+        {
+            using std::swap;
+            swap(docIdList, newDocIdList);
+            swap(rankScoreList, newScoreList);
+        }
+    }
 }
 
 void PropertyDiversityReranker::rerank(

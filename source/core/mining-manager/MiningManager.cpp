@@ -383,8 +383,9 @@ bool MiningManager::open()
         {
             std::string boostingProperty = mining_schema_.prop_rerank_property.boostingPropName;
             groupReranker_ = new faceted::PropertyDiversityReranker(mining_schema_.prop_rerank_property.propName, groupManager_->getPropValueMap(),boostingProperty);
+            groupReranker_->setCTRManager(ctrManager_);
             GroupLabelLogger* logger = groupLabelLoggerMap_[boostingProperty];
-            if(logger) 
+            if(logger)
             {
                 groupReranker_->setGroupLabelLogger(logger);
                 searchManager_->set_dynamic_reranker(boost::bind(&faceted::PropertyDiversityReranker::rerank,groupReranker_,_1,_2,_3));

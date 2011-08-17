@@ -13,6 +13,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include "group_manager.h"
+#include "ctr_manager.h"
 
 #include <common/inttypes.h>
 #include <util/ustring/UString.h>
@@ -49,11 +50,19 @@ public:
     void setGroupLabelLogger(GroupLabelLogger* logger){
         groupLabelLogger_ = logger;
     }
+
+    void setCTRManager(boost::shared_ptr<CTRManager> ctrManager)
+    {
+        ctrManager_ = ctrManager;
+    }
+
 private:
     std::string property_;
     const GroupManager::PropValueMap& propValueMap_;
     GroupLabelLogger* groupLabelLogger_;
     std::string boostingProperty_;
+
+    boost::shared_ptr<CTRManager> ctrManager_;
 };
 
 

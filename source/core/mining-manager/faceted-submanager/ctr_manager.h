@@ -12,6 +12,9 @@
 #include <am/tokyo_cabinet/tc_hash.h>
 #include <sdb/SequentialDB.h>
 
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/shared_mutex.hpp>
+
 NS_FACETED_BEGIN
 
 class CTRManager
@@ -37,6 +40,28 @@ public:
      */
     bool update(uint32_t docId);
 
+    /**
+     * Get click-count for each document.
+     * @param docIdList [IN]
+     * @param posClickCountList [OUT]
+     */
+    void getClickCountListByDocIdList(
+            const std::vector<unsigned int>& docIdList,
+            std::vector<std::pair<size_t, count_t> >& posClickCountList);
+
+    void getClickCountListByDocIdList(
+            const std::vector<unsigned int>& docIdList,
+            std::vector<count_t>& clickCountList);
+
+    /**
+     * Get click-count for specified document
+     * @param docId
+     * @return click count
+     */
+    count_t getClickCountByDocId(uint32_t docId);
+
+    bool getClickCountByDocId(uint32_t docId, count_t& clickCount);
+
 private:
     bool updateDB(uint32_t docId, count_t clickCount);
 
@@ -47,6 +72,8 @@ private:
     std::vector<count_t> docClickCountList_;
 
     DBType* db_;
+
+    mutable boost::shared_mutex mutex_;
 };
 
 NS_FACETED_END
