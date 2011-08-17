@@ -53,6 +53,9 @@ bool CTRManager::open()
     return true;
 }
 
+/// TODO, remove lock to reduce overhead.
+/// use atomic operation, or it can only update disk(db) data here,
+/// memory data can be loaded from disk wholly periodically.
 bool CTRManager::update(uint32_t docId)
 {
     boost::lock_guard<boost::shared_mutex> lg(mutex_);
@@ -143,6 +146,7 @@ bool CTRManager::updateDB(uint32_t docId, count_t clickCount)
     if (db_->update(docId, clickCount))
     {
         db_->flush();
+        return true;
     }
 
     return false;
