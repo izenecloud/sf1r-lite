@@ -430,7 +430,13 @@ namespace sf1r {
             /// internal IDs of the documents
             std::vector<docid_t> idList_;
             
-            
+            void assign(const RawTextResultFromSIA& obj)
+            {
+                fullTextOfDocumentInPage_ = obj.fullTextOfDocumentInPage_;
+                snippetTextOfDocumentInPage_ = obj.snippetTextOfDocumentInPage_;
+                rawTextOfSummaryInPage_ = obj.rawTextOfSummaryInPage_;
+                idList_ = obj.idList_;
+            }
 
             //LOG: changed the names for consistentcy with KeywordResultItem
             //DATA_IO_LOAD_SAVE(RawTextResultFromSIA, 

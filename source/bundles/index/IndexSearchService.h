@@ -51,9 +51,7 @@ public:
 
 private:
 
-    void getWorkersByCollectionName(std::string& collectionName, std::vector<workerid_t>& workeridList);
-
-private:
+    bool checkAggregatorByCollectionName(std::string& collectionName);
 
     bool buildQuery(
         SearchKeywordOperation& actionOperation,
