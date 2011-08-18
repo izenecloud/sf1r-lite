@@ -47,8 +47,6 @@ namespace bfs = boost::filesystem;
 bool CobraProcess::initialize(const std::string& configFileDir)
 {
     if( !exists(configFileDir) || !is_directory(configFileDir) ) return false;
-    bfs::path logPath(bfs::path(".") / "log" / "COBRA");
-    if( !sflog->init( logPath.string() ) ) return false;
     try
     {
         configDir_ = configFileDir;
@@ -65,6 +63,8 @@ bool CobraProcess::initialize(const std::string& configFileDir)
         return false;
     }
 
+    if(!initLogManager()) return false;
+
     if(!initLAManager()) return false;
 
     if(!initFireWall()) return false;
@@ -73,6 +73,18 @@ bool CobraProcess::initialize(const std::string& configFileDir)
 
     initDriverServer();
 
+    return true;
+}
+
+bool CobraProcess::initLogManager()
+{
+    std::string log_conn = SF1Config::get()->getLogConnString();
+//     bfs::path logPath(bfs::path(".") / "log" / "COBRA");
+    if( !sflog->init(log_conn) ) 
+    {
+        std::cerr<<"Init LogManager with "<<log_conn<<" failed!"<<std::endl;
+        return false;
+    }
     return true;
 }
 

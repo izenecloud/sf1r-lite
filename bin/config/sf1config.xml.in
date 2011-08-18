@@ -10,7 +10,7 @@
   -->
   <System>
     <Resource path="@SF1RENGINE_ROOT@/package/resource"/> 
-    
+    <LogConnection str="sqlite3://./log/COBRA" />
     <BundlesDefault>
       <!-- QueryCorrection Bundle Default -->
       <QueryLogBundle enableworker="n">
@@ -30,7 +30,12 @@
           <CollectionDataDirectory>default-collection-dir</CollectionDataDirectory>
           <!-- <CollectionDataDirectory>collection-dir-A</CollectionDataDirectory> -->
           <!-- <CollectionDataDirectory>collection-dir-B</CollectionDataDirectory> -->
-          <IndexStrategy memorypoolsize="128000000" indexpolicy="default" cron="0 3 * * *" />
+          <IndexStrategy memorypoolsize="128000000" indexpolicy="default" mergepolicy="file" cron="0 3 * * *" />
+          <!-- mergepolicy could be set for both "memory" or "file", which is used to indicate the situation that when it requires an extra intermediate 
+               storage space to guarantee the skiplist to be at the head of each posting during index merging, this parameter is used to indicate the type
+               of that extra storage space. "file" refers to file, "memory" refers to memory. If "memory" is set, the extra memory consumption equals to 
+               the maximum posting length, while if "file" is set, it might cause low efficiency on some specified kind of disks.
+          -->
 
           <!-- In unigram searching mode (unigramsearchmode="y"), searching performs on unigram terms, while ranking performs on word segments. 
                Make sure unigram terms have been indexed for Property (LA for Indexing is "la_sia_with_unigram"), or search(retrieve) may fail.

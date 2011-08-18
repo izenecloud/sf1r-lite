@@ -242,10 +242,10 @@ namespace sf1r {
             {
                 if (topKWorkerIds_.size() == 0)
                     topKWorkerIds_.resize(topKDocs_.size(), 0);
-
+                topKWDocs.resize( topKDocs_.size() );
                 for (size_t i = 0; i < topKDocs_.size(); i++)
                 {
-                    topKWDocs.push_back(net::aggregator::Util::GetWDocId(topKWorkerIds_[i], topKDocs_[i]));
+                    topKWDocs[i] = net::aggregator::Util::GetWDocId(topKWorkerIds_[i], topKDocs_[i]);
                 }
             }
 

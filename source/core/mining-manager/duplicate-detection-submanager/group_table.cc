@@ -1,6 +1,6 @@
 #include "group_table.h"
 #include <boost/serialization/deque.hpp>
-
+#include <boost/filesystem.hpp>
 // #define GT_DEBUG
 
 using namespace sf1r;
@@ -14,6 +14,10 @@ GroupTable::~GroupTable()
 
 bool GroupTable::Load()
 {
+    if(!boost::filesystem::exists(file_))
+    {
+        return true;
+    }
     std::ifstream ifs(file_.c_str(), std::ios::binary);
     if ( ifs.fail()) return false;
     {

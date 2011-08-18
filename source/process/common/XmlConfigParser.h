@@ -355,10 +355,17 @@ public:
     /// 
     bool parseConfigFile( const std::string & fileName ) throw(XmlConfigParserException );
 
-    std::string getResourceDir() const
+    const std::string& getResourceDir() const
     {
       return resource_dir_;
     }
+    
+    const std::string& getLogConnString() const
+    {
+      return log_conn_str_;
+    }
+    
+    
     
     /// @brief Gets the configuration related to LAManager
     /// @return The settings for LAManager
@@ -571,6 +578,8 @@ public:
     // CONFIGURATION ITEMS ---------------
     
     std::string resource_dir_;
+    
+    std::string log_conn_str_;
 
     /// @brief  Configurations for BrokerAgent
     BrokerAgentConfig brokerAgentConfig_;

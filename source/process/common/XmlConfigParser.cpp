@@ -314,6 +314,8 @@ void SF1Config::parseSystemSettings( const ticpp::Element * system )
 {
   //get resource dir
   getAttribute( getUniqChildElement( system, "Resource" ), "path", resource_dir_);
+  
+  getAttribute( getUniqChildElement( system, "LogConnection" ), "str", log_conn_str_);
 
   parseBundlesDefault(getUniqChildElement( system, "BundlesDefault" ));
   
@@ -1027,6 +1029,12 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     indexmanager_config.indexStrategy_.maxSkipLevel_ = 3;
     indexmanager_config.storeStrategy_.param_ = "file";
     params.GetString("IndexStrategy/indexpolicy", indexmanager_config.indexStrategy_.indexMode_, "default");
+    std::string indexMergePolicy;
+    params.GetString("IndexStrategy/mergepolicy",indexMergePolicy, "file");
+    if(indexMergePolicy == "memory")
+        indexmanager_config.mergeStrategy_.requireIntermediateFileForMerging_ = false;
+    else
+        indexmanager_config.mergeStrategy_.requireIntermediateFileForMerging_ = true;
     indexmanager_config.mergeStrategy_.param_ = "dbt";
     params.GetString("IndexStrategy/cron", indexBundleConfig.cronIndexer_, "");
 

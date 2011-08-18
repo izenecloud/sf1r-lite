@@ -42,7 +42,7 @@ class TaxonomyGenerationSubManager : public boost::noncopyable
         {
         }
         uint32_t concept_id;
-        boost::dynamic_bitset<> doc_invert;
+        boost::dynamic_bitset<uint32_t> doc_invert;
         double score;
         double score2rank;
         
@@ -68,7 +68,7 @@ public:
     bool GetResult(const idmlib::cc::CCInput64& input, TaxonomyRep& taxonomyRep ,NEResultList& neList);
     
     
-    void AggregateInput(const std::vector<std::pair<uint32_t, idmlib::cc::CCInput32> >& input_list, idmlib::cc::CCInput64& result);
+    void AggregateInput(const std::vector<wdocid_t>& top_wdoclist, const std::vector<std::pair<uint32_t, idmlib::cc::CCInput32> >& input_list, idmlib::cc::CCInput64& result);
     
     
     /// @brief Given a query, get the query specific taxonomy information to display.

@@ -170,7 +170,7 @@ void DocumentsSearchHandler::search()
                     getActionItem.displayPropertyList_
                     = actionItem_.displayPropertyList_;
 
-                    if (doGet(getActionItem, rawTextResult))
+                    if (doGet(getActionItem, searchResult, rawTextResult))
                     {
                         renderDocuments(rawTextResult);
                         renderMiningResult(searchResult);
@@ -287,6 +287,7 @@ void DocumentsSearchHandler::filterDocIdList(const KeywordSearchResult& origin, 
 
 bool DocumentsSearchHandler::doGet(
     const GetDocumentsByIdsActionItem& getActionItem,
+    const KeywordSearchResult& miaResult,
     RawTextResultFromMIA& rawTextResult
 )
 {
@@ -297,19 +298,17 @@ bool DocumentsSearchHandler::doGet(
         return false;
     }
     //add dd result
-    rawTextResult.numberOfDuplicatedDocs_.resize(rawTextResult.idList_.size());
-    for(uint32_t i=0;i<rawTextResult.idList_.size();i++)
-    {
-        uint32_t docid = rawTextResult.idList_[i];
-        std::vector<uint32_t> dd_list;
-        requestSent = miningSearchService_->getDuplicateDocIdList(docid, dd_list);
-        if (!requestSent)
-        {
-            response_.addError("Internal communication error.");
-            return false;
-        }
-        rawTextResult.numberOfDuplicatedDocs_[i] = dd_list.size();
-    }
+    rawTextResult.numberOfDuplicatedDocs_.resize(rawTextResult.idList_.size(), 0);
+//     uint32_t pos1=0,pos2=0;
+//     while(pos1<miaResult.topKDocs_.size() && pos<rawTextResult.idList_.size() )
+//     {
+//         
+//     }
+//     for(uint32_t i=0;i<rawTextResult.idList_.size();i++)
+//     {
+//         wdocid_t wdocid = rawTextResult.idList_[i];
+//         rawTextResult.numberOfDuplicatedDocs_[i] = dd_list.size();
+//     }
     
     //TODO add other information
     
