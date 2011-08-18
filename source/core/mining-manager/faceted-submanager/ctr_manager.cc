@@ -72,29 +72,32 @@ bool CTRManager::update(uint32_t docId)
     return true;
 }
 
-void CTRManager::getClickCountListByDocIdList(
+bool CTRManager::getClickCountListByDocIdList(
         const std::vector<unsigned int>& docIdList,
         std::vector<std::pair<size_t, count_t> >& posClickCountList)
 {
     boost::lock_guard<boost::shared_mutex> lg(mutex_);
 
-    if (docClickCountList_.size() <= 0)
-        return;
-
-    for (size_t pos = 0; pos < docIdList.size(); pos++)
+    bool result = false;
+    const size_t listSize = docIdList.size();
+    posClickCountList.resize(listSize);
+    for (size_t pos = 0; pos < listSize; ++pos)
     {
         const unsigned int& docId = docIdList[pos];
+        count_t count = 0;
         if (docId < docClickCountList_.size())
         {
-            if (docClickCountList_[docId] > 0)
-            {
-                posClickCountList.push_back(std::make_pair(pos, docClickCountList_[docId]));
-            }
+            if ((count = docClickCountList_[docId]))
+                result = true;
         }
+        posClickCountList[pos].first = pos;
+        posClickCountList[pos].second = count;
     }
+
+    return result;
 }
 
-void CTRManager::getClickCountListByDocIdList(
+bool CTRManager::getClickCountListByDocIdList(
         const std::vector<unsigned int>& docIdList,
         std::vector<count_t>& clickCountList)
 {
@@ -102,14 +105,18 @@ void CTRManager::getClickCountListByDocIdList(
 
     clickCountList.resize(docIdList.size(), 0);
 
+    bool result = false;
     for (size_t i = 0; i < docIdList.size(); i++)
     {
         const unsigned int& docId = docIdList[i];
         if (docId < docClickCountList_.size())
         {
-            clickCountList[i] = docClickCountList_[docId];
+            if ((clickCountList[i] = docClickCountList_[docId]))
+                result = true;
         }
     }
+
+    return result;
 }
 
 count_t CTRManager::getClickCountByDocId(uint32_t docId)
@@ -123,21 +130,6 @@ count_t CTRManager::getClickCountByDocId(uint32_t docId)
 
     return 0;
 }
-
-bool CTRManager::getClickCountByDocId(uint32_t docId, count_t& clickCount)
-{
-    boost::lock_guard<boost::shared_mutex> lg(mutex_);
-
-    if (docId < docClickCountList_.size())
-    {
-        clickCount = docClickCountList_[docId];
-        return true;
-    }
-
-    clickCount = 0;
-    return false;
-}
-
 
 /// private
 

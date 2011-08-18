@@ -45,9 +45,14 @@ public:
      */
     bool processCollection();
 
-    const PropValueMap& getPropValueMap() const
+    const PropValueTable* getPropValueTable(const std::string& propName) const
     {
-        return propValueMap_;
+        PropValueMap::const_iterator it = propValueMap_.find(propName);
+        if (it != propValueMap_.end())
+        {
+            return &(it->second);
+        }
+        return NULL;
     }
 
 private:

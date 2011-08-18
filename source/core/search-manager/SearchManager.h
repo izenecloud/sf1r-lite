@@ -39,8 +39,7 @@ class SearchManager
     typedef izenelib::ir::idmanager::IDManager IDManager;
 
 public:
-    typedef boost::function< void( std::vector<unsigned int>&, std::vector<float>&, const std::string& ) > dynamic_reranker_t;
-    typedef boost::function< void( std::vector<unsigned int>&, std::vector<float>& ) > static_reranker_t;	
+    typedef boost::function< void( std::vector<unsigned int>&, std::vector<float>&, const std::string& ) > reranker_t;
     SearchManager(
         std::set<PropertyConfig, PropertyComp> schema,
         const boost::shared_ptr<IDManager>& idManager,
@@ -72,12 +71,8 @@ public:
                IndexBundleConfiguration* config
                );
 
-    void set_dynamic_reranker(dynamic_reranker_t reranker){
-        dynamic_reranker_ = reranker;
-    }
-
-    void set_static_reranker(static_reranker_t reranker){
-        static_reranker_ = reranker;
+    void set_reranker(reranker_t reranker){
+        reranker_ = reranker;
     }
 
     void setGroupFilterBuilder(faceted::GroupFilterBuilder* builder);
@@ -117,8 +112,7 @@ private:
     boost::scoped_ptr<SearchCache> cache_;
     SortPropertyCache* pSorterCache_;
 
-    dynamic_reranker_t dynamic_reranker_;
-    static_reranker_t	 static_reranker_;
+    reranker_t reranker_;
 
     boost::scoped_ptr<faceted::GroupFilterBuilder> groupFilterBuilder_;
 };

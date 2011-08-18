@@ -44,12 +44,14 @@ public:
      * Get click-count for each document.
      * @param docIdList [IN]
      * @param posClickCountList [OUT]
+     * @return true for @p posClickCountList contains positive value,
+     *         false for @p posClickCountList is empty or its values are all zero.
      */
-    void getClickCountListByDocIdList(
+    bool getClickCountListByDocIdList(
             const std::vector<unsigned int>& docIdList,
             std::vector<std::pair<size_t, count_t> >& posClickCountList);
 
-    void getClickCountListByDocIdList(
+    bool getClickCountListByDocIdList(
             const std::vector<unsigned int>& docIdList,
             std::vector<count_t>& clickCountList);
 
@@ -59,8 +61,6 @@ public:
      * @return click count
      */
     count_t getClickCountByDocId(uint32_t docId);
-
-    bool getClickCountByDocId(uint32_t docId, count_t& clickCount);
 
 private:
     bool updateDB(uint32_t docId, count_t clickCount);

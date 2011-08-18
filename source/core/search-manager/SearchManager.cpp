@@ -64,8 +64,7 @@ SearchManager::SearchManager(std::set<PropertyConfig, PropertyComp> schema,
         , rankingManagerPtr_(rankingManager)
         , queryBuilder_()
         , pSorterCache_(0)
-        , dynamic_reranker_(0)
-        , static_reranker_(0)
+        , reranker_(0)
 {
     for (std::set<PropertyConfig, PropertyComp>::iterator iter = schema.begin(); iter != schema.end(); ++iter)
         schemaMap_[iter->getName()] = *iter;
@@ -136,11 +135,11 @@ START_PROFILER ( cacheoverhead )
     if (cache_->get(identity, rankScoreList, customRankScoreList, docIdList, totalCount, groupRep, attrRep))
     {
 STOP_PROFILER ( cacheoverhead )
-        // for dynamic reranker, the cached search results require to be performed      
-        if(dynamic_reranker_ &&
+        // the cached search results require to be reranked
+        if(reranker_ &&
             customRankScoreList.empty() &&
             action_rerankable(actionOperation))
-            dynamic_reranker_(docIdList,rankScoreList,actionOperation.actionItem_.env_.queryString_);           
+            reranker_(docIdList,rankScoreList,actionOperation.actionItem_.env_.queryString_);           
 
         return true;
     }
@@ -577,12 +576,9 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             if (fieldNameL == "_rank")
                 rerank = true;
             }
-        if(rerank)
+        if(rerank && reranker_)
         {
-            if(dynamic_reranker_) 
-                dynamic_reranker_(docIdList,rankScoreList,actionOperation.actionItem_.env_.queryString_);
-            else if(static_reranker_) 
-                static_reranker_(docIdList,rankScoreList);
+            reranker_(docIdList,rankScoreList,actionOperation.actionItem_.env_.queryString_);
         }
     }
     catch (std::exception& e)

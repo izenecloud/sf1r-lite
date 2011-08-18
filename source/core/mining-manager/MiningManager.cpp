@@ -379,21 +379,14 @@ bool MiningManager::open()
         }
 
         /** property_rerank **/
-        if( mining_schema_.group_enable)
         {
-            std::string boostingProperty = mining_schema_.prop_rerank_property.boostingPropName;
-            groupReranker_ = new faceted::PropertyDiversityReranker(mining_schema_.prop_rerank_property.propName, groupManager_->getPropValueMap(),boostingProperty);
+            const std::string& diversityProperty = mining_schema_.prop_rerank_property.propName;
+            const std::string& boostingProperty = mining_schema_.prop_rerank_property.boostingPropName;
+
+            groupReranker_ = new faceted::PropertyDiversityReranker(groupManager_, diversityProperty, boostingProperty);
+            groupReranker_->setGroupLabelLogger(groupLabelLoggerMap_[boostingProperty]);
             groupReranker_->setCTRManager(ctrManager_);
-            GroupLabelLogger* logger = groupLabelLoggerMap_[boostingProperty];
-            if(logger)
-            {
-                groupReranker_->setGroupLabelLogger(logger);
-                searchManager_->set_dynamic_reranker(boost::bind(&faceted::PropertyDiversityReranker::rerank,groupReranker_,_1,_2,_3));
-            }
-            else
-            {
-                searchManager_->set_static_reranker(boost::bind(&faceted::PropertyDiversityReranker::simplererank,groupReranker_,_1,_2));				
-            }
+            searchManager_->set_reranker(boost::bind(&faceted::PropertyDiversityReranker::rerank,groupReranker_,_1,_2,_3));
         }
 
         /** tdt **/

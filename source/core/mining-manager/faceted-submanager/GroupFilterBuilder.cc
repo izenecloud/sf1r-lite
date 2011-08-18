@@ -2,12 +2,12 @@
 #include "GroupFilter.h"
 #include "GroupParam.h"
 
+#include "group_manager.h"
 #include "attr_manager.h"
 #include "attr_table.h"
 
 namespace
 {
-const sf1r::faceted::GroupManager::PropValueMap EMPTY_PROP_VALUE_MAP;
 const sf1r::faceted::AttrTable EMPTY_ATTR_TABLE;
 }
 
@@ -17,7 +17,7 @@ GroupFilterBuilder::GroupFilterBuilder(
     const GroupManager* groupManager,
     const AttrManager* attrManager
 )
-    : propValueMap_(groupManager ? groupManager->getPropValueMap() : EMPTY_PROP_VALUE_MAP)
+    : groupManager_(groupManager)
     , attrTable_(attrManager ? attrManager->getAttrTable() : EMPTY_ATTR_TABLE)
 {
 }
@@ -27,7 +27,7 @@ GroupFilter* GroupFilterBuilder::createFilter(const GroupParam& groupParam) cons
     if (groupParam.empty())
         return NULL;
 
-    return new GroupFilter(propValueMap_, attrTable_, groupParam);
+    return new GroupFilter(groupManager_, attrTable_, groupParam);
 }
 
 NS_FACETED_END
