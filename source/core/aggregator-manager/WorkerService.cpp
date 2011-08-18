@@ -33,18 +33,18 @@ WorkerService::WorkerService()
 
 /// public service interfaces
 
-bool WorkerService::getPreSearchResult(const KeywordSearchActionItem& actionItem, KeywordPreSearchResult& resultItem)
+bool WorkerService::getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem)
 {
-	KeywordRealSearchResult fakeResultItem;
-	fakeResultItem.preSearchResult_.preResultType_ = KeywordPreSearchResult::RESULT_TYPE_FECTH;
+    DistKeywordSearchResult fakeResultItem;
+	fakeResultItem.distSearchInfo_.preResultType_ = DistKeywordSearchInfo::RESULT_TYPE_FECTH;
 
     getSearchResult(const_cast<KeywordSearchActionItem&>(actionItem), fakeResultItem);
 
-	resultItem = fakeResultItem.preSearchResult_;
+	resultItem = fakeResultItem.distSearchInfo_;
     return true;
 }
 
-bool WorkerService::processGetSearchResult(const KeywordSearchActionItem& actionItem, KeywordRealSearchResult& resultItem)
+bool WorkerService::processGetSearchResult(const KeywordSearchActionItem& actionItem, DistKeywordSearchResult& resultItem)
 {
     cout << "#[WorkerService::processGetSearchResult] " << actionItem.collectionName_ << endl;
 
@@ -157,9 +157,11 @@ bool WorkerService::clickGroupLabel(const clickGroupLabelActionItem& actionItem,
 
 /// private methods ////////////////////////////////////////////////////////////
 
+template <typename ResultItemType>
 bool WorkerService::getSearchResult(
         KeywordSearchActionItem& actionItem,
-        KeywordRealSearchResult& resultItem)
+        ResultItemType& resultItem,
+        bool isDistributedSearch)
 {
     CREATE_PROFILER ( searchIndex, "IndexSearchService", "processGetSearchResults: search index");
 
@@ -190,46 +192,36 @@ bool WorkerService::getSearchResult(
     // Get Personalized Search information (user profile)
     PersonalSearchInfo personalSearchInfo;
     personalSearchInfo.enabled = false;
-
     User& user = personalSearchInfo.user;
     user.idStr_ = actionItem.env_.userID_;
     if( recommendSearchService_  && (!user.idStr_.empty()))
     {
         personalSearchInfo.enabled = recommendSearchService_->getUser(user.idStr_, user);
-
-#if 1
-        if (personalSearchInfo.enabled)
-        {
-            cout << "[ Got User profile by user id: " << user.idStr_ << endl;
-            User::PropValueMap::iterator iter;
-            for (iter = user.propValueMap_.begin(); iter != user.propValueMap_.end(); iter ++)
-            {
-                cout << "Item: "<< iter->first << " : " << iter->second << endl;
-            }
-        }
-        else
-        {
-            cout << "[ Failed to get User profile by user id: " << user.idStr_ << endl;
-        }
-#endif
     }
     else
     {
         // Recommend Search Service is not available, xxx
     }
 
-    //std::vector<std::vector<izenelib::util::UString> > propertyQueryTermList;
+    resultItem.propertyQueryTermList_.clear();
     if(!buildQuery(actionOperation, *bundleConfig_, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
     {
         return true;
     }
 
     START_PROFILER ( searchIndex );
-    // xxx, the page start(offset) for result is measured in results over all nodes based on sort condition.
-    // In one node, we don't know how many results should be retrieved. The extreme case is, all results of
-    // the requested page located in one node. (maybe can pre-fetch some statistical info to improve.)
-    //int startOffset = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
-    int startOffset = 0;
+    int startOffset;
+    if (isDistributedSearch)
+    {
+        // XXX, For distributed search, the page start(offset) should be measured in results over all nodes,
+        // we don't know which part of results should be retrieved in one node. Currently, the limitation of documents
+        // to be retrieved in one node is set to TOP_K_NUM.
+        startOffset = 0;
+    }
+    else
+    {
+        startOffset = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
+    }
 
     if(! searchManager_->search(
                 actionOperation,
@@ -241,7 +233,7 @@ bool WorkerService::getSearchResult(
                 resultItem.attrRep_,
                 TOP_K_NUM,
                 startOffset,
-                resultItem.preSearchResult_
+                resultItem.distSearchInfo_
                 ))
     {
         std::string newQuery;
@@ -267,13 +259,14 @@ bool WorkerService::getSearchResult(
                                     resultItem.attrRep_,
                                     TOP_K_NUM,
                                     startOffset,
-                                    resultItem.preSearchResult_
+                                    resultItem.distSearchInfo_
                                     ))
         {
             return true;
         }
     }
 
+    // todo, remove duplication globally over all nodes?
     // Remove duplicated docs from the result if the option is on.
     removeDuplicateDocs(actionItem, resultItem);
 
@@ -287,7 +280,7 @@ bool WorkerService::getSearchResult(
     {
         resultItem.start_ = overallSearchResultSize;
     }
-    else if(resultItem.start_ + resultItem.count_ > overallSearchResultSize)
+    if(resultItem.start_ + resultItem.count_ > overallSearchResultSize)
     {
         resultItem.count_ = overallSearchResultSize - resultItem.start_;
     }
@@ -307,7 +300,8 @@ bool WorkerService::getSearchResult(
 
 bool WorkerService::getSummaryMiningResult(
         KeywordSearchActionItem& actionItem,
-        KeywordSearchResult& resultItem)
+        KeywordSearchResult& resultItem,
+        bool isDistributedSearch)
 {
     CREATE_PROFILER ( getSummary, "IndexSearchService", "processGetSearchResults: get raw text, snippets, summarization");
     START_PROFILER ( getSummary );
@@ -318,7 +312,7 @@ bool WorkerService::getSummaryMiningResult(
     {
         // id of documents in current page
         std::vector<sf1r::docid_t> docsInPage;
-        std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin() + resultItem.start_; //%TOP_K_NUM;
+        std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin() + resultItem.start_%TOP_K_NUM;
         for(size_t i=0 ; it != resultItem.topKDocs_.end() && i<resultItem.count_; i++, it++)
         {
           docsInPage.push_back(*it);
@@ -482,9 +476,10 @@ bool  WorkerService::getResultItem(ActionItemT& actionItem, const std::vector<sf
     return ret;
 }
 
+template <typename ResultItemType>
 bool WorkerService::removeDuplicateDocs(
     KeywordSearchActionItem& actionItem,
-    KeywordRealSearchResult& resultItem
+    ResultItemType& resultItem
 )
 {
     // Remove duplicated docs from the result if the option is on.

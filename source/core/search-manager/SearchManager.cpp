@@ -29,6 +29,9 @@
 namespace sf1r
 {
 
+DistKeywordSearchInfo SearchManager::kDefaultDistSearchInfo_;
+
+
 bool action_rerankable(SearchKeywordOperation& actionOperation)
 {
     bool rerank = false;
@@ -50,8 +53,6 @@ bool action_rerankable(SearchKeywordOperation& actionOperation)
     }
     return rerank;
 }
-
-KeywordPreSearchResult SearchManager::kDefaultPreSearchResult_;
 
 SearchManager::SearchManager(std::set<PropertyConfig, PropertyComp> schema,
                              const boost::shared_ptr<IDManager>& idManager,
@@ -127,7 +128,7 @@ bool SearchManager::search(SearchKeywordOperation& actionOperation,
                            faceted::OntologyRep& attrRep,
                            int topK,
                            int start,
-                           KeywordPreSearchResult& preSearchResult)
+                           DistKeywordSearchInfo& DistSearchInfo)
 {
 CREATE_PROFILER ( cacheoverhead, "SearchManager", "cache overhead: overhead for caching in searchmanager");
 
@@ -160,10 +161,10 @@ STOP_PROFILER ( cacheoverhead )
                   attrRep,
                   topK,
                   start,
-                  preSearchResult))
+                  DistSearchInfo))
     {
  START_PROFILER ( cacheoverhead )
-		if (preSearchResult.preResultType_ != KeywordPreSearchResult::RESULT_TYPE_FECTH)
+		if (DistSearchInfo.preResultType_ != DistKeywordSearchInfo::RESULT_TYPE_FECTH)
 			cache_->set(identity, rankScoreList, customRankScoreList, docIdList, totalCount, groupRep, attrRep);
  STOP_PROFILER ( cacheoverhead )
         return true;
@@ -181,7 +182,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                               faceted::OntologyRep& attrRep,
                               int topK,
                               int start,
-                              KeywordPreSearchResult& preSearchResult)
+                              DistKeywordSearchInfo& DistSearchInfo)
 {
     CREATE_PROFILER ( dociterating, "SearchManager", "doSearch_: doc iterating");
     CREATE_PROFILER ( preparedociter, "SearchManager", "doSearch_: SearchManager_search : build doc iterator");
@@ -285,18 +286,18 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
     DocumentFrequencyInProperties dfmap;
     CollectionTermFrequencyInProperties ctfmap;
 
-    if (preSearchResult.preResultType_ == KeywordPreSearchResult::RESULT_TYPE_FECTH)
+    if (DistSearchInfo.preResultType_ == DistKeywordSearchInfo::RESULT_TYPE_FECTH)
     {
     	pDocIterator->df_ctf(dfmap, ctfmap);
 
-    	preSearchResult.dfmap_ = dfmap;
-    	preSearchResult.ctfmap_ = ctfmap;
+    	DistSearchInfo.dfmap_ = dfmap;
+    	DistSearchInfo.ctfmap_ = ctfmap;
     	return true;
     }
-    else if (preSearchResult.preResultType_ == KeywordPreSearchResult::RESULT_TYPE_SEND)
+    else if (DistSearchInfo.preResultType_ == DistKeywordSearchInfo::RESULT_TYPE_SEND)
     {
-    	dfmap = preSearchResult.dfmap_;
-    	ctfmap = preSearchResult.ctfmap_;
+    	dfmap = DistSearchInfo.dfmap_;
+    	ctfmap = DistSearchInfo.ctfmap_;
     }
     else
     {

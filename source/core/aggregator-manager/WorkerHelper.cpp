@@ -36,11 +36,12 @@ void assembleDisjunction(std::vector<izenelib::util::UString> keywords, std::str
     boost::trim_right_if(result,is_any_of("|"));	
 }
 
+template <typename ResultItemT>
 bool buildQuery(
     SearchKeywordOperation& actionOperation,
     IndexBundleConfiguration& bundleConfig,
     std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList,
-    KeywordRealSearchResult& resultItem,
+    ResultItemT& resultItem,
     PersonalSearchInfo& personalSearchInfo
 )
 {

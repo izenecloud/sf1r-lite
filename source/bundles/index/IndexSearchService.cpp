@@ -62,7 +62,19 @@ bool IndexSearchService::getSearchResult(
 
 #ifdef DISTRIBUTED_SEARCH
 
-    ///actionItem.print();
+    if (!checkAggregatorSupport(resultItem.collectionName_))
+    {
+        cout <<"aggregator false: "<<  resultItem.collectionName_<<endl;
+
+        if (workerService_->getSearchResult(actionItem, resultItem, false))
+        {
+            return workerService_->getSummaryMiningResult(actionItem, resultItem, false);
+        }
+
+        return false;
+    }
+
+    cout <<"aggregator true: "<<  resultItem.collectionName_<<endl;
 
     // set basic info for result
     resultItem.collectionName_ = actionItem.collectionName_;
@@ -72,33 +84,18 @@ bool IndexSearchService::getSearchResult(
     resultItem.count_ = actionItem.pageInfo_.count_;
     resultItem.rawQueryString_ = actionItem.env_.queryString_;
 
-
-//    if (!checkAggregatorByCollectionName(resultItem.collectionName_))
-//    {
-//        cout <<"aggregator false: "<<  resultItem.collectionName_<<endl;
-//
-//        if( workerService_->processGetSearchResult(actionItem, resultItem) )
-//        {
-//            return workerService_->processGetSummaryResult(actionItem, resultItem);
-//        }
-//
-//        return false;
-//    }
-
-//    cout <<"aggregator true: "<<  resultItem.collectionName_<<endl;
-
-    KeywordPreSearchResult preResultItem;
-    aggregatorManager_->sendRequest<KeywordSearchActionItem, KeywordPreSearchResult>(
-            actionItem.collectionName_, "getPreSearchResult", actionItem, preResultItem);
+    DistKeywordSearchInfo infoResultItem;
+    aggregatorManager_->sendRequest<KeywordSearchActionItem, DistKeywordSearchInfo>(
+            actionItem.collectionName_, "getDistSearchInfo", actionItem, infoResultItem);
 
     // get and merge mutliple keyword search result
     std::vector<workerid_t> workeridList;
-    KeywordRealSearchResult ksResultItem;
+    DistKeywordSearchResult distResultItem;
     ///getWorkersByCollectionName(actionItem.collectionName_, workeridList);
-    aggregatorManager_->sendRequest<KeywordSearchActionItem, KeywordRealSearchResult>(
-            actionItem.collectionName_, "getSearchResult", actionItem, ksResultItem, workeridList);
+    aggregatorManager_->sendRequest<KeywordSearchActionItem, DistKeywordSearchResult>(
+            actionItem.collectionName_, "getSearchResult", actionItem, distResultItem, workeridList);
 
-    copySearchResult(resultItem, ksResultItem);
+    ///copySearchResult(resultItem, ksResultItem);
 
     DLOG(INFO) << "Total count: " << resultItem.totalCount_ << endl;
     DLOG(INFO) << "Top K count: " << resultItem.topKDocs_.size() << endl;
@@ -137,7 +134,7 @@ bool IndexSearchService::getSearchResult(
 
     return true;
 
-#endif
+#else
 
     // Set basic info for response
     resultItem.collectionName_ = actionItem.collectionName_;
@@ -172,22 +169,6 @@ bool IndexSearchService::getSearchResult(
     if( recommendSearchService_  && (!user.idStr_.empty()))
     {
         personalSearchInfo.enabled = recommendSearchService_->getUser(user.idStr_, user);
-
-#if 1
-        if (personalSearchInfo.enabled)
-        {
-            cout << "[ Got User profile by user id: " << user.idStr_ << endl;
-            User::PropValueMap::iterator iter;
-            for (iter = user.propValueMap_.begin(); iter != user.propValueMap_.end(); iter ++)
-            {
-                cout << "Item: "<< iter->first << " : " << iter->second << endl;
-            }
-        }
-        else
-        {
-            cout << "[ Failed to get User profile by user id: " << user.idStr_ << endl;
-        }
-#endif
     }
     else
     {
@@ -202,11 +183,6 @@ bool IndexSearchService::getSearchResult(
 
     START_PROFILER ( searchIndex );
     int startOffset = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
-    //int gap = actionItem.pageInfo_.start_ + actionItem.pageInfo_.count_ - startOffset + TOP_K_NUM;
-    //if (gap > 0)
-    //{
-    //    startOffset += gap;
-    //}
 
     if(! searchManager_->search(
                 actionOperation,
@@ -329,6 +305,8 @@ bool IndexSearchService::getSearchResult(
     }
 
     return true;
+
+#endif
 }
 
 void IndexSearchService::analyze_(const std::string& qstr, std::vector<izenelib::util::UString>& results)
@@ -735,7 +713,7 @@ bool IndexSearchService::getInternalDocumentId(
     return true;
 }
 
-bool IndexSearchService::checkAggregatorByCollectionName(std::string& collectionName)
+bool IndexSearchService::checkAggregatorSupport(std::string& collectionName)
 {
     return
     const_cast<BrokerAgentConfig&>(SF1Config::get()->getBrokerAgentConfig()).checkAggregatorByName(collectionName);

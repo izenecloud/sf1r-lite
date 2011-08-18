@@ -2,22 +2,14 @@
  * @file DistributeResultType.h
  * @author Zhongxia Li
  * @date Aug 12, 2011
- * @brief 
+ * @brief Divide Reuslt Types to different parts by distributed search functionality.
  */
-#ifndef DISTIBUTE_RESULT_TYPE_H_
-#define DISTIBUTE_RESULT_TYPE_H_
 
-#include "ResultType.h"
-
-//#include "type_defs.h"
-
-namespace sf1r{
-
-class KeywordPreSearchResult
+class DistKeywordSearchInfo
 {
 public:
 
-	KeywordPreSearchResult() : preResultType_(RESULT_TYPE_NOACTION) {}
+    DistKeywordSearchInfo() : preResultType_(RESULT_TYPE_NOACTION) {}
 
 	static const int RESULT_TYPE_NOACTION = 0x0;
 	static const int RESULT_TYPE_FECTH = 0x1;
@@ -35,11 +27,11 @@ public:
     MSGPACK_DEFINE();
 };
 
-class KeywordRealSearchResult : public ResultBase
+class DistKeywordSearchResult : public ErrorInfo
 {
 public:
-	KeywordRealSearchResult()
-    : preSearchResult_(), rawQueryString_(""), encodingType_(izenelib::util::UString::UTF_8)
+    DistKeywordSearchResult()
+    : distSearchInfo_(), rawQueryString_(""), encodingType_(izenelib::util::UString::UTF_8)
     , collectionName_(""), analyzedQuery_(), queryTermIdList_()
     , totalCount_(0), topKDocs_(0), topKRankScoreList_(0), topKCustomRankScoreList_(0)
     , start_(0), count_(0), onto_rep_()
@@ -47,7 +39,7 @@ public:
     }
 
 	/// pre-fetched info for keyword search
-	KeywordPreSearchResult preSearchResult_;
+    DistKeywordSearchInfo distSearchInfo_;
 
     std::string rawQueryString_;
 
@@ -98,33 +90,14 @@ public:
     sf1r::faceted::OntologyRep attrRep_;
 
     MSGPACK_DEFINE(
-    		/*preSearchResult_,*/rawQueryString_,encodingType_,collectionName_,analyzedQuery_,
+    		/*distSearchInfo_,*/rawQueryString_,encodingType_,collectionName_,analyzedQuery_,
             queryTermIdList_,totalCount_,topKDocs_,topKWorkerIds_,topKRankScoreList_,
             topKCustomRankScoreList_,start_,count_,topKPostionList_,propertyQueryTermList_,
             onto_rep_,groupRep_,attrRep_);
 };
 
-static void copySearchResult(KeywordSearchResult& resultDest, const KeywordRealSearchResult& resultSrc)
-{
-	//resultDest.rawQueryString_ = resultSrc.rawQueryString_;
-	//resultDest.encodingType_ = resultSrc.rawQueryString_;
-	//resultDest.collectionName_ = resultSrc.collectionName_;
-	resultDest.analyzedQuery_ = resultSrc.analyzedQuery_;
-	resultDest.queryTermIdList_ = resultSrc.queryTermIdList_;
-	resultDest.totalCount_ = resultSrc.totalCount_;
-	resultDest.topKDocs_ = resultSrc.topKDocs_;
-	resultDest.topKWorkerIds_ = resultSrc.topKWorkerIds_;
-	resultDest.topKRankScoreList_ = resultSrc.topKRankScoreList_;
-	resultDest.topKCustomRankScoreList_ = resultSrc.topKCustomRankScoreList_;
-	//resultDest.start_ = resultSrc.start_;
-	//resultDest.count_ = resultSrc.count_;
-	resultDest.topKPostionList_ = resultSrc.topKPostionList_;
-	resultDest.propertyQueryTermList_ = resultSrc.propertyQueryTermList_;
-	resultDest.onto_rep_ = resultSrc.onto_rep_;
-	resultDest.groupRep_ = resultSrc.groupRep_;
-	resultDest.attrRep_ = resultSrc.attrRep_;
-}
 
-}
 
-#endif /* DISTIBUTE_RESULT_TYPE_H_ */
+
+
+

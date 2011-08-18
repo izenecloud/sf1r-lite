@@ -61,6 +61,9 @@ namespace sf1r {
 
     typedef ErrorInfo ResultBase;
 
+    // Definition of divided search results
+    #include "DistributeResultType.h"
+
     class KeywordSearchResult : public ErrorInfo
     {
         public:
@@ -77,7 +80,7 @@ namespace sf1r {
           , relatedQueryList_(), rqScore_()
           {
           }
-          
+
           void print(std::ostream& out = std::cout) const
           {
               stringstream ss;
@@ -251,6 +254,9 @@ namespace sf1r {
 
             std::string rawQueryString_;
 
+            /// Distributed search info
+            DistKeywordSearchInfo distSearchInfo_;
+
             ///
             /// @brief encoding type of rawQueryString
             ///
@@ -378,6 +384,28 @@ namespace sf1r {
             /// A list of related query rank score.
             std::vector<float> rqScore_;
             
+            void assign(KeywordSearchResult& resultDest, const DistKeywordSearchResult& resultSrc)
+            {
+              //resultDest.rawQueryString_ = resultSrc.rawQueryString_;
+              //resultDest.encodingType_ = resultSrc.rawQueryString_;
+              //resultDest.collectionName_ = resultSrc.collectionName_;
+              resultDest.analyzedQuery_ = resultSrc.analyzedQuery_;
+              resultDest.queryTermIdList_ = resultSrc.queryTermIdList_;
+              resultDest.totalCount_ = resultSrc.totalCount_;
+              resultDest.topKDocs_ = resultSrc.topKDocs_;
+              resultDest.topKWorkerIds_ = resultSrc.topKWorkerIds_;
+              resultDest.topKRankScoreList_ = resultSrc.topKRankScoreList_;
+              resultDest.topKCustomRankScoreList_ = resultSrc.topKCustomRankScoreList_;
+              //resultDest.start_ = resultSrc.start_;
+              //resultDest.count_ = resultSrc.count_;
+              resultDest.topKPostionList_ = resultSrc.topKPostionList_;
+              resultDest.propertyQueryTermList_ = resultSrc.propertyQueryTermList_;
+              resultDest.onto_rep_ = resultSrc.onto_rep_;
+              resultDest.groupRep_ = resultSrc.groupRep_;
+              resultDest.attrRep_ = resultSrc.attrRep_;
+            }
+
+
 //             DATA_IO_LOAD_SAVE(KeywordSearchResult,
 //                     &rawQueryString_&encodingType_&collectionName_&analyzedQuery_
 //                     &queryTermIdList_&totalCount_

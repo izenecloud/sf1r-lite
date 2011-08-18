@@ -8,10 +8,8 @@
 #define WORKER_SERVICE_H_
 
 #include <query-manager/ActionItem.h>
-#include <query-manager/DistributeActionItem.h>
 #include <la-manager/AnalysisInformation.h>
 #include <common/ResultType.h>
-#include <common/DistributeResultType.h>
 
 #include <net/aggregator/JobInfo.h>
 #include <ir/id_manager/IDManager.h>
@@ -47,12 +45,12 @@ public:
     bool call(
             const std::string& func,
             const KeywordSearchActionItem& request,
-            KeywordPreSearchResult& result,
+            DistKeywordSearchInfo& result,
             std::string& error)
     {
-        if (func == "getPreSearchResult")
+        if (func == "getDistSearchInfo")
         {
-            return getPreSearchResult(request, result);
+            return getDistSearchInfo(request, result);
         }
 
         return false;
@@ -61,7 +59,7 @@ public:
     bool call(
             const std::string& func,
             const KeywordSearchActionItem& request,
-            KeywordRealSearchResult& result,
+            DistKeywordSearchResult& result,
             std::string& error)
     {
         if (func == "getSearchResult")
@@ -129,9 +127,9 @@ public:
      * @{
      */
 
-    bool getPreSearchResult(const KeywordSearchActionItem& actionItem, KeywordPreSearchResult& resultItem);
+    bool getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem);
 
-    bool processGetSearchResult(const KeywordSearchActionItem& actionItem, KeywordRealSearchResult& resultItem);
+    bool processGetSearchResult(const KeywordSearchActionItem& actionItem, DistKeywordSearchResult& resultItem);
 
     bool processGetSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
@@ -142,13 +140,16 @@ public:
     /** @} */
 
 private:
+    template <typename ResultItemType>
     bool getSearchResult(
             KeywordSearchActionItem& actionItem,
-            KeywordRealSearchResult& resultItem);
+            ResultItemType& resultItem,
+            bool isDistributedSearch = true);
 
     bool getSummaryMiningResult(
             KeywordSearchActionItem& actionItem,
-            KeywordSearchResult& resultItem);
+            KeywordSearchResult& resultItem,
+            bool isDistributedSearch = true);
 
     void analyze_(const std::string& qstr, std::vector<izenelib::util::UString>& results);
 
@@ -156,9 +157,10 @@ private:
     bool  getResultItem(ActionItemT& actionItem, const std::vector<sf1r::docid_t>& docsInPage,
         const vector<vector<izenelib::util::UString> >& propertyQueryTermList, ResultItemT& resultItem);
 
+    template <typename ResultItemType>
     bool removeDuplicateDocs(
             KeywordSearchActionItem& actionItem,
-            KeywordRealSearchResult& resultItem);
+            ResultItemType& resultItem);
 
 
 private:
@@ -175,6 +177,7 @@ private:
 
     AnalysisInfo analysisInfo_;
 
+    friend class IndexSearchService;
     friend class IndexBundleActivator;
 };
 

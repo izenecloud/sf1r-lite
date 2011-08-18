@@ -54,16 +54,16 @@ public:
      * @{
      */
 
-    void join_impl(const std::string& func,KeywordPreSearchResult& result, const std::vector<std::pair<workerid_t, KeywordPreSearchResult> >& resultList)
+    void join_impl(const std::string& func,DistKeywordSearchInfo& result, const std::vector<std::pair<workerid_t, DistKeywordSearchInfo> >& resultList)
     {
-        if (func == "getPreSearchResult")
+        if (func == "getDistSearchInfo")
         {
-            aggregatePreSearchResult(result, resultList);
+            aggregateDistSearchInfo(result, resultList);
         }
     }
 
 
-    void join_impl(const std::string& func,KeywordRealSearchResult& result, const std::vector<std::pair<workerid_t, KeywordRealSearchResult> >& resultList)
+    void join_impl(const std::string& func,DistKeywordSearchResult& result, const std::vector<std::pair<workerid_t, DistKeywordSearchResult> >& resultList)
     {
         if (func == "getSearchResult")
         {
@@ -98,12 +98,12 @@ public:
     /** @}*/
 
 public:
-    void aggregatePreSearchResult(KeywordPreSearchResult& result, const std::vector<std::pair<workerid_t, KeywordPreSearchResult> >& resultList)
+    void aggregateDistSearchInfo(DistKeywordSearchInfo& result, const std::vector<std::pair<workerid_t, DistKeywordSearchInfo> >& resultList)
     {
 
     }
 
-    void aggregateSearchResult(KeywordRealSearchResult& result, const std::vector<std::pair<workerid_t, KeywordRealSearchResult> >& resultList);
+    void aggregateSearchResult(DistKeywordSearchResult& result, const std::vector<std::pair<workerid_t, DistKeywordSearchResult> >& resultList);
 
     void aggregateSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
 
