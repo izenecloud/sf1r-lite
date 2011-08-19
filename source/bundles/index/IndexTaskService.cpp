@@ -152,7 +152,6 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
         if (bfs::is_regular_file(itr->status()))
         {
             std::string fileName = itr->path().filename();
-
             if (parser.checkSCDFormat(fileName) )
             {
                 scdList.push_back(itr->path().string() );
@@ -878,6 +877,18 @@ void IndexTaskService::checkRtype_(
     }
 }
 
+bool IndexTaskService::checkSeparatorType_(const izenelib::util::UString& propertyValueStr, izenelib::util::UString::EncodingType encoding, char separator)
+{
+    izenelib::util::UString tmpStr(propertyValueStr);
+    izenelib::util::UString sep(" ",encoding);
+    sep[0] = separator;
+    size_t n = 0;
+    n = tmpStr.find(sep,n);
+    if (n != izenelib::util::UString::npos)
+        return true;
+    return false;
+}
+
 bool IndexTaskService::prepareDocument_(
     SCDDoc& doc, 
     Document& document,
@@ -1145,12 +1156,27 @@ bool IndexTaskService::prepareDocument_(
                         try
                         {
                             value = boost::lexical_cast< int64_t >( str );
+                            indexDocument.insertProperty(indexerPropertyConfig, value);
                         }
                         catch( const boost::bad_lexical_cast & )
                         {
-                            sflog->error(SFL_IDX,10140, docId);
+                            MultiValuePropertyType multiProps;
+                            if( checkSeparatorType_(propertyValueU, encoding, '-') )
+                            {
+                                split_int(propertyValueU, multiProps, encoding,'-');
+                            }
+                            else if( checkSeparatorType_(propertyValueU, encoding, '~') )
+                            {
+                                split_int(propertyValueU, multiProps, encoding,'~');
+                            }
+                            else if( checkSeparatorType_(propertyValueU, encoding, ',') )
+                            {
+                                split_int(propertyValueU, multiProps, encoding,',');
+                            }
+                            indexerPropertyConfig.setIsMultiValue(true);
+                            indexDocument.insertProperty(indexerPropertyConfig, multiProps);
+                            //sflog->error(SFL_IDX,10140, docId);
                         }
-                        indexDocument.insertProperty(indexerPropertyConfig, value);
                     }
                 }
             }
@@ -1173,13 +1199,27 @@ bool IndexTaskService::prepareDocument_(
                         try
                         {
                             value = boost::lexical_cast< float >( str );
+                            indexDocument.insertProperty(indexerPropertyConfig, value);
                         }
                         catch( const boost::bad_lexical_cast & )
                         {
-                            LOG(WARNING) << "Float casting error : "<<str<<" in doc "<<docId;
-
+                            MultiValuePropertyType multiProps;
+                            if( checkSeparatorType_(propertyValueU, encoding, '-') )
+                            {
+                                split_float(propertyValueU, multiProps, encoding,'-');
+                            }
+                            else if( checkSeparatorType_(propertyValueU, encoding, '~') )
+                            {
+                                split_float(propertyValueU, multiProps, encoding,'~');
+                            }
+                            else if( checkSeparatorType_(propertyValueU, encoding, ',') )
+                            {
+                                split_float(propertyValueU, multiProps, encoding,',');
+                            }
+                            indexerPropertyConfig.setIsMultiValue(true);
+                            indexDocument.insertProperty(indexerPropertyConfig, multiProps);
+                            //LOG(WARNING) << "Float casting error : "<<str<<" in doc "<<docId;
                         }
-                        indexDocument.insertProperty(indexerPropertyConfig, value);
                     }
                 }
             }

@@ -69,6 +69,12 @@ private:
         bool insert = true
     );
 
+    bool checkSeparatorType_(
+        const izenelib::util::UString& propertyValueStr,
+        izenelib::util::UString::EncodingType encoding,
+        char separator
+    );
+
     bool preparePartialDocument_(
         Document& document, 
         IndexerDocument& oldIndexDocument
