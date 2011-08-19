@@ -122,8 +122,9 @@ public:
      * Split data by workerid to sub data for requesting different workers.
      * @param result [IN]
      * @param resultList [OUT]
+     * @return true if successfully splited, or false.
      */
-    void splitResultByWorkerid(const KeywordSearchResult& result, std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >& resultMap);
+    bool splitSearchResultByWorkerid(const KeywordSearchResult& result, std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >& resultMap);
 
     /**
      *

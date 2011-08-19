@@ -143,15 +143,89 @@ void AggregatorManager::aggregateSummaryResult(KeywordSearchResult& result, cons
 {
     cout << "#[AggregatorManager::aggregateSummaryResult] " << resultList.size() << endl;
 
-    size_t workerNum = resultList.size();
+    size_t subResultNum = resultList.size();
 
-    // only one result
-    if (workerNum == 1)
-    {
-        result = resultList[0].second;
-        ///result.workerIdList_.resize(result.topKDocs_.size(), resultList[0].first);
+    if (subResultNum <= 0)
         return;
+
+    //if (subResultNum == 1)
+    //{
+    //}
+
+    size_t pageCount = 0;
+    for (size_t i = 0; i < subResultNum; i++)
+    {
+        pageCount += resultList[i].second.count_;
     }
+    if (result.count_ > pageCount)
+    {
+        result.count_ = pageCount;
+    }
+    else
+    {
+        pageCount = result.count_;
+    }
+
+    size_t displayPropertyNum = resultList[0].second.snippetTextOfDocumentInPage_.size(); //xxx
+    size_t isSummaryOn = resultList[0].second.rawTextOfSummaryInPage_.size(); //xxx
+
+    // initialize summary info for result
+    result.snippetTextOfDocumentInPage_.resize(displayPropertyNum);
+    result.fullTextOfDocumentInPage_.resize(displayPropertyNum);
+    if (isSummaryOn)
+        result.rawTextOfSummaryInPage_.resize(isSummaryOn);
+
+    for (size_t dis = 0; dis < displayPropertyNum; dis++)
+    {
+        result.snippetTextOfDocumentInPage_[dis].resize(pageCount);
+        result.fullTextOfDocumentInPage_[dis].resize(pageCount);
+    }
+    for (size_t dis = 0; dis < isSummaryOn; dis++)
+    {
+        result.rawTextOfSummaryInPage_[dis].resize(pageCount);
+    }
+
+    // merge
+    // each sub result provided part of docs for result page, and they kept the doc postions
+    // in topKDocs of result for that page.
+    size_t curSub;
+    size_t* iter = new size_t[subResultNum];
+    memset(iter, 0, sizeof(size_t)*subResultNum);
+
+    for (size_t i = 0, pos = result.start_; i < pageCount; i++, pos++)
+    {
+        curSub = size_t(-1);
+        for (size_t sub = 0; sub < subResultNum; sub++)
+        {
+            const std::vector<size_t>& subTopKPosList = resultList[sub].second.topKPostionList_;
+            if (iter[sub] < subTopKPosList.size() && subTopKPosList[iter[sub]] == pos)
+            {
+                curSub = sub;
+                break;
+            }
+        }
+
+        if (curSub == size_t(-1))
+            break;
+        //cout << "index,pos:" << i <<","<< pos <<"   curSub:"<< curSub<<"  iter[curSub]:" << iter[curSub]<<endl;
+
+        // get a result
+        const KeywordSearchResult& subResult = resultList[curSub].second;
+        for (size_t dis = 0; dis < displayPropertyNum; dis++)
+        {
+            result.snippetTextOfDocumentInPage_[dis][i] = subResult.snippetTextOfDocumentInPage_[dis][iter[curSub]];
+            result.fullTextOfDocumentInPage_[dis][i] = subResult.fullTextOfDocumentInPage_[dis][iter[curSub]];
+        }
+        for (size_t dis = 0; dis < isSummaryOn; dis++)
+        {
+            result.rawTextOfSummaryInPage_[dis][i] = subResult.rawTextOfSummaryInPage_[dis][iter[curSub]];
+        }
+
+        // next
+        iter[curSub] ++;
+    }
+
+    delete[] iter;
 }
 
 void AggregatorManager::aggregateDocumentsResult(RawTextResultFromSIA& result, const std::vector<std::pair<workerid_t, RawTextResultFromSIA> >& resultList)
@@ -202,7 +276,7 @@ void AggregatorManager::aggregateDocumentsResult(RawTextResultFromSIA& result, c
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void AggregatorManager::splitResultByWorkerid(const KeywordSearchResult& result, std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >& resultMap)
+bool AggregatorManager::splitSearchResultByWorkerid(const KeywordSearchResult& result, std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >& resultMap)
 {
     const std::vector<uint32_t>& topKWorkerIds = result.topKWorkerIds_;
 
@@ -238,6 +312,8 @@ void AggregatorManager::splitResultByWorkerid(const KeywordSearchResult& result,
             subResult->count_ += 1;
         }
     }
+
+    return true;
 }
 
 std::pair<bool, workerid_t> AggregatorManager::splitGetDocsActionItemByWorkerid(

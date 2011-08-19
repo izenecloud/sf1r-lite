@@ -82,19 +82,17 @@ bool IndexSearchService::getSearchResult(
     resultItem.count_ = actionItem.pageInfo_.count_;
     resultItem.rawQueryString_ = actionItem.env_.queryString_;
 
-    DistKeywordSearchInfo infoResultItem;
-    aggregatorManager_->sendRequest<KeywordSearchActionItem, DistKeywordSearchInfo>(
-            actionItem.collectionName_, "getDistSearchInfo", actionItem, infoResultItem);
+    // prefetch stats info from mutliple nodes
+    //DistKeywordSearchInfo infoResultItem;
+    //aggregatorManager_->sendRequest<KeywordSearchActionItem, DistKeywordSearchInfo>(
+    //        actionItem.collectionName_, "getDistSearchInfo", actionItem, infoResultItem);
 
-
-    // get and merge mutliple keyword search result
-    std::vector<workerid_t> workeridList;
+    // retrieve keyword result from mutliple nodes
     DistKeywordSearchResult distResultItem;
-    ///getWorkersByCollectionName(actionItem.collectionName_, workeridList);
     aggregatorManager_->sendRequest<KeywordSearchActionItem, DistKeywordSearchResult>(
-            actionItem.collectionName_, "getSearchResult", actionItem, distResultItem, workeridList);
+            actionItem.collectionName_, "getSearchResult", actionItem, distResultItem);
 
-    ///copySearchResult(resultItem, ksResultItem);
+    resultItem.assign(distResultItem);
 
     DLOG(INFO) << "Total count: " << resultItem.totalCount_ << endl;
     DLOG(INFO) << "Top K count: " << resultItem.topKDocs_.size() << endl;
@@ -102,32 +100,49 @@ bool IndexSearchService::getSearchResult(
 
     // xxx split & get summary, mining result by workers.
     std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> > resultMap;
-    aggregatorManager_->splitResultByWorkerid(resultItem, resultMap);
-    std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >::iterator witer;
+    aggregatorManager_->splitSearchResultByWorkerid(resultItem, resultMap);
 
-    std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > > resultList;
-    for (witer = resultMap.begin(); witer != resultMap.end(); witer++)
+    RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
+    std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >::iterator it;
+    for (it = resultMap.begin(); it != resultMap.end(); it++)
     {
-        workeridList.clear();
-        workeridList.push_back(witer->first);
+        workerid_t workerid = it->first;
+        boost::shared_ptr<KeywordSearchResult>& subResultItem = it->second;
 
-        boost::shared_ptr<KeywordSearchResult>& subResult = witer->second;
-
-        aggregatorManager_->sendRequest<KeywordSearchActionItem, KeywordSearchResult>(
-                actionItem.collectionName_, "getSummaryResult", actionItem, *subResult, workeridList);
-
-        resultList.push_back(std::make_pair(witer->first, subResult));
-
-        //subResult->print();
+        requestGroup.addRequest(workerid, &actionItem, subResultItem.get());
     }
 
-    // merge summary, mining results
-    if (resultItem.count_ > 0)
-    {
-        aggregatorManager_->mergeSummaryResult(resultItem, resultList);
-    }
+    requestGroup.setResultItemForMerging(&resultItem);
 
-    aggregatorManager_->mergeMiningResult(resultItem, resultList);
+    aggregatorManager_->sendRequest<KeywordSearchActionItem, KeywordSearchResult>(
+            actionItem.collectionName_, "getSummaryResult", requestGroup);
+
+//    ///----------------------------------------
+//    std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >::iterator witer;
+//
+//    std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > > resultList;
+//    for (witer = resultMap.begin(); witer != resultMap.end(); witer++)
+//    {
+//        std::vector<workerid_t> workeridList;
+//        workeridList.push_back(witer->first);
+//
+//        boost::shared_ptr<KeywordSearchResult>& subResult = witer->second;
+//
+//        aggregatorManager_->sendRequest<KeywordSearchActionItem, KeywordSearchResult>(
+//                actionItem.collectionName_, "getSummaryResult", actionItem, *subResult, workeridList);
+//
+//        resultList.push_back(std::make_pair(witer->first, subResult));
+//
+//        //subResult->print();
+//    }
+//
+//    // merge summary, mining results
+//    if (resultItem.count_ > 0)
+//    {
+//        aggregatorManager_->mergeSummaryResult(resultItem, resultList);
+//    }
+//
+//    aggregatorManager_->mergeMiningResult(resultItem, resultList);
 
     //resultItem.print();
 
@@ -570,16 +585,16 @@ bool IndexSearchService::getDocumentsByIds(
             workerid_t workerid = it->first;
             boost::shared_ptr<GetDocumentsByIdsActionItem>& subActionItem = it->second;
 
-            requestGroup.addRequest(workerid, subActionItem);
+            requestGroup.addRequest(workerid, subActionItem.get());
         }
 
-        boost::shared_ptr<RawTextResultFromSIA> resultRet(new RawTextResultFromSIA());
-        requestGroup.setResultItem(resultRet);
+        //boost::shared_ptr<RawTextResultFromSIA> resultRet(new RawTextResultFromSIA());
+        requestGroup.setResultItemForMerging(&resultItem);
 
         aggregatorManager_->sendRequest<GetDocumentsByIdsActionItem, RawTextResultFromSIA>(
                 actionItem.collectionName_, "getDocumentsByIds", requestGroup);
 
-        resultItem.assign(*requestGroup.resultItem_);
+        //resultItem.assign(*requestGroup.resultItem_);
 
 //        // asynchronously request to each workers
 //        std::vector<std::pair<workerid_t, boost::shared_ptr<WorkerFutureHolder> > > futureList;

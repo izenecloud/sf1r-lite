@@ -74,7 +74,7 @@ public:
     /// @brief number of documents in current page
     std::size_t count_;
 
-    /// For results in page in one node, indicates corresponding postions in topk results overall nodes.
+    /// Temporary, for merging in-page results: recorded the postions in overall results, for in-page docs in this node.
     std::vector<size_t> topKPostionList_;
 
     /// property query terms

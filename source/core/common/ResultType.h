@@ -384,25 +384,25 @@ namespace sf1r {
             /// A list of related query rank score.
             std::vector<float> rqScore_;
             
-            void assign(KeywordSearchResult& resultDest, const DistKeywordSearchResult& resultSrc)
+            void assign(const DistKeywordSearchResult& result)
             {
-              //resultDest.rawQueryString_ = resultSrc.rawQueryString_;
-              //resultDest.encodingType_ = resultSrc.rawQueryString_;
-              //resultDest.collectionName_ = resultSrc.collectionName_;
-              resultDest.analyzedQuery_ = resultSrc.analyzedQuery_;
-              resultDest.queryTermIdList_ = resultSrc.queryTermIdList_;
-              resultDest.totalCount_ = resultSrc.totalCount_;
-              resultDest.topKDocs_ = resultSrc.topKDocs_;
-              resultDest.topKWorkerIds_ = resultSrc.topKWorkerIds_;
-              resultDest.topKRankScoreList_ = resultSrc.topKRankScoreList_;
-              resultDest.topKCustomRankScoreList_ = resultSrc.topKCustomRankScoreList_;
-              //resultDest.start_ = resultSrc.start_;
-              //resultDest.count_ = resultSrc.count_;
-              resultDest.topKPostionList_ = resultSrc.topKPostionList_;
-              resultDest.propertyQueryTermList_ = resultSrc.propertyQueryTermList_;
-              resultDest.onto_rep_ = resultSrc.onto_rep_;
-              resultDest.groupRep_ = resultSrc.groupRep_;
-              resultDest.attrRep_ = resultSrc.attrRep_;
+                //rawQueryString_ = result.rawQueryString_;
+                //encodingType_ = result.rawQueryString_;
+                //collectionName_ = result.collectionName_;
+                analyzedQuery_ = result.analyzedQuery_;
+                queryTermIdList_ = result.queryTermIdList_;
+                totalCount_ = result.totalCount_;
+                topKDocs_ = result.topKDocs_;
+                topKWorkerIds_ = result.topKWorkerIds_;
+                topKRankScoreList_ = result.topKRankScoreList_;
+                topKCustomRankScoreList_ = result.topKCustomRankScoreList_;
+                //start_ = result.start_;
+                //count_ = result.count_;
+                topKPostionList_ = result.topKPostionList_;
+                propertyQueryTermList_ = result.propertyQueryTermList_;
+                onto_rep_ = result.onto_rep_;
+                groupRep_ = result.groupRep_;
+                attrRep_ = result.attrRep_;
             }
 
 
