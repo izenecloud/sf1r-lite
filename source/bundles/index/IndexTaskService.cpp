@@ -883,7 +883,7 @@ bool IndexTaskService::checkSeparatorType_(const izenelib::util::UString& proper
     izenelib::util::UString sep(" ",encoding);
     sep[0] = separator;
     size_t n = 0;
-    n = tmpStr.find(sep,n);
+    n = tmpStr.find(sep,0);
     if (n != izenelib::util::UString::npos)
         return true;
     return false;
