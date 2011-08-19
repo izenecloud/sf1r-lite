@@ -133,6 +133,8 @@ public:
 
     bool processGetSearchResult(const KeywordSearchActionItem& actionItem, DistKeywordSearchResult& resultItem);
 
+    bool processGetSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
+
     bool processGetSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
     bool processGetDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem);
@@ -144,12 +146,12 @@ public:
 private:
     template <typename ResultItemType>
     bool getSearchResult(
-            KeywordSearchActionItem& actionItem,
+            const KeywordSearchActionItem& actionItem,
             ResultItemType& resultItem,
             bool isDistributedSearch = true);
 
     bool getSummaryMiningResult(
-            KeywordSearchActionItem& actionItem,
+            const KeywordSearchActionItem& actionItem,
             KeywordSearchResult& resultItem,
             bool isDistributedSearch = true);
 
@@ -169,7 +171,7 @@ private:
 
     template <typename ResultItemType>
     bool removeDuplicateDocs(
-            KeywordSearchActionItem& actionItem,
+            const KeywordSearchActionItem& actionItem,
             ResultItemType& resultItem);
 
 

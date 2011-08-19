@@ -72,6 +72,7 @@ public:
     {
         ADD_WORKER_HANDLER_LIST_BEGIN( WorkerServer )
 
+        ADD_WORKER_HANDLER( getDistSearchInfo )
         ADD_WORKER_HANDLER( getSearchResult )
         ADD_WORKER_HANDLER( getSummaryResult )
         ADD_WORKER_HANDLER( getDocumentsByIds )
@@ -85,6 +86,12 @@ public:
      * Publish worker services to remote procedure (as remote server)
      * @{
      */
+
+    bool getDistSearchInfo(JobRequest& req)
+    {
+        WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, DistKeywordSearchInfo, workerService_, getDistSearchInfo)
+        return true;
+    }
 
     bool getSearchResult(JobRequest& req)
     {

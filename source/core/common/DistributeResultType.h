@@ -9,14 +9,14 @@ class DistKeywordSearchInfo
 {
 public:
 
-    DistKeywordSearchInfo() : preResultType_(RESULT_TYPE_NOACTION) {}
+    DistKeywordSearchInfo() : actionType_(ACTION_NONE) {}
 
-	static const int RESULT_TYPE_NOACTION = 0x0;
-	static const int RESULT_TYPE_FECTH = 0x1;
-	static const int RESULT_TYPE_SEND = 0x2;
+	static const int ACTION_NONE = 0x0;
+	static const int ACTION_FETCH = 0x1;
+	static const int ACTION_SEND = 0x2;
 
-	/// @brief indicate how this result is used.
-	int preResultType_;
+	/// @brief indicate .
+	int actionType_;
 
     /// @brief document frequency info of terms for each property
     DocumentFrequencyInProperties dfmap_;

@@ -36,9 +36,9 @@ WorkerService::WorkerService()
 bool WorkerService::getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem)
 {
     DistKeywordSearchResult fakeResultItem;
-	fakeResultItem.distSearchInfo_.preResultType_ = DistKeywordSearchInfo::RESULT_TYPE_FECTH;
+	fakeResultItem.distSearchInfo_.actionType_ = DistKeywordSearchInfo::ACTION_FETCH;
 
-    getSearchResult(const_cast<KeywordSearchActionItem&>(actionItem), fakeResultItem);
+    getSearchResult(actionItem, fakeResultItem);
 
 	resultItem = fakeResultItem.distSearchInfo_;
     return true;
@@ -48,7 +48,17 @@ bool WorkerService::processGetSearchResult(const KeywordSearchActionItem& action
 {
     cout << "#[WorkerService::processGetSearchResult] " << actionItem.collectionName_ << endl;
 
-    if (! getSearchResult(const_cast<KeywordSearchActionItem&>(actionItem), resultItem))
+    if (! getSearchResult(actionItem, resultItem))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool WorkerService::processGetSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+{
+    if (! getSearchResult(actionItem, resultItem, false))
     {
         return false;
     }
@@ -60,7 +70,7 @@ bool WorkerService::processGetSummaryResult(const KeywordSearchActionItem& actio
 {
     cout << "#[WorkerService::processGetSummaryResult] " << actionItem.collectionName_ << endl;
 
-    if (!getSummaryMiningResult(const_cast<KeywordSearchActionItem&>(actionItem), resultItem))
+    if (!getSummaryMiningResult(actionItem, resultItem))
     {
         return false;
     }
@@ -159,7 +169,7 @@ bool WorkerService::clickGroupLabel(const clickGroupLabelActionItem& actionItem,
 
 template <typename ResultItemType>
 bool WorkerService::getSearchResult(
-        KeywordSearchActionItem& actionItem,
+        const KeywordSearchActionItem& actionItem,
         ResultItemType& resultItem,
         bool isDistributedSearch)
 {
@@ -299,7 +309,7 @@ bool WorkerService::getSearchResult(
 }
 
 bool WorkerService::getSummaryMiningResult(
-        KeywordSearchActionItem& actionItem,
+        const KeywordSearchActionItem& actionItem,
         KeywordSearchResult& resultItem,
         bool isDistributedSearch)
 {
@@ -548,7 +558,7 @@ bool  WorkerService::getResultItem(ActionItemT& actionItem, const std::vector<sf
 
 template <typename ResultItemType>
 bool WorkerService::removeDuplicateDocs(
-    KeywordSearchActionItem& actionItem,
+    const KeywordSearchActionItem& actionItem,
     ResultItemType& resultItem
 )
 {

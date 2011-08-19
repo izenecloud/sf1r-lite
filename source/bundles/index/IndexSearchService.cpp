@@ -62,11 +62,9 @@ bool IndexSearchService::getSearchResult(
 
 #ifdef DISTRIBUTED_SEARCH
 
-    if (!checkAggregatorSupport(resultItem.collectionName_))
+    if (!checkAggregatorSupport(actionItem.collectionName_))
     {
-        cout <<"aggregator false: "<<  resultItem.collectionName_<<endl;
-
-        if (workerService_->getSearchResult(actionItem, resultItem, false))
+        if (workerService_->processGetSearchResult(actionItem, resultItem))
         {
             return workerService_->getSummaryMiningResult(actionItem, resultItem, false);
         }
@@ -74,7 +72,7 @@ bool IndexSearchService::getSearchResult(
         return false;
     }
 
-    cout <<"aggregator true: "<<  resultItem.collectionName_<<endl;
+    cout <<"Aggregate for : "<<  actionItem.collectionName_<<endl;
 
     // set basic info for result
     resultItem.collectionName_ = actionItem.collectionName_;
@@ -87,6 +85,7 @@ bool IndexSearchService::getSearchResult(
     DistKeywordSearchInfo infoResultItem;
     aggregatorManager_->sendRequest<KeywordSearchActionItem, DistKeywordSearchInfo>(
             actionItem.collectionName_, "getDistSearchInfo", actionItem, infoResultItem);
+
 
     // get and merge mutliple keyword search result
     std::vector<workerid_t> workeridList;

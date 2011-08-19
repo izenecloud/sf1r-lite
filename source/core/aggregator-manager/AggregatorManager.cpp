@@ -9,6 +9,45 @@ namespace sf1r
 
 extern int TOP_K_NUM;
 
+
+void AggregatorManager::aggregateDistSearchInfo(DistKeywordSearchInfo& result, const std::vector<std::pair<workerid_t, DistKeywordSearchInfo> >& resultList)
+{
+    cout << "#[AggregatorManager::aggregateDistSearchInfo] " << resultList.size() << endl;
+
+    size_t resultNum = resultList.size();
+
+    for (size_t i = 0; i < resultNum; i++)
+    {
+        DistKeywordSearchInfo& wResult = const_cast<DistKeywordSearchInfo&>(resultList[i].second);
+
+        DocumentFrequencyInProperties::iterator dfiter;
+        for (dfiter = wResult.dfmap_.begin(); dfiter != wResult.dfmap_.end(); dfiter++)
+        {
+            const std::string& property = dfiter->first;
+
+            ID_FREQ_MAP_T& df = wResult.dfmap_[property];
+            ID_FREQ_UNORDERED_MAP_T::iterator iter_;
+            for (iter_ = df.begin(); iter_ != df.end(); iter_++)
+            {
+                result.dfmap_[property][iter_->first] += iter_->second;
+            }
+        }
+
+        CollectionTermFrequencyInProperties::iterator ctfiter;
+        for (ctfiter = wResult.ctfmap_.begin(); ctfiter != wResult.ctfmap_.end(); ctfiter++)
+        {
+            const std::string& property = ctfiter->first;
+
+            ID_FREQ_MAP_T& ctf = wResult.ctfmap_[property];
+            ID_FREQ_UNORDERED_MAP_T::iterator iter_;
+            for (iter_ = ctf.begin(); iter_ != ctf.end(); iter_++)
+            {
+                result.ctfmap_[property][iter_->first] += iter_->second;
+            }
+        }
+    }
+}
+
 void AggregatorManager::aggregateSearchResult(DistKeywordSearchResult& result, const std::vector<std::pair<workerid_t, DistKeywordSearchResult> >& resultList)
 {
     cout << "#[AggregatorManager::aggregateSearchResult] " << resultList.size() << endl;

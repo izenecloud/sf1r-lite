@@ -127,7 +127,7 @@ bool SearchManager::search(SearchKeywordOperation& actionOperation,
                            faceted::OntologyRep& attrRep,
                            int topK,
                            int start,
-                           DistKeywordSearchInfo& DistSearchInfo)
+                           DistKeywordSearchInfo& distSearchInfo)
 {
 CREATE_PROFILER ( cacheoverhead, "SearchManager", "cache overhead: overhead for caching in searchmanager");
 
@@ -160,10 +160,10 @@ STOP_PROFILER ( cacheoverhead )
                   attrRep,
                   topK,
                   start,
-                  DistSearchInfo))
+                  distSearchInfo))
     {
  START_PROFILER ( cacheoverhead )
-		if (DistSearchInfo.preResultType_ != DistKeywordSearchInfo::RESULT_TYPE_FECTH)
+		if (distSearchInfo.actionType_ != DistKeywordSearchInfo::ACTION_FETCH)
 			cache_->set(identity, rankScoreList, customRankScoreList, docIdList, totalCount, groupRep, attrRep);
  STOP_PROFILER ( cacheoverhead )
         return true;
@@ -181,7 +181,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                               faceted::OntologyRep& attrRep,
                               int topK,
                               int start,
-                              DistKeywordSearchInfo& DistSearchInfo)
+                              DistKeywordSearchInfo& distSearchInfo)
 {
     CREATE_PROFILER ( dociterating, "SearchManager", "doSearch_: doc iterating");
     CREATE_PROFILER ( preparedociter, "SearchManager", "doSearch_: SearchManager_search : build doc iterator");
@@ -285,18 +285,18 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
     DocumentFrequencyInProperties dfmap;
     CollectionTermFrequencyInProperties ctfmap;
 
-    if (DistSearchInfo.preResultType_ == DistKeywordSearchInfo::RESULT_TYPE_FECTH)
+    if (distSearchInfo.actionType_ == DistKeywordSearchInfo::ACTION_FETCH)
     {
     	pDocIterator->df_ctf(dfmap, ctfmap);
 
-    	DistSearchInfo.dfmap_ = dfmap;
-    	DistSearchInfo.ctfmap_ = ctfmap;
+    	distSearchInfo.dfmap_ = dfmap;
+    	distSearchInfo.ctfmap_ = ctfmap;
     	return true;
     }
-    else if (DistSearchInfo.preResultType_ == DistKeywordSearchInfo::RESULT_TYPE_SEND)
+    else if (distSearchInfo.actionType_ == DistKeywordSearchInfo::ACTION_SEND)
     {
-    	dfmap = DistSearchInfo.dfmap_;
-    	ctfmap = DistSearchInfo.ctfmap_;
+    	dfmap = distSearchInfo.dfmap_;
+    	ctfmap = distSearchInfo.ctfmap_;
     }
     else
     {
