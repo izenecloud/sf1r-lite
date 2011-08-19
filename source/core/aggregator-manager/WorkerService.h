@@ -8,9 +8,11 @@
 #define WORKER_SERVICE_H_
 
 #include <query-manager/ActionItem.h>
+#include <query-manager/SearchKeywordOperation.h>
 #include <la-manager/AnalysisInformation.h>
 #include <common/ResultType.h>
 
+#include <util/get.h>
 #include <net/aggregator/JobInfo.h>
 #include <ir/id_manager/IDManager.h>
 #include <question-answering/QuestionAnalysis.h>
@@ -152,6 +154,14 @@ private:
             bool isDistributedSearch = true);
 
     void analyze_(const std::string& qstr, std::vector<izenelib::util::UString>& results);
+
+    template <typename ResultItemT>
+    bool buildQuery(
+            SearchKeywordOperation& actionOperation,
+            IndexBundleConfiguration& bundleConfig,
+            std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList,
+            ResultItemT& resultItem,
+            PersonalSearchInfo& personalSearchInfo);
 
     template<typename ActionItemT, typename ResultItemT>
     bool  getResultItem(ActionItemT& actionItem, const std::vector<sf1r::docid_t>& docsInPage,

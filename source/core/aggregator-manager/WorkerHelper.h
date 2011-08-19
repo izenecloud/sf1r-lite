@@ -13,14 +13,6 @@ namespace sf1r
 void assembleConjunction(std::vector<izenelib::util::UString> keywords, std::string& result);
 void assembleDisjunction(std::vector<izenelib::util::UString> keywords, std::string& result);
 
-template <typename ResultItemT>
-bool buildQuery(
-        SearchKeywordOperation& actionOperation,
-        IndexBundleConfiguration& bundleConfig,
-        std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList,
-        ResultItemT& resultItem,
-        PersonalSearchInfo& personalSearchInfo);
-
 bool buildQueryTree(
         SearchKeywordOperation&action,
         IndexBundleConfiguration& bundleConfig,
