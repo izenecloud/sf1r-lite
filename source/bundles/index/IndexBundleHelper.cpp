@@ -146,7 +146,7 @@ void split_int(const izenelib::util::UString& szText, std::list<PropertyType>& o
                 try
                 {
                     izenelib::util::UString tmpStr = str.substr(nOld, n-nOld);
-                    trimright( tmpStr );
+                    trim( tmpStr );
                     value = boost::lexical_cast< int64_t >( tmpStr );
                     out.push_back(value);
                 }
@@ -162,7 +162,7 @@ void split_int(const izenelib::util::UString& szText, std::list<PropertyType>& o
     try
     {
         izenelib::util::UString tmpStr = str.substr(nOld, str.length()-nOld);
-        trimright( tmpStr );
+        trim( tmpStr );
         value = boost::lexical_cast< int64_t >( tmpStr );
         out.push_back(value);
     }
@@ -187,7 +187,7 @@ void split_float(const izenelib::util::UString& szText, std::list<PropertyType>&
                 try
                 {
                     izenelib::util::UString tmpStr = str.substr(nOld, n-nOld);
-                    trimright( tmpStr );
+                    trim( tmpStr );
                     value = boost::lexical_cast< float >( tmpStr );
                     out.push_back(value);
                 }
@@ -203,7 +203,7 @@ void split_float(const izenelib::util::UString& szText, std::list<PropertyType>&
     try
     {
         izenelib::util::UString tmpStr = str.substr(nOld, str.length()-nOld);
-        trimright( tmpStr );
+        trim( tmpStr );
         value = boost::lexical_cast< float >( tmpStr );
         out.push_back(value);
     }
