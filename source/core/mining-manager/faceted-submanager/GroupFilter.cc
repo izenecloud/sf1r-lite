@@ -1,5 +1,6 @@
 #include "GroupFilter.h"
 #include "GroupParam.h"
+#include "group_manager.h"
 #include "attr_table.h"
 #include "ontology_rep.h"
 #include "GroupCounter.h"
@@ -18,11 +19,11 @@ typedef std::vector<std::pair<std::string, std::string> > LabelVec;
 NS_FACETED_BEGIN
 
 GroupFilter::GroupFilter(
-    const GroupManager::PropValueMap& propValueMap,
+    const GroupManager* groupManager,
     const AttrTable& attrTable,
     const GroupParam& groupParam
 )
-    : propValueMap_(propValueMap)
+    : groupManager_(groupManager)
     , attrTable_(attrTable)
     , groupParam_(groupParam)
     , attrCounter_(NULL)
@@ -67,12 +68,12 @@ void GroupFilter::initGroup_()
     for (std::vector<std::string>::const_iterator it = groupProps.begin();
         it != groupProps.end(); ++it)
     {
-        GroupManager::PropValueMap::const_iterator pvIt = propValueMap_.find(*it);
-        if (pvIt != propValueMap_.end())
+        const PropValueTable* pvTable = groupManager_->getPropValueTable(*it);
+        if (pvTable)
         {
             if (groupCounterMap.find(*it) == groupCounterMap.end())
             {
-                GroupCounter* counter = new GroupCounter(pvIt->second);
+                GroupCounter* counter = new GroupCounter(*pvTable);
                 groupCounterMap[*it] = counter;
                 groupCounters_.push_back(counter);
             }
@@ -94,10 +95,10 @@ void GroupFilter::initGroup_()
         GroupCounterMap::iterator counterIt = groupCounterMap.find(it->first);
         if (counterIt != groupCounterMap.end())
         {
-            GroupManager::PropValueMap::const_iterator pvIt = propValueMap_.find(it->first);
-            if (pvIt != propValueMap_.end())
+            const PropValueTable* pvTable = groupManager_->getPropValueTable(it->first);
+            if (pvTable)
             {
-                groupLabels_.push_back(new GroupLabel(*it, pvIt->second, counterIt->second));
+                groupLabels_.push_back(new GroupLabel(*it, *pvTable, counterIt->second));
             }
             else
             {

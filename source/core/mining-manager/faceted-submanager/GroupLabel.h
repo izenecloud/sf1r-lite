@@ -31,8 +31,6 @@ public:
 
 private:
     const PropValueTable& propValueTable_;
-    const std::vector<PropValueTable::pvid_t>& valueIdTable_;
-    const std::vector<PropValueTable::pvid_t>& parentIdTable_;
     const PropValueTable::pvid_t targetValueId_;
     GroupCounter* counter_;
 };

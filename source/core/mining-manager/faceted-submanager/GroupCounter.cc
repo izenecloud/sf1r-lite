@@ -5,33 +5,19 @@ NS_FACETED_BEGIN
 
 GroupCounter::GroupCounter(const PropValueTable& pvTable)
     : propValueTable_(pvTable)
-    , valueIdTable_(pvTable.propIdTable())
-    , parentIdTable_(pvTable.parentIdTable())
-    , valueIdNum_(pvTable.propValueNum())
-    , countTable_(valueIdNum_)
+    , countTable_(pvTable.propValueNum())
 {
 }
 
 void GroupCounter::addDoc(docid_t doc)
 {
-    // this doc has no group index data yet
-    if (doc >= valueIdTable_.size())
-        return;
+    std::set<PropValueTable::pvid_t> parentSet;
+    propValueTable_.parentIdSet(doc, parentSet);
 
-    PropValueTable::pvid_t pvId = valueIdTable_[doc];
-
-    if (pvId && pvId < valueIdNum_)
+    for (std::set<PropValueTable::pvid_t>::const_iterator it = parentSet.begin();
+        it != parentSet.end(); ++it)
     {
-        ++countTable_[pvId];
-
-        // also parent id
-        if (pvId < parentIdTable_.size())
-        {
-            while ((pvId = parentIdTable_[pvId]))
-            {
-                ++countTable_[pvId];
-            }
-        }
+        ++countTable_[*it];
     }
 }
 

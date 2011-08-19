@@ -1,4 +1,5 @@
 #include "attr_manager.h"
+#include <mining-manager/util/split_ustr.h>
 #include <mining-manager/util/FSUtil.hpp>
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningException.hpp>
@@ -6,151 +7,6 @@
 #include <glog/logging.h>
 
 using namespace sf1r::faceted;
-
-namespace
-{
-
-const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
-
-/** colon to split attribute name and value */
-const izenelib::util::UString COLON(":", ENCODING_TYPE);
-
-/** vertical line to split attribute values */
-const izenelib::util::UString VL("|", ENCODING_TYPE);
-
-/** comma to split pairs of attribute name and value */
-const izenelib::util::UString COMMA_VL(",|", ENCODING_TYPE);
-
-/** quote to embed escape characters */
-const izenelib::util::UString QUOTE("\"", ENCODING_TYPE);
-
-/**
- * scans from @p first to @p last until any character in @p delimStr is reached,
- * copy the processed string into @p output.
- * @param first the begin position
- * @param last the end position
- * @param delimStr if any character in @p delimStr is reached, stop the scanning
- * @param output store the sub string
- * @return the last position scaned
- */
-template<class InputIterator, class T>
-InputIterator parseAttrStr(
-    InputIterator first,
-    InputIterator last,
-    const T& delimStr,
-    T& output
-)
-{
-    output.clear();
-
-    InputIterator it = first;
-
-    if (first != last && *first == QUOTE[0])
-    {
-        // escape start quote
-        ++it;
-
-        for (; it != last; ++it)
-        {
-            // candidate end quote
-            if (*it == QUOTE[0])
-            {
-                ++it;
-
-                // convert double quotes to single quote
-                if (it != last && *it == QUOTE[0])
-                {
-                    output.push_back(*it);
-                }
-                else
-                {
-                    // end quote escaped
-                    break;
-                }
-            }
-            else
-            {
-                output.push_back(*it);
-            }
-        }
-
-        // escape all characters between end quote and delimStr
-        for (; it != last; ++it)
-        {
-            if (delimStr.find(*it) != T::npos)
-                break;
-        }
-    }
-    else
-    {
-        for (; it != last; ++it)
-        {
-            if (delimStr.find(*it) != T::npos)
-                break;
-
-            output.push_back(*it);
-        }
-
-        // as no quote "" is surrounded,
-        // trim space characters at head and tail
-        izenelib::util::UString::algo::compact(output);
-    }
-
-    return it;
-}
-
-}
-
-void AttrManager::splitAttrPair(
-    const izenelib::util::UString& src,
-    std::vector<AttrPair>& attrPairs
-)
-{
-    izenelib::util::UString::const_iterator it = src.begin();
-    izenelib::util::UString::const_iterator endIt = src.end();
-
-    while (it != endIt)
-    {
-        izenelib::util::UString name;
-        it = parseAttrStr(it, endIt, COLON, name);
-        if (it == endIt || name.empty())
-            break;
-
-        AttrPair attrPair;
-        attrPair.first = name;
-        izenelib::util::UString value;
-
-        // escape colon
-        ++it;
-        it = parseAttrStr(it, endIt, COMMA_VL, value);
-        if (!value.empty())
-        {
-            attrPair.second.push_back(value);
-        }
-
-        while (it != endIt && *it == VL[0])
-        {
-            // escape vertical line
-            ++it;
-            it = parseAttrStr(it, endIt, COMMA_VL, value);
-            if (!value.empty())
-            {
-                attrPair.second.push_back(value);
-            }
-        }
-        if (!attrPair.second.empty())
-        {
-            attrPairs.push_back(attrPair);
-        }
-
-        if (it != endIt)
-        {
-            assert(*it == COMMA_VL[0]);
-            // escape comma
-            ++it;
-        }
-    }
-}
 
 AttrManager::AttrManager(
     DocumentManager* documentManager,
@@ -211,7 +67,7 @@ bool AttrManager::processCollection()
             {
                 const izenelib::util::UString& propValue = it->second.get<izenelib::util::UString>();
                 std::vector<AttrPair> attrPairs;
-                splitAttrPair(propValue, attrPairs);
+                split_attr_pair(propValue, attrPairs);
 
                 try
                 {

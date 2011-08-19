@@ -11,9 +11,7 @@
 #include "ontology_rep.h"
 #include "attr_table.h"
 #include <configuration-manager/AttrConfig.h>
-#include <util/ustring/UString.h>
 
-#include <vector>
 #include <string>
 
 namespace sf1r
@@ -47,24 +45,6 @@ public:
     {
         return attrTable_;
     }
-
-    typedef std::pair<
-                izenelib::util::UString, /// attribute name
-                std::vector<izenelib::util::UString> /// attribute values
-            > AttrPair;
-
-    /**
-     * Split @p src into pairs of attribute name and values.
-     * @param src the source string, such as "品牌:欧艾尼,年份:2011,尺码:S|M|L|XL"
-     * @param attrPairs stores the pairs of attribute name and values, for example,
-     *                  [0]: attribute name "品牌", values: "欧艾尼",
-     *                  [1]: attribute name "年份", values: "2011",
-     *                  [2]: attribute name "尺码", values: ["S", "M", "L", "XL"]
-     */
-    static void splitAttrPair(
-        const izenelib::util::UString& src,
-        std::vector<AttrPair>& attrPairs
-    );
 
 private:
     sf1r::DocumentManager* documentManager_;

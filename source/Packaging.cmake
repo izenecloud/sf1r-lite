@@ -154,7 +154,7 @@ IF(NOT ENV_ONLY_PACKAGE_SF1)
     )
   INSTALL( PROGRAMS 
     ${CMAKE_SOURCE_DIR}/../bin/sf1r-engine 
-    ${CMAKE_SOURCE_DIR}/../bin/clean.query 
+	#    ${CMAKE_SOURCE_DIR}/../bin/clean.query 
     DESTINATION "bin"
     COMPONENT sf1r_packings
     )

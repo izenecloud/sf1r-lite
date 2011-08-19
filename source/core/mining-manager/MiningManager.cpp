@@ -32,6 +32,7 @@
 #include "faceted-submanager/attr_manager.h"
 #include "faceted-submanager/property_diversity_reranker.h"
 #include "faceted-submanager/GroupFilterBuilder.h"
+#include "faceted-submanager/ctr_manager.h"
 
 #include "group-label-logger/GroupLabelLogger.h"
 
@@ -287,6 +288,26 @@ bool MiningManager::open()
 
         }
 
+        /** CTR */
+        if ( true )
+        {
+            std::string ctr_path = prefix_path + "/ctr";
+            FSUtil::createDir(ctr_path);
+
+            size_t docNum = 0;
+            if (index_manager_)
+            {
+                docNum = index_manager_->getIndexReader()->maxDoc() + 1;
+            }
+
+            ctrManager_.reset(new faceted::CTRManager(ctr_path, docNum));
+            if (!ctrManager_->open())
+            {
+                std::cerr << "open CRT failed" << std::endl;
+                return false;
+            }
+        }
+
         /** group */
         if( mining_schema_.group_enable )
         {
@@ -358,20 +379,14 @@ bool MiningManager::open()
         }
 
         /** property_rerank **/
-        if( mining_schema_.group_enable)
         {
-            std::string boostingProperty = mining_schema_.prop_rerank_property.boostingPropName;
-            groupReranker_ = new faceted::PropertyDiversityReranker(mining_schema_.prop_rerank_property.propName, groupManager_->getPropValueMap(),boostingProperty);
-            GroupLabelLogger* logger = groupLabelLoggerMap_[boostingProperty];
-            if(logger) 
-            {
-                groupReranker_->setGroupLabelLogger(logger);
-                searchManager_->set_dynamic_reranker(boost::bind(&faceted::PropertyDiversityReranker::rerank,groupReranker_,_1,_2,_3));
-            }
-            else
-            {
-                searchManager_->set_static_reranker(boost::bind(&faceted::PropertyDiversityReranker::simplererank,groupReranker_,_1,_2));				
-            }
+            const std::string& diversityProperty = mining_schema_.prop_rerank_property.propName;
+            const std::string& boostingProperty = mining_schema_.prop_rerank_property.boostingPropName;
+
+            groupReranker_ = new faceted::PropertyDiversityReranker(groupManager_, diversityProperty, boostingProperty);
+            groupReranker_->setGroupLabelLogger(groupLabelLoggerMap_[boostingProperty]);
+            groupReranker_->setCTRManager(ctrManager_);
+            searchManager_->set_reranker(boost::bind(&faceted::PropertyDiversityReranker::rerank,groupReranker_,_1,_2,_3));
         }
 
         /** tdt **/
@@ -437,6 +452,12 @@ bool MiningManager::open()
     catch (izenelib::ir::indexmanager::IndexManagerException& ex)
     {
         sflog->crit(SFL_MINE, ex.what());
+        return false;
+    }
+    catch (std::exception& ex)
+    {
+        sflog->crit(SFL_MINE, ex.what());
+        std::cerr << "std::exception: " << ex.what() << std::endl;
         return false;
     }
     return true;
@@ -1231,6 +1252,16 @@ bool MiningManager::addFacetedResult_(KeywordSearchResult& miaInput)
     faceted_->GetSearcher()->GetRepresentation(miaInput.topKDocs_, miaInput.onto_rep_);
 
     return true;
+}
+
+bool MiningManager::visitDoc(uint32_t docId)
+{
+    if (!ctrManager_)
+    {
+        return true;
+    }
+
+    return ctrManager_->update(docId);
 }
 
 bool MiningManager::clickGroupLabel(

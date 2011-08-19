@@ -1,9 +1,11 @@
 #include "group_manager.h"
+#include <mining-manager/util/split_ustr.h>
 #include <mining-manager/util/FSUtil.hpp>
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningException.hpp>
 
 #include <iostream>
+#include <cassert>
 
 #include <glog/logging.h>
 
@@ -78,7 +80,7 @@ bool GroupManager::processCollection()
     {
         const std::string& propName = it->first;
         PropValueTable& pvTable = it->second;
-        std::vector<PropValueTable::pvid_t>& idTable = pvTable.propIdTable();
+        PropValueTable::ValueIdTable& idTable = pvTable.valueIdTable();
         assert(! idTable.empty() && "id 0 should have been reserved in PropValueTable constructor");
 
         const docid_t startDocId = idTable.size();
@@ -91,18 +93,27 @@ bool GroupManager::processCollection()
 
         for (docid_t docId = startDocId; docId <= endDocId; ++docId)
         {
-            Document doc;
-            PropValueTable::pvid_t pvId = 0;
+            idTable.push_back(PropValueTable::ValueIdList());
+            PropValueTable::ValueIdList& valueIdList = idTable.back();
 
+            Document doc;
             if (documentManager_->getDocument(docId, doc))
             {
                 Document::property_iterator it = doc.findProperty(propName);
                 if (it != doc.propertyEnd())
                 {
-                    const izenelib::util::UString& value = it->second.get<izenelib::util::UString>();
+                    const izenelib::util::UString& propValue = it->second.get<izenelib::util::UString>();
+                    std::vector<izenelib::util::UString> groupValues;
+                    split_group_value(propValue, groupValues);
+
                     try
                     {
-                        pvId = pvTable.propValueId(value);
+                        for (std::vector<izenelib::util::UString>::const_iterator valueIt = groupValues.begin();
+                            valueIt != groupValues.end(); ++valueIt)
+                        {
+                            PropValueTable::pvid_t pvId = pvTable.propValueId(*valueIt);
+                            valueIdList.push_back(pvId);
+                        }
                     }
                     catch(MiningException& e)
                     {
@@ -120,8 +131,6 @@ bool GroupManager::processCollection()
             {
                 LOG(ERROR) << "DocumentManager::getDocument() failed, doc id: " << docId;
             }
-
-            idTable.push_back(pvId);
 
             if (docId % 100000 == 0)
             {

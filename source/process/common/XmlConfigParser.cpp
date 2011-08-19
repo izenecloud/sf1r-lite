@@ -1307,7 +1307,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
               	}
               if( !gottype )
               {
-                  throw XmlConfigParserException("<Property> ["+property_name+"] in <Rerank> is not string type.");
+                  throw XmlConfigParserException("<Property> ["+property_name+"] in <Rerank> is not configured in <Group>.");
               }
               mining_schema.prop_rerank_property.propName = property_name;
               mining_schema.property_rerank_enable = true;

@@ -27,11 +27,6 @@ public:
 
 private:
     const PropValueTable& propValueTable_;
-    const std::vector<PropValueTable::pvid_t>& valueIdTable_;
-    const std::vector<PropValueTable::pvid_t>& parentIdTable_;
-
-    /** the number of value ids */
-    const std::size_t valueIdNum_;
 
     /** map from value id to doc count */
     std::vector<int> countTable_;

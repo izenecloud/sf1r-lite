@@ -1,24 +1,30 @@
 #include "property_diversity_reranker.h"
+#include "group_manager.h"
 
 #include <mining-manager/group-label-logger/GroupLabelLogger.h>
+#include <util/ustring/UString.h>
+#include <util/ClockTimer.h>
 
 #include <list>
 #include <algorithm>
 #include <glog/logging.h>
 
-using sf1r::GroupLabelLogger;
-
 NS_FACETED_BEGIN
 
+bool CompareSecond(const std::pair<size_t, count_t>& r1, const std::pair<size_t, count_t>& r2)
+{
+    return (r1.second > r2.second);
+}
+
 PropertyDiversityReranker::PropertyDiversityReranker(
-    const std::string& property,
-    const GroupManager::PropValueMap& propValueMap,
+    const GroupManager* groupManager,
+    const std::string& diversityProperty,
     const std::string& boostingProperty
 )
-    :property_(property)
-    ,propValueMap_(propValueMap)
-    ,groupLabelLogger_(NULL)
+    :groupManager_(groupManager)
+    ,diversityProperty_(diversityProperty)
     ,boostingProperty_(boostingProperty)
+    ,groupLabelLogger_(NULL)
 {
 }
 
@@ -26,7 +32,117 @@ PropertyDiversityReranker::~PropertyDiversityReranker()
 {
 }
 
-void PropertyDiversityReranker::simplererank(
+void PropertyDiversityReranker::rerank(
+    std::vector<unsigned int>& docIdList,
+    std::vector<float>& rankScoreList,
+    const std::string& query
+)
+{
+    bool isBoostLabel = false;
+    const PropValueTable* pvTable = NULL;
+    PropValueTable::pvid_t labelId = 0;
+    izenelib::util::ClockTimer timer;
+
+    if(groupManager_ && groupLabelLogger_ && !boostingProperty_.empty())
+    {
+        std::vector<std::string> propValueVec;
+        std::vector<int> freqVec;
+        groupLabelLogger_->getFreqLabel(query, 1, propValueVec, freqVec);
+
+        if(!propValueVec.empty())
+        {
+            const std::string& boostingCategoryLabel = propValueVec[0];
+            LOG(INFO) << "boosting property: " << boostingProperty_
+                      << ", label: " << boostingCategoryLabel
+                      << ", doc num: " << docIdList.size();
+
+            pvTable = groupManager_->getPropValueTable(boostingProperty_);
+            if (pvTable)
+            {
+                izenelib::util::UString labelUStr(boostingCategoryLabel, izenelib::util::UString::UTF_8);
+                labelId = pvTable->propValueId(labelUStr);
+                if (labelId)
+                {
+                    isBoostLabel = true;
+                }
+                else
+                {
+                    LOG(WARNING) << "in PropertyDiversityReranker: group index has not been built for Category value: " << boostingCategoryLabel;
+                }
+            }
+            else
+            {
+                LOG(ERROR) << "in PropertyDiversityReranker: group index file is not loaded for property " << boostingProperty_;
+            }
+        }
+        else
+        {
+            LOG(INFO) << "no boosting label for property " << boostingProperty_;
+        }
+    }
+
+    if (isBoostLabel)
+    {
+        std::size_t numDoc = docIdList.size();
+
+        std::vector<unsigned int> boostingDocIdList;
+        std::vector<float> boostingScoreList;	
+        boostingDocIdList.reserve(numDoc);;
+        boostingScoreList.reserve(numDoc);
+
+        std::vector<unsigned int> leftDocIdList;
+        std::vector<float> leftScoreList;	
+        leftDocIdList.reserve(numDoc);;
+        leftScoreList.reserve(numDoc);
+
+        for(std::size_t i = 0; i < numDoc; ++i)
+        {
+            docid_t docId = docIdList[i];
+
+            if (pvTable->testDoc(docId, labelId))
+            {
+                boostingDocIdList.push_back(docId);
+                boostingScoreList.push_back(rankScoreList[i]);
+            }
+            else
+            {
+                leftDocIdList.push_back(docId);
+                leftScoreList.push_back(rankScoreList[i]);
+            }
+        }
+        if(!boostingDocIdList.empty())
+        {
+            rerankImpl_(boostingDocIdList, boostingScoreList);
+        }
+        if(!leftDocIdList.empty())
+        {
+            rerankImpl_(leftDocIdList, leftScoreList);
+        }
+        boostingDocIdList.resize(numDoc);
+        boostingScoreList.resize(numDoc);
+        std::copy_backward(leftDocIdList.begin(), leftDocIdList.end(), boostingDocIdList.end());
+        std::copy_backward(leftScoreList.begin(), leftScoreList.end(), boostingScoreList.end());
+        std::swap(docIdList, boostingDocIdList);
+        std::swap(rankScoreList, boostingScoreList);
+    }
+    else
+    {
+        rerankImpl_(docIdList, rankScoreList);
+    }
+
+    LOG(INFO) << "PropertyDiversityReranker::rerank() costs " << timer.elapsed() << " seconds";
+}
+
+void PropertyDiversityReranker::rerankImpl_(
+    std::vector<unsigned int>& docIdList,
+    std::vector<float>& rankScoreList
+)
+{
+    rerankDiversity_(docIdList, rankScoreList);
+    rerankCTR_(docIdList, rankScoreList);
+}
+
+void PropertyDiversityReranker::rerankDiversity_(
     std::vector<unsigned int>& docIdList,
     std::vector<float>& rankScoreList
 )
@@ -34,19 +150,28 @@ void PropertyDiversityReranker::simplererank(
     typedef std::list<std::pair<unsigned int,float> > DocIdList;
     typedef std::map<PropValueTable::pvid_t, DocIdList> DocIdMap;
 
-    GroupManager::PropValueMap::const_iterator pvIt = propValueMap_.find(property_);
-    if (pvIt == propValueMap_.end())
+    const PropValueTable* pvTable = NULL;
+    if (groupManager_ && !diversityProperty_.empty())
     {
-        LOG(ERROR) << "in GroupManager: group index file is not loaded for group property " << property_;
+        pvTable = groupManager_->getPropValueTable(diversityProperty_);
+        if (!pvTable)
+        {
+            LOG(ERROR) << "in PropertyDiversityReranker: group index file is not loaded for group property " << diversityProperty_;
+            return;
+        }
+    }
+    else
+    {
         return;
     }
 
-    const PropValueTable& pvTable = pvIt->second;
-    const std::vector<PropValueTable::pvid_t>& idTable = pvTable.propIdTable();
+    LOG(INFO) << "diversity property: " << diversityProperty_
+              << ", doc num: " << docIdList.size();
 
+    const PropValueTable::ValueIdTable& idTable = pvTable->valueIdTable();
     std::size_t numDoc = docIdList.size();
     std::vector<unsigned int> newDocIdList;
-    std::vector<float> newScoreList;	
+    std::vector<float> newScoreList;
     newDocIdList.reserve(numDoc);
     newScoreList.reserve(numDoc);
 
@@ -55,14 +180,11 @@ void PropertyDiversityReranker::simplererank(
     for (std::size_t i = 0; i < numDoc; ++i)
     {
         docid_t docId = docIdList[i];
-	
-        // this doc has not built group index data
-        if (docId >= idTable.size())
-            continue;
-	
-        PropValueTable::pvid_t pvId = idTable[docId];
-        if (pvId != 0)
+        
+        if (docId < idTable.size() && idTable[docId].empty() == false)
         {
+            // use 1st group value
+            PropValueTable::pvid_t pvId = idTable[docId][0];
             docIdMap[pvId].push_back(std::make_pair(docId, rankScoreList[i]));
         }
         else
@@ -70,12 +192,16 @@ void PropertyDiversityReranker::simplererank(
             missDocs.push_back(std::make_pair(docId, rankScoreList[i]));
         }
     }
-    if(docIdMap.size() <= 1) return; // single property or empty
+
+    // single property or empty
+    if(docIdMap.size() > 1)
+        return;
+
     do{
         DocIdMap::iterator mapIt = docIdMap.begin();
         while(mapIt != docIdMap.end())
         {
-            if(mapIt->second.empty()) 
+            if(mapIt->second.empty())
             {
                 docIdMap.erase(mapIt++);
             }
@@ -96,113 +222,46 @@ void PropertyDiversityReranker::simplererank(
         newScoreList.push_back(missIt->second);
     }
 
-    using std::swap;
-    swap(docIdList, newDocIdList);
-    swap(rankScoreList, newScoreList);
+    std::swap(docIdList, newDocIdList);
+    std::swap(rankScoreList, newScoreList);
 }
 
-void PropertyDiversityReranker::rerank(
+void PropertyDiversityReranker::rerankCTR_(
     std::vector<unsigned int>& docIdList,
-    std::vector<float>& rankScoreList,
-    const std::string& query
+    std::vector<float>& rankScoreList
 )
 {
-    typedef std::list<std::pair<unsigned int,float> > DocIdList;
-    typedef std::map<PropValueTable::pvid_t, DocIdList> DocIdMap;
-
-    std::vector<std::string> propValueVec;
-    std::vector<int> freqVec;
-    if(groupLabelLogger_)
+    std::vector<std::pair<size_t, count_t> > posClickCountList;
+    bool hasClickCount = false;
+    if (ctrManager_)
     {
-        groupLabelLogger_->getFreqLabel(query, 1, propValueVec, freqVec);
+        hasClickCount = ctrManager_->getClickCountListByDocIdList(docIdList, posClickCountList);
     }
 
-    if(!propValueVec.empty())
+    if (!hasClickCount)
+        return;
+
+    LOG(INFO) << "CTR rerank, doc num: " << docIdList.size();
+
+    // sort by click-count
+    std::sort(posClickCountList.begin(), posClickCountList.end(), CompareSecond);
+
+    std::size_t numDoc = docIdList.size();
+    std::vector<unsigned int> newDocIdList(numDoc);
+    std::vector<float> newScoreList(numDoc);
+
+    size_t i = 0;
+    for (std::vector<std::pair<size_t, count_t> >::iterator it = posClickCountList.begin();
+        it != posClickCountList.end(); ++it)
     {
-        std::string& boostingCategoryLabel = propValueVec[0];
-        std::cout<<"boosting category "<<boostingCategoryLabel<<std::endl;		
-        GroupManager::PropValueMap::const_iterator pvIt = propValueMap_.find(boostingProperty_);
-        if (pvIt == propValueMap_.end())
-        {
-            LOG(ERROR) << "in GroupManager: group index file is not loaded for group property " << boostingProperty_;
-            simplererank(docIdList, rankScoreList);
-            return;
-        }
-        const PropValueTable& pvTable = pvIt->second;
-        const std::vector<PropValueTable::pvid_t>& idTable = pvTable.propIdTable();
-        const std::vector<PropValueTable::pvid_t>& parentTable = pvTable.parentIdTable();
-        izenelib::util::UString labelUStr(boostingCategoryLabel, izenelib::util::UString::UTF_8);
-        PropValueTable::pvid_t labelId = pvTable.propValueId(labelUStr);
-        if (labelId == 0)
-        {
-            LOG(WARNING) << "in GroupManager: group index has not been built for Category value: " << boostingCategoryLabel;
-            simplererank(docIdList, rankScoreList);			
-            return;
-        }
-
-        std::size_t numDoc = docIdList.size();
-		
-        std::vector<unsigned int> boostingDocIdList;
-        std::vector<float> boostingScoreList;	
-        boostingDocIdList.reserve(numDoc);;
-        boostingScoreList.reserve(numDoc);
-
-        std::vector<unsigned int> leftDocIdList;
-        std::vector<float> leftScoreList;	
-        leftDocIdList.reserve(numDoc);;
-        leftScoreList.reserve(numDoc);
-		
-        for(std::size_t i = 0; i < numDoc; ++i)
-        {
-            docid_t docId = docIdList[i];
-
-            // this doc has not built group index data
-            if (docId >= idTable.size())
-                continue;
-
-            PropValueTable::pvid_t pvId = idTable[docId];
-
-            // check whether pvId is the child (or itself) of labelId
-            bool isChild = false;
-            while (pvId != 0)
-            {
-                if (pvId == labelId)
-                {
-                    isChild = true;
-                    break;
-                }
-                pvId = parentTable[pvId];
-            }
-
-            if (isChild)
-            {
-                boostingDocIdList.push_back(docId);
-                boostingScoreList.push_back(rankScoreList[i]);
-            }
-            else
-            {
-                leftDocIdList.push_back(docId);
-                leftScoreList.push_back(rankScoreList[i]);
-            }
-        }
-        if(!boostingDocIdList.empty())
-        {
-            simplererank(boostingDocIdList, boostingScoreList);
-        }
-        if(!leftDocIdList.empty())
-        {
-            simplererank(leftDocIdList, leftScoreList);
-        }
-        boostingDocIdList.resize(numDoc);
-        boostingScoreList.resize(numDoc);
-        std::copy_backward(leftDocIdList.begin(), leftDocIdList.end(), boostingDocIdList.end());
-        std::copy_backward(leftScoreList.begin(), leftScoreList.end(), boostingScoreList.end());
-        using std::swap;
-        swap(docIdList, boostingDocIdList);
-        swap(rankScoreList, boostingScoreList);
+        size_t pos = it->first;
+        newDocIdList[i] = docIdList[pos];
+        newScoreList[i] = rankScoreList[pos];
+        ++i;
     }
-    else
-        simplererank(docIdList, rankScoreList);
+
+    std::swap(docIdList, newDocIdList);
+    std::swap(rankScoreList, newScoreList);
 }
 
 NS_FACETED_END

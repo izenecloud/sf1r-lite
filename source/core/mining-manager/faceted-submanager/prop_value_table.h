@@ -18,6 +18,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <set>
 
 NS_FACETED_BEGIN
 
@@ -30,6 +31,12 @@ public:
      * the valid id range is [1, 2^16) (65535 ids)
      */
     typedef uint16_t pvid_t;
+
+    /** a list of property value id */
+    typedef std::vector<pvid_t> ValueIdList;
+
+    /** mapping from doc id to a list of property value id */
+    typedef std::vector<ValueIdList> ValueIdTable;
 
     PropValueTable(
         const std::string& dirPath,
@@ -44,12 +51,12 @@ public:
         return propName_.c_str();
     }
 
-    std::vector<pvid_t>& propIdTable() {
-        return propIdVec_;
+    ValueIdTable& valueIdTable() {
+        return valueIdTable_;
     }
 
-    const std::vector<pvid_t>& propIdTable() const {
-        return propIdVec_;
+    const ValueIdTable& valueIdTable() const {
+        return valueIdTable_;
     }
 
     const izenelib::util::UString& propValueStr(pvid_t pvId) const {
@@ -98,9 +105,20 @@ public:
         return valueTree_;
     }
 
-    const std::vector<pvid_t>& parentIdTable() const {
-        return parentIdVec_;
-    }
+    /**
+     * Whether @p docId belongs to group label of @p labelId.
+     * @param docId the doc id
+     * @param labelId the property value id of group label
+     * @return true for belongs to, false for not belongs to.
+     */
+    bool testDoc(docid_t docId, pvid_t labelId) const;
+
+    /**
+     * Get value ids of @p docId, including all its parent ids.
+     * @param docId the doc id
+     * @param parentSet the set of value ids
+     */
+    void parentIdSet(docid_t docId, std::set<pvid_t>& parentSet) const;
 
 private:
     /** directory path */
@@ -114,15 +132,13 @@ private:
 
     /** mapping from property value id to value string */
     std::vector<izenelib::util::UString> propStrVec_;
-
     /** the number of value strings saved in file */
     unsigned int savePropStrNum_;
 
-    /** mapping from doc id to property value id */
-    std::vector<pvid_t> propIdVec_;
-
-    /** the number of value ids saved in file */
-    unsigned int savePropIdNum_;
+    /** mapping from doc id to a list of property value id */
+    ValueIdTable valueIdTable_;
+    /** the number of elements in @c valueIdTable_ saved in file */
+    unsigned int saveDocIdNum_;
 
     /** the values configured in hierachical levels */
     faceted::OntologyRep valueTree_;

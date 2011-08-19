@@ -96,6 +96,7 @@ class GroupManager;
 class AttrManager;
 class PropertyDiversityReranker;
 class OntologyManager;
+class CTRManager;
 }
 
 /**
@@ -189,6 +190,13 @@ public:
 
     bool getLabelListWithSimByDocId(uint32_t docid,
                                     std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > >& label_list);
+
+    /**
+     * Visit document, for updatint click-through rate (CTR).
+     * @param docId spedified document id
+     * @return true if success, or false;
+     */
+    bool visitDoc(uint32_t docId);
 
     /**
      * Log the group label click.
@@ -380,6 +388,9 @@ private:
     boost::shared_ptr<faceted::OntologyManager> faceted_;
     std::string faceted_path_;
     boost::shared_ptr<izenelib::ir::idmanager::IDManager> idManager_;
+
+    /** CTR */
+    boost::shared_ptr<faceted::CTRManager> ctrManager_;
 
     /** GROUP BY */
     faceted::GroupManager* groupManager_;
