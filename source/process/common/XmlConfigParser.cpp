@@ -13,6 +13,7 @@
 #include <common/SFLogger.h>
 #include <la-manager/LAPool.h>
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <glog/logging.h>
 
@@ -1504,6 +1505,16 @@ void CollectionConfig::parseIndexSchemaProperty(
     string propertyName;
 
     getAttribute( property, "name", propertyName );
+
+    string pName = propertyName;
+    boost::to_lower(pName);
+    if((pName == "date" )||(pName == "docid"))
+    {
+        stringstream message;
+        message << "DATE/DOCID are inherent properties and should not exist within IndexBundleSchema";
+        throw XmlConfigParserException( message.str() );
+    }
+	
     PropertyConfig p;
     p.setName(propertyName);
 
