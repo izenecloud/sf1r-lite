@@ -179,7 +179,6 @@ void QueryBuilder::prepare_for_property_(
     std::map<termid_t, std::vector<TermDocFreqs*> > termDocReaders;
     bool isNumericFilter = false;
     sf1r::PropertyDataType dataType;
-    std::vector<pair<termid_t, std::string> > numericTermList;
 
     typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
     iterator found = schemaMap_.find(property);
