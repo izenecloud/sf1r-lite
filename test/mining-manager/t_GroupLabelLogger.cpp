@@ -48,11 +48,11 @@ private:
     boost::uniform_int<> limitDistribution_;
     boost::variate_generator<mt19937, uniform_int<> > limitRandom_;
 
-    typedef map<string, int> GroupCountMap;
+    typedef map<int, int> GroupCountMap;
     struct GroupCounter
     {
         GroupCountMap countMap_;
-        string manualTop_;
+        int manualTop_;
     };
 
     typedef map<string, GroupCounter> QueryGroupMap;
@@ -61,35 +61,35 @@ private:
 private:
     void checkGroup_(
         int limit,
-        const std::vector<std::string>& propValueVec,
+        const std::vector<LabelCounter::value_type>& valueVec,
         const std::vector<int>& freqVec,
         const GroupCounter& groupCounter
     )
     {
         //cout << "checkGroup_(), limit: " << limit
-             //<< ", propValueVec.size(): " << propValueVec.size();
-        //for (size_t i=0; i<propValueVec.size(); ++i)
+             //<< ", valueVec.size(): " << valueVec.size();
+        //for (size_t i=0; i<valueVec.size(); ++i)
         //{
-            //cout << ", (" << propValueVec[i] << ", " << freqVec[i] << ")";
+            //cout << ", (" << valueVec[i] << ", " << freqVec[i] << ")";
         //}
         //cout << endl;
 
 
-        BOOST_CHECK_EQUAL(propValueVec.size(), freqVec.size());
-        BOOST_CHECK_LE(propValueVec.size(), limit);
+        BOOST_CHECK_EQUAL(valueVec.size(), freqVec.size());
+        BOOST_CHECK_LE(valueVec.size(), limit);
 
-        set<string> checkedSet;
+        set<int> checkedSet;
         size_t i = 0;
         const GroupCountMap& groupCountMap = groupCounter.countMap_;
         int totalCount = groupCountMap.size();
 
         // check top label set manually
-        if (groupCounter.manualTop_.empty() == false)
+        if (groupCounter.manualTop_)
         {
-            const string& groupStr = groupCounter.manualTop_;
-            BOOST_CHECK_EQUAL(propValueVec[0], groupStr);
+            int group = groupCounter.manualTop_;
+            BOOST_CHECK_EQUAL(valueVec[0], group);
 
-            GroupCountMap::const_iterator findIt = groupCountMap.find(groupStr);
+            GroupCountMap::const_iterator findIt = groupCountMap.find(group);
             if (findIt != groupCountMap.end())
             {
                 BOOST_CHECK_EQUAL(freqVec[0], findIt->second);
@@ -100,27 +100,27 @@ private:
                 ++totalCount;
             }
 
-            BOOST_CHECK(checkedSet.insert(groupStr).second);
+            BOOST_CHECK(checkedSet.insert(group).second);
 
             ++i;
         }
 
         // check result size
-        BOOST_CHECK_EQUAL(propValueVec.size(), min(totalCount, limit));
+        BOOST_CHECK_EQUAL(valueVec.size(), min(totalCount, limit));
 
         int maxFreq = INT_MAX;
-        for (; i<propValueVec.size(); ++i)
+        for (; i<valueVec.size(); ++i)
         {
-            const string& groupStr = propValueVec[i];
+            int group = valueVec[i];
             const int freqValue = freqVec[i];
 
             // freq value
-            GroupCountMap::const_iterator findIt = groupCountMap.find(groupStr);
+            GroupCountMap::const_iterator findIt = groupCountMap.find(group);
             BOOST_CHECK(findIt != groupCountMap.end());
             BOOST_CHECK_EQUAL(freqValue, findIt->second);
 
             // not inserted before
-            BOOST_CHECK(checkedSet.insert(groupStr).second);
+            BOOST_CHECK(checkedSet.insert(group).second);
 
             // decreasing freq
             BOOST_CHECK_LE(freqValue, maxFreq);
@@ -151,13 +151,10 @@ public:
 
     void createLog(GroupLabelLogger& logger, int logNum)
     {
-        string query;
-        string group;
-
         for (int i=0; i<logNum; ++i)
         {
-            query = "query_" + lexical_cast<string>(queryRandom_());
-            group = "group_" + lexical_cast<string>(groupRandom_());
+            string query = "query_" + lexical_cast<string>(queryRandom_());
+            int group = groupRandom_();
 
             //cout << "create log: " << query << ", " << group << endl;
 
@@ -171,12 +168,12 @@ public:
         for (int i=0; i<topNum; ++i)
         {
             string query = "query_" + lexical_cast<string>(queryRandom_());
-            string group;
+            int group = 0;
 
             // in 50% test, "group" would be empty to reset the top label
             if (i % 2 == 0)
             {
-                group = "group_" + lexical_cast<string>(groupRandom_());
+                group = groupRandom_();
             }
 
             //cout << "set top label: " << query << ", " << group << endl;
@@ -201,12 +198,12 @@ public:
             {
                 limit = 1;
             }
-            std::vector<std::string> propValueVec;
+            std::vector<LabelCounter::value_type> valueVec;
             std::vector<int> freqVec;
-            BOOST_CHECK(logger.getFreqLabel(query, limit, propValueVec, freqVec));
+            BOOST_CHECK(logger.getFreqLabel(query, limit, valueVec, freqVec));
 
             //cout << "check query: " << query << endl;
-            checkGroup_(limit, propValueVec, freqVec, groupCounter);
+            checkGroup_(limit, valueVec, freqVec, groupCounter);
         }
     }
 };

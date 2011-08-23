@@ -14,17 +14,7 @@
 	</xs:simpleType>
 
 	
-	<xs:complexType name="TreeNodeType">
-		<xs:sequence>
-			<xs:element name="TreeNode" type="TreeNodeType" minOccurs="0" maxOccurs="unbounded"/>
-		</xs:sequence>
-        <xs:attribute name="value" type="xs:string" use="required"/>
-	</xs:complexType>
-
 	<xs:complexType name="PropertyType">
-		<xs:sequence>
-			<xs:element name="TreeNode" type="TreeNodeType" minOccurs="0" maxOccurs="unbounded"/>
-		</xs:sequence>
 		<xs:attribute name="name" type="xs:string" use="required"/>
 		<xs:attribute name="type">
             <xs:simpleType>

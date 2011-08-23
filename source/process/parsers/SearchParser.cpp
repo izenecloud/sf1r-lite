@@ -44,8 +44,9 @@ using driver::Keys;
  *   in each groups.
  *   - @b property* (@c String): the property name, this name must be also specified
  *   in request["group"].
- *   - @b value* (@c String): the property value, only those documents with this
- *   property value would be returned.
+ *   - @b value* (@c Array): the label value. It's an array of the path from root to leaf node.
+ *   Each is a @c String of node value.
+ *   Only those documents belonging to the leaf node would be returned.
  * - @b attr_label (@c Array): Only get documents in the specified attribute groups.
  *   Multiple labels could be specified. It could also be used with @b group_label
  *   together, so that the documents returned must be contained in each label in
@@ -139,11 +140,21 @@ bool SearchParser::parse(const Value& search)
             {
                 const Value& groupPair = groupNode(i);
                 groupLabels_[i].first = asString(groupPair[Keys::property]);
-                groupLabels_[i].second = asString(groupPair[Keys::value]);
+                faceted::GroupParam::GroupPath& groupPath = groupLabels_[i].second;
+
+                const Value& pathNode = groupPair[Keys::value];
+                if (pathNode.type() == Value::kArrayType)
+                {
+                    groupPath.resize(pathNode.size());
+                    for (std::size_t j = 0; j < pathNode.size(); ++j)
+                    {
+                        groupPath[j] = asString(pathNode(j));
+                    }
+                }
 
                 if (groupLabels_[i].first.empty() || groupLabels_[i].second.empty())
                 {
-                    error() = "Must specify both property name and value for group label";
+                    error() = "Must specify both property name and array of value path for group label";
                     return false;
                 }
             }
@@ -166,10 +177,11 @@ bool SearchParser::parse(const Value& search)
             for (std::size_t i = 0; i < attrNode.size(); ++i)
             {
                 const Value& attrPair = attrNode(i);
-                attrLabels_[i].first = asString(attrPair[Keys::attr_name]);
-                attrLabels_[i].second = asString(attrPair[Keys::attr_value]);
+                faceted::GroupParam::AttrLabel& attrLabel = attrLabels_[i];
+                attrLabel.first = asString(attrPair[Keys::attr_name]);
+                attrLabel.second = asString(attrPair[Keys::attr_value]);
 
-                if (attrLabels_[i].first.empty() || attrLabels_[i].second.empty())
+                if (attrLabel.first.empty() || attrLabel.second.empty())
                 {
                     error() = "Must specify both attribute name and value for attr label";
                     return false;

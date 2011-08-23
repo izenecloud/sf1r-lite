@@ -6,12 +6,13 @@
 #include <fstream>
 #include <cassert>
 #include <set>
+#include <algorithm> // reverse
 
 #include <boost/lexical_cast.hpp>
 
 #include <glog/logging.h>
 
-using namespace sf1r::faceted;
+NS_FACETED_BEGIN
 
 // as id 0 is reserved for empty value,
 // members are initialized to size 1
@@ -23,39 +24,49 @@ PropValueTable::PropValueTable(
 , propName_(propName)
 , propStrVec_(1)
 , savePropStrNum_(0)
+, parentIdVec_(1)
+, saveParentIdNum_(0)
+, childMapTable_(1)
 , valueIdTable_(1)
 , saveDocIdNum_(0)
 {
 }
 
-PropValueTable::pvid_t PropValueTable::propValueId(const izenelib::util::UString& value)
+PropValueTable::pvid_t PropValueTable::propValueId(const std::vector<izenelib::util::UString>& path)
 {
-    pvid_t pvId = propStrVec_.size();
+    pvid_t pvId = 0;
 
-    typedef std::map<izenelib::util::UString, pvid_t> PropStrMap;
-    std::pair<PropStrMap::iterator, bool> result = propStrMap_.insert(
-        PropStrMap::value_type(value, pvId)
-    );
-
-    if (result.second)
+    for (std::vector<izenelib::util::UString>::const_iterator pathIt = path.begin();
+        pathIt != path.end(); ++pathIt)
     {
-        if (pvId != 0)
+        PropStrMap& propStrMap = childMapTable_[pvId];
+        std::pair<PropStrMap::iterator, bool> result = propStrMap.insert(
+                PropStrMap::value_type(*pathIt, propStrVec_.size()));
+
+        if (result.second)
         {
-            propStrVec_.push_back(value);
+            pvid_t parentId = pvId;
+            pvId = result.first->second;
+            if (pvId != 0)
+            {
+                propStrVec_.push_back(*pathIt);
+                parentIdVec_.push_back(parentId);
+                childMapTable_.push_back(PropStrMap());
+            }
+            else
+            {
+                // overflow
+                throw MiningException(
+                    "property value count is out of range",
+                    boost::lexical_cast<std::string>(propStrVec_.size()),
+                    "PropValueTable::propValueId"
+                );
+            }
         }
         else
         {
-            // overflow
-            throw MiningException(
-                "property value count is out of range",
-                boost::lexical_cast<std::string>(propStrVec_.size()),
-                "PropValueTable::propValueId"
-            );
+            pvId = result.first->second;
         }
-    }
-    else
-    {
-        pvId = result.first->second;
     }
 
     return pvId;
@@ -63,16 +74,27 @@ PropValueTable::pvid_t PropValueTable::propValueId(const izenelib::util::UString
 
 bool PropValueTable::open()
 {
-    if (!load_container(dirPath_, propName_ + ".map", propStrVec_, savePropStrNum_)
-        || !load_container(dirPath_, propName_ + ".table", valueIdTable_, saveDocIdNum_, true))
+    if (!load_container(dirPath_, propName_ + ".prop.txt", propStrVec_, savePropStrNum_)
+        || !load_container(dirPath_, propName_ + ".parent.bin", parentIdVec_, saveParentIdNum_, true)
+        || !load_container(dirPath_, propName_ + ".doc.bin", valueIdTable_, saveDocIdNum_, true))
     {
         return false;
     }
 
-    propStrMap_.clear();
-    for (unsigned int i = 0; i < propStrVec_.size(); ++i)
+    const unsigned int valueNum = parentIdVec_.size();
+    if (valueNum != propStrVec_.size())
     {
-        propStrMap_[propStrVec_[i]] = i;
+        LOG(ERROR) << "unequal property value number in parentIdVec_ and propStrVec_";
+        return false;
+    }
+
+    childMapTable_.clear();
+    childMapTable_.resize(valueNum);
+    for (unsigned int i = 1; i < valueNum; ++i)
+    {
+        pvid_t parentId = parentIdVec_[i];
+        const izenelib::util::UString& valueStr = propStrVec_[i];
+        childMapTable_[parentId][valueStr] = i;
     }
 
     return true;
@@ -80,55 +102,11 @@ bool PropValueTable::open()
 
 bool PropValueTable::flush()
 {
-    if (!save_container(dirPath_, propName_ + ".map", propStrVec_, savePropStrNum_)
-        || !save_container(dirPath_, propName_ + ".table", valueIdTable_, saveDocIdNum_, true))
+    if (!save_container(dirPath_, propName_ + ".prop.txt", propStrVec_, savePropStrNum_)
+        || !save_container(dirPath_, propName_ + ".parent.bin", parentIdVec_, saveParentIdNum_, true)
+        || !save_container(dirPath_, propName_ + ".doc.bin", valueIdTable_, saveDocIdNum_, true))
     {
         return false;
-    }
-
-    return true;
-}
-
-bool PropValueTable::setValueTree(const faceted::OntologyRep& valueTree)
-{
-    valueTree_ = valueTree;
-
-    parentIdVec_.assign(propValueNum(), 0);
-    std::list<OntologyRepItem>& itemList = valueTree_.item_list;
-
-    // mapping from level to value id
-    std::vector<pvid_t> path;
-    path.push_back(0);
-    std::set<pvid_t> treeIdSet;
-    for (std::list<faceted::OntologyRepItem>::iterator it = itemList.begin();
-        it != itemList.end(); ++it)
-    {
-        faceted::OntologyRepItem& item = *it;
-        std::size_t currentLevel = item.level;
-        BOOST_ASSERT(currentLevel >= 1 && currentLevel <= path.size());
-        path.resize(currentLevel + 1);
-
-        pvid_t pvId = propValueId(item.text);
-        item.id = pvId;
-        path[currentLevel] = pvId;
-
-        if (pvId >= parentIdVec_.size())
-        {
-            parentIdVec_.resize(pvId+1);
-        }
-
-        if (treeIdSet.insert(pvId).second)
-        {
-            parentIdVec_[pvId] = path[currentLevel-1];
-        }
-        else
-        {
-            std::string utf8Str;
-            item.text.convertString(utf8Str, izenelib::util::UString::UTF_8);
-            LOG(ERROR) << "in <MiningSchema>::<Group>::<Property> \"" << propName_
-                       << "\", duplicate <TreeNode> value \"" << utf8Str << "\"";
-            return false;
-        }
     }
 
     return true;
@@ -151,17 +129,25 @@ void PropValueTable::parentIdSet(docid_t docId, std::set<pvid_t>& parentSet) con
     for (ValueIdList::const_iterator it = valueIdList.begin();
         it != valueIdList.end(); ++it)
     {
-        pvid_t pvId = *it;
-        parentSet.insert(pvId);
-
-        if (pvId < parentIdVec_.size())
+        for (pvid_t pvId = *it; pvId; pvId = parentIdVec_[pvId])
         {
-            while ((pvId = parentIdVec_[pvId]))
-            {
-                // stop finding parent if already inserted
-                if (parentSet.insert(pvId).second == false)
-                    break;
-            }
+            // stop finding parent if already inserted
+            if (parentSet.insert(pvId).second == false)
+                break;
         }
     }
 }
+
+void PropValueTable::propValuePath(pvid_t pvId, std::vector<izenelib::util::UString>& path) const
+{
+    // from leaf to root
+    for (; pvId; pvId = parentIdVec_[pvId])
+    {
+        path.push_back(propStrVec_[pvId]);
+    }
+
+    // from root to leaf
+    std::reverse(path.begin(), path.end());
+}
+
+NS_FACETED_END

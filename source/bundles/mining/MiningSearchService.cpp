@@ -183,30 +183,30 @@ bool MiningSearchService::visitDoc(uint32_t docId)
 bool MiningSearchService::clickGroupLabel(
     const std::string& query,
     const std::string& propName,
-    const std::string& propValue
+    const std::vector<std::string>& groupPath
 )
 {
-    return miningManager_->clickGroupLabel(query, propName, propValue);
+    return miningManager_->clickGroupLabel(query, propName, groupPath);
 }
 
 bool MiningSearchService::getFreqGroupLabel(
     const std::string& query,
     const std::string& propName,
     int limit,
-    std::vector<std::string>& propValueVec,
+    std::vector<std::vector<std::string> >& pathVec,
     std::vector<int>& freqVec
 )
 {
-    return miningManager_->getFreqGroupLabel(query, propName, limit, propValueVec, freqVec);
+    return miningManager_->getFreqGroupLabel(query, propName, limit, pathVec, freqVec);
 }
 
 bool MiningSearchService::setTopGroupLabel(
     const std::string& query,
     const std::string& propName,
-    const std::string& propValue
+    const std::vector<std::string>& groupPath
 )
 {
-    return miningManager_->setTopGroupLabel(query, propName, propValue);
+    return miningManager_->setTopGroupLabel(query, propName, groupPath);
 }
 
 bool MiningSearchService::GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list)

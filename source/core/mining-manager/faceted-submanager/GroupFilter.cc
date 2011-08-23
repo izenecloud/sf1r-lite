@@ -11,11 +11,6 @@
 
 #include <glog/logging.h>
 
-namespace
-{
-typedef std::vector<std::pair<std::string, std::string> > LabelVec;
-}
-
 NS_FACETED_BEGIN
 
 GroupFilter::GroupFilter(
@@ -88,8 +83,8 @@ void GroupFilter::initGroup_()
         }
     }
 
-    const LabelVec& labels = groupParam_.groupLabels_;
-    for (LabelVec::const_iterator it = labels.begin();
+    const GroupParam::GroupLabelVec& labels = groupParam_.groupLabels_;
+    for (GroupParam::GroupLabelVec::const_iterator it = labels.begin();
         it != labels.end(); ++it)
     {
         GroupCounterMap::iterator counterIt = groupCounterMap.find(it->first);
@@ -98,7 +93,7 @@ void GroupFilter::initGroup_()
             const PropValueTable* pvTable = groupManager_->getPropValueTable(it->first);
             if (pvTable)
             {
-                groupLabels_.push_back(new GroupLabel(*it, *pvTable, counterIt->second));
+                groupLabels_.push_back(new GroupLabel(it->second, *pvTable, counterIt->second));
             }
             else
             {
@@ -118,8 +113,8 @@ void GroupFilter::initAttr_()
     {
         attrCounter_ = new AttrCounter(attrTable_);
 
-        const LabelVec& labels = groupParam_.attrLabels_;
-        for (LabelVec::const_iterator it = labels.begin();
+        const GroupParam::AttrLabelVec& labels = groupParam_.attrLabels_;
+        for (GroupParam::AttrLabelVec::const_iterator it = labels.begin();
             it != labels.end(); ++it)
         {
             attrLabels_.push_back(new AttrLabel(*it, attrTable_));

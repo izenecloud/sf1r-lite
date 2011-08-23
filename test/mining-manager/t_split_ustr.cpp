@@ -21,17 +21,24 @@ namespace
 {
 const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
 
-void checkGroupValues(
-    const vector<izenelib::util::UString>& groupValues,
-    const vector<string>& goldGroupValues
+void checkGroupPaths(
+    const vector<vector<izenelib::util::UString> >& groupPaths,
+    const vector<vector<string> >& goldGroupPaths
 )
 {
-    BOOST_CHECK_EQUAL(groupValues.size(), goldGroupValues.size());
-    for (unsigned int i = 0; i < groupValues.size(); ++i)
+    BOOST_CHECK_EQUAL(groupPaths.size(), goldGroupPaths.size());
+    for (unsigned int i = 0; i < groupPaths.size(); ++i)
     {
-        std::string valueUtf8;
-        groupValues[i].convertString(valueUtf8, ENCODING_TYPE);
-        BOOST_CHECK_EQUAL(valueUtf8, goldGroupValues[i]);
+        const vector<izenelib::util::UString>& path = groupPaths[i];
+        const vector<string>& goldPath = goldGroupPaths[i];
+        BOOST_CHECK_EQUAL(path.size(), goldPath.size());
+
+        for (unsigned int j = 0; j < path.size(); ++j)
+        {
+            std::string valueUtf8;
+            path[j].convertString(valueUtf8, ENCODING_TYPE);
+            BOOST_CHECK_EQUAL(valueUtf8, goldPath[j]);
+        }
     }
 }
 
@@ -66,44 +73,73 @@ BOOST_AUTO_TEST_CASE(split_group)
 {
     {
         izenelib::util::UString src("", ENCODING_TYPE);
-        vector<izenelib::util::UString> groupValues;
-        split_group_value(src, groupValues);
-        BOOST_CHECK_EQUAL(groupValues.size(), 0U);
+        vector<vector<izenelib::util::UString> > groupPaths;
+        split_group_path(src, groupPaths);
+        BOOST_CHECK_EQUAL(groupPaths.size(), 0U);
     }
 
     {
         izenelib::util::UString src(",,,", ENCODING_TYPE);
-        vector<izenelib::util::UString> groupValues;
-        split_group_value(src, groupValues);
-        BOOST_CHECK_EQUAL(groupValues.size(), 0U);
+        vector<vector<izenelib::util::UString> > groupPaths;
+        split_group_path(src, groupPaths);
+        BOOST_CHECK_EQUAL(groupPaths.size(), 0U);
     }
 
     {
         izenelib::util::UString src("a,b,c", ENCODING_TYPE);
-        vector<izenelib::util::UString> groupValues;
-        split_group_value(src, groupValues);
+        vector<vector<izenelib::util::UString> > groupPaths;
+        split_group_path(src, groupPaths);
 
-        vector<string> goldGroupValues;
-        goldGroupValues.push_back("a");
-        goldGroupValues.push_back("b");
-        goldGroupValues.push_back("c");
+        vector<vector<string> > goldGroupPaths;
+        goldGroupPaths.push_back(vector<string>());
+        goldGroupPaths.back().push_back("a");
+        goldGroupPaths.push_back(vector<string>());
+        goldGroupPaths.back().push_back("b");
+        goldGroupPaths.push_back(vector<string>());
+        goldGroupPaths.back().push_back("c");
 
-        checkGroupValues(groupValues, goldGroupValues);
+        checkGroupPaths(groupPaths, goldGroupPaths);
     }
 
     {
-        izenelib::util::UString src("T恤,衬衫, POLO衫,\"John, Mark \"\"Mary\"\"\",长袖上衣  ,,,,,", ENCODING_TYPE);
-        vector<izenelib::util::UString> groupValues;
-        split_group_value(src, groupValues);
+        izenelib::util::UString src("A>B>C,D>E>F", ENCODING_TYPE);
+        vector<vector<izenelib::util::UString> > groupPaths;
+        split_group_path(src, groupPaths);
 
-        vector<string> goldGroupValues;
-        goldGroupValues.push_back("T恤");
-        goldGroupValues.push_back("衬衫");
-        goldGroupValues.push_back("POLO衫");
-        goldGroupValues.push_back("John, Mark \"Mary\"");
-        goldGroupValues.push_back("长袖上衣");
+        vector<vector<string> > goldGroupPaths;
+        goldGroupPaths.push_back(vector<string>());
+        goldGroupPaths.back().push_back("A");
+        goldGroupPaths.back().push_back("B");
+        goldGroupPaths.back().push_back("C");
+        goldGroupPaths.push_back(vector<string>());
+        goldGroupPaths.back().push_back("D");
+        goldGroupPaths.back().push_back("E");
+        goldGroupPaths.back().push_back("F");
 
-        checkGroupValues(groupValues, goldGroupValues);
+        checkGroupPaths(groupPaths, goldGroupPaths);
+    }
+
+    {
+        izenelib::util::UString src("创意生活,电脑办公>网络设备  ,手机数码> 手机通讯>手机,\"John, Mark\">\"1+1>2\">\"\"\"Mary\"\"\"   ,,,,,", ENCODING_TYPE);
+        vector<vector<izenelib::util::UString> > groupPaths;
+        split_group_path(src, groupPaths);
+
+        vector<vector<string> > goldGroupPaths;
+        goldGroupPaths.push_back(vector<string>());
+        goldGroupPaths.back().push_back("创意生活");
+        goldGroupPaths.push_back(vector<string>());
+        goldGroupPaths.back().push_back("电脑办公");
+        goldGroupPaths.back().push_back("网络设备");
+        goldGroupPaths.push_back(vector<string>());
+        goldGroupPaths.back().push_back("手机数码");
+        goldGroupPaths.back().push_back("手机通讯");
+        goldGroupPaths.back().push_back("手机");
+        goldGroupPaths.push_back(vector<string>());
+        goldGroupPaths.back().push_back("John, Mark");
+        goldGroupPaths.back().push_back("1+1>2");
+        goldGroupPaths.back().push_back("\"Mary\"");
+
+        checkGroupPaths(groupPaths, goldGroupPaths);
     }
 }
 

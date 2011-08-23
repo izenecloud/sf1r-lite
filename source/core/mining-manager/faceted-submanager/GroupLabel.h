@@ -10,15 +10,19 @@
 
 #include "faceted_types.h"
 #include "prop_value_table.h"
-#include "GroupCounter.h"
+
+#include <vector>
+#include <string>
 
 NS_FACETED_BEGIN
+
+class GroupCounter;
 
 class GroupLabel
 {
 public:
     GroupLabel(
-        const std::pair<std::string, std::string>& label,
+        const std::vector<std::string>& labelPath,
         const PropValueTable& pvTable,
         GroupCounter* counter
     );
@@ -31,7 +35,7 @@ public:
 
 private:
     const PropValueTable& propValueTable_;
-    const PropValueTable::pvid_t targetValueId_;
+    PropValueTable::pvid_t targetValueId_;
     GroupCounter* counter_;
 };
 

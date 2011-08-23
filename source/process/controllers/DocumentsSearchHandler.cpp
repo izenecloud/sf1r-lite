@@ -376,7 +376,7 @@ bool DocumentsSearchHandler::parse()
     }
 
     // check consistency between SearchParser and GroupingParser
-    const std::vector<std::pair<std::string, std::string> >& groupLabels = searchParser.groupLabels();
+    const faceted::GroupParam::GroupLabelVec& groupLabels = searchParser.groupLabels();
     if (!groupLabels.empty())
     {
         const std::vector<std::string>& groups = groupingParser.groupPropertyList();

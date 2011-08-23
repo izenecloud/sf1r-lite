@@ -16,17 +16,16 @@ namespace sf1r
 {
 
 /**
- * Split @p src into multiple group values.
- * @param src the source string, such as "T恤,衬衫,POLO衫,长袖上衣"
- * @param groupValues stores the group values, for example,
- *                    [0]: "T恤",
- *                    [1]: "衬衫",
- *                    [2]: "POLO衫",
- *                    [3]: "长袖上衣"
+ * Split @p src into multiple group paths.
+ * @param src the source string, such as "创意生活,电脑办公>网络设备,手机数码>手机通讯>手机"
+ * @param groupPaths stores the group paths, for example,
+ *                    [0]: ["创意生活"],
+ *                    [1]: ["电脑办公", "网络设备"],
+ *                    [2]: ["手机数码", "手机通讯", "手机"]
  */
-void split_group_value(
+void split_group_path(
     const izenelib::util::UString& src,
-    std::vector<izenelib::util::UString>& groupValues
+    std::vector<vector<izenelib::util::UString> >& groupPaths
 );
 
 typedef std::pair<

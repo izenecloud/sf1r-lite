@@ -282,15 +282,14 @@ bool IndexSearchService::getSearchResult(
 
         if (actionItem.env_.isLogGroupLabels_)
         {
-            typedef std::vector<std::pair<std::string, std::string> > LabelVec;
-            const LabelVec& groupLabels = actionItem.groupParam_.groupLabels_;
-            for (LabelVec::const_iterator it = groupLabels.begin();
+            const faceted::GroupParam::GroupLabelVec& groupLabels = actionItem.groupParam_.groupLabels_;
+            for (faceted::GroupParam::GroupLabelVec::const_iterator it = groupLabels.begin();
                 it != groupLabels.end(); ++it)
             {
                 if (miningSearchService_->clickGroupLabel(actionItem.env_.queryString_, it->first, it->second) == false)
                 {
                     LOG(ERROR) << "error in log group label click, query: " << actionItem.env_.queryString_
-                               << ", property name: " << it->first << ", property value: " << it->second;
+                               << ", property name: " << it->first << ", path size: " << it->second.size();
                 }
             }
         }

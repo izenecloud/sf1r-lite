@@ -45,12 +45,6 @@ bool GroupManager::open(const std::vector<GroupConfig>& configVec)
                 LOG(ERROR) << "PropValueTable::open() failed, property name: " << it->propName;
                 return false;
             }
-
-            if (!pvTable.setValueTree(it->valueTree))
-            {
-                LOG(ERROR) << "PropValueTable::setValueTree() failed, property name: " << it->propName;
-                return false;
-            }
         }
         else
         {
@@ -103,15 +97,15 @@ bool GroupManager::processCollection()
                 if (it != doc.propertyEnd())
                 {
                     const izenelib::util::UString& propValue = it->second.get<izenelib::util::UString>();
-                    std::vector<izenelib::util::UString> groupValues;
-                    split_group_value(propValue, groupValues);
+                    std::vector<vector<izenelib::util::UString> > groupPaths;
+                    split_group_path(propValue, groupPaths);
 
                     try
                     {
-                        for (std::vector<izenelib::util::UString>::const_iterator valueIt = groupValues.begin();
-                            valueIt != groupValues.end(); ++valueIt)
+                        for (std::vector<vector<izenelib::util::UString> >::const_iterator pathIt = groupPaths.begin();
+                            pathIt != groupPaths.end(); ++pathIt)
                         {
-                            PropValueTable::pvid_t pvId = pvTable.propValueId(*valueIt);
+                            PropValueTable::pvid_t pvId = pvTable.propValueId(*pathIt);
                             valueIdList.push_back(pvId);
                         }
                     }
