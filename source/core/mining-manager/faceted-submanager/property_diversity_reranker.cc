@@ -238,7 +238,7 @@ void PropertyDiversityReranker::rerankCTR_(
     LOG(INFO) << "CTR rerank, doc num: " << docIdList.size();
 
     // sort by click-count
-    std::sort(posClickCountList.begin(), posClickCountList.end(), CompareSecond);
+    std::stable_sort(posClickCountList.begin(), posClickCountList.end(), CompareSecond);
 
     std::size_t numDoc = docIdList.size();
     std::vector<unsigned int> newDocIdList(numDoc);
