@@ -76,7 +76,7 @@ private:
 
 
         BOOST_CHECK_EQUAL(valueVec.size(), freqVec.size());
-        BOOST_CHECK_LE(valueVec.size(), limit);
+        BOOST_CHECK_LE(static_cast<int>(valueVec.size()), limit);
 
         set<int> checkedSet;
         size_t i = 0;
@@ -106,7 +106,7 @@ private:
         }
 
         // check result size
-        BOOST_CHECK_EQUAL(valueVec.size(), min(totalCount, limit));
+        BOOST_CHECK_EQUAL(static_cast<int>(valueVec.size()), min(totalCount, limit));
 
         int maxFreq = INT_MAX;
         for (; i<valueVec.size(); ++i)

@@ -93,12 +93,12 @@ public:
 private:
     bool processGetSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
     {
-        workerService_->processGetSearchResult(actionItem, resultItem);
+        return workerService_->processGetSearchResult(actionItem, resultItem);
     }
 
     bool processGetSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
     {
-        workerService_->processGetSummaryResult(actionItem, resultItem);
+        return workerService_->processGetSummaryResult(actionItem, resultItem);
     }
 };
 

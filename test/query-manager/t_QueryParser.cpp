@@ -54,9 +54,9 @@ void keywordTreeCheck(const QueryTreePtr& queryTree, const std::string& queryStr
     izenelib::util::UString queryUStr(queryStr, izenelib::util::UString::UTF_8);
     BOOST_CHECK_EQUAL( QueryTree::KEYWORD , queryTree->type_ );
     BOOST_CHECK_EQUAL( queryStr , queryTree->keyword_ );
-    BOOST_CHECK_NE( 0 , queryTree->keywordId_ );
+    BOOST_CHECK_NE( 0U , queryTree->keywordId_ );
     BOOST_CHECK( queryUStr == queryTree->keywordUString_ );
-    BOOST_CHECK_EQUAL( 0 , queryTree->children_.size() );
+    BOOST_CHECK_EQUAL( 0U , queryTree->children_.size() );
 } // end - keywordTreeCheck
 
 BOOST_AUTO_TEST_CASE(normalizeQuery_test)
@@ -102,9 +102,9 @@ BOOST_AUTO_TEST_CASE(parseQuery_basic_test)
         BOOST_CHECK( queryParser.parseQuery(queryUStr, queryTree, false) );
         BOOST_CHECK_EQUAL( QueryTree::TRIE_WILDCARD, queryTree->type_ );
         BOOST_CHECK_EQUAL( queryStr , queryTree->keyword_ );
-        BOOST_CHECK_NE( 0 , queryTree->keywordId_ );
+        BOOST_CHECK_NE( 0U , queryTree->keywordId_ );
         BOOST_CHECK( queryUStr == queryTree->keywordUString_ );
-        BOOST_CHECK_EQUAL( 0 , queryTree->children_.size() );
+        BOOST_CHECK_EQUAL( 0U , queryTree->children_.size() );
     }
     { // WILDCARD type 2
         queryStr = "본케나오게*하지마라?";
@@ -113,14 +113,14 @@ BOOST_AUTO_TEST_CASE(parseQuery_basic_test)
         BOOST_CHECK_EQUAL( QueryTree::UNIGRAM_WILDCARD, queryTree->type_ );
         BOOST_CHECK_EQUAL( queryStr , queryTree->keyword_ );
         BOOST_CHECK( queryUStr == queryTree->keywordUString_ );
-        BOOST_CHECK_NE( 0 , queryTree->keywordId_ );
-        BOOST_CHECK_EQUAL( 11 , queryTree->children_.size() );
+        BOOST_CHECK_NE( 0U , queryTree->keywordId_ );
+        BOOST_CHECK_EQUAL( 11U , queryTree->children_.size() );
         std::list<QueryTreePtr>::const_iterator iter = queryTree->children_.begin();
 
         BOOST_CHECK_EQUAL( QueryTree::KEYWORD, (*iter)->type_ );
         BOOST_CHECK_EQUAL( "본" , (*iter)->keyword_ );
         BOOST_CHECK( izenelib::util::UString("본", izenelib::util::UString::UTF_8) ==(*iter)->keywordUString_ );
-        BOOST_CHECK_NE( 0, (*iter)->keywordId_ );
+        BOOST_CHECK_NE( 0U, (*iter)->keywordId_ );
 
         iter++;iter++;iter++;iter++;iter++;
         BOOST_CHECK_EQUAL( QueryTree::ASTERISK, (*iter)->type_ );
@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(parseQuery_basic_test)
         BOOST_CHECK_EQUAL( QueryTree::KEYWORD, (*iter)->type_ );
         BOOST_CHECK_EQUAL( "지" , (*iter)->keyword_ );
         BOOST_CHECK( izenelib::util::UString("지", izenelib::util::UString::UTF_8) == (*iter)->keywordUString_ );
-        BOOST_CHECK_NE( 0, (*iter)->keywordId_ );
+        BOOST_CHECK_NE( 0U, (*iter)->keywordId_ );
 
         iter++;iter++;iter++;
         BOOST_CHECK_EQUAL( QueryTree::QUESTION_MARK, (*iter)->type_ );
@@ -140,8 +140,8 @@ BOOST_AUTO_TEST_CASE(parseQuery_basic_test)
         BOOST_CHECK( queryParser.parseQuery(queryUStr, queryTree, true) );
         BOOST_CHECK_EQUAL( QueryTree::AND, queryTree->type_ );
         BOOST_CHECK_EQUAL( "", queryTree->keyword_ );
-        BOOST_CHECK_EQUAL( 0 , queryTree->keywordId_ );
-        BOOST_CHECK_EQUAL( 2 , queryTree->children_.size() );
+        BOOST_CHECK_EQUAL( 0U , queryTree->keywordId_ );
+        BOOST_CHECK_EQUAL( 2U , queryTree->children_.size() );
 
         std::list<QueryTreePtr>::const_iterator iter = queryTree->children_.begin();
         QueryTreePtr child = *iter;
@@ -155,8 +155,8 @@ BOOST_AUTO_TEST_CASE(parseQuery_basic_test)
         queryUStr.assign(queryStr, izenelib::util::UString::UTF_8);
         BOOST_CHECK( queryParser.parseQuery(queryUStr, queryTree, true) );
         BOOST_CHECK_EQUAL( "", queryTree->keyword_ );
-        BOOST_CHECK_EQUAL( 0 , queryTree->keywordId_ );
-        BOOST_CHECK_EQUAL( 2 , queryTree->children_.size() );
+        BOOST_CHECK_EQUAL( 0U , queryTree->keywordId_ );
+        BOOST_CHECK_EQUAL( 2U , queryTree->children_.size() );
 
         std::list<QueryTreePtr>::const_iterator iter = queryTree->children_.begin();
         QueryTreePtr child = *iter;
@@ -171,8 +171,8 @@ BOOST_AUTO_TEST_CASE(parseQuery_basic_test)
         BOOST_CHECK( queryParser.parseQuery(queryUStr, queryTree, true) );
         BOOST_CHECK_EQUAL( QueryTree::OR, queryTree->type_ );
         BOOST_CHECK_EQUAL( "", queryTree->keyword_ );
-        BOOST_CHECK_EQUAL( 0 , queryTree->keywordId_ );
-        BOOST_CHECK_EQUAL( 2 , queryTree->children_.size() );
+        BOOST_CHECK_EQUAL( 0U , queryTree->keywordId_ );
+        BOOST_CHECK_EQUAL( 2U , queryTree->children_.size() );
 
         std::list<QueryTreePtr>::const_iterator iter = queryTree->children_.begin();
         QueryTreePtr child = *iter;
@@ -187,8 +187,8 @@ BOOST_AUTO_TEST_CASE(parseQuery_basic_test)
         BOOST_CHECK( queryParser.parseQuery(queryUStr, queryTree, true) );
         BOOST_CHECK_EQUAL( QueryTree::NOT, queryTree->type_ );
         BOOST_CHECK_EQUAL( "", queryTree->keyword_ );
-        BOOST_CHECK_EQUAL( 0 , queryTree->keywordId_ );
-        BOOST_CHECK_EQUAL( 1 , queryTree->children_.size() );
+        BOOST_CHECK_EQUAL( 0U , queryTree->keywordId_ );
+        BOOST_CHECK_EQUAL( 1U , queryTree->children_.size() );
 
         QueryTreePtr child = *(queryTree->children_.begin());
         keywordTreeCheck(child, "빙신");
@@ -199,8 +199,8 @@ BOOST_AUTO_TEST_CASE(parseQuery_basic_test)
         BOOST_CHECK( queryParser.parseQuery(queryUStr, queryTree, true) );
         BOOST_CHECK_EQUAL( QueryTree::EXACT, queryTree->type_ );
         BOOST_CHECK_EQUAL( "본케나오게 .하지마라", queryTree->keyword_ );
-        BOOST_CHECK_NE( 0 , queryTree->keywordId_ );
-        BOOST_CHECK_EQUAL( 10 , queryTree->children_.size() );
+        BOOST_CHECK_NE( 0U , queryTree->keywordId_ );
+        BOOST_CHECK_EQUAL( 10U , queryTree->children_.size() );
 
         QTIter iter = queryTree->children_.begin();
         keywordTreeCheck(*iter++, "본");
@@ -220,8 +220,8 @@ BOOST_AUTO_TEST_CASE(parseQuery_basic_test)
         BOOST_CHECK( queryParser.parseQuery(queryUStr, queryTree, true) );
         BOOST_CHECK_EQUAL( QueryTree::ORDER, queryTree->type_ );
         BOOST_CHECK_EQUAL( "본케나오게 하지마라" , queryTree->keyword_ );
-        BOOST_CHECK_NE( 0 , queryTree->keywordId_ );
-        BOOST_CHECK_EQUAL( 2 , queryTree->children_.size() );
+        BOOST_CHECK_NE( 0U , queryTree->keywordId_ );
+        BOOST_CHECK_EQUAL( 2U , queryTree->children_.size() );
 
         std::list<QueryTreePtr>::const_iterator iter = queryTree->children_.begin();
         QueryTreePtr child = *iter;
@@ -236,8 +236,8 @@ BOOST_AUTO_TEST_CASE(parseQuery_basic_test)
         BOOST_CHECK( queryParser.parseQuery(queryUStr, queryTree, true) );
         BOOST_CHECK_EQUAL( QueryTree::NEARBY, queryTree->type_ );
         BOOST_CHECK_EQUAL( "본케나오게 하지마라" , queryTree->keyword_ );
-        BOOST_CHECK_NE( 0 , queryTree->keywordId_ );
-        BOOST_CHECK_EQUAL( 2 , queryTree->children_.size() );
+        BOOST_CHECK_NE( 0U , queryTree->keywordId_ );
+        BOOST_CHECK_EQUAL( 2U , queryTree->children_.size() );
 
         std::list<QueryTreePtr>::const_iterator iter = queryTree->children_.begin();
         QueryTreePtr child = *iter;
@@ -254,8 +254,8 @@ BOOST_AUTO_TEST_CASE(parseQuery_basic_test)
         BOOST_CHECK( queryParser.parseQuery(queryUStr, queryTree, true) );
         BOOST_CHECK_EQUAL( QueryTree::NEARBY, queryTree->type_ );
         BOOST_CHECK_EQUAL( "본케나오게 하지마라" , queryTree->keyword_ );
-        BOOST_CHECK_NE( 0 , queryTree->keywordId_ );
-        BOOST_CHECK_EQUAL( 2 , queryTree->children_.size() );
+        BOOST_CHECK_NE( 0U , queryTree->keywordId_ );
+        BOOST_CHECK_EQUAL( 2U , queryTree->children_.size() );
 
         std::list<QueryTreePtr>::const_iterator iter = queryTree->children_.begin();
         QueryTreePtr child = *iter;
@@ -362,7 +362,7 @@ BOOST_AUTO_TEST_CASE(getAnalyzedQueryTree_phrase_test)
         BOOST_CHECK( queryParser.parseQuery(queryUStr, queryTree, false) );
         BOOST_CHECK_EQUAL(queryTree->type_ , QueryTree::ORDER);
         BOOST_CHECK_EQUAL(queryTree->keyword_ , "대한민국 명바기");
-        BOOST_CHECK_EQUAL(queryTree->children_.size() , 2 );
+        BOOST_CHECK_EQUAL(queryTree->children_.size() , 2U );
         childIter = queryTree->children_.begin();
         keywordTreeCheck(*childIter++, "대한민국");
         keywordTreeCheck(*childIter, "명바기");
@@ -371,7 +371,7 @@ BOOST_AUTO_TEST_CASE(getAnalyzedQueryTree_phrase_test)
         BOOST_CHECK(queryParser.getAnalyzedQueryTree(true, analysisInfo, queryUStr, queryTree, false));
         BOOST_CHECK_EQUAL(queryTree->type_ , QueryTree::ORDER);
         BOOST_CHECK_EQUAL(queryTree->keyword_ , "대한민국 명바기");
-        BOOST_CHECK_EQUAL(queryTree->children_.size() , 3 );
+        BOOST_CHECK_EQUAL(queryTree->children_.size() , 3U );
         childIter = queryTree->children_.begin();
         keywordTreeCheck(*childIter++, "대한");
         keywordTreeCheck(*childIter++, "민국");
@@ -390,7 +390,7 @@ BOOST_AUTO_TEST_CASE(getAnalyzedQueryTree_phrase_test)
         BOOST_CHECK_EQUAL(queryTree->type_ , QueryTree::NEARBY);
         BOOST_CHECK_EQUAL(queryTree->keyword_ , "대한민국 명바기");
         BOOST_CHECK_EQUAL(queryTree->distance_ , 777 );
-        BOOST_CHECK_EQUAL(queryTree->children_.size() , 2 );
+        BOOST_CHECK_EQUAL(queryTree->children_.size() , 2U );
         childIter = queryTree->children_.begin();
         keywordTreeCheck(*childIter++, "대한민국");
         keywordTreeCheck(*childIter, "명바기");
@@ -400,7 +400,7 @@ BOOST_AUTO_TEST_CASE(getAnalyzedQueryTree_phrase_test)
         BOOST_CHECK_EQUAL(queryTree->type_ , QueryTree::NEARBY);
         BOOST_CHECK_EQUAL(queryTree->keyword_ , "대한민국 명바기");
         BOOST_CHECK_EQUAL(queryTree->distance_ , 777 );
-        BOOST_CHECK_EQUAL(queryTree->children_.size() , 3 );
+        BOOST_CHECK_EQUAL(queryTree->children_.size() , 3U );
         childIter = queryTree->children_.begin();
         keywordTreeCheck(*childIter++, "대한");
         keywordTreeCheck(*childIter++, "민국");
