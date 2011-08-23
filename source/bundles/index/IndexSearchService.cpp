@@ -64,7 +64,7 @@ bool IndexSearchService::getSearchResult(
 
     if (!checkAggregatorSupport(actionItem.collectionName_))
     {
-        if (workerService_->processGetSearchResult(actionItem, resultItem))
+        if (workerService_->getKeywordSearchResult(actionItem, resultItem))
         {
             return workerService_->getSummaryMiningResult(actionItem, resultItem, false);
         }
@@ -115,8 +115,9 @@ bool IndexSearchService::getSearchResult(
     requestGroup.setResultItemForMerging(&resultItem);
 
     aggregatorManager_->sendRequest<KeywordSearchActionItem, KeywordSearchResult>(
-            actionItem.collectionName_, "getSummaryResult", requestGroup);
+            actionItem.collectionName_, "getSummaryMiningResult", requestGroup);
 
+    //resultItem.print();
     return true;
 
 #else

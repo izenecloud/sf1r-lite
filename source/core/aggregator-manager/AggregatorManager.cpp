@@ -157,18 +157,21 @@ void AggregatorManager::aggregateSearchResult(DistKeywordSearchResult& result, c
     delete docComparators;
 }
 
+void AggregatorManager::aggregateSummaryMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
+{
+    cout << "#[AggregatorManager::aggregateSummaryMiningResult] " << resultList.size() << endl;
+
+    aggregateSummaryResult(result, resultList);
+
+    aggregateMiningResult(result, resultList);
+}
+
 void AggregatorManager::aggregateSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
 {
-    cout << "#[AggregatorManager::aggregateSummaryResult] " << resultList.size() << endl;
-
     size_t subResultNum = resultList.size();
 
     if (subResultNum <= 0)
         return;
-
-    //if (subResultNum == 1)
-    //{
-    //}
 
     size_t pageCount = 0;
     for (size_t i = 0; i < subResultNum; i++)
@@ -244,6 +247,39 @@ void AggregatorManager::aggregateSummaryResult(KeywordSearchResult& result, cons
     }
 
     delete[] iter;
+}
+
+void AggregatorManager::aggregateMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
+{
+    if(!mining_manager_) return;
+    std::cout<<"call mergeMiningResult"<<std::endl;
+    boost::shared_ptr<TaxonomyGenerationSubManager> tg_manager = mining_manager_->GetTgManager();
+    if(tg_manager)
+    {
+        std::vector<std::pair<uint32_t, idmlib::cc::CCInput32> > input_list;
+        for(uint32_t i=0;i<resultList.size();i++)
+        {
+            const idmlib::cc::CCInput32& tg_input = resultList[i].second.tg_input;
+            if(tg_input.concept_list.size()>0)
+            {
+                input_list.push_back(std::make_pair(resultList[i].first, tg_input) );
+            }
+        }
+        if( input_list.size()>0)
+        {
+            std::vector<sf1r::wdocid_t> top_wdoclist;
+            result.getTopKWDocs(top_wdoclist);
+            idmlib::cc::CCInput64 input;
+            std::cout<<"before merging, size : "<<input_list.size()<<std::endl;
+            tg_manager->AggregateInput(top_wdoclist, input_list, input);
+            std::cout<<"after merging, concept size : "<<input.concept_list.size()<<" , doc size : "<<input.doc_list.size()<<std::endl;
+            TaxonomyRep taxonomyRep;
+            if( tg_manager->GetResult(input, taxonomyRep, result.neList_) )
+            {
+                taxonomyRep.fill(result);
+            }
+        }
+    }
 }
 
 void AggregatorManager::aggregateDocumentsResult(RawTextResultFromSIA& result, const std::vector<std::pair<workerid_t, RawTextResultFromSIA> >& resultList)
@@ -378,124 +414,5 @@ std::pair<bool, workerid_t> AggregatorManager::splitGetDocsActionItemByWorkerid(
     return std::pair<bool, workerid_t>(true, workerid_t(-1));
 }
 
-
-void AggregatorManager::mergeSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > >& resultList)
-{
-    cout << "#[AggregatorManager::mergeSummaryResult] " << endl;
-
-    size_t subResultNum = resultList.size();
-
-    if (subResultNum <= 0)
-        return;
-
-    size_t pageCount = 0;
-    for (size_t i = 0; i < subResultNum; i++)
-    {
-        pageCount += resultList[i].second->count_;
-    }
-    if (result.count_ > pageCount)
-    {
-        result.count_ = pageCount;
-    }
-    else
-    {
-        pageCount = result.count_;
-    }
-
-    size_t displayPropertyNum = resultList[0].second->snippetTextOfDocumentInPage_.size(); //xxx
-    size_t isSummaryOn = resultList[0].second->rawTextOfSummaryInPage_.size(); //xxx
-
-    // initialize summary info for result
-    result.snippetTextOfDocumentInPage_.resize(displayPropertyNum);
-    result.fullTextOfDocumentInPage_.resize(displayPropertyNum);
-    if (isSummaryOn)
-        result.rawTextOfSummaryInPage_.resize(isSummaryOn);
-
-    for (size_t dis = 0; dis < displayPropertyNum; dis++)
-    {
-        result.snippetTextOfDocumentInPage_[dis].resize(pageCount);
-        result.fullTextOfDocumentInPage_[dis].resize(pageCount);
-    }
-    for (size_t dis = 0; dis < isSummaryOn; dis++)
-    {
-        result.rawTextOfSummaryInPage_[dis].resize(pageCount);
-    }
-
-    // merge
-    // each sub result provided part of docs for result page, and they kept the doc postions
-    // in topKDocs of result for that page.
-    size_t curSub;
-    size_t* iter = new size_t[subResultNum];
-    memset(iter, 0, sizeof(size_t)*subResultNum);
-
-    for (size_t i = 0, pos = result.start_; i < pageCount; i++, pos++)
-    {
-        curSub = size_t(-1);
-        for (size_t sub = 0; sub < subResultNum; sub++)
-        {
-            const std::vector<size_t>& subTopKPosList = resultList[sub].second->topKPostionList_;
-            if (iter[sub] < subTopKPosList.size() && subTopKPosList[iter[sub]] == pos)
-            {
-                curSub = sub;
-                break;
-            }
-        }
-
-        if (curSub == size_t(-1))
-            break;
-        //cout << "index,pos:" << i <<","<< pos <<"   curSub:"<< curSub<<"  iter[curSub]:" << iter[curSub]<<endl;
-
-        // get a result
-        const boost::shared_ptr<KeywordSearchResult>& subResult = resultList[curSub].second;
-        for (size_t dis = 0; dis < displayPropertyNum; dis++)
-        {
-            result.snippetTextOfDocumentInPage_[dis][i] = subResult->snippetTextOfDocumentInPage_[dis][iter[curSub]];
-            result.fullTextOfDocumentInPage_[dis][i] = subResult->fullTextOfDocumentInPage_[dis][iter[curSub]];
-        }
-        for (size_t dis = 0; dis < isSummaryOn; dis++)
-        {
-            result.rawTextOfSummaryInPage_[dis][i] = subResult->rawTextOfSummaryInPage_[dis][iter[curSub]];
-        }
-
-        // next
-        iter[curSub] ++;
-    }
-
-    delete[] iter;
 }
 
-
-void AggregatorManager::mergeMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > >& resultList)
-{
-    if(!mining_manager_) return;
-    std::cout<<"call mergeMiningResult"<<std::endl;
-    boost::shared_ptr<TaxonomyGenerationSubManager> tg_manager = mining_manager_->GetTgManager();
-    if(tg_manager)
-    {
-        std::vector<std::pair<uint32_t, idmlib::cc::CCInput32> > input_list;
-        for(uint32_t i=0;i<resultList.size();i++)
-        {
-            const idmlib::cc::CCInput32& tg_input = resultList[i].second->tg_input;
-            if(tg_input.concept_list.size()>0)
-            {
-                input_list.push_back(std::make_pair(resultList[i].first, tg_input) );
-            }
-        }
-        if( input_list.size()>0)
-        {
-            std::vector<sf1r::wdocid_t> top_wdoclist;
-            result.getTopKWDocs(top_wdoclist);
-            idmlib::cc::CCInput64 input;
-            std::cout<<"before merging, size : "<<input_list.size()<<std::endl;
-            tg_manager->AggregateInput(top_wdoclist, input_list, input);
-            std::cout<<"after merging, concept size : "<<input.concept_list.size()<<" , doc size : "<<input.doc_list.size()<<std::endl;
-            TaxonomyRep taxonomyRep;
-            if( tg_manager->GetResult(input, taxonomyRep, result.neList_) )
-            {
-                taxonomyRep.fill(result);
-            }
-        }
-    }
-}
-
-}

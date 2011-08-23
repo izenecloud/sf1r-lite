@@ -74,7 +74,7 @@ public:
 
         ADD_WORKER_HANDLER( getDistSearchInfo )
         ADD_WORKER_HANDLER( getSearchResult )
-        ADD_WORKER_HANDLER( getSummaryResult )
+        ADD_WORKER_HANDLER( getSummaryMiningResult )
         ADD_WORKER_HANDLER( getDocumentsByIds )
         ADD_WORKER_HANDLER( clickGroupLabel )
         // todo, add services
@@ -99,15 +99,15 @@ public:
         return true;
     }
 
-    bool getSummaryResult(JobRequest& req)
+    bool getSummaryMiningResult(JobRequest& req)
     {
-        WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, KeywordSearchResult, workerService_, processGetSummaryResult)
+        WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, KeywordSearchResult, workerService_, processGetSummaryMiningResult)
         return true;
     }
 
     bool getDocumentsByIds(JobRequest& req)
     {
-        WORKER_HANDLE_REQUEST_1_1(req, GetDocumentsByIdsActionItem, RawTextResultFromSIA, workerService_, processGetDocumentsByIds)
+        WORKER_HANDLE_REQUEST_1_1(req, GetDocumentsByIdsActionItem, RawTextResultFromSIA, workerService_, getDocumentsByIds)
     	return true;
     }
 

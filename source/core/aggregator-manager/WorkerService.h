@@ -78,9 +78,9 @@ public:
             KeywordSearchResult& result,
             std::string& error)
     {
-        if (func == "getSummaryResult")
+        if (func == "getSummaryMiningResult")
         {
-            return processGetSummaryResult(request, result);
+            return processGetSummaryMiningResult(request, result);
         }
         else
         {
@@ -98,7 +98,7 @@ public:
     {
         if (func == "getDocumentsByIds")
         {
-            return processGetDocumentsByIds(request, result);
+            return getDocumentsByIds(request, result);
         }
 
         error = "no method!";
@@ -133,11 +133,11 @@ public:
 
     bool processGetSearchResult(const KeywordSearchActionItem& actionItem, DistKeywordSearchResult& resultItem);
 
-    bool processGetSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
+    bool getKeywordSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
-    bool processGetSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
+    bool processGetSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
-    bool processGetDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem);
+    bool getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem);
 
     bool clickGroupLabel(const clickGroupLabelActionItem& actionItem, bool& ret);
 

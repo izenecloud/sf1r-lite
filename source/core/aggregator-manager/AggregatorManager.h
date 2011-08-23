@@ -73,9 +73,9 @@ public:
 
     void join_impl(const std::string& func, KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
     {
-    	if (func == "getSummaryResult")
+    	if (func == "getSummaryMiningResult")
         {
-        	aggregateSummaryResult(result, resultList);
+        	aggregateSummaryMiningResult(result, resultList);
         }
     }
 
@@ -102,7 +102,11 @@ public:
 
     void aggregateSearchResult(DistKeywordSearchResult& result, const std::vector<std::pair<workerid_t, DistKeywordSearchResult> >& resultList);
 
+    void aggregateSummaryMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
+
     void aggregateSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
+
+    void aggregateMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
 
     void aggregateDocumentsResult(RawTextResultFromSIA& result, const std::vector<std::pair<workerid_t, RawTextResultFromSIA> >& resultList);
 
@@ -135,16 +139,6 @@ public:
     std::pair<bool, workerid_t> splitGetDocsActionItemByWorkerid(
             const GetDocumentsByIdsActionItem& actionItem,
             std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >& actionItemMap);
-
-    /**
-     * Merge data got from different workers.
-     * @param result [OUT]
-     * @param resultList [IN]
-     */
-    void mergeSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > >& resultList);
-
-    void mergeMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > >& resultList);
-    
     
 
 private:

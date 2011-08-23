@@ -56,7 +56,7 @@ bool WorkerService::processGetSearchResult(const KeywordSearchActionItem& action
     return true;
 }
 
-bool WorkerService::processGetSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+bool WorkerService::getKeywordSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
     if (! getSearchResult(actionItem, resultItem, false))
     {
@@ -66,7 +66,7 @@ bool WorkerService::processGetSearchResult(const KeywordSearchActionItem& action
     return true;
 }
 
-bool WorkerService::processGetSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+bool WorkerService::processGetSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
     cout << "#[WorkerService::processGetSummaryResult] " << actionItem.collectionName_ << endl;
 
@@ -78,7 +78,7 @@ bool WorkerService::processGetSummaryResult(const KeywordSearchActionItem& actio
     return true;
 }
 
-bool WorkerService::processGetDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem)
+bool WorkerService::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem)
 {
     cout << "#[WorkerService::processGetDocumentsByIds] " <<endl;
 
