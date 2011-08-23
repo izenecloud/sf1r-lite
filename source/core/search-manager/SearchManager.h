@@ -28,6 +28,7 @@ class QueryBuilder;
 class DocumentManager;
 class RankingManager;
 class IndexManager;
+class Sorter;
 
 namespace faceted
 {
@@ -97,6 +98,15 @@ private:
      * @see CollectionMeta::numberPropertyConfig
      */
     propertyid_t getPropertyIdByName(const std::string& name) const;
+
+    /**
+     * @brief get data list of each sort property for documents referred by docIdList,
+     * used in distributed search for merging topk results.
+     * @param pSorter [OUT]
+     * @param docIdList [IN]
+     * @param distSearchInfo [OUT]
+     */
+    void getSortPropertyData(Sorter* pSorter, std::vector<unsigned int>& docIdList, DistKeywordSearchInfo& distSearchInfo);
 
 private:
     /**

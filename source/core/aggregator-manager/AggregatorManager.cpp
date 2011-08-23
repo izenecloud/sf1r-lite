@@ -1,4 +1,5 @@
 #include "AggregatorManager.h"
+#include "MergeComparator.h"
 
 #include <common/ResultType.h>
 #include <mining-manager/MiningManager.h>
@@ -96,26 +97,39 @@ void AggregatorManager::aggregateSearchResult(DistKeywordSearchResult& result, c
     result.topKRankScoreList_.resize(resultCount);
     result.topKCustomRankScoreList_.resize(resultCount);
 
-    // merge multiple results
-    float max;
+    // Create comparators for merging results from different nodes
+    DocumentComparator** docComparators = new DocumentComparator*[workerNum];
+    for (size_t i = 0; i < workerNum; i++)
+    {
+        docComparators[i] = new DocumentComparator(resultList[i].second);
+    }
+    // Merge results according to sort condition
     size_t maxi;
     size_t* iter = new size_t[workerNum];
     memset(iter, 0, sizeof(size_t)*workerNum);
     for (size_t cnt = 0; cnt < resultCount; cnt++)
     {
-        // find max score from head of multiple score lists (sorted).
-        max = 0; maxi = size_t(-1);
-        for (size_t i = 0; i < workerNum; i++)
+        // find doc which should be merged firstly from heads of multiple doc lists (sorted).
+        maxi = size_t(-1);
+        for (size_t i = 1; i < workerNum; i++)
         {
-            const std::vector<float>& rankScoreList = resultList[i].second.topKRankScoreList_;
-            if (iter[i] < rankScoreList.size() && rankScoreList[iter[i]] > max)
+            const std::vector<docid_t>& subTopKDocs = resultList[i].second.topKDocs_;
+            if (iter[i] >= subTopKDocs.size())
+                continue;
+
+            if (maxi == size_t(-1))
             {
-                max = rankScoreList[iter[i]];
+                maxi = i;
+                continue;
+            }
+
+            if (greaterThan(docComparators[i], iter[i], docComparators[maxi], iter[maxi]))
+            {
                 maxi = i;
             }
         }
 
-        //cout << "max: " << max <<", maxi: "<< maxi<<", iter[maxi]: " << iter[maxi]<<endl;
+        //cout << "maxi: "<< maxi<<", iter[maxi]: " << iter[maxi]<<endl;
         if (maxi == size_t(-1))
         {
             break;
@@ -136,7 +150,11 @@ void AggregatorManager::aggregateSearchResult(DistKeywordSearchResult& result, c
     }
 
     delete[] iter;
-
+    for (size_t i = 0; i < workerNum; i++)
+    {
+        delete docComparators[i];
+    }
+    delete docComparators;
 }
 
 void AggregatorManager::aggregateSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)

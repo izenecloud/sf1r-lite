@@ -24,7 +24,13 @@ public:
     /// @brief collection term frequency info of terms for each property
     CollectionTermFrequencyInProperties ctfmap_;
 
-    MSGPACK_DEFINE();
+    /// @brief data lists for sort properties of docList.
+    std::vector<std::pair<std::string , bool> > sortPropertyList_;
+    std::vector<std::pair<std::string, std::vector<int64_t> > > sortPropertyIntDataList_;
+    std::vector<std::pair<std::string, std::vector<uint64_t> > > sortPropertyUIntDataList_;
+    std::vector<std::pair<std::string, std::vector<float> > > sortPropertyFloatDataList_;
+
+    MSGPACK_DEFINE(sortPropertyIntDataList_,sortPropertyUIntDataList_,sortPropertyFloatDataList_);
 };
 
 class DistKeywordSearchResult : public ErrorInfo
