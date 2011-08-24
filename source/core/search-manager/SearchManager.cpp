@@ -605,7 +605,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             reranker_(docIdList,rankScoreList,actionOperation.actionItem_.env_.queryString_);
         }
 
-        if (pSorter && distSearchInfo.actionType_ != DistKeywordSearchInfo::ACTION_NONE)
+        if (pSorter)
         {
             getSortPropertyData(pSorter, docIdList, distSearchInfo);
         }
@@ -657,12 +657,9 @@ void SearchManager::getSortPropertyData(Sorter* pSorter, std::vector<unsigned in
     {
         pSortProperty = *iter;
         std::string SortPropertyName = pSortProperty->getProperty();
-        std::string SortPropertyNameL = SortPropertyName;
-        boost::to_lower(SortPropertyNameL);
+        distSearchInfo.sortPropertyList_.push_back(std::make_pair(SortPropertyName, pSortProperty->isReverse()));
 
-        distSearchInfo.sortPropertyList_.push_back(std::make_pair(SortPropertyNameL, pSortProperty->isReverse()));
-
-        if (SortPropertyNameL == "custom_rank" || SortPropertyNameL == "_rank")
+        if (SortPropertyName == "CUSTOM_RANK" || SortPropertyName == "RANK")
             continue;
 
         //if (pCache->sortDataCache_.find(pSortProperty->getProperty()) == pCache->sortDataCache_.end())
@@ -680,7 +677,7 @@ void SearchManager::getSortPropertyData(Sorter* pSorter, std::vector<unsigned in
                 {
                     dataList[i] = ((int64_t*)data)[docIdList[i]];
                 }
-                distSearchInfo.sortPropertyIntDataList_.push_back(std::make_pair(SortPropertyNameL, dataList));
+                distSearchInfo.sortPropertyIntDataList_.push_back(std::make_pair(SortPropertyName, dataList));
             }
                 break;
             case UNSIGNED_INT_PROPERTY_TYPE:
@@ -690,7 +687,7 @@ void SearchManager::getSortPropertyData(Sorter* pSorter, std::vector<unsigned in
                 {
                     dataList[i] = ((uint64_t*)data)[docIdList[i]];
                 }
-                distSearchInfo.sortPropertyUIntDataList_.push_back(std::make_pair(SortPropertyNameL, dataList));
+                distSearchInfo.sortPropertyUIntDataList_.push_back(std::make_pair(SortPropertyName, dataList));
             }
                 break;
             case FLOAT_PROPERTY_TYPE:
@@ -700,7 +697,7 @@ void SearchManager::getSortPropertyData(Sorter* pSorter, std::vector<unsigned in
                 {
                     dataList[i] = ((float*)data)[docIdList[i]];
                 }
-                distSearchInfo.sortPropertyFloatDataList_.push_back(std::make_pair(SortPropertyNameL, dataList));
+                distSearchInfo.sortPropertyFloatDataList_.push_back(std::make_pair(SortPropertyName, dataList));
             }
                 break;
             case DOUBLE_PROPERTY_TYPE:
@@ -710,7 +707,7 @@ void SearchManager::getSortPropertyData(Sorter* pSorter, std::vector<unsigned in
                 {
                     dataList[i] = (float)((double*)data)[docIdList[i]];
                 }
-                distSearchInfo.sortPropertyFloatDataList_.push_back(std::make_pair(SortPropertyNameL, dataList));
+                distSearchInfo.sortPropertyFloatDataList_.push_back(std::make_pair(SortPropertyName, dataList));
             }
                 break;
             default:

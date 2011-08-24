@@ -8,6 +8,8 @@ DocumentComparator::DocumentComparator(const DistKeywordSearchResult& distSearch
 {
     const DistKeywordSearchInfo& distSearchInfo = distSearchResult.distSearchInfo_;
     const std::vector<std::pair<std::string , bool> >& sortPropertyList = distSearchInfo.sortPropertyList_;
+    if (sortPropertyList.size() <= 0)
+        const_cast<std::vector<std::pair<std::string , bool> >&>(sortPropertyList).push_back(std::make_pair("RANK", false));
     std::vector<std::pair<std::string , bool> >::const_iterator iter;
     for (iter = sortPropertyList.begin(); iter != sortPropertyList.end(); ++iter)
     {
@@ -15,12 +17,12 @@ DocumentComparator::DocumentComparator(const DistKeywordSearchResult& distSearch
         SortPropertyData* pPropertyComparator = new SortPropertyData(iter->first, iter->second);
 
         void* dataList = NULL;
-        if (property == "_rank")
+        if (property == "RANK")
         {
             dataList = (void*)(distSearchResult.topKRankScoreList_.data());
             pPropertyComparator->setDataType(SortPropertyData::DATA_TYPE_FLOAT);
         }
-        else if (property == "custom_rank")
+        else if (property == "CUSTOM_RANK")
         {
             dataList = (void*)(distSearchResult.topKCustomRankScoreList_.data());
             pPropertyComparator->setDataType(SortPropertyData::DATA_TYPE_FLOAT);
