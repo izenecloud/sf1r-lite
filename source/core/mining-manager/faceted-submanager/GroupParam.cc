@@ -37,9 +37,15 @@ std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam)
     out << "groupLabels_: ";
     for (std::size_t i = 0; i < groupParam.groupLabels_.size(); ++i)
     {
-        out << "(" << groupParam.groupLabels_[i].first << ", " << groupParam.groupLabels_[i].second << "), ";
+        const GroupParam::GroupLabel& groupLabel = groupParam.groupLabels_[i];
+        out << "\t" << groupLabel.first << ": ";
+        const GroupParam::GroupPath& groupPath = groupLabel.second;
+        for (std::size_t j = 0; j < groupPath.size(); ++j)
+        {
+            out << groupPath[j] << ", ";
+        }
+        out << std::endl;
     }
-    out << std::endl;
 
     out << "isAttrGroup_: " << groupParam.isAttrGroup_ << std::endl;
     out << "attrGroupNum_: " << groupParam.attrGroupNum_ << std::endl;
@@ -47,7 +53,8 @@ std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam)
     out << "attrLabels_: ";
     for (std::size_t i = 0; i < groupParam.attrLabels_.size(); ++i)
     {
-        out << "(" << groupParam.attrLabels_[i].first << ", " << groupParam.attrLabels_[i].second << "), ";
+        const GroupParam::AttrLabel& attrLabel = groupParam.attrLabels_[i];
+        out << "(" << attrLabel.first << ", " << attrLabel.second << "), ";
     }
     out << std::endl;
 

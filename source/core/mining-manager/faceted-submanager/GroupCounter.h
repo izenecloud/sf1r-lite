@@ -26,7 +26,24 @@ public:
     void getGroupRep(OntologyRep& groupRep);
 
 private:
+    /**
+     * append all descendent nodes of @p pvId to @p itemList.
+     * @param itemList the nodes are appended to this list
+     * @param pvId the value id of the root node to append
+     * @param level the level of the root node to append
+     * @param valueStr the string value of the root node
+     */
+    void appendGroupRep(
+        std::list<OntologyRepItem>& itemList,
+        PropValueTable::pvid_t pvId,
+        int level,
+        const izenelib::util::UString& valueStr
+    );
+
+private:
     const PropValueTable& propValueTable_;
+
+    const std::vector<PropValueTable::PropStrMap>& childMapTable_;
 
     /** map from value id to doc count */
     std::vector<int> countTable_;

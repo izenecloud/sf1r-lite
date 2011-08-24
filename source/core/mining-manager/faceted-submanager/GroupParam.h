@@ -28,8 +28,14 @@ struct GroupParam
     /** the property names which need doc counts for each property value */
     std::vector<std::string> groupProps_;
 
-    /** selected group labels, each label is a pair of property name and value. */
-    std::vector<std::pair<std::string, std::string> > groupLabels_;
+    /** the group path contains values from root to leaf node */
+    typedef std::vector<std::string> GroupPath;
+    /** the group label contains property name and group path */
+    typedef std::pair<std::string, GroupPath> GroupLabel;
+    /** a list of group labels */
+    typedef std::vector<GroupLabel> GroupLabelVec;
+    /** selected group labels */
+    GroupLabelVec groupLabels_;
 
     /** true for need doc counts for each attribute value */
     bool isAttrGroup_;
@@ -37,8 +43,12 @@ struct GroupParam
     /** the number of attributes to return */
     int attrGroupNum_;
 
-    /** selected attribute labels, each label is a pair of attribute name and value. */
-    std::vector<std::pair<std::string, std::string> > attrLabels_;
+    /** the attribute label contains a pair of attribute name and value */
+    typedef std::pair<std::string, std::string> AttrLabel;
+    /** a list of attribute labels */
+    typedef std::vector<AttrLabel> AttrLabelVec;
+    /** selected attribute labels */
+    AttrLabelVec attrLabels_;
 
     /**
      * Whether need to filter docs by group filter.

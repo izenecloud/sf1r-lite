@@ -42,19 +42,19 @@ public:
     /**
      * Log the group label click.
      * @param query user query
-     * @param propValue the property value of the group label
+     * @param value the value of the group label
      * @return true for success, false for failure
      */
     bool logLabel(
         const std::string& query,
-        const std::string& propValue
+        LabelCounter::value_type value
     );
 
     /**
      * Get the most frequently clicked group labels.
      * @param query user query
      * @param limit the max number of labels to get
-     * @param propValueVec store the property values of each group label
+     * @param valueVec store the values of each group label
      * @param freqVec the click count for each group label
      * @return true for success, false for failure
      * @post @p freqVec is sorted in descending order.
@@ -62,19 +62,19 @@ public:
     bool getFreqLabel(
         const std::string& query,
         int limit,
-        std::vector<std::string>& propValueVec,
+        std::vector<LabelCounter::value_type>& valueVec,
         std::vector<int>& freqVec
     );
 
     /**
      * Set the most frequently clicked group label.
      * @param query user query
-     * @param propValue the property value of group label
+     * @param value the value of group label
      * @return true for success, false for failure
      */
     bool setTopLabel(
         const std::string& query,
-        const std::string& propValue
+        LabelCounter::value_type value
     );
 
 private:

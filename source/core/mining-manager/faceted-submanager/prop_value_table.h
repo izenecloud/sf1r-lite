@@ -13,7 +13,6 @@
 #include <common/inttypes.h>
 #include <util/ustring/UString.h>
 #include "faceted_types.h"
-#include "ontology_rep.h"
 
 #include <vector>
 #include <string>
@@ -37,6 +36,11 @@ public:
 
     /** mapping from doc id to a list of property value id */
     typedef std::vector<ValueIdList> ValueIdTable;
+
+    /** mapping from value string to value id */
+    typedef std::map<izenelib::util::UString, pvid_t> PropStrMap;
+    /** mapping from value id to the map of child values */
+    typedef std::vector<PropStrMap> ChildMapTable;
 
     PropValueTable(
         const std::string& dirPath,
@@ -67,42 +71,42 @@ public:
         return propStrVec_.size();
     }
 
-    /**
-     * Get property value id.
-     * @param value property string
-     * @exception MiningException when the new id created is overflow
-     * @return value id, if @p value is not inserted before, its new id is created and returned
-     */
-    pvid_t propValueId(const izenelib::util::UString& value);
-
-    /**
-     * Get property value id.
-     * @param value property string
-     * @return value id, if @p value is not inserted before, 0 is returned
-     */
-    pvid_t propValueId(const izenelib::util::UString& value) const {
-        pvid_t pvId = 0;
-
-        std::map<izenelib::util::UString, pvid_t>::const_iterator it = propStrMap_.find(value);
-        if (it != propStrMap_.end())
-        {
-            pvId = it->second; 
-        }
-
-        return pvId;
+    const ChildMapTable& childMapTable() const {
+        return childMapTable_;
     }
 
     /**
-     * Set the value tree, it defines the hierachical levels for values,
-     * so that the group values could be returned in the form of this tree.
-     * @param valueTree the value tree
-     * @return true for success, false for error in parsing @p valueTree
-     * @attention before calling this function, @c open() must be called to load all values.
+     * Get property value id.
+     * @param path the path of property value, from root node to leaf node
+     * @exception MiningException when the new id created is overflow
+     * @return value id, if @p value is not inserted before, its new id is created and returned
      */
-    bool setValueTree(const faceted::OntologyRep& valueTree);
+    pvid_t propValueId(const std::vector<izenelib::util::UString>& path);
 
-    const faceted::OntologyRep& valueTree() const {
-        return valueTree_;
+    /**
+     * Get property value id.
+     * @param path the path of property value, from root node to leaf node
+     * @return value id, if @p path is not inserted before, 0 is returned
+     */
+    pvid_t propValueId(const std::vector<izenelib::util::UString>& path) const {
+        pvid_t pvId = 0;
+
+        for (std::vector<izenelib::util::UString>::const_iterator pathIt = path.begin();
+            pathIt != path.end(); ++pathIt)
+        {
+            const PropStrMap& propStrMap = childMapTable_[pvId];
+            PropStrMap::const_iterator it = propStrMap.find(*pathIt);
+            if (it != propStrMap.end())
+            {
+                pvId = it->second;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        return pvId;
     }
 
     /**
@@ -120,6 +124,13 @@ public:
      */
     void parentIdSet(docid_t docId, std::set<pvid_t>& parentSet) const;
 
+    /**
+     * Given value id @p pvId, get its path from root node to leaf node.
+     * @param pvId the value id
+     * @param path store the path
+     */
+    void propValuePath(pvid_t pvId, std::vector<izenelib::util::UString>& path) const;
+
 private:
     /** directory path */
     std::string dirPath_;
@@ -127,24 +138,23 @@ private:
     /** property name */
     std::string propName_;
 
-    /** mapping from property value string to value id */
-    std::map<izenelib::util::UString, pvid_t> propStrMap_;
-
-    /** mapping from property value id to value string */
+    /** mapping from value id to value string */
     std::vector<izenelib::util::UString> propStrVec_;
-    /** the number of value strings saved in file */
+    /** the number of elements in @c propStrVec_ saved in ".prop.txt" file */
     unsigned int savePropStrNum_;
-
-    /** mapping from doc id to a list of property value id */
-    ValueIdTable valueIdTable_;
-    /** the number of elements in @c valueIdTable_ saved in file */
-    unsigned int saveDocIdNum_;
-
-    /** the values configured in hierachical levels */
-    faceted::OntologyRep valueTree_;
 
     /** mapping from value id to parent value id */
     std::vector<pvid_t> parentIdVec_;
+    /** the number of elements in @c parentIdVec_ saved in ".parent.bin" file */
+    unsigned int saveParentIdNum_;
+
+    /** mapping from value id to the map of child values */
+    ChildMapTable childMapTable_;
+
+    /** mapping from doc id to a list of property value id */
+    ValueIdTable valueIdTable_;
+    /** the number of elements in @c valueIdTable_ saved in ".doc.bin" file */
+    unsigned int saveDocIdNum_;
 };
 
 NS_FACETED_END

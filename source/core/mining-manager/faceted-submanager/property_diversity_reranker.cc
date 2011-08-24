@@ -45,30 +45,24 @@ void PropertyDiversityReranker::rerank(
 
     if(groupManager_ && groupLabelLogger_ && !boostingProperty_.empty())
     {
-        std::vector<std::string> propValueVec;
+        std::vector<PropValueTable::pvid_t> pvIdVec;
         std::vector<int> freqVec;
-        groupLabelLogger_->getFreqLabel(query, 1, propValueVec, freqVec);
+        groupLabelLogger_->getFreqLabel(query, 1, pvIdVec, freqVec);
 
-        if(!propValueVec.empty())
+        if(!pvIdVec.empty() && (labelId = pvIdVec[0]))
         {
-            const std::string& boostingCategoryLabel = propValueVec[0];
-            LOG(INFO) << "boosting property: " << boostingProperty_
-                      << ", label: " << boostingCategoryLabel
-                      << ", doc num: " << docIdList.size();
-
             pvTable = groupManager_->getPropValueTable(boostingProperty_);
             if (pvTable)
             {
-                izenelib::util::UString labelUStr(boostingCategoryLabel, izenelib::util::UString::UTF_8);
-                labelId = pvTable->propValueId(labelUStr);
-                if (labelId)
-                {
-                    isBoostLabel = true;
-                }
-                else
-                {
-                    LOG(WARNING) << "in PropertyDiversityReranker: group index has not been built for Category value: " << boostingCategoryLabel;
-                }
+                isBoostLabel = true;
+
+                const izenelib::util::UString& labelUStr = pvTable->propValueStr(labelId);
+                std::string boostLabel;
+                labelUStr.convertString(boostLabel, izenelib::util::UString::UTF_8);
+
+                LOG(INFO) << "boosting property: " << boostingProperty_
+                        << ", label: " << boostLabel
+                        << ", doc num: " << docIdList.size();
             }
             else
             {
@@ -244,7 +238,7 @@ void PropertyDiversityReranker::rerankCTR_(
     LOG(INFO) << "CTR rerank, doc num: " << docIdList.size();
 
     // sort by click-count
-    std::sort(posClickCountList.begin(), posClickCountList.end(), CompareSecond);
+    std::stable_sort(posClickCountList.begin(), posClickCountList.end(), CompareSecond);
 
     std::size_t numDoc = docIdList.size();
     std::vector<unsigned int> newDocIdList(numDoc);

@@ -931,23 +931,8 @@ bool IndexTaskService::prepareDocument_(
         if ( (propertyNameL == izenelib::util::UString("docid", encoding) )
                 && (!extraProperty))
         {
-            if(insert)
-            {
-                bool ret = idManager_->getDocIdByDocName(propertyValueU, docId);
-                if (ret)
-                {
-                    string scdDocId;
-                    propertyValueU.convertString(scdDocId, encoding );
-                    sflog->warn(SFL_IDX, 10125, docId, scdDocId.c_str());
-                    return false;
-                }
-                if (docId <= maxDocId_)
-                {
-                    sflog->warn(SFL_IDX,10124, docId);
-                    return false;
-                }
-            }
-            else
+            // update
+            if (!insert)
             {
                 //R-type check
                 checkRtype_(doc, rType, rTypeFieldValue);
@@ -963,7 +948,24 @@ bool IndexTaskService::prepareDocument_(
                 }
                 if (!ret)
                 {
-                    LOG(WARNING) << "it is not allowed to update the doc which has not been inserted before!";
+                    // docid not inserted before, change from update type to insert
+                    insert = true;
+                }
+            }
+
+            if(insert)
+            {
+                bool ret = idManager_->getDocIdByDocName(propertyValueU, docId);
+                if (ret)
+                {
+                    string scdDocId;
+                    propertyValueU.convertString(scdDocId, encoding );
+                    sflog->warn(SFL_IDX, 10125, docId, scdDocId.c_str());
+                    return false;
+                }
+                if (docId <= maxDocId_)
+                {
+                    sflog->warn(SFL_IDX,10124, docId);
                     return false;
                 }
             }

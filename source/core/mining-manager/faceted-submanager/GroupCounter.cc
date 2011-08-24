@@ -5,6 +5,7 @@ NS_FACETED_BEGIN
 
 GroupCounter::GroupCounter(const PropValueTable& pvTable)
     : propValueTable_(pvTable)
+    , childMapTable_(pvTable.childMapTable())
     , countTable_(pvTable.propValueNum())
 {
 }
@@ -19,53 +20,44 @@ void GroupCounter::addDoc(docid_t doc)
     {
         ++countTable_[*it];
     }
+
+    // total doc count for this property
+    if (!parentSet.empty())
+    {
+        ++countTable_[0];
+    }
 }
 
 void GroupCounter::getGroupRep(OntologyRep& groupRep)
 {
     std::list<OntologyRepItem>& itemList = groupRep.item_list;
 
-    // property name as root node
-    itemList.push_back(OntologyRepItem());
-    OntologyRepItem& propItem = itemList.back();
-    propItem.text.assign(propValueTable_.propName(),
-                         izenelib::util::UString::UTF_8);
+    izenelib::util::UString propName(propValueTable_.propName(), UString::UTF_8);
+    // start from id 0 at level 0
+    appendGroupRep(itemList, 0, 0, propName);
+}
 
-    // nodes at configured level
-    const std::list<OntologyRepItem>& treeList = propValueTable_.valueTree().item_list;
-    for (std::list<OntologyRepItem>::const_iterator it = treeList.begin();
-        it != treeList.end(); ++it)
+void GroupCounter::appendGroupRep(
+    std::list<OntologyRepItem>& itemList,
+    PropValueTable::pvid_t pvId,
+    int level,
+    const izenelib::util::UString& valueStr
+)
+{
+    itemList.push_back(faceted::OntologyRepItem());
+    faceted::OntologyRepItem& repItem = itemList.back();
+    repItem.level = level;
+    repItem.text = valueStr;
+    repItem.doc_count = countTable_[pvId];
+
+    const PropValueTable::PropStrMap& propStrMap = childMapTable_[pvId];
+    for (PropValueTable::PropStrMap::const_iterator it = propStrMap.begin();
+        it != propStrMap.end(); ++it)
     {
-        int count = countTable_[it->id];
-        if (count)
+        PropValueTable::pvid_t childId = it->second;
+        if (countTable_[childId])
         {
-            itemList.push_back(*it);
-            OntologyRepItem& valueItem = itemList.back();
-            valueItem.doc_count = count;
-
-            if (valueItem.level == 1)
-            {
-                propItem.doc_count += count;
-            }
-
-            // clear configured node
-            countTable_[it->id] = 0;
-        }
-    }
-
-    // other nodes are appended as level 1
-    for (std::size_t valueId = 1; valueId < countTable_.size(); ++valueId)
-    {
-        int count = countTable_[valueId];
-        if (count)
-        {
-            itemList.push_back(sf1r::faceted::OntologyRepItem());
-            sf1r::faceted::OntologyRepItem& valueItem = itemList.back();
-            valueItem.level = 1;
-            valueItem.text = propValueTable_.propValueStr(valueId);
-            valueItem.doc_count = count;
-
-            propItem.doc_count += count;
+            appendGroupRep(itemList, childId, level+1, it->first);
         }
     }
 }

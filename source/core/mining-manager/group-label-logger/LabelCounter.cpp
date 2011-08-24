@@ -8,7 +8,7 @@ namespace
 {
 
 /** value => freq */
-typedef std::pair<std::string, int> ValueFreq;
+typedef std::pair<sf1r::LabelCounter::value_type, int> ValueFreq;
 
 class ValueFreqQueue : public izenelib::util::PriorityQueue<ValueFreq>
 {
@@ -31,31 +31,37 @@ namespace sf1r
 {
 
 LabelCounter::LabelCounter()
-    : topFreq_(0)
+    : topValue_(0)
+    , topFreq_(0)
 {
 }
 
-void LabelCounter::increment(const std::string& propValue)
+void LabelCounter::increment(faceted::PropValueTable::pvid_t pvId)
 {
-    int newFreq = ++valueFreqMap_[propValue];
+    int newFreq = ++valueFreqMap_[pvId];
 
     if (isSetTopLabel_() == false)
     {
         if (newFreq > topFreq_)
         {
-            topValue_ = propValue;
+            topValue_ = pvId;
             topFreq_ = newFreq;
         }
     }
 }
 
-void LabelCounter::setTopLabel(const std::string& propValue)
+void LabelCounter::setTopLabel(value_type value)
 {
-    if (propValue.empty())
+    if (value)
+    {
+        topValue_ = value;
+        topFreq_ = -1;
+    }
+    else
     {
         if (isSetTopLabel_())
         {
-            topValue_.clear();
+            topValue_ = 0;
             topFreq_ = 0;
 
             // reset to top freq
@@ -70,16 +76,11 @@ void LabelCounter::setTopLabel(const std::string& propValue)
             }
         }
     }
-    else
-    {
-        topValue_ = propValue;
-        topFreq_ = -1;
-    }
 }
 
 void LabelCounter::getFreqLabel(
     int limit,
-    std::vector<std::string>& propValueVec,
+    std::vector<value_type>& valueVec,
     std::vector<int>& freqVec
 ) const
 {
@@ -88,7 +89,7 @@ void LabelCounter::getFreqLabel(
 
     if (limit == 1)
     {
-        if (! topValue_.empty())
+        if (topValue_)
         {
             int freq = topFreq_;
 
@@ -98,7 +99,7 @@ void LabelCounter::getFreqLabel(
                 freq = (it != valueFreqMap_.end()) ? it->second: 0;
             }
 
-            propValueVec.push_back(topValue_);
+            valueVec.push_back(topValue_);
             freqVec.push_back(freq);
         }
         return;
@@ -106,12 +107,12 @@ void LabelCounter::getFreqLabel(
 
     // is filter topValue_
     bool isFilter = false;
-    std::string filterStr;
+    value_type filterValue;
     int filterFreq = 0;
     if (isSetTopLabel_())
     {
         isFilter = true;
-        filterStr = topValue_;
+        filterValue = topValue_;
         --limit;
     }
 
@@ -120,7 +121,7 @@ void LabelCounter::getFreqLabel(
     for (ValueFreqMap::const_iterator mapIt = valueFreqMap_.begin();
             mapIt != valueFreqMap_.end(); ++mapIt)
     {
-        if (isFilter && mapIt->first == filterStr)
+        if (isFilter && mapIt->first == filterValue)
         {
             filterFreq = mapIt->second;
         }
@@ -131,12 +132,12 @@ void LabelCounter::getFreqLabel(
     }
 
     const std::size_t queueSize = queue.size();
-    propValueVec.resize(queueSize);
+    valueVec.resize(queueSize);
     freqVec.resize(queueSize);
 
-    std::vector<std::string>::reverse_iterator ritValue = propValueVec.rbegin();
+    std::vector<value_type>::reverse_iterator ritValue = valueVec.rbegin();
     std::vector<int>::reverse_iterator ritFreq = freqVec.rbegin();
-    for(; ritValue != propValueVec.rend(); ++ritValue, ++ritFreq)
+    for(; ritValue != valueVec.rend(); ++ritValue, ++ritFreq)
     {
         ValueFreq valueFreq = queue.pop();
         *ritValue = valueFreq.first;
@@ -145,7 +146,7 @@ void LabelCounter::getFreqLabel(
 
     if (isFilter)
     {
-        propValueVec.insert(propValueVec.begin(), filterStr);
+        valueVec.insert(valueVec.begin(), filterValue);
         freqVec.insert(freqVec.begin(), filterFreq);
     }
 }

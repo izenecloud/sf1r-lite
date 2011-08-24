@@ -59,21 +59,6 @@ struct DocInput
 
     DocInput(
         unsigned int docId,
-        const string& title,
-        const string& groupStr,
-        const string& groupInt,
-        const string& groupFloat
-    )
-    : docId_(docId)
-    , title_(title)
-    , groupStr_(groupStr)
-    , groupInt_(groupInt)
-    , groupFloat_(groupFloat)
-    {
-    }
-
-    DocInput(
-        unsigned int docId,
         const string& groupStr,
         const string& groupInt,
         const string& groupFloat
@@ -125,9 +110,12 @@ void createDocInput(
     }
 }
 
+/**
+ * @param labelList the label list, it is assumed that each path contains only one element.
+ */
 void createPropertyMap(
     const vector<DocInput>& docInputVec,
-    const std::vector<std::pair<std::string, std::string> >& labelList,
+    const faceted::GroupParam::GroupLabelVec& labelList,
     PropertyMap& propertyMap
 )
 {
@@ -141,8 +129,9 @@ void createPropertyMap(
         bool isOK = true;
         for (std::size_t i = 0; i < labelList.size(); ++i)
         {
-            if ((labelList[i].first == PROP_NAME_GROUP_INT && labelList[i].second != it->groupInt_)
-                || (labelList[i].first == PROP_NAME_GROUP_FLOAT && labelList[i].second != it->groupFloat_))
+            const faceted::GroupParam::GroupLabel& label = labelList[i];
+            if ((label.first == PROP_NAME_GROUP_INT && label.second[0] != it->groupInt_)
+                || (label.first == PROP_NAME_GROUP_FLOAT && label.second[0] != it->groupFloat_))
             {
                 isOK = false;
                 break;
@@ -156,8 +145,9 @@ void createPropertyMap(
         isOK = true;
         for (std::size_t i = 0; i < labelList.size(); ++i)
         {
-            if ((labelList[i].first == PROP_NAME_GROUP_STR && labelList[i].second != it->groupStr_)
-                || (labelList[i].first == PROP_NAME_GROUP_FLOAT && labelList[i].second != it->groupFloat_))
+            const faceted::GroupParam::GroupLabel& label = labelList[i];
+            if ((label.first == PROP_NAME_GROUP_STR && label.second[0] != it->groupStr_)
+                || (label.first == PROP_NAME_GROUP_FLOAT && label.second[0] != it->groupFloat_))
             {
                 isOK = false;
                 break;
@@ -171,8 +161,9 @@ void createPropertyMap(
         isOK = true;
         for (std::size_t i = 0; i < labelList.size(); ++i)
         {
-            if ((labelList[i].first == PROP_NAME_GROUP_STR && labelList[i].second != it->groupStr_)
-                || (labelList[i].first == PROP_NAME_GROUP_INT && labelList[i].second != it->groupInt_))
+            const faceted::GroupParam::GroupLabel& label = labelList[i];
+            if ((label.first == PROP_NAME_GROUP_STR && label.second[0] != it->groupStr_)
+                || (label.first == PROP_NAME_GROUP_INT && label.second[0] != it->groupInt_))
             {
                 isOK = false;
                 break;
@@ -189,7 +180,7 @@ void createPropertyMap(
 void createGroupRep(
     const vector<unsigned int>& docIdList,
     const vector<string>& propNameVec,
-    const vector<pair<string, string> >& labelVec,
+    const faceted::GroupParam::GroupLabelVec& labelVec,
     const faceted::GroupManager* groupManager,
     faceted::OntologyRep& groupRep
 )
@@ -254,7 +245,7 @@ void checkGroupRep(
             BOOST_CHECK_EQUAL(propName, *propNameIt);
             ++propNameIt;
 
-            BOOST_CHECK_EQUAL(valueDocSum, propDocCount);
+            BOOST_CHECK_EQUAL(propDocCount, valueDocSum);
             propDocCount = item.doc_count;
             valueDocSum = 0;
         }
@@ -271,7 +262,7 @@ void checkGroupRep(
             valueDocSum += item.doc_count;
         }
     }
-    BOOST_CHECK_EQUAL(valueDocSum, propDocCount);
+    BOOST_CHECK_EQUAL(propDocCount, valueDocSum);
 }
 
 void makeSchema(std::set<PropertyConfig, PropertyComp>& propertyConfig)
@@ -436,25 +427,38 @@ void checkGroupManager(
     }
 
 
-    vector<pair<string, string> > labelList;
-    BOOST_TEST_MESSAGE("check label size: " << labelList.size());
+    faceted::GroupParam::GroupLabelVec labelList;
     faceted::OntologyRep groupRep;
-    createGroupRep(docIdList, propNameVec, labelList, groupManager, groupRep);
-
     PropertyMap propMap;
-    createPropertyMap(docInputVec, labelList, propMap);
-    checkGroupRep(groupRep, propNameVec, propMap);
+
+    {
+        BOOST_TEST_MESSAGE("check label size: " << labelList.size());
+        createGroupRep(docIdList, propNameVec, labelList, groupManager, groupRep);
+        createPropertyMap(docInputVec, labelList, propMap);
+        checkGroupRep(groupRep, propNameVec, propMap);
+    }
 
 
-    labelList.push_back(std::pair<std::string, std::string>(PROP_NAME_GROUP_STR, "aaa"));
-    labelList.push_back(std::pair<std::string, std::string>(PROP_NAME_GROUP_INT, "2"));
-    BOOST_TEST_MESSAGE("check label size: " << labelList.size());
-    groupRep.item_list.clear();
-    createGroupRep(docIdList, propNameVec, labelList, groupManager, groupRep);
+    {
+        faceted::GroupParam::GroupLabel label1;
+        label1.first = PROP_NAME_GROUP_STR;
+        label1.second.push_back("aaa");
 
-    propMap.clear();
-    createPropertyMap(docInputVec, labelList, propMap);
-    checkGroupRep(groupRep, propNameVec, propMap);
+        faceted::GroupParam::GroupLabel label2;
+        label2.first = PROP_NAME_GROUP_INT;
+        label2.second.push_back("2");
+
+        labelList.push_back(label1);
+        labelList.push_back(label2);
+
+        BOOST_TEST_MESSAGE("check label size: " << labelList.size());
+        groupRep.item_list.clear();
+        createGroupRep(docIdList, propNameVec, labelList, groupManager, groupRep);
+
+        propMap.clear();
+        createPropertyMap(docInputVec, labelList, propMap);
+        checkGroupRep(groupRep, propNameVec, propMap);
+    }
 
     delete groupManager;
 }

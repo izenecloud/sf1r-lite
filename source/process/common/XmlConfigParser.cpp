@@ -13,6 +13,7 @@
 #include <common/SFLogger.h>
 #include <la-manager/LAPool.h>
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <glog/logging.h>
 
@@ -185,27 +186,6 @@ izenelib::util::UString::EncodingType XmlConfigParser::parseEncodingType(const s
     else if ( encoding == "iso8859-15" )
         eType = izenelib::util::UString::ISO8859_15;
     return eType;
-}
-
-void XmlConfigParser::parseGroupTreeNode(
-    const ticpp::Element* ele,
-    int level,
-    std::list<faceted::OntologyRepItem>& itemList
-) const
-{
-    Iterator<Element> nodeIt( "TreeNode" );
-    std::string value_str;
-    for ( nodeIt = nodeIt.begin( ele ); nodeIt != nodeIt.end(); ++nodeIt )
-    {
-        getAttribute( nodeIt.Get(), "value", value_str );
-
-        itemList.push_back(faceted::OntologyRepItem());
-        faceted::OntologyRepItem& propItem = itemList.back();
-        propItem.text.assign(value_str, izenelib::util::UString::UTF_8);
-        propItem.level = level;
-
-        parseGroupTreeNode(nodeIt.Get(), level+1, itemList);
-    }
 }
 
 // ------------------------- SF1Config-------------------------
@@ -1253,11 +1233,8 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
 
               GroupConfig& groupConfig = mining_schema.group_properties.back();
               groupConfig.propName = property_name;
-              std::list<faceted::OntologyRepItem>& itemList = groupConfig.valueTree.item_list;
-              parseGroupTreeNode(it.Get(), 1, itemList);
 
-              LOG(INFO) << "group config parsed, property: " << property_name
-                        << ", tree node num: " << itemList.size();
+              LOG(INFO) << "group config parsed, property: " << property_name;
           }
           mining_schema.group_enable = true;
       }
@@ -1506,6 +1483,16 @@ void CollectionConfig::parseIndexSchemaProperty(
     string propertyName;
 
     getAttribute( property, "name", propertyName );
+
+    string pName = propertyName;
+    boost::to_lower(pName);
+    if((pName == "date" )||(pName == "docid"))
+    {
+        stringstream message;
+        message << "DATE/DOCID are inherent properties and should not exist within IndexBundleSchema";
+        throw XmlConfigParserException( message.str() );
+    }
+	
     PropertyConfig p;
     p.setName(propertyName);
 

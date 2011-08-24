@@ -16,6 +16,8 @@
 #ifndef SF1R_MINING_MANAGER_H_
 #define SF1R_MINING_MANAGER_H_
 
+#include "faceted-submanager/prop_value_table.h" // pvid_t
+
 #include <common/ResultType.h>
 #include <configuration-manager/PropertyConfig.h>
 #include <query-manager/ActionItem.h>
@@ -202,13 +204,13 @@ public:
      * Log the group label click.
      * @param query user query
      * @param propName the property name of the group label
-     * @param propValue the property value of the group label
+     * @param groupPath the path of the group label
      * @return true for success, false for failure
      */
     bool clickGroupLabel(
         const std::string& query,
         const std::string& propName,
-        const std::string& propValue
+        const std::vector<std::string>& groupPath
     );
 
     /**
@@ -216,7 +218,7 @@ public:
      * @param query user query
      * @param propName the property name for the group labels to get
      * @param limit the max number of labels to get
-     * @param propValueVec store the property values of each group label
+     * @param pathVec store the path for each group label
      * @param freqVec the click count for each group label
      * @return true for success, false for failure
      * @post @p freqVec is sorted in descending order.
@@ -225,7 +227,7 @@ public:
         const std::string& query,
         const std::string& propName,
         int limit,
-        std::vector<std::string>& propValueVec,
+        std::vector<std::vector<std::string> >& pathVec,
         std::vector<int>& freqVec
     );
 
@@ -233,13 +235,13 @@ public:
      * Set the most frequently clicked group label.
      * @param query user query
      * @param propName the property name for the group labels to get
-     * @param propValue the property value of group label
+     * @param groupPath the path of the group label
      * @return true for success, false for failure
      */
     bool setTopGroupLabel(
         const std::string& query,
         const std::string& propName,
-        const std::string& propValue
+        const std::vector<std::string>& groupPath
     );
 
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
@@ -323,6 +325,11 @@ private:
     bool doTgInfoInit_();
 
     void doTgInfoRelease_();
+
+    faceted::PropValueTable::pvid_t propValueId_(
+        const std::string& propName,
+        const std::vector<std::string>& groupPath
+    ) const;
 
 public:
     /// Should be initialized after construction

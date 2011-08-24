@@ -12,11 +12,17 @@ const izenelib::util::UString COLON(":", ENCODING_TYPE);
 /** vertical line to split attribute values */
 const izenelib::util::UString VL("|", ENCODING_TYPE);
 
+/** greater-than symbol to split group hierarchical values */
+const izenelib::util::UString GT(">", ENCODING_TYPE);
+
 /** comma */
 const izenelib::util::UString COMMA(",", ENCODING_TYPE);
 
 /** comma and vertical line */
 const izenelib::util::UString COMMA_VL(",|", ENCODING_TYPE);
+
+/** comma and greater-than symbol */
+const izenelib::util::UString COMMA_GT(",>", ENCODING_TYPE);
 
 /** quote to embed escape characters */
 const izenelib::util::UString QUOTE("\"", ENCODING_TYPE);
@@ -99,9 +105,9 @@ UStrIter parse_ustr(
 namespace sf1r
 {
 
-void split_group_value(
+void split_group_path(
     const izenelib::util::UString& src,
-    std::vector<izenelib::util::UString>& groupValues
+    std::vector<vector<izenelib::util::UString> >& groupPaths
 )
 {
     UStrIter it = src.begin();
@@ -109,12 +115,28 @@ void split_group_value(
 
     while (it != endIt)
     {
+        std::vector<izenelib::util::UString> path;
         izenelib::util::UString value;
-        it = parse_ustr(it, endIt, COMMA, value);
 
+        it = parse_ustr(it, endIt, COMMA_GT, value);
         if (!value.empty())
         {
-            groupValues.push_back(value);
+            path.push_back(value);
+        }
+
+        while (it != endIt && *it == GT[0])
+        {
+            // escape ">"
+            ++it;
+            it = parse_ustr(it, endIt, COMMA_GT, value);
+            if (!value.empty())
+            {
+                path.push_back(value);
+            }
+        }
+        if (!path.empty())
+        {
+            groupPaths.push_back(path);
         }
 
         if (it != endIt)

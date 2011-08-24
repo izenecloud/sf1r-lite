@@ -615,7 +615,7 @@ void DocumentsController::get_topic_with_sim()
  *   Please note that if @c set_top_group_label() is called previously with a non-empty @b group_label,@n
  *   then that label would always be ranked at the 1st in the result, regardless of its frequency count.
  *   - @b freq (@c Uint): the frequency count
- *   - @b group_label (@c String): the property value of the group label
+ *   - @b group_label (@c Array): the array of the path from root to leaf node, each is a @c String of node value
  *
  *
  * @section example
@@ -637,9 +637,9 @@ void DocumentsController::get_topic_with_sim()
  * {
  *   "resources": [
  *     { "freq": 10,
- *       "group_label": "手机" },
+ *       "group_label": ["手机数码", "手机通讯", "手机"] },
  *     { "freq": 5,
- *       "group_label": "数码配件" }
+ *       "group_label": ["手机数码", "数码配件"] }
  *   ]
  * }
  * @endcode
@@ -664,10 +664,10 @@ void DocumentsController::get_freq_group_labels()
 
     int limit = asUintOr(input[Keys::limit], 1);
 
-    std::vector<std::string> propValueVec;
+    std::vector<std::vector<std::string> > pathVec;
     std::vector<int> freqVec;
     if (!collectionHandler_->miningSearchService_->getFreqGroupLabel(
-        query, propName, limit, propValueVec, freqVec))
+        query, propName, limit, pathVec, freqVec))
     {
         response().addError(
             "Request Failed."
@@ -677,11 +677,19 @@ void DocumentsController::get_freq_group_labels()
 
     Value& resources = response()[Keys::resources];
     resources.reset<Value::ArrayType>();
-    for (std::size_t i=0; i<propValueVec.size(); ++i)
+    for (std::size_t i = 0; i < pathVec.size(); ++i)
     {
         Value& new_resource = resources();
-        new_resource[Keys::group_label] = propValueVec[i];
         new_resource[Keys::freq] = freqVec[i];
+
+        Value& labelValue = new_resource[Keys::group_label];
+        labelValue.reset<Value::ArrayType>();
+        const std::vector<std::string>& path = pathVec[i];
+        for (std::vector<std::string>::const_iterator it = path.begin();
+            it != path.end(); ++it)
+        {
+            labelValue() = *it;
+        }
     }
 }
 
@@ -694,9 +702,9 @@ void DocumentsController::get_freq_group_labels()
  * - @b resource* (@c Object): specify the keywords, property name and label value.
  *   - @b keywords* (@c String): user query
  *   - @b group_property* (@c String): the group property name
- *   - @b group_label* (@c String): the property value of the group label.@n
- *     If @b group_label is non-empty value, this label would always be ranked at the 1st in the result of @c get_freq_group_labels() with the same values of @b keywords and @b group_property.@n
- *     Otherwise, if @b group_label is empty value "", then the label with the largest frequency count would be ranked at the 1st as original.
+ *   - @b group_label* (@c Array): the value of the group label. It's an array of the path from root to leaf node. Each is a @c String of node value.@n
+ *     If @b group_label is a non-empty array, this label would always be ranked at the 1st in the result of @c get_freq_group_labels() with the same values of @b keywords and @b group_property.@n
+ *     Otherwise, if @b group_label is an empty array [], then it would clear the top label previously set, and the label with the largest frequency count would be ranked at the 1st as original.
  *
  * @section response
  *
@@ -711,7 +719,7 @@ void DocumentsController::get_freq_group_labels()
  *   "resource": {
  *     "keywords": "iphone4"，
  *     "group_property": "Category",
- *     "group_label": "手机"
+ *     "group_label": ["手机数码", "手机通讯", "手机"]
  *   }
  * }
  * @endcode
@@ -739,10 +747,24 @@ void DocumentsController::set_top_group_label()
         response().addError("Require resource[group_label] as group label value.");
         return;
     }
-    std::string propValue = asString(input[Keys::group_label]);
+    const Value& pathValue = input[Keys::group_label];
+    std::vector<std::string> groupPath;
+    if (pathValue.type() == Value::kArrayType)
+    {
+        groupPath.resize(pathValue.size());
+        for (std::size_t i = 0; i < pathValue.size(); ++i)
+        {
+            groupPath[i] = asString(pathValue(i));
+        }
+    }
+    else
+    {
+        response().addError("Require resource[group_label] as an array of group path.");
+        return;
+    }
 
     if (!collectionHandler_->miningSearchService_->setTopGroupLabel(
-        query, propName, propValue))
+        query, propName, groupPath))
     {
         response().addError("Request Failed.");
         return;

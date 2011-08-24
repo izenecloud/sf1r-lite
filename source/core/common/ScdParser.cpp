@@ -14,7 +14,8 @@
 #include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <sstream>
-#include <iostream>
+#include <iterator>
+#include <boost/regex.hpp>
 
 using namespace boost::filesystem;
 
@@ -26,6 +27,12 @@ namespace
 {
 /** default delimiter for each doc */
 const char* DEFAULT_DOC_DELIMITER = "<DOCID>";
+
+/** pattern for html codes of "<>" */
+const boost::regex PATTERN_LT_GT("(&lt;)|(&gt;)");
+
+/** format string for "<>" */
+const char* FORMAT_LT_GT = "(?1<)(?2>)";
 }
 
 struct scd_grammar
@@ -64,7 +71,13 @@ struct scd_grammar
                 :scddoc(doc),codingType(type),property_name(propertyname) {}
         void operator()(const char *begin, const char *end) const
         {
-            izenelib::util::UString property_value(std::string(begin,end),codingType);
+            // in ScdParser::iterator::preProcessDoc(), "<" is replaced by "&lt;", and ">" by "&gt;",
+            // as ">" is used to split group path values, they are converted back here
+            std::string str;
+            boost::regex_replace(std::back_inserter(str), begin, end,
+                PATTERN_LT_GT, FORMAT_LT_GT, boost::match_default | boost::format_all);
+
+            izenelib::util::UString property_value(str,codingType);
             scddoc.push_back(FieldPair(property_name, property_value));
             property_name.clear();
         }

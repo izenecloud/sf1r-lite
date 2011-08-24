@@ -10,6 +10,7 @@
 
 #include <query-manager/ConditionInfo.h>
 #include <ranking-manager/RankingEnumerator.h>
+#include <mining-manager/faceted-submanager/GroupParam.h>
 
 #include <bundles/index/IndexBundleConfiguration.h>
 
@@ -80,20 +81,20 @@ public:
         return nameEntityType_;
     }
 
-    std::vector<std::pair<std::string, std::string> >& mutableGroupLabels()
+    faceted::GroupParam::GroupLabelVec& mutableGroupLabels()
     {
         return groupLabels_;
     }
-    const std::vector<std::pair<std::string, std::string> >& groupLabels() const
+    const faceted::GroupParam::GroupLabelVec& groupLabels() const
     {
         return groupLabels_;
     }
 
-    std::vector<std::pair<std::string, std::string> >& mutableAttrLabels()
+    faceted::GroupParam::AttrLabelVec& mutableAttrLabels()
     {
         return attrLabels_;
     }
-    const std::vector<std::pair<std::string, std::string> >& attrLabels() const
+    const faceted::GroupParam::AttrLabelVec& attrLabels() const
     {
         return attrLabels_;
     }
@@ -135,8 +136,8 @@ private:
     std::string taxonomyLabel_;
     std::string nameEntityType_;
     std::string nameEntityItem_;
-    std::vector<std::pair<std::string, std::string> > groupLabels_; // <property name, value>
-    std::vector<std::pair<std::string, std::string> > attrLabels_; // <attribute name, value>
+    faceted::GroupParam::GroupLabelVec groupLabels_;
+    faceted::GroupParam::AttrLabelVec attrLabels_;
     bool logKeywords_;
     bool logGroupLabels_;
     std::vector<std::string> properties_;

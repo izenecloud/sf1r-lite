@@ -37,12 +37,12 @@ bool GroupLabelLogger::open()
 
 bool GroupLabelLogger::logLabel(
     const std::string& query,
-    const std::string& propValue
+    LabelCounter::value_type value
 )
 {
     LabelCounter labelCounter;
     container_.getValue(query, labelCounter);
-    labelCounter.increment(propValue);
+    labelCounter.increment(value);
 
     bool result = false;
     try
@@ -60,16 +60,16 @@ bool GroupLabelLogger::logLabel(
 bool GroupLabelLogger::getFreqLabel(
     const std::string& query,
     int limit,
-    std::vector<std::string>& propValueVec,
+    std::vector<LabelCounter::value_type>& valueVec,
     std::vector<int>& freqVec
 )
 {
     LabelCounter labelCounter;
     container_.getValue(query, labelCounter);
 
-    labelCounter.getFreqLabel(limit, propValueVec, freqVec);
+    labelCounter.getFreqLabel(limit, valueVec, freqVec);
 
-    if (propValueVec.size() != freqVec.size())
+    if (valueVec.size() != freqVec.size())
         return false;
 
     return true;
@@ -77,12 +77,12 @@ bool GroupLabelLogger::getFreqLabel(
 
 bool GroupLabelLogger::setTopLabel(
     const std::string& query,
-    const std::string& propValue
+    LabelCounter::value_type value
 )
 {
     LabelCounter labelCounter;
     container_.getValue(query, labelCounter);
-    labelCounter.setTopLabel(propValue);
+    labelCounter.setTopLabel(value);
 
     bool result = false;
     try
