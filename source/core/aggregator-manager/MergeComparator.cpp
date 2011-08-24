@@ -117,7 +117,7 @@ bool greaterThan(DocumentComparator* comp1, size_t idx1, DocumentComparator* com
 {
     for (size_t i = 0; i < comp1->sortProperties_.size(); i++)
     {
-        if (i < comp2->sortProperties_.size())
+        if (i >= comp2->sortProperties_.size())
             break;
 
         SortPropertyData* pSortProperty1 = comp1->sortProperties_[i];

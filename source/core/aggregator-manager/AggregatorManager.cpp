@@ -69,12 +69,17 @@ void AggregatorManager::aggregateSearchResult(DistKeywordSearchResult& result, c
     result.totalCount_ = 0;
     size_t overallResultCount = 0;
 
+    bool hasCustomRankScore = false;
     for (size_t i = 0; i < workerNum; i++)
     {
         const DistKeywordSearchResult& wResult = resultList[i].second;
+
         //result.totalCount_ += ((wResult.totalCount_ > TOP_K_NUM) ? TOP_K_NUM : wResult.totalCount_);
         result.totalCount_ += wResult.totalCount_;
         overallResultCount += wResult.topKDocs_.size();
+
+        if (wResult.topKCustomRankScoreList_.size() > 0)
+            hasCustomRankScore = true;
     }
     cout << "result.totalCount_: " << result.totalCount_ << ",  overallResultCount: " << overallResultCount<<endl;
 
@@ -95,7 +100,8 @@ void AggregatorManager::aggregateSearchResult(DistKeywordSearchResult& result, c
     result.topKDocs_.resize(resultCount);
     result.topKWorkerIds_.resize(resultCount);
     result.topKRankScoreList_.resize(resultCount);
-    result.topKCustomRankScoreList_.resize(resultCount);
+    if (hasCustomRankScore)
+        result.topKCustomRankScoreList_.resize(resultCount);
 
     // Create comparators for merging results from different nodes
     DocumentComparator** docComparators = new DocumentComparator*[workerNum];
@@ -111,7 +117,7 @@ void AggregatorManager::aggregateSearchResult(DistKeywordSearchResult& result, c
     {
         // find doc which should be merged firstly from heads of multiple doc lists (sorted).
         maxi = size_t(-1);
-        for (size_t i = 1; i < workerNum; i++)
+        for (size_t i = 0; i < workerNum; i++)
         {
             const std::vector<docid_t>& subTopKDocs = resultList[i].second.topKDocs_;
             if (iter[i] >= subTopKDocs.size())
@@ -142,7 +148,7 @@ void AggregatorManager::aggregateSearchResult(DistKeywordSearchResult& result, c
         result.topKDocs_[cnt] = wResult.topKDocs_[iter[maxi]];
         result.topKWorkerIds_[cnt] = workerid;
         result.topKRankScoreList_[cnt] = wResult.topKRankScoreList_[iter[maxi]];
-        if (wResult.topKCustomRankScoreList_.size() > 0)
+        if (hasCustomRankScore && wResult.topKCustomRankScoreList_.size() > 0)
             result.topKCustomRankScoreList_[cnt] = wResult.topKCustomRankScoreList_[iter[maxi]];
 
         // next
