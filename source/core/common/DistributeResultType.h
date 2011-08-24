@@ -61,7 +61,7 @@ public:
             ss << s << ", ";
         }
         ss << endl;
-        ss << "queryTermIdList_   : " << endl;
+        ss << "queryTermIdList_   : " ;
         for (size_t i = 0; i < queryTermIdList_.size(); i ++)
         {
             ss << queryTermIdList_[i] << ", ";

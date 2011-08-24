@@ -63,30 +63,30 @@ void AggregatorManager::aggregateSearchResult(DistKeywordSearchResult& result, c
         return;
     }
 
-    //cout << "resultPage(request)    start: " << result.start_ << ", count: " << result.count_ << endl;
+    // Set basic info
+    result.analyzedQuery_ = resultList[0].second.analyzedQuery_;
+    result.queryTermIdList_ = resultList[0].second.queryTermIdList_;
+    result.propertyQueryTermList_ = resultList[0].second.propertyQueryTermList_;
 
-    // get basic info
     result.totalCount_ = 0;
     size_t overallResultCount = 0;
-
     bool hasCustomRankScore = false;
     for (size_t i = 0; i < workerNum; i++)
     {
         const DistKeywordSearchResult& wResult = resultList[i].second;
+        //wResult.print();//:~
 
-        //result.totalCount_ += ((wResult.totalCount_ > TOP_K_NUM) ? TOP_K_NUM : wResult.totalCount_);
         result.totalCount_ += wResult.totalCount_;
         overallResultCount += wResult.topKDocs_.size();
 
         if (wResult.topKCustomRankScoreList_.size() > 0)
             hasCustomRankScore = true;
     }
-    cout << "result.totalCount_: " << result.totalCount_ << ",  overallResultCount: " << overallResultCount<<endl;
 
-    // get page count info
+    // set page info
+    cout << "result.totalCount_: " << result.totalCount_ << ",  overallResultCount: " << overallResultCount<<endl;
     if (result.start_ >= overallResultCount)
     {
-        // page offset over flow
         return;
     }
     if (result.start_ + result.count_ > overallResultCount)
@@ -94,22 +94,22 @@ void AggregatorManager::aggregateSearchResult(DistKeywordSearchResult& result, c
         result.count_ = overallResultCount - result.start_;
     }
     size_t resultCount = overallResultCount < size_t(TOP_K_NUM) ? overallResultCount : TOP_K_NUM;
-
     cout << "resultPage      start: " << result.start_ << ", count: " << result.count_ << endl;
 
+    // reserve data size for topK docs
     result.topKDocs_.resize(resultCount);
     result.topKWorkerIds_.resize(resultCount);
     result.topKRankScoreList_.resize(resultCount);
     if (hasCustomRankScore)
         result.topKCustomRankScoreList_.resize(resultCount);
 
-    // Create comparators for merging results from different nodes
+    // Prepare comparator for each sub result (compare by sort properties).
     DocumentComparator** docComparators = new DocumentComparator*[workerNum];
     for (size_t i = 0; i < workerNum; i++)
     {
         docComparators[i] = new DocumentComparator(resultList[i].second);
     }
-    // Merge results according to sort condition
+    // Merge topK docs
     size_t maxi;
     size_t* iter = new size_t[workerNum];
     memset(iter, 0, sizeof(size_t)*workerNum);
@@ -161,6 +161,11 @@ void AggregatorManager::aggregateSearchResult(DistKeywordSearchResult& result, c
         delete docComparators[i];
     }
     delete docComparators;
+
+    // TODO, merge Ontology info
+    //result.onto_rep_;
+    //result.groupRep_;
+    //result.attrRep_;
 }
 
 void AggregatorManager::aggregateSummaryMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
