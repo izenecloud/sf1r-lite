@@ -44,6 +44,89 @@ public:
     {
     }
 
+    void print(std::ostream& out = std::cout) const
+    {
+        stringstream ss;
+        ss << endl;
+        ss << "==== Class DistKeywordSearchResult ====" << endl;
+        ss << "-----------------------------------" << endl;
+        ss << "rawQueryString_    : " << rawQueryString_ << endl;
+        ss << "encodingType_      : " << encodingType_ << endl;
+        ss << "collectionName_    : " << collectionName_ << endl;
+        ss << "analyzedQuery_     : " ;
+        for (size_t i = 0; i < analyzedQuery_.size(); i ++)
+        {
+            string s;
+            analyzedQuery_[i].convertString(s, izenelib::util::UString::UTF_8);
+            ss << s << ", ";
+        }
+        ss << endl;
+        ss << "queryTermIdList_   : " << endl;
+        for (size_t i = 0; i < queryTermIdList_.size(); i ++)
+        {
+            ss << queryTermIdList_[i] << ", ";
+        }
+        ss << endl;
+        ss << "totalCount_        : " << totalCount_ << endl;
+        ss << "topKDocs_          : " << topKDocs_.size() << endl;
+        for (size_t i = 0; i < topKDocs_.size(); i ++)
+        {
+            ss << "0x"<< hex<< topKDocs_[i] << ", ";
+        }
+        ss << dec<< endl;
+        ss << "topKWorkerIds_      : " << topKWorkerIds_.size() << endl;
+        for (size_t i = 0; i < topKWorkerIds_.size(); i ++)
+        {
+            ss << topKWorkerIds_[i] << ", ";
+        }
+        ss << endl;
+
+        ss << "topKRankScoreList_      : " << topKRankScoreList_.size() << endl;
+        for (size_t i = 0; i < topKRankScoreList_.size(); i ++)
+        {
+            ss << topKRankScoreList_[i] << ", ";
+        }
+        ss << endl;
+        ss << "topKCustomRankScoreList_: " << endl;
+        for (size_t i = 0; i < topKCustomRankScoreList_.size(); i ++)
+        {
+            ss << topKCustomRankScoreList_[i] << ", ";
+        }
+        ss << endl;
+        ss << "page start_    : " << start_ << " count_   : " << count_ << endl;
+        ss << endl;
+        ss << "topKPostionList_          : " << topKPostionList_.size() << endl;
+        for (size_t i = 0; i < topKPostionList_.size(); i ++)
+        {
+            ss << topKPostionList_[i] << ", ";
+        }
+        ss << endl << endl;
+
+        ss << "propertyQueryTermList_ : " << endl;
+        for (size_t i = 0; i < propertyQueryTermList_.size(); i++)
+        {
+            for (size_t j = 0; j < propertyQueryTermList_[i].size(); j++)
+            {
+                string s;
+                propertyQueryTermList_[i][j].convertString(s, izenelib::util::UString::UTF_8);
+                ss << s << ", ";
+            }
+            ss << endl;
+        }
+        ss << endl;
+
+        ss << "onto_rep_ : " <<endl;
+        ss << onto_rep_.ToString();
+        ss << "groupRep_ : " <<endl;
+        ss << groupRep_.ToString();
+        ss << "attrRep_ : " <<endl;
+        ss << attrRep_.ToString();
+
+        ss << "===================================" << endl;
+        out << ss.str();
+    }
+
+
 	/// pre-fetched info for keyword search
     DistKeywordSearchInfo distSearchInfo_;
 
@@ -96,7 +179,7 @@ public:
     sf1r::faceted::OntologyRep attrRep_;
 
     MSGPACK_DEFINE(
-    		/*distSearchInfo_,*/rawQueryString_,encodingType_,collectionName_,analyzedQuery_,
+    		distSearchInfo_,rawQueryString_,encodingType_,collectionName_,analyzedQuery_,
             queryTermIdList_,totalCount_,topKDocs_,topKWorkerIds_,topKRankScoreList_,
             topKCustomRankScoreList_,start_,count_,topKPostionList_,propertyQueryTermList_,
             onto_rep_,groupRep_,attrRep_);

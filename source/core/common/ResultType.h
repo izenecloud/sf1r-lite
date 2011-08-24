@@ -237,6 +237,13 @@ namespace sf1r {
               }
               ss << endl;
 
+              ss << "onto_rep_ : " <<endl;
+              ss << onto_rep_.ToString();
+              ss << "groupRep_ : " <<endl;
+              ss << groupRep_.ToString();
+              ss << "attrRep_ : " <<endl;
+              ss << attrRep_.ToString();
+
               ss << "===================================" << endl;
               out << ss.str();
           }
