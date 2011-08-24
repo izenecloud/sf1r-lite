@@ -30,7 +30,7 @@ public:
     std::vector<std::pair<std::string, std::vector<uint64_t> > > sortPropertyUIntDataList_;
     std::vector<std::pair<std::string, std::vector<float> > > sortPropertyFloatDataList_;
 
-    MSGPACK_DEFINE(sortPropertyIntDataList_,sortPropertyUIntDataList_,sortPropertyFloatDataList_);
+    MSGPACK_DEFINE(actionType_,sortPropertyList_,sortPropertyIntDataList_,sortPropertyUIntDataList_,sortPropertyFloatDataList_);
 };
 
 class DistKeywordSearchResult : public ErrorInfo
