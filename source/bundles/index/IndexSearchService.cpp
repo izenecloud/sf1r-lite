@@ -277,14 +277,6 @@ bool IndexSearchService::getSearchResult(
                     LOG(ERROR) << "error in log group label click, query: " << actionItem.env_.queryString_
                                << ", property name: " << it->first << ", path size: " << it->second.size();
                 }
-
-                if (aggregatorManager_)
-                {
-                    clickGroupLabelActionItem cglActionItem(actionItem.env_.queryString_, it->first, it->second);
-                    bool ret = true;
-                    aggregatorManager_->sendRequest<clickGroupLabelActionItem, bool>(
-                                actionItem.collectionName_, "clickGroupLabel", cglActionItem, ret);
-                }
             }
         }
     }

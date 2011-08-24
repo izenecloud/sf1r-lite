@@ -155,12 +155,12 @@ bool WorkerService::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionI
     return false;
 }
 
-bool WorkerService::clickGroupLabel(const clickGroupLabelActionItem& actionItem, bool& ret)
+bool WorkerService::clickGroupLabel(const ClickGroupLabelActionItem& actionItem, bool& ret)
 {
     ret = miningSearchService_->clickGroupLabel(
             actionItem.queryString_,
             actionItem.propName_,
-            actionItem.propValue_);
+            actionItem.groupPath_);
 
     return ret;
 }

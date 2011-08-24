@@ -107,7 +107,7 @@ public:
 
     bool call(
             const std::string& func,
-            const clickGroupLabelActionItem& request,
+            const ClickGroupLabelActionItem& request,
             bool& result,
             std::string& error)
     {
@@ -139,7 +139,7 @@ public:
 
     bool getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem);
 
-    bool clickGroupLabel(const clickGroupLabelActionItem& actionItem, bool& ret);
+    bool clickGroupLabel(const ClickGroupLabelActionItem& actionItem, bool& ret);
 
     /** @} */
 

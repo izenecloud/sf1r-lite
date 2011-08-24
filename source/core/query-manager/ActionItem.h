@@ -649,27 +649,27 @@ class GetDocumentsByIdsActionItem
 ///
 /// @brief Information for click group label.
 ///
-class clickGroupLabelActionItem
+class ClickGroupLabelActionItem
 {
 public:
-    clickGroupLabelActionItem() {}
+    ClickGroupLabelActionItem() {}
 
-    clickGroupLabelActionItem(
+    ClickGroupLabelActionItem(
             const std::string& queryString,
             const std::string& propName,
-            const std::string& propValue)
+            const std::vector<std::string>& groupPath)
     :queryString_(queryString),
      propName_(propName),
-     propValue_(propValue)
+     groupPath_(groupPath)
     {}
 
     std::string queryString_;
 
     std::string propName_;
 
-    std::string propValue_;
+    std::vector<std::string> groupPath_;
 
-    MSGPACK_DEFINE(queryString_, propName_, propValue_);
+    MSGPACK_DEFINE(queryString_, propName_, groupPath_);
 };
 
 ///

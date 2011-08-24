@@ -113,7 +113,7 @@ public:
 
     bool clickGroupLabel(JobRequest& req)
     {
-        WORKER_HANDLE_REQUEST_1_1(req, clickGroupLabelActionItem, bool, workerService_, clickGroupLabel)
+        WORKER_HANDLE_REQUEST_1_1(req, ClickGroupLabelActionItem, bool, workerService_, clickGroupLabel)
         return true;
     }
 
