@@ -78,9 +78,9 @@ bool IndexSearchService::getSearchResult(
     resultItem.collectionName_ = actionItem.collectionName_;
     resultItem.encodingType_ = izenelib::util::UString::convertEncodingTypeFromStringToEnum(
             actionItem.env_.encodingType_.c_str() );
+    resultItem.rawQueryString_ = actionItem.env_.queryString_;
     resultItem.start_ = actionItem.pageInfo_.start_;
     resultItem.count_ = actionItem.pageInfo_.count_;
-    resultItem.rawQueryString_ = actionItem.env_.queryString_;
 
     // prefetch stats info from multiple nodes
     //DistKeywordSearchInfo infoResultItem;
@@ -89,6 +89,8 @@ bool IndexSearchService::getSearchResult(
 
     // Get and aggregate keyword results from mutliple nodes
     DistKeywordSearchResult distResultItem;
+    distResultItem.start_ = actionItem.pageInfo_.start_;
+    distResultItem.count_ = actionItem.pageInfo_.count_;
     aggregatorManager_->sendRequest<KeywordSearchActionItem, DistKeywordSearchResult>(
             actionItem.collectionName_, "getSearchResult", actionItem, distResultItem);
 
@@ -97,6 +99,8 @@ bool IndexSearchService::getSearchResult(
     cout << "Total count: " << resultItem.totalCount_ << endl;
     cout << "Top K count: " << resultItem.topKDocs_.size() << endl;
     cout << "Page Count: " << resultItem.count_ << endl;
+
+    //resultItem.print();//:~
 
     // Get and aggregate Summary, Mining results from multiple nodes.
     std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> > resultMap;
@@ -117,7 +121,7 @@ bool IndexSearchService::getSearchResult(
     aggregatorManager_->sendRequest<KeywordSearchActionItem, KeywordSearchResult>(
             actionItem.collectionName_, "getSummaryMiningResult", requestGroup);
 
-    //resultItem.print();
+    //resultItem.print();//:~
     return true;
 
 #else

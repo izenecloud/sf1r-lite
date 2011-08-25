@@ -404,7 +404,7 @@ namespace sf1r {
                 topKRankScoreList_ = result.topKRankScoreList_;
                 topKCustomRankScoreList_ = result.topKCustomRankScoreList_;
                 //start_ = result.start_;
-                //count_ = result.count_;
+                count_ = result.count_;
                 topKPostionList_ = result.topKPostionList_;
                 propertyQueryTermList_ = result.propertyQueryTermList_;
                 onto_rep_ = result.onto_rep_;

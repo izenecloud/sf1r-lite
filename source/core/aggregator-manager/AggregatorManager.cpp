@@ -82,21 +82,22 @@ void AggregatorManager::aggregateSearchResult(DistKeywordSearchResult& result, c
         if (wResult.topKCustomRankScoreList_.size() > 0)
             hasCustomRankScore = true;
     }
+    cout << "result.totalCount_: " << result.totalCount_ << ",  overallResultCount: " << overallResultCount<<endl;
 
     // set page info
-    cout << "result.totalCount_: " << result.totalCount_ << ",  overallResultCount: " << overallResultCount<<endl;
     if (result.start_ >= overallResultCount)
     {
+        result.count_ = 0;
         return;
     }
     if (result.start_ + result.count_ > overallResultCount)
     {
         result.count_ = overallResultCount - result.start_;
     }
-    size_t resultCount = overallResultCount < size_t(TOP_K_NUM) ? overallResultCount : TOP_K_NUM;
     cout << "resultPage      start: " << result.start_ << ", count: " << result.count_ << endl;
 
     // reserve data size for topK docs
+    size_t resultCount = overallResultCount < size_t(TOP_K_NUM) ? overallResultCount : TOP_K_NUM;
     result.topKDocs_.resize(resultCount);
     result.topKWorkerIds_.resize(resultCount);
     result.topKRankScoreList_.resize(resultCount);
