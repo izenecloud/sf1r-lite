@@ -134,9 +134,9 @@ public:
      *
      * @param actionItem [IN]
      * @param actionItemMap [OUT]
-     * @return <false, workerid> if only one worker, <false, -1> if no workerid(request all), else <true, -1>.
+     * @return true if successfully splited, or false.
      */
-    std::pair<bool, workerid_t> splitGetDocsActionItemByWorkerid(
+    bool splitGetDocsActionItemByWorkerid(
             const GetDocumentsByIdsActionItem& actionItem,
             std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >& actionItemMap);
     

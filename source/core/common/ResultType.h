@@ -248,17 +248,6 @@ namespace sf1r {
               out << ss.str();
           }
 
-            void getTopKWDocs(std::vector<sf1r::wdocid_t>& topKWDocs)
-            {
-                if (topKWorkerIds_.size() == 0)
-                    topKWorkerIds_.resize(topKDocs_.size(), 0);
-                topKWDocs.resize( topKDocs_.size() );
-                for (size_t i = 0; i < topKDocs_.size(); i++)
-                {
-                    topKWDocs[i] = net::aggregator::Util::GetWDocId(topKWorkerIds_[i], topKDocs_[i]);
-                }
-            }
-
             std::string rawQueryString_;
 
             /// Distributed search info
@@ -391,6 +380,22 @@ namespace sf1r {
             /// A list of related query rank score.
             std::vector<float> rqScore_;
             
+
+            void getTopKWDocs(std::vector<sf1r::wdocid_t>& topKWDocs) const
+            {
+                if (topKWorkerIds_.size() <= 0)
+                {
+                    topKWDocs.assign(topKDocs_.begin(), topKDocs_.end());
+                    return;
+                }
+
+                topKWDocs.resize(topKDocs_.size());
+                for (size_t i = 0; i < topKDocs_.size(); i++)
+                {
+                    topKWDocs[i] = net::aggregator::Util::GetWDocId(topKWorkerIds_[i], topKDocs_[i]);
+                }
+            }
+
             void assign(const DistKeywordSearchResult& result)
             {
                 //rawQueryString_ = result.rawQueryString_;
@@ -464,13 +469,23 @@ namespace sf1r {
 
             /// internal IDs of the documents
             std::vector<docid_t> idList_;
+
+            /// corresponding workerids for each id. (no need to be serialized)
+            std::vector<workerid_t> workeridList_;
             
-            void assign(const RawTextResultFromSIA& obj)
+            void getWIdList(std::vector<sf1r::wdocid_t>& widList) const
             {
-                fullTextOfDocumentInPage_ = obj.fullTextOfDocumentInPage_;
-                snippetTextOfDocumentInPage_ = obj.snippetTextOfDocumentInPage_;
-                rawTextOfSummaryInPage_ = obj.rawTextOfSummaryInPage_;
-                idList_ = obj.idList_;
+                if (workeridList_.size() <= 0)
+                {
+                    widList.assign(idList_.begin(), idList_.end());
+                    return;
+                }
+
+                widList.resize(idList_.size());
+                for (size_t i = 0; i < idList_.size(); i++)
+                {
+                    widList[i] = net::aggregator::Util::GetWDocId(workeridList_[i], idList_[i]);
+                }
             }
 
             //LOG: changed the names for consistentcy with KeywordResultItem

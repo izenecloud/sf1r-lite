@@ -30,13 +30,16 @@ void DocumentsRenderer::renderDocuments(
     Value& resources
 )
 {
-    std::size_t resultCount = result.idList_.size();
+    std::vector<sf1r::wdocid_t> widList;
+    result.getWIdList(widList);
+
+    std::size_t resultCount = widList.size();
 
     for (std::size_t i = 0; i < resultCount; ++i)
     {
         Value& newResource = resources();
 
-        newResource[Keys::_id] = result.idList_[i];
+        newResource[Keys::_id] = widList[i];
 
         // full text and snippet properties
         std::size_t summaryIndex = 0;
@@ -70,7 +73,7 @@ void DocumentsRenderer::renderDocuments(
             }
         }
         if (result.numberOfDuplicatedDocs_.size()
-            == result.idList_.size())
+            == widList.size())
         {
             newResource[Keys::_duplicated_document_count] =
                 result.numberOfDuplicatedDocs_[i];
@@ -94,8 +97,9 @@ void DocumentsRenderer::renderDocuments(
     std::size_t indexInTopK = searchResult.start_ % TOP_K_NUM;
 
     BOOST_ASSERT(indexInTopK + searchResult.count_ <= searchResult.topKDocs_.size());
+
     std::vector<sf1r::wdocid_t> topKWDocs;
-    const_cast<KeywordSearchResult&>(searchResult).getTopKWDocs(topKWDocs);
+    searchResult.getTopKWDocs(topKWDocs);
 
     for (std::size_t i = 0; i < searchResult.count_; ++i, ++indexInTopK)
     {

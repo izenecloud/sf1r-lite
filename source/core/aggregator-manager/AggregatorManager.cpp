@@ -311,7 +311,7 @@ void AggregatorManager::aggregateDocumentsResult(RawTextResultFromSIA& result, c
 
     for (size_t w = 0; w < workerNum; w++)
     {
-        //workerid_t workerid = resultList[w].first;
+        workerid_t workerid = resultList[w].first;
         const RawTextResultFromSIA& wResult = resultList[w].second;
 
         for (size_t i = 0; i < wResult.idList_.size(); i++)
@@ -324,7 +324,9 @@ void AggregatorManager::aggregateDocumentsResult(RawTextResultFromSIA& result, c
                 result.rawTextOfSummaryInPage_.resize(wResult.rawTextOfSummaryInPage_.size());
             }
 
+            // id and corresponding workerid
             result.idList_.push_back(wResult.idList_[i]);
+            result.workeridList_.push_back(workerid);
 
             for (size_t p = 0; p < wResult.fullTextOfDocumentInPage_.size(); p++)
             {
@@ -345,6 +347,10 @@ void AggregatorManager::aggregateDocumentsResult(RawTextResultFromSIA& result, c
 bool AggregatorManager::splitSearchResultByWorkerid(const KeywordSearchResult& result, std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >& resultMap)
 {
     const std::vector<uint32_t>& topKWorkerIds = result.topKWorkerIds_;
+    if (topKWorkerIds.size() <= 0)
+    {
+        return false; //xxx
+    }
 
     // split docs of current page by worker
     boost::shared_ptr<KeywordSearchResult> subResult;
@@ -382,26 +388,18 @@ bool AggregatorManager::splitSearchResultByWorkerid(const KeywordSearchResult& r
     return true;
 }
 
-std::pair<bool, workerid_t> AggregatorManager::splitGetDocsActionItemByWorkerid(
+bool AggregatorManager::splitGetDocsActionItemByWorkerid(
         const GetDocumentsByIdsActionItem& actionItem,
         std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >& actionItemMap)
 {
-    cout << "#[AggregatorManager::splitGetDocsActionItemByWorkerid] " <<endl;
+    if (actionItem.idList_.size() <= 0)
+    {
+        return false;
+    }
 
     std::vector<sf1r::docid_t> idList;
     std::vector<sf1r::workerid_t> workeridList;
-    std::set<sf1r::workerid_t> ret =
-            const_cast<GetDocumentsByIdsActionItem&>(actionItem).getDocWorkerIdLists(idList, workeridList);
-
-    if (ret.size() == 0)
-    {
-        return std::pair<bool, workerid_t>(false, workerid_t(-1));
-    }
-
-    if (ret.size() == 1)
-    {
-        return std::pair<bool, workerid_t>(false, *ret.begin());
-    }
+    actionItem.getDocWorkerIdLists(idList, workeridList);
 
     // split
     boost::shared_ptr<GetDocumentsByIdsActionItem> subActionItem;
@@ -423,7 +421,7 @@ std::pair<bool, workerid_t> AggregatorManager::splitGetDocsActionItemByWorkerid(
         subActionItem->idList_.push_back(actionItem.idList_[i]);
     }
 
-    return std::pair<bool, workerid_t>(true, workerid_t(-1));
+    return true;
 }
 
 }

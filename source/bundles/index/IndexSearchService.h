@@ -51,7 +51,7 @@ public:
 
 private:
 
-    bool checkAggregatorSupport(std::string& collectionName);
+    bool checkAggregatorSupport(const std::string& collectionName);
 
     bool buildQuery(
         SearchKeywordOperation& actionOperation,

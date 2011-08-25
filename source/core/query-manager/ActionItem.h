@@ -621,7 +621,7 @@ class GetDocumentsByIdsActionItem
     public:
         std::set<sf1r::workerid_t> getDocWorkerIdLists(
                 std::vector<sf1r::docid_t>& docidList,
-                std::vector<sf1r::workerid_t>& workeridList)
+                std::vector<sf1r::workerid_t>& workeridList) const
         {
             std::set<sf1r::workerid_t> workerSet;
             for (size_t i = 0; i < idList_.size(); i++)

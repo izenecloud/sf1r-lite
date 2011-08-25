@@ -526,21 +526,16 @@ bool IndexSearchService::getDocumentsByIds(
 {
 #ifdef DISTRIBUTED_SEARCH
 
-    std::vector<workerid_t> workerReqList;
-    std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> > actionItemMap;
-
-    ///if (getWorkersByCollectionName(actionItem.collectionName_))
-
-    std::pair<bool, workerid_t> ret = aggregatorManager_->splitGetDocsActionItemByWorkerid(actionItem, actionItemMap);
-    if (ret.first == false)
+    if (!checkAggregatorSupport(actionItem.collectionName_))
     {
-        // only request one worker, or request all workers if workerReqList is empty.
-        if (ret.second != workerid_t(-1))
-        {
-            workerReqList.push_back(ret.second);
-        }
+        return workerService_->getDocumentsByIds(actionItem, resultItem);
+    }
+
+    std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> > actionItemMap;
+    if (!aggregatorManager_->splitGetDocsActionItemByWorkerid(actionItem, actionItemMap))
+    {
         aggregatorManager_->sendRequest<GetDocumentsByIdsActionItem, RawTextResultFromSIA>(
-                actionItem.collectionName_, "getDocumentsByIds", actionItem, resultItem, workerReqList);
+                actionItem.collectionName_, "getDocumentsByIds", actionItem, resultItem);
     }
     else
     {
@@ -555,53 +550,10 @@ bool IndexSearchService::getDocumentsByIds(
             requestGroup.addRequest(workerid, subActionItem.get());
         }
 
-        //boost::shared_ptr<RawTextResultFromSIA> resultRet(new RawTextResultFromSIA());
         requestGroup.setResultItemForMerging(&resultItem);
 
         aggregatorManager_->sendRequest<GetDocumentsByIdsActionItem, RawTextResultFromSIA>(
                 actionItem.collectionName_, "getDocumentsByIds", requestGroup);
-
-        //resultItem.assign(*requestGroup.resultItem_);
-
-//        // asynchronously request to each workers
-//        std::vector<std::pair<workerid_t, boost::shared_ptr<WorkerFutureHolder> > > futureList;
-//
-//        std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >::iterator iter;
-//        for (iter = actionItemMap.begin(); iter != actionItemMap.end(); iter++)
-//        {
-//            workerid_t workerid = iter->first;
-//            boost::shared_ptr<GetDocumentsByIdsActionItem>& subActionItem = iter->second;
-//
-//            boost::shared_ptr<WorkerFutureHolder> workerFuture(new WorkerFutureHolder);
-//            workerReqList.clear();
-//            workerReqList.push_back(workerid);
-//
-//            aggregatorManager_->sendRequest<GetDocumentsByIdsActionItem, RawTextResultFromSIA>(
-//                    *workerFuture, subActionItem->collectionName_, "getDocumentsByIds", *subActionItem, resultItem, workerReqList);
-//
-//            futureList.push_back(std::make_pair(workerid, workerFuture));
-//        }
-//
-//        // get results
-//        std::vector<std::pair<workerid_t, RawTextResultFromSIA> > resultList;
-//        for (size_t i = 0; i < futureList.size(); i++)
-//        {
-//            workerid_t curWorkerid = futureList[i].first;
-//            boost::shared_ptr<WorkerFutureHolder>& workerFuture = futureList[i].second;
-//
-//            boost::shared_ptr<GetDocumentsByIdsActionItem>& subActionItem = actionItemMap[curWorkerid];
-//            RawTextResultFromSIA subResultItem;
-//            workerReqList.clear();
-//            workerReqList.push_back(curWorkerid);
-//
-//            aggregatorManager_->getResult<GetDocumentsByIdsActionItem, RawTextResultFromSIA>(
-//                    *workerFuture, "getDocumentsByIds", *subActionItem, subResultItem, workerReqList);
-//
-//            resultList.push_back(std::make_pair(curWorkerid, subResultItem));
-//        }
-//
-//        // aggregate results
-//        aggregatorManager_->aggregateDocumentsResult(resultItem, resultList);
     }
 
 	return true;
@@ -694,7 +646,7 @@ bool IndexSearchService::getInternalDocumentId(
     return true;
 }
 
-bool IndexSearchService::checkAggregatorSupport(std::string& collectionName)
+bool IndexSearchService::checkAggregatorSupport(const std::string& collectionName)
 {
     return
     const_cast<BrokerAgentConfig&>(SF1Config::get()->getBrokerAgentConfig()).checkAggregatorByName(collectionName);
