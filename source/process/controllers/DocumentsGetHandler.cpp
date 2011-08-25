@@ -43,6 +43,7 @@ DocumentsGetHandler::DocumentsGetHandler(
 {
     actionItem_.env_.encodingType_ = "UTF-8";
     actionItem_.env_.ipAddress_ = request.header()[Keys::remote_ip].getString();
+    actionItem_.collectionName_ = asString(request[Keys::collection]);
 }
 
 void DocumentsGetHandler::get()

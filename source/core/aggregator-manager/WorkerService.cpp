@@ -99,8 +99,10 @@ bool WorkerService::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionI
          it != actionItem.docIdList_.end(); ++it)
     {
         unicodeDocId.assign(*it, kEncodingType);
-        idManager_->getDocIdByDocName(unicodeDocId, internalId);
-        idList.push_back(internalId);
+        if (idManager_->getDocIdByDocName(unicodeDocId, internalId, false))
+        {
+            idList.push_back(internalId);
+        }
     }
 
     // get docids by property value
