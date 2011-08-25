@@ -297,7 +297,7 @@ bool MiningManager::open()
             size_t docNum = 0;
             if (index_manager_)
             {
-                docNum = index_manager_->getIndexReader()->maxDoc() + 1;
+                docNum = index_manager_->getIndexReader()->maxDoc();
             }
 
             ctrManager_.reset(new faceted::CTRManager(ctr_path, docNum));
