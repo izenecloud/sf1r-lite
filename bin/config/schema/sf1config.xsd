@@ -202,10 +202,12 @@
 		</xs:complexType>
 	</xs:element>
 	<xs:element name="RemoteAgent">
-		<xs:complexType>
+		<xs:complexType>                        
 			<xs:sequence>
 				<xs:element ref="Worker" minOccurs="0" maxOccurs="unbounded"/>
 			</xs:sequence>
+
+                        <xs:attribute name="enablelocalworker" type="YesNoType" use="required"/>
 		</xs:complexType>
 	</xs:element>
 	<xs:element name="Worker">

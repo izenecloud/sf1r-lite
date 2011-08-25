@@ -165,7 +165,7 @@
         -->
     </BrokerAgent>
 
-    <RemoteAgent>
+    <RemoteAgent enablelocalworker="y">
        <!--
        <Worker host="0.0.0.0" port="18111" />
        <Worker host="0.0.0.0" port="18112" />

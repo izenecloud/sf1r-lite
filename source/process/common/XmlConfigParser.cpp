@@ -326,13 +326,15 @@ void SF1Config::parseBrokerAgent( const ticpp::Element * brokerAgent )
 
 void SF1Config::parseRemoteAgent( const ticpp::Element * remoteAgent )
 {
+    getAttribute(remoteAgent, "enablelocalworker", aggregatorConfig_.enableLocalWorker_, false);
+
     Iterator<Element> worker_it( "Worker" );
     for (worker_it = worker_it.begin(remoteAgent); worker_it != worker_it.end(); worker_it++)
     {
         std::string host;
         int port;
-        getAttribute(worker_it.Get(), "host", host, false);
-        getAttribute(worker_it.Get(), "port", port, false);
+        getAttribute(worker_it.Get(), "host", host, true);
+        getAttribute(worker_it.Get(), "port", port, true);
         aggregatorConfig_.addWorker(host, static_cast<uint16_t>(port) );
     }
 }
