@@ -192,6 +192,7 @@ bool IndexSearchService::getSearchResult(
                 resultItem.totalCount_,
                 resultItem.groupRep_,
                 resultItem.attrRep_,
+                resultItem.propertyRange_,
                 TOP_K_NUM,
                 startOffset
                 ))
@@ -217,6 +218,7 @@ bool IndexSearchService::getSearchResult(
                                     resultItem.totalCount_,
                                     resultItem.groupRep_,
                                     resultItem.attrRep_,
+                                    resultItem.propertyRange_,
                                     TOP_K_NUM,
                                     startOffset
                                     ))
@@ -379,6 +381,7 @@ bool IndexSearchService::processSearchAction(
                 resultItem.totalCount_,
                 resultItem.groupRep_,
                 resultItem.attrRep_,
+                resultItem.propertyRange_,
                 top_k_num,
                 startOffset
                 ))
@@ -404,6 +407,7 @@ bool IndexSearchService::processSearchAction(
                                     resultItem.totalCount_,
                                     resultItem.groupRep_,
                                     resultItem.attrRep_,
+                                    resultItem.propertyRange_,
                                     TOP_K_NUM,
                                     startOffset
                                     ))

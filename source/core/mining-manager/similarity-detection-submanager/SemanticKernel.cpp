@@ -181,6 +181,7 @@ void SemanticKernel::doSearch()
                 std::size_t totalCount;
                 faceted::OntologyRep groupRep;
                 faceted::OntologyRep attrRep;
+                sf1r::PropertyRange propertyRange;
 
                 if(searchManager_->search(
                     actionOperation,
@@ -190,6 +191,7 @@ void SemanticKernel::doSearch()
                     totalCount,
                     groupRep,
                     attrRep,
+                    propertyRange,
                     100,
                     0
                  ))

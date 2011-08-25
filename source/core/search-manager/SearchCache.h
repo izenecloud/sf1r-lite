@@ -28,6 +28,7 @@ public:
         std::size_t totalCount;
         faceted::OntologyRep groupRep;
         faceted::OntologyRep attrRep;
+        sf1r::PropertyRange propertyRange;
     };
     typedef QueryIdentity key_type;
 
@@ -44,7 +45,8 @@ public:
              std::vector<unsigned int>& docIdList,
              std::size_t& totalCount,
              faceted::OntologyRep& groupRep,
-             faceted::OntologyRep& attrRep)
+             faceted::OntologyRep& attrRep,
+             sf1r::PropertyRange& propertyRange)
     {
         value_type value;
         if (cache_.getValueNoInsert(key, value))
@@ -55,7 +57,7 @@ public:
             totalCount = value.totalCount;
             groupRep.swap(value.groupRep);
             attrRep.swap(value.attrRep);
-
+            propertyRange.swap(value.propertyRange);
             return true;
         }
 
@@ -68,7 +70,8 @@ public:
              std::vector<unsigned int> docIdList,
              std::size_t totalCount,
              faceted::OntologyRep groupRep,
-             faceted::OntologyRep attrRep)
+             faceted::OntologyRep attrRep,
+             sf1r::PropertyRange propertyRange)
     {
         value_type value;
         scores.swap(value.scores);
@@ -77,6 +80,7 @@ public:
         value.totalCount = totalCount;
         groupRep.swap(value.groupRep);
         attrRep.swap(value.attrRep);
+        propertyRange.swap(value.propertyRange);
         cache_.insertValue(key, value);
     }
 

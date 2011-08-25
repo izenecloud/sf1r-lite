@@ -7,6 +7,7 @@
 #include <configuration-manager/PropertyConfig.h>
 #include <query-manager/SearchKeywordOperation.h>
 #include <query-manager/ActionItem.h>
+#include <common/ResultType.h>
 
 #include <ir/id_manager/IDManager.h>
 #include <util/ustring/UString.h>
@@ -58,6 +59,7 @@ public:
                 std::size_t& totalCount,
                 faceted::OntologyRep& groupRep,
                 faceted::OntologyRep& attrRep,
+                sf1r::PropertyRange& propertyRange,
                 int topK = 200,
                 int start = 0);
 
@@ -85,6 +87,7 @@ private:
                    std::size_t& totalCount,
                    faceted::OntologyRep& groupRep,
                    faceted::OntologyRep& attrRep,
+                   sf1r::PropertyRange& propertyRange,
                    int topK,
                    int start);
 

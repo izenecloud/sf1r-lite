@@ -5,6 +5,7 @@
 #include <query-manager/SearchKeywordOperation.h>
 #include "PrunedSortedForwardIndex.h"
 #include <ir/id_manager/IDManager.h>
+#include <common/ResultType.h>
 
 #include <util/ustring/UString.h>
 

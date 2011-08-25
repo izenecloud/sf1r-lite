@@ -30,6 +30,20 @@
 #include <algorithm>
 
 namespace sf1r {
+    struct PropertyRange
+    {
+        PropertyRange()
+                : highValue_(0)
+                , lowValue_(0)
+            {}
+        void swap(PropertyRange& range)
+        {
+            highValue_ = range.highValue_;
+            lowValue_ = range.lowValue_;
+        }
+        float highValue_;
+        float lowValue_;
+    };
 
     ///
     /// @brief This class is inheritable type of every result type in this file.
@@ -252,6 +266,8 @@ namespace sf1r {
 
             /// A list of custom ranking scores. The sequence is following \c topKDocs_.
             std::vector<float> topKCustomRankScoreList_;
+
+            PropertyRange propertyRange_;
 
             std::size_t start_;
 
