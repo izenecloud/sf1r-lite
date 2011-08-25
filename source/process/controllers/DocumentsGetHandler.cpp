@@ -291,7 +291,7 @@ bool DocumentsGetHandler::parseDocumentId(const Value& inputId)
         scdDocumentId, izenelib::util::UString::UTF_8
     );
     bool success = indexSearchService_->getInternalDocumentId(
-                       unicodeScdDocuemntId, internalId_
+                       actionItem_.collectionName_, unicodeScdDocuemntId, internalId_
                    );
 
     if (!success)

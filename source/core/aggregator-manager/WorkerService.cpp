@@ -157,6 +157,21 @@ bool WorkerService::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionI
     return false;
 }
 
+bool WorkerService::getInternalDocumentId(const izenelib::util::UString& scdDocumentId, uint64_t& internalId)
+{
+    uint32_t docid = 0;
+    std::string str;
+    scdDocumentId.convertString(str, izenelib::util::UString::UTF_8);
+    if (!idManager_->getDocIdByDocName(scdDocumentId, docid, false))
+    {
+        internalId = 0;
+        return false;
+    }
+
+    internalId = docid;
+    return true;
+}
+
 bool WorkerService::clickGroupLabel(const ClickGroupLabelActionItem& actionItem, bool& ret)
 {
     ret = miningSearchService_->clickGroupLabel(

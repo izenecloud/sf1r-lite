@@ -25,6 +25,7 @@ bool MiningSearchService::getSimilarDocIdList(
     std::vector<std::pair<uint32_t, float> >& result
 )
 {
+    // TODO, aggregate by wdocid
     return miningManager_->getSimilarDocIdList(documentId, maxNum, result);
 }
 
@@ -62,10 +63,11 @@ bool MiningSearchService::getSimilarLabelStringList(
 }
 
 bool MiningSearchService::getDocLabelList(
-    uint32_t docid, 
+    uint32_t docid,
     std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list 
 )
 {
+    // TODO, aggregate by wdocid
     return miningManager_->getLabelListByDocId(docid, label_list);
 }
 
@@ -74,6 +76,7 @@ bool MiningSearchService::getLabelListWithSimByDocId(
     std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > >& label_list
 )
 {
+    // TODO, aggregate by wdocid
     return miningManager_->getLabelListWithSimByDocId(docid, label_list);
 }
 
@@ -177,6 +180,7 @@ bool MiningSearchService::DefineDocCategory(
 
 bool MiningSearchService::visitDoc(uint32_t docId)
 {
+    // TODO, aggregate by wdocid
     return miningManager_->visitDoc(docId);
 }
 

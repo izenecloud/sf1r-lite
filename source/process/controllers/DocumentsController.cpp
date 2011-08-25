@@ -484,12 +484,14 @@ void DocumentsController::get_topic()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
   
-    uint32_t internal_id = 0;
+    uint64_t internal_id = 0;
     Value& input = request()[Keys::resource];
     Value& docid_value = input[Keys::DOCID];
     std::string sdocid = asString(docid_value);
     izenelib::util::UString udocid(sdocid, izenelib::util::UString::UTF_8);
-    bool success = collectionHandler_->indexSearchService_->getInternalDocumentId(udocid, internal_id);
+    std::string collectionName =  asString(request()[Keys::collection]);
+
+    bool success = collectionHandler_->indexSearchService_->getInternalDocumentId(collectionName, udocid, internal_id);
     if (!success || internal_id==0)
     {
         response().addError("Cannot convert DOCID to internal ID");
@@ -551,13 +553,14 @@ void DocumentsController::get_topic_with_sim()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
   
-    uint32_t internal_id = 0;
+    uint64_t internal_id = 0;
     Value& input = request()[Keys::resource];
     Value& docid_value = input[Keys::DOCID];
     std::string sdocid = asString(docid_value);
     izenelib::util::UString udocid(sdocid, izenelib::util::UString::UTF_8);
+    std::string collectionName =  asString(request()[Keys::collection]);
     bool success = collectionHandler_->indexSearchService_->getInternalDocumentId(
-          udocid, internal_id
+          collectionName, udocid, internal_id
       );
     if (!success || internal_id==0)
     {
@@ -800,12 +803,13 @@ void DocumentsController::visit()
     IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
 
-    uint32_t internalId = 0;
+    uint64_t internalId = 0;
     Value& docidValue = request()[Keys::resource][Keys::DOCID];
     std::string docidStr = asString(docidValue);
     izenelib::util::UString docidUStr(docidStr, izenelib::util::UString::UTF_8);
+    std::string collectionName =  asString(request()[Keys::collection]);
 
-    if (collectionHandler_->indexSearchService_->getInternalDocumentId(docidUStr, internalId)
+    if (collectionHandler_->indexSearchService_->getInternalDocumentId(collectionName, docidUStr, internalId)
             && internalId != 0)
     {
         if (!collectionHandler_->miningSearchService_->visitDoc(internalId))

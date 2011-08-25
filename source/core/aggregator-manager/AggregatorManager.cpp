@@ -342,6 +342,22 @@ void AggregatorManager::aggregateDocumentsResult(RawTextResultFromSIA& result, c
     }
 }
 
+void AggregatorManager::aggregateInternalDocumentId(uint64_t& result, const std::vector<std::pair<workerid_t, uint64_t> >& resultList)
+{
+    result = 0;
+
+    size_t workerNum = resultList.size();
+    for (size_t w = 0; w < workerNum; w++)
+    {
+        // Assume and DOCID should be unique in global space
+        if (resultList[w].second != 0)
+        {
+            result = net::aggregator::Util::GetWDocId(resultList[w].first, (uint32_t)resultList[w].second);
+            return;
+        }
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 bool AggregatorManager::splitSearchResultByWorkerid(const KeywordSearchResult& result, std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >& resultMap)

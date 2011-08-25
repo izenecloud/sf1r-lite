@@ -40,7 +40,7 @@ public:
 
 public:
     /**
-     * Publish services to local procedure (in-process server).
+     * Inerfaces for call directly.
      * @{
      */
 
@@ -107,6 +107,21 @@ public:
 
     bool call(
             const std::string& func,
+            const izenelib::util::UString& request,
+            uint64_t& result,
+            std::string& error)
+    {
+        if (func == "getInternalDocumentId")
+        {
+            return getInternalDocumentId(request, result);
+        }
+
+        error = "no method!";
+        return false;
+    }
+
+    bool call(
+            const std::string& func,
             const ClickGroupLabelActionItem& request,
             bool& result,
             std::string& error)
@@ -138,6 +153,8 @@ public:
     bool processGetSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
     bool getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem);
+
+    bool getInternalDocumentId(const izenelib::util::UString& actionItem, uint64_t& resultItem);
 
     bool clickGroupLabel(const ClickGroupLabelActionItem& actionItem, bool& ret);
 

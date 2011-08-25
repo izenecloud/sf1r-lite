@@ -76,6 +76,7 @@ public:
         ADD_WORKER_HANDLER( getSearchResult )
         ADD_WORKER_HANDLER( getSummaryMiningResult )
         ADD_WORKER_HANDLER( getDocumentsByIds )
+        ADD_WORKER_HANDLER( getInternalDocumentId )
         ADD_WORKER_HANDLER( clickGroupLabel )
         // todo, add services
 
@@ -109,6 +110,12 @@ public:
     {
         WORKER_HANDLE_REQUEST_1_1(req, GetDocumentsByIdsActionItem, RawTextResultFromSIA, workerService_, getDocumentsByIds)
     	return true;
+    }
+
+    bool getInternalDocumentId(JobRequest& req)
+    {
+        WORKER_HANDLE_REQUEST_1_1(req, izenelib::util::UString, uint64_t, workerService_, getInternalDocumentId)
+        return true;
     }
 
     bool clickGroupLabel(JobRequest& req)

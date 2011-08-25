@@ -638,14 +638,24 @@ bool IndexSearchService::getDocumentsByIds(
 }
 
 bool IndexSearchService::getInternalDocumentId(
+    const std::string& collectionName,
     const izenelib::util::UString& scdDocumentId, 
-    uint32_t& internalId
+    uint64_t& internalId
 )
 {
+#ifdef DISTRIBUTED_SEARCH
+
+    internalId = 0;
+    aggregatorManager_->sendRequest<izenelib::util::UString, uint64_t>(
+            collectionName, "getInternalDocumentId", scdDocumentId, internalId);
+
+    return (internalId != 0);
+
+#else
     std::string str;
     scdDocumentId.convertString(str, izenelib::util::UString::UTF_8);
-    idManager_->getDocIdByDocName(scdDocumentId, internalId);
-    return true;
+    return idManager_->getDocIdByDocName(scdDocumentId, internalId, false);
+#endif
 }
 
 bool IndexSearchService::checkAggregatorSupport(const std::string& collectionName)

@@ -87,6 +87,14 @@ public:
     	}
     }
 
+    void join_impl(const std::string& func, uint64_t& result, const std::vector<std::pair<workerid_t, uint64_t> >& resultList)
+    {
+        if (func == "getInternalDocumentId")
+        {
+            aggregateInternalDocumentId(result, resultList);
+        }
+    }
+
     void join_impl(const std::string& func, bool& ret, const std::vector<std::pair<workerid_t, bool> >& resultList)
     {
         if (func == "clickGroupLabel")
@@ -109,6 +117,8 @@ public:
     void aggregateMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
 
     void aggregateDocumentsResult(RawTextResultFromSIA& result, const std::vector<std::pair<workerid_t, RawTextResultFromSIA> >& resultList);
+
+    void aggregateInternalDocumentId(uint64_t& result, const std::vector<std::pair<workerid_t, uint64_t> >& resultList);
 
 
 public:
