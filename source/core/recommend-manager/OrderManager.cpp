@@ -26,12 +26,26 @@ namespace
 {
 
 /**
- * max item nums allowed in each order.
- * As the time cost in @c _judgeFrequentItemset() is exponential to item number in each order,
- * we have to limit the max number of items in each order by this value.
- * If the item number is larger than this value, in @c addOrder(),
- * it would split the items into smaller orders.
+ * Get unique items from @p srcItems to @p destItems. 
  */
+void unique_items(
+    const std::vector<sf1r::itemid_t>& srcItems,
+    std::vector<sf1r::itemid_t>& destItems
+)
+{
+    std::set<sf1r::itemid_t> itemSet;
+
+    for (std::vector<sf1r::itemid_t>::const_iterator it = srcItems.begin();
+        it != srcItems.end(); ++it)
+    {
+        if (itemSet.insert(*it).second)
+        {
+            destItems.push_back(*it);
+        }
+    }
+}
+
+/** max item nums allowed in each order */
 const int MAX_ORDER_ITEM_NUM = 10;
 
 typedef std::pair<sf1r::itemid_t, int> ItemFreq;
@@ -135,15 +149,28 @@ OrderManager::~OrderManager()
     fclose(order_db_);
 }
 
-void OrderManager::addOrder(const std::vector<sf1r::itemid_t>& items)
+void OrderManager::addOrder(const std::vector<itemid_t>& items)
 {
-    std::vector<sf1r::itemid_t>::const_iterator firstIt = items.begin();
-    std::vector<sf1r::itemid_t>::const_iterator lastIt;
+    // as required by _judgeFrequentItemset(),
+    // we need to filter out duplicate items
+    std::vector<itemid_t> uniqueItems;
+    unique_items(items, uniqueItems);
+
+    _splitOrder(uniqueItems, MAX_ORDER_ITEM_NUM);
+}
+
+void OrderManager::_splitOrder(
+    const std::vector<itemid_t>& items,
+    int maxItemNum
+)
+{
+    std::vector<itemid_t>::const_iterator firstIt = items.begin();
+    std::vector<itemid_t>::const_iterator lastIt;
     while (firstIt != items.end())
     {
-        if (firstIt + MAX_ORDER_ITEM_NUM < items.end())
+        if (firstIt + maxItemNum < items.end())
         {
-            lastIt = firstIt + MAX_ORDER_ITEM_NUM;
+            lastIt = firstIt + maxItemNum;
         }
         else
         {
@@ -160,8 +187,8 @@ void OrderManager::addOrder(const std::vector<sf1r::itemid_t>& items)
 
 bool OrderManager::getFreqItemSets(
     int howmany, 
-    std::list<sf1r::itemid_t>& items, 
-    std::list<sf1r::itemid_t>& results,
+    std::list<itemid_t>& items, 
+    std::list<itemid_t>& results,
     idmlib::recommender::ItemRescorer* rescorer)
 {
     std::list<orderid_t> orders;
@@ -255,9 +282,9 @@ void OrderManager::buildFreqItemsets()
 }
 
 void OrderManager::_writeRecord(
-        sf1r::orderid_t orderId,
-        std::vector<sf1r::itemid_t>::const_iterator firstItemIt,
-        std::vector<sf1r::itemid_t>::const_iterator lastItemIt)
+        orderid_t orderId,
+        std::vector<itemid_t>::const_iterator firstIt,
+        std::vector<itemid_t>::const_iterator lastIt)
 {
     {
     ///write keys
@@ -267,22 +294,22 @@ void OrderManager::_writeRecord(
     fwrite(&pos, 1, sizeof(off_t), order_key_);
     }
     ///write values
-    fwrite(&orderId, sizeof(sf1r::orderid_t), 1, order_db_); // recordId
-    uint32_t size = lastItemIt - firstItemIt;
+    fwrite(&orderId, sizeof(orderid_t), 1, order_db_); // recordId
+    uint32_t size = lastIt - firstIt;
     fwrite(&size, sizeof(uint32_t), 1, order_db_); // size
-    for(std::vector<sf1r::itemid_t>::const_iterator iter = firstItemIt;
-          iter != lastItemIt; ++iter)
+    for(std::vector<itemid_t>::const_iterator iter = firstIt;
+          iter != lastIt; ++iter)
     {
-        sf1r::itemid_t itemId = *iter;
-        fwrite(&itemId, sizeof(sf1r::itemid_t), 1, order_db_); //itemId
+        itemid_t itemId = *iter;
+        fwrite(&itemId, sizeof(itemid_t), 1, order_db_); //itemId
     }
     ///flush for the new order could be fetched in _getOrder()
     fflush(order_db_);
 }
 
 bool OrderManager::_getOrder(
-	sf1r::orderid_t orderId,
-	std::vector<sf1r::itemid_t>& items
+	orderid_t orderId,
+	std::vector<itemid_t>& items
 )
 {
     off_t pos;
@@ -295,7 +322,7 @@ bool OrderManager::_getOrder(
     FILE* order_db = fopen(order_db_path_.c_str(), "rb" );
     fseek(order_db, pos, SEEK_SET);
 
-    sf1r::orderid_t tempOrderId = 0;
+    orderid_t tempOrderId = 0;
     bool result = false;
     size_t bytes_read;
     if ((bytes_read = fread(&tempOrderId, 1, 4, order_db)) == 4

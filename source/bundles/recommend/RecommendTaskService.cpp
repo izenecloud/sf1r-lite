@@ -214,7 +214,6 @@ bool doc2Order(
     const SCDDoc& doc,
     std::string& userIdStr,
     std::string& orderIdStr,
-    std::string& dateStr,
     sf1r::RecommendTaskService::OrderItem& orderItem
 )
 {
@@ -242,7 +241,7 @@ bool doc2Order(
     }
 
     orderIdStr = docMap["order_id"];
-    dateStr = docMap["DATE"];
+    orderItem.dateStr_ = docMap["DATE"];
 
     if (docMap["quantity"].empty() == false)
     {
@@ -252,7 +251,7 @@ bool doc2Order(
         }
         catch(boost::bad_lexical_cast& e)
         {
-            LOG(ERROR) << "error in casting quantity " << docMap["quantity"] << " to int value";
+            LOG(WARNING) << "error in casting quantity " << docMap["quantity"] << " to int value";
         }
     }
 
@@ -264,100 +263,12 @@ bool doc2Order(
         }
         catch(boost::bad_lexical_cast& e)
         {
-            LOG(ERROR) << "error in casting price " << docMap["price"] << " to double value";
+            LOG(WARNING) << "error in casting price " << docMap["price"] << " to double value";
         }
     }
 
     return true;
 }
-
-class VisitTask
-{
-public:
-    VisitTask(
-        sf1r::VisitManager& visitManager,
-        const std::string& sessionId,
-        sf1r::userid_t userId,
-        sf1r::itemid_t itemId
-    )
-    : visitManager_(visitManager)
-    , sessionId_(sessionId)
-    , userId_(userId)
-    , itemId_(itemId)
-    {
-    }
-
-    void visit()
-    {
-        visitManager_.addVisitItem(sessionId_, userId_, itemId_);
-    }
-
-private:
-    sf1r::VisitManager& visitManager_;
-    std::string sessionId_;
-    sf1r::userid_t userId_;
-    sf1r::itemid_t itemId_;
-};
-
-class OrderTask
-{
-public:
-    OrderTask(
-        sf1r::OrderManager& orderManager,
-        std::vector<sf1r::itemid_t>& orderItems
-    )
-    : orderManager_(orderManager)
-    , orderItems_(orderItems)
-    {
-    }
-
-    OrderTask(const OrderTask& orderTask)
-    : orderManager_(orderTask.orderManager_)
-    {
-        orderItems_.swap(orderTask.orderItems_);
-    }
-
-    void purchase()
-    {
-        orderManager_.addOrder(orderItems_);
-    }
-
-private:
-    sf1r::OrderManager& orderManager_;
-    mutable std::vector<sf1r::itemid_t> orderItems_;
-};
-
-class PurchaseTask
-{
-public:
-    PurchaseTask(
-        sf1r::PurchaseManager& purchaseManager,
-        sf1r::userid_t userId,
-        std::vector<sf1r::itemid_t>& itemVec
-    )
-    : purchaseManager_(purchaseManager)
-    , userId_(userId)
-    , itemVec_(itemVec)
-    {
-    }
-
-    PurchaseTask(const PurchaseTask& task)
-    : purchaseManager_(task.purchaseManager_)
-    , userId_(task.userId_)
-    {
-        itemVec_.swap(task.itemVec_);
-    }
-
-    void purchase()
-    {
-        purchaseManager_.addPurchaseItem(userId_, itemVec_);
-    }
-
-private:
-    sf1r::PurchaseManager& purchaseManager_;
-    sf1r::userid_t userId_;
-    mutable std::vector<sf1r::itemid_t> itemVec_;
-};
 
 }
 
@@ -518,8 +429,8 @@ bool RecommendTaskService::visitItem(
         return false;
     }
 
-    VisitTask task(*visitManager_, sessionIdStr, userId, itemId);
-    jobScheduler_->addTask(boost::bind(&VisitTask::visit, task));
+    jobScheduler_->addTask(boost::bind(&VisitManager::addVisitItem, visitManager_,
+                                       sessionIdStr, userId, itemId));
 
     return true;
 }
@@ -530,23 +441,8 @@ bool RecommendTaskService::purchaseItem(
     const OrderItemVec& orderItemVec
 )
 {
-    userid_t userId = 0;
-    std::vector<itemid_t> itemIdVec;
-
-    if (convertUserItemId_(userIdStr, orderItemVec, userId, itemIdVec) == false)
-    {
-        return false;
-    }
-
-    {
-        OrderTask task(*orderManager_, itemIdVec);
-        jobScheduler_->addTask(boost::bind(&OrderTask::purchase, task));
-    }
-
-    {
-        PurchaseTask task(*purchaseManager_, userId, itemIdVec);
-        jobScheduler_->addTask(boost::bind(&PurchaseTask::purchase, task));
-    }
+    jobScheduler_->addTask(boost::bind(&RecommendTaskService::saveOrder_, this,
+                                       userIdStr, orderIdStr, orderItemVec, true));
 
     return true;
 }
@@ -645,74 +541,87 @@ bool RecommendTaskService::loadUserSCD_()
         return true;
     }
 
-    LOG(INFO) << "Start loading " << scdList.size() << " user SCD files...";
     for (std::vector<string>::const_iterator scdIt = scdList.begin();
         scdIt != scdList.end(); ++scdIt)
     {
-        ScdParser userParser(DEFAULT_ENCODING, "<USERID>");
-        if (userParser.load(*scdIt) == false)
-        {
-            LOG(ERROR) << "ScdParser failed in loading " << *scdIt;
-            continue;
-        }
-
-        const SCD_TYPE scdType = ScdParser::checkSCDType(*scdIt);
-        if (scdType == NOT_SCD)
-        {
-            LOG(ERROR) << "Unknown SCD type of file " << *scdIt;
-            continue;
-        }
-
-        int userNum = 0;
-        for (ScdParser::iterator docIter = userParser.begin();
-            docIter != userParser.end(); ++docIter)
-        {
-            ++userNum;
-
-            SCDDocPtr docPtr = (*docIter);
-            const SCDDoc& doc = *docPtr;
-
-            User user;
-            if (doc2User(doc, user, bundleConfig_->recommendSchema_) == false)
-            {
-                LOG(ERROR) << "error in parsing User, userNum: " << userNum << ", SCD file: " << *scdIt;
-                continue;
-            }
-
-            switch(scdType)
-            {
-            case INSERT_SCD:
-                if (addUser(user) == false)
-                {
-                    LOG(ERROR) << "error in adding User, USERID: " << user.idStr_;
-                }
-                break;
-
-            case UPDATE_SCD:
-                if (updateUser(user) == false)
-                {
-                    LOG(ERROR) << "error in updating User, USERID: " << user.idStr_;
-                }
-                break;
-
-            case DELETE_SCD:
-                if (removeUser(user.idStr_) == false)
-                {
-                    LOG(ERROR) << "error in removing User, USERID: " << user.idStr_;
-                }
-                break;
-
-            default:
-                LOG(ERROR) << "unknown SCD type " << scdType << ", SCD file: " << *scdIt;
-                break;
-            }
-        }
+        parseUserSCD_(*scdIt);
     }
 
     userIdGenerator_->flush();
     userManager_->flush();
 
     backupSCDFiles(scdDir, scdList);
+
+    return true;
+}
+
+bool RecommendTaskService::parseUserSCD_(const std::string& scdPath)
+{
+    LOG(INFO) << "parsing SCD file: " << scdPath;
+
+    ScdParser userParser(DEFAULT_ENCODING, "<USERID>");
+    if (userParser.load(scdPath) == false)
+    {
+        LOG(ERROR) << "ScdParser loading failed";
+        return false;
+    }
+
+    const SCD_TYPE scdType = ScdParser::checkSCDType(scdPath);
+    if (scdType == NOT_SCD)
+    {
+        LOG(ERROR) << "Unknown SCD type";
+        return false;
+    }
+
+    int userNum = 0;
+    for (ScdParser::iterator docIter = userParser.begin();
+        docIter != userParser.end(); ++docIter)
+    {
+        if (++userNum % 10000 == 0)
+        {
+            std::cout << "\rloading user num: " << userNum << "\t" << std::flush;
+        }
+
+        SCDDocPtr docPtr = (*docIter);
+        const SCDDoc& doc = *docPtr;
+
+        User user;
+        if (doc2User(doc, user, bundleConfig_->recommendSchema_) == false)
+        {
+            LOG(ERROR) << "error in parsing User, userNum: " << userNum;
+            continue;
+        }
+
+        switch(scdType)
+        {
+        case INSERT_SCD:
+            if (addUser(user) == false)
+            {
+                LOG(ERROR) << "error in adding User, USERID: " << user.idStr_;
+            }
+            break;
+
+        case UPDATE_SCD:
+            if (updateUser(user) == false)
+            {
+                LOG(ERROR) << "error in updating User, USERID: " << user.idStr_;
+            }
+            break;
+
+        case DELETE_SCD:
+            if (removeUser(user.idStr_) == false)
+            {
+                LOG(ERROR) << "error in removing User, USERID: " << user.idStr_;
+            }
+            break;
+
+        default:
+            LOG(ERROR) << "unknown SCD type " << scdType;
+            break;
+        }
+    }
+
+    std::cout << "\rloading user num: " << userNum << "\t" << std::endl;
 
     return true;
 }
@@ -733,74 +642,87 @@ bool RecommendTaskService::loadItemSCD_()
         return true;
     }
 
-    LOG(INFO) << "Start loading " << scdList.size() << " item SCD files...";
     for (std::vector<string>::const_iterator scdIt = scdList.begin();
         scdIt != scdList.end(); ++scdIt)
     {
-        ScdParser itemParser(DEFAULT_ENCODING, "<ITEMID>");
-        if (itemParser.load(*scdIt) == false)
-        {
-            LOG(ERROR) << "ScdParser failed in loading " << *scdIt;
-            continue;
-        }
-
-        const SCD_TYPE scdType = ScdParser::checkSCDType(*scdIt);
-        if (scdType == NOT_SCD)
-        {
-            LOG(ERROR) << "Unknown SCD type of file " << *scdIt;
-            continue;
-        }
-
-        int itemNum = 0;
-        for (ScdParser::iterator docIter = itemParser.begin();
-            docIter != itemParser.end(); ++docIter)
-        {
-            ++itemNum;
-
-            SCDDocPtr docPtr = (*docIter);
-            const SCDDoc& doc = *docPtr;
-
-            Item item;
-            if (doc2Item(doc, item, bundleConfig_->recommendSchema_) == false)
-            {
-                LOG(ERROR) << "error in parsing item, itemNum: " << itemNum << ", SCD file: " << *scdIt;
-                continue;
-            }
-
-            switch(scdType)
-            {
-            case INSERT_SCD:
-                if (addItem(item) == false)
-                {
-                    LOG(ERROR) << "error in adding item, ITEMID: " << item.idStr_;
-                }
-                break;
-
-            case UPDATE_SCD:
-                if (updateItem(item) == false)
-                {
-                    LOG(ERROR) << "error in updating item, ITEMID: " << item.idStr_;
-                }
-                break;
-
-            case DELETE_SCD:
-                if (removeItem(item.idStr_) == false)
-                {
-                    LOG(ERROR) << "error in removing item, ITEMID: " << item.idStr_;
-                }
-                break;
-
-            default:
-                LOG(ERROR) << "unknown SCD type " << scdType << ", SCD file: " << *scdIt;
-                break;
-            }
-        }
+        parseItemSCD_(*scdIt);
     }
 
     itemIdGenerator_->flush();
     itemManager_->flush();
 
     backupSCDFiles(scdDir, scdList);
+
+    return true;
+}
+
+bool RecommendTaskService::parseItemSCD_(const std::string& scdPath)
+{
+    LOG(INFO) << "parsing SCD file: " << scdPath;
+
+    ScdParser itemParser(DEFAULT_ENCODING, "<ITEMID>");
+    if (itemParser.load(scdPath) == false)
+    {
+        LOG(ERROR) << "ScdParser loading failed";
+        return false;
+    }
+
+    const SCD_TYPE scdType = ScdParser::checkSCDType(scdPath);
+    if (scdType == NOT_SCD)
+    {
+        LOG(ERROR) << "Unknown SCD type";
+        return false;
+    }
+
+    int itemNum = 0;
+    for (ScdParser::iterator docIter = itemParser.begin();
+        docIter != itemParser.end(); ++docIter)
+    {
+        if (++itemNum % 10000 == 0)
+        {
+            std::cout << "\rloading item num: " << itemNum << "\t" << std::flush;
+        }
+
+        SCDDocPtr docPtr = (*docIter);
+        const SCDDoc& doc = *docPtr;
+
+        Item item;
+        if (doc2Item(doc, item, bundleConfig_->recommendSchema_) == false)
+        {
+            LOG(ERROR) << "error in parsing item, itemNum: " << itemNum;
+            continue;
+        }
+
+        switch(scdType)
+        {
+        case INSERT_SCD:
+            if (addItem(item) == false)
+            {
+                LOG(ERROR) << "error in adding item, ITEMID: " << item.idStr_;
+            }
+            break;
+
+        case UPDATE_SCD:
+            if (updateItem(item) == false)
+            {
+                LOG(ERROR) << "error in updating item, ITEMID: " << item.idStr_;
+            }
+            break;
+
+        case DELETE_SCD:
+            if (removeItem(item.idStr_) == false)
+            {
+                LOG(ERROR) << "error in removing item, ITEMID: " << item.idStr_;
+            }
+            break;
+
+        default:
+            LOG(ERROR) << "unknown SCD type " << scdType;
+            break;
+        }
+    }
+
+    std::cout << "\rloading item num: " << itemNum << "\t" << std::endl;
 
     return true;
 }
@@ -821,25 +743,16 @@ bool RecommendTaskService::loadOrderSCD_()
         return true;
     }
 
-    // clear old file
-    std::string mapFileName = directoryRotator_->currentDirectory()->path().string() + "/user_item.sdb.tmp";
-    bfs::remove(mapFileName);
-
-    // collect item ids for each user
-    UserItemMap userItemMap(mapFileName);
-    // adjust the bucket array number in TC hash
-    const unsigned int USER_NUM = userManager_->userNum();
-    const unsigned int DEFAULT_BNUM = 1 << 17; // default bucket array number
-    if (USER_NUM > DEFAULT_BNUM)
+    for (std::vector<string>::const_iterator scdIt = scdList.begin();
+        scdIt != scdList.end(); ++scdIt)
     {
-        izenelib::am::tc_hash<userid_t, ItemIdSet>& tcHash = userItemMap.getContainer();
-        tcHash.tune(USER_NUM, -1, -1, 0);
+        parseOrderSCD_(*scdIt);
     }
-    userItemMap.open();
 
-    loadUserItemMap_(scdList, userItemMap);
+    orderManager_->flush();
 
-    loadPurchaseItem_(userItemMap);
+    purchaseManager_->buildSimMatrix();
+    purchaseManager_->flush();
 
     buildFreqItemSet_();
 
@@ -848,131 +761,102 @@ bool RecommendTaskService::loadOrderSCD_()
     return true;
 }
 
-void RecommendTaskService::loadUserItemMap_(
-    const std::vector<string>& scdList,
-    UserItemMap& userItemMap
-)
+bool RecommendTaskService::parseOrderSCD_(const std::string& scdPath)
 {
+    LOG(INFO) << "parsing SCD file: " << scdPath;
+
+    ScdParser orderParser(DEFAULT_ENCODING, "<USERID>");
+    if (orderParser.load(scdPath) == false)
+    {
+        LOG(ERROR) << "ScdParser loading failed";
+        return false;
+    }
+
+    const SCD_TYPE scdType = ScdParser::checkSCDType(scdPath);
+    if (scdType != INSERT_SCD)
+    {
+        LOG(ERROR) << "Only insert type is allowed for order SCD file";
+        return false;
+    }
+
     int orderNum = 0;
-    LOG(INFO) << "Start loading " << scdList.size() << " order SCD files...";
-    for (std::vector<string>::const_iterator scdIt = scdList.begin();
-        scdIt != scdList.end(); ++scdIt)
+    OrderMap orderMap;
+    for (ScdParser::iterator docIter = orderParser.begin();
+        docIter != orderParser.end(); ++docIter)
     {
-        ScdParser orderParser(DEFAULT_ENCODING, "<USERID>");
-        if (orderParser.load(*scdIt) == false)
+        if (++orderNum % 10000 == 0)
         {
-            LOG(ERROR) << "ScdParser failed in loading " << *scdIt;
+            std::cout << "\rloading order num: " << orderNum << "\t" << std::flush;
+        }
+
+        SCDDocPtr docPtr = (*docIter);
+        const SCDDoc& doc = *docPtr;
+
+        std::string userIdStr;
+        std::string orderIdStr;
+        OrderItem orderItem;
+
+        if (doc2Order(doc, userIdStr, orderIdStr, orderItem) == false)
+        {
+            LOG(ERROR) << "error in parsing Order SCD file";
             continue;
         }
 
-        const SCD_TYPE scdType = ScdParser::checkSCDType(*scdIt);
-        if (scdType != INSERT_SCD)
-        {
-            LOG(ERROR) << "Only insert type is allowed for order SCD file " << *scdIt;
-            continue;
-        }
-
-        OrderMap orderMap;
-        for (ScdParser::iterator docIter = orderParser.begin();
-            docIter != orderParser.end(); ++docIter)
-        {
-            if (++orderNum % 10000 == 0)
-            {
-                std::cout << "\rloading orders, total order num: " << orderNum << ", SCD file: " << *scdIt << std::flush;
-            }
-
-            SCDDocPtr docPtr = (*docIter);
-            const SCDDoc& doc = *docPtr;
-
-            std::string userIdStr;
-            std::string orderIdStr;
-            std::string dateStr;
-            OrderItem orderItem;
-            if (doc2Order(doc, userIdStr, orderIdStr, dateStr, orderItem) == false)
-            {
-                LOG(ERROR) << "error in parsing Order, SCD file: " << *scdIt
-                           << ", userId: " << userIdStr
-                           << ", orderId: " << orderIdStr
-                           << ", date: " << dateStr;
-                continue;
-            }
-
-            assert(userIdStr.empty() == false);
-
-            if (orderIdStr.empty())
-            {
-                OrderItemVec orderItemVec;
-                orderItemVec.push_back(orderItem);
-                if (loadOrder_(userIdStr, orderItemVec, userItemMap) == false)
-                {
-                    LOG(ERROR) << "error in loading order, USERID: " << userIdStr
-                               << ", order id: " << orderIdStr
-                               << ", item num: " << orderItemVec.size();
-                }
-            }
-            else
-            {
-                OrderKey orderKey(userIdStr, orderIdStr);
-                OrderMap::iterator mapIt = orderMap.find(orderKey);
-                if (mapIt != orderMap.end())
-                {
-                    mapIt->second.push_back(orderItem);
-                }
-                else
-                {
-                    if (orderMap.size() >= MAX_ORDER_NUM)
-                    {
-                        loadOrderMap_(orderMap, userItemMap);
-                        orderMap.clear();
-                    }
-
-                    orderMap[orderKey].push_back(orderItem);
-                }
-            }
-        }
-
-        loadOrderMap_(orderMap, userItemMap);
+        loadOrderItem_(userIdStr, orderIdStr, orderItem, orderMap);
     }
-    std::cout << "\rloading orders, total order num: " << orderNum << std::endl;
 
-    orderManager_->flush();
+    saveOrderMap_(orderMap);
+    std::cout << "\rloading order num: " << orderNum << "\t" << std::endl;
+
+    return true;
 }
 
-void RecommendTaskService::loadPurchaseItem_(UserItemMap& userItemMap)
-{
-    typedef izenelib::sdb::SDBCursorIterator<UserItemMap> UserItemIterator;
-    UserItemIterator itEnd;
-
-    LOG(INFO) << "start loading purchased items for " << userItemMap.numItems() << " users...";
-    int userNum = 0;
-    for (UserItemIterator it = UserItemIterator(userItemMap); it != itEnd; ++it)
-    {
-        if (++userNum % 1000 == 0)
-        {
-            std::cout << "\rloading user num: " << userNum << std::flush;
-        }
-
-        std::vector<itemid_t> itemVec(it->second.begin(), it->second.end());
-        if (purchaseManager_->addPurchaseItem(it->first, itemVec, false) == false)
-        {
-            LOG(ERROR) << "error in PurchaseManager::addPurchaseItem(), user id: " << it->first
-                       << ", item num: " << itemVec.size();
-        }
-    }
-    std::cout << "\rloading user num: " << userNum << std::endl;
-
-    purchaseManager_->buildSimMatrix();
-    purchaseManager_->flush();
-}
-
-void RecommendTaskService::loadOrderMap_(
-    const OrderMap& orderMap,
-    UserItemMap& userItemMap
+void RecommendTaskService::loadOrderItem_(
+    const std::string& userIdStr,
+    const std::string& orderIdStr,
+    const OrderItem& orderItem,
+    OrderMap& orderMap
 )
+{
+    assert(userIdStr.empty() == false);
+
+    if (orderIdStr.empty())
+    {
+        OrderItemVec orderItemVec;
+        orderItemVec.push_back(orderItem);
+        if (saveOrder_(userIdStr, orderIdStr, orderItemVec, false) == false)
+        {
+            LOG(ERROR) << "error in loading order, USERID: " << userIdStr
+                        << ", order id: " << orderIdStr
+                        << ", item num: " << orderItemVec.size();
+        }
+    }
+    else
+    {
+        OrderKey orderKey(userIdStr, orderIdStr);
+        OrderMap::iterator mapIt = orderMap.find(orderKey);
+        if (mapIt != orderMap.end())
+        {
+            mapIt->second.push_back(orderItem);
+        }
+        else
+        {
+            if (orderMap.size() >= MAX_ORDER_NUM)
+            {
+                saveOrderMap_(orderMap);
+                orderMap.clear();
+            }
+
+            orderMap[orderKey].push_back(orderItem);
+        }
+    }
+}
+
+void RecommendTaskService::saveOrderMap_(const OrderMap& orderMap)
 {
     for (OrderMap::const_iterator it = orderMap.begin(); it != orderMap.end(); ++it)
     {
-        if (loadOrder_(it->first.first, it->second, userItemMap) == false)
+        if (saveOrder_(it->first.first, it->first.second, it->second, false) == false)
         {
             LOG(ERROR) << "error in adding order, USERID: " << it->first.first
                        << ", order id: " << it->first.second
@@ -981,12 +865,19 @@ void RecommendTaskService::loadOrderMap_(
     }
 }
 
-bool RecommendTaskService::loadOrder_(
+bool RecommendTaskService::saveOrder_(
     const std::string& userIdStr,
+    const std::string& orderIdStr,
     const OrderItemVec& orderItemVec,
-    UserItemMap& userItemMap
+    bool isUpdateSimMatrix
 )
 {
+    if (orderItemVec.empty())
+    {
+        LOG(WARNING) << "empty order in RecommendTaskService::saveOrder_()";
+        return false;
+    }
+
     userid_t userId = 0;
     std::vector<itemid_t> itemIdVec;
 
@@ -994,36 +885,15 @@ bool RecommendTaskService::loadOrder_(
     {
         return false;
     }
+    assert(orderItemVec.size() == itemIdVec.size());
 
     orderManager_->addOrder(itemIdVec);
 
-    // collect items for each user
-    ItemIdSet itemIdSet;
-    userItemMap.getValue(userId, itemIdSet);
-    bool needUpdate = false;
-    for (std::vector<itemid_t>::const_iterator it = itemIdVec.begin();
-        it != itemIdVec.end(); ++it)
+    if (purchaseManager_->addPurchaseItem(userId, itemIdVec, isUpdateSimMatrix) == false)
     {
-        if (itemIdSet.insert(*it).second && needUpdate == false)
-        {
-            needUpdate = true;
-        }
-    }
-
-    // not purchased yet
-    if (needUpdate)
-    {
-        try
-        {
-            if (userItemMap.update(userId, itemIdSet) == false)
-            {
-                return false;
-            }
-        }
-        catch(izenelib::util::IZENELIBException& e)
-        {
-            LOG(ERROR) << "exception in SDB::update(): " << e.what();
-        }
+        LOG(ERROR) << "error in PurchaseManager::addPurchaseItem(), user id: " << userId
+                   << ", item num: " << itemIdVec.size();
+        return false;
     }
 
     return true;
@@ -1042,10 +912,6 @@ bool RecommendTaskService::convertUserItemId_(
         return false;
     }
 
-    // if there is duplicated items in any order,
-    // it would lead forever loop in OrderManager::_judgeFrequentItemset() in finding all subsets,
-    // so we use a set here to ensure unique items in each order
-    std::set<itemid_t> itemIdSet;
     for (OrderItemVec::const_iterator it = orderItemVec.begin();
         it != orderItemVec.end(); ++it)
     {
@@ -1056,10 +922,7 @@ bool RecommendTaskService::convertUserItemId_(
             return false;
         }
 
-        if (itemIdSet.insert(itemId).second)
-        {
-            itemIdVec.push_back(itemId);
-        }
+        itemIdVec.push_back(itemId);
     }
 
     return true;

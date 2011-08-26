@@ -39,7 +39,11 @@ public:
         threshold_ = threshold;
     }
 
-    void addOrder(const std::vector<sf1r::itemid_t>& items);
+    /**
+     * Add the items from one order.
+     * @param items the items to add
+     */
+    void addOrder(const std::vector<itemid_t>& items);
 
     /**
      * Get @p howmany items which is most frequently appeared with @p items in the same order.
@@ -50,8 +54,8 @@ public:
      */
     bool getFreqItemSets(
         int howmany, 
-        std::list<sf1r::itemid_t>& items, 
-        std::list<sf1r::itemid_t>& results,
+        std::list<itemid_t>& items, 
+        std::list<itemid_t>& results,
         idmlib::recommender::ItemRescorer* rescorer = NULL);
 
     /**
@@ -82,23 +86,42 @@ private:
     bool _restoreFreqItemsetDb();
 
     void _writeRecord(
-        sf1r::orderid_t orderId,
-        std::vector<sf1r::itemid_t>::const_iterator firstItemIt,
-        std::vector<sf1r::itemid_t>::const_iterator lastItemIt);
+        orderid_t orderId,
+        std::vector<itemid_t>::const_iterator firstIt,
+        std::vector<itemid_t>::const_iterator lastIt);
 
     bool _getOrder(
-        sf1r::orderid_t orderId,
-        std::vector<sf1r::itemid_t>& items);
+        orderid_t orderId,
+        std::vector<itemid_t>& items);
 
     void _findMaxItemsets();
 
     void _findFrequentItemsets();
 
+    /**
+     * add subsets of @p max_itemset into @p frequent_itemsets.
+     * @pre max_itemset should not contain duplicate item,
+     * otherwise, it would lead to forever loop in @c izenelib::util::next_subset().
+     */
     void _judgeFrequentItemset(
         std::vector<itemid_t>& max_itemset , 
         FrequentItemSetResultType& frequent_itemsets);
 
+    /**
+     * generate new order id.
+     */
     orderid_t _newOrderId();
+
+    /**
+     * as the time cost in @c _judgeFrequentItemset() is exponential
+     * to item number in each order, this function splits @p items into
+     * smaller orders with max item num @p maxItemNum, it also adds
+     * each smaller order into index and record file.
+     */
+    void _splitOrder(
+        const std::vector<itemid_t>& items,
+        int maxItemNum
+    );
 
 private:
     ItemIndex item_order_index_;
