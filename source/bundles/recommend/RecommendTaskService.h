@@ -92,11 +92,13 @@ public:
 
     /**
      * @p sessionIdStr, @p userIdStr and @p itemIdStr must not be empty.
+     * @param isRecItem whether is recommendation item.
      */
     bool visitItem(
         const std::string& sessionIdStr,
         const std::string& userIdStr,
-        const std::string& itemIdStr
+        const std::string& itemIdStr,
+        bool isRecItem
     );
 
     struct OrderItem
@@ -237,7 +239,7 @@ private:
     void saveOrderMap_(const OrderMap& orderMap);
 
     /**
-     * Save the order into @c orderManager_, @c purchaseManager_.
+     * save the order into @c orderManager_, @c purchaseManager_.
      * @param userIdStr the string of user id
      * @param orderIdStr the string of order id
      * @param orderItemVec the array of item id string
@@ -248,6 +250,17 @@ private:
         const std::string& orderIdStr,
         const OrderItemVec& orderItemVec,
         bool isUpdateSimMatrix
+    );
+
+    /**
+     * insert the order items as DB records.
+     */
+    bool insertOrderDB_(
+        const std::string& userIdStr,
+        const std::string& orderIdStr,
+        const OrderItemVec& orderItemVec,
+        userid_t userId,
+        const std::vector<itemid_t>& itemIdVec
     );
 
     void buildFreqItemSet_();

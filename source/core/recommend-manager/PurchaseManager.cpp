@@ -61,16 +61,21 @@ bool PurchaseManager::addPurchaseItem(
     // not purchased yet
     if (! newItems.empty())
     {
+        bool result = false;
         try
         {
-            if (container_.update(userId, itemIdSet) == false)
-            {
-                return false;
-            }
+            result = container_.update(userId, itemIdSet);
         }
         catch(izenelib::util::IZENELIBException& e)
         {
             LOG(ERROR) << "exception in SDB::update(): " << e.what();
+        }
+
+        if (!result)
+        {
+            LOG(ERROR) << "error in addPurchaseItem(), user id: " << userId
+                       << ", item num: " << itemIdSet.size();
+            return false;
         }
 
         if (isUpdateSimMatrix)
