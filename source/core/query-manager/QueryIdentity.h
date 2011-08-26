@@ -37,6 +37,9 @@ struct QueryIdentity
     /// @brief param for group filter
     faceted::GroupParam groupParam;
 
+    /// @brief property name which needs range result
+    std::string rangeProperty;
+
     /// @brief custom ranking info
     std::string strExp;
     std::map<std::string, double> paramConstValueMap;
@@ -45,7 +48,8 @@ struct QueryIdentity
     /// search results offset after topK
     int start;
 
-    DATA_IO_LOAD_SAVE(QueryIdentity, &query&userId&rankingType&laInfo&properties&sortInfo&filterInfo&groupParam
+    DATA_IO_LOAD_SAVE(QueryIdentity, &query&userId&rankingType&laInfo&properties
+            &sortInfo&filterInfo&groupParam&rangeProperty
             &strExp&paramConstValueMap&paramPropertyValueMap&start);
 
     template<class Archive>
@@ -59,6 +63,7 @@ struct QueryIdentity
         ar & sortInfo;
         ar & filterInfo;
         ar & groupParam;
+        ar & rangeProperty;
         ar & strExp;
         ar & paramConstValueMap;
         ar & paramPropertyValueMap;
@@ -83,6 +88,7 @@ inline bool operator==(const QueryIdentity& a,
         && a.sortInfo == b.sortInfo
         && a.filterInfo == b.filterInfo
         && a.groupParam == b.groupParam
+        && a.rangeProperty == b.rangeProperty
         && a.strExp == b.strExp
         && a.paramConstValueMap == b.paramConstValueMap
         && a.paramPropertyValueMap == b.paramPropertyValueMap

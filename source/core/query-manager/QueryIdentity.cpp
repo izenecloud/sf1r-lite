@@ -25,6 +25,7 @@ void makeQueryIdentity(
     identity.sortInfo = item.sortPriorityList_;
     identity.filterInfo = item.filteringList_;
     identity.groupParam = item.groupParam_;
+    identity.rangeProperty = item.rangePropertyName_;
     identity.strExp = item.strExp_;
     identity.paramConstValueMap = item.paramConstValueMap_;
     identity.paramPropertyValueMap = item.paramPropertyValueMap_;

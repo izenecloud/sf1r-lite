@@ -463,9 +463,9 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
     try
     {
         totalCount = 0;
-        std::string rangePropertyName = actionOperation.actionItem_.rangePropertyName_;
-        PropertyDataType rangePropertyType;
-        void* rangePropertyData;
+        const std::string& rangePropertyName = actionOperation.actionItem_.rangePropertyName_;
+        PropertyDataType rangePropertyType = UNKNOWN_DATA_PROPERTY_TYPE;
+        void* rangePropertyData = NULL;
         float lowValue = (std::numeric_limits<float>::max) ();
         float highValue = - lowValue;
 
@@ -494,7 +494,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                 }
             }
 
-            if(!rangePropertyName.empty())
+            if(rangePropertyData)
             {
                 float docPropertyValue = 0.0F;
                 switch(rangePropertyType)
@@ -556,7 +556,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             groupFilter->getGroupRep(groupRep, attrRep);
         }
 
-        if (!rangePropertyName.empty())
+        if (rangePropertyData && totalCount)
         {
             propertyRange.highValue_ = highValue;
             propertyRange.lowValue_ = lowValue;

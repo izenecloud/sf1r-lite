@@ -18,6 +18,7 @@
 #include <parsers/FilteringParser.h>
 #include <parsers/GroupingParser.h>
 #include <parsers/AttrParser.h>
+#include <parsers/RangeParser.h>
 #include <parsers/SearchParser.h>
 #include <parsers/SortParser.h>
 #include <parsers/CustomRankingParser.h>
@@ -101,12 +102,9 @@ void DocumentsSearchHandler::search()
                 response_[Keys::total_count] = searchResult.totalCount_;
                 response_[Keys::top_k_count] = startOffset + searchResult.topKDocs_.size();
 
-                Value& range = response_[Keys::range];
-                range[Keys::min] = searchResult.propertyRange_.lowValue_;
-                range[Keys::max] = searchResult.propertyRange_.highValue_;
-
                 renderDocuments(searchResult);
                 renderMiningResult(searchResult);
+                renderRangeResult(searchResult);
                 renderRefinedQuery();
             }
 
@@ -178,6 +176,7 @@ void DocumentsSearchHandler::search()
                     {
                         renderDocuments(rawTextResult);
                         renderMiningResult(searchResult);
+                        renderRangeResult(searchResult);
                         renderRefinedQuery();
                     }
                     else
@@ -369,6 +368,10 @@ bool DocumentsSearchHandler::parse()
     parsers.push_back(&attrParser);
     values.push_back(&request_[Keys::attr]);
 
+    RangeParser rangeParser(indexSchema_);
+    parsers.push_back(&rangeParser);
+    values.push_back(&request_[Keys::range]);
+
     for (std::size_t i = 0; i < parsers.size(); ++i)
     {
         if (!parsers[i]->parse(*values[i]))
@@ -449,9 +452,6 @@ bool DocumentsSearchHandler::parse()
         filteringParser.mutableFilteringRules()
     );
 
-    // property for getting its property value range
-    actionItem_.rangePropertyName_ = asString(request_[Keys::range][Keys::property]);
-
     // CustomRankingParser
     swap(
         actionItem_.customRanker_,
@@ -480,6 +480,9 @@ bool DocumentsSearchHandler::parse()
     // attrParser
     actionItem_.groupParam_.isAttrGroup_ = attrParser.attrResult();
     actionItem_.groupParam_.attrGroupNum_ = attrParser.attrTop();
+
+    // rangeParser
+    actionItem_.rangePropertyName_ = rangeParser.rangeProperty();
 
     return true;
 }
@@ -706,6 +709,18 @@ void DocumentsSearchHandler::renderMiningResult(
             miaResult,
             response_[Keys::attr]
         );
+    }
+}
+
+void DocumentsSearchHandler::renderRangeResult(
+    const KeywordSearchResult& searchResult
+)
+{
+    if (!actionItem_.rangePropertyName_.empty())
+    {
+        Value& range = response_[Keys::range];
+        range[Keys::min] = searchResult.propertyRange_.lowValue_;
+        range[Keys::max] = searchResult.propertyRange_.highValue_;
     }
 }
 
