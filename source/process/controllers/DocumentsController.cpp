@@ -35,6 +35,10 @@ const std::size_t DocumentsController::kDefaultPageCount = 20;
  *   - @b property* (@c String): Property name, whose group result (doc count for
  *     each property value) would be supplied in response["group"]. The property
  *     type must be string, int or float.
+ * - @b range (@c Object): Property name for getting its property value range.
+ *   - @b property* (@c String): Property name, whose value range (the maximum and
+ *     minimum property value) would be supplied in response["range"]. The property
+ *     type must be int or float.
  * - @b attr (@c Object): Options for group by attribute values
  *   - @b attr_result (@c Bool = @c false): If true, response["attr"] would be
  *     returned as search results grouped by attribute values.
@@ -87,6 +91,9 @@ const std::size_t DocumentsController::kDefaultPageCount = 20;
  *     - @b document_count (@c Uint): Number of result documents in this label.
  *     - @b sub_labels (@c Array): Array of sub labels. It has the same
  *       structure of the top @b labels field.
+ * - @b range (@c Object): Property value range.
+ *   - @b max (@c Float): Maximum value
+ *   - @b min (@c Float): Minimum value
  * - @b name_entity (@c Array): Every item represents one type of name
  *   entity. The item has following fields.
  *   - @b type (@c String): Name entity type.

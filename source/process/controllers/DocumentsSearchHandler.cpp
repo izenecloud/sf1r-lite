@@ -101,6 +101,10 @@ void DocumentsSearchHandler::search()
                 response_[Keys::total_count] = searchResult.totalCount_;
                 response_[Keys::top_k_count] = startOffset + searchResult.topKDocs_.size();
 
+                Value& range = response_[Keys::range];
+                range[Keys::min] = searchResult.propertyRange_.lowValue_;
+                range[Keys::max] = searchResult.propertyRange_.highValue_;
+
                 renderDocuments(searchResult);
                 renderMiningResult(searchResult);
                 renderRefinedQuery();
@@ -444,6 +448,9 @@ bool DocumentsSearchHandler::parse()
         actionItem_.filteringList_,
         filteringParser.mutableFilteringRules()
     );
+
+    // property for getting its property value range
+    actionItem_.rangePropertyName_ = asString(request_[Keys::range][Keys::property]);
 
     // CustomRankingParser
     swap(
