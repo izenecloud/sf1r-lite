@@ -43,25 +43,29 @@ public:
 
     /**
      * Pre-process before dispatch (handle) a received request,
-     * key is info such as collection, bundle name.
+     * identity is info such as collection, bundle name.
      */
-    virtual bool preHandle(const std::string& key)
+    virtual bool preHandle(const std::string& identity, std::string& error)
     {
-        //cout << "#[WorkerServer::preHandle] key : " << key<<endl;
+        if (debug_)
+            cout << "#[WorkerServer::preHandle] identity : " << identity << endl;
 
-        if (!sf1r::SF1Config::get()->checkCollectionWorkerServer(key))
+        // todo, check if bundle worker service enabled(queryLog)
+        if (!sf1r::SF1Config::get()->checkCollectionWorkerServer(identity))
         {
+            error = "Worker service is not enabled for " + identity;
             return false;
         }
 
-        CollectionHandler* collectionHandler_ = CollectionManager::get()->findHandler(key);
+        // todo, check if identity is bundle name(queryLog)
+        CollectionHandler* collectionHandler_ = CollectionManager::get()->findHandler(identity);
         if (!collectionHandler_)
         {
+            error = "No collection found for " + identity;
             return false;
         }
 
         workerService_ = collectionHandler_->indexSearchService_->workerService_;
-
         return true;
     }
 
@@ -126,6 +130,7 @@ public:
 
     /** @} */
 };
+
 
 }
 
