@@ -40,115 +40,13 @@ public:
 
 public:
     /**
-     * Inerfaces for call directly.
-     * @{
-     */
-
-    bool call(
-            const std::string& func,
-            const KeywordSearchActionItem& request,
-            DistKeywordSearchInfo& result,
-            std::string& error)
-    {
-        if (func == "getDistSearchInfo")
-        {
-            return getDistSearchInfo(request, result);
-        }
-
-        return false;
-    }
-
-    bool call(
-            const std::string& func,
-            const KeywordSearchActionItem& request,
-            DistKeywordSearchResult& result,
-            std::string& error)
-    {
-        if (func == "getSearchResult")
-        {
-            return processGetSearchResult(request, result);
-        }
-
-        return false;
-    }
-
-    bool call(
-            const std::string& func,
-            const KeywordSearchActionItem& request,
-            KeywordSearchResult& result,
-            std::string& error)
-    {
-        if (func == "getSummaryMiningResult")
-        {
-            return processGetSummaryMiningResult(request, result);
-        }
-        else
-        {
-            error = "no method!";
-        }
-
-        return false;
-    }
-
-    bool call(
-    		const std::string& func,
-            const GetDocumentsByIdsActionItem& request,
-            RawTextResultFromSIA& result,
-            std::string& error)
-    {
-        if (func == "getDocumentsByIds")
-        {
-            return getDocumentsByIds(request, result);
-        }
-
-        error = "no method!";
-        return false;
-    }
-
-    bool call(
-            const std::string& func,
-            const izenelib::util::UString& request,
-            uint64_t& result,
-            std::string& error)
-    {
-        if (func == "getInternalDocumentId")
-        {
-            return getInternalDocumentId(request, result);
-        }
-
-        error = "no method!";
-        return false;
-    }
-
-    bool call(
-            const std::string& func,
-            const ClickGroupLabelActionItem& request,
-            bool& result,
-            std::string& error)
-    {
-        if (func == "clickGroupLabel")
-        {
-            clickGroupLabel(request, result);
-            return result;
-        }
-
-        error = "no method!";
-        return false;
-    }
-
-    /** @}*/
-
-public:
-    /**
-     * Services (interfaces) for publication
+     * Worker services (interfaces)
      * @{
      */
 
     bool getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem);
 
     bool processGetSearchResult(const KeywordSearchActionItem& actionItem, DistKeywordSearchResult& resultItem);
-
-    bool getKeywordSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
     bool processGetSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
@@ -159,6 +57,8 @@ public:
     bool clickGroupLabel(const ClickGroupLabelActionItem& actionItem, bool& ret);
 
     /** @} */
+
+    bool getKeywordSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
 private:
     template <typename ResultItemType>

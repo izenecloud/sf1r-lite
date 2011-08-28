@@ -82,7 +82,6 @@ public:
         ADD_WORKER_HANDLER( getDocumentsByIds )
         ADD_WORKER_HANDLER( getInternalDocumentId )
         ADD_WORKER_HANDLER( clickGroupLabel )
-        // todo, add services
 
         ADD_WORKER_HANDLER_LIST_END()
     }

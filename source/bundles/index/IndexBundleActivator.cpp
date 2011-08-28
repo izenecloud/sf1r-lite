@@ -439,7 +439,7 @@ IndexBundleActivator::createAggregatorManager_() const
 {
     boost::shared_ptr<AggregatorManager> ret(new AggregatorManager());
     ret->setAggregatorConfig(sf1r::SF1Config::get()->getAggregatorConfig());
-    ret->setLocalWorkerService(workerService_);
+    ret->initLocalWorkerCaller(workerService_);
     return ret;
 }
 

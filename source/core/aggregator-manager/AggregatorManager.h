@@ -21,31 +21,24 @@ namespace sf1r
 class KeywordSearchResult;
 class MiningManager;
 
-class AggregatorManager : public JobAggregator<AggregatorManager>
+typedef WorkerCaller<WorkerService> LocalWorkerCaller;
+
+class AggregatorManager : public JobAggregator<AggregatorManager, LocalWorkerCaller>
 {
 
 public:
-    /**
-     * Interface which encapsulate calls to local service directly
-     */
-    template <typename RequestType, typename ResultType>
-    bool get_local_result(
-            const std::string& func,
-            const RequestType& request,
-            ResultType& result,
-            std::string& error)
+    void initLocalWorkerCaller(const boost::shared_ptr<WorkerService> localWorkerService)
     {
-        if (localWorkerService_)
-        {
-            return localWorkerService_->call(func, request, result, error);
-        }
-        else
-        {
-            error = "No local worker service.";
-            return false;
-        }
-    }
+        localWorkerCaller_.reset(new LocalWorkerCaller);
+        localWorkerCaller_->setInvoker(localWorkerService.get());
 
+        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getDistSearchInfo);
+        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, processGetSearchResult);
+        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, processGetSummaryMiningResult);
+        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getDocumentsByIds);
+        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getInternalDocumentId);
+        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, clickGroupLabel);
+    }
 
 public:
     /**
@@ -133,11 +126,6 @@ public:
 
 
 public:
-    void setLocalWorkerService(const boost::shared_ptr<WorkerService>& localWorkerService)
-    {
-        localWorkerService_ = localWorkerService;
-    }
-
     void SetMiningManager(const boost::shared_ptr<MiningManager>& mining_manager)
     {
     	mining_manager_ = mining_manager;
@@ -163,8 +151,6 @@ public:
     
 
 private:
-    boost::shared_ptr<WorkerService> localWorkerService_;
-    
     boost::shared_ptr<MiningManager> mining_manager_;
 };
 
