@@ -84,14 +84,14 @@ bool IndexSearchService::getSearchResult(
 
     // prefetch stats info from multiple nodes
     //DistKeywordSearchInfo infoResultItem;
-    //aggregatorManager_->sendRequest<KeywordSearchActionItem, DistKeywordSearchInfo>(
+    //aggregatorManager_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchInfo>(
     //        actionItem.collectionName_, "getDistSearchInfo", actionItem, infoResultItem);
 
     // Get and aggregate keyword results from mutliple nodes
     DistKeywordSearchResult distResultItem;
     distResultItem.start_ = actionItem.pageInfo_.start_;
     distResultItem.count_ = actionItem.pageInfo_.count_;
-    aggregatorManager_->sendRequest<KeywordSearchActionItem, DistKeywordSearchResult>(
+    aggregatorManager_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchResult>(
             actionItem.collectionName_, "getSearchResult", actionItem, distResultItem);
 
     resultItem.assign(distResultItem);
@@ -116,10 +116,10 @@ bool IndexSearchService::getSearchResult(
         requestGroup.addRequest(workerid, &actionItem, subResultItem.get());
     }
 
-    requestGroup.setResultItemForMerging(&resultItem);
+    //requestGroup.setResultItemForMerging(&resultItem);
 
-    aggregatorManager_->sendRequest<KeywordSearchActionItem, KeywordSearchResult>(
-            actionItem.collectionName_, "getSummaryMiningResult", requestGroup);
+    aggregatorManager_->distributeRequest<KeywordSearchActionItem, KeywordSearchResult>(
+            actionItem.collectionName_, "getSummaryMiningResult", requestGroup, resultItem);
 
     //resultItem.print();//:~
     return true;
@@ -534,7 +534,7 @@ bool IndexSearchService::getDocumentsByIds(
     std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> > actionItemMap;
     if (!aggregatorManager_->splitGetDocsActionItemByWorkerid(actionItem, actionItemMap))
     {
-        aggregatorManager_->sendRequest<GetDocumentsByIdsActionItem, RawTextResultFromSIA>(
+        aggregatorManager_->distributeRequest<GetDocumentsByIdsActionItem, RawTextResultFromSIA>(
                 actionItem.collectionName_, "getDocumentsByIds", actionItem, resultItem);
     }
     else
@@ -550,10 +550,10 @@ bool IndexSearchService::getDocumentsByIds(
             requestGroup.addRequest(workerid, subActionItem.get());
         }
 
-        requestGroup.setResultItemForMerging(&resultItem);
+        //requestGroup.setResultItemForMerging(&resultItem);
 
-        aggregatorManager_->sendRequest<GetDocumentsByIdsActionItem, RawTextResultFromSIA>(
-                actionItem.collectionName_, "getDocumentsByIds", requestGroup);
+        aggregatorManager_->distributeRequest<GetDocumentsByIdsActionItem, RawTextResultFromSIA>(
+                actionItem.collectionName_, "getDocumentsByIds", requestGroup, resultItem);
     }
 
 	return true;
@@ -646,7 +646,7 @@ bool IndexSearchService::getInternalDocumentId(
 #ifdef DISTRIBUTED_SEARCH
 
     internalId = 0;
-    aggregatorManager_->sendRequest<izenelib::util::UString, uint64_t>(
+    aggregatorManager_->distributeRequest<izenelib::util::UString, uint64_t>(
             collectionName, "getInternalDocumentId", scdDocumentId, internalId);
 
     return (internalId != 0);

@@ -49,58 +49,69 @@ public:
 
 public:
     /**
-     * TODO, overload join_impl() to aggregate result(s) got from server node(s).
+     * TODO, overload aggregate() to aggregate result(s) got from server node(s).
      *
      * @{
      */
 
-    void join_impl(const std::string& func,DistKeywordSearchInfo& result, const std::vector<std::pair<workerid_t, DistKeywordSearchInfo> >& resultList)
+    bool aggregate(const std::string& func,DistKeywordSearchInfo& result, const std::vector<std::pair<workerid_t, DistKeywordSearchInfo> >& resultList)
     {
         if (func == "getDistSearchInfo")
         {
             aggregateDistSearchInfo(result, resultList);
+            return true;
         }
+        return false;
     }
 
 
-    void join_impl(const std::string& func,DistKeywordSearchResult& result, const std::vector<std::pair<workerid_t, DistKeywordSearchResult> >& resultList)
+    bool aggregate(const std::string& func,DistKeywordSearchResult& result, const std::vector<std::pair<workerid_t, DistKeywordSearchResult> >& resultList)
     {
         if (func == "getSearchResult")
         {
         	aggregateSearchResult(result, resultList);
+        	return true;
         }
+        return false;
     }
 
-    void join_impl(const std::string& func, KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
+    bool aggregate(const std::string& func, KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
     {
     	if (func == "getSummaryMiningResult")
         {
         	aggregateSummaryMiningResult(result, resultList);
+        	return true;
         }
+    	return false;
     }
 
-    void join_impl(const std::string& func, RawTextResultFromSIA& result, const std::vector<std::pair<workerid_t, RawTextResultFromSIA> >& resultList)
+    bool aggregate(const std::string& func, RawTextResultFromSIA& result, const std::vector<std::pair<workerid_t, RawTextResultFromSIA> >& resultList)
     {
     	if (func == "getDocumentsByIds")
     	{
     		aggregateDocumentsResult(result, resultList);
+    		return true;
     	}
+    	return false;
     }
 
-    void join_impl(const std::string& func, uint64_t& result, const std::vector<std::pair<workerid_t, uint64_t> >& resultList)
+    bool aggregate(const std::string& func, uint64_t& result, const std::vector<std::pair<workerid_t, uint64_t> >& resultList)
     {
         if (func == "getInternalDocumentId")
         {
             aggregateInternalDocumentId(result, resultList);
+            return true;
         }
+        return false;
     }
 
-    void join_impl(const std::string& func, bool& ret, const std::vector<std::pair<workerid_t, bool> >& resultList)
+    bool aggregate(const std::string& func, bool& ret, const std::vector<std::pair<workerid_t, bool> >& resultList)
     {
         if (func == "clickGroupLabel")
         {
-            // nothing
+            return true;
         }
+        return false;
     }
 
     /** @}*/
