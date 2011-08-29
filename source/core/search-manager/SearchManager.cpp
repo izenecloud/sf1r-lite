@@ -387,6 +387,8 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                 {
                     // prepare custom ranker
                     customRanker = actionOperation.actionItem_.customRanker_;
+                    if (!customRanker)
+                        customRanker = buildCustomRanker(actionOperation.actionItem_);
                     //customRanker->printESTree(); //test
                     if (!customRanker->setPropertyData(pSorterCache_)) {
                         // error info
@@ -639,6 +641,32 @@ propertyid_t SearchManager::getPropertyIdByName(const std::string& name) const
     {
         return 0;
     }
+}
+
+CustomRankerPtr SearchManager::buildCustomRanker(KeywordSearchActionItem& actionItem)
+{
+    CustomRankerPtr customRanker(new CustomRanker());
+
+    customRanker->getConstParamMap() = actionItem.paramConstValueMap_;
+    customRanker->getPropertyParamMap() = actionItem.paramPropertyValueMap_;
+
+    customRanker->parse(actionItem.strExp_);
+
+    std::map<std::string, PropertyDataType>& propertyDataTypeMap = customRanker->getPropertyDataTypeMap();
+    std::map<std::string, PropertyDataType>::iterator iter;
+    for (iter = propertyDataTypeMap.begin(); iter != propertyDataTypeMap.end(); iter++)
+    {
+        boost::unordered_map<std::string, PropertyConfig>::iterator ret = schemaMap_.find(iter->first);
+        if (ret != schemaMap_.end())
+        {
+            PropertyConfig& propertyConfig = ret->second;
+            PropertyDataType propertyType = propertyConfig.getType();
+
+            iter->second = propertyType;
+        }
+    }
+
+    return customRanker;
 }
 
 void SearchManager::getSortPropertyData(Sorter* pSorter, std::vector<unsigned int>& docIdList, DistKeywordSearchInfo& distSearchInfo)

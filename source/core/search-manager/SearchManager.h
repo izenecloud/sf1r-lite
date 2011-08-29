@@ -99,6 +99,14 @@ private:
      */
     propertyid_t getPropertyIdByName(const std::string& name) const;
 
+
+    /**
+     * rebuild custom ranker.
+     * @param actionItem
+     * @return
+     */
+    CustomRankerPtr buildCustomRanker(KeywordSearchActionItem& actionItem);
+
     /**
      * @brief get data list of each sort property for documents referred by docIdList,
      * used in distributed search for merging topk results.
