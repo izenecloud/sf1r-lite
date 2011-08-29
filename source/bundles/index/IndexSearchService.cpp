@@ -473,8 +473,10 @@ bool IndexSearchService::getDocumentsByIds(
          it != actionItem.docIdList_.end(); ++it)
     {
         unicodeDocId.assign(*it, kEncodingType);
-        idManager_->getDocIdByDocName(unicodeDocId, internalId);
-        idList.push_back(internalId);
+        if (idManager_->getDocIdByDocName(unicodeDocId, internalId, false))
+        {
+            idList.push_back(internalId);
+        }
     }
 
     // get docids by property value
@@ -536,8 +538,7 @@ bool IndexSearchService::getInternalDocumentId(
 {
     std::string str;
     scdDocumentId.convertString(str, izenelib::util::UString::UTF_8);
-    idManager_->getDocIdByDocName(scdDocumentId, internalId);
-    return true;
+    return idManager_->getDocIdByDocName(scdDocumentId, internalId, false);
 }
 
 }
