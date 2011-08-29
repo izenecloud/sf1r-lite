@@ -77,15 +77,19 @@ bool IndexSearchService::getSearchResult(
     resultItem.start_ = actionItem.pageInfo_.start_;
     resultItem.count_ = actionItem.pageInfo_.count_;
 
-    // prefetch stats info from multiple nodes
-    //DistKeywordSearchInfo infoResultItem;
-    //aggregatorManager_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchInfo>(
-    //        actionItem.collectionName_, "getDistSearchInfo", actionItem, infoResultItem);
-
     // Get and aggregate keyword results from mutliple nodes
     DistKeywordSearchResult distResultItem;
     distResultItem.start_ = actionItem.pageInfo_.start_;
     distResultItem.count_ = actionItem.pageInfo_.count_;
+
+#ifdef PREFETCH_INFO
+    distResultItem.distSearchInfo_.actionType_ = DistKeywordSearchInfo::ACTION_FETCH;
+    aggregatorManager_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchInfo>(
+            actionItem.collectionName_, "getDistSearchInfo", actionItem, distResultItem.distSearchInfo_);
+
+    distResultItem.distSearchInfo_.actionType_ = DistKeywordSearchInfo::ACTION_SEND;
+#endif
+
     aggregatorManager_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchResult>(
             actionItem.collectionName_, "getDistSearchResult", actionItem, distResultItem);
 
@@ -647,9 +651,16 @@ bool IndexSearchService::getInternalDocumentId(
     return (internalId != 0);
 
 #else
+    uint32_t docid;
     std::string str;
     scdDocumentId.convertString(str, izenelib::util::UString::UTF_8);
-    return idManager_->getDocIdByDocName(scdDocumentId, internalId, false);
+    internalId = 0;
+    if (idManager_->getDocIdByDocName(str, docid, false))
+    {
+        internalId = docid;
+        return true;
+    }
+    return false;
 #endif
 }
 

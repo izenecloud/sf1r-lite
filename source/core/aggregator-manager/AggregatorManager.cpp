@@ -10,6 +10,32 @@ namespace sf1r
 
 extern int TOP_K_NUM;
 
+void printDFCTF(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties ctfmap)
+{
+    cout << "\n[Index terms info for Query]" << endl;
+    DocumentFrequencyInProperties::iterator dfiter;
+    for (dfiter = dfmap.begin(); dfiter != dfmap.end(); dfiter++)
+    {
+        cout << "property: " << dfiter->first << endl;
+        ID_FREQ_UNORDERED_MAP_T::iterator iter_;
+        for (iter_ = dfiter->second.begin(); iter_ != dfiter->second.end(); iter_++)
+        {
+            cout << "termid: " << iter_->first << " DF: " << iter_->second << endl;
+        }
+    }
+    cout << "-----------------------" << endl;
+    CollectionTermFrequencyInProperties::iterator ctfiter;
+    for (ctfiter = ctfmap.begin(); ctfiter != ctfmap.end(); ctfiter++)
+    {
+        cout << "property: " << ctfiter->first << endl;
+        ID_FREQ_UNORDERED_MAP_T::iterator iter_;
+        for (iter_ = ctfiter->second.begin(); iter_ != ctfiter->second.end(); iter_++)
+        {
+            cout << "termid: " << iter_->first << " CTF: " << iter_->second << endl;
+        }
+    }
+    cout << "-----------------------" << endl;
+}
 
 void AggregatorManager::aggregateDistSearchInfo(DistKeywordSearchInfo& result, const std::vector<std::pair<workerid_t, DistKeywordSearchInfo> >& resultList)
 {
