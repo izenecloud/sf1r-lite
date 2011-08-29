@@ -64,12 +64,7 @@ bool IndexSearchService::getSearchResult(
 
     if (!checkAggregatorSupport(actionItem.collectionName_))
     {
-        if (workerService_->getKeywordSearchResult(actionItem, resultItem))
-        {
-            return workerService_->getSummaryMiningResult(actionItem, resultItem, false);
-        }
-
-        return false;
+        return workerService_->doLocalSearch(actionItem, resultItem);
     }
 
     cout <<"Aggregate for : "<<  actionItem.collectionName_<<endl;
@@ -92,7 +87,7 @@ bool IndexSearchService::getSearchResult(
     distResultItem.start_ = actionItem.pageInfo_.start_;
     distResultItem.count_ = actionItem.pageInfo_.count_;
     aggregatorManager_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchResult>(
-            actionItem.collectionName_, "getSearchResult", actionItem, distResultItem);
+            actionItem.collectionName_, "getDistSearchResult", actionItem, distResultItem);
 
     resultItem.assign(distResultItem);
 

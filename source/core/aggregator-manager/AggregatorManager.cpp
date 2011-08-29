@@ -49,7 +49,7 @@ void AggregatorManager::aggregateDistSearchInfo(DistKeywordSearchInfo& result, c
     }
 }
 
-void AggregatorManager::aggregateSearchResult(DistKeywordSearchResult& result, const std::vector<std::pair<workerid_t, DistKeywordSearchResult> >& resultList)
+void AggregatorManager::aggregateDistSearchResult(DistKeywordSearchResult& result, const std::vector<std::pair<workerid_t, DistKeywordSearchResult> >& resultList)
 {
     cout << "#[AggregatorManager::aggregateSearchResult] " << resultList.size() << endl;
 

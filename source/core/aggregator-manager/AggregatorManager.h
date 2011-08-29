@@ -33,8 +33,8 @@ public:
         localWorkerCaller_->setInvoker(localWorkerService.get());
 
         ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getDistSearchInfo);
-        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, processGetSearchResult);
-        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, processGetSummaryMiningResult);
+        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getDistSearchResult);
+        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getSummaryMiningResult);
         ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getDocumentsByIds);
         ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getInternalDocumentId);
         ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, clickGroupLabel);
@@ -60,9 +60,9 @@ public:
 
     bool aggregate(const std::string& func,DistKeywordSearchResult& result, const std::vector<std::pair<workerid_t, DistKeywordSearchResult> >& resultList)
     {
-        if (func == "getSearchResult")
+        if (func == "getDistSearchResult")
         {
-        	aggregateSearchResult(result, resultList);
+        	aggregateDistSearchResult(result, resultList);
         	return true;
         }
         return false;
@@ -112,7 +112,7 @@ public:
 public:
     void aggregateDistSearchInfo(DistKeywordSearchInfo& result, const std::vector<std::pair<workerid_t, DistKeywordSearchInfo> >& resultList);
 
-    void aggregateSearchResult(DistKeywordSearchResult& result, const std::vector<std::pair<workerid_t, DistKeywordSearchResult> >& resultList);
+    void aggregateDistSearchResult(DistKeywordSearchResult& result, const std::vector<std::pair<workerid_t, DistKeywordSearchResult> >& resultList);
 
     void aggregateSummaryMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
 

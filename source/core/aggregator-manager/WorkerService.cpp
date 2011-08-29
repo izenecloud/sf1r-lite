@@ -38,17 +38,17 @@ bool WorkerService::getDistSearchInfo(const KeywordSearchActionItem& actionItem,
     DistKeywordSearchResult fakeResultItem;
 	fakeResultItem.distSearchInfo_.actionType_ = DistKeywordSearchInfo::ACTION_FETCH;
 
-    getSearchResult(actionItem, fakeResultItem);
+    getSearchResult_(actionItem, fakeResultItem);
 
 	resultItem = fakeResultItem.distSearchInfo_;
     return true;
 }
 
-bool WorkerService::processGetSearchResult(const KeywordSearchActionItem& actionItem, DistKeywordSearchResult& resultItem)
+bool WorkerService::getDistSearchResult(const KeywordSearchActionItem& actionItem, DistKeywordSearchResult& resultItem)
 {
     cout << "#[WorkerService::processGetSearchResult] " << actionItem.collectionName_ << endl;
 
-    if (! getSearchResult(actionItem, resultItem))
+    if (! getSearchResult_(actionItem, resultItem))
     {
         return false;
     }
@@ -56,21 +56,11 @@ bool WorkerService::processGetSearchResult(const KeywordSearchActionItem& action
     return true;
 }
 
-bool WorkerService::getKeywordSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
-{
-    if (! getSearchResult(actionItem, resultItem, false))
-    {
-        return false;
-    }
-
-    return true;
-}
-
-bool WorkerService::processGetSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+bool WorkerService::getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
     cout << "#[WorkerService::processGetSummaryResult] " << actionItem.collectionName_ << endl;
 
-    if (!getSummaryMiningResult(actionItem, resultItem))
+    if (!getSummaryMiningResult_(actionItem, resultItem))
     {
         return false;
     }
@@ -182,10 +172,27 @@ bool WorkerService::clickGroupLabel(const ClickGroupLabelActionItem& actionItem,
     return ret;
 }
 
+///
+
+bool WorkerService::doLocalSearch(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+{
+    if (! getSearchResult_(actionItem, resultItem, false))
+    {
+        return false;
+    }
+
+    if (! getSummaryMiningResult_(actionItem, resultItem, false))
+    {
+        return false;
+    }
+
+    return true;
+}
+
 /// private methods ////////////////////////////////////////////////////////////
 
 template <typename ResultItemType>
-bool WorkerService::getSearchResult(
+bool WorkerService::getSearchResult_(
         const KeywordSearchActionItem& actionItem,
         ResultItemType& resultItem,
         bool isDistributedSearch)
@@ -325,7 +332,7 @@ bool WorkerService::getSearchResult(
     return true;
 }
 
-bool WorkerService::getSummaryMiningResult(
+bool WorkerService::getSummaryMiningResult_(
         const KeywordSearchActionItem& actionItem,
         KeywordSearchResult& resultItem,
         bool isDistributedSearch)

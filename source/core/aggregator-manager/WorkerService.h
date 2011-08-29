@@ -41,14 +41,15 @@ public:
 public:
     /**
      * Worker services (interfaces)
+     * xxx, use different function names instead of overload.
      * @{
      */
 
     bool getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem);
 
-    bool processGetSearchResult(const KeywordSearchActionItem& actionItem, DistKeywordSearchResult& resultItem);
+    bool getDistSearchResult(const KeywordSearchActionItem& actionItem, DistKeywordSearchResult& resultItem);
 
-    bool processGetSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
+    bool getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
     bool getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem);
 
@@ -58,16 +59,16 @@ public:
 
     /** @} */
 
-    bool getKeywordSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
+    bool doLocalSearch(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
 private:
     template <typename ResultItemType>
-    bool getSearchResult(
+    bool getSearchResult_(
             const KeywordSearchActionItem& actionItem,
             ResultItemType& resultItem,
             bool isDistributedSearch = true);
 
-    bool getSummaryMiningResult(
+    bool getSummaryMiningResult_(
             const KeywordSearchActionItem& actionItem,
             KeywordSearchResult& resultItem,
             bool isDistributedSearch = true);

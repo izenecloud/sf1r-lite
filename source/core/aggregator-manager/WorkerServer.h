@@ -77,7 +77,7 @@ public:
         ADD_WORKER_HANDLER_LIST_BEGIN( WorkerServer )
 
         ADD_WORKER_HANDLER( getDistSearchInfo )
-        ADD_WORKER_HANDLER( getSearchResult )
+        ADD_WORKER_HANDLER( getDistSearchResult )
         ADD_WORKER_HANDLER( getSummaryMiningResult )
         ADD_WORKER_HANDLER( getDocumentsByIds )
         ADD_WORKER_HANDLER( getInternalDocumentId )
@@ -97,15 +97,15 @@ public:
         return true;
     }
 
-    bool getSearchResult(JobRequest& req)
+    bool getDistSearchResult(JobRequest& req)
     {
-        WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, DistKeywordSearchResult, workerService_, processGetSearchResult)
+        WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, DistKeywordSearchResult, workerService_, getDistSearchResult)
         return true;
     }
 
     bool getSummaryMiningResult(JobRequest& req)
     {
-        WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, KeywordSearchResult, workerService_, processGetSummaryMiningResult)
+        WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, KeywordSearchResult, workerService_, getSummaryMiningResult)
         return true;
     }
 
