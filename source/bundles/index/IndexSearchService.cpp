@@ -181,6 +181,7 @@ bool IndexSearchService::getSearchResult(
                 resultItem.totalCount_,
                 resultItem.groupRep_,
                 resultItem.attrRep_,
+                resultItem.propertyRange_,
                 TOP_K_NUM,
                 startOffset
                 ))
@@ -206,6 +207,7 @@ bool IndexSearchService::getSearchResult(
                                     resultItem.totalCount_,
                                     resultItem.groupRep_,
                                     resultItem.attrRep_,
+                                    resultItem.propertyRange_,
                                     TOP_K_NUM,
                                     startOffset
                                     ))

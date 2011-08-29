@@ -9,14 +9,17 @@ namespace sf1r
 
 VisitManager::VisitManager(
     const std::string& visitDBPath,
+    const std::string& recommendDBPath,
     const std::string& sessionDBPath,
     CoVisitManager* coVisitManager
 )
     : visitDB_(visitDBPath)
+    , recommendDB_(recommendDBPath)
     , sessionDB_(sessionDBPath)
     , coVisitManager_(coVisitManager)
 {
     visitDB_.open();
+    recommendDB_.open();
     sessionDB_.open();
 }
 
@@ -25,6 +28,7 @@ void VisitManager::flush()
     try
     {
         visitDB_.flush();
+        recommendDB_.flush();
         sessionDB_.flush();
     }
     catch(izenelib::util::IZENELIBException& e)
@@ -36,12 +40,19 @@ void VisitManager::flush()
 bool VisitManager::addVisitItem(
     const std::string& sessionId,
     userid_t userId,
-    itemid_t itemId
+    itemid_t itemId,
+    bool isRecItem
 )
 {
-    if (updateVisitDB_(userId, itemId)
+    if (updateVisitDB_(visitDB_, userId, itemId)
         && updateSessionDB_(sessionId, userId, itemId))
     {
+        if (isRecItem
+            && updateVisitDB_(recommendDB_, userId, itemId) == false)
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -50,19 +61,12 @@ bool VisitManager::addVisitItem(
 
 bool VisitManager::getVisitItemSet(userid_t userId, ItemIdSet& itemIdSet)
 {
-    bool result = false;
-    try
-    {
-        itemIdSet.clear();
-        visitDB_.getValue(userId, itemIdSet);
-        result = true;
-    }
-    catch(izenelib::util::IZENELIBException& e)
-    {
-        LOG(ERROR) << "exception in SDB::getValue(): " << e.what();
-    }
+    return getVisitDB_(visitDB_, userId, itemIdSet);
+}
 
-    return result;
+bool VisitManager::getRecommendItemSet(userid_t userId, ItemIdSet& itemIdSet)
+{
+    return getVisitDB_(recommendDB_, userId, itemIdSet);
 }
 
 bool VisitManager::getVisitSession(userid_t userId, VisitSession& visitSession)
@@ -86,23 +90,24 @@ unsigned int VisitManager::visitUserNum()
     return visitDB_.numItems();
 }
 
-VisitManager::SDBIterator VisitManager::begin()
+VisitManager::VisitIterator VisitManager::begin()
 {
-    return SDBIterator(visitDB_);
+    return VisitIterator(visitDB_);
 }
 
-VisitManager::SDBIterator VisitManager::end()
+VisitManager::VisitIterator VisitManager::end()
 {
-    return SDBIterator();
+    return VisitIterator();
 }
 
 bool VisitManager::updateVisitDB_(
+    VisitDBType& db,
     userid_t userId,
     itemid_t itemId
 )
 {
     ItemIdSet itemIdSet;
-    visitDB_.getValue(userId, itemIdSet);
+    db.getValue(userId, itemIdSet);
 
     std::pair<ItemIdSet::iterator, bool> res = itemIdSet.insert(itemId);
     // not visited yet
@@ -111,7 +116,7 @@ bool VisitManager::updateVisitDB_(
         bool result = false;
         try
         {
-            result = visitDB_.update(userId, itemIdSet);
+            result = db.update(userId, itemIdSet);
         }
         catch(izenelib::util::IZENELIBException& e)
         {
@@ -123,6 +128,27 @@ bool VisitManager::updateVisitDB_(
 
     // already visited
     return true;
+}
+
+bool VisitManager::getVisitDB_(
+    VisitDBType& db,
+    userid_t userId,
+    ItemIdSet& itemIdSet
+)
+{
+    bool result = false;
+    try
+    {
+        itemIdSet.clear();
+        db.getValue(userId, itemIdSet);
+        result = true;
+    }
+    catch(izenelib::util::IZENELIBException& e)
+    {
+        LOG(ERROR) << "exception in SDB::getValue(): " << e.what();
+    }
+
+    return result;
 }
 
 bool VisitManager::updateSessionDB_(

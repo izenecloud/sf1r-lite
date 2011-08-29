@@ -139,7 +139,8 @@ bool RecommendBundleActivator::init_()
     boost::filesystem::path eventDir = dataDir / "event";
     boost::filesystem::create_directory(eventDir);
 
-    auto_ptr<VisitManager> visitManagerPtr(new VisitManager((eventDir / "visit.db").string(),
+    auto_ptr<VisitManager> visitManagerPtr(new VisitManager((eventDir / "visit_item.db").string(),
+                                                            (eventDir / "visit_recommend.db").string(),
                                                             (eventDir / "visit_session.db").string(),
                                                             coVisitManagerPtr.get()));
 

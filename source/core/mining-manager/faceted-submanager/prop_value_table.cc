@@ -9,6 +9,7 @@
 #include <algorithm> // reverse
 
 #include <boost/lexical_cast.hpp>
+#include <boost/filesystem.hpp>
 
 #include <glog/logging.h>
 
@@ -81,10 +82,10 @@ bool PropValueTable::open()
         return false;
     }
 
-    const unsigned int valueNum = parentIdVec_.size();
-    if (valueNum != propStrVec_.size())
+    const unsigned int valueNum = propStrVec_.size();
+    if (valueNum != parentIdVec_.size())
     {
-        LOG(ERROR) << "unequal property value number in parentIdVec_ and propStrVec_";
+        LOG(ERROR) << "unequal property value number in propStrVec_ and parentIdVec_ ";
         return false;
     }
 
@@ -102,13 +103,53 @@ bool PropValueTable::open()
 
 bool PropValueTable::flush()
 {
-    if (!save_container(dirPath_, propName_ + ".prop.txt", propStrVec_, savePropStrNum_)
+    if (!saveParentId_(dirPath_, propName_ + ".parent.txt")
+        || !save_container(dirPath_, propName_ + ".prop.txt", propStrVec_, savePropStrNum_)
         || !save_container(dirPath_, propName_ + ".parent.bin", parentIdVec_, saveParentIdNum_, true)
         || !save_container(dirPath_, propName_ + ".doc.bin", valueIdTable_, saveDocIdNum_, true))
     {
         return false;
     }
 
+    return true;
+}
+
+bool PropValueTable::saveParentId_(
+    const std::string& dirPath,
+    const std::string& fileName
+) const
+{
+    const unsigned int valueNum = propStrVec_.size();
+    if (valueNum != parentIdVec_.size())
+    {
+        LOG(ERROR) << "unequal property value number in propStrVec_ and parentIdVec_ ";
+        return false;
+    }
+
+    if (savePropStrNum_ >= propStrVec_.size())
+        return true;
+
+    boost::filesystem::path filePath(dirPath);
+    filePath /= fileName;
+    std::string pathStr = filePath.string();
+
+    LOG(INFO) << "saving file: " << pathStr
+              << ", element num: " << valueNum;
+
+    std::ofstream ofs(pathStr.c_str());
+    if (! ofs)
+    {
+        LOG(ERROR) << "failed opening file " << pathStr;
+        return false;
+    }
+
+    std::string convertBuffer;
+    for (unsigned int i = 1; i < valueNum; ++i)
+    {
+        propStrVec_[i].convertString(convertBuffer, UString::UTF_8);
+        // columns: id, str, parentId
+        ofs << i << "\t" << convertBuffer << "\t" << parentIdVec_[i] << std::endl;
+    }
     return true;
 }
 

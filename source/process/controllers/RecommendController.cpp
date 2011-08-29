@@ -653,6 +653,9 @@ void RecommendController::get_item()
  *     In each session, the items visited by the user would be used to recommend items for the type @b VAV in @c do_recommend().
  *   - @b USERID* (@c String): a unique user identifier.
  *   - @b ITEMID* (@c String): a unique item identifier.
+ *   - @b is_recommend_item (@c Bool = @c false): this is an important flag to give feedback on recommendation result.@n
+ *     @c true for @b USERID visits @b ITEMID because it was recommended to that user before,@n
+ *     otherwise, @c false is set.
  *
  * @section response
  *
@@ -666,7 +669,8 @@ void RecommendController::get_item()
  *   "resource": {
  *     "session_id": "session_001",
  *     "USERID": "user_001",
- *     "ITEMID": "item_001"
+ *     "ITEMID": "item_001",
+ *     "is_recommend_item": true
  *   }
  * }
  * @endcode
@@ -684,12 +688,14 @@ void RecommendController::visit_item()
     IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
     IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::ITEMID));
 
-    std::string sessionIdStr = asString(request()[Keys::resource][Keys::session_id]);
-    std::string userIdStr = asString(request()[Keys::resource][Keys::USERID]);
-    std::string itemIdStr = asString(request()[Keys::resource][Keys::ITEMID]);
+    izenelib::driver::Value& resourceValue = request()[Keys::resource];
+    std::string sessionIdStr = asString(resourceValue[Keys::session_id]);
+    std::string userIdStr = asString(resourceValue[Keys::USERID]);
+    std::string itemIdStr = asString(resourceValue[Keys::ITEMID]);
+    bool isRecItem = asBoolOr(resourceValue[Keys::is_recommend_item], false);
 
     RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
-    if (!service->visitItem(sessionIdStr, userIdStr, itemIdStr))
+    if (!service->visitItem(sessionIdStr, userIdStr, itemIdStr, isRecItem))
     {
         response().addError("Failed to add visit to given collection.");
     }

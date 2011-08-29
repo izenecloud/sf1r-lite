@@ -357,7 +357,7 @@ namespace license_tool {
 
     bool cvtArrToStr(size_t inputSize, const LICENSE_DATA_T& inputData, std::string& outputStr)
     {
-        char buf[2]={0,0};
+        char buf[3]={0,0,0};
         std::string tmpStr;
 
         for(size_t i = 0; i < inputSize; i++)

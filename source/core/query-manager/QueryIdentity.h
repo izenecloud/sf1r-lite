@@ -37,6 +37,9 @@ struct QueryIdentity
     /// @brief param for group filter
     faceted::GroupParam groupParam;
 
+    /// @brief property name which needs range result
+    std::string rangeProperty;
+
     /// @brief custom ranking info
     std::string strExp;
     std::map<std::string, double> paramConstValueMap;
@@ -45,8 +48,12 @@ struct QueryIdentity
     /// search results offset after topK
     int start;
 
-    DATA_IO_LOAD_SAVE(QueryIdentity, &query&userId&rankingType&laInfo&properties&sortInfo&filterInfo&groupParam
-            &strExp&paramConstValueMap&paramPropertyValueMap&start);
+    /// action type of distributed search
+    int distActionType;
+
+    DATA_IO_LOAD_SAVE(QueryIdentity, &query&userId&rankingType&laInfo&properties
+            &sortInfo&filterInfo&groupParam&rangeProperty
+            &strExp&paramConstValueMap&paramPropertyValueMap&start&distActionType);
 
     template<class Archive>
     void serialize(Archive& ar, const unsigned version)
@@ -59,16 +66,19 @@ struct QueryIdentity
         ar & sortInfo;
         ar & filterInfo;
         ar & groupParam;
+        ar & rangeProperty;
         ar & strExp;
         ar & paramConstValueMap;
         ar & paramPropertyValueMap;
         ar & start;
+        ar & distActionType;
     }
 };
 
 void makeQueryIdentity(
     QueryIdentity& identity,
     const KeywordSearchActionItem& item,
+    int distActionType = 0,
     int start = 0
 );
 
@@ -83,10 +93,12 @@ inline bool operator==(const QueryIdentity& a,
         && a.sortInfo == b.sortInfo
         && a.filterInfo == b.filterInfo
         && a.groupParam == b.groupParam
+        && a.rangeProperty == b.rangeProperty
         && a.strExp == b.strExp
         && a.paramConstValueMap == b.paramConstValueMap
         && a.paramPropertyValueMap == b.paramPropertyValueMap
-        && a.start == b.start;
+        && a.start == b.start
+        && a.distActionType == b.distActionType;
 }
 
 inline bool operator!=(const QueryIdentity& a,

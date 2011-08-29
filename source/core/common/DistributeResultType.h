@@ -159,6 +159,8 @@ public:
     /// A list of custom ranking scores. The sequence is following \c topKDocs_.
     std::vector<float> topKCustomRankScoreList_;
 
+    PropertyRange propertyRange_;
+
     std::size_t start_;
 
     /// @brief number of documents in current page
@@ -182,7 +184,7 @@ public:
     MSGPACK_DEFINE(
     		distSearchInfo_,rawQueryString_,encodingType_,collectionName_,analyzedQuery_,
             queryTermIdList_,totalCount_,topKDocs_,topKWorkerIds_,topKRankScoreList_,
-            topKCustomRankScoreList_,start_,count_,topKPostionList_,propertyQueryTermList_,
+            topKCustomRankScoreList_,propertyRange_,start_,count_,topKPostionList_,propertyQueryTermList_,
             onto_rep_,groupRep_,attrRep_);
 };
 

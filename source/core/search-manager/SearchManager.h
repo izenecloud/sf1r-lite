@@ -60,6 +60,7 @@ public:
                 std::size_t& totalCount,
                 faceted::OntologyRep& groupRep,
                 faceted::OntologyRep& attrRep,
+                sf1r::PropertyRange& propertyRange,
                 int topK = 200,
                 int start = 0,
                 DistKeywordSearchInfo& distSearchInfo = kDefaultDistSearchInfo_);
@@ -88,6 +89,7 @@ private:
                    std::size_t& totalCount,
                    faceted::OntologyRep& groupRep,
                    faceted::OntologyRep& attrRep,
+                   sf1r::PropertyRange& propertyRange,
                    int topK,
                    int start,
                    DistKeywordSearchInfo& distSearchInfo  = kDefaultDistSearchInfo_);

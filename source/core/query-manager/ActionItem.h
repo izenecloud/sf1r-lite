@@ -354,6 +354,7 @@ class KeywordSearchActionItem
             displayPropertyList_(obj.displayPropertyList_),
             sortPriorityList_   (obj.sortPriorityList_),
             filteringList_(obj.filteringList_),
+            rangePropertyName_(obj.rangePropertyName_),
             groupParam_(obj.groupParam_),
             strExp_(obj.strExp_),
             paramConstValueMap_(obj.paramConstValueMap_),
@@ -374,6 +375,7 @@ class KeywordSearchActionItem
             displayPropertyList_ = obj.displayPropertyList_;
             sortPriorityList_    = obj.sortPriorityList_;
             filteringList_ = obj.filteringList_;
+            rangePropertyName_ = obj.rangePropertyName_;
             groupParam_ = obj.groupParam_;
             strExp_ = obj.strExp_;
             paramConstValueMap_ = obj.paramConstValueMap_;
@@ -396,6 +398,7 @@ class KeywordSearchActionItem
                 && displayPropertyList_ == obj.displayPropertyList_
                 && sortPriorityList_    == obj.sortPriorityList_
                 && filteringList_ == obj.filteringList_
+                && rangePropertyName_ == obj.rangePropertyName_
                 && groupParam_ == obj.groupParam_
                 && strExp_ == obj.strExp_
                 && paramConstValueMap_ == obj.paramConstValueMap_
@@ -519,6 +522,11 @@ class KeywordSearchActionItem
         std::vector<QueryFiltering::FilteringType>      filteringList_;
 
         ///
+        /// @brief property name for getting its property value range.
+        ///
+        std::string      rangePropertyName_;
+
+        ///
         /// @brief group filter parameter
         ///
         faceted::GroupParam groupParam_;
@@ -542,13 +550,13 @@ class KeywordSearchActionItem
 
         DATA_IO_LOAD_SAVE(KeywordSearchActionItem, &env_&refinedQueryString_&collectionName_
                 &rankingType_&pageInfo_&languageAnalyzerInfo_&searchPropertyList_&removeDuplicatedDocs_
-                &displayPropertyList_&sortPriorityList_&filteringList_&groupParam_
+                &displayPropertyList_&sortPriorityList_&filteringList_&rangePropertyName_&groupParam_
                 &strExp_&paramConstValueMap_&paramPropertyValueMap_);
 
         /// msgpack serializtion
         MSGPACK_DEFINE(env_,refinedQueryString_,collectionName_,rankingType_,pageInfo_,languageAnalyzerInfo_,
                 searchPropertyList_,removeDuplicatedDocs_,displayPropertyList_,sortPriorityList_,filteringList_,
-                groupParam_,strExp_,paramConstValueMap_,paramPropertyValueMap_);
+                rangePropertyName_,groupParam_,strExp_,paramConstValueMap_,paramPropertyValueMap_);
 
     private:
         
@@ -569,6 +577,7 @@ class KeywordSearchActionItem
             ar & displayPropertyList_;
             ar & sortPriorityList_;
             ar & filteringList_;
+            ar & rangePropertyName_;
             ar & groupParam_;
             ar & strExp_;
             ar & paramConstValueMap_;

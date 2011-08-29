@@ -40,16 +40,23 @@ class VisitManager
 public:
     VisitManager(
         const std::string& visitDBPath,
+        const std::string& recommendDBPath,
         const std::string& sessionDBPath,
         CoVisitManager* coVisitManager
     );
 
     void flush();
 
+    /**
+     * Add visit item.
+     * @param isRecItem true for recommended item
+     * @return true for success, false for error happened.
+     */
     bool addVisitItem(
         const std::string& sessionId,
         userid_t userId,
-        itemid_t itemId
+        itemid_t itemId,
+        bool isRecItem
     );
 
     /**
@@ -60,6 +67,14 @@ public:
      * @return true for success, false for error happened.
      */
     bool getVisitItemSet(userid_t userId, ItemIdSet& itemIdSet);
+
+    /**
+     * Get @p itemIdSet recommended to @p userId.
+     * @param userId user id
+     * @param itemidSet item id set recommended to @p userId before.
+     * @return true for success, false for error happened.
+     */
+    bool getRecommendItemSet(userid_t userId, ItemIdSet& itemIdSet);
 
     /**
      * Get the current visit session by @p userId.
@@ -74,15 +89,22 @@ public:
      */
     unsigned int visitUserNum();
 
-    typedef izenelib::sdb::unordered_sdb_tc<userid_t, ItemIdSet, ReadWriteLock> SDBType;
-    typedef izenelib::sdb::SDBCursorIterator<SDBType> SDBIterator;
-    SDBIterator begin();
-    SDBIterator end();
+    typedef izenelib::sdb::unordered_sdb_tc<userid_t, ItemIdSet, ReadWriteLock> VisitDBType;
+    typedef izenelib::sdb::SDBCursorIterator<VisitDBType> VisitIterator;
+    VisitIterator begin();
+    VisitIterator end();
 
 private:
     bool updateVisitDB_(
+        VisitDBType& db,
         userid_t userId,
         itemid_t itemId
+    );
+
+    bool getVisitDB_(
+        VisitDBType& db,
+        userid_t userId,
+        ItemIdSet& itemIdSet
     );
 
     bool updateSessionDB_(
@@ -92,10 +114,11 @@ private:
     );
 
 private:
-    SDBType visitDB_;
+    VisitDBType visitDB_; // the items visited
+    VisitDBType recommendDB_; // the items recommended
 
     typedef izenelib::sdb::unordered_sdb_tc<userid_t, VisitSession, ReadWriteLock> SessionDBType;
-    SessionDBType sessionDB_;
+    SessionDBType sessionDB_; // the items in current session
 
     CoVisitManager* coVisitManager_;
 };

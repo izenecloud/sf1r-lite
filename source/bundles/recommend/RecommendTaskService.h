@@ -10,7 +10,6 @@
 #include <recommend-manager/RecTypes.h>
 
 #include <util/osgi/IService.h>
-#include <sdb/SequentialDB.h>
 #include <util/cronexpression.h>
 
 #include <string>
@@ -93,11 +92,13 @@ public:
 
     /**
      * @p sessionIdStr, @p userIdStr and @p itemIdStr must not be empty.
+     * @param isRecItem whether is recommendation item.
      */
     bool visitItem(
         const std::string& sessionIdStr,
         const std::string& userIdStr,
-        const std::string& itemIdStr
+        const std::string& itemIdStr,
+        bool isRecItem
     );
 
     struct OrderItem
@@ -122,6 +123,7 @@ public:
         std::string itemIdStr_;
         int quantity_;
         double price_;
+        std::string dateStr_;
     };
     typedef std::vector<OrderItem> OrderItemVec;
 
@@ -167,70 +169,6 @@ public:
 
 private:
     /**
-     * Load user SCD files.
-     */
-    bool loadUserSCD_();
-
-    /**
-     * Load item SCD files.
-     */
-    bool loadItemSCD_();
-
-    /**
-     * Load order SCD files.
-     */
-    bool loadOrderSCD_();
-
-    /** user id, order id */
-    typedef std::pair<string, string> OrderKey;
-    typedef std::map<OrderKey, OrderItemVec> OrderMap;
-
-    /** the container to collect item ids for each user id by scanning SCD files */
-    typedef izenelib::sdb::unordered_sdb_tc<userid_t, ItemIdSet> UserItemMap;
-
-    /**
-     * Load the SCD files in @p scdList,
-     * add each order into @c orderManager_,
-     * store item ids of each user into @p userItemMap.
-     * @param scdList the SCD file paths
-     * @param userItemMap store item ids for each user id
-     */
-    void loadUserItemMap_(
-        const std::vector<string>& scdList,
-        UserItemMap& userItemMap
-    );
-
-    /**
-     * For the item ids of each user from @p userItemMap,
-     * add them into @c purchaseManager_.
-     * @param userItemMap the item ids for each user id
-     */
-    void loadPurchaseItem_(UserItemMap& userItemMap);
-
-    /**
-     * For each order in @p orderMap, add it into @c orderManager_ and @p userItemMap.
-     * @param orderMap the orders
-     * @param userItemMap store item ids for each user id
-     */
-    void loadOrderMap_(
-        const OrderMap& orderMap,
-        UserItemMap& userItemMap
-    );
-
-    /**
-     * Add the items from @p orderItemVec into @c orderManager_,
-     * and add them into @p userItemMap.
-     * @param userIdStr the string of user id
-     * @param orderItemVec the array of item id string
-     * @param userItemMap store item ids for each user id
-     */
-    bool loadOrder_(
-        const std::string& userIdStr,
-        const OrderItemVec& orderItemVec,
-        UserItemMap& userItemMap
-    );
-
-    /**
      * Convert from @p userIdStr to @p userId,
      * and from @p orderItemVec to @p itemIdVec.
      * @return true for success, false for failure.
@@ -240,6 +178,89 @@ private:
         const OrderItemVec& orderItemVec,
         userid_t& userId,
         std::vector<itemid_t>& itemIdVec
+    );
+
+    /**
+     * Load user SCD files.
+     */
+    bool loadUserSCD_();
+
+    /**
+     * Parse user SCD file.
+     * @param scdPath the user SCD file path
+     * @return true for success, false for failure
+     */
+    bool parseUserSCD_(const std::string& scdPath);
+
+    /**
+     * Load item SCD files.
+     */
+    bool loadItemSCD_();
+
+    /**
+     * Parse item SCD file.
+     * @param scdPath the item SCD file path
+     * @return true for success, false for failure
+     */
+    bool parseItemSCD_(const std::string& scdPath);
+
+    /**
+     * Load order SCD files.
+     */
+    bool loadOrderSCD_();
+
+    /**
+     * Parse order SCD file.
+     * @param scdPath the order SCD file path
+     * @return true for success, false for failure
+     */
+    bool parseOrderSCD_(const std::string& scdPath);
+
+    /** user id, order id */
+    typedef std::pair<string, string> OrderKey;
+    typedef std::map<OrderKey, OrderItemVec> OrderMap;
+
+    /**
+     * load order item.
+     * if @p orderIdStr is empty, it stores @p orderItem directly,
+     * otherwise, it inserts @p orderItem into @p orderMap.
+     */
+    void loadOrderItem_(
+        const std::string& userIdStr,
+        const std::string& orderIdStr,
+        const OrderItem& orderItem,
+        OrderMap& orderMap
+    );
+
+    /**
+     * it calls @c saveOrder_() for each order in @p orderMap.
+     * @param orderMap the orders
+     */
+    void saveOrderMap_(const OrderMap& orderMap);
+
+    /**
+     * save the order into @c orderManager_, @c purchaseManager_.
+     * @param userIdStr the string of user id
+     * @param orderIdStr the string of order id
+     * @param orderItemVec the array of item id string
+     * @param isUpdateSimMatrix this param is passed to @c PurchaseManager::addPurchaseItem().
+     */
+    bool saveOrder_(
+        const std::string& userIdStr,
+        const std::string& orderIdStr,
+        const OrderItemVec& orderItemVec,
+        bool isUpdateSimMatrix
+    );
+
+    /**
+     * insert the order items as DB records.
+     */
+    bool insertOrderDB_(
+        const std::string& userIdStr,
+        const std::string& orderIdStr,
+        const OrderItemVec& orderItemVec,
+        userid_t userId,
+        const std::vector<itemid_t>& itemIdVec
     );
 
     void buildFreqItemSet_();

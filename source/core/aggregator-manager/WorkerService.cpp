@@ -265,6 +265,7 @@ bool WorkerService::getSearchResult_(
                 resultItem.totalCount_,
                 resultItem.groupRep_,
                 resultItem.attrRep_,
+                resultItem.propertyRange_,
                 TOP_K_NUM,
                 startOffset,
                 resultItem.distSearchInfo_
@@ -291,6 +292,7 @@ bool WorkerService::getSearchResult_(
                                     resultItem.totalCount_,
                                     resultItem.groupRep_,
                                     resultItem.attrRep_,
+                                    resultItem.propertyRange_,
                                     TOP_K_NUM,
                                     startOffset,
                                     resultItem.distSearchInfo_

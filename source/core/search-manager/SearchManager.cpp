@@ -125,6 +125,7 @@ bool SearchManager::search(SearchKeywordOperation& actionOperation,
                            std::size_t& totalCount,
                            faceted::OntologyRep& groupRep,
                            faceted::OntologyRep& attrRep,
+                           sf1r::PropertyRange& propertyRange,
                            int topK,
                            int start,
                            DistKeywordSearchInfo& distSearchInfo)
@@ -134,9 +135,9 @@ CREATE_PROFILER ( cacheoverhead, "SearchManager", "cache overhead: overhead for 
 START_PROFILER ( cacheoverhead )
 
     QueryIdentity identity;
-    makeQueryIdentity(identity, actionOperation.actionItem_, start);
+    makeQueryIdentity(identity, actionOperation.actionItem_, distSearchInfo.actionType_, start);
 
-    if (cache_->get(identity, rankScoreList, customRankScoreList, docIdList, totalCount, groupRep, attrRep))
+    if (cache_->get(identity, rankScoreList, customRankScoreList, docIdList, totalCount, groupRep, attrRep, propertyRange, distSearchInfo))
     {
 STOP_PROFILER ( cacheoverhead )
         // the cached search results require to be reranked
@@ -158,13 +159,13 @@ STOP_PROFILER ( cacheoverhead )
                   totalCount,
                   groupRep,
                   attrRep,
+                  propertyRange,
                   topK,
                   start,
                   distSearchInfo))
     {
  START_PROFILER ( cacheoverhead )
-		if (distSearchInfo.actionType_ != DistKeywordSearchInfo::ACTION_FETCH)
-			cache_->set(identity, rankScoreList, customRankScoreList, docIdList, totalCount, groupRep, attrRep);
+        cache_->set(identity, rankScoreList, customRankScoreList, docIdList, totalCount, groupRep, attrRep, propertyRange, distSearchInfo);
  STOP_PROFILER ( cacheoverhead )
         return true;
     }
@@ -179,6 +180,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                               std::size_t& totalCount,
                               faceted::OntologyRep& groupRep,
                               faceted::OntologyRep& attrRep,
+                              sf1r::PropertyRange& propertyRange,
                               int topK,
                               int start,
                               DistKeywordSearchInfo& distSearchInfo)
@@ -486,6 +488,23 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
     try
     {
         totalCount = 0;
+        const std::string& rangePropertyName = actionOperation.actionItem_.rangePropertyName_;
+        PropertyDataType rangePropertyType = UNKNOWN_DATA_PROPERTY_TYPE;
+        void* rangePropertyData = NULL;
+        float lowValue = (std::numeric_limits<float>::max) ();
+        float highValue = - lowValue;
+
+        if(!rangePropertyName.empty())
+        {
+            typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
+            iterator found = schemaMap_.find(rangePropertyName);
+            if (found != schemaMap_.end())
+            {
+                rangePropertyType = found->second.getType();
+                pSorterCache_->getSortPropertyData(rangePropertyName, rangePropertyType, rangePropertyData);
+            }
+        }
+
         while (pDocIterator->next())
         {
             if (pFilter)
@@ -500,6 +519,40 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                 }
             }
 
+            if(rangePropertyData)
+            {
+                float docPropertyValue = 0.0F;
+                switch(rangePropertyType)
+                {
+                case INT_PROPERTY_TYPE:
+                    {
+                        int64_t value = 0;
+                        int64_t* data;
+                        data = (int64_t*)rangePropertyData;
+                        value = data[pDocIterator->doc()];
+                        docPropertyValue = (float)value;
+                    }
+                    break;
+                case FLOAT_PROPERTY_TYPE:
+                    {
+                        float* data;
+                        data = (float*)rangePropertyData;
+                        docPropertyValue = data[pDocIterator->doc()];
+                    }
+                    break;
+                default:
+                      break;
+                }
+                if ( docPropertyValue < lowValue )
+                {
+                    lowValue = docPropertyValue;
+                }
+
+                if (docPropertyValue > highValue)
+                {
+                    highValue = docPropertyValue;
+                }
+            }
 
             STOP_PROFILER ( dociterating )
             ScoreDoc scoreItem(pDocIterator->doc());
@@ -526,6 +579,12 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
         if (groupFilter)
         {
             groupFilter->getGroupRep(groupRep, attrRep);
+        }
+
+        if (rangePropertyData && totalCount)
+        {
+            propertyRange.highValue_ = highValue;
+            propertyRange.lowValue_ = lowValue;
         }
 
         size_t count = start > 0 ? (scoreItemQueue->size() - start) : scoreItemQueue->size();

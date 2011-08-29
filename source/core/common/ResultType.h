@@ -32,6 +32,22 @@
 #include <algorithm>
 
 namespace sf1r {
+    struct PropertyRange
+    {
+        PropertyRange()
+                : highValue_(0)
+                , lowValue_(0)
+            {}
+        void swap(PropertyRange& range)
+        {
+            highValue_ = range.highValue_;
+            lowValue_ = range.lowValue_;
+        }
+        float highValue_;
+        float lowValue_;
+
+        MSGPACK_DEFINE(highValue_, lowValue_);
+    };
 
     
     ///
@@ -279,6 +295,8 @@ namespace sf1r {
             /// A list of custom ranking scores. The sequence is following \c topKDocs_.
             std::vector<float> topKCustomRankScoreList_;
 
+            PropertyRange propertyRange_;
+
             std::size_t start_;
 
             /// @brief number of documents in current page
@@ -430,9 +448,8 @@ namespace sf1r {
             MSGPACK_DEFINE(
                     rawQueryString_,encodingType_,collectionName_,analyzedQuery_,
                     queryTermIdList_,totalCount_,topKDocs_,topKWorkerIds_,topKRankScoreList_,
-                    topKCustomRankScoreList_,start_,count_,topKPostionList_,propertyQueryTermList_,fullTextOfDocumentInPage_,
+                    topKCustomRankScoreList_,propertyRange_,start_,count_,topKPostionList_,propertyQueryTermList_,fullTextOfDocumentInPage_,
                     snippetTextOfDocumentInPage_,rawTextOfSummaryInPage_,
-                    errno_,error_,
                     numberOfDuplicatedDocs_,numberOfSimilarDocs_,docCategories_,
                     tg_input,taxonomyString_,numOfTGDocs_,taxonomyLevel_,tgDocIdList_,
                     neList_,onto_rep_,groupRep_,attrRep_,relatedQueryList_,rqScore_);
