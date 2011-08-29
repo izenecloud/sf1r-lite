@@ -304,6 +304,7 @@ void AggregatorManager::aggregateDocumentsResult(RawTextResultFromSIA& result, c
     if (workerNum == 1)
     {
         result = resultList[0].second;
+        result.workeridList_.resize(result.idList_.size(), resultList[0].first);
         return;
     }
 
