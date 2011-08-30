@@ -51,8 +51,6 @@ public:
 
 private:
 
-    bool checkAggregatorSupport(const std::string& collectionName);
-
     bool buildQuery(
         SearchKeywordOperation& actionOperation,
         std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList,

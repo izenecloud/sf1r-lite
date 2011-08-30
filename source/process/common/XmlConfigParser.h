@@ -430,6 +430,11 @@ public:
         return false;
     }
 
+    bool checkAggregatorSupport(const std::string& collectionName)
+    {
+        return brokerAgentConfig_.checkAggregatorByName(collectionName);
+    }
+
     bool checkCollectionWorkerServer(const std::string& collectionName)
     {
         std::map<std::string, CollectionMeta>::const_iterator it =

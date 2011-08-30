@@ -63,7 +63,7 @@ bool IndexSearchService::getSearchResult(
 #ifdef DISTRIBUTED_SEARCH
 
     /// Perform search on local node, if collection was not supported by aggregator.
-    if (!checkAggregatorSupport(actionItem.collectionName_))
+    if (!SF1Config::get()->checkAggregatorSupport(actionItem.collectionName_))
     {
         return workerService_->doLocalSearch(actionItem, resultItem);
     }
@@ -529,7 +529,7 @@ bool IndexSearchService::getDocumentsByIds(
 #ifdef DISTRIBUTED_SEARCH
 
     /// Perform search on local node, if collection was not supported by aggregator.
-    if (!checkAggregatorSupport(actionItem.collectionName_))
+    if (!SF1Config::get()->checkAggregatorSupport(actionItem.collectionName_))
     {
         return workerService_->getDocumentsByIds(actionItem, resultItem);
     }
@@ -650,7 +650,7 @@ bool IndexSearchService::getInternalDocumentId(
 #ifdef DISTRIBUTED_SEARCH
 
     /// Perform search on local node, if collection was not supported by aggregator.
-    if (!checkAggregatorSupport(collectionName))
+    if (!SF1Config::get()->checkAggregatorSupport(collectionName))
     {
         return workerService_->getInternalDocumentId(scdDocumentId, internalId);
     }
@@ -674,12 +674,6 @@ bool IndexSearchService::getInternalDocumentId(
     }
     return false;
 #endif
-}
-
-bool IndexSearchService::checkAggregatorSupport(const std::string& collectionName)
-{
-    return
-    const_cast<BrokerAgentConfig&>(SF1Config::get()->getBrokerAgentConfig()).checkAggregatorByName(collectionName);
 }
 
 }
