@@ -24,14 +24,40 @@ bool MiningSearchService::getSearchResult(
     return miningManager_->getMiningResult(resultItem);
 }
 
+//xxx
 bool MiningSearchService::getSimilarDocIdList(
     uint32_t documentId, 
     uint32_t maxNum, 
     std::vector<std::pair<uint32_t, float> >& result
 )
 {
-    // TODO, aggregate by wdocid
     return miningManager_->getSimilarDocIdList(documentId, maxNum, result);
+}
+
+bool MiningSearchService::getSimilarDocIdList(
+        const std::string& collectionName,
+        uint64_t documentId,
+        uint32_t maxNum,
+        std::vector<std::pair<uint32_t, float> >& result)
+{
+    std::pair<sf1r::workerid_t, sf1r::docid_t> wd = net::aggregator::Util::GetWorkerAndDocId(documentId);
+    sf1r::workerid_t workerId = wd.first;
+    sf1r::docid_t docId = wd.second;
+    bool ret = true;
+
+    if (!SF1Config::get()->checkAggregatorSupport(collectionName))
+    {
+        return miningManager_->getSimilarDocIdList(docId, maxNum, result);;
+    }
+
+    aggregatorManager_->singleRequest(collectionName, "getSimilarDocIdList", docId, maxNum, result, workerId);
+
+    if (result.size() > maxNum)
+    {
+        result.resize(maxNum);
+    }
+
+    return ret;
 }
 
 bool MiningSearchService::getDuplicateDocIdList(

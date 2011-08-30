@@ -26,6 +26,28 @@ public:
     ~MiningSearchService();
 
 public:
+    /// distributed search
+    bool getSimilarDocIdList(
+            const std::string& collectionName,
+            uint64_t documentId,
+            uint32_t maxNum,
+            std::vector<std::pair<uint32_t, float> >& result);
+
+    bool visitDoc(
+            const std::string& collectionName,
+            uint64_t wdocId);
+
+    bool getDocLabelList(
+            const std::string& collectionName,
+            uint32_t docid,
+            std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list );
+
+    bool getLabelListWithSimByDocId(
+            const std::string& collectionName,
+            uint32_t docid,
+            std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > >& label_list);
+
+public:
     bool getSearchResult(KeywordSearchResult& resultItem);
 
     bool getSimilarDocIdList(uint32_t documentId, uint32_t maxNum, std::vector<std::pair<uint32_t, float> >& result);
@@ -62,7 +84,6 @@ public:
 
     /// visit document
     bool visitDoc(uint32_t docId);
-    bool visitDoc(const std::string& collectionName, uint64_t wdocId);
 
     /**
      * Log the group label click.

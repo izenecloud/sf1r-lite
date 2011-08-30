@@ -81,6 +81,7 @@ public:
         ADD_WORKER_HANDLER( getSummaryMiningResult )
         ADD_WORKER_HANDLER( getDocumentsByIds )
         ADD_WORKER_HANDLER( getInternalDocumentId )
+        ADD_WORKER_HANDLER( getSimilarDocIdList )
         ADD_WORKER_HANDLER( clickGroupLabel )
         ADD_WORKER_HANDLER( visitDoc )
 
@@ -119,6 +120,12 @@ public:
     bool getInternalDocumentId(JobRequest& req)
     {
         WORKER_HANDLE_REQUEST_1_1(req, izenelib::util::UString, uint64_t, workerService_, getInternalDocumentId)
+        return true;
+    }
+
+    bool getSimilarDocIdList(JobRequest& req)
+    {
+        WORKER_HANDLE_REQUEST_2_1(req, uint32_t, uint32_t, workerService_->getSimilarDocIdList, SimilarDocIdListType)
         return true;
     }
 

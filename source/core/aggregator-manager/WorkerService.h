@@ -23,6 +23,8 @@ namespace sf1r
 {
 using izenelib::ir::idmanager::IDManager;
 
+typedef std::vector<std::pair<uint32_t, float> > SimilarDocIdListType;
+
 class IndexBundleConfiguration;
 class IndexSearchService;
 class MiningSearchService;
@@ -59,6 +61,8 @@ public:
     bool getInternalDocumentId(const izenelib::util::UString& actionItem, uint64_t& resultItem);
 
     /// mining
+    bool getSimilarDocIdList(uint32_t& documentId, uint32_t& maxNum, SimilarDocIdListType& result);
+
     bool clickGroupLabel(const ClickGroupLabelActionItem& actionItem, bool& ret);
 
     bool visitDoc(const uint32_t& docId, bool& ret);

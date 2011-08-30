@@ -5,6 +5,11 @@
 namespace sf1r
 {
 
+bool WorkerService::getSimilarDocIdList(uint32_t& documentId, uint32_t& maxNum, SimilarDocIdListType& result)
+{
+    return miningManager_->getSimilarDocIdList(documentId, maxNum, result);
+}
+
 bool WorkerService::clickGroupLabel(const ClickGroupLabelActionItem& actionItem, bool& ret)
 {
     ret = miningManager_->clickGroupLabel(
