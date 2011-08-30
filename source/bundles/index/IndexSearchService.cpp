@@ -62,12 +62,13 @@ bool IndexSearchService::getSearchResult(
 
 #ifdef DISTRIBUTED_SEARCH
 
+    /// Perform search on local node, if collection was not supported by aggregator.
     if (!checkAggregatorSupport(actionItem.collectionName_))
     {
         return workerService_->doLocalSearch(actionItem, resultItem);
     }
 
-    cout <<"Aggregate for : "<<  actionItem.collectionName_<<endl;
+    /// Perform distributed search by aggregator
 
     // set basic info for result
     resultItem.collectionName_ = actionItem.collectionName_;
@@ -527,11 +528,13 @@ bool IndexSearchService::getDocumentsByIds(
 {
 #ifdef DISTRIBUTED_SEARCH
 
+    /// Perform search on local node, if collection was not supported by aggregator.
     if (!checkAggregatorSupport(actionItem.collectionName_))
     {
         return workerService_->getDocumentsByIds(actionItem, resultItem);
     }
 
+    /// Perform distributed search by aggregator
     std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> > actionItemMap;
     if (!aggregatorManager_->splitGetDocsActionItemByWorkerid(actionItem, actionItemMap))
     {
@@ -646,6 +649,13 @@ bool IndexSearchService::getInternalDocumentId(
 {
 #ifdef DISTRIBUTED_SEARCH
 
+    /// Perform search on local node, if collection was not supported by aggregator.
+    if (!checkAggregatorSupport(collectionName))
+    {
+        return workerService_->getInternalDocumentId(scdDocumentId, internalId);
+    }
+
+    /// Perform distributed search by aggregator
     internalId = 0;
     aggregatorManager_->distributeRequest<izenelib::util::UString, uint64_t>(
             collectionName, "getInternalDocumentId", scdDocumentId, internalId);
