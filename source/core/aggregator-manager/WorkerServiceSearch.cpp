@@ -20,7 +20,6 @@ extern int TOP_K_NUM;
 
 WorkerService::WorkerService()
 {
-    miningSearchService_ = NULL;
     recommendSearchService_ = NULL;
     ///LA can only be got from a pool because it is not thread safe
     ///For some situation, we need to get the la not according to the property
@@ -160,16 +159,6 @@ bool WorkerService::getInternalDocumentId(const izenelib::util::UString& scdDocu
 
     internalId = docid;
     return true;
-}
-
-bool WorkerService::clickGroupLabel(const ClickGroupLabelActionItem& actionItem, bool& ret)
-{
-    ret = miningSearchService_->clickGroupLabel(
-            actionItem.queryString_,
-            actionItem.propName_,
-            actionItem.groupPath_);
-
-    return ret;
 }
 
 ///
@@ -364,9 +353,9 @@ bool WorkerService::getSummaryMiningResult_(
 
     cout << "[IndexSearchService] keywordSearch process Done" << endl; // XXX
 
-    if( miningSearchService_ )
+    if( miningManager_ )
     {
-        miningSearchService_->getSearchResult(resultItem);
+        miningManager_->getMiningResult(resultItem);
     }
 
     return true;
@@ -589,12 +578,12 @@ bool WorkerService::removeDuplicateDocs(
 )
 {
     // Remove duplicated docs from the result if the option is on.
-    if( miningSearchService_)
+    if( miningManager_ )
     {
       if ( actionItem.removeDuplicatedDocs_ && (resultItem.topKDocs_.size() != 0) )
       {
           std::vector<sf1r::docid_t> dupRemovedDocs;
-          bool ret = miningSearchService_->getUniqueDocIdList(resultItem.topKDocs_, dupRemovedDocs);
+          bool ret = miningManager_->getUniqueDocIdList(resultItem.topKDocs_, dupRemovedDocs);
           if ( ret )
           {
               resultItem.topKDocs_.swap(dupRemovedDocs);

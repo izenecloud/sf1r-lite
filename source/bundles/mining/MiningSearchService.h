@@ -14,6 +14,10 @@
 
 namespace sf1r
 {
+
+class WorkerService;
+class AggregatorManager;
+
 class MiningSearchService : public ::izenelib::osgi::IService
 {
 public:
@@ -58,6 +62,7 @@ public:
 
     /// visit document
     bool visitDoc(uint32_t docId);
+    bool visitDoc(const std::string& collectionName, uint64_t wdocId);
 
     /**
      * Log the group label click.
@@ -118,6 +123,9 @@ public:
 
 private:
     boost::shared_ptr<MiningManager> miningManager_;
+
+    boost::shared_ptr<WorkerService> workerService_;
+    boost::shared_ptr<AggregatorManager> aggregatorManager_;
 
     friend class MiningBundleActivator;
 };

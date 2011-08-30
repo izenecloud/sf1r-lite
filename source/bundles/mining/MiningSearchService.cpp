@@ -1,5 +1,10 @@
 #include "MiningSearchService.h"
 #include <mining-manager/faceted-submanager/ontology_manager.h>
+
+#include <process/common/XmlConfigParser.h>
+#include <aggregator-manager/WorkerService.h>
+#include <aggregator-manager/AggregatorManager.h>
+
 namespace sf1r
 {
 
@@ -178,10 +183,26 @@ bool MiningSearchService::DefineDocCategory(
     return true;
 }
 
+// xxx
 bool MiningSearchService::visitDoc(uint32_t docId)
 {
-    // TODO, aggregate by wdocid
     return miningManager_->visitDoc(docId);
+}
+
+bool MiningSearchService::visitDoc(const std::string& collectionName, uint64_t wdocId)
+{
+    std::pair<sf1r::workerid_t, sf1r::docid_t> wd = net::aggregator::Util::GetWorkerAndDocId(wdocId);
+    sf1r::workerid_t workerId = wd.first;
+    sf1r::docid_t docId = wd.second;
+    bool ret = true;
+
+    if (!SF1Config::get()->checkAggregatorSupport(collectionName))
+    {
+        return workerService_->visitDoc(docId, ret);
+    }
+
+    aggregatorManager_->singleRequest(collectionName, "visitDoc", docId, ret, workerId);
+    return ret;
 }
 
 bool MiningSearchService::clickGroupLabel(

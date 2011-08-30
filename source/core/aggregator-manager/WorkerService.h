@@ -2,7 +2,7 @@
  * @file WorkerService.h
  * @author Zhongxia Li
  * @date Jul 5, 2011
- * @brief Worker Service provide services of local SF1 server.
+ * @brief Worker Service encapsulated service interfaces (such as Search, Mining..) of SF1.
  */
 #ifndef WORKER_SERVICE_H_
 #define WORKER_SERVICE_H_
@@ -32,6 +32,7 @@ class IndexManager;
 class DocumentManager;
 class LAManager;
 class SearchManager;
+class MiningManager;
 
 class WorkerService
 {
@@ -45,17 +46,22 @@ public:
      * @{
      */
 
+    /// search
     bool getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem);
 
     bool getDistSearchResult(const KeywordSearchActionItem& actionItem, DistKeywordSearchResult& resultItem);
 
     bool getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
+    /// documents
     bool getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem);
 
     bool getInternalDocumentId(const izenelib::util::UString& actionItem, uint64_t& resultItem);
 
+    /// mining
     bool clickGroupLabel(const ClickGroupLabelActionItem& actionItem, bool& ret);
+
+    bool visitDoc(const uint32_t& docId, bool& ret);
 
     /** @} */
 
@@ -95,7 +101,6 @@ private:
 
 private:
     IndexBundleConfiguration* bundleConfig_;
-    MiningSearchService* miningSearchService_;
     RecommendSearchService* recommendSearchService_;
 
     boost::shared_ptr<LAManager> laManager_;
@@ -103,6 +108,7 @@ private:
     boost::shared_ptr<DocumentManager> documentManager_;
     boost::shared_ptr<IndexManager> indexManager_;
     boost::shared_ptr<SearchManager> searchManager_;
+    boost::shared_ptr<MiningManager> miningManager_;
     ilplib::qa::QuestionAnalysis* pQA_;
 
     AnalysisInfo analysisInfo_;

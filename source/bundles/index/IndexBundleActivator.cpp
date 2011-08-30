@@ -120,10 +120,8 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
             MiningSearchService* service = reinterpret_cast<MiningSearchService*> ( const_cast<IService*>(ref.getService()) );
             cout << "[IndexBundleActivator#addingService] Calling MiningSearchService..." << endl;
             searchService_->miningSearchService_ = service;
-            if (searchService_->aggregatorManager_)
-                searchService_->aggregatorManager_->SetMiningManager(service->GetMiningManager());
-            if (searchService_->workerService_)
-                searchService_->workerService_->miningSearchService_ = service;
+            searchService_->aggregatorManager_->SetMiningManager(service->GetMiningManager());
+            searchService_->workerService_->miningManager_ = service->GetMiningManager();
             return true;
         }
         else

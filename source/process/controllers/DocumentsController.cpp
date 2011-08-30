@@ -819,7 +819,7 @@ void DocumentsController::visit()
     if (collectionHandler_->indexSearchService_->getInternalDocumentId(collectionName, docidUStr, internalId)
             && internalId != 0)
     {
-        if (!collectionHandler_->miningSearchService_->visitDoc(internalId))
+        if (!collectionHandler_->miningSearchService_->visitDoc(collectionName, internalId))
         {
             response().addError("Failed to visit document");
         }
