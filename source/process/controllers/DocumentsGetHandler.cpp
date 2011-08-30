@@ -64,8 +64,9 @@ void DocumentsGetHandler::similar_to()
             parsePageInfo() &&
             parseDocumentId(request_[Keys::similar_to]))
     {
-        std::vector<std::pair<docid_t, float> > similarDocuments;
+        std::vector<std::pair<wdocid_t, float> > similarDocuments;
         bool success = miningSearchService_->getSimilarDocIdList(
+                           actionItem_.collectionName_,
                            internalId_,
                            kMaxSimilarDocumentCount,
                            similarDocuments

@@ -31,7 +31,7 @@ public:
             const std::string& collectionName,
             uint64_t documentId,
             uint32_t maxNum,
-            std::vector<std::pair<uint32_t, float> >& result);
+            std::vector<std::pair<uint64_t, float> >& result);
 
     bool visitDoc(
             const std::string& collectionName,

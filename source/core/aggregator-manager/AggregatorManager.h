@@ -111,16 +111,6 @@ public:
         return false;
     }
 
-    bool aggregate(const std::string& func, SimilarDocIdListType& result, const std::vector<std::pair<workerid_t, SimilarDocIdListType> >& resultList)
-    {
-        if (func == "getSimilarDocIdList")
-        {
-            aggregateSimilarDocIdList(result, resultList);
-            return true;
-        }
-        return false;
-    }
-
     /** @}*/
 
 public:
@@ -141,7 +131,7 @@ public:
     /// mining
     void aggregateMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
 
-    void aggregateSimilarDocIdList(SimilarDocIdListType& result, const std::vector<std::pair<workerid_t, SimilarDocIdListType> >& resultList);
+    //void aggregateSimilarDocIdList(SimilarDocIdListType& result, const std::vector<std::pair<workerid_t, SimilarDocIdListType> >& resultList);
 
 
 public:
