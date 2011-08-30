@@ -82,6 +82,7 @@ public:
         ADD_WORKER_HANDLER( getDocumentsByIds )
         ADD_WORKER_HANDLER( getInternalDocumentId )
         ADD_WORKER_HANDLER( clickGroupLabel )
+        ADD_WORKER_HANDLER( visitDoc )
 
         ADD_WORKER_HANDLER_LIST_END()
     }
@@ -124,6 +125,12 @@ public:
     bool clickGroupLabel(JobRequest& req)
     {
         WORKER_HANDLE_REQUEST_1_1(req, ClickGroupLabelActionItem, bool, workerService_, clickGroupLabel)
+        return true;
+    }
+
+    bool visitDoc(JobRequest& req)
+    {
+        WORKER_HANDLE_REQUEST_1_1(req, uint32_t, bool, workerService_, visitDoc)
         return true;
     }
 
