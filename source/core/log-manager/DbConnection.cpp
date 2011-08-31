@@ -6,6 +6,8 @@ namespace sf1r {
 
 DbConnection::DbConnection()
 {
+    sqlKeywords_[ATTR_AUTO_INCREMENT] = "AUTOINCREMENT";
+    sqlKeywords_[FUNC_LAST_INSERT_ID] = "last_insert_rowid()";
 }
 
 DbConnection::~DbConnection()

@@ -79,7 +79,7 @@ public:
      * Get property value id.
      * @param path the path of property value, from root node to leaf node
      * @exception MiningException when the new id created is overflow
-     * @return value id, if @p value is not inserted before, its new id is created and returned
+     * @return value id, if @p path is not inserted before, its new id is created and returned
      */
     pvid_t propValueId(const std::vector<izenelib::util::UString>& path);
 

@@ -17,7 +17,6 @@ namespace sf1r {
 class DbConnection : public LogManagerSingleton<DbConnection>
 {
 public:
-
     DbConnection();
 
     ~DbConnection();
@@ -38,8 +37,17 @@ public:
     /// @throw exception if underlying database reports error
     bool exec(const std::string & sql, std::list< std::map<std::string, std::string> > & results, bool omitError=false);
 
-private:
+    enum SQL_KEYWORD {
+        ATTR_AUTO_INCREMENT, // the attribute to generate unique id for new row
+        FUNC_LAST_INSERT_ID, // the function to get the last automatically generated id
+        SQL_KEYWORD_NUM
+    };
 
+    const std::string& getSqlKeyword(SQL_KEYWORD type) const {
+        return sqlKeywords_[type];
+    }
+
+private:
     static const int PoolSize = 16;
 
     /// callback functions required by sqlite3_exec
@@ -55,6 +63,7 @@ private:
 
     std::list<sqlite3*> pool_;
 
+    std::string sqlKeywords_[SQL_KEYWORD_NUM];
 };
 
 }

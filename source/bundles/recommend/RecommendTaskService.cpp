@@ -9,6 +9,8 @@
 #include <recommend-manager/OrderManager.h>
 #include <recommend-manager/CartManager.h>
 #include <recommend-manager/EventManager.h>
+#include <log-manager/OrderLogger.h>
+#include <log-manager/ItemLogger.h>
 #include <common/ScdParser.h>
 #include <directory-manager/Directory.h>
 #include <directory-manager/DirectoryRotator.h>
@@ -916,25 +918,31 @@ bool RecommendTaskService::insertOrderDB_(
         return false;
     }
 
-    // TODO: insert into order DB
-    //int orderId = OrderUserDB.addOrder(userIdStr_, orderIdStr_, orderItemVec[0].dateStr_);
-    //const unsigned int itemNum = orderItemVec.size();
-    //for (unsigned int i = 0; i < itemNum; ++i)
-    //{
-        //itemid_t itemId = itemIdVec[i];
-        //const RecommendTaskService::OrderItem& orderItem = orderItemVec[i];
+    OrderLogger& orderLogger = OrderLogger::instance();
+    ItemLogger& itemLogger = ItemLogger::instance();
+    int orderId = 0;
+    if (!orderLogger.insertOrder(orderIdStr, bundleConfig_->collectionName_,
+                                 userIdStr, orderItemVec[0].dateStr_, orderId))
+    {
+        return false;
+    }
 
-        //bool isRecItem = false;
-        //if (recItemSet.find(itemId) != recItemSet.end())
-        //{
-            //isRecItem = true;
-        //}
+    bool result = true;
+    const unsigned int itemNum = orderItemVec.size();
+    for (unsigned int i = 0; i < itemNum; ++i)
+    {
+        itemid_t itemId = itemIdVec[i];
+        bool isRecItem = (recItemSet.find(itemId) != recItemSet.end());
+        const RecommendTaskService::OrderItem& orderItem = orderItemVec[i];
 
-        //OrderItemDB.addItem(orderId, orderItem.itemIdStr_,
-                //orderItem.price_, orderItem.quantity_, isRecItem);
-    //}
+        if(!itemLogger.insertItem(orderId, orderItem.itemIdStr_,
+                                  orderItem.price_, orderItem.quantity_, isRecItem))
+        {
+            result = false;
+        }
+    }
 
-    return true;
+    return result;
 }
 
 bool RecommendTaskService::convertUserItemId_(
