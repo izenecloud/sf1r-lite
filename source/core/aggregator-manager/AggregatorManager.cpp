@@ -97,6 +97,7 @@ void AggregatorManager::aggregateDistSearchResult(DistKeywordSearchResult& resul
     result.totalCount_ = 0;
     size_t overallResultCount = 0;
     bool hasCustomRankScore = false;
+    float rangeLow = numeric_limits<float>::max(), rangeHigh = numeric_limits<float>::min();
     for (size_t i = 0; i < workerNum; i++)
     {
         const DistKeywordSearchResult& wResult = resultList[i].second;
@@ -107,8 +108,19 @@ void AggregatorManager::aggregateDistSearchResult(DistKeywordSearchResult& resul
 
         if (wResult.topKCustomRankScoreList_.size() > 0)
             hasCustomRankScore = true;
+
+        if (wResult.propertyRange_.lowValue_ < rangeLow)
+        {
+            rangeLow = wResult.propertyRange_.lowValue_;
+        }
+        if (wResult.propertyRange_.highValue_ > rangeHigh)
+        {
+            rangeHigh = wResult.propertyRange_.highValue_;
+        }
     }
-    cout << "result.totalCount_: " << result.totalCount_ << ",  overallResultCount: " << overallResultCount<<endl;
+    //cout << "result.totalCount_: " << result.totalCount_ << ",  overallResultCount: " << overallResultCount<<endl;
+    result.propertyRange_.lowValue_ = rangeLow;
+    result.propertyRange_.highValue_ = rangeHigh;
 
     // set page info
     if (result.start_ >= overallResultCount)
