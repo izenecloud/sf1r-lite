@@ -28,9 +28,12 @@ class KeywordSearchResult;
 class WorkerServer : public JobWorker<WorkerServer>
 {
 private:
+    // A coming request should be target at a specified collection or a bundle which not limited
+    // to any collection, set to corresponding worker service before handling request.
     boost::shared_ptr<WorkerService> workerService_;
 
-    QueryLogSearchService* queryLogSearchService_;
+    // worker service for querylog bundle
+    boost::shared_ptr<WorkerService> queryLogWorkerService_;
 
 public:
 //    static WorkerServer* get()
@@ -41,11 +44,12 @@ public:
     WorkerServer(const std::string& host, uint16_t port, unsigned int threadNum)
     : JobWorker<WorkerServer>(host, port, threadNum)
     {
+        queryLogWorkerService_.reset(new WorkerService());
     }
 
     void setQueryLogSearchService(QueryLogSearchService* queryLogSearchService)
     {
-        queryLogSearchService_ = queryLogSearchService;
+        queryLogWorkerService_->queryLogSearchService_ = queryLogSearchService;
     }
 
 public:
@@ -63,7 +67,10 @@ public:
         if (identityLow == "querylog")
         {
             if (sf1r::SF1Config::get()->checkQueryLogWorkerService())
+            {
+                workerService_ = queryLogWorkerService_;
                 return true;
+            }
             else
             {
                 error = "QueryLog worker service is not enabled!";
