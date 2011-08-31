@@ -125,7 +125,6 @@ bool IndexSearchService::getSearchResult(
     return true;
 
 #else
-
     // Set basic info for response
     resultItem.collectionName_ = actionItem.collectionName_;
     resultItem.encodingType_ =
@@ -290,6 +289,7 @@ bool IndexSearchService::getSearchResult(
     return true;
 
 #endif
+
 }
 
 void IndexSearchService::analyze_(const std::string& qstr, std::vector<izenelib::util::UString>& results)

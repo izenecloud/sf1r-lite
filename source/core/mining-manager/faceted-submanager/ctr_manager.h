@@ -33,6 +33,9 @@ public:
 
     bool open();
 
+    // resize
+    void updateDocNum(size_t docNum);
+
     /**
      * Update ctr by internal document id.
      * @param docId, indicates which document to be updated.

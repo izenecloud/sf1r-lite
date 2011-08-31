@@ -265,7 +265,8 @@ public:
     {
         return tgManager_;
     }
-    
+
+    void onIndexUpdated(size_t docNum);
 private:
 
 
