@@ -201,8 +201,8 @@ bool CobraProcess::initDriverServer()
 
     // init Router
     router_.reset(new ::izenelib::driver::Router);
-    QueryLogSearchService* service = initQuery();
-    initializeDriverRouter(*router_, service, enableTest);
+    queryLogService_ = initQuery();
+    initializeDriverRouter(*router_, queryLogService_, enableTest);
 
     boost::shared_ptr<DriverConnectionFactory> factory(
         new DriverConnectionFactory(router_)
@@ -240,7 +240,9 @@ bool CobraProcess::checkAndStartWorkerServer()
             workerServer_.reset(new WorkerServer(host, port, threadNum));
             workerServer_->start();
 
-            cout << "#[Worker Server] enabled, listening at localhost:"<<port<<" ..."<<endl;
+            workerServer_->setQueryLogSearchService(queryLogService_);
+
+            cout << "#[Worker Server] started, listening at localhost:"<<port<<" ..."<<endl;
         }
         catch (std::exception& e)
         {

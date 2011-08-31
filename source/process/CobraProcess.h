@@ -43,6 +43,8 @@ private:
 private:
     std::string configDir_;
 
+    QueryLogSearchService* queryLogService_;
+
     boost::scoped_ptr<izenelib::driver::DriverServer> driverServer_;
 
     boost::shared_ptr<izenelib::driver::Router> router_;

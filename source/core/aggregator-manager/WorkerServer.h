@@ -13,6 +13,7 @@
 //#include <util/singleton.h>
 
 #include <common/CollectionManager.h>
+#include <common/Utilities.h>
 #include <controllers/CollectionHandler.h>
 #include <bundles/index/IndexSearchService.h>
 
@@ -29,6 +30,8 @@ class WorkerServer : public JobWorker<WorkerServer>
 private:
     boost::shared_ptr<WorkerService> workerService_;
 
+    QueryLogSearchService* queryLogSearchService_;
+
 public:
 //    static WorkerServer* get()
 //    {
@@ -37,7 +40,13 @@ public:
 
     WorkerServer(const std::string& host, uint16_t port, unsigned int threadNum)
     : JobWorker<WorkerServer>(host, port, threadNum)
-    {}
+    {
+    }
+
+    void setQueryLogSearchService(QueryLogSearchService* queryLogSearchService)
+    {
+        queryLogSearchService_ = queryLogSearchService;
+    }
 
 public:
 
@@ -50,22 +59,34 @@ public:
         if (debug_)
             cout << "#[WorkerServer::preHandle] identity : " << identity << endl;
 
-        // todo, check if bundle worker service enabled(queryLog)
-        if (!sf1r::SF1Config::get()->checkCollectionWorkerServer(identity))
+        std::string identityLow = sf1r::Utilities::toLower(identity);
+        if (identityLow == "querylog")
+        {
+            if (sf1r::SF1Config::get()->checkQueryLogWorkerService())
+                return true;
+            else
+            {
+                error = "QueryLog worker service is not enabled!";
+                return false;
+            }
+        }
+
+        if (sf1r::SF1Config::get()->checkCollectionWorkerService(identity))
+        {
+            CollectionHandler* collectionHandler_ = CollectionManager::get()->findHandler(identity);
+            if (!collectionHandler_)
+            {
+                error = "No collectionHandler found for " + identity;
+                return false;
+            }
+            workerService_ = collectionHandler_->indexSearchService_->workerService_;
+        }
+        else
         {
             error = "Worker service is not enabled for " + identity;
             return false;
         }
 
-        // todo, check if identity is bundle name(queryLog)
-        CollectionHandler* collectionHandler_ = CollectionManager::get()->findHandler(identity);
-        if (!collectionHandler_)
-        {
-            error = "No collection found for " + identity;
-            return false;
-        }
-
-        workerService_ = collectionHandler_->indexSearchService_->workerService_;
         return true;
     }
 

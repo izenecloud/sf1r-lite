@@ -430,12 +430,18 @@ public:
         return false;
     }
 
-    bool checkAggregatorSupport(const std::string& collectionName)
+    bool checkAggregatorSupport(const std::string& collectionOrBundleName)
     {
-        return brokerAgentConfig_.checkAggregatorByName(collectionName);
+        std::string nameLower = collectionOrBundleName;
+        downCase(nameLower);
+
+        if (nameLower == "querylog")
+            return true;
+
+        return brokerAgentConfig_.checkAggregatorByName(collectionOrBundleName);
     }
 
-    bool checkCollectionWorkerServer(const std::string& collectionName)
+    bool checkCollectionWorkerService(const std::string& collectionName)
     {
         std::map<std::string, CollectionMeta>::const_iterator it =
             collectionMetaMap_.find(collectionName);
@@ -446,6 +452,11 @@ public:
         }
 
         return false;
+    }
+
+    bool checkQueryLogWorkerService()
+    {
+        return queryLogBundleConfig_ .enable_worker_;
     }
 
     bool isEnableWorkerServer()
