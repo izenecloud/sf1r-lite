@@ -33,6 +33,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
         ${izenelib_LIBRARIES}
         ${xml2_LIBRARIES}
         sqlite3
+	${MYSQL_LIBRARIES}
         )
     SET_TARGET_PROPERTIES(t_license_manager
         PROPERTIES

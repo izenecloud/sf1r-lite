@@ -1,5 +1,5 @@
-#ifndef _DB_CONNECTION_H_
-#define _DB_CONNECTION_H_
+#ifndef SF1R_SQLITE3_DBCONNECTION_H_
+#define SF1R_SQLITE3_DBCONNECTION_H_
 
 #include <iostream>
 #include <string>
@@ -9,22 +9,20 @@
 #include <sqlite3.h>
 
 #include <util/ThreadModel.h>
-
-#include "LogManagerSingleton.h"
-
+#include "DbConnectionBase.h"
 
 namespace sf1r {
 
-class DbConnectionBase;
-
-class DbConnection : public LogManagerSingleton<DbConnection>
+class Sqlite3DbConnection : public DbConnectionBase
 {
 public:
-    DbConnection();
 
-    ~DbConnection();
+    Sqlite3DbConnection();
 
-    bool init(const std::string& str);
+    ~Sqlite3DbConnection();
+
+    /// @path where database file locates
+    bool init(const std::string & path );
 
     /// close all database connections
     void close();
@@ -39,16 +37,23 @@ public:
     /// @throw exception if underlying database reports error
     bool exec(const std::string & sql, std::list< std::map<std::string, std::string> > & results, bool omitError=false);
 
-    enum SQL_KEYWORD {
-        ATTR_AUTO_INCREMENT, // the attribute to automatically generate unique id for new row
-        FUNC_LAST_INSERT_ID, // the function to get the last automatically generated id
-        SQL_KEYWORD_NUM
-    };
-
-    const std::string& getSqlKeyword(SQL_KEYWORD type) const;
-
 private:
-    DbConnectionBase* impl_;
+
+    static const int PoolSize = 16;
+
+    /// callback functions required by sqlite3_exec
+    static int callback(void *data, int argc, char **argv, char **azColName);
+
+    static int busyhandler(void *data, int times);
+
+    sqlite3* getDb();
+
+    void putDb(sqlite3 *);
+
+    izenelib::util::ReadWriteLock mutex_;
+
+    std::list<sqlite3*> pool_;
+
 };
 
 }

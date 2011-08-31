@@ -297,7 +297,7 @@ bool MiningManager::open()
             size_t docNum = 0;
             if (index_manager_)
             {
-                docNum = index_manager_->getIndexReader()->maxDoc() + 1;
+                docNum = index_manager_->getIndexReader()->maxDoc();
             }
 
             ctrManager_.reset(new faceted::CTRManager(ctr_path, docNum));
@@ -540,6 +540,18 @@ bool MiningManager::DoMiningCollection()
         faceted_->ProcessCollection(false);
     }
 
+    //do ctr
+    if ( ctrManager_ )
+    {
+        size_t docNum = 0;
+        if (index_manager_)
+        {
+            docNum = index_manager_->getIndexReader()->maxDoc();
+        }
+
+        ctrManager_->updateDocNum(docNum);
+    }
+
     //do group
     if( mining_schema_.group_enable )
     {
@@ -600,6 +612,14 @@ bool MiningManager::DoMiningCollection()
         MEMLOG("[Mining] SIM finished.");
     }
     return true;
+}
+
+void MiningManager::onIndexUpdated(size_t docNum)
+{
+    if (ctrManager_)
+    {
+        ctrManager_->updateDocNum(docNum);
+    }
 }
 
 bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
@@ -1164,43 +1184,37 @@ bool MiningManager::addTgResult_(KeywordSearchResult& miaInput)
 {
     std::cout << "[MiningManager::getTGResult]" << std::endl;
     if ( miaInput.topKDocs_.size()==0 ) return true;
-    uint32_t top_docs_count = miningConfig_.taxonomy_param.top_docnum;
-    if (top_docs_count > miaInput.topKDocs_.size())
-    {
-        top_docs_count = miaInput.topKDocs_.size();
-    }
-    std::vector<docid_t> topDocIdList;
-    topDocIdList.assign(miaInput.topKDocs_.begin(), miaInput.topKDocs_.begin()+top_docs_count);
-    std::cout << "Use top " << top_docs_count <<" docs for TG, getting "<<miaInput.topKDocs_.size()<<std::endl;
 
-    TaxonomyRep taxonomyRep;
-    bool ret = tgManager_->getQuerySpecificTaxonomyInfo(topDocIdList,
-               izenelib::util::UString(miaInput.rawQueryString_, miaInput.encodingType_), miaInput.totalCount_, miaInput.topKDocs_.size(), taxonomyRep, miaInput.neList_);
-    if (!ret)
-    {
-        std::string msg = "error at getting taxonomy";
-        if (taxonomyRep.error_.length() > 0)
-        {
-            msg = taxonomyRep.error_;
-        }
-        miaInput.error_ += "[TG: "+msg+"]";
-        sflog->error(SFL_MINE, msg.c_str());
-    }
-    else
-    {
-        taxonomyRep.fill(miaInput);
-//       {
-//         //debug output
-//         for(uint32_t i=0;i<taxonomyRep.result_.size();i++)
+    izenelib::util::UString query(miaInput.rawQueryString_, miaInput.encodingType_);
+//     TaxonomyRep taxonomyRep;
+//     
+//     bool ret = tgManager_->GetResult(miaInput.topKDocs_, query, miaInput.totalCount_, taxonomyRep, miaInput.neList_);
+//     if (!ret)
+//     {
+//         std::string msg = "error at getting taxonomy";
+//         if (taxonomyRep.error_.length() > 0)
 //         {
-//             std::string str;
-//             taxonomyRep.result_[i]->name_.convertString(str, izenelib::util::UString::UTF_8);
-//             std::cout<<"Top Cluster: "<<str<<std::endl;
+//             msg = taxonomyRep.error_;
 //         }
-//       }
-
-    }
-
+//         miaInput.error_ += "[TG: "+msg+"]";
+//         sflog->error(SFL_MINE, msg.c_str());
+//     }
+//     else
+//     {
+//         taxonomyRep.fill(miaInput);
+// //       {
+// //         //debug output
+// //         for(uint32_t i=0;i<taxonomyRep.result_.size();i++)
+// //         {
+// //             std::string str;
+// //             taxonomyRep.result_[i]->name_.convertString(str, izenelib::util::UString::UTF_8);
+// //             std::cout<<"Top Cluster: "<<str<<std::endl;
+// //         }
+// //       }
+// 
+//     }
+    
+    bool ret = tgManager_->GetConceptsByDocidList(miaInput.topKDocs_, query, miaInput.totalCount_, miaInput.tg_input);
     return ret;
 
 }

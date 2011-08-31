@@ -48,9 +48,12 @@ struct QueryIdentity
     /// search results offset after topK
     int start;
 
+    /// action type of distributed search
+    int distActionType;
+
     DATA_IO_LOAD_SAVE(QueryIdentity, &query&userId&rankingType&laInfo&properties
             &sortInfo&filterInfo&groupParam&rangeProperty
-            &strExp&paramConstValueMap&paramPropertyValueMap&start);
+            &strExp&paramConstValueMap&paramPropertyValueMap&start&distActionType);
 
     template<class Archive>
     void serialize(Archive& ar, const unsigned version)
@@ -68,12 +71,14 @@ struct QueryIdentity
         ar & paramConstValueMap;
         ar & paramPropertyValueMap;
         ar & start;
+        ar & distActionType;
     }
 };
 
 void makeQueryIdentity(
     QueryIdentity& identity,
     const KeywordSearchActionItem& item,
+    int distActionType = 0,
     int start = 0
 );
 
@@ -92,7 +97,8 @@ inline bool operator==(const QueryIdentity& a,
         && a.strExp == b.strExp
         && a.paramConstValueMap == b.paramConstValueMap
         && a.paramPropertyValueMap == b.paramPropertyValueMap
-        && a.start == b.start;
+        && a.start == b.start
+        && a.distActionType == b.distActionType;
 }
 
 inline bool operator!=(const QueryIdentity& a,

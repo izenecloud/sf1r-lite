@@ -103,7 +103,7 @@ namespace sf1r {
             void writeEventLog( LOG_TYPE type, int nStatus, const char* msg, va_list & vlist);
 
         private:
-            string logPath;
+//             string logPath;
 
     };
 

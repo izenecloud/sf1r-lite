@@ -13,6 +13,7 @@
 //#include <util/singleton.h>
 
 #include <common/CollectionManager.h>
+#include <common/Utilities.h>
 #include <controllers/CollectionHandler.h>
 #include <bundles/index/IndexSearchService.h>
 
@@ -29,6 +30,8 @@ class WorkerServer : public JobWorker<WorkerServer>
 private:
     boost::shared_ptr<WorkerService> workerService_;
 
+    QueryLogSearchService* queryLogSearchService_;
+
 public:
 //    static WorkerServer* get()
 //    {
@@ -37,70 +40,131 @@ public:
 
     WorkerServer(const std::string& host, uint16_t port, unsigned int threadNum)
     : JobWorker<WorkerServer>(host, port, threadNum)
-    {}
+    {
+    }
+
+    void setQueryLogSearchService(QueryLogSearchService* queryLogSearchService)
+    {
+        queryLogSearchService_ = queryLogSearchService;
+    }
 
 public:
+
     /**
-     * interfaces for handling remote request
-     * @{
+     * Pre-process before dispatch (handle) a received request,
+     * identity is info such as collection, bundle name.
      */
-
-    virtual bool preHandle(const std::string& key)
+    virtual bool preHandle(const std::string& identity, std::string& error)
     {
-        cout << "#[WorkerServer::preHandle] key : " << key<<endl;
+        if (debug_)
+            cout << "#[WorkerServer::preHandle] identity : " << identity << endl;
 
-        if (!sf1r::SF1Config::get()->checkCollectionWorkerServer(key))
+        std::string identityLow = sf1r::Utilities::toLower(identity);
+        if (identityLow == "querylog")
         {
+            if (sf1r::SF1Config::get()->checkQueryLogWorkerService())
+                return true;
+            else
+            {
+                error = "QueryLog worker service is not enabled!";
+                return false;
+            }
+        }
+
+        if (sf1r::SF1Config::get()->checkCollectionWorkerService(identity))
+        {
+            CollectionHandler* collectionHandler_ = CollectionManager::get()->findHandler(identity);
+            if (!collectionHandler_)
+            {
+                error = "No collectionHandler found for " + identity;
+                return false;
+            }
+            workerService_ = collectionHandler_->indexSearchService_->workerService_;
+        }
+        else
+        {
+            error = "Worker service is not enabled for " + identity;
             return false;
         }
 
-        CollectionHandler* collectionHandler_ = CollectionManager::get()->findHandler(key);
-        if (!collectionHandler_)
-        {
-            return false;
-        }
-
-        workerService_ = collectionHandler_->indexSearchService_->workerService_;
         return true;
     }
 
-    /*pure virtual*/
-    void addHandlers()
+    /**
+     * Handlers for processing received remote requests.
+     */
+    virtual void addHandlers()
     {
         ADD_WORKER_HANDLER_LIST_BEGIN( WorkerServer )
 
-        ADD_WORKER_HANDLER( getSearchResult )
-        ADD_WORKER_HANDLER( getSummaryResult )
-        // todo, add more ...
+        ADD_WORKER_HANDLER( getDistSearchInfo )
+        ADD_WORKER_HANDLER( getDistSearchResult )
+        ADD_WORKER_HANDLER( getSummaryMiningResult )
+        ADD_WORKER_HANDLER( getDocumentsByIds )
+        ADD_WORKER_HANDLER( getInternalDocumentId )
+        ADD_WORKER_HANDLER( getSimilarDocIdList )
+        ADD_WORKER_HANDLER( clickGroupLabel )
+        ADD_WORKER_HANDLER( visitDoc )
 
         ADD_WORKER_HANDLER_LIST_END()
     }
 
-    bool getSearchResult(JobRequest& req)
+    /**
+     * Publish worker services to remote procedure (as remote server)
+     * @{
+     */
+
+    bool getDistSearchInfo(JobRequest& req)
     {
-        WORKER_HANDLE_1_1(req, KeywordSearchActionItem, processGetSearchResult, KeywordSearchResult)
+        WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, DistKeywordSearchInfo, workerService_, getDistSearchInfo)
         return true;
     }
 
-    bool getSummaryResult(JobRequest& req)
+    bool getDistSearchResult(JobRequest& req)
     {
-        WORKER_HANDLE_1_1(req, KeywordSearchActionItem, processGetSummaryResult, KeywordSearchResult)
+        WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, DistKeywordSearchResult, workerService_, getDistSearchResult)
         return true;
     }
 
-    /** @}*/
-
-private:
-    bool processGetSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+    bool getSummaryMiningResult(JobRequest& req)
     {
-        return workerService_->processGetSearchResult(actionItem, resultItem);
+        WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, KeywordSearchResult, workerService_, getSummaryMiningResult)
+        return true;
     }
 
-    bool processGetSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+    bool getDocumentsByIds(JobRequest& req)
     {
-        return workerService_->processGetSummaryResult(actionItem, resultItem);
+        WORKER_HANDLE_REQUEST_1_1(req, GetDocumentsByIdsActionItem, RawTextResultFromSIA, workerService_, getDocumentsByIds)
+    	return true;
     }
+
+    bool getInternalDocumentId(JobRequest& req)
+    {
+        WORKER_HANDLE_REQUEST_1_1(req, izenelib::util::UString, uint64_t, workerService_, getInternalDocumentId)
+        return true;
+    }
+
+    bool getSimilarDocIdList(JobRequest& req)
+    {
+        WORKER_HANDLE_REQUEST_2_1(req, uint64_t, uint32_t, workerService_->getSimilarDocIdList, SimilarDocIdListType)
+        return true;
+    }
+
+    bool clickGroupLabel(JobRequest& req)
+    {
+        WORKER_HANDLE_REQUEST_1_1(req, ClickGroupLabelActionItem, bool, workerService_, clickGroupLabel)
+        return true;
+    }
+
+    bool visitDoc(JobRequest& req)
+    {
+        WORKER_HANDLE_REQUEST_1_1(req, uint32_t, bool, workerService_, visitDoc)
+        return true;
+    }
+
+    /** @} */
 };
+
 
 }
 

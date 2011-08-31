@@ -64,6 +64,7 @@ private:
     /// @param[out] rawTextResult Raw text.
     bool doGet(
         const GetDocumentsByIdsActionItem& getActionItem,
+        const KeywordSearchResult& miaResult,
         RawTextResultFromMIA& rawTextResult
     );
 
@@ -79,7 +80,7 @@ private:
         const KeywordSearchResult& miaResult,
         unsigned start,
         unsigned count,
-        std::vector<sf1r::docid_t>& idListInPage
+        std::vector<wdocid_t>& idListInPage
     );
 
     /// @internal
@@ -94,7 +95,7 @@ private:
         const KeywordSearchResult& miaResult,
         unsigned start,
         unsigned count,
-        std::vector<sf1r::docid_t>& idListInPage
+        std::vector<wdocid_t>& idListInPage
     );
 
     void filterDocIdList(const KeywordSearchResult& origin, const std::vector<sf1r::docid_t>& id_list, KeywordSearchResult& new_result);

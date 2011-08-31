@@ -84,9 +84,12 @@ bool MiningBundleActivator::addingService( const ServiceReference& ref )
             }
             searchService_ = new MiningSearchService;
             searchService_->miningManager_ = miningManager_;
+            searchService_->aggregatorManager_ = service->aggregatorManager_;
+            searchService_->workerService_ = service->workerService_;
+            
             taskService_ = new MiningTaskService;
             taskService_->miningManager_ = miningManager_;
-
+            
             Properties props;
             props.put( "collection", config_->collectionName_);
             searchServiceReg_ = context_->registerService( "MiningSearchService", searchService_, props );
@@ -173,11 +176,11 @@ MiningBundleActivator::createMiningManager_(IndexSearchService* indexService) co
         new MiningManager(
             dir,
             getQueryDataPath_(),
-            indexService->laManager_,
-            indexService->documentManager_,
-            indexService->indexManager_,
-            indexService->searchManager_,
-            indexService->idManager_,
+            indexService->workerService_->laManager_,
+            indexService->workerService_->documentManager_,
+            indexService->workerService_->indexManager_,
+            indexService->workerService_->searchManager_,
+            indexService->workerService_->idManager_,
             config_->collectionName_,
             config_->schema_,
             config_->mining_config_,

@@ -1,5 +1,10 @@
 #include "MiningSearchService.h"
 #include <mining-manager/faceted-submanager/ontology_manager.h>
+
+#include <process/common/XmlConfigParser.h>
+#include <aggregator-manager/WorkerService.h>
+#include <aggregator-manager/AggregatorManager.h>
+
 namespace sf1r
 {
 
@@ -19,6 +24,7 @@ bool MiningSearchService::getSearchResult(
     return miningManager_->getMiningResult(resultItem);
 }
 
+//xxx
 bool MiningSearchService::getSimilarDocIdList(
     uint32_t documentId, 
     uint32_t maxNum, 
@@ -26,6 +32,23 @@ bool MiningSearchService::getSimilarDocIdList(
 )
 {
     return miningManager_->getSimilarDocIdList(documentId, maxNum, result);
+}
+
+bool MiningSearchService::getSimilarDocIdList(
+        const std::string& collectionName,
+        uint64_t documentId,
+        uint32_t maxNum,
+        std::vector<std::pair<uint64_t, float> >& result)
+{
+    if (!SF1Config::get()->checkAggregatorSupport(collectionName))
+    {
+        return workerService_->getSimilarDocIdList(documentId, maxNum, result);;
+    }
+    else
+    {
+        sf1r::workerid_t workerId = net::aggregator::Util::GetWorkerAndDocId(documentId).first;
+        return aggregatorManager_->singleRequest(collectionName, "getSimilarDocIdList", documentId, maxNum, result, workerId);
+    }
 }
 
 bool MiningSearchService::getDuplicateDocIdList(
@@ -62,10 +85,11 @@ bool MiningSearchService::getSimilarLabelStringList(
 }
 
 bool MiningSearchService::getDocLabelList(
-    uint32_t docid, 
+    uint32_t docid,
     std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list 
 )
 {
+    // TODO, aggregate by wdocid
     return miningManager_->getLabelListByDocId(docid, label_list);
 }
 
@@ -74,6 +98,7 @@ bool MiningSearchService::getLabelListWithSimByDocId(
     std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > >& label_list
 )
 {
+    // TODO, aggregate by wdocid
     return miningManager_->getLabelListWithSimByDocId(docid, label_list);
 }
 
@@ -175,9 +200,26 @@ bool MiningSearchService::DefineDocCategory(
     return true;
 }
 
+// xxx
 bool MiningSearchService::visitDoc(uint32_t docId)
 {
     return miningManager_->visitDoc(docId);
+}
+
+bool MiningSearchService::visitDoc(const std::string& collectionName, uint64_t wdocId)
+{
+    std::pair<sf1r::workerid_t, sf1r::docid_t> wd = net::aggregator::Util::GetWorkerAndDocId(wdocId);
+    sf1r::workerid_t workerId = wd.first;
+    sf1r::docid_t docId = wd.second;
+    bool ret = true;
+
+    if (!SF1Config::get()->checkAggregatorSupport(collectionName))
+    {
+        return workerService_->visitDoc(docId, ret);
+    }
+
+    aggregatorManager_->singleRequest(collectionName, "visitDoc", docId, ret, workerId);
+    return ret;
 }
 
 bool MiningSearchService::clickGroupLabel(

@@ -1,30 +1,27 @@
-#ifndef _DB_CONNECTION_H_
-#define _DB_CONNECTION_H_
+#ifndef SF1R_MYSQL_DBCONNECTION_H_
+#define SF1R_MYSQL_DBCONNECTION_H_
 
 #include <iostream>
 #include <string>
 #include <map>
 #include <list>
 
-#include <sqlite3.h>
+#include <mysql/mysql.h>
 
 #include <util/ThreadModel.h>
-
-#include "LogManagerSingleton.h"
-
+#include "DbConnectionBase.h"
 
 namespace sf1r {
 
-class DbConnectionBase;
-
-class DbConnection : public LogManagerSingleton<DbConnection>
+class MysqlDbConnection : public DbConnectionBase
 {
 public:
-    DbConnection();
 
-    ~DbConnection();
+    MysqlDbConnection();
 
-    bool init(const std::string& str);
+    ~MysqlDbConnection();
+
+    bool init(const std::string& str );
 
     /// close all database connections
     void close();
@@ -39,17 +36,22 @@ public:
     /// @throw exception if underlying database reports error
     bool exec(const std::string & sql, std::list< std::map<std::string, std::string> > & results, bool omitError=false);
 
-    enum SQL_KEYWORD {
-        ATTR_AUTO_INCREMENT, // the attribute to automatically generate unique id for new row
-        FUNC_LAST_INSERT_ID, // the function to get the last automatically generated id
-        SQL_KEYWORD_NUM
-    };
-
-    const std::string& getSqlKeyword(SQL_KEYWORD type) const;
-
 private:
-    DbConnectionBase* impl_;
+    
+    const std::string DB_NAME;
+    
+    const int PoolSize;
+
+    MYSQL* getDb();
+
+    void putDb(MYSQL *);
+
+    izenelib::util::ReadWriteLock mutex_;
+
+    std::list<MYSQL*> pool_;
+
 };
+
 
 }
 

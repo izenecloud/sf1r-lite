@@ -34,6 +34,8 @@ typedef uint32_t labelid_t;
 typedef uint32_t loc_t;
 typedef uint32_t count_t;
 typedef uint32_t collectionid_t;
+typedef uint32_t workerid_t;
+typedef uint64_t wdocid_t;
 
 } // namespace sf1r
 

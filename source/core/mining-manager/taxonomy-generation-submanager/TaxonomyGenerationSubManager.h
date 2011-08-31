@@ -22,10 +22,11 @@
 #include <am/cccr_hash/cccr_hash.h>
 #include <am/tokyo_cabinet/tc_hash.h>
 #include <common/type_defs.h>
+
 #include "LabelManager.h"
 #include <am/3rdparty/rde_hash.h>
 #include <idmlib/util/idm_analyzer.h>
-#include <idmlib/concept-clustering/algorithm.hpp>
+#include <idmlib/concept-clustering/concept_clustering.h>
 
 namespace sf1r
 {
@@ -33,6 +34,23 @@ namespace sf1r
 class TaxonomyGenerationSubManager : public boost::noncopyable
 {
 
+    struct ScoreItem
+    {
+        ScoreItem(){}
+        ScoreItem(uint32_t doc_count)
+        :doc_invert(doc_count)
+        {
+        }
+        uint32_t concept_id;
+        boost::dynamic_bitset<uint32_t> doc_invert;
+        double score;
+        double score2rank;
+        
+        bool operator<(const ScoreItem& another) const
+        {
+            return score2rank > another.score2rank;
+        }
+    };
 
 
 public:
@@ -43,6 +61,16 @@ public:
     ~TaxonomyGenerationSubManager();
 
 public:
+    
+    bool GetConceptsByDocidList(const std::vector<docid_t>& docIdList, const izenelib::util::UString& queryStr,
+        uint32_t totalCount, idmlib::cc::CCInput32& input);
+        
+    bool GetResult(const idmlib::cc::CCInput64& input, TaxonomyRep& taxonomyRep ,NEResultList& neList);
+    
+    
+    void AggregateInput(const std::vector<wdocid_t>& top_wdoclist, const std::vector<std::pair<uint32_t, idmlib::cc::CCInput32> >& input_list, idmlib::cc::CCInput64& result);
+    
+    
     /// @brief Given a query, get the query specific taxonomy information to display.
     ///
     /// @param docIdList The top doc id list to be taxonomy.
@@ -52,26 +80,31 @@ public:
     /// @param taxonomyRep The output parameter.
     ///
     /// @return If succ.
-    bool getQuerySpecificTaxonomyInfo(
-        const std::vector<docid_t>& docIdList,
-        const izenelib::util::UString& queryStr,
-        uint32_t totalCount,
-        uint32_t numberFromSia,
-        TaxonomyRep& taxonomyRep
-        ,ne_result_list_type& neList);
+//     bool getQuerySpecificTaxonomyInfo(
+//         const std::vector<docid_t>& docIdList,
+//         const izenelib::util::UString& queryStr,
+//         uint32_t totalCount,
+//         uint32_t numberFromSia,
+//         TaxonomyRep& taxonomyRep
+//         ,NEResultList& neList);
 
 
 private:
+    
+    void CombineConceptItem_(const idmlib::cc::ConceptItem& from, idmlib::cc::ConceptItem& to);
+    
+    void GetNEResult_(const idmlib::cc::CCInput64& input, const std::vector<wdocid_t>& doc_list, std::vector<NEItem>& item_list);
 
-    void getNEList_(std::vector<std::pair<labelid_t, docid_t> >& inputPairList
-                    , const std::vector<uint32_t>& docIdList, uint32_t totalDocCount,uint32_t max, std::vector<ne_item_type >& neList);
+//     void getNEList_(std::vector<std::pair<labelid_t, docid_t> >& inputPairList
+//                     , const std::vector<uint32_t>& docIdList, uint32_t totalDocCount,uint32_t max, std::vector<ne_item_type >& neList);
 
 private:
     TaxonomyPara taxonomy_param_;
     std::string path_;
     boost::shared_ptr<LabelManager> labelManager_;
     idmlib::util::IDMAnalyzer* analyzer_;
-    idmlib::cc::Algorithm<LabelManager> algorithm_;
+    idmlib::cc::ConceptClustering<wdocid_t> algorithm_;
+//     idmlib::cc::Algorithm<LabelManager> algorithm_;
     idmlib::cc::Parameters tgParams_;
 //     idmlib::cc::Parameters peopParams_;
 //     idmlib::cc::Parameters locParams_;

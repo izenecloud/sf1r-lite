@@ -29,6 +29,7 @@ public:
         faceted::OntologyRep groupRep;
         faceted::OntologyRep attrRep;
         sf1r::PropertyRange propertyRange;
+        DistKeywordSearchInfo distSearchInfo;
     };
     typedef QueryIdentity key_type;
 
@@ -46,7 +47,8 @@ public:
              std::size_t& totalCount,
              faceted::OntologyRep& groupRep,
              faceted::OntologyRep& attrRep,
-             sf1r::PropertyRange& propertyRange)
+             sf1r::PropertyRange& propertyRange,
+             DistKeywordSearchInfo& distSearchInfo)
     {
         value_type value;
         if (cache_.getValueNoInsert(key, value))
@@ -58,6 +60,7 @@ public:
             groupRep.swap(value.groupRep);
             attrRep.swap(value.attrRep);
             propertyRange.swap(value.propertyRange);
+            distSearchInfo = value.distSearchInfo;
             return true;
         }
 
@@ -71,7 +74,8 @@ public:
              std::size_t totalCount,
              faceted::OntologyRep groupRep,
              faceted::OntologyRep attrRep,
-             sf1r::PropertyRange propertyRange)
+             sf1r::PropertyRange propertyRange,
+             DistKeywordSearchInfo distSearchInfo)
     {
         value_type value;
         scores.swap(value.scores);
@@ -81,6 +85,7 @@ public:
         groupRep.swap(value.groupRep);
         attrRep.swap(value.attrRep);
         propertyRange.swap(value.propertyRange);
+        value.distSearchInfo = distSearchInfo;
         cache_.insertValue(key, value);
     }
 

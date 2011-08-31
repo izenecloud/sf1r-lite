@@ -43,6 +43,7 @@ DocumentsGetHandler::DocumentsGetHandler(
 {
     actionItem_.env_.encodingType_ = "UTF-8";
     actionItem_.env_.ipAddress_ = request.header()[Keys::remote_ip].getString();
+    actionItem_.collectionName_ = asString(request[Keys::collection]);
 }
 
 void DocumentsGetHandler::get()
@@ -63,8 +64,9 @@ void DocumentsGetHandler::similar_to()
             parsePageInfo() &&
             parseDocumentId(request_[Keys::similar_to]))
     {
-        std::vector<std::pair<docid_t, float> > similarDocuments;
+        std::vector<std::pair<wdocid_t, float> > similarDocuments;
         bool success = miningSearchService_->getSimilarDocIdList(
+                           actionItem_.collectionName_,
                            internalId_,
                            kMaxSimilarDocumentCount,
                            similarDocuments
@@ -290,7 +292,7 @@ bool DocumentsGetHandler::parseDocumentId(const Value& inputId)
         scdDocumentId, izenelib::util::UString::UTF_8
     );
     bool success = indexSearchService_->getInternalDocumentId(
-                       unicodeScdDocuemntId, internalId_
+                       actionItem_.collectionName_, unicodeScdDocuemntId, internalId_
                    );
 
     if (!success)

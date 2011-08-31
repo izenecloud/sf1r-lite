@@ -23,6 +23,7 @@ SET(libs
   ${Glog_LIBRARIES}
   ${sqlite3_LIBRARIES}
   ${xml2_LIBRARIES}
+  ${MYSQL_LIBRARIES}
   )
 
 SET(Boost_USE_STATIC_LIBS OFF)

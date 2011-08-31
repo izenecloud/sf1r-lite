@@ -172,7 +172,7 @@ void DocumentsSearchHandler::search()
                     getActionItem.displayPropertyList_
                     = actionItem_.displayPropertyList_;
 
-                    if (doGet(getActionItem, rawTextResult))
+                    if (doGet(getActionItem, searchResult, rawTextResult))
                     {
                         renderDocuments(rawTextResult);
                         renderMiningResult(searchResult);
@@ -200,7 +200,7 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInLabel(
     const KeywordSearchResult& miaResult,
     unsigned start,
     unsigned count,
-    std::vector<sf1r::docid_t>& idListInPage
+    std::vector<sf1r::wdocid_t>& idListInPage
 )
 {
     izenelib::util::UString taxonomyLabel(
@@ -218,7 +218,7 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInLabel(
     std::size_t totalCount = 0;
     if (taxonomyIndex < miaResult.tgDocIdList_.size())
     {
-        const std::vector<sf1r::docid_t>& tgDocIdList =
+        const std::vector<sf1r::wdocid_t>& tgDocIdList =
             miaResult.tgDocIdList_[taxonomyIndex];
         totalCount = tgDocIdList.size();
 
@@ -240,7 +240,7 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInNameEntityItem(
     const KeywordSearchResult& miaResult,
     unsigned start,
     unsigned count,
-    std::vector<sf1r::docid_t>& idListInPage
+    std::vector<sf1r::wdocid_t>& idListInPage
 )
 {
     izenelib::util::UString type(
@@ -253,21 +253,21 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInNameEntityItem(
     );
 
     std::size_t totalCount = 0;
-    typedef ne_result_list_type::const_iterator ne_result_list_iterator;
+    typedef NEResultList::const_iterator ne_result_list_iterator;
     ne_result_list_iterator resultOfType =
         std::find_if(miaResult.neList_.begin(), miaResult.neList_.end(),
-                     boost::bind(&ne_result_type::type_, _1) == type);
+                     boost::bind(&NEResult::type, _1) == type);
     if (resultOfType != miaResult.neList_.end())
     {
-        typedef std::vector<ne_item_type>::const_iterator item_iterator;
+        typedef std::vector<NEItem>::const_iterator item_iterator;
         item_iterator foundItem =
-            std::find_if(resultOfType->itemList_.begin(),
-                         resultOfType->itemList_.end(),
-                         boost::bind(&ne_item_type::first, _1) == name);
+            std::find_if(resultOfType->item_list.begin(),
+                         resultOfType->item_list.end(),
+                         boost::bind(&NEItem::text, _1) == name);
 
-        if (foundItem != resultOfType->itemList_.end())
+        if (foundItem != resultOfType->item_list.end())
         {
-            totalCount = foundItem->second.size();
+            totalCount = foundItem->doc_list.size();
             std::size_t end = start + count;
             if (end > totalCount)
             {
@@ -275,7 +275,7 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInNameEntityItem(
             }
             for (std::size_t i = start; i < end; ++i)
             {
-                idListInPage.push_back(foundItem->second[i]);
+                idListInPage.push_back(foundItem->doc_list[i]);
             }
         }
     }
@@ -290,6 +290,7 @@ void DocumentsSearchHandler::filterDocIdList(const KeywordSearchResult& origin, 
 
 bool DocumentsSearchHandler::doGet(
     const GetDocumentsByIdsActionItem& getActionItem,
+    const KeywordSearchResult& miaResult,
     RawTextResultFromMIA& rawTextResult
 )
 {
@@ -300,19 +301,17 @@ bool DocumentsSearchHandler::doGet(
         return false;
     }
     //add dd result
-    rawTextResult.numberOfDuplicatedDocs_.resize(rawTextResult.idList_.size());
-    for(uint32_t i=0;i<rawTextResult.idList_.size();i++)
-    {
-        uint32_t docid = rawTextResult.idList_[i];
-        std::vector<uint32_t> dd_list;
-        requestSent = miningSearchService_->getDuplicateDocIdList(docid, dd_list);
-        if (!requestSent)
-        {
-            response_.addError("Internal communication error.");
-            return false;
-        }
-        rawTextResult.numberOfDuplicatedDocs_[i] = dd_list.size();
-    }
+    rawTextResult.numberOfDuplicatedDocs_.resize(rawTextResult.idList_.size(), 0);
+//     uint32_t pos1=0,pos2=0;
+//     while(pos1<miaResult.topKDocs_.size() && pos<rawTextResult.idList_.size() )
+//     {
+//         
+//     }
+//     for(uint32_t i=0;i<rawTextResult.idList_.size();i++)
+//     {
+//         wdocid_t wdocid = rawTextResult.idList_[i];
+//         rawTextResult.numberOfDuplicatedDocs_[i] = dd_list.size();
+//     }
     
     //TODO add other information
     
