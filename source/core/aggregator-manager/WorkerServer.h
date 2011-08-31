@@ -146,7 +146,7 @@ public:
 
     bool getSimilarDocIdList(JobRequest& req)
     {
-        WORKER_HANDLE_REQUEST_2_1(req, uint32_t, uint32_t, workerService_->getSimilarDocIdList, SimilarDocIdListType)
+        WORKER_HANDLE_REQUEST_2_1(req, uint64_t, uint32_t, workerService_->getSimilarDocIdList, SimilarDocIdListType)
         return true;
     }
 

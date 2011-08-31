@@ -40,29 +40,15 @@ bool MiningSearchService::getSimilarDocIdList(
         uint32_t maxNum,
         std::vector<std::pair<uint64_t, float> >& result)
 {
-    std::pair<sf1r::workerid_t, sf1r::docid_t> wd = net::aggregator::Util::GetWorkerAndDocId(documentId);
-    sf1r::workerid_t workerId = wd.first;
-    sf1r::docid_t docId = wd.second;
-
-    std::vector<std::pair<uint32_t, float> > simDocList;
-    bool ret;
     if (!SF1Config::get()->checkAggregatorSupport(collectionName))
     {
-        ret = miningManager_->getSimilarDocIdList(docId, maxNum, simDocList);;
+        return workerService_->getSimilarDocIdList(documentId, maxNum, result);;
     }
     else
     {
-        ret = aggregatorManager_->singleRequest(collectionName, "getSimilarDocIdList", docId, maxNum, simDocList, workerId);
+        sf1r::workerid_t workerId = net::aggregator::Util::GetWorkerAndDocId(documentId).first;
+        return aggregatorManager_->singleRequest(collectionName, "getSimilarDocIdList", documentId, maxNum, result, workerId);
     }
-
-    result.reserve(simDocList.size());
-    for (size_t i = 0; i < simDocList.size(); i ++)
-    {
-        uint64_t wdocid = net::aggregator::Util::GetWDocId(workerId, simDocList[i].first);
-        result.push_back(std::make_pair(wdocid, simDocList[i].second));
-    }
-
-    return ret;
 }
 
 bool MiningSearchService::getDuplicateDocIdList(
