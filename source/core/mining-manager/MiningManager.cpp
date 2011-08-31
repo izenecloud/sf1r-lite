@@ -297,7 +297,7 @@ bool MiningManager::open()
             size_t docNum = 0;
             if (index_manager_)
             {
-                docNum = index_manager_->getIndexReader()->maxDoc() + 1;
+                docNum = index_manager_->getIndexReader()->maxDoc();
             }
 
             ctrManager_.reset(new faceted::CTRManager(ctr_path, docNum));
@@ -540,6 +540,18 @@ bool MiningManager::DoMiningCollection()
         faceted_->ProcessCollection(false);
     }
 
+    //do ctr
+    if ( ctrManager_ )
+    {
+        size_t docNum = 0;
+        if (index_manager_)
+        {
+            docNum = index_manager_->getIndexReader()->maxDoc();
+        }
+
+        ctrManager_->updateDocNum(docNum);
+    }
+
     //do group
     if( mining_schema_.group_enable )
     {
@@ -600,6 +612,14 @@ bool MiningManager::DoMiningCollection()
         MEMLOG("[Mining] SIM finished.");
     }
     return true;
+}
+
+void MiningManager::onIndexUpdated(size_t docNum)
+{
+    if (ctrManager_)
+    {
+        ctrManager_->updateDocNum(docNum);
+    }
 }
 
 bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
