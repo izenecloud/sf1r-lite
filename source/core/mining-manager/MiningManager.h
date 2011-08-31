@@ -260,6 +260,11 @@ public:
     {
         return faceted_;
     }
+    
+    boost::shared_ptr<TaxonomyGenerationSubManager> GetTgManager()
+    {
+        return tgManager_;
+    }
 
     void onIndexUpdated(size_t docNum);
 private:

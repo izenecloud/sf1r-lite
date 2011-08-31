@@ -19,85 +19,146 @@ namespace sf1r
 {
 
 class KeywordSearchResult;
+class MiningManager;
 
-class AggregatorManager : public JobAggregator<AggregatorManager>
+typedef WorkerCaller<WorkerService> LocalWorkerCaller;
+
+class AggregatorManager : public JobAggregator<AggregatorManager, LocalWorkerCaller>
 {
-private:
-    boost::shared_ptr<WorkerService> localWorkerService_;
 
 public:
-    void setLocalWorkerService(const boost::shared_ptr<WorkerService>& localWorkerService)
+    void initLocalWorkerCaller(const boost::shared_ptr<WorkerService> localWorkerService)
     {
-        localWorkerService_ = localWorkerService;
-    }
+        localWorkerCaller_.reset(new LocalWorkerCaller);
+        localWorkerCaller_->setInvoker(localWorkerService.get());
 
-    /**
-     * Interface which encapsulate calls to local service directly
-     */
-    template <typename RequestType, typename ResultType>
-    bool get_local_result(
-            const std::string& func,
-            const RequestType& request,
-            ResultType& result,
-            std::string& error)
-    {
-        if (localWorkerService_)
-        {
-            return localWorkerService_->call(func, request, result, error);
-        }
-        else
-        {
-            error = "No local worker service.";
-            return false;
-        }
+        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getDistSearchInfo);
+        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getDistSearchResult);
+        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getSummaryMiningResult);
+        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getDocumentsByIds);
+        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getInternalDocumentId);
+        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getSimilarDocIdList);
+        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, clickGroupLabel);
+        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, visitDoc);
     }
-
 
 public:
     /**
-     * Functoin for merging results
-     * @details Overload join_impl() to aggregate different results from multiple nodes
+     * TODO, overload aggregate() to aggregate result(s) got from server node(s).
+     *
      * @{
      */
 
-    /** keyword search result */
-    void join_impl(const std::string& func, KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
+    bool aggregate(const std::string& func,DistKeywordSearchInfo& result, const std::vector<std::pair<workerid_t, DistKeywordSearchInfo> >& resultList)
     {
-        if (func == "getSearchResult")
+        if (func == "getDistSearchInfo")
         {
-            mergeSearchResult(result, resultList);
+            aggregateDistSearchInfo(result, resultList);
+            return true;
         }
-        else if (func == "getSummaryResult")
-        {
-            mergeSummaryResult(result, resultList);
-        }
+        return false;
     }
 
-    /** todo, mining result */
+
+    bool aggregate(const std::string& func,DistKeywordSearchResult& result, const std::vector<std::pair<workerid_t, DistKeywordSearchResult> >& resultList)
+    {
+        if (func == "getDistSearchResult")
+        {
+        	aggregateDistSearchResult(result, resultList);
+        	return true;
+        }
+        return false;
+    }
+
+    bool aggregate(const std::string& func, KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
+    {
+    	if (func == "getSummaryMiningResult")
+        {
+        	aggregateSummaryMiningResult(result, resultList);
+        	return true;
+        }
+    	return false;
+    }
+
+    bool aggregate(const std::string& func, RawTextResultFromSIA& result, const std::vector<std::pair<workerid_t, RawTextResultFromSIA> >& resultList)
+    {
+    	if (func == "getDocumentsByIds")
+    	{
+    		aggregateDocumentsResult(result, resultList);
+    		return true;
+    	}
+    	return false;
+    }
+
+    bool aggregate(const std::string& func, uint64_t& result, const std::vector<std::pair<workerid_t, uint64_t> >& resultList)
+    {
+        if (func == "getInternalDocumentId")
+        {
+            aggregateInternalDocumentId(result, resultList);
+            return true;
+        }
+        return false;
+    }
+
+    bool aggregate(const std::string& func, bool& ret, const std::vector<std::pair<workerid_t, bool> >& resultList)
+    {
+        if (func == "clickGroupLabel")
+        {
+            // xxx
+            ret = true;
+            return true;
+        }
+        return false;
+    }
 
     /** @}*/
 
 private:
-    void mergeSearchResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
+    /// search
+    void aggregateDistSearchInfo(DistKeywordSearchInfo& result, const std::vector<std::pair<workerid_t, DistKeywordSearchInfo> >& resultList);
 
-    void mergeSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
+    void aggregateDistSearchResult(DistKeywordSearchResult& result, const std::vector<std::pair<workerid_t, DistKeywordSearchResult> >& resultList);
+
+    void aggregateSummaryMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
+
+    /// documents
+    void aggregateSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
+
+    void aggregateDocumentsResult(RawTextResultFromSIA& result, const std::vector<std::pair<workerid_t, RawTextResultFromSIA> >& resultList);
+
+    void aggregateInternalDocumentId(uint64_t& result, const std::vector<std::pair<workerid_t, uint64_t> >& resultList);
+
+    /// mining
+    void aggregateMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList);
+
+    //void aggregateSimilarDocIdList(SimilarDocIdListType& result, const std::vector<std::pair<workerid_t, SimilarDocIdListType> >& resultList);
+
 
 public:
-
     /**
+     * Split data by workerid to sub data for requesting different workers.
      * @param result [IN]
      * @param resultList [OUT]
+     * @return true if successfully splited, or false.
      */
-    void splitResultByWorkerid(const KeywordSearchResult& result, std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >& resultMap);
+    bool splitSearchResultByWorkerid(const KeywordSearchResult& result, std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >& resultMap);
 
     /**
      *
-     * @param result [OUT]
-     * @param resultList [IN]
+     * @param actionItem [IN]
+     * @param actionItemMap [OUT]
+     * @return true if successfully splited, or false.
      */
-    void mergeSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > >& resultList);
+    bool splitGetDocsActionItemByWorkerid(
+            const GetDocumentsByIdsActionItem& actionItem,
+            std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >& actionItemMap);
+    
 
-    void mergeMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, boost::shared_ptr<KeywordSearchResult> > >& resultList);
+private:
+    boost::shared_ptr<MiningManager> miningManager_;
+
+    friend class IndexSearchService;
+    friend class IndexBundleActivator;
 };
 
 

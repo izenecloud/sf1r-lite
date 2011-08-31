@@ -46,6 +46,7 @@ SET(libs
   ${Glog_LIBRARIES}
   ${xml2_LIBRARIES}
   ${sqlite3_LIBRARIES}
+  ${MYSQL_LIBRARIES}
   )
 SET(Boost_USE_STATIC_LIBS OFF)
 FIND_PACKAGE(Boost ${Boost_FIND_VERSION}

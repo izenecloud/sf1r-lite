@@ -14,12 +14,38 @@
 
 namespace sf1r
 {
+
+class WorkerService;
+class AggregatorManager;
+
 class MiningSearchService : public ::izenelib::osgi::IService
 {
 public:
     MiningSearchService();
 
     ~MiningSearchService();
+
+public:
+    /// distributed search
+    bool getSimilarDocIdList(
+            const std::string& collectionName,
+            uint64_t documentId,
+            uint32_t maxNum,
+            std::vector<std::pair<uint64_t, float> >& result);
+
+    bool visitDoc(
+            const std::string& collectionName,
+            uint64_t wdocId);
+
+    bool getDocLabelList(
+            const std::string& collectionName,
+            uint32_t docid,
+            std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list );
+
+    bool getLabelListWithSimByDocId(
+            const std::string& collectionName,
+            uint32_t docid,
+            std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > >& label_list);
 
 public:
     bool getSearchResult(KeywordSearchResult& resultItem);
@@ -106,6 +132,11 @@ public:
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
     bool GetTdtTopicInfo(const izenelib::util::UString& text, idmlib::tdt::TopicInfoType& topic_info);
     
+    boost::shared_ptr<MiningManager> GetMiningManager() const
+    {
+        return miningManager_;
+    }
+
     void InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result);
     
     void FinishQueryRecommendInject();
@@ -113,6 +144,9 @@ public:
 
 private:
     boost::shared_ptr<MiningManager> miningManager_;
+
+    boost::shared_ptr<WorkerService> workerService_;
+    boost::shared_ptr<AggregatorManager> aggregatorManager_;
 
     friend class MiningBundleActivator;
 };

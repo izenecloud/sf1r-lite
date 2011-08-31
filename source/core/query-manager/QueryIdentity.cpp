@@ -13,6 +13,7 @@ namespace sf1r {
 void makeQueryIdentity(
     QueryIdentity& identity,
     const KeywordSearchActionItem& item,
+    int distActionType,
     int start
 )
 {
@@ -30,6 +31,7 @@ void makeQueryIdentity(
     identity.paramConstValueMap = item.paramConstValueMap_;
     identity.paramPropertyValueMap = item.paramPropertyValueMap_;
     identity.start = start;
+    identity.distActionType = distActionType;
     std::sort(identity.properties.begin(),
               identity.properties.end());
 }

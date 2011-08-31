@@ -30,13 +30,16 @@ void DocumentsRenderer::renderDocuments(
     Value& resources
 )
 {
-    std::size_t resultCount = result.idList_.size();
+    std::vector<sf1r::wdocid_t> widList;
+    result.getWIdList(widList);
+
+    std::size_t resultCount = widList.size();
 
     for (std::size_t i = 0; i < resultCount; ++i)
     {
         Value& newResource = resources();
 
-        newResource[Keys::_id] = result.idList_[i];
+        newResource[Keys::_id] = widList[i];
 
         // full text and snippet properties
         std::size_t summaryIndex = 0;
@@ -70,7 +73,7 @@ void DocumentsRenderer::renderDocuments(
             }
         }
         if (result.numberOfDuplicatedDocs_.size()
-            == result.idList_.size())
+            == widList.size())
         {
             newResource[Keys::_duplicated_document_count] =
                 result.numberOfDuplicatedDocs_[i];
@@ -94,10 +97,14 @@ void DocumentsRenderer::renderDocuments(
     std::size_t indexInTopK = searchResult.start_ % TOP_K_NUM;
 
     BOOST_ASSERT(indexInTopK + searchResult.count_ <= searchResult.topKDocs_.size());
+
+    std::vector<sf1r::wdocid_t> topKWDocs;
+    searchResult.getTopKWDocs(topKWDocs);
+
     for (std::size_t i = 0; i < searchResult.count_; ++i, ++indexInTopK)
     {
         Value& newResource = resources();
-        newResource[Keys::_id] = searchResult.topKDocs_[indexInTopK];
+        newResource[Keys::_id] = topKWDocs[indexInTopK];
         newResource[Keys::_rank] = searchResult.topKRankScoreList_[indexInTopK];
 
         if (searchResult.topKCustomRankScoreList_.size()
@@ -260,19 +267,19 @@ void DocumentsRenderer::renderNameEntity(
     {
         Value& newNameEntity = nameEntity();
 
-        miaResult.neList_[i].type_.convertString(convertBuffer, kEncoding);
+        miaResult.neList_[i].type.convertString(convertBuffer, kEncoding);
         newNameEntity[Keys::type] = convertBuffer;
 
         Value& nameEntityList = newNameEntity[Keys::name_entity_list];
-        typedef std::vector<ne_item_type>::const_iterator const_iterator;
-        for (const_iterator item = miaResult.neList_[i].itemList_.begin(),
-                         itemEnd = miaResult.neList_[i].itemList_.end();
+        typedef std::vector<NEItem>::const_iterator const_iterator;
+        for (const_iterator item = miaResult.neList_[i].item_list.begin(),
+                         itemEnd = miaResult.neList_[i].item_list.end();
              item != itemEnd; ++item)
         {
             Value& newNameEntityItem = nameEntityList();
-            item->first.convertString(convertBuffer, kEncoding);
+            item->text.convertString(convertBuffer, kEncoding);
             newNameEntityItem[Keys::name_entity_item] = convertBuffer;
-            newNameEntityItem[Keys::document_support_count] = item->second.size();
+            newNameEntityItem[Keys::document_support_count] = item->doc_list.size();
         }
     }
 }

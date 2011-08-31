@@ -47,8 +47,6 @@ namespace bfs = boost::filesystem;
 bool CobraProcess::initialize(const std::string& configFileDir)
 {
     if( !exists(configFileDir) || !is_directory(configFileDir) ) return false;
-    bfs::path logPath(bfs::path(".") / "log" / "COBRA");
-    if( !sflog->init( logPath.string() ) ) return false;
     try
     {
         configDir_ = configFileDir;
@@ -65,6 +63,8 @@ bool CobraProcess::initialize(const std::string& configFileDir)
         return false;
     }
 
+    if(!initLogManager()) return false;
+
     if(!initLAManager()) return false;
 
     if(!initFireWall()) return false;
@@ -73,6 +73,18 @@ bool CobraProcess::initialize(const std::string& configFileDir)
 
     initDriverServer();
 
+    return true;
+}
+
+bool CobraProcess::initLogManager()
+{
+    std::string log_conn = SF1Config::get()->getLogConnString();
+//     bfs::path logPath(bfs::path(".") / "log" / "COBRA");
+    if( !sflog->init(log_conn) ) 
+    {
+        std::cerr<<"Init LogManager with "<<log_conn<<" failed!"<<std::endl;
+        return false;
+    }
     return true;
 }
 
@@ -189,8 +201,8 @@ bool CobraProcess::initDriverServer()
 
     // init Router
     router_.reset(new ::izenelib::driver::Router);
-    QueryLogSearchService* service = initQuery();
-    initializeDriverRouter(*router_, service, enableTest);
+    queryLogService_ = initQuery();
+    initializeDriverRouter(*router_, queryLogService_, enableTest);
 
     boost::shared_ptr<DriverConnectionFactory> factory(
         new DriverConnectionFactory(router_)
@@ -228,7 +240,9 @@ bool CobraProcess::checkAndStartWorkerServer()
             workerServer_.reset(new WorkerServer(host, port, threadNum));
             workerServer_->start();
 
-            cout << "#[Worker Server] enabled, listening at localhost:"<<port<<" ..."<<endl;
+            workerServer_->setQueryLogSearchService(queryLogService_);
+
+            cout << "#[Worker Server] started, listening at localhost:"<<port<<" ..."<<endl;
         }
         catch (std::exception& e)
         {

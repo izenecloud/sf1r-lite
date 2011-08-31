@@ -70,7 +70,7 @@ private:
     GetDocumentsByIdsActionItem actionItem_;
 
     /// for parseDocumentId
-    sf1r::docid_t internalId_;
+    sf1r::wdocid_t internalId_;
 
     /// for parsePageInfo
     std::size_t offset_;

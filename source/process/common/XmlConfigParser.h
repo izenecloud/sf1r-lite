@@ -345,10 +345,17 @@ public:
     /// 
     bool parseConfigFile( const std::string & fileName ) throw(XmlConfigParserException );
 
-    std::string getResourceDir() const
+    const std::string& getResourceDir() const
     {
       return resource_dir_;
     }
+    
+    const std::string& getLogConnString() const
+    {
+      return log_conn_str_;
+    }
+    
+    
     
     /// @brief Gets the configuration related to LAManager
     /// @return The settings for LAManager
@@ -423,7 +430,18 @@ public:
         return false;
     }
 
-    bool checkCollectionWorkerServer(const std::string& collectionName)
+    bool checkAggregatorSupport(const std::string& collectionOrBundleName)
+    {
+        std::string nameLower = collectionOrBundleName;
+        downCase(nameLower);
+
+        if (nameLower == "querylog")
+            return true;
+
+        return brokerAgentConfig_.checkAggregatorByName(collectionOrBundleName);
+    }
+
+    bool checkCollectionWorkerService(const std::string& collectionName)
     {
         std::map<std::string, CollectionMeta>::const_iterator it =
             collectionMetaMap_.find(collectionName);
@@ -434,6 +452,11 @@ public:
         }
 
         return false;
+    }
+
+    bool checkQueryLogWorkerService()
+    {
+        return queryLogBundleConfig_ .enable_worker_;
     }
 
     bool isEnableWorkerServer()
@@ -561,6 +584,8 @@ public:
     // CONFIGURATION ITEMS ---------------
     
     std::string resource_dir_;
+    
+    std::string log_conn_str_;
 
     /// @brief  Configurations for BrokerAgent
     BrokerAgentConfig brokerAgentConfig_;

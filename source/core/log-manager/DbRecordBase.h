@@ -59,7 +59,7 @@ void createTable()
 {
     std::stringstream sql;
 
-    sql << "create table " << DbRecordType::TableName << "(";
+    sql << "create table IF NOT EXISTS " << DbRecordType::TableName << "(";
     for ( int i=0 ; i<DbRecordType::EoC; i++ )
     {
         sql << DbRecordType::ColumnName[i] << " " << DbRecordType::ColumnMeta[i];

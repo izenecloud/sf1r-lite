@@ -30,6 +30,7 @@
 namespace sf1r
 {
 
+
 bool action_rerankable(SearchKeywordOperation& actionOperation)
 {
     bool rerank = false;
@@ -125,6 +126,7 @@ bool SearchManager::search(SearchKeywordOperation& actionOperation,
                            faceted::OntologyRep& groupRep,
                            faceted::OntologyRep& attrRep,
                            sf1r::PropertyRange& propertyRange,
+                           DistKeywordSearchInfo& distSearchInfo,
                            int topK,
                            int start)
 {
@@ -133,9 +135,9 @@ CREATE_PROFILER ( cacheoverhead, "SearchManager", "cache overhead: overhead for 
 START_PROFILER ( cacheoverhead )
 
     QueryIdentity identity;
-    makeQueryIdentity(identity, actionOperation.actionItem_, start);
+    makeQueryIdentity(identity, actionOperation.actionItem_, distSearchInfo.actionType_, start);
 
-    if (cache_->get(identity, rankScoreList, customRankScoreList, docIdList, totalCount, groupRep, attrRep, propertyRange))
+    if (cache_->get(identity, rankScoreList, customRankScoreList, docIdList, totalCount, groupRep, attrRep, propertyRange, distSearchInfo))
     {
 STOP_PROFILER ( cacheoverhead )
         // the cached search results require to be reranked
@@ -158,11 +160,12 @@ STOP_PROFILER ( cacheoverhead )
                   groupRep,
                   attrRep,
                   propertyRange,
+                  distSearchInfo,
                   topK,
                   start))
     {
  START_PROFILER ( cacheoverhead )
-        cache_->set(identity, rankScoreList, customRankScoreList, docIdList, totalCount, groupRep, attrRep, propertyRange);
+        cache_->set(identity, rankScoreList, customRankScoreList, docIdList, totalCount, groupRep, attrRep, propertyRange, distSearchInfo);
  STOP_PROFILER ( cacheoverhead )
         return true;
     }
@@ -178,6 +181,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                               faceted::OntologyRep& groupRep,
                               faceted::OntologyRep& attrRep,
                               sf1r::PropertyRange& propertyRange,
+                              DistKeywordSearchInfo& distSearchInfo,
                               int topK,
                               int start)
 {
@@ -283,7 +287,24 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
     DocumentFrequencyInProperties dfmap;
     CollectionTermFrequencyInProperties ctfmap;
 
-    pDocIterator->df_ctf(dfmap, ctfmap);
+    if (distSearchInfo.actionType_ == DistKeywordSearchInfo::ACTION_FETCH)
+    {
+    	pDocIterator->df_ctf(dfmap, ctfmap);
+
+    	distSearchInfo.dfmap_ = dfmap;
+    	distSearchInfo.ctfmap_ = ctfmap;
+    	return true;
+    }
+    else if (distSearchInfo.actionType_ == DistKeywordSearchInfo::ACTION_SEND)
+    {
+    	dfmap = distSearchInfo.dfmap_;
+    	ctfmap = distSearchInfo.ctfmap_;
+    }
+    else
+    {
+    	pDocIterator->df_ctf(dfmap, ctfmap);
+    }
+
 
     vector<RankQueryProperty> rankQueryProperties(indexPropertySize);
 
@@ -368,6 +389,8 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                 {
                     // prepare custom ranker
                     customRanker = actionOperation.actionItem_.customRanker_;
+                    if (!customRanker)
+                        customRanker = buildCustomRanker(actionOperation.actionItem_);
                     //customRanker->printESTree(); //test
                     if (!customRanker->setPropertyData(pSorterCache_)) {
                         // error info
@@ -640,6 +663,11 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
         {
             reranker_(docIdList,rankScoreList,actionOperation.actionItem_.env_.queryString_);
         }
+
+        if (pSorter)
+        {
+            getSortPropertyData(pSorter, docIdList, distSearchInfo);
+        }
     }
     catch (std::exception& e)
     {
@@ -670,6 +698,108 @@ propertyid_t SearchManager::getPropertyIdByName(const std::string& name) const
     {
         return 0;
     }
+}
+
+CustomRankerPtr SearchManager::buildCustomRanker(KeywordSearchActionItem& actionItem)
+{
+    CustomRankerPtr customRanker(new CustomRanker());
+
+    customRanker->getConstParamMap() = actionItem.paramConstValueMap_;
+    customRanker->getPropertyParamMap() = actionItem.paramPropertyValueMap_;
+
+    customRanker->parse(actionItem.strExp_);
+
+    std::map<std::string, PropertyDataType>& propertyDataTypeMap = customRanker->getPropertyDataTypeMap();
+    std::map<std::string, PropertyDataType>::iterator iter;
+    for (iter = propertyDataTypeMap.begin(); iter != propertyDataTypeMap.end(); iter++)
+    {
+        boost::unordered_map<std::string, PropertyConfig>::iterator ret = schemaMap_.find(iter->first);
+        if (ret != schemaMap_.end())
+        {
+            PropertyConfig& propertyConfig = ret->second;
+            PropertyDataType propertyType = propertyConfig.getType();
+
+            iter->second = propertyType;
+        }
+    }
+
+    return customRanker;
+}
+
+void SearchManager::getSortPropertyData(Sorter* pSorter, std::vector<unsigned int>& docIdList, DistKeywordSearchInfo& distSearchInfo)
+{
+    if (!pSorter)
+        return;
+
+    size_t docNum = docIdList.size();
+
+    SortPropertyCache* pCache = pSorter->pCache_;
+    std::list<SortProperty*>& sortProperties = pSorter->sortProperties_;
+
+    std::list<SortProperty*>::iterator iter;
+    SortProperty* pSortProperty;
+    for (iter = sortProperties.begin(); iter != sortProperties.end(); ++iter)
+    {
+        pSortProperty = *iter;
+        std::string SortPropertyName = pSortProperty->getProperty();
+        distSearchInfo.sortPropertyList_.push_back(std::make_pair(SortPropertyName, pSortProperty->isReverse()));
+
+        if (SortPropertyName == "CUSTOM_RANK" || SortPropertyName == "RANK")
+            continue;
+
+        //if (pCache->sortDataCache_.find(pSortProperty->getProperty()) == pCache->sortDataCache_.end())
+        //    continue;
+
+        PropertyDataType dataType = pCache->sortDataCache_[SortPropertyName].first;
+        void* data =  pCache->sortDataCache_[SortPropertyName].second;
+
+        switch (dataType)
+        {
+            case INT_PROPERTY_TYPE:
+            {
+                std::vector<int64_t> dataList(docNum);
+                for (size_t i = 0; i < docNum; i++)
+                {
+                    dataList[i] = ((int64_t*)data)[docIdList[i]];
+                }
+                distSearchInfo.sortPropertyIntDataList_.push_back(std::make_pair(SortPropertyName, dataList));
+            }
+                break;
+            case UNSIGNED_INT_PROPERTY_TYPE:
+            {
+                std::vector<uint64_t> dataList(docNum);
+                for (size_t i = 0; i < docNum; i++)
+                {
+                    dataList[i] = ((uint64_t*)data)[docIdList[i]];
+                }
+                distSearchInfo.sortPropertyUIntDataList_.push_back(std::make_pair(SortPropertyName, dataList));
+            }
+                break;
+            case FLOAT_PROPERTY_TYPE:
+            {
+                std::vector<float> dataList(docNum);
+                for (size_t i = 0; i < docNum; i++)
+                {
+                    dataList[i] = ((float*)data)[docIdList[i]];
+                }
+                distSearchInfo.sortPropertyFloatDataList_.push_back(std::make_pair(SortPropertyName, dataList));
+            }
+                break;
+            case DOUBLE_PROPERTY_TYPE:
+            {
+                std::vector<float> dataList(docNum);
+                for (size_t i = 0; i < docNum; i++)
+                {
+                    dataList[i] = (float)((double*)data)[docIdList[i]];
+                }
+                distSearchInfo.sortPropertyFloatDataList_.push_back(std::make_pair(SortPropertyName, dataList));
+            }
+                break;
+            default:
+                break;
+        }
+    }
+
 }
 
 void SearchManager::printDFCTF(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties ctfmap)

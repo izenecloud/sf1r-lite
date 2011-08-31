@@ -25,27 +25,48 @@ namespace sf1r
 {
 
 #define TG_VAR_DEF(var,path) var(path+"/"+#var+".tg")
-typedef std::pair<izenelib::util::UString, std::vector<uint32_t> > ne_item_type;
 
-struct ne_result_type
+
+// typedef std::pair<izenelib::util::UString, std::vector<uint32_t> > ne_item_type;
+// struct ne_result_type
+// {
+//     izenelib::util::UString type_;
+//     std::vector<ne_item_type > itemList_;
+//     friend class boost::serialization::access;
+//     template<class Archive>
+//     void serialize(Archive & ar, const unsigned int version)
+//     {
+//         ar & type_;
+//         ar & itemList_;
+//     }
+//     DATA_IO_LOAD_SAVE(ne_result_type, &type_&itemList_);
+// 
+//     MSGPACK_DEFINE(type_,itemList_);
+// };
+// typedef std::vector<ne_result_type> ne_result_list_type;
+
+
+struct NEItem
 {
-    izenelib::util::UString type_;
-    std::vector<ne_item_type > itemList_;
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version)
-    {
-        ar & type_;
-        ar & itemList_;
-    }
-    DATA_IO_LOAD_SAVE(ne_result_type, &type_&itemList_);
-
-    MSGPACK_DEFINE(type_,itemList_);
+    izenelib::util::UString text;
+    std::vector<wdocid_t> doc_list;
+    
+    MSGPACK_DEFINE(text, doc_list);
 };
 
-typedef std::vector<ne_result_type> ne_result_list_type;
+struct NEResult
+{
+    izenelib::util::UString type;
+    std::vector<NEItem> item_list;
+    
+    MSGPACK_DEFINE(type, item_list);
+};
+
+typedef std::vector<NEResult> NEResultList;
+
+
 typedef std::vector<termid_t> TIL;
-typedef idmlib::cc::ClusterRep<uint32_t> TgClusterRep;
+typedef idmlib::cc::ClusterRep<wdocid_t> TgClusterRep;
 
 class TgLabelInfo
 {

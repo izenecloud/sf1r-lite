@@ -31,6 +31,8 @@
 #include <common/sf1_msgpack_serialization_types.h>
 #include <3rdparty/msgpack/msgpack.hpp>
 #include <util/izene_serialization.h>
+#include <net/aggregator/Util.h>
+
 #include <sstream>
 #include <vector>
 #include <utility>
@@ -604,7 +606,7 @@ class GetDocumentsByIdsActionItem
         std::vector<DisplayProperty> displayPropertyList_;
 
         /// @brief Internal document id list.
-        std::vector<docid_t> idList_;
+        std::vector<wdocid_t> idList_;
 
         /// @brief User specified DOCID list.
         std::vector<std::string> docIdList_;
@@ -625,6 +627,24 @@ class GetDocumentsByIdsActionItem
         MSGPACK_DEFINE(env_,languageAnalyzerInfo_,collectionName_,displayPropertyList_,
                 idList_,docIdList_,propertyName_,propertyValueList_,filteringList_);
 
+    public:
+        std::set<sf1r::workerid_t> getDocWorkerIdLists(
+                std::vector<sf1r::docid_t>& docidList,
+                std::vector<sf1r::workerid_t>& workeridList) const
+        {
+            std::set<sf1r::workerid_t> workerSet;
+            for (size_t i = 0; i < idList_.size(); i++)
+            {
+                std::pair<sf1r::workerid_t, docid_t> wd = net::aggregator::Util::GetWorkerAndDocId(idList_[i]);
+                workeridList.push_back(wd.first);
+                docidList.push_back(wd.second);
+
+                workerSet.insert(wd.first);
+            }
+
+            return workerSet;
+        }
+
     private:
         friend class boost::serialization::access;
         template<class Archive>
@@ -634,6 +654,32 @@ class GetDocumentsByIdsActionItem
                 &idList_&docIdList_&filteringList_;
         }
 }; // end - class GetDocumentsByIdsActionItem
+
+///
+/// @brief Information for click group label.
+///
+class ClickGroupLabelActionItem
+{
+public:
+    ClickGroupLabelActionItem() {}
+
+    ClickGroupLabelActionItem(
+            const std::string& queryString,
+            const std::string& propName,
+            const std::vector<std::string>& groupPath)
+    :queryString_(queryString),
+     propName_(propName),
+     groupPath_(groupPath)
+    {}
+
+    std::string queryString_;
+
+    std::string propName_;
+
+    std::vector<std::string> groupPath_;
+
+    MSGPACK_DEFINE(queryString_, propName_, groupPath_);
+};
 
 ///
 /// @brief This class has information to start mining.

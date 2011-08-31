@@ -45,5 +45,6 @@ TARGET_LINK_LIBRARIES(LicenseFileGenerator
   ${TokyoCabinet_LIBRARIES}
   ${Glog_LIBRARIES}
   ${sqlite3_LIBRARIES}
+  ${MYSQL_LIBRARIES}
 )
 

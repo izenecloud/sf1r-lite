@@ -111,6 +111,8 @@ private:
     boost::mutex mutex_;	
 
     IndexBundleConfiguration* config_;
+
+    friend class SearchManager;
 };
 
 /*
@@ -143,6 +145,8 @@ private:
     SortProperty** ppSortProperties_;
 
     size_t nNumProperties_;
+
+    friend class SearchManager;
 };
 
 inline bool Sorter::lessThan(ScoreDoc doc1,ScoreDoc doc2)

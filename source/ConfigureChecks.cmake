@@ -104,6 +104,7 @@ FIND_PACKAGE(Boost 1.38 REQUIRED
 FIND_PACKAGE(TokyoCabinet 1.4.29 REQUIRED)
 FIND_PACKAGE(Glog REQUIRED)
 FIND_PACKAGE(sqlite3 REQUIRED)
+FIND_PACKAGE(MySQL REQUIRED)
 
 ##################################################
 # Driver Docs

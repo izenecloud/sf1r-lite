@@ -1,6 +1,7 @@
 #include "IndexBundleActivator.h"
-
+#include "../mining/MiningSearchService.h"
 #include <common/SFLogger.h>
+#include <process/common/XmlConfigParser.h>
 #include <query-manager/QueryManager.h>
 #include <index-manager/IndexManager.h>
 #include <search-manager/SearchManager.h>
@@ -9,7 +10,8 @@
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
 #include <la-manager/LAPool.h>
-
+#include <aggregator-manager/AggregatorManager.h>
+#include <aggregator-manager/WorkerService.h>
 #include <util/singleton.h>
 
 #include <boost/filesystem.hpp>
@@ -117,7 +119,8 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
         {
             MiningSearchService* service = reinterpret_cast<MiningSearchService*> ( const_cast<IService*>(ref.getService()) );
             cout << "[IndexBundleActivator#addingService] Calling MiningSearchService..." << endl;
-            searchService_->miningSearchService_ = service;
+            searchService_->aggregatorManager_->miningManager_ = service->GetMiningManager();
+            searchService_->workerService_->miningManager_ = service->GetMiningManager();
             return true;
         }
         else
@@ -147,7 +150,7 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
         {
             RecommendSearchService* service = reinterpret_cast<RecommendSearchService*> ( const_cast<IService*>(ref.getService()) );
             cout << "[IndexBundleActivator#addingService] Calling RecommendSearchService..." << endl;
-            searchService_->recommendSearchService_ = service;
+            searchService_->workerService_->recommendSearchService_ = service;
             return true;
         }
         else
@@ -205,18 +208,24 @@ bool IndexBundleActivator::init_()
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open search manager.."<<std::endl;
     searchManager_ = createSearchManager_();
     SF1R_ENSURE_INIT(searchManager_);
+    workerService_.reset(new WorkerService());
+    SF1R_ENSURE_INIT(workerService_);
+    aggregatorManager_ = createAggregatorManager_();
+    SF1R_ENSURE_INIT(aggregatorManager_);
     pQA_ = Singleton<ilplib::qa::QuestionAnalysis>::get();
 
     searchService_ = new IndexSearchService;
 
-    searchService_->bundleConfig_ = config_;
-    searchService_->laManager_ = laManager_;
-    searchService_->idManager_ = idManager_;
-    searchService_->documentManager_ = documentManager_;
-    searchService_->indexManager_ = indexManager_;
-    searchService_->rankingManager_ = rankingManager_;
-    searchService_->searchManager_ = searchManager_;
-    searchService_->pQA_ = pQA_;
+    searchService_->aggregatorManager_ = aggregatorManager_;
+    searchService_->workerService_ = workerService_;
+    searchService_->workerService_->bundleConfig_ = config_;
+    searchService_->workerService_->laManager_ = laManager_;
+    searchService_->workerService_->idManager_ = idManager_;
+    searchService_->workerService_->documentManager_ = documentManager_;
+    searchService_->workerService_->indexManager_ = indexManager_;
+    //searchService_->workerService_->rankingManager_ = rankingManager_;
+    searchService_->workerService_->searchManager_ = searchManager_;
+    searchService_->workerService_->pQA_ = pQA_;
 
     taskService_ = new IndexTaskService(config_, directoryRotator_, indexManager_);
 
@@ -405,6 +414,15 @@ IndexBundleActivator::createLAManager_() const
     LAPool::getInstance()->get_kma_path(kma_path);
     string temp = kma_path + "/stopword.txt";
     ret->loadStopDict( temp );
+    return ret;
+}
+
+boost::shared_ptr<AggregatorManager>
+IndexBundleActivator::createAggregatorManager_() const
+{
+    boost::shared_ptr<AggregatorManager> ret(new AggregatorManager());
+    ret->setAggregatorConfig(sf1r::SF1Config::get()->getAggregatorConfig());
+    ret->initLocalWorkerCaller(workerService_);
     return ret;
 }
 

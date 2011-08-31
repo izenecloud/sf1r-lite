@@ -28,6 +28,7 @@ class QueryBuilder;
 class DocumentManager;
 class RankingManager;
 class IndexManager;
+class Sorter;
 
 namespace faceted
 {
@@ -60,6 +61,7 @@ public:
                 faceted::OntologyRep& groupRep,
                 faceted::OntologyRep& attrRep,
                 sf1r::PropertyRange& propertyRange,
+                DistKeywordSearchInfo& distSearchInfo,
                 int topK = 200,
                 int start = 0);
 
@@ -88,6 +90,7 @@ private:
                    faceted::OntologyRep& groupRep,
                    faceted::OntologyRep& attrRep,
                    sf1r::PropertyRange& propertyRange,
+                   DistKeywordSearchInfo& distSearchInfo,
                    int topK,
                    int start);
 
@@ -97,6 +100,23 @@ private:
      * @see CollectionMeta::numberPropertyConfig
      */
     propertyid_t getPropertyIdByName(const std::string& name) const;
+
+
+    /**
+     * rebuild custom ranker.
+     * @param actionItem
+     * @return
+     */
+    CustomRankerPtr buildCustomRanker(KeywordSearchActionItem& actionItem);
+
+    /**
+     * @brief get data list of each sort property for documents referred by docIdList,
+     * used in distributed search for merging topk results.
+     * @param pSorter [OUT]
+     * @param docIdList [IN]
+     * @param distSearchInfo [OUT]
+     */
+    void getSortPropertyData(Sorter* pSorter, std::vector<unsigned int>& docIdList, DistKeywordSearchInfo& distSearchInfo);
 
 private:
     /**

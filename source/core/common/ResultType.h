@@ -15,14 +15,16 @@
 #define _RESULTTYPE_H_
 
 #include <common/type_defs.h>
-
+#include <common/sf1_msgpack_serialization_types.h>
 #include <mining-manager/taxonomy-generation-submanager/TgTypes.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
-// #include <idmlib/tdt/tdt_types.h>
+#include <idmlib/concept-clustering/cc_types.h>
 // #include <mining-manager/faceted-submanager/manmade_doc_category_item.h>
 #include <util/ustring/UString.h>
 #include <util/izene_serialization.h>
+
 #include <3rdparty/msgpack/msgpack.hpp>
+#include <net/aggregator/Util.h>
 
 #include <sstream>
 #include <vector>
@@ -44,8 +46,11 @@ namespace sf1r {
         }
         float highValue_;
         float lowValue_;
+
+        MSGPACK_DEFINE(highValue_, lowValue_);
     };
 
+    
     ///
     /// @brief This class is inheritable type of every result type in this file.
     ///
@@ -71,6 +76,11 @@ namespace sf1r {
 
     }; // end - class ErrorInfo
 
+    typedef ErrorInfo ResultBase;
+
+    // Definition of divided search results
+    #include "DistributeResultType.h"
+
     class KeywordSearchResult : public ErrorInfo
     {
         public:
@@ -82,12 +92,12 @@ namespace sf1r {
           , start_(0), count_(0), fullTextOfDocumentInPage_()
           , snippetTextOfDocumentInPage_(), rawTextOfSummaryInPage_()
           , numberOfDuplicatedDocs_(), numberOfSimilarDocs_()
-          , docCategories_(), imgs_(), taxonomyString_(), numOfTGDocs_()
+          , docCategories_()/*, imgs_()*/, taxonomyString_(), numOfTGDocs_()
           , tgDocIdList_(), taxonomyLevel_(), neList_(), onto_rep_()
           , relatedQueryList_(), rqScore_()
           {
           }
-          
+
           void print(std::ostream& out = std::cout) const
           {
               stringstream ss;
@@ -105,7 +115,7 @@ namespace sf1r {
                   ss << s << ", ";
               }
               ss << endl;
-              ss << "queryTermIdList_   : " << endl;
+              ss << "queryTermIdList_   : " ;
               for (size_t i = 0; i < queryTermIdList_.size(); i ++)
               {
                   ss << queryTermIdList_[i] << ", ";
@@ -119,11 +129,19 @@ namespace sf1r {
               }
               ss << dec<< endl;
               ss << "topKWorkerIds_      : " << topKWorkerIds_.size() << endl;
-                for (size_t i = 0; i < topKWorkerIds_.size(); i ++)
-                {
-                    ss << topKWorkerIds_[i] << ", ";
-                }
-                ss << endl;
+              for (size_t i = 0; i < topKWorkerIds_.size(); i ++)
+              {
+                  ss << topKWorkerIds_[i] << ", ";
+              }
+              ss << endl;
+              std::vector<sf1r::wdocid_t> topKWDocs;
+              const_cast<KeywordSearchResult*>(this)->getTopKWDocs(topKWDocs);
+              ss << "topKWDocs          : " << topKWDocs.size() << endl;
+              for (size_t i = 0; i < topKWDocs.size(); i ++)
+              {
+                  ss << "0x"<< hex<< topKWDocs[i] << ", ";
+              }
+              ss << dec<< endl;
               ss << "topKRankScoreList_      : " << topKRankScoreList_.size() << endl;
               for (size_t i = 0; i < topKRankScoreList_.size(); i ++)
               {
@@ -213,12 +231,12 @@ namespace sf1r {
                   ss << endl;
               }
               ss << endl;
-              ss << "imgs_        : " << imgs_.size() << endl;
-              for (size_t i = 0; i < imgs_.size(); i ++)
-              {
-                  ss << imgs_[i] << ", ";
-              }
-              ss << endl;
+//               ss << "imgs_        : " << imgs_.size() << endl;
+//               for (size_t i = 0; i < imgs_.size(); i ++)
+//               {
+//                   ss << imgs_[i] << ", ";
+//               }
+//               ss << endl;
 
               ss << "taxonomyString_    : " << taxonomyString_.size() << endl;
               for (size_t i = 0; i < taxonomyString_.size(); i++)
@@ -236,11 +254,21 @@ namespace sf1r {
               }
               ss << endl;
 
+              ss << "onto_rep_ : " <<endl;
+              ss << onto_rep_.ToString();
+              ss << "groupRep_ : " <<endl;
+              ss << groupRep_.ToString();
+              ss << "attrRep_ : " <<endl;
+              ss << attrRep_.ToString();
+
               ss << "===================================" << endl;
               out << ss.str();
           }
 
             std::string rawQueryString_;
+
+            /// Distributed search info
+            DistKeywordSearchInfo distSearchInfo_;
 
             ///
             /// @brief encoding type of rawQueryString
@@ -275,7 +303,7 @@ namespace sf1r {
             /// @brief number of documents in current page
             std::size_t count_;
 
-            /// For sub result, indecates the ordered postions in overall topk list.
+            /// For results in page in one node, indicates corresponding postions in topk results overall nodes.
             std::vector<size_t> topKPostionList_;
 
             /// property query terms
@@ -326,9 +354,11 @@ namespace sf1r {
 
             std::vector< std::vector<izenelib::util::UString> > docCategories_;
 
-            std::vector< uint32_t> imgs_;
+             std::vector< uint32_t> imgs_;
 
             // --------------------------------[ Taxonomy List ]
+            
+            idmlib::cc::CCInput32 tg_input;
 
             /// Taxonomy string list.
             std::vector<izenelib::util::UString> taxonomyString_;
@@ -337,7 +367,7 @@ namespace sf1r {
             std::vector<count_t> numOfTGDocs_;
 
             /// A list which stores the id list of documents which are related to the specific TG item.
-            std::vector<std::vector<docid_t> > tgDocIdList_;
+            std::vector<std::vector<uint64_t> > tgDocIdList_;
 
             /// TaxnomyLevel is used for displaying hierarchical taxonomy result. It will start from 0.
             ///
@@ -352,7 +382,7 @@ namespace sf1r {
             /// numOfTGDocs_ = { 0 , 1 , 2 , 0 };
             std::vector<uint32_t> taxonomyLevel_; // Start From 0
 
-            ne_result_list_type neList_;
+            NEResultList neList_;
             // --------------------------------[ Related Query ]
             
             sf1r::faceted::OntologyRep onto_rep_;
@@ -369,23 +399,60 @@ namespace sf1r {
             /// A list of related query rank score.
             std::vector<float> rqScore_;
             
-            DATA_IO_LOAD_SAVE(KeywordSearchResult,
-                    &rawQueryString_&encodingType_&collectionName_&analyzedQuery_
-                    &queryTermIdList_&totalCount_
-                    &topKDocs_&topKWorkerIds_&topKRankScoreList_&topKCustomRankScoreList_
-                    &start_&count_&propertyQueryTermList_&fullTextOfDocumentInPage_
-                    &snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_
-                    &errno_&error_
-                    &numberOfDuplicatedDocs_&numberOfSimilarDocs_&docCategories_&imgs_&taxonomyString_&numOfTGDocs_&taxonomyLevel_&tgDocIdList_&neList_&onto_rep_&groupRep_&attrRep_&relatedQueryList_&rqScore_)
+
+            void getTopKWDocs(std::vector<sf1r::wdocid_t>& topKWDocs) const
+            {
+                if (topKWorkerIds_.size() <= 0)
+                {
+                    topKWDocs.assign(topKDocs_.begin(), topKDocs_.end());
+                    return;
+                }
+
+                topKWDocs.resize(topKDocs_.size());
+                for (size_t i = 0; i < topKDocs_.size(); i++)
+                {
+                    topKWDocs[i] = net::aggregator::Util::GetWDocId(topKWorkerIds_[i], topKDocs_[i]);
+                }
+            }
+
+            void assign(const DistKeywordSearchResult& result)
+            {
+                //rawQueryString_ = result.rawQueryString_;
+                //encodingType_ = result.rawQueryString_;
+                //collectionName_ = result.collectionName_;
+                analyzedQuery_ = result.analyzedQuery_;
+                queryTermIdList_ = result.queryTermIdList_;
+                totalCount_ = result.totalCount_;
+                topKDocs_ = result.topKDocs_;
+                topKWorkerIds_ = result.topKWorkerIds_;
+                topKRankScoreList_ = result.topKRankScoreList_;
+                topKCustomRankScoreList_ = result.topKCustomRankScoreList_;
+                //start_ = result.start_;
+                count_ = result.count_;
+                topKPostionList_ = result.topKPostionList_;
+                propertyQueryTermList_ = result.propertyQueryTermList_;
+                onto_rep_ = result.onto_rep_;
+                groupRep_ = result.groupRep_;
+                attrRep_ = result.attrRep_;
+            }
+
+
+//             DATA_IO_LOAD_SAVE(KeywordSearchResult,
+//                     &rawQueryString_&encodingType_&collectionName_&analyzedQuery_
+//                     &queryTermIdList_&totalCount_
+//                     &topKDocs_&topKWorkerIds_&topKRankScoreList_&topKCustomRankScoreList_
+//                     &start_&count_&propertyQueryTermList_&fullTextOfDocumentInPage_
+//                     &snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_
+//                     &errno_&error_
+//                     &numberOfDuplicatedDocs_&numberOfSimilarDocs_&docCategories_&imgs_&taxonomyString_&numOfTGDocs_&taxonomyLevel_&tgDocIdList_&neList_&onto_rep_&groupRep_&attrRep_&relatedQueryList_&rqScore_)
 
             MSGPACK_DEFINE(
                     rawQueryString_,encodingType_,collectionName_,analyzedQuery_,
                     queryTermIdList_,totalCount_,topKDocs_,topKWorkerIds_,topKRankScoreList_,
-                    topKCustomRankScoreList_,start_,count_,topKPostionList_,propertyQueryTermList_,fullTextOfDocumentInPage_,
+                    topKCustomRankScoreList_,propertyRange_,start_,count_,topKPostionList_,propertyQueryTermList_,fullTextOfDocumentInPage_,
                     snippetTextOfDocumentInPage_,rawTextOfSummaryInPage_,
-                    errno_,error_,
-                    numberOfDuplicatedDocs_,numberOfSimilarDocs_,docCategories_,imgs_,
-                    taxonomyString_,numOfTGDocs_,taxonomyLevel_,tgDocIdList_,
+                    numberOfDuplicatedDocs_,numberOfSimilarDocs_,docCategories_,
+                    tg_input,taxonomyString_,numOfTGDocs_,taxonomyLevel_,tgDocIdList_,
                     neList_,onto_rep_,groupRep_,attrRep_,relatedQueryList_,rqScore_);
     };
 
@@ -420,8 +487,24 @@ namespace sf1r {
 
             /// internal IDs of the documents
             std::vector<docid_t> idList_;
+
+            /// corresponding workerids for each id. (no need to be serialized)
+            std::vector<workerid_t> workeridList_;
             
-            
+            void getWIdList(std::vector<sf1r::wdocid_t>& widList) const
+            {
+                if (workeridList_.size() <= 0)
+                {
+                    widList.assign(idList_.begin(), idList_.end());
+                    return;
+                }
+
+                widList.resize(idList_.size());
+                for (size_t i = 0; i < idList_.size(); i++)
+                {
+                    widList[i] = net::aggregator::Util::GetWDocId(workeridList_[i], idList_[i]);
+                }
+            }
 
             //LOG: changed the names for consistentcy with KeywordResultItem
             //DATA_IO_LOAD_SAVE(RawTextResultFromSIA, 

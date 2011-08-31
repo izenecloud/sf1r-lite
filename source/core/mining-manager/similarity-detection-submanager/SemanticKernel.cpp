@@ -182,6 +182,7 @@ void SemanticKernel::doSearch()
                 faceted::OntologyRep groupRep;
                 faceted::OntologyRep attrRep;
                 sf1r::PropertyRange propertyRange;
+                sf1r::DistKeywordSearchInfo distKeywordSearchInfo;
 
                 if(searchManager_->search(
                     actionOperation,
@@ -192,6 +193,7 @@ void SemanticKernel::doSearch()
                     groupRep,
                     attrRep,
                     propertyRange,
+                    distKeywordSearchInfo,
                     100,
                     0
                  ))

@@ -22,6 +22,8 @@ public:
     bool initialize(const std::string& configFileDir);
 
 private:
+    bool initLogManager();
+    
     bool initLicenseManager();
 
     bool initLAManager();
@@ -40,6 +42,8 @@ private:
 
 private:
     std::string configDir_;
+
+    QueryLogSearchService* queryLogService_;
 
     boost::scoped_ptr<izenelib::driver::DriverServer> driverServer_;
 
