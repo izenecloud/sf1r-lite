@@ -8,6 +8,7 @@
 #include <query-manager/SearchKeywordOperation.h>
 #include <query-manager/ActionItem.h>
 #include <common/ResultType.h>
+#include "NumericPropertyTable.h"
 
 #include <ir/id_manager/IDManager.h>
 #include <util/ustring/UString.h>
@@ -80,6 +81,8 @@ public:
     }
 
     void setGroupFilterBuilder(faceted::GroupFilterBuilder* builder);
+
+    bool createPropertyTable(const std::string& propertyName, NumericPropertyTable* &propertyTable);
 
 private:
     bool doSearch_(SearchKeywordOperation& actionOperation,

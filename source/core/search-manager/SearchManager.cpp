@@ -17,7 +17,6 @@
 #include "QueryBuilder.h"
 #include "Sorter.h"
 #include "HitQueue.h"
-#include "NumericPropertyManager.h"
 
 #include <util/swap.h>
 #include <util/get.h>
@@ -71,7 +70,6 @@ SearchManager::SearchManager(std::set<PropertyConfig, PropertyComp> schema,
         schemaMap_[iter->getName()] = *iter;
 
     pSorterCache_ = new SortPropertyCache(indexManagerPtr_.get(), config);
-    NumericPropertyManager::instance()->setPropertyCache(pSorterCache_);
     queryBuilder_.reset(new QueryBuilder(indexManager,documentManager,idManager,schemaMap_, config->filterCacheNum_));
     cache_.reset(new SearchCache(config->searchCacheNum_));
     rankingManagerPtr_->getPropertyWeightMap(propertyWeightMap_);
@@ -114,7 +112,6 @@ void SearchManager::chdir(const boost::shared_ptr<IDManager>& idManager,
     // clear cache
     delete pSorterCache_;
     pSorterCache_ = new SortPropertyCache(indexManagerPtr_.get(), config);
-    NumericPropertyManager::instance()->setPropertyCache(pSorterCache_);
     cache_.reset(new SearchCache(config->searchCacheNum_));
 }
 
@@ -801,6 +798,17 @@ void SearchManager::getSortPropertyData(Sorter* pSorter, std::vector<unsigned in
     }
 
 }
+
+bool SearchManager::createPropertyTable(const std::string& propertyName, NumericPropertyTable* &propertyTable)
+{
+    std::map<std::string, std::pair<PropertyDataType,void*> >::const_iterator it = pSorterCache_->sortDataCache_.find(propertyName);
+    if ( it == pSorterCache_->sortDataCache_.end() )
+        return false;
+
+    propertyTable = new NumericPropertyTable(it->second.first, it->second.second);
+    return true;
+}
+
 
 void SearchManager::printDFCTF(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties ctfmap)
 {

@@ -1,13 +1,13 @@
 /**
- * @file sf1r/search-manager/NumericPropertyManager.h
+ * @file sf1r/search-manager/NumericPropertyTable.h
  * @author August Njam Grong <ran.long@izenesoft.com>
  * @date Created <2011-08-31>
  * @brief Providing an interface to retrieve property values from cache.
  */
-#ifndef NUMERIC_PROPERTY_MANAGER_H
-#define NUMERIC_PROPERTY_MANAGER_H
+#ifndef NUMERIC_PROPERTY_TABLE_H
+#define NUMERIC_PROPERTY_TABLE_H
 
-#include "Sorter.h"
+#include <common/type_defs.h>
 
 using namespace std;
 
@@ -18,6 +18,11 @@ class NumericPropertyTable
 public:
     NumericPropertyTable(PropertyDataType type, void *data): type_(type), data_(data)
     {}
+
+    PropertyDataType getType()
+    {
+        return type_;
+    }
 
     inline bool getIntPropertyValue(const docid_t did, int64_t &value)
     {
@@ -59,21 +64,6 @@ private:
     PropertyDataType type_;
 
     void *data_;
-};
-
-class NumericPropertyManager
-{
-public:
-    static NumericPropertyManager* instance();
-
-    void setPropertyCache(SortPropertyCache *propertyCache);
-
-    NumericPropertyTable* getPropertyTable(const string& property, PropertyDataType type);
-
-private:
-    SortPropertyCache *propertyCache_;
-
-    static NumericPropertyManager *instance_;
 };
 
 }
