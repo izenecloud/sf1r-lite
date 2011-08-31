@@ -56,8 +56,6 @@ bool IndexSearchService::getSearchResult(
 )
 {
     CREATE_PROFILER (query, "IndexSearchService", "processGetSearchResults all: total query time");
-    CREATE_PROFILER ( searchIndex, "IndexSearchService", "processGetSearchResults: search index");
-    CREATE_PROFILER ( getSummary, "IndexSearchService", "processGetSearchResults: get raw text, snippets, summarization");
     START_PROFILER ( query );
 
 #ifdef DISTRIBUTED_SEARCH
@@ -123,6 +121,10 @@ bool IndexSearchService::getSearchResult(
 
     //resultItem.print();//:~
     return true;
+
+    STOP_PROFILER ( query );
+
+    REPORT_PROFILE_TO_FILE( "PerformanceQueryResult.SIAProcess" );
 
 #else
     // Set basic info for response

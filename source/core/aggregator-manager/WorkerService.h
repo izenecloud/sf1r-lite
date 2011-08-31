@@ -44,7 +44,6 @@ public:
 public:
     /**
      * Worker services (interfaces)
-     * xxx, use different function names instead of overload.
      * @{
      */
 
@@ -88,7 +87,6 @@ private:
     template <typename ResultItemT>
     bool buildQuery(
             SearchKeywordOperation& actionOperation,
-            IndexBundleConfiguration& bundleConfig,
             std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList,
             ResultItemT& resultItem,
             PersonalSearchInfo& personalSearchInfo);

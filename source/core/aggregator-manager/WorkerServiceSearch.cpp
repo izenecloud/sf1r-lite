@@ -227,7 +227,7 @@ bool WorkerService::getSearchResult_(
     }
 
     resultItem.propertyQueryTermList_.clear();
-    if(!buildQuery(actionOperation, *bundleConfig_, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
+    if(!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
     {
         return true;
     }
@@ -268,7 +268,7 @@ bool WorkerService::getSearchResult_(
 
         actionOperation.actionItem_.env_.queryString_ = newQuery;
         resultItem.propertyQueryTermList_.clear();
-        if(!buildQuery(actionOperation, *bundleConfig_, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
+        if(!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
         {
             return true;
         }
@@ -349,13 +349,26 @@ bool WorkerService::getSummaryMiningResult_(
 
     STOP_PROFILER ( getSummary );
 
-    REPORT_PROFILE_TO_FILE( "PerformanceQueryResult.SIAProcess" );
 
     cout << "[IndexSearchService] keywordSearch process Done" << endl; // XXX
 
     if( miningManager_ )
     {
         miningManager_->getMiningResult(resultItem);
+
+        if (actionItem.env_.isLogGroupLabels_)
+        {
+            const faceted::GroupParam::GroupLabelVec& groupLabels = actionItem.groupParam_.groupLabels_;
+            for (faceted::GroupParam::GroupLabelVec::const_iterator it = groupLabels.begin();
+                it != groupLabels.end(); ++it)
+            {
+                if (miningManager_->clickGroupLabel(actionItem.env_.queryString_, it->first, it->second) == false)
+                {
+                    LOG(ERROR) << "error in log group label click, query: " << actionItem.env_.queryString_
+                               << ", property name: " << it->first << ", path size: " << it->second.size();
+                }
+            }
+        }
     }
 
     return true;
@@ -392,7 +405,6 @@ void WorkerService::analyze_(const std::string& qstr, std::vector<izenelib::util
 template <typename ResultItemT>
 bool WorkerService::buildQuery(
     SearchKeywordOperation& actionOperation,
-    IndexBundleConfiguration& bundleConfig,
     std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList,
     ResultItemT& resultItem,
     PersonalSearchInfo& personalSearchInfo
@@ -406,7 +418,7 @@ bool WorkerService::buildQuery(
 
     START_PROFILER ( buildQueryTree );
     std::string errorMessage;
-    bool buildSuccess = buildQueryTree(actionOperation, bundleConfig, resultItem.error_, personalSearchInfo);
+    bool buildSuccess = buildQueryTree(actionOperation, *bundleConfig_, resultItem.error_, personalSearchInfo);
     STOP_PROFILER ( buildQueryTree );
 
     if (!buildSuccess)
