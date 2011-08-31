@@ -226,7 +226,7 @@ void AggregatorManager::aggregateSummaryResult(KeywordSearchResult& result, cons
     }
 
     size_t displayPropertyNum = resultList[0].second.snippetTextOfDocumentInPage_.size(); //xxx
-    size_t isSummaryOn = resultList[0].second.rawTextOfSummaryInPage_.size(); //xxx
+    size_t isSummaryOn = resultList[0].second.rawTextOfSummaryInPage_.size();
 
     // initialize summary info for result
     result.snippetTextOfDocumentInPage_.resize(displayPropertyNum);
@@ -289,9 +289,9 @@ void AggregatorManager::aggregateSummaryResult(KeywordSearchResult& result, cons
 
 void AggregatorManager::aggregateMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
 {
-    if(!mining_manager_) return;
+    if(!miningManager_) return;
     std::cout<<"call mergeMiningResult"<<std::endl;
-    boost::shared_ptr<TaxonomyGenerationSubManager> tg_manager = mining_manager_->GetTgManager();
+    boost::shared_ptr<TaxonomyGenerationSubManager> tg_manager = miningManager_->GetTgManager();
     if(tg_manager)
     {
         std::vector<std::pair<uint32_t, idmlib::cc::CCInput32> > input_list;

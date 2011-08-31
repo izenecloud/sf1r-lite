@@ -113,7 +113,7 @@ public:
 
     /** @}*/
 
-public:
+private:
     /// search
     void aggregateDistSearchInfo(DistKeywordSearchInfo& result, const std::vector<std::pair<workerid_t, DistKeywordSearchInfo> >& resultList);
 
@@ -135,11 +135,6 @@ public:
 
 
 public:
-    void SetMiningManager(const boost::shared_ptr<MiningManager>& mining_manager)
-    {
-    	mining_manager_ = mining_manager;
-    }
-
     /**
      * Split data by workerid to sub data for requesting different workers.
      * @param result [IN]
@@ -160,7 +155,10 @@ public:
     
 
 private:
-    boost::shared_ptr<MiningManager> mining_manager_;
+    boost::shared_ptr<MiningManager> miningManager_;
+
+    friend class IndexSearchService;
+    friend class IndexBundleActivator;
 };
 
 

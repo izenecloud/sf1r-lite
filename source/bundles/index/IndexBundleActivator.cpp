@@ -119,8 +119,7 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
         {
             MiningSearchService* service = reinterpret_cast<MiningSearchService*> ( const_cast<IService*>(ref.getService()) );
             cout << "[IndexBundleActivator#addingService] Calling MiningSearchService..." << endl;
-            searchService_->miningSearchService_ = service;
-            searchService_->aggregatorManager_->SetMiningManager(service->GetMiningManager());
+            searchService_->aggregatorManager_->miningManager_ = service->GetMiningManager();
             searchService_->workerService_->miningManager_ = service->GetMiningManager();
             return true;
         }
@@ -151,9 +150,7 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
         {
             RecommendSearchService* service = reinterpret_cast<RecommendSearchService*> ( const_cast<IService*>(ref.getService()) );
             cout << "[IndexBundleActivator#addingService] Calling RecommendSearchService..." << endl;
-            searchService_->recommendSearchService_ = service;
-            if (searchService_->workerService_)
-                searchService_->workerService_->recommendSearchService_ = service;
+            searchService_->workerService_->recommendSearchService_ = service;
             return true;
         }
         else
@@ -219,28 +216,16 @@ bool IndexBundleActivator::init_()
 
     searchService_ = new IndexSearchService;
 
-    searchService_->bundleConfig_ = config_;
-    searchService_->laManager_ = laManager_;
-    searchService_->idManager_ = idManager_;
-    searchService_->documentManager_ = documentManager_;
-    searchService_->indexManager_ = indexManager_;
-    searchService_->rankingManager_ = rankingManager_;
-    searchService_->searchManager_ = searchManager_;
-    searchService_->pQA_ = pQA_;
-    searchService_->workerService_ = workerService_;
     searchService_->aggregatorManager_ = aggregatorManager_;
-
-    if (searchService_->workerService_)
-    {
-        searchService_->workerService_->bundleConfig_ = config_;
-        searchService_->workerService_->laManager_ = laManager_;
-        searchService_->workerService_->idManager_ = idManager_;
-        searchService_->workerService_->documentManager_ = documentManager_;
-        searchService_->workerService_->indexManager_ = indexManager_;
-        //searchService_->workerService_->rankingManager_ = rankingManager_;
-        searchService_->workerService_->searchManager_ = searchManager_;
-        searchService_->workerService_->pQA_ = pQA_;
-    }
+    searchService_->workerService_ = workerService_;
+    searchService_->workerService_->bundleConfig_ = config_;
+    searchService_->workerService_->laManager_ = laManager_;
+    searchService_->workerService_->idManager_ = idManager_;
+    searchService_->workerService_->documentManager_ = documentManager_;
+    searchService_->workerService_->indexManager_ = indexManager_;
+    //searchService_->workerService_->rankingManager_ = rankingManager_;
+    searchService_->workerService_->searchManager_ = searchManager_;
+    searchService_->workerService_->pQA_ = pQA_;
 
     taskService_ = new IndexTaskService(config_, directoryRotator_, indexManager_);
 

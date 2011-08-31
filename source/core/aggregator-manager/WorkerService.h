@@ -44,6 +44,8 @@ public:
 public:
     /**
      * Worker services (interfaces)
+     * 1) add to WorkerServer to provide remote procedure call
+     * 2) add to AggregatorManager::initLocalWorkerCaller to provide in-procedure call
      * @{
      */
 
@@ -117,6 +119,7 @@ private:
 
     friend class IndexSearchService;
     friend class IndexBundleActivator;
+    friend class MiningBundleActivator;
 };
 
 }

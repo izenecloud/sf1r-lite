@@ -29,8 +29,6 @@
 namespace sf1r
 {
 
-DistKeywordSearchInfo SearchManager::kDefaultDistSearchInfo_;
-
 
 bool action_rerankable(SearchKeywordOperation& actionOperation)
 {
@@ -126,9 +124,9 @@ bool SearchManager::search(SearchKeywordOperation& actionOperation,
                            faceted::OntologyRep& groupRep,
                            faceted::OntologyRep& attrRep,
                            sf1r::PropertyRange& propertyRange,
+                           DistKeywordSearchInfo& distSearchInfo,
                            int topK,
-                           int start,
-                           DistKeywordSearchInfo& distSearchInfo)
+                           int start)
 {
 CREATE_PROFILER ( cacheoverhead, "SearchManager", "cache overhead: overhead for caching in searchmanager");
 
@@ -160,9 +158,9 @@ STOP_PROFILER ( cacheoverhead )
                   groupRep,
                   attrRep,
                   propertyRange,
+                  distSearchInfo,
                   topK,
-                  start,
-                  distSearchInfo))
+                  start))
     {
  START_PROFILER ( cacheoverhead )
         cache_->set(identity, rankScoreList, customRankScoreList, docIdList, totalCount, groupRep, attrRep, propertyRange, distSearchInfo);
@@ -181,9 +179,9 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                               faceted::OntologyRep& groupRep,
                               faceted::OntologyRep& attrRep,
                               sf1r::PropertyRange& propertyRange,
+                              DistKeywordSearchInfo& distSearchInfo,
                               int topK,
-                              int start,
-                              DistKeywordSearchInfo& distSearchInfo)
+                              int start)
 {
     CREATE_PROFILER ( dociterating, "SearchManager", "doSearch_: doc iterating");
     CREATE_PROFILER ( preparedociter, "SearchManager", "doSearch_: SearchManager_search : build doc iterator");

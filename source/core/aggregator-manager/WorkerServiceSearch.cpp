@@ -69,8 +69,6 @@ bool WorkerService::getSummaryMiningResult(const KeywordSearchActionItem& action
 
 bool WorkerService::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem)
 {
-    cout << "#[WorkerService::processGetDocumentsByIds] " <<endl;
-
     const izenelib::util::UString::EncodingType kEncodingType =
         izenelib::util::UString::convertEncodingTypeFromStringToEnum(
             actionItem.env_.encodingType_.c_str()
@@ -78,7 +76,7 @@ bool WorkerService::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionI
 
     std::vector<sf1r::docid_t> idList;
     std::vector<sf1r::workerid_t> workeridList;
-    const_cast<GetDocumentsByIdsActionItem&>(actionItem).getDocWorkerIdLists(idList, workeridList);
+    actionItem.getDocWorkerIdLists(idList, workeridList);
 
     // append docIdList_ at the end of idList_.
     typedef std::vector<std::string>::const_iterator docid_iterator;
@@ -149,13 +147,9 @@ bool WorkerService::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionI
 bool WorkerService::getInternalDocumentId(const izenelib::util::UString& scdDocumentId, uint64_t& internalId)
 {
     uint32_t docid = 0;
-    std::string str;
-    scdDocumentId.convertString(str, izenelib::util::UString::UTF_8);
+    internalId = 0;
     if (!idManager_->getDocIdByDocName(scdDocumentId, docid, false))
-    {
-        internalId = 0;
         return false;
-    }
 
     internalId = docid;
     return true;
@@ -255,9 +249,9 @@ bool WorkerService::getSearchResult_(
                 resultItem.groupRep_,
                 resultItem.attrRep_,
                 resultItem.propertyRange_,
+                resultItem.distSearchInfo_,
                 TOP_K_NUM,
-                startOffset,
-                resultItem.distSearchInfo_
+                startOffset
                 ))
     {
         std::string newQuery;
@@ -282,9 +276,9 @@ bool WorkerService::getSearchResult_(
                                     resultItem.groupRep_,
                                     resultItem.attrRep_,
                                     resultItem.propertyRange_,
+                                    resultItem.distSearchInfo_,
                                     TOP_K_NUM,
-                                    startOffset,
-                                    resultItem.distSearchInfo_
+                                    startOffset
                                     ))
         {
             return true;

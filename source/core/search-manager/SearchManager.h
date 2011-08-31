@@ -61,9 +61,9 @@ public:
                 faceted::OntologyRep& groupRep,
                 faceted::OntologyRep& attrRep,
                 sf1r::PropertyRange& propertyRange,
+                DistKeywordSearchInfo& distSearchInfo,
                 int topK = 200,
-                int start = 0,
-                DistKeywordSearchInfo& distSearchInfo = kDefaultDistSearchInfo_);
+                int start = 0);
 
 
     void reset_cache(bool rType, docid_t id, const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
@@ -90,9 +90,9 @@ private:
                    faceted::OntologyRep& groupRep,
                    faceted::OntologyRep& attrRep,
                    sf1r::PropertyRange& propertyRange,
+                   DistKeywordSearchInfo& distSearchInfo,
                    int topK,
-                   int start,
-                   DistKeywordSearchInfo& distSearchInfo  = kDefaultDistSearchInfo_);
+                   int start);
 
     /**
      * @brief get corresponding id of the property, returns 0 if the property
@@ -134,8 +134,6 @@ private:
 
     boost::scoped_ptr<SearchCache> cache_;
     SortPropertyCache* pSorterCache_;
-
-    static DistKeywordSearchInfo kDefaultDistSearchInfo_;
 
     reranker_t reranker_;
 
