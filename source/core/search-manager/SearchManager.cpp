@@ -17,6 +17,7 @@
 #include "QueryBuilder.h"
 #include "Sorter.h"
 #include "HitQueue.h"
+#include "NumericPropertyManager.h"
 
 #include <util/swap.h>
 #include <util/get.h>
@@ -63,13 +64,13 @@ SearchManager::SearchManager(std::set<PropertyConfig, PropertyComp> schema,
         , documentManagerPtr_(documentManager)
         , rankingManagerPtr_(rankingManager)
         , queryBuilder_()
-        , pSorterCache_(0)
         , reranker_(0)
 {
     for (std::set<PropertyConfig, PropertyComp>::iterator iter = schema.begin(); iter != schema.end(); ++iter)
         schemaMap_[iter->getName()] = *iter;
 
     pSorterCache_ = new SortPropertyCache(indexManagerPtr_.get(), config);
+    NumericPropertyManager::instance()->setPropertyCache(pSorterCache_);
     queryBuilder_.reset(new QueryBuilder(indexManager,documentManager,idManager,schemaMap_, config->filterCacheNum_));
     cache_.reset(new SearchCache(config->searchCacheNum_));
     rankingManagerPtr_->getPropertyWeightMap(propertyWeightMap_);
@@ -112,6 +113,7 @@ void SearchManager::chdir(const boost::shared_ptr<IDManager>& idManager,
     // clear cache
     delete pSorterCache_;
     pSorterCache_ = new SortPropertyCache(indexManagerPtr_.get(), config);
+    NumericPropertyManager::instance()->setPropertyCache(pSorterCache_);
     cache_.reset(new SearchCache(config->searchCacheNum_));
 }
 
@@ -393,8 +395,6 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                     if (!pSorter) pSorter = new Sorter(pSorterCache_);
 
                     sflog->info(SFL_SRCH, 130103);
-                    //std::cout << "sort by date" << std::endl;
-                    //if (!pSorter) pSorter = new Sorter(pSorterCache_, iter->second);
                     SortProperty* pSortProperty = new SortProperty(iter->first, INT_PROPERTY_TYPE, iter->second);
                     pSorter->addSortProperty(pSortProperty);
                     continue;
