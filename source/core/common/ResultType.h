@@ -38,8 +38,9 @@ namespace sf1r {
             {}
         void swap(PropertyRange& range)
         {
-            highValue_ = range.highValue_;
-            lowValue_ = range.lowValue_;
+            using std::swap;
+            swap(highValue_, range.highValue_);
+            swap(lowValue_, range.lowValue_);
         }
         float highValue_;
         float lowValue_;
