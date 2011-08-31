@@ -260,6 +260,8 @@ public:
     {
         return faceted_;
     }
+
+    void onIndexUpdated(size_t docNum);
 private:
 
 

@@ -1,7 +1,9 @@
 /**
  * @file sf1r/search-manager/SortPropertyComparator.h
  * @author Yingfeng Zhang
+ * @author August Njam Grong
  * @date Created <2009-10-10>
+ * @date Updated <2011-08-29>
  * @brief WildcardDocumentIterator DocumentIterator for wildcard query
  */
 #ifndef SORT_PROPERTY_COMPARATOR_H
@@ -18,72 +20,28 @@ class CustomRanker;
 class SortPropertyComparator
 {
 public:
-    SortPropertyComparator():type_(UNKNOWN_DATA_PROPERTY_TYPE){}
-    SortPropertyComparator(void* data, PropertyDataType type):data_(data), type_(type){}
-    SortPropertyComparator(PropertyDataType dataType): type_(dataType) {}
-    ~SortPropertyComparator() {}
-public:
-    int compare(ScoreDoc doc1, ScoreDoc doc2)
-    {
-        switch(type_)
-        {
-        case INT_PROPERTY_TYPE:
-            {
-                int64_t f1 = ((int64_t*)data_)[doc1.docId];
-                int64_t f2 = ((int64_t*)data_)[doc2.docId];
-                if (f1 < f2) return -1;
-                if (f1 > f2) return 1;
-                return 0;
-            }
-            break;
-        case UNSIGNED_INT_PROPERTY_TYPE:
-            {
-                uint64_t f1 = ((uint64_t*)data_)[doc1.docId];
-                uint64_t f2 = ((uint64_t*)data_)[doc2.docId];
-                if (f1 < f2) return -1;
-                if (f1 > f2) return 1;
-                return 0;
-            }
-            break;
-        case FLOAT_PROPERTY_TYPE:
-            {
-                float f1 = ((float*)data_)[doc1.docId];
-                float f2 = ((float*)data_)[doc2.docId];
-                if (f1 < f2) return -1;
-                if (f1 > f2) return 1;
-                return 0;
-            }
-            break;
-        case DOUBLE_PROPERTY_TYPE:
-            {
-                double f1 = ((double*)data_)[doc1.docId];
-                double f2 = ((double*)data_)[doc2.docId];
-                if (f1 < f2) return -1;
-                if (f1 > f2) return 1;
-                return 0;
-            }
-            break;
-        case UNKNOWN_DATA_PROPERTY_TYPE:
-            {
-                if (doc1.score < doc2.score) return -1;
-                if (doc1.score > doc2.score) return 1;
-                return 0;
-            }
-            break;
-        case CUSTOM_RANKING_PROPERTY_TYPE:
-            {
-                if (doc1.custom_score < doc2.custom_score) return -1;
-                if (doc1.custom_score > doc2.custom_score) return 1;
-                return 0;
-            }
-        default:
-            break;
-        }
-        return 0;
-    }
+    int compare(ScoreDoc doc1, ScoreDoc doc2);
+
 private:
     void* data_;
     PropertyDataType type_;
+
+public:
+    SortPropertyComparator();
+    SortPropertyComparator(void* data, PropertyDataType type);
+    SortPropertyComparator(PropertyDataType dataType);
+    ~SortPropertyComparator() {}
+
+private:
+    void initComparator();
+    int (SortPropertyComparator::*comparator_)(ScoreDoc doc1, ScoreDoc doc2);
+    int compareImplDefault(ScoreDoc doc1, ScoreDoc doc2);
+    int compareImplInt(ScoreDoc doc1, ScoreDoc doc2);
+    int compareImplUnsigned(ScoreDoc doc1, ScoreDoc doc2);
+    int compareImplFloat(ScoreDoc doc1, ScoreDoc doc2);
+    int compareImplDouble(ScoreDoc doc1, ScoreDoc doc2);
+    int compareImplUnknown(ScoreDoc doc1, ScoreDoc doc2);
+    int compareImplCustomRanking(ScoreDoc doc1, ScoreDoc doc2);
 };
 
 }
