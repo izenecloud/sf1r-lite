@@ -29,6 +29,7 @@ class IndexBundleConfiguration;
 class IndexSearchService;
 class MiningSearchService;
 class RecommendSearchService;
+class QueryLogSearchService;
 class User;
 class IndexManager;
 class DocumentManager;
@@ -106,6 +107,7 @@ private:
 private:
     IndexBundleConfiguration* bundleConfig_;
     RecommendSearchService* recommendSearchService_;
+    QueryLogSearchService* queryLogSearchService_;
 
     boost::shared_ptr<LAManager> laManager_;
     boost::shared_ptr<IDManager> idManager_;
@@ -117,6 +119,7 @@ private:
 
     AnalysisInfo analysisInfo_;
 
+    friend class WorkerServer;
     friend class IndexSearchService;
     friend class IndexBundleActivator;
     friend class MiningBundleActivator;
