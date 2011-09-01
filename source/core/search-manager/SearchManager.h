@@ -82,7 +82,7 @@ public:
 
     void setGroupFilterBuilder(faceted::GroupFilterBuilder* builder);
 
-    bool createPropertyTable(const std::string& propertyName, NumericPropertyTable* &propertyTable);
+    bool createPropertyTable(const std::string& propertyName, PropertyDataType propertyType, NumericPropertyTable* &propertyTable);
 
 private:
     bool doSearch_(SearchKeywordOperation& actionOperation,

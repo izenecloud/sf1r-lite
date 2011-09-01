@@ -799,14 +799,15 @@ void SearchManager::getSortPropertyData(Sorter* pSorter, std::vector<unsigned in
 
 }
 
-bool SearchManager::createPropertyTable(const std::string& propertyName, NumericPropertyTable* &propertyTable)
+bool SearchManager::createPropertyTable(const std::string& propertyName, PropertyDataType propertyType, NumericPropertyTable* &propertyTable)
 {
-    std::map<std::string, std::pair<PropertyDataType,void*> >::const_iterator it = pSorterCache_->sortDataCache_.find(propertyName);
-    if ( it == pSorterCache_->sortDataCache_.end() )
-        return false;
-
-    propertyTable = new NumericPropertyTable(it->second.first, it->second.second);
-    return true;
+    void *data;
+    if (pSorterCache_->getSortPropertyData(propertyName, propertyType, data))
+    {
+        propertyTable = new NumericPropertyTable(propertyType, data);
+        return true;
+    }
+    return false;
 }
 
 
