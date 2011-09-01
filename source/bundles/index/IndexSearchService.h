@@ -27,10 +27,11 @@ using izenelib::ir::idmanager::IDManager;
 using namespace net::aggregator;
 
 class AggregatorManager;
+class SearchCache;
 class IndexSearchService : public ::izenelib::osgi::IService
 {
 public:
-    IndexSearchService();
+    IndexSearchService(IndexBundleConfiguration* config);
 
     ~IndexSearchService();
 
@@ -44,6 +45,8 @@ public:
 private:
     boost::shared_ptr<AggregatorManager> aggregatorManager_;
     boost::shared_ptr<WorkerService> workerService_;
+
+    boost::scoped_ptr<SearchCache> cache_; // for Master Node
 
     friend class WorkerServer;
     friend class IndexBundleActivator;

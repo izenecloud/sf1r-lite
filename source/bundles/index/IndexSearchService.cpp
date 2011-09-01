@@ -6,6 +6,8 @@
 #include <index-manager/IndexManager.h>
 #include <search-manager/SearchManager.h>
 #include <search-manager/PersonalizedSearchInfo.h>
+#include <search-manager/SearchCache.h>
+#include <query-manager/QueryIdentity.h>
 #include <ranking-manager/RankingManager.h>
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
@@ -32,8 +34,9 @@ namespace sf1r
 {
 int TOP_K_NUM = 4000;
 
-IndexSearchService::IndexSearchService()
+IndexSearchService::IndexSearchService(IndexBundleConfiguration* config)
 {
+    cache_.reset(new SearchCache(config->searchCacheNum_));
 }
 
 IndexSearchService::~IndexSearchService()
@@ -75,10 +78,42 @@ bool IndexSearchService::getSearchResult(
     distResultItem.distSearchInfo_.actionType_ = DistKeywordSearchInfo::ACTION_SEND;
 #endif
 
-    aggregatorManager_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchResult>(
-            actionItem.collectionName_, "getDistSearchResult", actionItem, distResultItem);
+    QueryIdentity identity;
+    makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.actionType_, actionItem.pageInfo_.start_);
 
-    resultItem.assign(distResultItem);
+    if (!cache_->get(
+            identity,
+            resultItem.topKRankScoreList_,
+            resultItem.topKCustomRankScoreList_,
+            resultItem.topKDocs_,
+            resultItem.totalCount_,
+            resultItem.groupRep_,
+            resultItem.attrRep_,
+            resultItem.propertyRange_,
+            resultItem.distSearchInfo_,
+            &resultItem.count_,
+            &resultItem.propertyQueryTermList_,
+            &resultItem.topKWorkerIds_))
+    {
+        aggregatorManager_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchResult>(
+                actionItem.collectionName_, "getDistSearchResult", actionItem, distResultItem);
+
+        resultItem.assign(distResultItem);
+
+        cache_->set(
+                identity,
+                resultItem.topKRankScoreList_,
+                resultItem.topKCustomRankScoreList_,
+                resultItem.topKDocs_,
+                resultItem.totalCount_,
+                resultItem.groupRep_,
+                resultItem.attrRep_,
+                resultItem.propertyRange_,
+                resultItem.distSearchInfo_,
+                resultItem.count_,
+                &resultItem.propertyQueryTermList_,
+                &resultItem.topKWorkerIds_);
+    }
 
     cout << "Total count: " << resultItem.totalCount_ << endl;
     cout << "Top K count: " << resultItem.topKDocs_.size() << endl;

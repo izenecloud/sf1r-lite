@@ -30,6 +30,9 @@ public:
         faceted::OntologyRep attrRep;
         sf1r::PropertyRange propertyRange;
         DistKeywordSearchInfo distSearchInfo;
+        std::size_t pageCount;
+        std::vector<std::vector<izenelib::util::UString> > propertyQueryTermList;
+        std::vector<uint32_t> workerIdList;
     };
     typedef QueryIdentity key_type;
 
@@ -48,7 +51,10 @@ public:
              faceted::OntologyRep& groupRep,
              faceted::OntologyRep& attrRep,
              sf1r::PropertyRange& propertyRange,
-             DistKeywordSearchInfo& distSearchInfo)
+             DistKeywordSearchInfo& distSearchInfo,
+             std::size_t* pageCount = NULL,
+             std::vector<std::vector<izenelib::util::UString> >* propertyQueryTermList = NULL,
+             std::vector<uint32_t>* workerIdList = NULL)
     {
         value_type value;
         if (cache_.getValueNoInsert(key, value))
@@ -61,6 +67,12 @@ public:
             attrRep.swap(value.attrRep);
             propertyRange.swap(value.propertyRange);
             distSearchInfo = value.distSearchInfo;
+            if (pageCount)
+                *pageCount = value.totalCount;
+            if (propertyQueryTermList)
+                *propertyQueryTermList = value.propertyQueryTermList;
+            if (workerIdList)
+                *workerIdList = value.workerIdList;
             return true;
         }
 
@@ -75,7 +87,10 @@ public:
              faceted::OntologyRep groupRep,
              faceted::OntologyRep attrRep,
              sf1r::PropertyRange propertyRange,
-             DistKeywordSearchInfo distSearchInfo)
+             DistKeywordSearchInfo distSearchInfo,
+             std::size_t pageCount = 0,
+             std::vector<std::vector<izenelib::util::UString> >* propertyQueryTermList = NULL,
+             std::vector<uint32_t>* workerIdList = NULL)
     {
         value_type value;
         scores.swap(value.scores);
@@ -86,6 +101,12 @@ public:
         attrRep.swap(value.attrRep);
         propertyRange.swap(value.propertyRange);
         value.distSearchInfo = distSearchInfo;
+        if (pageCount)
+            value.pageCount = pageCount;
+        if (propertyQueryTermList)
+            value.propertyQueryTermList = *propertyQueryTermList;
+        if (workerIdList)
+            value.workerIdList = *workerIdList;
         cache_.insertValue(key, value);
     }
 

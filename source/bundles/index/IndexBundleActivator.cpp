@@ -214,7 +214,7 @@ bool IndexBundleActivator::init_()
     SF1R_ENSURE_INIT(aggregatorManager_);
     pQA_ = Singleton<ilplib::qa::QuestionAnalysis>::get();
 
-    searchService_ = new IndexSearchService;
+    searchService_ = new IndexSearchService(config_);
 
     searchService_->aggregatorManager_ = aggregatorManager_;
     searchService_->workerService_ = workerService_;
