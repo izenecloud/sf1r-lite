@@ -33,7 +33,7 @@ void OrderLogger::createTable()
     DbConnection& dbConnection = DbConnection::instance();
     std::ostringstream oss;
 
-    oss << "create table " << TableName << "(";
+    oss << "create table if not exists " << TableName << "(";
 
     // as insertOrder() needs a unique id for each new row,
     // declare column "Id" with auto increment attribute

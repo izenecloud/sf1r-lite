@@ -37,9 +37,10 @@ public:
     bool exec(const std::string & sql, std::list< std::map<std::string, std::string> > & results, bool omitError=false);
 
 private:
-    
-    const std::string DB_NAME;
-    
+    /// @return true for success, false for failure
+    bool fetchRows_(MYSQL* db, std::list< std::map<std::string, std::string> > & rows);
+
+private:
     const int PoolSize;
 
     MYSQL* getDb();

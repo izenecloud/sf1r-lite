@@ -30,7 +30,7 @@ void ItemLogger::createTable()
     DbConnection& dbConnection = DbConnection::instance();
     std::ostringstream oss;
 
-    oss << "create table " << TableName << "(";
+    oss << "create table if not exists " << TableName << "(";
     for (int i=0; i<EoC; ++i)
     {
         oss << ColumnName[i] << " " << ColumnMeta[i];

@@ -12,6 +12,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <string>
 #include <list>
@@ -27,8 +28,9 @@ namespace bfs = boost::filesystem;
 
 namespace
 {
-const char* TEST_DIR_STR = "test_log_manager_dir/t_ItemLogger";
-const char* ITEM_DB_STR = "item.db";
+const string TEST_DIR_STR = "test_log_manager_dir/t_ItemLogger";
+const string SQLITE_ITEM_DB_FILE = "item.db";
+const string MYSQL_ITEM_DB_NAME = "item_logger_test_db";
 }
 
 struct ItemLoggerColumn
@@ -68,9 +70,12 @@ struct ItemRecord
 
 struct ItemLoggerTestFixture
 {
-    const string dbPath_;
+    string dbPath_;
+    string mySqlDBName_;
+
     DbConnection& dbConnection_;
     ItemLogger& itemLogger_;
+
     ItemLoggerColumn columns_;
     int rowNum_;
 
@@ -81,21 +86,53 @@ struct ItemLoggerTestFixture
     RecordList recordList_;
 
     ItemLoggerTestFixture()
-        : dbPath_((bfs::path(TEST_DIR_STR) / ITEM_DB_STR).string())
-        , dbConnection_(DbConnection::instance())
+        : dbConnection_(DbConnection::instance())
         , itemLogger_(ItemLogger::instance())
         , rowNum_(0)
     {
-        bfs::remove_all(TEST_DIR_STR);
-        bfs::create_directories(TEST_DIR_STR);
-
-        BOOST_CHECK(dbConnection_.init(dbPath_));
-        ItemLogger::createTable();
     }
 
     ~ItemLoggerTestFixture()
     {
+        // remove test db
+        if (dbPath_.find("sqlite3") == 0)
+        {
+            bfs::remove_all(TEST_DIR_STR);
+        }
+        else if (dbPath_.find("mysql") == 0)
+        {
+            stringstream sql;
+            sql << "drop database " << mySqlDBName_ << ";";
+            BOOST_CHECK(dbConnection_.exec(sql.str()));
+        }
+
         dbConnection_.close();
+    }
+
+    void initSqlite()
+    {
+        bfs::remove_all(TEST_DIR_STR);
+        bfs::create_directories(TEST_DIR_STR);
+        dbPath_ = "sqlite3://" + (bfs::path(TEST_DIR_STR) / SQLITE_ITEM_DB_FILE).string();
+
+        initDbConnection();
+    }
+
+    void initMysql()
+    {
+        posix_time::ptime pt(posix_time::second_clock::local_time());
+        mySqlDBName_ = MYSQL_ITEM_DB_NAME + "_" + posix_time::to_iso_string(pt);
+        dbPath_ = "mysql://root:123456@127.0.0.1:3306/" + mySqlDBName_;
+
+        initDbConnection();
+    }
+
+    void initDbConnection()
+    {
+        cout << "dbPath: " << dbPath_ << endl;
+        BOOST_CHECK(dbConnection_.init(dbPath_));
+
+        ItemLogger::createTable();
     }
 
     void resetDbConnection()
@@ -104,27 +141,31 @@ struct ItemLoggerTestFixture
         BOOST_CHECK(dbConnection_.init(dbPath_));
     }
 
-    void insertItem(
-        int orderId,
-        const string& itemId,
-        double price,
-        int quantity,
-        bool isRec
-    )
+    void run()
     {
-        bool result = itemLogger_.insertItem(orderId, itemId, price, quantity, isRec);
+        // empty item
+        checkItems();
 
-        if (orderId <= 0 || itemId.empty())
-        {
-            BOOST_CHECK(result == false);
-        }
-        else
-        {
-            BOOST_CHECK(result);
+        // valid item
+        insertItem(1, "item_001", 10.0, 1, false);
+        insertItem(2, "item_002", 2.5, 4, true);
+        insertItem(2, "item_002", 1338.210, 2, false);
+        insertItem(3, "item_003", 0.0, 5, true);
+        insertItem(3, "item_003", -12.35, 3, true);
+        // invalid orderId or itemId
+        insertItem(0, "item_005", 10.0, 1, false);
+        insertItem(-2, "item_006", 10.0, 1, false);
+        insertItem(1, "", 10.0, 1, false);
 
-            ++rowNum_;
-            recordList_.push_back(ItemRecord(orderId, itemId, price, quantity, isRec));
-        }
+        checkItems();
+
+        resetDbConnection();
+        checkItems();
+
+        // new item
+        insertItem(4, "item_004", 100.0, 1, false);
+        insertItem(5, "item_005", 1000.0, 2, true);
+        checkItems();
     }
 
     void checkItems()
@@ -140,7 +181,7 @@ struct ItemLoggerTestFixture
 
         RowList::iterator resultIt = sqlResult.begin();
         RecordList::iterator recordIt = recordList_.begin();
-        for (; resultIt != sqlResult.end(); ++resultIt, ++recordIt)
+        for (; resultIt != sqlResult.end() && recordIt != recordList_.end(); ++resultIt, ++recordIt)
         {
             const string& orderIdStr = (*resultIt)[columns_.orderId_];
             int orderId = lexical_cast<int>(orderIdStr);
@@ -186,35 +227,43 @@ struct ItemLoggerTestFixture
         }
         return oss.str();
     }
+
+    void insertItem(
+        int orderId,
+        const string& itemId,
+        double price,
+        int quantity,
+        bool isRec
+    )
+    {
+        bool result = itemLogger_.insertItem(orderId, itemId, price, quantity, isRec);
+
+        if (orderId <= 0 || itemId.empty())
+        {
+            BOOST_CHECK(result == false);
+        }
+        else
+        {
+            BOOST_CHECK(result);
+
+            ++rowNum_;
+            recordList_.push_back(ItemRecord(orderId, itemId, price, quantity, isRec));
+        }
+    }
 };
 
 BOOST_AUTO_TEST_SUITE(ItemLoggerTest)
 
-BOOST_FIXTURE_TEST_CASE(checkInsertItem, ItemLoggerTestFixture)
+BOOST_FIXTURE_TEST_CASE(checkSqliteInsertItem, ItemLoggerTestFixture)
 {
-    // empty item
-    checkItems();
+    initSqlite();
+    run();
+}
 
-    // valid item
-    insertItem(1, "item_001", 10.0, 1, false);
-    insertItem(2, "item_002", 2.5, 4, true);
-    insertItem(2, "item_002", 1338.210, 2, false);
-    insertItem(3, "item_003", 0.0, 5, true);
-    insertItem(3, "item_003", -12.35, 3, true);
-    // invalid orderId or itemId
-    insertItem(0, "item_005", 10.0, 1, false);
-    insertItem(-2, "item_006", 10.0, 1, false);
-    insertItem(1, "", 10.0, 1, false);
-
-    checkItems();
-
-    resetDbConnection();
-    checkItems();
-
-    // new item
-    insertItem(4, "item_004", 100.0, 1, false);
-    insertItem(5, "item_005", 1000.0, 2, true);
-    checkItems();
+BOOST_FIXTURE_TEST_CASE(checkMysqlInsertItem, ItemLoggerTestFixture)
+{
+    initMysql();
+    run();
 }
 
 BOOST_AUTO_TEST_SUITE_END() 
