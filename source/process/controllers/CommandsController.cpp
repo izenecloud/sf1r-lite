@@ -4,11 +4,14 @@
  * @date Created <2010-06-01 10:26:16>
  */
 #include "CommandsController.h"
+#include "CollectionHandler.h"
 #include <common/JobScheduler.h>
 #include <process/common/XmlConfigParser.h>
 #include <process/common/CollectionManager.h>
 #include <bundles/index/IndexTaskService.h>
+#include <bundles/index/IndexSearchService.h>
 #include <bundles/recommend/RecommendTaskService.h>
+#include <aggregator-manager/AggregatorManager.h>
 
 #include <common/Keys.h>
 
@@ -62,6 +65,23 @@ void CommandsController::index()
 
     // 0 indicates no limit
     Value::UintType documentCount = asUint(request()[Keys::document_count]);
+
+    // check if perform distributed indexing
+    if (SF1Config::get()->checkAggregatorSupport(collection_))
+    {
+        CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection_);
+        if (!collectionHandler)
+        {
+            response().addError("No Handler for this collection.");
+            return;
+        }
+
+        bool ret = true;
+        collectionHandler->indexSearchService_->getAggregatorManager()
+            ->distributeRequest(collection_, "index", documentCount, ret);
+
+        //return;
+    }
 
     if (!SF1Config::get()->checkCollectionExist(collection_))
     {

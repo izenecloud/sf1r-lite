@@ -14,8 +14,10 @@
 
 #include <common/CollectionManager.h>
 #include <common/Utilities.h>
+#include <common/JobScheduler.h>
 #include <controllers/CollectionHandler.h>
 #include <bundles/index/IndexSearchService.h>
+#include <bundles/index/IndexTaskService.h>
 
 using namespace net::aggregator;
 
@@ -62,6 +64,8 @@ public:
     {
         if (debug_)
             cout << "#[WorkerServer::preHandle] identity : " << identity << endl;
+
+        identity_ = identity;
 
         std::string identityLow = sf1r::Utilities::toLower(identity);
         if (identityLow == "querylog")
@@ -112,6 +116,7 @@ public:
         ADD_WORKER_HANDLER( getSimilarDocIdList )
         ADD_WORKER_HANDLER( clickGroupLabel )
         ADD_WORKER_HANDLER( visitDoc )
+        ADD_WORKER_HANDLER( index )
 
         ADD_WORKER_HANDLER_LIST_END()
     }
@@ -169,7 +174,36 @@ public:
         return true;
     }
 
+    bool index(JobRequest& req)
+    {
+        WORKER_HANDLE_REQUEST_1_1_(req, unsigned int, index, bool)
+        return true;
+    }
+
     /** @} */
+
+private:
+    bool index(const unsigned int& numdoc, bool& ret)
+    {
+        std::string bundleName = "IndexBundle-" + identity_;
+        IndexTaskService* indexService = static_cast<IndexTaskService*>(
+                                             CollectionManager::get()->getOSGILauncher().getService(bundleName, "IndexTaskService"));
+        if (!indexService)
+        {
+            ret = false;
+        }
+        else
+        {
+            ret = true;
+            task_type task = boost::bind(&IndexTaskService::buildCollection, indexService, numdoc);
+            JobScheduler::get()->addTask(task);
+        }
+
+        return ret;
+    }
+
+private:
+    std::string identity_;
 };
 
 

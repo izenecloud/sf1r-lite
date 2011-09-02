@@ -35,6 +35,11 @@ public:
 
     ~IndexSearchService();
 
+    boost::shared_ptr<AggregatorManager> getAggregatorManager()
+    {
+        return aggregatorManager_;
+    }
+
     void OnUpdateSearchCache();
 
 public:
