@@ -20,11 +20,14 @@
 
 #include <util/swap.h>
 #include <util/get.h>
+#include <net/aggregator/MasterServerBase.h>
 
 #include <boost/algorithm/string.hpp>
 
 #include <fstream>
 #include <algorithm>
+
+using namespace net::aggregator;
 
 namespace sf1r
 {
@@ -66,6 +69,7 @@ SearchManager::SearchManager(std::set<PropertyConfig, PropertyComp> schema,
         , queryBuilder_()
         , reranker_(0)
 {
+    collectionName_ = config->collectionName_;
     for (std::set<PropertyConfig, PropertyComp>::iterator iter = schema.begin(); iter != schema.end(); ++iter)
         schemaMap_[iter->getName()] = *iter;
 
@@ -94,6 +98,13 @@ void SearchManager::reset_cache(bool rType, docid_t id, const std::map<std::stri
     }
 
     cache_->clear();
+    {
+        NotifyMSG msg;
+        msg.identity = collectionName_;
+        msg.method = "clear_search_cache";
+        MasterNotifierSingleton::get()->notify(msg);
+    }
+
     queryBuilder_->reset_cache();
 }
 

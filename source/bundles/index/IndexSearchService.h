@@ -35,6 +35,8 @@ public:
 
     ~IndexSearchService();
 
+    void OnUpdateSearchCache();
+
 public:
     bool getSearchResult(KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 

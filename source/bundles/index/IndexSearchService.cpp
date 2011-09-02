@@ -43,6 +43,11 @@ IndexSearchService::~IndexSearchService()
 {
 }
 
+void IndexSearchService::OnUpdateSearchCache()
+{
+    cache_->clear();
+}
+
 bool IndexSearchService::getSearchResult(
     KeywordSearchActionItem& actionItem, 
     KeywordSearchResult& resultItem

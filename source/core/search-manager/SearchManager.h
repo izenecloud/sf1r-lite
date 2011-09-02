@@ -128,6 +128,7 @@ private:
     void printDFCTF(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties ctfmap);
 
 private:
+    std::string collectionName_;
     boost::unordered_map<std::string, PropertyConfig> schemaMap_;
     boost::shared_ptr<IndexManager> indexManagerPtr_;
     boost::shared_ptr<DocumentManager> documentManagerPtr_;

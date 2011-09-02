@@ -4,7 +4,7 @@
 #include <common/SFLogger.h>
 #include <la-manager/LAPool.h>
 #include <license-manager/LicenseManager.h>
-//#include <aggregator-manager/MasterServer.h>
+#include <aggregator-manager/MasterServer.h>
 
 #include <bundles/querylog/QueryLogBundleConfiguration.h>
 #include <bundles/querylog/QueryLogBundleActivator.h>
@@ -233,7 +233,7 @@ bool CobraProcess::initMasterAndWorker()
     if (sf1r::SF1Config::get()->isMasterEnabled())
     {
         uint16_t masterPort = sf1r::SF1Config::get()->masterAgentConfig_.port_;
-        //MasterServer::get()->start("localhost", masterPort);
+        MasterServer::get()->start("localhost", masterPort);
         //cout << "#[Master Server]started, listening at localhost:"<<masterPort<<" ..."<<endl;
     }
 
@@ -256,7 +256,7 @@ bool CobraProcess::initMasterAndWorker()
             // master notifier
             std::string masterHost = SF1Config::get()->workerAgentConfig_.masterHost_;
             uint16_t masterPort = SF1Config::get()->workerAgentConfig_.masterPort_;
-            //MasterNotifierSingleton::get()->setMasterServerInfo(masterHost, masterPort);
+            MasterNotifierSingleton::get()->setMasterServerInfo(masterHost, masterPort);
 
             addExitHook(boost::bind(&CobraProcess::stopWorkerServer, this));
         }
