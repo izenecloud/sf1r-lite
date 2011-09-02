@@ -159,18 +159,23 @@
 
 
   <Deployment>
-    <BrokerAgent usecache="n" threadnum="50" enabletest="y" port="18181" workerport="18111">
-        <!--
-        <Aggregator name="example" />
-        -->
-    </BrokerAgent>
+    <BrokerAgent usecache="n" threadnum="50" enabletest="y" port="18181" />
 
-    <RemoteAgent enablelocalworker="y">
-       <!--
-       <Worker host="0.0.0.0" port="18111" />
-       <Worker host="0.0.0.0" port="18112" />
-       -->
-    </RemoteAgent>
+    <!-- Master --> 
+    <MasterAgent enable="n" port="18151" enablelocalworker="y">            
+       <AggregatorSupport> 
+         <Aggregator name="chinese-wiki-dist" />
+         <Aggregator name="icson" /> 
+       </AggregatorSupport>
+       
+       <Worker host="0.0.0.0" port="18111" /> 
+       <Worker host="172.16.0.163" port="18111" />
+    </MasterAgent> 
+
+    <!-- Worker --> <!--To enable worker, at least one collection(bundle) should also be configured as enabled--> <!--
+    <WorkerAgent enable="n" port="18111">       
+       <Master host="0.0.0.0" port="18151"/>
+    </WorkerAgent>    -->
   </Deployment>
 
 </SF1Config>

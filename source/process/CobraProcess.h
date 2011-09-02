@@ -36,7 +36,7 @@ private:
 
     void stopDriver();
 
-    bool checkAndStartWorkerServer();
+    bool initMasterAndWorker();
 
     void stopWorkerServer();
 

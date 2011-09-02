@@ -172,16 +172,13 @@
 		<xs:complexType>
 			<xs:sequence>
 				<xs:element ref="BrokerAgent"/>
-				<xs:element ref="RemoteAgent"/>
+				<xs:element ref="MasterAgent" minOccurs="0" maxOccurs="1"/>
+				<xs:element ref="WorkerAgent" minOccurs="0" maxOccurs="1"/>
 			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
 	<xs:element name="BrokerAgent">
 		<xs:complexType>
-			<xs:sequence>
-				<xs:element ref="Aggregator" minOccurs="0" maxOccurs="unbounded"/>
-			</xs:sequence>
-
 			<xs:attribute name="enabletest" type="YesNoType" use="required"/>
 			<xs:attribute name="threadnum" use="required">
 				<xs:simpleType>
@@ -192,8 +189,26 @@
 				</xs:simpleType>
 			</xs:attribute>
 			<xs:attribute name="usecache" type="YesNoType" use="required"/>
+			<xs:attribute name="port" type="PortType" use="required"/>	
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="MasterAgent">
+		<xs:complexType>                        
+			<xs:sequence>
+				<xs:element ref="AggregatorSupport" minOccurs="0" maxOccurs="1"/>
+				<xs:element ref="Worker" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+
+			<xs:attribute name="enable" type="YesNoType" use="required"/>
 			<xs:attribute name="port" type="PortType" use="required"/>
-			<xs:attribute name="workerport" type="PortType" use="required"/>
+			<xs:attribute name="enablelocalworker" type="YesNoType" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="AggregatorSupport">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Aggregator" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
 	<xs:element name="Aggregator">
@@ -201,16 +216,23 @@
 			<xs:attribute name="name" type="xs:NCName" use="required"/>
 		</xs:complexType>
 	</xs:element>
-	<xs:element name="RemoteAgent">
-		<xs:complexType>                        
-			<xs:sequence>
-				<xs:element ref="Worker" minOccurs="0" maxOccurs="unbounded"/>
-			</xs:sequence>
-
-                        <xs:attribute name="enablelocalworker" type="YesNoType" use="required"/>
+	<xs:element name="Worker">
+		<xs:complexType>
+			<xs:attribute name="host" type="xs:string" use="required"/>
+			<xs:attribute name="port" type="xs:integer" use="required"/>
 		</xs:complexType>
 	</xs:element>
-	<xs:element name="Worker">
+	<xs:element name="WorkerAgent">
+		<xs:complexType>                        
+			<xs:sequence>
+				<xs:element ref="Master" minOccurs="1" maxOccurs="1"/>
+			</xs:sequence>
+
+			<xs:attribute name="enable" type="YesNoType" use="required"/>
+			<xs:attribute name="port" type="PortType" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Master">
 		<xs:complexType>
 			<xs:attribute name="host" type="xs:string" use="required"/>
 			<xs:attribute name="port" type="xs:integer" use="required"/>

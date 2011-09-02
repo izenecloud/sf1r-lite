@@ -221,7 +221,7 @@ bool SF1Config::parseConfigFile( const string & fileName ) throw( XmlConfigParse
              std::cerr << "[SF1Config] Schema File doesn't exist." << std::endl;
              return false;
          }
-         
+
          XmlSchema schema(schema_file_string);
          bool schema_valid = schema.validate(fileName);
          std::list<std::string> schema_warning = schema.getSchemaValidityWarnings();
@@ -312,30 +312,54 @@ void SF1Config::parseBrokerAgent( const ticpp::Element * brokerAgent )
     getAttribute( brokerAgent, "usecache", brokerAgentConfig_.useCache_, false );
     getAttribute( brokerAgent, "enabletest", brokerAgentConfig_.enableTest_,false );
     getAttribute( brokerAgent, "threadnum", brokerAgentConfig_.threadNum_,false );
-    getAttribute( brokerAgent, "port", brokerAgentConfig_.port_,false );	
-    getAttribute( brokerAgent, "workerport", brokerAgentConfig_.workerport_,false );
+    getAttribute( brokerAgent, "port", brokerAgentConfig_.port_,false );
+}
 
-    Iterator<Element> aggregator_it( "Aggregator" );
-    for (aggregator_it = aggregator_it.begin(brokerAgent); aggregator_it != aggregator_it.end(); aggregator_it++)
+void SF1Config::parseMasterAgent( const ticpp::Element * masterAgent )
+{
+    if (!masterAgent)
+        return;
+
+    getAttribute(masterAgent, "enable", masterAgentConfig_.enabled_);
+    getAttribute(masterAgent, "port", masterAgentConfig_.port_);
+    getAttribute(masterAgent, "enablelocalworker", masterAgentConfig_.aggregatorConfig_.enableLocalWorker_);
+
+    ticpp::Element * aggregators = getUniqChildElement( masterAgent, "AggregatorSupport" , false);
+    if (aggregators)
     {
-        AggregatorConfigUnit aggregatorConfig;
-        getAttribute(aggregator_it.Get(), "name", aggregatorConfig.name_, false);
-        brokerAgentConfig_.addAggregatorConfig(aggregatorConfig);
+        Iterator<Element> aggregator_it( "Aggregator" );
+        for (aggregator_it = aggregator_it.begin(aggregators); aggregator_it != aggregator_it.end(); aggregator_it++)
+        {
+            AggregatorUnit aggregatorUnit;
+            getAttribute(aggregator_it.Get(), "name", aggregatorUnit.name_);
+            masterAgentConfig_.addAggregatorConfig(aggregatorUnit);
+        }
+
+        Iterator<Element> worker_it( "Worker" );
+        for (worker_it = worker_it.begin(masterAgent); worker_it != worker_it.end(); worker_it++)
+        {
+            std::string host;
+            int port;
+            getAttribute(worker_it.Get(), "host", host, true);
+            getAttribute(worker_it.Get(), "port", port, true);
+            masterAgentConfig_.aggregatorConfig_.addWorker(host, static_cast<uint16_t>(port));
+        }
     }
 }
 
-void SF1Config::parseRemoteAgent( const ticpp::Element * remoteAgent )
+void SF1Config::parseWorkerAgent( const ticpp::Element * workerAgent )
 {
-    getAttribute(remoteAgent, "enablelocalworker", aggregatorConfig_.enableLocalWorker_, false);
+    if (!workerAgent)
+        return;
 
-    Iterator<Element> worker_it( "Worker" );
-    for (worker_it = worker_it.begin(remoteAgent); worker_it != worker_it.end(); worker_it++)
+    getAttribute(workerAgent, "enable", workerAgentConfig_.enabled_);
+    getAttribute(workerAgent, "port", workerAgentConfig_.port_);
+
+    ticpp::Element * master = getUniqChildElement( workerAgent, "Master");
+    if (master)
     {
-        std::string host;
-        int port;
-        getAttribute(worker_it.Get(), "host", host, true);
-        getAttribute(worker_it.Get(), "port", port, true);
-        aggregatorConfig_.addWorker(host, static_cast<uint16_t>(port) );
+        getAttribute(master, "host", workerAgentConfig_.masterHost_);
+        getAttribute(master, "port", workerAgentConfig_.masterPort_);
     }
 }
 
@@ -706,7 +730,9 @@ void SF1Config::parseDeploymentSettings(const ticpp::Element * deploy)
 {
     parseBrokerAgent( getUniqChildElement( deploy, "BrokerAgent" ) );
 
-    parseRemoteAgent( getUniqChildElement( deploy, "RemoteAgent" ) );
+    parseMasterAgent( getUniqChildElement( deploy, "MasterAgent", false ) );
+
+    parseWorkerAgent( getUniqChildElement( deploy, "WorkerAgent", false ) );
 }
 
 // ------------------------- CollectionConfig-------------------------

@@ -4,6 +4,7 @@
 #include <common/SFLogger.h>
 #include <la-manager/LAPool.h>
 #include <license-manager/LicenseManager.h>
+//#include <aggregator-manager/MasterServer.h>
 
 #include <bundles/querylog/QueryLogBundleConfiguration.h>
 #include <bundles/querylog/QueryLogBundleActivator.h>
@@ -226,31 +227,44 @@ void CobraProcess::stopDriver()
     }
 }
 
-bool CobraProcess::checkAndStartWorkerServer()
+bool CobraProcess::initMasterAndWorker()
 {
-    // WorkerServer should be checked after all collections have been started
-    if (sf1r::SF1Config::get()->isEnableWorkerServer())
+    // If work as Master
+    if (sf1r::SF1Config::get()->isMasterEnabled())
+    {
+        uint16_t masterPort = sf1r::SF1Config::get()->masterAgentConfig_.port_;
+        //MasterServer::get()->start("localhost", masterPort);
+        //cout << "#[Master Server]started, listening at localhost:"<<masterPort<<" ..."<<endl;
+    }
+
+    // If work as remote Worker
+    // *WorkerServer should be checked after all collections have been started
+    if (sf1r::SF1Config::get()->isWorkerEnabled())
     {
         try
         {
+            // worker server
             std::string host = "localhost";
-            uint16_t port = SF1Config::get()->brokerAgentConfig_.workerport_;
+            uint16_t port = SF1Config::get()->workerAgentConfig_.port_;
             std::size_t threadNum = SF1Config::get()->brokerAgentConfig_.threadNum_;
 
             workerServer_.reset(new WorkerServer(host, port, threadNum));
             workerServer_->start();
-
             workerServer_->setQueryLogSearchService(queryLogService_);
+            cout << "#[Worker Server]started, listening at localhost:"<<port<<" ..."<<endl;
 
-            cout << "#[Worker Server] started, listening at localhost:"<<port<<" ..."<<endl;
+            // master notifier
+            std::string masterHost = SF1Config::get()->workerAgentConfig_.masterHost_;
+            uint16_t masterPort = SF1Config::get()->workerAgentConfig_.masterPort_;
+            //MasterNotifierSingleton::get()->setMasterServerInfo(masterHost, masterPort);
+
+            addExitHook(boost::bind(&CobraProcess::stopWorkerServer, this));
         }
         catch (std::exception& e)
         {
             cout << e.what() << endl;
         }
     }
-
-    addExitHook(boost::bind(&CobraProcess::stopWorkerServer, this));
 
     return true;
 }
@@ -313,8 +327,8 @@ int CobraProcess::run()
             }
 #endif
 
-        // check after collections have been started
-        checkAndStartWorkerServer();
+        // init after collections have been started
+        initMasterAndWorker();
 
         driverServer_->run();
     }

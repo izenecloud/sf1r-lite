@@ -14,6 +14,8 @@
 #include <configuration-manager/LAManagerConfig.h>
 #include <configuration-manager/QuerySupportConfig.h>
 #include <configuration-manager/BrokerAgentConfig.h>
+#include <configuration-manager/MasterAgentConfig.h>
+#include <configuration-manager/WorkerAgentConfig.h>
 #include <configuration-manager/FirewallConfig.h>
 #include <configuration-manager/CollectionParameterConfig.h>
 #include <mining-manager/faceted-submanager/ontology_rep_item.h>
@@ -24,7 +26,6 @@
 
 #include <util/singleton.h>
 #include <util/ticpp/ticpp.h>
-
 #include <net/aggregator/AggregatorConfig.h>
 
 #include <boost/unordered_set.hpp>
@@ -386,9 +387,14 @@ public:
         return brokerAgentConfig_;
     }
 
+    const MasterAgentConfig& getMasterAgentConfig()
+    {
+        return masterAgentConfig_;
+    }
+
     const net::aggregator::AggregatorConfig& getAggregatorConfig()
     {
-        return aggregatorConfig_;
+        return masterAgentConfig_.aggregatorConfig_;
     }
 
     /// @brief Gets the configuration related to BrokerAgent
@@ -398,6 +404,10 @@ public:
         brokerAgentConfig = brokerAgentConfig_;
     }
 
+    const WorkerAgentConfig& getWorkerAgentConfig()
+    {
+        return workerAgentConfig_;
+    }
 
     /// @brief Gets the configuration related to Firewall
     /// @return The settings for Firewall
@@ -430,19 +440,47 @@ public:
         return false;
     }
 
+    bool isMasterEnabled()
+    {
+        if (!masterAgentConfig_.enabled_)
+            return false;
+
+        return (masterAgentConfig_.aggregatorSupportMap_.size() > 0);
+    }
+
     bool checkAggregatorSupport(const std::string& collectionOrBundleName)
     {
+        if (!masterAgentConfig_.enabled_)
+            return false;
+
         std::string nameLower = collectionOrBundleName;
         downCase(nameLower);
-
         if (nameLower == "querylog")
             return true;
 
-        return brokerAgentConfig_.checkAggregatorByName(collectionOrBundleName);
+        return masterAgentConfig_.checkAggregatorByName(collectionOrBundleName);
+    }
+
+    bool isWorkerEnabled()
+    {
+        if (!workerAgentConfig_.enabled_)
+            return false;
+
+        std::map<std::string, CollectionMeta>::const_iterator it;
+        for(it = collectionMetaMap_.begin(); it != collectionMetaMap_.end(); it++)
+        {
+            if (it->second.enableWorkerServer_)
+                return true;
+        }
+
+        return queryLogBundleConfig_ .enable_worker_;
     }
 
     bool checkCollectionWorkerService(const std::string& collectionName)
     {
+        if (!workerAgentConfig_.enabled_)
+            return false;
+
         std::map<std::string, CollectionMeta>::const_iterator it =
             collectionMetaMap_.find(collectionName);
 
@@ -456,22 +494,10 @@ public:
 
     bool checkQueryLogWorkerService()
     {
+        if (!workerAgentConfig_.enabled_)
+            return false;
+
         return queryLogBundleConfig_ .enable_worker_;
-    }
-
-    bool isEnableWorkerServer()
-    {
-        bool ret = false;
-
-        std::map<std::string, CollectionMeta>::const_iterator it;
-        for(it = collectionMetaMap_.begin(); it != collectionMetaMap_.end(); it++)
-        {
-            ret |= it->second.enableWorkerServer_;
-        }
-
-        ret |= queryLogBundleConfig_ .enable_worker_;
-
-        return ret;
     }
 
     bool checkCollectionExist(const std::string& collectionName)
@@ -563,7 +589,8 @@ private:
     void parseBroker(const ticpp::Element * broker);
     /// @brief                  Parse <RemoteAgent> settings
     /// @param system           Pointer to the Element
-    void parseRemoteAgent(const ticpp::Element * remoteAgent);
+    void parseMasterAgent(const ticpp::Element * remoteAgent);
+    void parseWorkerAgent(const ticpp::Element * remoteAgent);
 
 public:
     //----------------------------  PRIVATE MEMBER VARIABLES  ----------------------------
@@ -591,7 +618,9 @@ public:
     BrokerAgentConfig brokerAgentConfig_;
 
     /// @brief Congiguations for Aggregator (Workers' server info, etc)
-    net::aggregator::AggregatorConfig aggregatorConfig_;
+    MasterAgentConfig masterAgentConfig_;
+
+    WorkerAgentConfig workerAgentConfig_;
 
     /// @brief QueryLogBundleConfig
     QueryLogBundleConfiguration queryLogBundleConfig_;
