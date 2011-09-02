@@ -159,9 +159,6 @@ void PropertyDiversityReranker::rerankDiversity_(
         return;
     }
 
-    LOG(INFO) << "diversity property: " << diversityProperty_
-              << ", doc num: " << docIdList.size();
-
     const PropValueTable::ValueIdTable& idTable = pvTable->valueIdTable();
     std::size_t numDoc = docIdList.size();
     std::vector<unsigned int> newDocIdList;
@@ -187,11 +184,18 @@ void PropertyDiversityReranker::rerankDiversity_(
         }
     }
 
-    // single property or empty
-    if(docIdMap.size() > 1)
-        return;
+    LOG(INFO) << "diversity property: " << diversityProperty_
+              << ", group num: " << docIdMap.size()
+              << ", doc num: " << docIdList.size();
 
-    do{
+    // single property or empty
+    if(docIdMap.size() <= 1)
+    {
+        return;
+    }
+
+    while (!docIdMap.empty())
+    {
         DocIdMap::iterator mapIt = docIdMap.begin();
         while(mapIt != docIdMap.end())
         {
@@ -208,7 +212,7 @@ void PropertyDiversityReranker::rerankDiversity_(
                 ++mapIt;
             }
         }
-    }while(!docIdMap.empty());
+    }
 
     for(DocIdList::iterator missIt = missDocs.begin(); missIt != missDocs.end(); ++missIt)
     {
