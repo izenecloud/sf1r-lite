@@ -3,6 +3,8 @@
 #include "DbConnection.h"
 #include "SystemEvent.h"
 #include "UserQuery.h"
+#include "OrderLogger.h"
+#include "ItemLogger.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
@@ -47,6 +49,9 @@ namespace sf1r
 
         SystemEvent::createTable();
         UserQuery::createTable();
+        OrderLogger::createTable();
+        ItemLogger::createTable();
+
         return true;
     }
 

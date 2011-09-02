@@ -96,6 +96,7 @@ private:
     void clear();
 
     void clear(const std::string& property);
+
 private:
     ///All data would be got through IndexManager
     IndexManager* pIndexer_;

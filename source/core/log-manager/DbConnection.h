@@ -20,7 +20,6 @@ class DbConnectionBase;
 class DbConnection : public LogManagerSingleton<DbConnection>
 {
 public:
-
     DbConnection();
 
     ~DbConnection();
@@ -40,9 +39,16 @@ public:
     /// @throw exception if underlying database reports error
     bool exec(const std::string & sql, std::list< std::map<std::string, std::string> > & results, bool omitError=false);
 
+    enum SQL_KEYWORD {
+        ATTR_AUTO_INCREMENT, // the attribute to automatically generate unique id for new row
+        FUNC_LAST_INSERT_ID, // the function to get the last automatically generated id
+        SQL_KEYWORD_NUM
+    };
+
+    const std::string& getSqlKeyword(SQL_KEYWORD type) const;
+
 private:
     DbConnectionBase* impl_;
-    
 };
 
 }

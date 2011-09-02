@@ -259,28 +259,10 @@ void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, p
 
 SortPropertyComparator* SortPropertyCache::getComparator(SortProperty* pSortProperty)
 {
-    boost::mutex::scoped_lock lock(this->mutex_);
+    void *data;
+    getSortPropertyData(pSortProperty->getProperty(), pSortProperty->getPropertyDataType(), data);
 
-    if (dirty_)
-    {
-        for (std::map<std::string, std::pair<PropertyDataType,void*> >::iterator iter = sortDataCache_.begin();
-                iter != sortDataCache_.end(); ++iter)
-        {
-            cout<<"dirty "<<iter->first<<endl;
-            loadSortData(iter->first, iter->second.first);
-        }
-        dirty_ = false;
-    }
-
-    std::map<std::string, std::pair<PropertyDataType,void*> >::iterator iter = sortDataCache_.find(pSortProperty->getProperty()) ;
-    if (iter == sortDataCache_.end())
-    {
-        void* data = NULL;
-        sortDataCache_[pSortProperty->getProperty()] = make_pair(pSortProperty->getPropertyDataType(), data);
-        cout<<"first load "<<pSortProperty->getProperty()<<endl;
-        loadSortData(pSortProperty->getProperty(), pSortProperty->getPropertyDataType());
-    }
-    return new SortPropertyComparator(sortDataCache_[pSortProperty->getProperty()].second, pSortProperty->getPropertyDataType());
+    return new SortPropertyComparator(data, pSortProperty->getPropertyDataType());
 }
 
 Sorter::Sorter(SortPropertyCache* pCache)

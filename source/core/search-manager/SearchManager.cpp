@@ -810,16 +810,21 @@ void SearchManager::getSortPropertyData(Sorter* pSorter, std::vector<unsigned in
 
 }
 
-bool SearchManager::createPropertyTable(const std::string& propertyName, NumericPropertyTable* &propertyTable)
+NumericPropertyTable* SearchManager::createPropertyTable(const std::string& propertyName) const
 {
-    std::map<std::string, std::pair<PropertyDataType,void*> >::const_iterator it = pSorterCache_->sortDataCache_.find(propertyName);
-    if ( it == pSorterCache_->sortDataCache_.end() )
-        return false;
+    void *data;
+    boost::unordered_map<std::string, PropertyConfig>::const_iterator it = schemaMap_.find(propertyName);
 
-    propertyTable = new NumericPropertyTable(it->second.first, it->second.second);
-    return true;
+    if (it != schemaMap_.end())
+    {
+        PropertyDataType type = it->second.getType();
+        if (pSorterCache_->getSortPropertyData(propertyName, type, data))
+        {
+            return new NumericPropertyTable(type, data);
+        }
+    }
+    return NULL;
 }
-
 
 void SearchManager::printDFCTF(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties ctfmap)
 {

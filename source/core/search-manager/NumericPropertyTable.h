@@ -19,12 +19,12 @@ public:
     NumericPropertyTable(PropertyDataType type, void *data): type_(type), data_(data)
     {}
 
-    PropertyDataType getType()
+    PropertyDataType getType() const
     {
         return type_;
     }
 
-    inline bool getIntPropertyValue(const docid_t did, int64_t &value)
+    inline bool getIntPropertyValue(const docid_t did, int64_t &value) const
     {
         if (type_ != INT_PROPERTY_TYPE)
             return false;
@@ -33,7 +33,7 @@ public:
         return true;
     }
 
-    inline bool getUnsignedPropertyValue(const docid_t did, uint64_t &value)
+    inline bool getUnsignedPropertyValue(const docid_t did, uint64_t &value) const
     {
         if (type_ != UNSIGNED_INT_PROPERTY_TYPE)
             return false;
@@ -42,7 +42,7 @@ public:
         return true;
     }
 
-    inline bool getFloatPropertyValue(const docid_t did, float &value)
+    inline bool getFloatPropertyValue(const docid_t did, float &value) const
     {
         if (type_ != FLOAT_PROPERTY_TYPE)
             return false;
@@ -51,7 +51,7 @@ public:
         return true;
     }
 
-    inline bool getDoublePropertyValue(const docid_t did, double &value)
+    inline bool getDoublePropertyValue(const docid_t did, double &value) const
     {
         if (type_ != DOUBLE_PROPERTY_TYPE)
             return false;

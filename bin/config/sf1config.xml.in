@@ -10,6 +10,10 @@
   -->
   <System>
     <Resource path="@SF1RENGINE_ROOT@/package/resource"/> 
+    <!-- examples of configuration on "LogConnection":
+         for sqlite3 db: "sqlite3://./log/COBRA"
+         for mysql db: "mysql://root:123456@127.0.0.1:3306/SF1R"
+    -->
     <LogConnection str="sqlite3://./log/COBRA" />
     <BundlesDefault>
       <!-- QueryCorrection Bundle Default -->

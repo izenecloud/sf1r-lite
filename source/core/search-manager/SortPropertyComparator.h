@@ -25,6 +25,7 @@ public:
 private:
     void* data_;
     PropertyDataType type_;
+    int (SortPropertyComparator::*comparator_)(ScoreDoc, ScoreDoc);
 
 public:
     SortPropertyComparator();
@@ -34,7 +35,6 @@ public:
 
 private:
     void initComparator();
-    int (SortPropertyComparator::*comparator_)(ScoreDoc doc1, ScoreDoc doc2);
     int compareImplDefault(ScoreDoc doc1, ScoreDoc doc2);
     int compareImplInt(ScoreDoc doc1, ScoreDoc doc2);
     int compareImplUnsigned(ScoreDoc doc1, ScoreDoc doc2);

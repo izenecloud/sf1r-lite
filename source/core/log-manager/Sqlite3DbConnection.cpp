@@ -6,6 +6,8 @@ namespace sf1r {
 
 Sqlite3DbConnection::Sqlite3DbConnection()
 {
+    sqlKeywords_[DbConnection::ATTR_AUTO_INCREMENT] = "AUTOINCREMENT";
+    sqlKeywords_[DbConnection::FUNC_LAST_INSERT_ID] = "last_insert_rowid()";
 }
 
 Sqlite3DbConnection::~Sqlite3DbConnection()

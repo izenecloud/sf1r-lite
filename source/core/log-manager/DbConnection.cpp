@@ -66,5 +66,9 @@ bool DbConnection::exec(const std::string & sql,
     return impl_->exec(sql, results, omitError);
 }
 
+const std::string& DbConnection::getSqlKeyword(SQL_KEYWORD type) const
+{
+    return impl_->getSqlKeyword(type);
+}
 
 }
