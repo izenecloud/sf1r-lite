@@ -1251,14 +1251,12 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
           {
               getAttribute( it.Get(), "name", property_name );
               bool gottype = collectionMeta.getPropertyType(property_name, property_type);
-              if( !gottype || (property_type != STRING_PROPERTY_TYPE
-                               && property_type != INT_PROPERTY_TYPE
-                               && property_type != FLOAT_PROPERTY_TYPE))
+              if( !gottype || property_type != STRING_PROPERTY_TYPE)
               {
-                  throw XmlConfigParserException("Property ["+property_name+"] used in Group is not string, int or float type.");
+                  throw XmlConfigParserException("Property ["+property_name+"] in <Group> is not string type.");
               }
-              mining_schema.group_properties.push_back(GroupConfig());
 
+              mining_schema.group_properties.push_back(GroupConfig());
               GroupConfig& groupConfig = mining_schema.group_properties.back();
               groupConfig.propName = property_name;
 
