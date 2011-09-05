@@ -60,6 +60,12 @@ public:
         return true;
     }
 
+    template<typename T>
+    inline void getPropertyValue(const docid_t did, T &value) const
+    {
+        value = ((T *)data_)[did];
+    }
+
 private:
     PropertyDataType type_;
 
