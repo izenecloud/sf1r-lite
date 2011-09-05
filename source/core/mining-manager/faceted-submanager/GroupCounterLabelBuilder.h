@@ -9,6 +9,7 @@
 #define SF1R_GROUP_COUNTER_LABEL_BUILDER_H
 
 #include "GroupParam.h"
+#include <configuration-manager/PropertyConfig.h>
 
 #include <string>
 
@@ -21,13 +22,22 @@ class GroupLabel;
 class GroupCounterLabelBuilder
 {
 public:
-    GroupCounterLabelBuilder(const GroupManager* groupManager);
+    GroupCounterLabelBuilder(
+        const schema_type& schema,
+        const GroupManager* groupManager
+    );
 
     GroupCounter* createGroupCounter(const std::string& prop) const;
-
     GroupLabel* createGroupLabel(const GroupParam::GroupLabel& labelParam) const;
 
 private:
+    PropertyDataType getPropertyType_(const std::string& prop) const;
+
+    GroupCounter* createStringCounter(const std::string& prop) const;
+    GroupLabel* createStringLabel(const GroupParam::GroupLabel& labelParam) const;
+
+private:
+    const schema_type& schema_;
     const GroupManager* groupManager_;
 };
 

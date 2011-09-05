@@ -12,8 +12,7 @@
 #include <mining-manager/faceted-submanager/GroupParam.h>
 #include <mining-manager/faceted-submanager/GroupFilterBuilder.h>
 #include <mining-manager/faceted-submanager/GroupFilter.h>
-
-#include <cstdlib>
+#include <configuration-manager/PropertyConfig.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
@@ -21,14 +20,15 @@
 #include <boost/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <string>
 #include <vector>
 #include <map>
 #include <list>
-#include <sstream>
 #include <iostream>
 #include <fstream>
+#include <cstdlib>
 
 using namespace std;
 using namespace boost;
@@ -43,6 +43,7 @@ const char* PROP_NAME_GROUP_STR = "Group_str";
 const char* PROP_NAME_GROUP_INT = "Group_int";
 const char* PROP_NAME_GROUP_FLOAT = "Group_float";
 const char* TEST_DIR_STR = "group_test";
+}
 
 struct DocInput
 {
@@ -68,275 +69,10 @@ struct DocInput
     , groupInt_(groupInt)
     , groupFloat_(groupFloat)
     {
-        ostringstream oss;
-        oss << "Title " << docId_;
-        title_ = oss.str();
+        title_ = "Title ";
+        title_ += lexical_cast<string>(docId);
     }
 };
-
-typedef vector<unsigned int> DocIdList;
-typedef map<string, DocIdList> DocIdMap; // key: property value
-typedef map<string, DocIdMap> PropertyMap; // key: property name
-
-void createDocInput(
-    vector<DocInput>& docInputVec,
-    int start,
-    int end
-)
-{
-    for (int i = start; i <= end; ++i)
-    {
-        DocInput docInput;
-        int mod = i % 4;
-        switch (mod)
-        {
-        case 0:
-            docInput = DocInput(i, "aaa", "1", "0.1");
-            break;
-        case 1:
-            docInput = DocInput(i, "上海", "2", "0.2");
-            break;
-        case 2:
-            docInput = DocInput(i, "中国", "3", "0.3");
-            break;
-        case 3:
-            docInput = DocInput(i, "aaa", "2", "0.3");
-            break;
-        default:
-            BOOST_ASSERT(false);
-        }
-
-        docInputVec.push_back(docInput);
-    }
-}
-
-/**
- * @param labelList the label list, it is assumed that each path contains only one element.
- */
-void createPropertyMap(
-    const vector<DocInput>& docInputVec,
-    const faceted::GroupParam::GroupLabelVec& labelList,
-    PropertyMap& propertyMap
-)
-{
-    DocIdMap& strDocIdMap = propertyMap[PROP_NAME_GROUP_STR];
-    DocIdMap& intDocIdMap = propertyMap[PROP_NAME_GROUP_INT];
-    DocIdMap& floatDocIdMap = propertyMap[PROP_NAME_GROUP_FLOAT];
-
-    for (vector<DocInput>::const_iterator it = docInputVec.begin();
-        it != docInputVec.end(); ++it)
-    {
-        bool isOK = true;
-        for (std::size_t i = 0; i < labelList.size(); ++i)
-        {
-            const faceted::GroupParam::GroupLabel& label = labelList[i];
-            if ((label.first == PROP_NAME_GROUP_INT && label.second[0] != it->groupInt_)
-                || (label.first == PROP_NAME_GROUP_FLOAT && label.second[0] != it->groupFloat_))
-            {
-                isOK = false;
-                break;
-            }
-        }
-        if (isOK)
-        {
-            strDocIdMap[it->groupStr_].push_back(it->docId_);
-        }
-
-        isOK = true;
-        for (std::size_t i = 0; i < labelList.size(); ++i)
-        {
-            const faceted::GroupParam::GroupLabel& label = labelList[i];
-            if ((label.first == PROP_NAME_GROUP_STR && label.second[0] != it->groupStr_)
-                || (label.first == PROP_NAME_GROUP_FLOAT && label.second[0] != it->groupFloat_))
-            {
-                isOK = false;
-                break;
-            }
-        }
-        if (isOK)
-        {
-            intDocIdMap[it->groupInt_].push_back(it->docId_);
-        }
-
-        isOK = true;
-        for (std::size_t i = 0; i < labelList.size(); ++i)
-        {
-            const faceted::GroupParam::GroupLabel& label = labelList[i];
-            if ((label.first == PROP_NAME_GROUP_STR && label.second[0] != it->groupStr_)
-                || (label.first == PROP_NAME_GROUP_INT && label.second[0] != it->groupInt_))
-            {
-                isOK = false;
-                break;
-            }
-        }
-        if (isOK)
-        {
-            floatDocIdMap[it->groupFloat_].push_back(it->docId_);
-        }
-
-    }
-}
-
-void createGroupRep(
-    const vector<unsigned int>& docIdList,
-    const vector<string>& propNameVec,
-    const faceted::GroupParam::GroupLabelVec& labelVec,
-    const faceted::GroupManager* groupManager,
-    faceted::OntologyRep& groupRep
-)
-{
-    faceted::GroupFilterBuilder filterBuilder(groupManager, NULL);
-    faceted::GroupParam groupParam;
-    groupParam.groupProps_ = propNameVec;
-    groupParam.groupLabels_ = labelVec;
-
-    faceted::GroupFilter* filter = filterBuilder.createFilter(groupParam);
-    for (vector<unsigned int>::const_iterator it = docIdList.begin();
-        it != docIdList.end(); ++it)
-    {
-        bool pass = filter->test(*it);
-        if (labelVec.empty())
-        {
-            BOOST_CHECK(pass);
-        }
-    }
-
-    faceted::OntologyRep attrRep;
-    filter->getGroupRep(groupRep, attrRep);
-
-    delete filter;
-}
-
-void checkGroupRep(
-    const faceted::OntologyRep& groupRep,
-    const vector<string>& propNameList,
-    PropertyMap& propertyMap
-)
-{
-    typedef list<faceted::OntologyRepItem> RepItemList;
-    const RepItemList& itemList = groupRep.item_list;
-
-    // check list size
-    unsigned int totalCount = 0;
-    // iterate property name
-    for (PropertyMap::const_iterator it = propertyMap.begin();
-        it != propertyMap.end(); ++it)
-    {
-        ++totalCount;
-        // get property value count
-        totalCount += it->second.size();
-    }
-    BOOST_CHECK_EQUAL(itemList.size(), totalCount);
-
-    string propName, convertBuffer;
-    vector<string>::const_iterator propNameIt = propNameList.begin();
-    int propDocCount = 0;
-    int valueDocSum = 0;
-    for (RepItemList::const_iterator it = itemList.begin();
-            it != itemList.end(); ++it)
-    {
-        const faceted::OntologyRepItem& item = *it;
-        item.text.convertString(convertBuffer, ENCODING_TYPE);
-
-        if (item.level == 0)
-        {
-            propName = convertBuffer;
-            BOOST_CHECK(propNameIt != propNameList.end());
-            BOOST_CHECK_EQUAL(propName, *propNameIt);
-            ++propNameIt;
-
-            BOOST_CHECK_EQUAL(propDocCount, valueDocSum);
-            propDocCount = item.doc_count;
-            valueDocSum = 0;
-        }
-        else
-        {
-            BOOST_CHECK_EQUAL(item.level, 1);
-
-            DocIdList& docIdList = propertyMap[propName][convertBuffer];
-            BOOST_TEST_MESSAGE("check property: " << propName
-                               << ", value: " << convertBuffer
-                               << ", doc count: " << docIdList.size());
-            BOOST_CHECK_EQUAL(item.doc_count, docIdList.size());
-
-            valueDocSum += item.doc_count;
-        }
-    }
-    BOOST_CHECK_EQUAL(propDocCount, valueDocSum);
-}
-
-void makeSchema(std::set<PropertyConfig, PropertyComp>& propertyConfig)
-{
-    PropertyConfig pconfig1;
-    pconfig1.setName("DOCID");
-    pconfig1.setType(sf1r::STRING_PROPERTY_TYPE);
-
-    PropertyConfig pconfig2;
-    pconfig2.setName("Title");
-    pconfig2.setType(sf1r::STRING_PROPERTY_TYPE);
-
-    PropertyConfig pconfig3;
-    pconfig3.setName(PROP_NAME_GROUP_STR);
-    pconfig3.setType(sf1r::STRING_PROPERTY_TYPE);
-
-    PropertyConfig pconfig4;
-    pconfig4.setName(PROP_NAME_GROUP_INT);
-    pconfig3.setType(sf1r::INT_PROPERTY_TYPE);
-
-    PropertyConfig pconfig5;
-    pconfig5.setName(PROP_NAME_GROUP_FLOAT);
-    pconfig3.setType(sf1r::FLOAT_PROPERTY_TYPE);
-
-    propertyConfig.insert(pconfig1);
-    propertyConfig.insert(pconfig2);
-    propertyConfig.insert(pconfig3);
-    propertyConfig.insert(pconfig4);
-    propertyConfig.insert(pconfig5);
-}
-
-DocumentManager*
-createDocumentManager()
-{
-    bfs::path dmPath(bfs::path(TEST_DIR_STR) / "dm/");
-    bfs::create_directories(dmPath);
-    std::set<PropertyConfig, PropertyComp> propertyConfig;
-    makeSchema(propertyConfig);
-
-    DocumentManager* ret = new DocumentManager(
-            dmPath.string(),
-            propertyConfig,
-            ENCODING_TYPE,
-            2000
-            );
-    return ret;
-}
-
-void prepareDocument(
-    Document& document,
-    const DocInput& docInput
-)
-{
-    document.setId(docInput.docId_);
-
-    ostringstream oss;
-    oss << docInput.docId_;
-
-    izenelib::util::UString property;
-    property.assign(oss.str(), ENCODING_TYPE);
-    document.property("DOCID") = property;
-
-    property.assign(docInput.title_, ENCODING_TYPE);
-    document.property("Title") = property;
-
-    property.assign(docInput.groupStr_, ENCODING_TYPE);
-    document.property(PROP_NAME_GROUP_STR) = property;
-
-    property.assign(docInput.groupInt_, ENCODING_TYPE);
-    document.property(PROP_NAME_GROUP_INT) = property;
-
-    property.assign(docInput.groupFloat_, ENCODING_TYPE);
-    document.property(PROP_NAME_GROUP_FLOAT) = property;
-}
 
 void checkProperty(
     const Document& doc,
@@ -353,158 +89,398 @@ void checkProperty(
     BOOST_CHECK_EQUAL(utf8Str, propValue);
 }
 
-void checkDocument(
-    Document& doc,
+void prepareDocument(
+    Document& document,
     const DocInput& docInput
 )
 {
-    ostringstream oss;
-    oss << docInput.docId_;
-    checkProperty(doc, "DOCID", oss.str());
-    checkProperty(doc, PROP_NAME_GROUP_STR, docInput.groupStr_);
-    checkProperty(doc, PROP_NAME_GROUP_INT, docInput.groupInt_);
-    checkProperty(doc, PROP_NAME_GROUP_FLOAT, docInput.groupFloat_);
+    document.setId(docInput.docId_);
+
+    izenelib::util::UString property;
+    property.assign(lexical_cast<string>(docInput.docId_), ENCODING_TYPE);
+    document.property("DOCID") = property;
+
+    property.assign(docInput.title_, ENCODING_TYPE);
+    document.property("Title") = property;
+
+    property.assign(docInput.groupStr_, ENCODING_TYPE);
+    document.property(PROP_NAME_GROUP_STR) = property;
+
+    property.assign(docInput.groupInt_, ENCODING_TYPE);
+    document.property(PROP_NAME_GROUP_INT) = property;
+
+    property.assign(docInput.groupFloat_, ENCODING_TYPE);
+    document.property(PROP_NAME_GROUP_FLOAT) = property;
 }
 
-void createCollection(
-    DocumentManager* documentManager,
-    const vector<DocInput>& docInputVec
-)
+class GroupManagerTestFixture
 {
-    for (vector<DocInput>::const_iterator it = docInputVec.begin();
-        it != docInputVec.end(); ++it)
+private:
+    schema_type baseSchema_;
+    set<PropertyConfig, PropertyComp> subSchema_;
+    vector<string> propNames_;
+    vector<GroupConfig> groupConfigs_;
+
+    DocumentManager* documentManager_;
+    vector<DocInput> docInputVec_;
+
+    string groupPath_;
+    faceted::GroupManager* groupManager_;
+
+    typedef vector<unsigned int> DocIdList;
+    typedef map<string, DocIdList> DocIdMap; // key: property value
+    typedef map<string, DocIdMap> PropertyMap; // key: property name
+
+public:
+    GroupManagerTestFixture()
+        : documentManager_(NULL)
+        , groupManager_(NULL)
     {
-        Document document;
-        prepareDocument(document, *it);
-        BOOST_CHECK(documentManager->insertDocument(document));
-    }
-}
+        boost::filesystem::remove_all(TEST_DIR_STR);
+        bfs::path dmPath(bfs::path(TEST_DIR_STR) / "dm/");
+        bfs::create_directories(dmPath);
+        groupPath_ = (bfs::path(TEST_DIR_STR) / "group").string();
 
-void checkCollection(
-    DocumentManager* documentManager,
-    const vector<DocInput>& docInputVec
-)
-{
-    for (vector<DocInput>::const_iterator it = docInputVec.begin();
-        it != docInputVec.end(); ++it)
-    {
-        Document doc;
-        documentManager->getDocument(it->docId_, doc);
-        checkDocument(doc, *it);
-    }
-}
+        makeSchema_();
 
-void checkGroupManager(
-    DocumentManager* documentManager,
-    const string& groupPath,
-    const vector<string>& propNameVec,
-    const vector<DocInput>& docInputVec,
-    bool isProcessCollection
-)
-{
-    faceted::GroupManager* groupManager = new faceted::GroupManager(documentManager, groupPath);
+        documentManager_ = new DocumentManager(
+            dmPath.string(),
+            subSchema_,
+            ENCODING_TYPE,
+            2000);
 
-    vector<GroupConfig> configVec;
-    for (vector<string>::const_iterator it = propNameVec.begin();
-        it != propNameVec.end(); ++it)
-    {
-        configVec.push_back(GroupConfig());
-        configVec.back().propName = *it;
-    }
+        propNames_.push_back(PROP_NAME_GROUP_STR);
+        propNames_.push_back(PROP_NAME_GROUP_INT);
+        propNames_.push_back(PROP_NAME_GROUP_FLOAT);
 
-    BOOST_CHECK(groupManager->open(configVec));
+        for (vector<string>::const_iterator it = propNames_.begin();
+            it != propNames_.end(); ++it)
+        {
+            groupConfigs_.push_back(GroupConfig());
+            groupConfigs_.back().propName = *it;
+        }
 
-    if (isProcessCollection)
-    {
-        BOOST_CHECK(groupManager->processCollection());
-    }
-
-    vector<unsigned int> docIdList;
-    for (vector<DocInput>::const_iterator it = docInputVec.begin();
-        it != docInputVec.end(); ++it)
-    {
-        docIdList.push_back(it->docId_);
+        resetGroupManager();
     }
 
-
-    faceted::GroupParam::GroupLabelVec labelList;
-    faceted::OntologyRep groupRep;
-    PropertyMap propMap;
-
+    ~GroupManagerTestFixture()
     {
-        BOOST_TEST_MESSAGE("check label size: " << labelList.size());
-        createGroupRep(docIdList, propNameVec, labelList, groupManager, groupRep);
-        createPropertyMap(docInputVec, labelList, propMap);
-        checkGroupRep(groupRep, propNameVec, propMap);
+        delete documentManager_;
+        delete groupManager_;
     }
 
-
+    void resetGroupManager()
     {
-        faceted::GroupParam::GroupLabel label1;
-        label1.first = PROP_NAME_GROUP_STR;
-        label1.second.push_back("aaa");
+        delete groupManager_;
 
-        faceted::GroupParam::GroupLabel label2;
-        label2.first = PROP_NAME_GROUP_INT;
-        label2.second.push_back("2");
-
-        labelList.push_back(label1);
-        labelList.push_back(label2);
-
-        BOOST_TEST_MESSAGE("check label size: " << labelList.size());
-        groupRep.item_list.clear();
-        createGroupRep(docIdList, propNameVec, labelList, groupManager, groupRep);
-
-        propMap.clear();
-        createPropertyMap(docInputVec, labelList, propMap);
-        checkGroupRep(groupRep, propNameVec, propMap);
+        groupManager_ = new faceted::GroupManager(documentManager_, groupPath_);
+        BOOST_CHECK(groupManager_->open(groupConfigs_));
     }
 
-    delete groupManager;
-}
+    void createDocument(int start, int end)
+    {
+        for (int i = start; i <= end; ++i)
+        {
+            DocInput docInput;
+            int mod = i % 4;
+            switch (mod)
+            {
+            case 0:
+                docInput = DocInput(i, "aaa", "1", "0.1");
+                break;
+            case 1:
+                docInput = DocInput(i, "上海", "2", "0.2");
+                break;
+            case 2:
+                docInput = DocInput(i, "中国", "3", "0.3");
+                break;
+            case 3:
+                docInput = DocInput(i, "aaa", "2", "0.3");
+                break;
+            default:
+                BOOST_ASSERT(false);
+            }
 
-}
+            docInputVec_.push_back(docInput);
+
+            Document document;
+            prepareDocument(document, docInput);
+            BOOST_CHECK(documentManager_->insertDocument(document));
+        }
+
+        checkCollection_();
+    }
+
+    void checkGroupManager(bool isProcessCollection)
+    {
+        if (isProcessCollection)
+        {
+            BOOST_CHECK(groupManager_->processCollection());
+        }
+
+        vector<unsigned int> docIdList;
+        for (vector<DocInput>::const_iterator it = docInputVec_.begin();
+            it != docInputVec_.end(); ++it)
+        {
+            docIdList.push_back(it->docId_);
+        }
+
+        faceted::GroupParam::GroupLabelVec labelList;
+        faceted::OntologyRep groupRep;
+        PropertyMap propMap;
+
+        {
+            BOOST_TEST_MESSAGE("check label size: " << labelList.size());
+            createGroupRep_(docIdList, labelList, groupRep);
+            createPropertyMap_(labelList, propMap);
+            checkGroupRep_(groupRep, propMap);
+        }
+
+
+        {
+            faceted::GroupParam::GroupLabel label1;
+            label1.first = PROP_NAME_GROUP_STR;
+            label1.second.push_back("aaa");
+
+            faceted::GroupParam::GroupLabel label2;
+            label2.first = PROP_NAME_GROUP_INT;
+            label2.second.push_back("2");
+
+            labelList.push_back(label1);
+            labelList.push_back(label2);
+
+            BOOST_TEST_MESSAGE("check label size: " << labelList.size());
+            groupRep.item_list.clear();
+            createGroupRep_(docIdList, labelList, groupRep);
+
+            propMap.clear();
+            createPropertyMap_(labelList, propMap);
+            checkGroupRep_(groupRep, propMap);
+        }
+    }
+
+private:
+    void makeSchema_()
+    {
+        PropertyConfigBase config1;
+        config1.propertyName_ = "DOCID";
+        config1.propertyType_ = STRING_PROPERTY_TYPE;
+
+        PropertyConfigBase config2;
+        config2.propertyName_ = "Title";
+        config2.propertyType_ = STRING_PROPERTY_TYPE;
+
+        PropertyConfigBase config3;
+        config3.propertyName_ = PROP_NAME_GROUP_STR;
+        config3.propertyType_ = STRING_PROPERTY_TYPE;
+
+        PropertyConfigBase config4;
+        config4.propertyName_ = PROP_NAME_GROUP_INT;
+        config4.propertyType_ = STRING_PROPERTY_TYPE;
+
+        PropertyConfigBase config5;
+        config5.propertyName_ = PROP_NAME_GROUP_FLOAT;
+        config5.propertyType_ = STRING_PROPERTY_TYPE;
+
+        baseSchema_.insert(config1);
+        baseSchema_.insert(config2);
+        baseSchema_.insert(config3);
+        baseSchema_.insert(config4);
+        baseSchema_.insert(config5);
+
+        subSchema_.insert(config1);
+        subSchema_.insert(config2);
+        subSchema_.insert(config3);
+        subSchema_.insert(config4);
+        subSchema_.insert(config5);
+    }
+
+    void checkCollection_()
+    {
+        for (vector<DocInput>::const_iterator it = docInputVec_.begin();
+            it != docInputVec_.end(); ++it)
+        {
+            const DocInput& docInput = *it;
+            Document doc;
+            documentManager_->getDocument(docInput.docId_, doc);
+
+            checkProperty(doc, "DOCID", lexical_cast<string>(docInput.docId_));
+            checkProperty(doc, PROP_NAME_GROUP_STR, docInput.groupStr_);
+            checkProperty(doc, PROP_NAME_GROUP_INT, docInput.groupInt_);
+            checkProperty(doc, PROP_NAME_GROUP_FLOAT, docInput.groupFloat_);
+        }
+    }
+
+    void createGroupRep_(
+        const vector<unsigned int>& docIdList,
+        const faceted::GroupParam::GroupLabelVec& labelVec,
+        faceted::OntologyRep& groupRep
+    )
+    {
+        faceted::GroupFilterBuilder filterBuilder(baseSchema_, groupManager_, NULL);
+        faceted::GroupParam groupParam;
+        groupParam.groupProps_ = propNames_;
+        groupParam.groupLabels_ = labelVec;
+
+        faceted::GroupFilter* filter = filterBuilder.createFilter(groupParam);
+        for (vector<unsigned int>::const_iterator it = docIdList.begin();
+            it != docIdList.end(); ++it)
+        {
+            bool pass = filter->test(*it);
+            if (labelVec.empty())
+            {
+                BOOST_CHECK(pass);
+            }
+        }
+
+        faceted::OntologyRep attrRep;
+        filter->getGroupRep(groupRep, attrRep);
+
+        delete filter;
+    }
+
+    /**
+    * @param labelList the label list, it is assumed that each path contains only one element.
+    */
+    void createPropertyMap_(
+        const faceted::GroupParam::GroupLabelVec& labelList,
+        PropertyMap& propertyMap
+    )
+    {
+        DocIdMap& strDocIdMap = propertyMap[PROP_NAME_GROUP_STR];
+        DocIdMap& intDocIdMap = propertyMap[PROP_NAME_GROUP_INT];
+        DocIdMap& floatDocIdMap = propertyMap[PROP_NAME_GROUP_FLOAT];
+
+        for (vector<DocInput>::const_iterator it = docInputVec_.begin();
+            it != docInputVec_.end(); ++it)
+        {
+            bool isOK = true;
+            for (std::size_t i = 0; i < labelList.size(); ++i)
+            {
+                const faceted::GroupParam::GroupLabel& label = labelList[i];
+                if ((label.first == PROP_NAME_GROUP_INT && label.second[0] != it->groupInt_)
+                    || (label.first == PROP_NAME_GROUP_FLOAT && label.second[0] != it->groupFloat_))
+                {
+                    isOK = false;
+                    break;
+                }
+            }
+            if (isOK)
+            {
+                strDocIdMap[it->groupStr_].push_back(it->docId_);
+            }
+
+            isOK = true;
+            for (std::size_t i = 0; i < labelList.size(); ++i)
+            {
+                const faceted::GroupParam::GroupLabel& label = labelList[i];
+                if ((label.first == PROP_NAME_GROUP_STR && label.second[0] != it->groupStr_)
+                    || (label.first == PROP_NAME_GROUP_FLOAT && label.second[0] != it->groupFloat_))
+                {
+                    isOK = false;
+                    break;
+                }
+            }
+            if (isOK)
+            {
+                intDocIdMap[it->groupInt_].push_back(it->docId_);
+            }
+
+            isOK = true;
+            for (std::size_t i = 0; i < labelList.size(); ++i)
+            {
+                const faceted::GroupParam::GroupLabel& label = labelList[i];
+                if ((label.first == PROP_NAME_GROUP_STR && label.second[0] != it->groupStr_)
+                    || (label.first == PROP_NAME_GROUP_INT && label.second[0] != it->groupInt_))
+                {
+                    isOK = false;
+                    break;
+                }
+            }
+            if (isOK)
+            {
+                floatDocIdMap[it->groupFloat_].push_back(it->docId_);
+            }
+
+        }
+    }
+
+    void checkGroupRep_(
+        const faceted::OntologyRep& groupRep,
+        PropertyMap& propertyMap
+    )
+    {
+        typedef list<faceted::OntologyRepItem> RepItemList;
+        const RepItemList& itemList = groupRep.item_list;
+
+        // check list size
+        unsigned int totalCount = 0;
+        // iterate property name
+        for (PropertyMap::const_iterator it = propertyMap.begin();
+            it != propertyMap.end(); ++it)
+        {
+            ++totalCount;
+            // get property value count
+            totalCount += it->second.size();
+        }
+        BOOST_CHECK_EQUAL(itemList.size(), totalCount);
+
+        string propName, convertBuffer;
+        vector<string>::const_iterator propNameIt = propNames_.begin();
+        int propDocCount = 0;
+        int valueDocSum = 0;
+        for (RepItemList::const_iterator it = itemList.begin();
+                it != itemList.end(); ++it)
+        {
+            const faceted::OntologyRepItem& item = *it;
+            item.text.convertString(convertBuffer, ENCODING_TYPE);
+
+            if (item.level == 0)
+            {
+                propName = convertBuffer;
+                BOOST_CHECK(propNameIt != propNames_.end());
+                BOOST_CHECK_EQUAL(propName, *propNameIt);
+                ++propNameIt;
+
+                BOOST_CHECK_EQUAL(propDocCount, valueDocSum);
+                propDocCount = item.doc_count;
+                valueDocSum = 0;
+            }
+            else
+            {
+                BOOST_CHECK_EQUAL(item.level, 1);
+
+                DocIdList& docIdList = propertyMap[propName][convertBuffer];
+                BOOST_TEST_MESSAGE("check property: " << propName
+                                << ", value: " << convertBuffer
+                                << ", doc count: " << docIdList.size());
+                BOOST_CHECK_EQUAL(item.doc_count, docIdList.size());
+
+                valueDocSum += item.doc_count;
+            }
+        }
+        BOOST_CHECK_EQUAL(propDocCount, valueDocSum);
+    }
+};
 
 BOOST_AUTO_TEST_SUITE(GroupManager_test)
 
-BOOST_AUTO_TEST_CASE(getGroupRep)
+BOOST_FIXTURE_TEST_CASE(checkGetGroupRep, GroupManagerTestFixture)
 {
-    boost::filesystem::remove_all(TEST_DIR_STR);
-
-    DocumentManager* documentManager = createDocumentManager();
-    BOOST_REQUIRE(documentManager != NULL);
-
-    vector<string> propNameVec;
-    propNameVec.push_back(PROP_NAME_GROUP_STR);
-    propNameVec.push_back(PROP_NAME_GROUP_INT);
-    propNameVec.push_back(PROP_NAME_GROUP_FLOAT);
-
-    bfs::path groupPath(bfs::path(TEST_DIR_STR) / "group");
-    vector<DocInput> docInputVec;
-
     BOOST_TEST_MESSAGE("check empty group index");
-    checkGroupManager(documentManager, groupPath.string(), propNameVec, docInputVec, false);
-
-    createDocInput(docInputVec, 1, 100);
-    createCollection(documentManager, docInputVec);
-    checkCollection(documentManager, docInputVec);
+    checkGroupManager(false);
 
     BOOST_TEST_MESSAGE("create group index 1st time");
-    checkGroupManager(documentManager, groupPath.string(), propNameVec, docInputVec, true);
+    createDocument(1, 100);
+    checkGroupManager(true);
 
     BOOST_TEST_MESSAGE("load group index");
-    checkGroupManager(documentManager, groupPath.string(), propNameVec, docInputVec, false);
-
-    vector<DocInput> newDocInputVec;
-    createDocInput(newDocInputVec, 101, 200);
-    createCollection(documentManager, newDocInputVec);
-    checkCollection(documentManager, newDocInputVec);
+    resetGroupManager();
+    checkGroupManager(false);
 
     BOOST_TEST_MESSAGE("create group index 2nd time");
-    docInputVec.insert(docInputVec.end(), newDocInputVec.begin(), newDocInputVec.end());
-    checkGroupManager(documentManager, groupPath.string(), propNameVec, docInputVec, true);
-
-    delete documentManager;
+    createDocument(101, 200);
+    checkGroupManager(true);
 }
 
 BOOST_AUTO_TEST_SUITE_END() 

@@ -20,6 +20,7 @@ class GroupLabel;
 class AttrLabel;
 class GroupCounter;
 class AttrCounter;
+class GroupCounterLabelBuilder;
 
 class GroupFilter
 {
@@ -31,7 +32,7 @@ public:
     /**
      * @return true for success, false for failure
      */
-    bool initGroup(const GroupManager* groupManager);
+    bool initGroup(const GroupCounterLabelBuilder& builder);
 
     /**
      * @return true for success, false for failure

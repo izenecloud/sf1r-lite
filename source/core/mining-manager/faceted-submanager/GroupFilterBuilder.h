@@ -9,6 +9,7 @@
 #define SF1R_GROUP_FILTER_BUILDER_H
 
 #include "faceted_types.h"
+#include <configuration-manager/PropertyConfig.h>
 
 NS_FACETED_BEGIN
 
@@ -22,6 +23,7 @@ class GroupFilterBuilder
 {
 public:
     GroupFilterBuilder(
+        const schema_type& schema,
         const GroupManager* groupManager,
         const AttrManager* attrManager
     );
@@ -36,6 +38,7 @@ public:
     GroupFilter* createFilter(const GroupParam& groupParam) const;
 
 private:
+    const schema_type& schema_;
     const GroupManager* groupManager_;
     const AttrTable* attrTable_;
 };

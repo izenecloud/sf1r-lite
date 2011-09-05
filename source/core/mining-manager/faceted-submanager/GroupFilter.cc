@@ -43,10 +43,8 @@ GroupFilter::~GroupFilter()
     delete attrCounter_;
 }
 
-bool GroupFilter::initGroup(const GroupManager* groupManager)
+bool GroupFilter::initGroup(const GroupCounterLabelBuilder& builder)
 {
-    GroupCounterLabelBuilder builder(groupManager);
-
     // map from prop name to GroupCounter instance
     typedef std::map<std::string, GroupCounter*> GroupCounterMap;
     GroupCounterMap groupCounterMap;
@@ -63,6 +61,11 @@ bool GroupFilter::initGroup(const GroupManager* groupManager)
                 groupCounterMap[*it] = counter;
                 groupCounters_.push_back(counter);
             }
+            else
+            {
+                LOG(ERROR) << "fail to create group counter for property " << *it;
+                return false;
+            }
         }
         else
         {
@@ -74,7 +77,8 @@ bool GroupFilter::initGroup(const GroupManager* groupManager)
     for (GroupParam::GroupLabelVec::const_iterator it = labels.begin();
         it != labels.end(); ++it)
     {
-        GroupCounterMap::iterator counterIt = groupCounterMap.find(it->first);
+        const std::string& propName = it->first;
+        GroupCounterMap::iterator counterIt = groupCounterMap.find(propName);
         if (counterIt != groupCounterMap.end())
         {
             GroupCounter* counter = counterIt->second;
@@ -84,10 +88,15 @@ bool GroupFilter::initGroup(const GroupManager* groupManager)
                 label->setCounter(counter);
                 groupLabels_.push_back(label);
             }
+            else
+            {
+                LOG(ERROR) << "fail to create group label for property " << propName;
+                return false;
+            }
         }
         else
         {
-            LOG(ERROR) << "not found group property " << it->first << " for group label";
+            LOG(ERROR) << "not found the group parameter for group label " << propName;
             return false;
         }
     }
