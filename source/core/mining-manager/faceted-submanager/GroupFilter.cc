@@ -7,24 +7,17 @@
 #include "AttrCounter.h"
 #include "GroupLabel.h"
 #include "AttrLabel.h"
+#include "GroupCounterLabelBuilder.h"
 #include <util/ClockTimer.h>
 
 #include <glog/logging.h>
 
 NS_FACETED_BEGIN
 
-GroupFilter::GroupFilter(
-    const GroupManager* groupManager,
-    const AttrTable& attrTable,
-    const GroupParam& groupParam
-)
-    : groupManager_(groupManager)
-    , attrTable_(attrTable)
-    , groupParam_(groupParam)
+GroupFilter::GroupFilter(const GroupParam& groupParam)
+    : groupParam_(groupParam)
     , attrCounter_(NULL)
 {
-    initGroup_();
-    initAttr_();
 }
 
 GroupFilter::~GroupFilter()
@@ -50,10 +43,9 @@ GroupFilter::~GroupFilter()
     delete attrCounter_;
 }
 
-void GroupFilter::initGroup_()
+bool GroupFilter::initGroup(const GroupManager* groupManager)
 {
-    if (groupParam_.groupProps_.empty())
-        return;
+    GroupCounterLabelBuilder builder(groupManager);
 
     // map from prop name to GroupCounter instance
     typedef std::map<std::string, GroupCounter*> GroupCounterMap;
@@ -63,23 +55,18 @@ void GroupFilter::initGroup_()
     for (std::vector<std::string>::const_iterator it = groupProps.begin();
         it != groupProps.end(); ++it)
     {
-        const PropValueTable* pvTable = groupManager_->getPropValueTable(*it);
-        if (pvTable)
+        if (groupCounterMap.find(*it) == groupCounterMap.end())
         {
-            if (groupCounterMap.find(*it) == groupCounterMap.end())
+            GroupCounter* counter = builder.createGroupCounter(*it);
+            if (counter)
             {
-                GroupCounter* counter = new GroupCounter(*pvTable);
                 groupCounterMap[*it] = counter;
                 groupCounters_.push_back(counter);
-            }
-            else
-            {
-                LOG(WARNING) << "duplicated group property " << *it;
             }
         }
         else
         {
-            LOG(WARNING) << "group index file is not loaded for group property " << *it;
+            LOG(WARNING) << "ignore duplicated group property " << *it;
         }
     }
 
@@ -90,36 +77,36 @@ void GroupFilter::initGroup_()
         GroupCounterMap::iterator counterIt = groupCounterMap.find(it->first);
         if (counterIt != groupCounterMap.end())
         {
-            const PropValueTable* pvTable = groupManager_->getPropValueTable(it->first);
-            if (pvTable)
+            GroupCounter* counter = counterIt->second;
+            GroupLabel* label = builder.createGroupLabel(*it);
+            if (label)
             {
-                groupLabels_.push_back(new GroupLabel(it->second, *pvTable, counterIt->second));
-            }
-            else
-            {
-                LOG(WARNING) << "group index file is not loaded for group property " << it->first;
+                label->setCounter(counter);
+                groupLabels_.push_back(label);
             }
         }
         else
         {
-            LOG(WARNING) << "not found property " << it->first << " for group label";
+            LOG(ERROR) << "not found group property " << it->first << " for group label";
+            return false;
         }
     }
+
+    return true;
 }
 
-void GroupFilter::initAttr_()
+bool GroupFilter::initAttr(const AttrTable* attrTable)
 {
-    if (groupParam_.isAttrGroup_)
-    {
-        attrCounter_ = new AttrCounter(attrTable_);
+    attrCounter_ = new AttrCounter(attrTable);
 
-        const GroupParam::AttrLabelVec& labels = groupParam_.attrLabels_;
-        for (GroupParam::AttrLabelVec::const_iterator it = labels.begin();
-            it != labels.end(); ++it)
-        {
-            attrLabels_.push_back(new AttrLabel(*it, attrTable_));
-        }
+    const GroupParam::AttrLabelVec& labels = groupParam_.attrLabels_;
+    for (GroupParam::AttrLabelVec::const_iterator it = labels.begin();
+        it != labels.end(); ++it)
+    {
+        attrLabels_.push_back(new AttrLabel(*it, attrTable));
     }
+
+    return true;
 }
 
 bool GroupFilter::test(docid_t doc)

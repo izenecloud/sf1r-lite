@@ -1,41 +1,34 @@
 ///
 /// @file GroupLabel.h
-/// @brief filter docs on selected property label
+/// @brief base class to filter docs on selected property label
 /// @author Jun Jiang <jun.jiang@izenesoft.com>
-/// @date Created 2011-07-29
+/// @date Created 2011-09-05
 ///
 
 #ifndef SF1R_GROUP_LABEL_H
 #define SF1R_GROUP_LABEL_H
 
 #include "faceted_types.h"
-#include "prop_value_table.h"
-
-#include <vector>
-#include <string>
+#include "GroupCounter.h"
 
 NS_FACETED_BEGIN
-
-class GroupCounter;
 
 class GroupLabel
 {
 public:
-    GroupLabel(
-        const std::vector<std::string>& labelPath,
-        const PropValueTable& pvTable,
-        GroupCounter* counter
-    );
+    GroupLabel() {}
 
-    bool test(docid_t doc) const;
+    void setCounter(GroupCounter* counter) {
+        counter_ = counter;
+    }
 
     GroupCounter* getCounter() {
         return counter_;
     }
 
+    virtual bool test(docid_t doc) const = 0;
+
 private:
-    const PropValueTable& propValueTable_;
-    PropValueTable::pvid_t targetValueId_;
     GroupCounter* counter_;
 };
 

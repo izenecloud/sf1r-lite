@@ -41,9 +41,9 @@ public:
      */
     bool processCollection();
 
-    const AttrTable& getAttrTable() const
+    const AttrTable* getAttrTable() const
     {
-        return attrTable_;
+        return &attrTable_;
     }
 
 private:

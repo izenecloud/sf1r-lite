@@ -24,13 +24,19 @@ class AttrCounter;
 class GroupFilter
 {
 public:
-    GroupFilter(
-        const GroupManager* groupManager,
-        const AttrTable& attrTable,
-        const GroupParam& groupParam
-    );
+    GroupFilter(const GroupParam& groupParam);
 
     ~GroupFilter();
+
+    /**
+     * @return true for success, false for failure
+     */
+    bool initGroup(const GroupManager* groupManager);
+
+    /**
+     * @return true for success, false for failure
+     */
+    bool initAttr(const AttrTable* attrTable);
 
     /**
      * Check whether doc belongs to the labels in @c groupParam_.
@@ -52,12 +58,6 @@ public:
     );
 
 private:
-    void initGroup_();
-    void initAttr_();
-
-private:
-    const GroupManager* groupManager_;
-    const AttrTable& attrTable_;
     const GroupParam& groupParam_;
 
     /** group label instances */

@@ -62,11 +62,11 @@ void getTopNameIds(
 
 NS_FACETED_BEGIN
 
-AttrCounter::AttrCounter(const AttrTable& attrTable)
+AttrCounter::AttrCounter(const AttrTable* attrTable)
     : attrTable_(attrTable)
-    , valueIdTable_(attrTable.valueIdTable())
-    , nameCountTable_(attrTable.nameNum())
-    , valueIdNum_(attrTable.valueNum())
+    , valueIdTable_(attrTable->valueIdTable())
+    , nameCountTable_(attrTable->nameNum())
+    , valueIdNum_(attrTable->valueNum())
     , valueCountTable_(valueIdNum_)
 {
 }
@@ -88,7 +88,7 @@ void AttrCounter::addDoc(docid_t doc)
         {
             ++valueCountTable_[vId];
 
-            AttrTable::nid_t nameId = attrTable_.valueId2NameId(vId);
+            AttrTable::nid_t nameId = attrTable_->valueId2NameId(vId);
             if (nameIdSet.insert(nameId).second)
             {
                 ++nameCountTable_[nameId];
@@ -111,7 +111,7 @@ void AttrCounter::addAttrDoc(AttrTable::nid_t nId, docid_t doc)
     {
         AttrTable::vid_t vId = *valueIt;
         if (vId < valueIdNum_
-            && attrTable_.valueId2NameId(vId) == nId)
+            && attrTable_->valueId2NameId(vId) == nId)
         {
             ++valueCountTable_[vId];
             findNameId = true;
@@ -134,7 +134,7 @@ void AttrCounter::getGroupRep(int topGroupNum, OntologyRep& groupRep) const
         int count = valueCountTable_[valueId];
         if (count)
         {
-            AttrTable::nid_t nameId = attrTable_.valueId2NameId(valueId);
+            AttrTable::nid_t nameId = attrTable_->valueId2NameId(valueId);
             nameCountMap[nameId][valueId] = count;
         }
     }
@@ -149,7 +149,7 @@ void AttrCounter::getGroupRep(int topGroupNum, OntologyRep& groupRep) const
         // attribute name as root node
         itemList.push_back(OntologyRepItem());
         OntologyRepItem& nameItem = itemList.back();
-        nameItem.text = attrTable_.nameStr(*nameIt);
+        nameItem.text = attrTable_->nameStr(*nameIt);
         nameItem.doc_count = nameCountTable_[*nameIt];
 
         // attribute values are appended as level 1
@@ -160,7 +160,7 @@ void AttrCounter::getGroupRep(int topGroupNum, OntologyRep& groupRep) const
             itemList.push_back(OntologyRepItem());
             OntologyRepItem& valueItem = itemList.back();
             valueItem.level = 1;
-            valueItem.text = attrTable_.valueStr(mapIt->first);
+            valueItem.text = attrTable_->valueStr(mapIt->first);
             valueItem.doc_count = mapIt->second;
         }
     }

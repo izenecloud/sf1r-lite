@@ -7,13 +7,12 @@ NS_FACETED_BEGIN
 
 AttrLabel::AttrLabel(
     const std::pair<std::string, std::string>& label,
-    const AttrTable& attrTable
+    const AttrTable* attrTable
 )
-    : attrTable_(attrTable)
-    , valueIdTable_(attrTable.valueIdTable())
-    , attrNameId_(attrTable_.nameId(
+    : valueIdTable_(attrTable->valueIdTable())
+    , attrNameId_(attrTable->nameId(
         izenelib::util::UString(label.first, izenelib::util::UString::UTF_8)))
-    , targetValueId_(attrTable_.valueId(
+    , targetValueId_(attrTable->valueId(
         attrNameId_,
         izenelib::util::UString(label.second, izenelib::util::UString::UTF_8)))
 {

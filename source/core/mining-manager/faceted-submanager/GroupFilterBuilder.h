@@ -37,7 +37,7 @@ public:
 
 private:
     const GroupManager* groupManager_;
-    const AttrTable& attrTable_;
+    const AttrTable* attrTable_;
 };
 
 NS_FACETED_END

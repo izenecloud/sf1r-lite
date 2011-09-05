@@ -1,17 +1,14 @@
-#include "GroupLabel.h"
-#include "GroupCounter.h"
+#include "StringGroupLabel.h"
 #include <util/ustring/UString.h>
 
 NS_FACETED_BEGIN
 
-GroupLabel::GroupLabel(
+StringGroupLabel::StringGroupLabel(
     const std::vector<std::string>& labelPath,
-    const PropValueTable& pvTable,
-    GroupCounter* counter
+    const PropValueTable& pvTable
 )
     : propValueTable_(pvTable)
     , targetValueId_(0)
-    , counter_(counter)
 {
     std::vector<izenelib::util::UString> ustrPath;
     for (std::vector<std::string>::const_iterator it = labelPath.begin();
@@ -22,7 +19,7 @@ GroupLabel::GroupLabel(
     targetValueId_ = propValueTable_.propValueId(ustrPath);
 }
 
-bool GroupLabel::test(docid_t doc) const
+bool StringGroupLabel::test(docid_t doc) const
 {
     return propValueTable_.testDoc(doc, targetValueId_);
 }
