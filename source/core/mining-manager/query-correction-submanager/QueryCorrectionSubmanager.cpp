@@ -326,7 +326,14 @@ bool QueryCorrectionSubmanager::getPinyin(
     const izenelib::util::UString& hanzis, std::vector<
     izenelib::util::UString>& pinyin)
 {
-//     return cmgr_.getPinyin(hanzis, pinyin);
+    std::vector<std::string> result_list;
+    cmgr_.GetPinyin(hanzis, result_list);
+    for(uint32_t i=0;i<result_list.size();i++)
+    {
+        boost::algorithm::replace_all(result_list[i], ",", "");
+        pinyin.push_back( izenelib::util::UString(result_list[i], izenelib::util::UString::UTF_8) );
+    }
+    if(pinyin.size()>0) return true;
     return false;
 }
 // 
