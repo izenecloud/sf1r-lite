@@ -1,7 +1,7 @@
 #include "GroupFilterBuilder.h"
 #include "GroupFilter.h"
 #include "GroupParam.h"
-
+#include "GroupCounterLabelBuilder.h"
 #include "group_manager.h"
 #include "attr_manager.h"
 #include "attr_table.h"
@@ -12,10 +12,12 @@
 NS_FACETED_BEGIN
 
 GroupFilterBuilder::GroupFilterBuilder(
+    const schema_type& schema,
     const GroupManager* groupManager,
     const AttrManager* attrManager
 )
-    : groupManager_(groupManager)
+    : schema_(schema)
+    , groupManager_(groupManager)
     , attrTable_(attrManager ? attrManager->getAttrTable() : NULL)
 {
 }
@@ -29,7 +31,8 @@ GroupFilter* GroupFilterBuilder::createFilter(const GroupParam& groupParam) cons
 
     if (!groupParam.groupProps_.empty())
     {
-        if (!groupFilter->initGroup(groupManager_))
+        GroupCounterLabelBuilder builder(schema_, groupManager_);
+        if (!groupFilter->initGroup(builder))
             return NULL;
     }
 

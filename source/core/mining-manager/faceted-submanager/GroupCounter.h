@@ -18,7 +18,7 @@ class GroupCounter
 public:
     GroupCounter() {}
 
-    virtual ~GroupCounter();
+    virtual ~GroupCounter() {};
 
     virtual void addDoc(docid_t doc) = 0;
 
