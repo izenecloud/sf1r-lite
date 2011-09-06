@@ -119,7 +119,7 @@ template<class T> bool load_container(
     std::ifstream ifs(pathStr.c_str(), openMode);
     if (ifs)
     {
-        LOG(INFO) << "start loading file : " << pathStr;
+        LOG(INFO) << "start loading file: " << pathStr;
 
         try
         {
@@ -143,7 +143,7 @@ template<class T> bool load_container(
 
         count = container.size();
 
-        LOG(INFO) << "finished loading , element num: " << count;
+        LOG(INFO) << "finished loading, element num: " << count;
     }
 
     return true;

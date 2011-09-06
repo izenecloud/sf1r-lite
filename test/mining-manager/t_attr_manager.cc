@@ -13,6 +13,7 @@
 #include <mining-manager/faceted-submanager/GroupFilterBuilder.h>
 #include <mining-manager/faceted-submanager/GroupFilter.h>
 #include <configuration-manager/PropertyConfig.h>
+#include <configuration-manager/GroupConfig.h>
 
 #include <cstdlib>
 
@@ -115,8 +116,7 @@ typedef map<string, ValueMap> AttrMap; // key: attribute name
 class AttrManagerTestFixture
 {
 private:
-    schema_type baseSchema_;
-    set<PropertyConfig, PropertyComp> subSchema_;
+    set<PropertyConfig, PropertyComp> schema_;
 
     DocumentManager* documentManager_;
     vector<DocInput> docInputVec_;
@@ -134,11 +134,11 @@ public:
         bfs::create_directories(dmPath);
         attrPath_ = (bfs::path(TEST_DIR_STR) / "attr").string();
 
-        makeSchema_();
+        initConfig_();
 
         documentManager_ = new DocumentManager(
             dmPath.string(),
-            subSchema_,
+            schema_,
             ENCODING_TYPE,
             2000);
 
@@ -218,27 +218,22 @@ public:
     }
 
 private:
-    void makeSchema_()
+    void initConfig_()
     {
         PropertyConfigBase config1;
         config1.propertyName_ = "DOCID";
         config1.propertyType_ = STRING_PROPERTY_TYPE;
+        schema_.insert(config1);
 
         PropertyConfigBase config2;
         config2.propertyName_ = "Title";
         config2.propertyType_ = STRING_PROPERTY_TYPE;
+        schema_.insert(config2);
 
         PropertyConfigBase config3;
         config3.propertyName_ = PROP_NAME_ATTR;
         config3.propertyType_ = STRING_PROPERTY_TYPE;
-
-        baseSchema_.insert(config1);
-        baseSchema_.insert(config2);
-        baseSchema_.insert(config3);
-
-        subSchema_.insert(config1);
-        subSchema_.insert(config2);
-        subSchema_.insert(config3);
+        schema_.insert(config3);
     }
 
     void checkCollection_()
@@ -260,7 +255,8 @@ private:
         faceted::OntologyRep& attrRep
     )
     {
-        faceted::GroupFilterBuilder filterBuilder(baseSchema_, NULL, attrManager_);
+        const vector<GroupConfig> emptyGroupConfigs;
+        faceted::GroupFilterBuilder filterBuilder(emptyGroupConfigs, NULL, attrManager_);
         faceted::GroupParam groupParam;
         groupParam.isAttrGroup_ = true;
 

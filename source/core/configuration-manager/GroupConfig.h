@@ -1,6 +1,8 @@
 #ifndef SF1R_GROUP_CONFIG_H_
 #define SF1R_GROUP_CONFIG_H_
 
+#include <common/type_defs.h> // PropertyDataType
+
 #include <string>
 #include <boost/serialization/access.hpp>
 
@@ -15,6 +17,18 @@ class GroupConfig
 public:
     /// property name
     std::string propName;
+
+    /// property type
+    PropertyDataType propType;
+
+    GroupConfig()
+        : propType(UNKNOWN_DATA_PROPERTY_TYPE)
+    {}
+
+    GroupConfig(const std::string& name, PropertyDataType type)
+        : propName(name)
+        , propType(type)
+    {}
 
 private:
     friend class boost::serialization::access;

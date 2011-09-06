@@ -1,8 +1,7 @@
 #ifndef _SEARCH_MANAGER_
 #define _SEARCH_MANAGER_
 
-//TODO Bad Smell Here
-#include <bundles/index/IndexBundleConfiguration.h>
+#include <../bundles/index/IndexBundleConfiguration.h>
 
 #include <configuration-manager/PropertyConfig.h>
 #include <query-manager/SearchKeywordOperation.h>

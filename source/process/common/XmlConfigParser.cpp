@@ -1248,52 +1248,70 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
           mining_schema.faceted_enable = true;
       }
 
-      task_node = getUniqChildElement( mining_schema_node, "Group", false );
-      mining_schema.group_enable = false;
-      if( task_node!= NULL )
-      {
-          Iterator<Element> it( "Property" );
-          for ( it = it.begin( task_node ); it != it.end(); it++ )
-          {
-              getAttribute( it.Get(), "name", property_name );
-              bool gottype = collectionMeta.getPropertyType(property_name, property_type);
-              if( !gottype || property_type != STRING_PROPERTY_TYPE)
-              {
-                  throw XmlConfigParserException("Property ["+property_name+"] in <Group> is not string type.");
-              }
+        task_node = getUniqChildElement(mining_schema_node, "Group", false);
+        mining_schema.group_enable = false;
+        if (task_node != NULL)
+        {
+            Iterator<Element> it("Property");
+            for (it = it.begin(task_node); it != it.end(); ++it)
+            {
+                getAttribute(it.Get(), "name", property_name);
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if( !gottype || (property_type != STRING_PROPERTY_TYPE
+                                 && property_type != INT_PROPERTY_TYPE
+                                 && property_type != FLOAT_PROPERTY_TYPE))
+                {
+                    throw XmlConfigParserException("Property ["+property_name+"] in <Group> is not string, int or float type.");
+                }
 
-              mining_schema.group_properties.push_back(GroupConfig());
-              GroupConfig& groupConfig = mining_schema.group_properties.back();
-              groupConfig.propName = property_name;
+                if (property_type == INT_PROPERTY_TYPE
+                    || property_type == FLOAT_PROPERTY_TYPE)
+                {
+                    const std::set<PropertyConfig, PropertyComp>& indexSchema = collectionMeta.indexBundleConfig_->schema_;
+                    PropertyConfig p;
+                    p.setName(property_name);
+                    std::set<PropertyConfig, PropertyComp>::const_iterator propIt = indexSchema.find(p);
+                    if (propIt == indexSchema.end()
+                        || !propIt->isIndex() || !propIt->getIsFilter())
+                    {
+                        throw XmlConfigParserException("As property ["+property_name+"] in <Group> is int or float type, "
+                                                       "it needs to be configured as a filter property like below:\n"
+                                                       "<IndexBundle> <Schema> <Property name=\"Price\"> <Indexing filter=\"yes\" ...");
+                    }
+                }
 
-              LOG(INFO) << "group config parsed, property: " << property_name;
-          }
-          mining_schema.group_enable = true;
-      }
+                GroupConfig groupConfig(property_name, property_type);
+                mining_schema.group_properties.push_back(groupConfig);
 
-      task_node = getUniqChildElement( mining_schema_node, "Attr", false );
-      mining_schema.attr_enable = false;
-      if( task_node!= NULL )
-      {
-          int propNum = 0;
-          Iterator<Element> it( "Property" );
-          for ( it = it.begin( task_node ); it != it.end(); it++ )
-          {
-              if (++propNum > 1)
-              {
-                  throw XmlConfigParserException("in <Attr> Config, at most one <Property> is allowed.");
-              }
+                LOG(INFO) << "group property: " << property_name
+                          << ", type: " << property_type;
+            }
+            mining_schema.group_enable = true;
+        }
 
-              getAttribute( it.Get(), "name", property_name );
-              bool gottype = collectionMeta.getPropertyType(property_name, property_type);
-              if( !gottype || property_type != STRING_PROPERTY_TYPE)
-              {
-                  throw XmlConfigParserException("<Property> ["+property_name+"] in <Attr> is not string type.");
-              }
-              mining_schema.attr_property.propName = property_name;
-              mining_schema.attr_enable = true;
-          }
-      }
+        task_node = getUniqChildElement(mining_schema_node, "Attr", false);
+        mining_schema.attr_enable = false;
+        if (task_node!= NULL)
+        {
+            int propNum = 0;
+            Iterator<Element> it("Property");
+            for (it = it.begin(task_node); it != it.end(); ++it)
+            {
+                if (++propNum > 1)
+                {
+                    throw XmlConfigParserException("in <Attr> Config, at most one <Property> is allowed.");
+                }
+
+                getAttribute(it.Get(), "name", property_name);
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if( !gottype || property_type != STRING_PROPERTY_TYPE)
+                {
+                    throw XmlConfigParserException("<Property> ["+property_name+"] in <Attr> is not string type.");
+                }
+                mining_schema.attr_property.propName = property_name;
+                mining_schema.attr_enable = true;
+            }
+        }
 
       task_node = getUniqChildElement( mining_schema_node, "Rerank", false );
       mining_schema.property_rerank_enable = false;
