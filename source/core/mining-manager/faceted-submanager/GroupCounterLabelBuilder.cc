@@ -2,7 +2,10 @@
 #include "group_manager.h"
 #include "StringGroupCounter.h"
 #include "StringGroupLabel.h"
+#include "NumericGroupCounter.h"
+#include "NumericGroupLabel.h"
 
+#include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
 
 NS_FACETED_BEGIN
@@ -38,6 +41,22 @@ GroupCounter* GroupCounterLabelBuilder::createGroupCounter(const std::string& pr
         counter = createStringCounter(prop);
         break;
 
+    case INT_PROPERTY_TYPE:
+        counter = new NumericGroupCounter<int64_t>(groupManager_->getPropertyTable(prop));
+        break;
+
+    case UNSIGNED_INT_PROPERTY_TYPE:
+        counter = new NumericGroupCounter<uint64_t>(groupManager_->getPropertyTable(prop));
+        break;
+
+    case FLOAT_PROPERTY_TYPE:
+        counter = new NumericGroupCounter<float>(groupManager_->getPropertyTable(prop));
+        break;
+
+    case DOUBLE_PROPERTY_TYPE:
+        counter = new NumericGroupCounter<double>(groupManager_->getPropertyTable(prop));
+        break;
+
     default:
         LOG(ERROR) << "unknown property type " << prop;
         break;
@@ -67,15 +86,31 @@ GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLa
 {
     GroupLabel* label = NULL;
 
-    const std::string& propName = labelParam.first;
-    switch(getPropertyType_(propName))
+    const std::string& prop = labelParam.first;
+    switch(getPropertyType_(prop))
     {
     case STRING_PROPERTY_TYPE:
         label = createStringLabel(labelParam);
         break;
 
+    case INT_PROPERTY_TYPE:
+        label = new NumericGroupLabel<int64_t>(groupManager_->getPropertyTable(prop), boost::lexical_cast<int64_t>(labelParam.second[0]));
+        break;
+
+    case UNSIGNED_INT_PROPERTY_TYPE:
+        label = new NumericGroupLabel<uint64_t>(groupManager_->getPropertyTable(prop), boost::lexical_cast<uint64_t>(labelParam.second[0]));
+        break;
+
+    case FLOAT_PROPERTY_TYPE:
+        label = new NumericGroupLabel<float>(groupManager_->getPropertyTable(prop), boost::lexical_cast<float>(labelParam.second[0]));
+        break;
+
+    case DOUBLE_PROPERTY_TYPE:
+        label = new NumericGroupLabel<double>(groupManager_->getPropertyTable(prop), boost::lexical_cast<double>(labelParam.second[0]));
+        break;
+
     default:
-        LOG(ERROR) << "unknown property type " << propName;
+        LOG(ERROR) << "unknown property type " << prop;
         break;
     }
 

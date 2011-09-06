@@ -820,7 +820,7 @@ NumericPropertyTable* SearchManager::createPropertyTable(const std::string& prop
         PropertyDataType type = it->second.getType();
         if (pSorterCache_->getSortPropertyData(propertyName, type, data))
         {
-            return new NumericPropertyTable(type, data);
+            return new NumericPropertyTable(propertyName, type, data);
         }
     }
     return NULL;

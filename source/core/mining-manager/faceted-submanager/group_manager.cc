@@ -20,9 +20,11 @@ const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UStr
 
 GroupManager::GroupManager(
     DocumentManager* documentManager,
+    SearchManager* searchManager,
     const std::string& dirPath
 )
 : documentManager_(documentManager)
+, searchManager_(searchManager)
 , dirPath_(dirPath)
 {
 }

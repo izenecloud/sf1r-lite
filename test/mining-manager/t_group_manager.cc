@@ -4,7 +4,7 @@
 /// @author Jun Jiang <jun.jiang@izenesoft.com>
 /// @date Created 2011-03-23
 ///
-
+//TODO add test cases for numeric property
 #include <util/ustring/UString.h>
 #include <document-manager/DocumentManager.h>
 #include <document-manager/Document.h>
@@ -173,7 +173,7 @@ public:
     {
         delete groupManager_;
 
-        groupManager_ = new faceted::GroupManager(documentManager_, groupPath_);
+        groupManager_ = new faceted::GroupManager(documentManager_, NULL, groupPath_);
         BOOST_CHECK(groupManager_->open(groupConfigs_));
     }
 

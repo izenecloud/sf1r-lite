@@ -16,10 +16,15 @@ namespace sf1r{
 class NumericPropertyTable
 {
 public:
-    NumericPropertyTable(PropertyDataType type, void *data): type_(type), data_(data)
+    NumericPropertyTable(const string &name, PropertyDataType type, void *data): name_(name), type_(type), data_(data)
     {}
 
-    PropertyDataType getType() const
+    const string &getPropertyName() const
+    {
+        return name_;
+    }
+
+    PropertyDataType getPropertyType() const
     {
         return type_;
     }
@@ -67,6 +72,8 @@ public:
     }
 
 private:
+    std::string name_;
+
     PropertyDataType type_;
 
     void *data_;
