@@ -14,7 +14,11 @@
 #include <vector>
 #include <string>
 
-namespace sf1r { class GroupConfig; }
+namespace sf1r
+{
+class GroupConfig;
+class SearchManager;
+}
 
 NS_FACETED_BEGIN
 
@@ -27,7 +31,8 @@ class GroupCounterLabelBuilder
 public:
     GroupCounterLabelBuilder(
         const std::vector<GroupConfig>& groupConfigs,
-        const GroupManager* groupManager
+        const GroupManager* groupManager,
+        const SearchManager* searchManager
     );
 
     GroupCounter* createGroupCounter(const std::string& prop) const;
@@ -42,6 +47,7 @@ private:
 private:
     const std::vector<GroupConfig>& groupConfigs_;
     const GroupManager* groupManager_;
+    const SearchManager* searchManager_;
 };
 
 NS_FACETED_END

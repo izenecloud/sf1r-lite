@@ -5,6 +5,7 @@
 #include "NumericGroupCounter.h"
 #include "NumericGroupLabel.h"
 #include <configuration-manager/GroupConfig.h>
+#include <search-manager/SearchManager.h>
 
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
@@ -13,10 +14,12 @@ NS_FACETED_BEGIN
 
 GroupCounterLabelBuilder::GroupCounterLabelBuilder(
     const std::vector<GroupConfig>& groupConfigs,
-    const GroupManager* groupManager
+    const GroupManager* groupManager,
+    const SearchManager* searchManager
 )
     : groupConfigs_(groupConfigs)
     , groupManager_(groupManager)
+    , searchManager_(searchManager)
 {
 }
 
@@ -44,19 +47,19 @@ GroupCounter* GroupCounterLabelBuilder::createGroupCounter(const std::string& pr
         break;
 
     case INT_PROPERTY_TYPE:
-        counter = new NumericGroupCounter<int64_t>(groupManager_->getPropertyTable(prop));
+        counter = new NumericGroupCounter<int64_t>(searchManager_->createPropertyTable(prop));
         break;
 
     case UNSIGNED_INT_PROPERTY_TYPE:
-        counter = new NumericGroupCounter<uint64_t>(groupManager_->getPropertyTable(prop));
+        counter = new NumericGroupCounter<uint64_t>(searchManager_->createPropertyTable(prop));
         break;
 
     case FLOAT_PROPERTY_TYPE:
-        counter = new NumericGroupCounter<float>(groupManager_->getPropertyTable(prop));
+        counter = new NumericGroupCounter<float>(searchManager_->createPropertyTable(prop));
         break;
 
     case DOUBLE_PROPERTY_TYPE:
-        counter = new NumericGroupCounter<double>(groupManager_->getPropertyTable(prop));
+        counter = new NumericGroupCounter<double>(searchManager_->createPropertyTable(prop));
         break;
 
     default:
@@ -98,19 +101,19 @@ GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLa
         break;
 
     case INT_PROPERTY_TYPE:
-        label = new NumericGroupLabel<int64_t>(groupManager_->getPropertyTable(propName), boost::lexical_cast<int64_t>(labelParam.second[0]));
+        label = new NumericGroupLabel<int64_t>(searchManager_->createPropertyTable(propName), boost::lexical_cast<int64_t>(labelParam.second[0]));
         break;
 
     case UNSIGNED_INT_PROPERTY_TYPE:
-        label = new NumericGroupLabel<uint64_t>(groupManager_->getPropertyTable(propName), boost::lexical_cast<uint64_t>(labelParam.second[0]));
+        label = new NumericGroupLabel<uint64_t>(searchManager_->createPropertyTable(propName), boost::lexical_cast<uint64_t>(labelParam.second[0]));
         break;
 
     case FLOAT_PROPERTY_TYPE:
-        label = new NumericGroupLabel<float>(groupManager_->getPropertyTable(propName), boost::lexical_cast<float>(labelParam.second[0]));
+        label = new NumericGroupLabel<float>(searchManager_->createPropertyTable(propName), boost::lexical_cast<float>(labelParam.second[0]));
         break;
 
     case DOUBLE_PROPERTY_TYPE:
-        label = new NumericGroupLabel<double>(groupManager_->getPropertyTable(propName), boost::lexical_cast<double>(labelParam.second[0]));
+        label = new NumericGroupLabel<double>(searchManager_->createPropertyTable(propName), boost::lexical_cast<double>(labelParam.second[0]));
         break;
 
     default:

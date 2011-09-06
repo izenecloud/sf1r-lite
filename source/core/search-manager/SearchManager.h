@@ -1,7 +1,6 @@
 #ifndef _SEARCH_MANAGER_
 #define _SEARCH_MANAGER_
 
-#include <../bundles/index/IndexBundleConfiguration.h>
 
 #include <configuration-manager/PropertyConfig.h>
 #include <query-manager/SearchKeywordOperation.h>
@@ -29,6 +28,7 @@ class DocumentManager;
 class RankingManager;
 class IndexManager;
 class Sorter;
+class IndexBundleConfiguration;
 
 namespace faceted
 {

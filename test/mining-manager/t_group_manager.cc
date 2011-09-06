@@ -161,7 +161,7 @@ public:
     {
         delete groupManager_;
 
-        groupManager_ = new faceted::GroupManager(documentManager_, NULL, groupPath_);
+        groupManager_ = new faceted::GroupManager(documentManager_, groupPath_);
         BOOST_CHECK(groupManager_->open(groupConfigs_));
     }
 
@@ -304,7 +304,7 @@ private:
         faceted::OntologyRep& groupRep
     )
     {
-        faceted::GroupFilterBuilder filterBuilder(groupConfigs_, groupManager_, NULL);
+        faceted::GroupFilterBuilder filterBuilder(groupConfigs_, groupManager_, NULL, NULL);
         faceted::GroupParam groupParam;
         groupParam.groupProps_ = propNames_;
         groupParam.groupLabels_ = labelVec;
