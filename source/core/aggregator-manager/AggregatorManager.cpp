@@ -8,7 +8,6 @@
 namespace sf1r
 {
 
-extern int TOP_K_NUM;
 
 void printDFCTF(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties ctfmap)
 {
@@ -90,6 +89,10 @@ void AggregatorManager::aggregateDistSearchResult(DistKeywordSearchResult& resul
     }
 
     // Set basic info
+    result.collectionName_ = resultList[0].second.collectionName_;
+    result.encodingType_ = resultList[0].second.encodingType_;
+    result.rawQueryString_ = resultList[0].second.rawQueryString_;
+    result.start_ = resultList[0].second.start_;
     result.analyzedQuery_ = resultList[0].second.analyzedQuery_;
     result.queryTermIdList_ = resultList[0].second.queryTermIdList_;
     result.propertyQueryTermList_ = resultList[0].second.propertyQueryTermList_;
@@ -118,7 +121,6 @@ void AggregatorManager::aggregateDistSearchResult(DistKeywordSearchResult& resul
             rangeHigh = wResult.propertyRange_.highValue_;
         }
     }
-    //cout << "result.totalCount_: " << result.totalCount_ << ",  overallResultCount: " << overallResultCount<<endl;
     result.propertyRange_.lowValue_ = rangeLow;
     result.propertyRange_.highValue_ = rangeHigh;
 

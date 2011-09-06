@@ -63,6 +63,8 @@ public:
 
     void renderAttr(const KeywordSearchResult& miaResult,
                           Value& attrResult);
+
+    int TOP_K_NUM;
 };
 
 } // namespace sf1r

@@ -17,7 +17,7 @@ using driver::Keys;
 
 const izenelib::util::UString::EncodingType DocumentsRenderer::kEncoding =
     izenelib::util::UString::UTF_8;
-extern int TOP_K_NUM;
+
 
 /**
  * @brief Render documents in response

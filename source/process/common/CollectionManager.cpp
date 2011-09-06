@@ -31,6 +31,7 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
     }
 
     collectionHandler->setBundleSchema(indexBundleConfig->schema_);
+    collectionHandler->setTopKNum(indexBundleConfig->topKNum_);
 
     ///createIndexBundle
     std::string bundleName = "IndexBundle-" + collectionName;

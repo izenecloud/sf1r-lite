@@ -130,6 +130,8 @@ private:
 
     bool returnAnalyzerResult_;
 
+    int TOP_K_NUM;
+
     DocumentsRenderer renderer_;
 };
 

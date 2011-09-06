@@ -89,8 +89,15 @@ public:
     {
 	recommendSchema_ = schema;
     }
+
+    void setTopKNum(int topKNum)
+    {
+        TOP_K_NUM = topKNum;
+    }
 public:
     std::string collection_;
+
+    int TOP_K_NUM;
 
     IndexSearchService* indexSearchService_;
 

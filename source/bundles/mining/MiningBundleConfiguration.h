@@ -17,6 +17,8 @@ public:
 
     std::string collectionName_;
 
+    bool isSupportByAggregator_;
+
     CollectionPath collPath_;
 
     std::string system_resource_path_;

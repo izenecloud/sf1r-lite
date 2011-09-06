@@ -1,7 +1,6 @@
 #include "IndexBundleActivator.h"
 #include "../mining/MiningSearchService.h"
 #include <common/SFLogger.h>
-#include <process/common/XmlConfigParser.h>
 #include <query-manager/QueryManager.h>
 #include <index-manager/IndexManager.h>
 #include <search-manager/SearchManager.h>
@@ -421,8 +420,9 @@ boost::shared_ptr<AggregatorManager>
 IndexBundleActivator::createAggregatorManager_() const
 {
     boost::shared_ptr<AggregatorManager> ret(new AggregatorManager());
-    ret->setAggregatorConfig(sf1r::SF1Config::get()->getAggregatorConfig());
+    ret->setAggregatorConfig(config_->aggregatorConfig_);
     ret->initLocalWorkerCaller(workerService_);
+    ret->TOP_K_NUM = config_->topKNum_;
     return ret;
 }
 
