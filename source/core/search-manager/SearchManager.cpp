@@ -1,5 +1,6 @@
 #include <common/SFLogger.h>
 
+#include <bundles/index/IndexBundleConfiguration.h>
 #include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
 #include <query-manager/QueryIdentity.h>

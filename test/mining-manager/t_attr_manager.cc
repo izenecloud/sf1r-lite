@@ -256,7 +256,7 @@ private:
     )
     {
         const vector<GroupConfig> emptyGroupConfigs;
-        faceted::GroupFilterBuilder filterBuilder(emptyGroupConfigs, NULL, attrManager_);
+        faceted::GroupFilterBuilder filterBuilder(emptyGroupConfigs, NULL, attrManager_, NULL);
         faceted::GroupParam groupParam;
         groupParam.isAttrGroup_ = true;
 

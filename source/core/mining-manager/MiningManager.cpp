@@ -314,7 +314,7 @@ bool MiningManager::open()
             if(groupManager_) delete groupManager_;
             std::string groupPath = prefix_path + "/group";
 		
-            groupManager_ = new faceted::GroupManager(document_manager_.get(), searchManager_.get(), groupPath);
+            groupManager_ = new faceted::GroupManager(document_manager_.get(), groupPath);
             if (! groupManager_->open(mining_schema_.group_properties))
             {
                 std::cerr << "open GROUP failed" << std::endl;
@@ -338,7 +338,10 @@ bool MiningManager::open()
 
         if (groupManager_ || attrManager_)
         {
-            faceted::GroupFilterBuilder* filterBuilder = new faceted::GroupFilterBuilder(mining_schema_.group_properties, groupManager_, attrManager_);
+            faceted::GroupFilterBuilder* filterBuilder = new faceted::GroupFilterBuilder(mining_schema_.group_properties,
+                                                                                         groupManager_,
+                                                                                         attrManager_,
+                                                                                         searchManager_.get());
             searchManager_->setGroupFilterBuilder(filterBuilder);
         }
 

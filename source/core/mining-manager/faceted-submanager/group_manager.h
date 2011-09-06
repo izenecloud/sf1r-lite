@@ -1,6 +1,6 @@
 ///
 /// @file group_manager.h
-/// @brief calculate doc count for each property value
+/// @brief manage forward index for string property values (doc id => value id)
 /// @author Jun Jiang <jun.jiang@izenesoft.com>
 /// @date Created 2011-03-22
 ///
@@ -11,7 +11,6 @@
 #include "ontology_rep.h"
 #include "prop_value_table.h"
 #include <configuration-manager/GroupConfig.h>
-#include <search-manager/SearchManager.h>
 
 #include <vector>
 #include <string>
@@ -30,7 +29,6 @@ public:
 
     GroupManager(
         DocumentManager* documentManager,
-        SearchManager* searchManager,
         const std::string& dirPath
     );
 
@@ -57,14 +55,8 @@ public:
         return NULL;
     }
 
-    const NumericPropertyTable* getPropertyTable(const std::string& propName) const
-    {
-        return searchManager_->createPropertyTable(propName);
-    }
-
 private:
     sf1r::DocumentManager* documentManager_;
-    sf1r::SearchManager* searchManager_;
     std::string dirPath_;
 
     PropValueMap propValueMap_;
