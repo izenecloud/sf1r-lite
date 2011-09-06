@@ -2,28 +2,29 @@
 #include "group_manager.h"
 #include "StringGroupCounter.h"
 #include "StringGroupLabel.h"
+#include <configuration-manager/GroupConfig.h>
 
 #include <glog/logging.h>
 
 NS_FACETED_BEGIN
 
 GroupCounterLabelBuilder::GroupCounterLabelBuilder(
-    const schema_type& schema,
+    const std::vector<GroupConfig>& groupConfigs,
     const GroupManager* groupManager
 )
-    : schema_(schema)
+    : groupConfigs_(groupConfigs)
     , groupManager_(groupManager)
 {
 }
 
 PropertyDataType GroupCounterLabelBuilder::getPropertyType_(const std::string& prop) const
 {
-    PropertyConfigBase config;
-    config.propertyName_ = prop;
-
-    schema_type::const_iterator it = schema_.find(config);
-    if (it != schema_.end())
-        return it->propertyType_;
+    for (std::vector<GroupConfig>::const_iterator it = groupConfigs_.begin();
+        it != groupConfigs_.end(); ++it)
+    {
+        if (it->propName == prop)
+            return it->propType;
+    }
 
     return UNKNOWN_DATA_PROPERTY_TYPE;
 }
@@ -32,14 +33,16 @@ GroupCounter* GroupCounterLabelBuilder::createGroupCounter(const std::string& pr
 {
     GroupCounter* counter = NULL;
 
-    switch(getPropertyType_(prop))
+    PropertyDataType type = getPropertyType_(prop);
+    switch(type)
     {
     case STRING_PROPERTY_TYPE:
         counter = createStringCounter(prop);
         break;
 
     default:
-        LOG(ERROR) << "unknown property type " << prop;
+        LOG(ERROR) << "unsupported type " << type
+                   << " for group property " << prop;
         break;
     }
 
@@ -68,14 +71,16 @@ GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLa
     GroupLabel* label = NULL;
 
     const std::string& propName = labelParam.first;
-    switch(getPropertyType_(propName))
+    PropertyDataType type = getPropertyType_(propName);
+    switch(type)
     {
     case STRING_PROPERTY_TYPE:
         label = createStringLabel(labelParam);
         break;
 
     default:
-        LOG(ERROR) << "unknown property type " << propName;
+        LOG(ERROR) << "unsupported type " << type
+                   << " for group property " << propName;
         break;
     }
 

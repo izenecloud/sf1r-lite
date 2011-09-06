@@ -9,9 +9,12 @@
 #define SF1R_GROUP_COUNTER_LABEL_BUILDER_H
 
 #include "GroupParam.h"
-#include <configuration-manager/PropertyConfig.h>
+#include <common/type_defs.h> // PropertyDataType
 
+#include <vector>
 #include <string>
+
+namespace sf1r { class GroupConfig; }
 
 NS_FACETED_BEGIN
 
@@ -23,7 +26,7 @@ class GroupCounterLabelBuilder
 {
 public:
     GroupCounterLabelBuilder(
-        const schema_type& schema,
+        const std::vector<GroupConfig>& groupConfigs,
         const GroupManager* groupManager
     );
 
@@ -37,7 +40,7 @@ private:
     GroupLabel* createStringLabel(const GroupParam::GroupLabel& labelParam) const;
 
 private:
-    const schema_type& schema_;
+    const std::vector<GroupConfig>& groupConfigs_;
     const GroupManager* groupManager_;
 };
 
