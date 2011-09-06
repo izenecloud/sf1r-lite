@@ -163,14 +163,13 @@ bool CobraProcess::initLicenseManager()
     path = licenseDir + LicenseManager::LICENSE_REQUEST_FILENAME;
     if ( !licenseManager->createLicenseRequestFile(path) )
     {
-        sflog->error(SFL_INIT, "License Request File is failed to generated. Please check if you're a sudoer");
+        DLOG(ERROR) <<"License Request File is failed to generated. Please check if you're a sudoer" <<endl;		
         return false;
     }
 
     if ( !licenseManager->validateLicenseFile() )
     {
         std::cerr << "[Warning] : license is invalid. Now sf1 will be worked on trial mode." << std::endl;
-        sflog->error(SFL_INIT, "license is invalid. Now sf1 will be worked on trial mode.");
         LicenseManager::continueIndex_ = false;
     }
 

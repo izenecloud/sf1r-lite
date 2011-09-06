@@ -426,7 +426,6 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                 {
                     if (!pSorter) pSorter = new Sorter(pSorterCache_);
 
-                    sflog->info(SFL_SRCH, 130103);
                     SortProperty* pSortProperty = new SortProperty(iter->first, INT_PROPERTY_TYPE, iter->second);
                     pSorter->addSortProperty(pSortProperty);
                     continue;

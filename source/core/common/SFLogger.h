@@ -14,6 +14,8 @@
 
 #include <log-manager/LogManager.h>
 
+#include <glog/logging.h>
+
 #define sflog (&sf1r::LogManager::instance())
 
 #endif // _SF1V5_SF_LOGGER__

@@ -268,8 +268,7 @@ bool IndexBundleActivator::openDataDirectories_()
         if (!directoryRotator_.appendDirectory(dataDir))
 	{
 	  std::string msg = dataDir.file_string() + " corrupted, delete it!";
-	  sflog->error( SFL_SYS, msg.c_str() ); 
-	  std::cout<<msg<<std::endl;
+	  DLOG(ERROR) <<msg <<endl;		  
 	  //clean the corrupt dir
 	  boost::filesystem::remove_all( dataDir );
 	  directoryRotator_.appendDirectory(dataDir);

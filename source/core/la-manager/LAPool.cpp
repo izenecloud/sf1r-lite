@@ -54,7 +54,7 @@ void setOptions( const std::string & option, EnglishAnalyzer * ka, bool outputLo
                 else
                 {
                     if( outputLog )
-                        sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA option value for Option 'S': %c", *o);
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'S':"<<*o<<endl;					
                     errorVal = true;
                 }
                 break;
@@ -64,7 +64,7 @@ void setOptions( const std::string & option, EnglishAnalyzer * ka, bool outputLo
 
             default:
                 if( outputLog )
-                    sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA Option \"%c\"", *o );
+                    DLOG(WARNING)<<"Invalid LanguageLA option value for Option "<<*o<<endl;				
                 checkDupl = false;
                 break;
         }
@@ -73,7 +73,7 @@ void setOptions( const std::string & option, EnglishAnalyzer * ka, bool outputLo
             if( hisSet.find( upperType ) != hisSet.end() )
             {
                 if( !errorVal && outputLog )
-                    sflog->warn( SFL_LA, "SF-070104: Duplicated LanguageLA option \"%c\", it would overwrite the previous setting.", origChar );
+                    DLOG(WARNING)<<"Duplicated LanguageLA option "<<origChar<<", it would overwrite the previous setting. "<<endl;				
             }
             else
                 hisSet.insert( upperType );
@@ -115,7 +115,7 @@ void setOptions( const std::string & option, ChineseAnalyzer * ka, bool outputLo
                 else
                 {
                     if( outputLog )
-                        sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA option value for Option 'R': %c", *o);
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'R':"<<*o<<endl;
                     errorVal = true;
                 }
                 break;
@@ -132,7 +132,7 @@ void setOptions( const std::string & option, ChineseAnalyzer * ka, bool outputLo
                 else
                 {
                     if( outputLog )
-                        sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA option value for Option 'S': %c", *o);
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'S':"<<*o<<endl;					
                     errorVal = true;
                 }
                 break;
@@ -143,7 +143,7 @@ void setOptions( const std::string & option, ChineseAnalyzer * ka, bool outputLo
                 else
                 {
                     if( outputLog )
-                        sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA option value for Option 'T': %c", *o);
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'T':"<<*o<<endl;					
                     errorVal = true;
                 }
                 break;
@@ -160,7 +160,7 @@ void setOptions( const std::string & option, ChineseAnalyzer * ka, bool outputLo
                 else
                 {
                     if( outputLog )
-                        sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA option value for Option 'V': %c", *o);
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'V':"<<*o<<endl;					
                     errorVal = true;
                 }
                 break;
@@ -170,7 +170,7 @@ void setOptions( const std::string & option, ChineseAnalyzer * ka, bool outputLo
 
             default:
                 if( outputLog )
-                    sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA Option \"%c\"", *o );
+                    DLOG(WARNING)<<"Invalid LanguageLA option value for Option "<<*o<<endl;				
                 checkDupl = false;
                 break;
         }
@@ -179,7 +179,7 @@ void setOptions( const std::string & option, ChineseAnalyzer * ka, bool outputLo
             if( hisSet.find( upperType ) != hisSet.end() )
             {
                 if( !errorVal && outputLog )
-                    sflog->warn( SFL_LA, "SF-070104: Duplicated LanguageLA option \"%c\", it would overwrite the previous setting.", origChar );
+                    DLOG(WARNING)<<"Duplicated LanguageLA option "<<origChar <<", it would overwrite the previous setting."<<endl;				
             }
             else
                 hisSet.insert( upperType );
@@ -221,7 +221,7 @@ void setOptions( const std::string & option, JapaneseAnalyzer * ka, bool outputL
                 else
                 {
                     if( outputLog )
-                        sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA option value for Option 'R': %c", *o);
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'R'"<<*o<<endl;					
                     errorVal = true;
                 }
                 break;
@@ -238,7 +238,7 @@ void setOptions( const std::string & option, JapaneseAnalyzer * ka, bool outputL
                 else
                 {
                     if( outputLog )
-                        sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA option value for Option 'S': %c", *o);
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'S'"<<*o<<endl;					
                     errorVal = true;
                 }
                 break;
@@ -248,7 +248,7 @@ void setOptions( const std::string & option, JapaneseAnalyzer * ka, bool outputL
 
             default:
                 if( outputLog )
-                    sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA Option \"%c\"", *o );
+                    DLOG(WARNING)<<"Invalid LanguageLA option value for Option "<<*o<<endl;				
                 checkDupl = false;
                 break;
         }
@@ -257,7 +257,7 @@ void setOptions( const std::string & option, JapaneseAnalyzer * ka, bool outputL
             if( hisSet.find( upperType ) != hisSet.end() )
             {
                 if( !errorVal && outputLog )
-                    sflog->warn( SFL_LA, "SF-070104: Duplicated LanguageLA option \"%c\", it would overwrite the previous setting.", origChar );
+                    DLOG(WARNING)<<"Duplicated LanguageLA option "<<origChar <<", it would overwrite the previous setting."<<endl;					
             }
             else
                 hisSet.insert( upperType );
@@ -345,7 +345,7 @@ void setOptions( const std::string & option, KoreanAnalyzer * ka, bool outputLog
                 else
                 {
                     if( outputLog )
-                        sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA option value for Option 'R': %c", *o);
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'R'"<<*o<<endl;						
                     errorVal = true;
                 }
                 break;
@@ -362,7 +362,7 @@ void setOptions( const std::string & option, KoreanAnalyzer * ka, bool outputLog
                 else
                 {
                     if( outputLog )
-                        sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA option value for Option 'N': %c", *o);
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'N'"<<*o<<endl;						
                     errorVal = true;
                 }
                 break;
@@ -379,7 +379,7 @@ void setOptions( const std::string & option, KoreanAnalyzer * ka, bool outputLog
                 else
                 {
                     if( outputLog )
-                        sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA option value for Option 'B': %c", *o);
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'B'"<<*o<<endl;
                     errorVal = true;
                 }
                 break;
@@ -397,7 +397,7 @@ void setOptions( const std::string & option, KoreanAnalyzer * ka, bool outputLog
                 else
                 {
                     if( outputLog )
-                        sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA option value for Option 'V': %c", *o);
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'V'"<<*o<<endl;											
                     errorVal = true;
                 }
                 break;
@@ -414,7 +414,7 @@ void setOptions( const std::string & option, KoreanAnalyzer * ka, bool outputLog
                 else
                 {
                     if( outputLog )
-                        sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA option value for Option 'S': %c", *o);
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'S'"<<*o<<endl;											
                     errorVal = true;
                 }
                 break;
@@ -423,7 +423,7 @@ void setOptions( const std::string & option, KoreanAnalyzer * ka, bool outputLog
                 break;
             default:
                 if( outputLog )
-                    sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA Option \"%c\"", *o );
+                    DLOG(WARNING)<<"Invalid LanguageLA option value for Option "<<*o<<endl;										
                 checkDupl = false;
                 break;
         }
@@ -432,7 +432,8 @@ void setOptions( const std::string & option, KoreanAnalyzer * ka, bool outputLog
             if( hisSet.find( upperType ) != hisSet.end() )
             {
                 if( !errorVal && outputLog )
-                    sflog->warn( SFL_LA, "SF-070104: Duplicated LanguageLA option \"%c\", it would overwrite the previous setting.", origChar );
+                    DLOG(WARNING)<<"Duplicated LanguageLA option "<<origChar <<", it would overwrite the previous setting."<<endl;					
+				
             }
             else
                 hisSet.insert( upperType );
@@ -601,7 +602,7 @@ namespace sf1r
 
         if(laConfigUnitMap_.size() < 1)
         {
-            sflog->warn(SFL_LA, "SF-070101: The size of config unit mapt is zero\n");
+            DLOG(WARNING) << "The size of config unit mapt is zero" <<endl;
             //cout << "The size of config unit Map is 0" << endl;
             return false;
         }
@@ -703,8 +704,7 @@ namespace sf1r
             {
                 if( outputLog )
                 {
-                    sflog->warn( SFL_LA, "SF-070101: Cannot find tokenizer id: %s.",
-                            tokenizerNameIter->c_str() );
+                    DLOG(WARNING)<<"Cannot find tokenizer id: "<<tokenizerNameIter->c_str() <<endl;					
                 }
                 return NULL;
             }
@@ -718,8 +718,7 @@ namespace sf1r
                 {
                     if( outputLog )
                     {
-                        sflog->warn( SFL_LA, "SF-070101: Can't gain any valid character from \"value\" and \"code\" of tokenizer \"%s\".",
-                                tokenizerNameIter->c_str() );
+                        DLOG(WARNING)<<"Can't gain any valid character from \"value\" and \"code\" of tokenizer "<<tokenizerNameIter->c_str() <<endl;						
                     }
                     continue;
                 }
@@ -738,7 +737,7 @@ namespace sf1r
                 if( containSpace )
                 {
                     if( outputLog )
-                        sflog->warn( SFL_LA, "SF-070101: Tokenizer \"%s\" contains space characters.", tokenizerNameIter->c_str() );
+                        DLOG(WARNING)<<"Tokenizer "<<tokenizerNameIter->c_str() <<" contains space characters."<<endl;											
                 }
             }
 
@@ -753,8 +752,7 @@ namespace sf1r
             {
                 if( outputLog )
                 {
-                    sflog->warn( SFL_LA, "SF-070101: Invalid tokenizer method \"%s\" for tokenizer \"%s\".",
-                        methodName.c_str(), tokenizerNameIter->c_str() );
+                    DLOG(WARNING)<<"Empty tokenizer method "<<methodName<<" for tokenizer "<<tokenizerNameIter->c_str() <<endl;					
                 }
                 return NULL;
             }
@@ -762,8 +760,7 @@ namespace sf1r
             {
                 if( outputLog )
                 {
-                    sflog->warn( SFL_LA, "SF-070101: Empty tokenizer method for tokenizer \"%s\".",
-                        tokenizerNameIter->c_str() );
+                    DLOG(WARNING)<<"Empty tokenizer method for tokenizer  "<<tokenizerNameIter->c_str() <<endl;
                 }
             }
         } // end - for
@@ -773,7 +770,8 @@ namespace sf1r
         if ( laConfigUnitIter == laConfigUnitMap_.end() )
         {
             if( outputLog )
-                sflog->error(SFL_LA, "SF-070102: Cannot Find LA analyzer. AnalyzerID %d\n", (analysisInfo.analyzerId_).c_str());
+                DLOG(ERROR)<<"Cannot Find LA analyzer. AnalyzerID  "<<analysisInfo.analyzerId_<<endl;													
+			
             return NULL;
         }
 
@@ -884,8 +882,9 @@ namespace sf1r
                     origSpeU.substr( i, 1 ).convertString( invalidStr, defEncoding );
                     if( outputLog )
                     {
-                        sflog->warn( SFL_LA, "SF-070105: Invalid special char \"%s\" for analyzer \"%s\" (accept 0x0000 to 0x007F).",
-                                invalidStr.c_str(), analysisInfo.analyzerId_.c_str() );
+                        DLOG(WARNING)<<"Invalid special char "<<invalidStr<<" for analyzer  "<<analysisInfo.analyzerId_
+                                <<" (accept 0x0000 to 0x007F)"<<endl;													
+					
                     }
                 }
                 else
@@ -971,8 +970,8 @@ namespace sf1r
                     origSpeU.substr( i, 1 ).convertString( invalidStr, defEncoding );
                     if( outputLog )
                     {
-                        sflog->warn( SFL_LA, "SF-070105: Invalid special char \"%s\" for analyzer \"%s\" (accept 0x0000 to 0x007F).",
-                                invalidStr.c_str(), analysisInfo.analyzerId_.c_str() );
+                        DLOG(WARNING)<<"Invalid special char "<<invalidStr<<" for analyzer  "<<analysisInfo.analyzerId_
+                                <<" (accept 0x0000 to 0x007F)"<<endl;													
                     }
                 }
                 else
@@ -1031,8 +1030,8 @@ namespace sf1r
                     origSpeU.substr( i, 1 ).convertString( invalidStr, defEncoding );
                     if( outputLog )
                     {
-                        sflog->warn( SFL_LA, "SF-070105: Invalid special char \"%s\" for analyzer \"%s\" (accept 0x0000 to 0x007F).",
-                                invalidStr.c_str(), analysisInfo.analyzerId_.c_str() );
+                        DLOG(WARNING)<<"Invalid special char "<<invalidStr<<" for analyzer  "<<analysisInfo.analyzerId_
+                                <<" (accept 0x0000 to 0x007F)"<<endl;							
                     }
                 }
                 else
@@ -1090,7 +1089,7 @@ namespace sf1r
                     stringstream message;
                     message << "LAPool::createLA() analysis \"" << analysis << "\"'s option is invalid: "<< option << ".";
                     if( outputLog )
-                        sflog->error(SFL_LA, "SF-070103: Analysis option is invalid: %s\n", (message.str()).c_str());
+                        DLOG(ERROR)<<"Analysis option is not available. Type "<<message.str()<<endl;						
                     throw std::logic_error( message.str() );
                 }
 
@@ -1115,7 +1114,7 @@ namespace sf1r
                     message << "LAPool::createLA() analysis \"" << analysis << "\"'s option, the language name is invalid: "<< langname <<
                             " (include default/cn/jp/kr/en ).";
                     if( outputLog )
-                        sflog->error(SFL_LA, "SF-070103: Analysis option is invalid: %s\n", (message.str()).c_str());
+                        DLOG(ERROR)<<"Analysis option is not available. Type "<<message.str()<<endl;						
                     throw std::logic_error( message.str() );
                 }
 
@@ -1167,7 +1166,7 @@ namespace sf1r
                         message << "LAPool::createLA() analysis \"" << analysis << "\"'s option, requires analyer id when language " <<
                                 "is default or process mode is ma after language "<< langname << ".";
                         if( outputLog )
-                            sflog->error(SFL_LA, "SF-070103: Analysis option is invalid: %s\n", (message.str()).c_str());
+                            DLOG(ERROR)<<"Analysis option is not available. Type "<<message.str()<<endl;	
                         throw std::logic_error( message.str() );
                     }
 
@@ -1190,7 +1189,7 @@ namespace sf1r
                         message << "LAPool::createLA() analysis \"" << analysis << "\"'s option, cannot find analyer id " <<
                                    analyzerId << " after language "<< langname << "(be declared before this Method and inner_ as prefix).";
                         if( outputLog )
-                            sflog->error(SFL_LA, "SF-070103: Analysis option is invalid: %s\n", (message.str()).c_str());
+                            DLOG(ERROR)<<"Analysis option is not available. Type "<<message.str()<<endl;							
                         throw std::logic_error( message.str() );
                     }
 
@@ -1238,7 +1237,7 @@ namespace sf1r
                     stringstream message;
                     message << "LAPool::createLA() analysis \"" << analysis << "\"'s option, requires default language " << ".";
                     if( outputLog )
-                        sflog->error(SFL_LA, "SF-070103: Analysis option is invalid: %s\n", (message.str()).c_str());
+                        DLOG(ERROR)<<"Analysis option is not available. Type "<<message.str()<<endl;						
                     throw std::logic_error( message.str() );
                 }
 
@@ -1249,7 +1248,7 @@ namespace sf1r
             stringstream message;
             message << "LAPool::createLA() analysis type \"" << analysis << "\" not available. ";
             if( outputLog )
-                sflog->error(SFL_LA, "SF-070103: Analysis type is not available. Type %s\n", (message.str()).c_str());
+                DLOG(ERROR)<<"Analysis type is not available. Type "<<message.str()<<endl;				
             throw std::logic_error( message.str() );
         }
 
@@ -1320,8 +1319,7 @@ namespace sf1r
                 tokDuplChar << "'(0x" << hex << tokItr->first << ")";
                 if( outputLog )
                 {
-                    sflog->warn( SFL_LA, "SF-070101: Duplicate Tokenizers (or specialchar) setting for character %s, in %s.",
-                            tokDuplChar.str().c_str(), tokanaNamesStr.c_str() );
+                    DLOG(WARNING)<<"Duplicate Tokenizers (or specialchar) setting for character "<<tokDuplChar.str()<<",in "<<tokanaNamesStr<<endl;					
                 }
             }
         }

@@ -39,7 +39,6 @@ struct PropertyValue2IndexPropertyType
     template<typename T>
     void operator()(const T& value)
     {
-        sflog->error(SFL_IDX, 70101);
         throw std::runtime_error("Type not supported in PropertyType");
     }
     void operator()(int64_t value)
