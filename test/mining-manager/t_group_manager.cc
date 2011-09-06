@@ -4,7 +4,7 @@
 /// @author Jun Jiang <jun.jiang@izenesoft.com>
 /// @date Created 2011-03-23
 ///
-
+//TODO add test cases for numeric property
 #include <util/ustring/UString.h>
 #include <document-manager/DocumentManager.h>
 #include <document-manager/Document.h>
@@ -116,8 +116,7 @@ void prepareDocument(
 class GroupManagerTestFixture
 {
 private:
-    schema_type baseSchema_;
-    set<PropertyConfig, PropertyComp> subSchema_;
+    set<PropertyConfig, PropertyComp> schema_;
     vector<string> propNames_;
     vector<GroupConfig> groupConfigs_;
 
@@ -141,24 +140,13 @@ public:
         bfs::create_directories(dmPath);
         groupPath_ = (bfs::path(TEST_DIR_STR) / "group").string();
 
-        makeSchema_();
+        initConfig_();
 
         documentManager_ = new DocumentManager(
             dmPath.string(),
-            subSchema_,
+            schema_,
             ENCODING_TYPE,
             2000);
-
-        propNames_.push_back(PROP_NAME_GROUP_STR);
-        propNames_.push_back(PROP_NAME_GROUP_INT);
-        propNames_.push_back(PROP_NAME_GROUP_FLOAT);
-
-        for (vector<string>::const_iterator it = propNames_.begin();
-            it != propNames_.end(); ++it)
-        {
-            groupConfigs_.push_back(GroupConfig());
-            groupConfigs_.back().propName = *it;
-        }
 
         resetGroupManager();
     }
@@ -173,7 +161,7 @@ public:
     {
         delete groupManager_;
 
-        groupManager_ = new faceted::GroupManager(documentManager_, groupPath_);
+        groupManager_ = new faceted::GroupManager(documentManager_, NULL, groupPath_);
         BOOST_CHECK(groupManager_->open(groupConfigs_));
     }
 
@@ -260,39 +248,38 @@ public:
     }
 
 private:
-    void makeSchema_()
+    void initConfig_()
     {
         PropertyConfigBase config1;
         config1.propertyName_ = "DOCID";
         config1.propertyType_ = STRING_PROPERTY_TYPE;
+        schema_.insert(config1);
 
         PropertyConfigBase config2;
         config2.propertyName_ = "Title";
         config2.propertyType_ = STRING_PROPERTY_TYPE;
+        schema_.insert(config2);
 
         PropertyConfigBase config3;
         config3.propertyName_ = PROP_NAME_GROUP_STR;
         config3.propertyType_ = STRING_PROPERTY_TYPE;
+        schema_.insert(config3);
+        propNames_.push_back(config3.propertyName_);
+        groupConfigs_.push_back(GroupConfig(config3.propertyName_, config3.propertyType_));
 
         PropertyConfigBase config4;
         config4.propertyName_ = PROP_NAME_GROUP_INT;
         config4.propertyType_ = STRING_PROPERTY_TYPE;
+        schema_.insert(config4);
+        propNames_.push_back(config4.propertyName_);
+        groupConfigs_.push_back(GroupConfig(config4.propertyName_, config4.propertyType_));
 
         PropertyConfigBase config5;
         config5.propertyName_ = PROP_NAME_GROUP_FLOAT;
         config5.propertyType_ = STRING_PROPERTY_TYPE;
-
-        baseSchema_.insert(config1);
-        baseSchema_.insert(config2);
-        baseSchema_.insert(config3);
-        baseSchema_.insert(config4);
-        baseSchema_.insert(config5);
-
-        subSchema_.insert(config1);
-        subSchema_.insert(config2);
-        subSchema_.insert(config3);
-        subSchema_.insert(config4);
-        subSchema_.insert(config5);
+        schema_.insert(config5);
+        propNames_.push_back(config5.propertyName_);
+        groupConfigs_.push_back(GroupConfig(config5.propertyName_, config5.propertyType_));
     }
 
     void checkCollection_()
@@ -317,7 +304,7 @@ private:
         faceted::OntologyRep& groupRep
     )
     {
-        faceted::GroupFilterBuilder filterBuilder(baseSchema_, groupManager_, NULL);
+        faceted::GroupFilterBuilder filterBuilder(groupConfigs_, groupManager_, NULL);
         faceted::GroupParam groupParam;
         groupParam.groupProps_ = propNames_;
         groupParam.groupLabels_ = labelVec;

@@ -165,29 +165,29 @@ bool MiningManager::open()
         LAPool::getInstance()->get_cma_path(cma_path );
         std::string jma_path;
         LAPool::getInstance()->get_jma_path(jma_path );
-        
-        
+
+
         IDMAnalyzerConfig config1 = idmlib::util::IDMAnalyzerConfig::GetCommonConfig(kma_path,"",jma_path);
         analyzer_ = new idmlib::util::IDMAnalyzer(config1);
         if ( !analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct") )
         {
             return false;
         }
-        
+
         IDMAnalyzerConfig config2 = idmlib::util::IDMAnalyzerConfig::GetCommonConfig(kma_path,cma_path,jma_path);
         c_analyzer_ = new idmlib::util::IDMAnalyzer(config2);
         if( !c_analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct") )
         {
             return false;
         }
-        
+
         IDMAnalyzerConfig config3 = idmlib::util::IDMAnalyzerConfig::GetCommonTgConfig(kma_path,"",jma_path);
         kpe_analyzer_ = new idmlib::util::IDMAnalyzer(config3);
         if ( !kpe_analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct") )
         {
             return false;
         }
-        
+
 //       id_path_ = prefix_path + "/id";
 //       FSUtil::createDir(id_path_);
 //       doIDManagerInit_();
@@ -314,7 +314,7 @@ bool MiningManager::open()
             if(groupManager_) delete groupManager_;
             std::string groupPath = prefix_path + "/group";
 		
-            groupManager_ = new faceted::GroupManager(document_manager_.get(), groupPath);
+            groupManager_ = new faceted::GroupManager(document_manager_.get(), searchManager_.get(), groupPath);
             if (! groupManager_->open(mining_schema_.group_properties))
             {
                 std::cerr << "open GROUP failed" << std::endl;
@@ -338,7 +338,7 @@ bool MiningManager::open()
 
         if (groupManager_ || attrManager_)
         {
-            faceted::GroupFilterBuilder* filterBuilder = new faceted::GroupFilterBuilder(schema_, groupManager_, attrManager_);
+            faceted::GroupFilterBuilder* filterBuilder = new faceted::GroupFilterBuilder(mining_schema_.group_properties, groupManager_, attrManager_);
             searchManager_->setGroupFilterBuilder(filterBuilder);
         }
 
@@ -557,13 +557,13 @@ bool MiningManager::DoMiningCollection()
     {
         groupManager_->processCollection();
     }
-    
+
     //do attr
     if( mining_schema_.attr_enable )
     {
         attrManager_->processCollection();
     }
-    
+
     //do tdt
     if( mining_schema_.tdt_enable )
     {
@@ -1187,7 +1187,7 @@ bool MiningManager::addTgResult_(KeywordSearchResult& miaInput)
 
     izenelib::util::UString query(miaInput.rawQueryString_, miaInput.encodingType_);
 //     TaxonomyRep taxonomyRep;
-//     
+//
 //     bool ret = tgManager_->GetResult(miaInput.topKDocs_, query, miaInput.totalCount_, taxonomyRep, miaInput.neList_);
 //     if (!ret)
 //     {
@@ -1211,9 +1211,9 @@ bool MiningManager::addTgResult_(KeywordSearchResult& miaInput)
 // //             std::cout<<"Top Cluster: "<<str<<std::endl;
 // //         }
 // //       }
-// 
+//
 //     }
-    
+
     bool ret = tgManager_->GetConceptsByDocidList(miaInput.topKDocs_, query, miaInput.totalCount_, miaInput.tg_input);
     return ret;
 
@@ -1245,8 +1245,8 @@ bool MiningManager::addSimilarityResult_(KeywordSearchResult& miaInput)
 //    boost::mutex::scoped_lock lock(sim_mtx_);
     if ( !similarityIndex_ && !similarityIndexEsa_) return true;
     miaInput.numberOfSimilarDocs_.resize(miaInput.topKDocs_.size());
-    
-    
+
+
     for(uint32_t i=0;i<miaInput.topKDocs_.size();i++)
     {
         uint32_t docid = miaInput.topKDocs_[i];
@@ -1421,7 +1421,7 @@ bool MiningManager::setTopGroupLabel(
                 return false;
             }
         }
-        
+
         return logger->setTopLabel(query, pvId);
     }
     else
@@ -1463,7 +1463,7 @@ bool MiningManager::GetTdtInTimeRange(const idmlib::tdt::TimeIdType& start, cons
     }
     return storage->GetTopicsInTimeRange(start, end, topic_list);
 }
-    
+
 bool MiningManager::GetTdtTopicInfo(const izenelib::util::UString& text, idmlib::tdt::TopicInfoType& info)
 {
     if( !mining_schema_.tdt_enable || tdt_storage_== NULL) return false;
@@ -1481,7 +1481,7 @@ void MiningManager::InjectQueryRecommend(const izenelib::util::UString& query, c
     if(!qrManager_) return;
     qrManager_->Inject(query, result);
 }
-    
+
 void MiningManager::FinishQueryRecommendInject()
 {
     if(!qrManager_) return;

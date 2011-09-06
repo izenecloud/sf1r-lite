@@ -20,9 +20,11 @@ const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UStr
 
 GroupManager::GroupManager(
     DocumentManager* documentManager,
+    SearchManager* searchManager,
     const std::string& dirPath
 )
 : documentManager_(documentManager)
+, searchManager_(searchManager)
 , dirPath_(dirPath)
 {
 }
@@ -34,6 +36,9 @@ bool GroupManager::open(const std::vector<GroupConfig>& configVec)
     for (std::vector<GroupConfig>::const_iterator it = configVec.begin();
         it != configVec.end(); ++it)
     {
+        if (it->propType != STRING_PROPERTY_TYPE)
+            continue;
+
         std::pair<PropValueMap::iterator, bool> res =
             propValueMap_.insert(PropValueMap::value_type(it->propName, PropValueTable(dirPath_, it->propName)));
 

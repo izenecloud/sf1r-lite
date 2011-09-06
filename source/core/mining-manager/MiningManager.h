@@ -38,7 +38,7 @@ namespace ir
 {
 namespace indexmanager
 {
-class IndexReader;   
+class IndexReader;
 }
 
 }
@@ -89,7 +89,7 @@ class SearchManager;
 
 namespace sim
 {
-class SimilarityIndex;    
+class SimilarityIndex;
 }
 
 namespace faceted
@@ -245,13 +245,13 @@ public:
     );
 
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
-    
+
     bool GetTdtInTimeRange(const boost::gregorian::date& start, const boost::gregorian::date& end, std::vector<izenelib::util::UString>& topic_list);
-    
+
     bool GetTdtTopicInfo(const izenelib::util::UString& text, std::pair<idmlib::tdt::TrackResult, std::vector<izenelib::util::UString> >& info);
 
     void InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result);
-    
+
     void FinishQueryRecommendInject();
 
     void close();
@@ -260,7 +260,7 @@ public:
     {
         return faceted_;
     }
-    
+
     boost::shared_ptr<TaxonomyGenerationSubManager> GetTgManager()
     {
         return tgManager_;
