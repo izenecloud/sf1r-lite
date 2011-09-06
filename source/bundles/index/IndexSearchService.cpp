@@ -58,7 +58,11 @@ bool IndexSearchService::getSearchResult(
 
     if (!SF1Config::get()->checkAggregatorSupport(actionItem.collectionName_))
     {
-        return workerService_->doLocalSearch(actionItem, resultItem);
+        bool ret = workerService_->doLocalSearch(actionItem, resultItem);
+        std::vector<std::pair<workerid_t, KeywordSearchResult> > resultList;
+        resultList.push_back(std::make_pair(0,resultItem));
+        aggregatorManager_->aggregateMiningResult(resultItem, resultList);
+        return ret;
     }
 
     /// Perform distributed search by aggregator
