@@ -153,7 +153,7 @@ STOP_PROFILER ( cacheoverhead )
         if(reranker_ &&
             customRankScoreList.empty() &&
             action_rerankable(actionOperation))
-            reranker_(docIdList,rankScoreList,actionOperation.actionItem_.env_.queryString_);           
+            reranker_(docIdList,rankScoreList,actionOperation.actionItem_.env_.queryString_);
 
         return true;
     }
@@ -658,7 +658,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
 #endif
 
         ///rerank is only used for pure ranking
-        std::vector<std::pair<std::string , bool> >& sortPropertyList = actionOperation.actionItem_.sortPriorityList_;            
+        std::vector<std::pair<std::string , bool> >& sortPropertyList = actionOperation.actionItem_.sortPriorityList_;
         bool rerank = false;
         if(!pSorter) rerank = true;
         else if (sortPropertyList.size() == 1)
