@@ -36,6 +36,9 @@ bool GroupManager::open(const std::vector<GroupConfig>& configVec)
     for (std::vector<GroupConfig>::const_iterator it = configVec.begin();
         it != configVec.end(); ++it)
     {
+        if (it->propType != STRING_PROPERTY_TYPE)
+            continue;
+
         std::pair<PropValueMap::iterator, bool> res =
             propValueMap_.insert(PropValueMap::value_type(it->propName, PropValueTable(dirPath_, it->propName)));
 

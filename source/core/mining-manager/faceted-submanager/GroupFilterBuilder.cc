@@ -5,6 +5,7 @@
 #include "group_manager.h"
 #include "attr_manager.h"
 #include "attr_table.h"
+#include <configuration-manager/GroupConfig.h>
 
 #include <memory> // auto_ptr
 #include <glog/logging.h>
@@ -12,11 +13,11 @@
 NS_FACETED_BEGIN
 
 GroupFilterBuilder::GroupFilterBuilder(
-    const schema_type& schema,
+    const std::vector<GroupConfig>& groupConfigs,
     const GroupManager* groupManager,
     const AttrManager* attrManager
 )
-    : schema_(schema)
+    : groupConfigs_(groupConfigs)
     , groupManager_(groupManager)
     , attrTable_(attrManager ? attrManager->getAttrTable() : NULL)
 {
@@ -31,7 +32,7 @@ GroupFilter* GroupFilterBuilder::createFilter(const GroupParam& groupParam) cons
 
     if (!groupParam.groupProps_.empty())
     {
-        GroupCounterLabelBuilder builder(schema_, groupManager_);
+        GroupCounterLabelBuilder builder(groupConfigs_, groupManager_);
         if (!groupFilter->initGroup(builder))
             return NULL;
     }

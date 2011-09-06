@@ -338,7 +338,7 @@ bool MiningManager::open()
 
         if (groupManager_ || attrManager_)
         {
-            faceted::GroupFilterBuilder* filterBuilder = new faceted::GroupFilterBuilder(schema_, groupManager_, attrManager_);
+            faceted::GroupFilterBuilder* filterBuilder = new faceted::GroupFilterBuilder(mining_schema_.group_properties, groupManager_, attrManager_);
             searchManager_->setGroupFilterBuilder(filterBuilder);
         }
 
