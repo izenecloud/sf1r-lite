@@ -75,13 +75,14 @@ DocumentsSearchHandler::DocumentsSearchHandler(
         miningSearchService_(collectionHandler.miningSearchService_),
         indexSchema_(collectionHandler.indexSchema_),
         miningSchema_(collectionHandler.miningSchema_),
-        TOP_K_NUM(collectionHandler.TOP_K_NUM),
-        actionItem_()
+        actionItem_(),
+        returnAnalyzerResult_(false),
+        TOP_K_NUM(collectionHandler.indexSearchService_->getBundleConfig()->topKNum_)
 {
     actionItem_.env_.encodingType_ = "UTF-8";
     actionItem_.env_.ipAddress_ = request.header()[Keys::remote_ip].getString();
     actionItem_.collectionName_ = asString(request[Keys::collection]);
-    renderer_.TOP_K_NUM = collectionHandler.TOP_K_NUM;
+    renderer_.TOP_K_NUM = TOP_K_NUM;
 }
 
 void DocumentsSearchHandler::search()

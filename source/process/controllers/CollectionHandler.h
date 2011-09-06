@@ -82,22 +82,15 @@ public:
 
     void setBundleSchema(MiningSchema& schema)
     {
-	miningSchema_ = schema;
+	    miningSchema_ = schema;
     }
 
     void setBundleSchema(RecommendSchema& schema)
     {
-	recommendSchema_ = schema;
-    }
-
-    void setTopKNum(int topKNum)
-    {
-        TOP_K_NUM = topKNum;
+	    recommendSchema_ = schema;
     }
 public:
     std::string collection_;
-
-    int TOP_K_NUM;
 
     IndexSearchService* indexSearchService_;
 

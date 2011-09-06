@@ -42,6 +42,16 @@ IndexSearchService::~IndexSearchService()
 {
 }
 
+boost::shared_ptr<AggregatorManager> IndexSearchService::getAggregatorManager()
+{
+    return aggregatorManager_;
+}
+
+const IndexBundleConfiguration* IndexSearchService::getBundleConfig()
+{
+    return bundleConfig_;
+}
+
 void IndexSearchService::OnUpdateSearchCache()
 {
     cache_->clear();
