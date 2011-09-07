@@ -26,14 +26,7 @@ public:
     {
         T value;
         propertyTable_->getPropertyValue(doc, value);
-        if (countTable_.find(value) == countTable_.end())
-        {
-            countTable_[value] = 1;
-        }
-        else
-        {
-            countTable_[value]++;
-        }
+        ++countTable_[value];
     }
 
     virtual void getGroupRep(OntologyRep& groupRep) const
