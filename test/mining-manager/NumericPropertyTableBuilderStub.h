@@ -1,0 +1,68 @@
+///
+/// @file NumericPropertyTableBuilderStub.h
+/// @brief stub class to create NumericPropertyTable instance,
+///        used to test groupby numeric property value.
+/// @author Jun Jiang <jun.jiang@izenesoft.com>
+/// @date Created 2011-09-07
+///
+
+#ifndef SF1R_NUMERIC_PROPERTY_TABLE_BUILDER_STUB_H
+#define SF1R_NUMERIC_PROPERTY_TABLE_BUILDER_STUB_H
+
+#include <search-manager/NumericPropertyTableBuilder.h>
+#include <common/type_defs.h> // PropertyDataType
+#include <common/PropertyValue.h>
+
+#include <vector>
+#include <string>
+
+namespace sf1r
+{
+
+class Document;
+class GroupConfig;
+
+class NumericPropertyTableBuilderStub : public NumericPropertyTableBuilder
+{
+public:
+    NumericPropertyTableBuilderStub(const std::vector<GroupConfig>& groupConfigs);
+
+    NumericPropertyTable* createPropertyTable(const std::string& propertyName);
+
+    bool insertDocument(const Document& doc);
+
+private:
+    PropertyDataType getPropertyType_(const std::string& prop) const;
+
+    bool insertProperty_(
+        const std::string& prop,
+        PropertyDataType type,
+        const PropertyValue* propValue
+    );
+
+    void insertPropMap_(
+        const std::string& prop,
+        PropertyDataType type,
+        const PropertyValue* propValue
+    );
+
+private:
+    const std::vector<GroupConfig>& groupConfigs_;
+    unsigned int lastDocId_;
+
+    typedef std::vector<int64_t> IntPropTable; // doc id => prop value
+    std::map<std::string, IntPropTable> intPropMap_; // prop name => prop value table
+
+    typedef std::vector<uint64_t> UIntPropTable;
+    std::map<std::string, UIntPropTable> uintPropMap_;
+
+    typedef std::vector<float> FloatPropTable;
+    std::map<std::string, FloatPropTable> floatPropMap_;
+
+    typedef std::vector<double> DoublePropTable;
+    std::map<std::string, DoublePropTable> doublePropMap_;
+};
+
+}
+
+#endif 

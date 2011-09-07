@@ -15,7 +15,7 @@
 namespace sf1r
 {
 class GroupConfig;
-class SearchManager;
+class NumericPropertyTableBuilder;
 }
 
 NS_FACETED_BEGIN
@@ -33,7 +33,7 @@ public:
         const std::vector<GroupConfig>& groupConfigs,
         const GroupManager* groupManager,
         const AttrManager* attrManager,
-        const SearchManager* searchManager
+        NumericPropertyTableBuilder* numericTableBuilder
     );
 
     /**
@@ -49,7 +49,7 @@ private:
     const std::vector<GroupConfig>& groupConfigs_;
     const GroupManager* groupManager_;
     const AttrTable* attrTable_;
-    const SearchManager* searchManager_;
+    NumericPropertyTableBuilder* numericTableBuilder_;
 };
 
 NS_FACETED_END

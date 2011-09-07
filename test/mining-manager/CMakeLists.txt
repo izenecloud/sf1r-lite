@@ -68,6 +68,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   ADD_EXECUTABLE(t_group_manager
     Runner.cpp
     t_group_manager.cc
+    NumericPropertyTableBuilderStub.cpp
   )
   TARGET_LINK_LIBRARIES(t_group_manager ${libs})
   SET_TARGET_PROPERTIES(t_group_manager PROPERTIES

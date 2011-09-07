@@ -810,7 +810,7 @@ void SearchManager::getSortPropertyData(Sorter* pSorter, std::vector<unsigned in
 
 }
 
-NumericPropertyTable* SearchManager::createPropertyTable(const std::string& propertyName) const
+NumericPropertyTable* SearchManager::createPropertyTable(const std::string& propertyName)
 {
     void *data;
     boost::unordered_map<std::string, PropertyConfig>::const_iterator it = schemaMap_.find(propertyName);

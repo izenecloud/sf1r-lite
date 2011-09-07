@@ -6,7 +6,7 @@
 #include "attr_manager.h"
 #include "attr_table.h"
 #include <configuration-manager/GroupConfig.h>
-#include <search-manager/SearchManager.h>
+#include <search-manager/NumericPropertyTableBuilder.h>
 
 #include <memory> // auto_ptr
 #include <glog/logging.h>
@@ -17,12 +17,12 @@ GroupFilterBuilder::GroupFilterBuilder(
     const std::vector<GroupConfig>& groupConfigs,
     const GroupManager* groupManager,
     const AttrManager* attrManager,
-    const SearchManager* searchManager
+    NumericPropertyTableBuilder* numericTableBuilder
 )
     : groupConfigs_(groupConfigs)
     , groupManager_(groupManager)
     , attrTable_(attrManager ? attrManager->getAttrTable() : NULL)
-    , searchManager_(searchManager)
+    , numericTableBuilder_(numericTableBuilder)
 {
 }
 
@@ -35,7 +35,7 @@ GroupFilter* GroupFilterBuilder::createFilter(const GroupParam& groupParam) cons
 
     if (!groupParam.groupProps_.empty())
     {
-        GroupCounterLabelBuilder builder(groupConfigs_, groupManager_, searchManager_);
+        GroupCounterLabelBuilder builder(groupConfigs_, groupManager_, numericTableBuilder_);
         if (!groupFilter->initGroup(builder))
             return NULL;
     }

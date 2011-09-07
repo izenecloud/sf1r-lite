@@ -195,15 +195,11 @@ public:
         }
 
         checkCollection_();
+        BOOST_CHECK(attrManager_->processCollection());
     }
 
-    void checkAttrManager(bool isProcessCollection)
+    void checkAttrManager()
     {
-        if (isProcessCollection)
-        {
-            BOOST_CHECK(attrManager_->processCollection());
-        }
-
         faceted::OntologyRep groupRep;
         createGroupRep_(groupRep);
 
@@ -364,23 +360,23 @@ BOOST_AUTO_TEST_SUITE(AttrManager_test)
 BOOST_FIXTURE_TEST_CASE(checkGetGroupRep, AttrManagerTestFixture)
 {
     BOOST_TEST_MESSAGE("check empty attr index");
-    checkAttrManager(false);
+    checkAttrManager();
 
     BOOST_TEST_MESSAGE("create attr index 1st time");
     createDocument(1, 100);
-    checkAttrManager(true);
+    checkAttrManager();
 
     BOOST_TEST_MESSAGE("load attr index");
     resetAttrManager();
-    checkAttrManager(false);
+    checkAttrManager();
 
     BOOST_TEST_MESSAGE("create attr index 2nd time");
     createDocument(101, 200);
-    checkAttrManager(true);
+    checkAttrManager();
 
     BOOST_TEST_MESSAGE("load attr index");
     resetAttrManager();
-    checkAttrManager(false);
+    checkAttrManager();
 }
 
 BOOST_AUTO_TEST_SUITE_END() 

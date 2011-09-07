@@ -4,7 +4,7 @@
 /// @author Jun Jiang <jun.jiang@izenesoft.com>
 /// @date Created 2011-03-23
 ///
-//TODO add test cases for numeric property
+#include "NumericPropertyTableBuilderStub.h"
 #include <util/ustring/UString.h>
 #include <document-manager/DocumentManager.h>
 #include <document-manager/Document.h>
@@ -83,10 +83,23 @@ void checkProperty(
     Document::property_const_iterator it = doc.findProperty(propName);
     BOOST_REQUIRE(it != doc.propertyEnd());
 
-    const izenelib::util::UString& value = it->second.get<izenelib::util::UString>();
-    std::string utf8Str;
-    value.convertString(utf8Str, izenelib::util::UString::UTF_8);
-    BOOST_CHECK_EQUAL(utf8Str, propValue);
+    const PropertyValue& value = it->second;
+
+    if (propName == PROP_NAME_GROUP_INT)
+    {
+        BOOST_CHECK_EQUAL(value.get<int64_t>(), lexical_cast<int64_t>(propValue));
+    }
+    else if (propName == PROP_NAME_GROUP_FLOAT)
+    {
+        BOOST_CHECK_EQUAL(value.get<float>(), lexical_cast<float>(propValue));
+    }
+    else
+    {
+        const izenelib::util::UString& ustr = value.get<izenelib::util::UString>();
+        std::string utf8Str;
+        ustr.convertString(utf8Str, ENCODING_TYPE);
+        BOOST_CHECK_EQUAL(utf8Str, propValue);
+    }
 }
 
 void prepareDocument(
@@ -106,16 +119,13 @@ void prepareDocument(
     property.assign(docInput.groupStr_, ENCODING_TYPE);
     document.property(PROP_NAME_GROUP_STR) = property;
 
-    property.assign(docInput.groupInt_, ENCODING_TYPE);
-    document.property(PROP_NAME_GROUP_INT) = property;
-
-    property.assign(docInput.groupFloat_, ENCODING_TYPE);
-    document.property(PROP_NAME_GROUP_FLOAT) = property;
+    document.property(PROP_NAME_GROUP_INT) = lexical_cast<int64_t>(docInput.groupInt_);
+    document.property(PROP_NAME_GROUP_FLOAT) = lexical_cast<float>(docInput.groupFloat_);
 }
 
 class GroupManagerTestFixture
 {
-private:
+protected:
     set<PropertyConfig, PropertyComp> schema_;
     vector<string> propNames_;
     vector<GroupConfig> groupConfigs_;
@@ -126,6 +136,7 @@ private:
 
     string groupPath_;
     faceted::GroupManager* groupManager_;
+    NumericPropertyTableBuilderStub* numericTableBuilder_;
 
     typedef vector<unsigned int> DocIdList;
     typedef map<string, DocIdList> DocIdMap; // key: property value
@@ -135,6 +146,7 @@ public:
     GroupManagerTestFixture()
         : documentManager_(NULL)
         , groupManager_(NULL)
+        , numericTableBuilder_(NULL)
     {
         boost::filesystem::remove_all(TEST_DIR_STR);
         bfs::path dmPath(bfs::path(TEST_DIR_STR) / "dm/");
@@ -148,6 +160,8 @@ public:
             schema_,
             ENCODING_TYPE,
             2000);
+
+        numericTableBuilder_ = new NumericPropertyTableBuilderStub(groupConfigs_);
 
         resetGroupManager();
     }
@@ -196,36 +210,20 @@ public:
             Document document;
             prepareDocument(document, docInput);
             BOOST_CHECK(documentManager_->insertDocument(document));
+
+            BOOST_CHECK(numericTableBuilder_->insertDocument(document));
         }
 
         checkCollection_();
+        BOOST_CHECK(groupManager_->processCollection());
     }
 
-    void checkGroupManager(bool isProcessCollection)
+    void checkGetGroupRep()
     {
-        if (isProcessCollection)
-        {
-            BOOST_CHECK(groupManager_->processCollection());
-        }
-
-        faceted::GroupParam::GroupLabelVec labelList;
-
-        createAndCheckGroupRep_(labelList);
-
-        {
-            faceted::GroupParam::GroupLabel label1;
-            label1.first = PROP_NAME_GROUP_STR;
-            label1.second.push_back("aaa");
-
-            faceted::GroupParam::GroupLabel label2;
-            label2.first = PROP_NAME_GROUP_INT;
-            label2.second.push_back("2");
-
-            labelList.push_back(label1);
-            labelList.push_back(label2);
-
-            createAndCheckGroupRep_(labelList);
-        }
+        checkEmptyLabel_();
+        checkOneLabel_();
+        checkTwoLabel_();
+        checkThreeLabel_();
     }
 
 private:
@@ -250,14 +248,14 @@ private:
 
         PropertyConfigBase config4;
         config4.propertyName_ = PROP_NAME_GROUP_INT;
-        config4.propertyType_ = STRING_PROPERTY_TYPE;
+        config4.propertyType_ = INT_PROPERTY_TYPE;
         schema_.insert(config4);
         propNames_.push_back(config4.propertyName_);
         groupConfigs_.push_back(GroupConfig(config4.propertyName_, config4.propertyType_));
 
         PropertyConfigBase config5;
         config5.propertyName_ = PROP_NAME_GROUP_FLOAT;
-        config5.propertyType_ = STRING_PROPERTY_TYPE;
+        config5.propertyType_ = FLOAT_PROPERTY_TYPE;
         schema_.insert(config5);
         propNames_.push_back(config5.propertyName_);
         groupConfigs_.push_back(GroupConfig(config5.propertyName_, config5.propertyType_));
@@ -279,6 +277,63 @@ private:
         }
     }
 
+    void checkEmptyLabel_()
+    {
+        faceted::GroupParam::GroupLabelVec labelList;
+        createAndCheckGroupRep_(labelList);
+    }
+
+    void checkOneLabel_()
+    {
+        faceted::GroupParam::GroupLabel label1;
+        label1.first = PROP_NAME_GROUP_STR;
+        label1.second.push_back("aaa");
+
+        faceted::GroupParam::GroupLabelVec labelList;
+        labelList.push_back(label1);
+
+        createAndCheckGroupRep_(labelList);
+    }
+
+    void checkTwoLabel_()
+    {
+        faceted::GroupParam::GroupLabel label1;
+        label1.first = PROP_NAME_GROUP_STR;
+        label1.second.push_back("上海");
+
+        faceted::GroupParam::GroupLabel label2;
+        label2.first = PROP_NAME_GROUP_INT;
+        label2.second.push_back("1");
+
+        faceted::GroupParam::GroupLabelVec labelList;
+        labelList.push_back(label1);
+        labelList.push_back(label2);
+
+        createAndCheckGroupRep_(labelList);
+    }
+
+    void checkThreeLabel_()
+    {
+        faceted::GroupParam::GroupLabel label1;
+        label1.first = PROP_NAME_GROUP_STR;
+        label1.second.push_back("aaa");
+
+        faceted::GroupParam::GroupLabel label2;
+        label2.first = PROP_NAME_GROUP_INT;
+        label2.second.push_back("2");
+
+        faceted::GroupParam::GroupLabel label3;
+        label3.first = PROP_NAME_GROUP_FLOAT;
+        label3.second.push_back("0.3");
+
+        faceted::GroupParam::GroupLabelVec labelList;
+        labelList.push_back(label1);
+        labelList.push_back(label2);
+        labelList.push_back(label3);
+
+        createAndCheckGroupRep_(labelList);
+    }
+
     void createAndCheckGroupRep_(const faceted::GroupParam::GroupLabelVec& labelList)
     {
         faceted::OntologyRep groupRep;
@@ -295,7 +350,7 @@ private:
         faceted::OntologyRep& groupRep
     )
     {
-        faceted::GroupFilterBuilder filterBuilder(groupConfigs_, groupManager_, NULL, NULL);
+        faceted::GroupFilterBuilder filterBuilder(groupConfigs_, groupManager_, NULL, numericTableBuilder_);
         faceted::GroupParam groupParam;
         groupParam.groupProps_ = propNames_;
         groupParam.groupLabels_ = labelVec;
@@ -443,22 +498,22 @@ private:
 
 BOOST_AUTO_TEST_SUITE(GroupManager_test)
 
-BOOST_FIXTURE_TEST_CASE(checkGetGroupRep, GroupManagerTestFixture)
+BOOST_FIXTURE_TEST_CASE(getGroupRep, GroupManagerTestFixture)
 {
     BOOST_TEST_MESSAGE("check empty group index");
-    checkGroupManager(false);
+    checkGetGroupRep();
 
     BOOST_TEST_MESSAGE("create group index 1st time");
     createDocument(1, 100);
-    checkGroupManager(true);
+    checkGetGroupRep();
 
     BOOST_TEST_MESSAGE("load group index");
     resetGroupManager();
-    checkGroupManager(false);
+    checkGetGroupRep();
 
     BOOST_TEST_MESSAGE("create group index 2nd time");
     createDocument(101, 200);
-    checkGroupManager(true);
+    checkGetGroupRep();
 }
 
 BOOST_AUTO_TEST_SUITE_END() 
