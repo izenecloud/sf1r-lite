@@ -40,8 +40,7 @@ RankingManager::createPropertyRanker(TextRankingType textRankingType) const
 
     if (!propertyRanker)
     {
-        sflog->error(SFL_INIT, 120101);
-        //std::cout << "Ranker has not be initialized" << std::endl;
+        DLOG(ERROR)<<"Ranker has not be initialized"<<endl;
         propertyRanker =
             rankerFactory_.createNullRanker();
     }

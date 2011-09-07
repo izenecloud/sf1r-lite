@@ -9,17 +9,17 @@
 
 #include <common/type_defs.h>
 
-using namespace std;
+#include <string>
 
 namespace sf1r{
 
 class NumericPropertyTable
 {
 public:
-    NumericPropertyTable(const string &name, PropertyDataType type, void *data): name_(name), type_(type), data_(data)
+    NumericPropertyTable(const std::string &name, PropertyDataType type, void *data): name_(name), type_(type), data_(data)
     {}
 
-    const string &getPropertyName() const
+    const std::string &getPropertyName() const
     {
         return name_;
     }
