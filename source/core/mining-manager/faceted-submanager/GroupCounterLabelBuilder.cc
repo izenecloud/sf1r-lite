@@ -146,8 +146,6 @@ GroupLabel* GroupCounterLabelBuilder::createStringLabel(const GroupParam::GroupL
 template<typename T>
 GroupLabel* GroupCounterLabelBuilder::createNumericLabel(const GroupParam::GroupLabel& labelParam) const
 {
-    GroupLabel* label = NULL;
-
     const std::string& propName = labelParam.first;
     T value = 0;
     try
