@@ -170,6 +170,7 @@ public:
     {
         delete documentManager_;
         delete groupManager_;
+        delete numericTableBuilder_;
     }
 
     void resetGroupManager()
