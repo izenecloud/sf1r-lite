@@ -120,6 +120,7 @@ private:
 
     DocumentManager* documentManager_;
     vector<DocInput> docInputVec_;
+    vector<unsigned int> docIdList_;
 
     string attrPath_;
     faceted::AttrManager* attrManager_;
@@ -186,6 +187,7 @@ public:
             }
 
             docInputVec_.push_back(docInput);
+            docIdList_.push_back(i);
 
             Document document;
             prepareDocument(document, docInput);
@@ -202,18 +204,12 @@ public:
             BOOST_CHECK(attrManager_->processCollection());
         }
 
-        vector<unsigned int> docIdList;
-        for (vector<DocInput>::const_iterator it = docInputVec_.begin();
-            it != docInputVec_.end(); ++it)
-        {
-            docIdList.push_back(it->docId_);
-        }
-
         faceted::OntologyRep groupRep;
-        createGroupRep_(docIdList, groupRep);
+        createGroupRep_(groupRep);
 
         AttrMap attrMap;
         createAttrMap_(attrMap);
+
         checkGroupRep_(groupRep, attrMap);
     }
 
@@ -250,10 +246,7 @@ private:
         }
     }
 
-    void createGroupRep_(
-        const vector<unsigned int>& docIdList,
-        faceted::OntologyRep& attrRep
-    )
+    void createGroupRep_(faceted::OntologyRep& attrRep)
     {
         const vector<GroupConfig> emptyGroupConfigs;
         faceted::GroupFilterBuilder filterBuilder(emptyGroupConfigs, NULL, attrManager_, NULL);
@@ -261,8 +254,8 @@ private:
         groupParam.isAttrGroup_ = true;
 
         faceted::GroupFilter* filter = filterBuilder.createFilter(groupParam);
-        for (vector<unsigned int>::const_iterator it = docIdList.begin();
-            it != docIdList.end(); ++it)
+        for (vector<unsigned int>::const_iterator it = docIdList_.begin();
+            it != docIdList_.end(); ++it)
         {
             BOOST_CHECK(filter->test(*it));
         }

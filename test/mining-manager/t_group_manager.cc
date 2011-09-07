@@ -122,6 +122,7 @@ private:
 
     DocumentManager* documentManager_;
     vector<DocInput> docInputVec_;
+    vector<unsigned int> docIdList_;
 
     string groupPath_;
     faceted::GroupManager* groupManager_;
@@ -190,6 +191,7 @@ public:
             }
 
             docInputVec_.push_back(docInput);
+            docIdList_.push_back(i);
 
             Document document;
             prepareDocument(document, docInput);
@@ -206,24 +208,9 @@ public:
             BOOST_CHECK(groupManager_->processCollection());
         }
 
-        vector<unsigned int> docIdList;
-        for (vector<DocInput>::const_iterator it = docInputVec_.begin();
-            it != docInputVec_.end(); ++it)
-        {
-            docIdList.push_back(it->docId_);
-        }
-
         faceted::GroupParam::GroupLabelVec labelList;
-        faceted::OntologyRep groupRep;
-        PropertyMap propMap;
 
-        {
-            BOOST_TEST_MESSAGE("check label size: " << labelList.size());
-            createGroupRep_(docIdList, labelList, groupRep);
-            createPropertyMap_(labelList, propMap);
-            checkGroupRep_(groupRep, propMap);
-        }
-
+        createAndCheckGroupRep_(labelList);
 
         {
             faceted::GroupParam::GroupLabel label1;
@@ -237,13 +224,7 @@ public:
             labelList.push_back(label1);
             labelList.push_back(label2);
 
-            BOOST_TEST_MESSAGE("check label size: " << labelList.size());
-            groupRep.item_list.clear();
-            createGroupRep_(docIdList, labelList, groupRep);
-
-            propMap.clear();
-            createPropertyMap_(labelList, propMap);
-            checkGroupRep_(groupRep, propMap);
+            createAndCheckGroupRep_(labelList);
         }
     }
 
@@ -298,8 +279,18 @@ private:
         }
     }
 
+    void createAndCheckGroupRep_(const faceted::GroupParam::GroupLabelVec& labelList)
+    {
+        faceted::OntologyRep groupRep;
+        PropertyMap propMap;
+
+        BOOST_TEST_MESSAGE("check label size: " << labelList.size());
+        createGroupRep_(labelList, groupRep);
+        createPropertyMap_(labelList, propMap);
+        checkGroupRep_(groupRep, propMap);
+    }
+
     void createGroupRep_(
-        const vector<unsigned int>& docIdList,
         const faceted::GroupParam::GroupLabelVec& labelVec,
         faceted::OntologyRep& groupRep
     )
@@ -310,8 +301,8 @@ private:
         groupParam.groupLabels_ = labelVec;
 
         faceted::GroupFilter* filter = filterBuilder.createFilter(groupParam);
-        for (vector<unsigned int>::const_iterator it = docIdList.begin();
-            it != docIdList.end(); ++it)
+        for (vector<unsigned int>::const_iterator it = docIdList_.begin();
+            it != docIdList_.end(); ++it)
         {
             bool pass = filter->test(*it);
             if (labelVec.empty())
