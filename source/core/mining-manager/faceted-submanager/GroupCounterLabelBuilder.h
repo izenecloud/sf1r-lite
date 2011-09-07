@@ -44,7 +44,7 @@ private:
     GroupCounter* createStringCounter(const std::string& prop);
     GroupLabel* createStringLabel(const GroupParam::GroupLabel& labelParam);
 
-    template<typename T>    
+    template <typename T>
     GroupLabel* createNumericLabel(const GroupParam::GroupLabel& labelParam) const;
 
 private:

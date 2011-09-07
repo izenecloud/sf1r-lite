@@ -13,7 +13,7 @@
 
 NS_FACETED_BEGIN
 
-template<typename T>
+template <typename T>
 class NumericGroupLabel : public GroupLabel
 {
 public:

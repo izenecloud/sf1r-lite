@@ -14,7 +14,7 @@
 
 NS_FACETED_BEGIN
 
-template<typename T>
+template <typename T>
 class NumericGroupCounter : public GroupCounter
 {
 public:
@@ -65,4 +65,4 @@ private:
 
 NS_FACETED_END
 
-#endif 
+#endif
