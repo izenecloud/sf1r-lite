@@ -11,9 +11,6 @@
 #include <search-manager/NumericPropertyTable.h>
 #include "GroupLabel.h"
 
-#include <vector>
-#include <string>
-
 NS_FACETED_BEGIN
 
 template<typename T>
