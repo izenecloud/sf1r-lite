@@ -101,19 +101,19 @@ GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLa
         break;
 
     case INT_PROPERTY_TYPE:
-        label = new NumericGroupLabel<int64_t>(numericTableBuilder_->createPropertyTable(propName), boost::lexical_cast<int64_t>(labelParam.second[0]));
+        label = createNumericLabel<int64_t>(labelParam);
         break;
 
     case UNSIGNED_INT_PROPERTY_TYPE:
-        label = new NumericGroupLabel<uint64_t>(numericTableBuilder_->createPropertyTable(propName), boost::lexical_cast<uint64_t>(labelParam.second[0]));
+        label = createNumericLabel<uint64_t>(labelParam);
         break;
 
     case FLOAT_PROPERTY_TYPE:
-        label = new NumericGroupLabel<float>(numericTableBuilder_->createPropertyTable(propName), boost::lexical_cast<float>(labelParam.second[0]));
+        label = createNumericLabel<float>(labelParam);
         break;
 
     case DOUBLE_PROPERTY_TYPE:
-        label = new NumericGroupLabel<double>(numericTableBuilder_->createPropertyTable(propName), boost::lexical_cast<double>(labelParam.second[0]));
+        label = createNumericLabel<double>(labelParam);
         break;
 
     default:
@@ -141,6 +141,26 @@ GroupLabel* GroupCounterLabelBuilder::createStringLabel(const GroupParam::GroupL
     }
 
     return label;
+}
+
+template<typename T>
+GroupLabel* GroupCounterLabelBuilder::createNumericLabel(const GroupParam::GroupLabel& labelParam) const
+{
+    GroupLabel* label = NULL;
+
+    const std::string& propName = labelParam.first;
+    T value = 0;
+    try
+    {
+        if (!labelParam.second.empty())
+            value = boost::lexical_cast<T>(labelParam.second[0]);
+    }
+    catch( const boost::bad_lexical_cast & )
+    {
+        LOG(WARNING) << "Numeric value casting error : "<<labelParam.second[0];
+    }
+
+    return new NumericGroupLabel<T>(numericTableBuilder_->createPropertyTable(propName), value);
 }
 
 NS_FACETED_END

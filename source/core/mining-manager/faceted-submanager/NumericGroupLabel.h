@@ -22,6 +22,11 @@ public:
         , targetValue_(targetValue)
     {}
 
+    ~NumericGroupLabel()
+    {
+        delete propertyTable_;
+    }
+
     bool test(docid_t doc) const
     {
         T value;
