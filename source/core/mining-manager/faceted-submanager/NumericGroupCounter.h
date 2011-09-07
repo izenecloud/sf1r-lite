@@ -20,6 +20,7 @@ class NumericGroupCounter : public GroupCounter
 public:
     NumericGroupCounter(const NumericPropertyTable *propertyTable)
         : propertyTable_(propertyTable)
+        , count_(0)
     {}
 
     ~NumericGroupCounter()
