@@ -495,20 +495,14 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
     {
         totalCount = 0;
         const std::string& rangePropertyName = actionOperation.actionItem_.rangePropertyName_;
-        PropertyDataType rangePropertyType = UNKNOWN_DATA_PROPERTY_TYPE;
-        void* rangePropertyData = NULL;
+        NumericPropertyTable* rangePropertyTable = NULL;
         float lowValue = (std::numeric_limits<float>::max) ();
         float highValue = - lowValue;
 
         if(!rangePropertyName.empty())
         {
             typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
-            iterator found = schemaMap_.find(rangePropertyName);
-            if (found != schemaMap_.end())
-            {
-                rangePropertyType = found->second.getType();
-                pSorterCache_->getSortPropertyData(rangePropertyName, rangePropertyType, rangePropertyData);
-            }
+            rangePropertyTable = createPropertyTable(rangePropertyName);
         }
 
         while (pDocIterator->next())
@@ -525,27 +519,19 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                 }
             }
 
-            if(rangePropertyData)
+            if(rangePropertyTable)
             {
                 float docPropertyValue = 0.0F;
-                switch(rangePropertyType)
+                switch(rangePropertyTable->getPropertyType())
                 {
                 case INT_PROPERTY_TYPE:
-                    {
-                        int64_t value = 0;
-                        int64_t* data;
-                        data = (int64_t*)rangePropertyData;
-                        value = data[pDocIterator->doc()];
-                        docPropertyValue = (float)value;
-                    }
+                    docPropertyValue = rangePropertyTable->getIntPropertyValue(pDocIterator->doc());
                     break;
+
                 case FLOAT_PROPERTY_TYPE:
-                    {
-                        float* data;
-                        data = (float*)rangePropertyData;
-                        docPropertyValue = data[pDocIterator->doc()];
-                    }
+                    docPropertyValue = rangePropertyTable->getFloatPropertyValue(pDocIterator->doc());
                     break;
+
                 default:
                       break;
                 }
@@ -587,7 +573,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             groupFilter->getGroupRep(groupRep, attrRep);
         }
 
-        if (rangePropertyData && totalCount)
+        if (rangePropertyTable && totalCount)
         {
             propertyRange.highValue_ = highValue;
             propertyRange.lowValue_ = lowValue;

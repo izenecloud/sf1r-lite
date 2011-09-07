@@ -38,6 +38,11 @@ public:
         return true;
     }
 
+    inline int64_t getIntPropertyValue(const docid_t did) const
+    {
+        return ((int64_t *)data_)[did];
+    }
+
     inline bool getUnsignedPropertyValue(const docid_t did, uint64_t &value) const
     {
         if (type_ != UNSIGNED_INT_PROPERTY_TYPE)
@@ -45,6 +50,11 @@ public:
 
         value = ((uint64_t *)data_)[did];
         return true;
+    }
+
+    inline uint64_t getUnsignedPropertyValue(const docid_t did) const
+    {
+        return ((uint64_t *)data_)[did];
     }
 
     inline bool getFloatPropertyValue(const docid_t did, float &value) const
@@ -56,6 +66,11 @@ public:
         return true;
     }
 
+    inline float getFloatPropertyValue(const docid_t did) const
+    {
+        return ((float *)data_)[did];
+    }
+
     inline bool getDoublePropertyValue(const docid_t did, double &value) const
     {
         if (type_ != DOUBLE_PROPERTY_TYPE)
@@ -63,6 +78,11 @@ public:
 
         value = ((double *)data_)[did];
         return true;
+    }
+
+    inline double getDoublePropertyValue(const docid_t did) const
+    {
+        return ((double *)data_)[did];
     }
 
     template<typename T>
