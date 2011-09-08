@@ -42,7 +42,11 @@ private:
     PropertyDataType getPropertyType_(const std::string& prop) const;
 
     GroupCounter* createStringCounter(const std::string& prop);
+
     GroupLabel* createStringLabel(const GroupParam::GroupLabel& labelParam);
+
+    template <typename T>
+    GroupCounter* createNumericCounter(const std::string& prop) const;
 
     template <typename T>
     GroupLabel* createNumericLabel(const GroupParam::GroupLabel& labelParam) const;
@@ -55,4 +59,4 @@ private:
 
 NS_FACETED_END
 
-#endif 
+#endif
