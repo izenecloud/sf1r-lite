@@ -293,6 +293,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
 //         miningManager_->flush();
         return false;
     }
+    indexManager_->getIndexReader();
 
     bfs::path bkDir = bfs::path(scdPath) / SCD_BACKUP_DIR;
     bfs::create_directory(bkDir);
@@ -341,6 +342,7 @@ bool IndexTaskService::optimizeIndex()
         return false;
     }
     indexManager_->optimizeIndex();
+    indexManager_->getIndexReader();
     return true;
 }
 
