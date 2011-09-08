@@ -47,19 +47,19 @@ GroupCounter* GroupCounterLabelBuilder::createGroupCounter(const std::string& pr
         break;
 
     case INT_PROPERTY_TYPE:
-        counter = new NumericGroupCounter<int64_t>(numericTableBuilder_->createPropertyTable(prop));
+        counter = createNumericCounter<int64_t>(prop);
         break;
 
     case UNSIGNED_INT_PROPERTY_TYPE:
-        counter = new NumericGroupCounter<uint64_t>(numericTableBuilder_->createPropertyTable(prop));
+        counter = createNumericCounter<uint64_t>(prop);
         break;
 
     case FLOAT_PROPERTY_TYPE:
-        counter = new NumericGroupCounter<float>(numericTableBuilder_->createPropertyTable(prop));
+        counter = createNumericCounter<float>(prop);
         break;
 
     case DOUBLE_PROPERTY_TYPE:
-        counter = new NumericGroupCounter<double>(numericTableBuilder_->createPropertyTable(prop));
+        counter = createNumericCounter<double>(prop);
         break;
 
     default:
@@ -86,6 +86,19 @@ GroupCounter* GroupCounterLabelBuilder::createStringCounter(const std::string& p
     }
 
     return counter;
+}
+
+template <typename T>
+GroupCounter* GroupCounterLabelBuilder::createNumericCounter(const std::string& prop) const
+{
+    NumericPropertyTable *propertyTable = numericTableBuilder_->createPropertyTable(prop);
+
+    if (propertyTable)
+    {
+        return new NumericGroupCounter<T>(propertyTable);
+    }
+
+    return NULL;
 }
 
 GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLabel& labelParam)
@@ -156,7 +169,10 @@ GroupLabel* GroupCounterLabelBuilder::createNumericLabel(const GroupParam::Group
             T value = boost::lexical_cast<T>(propValue);
             const std::string& propName = labelParam.first;
             NumericPropertyTable *propertyTable = numericTableBuilder_->createPropertyTable(propName);
-            label = new NumericGroupLabel<T>(propertyTable, value);
+            if (propertyTable)
+            {
+                label = new NumericGroupLabel<T>(propertyTable, value);
+            }
         }
         catch(const boost::bad_lexical_cast& e)
         {
