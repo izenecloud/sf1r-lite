@@ -1,5 +1,6 @@
 #include <common/SFLogger.h>
 
+#include <bundles/index/IndexBundleConfiguration.h>
 #include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
 #include <query-manager/QueryIdentity.h>
@@ -152,7 +153,7 @@ STOP_PROFILER ( cacheoverhead )
         if(reranker_ &&
             customRankScoreList.empty() &&
             action_rerankable(actionOperation))
-            reranker_(docIdList,rankScoreList,actionOperation.actionItem_.env_.queryString_);           
+            reranker_(docIdList,rankScoreList,actionOperation.actionItem_.env_.queryString_);
 
         return true;
     }
@@ -425,7 +426,6 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                 {
                     if (!pSorter) pSorter = new Sorter(pSorterCache_);
 
-                    sflog->info(SFL_SRCH, 130103);
                     SortProperty* pSortProperty = new SortProperty(iter->first, INT_PROPERTY_TYPE, iter->second);
                     pSorter->addSortProperty(pSortProperty);
                     continue;
@@ -495,20 +495,14 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
     {
         totalCount = 0;
         const std::string& rangePropertyName = actionOperation.actionItem_.rangePropertyName_;
-        PropertyDataType rangePropertyType = UNKNOWN_DATA_PROPERTY_TYPE;
-        void* rangePropertyData = NULL;
+        NumericPropertyTable* rangePropertyTable = NULL;
         float lowValue = (std::numeric_limits<float>::max) ();
         float highValue = - lowValue;
 
         if(!rangePropertyName.empty())
         {
             typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
-            iterator found = schemaMap_.find(rangePropertyName);
-            if (found != schemaMap_.end())
-            {
-                rangePropertyType = found->second.getType();
-                pSorterCache_->getSortPropertyData(rangePropertyName, rangePropertyType, rangePropertyData);
-            }
+            rangePropertyTable = createPropertyTable(rangePropertyName);
         }
 
         while (pDocIterator->next())
@@ -525,27 +519,19 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                 }
             }
 
-            if(rangePropertyData)
+            if(rangePropertyTable)
             {
                 float docPropertyValue = 0.0F;
-                switch(rangePropertyType)
+                switch(rangePropertyTable->getPropertyType())
                 {
                 case INT_PROPERTY_TYPE:
-                    {
-                        int64_t value = 0;
-                        int64_t* data;
-                        data = (int64_t*)rangePropertyData;
-                        value = data[pDocIterator->doc()];
-                        docPropertyValue = (float)value;
-                    }
+                    docPropertyValue = rangePropertyTable->getIntPropertyValue(pDocIterator->doc());
                     break;
+
                 case FLOAT_PROPERTY_TYPE:
-                    {
-                        float* data;
-                        data = (float*)rangePropertyData;
-                        docPropertyValue = data[pDocIterator->doc()];
-                    }
+                    docPropertyValue = rangePropertyTable->getFloatPropertyValue(pDocIterator->doc());
                     break;
+
                 default:
                       break;
                 }
@@ -587,7 +573,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             groupFilter->getGroupRep(groupRep, attrRep);
         }
 
-        if (rangePropertyData && totalCount)
+        if (rangePropertyTable && totalCount)
         {
             propertyRange.highValue_ = highValue;
             propertyRange.lowValue_ = lowValue;
@@ -657,7 +643,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
 #endif
 
         ///rerank is only used for pure ranking
-        std::vector<std::pair<std::string , bool> >& sortPropertyList = actionOperation.actionItem_.sortPriorityList_;            
+        std::vector<std::pair<std::string , bool> >& sortPropertyList = actionOperation.actionItem_.sortPriorityList_;
         bool rerank = false;
         if(!pSorter) rerank = true;
         else if (sortPropertyList.size() == 1)
@@ -810,7 +796,7 @@ void SearchManager::getSortPropertyData(Sorter* pSorter, std::vector<unsigned in
 
 }
 
-NumericPropertyTable* SearchManager::createPropertyTable(const std::string& propertyName) const
+NumericPropertyTable* SearchManager::createPropertyTable(const std::string& propertyName)
 {
     void *data;
     boost::unordered_map<std::string, PropertyConfig>::const_iterator it = schemaMap_.find(propertyName);

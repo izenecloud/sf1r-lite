@@ -865,6 +865,7 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
     parseIndexBundleSchema(getUniqChildElement( indexBundle, "Schema" ), collectionMeta);
 
     // MiningBundle
+    collectionMeta.miningBundleConfig_->isSupportByAggregator_ = collectionMeta.indexBundleConfig_->isSupportByAggregator_;
     Element* miningBundle = getUniqChildElement( collection, "MiningBundle" , false );
     if(miningBundle) 
     {
@@ -1059,7 +1060,12 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     params.Get<std::size_t>("Sia/doccachenum", indexBundleConfig.documentCacheNum_);
     params.Get<std::size_t>("Sia/searchcachenum", indexBundleConfig.searchCacheNum_);	
     params.Get<std::size_t>("Sia/filtercachenum", indexBundleConfig.filterCacheNum_);
+    params.Get<std::size_t>("Sia/mastersearchcachenum", indexBundleConfig.masterSearchCacheNum_);
+    params.Get<std::size_t>("Sia/topknum", indexBundleConfig.topKNum_);
     params.GetString("LanguageIdentifier/dbpath", indexBundleConfig.languageIdentifierDbPath_, "");
+
+    indexBundleConfig.isSupportByAggregator_ = SF1Config::get()->checkAggregatorSupport(collectionMeta.getName());
+    indexBundleConfig.setAggregatorConfig(SF1Config::get()->getAggregatorConfig());
 }
 
 void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema, CollectionMeta & collectionMeta)

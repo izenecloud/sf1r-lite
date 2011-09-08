@@ -63,7 +63,6 @@ private:
 } // namespace detail
 
 const int DocumentsSearchHandler::kRefinedQueryThreshold = 0;
-extern int TOP_K_NUM;
 
 DocumentsSearchHandler::DocumentsSearchHandler(
     ::izenelib::driver::Request& request,
@@ -76,11 +75,14 @@ DocumentsSearchHandler::DocumentsSearchHandler(
         miningSearchService_(collectionHandler.miningSearchService_),
         indexSchema_(collectionHandler.indexSchema_),
         miningSchema_(collectionHandler.miningSchema_),
-        actionItem_()
+        actionItem_(),
+        returnAnalyzerResult_(false),
+        TOP_K_NUM(collectionHandler.indexSearchService_->getBundleConfig()->topKNum_)
 {
     actionItem_.env_.encodingType_ = "UTF-8";
     actionItem_.env_.ipAddress_ = request.header()[Keys::remote_ip].getString();
     actionItem_.collectionName_ = asString(request[Keys::collection]);
+    renderer_.TOP_K_NUM = TOP_K_NUM;
 }
 
 void DocumentsSearchHandler::search()

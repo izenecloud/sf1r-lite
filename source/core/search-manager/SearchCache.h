@@ -70,9 +70,9 @@ public:
             if (pageCount)
                 *pageCount = value.totalCount;
             if (propertyQueryTermList)
-                *propertyQueryTermList = value.propertyQueryTermList;
+                (*propertyQueryTermList).swap(value.propertyQueryTermList);
             if (workerIdList)
-                *workerIdList = value.workerIdList;
+                (*workerIdList).swap(value.workerIdList);
             return true;
         }
 

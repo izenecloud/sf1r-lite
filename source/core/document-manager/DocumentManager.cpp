@@ -375,7 +375,7 @@ bool DocumentManager::savePropertyLengthDb_() const
     }
     catch (boost::archive::archive_exception& e)
     {
-        sflog->error(SFL_IDX, 50102, e.what());
+        DLOG(ERROR)<<"Serialization Error while saving property length."<<e.what()<<endl;
         return false;
     }
 }
@@ -397,7 +397,7 @@ bool DocumentManager::restorePropertyLengthDb_()
     }
     catch (boost::archive::archive_exception& e)
     {
-        sflog->error(SFL_IDX, 50103, e.what());
+        DLOG(ERROR)<<"Serialization Error while restoring property length."<<e.what()<<endl;
         propertyLengthDb_.clear();
         return false;
     }
@@ -540,7 +540,7 @@ bool DocumentManager::getRawTextOfOneDocument_(
     }
     if (rawText.empty())
     {
-        sflog->error(SFL_SRCH, 50105, propertyName.c_str());
+        DLOG(ERROR)<<"No RawText For This Property. Property Name "<<propertyName<<endl;
         return true;
     }
 

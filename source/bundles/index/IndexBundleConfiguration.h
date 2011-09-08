@@ -7,6 +7,8 @@
 
 #include <ir/index_manager/utility/IndexManagerConfig.h>
 
+#include <net/aggregator/AggregatorConfig.h>
+
 #include <util/osgi/BundleConfiguration.h>
 #include <util/ustring/UString.h>
 
@@ -23,6 +25,11 @@ public:
 
     void setSchema(const std::set<PropertyConfigBase, PropertyBaseComp>& schema);
 
+    void setAggregatorConfig(const net::aggregator::AggregatorConfig& aggConfig)
+    {
+        aggregatorConfig_ = aggConfig;
+    }
+
     void numberProperty();
 
     const bool isUnigramWildcard() { return wildcardType_ == "unigram"; }
@@ -32,6 +39,8 @@ public:
     const bool hasUnigramProperty() { return bIndexUnigramProperty_; }
 
     const bool isUnigramSearchMode() { return bUnigramSearchMode_; }
+
+    bool isSupportByAggregator() { return isSupportByAggregator_; }
 
     void setIndexMultiLangGranularity(const std::string& granularity);
 
@@ -89,6 +98,18 @@ public:
 
     /// @brief filter cache number
     size_t filterCacheNum_;
+
+    /// @brief master search cache number
+    size_t masterSearchCacheNum_;
+
+    /// @brief top results number
+    size_t topKNum_;
+
+    /// @brief whether supported for distributed search
+    bool isSupportByAggregator_;
+
+    /// @brief aggregator config
+    net::aggregator::AggregatorConfig aggregatorConfig_;
 
     /// @brief The encoding type of the Collection
     izenelib::util::UString::EncodingType encoding_;

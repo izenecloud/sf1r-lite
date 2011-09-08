@@ -11,12 +11,9 @@
 #include <search-manager/NumericPropertyTable.h>
 #include "GroupLabel.h"
 
-#include <vector>
-#include <string>
-
 NS_FACETED_BEGIN
 
-template<typename T>
+template <typename T>
 class NumericGroupLabel : public GroupLabel
 {
 public:
@@ -24,6 +21,11 @@ public:
         : propertyTable_(propertyTable)
         , targetValue_(targetValue)
     {}
+
+    ~NumericGroupLabel()
+    {
+        delete propertyTable_;
+    }
 
     bool test(docid_t doc) const
     {

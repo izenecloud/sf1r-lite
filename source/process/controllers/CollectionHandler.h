@@ -82,12 +82,12 @@ public:
 
     void setBundleSchema(MiningSchema& schema)
     {
-	miningSchema_ = schema;
+	    miningSchema_ = schema;
     }
 
     void setBundleSchema(RecommendSchema& schema)
     {
-	recommendSchema_ = schema;
+	    recommendSchema_ = schema;
     }
 public:
     std::string collection_;

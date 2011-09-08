@@ -35,10 +35,9 @@ public:
 
     ~IndexSearchService();
 
-    boost::shared_ptr<AggregatorManager> getAggregatorManager()
-    {
-        return aggregatorManager_;
-    }
+    boost::shared_ptr<AggregatorManager> getAggregatorManager();
+
+    const IndexBundleConfiguration* getBundleConfig();
 
     void OnUpdateSearchCache();
 
@@ -50,6 +49,7 @@ public:
     bool getInternalDocumentId(const std::string& collectionName, const izenelib::util::UString& scdDocumentId, uint64_t& internalId);
 
 private:
+    IndexBundleConfiguration* bundleConfig_;
     boost::shared_ptr<AggregatorManager> aggregatorManager_;
     boost::shared_ptr<WorkerService> workerService_;
 

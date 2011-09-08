@@ -5,6 +5,7 @@
 #include "NumericGroupCounter.h"
 #include "NumericGroupLabel.h"
 #include <configuration-manager/GroupConfig.h>
+#include <search-manager/NumericPropertyTableBuilder.h>
 
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
@@ -13,10 +14,12 @@ NS_FACETED_BEGIN
 
 GroupCounterLabelBuilder::GroupCounterLabelBuilder(
     const std::vector<GroupConfig>& groupConfigs,
-    const GroupManager* groupManager
+    const GroupManager* groupManager,
+    NumericPropertyTableBuilder* numericTableBuilder
 )
     : groupConfigs_(groupConfigs)
     , groupManager_(groupManager)
+    , numericTableBuilder_(numericTableBuilder)
 {
 }
 
@@ -32,7 +35,7 @@ PropertyDataType GroupCounterLabelBuilder::getPropertyType_(const std::string& p
     return UNKNOWN_DATA_PROPERTY_TYPE;
 }
 
-GroupCounter* GroupCounterLabelBuilder::createGroupCounter(const std::string& prop) const
+GroupCounter* GroupCounterLabelBuilder::createGroupCounter(const std::string& prop)
 {
     GroupCounter* counter = NULL;
 
@@ -44,19 +47,19 @@ GroupCounter* GroupCounterLabelBuilder::createGroupCounter(const std::string& pr
         break;
 
     case INT_PROPERTY_TYPE:
-        counter = new NumericGroupCounter<int64_t>(groupManager_->getPropertyTable(prop));
+        counter = new NumericGroupCounter<int64_t>(numericTableBuilder_->createPropertyTable(prop));
         break;
 
     case UNSIGNED_INT_PROPERTY_TYPE:
-        counter = new NumericGroupCounter<uint64_t>(groupManager_->getPropertyTable(prop));
+        counter = new NumericGroupCounter<uint64_t>(numericTableBuilder_->createPropertyTable(prop));
         break;
 
     case FLOAT_PROPERTY_TYPE:
-        counter = new NumericGroupCounter<float>(groupManager_->getPropertyTable(prop));
+        counter = new NumericGroupCounter<float>(numericTableBuilder_->createPropertyTable(prop));
         break;
 
     case DOUBLE_PROPERTY_TYPE:
-        counter = new NumericGroupCounter<double>(groupManager_->getPropertyTable(prop));
+        counter = new NumericGroupCounter<double>(numericTableBuilder_->createPropertyTable(prop));
         break;
 
     default:
@@ -68,7 +71,7 @@ GroupCounter* GroupCounterLabelBuilder::createGroupCounter(const std::string& pr
     return counter;
 }
 
-GroupCounter* GroupCounterLabelBuilder::createStringCounter(const std::string& prop) const
+GroupCounter* GroupCounterLabelBuilder::createStringCounter(const std::string& prop)
 {
     GroupCounter* counter = NULL;
 
@@ -85,7 +88,7 @@ GroupCounter* GroupCounterLabelBuilder::createStringCounter(const std::string& p
     return counter;
 }
 
-GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLabel& labelParam) const
+GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLabel& labelParam)
 {
     GroupLabel* label = NULL;
 
@@ -98,19 +101,19 @@ GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLa
         break;
 
     case INT_PROPERTY_TYPE:
-        label = new NumericGroupLabel<int64_t>(groupManager_->getPropertyTable(propName), boost::lexical_cast<int64_t>(labelParam.second[0]));
+        label = createNumericLabel<int64_t>(labelParam);
         break;
 
     case UNSIGNED_INT_PROPERTY_TYPE:
-        label = new NumericGroupLabel<uint64_t>(groupManager_->getPropertyTable(propName), boost::lexical_cast<uint64_t>(labelParam.second[0]));
+        label = createNumericLabel<uint64_t>(labelParam);
         break;
 
     case FLOAT_PROPERTY_TYPE:
-        label = new NumericGroupLabel<float>(groupManager_->getPropertyTable(propName), boost::lexical_cast<float>(labelParam.second[0]));
+        label = createNumericLabel<float>(labelParam);
         break;
 
     case DOUBLE_PROPERTY_TYPE:
-        label = new NumericGroupLabel<double>(groupManager_->getPropertyTable(propName), boost::lexical_cast<double>(labelParam.second[0]));
+        label = createNumericLabel<double>(labelParam);
         break;
 
     default:
@@ -122,7 +125,7 @@ GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLa
     return label;
 }
 
-GroupLabel* GroupCounterLabelBuilder::createStringLabel(const GroupParam::GroupLabel& labelParam) const
+GroupLabel* GroupCounterLabelBuilder::createStringLabel(const GroupParam::GroupLabel& labelParam)
 {
     GroupLabel* label = NULL;
 
@@ -135,6 +138,31 @@ GroupLabel* GroupCounterLabelBuilder::createStringLabel(const GroupParam::GroupL
     else
     {
         LOG(ERROR) << "group index file is not loaded for group property " << propName;
+    }
+
+    return label;
+}
+
+template <typename T>
+GroupLabel* GroupCounterLabelBuilder::createNumericLabel(const GroupParam::GroupLabel& labelParam) const
+{
+    GroupLabel* label = NULL;
+
+    if (!labelParam.second.empty())
+    {
+        const std::string& propValue = labelParam.second[0];
+        try
+        {
+            T value = boost::lexical_cast<T>(propValue);
+            const std::string& propName = labelParam.first;
+            NumericPropertyTable *propertyTable = numericTableBuilder_->createPropertyTable(propName);
+            label = new NumericGroupLabel<T>(propertyTable, value);
+        }
+        catch(const boost::bad_lexical_cast& e)
+        {
+            LOG(ERROR) << "failed in casting label from " << propValue
+                       << " to numeric value, exception: " << e.what();
+        }
     }
 
     return label;

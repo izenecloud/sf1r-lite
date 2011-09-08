@@ -32,7 +32,7 @@ public:
     /**
      * @return true for success, false for failure
      */
-    bool initGroup(const GroupCounterLabelBuilder& builder);
+    bool initGroup(GroupCounterLabelBuilder& builder);
 
     /**
      * @return true for success, false for failure

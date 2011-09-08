@@ -83,6 +83,7 @@ bool MiningBundleActivator::addingService( const ServiceReference& ref )
                 return false;
             }
             searchService_ = new MiningSearchService;
+            searchService_->bundleConfig_ = config_;
             searchService_->miningManager_ = miningManager_;
             searchService_->aggregatorManager_ = service->aggregatorManager_;
             searchService_->workerService_ = service->workerService_;

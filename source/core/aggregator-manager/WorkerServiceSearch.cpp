@@ -16,8 +16,6 @@
 namespace sf1r
 {
 
-extern int TOP_K_NUM;
-
 WorkerService::WorkerService()
 {
     recommendSearchService_ = NULL;
@@ -228,6 +226,7 @@ bool WorkerService::getSearchResult_(
 
     START_PROFILER ( searchIndex );
     int startOffset;
+    int TOP_K_NUM = bundleConfig_->topKNum_;
     if (isDistributedSearch)
     {
         // XXX, For distributed search, the page start(offset) should be measured in results over all nodes,
@@ -331,7 +330,7 @@ bool WorkerService::getSummaryMiningResult_(
     {
         // id of documents in current page
         std::vector<sf1r::docid_t> docsInPage;
-        std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin() + resultItem.start_%TOP_K_NUM;
+        std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin() + resultItem.start_%bundleConfig_->topKNum_;
         for(size_t i=0 ; it != resultItem.topKDocs_.end() && i<resultItem.count_; i++, it++)
         {
           docsInPage.push_back(*it);
@@ -342,7 +341,6 @@ bool WorkerService::getSummaryMiningResult_(
     }
 
     STOP_PROFILER ( getSummary );
-
 
     cout << "[IndexSearchService] keywordSearch process Done" << endl; // XXX
 

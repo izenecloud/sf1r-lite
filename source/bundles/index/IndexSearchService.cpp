@@ -15,7 +15,6 @@
 #include <aggregator-manager/AggregatorManager.h>
 
 #include <common/SFLogger.h>
-#include <process/common/XmlConfigParser.h>
 
 #include <query-manager/QMCommonFunc.h>
 #include <recommend-manager/User.h>
@@ -32,15 +31,25 @@ using namespace izenelib::util;
 
 namespace sf1r
 {
-int TOP_K_NUM = 4000;
 
 IndexSearchService::IndexSearchService(IndexBundleConfiguration* config)
 {
-    cache_.reset(new SearchCache(config->searchCacheNum_));
+    bundleConfig_ = config;
+    cache_.reset(new SearchCache(bundleConfig_->masterSearchCacheNum_));
 }
 
 IndexSearchService::~IndexSearchService()
 {
+}
+
+boost::shared_ptr<AggregatorManager> IndexSearchService::getAggregatorManager()
+{
+    return aggregatorManager_;
+}
+
+const IndexBundleConfiguration* IndexSearchService::getBundleConfig()
+{
+    return bundleConfig_;
 }
 
 void IndexSearchService::OnUpdateSearchCache()
@@ -56,7 +65,7 @@ bool IndexSearchService::getSearchResult(
     CREATE_PROFILER (query, "IndexSearchService", "processGetSearchResults all: total query time");
     START_PROFILER ( query );
 
-    if (!SF1Config::get()->checkAggregatorSupport(actionItem.collectionName_))
+    if (!bundleConfig_->isSupportByAggregator())
     {
         bool ret = workerService_->doLocalSearch(actionItem, resultItem);
         std::vector<std::pair<workerid_t, KeywordSearchResult> > resultList;
@@ -66,18 +75,7 @@ bool IndexSearchService::getSearchResult(
     }
 
     /// Perform distributed search by aggregator
-    // set basic info for result
-    resultItem.collectionName_ = actionItem.collectionName_;
-    resultItem.encodingType_ = izenelib::util::UString::convertEncodingTypeFromStringToEnum(
-            actionItem.env_.encodingType_.c_str() );
-    resultItem.rawQueryString_ = actionItem.env_.queryString_;
-    resultItem.start_ = actionItem.pageInfo_.start_;
-    resultItem.count_ = actionItem.pageInfo_.count_;
-
-    // Get and aggregate keyword results from mutliple nodes
     DistKeywordSearchResult distResultItem;
-    distResultItem.start_ = actionItem.pageInfo_.start_;
-    distResultItem.count_ = actionItem.pageInfo_.count_;
 
 #ifdef PREFETCH_INFO
     distResultItem.distSearchInfo_.actionType_ = DistKeywordSearchInfo::ACTION_FETCH;
@@ -104,10 +102,14 @@ bool IndexSearchService::getSearchResult(
             &resultItem.propertyQueryTermList_,
             &resultItem.topKWorkerIds_))
     {
-        aggregatorManager_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchResult>(
+        // Get and aggregate keyword search results from mutliple nodes
+        distResultItem.start_ = actionItem.pageInfo_.start_;
+        distResultItem.count_ = actionItem.pageInfo_.count_;
+
+        aggregatorManager_->distributeRequest(
                 actionItem.collectionName_, "getDistSearchResult", actionItem, distResultItem);
 
-        resultItem.assign(distResultItem);
+        resultItem.swap(distResultItem);
 
         cache_->set(
                 identity,
@@ -128,26 +130,22 @@ bool IndexSearchService::getSearchResult(
     cout << "Top K count: " << resultItem.topKDocs_.size() << endl;
     cout << "Page Count: " << resultItem.count_ << endl;
 
-    //resultItem.print();//:~
-
     // Get and aggregate Summary, Mining results from multiple nodes.
-    std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> > resultMap;
-    aggregatorManager_->splitSearchResultByWorkerid(resultItem, resultMap);
+    typedef std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> > ResultMapT;
+    typedef std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >::iterator ResultMapIterT;
 
+    ResultMapT resultMap;
+    aggregatorManager_->splitSearchResultByWorkerid(resultItem, resultMap);
     RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
-    std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >::iterator it;
-    for (it = resultMap.begin(); it != resultMap.end(); it++)
+    for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
     {
         workerid_t workerid = it->first;
         boost::shared_ptr<KeywordSearchResult>& subResultItem = it->second;
-
         requestGroup.addRequest(workerid, &actionItem, subResultItem.get());
     }
 
-    aggregatorManager_->distributeRequest<KeywordSearchActionItem, KeywordSearchResult>(
+    aggregatorManager_->distributeRequest(
             actionItem.collectionName_, "getSummaryMiningResult", requestGroup, resultItem);
-
-    //resultItem.print();//:~
 
     STOP_PROFILER ( query );
     REPORT_PROFILE_TO_FILE( "PerformanceQueryResult.SIAProcess" );
@@ -160,35 +158,31 @@ bool IndexSearchService::getDocumentsByIds(
     RawTextResultFromSIA& resultItem
 )
 {
-    if (!SF1Config::get()->checkAggregatorSupport(actionItem.collectionName_))
+    if (!bundleConfig_->isSupportByAggregator())
     {
         return workerService_->getDocumentsByIds(actionItem, resultItem);
     }
 
     /// Perform distributed search by aggregator
-    std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> > actionItemMap;
+    typedef std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> > ActionItemMapT;
+    typedef std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >::iterator ActionItemMapIterT;
+
+    ActionItemMapT actionItemMap;
     if (!aggregatorManager_->splitGetDocsActionItemByWorkerid(actionItem, actionItemMap))
     {
-        aggregatorManager_->distributeRequest<GetDocumentsByIdsActionItem, RawTextResultFromSIA>(
-                actionItem.collectionName_, "getDocumentsByIds", actionItem, resultItem);
+        aggregatorManager_->distributeRequest(actionItem.collectionName_, "getDocumentsByIds", actionItem, resultItem);
     }
     else
     {
         RequestGroup<GetDocumentsByIdsActionItem, RawTextResultFromSIA> requestGroup;
-
-        std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >::iterator it;
-        for (it = actionItemMap.begin(); it != actionItemMap.end(); it++)
+        for (ActionItemMapIterT it = actionItemMap.begin(); it != actionItemMap.end(); it++)
         {
             workerid_t workerid = it->first;
             boost::shared_ptr<GetDocumentsByIdsActionItem>& subActionItem = it->second;
-
             requestGroup.addRequest(workerid, subActionItem.get());
         }
 
-        //requestGroup.setResultItemForMerging(&resultItem);
-
-        aggregatorManager_->distributeRequest<GetDocumentsByIdsActionItem, RawTextResultFromSIA>(
-                actionItem.collectionName_, "getDocumentsByIds", requestGroup, resultItem);
+        aggregatorManager_->distributeRequest(actionItem.collectionName_, "getDocumentsByIds", requestGroup, resultItem);
     }
 
 	return true;
@@ -200,7 +194,7 @@ bool IndexSearchService::getInternalDocumentId(
     uint64_t& internalId
 )
 {
-    if (!SF1Config::get()->checkAggregatorSupport(collectionName))
+    if (!bundleConfig_->isSupportByAggregator())
     {
         return workerService_->getInternalDocumentId(scdDocumentId, internalId);
     }

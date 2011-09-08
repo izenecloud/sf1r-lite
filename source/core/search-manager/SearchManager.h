@@ -1,13 +1,13 @@
 #ifndef _SEARCH_MANAGER_
 #define _SEARCH_MANAGER_
 
-#include <../bundles/index/IndexBundleConfiguration.h>
 
 #include <configuration-manager/PropertyConfig.h>
 #include <query-manager/SearchKeywordOperation.h>
 #include <query-manager/ActionItem.h>
 #include <common/ResultType.h>
 #include "NumericPropertyTable.h"
+#include "NumericPropertyTableBuilder.h"
 
 #include <ir/id_manager/IDManager.h>
 #include <util/ustring/UString.h>
@@ -29,6 +29,7 @@ class DocumentManager;
 class RankingManager;
 class IndexManager;
 class Sorter;
+class IndexBundleConfiguration;
 
 namespace faceted
 {
@@ -36,7 +37,7 @@ class GroupFilterBuilder;
 class OntologyRep;
 }
 
-class SearchManager
+class SearchManager : public NumericPropertyTableBuilder
 {
     typedef izenelib::ir::idmanager::IDManager IDManager;
 
@@ -81,7 +82,7 @@ public:
 
     void setGroupFilterBuilder(faceted::GroupFilterBuilder* builder);
 
-    NumericPropertyTable* createPropertyTable(const std::string& propertyName) const;
+    NumericPropertyTable* createPropertyTable(const std::string& propertyName);
 
 private:
     bool doSearch_(SearchKeywordOperation& actionOperation,

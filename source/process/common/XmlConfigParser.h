@@ -453,11 +453,6 @@ public:
         if (!masterAgentConfig_.enabled_)
             return false;
 
-        std::string nameLower = collectionOrBundleName;
-        downCase(nameLower);
-        if (nameLower == "querylog")
-            return true;
-
         return masterAgentConfig_.checkAggregatorByName(collectionOrBundleName);
     }
 

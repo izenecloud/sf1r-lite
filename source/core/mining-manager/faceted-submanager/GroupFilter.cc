@@ -43,7 +43,7 @@ GroupFilter::~GroupFilter()
     delete attrCounter_;
 }
 
-bool GroupFilter::initGroup(const GroupCounterLabelBuilder& builder)
+bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
 {
     // map from prop name to GroupCounter instance
     typedef std::map<std::string, GroupCounter*> GroupCounterMap;

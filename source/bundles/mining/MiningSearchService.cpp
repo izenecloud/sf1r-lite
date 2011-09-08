@@ -1,7 +1,6 @@
 #include "MiningSearchService.h"
 #include <mining-manager/faceted-submanager/ontology_manager.h>
 
-#include <process/common/XmlConfigParser.h>
 #include <aggregator-manager/WorkerService.h>
 #include <aggregator-manager/AggregatorManager.h>
 
@@ -40,7 +39,7 @@ bool MiningSearchService::getSimilarDocIdList(
         uint32_t maxNum,
         std::vector<std::pair<uint64_t, float> >& result)
 {
-    if (!SF1Config::get()->checkAggregatorSupport(collectionName))
+    if (!bundleConfig_->isSupportByAggregator_)
     {
         return workerService_->getSimilarDocIdList(documentId, maxNum, result);;
     }
@@ -213,7 +212,7 @@ bool MiningSearchService::visitDoc(const std::string& collectionName, uint64_t w
     sf1r::docid_t docId = wd.second;
     bool ret = true;
 
-    if (!SF1Config::get()->checkAggregatorSupport(collectionName))
+    if (!bundleConfig_->isSupportByAggregator_)
     {
         return workerService_->visitDoc(docId, ret);
     }

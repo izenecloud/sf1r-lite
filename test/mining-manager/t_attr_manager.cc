@@ -120,6 +120,7 @@ private:
 
     DocumentManager* documentManager_;
     vector<DocInput> docInputVec_;
+    vector<unsigned int> docIdList_;
 
     string attrPath_;
     faceted::AttrManager* attrManager_;
@@ -186,6 +187,7 @@ public:
             }
 
             docInputVec_.push_back(docInput);
+            docIdList_.push_back(i);
 
             Document document;
             prepareDocument(document, docInput);
@@ -193,27 +195,17 @@ public:
         }
 
         checkCollection_();
+        BOOST_CHECK(attrManager_->processCollection());
     }
 
-    void checkAttrManager(bool isProcessCollection)
+    void checkAttrManager()
     {
-        if (isProcessCollection)
-        {
-            BOOST_CHECK(attrManager_->processCollection());
-        }
-
-        vector<unsigned int> docIdList;
-        for (vector<DocInput>::const_iterator it = docInputVec_.begin();
-            it != docInputVec_.end(); ++it)
-        {
-            docIdList.push_back(it->docId_);
-        }
-
         faceted::OntologyRep groupRep;
-        createGroupRep_(docIdList, groupRep);
+        createGroupRep_(groupRep);
 
         AttrMap attrMap;
         createAttrMap_(attrMap);
+
         checkGroupRep_(groupRep, attrMap);
     }
 
@@ -250,19 +242,16 @@ private:
         }
     }
 
-    void createGroupRep_(
-        const vector<unsigned int>& docIdList,
-        faceted::OntologyRep& attrRep
-    )
+    void createGroupRep_(faceted::OntologyRep& attrRep)
     {
         const vector<GroupConfig> emptyGroupConfigs;
-        faceted::GroupFilterBuilder filterBuilder(emptyGroupConfigs, NULL, attrManager_);
+        faceted::GroupFilterBuilder filterBuilder(emptyGroupConfigs, NULL, attrManager_, NULL);
         faceted::GroupParam groupParam;
         groupParam.isAttrGroup_ = true;
 
         faceted::GroupFilter* filter = filterBuilder.createFilter(groupParam);
-        for (vector<unsigned int>::const_iterator it = docIdList.begin();
-            it != docIdList.end(); ++it)
+        for (vector<unsigned int>::const_iterator it = docIdList_.begin();
+            it != docIdList_.end(); ++it)
         {
             BOOST_CHECK(filter->test(*it));
         }
@@ -371,23 +360,23 @@ BOOST_AUTO_TEST_SUITE(AttrManager_test)
 BOOST_FIXTURE_TEST_CASE(checkGetGroupRep, AttrManagerTestFixture)
 {
     BOOST_TEST_MESSAGE("check empty attr index");
-    checkAttrManager(false);
+    checkAttrManager();
 
     BOOST_TEST_MESSAGE("create attr index 1st time");
     createDocument(1, 100);
-    checkAttrManager(true);
+    checkAttrManager();
 
     BOOST_TEST_MESSAGE("load attr index");
     resetAttrManager();
-    checkAttrManager(false);
+    checkAttrManager();
 
     BOOST_TEST_MESSAGE("create attr index 2nd time");
     createDocument(101, 200);
-    checkAttrManager(true);
+    checkAttrManager();
 
     BOOST_TEST_MESSAGE("load attr index");
     resetAttrManager();
-    checkAttrManager(false);
+    checkAttrManager();
 }
 
 BOOST_AUTO_TEST_SUITE_END() 

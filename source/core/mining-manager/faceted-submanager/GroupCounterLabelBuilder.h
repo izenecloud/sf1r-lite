@@ -14,7 +14,11 @@
 #include <vector>
 #include <string>
 
-namespace sf1r { class GroupConfig; }
+namespace sf1r
+{
+class GroupConfig;
+class NumericPropertyTableBuilder;
+}
 
 NS_FACETED_BEGIN
 
@@ -27,21 +31,26 @@ class GroupCounterLabelBuilder
 public:
     GroupCounterLabelBuilder(
         const std::vector<GroupConfig>& groupConfigs,
-        const GroupManager* groupManager
+        const GroupManager* groupManager,
+        NumericPropertyTableBuilder* numericTableBuilder
     );
 
-    GroupCounter* createGroupCounter(const std::string& prop) const;
-    GroupLabel* createGroupLabel(const GroupParam::GroupLabel& labelParam) const;
+    GroupCounter* createGroupCounter(const std::string& prop);
+    GroupLabel* createGroupLabel(const GroupParam::GroupLabel& labelParam);
 
 private:
     PropertyDataType getPropertyType_(const std::string& prop) const;
 
-    GroupCounter* createStringCounter(const std::string& prop) const;
-    GroupLabel* createStringLabel(const GroupParam::GroupLabel& labelParam) const;
+    GroupCounter* createStringCounter(const std::string& prop);
+    GroupLabel* createStringLabel(const GroupParam::GroupLabel& labelParam);
+
+    template <typename T>
+    GroupLabel* createNumericLabel(const GroupParam::GroupLabel& labelParam) const;
 
 private:
     const std::vector<GroupConfig>& groupConfigs_;
     const GroupManager* groupManager_;
+    NumericPropertyTableBuilder* numericTableBuilder_;
 };
 
 NS_FACETED_END

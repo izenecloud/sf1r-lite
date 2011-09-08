@@ -170,7 +170,7 @@ bool SortPropertyCache::getSortPropertyData(const std::string& propertyName, Pro
     {
         void* data = NULL;
         sortDataCache_[propertyName] = make_pair(propertyType, data);
-        cout<<"first load "<<propertyName<<endl;
+        cout << "first load <" << propertyName << ">" << endl;
         loadSortData(propertyName, propertyType);
     }
 

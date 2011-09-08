@@ -267,7 +267,7 @@ bool MiningManager::open()
         {
             faceted_path_ = prefix_path + "/faceted";
             FSUtil::createDir(faceted_path_);
-/*			
+/*
             std::string reader_dir = tg_label_path_+"/labeldistribute";
             boost::shared_ptr<LabelManager::LabelDistributeSSFType::ReaderType> reader(new LabelManager::LabelDistributeSSFType::ReaderType(reader_dir));
             faceted_.reset(new faceted::OntologyManager(faceted_path_,
@@ -282,7 +282,7 @@ bool MiningManager::open()
                            idManager_,
                            reader,
                            laManager_));
-*/			
+*/
             faceted_.reset(new faceted::OntologyManager(faceted_path_, document_manager_, mining_schema_.faceted_properties, analyzer_));
             faceted_->Open();
 
@@ -313,8 +313,8 @@ bool MiningManager::open()
         {
             if(groupManager_) delete groupManager_;
             std::string groupPath = prefix_path + "/group";
-		
-            groupManager_ = new faceted::GroupManager(document_manager_.get(), searchManager_.get(), groupPath);
+
+            groupManager_ = new faceted::GroupManager(document_manager_.get(), groupPath);
             if (! groupManager_->open(mining_schema_.group_properties))
             {
                 std::cerr << "open GROUP failed" << std::endl;
@@ -327,7 +327,7 @@ bool MiningManager::open()
         {
             if(attrManager_) delete attrManager_;
             std::string attrPath = prefix_path + "/attr";
-		
+
             attrManager_ = new faceted::AttrManager(document_manager_.get(), attrPath);
             if (! attrManager_->open(mining_schema_.attr_property))
             {
@@ -338,7 +338,10 @@ bool MiningManager::open()
 
         if (groupManager_ || attrManager_)
         {
-            faceted::GroupFilterBuilder* filterBuilder = new faceted::GroupFilterBuilder(mining_schema_.group_properties, groupManager_, attrManager_);
+            faceted::GroupFilterBuilder* filterBuilder = new faceted::GroupFilterBuilder(mining_schema_.group_properties,
+                                                                                         groupManager_,
+                                                                                         attrManager_,
+                                                                                         searchManager_.get());
             searchManager_->setGroupFilterBuilder(filterBuilder);
         }
 

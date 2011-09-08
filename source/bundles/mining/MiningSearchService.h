@@ -1,6 +1,8 @@
 #ifndef MINING_BUNDLE_SEARCH_SERVICE_H
 #define MINING_BUNDLE_SEARCH_SERVICE_H
 
+#include "MiningBundleConfiguration.h"
+
 #include <util/osgi/IService.h>
 
 #include <common/sf1_serialization_types.h>
@@ -143,6 +145,7 @@ public:
     
 
 private:
+    MiningBundleConfiguration* bundleConfig_;
     boost::shared_ptr<MiningManager> miningManager_;
 
     boost::shared_ptr<WorkerService> workerService_;

@@ -25,6 +25,8 @@ typedef WorkerCaller<WorkerService> LocalWorkerCaller;
 
 class AggregatorManager : public JobAggregator<AggregatorManager, LocalWorkerCaller>
 {
+public:
+    AggregatorManager() : TOP_K_NUM(4000) {}
 
 public:
     void initLocalWorkerCaller(const boost::shared_ptr<WorkerService> localWorkerService)
@@ -40,6 +42,7 @@ public:
         ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getSimilarDocIdList);
         ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, clickGroupLabel);
         ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, visitDoc);
+        //ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, index);
     }
 
 public:
@@ -156,6 +159,7 @@ public:
 
 private:
     boost::shared_ptr<MiningManager> miningManager_;
+    int TOP_K_NUM;
 
     friend class IndexSearchService;
     friend class IndexBundleActivator;

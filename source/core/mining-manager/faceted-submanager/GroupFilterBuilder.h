@@ -12,7 +12,11 @@
 
 #include <vector>
 
-namespace sf1r { class GroupConfig; }
+namespace sf1r
+{
+class GroupConfig;
+class NumericPropertyTableBuilder;
+}
 
 NS_FACETED_BEGIN
 
@@ -28,7 +32,8 @@ public:
     GroupFilterBuilder(
         const std::vector<GroupConfig>& groupConfigs,
         const GroupManager* groupManager,
-        const AttrManager* attrManager
+        const AttrManager* attrManager,
+        NumericPropertyTableBuilder* numericTableBuilder
     );
 
     /**
@@ -44,6 +49,7 @@ private:
     const std::vector<GroupConfig>& groupConfigs_;
     const GroupManager* groupManager_;
     const AttrTable* attrTable_;
+    NumericPropertyTableBuilder* numericTableBuilder_;
 };
 
 NS_FACETED_END

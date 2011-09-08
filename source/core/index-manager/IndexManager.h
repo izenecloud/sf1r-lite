@@ -39,7 +39,6 @@ struct PropertyValue2IndexPropertyType
     template<typename T>
     void operator()(const T& value)
     {
-        sflog->error(SFL_IDX, 70101);
         throw std::runtime_error("Type not supported in PropertyType");
     }
     void operator()(int64_t value)
@@ -111,7 +110,7 @@ public:
         BTreeIndex<IndexKeyType<T> >* pBTreeIndexer = pBTreeIndexer_->getIndexer<T>();
         T low = NumericUtil<T>::Low();
         T high = NumericUtil<T>::High();
-        data = new T[maxLength];
+        data = new T[maxLength]();
         IndexKeyType<T> lowkey(cid, fid, low);
         IndexKeyType<T> highkey(cid, fid, high);
         pBTreeIndexer->get_between(lowkey,highkey,data,maxLength);
