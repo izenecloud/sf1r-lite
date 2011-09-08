@@ -495,14 +495,14 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
     {
         totalCount = 0;
         const std::string& rangePropertyName = actionOperation.actionItem_.rangePropertyName_;
-        NumericPropertyTable* rangePropertyTable = NULL;
+        boost::shared_ptr<NumericPropertyTable> rangePropertyTable;
         float lowValue = (std::numeric_limits<float>::max) ();
         float highValue = - lowValue;
 
         if(!rangePropertyName.empty())
         {
             typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
-            rangePropertyTable = createPropertyTable(rangePropertyName);
+            rangePropertyTable.reset(createPropertyTable(rangePropertyName));
         }
 
         while (pDocIterator->next())
@@ -519,22 +519,9 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                 }
             }
 
-            if(rangePropertyTable)
+            if(rangePropertyTable.get())
             {
-                float docPropertyValue = 0.0F;
-                switch(rangePropertyTable->getPropertyType())
-                {
-                case INT_PROPERTY_TYPE:
-                    docPropertyValue = rangePropertyTable->getIntPropertyValue(pDocIterator->doc());
-                    break;
-
-                case FLOAT_PROPERTY_TYPE:
-                    docPropertyValue = rangePropertyTable->getFloatPropertyValue(pDocIterator->doc());
-                    break;
-
-                default:
-                      break;
-                }
+                float docPropertyValue = rangePropertyTable->convertPropertyValue(pDocIterator->doc());
                 if ( docPropertyValue < lowValue )
                 {
                     lowValue = docPropertyValue;
@@ -573,7 +560,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             groupFilter->getGroupRep(groupRep, attrRep);
         }
 
-        if (rangePropertyTable && totalCount)
+        if (rangePropertyTable.get() && totalCount)
         {
             propertyRange.highValue_ = highValue;
             propertyRange.lowValue_ = lowValue;
