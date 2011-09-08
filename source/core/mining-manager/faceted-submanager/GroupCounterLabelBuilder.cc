@@ -146,24 +146,26 @@ GroupLabel* GroupCounterLabelBuilder::createStringLabel(const GroupParam::GroupL
 template <typename T>
 GroupLabel* GroupCounterLabelBuilder::createNumericLabel(const GroupParam::GroupLabel& labelParam) const
 {
-    if (labelParam.second.empty())
+    GroupLabel* label = NULL;
+
+    if (!labelParam.second.empty())
     {
-        return NULL;
+        const std::string& propValue = labelParam.second[0];
+        try
+        {
+            T value = boost::lexical_cast<T>(propValue);
+            const std::string& propName = labelParam.first;
+            NumericPropertyTable *propertyTable = numericTableBuilder_->createPropertyTable(propName);
+            label = new NumericGroupLabel<T>(propertyTable, value);
+        }
+        catch(const boost::bad_lexical_cast& e)
+        {
+            LOG(ERROR) << "failed in casting label from " << propValue
+                       << " to numeric value, exception: " << e.what();
+        }
     }
 
-    NumericPropertyTable *propertyTable = numericTableBuilder_->createPropertyTable(labelParam.first);
-    T value;
-    try
-    {
-        value = boost::lexical_cast<T>(labelParam.second[0]);
-    }
-    catch( const boost::bad_lexical_cast & )
-    {
-        LOG(WARNING) << "Numeric value casting error : "<<labelParam.second[0];
-        return NULL;
-    }
-
-    return new NumericGroupLabel<T>(propertyTable, value);
+    return label;
 }
 
 NS_FACETED_END
