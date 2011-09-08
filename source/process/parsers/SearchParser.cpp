@@ -64,8 +64,8 @@ using driver::Keys;
  *   is used (In Collection node attribute).
  * - @b log_keywords (@c Bool = @c true): Whether the keywords should be
  *   logged.
- * - @b log_group_labels (@c Bool = @c true): Whether the @b group_label should be
- *   logged.
+ * - @b log_group_labels (@c Bool = @c true): Whether the @b group_label should be logged.@n
+ *   If @c true, those @b group_label of string property type would be logged.
  * - @b analyzer (@c Object): Keywords analyzer options
  *   - @b apply_la (@c Bool = @c true): TODO
  *   - @b use_synonym_extension (@c Bool = @c false): TODO
