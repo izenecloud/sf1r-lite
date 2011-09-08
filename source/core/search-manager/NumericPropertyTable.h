@@ -45,8 +45,14 @@ public:
         case INT_PROPERTY_TYPE:
             return ((int64_t *)data_)[did];
 
+        case UNSIGNED_INT_PROPERTY_TYPE:
+            return ((uint64_t *)data_)[did];
+
         case FLOAT_PROPERTY_TYPE:
             return ((float *)data_)[did];
+
+        case DOUBLE_PROPERTY_TYPE:
+            return ((double *)data_)[did];
 
         default:
             return 0;
