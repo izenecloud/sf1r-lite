@@ -205,7 +205,7 @@ void KeywordsController::index()
  *
  * - @b resource (@c Array): all inject queries.
  *   - @b query (@c String) : inject query
- *   - @b result (@c String) : inject result to query
+ *   - @b result (@c String) : inject result to query. if equals '__delete__', means delete the injection of this query.
  *
  * @section response
  *

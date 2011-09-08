@@ -393,12 +393,17 @@ void QueryCorrectionSubmanager::Inject(const izenelib::util::UString& query, con
 {
     std::string str_query;
     query.convertString(str_query, izenelib::util::UString::UTF_8);
+    std::string str_result;
+    result.convertString(str_result, izenelib::util::UString::UTF_8);
     boost::algorithm::trim(str_query);
     if(str_query.empty()) return;
     boost::algorithm::to_lower(str_query);
     std::cout<<"Inject query correction : "<<str_query<<std::endl;
     inject_data_.erase( str_query );
-    inject_data_.insert(std::make_pair( str_query, result) );
+    if( str_result != "__delete__" )
+    {
+        inject_data_.insert(std::make_pair( str_query, result) );
+    }
     has_new_inject_ = true;
 }
 
