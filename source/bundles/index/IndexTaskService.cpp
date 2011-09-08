@@ -342,7 +342,6 @@ bool IndexTaskService::optimizeIndex()
         return false;
     }
     indexManager_->optimizeIndex();
-    indexManager_->getIndexReader();
     return true;
 }
 
