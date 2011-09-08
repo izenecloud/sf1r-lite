@@ -521,15 +521,18 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
 
             if(rangePropertyTable)
             {
-                float docPropertyValue = rangePropertyTable->convertPropertyValue(pDocIterator->doc());
-                if ( docPropertyValue < lowValue )
+                float docPropertyValue = 0;
+                if (rangePropertyTable->convertPropertyValue(pDocIterator->doc(), docPropertyValue))
                 {
-                    lowValue = docPropertyValue;
-                }
+                    if ( docPropertyValue < lowValue )
+                    {
+                        lowValue = docPropertyValue;
+                    }
 
-                if (docPropertyValue > highValue)
-                {
-                    highValue = docPropertyValue;
+                    if (docPropertyValue > highValue)
+                    {
+                        highValue = docPropertyValue;
+                    }
                 }
             }
 
@@ -560,7 +563,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             groupFilter->getGroupRep(groupRep, attrRep);
         }
 
-        if (rangePropertyTable && totalCount)
+        if (rangePropertyTable && lowValue <= highValue)
         {
             propertyRange.highValue_ = highValue;
             propertyRange.lowValue_ = lowValue;

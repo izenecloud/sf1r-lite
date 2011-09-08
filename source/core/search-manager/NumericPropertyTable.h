@@ -38,25 +38,32 @@ public:
         value = ((T *)data_)[did];
     }
 
-    inline float convertPropertyValue(const docid_t did) const
+    template <typename T>
+    inline bool convertPropertyValue(const docid_t did, T &value) const
     {
         switch(type_)
         {
         case INT_PROPERTY_TYPE:
-            return ((int64_t *)data_)[did];
+            value = ((int64_t *)data_)[did];
+            break;
 
         case UNSIGNED_INT_PROPERTY_TYPE:
-            return ((uint64_t *)data_)[did];
+            value = ((uint64_t *)data_)[did];
+            break;
 
         case FLOAT_PROPERTY_TYPE:
-            return ((float *)data_)[did];
+            value = ((float *)data_)[did];
+            break;
 
         case DOUBLE_PROPERTY_TYPE:
-            return ((double *)data_)[did];
+            value = ((double *)data_)[did];
+            break;
 
         default:
-            return 0;
+            return false;
         }
+
+        return true;
     }
 
 private:
