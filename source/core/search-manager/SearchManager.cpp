@@ -495,7 +495,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
     {
         totalCount = 0;
         const std::string& rangePropertyName = actionOperation.actionItem_.rangePropertyName_;
-        boost::shared_ptr<NumericPropertyTable> rangePropertyTable;
+        boost::scoped_ptr<NumericPropertyTable> rangePropertyTable;
         float lowValue = (std::numeric_limits<float>::max) ();
         float highValue = - lowValue;
 
@@ -519,7 +519,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                 }
             }
 
-            if(rangePropertyTable.get())
+            if(rangePropertyTable)
             {
                 float docPropertyValue = rangePropertyTable->convertPropertyValue(pDocIterator->doc());
                 if ( docPropertyValue < lowValue )
@@ -560,7 +560,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             groupFilter->getGroupRep(groupRep, attrRep);
         }
 
-        if (rangePropertyTable.get() && totalCount)
+        if (rangePropertyTable && totalCount)
         {
             propertyRange.highValue_ = highValue;
             propertyRange.lowValue_ = lowValue;
