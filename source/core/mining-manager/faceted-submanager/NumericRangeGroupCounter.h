@@ -17,14 +17,31 @@ NS_FACETED_BEGIN
 class DecimalSegmentTreeNode
 {
 public:
-    DecimalSegmentTreeNode(int start, size_t span)
+    DecimalSegmentTreeNode(int start, size_t span, DecimalSegmentTreeNode* parent = NULL)
         : start_(start)
         , span_(span)
         , count_(0)
-        , parent_(NULL)
+        , parent_(parent)
     {
         for (size_t i = 0; i < 10; i++)
             children_[i] = NULL;
+    }
+
+    ~DecimalSegmentTreeNode()
+    {
+        clear();
+    }
+
+    void clear()
+    {
+        for (size_t i = 0; i < 10; i++)
+        {
+            if (children_[i])
+            {
+                children_[i]->clear();
+                delete children_[i];
+            }
+        }
     }
 
     int getStart() const
@@ -49,7 +66,7 @@ public:
         {
             if (!children_[*digits])
             {
-                children_[*digits] = new DecimalSegmentTreeNode(start_ + (*digits) * span_ / 10, span_ /10);
+                children_[*digits] = new DecimalSegmentTreeNode(start_ + (*digits) * span_ / 10, span_ /10, this);
             }
             children_[*digits]->insertPoint(digits + 1, level - 1);
         }
@@ -67,8 +84,9 @@ template <typename T>
 class NumericRangeGroupCounter : public GroupCounter
 {
 public:
-    NumericRangeGroupCounter(const NumericPropertyTable *propertyTable)
+    NumericRangeGroupCounter(const NumericPropertyTable *propertyTable, size_t rangeCount = 5)
         : propertyTable_(propertyTable)
+        , rangeCount_(rangeCount)
         , decimalSegmentTree_(0, 1000000000)
     {}
 
@@ -93,27 +111,30 @@ public:
 
     virtual void getGroupRep(OntologyRep& groupRep) const
     {
-//        std::list<OntologyRepItem>& itemList = groupRep.item_list;
+        std::list<OntologyRepItem>& itemList = groupRep.item_list;
 
-//        izenelib::util::UString propName(propertyTable_->getPropertyName(), UString::UTF_8);
-//        itemList.push_back(faceted::OntologyRepItem(0, propName, 0, count_));
+        izenelib::util::UString propName(propertyTable_->getPropertyName(), UString::UTF_8);
+        size_t count = decimalSegmentTree_.getCount();
+        itemList.push_back(faceted::OntologyRepItem(0, propName, 0, count));
 
-//        for (typename std::map<T, size_t>::const_iterator it = countTable_.begin();
-//            it != countTable_.end(); it++)
-//        {
-//            itemList.push_back(faceted::OntologyRepItem());
-//            faceted::OntologyRepItem& repItem = itemList.back();
-//            repItem.level = 1;
-//            std::stringstream ss;
-//            ss << it->first;
-//            izenelib::util::UString stringValue(ss.str(), UString::UTF_8);
-//            repItem.text = stringValue;
-//            repItem.doc_count = it->second;
-//        }
+//      TODO: design a strategy to split into small ranges
+//      for (typename std::map<T, size_t>::const_iterator it = countTable_.begin();
+//          it != countTable_.end(); it++)
+//      {
+//          itemList.push_back(faceted::OntologyRepItem());
+//          faceted::OntologyRepItem& repItem = itemList.back();
+//          repItem.level = 1;
+//          std::stringstream ss;
+//          ss << it->first;
+//          izenelib::util::UString stringValue(ss.str(), UString::UTF_8);
+//          repItem.text = stringValue;
+//          repItem.doc_count = it->second;
+//      }
     }
 
 private:
     const NumericPropertyTable *propertyTable_;
+    size_t rangeCount_;
     DecimalSegmentTreeNode decimalSegmentTree_;
 };
 
