@@ -8,69 +8,30 @@
 #ifndef SF1R_NUMERIC_RANGE_GROUP_COUNTER_H
 #define SF1R_NUMERIC_RANGE_GROUP_COUNTER_H
 
-#include <search-manager/NumericPropertyTable.h>
-#include <util/ustring/UString.h>
 #include "GroupCounter.h"
+
+namespace sf1r{
+class NumericPropertyTable;
+}
 
 NS_FACETED_BEGIN
 
 class DecimalSegmentTreeNode
 {
 public:
-    DecimalSegmentTreeNode(int start, size_t span, DecimalSegmentTreeNode* parent = NULL)
-        : start_(start)
-        , span_(span)
-        , count_(0)
-        , parent_(parent)
-    {
-        for (size_t i = 0; i < 10; i++)
-            children_[i] = NULL;
-    }
+    DecimalSegmentTreeNode(int start, size_t span, DecimalSegmentTreeNode* parent = NULL);
 
-    ~DecimalSegmentTreeNode()
-    {
-        clear();
-    }
+    ~DecimalSegmentTreeNode();
 
-    void clear()
-    {
-        for (size_t i = 0; i < 10; i++)
-        {
-            if (children_[i])
-            {
-                children_[i]->clear();
-                delete children_[i];
-            }
-        }
-    }
+    void clear();
 
-    int getStart() const
-    {
-        return start_;
-    }
+    int getStart() const;
 
-    size_t getSpan() const
-    {
-        return span_;
-    }
+    size_t getSpan() const;
 
-    size_t getCount() const
-    {
-        return count_;
-    }
+    size_t getCount() const;
 
-    void insertPoint(unsigned char *digits, size_t level)
-    {
-        count_++;
-        if (level > 1)
-        {
-            if (!children_[*digits])
-            {
-                children_[*digits] = new DecimalSegmentTreeNode(start_ + (*digits) * span_ / 10, span_ /10, this);
-            }
-            children_[*digits]->insertPoint(digits + 1, level - 1);
-        }
-    }
+    void insertPoint(unsigned char *digits, size_t level);
 
 private:
     int start_;
@@ -80,57 +41,16 @@ private:
     DecimalSegmentTreeNode* parent_;
 };
 
-template <typename T>
 class NumericRangeGroupCounter : public GroupCounter
 {
 public:
-    NumericRangeGroupCounter(const NumericPropertyTable *propertyTable, size_t rangeCount = 5)
-        : propertyTable_(propertyTable)
-        , rangeCount_(rangeCount)
-        , decimalSegmentTree_(0, 1000000000)
-    {}
+    NumericRangeGroupCounter(const NumericPropertyTable *propertyTable, size_t rangeCount = 5);
 
-    ~NumericRangeGroupCounter()
-    {
-        delete propertyTable_;
-    }
+    ~NumericRangeGroupCounter();
 
-    virtual void addDoc(docid_t doc)
-    {
-        T value;
-        propertyTable_->getPropertyValue(doc, value);
-        unsigned char *digits = new unsigned char[9]();
-        for (int i = 8; i >= 0; i--)
-        {
-            digits = value % 10;
-            value /= 10;
-        }
-        decimalSegmentTree_.insertPoint(digits, 9);
-        delete digits;
-    }
+    virtual void addDoc(docid_t doc);
 
-    virtual void getGroupRep(OntologyRep& groupRep) const
-    {
-        std::list<OntologyRepItem>& itemList = groupRep.item_list;
-
-        izenelib::util::UString propName(propertyTable_->getPropertyName(), UString::UTF_8);
-        size_t count = decimalSegmentTree_.getCount();
-        itemList.push_back(faceted::OntologyRepItem(0, propName, 0, count));
-
-//      TODO: design a strategy to split into small ranges
-//      for (typename std::map<T, size_t>::const_iterator it = countTable_.begin();
-//          it != countTable_.end(); it++)
-//      {
-//          itemList.push_back(faceted::OntologyRepItem());
-//          faceted::OntologyRepItem& repItem = itemList.back();
-//          repItem.level = 1;
-//          std::stringstream ss;
-//          ss << it->first;
-//          izenelib::util::UString stringValue(ss.str(), UString::UTF_8);
-//          repItem.text = stringValue;
-//          repItem.doc_count = it->second;
-//      }
-    }
+    virtual void getGroupRep(OntologyRep& groupRep) const;
 
 private:
     const NumericPropertyTable *propertyTable_;
