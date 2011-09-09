@@ -14,26 +14,81 @@
 
 NS_FACETED_BEGIN
 
+class DecimalSegmentTreeNode
+{
+public:
+    DecimalSegmentTreeNode(int start, size_t span)
+        : start_(start)
+        , span_(span)
+        , count_(0)
+        , parent_(NULL)
+    {
+        for (size_t i = 0; i < 10; i++)
+            children_[i] = NULL;
+    }
+
+    int getStart() const
+    {
+        return start_;
+    }
+
+    size_t getSpan() const
+    {
+        return span_;
+    }
+
+    size_t getCount() const
+    {
+        return count_;
+    }
+
+    void insertPoint(unsigned char *digits, size_t level)
+    {
+        count_++;
+        if (level > 1)
+        {
+            if (!children_[*digits])
+            {
+                children_[*digits] = new DecimalSegmentTreeNode(start_ + (*digits) * span_ / 10, span_ /10);
+            }
+            children_[*digits]->insertPoint(digits + 1, level - 1);
+        }
+    }
+
+private:
+    int start_;
+    size_t span_;
+    size_t count_;
+    DecimalSegmentTreeNode* children_[10];
+    DecimalSegmentTreeNode* parent_;
+};
+
 template <typename T>
 class NumericRangeGroupCounter : public GroupCounter
 {
 public:
-    NumericGroupCounter(const NumericPropertyTable *propertyTable)
+    NumericRangeGroupCounter(const NumericPropertyTable *propertyTable)
         : propertyTable_(propertyTable)
-        , count_(0)
+        , decimalSegmentTree_(0, 1000000000)
     {}
 
-    ~NumericGroupCounter()
+    ~NumericRangeGroupCounter()
     {
         delete propertyTable_;
     }
 
     virtual void addDoc(docid_t doc)
     {
-//        T value;
-//        propertyTable_->getPropertyValue(doc, value);
-//        ++count_;
-//        ++countTable_[value];
+        T value;
+        propertyTable_->getPropertyValue(doc, value);
+        unsigned char *digits = new unsigned char[9]();
+        for (int i = 8; i >= 0; i--)
+        {
+            digits = value % 10;
+            value /= 10;
+        }
+        decimalSegmentTree_.insertPoint(digits, 9);
+        delete digits;
     }
 
     virtual void getGroupRep(OntologyRep& groupRep) const
@@ -59,8 +114,7 @@ public:
 
 private:
     const NumericPropertyTable *propertyTable_;
-    size_t count_;
-    std::map<T, size_t> countTable_;
+    DecimalSegmentTreeNode decimalSegmentTree_;
 };
 
 NS_FACETED_END

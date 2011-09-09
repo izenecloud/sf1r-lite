@@ -4,6 +4,8 @@
 #include "StringGroupLabel.h"
 #include "NumericGroupCounter.h"
 #include "NumericGroupLabel.h"
+#include "NumericRangeGroupCounter.h"
+#include "NumericRangeGroupLabel.h"
 #include <configuration-manager/GroupConfig.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
 

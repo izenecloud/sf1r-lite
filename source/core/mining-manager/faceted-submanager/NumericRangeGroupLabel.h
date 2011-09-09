@@ -17,13 +17,13 @@ template <typename T>
 class NumericRangeGroupLabel : public GroupLabel
 {
 public:
-    NumericGroupLabel(const NumericPropertyTable *propertyTable, const T &lowerBound, const T &upperBound)
+    NumericRangeGroupLabel(const NumericPropertyTable *propertyTable, const T &lowerBound, const T &upperBound)
         : propertyTable_(propertyTable)
         , lowerBound_(lowerBound)
         , upperBound_(upperBound)
     {}
 
-    ~NumericGroupLabel()
+    ~NumericRangeGroupLabel()
     {
         delete propertyTable_;
     }
@@ -32,7 +32,7 @@ public:
     {
         T value;
         propertyTable_->getPropertyValue(doc, value);
-        return (value >= lowerBound_ && value <= upperBound);
+        return (value >= lowerBound_ && value <= upperBound_);
     }
 
 private:
