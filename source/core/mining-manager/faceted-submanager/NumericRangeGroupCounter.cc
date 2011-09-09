@@ -1,68 +1,41 @@
 #include <search-manager/NumericPropertyTable.h>
 #include <util/ustring/UString.h>
+#include <cstring>
+#include <cmath>
 #include "NumericRangeGroupCounter.h"
 
 NS_FACETED_BEGIN
 
-DecimalSegmentTreeNode::DecimalSegmentTreeNode(int start, size_t span, DecimalSegmentTreeNode* parent)
-    : start_(start)
-    , span_(span)
-    , count_(0)
-    , parent_(parent)
+Log10SegmentTree::Log10SegmentTree()
 {
-    for (size_t i = 0; i < 10; i++)
-        children_[i] = NULL;
+    level0_ = 0;
+    bzero(level1_, sizeof(level1_));
+    bzero(level2_, sizeof(level2_));
+    bzero(level3_, sizeof(level3_));
 }
 
-DecimalSegmentTreeNode::~DecimalSegmentTreeNode()
+void Log10SegmentTree::insertPoint(int64_t point)
 {
-    clear();
-}
-
-void DecimalSegmentTreeNode::clear()
-{
-    for (size_t i = 0; i < 10; i++)
+    level0_++;
+    int exponent = log10(point);
+    if (exponent < 2)
     {
-        if (children_[i])
-        {
-            children_[i]->clear();
-            delete children_[i];
-        }
+        exponent = 2;
     }
-}
-
-int DecimalSegmentTreeNode::getStart() const
-{
-    return start_;
-}
-
-size_t DecimalSegmentTreeNode::getSpan() const
-{
-    return span_;
-}
-
-size_t DecimalSegmentTreeNode::getCount() const
-{
-    return count_;
-}
-
-void DecimalSegmentTreeNode::insertPoint(unsigned char *digits, size_t level)
-{
-    count_++;
-    if (level > 1)
+    exponent -= 2;
+    level1_[exponent]++;
+    for (int i = 2; i < exponent; i++)
     {
-        if (!children_[*digits])
-        {
-            children_[*digits] = new DecimalSegmentTreeNode(start_ + (*digits) * span_ / 10, span_ /10, this);
-        }
-        children_[*digits]->insertPoint(digits + 1, level - 1);
+        point /= 10;
     }
+    level2_[exponent][point / 10]++;
+    level3_[exponent][point / 10][point % 10]++;
 }
 
 NumericRangeGroupCounter::NumericRangeGroupCounter(const NumericPropertyTable *propertyTable, size_t rangeCount)
     : propertyTable_(propertyTable)
     , rangeCount_(rangeCount)
-    , decimalSegmentTree_(0, 1000000000)
+    , log10SegmentTree_()
 {}
 
 NumericRangeGroupCounter::~NumericRangeGroupCounter()
@@ -74,14 +47,7 @@ void NumericRangeGroupCounter::addDoc(docid_t doc)
 {
     int64_t value;
     propertyTable_->getPropertyValue(doc, value);
-    unsigned char *digits = new unsigned char[9]();
-    for (int i = 8; i >= 0; i--)
-    {
-        digits[i] = value % 10;
-        value /= 10;
-    }
-    decimalSegmentTree_.insertPoint(digits, 9);
-    delete digits;
+    log10SegmentTree_.insertPoint(value);
 }
 
 void NumericRangeGroupCounter::getGroupRep(OntologyRep& groupRep) const
@@ -89,7 +55,7 @@ void NumericRangeGroupCounter::getGroupRep(OntologyRep& groupRep) const
     std::list<OntologyRepItem>& itemList = groupRep.item_list;
 
     izenelib::util::UString propName(propertyTable_->getPropertyName(), UString::UTF_8);
-    size_t count = decimalSegmentTree_.getCount();
+    size_t count = log10SegmentTree_.level0_;
     itemList.push_back(faceted::OntologyRepItem(0, propName, 0, count));
 
 //  TODO: design a strategy to split into several ranges

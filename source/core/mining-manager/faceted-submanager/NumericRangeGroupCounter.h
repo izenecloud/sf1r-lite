@@ -16,29 +16,16 @@ class NumericPropertyTable;
 
 NS_FACETED_BEGIN
 
-class DecimalSegmentTreeNode
+struct Log10SegmentTree
 {
-public:
-    DecimalSegmentTreeNode(int start, size_t span, DecimalSegmentTreeNode* parent = NULL);
+    Log10SegmentTree();
 
-    ~DecimalSegmentTreeNode();
+    void insertPoint(int64_t point);
 
-    void clear();
-
-    int getStart() const;
-
-    size_t getSpan() const;
-
-    size_t getCount() const;
-
-    void insertPoint(unsigned char *digits, size_t level);
-
-private:
-    int start_;
-    size_t span_;
-    size_t count_;
-    DecimalSegmentTreeNode* children_[10];
-    DecimalSegmentTreeNode* parent_;
+    size_t level0_;
+    size_t level1_[8];
+    size_t level2_[8][10];
+    size_t level3_[8][10][10];
 };
 
 class NumericRangeGroupCounter : public GroupCounter
@@ -55,7 +42,7 @@ public:
 private:
     const NumericPropertyTable *propertyTable_;
     size_t rangeCount_;
-    DecimalSegmentTreeNode decimalSegmentTree_;
+    Log10SegmentTree log10SegmentTree_;
 };
 
 NS_FACETED_END
