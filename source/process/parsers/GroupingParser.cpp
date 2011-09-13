@@ -92,7 +92,7 @@ bool GroupingParser::parse(const Value& grouping)
         }
         else
         {
-            if (!configIt->isStringType() || !configIt->isNumericType())
+            if (!configIt->isStringType() && !configIt->isNumericType())
             {
                 error() = "the property type of \"" + propName + "\" is not string, int or float for group.";
                 return false;
