@@ -19,7 +19,7 @@ NS_FACETED_BEGIN
 class NumericRangeGroupLabel : public GroupLabel
 {
 public:
-    NumericRangeGroupLabel(const NumericPropertyTable *propertyTable, const int64_t &lowerBound);
+    NumericRangeGroupLabel(const NumericPropertyTable *propertyTable, const float &targetValue);
 
     NumericRangeGroupLabel(const NumericPropertyTable *propertyTable, const int64_t &lowerBound, const int64_t &upperBound);
 
@@ -35,6 +35,7 @@ private:
     const NumericPropertyTable *propertyTable_;
     int64_t lowerBound_;
     int64_t upperBound_;
+    float targetValue_;
     bool (NumericRangeGroupLabel::*test_)(docid_t doc) const;
 };
 

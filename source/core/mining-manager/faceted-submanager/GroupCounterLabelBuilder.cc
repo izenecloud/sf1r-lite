@@ -210,7 +210,7 @@ GroupLabel* GroupCounterLabelBuilder::createNumericRangeLabel(const GroupParam::
             NumericPropertyTable *propertyTable = numericTableBuilder_->createPropertyTable(propName);
             if (propertyTable)
             {
-                label = new NumericRangeGroupLabel(propertyTable, (int64_t)value);
+                label = new NumericRangeGroupLabel(propertyTable, value);
             }
         }
         catch(const boost::bad_lexical_cast& e)
