@@ -8,6 +8,7 @@
 #include <configuration-manager/GroupConfig.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
 
+#include <limits>
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
 
@@ -198,29 +199,54 @@ GroupLabel* GroupCounterLabelBuilder::createStringLabel(const GroupParam::GroupL
 
 GroupLabel* GroupCounterLabelBuilder::createNumericRangeLabel(const GroupParam::GroupLabel& labelParam) const
 {
-    GroupLabel* label = NULL;
-
-    if (!labelParam.second.empty())
+    const std::string& propName = labelParam.first;
+    if (labelParam.second.empty())
     {
-        const std::string& propValue = labelParam.second[0];
-        try
-        {
-            float value = boost::lexical_cast<float>(propValue);
-            const std::string& propName = labelParam.first;
-            NumericPropertyTable *propertyTable = numericTableBuilder_->createPropertyTable(propName);
-            if (propertyTable)
-            {
-                label = new NumericRangeGroupLabel(propertyTable, value);
-            }
-        }
-        catch(const boost::bad_lexical_cast& e)
-        {
-            LOG(ERROR) << "failed in casting label from " << propValue
-                       << " to numeric value, exception: " << e.what();
-        }
+        LOG(ERROR) << "empty group label value for property " << propName;
+        return NULL;
     }
 
-    return label;
+    NumericPropertyTable *propertyTable = numericTableBuilder_->createPropertyTable(propName);
+    if (!propertyTable)
+    {
+        LOG(ERROR) << "failed in creating numeric table for property " << propName;
+        return NULL;
+    }
+
+    const std::string& propValue = labelParam.second[0];
+    try
+    {
+        std::size_t delimitPos = propValue.find('-');
+        if (delimitPos == std::string::npos)
+        {
+            float value = boost::lexical_cast<float>(propValue);
+            return new NumericRangeGroupLabel(propertyTable, value);
+        }
+
+        int64_t lowerBound = std::numeric_limits<int64_t>::min();
+        int64_t upperBound = std::numeric_limits<int64_t>::max();
+
+        if (delimitPos)
+        {
+            std::string sub = propValue.substr(0, delimitPos-1);
+            lowerBound = boost::lexical_cast<float>(sub);
+        }
+
+        if (delimitPos+1 != propValue.size())
+        {
+            std::string sub = propValue.substr(delimitPos+1);
+            upperBound = boost::lexical_cast<float>(sub);
+        }
+
+        return new NumericRangeGroupLabel(propertyTable, lowerBound, upperBound);
+    }
+    catch(const boost::bad_lexical_cast& e)
+    {
+        LOG(ERROR) << "failed in casting label from " << propValue
+                    << " to numeric value, exception: " << e.what();
+    }
+
+    return NULL;
 }
 
 NS_FACETED_END
