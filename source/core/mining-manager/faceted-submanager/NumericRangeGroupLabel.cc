@@ -3,9 +3,9 @@
 
 NS_FACETED_BEGIN
 
-NumericRangeGroupLabel::NumericRangeGroupLabel(const NumericPropertyTable *propertyTable, const int64_t &lowerBound)
+NumericRangeGroupLabel::NumericRangeGroupLabel(const NumericPropertyTable *propertyTable, const float &targetValue)
     : propertyTable_(propertyTable)
-    , lowerBound_(lowerBound)
+    , targetValue_(targetValue)
     , test_(&NumericRangeGroupLabel::test1)
 {}
 
@@ -28,9 +28,9 @@ bool NumericRangeGroupLabel::test(docid_t doc) const
 
 bool NumericRangeGroupLabel::test1(docid_t doc) const
 {
-    int64_t value;
+    float value;
     propertyTable_->convertPropertyValue(doc, value);
-    return (value == lowerBound_);
+    return (value == targetValue_);
 }
 
 bool NumericRangeGroupLabel::test2(docid_t doc) const
