@@ -27,6 +27,7 @@
 #include <map>
 #include <list>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <cstdlib>
 
@@ -43,6 +44,15 @@ const char* PROP_NAME_GROUP_STR = "Group_str";
 const char* PROP_NAME_GROUP_INT = "Group_int";
 const char* PROP_NAME_GROUP_FLOAT = "Group_float";
 const char* TEST_DIR_STR = "group_test";
+}
+
+string normalizeFloatRep(const string& str)
+{
+    float f = lexical_cast<float>(str);
+    ostringstream oss;
+    oss << fixed << setprecision(2);
+    oss << f;
+    return oss.str();
 }
 
 struct DocInput
@@ -67,7 +77,7 @@ struct DocInput
     : docId_(docId)
     , groupStr_(groupStr)
     , groupInt_(groupInt)
-    , groupFloat_(groupFloat)
+    , groupFloat_(normalizeFloatRep(groupFloat))
     {
         title_ = "Title ";
         title_ += lexical_cast<string>(docId);
@@ -393,7 +403,8 @@ private:
             {
                 const faceted::GroupParam::GroupLabel& label = labelList[i];
                 if ((label.first == PROP_NAME_GROUP_INT && label.second[0] != it->groupInt_)
-                    || (label.first == PROP_NAME_GROUP_FLOAT && label.second[0] != it->groupFloat_))
+                    || (label.first == PROP_NAME_GROUP_FLOAT
+                        && normalizeFloatRep(label.second[0]) != it->groupFloat_))
                 {
                     isOK = false;
                     break;
@@ -409,7 +420,8 @@ private:
             {
                 const faceted::GroupParam::GroupLabel& label = labelList[i];
                 if ((label.first == PROP_NAME_GROUP_STR && label.second[0] != it->groupStr_)
-                    || (label.first == PROP_NAME_GROUP_FLOAT && label.second[0] != it->groupFloat_))
+                    || (label.first == PROP_NAME_GROUP_FLOAT
+                        && normalizeFloatRep(label.second[0]) != it->groupFloat_))
                 {
                     isOK = false;
                     break;
