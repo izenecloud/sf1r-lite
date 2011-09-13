@@ -18,18 +18,18 @@ void Log10SegmentTree::insertPoint(int64_t point)
 {
     level0_++;
     int exponent = log10(point);
-    if (exponent < 2)
+    if (exponent < 1)
     {
-        exponent = 2;
+        exponent = 1;
     }
-    exponent -= 2;
-    level1_[exponent]++;
-    for (int i = 2; i < exponent; i++)
+    exponent--;
+    ++level1_[exponent];
+    for (int i = 0; i < exponent; i++)
     {
         point /= 10;
     }
-    level2_[exponent][point / 10]++;
-    level3_[exponent][point / 10][point % 10]++;
+    ++level2_[exponent][point / 10];
+    ++level3_[exponent][point / 10][point % 10];
 }
 
 NumericRangeGroupCounter::NumericRangeGroupCounter(const NumericPropertyTable *propertyTable, size_t rangeCount)
@@ -46,7 +46,7 @@ NumericRangeGroupCounter::~NumericRangeGroupCounter()
 void NumericRangeGroupCounter::addDoc(docid_t doc)
 {
     int64_t value;
-    propertyTable_->getPropertyValue(doc, value);
+    propertyTable_->convertPropertyValue(doc, value);
     log10SegmentTree_.insertPoint(value);
 }
 
@@ -58,8 +58,25 @@ void NumericRangeGroupCounter::getGroupRep(OntologyRep& groupRep) const
     size_t count = log10SegmentTree_.level0_;
     itemList.push_back(faceted::OntologyRepItem(0, propName, 0, count));
 
-//  TODO: design a strategy to split into several ranges
+    for (int i = 0; i < 8; i++)
+    {
+        if (log10SegmentTree_.level1_[i] == 0)
+            continue;
 
+        itemList.push_back(faceted::OntologyRepItem());
+        faceted::OntologyRepItem& repItem = itemList.back();
+        repItem.level = 1;
+        std::stringstream ss;
+        ss << fixed << setprecision(2);
+        int lowerBound = exp10(i + 1);
+        if (lowerBound == 10)
+            lowerBound = 0;
+
+        ss << lowerBound << "-" << (int) exp10(i + 2) - 1;
+        izenelib::util::UString stringValue(ss.str(), UString::UTF_8);
+        repItem.text = stringValue;
+        repItem.doc_count = log10SegmentTree_.level1_[i];
+    }
 }
 
 NS_FACETED_END

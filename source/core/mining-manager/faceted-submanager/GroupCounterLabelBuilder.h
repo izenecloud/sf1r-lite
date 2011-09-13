@@ -51,6 +51,10 @@ private:
     template <typename T>
     GroupLabel* createNumericLabel(const GroupParam::GroupLabel& labelParam) const;
 
+    GroupCounter* createNumericRangeCounter(const std::string& prop) const;
+
+    GroupLabel* createNumericRangeLabel(const GroupParam::GroupLabel& labelParam) const;
+
 private:
     const std::vector<GroupConfig>& groupConfigs_;
     const GroupManager* groupManager_;
