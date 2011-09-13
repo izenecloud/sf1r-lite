@@ -19,6 +19,8 @@ NS_FACETED_BEGIN
 class NumericRangeGroupLabel : public GroupLabel
 {
 public:
+    NumericRangeGroupLabel(const NumericPropertyTable *propertyTable, const int64_t &lowerBound);
+
     NumericRangeGroupLabel(const NumericPropertyTable *propertyTable, const int64_t &lowerBound, const int64_t &upperBound);
 
     ~NumericRangeGroupLabel();
@@ -26,9 +28,14 @@ public:
     bool test(docid_t doc) const;
 
 private:
+    bool test1(docid_t doc) const;
+    bool test2(docid_t doc) const;
+
+private:
     const NumericPropertyTable *propertyTable_;
-    const int64_t lowerBound_;
-    const int64_t upperBound_;
+    int64_t lowerBound_;
+    int64_t upperBound_;
+    bool (NumericRangeGroupLabel::*test_)(docid_t doc) const;
 };
 
 NS_FACETED_END

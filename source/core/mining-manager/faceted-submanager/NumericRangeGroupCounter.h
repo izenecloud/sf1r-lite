@@ -26,6 +26,7 @@ struct Log10SegmentTree
     size_t level1_[8];
     size_t level2_[8][10];
     size_t level3_[8][10][10];
+    static const int span_[8];
 };
 
 class NumericRangeGroupCounter : public GroupCounter

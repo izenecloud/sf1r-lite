@@ -6,6 +6,8 @@
 
 NS_FACETED_BEGIN
 
+const int Log10SegmentTree::span_[8] = {1, 10, 100, 1000, 10000, 100000, 1000000, 10000000};
+
 Log10SegmentTree::Log10SegmentTree()
 {
     level0_ = 0;
@@ -67,7 +69,6 @@ void NumericRangeGroupCounter::getGroupRep(OntologyRep& groupRep) const
         faceted::OntologyRepItem& repItem = itemList.back();
         repItem.level = 1;
         std::stringstream ss;
-        ss << fixed << setprecision(2);
         int lowerBound = exp10(i + 1);
         if (lowerBound == 10)
             lowerBound = 0;

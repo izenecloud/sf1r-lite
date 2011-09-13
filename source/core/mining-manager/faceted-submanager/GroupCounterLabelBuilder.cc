@@ -3,7 +3,6 @@
 #include "StringGroupCounter.h"
 #include "StringGroupLabel.h"
 #include "NumericGroupCounter.h"
-#include "NumericGroupLabel.h"
 #include "NumericRangeGroupCounter.h"
 #include "NumericRangeGroupLabel.h"
 #include <configuration-manager/GroupConfig.h>
@@ -164,19 +163,10 @@ GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLa
         break;
 
     case INT_PROPERTY_TYPE:
-        label = createNumericLabel<int64_t>(labelParam);
-        break;
-
     case UNSIGNED_INT_PROPERTY_TYPE:
-        label = createNumericLabel<uint64_t>(labelParam);
-        break;
-
     case FLOAT_PROPERTY_TYPE:
-        label = createNumericLabel<float>(labelParam);
-        break;
-
     case DOUBLE_PROPERTY_TYPE:
-        label = createNumericLabel<double>(labelParam);
+        label = createNumericRangeLabel(labelParam);
         break;
 
     default:
@@ -206,8 +196,7 @@ GroupLabel* GroupCounterLabelBuilder::createStringLabel(const GroupParam::GroupL
     return label;
 }
 
-template <typename T>
-GroupLabel* GroupCounterLabelBuilder::createNumericLabel(const GroupParam::GroupLabel& labelParam) const
+GroupLabel* GroupCounterLabelBuilder::createNumericRangeLabel(const GroupParam::GroupLabel& labelParam) const
 {
     GroupLabel* label = NULL;
 
@@ -216,12 +205,12 @@ GroupLabel* GroupCounterLabelBuilder::createNumericLabel(const GroupParam::Group
         const std::string& propValue = labelParam.second[0];
         try
         {
-            T value = boost::lexical_cast<T>(propValue);
+            float value = boost::lexical_cast<float>(propValue);
             const std::string& propName = labelParam.first;
             NumericPropertyTable *propertyTable = numericTableBuilder_->createPropertyTable(propName);
             if (propertyTable)
             {
-                label = new NumericGroupLabel<T>(propertyTable, value);
+                label = new NumericRangeGroupLabel(propertyTable, (int64_t)value);
             }
         }
         catch(const boost::bad_lexical_cast& e)
