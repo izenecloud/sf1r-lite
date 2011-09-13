@@ -33,8 +33,8 @@ private:
 
 private:
     const NumericPropertyTable *propertyTable_;
-    const int64_t lowerBound_;
-    const int64_t upperBound_;
+    int64_t lowerBound_;
+    int64_t upperBound_;
     bool (NumericRangeGroupLabel::*test_)(docid_t doc) const;
 };
 

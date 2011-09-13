@@ -69,7 +69,6 @@ void NumericRangeGroupCounter::getGroupRep(OntologyRep& groupRep) const
         faceted::OntologyRepItem& repItem = itemList.back();
         repItem.level = 1;
         std::stringstream ss;
-        ss << fixed << setprecision(2);
         int lowerBound = exp10(i + 1);
         if (lowerBound == 10)
             lowerBound = 0;
