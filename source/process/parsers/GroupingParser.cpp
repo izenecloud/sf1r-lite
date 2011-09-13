@@ -15,12 +15,16 @@ using driver::Keys;
 /**
  * @class GroupingParser
  *
- * Field @b group is an array. It specifies which properties need statistics info (doc count) for each property value.
+ * Field @b group is an array. It specifies which properties need doc count result for each property value.
  *
  * Every item is an object having following fields.
- * - @b property* (@c String): Property which statistics info would be supplied in response["group"]
- *
- * The property type must be string, int or float.
+ * - @b property* (@c String): Property name, whose group result (doc count for
+ *   each property value) would be supplied in response["group"].@n
+ *   The property type must be string, int or float.
+ * - @b range (@c Bool = @c false): For the property type of int or float, you
+ *   could also set this parameter to true,@n
+ *   then the group results would be in range form such as "101-200",
+ *   meaning the values contained in this range, including both boundary values.
  */
 
 bool GroupingParser::parse(const Value& grouping)
@@ -39,40 +43,63 @@ bool GroupingParser::parse(const Value& grouping)
         return false;
     }
 
-    if (grouping.type() == Value::kArrayType)
+    if (grouping.type() != Value::kArrayType)
     {
-        propertyList_.resize(grouping.size());
+        error() = "Require an array for parameter [group].";
+        return false;
+    }
 
-        const std::vector<GroupConfig> groupProps = miningSchema_.group_properties;
-        for (std::size_t i = 0; i < grouping.size(); ++i)
+    const std::vector<GroupConfig> groupProps = miningSchema_.group_properties;
+    for (std::size_t i = 0; i < grouping.size(); ++i)
+    {
+        const Value& groupingRule = grouping(i);
+        faceted::GroupPropParam propParam;
+
+        if (groupingRule.type() == Value::kObjectType)
         {
-            const Value& groupingRule = grouping(i);
-            std::string& property = propertyList_[i];
-
-            if (groupingRule.type() == Value::kObjectType)
+            propParam.property_ = asString(groupingRule[Keys::property]);
+            if (groupingRule.hasKey(Keys::range))
             {
-                property = asString(groupingRule[Keys::property]);
+                propParam.isRange_ = asBool(groupingRule[Keys::range]);
             }
-            else
-            {
-                property = asString(groupingRule);
-            }
+        }
+        else
+        {
+            propParam.property_ = asString(groupingRule);
+        }
 
-            std::vector<GroupConfig>::const_iterator configIt =
-                std::find_if(groupProps.begin(), groupProps.end(),
-                    boost::bind(&GroupConfig::propName, _1) == property);
+        const std::string& propName = propParam.property_;
+        std::vector<GroupConfig>::const_iterator configIt;
+        for (configIt = groupProps.begin(); configIt != groupProps.end(); ++configIt)
+        {
+            if (configIt->propName == propName)
+                break;
+        }
 
-            if (configIt == groupProps.end())
+        if (configIt == groupProps.end())
+        {
+            error() = "\"" + propName + "\" is not GroupBy property, it should be configured in <MiningBundle>::<Schema>::<Group>.";
+            return false;
+        }
+
+        if (propParam.isRange_)
+        {
+            if (!configIt->isNumericType())
             {
-                error() = "\"" + property + "\" is not GroupBy property, it should be configured in <MiningBundle>::<Schema>::<Group>.";
+                error() = "the property type of \"" + propName + "\" is not int or float for range group.";
                 return false;
             }
         }
-    }
-    else
-    {
-        error() = "Require an array for grouping rules.";
-        return false;
+        else
+        {
+            if (!configIt->isStringType() || !configIt->isNumericType())
+            {
+                error() = "the property type of \"" + propName + "\" is not string, int or float for group.";
+                return false;
+            }
+        }
+
+        propertyList_.push_back(propParam);
     }
 
     return true;

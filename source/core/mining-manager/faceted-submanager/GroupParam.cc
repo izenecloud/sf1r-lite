@@ -2,18 +2,76 @@
 
 NS_FACETED_BEGIN
 
+GroupPropParam::GroupPropParam()
+    : isRange_(false)
+{
+}
+
+bool operator==(const GroupPropParam& a, const GroupPropParam& b)
+{
+    return a.property_ == b.property_
+        && a.isRange_ == b.isRange_;
+}
+
+std::ostream& operator<<(std::ostream& out, const GroupPropParam& groupPropParam)
+{
+    out << "property: " << groupPropParam.property_
+        << ", is range: " << groupPropParam.isRange_
+        << std::endl;
+
+    return out;
+}
+
 GroupParam::GroupParam()
     : isAttrGroup_(false)
     , attrGroupNum_(0)
 {
 }
 
-bool GroupParam::empty() const
+bool GroupParam::isEmpty() const
 {
-    if (groupProps_.empty() && isAttrGroup_ == false)
-        return true;
+    return isGroupEmpty() && isAttrEmpty();
+}
 
-    return false;
+bool GroupParam::isGroupEmpty() const
+{
+    return groupProps_.empty() && groupLabels_.empty();
+}
+
+bool GroupParam::isAttrEmpty() const
+{
+    return isAttrGroup_ == false && attrLabels_.empty();
+}
+
+bool GroupParam::checkParam(std::string& message) const
+{
+    for (GroupLabelVec::const_iterator labelIt = groupLabels_.begin();
+        labelIt != groupLabels_.end(); ++labelIt)
+    {
+        const std::string& propName = labelIt->first;
+        const GroupPath& groupPath = labelIt->second;
+        if (groupPath.empty())
+        {
+            message = "request[search][group_label][value] is empty for property " + propName;
+            return false;
+        }
+
+        // range label
+        if (groupPath[0].find('-') != std::string::npos)
+        {
+            for (std::vector<GroupPropParam>::const_iterator propIt = groupProps_.begin();
+                propIt != groupProps_.end(); ++propIt)
+            {
+                if (propIt->property_ == propName && propIt->isRange_)
+                {
+                    message = "the property " + propName + " in request[search][group_label] could not be specified in request[group] at the same time";
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
 }
 
 bool operator==(const GroupParam& a, const GroupParam& b)
@@ -30,9 +88,8 @@ std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam)
     out << "groupProps_: ";
     for (std::size_t i = 0; i < groupParam.groupProps_.size(); ++i)
     {
-        out << groupParam.groupProps_[i] << ", ";
+        out << groupParam.groupProps_[i];
     }
-    out << std::endl;
 
     out << "groupLabels_: ";
     for (std::size_t i = 0; i < groupParam.groupLabels_.size(); ++i)

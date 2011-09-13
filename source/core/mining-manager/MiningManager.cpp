@@ -362,7 +362,7 @@ bool MiningManager::open()
             for (std::vector<GroupConfig>::const_iterator it = mining_schema_.group_properties.begin();
                 it != mining_schema_.group_properties.end(); ++it)
             {
-                if (it->propType != STRING_PROPERTY_TYPE)
+                if (! it->isStringType())
                     continue;
 
                 const std::string& propName = it->propName;

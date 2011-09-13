@@ -363,7 +363,13 @@ private:
     {
         faceted::GroupFilterBuilder filterBuilder(groupConfigs_, groupManager_, NULL, numericTableBuilder_);
         faceted::GroupParam groupParam;
-        groupParam.groupProps_ = propNames_;
+        for (vector<string>::const_iterator it = propNames_.begin();
+            it != propNames_.end(); ++it)
+        {
+            faceted::GroupPropParam propParam;
+            propParam.property_ = *it;
+            groupParam.groupProps_.push_back(propParam);
+        }
         groupParam.groupLabels_ = labelVec;
 
         faceted::GroupFilter* filter = filterBuilder.createFilter(groupParam);

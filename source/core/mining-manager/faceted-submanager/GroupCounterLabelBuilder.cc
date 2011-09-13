@@ -37,7 +37,36 @@ PropertyDataType GroupCounterLabelBuilder::getPropertyType_(const std::string& p
     return UNKNOWN_DATA_PROPERTY_TYPE;
 }
 
-GroupCounter* GroupCounterLabelBuilder::createGroupCounter(const std::string& prop)
+const GroupConfig* GroupCounterLabelBuilder::getGroupConfig_(const std::string& prop) const
+{
+    for (std::vector<GroupConfig>::const_iterator it = groupConfigs_.begin();
+        it != groupConfigs_.end(); ++it)
+    {
+        if (it->propName == prop)
+            return &(*it);
+    }
+
+    return NULL;
+}
+
+GroupCounter* GroupCounterLabelBuilder::createGroupCounter(const GroupPropParam& groupPropParam)
+{
+    GroupCounter* counter = NULL;
+
+    const std::string& propName = groupPropParam.property_;
+    if (groupPropParam.isRange_)
+    {
+        counter = createNumericRangeCounter(propName);
+    }
+    else
+    {
+        counter = createValueCounter(propName);
+    }
+
+    return counter;
+}
+
+GroupCounter* GroupCounterLabelBuilder::createValueCounter(const std::string& prop) const
 {
     GroupCounter* counter = NULL;
 
@@ -49,11 +78,20 @@ GroupCounter* GroupCounterLabelBuilder::createGroupCounter(const std::string& pr
         break;
 
     case INT_PROPERTY_TYPE:
+         counter = createNumericCounter<int64_t>(prop);
+         break;
+
     case UNSIGNED_INT_PROPERTY_TYPE:
+         counter = createNumericCounter<uint64_t>(prop);
+         break;
+
     case FLOAT_PROPERTY_TYPE:
+         counter = createNumericCounter<float>(prop);
+         break;
+
     case DOUBLE_PROPERTY_TYPE:
-        counter = createNumericRangeCounter(prop);
-        break;
+         counter = createNumericCounter<double>(prop);
+         break;
 
     default:
         LOG(ERROR) << "unsupported type " << type
@@ -64,7 +102,7 @@ GroupCounter* GroupCounterLabelBuilder::createGroupCounter(const std::string& pr
     return counter;
 }
 
-GroupCounter* GroupCounterLabelBuilder::createStringCounter(const std::string& prop)
+GroupCounter* GroupCounterLabelBuilder::createStringCounter(const std::string& prop) const
 {
     GroupCounter* counter = NULL;
 
@@ -97,13 +135,19 @@ GroupCounter* GroupCounterLabelBuilder::createNumericCounter(const std::string& 
 
 GroupCounter* GroupCounterLabelBuilder::createNumericRangeCounter(const std::string& prop) const
 {
-    NumericPropertyTable *propertyTable = numericTableBuilder_->createPropertyTable(prop);
+    const GroupConfig* groupConfig = getGroupConfig_(prop);
+    if (!groupConfig || !groupConfig->isNumericType())
+    {
+        LOG(ERROR) << "property " << prop
+                   << " must be configured as numeric type for range group";
+        return NULL;
+    }
 
+    NumericPropertyTable *propertyTable = numericTableBuilder_->createPropertyTable(prop);
     if (propertyTable)
     {
         return new NumericRangeGroupCounter(propertyTable);
     }
-
     return NULL;
 }
 
@@ -144,7 +188,7 @@ GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLa
     return label;
 }
 
-GroupLabel* GroupCounterLabelBuilder::createStringLabel(const GroupParam::GroupLabel& labelParam)
+GroupLabel* GroupCounterLabelBuilder::createStringLabel(const GroupParam::GroupLabel& labelParam) const
 {
     GroupLabel* label = NULL;
 

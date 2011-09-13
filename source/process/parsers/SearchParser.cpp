@@ -42,11 +42,18 @@ using driver::Keys;
  * - @b group_label (@c Array): Only get documents in the specified groups. Multiple
  *   groups could be specified, so that the documents returned must be contained
  *   in each groups.
- *   - @b property* (@c String): the property name, this name must be also specified
- *   in request["group"].
- *   - @b value* (@c Array): the label value. It's an array of the path from root to leaf node.
- *   Each is a @c String of node value.
- *   Only those documents belonging to the leaf node would be returned.
+ *   - @b property* (@c String): the property name.
+ *   - @b value* (@c Array): the label value.@n
+ *   For the property type of string, it's an array of the path from root to leaf node.
+ *   Each is a @c String of node value. Only those documents belonging to the leaf node
+ *   would be returned.@n
+ *   For the property type of int or float, you could either specify a property value
+ *   or a range in @b value[0]. If it is a range, you could not specify the same @b property
+ *   in request["group"].@n
+ *   Regarding the range format, you could specify it in the form of "101-200",
+ *   meaning all values between 101 and 200, including both boundary values,
+ *   or in the form of "-200", meaning all values not larger than 200,
+ *   or in the form of "101-", meaning all values not less than 101.
  * - @b attr_label (@c Array): Only get documents in the specified attribute groups.
  *   Multiple labels could be specified. It could also be used with @b group_label
  *   together, so that the documents returned must be contained in each label in

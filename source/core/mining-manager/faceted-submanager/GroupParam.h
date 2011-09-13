@@ -21,12 +21,33 @@
 
 NS_FACETED_BEGIN
 
+struct GroupPropParam
+{
+    std::string property_;
+    bool isRange_;
+
+    GroupPropParam();
+
+    DATA_IO_LOAD_SAVE(GroupPropParam, &property_&isRange_);
+
+    MSGPACK_DEFINE(property_, isRange_);
+
+    template<class Archive>
+    void serialize(Archive& ar, const unsigned int version)
+    {
+        ar & property_;
+        ar & isRange_;
+    }
+};
+bool operator==(const GroupPropParam& a, const GroupPropParam& b);
+std::ostream& operator<<(std::ostream& out, const GroupPropParam& groupPropParam);
+
 struct GroupParam
 {
     GroupParam();
 
-    /** the property names which need doc counts for each property value */
-    std::vector<std::string> groupProps_;
+    /** the properties which need doc counts for each property value */
+    std::vector<GroupPropParam> groupProps_;
 
     /** the group path contains values from root to leaf node */
     typedef std::vector<std::string> GroupPath;
@@ -50,12 +71,10 @@ struct GroupParam
     /** selected attribute labels */
     AttrLabelVec attrLabels_;
 
-    /**
-     * Whether need to filter docs by group filter.
-     * @return true for empty group params, not need group filter,
-     *         false for group params not empty, need group filter.
-     */
-    bool empty() const;
+    bool isEmpty() const;
+    bool isGroupEmpty() const;
+    bool isAttrEmpty() const;
+    bool checkParam(std::string& message) const;
 
     DATA_IO_LOAD_SAVE(GroupParam, &groupProps_&groupLabels_
             &isAttrGroup_&attrGroupNum_&attrLabels_);

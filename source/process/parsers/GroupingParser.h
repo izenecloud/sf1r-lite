@@ -9,6 +9,7 @@
 #include <util/driver/Value.h>
 
 #include <configuration-manager/MiningSchema.h>
+#include <mining-manager/faceted-submanager/GroupParam.h>
 
 #include <string>
 #include <vector>
@@ -31,18 +32,18 @@ public:
 
     bool parse(const Value& grouping);
 
-    std::vector<std::string>& mutableGroupPropertyList()
+    std::vector<faceted::GroupPropParam>& mutableGroupPropertyList()
     {
         return propertyList_;
     }
-    const std::vector<std::string>& groupPropertyList() const
+    const std::vector<faceted::GroupPropParam>& groupPropertyList() const
     {
         return propertyList_;
     }
 private:
     const MiningSchema& miningSchema_;
 
-    std::vector<std::string> propertyList_;
+    std::vector<faceted::GroupPropParam> propertyList_;
 };
 
 /// @}

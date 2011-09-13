@@ -31,10 +31,7 @@ const std::size_t DocumentsController::kDefaultPageCount = 20;
  * - @b select (@c Array): Select properties in search result. See SelectParser.
  * - @b conditions (@c Array): Result filtering conditions. See ConditionArrayParser.
  * - @b sort (@c Array): Sort result. See SortParser.
- * - @b group (@c Array): Group property values.
- *   - @b property* (@c String): Property name, whose group result (doc count for
- *     each property value) would be supplied in response["group"]. The property
- *     type must be string, int or float.
+ * - @b group (@c Array): Group property values. See GroupingParser.
  * - @b range (@c Object): Property name for getting its property value range.
  *   - @b property* (@c String): Property name, whose value range (the maximum and
  *     minimum property value) would be supplied in response["range"]. The property
