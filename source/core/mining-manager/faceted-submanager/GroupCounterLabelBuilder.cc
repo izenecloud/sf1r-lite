@@ -228,7 +228,7 @@ GroupLabel* GroupCounterLabelBuilder::createNumericRangeLabel(const GroupParam::
 
         if (delimitPos)
         {
-            std::string sub = propValue.substr(0, delimitPos-1);
+            std::string sub = propValue.substr(0, delimitPos);
             lowerBound = boost::lexical_cast<float>(sub);
         }
 
