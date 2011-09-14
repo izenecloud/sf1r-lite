@@ -1257,15 +1257,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             {
                 getAttribute(it.Get(), "name", property_name);
                 bool gottype = collectionMeta.getPropertyType(property_name, property_type);
-                if( !gottype || (property_type != STRING_PROPERTY_TYPE
-                                 && property_type != INT_PROPERTY_TYPE
-                                 && property_type != FLOAT_PROPERTY_TYPE))
+                if( !gottype )
                 {
-                    throw XmlConfigParserException("Property ["+property_name+"] in <Group> is not string, int or float type.");
+                    throw XmlConfigParserException("The type of property ["+property_name+"] in <Group> is unknown.");
                 }
 
-                if (property_type == INT_PROPERTY_TYPE
-                    || property_type == FLOAT_PROPERTY_TYPE)
+                GroupConfig groupConfig(property_name, property_type);
+
+                if ( groupConfig.isNumericType() )
                 {
                     const std::set<PropertyConfig, PropertyComp>& indexSchema = collectionMeta.indexBundleConfig_->schema_;
                     PropertyConfig p;
@@ -1279,8 +1278,11 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                                                        "<IndexBundle> <Schema> <Property name=\"Price\"> <Indexing filter=\"yes\" ...");
                     }
                 }
+                else if( !groupConfig.isStringType() )
+                {
+                    throw XmlConfigParserException("Property ["+property_name+"] in <Group> is not string, int or float type.");
+                }
 
-                GroupConfig groupConfig(property_name, property_type);
                 mining_schema.group_properties.push_back(groupConfig);
 
                 LOG(INFO) << "group property: " << property_name

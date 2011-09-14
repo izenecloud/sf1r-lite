@@ -82,21 +82,10 @@ bool GroupingParser::parse(const Value& grouping)
             return false;
         }
 
-        if (propParam.isRange_)
+        if (propParam.isRange_ && !configIt->isNumericType())
         {
-            if (!configIt->isNumericType())
-            {
-                error() = "the property type of \"" + propName + "\" is not int or float for range group.";
-                return false;
-            }
-        }
-        else
-        {
-            if (!configIt->isStringType() && !configIt->isNumericType())
-            {
-                error() = "the property type of \"" + propName + "\" is not string, int or float for group.";
-                return false;
-            }
+            error() = "the property type of \"" + propName + "\" is not int or float for group range result.";
+            return false;
         }
 
         propertyList_.push_back(propParam);
