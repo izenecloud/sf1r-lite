@@ -4,8 +4,10 @@
 #include <bundles/querylog/QueryLogSearchService.h>
 
 #include <util/driver/DriverServer.h>
+#include <3rdparty/zookeeper/ZooKeeper.hpp>
 
 #include <aggregator-manager/WorkerServer.h>
+#include <aggregator-manager/WorkerDetector.h>
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -51,6 +53,8 @@ private:
 
     boost::shared_ptr<sf1r::WorkerServer> workerServer_;
 
+    boost::shared_ptr<zookeeper::ZooKeeper> zookeeper_;
+    boost::shared_ptr<sf1r::WorkerDetector> workerDectector_;
 };
 
 #endif /*COBRAPROCESS_H_*/

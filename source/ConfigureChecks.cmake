@@ -38,6 +38,7 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   lzo
   beansdb
   msgpack
+  zookeeper
   )
 
 FIND_PACKAGE(ilplib REQUIRED)
