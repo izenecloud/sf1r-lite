@@ -5,6 +5,7 @@
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
 #include <search-manager/SearchManager.h>
+#include <log-manager/ProductInfo.h>
 
 #include <bundles/mining/MiningTaskService.h>
 #include <bundles/recommend/RecommendTaskService.h>
@@ -379,7 +380,8 @@ bool IndexTaskService::createDocument(const Value& documentValue)
     bool rType = false;
     std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
     sf1r::docid_t id = 0;
-    if (!prepareDocument_(scddoc, document, indexDocument, rType, rTypeFieldValue))
+    std::string source = "";
+    if (!prepareDocument_(scddoc, document, indexDocument, rType, rTypeFieldValue, source))
     {
         return false;
     }
@@ -387,6 +389,19 @@ bool IndexTaskService::createDocument(const Value& documentValue)
     if (rType)
     {
         id = document.getId();
+    }
+
+    boost::posix_time::ptime now =
+                boost::posix_time::microsec_clock::local_time();
+    if(!source.empty())
+    {
+        ProductInfo productInfo;
+        productInfo.setSource(source);
+        productInfo.setCollection(bundleConfig_->collectionName_);
+        productInfo.setNum(1);
+        productInfo.setFlag("insert");
+        productInfo.setTimeStamp(now);
+        productInfo.save();
     }
 
     // DEBUG
@@ -428,7 +443,8 @@ bool IndexTaskService::updateDocument(const Value& documentValue)
     bool rType = false;
     std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
     sf1r::docid_t id = 0;
-    if (!prepareDocument_(scddoc, document, indexDocument, rType, rTypeFieldValue, false))
+    std::string source = "";
+    if (!prepareDocument_(scddoc, document, indexDocument, rType, rTypeFieldValue, source, false))
     {
         return false;
     }
@@ -436,6 +452,19 @@ bool IndexTaskService::updateDocument(const Value& documentValue)
     if (rType)
     {
         id = document.getId();
+    }
+
+    boost::posix_time::ptime now =
+                boost::posix_time::microsec_clock::local_time();
+    if(!source.empty())
+    {
+        ProductInfo productInfo;
+        productInfo.setSource(source);
+        productInfo.setCollection(bundleConfig_->collectionName_);
+        productInfo.setNum(1);
+        productInfo.setFlag("update");
+        productInfo.setTimeStamp(now);
+        productInfo.save();
     }
 
     sf1r::docid_t oldId = indexDocument.getId();
@@ -598,6 +627,26 @@ bool IndexTaskService::destroyDocument(const Value& documentValue)
         return true;
     }
 
+    boost::posix_time::ptime now =
+                boost::posix_time::microsec_clock::local_time();
+    PropertyValue value;
+    std::string source = "";
+    if (documentManager_->getPropertyValue(docid, "Source", value))
+    {
+        source = get<std::string>(value);
+        if(!source.empty())
+        {
+            ProductInfo productInfo;
+            productInfo.setSource(source);
+            productInfo.setCollection(bundleConfig_->collectionName_);
+            productInfo.setNum(1);
+            productInfo.setFlag("delete");
+            productInfo.setTimeStamp(now);
+            productInfo.save();
+        }
+    }
+
+
     return false;
 }
 
@@ -619,6 +668,7 @@ bool IndexTaskService::doBuildCollection_(
     }
     indexProgress_.currentFileSize_ = parser.getFileSize();
     indexProgress_.currentFilePos_ = 0;
+    map<string, uint32_t> sourceCount;
     if( op <= 2 ) // insert or update
     {
         // make propertyNameList for ScdParser::iterator
@@ -668,10 +718,16 @@ bool IndexTaskService::doBuildCollection_(
             bool rType = false;
             std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
             sf1r::docid_t id = 0;
-            bool ret = prepareDocument_( *doc, document, indexDocument, rType, rTypeFieldValue, isInsert);//or is update
+            std::string source = "";
+            bool ret = prepareDocument_( *doc, document, indexDocument, rType, rTypeFieldValue, source, isInsert);//or is update
 
             if ( !ret)
                 continue;
+
+            if(!source.empty())
+            {
+                 sourceCount[source]++;
+            }
 
             if (rType)
             {
@@ -798,6 +854,13 @@ bool IndexTaskService::doBuildCollection_(
             indexManager_->removeDocument(collectionId_, *iter);
             ++numDeletedDocs_;
             indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
+
+            PropertyValue value;
+            if (documentManager_->getPropertyValue(*iter, "Source", value))
+            {
+                std::string source = get<std::string>(value);
+                sourceCount[source]++;
+            }
         }
 
         std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
@@ -806,6 +869,33 @@ bool IndexTaskService::doBuildCollection_(
         // interrupt when closing the process
         boost::this_thread::interruption_point();
 
+    }
+
+    if (!sourceCount.empty())
+    {
+        boost::posix_time::ptime now =
+            boost::posix_time::microsec_clock::local_time();
+        for(map<std::string, uint32_t>::const_iterator iter = sourceCount.begin(); iter != sourceCount.end(); iter++)
+        {
+            ProductInfo productInfo;
+            productInfo.setSource(iter->first);
+            productInfo.setCollection(bundleConfig_->collectionName_);
+            productInfo.setNum(iter->second);
+            if (op == 1)
+            {
+                productInfo.setFlag("insert");
+            }
+            else if (op == 2)
+            {
+                productInfo.setFlag("update");
+            }
+            else
+            {
+                productInfo.setFlag("delete");
+            }
+            productInfo.setTimeStamp(now);
+            productInfo.save();
+        }
     }
 
     return true;
@@ -876,6 +966,7 @@ bool IndexTaskService::prepareDocument_(
     IndexerDocument& indexDocument,
     bool& rType,
     std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
+    std::string& source,
     bool insert
 )
 {
@@ -920,6 +1011,14 @@ bool IndexTaskService::prepareDocument_(
         }
 
         izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
+        std::string fieldValue("");
+        propertyValueU.convertString(fieldValue, encoding);
+
+        if(fieldStr == "Source")
+        {
+            source = fieldValue;
+        }
+
         if ( (propertyNameL == izenelib::util::UString("docid", encoding) )
                 && (!extraProperty))
         {
