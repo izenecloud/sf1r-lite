@@ -1,7 +1,6 @@
 #include <search-manager/NumericPropertyTable.h>
 #include <util/ustring/UString.h>
 #include <cstring>
-#include <cmath>
 #include "NumericRangeGroupCounter.h"
 
 NS_FACETED_BEGIN
@@ -19,17 +18,11 @@ Log10SegmentTree::Log10SegmentTree()
 void Log10SegmentTree::insertPoint(int64_t point)
 {
     level0_++;
-    int exponent = log10(point);
-    if (exponent < 1)
-    {
-        exponent = 1;
-    }
-    exponent--;
-    ++level1_[exponent];
-    for (int i = 0; i < exponent; i++)
-    {
+    int exponent;
+    for (exponent = 0; point >= 100; ++exponent)
         point /= 10;
-    }
+
+    ++level1_[exponent];
     ++level2_[exponent][point / 10];
     ++level3_[exponent][point / 10][point % 10];
 }
@@ -69,11 +62,8 @@ void NumericRangeGroupCounter::getGroupRep(OntologyRep& groupRep) const
         faceted::OntologyRepItem& repItem = itemList.back();
         repItem.level = 1;
         std::stringstream ss;
-        int lowerBound = exp10(i + 1);
-        if (lowerBound == 10)
-            lowerBound = 0;
 
-        ss << lowerBound << "-" << (int) exp10(i + 2) - 1;
+        ss << (i > 0 ? Log10SegmentTree::span_[i + 1] : 0) << "-" << Log10SegmentTree::span_[i + 2] - 1;
         izenelib::util::UString stringValue(ss.str(), UString::UTF_8);
         repItem.text = stringValue;
         repItem.doc_count = log10SegmentTree_.level1_[i];

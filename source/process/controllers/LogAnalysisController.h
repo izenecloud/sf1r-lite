@@ -31,6 +31,10 @@ public:
 
     void user_queries();
 
+    void merchant_count();
+
+    void product_update_info();
+
     void inject_user_queries();
 
     void delete_record_from_system_events();

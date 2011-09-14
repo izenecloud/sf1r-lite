@@ -2,6 +2,7 @@
 
 #include <log-manager/SystemEvent.h>
 #include <log-manager/UserQuery.h>
+#include <log-manager/ProductInfo.h>
 #include <common/SFLogger.h>
 #include <common/parsers/OrderArrayParser.h>
 #include <common/parsers/ConditionArrayParser.h>
@@ -198,7 +199,6 @@ void LogAnalysisController::system_events()
  * - @b user_queries All system events which fit conditions.
  *
  */
-
 void LogAnalysisController::user_queries()
 {
     bool isExistAggregateFunc = false;
@@ -276,6 +276,168 @@ void LogAnalysisController::user_queries()
             if (it->hasDuration()) userQuery[Keys::duration] = to_simple_string(it->getDuration());
             if (it->hasTimeStamp()) userQuery[Keys::timestamp] = to_simple_string(it->getTimeStamp());
         }
+    }
+}
+
+/**
+ * @brief Action \b merchant_count.
+ *
+ * @section request
+ *
+ * - @b conditions (@c Array): Result filtering conditions. See ConditionArrayParser.
+ *
+ * @section response
+ *
+ * - @b merchant_count The merchant count in all the records which fit the conditions.
+ *
+ * @section example
+ *
+ * Request
+ * @code
+ * {
+ *   "conditions"=>[
+        {"property":"collection", "operator":"=", "value":"intel"}
+     ]
+ * }
+ * @endcode
+ *
+ * response
+ * @code
+ * {
+ *   "merchant_count" => {
+ *      "count"=>"100"
+ *   }
+ * }
+ * @endcode
+ *
+ */
+void LogAnalysisController::merchant_count()
+{
+    string select = "count(distinct Source) as count";
+    string conditions = parseConditions();
+
+    std::list< std::map<std::string, std::string> > sqlResults;
+    std::stringstream sql;
+
+    sql << "select " << select;
+    sql << " from " << ProductInfo::TableName;
+    if ( conditions.size() )
+    {
+         sql << " where " << conditions;
+    }
+    sql << ";";
+    std::cerr << sql.str() << std::endl;
+    ProductInfo::find_by_sql(sql.str(), sqlResults);
+
+    Value& productInfo = response()[Keys::merchant_count];
+    std::list< std::map<std::string, std::string> >::iterator it = sqlResults.begin();
+    productInfo[Keys::count] = (*it)["count"];
+}
+
+
+/**
+ * @brief Action \b product_update_info.
+ *
+ * @section request
+ *
+ * - @b conditions (@c Array): Result filtering conditions. See ConditionArrayParser.
+ *
+ * @section response
+ *
+ * - @b product_update_info The product updated information for records with specified source which fit conditions.
+ *
+ * @section example
+ *
+ * Request
+ * @code
+ * {
+ *   "conditions"=>[
+        {"property":"source", "operator":"=", "value":"当当网"},
+        {"property":"collection", "operator":"=", "value":"intel"},
+        {"property":"timestamp", "operator":"range", "value":[1.0, 10.0]},
+     ]
+ * }
+ * @endcode
+ *
+ * response
+ * @code
+ * {
+ *   "product_update_info" => {
+ *      "count"=>"1000", "update_info"=>"50", "delete_info"=>"20"
+ *   }
+ * }
+ * @endcode
+ *
+ */
+void LogAnalysisController::product_update_info()
+{
+    string select = "sum(Num) as sum";
+    string conditions = parseConditions() + " and ";
+    conditions += "Flag = " + str_concat("'", "insert", "'");
+
+    ///Get index result
+    std::list< std::map<std::string, std::string> > insertResults;
+    std::stringstream sql;
+
+    sql << "select " << select;
+    sql << " from " << ProductInfo::TableName;
+    if( conditions.size() )
+    {
+        sql << " where " << conditions;
+    }
+    sql << ";";
+    std::cerr << sql.str() << std::endl;
+    ProductInfo::find_by_sql(sql.str(), insertResults);
+
+    ///Get updated result
+    conditions = parseConditions() + " and ";
+    conditions += "Flag = " + str_concat("'", "update", "'");
+
+    std::list< std::map<std::string, std::string> > updateResults;
+    sql.clear();
+    sql.str("");
+
+    sql << "select " << select;
+    sql << " from " << ProductInfo::TableName;
+    if( conditions.size() )
+    {
+        sql << " where " << conditions;
+    }
+    sql <<";";
+    std::cerr<< sql.str() << std::endl;
+    ProductInfo::find_by_sql(sql.str(), updateResults);
+
+    ///Get deleted result
+    conditions = parseConditions() + " and ";
+    conditions += "Flag = " + str_concat("'", "delete", "'");
+
+    std::list< std::map<std::string, std::string> > deleteResults;
+    sql.clear();
+    sql.str("");
+
+    sql<<"select " << select;
+    sql<<" from "<< ProductInfo::TableName;
+    if( conditions.size() )
+    {
+        sql<<" where " << conditions;
+    }
+    sql<<";";
+    std::cerr<< sql.str() <<std::endl;
+    ProductInfo::find_by_sql(sql.str(), deleteResults);
+
+    ///Output
+    Value& productInfo = response()[Keys::product_update_info];
+    std::list< std::map<std::string, std::string> >::iterator iter = insertResults.begin();
+    std::map<std::string, std::string>::const_iterator map_iter;
+
+    productInfo[Keys::count] = (*iter)["sum"];
+    if( updateResults.size() && (map_iter = updateResults.front().find("sum")) != updateResults.front().end())
+    {
+        productInfo[Keys::update_info] = map_iter->second;
+    }
+    if( deleteResults.size() && (map_iter = deleteResults.front().find("sum")) != deleteResults.front().end())
+    {
+        productInfo[Keys::delete_info] = map_iter->second;
     }
 }
 

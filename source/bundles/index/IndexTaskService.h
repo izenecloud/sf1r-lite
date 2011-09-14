@@ -66,6 +66,7 @@ private:
         IndexerDocument& indexDocument,
         bool& rType,
         std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
+        std::string& source,
         bool insert = true
     );
 
