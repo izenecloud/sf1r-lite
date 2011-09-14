@@ -28,16 +28,20 @@ bool NumericRangeGroupLabel::test(docid_t doc) const
 
 bool NumericRangeGroupLabel::test1(docid_t doc) const
 {
-    float value;
-    propertyTable_->convertPropertyValue(doc, value);
-    return (value == targetValue_);
+    float value = 0;
+    if (propertyTable_->convertPropertyValue(doc, value))
+        return (value == targetValue_);
+
+    return false;
 }
 
 bool NumericRangeGroupLabel::test2(docid_t doc) const
 {
-    int64_t value;
-    propertyTable_->convertPropertyValue(doc, value);
-    return (value >= lowerBound_ && value <= upperBound_);
+    int64_t value = 0;
+    if (propertyTable_->convertPropertyValue(doc, value))
+        return (value >= lowerBound_ && value <= upperBound_);
+
+    return false;
 }
 
 NS_FACETED_END
