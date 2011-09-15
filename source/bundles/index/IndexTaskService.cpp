@@ -631,7 +631,7 @@ bool IndexTaskService::destroyDocument(const Value& documentValue)
                 boost::posix_time::microsec_clock::local_time();
     PropertyValue value;
     std::string source = "";
-    if (documentManager_->getPropertyValue(docid, "Source", value))
+    if (!(bundleConfig_->productSourceField_).empty() && documentManager_->getPropertyValue(docid, bundleConfig_->productSourceField_, value))
     {
         source = get<std::string>(value);
         if(!source.empty())
@@ -855,11 +855,14 @@ bool IndexTaskService::doBuildCollection_(
             ++numDeletedDocs_;
             indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
 
-            PropertyValue value;
-            if (documentManager_->getPropertyValue(*iter, "Source", value))
+            if(!(bundleConfig_->productSourceField_).empty())
             {
-                std::string source = get<std::string>(value);
-                sourceCount[source]++;
+                PropertyValue value;
+                if (documentManager_->getPropertyValue(*iter, bundleConfig_->productSourceField_, value))
+                {
+                    std::string source = get<std::string>(value);
+                    sourceCount[source]++;
+                }
             }
         }
 
@@ -871,7 +874,7 @@ bool IndexTaskService::doBuildCollection_(
 
     }
 
-    if (!sourceCount.empty())
+    if (!(bundleConfig_->productSourceField_).empty() && !sourceCount.empty())
     {
         boost::posix_time::ptime now =
             boost::posix_time::microsec_clock::local_time();
@@ -1014,7 +1017,8 @@ bool IndexTaskService::prepareDocument_(
         std::string fieldValue("");
         propertyValueU.convertString(fieldValue, encoding);
 
-        if(fieldStr == "Source")
+        if(!(bundleConfig_->productSourceField_).empty()
+              && fieldStr == bundleConfig_->productSourceField_)
         {
             source = fieldValue;
         }

@@ -1062,6 +1062,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     params.Get<std::size_t>("Sia/filtercachenum", indexBundleConfig.filterCacheNum_);
     params.Get<std::size_t>("Sia/mastersearchcachenum", indexBundleConfig.masterSearchCacheNum_);
     params.Get<std::size_t>("Sia/topknum", indexBundleConfig.topKNum_);
+    params.GetString("ProductSourceField/property", indexBundleConfig.productSourceField_, "");
     params.GetString("LanguageIdentifier/dbpath", indexBundleConfig.languageIdentifierDbPath_, "");
 
     indexBundleConfig.isSupportByAggregator_ = SF1Config::get()->checkAggregatorSupport(collectionMeta.getName());
