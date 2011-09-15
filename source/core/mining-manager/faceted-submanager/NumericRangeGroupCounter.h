@@ -10,6 +10,8 @@
 
 #include "GroupCounter.h"
 
+#define LEVEL_1_OF_SEGMENT_TREE 7
+
 namespace sf1r{
 class NumericPropertyTable;
 }
@@ -22,17 +24,25 @@ struct Log10SegmentTree
 
     void insertPoint(int64_t point);
 
-    size_t level0_;
-    size_t level1_[8];
-    size_t level2_[8][10];
-    size_t level3_[8][10][10];
-    static const int bound_[9];
+    int level0_;
+    int level1_[LEVEL_1_OF_SEGMENT_TREE];
+    int level2_[LEVEL_1_OF_SEGMENT_TREE][10];
+    int level3_[LEVEL_1_OF_SEGMENT_TREE][10][10];
+    static const int bound_[LEVEL_1_OF_SEGMENT_TREE + 1];
 };
 
 class NumericRangeGroupCounter : public GroupCounter
 {
 public:
-    NumericRangeGroupCounter(const NumericPropertyTable *propertyTable, size_t rangeCount = 5);
+    enum RangePolicy {
+        RAW,
+        DROP_BLANKS,
+        SPLIT,
+        SPLIT_AND_MERGE
+    };
+
+public:
+    NumericRangeGroupCounter(const NumericPropertyTable *propertyTable, RangePolicy rangePolicy = SPLIT, int maxRangeNumber = 7);
 
     ~NumericRangeGroupCounter();
 
@@ -51,7 +61,8 @@ private:
 
 private:
     const NumericPropertyTable *propertyTable_;
-    size_t rangeCount_;
+    RangePolicy rangePolicy_;
+    int maxRangeNumber_;
     Log10SegmentTree segmentTree_;
 };
 
