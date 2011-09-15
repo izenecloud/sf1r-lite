@@ -18,6 +18,7 @@
 #include <configuration-manager/WorkerAgentConfig.h>
 #include <configuration-manager/FirewallConfig.h>
 #include <configuration-manager/CollectionParameterConfig.h>
+#include <configuration-manager/DistributedCoordinationConfig.h>
 #include <mining-manager/faceted-submanager/ontology_rep_item.h>
 
 #include <bundles/querylog/QueryLogBundleConfiguration.h>
@@ -587,6 +588,10 @@ private:
     void parseMasterAgent(const ticpp::Element * remoteAgent);
     void parseWorkerAgent(const ticpp::Element * remoteAgent);
 
+    /// @brief                  Parse <DistributedCoordination>
+    /// @param system           Pointer to the Element
+    void parseDistCoordination(const ticpp::Element * distcoordAgent);
+
 public:
     //----------------------------  PRIVATE MEMBER VARIABLES  ----------------------------
     // STATIC VALUES -----------------
@@ -616,6 +621,9 @@ public:
     MasterAgentConfig masterAgentConfig_;
 
     WorkerAgentConfig workerAgentConfig_;
+
+    /// @brief Configuations for distributed coordination
+    DistributedCoordinationConfig distCoordinationConfig_;
 
     /// @brief QueryLogBundleConfig
     QueryLogBundleConfiguration queryLogBundleConfig_;

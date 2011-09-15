@@ -183,6 +183,10 @@
     <WorkerAgent enable="n" port="18111">       
        <Master host="0.0.0.0" port="18151"/>
     </WorkerAgent>    -->
+
+    <DistributedCoordination>
+      <ZooKeeper servers="127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183" sessiontimeout="2000" />
+    </DistributedCoordination>
   </Deployment>
 
 </SF1Config>

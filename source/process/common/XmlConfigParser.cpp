@@ -363,6 +363,17 @@ void SF1Config::parseWorkerAgent( const ticpp::Element * workerAgent )
     }
 }
 
+void SF1Config::parseDistCoordination(const ticpp::Element * distcoordAgent)
+{
+    if (!distcoordAgent)
+        return;
+
+    ticpp::Element* zk = getUniqChildElement( distcoordAgent, "ZooKeeper", true);
+
+    getAttribute(zk, "servers", distCoordinationConfig_.zkHosts_, true);
+    getAttribute(zk, "sessiontimeout", distCoordinationConfig_.zkRecvTimeout_, true);
+}
+
 void SF1Config::parseBundlesDefault(const ticpp::Element * bundles)
 {
     Element * bundle = NULL;

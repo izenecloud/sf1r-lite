@@ -26,7 +26,7 @@ struct Log10SegmentTree
     size_t level1_[8];
     size_t level2_[8][10];
     size_t level3_[8][10][10];
-    static const int span_[8];
+    static const int bound_[9];
 };
 
 class NumericRangeGroupCounter : public GroupCounter
@@ -41,9 +41,18 @@ public:
     virtual void getGroupRep(OntologyRep& groupRep) const;
 
 private:
+    void get_range_list_raw(std::list<OntologyRepItem>& itemList) const;
+
+    void get_range_list_drop_blanks(std::list<OntologyRepItem>& itemList) const;
+
+    void get_range_list_split(std::list<OntologyRepItem>& itemList) const;
+
+    void get_range_list_split_and_merge(std::list<OntologyRepItem>& itemList) const;
+
+private:
     const NumericPropertyTable *propertyTable_;
     size_t rangeCount_;
-    Log10SegmentTree log10SegmentTree_;
+    Log10SegmentTree segmentTree_;
 };
 
 NS_FACETED_END
