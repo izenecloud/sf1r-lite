@@ -23,9 +23,19 @@ void Log10SegmentTree::insertPoint(int64_t point)
     for (exponent = 0; point >= 100; ++exponent)
         point /= 10;
 
-    ++level1_[exponent];
-    ++level2_[exponent][point / 10];
-    ++level3_[exponent][point / 10][point % 10];
+    if (exponent)
+    {
+        --exponent;
+        ++level1_[exponent];
+        ++level2_[exponent][point / 10];
+        ++level3_[exponent][point / 10][point % 10];
+    }
+    else
+    {
+        ++level1_[0];
+        ++level2_[0][0];
+        ++level3_[0][0][point / 10];
+    }
 }
 
 NumericRangeGroupCounter::NumericRangeGroupCounter(const NumericPropertyTable *propertyTable, RangePolicy rangePolicy, int maxRangeNumber)
@@ -184,20 +194,19 @@ void NumericRangeGroupCounter::get_range_list_split(std::list<OntologyRepItem>& 
         int atom = segmentTree_.bound_[i + 1] / 100;
         std::pair<int, int> stop(begin), oldStop;
         int tempCount = 0, oldCount = 0;
-        int partition[split[i]];
         for (int j = 0; j < split[i] - 1; j++)
         {
-            partition[j] = ((j + 1) * segmentTree_.level1_[i] - 1) / split[i] + 1;
-            int difference = abs(tempCount - partition[j]);
+            int expectation = ((j + 1) * segmentTree_.level1_[i] - 1) / split[i] + 1;
+            int difference = tempCount - expectation;
             oldStop = stop;
             std::pair<int, int> tempStop(stop);
             while (true)
             {
-                int newDifference = abs(tempCount + segmentTree_.level3_[i][stop.first][stop.second] - partition[j]);
-                if (newDifference > difference)
+                int newDifference = tempCount + segmentTree_.level3_[i][stop.first][stop.second] - expectation;
+                if (newDifference + difference == 0 || newDifference * newDifference > difference * difference)
                     break;
 
-                if (newDifference < difference)
+                if (newDifference * newDifference < difference * difference)
                 {
                     tempCount += segmentTree_.level3_[i][stop.first][stop.second];
                     difference = newDifference;
