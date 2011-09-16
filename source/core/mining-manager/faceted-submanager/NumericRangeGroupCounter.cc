@@ -133,8 +133,8 @@ void NumericRangeGroupCounter::get_range_list_drop_blanks(std::list<OntologyRepI
 
         int atom = segmentTree_.bound_[i + 1] / 100;
         ss << atom * (10 * begin.first + begin.second)
-           << "-"
-           << atom * (10 * end.first + end.second + 1);
+            << "-"
+            << atom * (10 * end.first + end.second + 1);
 
         izenelib::util::UString stringValue(ss.str(), UString::UTF_8);
         repItem.text = stringValue;
@@ -199,13 +199,12 @@ void NumericRangeGroupCounter::get_range_list_split(std::list<OntologyRepItem>& 
         }
         for (int j = 0; j < split[i] - 1; j++)
         {
-            int expectation = ((j + 1) * segmentTree_.level1_[i] - 1) / split[i] + 1;
-            int difference = tempCount - expectation;
+            int64_t difference = tempCount - ((j + 1) * segmentTree_.level1_[i] - 1) / split[i] - 1;
             oldStop = stop;
             std::pair<int, int> tempStop(stop);
             while (true)
             {
-                int newDifference = difference + segmentTree_.level3_[i][stop.first][stop.second];
+                int64_t newDifference = difference + segmentTree_.level3_[i][stop.first][stop.second];
                 if (newDifference + difference == 0 || newDifference * newDifference > difference * difference)
                     break;
 
