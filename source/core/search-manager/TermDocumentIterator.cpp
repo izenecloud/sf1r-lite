@@ -127,13 +127,13 @@ bool TermDocumentIterator::accept()
         PropertyValue2IndexPropertyType converter(value);
         boost::apply_visitor(converter, TermTypeDetector::propertyValue_.getVariant());
 
-        bool find = indexManagerPtr_->seek(colID_, property_, value);
+        bool find = indexManagerPtr_->seekTermFromBTreeIndex(colID_, property_, value);
         if (find)
         {
              pDocIdSet.reset(new EWAHBoolArray<uword32>());
              pBitVector.reset(new BitVector(pIndexReader_->numDocs() + 1));
 
-             indexManagerPtr_->getDocList(colID_, property_, value, *pBitVector);
+             indexManagerPtr_->getDocsByNumericValue(colID_, property_, value, *pBitVector);
              pBitVector->compressed(*pDocIdSet);
              vector<uint> idList;
              pDocIdSet->appendRowIDs(idList);

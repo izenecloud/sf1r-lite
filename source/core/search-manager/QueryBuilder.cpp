@@ -234,7 +234,7 @@ void QueryBuilder::prepare_for_property_(
             PropertyType value;
             PropertyValue2IndexPropertyType converter(value);
             boost::apply_visitor(converter, TermTypeDetector::propertyValue_.getVariant());
-            bool find = indexManagerPtr_->seek(colID, property, value);
+            bool find = indexManagerPtr_->seekTermFromBTreeIndex(colID, property, value);
 
             if (find)
             {
@@ -249,7 +249,7 @@ void QueryBuilder::prepare_for_property_(
                     pDocIdSet.reset(new EWAHBoolArray<uword32>());
                     pBitVector.reset(new BitVector(pIndexReader_->numDocs() + 1));
 
-                    indexManagerPtr_->getDocList(colID, property, value, *pBitVector);
+                    indexManagerPtr_->getDocsByNumericValue(colID, property, value, *pBitVector);
                     pBitVector->compressed(*pDocIdSet);
                     filterCache_->set(filteringRule, pDocIdSet);
                 }
