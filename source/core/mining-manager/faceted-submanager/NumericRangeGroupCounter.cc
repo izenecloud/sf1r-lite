@@ -161,7 +161,7 @@ void NumericRangeGroupCounter::get_range_list_split(std::list<OntologyRepItem>& 
         int best = -1;
         for (int i = 0; i < LEVEL_1_OF_SEGMENT_TREE; i++)
         {
-            if (split[i] > 0 && (best == -1 || (segmentTree_.level1_[i] / (split[i] + 1) > segmentTree_.level1_[best] / (split[best] + 1) && split[i] <= split[best])))
+            if (split[i] > 0 && (best == -1 || (segmentTree_.level1_[i] / (split[i] + 1) > segmentTree_.level1_[best] / (split[best] + 1) || (segmentTree_.level1_[i] / (split[i] + 1) == segmentTree_.level1_[best] / (split[best] + 1) && split[i] <= split[best]))))
             {
                 best = i;
             }
@@ -178,13 +178,7 @@ void NumericRangeGroupCounter::get_range_list_split(std::list<OntologyRepItem>& 
         if (!split[i])
             continue;
 
-        std::pair<int, int> begin(0, 0), end(9, 9);
-        while (segmentTree_.level2_[i][begin.first] == 0)
-            ++begin.first;
-
-        while (segmentTree_.level3_[i][begin.first][begin.second] == 0)
-            ++begin.second;
-
+        std::pair<int, int> end(9, 9);
         while (segmentTree_.level2_[i][end.first] == 0)
             --end.first;
 
@@ -192,8 +186,17 @@ void NumericRangeGroupCounter::get_range_list_split(std::list<OntologyRepItem>& 
             --end.second;
 
         int atom = segmentTree_.bound_[i + 1] / 100;
-        std::pair<int, int> stop(begin), oldStop;
+        std::pair<int, int> stop(0, 0), oldStop;
         int tempCount = 0, oldCount = 0;
+        while (segmentTree_.level3_[i][stop.first][stop.second] == 0)
+        {
+            ++stop.second;
+            if (stop.second == 10)
+            {
+                stop.second = 0;
+                ++stop.first;
+            }
+        }
         for (int j = 0; j < split[i] - 1; j++)
         {
             int expectation = ((j + 1) * segmentTree_.level1_[i] - 1) / split[i] + 1;
@@ -202,11 +205,11 @@ void NumericRangeGroupCounter::get_range_list_split(std::list<OntologyRepItem>& 
             std::pair<int, int> tempStop(stop);
             while (true)
             {
-                int newDifference = tempCount + segmentTree_.level3_[i][stop.first][stop.second] - expectation;
+                int newDifference = difference + segmentTree_.level3_[i][stop.first][stop.second];
                 if (newDifference + difference == 0 || newDifference * newDifference > difference * difference)
                     break;
 
-                if (newDifference * newDifference < difference * difference)
+                if (newDifference != difference)
                 {
                     tempCount += segmentTree_.level3_[i][stop.first][stop.second];
                     difference = newDifference;
@@ -218,8 +221,17 @@ void NumericRangeGroupCounter::get_range_list_split(std::list<OntologyRepItem>& 
                     stop.second = 0;
                     ++stop.first;
                 }
-                if (stop == end)
+                if (tempCount == segmentTree_.level1_[i])
                     break;
+            }
+            while (segmentTree_.level3_[i][stop.first][stop.second] == 0)
+            {
+                ++stop.second;
+                if (stop.second == 10)
+                {
+                    stop.second = 0;
+                    ++stop.first;
+                }
             }
             if (oldCount != tempCount)
             {
