@@ -961,9 +961,11 @@ void IndexTaskService::checkRtype_(
 {
     //R-type check
     PropertyDataType dataType;
+    sf1r::docid_t docId;
     vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
     for (p = doc.begin(); p != doc.end(); p++)
     {
+        const izenelib::util::UString & propertyValueU = p->second;
         std::set<PropertyConfig, PropertyComp>::iterator iter;
         string fieldName;
         p->first.convertString(fieldName, bundleConfig_->encoding_ );
@@ -974,26 +976,43 @@ void IndexTaskService::checkRtype_(
 
         if ( iter != bundleConfig_->schema_.end() )
         {
-            if ( iter->getName() == "DOCID" || iter->getName() == "DATE" )
+            if ( iter->getName() == "DOCID" )
             {
-                continue;
-            }
-            if ( iter-> isIndex() && iter->getIsFilter() && !iter->isAnalyzed())
-            {
-                dataType = iter->getType();
-                if ( dataType != INT_PROPERTY_TYPE && dataType != UNSIGNED_INT_PROPERTY_TYPE
-                    && dataType != FLOAT_PROPERTY_TYPE && dataType != DOUBLE_PROPERTY_TYPE )
+                bool ret = false;
+                ret = idManager_->getDocIdByDocName(propertyValueU, docId, false);
+                if(!ret)
                 {
                     break;
                 }
-                pair<PropertyDataType, izenelib::util::UString> fieldValue;
-                fieldValue.first = dataType;
-                fieldValue.second = p->second;
-                rTypeFieldValue[iter->getName()] = fieldValue;
             }
             else
             {
-                break;
+                PropertyValue value;
+                if (documentManager_->getPropertyValue(docId, iter->getName(), value))
+                {
+                    izenelib::util::UString oldPropertyValue = get<izenelib::util::UString>(value);
+                    if ( propertyValueU == oldPropertyValue )
+                    {
+                        continue;
+                    }
+                }
+                if ( iter->isIndex() && iter->getIsFilter() && !iter->isAnalyzed())
+                {
+                    dataType = iter->getType();
+                    if ( dataType != INT_PROPERTY_TYPE && dataType != UNSIGNED_INT_PROPERTY_TYPE
+                        && dataType != FLOAT_PROPERTY_TYPE && dataType != DOUBLE_PROPERTY_TYPE )
+                    {
+                        break;
+                    }
+                    pair<PropertyDataType, izenelib::util::UString> fieldValue;
+                    fieldValue.first = dataType;
+                    fieldValue.second = p->second;
+                    rTypeFieldValue[iter->getName()] = fieldValue;
+                }
+                else
+                {
+                    break;
+                }
             }
         }
         else
