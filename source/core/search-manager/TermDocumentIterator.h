@@ -8,10 +8,13 @@
 #define TERM_DOCUMENT_ITERATOR_H
 
 #include "DocumentIterator.h"
+#include <common/TermTypeDetector.h>
+#include <index-manager/IndexManager.h>
 
 #include <ir/index_manager/index/AbsTermReader.h>
 #include <ir/index_manager/index/IndexReader.h>
 #include <ir/index_manager/index/TermDocFreqs.h>
+#include <ir/index_manager/utility/BitMapIterator.h>
 #include <ir/index_manager/utility/PriorityQueue.h>
 
 #include <boost/assert.hpp>
@@ -26,13 +29,27 @@ class TermDocumentIterator: public DocumentIterator
 {
 public:
     TermDocumentIterator(
-		termid_t termid,
-		collectionid_t colID,
-		izenelib::ir::indexmanager::IndexReader* pIndexReader,
-		const std::string& property,
-		unsigned int propertyId,
-		unsigned int termIndex,
-		bool readPositions
+                termid_t termid,
+                collectionid_t colID,
+                izenelib::ir::indexmanager::IndexReader* pIndexReader,
+                const std::string& property,
+                unsigned int propertyId,
+                unsigned int termIndex,
+                bool readPositions
+    );
+
+    TermDocumentIterator(
+                termid_t termid,
+                std::string rawTerm,
+                collectionid_t colID,
+                izenelib::ir::indexmanager::IndexReader* pIndexReader,
+                boost::shared_ptr<IndexManager> indexManagerPtr,
+                const std::string& property,
+                unsigned int propertyId,
+                sf1r::PropertyDataType dataType,
+                bool isNumericFilter,
+                unsigned int termIndex,
+                bool readPositions
     );
 
     ~TermDocumentIterator();
@@ -98,11 +115,17 @@ public:
 protected:
     termid_t termId_;
 
+    std::string rawTerm_;
+
     collectionid_t colID_;
 
     std::string property_;
 
     unsigned int propertyId_;
+
+    sf1r::PropertyDataType dataType_;
+
+    bool isNumericFilter_;
 
     unsigned int termIndex_;
 
@@ -111,6 +134,8 @@ protected:
     izenelib::ir::indexmanager::TermReader* pTermReader_;
 
     izenelib::ir::indexmanager::TermDocFreqs* pTermDocReader_;
+
+    boost::shared_ptr<IndexManager> indexManagerPtr_;
 
     docid_t currDoc_;
 
