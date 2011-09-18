@@ -159,11 +159,17 @@ void NumericRangeGroupCounter::get_range_list_split(std::list<OntologyRepItem>& 
     while (rangeNumber > 0)
     {
         int best = -1;
+        double bestVarianceReduce;
         for (int i = 0; i < LEVEL_1_OF_SEGMENT_TREE; i++)
         {
-            if (split[i] > 0 && (best == -1 || (segmentTree_.level1_[i] / (split[i] + 1) > segmentTree_.level1_[best] / (split[best] + 1) || (segmentTree_.level1_[i] / (split[i] + 1) == segmentTree_.level1_[best] / (split[best] + 1) && split[i] <= split[best]))))
+            if (segmentTree_.level1_[i] <= split[i])
+                continue;
+
+            double varianceReduce = (double) segmentTree_.level1_[i] * segmentTree_.level1_[i] / split[i] / (split[i] + 1);
+            if (best == -1 || varianceReduce > bestVarianceReduce)
             {
                 best = i;
+                bestVarianceReduce = varianceReduce;
             }
         }
         if (best != -1)
@@ -178,34 +184,29 @@ void NumericRangeGroupCounter::get_range_list_split(std::list<OntologyRepItem>& 
         if (!split[i])
             continue;
 
-        std::pair<int, int> end(9, 9);
+        std::pair<int, int> stop(0, 0), end(9, 9);
+        int tempCount = 0, oldCount = 0;
+        int atom = segmentTree_.bound_[i + 1] / 100;
+        while (segmentTree_.level2_[i][stop.first] == 0)
+            ++stop.first;
+
+        while (segmentTree_.level3_[i][stop.first][stop.second] == 0)
+            ++stop.second;
+
         while (segmentTree_.level2_[i][end.first] == 0)
             --end.first;
 
         while (segmentTree_.level3_[i][end.first][end.second] == 0)
             --end.second;
 
-        int atom = segmentTree_.bound_[i + 1] / 100;
-        std::pair<int, int> stop(0, 0), oldStop;
-        int tempCount = 0, oldCount = 0;
-        while (segmentTree_.level3_[i][stop.first][stop.second] == 0)
-        {
-            ++stop.second;
-            if (stop.second == 10)
-            {
-                stop.second = 0;
-                ++stop.first;
-            }
-        }
         for (int j = 0; j < split[i] - 1; j++)
         {
-            int64_t difference = tempCount - ((j + 1) * segmentTree_.level1_[i] - 1) / split[i] - 1;
-            oldStop = stop;
-            std::pair<int, int> tempStop(stop);
+            int difference = tempCount - ((j + 1) * segmentTree_.level1_[i] - 1) / split[i] - 1;
+            std::pair<int, int> tempStop, oldStop(stop);
             while (true)
             {
-                int64_t newDifference = difference + segmentTree_.level3_[i][stop.first][stop.second];
-                if (newDifference + difference == 0 || newDifference * newDifference > difference * difference)
+                int newDifference = difference + segmentTree_.level3_[i][stop.first][stop.second];
+                if (newDifference + difference >= 0)
                     break;
 
                 if (newDifference != difference)
@@ -214,24 +215,21 @@ void NumericRangeGroupCounter::get_range_list_split(std::list<OntologyRepItem>& 
                     difference = newDifference;
                     tempStop = stop;
                 }
-                stop.second++;
-                if (stop.second == 10)
-                {
-                    stop.second = 0;
-                    ++stop.first;
-                }
                 if (tempCount == segmentTree_.level1_[i])
                     break;
-            }
-            while (segmentTree_.level3_[i][stop.first][stop.second] == 0)
-            {
-                ++stop.second;
+
+                while (++stop.second < 10 && segmentTree_.level3_[i][stop.first][stop.second] == 0);
                 if (stop.second == 10)
                 {
+                    while (segmentTree_.level2_[i][++stop.first] == 0);
                     stop.second = 0;
-                    ++stop.first;
+                    while (segmentTree_.level3_[i][stop.first][stop.second] == 0)
+                        ++stop.second;
                 }
             }
+            if (tempCount == segmentTree_.level1_[i])
+                break;
+
             if (oldCount != tempCount)
             {
                 itemList.push_back(faceted::OntologyRepItem());
