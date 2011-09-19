@@ -22,7 +22,7 @@ struct Log10SegmentTree
 {
     Log10SegmentTree();
 
-    void insertPoint(int64_t point);
+    void insertPoint(int point);
 
     int level0_;
     int level1_[LEVEL_1_OF_SEGMENT_TREE];
