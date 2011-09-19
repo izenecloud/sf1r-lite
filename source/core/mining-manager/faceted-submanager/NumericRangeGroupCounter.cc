@@ -20,8 +20,8 @@ void Log10SegmentTree::insertPoint(int point)
 {
     ++level0_;
     int exponent;
-    for (exponent = 0; point >= bound_[exponent + 1]; ++exponent);
-    point /= bound_[exponent + 1] / 100;
+    for (exponent = 1; point >= bound_[exponent]; ++exponent);
+    point /= bound_[exponent--] / 100;
     ++level1_[exponent];
     ++level2_[exponent][point / 10];
     ++level3_[exponent][point / 10][point % 10];
