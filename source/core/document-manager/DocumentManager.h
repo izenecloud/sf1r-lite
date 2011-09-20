@@ -24,6 +24,8 @@
 
 #include <ir/id_manager/IDManager.h>
 
+#include <am/sequence_file/ssfr.h>
+
 #include <util/ustring/UString.h>
 
 #include <langid/langid.h>
@@ -35,6 +37,7 @@
 
 #include <boost/thread.hpp>
 #include <boost/threadpool.hpp>
+#include <boost/dynamic_bitset.hpp>
 
 namespace sf1r
 {
@@ -56,6 +59,8 @@ class DocContainer;
 class DocumentManager
 {
     typedef uint32_t CharacterOffset;
+    typedef uint32_t DelFilterBlockType;
+    typedef boost::dynamic_bitset<DelFilterBlockType> DelFilterType;
 public:
     typedef Document DocumentType;
     /**
@@ -280,9 +285,16 @@ public:
      * @return  returns maximum docId value managed by document manager
      */
     docid_t getMaxDocId();
-
+    
+    bool getDeletedDocIdList(std::vector<docid_t>& docid_list);
+    
+    
 
 private:
+    
+    bool loadDelFilter_();
+    
+    bool saveDelFilter_();
     /**
      * @brief builds property-id pair map for properties from configuration. Different
      *               map for alias is constructed in the same interface.
@@ -387,6 +399,9 @@ private:
 
     /// @brief SDB file that holds all corresponding property and files
     DocContainer* propertyValueTable_;
+    
+    /// @brief The delete flag filter
+    DelFilterType delfilter_;
 
     /// @brief document cache holds the retrieved property values of document
     izenelib::cache::IzeneCache<docid_t, Document, izenelib::util::ReadWriteLock> documentCache_;
