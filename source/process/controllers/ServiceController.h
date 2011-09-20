@@ -15,6 +15,8 @@
 #include <string>
 
 namespace sf1r {
+/// @addtogroup controllers
+/// @{
 
 /**
  * @brief Controller \b service
@@ -27,6 +29,7 @@ public:
 };
 
 /// @}
+
 } // namespace sf1r
 
 #endif /* BA_PROCESS_CONTROLLERS_SERVICE_CONTROLLER_H_ */

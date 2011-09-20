@@ -50,6 +50,7 @@ public:
             faceted::OntologyRepItem& repItem = itemList.back();
             repItem.level = 1;
             std::stringstream ss;
+            ss << fixed << setprecision(2);
             ss << it->first;
             izenelib::util::UString stringValue(ss.str(), UString::UTF_8);
             repItem.text = stringValue;

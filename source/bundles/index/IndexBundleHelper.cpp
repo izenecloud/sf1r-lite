@@ -1,8 +1,11 @@
 #include "IndexBundleHelper.h"
+#include <ir/index_manager/utility/StringUtils.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/lexical_cast.hpp>
+
+using namespace izenelib::ir::indexmanager;
 
 namespace sf1r
 {
@@ -43,7 +46,9 @@ void split_int(const izenelib::util::UString& szText, std::list<PropertyType>& o
                 int64_t value = 0;
                 try
                 {
-                    value = boost::lexical_cast< int64_t >( str.substr(nOld, n-nOld) );
+                    izenelib::util::UString tmpStr = str.substr(nOld, n-nOld);
+                    trim( tmpStr );
+                    value = boost::lexical_cast< int64_t >( tmpStr );
                     out.push_back(value);
                 }
                 catch( const boost::bad_lexical_cast & )
@@ -57,7 +62,9 @@ void split_int(const izenelib::util::UString& szText, std::list<PropertyType>& o
     int64_t value = 0;
     try
     {
-        value = boost::lexical_cast< int64_t >( str.substr(nOld, str.length()-nOld) );
+        izenelib::util::UString tmpStr = str.substr(nOld, str.length()-nOld);
+        trim( tmpStr );
+        value = boost::lexical_cast< int64_t >( tmpStr );
         out.push_back(value);
     }
     catch( const boost::bad_lexical_cast & )
@@ -80,7 +87,9 @@ void split_float(const izenelib::util::UString& szText, std::list<PropertyType>&
                 float value = 0;
                 try
                 {
-                    value = boost::lexical_cast< float >( str.substr(nOld, n-nOld) );
+                    izenelib::util::UString tmpStr = str.substr(nOld, n-nOld);
+                    trim( tmpStr );
+                    value = boost::lexical_cast< float >( tmpStr );
                     out.push_back(value);
                 }
                 catch( const boost::bad_lexical_cast & )
@@ -94,7 +103,9 @@ void split_float(const izenelib::util::UString& szText, std::list<PropertyType>&
     float value = 0;
     try
     {
-        value = boost::lexical_cast< float >( str.substr(nOld, str.length()-nOld) );
+        izenelib::util::UString tmpStr = str.substr(nOld, str.length()-nOld);
+        trim( tmpStr );
+        value = boost::lexical_cast< float >( tmpStr );
         out.push_back(value);
     }
     catch( const boost::bad_lexical_cast & )

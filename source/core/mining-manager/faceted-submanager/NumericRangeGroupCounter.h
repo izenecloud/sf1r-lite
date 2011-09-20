@@ -8,59 +8,62 @@
 #ifndef SF1R_NUMERIC_RANGE_GROUP_COUNTER_H
 #define SF1R_NUMERIC_RANGE_GROUP_COUNTER_H
 
-#include <search-manager/NumericPropertyTable.h>
-#include <util/ustring/UString.h>
 #include "GroupCounter.h"
+
+#define LEVEL_1_OF_SEGMENT_TREE 7
+
+namespace sf1r{
+class NumericPropertyTable;
+}
 
 NS_FACETED_BEGIN
 
-template <typename T>
+struct Log10SegmentTree
+{
+    Log10SegmentTree();
+
+    void insertPoint(int point);
+
+    int level0_;
+    int level1_[LEVEL_1_OF_SEGMENT_TREE];
+    int level2_[LEVEL_1_OF_SEGMENT_TREE][10];
+    int level3_[LEVEL_1_OF_SEGMENT_TREE][10][10];
+    static const int bound_[LEVEL_1_OF_SEGMENT_TREE + 1];
+};
+
 class NumericRangeGroupCounter : public GroupCounter
 {
 public:
-    NumericGroupCounter(const NumericPropertyTable *propertyTable)
-        : propertyTable_(propertyTable)
-        , count_(0)
-    {}
+    enum RangePolicy {
+        RAW,
+        DROP_BLANKS,
+        SPLIT,
+        SPLIT_AND_MERGE
+    };
 
-    ~NumericGroupCounter()
-    {
-        delete propertyTable_;
-    }
+public:
+    NumericRangeGroupCounter(const NumericPropertyTable *propertyTable, RangePolicy rangePolicy = SPLIT, int maxRangeNumber = 7);
 
-    virtual void addDoc(docid_t doc)
-    {
-//        T value;
-//        propertyTable_->getPropertyValue(doc, value);
-//        ++count_;
-//        ++countTable_[value];
-    }
+    ~NumericRangeGroupCounter();
 
-    virtual void getGroupRep(OntologyRep& groupRep) const
-    {
-//        std::list<OntologyRepItem>& itemList = groupRep.item_list;
+    virtual void addDoc(docid_t doc);
 
-//        izenelib::util::UString propName(propertyTable_->getPropertyName(), UString::UTF_8);
-//        itemList.push_back(faceted::OntologyRepItem(0, propName, 0, count_));
+    virtual void getGroupRep(OntologyRep& groupRep) const;
 
-//        for (typename std::map<T, size_t>::const_iterator it = countTable_.begin();
-//            it != countTable_.end(); it++)
-//        {
-//            itemList.push_back(faceted::OntologyRepItem());
-//            faceted::OntologyRepItem& repItem = itemList.back();
-//            repItem.level = 1;
-//            std::stringstream ss;
-//            ss << it->first;
-//            izenelib::util::UString stringValue(ss.str(), UString::UTF_8);
-//            repItem.text = stringValue;
-//            repItem.doc_count = it->second;
-//        }
-    }
+private:
+    void get_range_list_raw(std::list<OntologyRepItem>& itemList) const;
+
+    void get_range_list_drop_blanks(std::list<OntologyRepItem>& itemList) const;
+
+    void get_range_list_split(std::list<OntologyRepItem>& itemList) const;
+
+    void get_range_list_split_and_merge(std::list<OntologyRepItem>& itemList) const;
 
 private:
     const NumericPropertyTable *propertyTable_;
-    size_t count_;
-    std::map<T, size_t> countTable_;
+    RangePolicy rangePolicy_;
+    int maxRangeNumber_;
+    Log10SegmentTree segmentTree_;
 };
 
 NS_FACETED_END

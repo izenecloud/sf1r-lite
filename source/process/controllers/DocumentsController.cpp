@@ -31,10 +31,7 @@ const std::size_t DocumentsController::kDefaultPageCount = 20;
  * - @b select (@c Array): Select properties in search result. See SelectParser.
  * - @b conditions (@c Array): Result filtering conditions. See ConditionArrayParser.
  * - @b sort (@c Array): Sort result. See SortParser.
- * - @b group (@c Array): Group property values.
- *   - @b property* (@c String): Property name, whose group result (doc count for
- *     each property value) would be supplied in response["group"]. The property
- *     type must be string, int or float.
+ * - @b group (@c Array): Group property values. See GroupingParser.
  * - @b range (@c Object): Property name for getting its property value range.
  *   - @b property* (@c String): Property name, whose value range (the maximum and
  *     minimum property value) would be supplied in response["range"]. The property
@@ -616,7 +613,7 @@ void DocumentsController::get_topic_with_sim()
  * - @b collection* (@c String): collection name.
  * - @b resource* (@c Object): specify the keywords, property name, etc.
  *   - @b keywords* (@c String): user query
- *   - @b group_property* (@c String): the group property name
+ *   - @b group_property* (@c String): the group property name, which property type must be string
  *   - @b limit (@c Uint = 1): Limit the count of returned labels
  *
  * @section response
@@ -711,7 +708,7 @@ void DocumentsController::get_freq_group_labels()
  * - @b collection* (@c String): collection name.
  * - @b resource* (@c Object): specify the keywords, property name and label value.
  *   - @b keywords* (@c String): user query
- *   - @b group_property* (@c String): the group property name
+ *   - @b group_property* (@c String): the group property name, which property type must be string
  *   - @b group_label* (@c Array): the value of the group label. It's an array of the path from root to leaf node. Each is a @c String of node value.@n
  *     If @b group_label is a non-empty array, this label would always be ranked at the 1st in the result of @c get_freq_group_labels() with the same values of @b keywords and @b group_property.@n
  *     Otherwise, if @b group_label is an empty array [], then it would clear the top label previously set, and the label with the largest frequency count would be ranked at the 1st as original.

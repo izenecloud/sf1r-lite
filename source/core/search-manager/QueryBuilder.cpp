@@ -13,8 +13,10 @@
 #include "PersonalSearchDocumentIterator.h"
 #include "FilterCache.h"
 
+#include <common/TermTypeDetector.h>
+
 #include <ir/index_manager/utility/BitVector.h>
-#include <ir/index_manager/utility/Ewah.h>
+#include <ir/index_manager/utility/BitMapIterator.h>
 
 #include <util/get.h>
 
@@ -175,44 +177,94 @@ void QueryBuilder::prepare_for_property_(
 )
 {
     std::map<termid_t, std::vector<TermDocFreqs*> > termDocReaders;
-#if PREFETCH_TERMID
-    std::vector<termid_t> termIds;
-    actionOperation.getQueryTermIdList(property, termIds);
-    TermReader* pTermReader
-    = pIndexReader_->getTermReader(colID);
-    if (!pTermReader)
+    bool isNumericFilter = false;
+    sf1r::PropertyDataType dataType;
+
+    typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
+    iterator found = schemaMap_.find(property);
+    if (found == schemaMap_.end())
         return;
-//        if (pIndexReader_->isDirty())
-//        {
-//            if (pTermReader) delete pTermReader;
-//            return;
-//        }
 
-    std::sort(termIds.begin(), termIds.end());
-    for (std::vector<termid_t>::const_iterator it = termIds.begin();
-            it != termIds.end(); ++it)
+    dataType = found->second.getType();
+    if(found->second.isIndex() && found->second.getIsFilter()
+                    && found->second.getType() != STRING_PROPERTY_TYPE)
+             isNumericFilter = true;
+
+#if PREFETCH_TERMID
+    std::vector<pair<termid_t, string> >termList;
+    actionOperation.getQueryTermInfoList(property, termList);
+    TermReader* pTermReader = NULL;
+    if (!isNumericFilter)
     {
-        Term term(property.c_str(),*it);
-        bool find = pTermReader->seek(&term);
-
-//            if (pIndexReader_->isDirty())
-//            {
-//                if (pTermReader) delete pTermReader;
-//                return;
-//            }
-
-        if (find)
-        {
-            TermDocFreqs* pTermDocReader = 0;
-            if (readPositions)
-                pTermDocReader = pTermReader->termPositions();
-            else
-                pTermDocReader = pTermReader->termDocFreqs();
-            termDocReaders[*it].push_back(pTermDocReader);
-        }
-
+        pTermReader = pIndexReader_->getTermReader(colID);
+        if (!pTermReader)
+                return;
     }
-    delete pTermReader;
+
+    std::sort(termList.begin(), termList.end());
+    for (std::vector<pair<termid_t, string> >::const_iterator it = termList.begin();
+            it != termList.end(); ++it)
+    {
+        termid_t termId = (*it).first;
+        const string& termStr = (*it).second;
+        if(!isNumericFilter)
+        {
+            Term term(property.c_str(),termId);
+            bool find = pTermReader->seek(&term);
+
+            if (find)
+            {
+                TermDocFreqs* pTermDocReader = 0;
+                if (readPositions)
+                    pTermDocReader = pTermReader->termPositions();
+                else
+                    pTermDocReader = pTermReader->termDocFreqs();
+                termDocReaders[termId].push_back(pTermDocReader);
+            }
+
+        }
+        else
+        {
+            boost::shared_ptr<EWAHBoolArray<uword32> > pDocIdSet;
+            boost::shared_ptr<BitVector> pBitVector;
+
+            if (!TermTypeDetector::isTypeMatch(termStr, dataType))
+                continue;
+
+            PropertyType value;
+            PropertyValue2IndexPropertyType converter(value);
+            boost::apply_visitor(converter, TermTypeDetector::propertyValue_.getVariant());
+            bool find = indexManagerPtr_->seekTermFromBTreeIndex(colID, property, value);
+
+            if (find)
+            {
+                QueryFiltering::FilteringType filteringRule;
+                filteringRule.first.first = QueryFiltering::EQUAL;
+                filteringRule.first.second = property;
+                std::vector<PropertyValue> filterParam;
+                filterParam.push_back(TermTypeDetector::propertyValue_);
+                filteringRule.second = filterParam;
+                if(!filterCache_->get(filteringRule, pDocIdSet))
+                {
+                    pDocIdSet.reset(new EWAHBoolArray<uword32>());
+                    pBitVector.reset(new BitVector(pIndexReader_->numDocs() + 1));
+
+                    indexManagerPtr_->getDocsByNumericValue(colID, property, value, *pBitVector);
+                    pBitVector->compressed(*pDocIdSet);
+                    filterCache_->set(filteringRule, pDocIdSet);
+                }
+                vector<uint> idList;
+                pDocIdSet->appendRowIDs(idList);
+
+                TermDocFreqs* pTermDocReader = 0;
+                pTermDocReader = new BitMapIterator(idList);
+                termDocReaders[termId].push_back(pTermDocReader);
+            }
+        }
+     }
+     if (pTermReader)
+        delete pTermReader;
+
 #endif
     DocumentIterator* pIter = NULL;
     QueryTreePtr queryTree;
@@ -222,6 +274,8 @@ void QueryBuilder::prepare_for_property_(
             colID,
             property,
             propertyId,
+            dataType,
+            isNumericFilter,
             readPositions,
             termIndexMapInProperty,
             pIter,
@@ -255,6 +309,8 @@ bool QueryBuilder::do_prepare_for_property_(
     collectionid_t colID,
     const std::string& property,
     unsigned int propertyId,
+    PropertyDataType propertyDataType,
+    bool isNumericFilter,
     bool readPositions,
     const std::map<termid_t, unsigned>& termIndexMapInProperty,
     DocumentIteratorPointer& pDocIterator,
@@ -269,6 +325,7 @@ bool QueryBuilder::do_prepare_for_property_(
     case QueryTree::KEYWORD:
     case QueryTree::RANK_KEYWORD:
     {
+        string keyword = queryTree->keyword_;
         termid_t keywordId = queryTree->keywordId_;
         unsigned termIndex = izenelib::util::getOr(
                                  termIndexMapInProperty,
@@ -281,10 +338,14 @@ bool QueryBuilder::do_prepare_for_property_(
         {
             pIterator = new TermDocumentIterator(
                 keywordId,
+                keyword,
                 colID,
                 pIndexReader_,
+                indexManagerPtr_,
                 property,
                 propertyId,
+                propertyDataType,
+                isNumericFilter,
                 termIndex,
                 readPositions);
         }
@@ -357,7 +418,9 @@ bool QueryBuilder::do_prepare_for_property_(
                 cout<<endl;
 #endif
                 delete pIterator;
-                return false;
+                pIterator = NULL;
+                if (!isNumericFilter)
+                    return false;
             }
         }
         return true;
@@ -525,6 +588,8 @@ bool QueryBuilder::do_prepare_for_property_(
                       colID,
                       property,
                       propertyId,
+                      propertyDataType,
+                      isNumericFilter,
                       readPositions,
                       termIndexMapInProperty,
                       pIterator,
@@ -563,6 +628,8 @@ bool QueryBuilder::do_prepare_for_property_(
                        colID,
                        property,
                        propertyId,
+                       propertyDataType,
+                       isNumericFilter,
                        readPositions,
                        termIndexMapInProperty,
                        pIterator,
@@ -603,6 +670,8 @@ bool QueryBuilder::do_prepare_for_property_(
                       colID,
                       property,
                       propertyId,
+                      propertyDataType,
+                      isNumericFilter,
                       readPositions,
                       termIndexMapInProperty,
                       pIterator,
@@ -642,6 +711,8 @@ bool QueryBuilder::do_prepare_for_property_(
                       colID,
                       property,
                       propertyId,
+                      propertyDataType,
+                      isNumericFilter,
                       readPositions,
                       termIndexMapInProperty,
                       pIterator,

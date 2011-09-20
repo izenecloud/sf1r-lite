@@ -34,7 +34,7 @@ bool GroupManager::open(const std::vector<GroupConfig>& configVec)
     for (std::vector<GroupConfig>::const_iterator it = configVec.begin();
         it != configVec.end(); ++it)
     {
-        if (it->propType != STRING_PROPERTY_TYPE)
+        if (! it->isStringType())
             continue;
 
         std::pair<PropValueMap::iterator, bool> res =

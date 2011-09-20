@@ -174,6 +174,7 @@
 				<xs:element ref="BrokerAgent"/>
 				<xs:element ref="MasterAgent" minOccurs="0" maxOccurs="1"/>
 				<xs:element ref="WorkerAgent" minOccurs="0" maxOccurs="1"/>
+				<xs:element ref="DistributedCoordination" minOccurs="0" maxOccurs="1"/>
 			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
@@ -236,6 +237,19 @@
 		<xs:complexType>
 			<xs:attribute name="host" type="xs:string" use="required"/>
 			<xs:attribute name="port" type="xs:integer" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="DistributedCoordination">
+		<xs:complexType>                        
+			<xs:sequence>
+				<xs:element ref="ZooKeeper" minOccurs="1" maxOccurs="1"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="ZooKeeper">
+		<xs:complexType>
+			<xs:attribute name="servers" type="xs:string" use="required"/>
+			<xs:attribute name="sessiontimeout" type="xs:integer" use="required"/>
 		</xs:complexType>
 	</xs:element>
 </xs:schema>

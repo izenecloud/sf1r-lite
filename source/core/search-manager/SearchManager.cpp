@@ -495,14 +495,14 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
     {
         totalCount = 0;
         const std::string& rangePropertyName = actionOperation.actionItem_.rangePropertyName_;
-        NumericPropertyTable* rangePropertyTable = NULL;
+        boost::scoped_ptr<NumericPropertyTable> rangePropertyTable;
         float lowValue = (std::numeric_limits<float>::max) ();
         float highValue = - lowValue;
 
         if(!rangePropertyName.empty())
         {
             typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
-            rangePropertyTable = createPropertyTable(rangePropertyName);
+            rangePropertyTable.reset(createPropertyTable(rangePropertyName));
         }
 
         while (pDocIterator->next())
@@ -521,28 +521,18 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
 
             if(rangePropertyTable)
             {
-                float docPropertyValue = 0.0F;
-                switch(rangePropertyTable->getPropertyType())
+                float docPropertyValue = 0;
+                if (rangePropertyTable->convertPropertyValue(pDocIterator->doc(), docPropertyValue))
                 {
-                case INT_PROPERTY_TYPE:
-                    docPropertyValue = rangePropertyTable->getIntPropertyValue(pDocIterator->doc());
-                    break;
+                    if ( docPropertyValue < lowValue )
+                    {
+                        lowValue = docPropertyValue;
+                    }
 
-                case FLOAT_PROPERTY_TYPE:
-                    docPropertyValue = rangePropertyTable->getFloatPropertyValue(pDocIterator->doc());
-                    break;
-
-                default:
-                      break;
-                }
-                if ( docPropertyValue < lowValue )
-                {
-                    lowValue = docPropertyValue;
-                }
-
-                if (docPropertyValue > highValue)
-                {
-                    highValue = docPropertyValue;
+                    if (docPropertyValue > highValue)
+                    {
+                        highValue = docPropertyValue;
+                    }
                 }
             }
 
@@ -573,7 +563,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             groupFilter->getGroupRep(groupRep, attrRep);
         }
 
-        if (rangePropertyTable && totalCount)
+        if (rangePropertyTable && lowValue <= highValue)
         {
             propertyRange.highValue_ = highValue;
             propertyRange.lowValue_ = lowValue;

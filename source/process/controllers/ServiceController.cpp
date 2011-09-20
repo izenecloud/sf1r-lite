@@ -13,6 +13,10 @@
 
 namespace sf1r {
 
+/**
+ * @brief Action @b process_overdue. This API is invoked when the service
+ * fee is overdued.
+ */
 void ServiceController::process_overdue()
 {
 #ifdef  EXIST_LICENSE
@@ -39,6 +43,10 @@ void ServiceController::process_overdue()
 #endif
 }
 
+/**
+ * @brief Action @b process_overdue. When the overdue fees is paid, this API is invoked
+ * to renew service.
+ */
 void ServiceController::renew()
 {
 #ifdef  EXIST_LICENSE

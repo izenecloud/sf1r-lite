@@ -47,6 +47,8 @@
           <Sia triggerqa="n" doccachenum="20000" searchcachenum="1000" filtercachenum="1000" mastersearchcachenum="1000" topknum="4000" 
                encoding="UTF-8" wildcardtype="unigram" indexunigramproperty="y" unigramsearchmode="n" multilanggranularity="field" />
           
+          <ProductSourceField property="Source"/>
+          
           <LanguageIdentifier dbpath="@ilplib_LANGUAGEIDENTIFIER_DB@"/>
 
         </Parameter>
@@ -181,6 +183,10 @@
     <WorkerAgent enable="n" port="18111">       
        <Master host="0.0.0.0" port="18151"/>
     </WorkerAgent>    -->
+
+    <DistributedCoordination>
+      <ZooKeeper servers="127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183" sessiontimeout="2000" />
+    </DistributedCoordination>
   </Deployment>
 
 </SF1Config>

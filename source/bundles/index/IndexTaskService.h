@@ -66,7 +66,14 @@ private:
         IndexerDocument& indexDocument,
         bool& rType,
         std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
+        std::string& source,
         bool insert = true
+    );
+
+    bool checkSeparatorType_(
+        const izenelib::util::UString& propertyValueStr,
+        izenelib::util::UString::EncodingType encoding,
+        char separator
     );
 
     bool preparePartialDocument_(

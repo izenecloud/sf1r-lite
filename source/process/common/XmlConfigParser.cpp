@@ -27,29 +27,6 @@ namespace sf1r
 {
 
 //------------------------- HELPER FUNCTIONS -------------------------
-
-bool checkIntFormat( const std::string & str )
-{
-    std::size_t pos = str.find_first_not_of( "0123456789", 0 );
-    if( pos != std::string::npos )
-    {
-        /*
-        // the value is a negative number
-        if( pos == 0 && str[pos] == '-' )
-        {
-            pos = str.find_first_not_of( "0123456789", pos+1 );
-            if( pos == string::npos )
-                return true;
-            else
-                return false;
-        }
-        */
-
-        return false;
-    }
-    return true;
-}
-
 void downCase( std::string & str )
 {
     for ( string::iterator it = str.begin(); it != str.end(); it++ )
@@ -361,6 +338,17 @@ void SF1Config::parseWorkerAgent( const ticpp::Element * workerAgent )
         getAttribute(master, "host", workerAgentConfig_.masterHost_);
         getAttribute(master, "port", workerAgentConfig_.masterPort_);
     }
+}
+
+void SF1Config::parseDistCoordination(const ticpp::Element * distcoordAgent)
+{
+    if (!distcoordAgent)
+        return;
+
+    ticpp::Element* zk = getUniqChildElement( distcoordAgent, "ZooKeeper", true);
+
+    getAttribute(zk, "servers", distCoordinationConfig_.zkHosts_, true);
+    getAttribute(zk, "sessiontimeout", distCoordinationConfig_.zkRecvTimeout_, true);
 }
 
 void SF1Config::parseBundlesDefault(const ticpp::Element * bundles)
@@ -1062,6 +1050,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     params.Get<std::size_t>("Sia/filtercachenum", indexBundleConfig.filterCacheNum_);
     params.Get<std::size_t>("Sia/mastersearchcachenum", indexBundleConfig.masterSearchCacheNum_);
     params.Get<std::size_t>("Sia/topknum", indexBundleConfig.topKNum_);
+    params.GetString("ProductSourceField/property", indexBundleConfig.productSourceField_, "");
     params.GetString("LanguageIdentifier/dbpath", indexBundleConfig.languageIdentifierDbPath_, "");
 
     indexBundleConfig.isSupportByAggregator_ = SF1Config::get()->checkAggregatorSupport(collectionMeta.getName());
@@ -1257,15 +1246,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             {
                 getAttribute(it.Get(), "name", property_name);
                 bool gottype = collectionMeta.getPropertyType(property_name, property_type);
-                if( !gottype || (property_type != STRING_PROPERTY_TYPE
-                                 && property_type != INT_PROPERTY_TYPE
-                                 && property_type != FLOAT_PROPERTY_TYPE))
+                if( !gottype )
                 {
-                    throw XmlConfigParserException("Property ["+property_name+"] in <Group> is not string, int or float type.");
+                    throw XmlConfigParserException("The type of property ["+property_name+"] in <Group> is unknown.");
                 }
 
-                if (property_type == INT_PROPERTY_TYPE
-                    || property_type == FLOAT_PROPERTY_TYPE)
+                GroupConfig groupConfig(property_name, property_type);
+
+                if ( groupConfig.isNumericType() )
                 {
                     const std::set<PropertyConfig, PropertyComp>& indexSchema = collectionMeta.indexBundleConfig_->schema_;
                     PropertyConfig p;
@@ -1279,8 +1267,11 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                                                        "<IndexBundle> <Schema> <Property name=\"Price\"> <Indexing filter=\"yes\" ...");
                     }
                 }
+                else if( !groupConfig.isStringType() )
+                {
+                    throw XmlConfigParserException("Property ["+property_name+"] in <Group> is not string, int or float type.");
+                }
 
-                GroupConfig groupConfig(property_name, property_type);
                 mining_schema.group_properties.push_back(groupConfig);
 
                 LOG(INFO) << "group property: " << property_name

@@ -5,6 +5,7 @@
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
 #include <search-manager/SearchManager.h>
+#include <log-manager/ProductInfo.h>
 
 #include <bundles/mining/MiningTaskService.h>
 #include <bundles/recommend/RecommendTaskService.h>
@@ -149,7 +150,6 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
         if (bfs::is_regular_file(itr->status()))
         {
             std::string fileName = itr->path().filename();
-
             if (parser.checkSCDFormat(fileName) )
             {
                 scdList.push_back(itr->path().string() );
@@ -293,6 +293,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
 //         miningManager_->flush();
         return false;
     }
+    indexManager_->getIndexReader();
 
     bfs::path bkDir = bfs::path(scdPath) / SCD_BACKUP_DIR;
     bfs::create_directory(bkDir);
@@ -378,7 +379,8 @@ bool IndexTaskService::createDocument(const Value& documentValue)
     bool rType = false;
     std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
     sf1r::docid_t id = 0;
-    if (!prepareDocument_(scddoc, document, indexDocument, rType, rTypeFieldValue))
+    std::string source = "";
+    if (!prepareDocument_(scddoc, document, indexDocument, rType, rTypeFieldValue, source))
     {
         return false;
     }
@@ -386,6 +388,19 @@ bool IndexTaskService::createDocument(const Value& documentValue)
     if (rType)
     {
         id = document.getId();
+    }
+
+    boost::posix_time::ptime now =
+                boost::posix_time::microsec_clock::local_time();
+    if(!source.empty())
+    {
+        ProductInfo productInfo;
+        productInfo.setSource(source);
+        productInfo.setCollection(bundleConfig_->collectionName_);
+        productInfo.setNum(1);
+        productInfo.setFlag("insert");
+        productInfo.setTimeStamp(now);
+        productInfo.save();
     }
 
     // DEBUG
@@ -427,7 +442,8 @@ bool IndexTaskService::updateDocument(const Value& documentValue)
     bool rType = false;
     std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
     sf1r::docid_t id = 0;
-    if (!prepareDocument_(scddoc, document, indexDocument, rType, rTypeFieldValue, false))
+    std::string source = "";
+    if (!prepareDocument_(scddoc, document, indexDocument, rType, rTypeFieldValue, source, false))
     {
         return false;
     }
@@ -435,6 +451,19 @@ bool IndexTaskService::updateDocument(const Value& documentValue)
     if (rType)
     {
         id = document.getId();
+    }
+
+    boost::posix_time::ptime now =
+                boost::posix_time::microsec_clock::local_time();
+    if(!source.empty())
+    {
+        ProductInfo productInfo;
+        productInfo.setSource(source);
+        productInfo.setCollection(bundleConfig_->collectionName_);
+        productInfo.setNum(1);
+        productInfo.setFlag("update");
+        productInfo.setTimeStamp(now);
+        productInfo.save();
     }
 
     sf1r::docid_t oldId = indexDocument.getId();
@@ -469,6 +498,7 @@ bool IndexTaskService::updateDocument(const Value& documentValue)
         }
         else
         {
+
             // Store the old property value.
             IndexerDocument oldIndexDocument;
             if ( !preparePartialDocument_(document, oldIndexDocument) )
@@ -506,7 +536,7 @@ bool IndexTaskService::preparePartialDocument_(
     typedef Document::property_const_iterator iterator;
     for (iterator it = document.propertyBegin(), itEnd = document.propertyEnd(); it
                  != itEnd; ++it) {
-        if (it->first != "DOCID" && it->first != "DATE") {
+        if (it->first != "DOCID" && it->first != "DATE" ) {
             std::set<PropertyConfig, PropertyComp>::iterator iter;
             PropertyConfig temp;
             temp.propertyName_ = it->first;
@@ -518,42 +548,95 @@ bool IndexTaskService::preparePartialDocument_(
             {
                 continue;
             }
-            indexerPropertyConfig.setPropertyId(iter->getPropertyId());
-            indexerPropertyConfig.setName(iter->getName());
-            indexerPropertyConfig.setIsIndex(iter->isIndex());
-            indexerPropertyConfig.setIsAnalyzed(iter->isAnalyzed());
-            indexerPropertyConfig.setIsFilter(iter->getIsFilter());
-            indexerPropertyConfig.setIsMultiValue(iter->getIsMultiValue());
-            indexerPropertyConfig.setIsStoreDocLen(iter->getIsStoreDocLen());
 
-            PropertyValue value = oldDoc.property(it->first);
-            const izenelib::util::UString* stringValue = get<izenelib::util::UString>(&value);
+            if(iter->isIndex() && iter->getIsFilter())
+            {
+                indexerPropertyConfig.setPropertyId(iter->getPropertyId());
+                indexerPropertyConfig.setName(iter->getName());
+                indexerPropertyConfig.setIsIndex(iter->isIndex());
+                indexerPropertyConfig.setIsAnalyzed(iter->isAnalyzed());
+                indexerPropertyConfig.setIsFilter(iter->getIsFilter());
+                indexerPropertyConfig.setIsMultiValue(iter->getIsMultiValue());
+                indexerPropertyConfig.setIsStoreDocLen(iter->getIsStoreDocLen());
 
-            std::string str("");
-            stringValue->convertString(str, bundleConfig_->encoding_);
-            if ( iter->getType() == INT_PROPERTY_TYPE )
-            {
-                int64_t value = 0;
-                value = boost::lexical_cast< int64_t >( str );
-                oldIndexDocument.insertProperty(indexerPropertyConfig, value);
-            }
-            else if ( iter->getType() == UNSIGNED_INT_PROPERTY_TYPE )
-            {
-                uint64_t value = 0;
-                value = boost::lexical_cast< uint64_t >( str );
-                oldIndexDocument.insertProperty(indexerPropertyConfig, value);
-            }
-            else if ( iter->getType() == FLOAT_PROPERTY_TYPE )
-            {
-                float value = 0.0;
-                value = boost::lexical_cast< float >( str );
-                oldIndexDocument.insertProperty(indexerPropertyConfig, value);
-            }
-            else if ( iter->getType() == DOUBLE_PROPERTY_TYPE )
-            {
-                 double value = 0.0;
-                 value = boost::lexical_cast< double >( str );
-                 oldIndexDocument.insertProperty(indexerPropertyConfig, value);
+                PropertyValue propertyValue = oldDoc.property(it->first);
+                const izenelib::util::UString* stringValue = get<izenelib::util::UString>(&propertyValue);
+
+                izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
+                std::string str("");
+                stringValue->convertString(str, encoding);
+                if ( iter->getType() == INT_PROPERTY_TYPE )
+                {
+                    if(iter->getIsMultiValue())
+                    {
+                        MultiValuePropertyType props;
+                        split_int(*stringValue, props, encoding, ',');
+                        oldIndexDocument.insertProperty(indexerPropertyConfig, props);
+                    }
+                    else
+                    {
+                        int64_t value = 0;
+                        try
+                        {
+                            value = boost::lexical_cast< int64_t >( str );
+                            oldIndexDocument.insertProperty(indexerPropertyConfig, value);
+                        }
+                        catch( const boost::bad_lexical_cast & )
+                        {
+                            MultiValuePropertyType props;
+                            if( checkSeparatorType_(*stringValue, encoding, '-') )
+                            {
+                                split_int(*stringValue, props, encoding,'-');
+                            }
+                            else if( checkSeparatorType_(*stringValue, encoding, '~') )
+                            {
+                                split_int(*stringValue, props, encoding,'~');
+                            }
+                            else if( checkSeparatorType_(*stringValue, encoding, ',') )
+                            {
+                                split_int(*stringValue, props, encoding,',');
+                            }
+                            indexerPropertyConfig.setIsMultiValue(true);
+                            oldIndexDocument.insertProperty(indexerPropertyConfig, props);
+                         }
+                    }
+                }
+                else if ( iter->getType() == FLOAT_PROPERTY_TYPE )
+                {
+                    if(iter->getIsMultiValue())
+                    {
+                        MultiValuePropertyType props;
+                        split_float(*stringValue, props, encoding,',');
+                        oldIndexDocument.insertProperty(indexerPropertyConfig, props);
+                    }
+                    else
+                    {
+                        float value = 0.0;
+                        try
+                        {
+                            value = boost::lexical_cast< float >( str );
+                            oldIndexDocument.insertProperty(indexerPropertyConfig, value);
+                        }
+                        catch( const boost::bad_lexical_cast & )
+                        {
+                            MultiValuePropertyType props;
+                            if( checkSeparatorType_(*stringValue, encoding, '-') )
+                            {
+                                split_float(*stringValue, props, encoding,'-');
+                            }
+                            else if( checkSeparatorType_(*stringValue, encoding, '~') )
+                            {
+                                split_float(*stringValue, props, encoding,'~');
+                            }
+                            else if( checkSeparatorType_(*stringValue, encoding, ',') )
+                            {
+                                split_float(*stringValue, props, encoding,',');
+                            }
+                            indexerPropertyConfig.setIsMultiValue(true);
+                            oldIndexDocument.insertProperty(indexerPropertyConfig, props);
+                         }
+                    }
+                }
             }
         }
     }
@@ -597,6 +680,26 @@ bool IndexTaskService::destroyDocument(const Value& documentValue)
         return true;
     }
 
+    boost::posix_time::ptime now =
+                boost::posix_time::microsec_clock::local_time();
+    PropertyValue value;
+    std::string source = "";
+    if (!(bundleConfig_->productSourceField_).empty() && documentManager_->getPropertyValue(docid, bundleConfig_->productSourceField_, value))
+    {
+        source = get<std::string>(value);
+        if(!source.empty())
+        {
+            ProductInfo productInfo;
+            productInfo.setSource(source);
+            productInfo.setCollection(bundleConfig_->collectionName_);
+            productInfo.setNum(1);
+            productInfo.setFlag("delete");
+            productInfo.setTimeStamp(now);
+            productInfo.save();
+        }
+    }
+
+
     return false;
 }
 
@@ -618,6 +721,7 @@ bool IndexTaskService::doBuildCollection_(
     }
     indexProgress_.currentFileSize_ = parser.getFileSize();
     indexProgress_.currentFilePos_ = 0;
+    map<string, uint32_t> sourceCount;
     if( op <= 2 ) // insert or update
     {
         // make propertyNameList for ScdParser::iterator
@@ -633,6 +737,7 @@ bool IndexTaskService::doBuildCollection_(
             boost::to_lower(propertyName);
             propertyNameList.push_back(propertyName);
         }
+
 
 
         uint32_t n = 0;
@@ -667,10 +772,16 @@ bool IndexTaskService::doBuildCollection_(
             bool rType = false;
             std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
             sf1r::docid_t id = 0;
-            bool ret = prepareDocument_( *doc, document, indexDocument, rType, rTypeFieldValue, isInsert);//or is update
+            std::string source = "";
+            bool ret = prepareDocument_( *doc, document, indexDocument, rType, rTypeFieldValue, source, isInsert);//or is update
 
             if ( !ret)
                 continue;
+
+            if(!source.empty())
+            {
+                 sourceCount[source]++;
+            }
 
             if (rType)
             {
@@ -797,6 +908,16 @@ bool IndexTaskService::doBuildCollection_(
             indexManager_->removeDocument(collectionId_, *iter);
             ++numDeletedDocs_;
             indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
+
+            if(!(bundleConfig_->productSourceField_).empty())
+            {
+                PropertyValue value;
+                if (documentManager_->getPropertyValue(*iter, bundleConfig_->productSourceField_, value))
+                {
+                    std::string source = get<std::string>(value);
+                    sourceCount[source]++;
+                }
+            }
         }
 
         std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
@@ -805,6 +926,33 @@ bool IndexTaskService::doBuildCollection_(
         // interrupt when closing the process
         boost::this_thread::interruption_point();
 
+    }
+
+    if (!(bundleConfig_->productSourceField_).empty() && !sourceCount.empty())
+    {
+        boost::posix_time::ptime now =
+            boost::posix_time::microsec_clock::local_time();
+        for(map<std::string, uint32_t>::const_iterator iter = sourceCount.begin(); iter != sourceCount.end(); iter++)
+        {
+            ProductInfo productInfo;
+            productInfo.setSource(iter->first);
+            productInfo.setCollection(bundleConfig_->collectionName_);
+            productInfo.setNum(iter->second);
+            if (op == 1)
+            {
+                productInfo.setFlag("insert");
+            }
+            else if (op == 2)
+            {
+                productInfo.setFlag("update");
+            }
+            else
+            {
+                productInfo.setFlag("delete");
+            }
+            productInfo.setTimeStamp(now);
+            productInfo.save();
+        }
     }
 
     return true;
@@ -818,9 +966,11 @@ void IndexTaskService::checkRtype_(
 {
     //R-type check
     PropertyDataType dataType;
+    sf1r::docid_t docId;
     vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
     for (p = doc.begin(); p != doc.end(); p++)
     {
+        const izenelib::util::UString & propertyValueU = p->second;
         std::set<PropertyConfig, PropertyComp>::iterator iter;
         string fieldName;
         p->first.convertString(fieldName, bundleConfig_->encoding_ );
@@ -831,26 +981,43 @@ void IndexTaskService::checkRtype_(
 
         if ( iter != bundleConfig_->schema_.end() )
         {
-            if ( iter->getName() == "DOCID" || iter->getName() == "DATE" )
+            if ( iter->getName() == "DOCID" )
             {
-                continue;
-            }
-            if ( iter-> isIndex() && iter->getIsFilter() && !iter->isAnalyzed())
-            {
-                dataType = iter->getType();
-                if ( dataType != INT_PROPERTY_TYPE && dataType != UNSIGNED_INT_PROPERTY_TYPE
-                    && dataType != FLOAT_PROPERTY_TYPE && dataType != DOUBLE_PROPERTY_TYPE )
+                bool ret = false;
+                ret = idManager_->getDocIdByDocName(propertyValueU, docId, false);
+                if(!ret)
                 {
                     break;
                 }
-                pair<PropertyDataType, izenelib::util::UString> fieldValue;
-                fieldValue.first = dataType;
-                fieldValue.second = p->second;
-                rTypeFieldValue[iter->getName()] = fieldValue;
             }
             else
             {
-                break;
+                PropertyValue value;
+                if (documentManager_->getPropertyValue(docId, iter->getName(), value))
+                {
+                    izenelib::util::UString oldPropertyValue = get<izenelib::util::UString>(value);
+                    if ( propertyValueU == oldPropertyValue )
+                    {
+                        continue;
+                    }
+                }
+                if ( iter->isIndex() && iter->getIsFilter() && !iter->isAnalyzed())
+                {
+                    dataType = iter->getType();
+                    if ( dataType != INT_PROPERTY_TYPE && dataType != UNSIGNED_INT_PROPERTY_TYPE
+                        && dataType != FLOAT_PROPERTY_TYPE && dataType != DOUBLE_PROPERTY_TYPE )
+                    {
+                        break;
+                    }
+                    pair<PropertyDataType, izenelib::util::UString> fieldValue;
+                    fieldValue.first = dataType;
+                    fieldValue.second = p->second;
+                    rTypeFieldValue[iter->getName()] = fieldValue;
+                }
+                else
+                {
+                    break;
+                }
             }
         }
         else
@@ -869,12 +1036,25 @@ void IndexTaskService::checkRtype_(
     }
 }
 
+bool IndexTaskService::checkSeparatorType_(const izenelib::util::UString& propertyValueStr, izenelib::util::UString::EncodingType encoding, char separator)
+{
+    izenelib::util::UString tmpStr(propertyValueStr);
+    izenelib::util::UString sep(" ",encoding);
+    sep[0] = separator;
+    size_t n = 0;
+    n = tmpStr.find(sep,0);
+    if (n != izenelib::util::UString::npos)
+        return true;
+    return false;
+}
+
 bool IndexTaskService::prepareDocument_(
     SCDDoc& doc,
     Document& document,
     IndexerDocument& indexDocument,
     bool& rType,
     std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
+    std::string& source,
     bool insert
 )
 {
@@ -919,6 +1099,15 @@ bool IndexTaskService::prepareDocument_(
         }
 
         izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
+        std::string fieldValue("");
+        propertyValueU.convertString(fieldValue, encoding);
+
+        if(!(bundleConfig_->productSourceField_).empty()
+              && fieldStr == bundleConfig_->productSourceField_)
+        {
+            source = fieldValue;
+        }
+        
         if ( (propertyNameL == izenelib::util::UString("docid", encoding) )
                 && (!extraProperty))
         {
@@ -1139,12 +1328,31 @@ bool IndexTaskService::prepareDocument_(
                         try
                         {
                             value = boost::lexical_cast< int64_t >( str );
+                            indexDocument.insertProperty(indexerPropertyConfig, value);
                         }
                         catch( const boost::bad_lexical_cast & )
                         {
-                            DLOG(ERROR) <<"Wrong format of number value. DocId "<<docId<<" Value"<<str<<endl;
+                            MultiValuePropertyType multiProps;
+                            if( checkSeparatorType_(propertyValueU, encoding, '-') )
+                            {
+                                split_int(propertyValueU, multiProps, encoding,'-');
+                            }
+                            else if( checkSeparatorType_(propertyValueU, encoding, '~') )
+                            {
+                                split_int(propertyValueU, multiProps, encoding,'~');
+                            }
+                            else if( checkSeparatorType_(propertyValueU, encoding, ',') )
+                            {
+                                split_int(propertyValueU, multiProps, encoding,',');
+                            }
+                            else
+                            {
+                                DLOG(ERROR) <<"Wrong format of number value. DocId "<<docId<<" Value"<<str<<endl;
+                            }
+                            indexerPropertyConfig.setIsMultiValue(true);
+                            indexDocument.insertProperty(indexerPropertyConfig, multiProps);
+                            //sflog->error(SFL_IDX,10140, docId);
                         }
-                        indexDocument.insertProperty(indexerPropertyConfig, value);
                     }
                 }
             }
@@ -1167,13 +1375,27 @@ bool IndexTaskService::prepareDocument_(
                         try
                         {
                             value = boost::lexical_cast< float >( str );
+                            indexDocument.insertProperty(indexerPropertyConfig, value);
                         }
                         catch( const boost::bad_lexical_cast & )
                         {
-                            LOG(WARNING) << "Float casting error : "<<str<<" in doc "<<docId;
-
+                            MultiValuePropertyType multiProps;
+                            if( checkSeparatorType_(propertyValueU, encoding, '-') )
+                            {
+                                split_float(propertyValueU, multiProps, encoding,'-');
+                            }
+                            else if( checkSeparatorType_(propertyValueU, encoding, '~') )
+                            {
+                                split_float(propertyValueU, multiProps, encoding,'~');
+                            }
+                            else if( checkSeparatorType_(propertyValueU, encoding, ',') )
+                            {
+                                split_float(propertyValueU, multiProps, encoding,',');
+                            }
+                            indexerPropertyConfig.setIsMultiValue(true);
+                            indexDocument.insertProperty(indexerPropertyConfig, multiProps);
+                            //LOG(WARNING) << "Float casting error : "<<str<<" in doc "<<docId;
                         }
-                        indexDocument.insertProperty(indexerPropertyConfig, value);
                     }
                 }
             }

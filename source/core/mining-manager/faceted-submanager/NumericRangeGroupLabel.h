@@ -8,37 +8,35 @@
 #ifndef SF1R_NUMERIC_RANGE_GROUP_LABEL_H
 #define SF1R_NUMERIC_RANGE_GROUP_LABEL_H
 
-#include <search-manager/NumericPropertyTable.h>
 #include "GroupLabel.h"
+
+namespace sf1r{
+class NumericPropertyTable;
+}
 
 NS_FACETED_BEGIN
 
-template <typename T>
 class NumericRangeGroupLabel : public GroupLabel
 {
 public:
-    NumericGroupLabel(const NumericPropertyTable *propertyTable, const T &lowerBound, const T &upperBound)
-        : propertyTable_(propertyTable)
-        , lowerBound_(lowerBound)
-        , upperBound_(upperBound)
-    {}
+    NumericRangeGroupLabel(const NumericPropertyTable *propertyTable, const float &targetValue);
 
-    ~NumericGroupLabel()
-    {
-        delete propertyTable_;
-    }
+    NumericRangeGroupLabel(const NumericPropertyTable *propertyTable, const int64_t &lowerBound, const int64_t &upperBound);
 
-    bool test(docid_t doc) const
-    {
-        T value;
-        propertyTable_->getPropertyValue(doc, value);
-        return (value >= lowerBound_ && value <= upperBound);
-    }
+    ~NumericRangeGroupLabel();
+
+    bool test(docid_t doc) const;
+
+private:
+    bool test1(docid_t doc) const;
+    bool test2(docid_t doc) const;
 
 private:
     const NumericPropertyTable *propertyTable_;
-    const T lowerBound_;
-    const T upperBound_;
+    int64_t lowerBound_;
+    int64_t upperBound_;
+    float targetValue_;
+    bool (NumericRangeGroupLabel::*test_)(docid_t doc) const;
 };
 
 NS_FACETED_END

@@ -1,6 +1,7 @@
 #include "TermDocumentIterator.h"
 
 #include <ir/index_manager/index/TermPositions.h>
+#include <ir/index_manager/utility/BitVector.h>
 
 #include <util/profiler/ProfilerGroup.h>
 
@@ -11,22 +12,56 @@ using namespace izenelib::ir::indexmanager;
 namespace sf1r {
 
 TermDocumentIterator::TermDocumentIterator(
-    termid_t termid,
-    collectionid_t colID,
-    IndexReader* pIndexReader,
-    const std::string& property,
-    unsigned int propertyId,
-    unsigned int termIndex,
-    bool readPositions
+   termid_t termid,
+   collectionid_t colID,
+   IndexReader* pIndexReader,
+   const std::string& property,
+   unsigned int propertyId,
+   unsigned int termIndex,
+   bool readPositions
 )
         :termId_(termid)
+        ,rawTerm_("")
         ,colID_(colID)
         ,property_(property)
         ,propertyId_(propertyId)
+        ,dataType_(sf1r::STRING_PROPERTY_TYPE)
+        ,isNumericFilter_(false)
         ,termIndex_(termIndex)
         ,pIndexReader_(pIndexReader)
         ,pTermReader_(0)
         ,pTermDocReader_(0)
+        ,df_(0)
+        ,readPositions_(readPositions)
+        ,destroy_(true)
+{
+}
+
+TermDocumentIterator::TermDocumentIterator(
+    termid_t termid,
+    std::string rawTerm,
+    collectionid_t colID,
+    izenelib::ir::indexmanager::IndexReader* pIndexReader,
+    boost::shared_ptr<IndexManager> indexManagerPtr,
+    const std::string& property,
+    unsigned int propertyId,
+    sf1r::PropertyDataType dataType,
+    bool isNumericFilter,
+    unsigned int termIndex,
+    bool readPositions
+)
+        :termId_(termid)
+        ,rawTerm_(rawTerm)
+        ,colID_(colID)
+        ,property_(property)
+        ,propertyId_(propertyId)
+        ,dataType_(dataType)
+        ,isNumericFilter_(isNumericFilter)
+        ,termIndex_(termIndex)
+        ,pIndexReader_(pIndexReader)
+        ,pTermReader_(0)
+        ,pTermDocReader_(0)
+        ,indexManagerPtr_(indexManagerPtr)
         ,df_(0)
         ,readPositions_(readPositions)
         ,destroy_(true)
@@ -44,42 +79,70 @@ TermDocumentIterator::~TermDocumentIterator()
 
 bool TermDocumentIterator::accept()
 {
-    Term term(property_.c_str(),termId_);
-
-    pTermReader_ = pIndexReader_->getTermReader(colID_);
-
-    if (!pTermReader_)
-        return false;
-//    if(pIndexReader_->isDirty())
-//    {
-//        if (pTermReader_) delete pTermReader_;
-//        pTermReader_ = 0;
-//        return false;
-//    }
-    bool find = pTermReader_->seek(&term);
-
-//    if(pIndexReader_->isDirty())
-//    {
-//        if (pTermReader_) delete pTermReader_;
-//        pTermReader_ = 0;
-//        return false;
-//    }
-    if (find)
+    if(!isNumericFilter_)
     {
-        df_ = pTermReader_->docFreq(&term);
-        //entry->pPositions = 0;//pPositions;
-        if (readPositions_)
-            pTermDocReader_ = pTermReader_->termPositions();
+        Term term(property_.c_str(),termId_);
+        pTermReader_ = pIndexReader_->getTermReader(colID_);
+
+        if (!pTermReader_)
+            return false;
+    //    if(pIndexReader_->isDirty())
+    //    {
+    //        if (pTermReader_) delete pTermReader_;
+    //        pTermReader_ = 0;
+    //        return false;
+    //    }
+        bool find = pTermReader_->seek(&term);
+
+    //    if(pIndexReader_->isDirty())
+    //    {
+    //        if (pTermReader_) delete pTermReader_;
+    //        pTermReader_ = 0;
+    //        return false;
+    //    }
+        if (find)
+        {
+            df_ = pTermReader_->docFreq(&term);
+            //entry->pPositions = 0;//pPositions;
+            if (readPositions_)
+                pTermDocReader_ = pTermReader_->termPositions();
+            else
+                pTermDocReader_ = pTermReader_->termDocFreqs();
+        }
         else
-            pTermDocReader_ = pTermReader_->termDocFreqs();
+        {
+            delete pTermReader_;
+            pTermReader_ = 0;
+        }
+
+        return find;
     }
     else
     {
-        delete pTermReader_;
-        pTermReader_ = 0;
-    }
+        boost::shared_ptr<EWAHBoolArray<uword32> > pDocIdSet;
+        boost::shared_ptr<BitVector> pBitVector;
+        if (!TermTypeDetector::isTypeMatch(rawTerm_, dataType_))
+            return false;
 
-    return find;
+        PropertyType value;
+        PropertyValue2IndexPropertyType converter(value);
+        boost::apply_visitor(converter, TermTypeDetector::propertyValue_.getVariant());
+
+        bool find = indexManagerPtr_->seekTermFromBTreeIndex(colID_, property_, value);
+        if (find)
+        {
+             pDocIdSet.reset(new EWAHBoolArray<uword32>());
+             pBitVector.reset(new BitVector(pIndexReader_->numDocs() + 1));
+
+             indexManagerPtr_->getDocsByNumericValue(colID_, property_, value, *pBitVector);
+             pBitVector->compressed(*pDocIdSet);
+             vector<uint> idList;
+             pDocIdSet->appendRowIDs(idList);
+             pTermDocReader_ = new BitMapIterator(idList);
+             df_ = pTermDocReader_->docFreq();
+         }
+        return find;
+    }
 }
 
 void TermDocumentIterator::doc_item(RankDocumentProperty& rankDocumentProperty)

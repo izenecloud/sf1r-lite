@@ -16,7 +16,9 @@ NS_FACETED_BEGIN
 class GroupLabel
 {
 public:
-    GroupLabel() {}
+    GroupLabel()
+        : counter_(NULL)
+    {}
 
     virtual ~GroupLabel() {}
 

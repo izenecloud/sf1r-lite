@@ -35,17 +35,22 @@ public:
         NumericPropertyTableBuilder* numericTableBuilder
     );
 
-    GroupCounter* createGroupCounter(const std::string& prop);
+    GroupCounter* createGroupCounter(const GroupPropParam& groupPropParam);
     GroupLabel* createGroupLabel(const GroupParam::GroupLabel& labelParam);
 
 private:
     PropertyDataType getPropertyType_(const std::string& prop) const;
+    const GroupConfig* getGroupConfig_(const std::string& prop) const;
 
-    GroupCounter* createStringCounter(const std::string& prop);
-    GroupLabel* createStringLabel(const GroupParam::GroupLabel& labelParam);
+    GroupCounter* createValueCounter(const std::string& prop) const;
+    GroupCounter* createNumericRangeCounter(const std::string& prop) const;
 
+    GroupCounter* createStringCounter(const std::string& prop) const;
     template <typename T>
-    GroupLabel* createNumericLabel(const GroupParam::GroupLabel& labelParam) const;
+    GroupCounter* createNumericCounter(const std::string& prop) const;
+
+    GroupLabel* createStringLabel(const GroupParam::GroupLabel& labelParam) const;
+    GroupLabel* createNumericRangeLabel(const GroupParam::GroupLabel& labelParam) const;
 
 private:
     const std::vector<GroupConfig>& groupConfigs_;
@@ -55,4 +60,4 @@ private:
 
 NS_FACETED_END
 
-#endif 
+#endif

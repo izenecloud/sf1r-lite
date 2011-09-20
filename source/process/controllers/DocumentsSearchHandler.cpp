@@ -383,21 +383,6 @@ bool DocumentsSearchHandler::parse()
         response_.addWarning(parsers[i]->warningMessage());
     }
 
-    // check consistency between SearchParser and GroupingParser
-    const faceted::GroupParam::GroupLabelVec& groupLabels = searchParser.groupLabels();
-    if (!groupLabels.empty())
-    {
-        const std::vector<std::string>& groups = groupingParser.groupPropertyList();
-        for (std::size_t i = 0; i < groupLabels.size(); ++i)
-        {
-            if (std::find(groups.begin(), groups.end(), groupLabels[i].first) == groups.end())
-            {
-                response_.addError("the property \"" + groupLabels[i].first + "\" in request[\"search\"][\"group_label\"] must be also specified in request[\"group\"].");
-                return false;
-            }
-        }
-    }
-
     parseOptions();
 
     // store parse result
@@ -484,6 +469,13 @@ bool DocumentsSearchHandler::parse()
 
     // rangeParser
     actionItem_.rangePropertyName_ = rangeParser.rangeProperty();
+
+    std::string message;
+    if (!actionItem_.groupParam_.checkParam(message))
+    {
+        response_.addError(message);
+        return false;
+    }
 
     return true;
 }

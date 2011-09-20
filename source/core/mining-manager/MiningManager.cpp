@@ -387,19 +387,23 @@ bool MiningManager::open()
             for (std::vector<GroupConfig>::const_iterator it = mining_schema_.group_properties.begin();
                 it != mining_schema_.group_properties.end(); ++it)
             {
-                if (groupLabelLoggerMap_[it->propName] == NULL)
+                if (! it->isStringType())
+                    continue;
+
+                const std::string& propName = it->propName;
+                if (groupLabelLoggerMap_[propName] == NULL)
                 {
-                    std::auto_ptr<GroupLabelLogger> loggerPtr(new GroupLabelLogger(logPath, it->propName));
+                    std::auto_ptr<GroupLabelLogger> loggerPtr(new GroupLabelLogger(logPath, propName));
                     if (! loggerPtr->open())
                     {
-                        std::cerr << "failed in openning label logger on group property: " << it->propName << std::endl;
+                        std::cerr << "failed in openning label logger on group property: " << propName << std::endl;
                         return false;
                     }
-                    groupLabelLoggerMap_[it->propName] = loggerPtr.release();
+                    groupLabelLoggerMap_[propName] = loggerPtr.release();
                 }
                 else
                 {
-                    std::cerr << "the label logger on group property " << it->propName
+                    std::cerr << "the label logger on group property " << propName
                               << " is already opened before" << std::endl;
                     return false;
                 }
@@ -1445,19 +1449,16 @@ bool MiningManager::clickGroupLabel(
     GroupLabelLogger* logger = groupLabelLoggerMap_[propName];
     if(logger)
     {
-
         faceted::PropValueTable::pvid_t pvId = propValueId_(propName, groupPath);
         if (pvId)
         {
             return logger->logLabel(query, pvId);
         }
-    }
-    else
-    {
-        LOG(ERROR) << "GroupLabelLogger is not initialized for group property: " << propName;
+
+        return false;
     }
 
-    return false;
+    return true;
 }
 
 bool MiningManager::getFreqGroupLabel(

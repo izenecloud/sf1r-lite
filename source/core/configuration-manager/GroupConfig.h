@@ -30,6 +30,19 @@ public:
         , propType(type)
     {}
 
+    bool isStringType() const
+    {
+        return propType == STRING_PROPERTY_TYPE;
+    }
+
+    bool isNumericType() const
+    {
+        return (propType == INT_PROPERTY_TYPE
+                || propType == UNSIGNED_INT_PROPERTY_TYPE
+                || propType == FLOAT_PROPERTY_TYPE
+                || propType == DOUBLE_PROPERTY_TYPE);
+    }
+
 private:
     friend class boost::serialization::access;
 

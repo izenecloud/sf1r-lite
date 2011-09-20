@@ -28,19 +28,19 @@ GroupFilterBuilder::GroupFilterBuilder(
 
 GroupFilter* GroupFilterBuilder::createFilter(const GroupParam& groupParam) const
 {
-    if (groupParam.empty())
+    if (groupParam.isEmpty())
         return NULL;
 
     std::auto_ptr<GroupFilter> groupFilter(new GroupFilter(groupParam));
 
-    if (!groupParam.groupProps_.empty())
+    if (!groupParam.isGroupEmpty())
     {
         GroupCounterLabelBuilder builder(groupConfigs_, groupManager_, numericTableBuilder_);
         if (!groupFilter->initGroup(builder))
             return NULL;
     }
 
-    if (groupParam.isAttrGroup_)
+    if (!groupParam.isAttrEmpty())
     {
         if (!attrTable_)
         {

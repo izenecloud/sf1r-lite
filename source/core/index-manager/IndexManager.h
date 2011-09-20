@@ -113,7 +113,11 @@ public:
         data = new T[maxLength]();
         IndexKeyType<T> lowkey(cid, fid, low);
         IndexKeyType<T> highkey(cid, fid, high);
-        pBTreeIndexer->get_between(lowkey,highkey,data,maxLength);
+        if (pBTreeIndexer->get_between(lowkey,highkey,data,maxLength) == 0)
+        {
+            delete[] data;
+            data = NULL;
+        }
     }
 
     ///Make range query on BTree index to fill the Filter, which is required by the filter utility of SearchManager

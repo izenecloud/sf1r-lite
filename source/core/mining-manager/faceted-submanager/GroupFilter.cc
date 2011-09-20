@@ -49,27 +49,28 @@ bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
     typedef std::map<std::string, GroupCounter*> GroupCounterMap;
     GroupCounterMap groupCounterMap;
 
-    const std::vector<std::string>& groupProps = groupParam_.groupProps_;
-    for (std::vector<std::string>::const_iterator it = groupProps.begin();
+    const std::vector<GroupPropParam>& groupProps = groupParam_.groupProps_;
+    for (std::vector<GroupPropParam>::const_iterator it = groupProps.begin();
         it != groupProps.end(); ++it)
     {
-        if (groupCounterMap.find(*it) == groupCounterMap.end())
+        const std::string& propName = it->property_;
+        if (groupCounterMap.find(propName) == groupCounterMap.end())
         {
             GroupCounter* counter = builder.createGroupCounter(*it);
             if (counter)
             {
-                groupCounterMap[*it] = counter;
+                groupCounterMap[propName] = counter;
                 groupCounters_.push_back(counter);
             }
             else
             {
-                LOG(ERROR) << "fail to create group counter for property " << *it;
+                LOG(ERROR) << "fail to create group counter for property " << propName;
                 return false;
             }
         }
         else
         {
-            LOG(WARNING) << "ignore duplicated group property " << *it;
+            LOG(WARNING) << "ignore duplicated group property " << propName;
         }
     }
 
@@ -78,25 +79,20 @@ bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
         it != labels.end(); ++it)
     {
         const std::string& propName = it->first;
-        GroupCounterMap::iterator counterIt = groupCounterMap.find(propName);
-        if (counterIt != groupCounterMap.end())
+        GroupLabel* label = builder.createGroupLabel(*it);
+        if (label)
         {
-            GroupCounter* counter = counterIt->second;
-            GroupLabel* label = builder.createGroupLabel(*it);
-            if (label)
+            GroupCounterMap::iterator counterIt = groupCounterMap.find(propName);
+            if (counterIt != groupCounterMap.end())
             {
-                label->setCounter(counter);
-                groupLabels_.push_back(label);
+                label->setCounter(counterIt->second);
             }
-            else
-            {
-                LOG(ERROR) << "fail to create group label for property " << propName;
-                return false;
-            }
+
+            groupLabels_.push_back(label);
         }
         else
         {
-            LOG(ERROR) << "not found the group parameter for group label " << propName;
+            LOG(ERROR) << "fail to create group label for property " << propName;
             return false;
         }
     }
@@ -106,7 +102,10 @@ bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
 
 bool GroupFilter::initAttr(const AttrTable* attrTable)
 {
-    attrCounter_ = new AttrCounter(attrTable);
+    if (groupParam_.isAttrGroup_)
+    {
+        attrCounter_ = new AttrCounter(attrTable);
+    }
 
     const GroupParam::AttrLabelVec& labels = groupParam_.attrLabels_;
     for (GroupParam::AttrLabelVec::const_iterator it = labels.begin();
@@ -174,14 +173,20 @@ bool GroupFilter::test(docid_t doc)
         if (groupResult)
         {
             // fail in attr label
-            AttrTable::nid_t nId = attrLabels_[failIndex]->attrNameId();
-            attrCounter_->addAttrDoc(nId, doc);
+            if (attrCounter_)
+            {
+                AttrTable::nid_t nId = attrLabels_[failIndex]->attrNameId();
+                attrCounter_->addAttrDoc(nId, doc);
+            }
         }
         else
         {
             // fail in group label
             GroupCounter* counter = groupLabels_[failIndex]->getCounter();
-            counter->addDoc(doc);
+            if (counter)
+            {
+                counter->addDoc(doc);
+            }
         }
     }
 

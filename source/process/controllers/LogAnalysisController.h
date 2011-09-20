@@ -16,20 +16,26 @@
 
 namespace sf1r
 {
+
+using driver::Keys;
+using namespace ::izenelib::driver;
+
 /// @addtogroup controllers
 /// @{
 
 /**
  * @brief Controller \b LogAnalysis
  */
-using driver::Keys;
-using namespace ::izenelib::driver;
 class LogAnalysisController : public ::izenelib::driver::Controller
 {
 public:
     void system_events();
 
     void user_queries();
+
+    void merchant_count();
+
+    void product_update_info();
 
     void inject_user_queries();
 
@@ -107,6 +113,7 @@ private:
 };
 
 /// @}
+
 } // namespace sf1r
 
 #endif // PROCESS_CONTROLLERS_LOGANALYSIS_CONTROLLER_H

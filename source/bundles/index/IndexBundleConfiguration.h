@@ -79,6 +79,8 @@ public:
     /// @brief the granularity of multi language support during indexing
     la::MultilangGranularity indexMultilangGranularity_;
 
+    std::string productSourceField_;
+
     std::string languageIdentifierDbPath_;
     /// Parameters
     /// @brief config for IndexManager

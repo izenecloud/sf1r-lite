@@ -2,6 +2,7 @@
 
 #include <log-manager/SystemEvent.h>
 #include <log-manager/UserQuery.h>
+#include <log-manager/ProductInfo.h>
 #include <common/SFLogger.h>
 #include <common/parsers/OrderArrayParser.h>
 #include <common/parsers/ConditionArrayParser.h>
@@ -120,7 +121,7 @@ std::string LogAnalysisController::parseGroupBy()
 }
 
 /**
- * @brief Action \b system_events.
+ * @brief Action @b system_events.
  *
  * @section request
  *
@@ -130,23 +131,25 @@ std::string LogAnalysisController::parseGroupBy()
  *
  * @section response
  *
- * - @b system_events All system events which fit conditions.
+ * - @b system_events: All system events which fit conditions.
  *
  * @section example
  *
  * Request
+ *
  * @code
  * {
  *   "select"=>["source", "content", "timestamp"],
  *   "conditions"=>[
-        {"property":"timestamp", "operator":"range", "value":[1.0, 10.0]},
-        {"property":"level", "operator":"in", "value":["warn", "error"]}
-     ],
-     "sort"=>["timestamp"]
+ *       {"property":"timestamp", "operator":"range", "value":[1.0, 10.0]},
+ *       {"property":"level", "operator":"in", "value":["warn", "error"]}
+ *    ],
+ *    "sort"=>["timestamp"]
  * }
  * @endcode
  *
- * response
+ * Response
+ *
  * @code
  * {
  *   "system_events" => [
@@ -185,7 +188,7 @@ void LogAnalysisController::system_events()
 }
 
 /**
- * @brief Action \b user_queries.
+ * @brief Action @b user_queries.
  *
  * @section request
  *
@@ -195,10 +198,9 @@ void LogAnalysisController::system_events()
  *
  * @section response
  *
- * - @b user_queries All system events which fit conditions.
+ * - @b user_queries: All user queries which fit conditions.
  *
  */
-
 void LogAnalysisController::user_queries()
 {
     bool isExistAggregateFunc = false;
@@ -280,11 +282,181 @@ void LogAnalysisController::user_queries()
 }
 
 /**
- * @brief Action \b inject_user_queries.
+ * @brief Action @b merchant_count.
  *
  * @section request
  *
- * The request format is identical with the response of \b user_queries.
+ * - @b conditions (@c Array): Result filtering conditions. See ConditionArrayParser.
+ *
+ * @section response
+ *
+ * - @b merchant_count (@c Object): The merchant count in all the records which fit the conditions.
+ *   - @b count (@c Uint): all distinct merchant count in ProductInfo table.
+ *
+ * @section example
+ *
+ * Request
+ *
+ * @code
+ * {
+ *   "conditions"=>[
+ *       {"property":"collection", "operator":"=", "value":"intel"}
+ *    ]
+ * }
+ * @endcode
+ *
+ * Response
+ *
+ * @code
+ * {
+ *   "merchant_count" => {
+ *      "count"=>"100"
+ *   }
+ * }
+ * @endcode
+ *
+ */
+void LogAnalysisController::merchant_count()
+{
+    string select = "count(distinct Source) as count";
+    string conditions = parseConditions();
+
+    std::list< std::map<std::string, std::string> > sqlResults;
+    std::stringstream sql;
+
+    sql << "select " << select;
+    sql << " from " << ProductInfo::TableName;
+    if ( conditions.size() )
+    {
+         sql << " where " << conditions;
+    }
+    sql << ";";
+    std::cerr << sql.str() << std::endl;
+    ProductInfo::find_by_sql(sql.str(), sqlResults);
+
+    Value& productInfo = response()[Keys::merchant_count];
+    std::list< std::map<std::string, std::string> >::iterator it = sqlResults.begin();
+    productInfo[Keys::count] = (*it)["count"];
+}
+
+
+/**
+ * @brief Action @b product_update_info.
+ *
+ * @section request
+ *
+ * - @b conditions (@c Array): Result filtering conditions, while Collection and source must be given. See ConditionArrayParser.
+ *
+ * @section response
+ *
+ * - @b product_update_info: The product updated information for records with specified source which fit conditions.
+ *   - @b count (@c Uint): overall products for specified source.
+ *   - @b update_info (@c Uint): updated products number for specified source.
+ *   - @b delete_info (@c Uint): deleted products number for specified source.
+ *
+ * @section example
+ *
+ * Request
+ *
+ * @code
+ * {
+ *   "conditions"=>[
+ *       {"property":"source", "operator":"=", "value":"当当网"},
+ *       {"property":"collection", "operator":"=", "value":"intel"},
+ *       {"property":"timestamp", "operator":"range", "value":[1.0, 10.0]}
+ *    ]
+ * }
+ * @endcode
+ *
+ * Response
+ *
+ * @code
+ * {
+ *   "product_update_info" => {
+ *      "count"=>"1000", "update_info"=>"50", "delete_info"=>"20"
+ *   }
+ * }
+ * @endcode
+ *
+ */
+void LogAnalysisController::product_update_info()
+{
+    string select = "sum(Num) as sum";
+    string conditions = parseConditions() + " and ";
+    conditions += "Flag = " + str_concat("'", "insert", "'");
+
+    //Get index result
+    std::list< std::map<std::string, std::string> > insertResults;
+    std::stringstream sql;
+
+    sql << "select " << select;
+    sql << " from " << ProductInfo::TableName;
+    if( conditions.size() )
+    {
+        sql << " where " << conditions;
+    }
+    sql << ";";
+    std::cerr << sql.str() << std::endl;
+    ProductInfo::find_by_sql(sql.str(), insertResults);
+
+    //Get updated result
+    conditions = parseConditions() + " and ";
+    conditions += "Flag = " + str_concat("'", "update", "'");
+
+    std::list< std::map<std::string, std::string> > updateResults;
+    sql.clear();
+    sql.str("");
+
+    sql << "select " << select;
+    sql << " from " << ProductInfo::TableName;
+    if( conditions.size() )
+    {
+        sql << " where " << conditions;
+    }
+    sql <<";";
+    std::cerr<< sql.str() << std::endl;
+    ProductInfo::find_by_sql(sql.str(), updateResults);
+
+    //Get deleted result
+    conditions = parseConditions() + " and ";
+    conditions += "Flag = " + str_concat("'", "delete", "'");
+
+    std::list< std::map<std::string, std::string> > deleteResults;
+    sql.clear();
+    sql.str("");
+
+    sql<<"select " << select;
+    sql<<" from "<< ProductInfo::TableName;
+    if( conditions.size() )
+    {
+        sql<<" where " << conditions;
+    }
+    sql<<";";
+    std::cerr<< sql.str() <<std::endl;
+    ProductInfo::find_by_sql(sql.str(), deleteResults);
+
+    ///Output
+    Value& productInfo = response()[Keys::product_update_info];
+    std::list< std::map<std::string, std::string> >::iterator iter = insertResults.begin();
+    std::map<std::string, std::string>::const_iterator map_iter;
+
+    productInfo[Keys::count] = (*iter)["sum"];
+    if( updateResults.size() && (map_iter = updateResults.front().find("sum")) != updateResults.front().end())
+    {
+        productInfo[Keys::update_info] = map_iter->second;
+    }
+    if( deleteResults.size() && (map_iter = deleteResults.front().find("sum")) != deleteResults.front().end())
+    {
+        productInfo[Keys::delete_info] = map_iter->second;
+    }
+}
+
+/**
+ * @brief Action @b inject_user_queries.
+ *
+ * @section request
+ *
+ * The request format is identical with the response of @b user_queries.
  *
  * - @b user_queries (@c Array): Array of queries with following fields
  *   - @b query* (@c String): keywords.
@@ -301,7 +473,7 @@ void LogAnalysisController::user_queries()
  *
  * @section response
  *
- * - @b user_queries All system events which fit conditions.
+ * - @b user_queries: All user queries which fit conditions.
  *
  */
 void LogAnalysisController::inject_user_queries()
@@ -388,7 +560,7 @@ void LogAnalysisController::inject_user_queries()
 }
 
 /**
- * @brief Action \b delete_record_from_system_events.
+ * @brief Action @b delete_record_from_system_events.
  *
  * @section request
  *
@@ -401,12 +573,13 @@ void LogAnalysisController::inject_user_queries()
  * @section example
  *
  * Request
+ *
  * @code
  * {
  *   "conditions"=>[
-        {"property":"timestamp", "operator":"range", "value":[1.0, 10.0]},
-        {"property":"level", "operator":"in", "value":["warn", "error"]}
-     ]
+ *      {"property":"timestamp", "operator":"range", "value":[1.0, 10.0]},
+ *      {"property":"level", "operator":"in", "value":["warn", "error"]}
+ *    ]
  * }
  * @endcode
  *
@@ -423,7 +596,7 @@ void LogAnalysisController::delete_record_from_system_events()
 }
 
 /**
- * @brief Action \b delete_record_from_user_queries.
+ * @brief Action @b delete_record_from_user_queries.
  *
  * @section request
  *
@@ -436,12 +609,13 @@ void LogAnalysisController::delete_record_from_system_events()
  * @section example
  *
  * Request
+ *
  * @code
  * {
  *   "conditions"=>[
-        {"property":"timestamp", "operator":"range", "value":[1.0, 10.0]},
-        {"property":"query", "operator":"in", "value":["中国", "人民"]}
-     ]
+ *       {"property":"timestamp", "operator":"range", "value":[1.0, 10.0]},
+ *       {"property":"query", "operator":"in", "value":["中国", "人民"]}
+ *    ]
  * }
  * @endcode
  *
@@ -457,6 +631,9 @@ void LogAnalysisController::delete_record_from_user_queries()
     }
 }
 
+/**
+ * @brief Action @b delete_database. Delete the whole database.
+ */
 void LogAnalysisController::delete_database()
 {
     if (!sflog->del_database())
