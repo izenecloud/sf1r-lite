@@ -1368,6 +1368,31 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
       {
           mining_schema.tdt_enable = true;
       }
+      
+      task_node = getUniqChildElement( mining_schema_node, "EC", false );
+      mining_schema.ec_enable = false;
+      if( task_node!= NULL )
+      {
+        mining_schema.ec_enable = true;
+        {
+            Iterator<Element> it( "TitleProperty" );
+            for ( it = it.begin( task_node ); it != it.end(); it++ )
+            {
+                getAttribute( it.Get(), "name", property_name );
+                mining_schema.ec_title_property = property_name;
+            }
+        }
+        
+        {
+            Iterator<Element> it( "ContentProperty" );
+            for ( it = it.begin( task_node ); it != it.end(); it++ )
+            {
+                getAttribute( it.Get(), "name", property_name );
+                mining_schema.ec_content_property = property_name;
+            }
+        }
+       
+      }
 
       task_node = getUniqChildElement( mining_schema_node, "IISE", false );
       mining_schema.ise_enable = false;

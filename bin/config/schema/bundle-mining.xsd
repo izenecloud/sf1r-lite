@@ -149,6 +149,7 @@
             				<xs:element ref="Attr" minOccurs="0"/>
             				<xs:element ref="Rerank" minOccurs="0"/>
                             <xs:element ref="TDT" minOccurs="0"/>
+                            <xs:element ref="EC" minOccurs="0"/>
             			</xs:sequence>
             		</xs:complexType>
             	</xs:element>
@@ -254,6 +255,15 @@
     
     <xs:element name="TDT">
         <xs:complexType>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="EC">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="TitleProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
+                <xs:element name="ContentProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
+            </xs:sequence>
         </xs:complexType>
     </xs:element>
 

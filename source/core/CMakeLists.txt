@@ -53,6 +53,7 @@ FILE(GLOB mining_SRC
   "mining-manager/auto-fill-submanager/*.cpp"
   "mining-manager/faceted-submanager/*.cc"
   "mining-manager/group-label-logger/*.cpp"
+  "mining-manager/ec-submanager/*.cc"
   )
 ADD_DEFINITIONS("-fno-strict-aliasing") 
 ADD_LIBRARY(sf1r_configuration_manager ${configuration_SRC})
