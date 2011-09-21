@@ -57,6 +57,37 @@ bool EcController::require_docs_()
     return true;
 }
 
+/**
+ * @brief Action \b get_all_tid. Get all exist tids.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b tid* (@c Uint): specify tid
+ *
+ * @section response
+ *
+ * - @b resources (@c Array): Every item is a tid.
+ * 
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection" : "intel",
+ *   "tid": 1
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ *   "resources" : [3,4]
+ * }
+ * @endcode
+ */
 void EcController::get_all_tid()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(check_ec_manager_());
@@ -73,7 +104,39 @@ void EcController::get_all_tid()
         resources() = all_tids[i];
     }
 }
-    
+
+
+/**
+ * @brief Action \b get_docs_by_tid. Get documents id by tid.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b tid* (@c Uint): specify tid
+ *
+ * @section response
+ *
+ * - @b resources (@c Array): Every item is a document id.
+ * 
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection" : "intel",
+ *   "tid": 1
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ *   "resources" : [3,4]
+ * }
+ * @endcode
+ */
 void EcController::get_docs_by_tid()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(check_ec_manager_());
@@ -98,6 +161,38 @@ void EcController::get_docs_by_tid()
     }
 }
 
+
+/**
+ * @brief Action \b get_tids_by_docs. Get tid list by documents id list.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b docid_list* (@c Array): document id list
+ *
+ * @section response
+ *
+ * - @b resources (@c Array): Every item is a tid.
+ * 
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection" : "intel",
+ *   "docid_list": [5,6,7,8]
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ *   "resources" : [3,4]
+ * }
+ * @endcode
+ */
 void EcController::get_tids_by_docs()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(check_ec_manager_());
@@ -126,6 +221,38 @@ void EcController::get_tids_by_docs()
     }
 }
 
+
+/**
+ * @brief Action \b add_new_tid. Use new documents id list to generate a new tid group
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b docid_list* (@c Array): document id list
+ *
+ * @section response
+ *
+ * - @b tid (@c Uint): Generated tid
+ * 
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection" : "intel",
+ *   "docid_list": [5,6,7,8]
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ *   "tid" : 1
+ * }
+ * @endcode
+ */
 void EcController::add_new_tid()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(check_ec_manager_());
@@ -140,6 +267,38 @@ void EcController::add_new_tid()
     response()[Keys::tid] = tid;
 }
 
+
+/**
+ * @brief Action \b add_docs_to_tid. Add documents id list to exist tid group
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b tid* (@c Uint): tid.
+ * - @b docid_list* (@c Array): document id list
+ *
+ * @section response
+ *
+ * 
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection" : "intel",
+ *   "tid" : 1,
+ *   "docid_list": [5,6,7,8]
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ * }
+ * @endcode
+ */
 void EcController::add_docs_to_tid()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(check_ec_manager_());
@@ -152,6 +311,37 @@ void EcController::add_docs_to_tid()
     }
 }
 
+/**
+ * @brief Action \b remove_docs_from_tid. Remove documents id list from exist tid group
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b tid* (@c Uint): tid.
+ * - @b docid_list* (@c Array): document id list
+ *
+ * @section response
+ *
+ * 
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection" : "intel",
+ *   "tid" : 1,
+ *   "docid_list": [5,6,7,8]
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ * }
+ * @endcode
+ */
 void EcController::remove_docs_from_tid()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(check_ec_manager_());
