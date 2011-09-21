@@ -216,9 +216,6 @@ void NumericRangeGroupCounter::get_range_list_split(std::list<OntologyRepItem>& 
                         ++stop.second;
                 }
             }
-            if (tempCount == segmentTree_.level1_[i])
-                break;
-
             if (oldCount != tempCount)
             {
                 itemList.push_back(faceted::OntologyRepItem());
@@ -235,6 +232,9 @@ void NumericRangeGroupCounter::get_range_list_split(std::list<OntologyRepItem>& 
                 oldCount = tempCount;
             }
         }
+        if (tempCount == segmentTree_.level1_[i])
+            continue;
+
         itemList.push_back(faceted::OntologyRepItem());
         faceted::OntologyRepItem& repItem = itemList.back();
         repItem.level = 1;
