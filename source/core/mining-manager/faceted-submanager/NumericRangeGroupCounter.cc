@@ -229,6 +229,9 @@ void NumericRangeGroupCounter::get_range_list_split(std::list<OntologyRepItem>& 
                 izenelib::util::UString stringValue(ss.str(), UString::UTF_8);
                 repItem.text = stringValue;
                 repItem.doc_count = tempCount - oldCount;
+                if (tempCount == segmentTree_.level1_[i])
+                    break;
+
                 oldCount = tempCount;
             }
         }
