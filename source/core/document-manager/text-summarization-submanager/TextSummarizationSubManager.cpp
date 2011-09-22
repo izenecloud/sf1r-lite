@@ -46,19 +46,14 @@ bool TextSummarizationSubManager::getOffsetPairs(
     //clear out structure
     offsetPairs.clear();
 
-    std::string utf8_text;
-    textBody.convertString(utf8_text, izenelib::util::UString::UTF_8);
-    const char* p = utf8_text.c_str();
-
     std::vector<std::vector<TermId> > sentenceListInTermId;
     std::vector<std::pair<CharacterOffset, CharacterOffset> > sentencesOffsetPairs;
 
+    UString sentence;
     CharacterOffset startPos = 0;
-    while (int len = langIdAnalyzer_->sentenceLength(p))
+    while (std::size_t len = langIdAnalyzer_->sentenceLength(textBody, startPos))
     {
-        UString sentence;
-        /// Add an efficient UString initializer for it. - Wei, 2010.08.25
-        sentence.assign(p, len, izenelib::util::UString::UTF_8);
+        sentence.assign(textBody, startPos, len);
 
         /// Replace the old inefficient API to the new one. - Wei, 2010.08.25
         TermId id;
@@ -75,9 +70,8 @@ bool TextSummarizationSubManager::getOffsetPairs(
             }
         }
 
-        sentencesOffsetPairs.push_back(make_pair(startPos, startPos+sentence.length()));
-        startPos+=sentence.length();
-        p += len;				 // move to the begining of next sentence
+        sentencesOffsetPairs.push_back(make_pair(startPos, startPos+len));
+        startPos += len;
     }
 
     //initialize first value to be 0 by default
