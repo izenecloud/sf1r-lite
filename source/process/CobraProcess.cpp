@@ -241,8 +241,6 @@ bool CobraProcess::initMasterAndWorker()
     {
         hosts = sf1r::SF1Config::get()->distCoordinationConfig_.zkHosts_;
         recvTimeout = sf1r::SF1Config::get()->distCoordinationConfig_.zkRecvTimeout_;
-
-        cooridinator.reset(new DistributedCoordinator(hosts, recvTimeout));
     }
 
     // If work as Master
@@ -251,13 +249,6 @@ bool CobraProcess::initMasterAndWorker()
         uint16_t masterPort = sf1r::SF1Config::get()->masterAgentConfig_.port_;
         MasterServer::get()->start("localhost", masterPort);
         //cout << "#[Master Server]started, listening at localhost:"<<masterPort<<" ..."<<endl;
-
-        zookeeper_.reset(new zookeeper::ZooKeeper(hosts, recvTimeout));
-        std::vector<std::string> childrenList;
-        zookeeper_->getZNodeChildren("/SF1", childrenList, zookeeper::ZooKeeper::WATCH);
-
-        workerDectector_.reset(new sf1r::WorkerDetector());
-        zookeeper_->registerEventHandler(workerDectector_.get());
     }
 
     // If work as remote Worker
@@ -275,8 +266,6 @@ bool CobraProcess::initMasterAndWorker()
             workerServer_->start();
             workerServer_->setQueryLogSearchService(queryLogService_);
             cout << "#[Worker Server]started, listening at localhost:"<<port<<" ..."<<endl;
-
-            cooridinator->registerNode("/SF1/Worker");
 
             // master notifier
             std::string masterHost = SF1Config::get()->workerAgentConfig_.masterHost_;
