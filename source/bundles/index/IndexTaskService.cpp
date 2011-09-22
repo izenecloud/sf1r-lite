@@ -498,6 +498,7 @@ bool IndexTaskService::updateDocument(const Value& documentValue)
         }
         else
         {
+
             // Store the old property value.
             IndexerDocument oldIndexDocument;
             if ( !preparePartialDocument_(document, oldIndexDocument) )
@@ -535,7 +536,7 @@ bool IndexTaskService::preparePartialDocument_(
     typedef Document::property_const_iterator iterator;
     for (iterator it = document.propertyBegin(), itEnd = document.propertyEnd(); it
                  != itEnd; ++it) {
-        if (it->first != "DOCID" && it->first != "DATE") {
+        if (it->first != "DOCID" && it->first != "DATE" ) {
             std::set<PropertyConfig, PropertyComp>::iterator iter;
             PropertyConfig temp;
             temp.propertyName_ = it->first;
@@ -547,90 +548,94 @@ bool IndexTaskService::preparePartialDocument_(
             {
                 continue;
             }
-            indexerPropertyConfig.setPropertyId(iter->getPropertyId());
-            indexerPropertyConfig.setName(iter->getName());
-            indexerPropertyConfig.setIsIndex(iter->isIndex());
-            indexerPropertyConfig.setIsAnalyzed(iter->isAnalyzed());
-            indexerPropertyConfig.setIsFilter(iter->getIsFilter());
-            indexerPropertyConfig.setIsMultiValue(iter->getIsMultiValue());
-            indexerPropertyConfig.setIsStoreDocLen(iter->getIsStoreDocLen());
 
-            PropertyValue propertyValue = oldDoc.property(it->first);
-            const izenelib::util::UString* stringValue = get<izenelib::util::UString>(&propertyValue);
-
-            izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
-            std::string str("");
-            stringValue->convertString(str, encoding);
-            if ( iter->getType() == INT_PROPERTY_TYPE )
+            if(iter->isIndex() && iter->getIsFilter())
             {
-                if(iter->getIsMultiValue())
+                indexerPropertyConfig.setPropertyId(iter->getPropertyId());
+                indexerPropertyConfig.setName(iter->getName());
+                indexerPropertyConfig.setIsIndex(iter->isIndex());
+                indexerPropertyConfig.setIsAnalyzed(iter->isAnalyzed());
+                indexerPropertyConfig.setIsFilter(iter->getIsFilter());
+                indexerPropertyConfig.setIsMultiValue(iter->getIsMultiValue());
+                indexerPropertyConfig.setIsStoreDocLen(iter->getIsStoreDocLen());
+
+                PropertyValue propertyValue = oldDoc.property(it->first);
+                const izenelib::util::UString* stringValue = get<izenelib::util::UString>(&propertyValue);
+
+                izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
+                std::string str("");
+                stringValue->convertString(str, encoding);
+                if ( iter->getType() == INT_PROPERTY_TYPE )
                 {
-                    MultiValuePropertyType props;
-                    split_int(*stringValue, props, encoding, ',');
-                    oldIndexDocument.insertProperty(indexerPropertyConfig, props);
-                }
-                else
-                {
-                    int64_t value = 0;
-                    try
-                    {
-                        value = boost::lexical_cast< int64_t >( str );
-                        oldIndexDocument.insertProperty(indexerPropertyConfig, value);
-                    }
-                    catch( const boost::bad_lexical_cast & )
+                    if(iter->getIsMultiValue())
                     {
                         MultiValuePropertyType props;
-                        if( checkSeparatorType_(*stringValue, encoding, '-') )
-                        {
-                            split_int(*stringValue, props, encoding,'-');
-                        }
-                        else if( checkSeparatorType_(*stringValue, encoding, '~') )
-                        {
-                            split_int(*stringValue, props, encoding,'~');
-                        }
-                        else if( checkSeparatorType_(*stringValue, encoding, ',') )
-                        {
-                            split_int(*stringValue, props, encoding,',');
-                        }
-                        indexerPropertyConfig.setIsMultiValue(true);
+                        split_int(*stringValue, props, encoding, ',');
                         oldIndexDocument.insertProperty(indexerPropertyConfig, props);
-                     }
-                }
-            }
-            else if ( iter->getType() == FLOAT_PROPERTY_TYPE )
-            {
-                if(iter->getIsMultiValue())
-                {
-                    MultiValuePropertyType props;
-                    split_float(*stringValue, props, encoding,',');
-                    oldIndexDocument.insertProperty(indexerPropertyConfig, props);
-                }
-                else
-                {
-                    float value = 0.0;
-                    try
-                    {
-                        value = boost::lexical_cast< float >( str );
-                        oldIndexDocument.insertProperty(indexerPropertyConfig, value);
                     }
-                    catch( const boost::bad_lexical_cast & )
+                    else
+                    {
+                        int64_t value = 0;
+                        try
+                        {
+                            value = boost::lexical_cast< int64_t >( str );
+                            oldIndexDocument.insertProperty(indexerPropertyConfig, value);
+                        }
+                        catch( const boost::bad_lexical_cast & )
+                        {
+                            MultiValuePropertyType props;
+                            if( checkSeparatorType_(*stringValue, encoding, '-') )
+                            {
+                                split_int(*stringValue, props, encoding,'-');
+                            }
+                            else if( checkSeparatorType_(*stringValue, encoding, '~') )
+                            {
+                                split_int(*stringValue, props, encoding,'~');
+                            }
+                            else if( checkSeparatorType_(*stringValue, encoding, ',') )
+                            {
+                                split_int(*stringValue, props, encoding,',');
+                            }
+                            indexerPropertyConfig.setIsMultiValue(true);
+                            oldIndexDocument.insertProperty(indexerPropertyConfig, props);
+                         }
+                    }
+                }
+                else if ( iter->getType() == FLOAT_PROPERTY_TYPE )
+                {
+                    if(iter->getIsMultiValue())
                     {
                         MultiValuePropertyType props;
-                        if( checkSeparatorType_(*stringValue, encoding, '-') )
-                        {
-                            split_float(*stringValue, props, encoding,'-');
-                        }
-                        else if( checkSeparatorType_(*stringValue, encoding, '~') )
-                        {
-                            split_float(*stringValue, props, encoding,'~');
-                        }
-                        else if( checkSeparatorType_(*stringValue, encoding, ',') )
-                        {
-                            split_float(*stringValue, props, encoding,',');
-                        }
-                        indexerPropertyConfig.setIsMultiValue(true);
+                        split_float(*stringValue, props, encoding,',');
                         oldIndexDocument.insertProperty(indexerPropertyConfig, props);
-                     }
+                    }
+                    else
+                    {
+                        float value = 0.0;
+                        try
+                        {
+                            value = boost::lexical_cast< float >( str );
+                            oldIndexDocument.insertProperty(indexerPropertyConfig, value);
+                        }
+                        catch( const boost::bad_lexical_cast & )
+                        {
+                            MultiValuePropertyType props;
+                            if( checkSeparatorType_(*stringValue, encoding, '-') )
+                            {
+                                split_float(*stringValue, props, encoding,'-');
+                            }
+                            else if( checkSeparatorType_(*stringValue, encoding, '~') )
+                            {
+                                split_float(*stringValue, props, encoding,'~');
+                            }
+                            else if( checkSeparatorType_(*stringValue, encoding, ',') )
+                            {
+                                split_float(*stringValue, props, encoding,',');
+                            }
+                            indexerPropertyConfig.setIsMultiValue(true);
+                            oldIndexDocument.insertProperty(indexerPropertyConfig, props);
+                         }
+                    }
                 }
             }
         }

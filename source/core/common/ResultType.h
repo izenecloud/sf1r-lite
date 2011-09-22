@@ -286,9 +286,12 @@ namespace sf1r {
 
             /// A list of ranked docId. First docId gets high rank score.
             std::vector<docid_t> topKDocs_;
-
+            
+            
             /// A list of workerids. The sequence is following \c topKDocs_.
             std::vector<uint32_t> topKWorkerIds_;
+            
+            std::vector<uint32_t> topKtids_;
 
             /// A list of rank scores. The sequence is following \c topKDocs_.
             std::vector<float> topKRankScoreList_;
@@ -425,6 +428,7 @@ namespace sf1r {
                 totalCount_ = result.totalCount_;
                 topKDocs_ = result.topKDocs_;
                 topKWorkerIds_ = result.topKWorkerIds_;
+                topKtids_ = result.topKtids_;
                 topKRankScoreList_ = result.topKRankScoreList_;
                 topKCustomRankScoreList_ = result.topKCustomRankScoreList_;
                 start_ = result.start_;
@@ -446,6 +450,7 @@ namespace sf1r {
                 totalCount_ = result.totalCount_;
                 topKDocs_.swap(result.topKDocs_);
                 topKWorkerIds_.swap(result.topKWorkerIds_);
+                topKtids_.swap(result.topKtids_);
                 topKRankScoreList_.swap(result.topKRankScoreList_);
                 topKCustomRankScoreList_.swap(result.topKCustomRankScoreList_);
                 start_ = result.start_;
@@ -469,7 +474,7 @@ namespace sf1r {
 
             MSGPACK_DEFINE(
                     rawQueryString_,encodingType_,collectionName_,analyzedQuery_,
-                    queryTermIdList_,totalCount_,topKDocs_,topKWorkerIds_,topKRankScoreList_,
+                    queryTermIdList_,totalCount_,topKDocs_,topKWorkerIds_,topKtids_,topKRankScoreList_,
                     topKCustomRankScoreList_,propertyRange_,start_,count_,topKPostionList_,propertyQueryTermList_,fullTextOfDocumentInPage_,
                     snippetTextOfDocumentInPage_,rawTextOfSummaryInPage_,
                     numberOfDuplicatedDocs_,numberOfSimilarDocs_,docCategories_,

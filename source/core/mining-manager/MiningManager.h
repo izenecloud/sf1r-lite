@@ -61,6 +61,7 @@ template <class T, typename A, typename B, typename C> class TermSimilarity;
 class DocSimOutput;
 }
 
+
 namespace util
 {
 template <class T> class ContainerSwitch;
@@ -99,6 +100,11 @@ class AttrManager;
 class PropertyDiversityReranker;
 class OntologyManager;
 class CTRManager;
+}
+
+namespace ec
+{
+class EcManager;
 }
 
 /**
@@ -145,6 +151,10 @@ public:
      * @brief The online querying interface.
      */
     bool getMiningResult(KeywordSearchResult& miaInput);
+    
+    ///@brief 1) add price comparasion result, 2) ...
+    bool ecFilter(KeywordSearchResult& input);
+    bool ecFilter(DistKeywordSearchResult& input);
 
     /**
      * @brief Gets list of documents with images similar to the target image.
@@ -264,6 +274,11 @@ public:
     boost::shared_ptr<TaxonomyGenerationSubManager> GetTgManager()
     {
         return tgManager_;
+    }
+    
+    boost::shared_ptr<ec::EcManager> GetEcManager()
+    {
+        return ec_manager_;
     }
 
     void onIndexUpdated(size_t docNum);
@@ -416,6 +431,9 @@ private:
     /** TDT */
     std::string tdt_path_;
     TdtStorageType* tdt_storage_;
+    
+    std::string ec_path_;
+    boost::shared_ptr<ec::EcManager> ec_manager_;
 };
 
 }

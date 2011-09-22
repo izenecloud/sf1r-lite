@@ -152,6 +152,9 @@ public:
 
     /// A list of workerids. The sequence is following \c topKDocs_.
     std::vector<uint32_t> topKWorkerIds_;
+    
+    /// for ec module.
+    std::vector<uint32_t> topKtids_;
 
     /// A list of rank scores. The sequence is following \c topKDocs_.
     std::vector<float> topKRankScoreList_;
@@ -183,7 +186,7 @@ public:
 
     MSGPACK_DEFINE(
     		distSearchInfo_,rawQueryString_,encodingType_,collectionName_,analyzedQuery_,
-            queryTermIdList_,totalCount_,topKDocs_,topKWorkerIds_,topKRankScoreList_,
+            queryTermIdList_,totalCount_,topKDocs_,topKWorkerIds_,topKtids_,topKRankScoreList_,
             topKCustomRankScoreList_,propertyRange_,start_,count_,topKPostionList_,propertyQueryTermList_,
             onto_rep_,groupRep_,attrRep_);
 };

@@ -47,6 +47,7 @@ private:
         ar & attr_enable & attr_property;
         ar & property_rerank_enable & prop_rerank_property;
         ar & tdt_enable;
+        ar & ec_enable & ec_title_property & ec_content_property;
         ar & ise_enable & ise_property;
         ar & recommend_tg & recommend_querylog & recommend_properties;
         
@@ -69,6 +70,10 @@ public:
     bool property_rerank_enable;
     PropertyRerankConfig prop_rerank_property;
     bool tdt_enable;
+    bool ec_enable;
+    std::string ec_title_property;
+    std::string ec_content_property;
+    
     bool ise_enable;
     std::string ise_property;
 

@@ -16,14 +16,16 @@
 
 namespace sf1r
 {
+
+using driver::Keys;
+using namespace ::izenelib::driver;
+
 /// @addtogroup controllers
 /// @{
 
 /**
  * @brief Controller \b LogAnalysis
  */
-using driver::Keys;
-using namespace ::izenelib::driver;
 class LogAnalysisController : public ::izenelib::driver::Controller
 {
 public:
@@ -111,6 +113,7 @@ private:
 };
 
 /// @}
+
 } // namespace sf1r
 
 #endif // PROCESS_CONTROLLERS_LOGANALYSIS_CONTROLLER_H

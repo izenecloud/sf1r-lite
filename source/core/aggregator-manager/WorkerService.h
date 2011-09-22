@@ -102,6 +102,11 @@ private:
     bool removeDuplicateDocs(
             const KeywordSearchActionItem& actionItem,
             ResultItemType& resultItem);
+            
+    template <typename ResultItemType>
+    bool ecFilter(
+            const KeywordSearchActionItem& actionItem,
+            ResultItemType& resultItem);
 
 
 private:

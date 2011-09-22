@@ -75,6 +75,11 @@ DocumentManager::~DocumentManager()
 bool DocumentManager::flush()
 {
     propertyValueTable_->flush();
+    if(!saveDelFilter_())
+    {
+        std::cout<<"DocumentManager::saveDelFilter_ failed"<<std::endl;
+    }
+    delfilter_.clear();
     return savePropertyLengthDb_();
 }
 
@@ -187,21 +192,32 @@ bool DocumentManager::updatePartialDocument(const Document& document)
 
 bool DocumentManager::isDeleted(docid_t docId)
 {
-
-    int64_t delIndicator=1;
-    getPropertyValue(docId, "DOCID", delIndicator);
-
-    if (delIndicator == -1)
-        return true;
-
-    return false;
-
+    if( delfilter_.empty() )
+    {
+        loadDelFilter_();
+    }
+    if(delfilter_.size()<docId)
+    {
+        return false;
+    }
+    //keep delfilter_ in memory
+    return delfilter_[docId-1];
 }
 
 bool DocumentManager::removeDocument(docid_t docId)
 {
     //if(acl_) aclTable_.del(docId);
-    return propertyValueTable_->del(docId);
+    if(docId<1) return false;
+    if(!propertyValueTable_->del(docId)) return false;
+    if( delfilter_.empty() )
+    {
+        loadDelFilter_();
+    }
+    if(delfilter_.size()<docId)
+    {
+        delfilter_.resize(docId);
+    }
+    delfilter_.set(docId-1);
     return true;
 }
 
@@ -299,6 +315,39 @@ bool DocumentManager::getDocument_impl(
 docid_t DocumentManager::getMaxDocId()
 {
     return propertyValueTable_->getMaxDocId();
+}
+
+bool DocumentManager::getDeletedDocIdList(std::vector<docid_t>& docid_list)
+{
+    if(!loadDelFilter_()) return false;
+    DelFilterType::size_type find = delfilter_.find_first();
+    while(find!=DelFilterType::npos)
+    {
+        docid_t docid = (docid_t)find+1;
+        docid_list.push_back(docid);
+        find = delfilter_.find_next(find);
+    }
+    delfilter_.clear();
+    return true;
+}
+
+bool DocumentManager::loadDelFilter_()
+{
+    const std::string filter_file = path_+"/del_filter";
+    delfilter_.clear();
+    std::vector<DelFilterBlockType> filter_data;
+    if(!izenelib::am::ssf::Util<>::Load(filter_file, filter_data)) return false;
+    delfilter_.append(filter_data.begin(), filter_data.end());
+    return true;
+}
+    
+bool DocumentManager::saveDelFilter_()
+{
+    const std::string filter_file = path_+"/del_filter";
+    std::vector<DelFilterBlockType> filter_data(delfilter_.num_blocks());
+    boost::to_block_range(delfilter_, filter_data.begin());
+    if(!izenelib::am::ssf::Util<>::Save(filter_file, filter_data)) return false;
+    return true;
 }
 
 void DocumentManager::buildPropertyIdMapper_()

@@ -28,6 +28,7 @@ TermDocumentIterator::TermDocumentIterator(
         ,dataType_(sf1r::STRING_PROPERTY_TYPE)
         ,isNumericFilter_(false)
         ,termIndex_(termIndex)
+        ,pIndexReader_(pIndexReader)
         ,pTermReader_(0)
         ,pTermDocReader_(0)
         ,df_(0)

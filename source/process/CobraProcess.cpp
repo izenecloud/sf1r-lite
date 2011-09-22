@@ -78,6 +78,8 @@ bool CobraProcess::initialize(const std::string& configFileDir)
 
     initDriverServer();
 
+    initDistributedNodeManager();
+
     return true;
 }
 
@@ -230,9 +232,9 @@ void CobraProcess::stopDriver()
     }
 }
 
-bool CobraProcess::initDistributedNode()
+bool CobraProcess::initDistributedNodeManager()
 {
-    if (!SF1Config::get()->get()->distributedTopologyConfig_.enabled_)
+    if (!SF1Config::get()->distributedTopologyConfig_.enabled_)
         return false;
 
     // Initialize Node Manager
@@ -243,7 +245,8 @@ bool CobraProcess::initDistributedNode()
     // Register current SF1 Node
     unsigned int nodeId   = SF1Config::get()->brokerAgentConfig_.nodeId_;
     unsigned int mirrorId = SF1Config::get()->brokerAgentConfig_.mirrorId_;
-    NodeManagerSingleton::get()->registerNode(nodeId, mirrorId);
+    std::string host = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.host_;
+    NodeManagerSingleton::get()->registerNode(nodeId, mirrorId, host);
 
     if (SF1Config::get()->isMasterEnabled())
     {
@@ -357,9 +360,6 @@ int CobraProcess::run()
                 }
             }
 #endif
-
-        // init after collections have been started
-        initDistributedNode();
 
         driverServer_->run();
     }
