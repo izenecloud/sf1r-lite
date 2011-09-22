@@ -56,7 +56,7 @@ public:
     unsigned int port_;
     std::map<std::string, AggregatorUnit> aggregatorSupportMap_;
 
-    net::aggregator::AggregatorConfig aggregatorConfig_;
+    net::aggregator::AggregatorConfig aggregatorConfig_; //xxx
 };
 
 #endif /* MASTERAGENTCONFIG_H_ */

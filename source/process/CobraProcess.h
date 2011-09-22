@@ -4,10 +4,8 @@
 #include <bundles/querylog/QueryLogSearchService.h>
 
 #include <util/driver/DriverServer.h>
-#include <3rdparty/zookeeper/ZooKeeper.hpp>
 
 #include <aggregator-manager/WorkerServer.h>
-#include <aggregator-manager/WorkerDetector.h>
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -38,7 +36,7 @@ private:
 
     void stopDriver();
 
-    bool initMasterAndWorker();
+    bool initDistributedNode();
 
     void stopWorkerServer();
 
@@ -52,9 +50,6 @@ private:
     boost::shared_ptr<izenelib::driver::Router> router_;
 
     boost::shared_ptr<sf1r::WorkerServer> workerServer_;
-
-    boost::shared_ptr<zookeeper::ZooKeeper> zookeeper_;
-    boost::shared_ptr<sf1r::WorkerDetector> workerDectector_;
 };
 
 #endif /*COBRAPROCESS_H_*/

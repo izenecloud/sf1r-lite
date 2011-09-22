@@ -292,63 +292,87 @@ void SF1Config::parseBrokerAgent( const ticpp::Element * brokerAgent )
     getAttribute( brokerAgent, "port", brokerAgentConfig_.port_,false );
 }
 
-void SF1Config::parseMasterAgent( const ticpp::Element * masterAgent )
+void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
 {
-    if (!masterAgent)
+    if (!topology)
         return;
 
-    getAttribute(masterAgent, "enable", masterAgentConfig_.enabled_);
-    getAttribute(masterAgent, "port", masterAgentConfig_.port_);
-    getAttribute(masterAgent, "enablelocalworker", masterAgentConfig_.aggregatorConfig_.enableLocalWorker_);
+    getAttribute( topology, "enable", distributedTopologyConfig_.enabled_ );
+    getAttribute( topology, "nodenum", distributedTopologyConfig_.nodeNum_ );
+    getAttribute( topology, "mirrornum", distributedTopologyConfig_.mirrorNum_ );
 
-    ticpp::Element * aggregators = getUniqChildElement( masterAgent, "AggregatorSupport" , false);
-    if (aggregators)
+    // Current SF1 node
+    ticpp::Element * cursf1node = getUniqChildElement( topology, "CurrentNode" );
+    getAttribute( cursf1node, "nodeid", distributedTopologyConfig_.curSF1Node_.nodeId_ );
+    getAttribute( cursf1node, "mirrorid", distributedTopologyConfig_.curSF1Node_.mirrorId_ );
+    getAttribute( cursf1node, "host", distributedTopologyConfig_.curSF1Node_.host_ );
+    parseMasterAgent( getUniqChildElement( cursf1node, "MasterAgent", false ) );
+    parseWorkerAgent( getUniqChildElement( cursf1node, "WorkerAgent", false ) );
+
+    // ZooKeeper configuration
+    ticpp::Element* zk = getUniqChildElement( topology, "ZooKeeper" );
+    getAttribute(zk, "servers", distributedTopologyConfig_.zkHosts_);
+    getAttribute(zk, "sessiontimeout", distributedTopologyConfig_.zkRecvTimeout_);
+
+    cout << distributedTopologyConfig_.toString();//xxx
+}
+
+void SF1Config::parseMasterAgent( const ticpp::Element * master )
+{
+    if (!master)
+        return;
+
+    MasterAgentConfig& masterAgent = distributedTopologyConfig_.curSF1Node_.masterAgent_;
+
+    getAttribute(master, "enable", masterAgent.enabled_);
+    getAttribute(master, "port", masterAgent.port_);
+    //getAttribute(master, "enablelocalworker", masterAgent.aggregatorConfig_.enableLocalWorker_);
+
+    Iterator<Element> aggregator_it( "Aggregator" );
+    for (aggregator_it = aggregator_it.begin(master); aggregator_it != aggregator_it.end(); aggregator_it++)
     {
-        Iterator<Element> aggregator_it( "Aggregator" );
-        for (aggregator_it = aggregator_it.begin(aggregators); aggregator_it != aggregator_it.end(); aggregator_it++)
-        {
-            AggregatorUnit aggregatorUnit;
-            getAttribute(aggregator_it.Get(), "name", aggregatorUnit.name_);
-            masterAgentConfig_.addAggregatorConfig(aggregatorUnit);
-        }
+        AggregatorUnit aggregatorUnit;
+        getAttribute(aggregator_it.Get(), "name", aggregatorUnit.name_);
+        masterAgent.addAggregatorConfig(aggregatorUnit);
+    }
 
-        Iterator<Element> worker_it( "Worker" );
-        for (worker_it = worker_it.begin(masterAgent); worker_it != worker_it.end(); worker_it++)
-        {
-            std::string host;
-            int port;
-            getAttribute(worker_it.Get(), "host", host, true);
-            getAttribute(worker_it.Get(), "port", port, true);
-            masterAgentConfig_.aggregatorConfig_.addWorker(host, static_cast<uint16_t>(port));
-        }
+    // todo, remove
+    Iterator<Element> worker_it( "Worker" );
+    for (worker_it = worker_it.begin(master); worker_it != worker_it.end(); worker_it++)
+    {
+        std::string host;
+        int port;
+        getAttribute(worker_it.Get(), "host", host, true);
+        getAttribute(worker_it.Get(), "port", port, true);
+        masterAgent.aggregatorConfig_.addWorker(host, static_cast<uint16_t>(port));
     }
 }
 
-void SF1Config::parseWorkerAgent( const ticpp::Element * workerAgent )
+void SF1Config::parseWorkerAgent( const ticpp::Element * worker )
 {
-    if (!workerAgent)
+    if (!worker)
         return;
 
-    getAttribute(workerAgent, "enable", workerAgentConfig_.enabled_);
-    getAttribute(workerAgent, "port", workerAgentConfig_.port_);
+    WorkerAgentConfig& workerAgent = distributedTopologyConfig_.curSF1Node_.workerAgent_;
 
-    ticpp::Element * master = getUniqChildElement( workerAgent, "Master");
+    getAttribute(worker, "enable", workerAgent.enabled_);
+    getAttribute(worker, "port", workerAgent.port_);
+
+    Iterator<Element> aggregator_it( "Service" );
+    for (aggregator_it = aggregator_it.begin(worker); aggregator_it != aggregator_it.end(); aggregator_it++)
+    {
+        ServiceUnit serviceUnit;
+        getAttribute(aggregator_it.Get(), "name", serviceUnit.name_);
+        workerAgent.addServiceUnit(serviceUnit);
+    }
+
+    // todo, remove
+    ticpp::Element* master = getUniqChildElement( worker, "Master", false );
     if (master)
     {
-        getAttribute(master, "host", workerAgentConfig_.masterHost_);
-        getAttribute(master, "port", workerAgentConfig_.masterPort_);
+        getAttribute(master, "host", workerAgent.masterHost_);
+        getAttribute(master, "port", workerAgent.masterPort_);
     }
-}
-
-void SF1Config::parseDistCoordination(const ticpp::Element * distcoordAgent)
-{
-    if (!distcoordAgent)
-        return;
-
-    ticpp::Element* zk = getUniqChildElement( distcoordAgent, "ZooKeeper", true);
-
-    getAttribute(zk, "servers", distCoordinationConfig_.zkHosts_, true);
-    getAttribute(zk, "sessiontimeout", distCoordinationConfig_.zkRecvTimeout_, true);
 }
 
 void SF1Config::parseBundlesDefault(const ticpp::Element * bundles)
@@ -718,9 +742,7 @@ void SF1Config::parseDeploymentSettings(const ticpp::Element * deploy)
 {
     parseBrokerAgent( getUniqChildElement( deploy, "BrokerAgent" ) );
 
-    parseMasterAgent( getUniqChildElement( deploy, "MasterAgent", false ) );
-
-    parseWorkerAgent( getUniqChildElement( deploy, "WorkerAgent", false ) );
+    parseDistributedTopology( getUniqChildElement( deploy, "DistributedTopology", false ) );
 }
 
 // ------------------------- CollectionConfig-------------------------
