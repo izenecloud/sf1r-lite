@@ -333,6 +333,7 @@ void SF1Config::parseMasterAgent( const ticpp::Element * master )
     {
         AggregatorUnit aggregatorUnit;
         getAttribute(aggregator_it.Get(), "name", aggregatorUnit.name_);
+        downCase(aggregatorUnit.name_);
         masterAgent.addAggregatorConfig(aggregatorUnit);
     }
 
@@ -363,6 +364,7 @@ void SF1Config::parseWorkerAgent( const ticpp::Element * worker )
     {
         ServiceUnit serviceUnit;
         getAttribute(aggregator_it.Get(), "name", serviceUnit.name_);
+        downCase(serviceUnit.name_);
         workerAgent.addServiceUnit(serviceUnit);
     }
 
@@ -379,7 +381,6 @@ void SF1Config::parseBundlesDefault(const ticpp::Element * bundles)
 {
     Element * bundle = NULL;
     bundle = getUniqChildElement( bundles, "QueryLogBundle" );
-    getAttribute( bundle, "enableworker", queryLogBundleConfig_.enable_worker_, false ); // worker
     parseQueryLogBundleParam(getUniqChildElement( bundle, "Parameter" ));
     bundle = getUniqChildElement( bundles, "IndexBundle" );
     defaultIndexBundleParam_.LoadXML(getUniqChildElement( bundle, "Parameter" ), false);	
@@ -847,9 +848,6 @@ bool CollectionConfig::parseConfigFile( const string& collectionName ,const stri
 
 void CollectionConfig::parseCollectionSettings( const ticpp::Element * collection, CollectionMeta & collectionMeta )
 {
-    // Worker
-    getAttribute( collection, "enableworker", collectionMeta.enableWorkerServer_, false);
-
     parseCollectionPath( getUniqChildElement( collection, "Path" ), collectionMeta );
 
     parseCollectionSchema( getUniqChildElement( collection, "DocumentSchema" ), collectionMeta );

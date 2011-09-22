@@ -150,17 +150,6 @@ public:
         return acl_;
     }
 
-    void setEnableWorkerServer(const bool enable)
-    {
-        enableWorkerServer_ = enable;
-    }
-
-    const bool isEnableWorkerServer()
-    {
-        return enableWorkerServer_;
-    }
-
-
 public:
     /// @brief Collection ID
     collectionid_t colId_;
@@ -171,8 +160,6 @@ public:
     std::string dateFormat_;
 
     CollectionPath collPath_;
-
-    bool enableWorkerServer_;
 
     /// @brief The DocumentSchema of this Collection
     std::set<PropertyConfigBase, PropertyBaseComp> schema_;

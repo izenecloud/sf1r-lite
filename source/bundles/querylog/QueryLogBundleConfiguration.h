@@ -28,8 +28,6 @@ public:
     std::string cronIndexRecommend_;
 
     std::string resource_dir_;
-
-    bool enable_worker_;
 };
 
 }

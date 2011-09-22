@@ -474,9 +474,11 @@ public:
 
     bool checkAggregatorSupport(const std::string& collectionOrBundleName)
     {
+        std::string downcaseName = collectionOrBundleName;
+        downCase(downcaseName);
         if (distributedTopologyConfig_.enabled_
                 && distributedTopologyConfig_.curSF1Node_.masterAgent_.enabled_
-                && distributedTopologyConfig_.curSF1Node_.masterAgent_.checkAggregatorByName(collectionOrBundleName))
+                && distributedTopologyConfig_.curSF1Node_.masterAgent_.checkAggregatorByName(downcaseName))
         {
             return true;
         }
@@ -487,47 +489,24 @@ public:
     bool isWorkerEnabled()
     {
         if (distributedTopologyConfig_.enabled_
-                && distributedTopologyConfig_.curSF1Node_.workerAgent_.enabled_)
+                && distributedTopologyConfig_.curSF1Node_.workerAgent_.enabled_
+                && distributedTopologyConfig_.curSF1Node_.workerAgent_.serviceMap_.size() > 0)
         {
-            // xxx
-            std::map<std::string, CollectionMeta>::const_iterator it;
-            for(it = collectionMetaMap_.begin(); it != collectionMetaMap_.end(); it++)
-            {
-                if (it->second.enableWorkerServer_)
-                    return true;
-            }
-
-            return queryLogBundleConfig_ .enable_worker_;
+            return true;
         }
 
         return false;
     }
 
-    // xxx
-    bool checkCollectionWorkerService(const std::string& collectionName)
+    bool checkWorkerServiceByName(const std::string& collectionOrBundleName)
     {
+        std::string downcaseName = collectionOrBundleName;
+        downCase(downcaseName);
         if (distributedTopologyConfig_.enabled_
-                && distributedTopologyConfig_.curSF1Node_.workerAgent_.enabled_)
+                && distributedTopologyConfig_.curSF1Node_.workerAgent_.enabled_
+                && distributedTopologyConfig_.curSF1Node_.workerAgent_.checkServiceByName(downcaseName))
         {
-            std::map<std::string, CollectionMeta>::const_iterator it =
-                collectionMetaMap_.find(collectionName);
-
-            if(it != collectionMetaMap_.end())
-            {
-                return it->second.enableWorkerServer_;
-            }
-        }
-
-        return false;
-    }
-
-    // xxx
-    bool checkQueryLogWorkerService()
-    {
-        if (distributedTopologyConfig_.enabled_
-                && distributedTopologyConfig_.curSF1Node_.workerAgent_.enabled_)
-        {
-            return queryLogBundleConfig_ .enable_worker_;
+             return true;
         }
 
         return false;

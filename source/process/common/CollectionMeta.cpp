@@ -7,7 +7,6 @@ namespace sf1r
 
 CollectionMeta::CollectionMeta()
     : colId_(0)
-    , enableWorkerServer_(false)
 {}
 
 bool CollectionMeta::getProperty(PropertyConfigBase& config) const
