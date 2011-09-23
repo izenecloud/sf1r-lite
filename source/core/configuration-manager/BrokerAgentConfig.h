@@ -12,8 +12,6 @@ struct BrokerAgentConfig
     size_t threadNum_;
     bool enableTest_;
     unsigned int port_;
-    unsigned int nodeId_;
-    unsigned int mirrorId_;
 };
 
 }

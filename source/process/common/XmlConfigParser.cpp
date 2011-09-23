@@ -313,8 +313,6 @@ void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
     ticpp::Element* zk = getUniqChildElement( topology, "ZooKeeper" );
     getAttribute(zk, "servers", distributedTopologyConfig_.zkHosts_);
     getAttribute(zk, "sessiontimeout", distributedTopologyConfig_.zkRecvTimeout_);
-
-    cout << distributedTopologyConfig_.toString();//xxx
 }
 
 void SF1Config::parseMasterAgent( const ticpp::Element * master )

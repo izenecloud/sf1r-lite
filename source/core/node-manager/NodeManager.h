@@ -25,31 +25,44 @@ class NodeManager : public ZooKeeperEventHandler
 public:
     NodeManager();
 
+    ~NodeManager();
+
     void initZooKeeper(const std::string& zkHosts, const int recvTimeout);
 
+    void setCurrentNodeInfo(SF1NodeInfo& sf1NodeInfo);
+
     /**
-     * Register SF1 node when start up.
-     * @param nodeId
-     * @param mirrorId
-     * @param data
+     * Register SF1 node for start up.
      */
-    void registerNode(nodeid_t nodeId, mirrorid_t mirrorId, const std::string& data="");
+    void registerNode();
 
     /**
      * Register Master on current SF1 node.
      */
-    void registerNodeMaster(nodeid_t nodeId, mirrorid_t mirrorId, const std::string& data="");
+    void registerMaster(unsigned int port);
+
+    /**
+     * Register Worker on current SF1 node.
+     */
+    void registerWorker(unsigned int port);
+
 
     virtual void process(ZooKeeperEvent& zkEvent);
 
 private:
-    void doProcess();
+    void ensureNodeParents(nodeid_t nodeId, mirrorid_t mirrorId);
+
+    void delayedProcess();
 
 private:
     boost::shared_ptr<ZooKeeper> zookeeper_;
 
-    std::vector<std::pair<std::string, std::string> > registerTaskList_;
+    bool registered_;
+    SF1NodeInfo nodeInfo_;
+    std::string nodePath_;
 
+    unsigned int masterPort_;
+    unsigned int workerPort_;
 };
 
 

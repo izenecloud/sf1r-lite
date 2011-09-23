@@ -36,7 +36,7 @@ private:
 
     void stopDriver();
 
-    bool initDistributedNodeManager();
+    bool startDistributedServer();
 
     void stopWorkerServer();
 

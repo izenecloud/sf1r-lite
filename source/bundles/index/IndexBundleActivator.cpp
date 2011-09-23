@@ -11,6 +11,7 @@
 #include <la-manager/LAPool.h>
 #include <aggregator-manager/AggregatorManager.h>
 #include <aggregator-manager/WorkerService.h>
+#include <node-manager/MasterNodeManager.h>
 #include <util/singleton.h>
 
 #include <boost/filesystem.hpp>
@@ -419,7 +420,8 @@ boost::shared_ptr<AggregatorManager>
 IndexBundleActivator::createAggregatorManager_() const
 {
     boost::shared_ptr<AggregatorManager> ret(new AggregatorManager());
-    ret->setAggregatorConfig(config_->aggregatorConfig_);
+    //ret->setAggregatorConfig(config_->aggregatorConfig_);
+    MasterNodeManagerSingleton::get()->registerAggregator(ret);
     ret->initLocalWorkerCaller(workerService_);
     ret->TOP_K_NUM = config_->topKNum_;
     return ret;

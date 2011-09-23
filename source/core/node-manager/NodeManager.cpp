@@ -1,11 +1,17 @@
 #include "NodeManager.h"
 
+#include <sstream>
 
 using namespace sf1r;
 
 NodeManager::NodeManager()
+: registered_(false), masterPort_(0), workerPort_(0)
 {
+}
 
+NodeManager::~NodeManager()
+{
+    //zookeeper_->deleteZNode(nodePath_, true);
 }
 
 void NodeManager::initZooKeeper(const std::string& zkHosts, const int recvTimeout)
@@ -14,28 +20,57 @@ void NodeManager::initZooKeeper(const std::string& zkHosts, const int recvTimeou
     zookeeper_->registerEventHandler(this);
 }
 
-void NodeManager::registerNode(nodeid_t nodeId, mirrorid_t mirrorId, const std::string& data)
+void NodeManager::setCurrentNodeInfo(SF1NodeInfo& sf1NodeInfo)
 {
-    std::string zpath = NodeUtil::getNodePath(mirrorId, nodeId);
+    nodeInfo_ = sf1NodeInfo;
+    nodePath_ = NodeUtil::getNodePath(nodeInfo_.mirrorId_, nodeInfo_.nodeId_);
+}
 
-    if (zookeeper_->isConnected()) {
-        // xxx check existence of path
-        zookeeper_->createZNode(zpath, data);
+void NodeManager::registerNode()
+{
+    if (zookeeper_->isConnected())
+    {
+        //std::cout<<"[NodeManager] connected to ZooKeeper Service."<<std::endl;
+
+        ensureNodeParents(nodeInfo_.nodeId_, nodeInfo_.mirrorId_);
+
+        zookeeper_->createZNode(nodePath_, nodeInfo_.localHost_);
+        if (zookeeper_->isZNodeExists(nodePath_))
+        {
+            registered_ = true;
+        }
     }
-    else {
-        registerTaskList_.push_back(std::make_pair(zpath, data));
+    else
+    {
+        std::cout<<"[NodeManager] connecting to ZooKeeper Service..."<<std::endl;
     }
 }
 
-void NodeManager::registerNodeMaster(nodeid_t nodeId, mirrorid_t mirrorId, const std::string& data)
+void NodeManager::registerMaster(unsigned int port)
 {
-    std::string zpath = NodeUtil::getNodePath(mirrorId, nodeId);
+    masterPort_ = port;
 
-    if (zookeeper_->isConnected()) {
-        zookeeper_->createZNode(zpath, data, ZooKeeper::ZNODE_EPHEMERAL);
+    std::string path = nodePath_+"/Master";
+    std::stringstream data;
+    data << masterPort_;
+
+    if (zookeeper_->isConnected())
+    {
+        zookeeper_->createZNode(path, data.str(), ZooKeeper::ZNODE_EPHEMERAL);
     }
-    else {
-        registerTaskList_.push_back(std::make_pair(zpath, data));
+}
+
+void NodeManager::registerWorker(unsigned int port)
+{
+    workerPort_ = port;
+
+    std::string path = nodePath_+"/Worker";
+    std::stringstream data;
+    data << workerPort_;
+
+    if (zookeeper_->isConnected())
+    {
+        zookeeper_->createZNode(path, data.str(), ZooKeeper::ZNODE_EPHEMERAL);
     }
 }
 
@@ -43,22 +78,28 @@ void NodeManager::process(ZooKeeperEvent& zkEvent)
 {
     if (zookeeper_->isConnected())
     {
-        doProcess();
+        //std::cout << "NodeManager::delayedProcess() "<<std::endl;
+        delayedProcess();
     }
 }
 
-void NodeManager::doProcess()
+void NodeManager::ensureNodeParents(nodeid_t nodeId, mirrorid_t mirrorId)
 {
-    std::vector<std::pair<std::string, std::string> >::iterator it;
-    for (it = registerTaskList_.begin(); it != registerTaskList_.end(); )
+    zookeeper_->createZNode(NodeUtil::getSF1RootPath());
+    zookeeper_->createZNode(NodeUtil::getSF1TopologyPath());
+    zookeeper_->createZNode(NodeUtil::getMirrorPath(mirrorId));
+}
+
+void NodeManager::delayedProcess()
+{
+    if (!registered_)
     {
-        if (zookeeper_->createZNode(it->first, it->second))
-        {
-            it = registerTaskList_.erase(it);
-        }
-        else
-        {
-            it ++;
-        }
+        registerNode();
+
+        // If parent node not registered, Master and Worker will also have not been registered.
+        if (masterPort_ != 0)
+            registerMaster(masterPort_);
+        if (workerPort_ != 0)
+            registerWorker(workerPort_);
     }
 }
