@@ -32,7 +32,7 @@ public:
 
 private:
     const NumericPropertyTable *propertyTable_;
-    std::vector<int> segmentTree_;
+    std::vector<unsigned int> segmentTree_;
 
     static const int bound_[LEVEL_1_OF_SEGMENT_TREE + 1];
 };

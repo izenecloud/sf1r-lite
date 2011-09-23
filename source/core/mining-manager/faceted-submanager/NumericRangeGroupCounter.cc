@@ -33,13 +33,13 @@ void NumericRangeGroupCounter::addDoc(docid_t doc)
 
 void NumericRangeGroupCounter::getGroupRep(OntologyRep& groupRep) const
 {
-    int level0 = 0;
-    int level1[LEVEL_1_OF_SEGMENT_TREE];
-    int level2[LEVEL_1_OF_SEGMENT_TREE][10];
-    int split[LEVEL_1_OF_SEGMENT_TREE];
+    unsigned int level0 = 0;
+    unsigned int level1[LEVEL_1_OF_SEGMENT_TREE];
+    unsigned int level2[LEVEL_1_OF_SEGMENT_TREE][10];
+    unsigned int split[LEVEL_1_OF_SEGMENT_TREE];
     int rangeNumber = MAX_RANGE_NUMBER;
 
-    std::vector<int>::const_iterator it = segmentTree_.begin();
+    std::vector<unsigned int>::const_iterator it = segmentTree_.begin();
 
     for (int i = 0; i < LEVEL_1_OF_SEGMENT_TREE; i++)
     {
@@ -94,14 +94,14 @@ void NumericRangeGroupCounter::getGroupRep(OntologyRep& groupRep) const
     izenelib::util::UString propName(propertyTable_->getPropertyName(), UString::UTF_8);
     itemList.push_back(faceted::OntologyRepItem(0, propName, 0, level0));
 
-    for (int i = 0; i < LEVEL_1_OF_SEGMENT_TREE; i++)
+    for (unsigned int i = 0; i < LEVEL_1_OF_SEGMENT_TREE; i++)
     {
-        std::vector<int>::const_iterator bit = segmentTree_.begin() + 100 * i;
+        std::vector<unsigned int>::const_iterator bit = segmentTree_.begin() + 100 * i;
         if (!split[i])
             continue;
 
         std::pair<int, int> stop(0, 0), end(9, 9);
-        int tempCount = 0, oldCount = 0;
+        unsigned int tempCount = 0, oldCount = 0;
         int atom = bound_[i + 1] / 100;
 
         while (level2[i][end.first] == 0)
@@ -124,7 +124,7 @@ void NumericRangeGroupCounter::getGroupRep(OntologyRep& groupRep) const
             ++it;
         }
 
-        for (int j = 0; j < split[i] - 1; j++)
+        for (unsigned int j = 0; j < split[i] - 1; j++)
         {
             int difference = tempCount - ((j + 1) * level1[i] - 1) / split[i] - 1;
             std::pair<int, int> tempStop, oldStop(stop);
