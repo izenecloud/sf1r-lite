@@ -8,60 +8,28 @@
 #ifndef SF1R_NUMERIC_GROUP_COUNTER_H
 #define SF1R_NUMERIC_GROUP_COUNTER_H
 
-#include <search-manager/NumericPropertyTable.h>
-#include <util/ustring/UString.h>
 #include "GroupCounter.h"
+
+namespace sf1r {
+class NumericPropertyTable;
+}
 
 NS_FACETED_BEGIN
 
-template <typename T>
 class NumericGroupCounter : public GroupCounter
 {
 public:
-    NumericGroupCounter(const NumericPropertyTable *propertyTable)
-        : propertyTable_(propertyTable)
-        , count_(0)
-    {}
+    NumericGroupCounter(const NumericPropertyTable *propertyTable);
 
-    ~NumericGroupCounter()
-    {
-        delete propertyTable_;
-    }
+    ~NumericGroupCounter();
 
-    virtual void addDoc(docid_t doc)
-    {
-        T value;
-        propertyTable_->getPropertyValue(doc, value);
-        ++count_;
-        ++countTable_[value];
-    }
+    virtual void addDoc(docid_t doc);
 
-    virtual void getGroupRep(OntologyRep& groupRep) const
-    {
-        std::list<OntologyRepItem>& itemList = groupRep.item_list;
-
-        izenelib::util::UString propName(propertyTable_->getPropertyName(), UString::UTF_8);
-        itemList.push_back(faceted::OntologyRepItem(0, propName, 0, count_));
-
-        for (typename std::map<T, size_t>::const_iterator it = countTable_.begin();
-            it != countTable_.end(); it++)
-        {
-            itemList.push_back(faceted::OntologyRepItem());
-            faceted::OntologyRepItem& repItem = itemList.back();
-            repItem.level = 1;
-            std::stringstream ss;
-            ss << fixed << setprecision(2);
-            ss << it->first;
-            izenelib::util::UString stringValue(ss.str(), UString::UTF_8);
-            repItem.text = stringValue;
-            repItem.doc_count = it->second;
-        }
-    }
+    virtual void getGroupRep(OntologyRep& groupRep) const;
 
 private:
     const NumericPropertyTable *propertyTable_;
-    size_t count_;
-    std::map<T, size_t> countTable_;
+    std::map<double, unsigned int> countTable_;
 };
 
 NS_FACETED_END
