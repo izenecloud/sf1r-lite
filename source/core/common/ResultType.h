@@ -9,7 +9,7 @@
 ///     - 2009.08.31 Added RawTextResultFromSIA by Dohyun Yun
 ///     - 2009.12.02 Added ErrorInfo class by Dohyun Yun
 ///     - 2011.04.22 Added topKCustomRankScoreList_ in KeywordSearchResult by Zhongxia Li
-///     
+///
 
 #ifndef _RESULTTYPE_H_
 #define _RESULTTYPE_H_
@@ -18,6 +18,7 @@
 #include <common/sf1_msgpack_serialization_types.h>
 #include <mining-manager/taxonomy-generation-submanager/TgTypes.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
+#include <mining-manager/faceted-submanager/GroupRep.h>
 #include <idmlib/concept-clustering/cc_types.h>
 // #include <mining-manager/faceted-submanager/manmade_doc_category_item.h>
 #include <util/ustring/UString.h>
@@ -50,7 +51,7 @@ namespace sf1r {
         MSGPACK_DEFINE(highValue_, lowValue_);
     };
 
-    
+
     ///
     /// @brief This class is inheritable type of every result type in this file.
     ///
@@ -84,7 +85,7 @@ namespace sf1r {
     class KeywordSearchResult : public ErrorInfo
     {
         public:
-          
+
           KeywordSearchResult()
           :rawQueryString_(""), encodingType_(izenelib::util::UString::UTF_8)
           , collectionName_(""), analyzedQuery_(), queryTermIdList_()
@@ -286,11 +287,11 @@ namespace sf1r {
 
             /// A list of ranked docId. First docId gets high rank score.
             std::vector<docid_t> topKDocs_;
-            
-            
+
+
             /// A list of workerids. The sequence is following \c topKDocs_.
             std::vector<uint32_t> topKWorkerIds_;
-            
+
             std::vector<uint32_t> topKtids_;
 
             /// A list of rank scores. The sequence is following \c topKDocs_.
@@ -349,8 +350,8 @@ namespace sf1r {
             ///
             ///
             std::vector<std::vector<izenelib::util::UString> >  rawTextOfSummaryInPage_;
-            
-            
+
+
             std::vector<count_t> numberOfDuplicatedDocs_;
 
             std::vector<count_t> numberOfSimilarDocs_;
@@ -360,7 +361,7 @@ namespace sf1r {
              std::vector< uint32_t> imgs_;
 
             // --------------------------------[ Taxonomy List ]
-            
+
             idmlib::cc::CCInput32 tg_input;
 
             /// Taxonomy string list.
@@ -381,17 +382,17 @@ namespace sf1r {
             ///     </TgLabel>
             /// </TgLabel>
             /// <TgLabel name=”bank” num=”4”/>
-            /// 
+            ///
             /// numOfTGDocs_ = { 0 , 1 , 2 , 0 };
             std::vector<uint32_t> taxonomyLevel_; // Start From 0
 
             NEResultList neList_;
             // --------------------------------[ Related Query ]
-            
+
             sf1r::faceted::OntologyRep onto_rep_;
 
             // a list, each element is a label tree for a property
-            sf1r::faceted::OntologyRep groupRep_;
+            sf1r::faceted::GroupRep groupRep_;
 
             // a list, each element is a label array for an attribute name
             sf1r::faceted::OntologyRep attrRep_;
@@ -401,7 +402,7 @@ namespace sf1r {
 
             /// A list of related query rank score.
             std::vector<float> rqScore_;
-            
+
 
             void getTopKWDocs(std::vector<sf1r::wdocid_t>& topKWDocs) const
             {
@@ -505,7 +506,7 @@ namespace sf1r {
 
 
             /// Raw Text of Document is used for generating resultXML of "KeywordSearch" query.
-            /// And the first index is following the sequence of the 
+            /// And the first index is following the sequence of the
             /// displayPropertyList(which is set to generate summary) in KeywordSearchActionItem.
             /// The second index is following the sequence of the rankedDocIdList_;
             //std::vector<std::vector<izenelib::util::UString> >  rawTextOfSummary_;
@@ -516,7 +517,7 @@ namespace sf1r {
 
             /// corresponding workerids for each id. (no need to be serialized)
             std::vector<workerid_t> workeridList_;
-            
+
             void getWIdList(std::vector<sf1r::wdocid_t>& widList) const
             {
                 if (workeridList_.size() <= 0)
@@ -533,10 +534,10 @@ namespace sf1r {
             }
 
             //LOG: changed the names for consistentcy with KeywordResultItem
-            //DATA_IO_LOAD_SAVE(RawTextResultFromSIA, 
+            //DATA_IO_LOAD_SAVE(RawTextResultFromSIA,
             //        &fullTextOfDocumentInOnePage_&rawTextOfDocument_&rawTextOfSummary_
-            
-            DATA_IO_LOAD_SAVE(RawTextResultFromSIA, 
+
+            DATA_IO_LOAD_SAVE(RawTextResultFromSIA,
                     &fullTextOfDocumentInPage_&snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_&idList_
                     &errno_&error_
                     );
@@ -544,8 +545,8 @@ namespace sf1r {
             MSGPACK_DEFINE(fullTextOfDocumentInPage_,snippetTextOfDocumentInPage_,rawTextOfSummaryInPage_,
                     idList_,errno_,error_);
     }; // end - class RawTextResultFromSIA
-    
-    
+
+
     class RawTextResultFromMIA : public RawTextResultFromSIA // Log : 2011.07.27
     {
         public:
@@ -553,14 +554,14 @@ namespace sf1r {
             std::vector<count_t> numberOfDuplicatedDocs_;
 
             std::vector<count_t> numberOfSimilarDocs_;
-            
-            
+
+
 
             //LOG: changed the names for consistentcy with KeywordResultItem
-            //DATA_IO_LOAD_SAVE(RawTextResultFromSIA, 
+            //DATA_IO_LOAD_SAVE(RawTextResultFromSIA,
             //        &fullTextOfDocumentInOnePage_&rawTextOfDocument_&rawTextOfSummary_
-            
-            DATA_IO_LOAD_SAVE(RawTextResultFromMIA, 
+
+            DATA_IO_LOAD_SAVE(RawTextResultFromMIA,
                     &fullTextOfDocumentInPage_&snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_&idList_
                     &numberOfDuplicatedDocs_&numberOfSimilarDocs_
                     &errno_&error_

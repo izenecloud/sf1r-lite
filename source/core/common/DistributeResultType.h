@@ -152,7 +152,7 @@ public:
 
     /// A list of workerids. The sequence is following \c topKDocs_.
     std::vector<uint32_t> topKWorkerIds_;
-    
+
     /// for ec module.
     std::vector<uint32_t> topKtids_;
 
@@ -179,7 +179,7 @@ public:
     sf1r::faceted::OntologyRep onto_rep_;
 
     // a list, each element is a label tree for a property
-    sf1r::faceted::OntologyRep groupRep_;
+    sf1r::faceted::GroupRep groupRep_;
 
     // a list, each element is a label array for an attribute name
     sf1r::faceted::OntologyRep attrRep_;

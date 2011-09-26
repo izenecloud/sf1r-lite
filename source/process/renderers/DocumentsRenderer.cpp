@@ -78,7 +78,7 @@ void DocumentsRenderer::renderDocuments(
             newResource[Keys::_duplicated_document_count] =
                 result.numberOfDuplicatedDocs_[i];
         }
-        
+
 //         if (result.topKtids_.size()
 //             == widList.size())
 //         {
@@ -165,7 +165,7 @@ void DocumentsRenderer::renderDocuments(
             newResource[Keys::_similar_document_count] =
                 searchResult.numberOfSimilarDocs_[indexInTopK];
         }
-        
+
         if (searchResult.topKtids_.size()
             == searchResult.topKDocs_.size())
         {
@@ -219,9 +219,9 @@ void DocumentsRenderer::renderRelatedQueries(
 //         miaResult.popularQueries_[i].convertString(convertBuffer, kEncoding);
 //         popularQueries() = convertBuffer;
 //     }
-// 
+//
 // }
-// 
+//
 // void DocumentsRenderer::renderRealTimeQueries(
 //     const KeywordSearchResult& miaResult,
 //     Value& realTimeQueries
@@ -346,8 +346,8 @@ void DocumentsRenderer::renderGroup(
     Value& groupResult
 )
 {
-    const std::list<sf1r::faceted::OntologyRepItem>& item_list = miaResult.groupRep_.item_list;
-    if (item_list.empty())
+    const std::list<std::list<sf1r::faceted::OntologyRepItem> >& group_list = miaResult.groupRep_.stringGroupRep_;
+    if (group_list.empty())
     {
         return;
     }
@@ -356,32 +356,36 @@ void DocumentsRenderer::renderGroup(
 
     std::vector<Value*> parents;
     parents.push_back(&groupResult);
-    for (std::list<sf1r::faceted::OntologyRepItem>::const_iterator it = item_list.begin();
-            it != item_list.end(); ++it)
+    for (std::list<std::list<sf1r::faceted::OntologyRepItem> >::const_iterator git = group_list.begin();
+        git != group_list.end(); ++git)
     {
-        const sf1r::faceted::OntologyRepItem& item = *it;
-        // group level start from 0
-        std::size_t currentLevel = item.level;
-        BOOST_ASSERT(currentLevel < parents.size());
-
-        Value& parent = *(parents[currentLevel]);
-        Value& newLabel = parent();
-        item.text.convertString(convertBuffer, kEncoding);
-
-        // alternative for the parent of next level
-        std::size_t nextLevel = currentLevel + 1;
-        parents.resize(nextLevel + 1);
-        if (currentLevel == 0)
+        for (std::list<sf1r::faceted::OntologyRepItem>::const_iterator it = git->begin();
+                it != git->end(); ++it)
         {
-            newLabel[Keys::property] = convertBuffer;
-            newLabel[Keys::document_count] = item.doc_count;
-            parents[nextLevel] = &newLabel[Keys::labels];
-        }
-        else
-        {
-            newLabel[Keys::label] = convertBuffer;
-            newLabel[Keys::document_count] = item.doc_count;
-            parents[nextLevel] = &newLabel[Keys::sub_labels];
+            const sf1r::faceted::OntologyRepItem& item = *it;
+            // group level start from 0
+            std::size_t currentLevel = item.level;
+            BOOST_ASSERT(currentLevel < parents.size());
+
+            Value& parent = *(parents[currentLevel]);
+            Value& newLabel = parent();
+            item.text.convertString(convertBuffer, kEncoding);
+
+            // alternative for the parent of next level
+            std::size_t nextLevel = currentLevel + 1;
+            parents.resize(nextLevel + 1);
+            if (currentLevel == 0)
+            {
+                newLabel[Keys::property] = convertBuffer;
+                newLabel[Keys::document_count] = item.doc_count;
+                parents[nextLevel] = &newLabel[Keys::labels];
+            }
+            else
+            {
+                newLabel[Keys::label] = convertBuffer;
+                newLabel[Keys::document_count] = item.doc_count;
+                parents[nextLevel] = &newLabel[Keys::sub_labels];
+            }
         }
     }
 }

@@ -45,7 +45,7 @@ public:
 
 //     void renderPopularQueries(const KeywordSearchResult& miaResult,
 //                               Value& popularQueries);
-// 
+//
 //     void renderRealTimeQueries(const KeywordSearchResult& miaResult,
 //                                Value& realTimeQueries);
 

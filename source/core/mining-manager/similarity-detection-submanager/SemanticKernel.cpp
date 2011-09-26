@@ -33,7 +33,7 @@ public:
     void putPair(uint32_t id1, uint32_t id2, float weight)
     {
         std::cout<<"id1 "<<id1<<" id2 "<<id2<<" weight "<<weight<<std::endl;
-        output_<<"id1 "<<id1<<" id2 "<<id2<<" weight "<<weight<<std::endl;		
+        output_<<"id1 "<<id1<<" id2 "<<id2<<" weight "<<weight<<std::endl;
 
         izenelib::util::UString rawText;
         if(document_manager_->getPropertyValue(id1, semanticField_, rawText))
@@ -48,7 +48,7 @@ public:
         if(document_manager_->getPropertyValue(id2, semanticField_, rawText2))
         {
             rawText2.displayStringValue(izenelib::util::UString::UTF_8);
-            std::cout<<std::endl;			
+            std::cout<<std::endl;
             std::string str;
             rawText2.convertString(str, izenelib::util::UString::UTF_8);
             output_<<str<<std::endl;
@@ -82,7 +82,7 @@ SemanticKernel::SemanticKernel(
     analysisInfo_.analyzerId_ = "la_sia";
     analysisInfo_.tokenizerNameList_.insert("tok_divide");
     analysisInfo_.tokenizerNameList_.insert("tok_unite");
-    boost::filesystem::create_directories(boost::filesystem::path(workingDir));	
+    boost::filesystem::create_directories(boost::filesystem::path(workingDir));
     boost::filesystem::create_directories(boost::filesystem::path(allpairPath_));
     forwardIndexBuilder_ = new PrunedSortedForwardIndex(
         workingDir,
@@ -99,8 +99,8 @@ SemanticKernel::~SemanticKernel()
 }
 
 void SemanticKernel::setSchema(
-	const std::vector<uint32_t>& property_ids, 
-	const std::vector<std::string>& properties, 
+	const std::vector<uint32_t>& property_ids,
+	const std::vector<std::string>& properties,
 	const std::string& semanticField,
 	const std::string& domainField
 )
@@ -179,7 +179,7 @@ void SemanticKernel::doSearch()
                 std::vector<float> topKRankScoreList;
                 std::vector<float> topKCustomRankScoreList;
                 std::size_t totalCount;
-                faceted::OntologyRep groupRep;
+                faceted::GroupRep groupRep;
                 faceted::OntologyRep attrRep;
                 sf1r::PropertyRange propertyRange;
                 sf1r::DistKeywordSearchInfo distKeywordSearchInfo;
@@ -211,7 +211,7 @@ void SemanticKernel::doSearch()
                             for(; fit != forward.end(); ++fit)
                             {
                                 std::map<uint32_t, float>::iterator rit = results.find(fit->first);
-                               
+
                                 if(rit == results.end())
                                 {
                                     results.insert(std::make_pair(fit->first,fit->second));
@@ -224,7 +224,7 @@ void SemanticKernel::doSearch()
                         }
                     }
                     float sum = 0;
-                   
+
                     idmlib::ssp::SparseVectorType normalized(did, results.size());
                     for(std::map<uint32_t, float>::iterator rit = results.begin(); rit != results.end(); ++rit)
                     {
@@ -233,7 +233,7 @@ void SemanticKernel::doSearch()
                         normalized.insertItem(rit->first, w);
                     }
                     sum = std::sqrt(sum);
-                    if(sum > 0) 
+                    if(sum > 0)
                     {
                         sum = std::sqrt(sum);
                         for(idmlib::ssp::SparseVectorType::list_iter_t fit = normalized.list.begin(); fit != normalized.list.end(); ++fit)
@@ -258,7 +258,7 @@ void SemanticKernel::doSearch()
     std::fstream out("result.txt", std::ios::out);
 
     std::vector<std::pair<uint32_t, float> > result;
-    for (size_t idx =1 ; idx <= maxDoc; idx++) 
+    for (size_t idx =1 ; idx <= maxDoc; idx++)
     {
         output->getSimilarDocIdScoreList(idx,10,result);
         if(! result.empty())
@@ -289,7 +289,7 @@ void SemanticKernel::flushSim_(uint32_t did, float weight, std::fstream& out)
     izenelib::util::UString domain;
     document_manager_->getPropertyValue(did, domainField_, domain);
     std::string domainstr;
-    domain.convertString(domainstr, izenelib::util::UString::UTF_8);	
+    domain.convertString(domainstr, izenelib::util::UString::UTF_8);
     if(document_manager_->getPropertyValue(did, semanticField_, rawText))
     {
         std::string str;

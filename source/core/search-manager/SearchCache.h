@@ -26,7 +26,7 @@ public:
         std::vector<float> customScores;
         std::vector<unsigned int> docIdList;
         std::size_t totalCount;
-        faceted::OntologyRep groupRep;
+        faceted::GroupRep groupRep;
         faceted::OntologyRep attrRep;
         sf1r::PropertyRange propertyRange;
         DistKeywordSearchInfo distSearchInfo;
@@ -48,7 +48,7 @@ public:
              std::vector<float>& customScores,
              std::vector<unsigned int>& docIdList,
              std::size_t& totalCount,
-             faceted::OntologyRep& groupRep,
+             faceted::GroupRep& groupRep,
              faceted::OntologyRep& attrRep,
              sf1r::PropertyRange& propertyRange,
              DistKeywordSearchInfo& distSearchInfo,
@@ -84,7 +84,7 @@ public:
              std::vector<float> customScores,
              std::vector<unsigned int> docIdList,
              std::size_t totalCount,
-             faceted::OntologyRep groupRep,
+             faceted::GroupRep groupRep,
              faceted::OntologyRep attrRep,
              sf1r::PropertyRange propertyRange,
              DistKeywordSearchInfo distSearchInfo,

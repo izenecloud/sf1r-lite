@@ -362,7 +362,7 @@ private:
 
     void createAndCheckGroupRep_(const faceted::GroupParam::GroupLabelVec& labelList)
     {
-        faceted::OntologyRep groupRep;
+        faceted::GroupRep groupRep;
         PropertyMap propMap;
 
         BOOST_TEST_MESSAGE("check label size: " << labelList.size());
@@ -373,7 +373,7 @@ private:
 
     void createGroupRep_(
         const faceted::GroupParam::GroupLabelVec& labelVec,
-        faceted::OntologyRep& groupRep
+        faceted::GroupRep& groupRep
     )
     {
         faceted::GroupFilterBuilder filterBuilder(groupConfigs_, groupManager_, NULL, numericTableBuilder_);
@@ -400,6 +400,7 @@ private:
 
         faceted::OntologyRep attrRep;
         filter->getGroupRep(groupRep, attrRep);
+        groupRep.convertGroupRep();
 
         delete filter;
     }
@@ -473,12 +474,19 @@ private:
     }
 
     void checkGroupRep_(
-        const faceted::OntologyRep& groupRep,
+        const faceted::GroupRep& groupRep,
         PropertyMap& propertyMap
     )
     {
         typedef list<faceted::OntologyRepItem> RepItemList;
-        const RepItemList& itemList = groupRep.item_list;
+        typedef list<RepItemList> GroupList;
+        RepItemList itemList;
+
+        for (GroupList::const_iterator it = groupRep.stringGroupRep_.begin();
+            it != groupRep.stringGroupRep_.end(); ++it)
+        {
+            itemList.insert(itemList.end(), it->begin(), it->end());
+        }
 
         // check list size
         unsigned int totalCount = 0;

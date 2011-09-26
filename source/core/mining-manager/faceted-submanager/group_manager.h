@@ -9,6 +9,7 @@
 #define SF1R_GROUP_MANAGER_H_
 
 #include "ontology_rep.h"
+#include "GroupRep.h"
 #include "prop_value_table.h"
 #include <configuration-manager/GroupConfig.h>
 

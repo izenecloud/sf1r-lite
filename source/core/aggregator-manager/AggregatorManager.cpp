@@ -120,6 +120,7 @@ void AggregatorManager::aggregateDistSearchResult(DistKeywordSearchResult& resul
         {
             rangeHigh = wResult.propertyRange_.highValue_;
         }
+        result.groupRep_.merge(wResult.groupRep_);
     }
     result.propertyRange_.lowValue_ = rangeLow;
     result.propertyRange_.highValue_ = rangeHigh;
@@ -205,7 +206,6 @@ void AggregatorManager::aggregateDistSearchResult(DistKeywordSearchResult& resul
 
     // TODO, merge Ontology info
     //result.onto_rep_;
-    //result.groupRep_;
     //result.attrRep_;
 }
 

@@ -12,6 +12,7 @@
 #include <mining-manager/faceted-submanager/GroupParam.h>
 #include <mining-manager/faceted-submanager/GroupFilterBuilder.h>
 #include <mining-manager/faceted-submanager/GroupFilter.h>
+#include <mining-manager/faceted-submanager/GroupRep.h>
 #include <configuration-manager/PropertyConfig.h>
 #include <configuration-manager/GroupConfig.h>
 
@@ -256,7 +257,7 @@ private:
             BOOST_CHECK(filter->test(*it));
         }
 
-        faceted::OntologyRep groupRep;
+        faceted::GroupRep groupRep;
         filter->getGroupRep(groupRep, attrRep);
 
         delete filter;

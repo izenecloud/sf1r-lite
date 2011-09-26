@@ -420,7 +420,7 @@ boost::shared_ptr<AggregatorManager>
 IndexBundleActivator::createAggregatorManager_() const
 {
     boost::shared_ptr<AggregatorManager> ret(new AggregatorManager());
-    //ret->setAggregatorConfig(config_->aggregatorConfig_);
+    ret->setAggregatorConfig(config_->aggregatorConfig_);
     MasterNodeManagerSingleton::get()->registerAggregator(ret);
     ret->initLocalWorkerCaller(workerService_);
     ret->TOP_K_NUM = config_->topKNum_;
