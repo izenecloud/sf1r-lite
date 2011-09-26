@@ -41,12 +41,14 @@ public:
     typedef boost::unordered_map<uint32_t, std::vector<GroupIdType> > d2g_type;
     typedef g2d_type::iterator g2d_iterator;
     typedef d2g_type::iterator d2g_iterator;
-//     friend class SimAlgorithm;
+    
     EcManager(const std::string& container);
+    
+    EcManager(const std::string& container, idmlib::util::IDMAnalyzer* analyzer, idmlib::util::IDMAnalyzer* cma_analyzer,  const std::string& kpe_resource_path);
     ~EcManager();
     bool Open();
     bool Flush();
-    bool ProcessCollection(const boost::shared_ptr<DocumentManager>& document_manager, izenelib::ir::indexmanager::IndexReader* index_reader, uint32_t property_id, const std::string& property_name);
+    bool ProcessCollection(const boost::shared_ptr<DocumentManager>& document_manager, izenelib::ir::indexmanager::IndexReader* index_reader, const std::pair<uint32_t, std::string>& title_property, const std::pair<uint32_t, std::string>& content_propert);
     
     g2d_iterator g2d_find(const GroupIdType& gid)
     {
@@ -137,15 +139,19 @@ public:
         id_manager_ = id_manager;
     }
     
-    bool EditBegin();
-    
-    bool EditEnd();
+    const std::string& ErrorMsg() const
+    {
+        return error_msg_;
+    }
     
     
 
 
 private:
     
+    void Evaluate_();
+    
+    bool EvaluateInSameGroup_(uint32_t docid1, uint32_t docid2);
     
     template<typename T>
     void VectorRemove_(std::vector<T>& vec, const T& value)
@@ -174,6 +180,7 @@ private:
     boost::shared_ptr<izenelib::ir::idmanager::IDManager> id_manager_;
     idmlib::util::IDMAnalyzer* analyzer_;
     idmlib::util::IDMAnalyzer* cma_analyzer_;
+    std::string kpe_resource_path_;
     g2d_type group_;
 
     ///for docid in group, the vector size==1. for docid in candidate and if only in one group, the vector = {0, groupid}.
@@ -183,6 +190,8 @@ private:
     std::vector<GroupIdType> available_groupid_list_;
     
     uint32_t max_docid_;
+    
+    std::string error_msg_;
 
 
 };

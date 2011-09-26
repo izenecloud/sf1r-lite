@@ -1,9 +1,19 @@
 #include "ec_manager.h"
+#include <boost/unordered_set.hpp>
 
 using namespace sf1r::ec;
 
 EcManager::EcManager(const std::string& container)
-:container_(container),available_groupid_(1), available_groupid_list_(), max_docid_(0)
+:container_(container)
+, analyzer_(NULL), cma_analyzer_(NULL), kpe_resource_path_("")
+, available_groupid_(1), available_groupid_list_(), max_docid_(0)
+{
+}
+
+EcManager::EcManager(const std::string& container, idmlib::util::IDMAnalyzer* analyzer, idmlib::util::IDMAnalyzer* cma_analyzer, const std::string& kpe_resource_path)
+:container_(container)
+, analyzer_(analyzer), cma_analyzer_(cma_analyzer), kpe_resource_path_(kpe_resource_path)
+, available_groupid_(1), available_groupid_list_(), max_docid_(0)
 {
 }
 
@@ -111,6 +121,7 @@ bool EcManager::Open()
     }
     std::string docid_file = container_+"/max_docid";
     izenelib::am::ssf::Util<>::Load(docid_file, max_docid_);
+    Evaluate_();
     return true;
 }
 
@@ -132,15 +143,16 @@ bool EcManager::Flush()
     return true;
 }
 
-bool EcManager::ProcessCollection(const boost::shared_ptr<DocumentManager>& document_manager, izenelib::ir::indexmanager::IndexReader* index_reader, uint32_t property_id, const std::string& property_name)
+bool EcManager::ProcessCollection(const boost::shared_ptr<DocumentManager>& document_manager, izenelib::ir::indexmanager::IndexReader* index_reader, const std::pair<uint32_t, std::string>& title_property, const std::pair<uint32_t, std::string>& content_propert)
 {
     //...
     uint32_t start_docid = max_docid_+1;
     std::string working_dir = container_+"/working";
-    SimAlgorithm algo(working_dir, this, start_docid, 0.8);
-    if(!algo.ProcessCollection(document_manager, index_reader, property_id, property_name)) return false;
+    SimAlgorithm algo(working_dir, this, start_docid, 0.7, analyzer_, cma_analyzer_, kpe_resource_path_);
+    if(!algo.ProcessCollection(document_manager, index_reader, title_property, content_propert)) return false;
     max_docid_ = document_manager->getMaxDocId();
     if(!Flush()) return false;
+    Evaluate_();
     return true;
 }
 
@@ -168,10 +180,17 @@ bool EcManager::GetAllGroupIdList(std::vector<GroupIdType>& id_list)
 
 bool EcManager::AddDocInGroup(const GroupIdType& id, const std::vector<uint32_t>& docid_list)
 {
+//     std::cout<<"AddDocInGroup "<<id<<std::endl;
+//     for(uint32_t i=0;i<docid_list.size();i++)
+//     {
+//         std::cout<<"["<<docid_list[i]<<"]"<<std::endl;
+//     }
     boost::unordered_map<GroupIdType, GroupDocsWithRes>::iterator git = group_.find(id);
     if( git== group_.end())
     {
-        //do not find, return;
+        char buffer [255];
+        sprintf (buffer, "can not find tid : %d", id);
+        error_msg_ = buffer;
         return false;
     }
     GroupDocsWithRes& ginfo = git->second;
@@ -183,6 +202,9 @@ bool EcManager::AddDocInGroup(const GroupIdType& id, const std::vector<uint32_t>
         if(it!=docs.doc.end())
         {
             //find the same in exist list.
+            char buffer [255];
+            sprintf (buffer, "find same id in list : %d", docid);
+            error_msg_ = buffer;
             return false;
         }
         boost::unordered_map<uint32_t, std::vector<GroupIdType> >::iterator dgit = docid_group_.find(docid);
@@ -191,7 +213,9 @@ bool EcManager::AddDocInGroup(const GroupIdType& id, const std::vector<uint32_t>
             std::vector<GroupIdType>& glist = dgit->second;
             if(!glist.empty() && glist[0]!=0 )
             {
-                //this docid belongs to other group, should delete it from that group firstly.
+                char buffer [255];
+                sprintf (buffer, "docid %d belongs to other group, should delete it from that group firstly.", docid);
+                error_msg_ = buffer;
                 return false;
             }
         }
@@ -302,6 +326,9 @@ bool EcManager::RemoveDocInGroup(const GroupIdType& id, const std::vector<uint32
     if( git== group_.end())
     {
         //do not find, return;
+        char buffer [255];
+        sprintf (buffer, "can not find tid : %d", id);
+        error_msg_ = buffer;
         return false;
     }
     GroupDocsWithRes& ginfo = git->second;
@@ -312,6 +339,9 @@ bool EcManager::RemoveDocInGroup(const GroupIdType& id, const std::vector<uint32
         if(it==docs.doc.end())
         {
             //not found in exist list.
+            char buffer [255];
+            sprintf (buffer, "docid %d not found in exist list", docid_list[i]);
+            error_msg_ = buffer;
             return false;
         }
     }
@@ -419,7 +449,10 @@ bool EcManager::DeleteDoc(uint32_t docid)
 {
     //use direct operations
     d2g_iterator it = d2g_find(docid);
-    if(it==d2g_end()) return true;
+    if(it==d2g_end())
+    {
+        return true;
+    }
     std::vector<GroupIdType>& gid_list = it->second;
     if(!gid_list.empty())
     {
@@ -556,7 +589,13 @@ void EcManager::NextGroupIdEnsure_()
 bool EcManager::GetGroup(const GroupIdType& id, std::vector<uint32_t>& docid_list)
 {
     boost::unordered_map<GroupIdType, GroupDocsWithRes>::iterator it = group_.find(id);
-    if(it==group_.end()) return false;
+    if(it==group_.end())
+    {
+        char buffer [255];
+        sprintf (buffer, "can not find tid : %d", id);
+        error_msg_ = buffer;
+        return false;
+    }
     docid_list.assign( it->second.docs.doc.begin(), it->second.docs.doc.end() );
     return true;
 }
@@ -564,7 +603,13 @@ bool EcManager::GetGroup(const GroupIdType& id, std::vector<uint32_t>& docid_lis
 bool EcManager::GetGroupCandidate(const GroupIdType& id, std::vector<uint32_t>& candidate_docid_list)
 {
     boost::unordered_map<GroupIdType, GroupDocsWithRes>::iterator it = group_.find(id);
-    if(it==group_.end()) return false;
+    if(it==group_.end())
+    {
+        char buffer [255];
+        sprintf (buffer, "can not find tid : %d", id);
+        error_msg_ = buffer;
+        return false;
+    }
     candidate_docid_list.assign( it->second.docs.candidate.begin(), it->second.docs.candidate.end() );
     return true;
 }
@@ -572,9 +617,20 @@ bool EcManager::GetGroupCandidate(const GroupIdType& id, std::vector<uint32_t>& 
 bool EcManager::GetGroupAll(const GroupIdType& id, std::vector<uint32_t>& docid_list, std::vector<uint32_t>& candidate_docid_list)
 {
     boost::unordered_map<GroupIdType, GroupDocsWithRes>::iterator it = group_.find(id);
-    if(it==group_.end()) return false;
+    if(it==group_.end())
+    {
+        char buffer [255];
+        sprintf (buffer, "can not find tid : %d", id);
+        error_msg_ = buffer;
+        return false;
+    }
     docid_list.assign( it->second.docs.doc.begin(), it->second.docs.doc.end() );
     candidate_docid_list.assign( it->second.docs.candidate.begin(), it->second.docs.candidate.end() );
+//     std::cout<<"GetGroupAll "<<id<<std::endl;
+//     for(uint32_t i=0;i<docid_list.size();i++)
+//     {
+//         std::cout<<"["<<docid_list[i]<<"]"<<std::endl;
+//     }
     return true;
 }
 
@@ -591,6 +647,111 @@ bool EcManager::GetGroupId(uint32_t docid, GroupIdType& groupid)
     if(vec[0]==0) return false;
     groupid = vec[0];
     return true;
+}
+
+void EcManager::Evaluate_()
+{
+    if(!id_manager_) return;
+    std::string import_file = container_+"/evaluate.txt";
+    if(!boost::filesystem::exists(import_file)) return;
+    std::ifstream ifs(import_file.c_str());
+    std::string line;
+    std::vector<uint32_t> in_group;
+    uint32_t standard_count = 0;
+    uint32_t correct_count = 0;
+    while ( true )
+    {
+        bool bbreak = false;
+        if(!getline ( ifs,line ))
+        {
+            line = "";
+            bbreak = true;
+        }
+        boost::algorithm::trim(line);
+        if(line.length()==0 && in_group.size()>0)
+        {
+            //process in_group
+            for(uint32_t i=0;i<in_group.size();i++)
+            {
+                for(uint32_t j=1;j<in_group.size();j++)
+                {
+                    if(EvaluateInSameGroup_(in_group[i], in_group[j]))
+                    {
+                        ++correct_count;
+                    }
+                    ++standard_count;
+                }
+            }
+            
+            in_group.resize(0);
+        }
+        if(line.length()>0)
+        {
+            std::size_t a = line.find('\t');
+            if(a!=std::string::npos)
+            {
+                std::string s_docid = line.substr(0, a);
+                izenelib::util::UString str_docid(s_docid, izenelib::util::UString::UTF_8);
+                uint32_t docid = 0;
+                if(id_manager_->getDocIdByDocName(str_docid, docid,false) )
+                {
+                    in_group.push_back(docid);
+                }
+                else
+                {
+//                     std::cout<<"docid "<<s_docid<<" does not exists."<<std::endl;
+                }
+            }
+        }
+        if(bbreak) break;
+    }
+    ifs.close();
+    double recall = (double)correct_count/standard_count;
+    std::cout<<"[Evaluate_] recall : "<<recall<<std::endl;
+    
+}
+
+bool EcManager::EvaluateInSameGroup_(uint32_t docid1, uint32_t docid2)
+{
+    d2g_iterator it1 = d2g_find(docid1);
+    d2g_iterator it2 = d2g_find(docid2);
+    if(it1 == d2g_end() || it2 == d2g_end() ) return false;
+    boost::unordered_set<GroupIdType> set;
+    std::vector<GroupIdType>& list1 = it1->second;
+    std::vector<GroupIdType>& list2 = it2->second;
+    for(uint32_t i=0;i<list1.size();i++)
+    {
+        GroupIdType gid = list1[i];
+        if(gid==0) continue;
+        set.insert(gid);
+        g2d_iterator it = g2d_find(gid);
+        if(it==g2d_end()) continue;
+        GroupDocs& docs = it->second.docs;
+        for(uint32_t j=0;j<docs.candidate.size();j++)
+        {
+            uint32_t docid = docs.candidate[j];
+            d2g_iterator dit = d2g_find(docid);
+            if(dit==d2g_end()) continue;
+            std::vector<GroupIdType>& list = dit->second;
+            for(uint32_t k=0;k<list.size();k++)
+            {
+                GroupIdType gids = list[k];
+                if(gids==0) continue;
+                set.insert(gids);
+            }
+        }
+        
+    }
+    for(uint32_t i=0;i<list2.size();i++)
+    {
+        if(list2[i]==0) continue;
+        boost::unordered_set<GroupIdType>::iterator it = set.find(list2[i]);
+        if(it!=set.end())
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
