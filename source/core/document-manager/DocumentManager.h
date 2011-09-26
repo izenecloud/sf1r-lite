@@ -292,9 +292,13 @@ public:
 
 private:
     
-    bool loadDelFilter_();
     
-    bool saveDelFilter_();
+    bool DelFilterLoadImpl_();
+    bool DelFilterLoad_();
+    
+    bool DelFilterFlush_();
+    
+    void DelFilterClear_();
     /**
      * @brief builds property-id pair map for properties from configuration. Different
      *               map for alias is constructed in the same interface.
@@ -402,6 +406,8 @@ private:
     
     /// @brief The delete flag filter
     DelFilterType delfilter_;
+    
+    boost::mutex delfilter_mutex_;
 
     /// @brief document cache holds the retrieved property values of document
     izenelib::cache::IzeneCache<docid_t, Document, izenelib::util::ReadWriteLock> documentCache_;
