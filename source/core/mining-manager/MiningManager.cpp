@@ -440,7 +440,8 @@ bool MiningManager::open()
         {
             ec_path_ = prefix_path + "/ec";
             boost::filesystem::create_directories(ec_path_);
-            ec_manager_.reset(new ec::EcManager(ec_path_));
+            ec_manager_.reset(new ec::EcManager(ec_path_, kpe_analyzer_, c_analyzer_, kpe_res_path_));
+            ec_manager_->SetIDManager(idManager_);
             if(!ec_manager_->Open()) return false;
         }
 
@@ -648,16 +649,18 @@ bool MiningManager::DoMiningCollection()
             schema_type::const_iterator it(schema_.find(byName));
             title_property_id = (*it).propertyId_;
         }
+        std::pair<uint32_t, std::string> title_property(title_property_id, mining_schema_.ec_title_property);
         
-//         uint32_t content_property_id;
-//         {
-//             PropertyConfigBase byName;
-//             byName.propertyName_ = mining_schema_.ec_content_property;
-//             schema_type::const_iterator it(schema_.find(byName));
-//             content_property_id = (*it).propertyId_;
-//         }
+        uint32_t content_property_id;
+        {
+            PropertyConfigBase byName;
+            byName.propertyName_ = mining_schema_.ec_content_property;
+            schema_type::const_iterator it(schema_.find(byName));
+            content_property_id = (*it).propertyId_;
+        }
+        std::pair<uint32_t, std::string> content_property(content_property_id, mining_schema_.ec_content_property);
         
-        if(!ec_manager_->ProcessCollection(document_manager_, index_manager_->getIndexReader(), title_property_id, mining_schema_.ec_title_property) )
+        if(!ec_manager_->ProcessCollection(document_manager_, index_manager_->getIndexReader(), title_property, content_property) )
         {
             std::cout<<"Ec computation failed."<<std::endl;
         }

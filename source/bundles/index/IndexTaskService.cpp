@@ -1238,15 +1238,11 @@ bool IndexTaskService::prepareDocument_(
 
                         document.property(fieldStr) = propertyValueU;
                         unsigned int numOfSummary = 0;
-                        if ( (iter->getIsSnippet() == true)
-                                || (iter->getIsSummary() == true))
+                        if ( (iter->getIsSummary() == true))
                         {
-                            if (iter->getIsSummary() == true)
-                            {
-                                numOfSummary = iter->getSummaryNum();
-                                if (numOfSummary <= 0)
-                                    numOfSummary = 1; //atleast one sentence required for summary
-                            }
+                            numOfSummary = iter->getSummaryNum();
+                            if (numOfSummary <= 0)
+                                numOfSummary = 1; //atleast one sentence required for summary
 
                             if (makeSentenceBlocks_(propertyValueU, iter->getDisplayLength(),
                                                     numOfSummary, sentenceOffsetList) == false)
@@ -1538,6 +1534,11 @@ bool IndexTaskService::getIndexStatus(Status& status)
     indexProgress_.getIndexingStatus(indexStatus_);
     status = indexStatus_;
     return true;
+}
+
+uint32_t IndexTaskService::getDocNum()
+{
+    return indexManager_->getIndexReader()->numDocs();
 }
 
 }

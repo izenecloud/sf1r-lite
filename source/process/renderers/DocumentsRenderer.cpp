@@ -78,6 +78,13 @@ void DocumentsRenderer::renderDocuments(
             newResource[Keys::_duplicated_document_count] =
                 result.numberOfDuplicatedDocs_[i];
         }
+        
+//         if (result.topKtids_.size()
+//             == widList.size())
+//         {
+//             newResource[Keys::_tid] =
+//                 result.topKtids_[i];
+//         }
     }
 }
 
@@ -157,6 +164,13 @@ void DocumentsRenderer::renderDocuments(
         {
             newResource[Keys::_similar_document_count] =
                 searchResult.numberOfSimilarDocs_[indexInTopK];
+        }
+        
+        if (searchResult.topKtids_.size()
+            == searchResult.topKDocs_.size())
+        {
+            newResource[Keys::_tid] =
+                searchResult.topKtids_[indexInTopK];
         }
 
         if (searchResult.imgs_.size() == searchResult.topKDocs_.size())
