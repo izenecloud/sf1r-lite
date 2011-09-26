@@ -357,6 +357,37 @@ void EcController::remove_docs_from_tid()
 
 }
 
+/**
+ * @brief Action \b get_all_product_info. get all products' categories and quantities information
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ *
+ * @section response
+ *
+ *
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection" : "intel",
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ *   "resources" : {
+ *      "categories": 900,
+ *      "products": 1200
+ *   }
+ * }
+ * @endcode
+ */
 void EcController::get_all_product_info()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(check_ec_manager_());
