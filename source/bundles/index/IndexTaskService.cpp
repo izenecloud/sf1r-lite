@@ -1540,5 +1540,10 @@ bool IndexTaskService::getIndexStatus(Status& status)
     return true;
 }
 
+uint32_t IndexTaskService::getDocNum()
+{
+    return indexManager_->getIndexReader()->numDocs();
+}
+
 }
 

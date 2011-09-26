@@ -38,6 +38,8 @@ public:
     
     void remove_docs_from_tid();
     
+    void get_all_product_info();
+
 private:
     bool check_ec_manager_();
     bool require_tid_();

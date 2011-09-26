@@ -281,6 +281,12 @@ public:
         return ec_manager_;
     }
 
+    boost::shared_ptr<DocumentManager> GetDocumentManager()
+    {
+        return  document_manager_;
+    }
+
+
     void onIndexUpdated(size_t docNum);
 private:
 
