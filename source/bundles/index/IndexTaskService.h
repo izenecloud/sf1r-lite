@@ -53,6 +53,8 @@ public:
 
     bool getIndexStatus(Status& status);
 
+    uint32_t getDocNum();
+
 private:
     bool doBuildCollection_(
         const std::string& scdFile, 

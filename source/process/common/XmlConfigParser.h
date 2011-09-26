@@ -14,11 +14,9 @@
 #include <configuration-manager/LAManagerConfig.h>
 #include <configuration-manager/QuerySupportConfig.h>
 #include <configuration-manager/BrokerAgentConfig.h>
-#include <configuration-manager/MasterAgentConfig.h>
-#include <configuration-manager/WorkerAgentConfig.h>
+#include <configuration-manager/DistributedTopologyConfig.h>
 #include <configuration-manager/FirewallConfig.h>
 #include <configuration-manager/CollectionParameterConfig.h>
-#include <configuration-manager/DistributedCoordinationConfig.h>
 #include <mining-manager/faceted-submanager/ontology_rep_item.h>
 #include <search-manager/QueryBuilder.h>
 #include <core/common/TermTypeDetector.h>
@@ -404,16 +402,6 @@ public:
         return brokerAgentConfig_;
     }
 
-    const MasterAgentConfig& getMasterAgentConfig()
-    {
-        return masterAgentConfig_;
-    }
-
-    const net::aggregator::AggregatorConfig& getAggregatorConfig()
-    {
-        return masterAgentConfig_.aggregatorConfig_;
-    }
-
     /// @brief Gets the configuration related to BrokerAgent
     /// @param brokerAgentConfig    The settings for BrokerAgent
     void getBrokerAgentConfig( BrokerAgentConfig& brokerAgentConfig )
@@ -421,14 +409,29 @@ public:
         brokerAgentConfig = brokerAgentConfig_;
     }
 
-    const WorkerAgentConfig& getWorkerAgentConfig()
+    /// @brief Get the configuration related to distributed deployment
+    /// @return The settings for DistributedTopologyConfig
+    const DistributedTopologyConfig& getMasterAgentConfig()
     {
-        return workerAgentConfig_;
+        return distributedTopologyConfig_;
+    }
+
+    /// @brief Get the configuration related to distributed deployment
+    /// @param distributedTopologyConfig The settings for DistributedTopologyConfig
+    void getMasterAgentConfig( DistributedTopologyConfig& distributedTopologyConfig )
+    {
+        distributedTopologyConfig = distributedTopologyConfig_;
+    }
+
+    // xxx
+    const net::aggregator::AggregatorConfig& getAggregatorConfig()
+    {
+        return distributedTopologyConfig_.curSF1Node_.masterAgent_.aggregatorConfig_;
     }
 
     /// @brief Gets the configuration related to Firewall
     /// @return The settings for Firewall
-    const FirewallConfig& getFirewallConfig( )
+    const FirewallConfig& getFirewallConfig()
     {
         return firewallConfig_;
     }
@@ -459,57 +462,54 @@ public:
 
     bool isMasterEnabled()
     {
-        if (!masterAgentConfig_.enabled_)
-            return false;
-
-        return (masterAgentConfig_.aggregatorSupportMap_.size() > 0);
-    }
-
-    bool checkAggregatorSupport(const std::string& collectionOrBundleName)
-    {
-        if (!masterAgentConfig_.enabled_)
-            return false;
-
-        return masterAgentConfig_.checkAggregatorByName(collectionOrBundleName);
-    }
-
-    bool isWorkerEnabled()
-    {
-        if (!workerAgentConfig_.enabled_)
-            return false;
-
-        std::map<std::string, CollectionMeta>::const_iterator it;
-        for(it = collectionMetaMap_.begin(); it != collectionMetaMap_.end(); it++)
+        if (distributedTopologyConfig_.enabled_
+                && distributedTopologyConfig_.curSF1Node_.masterAgent_.enabled_
+                && distributedTopologyConfig_.curSF1Node_.masterAgent_.aggregatorSupportMap_.size() > 0)
         {
-            if (it->second.enableWorkerServer_)
-                return true;
-        }
-
-        return queryLogBundleConfig_ .enable_worker_;
-    }
-
-    bool checkCollectionWorkerService(const std::string& collectionName)
-    {
-        if (!workerAgentConfig_.enabled_)
-            return false;
-
-        std::map<std::string, CollectionMeta>::const_iterator it =
-            collectionMetaMap_.find(collectionName);
-
-        if(it != collectionMetaMap_.end())
-        {
-            return it->second.enableWorkerServer_;
+            return true;
         }
 
         return false;
     }
 
-    bool checkQueryLogWorkerService()
+    bool checkAggregatorSupport(const std::string& collectionOrBundleName)
     {
-        if (!workerAgentConfig_.enabled_)
-            return false;
+        std::string downcaseName = collectionOrBundleName;
+        downCase(downcaseName);
+        if (distributedTopologyConfig_.enabled_
+                && distributedTopologyConfig_.curSF1Node_.masterAgent_.enabled_
+                && distributedTopologyConfig_.curSF1Node_.masterAgent_.checkAggregatorByName(downcaseName))
+        {
+            return true;
+        }
 
-        return queryLogBundleConfig_ .enable_worker_;
+        return false;
+    }
+
+    bool isWorkerEnabled()
+    {
+        if (distributedTopologyConfig_.enabled_
+                && distributedTopologyConfig_.curSF1Node_.workerAgent_.enabled_
+                && distributedTopologyConfig_.curSF1Node_.workerAgent_.serviceMap_.size() > 0)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    bool checkWorkerServiceByName(const std::string& collectionOrBundleName)
+    {
+        std::string downcaseName = collectionOrBundleName;
+        downCase(downcaseName);
+        if (distributedTopologyConfig_.enabled_
+                && distributedTopologyConfig_.curSF1Node_.workerAgent_.enabled_
+                && distributedTopologyConfig_.curSF1Node_.workerAgent_.checkServiceByName(downcaseName))
+        {
+             return true;
+        }
+
+        return false;
     }
 
     bool checkCollectionExist(const std::string& collectionName)
@@ -595,18 +595,13 @@ private:
     /// @brief                  Parse <BrokerAgnet> settings
     /// @param system           Pointer to the Element
     void parseBrokerAgent( const ticpp::Element * brokerAgent );
-
     /// @brief                  Parse <Broker> settings
     /// @param system           Pointer to the Element
-    void parseBroker(const ticpp::Element * broker);
+    void parseDistributedTopology(const ticpp::Element * topology);
     /// @brief                  Parse <RemoteAgent> settings
     /// @param system           Pointer to the Element
-    void parseMasterAgent(const ticpp::Element * remoteAgent);
-    void parseWorkerAgent(const ticpp::Element * remoteAgent);
-
-    /// @brief                  Parse <DistributedCoordination>
-    /// @param system           Pointer to the Element
-    void parseDistCoordination(const ticpp::Element * distcoordAgent);
+    void parseMasterAgent(const ticpp::Element * master);
+    void parseWorkerAgent(const ticpp::Element * worker);
 
 public:
     //----------------------------  PRIVATE MEMBER VARIABLES  ----------------------------
@@ -633,13 +628,8 @@ public:
     /// @brief  Configurations for BrokerAgent
     BrokerAgentConfig brokerAgentConfig_;
 
-    /// @brief Congiguations for Aggregator (Workers' server info, etc)
-    MasterAgentConfig masterAgentConfig_;
-
-    WorkerAgentConfig workerAgentConfig_;
-
-    /// @brief Configuations for distributed coordination
-    DistributedCoordinationConfig distCoordinationConfig_;
+    /// @brief Configurations for distributed search system
+    DistributedTopologyConfig distributedTopologyConfig_;
 
     /// @brief QueryLogBundleConfig
     QueryLogBundleConfiguration queryLogBundleConfig_;

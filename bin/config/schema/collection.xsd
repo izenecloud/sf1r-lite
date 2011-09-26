@@ -47,7 +47,6 @@
 				<xs:element ref="MiningBundle" minOccurs="0"/>
 				<xs:element ref="RecommendBundle" minOccurs="0"/>
 			</xs:sequence>
-			<xs:attribute name="enableworker" type="YesNoType" use="optional"/>
 		</xs:complexType>
 		<!-- Key and KeyRef should be put together -->
 		<xs:key name="SchemaPropertyKey">

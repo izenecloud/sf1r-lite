@@ -78,19 +78,10 @@ GroupCounter* GroupCounterLabelBuilder::createValueCounter(const std::string& pr
         break;
 
     case INT_PROPERTY_TYPE:
-         counter = createNumericCounter<int64_t>(prop);
-         break;
-
     case UNSIGNED_INT_PROPERTY_TYPE:
-         counter = createNumericCounter<uint64_t>(prop);
-         break;
-
     case FLOAT_PROPERTY_TYPE:
-         counter = createNumericCounter<float>(prop);
-         break;
-
     case DOUBLE_PROPERTY_TYPE:
-         counter = createNumericCounter<double>(prop);
+         counter = createNumericCounter(prop);
          break;
 
     default:
@@ -119,14 +110,13 @@ GroupCounter* GroupCounterLabelBuilder::createStringCounter(const std::string& p
     return counter;
 }
 
-template <typename T>
 GroupCounter* GroupCounterLabelBuilder::createNumericCounter(const std::string& prop) const
 {
     NumericPropertyTable *propertyTable = numericTableBuilder_->createPropertyTable(prop);
 
     if (propertyTable)
     {
-        return new NumericGroupCounter<T>(propertyTable);
+        return new NumericGroupCounter(propertyTable);
     }
 
     return NULL;

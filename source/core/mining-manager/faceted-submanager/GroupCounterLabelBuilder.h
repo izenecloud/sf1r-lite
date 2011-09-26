@@ -46,7 +46,6 @@ private:
     GroupCounter* createNumericRangeCounter(const std::string& prop) const;
 
     GroupCounter* createStringCounter(const std::string& prop) const;
-    template <typename T>
     GroupCounter* createNumericCounter(const std::string& prop) const;
 
     GroupLabel* createStringLabel(const GroupParam::GroupLabel& labelParam) const;

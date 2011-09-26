@@ -5,8 +5,8 @@
 #include <la-manager/LAPool.h>
 #include <license-manager/LicenseManager.h>
 #include <aggregator-manager/MasterServer.h>
-#include <aggregator-manager/DistributedCoordinator.h>
-#include <aggregator-manager/WorkerDetector.h>
+#include <node-manager/NodeManager.h>
+#include <node-manager/MasterNodeManager.h>
 
 #include <bundles/querylog/QueryLogBundleConfiguration.h>
 #include <bundles/querylog/QueryLogBundleActivator.h>
@@ -230,58 +230,49 @@ void CobraProcess::stopDriver()
     }
 }
 
-bool CobraProcess::initMasterAndWorker()
+bool CobraProcess::startDistributedServer()
 {
-    boost::shared_ptr<DistributedCoordinator> cooridinator;
-    std::string hosts;
-    unsigned int recvTimeout;
+    if (!SF1Config::get()->distributedTopologyConfig_.enabled_)
+        return false;
 
-    if (sf1r::SF1Config::get()->isMasterEnabled() ||
-            sf1r::SF1Config::get()->isWorkerEnabled())
-    {
-        hosts = sf1r::SF1Config::get()->distCoordinationConfig_.zkHosts_;
-        recvTimeout = sf1r::SF1Config::get()->distCoordinationConfig_.zkRecvTimeout_;
+    // Initial information from configuration
+    std::string  zkHosts       = SF1Config::get()->distributedTopologyConfig_.zkHosts_;
+    unsigned int zkRecvTimeout = SF1Config::get()->distributedTopologyConfig_.zkRecvTimeout_;
 
-        cooridinator.reset(new DistributedCoordinator(hosts, recvTimeout));
-    }
+    Topology topology;
+    topology.nodeNum_ = SF1Config::get()->distributedTopologyConfig_.nodeNum_;
+    topology.mirrorNum_ = SF1Config::get()->distributedTopologyConfig_.mirrorNum_;
 
-    // If work as Master
-    if (sf1r::SF1Config::get()->isMasterEnabled())
-    {
-        uint16_t masterPort = sf1r::SF1Config::get()->masterAgentConfig_.port_;
-        MasterServer::get()->start("localhost", masterPort);
-        //cout << "#[Master Server]started, listening at localhost:"<<masterPort<<" ..."<<endl;
+    SF1NodeInfo curNodeInfo;
+    curNodeInfo.mirrorId_ = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.mirrorId_;
+    curNodeInfo.nodeId_ = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.nodeId_;
+    curNodeInfo.localHost_ = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.host_;
+    curNodeInfo.baPort_ = SF1Config::get()->brokerAgentConfig_.port_;
 
-        zookeeper_.reset(new zookeeper::ZooKeeper(hosts, recvTimeout));
-        std::vector<std::string> childrenList;
-        zookeeper_->getZNodeChildren("/SF1", childrenList, zookeeper::ZooKeeper::WATCH);
+    NodeManagerSingleton::get()->initZooKeeper(zkHosts, zkRecvTimeout);
+    NodeManagerSingleton::get()->setCurrentNodeInfo(curNodeInfo);
+    NodeManagerSingleton::get()->registerNode();
 
-        workerDectector_.reset(new sf1r::WorkerDetector());
-        zookeeper_->registerEventHandler(workerDectector_.get());
-    }
-
-    // If work as remote Worker
-    // *WorkerServer should be checked after all collections have been started
     if (sf1r::SF1Config::get()->isWorkerEnabled())
     {
         try
         {
-            // worker server
-            std::string host = "localhost";
-            uint16_t port = SF1Config::get()->workerAgentConfig_.port_;
-            std::size_t threadNum = SF1Config::get()->brokerAgentConfig_.threadNum_;
+            uint16_t workerPort = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.port_;
 
-            workerServer_.reset(new WorkerServer(host, port, threadNum));
+            // Register Worker on current SF1 node
+            NodeManagerSingleton::get()->registerWorker(workerPort);
+
+            // worker rpc server
+            std::size_t threadNum = SF1Config::get()->brokerAgentConfig_.threadNum_;
+            workerServer_.reset(new WorkerServer(curNodeInfo.localHost_, workerPort, threadNum));
             workerServer_->start();
             workerServer_->setQueryLogSearchService(queryLogService_);
-            cout << "#[Worker Server]started, listening at localhost:"<<port<<" ..."<<endl;
+            cout << "#[Worker Server]started, listening at localhost:"<<workerPort<<" ..."<<endl;
 
-            cooridinator->registerNode("/SF1/Worker");
-
-            // master notifier
-            std::string masterHost = SF1Config::get()->workerAgentConfig_.masterHost_;
-            uint16_t masterPort = SF1Config::get()->workerAgentConfig_.masterPort_;
-            MasterNotifierSingleton::get()->setMasterServerInfo(masterHost, masterPort);
+            // master notifier, xxx
+            //std::string masterHost = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.masterHost_;
+            //uint16_t masterPort = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.masterPort_;
+            //MasterNotifierSingleton::get()->setMasterServerInfo(masterHost, masterPort);
 
             addExitHook(boost::bind(&CobraProcess::stopWorkerServer, this));
         }
@@ -291,6 +282,22 @@ bool CobraProcess::initMasterAndWorker()
         }
     }
 
+    if (SF1Config::get()->isMasterEnabled())
+    {
+        uint16_t masterPort = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.masterAgent_.port_;
+
+        // Register Master on current SF1 node
+        NodeManagerSingleton::get()->registerMaster(masterPort);
+
+        // Initialize master node manager
+        MasterNodeManagerSingleton::get()->initZooKeeper(zkHosts, zkRecvTimeout);
+        MasterNodeManagerSingleton::get()->setNodeInfo(topology, curNodeInfo);
+        MasterNodeManagerSingleton::get()->startServer();
+
+        // master rpc server
+        //MasterServer::get()->start(curNodeInfo.localHost_, masterPort);
+    }
+
     return true;
 }
 
@@ -298,7 +305,6 @@ void CobraProcess::stopWorkerServer()
 {
     if (workerServer_)
     {
-        //workerServer_->join();
         workerServer_->end();
     }
 }
@@ -352,8 +358,7 @@ int CobraProcess::run()
             }
 #endif
 
-        // init after collections have been started
-        initMasterAndWorker();
+        startDistributedServer();
 
         driverServer_->run();
     }

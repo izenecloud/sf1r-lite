@@ -115,4 +115,5 @@ controllers:
       - add_new_tid
       - add_docs_to_tid
       - remove_docs_from_tid
+      - get_all_product_info
 

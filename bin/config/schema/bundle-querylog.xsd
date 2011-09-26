@@ -18,7 +18,6 @@
                   </xs:complexType>
                 </xs:element>
 			</xs:sequence>
-			<xs:attribute name="enableworker" type="YesNoType" use="optional"/>
 		</xs:complexType>
 	</xs:element>
 

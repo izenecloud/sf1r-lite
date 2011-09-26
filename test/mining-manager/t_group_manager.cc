@@ -46,12 +46,11 @@ const char* PROP_NAME_GROUP_FLOAT = "Group_float";
 const char* TEST_DIR_STR = "group_test";
 }
 
-string normalizeFloatRep(const string& str)
+string normalizeDoubleRep(double value)
 {
-    float f = lexical_cast<float>(str);
     ostringstream oss;
     oss << fixed << setprecision(2);
-    oss << f;
+    oss << value;
     return oss.str();
 }
 
@@ -60,29 +59,57 @@ struct DocInput
     unsigned int docId_;
     string title_;
     string groupStr_;
-    string groupInt_;
-    string groupFloat_;
+    int groupInt_;
+    float groupFloat_;
 
     DocInput()
     : docId_(0)
+    , groupInt_(0)
+    , groupFloat_(0)
     {
     }
 
     DocInput(
         unsigned int docId,
         const string& groupStr,
-        const string& groupInt,
-        const string& groupFloat
+        int groupInt,
+        float groupFloat
     )
     : docId_(docId)
     , groupStr_(groupStr)
     , groupInt_(groupInt)
-    , groupFloat_(normalizeFloatRep(groupFloat))
+    , groupFloat_(groupFloat)
     {
         title_ = "Title ";
         title_ += lexical_cast<string>(docId);
     }
 };
+
+void checkProperty(
+    const Document& doc,
+    const string& propName,
+    int propValue
+)
+{
+    Document::property_const_iterator it = doc.findProperty(propName);
+    BOOST_REQUIRE(it != doc.propertyEnd());
+
+    const PropertyValue& value = it->second;
+    BOOST_CHECK_EQUAL(value.get<int64_t>(), propValue);
+}
+
+void checkProperty(
+    const Document& doc,
+    const string& propName,
+    float propValue
+)
+{
+    Document::property_const_iterator it = doc.findProperty(propName);
+    BOOST_REQUIRE(it != doc.propertyEnd());
+
+    const PropertyValue& value = it->second;
+    BOOST_CHECK_EQUAL(value.get<float>(), propValue);
+}
 
 void checkProperty(
     const Document& doc,
@@ -94,22 +121,10 @@ void checkProperty(
     BOOST_REQUIRE(it != doc.propertyEnd());
 
     const PropertyValue& value = it->second;
-
-    if (propName == PROP_NAME_GROUP_INT)
-    {
-        BOOST_CHECK_EQUAL(value.get<int64_t>(), lexical_cast<int64_t>(propValue));
-    }
-    else if (propName == PROP_NAME_GROUP_FLOAT)
-    {
-        BOOST_CHECK_EQUAL(value.get<float>(), lexical_cast<float>(propValue));
-    }
-    else
-    {
-        const izenelib::util::UString& ustr = value.get<izenelib::util::UString>();
-        std::string utf8Str;
-        ustr.convertString(utf8Str, ENCODING_TYPE);
-        BOOST_CHECK_EQUAL(utf8Str, propValue);
-    }
+    const izenelib::util::UString& ustr = value.get<izenelib::util::UString>();
+    std::string utf8Str;
+    ustr.convertString(utf8Str, ENCODING_TYPE);
+    BOOST_CHECK_EQUAL(utf8Str, propValue);
 }
 
 void prepareDocument(
@@ -200,16 +215,16 @@ public:
             switch (mod)
             {
             case 0:
-                docInput = DocInput(i, "aaa", "1", "0.1");
+                docInput = DocInput(i, "aaa", 1, 0.1);
                 break;
             case 1:
-                docInput = DocInput(i, "上海", "2", "0.2");
+                docInput = DocInput(i, "上海", 2, 0.2);
                 break;
             case 2:
-                docInput = DocInput(i, "中国", "3", "0.3");
+                docInput = DocInput(i, "中国", 3, 0.3);
                 break;
             case 3:
-                docInput = DocInput(i, "aaa", "2", "0.3");
+                docInput = DocInput(i, "aaa", 2, 0.3);
                 break;
             default:
                 BOOST_ASSERT(false);
@@ -408,9 +423,8 @@ private:
             for (std::size_t i = 0; i < labelList.size(); ++i)
             {
                 const faceted::GroupParam::GroupLabel& label = labelList[i];
-                if ((label.first == PROP_NAME_GROUP_INT && label.second[0] != it->groupInt_)
-                    || (label.first == PROP_NAME_GROUP_FLOAT
-                        && normalizeFloatRep(label.second[0]) != it->groupFloat_))
+                if ((label.first == PROP_NAME_GROUP_INT && lexical_cast<int>(label.second[0]) != it->groupInt_)
+                    || (label.first == PROP_NAME_GROUP_FLOAT && lexical_cast<float>(label.second[0]) != it->groupFloat_))
                 {
                     isOK = false;
                     break;
@@ -426,8 +440,7 @@ private:
             {
                 const faceted::GroupParam::GroupLabel& label = labelList[i];
                 if ((label.first == PROP_NAME_GROUP_STR && label.second[0] != it->groupStr_)
-                    || (label.first == PROP_NAME_GROUP_FLOAT
-                        && normalizeFloatRep(label.second[0]) != it->groupFloat_))
+                    || (label.first == PROP_NAME_GROUP_FLOAT && lexical_cast<float>(label.second[0]) != it->groupFloat_))
                 {
                     isOK = false;
                     break;
@@ -435,7 +448,8 @@ private:
             }
             if (isOK)
             {
-                intDocIdMap[it->groupInt_].push_back(it->docId_);
+                string normRep = normalizeDoubleRep(it->groupInt_);
+                intDocIdMap[normRep].push_back(it->docId_);
             }
 
             isOK = true;
@@ -443,7 +457,7 @@ private:
             {
                 const faceted::GroupParam::GroupLabel& label = labelList[i];
                 if ((label.first == PROP_NAME_GROUP_STR && label.second[0] != it->groupStr_)
-                    || (label.first == PROP_NAME_GROUP_INT && label.second[0] != it->groupInt_))
+                    || (label.first == PROP_NAME_GROUP_INT && lexical_cast<int>(label.second[0]) != it->groupInt_))
                 {
                     isOK = false;
                     break;
@@ -451,7 +465,8 @@ private:
             }
             if (isOK)
             {
-                floatDocIdMap[it->groupFloat_].push_back(it->docId_);
+                string normRep = normalizeDoubleRep(it->groupFloat_);
+                floatDocIdMap[normRep].push_back(it->docId_);
             }
 
         }

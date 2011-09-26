@@ -70,7 +70,7 @@ public:
         std::string identityLow = sf1r::Utilities::toLower(identity);
         if (identityLow == "querylog")
         {
-            if (sf1r::SF1Config::get()->checkQueryLogWorkerService())
+            if (sf1r::SF1Config::get()->checkWorkerServiceByName(identityLow))
             {
                 workerService_ = queryLogWorkerService_;
                 return true;
@@ -82,7 +82,7 @@ public:
             }
         }
 
-        if (sf1r::SF1Config::get()->checkCollectionWorkerService(identity))
+        if (sf1r::SF1Config::get()->checkWorkerServiceByName(identity))
         {
             CollectionHandler* collectionHandler_ = CollectionManager::get()->findHandler(identity);
             if (!collectionHandler_)

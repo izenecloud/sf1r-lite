@@ -15,6 +15,7 @@ using namespace izenelib::driver;
 bool EcController::check_ec_manager_()
 {
     boost::shared_ptr<MiningManager> mining_manager = GetMiningManager();
+
     ec_manager_ = mining_manager->GetEcManager();
     if(!ec_manager_)
     {
@@ -351,6 +352,91 @@ void EcController::remove_docs_from_tid()
         response().addError(ec_manager_->ErrorMsg());
         return;
     }
+
+
+}
+
+/**
+ * @brief Action \b get_all_product_info. get all products' categories and quantities information
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ *
+ * @section response
+ *
+ *
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection" : "intel",
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ *   "resources" : {
+ *      "categories": 900,
+ *      "products": 1200
+ *   }
+ * }
+ * @endcode
+ */
+void EcController::get_all_product_info()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(check_ec_manager_());
+    uint32_t categories = 0, products = 0, products_in_groups = 0, count = 0;
+    std::vector<uint32_t> all_tids;
+    if(!ec_manager_->GetAllGroupIdList(all_tids))
+    {
+        response().addError("GetAllGroupIdList failed.");
+        return;
+    }
+
+    boost::shared_ptr<MiningManager> mining_manager = GetMiningManager();
+    boost::shared_ptr<DocumentManager> document_manager = mining_manager->GetDocumentManager();
+    std::string source_field = GetProductSourceField();
+
+    for( size_t i = 0; i < all_tids.size(); i++ )
+    {
+        std::vector<uint32_t> docid_list;
+        std::vector<uint32_t> candidate_list;
+        ec_manager_->GetGroupAll(all_tids[i], docid_list, candidate_list);
+        set<std::string> product_count;
+        for(size_t j = 0; j < docid_list.size(); j++)
+        {
+            PropertyValue value;
+            if ( !source_field.empty()
+                    && document_manager->getPropertyValue(docid_list[j], source_field, value) )
+            {
+                izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
+                std::string strValue("");
+                sourceFieldValue.convertString(strValue, izenelib::util::UString::UTF_8);
+                product_count.insert(strValue);
+            }
+        }
+
+        if(source_field.empty())
+        {
+            count += docid_list.size();
+        }
+        else
+        {
+            count += product_count.size();
+        }
+        products_in_groups += docid_list.size();
+    }
+
+    categories = GetDocNum() - products_in_groups + all_tids.size();
+    products = GetDocNum() - products_in_groups + count;
+    Value& productsInfo = response()[Keys::resource];
+    productsInfo[Keys::categories] = categories;
+    productsInfo[Keys::products] = products;
 }
     
 }

@@ -17,7 +17,7 @@
     <LogConnection str="sqlite3://./log/COBRA" />
     <BundlesDefault>
       <!-- QueryCorrection Bundle Default -->
-      <QueryLogBundle enableworker="n">
+      <QueryLogBundle>
         <Parameter>
           <Path basepath="@SF1RENGINE_ROOT@/bin/query-support" />
           <QuerySupport updatetime="3600" logdays="7" />
@@ -168,25 +168,23 @@
   <Deployment>
     <BrokerAgent usecache="n" threadnum="50" enabletest="y" port="18181" />
 
-    <!-- Master --> 
-    <MasterAgent enable="n" port="18151" enablelocalworker="y">            
-       <AggregatorSupport> 
-         <Aggregator name="chinese-wiki-dist" />
-         <Aggregator name="icson" /> 
-       </AggregatorSupport>
-       
-       <Worker host="0.0.0.0" port="18111" /> 
-       <Worker host="172.16.0.163" port="18111" />
-    </MasterAgent> 
+    <DistributedTopology enable="n" nodenum="2" mirrornum="2" >
+      <CurrentNode nodeid="1" mirrorid="1" host="172.16.0.36" >
+        <!--as master-->
+        <MasterAgent enable="y" port="18151" >
+          <Aggregator name="chinese-wiki-dist" />
+          <Aggregator name="icson" /> 
+        </MasterAgent> 
+        <!--as worker--> 
+        <WorkerAgent enable="y" port="18111" >
+          <Service name="chinese-wiki-dist" />
+          <Service name="icson" />
+        </WorkerAgent>
+      </CurrentNode>
 
-    <!-- Worker --> <!--To enable worker, at least one collection(bundle) should also be configured as enabled--> <!--
-    <WorkerAgent enable="n" port="18111">       
-       <Master host="0.0.0.0" port="18151"/>
-    </WorkerAgent>    -->
-
-    <DistributedCoordination>
       <ZooKeeper servers="127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183" sessiontimeout="2000" />
-    </DistributedCoordination>
+      <!-- <ZooKeeper servers="172.16.0.163:2181,172.16.0.163:2182,172.16.0.163:2183" sessiontimeout="2000" /> -->
+    </DistributedTopology>
   </Deployment>
 
 </SF1Config>
