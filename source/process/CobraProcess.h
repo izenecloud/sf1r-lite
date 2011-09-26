@@ -38,7 +38,7 @@ private:
 
     bool startDistributedServer();
 
-    void stopWorkerServer();
+    void stopDistributedServer();
 
 private:
     std::string configDir_;

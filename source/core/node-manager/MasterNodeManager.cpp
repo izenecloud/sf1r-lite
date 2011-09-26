@@ -22,6 +22,7 @@ void MasterNodeManager::setNodeInfo(Topology& topology, SF1NodeInfo& sf1NodeInfo
     topology_ = topology;
     curNodeInfo_ = sf1NodeInfo;
 
+    // Init worker nodes state in current mirror
     for (uint32_t i = 1; i <= topology_.nodeNum_; i++)
     {
         boost::shared_ptr<WorkerState> workerState(new WorkerState);
@@ -29,15 +30,16 @@ void MasterNodeManager::setNodeInfo(Topology& topology, SF1NodeInfo& sf1NodeInfo
         workerState->nodeId_ = i;
         workerState->zkPath_ = NodeUtil::getNodePath(curNodeInfo_.mirrorId_, i)+"/Worker";
         workerStateMap_[workerState->zkPath_] = workerState;
-
-        if (i == curNodeInfo_.nodeId_) {
-            aggregatorConfig_.enableLocalWorker_ = true; //xxx
-        }
     }
 }
 
 void MasterNodeManager::startServer()
 {
+    boost::unique_lock<boost::mutex> lock(mutex_);
+
+    if (isReady_)
+        return;
+
     isReady_ = checkWorkers();
 
     if (isReady_)
@@ -46,7 +48,7 @@ void MasterNodeManager::startServer()
 
 void MasterNodeManager::process(ZooKeeperEvent& zkEvent)
 {
-    //std::cout << "MasterNodeManager::process "<<zkEvent.toString();//
+    std::cout << "MasterNodeManager::process "<<zkEvent.toString();
 
     if (!isReady_)
     {
@@ -68,9 +70,15 @@ void MasterNodeManager::showWorkers()
     }
 }
 
+/// private ////////////////////////////////////////////////////////////////////
+
+bool MasterNodeManager::checkMaster()
+{
+    return true;
+}
+
 bool MasterNodeManager::checkWorkers()
 {
-    // xxx, lock
     if (workerStateMap_.size() <= 0)
     {
         std::cout << "No worker node!" <<std::endl;
@@ -83,20 +91,32 @@ bool MasterNodeManager::checkWorkers()
     for (it = workerStateMap_.begin(); it != workerStateMap_.end(); it++)
     {
         boost::shared_ptr<WorkerState> workerState = it->second;
+        if (workerState->isRunning_)
+            continue;
+
+        // detect worker
         if (zookeeper_->isZNodeExists(workerState->zkPath_, ZooKeeper::WATCH))
         {
             workerState->isRunning_ = true;
 
+            // get worker host
             std::string workerNodePath = NodeUtil::getNodePath(curNodeInfo_.mirrorId_, workerState->nodeId_);
             zookeeper_->getZNodeData(workerNodePath, workerState->host_, ZooKeeper::WATCH);
-
+            // get worker port
             std::string portString;
             zookeeper_->getZNodeData(workerState->zkPath_, portString, ZooKeeper::WATCH);
             try
             {
                 workerState->port_ = boost::lexical_cast<unsigned int>(portString);
-
-                aggregatorConfig_.addWorker(workerState->host_, workerState->port_);
+                // add worker info to AggregatorConfig
+                if (workerState->nodeId_ == curNodeInfo_.nodeId_)
+                {
+                    aggregatorConfig_.enableLocalWorker_ = true; //xxx
+                }
+                else
+                {
+                    aggregatorConfig_.addWorker(workerState->host_, workerState->port_);
+                }
                 std::cout << "[MasterNodeManager] detected worker "<<workerState->host_<<":"<<workerState->port_<<std::endl;//
             }
             catch (std::exception& e)
@@ -110,7 +130,7 @@ bool MasterNodeManager::checkWorkers()
         {
             workerState->isRunning_ = false;
             ret = false;
-            std::cout << "[MasterNodeManager] waiting worker - "<<workerState->zkPath_<< std::endl;
+            ///std::cout << "[MasterNodeManager] waiting worker - "<<workerState->zkPath_<< std::endl;
         }
     }
 
@@ -134,11 +154,13 @@ void MasterNodeManager::registerServer()
         zookeeper_->createZNode(path);
     }
 
-    if (zookeeper_->createZNode(path+"/Server", "", ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
+    std::stringstream serverAddress;
+    serverAddress<<curNodeInfo_.localHost_<<":"<<curNodeInfo_.baPort_;
+    if (zookeeper_->createZNode(path+"/Server", serverAddress.str(), ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
     {
         serverPath_ = zookeeper_->getLastCreatedNodePath();
 
-        std::cout << "[MasterNodeManager] Master ready to server -- "<<serverPath_<<std::endl;//
+        std::cout << "[MasterNodeManager] Master ready to serve -- "<<serverPath_<<std::endl;//
     }
 }
 

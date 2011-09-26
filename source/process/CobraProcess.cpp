@@ -273,8 +273,6 @@ bool CobraProcess::startDistributedServer()
             //std::string masterHost = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.masterHost_;
             //uint16_t masterPort = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.masterPort_;
             //MasterNotifierSingleton::get()->setMasterServerInfo(masterHost, masterPort);
-
-            addExitHook(boost::bind(&CobraProcess::stopWorkerServer, this));
         }
         catch (std::exception& e)
         {
@@ -298,11 +296,15 @@ bool CobraProcess::startDistributedServer()
         //MasterServer::get()->start(curNodeInfo.localHost_, masterPort);
     }
 
+    addExitHook(boost::bind(&CobraProcess::stopDistributedServer, this));
+
     return true;
 }
 
-void CobraProcess::stopWorkerServer()
+void CobraProcess::stopDistributedServer()
 {
+    NodeManagerSingleton::get()->deregisterNode();
+
     if (workerServer_)
     {
         workerServer_->end();
