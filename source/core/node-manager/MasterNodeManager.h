@@ -19,6 +19,7 @@
 #include <util/singleton.h>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/mutex.hpp>
 
 using namespace zookeeper;
 
@@ -71,6 +72,12 @@ public:
 
 private:
     /**
+     * Check whether master node has been ready
+     * @return
+     */
+    bool checkMaster();
+
+    /**
      * Check whether all workers ready (i.e., master it's ready).
      * @return
      */
@@ -113,6 +120,8 @@ private:
     std::string serverPath_;
     net::aggregator::AggregatorConfig aggregatorConfig_;
     std::vector<boost::shared_ptr<AggregatorManager> > aggregatorList_;
+
+    boost::mutex mutex_;
 };
 
 typedef izenelib::util::Singleton<MasterNodeManager> MasterNodeManagerSingleton;
