@@ -12,6 +12,7 @@
 #include <mining-manager/faceted-submanager/GroupParam.h>
 #include <mining-manager/faceted-submanager/GroupFilterBuilder.h>
 #include <mining-manager/faceted-submanager/GroupFilter.h>
+#include <mining-manager/faceted-submanager/GroupRep.h>
 #include <configuration-manager/PropertyConfig.h>
 
 #include <boost/test/unit_test.hpp>
