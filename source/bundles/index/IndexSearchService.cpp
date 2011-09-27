@@ -58,7 +58,7 @@ void IndexSearchService::OnUpdateSearchCache()
 }
 
 bool IndexSearchService::getSearchResult(
-    KeywordSearchActionItem& actionItem, 
+    KeywordSearchActionItem& actionItem,
     KeywordSearchResult& resultItem
 )
 {
@@ -71,11 +71,13 @@ bool IndexSearchService::getSearchResult(
         std::vector<std::pair<workerid_t, KeywordSearchResult> > resultList;
         resultList.push_back(std::make_pair(0,resultItem));
         aggregatorManager_->aggregateMiningResult(resultItem, resultList);
+        STOP_PROFILER ( query );
         return ret;
     }
 
     /// Perform distributed search by aggregator
     DistKeywordSearchResult distResultItem;
+    distResultItem.distSearchInfo_.nodeType_ = DistKeywordSearchInfo::NODE_WORKER;
 
 #ifdef PREFETCH_INFO
     distResultItem.distSearchInfo_.actionType_ = DistKeywordSearchInfo::ACTION_FETCH;
@@ -110,6 +112,7 @@ bool IndexSearchService::getSearchResult(
                 actionItem.collectionName_, "getDistSearchResult", actionItem, distResultItem);
 
         resultItem.swap(distResultItem);
+        resultItem.distSearchInfo_.nodeType_ = DistKeywordSearchInfo::NODE_MASTER;
 
         cache_->set(
                 identity,
@@ -154,7 +157,7 @@ bool IndexSearchService::getSearchResult(
 }
 
 bool IndexSearchService::getDocumentsByIds(
-    const GetDocumentsByIdsActionItem& actionItem, 
+    const GetDocumentsByIdsActionItem& actionItem,
     RawTextResultFromSIA& resultItem
 )
 {
@@ -190,7 +193,7 @@ bool IndexSearchService::getDocumentsByIds(
 
 bool IndexSearchService::getInternalDocumentId(
     const std::string& collectionName,
-    const izenelib::util::UString& scdDocumentId, 
+    const izenelib::util::UString& scdDocumentId,
     uint64_t& internalId
 )
 {

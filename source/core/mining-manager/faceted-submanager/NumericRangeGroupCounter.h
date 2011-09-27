@@ -28,7 +28,9 @@ public:
 
     virtual void addDoc(docid_t doc);
 
-    virtual void getGroupRep(OntologyRep& groupRep) const;
+    virtual void getGroupRep(GroupRep &groupRep);
+
+    static void toOntologyRepItemList(GroupRep &groupRep);
 
 private:
     const NumericPropertyTable *propertyTable_;

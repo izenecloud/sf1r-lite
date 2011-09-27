@@ -16,6 +16,7 @@ class GroupManager;
 class AttrTable;
 class GroupParam;
 class OntologyRep;
+class GroupRep;
 class GroupLabel;
 class AttrLabel;
 class GroupCounter;
@@ -54,7 +55,7 @@ public:
      * @param attrRep doc counts for attribute values
      */
     void getGroupRep(
-        OntologyRep& groupRep,
+        GroupRep& groupRep,
         OntologyRep& attrRep
     );
 
@@ -76,4 +77,4 @@ private:
 
 NS_FACETED_END
 
-#endif 
+#endif

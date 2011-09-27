@@ -8,6 +8,7 @@
 #include "GroupLabel.h"
 #include "AttrLabel.h"
 #include "GroupCounterLabelBuilder.h"
+#include "GroupRep.h"
 #include <util/ClockTimer.h>
 
 #include <glog/logging.h>
@@ -157,7 +158,7 @@ bool GroupFilter::test(docid_t doc)
 
     if (result)
     {
-        for (std::vector<GroupCounter*>::iterator it = groupCounters_.begin(); 
+        for (std::vector<GroupCounter*>::iterator it = groupCounters_.begin();
             it != groupCounters_.end(); ++it)
         {
             (*it)->addDoc(doc);
@@ -194,13 +195,13 @@ bool GroupFilter::test(docid_t doc)
 }
 
 void GroupFilter::getGroupRep(
-    OntologyRep& groupRep,
+    GroupRep& groupRep,
     OntologyRep& attrRep
 )
 {
     izenelib::util::ClockTimer timer;
 
-    for (std::vector<GroupCounter*>::iterator it = groupCounters_.begin(); 
+    for (std::vector<GroupCounter*>::iterator it = groupCounters_.begin();
         it != groupCounters_.end(); ++it)
     {
         (*it)->getGroupRep(groupRep);

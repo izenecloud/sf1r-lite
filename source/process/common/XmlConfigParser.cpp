@@ -336,6 +336,7 @@ void SF1Config::parseMasterAgent( const ticpp::Element * master )
     }
 
     // todo, remove
+    masterAgent.aggregatorConfig_.enableLocalWorker_ = true;
     Iterator<Element> worker_it( "Worker" );
     for (worker_it = worker_it.begin(master); worker_it != worker_it.end(); worker_it++)
     {

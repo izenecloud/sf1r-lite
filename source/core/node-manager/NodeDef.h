@@ -19,9 +19,9 @@ typedef uint32_t nodeid_t;
 typedef uint32_t mirrorid_t;
 
 
-const static char ZK_PATH_SF1[] = "/SF1Root";
+const static char ZK_PATH_SF1[]          = "/SF1Root";
 const static char ZK_PATH_SF1_TOPOLOGY[] = "/SF1Root/Topology";
-const static char ZK_PATH_SF1_SERVICE[] = "/SF1Root/Service";
+const static char ZK_PATH_SF1_SERVICE[]  = "/SF1Root/Service";
 
 /**
 The topology of distributed SF1 service:

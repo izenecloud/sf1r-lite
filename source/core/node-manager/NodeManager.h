@@ -14,6 +14,7 @@
 #include <util/singleton.h>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/mutex.hpp>
 
 using namespace zookeeper;
 
@@ -46,13 +47,17 @@ public:
      */
     void registerWorker(unsigned int port);
 
+    /**
+     * Deregister SF1 node on exit
+     */
+    void deregisterNode();
 
     virtual void process(ZooKeeperEvent& zkEvent);
 
 private:
     void ensureNodeParents(nodeid_t nodeId, mirrorid_t mirrorId);
 
-    void delayedProcess();
+    void retryRegister();
 
 private:
     boost::shared_ptr<ZooKeeper> zookeeper_;
@@ -63,6 +68,8 @@ private:
 
     unsigned int masterPort_;
     unsigned int workerPort_;
+
+    boost::mutex mutex_;
 };
 
 
