@@ -34,6 +34,9 @@ void GroupRep::mergeStringGroup(const GroupRep& other)
 
 void GroupRep::mergeNumericGroup(const GroupRep& other)
 {
+    if (other.numericGroupRep_.empty())
+        return;
+
     if (numericGroupRep_.empty())
     {
         numericGroupRep_.swap(((GroupRep &) other).numericGroupRep_);
@@ -56,6 +59,9 @@ void GroupRep::mergeNumericGroup(const GroupRep& other)
 
 void GroupRep::mergeNumericRangeGroup(const GroupRep& other)
 {
+    if (other.numericRangeGroupRep_.empty())
+        return;
+
     if (numericRangeGroupRep_.empty())
     {
         numericRangeGroupRep_.swap(((GroupRep &) other).numericRangeGroupRep_);

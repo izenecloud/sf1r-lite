@@ -336,6 +336,7 @@ void SF1Config::parseMasterAgent( const ticpp::Element * master )
     }
 
     // todo, remove
+    masterAgent.aggregatorConfig_.enableLocalWorker_ = true;
     Iterator<Element> worker_it( "Worker" );
     for (worker_it = worker_it.begin(master); worker_it != worker_it.end(); worker_it++)
     {
@@ -1068,7 +1069,6 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     params.Get<std::size_t>("Sia/filtercachenum", indexBundleConfig.filterCacheNum_);
     params.Get<std::size_t>("Sia/mastersearchcachenum", indexBundleConfig.masterSearchCacheNum_);
     params.Get<std::size_t>("Sia/topknum", indexBundleConfig.topKNum_);
-    params.GetString("ProductSourceField/property", indexBundleConfig.productSourceField_, "");
     params.GetString("LanguageIdentifier/dbpath", indexBundleConfig.languageIdentifierDbPath_, "");
 
     indexBundleConfig.isSupportByAggregator_ = SF1Config::get()->checkAggregatorSupport(collectionMeta.getName());
@@ -1417,6 +1417,22 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         mining_schema.ise_enable = true;
       }
       
+      task_node = getUniqChildElement( mining_schema_node, "ProductSourceField", false );
+      if( task_node!= NULL )
+      {
+        Iterator<Element> it( "Property" );
+        for ( it = it.begin( task_node ); it != it.end(); it++ )
+        {
+            getAttribute( it.Get(), "name", property_name );
+            bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+            if( !gottype || property_type != STRING_PROPERTY_TYPE )
+            {
+              throw XmlConfigParserException("Property ["+property_name+"] used in ProductSourceField is not string type.");
+            }
+            mining_schema.product_source_property = property_name;
+        }
+      }
+
       //for recommend schema
       task_node = getUniqChildElement( mining_schema_node, "QueryRecommend", false );
       mining_schema.recommend_tg = false;

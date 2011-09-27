@@ -67,6 +67,12 @@ public:
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
 
+    virtual void onNodeCreated(const std::string& path);
+
+    virtual void onNodeDeleted(const std::string& path);
+
+    virtual void onDataChanged(const std::string& path);
+
     /// test
     void showWorkers();
 
@@ -88,11 +94,20 @@ private:
      */
     void registerServer();
 
+    /**
+     * Deregister SF1 server on failure.
+     */
+    void deregisterServer();
+
+    /***/
+    void resetAggregatorConfig();
+
 
 public:
     struct WorkerState
     {
         bool isRunning_;
+        mirrorid_t mirrorId_;
         nodeid_t nodeId_;
         std::string zkPath_;
         std::string host_;

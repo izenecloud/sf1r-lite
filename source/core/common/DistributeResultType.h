@@ -9,14 +9,22 @@ class DistKeywordSearchInfo
 {
 public:
 
-    DistKeywordSearchInfo() : actionType_(ACTION_NONE) {}
+    DistKeywordSearchInfo()
+        : actionType_(ACTION_NONE)
+        , nodeType_(NODE_MASTER)
+    {
+    }
 
-	static const int ACTION_NONE = 0x0;
-	static const int ACTION_FETCH = 0x1;
-	static const int ACTION_SEND = 0x2;
+    static const int8_t ACTION_NONE = 0x0;
+    static const int8_t ACTION_FETCH = 0x1;
+    static const int8_t ACTION_SEND = 0x2;
 
-	/// @brief indicate .
-	int actionType_;
+    static const int8_t NODE_MASTER = 0x0;
+    static const int8_t NODE_WORKER = 0x1;
+
+    /// @brief indicate .
+    int8_t actionType_;
+    int8_t nodeType_;
 
     /// @brief document frequency info of terms for each property
     DocumentFrequencyInProperties dfmap_;
@@ -30,8 +38,8 @@ public:
     std::vector<std::pair<std::string, std::vector<uint64_t> > > sortPropertyUIntDataList_;
     std::vector<std::pair<std::string, std::vector<float> > > sortPropertyFloatDataList_;
 
-    MSGPACK_DEFINE(actionType_,dfmap_,ctfmap_,sortPropertyList_,
-            sortPropertyIntDataList_,sortPropertyUIntDataList_,sortPropertyFloatDataList_);
+    MSGPACK_DEFINE(actionType_, nodeType_, dfmap_, ctfmap_, sortPropertyList_,
+        sortPropertyIntDataList_, sortPropertyUIntDataList_, sortPropertyFloatDataList_);
 };
 
 class DistKeywordSearchResult : public ErrorInfo
@@ -128,7 +136,7 @@ public:
     }
 
 
-	/// pre-fetched info for keyword search
+    /// pre-fetched info for keyword search
     DistKeywordSearchInfo distSearchInfo_;
 
     std::string rawQueryString_;
@@ -185,17 +193,13 @@ public:
     sf1r::faceted::OntologyRep attrRep_;
 
     MSGPACK_DEFINE(
-    		distSearchInfo_,rawQueryString_,encodingType_,collectionName_,analyzedQuery_,
-            queryTermIdList_,totalCount_,topKDocs_,topKWorkerIds_,topKtids_,topKRankScoreList_,
-            topKCustomRankScoreList_,propertyRange_,start_,count_,topKPostionList_,propertyQueryTermList_,
-            onto_rep_,groupRep_,attrRep_);
+        distSearchInfo_, rawQueryString_, encodingType_, collectionName_, analyzedQuery_,
+        queryTermIdList_, totalCount_, topKDocs_, topKWorkerIds_, topKtids_, topKRankScoreList_,
+        topKCustomRankScoreList_, propertyRange_, start_, count_, topKPostionList_, propertyQueryTermList_,
+        onto_rep_, groupRep_, attrRep_);
 };
 
 class DistSummaryMiningResult : public ErrorInfo
 {
 
 };
-
-
-
-

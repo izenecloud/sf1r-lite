@@ -116,6 +116,7 @@ private:
     MiningTaskService* miningTaskService_;
     RecommendTaskService* recommendTaskService_;
 
+    std::string productSourceField_;
     PropertyConfig dateProperty_;
     config_tool::PROPERTY_ALIAS_MAP_T propertyAliasMap_;
 
