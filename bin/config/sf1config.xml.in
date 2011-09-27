@@ -47,8 +47,7 @@
           <Sia triggerqa="n" doccachenum="20000" searchcachenum="1000" filtercachenum="1000" mastersearchcachenum="1000" topknum="4000" 
                encoding="UTF-8" wildcardtype="unigram" indexunigramproperty="y" unigramsearchmode="n" multilanggranularity="field" />
           
-          <ProductSourceField property="Source"/>
-          
+
           <LanguageIdentifier dbpath="@ilplib_LANGUAGEIDENTIFIER_DB@"/>
 
         </Parameter>
