@@ -372,20 +372,20 @@ bool QueryCorrectionSubmanager::isPinyin(const izenelib::util::UString& str)
     return false;
 }
 // 
-void QueryCorrectionSubmanager::updateCogramAndDict(const std::list<std::pair<izenelib::util::UString, uint32_t> >& recentQueryList)
+void QueryCorrectionSubmanager::updateCogramAndDict(const std::list<QueryLogType>& recentQueryList)
 {
     updateCogramAndDict("", recentQueryList);
 }
 
-void QueryCorrectionSubmanager::updateCogramAndDict(const std::string& collectionName, const std::list<std::pair<izenelib::util::UString, uint32_t> >& recentQueryList)
+void QueryCorrectionSubmanager::updateCogramAndDict(const std::string& collectionName, const std::list<QueryLogType>& recentQueryList)
 {
     boost::mutex::scoped_lock scopedLock(logMutex_);
 
     DLOG(INFO)<<"updateCogramAndDict..."<<endl;
-    const std::list < std :: pair < izenelib::util::UString, uint32_t> >& queryList = recentQueryList;
-    std::list < std :: pair < izenelib::util::UString, uint32_t> >::const_iterator lit;
+//     const std::list < std :: pair < izenelib::util::UString, uint32_t> >& queryList = recentQueryList;
+//     std::list < std :: pair < izenelib::util::UString, uint32_t> >::const_iterator lit;
     //no collection independent
-    cmgr_.Update(queryList);
+    cmgr_.Update(recentQueryList);
 
 }
 

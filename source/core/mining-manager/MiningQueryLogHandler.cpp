@@ -9,6 +9,7 @@
 #include "auto-fill-submanager/AutoFillSubManager.h"
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/tuple/tuple.hpp>
 #include <log-manager/UserQuery.h>
 #include <query-manager/QMCommonFunc.h>
 #include <util/scheduler.h>
@@ -88,12 +89,13 @@ void MiningQueryLogHandler::processCollectionIndependent_(const boost::posix_tim
     boost::gregorian::days dd(days_);
     boost::posix_time::ptime p = nowTime-dd;
     std::string time_string = boost::posix_time::to_iso_string(p);
-    std::string query_sql = "select query, count(*) as freq from user_queries where TimeStamp >='"+time_string+"' group by query";
+    std::string query_sql = "select query, count(*) as freq, max(hit_docs_num) as df from user_queries where TimeStamp >='"+time_string+"' group by query";
     std::list<std::map<std::string, std::string> > query_records;
     UserQuery::find_by_sql(query_sql, query_records);
     std::list<std::map<std::string, std::string> >::iterator it = query_records.begin();
-
-    std::list<std::pair<izenelib::util::UString,uint32_t> > logItems;
+    //freq, df, text
+    typedef boost::tuple<count_t, count_t, izenelib::util::UString> ItemType;
+    std::list<ItemType> logItems;
     for ( ;it!=query_records.end();++it )
     {
         izenelib::util::UString uquery( (*it)["query"], izenelib::util::UString::UTF_8);
@@ -102,7 +104,8 @@ void MiningQueryLogHandler::processCollectionIndependent_(const boost::posix_tim
             continue;
         }
         uint32_t freq = boost::lexical_cast<uint32_t>( (*it)["freq"] );
-        logItems.push_back( std::make_pair(uquery, freq) );
+        uint32_t df = boost::lexical_cast<uint32_t>( (*it)["df"] );
+        logItems.push_back( ItemType(freq, df, uquery) );
     }
 
     std::vector<boost::shared_ptr<LabelManager> > label_manager_list;

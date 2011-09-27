@@ -110,15 +110,13 @@ bool AutoFillSubManager::Init(
 // }
 //
 
-bool AutoFillSubManager::buildIndex(const std::list<std::pair<izenelib::util::UString,
-                                    uint32_t> >& queryList)
+bool AutoFillSubManager::buildIndex(const std::list<ItemValueType>& queryList)
 {
     std::vector<boost::shared_ptr<LabelManager> > tmp;
     return buildIndex(queryList, tmp);
 }
 
-bool AutoFillSubManager::buildIndex(const std::list<std::pair<izenelib::util::UString,
-                                    uint32_t> >& queryList, const std::vector<boost::shared_ptr<LabelManager> >& label_manager_list)
+bool AutoFillSubManager::buildIndex(const std::list<ItemValueType>& queryList, const std::vector<boost::shared_ptr<LabelManager> >& label_manager_list)
 {
     if (queryList.size()==0 && label_manager_list.size()==0 )
     {
@@ -140,9 +138,9 @@ bool AutoFillSubManager::buildIndex(const std::list<std::pair<izenelib::util::US
         }
         tempTrie = new Trie_(tempTriePath , top_);
 
-        std::list<std::pair<izenelib::util::UString, uint32_t> >::const_iterator it;
+        std::list<ItemValueType>::const_iterator it;
         for (it = queryList.begin(); it != queryList.end(); it++)
-            buildTrieItem(tempTrie, it->first, it->second);
+            buildTrieItem(tempTrie, *it);
         //for labels
         izenelib::util::UString label_str;
         uint32_t label_df = 0;
@@ -154,7 +152,8 @@ bool AutoFillSubManager::buildIndex(const std::list<std::pair<izenelib::util::US
             {
                 if ( !label_manager->getLabelStringByLabelId(id, label_str) ) continue;
                 if ( !label_manager->getLabelDF(id, label_df) ) continue;
-                buildTrieItem(tempTrie, label_str, label_df);
+                ItemValueType item(label_df, label_df, label_str);
+                buildTrieItem(tempTrie, item);
             }
         }
         tempTrie->flush();
@@ -198,7 +197,7 @@ bool AutoFillSubManager::buildIndex(const std::list<std::pair<izenelib::util::US
 
 
 bool AutoFillSubManager::getAutoFillList(const izenelib::util::UString& query,
-        std::vector<izenelib::util::UString>& list)
+        std::vector<std::pair<izenelib::util::UString,uint32_t> >& list)
 {
     if (query.length() == 0)
         return false;
@@ -233,16 +232,53 @@ bool AutoFillSubManager::getAutoFillList(const izenelib::util::UString& query,
 void AutoFillSubManager::updateTrie(Trie_* trie, const izenelib::util::UString& key,
                                     const ItemValueType& value)
 {
-    trie->add_item(key, value.second, value.first);
+    trie->add_item(key, value.get<2>(), value.get<1>(), value.get<0>());
 }
 
-void AutoFillSubManager::buildTrieItem(Trie_* trie,
-                                       const izenelib::util::UString& key, uint32_t value)
+void AutoFillSubManager::buildTrieItem(Trie_* trie, const ItemValueType& item)
 {
-    if (!QueryCorrectionSubmanager::getInstance().isPinyin(key))
+//     if (!QueryCorrectionSubmanager::getInstance().isPinyin(key))
+//     {
+//         ItemValueType item(value, key);
+//         buildTrieItem(trie, key, item);
+//     }
+    izenelib::util::UString key = item.get<2>();
+    string keystr;
+    key.convertString(keystr, UString::UTF_8);
+
+    if (key.length() == 0)
+        return;
+    izenelib::util::UString decomposedLabel;
+    if (key.isChineseChar(0))
     {
-        ItemValueType item(value, key);
-        buildTrieItem(trie, key, item);
+        izenelib::util::UString tempLabel;
+        tempLabel = izenelib::util::Algorithm<izenelib::util::UString>::trim(key);
+        updateTrie(trie, tempLabel, item);
+        std::vector<izenelib::util::UString> pinyins;
+        QueryCorrectionSubmanager::getInstance().getPinyin(tempLabel, pinyins);
+
+        for (size_t i=1; i<key.length(); i++)
+        {
+            UString suffix = key.substr(i);
+            string suffixstr;
+            suffix.convertString(suffixstr, UString::UTF_8);
+            updateTrie(trie, suffix, item);
+        }
+        for (unsigned int i = 0; i < pinyins.size(); i++)
+        {
+            updateTrie(trie, pinyins[i], item);
+        }
+    }
+    else if (izenelib::util::ustring_tool::processKoreanDecomposerWithCharacterCheck<
+             izenelib::util::UString>(key, decomposedLabel))
+    {
+        updateTrie(trie, decomposedLabel, item);
+    }
+    else
+    {
+        izenelib::util::UString tempKey(key);
+        tempKey.toLowerString();
+        updateTrie(trie, tempKey, item);
     }
 }
 

@@ -19,6 +19,7 @@
 #include <idmlib/query-correction/cn_query_correction.h>
 #include "EkQueryCorrection.h"
 #include <boost/noncopyable.hpp>
+#include <boost/tuple/tuple.hpp>
 #include <sdb/SequentialDB.h>
 
 namespace sf1r
@@ -59,6 +60,7 @@ public:
 
 class QueryCorrectionSubmanager : public boost::noncopyable
 {
+    typedef boost::tuple<count_t, count_t, izenelib::util::UString> QueryLogType;
     static const int DEFAULT_MAX_EDITDISTANCE_ = 2;
 private:
     QueryCorrectionSubmanager(const string& path, const std::string& workingPath, bool enableEK, bool enableChn, int ed=DEFAULT_MAX_EDITDISTANCE_);
@@ -89,9 +91,9 @@ public:
 // 
     bool isPinyin(const izenelib::util::UString& str);
 // 
-    void updateCogramAndDict(const std::list<std::pair<izenelib::util::UString, uint32_t> >& recentQueryList);
+    void updateCogramAndDict(const std::list<QueryLogType>& recentQueryList);
 
-    void updateCogramAndDict(const std::string& collectionName, const std::list<std::pair<izenelib::util::UString, uint32_t> >& recentQueryList);
+    void updateCogramAndDict(const std::string& collectionName, const std::list<QueryLogType>& recentQueryList);
     
     void Inject(const izenelib::util::UString& query, const izenelib::util::UString& result);
     
