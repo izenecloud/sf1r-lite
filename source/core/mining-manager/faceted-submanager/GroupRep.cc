@@ -36,7 +36,7 @@ void GroupRep::mergeNumericGroup(const GroupRep& other)
 {
     if (numericGroupRep_.empty())
     {
-        numericGroupRep_ = other.numericGroupRep_;
+        numericGroupRep_.swap(((GroupRep &) other).numericGroupRep_);
         return;
     }
 
@@ -58,7 +58,7 @@ void GroupRep::mergeNumericRangeGroup(const GroupRep& other)
 {
     if (numericRangeGroupRep_.empty())
     {
-        numericRangeGroupRep_ = other.numericRangeGroupRep_;
+        numericRangeGroupRep_.swap(((GroupRep &) other).numericRangeGroupRep_);
         return;
     }
 
@@ -80,10 +80,10 @@ void GroupRep::mergeNumericRangeGroup(const GroupRep& other)
     }
 }
 
-void GroupRep::convertGroupRep()
+void GroupRep::toOntologyRepItemList()
 {
-    NumericGroupCounter::convertGroupRep(*this);
-    NumericRangeGroupCounter::convertGroupRep(*this);
+    NumericGroupCounter::toOntologyRepItemList(*this);
+    NumericRangeGroupCounter::toOntologyRepItemList(*this);
 }
 
 std::string GroupRep::ToString() const

@@ -27,7 +27,7 @@ public:
 
     virtual void getGroupRep(GroupRep &groupRep);
 
-    static void convertGroupRep(GroupRep &groupRep);
+    static void toOntologyRepItemList(GroupRep &groupRep);
 
 private:
     const NumericPropertyTable *propertyTable_;

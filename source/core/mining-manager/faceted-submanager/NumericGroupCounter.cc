@@ -28,7 +28,7 @@ void NumericGroupCounter::getGroupRep(GroupRep &groupRep)
     countTable_.swap(groupRep.numericGroupRep_.back().second);
 }
 
-void NumericGroupCounter::convertGroupRep(GroupRep &groupRep)
+void NumericGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
 {
     for (GroupRep::NumericGroupRep::const_iterator it = groupRep.numericGroupRep_.begin();
         it != groupRep.numericGroupRep_.end(); ++it)
