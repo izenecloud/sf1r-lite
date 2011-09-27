@@ -19,6 +19,7 @@
 #include <util/singleton.h>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/mutex.hpp>
 
 using namespace zookeeper;
 
@@ -66,10 +67,22 @@ public:
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
 
+    virtual void onNodeCreated(const std::string& path);
+
+    virtual void onNodeDeleted(const std::string& path);
+
+    virtual void onDataChanged(const std::string& path);
+
     /// test
     void showWorkers();
 
 private:
+    /**
+     * Check whether master node has been ready
+     * @return
+     */
+    bool checkMaster();
+
     /**
      * Check whether all workers ready (i.e., master it's ready).
      * @return
@@ -81,11 +94,20 @@ private:
      */
     void registerServer();
 
+    /**
+     * Deregister SF1 server on failure.
+     */
+    void deregisterServer();
+
+    /***/
+    void resetAggregatorConfig();
+
 
 public:
     struct WorkerState
     {
         bool isRunning_;
+        mirrorid_t mirrorId_;
         nodeid_t nodeId_;
         std::string zkPath_;
         std::string host_;
@@ -113,6 +135,8 @@ private:
     std::string serverPath_;
     net::aggregator::AggregatorConfig aggregatorConfig_;
     std::vector<boost::shared_ptr<AggregatorManager> > aggregatorList_;
+
+    boost::mutex mutex_;
 };
 
 typedef izenelib::util::Singleton<MasterNodeManager> MasterNodeManagerSingleton;

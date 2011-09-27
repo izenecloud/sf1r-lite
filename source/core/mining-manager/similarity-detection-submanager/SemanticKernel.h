@@ -39,8 +39,8 @@ public:
     ~SemanticKernel();
 
     void setSchema(
-        const std::vector<uint32_t>& property_ids, 
-        const std::vector<std::string>& properties, 
+        const std::vector<uint32_t>& property_ids,
+        const std::vector<std::string>& properties,
         const std::string& semanticField,
         const std::string& domainField
     );

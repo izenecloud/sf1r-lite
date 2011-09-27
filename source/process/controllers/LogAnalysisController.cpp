@@ -139,12 +139,12 @@ std::string LogAnalysisController::parseGroupBy()
  *
  * @code
  * {
- *   "select"=>["source", "content", "timestamp"],
- *   "conditions"=>[
+ *   "select": ["source", "content", "timestamp"],
+ *   "conditions": [
  *       {"property":"timestamp", "operator":"range", "value":[1.0, 10.0]},
  *       {"property":"level", "operator":"in", "value":["warn", "error"]}
  *    ],
- *    "sort"=>["timestamp"]
+ *    "sort": ["timestamp"]
  * }
  * @endcode
  *
@@ -152,8 +152,8 @@ std::string LogAnalysisController::parseGroupBy()
  *
  * @code
  * {
- *   "system_events" => [
- *      {"level"=>"error", "source"=>"SYS", "content"=>"Out of memory", "timestamp"=>"2010-Jul-16 18:11:38" }
+ *   "system_events":[
+ *      {"level":"error", "source":"SYS", "content":"Out of memory", "timestamp":"2010-Jul-16 18:11:38" }
  *   ]
  * }
  * @endcode
@@ -299,7 +299,7 @@ void LogAnalysisController::user_queries()
  *
  * @code
  * {
- *   "conditions"=>[
+ *   "conditions":[
  *       {"property":"collection", "operator":"=", "value":"intel"}
  *    ]
  * }
@@ -309,8 +309,8 @@ void LogAnalysisController::user_queries()
  *
  * @code
  * {
- *   "merchant_count" => {
- *      "count"=>"100"
+ *   "merchant_count":{
+ *      "count":"100"
  *   }
  * }
  * @endcode
@@ -360,7 +360,7 @@ void LogAnalysisController::merchant_count()
  *
  * @code
  * {
- *   "conditions"=>[
+ *   "conditions":[
  *       {"property":"source", "operator":"=", "value":"当当网"},
  *       {"property":"collection", "operator":"=", "value":"intel"},
  *       {"property":"timestamp", "operator":"range", "value":[1.0, 10.0]}
@@ -372,8 +372,8 @@ void LogAnalysisController::merchant_count()
  *
  * @code
  * {
- *   "product_update_info" => {
- *      "count"=>"1000", "update_info"=>"50", "delete_info"=>"20"
+ *   "product_update_info": {
+ *      "count":"1000", "update_info":"50", "delete_info":"20"
  *   }
  * }
  * @endcode
@@ -576,7 +576,7 @@ void LogAnalysisController::inject_user_queries()
  *
  * @code
  * {
- *   "conditions"=>[
+ *   "conditions":[
  *      {"property":"timestamp", "operator":"range", "value":[1.0, 10.0]},
  *      {"property":"level", "operator":"in", "value":["warn", "error"]}
  *    ]
@@ -612,7 +612,7 @@ void LogAnalysisController::delete_record_from_system_events()
  *
  * @code
  * {
- *   "conditions"=>[
+ *   "conditions":[
  *       {"property":"timestamp", "operator":"range", "value":[1.0, 10.0]},
  *       {"property":"query", "operator":"in", "value":["中国", "人民"]}
  *    ]

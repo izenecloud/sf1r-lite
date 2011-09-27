@@ -22,7 +22,7 @@ public:
 
     void addDoc(docid_t doc);
 
-    void getGroupRep(OntologyRep& groupRep) const;
+    void getGroupRep(GroupRep& groupRep);
 
 private:
     /**

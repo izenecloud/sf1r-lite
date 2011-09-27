@@ -22,22 +22,25 @@ void MasterNodeManager::setNodeInfo(Topology& topology, SF1NodeInfo& sf1NodeInfo
     topology_ = topology;
     curNodeInfo_ = sf1NodeInfo;
 
+    // Init worker nodes state in current mirror
     for (uint32_t i = 1; i <= topology_.nodeNum_; i++)
     {
         boost::shared_ptr<WorkerState> workerState(new WorkerState);
         workerState->isRunning_ = false;
+        workerState->mirrorId_ = curNodeInfo_.mirrorId_;
         workerState->nodeId_ = i;
-        workerState->zkPath_ = NodeUtil::getNodePath(curNodeInfo_.mirrorId_, i)+"/Worker";
+        workerState->zkPath_ = NodeUtil::getNodePath(workerState->mirrorId_, i)+"/Worker";
         workerStateMap_[workerState->zkPath_] = workerState;
-
-        if (i == curNodeInfo_.nodeId_) {
-            aggregatorConfig_.enableLocalWorker_ = true; //xxx
-        }
     }
 }
 
 void MasterNodeManager::startServer()
 {
+    boost::unique_lock<boost::mutex> lock(mutex_);
+
+    if (isReady_)
+        return;
+
     isReady_ = checkWorkers();
 
     if (isReady_)
@@ -46,18 +49,100 @@ void MasterNodeManager::startServer()
 
 void MasterNodeManager::process(ZooKeeperEvent& zkEvent)
 {
-    //std::cout << "MasterNodeManager::process "<<zkEvent.toString();//
+    //std::cout << "MasterNodeManager::process "<<zkEvent.toString();
+}
 
+void MasterNodeManager::onNodeCreated(const std::string& path)
+{
     if (!isReady_)
     {
         // retry
         startServer();
     }
+}
+
+void MasterNodeManager::onNodeDeleted(const std::string& path)
+{
+    bool switchSuccess = false;
+    if (workerStateMap_.find(path) != workerStateMap_.end())
+    {
+        boost::shared_ptr<WorkerState> workerState = workerStateMap_[path];
+
+        // switch to corresponding worker on another mirror
+        for (uint32_t i = 1; i <= topology_.mirrorNum_; i++)
+        {
+            if (workerState->mirrorId_ == i)
+                continue;
+
+            workerState->mirrorId_ = i;
+            workerState->zkPath_ = NodeUtil::getNodePath(workerState->mirrorId_, i)+"/Worker";
+            if (zookeeper_->isZNodeExists(workerState->zkPath_, ZooKeeper::WATCH))
+            {
+                // get worker host
+                std::string workerNodePath = NodeUtil::getNodePath(workerState->mirrorId_, workerState->nodeId_);
+                zookeeper_->getZNodeData(workerNodePath, workerState->host_);
+                // get worker port
+                std::string portString;
+                zookeeper_->getZNodeData(workerState->zkPath_, portString, ZooKeeper::WATCH);
+                try
+                {
+                    workerState->port_ = boost::lexical_cast<unsigned int>(portString);
+                }
+                catch (std::exception& e)
+                {
+                    continue;
+                }
+
+                switchSuccess = true;
+                break;
+            }
+        }
+
+        if (!switchSuccess)
+        {
+            // watch worker on current mirror
+            workerState->mirrorId_ = curNodeInfo_.mirrorId_;
+            workerState->zkPath_ = NodeUtil::getNodePath(workerState->mirrorId_, workerState->nodeId_)+"/Worker";
+            zookeeper_->isZNodeExists(workerState->zkPath_, ZooKeeper::WATCH);
+        }
+    }
+
+    if (switchSuccess)
+    {
+        resetAggregatorConfig();
+    }
     else
     {
-        // failure detection
+        deregisterServer();
+        isReady_ = false;
     }
 }
+
+void MasterNodeManager::onDataChanged(const std::string& path)
+{
+    if (workerStateMap_.find(path) != workerStateMap_.end())
+    {
+        boost::shared_ptr<WorkerState> workerState = workerStateMap_[path];
+
+        // get worker host
+        std::string workerNodePath = NodeUtil::getNodePath(workerState->mirrorId_, workerState->nodeId_);
+        zookeeper_->getZNodeData(workerNodePath, workerState->host_, ZooKeeper::WATCH);
+        // get worker port
+        std::string portString;
+        zookeeper_->getZNodeData(workerState->zkPath_, portString, ZooKeeper::WATCH);
+        try
+        {
+            workerState->port_ = boost::lexical_cast<unsigned int>(portString);
+        }
+        catch (std::exception& e)
+        {
+            return;
+        }
+
+        resetAggregatorConfig();
+    }
+}
+
 
 void MasterNodeManager::showWorkers()
 {
@@ -68,9 +153,15 @@ void MasterNodeManager::showWorkers()
     }
 }
 
+/// private ////////////////////////////////////////////////////////////////////
+
+bool MasterNodeManager::checkMaster()
+{
+    return true;
+}
+
 bool MasterNodeManager::checkWorkers()
 {
-    // xxx, lock
     if (workerStateMap_.size() <= 0)
     {
         std::cout << "No worker node!" <<std::endl;
@@ -83,20 +174,32 @@ bool MasterNodeManager::checkWorkers()
     for (it = workerStateMap_.begin(); it != workerStateMap_.end(); it++)
     {
         boost::shared_ptr<WorkerState> workerState = it->second;
+        if (workerState->isRunning_)
+            continue;
+
+        // detect worker
         if (zookeeper_->isZNodeExists(workerState->zkPath_, ZooKeeper::WATCH))
         {
             workerState->isRunning_ = true;
 
-            std::string workerNodePath = NodeUtil::getNodePath(curNodeInfo_.mirrorId_, workerState->nodeId_);
+            // get worker host
+            std::string workerNodePath = NodeUtil::getNodePath(workerState->mirrorId_, workerState->nodeId_);
             zookeeper_->getZNodeData(workerNodePath, workerState->host_, ZooKeeper::WATCH);
-
+            // get worker port
             std::string portString;
             zookeeper_->getZNodeData(workerState->zkPath_, portString, ZooKeeper::WATCH);
             try
             {
                 workerState->port_ = boost::lexical_cast<unsigned int>(portString);
-
-                aggregatorConfig_.addWorker(workerState->host_, workerState->port_);
+                // add worker info to AggregatorConfig
+                if (workerState->nodeId_ == curNodeInfo_.nodeId_)
+                {
+                    aggregatorConfig_.enableLocalWorker_ = true; //xxx
+                }
+                else
+                {
+                    aggregatorConfig_.addWorker(workerState->host_, workerState->port_);
+                }
                 std::cout << "[MasterNodeManager] detected worker "<<workerState->host_<<":"<<workerState->port_<<std::endl;//
             }
             catch (std::exception& e)
@@ -110,7 +213,7 @@ bool MasterNodeManager::checkWorkers()
         {
             workerState->isRunning_ = false;
             ret = false;
-            std::cout << "[MasterNodeManager] waiting worker - "<<workerState->zkPath_<< std::endl;
+            ///std::cout << "[MasterNodeManager] waiting worker - "<<workerState->zkPath_<< std::endl;
         }
     }
 
@@ -134,11 +237,49 @@ void MasterNodeManager::registerServer()
         zookeeper_->createZNode(path);
     }
 
-    if (zookeeper_->createZNode(path+"/Server", "", ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
+    std::stringstream serverAddress;
+    serverAddress<<curNodeInfo_.localHost_<<":"<<curNodeInfo_.baPort_;
+    if (zookeeper_->createZNode(path+"/Server", serverAddress.str(), ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
     {
         serverPath_ = zookeeper_->getLastCreatedNodePath();
 
-        std::cout << "[MasterNodeManager] Master ready to server -- "<<serverPath_<<std::endl;//
+        std::cout << "[MasterNodeManager] Master ready to serve -- "<<serverPath_<<std::endl;//
+    }
+}
+
+void MasterNodeManager::deregisterServer()
+{
+    zookeeper_->deleteZNode(serverPath_);
+
+    std::cout << "[MasterNodeManager] Master is boken down... " <<std::endl;
+}
+
+void MasterNodeManager::resetAggregatorConfig()
+{
+    aggregatorConfig_.reset();
+
+    WorkerStateMapT::iterator it;
+    for (it = workerStateMap_.begin(); it != workerStateMap_.end(); it++)
+    {
+        boost::shared_ptr<WorkerState> workerState = it->second;
+
+        if (workerState->nodeId_ == curNodeInfo_.nodeId_)
+        {
+            aggregatorConfig_.enableLocalWorker_ = true;
+        }
+        else
+        {
+            aggregatorConfig_.addWorker(workerState->host_, workerState->port_);
+        }
+    }
+
+    // set aggregator configuration
+    std::vector<boost::shared_ptr<AggregatorManager> >::iterator agg_it;
+    for (agg_it = aggregatorList_.begin(); agg_it != aggregatorList_.end(); agg_it++)
+    {
+        (*agg_it)->setAggregatorConfig(aggregatorConfig_);
+
+        ///std::cout << aggregatorConfig_.toString() <<std::endl;
     }
 }
 

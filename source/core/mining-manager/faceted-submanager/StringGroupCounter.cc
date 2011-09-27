@@ -28,9 +28,10 @@ void StringGroupCounter::addDoc(docid_t doc)
     }
 }
 
-void StringGroupCounter::getGroupRep(OntologyRep& groupRep) const
+void StringGroupCounter::getGroupRep(GroupRep& groupRep)
 {
-    std::list<OntologyRepItem>& itemList = groupRep.item_list;
+    groupRep.stringGroupRep_.push_back(std::list<OntologyRepItem>());
+    std::list<OntologyRepItem>& itemList = groupRep.stringGroupRep_.back();
 
     izenelib::util::UString propName(propValueTable_.propName(), UString::UTF_8);
     // start from id 0 at level 0

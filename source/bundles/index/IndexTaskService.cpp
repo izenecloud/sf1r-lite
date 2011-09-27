@@ -43,11 +43,13 @@ namespace sf1r
 IndexTaskService::IndexTaskService(
     IndexBundleConfiguration* bundleConfig,
     DirectoryRotator& directoryRotator,
-    boost::shared_ptr<IndexManager> indexManager)
+    boost::shared_ptr<IndexManager> indexManager
+    )
     : bundleConfig_(bundleConfig)
     , directoryRotator_(directoryRotator)
     , miningTaskService_(NULL)
     , recommendTaskService_(NULL)
+    , productSourceField_("")
     , indexManager_(indexManager)
     , collectionId_(1)
     , maxDocId_(0)
@@ -89,6 +91,9 @@ IndexTaskService::IndexTaskService(
         laInputs_[iter->getPropertyId()] = laInput;
     }
 
+    CollectionMeta meta;
+    SF1Config::get()->getCollectionMetaByName(bundleConfig_->collectionName_, meta);
+    productSourceField_ = meta.miningBundleConfig_->mining_schema_.product_source_property;
 }
 
 IndexTaskService::~IndexTaskService()
@@ -684,9 +689,11 @@ bool IndexTaskService::destroyDocument(const Value& documentValue)
                 boost::posix_time::microsec_clock::local_time();
     PropertyValue value;
     std::string source = "";
-    if (!(bundleConfig_->productSourceField_).empty() && documentManager_->getPropertyValue(docid, bundleConfig_->productSourceField_, value))
+    if (!productSourceField_.empty() && documentManager_->getPropertyValue(docid, productSourceField_, value))
     {
-        source = get<std::string>(value);
+        izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
+        sourceFieldValue.convertString(source, izenelib::util::UString::UTF_8);
+
         if(!source.empty())
         {
             ProductInfo productInfo;
@@ -898,6 +905,19 @@ bool IndexTaskService::doBuildCollection_(
                 indexStatus_.elapsedTime_ = boost::posix_time::seconds((int)indexProgress_.getElapsed());
                 indexStatus_.leftTime_ =  boost::posix_time::seconds((int)indexProgress_.getLeft());
             }
+
+            if(!productSourceField_.empty())
+            {
+                PropertyValue value;
+                if (documentManager_->getPropertyValue(*iter, productSourceField_, value))
+                {
+                    izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
+                    std::string source("");
+                    sourceFieldValue.convertString(source, izenelib::util::UString::UTF_8);
+                    sourceCount[source]++;
+                }
+            }
+
             //marks delete key to true in DB
             if (!documentManager_->removeDocument(*iter))
             {
@@ -908,16 +928,6 @@ bool IndexTaskService::doBuildCollection_(
             indexManager_->removeDocument(collectionId_, *iter);
             ++numDeletedDocs_;
             indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
-
-            if(!(bundleConfig_->productSourceField_).empty())
-            {
-                PropertyValue value;
-                if (documentManager_->getPropertyValue(*iter, bundleConfig_->productSourceField_, value))
-                {
-                    std::string source = get<std::string>(value);
-                    sourceCount[source]++;
-                }
-            }
         }
 
         std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
@@ -928,7 +938,7 @@ bool IndexTaskService::doBuildCollection_(
 
     }
 
-    if (!(bundleConfig_->productSourceField_).empty() && !sourceCount.empty())
+    if (!productSourceField_.empty() && !sourceCount.empty())
     {
         boost::posix_time::ptime now =
             boost::posix_time::microsec_clock::local_time();
@@ -1102,8 +1112,8 @@ bool IndexTaskService::prepareDocument_(
         std::string fieldValue("");
         propertyValueU.convertString(fieldValue, encoding);
 
-        if(!(bundleConfig_->productSourceField_).empty()
-              && fieldStr == bundleConfig_->productSourceField_)
+        if(!productSourceField_.empty()
+              && fieldStr == productSourceField_)
         {
             source = fieldValue;
         }
@@ -1238,15 +1248,11 @@ bool IndexTaskService::prepareDocument_(
 
                         document.property(fieldStr) = propertyValueU;
                         unsigned int numOfSummary = 0;
-                        if ( (iter->getIsSnippet() == true)
-                                || (iter->getIsSummary() == true))
+                        if ( (iter->getIsSummary() == true))
                         {
-                            if (iter->getIsSummary() == true)
-                            {
-                                numOfSummary = iter->getSummaryNum();
-                                if (numOfSummary <= 0)
-                                    numOfSummary = 1; //atleast one sentence required for summary
-                            }
+                            numOfSummary = iter->getSummaryNum();
+                            if (numOfSummary <= 0)
+                                numOfSummary = 1; //atleast one sentence required for summary
 
                             if (makeSentenceBlocks_(propertyValueU, iter->getDisplayLength(),
                                                     numOfSummary, sentenceOffsetList) == false)

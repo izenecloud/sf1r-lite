@@ -53,6 +53,10 @@ private:
     {
         GroupCountMap countMap_;
         int manualTop_;
+
+        GroupCounter()
+            : manualTop_(0)
+        {}
     };
 
     typedef map<string, GroupCounter> QueryGroupMap;

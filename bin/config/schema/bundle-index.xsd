@@ -27,8 +27,7 @@
                         <xs:sequence>
                             <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="1" maxOccurs="2"/>
                             <xs:element ref="IndexStrategy"/>
-                            <xs:element ref="Sia"/>
-                            <xs:element ref="ProductSourceField"/>
+                            <xs:element ref="Sia"/>                            
                             <xs:element ref="LanguageIdentifier"/>
                         </xs:sequence>
                     </xs:complexType>
@@ -125,12 +124,6 @@
 	    		</xs:simpleType>
     		</xs:attribute>
     	</xs:complexType>
-	</xs:element>
-
-	<xs:element name="ProductSourceField">
-		<xs:complexType>
-			<xs:attribute name="property" type="xs:string"/>
-		</xs:complexType>
 	</xs:element>
 
 	<xs:element name="LanguageIdentifier">

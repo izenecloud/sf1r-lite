@@ -191,7 +191,7 @@ void DocumentsSearchHandler::search()
                 {
                     // top_k_count equals to total_count when search in label/ne
                     response_[Keys::total_count] = totalCount;
-                    response_[Keys::top_k_count] = totalCount; 
+                    response_[Keys::top_k_count] = totalCount;
                 }
             }
         }
@@ -287,7 +287,7 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInNameEntityItem(
 
 void DocumentsSearchHandler::filterDocIdList(const KeywordSearchResult& origin, const std::vector<sf1r::docid_t>& id_list, KeywordSearchResult& new_result)
 {
-    
+
 }
 
 bool DocumentsSearchHandler::doGet(
@@ -307,17 +307,17 @@ bool DocumentsSearchHandler::doGet(
 //     uint32_t pos1=0,pos2=0;
 //     while(pos1<miaResult.topKDocs_.size() && pos<rawTextResult.idList_.size() )
 //     {
-//         
+//
 //     }
 //     for(uint32_t i=0;i<rawTextResult.idList_.size();i++)
 //     {
 //         wdocid_t wdocid = rawTextResult.idList_[i];
 //         rawTextResult.numberOfDuplicatedDocs_[i] = dd_list.size();
 //     }
-    
+
     //TODO add other information
-    
-    
+
+
 
     if (!rawTextResult.error_.empty())
     {

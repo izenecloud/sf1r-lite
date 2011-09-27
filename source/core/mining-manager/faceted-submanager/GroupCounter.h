@@ -9,7 +9,7 @@
 #define SF1R_GROUP_COUNTER_H
 
 #include "faceted_types.h"
-#include "ontology_rep.h"
+#include "GroupRep.h"
 
 NS_FACETED_BEGIN
 
@@ -22,7 +22,7 @@ public:
 
     virtual void addDoc(docid_t doc) = 0;
 
-    virtual void getGroupRep(OntologyRep& groupRep) const = 0;
+    virtual void getGroupRep(GroupRep &groupRep) = 0;
 };
 
 NS_FACETED_END
