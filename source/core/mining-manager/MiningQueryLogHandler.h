@@ -29,8 +29,6 @@ namespace sf1r
 
 class MiningQueryLogHandler : public boost::noncopyable
 {
-    typedef izenelib::am::SSFType<uint32_t, std::pair<izenelib::util::UString, uint32_t> , uint32_t, false> TimedQueryLogSSFType;
-
     typedef std::map<std::string, boost::shared_ptr<RecommendManager> >::iterator map_it_type;
 public:
 

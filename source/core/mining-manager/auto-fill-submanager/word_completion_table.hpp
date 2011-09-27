@@ -24,12 +24,11 @@ namespace sf1r
 /**
  * @class WordCompletionTable
  **/
-template <
-typename FREQ_TYPE = double,
-typename CHAR_TYPE = uint8_t
->
 class WordCompletionTable
 {
+    typedef uint32_t DF_TYPE;
+    typedef uint32_t FREQ_TYPE; 
+    typedef uint8_t CHAR_TYPE;
     std::string dir_name_;
     izenelib::sdb::ordered_sdb<std::string, std::string, izenelib::util::ReadWriteLock>* sdb_;
     //ValueSharedTable* vst_;
@@ -112,6 +111,15 @@ class WordCompletionTable
         for (++len; ((CHAR_TYPE*)(buf))[len]!='\n'; ++len, ++r);
         return r;
     }
+    
+    DF_TYPE get_df_(const char* buf)const
+    {
+        uint32_t len = 0;
+        for (; ((CHAR_TYPE*)(buf))[len]!='\n'; ++len);
+        for (++len; ((CHAR_TYPE*)(buf))[len]!='\n'; ++len);
+        ++len;
+        return *(DF_TYPE*)(buf+len*sizeof(CHAR_TYPE));
+    }
 
     FREQ_TYPE get_freq_(const char* buf)const
     {
@@ -119,7 +127,7 @@ class WordCompletionTable
         for (; ((CHAR_TYPE*)(buf))[len]!='\n'; ++len);
         for (++len; ((CHAR_TYPE*)(buf))[len]!='\n'; ++len);
         ++len;
-        return *(FREQ_TYPE*)(buf+len*sizeof(CHAR_TYPE));
+        return *(FREQ_TYPE*)(buf+len*sizeof(CHAR_TYPE)+sizeof(DF_TYPE));
     }
 
     inline void pack_up_(uint32_t start, uint32_t end, uint32_t n, const std::vector<uint32_t>& lens)
@@ -154,9 +162,13 @@ class WordCompletionTable
         {
             assert(list[j].idx_ != idx);
             idx = list[j].idx_;
+            //buf includes key,\n,value,\n,df,freq
             char* buf = buffer_ + lens[list[j].idx_];
-            strlist += (std::string( buf + (get_key_len_(buf)+1)*sizeof(CHAR_TYPE),
-                                     (get_value_len_(buf)+1)*sizeof(CHAR_TYPE)));
+            //starts with value, ends before freq
+            strlist += std::string( 
+            buf + (get_key_len_(buf)+1)*sizeof(CHAR_TYPE),
+            (get_value_len_(buf)+1)*sizeof(CHAR_TYPE)+sizeof(DF_TYPE)
+            );
 
 //         std::cout<<std::string( buf, get_key_len_(buf)*sizeof(CHAR_TYPE))
 //                  <<":"
@@ -217,7 +229,7 @@ public:
         top_=top;
     }
 
-    void add_item(const std::string& key, const std::string& value, FREQ_TYPE freq)
+    void add_item(const std::string& key, const std::string& value, DF_TYPE df, FREQ_TYPE freq)
     {
         if (!sdb_)
             return;
@@ -227,34 +239,36 @@ public:
             sortor_ = new izenelib::am::IzeneSort<CHAR_TYPE, uint32_t, true>((dir_name_+"/sort").c_str());
         }
 
-        uint32_t len = key.length() + value.length() + sizeof(freq) + 2*sizeof(CHAR_TYPE);
+        uint32_t len = key.length() + value.length() + sizeof(df) + sizeof(freq) + 2*sizeof(CHAR_TYPE);
         enlarge_buf_(len);
         memcpy(buffer_, key.c_str(), key.length());
         *(CHAR_TYPE*)(buffer_+key.length()) = '\n';
         memcpy(buffer_+key.length()+sizeof(CHAR_TYPE), value.c_str(), value.length());
         *(CHAR_TYPE*)(buffer_+key.length() + sizeof(CHAR_TYPE) + value.length() ) = '\n';
-        *(FREQ_TYPE*)(buffer_+key.length() + sizeof(CHAR_TYPE) + value.length() + sizeof(CHAR_TYPE) ) = freq;
+        //df first, then freq.
+        *(FREQ_TYPE*)(buffer_+key.length() + sizeof(CHAR_TYPE) + value.length() + sizeof(CHAR_TYPE) ) = df;
+        *(FREQ_TYPE*)(buffer_+key.length() + sizeof(CHAR_TYPE) + value.length() + sizeof(CHAR_TYPE) + sizeof(DF_TYPE) ) = freq;
 
         sortor_->add_data(len, buffer_);
     }
 
-    void add_item(const izenelib::util::UString& key, const izenelib::util::UString& value, FREQ_TYPE freq)
+    void add_item(const izenelib::util::UString& key, const izenelib::util::UString& value, DF_TYPE df, FREQ_TYPE freq)
     {
         std::string s1 = "";
         key.convertString(s1, izenelib::util::UString::UTF_8);
         std::string s2 = "";
         value.convertString(s2, izenelib::util::UString::UTF_8);
-        add_item(s1, s2, freq);
+        add_item(s1, s2, df, freq);
         //sstd::cout<<s1<<":"<<s2<<std::endl;
     }
 
-    void get_item(const std::string& key, std::string& value)
-    {
-        value = "";
-        sdb_->get(key, value);
-    }
+//     void get_item(const std::string& key, std::string& value)
+//     {
+//         value = "";
+//         sdb_->get(key, value);
+//     }
 
-    bool get_item(const izenelib::util::UString& query, std::vector<izenelib::util::UString>& list)
+    bool get_item(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString, uint32_t> >& list)
     {
         std::string value = "";
         std::string key = "";
@@ -264,20 +278,32 @@ public:
 
         list.clear();
         uint32_t s = 0;
+        const char* p = value.c_str();
+        std::vector<izenelib::util::UString> text_list;
         for (uint32_t i=0; i<value.length(); ++i)
         {
             if (value[i]=='\n')
             {
                 izenelib::util::UString str(value.substr(s, i-s), izenelib::util::UString::UTF_8);
                 bool flag = false;
-                for (uint32_t j=0; j<list.size(); ++j)
-                    if (list[j] == str)
+                for (uint32_t j=0; j<text_list.size(); ++j)
+                {
+                    if (text_list[j] == str)
                     {
                         flag = true;
                         break;
                     }
-                if (!flag&&!LabelDistance::isDuplicate(str, list))
-                    list.push_back(str);
+                }
+                if (!flag&&!LabelDistance::isDuplicate(str, text_list))
+                {
+                    const char* pc = p+sizeof(CHAR_TYPE)*(i+1);
+                    const DF_TYPE* dp = (const DF_TYPE*)pc;
+                    DF_TYPE df = *dp;
+                    list.push_back(std::make_pair(str, df));
+                    text_list.push_back(str);
+//                     std::cout<<"[autofill] "<<str<<","<<df<<std::endl;
+                }
+                i += sizeof(DF_TYPE);
                 s = i+1;
             }
         }
@@ -319,8 +345,8 @@ public:
             }
 
             first = *(CHAR_TYPE*)buf;
-
-            std::string tmp(buf, len-sizeof(FREQ_TYPE));
+            //tmp include key,\n,value,\n
+            std::string tmp(buf, len-sizeof(FREQ_TYPE)-sizeof(DF_TYPE));
             if (last_str.compare(tmp) == 0)
             {
                 *(FREQ_TYPE*)(buffer_+buf_pos-sizeof(FREQ_TYPE)) += *(FREQ_TYPE*)(buf+len-sizeof(FREQ_TYPE));

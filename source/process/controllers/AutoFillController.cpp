@@ -32,8 +32,7 @@ AutoFillController::AutoFillController(const AutoFillController& controller)
 
 
 /**
- * @brief Action \b index. Gets list of logged keywords starting with specified
- * prefix.
+ * @brief Action \b index. Gets list of logged keywords starting with specified prefix.
  *
  * @section request
  *
@@ -46,8 +45,9 @@ AutoFillController::AutoFillController(const AutoFillController& controller)
  *
  * - @b total_count (@c Uint): Total count of logged keywords starting with the
  *   specified prefix.
- * - @b keywords (@c Array): An array of strings. Every string is a logged
- *   keyword starting with the specified prefix.
+ * - @b keywords (@c Array): An array of strings with its document frequency. 
+ *   - @b name (@c String): The string text.
+ *   - @b count (@c Uint): Document frequency.
  *
  * @section Example
  *
@@ -64,11 +64,11 @@ AutoFillController::AutoFillController(const AutoFillController& controller)
  * {
  *   "header": {"success": true},
  *   "keywords": [
- *     "autocad",
- *     "autodesk",
- *     "autoexec",
- *     "automatic",
- *     "automobile"
+ *     { "name" : "autocad", "count" : 20 } ,
+ *     { "name" : "autodesk", "count" : 10 } ,
+ *     { "name" : "autoexec", "count" : 8 } ,
+ *     { "name" : "automatic", "count" : 15 } ,
+ *     { "name" : "automobile", "count" : 12 }
  *   ]
  * }
  * @endcode
@@ -89,7 +89,7 @@ void AutoFillController::index()
     }
 
     izenelib::util::UString query(prefix, izenelib::util::UString::UTF_8);
-    std::vector<izenelib::util::UString> result;
+    std::vector<std::pair<izenelib::util::UString, uint32_t> > result;
     queryLogSearchService_->getAutoFillList(query, result);
 
     Value::UintType count = result.size();
@@ -105,8 +105,11 @@ void AutoFillController::index()
     std::string convertBuffer;
     for (Value::UintType i = 0; i < count; ++i)
     {
-        result[i].convertString(convertBuffer, izenelib::util::UString::UTF_8);
-        keywords() = convertBuffer;
+        result[i].first.convertString(convertBuffer, izenelib::util::UString::UTF_8);
+        Value& item = keywords();
+        item[Keys::name] = convertBuffer;
+        item[Keys::count] = result[i].second;
+//         keywords() = convertBuffer;
     }
 }
 

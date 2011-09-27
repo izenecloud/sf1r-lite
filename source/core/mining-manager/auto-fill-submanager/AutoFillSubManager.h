@@ -12,6 +12,7 @@
 #include <string.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/tuple/tuple.hpp>
 #include <log-manager/LogManager.h>
 #include <mining-manager/taxonomy-generation-submanager/LabelManager.h>
 #include <util/ThreadModel.h>
@@ -37,8 +38,16 @@ namespace sf1r
  */
 class AutoFillSubManager: public boost::noncopyable
 {
-    typedef std::pair<count_t, izenelib::util::UString> ItemValueType;
-    typedef WordCompletionTable<count_t> Trie_;
+//     struct ItemValueType
+//     {
+//         izenelib::util::UString text;
+//         uint32_t df;
+//         uint32_t value;
+//     };
+    
+    //freq, df, text
+    typedef boost::tuple<count_t, count_t, izenelib::util::UString> ItemValueType;
+    typedef WordCompletionTable Trie_;
 
 public:
     explicit AutoFillSubManager();
@@ -72,10 +81,10 @@ public:
      * @brief build the B-tree index for the collection and query log.
      * @param queryList The recent queries got from query log.
      */
-    bool buildIndex(const std::list<std::pair<izenelib::util::UString, uint32_t> >& queryList,
+    bool buildIndex(const std::list<ItemValueType>& queryList,
                     const std::vector<boost::shared_ptr<LabelManager> >& label_manager_list);
 
-    bool buildIndex(const std::list<std::pair<izenelib::util::UString, uint32_t> >& queryList	);
+    bool buildIndex(const std::list<ItemValueType>& queryList	);
 
 
     /**
@@ -83,7 +92,7 @@ public:
      * @param query The given query from BA.
      * @param list The returned autocompletion result for the query string.
      */
-    bool getAutoFillList(const izenelib::util::UString& query, std::vector<izenelib::util::UString>& list);
+    bool getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
 
 private:
 
@@ -95,7 +104,7 @@ private:
 
     void updateTrie(Trie_* trie, const izenelib::util::UString& key , const ItemValueType& value);
 
-    void buildTrieItem(Trie_* trie, const izenelib::util::UString& key , uint32_t value);
+    void buildTrieItem(Trie_* trie, const ItemValueType& item);
     void buildTrieItem(Trie_* trie, const izenelib::util::UString& key, const ItemValueType& item);
 
 };
