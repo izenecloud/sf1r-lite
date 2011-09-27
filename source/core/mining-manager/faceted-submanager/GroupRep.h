@@ -25,7 +25,10 @@ public:
     GroupRep();
     ~GroupRep();
 
+    bool empty() const;
     void swap(GroupRep& other);
+    bool operator==(const GroupRep& other) const;
+
     void merge(const GroupRep& other);
     void toOntologyRepItemList();
     string ToString() const;
