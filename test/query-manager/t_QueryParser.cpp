@@ -7,47 +7,60 @@
 #include "test_def.h"
 
 #include <boost/test/unit_test.hpp>
+#include <boost/filesystem.hpp>
 #include <query-manager/QueryParser.h>
 #include <common/SFLogger.h>
-#include <stdlib.h>
 
 using namespace std;
 using namespace sf1r;
 using namespace boost::unit_test;
+namespace bfs = boost::filesystem;
 using izenelib::ir::idmanager::IDManager;
 
-BOOST_AUTO_TEST_SUITE(QueryParser_test)
-
-std::vector<AnalysisInfo> analysisInfoList;
-boost::shared_ptr<LAManager> laManager;
-boost::shared_ptr<IDManager> idManager;
-
-void initOnlyOnce()
+namespace
 {
-    LAManagerConfig config;
-    initConfig( analysisInfoList, config );
+const string TEST_DIR_STR = "t_QueryParser_dir";
+}
 
-    LAPool::getInstance()->init(config);
-    laManager.reset( new LAManager() );
-    ::system("rm -rf ./idm_qmt*");
-    idManager.reset( new IDManager("./idm_qmt") );
+struct QueryParserTestFixture
+{
+    std::vector<AnalysisInfo> analysisInfoList;
+    boost::shared_ptr<LAManager> laManager;
+    boost::shared_ptr<IDManager> idManager;
 
-    QueryParser::initOnlyOnce();
+    QueryParserTestFixture()
+        : laManager(new LAManager)
+    {
+        LAManagerConfig config;
+        initConfig( analysisInfoList, config );
 
-    // Initialize SFLogger
-    sflog->init( "./sflog");
+        bfs::create_directories(TEST_DIR_STR);
+        idManager.reset(new IDManager(TEST_DIR_STR + "/idm_qmt"));
 
-    // Build restrict term dictionary
-    std::string restrictDicPath("./restrict.txt");
-    ofstream fpout(restrictDicPath.c_str());
-    BOOST_CHECK( fpout.is_open() );
-    fpout << "news" << endl;
-    fpout << "korean news" << endl;
-    fpout.close();
-    sleep(15);
-    QueryUtility::buildRestrictTermDictionary(restrictDicPath, idManager);
+        LAPool::getInstance()->init(config);
+        QueryParser::initOnlyOnce();
 
-} // end - initOnlyOnce
+        // Initialize SFLogger
+        sflog->init("sqlite3://" + TEST_DIR_STR + "/COBRA");
+
+        // Build restrict term dictionary
+        std::string restrictDicPath(TEST_DIR_STR + "/restrict.txt");
+        ofstream fpout(restrictDicPath.c_str());
+        BOOST_CHECK( fpout.is_open() );
+        fpout << "news" << endl;
+        fpout << "korean news" << endl;
+        fpout.close();
+        QueryUtility::buildRestrictTermDictionary(restrictDicPath, idManager);
+
+    } // end - initOnlyOnce
+
+    ~QueryParserTestFixture()
+    {
+        idManager->close();
+        LAPool::destroy();
+        bfs::remove_all(TEST_DIR_STR);
+    }
+};
 
 void keywordTreeCheck(const QueryTreePtr& queryTree, const std::string& queryStr)
 {
@@ -59,10 +72,10 @@ void keywordTreeCheck(const QueryTreePtr& queryTree, const std::string& queryStr
     BOOST_CHECK_EQUAL( 0U , queryTree->children_.size() );
 } // end - keywordTreeCheck
 
+BOOST_FIXTURE_TEST_SUITE(QueryParser_test, QueryParserTestFixture)
+
 BOOST_AUTO_TEST_CASE(normalizeQuery_test)
 {
-    initOnlyOnce();
-
     std::vector<std::string> queryStringList, normResultList;
 
     queryStringList.push_back("   test");
@@ -71,8 +84,8 @@ BOOST_AUTO_TEST_CASE(normalizeQuery_test)
     queryStringList.push_back("(bracket close)(open space)");
     normResultList.push_back(std::string("test"));
     normResultList.push_back(std::string("(hello|world)"));
-    normResultList.push_back(std::string("{test case}^12&(month case)"));
-    normResultList.push_back(std::string("(bracket close)&(open space)"));
+    normResultList.push_back(std::string("{test&case}^12&(month&case)"));
+    normResultList.push_back(std::string("(bracket&close)&(open&space)"));
     for(size_t i = 0; i < queryStringList.size(); i++)
     {
         std::string out;
@@ -406,15 +419,6 @@ BOOST_AUTO_TEST_CASE(getAnalyzedQueryTree_phrase_test)
         keywordTreeCheck(*childIter++, "민국");
         keywordTreeCheck(*childIter++, "명바");
     }
-}
-
-BOOST_AUTO_TEST_CASE(__finilize__)
-{
-    idManager->close();
-    LAPool::destroy();
-    ::system("rm -rf ./idm_qmt*");
-    ::system("rm -rf ./restrict.txt");
-    ::system("rm -rf ./sflog*");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
