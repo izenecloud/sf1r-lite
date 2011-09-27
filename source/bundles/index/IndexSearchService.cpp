@@ -77,6 +77,7 @@ bool IndexSearchService::getSearchResult(
 
     /// Perform distributed search by aggregator
     DistKeywordSearchResult distResultItem;
+    distResultItem.distSearchInfo_.nodeType_ = DistKeywordSearchInfo::NODE_WORKER;
 
 #ifdef PREFETCH_INFO
     distResultItem.distSearchInfo_.actionType_ = DistKeywordSearchInfo::ACTION_FETCH;
@@ -111,6 +112,7 @@ bool IndexSearchService::getSearchResult(
                 actionItem.collectionName_, "getDistSearchResult", actionItem, distResultItem);
 
         resultItem.swap(distResultItem);
+        resultItem.distSearchInfo_.nodeType_ = DistKeywordSearchInfo::NODE_MASTER;
 
         cache_->set(
                 identity,

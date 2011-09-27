@@ -346,7 +346,6 @@ void DocumentsRenderer::renderGroup(
     Value& groupResult
 )
 {
-    ((KeywordSearchResult &) miaResult).groupRep_.toOntologyRepItemList();
     const std::list<std::list<sf1r::faceted::OntologyRepItem> >& group_list = miaResult.groupRep_.stringGroupRep_;
     if (group_list.empty())
     {
