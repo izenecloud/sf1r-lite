@@ -70,7 +70,6 @@ bool IndexSearchService::getSearchResult(
         bool ret = workerService_->doLocalSearch(actionItem, resultItem);
         std::vector<std::pair<workerid_t, KeywordSearchResult> > resultList;
         resultList.push_back(std::make_pair(0,resultItem));
-        resultItem.groupRep_.convertGroupRep();
         aggregatorManager_->aggregateMiningResult(resultItem, resultList);
         STOP_PROFILER ( query );
         return ret;
@@ -112,7 +111,6 @@ bool IndexSearchService::getSearchResult(
                 actionItem.collectionName_, "getDistSearchResult", actionItem, distResultItem);
 
         resultItem.swap(distResultItem);
-        resultItem.groupRep_.convertGroupRep();
 
         cache_->set(
                 identity,

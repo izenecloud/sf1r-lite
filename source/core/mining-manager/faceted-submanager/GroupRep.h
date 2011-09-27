@@ -27,7 +27,7 @@ public:
 
     void swap(GroupRep& other);
     void merge(const GroupRep& other);
-    void convertGroupRep();
+    void toOntologyRepItemList();
     string ToString() const;
 
     friend class boost::serialization::access;

@@ -401,7 +401,7 @@ private:
 
         faceted::OntologyRep attrRep;
         filter->getGroupRep(groupRep, attrRep);
-        groupRep.convertGroupRep();
+        groupRep.toOntologyRepItemList();
 
         delete filter;
     }

@@ -37,7 +37,7 @@ void NumericRangeGroupCounter::getGroupRep(GroupRep &groupRep)
     segmentTree_.swap(groupRep.numericRangeGroupRep_.back().second);
 }
 
-void NumericRangeGroupCounter::convertGroupRep(GroupRep &groupRep)
+void NumericRangeGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
 {
     for (GroupRep::NumericRangeGroupRep::const_iterator it = groupRep.numericRangeGroupRep_.begin();
         it != groupRep.numericRangeGroupRep_.end(); ++it)
