@@ -480,14 +480,7 @@ private:
     )
     {
         typedef list<faceted::OntologyRepItem> RepItemList;
-        typedef list<RepItemList> GroupList;
-        RepItemList itemList;
-
-        for (GroupList::const_iterator it = groupRep.stringGroupRep_.begin();
-            it != groupRep.stringGroupRep_.end(); ++it)
-        {
-            itemList.insert(itemList.end(), it->begin(), it->end());
-        }
+        const RepItemList& itemList = groupRep.stringGroupRep_;
 
         // check list size
         unsigned int totalCount = 0;

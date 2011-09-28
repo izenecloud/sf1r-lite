@@ -51,8 +51,8 @@ public:
 
     bool flush();
 
-    const char* propName() const {
-        return propName_.c_str();
+    const string &propName() const {
+        return propName_;
     }
 
     ValueIdTable& valueIdTable() {

@@ -5,6 +5,8 @@
 
 NS_FACETED_BEGIN
 
+//using namespace std;
+
 GroupRep::GroupRep()
 {
 }
@@ -36,21 +38,11 @@ bool GroupRep::operator==(const GroupRep& other) const
 
     StringGroupRep::const_iterator lit1 = stringGroupRep_.begin();
     StringGroupRep::const_iterator lit2 = other.stringGroupRep_.begin();
-    while (lit1 != stringGroupRep_.end())
+    while (lit1 != stringGroupRep_.end() && lit2 != other.stringGroupRep_.end())
     {
-        if (lit1->size() != lit2->size())
+        if (!(*lit1 == *lit2))
             return false;
 
-        list<OntologyRepItem>::const_iterator it1 = lit1->begin();
-        list<OntologyRepItem>::const_iterator it2 = lit2->begin();
-        while (it1 != lit1->end())
-        {
-            if (!(*it1 == *it2))
-                return false;
-
-            ++it1;
-            ++it2;
-        }
         ++lit1;
         ++lit2;
     }
@@ -62,8 +54,8 @@ bool GroupRep::operator==(const GroupRep& other) const
         if (mit1->first != mit2->first || mit1->second.size() != mit2->second.size())
             return false;
 
-        map<double, unsigned int>::const_iterator it1 = mit1->second.begin();
-        map<double, unsigned int>::const_iterator it2 = mit2->second.begin();
+        list<pair<double, unsigned int> >::const_iterator it1 = mit1->second.begin();
+        list<pair<double, unsigned int> >::const_iterator it2 = mit2->second.begin();
         while (it1 != mit1->second.end())
         {
             if (it1->first != it2->first || it1->second != it2->second)
@@ -118,7 +110,53 @@ void GroupRep::mergeStringGroup(const GroupRep& other)
         return;
     }
 
-//  TODO
+    StringGroupRep::iterator it = stringGroupRep_.begin();
+    StringGroupRep::const_iterator oit = other.stringGroupRep_.begin();
+
+    recurseStringGroup(other, it, oit, 0);
+}
+
+void GroupRep::recurseStringGroup(
+    const GroupRep& other,
+    StringGroupRep::iterator &it,
+    StringGroupRep::const_iterator &oit,
+    uint8_t level
+)
+{
+    while (it != stringGroupRep_.end() && it->level >= level
+        && oit != other.stringGroupRep_.end() && oit->level >= level)
+    {
+        int comp = it->text.compare(oit->text);
+
+        if (comp < 0)
+        {
+            while (++it != stringGroupRep_.end() && it->level > level);
+            continue;
+        }
+        if (comp > 0)
+        {
+            stringGroupRep_.insert(it, *(oit++));
+            while (oit != other.stringGroupRep_.end() && oit->level > level)
+            {
+                stringGroupRep_.insert(it, *(oit++));
+            }
+            continue;
+        }
+        (it++)->doc_count += (oit++)->doc_count;
+        recurseStringGroup(other, it, oit, level + 1);
+    }
+    if (it != stringGroupRep_.end() && it->level >= level)
+    {
+        while (++it != stringGroupRep_.end() && it->level >= level);
+    }
+    else if (oit != other.stringGroupRep_.end() && oit->level >= level)
+    {
+        stringGroupRep_.insert(it, *(oit++));
+        while (oit != other.stringGroupRep_.end() && oit->level >= level)
+        {
+            stringGroupRep_.insert(it, *(oit++));
+        }
+    }
 }
 
 void GroupRep::mergeNumericGroup(const GroupRep& other)
@@ -137,10 +175,36 @@ void GroupRep::mergeNumericGroup(const GroupRep& other)
 
     while (it != numericGroupRep_.end())
     {
-        for (map<double, unsigned int>::const_iterator mit = oit->second.begin(); mit != oit->second.end(); ++mit)
+        list<pair<double, unsigned int> >::iterator lit = it->second.begin();
+        list<pair<double, unsigned int> >::const_iterator olit = oit->second.begin();
+
+        while (true)
         {
-            it->second[mit->first] += mit->second;
+            if (olit == oit->second.end()) 
+                break;
+
+            while (lit != it->second.end() && lit->first < olit->first)
+            {
+                ++lit;
+            }
+
+            if (lit == it->second.end())
+            {
+                it->second.insert(lit, olit, oit->second.end());
+                break;
+            }
+
+            while (olit != oit->second.end() && lit->first > olit->first)
+            {
+                it->second.insert(lit, *(olit++));
+            }
+
+            while (lit != it->second.end() && olit != oit->second.end() && lit->first == olit->first)
+            {
+                (lit++)->second += (olit++)->second;
+            }
         }
+
         ++it;
         ++oit;
     }
@@ -181,20 +245,16 @@ void GroupRep::toOntologyRepItemList()
     NumericRangeGroupCounter::toOntologyRepItemList(*this);
 }
 
-std::string GroupRep::ToString() const
+string GroupRep::ToString() const
 {
-    std::stringstream ss;
+    stringstream ss;
     for (StringGroupRep::const_iterator it = stringGroupRep_.begin();
         it != stringGroupRep_.end(); ++it)
     {
-        for (std::list<OntologyRepItem>::const_iterator lit = it->begin();
-            lit != it->end(); ++lit)
-        {
-            OntologyRepItem item = *lit;
-            std::string str;
-            item.text.convertString(str, izenelib::util::UString::UTF_8);
-            ss<<(int)item.level<<","<<item.id<<","<<str<<","<<item.doc_count<<std::endl;
-        }
+        OntologyRepItem item = *it;
+        string str;
+        item.text.convertString(str, izenelib::util::UString::UTF_8);
+        ss<<(int)item.level<<","<<item.id<<","<<str<<","<<item.doc_count<<endl;
     }
 
     return ss.str();

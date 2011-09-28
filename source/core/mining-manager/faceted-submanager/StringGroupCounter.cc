@@ -30,8 +30,7 @@ void StringGroupCounter::addDoc(docid_t doc)
 
 void StringGroupCounter::getGroupRep(GroupRep& groupRep)
 {
-    groupRep.stringGroupRep_.push_back(std::list<OntologyRepItem>());
-    std::list<OntologyRepItem>& itemList = groupRep.stringGroupRep_.back();
+    GroupRep::StringGroupRep& itemList = groupRep.stringGroupRep_;
 
     izenelib::util::UString propName(propValueTable_.propName(), UString::UTF_8);
     // start from id 0 at level 0
@@ -45,11 +44,7 @@ void StringGroupCounter::appendGroupRep(
     const izenelib::util::UString& valueStr
 ) const
 {
-    itemList.push_back(faceted::OntologyRepItem());
-    faceted::OntologyRepItem& repItem = itemList.back();
-    repItem.level = level;
-    repItem.text = valueStr;
-    repItem.doc_count = countTable_[pvId];
+    itemList.push_back(faceted::OntologyRepItem(level, valueStr, 0, countTable_[pvId]));
 
     const PropValueTable::PropStrMap& propStrMap = childMapTable_[pvId];
     for (PropValueTable::PropStrMap::const_iterator it = propStrMap.begin();
