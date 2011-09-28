@@ -89,7 +89,7 @@ void MiningQueryLogHandler::processCollectionIndependent_(const boost::posix_tim
     boost::gregorian::days dd(days_);
     boost::posix_time::ptime p = nowTime-dd;
     std::string time_string = boost::posix_time::to_iso_string(p);
-    std::string query_sql = "select query, count(*) as freq, max(hit_docs_num) as df from user_queries where TimeStamp >='"+time_string+"' group by query";
+    std::string query_sql = "select query, count(*) as freq, max(hit_docs_num) as df from user_queries where TimeStamp >='"+time_string+"' and hit_docs_num>0 group by query";
     std::list<std::map<std::string, std::string> > query_records;
     UserQuery::find_by_sql(query_sql, query_records);
     std::list<std::map<std::string, std::string> >::iterator it = query_records.begin();

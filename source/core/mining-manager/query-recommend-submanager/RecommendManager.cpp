@@ -235,7 +235,7 @@ bool RecommendManager::RebuildForRecommend()
         boost::gregorian::days dd(days);
         boost::posix_time::ptime p = time_now-dd;
         std::string time_string = boost::posix_time::to_iso_string(p);
-        std::string freq_sql = "select query, count(*) as freq from user_queries where collection='"+collection_name_+"' and TimeStamp >='"+time_string+"' group by query";
+        std::string freq_sql = "select query, count(*) as freq from user_queries where collection='"+collection_name_+"' and hit_docs_num>0 and TimeStamp >='"+time_string+"' group by query";
         std::list<std::map<std::string, std::string> > freq_records;
         UserQuery::find_by_sql(freq_sql, freq_records);
         std::list<std::map<std::string, std::string> >::iterator it = freq_records.begin();
