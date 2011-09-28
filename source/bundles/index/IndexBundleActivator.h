@@ -28,11 +28,14 @@ class AggregatorManager;
 class IndexBundleActivator : public IBundleActivator, public IServiceTrackerCustomizer
 {
 private:
-    ServiceTracker* searchTracker_;
-    ServiceTracker* taskTracker_;
+    ServiceTracker* miningSearchTracker_;
+    ServiceTracker* miningTaskTracker_;
 
     ServiceTracker* recommendSearchTracker_;
     ServiceTracker* recommendTaskTracker_;
+
+    ServiceTracker* productSearchTracker_;
+    ServiceTracker* productTaskTracker_;
 
     IBundleContext* context_;
     IndexSearchService* searchService_;

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2011 (http://www.altova.com) by YF (izenesoft) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.izenesoft.com" xmlns:t="http://www.izenesoft.com" targetNamespace="http://www.izenesoft.com" elementFormDefault="qualified">
+    <xs:include schemaLocation="common.xsd"/>
+
+	<xs:element name="ProductBundle">
+		<xs:complexType>
+			<xs:sequence>
+            	<xs:element name="Schema" minOccurs="0">
+            		<xs:complexType>
+		            <xs:sequence>
+                        	<xs:element name="Property" maxOccurs="unbounded" >
+		                        <xs:complexType>
+                        			<xs:attribute name="name" type="xs:string" use="required"/>
+                        		</xs:complexType>
+                        	</xs:element>
+          		    </xs:sequence>
+            		</xs:complexType>
+            	</xs:element>
+
+                <xs:element name="Parameter" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="Blabla" type="xs:string" minOccurs="0" maxOccurs="2"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+</xs:schema>

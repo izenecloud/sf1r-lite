@@ -1,5 +1,8 @@
 #include "IndexBundleActivator.h"
-#include "../mining/MiningSearchService.h"
+#include <bundles/mining/MiningSearchService.h>
+#include <bundles/product/ProductSearchService.h>
+#include <bundles/product/ProductTaskService.h>
+
 #include <common/SFLogger.h>
 #include <query-manager/QueryManager.h>
 #include <index-manager/IndexManager.h>
@@ -26,8 +29,12 @@ namespace sf1r
 
 using namespace izenelib::osgi;
 IndexBundleActivator::IndexBundleActivator()
-    :searchTracker_(0)
-    ,taskTracker_(0)
+    :miningSearchTracker_(0)
+    ,miningTaskTracker_(0)
+    ,recommendSearchTracker_(0)
+    ,recommendTaskTracker_(0)
+    ,productSearchTracker_(0)
+    ,productTaskTracker_(0)
     ,context_(0)
     ,searchService_(0)
     ,searchServiceReg_(0)
@@ -53,10 +60,15 @@ void IndexBundleActivator::start( IBundleContext::ConstPtr context )
     props.put( "collection", config_->collectionName_);
     searchServiceReg_ = context->registerService( "IndexSearchService", searchService_, props );
     taskServiceReg_ = context->registerService( "IndexTaskService", taskService_, props );
-    searchTracker_ = new ServiceTracker( context, "MiningSearchService", this );
-    searchTracker_->startTracking();
-    taskTracker_ = new ServiceTracker( context, "MiningTaskService", this );
-    taskTracker_->startTracking();
+    miningSearchTracker_ = new ServiceTracker( context, "MiningSearchService", this );
+    miningSearchTracker_->startTracking();
+    miningTaskTracker_ = new ServiceTracker( context, "MiningTaskService", this );
+    miningTaskTracker_->startTracking();
+
+    productSearchTracker_ = new ServiceTracker( context, "ProductSearchService", this );
+    productSearchTracker_->startTracking();
+    productTaskTracker_ = new ServiceTracker( context, "ProductTaskService", this );
+    productTaskTracker_->startTracking();
 
     recommendSearchTracker_ = new ServiceTracker( context, "RecommendSearchService", this );
     recommendSearchTracker_->startTracking();
@@ -66,17 +78,30 @@ void IndexBundleActivator::start( IBundleContext::ConstPtr context )
 
 void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
 {
-    if(searchTracker_)
+    if(miningSearchTracker_)
     {
-        searchTracker_->stopTracking();
-        delete searchTracker_;
-        searchTracker_ = 0;
+        miningSearchTracker_->stopTracking();
+        delete miningSearchTracker_;
+        miningSearchTracker_ = 0;
     }
-    if(taskTracker_)
+    if(miningTaskTracker_)
     {
-        taskTracker_->stopTracking();
-        delete taskTracker_;
-        taskTracker_ = 0;
+        miningTaskTracker_->stopTracking();
+        delete miningTaskTracker_;
+        miningTaskTracker_ = 0;
+    }
+
+    if(productSearchTracker_)
+    {
+        productSearchTracker_->stopTracking();
+        delete productSearchTracker_;
+        productSearchTracker_ = 0;
+    }
+    if(productTaskTracker_)
+    {
+        productTaskTracker_->stopTracking();
+        delete productTaskTracker_;
+        productTaskTracker_ = 0;
     }
 
     if(recommendSearchTracker_)
@@ -136,6 +161,36 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
             MiningTaskService* service = reinterpret_cast<MiningTaskService*> ( const_cast<IService*>(ref.getService()) );
             cout << "[IndexBundleActivator#addingService] Calling MiningTaskService..." << endl;
             taskService_->miningTaskService_= service;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else if ( ref.getServiceName() == "ProductSearchService" )
+    {
+        Properties props = ref.getServiceProperties();
+        if ( props.get( "collection" ) == config_->collectionName_)
+        {
+            //ProductSearchService* service = reinterpret_cast<ProductSearchService*> ( const_cast<IService*>(ref.getService()) );
+            cout << "[IndexBundleActivator#addingService] Calling ProductSearchService..." << endl;
+            ///TODO
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else if ( ref.getServiceName() == "ProductTaskService" )	
+    {
+        Properties props = ref.getServiceProperties();
+        if ( props.get( "collection" ) == config_->collectionName_)
+        {
+            //ProductTaskService* service = reinterpret_cast<ProductTaskService*> ( const_cast<IService*>(ref.getService()) );
+            cout << "[IndexBundleActivator#addingService] Calling ProductTaskService..." << endl;
+            ///TODO
             return true;
         }
         else

@@ -871,6 +871,13 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
     parseIndexBundleParam(indexParam, collectionMeta);
     parseIndexBundleSchema(getUniqChildElement( indexBundle, "Schema" ), collectionMeta);
 
+    // ProductBundle
+    Element* productBundle = getUniqChildElement( collection, "ProductBundle", false  );
+    if(productBundle)
+    {
+        Element* productParam = getUniqChildElement( productBundle, "Parameter", false );
+        if(productParam) parseProductBundleParam(productParam, collectionMeta);
+    }
     // MiningBundle
     collectionMeta.miningBundleConfig_->isSupportByAggregator_ = collectionMeta.indexBundleConfig_->isSupportByAggregator_;
     Element* miningBundle = getUniqChildElement( collection, "MiningBundle" , false );
@@ -1112,6 +1119,11 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
             propertyWeightMap.insert( pair<string, float>(it->getName(), it->getRankWeight()) );
         }
     }
+}
+
+void CollectionConfig::parseProductBundleParam(const ticpp::Element * product, CollectionMeta & collectionMeta)
+{
+    ///TODO
 }
 
 void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, CollectionMeta & collectionMeta)
