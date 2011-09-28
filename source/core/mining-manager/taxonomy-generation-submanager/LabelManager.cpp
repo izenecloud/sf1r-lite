@@ -16,8 +16,8 @@
 
 using namespace sf1r;
 
-LabelManager::LabelManager(const std::string& path) :
-        path_(path), isOpen_(false)
+LabelManager::LabelManager(const std::string& path, bool no_doc_container) :
+        path_(path), isOpen_(false), no_doc_container_(no_doc_container)
         , info_(0)
         , serInfo_(path_+"/ser_info")
         , idManager_(NULL)
@@ -693,7 +693,7 @@ void LabelManager::insertToDocTable_( uint32_t docId, std::vector<id2count_t>& l
 //   std::cout<<std::endl;
 
 
-
+    if(no_doc_container_) return;
     std::vector<uint32_t> labelIdList;
     std::vector<uint32_t> sorted_label;
     selectDocLabels(labelItemList, labelIdList, sorted_label);

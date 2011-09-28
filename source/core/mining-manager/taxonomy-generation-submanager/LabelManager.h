@@ -121,7 +121,7 @@ public:
     };
 
 
-    LabelManager(const std::string& path);
+    LabelManager(const std::string& path, bool no_doc_container = false);
 
     ~LabelManager();
 
@@ -293,7 +293,7 @@ private:
 private:
     std::string path_;
     bool isOpen_;
-
+    bool no_doc_container_;
     INFO_TYPE info_;
     izenelib::am::tc_hash<bool, INFO_TYPE > serInfo_;
 

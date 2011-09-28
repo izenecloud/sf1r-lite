@@ -44,7 +44,7 @@
 
     <MiningBundle>
       <Schema>
-        <TaxonomyGeneration> 
+        <TaxonomyGeneration kpe_only="n"> 
           <Property name="Title" />
           <Property name="Content" />
         </TaxonomyGeneration>
