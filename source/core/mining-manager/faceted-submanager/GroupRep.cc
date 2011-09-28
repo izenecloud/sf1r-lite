@@ -36,27 +36,27 @@ bool GroupRep::operator==(const GroupRep& other) const
         return false;
     }
 
-    StringGroupRep::const_iterator lit1 = stringGroupRep_.begin();
-    StringGroupRep::const_iterator lit2 = other.stringGroupRep_.begin();
-    while (lit1 != stringGroupRep_.end() && lit2 != other.stringGroupRep_.end())
+    StringGroupRep::const_iterator sit1 = stringGroupRep_.begin();
+    StringGroupRep::const_iterator sit2 = other.stringGroupRep_.begin();
+    while (sit1 != stringGroupRep_.end())
     {
-        if (!(*lit1 == *lit2))
+        if (!(*sit1 == *sit2))
             return false;
 
-        ++lit1;
-        ++lit2;
+        ++sit1;
+        ++sit2;
     }
 
-    NumericGroupRep::const_iterator mit1 = numericGroupRep_.begin();
-    NumericGroupRep::const_iterator mit2 = other.numericGroupRep_.begin();
-    while (mit1 != numericGroupRep_.end())
+    NumericGroupRep::const_iterator nit1 = numericGroupRep_.begin();
+    NumericGroupRep::const_iterator nit2 = other.numericGroupRep_.begin();
+    while (nit1 != numericGroupRep_.end())
     {
-        if (mit1->first != mit2->first || mit1->second.size() != mit2->second.size())
+        if (nit1->first != nit2->first || nit1->second.size() != nit2->second.size())
             return false;
 
-        list<pair<double, unsigned int> >::const_iterator it1 = mit1->second.begin();
-        list<pair<double, unsigned int> >::const_iterator it2 = mit2->second.begin();
-        while (it1 != mit1->second.end())
+        list<pair<double, unsigned int> >::const_iterator it1 = nit1->second.begin();
+        list<pair<double, unsigned int> >::const_iterator it2 = nit2->second.begin();
+        while (it1 != nit1->second.end())
         {
             if (it1->first != it2->first || it1->second != it2->second)
                 return false;
@@ -64,20 +64,20 @@ bool GroupRep::operator==(const GroupRep& other) const
             ++it1;
             ++it2;
         }
-        ++mit1;
-        ++mit2;
+        ++nit1;
+        ++nit2;
     }
 
-    NumericRangeGroupRep::const_iterator vit1 = numericRangeGroupRep_.begin();
-    NumericRangeGroupRep::const_iterator vit2 = other.numericRangeGroupRep_.begin();
-    while (vit1 != numericRangeGroupRep_.end())
+    NumericRangeGroupRep::const_iterator rit1 = numericRangeGroupRep_.begin();
+    NumericRangeGroupRep::const_iterator rit2 = other.numericRangeGroupRep_.begin();
+    while (rit1 != numericRangeGroupRep_.end())
     {
-        if (vit1->first != vit2->first || vit1->second.size() != vit2->second.size())
+        if (rit1->first != rit2->first || rit1->second.size() != rit2->second.size())
             return false;
 
-        vector<unsigned int>::const_iterator it1 = vit1->second.begin();
-        vector<unsigned int>::const_iterator it2 = vit2->second.begin();
-        while (it1 != vit1->second.end())
+        vector<unsigned int>::const_iterator it1 = rit1->second.begin();
+        vector<unsigned int>::const_iterator it2 = rit2->second.begin();
+        while (it1 != rit1->second.end())
         {
             if (*it1 != *it2)
                 return false;
@@ -85,8 +85,8 @@ bool GroupRep::operator==(const GroupRep& other) const
             ++it1;
             ++it2;
         }
-        ++vit1;
-        ++vit2;
+        ++rit1;
+        ++rit2;
     }
 
     return true;
@@ -180,7 +180,7 @@ void GroupRep::mergeNumericGroup(const GroupRep& other)
 
         while (true)
         {
-            if (olit == oit->second.end()) 
+            if (olit == oit->second.end())
                 break;
 
             while (lit != it->second.end() && lit->first < olit->first)

@@ -34,7 +34,6 @@ public:
     void merge(const GroupRep& other);
     string ToString() const;
 
-    friend class StringGroupCounter;
     friend class NumericGroupCounter;
     friend class NumericRangeGroupCounter;
     void toOntologyRepItemList();
