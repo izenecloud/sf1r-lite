@@ -31,6 +31,7 @@ class WordCompletionTable
     typedef uint8_t CHAR_TYPE;
     std::string dir_name_;
     izenelib::sdb::ordered_sdb<std::string, std::string, izenelib::util::ReadWriteLock>* sdb_;
+    bool has_count_;
     //ValueSharedTable* vst_;
     izenelib::am::IzeneSort<CHAR_TYPE, uint32_t, true>* sortor_;
     char* buffer_;
@@ -188,7 +189,7 @@ class WordCompletionTable
 
 public:
     WordCompletionTable(const std::string& dir_nm, uint32_t top = 10, uint32_t max_buf = 100000000)
-            :dir_name_(dir_nm), sdb_(NULL), sortor_(NULL),
+            :dir_name_(dir_nm), sdb_(NULL), has_count_(false), sortor_(NULL),
             buffer_(NULL), bs_(0), top_(top)
     {
         if (!boost::filesystem::is_directory(dir_name_))
@@ -203,7 +204,11 @@ public:
                 return;
             }
         } // end - try-catch
-
+        
+        if (boost::filesystem::exists(dir_name_+"/has_count"))
+        {
+            has_count_ = true;
+        }
         //vst_ = new ValueSharedTable((dir_name_+"/table").c_str(), max_buf);
         sdb_  = new izenelib::sdb::ordered_sdb<std::string, std::string, izenelib::util::ReadWriteLock>(dir_name_+"/table");
         sdb_->setCacheSize(30000);
@@ -262,11 +267,6 @@ public:
         //sstd::cout<<s1<<":"<<s2<<std::endl;
     }
 
-//     void get_item(const std::string& key, std::string& value)
-//     {
-//         value = "";
-//         sdb_->get(key, value);
-//     }
 
     bool get_item(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString, uint32_t> >& list)
     {
@@ -296,14 +296,21 @@ public:
                 }
                 if (!flag&&!LabelDistance::isDuplicate(str, text_list))
                 {
-                    const char* pc = p+sizeof(CHAR_TYPE)*(i+1);
-                    const DF_TYPE* dp = (const DF_TYPE*)pc;
-                    DF_TYPE df = *dp;
+                    DF_TYPE df = 0;
+                    if(has_count_)
+                    {
+                        const char* pc = p+sizeof(CHAR_TYPE)*(i+1);
+                        const DF_TYPE* dp = (const DF_TYPE*)pc;
+                        df = *dp;
+                    }
                     list.push_back(std::make_pair(str, df));
                     text_list.push_back(str);
 //                     std::cout<<"[autofill] "<<str<<","<<df<<std::endl;
                 }
-                i += sizeof(DF_TYPE);
+                if(has_count_)
+                {
+                    i += sizeof(DF_TYPE);
+                }
                 s = i+1;
             }
         }
@@ -381,6 +388,11 @@ public:
 
         //vst_->flush();
         sdb_->flush();
+        has_count_ = true;
+        std::string has_count_file = dir_name_+"/has_count";
+        std::ofstream ofs(has_count_file.c_str());
+        ofs<<"a";
+        ofs.close();
     }
 
 }
