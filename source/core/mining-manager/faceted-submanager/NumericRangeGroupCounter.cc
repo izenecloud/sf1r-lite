@@ -1,6 +1,5 @@
 #include <search-manager/NumericPropertyTable.h>
 #include <util/ustring/UString.h>
-#include <cstring>
 #include "NumericRangeGroupCounter.h"
 
 NS_FACETED_BEGIN
@@ -194,7 +193,6 @@ void NumericRangeGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
             itemList.push_back(faceted::OntologyRepItem(1, ustr, 0, level1[i] - tempCount));
         }
     }
-    groupRep.numericRangeGroupRep_.clear();
 }
 
 NS_FACETED_END

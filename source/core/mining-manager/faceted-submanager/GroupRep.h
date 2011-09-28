@@ -13,7 +13,7 @@
 #include <3rdparty/msgpack/msgpack.hpp>
 #include <common/type_defs.h>
 #include "faceted_types.h"
-#include "ontology_rep.h"
+#include "ontology_rep_item.h"
 
 NS_FACETED_BEGIN
 
