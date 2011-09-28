@@ -22,6 +22,8 @@ class RecommendSearchService;
 class IndexTaskService;
 class IndexSearchService;
 class MiningSearchService;
+class ProductTaskService;
+class ProductSearchService;
 /**
  * @brief CollectionHandler
  *
@@ -60,6 +62,16 @@ public:
         indexTaskService_ = service;
     }
 
+    void registerService(ProductSearchService* service)
+    {
+        productSearchService_ = service;
+    }
+
+    void registerService(ProductTaskService* service)
+    {
+        productTaskService_ = service;
+    }
+
     void registerService(MiningSearchService* service)
     {
         miningSearchService_ = service;
@@ -82,12 +94,12 @@ public:
 
     void setBundleSchema(MiningSchema& schema)
     {
-	    miningSchema_ = schema;
+        miningSchema_ = schema;
     }
 
     void setBundleSchema(RecommendSchema& schema)
     {
-	    recommendSchema_ = schema;
+        recommendSchema_ = schema;
     }
 public:
     std::string collection_;
@@ -95,6 +107,10 @@ public:
     IndexSearchService* indexSearchService_;
 
     IndexTaskService* indexTaskService_;
+
+    ProductSearchService* productSearchService_;
+
+    ProductTaskService* productTaskService_;
 
     MiningSearchService* miningSearchService_;
 

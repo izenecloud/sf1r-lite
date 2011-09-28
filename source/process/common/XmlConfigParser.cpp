@@ -871,6 +871,13 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
     parseIndexBundleParam(indexParam, collectionMeta);
     parseIndexBundleSchema(getUniqChildElement( indexBundle, "Schema" ), collectionMeta);
 
+    // ProductBundle
+    Element* productBundle = getUniqChildElement( collection, "ProductBundle", false  );
+    if(productBundle)
+    {
+        Element* productParam = getUniqChildElement( productBundle, "Parameter", false );
+        if(productParam) parseProductBundleParam(productParam, collectionMeta);
+    }
     // MiningBundle
     collectionMeta.miningBundleConfig_->isSupportByAggregator_ = collectionMeta.indexBundleConfig_->isSupportByAggregator_;
     Element* miningBundle = getUniqChildElement( collection, "MiningBundle" , false );
@@ -1114,6 +1121,11 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
     }
 }
 
+void CollectionConfig::parseProductBundleParam(const ticpp::Element * product, CollectionMeta & collectionMeta)
+{
+    ///TODO
+}
+
 void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, CollectionMeta & collectionMeta)
 {
     CollectionParameterConfig params(SF1Config::get()->defaultMiningBundleParam_);
@@ -1168,9 +1180,15 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
     {
       ticpp::Element * task_node = getUniqChildElement( mining_schema_node, "TaxonomyGeneration", false );
       mining_schema.tg_enable = false;
+      mining_schema.tg_kpe_only = false;
       std::string property_name;
       if( task_node!= NULL )
       {
+        bool kpe_only = false;
+        if( getAttribute( task_node, "kpe_only", kpe_only, false ) )
+        {
+            mining_schema.tg_kpe_only = kpe_only;
+        }
         Iterator<Element> it( "Property" );
         for ( it = it.begin( task_node ); it != it.end(); it++ )
         {

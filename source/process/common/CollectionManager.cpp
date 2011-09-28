@@ -3,6 +3,7 @@
 #include <controllers/CollectionHandler.h>
 
 #include <bundles/index/IndexBundleActivator.h>
+#include <bundles/product/ProductBundleActivator.h>
 #include <bundles/mining/MiningBundleActivator.h>
 #include <bundles/recommend/RecommendBundleActivator.h>
 
@@ -17,11 +18,13 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
     std::auto_ptr<CollectionHandler> collectionHandler(new CollectionHandler(collectionName));
 
     boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig(new IndexBundleConfiguration(collectionName));
+    boost::shared_ptr<ProductBundleConfiguration> productBundleConfig(new ProductBundleConfiguration(collectionName));	
     boost::shared_ptr<MiningBundleConfiguration> miningBundleConfig(new MiningBundleConfiguration(collectionName));
     boost::shared_ptr<RecommendBundleConfiguration> recommendBundleConfig(new RecommendBundleConfiguration(collectionName));
 
     CollectionMeta collectionMeta;
     collectionMeta.indexBundleConfig_ = indexBundleConfig;
+    collectionMeta.productBundleConfig_ = productBundleConfig;
     collectionMeta.miningBundleConfig_ = miningBundleConfig;
     collectionMeta.recommendBundleConfig_ = recommendBundleConfig;
 
@@ -41,6 +44,17 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
     IndexTaskService* indexTaskService = static_cast<IndexTaskService*>(osgiLauncher_.getService(bundleName, "IndexTaskService"));
     collectionHandler->registerService(indexTaskService);
 
+    if(productBundleConfig->enabled_)
+    {
+        ///createProductBundle
+        bundleName = "ProductBundle-" + collectionName;
+        DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, ProductBundleActivator);
+        osgiLauncher_.start(productBundleConfig);
+        ProductSearchService* productSearchService = static_cast<ProductSearchService*>(osgiLauncher_.getService(bundleName, "ProductSearchService"));
+        collectionHandler->registerService(productSearchService);
+        ProductTaskService* productTaskService = static_cast<ProductTaskService*>(osgiLauncher_.getService(bundleName, "ProductTaskService"));
+        collectionHandler->registerService(productTaskService);
+    }
     ///createMiningBundle
     bundleName = "MiningBundle-" + collectionName;
     DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, MiningBundleActivator);	

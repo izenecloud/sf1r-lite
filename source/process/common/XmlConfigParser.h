@@ -703,6 +703,10 @@ private:
     /// @param index           Pointer to the Element
     void parseIndexBundleSchema(const ticpp::Element * index, CollectionMeta & collectionMeta);
 
+    /// @brief                  Parse <ProductBundle> <Parameter> 
+    /// @param product           Pointer to the Element
+    void parseProductBundleParam(const ticpp::Element * product, CollectionMeta & collectionMeta);
+
     /// @brief                  Parse <MiningBundle> <Parameter> 
     /// @param mining           Pointer to the Element
     void parseMiningBundleParam(const ticpp::Element * mining, CollectionMeta & collectionMeta);

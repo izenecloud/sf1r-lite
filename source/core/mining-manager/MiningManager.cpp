@@ -151,7 +151,7 @@ bool MiningManager::open()
         }
     }
 
-    std::cout<<"DO_TG : "<<(int)mining_schema_.tg_enable<<std::endl;
+    std::cout<<"DO_TG : "<<(int)mining_schema_.tg_enable<<" - "<<(int)mining_schema_.tg_kpe_only<<std::endl;
     std::cout<<"DO_DUPD : "<<(int)mining_schema_.dupd_enable<<std::endl;
     std::cout<<"DO_SIM : "<<(int)mining_schema_.sim_enable<<std::endl;
     std::cout<<"DO_FACETED : "<<(int)mining_schema_.faceted_enable<<std::endl;
@@ -228,7 +228,7 @@ bool MiningManager::open()
             FSUtil::createDir(tg_label_path_);
             FSUtil::createDir(tg_label_sim_path_);
 
-            labelManager_.reset(new LabelManager(tg_path_ + "/label"));
+            labelManager_.reset(new LabelManager(tg_path_ + "/label", mining_schema_.tg_kpe_only));
             labelManager_->open();
 
             tgManager_.reset(new TaxonomyGenerationSubManager(miningConfig_.taxonomy_param,labelManager_, analyzer_));
@@ -719,7 +719,7 @@ bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
         STOP_PROFILER(qr);
 
         START_PROFILER( tg);
-        if (mining_schema_.tg_enable)
+        if (mining_schema_.tg_enable && !mining_schema_.tg_kpe_only)
         {
             izenelib::util::ClockTimer clocker;
             addTgResult_(miaInput);

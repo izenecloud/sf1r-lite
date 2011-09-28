@@ -13,11 +13,9 @@
 #include <3rdparty/msgpack/msgpack.hpp>
 #include <common/type_defs.h>
 #include "faceted_types.h"
-#include "ontology_rep.h"
+#include "ontology_rep_item.h"
 
 NS_FACETED_BEGIN
-
-using namespace std;
 
 class GroupRep
 {
@@ -25,13 +23,20 @@ public:
     GroupRep();
     ~GroupRep();
 
+    typedef std::list<OntologyRepItem> StringGroupRep;
+    typedef std::list<std::pair<std::string, std::list<std::pair<double, unsigned int> > > > NumericGroupRep;
+    typedef std::list<std::pair<std::string, std::vector<unsigned int> > > NumericRangeGroupRep;
+
     bool empty() const;
     void swap(GroupRep& other);
     bool operator==(const GroupRep& other) const;
 
     void merge(const GroupRep& other);
-    void toOntologyRepItemList();
     string ToString() const;
+
+    friend class NumericGroupCounter;
+    friend class NumericRangeGroupCounter;
+    void toOntologyRepItemList();
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -53,12 +58,17 @@ private:
     void mergeNumericGroup(const GroupRep& other);
     void mergeNumericRangeGroup(const GroupRep& other);
 
-public:
-    typedef list<list<OntologyRepItem> > StringGroupRep;
-    typedef list<pair<string, map<double, unsigned int> > > NumericGroupRep;
-    typedef list<pair<string, vector<unsigned int> > > NumericRangeGroupRep;
+    void recurseStringGroup(
+        const GroupRep& other,
+        StringGroupRep::iterator &it,
+        StringGroupRep::const_iterator &oit,
+        uint8_t level
+    );
 
+public:
     StringGroupRep stringGroupRep_;
+
+private:
     NumericGroupRep numericGroupRep_;
     NumericRangeGroupRep numericRangeGroupRep_;
 };

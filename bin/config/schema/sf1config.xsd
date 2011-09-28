@@ -4,6 +4,7 @@
     <xs:include schemaLocation="common.xsd"/>
     <xs:include schemaLocation="bundle-querylog.xsd"/>
     <xs:include schemaLocation="bundle-index.xsd"/>
+    <xs:include schemaLocation="bundle-product.xsd"/>    
     <xs:include schemaLocation="bundle-mining.xsd"/>
     <xs:include schemaLocation="bundle-recommend.xsd"/>
         
@@ -66,6 +67,7 @@
 			<xs:sequence>
                 <xs:element ref="QueryLogBundle"/>
                 <xs:element ref="IndexBundle"/>
+                <xs:element ref="ProductBundle"/>
                 <xs:element ref="MiningBundle"/>
                 <xs:element ref="RecommendBundle"/>
 			</xs:sequence>

@@ -32,6 +32,8 @@ using namespace izenelib::osgi;
 CollectionHandler::CollectionHandler(const string& collection)
         : collection_(collection)
         , indexSearchService_(0)
+        , productSearchService_(0)
+        , productTaskService_(0)
         , miningSearchService_(0)
         , recommendTaskService_(0)
         , recommendSearchService_(0)

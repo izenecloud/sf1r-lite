@@ -11,6 +11,7 @@
 #include <configuration-manager/Acl.h>
 
 #include <bundles/index/IndexBundleConfiguration.h>
+#include <bundles/product/ProductBundleConfiguration.h>
 #include <bundles/mining/MiningBundleConfiguration.h>
 #include <bundles/recommend/RecommendBundleConfiguration.h>
 
@@ -165,6 +166,8 @@ public:
     std::set<PropertyConfigBase, PropertyBaseComp> schema_;
 
     boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig_;
+
+    boost::shared_ptr<ProductBundleConfiguration> productBundleConfig_;
 
     boost::shared_ptr<MiningBundleConfiguration> miningBundleConfig_;
 

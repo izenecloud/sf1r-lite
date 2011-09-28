@@ -53,6 +53,11 @@
         </Parameter>
       </IndexBundle>
 
+      <ProductBundle>
+        <Parameter>
+        </Parameter>
+      </ProductBundle>
+      
       <MiningBundle> 
         <Parameter>
           <!-- Specify multiple index directory to support backup and directory rotating -->

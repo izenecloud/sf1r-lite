@@ -1,6 +1,5 @@
 #include <search-manager/NumericPropertyTable.h>
 #include <util/ustring/UString.h>
-#include <cstring>
 #include "NumericRangeGroupCounter.h"
 
 NS_FACETED_BEGIN
@@ -39,12 +38,11 @@ void NumericRangeGroupCounter::getGroupRep(GroupRep &groupRep)
 
 void NumericRangeGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
 {
+    GroupRep::StringGroupRep& itemList = groupRep.stringGroupRep_;
+
     for (GroupRep::NumericRangeGroupRep::const_iterator it = groupRep.numericRangeGroupRep_.begin();
         it != groupRep.numericRangeGroupRep_.end(); ++it)
     {
-        groupRep.stringGroupRep_.push_back(std::list<OntologyRepItem>());
-        std::list<OntologyRepItem>& itemList = groupRep.stringGroupRep_.back();
-
         unsigned int level0 = 0;
         unsigned int level1[LEVEL_1_OF_SEGMENT_TREE];
         unsigned int level2[LEVEL_1_OF_SEGMENT_TREE][10];
@@ -171,17 +169,12 @@ void NumericRangeGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
 
                 if (oldCount != tempCount)
                 {
-                    itemList.push_back(faceted::OntologyRepItem());
-                    faceted::OntologyRepItem& repItem = itemList.back();
-                    repItem.level = 1;
                     std::stringstream ss;
                     ss << atom * (10 * oldStop.first + oldStop.second)
                         << "-"
                         << atom * (10 * tempStop.first + tempStop.second + 1) - 1;
-
-                    izenelib::util::UString stringValue(ss.str(), UString::UTF_8);
-                    repItem.text = stringValue;
-                    repItem.doc_count = tempCount - oldCount;
+                    izenelib::util::UString ustr(ss.str(), UString::UTF_8);
+                    itemList.push_back(faceted::OntologyRepItem(1, ustr, 0, tempCount - oldCount));
                     if (tempCount == level1[i])
                         break;
 
@@ -192,20 +185,14 @@ void NumericRangeGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
             if (tempCount == level1[i])
                 continue;
 
-            itemList.push_back(faceted::OntologyRepItem());
-            faceted::OntologyRepItem& repItem = itemList.back();
-            repItem.level = 1;
             std::stringstream ss;
             ss << atom * (10 * stop.first + stop.second)
                 << "-"
                 << atom * (10 * end.first + end.second + 1) - 1;
-
-            izenelib::util::UString stringValue(ss.str(), UString::UTF_8);
-            repItem.text = stringValue;
-            repItem.doc_count = level1[i] - tempCount;
+            izenelib::util::UString ustr(ss.str(), UString::UTF_8);
+            itemList.push_back(faceted::OntologyRepItem(1, ustr, 0, level1[i] - tempCount));
         }
     }
-    groupRep.numericRangeGroupRep_.clear();
 }
 
 NS_FACETED_END
