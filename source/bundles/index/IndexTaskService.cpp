@@ -226,15 +226,8 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
             break;
             case UPDATE_SCD:
             {
-                if (documentManager_->getMaxDocId()> 0)
-                {
-                    doBuildCollection_( *scd_it, 2, 0 );
-                    DLOG(INFO) << "Update Finished"<<endl;
-                }
-                else
-                {
-                    DLOG(WARNING) << "Indexed documents do not exist. File "<<boost::filesystem::path(*scd_it).stem()<<endl;
-                }
+                doBuildCollection_( *scd_it, 2, 0 );
+                DLOG(INFO) << "Update Finished"<<endl;
             }
             break;
             default:
