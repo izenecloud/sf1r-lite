@@ -12,7 +12,7 @@
 #include <bundles/index/IndexSearchService.h>
 #include <bundles/recommend/RecommendTaskService.h>
 #include <aggregator-manager/AggregatorManager.h>
-
+#include <mining-manager/MiningQueryLogHandler.h>
 #include <common/Keys.h>
 
 namespace sf1r
@@ -149,6 +149,23 @@ void CommandsController::index_recommend()
 
     task_type task = boost::bind(&RecommendTaskService::buildCollection, taskService);
     JobScheduler::get()->addTask(task);
+}
+
+
+/**
+ * @brief Action \b index_query_log. Sends command "index_query_log" to rebuild all query related features.
+ *
+ * @section request
+ *
+ *
+ * @section response
+ *
+ * No extra fields.
+ *
+ **/
+void CommandsController::index_query_log()
+{
+    MiningQueryLogHandler::getInstance()->runEvents();
 }
 
 /**

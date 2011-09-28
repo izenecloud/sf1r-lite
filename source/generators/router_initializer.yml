@@ -26,6 +26,7 @@ controllers:
       - index
       - index_recommend
       - optimize_index
+      - index_query_log
 
   KeywordsController:
     actions:
