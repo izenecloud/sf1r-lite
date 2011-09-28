@@ -1180,9 +1180,15 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
     {
       ticpp::Element * task_node = getUniqChildElement( mining_schema_node, "TaxonomyGeneration", false );
       mining_schema.tg_enable = false;
+      mining_schema.tg_kpe_only = false;
       std::string property_name;
       if( task_node!= NULL )
       {
+        bool kpe_only = false;
+        if( getAttribute( task_node, "kpe_only", kpe_only, false ) )
+        {
+            mining_schema.tg_kpe_only = kpe_only;
+        }
         Iterator<Element> it( "Property" );
         for ( it = it.begin( task_node ); it != it.end(); it++ )
         {
