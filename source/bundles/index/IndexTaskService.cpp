@@ -957,18 +957,21 @@ bool IndexTaskService::doBuildCollection_(
     return true;
 }
 
-void IndexTaskService::checkRtype_(
+bool IndexTaskService::checkRtype_(
     SCDDoc& doc,
-    bool& rType,
     std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue
 )
 {
     //R-type check
+    bool rType = false;
     PropertyDataType dataType;
     sf1r::docid_t docId;
+    izenelib::util::UString newPropertyValue;
     vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
     for (p = doc.begin(); p != doc.end(); p++)
     {
+        izenelib::util::UString propertyNameL = p->first;
+        propertyNameL.toLowerString();
         const izenelib::util::UString & propertyValueU = p->second;
         std::set<PropertyConfig, PropertyComp>::iterator iter;
         string fieldName;
@@ -980,7 +983,7 @@ void IndexTaskService::checkRtype_(
 
         if ( iter != bundleConfig_->schema_.end() )
         {
-            if ( iter->getName() == "DOCID" )
+            if ( propertyNameL == izenelib::util::UString("docid", bundleConfig_->encoding_) )
             {
                 bool ret = false;
                 ret = idManager_->getDocIdByDocName(propertyValueU, docId, false);
@@ -991,15 +994,23 @@ void IndexTaskService::checkRtype_(
             }
             else
             {
+                newPropertyValue = propertyValueU;
+                if( propertyNameL == izenelib::util::UString("date", bundleConfig_->encoding_) )
+                {
+                    izenelib::util::UString dateStr;
+                    sf1r::Utilities::convertDate(propertyValueU, bundleConfig_->encoding_, dateStr);
+                    newPropertyValue = dateStr;
+                }
                 PropertyValue value;
                 if (documentManager_->getPropertyValue(docId, iter->getName(), value))
                 {
                     izenelib::util::UString oldPropertyValue = get<izenelib::util::UString>(value);
-                    if ( propertyValueU == oldPropertyValue )
+                    if ( newPropertyValue == oldPropertyValue )
                     {
                         continue;
                     }
                 }
+
                 if ( iter->isIndex() && iter->getIsFilter() && !iter->isAnalyzed())
                 {
                     dataType = iter->getType();
@@ -1010,7 +1021,7 @@ void IndexTaskService::checkRtype_(
                     }
                     pair<PropertyDataType, izenelib::util::UString> fieldValue;
                     fieldValue.first = dataType;
-                    fieldValue.second = p->second;
+                    fieldValue.second = newPropertyValue;
                     rTypeFieldValue[iter->getName()] = fieldValue;
                 }
                 else
@@ -1033,6 +1044,7 @@ void IndexTaskService::checkRtype_(
         rType = false;
         rTypeFieldValue.clear();
     }
+    return rType;
 }
 
 bool IndexTaskService::checkSeparatorType_(const izenelib::util::UString& propertyValueStr, izenelib::util::UString::EncodingType encoding, char separator)
@@ -1114,7 +1126,7 @@ bool IndexTaskService::prepareDocument_(
             if (!insert)
             {
                 //R-type check
-                checkRtype_(doc, rType, rTypeFieldValue);
+                rType = checkRtype_(doc, rTypeFieldValue);
                 bool ret = false;
                 if ( !rType )
                 {
@@ -1122,6 +1134,9 @@ bool IndexTaskService::prepareDocument_(
                 }
                 else
                 {
+
+                    if (rTypeFieldValue.empty())
+                        return false;
                     ret = idManager_->getDocIdByDocName(propertyValueU, Id, false);
                     docId = Id;
                 }

@@ -83,9 +83,8 @@ private:
         IndexerDocument& oldIndexDocument
     );
 
-    void checkRtype_(
+    bool checkRtype_(
         SCDDoc& doc,
-        bool& rType,
         std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue
     );
 
