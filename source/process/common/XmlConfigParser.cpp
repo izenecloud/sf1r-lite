@@ -869,6 +869,7 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
     Element* indexBundle = getUniqChildElement( collection, "IndexBundle", false  );
     Element* indexParam = getUniqChildElement( indexBundle, "Parameter", false );
     parseIndexBundleParam(indexParam, collectionMeta);
+    parseIndexEcSchema(getUniqChildElement( indexBundle, "EcSchema", false), collectionMeta);
     parseIndexBundleSchema(getUniqChildElement( indexBundle, "Schema" ), collectionMeta);
 
     // ProductBundle
@@ -1080,6 +1081,31 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
 
     indexBundleConfig.isSupportByAggregator_ = SF1Config::get()->checkAggregatorSupport(collectionMeta.getName());
     indexBundleConfig.setAggregatorConfig(SF1Config::get()->getAggregatorConfig());
+}
+
+void CollectionConfig::parseIndexEcSchema(const ticpp::Element * indexEcSchema, CollectionMeta & collectionMeta)
+{
+    IndexBundleConfiguration& indexBundleConfig = *(collectionMeta.indexBundleConfig_);
+    PropertyDataType property_type;
+    if(indexEcSchema != NULL)
+    {
+        ticpp::Element * child_node = getUniqChildElement( indexEcSchema, "ProductSourceField", false );
+        std::string property_name;
+        if( child_node != NULL )
+        {
+          Iterator<Element> it( "Property" );
+          for ( it = it.begin( child_node ); it != it.end(); it++ )
+          {
+              getAttribute( it.Get(), "name", property_name );
+              bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+              if( !gottype)
+              {
+                throw XmlConfigParserException("Property ["+property_name+"] used in ProductSourceField is not in DocumentSchema.");
+              }
+              indexBundleConfig.productSourceField_ = property_name;
+          }
+        }
+    }
 }
 
 void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema, CollectionMeta & collectionMeta)
@@ -1433,22 +1459,6 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         }
         mining_schema.ise_property = property_name;
         mining_schema.ise_enable = true;
-      }
-      
-      task_node = getUniqChildElement( mining_schema_node, "ProductSourceField", false );
-      if( task_node!= NULL )
-      {
-        Iterator<Element> it( "Property" );
-        for ( it = it.begin( task_node ); it != it.end(); it++ )
-        {
-            getAttribute( it.Get(), "name", property_name );
-            bool gottype = collectionMeta.getPropertyType(property_name, property_type);
-            if( !gottype || property_type != STRING_PROPERTY_TYPE )
-            {
-              throw XmlConfigParserException("Property ["+property_name+"] used in ProductSourceField is not string type.");
-            }
-            mining_schema.product_source_property = property_name;
-        }
       }
 
       //for recommend schema

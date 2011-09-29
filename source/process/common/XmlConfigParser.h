@@ -699,6 +699,10 @@ private:
     /// @param index           Pointer to the Element
     void parseIndexBundleParam(const ticpp::Element * index, CollectionMeta & collectionMeta);
 
+    /// @brief                  Parse <IndexBundle> <EcSchema>
+    /// @param index           Pointer to the Element
+    void parseIndexEcSchema(const ticpp::Element * index, CollectionMeta & collectionMeta);
+
     /// @brief                  Parse <IndexBundle> <Schema> 
     /// @param index           Pointer to the Element
     void parseIndexBundleSchema(const ticpp::Element * index, CollectionMeta & collectionMeta);

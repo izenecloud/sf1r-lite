@@ -49,7 +49,6 @@ IndexTaskService::IndexTaskService(
     , directoryRotator_(directoryRotator)
     , miningTaskService_(NULL)
     , recommendTaskService_(NULL)
-    , productSourceField_("")
     , indexManager_(indexManager)
     , collectionId_(1)
     , maxDocId_(0)
@@ -90,10 +89,6 @@ IndexTaskService::IndexTaskService(
         boost::shared_ptr<LAInput> laInput(new LAInput);
         laInputs_[iter->getPropertyId()] = laInput;
     }
-
-    CollectionMeta meta;
-    SF1Config::get()->getCollectionMetaByName(bundleConfig_->collectionName_, meta);
-    productSourceField_ = meta.miningBundleConfig_->mining_schema_.product_source_property;
 }
 
 IndexTaskService::~IndexTaskService()
@@ -682,7 +677,8 @@ bool IndexTaskService::destroyDocument(const Value& documentValue)
                 boost::posix_time::microsec_clock::local_time();
     PropertyValue value;
     std::string source = "";
-    if (!productSourceField_.empty() && documentManager_->getPropertyValue(docid, productSourceField_, value))
+    if (!(bundleConfig_->productSourceField_).empty()
+            && documentManager_->getPropertyValue(docid, bundleConfig_->productSourceField_, value))
     {
         izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
         sourceFieldValue.convertString(source, izenelib::util::UString::UTF_8);
@@ -780,6 +776,7 @@ bool IndexTaskService::doBuildCollection_(
 
             if(!source.empty())
             {
+                 std::cout<<"**************source = "<<source<<std::endl;
                  sourceCount[source]++;
             }
 
@@ -899,10 +896,10 @@ bool IndexTaskService::doBuildCollection_(
                 indexStatus_.leftTime_ =  boost::posix_time::seconds((int)indexProgress_.getLeft());
             }
 
-            if(!productSourceField_.empty())
+            if(!(bundleConfig_->productSourceField_).empty())
             {
                 PropertyValue value;
-                if (documentManager_->getPropertyValue(*iter, productSourceField_, value))
+                if (documentManager_->getPropertyValue(*iter, bundleConfig_->productSourceField_, value))
                 {
                     izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
                     std::string source("");
@@ -931,7 +928,7 @@ bool IndexTaskService::doBuildCollection_(
 
     }
 
-    if (!productSourceField_.empty() && !sourceCount.empty())
+    if (!(bundleConfig_->productSourceField_).empty() && !sourceCount.empty())
     {
         boost::posix_time::ptime now =
             boost::posix_time::microsec_clock::local_time();
@@ -1105,10 +1102,11 @@ bool IndexTaskService::prepareDocument_(
         std::string fieldValue("");
         propertyValueU.convertString(fieldValue, encoding);
 
-        if(!productSourceField_.empty()
-              && fieldStr == productSourceField_)
+        if(!(bundleConfig_->productSourceField_).empty()
+              && fieldStr == bundleConfig_->productSourceField_)
         {
             source = fieldValue;
+            std::cout<<"***********source = "<<source<<std::endl;
         }
         
         if ( (propertyNameL == izenelib::util::UString("docid", encoding) )
