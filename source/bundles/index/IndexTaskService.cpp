@@ -776,7 +776,6 @@ bool IndexTaskService::doBuildCollection_(
 
             if(!source.empty())
             {
-                 std::cout<<"**************source = "<<source<<std::endl;
                  sourceCount[source]++;
             }
 
@@ -1106,7 +1105,6 @@ bool IndexTaskService::prepareDocument_(
               && fieldStr == bundleConfig_->productSourceField_)
         {
             source = fieldValue;
-            std::cout<<"***********source = "<<source<<std::endl;
         }
         
         if ( (propertyNameL == izenelib::util::UString("docid", encoding) )
