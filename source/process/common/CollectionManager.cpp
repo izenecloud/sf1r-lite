@@ -78,11 +78,6 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
         collectionHandlers_.insert(std::make_pair(collectionName, kEmptyHandler_));
     insertResult.first->second = collectionHandler.release();
 
-    ///update LA here
-    LAManagerConfig laConfig;
-    SF1Config::get()->getLAManagerConfig(laConfig);
-    LAPool::getInstance()->init(laConfig);
-
     return collectionHandler;
 }
 
