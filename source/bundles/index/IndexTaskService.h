@@ -83,9 +83,8 @@ private:
         IndexerDocument& oldIndexDocument
     );
 
-    void checkRtype_(
+    bool checkRtype_(
         SCDDoc& doc,
-        bool& rType,
         std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue
     );
 
@@ -116,7 +115,6 @@ private:
     MiningTaskService* miningTaskService_;
     RecommendTaskService* recommendTaskService_;
 
-    std::string productSourceField_;
     PropertyConfig dateProperty_;
     config_tool::PROPERTY_ALIAS_MAP_T propertyAliasMap_;
 

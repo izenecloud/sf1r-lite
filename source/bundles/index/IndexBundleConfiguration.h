@@ -80,6 +80,9 @@ public:
     la::MultilangGranularity indexMultilangGranularity_;
 
     std::string languageIdentifierDbPath_;
+
+    std::string productSourceField_;
+
     /// Parameters
     /// @brief config for IndexManager
     izenelib::ir::indexmanager::IndexManagerConfig indexConfig_;
