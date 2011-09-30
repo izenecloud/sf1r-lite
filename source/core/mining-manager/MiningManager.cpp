@@ -129,15 +129,6 @@ bool MiningManager::open()
 {
     close();
     
-    {
-        std::vector<uint32_t> docid_list;
-        document_manager_->getDeletedDocIdList(docid_list);
-        for(uint32_t i=0;i<docid_list.size();i++)
-        {
-            std::cout<<"[DocumentManager] deleted : "<<docid_list[i]<<std::endl;
-        }
-    }
-    
     //if ec enabled, then disable dupd and sim
     if( mining_schema_.ec_enable )
     {
