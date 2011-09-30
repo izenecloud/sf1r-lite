@@ -1134,7 +1134,6 @@ bool IndexTaskService::prepareDocument_(
                 }
                 else
                 {
-
                     if (rTypeFieldValue.empty())
                         return false;
                     ret = idManager_->getDocIdByDocName(propertyValueU, Id, false);
