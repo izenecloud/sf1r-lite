@@ -253,6 +253,56 @@ public:
         checkThreeLabel_();
     }
 
+    void checkGroupRepMerge()
+    {
+        faceted::GroupRep group, group0, group1, group2;
+
+        izenelib::util::UString ua("a", ENCODING_TYPE);
+        izenelib::util::UString ub("b", ENCODING_TYPE);
+        izenelib::util::UString uc("c", ENCODING_TYPE);
+        izenelib::util::UString ud("d", ENCODING_TYPE);
+        izenelib::util::UString ue("e", ENCODING_TYPE);
+        izenelib::util::UString uf("f", ENCODING_TYPE);
+        izenelib::util::UString ug("g", ENCODING_TYPE);
+        izenelib::util::UString uh("h", ENCODING_TYPE);
+        izenelib::util::UString ui("i", ENCODING_TYPE);
+        izenelib::util::UString uj("j", ENCODING_TYPE);
+
+        group1.stringGroupRep_.push_back(faceted::OntologyRepItem(0, ua, 0, 4));
+        group1.stringGroupRep_.push_back(faceted::OntologyRepItem(1, ub, 0, 1));
+        group1.stringGroupRep_.push_back(faceted::OntologyRepItem(1, ud, 0, 2));
+        group1.stringGroupRep_.push_back(faceted::OntologyRepItem(2, ug, 0, 1));
+        group1.stringGroupRep_.push_back(faceted::OntologyRepItem(2, uh, 0, 1));
+        group1.stringGroupRep_.push_back(faceted::OntologyRepItem(1, uf, 0, 1));
+
+        group2.stringGroupRep_.push_back(faceted::OntologyRepItem(0, ua, 0, 5));
+        group2.stringGroupRep_.push_back(faceted::OntologyRepItem(1, uc, 0, 1));
+        group2.stringGroupRep_.push_back(faceted::OntologyRepItem(1, ud, 0, 3));
+        group2.stringGroupRep_.push_back(faceted::OntologyRepItem(2, uh, 0, 1));
+        group2.stringGroupRep_.push_back(faceted::OntologyRepItem(2, ui, 0, 1));
+        group2.stringGroupRep_.push_back(faceted::OntologyRepItem(2, uj, 0, 1));
+        group2.stringGroupRep_.push_back(faceted::OntologyRepItem(1, ue, 0, 1));
+
+        group.stringGroupRep_.push_back(faceted::OntologyRepItem(0, ua, 0, 9));
+        group.stringGroupRep_.push_back(faceted::OntologyRepItem(1, ub, 0, 1));
+        group.stringGroupRep_.push_back(faceted::OntologyRepItem(1, uc, 0, 1));
+        group.stringGroupRep_.push_back(faceted::OntologyRepItem(1, ud, 0, 5));
+        group.stringGroupRep_.push_back(faceted::OntologyRepItem(2, ug, 0, 1));
+        group.stringGroupRep_.push_back(faceted::OntologyRepItem(2, uh, 0, 2));
+        group.stringGroupRep_.push_back(faceted::OntologyRepItem(2, ui, 0, 1));
+        group.stringGroupRep_.push_back(faceted::OntologyRepItem(2, uj, 0, 1));
+        group.stringGroupRep_.push_back(faceted::OntologyRepItem(1, ue, 0, 1));
+        group.stringGroupRep_.push_back(faceted::OntologyRepItem(1, uf, 0, 1));
+
+        group0 = group1;
+        group0.merge(group2);
+        BOOST_CHECK_EQUAL( group == group0, true );
+
+        group0 = group2;
+        group0.merge(group1);
+        BOOST_CHECK_EQUAL( group == group0, true );
+    }
+
 private:
     void initConfig_()
     {
@@ -550,6 +600,8 @@ BOOST_FIXTURE_TEST_CASE(getGroupRep, GroupManagerTestFixture)
     BOOST_TEST_MESSAGE("create group index 2nd time");
     createDocument(101, 200);
     checkGetGroupRep();
+
+    checkGroupRepMerge();
 }
 
 BOOST_AUTO_TEST_SUITE_END() 

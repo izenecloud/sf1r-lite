@@ -15,6 +15,8 @@
 
 NS_FACETED_BEGIN
 
+class OntologyRepItem;
+
 class StringGroupCounter : public GroupCounter
 {
 public:
