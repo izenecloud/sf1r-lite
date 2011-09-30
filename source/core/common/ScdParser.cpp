@@ -551,7 +551,7 @@ SCDDoc* ScdParser::iterator::getDoc()
     string str(docDelimiter_);
     if (readLength_ > 0)
     {
-        str.append(std::string(buffer_->gptr(),readLength_-7));
+        str.append(std::string(buffer_->gptr(),readLength_-docDelimiter_.size()));
         buffer_->consume(readLength_);
         prevOffset_ = pfs_->tellg();
     }

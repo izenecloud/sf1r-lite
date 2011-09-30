@@ -634,4 +634,70 @@ BOOST_AUTO_TEST_CASE(testItemId)
     BOOST_CHECK_EQUAL(docNum, DOC_NUM);
 }
 
+BOOST_AUTO_TEST_CASE(testBracketInPropertyValue)
+{
+    fs::path tmpdir = createCleanTempDir("testBracketInPropertyValue");
+    fs::path scdPath = tmpdir / fileName;
+
+    const int DOC_NUM = 5;
+    {
+        ScdBuilder scd(scdPath);
+        for (int i = 1; i <= DOC_NUM; ++i)
+        {
+            scd("USERID") << "<user_>" << i;
+            scd("gender") << "<gender_>" << i;
+            scd("age") << "<age_>" << i;
+            scd("area") << "<area_>" << i;
+        }
+    }
+
+    ScdParser userParser(izenelib::util::UString::UTF_8, "<USERID>");
+    BOOST_CHECK(userParser.load(scdPath.file_string()));
+
+    izenelib::util::UString userid("USERID", izenelib::util::UString::UTF_8);
+    izenelib::util::UString gender("gender", izenelib::util::UString::UTF_8);
+    izenelib::util::UString age("age", izenelib::util::UString::UTF_8);
+    izenelib::util::UString area("area", izenelib::util::UString::UTF_8);
+
+    std::vector<string> propertyNameList;
+    propertyNameList.push_back("USERID");
+    propertyNameList.push_back("gender");
+    propertyNameList.push_back("age");
+    propertyNameList.push_back("area");
+
+    int docNum = 0;
+    for (ScdParser::iterator doc_iter = userParser.begin(propertyNameList); doc_iter != userParser.end(); ++doc_iter)
+    {
+        SCDDocPtr doc = (*doc_iter);
+
+        BOOST_CHECK(doc->size() == 4);
+
+        std::string idStr = boost::lexical_cast<std::string>(docNum + 1);
+        izenelib::util::UString idUStr("<user_>" + idStr, izenelib::util::UString::UTF_8);
+        izenelib::util::UString genderUStr("<gender_>" + idStr, izenelib::util::UString::UTF_8);
+        izenelib::util::UString ageUStr("<age_>" + idStr, izenelib::util::UString::UTF_8);
+        izenelib::util::UString areaUStr("<area_>" + idStr, izenelib::util::UString::UTF_8);
+
+        // <UESRID>
+        BOOST_CHECK((*doc)[0].first == userid);
+        BOOST_CHECK_EQUAL(idUStr, (*doc)[0].second);
+
+        // <gender>
+        BOOST_CHECK((*doc)[1].first == gender);
+        BOOST_CHECK_EQUAL(genderUStr, (*doc)[1].second);
+
+        // <age>
+        BOOST_CHECK((*doc)[2].first == age);
+        BOOST_CHECK_EQUAL(ageUStr, (*doc)[2].second);
+
+        // <area>
+        BOOST_CHECK((*doc)[3].first == area);
+        BOOST_CHECK_EQUAL(areaUStr, (*doc)[3].second);
+
+        ++docNum;
+    }
+
+    BOOST_CHECK_EQUAL(docNum, DOC_NUM);
+}
+
 BOOST_AUTO_TEST_SUITE_END() // ScdParser_test
