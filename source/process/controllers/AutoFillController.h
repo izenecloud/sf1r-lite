@@ -5,11 +5,11 @@
  * @author Ian Yang
  * @date Created <2010-05-31 14:11:35>
  */
-#include "Sf1Controller.h"
+#include "CollectionMiningController.h"
 
 namespace sf1r
 {
-
+class RecommendManager;
 /// @addtogroup controllers
 /// @{
 
@@ -19,12 +19,9 @@ namespace sf1r
  * Gets list of popular keywords starting with specified prefix.
  */
 class QueryLogSearchService; 
-class AutoFillController : public ::izenelib::driver::Controller
+class AutoFillController : public CollectionMiningController
 {
 public:
-    AutoFillController();
-
-    AutoFillController(const AutoFillController& controller);
 
     enum
     {
@@ -34,14 +31,13 @@ public:
     {
         kMaxCount = 100         /**< Max count of result */
     };
-    void setService(QueryLogSearchService* queryLogSearchService)
-    {
-        queryLogSearchService_ = queryLogSearchService;
-    }
-
     void index();
+    
 private:
-    QueryLogSearchService* queryLogSearchService_;
+    bool check_recommend_manager_();
+    
+private:
+    boost::shared_ptr<RecommendManager> recommend_manager_;
 };
 
 /// @}

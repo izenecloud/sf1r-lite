@@ -5,7 +5,7 @@
  */
 #include "AutoFillController.h"
 
-#include <bundles/querylog/QueryLogSearchService.h>
+#include <mining-manager/query-recommend-submanager/RecommendManager.h>
 
 #include <common/Keys.h>
 
@@ -20,22 +20,25 @@ namespace sf1r
 using driver::Keys;
 using namespace izenelib::driver;
 
-AutoFillController::AutoFillController()
-    :queryLogSearchService_(NULL)
+bool AutoFillController::check_recommend_manager_()
 {
-}
+    boost::shared_ptr<MiningManager> mining_manager = GetMiningManager();
 
-AutoFillController::AutoFillController(const AutoFillController& controller)
-    :queryLogSearchService_(controller.queryLogSearchService_)
-{
+    recommend_manager_ = mining_manager->GetRecommendManager();
+    if(!recommend_manager_)
+    {
+        response().addError("RecommendManager not enabled.");
+        return false;
+    }
+    return true;
 }
-
 
 /**
  * @brief Action \b index. Gets list of logged keywords starting with specified prefix.
  *
  * @section request
  *
+ * - @b collection* (@c String): Collection name.
  * - @b prefix* (@c String): Specified keywords prefix.
  * - @b limit (@c Uint = @ref kDefaultCount): Limit the count of result in
  *   response. If the limit is larger than @ref kMaxCount, @ref kMaxCount is
@@ -54,6 +57,7 @@ AutoFillController::AutoFillController(const AutoFillController& controller)
  * Request
  * @code
  * {
+ *   "collection": "example",
  *   "prefix": "auto",
  *   "limit": 10
  * }
@@ -75,6 +79,7 @@ AutoFillController::AutoFillController(const AutoFillController& controller)
  */
 void AutoFillController::index()
 {
+    IZENELIB_DRIVER_BEFORE_HOOK(check_recommend_manager_());
     Value::StringType prefix = asString(request()[Keys::prefix]);
     Value::UintType limit = asUintOr(request()[Keys::limit], kDefaultCount);
     if (limit > kMaxCount)
@@ -90,7 +95,7 @@ void AutoFillController::index()
 
     izenelib::util::UString query(prefix, izenelib::util::UString::UTF_8);
     std::vector<std::pair<izenelib::util::UString, uint32_t> > result;
-    queryLogSearchService_->getAutoFillList(query, result);
+    recommend_manager_->getAutoFillList(query, result);
 
     Value::UintType count = result.size();
     if (limit < count)

@@ -119,7 +119,7 @@ void MiningQueryLogHandler::processCollectionIndependent_(const boost::posix_tim
         }
     }
     QueryCorrectionSubmanager::getInstance().updateCogramAndDict(logItems);
-    AutoFillSubManager::get()->buildIndex(logItems, label_manager_list);
+//     AutoFillSubManager::get()->buildIndex(logItems, label_manager_list);
     
 }
 

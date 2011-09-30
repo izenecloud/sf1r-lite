@@ -285,6 +285,11 @@ public:
     {
         return  document_manager_;
     }
+    
+    boost::shared_ptr<RecommendManager> GetRecommendManager()
+    {
+        return rmDb_;
+    }
 
 
     void onIndexUpdated(size_t docNum);

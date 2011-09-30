@@ -70,8 +70,6 @@ bool CobraProcess::initialize(const std::string& configFileDir)
 
     if(!initLogManager()) return false;
 
-    if(!initLAManager()) return false;
-
     if(!initFireWall()) return false;
 
     if(!initLicenseManager()) return false;
@@ -333,6 +331,10 @@ int CobraProcess::run()
             }
         }
 
+        // in collection config file, each <Indexing analyzer="..."> needs to be initialized in LAPool,
+        // so LAPool is initialized here after all collection config files are parsed
+        if(!initLAManager())
+            throw std::runtime_error("failed in initLAManager()");
 
 #ifdef  EXIST_LICENSE
             char* home = getenv("HOME");

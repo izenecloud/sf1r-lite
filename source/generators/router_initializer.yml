@@ -16,7 +16,6 @@ headers:
 
 controllers:
   AutoFillController:
-    service: true
   
   QueryCorrectionController:
     service: true
