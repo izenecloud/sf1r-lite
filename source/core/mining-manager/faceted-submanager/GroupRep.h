@@ -28,6 +28,7 @@ public:
     typedef std::list<std::pair<std::string, std::vector<unsigned int> > > NumericRangeGroupRep;
 
     bool empty() const;
+    void clear();
     void swap(GroupRep& other);
     bool operator==(const GroupRep& other) const;
 

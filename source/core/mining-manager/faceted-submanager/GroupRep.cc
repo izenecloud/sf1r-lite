@@ -19,6 +19,13 @@ bool GroupRep::empty() const
     return (stringGroupRep_.empty() && numericGroupRep_.empty() && numericRangeGroupRep_.empty());
 }
 
+void GroupRep::clear()
+{
+    stringGroupRep_.clear();
+    numericGroupRep_.clear();
+    numericRangeGroupRep_.clear();
+}
+
 void GroupRep::swap(GroupRep& rep)
 {
     stringGroupRep_.swap(rep.stringGroupRep_);

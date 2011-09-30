@@ -1,6 +1,8 @@
+#include "NumericRangeGroupCounter.h"
+
 #include <search-manager/NumericPropertyTable.h>
 #include <util/ustring/UString.h>
-#include "NumericRangeGroupCounter.h"
+#include "GroupRep.h"
 
 NS_FACETED_BEGIN
 

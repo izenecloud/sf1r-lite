@@ -68,7 +68,7 @@ public:
             propertyRange.swap(value.propertyRange);
             distSearchInfo = value.distSearchInfo;
             if (pageCount)
-                *pageCount = value.totalCount;
+                *pageCount = value.pageCount;
             if (propertyQueryTermList)
                 (*propertyQueryTermList).swap(value.propertyQueryTermList);
             if (workerIdList)

@@ -1,5 +1,7 @@
 #include "StringGroupCounter.h"
+
 #include <util/ustring/UString.h>
+#include "GroupRep.h"
 
 NS_FACETED_BEGIN
 

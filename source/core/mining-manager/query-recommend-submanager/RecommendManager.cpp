@@ -34,6 +34,7 @@ RecommendManager::RecommendManager(
         document_manager_(documentManager),
         recommend_db_(NULL), concept_id_manager_(NULL),
         labelManager_(labelManager),
+        autofill_(new AutoFillSubManager()),
         analyzer_(analyzer),
         logdays_(logdays),
         dir_switcher_(path),
@@ -84,6 +85,7 @@ bool RecommendManager::open()
     {
         //TODO
     }
+    if(!autofill_->Init(path_+"/autofill")) return false;
     isOpen_ = true;
     return true;
 }
@@ -348,7 +350,41 @@ bool RecommendManager::RebuildForCorrection()
 
 bool RecommendManager::RebuildForAutofill()
 {
+    boost::posix_time::ptime time_now = boost::posix_time::second_clock::local_time();
+    uint32_t days = logdays_;
+    boost::gregorian::days dd(days);
+    boost::posix_time::ptime p = time_now-dd;
+    std::string time_string = boost::posix_time::to_iso_string(p);
+    std::string freq_sql = "select query, count(*) as freq, max(hit_docs_num) as df from user_queries where collection='"+collection_name_+"' and hit_docs_num>0 and TimeStamp >='"+time_string+"' group by query";
+    std::list<std::map<std::string, std::string> > freq_records;
+    UserQuery::find_by_sql(freq_sql, freq_records);
+    std::list<std::map<std::string, std::string> >::iterator it = freq_records.begin();
+    typedef boost::tuple<count_t, count_t, izenelib::util::UString> ItemType;
+    std::list<ItemType> logItems;
+    for ( ;it!=freq_records.end();++it )
+    {
+        izenelib::util::UString uquery( (*it)["query"], izenelib::util::UString::UTF_8);
+        if ( QueryUtility::isRestrictWord( uquery ) )
+        {
+            continue;
+        }
+//         std::cout<<"{{{242 "<<(*it)["freq"]<<std::endl;
+        uint32_t freq = boost::lexical_cast<uint32_t>( (*it)["freq"] );
+        uint32_t df = boost::lexical_cast<uint32_t>( (*it)["df"] );
+        logItems.push_back( ItemType(freq, df, uquery) );
+    }
+    std::vector<boost::shared_ptr<LabelManager> > label_manager_list;
+    if(labelManager_)
+    {
+        label_manager_list.push_back(labelManager_);
+    }
+    autofill_->buildIndex(logItems, label_manager_list);
     return true;
+}
+
+bool RecommendManager::getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list)
+{
+    return autofill_->getAutoFillList(query, list);
 }
 
 

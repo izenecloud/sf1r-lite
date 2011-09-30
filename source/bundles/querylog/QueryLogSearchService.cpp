@@ -1,7 +1,7 @@
 #include "QueryLogSearchService.h"
 
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
-#include <mining-manager/auto-fill-submanager/AutoFillSubManager.h>
+
 
 namespace sf1r
 {
@@ -25,14 +25,14 @@ bool QueryLogSearchService::getRefinedQuery(
 			refinedQueryUString);	
 }
 
-bool QueryLogSearchService::getAutoFillList(
-    const izenelib::util::UString& query, 
-    std::vector<std::pair<izenelib::util::UString,uint32_t> >& list
-)
-{
-    AutoFillSubManager::get()->getAutoFillList(query, list);
-    return true;
-}
+// bool QueryLogSearchService::getAutoFillList(
+//     const izenelib::util::UString& query, 
+//     std::vector<std::pair<izenelib::util::UString,uint32_t> >& list
+// )
+// {
+//     AutoFillSubManager::get()->getAutoFillList(query, list);
+//     return true;
+// }
 
 
 }

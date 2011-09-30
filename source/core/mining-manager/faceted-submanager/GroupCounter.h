@@ -9,9 +9,10 @@
 #define SF1R_GROUP_COUNTER_H
 
 #include "faceted_types.h"
-#include "GroupRep.h"
 
 NS_FACETED_BEGIN
+
+class GroupRep;
 
 class GroupCounter
 {

@@ -69,10 +69,10 @@ private:
     idmlib::util::DirectorySwitcher* dir_switcher_;
 public:
 
-    static AutoFillSubManager* get()
-    {
-        return izenelib::util::Singleton<AutoFillSubManager>::get();
-    }
+//     static AutoFillSubManager* get()
+//     {
+//         return izenelib::util::Singleton<AutoFillSubManager>::get();
+//     }
 
     bool Init(const std::string& fillSupportPath, uint32_t top=10, uint32_t queryUpdateTime=24);
 
