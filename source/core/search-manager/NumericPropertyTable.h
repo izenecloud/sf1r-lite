@@ -33,12 +33,6 @@ public:
     }
 
     template <typename T>
-    inline void getPropertyValue(const docid_t did, T &value) const
-    {
-        value = ((T *)data_)[did];
-    }
-
-    template <typename T>
     inline bool convertPropertyValue(const docid_t did, T &value) const
     {
         switch(type_)

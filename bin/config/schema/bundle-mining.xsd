@@ -149,8 +149,7 @@
             				<xs:element ref="Attr" minOccurs="0"/>
             				<xs:element ref="Rerank" minOccurs="0"/>
                             <xs:element ref="TDT" minOccurs="0"/>
-                            <xs:element ref="EC" minOccurs="0"/>
-                            <xs:element ref="ProductSourceField" minOccurs="0"/>
+                            <xs:element ref="EC" minOccurs="0"/>                            
             			</xs:sequence>
             		</xs:complexType>
             	</xs:element>
@@ -268,13 +267,4 @@
             </xs:sequence>
         </xs:complexType>
     </xs:element>
-        <xs:element name="ProductSourceField">
-        <xs:complexType>
-            <xs:sequence>
-                <xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="1"/>               
-            </xs:sequence>
-        </xs:complexType>
-    </xs:element>
-
-
 </xs:schema>
