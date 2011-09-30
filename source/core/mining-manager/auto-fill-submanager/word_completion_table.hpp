@@ -356,7 +356,9 @@ public:
             std::string tmp(buf, len-sizeof(FREQ_TYPE)-sizeof(DF_TYPE));
             if (last_str.compare(tmp) == 0)
             {
-                *(FREQ_TYPE*)(buffer_+buf_pos-sizeof(FREQ_TYPE)) += *(FREQ_TYPE*)(buf+len-sizeof(FREQ_TYPE));
+                FREQ_TYPE max_freq = std::max( *(FREQ_TYPE*)(buffer_+buf_pos-sizeof(FREQ_TYPE)), *(FREQ_TYPE*)(buf+len-sizeof(FREQ_TYPE)) );
+                *(FREQ_TYPE*)(buffer_+buf_pos-sizeof(FREQ_TYPE)) = max_freq;
+//                 *(FREQ_TYPE*)(buffer_+buf_pos-sizeof(FREQ_TYPE)) += *(FREQ_TYPE*)(buf+len-sizeof(FREQ_TYPE));
                 free(buf);
                 continue;
             }

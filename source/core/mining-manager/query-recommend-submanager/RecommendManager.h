@@ -24,6 +24,7 @@
 #include <mining-manager/concept-id-manager.h>
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/taxonomy-generation-submanager/LabelManager.h>
+#include <mining-manager/auto-fill-submanager/AutoFillSubManager.h>
 #include <mining-manager/util/FSUtil.hpp>
 #include <configuration-manager/MiningConfig.h>
 #include <configuration-manager/MiningSchema.h>
@@ -96,6 +97,8 @@ public:
         const izenelib::util::UString& query,
         uint32_t maxNum,
         std::deque<izenelib::util::UString>& queries);
+        
+    bool getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
 
     
 //     void rebuild();
@@ -154,6 +157,7 @@ private:
     MIRDatabase* recommend_db_;
     ConceptIDManager* concept_id_manager_;
     boost::shared_ptr<LabelManager> labelManager_;
+    boost::shared_ptr<AutoFillSubManager> autofill_;
     uint32_t max_labelid_in_recommend_;
     idmlib::util::IDMAnalyzer* analyzer_;
     uint32_t logdays_;
