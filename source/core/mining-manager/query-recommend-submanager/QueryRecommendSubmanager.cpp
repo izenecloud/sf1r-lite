@@ -67,6 +67,11 @@ void QueryRecommendSubmanager::Inject(const izenelib::util::UString& query, cons
     if(str_query.empty()) return;
     boost::algorithm::to_lower(str_query);
     std::cout<<"Inject query recommend : "<<str_query<<std::endl;
+    if(str_query == "__delete__" )
+    {
+        inject_data_.erase( str_query );
+        return;
+    }
     std::string str_result;
     result.convertString(str_result, izenelib::util::UString::UTF_8);
     std::vector<std::string> vec_result;

@@ -273,7 +273,7 @@ void KeywordsController::inject_query_correction()
  * - @b collection* (@c String): Collection name.
  * - @b resource* (@c Array): all inject queries.
  *   - @b query (@c String) : inject query
- *   - @b result (@c String) : results to query, splited by '|'
+ *   - @b result (@c String) : results to query, splited by '|', if equals '__delete__', means delete the injection of this query.
  *
  * @section response
  *
