@@ -455,9 +455,9 @@ BOOST_AUTO_TEST_CASE(testNoTrailingNewLine)
     }
 }
 
-BOOST_AUTO_TEST_CASE(testTrailingCarriageReturn)
+BOOST_AUTO_TEST_CASE(testCarriageReturn)
 {
-    fs::path tmpdir = createCleanTempDir("testTrailingCarriageReturn");
+    fs::path tmpdir = createCleanTempDir("testCarriageReturn");
     fs::path scdPath = tmpdir / fileName;
 
     const int DOC_NUM = 3;
@@ -467,7 +467,7 @@ BOOST_AUTO_TEST_CASE(testTrailingCarriageReturn)
         {
             scd("DOCID") << i << "\r";
             scd("Title") << "Title " << i << "\r";
-            scd("Content") << "Content " << i << "\r";
+            scd("Content") << "Content \r ABC " << i << "\r";
         }
     }
 
@@ -487,7 +487,7 @@ BOOST_AUTO_TEST_CASE(testTrailingCarriageReturn)
         std::string idStr = boost::lexical_cast<std::string>(docNum + 1);
         izenelib::util::UString idUStr(idStr, izenelib::util::UString::UTF_8);
         izenelib::util::UString titleUStr("Title " + idStr, izenelib::util::UString::UTF_8);
-        izenelib::util::UString contentUStr("Content " + idStr, izenelib::util::UString::UTF_8);
+        izenelib::util::UString contentUStr("Content \r ABC " + idStr, izenelib::util::UString::UTF_8);
 
         // <DOCID>
         BOOST_CHECK((*doc)[0].first == docid);
@@ -503,6 +503,8 @@ BOOST_AUTO_TEST_CASE(testTrailingCarriageReturn)
 
         ++docNum;
     }
+
+    BOOST_CHECK_EQUAL(docNum, DOC_NUM);
 }
 
 BOOST_AUTO_TEST_CASE(testUserId)

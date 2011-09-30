@@ -32,7 +32,7 @@ const char* DEFAULT_DOC_DELIMITER = "<DOCID>";
 const boost::regex PATTERN_LT_GT("(&lt;)|(&gt;)");
 
 /** pattern for end of line */
-const boost::regex PATTERN_EOL("\n|\r\n|$");
+const boost::regex PATTERN_EOL("\n|\r\n|\r|$");
 
 /** format string for "<>" */
 const char* FORMAT_LT_GT = "(?1<)(?2>)";
