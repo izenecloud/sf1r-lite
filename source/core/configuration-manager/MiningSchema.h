@@ -26,7 +26,6 @@ public:
             , group_enable(false), group_properties()
             , attr_enable(false), attr_property()
             , property_rerank_enable(false), prop_rerank_property()
-            , product_source_property()
             , ise_enable(false), ise_property()
             , recommend_tg(false), recommend_querylog(true), recommend_properties()
     {
@@ -49,7 +48,6 @@ private:
         ar & property_rerank_enable & prop_rerank_property;
         ar & tdt_enable;
         ar & ec_enable & ec_title_property & ec_content_property;
-        ar & product_source_property;
         ar & ise_enable & ise_property;
         ar & recommend_tg & recommend_querylog & recommend_properties;
         
@@ -76,8 +74,7 @@ public:
     bool ec_enable;
     std::string ec_title_property;
     std::string ec_content_property;
-    std::string product_source_property;
-    
+
     bool ise_enable;
     std::string ise_property;
 

@@ -8,6 +8,7 @@
 #include "CollectionHandler.h"
 #include <bundles/mining/MiningSearchService.h>
 #include <bundles/index/IndexTaskService.h>
+#include <bundles/index/IndexSearchService.h>
 
 namespace sf1r
 {
@@ -36,7 +37,8 @@ public:
 
     std::string GetProductSourceField()
     {
-        return (collectionHandler_->miningSchema_).product_source_property;
+        const IndexBundleConfiguration* bundleConfig = collectionHandler_->indexSearchService_->getBundleConfig();
+        return bundleConfig->productSourceField_;
     }
 
     uint32_t GetDocNum()
