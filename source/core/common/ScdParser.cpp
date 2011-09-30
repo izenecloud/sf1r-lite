@@ -31,6 +31,9 @@ const char* DEFAULT_DOC_DELIMITER = "<DOCID>";
 /** pattern for html codes of "<>" */
 const boost::regex PATTERN_LT_GT("(&lt;)|(&gt;)");
 
+/** pattern for end of line */
+const boost::regex PATTERN_EOL("\n|\r\n|$");
+
 /** format string for "<>" */
 const char* FORMAT_LT_GT = "(?1<)(?2>)";
 }
@@ -546,7 +549,6 @@ SCDDoc* ScdParser::iterator::getDoc()
     START_PROFILER ( proScdParsing );
     readLength_ = izenelib::util::izene_read_until(*pfs_,*buffer_,docDelimiter_);
     string str(docDelimiter_);
-    static const boost::regex pattern("\n|$");
     if (readLength_ > 0)
     {
         str.append(std::string(buffer_->gptr(),readLength_-7));
@@ -557,7 +559,7 @@ SCDDoc* ScdParser::iterator::getDoc()
     {
         do
         {
-            readLength_ = izenelib::util::izene_read_until(*pfs_,*buffer_,pattern);
+            readLength_ = izenelib::util::izene_read_until(*pfs_,*buffer_,PATTERN_EOL);
             if (readLength_ > 0)
             {
                 str.append(std::string(buffer_->gptr(),readLength_));
@@ -577,6 +579,7 @@ SCDDoc* ScdParser::iterator::getDoc()
     scd_grammar g(*doc, codingType_);
     parse_info<> pi = parse(str.c_str(), g, space_p);
     STOP_PROFILER ( proScdParsing );
+
     return doc;
 }
 

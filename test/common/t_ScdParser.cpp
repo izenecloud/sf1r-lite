@@ -269,7 +269,7 @@ BOOST_AUTO_TEST_CASE(testIterator)
     {
     SCDDocPtr doc = (*doc_iter);
 
-    BOOST_CHECK(doc->size() == 3);
+    BOOST_CHECK_EQUAL(doc->size(), 3);
 
     std::string idStr = boost::lexical_cast<std::string>(docNum + 1);
     izenelib::util::UString idUStr(idStr, izenelib::util::UString::UTF_8);
@@ -452,6 +452,56 @@ BOOST_AUTO_TEST_CASE(testNoTrailingNewLine)
     // <Content>
     BOOST_CHECK((*doc)[2].first == content);
     BOOST_CHECK_EQUAL(contentOne, (*doc)[2].second);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(testTrailingCarriageReturn)
+{
+    fs::path tmpdir = createCleanTempDir("testTrailingCarriageReturn");
+    fs::path scdPath = tmpdir / fileName;
+
+    const int DOC_NUM = 3;
+    {
+        ScdBuilder scd(scdPath);
+        for (int i = 1; i <= DOC_NUM; ++i)
+        {
+            scd("DOCID") << i << "\r";
+            scd("Title") << "Title " << i << "\r";
+            scd("Content") << "Content " << i << "\r";
+        }
+    }
+
+    BOOST_CHECK(parser.load(scdPath.file_string()));
+
+    izenelib::util::UString docid("DOCID", izenelib::util::UString::UTF_8);
+    izenelib::util::UString title("Title", izenelib::util::UString::UTF_8);
+    izenelib::util::UString content("Content", izenelib::util::UString::UTF_8);
+
+    int docNum = 0;
+    for (ScdParser::iterator doc_iter = parser.begin(); doc_iter != parser.end(); ++doc_iter)
+    {
+        SCDDocPtr doc = (*doc_iter);
+
+        BOOST_CHECK_EQUAL(doc->size(), 3);
+
+        std::string idStr = boost::lexical_cast<std::string>(docNum + 1);
+        izenelib::util::UString idUStr(idStr, izenelib::util::UString::UTF_8);
+        izenelib::util::UString titleUStr("Title " + idStr, izenelib::util::UString::UTF_8);
+        izenelib::util::UString contentUStr("Content " + idStr, izenelib::util::UString::UTF_8);
+
+        // <DOCID>
+        BOOST_CHECK((*doc)[0].first == docid);
+        BOOST_CHECK_EQUAL(idUStr, (*doc)[0].second);
+
+        // <Title>
+        BOOST_CHECK((*doc)[1].first == title);
+        BOOST_CHECK_EQUAL(titleUStr, (*doc)[1].second);
+
+        // <Content>
+        BOOST_CHECK((*doc)[2].first == content);
+        BOOST_CHECK_EQUAL(contentUStr, (*doc)[2].second);
+
+        ++docNum;
     }
 }
 
