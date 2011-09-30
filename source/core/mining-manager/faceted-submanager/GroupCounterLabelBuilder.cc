@@ -219,13 +219,13 @@ GroupLabel* GroupCounterLabelBuilder::createNumericRangeLabel(const GroupParam::
         if (delimitPos)
         {
             std::string sub = propValue.substr(0, delimitPos);
-            lowerBound = boost::lexical_cast<float>(sub);
+            lowerBound = boost::lexical_cast<int64_t>(sub);
         }
 
         if (delimitPos+1 != propValue.size())
         {
             std::string sub = propValue.substr(delimitPos+1);
-            upperBound = boost::lexical_cast<float>(sub);
+            upperBound = boost::lexical_cast<int64_t>(sub);
         }
 
         return new NumericRangeGroupLabel(propertyTable, lowerBound, upperBound);

@@ -79,7 +79,7 @@ void NumericRangeGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
         while (rangeNumber > 0)
         {
             int best = -1;
-            double bestVarianceReduce;
+            double bestVarianceReduce = 0;
 
             for (int i = 0; i < LEVEL_1_OF_SEGMENT_TREE; i++)
             {

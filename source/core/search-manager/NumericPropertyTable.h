@@ -38,19 +38,19 @@ public:
         switch(type_)
         {
         case INT_PROPERTY_TYPE:
-            value = ((int64_t *)data_)[did];
+            value = static_cast<T>(((int64_t *)data_)[did]);
             break;
 
         case UNSIGNED_INT_PROPERTY_TYPE:
-            value = ((uint64_t *)data_)[did];
+            value = static_cast<T>(((uint64_t *)data_)[did]);
             break;
 
         case FLOAT_PROPERTY_TYPE:
-            value = ((float *)data_)[did];
+            value = static_cast<T>(((float *)data_)[did]);
             break;
 
         case DOUBLE_PROPERTY_TYPE:
-            value = ((double *)data_)[did];
+            value = static_cast<T>(((double *)data_)[did]);
             break;
 
         default:
