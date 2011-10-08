@@ -4,8 +4,6 @@
 
 NS_FACETED_BEGIN
 
-//using namespace std;
-
 GroupRep::GroupRep()
 {
 }
@@ -232,12 +230,57 @@ void GroupRep::mergeNumericRangeGroup(const GroupRep& other)
 
     while (it != numericRangeGroupRep_.end())
     {
-        vector<unsigned int>::iterator vit = it->second.begin();
-        vector<unsigned int>::const_iterator ovit = oit->second.begin();
-
-        while (vit != it->second.end())
+        if (oit->second.back() == 0)
         {
-            *(vit++) += *(ovit++);
+            ++it;
+            ++oit;
+            continue;
+        }
+
+        vector<unsigned int>::iterator level3 = it->second.begin();
+        vector<unsigned int>::iterator level2 = level3 + 100 * LEVEL_1_OF_SEGMENT_TREE;
+        vector<unsigned int>::iterator level1 = level2 + 10 * LEVEL_1_OF_SEGMENT_TREE;
+
+        vector<unsigned int>::const_iterator olevel3 = oit->second.begin();
+        vector<unsigned int>::const_iterator olevel2 = olevel3 + 100 * LEVEL_1_OF_SEGMENT_TREE;
+        vector<unsigned int>::const_iterator olevel1 = olevel2 + 10 * LEVEL_1_OF_SEGMENT_TREE;
+
+        it->second.back() += oit->second.back();
+        for (int i = 0; i < LEVEL_1_OF_SEGMENT_TREE; i++)
+        {
+            if (*olevel1)
+            {
+                for (int j = 0; j < 10; j++)
+                {
+                    if (*olevel2)
+                    {
+                        for (int k = 0; k < 10; k++)
+                            *(level3++) += *(olevel3++);
+
+                        *level2 += *olevel2;
+                    }
+                    else
+                    {
+                        level3 += 10;
+                        olevel3 += 10;
+                    }
+
+                    ++level2;
+                    ++olevel2;
+                }
+
+                *level1 += *olevel1;
+            }
+            else
+            {
+                level2 += 10;
+                level3 += 100;
+                olevel2 += 10;
+                olevel3 += 100;
+            }
+
+            ++level1;
+            ++olevel1;
         }
 
         ++it;
@@ -256,10 +299,10 @@ void GroupRep::toOntologyRepItemList()
         faceted::OntologyRepItem& topItem = stringGroupRep_.back();
         unsigned int count = 0;
 
-        for (std::list<std::pair<double, unsigned int> >::const_iterator lit = it->second.begin();
+        for (list<pair<double, unsigned int> >::const_iterator lit = it->second.begin();
             lit != it->second.end(); ++lit)
         {
-            std::stringstream ss;
+            stringstream ss;
             ss << fixed << setprecision(2);
             ss << lit->first;
             izenelib::util::UString ustr(ss.str(), UString::UTF_8);
@@ -283,7 +326,7 @@ string GroupRep::ToString() const
         OntologyRepItem item = *it;
         string str;
         item.text.convertString(str, izenelib::util::UString::UTF_8);
-        ss<<(int)item.level<<","<<item.id<<","<<str<<","<<item.doc_count<<endl;
+        ss << (int)item.level << " , " << item.id << " , " << str << " , " << item.doc_count << endl;
     }
 
     return ss.str();

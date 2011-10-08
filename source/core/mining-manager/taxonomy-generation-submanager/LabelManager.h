@@ -124,6 +124,9 @@ public:
     LabelManager(const std::string& path, bool no_doc_container = false);
 
     ~LabelManager();
+    
+    
+    void SetDbSave(const std::string& collection_name);
 
     /**
     * @brief open this label manager.
@@ -294,6 +297,7 @@ private:
     std::string path_;
     bool isOpen_;
     bool no_doc_container_;
+    std::string collection_name_;
     INFO_TYPE info_;
     izenelib::am::tc_hash<bool, INFO_TYPE > serInfo_;
 

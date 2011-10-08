@@ -26,10 +26,10 @@ void NumericGroupCounter::addDoc(docid_t doc)
 
 void NumericGroupCounter::getGroupRep(GroupRep &groupRep)
 {
-    groupRep.numericGroupRep_.push_back(make_pair(propertyTable_->getPropertyName(), std::list<std::pair<double, unsigned int> >()));
-    std::list<std::pair<double, unsigned int> > &countList = groupRep.numericGroupRep_.back().second;
+    groupRep.numericGroupRep_.push_back(make_pair(propertyTable_->getPropertyName(), list<pair<double, unsigned int> >()));
+    list<pair<double, unsigned int> > &countList = groupRep.numericGroupRep_.back().second;
 
-    for (std::map<double, unsigned int>::const_iterator it = countTable_.begin();
+    for (map<double, unsigned int>::const_iterator it = countTable_.begin();
         it != countTable_.end(); ++it)
     {
         countList.push_back(*it);

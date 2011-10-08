@@ -11,8 +11,8 @@ const int NumericRangeGroupCounter::bound_[]
 
 NumericRangeGroupCounter::NumericRangeGroupCounter(const NumericPropertyTable *propertyTable)
     : propertyTable_(propertyTable)
+    , segmentTree_(111 * LEVEL_1_OF_SEGMENT_TREE + 1)
 {
-    segmentTree_.resize(100 * LEVEL_1_OF_SEGMENT_TREE);
 }
 
 NumericRangeGroupCounter::~NumericRangeGroupCounter()
@@ -34,7 +34,20 @@ void NumericRangeGroupCounter::addDoc(docid_t doc)
 
 void NumericRangeGroupCounter::getGroupRep(GroupRep &groupRep)
 {
-    groupRep.numericRangeGroupRep_.push_back(make_pair(propertyTable_->getPropertyName(), std::vector<unsigned int>()));
+    vector<unsigned int>::const_iterator it = segmentTree_.begin();
+    vector<unsigned int>::iterator it0 = segmentTree_.begin() + 100 * LEVEL_1_OF_SEGMENT_TREE;
+
+    for (int i = 0; i < LEVEL_1_OF_SEGMENT_TREE * 11; i++)
+    {
+        for (int j = 0; j < 10; j++)
+            *it0 += *(it++);
+
+        it0++;
+    }
+    for (int i = 0; i < LEVEL_1_OF_SEGMENT_TREE; i++)
+        *it0 += *(it++);
+
+    groupRep.numericRangeGroupRep_.push_back(make_pair(propertyTable_->getPropertyName(), vector<unsigned int>()));
     segmentTree_.swap(groupRep.numericRangeGroupRep_.back().second);
 }
 
@@ -45,28 +58,19 @@ void NumericRangeGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
     for (GroupRep::NumericRangeGroupRep::const_iterator it = groupRep.numericRangeGroupRep_.begin();
         it != groupRep.numericRangeGroupRep_.end(); ++it)
     {
-        unsigned int level0 = 0;
-        unsigned int level1[LEVEL_1_OF_SEGMENT_TREE];
-        unsigned int level2[LEVEL_1_OF_SEGMENT_TREE][10];
-        const vector<unsigned int> &level3 = it->second;
+        izenelib::util::UString propName(it->first, UString::UTF_8);
+        itemList.push_back(faceted::OntologyRepItem(0, propName, 0, it->second.back()));
+
+        vector<unsigned int>::const_iterator level3 = it->second.begin();
+        vector<unsigned int>::const_iterator level2 = level3 + 100 * LEVEL_1_OF_SEGMENT_TREE;
+        vector<unsigned int>::const_iterator level1 = level2 + 10 * LEVEL_1_OF_SEGMENT_TREE;
         unsigned int split[LEVEL_1_OF_SEGMENT_TREE];
         int rangeNumber = MAX_RANGE_NUMBER;
 
-        std::vector<unsigned int>::const_iterator vit = level3.begin();
+        vector<unsigned int>::const_iterator vit = level3;
 
         for (int i = 0; i < LEVEL_1_OF_SEGMENT_TREE; i++)
         {
-            level1[i] = 0;
-            for (int j = 0; j < 10; j++)
-            {
-                level2[i][j] = 0;
-                for (int k = 0; k < 10; k++)
-                {
-                    level2[i][j] += *(vit++);
-                }
-                level1[i] += level2[i][j];
-            }
-            level0 += level1[i];
             if (level1[i])
             {
                 split[i] = 1;
@@ -102,33 +106,34 @@ void NumericRangeGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
             else break;
         }
 
-        izenelib::util::UString propName(it->first, UString::UTF_8);
-        itemList.push_back(faceted::OntologyRepItem(0, propName, 0, level0));
-
         for (unsigned int i = 0; i < LEVEL_1_OF_SEGMENT_TREE; i++)
         {
-            std::vector<unsigned int>::const_iterator bit = level3.begin() + 100 * i;
             if (!split[i])
+            {
+                level3 += 100;
+                level2 += 10;
+                level1 ++;
                 continue;
+            }
 
-            std::pair<int, int> stop(0, 0), end(9, 9);
+            pair<int, int> stop(0, 0), end(9, 9);
             unsigned int tempCount = 0, oldCount = 0;
             int atom = bound_[i + 1] / 100;
 
-            while (level2[i][end.first] == 0)
+            while (level2[end.first] == 0)
                 --end.first;
 
-            vit = bit + 10 * end.first + 9;
+            vit = level3 + 10 * end.first + 9;
             while (*vit == 0)
             {
                 --end.second;
                 --vit;
             }
 
-            while (level2[i][stop.first] == 0)
+            while (level2[stop.first] == 0)
                 ++stop.first;
 
-            vit = bit + 10 * stop.first;
+            vit = level3 + 10 * stop.first;
             while (*vit == 0)
             {
                 ++stop.second;
@@ -137,8 +142,8 @@ void NumericRangeGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
 
             for (unsigned int j = 0; j < split[i] - 1; j++)
             {
-                int difference = tempCount - ((j + 1) * level1[i] - 1) / split[i] - 1;
-                std::pair<int, int> tempStop, oldStop(stop);
+                int difference = tempCount - ((j + 1) * (*level1) - 1) / split[i] - 1;
+                pair<int, int> tempStop, oldStop(stop);
 
                 while (true)
                 {
@@ -152,15 +157,15 @@ void NumericRangeGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
                         difference = newDifference;
                         tempStop = stop;
                     }
-                    if (tempCount == level1[i])
+                    if (tempCount == *level1)
                         break;
 
                     while (++stop.second < 10 && *(++vit) == 0);
                     if (stop.second == 10)
                     {
-                        while (level2[i][++stop.first] == 0);
+                        while (level2[++stop.first] == 0);
                         stop.second = 0;
-                        vit = bit + 10 * stop.first;
+                        vit = level3 + 10 * stop.first;
                         while (*vit == 0)
                         {
                             ++stop.second;
@@ -171,28 +176,32 @@ void NumericRangeGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
 
                 if (oldCount != tempCount)
                 {
-                    std::stringstream ss;
+                    stringstream ss;
                     ss << atom * (10 * oldStop.first + oldStop.second)
                         << "-"
                         << atom * (10 * tempStop.first + tempStop.second + 1) - 1;
                     izenelib::util::UString ustr(ss.str(), UString::UTF_8);
                     itemList.push_back(faceted::OntologyRepItem(1, ustr, 0, tempCount - oldCount));
-                    if (tempCount == level1[i])
+                    if (tempCount == *level1)
                         break;
 
                     oldCount = tempCount;
                 }
             }
 
-            if (tempCount == level1[i])
-                continue;
+            if (tempCount != *level1)
+            {
+                stringstream ss;
+                ss << atom * (10 * stop.first + stop.second)
+                    << "-"
+                    << atom * (10 * end.first + end.second + 1) - 1;
+                izenelib::util::UString ustr(ss.str(), UString::UTF_8);
+                itemList.push_back(faceted::OntologyRepItem(1, ustr, 0, *level1 - tempCount));
+            }
 
-            std::stringstream ss;
-            ss << atom * (10 * stop.first + stop.second)
-                << "-"
-                << atom * (10 * end.first + end.second + 1) - 1;
-            izenelib::util::UString ustr(ss.str(), UString::UTF_8);
-            itemList.push_back(faceted::OntologyRepItem(1, ustr, 0, level1[i] - tempCount));
+            level3 += 100;
+            level2 += 10;
+            level1 ++;
         }
     }
 }
