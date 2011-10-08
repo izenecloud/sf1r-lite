@@ -738,9 +738,9 @@ bool IndexTaskService::doBuildCollection_(
 
         uint32_t n = 0;
         long lastOffset = 0;
-        bool isInsert = (op == 1)?true:false;
-        for (ScdParser::iterator doc_iter = parser.begin(propertyNameList); doc_iter
-                != parser.end(); ++doc_iter, ++n)
+        const bool isInsert = (op == 1);
+        for (ScdParser::iterator doc_iter = parser.begin(propertyNameList);
+            doc_iter != parser.end(); ++doc_iter, ++n)
         {
             if (*doc_iter == NULL)
             {
@@ -784,14 +784,9 @@ bool IndexTaskService::doBuildCollection_(
                 id = document.getId();
             }
 
-            uint32_t oldId = 0;
-            if( !isInsert )
-            {
-                oldId = indexDocument.getId();
-                if( oldId == 0 ) isInsert = true;
-            }
+            uint32_t oldId = indexDocument.getId();
             // begin insert and update document
-            if( isInsert )
+            if( isInsert || oldId == 0 )
             {
                 START_PROFILER( proDocumentIndexing );
                 if (documentManager_->insertDocument(document) == false)
