@@ -2,8 +2,6 @@
 #include <boost/lexical_cast.hpp>
 
 using namespace std;
-using namespace boost;
-using namespace boost::posix_time;
 
 namespace sf1r {
 
@@ -18,7 +16,7 @@ void PropertyLabel::save( std::map<std::string, std::string> & rawdata ) {
     if(hasCollection() )
         rawdata[ ColumnName[Collection] ] = getCollection();
     if(hasLabelId() )
-        rawdata[ ColumnName[LabelId] ] = getLabelId();
+        rawdata[ ColumnName[LabelId] ] = boost::lexical_cast<string>(getLabelId());
     if(hasLabelName() )
         rawdata[ ColumnName[LabelName] ] = getLabelName();
     if(hasHitDocsNum() )
