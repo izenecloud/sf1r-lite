@@ -256,14 +256,20 @@ void GroupRep::mergeNumericRangeGroup(const GroupRep& other)
                     {
                         for (int k = 0; k < 10; k++)
                             *(level3++) += *(olevel3++);
+
+                        *level2 += *olevel2;
                     }
                     else
                     {
                         level3 += 10;
                         olevel3 += 10;
                     }
-                    *(level2++) += *(olevel2++);
+
+                    ++level2;
+                    ++olevel2;
                 }
+
+                *level1 += *olevel1;
             }
             else
             {
@@ -272,7 +278,9 @@ void GroupRep::mergeNumericRangeGroup(const GroupRep& other)
                 olevel2 += 10;
                 olevel3 += 100;
             }
-            *(level1++) += *(olevel1++);
+
+            ++level1;
+            ++olevel1;
         }
 
         ++it;
