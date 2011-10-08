@@ -94,7 +94,7 @@ bool MysqlDbConnection::init(const std::string& str )
         
         if (!mysql_real_connect(mysql, host.c_str(), username.c_str(), password.c_str(), NULL, port, NULL, flags))
         {
-            printf("Couldn't connect mysql : %d:(%s) %s\n", mysql_errno(mysql), mysql_sqlstate(mysql), mysql_error(mysql));
+            fprintf(stderr, "Couldn't connect mysql : %d:(%s) %s\n", mysql_errno(mysql), mysql_sqlstate(mysql), mysql_error(mysql));
             mysql_close(mysql);
             return false;
         }
@@ -103,14 +103,14 @@ bool MysqlDbConnection::init(const std::string& str )
         
         std::string create_db_query = "create database IF NOT EXISTS "+database+" default character set utf8";
         if ( mysql_query(mysql, create_db_query.c_str())>0 ) {
-            printf("Error %u: %s\n", mysql_errno(mysql), mysql_error(mysql));
+            fprintf(stderr, "Error %u: %s\n", mysql_errno(mysql), mysql_error(mysql));
             mysql_close(mysql);
             return false;
         }
         
         std::string use_db_query = "use "+database;
         if ( mysql_query(mysql, use_db_query.c_str())>0 ) {
-            printf("Error %u: %s\n", mysql_errno(mysql), mysql_error(mysql));
+            fprintf(stderr, "Error %u: %s\n", mysql_errno(mysql), mysql_error(mysql));
             mysql_close(mysql);
             return false;
         }
@@ -152,7 +152,7 @@ bool MysqlDbConnection::exec(const std::string & sql, bool omitError)
 
     if( mysql_real_query(db, sql.c_str(), sql.length()) >0 && mysql_errno(db) )
     {
-        printf("Error : %d:(%s) %s\n", mysql_errno(db), mysql_sqlstate(db), mysql_error(db));
+        fprintf(stderr, "Error : %d:(%s) %s\n", mysql_errno(db), mysql_sqlstate(db), mysql_error(db));
         ret = false; 
     }
 
@@ -173,7 +173,7 @@ bool MysqlDbConnection::exec(const std::string & sql,
     
     if( mysql_real_query(db, sql.c_str(), sql.length()) >0 && mysql_errno(db) )
     {
-        printf("Error : %d:(%s) %s\n", mysql_errno(db), mysql_sqlstate(db), mysql_error(db));
+        fprintf(stderr, "Error : %d:(%s) %s\n", mysql_errno(db), mysql_sqlstate(db), mysql_error(db));
         ret = false; 
     }
     else
@@ -217,7 +217,7 @@ bool MysqlDbConnection::fetchRows_(MYSQL* db, std::list< std::map<std::string, s
         {
             if (mysql_field_count(db))
             {
-                printf("Error during store_result : %d:(%s) %s\n", mysql_errno(db), mysql_sqlstate(db), mysql_error(db));
+                fprintf(stderr, "Error during store_result : %d:(%s) %s\n", mysql_errno(db), mysql_sqlstate(db), mysql_error(db));
                 success = false;
                 break;
             }
@@ -226,7 +226,7 @@ bool MysqlDbConnection::fetchRows_(MYSQL* db, std::list< std::map<std::string, s
         // more results? -1 = no, >0 = error, 0 = yes (keep looping)
         if ((status = mysql_next_result(db)) > 0)
         {
-            printf("Error during next_result : %d:(%s) %s\n", mysql_errno(db), mysql_sqlstate(db), mysql_error(db));
+            fprintf(stderr, "Error during next_result : %d:(%s) %s\n", mysql_errno(db), mysql_sqlstate(db), mysql_error(db));
             success = false;
             break;
         }
