@@ -3,6 +3,7 @@
 #include "DbConnection.h"
 #include "SystemEvent.h"
 #include "UserQuery.h"
+#include "PropertyLabel.h"
 #include "ProductInfo.h"
 #include "OrderLogger.h"
 #include "ItemLogger.h"
@@ -50,6 +51,7 @@ namespace sf1r
 
         SystemEvent::createTable();
         UserQuery::createTable();
+        PropertyLabel::createTable();
         ProductInfo::createTable();
         OrderLogger::createTable();
         ItemLogger::createTable();

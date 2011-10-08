@@ -4,6 +4,7 @@
 #include <mining-manager/util/TermUtil.hpp>
 #include <mining-manager/util/FSUtil.hpp>
 #include <mining-manager/MiningUtil.h>
+#include <log-manager/PropertyLabel.h>
 #include <util/hashFunction.h>
 #include <stdint.h>
 #include <algorithm>
@@ -36,6 +37,11 @@ LabelManager::LabelManager(const std::string& path, bool no_doc_container) :
 
 {
     RegisterErrorMsg_(1, "file io error");
+}
+
+void LabelManager::SetDbSave(const std::string& collection_name)
+{
+    collection_name_ = collection_name;
 }
 
 void LabelManager::open()
@@ -651,19 +657,35 @@ uint32_t LabelManager::getLabelId_(const izenelib::util::UString& text, uint32_t
     hash_t key = idManager_->Hash(text);
     uint32_t label_id = 0;
     uint32_t odf = 0;
+    std::string str;
+    text.convertString(str, izenelib::util::UString::UTF_8);
     if ( labelMap_->get(key, label_id) )
     {
         getLabelDF(label_id, odf);
+        //update df in db if SetDbSave
+        if(collection_name_!="")
+        {
+            std::string sql = "update property_labels set hit_docs_num=hit_docs_num+"+boost::lexical_cast<std::string>(df)+" where collection='"+collection_name_+"'  and label_id="+boost::lexical_cast<std::string>(label_id);
+            DbConnection::instance().exec(sql, true);
+        }
     }
     else
     {
         label_id = labelMap_->num_items()+1;
         idManager_->Put(label_id, text );
         labelMap_->insert(key, label_id);
-        std::string str;
-        text.convertString(str, izenelib::util::UString::UTF_8);
         labelStream_ << str << "," << df << "," << (uint32_t)score <<","<<label_id<< endl;
         typeInfo_->update(label_id, type);//update the type in first time.
+        //insert to db if SetDbSave
+        if(collection_name_!="")
+        {
+            PropertyLabel plabel;
+            plabel.setCollection(collection_name_);
+            plabel.setLabelId(label_id);
+            plabel.setLabelName(str);
+            plabel.setHitDocsNum(df);
+            plabel.save();
+        }
     }
     odf+=df;
     setLabelDF(label_id, odf);

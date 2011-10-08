@@ -221,6 +221,7 @@ bool MiningManager::open()
 
             labelManager_.reset(new LabelManager(tg_path_ + "/label", mining_schema_.tg_kpe_only));
             labelManager_->open();
+            labelManager_->SetDbSave(collectionName_);
 
             tgManager_.reset(new TaxonomyGenerationSubManager(miningConfig_.taxonomy_param,labelManager_, analyzer_));
 
