@@ -2,7 +2,6 @@
 #define _PROPERTY_LABEL_H_
 
 #include "DbRecordBase.h"
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace sf1r {
 
@@ -10,7 +9,7 @@ class PropertyLabel : public DbRecordBase {
 
 public:
 
-    enum Column { Collection, PropertyName, LabelName, HitDocsNum, TimeStamp, EoC };
+    enum Column { Collection, LabelName, HitDocsNum, EoC };
 
     static const char* ColumnName[EoC];
 
@@ -22,10 +21,8 @@ public:
 
     PropertyLabel() : DbRecordBase(),
         collectionPresent_(false),
-        propertyNamePresent_(false),
         labelNamePresent_(false),
-        hitDocsNumPresent_(false),
-        timeStampPresent_(false){}
+        hitDocsNumPresent_(false){}
 
     ~PropertyLabel(){}
 
@@ -41,20 +38,6 @@ public:
 
     inline bool hasCollection() {
         return collectionPresent_;
-    }
-
-    inline const std::string & getPropertyName()
-    {
-        return propertyName_;
-    }
-
-    inline void setPropertyName( const std::string & propertyName ) {
-        propertyName_ = propertyName;
-        propertyNamePresent_ = true;
-    }
-
-    inline bool hasPropertyName() {
-        return propertyNamePresent_;
     }
 
     inline const std::string & getLabelName()
@@ -85,19 +68,6 @@ public:
         return hitDocsNumPresent_;
     }
 
-    inline const boost::posix_time::ptime & getTimeStamp() {
-        return timeStamp_;
-    }
-
-    inline void setTimeStamp( const boost::posix_time::ptime & timeStamp ) {
-        timeStamp_ = timeStamp;
-        timeStampPresent_ = true;
-    }
-
-    inline bool hasTimeStamp() {
-        return timeStampPresent_;
-    }
-
     void save( std::map<std::string, std::string> & rawdata );
 
     void load( const std::map<std::string, std::string> & rawdata );
@@ -107,17 +77,11 @@ private:
     std::string collection_;
     bool collectionPresent_;
 
-    std::string propertyName_;
-    bool propertyNamePresent_;
-
     std::string labelName_;
     bool labelNamePresent_;
 
     size_t hitDocsNum_;
     bool hitDocsNumPresent_;
-
-    boost::posix_time::ptime timeStamp_;
-    bool timeStampPresent_;
 };
 
 }
