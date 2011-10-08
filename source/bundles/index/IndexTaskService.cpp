@@ -879,7 +879,7 @@ bool IndexTaskService::doBuildCollection_(
             {
                 string property;
                 iter->convertString(property, bundleConfig_->encoding_ );
-                DLOG(ERROR) << "Deleted document "<<property<<"does not exist, skip it"<<endl;
+                DLOG(ERROR) << "Deleted document " << property << " does not exist, skip it" << endl;
             }
         }
 
