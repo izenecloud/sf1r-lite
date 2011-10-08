@@ -101,15 +101,12 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
     string scdPath = bundleConfig_->collPath_.getScdPath() + "index/";
 
     if(!backup_() )
-    {
-        std::cout<<"backup failed."<<std::endl;
         return false;
-    }
 
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
     {
-        DLOG(ERROR) << "Index directory is corrupted"<<endl;
+        LOG(ERROR) << "Index directory is corrupted";
         return false;
     }
 
@@ -118,7 +115,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
 
     START_PROFILER(buildIndex);
 
-    DLOG(INFO) << "start BuildCollection"<<endl;
+    LOG(INFO) << "start BuildCollection";
 
     izenelib::util::ClockTimer timer;
 
@@ -132,13 +129,13 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
     {
         if (bfs::is_directory(scdPath) == false)
         {
-            DLOG(ERROR) << "SCD Path does not exist. Path "<<scdPath<<endl;
+            LOG(ERROR) << "SCD Path does not exist. Path " << scdPath;
             return false;
         }
     }
     catch(boost::filesystem::filesystem_error& e)
     {
-        DLOG(ERROR) << "Error while opening directory "<<e.what()<< endl;
+        LOG(ERROR) << "Error while opening directory " << e.what();
         return false;
     }
 
@@ -158,7 +155,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
             }
             else
             {
-                DLOG(WARNING) << "SCD File not valid "<<fileName <<endl;
+                LOG(WARNING) << "SCD File not valid " << fileName;
             }
         }
     }
@@ -167,7 +164,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
 
     if (indexProgress_.totalFileNum == 0)
     {
-        DLOG(WARNING) << "SCD Files do not exist. Path "<<scdPath <<endl;
+        LOG(WARNING) << "SCD Files do not exist. Path " << scdPath;
         return false;
     }
 
@@ -176,10 +173,10 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
     //sort scdList
     sort(scdList.begin(), scdList.end(), ScdParser::compareSCD);
 
-    DLOG(INFO) << "SCD Files in Path processed in given  order. Path "<<scdPath <<endl;
+    LOG(INFO) << "SCD Files in Path processed in given order. Path " << scdPath;
     vector<string>::iterator scd_it;
     for ( scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
-        DLOG(INFO) << "SCD File "<< boost::filesystem::path(*scd_it).stem()<<endl;
+        LOG(INFO) << "SCD File " << boost::filesystem::path(*scd_it).stem();
 
     try
     {
@@ -192,7 +189,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
             indexProgress_.currentFileName = filename;
             indexProgress_.currentFilePos_ = 0;
 
-            DLOG(INFO) << "Processing SCD file. "<< boost::filesystem::path(*scd_it).stem()<<endl;
+            LOG(INFO) << "Processing SCD file. " << boost::filesystem::path(*scd_it).stem();
 
             switch ( parser.checkSCDType(*scd_it) )
             {
@@ -202,7 +199,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
                 {
                     //continue;
                 }
-                DLOG(INFO) << "Indexing Finished"<<endl;
+                LOG(INFO) << "Indexing Finished";
 
             }
             break;
@@ -211,18 +208,18 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
                 if (documentManager_->getMaxDocId()> 0)
                 {
                     doBuildCollection_( *scd_it, 3, 0 );
-                    DLOG(INFO) << "Delete Finished"<<endl;
+                    LOG(INFO) << "Delete Finished";
                 }
                 else
                 {
-                    DLOG(WARNING) << "Indexed documents do not exist. File "<<boost::filesystem::path(*scd_it).stem()<<endl;
+                    LOG(WARNING) << "Indexed documents do not exist. File " << boost::filesystem::path(*scd_it).stem();
                 }
             }
             break;
             case UPDATE_SCD:
             {
                 doBuildCollection_( *scd_it, 2, 0 );
-                DLOG(INFO) << "Update Finished"<<endl;
+                LOG(INFO) << "Update Finished";
             }
             break;
             default:
@@ -237,20 +234,6 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
         } // end of loop for scd files of a collection
 
         documentManager_->flush();
-        //debug documentmanager's performance
-//         std::cout<<"start debug documentmanager..."<<std::endl;
-//         izenelib::util::ClockTimer clocker;
-//         for(uint32_t i=1;i<documentManager_->getMaxDocId();i++)
-//         {
-//           if( i%1000 == 0 )
-//           {
-//             std::cout<<"debuging "<<i<<std::endl;
-//           }
-//           Document doc;
-//           documentManager_->getDocument(i, doc);
-//         }
-//         std::cout<<"end debug documentmanager, cost "<<clocker.elapsed()<<std::endl;
-
         idManager_->flush();
         indexManager_->flush();
         //indexManager_->optimizeIndex();
@@ -267,30 +250,19 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
           miningTaskService_->DoMiningCollection();
           indexManager_->resumeMerge();
         }
-        // Will be called by "commands/index_recommend"
-//        if( recommendTaskService_ )
-//        {
-//            indexManager_->pauseMerge();
-//            recommendTaskService_->buildCollection();
-//            indexManager_->resumeMerge();
-//        }
     }
     catch (std::exception& e)
     {
         LOG(WARNING) << "exception in indexing or mining: " << e.what();
         indexProgress_.getIndexingStatus(indexStatus_);
         indexProgress_.reset();
-//         documentManager_->flush();
-//         idManager_->flush();
-//         indexManager_->flush();
-//         miningManager_->flush();
         return false;
     }
     indexManager_->getIndexReader();
 
     bfs::path bkDir = bfs::path(scdPath) / SCD_BACKUP_DIR;
     bfs::create_directory(bkDir);
-    DLOG(INFO) << "moving " << scdList.size() << " SCD files to directory " << bkDir;
+    LOG(INFO) << "moving " << scdList.size() << " SCD files to directory " << bkDir;
     for (scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
     {
         try
@@ -304,8 +276,8 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
     }
 
     indexProgress_.getIndexingStatus(indexStatus_);
-    DLOG(INFO) << "Indexing Finished! Documents Indexed: " <<documentManager_->getMaxDocId()
-        <<" Deleted: " << numDeletedDocs_ << "Updated: "<<numUpdatedDocs_<<endl;
+    LOG(INFO) << "Indexing Finished! Documents Indexed: " << documentManager_->getMaxDocId()
+              <<" Deleted: " << numDeletedDocs_ << "Updated: " << numUpdatedDocs_;
 
     //both variables are refreshed
     numDeletedDocs_ = 0;
@@ -313,8 +285,8 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
 
     indexProgress_.reset();
     REPORT_PROFILE_TO_FILE( "PerformanceIndexResult.SIAProcess" )
-    DLOG(INFO) << "End BuildCollection: "<< endl;
-    DLOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds\n";
+    LOG(INFO) << "End BuildCollection: ";
+    LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
 
     STOP_PROFILER(buildIndex);
     return true;
@@ -323,15 +295,12 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
 bool IndexTaskService::optimizeIndex()
 {
     if(!backup_() )
-    {
-        std::cout<<"backup failed."<<std::endl;
         return false;
-    }
 
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
     {
-        DLOG(ERROR) << "Index directory is corrupted"<<endl;
+        LOG(ERROR) << "Index directory is corrupted";
         return false;
     }
     indexManager_->optimizeIndex();
@@ -341,15 +310,12 @@ bool IndexTaskService::optimizeIndex()
 bool IndexTaskService::createDocument(const Value& documentValue)
 {
     if(!backup_() )
-    {
-        std::cout<<"backup failed."<<std::endl;
         return false;
-    }
 
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
     {
-        DLOG(ERROR) << "Index directory is corrupted"<<endl;
+        LOG(ERROR) << "Index directory is corrupted";
         return false;
     }
     sf1r::Status::Guard statusGuard(indexStatus_);
@@ -415,15 +381,12 @@ bool IndexTaskService::createDocument(const Value& documentValue)
 bool IndexTaskService::updateDocument(const Value& documentValue)
 {
     if(!backup_() )
-    {
-        std::cout<<"backup failed."<<std::endl;
         return false;
-    }
 
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
     {
-        DLOG(ERROR) << "Index directory is corrupted"<<endl;
+        LOG(ERROR) << "Index directory is corrupted";
         return false;
     }
     sf1r::Status::Guard statusGuard(indexStatus_);
@@ -639,15 +602,12 @@ bool IndexTaskService::preparePartialDocument_(
 bool IndexTaskService::destroyDocument(const Value& documentValue)
 {
     if(!backup_() )
-    {
-        std::cout<<"backup failed."<<std::endl;
         return false;
-    }
 
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
     {
-        DLOG(ERROR) << "Index directory is corrupted"<<endl;
+        LOG(ERROR) << "Index directory is corrupted";
         return false;
     }
     sf1r::Status::Guard statusGuard(indexStatus_);
@@ -661,7 +621,7 @@ bool IndexTaskService::destroyDocument(const Value& documentValue)
     {
         string property;
         docName.convertString(property, bundleConfig_->encoding_ );
-        DLOG(ERROR) << "Deleted document " <<property <<" does not exist, skip it."<< endl;
+        LOG(ERROR) << "Deleted document " <<property <<" does not exist, skip it.";
     }
     if (documentManager_->removeDocument(docid))
     {
@@ -712,7 +672,7 @@ bool IndexTaskService::doBuildCollection_(
     ScdParser parser(bundleConfig_->encoding_);
     if (parser.load(fileName) == false)
     {
-        DLOG(ERROR) << "Could not Load Scd File. File "<<fileName<< endl;
+        LOG(ERROR) << "Could not Load Scd File. File " << fileName;
         return false;
     }
     indexProgress_.currentFileSize_ = parser.getFileSize();
@@ -744,7 +704,7 @@ bool IndexTaskService::doBuildCollection_(
         {
             if (*doc_iter == NULL)
             {
-                DLOG(WARNING) << "SCD File not valid. File "<<boost::filesystem::path(fileName).stem()<< endl;
+                LOG(WARNING) << "SCD File not valid. File " << boost::filesystem::path(fileName).stem();
                 return false;
             }
 
@@ -791,7 +751,7 @@ bool IndexTaskService::doBuildCollection_(
                 START_PROFILER( proDocumentIndexing );
                 if (documentManager_->insertDocument(document) == false)
                 {
-                    DLOG(ERROR) << "Document Insert Failed in SDB. "<<document.property("DOCID")<<endl;
+                    LOG(ERROR) << "Document Insert Failed in SDB. " << document.property("DOCID");
                     continue;
                 }
                 STOP_PROFILER( proDocumentIndexing );
@@ -812,7 +772,7 @@ bool IndexTaskService::doBuildCollection_(
                     }
                     if (documentManager_->insertDocument(document) == false)
                     {
-                         DLOG(ERROR) << "Document Insert Failed in SDB. "<<document.property("DOCID")<<endl;
+                         LOG(ERROR) << "Document Insert Failed in SDB. " << document.property("DOCID");
                          continue;
                     }
 
@@ -830,7 +790,7 @@ bool IndexTaskService::doBuildCollection_(
                     // Update document data in the SDB repository.
                     if ( documentManager_->updatePartialDocument(document) == false )
                     {
-                         DLOG(ERROR) << "Document Insert Failed in SDB. "<<document.property("DOCID")<<endl;
+                         LOG(ERROR) << "Document Insert Failed in SDB. " << document.property("DOCID");
                          continue;
                     }
 
@@ -838,11 +798,6 @@ bool IndexTaskService::doBuildCollection_(
                  }
                 ++numUpdatedDocs_;
             }
-//             uint32_t nn = n%200;
-//             if( nn == 0 )
-//             {
-//               std::cout<<"Collection Builder : added "<<n<<" docs."<<std::endl;
-//             }
             searchManager_->reset_cache(rType, id, rTypeFieldValue);
 
             // interrupt when closing the process
@@ -855,7 +810,7 @@ bool IndexTaskService::doBuildCollection_(
         std::vector<izenelib::util::UString> rawDocIDList;
         if (parser.getDocIdList(rawDocIDList) == false)
         {
-            DLOG(WARNING) << "SCD File not valid. File "<<boost::filesystem::path(fileName).stem()<< endl;
+            LOG(WARNING) << "SCD File not valid. File " << boost::filesystem::path(fileName).stem();
             return false;
         }
         //get the docIds for deleting
@@ -874,7 +829,7 @@ bool IndexTaskService::doBuildCollection_(
             {
                 string property;
                 iter->convertString(property, bundleConfig_->encoding_ );
-                DLOG(ERROR) << "Deleted document " << property << " does not exist, skip it" << endl;
+                LOG(ERROR) << "Deleted document " << property << " does not exist, skip it";
             }
         }
 
@@ -905,7 +860,7 @@ bool IndexTaskService::doBuildCollection_(
             //marks delete key to true in DB
             if (!documentManager_->removeDocument(*iter))
             {
-                DLOG(WARNING) << "Cannot delete removed Document. docid. "<<*iter<<endl;
+                LOG(WARNING) << "Cannot delete removed Document. docid. " << *iter;
                 continue;
             }
             ++indexProgress_.currentFilePos_;
@@ -1149,12 +1104,12 @@ bool IndexTaskService::prepareDocument_(
                     string scdDocId;
                     propertyValueU.convertString(scdDocId, encoding );
                     //sflog->warn(SFL_IDX, 10125, docId, scdDocId.c_str());
-                    DLOG(WARNING) << "Duplicated Doc ID  "<<docId<<" Duplicated SCD DOCID "<<scdDocId<<endl;
+                    LOG(WARNING) << "Duplicated Doc ID  " << docId << " Duplicated SCD DOCID " << scdDocId;
                     return false;
                 }
                 if (docId <= maxDocId_)
                 {
-                    DLOG(WARNING)<<"DocId skipped while indexing. DocId "<<docId<<endl;
+                    LOG(WARNING) << "DocId skipped while indexing. DocId " << docId;
                     return false;
                 }
             }
@@ -1214,7 +1169,7 @@ bool IndexTaskService::prepareDocument_(
                         laInputs_[iter->getPropertyId()]->setDocId(docId);
                         if (makeForwardIndex_(propertyValueU, fieldStr, iter->getPropertyId(), analysisInfo) == false)
                         {
-                            DLOG(ERROR) << "Forward Indexing Failed Error Line : "<< __LINE__ << endl;
+                            LOG(ERROR) << "Forward Indexing Failed Error Line : " << __LINE__;
                             return false;
                         }
                         if (iter->getIsFilter())
@@ -1255,7 +1210,7 @@ bool IndexTaskService::prepareDocument_(
                             if (makeSentenceBlocks_(propertyValueU, iter->getDisplayLength(),
                                                     numOfSummary, sentenceOffsetList) == false)
                             {
-                                DLOG(ERROR)<<"Make Sentence Blocks Failes "<<endl;
+                                LOG(ERROR) << "Make Sentence Blocks Failes ";
                             }
 
                             document.property(fieldStr + ".blocks")
@@ -1280,7 +1235,7 @@ bool IndexTaskService::prepareDocument_(
                                                       vecIter->getPropertyId(),
                                                       aliasAnalysisInfo) == false)
                                 {
-                                    DLOG(ERROR) << "Forward Indexing Failed Error Line : "<< __LINE__ << endl;
+                                    LOG(ERROR) << "Forward Indexing Failed Error Line : " << __LINE__;
                                     return false;
                                 }
                                 IndexerPropertyConfig
@@ -1351,7 +1306,7 @@ bool IndexTaskService::prepareDocument_(
                             }
                             else
                             {
-                                DLOG(ERROR) <<"Wrong format of number value. DocId "<<docId<<" Value"<<str<<endl;
+                                LOG(ERROR) << "Wrong format of number value. DocId " << docId << " Value" << str;
                             }
                             indexerPropertyConfig.setIsMultiValue(true);
                             indexDocument.insertProperty(indexerPropertyConfig, multiProps);
@@ -1398,7 +1353,6 @@ bool IndexTaskService::prepareDocument_(
                             }
                             indexerPropertyConfig.setIsMultiValue(true);
                             indexDocument.insertProperty(indexerPropertyConfig, multiProps);
-                            //LOG(WARNING) << "Float casting error : "<<str<<" in doc "<<docId;
                         }
                     }
                 }
@@ -1516,17 +1470,14 @@ bool IndexTaskService::backup_()
     {
         try
         {
-            std::cout << "Copy index dir from "
-                      << current->name()
-                      << " to "
-                      << next->name()
-                      << std::endl;
+            LOG(INFO) << "Copy index dir from " << current->name()
+                      << " to " << next->name();
             next->copyFrom(*current);
             return true;
         }
         catch(boost::filesystem::filesystem_error& e)
         {
-            DLOG(INFO)<< "Failed to copy index directory "<<e.what()<<endl;
+            LOG(ERROR) << "Failed to copy index directory " << e.what();
         }
 
         // try copying but failed
