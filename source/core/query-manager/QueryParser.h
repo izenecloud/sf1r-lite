@@ -89,8 +89,8 @@ namespace sf1r {
             static boost::unordered_map<std::string , std::string> operEncodeDic_; // < "\^" , "::$OP_UP$::" >
             static boost::unordered_map<std::string , std::string> operDecodeDic_; // < "::$OP_UP$::" , "^" >
 
-            static boost::unordered_map<char, bool> openBracket_;  // <bracket char , if close bracket>
-            static boost::unordered_map<char, bool> closeBracket_;  // <bracket char , if close bracket>
+            static std::string openBracket_;  // <bracket char , if close bracket>
+            static std::string closeBracket_;  // <bracket char , if close bracket>
 
             boost::shared_ptr<LAManager> laManager_;
             boost::shared_ptr<izenelib::ir::idmanager::IDManager> idManager_;
@@ -145,7 +145,7 @@ namespace sf1r {
             /// @param[normString] normalized query string.
             /// @return true if success or false.
             ///
-            static void normalizeQuery(const std::string& queryString, std::string& normString, bool unigramFlag);
+            static void normalizeQuery(const std::string& queryString, std::string& normString, bool indexUnigram = true);
 
             ///
             /// @brief parses query and generates QueryTree.

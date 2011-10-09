@@ -84,13 +84,13 @@ BOOST_AUTO_TEST_CASE(normalizeQuery_test)
     queryStringList.push_back("(bracket close)(open space)");
     normResultList.push_back(std::string("test"));
     normResultList.push_back(std::string("(hello|world)"));
-    normResultList.push_back(std::string("{test&case}^12&(month&case)"));
+    normResultList.push_back(std::string("{test case}^12&(month&case)"));
     normResultList.push_back(std::string("(bracket&close)&(open&space)"));
     for(size_t i = 0; i < queryStringList.size(); i++)
     {
         std::string out;
         QueryParser queryParser(laManager, idManager);
-        queryParser.normalizeQuery( queryStringList[i], out, true );
+        queryParser.normalizeQuery( queryStringList[i], out );
         BOOST_CHECK_EQUAL( out , normResultList[i] );
     }
 }
