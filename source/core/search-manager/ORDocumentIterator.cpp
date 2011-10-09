@@ -41,8 +41,14 @@ void ORDocumentIterator::initDocIteratorQueue()
         if (pDocIterator)
         {
             pDocIterator->setCurrent(false);
-            if(pDocIterator->next())		
+            if(pDocIterator->next())
                 pDocIteratorQueue_->insert(pDocIterator);
+           else
+           {
+               iter = docIteratorList_.erase(iter);
+               delete pDocIterator;
+               continue;
+           }
         }
         iter ++;
     }
