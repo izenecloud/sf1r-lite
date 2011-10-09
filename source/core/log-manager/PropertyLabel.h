@@ -40,7 +40,7 @@ public:
     inline bool hasCollection() {
         return collectionPresent_;
     }
-    
+
     inline std::size_t getLabelId()
     {
         return labelId_;
@@ -91,7 +91,7 @@ private:
 
     std::string collection_;
     bool collectionPresent_;
-    
+
     std::size_t labelId_;
     bool labelIdPresent_;
 

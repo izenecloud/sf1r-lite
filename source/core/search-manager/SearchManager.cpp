@@ -143,6 +143,13 @@ CREATE_PROFILER ( cacheoverhead, "SearchManager", "cache overhead: overhead for 
 
 START_PROFILER ( cacheoverhead )
 
+    izenelib::ir::indexmanager::IndexManagerConfig* pIndexManagerConfig = indexManagerPtr_->getIndexManagerConfig();
+    if ( pIndexManagerConfig->indexStrategy_.indexLevel_ == "doclevel" &&
+            actionOperation.actionItem_.rankingType_ == RankingType::PLM )
+    {
+        actionOperation.actionItem_.rankingType_ = RankingType::BM25;
+    }
+
     QueryIdentity identity;
     makeQueryIdentity(identity, actionOperation.actionItem_, distSearchInfo.actionType_, start);
 

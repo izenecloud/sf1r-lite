@@ -124,8 +124,7 @@ public:
     LabelManager(const std::string& path, bool no_doc_container = false);
 
     ~LabelManager();
-    
-    
+
     void SetDbSave(const std::string& collection_name);
 
     /**

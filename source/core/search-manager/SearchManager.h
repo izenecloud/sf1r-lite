@@ -9,6 +9,7 @@
 #include "NumericPropertyTable.h"
 #include "NumericPropertyTableBuilder.h"
 
+#include <ir/index_manager/utility/IndexManagerConfig.h>
 #include <ir/id_manager/IDManager.h>
 #include <util/ustring/UString.h>
 

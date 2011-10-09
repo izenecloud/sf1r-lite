@@ -11,6 +11,7 @@
 #include <cmath>
 #include <log-manager/LogManager.h>
 #include <log-manager/UserQuery.h>
+#include <log-manager/PropertyLabel.h>
 #include <query-manager/QMCommonFunc.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 using namespace sf1r;
@@ -237,12 +238,14 @@ bool RecommendManager::RebuildForRecommend()
         boost::gregorian::days dd(days);
         boost::posix_time::ptime p = time_now-dd;
         std::string time_string = boost::posix_time::to_iso_string(p);
-        std::string freq_sql = "select query, count(*) as freq from user_queries where collection='"+collection_name_+"' and hit_docs_num>0 and TimeStamp >='"+time_string+"' group by query";
-        std::list<std::map<std::string, std::string> > freq_records;
-        UserQuery::find_by_sql(freq_sql, freq_records);
-        std::list<std::map<std::string, std::string> >::iterator it = freq_records.begin();
+        std::string freq_sql = "SELECT query, count(*) AS freq FROM user_queries WHERE collection='"+collection_name_+"' AND hit_docs_num>0 AND TimeStamp >='"+time_string+"' GROUP BY query";
+        std::string label_sql = "SELECT label_name AS query, hit_docs_num AS freq FROM property_labels WHERE collection='"+collection_name_+"'";
+        std::list<std::map<std::string, std::string> > db_records;
+        UserQuery::find_by_sql(freq_sql, db_records);
+        PropertyLabel::find_by_sql(label_sql, db_records);
+        std::list<std::map<std::string, std::string> >::iterator it = db_records.begin();
 
-        for ( ;it!=freq_records.end();++it )
+        for ( ;it!=db_records.end();++it )
         {
             izenelib::util::UString uquery( (*it)["query"], izenelib::util::UString::UTF_8);
             if ( QueryUtility::isRestrictWord( uquery ) )
@@ -328,7 +331,7 @@ bool RecommendManager::RebuildForCorrection()
 //     std::list<std::map<std::string, std::string> > query_records;
 //     UserQuery::find_by_sql(query_sql, query_records);
 //     std::list<std::map<std::string, std::string> >::iterator it = query_records.begin();
-// 
+//
 //     std::list<std::pair<izenelib::util::UString,uint32_t> > logItems;
 //     for ( ;it!=query_records.end();++it )
 //     {
@@ -355,13 +358,15 @@ bool RecommendManager::RebuildForAutofill()
     boost::gregorian::days dd(days);
     boost::posix_time::ptime p = time_now-dd;
     std::string time_string = boost::posix_time::to_iso_string(p);
-    std::string freq_sql = "select query, count(*) as freq, max(hit_docs_num) as df from user_queries where collection='"+collection_name_+"' and hit_docs_num>0 and TimeStamp >='"+time_string+"' group by query";
-    std::list<std::map<std::string, std::string> > freq_records;
-    UserQuery::find_by_sql(freq_sql, freq_records);
-    std::list<std::map<std::string, std::string> >::iterator it = freq_records.begin();
+    std::string freq_sql = "SELECT query, count(*) AS freq, max(hit_docs_num) AS df FROM user_queries WHERE collection='"+collection_name_+"' AND hit_docs_num>0 AND TimeStamp >='"+time_string+"' GROUP BY query";
+    std::string label_sql = "SELECT label_name AS query, hit_docs_num AS freq, hit_docs_num AS df from property_labels WHERE collection='"+collection_name_+"'";
+    std::list<std::map<std::string, std::string> > db_records;
+    UserQuery::find_by_sql(freq_sql, db_records);
+    PropertyLabel::find_by_sql(label_sql, db_records);
+    std::list<std::map<std::string, std::string> >::iterator it = db_records.begin();
     typedef boost::tuple<count_t, count_t, izenelib::util::UString> ItemType;
     std::list<ItemType> logItems;
-    for ( ;it!=freq_records.end();++it )
+    for ( ;it!=db_records.end();++it )
     {
         izenelib::util::UString uquery( (*it)["query"], izenelib::util::UString::UTF_8);
         if ( QueryUtility::isRestrictWord( uquery ) )

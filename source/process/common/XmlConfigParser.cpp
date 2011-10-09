@@ -1052,6 +1052,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     indexmanager_config.indexStrategy_.skipInterval_ = 8;
     indexmanager_config.indexStrategy_.maxSkipLevel_ = 3;
     indexmanager_config.storeStrategy_.param_ = "file";
+    params.GetString("IndexStrategy/indexlevel", indexmanager_config.indexStrategy_.indexLevel_, "wordlevel");
     params.GetString("IndexStrategy/indexpolicy", indexmanager_config.indexStrategy_.indexMode_, "default");
     std::string indexMergePolicy;
     params.GetString("IndexStrategy/mergepolicy",indexMergePolicy, "file");

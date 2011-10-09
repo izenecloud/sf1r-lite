@@ -56,12 +56,27 @@ public:
     uint32_t getDocNum();
 
 private:
+    void createPropertyList_();
+
     bool doBuildCollection_(
         const std::string& scdFile, 
         int op, 
         uint32_t numdoc
     );
-    
+
+    bool insertOrUpdateSCD_(
+        ScdParser& parser,
+        bool isInsert,
+        uint32_t numdoc
+    );
+    bool updateDoc_(
+        Document& document,
+        IndexerDocument& indexDocument,
+        bool rType
+    );
+    bool deleteSCD_(ScdParser& parser);
+    void saveProductInfo_(int op);
+
     bool prepareDocument_(
         SCDDoc& doc,
         Document& document,
@@ -135,6 +150,10 @@ private:
     Status indexStatus_;
 
     std::vector<boost::shared_ptr<LAInput> > laInputs_;
+
+    std::vector<string> propertyList_;
+
+    std::map<std::string, uint32_t> productSourceCount_;
 
     friend class IndexBundleActivator;
 };
