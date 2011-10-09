@@ -292,6 +292,8 @@ private:
         std::vector<id2count_t>& labelItemList,
         std::vector<uint32_t>& labelIdList,
         std::vector<uint32_t>& sorted_label);
+        
+    bool updateLabelDb_();
 
 private:
     std::string path_;
