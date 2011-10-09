@@ -98,7 +98,7 @@ namespace sf1r {
         public: // static interface
 
             QueryParser(
-                    boost::shared_ptr<LAManager>& laManager, 
+                    boost::shared_ptr<LAManager>& laManager,
                     boost::shared_ptr<izenelib::ir::idmanager::IDManager>& idManager );
 
             ///
@@ -145,20 +145,20 @@ namespace sf1r {
             /// @param[normString] normalized query string.
             /// @return true if success or false.
             ///
-            static void normalizeQuery(const std::string& queryString, std::string& normString);
+            static void normalizeQuery(const std::string& queryString, std::string& normString, bool unigramFlag);
 
             ///
             /// @brief parses query and generates QueryTree.
             /// @param[queryUString] ustring of query.
             /// @param[queryTree] output of this interface which contains tree structure of query.
             /// @param[unigramFlag] a flag if parsing rule of "orderby unigram wildcard search" is used for wildcard type query.
-            /// @param[removeChineseSpace] a flag to remove redundant space in chinese query. This value should be "false" 
+            /// @param[removeChineseSpace] a flag to remove redundant space in chinese query. This value should be "false"
             ///                            if analyzed query is used as a parameter of parseQuery().
             /// @return true if success, or false.
             ///
-            bool parseQuery( 
-                    const izenelib::util::UString& queryUStr, 
-                    QueryTreePtr& queryTree, 
+            bool parseQuery(
+                    const izenelib::util::UString& queryUStr,
+                    QueryTreePtr& queryTree,
                     bool unigramFlag,
                     bool removeChineseSpace = true );
 
@@ -232,7 +232,7 @@ namespace sf1r {
             /// @return true if success, or false.
             ///
             bool recursiveQueryTreeExtension(
-                    QueryTreePtr& queryTree, 
+                    QueryTreePtr& queryTree,
                     const LAEXInfo& laInfo,
                     bool isUnigramSearchMode,
                     PersonalSearchInfo& personalSearchInfo,
@@ -245,9 +245,9 @@ namespace sf1r {
             bool processExactQuery( iter_t const& i, QueryTreePtr& queryTree);
             bool processBracketQuery( iter_t const& i, QueryTree::QueryType queryType, QueryTreePtr& queryTree, bool unigramFlag);
             bool tokenizeBracketQuery(
-                    const std::string& queryStr, 
-                    const AnalysisInfo& analysisInfo, 
-                    QueryTree::QueryType queryType, 
+                    const std::string& queryStr,
+                    const AnalysisInfo& analysisInfo,
+                    QueryTree::QueryType queryType,
                     QueryTreePtr& queryTree,
                     int distance = 0 // used only for nearby
                     );

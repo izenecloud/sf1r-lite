@@ -129,7 +129,7 @@ namespace sf1r
 
     } // end - addEscapeCharToOperator()
 
-    void QueryParser::normalizeQuery(const std::string& queryString, std::string& normString)
+    void QueryParser::normalizeQuery(const std::string& queryString, std::string& normString, bool unigramFlag)
     {
         std::string tmpNormString;
         std::string::const_iterator iter, iterEnd;
@@ -138,8 +138,8 @@ namespace sf1r
         iter = queryString.begin();
         iterEnd = queryString.end();
 
-        while ( iter != iterEnd && ( *iter == ' ' || *iter == '&' || *iter == '|' ) ) iter++;
-        while ( iterEnd != iter && ( *(iterEnd - 1) == ' ' || *(iterEnd - 1) == '&' || *(iterEnd - 1) == '|' || *(iterEnd - 1) == '!' ) ) iterEnd--;
+        while ( iter != iterEnd && ( *iter == ' ' || *iter == '&' || *iter == '|' || ( !unigramFlag && ( *iter == '"' || *iter == '?' || *iter == '*' ) ) ) ) iter++;
+        while ( iterEnd != iter && ( *(iterEnd - 1) == ' ' || *(iterEnd - 1) == '&' || *(iterEnd - 1) == '|' || *(iterEnd - 1) == '!'  || ( !unigramFlag && ( *(iterEnd - 1) == '"' || *(iterEnd - 1) == '?' || *(iterEnd - 1) == '*' ) ) ) ) iterEnd--;
 
         // -----[ Step 2 : Remove redundant spaces and do some more tricks ]
         std::stack<char> bracketStack;
@@ -151,27 +151,31 @@ namespace sf1r
             case '&':
             case '|':
                 // ( hello world) -> (hello world)
-                tmpNormString.push_back( *iter++ );
-                while ( iter != iterEnd && *iter == ' ' ) iter++;
+                tmpNormString.push_back( *iter );
+                while ( ++iter != iterEnd && *iter == ' ' );
                 break;
+
             case '(':
-                tmpNormString.push_back( *iter++ );
-                while ( iter != iterEnd && *iter == ' ' ) iter++;
+                tmpNormString.push_back( *iter );
+                while ( ++iter != iterEnd && *iter == ' ' );
                 if ( bracketStack.empty() || bracketStack.top() == '(' )
                     bracketStack.push('(');
                 break;
+
             case '[':
-                tmpNormString.push_back( *iter++ );
-                while ( iter != iterEnd && *iter == ' ' ) iter++;
+                tmpNormString.push_back( *iter );
+                while ( ++iter != iterEnd && *iter == ' ' );
                 if ( bracketStack.empty() || bracketStack.top() == '(' )
                     bracketStack.push('[');
                 break;
+
             case '{':
-                tmpNormString.push_back( *iter++ );
-                while ( iter != iterEnd && *iter == ' ' ) iter++;
+                tmpNormString.push_back( *iter );
+                while ( ++iter != iterEnd && *iter == ' ' );
                 if ( bracketStack.empty() || bracketStack.top() == '(' )
                     bracketStack.push('{');
                 break;
+
             case ')':
                 if ( !bracketStack.empty() )
                 {
@@ -179,11 +183,11 @@ namespace sf1r
                     if ( bracketStack.top() == '(' )
                         bracketStack.pop();
                 }
-                iter++;
-                while ( iter != iterEnd && *iter == ' ' ) iter++;
+                while ( ++iter != iterEnd && *iter == ' ' );
                 if ( iter != iterEnd && *iter != '&' && *iter != '|' && *iter != ')' && *iter != ']' && *iter != '}' )
                     tmpNormString.push_back('&');
                 break;
+
             case ']':
                 if ( !bracketStack.empty() && bracketStack.top() != '(' )
                 {
@@ -191,11 +195,11 @@ namespace sf1r
                     if ( bracketStack.top() == '[' )
                         bracketStack.pop();
                 }
-                iter++;
-                while ( iter != iterEnd && *iter == ' ' ) iter++;
+                while ( ++iter != iterEnd && *iter == ' ' );
                 if ( iter != iterEnd && *iter != '&' && *iter != '|' && *iter != ')' && *iter != ']' && *iter != '}' )
                     tmpNormString.push_back('&');
                 break;
+
             case '}':
                 if ( !bracketStack.empty() && bracketStack.top() != '(' )
                 {
@@ -203,14 +207,14 @@ namespace sf1r
                     if ( bracketStack.top() == '{' )
                         bracketStack.pop();
                 }
-                iter++;
-                while ( iter != iterEnd && *iter == ' ' ) iter++;
+                while ( ++iter != iterEnd && *iter == ' ' );
                 break;
+
             case '^':
                 // Remove space between ^ and number and add space between number and open bracket.
                 // {Test case}^ 123(case) -> {Test case}^123 (case)
-                tmpNormString.push_back( *iter++ );
-                while ( iter != iterEnd && *iter == ' ' ) iter++;
+                tmpNormString.push_back( *iter );
+                while ( ++iter != iterEnd && *iter == ' ' );
 
                 while ( iter != iterEnd && isdigit(*iter) ) // Store digit
                     tmpNormString.push_back( *iter++ );
@@ -222,15 +226,25 @@ namespace sf1r
                 //if ( openBracket_[*iter] ) // if first char after digit is open bracket, insert space.
                 //    tmpNormString.push_back(' ');
                 break;
+
             case ' ': // (hello world ) -> (hello world)
                 {
-                    while ( *(++iter) == ' ' );
-                    if ( *iter != '&' && *iter != '|' && (!closeBracket_[*iter] || *iter == '"') )
+                    while ( ++iter != iterEnd && *iter == ' ' );
+                    if ( iter != iterEnd && *iter != '&' && *iter != '|' && (!closeBracket_[*iter] || *iter == '"') )
                         tmpNormString.push_back('&');
                     break;
                 }
+
             case '"': // Skip all things inside the exact bracket.
                 {
+                    if (!unigramFlag)
+                    {
+                        while ( ++iter != iterEnd && (*iter == '"' || *iter == '?' || *iter == '*' || *iter == ' ') );
+                        if ( iter != iterEnd && tmpNormString.at(tmpNormString.size() - 1) != '&' && *iter != '&' && *iter != '|' && !closeBracket_[*iter] )
+                            tmpNormString.push_back('&');
+                        break;
+                    }
+
                     // "keyword -> keyword
                     std::string right(iter, iterEnd);
                     if (right.find('"', 1) == std::string::npos) {
@@ -238,7 +252,7 @@ namespace sf1r
                         break;
                     }
 
-                    tmpNormString.push_back('"');
+                    tmpNormString.push_back( *iter );
                     while ( ++iter != iterEnd && *iter != '"' ) // Store exact string
                         tmpNormString.push_back( *iter );
                     if (iter != iterEnd)
@@ -248,6 +262,18 @@ namespace sf1r
                     if ( iter != iterEnd && *iter != '&' && *iter != '|')
                         tmpNormString.push_back('&');
                     break;
+                }
+
+            case '?':
+            case '*':
+                {
+                    if (!unigramFlag)
+                    {
+                        while ( ++iter != iterEnd && (*iter == '"' || *iter == '?' || *iter == '*' || *iter == ' ') );
+                        if ( iter != iterEnd && tmpNormString.at(tmpNormString.size() - 1) != '&' && *iter != '&' && *iter != '|' && !closeBracket_[*iter] )
+                            tmpNormString.push_back('&');
+                        break;
+                    }
                 }
             default: // Store char and insert "&" if an openBracket is attached to the back of a closeBracket.
                 tmpNormString.push_back( *iter++ );
@@ -293,7 +319,7 @@ namespace sf1r
         queryUStr.convertString(queryString, izenelib::util::UString::UTF_8);
 
         processEscapeOperator(queryString);
-        normalizeQuery(queryString, normQueryString);
+        normalizeQuery(queryString, normQueryString, unigramFlag);
 
         // Remove redundant space for chinese character.
         if ( removeChineseSpace )

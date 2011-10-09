@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE(normalizeQuery_test)
     {
         std::string out;
         QueryParser queryParser(laManager, idManager);
-        queryParser.normalizeQuery( queryStringList[i], out );
+        queryParser.normalizeQuery( queryStringList[i], out, true );
         BOOST_CHECK_EQUAL( out , normResultList[i] );
     }
 }
