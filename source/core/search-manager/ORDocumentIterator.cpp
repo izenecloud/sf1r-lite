@@ -167,10 +167,12 @@ bool ORDocumentIterator::do_next()
         //DocumentIterator* pEntry = pDocIteratorQueue_->getAt(i);
         DocumentIterator* pEntry = (*iter);
         if(pEntry)
+        {
             if (currDoc_ == pEntry->doc())
                 pEntry->setCurrent(true);
             else
                 pEntry->setCurrent(false);
+        }
     }
 
     return true;
