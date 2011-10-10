@@ -26,6 +26,8 @@ public:
 
     void addTask(task_type task);
 
+    void close();
+
 private:
     void runAsynchronousTasks_();
 

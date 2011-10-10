@@ -26,6 +26,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/thread/locks.hpp>
+#include <boost/thread/thread.hpp>
 
 #include <glog/logging.h>
 
@@ -622,6 +623,9 @@ bool RecommendTaskService::parseUserSCD_(const std::string& scdPath)
             LOG(ERROR) << "unknown SCD type " << scdType;
             break;
         }
+
+        // terminate execution if interrupted
+        boost::this_thread::interruption_point();
     }
 
     std::cout << "\rloading user num: " << userNum << "\t" << std::endl;
@@ -723,6 +727,9 @@ bool RecommendTaskService::parseItemSCD_(const std::string& scdPath)
             LOG(ERROR) << "unknown SCD type " << scdType;
             break;
         }
+
+        // terminate execution if interrupted
+        boost::this_thread::interruption_point();
     }
 
     std::cout << "\rloading item num: " << itemNum << "\t" << std::endl;
@@ -806,6 +813,9 @@ bool RecommendTaskService::parseOrderSCD_(const std::string& scdPath)
         }
 
         loadOrderItem_(userIdStr, orderIdStr, orderItem, orderMap);
+
+        // terminate execution if interrupted
+        boost::this_thread::interruption_point();
     }
 
     saveOrderMap_(orderMap);

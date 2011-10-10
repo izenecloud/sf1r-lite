@@ -5,6 +5,7 @@
 
 #include <util/osgi/BundleInfo.h>
 #include <util/osgi/ServiceInfo.h>
+#include <common/JobScheduler.h>
 
 namespace sf1r
 {
@@ -72,6 +73,11 @@ IService* OSGILauncher::getService(const std::string& bundleName, const std::str
 
 void OSGILauncher::stop()
 {
+    // JobScheduler must be closed before all bundles are removed,
+    // otherwise the JobScheduler thread might be resumed after bundles are destroyed,
+    // which might lead to memory access problem.
+    JobScheduler::get()->close();
+
     this->registry_->removeAllBundleInfos();
 }
 
