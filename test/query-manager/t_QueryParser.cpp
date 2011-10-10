@@ -97,7 +97,7 @@ BOOST_AUTO_TEST_CASE(normalizeQuery_test)
     }
 
     std::string queryString = "{  test  \"case  \"  * no?unigram } ^ 12(month \" case\" *no?unigram";
-    std::string normResults[2] = {"{test \"case \" * no?unigram}^12&(month&\" case\"&*no?unigram)", "{test \" case\"* no?unigram}^12(month&case&no&unigram)"};
+    std::string normResults[2] = {"{test \"case \" * no?unigram}^12&(month&\" case\"&*no?unigram)", "{test \"case \" * no?unigram}^12&(month&case&no&unigram)"};
 
     queryParser.normalizeQuery( queryString, out, true );
     BOOST_CHECK_EQUAL( out , normResults[0] );

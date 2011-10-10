@@ -8,7 +8,6 @@
 ///
 
 #include "SearchKeywordOperation.h"
-#include "QueryParser.h"
 
 namespace sf1r {
 

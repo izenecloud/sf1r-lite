@@ -89,9 +89,6 @@ namespace sf1r {
             static boost::unordered_map<std::string , std::string> operEncodeDic_; // < "\^" , "::$OP_UP$::" >
             static boost::unordered_map<std::string , std::string> operDecodeDic_; // < "::$OP_UP$::" , "^" >
 
-            static std::string openBracket_;  // <bracket char , if close bracket>
-            static std::string closeBracket_;  // <bracket char , if close bracket>
-
             boost::shared_ptr<LAManager> laManager_;
             boost::shared_ptr<izenelib::ir::idmanager::IDManager> idManager_;
 
