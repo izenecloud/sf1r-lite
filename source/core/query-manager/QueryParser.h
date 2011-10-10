@@ -145,7 +145,7 @@ namespace sf1r {
             /// @param[normString] normalized query string.
             /// @return true if success or false.
             ///
-            static void normalizeQuery(const std::string& queryString, std::string& normString, bool indexUnigram = true);
+            static void normalizeQuery(const std::string& queryString, std::string& normString, bool hasUnigramProperty);
 
             ///
             /// @brief parses query and generates QueryTree.
@@ -160,6 +160,7 @@ namespace sf1r {
                     const izenelib::util::UString& queryUStr,
                     QueryTreePtr& queryTree,
                     bool unigramFlag,
+                    bool hasUnigramProperty,
                     bool removeChineseSpace = true );
 
             ///
@@ -177,6 +178,7 @@ namespace sf1r {
                     QueryTreePtr& analyzedQueryTree,
                     std::string& expandedQueryString,
                     bool unigramFlag,
+                    bool hasUnigramProperty,
                     bool isUnigramSearchMode,
                     PersonalSearchInfo& personalSearchInfo);
 
@@ -186,13 +188,14 @@ namespace sf1r {
                                 const AnalysisInfo& analysisInfo,
                                 const izenelib::util::UString& rawUStr,
                                 QueryTreePtr& analyzedQueryTree,
-                                bool unigramFlag)
+                                bool unigramFlag,
+                                bool hasUnigramProperty)
             {
                 std::string expandedQueryString;
                 PersonalSearchInfo personalSearchInfo;
                 personalSearchInfo.enabled = false;
                 return getAnalyzedQueryTree(synonymExtension, analysisInfo, rawUStr, analyzedQueryTree, expandedQueryString,
-                        unigramFlag, false, personalSearchInfo);
+                        unigramFlag, hasUnigramProperty, false, personalSearchInfo);
             }
 
         private:

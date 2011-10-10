@@ -123,7 +123,7 @@ bool SemanticKernel::buildQuery_(SearchKeywordOperation&action, izenelib::util::
 {
     action.clear();
     // Build raw Query Tree
-    if ( !action.queryParser_.parseQuery( queryUStr, action.rawQueryTree_, action.unigramFlag_ ) )
+    if ( !action.queryParser_.parseQuery( queryUStr, action.rawQueryTree_, action.unigramFlag_, action.hasUnigramProperty_ ) )
         return false;
     //action.rawQueryTree_->print();
 
@@ -136,7 +136,7 @@ bool SemanticKernel::buildQuery_(SearchKeywordOperation&action, izenelib::util::
             continue;
 
         QueryTreePtr tmpQueryTree;
-        if ( !action.queryParser_.getAnalyzedQueryTree(false, analysisInfo_, queryUStr, tmpQueryTree, true))
+        if ( !action.queryParser_.getAnalyzedQueryTree(false, analysisInfo_, queryUStr, tmpQueryTree, true, action.hasUnigramProperty_))
             return false;
 
         //tmpQueryTree->print();

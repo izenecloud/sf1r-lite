@@ -123,7 +123,7 @@ namespace sf1r
 
     } // end - addEscapeCharToOperator()
 
-    void QueryParser::normalizeQuery(const std::string& queryString, std::string& normString, bool indexUnigram)
+    void QueryParser::normalizeQuery(const std::string& queryString, std::string& normString, bool hasUnigramProperty)
     {
         std::string tmpNormString;
         std::string::const_iterator iter, iterEnd;
@@ -138,8 +138,8 @@ namespace sf1r
         char separator[] = "& ";
         bool inBracket = false;
 
-        while ( iter != iterEnd && ( blanks[indexUnigram].find(*iter) != std::string::npos || *iter == '&' || *iter == '|' ) ) ++iter;
-        while ( iterEnd != iter && ( blanks[indexUnigram].find(*(iterEnd - 1)) != std::string::npos || *(iterEnd - 1) == '&' || *(iterEnd - 1) == '|' || *(iterEnd - 1) == '!' ) ) --iterEnd;
+        while ( iter != iterEnd && ( blanks[hasUnigramProperty].find(*iter) != std::string::npos || *iter == '&' || *iter == '|' ) ) ++iter;
+        while ( iterEnd != iter && ( blanks[hasUnigramProperty].find(*(iterEnd - 1)) != std::string::npos || *(iterEnd - 1) == '&' || *(iterEnd - 1) == '|' || *(iterEnd - 1) == '!' ) ) --iterEnd;
 
         // -----[ Step 2 : Remove redundant spaces and do some more tricks ]
         std::stack<char> bracketStack;
@@ -152,13 +152,13 @@ namespace sf1r
             case '|':
                 // ( hello world) -> (hello world)
                 tmpNormString.push_back( *iter );
-                while ( ++iter != iterEnd && blanks[indexUnigram || inBracket].find(*iter) != std::string::npos );
+                while ( ++iter != iterEnd && blanks[hasUnigramProperty || inBracket].find(*iter) != std::string::npos );
                 break;
 
             case '(':
                 if (!inBracket)
                 {
-                    while ( ++iter != iterEnd && ( blanks[indexUnigram].find(*iter) != std::string::npos || closeBracket_.find(*iter) != std::string::npos ) );
+                    while ( ++iter != iterEnd && ( blanks[hasUnigramProperty].find(*iter) != std::string::npos || closeBracket_.find(*iter) != std::string::npos ) );
                     if (iter != iterEnd)
                     {
                         tmpNormString.push_back('(');
@@ -173,7 +173,7 @@ namespace sf1r
                 break;
 
             case '[':
-                while ( ++iter != iterEnd && blanks[indexUnigram || inBracket].find(*iter) != std::string::npos );
+                while ( ++iter != iterEnd && blanks[hasUnigramProperty || inBracket].find(*iter) != std::string::npos );
                 if (iter == iterEnd)
                     break;
                 if ( inBracket || *iter != ']' )
@@ -187,14 +187,14 @@ namespace sf1r
                 }
                 else
                 {
-                    while ( ++iter != iterEnd && blanks[indexUnigram].find(*iter) != std::string::npos );
+                    while ( ++iter != iterEnd && blanks[hasUnigramProperty].find(*iter) != std::string::npos );
                     if ( iter != iterEnd && !tmpNormString.empty() && tmpNormString[tmpNormString.size() - 1] != '(' && tmpNormString[tmpNormString.size() - 1] != '&' )
                         tmpNormString.push_back('&');
                 }
                 break;
 
             case '{':
-                while ( ++iter != iterEnd && blanks[indexUnigram || inBracket].find(*iter) != std::string::npos );
+                while ( ++iter != iterEnd && blanks[hasUnigramProperty || inBracket].find(*iter) != std::string::npos );
                 if (iter == iterEnd)
                     break;
                 if ( inBracket || *iter != '}' )
@@ -208,14 +208,14 @@ namespace sf1r
                 }
                 else
                 {
-                    while ( ++iter != iterEnd && blanks[indexUnigram].find(*iter) != std::string::npos );
+                    while ( ++iter != iterEnd && blanks[hasUnigramProperty].find(*iter) != std::string::npos );
                     if ( iter != iterEnd && !tmpNormString.empty() && tmpNormString[tmpNormString.size() - 1] != '(' && tmpNormString[tmpNormString.size() - 1] != '&' )
                         tmpNormString.push_back('&');
                 }
                 break;
 
             case ')':
-                while ( ++iter != iterEnd && blanks[indexUnigram || inBracket].find(*iter) != std::string::npos );
+                while ( ++iter != iterEnd && blanks[hasUnigramProperty || inBracket].find(*iter) != std::string::npos );
                 if ( !bracketStack.empty() )
                 {
                     tmpNormString.push_back(')');
@@ -227,7 +227,7 @@ namespace sf1r
                 break;
 
             case ']':
-                while ( ++iter != iterEnd && blanks[indexUnigram || inBracket].find(*iter) != std::string::npos );
+                while ( ++iter != iterEnd && blanks[hasUnigramProperty || inBracket].find(*iter) != std::string::npos );
                 if (inBracket)
                 {
                     tmpNormString.push_back(']');
@@ -242,7 +242,7 @@ namespace sf1r
                 break;
 
             case '}':
-                while ( ++iter != iterEnd && blanks[indexUnigram || inBracket].find(*iter) != std::string::npos );
+                while ( ++iter != iterEnd && blanks[hasUnigramProperty || inBracket].find(*iter) != std::string::npos );
                 if (inBracket)
                 {
                     tmpNormString.push_back('}');
@@ -261,13 +261,13 @@ namespace sf1r
                 // Remove space between ^ and number and add space between number and open bracket.
                 // {Test case}^ 123(case) -> {Test case}^123 (case)
                 tmpNormString.push_back( *iter );
-                while ( ++iter != iterEnd && blanks[indexUnigram || inBracket].find(*iter) != std::string::npos );
+                while ( ++iter != iterEnd && blanks[hasUnigramProperty || inBracket].find(*iter) != std::string::npos );
 
                 if (!inBracket)
                 {
                     while ( iter != iterEnd && isdigit(*iter) ) // Store digit
                         tmpNormString.push_back( *iter++ );
-                    while ( iter != iterEnd && blanks[indexUnigram || inBracket].find(*iter) != std::string::npos) ++iter;
+                    while ( iter != iterEnd && blanks[hasUnigramProperty || inBracket].find(*iter) != std::string::npos) ++iter;
                     if ( iter != iterEnd && *iter != '&' && *iter != '|' && closeBracket_.find(*iter) == std::string::npos )
                         tmpNormString.push_back(separator[inBracket]);
                 }
@@ -275,7 +275,7 @@ namespace sf1r
 
             case '"': // Skip all things inside the exact bracket.
             {
-                if (!indexUnigram)
+                if (!hasUnigramProperty)
                 {
                     while ( ++iter != iterEnd && blanks[inBracket].find(*iter) != std::string::npos );
                     if ( iter != iterEnd && *iter != '&' && *iter != '|' && closeBracket_.find(*iter) == std::string::npos )
@@ -306,9 +306,9 @@ namespace sf1r
                 tmpNormString.push_back( *iter++ );
                 if (iter == iterEnd)
                     break;
-                if (blanks[indexUnigram || inBracket].find(*iter) != std::string::npos)
+                if (blanks[hasUnigramProperty || inBracket].find(*iter) != std::string::npos)
                 {
-                    while ( ++iter != iterEnd && blanks[indexUnigram || inBracket].find(*iter) != std::string::npos );
+                    while ( ++iter != iterEnd && blanks[hasUnigramProperty || inBracket].find(*iter) != std::string::npos );
                     if ( iter != iterEnd && *iter != '&' && *iter != '|' && closeBracket_.find(*iter) == std::string::npos )
                         tmpNormString.push_back(separator[inBracket]);
                     break;
@@ -345,6 +345,7 @@ namespace sf1r
             const izenelib::util::UString& queryUStr,
             QueryTreePtr& queryTree,
             bool unigramFlag,
+            bool hasUnigramProperty,
             bool removeChineseSpace
             )
     {
@@ -356,7 +357,7 @@ namespace sf1r
         queryUStr.convertString(queryString, izenelib::util::UString::UTF_8);
 
         processEscapeOperator(queryString);
-        normalizeQuery(queryString, normQueryString);
+        normalizeQuery(queryString, normQueryString, hasUnigramProperty);
 
         // Remove redundant space for chinese character.
         if ( removeChineseSpace )
@@ -386,6 +387,7 @@ namespace sf1r
         QueryTreePtr& analyzedQueryTree,
         std::string& expandedQueryString,
         bool unigramFlag,
+        bool hasUnigramProperty,
         bool isUnigramSearchMode,
         PersonalSearchInfo& personalSearchInfo
     )
@@ -394,7 +396,7 @@ namespace sf1r
         LAEXInfo laInfo(unigramFlag, synonymExtension, analysisInfo);
 
         // Apply escaped operator.
-        QueryParser::parseQuery( rawUStr, tmpQueryTree, unigramFlag );
+        QueryParser::parseQuery( rawUStr, tmpQueryTree, unigramFlag, hasUnigramProperty );
         bool ret = recursiveQueryTreeExtension(tmpQueryTree, laInfo, isUnigramSearchMode, personalSearchInfo, expandedQueryString);
         if ( ret )
         {
