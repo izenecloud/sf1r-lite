@@ -266,7 +266,15 @@ namespace sf1r
                     if (parenthesesCount)
                     {
                         --parenthesesCount;
-                        tmpNormString.push_back(')');
+                        string::iterator it = tmpNormString.end() - 1;
+                        while (!tmpNormString.empty() && (*it == '&' || *it == '!' || *it == '|'))
+                            tmpNormString.erase(it--);
+                        if (tmpNormString.empty())
+                            break;
+                        if (*it == '(')
+                            tmpNormString.erase(it);
+                        else
+                            tmpNormString.push_back(')');
                     }
                     if (iter != iterEnd && noBoolBefore.find(*iter) == string::npos && !tmpNormString.empty() && noBoolAfter.find(*tmpNormString.rbegin()) == string::npos)
                         tmpNormString.push_back('&');
@@ -325,12 +333,11 @@ namespace sf1r
         } // end - while
 
         // -----[ Step 3 : Match the unclosed brackets ]
+        string::iterator it = tmpNormString.end() - 1;
+        while (!tmpNormString.empty() && (*it == '&' || *it == '!' || *it == '|'))
+            tmpNormString.erase(it--);
         for (int i = 0; i < parenthesesCount; i++)
             tmpNormString.push_back(')');
-
-        string::iterator it = tmpNormString.end() - 1;
-        if (*it == '&')
-            tmpNormString.erase(it);
 
         normString.swap(tmpNormString);
 
