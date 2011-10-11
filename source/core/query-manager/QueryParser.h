@@ -22,7 +22,6 @@
 #include <boost/spirit/include/classic_ast.hpp>
 #include <boost/spirit/include/classic_chset.hpp>
 
-#include <boost/unordered_map.hpp>
 #include <boost/thread/once.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -34,7 +33,7 @@ namespace sf1r {
     class QueryParser : public grammar<QueryParser>
     {
         public:
-            typedef char const* iterator_t;
+            typedef uint16_t const* iterator_t;
             typedef tree_match<iterator_t> parse_tree_match_t;
             typedef parse_tree_match_t::tree_iterator iter_t;
 
@@ -53,22 +52,22 @@ namespace sf1r {
                     rootQuery = root_node_d[eps_p] >> +boolQuery;
 
                     boolQuery = (stringQuery | notQuery | priorQuery | exactQuery | orderedQuery | nearbyQuery)
-                        >> !( (root_node_d[ch_p('&')] >> boolQuery) | (root_node_d[ch_p('|')] >> boolQuery) );
-                    notQuery = root_node_d[ch_p('!')] >> (stringQuery | priorQuery | exactQuery);
+                        >> !( (root_node_d[chlit<uint16_t>('&')] >> boolQuery) | (root_node_d[chlit<uint16_t>('|')] >> boolQuery) );
+                    notQuery = root_node_d[chlit<uint16_t>('!')] >> (stringQuery | priorQuery | exactQuery);
 
-                    stringQuery = leaf_node_d[ lexeme_d[+(~chset_p(operStr_.c_str()))] ];
+                    stringQuery = leaf_node_d[ lexeme_d[+(~chset<uint16_t>(operUStr_.c_str()))] ];
 
-                    exactQuery = root_node_d[ch_p('\"')] >> exactString >> no_node_d[ch_p('\"')];
-                    exactString = leaf_node_d[ lexeme_d[+(~ch_p('\"'))] ];
+                    exactQuery = root_node_d[chlit<uint16_t>('\"')] >> exactString >> no_node_d[chlit<uint16_t>('\"')];
+                    exactString = leaf_node_d[ lexeme_d[+(~chlit<uint16_t>('\"'))] ];
 
-                    orderedQuery = root_node_d[ch_p('[')] >> orderedString >> no_node_d[ch_p(']')];
-                    orderedString = leaf_node_d[ lexeme_d[+(~ch_p(']'))] ];
+                    orderedQuery = root_node_d[chlit<uint16_t>('[')] >> orderedString >> no_node_d[chlit<uint16_t>(']')];
+                    orderedString = leaf_node_d[ lexeme_d[+(~chlit<uint16_t>(']'))] ];
 
-                    nearbyQuery = root_node_d[ch_p('{')] >> nearbyString >> no_node_d[ch_p('}')]
-                        >> !( no_node_d[ch_p('^')] >> uint_p );
-                    nearbyString = leaf_node_d[ lexeme_d[+(~ch_p('}'))] ];
+                    nearbyQuery = root_node_d[chlit<uint16_t>('{')] >> nearbyString >> no_node_d[chlit<uint16_t>('}')]
+                        >> !( no_node_d[chlit<uint16_t>('^')] >> uint_p );
+                    nearbyString = leaf_node_d[ lexeme_d[+(~chlit<uint16_t>('}'))] ];
 
-                    priorQuery = inner_node_d[ch_p('(') >> boolQuery >> ch_p(')')];
+                    priorQuery = inner_node_d[chlit<uint16_t>('(') >> boolQuery >> chlit<uint16_t>(')')];
 
                 } // end - definition()
 
@@ -83,11 +82,11 @@ namespace sf1r {
             }; // end - definition
 
         private: // private member variables
-            static std::string operStr_;
-            static std::string escOperStr_;
+            static izenelib::util::UString operUStr_;
+            static izenelib::util::UString escOperUStr_;
 
-            static boost::unordered_map<std::string , std::string> operEncodeDic_; // < "\^" , "::$OP_UP$::" >
-            static boost::unordered_map<std::string , std::string> operDecodeDic_; // < "::$OP_UP$::" , "^" >
+            static std::vector<std::pair<izenelib::util::UString , izenelib::util::UString> > operEncodeDic_; // < "\^" , "::$OP_UP$::" >
+            static std::vector<std::pair<izenelib::util::UString , izenelib::util::UString> > operDecodeDic_; // < "::$OP_UP$::" , "^" >
 
             boost::shared_ptr<LAManager> laManager_;
             boost::shared_ptr<izenelib::ir::idmanager::IDManager> idManager_;
@@ -106,28 +105,28 @@ namespace sf1r {
             ///
             /// @brief replaces escaped operators to the regestered term.
             /// @details Example :    \^ => ::$OP_UP$::
-            /// @param[queryString] input and output of this interface.
+            /// @param[queryUStr] input and output of this interface.
             ///
-            static void processEscapeOperator(std::string& queryString);
+            static void processEscapeOperator(izenelib::util::UString& queryUStr);
 
             ///
             /// @brief recorver regestered term to operators so that it can be applied as a original keyword.
             /// @details Example :    ::$OP_UP$:: => ^
-            /// @param[queryString] input and output of this interface.
+            /// @param[queryUStr] input and output of this interface.
             ///
-            static void recoverEscapeOperator(std::string& queryString);
+            static void recoverEscapeOperator(izenelib::util::UString& queryUStr);
 
             ///
             /// @brief add \ to operators which is used in the recursive analyzing.
             /// @details Example : ^ => \^
             ///
-            static void addEscapeCharToOperator(std::string& queryString);
+            static void addEscapeCharToOperator(izenelib::util::UString& queryUStr);
 
             ///
             /// @brief remove \ from operators.
             /// @details Example : \^ => ^
             ///
-            static void removeEscapeChar(std::string& queryString);
+            static void removeEscapeChar(izenelib::util::UString& queryUStr);
 
             ///
             /// @brief normalizes query string before parsing. It removes or adds space.
@@ -138,11 +137,11 @@ namespace sf1r {
             ///         - ( Hello World) -> (Hello World)
             ///         - {test case } ^ 12(month case) -> {test case}^12 (month case)
             ///         - (bracket close)(open space) -> (bracket close) (open space)
-            /// @param[queryString] source query string.
-            /// @param[normString] normalized query string.
+            /// @param[queryUStr] source query string.
+            /// @param[normUStr] normalized query string.
             /// @return true if success or false.
             ///
-            static void normalizeQuery(const std::string& queryString, std::string& normString, bool hasUnigramProperty);
+            static void normalizeQuery(const izenelib::util::UString& queryUStr, izenelib::util::UString& normUStr, bool hasUnigramProperty);
 
             ///
             /// @brief parses query and generates QueryTree.
@@ -245,7 +244,7 @@ namespace sf1r {
             bool processExactQuery( iter_t const& i, QueryTreePtr& queryTree);
             bool processBracketQuery( iter_t const& i, QueryTree::QueryType queryType, QueryTreePtr& queryTree, bool unigramFlag);
             bool tokenizeBracketQuery(
-                    const std::string& queryStr,
+                    const izenelib::util::UString& queryUStr,
                     const AnalysisInfo& analysisInfo,
                     QueryTree::QueryType queryType,
                     QueryTreePtr& queryTree,
@@ -253,7 +252,7 @@ namespace sf1r {
                     );
             bool processBoolQuery(iter_t const& i, QueryTreePtr& queryTree, bool unigramFlag);
             bool processChildTree(iter_t const& i, QueryTreePtr& queryTree, bool unigramFlag);
-            static bool processReplaceAll(std::string& queryString, boost::unordered_map<std::string,std::string>& dic);
+            static bool processReplaceAll(izenelib::util::UString& queryUStr, std::vector<std::pair<izenelib::util::UString,izenelib::util::UString> >& dic);
 
             ///
             /// @brief set utf8 string into keyword_, keywordId_ and keyowrdUString_ of QueryTree
