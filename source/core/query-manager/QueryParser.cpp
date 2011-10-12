@@ -9,6 +9,7 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
+#include <boost/lexical_cast.hpp>
 #include <algorithm>
 
 #define USTRING(str) UString(str, UString::UTF_8)
@@ -543,7 +544,7 @@ namespace sf1r
                     QueryTreePtr subChild( new QueryTree(QueryTree::KEYWORD) );
                     if ( !setKeyword(subChild, *ustrIter) ) {
                         string str;
-                        (*ustrIter).convertString(str, UString::UTF_8);
+                        ustrIter->convertString(str, UString::UTF_8);
                         cout << "[QueryParser::extendPersonlSearchTree] Failed to set keyword: " << str << endl;
                         continue; // todo, apply LA
                     }
@@ -602,7 +603,6 @@ namespace sf1r
             string escAddedStr;
             analyzedUStr.convertString(escAddedStr, UString::UTF_8);
             expandedQueryString += escAddedStr; // for search cache identity
-            analyzedUStr.assign(escAddedStr, UString::UTF_8);
             if (!QueryParser::parseQuery(analyzedUStr, tmpQueryTree, laInfo.unigramFlag_, false))
                 return false;
             queryTree = tmpQueryTree;
@@ -774,12 +774,8 @@ namespace sf1r
             if ( distIter != i->children.end() )
             {
                 UString distUStr( distIter->value.begin(), distIter->value.end() );
-                string distStr;
-                distUStr.convertString(distStr, UString::UTF_8);
-                distance = atoi( distStr.c_str() );
+                distance = boost::lexical_cast<int>(distUStr);
             }
-            else
-                distance = 20;
         }
         return tokenizeBracketQuery(queryUStr, analysisInfo, queryType, queryTree, distance);
     } // end - processBracketQuery()
