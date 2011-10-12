@@ -4,6 +4,7 @@
 #include <query-manager/QMCommonFunc.h>
 
 #include <boost/tokenizer.hpp>
+#include <boost/lexical_cast.hpp>
 
 using namespace std;
 using namespace la;
@@ -54,7 +55,7 @@ void setOptions( const std::string & option, EnglishAnalyzer * ka, bool outputLo
                 else
                 {
                     if( outputLog )
-                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'S':"<<*o<<endl;					
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'S':"<<*o<<endl;
                     errorVal = true;
                 }
                 break;
@@ -64,7 +65,7 @@ void setOptions( const std::string & option, EnglishAnalyzer * ka, bool outputLo
 
             default:
                 if( outputLog )
-                    DLOG(WARNING)<<"Invalid LanguageLA option value for Option "<<*o<<endl;				
+                    DLOG(WARNING)<<"Invalid LanguageLA option value for Option "<<*o<<endl;
                 checkDupl = false;
                 break;
         }
@@ -73,7 +74,7 @@ void setOptions( const std::string & option, EnglishAnalyzer * ka, bool outputLo
             if( hisSet.find( upperType ) != hisSet.end() )
             {
                 if( !errorVal && outputLog )
-                    DLOG(WARNING)<<"Duplicated LanguageLA option "<<origChar<<", it would overwrite the previous setting. "<<endl;				
+                    DLOG(WARNING)<<"Duplicated LanguageLA option "<<origChar<<", it would overwrite the previous setting. "<<endl;
             }
             else
                 hisSet.insert( upperType );
@@ -110,7 +111,7 @@ void setOptions( const std::string & option, ChineseAnalyzer * ka, bool outputLo
                 }
                 else if ((*o >= '1') && (*o <= '9'))
                 {
-                    ka->setNBest( atoi(o) );
+                    ka->setNBest( boost::lexical_cast<int>(o) );
                 }
                 else
                 {
@@ -132,18 +133,18 @@ void setOptions( const std::string & option, ChineseAnalyzer * ka, bool outputLo
                 else
                 {
                     if( outputLog )
-                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'S':"<<*o<<endl;					
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'S':"<<*o<<endl;
                     errorVal = true;
                 }
                 break;
             case 'T': case 't': // ignore analysis type here
                 ++o;
                 if ((*o >= '1') && (*o <= '9'))
-                    ka->setAnalysisType( (ChineseAnalyzer::ChineseAnalysisType)atoi(o) );
+                    ka->setAnalysisType( (ChineseAnalyzer::ChineseAnalysisType)boost::lexical_cast<int>(o) );
                 else
                 {
                     if( outputLog )
-                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'T':"<<*o<<endl;					
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'T':"<<*o<<endl;
                     errorVal = true;
                 }
                 break;
@@ -160,7 +161,7 @@ void setOptions( const std::string & option, ChineseAnalyzer * ka, bool outputLo
                 else
                 {
                     if( outputLog )
-                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'V':"<<*o<<endl;					
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'V':"<<*o<<endl;
                     errorVal = true;
                 }
                 break;
@@ -170,7 +171,7 @@ void setOptions( const std::string & option, ChineseAnalyzer * ka, bool outputLo
 
             default:
                 if( outputLog )
-                    DLOG(WARNING)<<"Invalid LanguageLA option value for Option "<<*o<<endl;				
+                    DLOG(WARNING)<<"Invalid LanguageLA option value for Option "<<*o<<endl;
                 checkDupl = false;
                 break;
         }
@@ -179,7 +180,7 @@ void setOptions( const std::string & option, ChineseAnalyzer * ka, bool outputLo
             if( hisSet.find( upperType ) != hisSet.end() )
             {
                 if( !errorVal && outputLog )
-                    DLOG(WARNING)<<"Duplicated LanguageLA option "<<origChar <<", it would overwrite the previous setting."<<endl;				
+                    DLOG(WARNING)<<"Duplicated LanguageLA option "<<origChar <<", it would overwrite the previous setting."<<endl;
             }
             else
                 hisSet.insert( upperType );
@@ -216,12 +217,12 @@ void setOptions( const std::string & option, JapaneseAnalyzer * ka, bool outputL
                 }
                 else if ((*o >= '1') && (*o <= '9'))
                 {
-                    ka->setNBest( atoi(o) );
+                    ka->setNBest( boost::lexical_cast<int>(o) );
                 }
                 else
                 {
                     if( outputLog )
-                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'R'"<<*o<<endl;					
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'R'"<<*o<<endl;
                     errorVal = true;
                 }
                 break;
@@ -238,7 +239,7 @@ void setOptions( const std::string & option, JapaneseAnalyzer * ka, bool outputL
                 else
                 {
                     if( outputLog )
-                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'S'"<<*o<<endl;					
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'S'"<<*o<<endl;
                     errorVal = true;
                 }
                 break;
@@ -248,7 +249,7 @@ void setOptions( const std::string & option, JapaneseAnalyzer * ka, bool outputL
 
             default:
                 if( outputLog )
-                    DLOG(WARNING)<<"Invalid LanguageLA option value for Option "<<*o<<endl;				
+                    DLOG(WARNING)<<"Invalid LanguageLA option value for Option "<<*o<<endl;
                 checkDupl = false;
                 break;
         }
@@ -257,7 +258,7 @@ void setOptions( const std::string & option, JapaneseAnalyzer * ka, bool outputL
             if( hisSet.find( upperType ) != hisSet.end() )
             {
                 if( !errorVal && outputLog )
-                    DLOG(WARNING)<<"Duplicated LanguageLA option "<<origChar <<", it would overwrite the previous setting."<<endl;					
+                    DLOG(WARNING)<<"Duplicated LanguageLA option "<<origChar <<", it would overwrite the previous setting."<<endl;
             }
             else
                 hisSet.insert( upperType );
@@ -340,12 +341,12 @@ void setOptions( const std::string & option, KoreanAnalyzer * ka, bool outputLog
                 }
                 else if ((*o >= '2') && (*o <= '9'))
                 {
-                    ka->setNBest( atoi(o) );
+                    ka->setNBest( boost::lexical_cast<int>(o) );
                 }
                 else
                 {
                     if( outputLog )
-                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'R'"<<*o<<endl;						
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'R'"<<*o<<endl;
                     errorVal = true;
                 }
                 break;
@@ -357,12 +358,12 @@ void setOptions( const std::string & option, KoreanAnalyzer * ka, bool outputLog
                 }
                 else if ((*o >= '1') && (*o <= '9'))
                 {
-                    ka->setLowDigitBound( atoi(o) );
+                    ka->setLowDigitBound( boost::lexical_cast<int>(o) );
                 }
                 else
                 {
                     if( outputLog )
-                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'N'"<<*o<<endl;						
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'N'"<<*o<<endl;
                     errorVal = true;
                 }
                 break;
@@ -397,7 +398,7 @@ void setOptions( const std::string & option, KoreanAnalyzer * ka, bool outputLog
                 else
                 {
                     if( outputLog )
-                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'V'"<<*o<<endl;											
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'V'"<<*o<<endl;
                     errorVal = true;
                 }
                 break;
@@ -414,7 +415,7 @@ void setOptions( const std::string & option, KoreanAnalyzer * ka, bool outputLog
                 else
                 {
                     if( outputLog )
-                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'S'"<<*o<<endl;											
+                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'S'"<<*o<<endl;
                     errorVal = true;
                 }
                 break;
@@ -423,7 +424,7 @@ void setOptions( const std::string & option, KoreanAnalyzer * ka, bool outputLog
                 break;
             default:
                 if( outputLog )
-                    DLOG(WARNING)<<"Invalid LanguageLA option value for Option "<<*o<<endl;										
+                    DLOG(WARNING)<<"Invalid LanguageLA option value for Option "<<*o<<endl;
                 checkDupl = false;
                 break;
         }
@@ -432,8 +433,8 @@ void setOptions( const std::string & option, KoreanAnalyzer * ka, bool outputLog
             if( hisSet.find( upperType ) != hisSet.end() )
             {
                 if( !errorVal && outputLog )
-                    DLOG(WARNING)<<"Duplicated LanguageLA option "<<origChar <<", it would overwrite the previous setting."<<endl;					
-				
+                    DLOG(WARNING)<<"Duplicated LanguageLA option "<<origChar <<", it would overwrite the previous setting."<<endl;
+
             }
             else
                 hisSet.insert( upperType );
@@ -704,7 +705,7 @@ namespace sf1r
             {
                 if( outputLog )
                 {
-                    DLOG(WARNING)<<"Cannot find tokenizer id: "<<tokenizerNameIter->c_str() <<endl;					
+                    DLOG(WARNING)<<"Cannot find tokenizer id: "<<tokenizerNameIter->c_str() <<endl;
                 }
                 return NULL;
             }
@@ -718,7 +719,7 @@ namespace sf1r
                 {
                     if( outputLog )
                     {
-                        DLOG(WARNING)<<"Can't gain any valid character from \"value\" and \"code\" of tokenizer "<<tokenizerNameIter->c_str() <<endl;						
+                        DLOG(WARNING)<<"Can't gain any valid character from \"value\" and \"code\" of tokenizer "<<tokenizerNameIter->c_str() <<endl;
                     }
                     continue;
                 }
@@ -737,7 +738,7 @@ namespace sf1r
                 if( containSpace )
                 {
                     if( outputLog )
-                        DLOG(WARNING)<<"Tokenizer "<<tokenizerNameIter->c_str() <<" contains space characters."<<endl;											
+                        DLOG(WARNING)<<"Tokenizer "<<tokenizerNameIter->c_str() <<" contains space characters."<<endl;
                 }
             }
 
@@ -752,7 +753,7 @@ namespace sf1r
             {
                 if( outputLog )
                 {
-                    DLOG(WARNING)<<"Empty tokenizer method "<<methodName<<" for tokenizer "<<tokenizerNameIter->c_str() <<endl;					
+                    DLOG(WARNING)<<"Empty tokenizer method "<<methodName<<" for tokenizer "<<tokenizerNameIter->c_str() <<endl;
                 }
                 return NULL;
             }
@@ -770,8 +771,8 @@ namespace sf1r
         if ( laConfigUnitIter == laConfigUnitMap_.end() )
         {
             if( outputLog )
-                DLOG(ERROR)<<"Cannot Find LA analyzer. AnalyzerID  "<<analysisInfo.analyzerId_<<endl;													
-			
+                DLOG(ERROR)<<"Cannot Find LA analyzer. AnalyzerID  "<<analysisInfo.analyzerId_<<endl;
+
             return NULL;
         }
 
@@ -883,8 +884,8 @@ namespace sf1r
                     if( outputLog )
                     {
                         DLOG(WARNING)<<"Invalid special char "<<invalidStr<<" for analyzer  "<<analysisInfo.analyzerId_
-                                <<" (accept 0x0000 to 0x007F)"<<endl;													
-					
+                                <<" (accept 0x0000 to 0x007F)"<<endl;
+
                     }
                 }
                 else
@@ -910,7 +911,7 @@ namespace sf1r
                     case 'T': case 't':
                         ++o;
                         if ((*o >= '1') && (*o <= '9'))
-                            type = static_cast<unsigned int>( atoi(o) );
+                            type = boost::lexical_cast<unsigned int>(o);
                         break;
                     case ' ':
                         break;
@@ -971,7 +972,7 @@ namespace sf1r
                     if( outputLog )
                     {
                         DLOG(WARNING)<<"Invalid special char "<<invalidStr<<" for analyzer  "<<analysisInfo.analyzerId_
-                                <<" (accept 0x0000 to 0x007F)"<<endl;													
+                                <<" (accept 0x0000 to 0x007F)"<<endl;
                     }
                 }
                 else
@@ -1031,7 +1032,7 @@ namespace sf1r
                     if( outputLog )
                     {
                         DLOG(WARNING)<<"Invalid special char "<<invalidStr<<" for analyzer  "<<analysisInfo.analyzerId_
-                                <<" (accept 0x0000 to 0x007F)"<<endl;							
+                                <<" (accept 0x0000 to 0x007F)"<<endl;
                     }
                 }
                 else
@@ -1089,7 +1090,7 @@ namespace sf1r
                     stringstream message;
                     message << "LAPool::createLA() analysis \"" << analysis << "\"'s option is invalid: "<< option << ".";
                     if( outputLog )
-                        DLOG(ERROR)<<"Analysis option is not available. Type "<<message.str()<<endl;						
+                        DLOG(ERROR)<<"Analysis option is not available. Type "<<message.str()<<endl;
                     throw std::logic_error( message.str() );
                 }
 
@@ -1114,7 +1115,7 @@ namespace sf1r
                     message << "LAPool::createLA() analysis \"" << analysis << "\"'s option, the language name is invalid: "<< langname <<
                             " (include default/cn/jp/kr/en ).";
                     if( outputLog )
-                        DLOG(ERROR)<<"Analysis option is not available. Type "<<message.str()<<endl;						
+                        DLOG(ERROR)<<"Analysis option is not available. Type "<<message.str()<<endl;
                     throw std::logic_error( message.str() );
                 }
 
@@ -1166,7 +1167,7 @@ namespace sf1r
                         message << "LAPool::createLA() analysis \"" << analysis << "\"'s option, requires analyer id when language " <<
                                 "is default or process mode is ma after language "<< langname << ".";
                         if( outputLog )
-                            DLOG(ERROR)<<"Analysis option is not available. Type "<<message.str()<<endl;	
+                            DLOG(ERROR)<<"Analysis option is not available. Type "<<message.str()<<endl;
                         throw std::logic_error( message.str() );
                     }
 
@@ -1189,7 +1190,7 @@ namespace sf1r
                         message << "LAPool::createLA() analysis \"" << analysis << "\"'s option, cannot find analyer id " <<
                                    analyzerId << " after language "<< langname << "(be declared before this Method and inner_ as prefix).";
                         if( outputLog )
-                            DLOG(ERROR)<<"Analysis option is not available. Type "<<message.str()<<endl;							
+                            DLOG(ERROR)<<"Analysis option is not available. Type "<<message.str()<<endl;
                         throw std::logic_error( message.str() );
                     }
 
@@ -1237,7 +1238,7 @@ namespace sf1r
                     stringstream message;
                     message << "LAPool::createLA() analysis \"" << analysis << "\"'s option, requires default language " << ".";
                     if( outputLog )
-                        DLOG(ERROR)<<"Analysis option is not available. Type "<<message.str()<<endl;						
+                        DLOG(ERROR)<<"Analysis option is not available. Type "<<message.str()<<endl;
                     throw std::logic_error( message.str() );
                 }
 
@@ -1248,7 +1249,7 @@ namespace sf1r
             stringstream message;
             message << "LAPool::createLA() analysis type \"" << analysis << "\" not available. ";
             if( outputLog )
-                DLOG(ERROR)<<"Analysis type is not available. Type "<<message.str()<<endl;				
+                DLOG(ERROR)<<"Analysis type is not available. Type "<<message.str()<<endl;
             throw std::logic_error( message.str() );
         }
 
@@ -1319,7 +1320,7 @@ namespace sf1r
                 tokDuplChar << "'(0x" << hex << tokItr->first << ")";
                 if( outputLog )
                 {
-                    DLOG(WARNING)<<"Duplicate Tokenizers (or specialchar) setting for character "<<tokDuplChar.str()<<",in "<<tokanaNamesStr<<endl;					
+                    DLOG(WARNING)<<"Duplicate Tokenizers (or specialchar) setting for character "<<tokDuplChar.str()<<",in "<<tokanaNamesStr<<endl;
                 }
             }
         }
