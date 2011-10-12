@@ -2,7 +2,7 @@
 
 #include <common/Keys.h>
 
-#include <bundles/querylog/QueryLogSearchService.h>
+#include <bundles/mining/QueryLogSearchService.h>
 
 #include <util/ustring/UString.h>
 

@@ -1,7 +1,7 @@
 #ifndef COBRAPROCESS_H_
 #define COBRAPROCESS_H_
 
-#include <bundles/querylog/QueryLogSearchService.h>
+#include <bundles/mining/QueryLogSearchService.h>
 
 #include <util/driver/DriverServer.h>
 
@@ -18,12 +18,12 @@ public:
     CobraProcess() {}
 
     int run();
-	
+
     bool initialize(const std::string& configFileDir);
 
 private:
     bool initLogManager();
-    
+
     bool initLicenseManager();
 
     bool initLAManager();

@@ -15,18 +15,18 @@ QueryLogSearchService::~QueryLogSearchService()
 }
 
 bool QueryLogSearchService::getRefinedQuery(
-    const std::string& collectionName, 
-    const UString& queryUString, 
+    const std::string& collectionName,
+    const UString& queryUString,
     UString& refinedQueryUString
 )
 {
     return QueryCorrectionSubmanager::getInstance().getRefinedQuery(
 			collectionName, queryUString,
-			refinedQueryUString);	
+			refinedQueryUString);
 }
 
 // bool QueryLogSearchService::getAutoFillList(
-//     const izenelib::util::UString& query, 
+//     const izenelib::util::UString& query,
 //     std::vector<std::pair<izenelib::util::UString,uint32_t> >& list
 // )
 // {

@@ -26,7 +26,7 @@ public:
 //     bool getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
 
 private:
-    friend class QueryLogBundleActivator;
+    friend class MiningBundleActivator;
 };
 
 }
