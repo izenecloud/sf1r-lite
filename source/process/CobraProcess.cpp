@@ -10,6 +10,7 @@
 
 #include <bundles/mining/MiningBundleConfiguration.h>
 #include <bundles/mining/MiningBundleActivator.h>
+#include <bundles/mining/QueryLogSearchService.h>
 
 #include <OnSignal.h>
 #include <common/XmlConfigParser.h>
@@ -119,7 +120,7 @@ bool CobraProcess::initLAManager()
     return true;
 }
 
-QueryLogSearchService* CobraProcess::initQuery()
+bool CobraProcess::initQuery()
 {
     ilplib::qa::QuestionAnalysis* pQA = Singleton<ilplib::qa::QuestionAnalysis>::get();
     std::string qahome = SF1Config::get()->getResourceDir();
@@ -129,18 +130,6 @@ QueryLogSearchService* CobraProcess::initQuery()
     {
         pQA->load(qaPath);
     }
-
-    ///create QueryLogBundle
-//    boost::shared_ptr<MiningBundleConfiguration> miningBundleConfig
-//    (new MiningBundleConfiguration(SF1Config::get()->defaultMiningBundleParam_));
-//    std::string bundleName = "MiningBundle";
-//    OSGILauncher& launcher = CollectionManager::get()->getOSGILauncher();
-//    launcher.start(miningBundleConfig);
-//    QueryLogSearchService* service = static_cast<QueryLogSearchService*>(launcher.getService(bundleName, "QueryLogSearchService"));
-
-    //addExitHook(boost::bind(&OSGILauncher::stop, launcher));
-
-    return new QueryLogSearchService(); // service;
 }
 
 bool CobraProcess::initLicenseManager()
@@ -203,8 +192,8 @@ bool CobraProcess::initDriverServer()
 
     // init Router
     router_.reset(new ::izenelib::driver::Router);
-    queryLogService_ = initQuery();
-    initializeDriverRouter(*router_, queryLogService_, enableTest);
+    initQuery();
+    initializeDriverRouter(*router_, new QueryLogSearchService(), enableTest);
 
     boost::shared_ptr<DriverConnectionFactory> factory(
         new DriverConnectionFactory(router_)
@@ -264,7 +253,7 @@ bool CobraProcess::startDistributedServer()
             std::size_t threadNum = SF1Config::get()->brokerAgentConfig_.threadNum_;
             workerServer_.reset(new WorkerServer(curNodeInfo.localHost_, workerPort, threadNum));
             workerServer_->start();
-            workerServer_->setQueryLogSearchService(queryLogService_);
+            workerServer_->setQueryLogSearchService(new QueryLogSearchService());
             cout << "#[Worker Server]started, listening at localhost:"<<workerPort<<" ..."<<endl;
 
             // master notifier, xxx
