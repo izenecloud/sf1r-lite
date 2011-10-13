@@ -115,8 +115,6 @@ bool CobraProcess::initLAManager()
     if (! LAPool::getInstance()->init(laConfig))
         return false;
 
-    atexit(&LAPool::destroy);
-
     return true;
 }
 
