@@ -169,14 +169,6 @@ public:
 class QueryCorrectionPara
 {
 
-private:
-    friend class boost::serialization::access;
-
-    template <typename Archive>
-    void serialize( Archive & ar, const unsigned int version )
-    {
-        ar & base_path & enableEK & enableCN & resource_dir;
-    }
 public:
     std::string base_path;
     bool enableEK;
@@ -188,14 +180,6 @@ public:
 class QueryLogPara
 {
 
-private:
-    friend class boost::serialization::access;
-
-    template <typename Archive>
-    void serialize( Archive & ar, const unsigned int version )
-    {
-        ar & update_time & log_days & cron;
-    }
 public:
     uint32_t update_time;
     uint32_t log_days;
@@ -232,8 +216,6 @@ private:
         ar & similarity_param;
         ar & dc_param;
         ar & ise_param;
-        ar & query_correction_param;
-        ar & query_log_param;
     }
 
 public:
@@ -247,8 +229,8 @@ public:
 
     IsePara ise_param;
 
-    QueryCorrectionPara query_correction_param;
-    QueryLogPara query_log_param;
+    static QueryCorrectionPara query_correction_param;
+    static QueryLogPara query_log_param;
 
 };
 

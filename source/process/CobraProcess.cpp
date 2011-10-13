@@ -120,7 +120,7 @@ bool CobraProcess::initLAManager()
     return true;
 }
 
-bool CobraProcess::initQuery()
+void CobraProcess::initQuery()
 {
     ilplib::qa::QuestionAnalysis* pQA = Singleton<ilplib::qa::QuestionAnalysis>::get();
     std::string qahome = SF1Config::get()->getResourceDir();

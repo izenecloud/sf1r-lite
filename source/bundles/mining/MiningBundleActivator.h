@@ -43,8 +43,6 @@ private:
     
     std::string getQueryDataPath_() const;
 
-    static bool QueryCorrectionInitiated;
-
 public:
     MiningBundleActivator();
     virtual ~MiningBundleActivator();

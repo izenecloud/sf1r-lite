@@ -26,7 +26,7 @@ private:
 
     bool initLAManager();
 
-    bool initQuery();
+    void initQuery();
 
     bool initFireWall();
 

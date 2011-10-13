@@ -1162,15 +1162,23 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     downCase(encoding_str);
     params.GetString("ClassificationPara/trainingencoding", encoding_str);
     mining_config.dc_param.encoding_type = parseEncodingType(encoding_str);
-    //for query correction
-    params.GetString("QueryCorrectionPara/basepath", mining_config.query_correction_param.base_path);
-    params.Get("QueryCorrectionPara/enableEK", mining_config.query_correction_param.enableEK);
-    params.Get("QueryCorrectionPara/enableCN", mining_config.query_correction_param.enableCN);
-    mining_config.query_correction_param.resource_dir = SF1Config::get()->getResourceDir();
-    //for query log
-    params.Get<uint32_t>("QueryLogPara/updatetime", mining_config.query_log_param.update_time);
-    params.Get<uint32_t>("QueryLogPara/logdays", mining_config.query_log_param.log_days);
-    params.GetString("QueryLogPara/cron", mining_config.query_log_param.cron);
+
+    static bool QueryCorrectionInitiated = false;
+
+    if (!QueryCorrectionInitiated)
+    {
+        //for query correction
+        params.GetString("QueryCorrectionPara/basepath", MiningConfig::query_correction_param.base_path);
+        params.Get("QueryCorrectionPara/enableEK", MiningConfig::query_correction_param.enableEK);
+        params.Get("QueryCorrectionPara/enableCN", MiningConfig::query_correction_param.enableCN);
+        MiningConfig::query_correction_param.resource_dir = SF1Config::get()->getResourceDir();
+        //for query log
+        params.Get<uint32_t>("QueryLogPara/updatetime", MiningConfig::query_log_param.update_time);
+        params.Get<uint32_t>("QueryLogPara/logdays", MiningConfig::query_log_param.log_days);
+        params.GetString("QueryLogPara/cron", MiningConfig::query_log_param.cron);
+
+        QueryCorrectionInitiated = true;
+    }
 
     std::set<std::string> directories;
     params.Get("CollectionDataDirectory", directories);
