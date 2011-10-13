@@ -35,14 +35,12 @@ ilplib::langid::Factory* DocumentManager::langIdFactory = ilplib::langid::Factor
 
 DocumentManager::DocumentManager(
     const std::string& path,
-    const std::vector<std::string>& snippetPropertyList,
     const std::set<PropertyConfig, PropertyComp>& schema,
     const izenelib::util::UString::EncodingType encodingType,
     size_t documentCacheNum
 )
     :path_(path)
     ,documentCache_(100)
-    ,propertyCache_(100)
     ,schema_(schema)
     ,encodingType_(encodingType)
     ,propertyLengthDb_()
@@ -52,9 +50,7 @@ DocumentManager::DocumentManager(
     ,maxSnippetLength_(200)
     ,threadPool_(20)
 {
-    for (std::set<PropertyConfig, PropertyComp>::iterator iter = schema_.begin(); iter != schema_.end(); ++iter)
-            schemaMap_[iter->getName()] = *iter;
-    propertyValueTable_ = new DocContainer(path, snippetPropertyList);
+    propertyValueTable_ = new DocContainer(path);
     propertyValueTable_->open();
     buildPropertyIdMapper_();
     restorePropertyLengthDb_();
@@ -243,6 +239,7 @@ bool DocumentManager::getPropertyValue(
     PropertyValue& result
 )
 {
+
     Document doc;
     const std::string* realPropertyName = &propertyName;
 
@@ -254,24 +251,16 @@ bool DocumentManager::getPropertyValue(
         realPropertyName = propertyIdMapper_.findValueById(aIter->second);
     }
 
-    int index;
-    propertyid_t propertyId = getPropertyIdByName(*realPropertyName);
-    PropertyKey propertyKey(docId, propertyId);
-    if ( !propertyCache_.getValueNoInsert(propertyKey, result) )
+    if (documentCache_.getValue(docId, doc) )
     {
-        if ( (index = propertyValueTable_->getPropertyIndex(*realPropertyName)) != -1 )
-        {
-            propertyValueTable_->getPropertyValue(docId, index, result);
-            propertyCache_.insertValue(propertyKey, result);
-        }
-        else
-        {
-            getDocument(docId, doc);
-            propertyCache_.insertValue(propertyKey, doc.property(*realPropertyName));
-            result = doc.property(*realPropertyName);
-        }
+        result = doc.property(*realPropertyName);
     }
-
+    else
+    {
+        getDocument(docId, doc);
+        documentCache_.insertValue(docId, doc);
+        result = doc.property(*realPropertyName);
+    }
 //	if( getDocument(docId, doc) )
 //		result = doc.property(*realPropertyName);
     return true;
@@ -742,21 +731,6 @@ bool DocumentManager::highlightText(
                                     highlightedText);
     outText.swap(highlightedText);
     return true;
-}
-
-propertyid_t DocumentManager::getPropertyIdByName(const std::string& name) const
-{
-    typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator
-        iterator;
-    iterator found = schemaMap_.find(name);
-    if (found != schemaMap_.end())
-    {
-        return found->second.getPropertyId();
-    }
-    else
-    {
-        return 0;
-    }
 }
 
 }

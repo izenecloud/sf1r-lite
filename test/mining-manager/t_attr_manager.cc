@@ -134,15 +134,12 @@ public:
         boost::filesystem::remove_all(TEST_DIR_STR);
         bfs::path dmPath(bfs::path(TEST_DIR_STR) / "dm/");
         bfs::create_directories(dmPath);
-        std::vector<std::string> snippetPropertyList;
-        snippetPropertyList.push_back("Title");
         attrPath_ = (bfs::path(TEST_DIR_STR) / "attr").string();
 
         initConfig_();
 
         documentManager_ = new DocumentManager(
             dmPath.string(),
-            snippetPropertyList,
             schema_,
             ENCODING_TYPE,
             2000);

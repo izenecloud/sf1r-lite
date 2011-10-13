@@ -87,19 +87,6 @@ public:
     }
 };
 
-inline bool operator==(const PropertyKey& a,
-                       const PropertyKey& b)
-{
-    return a.docId == b.docId
-        && a.propertyId == b.propertyId;
-}
-
-inline bool operator!=(const PropertyKey& a,
-                       const PropertyKey& b)
-{
-    return !(a == b);
-}
-
 } // namespace sf1r
 
 #endif // SF1V5_DOCUMENT_MANAGER_PROPERTY_KEY_H

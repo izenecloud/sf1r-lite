@@ -365,7 +365,6 @@ IndexBundleActivator::createDocumentManager_() const
     boost::shared_ptr<DocumentManager> ret(
         new DocumentManager(
             dir,
-            config_->snippetPropertyList_,
             config_->schema_,
             config_->encoding_,
             config_->documentCacheNum_
