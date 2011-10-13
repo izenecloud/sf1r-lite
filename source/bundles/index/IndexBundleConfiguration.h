@@ -122,6 +122,8 @@ public:
 
     std::vector<std::string> collectionDataDirectories_;
 
+    std::vector<std::string> snippetPropertyList_;
+
     /// @brief	Configurations for RankingManager
     RankingManagerConfig rankingManagerConfig_;
 };

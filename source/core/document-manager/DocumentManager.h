@@ -38,6 +38,7 @@
 #include <boost/thread.hpp>
 #include <boost/threadpool.hpp>
 #include <boost/dynamic_bitset.hpp>
+#include <boost/unordered_map.hpp>
 
 namespace sf1r
 {
@@ -71,6 +72,7 @@ public:
      */
     DocumentManager(
         const std::string& path,
+        const std::vector<std::string>& snippetPropertyList,
         const std::set<PropertyConfig, PropertyComp>& schema,
         izenelib::util::UString::EncodingType encondingType,
         size_t documentCacheNum = 20000
@@ -395,6 +397,15 @@ private:
         vector<Document>& docs
     );
 
+
+    /**
+     * @brief get corresponding id of the property, returns 0 if the property
+     * does not exist.
+     * @see CollectionMeta::numberPropertyConfig
+     */
+    propertyid_t getPropertyIdByName(const std::string& name) const;
+
+
 private:
     /// @brief path for the index property file
     std::string path_;
@@ -412,8 +423,20 @@ private:
     /// @brief document cache holds the retrieved property values of document
     izenelib::cache::IzeneCache<docid_t, Document, izenelib::util::ReadWriteLock> documentCache_;
 
+    /// @brief document cache holds the retrieved property values of document
+    typedef izenelib::cache::IzeneCache<
+    PropertyKey,
+    PropertyValue,
+    izenelib::util::ReadWriteLock,
+    izenelib::cache::RDE_HASH,
+    izenelib::cache::LFU
+    > cache_type;
+    cache_type propertyCache_;
+
     /// @brief property specification from the configuration file
     std::set<PropertyConfig, PropertyComp> schema_;
+
+    boost::unordered_map<std::string, PropertyConfig> schemaMap_;
 
     /// @brief encoding type used in system
     izenelib::util::UString::EncodingType encodingType_;
