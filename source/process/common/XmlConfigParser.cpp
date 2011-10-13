@@ -1171,7 +1171,6 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
         params.GetString("QueryCorrectionPara/basepath", MiningConfig::query_correction_param.base_path);
         params.Get("QueryCorrectionPara/enableEK", MiningConfig::query_correction_param.enableEK);
         params.Get("QueryCorrectionPara/enableCN", MiningConfig::query_correction_param.enableCN);
-        MiningConfig::query_correction_param.resource_dir = SF1Config::get()->getResourceDir();
         //for query log
         params.Get<uint32_t>("QueryLogPara/updatetime", MiningConfig::query_log_param.update_time);
         params.Get<uint32_t>("QueryLogPara/logdays", MiningConfig::query_log_param.log_days);
