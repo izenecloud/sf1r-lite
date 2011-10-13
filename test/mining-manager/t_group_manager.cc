@@ -178,13 +178,11 @@ public:
         bfs::path dmPath(bfs::path(TEST_DIR_STR) / "dm/");
         bfs::create_directories(dmPath);
         groupPath_ = (bfs::path(TEST_DIR_STR) / "group").string();
-        std::vector<std::string> snippetPropertyList;
-        snippetPropertyList.push_back("Title");
+
         initConfig_();
 
         documentManager_ = new DocumentManager(
             dmPath.string(),
-            snippetPropertyList,
             schema_,
             ENCODING_TYPE,
             2000);

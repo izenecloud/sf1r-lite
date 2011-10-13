@@ -1,9 +1,6 @@
 #ifndef DOCCONTAINER_H_
 #define DOCCONTAINER_H_
 
-#include <common/PropertyKey.h>
-#include <common/PropertyValue.h>
-
 #include "Document.h"
 
 #include <3rdparty/am/luxio/array.h>
@@ -13,7 +10,6 @@
 
 #include <ir/index_manager/utility/BitVector.h>
 
-#include <boost/unordered_map.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/archive/xml_oarchive.hpp>
@@ -31,24 +27,16 @@ class DocContainer
 {
     typedef Lux::IO::Array containerType;
 public:
-    DocContainer(const std::string&path, const std::vector<std::string>& snippetPropertyList) :
+    DocContainer(const std::string&path) :
             path_(path),
             fileName_(path + "DocumentPropertyTable"),
             maxDocIdDb_(path + "MaxDocID.xml"),
             containerPtr_(NULL),
-            snippetPropertyList_(snippetPropertyList),
             maxDocID_(0)
     {
         containerPtr_ = new containerType(Lux::IO::NONCLUSTER);
         containerPtr_->set_noncluster_params(Lux::IO::Linked);
         restoreMaxDocDb_();
-
-        propertyContainerPtr_.resize(snippetPropertyList_.size());
-        for(size_t i = 0; i < snippetPropertyList_.size(); i++)
-        {
-            propertyContainerPtr_[i] = new containerType(Lux::IO::NONCLUSTER);
-            propertyContainerPtr_[i]->set_noncluster_params(Lux::IO::Linked);
-        }
     }
     ~DocContainer()
     {
@@ -56,18 +44,6 @@ public:
         {
             containerPtr_->close();
             delete containerPtr_;
-        }
-        if (!propertyContainerPtr_.empty())
-        {
-            for(size_t i = 0 ; i < propertyContainerPtr_.size(); i++)
-            {
-                if(propertyContainerPtr_[i])
-                {
-                    propertyContainerPtr_[i]->close();
-                    delete propertyContainerPtr_[i];
-                }
-            }
-            propertyContainerPtr_.clear();
         }
     }
     bool open()
@@ -81,18 +57,6 @@ public:
             else
             {
                 containerPtr_->open(fileName_.c_str(), Lux::IO::DB_RDWR);
-            }
-
-            for ( size_t i = 0; i < snippetPropertyList_.size(); i++)
-            {
-                if ( !boost::filesystem::exists(snippetPropertyList_[i]) )
-                {
-                    propertyContainerPtr_[i]->open( (path_ + snippetPropertyList_[i]).c_str(), Lux::IO::DB_CREAT );
-                }
-                else
-                {
-                    propertyContainerPtr_[i]->open( (path_ + snippetPropertyList_[i]).c_str(), Lux::IO::DB_RDWR );
-                }
             }
         }
         catch (...)
@@ -128,9 +92,7 @@ public:
             unsigned int id = docId;
             containerPtr_->put(0, &id, sizeof(unsigned int), Lux::IO::OVERWRITE);
         }
-
-        bool isPropertyInserted = insertPropertyValue(docId, doc);
-        return ret & isPropertyInserted;
+        return ret;
     }
     bool get(const unsigned int docId, Document& doc)
     {
@@ -168,41 +130,11 @@ public:
         return true;
     }
 
-    bool getPropertyValue(const unsigned int docId, int index, PropertyValue& result)
-    {
-        if (docId > maxDocID_)
-            return false;
-        Lux::IO::data_t *val_p = NULL;
-        if (false == propertyContainerPtr_[index]->get(docId, &val_p, Lux::IO::SYSTEM))
-        {
-            propertyContainerPtr_[index]->clean_data(val_p);
-            return false;
-        }
-        int nsz=0;
-
-        const uint32_t allocSize = *reinterpret_cast<const uint32_t*>(val_p->data);
-        unsigned char* p = new unsigned char[allocSize];
-        lzo_uint tmpTarLen;
-        int re = lzo1x_decompress((const unsigned char*)val_p->data + sizeof(uint32_t), val_p->size - sizeof(uint32_t), p, &tmpTarLen, NULL);
-
-        if (re != LZO_E_OK || tmpTarLen != allocSize)
-            return false;
-
-        nsz = tmpTarLen; //
-
-        izene_deserialization<PropertyValue> izd((char*)p, nsz);
-        izd.read_image(result);
-        delete[] p;
-        propertyContainerPtr_[index]->clean_data(val_p);
-        return true;
-    }
-
     bool del(const unsigned int docId)
     {
         if (docId > maxDocID_ )
             return false;
-
-        return (containerPtr_->del(docId)) & (delProperty(docId));
+        return containerPtr_->del(docId);
     }
     bool update(const unsigned int docId, const Document& doc)
     {
@@ -223,31 +155,7 @@ public:
             return false;
 
         bool ret = containerPtr_->put(docId, destPtr.get(), destLen + sizeof(uint32_t), Lux::IO::OVERWRITE);
-
-        bool isPropertyUpdated = updatePropertyValue(docId, doc);
-        return ret & isPropertyUpdated;
-    }
-
-    int getPropertyIndex(const std::string& propertyName)
-    {
-        size_t pos = 0, i = 0;
-        for(; i < snippetPropertyList_.size(); i++)
-        {
-            if (snippetPropertyList_[i] == propertyName)
-            {
-                pos = i;
-                break;
-            }
-        }
-
-        if( i == snippetPropertyList_.size() )
-        {
-            return -1;
-        }
-        else
-        {
-            return pos;
-        }
+        return ret;
     }
 
     docid_t getMaxDocId()
@@ -261,75 +169,6 @@ public:
     }
 
 private:
-    bool insertPropertyValue(const unsigned int docId, const Document& doc)
-    {
-        for( size_t i = 0; i < snippetPropertyList_.size(); i++)
-        {
-            const std::string& propertyName = snippetPropertyList_[i];
-            const PropertyValue value = doc.property(propertyName);
-            izene_serialization<PropertyValue> izs(value);
-            char* src;
-            size_t srcLen;
-            izs.write_image(src, srcLen);
-
-            const size_t allocSize = OUTPUT_BLOCK_SIZE(srcLen);
-            size_t destLen = 0;
-            boost::scoped_array<unsigned char> destPtr(new unsigned char[allocSize + sizeof(uint32_t)]);
-            *reinterpret_cast<uint32_t*>(destPtr.get()) = srcLen;
-
-            if (compress_(src, srcLen, destPtr.get() + sizeof(uint32_t), allocSize, destLen) == false)
-                return false;
-
-            bool ret = propertyContainerPtr_[i]->put(docId, destPtr.get(), destLen + sizeof(uint32_t), Lux::IO::APPEND);
-            if (ret)
-            {
-                unsigned int id = docId;
-                propertyContainerPtr_[i]->put(0, &id, sizeof(unsigned int), Lux::IO::OVERWRITE);
-            }
-            else
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    bool updatePropertyValue(const unsigned int docId, const Document& doc)
-    {
-        for( size_t i = 0; i < snippetPropertyList_.size(); i++)
-        {
-            const std::string& propertyName = snippetPropertyList_[i];
-            const PropertyValue& value = doc.property(propertyName);
-            izene_serialization<PropertyValue> izs(value);
-            char* src;
-            size_t srcLen;
-            izs.write_image(src, srcLen);
-
-            const size_t allocSize = OUTPUT_BLOCK_SIZE(srcLen);
-            size_t destLen = 0;
-            boost::scoped_array<unsigned char> destPtr(new unsigned char[allocSize + sizeof(uint32_t)]);
-            *reinterpret_cast<uint32_t*>(destPtr.get()) = srcLen;
-
-            if (compress_(src, srcLen, destPtr.get() + sizeof(uint32_t), allocSize, destLen) == false)
-                return false;
-
-            bool ret = propertyContainerPtr_[i]->put(docId, destPtr.get(), destLen + sizeof(uint32_t), Lux::IO::OVERWRITE);
-            if(!ret)
-                return false;
-        }
-        return true;
-    }
-
-    bool delProperty(const unsigned int docId)
-    {
-        for(size_t i = 0; i < propertyContainerPtr_.size(); i++)
-        {
-            if ( !propertyContainerPtr_[i]->del(docId) )
-                return false;
-        }
-        return true;
-    }
-
     bool saveMaxDocDb_() const
     {
         try
@@ -391,8 +230,6 @@ private:
     std::string fileName_;
     std::string maxDocIdDb_;
     containerType* containerPtr_;
-    std::vector<std::string> snippetPropertyList_;
-    std::vector<containerType*> propertyContainerPtr_;
     docid_t maxDocID_;
 };
 
