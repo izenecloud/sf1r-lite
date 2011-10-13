@@ -60,7 +60,7 @@ then
   elif [ "$dir_name" = "all" ]
   then
     echo "rsyncing all, type the password: $password"
-    rsync -azvP --delete "$home/package/resource/ "$username@izenesoft.cn:/data/sf1r-resource/$1/resource/" "
+    rsync -azvP --delete "$home/package/resource/" "$username@izenesoft.cn:/data/sf1r-resource/$1/resource/"
   else
     echo "unknow module: $2"
     usage

@@ -2,7 +2,6 @@
 <!-- edited with XMLSpy v2011 (http://www.altova.com) by YF (izenesoft) -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.izenesoft.com" xmlns:t="http://www.izenesoft.com" targetNamespace="http://www.izenesoft.com" elementFormDefault="qualified">
     <xs:include schemaLocation="common.xsd"/>
-    <xs:include schemaLocation="bundle-querylog.xsd"/>
     <xs:include schemaLocation="bundle-index.xsd"/>
     <xs:include schemaLocation="bundle-product.xsd"/>    
     <xs:include schemaLocation="bundle-mining.xsd"/>
@@ -65,7 +64,6 @@
 	<xs:element name="BundlesDefault">
 		<xs:complexType>
 			<xs:sequence>
-                <xs:element ref="QueryLogBundle"/>
                 <xs:element ref="IndexBundle"/>
                 <xs:element ref="ProductBundle"/>
                 <xs:element ref="MiningBundle"/>

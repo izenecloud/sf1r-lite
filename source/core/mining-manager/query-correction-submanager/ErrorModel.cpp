@@ -6,6 +6,7 @@
  */
 #include "ErrorModel.h"
 
+#include <boost/lexical_cast.hpp>
 
 typedef boost::tokenizer<boost::char_separator<char> >        tokenizerSeq;
 namespace
@@ -43,7 +44,7 @@ void ErrorModel::assignMatrix(const char* matrixFile)
         if (line>=0 && line<26)
         {
             for (tokenizerSeq::iterator beg=tok.begin(); beg!=tok.end();++beg)
-                sub[line][i++]=atoi((*beg).c_str());
+                sub[line][i++]=boost::lexical_cast<int>(*beg);
             line++;
             continue;
         }
@@ -52,7 +53,7 @@ void ErrorModel::assignMatrix(const char* matrixFile)
             int newline = line-26;
             i = 0;
             for (tokenizerSeq::iterator beg=tok.begin(); beg!=tok.end(); ++beg)
-                rev[newline][i++] = atoi((*beg).c_str());
+                rev[newline][i++] = boost::lexical_cast<int>(*beg);
             line++;
             continue;
         }
@@ -61,7 +62,7 @@ void ErrorModel::assignMatrix(const char* matrixFile)
             int newline = line-52;
             i = 0;
             for (tokenizerSeq::iterator beg=tok.begin(); beg!=tok.end(); ++beg)
-                del[newline][i++] = atoi((*beg).c_str());
+                del[newline][i++] = boost::lexical_cast<int>(*beg);
             line++;
             continue;
         }
@@ -70,7 +71,7 @@ void ErrorModel::assignMatrix(const char* matrixFile)
             int newline = line-79;
             i = 0;
             for (tokenizerSeq::iterator beg=tok.begin(); beg!=tok.end(); ++beg)
-                add[newline][i++] = atoi((*beg).c_str());
+                add[newline][i++] = boost::lexical_cast<int>(*beg);
             line++;
             continue;
         }
@@ -78,7 +79,7 @@ void ErrorModel::assignMatrix(const char* matrixFile)
         {
             i = 0;
             for (tokenizerSeq::iterator beg=tok.begin(); beg!=tok.end(); ++beg)
-                charX[i++] = atoi((*beg).c_str());
+                charX[i++] = boost::lexical_cast<int>(*beg);
             line++;
             continue;
 
@@ -88,7 +89,7 @@ void ErrorModel::assignMatrix(const char* matrixFile)
             int newline = line-107;
             int i = 0;
             for (tokenizerSeq::iterator beg=tok.begin(); beg!=tok.end(); ++beg)
-                charXY[newline][i++] = atoi((*beg).c_str());
+                charXY[newline][i++] = boost::lexical_cast<int>(*beg);
             line++;
 
 
