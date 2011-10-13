@@ -971,7 +971,7 @@ void RecommendController::track_event()
  *   - @b ITEMID (@c String): a unique item identifier.
  *   - @b weight (@c Double): the recommendation weight, if this value is available, the items would be sorted by this value decreasingly.
  *   - @b reasons (@c Array): the reasons why this item is recommended. Each is an event which has major influence on recommendation.@n
- *     Please note that the @b reasons result would only  be returned for rec_type of @b BAB, @b BOE, @b BOB, @b BOS.
+ *     Please note that the @b reasons result would only be returned for rec_type of @b BOE, @b BOB, @b BOS.
  *     - @b event (@c String): the event type, it could be @b purchase, @b shopping_cart, @b browse, or the event values in @c track_event().
  *     - @b ITEMID (@c String): a unique item identifier, which item appears in the above event.
  *   - The item properties added by @c add_item() would also be returned here.@n
@@ -1127,7 +1127,8 @@ void RecommendController::do_recommend()
             }
 
             const std::vector<ReasonItem>& reasonItems = recIt->reasonItems_;
-            if (reasonItems.empty() == false)
+            // BAB need not reason results
+            if (recTypeId != BUY_ALSO_BUY && reasonItems.empty() == false)
             {
                 Value& reasonsValue = itemValue[Keys::reasons];
                 for (std::vector<ReasonItem>::const_iterator it = reasonItems.begin();
