@@ -71,12 +71,15 @@ createDocumentManager()
 {
     bfs::path dmPath(bfs::path(".") /"document/");
     bfs::create_directories(dmPath);	
+    std::vector<std::string> snippetPropertyList;
+    snippetPropertyList.push_back("Title");
     std::set<PropertyConfig, PropertyComp> propertyConfig;
     makeSchema(propertyConfig);
 
     boost::shared_ptr<DocumentManager> ret(
         new DocumentManager(
             dmPath.string(),
+            snippetPropertyList,
             propertyConfig,
             encoding,
             2000

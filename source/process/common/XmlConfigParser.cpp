@@ -1654,6 +1654,10 @@ void CollectionConfig::parseIndexSchemaProperty(
         try
         {
             parseProperty_Display( display, propertyConfig );
+            if (propertyConfig.getIsSnippet())
+            {
+                (collectionMeta.indexBundleConfig_->snippetPropertyList_).push_back(propertyName);
+            }
         }
         catch ( XmlConfigParserException & e )
         {
