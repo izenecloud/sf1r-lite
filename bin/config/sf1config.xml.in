@@ -16,17 +16,6 @@
     -->
     <LogConnection str="sqlite3://./log/COBRA" />
     <BundlesDefault>
-      <!-- QueryCorrection Bundle Default -->
-      <QueryLogBundle>
-        <Parameter>
-          <Path basepath="@SF1RENGINE_ROOT@/bin/query-support" />
-          <QuerySupport updatetime="3600" logdays="7" />
-          <QueryCorrectionPara enableEK="y" enableCN="y"/>
-          <AutoFillPara num="10"/> 
-          <CronIndexRecommend value="0 2 * * *" />
-        </Parameter>
-      </QueryLogBundle>
-
       <!-- Index Bundle Default -->
       <IndexBundle>
         <Parameter>
@@ -75,6 +64,8 @@
                storeimagelocally: whether the image will be copied and stored locally in the server. 
           -->
           <IsePara buildimageindex="y" storeimagelocally="n" maximagenum="1000000" relatedimagenum="50"/>
+          <QueryCorrectionPara basepath="@SF1RENGINE_ROOT@/bin/query-support" enableEK="y" enableCN="y"/>
+          <QueryLogPara updatetime="3600" logdays="7" cron="0 2 * * *"/>
         </Parameter>
       </MiningBundle>
 
@@ -195,5 +186,3 @@
   </Deployment>
 
 </SF1Config>
-
-

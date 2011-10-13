@@ -178,7 +178,7 @@ SF1Config::~SF1Config()
 bool SF1Config::parseConfigFile( const string & fileName ) throw( XmlConfigParserException  )
 {
     namespace bf=boost::filesystem;
-    
+
     try
     {
         if( !boost::filesystem::exists(fileName) )
@@ -186,7 +186,7 @@ bool SF1Config::parseConfigFile( const string & fileName ) throw( XmlConfigParse
             std::cerr << "[SF1Config] Config File doesn't exist." << std::endl;
             return false;
         }
-        
+
         /** schema validate begin */
          bf::path config_file(fileName);
          bf::path config_dir = config_file.parent_path();
@@ -271,13 +271,13 @@ void SF1Config::parseSystemSettings( const ticpp::Element * system )
 {
   //get resource dir
   getAttribute( getUniqChildElement( system, "Resource" ), "path", resource_dir_);
-  
+
   getAttribute( getUniqChildElement( system, "LogConnection" ), "str", log_conn_str_);
 
   parseBundlesDefault(getUniqChildElement( system, "BundlesDefault" ));
-  
+
   parseFirewall( getUniqChildElement( system, "Firewall" ) );
-  
+
   parseTokenizer( getUniqChildElement( system, "Tokenizing" ) );
 
   parseLanguageAnalyzer( getUniqChildElement( system, "LanguageAnalyzer" ) );
@@ -379,33 +379,12 @@ void SF1Config::parseWorkerAgent( const ticpp::Element * worker )
 void SF1Config::parseBundlesDefault(const ticpp::Element * bundles)
 {
     Element * bundle = NULL;
-    bundle = getUniqChildElement( bundles, "QueryLogBundle" );
-    parseQueryLogBundleParam(getUniqChildElement( bundle, "Parameter" ));
     bundle = getUniqChildElement( bundles, "IndexBundle" );
-    defaultIndexBundleParam_.LoadXML(getUniqChildElement( bundle, "Parameter" ), false);	
+    defaultIndexBundleParam_.LoadXML(getUniqChildElement( bundle, "Parameter" ), false);
     bundle = getUniqChildElement( bundles, "MiningBundle" );
-    defaultMiningBundleParam_.LoadXML(getUniqChildElement( bundle, "Parameter" ), false);	
+    defaultMiningBundleParam_.LoadXML(getUniqChildElement( bundle, "Parameter" ), false);
     bundle = getUniqChildElement( bundles, "RecommendBundle" );
-    defaultRecommendBundleParam_.LoadXML(getUniqChildElement( bundle, "Parameter" ), false);	
-}
-
-void SF1Config::parseQueryLogBundleParam(const ticpp::Element * queryLog)
-{
-
-    Element * settings = NULL;
-    settings = getUniqChildElement( queryLog, "Path" );
-    getAttribute( settings, "basepath", queryLogBundleConfig_.basepath );
-    settings = getUniqChildElement( queryLog, "QuerySupport" );
-    getAttribute( settings, "updatetime", queryLogBundleConfig_.update_time );
-    getAttribute( settings, "logdays", queryLogBundleConfig_.log_days );
-    settings = getUniqChildElement( queryLog, "QueryCorrectionPara" );
-    getAttribute( settings, "enableEK", queryLogBundleConfig_.query_correction_enableEK );
-    getAttribute( settings, "enableCN", queryLogBundleConfig_.query_correction_enableCN );
-    settings = getUniqChildElement( queryLog, "AutoFillPara" );
-    getAttribute( settings, "num", queryLogBundleConfig_.autofill_num );
-    settings = getUniqChildElement( queryLog, "CronIndexRecommend" );
-    getAttribute( settings, "value", queryLogBundleConfig_.cronIndexRecommend_);
-    queryLogBundleConfig_.resource_dir_ = resource_dir_;
+    defaultRecommendBundleParam_.LoadXML(getUniqChildElement( bundle, "Parameter" ), false);
 }
 
 void SF1Config::parseFirewall( const ticpp::Element * fireElement )
@@ -650,7 +629,7 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
                     {
                         LAPool::getInstance()->set_jma_path(dictionaryPath_inner );
                         std::cout<<"set_jma_path : "<<dictionaryPath_inner<<std::endl;
-                    }						
+                    }
                 }
                 else if ( !dictionaryPath.empty() && dictionaryPath_inner.empty() )
                 {
@@ -664,7 +643,7 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
                     {
                         LAPool::getInstance()->set_jma_path(dictionaryPath_inner );
                         std::cout<<"set_jma_path : "<<dictionaryPath_inner<<std::endl;
-                    }						
+                    }
                 }
                 else
                 {
@@ -691,7 +670,7 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
             {
                 laUnit.setLower( lower );
             }
-            
+
             Element * settings = NULL;
             string mode;
 
@@ -700,12 +679,12 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
             {
                 getAttribute( settings, "mode", mode, false );
                 downCase( mode );
-                
+
 
                 if(mode != "all" && mode != "noun" && mode != "label") throw_TypeMismatch( settings, "mode", mode, "\"all\", \"noun\" or \"label\"" );
 
                 laUnit.setMode( mode );
-                
+
             }
         }
         else
@@ -738,7 +717,7 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
 
 } // END - SF1Config::parseLanguageAnalyzer()
 
-void SF1Config::parseDeploymentSettings(const ticpp::Element * deploy) 
+void SF1Config::parseDeploymentSettings(const ticpp::Element * deploy)
 {
     parseBrokerAgent( getUniqChildElement( deploy, "BrokerAgent" ) );
 
@@ -757,7 +736,7 @@ CollectionConfig::~CollectionConfig()
 bool CollectionConfig::parseConfigFile( const string& collectionName ,const string & fileName, CollectionMeta& collectionMeta) throw( XmlConfigParserException  )
 {
     namespace bf=boost::filesystem;
-    
+
     try
     {
         if( !boost::filesystem::exists(fileName) )
@@ -765,7 +744,7 @@ bool CollectionConfig::parseConfigFile( const string& collectionName ,const stri
             std::cerr << "[SF1Config] Config File doesn't exist." << std::endl;
             return false;
         }
-        
+
         /** schema validate begin */
          bf::path config_file(fileName);
          bf::path config_dir = config_file.parent_path();
@@ -777,7 +756,7 @@ bool CollectionConfig::parseConfigFile( const string& collectionName ,const stri
              std::cerr << "[SF1Config] Schema File doesn't exist." << std::endl;
              return false;
          }
-         
+
          XmlSchema schema(schema_file_string);
          bool schema_valid = schema.validate(fileName);
          std::list<std::string> schema_warning = schema.getSchemaValidityWarnings();
@@ -819,7 +798,7 @@ bool CollectionConfig::parseConfigFile( const string& collectionName ,const stri
 
         collectionMeta.setName(collectionName);
         parseCollectionSettings( collection, collectionMeta );
-	
+
         SF1Config::get()->collectionMetaMap_.insert(std::make_pair( collectionMeta.getName(), collectionMeta));
     }
     catch( ticpp::Exception err )
@@ -843,7 +822,7 @@ bool CollectionConfig::parseConfigFile( const string& collectionName ,const stri
     }
 
     return true;
-} 
+}
 
 void CollectionConfig::parseCollectionSettings( const ticpp::Element * collection, CollectionMeta & collectionMeta )
 {
@@ -882,7 +861,7 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
     // MiningBundle
     collectionMeta.miningBundleConfig_->isSupportByAggregator_ = collectionMeta.indexBundleConfig_->isSupportByAggregator_;
     Element* miningBundle = getUniqChildElement( collection, "MiningBundle" , false );
-    if(miningBundle) 
+    if(miningBundle)
     {
         Element* miningSchema = getUniqChildElement( miningBundle, "Schema", false  );
         if(miningSchema) parseMiningBundleSchema(miningSchema, collectionMeta);
@@ -959,17 +938,17 @@ void CollectionConfig::parseCollectionSchema( const ticpp::Element * documentSch
         {
             //holds all the configuration data of this property
             PropertyConfigBase propertyConfig;
-		 
+
             string propertyName, type;
             PropertyDataType dataType = UNKNOWN_DATA_PROPERTY_TYPE;
-		 
+
             getAttribute( property.Get(), "name", propertyName );
             getAttribute( property.Get(), "type", type );
-		 
+
             downCase( type );
-		 
-            if( !validateID(propertyName) ) 
-                throw XmlConfigParserException( "Alphabets, Numbers, Dot(.), Dash(-) and Underscore(_)");			
+
+            if( !validateID(propertyName) )
+                throw XmlConfigParserException( "Alphabets, Numbers, Dot(.), Dash(-) and Underscore(_)");
             if ( (( propertyNameList.insert(propertyName) ).second) == false )
             {
                 throw XmlConfigParserException( "Duplicate property names" );
@@ -995,7 +974,7 @@ void CollectionConfig::parseCollectionSchema( const ticpp::Element * documentSch
             propertyConfig.propertyName_ = propertyName;
             propertyConfig.propertyType_ = dataType;
             collectionMeta.insertProperty( propertyConfig );
-			
+
             boost::to_lower(propertyName);
             if(propertyName == "date" )
                 hasDate = true;
@@ -1044,7 +1023,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
 
     //Index strategy
     izenelib::ir::indexmanager::IndexManagerConfig& indexmanager_config = indexBundleConfig.indexConfig_;
-    
+
     int64_t memorypool = 0;
     params.Get<int64_t>("IndexStrategy/memorypoolsize", memorypool);
     indexmanager_config.indexStrategy_.memory_ = memorypool;
@@ -1065,7 +1044,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
 
     std::set<std::string> directories;
     params.Get("CollectionDataDirectory", directories);
-		
+
     if(!directories.empty())
     {
         indexmanager_config.indexStrategy_.indexLocations_.assign(directories.begin(), directories.end());
@@ -1074,7 +1053,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
 
     params.Get("Sia/triggerqa", indexBundleConfig.bTriggerQA_);
     params.Get<std::size_t>("Sia/doccachenum", indexBundleConfig.documentCacheNum_);
-    params.Get<std::size_t>("Sia/searchcachenum", indexBundleConfig.searchCacheNum_);	
+    params.Get<std::size_t>("Sia/searchcachenum", indexBundleConfig.searchCacheNum_);
     params.Get<std::size_t>("Sia/filtercachenum", indexBundleConfig.filterCacheNum_);
     params.Get<std::size_t>("Sia/mastersearchcachenum", indexBundleConfig.masterSearchCacheNum_);
     params.Get<std::size_t>("Sia/topknum", indexBundleConfig.topKNum_);
@@ -1112,7 +1091,7 @@ void CollectionConfig::parseIndexEcSchema(const ticpp::Element * indexEcSchema, 
 void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema, CollectionMeta & collectionMeta)
 {
     IndexBundleConfiguration& indexBundleConfig = *(collectionMeta.indexBundleConfig_);
-    indexBundleConfig.setSchema(collectionMeta.schema_);	
+    indexBundleConfig.setSchema(collectionMeta.schema_);
 
     Iterator<Element> property( "Property" );
 
@@ -1129,7 +1108,7 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
     }
 
     ///we update property Id here
-    ///It is because that IndexBundle might add properties "xx_unigram", in this case, we must keep the propertyId consistent 
+    ///It is because that IndexBundle might add properties "xx_unigram", in this case, we must keep the propertyId consistent
     ///between IndexBundle and other bundles
     ///collectionMeta.numberProperty();
     indexBundleConfig.numberProperty();
@@ -1181,12 +1160,29 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     params.Get("ClassificationPara/customizetraining", mining_config.dc_param.customize_training);
     std::string encoding_str;
     downCase(encoding_str);
-    params.GetString("ClassificationPara/trainingencoding", encoding_str); 
+    params.GetString("ClassificationPara/trainingencoding", encoding_str);
     mining_config.dc_param.encoding_type = parseEncodingType(encoding_str);
+
+    static bool QueryCorrectionInitiated = false;
+
+    if (!QueryCorrectionInitiated)
+    {
+        //for query correction
+        params.GetString("QueryCorrectionPara/basepath", MiningConfig::query_correction_param.base_path);
+        params.Get("QueryCorrectionPara/enableEK", MiningConfig::query_correction_param.enableEK);
+        params.Get("QueryCorrectionPara/enableCN", MiningConfig::query_correction_param.enableCN);
+        MiningConfig::query_correction_param.resource_dir = SF1Config::get()->getResourceDir();
+        //for query log
+        params.Get<uint32_t>("QueryLogPara/updatetime", MiningConfig::query_log_param.update_time);
+        params.Get<uint32_t>("QueryLogPara/logdays", MiningConfig::query_log_param.log_days);
+        params.GetString("QueryLogPara/cron", MiningConfig::query_log_param.cron);
+
+        QueryCorrectionInitiated = true;
+    }
 
     std::set<std::string> directories;
     params.Get("CollectionDataDirectory", directories);
-	
+
     if(!directories.empty())
     {
         collectionMeta.miningBundleConfig_->collectionDataDirectories_.assign(directories.begin(), directories.end());
@@ -1263,7 +1259,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         }
         mining_schema.sim_enable = true;
       }
-      
+
       task_node = getUniqChildElement( mining_schema_node, "DocumentClassification", false );
       mining_schema.dc_enable = false;
       if( task_node!= NULL )
@@ -1281,7 +1277,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         }
         mining_schema.dc_enable = true;
       }
-      
+
       task_node = getUniqChildElement( mining_schema_node, "Faceted", false );
       mining_schema.faceted_enable = false;
       if( task_node!= NULL )
@@ -1422,7 +1418,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
       {
           mining_schema.tdt_enable = true;
       }
-      
+
       task_node = getUniqChildElement( mining_schema_node, "EC", false );
       mining_schema.ec_enable = false;
       if( task_node!= NULL )
@@ -1436,7 +1432,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 mining_schema.ec_title_property = property_name;
             }
         }
-        
+
         {
             Iterator<Element> it( "ContentProperty" );
             for ( it = it.begin( task_node ); it != it.end(); it++ )
@@ -1445,7 +1441,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 mining_schema.ec_content_property = property_name;
             }
         }
-       
+
       }
 
       task_node = getUniqChildElement( mining_schema_node, "IISE", false );
@@ -1492,7 +1488,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         }
       }
     }
-    
+
 }
 
 void CollectionConfig::parseRecommendBundleParam(const ticpp::Element * recParamNode, CollectionMeta & collectionMeta)
@@ -1621,7 +1617,7 @@ void CollectionConfig::parseIndexSchemaProperty(
         message << "DATE/DOCID are inherent properties and should not exist within IndexBundleSchema";
         throw XmlConfigParserException( message.str() );
     }
-	
+
     PropertyConfig p;
     p.setName(propertyName);
 

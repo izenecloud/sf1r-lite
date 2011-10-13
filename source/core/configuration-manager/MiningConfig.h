@@ -166,9 +166,27 @@ public:
 
 };
 
-/**
- * @brief   The configure unit for mining manager
- */
+class QueryCorrectionPara
+{
+
+public:
+    std::string base_path;
+    bool enableEK;
+    bool enableCN;
+    std::string resource_dir;
+
+};
+
+class QueryLogPara
+{
+
+public:
+    uint32_t update_time;
+    uint32_t log_days;
+    std::string cron;
+
+};
+
 class MiningConfig
 {
 
@@ -210,6 +228,9 @@ public:
     DocumentClassificationPara dc_param;
 
     IsePara ise_param;
+
+    static QueryCorrectionPara query_correction_param;
+    static QueryLogPara query_log_param;
 
 };
 

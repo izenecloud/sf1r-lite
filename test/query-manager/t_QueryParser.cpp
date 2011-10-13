@@ -76,18 +76,22 @@ BOOST_FIXTURE_TEST_SUITE(QueryParser_test, QueryParserTestFixture)
 
 BOOST_AUTO_TEST_CASE(normalizeQuery_test)
 {
-    std::vector<std::string> queryStringList, normResultList;
 
-    queryStringList.push_back("   test");
-    queryStringList.push_back("(  hello  |   world  )");
-    queryStringList.push_back("{  test  case } ^ 12(month case)");
-    queryStringList.push_back("(bracket close)(open space)");
-    normResultList.push_back("test");
-    normResultList.push_back("(hello|world)");
-    normResultList.push_back("{test case}^12&(month&case)");
-    normResultList.push_back("(bracket&close)&(open&space)");
+#define USTRING(str) UString(str, UString::UTF_8)
 
-    std::string out;
+    using izenelib::util::UString;
+    std::vector<UString> queryStringList, normResultList;
+
+    queryStringList.push_back(USTRING("   test"));
+    queryStringList.push_back(USTRING("(  hello  |   world  )"));
+    queryStringList.push_back(USTRING("{  test  case } ^ 12(month case)"));
+    queryStringList.push_back(USTRING("(bracket close)(open space)"));
+    normResultList.push_back(USTRING("test"));
+    normResultList.push_back(USTRING("(hello|world)"));
+    normResultList.push_back(USTRING("{test case}^12&(month&case)"));
+    normResultList.push_back(USTRING("(bracket&close)&(open&space)"));
+
+    UString out;
     QueryParser queryParser(laManager, idManager);
 
     for(size_t i = 0; i < queryStringList.size(); i++)
@@ -96,11 +100,12 @@ BOOST_AUTO_TEST_CASE(normalizeQuery_test)
         BOOST_CHECK_EQUAL( out , normResultList[i] );
     }
 
-    std::string queryString = "{  test  \"case  \"  * no?unigram } ^ 12(month \" case\" *no?unigram";
-    std::string normResults[2] = {"{test \"case \" * no?unigram}^12&(month&\" case\"&*no?unigram)", "{test \"case \" * no?unigram}^12&(month&case&no&unigram)"};
+    UString queryString = USTRING("{  test  \"case  \"  * no?unigram } ^ 12(month \" case\" *no?unigram");
+    UString normResults[2] = {USTRING("{test \"case \" * no?unigram}^12&(month&\" case\"&*no?unigram)"), USTRING("{test \"case \" * no?unigram}^12&(month&case&no&unigram)")};
 
     queryParser.normalizeQuery( queryString, out, true );
     BOOST_CHECK_EQUAL( out , normResults[0] );
+
     queryParser.normalizeQuery( queryString, out, false );
     BOOST_CHECK_EQUAL( out , normResults[1] );
 }

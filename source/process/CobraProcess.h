@@ -1,8 +1,6 @@
 #ifndef COBRAPROCESS_H_
 #define COBRAPROCESS_H_
 
-#include <bundles/querylog/QueryLogSearchService.h>
-
 #include <util/driver/DriverServer.h>
 
 #include <aggregator-manager/WorkerServer.h>
@@ -18,17 +16,17 @@ public:
     CobraProcess() {}
 
     int run();
-	
+
     bool initialize(const std::string& configFileDir);
 
 private:
     bool initLogManager();
-    
+
     bool initLicenseManager();
 
     bool initLAManager();
 
-    QueryLogSearchService* initQuery();
+    void initQuery();
 
     bool initFireWall();
 
@@ -42,8 +40,6 @@ private:
 
 private:
     std::string configDir_;
-
-    QueryLogSearchService* queryLogService_;
 
     boost::scoped_ptr<izenelib::driver::DriverServer> driverServer_;
 

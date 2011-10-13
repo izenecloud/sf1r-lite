@@ -48,7 +48,6 @@ TARGET_LINK_LIBRARIES(CobraProcess
 
   sf1r_bundle_index 
   sf1r_bundle_product 
-  sf1r_bundle_querylog
   sf1r_bundle_mining
   sf1r_bundle_recommend
 

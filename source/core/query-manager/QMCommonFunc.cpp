@@ -116,7 +116,7 @@ namespace sf1r {
             return true;
         }
         return false;
-    } // end - isRestrictWord()
+    } // end - isRestrictId()
 
     void QueryUtility::getMergedUniqueTokens(
             const std::vector<izenelib::util::UString>& inputTokens,
@@ -141,10 +141,7 @@ namespace sf1r {
             laManager->getTermList(rawString, analysisInfo, termList );
             for (la::TermList::iterator p = termList.begin(); p != termList.end(); ++p)
             {
-                std::string escRmvStr;
-                p->text_.convertString(escRmvStr, UString::UTF_8);
-                QueryParser::removeEscapeChar(escRmvStr);
-                p->text_.assign(escRmvStr, UString::UTF_8);
+                QueryParser::removeEscapeChar(p->text_);
                 queryTermSet.insert(p->text_);			
             }
         }
