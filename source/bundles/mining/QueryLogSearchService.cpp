@@ -6,6 +6,8 @@
 namespace sf1r
 {
 
+QueryLogSearchService *QueryLogSearchService::serviceInstance_ = NULL;
+
 QueryLogSearchService::QueryLogSearchService()
 {
 }
@@ -23,6 +25,14 @@ bool QueryLogSearchService::getRefinedQuery(
     return QueryCorrectionSubmanager::getInstance().getRefinedQuery(
 			collectionName, queryUString,
 			refinedQueryUString);
+}
+
+QueryLogSearchService *QueryLogSearchService::instance()
+{
+    if (!serviceInstance_)
+        serviceInstance_ = new QueryLogSearchService();
+
+    return serviceInstance_;
 }
 
 }

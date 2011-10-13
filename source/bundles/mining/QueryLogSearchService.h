@@ -15,8 +15,12 @@ public:
 
     ~QueryLogSearchService();
 
-public:
     bool getRefinedQuery(const std::string& collectionName, const UString& queryUString, UString& refinedQueryUString);
+
+    static QueryLogSearchService *instance();
+
+private:
+    static QueryLogSearchService *serviceInstance_;
 };
 
 }
