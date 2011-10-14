@@ -375,7 +375,7 @@ void OrderManager::_findFrequentItemsets()
     {
         if (++lineNum % 100 == 0)
         {
-            std::cout << std::endl << "loading item set num: " << lineNum << std::flush;
+            std::cout << "\rloading item set num: " << lineNum << std::flush;
         }
         std::vector<std::string> item_strs;
         boost::algorithm::split( item_strs, line, boost::algorithm::is_any_of(" ") );
@@ -393,7 +393,7 @@ void OrderManager::_findFrequentItemsets()
         }
         _judgeFrequentItemset(max_itemset, frequentItemsets);
     }
-    std::cout << std::endl << "loading item set num: " << lineNum << std::endl;
+    std::cout << "\rloading item set num: " << lineNum << std::endl;
 
     std::sort(frequentItemsets.begin(), frequentItemsets.end(), itemSetCompare);
     FrequentItemSetResultType::iterator uniqueEnd = std::unique(frequentItemsets.begin(), frequentItemsets.end(), itemSetPredicate);
