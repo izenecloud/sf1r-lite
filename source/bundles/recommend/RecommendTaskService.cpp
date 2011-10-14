@@ -585,7 +585,7 @@ bool RecommendTaskService::parseUserSCD_(const std::string& scdPath)
     {
         if (++userNum % 10000 == 0)
         {
-            std::cout << "\rloading user num: " << userNum << "\t" << std::flush;
+            std::cout << std::endl << "loading user num: " << userNum << "\t" << std::flush;
         }
 
         SCDDocPtr docPtr = (*docIter);
@@ -630,7 +630,7 @@ bool RecommendTaskService::parseUserSCD_(const std::string& scdPath)
         boost::this_thread::interruption_point();
     }
 
-    std::cout << "\rloading user num: " << userNum << "\t" << std::endl;
+    std::cout << std::endl << "loading user num: " << userNum << "\t" << std::endl;
 
     return true;
 }
@@ -689,7 +689,7 @@ bool RecommendTaskService::parseItemSCD_(const std::string& scdPath)
     {
         if (++itemNum % 10000 == 0)
         {
-            std::cout << "\rloading item num: " << itemNum << "\t" << std::flush;
+            std::cout << std::endl << "loading item num: " << itemNum << "\t" << std::flush;
         }
 
         SCDDocPtr docPtr = (*docIter);
@@ -734,7 +734,7 @@ bool RecommendTaskService::parseItemSCD_(const std::string& scdPath)
         boost::this_thread::interruption_point();
     }
 
-    std::cout << "\rloading item num: " << itemNum << "\t" << std::endl;
+    std::cout << std::endl << "loading item num: " << itemNum << "\t" << std::endl;
 
     return true;
 }
@@ -798,7 +798,7 @@ bool RecommendTaskService::parseOrderSCD_(const std::string& scdPath)
     {
         if (++orderNum % 10000 == 0)
         {
-            std::cout << "\rloading order num: " << orderNum << "\t" << std::flush;
+            std::cout << std::endl << "loading order num: " << orderNum << "\t" << std::flush;
         }
 
         SCDDocPtr docPtr = (*docIter);
@@ -821,7 +821,7 @@ bool RecommendTaskService::parseOrderSCD_(const std::string& scdPath)
     }
 
     saveOrderMap_(orderMap);
-    std::cout << "\rloading order num: " << orderNum << "\t" << std::endl;
+    std::cout << std::endl << "loading order num: " << orderNum << "\t" << std::endl;
 
     return true;
 }
