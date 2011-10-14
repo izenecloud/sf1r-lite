@@ -24,7 +24,7 @@ public:
         : itemManager_(itemManager)
     {}
 
-    ~Recommender() {}
+    virtual ~Recommender() {}
 
     virtual bool recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec) = 0;
 
