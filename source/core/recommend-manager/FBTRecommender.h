@@ -8,30 +8,21 @@
 #ifndef FBT_RECOMMENDER_H
 #define FBT_RECOMMENDER_H
 
-#include "RecTypes.h"
-#include "RecommendItem.h"
-
-#include <vector>
+#include "Recommender.h"
 
 namespace sf1r
 {
 class OrderManager;
-class ItemFilter;
 
-class FBTRecommender
+class FBTRecommender : public Recommender
 {
 public:
-    FBTRecommender(OrderManager* orderManager);
+    FBTRecommender(ItemManager& itemManager, OrderManager& orderManager);
 
-    bool recommend(
-        int maxRecNum,
-        const std::vector<itemid_t>& inputItemVec,
-        ItemFilter& filter,
-        std::vector<RecommendItem>& recItemVec
-    );
+    bool recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec);
 
 private:
-    OrderManager* orderManager_;
+    OrderManager& orderManager_;
 };
 
 } // namespace sf1r

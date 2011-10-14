@@ -11,6 +11,7 @@
 #include "RecTypes.h"
 #include "ItemManager.h"
 #include "ItemCondition.h"
+#include "RecommendParam.h"
 
 #include <vector>
 
@@ -20,9 +21,15 @@ namespace sf1r
 class ItemFilter : public idmlib::recommender::ItemRescorer
 {
 public:
-    ItemFilter(ItemManager* itemManager)
+    ItemFilter(
+        ItemManager& itemManager,
+        const RecommendParam& param
+    )
         : itemManager_(itemManager)
+        , condition_(param.condition)
     {
+        insert(param.includeItemIds.begin(), param.includeItemIds.end());
+        insert(param.excludeItemIds.begin(), param.excludeItemIds.end());
     }
 
     float rescore(itemid_t itemId, float originalScore)
@@ -43,11 +50,11 @@ public:
 
         // no condition
         if (condition_.propName_.empty())
-            return itemManager_->hasItem(itemId) == false;
+            return itemManager_.hasItem(itemId) == false;
 
         // not exist
         Item item;
-        if (itemManager_->getItem(itemId, item) == false)
+        if (itemManager_.getItem(itemId, item) == false)
             return true;
 
         return condition_.checkItem(item) == false;
@@ -72,19 +79,10 @@ public:
         filterSet_.insert(first, last);
     }
 
-    /**
-     * Set the condition for item property value.
-     * @param condition the item condition, if the item meet the condition, @c isFiltered() returns false.
-     */
-    void setCondition(const ItemCondition& condition)
-    {
-        condition_ = condition;
-    }
-
 private:
-    ItemManager* itemManager_;
+    ItemManager& itemManager_;
+    const ItemCondition& condition_;
     std::set<itemid_t> filterSet_;
-    ItemCondition condition_;
 };
 
 } // namespace sf1r

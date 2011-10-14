@@ -1,5 +1,5 @@
 /**
- * @file RecommendManager.h
+ * @file RecommenderManager.h
  * @author Jun Jiang
  * @date 2011-04-15
  */
@@ -10,16 +10,12 @@
 #include "RecTypes.h"
 #include "RecommendItem.h"
 #include "TIBRecommender.h"
-#include "FBTRecommender.h"
-#include "VAVRecommender.h"
-#include "BABRecommender.h"
-#include "UserEventFilter.h"
+#include "RecommenderFactory.h"
 
 #include <vector>
 
 namespace sf1r
 {
-class RecommendSchema;
 class ItemManager;
 class VisitManager;
 class PurchaseManager;
@@ -28,12 +24,12 @@ class EventManager;
 class OrderManager;
 class ItemCondition;
 class ItemFilter;
+struct RecommendParam;
 
-class RecommendManager
+class RecommenderManager
 {
 public:
-    RecommendManager(
-        const RecommendSchema& schema,
+    RecommenderManager(
         ItemManager* itemManager,
         VisitManager* visitManager,
         PurchaseManager* purchaseManager,
@@ -45,14 +41,7 @@ public:
     );
 
     bool recommend(
-        RecommendType type,
-        int maxRecNum,
-        userid_t userId,
-        const std::string& sessionIdStr,
-        const std::vector<itemid_t>& inputItemVec,
-        const std::vector<itemid_t>& includeItemVec,
-        const std::vector<itemid_t>& excludeItemVec,
-        const ItemCondition& condition,
+        RecommendParam& param,
         std::vector<RecommendItem>& recItemVec
     );
 
@@ -65,23 +54,13 @@ public:
 
 private:
     void appendIncludeItems_(
-        int maxRecNum,
-        const std::vector<itemid_t>& includeItemVec,
+        RecommendParam& param,
         std::vector<RecommendItem>& recItemVec
     ) const;
 
 private:
-    const RecommendSchema& recommendSchema_;
-    ItemManager* itemManager_;
-    VisitManager* visitManager_;
-    CartManager* cartManager_;
-    ItemCFManager* itemCFManager_;
-
-    UserEventFilter userEventFilter_;
     TIBRecommender tibRecommender_;
-    FBTRecommender fbtRecommender_;
-    VAVRecommender vavRecommender_;
-    BABRecommender babRecommender_;
+    RecommenderFactory recommenderFactory_;
 };
 
 } // namespace sf1r

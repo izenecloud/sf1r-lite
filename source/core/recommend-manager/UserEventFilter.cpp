@@ -7,17 +7,43 @@
 
 #include <glog/logging.h>
 
+namespace
+{
+
+using namespace sf1r;
+
+void excludeItems(
+    const ItemIdSet& excludeItemSet,
+    std::vector<itemid_t>& inputItems
+)
+{
+    if (excludeItemSet.empty())
+        return;
+
+    std::vector<itemid_t> newInputItems;
+    for (std::vector<itemid_t>::const_iterator it = inputItems.begin(); 
+            it != inputItems.end(); ++it)
+    {
+        if (excludeItemSet.find(*it) == excludeItemSet.end())
+        {
+            newInputItems.push_back(*it);
+        }
+    }
+
+    newInputItems.swap(inputItems);
+}
+
+}
+
 namespace sf1r
 {
 
 UserEventFilter::UserEventFilter(
-    const RecommendSchema& schema,
-    PurchaseManager* purchaseManager,
-    CartManager* cartManager,
-    EventManager* eventManager
+    PurchaseManager& purchaseManager,
+    CartManager& cartManager,
+    EventManager& eventManager
 )
-    : recommendSchema_(schema)
-    , purchaseManager_(purchaseManager)
+    : purchaseManager_(purchaseManager)
     , cartManager_(cartManager)
     , eventManager_(eventManager)
 {
@@ -25,15 +51,15 @@ UserEventFilter::UserEventFilter(
 
 bool UserEventFilter::filter(
     userid_t userId,
-    ItemFilter& filter,
-    ItemIdSet& notRecInputSet
+    std::vector<itemid_t>& inputItemVec,
+    ItemFilter& filter
 ) const
 {
     assert(userId);
 
     return (filterPurchaseItem_(userId, filter)
             && filterCartItem_(userId, filter)
-            && filterPreferenceItem_(userId, filter, notRecInputSet));
+            && filterPreferenceItem_(userId, inputItemVec, filter));
 }
 
 bool UserEventFilter::filterPurchaseItem_(
@@ -42,7 +68,7 @@ bool UserEventFilter::filterPurchaseItem_(
 ) const
 {
     ItemIdSet purchaseItemSet;
-    if (purchaseManager_->getPurchaseItemSet(userId, purchaseItemSet) == false)
+    if (! purchaseManager_.getPurchaseItemSet(userId, purchaseItemSet))
     {
         LOG(ERROR) << "failed to get purchased items for user id " << userId;
         return false;
@@ -58,7 +84,7 @@ bool UserEventFilter::filterCartItem_(
 ) const
 {
     std::vector<itemid_t> cartItemVec;
-    if (cartManager_->getCart(userId, cartItemVec) == false)
+    if (! cartManager_.getCart(userId, cartItemVec))
     {
         LOG(ERROR) << "failed to get shopping cart items for user id " << userId;
         return false;
@@ -70,12 +96,12 @@ bool UserEventFilter::filterCartItem_(
 
 bool UserEventFilter::filterPreferenceItem_(
     userid_t userId,
-    ItemFilter& filter,
-    ItemIdSet& notRecInputSet
+    std::vector<itemid_t>& inputItemVec,
+    ItemFilter& filter
 ) const
 {
     EventManager::EventItemMap eventItemMap;
-    if (eventManager_->getEvent(userId, eventItemMap) == false)
+    if (! eventManager_.getEvent(userId, eventItemMap))
     {
         LOG(ERROR) << "failed to get events for user id " << userId;
         return false;
@@ -87,34 +113,34 @@ bool UserEventFilter::filterPreferenceItem_(
         filter.insert(it->second.begin(), it->second.end());
     }
 
-    notRecInputSet.swap(eventItemMap[RecommendSchema::NOT_REC_INPUT_EVENT]);
+    const ItemIdSet& notRecInputSet = eventItemMap[RecommendSchema::NOT_REC_INPUT_EVENT];
+    excludeItems(notRecInputSet, inputItemVec);
 
     return true;
 }
 
 bool UserEventFilter::addUserEvent(
     userid_t userId,
-    ItemEventMap& itemEventMap,
     std::vector<itemid_t>& inputItemVec,
-    ItemFilter& filter,
-    ItemIdSet& notRecInputSet
+    ItemEventMap& itemEventMap,
+    ItemFilter& filter
 ) const
 {
     assert(userId);
 
-    return (addPurchaseItem_(userId, itemEventMap, inputItemVec)
-            && addCartItem_(userId, itemEventMap, inputItemVec)
-            && addPreferenceItem_(userId, itemEventMap, inputItemVec, filter, notRecInputSet));
+    return (addPurchaseItem_(userId, inputItemVec, itemEventMap)
+            && addCartItem_(userId, inputItemVec, itemEventMap)
+            && addPreferenceItem_(userId, inputItemVec, itemEventMap, filter));
 }
 
 bool UserEventFilter::addPurchaseItem_(
     userid_t userId,
-    ItemEventMap& itemEventMap,
-    std::vector<itemid_t>& inputItemVec
+    std::vector<itemid_t>& inputItemVec,
+    ItemEventMap& itemEventMap
 ) const
 {
     ItemIdSet purchaseItemSet;
-    if (purchaseManager_->getPurchaseItemSet(userId, purchaseItemSet) == false)
+    if (! purchaseManager_.getPurchaseItemSet(userId, purchaseItemSet))
     {
         LOG(ERROR) << "failed to get purchased items for user id " << userId;
         return false;
@@ -135,12 +161,12 @@ bool UserEventFilter::addPurchaseItem_(
 
 bool UserEventFilter::addCartItem_(
     userid_t userId,
-    ItemEventMap& itemEventMap,
-    std::vector<itemid_t>& inputItemVec
+    std::vector<itemid_t>& inputItemVec,
+    ItemEventMap& itemEventMap
 ) const
 {
     std::vector<itemid_t> cartItemVec;
-    if (cartManager_->getCart(userId, cartItemVec) == false)
+    if (! cartManager_.getCart(userId, cartItemVec))
     {
         LOG(ERROR) << "failed to get shopping cart items for user id " << userId;
         return false;
@@ -161,14 +187,13 @@ bool UserEventFilter::addCartItem_(
 
 bool UserEventFilter::addPreferenceItem_(
     userid_t userId,
-    ItemEventMap& itemEventMap,
     std::vector<itemid_t>& inputItemVec,
-    ItemFilter& filter,
-    ItemIdSet& notRecInputSet
+    ItemEventMap& itemEventMap,
+    ItemFilter& filter
 ) const
 {
     EventManager::EventItemMap eventItemMap;
-    if (eventManager_->getEvent(userId, eventItemMap) == false)
+    if (! eventManager_.getEvent(userId, eventItemMap))
     {
         LOG(ERROR) << "failed to get events for user id " << userId;
         return false;
@@ -198,7 +223,8 @@ bool UserEventFilter::addPreferenceItem_(
         }
     }
 
-    notRecInputSet.swap(eventItemMap[RecommendSchema::NOT_REC_INPUT_EVENT]);
+    const ItemIdSet& notRecInputSet = eventItemMap[RecommendSchema::NOT_REC_INPUT_EVENT];
+    excludeItems(notRecInputSet, inputItemVec);
 
     return true;
 }

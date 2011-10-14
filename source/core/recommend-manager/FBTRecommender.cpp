@@ -9,27 +9,25 @@
 namespace sf1r
 {
 
-FBTRecommender::FBTRecommender(OrderManager* orderManager)
-    : orderManager_(orderManager)
+FBTRecommender::FBTRecommender(ItemManager& itemManager, OrderManager& orderManager)
+    : Recommender(itemManager)
+    , orderManager_(orderManager)
 {
 }
 
-bool FBTRecommender::recommend(
-    int maxRecNum,
-    const std::vector<itemid_t>& inputItemVec,
-    ItemFilter& filter,
-    std::vector<RecommendItem>& recItemVec
-)
+bool FBTRecommender::recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec)
 {
-    if (inputItemVec.empty())
+    if (param.inputItemIds.empty())
     {
         LOG(ERROR) << "failed to recommend for empty input items";
         return false;
     }
 
-    std::list<itemid_t> inputItemList(inputItemVec.begin(), inputItemVec.end());
+    ItemFilter filter(itemManager_, param);
+    std::list<itemid_t> inputItemList(param.inputItemIds.begin(), param.inputItemIds.end());
     std::list<itemid_t> results;
-    if (orderManager_->getFreqItemSets(maxRecNum, inputItemList, results, &filter) == false)
+
+    if (orderManager_.getFreqItemSets(param.limit, inputItemList, results, &filter) == false)
     {
         LOG(ERROR) << "failed in OrderManager::getFreqItemSets()";
         return false;

@@ -8,31 +8,21 @@
 #ifndef BOE_RECOMMENDER_H
 #define BOE_RECOMMENDER_H
 
-#include "UserBaseRecommender.h"
-#include "UserEventFilter.h"
+#include "ItemCFRecommender.h"
 
 namespace sf1r
 {
 
-class BOERecommender : public UserBaseRecommender 
+class BOERecommender : public ItemCFRecommender 
 {
 public:
     BOERecommender(
-        const RecommendSchema& schema,
-        ItemCFManager* itemCFManager,
-        const UserEventFilter& userEventFilter,
-        userid_t userId,
-        int maxRecNum,
-        ItemFilter& filter
+        ItemManager& itemManager,
+        ItemCFManager& itemCFManager,
+        const UserEventFilter& userEventFilter
     );
 
-    bool recommend(std::vector<RecommendItem>& recItemVec);
-
-private:
-    void setReasonEvent_(
-        std::vector<RecommendItem>& recItemVec,
-        const UserEventFilter::ItemEventMap& itemEventMap
-    ) const;
+    bool recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec);
 };
 
 } // namespace sf1r

@@ -19,7 +19,7 @@ class OrderManager;
 class TIBRecommender
 {
 public:
-    TIBRecommender(OrderManager* orderManager);
+    TIBRecommender(OrderManager& orderManager);
 
     bool recommend(
         int maxRecNum,
@@ -29,7 +29,7 @@ public:
     );
 
 private:
-    OrderManager* orderManager_;
+    OrderManager& orderManager_;
 };
 
 } // namespace sf1r

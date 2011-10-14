@@ -4,50 +4,15 @@
 
 #include <glog/logging.h>
 
-namespace sf1r
+namespace
 {
 
-BOERecommender::BOERecommender(
-    const RecommendSchema& schema,
-    ItemCFManager* itemCFManager,
-    const UserEventFilter& userEventFilter,
-    userid_t userId,
-    int maxRecNum,
-    ItemFilter& filter
-)
-    : UserBaseRecommender(schema, itemCFManager, userEventFilter,
-                          userId, maxRecNum, filter)
-{
-}
+using namespace sf1r;
 
-bool BOERecommender::recommend(std::vector<RecommendItem>& recItemVec)
-{
-    if (userId_ == 0)
-    {
-        LOG(ERROR) << "userId should be positive";
-        return false;
-    }
-
-    UserEventFilter::ItemEventMap itemEventMap;
-    std::vector<itemid_t> inputItemVec;
-
-    if (! userEventFilter_.addUserEvent(userId_, itemEventMap, inputItemVec,
-                                        filter_, notRecInputSet_))
-    {
-        LOG(ERROR) << "failed to add user event for user id " << userId_;
-        return false;
-    }
-
-    recommendByItem_(inputItemVec, recItemVec);
-    setReasonEvent_(recItemVec, itemEventMap);
-
-    return true;
-}
-
-void BOERecommender::setReasonEvent_(
+void setReasonEvent(
     std::vector<RecommendItem>& recItemVec,
     const UserEventFilter::ItemEventMap& itemEventMap
-) const
+)
 {
     for (std::vector<RecommendItem>::iterator recIt = recItemVec.begin();
         recIt != recItemVec.end(); ++recIt)
@@ -63,6 +28,43 @@ void BOERecommender::setReasonEvent_(
             }
         }
     }
+}
+
+}
+
+namespace sf1r
+{
+
+BOERecommender::BOERecommender(
+    ItemManager& itemManager,
+    ItemCFManager& itemCFManager,
+    const UserEventFilter& userEventFilter
+)
+    : ItemCFRecommender(itemManager, itemCFManager, userEventFilter)
+{
+}
+
+bool BOERecommender::recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec)
+{
+    if (param.userId == 0)
+    {
+        LOG(ERROR) << "BOE type recommend requires non-empty userId";
+        return false;
+    }
+
+    ItemFilter filter(itemManager_, param);
+    UserEventFilter::ItemEventMap itemEventMap;
+    if (! userEventFilter_.addUserEvent(param.userId, param.inputItemIds,
+                                        itemEventMap, filter))
+    {
+        LOG(ERROR) << "failed to add user event for user id " << param.userId;
+        return false;
+    }
+
+    recommendItemCF_(param, filter, recItemVec);
+    setReasonEvent(recItemVec, itemEventMap);
+
+    return true;
 }
 
 } // namespace sf1r

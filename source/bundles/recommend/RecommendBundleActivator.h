@@ -30,7 +30,7 @@ class PurchaseManager;
 class CartManager;
 class EventManager;
 class OrderManager;
-class RecommendManager;
+class RecommenderManager;
 
 class RecommendBundleActivator : public IBundleActivator
 {
@@ -57,7 +57,7 @@ private:
     CartManager* cartManager_;
     EventManager* eventManager_;
     OrderManager* orderManager_;
-    RecommendManager* recommendManager_;
+    RecommenderManager* recommenderManager_;
     RecIdGenerator* userIdGenerator_;
     RecIdGenerator* itemIdGenerator_;
 

@@ -6,7 +6,7 @@
 #include <recommend-manager/CartManager.h>
 #include <recommend-manager/EventManager.h>
 #include <recommend-manager/OrderManager.h>
-#include <recommend-manager/RecommendManager.h>
+#include <recommend-manager/RecommenderManager.h>
 
 #include <common/SFLogger.h>
 
@@ -30,7 +30,7 @@ RecommendBundleActivator::RecommendBundleActivator()
     ,cartManager_(NULL)
     ,eventManager_(NULL)
     ,orderManager_(NULL)
-    ,recommendManager_(NULL)
+    ,recommenderManager_(NULL)
     ,userIdGenerator_(NULL)
     ,itemIdGenerator_(NULL)
     ,coVisitManager_(NULL)
@@ -84,7 +84,7 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
     delete cartManager_;
     delete eventManager_;
     delete orderManager_;
-    delete recommendManager_;
+    delete recommenderManager_;
     delete userIdGenerator_;
     delete itemIdGenerator_;
     delete coVisitManager_;
@@ -96,7 +96,7 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
     cartManager_ = NULL;
     eventManager_ = NULL;
     orderManager_ = NULL;
-    recommendManager_ = NULL;
+    recommenderManager_ = NULL;
     userIdGenerator_ = NULL;
     itemIdGenerator_ = NULL;
     coVisitManager_ = NULL;
@@ -156,15 +156,10 @@ bool RecommendBundleActivator::init_()
     boost::filesystem::create_directory(orderDir);
     auto_ptr<OrderManager> orderManagerPtr(new OrderManager(orderDir.string(), itemManagerPtr.get()));
 
-    auto_ptr<RecommendManager> recommendManagerPtr(new RecommendManager(config_->recommendSchema_,
-                                                                        itemManagerPtr.get(),
-                                                                        visitManagerPtr.get(),
-                                                                        purchaseManagerPtr.get(),
-                                                                        cartManagerPtr.get(),
-                                                                        eventManagerPtr.get(),
-                                                                        coVisitManagerPtr.get(),
-                                                                        itemCFManagerPtr.get(),
-                                                                        orderManagerPtr.get()));
+    auto_ptr<RecommenderManager> recommenderManagerPtr(new RecommenderManager(itemManagerPtr.get(), visitManagerPtr.get(),
+                                                                            purchaseManagerPtr.get(), cartManagerPtr.get(),
+                                                                            eventManagerPtr.get(), coVisitManagerPtr.get(),
+                                                                            itemCFManagerPtr.get(), orderManagerPtr.get()));
 
     boost::filesystem::path idDir = dataDir / "id";
     boost::filesystem::create_directory(idDir);
@@ -179,7 +174,7 @@ bool RecommendBundleActivator::init_()
     cartManager_ = cartManagerPtr.release();
     eventManager_ = eventManagerPtr.release();
     orderManager_ = orderManagerPtr.release();
-    recommendManager_ = recommendManagerPtr.release();
+    recommenderManager_ = recommenderManagerPtr.release();
 
     userIdGenerator_ = userIdGeneratorPtr.release();
     itemIdGenerator_ = itemIdGeneratorPtr.release();
@@ -188,7 +183,7 @@ bool RecommendBundleActivator::init_()
     itemCFManager_ = itemCFManagerPtr.release();
 
     taskService_ = new RecommendTaskService(config_, &directoryRotator_, userManager_, itemManager_, visitManager_, purchaseManager_, cartManager_, eventManager_, orderManager_, userIdGenerator_, itemIdGenerator_);
-    searchService_ = new RecommendSearchService(userManager_, itemManager_, recommendManager_, userIdGenerator_, itemIdGenerator_);
+    searchService_ = new RecommendSearchService(userManager_, itemManager_, recommenderManager_, userIdGenerator_, itemIdGenerator_);
 
     return true;
 }

@@ -6,26 +6,24 @@
 namespace sf1r
 {
 
-BABRecommender::BABRecommender(ItemCFManager* itemCFManager)
-    : itemCFManager_(itemCFManager)
+BABRecommender::BABRecommender(ItemManager& itemManager, ItemCFManager& itemCFManager)
+    : Recommender(itemManager)
+    , itemCFManager_(itemCFManager)
 {
 }
 
-bool BABRecommender::recommend(
-    int maxRecNum,
-    const std::vector<itemid_t>& inputItemVec,
-    ItemFilter& filter,
-    std::vector<RecommendItem>& recItemVec
-)
+bool BABRecommender::recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec)
 {
-    if (inputItemVec.empty())
+    if (param.inputItemIds.empty())
     {
         LOG(ERROR) << "failed to recommend for empty input items";
         return false;
     }
 
+    ItemFilter filter(itemManager_, param);
+
     idmlib::recommender::RecommendItemVec results;
-    itemCFManager_->recommend(maxRecNum, inputItemVec, results, &filter);
+    itemCFManager_.recommend(param.limit, param.inputItemIds, results, &filter);
 
     recItemVec.insert(recItemVec.end(), results.begin(), results.end());
 

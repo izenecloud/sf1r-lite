@@ -15,7 +15,6 @@
 
 namespace sf1r
 {
-class RecommendSchema;
 class ItemFilter;
 class PurchaseManager;
 class CartManager;
@@ -25,26 +24,23 @@ class UserEventFilter
 {
 public:
     UserEventFilter(
-        const RecommendSchema& schema,
-        PurchaseManager* purchaseManager,
-        CartManager* cartManager,
-        EventManager* eventManager
+        PurchaseManager& purchaseManager,
+        CartManager& cartManager,
+        EventManager& eventManager
     );
 
     bool filter(
         userid_t userId,
-        ItemFilter& filter,
-        ItemIdSet& notRecInputSet
+        std::vector<itemid_t>& inputItemVec,
+        ItemFilter& filter
     ) const;
 
     typedef std::map<itemid_t, std::string> ItemEventMap;
-
     bool addUserEvent(
         userid_t userId,
-        ItemEventMap& itemEventMap,
         std::vector<itemid_t>& inputItemVec,
-        ItemFilter& filter,
-        ItemIdSet& notRecInputSet
+        ItemEventMap& itemEventMap,
+        ItemFilter& filter
     ) const;
 
 private:
@@ -60,35 +56,33 @@ private:
 
     bool filterPreferenceItem_(
         userid_t userId,
-        ItemFilter& filter,
-        ItemIdSet& notRecInputSet
+        std::vector<itemid_t>& inputItemVec,
+        ItemFilter& filter
     ) const;
 
     bool addPurchaseItem_(
         userid_t userId,
-        ItemEventMap& itemEventMap,
-        std::vector<itemid_t>& inputItemVec
+        std::vector<itemid_t>& inputItemVec,
+        ItemEventMap& itemEventMap
     ) const;
 
     bool addCartItem_(
         userid_t userId,
-        ItemEventMap& itemEventMap,
-        std::vector<itemid_t>& inputItemVec
+        std::vector<itemid_t>& inputItemVec,
+        ItemEventMap& itemEventMap
     ) const;
 
     bool addPreferenceItem_(
         userid_t userId,
-        ItemEventMap& itemEventMap,
         std::vector<itemid_t>& inputItemVec,
-        ItemFilter& filter,
-        ItemIdSet& notRecInputSet
+        ItemEventMap& itemEventMap,
+        ItemFilter& filter
     ) const;
 
 protected:
-    const RecommendSchema& recommendSchema_;
-    PurchaseManager* purchaseManager_;
-    CartManager* cartManager_;
-    EventManager* eventManager_;
+    PurchaseManager& purchaseManager_;
+    CartManager& cartManager_;
+    EventManager& eventManager_;
 };
 
 } // namespace sf1r

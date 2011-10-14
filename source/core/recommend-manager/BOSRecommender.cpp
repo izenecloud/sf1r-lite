@@ -1,4 +1,5 @@
 #include "BOSRecommender.h"
+#include "UserEventFilter.h"
 #include "ItemFilter.h"
 #include "CartManager.h"
 #include <bundles/recommend/RecommendSchema.h>
@@ -9,68 +10,48 @@ namespace sf1r
 {
 
 BOSRecommender::BOSRecommender(
-    const RecommendSchema& schema,
-    ItemCFManager* itemCFManager,
+    ItemManager& itemManager,
+    ItemCFManager& itemCFManager,
     const UserEventFilter& userEventFilter,
-    userid_t userId,
-    int maxRecNum,
-    ItemFilter& filter,
-    CartManager* cartManager
+    CartManager& cartManager
 )
-    : UserBaseRecommender(schema, itemCFManager, userEventFilter,
-                          userId, maxRecNum, filter)
+    : ItemCFRecommender(itemManager, itemCFManager, userEventFilter)
     , cartManager_(cartManager)
 {
 }
 
-bool BOSRecommender::recommend(
-    const std::vector<itemid_t>& inputItemVec,
-    std::vector<RecommendItem>& recItemVec
-)
+bool BOSRecommender::recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec)
 {
-    if (inputItemVec.empty() == false)
-    {
-        // use input items as shopping cart
-        return recommendImpl_(inputItemVec, recItemVec);
-    }
+    if (!getCartItems_(param))
+        return false;
 
-    std::vector<itemid_t> cartItemVec;
-    if (getCartItems_(cartItemVec))
+    ItemFilter filter(itemManager_, param);
+    if (param.userId && !userEventFilter_.filter(param.userId, param.inputItemIds, filter))
     {
-        return recommendImpl_(cartItemVec, recItemVec);
-    }
-
-    return false;
-}
-
-bool BOSRecommender::recommendImpl_(
-    const std::vector<itemid_t>& inputItemVec,
-    std::vector<RecommendItem>& recItemVec
-)
-{
-    if (filterUserEvent_() == false)
-    {
-        LOG(ERROR) << "failed to filter user event for user id " << userId_;
+        LOG(ERROR) << "failed to filter user event for user id " << param.userId;
         return false;
     }
 
-    recommendByItem_(inputItemVec, recItemVec);
+    recommendItemCF_(param, filter, recItemVec);
     setReasonEvent_(recItemVec, RecommendSchema::CART_EVENT);
 
     return true;
 }
 
-bool BOSRecommender::getCartItems_(std::vector<itemid_t>& cartItemVec) const
+bool BOSRecommender::getCartItems_(RecommendParam& param) const
 {
-    if (userId_ == 0)
+    if (!param.inputItemIds.empty())
+        return true;
+
+    if (param.userId == 0)
     {
-        LOG(ERROR) << "failed to recommend with empty shopping cart and empty user id";
+        LOG(ERROR) << "failed to recommend with empty user id and empty input items";
         return false;
     }
 
-    if (cartManager_->getCart(userId_, cartItemVec) == false)
+    if (!cartManager_.getCart(param.userId, param.inputItemIds))
     {
-        LOG(ERROR) << "failed to get shopping cart items for user id " << userId_;
+        LOG(ERROR) << "failed to get shopping cart items for user id " << param.userId;
         return false;
     }
 

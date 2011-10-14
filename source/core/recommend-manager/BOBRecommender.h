@@ -8,48 +8,29 @@
 #ifndef BOB_RECOMMENDER_H
 #define BOB_RECOMMENDER_H
 
-#include "UserBaseRecommender.h"
-
-#include <string>
-#include <vector>
+#include "ItemCFRecommender.h"
 
 namespace sf1r
 {
-
 class VisitManager;
 
-class BOBRecommender : public UserBaseRecommender 
+class BOBRecommender : public ItemCFRecommender 
 {
 public:
     BOBRecommender(
-        const RecommendSchema& schema,
-        ItemCFManager* itemCFManager,
+        ItemManager& itemManager,
+        ItemCFManager& itemCFManager,
         const UserEventFilter& userEventFilter,
-        userid_t userId,
-        int maxRecNum,
-        ItemFilter& filter,
-        VisitManager* visitManager
+        VisitManager& visitManager
     );
 
-    bool recommend(
-        const std::string& sessionIdStr,
-        const std::vector<itemid_t>& inputItemVec,
-        std::vector<RecommendItem>& recItemVec
-    );
+    bool recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec);
 
 private:
-    bool getBrowseItems_(
-        const std::string& sessionIdStr,
-        std::vector<itemid_t>& browseItemVec
-    ) const;
-
-    bool recommendImpl_(
-        const std::vector<itemid_t>& inputItemVec,
-        std::vector<RecommendItem>& recItemVec
-    );
+    bool getBrowseItems_(RecommendParam& param) const;
 
 private:
-    VisitManager* visitManager_;
+    VisitManager& visitManager_;
 };
 
 } // namespace sf1r

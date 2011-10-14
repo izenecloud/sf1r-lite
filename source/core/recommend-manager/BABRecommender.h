@@ -9,28 +9,20 @@
 #define BAB_RECOMMENDER_H
 
 #include "RecTypes.h"
-#include "RecommendItem.h"
-
-#include <vector>
+#include "Recommender.h"
 
 namespace sf1r
 {
-class ItemFilter;
 
-class BABRecommender
+class BABRecommender : public Recommender
 {
 public:
-    BABRecommender(ItemCFManager* itemCFManager);
+    BABRecommender(ItemManager& itemManager, ItemCFManager& itemCFManager);
 
-    bool recommend(
-        int maxRecNum,
-        const std::vector<itemid_t>& inputItemVec,
-        ItemFilter& filter,
-        std::vector<RecommendItem>& recItemVec
-    );
+    bool recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec);
 
 private:
-    ItemCFManager* itemCFManager_;
+    ItemCFManager& itemCFManager_;
 };
 
 } // namespace sf1r

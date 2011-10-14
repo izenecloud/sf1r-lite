@@ -6,26 +6,23 @@
 namespace sf1r
 {
 
-VAVRecommender::VAVRecommender(CoVisitManager* coVisitManager)
-    : coVisitManager_(coVisitManager)
+VAVRecommender::VAVRecommender(ItemManager& itemManager, CoVisitManager& coVisitManager)
+    : Recommender(itemManager)
+    , coVisitManager_(coVisitManager)
 {
 }
 
-bool VAVRecommender::recommend(
-    int maxRecNum,
-    const std::vector<itemid_t>& inputItemVec,
-    ItemFilter& filter,
-    std::vector<RecommendItem>& recItemVec
-)
+bool VAVRecommender::recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec)
 {
-    if (inputItemVec.empty())
+    if (param.inputItemIds.empty())
     {
         LOG(ERROR) << "failed to recommend for empty input items";
         return false;
     }
 
+    ItemFilter filter(itemManager_, param);
     std::vector<itemid_t> results;
-    coVisitManager_->getCoVisitation(maxRecNum, inputItemVec[0], results, &filter);
+    coVisitManager_.getCoVisitation(param.limit, param.inputItemIds[0], results, &filter);
 
     RecommendItem recItem;
     recItem.weight_ = 1;

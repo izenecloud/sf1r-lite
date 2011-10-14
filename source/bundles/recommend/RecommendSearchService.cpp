@@ -3,7 +3,8 @@
 #include <recommend-manager/ItemCondition.h>
 #include <recommend-manager/UserManager.h>
 #include <recommend-manager/ItemManager.h>
-#include <recommend-manager/RecommendManager.h>
+#include <recommend-manager/RecommenderManager.h>
+#include <recommend-manager/RecommendParam.h>
 
 #include <glog/logging.h>
 
@@ -13,13 +14,13 @@ namespace sf1r
 RecommendSearchService::RecommendSearchService(
     UserManager* userManager,
     ItemManager* itemManager,
-    RecommendManager* recommendManager,
+    RecommenderManager* recommenderManager,
     RecIdGenerator* userIdGenerator,
     RecIdGenerator* itemIdGenerator
 )
     :userManager_(userManager)
     ,itemManager_(itemManager)
-    ,recommendManager_(recommendManager)
+    ,recommenderManager_(recommenderManager)
     ,userIdGenerator_(userIdGenerator)
     ,itemIdGenerator_(itemIdGenerator)
 {
@@ -51,7 +52,46 @@ bool RecommendSearchService::getItem(const std::string& itemIdStr, Item& item)
     return itemManager_->getItem(itemId, item);
 }
 
-bool RecommendSearchService::convertItemId(
+bool RecommendSearchService::recommend(
+    RecommendParam& param,
+    std::vector<RecommendItem>& recItemVec
+)
+{
+    if (!convertIds_(param))
+        return false;
+
+    if (!recommenderManager_->recommend(param, recItemVec))
+    {
+        LOG(ERROR) << "error in RecommenderManager::recommend()";
+        return false;
+    }
+
+    if (!getItems_(recItemVec))
+        return false;
+
+    return true;
+}
+
+bool RecommendSearchService::convertIds_(RecommendParam& param)
+{
+    if (!param.userIdStr.empty()
+        && !userIdGenerator_->conv(param.userIdStr, param.userId, false))
+    {
+        LOG(ERROR) << "error in convertIds_(), user id " << param.userIdStr << " not yet added before";
+        return false;
+    }
+
+    if (!convertItemId_(param.inputItems, param.inputItemIds)
+        || !convertItemId_(param.includeItems, param.includeItemIds)
+        || !convertItemId_(param.excludeItems, param.excludeItemIds))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool RecommendSearchService::convertItemId_(
     const std::vector<std::string>& inputItemVec,
     std::vector<itemid_t>& outputItemVec
 )
@@ -62,7 +102,7 @@ bool RecommendSearchService::convertItemId(
     {
         if (itemIdGenerator_->conv(inputItemVec[i], itemId, false) == false)
         {
-            LOG(ERROR) << "error in convertItemId(), item id " << inputItemVec[i] << " not yet added before";
+            LOG(ERROR) << "error in convertItemId_(), item id " << inputItemVec[i] << " not yet added before";
             return false;
         }
 
@@ -72,44 +112,8 @@ bool RecommendSearchService::convertItemId(
     return true;
 }
 
-bool RecommendSearchService::recommend(
-    RecommendType recType,
-    int maxRecNum,
-    const std::string& userIdStr,
-    const std::string& sessionIdStr,
-    const std::vector<std::string>& inputItemVec,
-    const std::vector<std::string>& includeItemVec,
-    const std::vector<std::string>& excludeItemVec,
-    const ItemCondition& condition,
-    std::vector<RecommendItem>& recItemVec
-)
+bool RecommendSearchService::getItems_(std::vector<RecommendItem>& recItemVec) const
 {
-    userid_t userId = 0;
-    if (!userIdStr.empty() && userIdGenerator_->conv(userIdStr, userId, false) == false)
-    {
-        LOG(ERROR) << "error in recommend(), user id " << userIdStr << " not yet added before";
-        return false;
-    }
-
-    std::vector<itemid_t> inputIdVec;
-    std::vector<itemid_t> includeIdVec;
-    std::vector<itemid_t> excludeIdVec;
-    if (!convertItemId(inputItemVec, inputIdVec)
-        || !convertItemId(includeItemVec, includeIdVec)
-        || !convertItemId(excludeItemVec, excludeIdVec))
-    {
-        return false;
-    }
-
-    if (!recommendManager_->recommend(recType, maxRecNum,
-                                      userId, sessionIdStr,
-                                      inputIdVec, includeIdVec, excludeIdVec, condition,
-                                      recItemVec))
-    {
-        LOG(ERROR) << "error in RecommendManager::recommend()";
-        return false;
-    }
-
     for (std::vector<RecommendItem>::iterator it = recItemVec.begin();
         it != recItemVec.end(); ++it)
     {
@@ -142,10 +146,10 @@ bool RecommendSearchService::topItemBundle(
 )
 {
     std::vector<vector<itemid_t> > bundleIdVec;
-    if (!recommendManager_->topItemBundle(maxRecNum, minFreq,
+    if (!recommenderManager_->topItemBundle(maxRecNum, minFreq,
                                           bundleIdVec, freqVec))
     {
-        LOG(ERROR) << "error in RecommendManager::topItemBundle()";
+        LOG(ERROR) << "error in RecommenderManager::topItemBundle()";
         return false;
     }
 

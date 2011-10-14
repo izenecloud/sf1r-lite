@@ -9,28 +9,20 @@
 #define VAV_RECOMMENDER_H
 
 #include "RecTypes.h"
-#include "RecommendItem.h"
-
-#include <vector>
+#include "Recommender.h"
 
 namespace sf1r
 {
-class ItemFilter;
 
-class VAVRecommender
+class VAVRecommender : public Recommender
 {
 public:
-    VAVRecommender(CoVisitManager* coVisitManager);
+    VAVRecommender(ItemManager& itemManager, CoVisitManager& coVisitManager);
 
-    bool recommend(
-        int maxRecNum,
-        const std::vector<itemid_t>& inputItemVec,
-        ItemFilter& filter,
-        std::vector<RecommendItem>& recItemVec
-    );
+    bool recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec);
 
 private:
-    CoVisitManager* coVisitManager_;
+    CoVisitManager& coVisitManager_;
 };
 
 } // namespace sf1r

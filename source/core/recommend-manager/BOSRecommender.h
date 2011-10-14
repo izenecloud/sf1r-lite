@@ -8,41 +8,29 @@
 #ifndef BOS_RECOMMENDER_H
 #define BOS_RECOMMENDER_H
 
-#include "UserBaseRecommender.h"
+#include "ItemCFRecommender.h"
 
 namespace sf1r
 {
-
 class CartManager;
 
-class BOSRecommender : public UserBaseRecommender 
+class BOSRecommender : public ItemCFRecommender 
 {
 public:
     BOSRecommender(
-        const RecommendSchema& schema,
-        ItemCFManager* itemCFManager,
+        ItemManager& itemManager,
+        ItemCFManager& itemCFManager,
         const UserEventFilter& userEventFilter,
-        userid_t userId,
-        int maxRecNum,
-        ItemFilter& filter,
-        CartManager* cartManager
+        CartManager& cartManager
     );
 
-    bool recommend(
-        const std::vector<itemid_t>& inputItemVec,
-        std::vector<RecommendItem>& recItemVec
-    );
+    bool recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec);
 
 private:
-    bool recommendImpl_(
-        const std::vector<itemid_t>& inputItemVec,
-        std::vector<RecommendItem>& recItemVec
-    );
-
-    bool getCartItems_(std::vector<itemid_t>& cartItemVec) const;
+    bool getCartItems_(RecommendParam& param) const;
 
 private:
-    CartManager* cartManager_;
+    CartManager& cartManager_;
 };
 
 } // namespace sf1r

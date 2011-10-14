@@ -1,4 +1,5 @@
 #include "BOBRecommender.h"
+#include "UserEventFilter.h"
 #include "ItemFilter.h"
 #include "VisitManager.h"
 #include <bundles/recommend/RecommendSchema.h>
@@ -9,79 +10,55 @@ namespace sf1r
 {
 
 BOBRecommender::BOBRecommender(
-    const RecommendSchema& schema,
-    ItemCFManager* itemCFManager,
+    ItemManager& itemManager,
+    ItemCFManager& itemCFManager,
     const UserEventFilter& userEventFilter,
-    userid_t userId,
-    int maxRecNum,
-    ItemFilter& filter,
-    VisitManager* visitManager
+    VisitManager& visitManager
 )
-    : UserBaseRecommender(schema, itemCFManager, userEventFilter,
-                          userId, maxRecNum, filter)
+    : ItemCFRecommender(itemManager, itemCFManager, userEventFilter)
     , visitManager_(visitManager)
 {
 }
 
-bool BOBRecommender::recommend(
-    const std::string& sessionIdStr,
-    const std::vector<itemid_t>& inputItemVec,
-    std::vector<RecommendItem>& recItemVec
-)
+bool BOBRecommender::recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec)
 {
-    if (inputItemVec.empty() == false)
-    {
-        // use input items as browse history
-        return recommendImpl_(inputItemVec, recItemVec);
-    }
+    if (!getBrowseItems_(param))
+        return false;
 
-    std::vector<itemid_t> browseItemVec;
-    if (getBrowseItems_(sessionIdStr, browseItemVec))
+    ItemFilter filter(itemManager_, param);
+    if (param.userId && !userEventFilter_.filter(param.userId, param.inputItemIds, filter))
     {
-        return recommendImpl_(browseItemVec, recItemVec);
-    }
-
-    return false;
-}
-
-bool BOBRecommender::recommendImpl_(
-    const std::vector<itemid_t>& inputItemVec,
-    std::vector<RecommendItem>& recItemVec
-)
-{
-    if (filterUserEvent_() == false)
-    {
-        LOG(ERROR) << "failed to filter user event for user id " << userId_;
+        LOG(ERROR) << "failed to filter user event for user id " << param.userId;
         return false;
     }
 
-    recommendByItem_(inputItemVec, recItemVec);
+    recommendItemCF_(param, filter, recItemVec);
     setReasonEvent_(recItemVec, RecommendSchema::BROWSE_EVENT);
 
     return true;
 }
 
-bool BOBRecommender::getBrowseItems_(
-    const std::string& sessionIdStr,
-    std::vector<itemid_t>& browseItemVec
-) const
+bool BOBRecommender::getBrowseItems_(RecommendParam& param) const
 {
-    if (userId_ == 0 || sessionIdStr.empty())
+    if (!param.inputItemIds.empty())
+        return true;
+
+    if (param.userId == 0 || param.sessionIdStr.empty())
     {
-        LOG(ERROR) << "failed to recommend with empty browse history";
+        LOG(ERROR) << "failed to recommend with empty user/session id and empty input items";
         return false;
     }
 
     VisitSession visitSession;
-    if (visitManager_->getVisitSession(userId_, visitSession) == false)
+    if (! visitManager_.getVisitSession(param.userId, visitSession))
     {
-        LOG(ERROR) << "failed to get visit session items for user id " << userId_;
+        LOG(ERROR) << "failed to get visit session items for user id " << param.userId;
         return false;
     }
 
-    if (visitSession.sessionId_ == sessionIdStr)
+    if (visitSession.sessionId_ == param.sessionIdStr)
     {
-        browseItemVec.assign(visitSession.itemSet_.begin(), visitSession.itemSet_.end());
+        param.inputItemIds.assign(visitSession.itemSet_.begin(), visitSession.itemSet_.end());
     }
 
     return true;

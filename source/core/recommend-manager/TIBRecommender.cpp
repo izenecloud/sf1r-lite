@@ -4,7 +4,7 @@
 namespace sf1r
 {
 
-TIBRecommender::TIBRecommender(OrderManager* orderManager)
+TIBRecommender::TIBRecommender(OrderManager& orderManager)
     : orderManager_(orderManager)
 {
 }
@@ -17,7 +17,7 @@ bool TIBRecommender::recommend(
 )
 {
     FrequentItemSetResultType results;
-    orderManager_->getAllFreqItemSets(maxRecNum, minFreq, results);
+    orderManager_.getAllFreqItemSets(maxRecNum, minFreq, results);
 
     const std::size_t resultNum = results.size();
     bundleVec.resize(resultNum);

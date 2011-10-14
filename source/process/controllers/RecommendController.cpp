@@ -13,6 +13,7 @@
 #include <recommend-manager/RecommendItem.h>
 #include <recommend-manager/ItemCondition.h>
 #include <recommend-manager/RecTypes.h>
+#include <recommend-manager/RecommendParam.h>
 
 #include <common/Keys.h>
 #include <common/Utilities.h> // Utilities::toUpper()
@@ -1007,143 +1008,91 @@ void RecommendController::do_recommend()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::rec_type));
 
-    int maxCount = kDefaultRecommendCount;
+    RecommendParam recParam;
+    if (!parseRecommendParam(recParam))
+        return;
+
+    std::vector<RecommendItem> recItemVec;
+    RecommendSearchService* service = collectionHandler_->recommendSearchService_;
+    if (service->recommend(recParam, recItemVec))
+    {
+        renderRecommendResult(recParam, recItemVec);
+    }
+    else
+    {
+        response().addError("Failed to get recommendation result from given collection.");
+    }
+}
+
+bool RecommendController::parseRecommendParam(RecommendParam& param)
+{
     const izenelib::driver::Value& maxCountValue = request()[Keys::resource][Keys::max_count];
-    if (!nullValue(maxCountValue))
+    param.limit = asUintOr(maxCountValue, kDefaultRecommendCount);
+
+    if (!value2ItemIdVec(Keys::input_items, param.inputItems)
+        || !value2ItemIdVec(Keys::include_items, param.includeItems)
+        || !value2ItemIdVec(Keys::exclude_items, param.excludeItems)
+        || !value2ItemCondition(param.condition))
     {
-        maxCount = asUint(maxCountValue);
-    }
-    if (maxCount <= 0)
-    {
-        response().addError("Require a positive value in request[resource][max_count].");
-        return;
+        return false;
     }
 
-    std::vector<std::string> inputItemVec;
-    std::vector<std::string> includeItemVec;
-    std::vector<std::string> excludeItemVec;
-    if (!value2ItemIdVec(Keys::input_items, inputItemVec)
-        || !value2ItemIdVec(Keys::include_items, includeItemVec)
-        || !value2ItemIdVec(Keys::exclude_items, excludeItemVec))
-    {
-        return;
-    }
-
-    ItemCondition itemCondition;
-    if (!value2ItemCondition(itemCondition))
-    {
-        return;
-    }
-
-    std::string userIdStr = asString(request()[Keys::resource][Keys::USERID]);
-    std::string sessionIdStr = asString(request()[Keys::resource][Keys::session_id]);
+    param.userIdStr = asString(request()[Keys::resource][Keys::USERID]);
+    param.sessionIdStr = asString(request()[Keys::resource][Keys::session_id]);
 
     std::string recTypeStr = asString(request()[Keys::resource][Keys::rec_type]);
     std::map<std::string, int>::const_iterator mapIt = recTypeMap_.find(Utilities::toUpper(recTypeStr));
     if (mapIt == recTypeMap_.end())
     {
         response().addError("Unknown recommendation type \"" + recTypeStr + "\" in request[resource][rec_type].");
-        return;
+        return false;
+    }
+    param.type = static_cast<RecommendType>(mapIt->second);
+
+    std::string errorMsg;
+    if (!param.check(errorMsg))
+    {
+        response().addError(errorMsg);
+        return false;
     }
 
-    RecommendType recTypeId = static_cast<RecommendType>(mapIt->second);
-    switch (recTypeId)
+    return true;
+}
+
+void RecommendController::renderRecommendResult(const RecommendParam& param, const std::vector<RecommendItem>& recItemVec)
+{
+    Value& resources = response()[Keys::resources];
+    std::string convertBuffer;
+
+    for (std::vector<RecommendItem>::const_iterator recIt = recItemVec.begin();
+        recIt != recItemVec.end(); ++recIt)
     {
-        case FREQUENT_BUY_TOGETHER:
-        case BUY_ALSO_BUY:
-        case VIEW_ALSO_VIEW:
+        Value& itemValue = resources();
+        const Item& item = recIt->item_;
+
+        itemValue[Keys::weight] = recIt->weight_;
+        itemValue[Keys::ITEMID] = item.idStr_;
+
+        for (Item::PropValueMap::const_iterator it = item.propValueMap_.begin();
+            it != item.propValueMap_.end(); ++it)
         {
-            if (inputItemVec.empty())
-            {
-                response().addError("This recommendation type requires input_items in request[resource].");
-                return;
-            }
-            break;
+            it->second.convertString(convertBuffer, kEncoding);
+            itemValue[it->first] = convertBuffer;
         }
 
-        case BASED_ON_EVENT:
+        const std::vector<ReasonItem>& reasonItems = recIt->reasonItems_;
+        // BAB need not reason results
+        if (param.type != BUY_ALSO_BUY && reasonItems.empty() == false)
         {
-            if (userIdStr.empty())
+            Value& reasonsValue = itemValue[Keys::reasons];
+            for (std::vector<ReasonItem>::const_iterator it = reasonItems.begin();
+                it != reasonItems.end(); ++it)
             {
-                response().addError("This recommendation type requires USERID sepcified in request[resource].");
-                return;
-            }
-            break;
-        }
-
-        case BASED_ON_BROWSE_HISTORY:
-        {
-            if (inputItemVec.empty())
-            {
-                if (userIdStr.empty() || sessionIdStr.empty())
-                {
-                    response().addError("This recommendation type requires either input_items or both USERID and session_id in request[resource].");
-                    return;
-                }
-            }
-            break;
-        }
-
-        case BASED_ON_SHOP_CART:
-        {
-            if (inputItemVec.empty() && userIdStr.empty())
-            {
-                response().addError("This recommendation type requires either input_items or USERID in request[resource].");
-                return;
-            }
-            break;
-        }
-
-        default:
-        {
-            response().addError("Unknown recommendation type \"" + recTypeStr + "\" in request[resource][rec_type].");
-            return;
-        }
-    }
-
-    std::vector<RecommendItem> recItemVec;
-    RecommendSearchService* service = collectionHandler_->recommendSearchService_;
-    if (service->recommend(recTypeId, maxCount,
-                           userIdStr, sessionIdStr,
-                           inputItemVec, includeItemVec, excludeItemVec, itemCondition,
-                           recItemVec))
-    {
-        Value& resources = response()[Keys::resources];
-        std::string convertBuffer;
-        for (std::vector<RecommendItem>::const_iterator recIt = recItemVec.begin();
-            recIt != recItemVec.end(); ++recIt)
-        {
-            Value& itemValue = resources();
-            const Item& item = recIt->item_;
-
-            itemValue[Keys::weight] = recIt->weight_;
-            itemValue[Keys::ITEMID] = item.idStr_;
-
-            for (Item::PropValueMap::const_iterator it = item.propValueMap_.begin();
-                it != item.propValueMap_.end(); ++it)
-            {
-                it->second.convertString(convertBuffer, kEncoding);
-                itemValue[it->first] = convertBuffer;
-            }
-
-            const std::vector<ReasonItem>& reasonItems = recIt->reasonItems_;
-            // BAB need not reason results
-            if (recTypeId != BUY_ALSO_BUY && reasonItems.empty() == false)
-            {
-                Value& reasonsValue = itemValue[Keys::reasons];
-                for (std::vector<ReasonItem>::const_iterator it = reasonItems.begin();
-                    it != reasonItems.end(); ++it)
-                {
-                    Value& value = reasonsValue();
-                    value[Keys::event] = it->event_;
-                    value[Keys::ITEMID] = it->item_.idStr_;
-                }
+                Value& value = reasonsValue();
+                value[Keys::event] = it->event_;
+                value[Keys::ITEMID] = it->item_.idStr_;
             }
         }
-    }
-    else
-    {
-        response().addError("Failed to get recommendation result from given collection.");
     }
 }
 
