@@ -18,7 +18,7 @@ namespace sf1r {
             bool unigramFlag,
             boost::shared_ptr<LAManager>& laManager,
             boost::shared_ptr<izenelib::ir::idmanager::IDManager>& idManager):
-        actionItem_(actionItem),
+        actionItem_((KeywordSearchActionItem &) actionItem),
         noError_(true),
         unigramFlag_(unigramFlag),
         queryParser_(laManager, idManager),
