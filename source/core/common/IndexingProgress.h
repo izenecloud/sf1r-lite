@@ -102,8 +102,7 @@ struct IndexingProgress {
 				<< totalPercent << "%]";
 		ss << "\t[left: " << leftmin << "m" << leftsec << "s]";
 
-		std::cout << "\r";
-		std::cout << ss.str() << std::flush;
+		std::cout << std::endl << ss.str() << std::flush;
 		status.metaInfo_ = ss.str();
 	}
 

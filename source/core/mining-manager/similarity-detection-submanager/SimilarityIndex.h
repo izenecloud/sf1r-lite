@@ -102,21 +102,21 @@ public:
 
     ~SimilarityIndex()
     {
-    	if(useFirstSdb_)
-    	{
-    		delete useFirstSdb_;
-    		useFirstSdb_=0;
-    	}
-//    	if(pairTable_)
-//    	{
-//    	    delete pairTable_;
-//    	    pairTable_=0;
-//    	}
-    	if(sorter_)
-    	{
-    	    delete sorter_;
-    	    sorter_=0;
-    	}
+        if(useFirstSdb_)
+        {
+            delete useFirstSdb_;
+            useFirstSdb_=0;
+        }
+//        if(pairTable_)
+//        {
+//            delete pairTable_;
+//            pairTable_=0;
+//        }
+        if(sorter_)
+        {
+            delete sorter_;
+            sorter_=0;
+        }
     }
 
     void setCache(const boost::shared_ptr<Hash>& db, unsigned cacheSize)
@@ -227,17 +227,16 @@ void SimilarityIndex::indexWorker(const std::vector<boost::shared_ptr<ReaderT> >
     // use hdb to reduce document pair-wise similarity
     for(size_t i=0;i<readers.size();i++)
     {
-    	std::cout<<"Processing property: "<<i+1<<std::endl;
-    	boost::shared_ptr<ReaderT> reader=readers[i];
-    	int count=0;
-    	while (reader->next())
+        std::cout<<"Processing property: "<<i+1<<std::endl;
+        boost::shared_ptr<ReaderT> reader=readers[i];
+        int count=0;
+        while (reader->next())
         {
-        	if(count%1001==0)
-        	{
-        		std::cout << "\r";
-     	  		std::cout<<"processed terms: "<<(float)count/reader->size()*100<<"%"<<std::flush;
-        	}
-        	count++;
+            if(count%1001==0)
+            {
+                std::cout << std::endl << "processed terms: " << (float) count / reader->size() * 100 << "%" << std::flush;
+            }
+            count++;
             if (reader->getDocFreq() > 0)
             {
                 doc_weight_list_type docWeightList;
@@ -296,7 +295,7 @@ OutputIterator SimilarityIndex::getSimilarDocIdScoreList(
     OutputIterator result
 ) const
 {
-	boost::lock_guard<boost::shared_mutex> lg(mutex_);
+    boost::lock_guard<boost::shared_mutex> lg(mutex_);
     if (!db_->is_open() && !db_->open())
     {
         std::cerr << "similarity index db is not opened" << std::endl;
