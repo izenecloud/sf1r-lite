@@ -788,8 +788,8 @@ void RecommendController::purchase_item()
  * @section request
  *
  * - @b collection* (@c String): Add event on updating shopping cart in this collection.
- * - @b resource* (@c Object): A resource for a shopping cart event, that is, the shopping cart of user @b USERID contains @b items.
- *   Please note that whenever there is any update in user's shopping cart, you have to specify @b items as all the items in the shopping cart.
+ * - @b resource* (@c Object): A resource for a shopping cart event, that is, the shopping cart of user @b USERID contains @b items.@n
+ *   Please note that whenever there is any update in user's shopping cart, you have to specify @b items as all the items in the shopping cart.@n
  *   When the shopping cart becomes empty, you have to add this event by calling @c update_shopping_cart() with an empty @b items.
  *   - @b USERID* (@c String): a unique user identifier.
  *   - @b items* (@c Array): each is an item in shopping cart.
@@ -939,8 +939,9 @@ void RecommendController::track_event()
  *     - @b VAV (<b>Viewed Also View</b>): get the items also viewed by the users who have viewed @b input_items.@n
  *       In current version, it supports recommending items based on only one input item,@n
  *       that is, only <b> input_items[0]</b> is used as input, and the rest items in @b input_items are ignored.
- *     - @b BOE (<b>Based on Event</b>): get the recommendation items based on the user events by @b USERID.@n
- *       The user events are added by @c purchase_item(), @c update_shopping_cart() and @c track_event().
+ *     - @b BOE (<b>Based on Event</b>): get the recommendation items based on the user events by @b USERID,@n
+ *       which user events are from @c purchase_item(), @c update_shopping_cart() and @c track_event().@n
+ *       The parameter @b input_items is not used for this recommendation type.
  *     - @b BOB (<b>Based on Browse History</b>): get the recommendation items based on the browse history of user @b USERID.@n
  *       If @b input_items is specified, the @b input_items would be used as the user's browse history.@n
  *       Otherwise, you have to specify both @b USERID and @b session_id, then the items added in @c visit_item() with the same @b USERID and @b session_id would be used as browse history.@n
@@ -950,12 +951,14 @@ void RecommendController::track_event()
  *       Otherwise, the items added in @c update_shopping_cart() with the same @b USERID would be used as shoppint cart.@n
  *       In the recommendation results, the items added by @c purchase_item(), @c update_shopping_cart() and @c track_event() would be excluded.
  *   - @b max_count (@c Uint = 10): max item number allowed in recommendation result.
- *   - @b USERID (@c String): a unique user identifier.
+ *   - @b USERID (@c String): a unique user identifier.@n
+ *     This parameter is required for rec_type of @b BOE, and optional for @b BOB and @b BOS.
  *   - @b session_id (@c String): a session id.@n
  *     A session id is a unique identifier to identify the user's current interaction session.@n
  *     For each session between user logging in and logging out, the session id should be unique and not changed.@n
  *     In current version, this parameter is only used in @b BOB rec_type.
- *   - @b input_items (@c Array): the input items for recommendation.
+ *   - @b input_items (@c Array): the input items for recommendation.@n
+ *     This parameter is required for rec_type of @b FBT, @b BAB, @b VAV, and optional for @b BOB and @b BOS.
  *     - @b ITEMID* (@c String): a unique item identifier.
  *   - @b include_items (@c Array): the items must be included in recommendation result.
  *     - @b ITEMID* (@c String): a unique item identifier.
