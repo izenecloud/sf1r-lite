@@ -1,7 +1,7 @@
 #include "BOSRecommender.h"
 #include "UserEventFilter.h"
-#include "ItemFilter.h"
 #include "CartManager.h"
+#include "RecommendParam.h"
 #include <bundles/recommend/RecommendSchema.h>
 
 #include <glog/logging.h>
@@ -15,24 +15,30 @@ BOSRecommender::BOSRecommender(
     const UserEventFilter& userEventFilter,
     CartManager& cartManager
 )
-    : ItemCFRecommender(itemManager, itemCFManager, userEventFilter)
+    : ItemCFRecommender(itemManager, itemCFManager)
+    , userEventFilter_(userEventFilter)
     , cartManager_(cartManager)
 {
 }
 
-bool BOSRecommender::recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec)
+bool BOSRecommender::recommendImpl_(
+    RecommendParam& param,
+    ItemFilter& filter,
+    std::vector<RecommendItem>& recItemVec
+)
 {
-    if (!getCartItems_(param))
+    if (! getCartItems_(param))
         return false;
 
-    ItemFilter filter(itemManager_, param);
     if (param.userId && !userEventFilter_.filter(param.userId, param.inputItemIds, filter))
     {
         LOG(ERROR) << "failed to filter user event for user id " << param.userId;
         return false;
     }
 
-    recommendItemCF_(param, filter, recItemVec);
+    if (! ItemCFRecommender::recommendImpl_(param, filter, recItemVec))
+        return false;
+
     setReasonEvent_(recItemVec, RecommendSchema::CART_EVENT);
 
     return true;

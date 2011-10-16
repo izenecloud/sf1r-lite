@@ -16,6 +16,7 @@
 #include "BOBRecommender.h"
 #include "BOSRecommender.h"
 #include "BOERecommender.h"
+#include "TIBRecommender.h"
 
 namespace sf1r
 {
@@ -42,6 +43,8 @@ public:
 
     Recommender* getRecommender(RecommendType type);
 
+    TIBRecommender* getTIBRecommender();
+
 private:
     UserEventFilter userEventFilter_;
     FBTRecommender fbtRecommender_;
@@ -50,6 +53,7 @@ private:
     BOBRecommender bobRecommender_;
     BOSRecommender bosRecommender_;
     BOERecommender boeRecommender_;
+    TIBRecommender tibRecommender_;
 };
 
 } // namespace sf1r

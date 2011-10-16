@@ -8,13 +8,13 @@
 #ifndef TIB_RECOMMENDER_H
 #define TIB_RECOMMENDER_H
 
-#include "RecTypes.h"
-
 #include <vector>
 
 namespace sf1r
 {
 class OrderManager;
+struct TIBParam;
+struct ItemBundle;
 
 class TIBRecommender
 {
@@ -22,10 +22,8 @@ public:
     TIBRecommender(OrderManager& orderManager);
 
     bool recommend(
-        int maxRecNum,
-        int minFreq,
-        std::vector<vector<itemid_t> >& bundleVec,
-        std::vector<int>& freqVec
+        const TIBParam& param,
+        std::vector<ItemBundle>& bundleVec
     );
 
 private:

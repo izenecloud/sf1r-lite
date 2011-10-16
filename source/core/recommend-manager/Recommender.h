@@ -8,25 +8,33 @@
 #ifndef RECOMMENDER_H
 #define RECOMMENDER_H
 
-#include "ItemManager.h"
-#include "RecommendParam.h"
-#include "RecommendItem.h"
-
 #include <vector>
 
 namespace sf1r
 {
+class ItemManager;
+class ItemFilter;
+struct RecommendParam;
+struct RecommendItem;
 
 class Recommender
 {
 public:
-    Recommender(ItemManager& itemManager)
-        : itemManager_(itemManager)
-    {}
+    Recommender(ItemManager& itemManager);
 
     virtual ~Recommender() {}
 
-    virtual bool recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec) = 0;
+    bool recommend(
+        RecommendParam& param,
+        std::vector<RecommendItem>& recItemVec
+    );
+
+protected:
+    virtual bool recommendImpl_(
+        RecommendParam& param,
+        ItemFilter& filter,
+        std::vector<RecommendItem>& recItemVec
+    ) = 0;
 
 protected:
     ItemManager& itemManager_;

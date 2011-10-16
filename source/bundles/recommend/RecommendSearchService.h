@@ -21,8 +21,10 @@ namespace sf1r
 class User;
 class UserManager;
 class ItemManager;
-class RecommenderManager;
+class RecommenderFactory;
 struct RecommendParam;
+struct TIBParam;
+struct ItemBundle;
 
 class RecommendSearchService : public ::izenelib::osgi::IService
 {
@@ -30,7 +32,7 @@ public:
     RecommendSearchService(
         UserManager* userManager,
         ItemManager* itemManager,
-        RecommenderManager* recommenderManager,
+        RecommenderFactory* recommenderFactory,
         RecIdGenerator* userIdGenerator,
         RecIdGenerator* itemIdGenerator
     );
@@ -45,10 +47,8 @@ public:
     );
 
     bool topItemBundle(
-        int maxRecNum,
-        int minFreq,
-        std::vector<vector<Item> >& bundleVec,
-        std::vector<int>& freqVec
+        const TIBParam& param,
+        std::vector<ItemBundle>& bundleVec
     );
 
 private:
@@ -57,12 +57,13 @@ private:
         const std::vector<std::string>& inputItemVec,
         std::vector<itemid_t>& outputItemVec
     );
-    bool getItems_(std::vector<RecommendItem>& recItemVec) const;
+    bool getRecommendItems_(std::vector<RecommendItem>& recItemVec) const;
+    bool getBundleItems_(std::vector<ItemBundle>& bundleVec) const;
 
 private:
     UserManager* userManager_;
     ItemManager* itemManager_;
-    RecommenderManager* recommenderManager_;
+    RecommenderFactory* recommenderFactory_;
     RecIdGenerator* userIdGenerator_;
     RecIdGenerator* itemIdGenerator_;
 };

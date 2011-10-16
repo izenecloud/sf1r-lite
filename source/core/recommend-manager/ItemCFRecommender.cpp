@@ -1,6 +1,7 @@
 #include "ItemCFRecommender.h"
-#include "UserEventFilter.h"
 #include "ItemFilter.h"
+#include "RecommendParam.h"
+#include "RecommendItem.h"
 
 #include <glog/logging.h>
 
@@ -9,16 +10,14 @@ namespace sf1r
 
 ItemCFRecommender::ItemCFRecommender(
     ItemManager& itemManager,
-    ItemCFManager& itemCFManager,
-    const UserEventFilter& userEventFilter
+    ItemCFManager& itemCFManager
 )
     : Recommender(itemManager)
     , itemCFManager_(itemCFManager)
-    , userEventFilter_(userEventFilter)
 {
 }
 
-void ItemCFRecommender::recommendItemCF_(
+bool ItemCFRecommender::recommendImpl_(
     RecommendParam& param,
     ItemFilter& filter,
     std::vector<RecommendItem>& recItemVec
@@ -27,6 +26,8 @@ void ItemCFRecommender::recommendItemCF_(
     idmlib::recommender::RecommendItemVec results;
     itemCFManager_.recommend(param.limit, param.inputItemIds, results, &filter);
     recItemVec.insert(recItemVec.end(), results.begin(), results.end());
+
+    return true;
 }
 
 void ItemCFRecommender::setReasonEvent_(

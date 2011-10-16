@@ -1,18 +1,27 @@
 #include "VAVRecommender.h"
 #include "ItemFilter.h"
+#include "RecommendParam.h"
+#include "RecommendItem.h"
 
 #include <glog/logging.h>
 
 namespace sf1r
 {
 
-VAVRecommender::VAVRecommender(ItemManager& itemManager, CoVisitManager& coVisitManager)
+VAVRecommender::VAVRecommender(
+    ItemManager& itemManager,
+    CoVisitManager& coVisitManager
+)
     : Recommender(itemManager)
     , coVisitManager_(coVisitManager)
 {
 }
 
-bool VAVRecommender::recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec)
+bool VAVRecommender::recommendImpl_(
+    RecommendParam& param,
+    ItemFilter& filter,
+    std::vector<RecommendItem>& recItemVec
+)
 {
     if (param.inputItemIds.empty())
     {
@@ -20,7 +29,6 @@ bool VAVRecommender::recommend(RecommendParam& param, std::vector<RecommendItem>
         return false;
     }
 
-    ItemFilter filter(itemManager_, param);
     std::vector<itemid_t> results;
     coVisitManager_.getCoVisitation(param.limit, param.inputItemIds[0], results, &filter);
 

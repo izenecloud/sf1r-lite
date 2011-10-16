@@ -1,6 +1,8 @@
 #include "BOERecommender.h"
 #include "ItemFilter.h"
 #include "UserEventFilter.h"
+#include "RecommendParam.h"
+#include "RecommendItem.h"
 
 #include <glog/logging.h>
 
@@ -40,11 +42,16 @@ BOERecommender::BOERecommender(
     ItemCFManager& itemCFManager,
     const UserEventFilter& userEventFilter
 )
-    : ItemCFRecommender(itemManager, itemCFManager, userEventFilter)
+    : ItemCFRecommender(itemManager, itemCFManager)
+    , userEventFilter_(userEventFilter)
 {
 }
 
-bool BOERecommender::recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec)
+bool BOERecommender::recommendImpl_(
+    RecommendParam& param,
+    ItemFilter& filter,
+    std::vector<RecommendItem>& recItemVec
+)
 {
     if (param.userId == 0)
     {
@@ -52,7 +59,6 @@ bool BOERecommender::recommend(RecommendParam& param, std::vector<RecommendItem>
         return false;
     }
 
-    ItemFilter filter(itemManager_, param);
     UserEventFilter::ItemEventMap itemEventMap;
     if (! userEventFilter_.addUserEvent(param.userId, param.inputItemIds,
                                         itemEventMap, filter))
@@ -61,7 +67,9 @@ bool BOERecommender::recommend(RecommendParam& param, std::vector<RecommendItem>
         return false;
     }
 
-    recommendItemCF_(param, filter, recItemVec);
+    if (! ItemCFRecommender::recommendImpl_(param, filter, recItemVec))
+        return false;
+
     setReasonEvent(recItemVec, itemEventMap);
 
     return true;

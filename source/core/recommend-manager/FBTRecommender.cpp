@@ -1,6 +1,8 @@
 #include "FBTRecommender.h"
 #include "OrderManager.h"
 #include "ItemFilter.h"
+#include "RecommendParam.h"
+#include "RecommendItem.h"
 
 #include <glog/logging.h>
 
@@ -9,13 +11,20 @@
 namespace sf1r
 {
 
-FBTRecommender::FBTRecommender(ItemManager& itemManager, OrderManager& orderManager)
+FBTRecommender::FBTRecommender(
+    ItemManager& itemManager,
+    OrderManager& orderManager
+)
     : Recommender(itemManager)
     , orderManager_(orderManager)
 {
 }
 
-bool FBTRecommender::recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec)
+bool FBTRecommender::recommendImpl_(
+    RecommendParam& param,
+    ItemFilter& filter,
+    std::vector<RecommendItem>& recItemVec
+)
 {
     if (param.inputItemIds.empty())
     {
@@ -23,11 +32,10 @@ bool FBTRecommender::recommend(RecommendParam& param, std::vector<RecommendItem>
         return false;
     }
 
-    ItemFilter filter(itemManager_, param);
     std::list<itemid_t> inputItemList(param.inputItemIds.begin(), param.inputItemIds.end());
     std::list<itemid_t> results;
 
-    if (orderManager_.getFreqItemSets(param.limit, inputItemList, results, &filter) == false)
+    if (! orderManager_.getFreqItemSets(param.limit, inputItemList, results, &filter))
     {
         LOG(ERROR) << "failed in OrderManager::getFreqItemSets()";
         return false;

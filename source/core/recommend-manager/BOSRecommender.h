@@ -12,6 +12,7 @@
 
 namespace sf1r
 {
+class UserEventFilter;
 class CartManager;
 
 class BOSRecommender : public ItemCFRecommender 
@@ -24,12 +25,18 @@ public:
         CartManager& cartManager
     );
 
-    bool recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec);
+protected:
+    virtual bool recommendImpl_(
+        RecommendParam& param,
+        ItemFilter& filter,
+        std::vector<RecommendItem>& recItemVec
+    );
 
 private:
     bool getCartItems_(RecommendParam& param) const;
 
 private:
+    const UserEventFilter& userEventFilter_;
     CartManager& cartManager_;
 };
 

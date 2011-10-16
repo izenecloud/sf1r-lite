@@ -12,6 +12,7 @@
 
 namespace sf1r
 {
+class UserEventFilter;
 class VisitManager;
 
 class BOBRecommender : public ItemCFRecommender 
@@ -24,12 +25,18 @@ public:
         VisitManager& visitManager
     );
 
-    bool recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec);
+protected:
+    virtual bool recommendImpl_(
+        RecommendParam& param,
+        ItemFilter& filter,
+        std::vector<RecommendItem>& recItemVec
+    );
 
 private:
     bool getBrowseItems_(RecommendParam& param) const;
 
 private:
+    const UserEventFilter& userEventFilter_;
     VisitManager& visitManager_;
 };
 

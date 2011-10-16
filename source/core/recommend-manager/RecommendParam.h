@@ -18,11 +18,7 @@ namespace sf1r
 
 struct RecommendParam
 {
-    RecommendParam()
-        : type(RECOMMEND_TYPE_NUM)
-        , limit(0)
-        , userId(0)
-    {}
+    RecommendParam();
 
     bool check(std::string& errorMsg) const;
 

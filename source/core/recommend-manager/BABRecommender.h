@@ -8,21 +8,25 @@
 #ifndef BAB_RECOMMENDER_H
 #define BAB_RECOMMENDER_H
 
-#include "RecTypes.h"
-#include "Recommender.h"
+#include "ItemCFRecommender.h"
 
 namespace sf1r
 {
 
-class BABRecommender : public Recommender
+class BABRecommender : public ItemCFRecommender
 {
 public:
-    BABRecommender(ItemManager& itemManager, ItemCFManager& itemCFManager);
+    BABRecommender(
+        ItemManager& itemManager,
+        ItemCFManager& itemCFManager
+    );
 
-    bool recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec);
-
-private:
-    ItemCFManager& itemCFManager_;
+protected:
+    virtual bool recommendImpl_(
+        RecommendParam& param,
+        ItemFilter& filter,
+        std::vector<RecommendItem>& recItemVec
+    );
 };
 
 } // namespace sf1r

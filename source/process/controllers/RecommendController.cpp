@@ -14,6 +14,8 @@
 #include <recommend-manager/ItemCondition.h>
 #include <recommend-manager/RecTypes.h>
 #include <recommend-manager/RecommendParam.h>
+#include <recommend-manager/TIBParam.h>
+#include <recommend-manager/ItemBundle.h>
 
 #include <common/Keys.h>
 #include <common/Utilities.h> // Utilities::toUpper()
@@ -748,10 +750,11 @@ void RecommendController::purchase_item()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
 
-    std::string userIdStr = asString(request()[Keys::resource][Keys::USERID]);
-    std::string orderIdStr = asString(request()[Keys::resource][Keys::order_id]);
+    izenelib::driver::Value& resourceValue = request()[Keys::resource];
+    std::string userIdStr = asString(resourceValue[Keys::USERID]);
+    std::string orderIdStr = asString(resourceValue[Keys::order_id]);
 
-    const izenelib::driver::Value& itemsValue = request()[Keys::resource][Keys::items];
+    const izenelib::driver::Value& itemsValue = resourceValue[Keys::items];
     if (nullValue(itemsValue) || itemsValue.type() != izenelib::driver::Value::kArrayType)
     {
         response().addError("Require an array of items in request[resource][items].");
@@ -825,9 +828,10 @@ void RecommendController::purchase_item()
 void RecommendController::update_shopping_cart()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
-    std::string userIdStr = asString(request()[Keys::resource][Keys::USERID]);
+    izenelib::driver::Value& resourceValue = request()[Keys::resource];
+    std::string userIdStr = asString(resourceValue[Keys::USERID]);
 
-    const izenelib::driver::Value& itemsValue = request()[Keys::resource][Keys::items];
+    const izenelib::driver::Value& itemsValue = resourceValue[Keys::items];
     if (nullValue(itemsValue) || itemsValue.type() != izenelib::driver::Value::kArrayType)
     {
         response().addError("Require an array of items in request[resource][items].");
@@ -1029,8 +1033,9 @@ void RecommendController::do_recommend()
 
 bool RecommendController::parseRecommendParam(RecommendParam& param)
 {
-    const izenelib::driver::Value& maxCountValue = request()[Keys::resource][Keys::max_count];
-    param.limit = asUintOr(maxCountValue, kDefaultRecommendCount);
+    izenelib::driver::Value& resourceValue = request()[Keys::resource];
+    param.limit = asUintOr(resourceValue[Keys::max_count],
+                           kDefaultRecommendCount);
 
     if (!value2ItemIdVec(Keys::input_items, param.inputItems)
         || !value2ItemIdVec(Keys::include_items, param.includeItems)
@@ -1040,10 +1045,10 @@ bool RecommendController::parseRecommendParam(RecommendParam& param)
         return false;
     }
 
-    param.userIdStr = asString(request()[Keys::resource][Keys::USERID]);
-    param.sessionIdStr = asString(request()[Keys::resource][Keys::session_id]);
+    param.userIdStr = asString(resourceValue[Keys::USERID]);
+    param.sessionIdStr = asString(resourceValue[Keys::session_id]);
 
-    std::string recTypeStr = asString(request()[Keys::resource][Keys::rec_type]);
+    std::string recTypeStr = asString(resourceValue[Keys::rec_type]);
     std::map<std::string, int>::const_iterator mapIt = recTypeMap_.find(Utilities::toUpper(recTypeStr));
     if (mapIt == recTypeMap_.end())
     {
@@ -1155,63 +1160,67 @@ void RecommendController::renderRecommendResult(const RecommendParam& param, con
  */
 void RecommendController::top_item_bundle()
 {
-    int maxCount = kDefaultRecommendCount;
-    const izenelib::driver::Value& maxCountValue = request()[Keys::resource][Keys::max_count];
-    if (!nullValue(maxCountValue))
-    {
-        maxCount = asUint(maxCountValue);
-    }
-    if (maxCount <= 0)
-    {
-        response().addError("Require a positive value in request[resource][max_count].");
+    TIBParam tibParam;
+    if (!parseTIBParam(tibParam))
         return;
-    }
 
-    int minFreq = kDefaultMinFreq;
-    const izenelib::driver::Value& minFreqValue = request()[Keys::resource][Keys::min_freq];
-    if (!nullValue(minFreqValue))
-    {
-        minFreq = asUint(minFreqValue);
-    }
-
-    std::vector<vector<Item> > bundleVec;
-    std::vector<int> freqVec;
+    std::vector<ItemBundle> bundleVec;
     RecommendSearchService* service = collectionHandler_->recommendSearchService_;
-    if (service->topItemBundle(maxCount, minFreq,
-                               bundleVec, freqVec))
+    if (service->topItemBundle(tibParam, bundleVec))
     {
-        if (bundleVec.size() != freqVec.size())
-        {
-            response().addError("Failed to get top item bundle from given collection (unequal size of bundle and freq array).");
-            return;
-        }
-
-        Value& resources = response()[Keys::resources];
-        std::string convertBuffer;
-        for (std::size_t i = 0; i < bundleVec.size(); ++i)
-        {
-            Value& bundleValue = resources();
-            bundleValue[Keys::freq] = freqVec[i];
-
-            Value& itemsValue = bundleValue[Keys::items];
-            const std::vector<Item>& itemVec = bundleVec[i];
-            for (std::size_t j = 0; j < itemVec.size(); ++j)
-            {
-                Value& itemValue = itemsValue();
-                const Item& item = itemVec[j];
-                itemValue[Keys::ITEMID] = item.idStr_;
-                for (Item::PropValueMap::const_iterator it = item.propValueMap_.begin();
-                    it != item.propValueMap_.end(); ++it)
-                {
-                    it->second.convertString(convertBuffer, kEncoding);
-                    itemValue[it->first] = convertBuffer;
-                }
-            }
-        }
+        renderBundleResult(bundleVec);
     }
     else
     {
         response().addError("Failed to get top item bundle from given collection.");
+    }
+}
+
+bool RecommendController::parseTIBParam(TIBParam& param)
+{
+    izenelib::driver::Value& resourceValue = request()[Keys::resource];
+
+    param.limit = asUintOr(resourceValue[Keys::max_count],
+                           kDefaultRecommendCount);
+    param.minFreq = asUintOr(resourceValue[Keys::min_freq],
+                             kDefaultMinFreq);
+
+    std::string errorMsg;
+    if (!param.check(errorMsg))
+    {
+        response().addError(errorMsg);
+        return false;
+    }
+
+    return true;
+}
+
+void RecommendController::renderBundleResult(const std::vector<ItemBundle>& bundleVec)
+{
+    Value& resources = response()[Keys::resources];
+    std::string convertBuffer;
+
+    for (std::vector<ItemBundle>::const_iterator bundleIt = bundleVec.begin();
+        bundleIt != bundleVec.end(); ++bundleIt)
+    {
+        Value& bundleValue = resources();
+        bundleValue[Keys::freq] = bundleIt->freq;
+
+        Value& itemsValue = bundleValue[Keys::items];
+        const std::vector<Item>& items = bundleIt->items;
+        for (std::vector<Item>::const_iterator itemIt = items.begin();
+            itemIt != items.end(); ++itemIt)
+        {
+            Value& itemValue = itemsValue();
+            const Item& item = *itemIt;
+            itemValue[Keys::ITEMID] = item.idStr_;
+            for (Item::PropValueMap::const_iterator propIt = item.propValueMap_.begin();
+                    propIt != item.propValueMap_.end(); ++propIt)
+            {
+                propIt->second.convertString(convertBuffer, kEncoding);
+                itemValue[propIt->first] = convertBuffer;
+            }
+        }
     }
 }
 

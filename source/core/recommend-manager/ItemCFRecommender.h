@@ -9,26 +9,24 @@
 #define ITEM_CF_RECOMMENDER_H
 
 #include "Recommender.h"
+#include "RecTypes.h"
 
 #include <vector>
 #include <string>
 
 namespace sf1r
 {
-class UserEventFilter;
-class ItemFilter;
 
 class ItemCFRecommender : public Recommender
 {
 public:
     ItemCFRecommender(
         ItemManager& itemManager,
-        ItemCFManager& itemCFManager,
-        const UserEventFilter& userEventFilter
+        ItemCFManager& itemCFManager
     );
 
 protected:
-    void recommendItemCF_(
+    virtual bool recommendImpl_(
         RecommendParam& param,
         ItemFilter& filter,
         std::vector<RecommendItem>& recItemVec
@@ -41,7 +39,6 @@ protected:
 
 protected:
     ItemCFManager& itemCFManager_;
-    const UserEventFilter& userEventFilter_;
 };
 
 } // namespace sf1r

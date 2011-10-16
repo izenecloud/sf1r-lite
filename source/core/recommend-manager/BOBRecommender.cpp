@@ -1,7 +1,7 @@
 #include "BOBRecommender.h"
 #include "UserEventFilter.h"
-#include "ItemFilter.h"
 #include "VisitManager.h"
+#include "RecommendParam.h"
 #include <bundles/recommend/RecommendSchema.h>
 
 #include <glog/logging.h>
@@ -15,24 +15,30 @@ BOBRecommender::BOBRecommender(
     const UserEventFilter& userEventFilter,
     VisitManager& visitManager
 )
-    : ItemCFRecommender(itemManager, itemCFManager, userEventFilter)
+    : ItemCFRecommender(itemManager, itemCFManager)
+    , userEventFilter_(userEventFilter)
     , visitManager_(visitManager)
 {
 }
 
-bool BOBRecommender::recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec)
+bool BOBRecommender::recommendImpl_(
+    RecommendParam& param,
+    ItemFilter& filter,
+    std::vector<RecommendItem>& recItemVec
+)
 {
-    if (!getBrowseItems_(param))
+    if (! getBrowseItems_(param))
         return false;
 
-    ItemFilter filter(itemManager_, param);
     if (param.userId && !userEventFilter_.filter(param.userId, param.inputItemIds, filter))
     {
         LOG(ERROR) << "failed to filter user event for user id " << param.userId;
         return false;
     }
 
-    recommendItemCF_(param, filter, recItemVec);
+    if (! ItemCFRecommender::recommendImpl_(param, filter, recItemVec))
+        return false;
+
     setReasonEvent_(recItemVec, RecommendSchema::BROWSE_EVENT);
 
     return true;
@@ -40,7 +46,7 @@ bool BOBRecommender::recommend(RecommendParam& param, std::vector<RecommendItem>
 
 bool BOBRecommender::getBrowseItems_(RecommendParam& param) const
 {
-    if (!param.inputItemIds.empty())
+    if (! param.inputItemIds.empty())
         return true;
 
     if (param.userId == 0 || param.sessionIdStr.empty())

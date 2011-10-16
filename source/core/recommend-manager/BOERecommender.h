@@ -12,6 +12,7 @@
 
 namespace sf1r
 {
+class UserEventFilter;
 
 class BOERecommender : public ItemCFRecommender 
 {
@@ -22,7 +23,15 @@ public:
         const UserEventFilter& userEventFilter
     );
 
-    bool recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec);
+protected:
+    virtual bool recommendImpl_(
+        RecommendParam& param,
+        ItemFilter& filter,
+        std::vector<RecommendItem>& recItemVec
+    );
+
+private:
+    const UserEventFilter& userEventFilter_;
 };
 
 } // namespace sf1r

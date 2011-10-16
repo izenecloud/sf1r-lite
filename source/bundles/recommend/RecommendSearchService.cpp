@@ -3,8 +3,10 @@
 #include <recommend-manager/ItemCondition.h>
 #include <recommend-manager/UserManager.h>
 #include <recommend-manager/ItemManager.h>
-#include <recommend-manager/RecommenderManager.h>
+#include <recommend-manager/RecommenderFactory.h>
 #include <recommend-manager/RecommendParam.h>
+#include <recommend-manager/TIBParam.h>
+#include <recommend-manager/ItemBundle.h>
 
 #include <glog/logging.h>
 
@@ -14,13 +16,13 @@ namespace sf1r
 RecommendSearchService::RecommendSearchService(
     UserManager* userManager,
     ItemManager* itemManager,
-    RecommenderManager* recommenderManager,
+    RecommenderFactory* recommenderFactory,
     RecIdGenerator* userIdGenerator,
     RecIdGenerator* itemIdGenerator
 )
     :userManager_(userManager)
     ,itemManager_(itemManager)
-    ,recommenderManager_(recommenderManager)
+    ,recommenderFactory_(recommenderFactory)
     ,userIdGenerator_(userIdGenerator)
     ,itemIdGenerator_(itemIdGenerator)
 {
@@ -60,16 +62,11 @@ bool RecommendSearchService::recommend(
     if (!convertIds_(param))
         return false;
 
-    if (!recommenderManager_->recommend(param, recItemVec))
-    {
-        LOG(ERROR) << "error in RecommenderManager::recommend()";
-        return false;
-    }
+    Recommender* recommender = recommenderFactory_->getRecommender(param.type);
+    if (recommender && recommender->recommend(param, recItemVec))
+        return getRecommendItems_(recItemVec);
 
-    if (!getItems_(recItemVec))
-        return false;
-
-    return true;
+    return false;
 }
 
 bool RecommendSearchService::convertIds_(RecommendParam& param)
@@ -112,12 +109,12 @@ bool RecommendSearchService::convertItemId_(
     return true;
 }
 
-bool RecommendSearchService::getItems_(std::vector<RecommendItem>& recItemVec) const
+bool RecommendSearchService::getRecommendItems_(std::vector<RecommendItem>& recItemVec) const
 {
     for (std::vector<RecommendItem>::iterator it = recItemVec.begin();
         it != recItemVec.end(); ++it)
     {
-        if (!itemManager_->getItem(it->itemId_, it->item_))
+        if (! itemManager_->getItem(it->itemId_, it->item_))
         {
             LOG(ERROR) << "error in ItemManager::getItem(), item id: " << it->itemId_;
             return false;
@@ -127,7 +124,7 @@ bool RecommendSearchService::getItems_(std::vector<RecommendItem>& recItemVec) c
         for (std::vector<ReasonItem>::iterator reasonIt = reasonItems.begin();
             reasonIt != reasonItems.end(); ++reasonIt)
         {
-            if (!itemManager_->getItem(reasonIt->itemId_, reasonIt->item_))
+            if (! itemManager_->getItem(reasonIt->itemId_, reasonIt->item_))
             {
                 LOG(ERROR) << "error in ItemManager::getItem(), item id: " << reasonIt->itemId_;
                 return false;
@@ -139,32 +136,31 @@ bool RecommendSearchService::getItems_(std::vector<RecommendItem>& recItemVec) c
 }
 
 bool RecommendSearchService::topItemBundle(
-    int maxRecNum,
-    int minFreq,
-    std::vector<vector<Item> >& bundleVec,
-    std::vector<int>& freqVec
+    const TIBParam& param,
+    std::vector<ItemBundle>& bundleVec
 )
 {
-    std::vector<vector<itemid_t> > bundleIdVec;
-    if (!recommenderManager_->topItemBundle(maxRecNum, minFreq,
-                                          bundleIdVec, freqVec))
-    {
-        LOG(ERROR) << "error in RecommenderManager::topItemBundle()";
-        return false;
-    }
+    TIBRecommender* recommender = recommenderFactory_->getTIBRecommender();
+    if (recommender && recommender->recommend(param, bundleVec))
+        return getBundleItems_(bundleVec);
 
-    bundleVec.resize(bundleIdVec.size());
-    for (std::size_t i = 0; i < bundleIdVec.size(); ++i)
-    {
-        const vector<itemid_t>& idVec = bundleIdVec[i];
-        vector<Item>& itemVec = bundleVec[i];
-        itemVec.resize(idVec.size());
+    return false;
+}
 
-        for (std::size_t j = 0; j < idVec.size(); ++j)
+bool RecommendSearchService::getBundleItems_(std::vector<ItemBundle>& bundleVec) const
+{
+    for (std::vector<ItemBundle>::iterator bundleIt = bundleVec.begin();
+        bundleIt != bundleVec.end(); ++bundleIt)
+    {
+        const std::vector<itemid_t>& itemIds = bundleIt->itemIds;
+        std::vector<Item>& items = bundleIt->items;
+        items.resize(itemIds.size());
+
+        for (std::size_t i = 0; i < itemIds.size(); ++i)
         {
-            if (!itemManager_->getItem(idVec[j], itemVec[j]))
+            if (! itemManager_->getItem(itemIds[i], items[i]))
             {
-                LOG(ERROR) << "error in ItemManager::getItem(), item id: " << idVec[j];
+                LOG(ERROR) << "error in ItemManager::getItem(), item id: " << itemIds[i];
                 return false;
             }
         }

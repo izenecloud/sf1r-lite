@@ -20,6 +20,7 @@ RecommenderFactory::RecommenderFactory(
     , bobRecommender_(itemManager, itemCFManager, userEventFilter_, visitManager)
     , bosRecommender_(itemManager, itemCFManager, userEventFilter_, cartManager)
     , boeRecommender_(itemManager, itemCFManager, userEventFilter_)
+    , tibRecommender_(orderManager)
 {
 }
 
@@ -50,6 +51,11 @@ Recommender* RecommenderFactory::getRecommender(RecommendType type)
     }
 
     return NULL;
+}
+
+TIBRecommender* RecommenderFactory::getTIBRecommender()
+{
+    return &tibRecommender_;
 }
 
 } // namespace sf1r

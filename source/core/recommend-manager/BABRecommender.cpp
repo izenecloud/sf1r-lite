@@ -1,18 +1,24 @@
 #include "BABRecommender.h"
-#include "ItemFilter.h"
+#include "RecommendParam.h"
 
 #include <glog/logging.h>
 
 namespace sf1r
 {
 
-BABRecommender::BABRecommender(ItemManager& itemManager, ItemCFManager& itemCFManager)
-    : Recommender(itemManager)
-    , itemCFManager_(itemCFManager)
+BABRecommender::BABRecommender(
+    ItemManager& itemManager,
+    ItemCFManager& itemCFManager
+)
+    : ItemCFRecommender(itemManager, itemCFManager)
 {
 }
 
-bool BABRecommender::recommend(RecommendParam& param, std::vector<RecommendItem>& recItemVec)
+bool BABRecommender::recommendImpl_(
+    RecommendParam& param,
+    ItemFilter& filter,
+    std::vector<RecommendItem>& recItemVec
+)
 {
     if (param.inputItemIds.empty())
     {
@@ -20,12 +26,8 @@ bool BABRecommender::recommend(RecommendParam& param, std::vector<RecommendItem>
         return false;
     }
 
-    ItemFilter filter(itemManager_, param);
-
-    idmlib::recommender::RecommendItemVec results;
-    itemCFManager_.recommend(param.limit, param.inputItemIds, results, &filter);
-
-    recItemVec.insert(recItemVec.end(), results.begin(), results.end());
+    if (! ItemCFRecommender::recommendImpl_(param, filter, recItemVec))
+        return false;
 
     return true;
 }
