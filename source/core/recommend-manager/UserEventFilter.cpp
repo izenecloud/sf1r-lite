@@ -128,6 +128,8 @@ bool UserEventFilter::addUserEvent(
 {
     assert(userId);
 
+    inputItemVec.clear();
+
     return (addPurchaseItem_(userId, inputItemVec, itemEventMap)
             && addCartItem_(userId, inputItemVec, itemEventMap)
             && addPreferenceItem_(userId, inputItemVec, itemEventMap, filter));
