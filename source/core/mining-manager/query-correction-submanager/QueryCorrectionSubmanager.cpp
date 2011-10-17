@@ -199,14 +199,32 @@ bool QueryCorrectionSubmanager::getRefinedToken_(const std::string& collectionNa
     if (enableChn_)
     {
         std::vector<izenelib::util::UString> vec_result;
-        if ( cmgr_.GetResult(token, vec_result) )
+        std::vector<izenelib::util::UString> vec_pinyin;
+        if ( getPinyin(token, vec_pinyin) )
         {
-            if(vec_result.size()>0)
+            izenelib::util::UString &pinyin = vec_pinyin[0];
+            for (size_t i = 1; i < vec_pinyin.size(); ++i)
+                pinyin.append(vec_pinyin[i]);
+
+            if ( cmgr_.GetResult(pinyin, vec_result) )
             {
-                result = vec_result[0];
-                return true;
+                if(vec_result.size()>0)
+                {
+                    result = vec_result[0];
+                    return true;
+                }
             }
-            return false;
+        }
+        else
+        {
+            if ( cmgr_.GetResult(token, vec_result) )
+            {
+                if(vec_result.size()>0)
+                {
+                    result = vec_result[0];
+                    return true;
+                }
+            }
         }
     }
     if (enableEK_)
@@ -250,15 +268,6 @@ bool QueryCorrectionSubmanager::getRefinedQuery(
 //     }
 //     return false;
 
-    std::string str_query;
-    queryUString.convertString(str_query, izenelib::util::UString::UTF_8);
-    boost::algorithm::to_lower(str_query);
-    boost::unordered_map<std::string, izenelib::util::UString>::iterator it = inject_data_.find(str_query);
-    if(it!=inject_data_.end())
-    {
-        refinedQueryUString = it->second;
-        return true;
-    }
     if (queryUString.empty() || !activate_)
     {
         return false;
@@ -268,6 +277,15 @@ bool QueryCorrectionSubmanager::getRefinedQuery(
         return false;
     }
 
+    std::string str_query;
+    queryUString.convertString(str_query, izenelib::util::UString::UTF_8);
+    boost::algorithm::to_lower(str_query);
+    boost::unordered_map<std::string, izenelib::util::UString>::iterator it = inject_data_.find(str_query);
+    if(it!=inject_data_.end())
+    {
+        refinedQueryUString = it->second;
+        return true;
+    }
     CREATE_SCOPED_PROFILER(getRealRefinedQuery, "QueryCorrectionSubmanager",
                            "QueryCorrectionSubmanager :: getRealRefinedQuery");
 
