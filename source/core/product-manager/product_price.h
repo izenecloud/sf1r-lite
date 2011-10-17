@@ -6,6 +6,7 @@
 
 #include <boost/operators.hpp>
 #include <boost/algorithm/string/trim.hpp>
+#include <boost/lexical_cast.hpp>
 #include "pm_def.h"
 #include "pm_types.h"
 
