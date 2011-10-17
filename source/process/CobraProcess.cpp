@@ -10,7 +10,6 @@
 
 #include <bundles/mining/MiningBundleConfiguration.h>
 #include <bundles/mining/MiningBundleActivator.h>
-#include <bundles/mining/QueryLogSearchService.h>
 
 #include <OnSignal.h>
 #include <common/XmlConfigParser.h>
@@ -191,7 +190,7 @@ bool CobraProcess::initDriverServer()
     // init Router
     router_.reset(new ::izenelib::driver::Router);
     initQuery();
-    initializeDriverRouter(*router_, QueryLogSearchService::instance(), enableTest);
+    initializeDriverRouter(*router_, NULL, enableTest);
 
     boost::shared_ptr<DriverConnectionFactory> factory(
         new DriverConnectionFactory(router_)
@@ -251,7 +250,6 @@ bool CobraProcess::startDistributedServer()
             std::size_t threadNum = SF1Config::get()->brokerAgentConfig_.threadNum_;
             workerServer_.reset(new WorkerServer(curNodeInfo.localHost_, workerPort, threadNum));
             workerServer_->start();
-            workerServer_->setQueryLogSearchService(QueryLogSearchService::instance());
             cout << "#[Worker Server]started, listening at localhost:"<<workerPort<<" ..."<<endl;
 
             // master notifier, xxx

@@ -76,9 +76,6 @@ config["controllers"].each do |type, spec|
         typedef ::izenelib::driver::ActionHandler<#{type}> handler_type;
         typedef std::auto_ptr<handler_type> handler_ptr;
 CONTROLLERSTART
-    if spec["service"]
-      cpp += "        #{name}.setService(static_cast<QueryLogSearchService*>(service));\n"
-    end
 
     actions.each do |action|
       cpp += <<ACTION
