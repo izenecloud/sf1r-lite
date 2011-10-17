@@ -3,8 +3,8 @@
 
 #include <sstream>
 #include <common/type_defs.h>
-#include "boost_uuid_random_generator.hpp"
-#include "boost_uuid_uuid_io.hpp"
+#include <3rdparty/boost/uuid/random_generator.hpp>
+#include <3rdparty/boost/uuid/uuid_io.hpp>
 
 #include "pm_def.h"
 #include "pm_types.h"
