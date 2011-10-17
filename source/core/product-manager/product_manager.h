@@ -36,6 +36,14 @@ public:
     
     void GenOperations();
     
+    const std::string& GetLastError() const
+    {
+        return error_;
+    }
+    
+    //all intervention functions.
+    bool AddGroup(const std::vector<uint32_t>& docid_list, izenelib::util::UString& gen_uuid);
+    
 private:
     
     bool HookUpdateNew_(uint32_t fromid, PMDocumentType& to);
@@ -46,11 +54,16 @@ private:
     
     bool GetUuid_(const PMDocumentType& doc, izenelib::util::UString& uuid);
     
+    bool GetDOCID_(const PMDocumentType& doc, izenelib::util::UString& docid);
+    
+    void SetItemCount_(PMDocumentType& doc, uint32_t item_count);
+    
 private:
     ProductDataSource* data_source_;
     OperationProcessor* op_processor_;
     UuidGenerator* uuid_gen_;
     PMConfig config_;
+    std::string error_;
 
 };
 

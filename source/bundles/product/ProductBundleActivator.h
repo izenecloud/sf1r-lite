@@ -5,7 +5,7 @@
 #include "ProductTaskService.h"
 
 #include <common/type_defs.h>
-
+#include <directory-manager/DirectoryRotator.h>
 #include <util/osgi/IBundleActivator.h>
 #include <util/osgi/IBundleContext.h>
 #include <util/osgi/IServiceRegistration.h>
@@ -38,11 +38,12 @@ private:
 
     ProductBundleConfiguration* config_;
     std::string currentCollectionDataName_;
-
+    DirectoryRotator directoryRotator_;
     ProductDataSource* data_source_;
     OperationProcessor* op_processor_;
     boost::shared_ptr<ProductManager> productManager_;
 
+    bool openDataDirectories_();
     std::string getCollectionDataPath_() const;
     
     std::string getCurrentCollectionDataPath_() const;

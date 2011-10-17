@@ -131,10 +131,18 @@ bool ProductBundleActivator::addingService( const ServiceReference& ref )
     }
     else if( ref.getServiceName() == "IndexTaskService" )
     {
-        refIndexTaskService_ = reinterpret_cast<IndexTaskService*> ( const_cast<IService*>(ref.getService()) );
-        if(productManager_)
+        Properties props = ref.getServiceProperties();
+        if ( props.get( "collection" ) == config_->collectionName_)
         {
-            addIndexHook_(refIndexTaskService_);
+            refIndexTaskService_ = reinterpret_cast<IndexTaskService*> ( const_cast<IService*>(ref.getService()) );
+            if(productManager_)
+            {
+                addIndexHook_(refIndexTaskService_);
+            }
+        }
+        else
+        {
+            return false;
         }
     }
     else
@@ -147,7 +155,10 @@ bool ProductBundleActivator::addingService( const ServiceReference& ref )
 boost::shared_ptr<ProductManager> 
 ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
 {
+    std::cout<<"ProductBundleActivator::createProductManager_"<<std::endl;
+    openDataDirectories_();
     std::string dir = getCurrentCollectionDataPath_()+"/product";
+    std::cout<<"dir : "<<dir<<std::endl;
     boost::filesystem::create_directories(dir);
     PMConfig config = PMConfig::GetDefaultPMConfig();
     data_source_ = new CollectionProductDataSource(indexService->workerService_->documentManager_, indexService->workerService_->indexManager_, config);
@@ -167,6 +178,41 @@ void ProductBundleActivator::removedService( const ServiceReference& ref )
 
 }
 
+bool ProductBundleActivator::openDataDirectories_()
+{
+    std::vector<std::string>& directories = config_->collectionDataDirectories_;
+    if( directories.size() == 0 )
+    {
+        std::cout<<"no data dir config"<<std::endl;
+        return false;
+    }
+    directoryRotator_.setCapacity(directories.size());
+    typedef std::vector<std::string>::const_iterator iterator;
+    for (iterator it = directories.begin(); it != directories.end(); ++it)
+    {
+        bfs::path dataDir = bfs::path( getCollectionDataPath_() ) / *it;
+        if (!directoryRotator_.appendDirectory(dataDir))
+        {
+            std::string msg = dataDir.file_string() + " corrupted, delete it!";
+            sflog->error( SFL_SYS, msg.c_str() ); 
+            std::cout<<msg<<std::endl;
+            //clean the corrupt dir
+            boost::filesystem::remove_all( dataDir );
+            directoryRotator_.appendDirectory(dataDir);
+        }
+    }
+
+    directoryRotator_.rotateToNewest();
+    boost::shared_ptr<Directory> newest = directoryRotator_.currentDirectory();
+    if (newest)
+    {
+        bfs::path p = newest->path();
+        currentCollectionDataName_ = p.filename();
+        //std::cout << "Current Index Directory: " << indexPath_() << std::endl;
+        return true;
+    }
+    return false;
+}
 
 std::string ProductBundleActivator::getCurrentCollectionDataPath_() const
 {

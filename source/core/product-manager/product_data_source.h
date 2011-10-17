@@ -16,11 +16,11 @@ class ProductDataSource
 {
 public:
     
-    virtual ~ProductDataSource();
+    virtual ~ProductDataSource() {}
     
-    virtual bool GetDocument(uint32_t docid, PMDocumentType& doc);
+    virtual bool GetDocument(uint32_t docid, PMDocumentType& doc) { return false;}
     
-    virtual void GetDocIdList(const izenelib::util::UString& uuid, std::vector<uint32_t>& docid_list, uint32_t exceptid);
+    virtual void GetDocIdList(const izenelib::util::UString& uuid, std::vector<uint32_t>& docid_list, uint32_t exceptid) {}
     
 };
 

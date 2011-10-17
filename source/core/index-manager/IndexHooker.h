@@ -10,11 +10,11 @@ namespace sf1r
 class IndexHooker
 {
 public:
-    virtual ~IndexHooker();
-    virtual bool HookInsert(Document& doc);
-    virtual bool HookUpdate(docid_t oldid, Document& doc, bool r_type);
-    virtual bool HookDelete(docid_t docid);
-    virtual bool Finish();
+    virtual ~IndexHooker() {}
+    virtual bool HookInsert(Document& doc) {return false;}
+    virtual bool HookUpdate(docid_t oldid, Document& doc, bool r_type) {return false;}
+    virtual bool HookDelete(docid_t docid) {return false;}
+    virtual bool Finish() {return false;}
 };
 
 

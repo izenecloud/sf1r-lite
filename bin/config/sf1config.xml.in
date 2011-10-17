@@ -47,6 +47,7 @@
 
       <ProductBundle>
         <Parameter>
+          <CollectionDataDirectory>default-collection-dir</CollectionDataDirectory>
         </Parameter>
       </ProductBundle>
       

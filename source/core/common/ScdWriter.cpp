@@ -1,6 +1,6 @@
 #include "ScdWriter.h"
 #include <boost/date_time/posix_time/posix_time.hpp>
-
+#include <boost/algorithm/string.hpp>
 using namespace sf1r;
 
 ScdWriter::ScdWriter(const std::string& dir, int op)
@@ -45,9 +45,23 @@ std::string ScdWriter::GenSCDFileName( int op)
     
 void ScdWriter::Append(const Document& doc)
 {
+    const static std::string DOCID = "DOCID";
+    Document::property_const_iterator docid_it = doc.findProperty(DOCID);
+    if(docid_it == doc.propertyEnd())
+    {
+        return;
+    }
+    std::string sdocid;
+    docid_it->second.get<izenelib::util::UString>().convertString(sdocid, izenelib::util::UString::UTF_8);
+    ofs_<<"<"<<DOCID<<">"<<sdocid<<std::endl;
     Document::property_const_iterator it = doc.propertyBegin();
     while(it!=doc.propertyEnd())
     {
+        if(it->first==DOCID)
+        {
+            ++it;
+            continue;
+        }
 //         if(pname_filter_)
 //         {
 //             if(!pname_filter_(it->first))
@@ -64,7 +78,7 @@ void ScdWriter::Append(const Document& doc)
         }
         std::string value;
         it->second.get<izenelib::util::UString>().convertString(value, izenelib::util::UString::UTF_8);
-        ofs_<<"<"<<it->first<<">"<<value<<std::endl<<std::endl;
+        ofs_<<"<"<<it->first<<">"<<value<<std::endl;
         ++it;
     }
 }

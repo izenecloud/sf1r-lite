@@ -381,6 +381,8 @@ void SF1Config::parseBundlesDefault(const ticpp::Element * bundles)
     Element * bundle = NULL;
     bundle = getUniqChildElement( bundles, "IndexBundle" );
     defaultIndexBundleParam_.LoadXML(getUniqChildElement( bundle, "Parameter" ), false);
+    bundle = getUniqChildElement( bundles, "ProductBundle" );
+    defaultProductBundleParam_.LoadXML(getUniqChildElement( bundle, "Parameter" ), false);
     bundle = getUniqChildElement( bundles, "MiningBundle" );
     defaultMiningBundleParam_.LoadXML(getUniqChildElement( bundle, "Parameter" ), false);
     bundle = getUniqChildElement( bundles, "RecommendBundle" );
@@ -856,7 +858,10 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
     if(productBundle)
     {
         Element* productParam = getUniqChildElement( productBundle, "Parameter", false );
-        if(productParam) parseProductBundleParam(productParam, collectionMeta);
+        parseProductBundleParam(productParam, collectionMeta);
+        
+        Element* product_schema = getUniqChildElement( productBundle, "Schema", false );
+        if(product_schema) parseProductBundleSchema(product_schema, collectionMeta);
     }
     // MiningBundle
     collectionMeta.miningBundleConfig_->isSupportByAggregator_ = collectionMeta.indexBundleConfig_->isSupportByAggregator_;
@@ -1127,9 +1132,41 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
     }
 }
 
-void CollectionConfig::parseProductBundleParam(const ticpp::Element * product, CollectionMeta & collectionMeta)
+void CollectionConfig::parseProductBundleParam(const ticpp::Element * product_param, CollectionMeta & collectionMeta)
 {
-    ///TODO
+    CollectionParameterConfig params(SF1Config::get()->defaultProductBundleParam_);
+    if(product_param)
+    {
+        params.LoadXML(product_param, true);
+    }
+
+    std::set<std::string> directories;
+    params.Get("CollectionDataDirectory", directories);
+    if(!directories.empty())
+    {
+        collectionMeta.productBundleConfig_->collectionDataDirectories_.assign(directories.begin(), directories.end());
+    }
+}
+
+void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_schema, CollectionMeta & collectionMeta)
+{
+    ProductBundleConfiguration& productBundleConfig = *(collectionMeta.productBundleConfig_);
+    productBundleConfig.enabled_ = true;
+    productBundleConfig.collPath_ = collectionMeta.collPath_;
+    std::string property_name;
+    ticpp::Element* property_node = 0;
+    property_node = getUniqChildElement( product_schema, "PriceProperty", false );
+    getAttribute(property_node, "name", productBundleConfig.pm_config_.price_property_name );
+    
+    property_node = getUniqChildElement( product_schema, "DOCIDProperty", false );
+    getAttribute(property_node, "name", productBundleConfig.pm_config_.docid_property_name );
+    
+    property_node = getUniqChildElement( product_schema, "UuidProperty", false );
+    getAttribute(property_node, "name", productBundleConfig.pm_config_.uuid_property_name );
+    
+    property_node = getUniqChildElement( product_schema, "ItemCountProperty", false );
+    getAttribute(property_node, "name", productBundleConfig.pm_config_.itemcount_property_name );
+    
 }
 
 void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, CollectionMeta & collectionMeta)

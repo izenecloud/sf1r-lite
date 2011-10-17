@@ -1,5 +1,4 @@
 #include "IndexBundleActivator.h"
-#include "ProductIndexHooker.h"
 #include <bundles/mining/MiningSearchService.h>
 #include <bundles/product/ProductSearchService.h>
 #include <bundles/product/ProductTaskService.h>
