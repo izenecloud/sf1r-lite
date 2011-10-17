@@ -8,7 +8,7 @@ headers:
   - controllers/LogAnalysisController.h
   - controllers/FacetedController.h
   - controllers/QueryCorrectionController.h
-  - querylog/QueryLogSearchService.h
+  - mining/QueryLogSearchService.h
   - controllers/TopicController.h
   - controllers/RecommendController.h
   - controllers/ServiceController.h

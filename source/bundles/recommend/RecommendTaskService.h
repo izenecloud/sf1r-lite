@@ -265,10 +265,12 @@ private:
 
     void buildFreqItemSet_();
     void cronJob_();
+    void flush_();
 
 private:
     RecommendBundleConfiguration* bundleConfig_;
     directory::DirectoryRotator* directoryRotator_;
+
     UserManager* userManager_;
     ItemManager* itemManager_;
     VisitManager* visitManager_;
@@ -278,10 +280,14 @@ private:
     OrderManager* orderManager_;
     RecIdGenerator* userIdGenerator_;
     RecIdGenerator* itemIdGenerator_;
+
     JobScheduler* jobScheduler_;
-    boost::mutex freqItemMutex_; // for build freq item set
+
     izenelib::util::CronExpression cronExpression_;
     const std::string cronJobName_;
+
+    boost::mutex buildFreqItemMutex_;
+    boost::mutex buildCollectionMutex_;
 };
 
 } // namespace sf1r

@@ -21,8 +21,10 @@ namespace sf1r
 class User;
 class UserManager;
 class ItemManager;
-class RecommendManager;
-class ItemCondition;
+class RecommenderFactory;
+struct RecommendParam;
+struct TIBParam;
+struct ItemBundle;
 
 class RecommendSearchService : public ::izenelib::osgi::IService
 {
@@ -30,7 +32,7 @@ public:
     RecommendSearchService(
         UserManager* userManager,
         ItemManager* itemManager,
-        RecommendManager* recommendManager,
+        RecommenderFactory* recommenderFactory,
         RecIdGenerator* userIdGenerator,
         RecIdGenerator* itemIdGenerator
     );
@@ -40,34 +42,28 @@ public:
     bool getItem(const std::string& itemIdStr, Item& item);
 
     bool recommend(
-        RecommendType recType,
-        int maxRecNum,
-        const std::string& userIdStr,
-        const std::string& sessionIdStr,
-        const std::vector<std::string>& inputItemVec,
-        const std::vector<std::string>& includeItemVec,
-        const std::vector<std::string>& excludeItemVec,
-        const ItemCondition& condition,
+        RecommendParam& param,
         std::vector<RecommendItem>& recItemVec
     );
 
     bool topItemBundle(
-        int maxRecNum,
-        int minFreq,
-        std::vector<vector<Item> >& bundleVec,
-        std::vector<int>& freqVec
+        const TIBParam& param,
+        std::vector<ItemBundle>& bundleVec
     );
 
 private:
-    bool convertItemId(
+    bool convertIds_(RecommendParam& param);
+    bool convertItemId_(
         const std::vector<std::string>& inputItemVec,
         std::vector<itemid_t>& outputItemVec
     );
+    bool getRecommendItems_(std::vector<RecommendItem>& recItemVec) const;
+    bool getBundleItems_(std::vector<ItemBundle>& bundleVec) const;
 
 private:
     UserManager* userManager_;
     ItemManager* itemManager_;
-    RecommendManager* recommendManager_;
+    RecommenderFactory* recommenderFactory_;
     RecIdGenerator* userIdGenerator_;
     RecIdGenerator* itemIdGenerator_;
 };

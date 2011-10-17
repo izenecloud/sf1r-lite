@@ -12,7 +12,6 @@
 #include <configuration-manager/LAConfigUnit.h>
 #include <configuration-manager/RankingConfigUnit.h>
 #include <configuration-manager/LAManagerConfig.h>
-#include <configuration-manager/QuerySupportConfig.h>
 #include <configuration-manager/BrokerAgentConfig.h>
 #include <configuration-manager/DistributedTopologyConfig.h>
 #include <configuration-manager/FirewallConfig.h>
@@ -20,8 +19,6 @@
 #include <mining-manager/faceted-submanager/ontology_rep_item.h>
 #include <search-manager/QueryBuilder.h>
 #include <core/common/TermTypeDetector.h>
-
-#include <bundles/querylog/QueryLogBundleConfiguration.h>
 
 #include "CollectionMeta.h"
 
@@ -573,10 +570,6 @@ private:
     /// @param Pointer to the Element
     void parseBundlesDefault(const ticpp::Element * bundles);
 
-    /// @brief                  Parse <QueryLogBundle> settings
-    /// @param system           Pointer to the Element
-    void parseQueryLogBundleParam(const ticpp::Element * querylog);
-
     /// @brief                  Parse <FireWall> settings
     /// @param system           Pointer to the Element
     void parseFirewall( const ticpp::Element * tgElement );
@@ -630,9 +623,6 @@ public:
 
     /// @brief Configurations for distributed search system
     DistributedTopologyConfig distributedTopologyConfig_;
-
-    /// @brief QueryLogBundleConfig
-    QueryLogBundleConfiguration queryLogBundleConfig_;
 
     /// @brief default IndexBundleConfig
     CollectionParameterConfig defaultIndexBundleParam_;

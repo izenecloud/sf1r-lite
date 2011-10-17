@@ -12,6 +12,11 @@ JobScheduler::JobScheduler()
 
 JobScheduler::~JobScheduler()
 {
+    close();
+}
+
+void JobScheduler::close()
+{
     asynchronousWorker_.interrupt();
     asynchronousWorker_.join();
 }

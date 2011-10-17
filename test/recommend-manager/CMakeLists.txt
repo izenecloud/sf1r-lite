@@ -15,7 +15,6 @@ INCLUDE_DIRECTORIES(
 # sequences is important for some linker
 # if a dpendes b, a must precede b
 SET(libs
-
   sf1r_query_manager
   sf1r_search_manager
   sf1r_ranking_manager
@@ -30,6 +29,7 @@ SET(libs
   sf1r_index_manager
   sf1r_common
   sf1r_recommend_manager
+  sf1r_bundle_recommend
 
   ${ilplib_LIBRARIES}
   ${idmlib_LIBRARIES}

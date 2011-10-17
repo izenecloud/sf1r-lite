@@ -33,10 +33,10 @@ void assembleDisjunction(std::vector<izenelib::util::UString> keywords, std::str
         result += str;
         result += "|";
     }
-    boost::trim_right_if(result,is_any_of("|"));	
+    boost::trim_right_if(result,is_any_of("|"));
 }
 
-bool buildQueryTree(SearchKeywordOperation&action, IndexBundleConfiguration& bundleConfig, std::string& btqError,  PersonalSearchInfo& personalSearchInfo)
+bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bundleConfig, std::string& btqError,  PersonalSearchInfo& personalSearchInfo)
 {
     action.clear();
     KeywordSearchActionItem actionItem = action.actionItem_;
@@ -46,8 +46,10 @@ bool buildQueryTree(SearchKeywordOperation&action, IndexBundleConfiguration& bun
         UString::convertEncodingTypeFromStringToEnum(
             action.actionItem_.env_.encodingType_.c_str() );
     UString queryUStr(action.actionItem_.env_.queryString_, encodingType);
-    if ( !action.queryParser_.parseQuery( queryUStr, action.rawQueryTree_, action.unigramFlag_ ) )
+    if ( !action.queryParser_.parseQuery( queryUStr, action.rawQueryTree_, action.unigramFlag_, action.hasUnigramProperty_ ) )
         return false;
+
+    queryUStr.convertString(action.actionItem_.env_.queryString_, encodingType);
     action.rawQueryTree_->print();
 
     // Build property query map
@@ -91,7 +93,7 @@ bool buildQueryTree(SearchKeywordOperation&action, IndexBundleConfiguration& bun
             if ( !action.queryParser_.getAnalyzedQueryTree(
                         action.actionItem_.languageAnalyzerInfo_.synonymExtension_,
                         analysisInfo, queryUStr, tmpQueryTree, action.actionItem_.env_.expandedQueryString_,
-                        action.unigramFlag_, isUnigramSearchMode, personalSearchInfo))
+                        action.unigramFlag_, action.hasUnigramProperty_, isUnigramSearchMode, personalSearchInfo))
                 return false;
 
         } // end - if

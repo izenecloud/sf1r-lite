@@ -26,6 +26,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/thread/locks.hpp>
+#include <boost/thread/thread.hpp>
 
 #include <glog/logging.h>
 
@@ -518,6 +519,8 @@ bool RecommendTaskService::buildCollection()
         return false;
     }
 
+    boost::mutex::scoped_lock lock(buildCollectionMutex_);
+
     if (loadUserSCD_() && loadItemSCD_() && loadOrderSCD_())
     {
         LOG(INFO) << "End recommend collection build, elapsed time: " << timer.elapsed() << " seconds";
@@ -622,6 +625,9 @@ bool RecommendTaskService::parseUserSCD_(const std::string& scdPath)
             LOG(ERROR) << "unknown SCD type " << scdType;
             break;
         }
+
+        // terminate execution if interrupted
+        boost::this_thread::interruption_point();
     }
 
     std::cout << "\rloading user num: " << userNum << "\t" << std::endl;
@@ -723,6 +729,9 @@ bool RecommendTaskService::parseItemSCD_(const std::string& scdPath)
             LOG(ERROR) << "unknown SCD type " << scdType;
             break;
         }
+
+        // terminate execution if interrupted
+        boost::this_thread::interruption_point();
     }
 
     std::cout << "\rloading item num: " << itemNum << "\t" << std::endl;
@@ -806,6 +815,9 @@ bool RecommendTaskService::parseOrderSCD_(const std::string& scdPath)
         }
 
         loadOrderItem_(userIdStr, orderIdStr, orderItem, orderMap);
+
+        // terminate execution if interrupted
+        boost::this_thread::interruption_point();
     }
 
     saveOrderMap_(orderMap);
@@ -976,26 +988,54 @@ bool RecommendTaskService::convertUserItemId_(
 
 void RecommendTaskService::buildFreqItemSet_()
 {
-    LOG(INFO) << "building frequent item set...";
+    LOG(INFO) << "start building frequent item set for collection " << bundleConfig_->collectionName_;
 
-    boost::mutex::scoped_try_lock lock(freqItemMutex_);
+    boost::mutex::scoped_try_lock lock(buildFreqItemMutex_);
     if (lock.owns_lock() == false)
     {
-        LOG(INFO) << "exit frequent item set building as it has already been started...";
+        LOG(INFO) << "exit frequent item set building as it has already been started for collection " << bundleConfig_->collectionName_;
         return;
     }
 
     orderManager_->buildFreqItemsets();
 
-    LOG(INFO) << "finish frequent item set building";
+    LOG(INFO) << "finish building frequent item set for collection " << bundleConfig_->collectionName_;
 }
 
 void RecommendTaskService::cronJob_()
 {
     if (cronExpression_.matches_now())
     {
+        flush_();
+
         buildFreqItemSet_();
     }
+}
+
+void RecommendTaskService::flush_()
+{
+    LOG(INFO) << "start flushing recommend data for collection " << bundleConfig_->collectionName_;
+
+    boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
+    if (lock.owns_lock() == false)
+    {
+        LOG(INFO) << "exit flushing recommend data as in building collection " << bundleConfig_->collectionName_;
+        return;
+    }
+
+    userIdGenerator_->flush();
+    itemIdGenerator_->flush();
+
+    userManager_->flush();
+    itemManager_->flush();
+
+    visitManager_->flush();
+    cartManager_->flush();
+    eventManager_->flush();
+    orderManager_->flush();
+    purchaseManager_->flush();
+
+    LOG(INFO) << "finish flushing recommend data for collection " << bundleConfig_->collectionName_;
 }
 
 } // namespace sf1r

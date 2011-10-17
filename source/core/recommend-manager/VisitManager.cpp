@@ -30,6 +30,7 @@ void VisitManager::flush()
         visitDB_.flush();
         recommendDB_.flush();
         sessionDB_.flush();
+        coVisitManager_->flush();
     }
     catch(izenelib::util::IZENELIBException& e)
     {

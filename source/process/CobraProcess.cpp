@@ -8,8 +8,9 @@
 #include <node-manager/NodeManager.h>
 #include <node-manager/MasterNodeManager.h>
 
-#include <bundles/querylog/QueryLogBundleConfiguration.h>
-#include <bundles/querylog/QueryLogBundleActivator.h>
+#include <bundles/mining/MiningBundleConfiguration.h>
+#include <bundles/mining/MiningBundleActivator.h>
+#include <bundles/mining/QueryLogSearchService.h>
 
 #include <OnSignal.h>
 #include <common/XmlConfigParser.h>
@@ -55,7 +56,7 @@ bool CobraProcess::initialize(const std::string& configFileDir)
     try
     {
         configDir_ = configFileDir;
-        boost::filesystem::path p(configFileDir); 
+        boost::filesystem::path p(configFileDir);
         SF1Config::get()->setHomeDirectory(p.string());
         if( !SF1Config::get()->parseConfigFile( bfs::path(p/"sf1config.xml").string() ) )
         {
@@ -83,7 +84,7 @@ bool CobraProcess::initLogManager()
 {
     std::string log_conn = SF1Config::get()->getLogConnString();
 //     bfs::path logPath(bfs::path(".") / "log" / "COBRA");
-    if( !sflog->init(log_conn) ) 
+    if( !sflog->init(log_conn) )
     {
         std::cerr<<"Init LogManager with "<<log_conn<<" failed!"<<std::endl;
         return false;
@@ -96,16 +97,16 @@ bool CobraProcess::initLAManager()
     LAManagerConfig laConfig;
     SF1Config::get()->getLAManagerConfig(laConfig);
 
-    ///TODO 
+    ///TODO
     /// Ugly here, to be optimized through better configuration
     LAConfigUnit config2;
     config2.setId( "la_sia" );
     config2.setAnalysis( "korean" );
     config2.setMode( "label" );
     config2.setDictionaryPath( laConfig.kma_path_ ); // defined macro
-	
+
     laConfig.addLAConfig(config2);
-	
+
     AnalysisInfo analysisInfo2;
     analysisInfo2.analyzerId_ = "la_sia";
     analysisInfo2.tokenizerNameList_.insert("tok_divide");
@@ -114,12 +115,10 @@ bool CobraProcess::initLAManager()
     if (! LAPool::getInstance()->init(laConfig))
         return false;
 
-    atexit(&LAPool::destroy);
-
     return true;
 }
 
-QueryLogSearchService* CobraProcess::initQuery()
+void CobraProcess::initQuery()
 {
     ilplib::qa::QuestionAnalysis* pQA = Singleton<ilplib::qa::QuestionAnalysis>::get();
     std::string qahome = SF1Config::get()->getResourceDir();
@@ -129,18 +128,6 @@ QueryLogSearchService* CobraProcess::initQuery()
     {
         pQA->load(qaPath);
     }
-
-    ///create QueryLogBundle
-    boost::shared_ptr<QueryLogBundleConfiguration> queryLogBundleConfig
-    (new QueryLogBundleConfiguration(SF1Config::get()->queryLogBundleConfig_));
-    std::string bundleName = "QueryLogBundle";
-    OSGILauncher& launcher = CollectionManager::get()->getOSGILauncher();
-    launcher.start(queryLogBundleConfig);
-    QueryLogSearchService* service = static_cast<QueryLogSearchService*>(launcher.getService(bundleName, "QueryLogSearchService"));
-
-    //addExitHook(boost::bind(&OSGILauncher::stop, launcher));
-
-    return service;
 }
 
 bool CobraProcess::initLicenseManager()
@@ -165,7 +152,7 @@ bool CobraProcess::initLicenseManager()
     path = licenseDir + LicenseManager::LICENSE_REQUEST_FILENAME;
     if ( !licenseManager->createLicenseRequestFile(path) )
     {
-        DLOG(ERROR) <<"License Request File is failed to generated. Please check if you're a sudoer" <<endl;		
+        DLOG(ERROR) <<"License Request File is failed to generated. Please check if you're a sudoer" <<endl;
         return false;
     }
 
@@ -203,8 +190,8 @@ bool CobraProcess::initDriverServer()
 
     // init Router
     router_.reset(new ::izenelib::driver::Router);
-    queryLogService_ = initQuery();
-    initializeDriverRouter(*router_, queryLogService_, enableTest);
+    initQuery();
+    initializeDriverRouter(*router_, QueryLogSearchService::instance(), enableTest);
 
     boost::shared_ptr<DriverConnectionFactory> factory(
         new DriverConnectionFactory(router_)
@@ -264,7 +251,7 @@ bool CobraProcess::startDistributedServer()
             std::size_t threadNum = SF1Config::get()->brokerAgentConfig_.threadNum_;
             workerServer_.reset(new WorkerServer(curNodeInfo.localHost_, workerPort, threadNum));
             workerServer_->start();
-            workerServer_->setQueryLogSearchService(queryLogService_);
+            workerServer_->setQueryLogSearchService(QueryLogSearchService::instance());
             cout << "#[Worker Server]started, listening at localhost:"<<workerPort<<" ..."<<endl;
 
             // master notifier, xxx

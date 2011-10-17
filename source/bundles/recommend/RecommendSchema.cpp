@@ -3,11 +3,12 @@
 namespace sf1r
 {
 
-RecommendSchema::RecommendSchema()
-    : notRecResultEvent_("not_rec_result")
-    , notRecInputEvent_("not_rec_input")
-{
-}
+const std::string RecommendSchema::NOT_REC_RESULT_EVENT("not_rec_result");
+const std::string RecommendSchema::NOT_REC_INPUT_EVENT("not_rec_input");
+
+const std::string RecommendSchema::BROWSE_EVENT("browse");
+const std::string RecommendSchema::CART_EVENT("shopping_cart");
+const std::string RecommendSchema::PURCHASE_EVENT("purchase");
 
 bool RecommendSchema::getUserProperty(const std::string& name, RecommendProperty& property) const
 {
@@ -42,8 +43,8 @@ bool RecommendSchema::getItemProperty(const std::string& name, RecommendProperty
 bool RecommendSchema::hasEvent(const std::string& event) const
 {
     return eventSet_.find(event) != eventSet_.end()
-           || event == notRecResultEvent_ 
-           || event == notRecInputEvent_;
+           || event == NOT_REC_RESULT_EVENT 
+           || event == NOT_REC_INPUT_EVENT;
 }
 
 } // namespace sf1r

@@ -15,6 +15,10 @@ namespace sf1r
 class User;
 class Item;
 class ItemCondition;
+struct RecommendParam;
+struct RecommendItem;
+struct TIBParam;
+struct ItemBundle;
 
 /// @addtogroup controllers
 /// @{
@@ -56,6 +60,10 @@ private:
     bool value2Item(const izenelib::driver::Value& value, Item& item);
     bool value2ItemIdVec(const std::string& propName, std::vector<std::string>& itemIdVec);
     bool value2ItemCondition(ItemCondition& itemCondition);
+    bool parseRecommendParam(RecommendParam& param);
+    void renderRecommendResult(const RecommendParam& param, const std::vector<RecommendItem>& recItemVec);
+    bool parseTIBParam(TIBParam& param);
+    void renderBundleResult(const std::vector<ItemBundle>& bundleVec);
 
 private:
     std::map<std::string, int> recTypeMap_; /// mapping from recommendation type string to type id

@@ -34,18 +34,17 @@ struct RecommendProperty : public PropertyConfigBase
 
 struct RecommendSchema
 {
-    std::vector<RecommendProperty> userSchema_;
+    static const std::string NOT_REC_RESULT_EVENT;
+    static const std::string NOT_REC_INPUT_EVENT;
 
+    static const std::string BROWSE_EVENT;
+    static const std::string CART_EVENT;
+    static const std::string PURCHASE_EVENT;
+
+    std::vector<RecommendProperty> userSchema_;
     std::vector<RecommendProperty> itemSchema_;
 
-    /** the event names */
     std::set<std::string> eventSet_;
-    /** the event name for not recommendation result */
-    std::string notRecResultEvent_;
-    /** the event name for not recommendation input */
-    std::string notRecInputEvent_;
-
-    RecommendSchema();
 
     /**
      * Find user property by @p name.
@@ -64,7 +63,7 @@ struct RecommendSchema
     bool getItemProperty(const std::string& name, RecommendProperty& property) const;
 
     /**
-     * Whether @p event is one of @c eventSet_, @c notRecResultEvent_ or @c notRecInputEvent_.
+     * Whether @p event is one of @c eventSet_, @c NOT_REC_RESULT_EVENT or @c NOT_REC_INPUT_EVENT.
      * @param event the event name
      * @return true for found, false for not found
      */

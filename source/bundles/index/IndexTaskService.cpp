@@ -299,7 +299,8 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
 
     indexProgress_.getIndexingStatus(indexStatus_);
     LOG(INFO) << "Indexing Finished! Documents Indexed: " << documentManager_->getMaxDocId()
-              <<" Deleted: " << numDeletedDocs_ << "Updated: " << numUpdatedDocs_;
+              << " Deleted: " << numDeletedDocs_
+              << " Updated: " << numUpdatedDocs_;
 
     //both variables are refreshed
     numDeletedDocs_ = 0;
