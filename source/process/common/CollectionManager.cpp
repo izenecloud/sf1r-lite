@@ -44,7 +44,8 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
     IndexTaskService* indexTaskService = static_cast<IndexTaskService*>(osgiLauncher_.getService(bundleName, "IndexTaskService"));
     collectionHandler->registerService(indexTaskService);
 
-    if(productBundleConfig->enabled_)
+//     if(productBundleConfig->enabled_)
+    if(false)
     {
         ///createProductBundle
         bundleName = "ProductBundle-" + collectionName;

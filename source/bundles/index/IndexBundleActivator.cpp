@@ -1,4 +1,5 @@
 #include "IndexBundleActivator.h"
+#include "ProductIndexHooker.h"
 #include <bundles/mining/MiningSearchService.h>
 #include <bundles/product/ProductSearchService.h>
 #include <bundles/product/ProductTaskService.h>
@@ -173,9 +174,10 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
         Properties props = ref.getServiceProperties();
         if ( props.get( "collection" ) == config_->collectionName_)
         {
-            //ProductSearchService* service = reinterpret_cast<ProductSearchService*> ( const_cast<IService*>(ref.getService()) );
+//             ProductSearchService* service = reinterpret_cast<ProductSearchService*> ( const_cast<IService*>(ref.getService()) );
             cout << "[IndexBundleActivator#addingService] Calling ProductSearchService..." << endl;
-            ///TODO
+            // product index hook set in Product Bundle
+
             return true;
         }
         else
@@ -289,6 +291,8 @@ bool IndexBundleActivator::init_()
     taskService_->documentManager_ = documentManager_;
     taskService_->searchManager_ = searchManager_;
     taskService_->summarizer_.init(documentManager_->getLangId(), idManager_);
+    
+    
 
     return true;
 }

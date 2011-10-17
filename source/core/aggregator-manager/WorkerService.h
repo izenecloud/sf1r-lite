@@ -128,6 +128,7 @@ private:
     friend class IndexSearchService;
     friend class IndexBundleActivator;
     friend class MiningBundleActivator;
+    friend class ProductBundleActivator;
 };
 
 }

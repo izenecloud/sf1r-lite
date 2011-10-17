@@ -15,7 +15,7 @@
 
 namespace sf1r
 {
-using izenelib::ir::idmanager::IDManager;
+class ProductManager;
 
 class ProductSearchService : public ::izenelib::osgi::IService
 {
@@ -25,9 +25,11 @@ public:
     ~ProductSearchService();
 
 public:
-    bool getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem);
+    
 private:
     ProductBundleConfiguration* bundleConfig_;
+    boost::shared_ptr<ProductManager> productManager_;
+    
     friend class ProductBundleActivator;
 };
 
