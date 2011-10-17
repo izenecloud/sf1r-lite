@@ -18,7 +18,6 @@ class RecommendManager;
  *
  * Gets list of popular keywords starting with specified prefix.
  */
-class QueryLogSearchService; 
 class AutoFillController : public CollectionMiningController
 {
 public:
