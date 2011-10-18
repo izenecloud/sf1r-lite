@@ -180,10 +180,12 @@
           <Service name="icson" />
         </WorkerAgent>
       </CurrentNode>
-
-      <ZooKeeper servers="127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183" sessiontimeout="2000" />
-      <!-- <ZooKeeper servers="172.16.0.163:2181,172.16.0.163:2182,172.16.0.163:2183" sessiontimeout="2000" /> -->
     </DistributedTopology>
+
+    <DistributedUtil>
+      <ZooKeeper servers="127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183" sessiontimeout="2000" />
+      <DFS type="hdfs" supportfuse="y" mountdir="/mnt/hdfs" server="localhost" port="9000" />
+    </DistributedUtil>
   </Deployment>
 
 </SF1Config>
