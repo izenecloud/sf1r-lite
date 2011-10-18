@@ -59,10 +59,6 @@ void ProductBundleActivator::start( IBundleContext::ConstPtr context )
     boost::shared_ptr<BundleConfiguration> bundleConfigPtr = context->getBundleConfig();
     config_ = static_cast<ProductBundleConfiguration*>(bundleConfigPtr.get());
 
-    Properties props;
-    props.put( "collection", config_->collectionName_);
-    searchServiceReg_ = context->registerService( "ProductSearchService", searchService_, props );
-    taskServiceReg_ = context->registerService( "ProductTaskService", taskService_, props );
     searchTracker_ = new ServiceTracker( context, "IndexSearchService", this );
     searchTracker_->startTracking();
     taskTracker_ = new ServiceTracker( context, "IndexTaskService", this );
@@ -122,6 +118,8 @@ bool ProductBundleActivator::addingService( const ServiceReference& ref )
             }
             
             taskService_ = new ProductTaskService(config_);
+            searchServiceReg_ = context_->registerService( "ProductSearchService", searchService_, props );
+            taskServiceReg_ = context_->registerService( "ProductTaskService", taskService_, props );
             return true;
         }
         else
@@ -161,7 +159,7 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
     std::cout<<"dir : "<<dir<<std::endl;
     boost::filesystem::create_directories(dir);
     PMConfig config = PMConfig::GetDefaultPMConfig();
-    data_source_ = new CollectionProductDataSource(indexService->workerService_->documentManager_, indexService->workerService_->indexManager_, config);
+    data_source_ = new CollectionProductDataSource(indexService->workerService_->documentManager_, indexService->workerService_->indexManager_, config, config_->schema_);
     op_processor_ = new ScdOperationProcessor(dir);
     boost::shared_ptr<ProductManager> product_manager(new ProductManager(data_source_, op_processor_, config));
     return product_manager;
