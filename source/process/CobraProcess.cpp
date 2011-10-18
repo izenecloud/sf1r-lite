@@ -223,8 +223,8 @@ bool CobraProcess::startDistributedServer()
         return false;
 
     // Initial information from configuration
-    std::string  zkHosts       = SF1Config::get()->distributedTopologyConfig_.zkHosts_;
-    unsigned int zkRecvTimeout = SF1Config::get()->distributedTopologyConfig_.zkRecvTimeout_;
+    std::string  zkHosts       = SF1Config::get()->distributedUtilConfig_.zkConfig_.zkHosts_;
+    unsigned int zkRecvTimeout = SF1Config::get()->distributedUtilConfig_.zkConfig_.zkRecvTimeout_;
 
     Topology topology;
     topology.nodeNum_ = SF1Config::get()->distributedTopologyConfig_.nodeNum_;

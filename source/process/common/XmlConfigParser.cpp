@@ -308,11 +308,22 @@ void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
     getAttribute( cursf1node, "host", distributedTopologyConfig_.curSF1Node_.host_ );
     parseMasterAgent( getUniqChildElement( cursf1node, "MasterAgent", false ) );
     parseWorkerAgent( getUniqChildElement( cursf1node, "WorkerAgent", false ) );
+}
 
+void SF1Config::parseDistributedUtil(const ticpp::Element * distributedUtil)
+{
     // ZooKeeper configuration
-    ticpp::Element* zk = getUniqChildElement( topology, "ZooKeeper" );
-    getAttribute(zk, "servers", distributedTopologyConfig_.zkHosts_);
-    getAttribute(zk, "sessiontimeout", distributedTopologyConfig_.zkRecvTimeout_);
+    ticpp::Element* zk = getUniqChildElement( distributedUtil, "ZooKeeper" );
+    getAttribute(zk, "servers", distributedUtilConfig_.zkConfig_.zkHosts_);
+    getAttribute(zk, "sessiontimeout", distributedUtilConfig_.zkConfig_.zkRecvTimeout_);
+
+    // Distributed File System configuration
+    ticpp::Element* dfs = getUniqChildElement( distributedUtil, "DFS" );
+    getAttribute(dfs, "type", distributedUtilConfig_.dfsConfig_.type_, false);
+    getAttribute(dfs, "supportfuse", distributedUtilConfig_.dfsConfig_.isSupportFuse_, false);
+    getAttribute(dfs, "mountdir", distributedUtilConfig_.dfsConfig_.mountDir_, true);
+    getAttribute(dfs, "server", distributedUtilConfig_.dfsConfig_.server_, false);
+    getAttribute(dfs, "port", distributedUtilConfig_.dfsConfig_.port_, false);
 }
 
 void SF1Config::parseMasterAgent( const ticpp::Element * master )
@@ -722,6 +733,8 @@ void SF1Config::parseDeploymentSettings(const ticpp::Element * deploy)
     parseBrokerAgent( getUniqChildElement( deploy, "BrokerAgent" ) );
 
     parseDistributedTopology( getUniqChildElement( deploy, "DistributedTopology", false ) );
+
+    parseDistributedUtil( getUniqChildElement( deploy, "DistributedUtil" ) );
 }
 
 // ------------------------- CollectionConfig-------------------------
