@@ -610,8 +610,16 @@ bool IndexTaskService::destroyDocument(const Value& documentValue)
     if (!bundleConfig_->productSourceField_.empty()
             && documentManager_->getPropertyValue(docid, bundleConfig_->productSourceField_, value))
     {
-        izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
-        sourceFieldValue.convertString(source, izenelib::util::UString::UTF_8);
+        try
+        {
+            izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
+            sourceFieldValue.convertString(source, izenelib::util::UString::UTF_8);
+        }
+        catch (std::exception& e)
+        {
+            LOG(WARNING) << "exception in get property value: " << e.what();
+            return false;
+        }
 
         if(!source.empty())
         {
@@ -877,10 +885,18 @@ bool IndexTaskService::deleteSCD_(ScdParser& parser)
             PropertyValue value;
             if (documentManager_->getPropertyValue(*iter, bundleConfig_->productSourceField_, value))
             {
-                izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
-                std::string source("");
-                sourceFieldValue.convertString(source, izenelib::util::UString::UTF_8);
-                ++productSourceCount_[source];
+                try
+                {
+                    izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
+                    std::string source("");
+                    sourceFieldValue.convertString(source, izenelib::util::UString::UTF_8);
+                    ++productSourceCount_[source];
+                }
+                catch (std::exception& e)
+                {
+                    LOG(WARNING) << "exception in get property value: " << e.what();
+                    return false;
+                }
             }
         }
 
@@ -943,7 +959,7 @@ bool IndexTaskService::checkRtype_(
     bool rType = false;
     PropertyDataType dataType;
     sf1r::docid_t docId;
-    izenelib::util::UString newPropertyValue;
+    izenelib::util::UString newPropertyValue, oldPropertyValue;
     vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
     for (p = doc.begin(); p != doc.end(); p++)
     {
@@ -977,10 +993,18 @@ bool IndexTaskService::checkRtype_(
                 PropertyValue value;
                 if (documentManager_->getPropertyValue(docId, iter->getName(), value))
                 {
-                    izenelib::util::UString oldPropertyValue = get<izenelib::util::UString>(value);
-                    if ( newPropertyValue == oldPropertyValue )
+                    try
                     {
-                        continue;
+                        oldPropertyValue = get<izenelib::util::UString>(value);
+                        if ( newPropertyValue == oldPropertyValue )
+                        {
+                            continue;
+                        }
+                    }
+                    catch (std::exception& e)
+                    {
+                        LOG(WARNING) << "exception in get property value: " << e.what();
+                        return false;
                     }
                 }
 
