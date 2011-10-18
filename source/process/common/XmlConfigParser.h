@@ -14,6 +14,7 @@
 #include <configuration-manager/LAManagerConfig.h>
 #include <configuration-manager/BrokerAgentConfig.h>
 #include <configuration-manager/DistributedTopologyConfig.h>
+#include <configuration-manager/DistributedUtilConfig.h>
 #include <configuration-manager/FirewallConfig.h>
 #include <configuration-manager/CollectionParameterConfig.h>
 #include <mining-manager/faceted-submanager/ontology_rep_item.h>
@@ -591,6 +592,9 @@ private:
     /// @brief                  Parse <Broker> settings
     /// @param system           Pointer to the Element
     void parseDistributedTopology(const ticpp::Element * topology);
+    /// @brief                  Parse <Broker> settings
+    /// @param system           Pointer to the Element
+    void parseDistributedUtil(const ticpp::Element * distributedUtil);
     /// @brief                  Parse <RemoteAgent> settings
     /// @param system           Pointer to the Element
     void parseMasterAgent(const ticpp::Element * master);
@@ -624,9 +628,15 @@ public:
     /// @brief Configurations for distributed search system
     DistributedTopologyConfig distributedTopologyConfig_;
 
+    /// @brief Configurations for distributed util
+    DistributedUtilConfig distributedUtilConfig_;
+
     /// @brief default IndexBundleConfig
     CollectionParameterConfig defaultIndexBundleParam_;
 
+    /// @brief default ProductBundleConfig
+    CollectionParameterConfig defaultProductBundleParam_;
+    
     /// @brief default MiningBundleConfig
     CollectionParameterConfig defaultMiningBundleParam_;
 
@@ -700,6 +710,10 @@ private:
     /// @brief                  Parse <ProductBundle> <Parameter> 
     /// @param product           Pointer to the Element
     void parseProductBundleParam(const ticpp::Element * product, CollectionMeta & collectionMeta);
+    
+    /// @brief                  Parse <ProductBundle> <Schema> 
+    /// @param product           Pointer to the Element
+    void parseProductBundleSchema(const ticpp::Element * product, CollectionMeta & collectionMeta);
 
     /// @brief                  Parse <MiningBundle> <Parameter> 
     /// @param mining           Pointer to the Element

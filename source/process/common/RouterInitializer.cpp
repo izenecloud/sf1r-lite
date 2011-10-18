@@ -22,7 +22,6 @@
 #include "controllers/LogAnalysisController.h"
 #include "controllers/FacetedController.h"
 #include "controllers/QueryCorrectionController.h"
-#include "mining/QueryLogSearchService.h"
 #include "controllers/TopicController.h"
 #include "controllers/RecommendController.h"
 #include "controllers/ServiceController.h"
@@ -143,7 +142,6 @@ void initializeDriverRouter(::izenelib::driver::Router& router, IService* servic
         const std::string controllerName("query_correction");
         typedef ::izenelib::driver::ActionHandler<QueryCorrectionController> handler_type;
         typedef std::auto_ptr<handler_type> handler_ptr;
-        query_correction.setService(static_cast<QueryLogSearchService*>(service));
 
         handler_ptr indexHandler(
             new handler_type(

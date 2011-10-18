@@ -309,11 +309,22 @@ void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
     getAttribute( cursf1node, "host", distributedTopologyConfig_.curSF1Node_.host_ );
     parseMasterAgent( getUniqChildElement( cursf1node, "MasterAgent", false ) );
     parseWorkerAgent( getUniqChildElement( cursf1node, "WorkerAgent", false ) );
+}
 
+void SF1Config::parseDistributedUtil(const ticpp::Element * distributedUtil)
+{
     // ZooKeeper configuration
-    ticpp::Element* zk = getUniqChildElement( topology, "ZooKeeper" );
-    getAttribute(zk, "servers", distributedTopologyConfig_.zkHosts_);
-    getAttribute(zk, "sessiontimeout", distributedTopologyConfig_.zkRecvTimeout_);
+    ticpp::Element* zk = getUniqChildElement( distributedUtil, "ZooKeeper" );
+    getAttribute(zk, "servers", distributedUtilConfig_.zkConfig_.zkHosts_);
+    getAttribute(zk, "sessiontimeout", distributedUtilConfig_.zkConfig_.zkRecvTimeout_);
+
+    // Distributed File System configuration
+    ticpp::Element* dfs = getUniqChildElement( distributedUtil, "DFS" );
+    getAttribute(dfs, "type", distributedUtilConfig_.dfsConfig_.type_, false);
+    getAttribute(dfs, "supportfuse", distributedUtilConfig_.dfsConfig_.isSupportFuse_, false);
+    getAttribute(dfs, "mountdir", distributedUtilConfig_.dfsConfig_.mountDir_, true);
+    getAttribute(dfs, "server", distributedUtilConfig_.dfsConfig_.server_, false);
+    getAttribute(dfs, "port", distributedUtilConfig_.dfsConfig_.port_, false);
 }
 
 void SF1Config::parseMasterAgent( const ticpp::Element * master )
@@ -382,6 +393,8 @@ void SF1Config::parseBundlesDefault(const ticpp::Element * bundles)
     Element * bundle = NULL;
     bundle = getUniqChildElement( bundles, "IndexBundle" );
     defaultIndexBundleParam_.LoadXML(getUniqChildElement( bundle, "Parameter" ), false);
+    bundle = getUniqChildElement( bundles, "ProductBundle" );
+    defaultProductBundleParam_.LoadXML(getUniqChildElement( bundle, "Parameter" ), false);
     bundle = getUniqChildElement( bundles, "MiningBundle" );
     defaultMiningBundleParam_.LoadXML(getUniqChildElement( bundle, "Parameter" ), false);
     bundle = getUniqChildElement( bundles, "RecommendBundle" );
@@ -723,6 +736,8 @@ void SF1Config::parseDeploymentSettings(const ticpp::Element * deploy)
     parseBrokerAgent( getUniqChildElement( deploy, "BrokerAgent" ) );
 
     parseDistributedTopology( getUniqChildElement( deploy, "DistributedTopology", false ) );
+
+    parseDistributedUtil( getUniqChildElement( deploy, "DistributedUtil" ) );
 }
 
 // ------------------------- CollectionConfig-------------------------
@@ -857,7 +872,10 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
     if(productBundle)
     {
         Element* productParam = getUniqChildElement( productBundle, "Parameter", false );
-        if(productParam) parseProductBundleParam(productParam, collectionMeta);
+        parseProductBundleParam(productParam, collectionMeta);
+        
+        Element* product_schema = getUniqChildElement( productBundle, "Schema", false );
+        if(product_schema) parseProductBundleSchema(product_schema, collectionMeta);
     }
     // MiningBundle
     collectionMeta.miningBundleConfig_->isSupportByAggregator_ = collectionMeta.indexBundleConfig_->isSupportByAggregator_;
@@ -1127,9 +1145,41 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
     }
 }
 
-void CollectionConfig::parseProductBundleParam(const ticpp::Element * product, CollectionMeta & collectionMeta)
+void CollectionConfig::parseProductBundleParam(const ticpp::Element * product_param, CollectionMeta & collectionMeta)
 {
-    ///TODO
+    CollectionParameterConfig params(SF1Config::get()->defaultProductBundleParam_);
+    if(product_param)
+    {
+        params.LoadXML(product_param, true);
+    }
+
+    std::set<std::string> directories;
+    params.Get("CollectionDataDirectory", directories);
+    if(!directories.empty())
+    {
+        collectionMeta.productBundleConfig_->collectionDataDirectories_.assign(directories.begin(), directories.end());
+    }
+}
+
+void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_schema, CollectionMeta & collectionMeta)
+{
+    ProductBundleConfiguration& productBundleConfig = *(collectionMeta.productBundleConfig_);
+    productBundleConfig.enabled_ = true;
+    productBundleConfig.collPath_ = collectionMeta.collPath_;
+    std::string property_name;
+    ticpp::Element* property_node = 0;
+    property_node = getUniqChildElement( product_schema, "PriceProperty", false );
+    getAttribute(property_node, "name", productBundleConfig.pm_config_.price_property_name );
+    
+    property_node = getUniqChildElement( product_schema, "DOCIDProperty", false );
+    getAttribute(property_node, "name", productBundleConfig.pm_config_.docid_property_name );
+    
+    property_node = getUniqChildElement( product_schema, "UuidProperty", false );
+    getAttribute(property_node, "name", productBundleConfig.pm_config_.uuid_property_name );
+    
+    property_node = getUniqChildElement( product_schema, "ItemCountProperty", false );
+    getAttribute(property_node, "name", productBundleConfig.pm_config_.itemcount_property_name );
+    
 }
 
 void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, CollectionMeta & collectionMeta)

@@ -15,7 +15,7 @@ namespace sf1r
 using driver::Keys;
 
 QueryCorrectionController::QueryCorrectionController()
-    :queryLogSearchService_(NULL)
+    :queryLogSearchService_(QueryLogSearchService::instance())
 {}
 
 QueryCorrectionController::QueryCorrectionController(

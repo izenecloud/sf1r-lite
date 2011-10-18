@@ -2,6 +2,7 @@
 #include "IndexBundleHelper.h"
 
 #include <index-manager/IndexManager.h>
+#include <index-manager/IndexHooker.h>
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
 #include <search-manager/SearchManager.h>
@@ -259,6 +260,11 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
             idManager_->joinWildcardProcess();
 #endif
         }
+        
+        if(hooker_)
+        {
+            if(!hooker_->Finish()) return false;
+        }
 
         if( miningTaskService_ )
         {
@@ -382,16 +388,9 @@ bool IndexTaskService::createDocument(const Value& documentValue)
     static int docnum = 1;
     fprintf(stderr, "\n-----[%-6d] Document is inserted\n", docnum++);
     // DEBUG
-
-    if (documentManager_->insertDocument(document))
-    {
-        indexManager_->insertDocument(indexDocument);
-        indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
-        searchManager_->reset_cache(rType, id, rTypeFieldValue);
-        return true;
-    }
-
-    return false;
+    if(!insertDoc_(document ,indexDocument)) return false;
+    searchManager_->reset_cache(rType, id, rTypeFieldValue);
+    return true;
 }
 
 bool IndexTaskService::updateDocument(const Value& documentValue)
@@ -442,53 +441,16 @@ bool IndexTaskService::updateDocument(const Value& documentValue)
     if(oldId == 0)
     {
         /// document does not exist, directly index
-        if (documentManager_->insertDocument(document))
-        {
-            indexManager_->insertDocument(indexDocument);
-            indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
-            searchManager_->reset_cache(rType, id, rTypeFieldValue);
-            return true;
-        }
+        if(!insertDoc_(document ,indexDocument)) return false;
+        searchManager_->reset_cache(rType, id, rTypeFieldValue);
     }
     else
     {
-        if (!rType)
-        {
-            if (!documentManager_->removeDocument(oldId))
-            {
-                 return false;
-            }
-
-            // Insert document data to the SDB repository.
-             if (documentManager_->insertDocument(document) )
-             {
-                 indexManager_->updateDocument(indexDocument);
-                 ++numUpdatedDocs_;
-                 searchManager_->reset_cache(rType, id, rTypeFieldValue);
-                 return true;
-             }
-        }
-        else
-        {
-
-            // Store the old property value.
-            IndexerDocument oldIndexDocument;
-            if ( !preparePartialDocument_(document, oldIndexDocument) )
-            {
-                return false;
-            }
-
-            // Update document data in the SDB repository.
-            if ( documentManager_->updatePartialDocument(document) )
-            {
-                indexManager_->updateRtypeDocument(oldIndexDocument, indexDocument);
-                ++numUpdatedDocs_;
-                searchManager_->reset_cache(rType, id, rTypeFieldValue);
-                return true;
-            }
-        }
+        if(!updateDoc_(document, indexDocument, rType)) return false;
+        ++numUpdatedDocs_;
+        searchManager_->reset_cache(rType, id, rTypeFieldValue);
     }
-    return false;
+    return true;
 }
 
 bool IndexTaskService::preparePartialDocument_(
@@ -636,17 +598,10 @@ bool IndexTaskService::destroyDocument(const Value& documentValue)
         docName.convertString(property, bundleConfig_->encoding_ );
         LOG(ERROR) << "Deleted document " <<property <<" does not exist, skip it.";
     }
-    if (documentManager_->removeDocument(docid))
-    {
-        indexManager_->removeDocument(collectionId_, docid);
-        ++numDeletedDocs_;
-        indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
-
-        std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
-        searchManager_->reset_cache(false, 0, rTypeFieldValue);
-
-        return true;
-    }
+    
+    if(!deleteDoc_(docid)) return false;
+    std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
+    searchManager_->reset_cache(false, 0, rTypeFieldValue);
 
     boost::posix_time::ptime now =
                 boost::posix_time::microsec_clock::local_time();
@@ -655,8 +610,16 @@ bool IndexTaskService::destroyDocument(const Value& documentValue)
     if (!bundleConfig_->productSourceField_.empty()
             && documentManager_->getPropertyValue(docid, bundleConfig_->productSourceField_, value))
     {
-        izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
-        sourceFieldValue.convertString(source, izenelib::util::UString::UTF_8);
+        try
+        {
+            izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
+            sourceFieldValue.convertString(source, izenelib::util::UString::UTF_8);
+        }
+        catch (std::exception& e)
+        {
+            LOG(WARNING) << "exception in get property value: " << e.what();
+            return false;
+        }
 
         if(!source.empty())
         {
@@ -671,7 +634,7 @@ bool IndexTaskService::destroyDocument(const Value& documentValue)
     }
 
 
-    return false;
+    return true;
 }
 
 bool IndexTaskService::doBuildCollection_(
@@ -767,19 +730,20 @@ bool IndexTaskService::insertOrUpdateSCD_(
         // begin insert and update document
         if (isInsert || oldId == 0)
         {
-            START_PROFILER( proDocumentIndexing );
-            if (documentManager_->insertDocument(document) == false)
-            {
-                LOG(ERROR) << "Document Insert Failed in SDB. " << document.property("DOCID");
-                continue;
-            }
-            STOP_PROFILER( proDocumentIndexing );
-
-            START_PROFILER( proIndexing );
-            indexManager_->insertDocument(indexDocument);
-            STOP_PROFILER( proIndexing );
-
-            indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
+            if(!insertDoc_(document, indexDocument)) continue;
+//             START_PROFILER( proDocumentIndexing );
+//             if (documentManager_->insertDocument(document) == false)
+//             {
+//                 LOG(ERROR) << "Document Insert Failed in SDB. " << document.property("DOCID");
+//                 continue;
+//             }
+//             STOP_PROFILER( proDocumentIndexing );
+// 
+//             START_PROFILER( proIndexing );
+//             indexManager_->insertDocument(indexDocument);
+//             STOP_PROFILER( proIndexing );
+// 
+//             indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
         }
         else
         {
@@ -797,12 +761,48 @@ bool IndexTaskService::insertOrUpdateSCD_(
     return true;
 }
 
+
+bool IndexTaskService::insertDoc_(Document& document, IndexerDocument& indexDocument)
+{
+    if(hooker_)
+    {
+        if(!hooker_->HookInsert(document)) return false;
+    }
+    if (documentManager_->insertDocument(document))
+    {
+        indexManager_->insertDocument(indexDocument);
+        indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
+        return true;
+    }
+    else return false;
+}
+
+bool IndexTaskService::deleteDoc_(docid_t docid)
+{
+    if(hooker_)
+    {
+        if(!hooker_->HookDelete(docid)) return false;
+    }
+    if (documentManager_->removeDocument(docid))
+    {
+        indexManager_->removeDocument(collectionId_, docid);
+        ++numDeletedDocs_;
+        indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
+        return true;
+    }
+    else return false;
+}
+
 bool IndexTaskService::updateDoc_(
     Document& document,
     IndexerDocument& indexDocument,
     bool rType
 )
 {
+    if(hooker_)
+    {
+        if(!hooker_->HookUpdate(indexDocument.getId(), document, rType)) return false;
+    }
     if (rType)
     {
         // Store the old property value.
@@ -885,23 +885,30 @@ bool IndexTaskService::deleteSCD_(ScdParser& parser)
             PropertyValue value;
             if (documentManager_->getPropertyValue(*iter, bundleConfig_->productSourceField_, value))
             {
-                izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
-                std::string source("");
-                sourceFieldValue.convertString(source, izenelib::util::UString::UTF_8);
-                ++productSourceCount_[source];
+                try
+                {
+                    izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
+                    std::string source("");
+                    sourceFieldValue.convertString(source, izenelib::util::UString::UTF_8);
+                    ++productSourceCount_[source];
+                }
+                catch (std::exception& e)
+                {
+                    LOG(WARNING) << "exception in get property value: " << e.what();
+                    return false;
+                }
             }
         }
 
         //marks delete key to true in DB
-        if (!documentManager_->removeDocument(*iter))
+        
+        if(!deleteDoc_(*iter))
         {
             LOG(WARNING) << "Cannot delete removed Document. docid. " << *iter;
             continue;
         }
         ++indexProgress_.currentFilePos_;
-        indexManager_->removeDocument(collectionId_, *iter);
-        ++numDeletedDocs_;
-        indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
+
     }
 
     std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
@@ -952,7 +959,7 @@ bool IndexTaskService::checkRtype_(
     bool rType = false;
     PropertyDataType dataType;
     sf1r::docid_t docId;
-    izenelib::util::UString newPropertyValue;
+    izenelib::util::UString newPropertyValue, oldPropertyValue;
     vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
     for (p = doc.begin(); p != doc.end(); p++)
     {
@@ -986,10 +993,18 @@ bool IndexTaskService::checkRtype_(
                 PropertyValue value;
                 if (documentManager_->getPropertyValue(docId, iter->getName(), value))
                 {
-                    izenelib::util::UString oldPropertyValue = get<izenelib::util::UString>(value);
-                    if ( newPropertyValue == oldPropertyValue )
+                    try
                     {
-                        continue;
+                        oldPropertyValue = get<izenelib::util::UString>(value);
+                        if ( newPropertyValue == oldPropertyValue )
+                        {
+                            continue;
+                        }
+                    }
+                    catch (std::exception& e)
+                    {
+                        LOG(WARNING) << "exception in get property value: " << e.what();
+                        return false;
                     }
                 }
 
