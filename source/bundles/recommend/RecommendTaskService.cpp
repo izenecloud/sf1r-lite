@@ -1021,6 +1021,9 @@ bool RecommendTaskService::convertUserItemId_(
 
 void RecommendTaskService::buildFreqItemSet_()
 {
+    if (! bundleConfig_->freqItemSetEnable_)
+        return;
+
     LOG(INFO) << "start building frequent item set for collection " << bundleConfig_->collectionName_;
 
     boost::mutex::scoped_try_lock lock(buildFreqItemMutex_);

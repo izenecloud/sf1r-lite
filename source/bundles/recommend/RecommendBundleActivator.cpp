@@ -1,4 +1,5 @@
 #include "RecommendBundleActivator.h"
+#include "RecommendBundleConfiguration.h"
 #include <recommend-manager/UserManager.h>
 #include <recommend-manager/ItemManager.h>
 #include <recommend-manager/VisitManager.h>
@@ -48,8 +49,7 @@ void RecommendBundleActivator::start(IBundleContext::ConstPtr context)
 {
     context_ = context;
 
-    boost::shared_ptr<BundleConfiguration> bundleConfigPtr = context->getBundleConfig();
-    config_ = static_cast<RecommendBundleConfiguration*>(bundleConfigPtr.get());
+    config_ = static_pointer_cast<RecommendBundleConfiguration>(context->getBundleConfig());
 
     init_();
 
@@ -134,11 +134,13 @@ bool RecommendBundleActivator::init_()
 
     boost::filesystem::path cfPath = miningDir / "cf";
     boost::filesystem::create_directory(cfPath);
-    auto_ptr<ItemCFManager> itemCFManagerPtr(new ItemCFManager((cfPath / "covisit").string(), 500*1024*1024,
-                                                               (cfPath / "sim").string(), 500*1024*1024,
+    const std::size_t matrixSize = config_->purchaseCacheSize_ >> 1;
+    auto_ptr<ItemCFManager> itemCFManagerPtr(new ItemCFManager((cfPath / "covisit").string(), matrixSize,
+                                                               (cfPath / "sim").string(), matrixSize,
                                                                (cfPath / "nb.sdb").string(), 30));
 
-    auto_ptr<CoVisitManager> coVisitManagerPtr(new CoVisitManager((miningDir / "covisit").string()));
+    auto_ptr<CoVisitManager> coVisitManagerPtr(new CoVisitManager((miningDir / "covisit").string(),
+                                                                  config_->visitCacheSize_));
 
     boost::filesystem::path eventDir = dataDir / "event";
     boost::filesystem::create_directory(eventDir);
@@ -158,7 +160,10 @@ bool RecommendBundleActivator::init_()
 
     boost::filesystem::path orderDir = dataDir / "order";
     boost::filesystem::create_directory(orderDir);
-    auto_ptr<OrderManager> orderManagerPtr(new OrderManager(orderDir.string(), itemManagerPtr.get()));
+    auto_ptr<OrderManager> orderManagerPtr(new OrderManager(orderDir.string(),
+                                                            itemManagerPtr.get(),
+                                                            config_->indexCacheSize_));
+    orderManagerPtr->setMinThreshold(config_->itemSetMinFreq_);
 
     auto_ptr<RecommenderFactory> recommenderFactoryPtr(new RecommenderFactory(*itemManagerPtr,
                                                                               *visitManagerPtr, *purchaseManagerPtr,
@@ -188,7 +193,7 @@ bool RecommendBundleActivator::init_()
     coVisitManager_ = coVisitManagerPtr.release();
     itemCFManager_ = itemCFManagerPtr.release();
 
-    taskService_ = new RecommendTaskService(config_, &directoryRotator_, userManager_, itemManager_,
+    taskService_ = new RecommendTaskService(config_.get(), &directoryRotator_, userManager_, itemManager_,
                                             visitManager_, purchaseManager_, cartManager_, orderManager_,
                                             eventManager_, rateManager_, userIdGenerator_, itemIdGenerator_);
     searchService_ = new RecommendSearchService(userManager_, itemManager_, recommenderFactory_,

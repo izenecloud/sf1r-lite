@@ -114,9 +114,10 @@ bool itemSetPredicate (const std::pair<std::vector<itemid_t>, size_t >& p1, cons
 
 OrderManager::OrderManager(
     const std::string& path,
-    const ItemManager* itemManager
+    const ItemManager* itemManager,
+    int64_t indexMemorySize
 )
-    :item_order_index_(path+"/index")
+    :item_order_index_(path+"/index", indexMemorySize)
     ,order_key_path_(path+"/orderdb.key")
     ,order_db_path_(path+"/orderdb.data")
     ,max_itemsets_results_path_(path+"/maxitemsets.txt")

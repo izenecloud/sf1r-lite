@@ -1187,7 +1187,8 @@ void RecommendController::renderRecommendResult(const RecommendParam& param, con
 }
 
 /**
- * @brief Action @b top_item_bundle. Get the most frequent item bundles, with each bundle containing the items frequently bought together in one order.
+ * @brief Action @b top_item_bundle. Get the most frequent item bundles, with each bundle containing the items frequently bought together in one order.@n
+ * To use this API, you need to configure @c enable in <tt> <RecommendBundle><Parameter><FreqItemSet></tt> to @c yes in config file (such as <tt>config/sf1config.xml</tt>).
  *
  * @section request
  *

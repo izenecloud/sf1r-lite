@@ -7,7 +7,6 @@
 #ifndef RECOMMEND_BUNDLE_ACTIVATOR_H
 #define RECOMMEND_BUNDLE_ACTIVATOR_H
 
-#include "RecommendBundleConfiguration.h"
 #include "RecommendTaskService.h"
 #include "RecommendSearchService.h"
 
@@ -18,11 +17,13 @@
 #include <util/osgi/IServiceRegistration.h>
 
 #include <string>
+#include <boost/shared_ptr.hpp>
 
 namespace sf1r
 {
 using namespace izenelib::osgi;
 
+class RecommendBundleConfiguration;
 class UserManager;
 class ItemManager;
 class VisitManager;
@@ -48,7 +49,7 @@ private:
     RecommendSearchService* searchService_;
     IServiceRegistration* searchServiceReg_;
 
-    RecommendBundleConfiguration* config_;
+    boost::shared_ptr<RecommendBundleConfiguration> config_;
     DirectoryRotator directoryRotator_;
 
     UserManager* userManager_;
