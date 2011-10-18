@@ -18,10 +18,12 @@ namespace sf1r {
 typedef uint32_t nodeid_t;
 typedef uint32_t mirrorid_t;
 
+/// Definition of zookeeper node paths
+const static char ZK_PATH_SF1[]          = "/SF1R";
+const static char ZK_PATH_SF1_TOPOLOGY[] = "/SF1R/Topology";
+const static char ZK_PATH_SF1_SERVICE[]  = "/SF1R/Service";
 
-const static char ZK_PATH_SF1[]          = "/SF1Root";
-const static char ZK_PATH_SF1_TOPOLOGY[] = "/SF1Root/Topology";
-const static char ZK_PATH_SF1_SERVICE[]  = "/SF1Root/Service";
+const static char* ZK_PATH_SYNCHRO   = "/SF1R/Synchro";
 
 /**
 The topology of distributed SF1 service:
@@ -41,7 +43,7 @@ The topology of distributed SF1 service:
 Using ZooKeeper for distributed coordination, the associated data structure is defined as below:
 /
 |
-SF1Root
+SF1R
 |--- Topology                #
      |--- Mirror1
           |--- Node1
@@ -121,6 +123,11 @@ public:
         ss <<ZK_PATH_SF1_TOPOLOGY<<"/Mirror"<<mirrorId<<"/Node"<<nodeId;
 
         return ss.str();
+    }
+
+    static std::string getSynchroPath()
+    {
+        return std::string(ZK_PATH_SYNCHRO);
     }
 
     static void serialize(std::string& data, std::string& k, std::string& v)
