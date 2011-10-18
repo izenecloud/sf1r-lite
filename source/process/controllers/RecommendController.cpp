@@ -13,6 +13,9 @@
 #include <recommend-manager/RecommendItem.h>
 #include <recommend-manager/ItemCondition.h>
 #include <recommend-manager/RecTypes.h>
+#include <recommend-manager/RecommendParam.h>
+#include <recommend-manager/TIBParam.h>
+#include <recommend-manager/ItemBundle.h>
 
 #include <common/Keys.h>
 #include <common/Utilities.h> // Utilities::toUpper()
@@ -747,10 +750,11 @@ void RecommendController::purchase_item()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
 
-    std::string userIdStr = asString(request()[Keys::resource][Keys::USERID]);
-    std::string orderIdStr = asString(request()[Keys::resource][Keys::order_id]);
+    izenelib::driver::Value& resourceValue = request()[Keys::resource];
+    std::string userIdStr = asString(resourceValue[Keys::USERID]);
+    std::string orderIdStr = asString(resourceValue[Keys::order_id]);
 
-    const izenelib::driver::Value& itemsValue = request()[Keys::resource][Keys::items];
+    const izenelib::driver::Value& itemsValue = resourceValue[Keys::items];
     if (nullValue(itemsValue) || itemsValue.type() != izenelib::driver::Value::kArrayType)
     {
         response().addError("Require an array of items in request[resource][items].");
@@ -787,8 +791,8 @@ void RecommendController::purchase_item()
  * @section request
  *
  * - @b collection* (@c String): Add event on updating shopping cart in this collection.
- * - @b resource* (@c Object): A resource for a shopping cart event, that is, the shopping cart of user @b USERID contains @b items.
- *   Please note that whenever there is any update in user's shopping cart, you have to specify @b items as all the items in the shopping cart.
+ * - @b resource* (@c Object): A resource for a shopping cart event, that is, the shopping cart of user @b USERID contains @b items.@n
+ *   Please note that whenever there is any update in user's shopping cart, you have to specify @b items as all the items in the shopping cart.@n
  *   When the shopping cart becomes empty, you have to add this event by calling @c update_shopping_cart() with an empty @b items.
  *   - @b USERID* (@c String): a unique user identifier.
  *   - @b items* (@c Array): each is an item in shopping cart.
@@ -824,9 +828,10 @@ void RecommendController::purchase_item()
 void RecommendController::update_shopping_cart()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
-    std::string userIdStr = asString(request()[Keys::resource][Keys::USERID]);
+    izenelib::driver::Value& resourceValue = request()[Keys::resource];
+    std::string userIdStr = asString(resourceValue[Keys::USERID]);
 
-    const izenelib::driver::Value& itemsValue = request()[Keys::resource][Keys::items];
+    const izenelib::driver::Value& itemsValue = resourceValue[Keys::items];
     if (nullValue(itemsValue) || itemsValue.type() != izenelib::driver::Value::kArrayType)
     {
         response().addError("Require an array of items in request[resource][items].");
@@ -938,8 +943,9 @@ void RecommendController::track_event()
  *     - @b VAV (<b>Viewed Also View</b>): get the items also viewed by the users who have viewed @b input_items.@n
  *       In current version, it supports recommending items based on only one input item,@n
  *       that is, only <b> input_items[0]</b> is used as input, and the rest items in @b input_items are ignored.
- *     - @b BOE (<b>Based on Event</b>): get the recommendation items based on the user events by @b USERID.@n
- *       The user events are added by @c purchase_item(), @c update_shopping_cart() and @c track_event().
+ *     - @b BOE (<b>Based on Event</b>): get the recommendation items based on the user events by @b USERID,@n
+ *       which user events are from @c purchase_item(), @c update_shopping_cart() and @c track_event().@n
+ *       The parameter @b input_items is not used for this recommendation type.
  *     - @b BOB (<b>Based on Browse History</b>): get the recommendation items based on the browse history of user @b USERID.@n
  *       If @b input_items is specified, the @b input_items would be used as the user's browse history.@n
  *       Otherwise, you have to specify both @b USERID and @b session_id, then the items added in @c visit_item() with the same @b USERID and @b session_id would be used as browse history.@n
@@ -949,12 +955,14 @@ void RecommendController::track_event()
  *       Otherwise, the items added in @c update_shopping_cart() with the same @b USERID would be used as shoppint cart.@n
  *       In the recommendation results, the items added by @c purchase_item(), @c update_shopping_cart() and @c track_event() would be excluded.
  *   - @b max_count (@c Uint = 10): max item number allowed in recommendation result.
- *   - @b USERID (@c String): a unique user identifier.
+ *   - @b USERID (@c String): a unique user identifier.@n
+ *     This parameter is required for rec_type of @b BOE, and optional for @b BOB and @b BOS.
  *   - @b session_id (@c String): a session id.@n
  *     A session id is a unique identifier to identify the user's current interaction session.@n
  *     For each session between user logging in and logging out, the session id should be unique and not changed.@n
  *     In current version, this parameter is only used in @b BOB rec_type.
- *   - @b input_items (@c Array): the input items for recommendation.
+ *   - @b input_items (@c Array): the input items for recommendation.@n
+ *     This parameter is required for rec_type of @b FBT, @b BAB, @b VAV, and optional for @b BOB and @b BOS.
  *     - @b ITEMID* (@c String): a unique item identifier.
  *   - @b include_items (@c Array): the items must be included in recommendation result.
  *     - @b ITEMID* (@c String): a unique item identifier.
@@ -971,7 +979,7 @@ void RecommendController::track_event()
  *   - @b ITEMID (@c String): a unique item identifier.
  *   - @b weight (@c Double): the recommendation weight, if this value is available, the items would be sorted by this value decreasingly.
  *   - @b reasons (@c Array): the reasons why this item is recommended. Each is an event which has major influence on recommendation.@n
- *     Please note that the @b reasons result would only  be returned for rec_type of @b BAB, @b BOE, @b BOB, @b BOS.
+ *     Please note that the @b reasons result would only be returned for rec_type of @b BOE, @b BOB, @b BOS.
  *     - @b event (@c String): the event type, it could be @b purchase, @b shopping_cart, @b browse, or the event values in @c track_event().
  *     - @b ITEMID (@c String): a unique item identifier, which item appears in the above event.
  *   - The item properties added by @c add_item() would also be returned here.@n
@@ -1007,142 +1015,92 @@ void RecommendController::do_recommend()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::rec_type));
 
-    int maxCount = kDefaultRecommendCount;
-    const izenelib::driver::Value& maxCountValue = request()[Keys::resource][Keys::max_count];
-    if (!nullValue(maxCountValue))
-    {
-        maxCount = asUint(maxCountValue);
-    }
-    if (maxCount <= 0)
-    {
-        response().addError("Require a positive value in request[resource][max_count].");
+    RecommendParam recParam;
+    if (!parseRecommendParam(recParam))
         return;
-    }
-
-    std::vector<std::string> inputItemVec;
-    std::vector<std::string> includeItemVec;
-    std::vector<std::string> excludeItemVec;
-    if (!value2ItemIdVec(Keys::input_items, inputItemVec)
-        || !value2ItemIdVec(Keys::include_items, includeItemVec)
-        || !value2ItemIdVec(Keys::exclude_items, excludeItemVec))
-    {
-        return;
-    }
-
-    ItemCondition itemCondition;
-    if (!value2ItemCondition(itemCondition))
-    {
-        return;
-    }
-
-    std::string userIdStr = asString(request()[Keys::resource][Keys::USERID]);
-    std::string sessionIdStr = asString(request()[Keys::resource][Keys::session_id]);
-
-    std::string recTypeStr = asString(request()[Keys::resource][Keys::rec_type]);
-    std::map<std::string, int>::const_iterator mapIt = recTypeMap_.find(Utilities::toUpper(recTypeStr));
-    if (mapIt == recTypeMap_.end())
-    {
-        response().addError("Unknown recommendation type \"" + recTypeStr + "\" in request[resource][rec_type].");
-        return;
-    }
-
-    RecommendType recTypeId = static_cast<RecommendType>(mapIt->second);
-    switch (recTypeId)
-    {
-        case FREQUENT_BUY_TOGETHER:
-        case BUY_ALSO_BUY:
-        case VIEW_ALSO_VIEW:
-        {
-            if (inputItemVec.empty())
-            {
-                response().addError("This recommendation type requires input_items in request[resource].");
-                return;
-            }
-            break;
-        }
-
-        case BASED_ON_EVENT:
-        {
-            if (userIdStr.empty())
-            {
-                response().addError("This recommendation type requires USERID sepcified in request[resource].");
-                return;
-            }
-            break;
-        }
-
-        case BASED_ON_BROWSE_HISTORY:
-        {
-            if (inputItemVec.empty())
-            {
-                if (userIdStr.empty() || sessionIdStr.empty())
-                {
-                    response().addError("This recommendation type requires either input_items or both USERID and session_id in request[resource].");
-                    return;
-                }
-            }
-            break;
-        }
-
-        case BASED_ON_SHOP_CART:
-        {
-            if (inputItemVec.empty() && userIdStr.empty())
-            {
-                response().addError("This recommendation type requires either input_items or USERID in request[resource].");
-                return;
-            }
-            break;
-        }
-
-        default:
-        {
-            response().addError("Unknown recommendation type \"" + recTypeStr + "\" in request[resource][rec_type].");
-            return;
-        }
-    }
 
     std::vector<RecommendItem> recItemVec;
     RecommendSearchService* service = collectionHandler_->recommendSearchService_;
-    if (service->recommend(recTypeId, maxCount,
-                           userIdStr, sessionIdStr,
-                           inputItemVec, includeItemVec, excludeItemVec, itemCondition,
-                           recItemVec))
+    if (service->recommend(recParam, recItemVec))
     {
-        Value& resources = response()[Keys::resources];
-        std::string convertBuffer;
-        for (std::vector<RecommendItem>::const_iterator recIt = recItemVec.begin();
-            recIt != recItemVec.end(); ++recIt)
-        {
-            Value& itemValue = resources();
-            const Item& item = recIt->item_;
-
-            itemValue[Keys::weight] = recIt->weight_;
-            itemValue[Keys::ITEMID] = item.idStr_;
-
-            for (Item::PropValueMap::const_iterator it = item.propValueMap_.begin();
-                it != item.propValueMap_.end(); ++it)
-            {
-                it->second.convertString(convertBuffer, kEncoding);
-                itemValue[it->first] = convertBuffer;
-            }
-
-            const std::vector<ReasonItem>& reasonItems = recIt->reasonItems_;
-            if (reasonItems.empty() == false)
-            {
-                Value& reasonsValue = itemValue[Keys::reasons];
-                for (std::vector<ReasonItem>::const_iterator it = reasonItems.begin();
-                    it != reasonItems.end(); ++it)
-                {
-                    Value& value = reasonsValue();
-                    value[Keys::event] = it->event_;
-                    value[Keys::ITEMID] = it->item_.idStr_;
-                }
-            }
-        }
+        renderRecommendResult(recParam, recItemVec);
     }
     else
     {
         response().addError("Failed to get recommendation result from given collection.");
+    }
+}
+
+bool RecommendController::parseRecommendParam(RecommendParam& param)
+{
+    izenelib::driver::Value& resourceValue = request()[Keys::resource];
+    param.limit = asUintOr(resourceValue[Keys::max_count],
+                           kDefaultRecommendCount);
+
+    if (!value2ItemIdVec(Keys::input_items, param.inputItems)
+        || !value2ItemIdVec(Keys::include_items, param.includeItems)
+        || !value2ItemIdVec(Keys::exclude_items, param.excludeItems)
+        || !value2ItemCondition(param.condition))
+    {
+        return false;
+    }
+
+    param.userIdStr = asString(resourceValue[Keys::USERID]);
+    param.sessionIdStr = asString(resourceValue[Keys::session_id]);
+
+    std::string recTypeStr = asString(resourceValue[Keys::rec_type]);
+    std::map<std::string, int>::const_iterator mapIt = recTypeMap_.find(Utilities::toUpper(recTypeStr));
+    if (mapIt == recTypeMap_.end())
+    {
+        response().addError("Unknown recommendation type \"" + recTypeStr + "\" in request[resource][rec_type].");
+        return false;
+    }
+    param.type = static_cast<RecommendType>(mapIt->second);
+
+    std::string errorMsg;
+    if (!param.check(errorMsg))
+    {
+        response().addError(errorMsg);
+        return false;
+    }
+
+    return true;
+}
+
+void RecommendController::renderRecommendResult(const RecommendParam& param, const std::vector<RecommendItem>& recItemVec)
+{
+    Value& resources = response()[Keys::resources];
+    std::string convertBuffer;
+
+    for (std::vector<RecommendItem>::const_iterator recIt = recItemVec.begin();
+        recIt != recItemVec.end(); ++recIt)
+    {
+        Value& itemValue = resources();
+        const Item& item = recIt->item_;
+
+        itemValue[Keys::weight] = recIt->weight_;
+        itemValue[Keys::ITEMID] = item.idStr_;
+
+        for (Item::PropValueMap::const_iterator it = item.propValueMap_.begin();
+            it != item.propValueMap_.end(); ++it)
+        {
+            it->second.convertString(convertBuffer, kEncoding);
+            itemValue[it->first] = convertBuffer;
+        }
+
+        const std::vector<ReasonItem>& reasonItems = recIt->reasonItems_;
+        // BAB need not reason results
+        if (param.type != BUY_ALSO_BUY && reasonItems.empty() == false)
+        {
+            Value& reasonsValue = itemValue[Keys::reasons];
+            for (std::vector<ReasonItem>::const_iterator it = reasonItems.begin();
+                it != reasonItems.end(); ++it)
+            {
+                Value& value = reasonsValue();
+                value[Keys::event] = it->event_;
+                value[Keys::ITEMID] = it->item_.idStr_;
+            }
+        }
     }
 }
 
@@ -1202,63 +1160,67 @@ void RecommendController::do_recommend()
  */
 void RecommendController::top_item_bundle()
 {
-    int maxCount = kDefaultRecommendCount;
-    const izenelib::driver::Value& maxCountValue = request()[Keys::resource][Keys::max_count];
-    if (!nullValue(maxCountValue))
-    {
-        maxCount = asUint(maxCountValue);
-    }
-    if (maxCount <= 0)
-    {
-        response().addError("Require a positive value in request[resource][max_count].");
+    TIBParam tibParam;
+    if (!parseTIBParam(tibParam))
         return;
-    }
 
-    int minFreq = kDefaultMinFreq;
-    const izenelib::driver::Value& minFreqValue = request()[Keys::resource][Keys::min_freq];
-    if (!nullValue(minFreqValue))
-    {
-        minFreq = asUint(minFreqValue);
-    }
-
-    std::vector<vector<Item> > bundleVec;
-    std::vector<int> freqVec;
+    std::vector<ItemBundle> bundleVec;
     RecommendSearchService* service = collectionHandler_->recommendSearchService_;
-    if (service->topItemBundle(maxCount, minFreq,
-                               bundleVec, freqVec))
+    if (service->topItemBundle(tibParam, bundleVec))
     {
-        if (bundleVec.size() != freqVec.size())
-        {
-            response().addError("Failed to get top item bundle from given collection (unequal size of bundle and freq array).");
-            return;
-        }
-
-        Value& resources = response()[Keys::resources];
-        std::string convertBuffer;
-        for (std::size_t i = 0; i < bundleVec.size(); ++i)
-        {
-            Value& bundleValue = resources();
-            bundleValue[Keys::freq] = freqVec[i];
-
-            Value& itemsValue = bundleValue[Keys::items];
-            const std::vector<Item>& itemVec = bundleVec[i];
-            for (std::size_t j = 0; j < itemVec.size(); ++j)
-            {
-                Value& itemValue = itemsValue();
-                const Item& item = itemVec[j];
-                itemValue[Keys::ITEMID] = item.idStr_;
-                for (Item::PropValueMap::const_iterator it = item.propValueMap_.begin();
-                    it != item.propValueMap_.end(); ++it)
-                {
-                    it->second.convertString(convertBuffer, kEncoding);
-                    itemValue[it->first] = convertBuffer;
-                }
-            }
-        }
+        renderBundleResult(bundleVec);
     }
     else
     {
         response().addError("Failed to get top item bundle from given collection.");
+    }
+}
+
+bool RecommendController::parseTIBParam(TIBParam& param)
+{
+    izenelib::driver::Value& resourceValue = request()[Keys::resource];
+
+    param.limit = asUintOr(resourceValue[Keys::max_count],
+                           kDefaultRecommendCount);
+    param.minFreq = asUintOr(resourceValue[Keys::min_freq],
+                             kDefaultMinFreq);
+
+    std::string errorMsg;
+    if (!param.check(errorMsg))
+    {
+        response().addError(errorMsg);
+        return false;
+    }
+
+    return true;
+}
+
+void RecommendController::renderBundleResult(const std::vector<ItemBundle>& bundleVec)
+{
+    Value& resources = response()[Keys::resources];
+    std::string convertBuffer;
+
+    for (std::vector<ItemBundle>::const_iterator bundleIt = bundleVec.begin();
+        bundleIt != bundleVec.end(); ++bundleIt)
+    {
+        Value& bundleValue = resources();
+        bundleValue[Keys::freq] = bundleIt->freq;
+
+        Value& itemsValue = bundleValue[Keys::items];
+        const std::vector<Item>& items = bundleIt->items;
+        for (std::vector<Item>::const_iterator itemIt = items.begin();
+            itemIt != items.end(); ++itemIt)
+        {
+            Value& itemValue = itemsValue();
+            const Item& item = *itemIt;
+            itemValue[Keys::ITEMID] = item.idStr_;
+            for (Item::PropValueMap::const_iterator propIt = item.propValueMap_.begin();
+                    propIt != item.propValueMap_.end(); ++propIt)
+            {
+                propIt->second.convertString(convertBuffer, kEncoding);
+                itemValue[propIt->first] = convertBuffer;
+            }
+        }
     }
 }
 

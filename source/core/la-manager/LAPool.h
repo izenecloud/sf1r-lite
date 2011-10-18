@@ -14,12 +14,12 @@
 //#include <la-manager/StemExtractor.h>
 //#include <la-manager/KoreanLanguageExtractor.h>
 #include "AnalysisInformation.h"
-#include "LASingleton.h"
 #include <configuration-manager/LAManagerConfig.h>
 
 #include <la/LA.h>          // la-manager library
 
 #include <util/ThreadModel.h>
+#include <util/singleton.h>
 
 #include <boost/unordered_map.hpp>
 
@@ -48,7 +48,7 @@ namespace sf1r
     /// @brief
     /// This class looks up the configuration of LA and creates Extractor classes.
     ///
-    class LAPool : public LASingleton<LAPool>
+    class LAPool
     {
 
         private:
@@ -69,6 +69,12 @@ namespace sf1r
             /// destructor.
             ///
             virtual ~LAPool();
+
+            /// for singleton 
+            static LAPool* getInstance()
+            {
+                return ::izenelib::util::Singleton<LAPool>::get();
+            }
 
             ///
             /// initialize dictionary.

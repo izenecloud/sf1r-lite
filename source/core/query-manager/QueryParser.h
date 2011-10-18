@@ -153,7 +153,7 @@ namespace sf1r {
             /// @return true if success, or false.
             ///
             bool parseQuery(
-                    const izenelib::util::UString& queryUStr,
+                    izenelib::util::UString& queryUStr,
                     QueryTreePtr& queryTree,
                     bool unigramFlag,
                     bool hasUnigramProperty,
@@ -170,7 +170,7 @@ namespace sf1r {
             bool getAnalyzedQueryTree(
                     bool synonymExtension,
                     const AnalysisInfo& analysisInfo,
-                    const izenelib::util::UString& rawUStr,
+                    izenelib::util::UString& rawUStr,
                     QueryTreePtr& analyzedQueryTree,
                     std::string& expandedQueryString,
                     bool unigramFlag,
@@ -182,7 +182,7 @@ namespace sf1r {
             bool getAnalyzedQueryTree(
                                 bool synonymExtension,
                                 const AnalysisInfo& analysisInfo,
-                                const izenelib::util::UString& rawUStr,
+                                izenelib::util::UString& rawUStr,
                                 QueryTreePtr& analyzedQueryTree,
                                 bool unigramFlag,
                                 bool hasUnigramProperty)

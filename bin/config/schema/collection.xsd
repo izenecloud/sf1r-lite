@@ -3,6 +3,7 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.izenesoft.com" xmlns:t="http://www.izenesoft.com" targetNamespace="http://www.izenesoft.com" elementFormDefault="qualified">
     <xs:include schemaLocation="common.xsd"/>
     <xs:include schemaLocation="bundle-index.xsd"/>
+    <xs:include schemaLocation="bundle-product.xsd"/>
     <xs:include schemaLocation="bundle-mining.xsd"/>
     <xs:include schemaLocation="bundle-recommend.xsd"/>
     	
@@ -44,6 +45,7 @@
 				<xs:element name="DocumentSchema" type="DocumentSchemaType" minOccurs="0" maxOccurs="1" />
                 <xs:element ref="ACL" minOccurs="0"/>
 				<xs:element ref="IndexBundle"/>
+				<xs:element ref="ProductBundle" minOccurs="0"/>
 				<xs:element ref="MiningBundle" minOccurs="0"/>
 				<xs:element ref="RecommendBundle" minOccurs="0"/>
 			</xs:sequence>

@@ -347,7 +347,7 @@ namespace sf1r
     } // end - normalizeQuery()
 
     bool QueryParser::parseQuery(
-            const UString& queryUStr,
+            UString& queryUStr,
             QueryTreePtr& queryTree,
             bool unigramFlag,
             bool hasUnigramProperty,
@@ -358,9 +358,9 @@ namespace sf1r
         if ( QueryUtility::isRestrictWord( queryUStr ) )
             return false;
 
-        UString tmpQueryUStr = queryUStr, normQueryUStr;
-        processEscapeOperator(tmpQueryUStr);
-        normalizeQuery(tmpQueryUStr, normQueryUStr, hasUnigramProperty);
+        UString normQueryUStr;
+        processEscapeOperator(queryUStr);
+        normalizeQuery(queryUStr, normQueryUStr, hasUnigramProperty);
 
         // Remove redundant space for chinese character.
         if ( removeChineseSpace )
@@ -368,7 +368,9 @@ namespace sf1r
             la::removeRedundantSpaces(normQueryUStr);
         }
 
-        tree_parse_info<const uint16_t *> info = ast_parse(normQueryUStr.c_str(), *this);
+        queryUStr.swap(normQueryUStr);
+
+        tree_parse_info<const uint16_t *> info = ast_parse(queryUStr.c_str(), *this);
 
         if ( info.match )
         {
@@ -383,7 +385,7 @@ namespace sf1r
     bool QueryParser::getAnalyzedQueryTree(
         bool synonymExtension,
         const AnalysisInfo& analysisInfo,
-        const UString& rawUStr,
+        UString& rawUStr,
         QueryTreePtr& analyzedQueryTree,
         string& expandedQueryString,
         bool unigramFlag,

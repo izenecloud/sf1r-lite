@@ -58,6 +58,7 @@ private:
     friend class WorkerServer;
     friend class IndexBundleActivator;
     friend class MiningBundleActivator;
+    friend class ProductBundleActivator;
 };
 
 }

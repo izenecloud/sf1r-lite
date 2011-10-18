@@ -1216,7 +1216,7 @@ namespace sf1r
                         if (language == MultiLanguageAnalyzer::CHINESE || language == MultiLanguageAnalyzer::ENGLISH)
                         {
                             // create a duplicated inner analyzer, en: use chinese
-                            LA* inla = createLA( innerInfo, outputLog, mode );
+                            boost::shared_ptr<LA> inla( createLA( innerInfo, outputLog, mode ));
                             if (NULL != inla)
                             {
                                 boost::shared_ptr<la::Analyzer> inan = inla->getAnalyzer();

@@ -5,7 +5,7 @@
 #include "ProductTaskService.h"
 
 #include <common/type_defs.h>
-
+#include <directory-manager/DirectoryRotator.h>
 #include <util/osgi/IBundleActivator.h>
 #include <util/osgi/IBundleContext.h>
 #include <util/osgi/IServiceRegistration.h>
@@ -17,8 +17,11 @@ namespace sf1r
 {
 using namespace izenelib::osgi;
 
-class IndexManager;
-class DocumentManager;
+class ProductManager;
+class ProductDataSource;
+class OperationProcessor;
+class IndexTaskService;
+class IndexSearchService;
 
 class ProductBundleActivator : public IBundleActivator, public IServiceTrackerCustomizer
 {
@@ -31,22 +34,24 @@ private:
     IServiceRegistration* searchServiceReg_;
     ProductTaskService* taskService_;
     IServiceRegistration* taskServiceReg_;
+    IndexTaskService* refIndexTaskService_;
 
     ProductBundleConfiguration* config_;
     std::string currentCollectionDataName_;
-
-    boost::shared_ptr<IDManager> idManager_;
-    boost::shared_ptr<DocumentManager> documentManager_;
-    boost::shared_ptr<IndexManager> indexManager_;
     DirectoryRotator directoryRotator_;
+    ProductDataSource* data_source_;
+    OperationProcessor* op_processor_;
+    boost::shared_ptr<ProductManager> productManager_;
 
     bool openDataDirectories_();
-
     std::string getCollectionDataPath_() const;
     
     std::string getCurrentCollectionDataPath_() const;
     
     std::string getQueryDataPath_() const;
+    
+    boost::shared_ptr<ProductManager> createProductManager_(IndexSearchService* indexService);
+    void addIndexHook_(IndexTaskService* indexService) const;
 
 public:
     ProductBundleActivator();

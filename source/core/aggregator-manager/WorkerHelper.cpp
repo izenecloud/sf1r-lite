@@ -33,10 +33,10 @@ void assembleDisjunction(std::vector<izenelib::util::UString> keywords, std::str
         result += str;
         result += "|";
     }
-    boost::trim_right_if(result,is_any_of("|"));	
+    boost::trim_right_if(result,is_any_of("|"));
 }
 
-bool buildQueryTree(SearchKeywordOperation&action, IndexBundleConfiguration& bundleConfig, std::string& btqError,  PersonalSearchInfo& personalSearchInfo)
+bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bundleConfig, std::string& btqError,  PersonalSearchInfo& personalSearchInfo)
 {
     action.clear();
     KeywordSearchActionItem actionItem = action.actionItem_;
@@ -48,6 +48,8 @@ bool buildQueryTree(SearchKeywordOperation&action, IndexBundleConfiguration& bun
     UString queryUStr(action.actionItem_.env_.queryString_, encodingType);
     if ( !action.queryParser_.parseQuery( queryUStr, action.rawQueryTree_, action.unigramFlag_, action.hasUnigramProperty_ ) )
         return false;
+
+    queryUStr.convertString(action.actionItem_.env_.queryString_, encodingType);
     action.rawQueryTree_->print();
 
     // Build property query map
