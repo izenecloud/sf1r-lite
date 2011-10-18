@@ -287,8 +287,6 @@ bool WorkerService::getSearchResult_(
     // todo, remove duplication globally over all nodes?
     // Remove duplicated docs from the result if the option is on.
     removeDuplicateDocs(actionItem, resultItem);
-    //do EC related work.
-    ecFilter(actionItem, resultItem);
 
     //set page info in resultItem t
     resultItem.start_ = actionItem.pageInfo_.start_;
@@ -599,18 +597,5 @@ bool WorkerService::removeDuplicateDocs(
     return true;
 }
 
-template <typename ResultItemType>
-bool WorkerService::ecFilter(
-    const KeywordSearchActionItem& actionItem,
-    ResultItemType& resultItem
-)
-{
-    // Remove duplicated docs from the result if the option is on.
-    if( miningManager_ )
-    {
-        if(!miningManager_->ecFilter(resultItem)) return false;
-    }
-    return true;
-}
 
 }

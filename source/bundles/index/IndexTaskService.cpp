@@ -767,6 +767,21 @@ bool IndexTaskService::insertDoc_(Document& document, IndexerDocument& indexDocu
     if(hooker_)
     {
         if(!hooker_->HookInsert(document)) return false;
+        
+        //tmp
+        PropertyConfig property_config;
+        property_config.propertyName_ = "uuid";
+        std::set<PropertyConfig, PropertyComp>::iterator iter = bundleConfig_->schema_.find(property_config);
+        if(iter==bundleConfig_->schema_.end()) return false;
+        IndexerPropertyConfig indexerPropertyConfig;
+        indexerPropertyConfig.setPropertyId(iter->getPropertyId());
+        indexerPropertyConfig.setName(iter->getName());
+        indexerPropertyConfig.setIsIndex(iter->isIndex());
+        indexerPropertyConfig.setIsAnalyzed(iter->isAnalyzed());
+        indexerPropertyConfig.setIsFilter(iter->getIsFilter());
+        indexerPropertyConfig.setIsMultiValue(iter->getIsMultiValue());
+        indexerPropertyConfig.setIsStoreDocLen(iter->getIsStoreDocLen());
+        indexDocument.insertProperty(indexerPropertyConfig, document.property("uuid").get<izenelib::util::UString>());
     }
     if (documentManager_->insertDocument(document))
     {

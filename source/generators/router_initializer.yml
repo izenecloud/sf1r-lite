@@ -12,7 +12,7 @@ headers:
   - controllers/TopicController.h
   - controllers/RecommendController.h
   - controllers/ServiceController.h
-  - controllers/EcController.h
+  - controllers/ProductController.h
 
 controllers:
   AutoFillController:
@@ -108,13 +108,7 @@ controllers:
       - process_overdue
       - renew
 
-  EcController:
+  ProductController:
     actions:
-      - get_all_tid
-      - get_docs_by_tid
-      - get_tids_by_docs
-      - add_new_tid
-      - add_docs_to_tid
-      - remove_docs_from_tid
-      - get_all_product_info
+      - add_new_group
 

@@ -10,6 +10,16 @@ ProductBundleConfiguration::ProductBundleConfiguration(const std::string& collec
     , collectionName_(collectionName)
 {}
 
+void ProductBundleConfiguration::setSchema(const std::set<PropertyConfigBase, PropertyBaseComp>& schema)
+{
+    std::set<PropertyConfigBase, PropertyBaseComp>::const_iterator iter = schema.begin();
+    for(; iter != schema.end(); ++iter)
+    {
+        PropertyConfig property(*iter);
+        schema_.insert(property);
+    }
+}
+
 
 }
 

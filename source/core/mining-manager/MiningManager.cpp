@@ -36,7 +36,6 @@
 
 #include "group-label-logger/GroupLabelLogger.h"
 
-#include "ec-submanager/ec_manager.h"
 
 #include <search-manager/SearchManager.h>
 #include <index-manager/IndexManager.h>
@@ -128,19 +127,6 @@ void MiningManager::close()
 bool MiningManager::open()
 {
     close();
-    
-    //if ec enabled, then disable dupd and sim
-    if( mining_schema_.ec_enable )
-    {
-        if( mining_schema_.dupd_enable || mining_schema_.sim_enable )
-        {
-            mining_schema_.dupd_enable = false;
-            mining_schema_.dupd_properties.clear();
-            mining_schema_.sim_enable = false;
-            mining_schema_.sim_properties.clear();
-            std::cout<<"EC Enabled, disable DD and SIM."<<std::endl;
-        }
-    }
 
     std::cout<<"DO_TG : "<<(int)mining_schema_.tg_enable<<" - "<<(int)mining_schema_.tg_kpe_only<<std::endl;
     std::cout<<"DO_DUPD : "<<(int)mining_schema_.dupd_enable<<std::endl;
@@ -149,7 +135,6 @@ bool MiningManager::open()
     std::cout<<"DO_GROUP : "<<(int)mining_schema_.group_enable<<std::endl;
     std::cout<<"DO_ATTR : "<<(int)mining_schema_.attr_enable<<std::endl;
     std::cout<<"DO_TDT : "<<(int)mining_schema_.tdt_enable<<std::endl;
-    std::cout<<"DO_EC : "<<(int)mining_schema_.ec_enable<<std::endl;
     std::cout<<"DO_IISE : "<<(int)mining_schema_.ise_enable<<std::endl;
 
     /** Global variables **/
@@ -427,16 +412,6 @@ bool MiningManager::open()
             }
         }
         
-        /** ec **/
-        if( mining_schema_.ec_enable )
-        {
-            ec_path_ = prefix_path + "/ec";
-            boost::filesystem::create_directories(ec_path_);
-            ec_manager_.reset(new ec::EcManager(ec_path_, kpe_analyzer_, c_analyzer_, kpe_res_path_));
-            ec_manager_->SetIDManager(idManager_);
-            if(!ec_manager_->Open()) return false;
-        }
-
         //do mining continue;
         try
         {
@@ -631,33 +606,7 @@ bool MiningManager::DoMiningCollection()
         }
     }
     
-    //do ec
-    if( mining_schema_.ec_enable )
-    {
-        uint32_t title_property_id;
-        {
-            PropertyConfigBase byName;
-            byName.propertyName_ = mining_schema_.ec_title_property;
-            schema_type::const_iterator it(schema_.find(byName));
-            title_property_id = (*it).propertyId_;
-        }
-        std::pair<uint32_t, std::string> title_property(title_property_id, mining_schema_.ec_title_property);
-        
-        uint32_t content_property_id;
-        {
-            PropertyConfigBase byName;
-            byName.propertyName_ = mining_schema_.ec_content_property;
-            schema_type::const_iterator it(schema_.find(byName));
-            content_property_id = (*it).propertyId_;
-        }
-        std::pair<uint32_t, std::string> content_property(content_property_id, mining_schema_.ec_content_property);
-        
-        if(!ec_manager_->ProcessCollection(document_manager_, index_manager_->getIndexReader(), title_property, content_property) )
-        {
-            std::cout<<"Ec computation failed."<<std::endl;
-        }
-    }
-
+    
     //do Similarity
     if ( mining_schema_.sim_enable )
     {
@@ -789,96 +738,6 @@ bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
     REPORT_PROFILE_TO_FILE( "PerformanceQueryResult.MiningManager" )
     std::cout << "[getMiningResult finished]" << std::endl;
     return bResult;
-}
-
-bool MiningManager::ecFilter(KeywordSearchResult& input)
-{
-    if(!mining_schema_.ec_enable) return true;
-    if(!ec_manager_) return false;
-    using namespace sf1r::ec;
-    boost::unordered_map<uint32_t, uint32_t> tid2pos;
-    std::vector<uint32_t> new_topk_docs;
-    for(uint32_t i=0;i<input.topKDocs_.size();i++)
-    {
-        uint32_t docid = input.topKDocs_[i];
-        uint32_t tid = 0;
-        EcManager::d2g_iterator it = ec_manager_->d2g_find(docid);
-        if(it==ec_manager_->d2g_end())
-        {
-            
-        }
-        else
-        {
-            if(!it->second.empty())
-            {
-                tid = it->second[0];
-            }
-        }
-        
-        if(tid==0)//not belongs to any tid
-        {
-            new_topk_docs.push_back(docid);
-            input.topKtids_.push_back(0);
-        }
-        else
-        {
-            boost::unordered_map<uint32_t, uint32_t>::iterator tit = tid2pos.find(tid);
-            if( tit == tid2pos.end() )
-            {
-                tid2pos.insert(std::make_pair(tid, (uint32_t)new_topk_docs.size()));
-                new_topk_docs.push_back(docid);
-                input.topKtids_.push_back(tid);
-            }
-            
-        }
-    }
-    input.topKDocs_.swap(new_topk_docs);
-    return true;
-}
-
-bool MiningManager::ecFilter(DistKeywordSearchResult& input)
-{
-    if(!mining_schema_.ec_enable) return true;
-    if(!ec_manager_) return false;
-    using namespace sf1r::ec;
-    boost::unordered_map<uint32_t, uint32_t> tid2pos;
-    std::vector<uint32_t> new_topk_docs;
-    for(uint32_t i=0;i<input.topKDocs_.size();i++)
-    {
-        uint32_t docid = input.topKDocs_[i];
-        uint32_t tid = 0;
-        EcManager::d2g_iterator it = ec_manager_->d2g_find(docid);
-        if(it==ec_manager_->d2g_end())
-        {
-            
-        }
-        else
-        {
-            if(!it->second.empty())
-            {
-                tid = it->second[0];
-            }
-        }
-        
-        if(tid==0)//not belongs to any tid
-        {
-            new_topk_docs.push_back(docid);
-            input.topKtids_.push_back(0);
-        }
-        else
-        {
-            boost::unordered_map<uint32_t, uint32_t>::iterator tit = tid2pos.find(tid);
-            if( tit == tid2pos.end() )
-            {
-                tid2pos.insert(std::make_pair(tid, (uint32_t)new_topk_docs.size()));
-                new_topk_docs.push_back(docid);
-                input.topKtids_.push_back(tid);
-            }
-            
-        }
-    }
-    input.topKDocs_.swap(new_topk_docs);
-    return true;
 }
 
 

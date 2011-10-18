@@ -22,6 +22,8 @@ public:
     
     virtual void GetDocIdList(const izenelib::util::UString& uuid, std::vector<uint32_t>& docid_list, uint32_t exceptid) {}
     
+    virtual bool UpdateUuid(const std::vector<uint32_t>& docid_list, const izenelib::util::UString& uuid) {return false;}
+    
 };
 
 }
