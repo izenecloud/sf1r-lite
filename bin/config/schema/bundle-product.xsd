@@ -4,29 +4,32 @@
     <xs:include schemaLocation="common.xsd"/>
 
 	<xs:element name="ProductBundle">
-		<xs:complexType>
-			<xs:sequence>
+	  <xs:complexType>
+            <xs:sequence>
             	<xs:element name="Schema" minOccurs="0">
             		<xs:complexType>
 		            <xs:sequence>
-                        	<xs:element name="Property" maxOccurs="unbounded" >
-		                        <xs:complexType>
-                        			<xs:attribute name="name" type="xs:string" use="required"/>
-                        		</xs:complexType>
-                        	</xs:element>
+                                <xs:element ref="PriceProperty" minOccurs="1" maxOccurs="1" />
+                                <xs:element ref="DOCIDProperty" minOccurs="1" maxOccurs="1" />
+                                <xs:element ref="UuidProperty" minOccurs="1" maxOccurs="1" />
+                                <xs:element ref="ItemCountProperty" minOccurs="1" maxOccurs="1" />
+
           		    </xs:sequence>
             		</xs:complexType>
             	</xs:element>
-
                 <xs:element name="Parameter" minOccurs="0">
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element name="Blabla" type="xs:string" minOccurs="0" maxOccurs="2"/>
+                            <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="1" maxOccurs="2"/>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
-			</xs:sequence>
-		</xs:complexType>
+            </xs:sequence>
+	  </xs:complexType>
 	</xs:element>
+        <xs:element name="PriceProperty" type="PropertyType" />
+        <xs:element name="DOCIDProperty" type="PropertyType" />
+        <xs:element name="UuidProperty" type="PropertyType" />
+        <xs:element name="ItemCountProperty" type="PropertyType" />
 
 </xs:schema>

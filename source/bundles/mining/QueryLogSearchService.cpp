@@ -1,7 +1,7 @@
 #include "QueryLogSearchService.h"
 
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
-
+#include <util/singleton.h>
 
 namespace sf1r
 {
@@ -23,6 +23,11 @@ bool QueryLogSearchService::getRefinedQuery(
     return QueryCorrectionSubmanager::getInstance().getRefinedQuery(
 			collectionName, queryUString,
 			refinedQueryUString);
+}
+
+QueryLogSearchService *QueryLogSearchService::instance()
+{
+    return ::izenelib::util::Singleton<QueryLogSearchService>::get();
 }
 
 }

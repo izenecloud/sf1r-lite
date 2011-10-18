@@ -57,7 +57,7 @@ void MiningBundleActivator::start( IBundleContext::ConstPtr context )
             std::cout << "Can not start cron job for recommend, cron_string: " << MiningConfig::query_log_param.cron << std::endl;
         }
         std::string query_support_path = MiningConfig::query_correction_param.base_path;
-        std::string query_correction_res_path = MiningConfig::query_correction_param.resource_dir + "/speller-support";
+        std::string query_correction_res_path = config_->system_resource_path_ + "/speller-support";
         std::string query_correction_path = query_support_path + "/querycorrection";
         boost::filesystem::create_directories(query_correction_path);
         QueryCorrectionSubmanagerParam::set(

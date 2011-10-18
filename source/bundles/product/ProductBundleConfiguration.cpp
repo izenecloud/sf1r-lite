@@ -8,14 +8,8 @@ ProductBundleConfiguration::ProductBundleConfiguration(const std::string& collec
     : ::izenelib::osgi::BundleConfiguration("ProductBundle-"+collectionName, "ProductBundleActivator" )
     , enabled_(false)
     , collectionName_(collectionName)
-    , encoding_(izenelib::util::UString::UNKNOWN)
 {}
 
-void ProductBundleConfiguration::setSchema(
-    const std::set<PropertyConfigBase, PropertyBaseComp>& schema
-)
-{
-}
 
 }
 

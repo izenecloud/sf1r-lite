@@ -30,6 +30,7 @@ class IndexManager;
 class DocumentManager;
 class LAManager;
 class SearchManager;
+class IndexHooker;
 class IndexTaskService : public ::izenelib::osgi::IService
 {
     typedef uint32_t CharacterOffset;
@@ -69,12 +70,15 @@ private:
         bool isInsert,
         uint32_t numdoc
     );
-    bool updateDoc_(
-        Document& document,
-        IndexerDocument& indexDocument,
-        bool rType
-    );
+    
     bool deleteSCD_(ScdParser& parser);
+    
+    bool insertDoc_(Document& document, IndexerDocument& indexDocument);
+    
+    bool updateDoc_(Document& document, IndexerDocument& indexDocument, bool rType);
+    
+    bool deleteDoc_(docid_t docid);
+    
     void saveProductInfo_(int op);
 
     bool prepareDocument_(
@@ -154,8 +158,11 @@ private:
     std::vector<string> propertyList_;
 
     std::map<std::string, uint32_t> productSourceCount_;
+    
+    boost::shared_ptr<IndexHooker> hooker_;
 
     friend class IndexBundleActivator;
+    friend class ProductBundleActivator;
 };
 
 }

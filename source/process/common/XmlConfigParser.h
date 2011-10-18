@@ -634,6 +634,9 @@ public:
     /// @brief default IndexBundleConfig
     CollectionParameterConfig defaultIndexBundleParam_;
 
+    /// @brief default ProductBundleConfig
+    CollectionParameterConfig defaultProductBundleParam_;
+    
     /// @brief default MiningBundleConfig
     CollectionParameterConfig defaultMiningBundleParam_;
 
@@ -707,6 +710,10 @@ private:
     /// @brief                  Parse <ProductBundle> <Parameter> 
     /// @param product           Pointer to the Element
     void parseProductBundleParam(const ticpp::Element * product, CollectionMeta & collectionMeta);
+    
+    /// @brief                  Parse <ProductBundle> <Schema> 
+    /// @param product           Pointer to the Element
+    void parseProductBundleSchema(const ticpp::Element * product, CollectionMeta & collectionMeta);
 
     /// @brief                  Parse <MiningBundle> <Parameter> 
     /// @param mining           Pointer to the Element

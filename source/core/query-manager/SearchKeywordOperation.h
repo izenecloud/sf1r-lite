@@ -78,7 +78,7 @@ namespace sf1r {
             bool setQueryTree(const std::string& propertyName, const QueryTreePtr& propertyQueryTree);
 
         public:
-            KeywordSearchActionItem actionItem_;
+            KeywordSearchActionItem &actionItem_;
 
             bool noError_;
             QueryTreePtr rawQueryTree_;

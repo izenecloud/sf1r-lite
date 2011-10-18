@@ -173,7 +173,6 @@ public:
     std::string base_path;
     bool enableEK;
     bool enableCN;
-    std::string resource_dir;
 
 };
 

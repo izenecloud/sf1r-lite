@@ -36,7 +36,7 @@ public:
         output_<<"id1 "<<id1<<" id2 "<<id2<<" weight "<<weight<<std::endl;
 
         izenelib::util::UString rawText;
-        if(document_manager_->getPropertyValue(id1, semanticField_, rawText))
+        if (document_manager_->getPropertyValue(id1, semanticField_, rawText))
         {
             rawText.displayStringValue(izenelib::util::UString::UTF_8);
             std::cout<<std::endl;
@@ -45,7 +45,7 @@ public:
             output_<<str<<std::endl;
         }
         izenelib::util::UString rawText2;
-        if(document_manager_->getPropertyValue(id2, semanticField_, rawText2))
+        if (document_manager_->getPropertyValue(id2, semanticField_, rawText2))
         {
             rawText2.displayStringValue(izenelib::util::UString::UTF_8);
             std::cout<<std::endl;
@@ -99,10 +99,10 @@ SemanticKernel::~SemanticKernel()
 }
 
 void SemanticKernel::setSchema(
-	const std::vector<uint32_t>& property_ids,
-	const std::vector<std::string>& properties,
-	const std::string& semanticField,
-	const std::string& domainField
+    const std::vector<uint32_t>& property_ids,
+    const std::vector<std::string>& properties,
+    const std::string& semanticField,
+    const std::string& domainField
 )
 {
     semanticField_ = semanticField;
@@ -112,14 +112,14 @@ void SemanticKernel::setSchema(
     {
         float fieldAveLength=index_manager_->getIndexReader()->getAveragePropertyLength(property_ids[i]);
         float weight = 0.3;
-        if(properties[i] == semanticField_) weight = 0.6;
+        if (properties[i] == semanticField_) weight = 0.6;
         forwardIndexBuilder_->addField(std::make_pair(properties[i], property_ids[i] ), weight, fieldAveLength);
         searchPropertyList_.push_back(properties[i]);
     }
     forwardIndexBuilder_->build();
 }
 
-bool SemanticKernel::buildQuery_(SearchKeywordOperation&action, izenelib::util::UString& queryUStr)
+bool SemanticKernel::buildQuery_(SearchKeywordOperation& action, izenelib::util::UString& queryUStr)
 {
     action.clear();
     // Build raw Query Tree
@@ -168,85 +168,85 @@ void SemanticKernel::doSearch()
     simoutput.open();
     for(uint32_t did = 1; did < maxDoc; ++did)
     {
-	 try{
-	 izenelib::util::UString queryUStr;
-	 if(document_manager_->getPropertyValue(did, semanticField_, queryUStr))
-	 {
-            queryUStr.convertString(actionOperation.actionItem_.env_.queryString_, izenelib::util::UString::UTF_8);
-            if(buildQuery_(actionOperation,  queryUStr))
+        try {
+            izenelib::util::UString queryUStr;
+            if (document_manager_->getPropertyValue(did, semanticField_, queryUStr))
             {
-                std::vector<uint32_t> topKDocs;
-                std::vector<float> topKRankScoreList;
-                std::vector<float> topKCustomRankScoreList;
-                std::size_t totalCount;
-                faceted::GroupRep groupRep;
-                faceted::OntologyRep attrRep;
-                sf1r::PropertyRange propertyRange;
-                sf1r::DistKeywordSearchInfo distKeywordSearchInfo;
-
-                if(searchManager_->search(
-                    actionOperation,
-                    topKDocs,
-                    topKRankScoreList,
-                    topKCustomRankScoreList,
-                    totalCount,
-                    groupRep,
-                    attrRep,
-                    propertyRange,
-                    distKeywordSearchInfo,
-                    100,
-                    0
-                 ))
-                 //topKDocs.push_back(did);
+                bool buildSuccess = buildQuery_(actionOperation,  queryUStr);
+                queryUStr.convertString(actionOperation.actionItem_.env_.queryString_, izenelib::util::UString::UTF_8);
+                if (buildSuccess)
                 {
-                    std::vector<uint32_t>::iterator dit = topKDocs.begin();
-                    std::map<uint32_t, float> results;
+                    std::vector<uint32_t> topKDocs;
+                    std::vector<float> topKRankScoreList;
+                    std::vector<float> topKCustomRankScoreList;
+                    std::size_t totalCount;
+                    faceted::GroupRep groupRep;
+                    faceted::OntologyRep attrRep;
+                    sf1r::PropertyRange propertyRange;
+                    sf1r::DistKeywordSearchInfo distKeywordSearchInfo;
 
-                    for(; dit != topKDocs.end(); ++dit)
+                    if (searchManager_->search(
+                                actionOperation,
+                                topKDocs,
+                                topKRankScoreList,
+                                topKCustomRankScoreList,
+                                totalCount,
+                                groupRep,
+                                attrRep,
+                                propertyRange,
+                                distKeywordSearchInfo,
+                                100,
+                                0
+                                ))
+                        //topKDocs.push_back(did);
                     {
-                        PrunedForwardType forward;
-                        if(prunedForwardIndices.get(*dit, forward))
-                        {
-                            PrunedForwardType::iterator fit = forward.begin();
-                            for(; fit != forward.end(); ++fit)
-                            {
-                                std::map<uint32_t, float>::iterator rit = results.find(fit->first);
+                        std::vector<uint32_t>::iterator dit = topKDocs.begin();
+                        std::map<uint32_t, float> results;
 
-                                if(rit == results.end())
+                        for(; dit != topKDocs.end(); ++dit)
+                        {
+                            PrunedForwardType forward;
+                            if (prunedForwardIndices.get(*dit, forward))
+                            {
+                                PrunedForwardType::iterator fit = forward.begin();
+                                for(; fit != forward.end(); ++fit)
                                 {
-                                    results.insert(std::make_pair(fit->first,fit->second));
-                                }
-                                else
-                                {
-                                    rit->second += fit->second;
+                                    std::map<uint32_t, float>::iterator rit = results.find(fit->first);
+
+                                    if (rit == results.end())
+                                    {
+                                        results.insert(std::make_pair(fit->first,fit->second));
+                                    }
+                                    else
+                                    {
+                                        rit->second += fit->second;
+                                    }
                                 }
                             }
                         }
-                    }
-                    float sum = 0;
+                        float sum = 0;
 
-                    idmlib::ssp::SparseVectorType normalized(did, results.size());
-                    for(std::map<uint32_t, float>::iterator rit = results.begin(); rit != results.end(); ++rit)
-                    {
-                        float w = rit->second /topKDocs.size();
-                        sum += w*w;
-                        normalized.insertItem(rit->first, w);
-                    }
-                    sum = std::sqrt(sum);
-                    if(sum > 0)
-                    {
-                        sum = std::sqrt(sum);
-                        for(idmlib::ssp::SparseVectorType::list_iter_t fit = normalized.list.begin(); fit != normalized.list.end(); ++fit)
+                        idmlib::ssp::SparseVectorType normalized(did, results.size());
+                        for(std::map<uint32_t, float>::iterator rit = results.begin(); rit != results.end(); ++rit)
                         {
-                            fit->value /= sum;
+                            float w = rit->second /topKDocs.size();
+                            sum += w*w;
+                            normalized.insertItem(rit->first, w);
                         }
-                        simoutput.put(normalized);
+                        sum = std::sqrt(sum);
+                        if (sum > 0)
+                        {
+                            sum = std::sqrt(sum);
+                            for(idmlib::ssp::SparseVectorType::list_iter_t fit = normalized.list.begin(); fit != normalized.list.end(); ++fit)
+                            {
+                                fit->value /= sum;
+                            }
+                            simoutput.put(normalized);
+                        }
                     }
                 }
             }
-        }
-        }catch (std::exception& e)
-        	{}
+        } catch (std::exception& e) {}
     }
     simoutput.close();
     boost::shared_ptr<idmlib::sim::DataSetIterator> dataSetIterator(new idmlib::sim::SparseVectorSetIterator(datafile));
@@ -261,7 +261,7 @@ void SemanticKernel::doSearch()
     for (size_t idx =1 ; idx <= maxDoc; idx++)
     {
         output->getSimilarDocIdScoreList(idx,10,result);
-        if(! result.empty())
+        if (! result.empty())
         {
             izenelib::util::UString domain;
             document_manager_->getPropertyValue(idx, domainField_, domain);
@@ -270,17 +270,19 @@ void SemanticKernel::doSearch()
             {
                 izenelib::util::UString thisDomain;
                 document_manager_->getPropertyValue(it->first, domainField_, thisDomain);
-                if(thisDomain == domain) continue;
+                if (thisDomain == domain) continue;
                 has = true;
                 flushSim_(it->first, it->second, out);
             }
-            if(has)
+            if (has)
             {
                 flushSim_(idx, 0, out);
-                out<<"\n\r";
+                out << std::endl;
             }
         }
     }
+
+    out.close();
 }
 
 void SemanticKernel::flushSim_(uint32_t did, float weight, std::fstream& out)
@@ -290,14 +292,15 @@ void SemanticKernel::flushSim_(uint32_t did, float weight, std::fstream& out)
     document_manager_->getPropertyValue(did, domainField_, domain);
     std::string domainstr;
     domain.convertString(domainstr, izenelib::util::UString::UTF_8);
-    if(document_manager_->getPropertyValue(did, semanticField_, rawText))
+    if (document_manager_->getPropertyValue(did, semanticField_, rawText))
     {
         std::string str;
         rawText.convertString(str, izenelib::util::UString::UTF_8);
-        if(weight) out<<did<<"	"<<weight<<"	"<<str<<"	source	"<<domainstr<<std::endl;
-        else out<<did<<"	"<<str<<"	source	"<<domainstr<<std::endl;
+        if (weight)
+            out << did << "\t" << weight << "\t" << str << "\tsource\t" << domainstr << std::endl;
+        else
+            out << did << "\t" << str << "\tsource\t" << domainstr << std::endl;
     }
 }
 
 }
-
