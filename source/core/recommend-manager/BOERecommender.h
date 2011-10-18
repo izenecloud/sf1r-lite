@@ -30,6 +30,12 @@ protected:
         std::vector<RecommendItem>& recItemVec
     );
 
+    void convertItemWeight_(
+        const std::vector<itemid_t>& inputItemIds,
+        const ItemRateMap& itemRateMap,
+        ItemWeightMap& itemWeightMap
+    ) const;
+
 private:
     const UserEventFilter& userEventFilter_;
 };

@@ -28,8 +28,9 @@ class ItemManager;
 class VisitManager;
 class PurchaseManager;
 class CartManager;
-class EventManager;
 class OrderManager;
+class EventManager;
+class RateManager;
 class RecommenderFactory;
 
 class RecommendBundleActivator : public IBundleActivator
@@ -55,8 +56,9 @@ private:
     VisitManager* visitManager_;
     PurchaseManager* purchaseManager_;
     CartManager* cartManager_;
-    EventManager* eventManager_;
     OrderManager* orderManager_;
+    EventManager* eventManager_;
+    RateManager* rateManager_;
     RecommenderFactory* recommenderFactory_;
     RecIdGenerator* userIdGenerator_;
     RecIdGenerator* itemIdGenerator_;

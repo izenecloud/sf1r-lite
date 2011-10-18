@@ -19,6 +19,7 @@ struct RecommendParam;
 struct RecommendItem;
 struct TIBParam;
 struct ItemBundle;
+struct RateParam;
 
 /// @addtogroup controllers
 /// @{
@@ -49,6 +50,7 @@ public:
     void purchase_item();
     void update_shopping_cart();
     void track_event();
+    void rate_item();
 
     void do_recommend();
 
@@ -64,6 +66,7 @@ private:
     void renderRecommendResult(const RecommendParam& param, const std::vector<RecommendItem>& recItemVec);
     bool parseTIBParam(TIBParam& param);
     void renderBundleResult(const std::vector<ItemBundle>& bundleVec);
+    bool parseRateParam(RateParam& param);
 
 private:
     std::map<std::string, int> recTypeMap_; /// mapping from recommendation type string to type id

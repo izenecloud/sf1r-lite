@@ -40,7 +40,7 @@ namespace sf1r
 typedef uint32_t userid_t;
 typedef uint32_t itemid_t;
 typedef uint32_t orderid_t;
-typedef uint8_t rate_t;
+typedef int16_t rate_t;
 
 enum RecommendType
 {

@@ -16,6 +16,7 @@
 #include <recommend-manager/RecommendParam.h>
 #include <recommend-manager/TIBParam.h>
 #include <recommend-manager/ItemBundle.h>
+#include <recommend-manager/RateParam.h>
 
 #include <common/Keys.h>
 #include <common/Utilities.h> // Utilities::toUpper()
@@ -931,6 +932,83 @@ void RecommendController::track_event()
 }
 
 /**
+ * @brief Action @b rate_item. Add a rating item event.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Track user behavior in this collection.
+ * - @b resource* (@c Object): A resource for a user behavior.
+ *   - @b is_add (@c Bool = @c true): @c true for add this rating, @c false for remove this rating.
+ *   - @b USERID* (@c String): a unique user identifier.
+ *   - @b ITEMID* (@c String): a unique item identifier.
+ *   - @b star (@c Uint): the rating star, an integral value from 1 to 5, each with meaning below:@n
+ *   This parameter is required when @b is_add is @c true.
+ *     - @b 1: I hate it
+ *     - @b 2: I don't like it
+ *     - @b 3: It's OK
+ *     - @b 4: I like it
+ *     - @b 5: I love it
+ *
+ * @section response
+ *
+ * - @b header (@c Object): Property @b success gives the result, true or false.
+ *
+ * @section example
+ *
+ * Request
+ * @code
+ * {
+ *   "resource": {
+ *     "USERID": "user_001",
+ *     "ITEMID": "item_001",
+ *     "star": 5
+ *   }
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true}
+ * }
+ * @endcode
+ */
+void RecommendController::rate_item()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
+    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::ITEMID));
+
+    RateParam param;
+    if (!parseRateParam(param))
+        return;
+
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    if (! service->rateItem(param))
+    {
+        response().addError("Failed to rate item in given collection.");
+    }
+}
+
+bool RecommendController::parseRateParam(RateParam& param)
+{
+    izenelib::driver::Value& resourceValue = request()[Keys::resource];
+
+    param.userIdStr = asString(resourceValue[Keys::USERID]);
+    param.itemIdStr = asString(resourceValue[Keys::ITEMID]);
+    param.isAdd = asBoolOr(resourceValue[Keys::is_add], true);
+    param.rate = asUintOr(resourceValue[Keys::star], 0);
+
+    std::string errorMsg;
+    if (!param.check(errorMsg))
+    {
+        response().addError(errorMsg);
+        return false;
+    }
+
+    return true;
+}
+
+/**
  * @brief Action @b do_recommend. Get recommendation result.
  *
  * @section request
@@ -944,16 +1022,16 @@ void RecommendController::track_event()
  *       In current version, it supports recommending items based on only one input item,@n
  *       that is, only <b> input_items[0]</b> is used as input, and the rest items in @b input_items are ignored.
  *     - @b BOE (<b>Based on Event</b>): get the recommendation items based on the user events by @b USERID,@n
- *       which user events are from @c purchase_item(), @c update_shopping_cart() and @c track_event().@n
+ *       which user events are from @c purchase_item(), @c update_shopping_cart(), @c track_event() and @c rate_item().@n
  *       The parameter @b input_items is not used for this recommendation type.
  *     - @b BOB (<b>Based on Browse History</b>): get the recommendation items based on the browse history of user @b USERID.@n
  *       If @b input_items is specified, the @b input_items would be used as the user's browse history.@n
  *       Otherwise, you have to specify both @b USERID and @b session_id, then the items added in @c visit_item() with the same @b USERID and @b session_id would be used as browse history.@n
- *       In the recommendation results, the items added by @c purchase_item(), @c update_shopping_cart() and @c track_event() would be excluded.
+ *       In the recommendation results, the items added by @c purchase_item(), @c update_shopping_cart(), @c track_event() and @c rate_item() would be excluded.
  *     - @b BOS (<b>Based on Shopping Cart</b>): get the recommendation items based on the shopping cart of user @b USERID.@n
  *       If @b input_items is specified, the @b input_items would be used as the items in user's shopping cart.@n
  *       Otherwise, the items added in @c update_shopping_cart() with the same @b USERID would be used as shoppint cart.@n
- *       In the recommendation results, the items added by @c purchase_item(), @c update_shopping_cart() and @c track_event() would be excluded.
+ *       In the recommendation results, the items added by @c purchase_item(), @c update_shopping_cart(), @c track_event() and @c rate_item() would be excluded.
  *   - @b max_count (@c Uint = 10): max item number allowed in recommendation result.
  *   - @b USERID (@c String): a unique user identifier.@n
  *     This parameter is required for rec_type of @b BOE, and optional for @b BOB and @b BOS.
@@ -980,8 +1058,9 @@ void RecommendController::track_event()
  *   - @b weight (@c Double): the recommendation weight, if this value is available, the items would be sorted by this value decreasingly.
  *   - @b reasons (@c Array): the reasons why this item is recommended. Each is an event which has major influence on recommendation.@n
  *     Please note that the @b reasons result would only be returned for rec_type of @b BOE, @b BOB, @b BOS.
- *     - @b event (@c String): the event type, it could be @b purchase, @b shopping_cart, @b browse, or the event values in @c track_event().
+ *     - @b event (@c String): the event type, it could be @b purchase, @b shopping_cart, @b browse, @b rate, or the event values in @c track_event().
  *     - @b ITEMID (@c String): a unique item identifier, which item appears in the above event.
+ *     - @b value (@c String): if @b event is @b rate, the @b value would be returned as rating star, such as "5".
  *   - The item properties added by @c add_item() would also be returned here.@n
  *     Property key name is used as key. The corresponding value is the content of that property.
  *
@@ -1099,6 +1178,9 @@ void RecommendController::renderRecommendResult(const RecommendParam& param, con
                 Value& value = reasonsValue();
                 value[Keys::event] = it->event_;
                 value[Keys::ITEMID] = it->item_.idStr_;
+
+                if(! it->value_.empty())
+                    value[Keys::value] = it->value_;
             }
         }
     }

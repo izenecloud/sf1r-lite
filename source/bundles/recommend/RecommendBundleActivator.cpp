@@ -4,8 +4,9 @@
 #include <recommend-manager/VisitManager.h>
 #include <recommend-manager/PurchaseManager.h>
 #include <recommend-manager/CartManager.h>
-#include <recommend-manager/EventManager.h>
 #include <recommend-manager/OrderManager.h>
+#include <recommend-manager/EventManager.h>
+#include <recommend-manager/RateManager.h>
 #include <recommend-manager/RecommenderFactory.h>
 
 #include <common/SFLogger.h>
@@ -28,8 +29,9 @@ RecommendBundleActivator::RecommendBundleActivator()
     ,visitManager_(NULL)
     ,purchaseManager_(NULL)
     ,cartManager_(NULL)
-    ,eventManager_(NULL)
     ,orderManager_(NULL)
+    ,eventManager_(NULL)
+    ,rateManager_(NULL)
     ,recommenderFactory_(NULL)
     ,userIdGenerator_(NULL)
     ,itemIdGenerator_(NULL)
@@ -82,8 +84,9 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
     delete visitManager_;
     delete purchaseManager_;
     delete cartManager_;
-    delete eventManager_;
     delete orderManager_;
+    delete eventManager_;
+    delete rateManager_;
     delete recommenderFactory_;
     delete userIdGenerator_;
     delete itemIdGenerator_;
@@ -94,8 +97,9 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
     visitManager_ = NULL;
     purchaseManager_ = NULL;
     cartManager_ = NULL;
-    eventManager_ = NULL;
     orderManager_ = NULL;
+    eventManager_ = NULL;
+    rateManager_ = NULL;
     recommenderFactory_ = NULL;
     userIdGenerator_ = NULL;
     itemIdGenerator_ = NULL;
@@ -149,16 +153,17 @@ bool RecommendBundleActivator::init_()
                                                                      itemManagerPtr.get()));
 
     auto_ptr<CartManager> cartManagerPtr(new CartManager((eventDir / "cart.db").string()));
-
     auto_ptr<EventManager> eventManagerPtr(new EventManager((eventDir / "event.db").string()));
+    auto_ptr<RateManager> rateManagerPtr(new RateManager((eventDir / "rate.db").string()));
 
     boost::filesystem::path orderDir = dataDir / "order";
     boost::filesystem::create_directory(orderDir);
     auto_ptr<OrderManager> orderManagerPtr(new OrderManager(orderDir.string(), itemManagerPtr.get()));
 
-    auto_ptr<RecommenderFactory> recommenderFactoryPtr(new RecommenderFactory(*itemManagerPtr, *visitManagerPtr,
-                                                                              *purchaseManagerPtr, *cartManagerPtr,
-                                                                              *orderManagerPtr, *eventManagerPtr,
+    auto_ptr<RecommenderFactory> recommenderFactoryPtr(new RecommenderFactory(*itemManagerPtr,
+                                                                              *visitManagerPtr, *purchaseManagerPtr,
+                                                                              *cartManagerPtr, *orderManagerPtr,
+                                                                              *eventManagerPtr, *rateManagerPtr,
                                                                               *coVisitManagerPtr, *itemCFManagerPtr));
 
     boost::filesystem::path idDir = dataDir / "id";
@@ -172,8 +177,9 @@ bool RecommendBundleActivator::init_()
     visitManager_ = visitManagerPtr.release();
     purchaseManager_ = purchaseManagerPtr.release();
     cartManager_ = cartManagerPtr.release();
-    eventManager_ = eventManagerPtr.release();
     orderManager_ = orderManagerPtr.release();
+    eventManager_ = eventManagerPtr.release();
+    rateManager_ = rateManagerPtr.release();
     recommenderFactory_ = recommenderFactoryPtr.release();
 
     userIdGenerator_ = userIdGeneratorPtr.release();
@@ -182,8 +188,11 @@ bool RecommendBundleActivator::init_()
     coVisitManager_ = coVisitManagerPtr.release();
     itemCFManager_ = itemCFManagerPtr.release();
 
-    taskService_ = new RecommendTaskService(config_, &directoryRotator_, userManager_, itemManager_, visitManager_, purchaseManager_, cartManager_, eventManager_, orderManager_, userIdGenerator_, itemIdGenerator_);
-    searchService_ = new RecommendSearchService(userManager_, itemManager_, recommenderFactory_, userIdGenerator_, itemIdGenerator_);
+    taskService_ = new RecommendTaskService(config_, &directoryRotator_, userManager_, itemManager_,
+                                            visitManager_, purchaseManager_, cartManager_, orderManager_,
+                                            eventManager_, rateManager_, userIdGenerator_, itemIdGenerator_);
+    searchService_ = new RecommendSearchService(userManager_, itemManager_, recommenderFactory_,
+                                                userIdGenerator_, itemIdGenerator_);
 
     return true;
 }

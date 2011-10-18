@@ -6,9 +6,11 @@
 #include <recommend-manager/ItemManager.h>
 #include <recommend-manager/VisitManager.h>
 #include <recommend-manager/PurchaseManager.h>
-#include <recommend-manager/OrderManager.h>
 #include <recommend-manager/CartManager.h>
+#include <recommend-manager/OrderManager.h>
 #include <recommend-manager/EventManager.h>
+#include <recommend-manager/RateManager.h>
+#include <recommend-manager/RateParam.h>
 #include <log-manager/OrderLogger.h>
 #include <log-manager/ItemLogger.h>
 #include <common/ScdParser.h>
@@ -286,8 +288,9 @@ RecommendTaskService::RecommendTaskService(
     VisitManager* visitManager,
     PurchaseManager* purchaseManager,
     CartManager* cartManager,
-    EventManager* eventManager,
     OrderManager* orderManager,
+    EventManager* eventManager,
+    RateManager* rateManager,
     RecIdGenerator* userIdGenerator,
     RecIdGenerator* itemIdGenerator
 )
@@ -298,8 +301,9 @@ RecommendTaskService::RecommendTaskService(
     ,visitManager_(visitManager)
     ,purchaseManager_(purchaseManager)
     ,cartManager_(cartManager)
-    ,eventManager_(eventManager)
     ,orderManager_(orderManager)
+    ,eventManager_(eventManager)
+    ,rateManager_(rateManager)
     ,userIdGenerator_(userIdGenerator)
     ,itemIdGenerator_(itemIdGenerator)
     ,jobScheduler_(new JobScheduler())
@@ -496,6 +500,35 @@ bool RecommendTaskService::trackEvent(
     else
     {
         result = eventManager_->removeEvent(eventStr, userId, itemId);
+    }
+
+    return result;
+}
+
+bool RecommendTaskService::rateItem(const RateParam& param)
+{
+    userid_t userId = 0;
+    if (userIdGenerator_->conv(param.userIdStr, userId, false) == false)
+    {
+        LOG(ERROR) << "error in rateItem(), user id " << param.userIdStr << " not yet added before";
+        return false;
+    }
+
+    itemid_t itemId = 0;
+    if (itemIdGenerator_->conv(param.itemIdStr, itemId, false) == false)
+    {
+        LOG(ERROR) << "error in rateItem(), item id " << param.itemIdStr << " not yet added before";
+        return false;
+    }
+
+    bool result = false;
+    if (param.isAdd)
+    {
+        result = rateManager_->addRate(userId, itemId, param.rate);
+    }
+    else
+    {
+        result = rateManager_->removeRate(userId, itemId);
     }
 
     return result;
