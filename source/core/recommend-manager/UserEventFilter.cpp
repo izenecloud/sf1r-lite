@@ -3,6 +3,7 @@
 #include "PurchaseManager.h"
 #include "CartManager.h"
 #include "EventManager.h"
+#include "RateManager.h"
 #include <bundles/recommend/RecommendSchema.h>
 
 #include <glog/logging.h>
@@ -29,8 +30,29 @@ void excludeItems(
             newInputItems.push_back(*it);
         }
     }
-
     newInputItems.swap(inputItems);
+}
+
+void excludeItems(
+    const ItemIdSet& excludeItemSet,
+    ItemRateMap& itemRateMap
+)
+{
+    if (excludeItemSet.empty())
+        return;
+
+    for (ItemRateMap::iterator it = itemRateMap.begin();
+        it != itemRateMap.end();)
+    {
+        if (excludeItemSet.find(it->first) == excludeItemSet.end())
+        {
+            ++it;
+        }
+        else
+        {
+            itemRateMap.erase(it++);
+        }
+    }
 }
 
 }
@@ -41,11 +63,13 @@ namespace sf1r
 UserEventFilter::UserEventFilter(
     PurchaseManager& purchaseManager,
     CartManager& cartManager,
-    EventManager& eventManager
+    EventManager& eventManager,
+    RateManager& rateManager
 )
     : purchaseManager_(purchaseManager)
     , cartManager_(cartManager)
     , eventManager_(eventManager)
+    , rateManager_(rateManager)
 {
 }
 
@@ -57,9 +81,31 @@ bool UserEventFilter::filter(
 {
     assert(userId);
 
-    return (filterPurchaseItem_(userId, filter)
+    return (filterRateItem_(userId, filter)
+            && filterPurchaseItem_(userId, filter)
             && filterCartItem_(userId, filter)
             && filterPreferenceItem_(userId, inputItemVec, filter));
+}
+
+bool UserEventFilter::filterRateItem_(
+    userid_t userId,
+    ItemFilter& filter
+) const
+{
+    ItemRateMap itemRateMap;
+    if (! rateManager_.getItemRateMap(userId, itemRateMap))
+    {
+        LOG(ERROR) << "failed to get rates for user id " << userId;
+        return false;
+    }
+
+    for (ItemRateMap::const_iterator it = itemRateMap.begin();
+        it != itemRateMap.end(); ++it)
+    {
+        filter.insert(it->first);
+    }
+
+    return true;
 }
 
 bool UserEventFilter::filterPurchaseItem_(
@@ -122,6 +168,7 @@ bool UserEventFilter::filterPreferenceItem_(
 bool UserEventFilter::addUserEvent(
     userid_t userId,
     std::vector<itemid_t>& inputItemVec,
+    ItemRateMap& itemRateMap,
     ItemEventMap& itemEventMap,
     ItemFilter& filter
 ) const
@@ -130,9 +177,39 @@ bool UserEventFilter::addUserEvent(
 
     inputItemVec.clear();
 
-    return (addPurchaseItem_(userId, inputItemVec, itemEventMap)
+    return (addRateItem_(userId, itemRateMap, itemEventMap)
+            && addPurchaseItem_(userId, inputItemVec, itemEventMap)
             && addCartItem_(userId, inputItemVec, itemEventMap)
-            && addPreferenceItem_(userId, inputItemVec, itemEventMap, filter));
+            && addPreferenceItem_(userId, inputItemVec, itemRateMap, itemEventMap, filter));
+}
+
+bool UserEventFilter::addRateItem_(
+    userid_t userId,
+    ItemRateMap& itemRateMap,
+    ItemEventMap& itemEventMap
+) const
+{
+    if (! rateManager_.getItemRateMap(userId, itemRateMap))
+    {
+        LOG(ERROR) << "failed to get rates for user id " << userId;
+        return false;
+    }
+
+    for (ItemRateMap::iterator it = itemRateMap.begin();
+        it != itemRateMap.end();)
+    {
+        ItemEventMap::value_type itemEvent(it->first, RecommendSchema::RATE_EVENT);
+        if (itemEventMap.insert(itemEvent).second)
+        {
+            ++it;
+        }
+        else
+        {
+            itemRateMap.erase(it++);
+        }
+    }
+
+    return true;
 }
 
 bool UserEventFilter::addPurchaseItem_(
@@ -190,6 +267,7 @@ bool UserEventFilter::addCartItem_(
 bool UserEventFilter::addPreferenceItem_(
     userid_t userId,
     std::vector<itemid_t>& inputItemVec,
+    ItemRateMap& itemRateMap,
     ItemEventMap& itemEventMap,
     ItemFilter& filter
 ) const
@@ -227,6 +305,7 @@ bool UserEventFilter::addPreferenceItem_(
 
     const ItemIdSet& notRecInputSet = eventItemMap[RecommendSchema::NOT_REC_INPUT_EVENT];
     excludeItems(notRecInputSet, inputItemVec);
+    excludeItems(notRecInputSet, itemRateMap);
 
     return true;
 }

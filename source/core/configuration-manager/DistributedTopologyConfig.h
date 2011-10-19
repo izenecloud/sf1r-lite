@@ -53,8 +53,6 @@ public:
            <<" nodeNum: "<<nodeNum_<<" mirrorNum: "<<mirrorNum_<<endl;
 
         ss << curSF1Node_.toString();
-
-        ss << "--[ZooKeeper] hosts: "<<zkHosts_<<" timeout: "<<zkRecvTimeout_<<endl;
         ss << "==============================="<<endl;
         return ss.str();
     }
@@ -67,10 +65,6 @@ public:
 
     // current SF1 node configuration
     SF1Node curSF1Node_;
-
-    // zookeeper configuration
-    std::string zkHosts_;
-    unsigned int zkRecvTimeout_;
 };
 
 }

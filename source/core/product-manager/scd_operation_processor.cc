@@ -27,6 +27,7 @@ void ScdOperationProcessor::Append(int op, const PMDocumentType& doc)
         writer_ = new ScdWriter(dir_, op);
     }
     writer_->Append(doc);
+    last_op_ = op;
 }
 
 void ScdOperationProcessor::ScdEnd()
@@ -40,6 +41,7 @@ void ScdOperationProcessor::Finish()
         writer_->Close();
         delete writer_;
         writer_ = NULL;
+        last_op_ = 0;
         //notify zookeeper on dir_
     }
 }

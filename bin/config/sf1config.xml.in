@@ -23,7 +23,7 @@
           <CollectionDataDirectory>default-collection-dir</CollectionDataDirectory>
           <!-- <CollectionDataDirectory>collection-dir-A</CollectionDataDirectory> -->
           <!-- <CollectionDataDirectory>collection-dir-B</CollectionDataDirectory> -->
-          <IndexStrategy memorypoolsize="128000000" indexlevel="doclevel" indexpolicy="default" mergepolicy="file" cron="0 3 * * *" />
+          <IndexStrategy memorypoolsize="128000000" indexlevel="wordlevel" indexpolicy="default" mergepolicy="file" cron="0 3 * * *" />
           <!-- indexlevel could be set for both "doclevel" or "wordlevel", when doclevel is set, PLM ranking model will be changed to BM25 and only
                dfp posting is used for ranking during search process.
           -->
@@ -75,6 +75,10 @@
           <!-- Specify multiple index directory to support backup and directory rotating -->
           <CollectionDataDirectory>default-recommend-dir</CollectionDataDirectory>
           <CronPara value="0 0 * * *" />
+          <!-- 1G for purchase matrix, 512M for visit matrix, 10M for index buffer -->
+          <CacheSize purchase="1073741824" visit="536870912" index="10485760" />
+          <!-- Speicfy "enable" to "yes" if recommend API top_item_bundle() is called -->
+          <FreqItemSet enable="no" minfreq="10" />
         </Parameter>
       </RecommendBundle> 
     </BundlesDefault>
@@ -180,10 +184,12 @@
           <Service name="icson" />
         </WorkerAgent>
       </CurrentNode>
-
-      <ZooKeeper servers="127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183" sessiontimeout="2000" />
-      <!-- <ZooKeeper servers="172.16.0.163:2181,172.16.0.163:2182,172.16.0.163:2183" sessiontimeout="2000" /> -->
     </DistributedTopology>
+
+    <DistributedUtil>
+      <ZooKeeper servers="127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183" sessiontimeout="2000" />
+      <DFS type="hdfs" supportfuse="y" mountdir="/mnt/hdfs" server="localhost" port="9000" />
+    </DistributedUtil>
   </Deployment>
 
 </SF1Config>

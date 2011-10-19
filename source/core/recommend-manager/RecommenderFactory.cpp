@@ -10,10 +10,11 @@ RecommenderFactory::RecommenderFactory(
     CartManager& cartManager,
     OrderManager& orderManager,
     EventManager& eventManager,
+    RateManager& rateManager,
     CoVisitManager& coVisitManager,
     ItemCFManager& itemCFManager
 )
-    : userEventFilter_(purchaseManager, cartManager, eventManager)
+    : userEventFilter_(purchaseManager, cartManager, eventManager, rateManager)
     , fbtRecommender_(itemManager, orderManager)
     , vavRecommender_(itemManager, coVisitManager)
     , babRecommender_(itemManager, itemCFManager)

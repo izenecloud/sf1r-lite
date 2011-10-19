@@ -77,6 +77,7 @@ void ProductManager::GenOperations()
 
 bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib::util::UString& gen_uuid)
 {
+    std::cout<<"ProductManager::AddGroup"<<std::endl;
     if(docid_list.empty()) return false;
     std::vector<PMDocumentType> doc_list(docid_list.size());
     for(uint32_t i=0;i<docid_list.size();i++)
@@ -115,6 +116,12 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib:
     output.eraseProperty(config_.uuid_property_name);
     izenelib::util::UString uuid = uuid_gen_->Gen(output);
     output.property(config_.docid_property_name) = uuid;
+    //update DM and IM first
+    if(!data_source_->UpdateUuid(docid_list, uuid))
+    {
+        error_ = "Update uuid failed";
+        return false;
+    }
     //output generated here.
     for(uint32_t i=0;i<uuid_list.size();i++)
     {
@@ -123,6 +130,8 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib:
         op_processor_->Append(3, del_doc);
     }
     op_processor_->Append(1, output);
+    gen_uuid = uuid;
+    //update doc in DM and IM
     return true;
 }
 

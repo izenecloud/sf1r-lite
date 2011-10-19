@@ -12,6 +12,7 @@
 #include "RecTypes.h"
 
 #include <vector>
+#include <map>
 #include <string>
 
 namespace sf1r
@@ -28,6 +29,14 @@ public:
 protected:
     virtual bool recommendImpl_(
         RecommendParam& param,
+        ItemFilter& filter,
+        std::vector<RecommendItem>& recItemVec
+    );
+
+    typedef ItemCFManager::ItemWeightMap ItemWeightMap;
+    bool recommendFromItemWeight_(
+        int limit,
+        const ItemWeightMap& itemWeightMap,
         ItemFilter& filter,
         std::vector<RecommendItem>& recItemVec
     );

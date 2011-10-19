@@ -26,6 +26,7 @@ class PurchaseManager;
 class CartManager;
 class OrderManager;
 class EventManager;
+class RateManager;
 
 class RecommenderFactory
 {
@@ -37,6 +38,7 @@ public:
         CartManager& cartManager,
         OrderManager& orderManager,
         EventManager& eventManager,
+        RateManager& rateManager,
         CoVisitManager& coVisitManager,
         ItemCFManager& itemCFManager
     );

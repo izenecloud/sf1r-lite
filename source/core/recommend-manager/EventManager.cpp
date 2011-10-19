@@ -45,19 +45,17 @@ bool EventManager::addEvent(
         return true;
     }
 
+    bool result = false;
     try
     {
-        if (container_.update(userId, eventItemMap) == false)
-        {
-            return false;
-        }
+        result = container_.update(userId, eventItemMap);
     }
     catch(izenelib::util::IZENELIBException& e)
     {
         LOG(ERROR) << "exception in SDB::update(): " << e.what();
     }
 
-    return true;
+    return result;
 }
 
 bool EventManager::removeEvent(
@@ -77,19 +75,17 @@ bool EventManager::removeEvent(
         return false;
     }
 
+    bool result = false;
     try
     {
-        if (container_.update(userId, eventItemMap) == false)
-        {
-            return false;
-        }
+        result = container_.update(userId, eventItemMap);
     }
     catch(izenelib::util::IZENELIBException& e)
     {
         LOG(ERROR) << "exception in SDB::update(): " << e.what();
     }
 
-    return true;
+    return result;
 }
 
 bool EventManager::getEvent(

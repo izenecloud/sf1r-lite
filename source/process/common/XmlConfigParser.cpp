@@ -14,6 +14,7 @@
 #include <la-manager/LAPool.h>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <glog/logging.h>
 
@@ -308,11 +309,22 @@ void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
     getAttribute( cursf1node, "host", distributedTopologyConfig_.curSF1Node_.host_ );
     parseMasterAgent( getUniqChildElement( cursf1node, "MasterAgent", false ) );
     parseWorkerAgent( getUniqChildElement( cursf1node, "WorkerAgent", false ) );
+}
 
+void SF1Config::parseDistributedUtil(const ticpp::Element * distributedUtil)
+{
     // ZooKeeper configuration
-    ticpp::Element* zk = getUniqChildElement( topology, "ZooKeeper" );
-    getAttribute(zk, "servers", distributedTopologyConfig_.zkHosts_);
-    getAttribute(zk, "sessiontimeout", distributedTopologyConfig_.zkRecvTimeout_);
+    ticpp::Element* zk = getUniqChildElement( distributedUtil, "ZooKeeper" );
+    getAttribute(zk, "servers", distributedUtilConfig_.zkConfig_.zkHosts_);
+    getAttribute(zk, "sessiontimeout", distributedUtilConfig_.zkConfig_.zkRecvTimeout_);
+
+    // Distributed File System configuration
+    ticpp::Element* dfs = getUniqChildElement( distributedUtil, "DFS" );
+    getAttribute(dfs, "type", distributedUtilConfig_.dfsConfig_.type_, false);
+    getAttribute(dfs, "supportfuse", distributedUtilConfig_.dfsConfig_.isSupportFuse_, false);
+    getAttribute(dfs, "mountdir", distributedUtilConfig_.dfsConfig_.mountDir_, true);
+    getAttribute(dfs, "server", distributedUtilConfig_.dfsConfig_.server_, false);
+    getAttribute(dfs, "port", distributedUtilConfig_.dfsConfig_.port_, false);
 }
 
 void SF1Config::parseMasterAgent( const ticpp::Element * master )
@@ -724,6 +736,8 @@ void SF1Config::parseDeploymentSettings(const ticpp::Element * deploy)
     parseBrokerAgent( getUniqChildElement( deploy, "BrokerAgent" ) );
 
     parseDistributedTopology( getUniqChildElement( deploy, "DistributedTopology", false ) );
+
+    parseDistributedUtil( getUniqChildElement( deploy, "DistributedUtil" ) );
 }
 
 // ------------------------- CollectionConfig-------------------------
@@ -883,8 +897,7 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
         if(recommendSchema) parseRecommendBundleSchema(recommendSchema, collectionMeta);
         recommendParam = getUniqChildElement( recommendBundle, "Parameter", false  );
     }
-    // also load recommend param in <BundlesDefault>
-    // even when "RecommendBundle" is not configured in <Collection>
+    // the <Parameter> in <Collection> would overwrite that in <BundlesDefault>
     parseRecommendBundleParam(recommendParam, collectionMeta);
 }
 
@@ -1153,6 +1166,7 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
     ProductBundleConfiguration& productBundleConfig = *(collectionMeta.productBundleConfig_);
     productBundleConfig.enabled_ = true;
     productBundleConfig.collPath_ = collectionMeta.collPath_;
+    productBundleConfig.setSchema(collectionMeta.schema_);
     std::string property_name;
     ticpp::Element* property_node = 0;
     property_node = getUniqChildElement( product_schema, "PriceProperty", false );
@@ -1455,31 +1469,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
           mining_schema.tdt_enable = true;
       }
 
-      task_node = getUniqChildElement( mining_schema_node, "EC", false );
-      mining_schema.ec_enable = false;
-      if( task_node!= NULL )
-      {
-        mining_schema.ec_enable = true;
-        {
-            Iterator<Element> it( "TitleProperty" );
-            for ( it = it.begin( task_node ); it != it.end(); it++ )
-            {
-                getAttribute( it.Get(), "name", property_name );
-                mining_schema.ec_title_property = property_name;
-            }
-        }
-
-        {
-            Iterator<Element> it( "ContentProperty" );
-            for ( it = it.begin( task_node ); it != it.end(); it++ )
-            {
-                getAttribute( it.Get(), "name", property_name );
-                mining_schema.ec_content_property = property_name;
-            }
-        }
-
-      }
-
+      
       task_node = getUniqChildElement( mining_schema_node, "IISE", false );
       mining_schema.ise_enable = false;
       if( task_node!= NULL )
@@ -1535,15 +1525,31 @@ void CollectionConfig::parseRecommendBundleParam(const ticpp::Element * recParam
         params.LoadXML(recParamNode, true);
     }
 
+    boost::shared_ptr<RecommendBundleConfiguration> recBundleConfig = collectionMeta.recommendBundleConfig_;
     std::set<std::string> directories;
     params.Get("CollectionDataDirectory", directories);
-    if(!directories.empty())
+    if(directories.empty())
     {
-        collectionMeta.recommendBundleConfig_->collectionDataDirectories_.assign(directories.begin(), directories.end());
+        throw XmlConfigParserException("Require configure <RecommendBundle> <Parameter> <CollectionDataDirectory>");
+    }
+    else
+    {
+        recBundleConfig->collectionDataDirectories_.assign(directories.begin(), directories.end());
     }
 
-    params.Get("CronPara/value", collectionMeta.recommendBundleConfig_->cronStr_);
-    LOG(INFO) << "RecommendBundle CronPara: " << collectionMeta.recommendBundleConfig_->cronStr_;
+    params.Get("CronPara/value", recBundleConfig->cronStr_);
+    params.Get("CacheSize/purchase", recBundleConfig->purchaseCacheSize_);
+    params.Get("CacheSize/visit", recBundleConfig->visitCacheSize_);
+    params.Get("CacheSize/index", recBundleConfig->indexCacheSize_);
+    params.Get("FreqItemSet/enable", recBundleConfig->freqItemSetEnable_);
+    params.Get("FreqItemSet/minfreq", recBundleConfig->itemSetMinFreq_);
+
+    LOG(INFO) << "RecommendBundle [CronPara] value: " << recBundleConfig->cronStr_;
+    LOG(INFO) << "RecommendBundle [CacheSize] purchase: " << recBundleConfig->purchaseCacheSize_;
+    LOG(INFO) << "RecommendBundle [CacheSize] visit: " << recBundleConfig->visitCacheSize_;
+    LOG(INFO) << "RecommendBundle [CacheSize] index: " << recBundleConfig->indexCacheSize_;
+    LOG(INFO) << "RecommendBundle [FreqItemSet] enable: " << recBundleConfig->freqItemSetEnable_;
+    LOG(INFO) << "RecommendBundle [FreqItemSet] min freq: " << recBundleConfig->itemSetMinFreq_;
 }
 
 void CollectionConfig::parseRecommendBundleSchema(const ticpp::Element * recSchemaNode, CollectionMeta & collectionMeta)

@@ -9,6 +9,7 @@ const std::string RecommendSchema::NOT_REC_INPUT_EVENT("not_rec_input");
 const std::string RecommendSchema::BROWSE_EVENT("browse");
 const std::string RecommendSchema::CART_EVENT("shopping_cart");
 const std::string RecommendSchema::PURCHASE_EVENT("purchase");
+const std::string RecommendSchema::RATE_EVENT("rate");
 
 bool RecommendSchema::getUserProperty(const std::string& name, RecommendProperty& property) const
 {
