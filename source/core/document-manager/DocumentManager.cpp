@@ -256,8 +256,7 @@ bool DocumentManager::getPropertyValue(
     }
     else
     {
-        bool isDocGetted = getDocument(docId, doc);
-        if ( !isDocGetted )
+        if(getDocument(docId, doc) == false)
             return false;
         documentCache_.insertValue(docId, doc);
         result = doc.property(*realPropertyName);
