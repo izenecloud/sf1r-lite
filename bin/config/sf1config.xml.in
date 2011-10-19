@@ -23,7 +23,7 @@
           <CollectionDataDirectory>default-collection-dir</CollectionDataDirectory>
           <!-- <CollectionDataDirectory>collection-dir-A</CollectionDataDirectory> -->
           <!-- <CollectionDataDirectory>collection-dir-B</CollectionDataDirectory> -->
-          <IndexStrategy memorypoolsize="128000000" indexlevel="doclevel" indexpolicy="default" mergepolicy="file" cron="0 3 * * *" />
+          <IndexStrategy memorypoolsize="128000000" indexlevel="wordlevel" indexpolicy="default" mergepolicy="file" cron="0 3 * * *" />
           <!-- indexlevel could be set for both "doclevel" or "wordlevel", when doclevel is set, PLM ranking model will be changed to BM25 and only
                dfp posting is used for ranking during search process.
           -->
