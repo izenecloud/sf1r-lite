@@ -176,16 +176,6 @@ public:
 
 };
 
-class QueryLogPara
-{
-
-public:
-    uint32_t update_time;
-    uint32_t log_days;
-    std::string cron;
-
-};
-
 class MiningConfig
 {
 
@@ -228,8 +218,7 @@ public:
 
     IsePara ise_param;
 
-    static QueryCorrectionPara query_correction_param;
-    static QueryLogPara query_log_param;
+    QueryCorrectionPara query_correction_param;
 
 };
 
