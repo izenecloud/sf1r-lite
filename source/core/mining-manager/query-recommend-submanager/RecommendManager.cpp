@@ -239,7 +239,7 @@ bool RecommendManager::RebuildForRecommend()
         boost::posix_time::ptime p = time_now-dd;
         std::string time_string = boost::posix_time::to_iso_string(p);
         std::string freq_sql = "SELECT query, count(*) AS freq FROM user_queries WHERE collection='"+collection_name_+"' AND hit_docs_num>0 AND TimeStamp >='"+time_string+"' GROUP BY query";
-        std::string label_sql = "SELECT label_name AS query, hit_docs_num AS freq FROM property_labels WHERE collection='"+collection_name_+"'";
+        std::string label_sql = "SELECT label_name AS query, sum(hit_docs_num) AS freq FROM property_labels WHERE collection='"+collection_name_+"' GROUP BY label_name";
         std::list<std::map<std::string, std::string> > db_records;
         UserQuery::find_by_sql(freq_sql, db_records);
         PropertyLabel::find_by_sql(label_sql, db_records);

@@ -19,7 +19,7 @@ using namespace sf1r;
 
 LabelManager::LabelManager(const std::string& path, bool no_doc_container) :
         path_(path), isOpen_(false), no_doc_container_(no_doc_container)
-        , collection_name_("")
+        , collection_name_()
         , info_(0)
         , serInfo_(path_+"/ser_info")
         , idManager_(NULL)
@@ -260,7 +260,6 @@ void LabelManager::insertLabel(
 
 }
 
-
 void LabelManager::insertLabel(
     docid_t docId,
     const izenelib::util::UString& labelStr)
@@ -304,11 +303,9 @@ bool LabelManager::getLabelsByDocIdList(const std::vector<docid_t>& docIdList, s
         labels.push_back(iLabelList);
     }
 
-
 //     docTableMutex_.lock_shared();
 //     bool ret = docLabelInfo_->get<docid_t>(docIdList, labels);
 //     docTableMutex_.unlock_shared();
-
 
     return ret;
 }
@@ -329,7 +326,6 @@ bool LabelManager::getSortedLabelsByDocId(docid_t docId, std::vector<labelid_t>&
 {
     return sorted_label_->get(docId, labelIdList);
 }
-
 
 void LabelManager::buildDocLabelMap()
 {
@@ -452,7 +448,6 @@ void LabelManager::buildDocLabelMap()
         }
         lastDocId = docId;
 
-
         p++;
         if (p % 1000000 == 0)
         {
@@ -480,36 +475,8 @@ void LabelManager::buildDocLabelMap()
     typeInfo_->flush();
 //     MUtil::MEMINFO("After label db flush");
     labelStream_.flush();
-    if(!updateLabelDb_())
-    {
-        std::cout<<"Update label DB failed"<<std::endl;
-    }
-}
 
-bool LabelManager::updateLabelDb_()
-{
-    if(collection_name_=="") return true;
-    std::string sql = "delete from property_labels where collection='"+collection_name_+"'";
-    DbConnection::instance().exec(sql, true);
-    uint32_t max_labelid = getMaxLabelID();
-    for(uint32_t labelid=1; labelid<=max_labelid; labelid++)
-    {
-        izenelib::util::UString labelstr;
-        if(!getLabelStringByLabelId(labelid, labelstr)) continue;
-        std::string str;
-        labelstr.convertString(str, izenelib::util::UString::UTF_8);
-        uint32_t df = 0;
-        getLabelDF(labelid, df);
-        PropertyLabel plabel;
-        plabel.setCollection(collection_name_);
-        plabel.setLabelId(labelid);
-        plabel.setLabelName(str);
-        plabel.setHitDocsNum(df);
-        plabel.save();
-    }
-    return true;
 }
-
 
 bool LabelManager::getLabelStringByLabelId(labelid_t labelId, izenelib::util::UString& labelStr)
 {
@@ -525,7 +492,6 @@ bool LabelManager::getLabelStringByLabelId(labelid_t labelId, izenelib::util::US
 
     return idManager_->GetStringById(labelId, labelStr);
 }
-
 
 bool LabelManager::getLabelStringListByLabelIdList(const std::vector<uint32_t>& labelIdList, std::vector<izenelib::util::UString>& labelStrList)
 {
@@ -576,7 +542,6 @@ void LabelManager::encode_(const std::vector<labelid_t>& labels, char** data, ui
         len=0;
         return;
     }
-
 
     uint32_t labelCount = labels.size();
     uint16_t max = 65535;
@@ -687,19 +652,29 @@ uint32_t LabelManager::getLabelId_(const izenelib::util::UString& text, uint32_t
     uint32_t odf = 0;
     std::string str;
     text.convertString(str, izenelib::util::UString::UTF_8);
-    if ( labelMap_->get(key, label_id) )
+    if (labelMap_->get(key, label_id))
     {
         getLabelDF(label_id, odf);
     }
     else
     {
-        label_id = labelMap_->num_items()+1;
+        label_id = labelMap_->num_items() + 1;
         idManager_->Put(label_id, text );
         labelMap_->insert(key, label_id);
-        labelStream_ << str << "," << df << "," << (uint32_t)score <<","<<label_id<< endl;
+        labelStream_ << str << "," << df << "," << (uint32_t)score << "," << label_id << endl;
         typeInfo_->update(label_id, type);//update the type in first time.
     }
-    odf+=df;
+
+    //insert to db if SetDbSave
+    if (!collection_name_.empty())
+    {
+        PropertyLabel plabel;
+        plabel.setCollection(collection_name_);
+        plabel.setLabelName(str);
+        plabel.setHitDocsNum(df);
+        plabel.save();
+    }
+    odf += df;
     setLabelDF(label_id, odf);
     return label_id;
 }
@@ -725,7 +700,6 @@ void LabelManager::insertToDocTable_( uint32_t docId, std::vector<id2count_t>& l
 //     }
 //   }
 //   std::cout<<std::endl;
-
 
     if(no_doc_container_) return;
     std::vector<uint32_t> labelIdList;
