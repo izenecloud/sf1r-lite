@@ -102,11 +102,6 @@ class OntologyManager;
 class CTRManager;
 }
 
-namespace ec
-{
-class EcManager;
-}
-
 /**
  * @brief MiningManager manages all the data mining tasks.
  * Those tasks needs heavy offline mining computation. Also, it manages the online query to
@@ -151,10 +146,6 @@ public:
      * @brief The online querying interface.
      */
     bool getMiningResult(KeywordSearchResult& miaInput);
-    
-    ///@brief 1) add price comparasion result, 2) ...
-    bool ecFilter(KeywordSearchResult& input);
-    bool ecFilter(DistKeywordSearchResult& input);
 
     /**
      * @brief Gets list of documents with images similar to the target image.
@@ -274,11 +265,6 @@ public:
     boost::shared_ptr<TaxonomyGenerationSubManager> GetTgManager()
     {
         return tgManager_;
-    }
-    
-    boost::shared_ptr<ec::EcManager> GetEcManager()
-    {
-        return ec_manager_;
     }
 
     boost::shared_ptr<DocumentManager> GetDocumentManager()
@@ -442,9 +428,7 @@ private:
     /** TDT */
     std::string tdt_path_;
     TdtStorageType* tdt_storage_;
-    
-    std::string ec_path_;
-    boost::shared_ptr<ec::EcManager> ec_manager_;
+
 };
 
 }

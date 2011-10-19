@@ -30,6 +30,7 @@ const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UStr
 const char* ORDER_HOME_STR = "recommend_test/t_OrderManager";
 const char* ITEM_DB_STR = "item.db";
 const char* MAX_ID_STR = "max_itemid.txt";
+const int64_t INDEX_MEMORY_SIZE = 10000000;
 ostream_iterator<itemid_t> COUT_ITER(cout, ",");
 
 template <class OutputIterator>
@@ -92,7 +93,7 @@ BOOST_AUTO_TEST_CASE(checkOrder)
         BOOST_CHECK(itemManager.addItem(i, Item()));
     }
 
-    OrderManager orderManager(ORDER_HOME_STR, &itemManager);
+    OrderManager orderManager(ORDER_HOME_STR, &itemManager, INDEX_MEMORY_SIZE);
     orderManager.setMinThreshold(1);
     {
     itemid_t myints[] = {1,2,3,4};
@@ -153,7 +154,7 @@ BOOST_AUTO_TEST_CASE(freqItemset)
         BOOST_CHECK(itemManager.addItem(i, Item()));
     }
 
-    OrderManager orderManager(ORDER_HOME_STR, &itemManager);
+    OrderManager orderManager(ORDER_HOME_STR, &itemManager, INDEX_MEMORY_SIZE);
     orderManager.setMinThreshold(1);
     for (int i=0; i<1000; ++i)
     {

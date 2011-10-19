@@ -10,6 +10,11 @@ ProductBundleConfiguration::ProductBundleConfiguration(const std::string& collec
     , collectionName_(collectionName)
 {}
 
+void ProductBundleConfiguration::setSchema(const std::set<PropertyConfig, PropertyComp>& schema)
+{
+    schema_ = schema;
+}
+
 
 }
 

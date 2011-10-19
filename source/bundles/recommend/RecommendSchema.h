@@ -40,6 +40,7 @@ struct RecommendSchema
     static const std::string BROWSE_EVENT;
     static const std::string CART_EVENT;
     static const std::string PURCHASE_EVENT;
+    static const std::string RATE_EVENT;
 
     std::vector<RecommendProperty> userSchema_;
     std::vector<RecommendProperty> itemSchema_;

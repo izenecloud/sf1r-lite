@@ -30,7 +30,7 @@ typedef std::vector<uint32_t>::const_iterator DataVectorIterator;
 class ItemIndex
 {
 public:
-    ItemIndex(const std::string& path);
+    ItemIndex(const std::string& path, int64_t memorySize);
 
     void flush();
 

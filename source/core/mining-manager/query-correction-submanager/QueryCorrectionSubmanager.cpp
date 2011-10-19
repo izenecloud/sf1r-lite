@@ -53,68 +53,6 @@ QueryCorrectionSubmanager& QueryCorrectionSubmanager::getInstance()
     return qcManager;
 }
 
-// bool QueryCorrectionSubmanager::stopHere(
-//     const izenelib::util::UString& queryUString)
-// {
-//     bool is = true;
-//     std::vector<UString> queryTokens;
-// 
-//     string queryStr;
-//     queryUString.convertString(queryStr, UString::UTF_8);
-//     if (cmgr_.inPinyinDict(queryStr))
-//         return false;
-// 
-//     getTokensFromUString(UString::UTF_8,' ', queryUString, queryTokens);
-// //	Tokenize(queryUString, queryTokens);
-// 
-//     uint32_t chineseCount = 0;
-//     uint32_t ekCount = 0;
-//     for (size_t i = 0; i < queryUString.length(); i++)
-//     {
-//         if (queryUString.isChineseChar(i))
-//         {
-//             ++chineseCount;
-//         }
-//         else
-//         {
-//             ++ekCount;
-//         }
-//     }
-//     // if( !enableChn_ && chineseCount>0 ) return true;
-//     // if( !enableEK_ && ekCount>0 ) return true;
-//     if (chineseCount > CHINESE_CORRECTION_LENGTH)
-//         return true;
-// 
-//     vector<UString>::iterator it_token = queryTokens.begin();
-//     for (; it_token != queryTokens.end(); it_token++)
-//     {
-//         string str;
-//         it_token->convertString(str, izenelib::util::UString::UTF_8);
-// 
-//         //if it is one word in Chinese dictionary, Chinese
-//         //QueryCorrection is firstly processed.
-//         (*it_token).toLowerString();
-//         if (queryTokens.size() == 1 && cmgr_.inPinyinDict(str))
-//         {
-//             return false;
-//         }
-//         bool b1 = ekmgr_.inDict(*it_token);
-//         bool b2 = cmgr_.inChineseDict(str);
-//         if ( b2 )
-//         {
-//             return false;
-//         }
-//         else
-//         {
-//             if ( !b1 )
-//                 is = false;
-//         }
-// 
-//     }
-//     return is;
-// }
-
-
 //Initialize some member variables
 bool QueryCorrectionSubmanager::initialize()
 {
@@ -154,7 +92,7 @@ bool QueryCorrectionSubmanager::initialize()
         }
 
     }
-    
+
     //load inject
     std::string inject_file = workingPath_+"/inject_data.txt";
     std::vector<izenelib::util::UString> str_list;
@@ -226,7 +164,6 @@ bool QueryCorrectionSubmanager::getRefinedToken_(const std::string& collectionNa
     return false;
 }
 
-
 //The public interface, when user input wrong query, given the correct refined query.
 bool QueryCorrectionSubmanager::getRefinedQuery(const UString& queryUString,
         UString& refinedQueryUString)
@@ -238,17 +175,14 @@ bool QueryCorrectionSubmanager::getRefinedQuery(
     const std::string& collectionName, const UString& queryUString,
     UString& refinedQueryUString)
 {
-//     std::vector<izenelib::util::UString> vec_result;
-//     if ( cmgr_.GetResult(queryUString, vec_result) )
-//     {
-//         if(vec_result.size()>0)
-//         {
-//             refinedQueryUString = vec_result[0];
-//             return true;
-//         }
-//         
-//     }
-//     return false;
+    if (queryUString.empty() || !activate_)
+    {
+        return false;
+    }
+    if (!enableEK_ && !enableChn_)
+    {
+        return false;
+    }
 
     std::string str_query;
     queryUString.convertString(str_query, izenelib::util::UString::UTF_8);
@@ -258,14 +192,6 @@ bool QueryCorrectionSubmanager::getRefinedQuery(
     {
         refinedQueryUString = it->second;
         return true;
-    }
-    if (queryUString.empty() || !activate_)
-    {
-        return false;
-    }
-    if (!enableEK_ && !enableChn_)
-    {
-        return false;
     }
 
     CREATE_SCOPED_PROFILER(getRealRefinedQuery, "QueryCorrectionSubmanager",
@@ -302,10 +228,10 @@ bool QueryCorrectionSubmanager::getRefinedQuery(
         {
             refinedQueryUString += token;
         }
-        
+
         first = false;
     }
-    
+
     if(bRefined)
     {
         return true;
@@ -315,11 +241,6 @@ bool QueryCorrectionSubmanager::getRefinedQuery(
         refinedQueryUString.clear();
         return false;
     }
-    
-//     if (stopHere(queryUString) )
-//     {
-//         return false;
-//     }
 }
 
 bool QueryCorrectionSubmanager::getPinyin(
@@ -336,42 +257,7 @@ bool QueryCorrectionSubmanager::getPinyin(
     if(pinyin.size()>0) return true;
     return false;
 }
-// 
-// bool QueryCorrectionSubmanager::pinyinSegment(const string& str,
-//         std::vector<string>& result)
-// {
-// 
-//     std::vector<std::vector<string> > vpy;
-//     if ( !cmgr_.pinyinSegment(str, vpy) )
-//     {
-//         result.push_back(str);
-//         return true;
-//     }
-// 
-//     size_t minSize = 1000;
-//     for (size_t i=0; i<vpy.size(); i++)
-//     {
-//         if (vpy[i].size() < minSize)
-//         {
-//             minSize = vpy[i].size() ;
-//             result = vpy[i];
-//         }
-//         for (size_t j=0; j<vpy[i].size(); j++)
-//             cout<<vpy[i][j]<<" -> ";
-//         cout<<endl;
-//     }
-//     return true;
-// }
-// 
-// 
-bool QueryCorrectionSubmanager::isPinyin(const izenelib::util::UString& str)
-{
-//     std::string tempString;
-//     str.convertString(tempString, izenelib::util::UString::UTF_8);
-//     return cmgr_.isPinyin(tempString);
-    return false;
-}
-// 
+
 void QueryCorrectionSubmanager::updateCogramAndDict(const std::list<QueryLogType>& recentQueryList)
 {
     updateCogramAndDict("", recentQueryList);
@@ -382,9 +268,6 @@ void QueryCorrectionSubmanager::updateCogramAndDict(const std::string& collectio
     boost::mutex::scoped_lock scopedLock(logMutex_);
 
     DLOG(INFO)<<"updateCogramAndDict..."<<endl;
-//     const std::list < std :: pair < izenelib::util::UString, uint32_t> >& queryList = recentQueryList;
-//     std::list < std :: pair < izenelib::util::UString, uint32_t> >::const_iterator lit;
-    //no collection independent
     cmgr_.Update(recentQueryList);
 
 }
