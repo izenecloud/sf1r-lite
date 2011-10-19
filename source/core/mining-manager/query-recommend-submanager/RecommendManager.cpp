@@ -238,7 +238,7 @@ bool RecommendManager::RebuildForRecommend()
         boost::gregorian::days dd(days);
         boost::posix_time::ptime p = time_now-dd;
         std::string time_string = boost::posix_time::to_iso_string(p);
-        std::string freq_sql = "SELECT query, count(*) AS freq FROM user_queries WHERE collection='"+collection_name_+"' AND hit_docs_num>0 AND TimeStamp >='"+time_string+"' GROUP BY query";
+        std::string freq_sql = "SELECT query, count(*) AS freq FROM user_queries WHERE collection='"+collection_name_+"' AND hit_docs_num>0 AND TimeStamp>='"+time_string+"' GROUP BY query";
         std::string label_sql = "SELECT label_name AS query, sum(hit_docs_num) AS freq FROM property_labels WHERE collection='"+collection_name_+"' GROUP BY label_name";
         std::list<std::map<std::string, std::string> > db_records;
         UserQuery::find_by_sql(freq_sql, db_records);
@@ -322,32 +322,34 @@ bool RecommendManager::RebuildForRecommend()
 
 bool RecommendManager::RebuildForCorrection()
 {
-//     boost::posix_time::ptime time_now = boost::posix_time::second_clock::local_time();
-//     uint32_t days = logdays_;
-//     boost::gregorian::days dd(days);
-//     boost::posix_time::ptime p = time_now-dd;
-//     std::string time_string = boost::posix_time::to_iso_string(p);
-//     std::string query_sql = "select query, count(*) as freq from user_queries where collection='"+collection_name_+"' and TimeStamp >='"+time_string+"' group by query";
-//     std::list<std::map<std::string, std::string> > query_records;
-//     UserQuery::find_by_sql(query_sql, query_records);
-//     std::list<std::map<std::string, std::string> >::iterator it = query_records.begin();
-//
-//     std::list<std::pair<izenelib::util::UString,uint32_t> > logItems;
-//     for ( ;it!=query_records.end();++it )
-//     {
-//         izenelib::util::UString uquery( (*it)["query"], izenelib::util::UString::UTF_8);
-//         if ( QueryUtility::isRestrictWord( uquery ) )
-//         {
-//             continue;
-//         }
-// //       std::cout<<"{{{421 "<<(*it)["freq"]<<std::endl;
-//         uint32_t freq = boost::lexical_cast<uint32_t>( (*it)["freq"] );
-//         logItems.push_back( std::make_pair(uquery, freq) );
-//     }
-//     if (logItems.size()>0)
-//     {
-//         QueryCorrectionSubmanager::getInstance().updateCogramAndDict(collection_name_, logItems);
-//     }
+    boost::posix_time::ptime time_now = boost::posix_time::second_clock::local_time();
+    uint32_t days = logdays_;
+    boost::gregorian::days dd(days);
+    boost::posix_time::ptime p = time_now-dd;
+    std::string time_string = boost::posix_time::to_iso_string(p);
+    std::string freq_sql = "SELECT query, count(*) AS freq FROM user_queries WHERE collection='" + collection_name_ + "' AND TimeStamp>='" + time_string+"' GROUP BY query";
+    std::string label_sql = "SELECT label_name AS query, sum(hit_docs_num) AS freq from property_labels WHERE collection='" + collection_name_ + "' GROUP BY label_name";
+    std::list<std::map<std::string, std::string> > db_records;
+    UserQuery::find_by_sql(freq_sql, db_records);
+    PropertyLabel::find_by_sql(label_sql, db_records);
+    std::list<std::map<std::string, std::string> >::iterator it = db_records.begin();
+
+    typedef boost::tuple<count_t, count_t, izenelib::util::UString> ItemType;
+    std::list<ItemType> logItems;
+    for (; it != db_records.end(); ++it)
+    {
+        izenelib::util::UString uquery( (*it)["query"], izenelib::util::UString::UTF_8);
+        if ( QueryUtility::isRestrictWord( uquery ) )
+        {
+            continue;
+        }
+        uint32_t freq = boost::lexical_cast<uint32_t>( (*it)["freq"] );
+        logItems.push_back( ItemType(freq, 0, uquery) );
+    }
+    if (logItems.size()>0)
+    {
+        QueryCorrectionSubmanager::getInstance().updateCogramAndDict(collection_name_, logItems);
+    }
     return true;
 }
 
@@ -358,8 +360,8 @@ bool RecommendManager::RebuildForAutofill()
     boost::gregorian::days dd(days);
     boost::posix_time::ptime p = time_now-dd;
     std::string time_string = boost::posix_time::to_iso_string(p);
-    std::string freq_sql = "SELECT query, count(*) AS freq, max(hit_docs_num) AS df FROM user_queries WHERE collection='"+collection_name_+"' AND hit_docs_num>0 AND TimeStamp >='"+time_string+"' GROUP BY query";
-    std::string label_sql = "SELECT label_name AS query, hit_docs_num AS freq, hit_docs_num AS df from property_labels WHERE collection='"+collection_name_+"'";
+    std::string freq_sql = "SELECT query, count(*) AS freq, max(hit_docs_num) AS df FROM user_queries WHERE collection='" + collection_name_ + "' AND hit_docs_num>0 AND TimeStamp>='" + time_string + "' GROUP BY query";
+    std::string label_sql = "SELECT label_name AS query, sum(hit_docs_num) AS freq, sum(hit_docs_num) AS df from property_labels WHERE collection='" + collection_name_ + "' GROUP BY label_name";
     std::list<std::map<std::string, std::string> > db_records;
     UserQuery::find_by_sql(freq_sql, db_records);
     PropertyLabel::find_by_sql(label_sql, db_records);
