@@ -1166,7 +1166,7 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
     ProductBundleConfiguration& productBundleConfig = *(collectionMeta.productBundleConfig_);
     productBundleConfig.enabled_ = true;
     productBundleConfig.collPath_ = collectionMeta.collPath_;
-    productBundleConfig.setSchema(collectionMeta.schema_);
+    productBundleConfig.setSchema(collectionMeta.indexBundleConfig_->schema_);
     std::string property_name;
     ticpp::Element* property_node = 0;
     property_node = getUniqChildElement( product_schema, "PriceProperty", false );
@@ -1719,7 +1719,6 @@ void CollectionConfig::parseIndexSchemaProperty(
             {
                 nOriginalName++;
             }
-
             //add this property setting(alias) to DocumentSchema
             indexSchema.insert( propertyConfig );
         }
@@ -1767,8 +1766,6 @@ void CollectionConfig::parseIndexSchemaProperty(
                     + " filter=\"yes/no\" or analyzer=\"\" required." );
         }
     }
-
-
 
     //add this property setting(alias) to DocumentSchema
     indexSchema.insert( propertyConfig );

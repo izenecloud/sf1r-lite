@@ -5,6 +5,7 @@
 
 
 #include <document-manager/Document.h>
+#include <ir/index_manager/index/IndexerDocument.h>
 
 #include "pm_def.h"
 #include "pm_types.h"
@@ -28,9 +29,9 @@ public:
     ~ProductManager();
     
     
-    bool HookInsert(PMDocumentType& doc);
+    bool HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager::IndexerDocument& index_document);
     
-    bool HookUpdate(uint32_t fromid, PMDocumentType& to, bool r_type);
+    bool HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::IndexerDocument& index_document, bool r_type);
     
     bool HookDelete(uint32_t docid);
     
@@ -46,9 +47,9 @@ public:
     
 private:
     
-    bool HookUpdateNew_(uint32_t fromid, PMDocumentType& to);
-    
     bool GetPrice_(uint32_t docid, ProductPrice& price);
+    
+    bool GetPrice_(const PMDocumentType& doc, ProductPrice& price);
     
     void GetPrice_(const std::vector<uint32_t>& docid_list, ProductPrice& price);
     

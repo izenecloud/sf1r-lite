@@ -15,7 +15,7 @@ class ProductBundleConfiguration : public ::izenelib::osgi::BundleConfiguration
 public:
     ProductBundleConfiguration(const std::string& collectionName);
 
-    void setSchema(const std::set<PropertyConfigBase, PropertyBaseComp>& schema);
+    void setSchema(const std::set<PropertyConfig, PropertyComp>& schema);
 public:
     bool enabled_;
 

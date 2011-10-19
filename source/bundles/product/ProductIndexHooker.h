@@ -3,6 +3,7 @@
 
 
 #include <document-manager/Document.h>
+#include <ir/index_manager/index/IndexerDocument.h>
 #include <index-manager/IndexHooker.h>
 
 
@@ -17,8 +18,8 @@ class ProductIndexHooker : public IndexHooker
 public:
     ProductIndexHooker(const boost::shared_ptr<ProductManager>& product_manager);
     ~ProductIndexHooker();
-    bool HookInsert(Document& doc);
-    bool HookUpdate(docid_t oldid, Document& doc, bool r_type);
+    bool HookInsert(Document& doc, izenelib::ir::indexmanager::IndexerDocument& index_document);
+    bool HookUpdate(Document& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, bool r_type);
     bool HookDelete(docid_t docid);
     bool Finish();
     
