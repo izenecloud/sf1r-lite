@@ -26,10 +26,12 @@ class ItemManager;
 class VisitManager;
 class PurchaseManager;
 class CartManager;
-class EventManager;
 class OrderManager;
+class EventManager;
+class RateManager;
 class RecommendBundleConfiguration;
 class JobScheduler;
+struct RateParam;
 
 namespace directory
 {
@@ -47,8 +49,9 @@ public:
         VisitManager* visitManager,
         PurchaseManager* purchaseManager,
         CartManager* cartManager,
-        EventManager* eventManager,
         OrderManager* orderManager,
+        EventManager* eventManager,
+        RateManager* rateManager,
         RecIdGenerator* userIdGenerator,
         RecIdGenerator* itemIdGenerator
     );
@@ -167,6 +170,13 @@ public:
         const std::string& itemIdStr
     );
 
+    /**
+     * Rate an item.
+     * @param param rating parameters
+     * @return true for success, false for failure
+     */
+    bool rateItem(const RateParam& param);
+
 private:
     /**
      * Convert from @p userIdStr to @p userId,
@@ -276,8 +286,9 @@ private:
     VisitManager* visitManager_;
     PurchaseManager* purchaseManager_;
     CartManager* cartManager_;
-    EventManager* eventManager_;
     OrderManager* orderManager_;
+    EventManager* eventManager_;
+    RateManager* rateManager_;
     RecIdGenerator* userIdGenerator_;
     RecIdGenerator* itemIdGenerator_;
 

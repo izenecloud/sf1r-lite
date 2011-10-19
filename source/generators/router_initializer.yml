@@ -99,6 +99,7 @@ controllers:
       - purchase_item
       - update_shopping_cart
       - track_event
+      - rate_item
       - do_recommend
       - top_item_bundle
       

@@ -14,6 +14,7 @@
 #include <la-manager/LAPool.h>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <glog/logging.h>
 
@@ -896,8 +897,7 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
         if(recommendSchema) parseRecommendBundleSchema(recommendSchema, collectionMeta);
         recommendParam = getUniqChildElement( recommendBundle, "Parameter", false  );
     }
-    // also load recommend param in <BundlesDefault>
-    // even when "RecommendBundle" is not configured in <Collection>
+    // the <Parameter> in <Collection> would overwrite that in <BundlesDefault>
     parseRecommendBundleParam(recommendParam, collectionMeta);
 }
 
@@ -1525,15 +1525,31 @@ void CollectionConfig::parseRecommendBundleParam(const ticpp::Element * recParam
         params.LoadXML(recParamNode, true);
     }
 
+    boost::shared_ptr<RecommendBundleConfiguration> recBundleConfig = collectionMeta.recommendBundleConfig_;
     std::set<std::string> directories;
     params.Get("CollectionDataDirectory", directories);
-    if(!directories.empty())
+    if(directories.empty())
     {
-        collectionMeta.recommendBundleConfig_->collectionDataDirectories_.assign(directories.begin(), directories.end());
+        throw XmlConfigParserException("Require configure <RecommendBundle> <Parameter> <CollectionDataDirectory>");
+    }
+    else
+    {
+        recBundleConfig->collectionDataDirectories_.assign(directories.begin(), directories.end());
     }
 
-    params.Get("CronPara/value", collectionMeta.recommendBundleConfig_->cronStr_);
-    LOG(INFO) << "RecommendBundle CronPara: " << collectionMeta.recommendBundleConfig_->cronStr_;
+    params.Get("CronPara/value", recBundleConfig->cronStr_);
+    params.Get("CacheSize/purchase", recBundleConfig->purchaseCacheSize_);
+    params.Get("CacheSize/visit", recBundleConfig->visitCacheSize_);
+    params.Get("CacheSize/index", recBundleConfig->indexCacheSize_);
+    params.Get("FreqItemSet/enable", recBundleConfig->freqItemSetEnable_);
+    params.Get("FreqItemSet/minfreq", recBundleConfig->itemSetMinFreq_);
+
+    LOG(INFO) << "RecommendBundle [CronPara] value: " << recBundleConfig->cronStr_;
+    LOG(INFO) << "RecommendBundle [CacheSize] purchase: " << recBundleConfig->purchaseCacheSize_;
+    LOG(INFO) << "RecommendBundle [CacheSize] visit: " << recBundleConfig->visitCacheSize_;
+    LOG(INFO) << "RecommendBundle [CacheSize] index: " << recBundleConfig->indexCacheSize_;
+    LOG(INFO) << "RecommendBundle [FreqItemSet] enable: " << recBundleConfig->freqItemSetEnable_;
+    LOG(INFO) << "RecommendBundle [FreqItemSet] min freq: " << recBundleConfig->itemSetMinFreq_;
 }
 
 void CollectionConfig::parseRecommendBundleSchema(const ticpp::Element * recSchemaNode, CollectionMeta & collectionMeta)

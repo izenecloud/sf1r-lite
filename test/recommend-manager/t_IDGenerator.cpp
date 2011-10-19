@@ -59,6 +59,18 @@ BOOST_AUTO_TEST_CASE(test_UniqueIDGenerator)
             BOOST_CHECK_EQUAL(id, i);
         }
     }
+
+    {
+        izenelib::ir::idmanager::UniqueIDGenerator<std::string, uint32_t> idGenerator(idName.string());
+        for (uint32_t i = 100; i < 200; ++i)
+        {
+            string str = boost::lexical_cast<string>(i);
+            uint32_t id;
+            // not yet converted before
+            BOOST_CHECK(idGenerator.conv(str, id) == false);
+            BOOST_CHECK_EQUAL(id, i);
+        }
+    }
 }
 
 

@@ -45,14 +45,8 @@ void updateEvent(
     }
     else
     {
-        if (userEventMap[userId][eventStr].erase(itemId))
-        {
-            BOOST_CHECK(eventManager.removeEvent(eventStr, userId, itemId));
-        }
-        else
-        {
-            BOOST_CHECK(eventManager.removeEvent(eventStr, userId, itemId) == false);
-        }
+        bool result = userEventMap[userId][eventStr].erase(itemId);
+        BOOST_CHECK_EQUAL(eventManager.removeEvent(eventStr, userId, itemId), result);
     }
 }
 

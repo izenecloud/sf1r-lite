@@ -30,6 +30,20 @@ bool ItemCFRecommender::recommendImpl_(
     return true;
 }
 
+bool ItemCFRecommender::recommendFromItemWeight_(
+    int limit,
+    const ItemWeightMap& itemWeightMap,
+    ItemFilter& filter,
+    std::vector<RecommendItem>& recItemVec
+)
+{
+    idmlib::recommender::RecommendItemVec results;
+    itemCFManager_.recommend(limit, itemWeightMap, results, &filter);
+    recItemVec.insert(recItemVec.end(), results.begin(), results.end());
+
+    return true;
+}
+
 void ItemCFRecommender::setReasonEvent_(
     std::vector<RecommendItem>& recItemVec,
     const std::string& eventName

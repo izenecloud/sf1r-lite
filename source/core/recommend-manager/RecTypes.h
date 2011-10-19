@@ -32,6 +32,7 @@
 
 #include <set>
 #include <string>
+#include <map>
 
 namespace sf1r
 {
@@ -39,6 +40,7 @@ namespace sf1r
 typedef uint32_t userid_t;
 typedef uint32_t itemid_t;
 typedef uint32_t orderid_t;
+typedef int16_t rate_t;
 
 enum RecommendType
 {
@@ -52,6 +54,8 @@ enum RecommendType
 };
 
 typedef std::set<itemid_t> ItemIdSet;
+typedef std::map<itemid_t, rate_t> ItemRateMap;
+
 typedef izenelib::ir::idmanager::UniqueIDGenerator<std::string, uint32_t, ReadWriteLock> RecIdGenerator;
 
 typedef idmlib::recommender::ItemCoVisitation<idmlib::recommender::CoVisitFreq> CoVisitManager;

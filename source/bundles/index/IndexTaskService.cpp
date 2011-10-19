@@ -610,16 +610,8 @@ bool IndexTaskService::destroyDocument(const Value& documentValue)
     if (!bundleConfig_->productSourceField_.empty()
             && documentManager_->getPropertyValue(docid, bundleConfig_->productSourceField_, value))
     {
-        try
-        {
-            izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
-            sourceFieldValue.convertString(source, izenelib::util::UString::UTF_8);
-        }
-        catch (std::exception& e)
-        {
-            LOG(WARNING) << "exception in get property value: " << e.what();
+        if(!getPropertyValue_(value, source))
             return false;
-        }
 
         if(!source.empty())
         {
@@ -632,7 +624,6 @@ bool IndexTaskService::destroyDocument(const Value& documentValue)
             productInfo.save();
         }
     }
-
 
     return true;
 }
@@ -885,16 +876,13 @@ bool IndexTaskService::deleteSCD_(ScdParser& parser)
             PropertyValue value;
             if (documentManager_->getPropertyValue(*iter, bundleConfig_->productSourceField_, value))
             {
-                try
+                std::string source("");
+                if (getPropertyValue_(value, source))
                 {
-                    izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
-                    std::string source("");
-                    sourceFieldValue.convertString(source, izenelib::util::UString::UTF_8);
                     ++productSourceCount_[source];
                 }
-                catch (std::exception& e)
+                else
                 {
-                    LOG(WARNING) << "exception in get property value: " << e.what();
                     return false;
                 }
             }
@@ -950,6 +938,21 @@ void IndexTaskService::saveProductInfo_(int op)
     }
 }
 
+bool IndexTaskService::getPropertyValue_( const PropertyValue& value, std::string& valueStr )
+{
+    try
+    {
+        izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>( value );
+        sourceFieldValue.convertString(valueStr, izenelib::util::UString::UTF_8);
+        return true;
+    }
+    catch(boost::bad_get& e)
+    {
+        LOG(WARNING) << "exception in get property value: " << e.what();
+        return false;
+    }
+}
+
 bool IndexTaskService::checkRtype_(
     SCDDoc& doc,
     std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue
@@ -990,20 +993,20 @@ bool IndexTaskService::checkRtype_(
                     sf1r::Utilities::convertDate(propertyValueU, bundleConfig_->encoding_, dateStr);
                     newPropertyValue = dateStr;
                 }
+
+                string newValueStr(""), oldValueStr("");
+                newPropertyValue.convertString(newValueStr, izenelib::util::UString::UTF_8);
+
                 PropertyValue value;
                 if (documentManager_->getPropertyValue(docId, iter->getName(), value))
                 {
-                    try
+                    if(getPropertyValue_(value, oldValueStr))
                     {
-                        oldPropertyValue = get<izenelib::util::UString>(value);
-                        if ( newPropertyValue == oldPropertyValue )
-                        {
+                        if (newValueStr == oldValueStr)
                             continue;
-                        }
                     }
-                    catch (std::exception& e)
+                    else
                     {
-                        LOG(WARNING) << "exception in get property value: " << e.what();
                         return false;
                     }
                 }

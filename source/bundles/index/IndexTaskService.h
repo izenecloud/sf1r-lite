@@ -19,6 +19,7 @@
 #include <util/driver/Value.h>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/variant/get.hpp>
 
 namespace sf1r
 {
@@ -58,6 +59,8 @@ public:
 
 private:
     void createPropertyList_();
+
+    bool getPropertyValue_( const PropertyValue& value, std::string& valueStr );
 
     bool doBuildCollection_(
         const std::string& scdFile, 
