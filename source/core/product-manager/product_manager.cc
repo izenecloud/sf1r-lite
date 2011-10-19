@@ -102,6 +102,39 @@ bool ProductManager::HookDelete(uint32_t docid)
 void ProductManager::GenOperations()
 {
     op_processor_->Finish();
+
+    /// M
+    /*
+    void ProductManager::onProcessed(bool success)
+    {
+        // action after SCDs have been processed
+    }
+
+    DistributedProcessSynchronizer dsSyn;
+    std::string scdDir = "/tmp/hdfs/scd"; // generated scd files in scdDir
+    dsSyn.generated(scdDir);
+    dsSyn.watchProcess(boost::bind(&ProductManager::onProcessed, this,_1));
+    */
+
+    /// A
+    /*
+    class Receiver {
+    public:
+        Receiver()
+        {
+            dsSyn.watchGenerate(boost::bind(&Receiver::onGenerated, this,_1));
+        }
+
+        void Receiver::onGenerated(const std::string& s)
+        {
+            // process SCDs
+
+            dsSyn.processed(true);
+        }
+
+        DistributedProcessSynchronizer dsSyn;
+    }
+    */
 }
 
 bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib::util::UString& gen_uuid)
