@@ -66,7 +66,6 @@
           -->
           <IsePara buildimageindex="y" storeimagelocally="n" maximagenum="1000000" relatedimagenum="50"/>
           <QueryCorrectionPara basepath="@SF1RENGINE_ROOT@/bin/query-support" enableEK="y" enableCN="y"/>
-          <QueryLogPara updatetime="3600" logdays="7" cron="0 2 * * *"/>
         </Parameter>
       </MiningBundle>
 

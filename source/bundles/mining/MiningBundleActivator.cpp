@@ -34,9 +34,6 @@ MiningBundleActivator::~MiningBundleActivator()
 {
 }
 
-QueryCorrectionPara MiningConfig::query_correction_param;
-QueryLogPara MiningConfig::query_log_param;
-
 void MiningBundleActivator::start( IBundleContext::ConstPtr context )
 {
     context_ = context;
@@ -50,21 +47,15 @@ void MiningBundleActivator::start( IBundleContext::ConstPtr context )
 
     if (!QueryCorrectionInitiated)
     {
-        MiningQueryLogHandler* handler = MiningQueryLogHandler::getInstance();
-        handler->SetParam(MiningConfig::query_log_param.update_time, MiningConfig::query_log_param.log_days);
-        if ( !handler->cronStart(MiningConfig::query_log_param.cron) )
-        {
-            std::cout << "Can not start cron job for recommend, cron_string: " << MiningConfig::query_log_param.cron << std::endl;
-        }
-        std::string query_support_path = MiningConfig::query_correction_param.base_path;
+        std::string query_support_path = config_->mining_config_.query_correction_param.base_path;
         std::string query_correction_res_path = config_->system_resource_path_ + "/speller-support";
         std::string query_correction_path = query_support_path + "/querycorrection";
         boost::filesystem::create_directories(query_correction_path);
         QueryCorrectionSubmanagerParam::set(
             query_correction_res_path,
             query_correction_path,
-            MiningConfig::query_correction_param.enableEK,
-            MiningConfig::query_correction_param.enableCN
+            config_->mining_config_.query_correction_param.enableEK,
+            config_->mining_config_.query_correction_param.enableCN
         );
         QueryCorrectionSubmanager::getInstance();
 
