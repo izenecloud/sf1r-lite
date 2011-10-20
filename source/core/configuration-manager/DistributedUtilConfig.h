@@ -34,7 +34,7 @@ struct DFSConfig
     unsigned int port_;
 
     DFSConfig()
-    : isSupportFuse_(true)
+    : isSupportFuse_(true), port_(0)
     {
 
     }
@@ -55,9 +55,7 @@ class DistributedUtilConfig
 public:
     std::string toString()
     {
-        return
-        zkConfig_.toString() +
-        dfsConfig_.toString();
+        return zkConfig_.toString() + dfsConfig_.toString();
     }
 
 public:

@@ -298,9 +298,22 @@ void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
     if (!topology)
         return;
 
+    std::string clusterId;
     getAttribute( topology, "enable", distributedTopologyConfig_.enabled_ );
+    getAttribute( topology, "clusterid", clusterId );
     getAttribute( topology, "nodenum", distributedTopologyConfig_.nodeNum_ );
     getAttribute( topology, "mirrornum", distributedTopologyConfig_.mirrorNum_ );
+
+    size_t pos = clusterId.rfind('/');
+    if (pos != std::string::npos)
+        clusterId = clusterId.substr(pos+1);
+    if (!clusterId.empty())
+        distributedTopologyConfig_.clusterId_ = clusterId;
+    else
+    {
+        distributedTopologyConfig_.clusterId_ = "unknown";
+        std::cout<<"Warning: unknown hostname for clusterid."<<std::endl;
+    }
 
     // Current SF1 node
     ticpp::Element * cursf1node = getUniqChildElement( topology, "CurrentNode" );

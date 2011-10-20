@@ -22,7 +22,7 @@ void NodeManager::initZooKeeper(const std::string& zkHosts, const int recvTimeou
 void NodeManager::setCurrentNodeInfo(SF1NodeInfo& sf1NodeInfo)
 {
     nodeInfo_ = sf1NodeInfo;
-    nodePath_ = NodeUtil::getNodePath(nodeInfo_.mirrorId_, nodeInfo_.nodeId_);
+    nodePath_ = NodeDef::getNodePath(nodeInfo_.mirrorId_, nodeInfo_.nodeId_);
 }
 
 void NodeManager::registerNode()
@@ -82,12 +82,20 @@ void NodeManager::deregisterNode()
 {
     zookeeper_->deleteZNode(nodePath_, true);
 
-    std::string mirrorPath = NodeUtil::getMirrorPath(nodeInfo_.mirrorId_);
+    std::string mirrorPath = NodeDef::getMirrorPath(nodeInfo_.mirrorId_);
     std::vector<std::string> childrenList;
     zookeeper_->getZNodeChildren(mirrorPath, childrenList, ZooKeeper::NOT_WATCH, false);
     if (childrenList.size() <= 0)
     {
         zookeeper_->deleteZNode(mirrorPath);
+    }
+
+    childrenList.clear();
+    zookeeper_->getZNodeChildren(NodeDef::getSF1TopologyPath(), childrenList, ZooKeeper::NOT_WATCH, false);
+    if (childrenList.size() <= 0)
+    {
+        // xxx ?
+        zookeeper_->deleteZNode(NodeDef::getSF1RootPath(), true);
     }
 }
 
@@ -103,9 +111,9 @@ void NodeManager::process(ZooKeeperEvent& zkEvent)
 
 void NodeManager::ensureNodeParents(nodeid_t nodeId, mirrorid_t mirrorId)
 {
-    zookeeper_->createZNode(NodeUtil::getSF1RootPath());
-    zookeeper_->createZNode(NodeUtil::getSF1TopologyPath());
-    zookeeper_->createZNode(NodeUtil::getMirrorPath(mirrorId));
+    zookeeper_->createZNode(NodeDef::getSF1RootPath());
+    zookeeper_->createZNode(NodeDef::getSF1TopologyPath());
+    zookeeper_->createZNode(NodeDef::getMirrorPath(mirrorId));
 }
 
 void NodeManager::retryRegister()

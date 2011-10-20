@@ -216,6 +216,10 @@ void CobraProcess::stopDriver()
 
 bool CobraProcess::startDistributedServer()
 {
+    // init node manager
+    NodeManagerSingleton::get()->setDSTopologyConfig(SF1Config::get()->distributedTopologyConfig_);
+    NodeManagerSingleton::get()->setDSUtilConfig(SF1Config::get()->distributedUtilConfig_);
+
     if (!SF1Config::get()->distributedTopologyConfig_.enabled_)
         return false;
 

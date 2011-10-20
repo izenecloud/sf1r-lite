@@ -29,7 +29,7 @@ void MasterNodeManager::setNodeInfo(Topology& topology, SF1NodeInfo& sf1NodeInfo
         workerState->isRunning_ = false;
         workerState->mirrorId_ = curNodeInfo_.mirrorId_;
         workerState->nodeId_ = i;
-        workerState->zkPath_ = NodeUtil::getNodePath(workerState->mirrorId_, i)+"/Worker";
+        workerState->zkPath_ = NodeDef::getNodePath(workerState->mirrorId_, i)+"/Worker";
         workerStateMap_[workerState->zkPath_] = workerState;
     }
 }
@@ -75,11 +75,11 @@ void MasterNodeManager::onNodeDeleted(const std::string& path)
                 continue;
 
             workerState->mirrorId_ = i;
-            workerState->zkPath_ = NodeUtil::getNodePath(workerState->mirrorId_, i)+"/Worker";
+            workerState->zkPath_ = NodeDef::getNodePath(workerState->mirrorId_, i)+"/Worker";
             if (zookeeper_->isZNodeExists(workerState->zkPath_, ZooKeeper::WATCH))
             {
                 // get worker host
-                std::string workerNodePath = NodeUtil::getNodePath(workerState->mirrorId_, workerState->nodeId_);
+                std::string workerNodePath = NodeDef::getNodePath(workerState->mirrorId_, workerState->nodeId_);
                 zookeeper_->getZNodeData(workerNodePath, workerState->host_);
                 // get worker port
                 std::string portString;
@@ -102,7 +102,7 @@ void MasterNodeManager::onNodeDeleted(const std::string& path)
         {
             // watch worker on current mirror
             workerState->mirrorId_ = curNodeInfo_.mirrorId_;
-            workerState->zkPath_ = NodeUtil::getNodePath(workerState->mirrorId_, workerState->nodeId_)+"/Worker";
+            workerState->zkPath_ = NodeDef::getNodePath(workerState->mirrorId_, workerState->nodeId_)+"/Worker";
             zookeeper_->isZNodeExists(workerState->zkPath_, ZooKeeper::WATCH);
         }
     }
@@ -125,7 +125,7 @@ void MasterNodeManager::onDataChanged(const std::string& path)
         boost::shared_ptr<WorkerState> workerState = workerStateMap_[path];
 
         // get worker host
-        std::string workerNodePath = NodeUtil::getNodePath(workerState->mirrorId_, workerState->nodeId_);
+        std::string workerNodePath = NodeDef::getNodePath(workerState->mirrorId_, workerState->nodeId_);
         zookeeper_->getZNodeData(workerNodePath, workerState->host_, ZooKeeper::WATCH);
         // get worker port
         std::string portString;
@@ -183,7 +183,7 @@ bool MasterNodeManager::checkWorkers()
             workerState->isRunning_ = true;
 
             // get worker host
-            std::string workerNodePath = NodeUtil::getNodePath(workerState->mirrorId_, workerState->nodeId_);
+            std::string workerNodePath = NodeDef::getNodePath(workerState->mirrorId_, workerState->nodeId_);
             zookeeper_->getZNodeData(workerNodePath, workerState->host_, ZooKeeper::WATCH);
             // get worker port
             std::string portString;
@@ -230,7 +230,7 @@ void MasterNodeManager::registerServer()
     }
 
     // This Master is ready to serve
-    std::string path = NodeUtil::getSF1ServicePath();
+    std::string path = NodeDef::getSF1ServicePath();
 
     if (!zookeeper_->isZNodeExists(path))
     {

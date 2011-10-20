@@ -2,30 +2,19 @@
  * @file NodeDef.h
  * @author Zhongxia Li
  * @date Sep 20, 2011
- * @brief 
+ * @brief Consistent definitions of node names and paths used in ZooKeeper for SF1R distributed coordination.
  */
 #ifndef NODE_DEF_H_
 #define NODE_DEF_H_
 
-#include <stdint.h>
-#include <string>
-#include <map>
+#include "TypeDef.h"
+
 #include <sstream>
 
 namespace sf1r {
 
-/// Definitions
-typedef uint32_t nodeid_t;
-typedef uint32_t mirrorid_t;
-
-/// Definition of zookeeper node paths
-const static char ZK_PATH_SF1[]          = "/SF1R";
-const static char ZK_PATH_SF1_TOPOLOGY[] = "/SF1R/Topology";
-const static char ZK_PATH_SF1_SERVICE[]  = "/SF1R/Service";
-
-const static char* ZK_PATH_SYNCHRO   = "/SF1R/Synchro";
-
 /**
+ *
 The topology of distributed SF1 service:
 (1) A Mirror is constituted of several SF1 Nodes, it provides full search data and functionality.
 
@@ -42,77 +31,61 @@ The topology of distributed SF1 service:
 
 Using ZooKeeper for distributed coordination, the associated data structure is defined as below:
 /
-|
-SF1R
-|--- Topology                #
-     |--- Mirror1
-          |--- Node1
-               |--- Master
-               |--- Worker
-          |--- Node2
-               |--- Worker
-     |--- Mirror2
-          |--- Node1
-               |--- Master
-               |--- Worker
-          |--- Node2
-               |--- Master
-               |--- Worker
+|---
+     SF1R-xx
+      |--- Topology
+             |--- Mirror1
+                  |--- Node1
+                       |--- Master
+                       |--- Worker
+                  |--- Node2
+                       |--- Worker
+             |--- Mirror2
+                  |--- Node1
+                       |--- Master
+                       |--- Worker
+                  |--- Node2
+                       |--- Master
+                       |--- Worker
 |--- Service                 # SF1 Servers
      |--- Server00000000     # ---->  "/Topology/Mirror1/Node1/Master"
      |--- Server00000001
      |--- Server00000002
-**/
-struct Topology
-{
-    uint32_t nodeNum_;
-    uint32_t mirrorNum_;
-
-    Topology()
-    : nodeNum_(0), mirrorNum_(0)
-    {}
-};
-
-/**
- * Information of a single node
+ *
  */
-struct SF1NodeInfo
+class NodeDef
 {
-    mirrorid_t mirrorId_;
-    nodeid_t nodeId_;
-    std::string localHost_;
-    uint32_t baPort_;
+    // ZooKeeper node names' definitions
+    static std::string sf1rCluster_;         // identify SF1R application, configured
+    static const std::string sf1rTopology_;
+    static const std::string sf1rService_;
 
-    SF1NodeInfo()
-    : mirrorId_(0)
-    , nodeId_(0)
-    , baPort_(0)
-    {}
-};
-
-/// Utility
-class NodeUtil
-{
 public:
+
+    static void setClusterIdNodeName(const std::string& clusterId)
+    {
+        sf1rCluster_ = "/SF1R-" + clusterId;
+    }
+
     static std::string getSF1RootPath()
     {
-        return std::string(ZK_PATH_SF1);
+        return sf1rCluster_;
     }
 
     static std::string getSF1TopologyPath()
     {
-        return std::string(ZK_PATH_SF1_TOPOLOGY);
+        return sf1rCluster_ + sf1rTopology_;
     }
 
     static std::string getSF1ServicePath()
     {
-        return std::string(ZK_PATH_SF1_SERVICE);
+        return sf1rCluster_ + sf1rService_;
     }
 
     static std::string getMirrorPath(mirrorid_t mirrorId)
     {
         std::stringstream ss;
-        ss <<ZK_PATH_SF1_TOPOLOGY<<"/Mirror"<<mirrorId;
+        ss <<sf1rCluster_<<sf1rTopology_<<"/Mirror"<<mirrorId;
 
         return ss.str();
     }
@@ -120,30 +93,15 @@ public:
     static std::string getNodePath(mirrorid_t mirrorId, nodeid_t nodeId)
     {
         std::stringstream ss;
-        ss <<ZK_PATH_SF1_TOPOLOGY<<"/Mirror"<<mirrorId<<"/Node"<<nodeId;
+        ss <<sf1rCluster_<<sf1rTopology_<<"/Mirror"<<mirrorId<<"/Node"<<nodeId;
 
         return ss.str();
     }
 
     static std::string getSynchroPath()
     {
-        return std::string(ZK_PATH_SYNCHRO);
+        return sf1rCluster_+"/Synchro"; // todo
     }
-
-    static void serialize(std::string& data, std::string& k, std::string& v)
-    {
-        if (!data.empty())
-            data += "$";
-
-        data += k+"#"+v;
-    }
-
-    static void deserialize(std::string& data, std::map<std::string, std::string>& kvData)
-    {
-    }
-
-    static const char delimiter_record = '$';
-    static const char delimiter_kv = '#';
 };
 
 }

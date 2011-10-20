@@ -49,7 +49,7 @@ public:
     {
         std::stringstream ss;
         ss << "==== [DistributedTopology] ===="<<endl;
-        ss << "enabled ? "<<enabled_
+        ss << "enabled ? "<<enabled_<<", clusterId "<<clusterId_
            <<" nodeNum: "<<nodeNum_<<" mirrorNum: "<<mirrorNum_<<endl;
 
         ss << curSF1Node_.toString();
@@ -60,6 +60,7 @@ public:
 public:
     // golable topology configuration
     bool enabled_;
+    std::string clusterId_;
     unsigned int nodeNum_;
     unsigned int mirrorNum_;
 
