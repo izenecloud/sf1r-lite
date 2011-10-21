@@ -136,23 +136,6 @@
         <xs:attribute name="enableCN" type="YesNoType" use="required"/>
         <xs:attribute name="enableEK" type="YesNoType" use="required"/>
     </xs:complexType>
-    <xs:complexType name="QueryLogParaType">
-        <xs:attribute name="updatetime" use="required">
-            <xs:simpleType>
-                <xs:restriction base="xs:integer">
-                    <xs:minInclusive value="1"/>
-                </xs:restriction>
-            </xs:simpleType>
-        </xs:attribute>
-        <xs:attribute name="logdays" use="required">
-            <xs:simpleType>
-                <xs:restriction base="xs:integer">
-                    <xs:minInclusive value="1"/>
-                </xs:restriction>
-            </xs:simpleType>
-        </xs:attribute>
-        <xs:attribute name="cron" use="required"/>
-    </xs:complexType>
 
     <xs:element name="MiningBundle">
         <xs:complexType>
@@ -184,7 +167,6 @@
                             <xs:element name="ClassificationPara" type="ClassificationParaType" minOccurs="1"/>
                             <xs:element name="IsePara" type="IseParaType" minOccurs="1"/>
                             <xs:element name="QueryCorrectionPara" type="QueryCorrectionParaType" minOccurs="1"/>
-                            <xs:element name="QueryLogPara" type="QueryLogParaType" minOccurs="1"/>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>

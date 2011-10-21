@@ -38,7 +38,7 @@ QueryCorrectionSubmanager::QueryCorrectionSubmanager
 :path_(path), workingPath_(workingPath)
 , enableEK_(enableEK), enableChn_(enableChn)
 , activate_(false)
-, cmgr_(path_+"/cn", workingPath_), ekmgr_(path, workingPath, ed)
+, cmgr_(path_+"/cn"), ekmgr_(path, workingPath, ed)
 , has_new_inject_(false)
 {
     initialize();
