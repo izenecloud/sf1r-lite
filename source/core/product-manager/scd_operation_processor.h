@@ -26,9 +26,7 @@ public:
     
     void Append(int op, const PMDocumentType& doc);
     
-    void ScdEnd();
-    
-    void Finish();
+    bool Finish();
     
 private:
     

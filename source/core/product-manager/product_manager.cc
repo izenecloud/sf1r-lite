@@ -2,6 +2,7 @@
 #include "product_data_source.h"
 #include "operation_processor.h"
 #include "uuid_generator.h"
+#include <boost/unordered_set.hpp>
 
 using namespace sf1r;
 
@@ -99,9 +100,14 @@ bool ProductManager::HookDelete(uint32_t docid)
     return true;
 }
 
-void ProductManager::GenOperations()
+bool ProductManager::GenOperations()
 {
-    op_processor_->Finish();
+    if(!op_processor_->Finish())
+    {
+        error_ = op_processor_->GetLastError();
+        return false;
+    }
+    return true;
 
     /// M
     /*
@@ -140,7 +146,48 @@ void ProductManager::GenOperations()
 bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib::util::UString& gen_uuid)
 {
     std::cout<<"ProductManager::AddGroup"<<std::endl;
-    if(docid_list.empty()) return false;
+    if(docid_list.size()<2) 
+    {
+        error_ = "Docid list size must larger than 1";
+        return false;
+    }
+    PMDocumentType first_doc;
+    if(!data_source_->GetDocument(docid_list[0], first_doc))
+    {
+        error_ = "Can not get document "+boost::lexical_cast<std::string>(docid_list[0]);
+        return false;
+    }
+    izenelib::util::UString first_uuid;
+    if(!GetUuid_(first_doc, first_uuid))
+    {
+        error_ = "Can not get uuid in document "+boost::lexical_cast<std::string>(docid_list[0]);
+        return false;
+    }
+    std::vector<uint32_t> remain(docid_list.begin()+1, docid_list.end());
+    if(!AppendToGroup_(first_uuid, remain))
+    {
+        return false;
+    }
+    gen_uuid = first_uuid;
+    return true;
+}
+
+bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list)
+{
+    if(docid_list.empty()) 
+    {
+        error_ = "Docid list size must larger than 0";
+        return false;
+    }
+    std::vector<uint32_t> uuid_docid_list;
+    data_source_->GetDocIdList(uuid, uuid_docid_list, 0);
+    if(uuid_docid_list.empty())
+    {
+        std::string suuid;
+        uuid.convertString(suuid, izenelib::util::UString::UTF_8);
+        error_ = suuid+" not exists";
+        return false;
+    }
     std::vector<PMDocumentType> doc_list(docid_list.size());
     for(uint32_t i=0;i<docid_list.size();i++)
     {
@@ -158,11 +205,6 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib:
             error_ = "Can not get uuid in document "+boost::lexical_cast<std::string>(docid_list[i]);
             return false;
         }
-//         if(!GetDOCID_(doc_list[i], str_docid_list[i]))
-//         {
-//             error_ = "Can not get DOCID in document "+boost::lexical_cast<std::string>(docid_list[i]);
-//             return false;
-//         }
         std::vector<uint32_t> same_docid_list;
         data_source_->GetDocIdList(uuid_list[i], same_docid_list, docid_list[i]);
         if(!same_docid_list.empty())
@@ -170,30 +212,144 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib:
             error_ = "Document id "+boost::lexical_cast<std::string>(docid_list[i])+" belongs to other group";
             return false;
         }
+        if(uuid_list[i] == uuid)
+        {
+            error_ = "Document id "+boost::lexical_cast<std::string>(docid_list[i])+" has the same uuid with request";
+            return false;
+        }
     }
+    
+    
+    std::vector<uint32_t> all_docid_list(uuid_docid_list);
+    all_docid_list.insert(all_docid_list.end(), docid_list.begin(), docid_list.end());
+    ProductPrice price;
+    GetPrice_(all_docid_list, price);
+
     //validation finished here.
-    PMDocumentType output(doc_list[0]);
-    output.property(config_.docid_property_name) = izenelib::util::UString("", izenelib::util::UString::UTF_8);
-    SetItemCount_(output, doc_list.size());
-    output.eraseProperty(config_.uuid_property_name);
-    izenelib::util::UString uuid = uuid_gen_->Gen(output);
+    
+    PMDocumentType output;
     output.property(config_.docid_property_name) = uuid;
-    //update DM and IM first
-    if(!data_source_->UpdateUuid(docid_list, uuid))
-    {
-        error_ = "Update uuid failed";
-        return false;
-    }
-    //output generated here.
+    SetItemCount_(output, all_docid_list.size());
+    output.property(config_.price_property_name) = price.ToUString();
+    
+    //commit firstly, then update DM and IM
     for(uint32_t i=0;i<uuid_list.size();i++)
     {
         PMDocumentType del_doc;
         del_doc.property(config_.docid_property_name) = uuid_list[i];
         op_processor_->Append(3, del_doc);
     }
-    op_processor_->Append(1, output);
-    gen_uuid = uuid;
-    //update doc in DM and IM
+    op_processor_->Append(2, output);
+    if(!GenOperations())
+    {
+        return false;
+    }
+    
+    //update DM and IM then
+    if(!data_source_->UpdateUuid(docid_list, uuid))
+    {
+        error_ = "Update uuid failed";
+        return false;
+    }
+    return false;
+}
+
+bool ProductManager::AppendToGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list)
+{
+    std::cout<<"ProductManager::AppendToGroup"<<std::endl;
+    return AppendToGroup_(uuid, docid_list);
+    
+}
+    
+bool ProductManager::RemoveFromGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list)
+{
+    std::cout<<"ProductManager::RemoveFromGroup"<<std::endl;
+    if(docid_list.empty()) 
+    {
+        error_ = "Docid list size must larger than 0";
+        return false;
+    }
+    std::vector<uint32_t> uuid_docid_list;
+    data_source_->GetDocIdList(uuid, uuid_docid_list, 0);
+    if(uuid_docid_list.empty())
+    {
+        std::string suuid;
+        uuid.convertString(suuid, izenelib::util::UString::UTF_8);
+        error_ = suuid+" not exists";
+        return false;
+    }
+    boost::unordered_set<uint32_t> contains;
+    for(uint32_t i=0;i<uuid_docid_list.size();i++)
+    {
+        contains.insert(uuid_docid_list[i]);
+    }
+    for(uint32_t i=0;i<docid_list.size();i++)
+    {
+        if( contains.find(docid_list[i]) == contains.end() )
+        {
+            error_ = "Document "+boost::lexical_cast<std::string>(docid_list[i])+" not in specific uuid";
+            return false;
+        }
+        contains.erase(docid_list[i]);
+    }
+    std::vector<uint32_t> remain;
+    boost::unordered_set<uint32_t>::iterator it = contains.begin();
+    while( it!=contains.end())
+    {
+        remain.push_back(*it);
+        ++it;
+    }
+    std::vector<PMDocumentType> doc_list(docid_list.size());
+    for(uint32_t i=0;i<docid_list.size();i++)
+    {
+        if(!data_source_->GetDocument(docid_list[i], doc_list[i]))
+        {
+            error_ = "Can not get document "+boost::lexical_cast<std::string>(docid_list[i]);
+            return false;
+        }
+    }
+    
+    if( remain.empty())
+    {
+        PMDocumentType del_doc;
+        del_doc.property(config_.docid_property_name) = uuid;
+        op_processor_->Append(3, del_doc);
+    }
+    else
+    {
+        ProductPrice price;
+        GetPrice_(remain, price);
+        //validation finished here.
+        
+        PMDocumentType update_doc;
+        update_doc.property(config_.docid_property_name) = uuid;
+        SetItemCount_(update_doc, remain.size());
+        update_doc.property(config_.price_property_name) = price.ToUString();
+        op_processor_->Append(2, update_doc);
+    }
+    std::vector<izenelib::util::UString> uuid_list(doc_list.size());
+    for(uint32_t i=0;i<doc_list.size();i++)
+    {
+        //TODO need to be more strong here.
+        uuid_list[i] = uuid_gen_->Gen(doc_list[i]);
+        doc_list[i].property(config_.docid_property_name) = uuid_list[i];
+        SetItemCount_(doc_list[i], doc_list.size());
+        doc_list[i].eraseProperty(config_.uuid_property_name);
+        op_processor_->Append(1, doc_list[i]);
+    }
+    if(!GenOperations())
+    {
+        return false;
+    }
+    //update DM and IM here
+    for(uint32_t i=0;i<docid_list.size();i++)
+    {
+        std::vector<uint32_t> tmp_list(1, docid_list[i]);
+        if(!data_source_->UpdateUuid(tmp_list, uuid_list[i]))
+        {
+            //TODO how to rollback?
+        }
+    }
     return true;
 }
 

@@ -35,7 +35,7 @@ public:
     
     bool HookDelete(uint32_t docid);
     
-    void GenOperations();
+    bool GenOperations();
     
     const std::string& GetLastError() const
     {
@@ -45,7 +45,13 @@ public:
     //all intervention functions.
     bool AddGroup(const std::vector<uint32_t>& docid_list, izenelib::util::UString& gen_uuid);
     
+    bool AppendToGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list);
+    
+    bool RemoveFromGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list);
+    
 private:
+    
+    bool AppendToGroup_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list);
     
     bool GetPrice_(uint32_t docid, ProductPrice& price);
     

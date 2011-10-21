@@ -47,11 +47,27 @@ bool ProductController::require_docs_()
     return true;
 }
 
+bool ProductController::require_uuid_()
+{
+    Value& vuuid = request()[Keys::uuid];
+    std::string suuid = asString(vuuid);
+    if(suuid.empty())
+    {
+        response().addError("Require uuid in request.");
+        return false;
+    }
+    else
+    {
+        uuid_ = izenelib::util::UString(suuid, izenelib::util::UString::UTF_8);
+    }
+    return true;
+}
+
 
 
 
 /**
- * @brief Action \b add_new_tid. Use new documents id list to generate a new tid group
+ * @brief Action \b add_new_group. Use new documents id list to generate a new group
  *
  * @section request
  *
@@ -68,7 +84,7 @@ bool ProductController::require_docs_()
  * Request
  * @code
  * {
- *   "collection" : "intel",
+ *   "collection" : "intelm",
  *   "docid_list": [5,6,7,8]
  * }
  * @endcode
@@ -96,7 +112,91 @@ void ProductController::add_new_group()
     response()[Keys::uuid] = suuid;
 }
 
+/**
+ * @brief Action \b append_to_group. Append new documents id list to an exist group
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b uuid*       (@c String): uuid
+ * - @b docid_list* (@c Array): document id list
+ *
+ * @section response
+ *
+ * 
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection" : "intelm",
+ *   "uuid" : "xxx-yyy-zzz",
+ *   "docid_list": [5,6,7,8]
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ * }
+ * @endcode
+ */
+void ProductController::append_to_group()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
+    IZENELIB_DRIVER_BEFORE_HOOK(require_uuid_());
+    IZENELIB_DRIVER_BEFORE_HOOK(require_docs_());
+    if(!product_manager_->AppendToGroup(uuid_, docid_list_))
+    {
+        response().addError(product_manager_->GetLastError());
+        return;
+    }
+}
 
+/**
+ * @brief Action \b remove_from_group. Remove documents id list from an exist group
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b uuid*       (@c String): uuid
+ * - @b docid_list* (@c Array): document id list
+ *
+ * @section response
+ *
+ * 
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection" : "intelm",
+ *   "uuid" : "xxx-yyy-zzz",
+ *   "docid_list": [5,6,7,8]
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ * }
+ * @endcode
+ */
+void ProductController::remove_from_group()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
+    IZENELIB_DRIVER_BEFORE_HOOK(require_uuid_());
+    IZENELIB_DRIVER_BEFORE_HOOK(require_docs_());
+    if(!product_manager_->RemoveFromGroup(uuid_, docid_list_))
+    {
+        response().addError(product_manager_->GetLastError());
+        return;
+    }
+}
 
     
 }

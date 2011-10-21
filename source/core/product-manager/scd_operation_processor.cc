@@ -33,11 +33,7 @@ void ScdOperationProcessor::Append(int op, const PMDocumentType& doc)
     last_op_ = op;
 }
 
-void ScdOperationProcessor::ScdEnd()
-{
-}
-
-void ScdOperationProcessor::Finish()
+bool ScdOperationProcessor::Finish()
 {
     if(writer_!=NULL)
     {
@@ -48,9 +44,11 @@ void ScdOperationProcessor::Finish()
         //notify zookeeper on dir_
     }
     std::cout<<"ScdOperationProcessor::Finish "<<dir_<<std::endl;
+    //TODO HOW to get the bool result?
     DistributedProcessSynchronizer dsSyn;
     dsSyn.generated(dir_);
     dsSyn.watchProcess(boost::bind(&ScdOperationProcessor::AfterProcess_, this,_1));
+    return true;
 }
 
 void ScdOperationProcessor::AfterProcess_(bool is_succ)

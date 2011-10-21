@@ -25,13 +25,18 @@ public:
     {
     }
     
-    virtual void ScdEnd()
+    virtual bool Finish()
     {
+        return false;
     }
     
-    virtual void Finish()
+    const std::string& GetLastError() const
     {
+        return error_;
     }
+    
+protected:
+    std::string error_;
     
 };
 
