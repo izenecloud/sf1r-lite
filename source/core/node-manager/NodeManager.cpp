@@ -22,14 +22,14 @@ void NodeManager::initZooKeeper(const std::string& zkHosts, const int recvTimeou
 void NodeManager::setCurrentNodeInfo(SF1NodeInfo& sf1NodeInfo)
 {
     nodeInfo_ = sf1NodeInfo;
-    nodePath_ = NodeDef::getNodePath(nodeInfo_.mirrorId_, nodeInfo_.nodeId_);
+    nodePath_ = NodeDef::getNodePath(nodeInfo_.replicaId_, nodeInfo_.nodeId_);
 }
 
 void NodeManager::registerNode()
 {
     if (zookeeper_->isConnected())
     {
-        ensureNodeParents(nodeInfo_.nodeId_, nodeInfo_.mirrorId_);
+        ensureNodeParents(nodeInfo_.nodeId_, nodeInfo_.replicaId_);
         if (!zookeeper_->createZNode(nodePath_, nodeInfo_.localHost_))
         {
             if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
@@ -43,7 +43,6 @@ void NodeManager::registerNode()
         {
             std::cout<<"[NodeManager] node registered at \""<<nodePath_<<"\" "<<nodeInfo_.localHost_<<std::endl;
             registered_ = true;
-            return;
         }
     }
 
@@ -82,12 +81,12 @@ void NodeManager::deregisterNode()
 {
     zookeeper_->deleteZNode(nodePath_, true);
 
-    std::string mirrorPath = NodeDef::getMirrorPath(nodeInfo_.mirrorId_);
+    std::string replicaPath = NodeDef::getReplicaPath(nodeInfo_.replicaId_);
     std::vector<std::string> childrenList;
-    zookeeper_->getZNodeChildren(mirrorPath, childrenList, ZooKeeper::NOT_WATCH, false);
+    zookeeper_->getZNodeChildren(replicaPath, childrenList, ZooKeeper::NOT_WATCH, false);
     if (childrenList.size() <= 0)
     {
-        zookeeper_->deleteZNode(mirrorPath);
+        zookeeper_->deleteZNode(replicaPath);
     }
 
     childrenList.clear();
@@ -109,16 +108,16 @@ void NodeManager::process(ZooKeeperEvent& zkEvent)
     }
 }
 
-void NodeManager::ensureNodeParents(nodeid_t nodeId, mirrorid_t mirrorId)
+void NodeManager::ensureNodeParents(nodeid_t nodeId, replicaid_t replicaId)
 {
     zookeeper_->createZNode(NodeDef::getSF1RootPath());
     zookeeper_->createZNode(NodeDef::getSF1TopologyPath());
-    zookeeper_->createZNode(NodeDef::getMirrorPath(mirrorId));
+    zookeeper_->createZNode(NodeDef::getReplicaPath(replicaId));
 }
 
 void NodeManager::retryRegister()
 {
-    std::cout<<"NodeManager::retryRegister"<<std::endl;
+    //std::cout<<"NodeManager::retryRegister"<<std::endl;
     registerNode();
 
     if (masterPort_ != 0)

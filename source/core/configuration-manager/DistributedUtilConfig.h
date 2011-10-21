@@ -42,10 +42,12 @@ struct DFSConfig
     std::string toString()
     {
         std::stringstream ss;
+        ss << "========= DistributedUtilConfig ========"<<endl;
         ss << "[DFS Config] "<<type_
                 << (isSupportFuse_?", support fuse" : ", not support fuse")
                 << ", mount on "<<mountDir_
                 << ", server="<<server_<<":"<<port_<<endl;
+        ss << "========================================"<<endl;
         return ss.str();
     }
 };

@@ -81,7 +81,7 @@ public:
     virtual void process(ZooKeeperEvent& zkEvent);
 
 private:
-    void ensureNodeParents(nodeid_t nodeId, mirrorid_t mirrorId);
+    void ensureNodeParents(nodeid_t nodeId, replicaid_t replicaId);
 
     void retryRegister();
 

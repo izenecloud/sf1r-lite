@@ -207,7 +207,7 @@
 					</xs:restriction>
 				</xs:simpleType>
 			</xs:attribute>
-			<xs:attribute name="mirrornum" use="required">
+			<xs:attribute name="workernum" use="optional">
 				<xs:simpleType>
 					<xs:restriction base="xs:integer">
 						<xs:minInclusive value="1"/>
@@ -231,7 +231,7 @@
 					</xs:restriction>
 				</xs:simpleType>
                         </xs:attribute>
-			<xs:attribute name="mirrorid" use="required">
+			<xs:attribute name="replicaid" use="required">
 				<xs:simpleType>
 					<xs:restriction base="xs:integer">
 						<xs:minInclusive value="1"/>
