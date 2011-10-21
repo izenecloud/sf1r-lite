@@ -19,6 +19,7 @@
 #include "EkQueryCorrection.h"
 #include <boost/noncopyable.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/shared_ptr.hpp>
 #include <sdb/SequentialDB.h>
 
 namespace sf1r
@@ -85,7 +86,7 @@ private:
     idmlib::qc::CnQueryCorrection cmgr_;
 
     //English or Korean Query CorrectionManager
-    EkQueryCorrection ekmgr_;
+    static boost::shared_ptr<EkQueryCorrection> ekmgr_;
 
     boost::unordered_map<std::string, izenelib::util::UString> inject_data_;
     bool has_new_inject_;

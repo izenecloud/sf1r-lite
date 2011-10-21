@@ -21,15 +21,21 @@ namespace sf1r
 
 std::string QueryCorrectionSubmanager::resourcePath_;
 std::string QueryCorrectionSubmanager::workingPath_;
+boost::shared_ptr<EkQueryCorrection> QueryCorrectionSubmanager::ekmgr_;
 
 QueryCorrectionSubmanager::QueryCorrectionSubmanager
 (const string& queryDataPath, bool enableEK, bool enableChn, int ed)
     : queryDataPath_(queryDataPath)
     , enableEK_(enableEK), enableChn_(enableChn)
     , activate_(false)
-    , cmgr_(resourcePath_ + "/cn"), ekmgr_(resourcePath_, workingPath_, ed)
+    , cmgr_(resourcePath_ + "/cn")
     , has_new_inject_(false)
 {
+    static bool FirstRun = true;
+    if (FirstRun)
+        ekmgr_.reset(new EkQueryCorrection(resourcePath_, workingPath_, ed));
+
+    FirstRun = false;
     initialize();
 }
 
@@ -48,6 +54,7 @@ QueryCorrectionSubmanager& QueryCorrectionSubmanager::getInstance()
 //Initialize some member variables
 bool QueryCorrectionSubmanager::initialize()
 {
+    static bool FirstRun = true;
     std::cout<< "Start Speller construction!" << std::endl;
     activate_ = true;
     if (!boost::filesystem::exists(resourcePath_)
@@ -61,9 +68,9 @@ bool QueryCorrectionSubmanager::initialize()
         return false;
     }
 
-    if (enableEK_)
+    if (FirstRun && enableEK_)
     {
-        ekmgr_.initialize();
+        ekmgr_->initialize();
     }
 
     if (enableChn_)
@@ -78,9 +85,9 @@ bool QueryCorrectionSubmanager::initialize()
 
     {
         boost::mutex::scoped_lock scopedLock(logMutex_);
-        if (enableEK_)
+        if (FirstRun && enableEK_)
         {
-            ekmgr_.warmUp();
+            ekmgr_->warmUp();
         }
 
     }
@@ -115,6 +122,7 @@ bool QueryCorrectionSubmanager::initialize()
     ifs.close();
 
     std::cout << "End Speller construction!" << std::endl;
+    FirstRun = false;
 
     return true;
 }
@@ -141,7 +149,7 @@ bool QueryCorrectionSubmanager::getRefinedToken_(const izenelib::util::UString& 
     }
     if (enableEK_)
     {
-        if ( ekmgr_.getRefinedQuery(token, result) )
+        if ( ekmgr_->getRefinedQuery(token, result) )
         {
             if(result.length()>0)
             {
