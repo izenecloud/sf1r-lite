@@ -51,8 +51,7 @@ EkQueryCorrection::EkQueryCorrection(const string& path,
     //initialize();
 }
 
-void EkQueryCorrection::initDictHash(izenelib::am::rde_hash<
-                                     izenelib::util::UString, bool>& hashdb, const std::string& fileName)
+void EkQueryCorrection::initDictHash(izenelib::am::rde_hash<izenelib::util::UString, bool>& hashdb, const std::string& fileName)
 {
 
     ifstream input(fileName.c_str());
@@ -120,7 +119,7 @@ bool EkQueryCorrection::ReloadEnResource()
     boost::lock_guard<boost::shared_mutex> lock(mutex_);
     dictENHash_.clear();
     initDictHash(dictENHash_, dictEN_);
-    
+
     if(s_!=NULL)
     {
         delete s_;
@@ -139,7 +138,7 @@ bool EkQueryCorrection::ReloadEnResource()
     }
     return true;
 }
-    
+
 bool EkQueryCorrection::ReloadKrResource()
 {
     boost::lock_guard<boost::shared_mutex> lock(mutex_);
@@ -182,12 +181,12 @@ bool EkQueryCorrection::initialize()
         activate_ = false;
         return false;
     }
-    
+
     matrix_ = path_ + "/Matrix.txt";
     model_.assignMatrix(matrix_.c_str());
     UAutomata autoMataU(max_ed_);
     autoMataU.buildAutomaton(states_, autoMaton_);
-    
+
     if(!ReloadEnResource())
     {
         std::cout<<"Load En Resource failed"<<std::endl;
@@ -200,7 +199,7 @@ bool EkQueryCorrection::initialize()
         activate_ = false;
         return false;
     }
-    
+
     //start update
     uint32_t interval = 30;
     update_thread_.setCheckInterval(interval);
@@ -226,8 +225,7 @@ EkQueryCorrection::~EkQueryCorrection()
 
 }
 
-bool EkQueryCorrection::getRefinedQuery(const std::string& collectionName,
-                                        const UString& queryUString, UString& refinedQueryUString)
+bool EkQueryCorrection::getRefinedQuery(const UString& queryUString, UString& refinedQueryUString)
 {
     boost::shared_lock<boost::shared_mutex> lock(mutex_);
     std::vector<UString> queryTokens;
@@ -275,7 +273,7 @@ bool EkQueryCorrection::getRefinedQuery(const std::string& collectionName,
     {
         std::vector<UString> refinedTokens;
         //for multiple query tokens, using Viterbi algorithm to find the best path
-        bool ret = getBestPath_(collectionName, queryTokens, queryCandidates, refinedTokens);
+        bool ret = getBestPath_(queryTokens, queryCandidates, refinedTokens);
         if (ret == false)
             return false;
         for (unsigned int i = 0; i < refinedTokens.size(); i++)
@@ -295,9 +293,11 @@ bool EkQueryCorrection::getRefinedQuery(const std::string& collectionName,
 }
 
 //Rank the candidates according to the error model and minute distance
-bool EkQueryCorrection::candidateRanking(const UString& queryToken,
-        const std::vector<UString>& queryCandidates, std::vector<
-        CandidateScoreItem>& scoredCandidates, bool queryFlag)
+bool EkQueryCorrection::candidateRanking(
+        const UString& queryToken,
+        const std::vector<UString>& queryCandidates,
+        std::vector<CandidateScoreItem>& scoredCandidates,
+        bool queryFlag)
 {
 
     // 	std::string candidate;
@@ -335,8 +335,7 @@ bool EkQueryCorrection::candidateRanking(const UString& queryToken,
 }
 
 //This error model is based on Minute EditDistance.
-float EkQueryCorrection::getErrorScore(const UString& queryToken,
-                                       const UString& queryCandidate)
+float EkQueryCorrection::getErrorScore(const UString& queryToken, const UString& queryCandidate)
 {
 
     std::string candidate;
@@ -350,8 +349,10 @@ float EkQueryCorrection::getErrorScore(const UString& queryToken,
 }
 
 //Given query and character set, we can get the corresponding bitVector.eg: $$word|w=001000
-void EkQueryCorrection::generateBitVector(const UString& queryToken, vector<
-        mychar>& characters, vector<std::string> &bitVector)
+void EkQueryCorrection::generateBitVector(
+        const UString& queryToken,
+        vector<mychar>& characters,
+        vector<std::string> &bitVector)
 {
     string tempStr(max_ed_, '$');
     UString ustrWord(tempStr, UString::UTF_8);
@@ -374,8 +375,11 @@ void EkQueryCorrection::generateBitVector(const UString& queryToken, vector<
 
 //Generate candidate according to universal automata and dictionary automata.
 //The process  is similar to DFS.
-void EkQueryCorrection::candidateGeneration(const UString& queryUString,
-        DictState *s, std::vector<UString>& queryCandidates, bool queryFlag)
+void EkQueryCorrection::candidateGeneration(
+        const UString& queryUString,
+        DictState *s,
+        std::vector<UString>& queryCandidates,
+        bool queryFlag)
 {
 
     vector<std::string> bitVector(letters_.size());
@@ -476,8 +480,7 @@ float EkQueryCorrection::transProb(const std::string& w1, const std::string& w2)
     return prob;
 }
 
-bool EkQueryCorrection::Tokenize(const UString& queryUString, std::vector<
-                                 UString>& queryTokens)
+bool EkQueryCorrection::Tokenize(const UString& queryUString, std::vector<UString>& queryTokens)
 {
     char delimiter = ' ';
     getTokensFromUString(UString::UTF_8, delimiter, queryUString, queryTokens);
@@ -495,15 +498,7 @@ unsigned int EkQueryCorrection::hashFunc(const std::string &str)
     return v;
 }
 
-void EkQueryCorrection::updateCogramAndDict(const std::list<std::pair<
-        izenelib::util::UString, uint32_t> >& recentQueryList)
-{
-    updateCogramAndDict("", recentQueryList);
-}
-
-void EkQueryCorrection::updateCogramAndDict(
-    const std::string& collectionName,
-    const std::list<std::pair<izenelib::util::UString, uint32_t> >& recentQueryList)
+void EkQueryCorrection::updateCogramAndDict(const std::list<std::pair<izenelib::util::UString, uint32_t> >& recentQueryList)
 {
     boost::lock_guard<boost::shared_mutex> lock(mutex_);
     DLOG(INFO) << "updateCogramAndDict..." << endl;
@@ -514,7 +509,6 @@ void EkQueryCorrection::updateCogramAndDict(
 
     //  LogManager::getRecentQueryList(queryList);
     //update Chinese Ngram
-
 
     //update English and Korean
     //     bool isReconstruct = false;
@@ -607,9 +601,8 @@ unsigned int EkQueryCorrection::hashFunc(const izenelib::util::UString& ustr)
     return hashFunc(str);
 }
 
-bool EkQueryCorrection::getCandidateItems_(const std::string& collectionName,
-        const std::vector<izenelib::util::UString>& tokens, std::vector<std::vector<
-        CandidateScoreItem> >& candidateItems)
+bool EkQueryCorrection::getCandidateItems_(const std::vector<izenelib::util::UString>& tokens,
+        std::vector<std::vector<CandidateScoreItem> >& candidateItems)
 {
     bool needCorrect = false;
     candidateItems.resize(tokens.size());
@@ -658,11 +651,10 @@ bool EkQueryCorrection::getCandidateItems_(const std::string& collectionName,
     return needCorrect;
 }
 
-
-
-bool EkQueryCorrection::getBestPath_(const std::string& collectionName, const std::vector<UString>& queryTokens,
-                                     const std::vector<std::vector<CandidateScoreItem> >& queryCandidates,
-                                     std::vector<UString>& refinedCandidate)
+bool EkQueryCorrection::getBestPath_(
+        const std::vector<UString>& queryTokens,
+        const std::vector<std::vector<CandidateScoreItem> >& queryCandidates,
+        std::vector<UString>& refinedCandidate)
 {
     float t_prob;
     int size = queryCandidates[0].size();

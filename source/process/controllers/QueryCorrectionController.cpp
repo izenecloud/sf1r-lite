@@ -1,8 +1,12 @@
 #include "QueryCorrectionController.h"
+#include "CollectionHandler.h"
 
 #include <common/Keys.h>
+#include <common/XmlConfigParser.h>
+#include <common/CollectionManager.h>
+#include <bundles/mining/MiningSearchService.h>
 
-#include <bundles/mining/QueryLogSearchService.h>
+#include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 
 #include <util/ustring/UString.h>
 
@@ -14,33 +18,36 @@ namespace sf1r
 
 using driver::Keys;
 
-QueryCorrectionController::QueryCorrectionController()
-    :queryLogSearchService_(QueryLogSearchService::instance())
-{}
-
-QueryCorrectionController::QueryCorrectionController(
-    const QueryCorrectionController& controller
-)
-    :queryLogSearchService_(controller.queryLogSearchService_)
-{
-}
-
 void QueryCorrectionController::index()
 {
-    std::string collectionName = asString(request()[Keys::collection]);
+    std::string collection = asString(request()[Keys::collection]);
     std::string queryString = asString( request()[Keys::keywords] );
 
     UString queryUString(queryString, UString::UTF_8);
-    UString refinedQueryString;
+    UString refinedQueryUString;
 
-    queryLogSearchService_->getRefinedQuery(
-        collectionName, queryUString,
-        refinedQueryString);
+    if (collection.empty())
+    {
+        QueryCorrectionSubmanager::getInstance().getRefinedQuery(
+                queryUString,
+                refinedQueryUString);
+    }
+    else
+    {
+        if (!SF1Config::get()->checkCollectionAndACL(collection, request().aclTokens()))
+        {
+            response().addError("Collection access denied");
+            return;
+        }
+        CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
+        MiningSearchService* service = collectionHandler->miningSearchService_;
+        service->GetRefinedQuery(queryUString, refinedQueryUString);
+    }
 
-    std::string convertBuffer;
-    refinedQueryString.convertString(convertBuffer,
+    std::string refinedQueryString;
+    refinedQueryUString.convertString(refinedQueryString,
                                      izenelib::util::UString::UTF_8);
-    response()[Keys::refined_query] = convertBuffer;
+    response()[Keys::refined_query] = refinedQueryString;
 }
 
 } // namespace sf1r

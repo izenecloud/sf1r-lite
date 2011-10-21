@@ -1,7 +1,6 @@
 #ifndef PROCESS_CONTROLLERS_QUERY_CORRECTION_CONTROLLER_H
 #define PROCESS_CONTROLLERS_QUERY_CORRECTION_CONTROLLER_H
 
-
 #include "Sf1Controller.h"
 
 namespace sf1r
@@ -15,23 +14,15 @@ namespace sf1r
  *
  * Gets list of popular keywords starting with specified prefix.
  */
-class QueryLogSearchService;
 class QueryCorrectionController : public ::izenelib::driver::Controller
 {
 public:
-    QueryCorrectionController();
-
-    QueryCorrectionController(const QueryCorrectionController& controller);
-
-    void setService(QueryLogSearchService* queryLogSearchService)
+    enum
     {
-        queryLogSearchService_ = queryLogSearchService;
-    }
+        kDefaultCount = 8       /**< Default count of result */
+    };
 
     void index();
-
-private:
-    QueryLogSearchService* queryLogSearchService_;
 };
 
 /// @}

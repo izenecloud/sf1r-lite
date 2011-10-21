@@ -6,7 +6,6 @@
  */
 
 #include "MiningQueryLogHandler.h"
-#include "auto-fill-submanager/AutoFillSubManager.h"
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -59,8 +58,6 @@ void MiningQueryLogHandler::runEvents()
         mlit->second->RebuildForAll();
     }
 
-    //for autofill and query correction
-    processCollectionIndependent_(now);
     std::cout<<"[Updated query information]"<<std::endl;
 }
 
@@ -83,47 +80,3 @@ void MiningQueryLogHandler::cronJob_()
         runEvents();
     }
 }
-
-void MiningQueryLogHandler::processCollectionIndependent_(const boost::posix_time::ptime& nowTime)
-{
-    boost::gregorian::days dd(days_);
-    boost::posix_time::ptime p = nowTime-dd;
-    std::string time_string = boost::posix_time::to_iso_string(p);
-    std::string query_sql = "select query, count(*) as freq, max(hit_docs_num) as df from user_queries where TimeStamp >='"+time_string+"' and hit_docs_num>0 group by query";
-    std::list<std::map<std::string, std::string> > query_records;
-    UserQuery::find_by_sql(query_sql, query_records);
-    std::list<std::map<std::string, std::string> >::iterator it = query_records.begin();
-    //freq, df, text
-    typedef boost::tuple<count_t, count_t, izenelib::util::UString> ItemType;
-    std::list<ItemType> logItems;
-    for ( ;it!=query_records.end();++it )
-    {
-        izenelib::util::UString uquery( (*it)["query"], izenelib::util::UString::UTF_8);
-        if ( QueryUtility::isRestrictWord( uquery ) )
-        {
-            continue;
-        }
-        uint32_t freq = boost::lexical_cast<uint32_t>( (*it)["freq"] );
-        uint32_t df = boost::lexical_cast<uint32_t>( (*it)["df"] );
-        logItems.push_back( ItemType(freq, df, uquery) );
-    }
-
-    std::vector<boost::shared_ptr<LabelManager> > label_manager_list;
-    map_it_type mlit = recommendManagerList_.begin();
-    for ( ; mlit!=recommendManagerList_.end(); ++mlit)
-    {
-        boost::shared_ptr<LabelManager> label_manager = mlit->second->GetLabelManager();
-        if ( label_manager )
-        {
-            label_manager_list.push_back(label_manager);
-        }
-    }
-    QueryCorrectionSubmanager::getInstance().updateCogramAndDict(logItems);
-//     AutoFillSubManager::get()->buildIndex(logItems, label_manager_list);
-    
-}
-
-
-
-
-

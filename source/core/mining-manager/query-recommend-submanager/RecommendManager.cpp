@@ -19,27 +19,28 @@ using namespace sf1r;
 RecommendManager::RecommendManager(
     const std::string& path,
     const std::string& collection_name,
-    const RecommendPara& recommend_param,
     const MiningSchema& mining_schema,
     const boost::shared_ptr<DocumentManager>& documentManager,
     boost::shared_ptr<LabelManager> labelManager,
+    boost::shared_ptr<QueryCorrectionSubmanager> query_correction,
     idmlib::util::IDMAnalyzer* analyzer,
-    uint32_t logdays):
-        path_(path),
-        isOpen_(false),
-        collection_name_(collection_name),
-        recommend_param_(recommend_param),
-        mining_schema_(mining_schema),
-        info_(0),
-        serInfo_(path_+"/ser_info"),
-        document_manager_(documentManager),
-        recommend_db_(NULL), concept_id_manager_(NULL),
-        labelManager_(labelManager),
-        autofill_(new AutoFillSubManager()),
-        analyzer_(analyzer),
-        logdays_(logdays),
-        dir_switcher_(path),
-        max_docid_(0), max_docid_file_(path+"/max_id")
+    uint32_t logdays
+)
+    : path_(path)
+    , isOpen_(false)
+    , collection_name_(collection_name)
+    , mining_schema_(mining_schema)
+    , info_(0)
+    , serInfo_(path_+"/ser_info")
+    , document_manager_(documentManager)
+    , recommend_db_(NULL), concept_id_manager_(NULL)
+    , labelManager_(labelManager)
+    , autofill_(new AutoFillSubManager())
+    , query_correction_(query_correction)
+    , analyzer_(analyzer)
+    , logdays_(logdays)
+    , dir_switcher_(path)
+    , max_docid_(0), max_docid_file_(path+"/max_id")
 {
     open();
 }
@@ -48,7 +49,6 @@ RecommendManager::~RecommendManager()
 {
     close();
 }
-
 
 bool RecommendManager::open()
 {
@@ -112,17 +112,36 @@ void RecommendManager::close()
     }
 }
 
-
-
-bool RecommendManager::RebuildForAll()
+void RecommendManager::RebuildForAll()
 {
-    bool succ = RebuildForRecommend();
-    if (!succ) return false;
-    succ = RebuildForCorrection();
-    if (!succ) return false;
-    succ = RebuildForAutofill();
-    if (!succ) return false;
-    return true;
+    boost::posix_time::ptime time_now = boost::posix_time::second_clock::local_time();
+    uint32_t days = logdays_;
+    boost::gregorian::days dd(days);
+    boost::posix_time::ptime p = time_now-dd;
+    std::string time_string = boost::posix_time::to_iso_string(p);
+    std::string freq_sql = "SELECT query, count(*) AS freq, max(hit_docs_num) AS df FROM user_queries WHERE collection='" + collection_name_ + "' AND hit_docs_num>0 AND TimeStamp>='" + time_string + "' GROUP BY query";
+    std::string label_sql = "SELECT label_name AS query, sum(hit_docs_num) AS freq, sum(hit_docs_num) AS df from property_labels WHERE collection='" + collection_name_ + "' GROUP BY label_name";
+    std::list<std::map<std::string, std::string> > db_records;
+    UserQuery::find_by_sql(freq_sql, db_records);
+    PropertyLabel::find_by_sql(label_sql, db_records);
+
+    std::list<std::map<std::string, std::string> >::iterator it = db_records.begin();
+    QueryLogListType logItems;
+    for ( ;it!=db_records.end();++it )
+    {
+        izenelib::util::UString uquery( (*it)["query"], izenelib::util::UString::UTF_8);
+        if ( QueryUtility::isRestrictWord( uquery ) )
+        {
+            continue;
+        }
+        uint32_t freq = boost::lexical_cast<uint32_t>( (*it)["freq"] );
+        uint32_t df = boost::lexical_cast<uint32_t>( (*it)["df"] );
+        logItems.push_back( QueryLogItemType(freq, df, uquery) );
+    }
+
+    RebuildForRecommend(logItems);
+    RebuildForCorrection(logItems);
+    RebuildForAutofill(logItems);
 }
 
 uint8_t RecommendManager::LabelScore_(uint32_t df)
@@ -188,13 +207,12 @@ bool RecommendManager::AddRecommendItem_(MIRDatabase* db, uint32_t item_id, cons
     return true;
 }
 
-bool RecommendManager::RebuildForRecommend()
+void RecommendManager::RebuildForRecommend(const QueryLogListType &logItems)
 {
     std::string newPath;
-    if (!dir_switcher_.GetNextWithDelete(newPath) )
-    {
-        return false;
-    }
+    if (!dir_switcher_.GetNextWithDelete(newPath))
+        return;
+
     std::cout<<"switching recommend manager to "<<newPath<<std::endl;
     MIRDatabase* new_db = new MIRDatabase(newPath);
     new_db->setCacheSize<0>(100000000);
@@ -208,7 +226,6 @@ bool RecommendManager::RebuildForRecommend()
         //TODO
     }
     std::cout<<newPath<<" opened"<<std::endl;
-
 
     uint32_t item_id = 1;
     if ( mining_schema_.recommend_tg && labelManager_) //use tg's kp
@@ -233,29 +250,17 @@ bool RecommendManager::RebuildForRecommend()
     max_labelid_in_recommend_ = item_id-1;
     if ( mining_schema_.recommend_querylog) //use query log
     {
-        boost::posix_time::ptime time_now = boost::posix_time::second_clock::local_time();
-        uint32_t days = logdays_;
-        boost::gregorian::days dd(days);
-        boost::posix_time::ptime p = time_now-dd;
-        std::string time_string = boost::posix_time::to_iso_string(p);
-        std::string freq_sql = "SELECT query, count(*) AS freq FROM user_queries WHERE collection='"+collection_name_+"' AND hit_docs_num>0 AND TimeStamp>='"+time_string+"' GROUP BY query";
-        std::string label_sql = "SELECT label_name AS query, sum(hit_docs_num) AS freq FROM property_labels WHERE collection='"+collection_name_+"' GROUP BY label_name";
-        std::list<std::map<std::string, std::string> > db_records;
-        UserQuery::find_by_sql(freq_sql, db_records);
-        PropertyLabel::find_by_sql(label_sql, db_records);
-        std::list<std::map<std::string, std::string> >::iterator it = db_records.begin();
+        QueryLogListType::const_iterator it = logItems.begin();
 
-        for ( ;it!=db_records.end();++it )
+        for (; it != logItems.end(); ++it)
         {
-            izenelib::util::UString uquery( (*it)["query"], izenelib::util::UString::UTF_8);
+            const izenelib::util::UString &uquery = it->get<2>();
             if ( QueryUtility::isRestrictWord( uquery ) )
             {
                 continue;
             }
-//         std::cout<<"{{{242 "<<(*it)["freq"]<<std::endl;
-            uint32_t freq = boost::lexical_cast<uint32_t>( (*it)["freq"] );
-            bool succ = AddRecommendItem_(new_db, item_id, uquery, 1, QueryLogScore_(freq) );
-            if ( succ )
+            const uint32_t &freq = it->get<0>();
+            if (AddRecommendItem_(new_db, item_id, uquery, 1, QueryLogScore_(freq)))
             {
                 new_concept_id_manager->Put(item_id-max_labelid_in_recommend_, uquery);
                 item_id++;
@@ -263,7 +268,7 @@ bool RecommendManager::RebuildForRecommend()
         }
     }
 
-    if ( mining_schema_.recommend_properties.size()>0 && document_manager_)
+    if (mining_schema_.recommend_properties.size() > 0 && document_manager_)
     {
         izenelib::am::rde_hash<std::string, bool> recommend_properties;
         for (uint32_t i=0;i<mining_schema_.recommend_properties.size();i++)
@@ -316,84 +321,27 @@ bool RecommendManager::RebuildForRecommend()
     }
     catch (std::exception& exe)
         {}
-    return true;
 }
 
-
-bool RecommendManager::RebuildForCorrection()
+void RecommendManager::RebuildForCorrection(const QueryLogListType &logItems)
 {
-    boost::posix_time::ptime time_now = boost::posix_time::second_clock::local_time();
-    uint32_t days = logdays_;
-    boost::gregorian::days dd(days);
-    boost::posix_time::ptime p = time_now-dd;
-    std::string time_string = boost::posix_time::to_iso_string(p);
-    std::string freq_sql = "SELECT query, count(*) AS freq FROM user_queries WHERE collection='" + collection_name_ + "' AND TimeStamp>='" + time_string+"' GROUP BY query";
-    std::string label_sql = "SELECT label_name AS query, sum(hit_docs_num) AS freq from property_labels WHERE collection='" + collection_name_ + "' GROUP BY label_name";
-    std::list<std::map<std::string, std::string> > db_records;
-    UserQuery::find_by_sql(freq_sql, db_records);
-    PropertyLabel::find_by_sql(label_sql, db_records);
-    std::list<std::map<std::string, std::string> >::iterator it = db_records.begin();
-
-    typedef boost::tuple<count_t, count_t, izenelib::util::UString> ItemType;
-    std::list<ItemType> logItems;
-    for (; it != db_records.end(); ++it)
-    {
-        izenelib::util::UString uquery( (*it)["query"], izenelib::util::UString::UTF_8);
-        if ( QueryUtility::isRestrictWord( uquery ) )
-        {
-            continue;
-        }
-        uint32_t freq = boost::lexical_cast<uint32_t>( (*it)["freq"] );
-        logItems.push_back( ItemType(freq, 0, uquery) );
-    }
-    if (logItems.size()>0)
-    {
-        QueryCorrectionSubmanager::getInstance().updateCogramAndDict(collection_name_, logItems);
-    }
-    return true;
+    query_correction_->updateCogramAndDict(logItems);
 }
 
-bool RecommendManager::RebuildForAutofill()
+void RecommendManager::RebuildForAutofill(const QueryLogListType &logItems)
 {
-    boost::posix_time::ptime time_now = boost::posix_time::second_clock::local_time();
-    uint32_t days = logdays_;
-    boost::gregorian::days dd(days);
-    boost::posix_time::ptime p = time_now-dd;
-    std::string time_string = boost::posix_time::to_iso_string(p);
-    std::string freq_sql = "SELECT query, count(*) AS freq, max(hit_docs_num) AS df FROM user_queries WHERE collection='" + collection_name_ + "' AND hit_docs_num>0 AND TimeStamp>='" + time_string + "' GROUP BY query";
-    std::string label_sql = "SELECT label_name AS query, sum(hit_docs_num) AS freq, sum(hit_docs_num) AS df from property_labels WHERE collection='" + collection_name_ + "' GROUP BY label_name";
-    std::list<std::map<std::string, std::string> > db_records;
-    UserQuery::find_by_sql(freq_sql, db_records);
-    PropertyLabel::find_by_sql(label_sql, db_records);
-    std::list<std::map<std::string, std::string> >::iterator it = db_records.begin();
-    typedef boost::tuple<count_t, count_t, izenelib::util::UString> ItemType;
-    std::list<ItemType> logItems;
-    for ( ;it!=db_records.end();++it )
-    {
-        izenelib::util::UString uquery( (*it)["query"], izenelib::util::UString::UTF_8);
-        if ( QueryUtility::isRestrictWord( uquery ) )
-        {
-            continue;
-        }
-//         std::cout<<"{{{242 "<<(*it)["freq"]<<std::endl;
-        uint32_t freq = boost::lexical_cast<uint32_t>( (*it)["freq"] );
-        uint32_t df = boost::lexical_cast<uint32_t>( (*it)["df"] );
-        logItems.push_back( ItemType(freq, df, uquery) );
-    }
     std::vector<boost::shared_ptr<LabelManager> > label_manager_list;
     if(labelManager_)
     {
         label_manager_list.push_back(labelManager_);
     }
     autofill_->buildIndex(logItems, label_manager_list);
-    return true;
 }
 
 bool RecommendManager::getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list)
 {
     return autofill_->getAutoFillList(query, list);
 }
-
 
 uint32_t RecommendManager::getRelatedConcepts(const izenelib::util::UString& queryStr, uint32_t maxNum, std::deque<izenelib::util::UString>& queries)
 {
@@ -409,7 +357,6 @@ uint32_t RecommendManager::getRelatedConcepts(const izenelib::util::UString& que
     return num;
 
 }
-
 
 uint32_t RecommendManager::getRelatedOnes_(
     MIRDatabase* db,
@@ -519,5 +466,3 @@ bool RecommendManager::getConceptStringByConceptId_(uint32_t id, izenelib::util:
         return concept_id_manager_->GetStringById(qpid, ustr);
     }
 }
-
-

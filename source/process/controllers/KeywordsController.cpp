@@ -252,7 +252,7 @@ void KeywordsController::inject_query_correction()
         izenelib::util::UString query(str_query, izenelib::util::UString::UTF_8);
         izenelib::util::UString result(str_result, izenelib::util::UString::UTF_8);
         input.push_back(std::make_pair(query, result) );
-        
+
     }
     if(!input.empty())
     {
@@ -334,7 +334,7 @@ void KeywordsController::inject_query_recommend()
         izenelib::util::UString query(str_query, izenelib::util::UString::UTF_8);
         izenelib::util::UString result(str_result, izenelib::util::UString::UTF_8);
         input.push_back(std::make_pair(query, result) );
-        
+
     }
     if(!input.empty())
     {

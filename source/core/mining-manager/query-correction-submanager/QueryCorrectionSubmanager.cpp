@@ -15,41 +15,33 @@
 #include <util/ustring/ustr_tool.h>
 #include <boost/algorithm/string.hpp>
 
-namespace
-{
-
-static const float SMOOTH = 0.000001;
-static const float FACTOR = 0.05;
-static const int UNIGRAM_FREQ_THRESHOLD = 3;
-static const int BIGRAM_FREQ_THRESHOLD = 3;
-static const int UNIGRAM_FACTOR = 10;
-static const int BIGRAM_FACTOR = 1;
-static const unsigned int CHINESE_CORRECTION_LENGTH = 8;
-
-}
 using namespace izenelib::util::ustring_tool;
 namespace sf1r
 {
 
-_QueryCorrectionSubmanagerParam QueryCorrectionSubmanagerParam::param_;
+std::string QueryCorrectionSubmanager::resourcePath_;
+std::string QueryCorrectionSubmanager::workingPath_;
 
 QueryCorrectionSubmanager::QueryCorrectionSubmanager
-(const string& path, const std::string& workingPath, bool enableEK, bool enableChn, int ed)
-:path_(path), workingPath_(workingPath)
-, enableEK_(enableEK), enableChn_(enableChn)
-, activate_(false)
-, cmgr_(path_+"/cn"), ekmgr_(path, workingPath, ed)
-, has_new_inject_(false)
+(const string& queryDataPath, bool enableEK, bool enableChn, int ed)
+    : queryDataPath_(queryDataPath)
+    , enableEK_(enableEK), enableChn_(enableChn)
+    , activate_(false)
+    , cmgr_(resourcePath_ + "/cn"), ekmgr_(resourcePath_, workingPath_, ed)
+    , has_new_inject_(false)
 {
     initialize();
 }
 
+void QueryCorrectionSubmanager::setPath(const std::string& resourcePath, const std::string& workingPath)
+{
+    resourcePath_ = resourcePath;
+    workingPath_ = workingPath;
+}
+
 QueryCorrectionSubmanager& QueryCorrectionSubmanager::getInstance()
 {
-    _QueryCorrectionSubmanagerParam& param =
-        QueryCorrectionSubmanagerParam::get();
-    static QueryCorrectionSubmanager qcManager(param.path_, param.workingPath_,
-            param.enableEK_, param.enableChn_);
+    static QueryCorrectionSubmanager qcManager(workingPath_, true, true);
     return qcManager;
 }
 
@@ -58,8 +50,8 @@ bool QueryCorrectionSubmanager::initialize()
 {
     std::cout<< "Start Speller construction!" << std::endl;
     activate_ = true;
-    if (!boost::filesystem::exists(path_) || !boost::filesystem::is_directory(
-                path_))
+    if (!boost::filesystem::exists(resourcePath_)
+        || !boost::filesystem::is_directory(resourcePath_))
     {
         std::string
         msg =
@@ -94,7 +86,7 @@ bool QueryCorrectionSubmanager::initialize()
     }
 
     //load inject
-    std::string inject_file = workingPath_+"/inject_data.txt";
+    std::string inject_file = queryDataPath_+"/correction_inject.txt";
     std::vector<izenelib::util::UString> str_list;
     std::ifstream ifs(inject_file.c_str());
     std::string line;
@@ -132,7 +124,7 @@ QueryCorrectionSubmanager::~QueryCorrectionSubmanager()
     DLOG(INFO) << "... Query Correction module is destroyed" << std::endl;
 }
 
-bool QueryCorrectionSubmanager::getRefinedToken_(const std::string& collectionName, const izenelib::util::UString& token, izenelib::util::UString& result)
+bool QueryCorrectionSubmanager::getRefinedToken_(const izenelib::util::UString& token, izenelib::util::UString& result)
 {
     if (enableChn_)
     {
@@ -149,7 +141,7 @@ bool QueryCorrectionSubmanager::getRefinedToken_(const std::string& collectionNa
     }
     if (enableEK_)
     {
-        if ( ekmgr_.getRefinedQuery(collectionName, token, result) )
+        if ( ekmgr_.getRefinedQuery(token, result) )
         {
             if(result.length()>0)
             {
@@ -165,15 +157,7 @@ bool QueryCorrectionSubmanager::getRefinedToken_(const std::string& collectionNa
 }
 
 //The public interface, when user input wrong query, given the correct refined query.
-bool QueryCorrectionSubmanager::getRefinedQuery(const UString& queryUString,
-        UString& refinedQueryUString)
-{
-    return getRefinedQuery("", queryUString, refinedQueryUString);
-}
-
-bool QueryCorrectionSubmanager::getRefinedQuery(
-    const std::string& collectionName, const UString& queryUString,
-    UString& refinedQueryUString)
+bool QueryCorrectionSubmanager::getRefinedQuery(const UString& queryUString, UString& refinedQueryUString)
 {
     if (queryUString.empty() || !activate_)
     {
@@ -219,7 +203,7 @@ bool QueryCorrectionSubmanager::getRefinedQuery(
         }
         izenelib::util::UString token(*iter, izenelib::util::UString::UTF_8);
         izenelib::util::UString refined_token;
-        if(getRefinedToken_(collectionName, token, refined_token) )
+        if(getRefinedToken_(token, refined_token) )
         {
             refinedQueryUString += refined_token;
             bRefined = true;
@@ -258,12 +242,7 @@ bool QueryCorrectionSubmanager::getPinyin(
     return false;
 }
 
-void QueryCorrectionSubmanager::updateCogramAndDict(const std::list<QueryLogType>& recentQueryList)
-{
-    updateCogramAndDict("", recentQueryList);
-}
-
-void QueryCorrectionSubmanager::updateCogramAndDict(const std::string& collectionName, const std::list<QueryLogType>& recentQueryList)
+void QueryCorrectionSubmanager::updateCogramAndDict(const QueryLogListType& recentQueryList)
 {
     boost::mutex::scoped_lock scopedLock(logMutex_);
 
@@ -293,7 +272,7 @@ void QueryCorrectionSubmanager::Inject(const izenelib::util::UString& query, con
 void QueryCorrectionSubmanager::FinishInject()
 {
     if(!has_new_inject_) return;
-    std::string inject_file = workingPath_+"/inject_data.txt";
+    std::string inject_file = queryDataPath_+"/correction_inject.txt";
     if(boost::filesystem::exists( inject_file) )
     {
         boost::filesystem::remove_all( inject_file);

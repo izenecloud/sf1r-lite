@@ -24,49 +24,19 @@
 namespace sf1r
 {
 
-class _QueryCorrectionSubmanagerParam
-{
-public:
-    _QueryCorrectionSubmanagerParam()
-    {
-    }
-    std::string path_;
-    std::string workingPath_;
-    bool enableEK_;
-    bool enableChn_;
-
-};
-
-class QueryCorrectionSubmanagerParam
-{
-public:
-    static _QueryCorrectionSubmanagerParam param_;
-
-    static _QueryCorrectionSubmanagerParam& get()
-    {
-        return param_;
-    }
-
-    static void set(const std::string& path, const std::string& workingPath, bool enableEK, bool enableChn)
-    {
-        param_.path_ = path;
-        param_.workingPath_ = workingPath;
-        param_.enableEK_ = enableEK;
-        param_.enableChn_ = enableChn;
-    }
-};
-
 class QueryCorrectionSubmanager : public boost::noncopyable
 {
-    typedef boost::tuple<count_t, count_t, izenelib::util::UString> QueryLogType;
+    typedef boost::tuple<uint32_t, uint32_t, izenelib::util::UString> QueryLogItemType;
+    typedef std::list<QueryLogItemType> QueryLogListType;
     static const int DEFAULT_MAX_EDITDISTANCE_ = 2;
-private:
-    QueryCorrectionSubmanager(const string& path, const std::string& workingPath, bool enableEK, bool enableChn, int ed=DEFAULT_MAX_EDITDISTANCE_);
 public:
+    QueryCorrectionSubmanager(const std::string& queryDataPath, bool enableEK, bool enableChn, int ed=DEFAULT_MAX_EDITDISTANCE_);
+
+    ~QueryCorrectionSubmanager();
 
     static QueryCorrectionSubmanager& getInstance();
 
-    ~QueryCorrectionSubmanager();
+    static void setPath(const std::string& resourcePath, const std::string& workingPath);
 
     /**
      * @brief The main interface to refine a user query,the query can be set of tokens
@@ -78,15 +48,10 @@ public:
     bool getRefinedQuery(const UString& queryUString,
                          UString& refinedQueryUString);
 
-    bool getRefinedQuery(const std::string& collectionName, const UString& queryUString,
-                         UString& refinedQueryUString);
-
     bool getPinyin(const izenelib::util::UString& hanzis,
                    std::vector<izenelib::util::UString>& pinyin);
 
-    void updateCogramAndDict(const std::list<QueryLogType>& recentQueryList);
-
-    void updateCogramAndDict(const std::string& collectionName, const std::list<QueryLogType>& recentQueryList);
+    void updateCogramAndDict(const QueryLogListType& recentQueryList);
 
     void Inject(const izenelib::util::UString& query, const izenelib::util::UString& result);
 
@@ -100,11 +65,13 @@ protected:
      */
     bool initialize();
 
-    bool getRefinedToken_(const std::string& collectionName, const izenelib::util::UString& token, izenelib::util::UString& result);
+    bool getRefinedToken_(const izenelib::util::UString& token, izenelib::util::UString& result);
 
 private:
-    std::string path_;
-    std::string workingPath_;
+    static std::string resourcePath_;
+    static std::string workingPath_;
+
+    std::string queryDataPath_;
     bool enableEK_;
     bool enableChn_;
 
