@@ -216,6 +216,10 @@ void CobraProcess::stopDriver()
 
 bool CobraProcess::startDistributedServer()
 {
+    // init node manager
+    NodeManagerSingleton::get()->setDSTopologyConfig(SF1Config::get()->distributedTopologyConfig_);
+    NodeManagerSingleton::get()->setDSUtilConfig(SF1Config::get()->distributedUtilConfig_);
+
     if (!SF1Config::get()->distributedTopologyConfig_.enabled_)
         return false;
 
@@ -225,10 +229,10 @@ bool CobraProcess::startDistributedServer()
 
     Topology topology;
     topology.nodeNum_ = SF1Config::get()->distributedTopologyConfig_.nodeNum_;
-    topology.mirrorNum_ = SF1Config::get()->distributedTopologyConfig_.mirrorNum_;
+    topology.workerNum_ = SF1Config::get()->distributedTopologyConfig_.workerNum_;
 
     SF1NodeInfo curNodeInfo;
-    curNodeInfo.mirrorId_ = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.mirrorId_;
+    curNodeInfo.replicaId_ = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.replicaId_;
     curNodeInfo.nodeId_ = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.nodeId_;
     curNodeInfo.localHost_ = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.host_;
     curNodeInfo.baPort_ = SF1Config::get()->brokerAgentConfig_.port_;

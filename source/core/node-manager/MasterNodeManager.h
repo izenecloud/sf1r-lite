@@ -107,7 +107,7 @@ public:
     struct WorkerState
     {
         bool isRunning_;
-        mirrorid_t mirrorId_;
+        replicaid_t replicaId_;
         nodeid_t nodeId_;
         std::string zkPath_;
         std::string host_;

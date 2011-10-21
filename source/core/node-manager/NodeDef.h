@@ -2,148 +2,103 @@
  * @file NodeDef.h
  * @author Zhongxia Li
  * @date Sep 20, 2011
- * @brief 
+ * @brief
  */
 #ifndef NODE_DEF_H_
 #define NODE_DEF_H_
 
-#include <stdint.h>
-#include <string>
-#include <map>
+#include "TypeDef.h"
+
 #include <sstream>
 
 namespace sf1r {
 
-/// Definitions
-typedef uint32_t nodeid_t;
-typedef uint32_t mirrorid_t;
-
-/// Definition of zookeeper node paths
-const static char ZK_PATH_SF1[]          = "/SF1R";
-const static char ZK_PATH_SF1_TOPOLOGY[] = "/SF1R/Topology";
-const static char ZK_PATH_SF1_SERVICE[]  = "/SF1R/Service";
-
-const static char* ZK_PATH_SYNCHRO   = "/SF1R/Synchro";
-
 /**
+ * @brief Consistent definitions of znodes used in ZooKeeper for SF1R distributed coordination.
+ *
 The topology of distributed SF1 service:
-(1) A Mirror is constituted of several SF1 Nodes, it provides full search data and functionality.
+(1) A distribution of SF1 is constituted of several SF1 Nodes, which provides full search data and functionality.
 
-(2) Mirrors are replicated, Nodes(Workers) between mirrors should be one-to-one correspondence,
-    i.e., "/Mirror1/Node1" and "/Mirror1/Node1" should carry the same search data.
-    So that, if "/Mirror1/Node2" broken down, Masters in Mirror1 will know that it can switch to
-    worker on "/Mirror2/Node2."
+(2) The distribution of SF1 can be replicated, Nodes(Workers) between replica should be one-to-one correspondence,
+    i.e., "/Replica1/Node1" and "/Replica2/Node1" should carry the same search data, so that, if "/Replica1/Node2"
+    is broken down, Masters in Replica1 will know that it can switch to worker on "/Replica2/Node2."
 
-(3) Each node is a SF1 process that can be identified by mirrorId and nodeId (Ids are 1, 2, 3...),
+(3) Each node is a SF1 process that can be identified by replicaId and nodeId (Ids are 1, 2, 3...),
     every node can work as Master or Worker (configurable).
 
-(4) Every Master in all mirriors provides full search functionality in the same manner, they are exposed
+(4) Every Master in all replicas provides full search functionality in the same manner, they are exposed
     to higher-level applications as replicated SF1 servers.
 
 Using ZooKeeper for distributed coordination, the associated data structure is defined as below:
 /
-|
-SF1R
-|--- Topology                #
-     |--- Mirror1
-          |--- Node1
-               |--- Master
-               |--- Worker
-          |--- Node2
-               |--- Worker
-     |--- Mirror2
-          |--- Node1
-               |--- Master
-               |--- Worker
-          |--- Node2
-               |--- Master
-               |--- Worker
-|--- Service                 # SF1 Servers
-     |--- Server00000000     # ---->  "/Topology/Mirror1/Node1/Master"
-     |--- Server00000001
-     |--- Server00000002
-**/
-struct Topology
-{
-    uint32_t nodeNum_;
-    uint32_t mirrorNum_;
-
-    Topology()
-    : nodeNum_(0), mirrorNum_(0)
-    {}
-};
-
-/**
- * Information of a single node
+|--- SF1R-xx
+      |--- Topology
+             |--- Replica1
+                  |--- Node1
+                       |--- Master
+                       |--- Worker
+                  |--- Node2
+                       |--- Worker
+             |--- Replica2
+                  |--- Node1
+                       |--- Worker
+                  |--- Node2
+                       |--- Worker
+                       |--- Master
+      |--- Service
+             |--- Server00000000     # ---->  "/Topology/Replica1/Node1/Master"
+             |--- Server00000001     # ---->  "/Topology/Replica2/Node2/Master"
+ *
  */
-struct SF1NodeInfo
+class NodeDef
 {
-    mirrorid_t mirrorId_;
-    nodeid_t nodeId_;
-    std::string localHost_;
-    uint32_t baPort_;
+    // ZooKeeper node names' definitions
+    static std::string sf1rCluster_;         // identify SF1R application, configured
+    static const std::string sf1rTopology_;
+    static const std::string sf1rService_;
 
-    SF1NodeInfo()
-    : mirrorId_(0)
-    , nodeId_(0)
-    , baPort_(0)
-    {}
-};
-
-/// Utility
-class NodeUtil
-{
 public:
+
+    static void setClusterIdNodeName(const std::string& clusterId)
+    {
+        sf1rCluster_ = "/SF1R-" + clusterId;
+    }
+
     static std::string getSF1RootPath()
     {
-        return std::string(ZK_PATH_SF1);
+        return sf1rCluster_;
     }
 
     static std::string getSF1TopologyPath()
     {
-        return std::string(ZK_PATH_SF1_TOPOLOGY);
+        return sf1rCluster_ + sf1rTopology_;
     }
 
     static std::string getSF1ServicePath()
     {
-        return std::string(ZK_PATH_SF1_SERVICE);
+        return sf1rCluster_ + sf1rService_;
     }
 
-    static std::string getMirrorPath(mirrorid_t mirrorId)
+    static std::string getReplicaPath(replicaid_t replicaId)
     {
         std::stringstream ss;
-        ss <<ZK_PATH_SF1_TOPOLOGY<<"/Mirror"<<mirrorId;
+        ss <<sf1rCluster_<<sf1rTopology_<<"/Replica"<<replicaId;
 
         return ss.str();
     }
 
-    static std::string getNodePath(mirrorid_t mirrorId, nodeid_t nodeId)
+    static std::string getNodePath(replicaid_t replicaId, nodeid_t nodeId)
     {
         std::stringstream ss;
-        ss <<ZK_PATH_SF1_TOPOLOGY<<"/Mirror"<<mirrorId<<"/Node"<<nodeId;
+        ss <<sf1rCluster_<<sf1rTopology_<<"/Replica"<<replicaId<<"/Node"<<nodeId;
 
         return ss.str();
     }
 
     static std::string getSynchroPath()
     {
-        return std::string(ZK_PATH_SYNCHRO);
+        return sf1rCluster_+"/Synchro"; // todo
     }
-
-    static void serialize(std::string& data, std::string& k, std::string& v)
-    {
-        if (!data.empty())
-            data += "$";
-
-        data += k+"#"+v;
-    }
-
-    static void deserialize(std::string& data, std::map<std::string, std::string>& kvData)
-    {
-    }
-
-    static const char delimiter_record = '$';
-    static const char delimiter_kv = '#';
 };
 
 }

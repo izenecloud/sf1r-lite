@@ -1,7 +1,7 @@
 #include "distributed_process_synchronizer.h"
-#include <process/common/XmlConfigParser.h>
 
 #include <node-manager/NodeDef.h>
+#include <node-manager/NodeManager.h>
 
 using namespace sf1r;
 using namespace zookeeper;
@@ -23,13 +23,13 @@ ZooKeeper node definition for this synchronizer:
 DistributedProcessSynchronizer::DistributedProcessSynchronizer()
 : generated_(false), generated_znode_(false), processed_(false), processed_znode_(false)
 {
-    std::string zkHosts = SF1Config::get()->distributedUtilConfig_.zkConfig_.zkHosts_;
-    int recvTimeout = SF1Config::get()->distributedUtilConfig_.zkConfig_.zkRecvTimeout_;
+    std::string zkHosts = NodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkHosts_;
+    int recvTimeout = NodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkRecvTimeout_;
     zookeeper_.reset(new ZooKeeper(zkHosts, recvTimeout));
     zookeeper_->registerEventHandler(this);
 
     // set node paths
-    prodNodePath_ = NodeUtil::getSynchroPath() + "/ProdManager";
+    prodNodePath_ = NodeDef::getSynchroPath() + "/ProdManager";
     generateNodePath_ = prodNodePath_ + "/generate";
     processNodePath_ = prodNodePath_ + "/process";
 
@@ -173,7 +173,7 @@ void DistributedProcessSynchronizer::processOnProcessed()
 void DistributedProcessSynchronizer::initOnConnected()
 {
     // ensure parent paths
-    zookeeper_->createZNode(NodeUtil::getSF1RootPath());
-    zookeeper_->createZNode(NodeUtil::getSynchroPath());
+    zookeeper_->createZNode(NodeDef::getSF1RootPath());
+    zookeeper_->createZNode(NodeDef::getSynchroPath());
     zookeeper_->createZNode(prodNodePath_);
 }

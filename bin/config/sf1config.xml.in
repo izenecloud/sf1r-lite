@@ -170,8 +170,8 @@
   <Deployment>
     <BrokerAgent usecache="n" threadnum="50" enabletest="y" port="18181" />
 
-    <DistributedTopology enable="n" nodenum="2" mirrornum="2" >
-      <CurrentNode nodeid="1" mirrorid="1" host="172.16.0.36" >
+    <DistributedTopology enable="n" clusterid="@HOME_USER@" nodenum="2" >
+      <CurrentNode nodeid="1" replicaid="1" host="172.16.0.36">
         <!--as master-->
         <MasterAgent enable="y" port="18151" >
           <Aggregator name="chinese-wiki-dist" />
@@ -186,7 +186,7 @@
     </DistributedTopology>
 
     <DistributedUtil>
-      <ZooKeeper servers="127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183" sessiontimeout="2000" />
+      <ZooKeeper servers="172.16.0.161:2181,172.16.0.162:2181,172.16.0.163:2181" sessiontimeout="2000" />
       <DFS type="hdfs" supportfuse="y" mountdir="/mnt/hdfs" server="localhost" port="9000" />
     </DistributedUtil>
   </Deployment>

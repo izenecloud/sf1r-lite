@@ -298,14 +298,30 @@ void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
     if (!topology)
         return;
 
+    std::string clusterId;
     getAttribute( topology, "enable", distributedTopologyConfig_.enabled_ );
+    getAttribute( topology, "clusterid", clusterId );
     getAttribute( topology, "nodenum", distributedTopologyConfig_.nodeNum_ );
-    getAttribute( topology, "mirrornum", distributedTopologyConfig_.mirrorNum_ );
+    if (!getAttribute( topology, "workernum", distributedTopologyConfig_.workerNum_ , false))
+    {
+        distributedTopologyConfig_.workerNum_ = distributedTopologyConfig_.nodeNum_;
+    }
+
+    size_t pos = clusterId.rfind('/');
+    if (pos != std::string::npos)
+        clusterId = clusterId.substr(pos+1);
+    if (!clusterId.empty())
+        distributedTopologyConfig_.clusterId_ = clusterId;
+    else
+    {
+        distributedTopologyConfig_.clusterId_ = "unknown";
+        std::cout<<"Warning: unknown hostname for clusterid."<<std::endl;
+    }
 
     // Current SF1 node
     ticpp::Element * cursf1node = getUniqChildElement( topology, "CurrentNode" );
     getAttribute( cursf1node, "nodeid", distributedTopologyConfig_.curSF1Node_.nodeId_ );
-    getAttribute( cursf1node, "mirrorid", distributedTopologyConfig_.curSF1Node_.mirrorId_ );
+    getAttribute( cursf1node, "replicaid", distributedTopologyConfig_.curSF1Node_.replicaId_ );
     getAttribute( cursf1node, "host", distributedTopologyConfig_.curSF1Node_.host_ );
     parseMasterAgent( getUniqChildElement( cursf1node, "MasterAgent", false ) );
     parseWorkerAgent( getUniqChildElement( cursf1node, "WorkerAgent", false ) );

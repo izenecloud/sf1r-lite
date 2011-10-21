@@ -225,6 +225,8 @@ ENDIF(ENABLE_TEST)
 ##################################################
 # Config
 #####
+SET(HOME_USER $ENV{HOME})
+
 CONFIGURE_FILE(
   "${SF1RENGINE_ROOT}/bin/config/sf1config.xml.in"
   "${SF1RENGINE_ROOT}/bin/config/sf1config.xml"
