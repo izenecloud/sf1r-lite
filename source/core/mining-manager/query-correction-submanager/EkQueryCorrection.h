@@ -33,20 +33,11 @@ public:
      * @brief The main interface to refine a user query,the query can be set of tokens
      * @param queryUString         the inputed query of the user.
      * @param refinedQueryUString  the corrected query, if no correction is done, this string is returned empty.
-     * @param collectionName
      * @return true if success false if failed.*/
-    bool getRefinedQuery(const std::string& collectionName,
-                         const UString& queryUString, UString& refinedQueryUString);
+    bool getRefinedQuery(const UString& queryUString, UString& refinedQueryUString);
 
     void
     updateCogramAndDict(
-        const std::list<
-        std::pair<izenelib::util::UString, uint32_t> >& recentQueryList);
-
-
-    void
-    updateCogramAndDict(
-        const std::string& collectionName,
         const std::list<
         std::pair<izenelib::util::UString, uint32_t> >& recentQueryList);
 
@@ -65,13 +56,12 @@ public:
     {
         cogram_->fillCache();
     }
-    
+
     bool ReloadEnResource();
-    
+
     bool ReloadKrResource();
 
 protected:
-
 
     void initDictHash(
         izenelib::am::rde_hash<izenelib::util::UString, bool>& hashdb,
@@ -158,14 +148,14 @@ protected:
                            vector<mychar>& characters, vector<string> &bitVector);
 
 private:
-    bool getCandidateItems_(const std::string& collectionName,
-                            const std::vector<UString>& tokens, std::vector<std::vector<
-                            CandidateScoreItem> >& candidateItems);
+    bool getCandidateItems_(
+            const std::vector<UString>& tokens,
+            std::vector<std::vector<CandidateScoreItem> >& candidateItems);
 
-    bool getBestPath_(const std::string& collectionName, const std::vector<
-                      izenelib::util::UString>& tokens, const std::vector<std::vector<
-                      CandidateScoreItem> >& queryCandidates, std::vector<
-                      UString>& refinedCandidate);
+    bool getBestPath_(
+            const std::vector<izenelib::util::UString>& tokens,
+            const std::vector<std::vector<CandidateScoreItem> >& queryCandidates,
+            std::vector<UString>& refinedCandidate);
 
     bool inDict_(const izenelib::util::UString& str);
 
@@ -242,7 +232,7 @@ private:
     izenelib::am::rde_hash<izenelib::util::UString, bool> dictENHash_;
 
     izenelib::am::rde_hash<izenelib::util::UString, bool> dictKRHash_;
-    
+
     la::UpdateDictThread update_thread_;
 
     boost::shared_mutex mutex_;

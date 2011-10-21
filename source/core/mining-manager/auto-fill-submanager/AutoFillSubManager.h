@@ -44,7 +44,7 @@ class AutoFillSubManager: public boost::noncopyable
 //         uint32_t df;
 //         uint32_t value;
 //     };
-    
+
     //freq, df, text
     typedef boost::tuple<count_t, count_t, izenelib::util::UString> ItemValueType;
     typedef WordCompletionTable Trie_;

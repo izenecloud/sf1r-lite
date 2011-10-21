@@ -41,6 +41,7 @@
 		<xs:complexType>
 			<xs:sequence>
 				<xs:element ref="Resource"/>
+				<xs:element ref="WorkingDir"/>
 				<xs:element ref="LogConnection"/>
 				<xs:element ref="BundlesDefault"/>
 				<xs:element ref="Firewall"/>
@@ -49,7 +50,14 @@
 			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
+
 	<xs:element name="Resource">
+		<xs:complexType>
+			<xs:attribute name="path" use="required"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="WorkingDir">
 		<xs:complexType>
 			<xs:attribute name="path" use="required"/>
 		</xs:complexType>

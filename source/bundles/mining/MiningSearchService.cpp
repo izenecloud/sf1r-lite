@@ -15,7 +15,6 @@ MiningSearchService::~MiningSearchService()
 {
 }
 
-
 bool MiningSearchService::getSearchResult(
     KeywordSearchResult& resultItem
 )
@@ -25,8 +24,8 @@ bool MiningSearchService::getSearchResult(
 
 //xxx
 bool MiningSearchService::getSimilarDocIdList(
-    uint32_t documentId, 
-    uint32_t maxNum, 
+    uint32_t documentId,
+    uint32_t maxNum,
     std::vector<std::pair<uint32_t, float> >& result
 )
 {
@@ -51,7 +50,7 @@ bool MiningSearchService::getSimilarDocIdList(
 }
 
 bool MiningSearchService::getDuplicateDocIdList(
-    uint32_t docId, 
+    uint32_t docId,
     std::vector<uint32_t>& docIdList
 )
 {
@@ -67,7 +66,7 @@ bool MiningSearchService::getSimilarImageDocIdList(
 }
 
 bool MiningSearchService::getReminderQuery(
-    std::vector<izenelib::util::UString>& popularQueries, 
+    std::vector<izenelib::util::UString>& popularQueries,
     std::vector<izenelib::util::UString>& realtimeQueries
 )
 {
@@ -76,8 +75,8 @@ bool MiningSearchService::getReminderQuery(
 }
 
 bool MiningSearchService::getSimilarLabelStringList(
-    uint32_t label_id, 
-    std::vector<izenelib::util::UString>& label_list 
+    uint32_t label_id,
+    std::vector<izenelib::util::UString>& label_list
 )
 {
     return miningManager_->getSimilarLabelStringList(label_id, label_list);
@@ -85,7 +84,7 @@ bool MiningSearchService::getSimilarLabelStringList(
 
 bool MiningSearchService::getDocLabelList(
     uint32_t docid,
-    std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list 
+    std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list
 )
 {
     // TODO, aggregate by wdocid
@@ -93,7 +92,7 @@ bool MiningSearchService::getDocLabelList(
 }
 
 bool MiningSearchService::getLabelListWithSimByDocId(
-    uint32_t docid,  
+    uint32_t docid,
     std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > >& label_list
 )
 {
@@ -102,7 +101,7 @@ bool MiningSearchService::getLabelListWithSimByDocId(
 }
 
 bool MiningSearchService::getUniqueDocIdList(
-    const std::vector<uint32_t>& docIdList, 
+    const std::vector<uint32_t>& docIdList,
     std::vector<uint32_t>& cleanDocs
 )
 {
@@ -156,7 +155,7 @@ bool MiningSearchService::OntologyStaticClick(uint32_t cid, std::list<uint32_t>&
 }
 
 bool MiningSearchService::GetOntologyRepresentation(
-    const std::vector<uint32_t>& search_result, 
+    const std::vector<uint32_t>& search_result,
     faceted::OntologyRep& rep
 )
 {
@@ -171,8 +170,8 @@ bool MiningSearchService::GetOntologyRepresentation(
 }
 
 bool MiningSearchService::OntologyClick(
-    const std::vector<uint32_t>& search_result, 
-    uint32_t cid, 
+    const std::vector<uint32_t>& search_result,
+    uint32_t cid,
     std::list<uint32_t>& docid_list
 )
 {
@@ -260,15 +259,19 @@ bool MiningSearchService::GetTdtTopicInfo(const izenelib::util::UString& text, i
     return miningManager_->GetTdtTopicInfo(text, topic_info);
 }
 
+void MiningSearchService::GetRefinedQuery(const izenelib::util::UString& query, izenelib::util::UString& result)
+{
+    miningManager_->GetRefinedQuery(query, result);
+}
+
 void MiningSearchService::InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result)
 {
     miningManager_->InjectQueryRecommend(query, result);
 }
-    
+
 void MiningSearchService::FinishQueryRecommendInject()
 {
     miningManager_->FinishQueryRecommendInject();
 }
 
 }
-

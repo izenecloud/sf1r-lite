@@ -2,14 +2,15 @@
 
 
 <!-- configuration for SF-11 Revolution -->
-<SF1Config xmlns="http://www.izenesoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+<SF1Config xmlns="http://www.izenesoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:schemaLocation="http://www.izenesoft.com sf1config.xsd">
   <!-- ======== SYSTEM CONFIGURATIONS ======== -->
-  <!-- 
+  <!--
        DESCRIPTION: Sets up system settings.
   -->
   <System>
-    <Resource path="@SF1RENGINE_ROOT@/package/resource"/> 
+    <Resource path="@SF1RENGINE_ROOT@/package/resource"/>
+    <WorkingDir path="@SF1RENGINE_ROOT@/bin"/>
     <!-- examples of configuration on "LogConnection":
          for sqlite3 db: "sqlite3://./log/COBRA"
          for mysql db: "mysql://root:123456@127.0.0.1:3306/SF1R"
@@ -27,18 +28,18 @@
           <!-- indexlevel could be set for both "doclevel" or "wordlevel", when doclevel is set, PLM ranking model will be changed to BM25 and only
                dfp posting is used for ranking during search process.
           -->
-          <!-- mergepolicy could be set for both "memory" or "file", which is used to indicate the situation that when it requires an extra intermediate 
+          <!-- mergepolicy could be set for both "memory" or "file", which is used to indicate the situation that when it requires an extra intermediate
                storage space to guarantee the skiplist to be at the head of each posting during index merging, this parameter is used to indicate the type
-               of that extra storage space. "file" refers to file, "memory" refers to memory. If "memory" is set, the extra memory consumption equals to 
+               of that extra storage space. "file" refers to file, "memory" refers to memory. If "memory" is set, the extra memory consumption equals to
                the maximum posting length, while if "file" is set, it might cause low efficiency on some specified kind of disks.
           -->
 
-          <!-- In unigram searching mode (unigramsearchmode="y"), searching performs on unigram terms, while ranking performs on word segments. 
+          <!-- In unigram searching mode (unigramsearchmode="y"), searching performs on unigram terms, while ranking performs on word segments.
                Make sure unigram terms have been indexed for Property (LA for Indexing is "la_sia_with_unigram"), or search(retrieve) may fail.
           -->
-          <Sia triggerqa="n" doccachenum="20000" searchcachenum="1000" filtercachenum="1000" mastersearchcachenum="1000" topknum="4000" 
+          <Sia triggerqa="n" doccachenum="20000" searchcachenum="1000" filtercachenum="1000" mastersearchcachenum="1000" topknum="4000"
                encoding="UTF-8" wildcardtype="unigram" indexunigramproperty="y" unigramsearchmode="n" multilanggranularity="field" />
-          
+
 
           <LanguageIdentifier dbpath="@ilplib_LANGUAGEIDENTIFIER_DB@"/>
 
@@ -50,8 +51,8 @@
           <CollectionDataDirectory>default-collection-dir</CollectionDataDirectory>
         </Parameter>
       </ProductBundle>
-      
-      <MiningBundle> 
+
+      <MiningBundle>
         <Parameter>
           <!-- Specify multiple index directory to support backup and directory rotating -->
           <CollectionDataDirectory>default-collection-dir</CollectionDataDirectory>
@@ -60,16 +61,16 @@
           <SimilarityPara docnumlimit="100" termnumlimit="400000" enableesa="n" />
           <ClassificationPara customizetraining="n" trainingencoding="UTF-8" />
           <!-- index mode for image search
-               enableise: whether enable ise. 
+               enableise: whether enable ise.
                buildimageindex: whether build the image representation in indexing.
-               storeimagelocally: whether the image will be copied and stored locally in the server. 
+               storeimagelocally: whether the image will be copied and stored locally in the server.
           -->
           <IsePara buildimageindex="y" storeimagelocally="n" maximagenum="1000000" relatedimagenum="50"/>
-          <QueryCorrectionPara basepath="@SF1RENGINE_ROOT@/bin/query-support" enableEK="y" enableCN="y"/>
+          <QueryCorrectionPara enableEK="y" enableCN="y"/>
         </Parameter>
       </MiningBundle>
 
-      <RecommendBundle> 
+      <RecommendBundle>
         <Parameter>
           <!-- Specify multiple index directory to support backup and directory rotating -->
           <CollectionDataDirectory>default-recommend-dir</CollectionDataDirectory>
@@ -79,7 +80,7 @@
           <!-- Speicfy "enable" to "yes" if recommend API top_item_bundle() is called -->
           <FreqItemSet enable="no" minfreq="10" />
         </Parameter>
-      </RecommendBundle> 
+      </RecommendBundle>
     </BundlesDefault>
 
     <!-- NOT IMPLEMENTED FOR CURRENT VERSION
@@ -88,14 +89,14 @@
          <Dictionary name="weight" path="@SF1RENGINE_ROOT@/bin/dictionary/weight.txt"/>
          </NumeralRecognition>
     -->
-    
+
     <Firewall>
-      <!-- Allow and Deny ip can have four types 
+      <!-- Allow and Deny ip can have four types
            (Full IP type is called class D in this configuration file)
            1. class A type : value="121"       That is 121.*.*.*
            2. class B type : value="121.2"     That is 121.2.*.*
            3. class C type : value="121.2.0"   That is 121.2.0.*
-           4. class D type : value="121.2.0.3" 
+           4. class D type : value="121.2.0.3"
 
       # Sample #
       <Allow value="211"/>
@@ -175,9 +176,9 @@
         <!--as master-->
         <MasterAgent enable="y" port="18151" >
           <Aggregator name="chinese-wiki-dist" />
-          <Aggregator name="icson" /> 
-        </MasterAgent> 
-        <!--as worker--> 
+          <Aggregator name="icson" />
+        </MasterAgent>
+        <!--as worker-->
         <WorkerAgent enable="y" port="18111" >
           <Service name="chinese-wiki-dist" />
           <Service name="icson" />

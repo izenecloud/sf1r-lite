@@ -27,11 +27,11 @@ public:
     };
 
     void index();
-    
+
     void inject_query_correction();
-    
+
     void inject_query_recommend();
-    
+
 //     void finish_inject();
 };
 

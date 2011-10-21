@@ -3,9 +3,7 @@
 #include <common/SFLogger.h>
 #include <bundles/index/IndexSearchService.h>
 
-#include <mining-manager/MiningQueryLogHandler.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
-#include <mining-manager/auto-fill-submanager/AutoFillSubManager.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
@@ -43,23 +41,16 @@ void MiningBundleActivator::start( IBundleContext::ConstPtr context )
     tracker_ = new ServiceTracker( context, "IndexSearchService", this );
     tracker_->startTracking();
 
-    static bool QueryCorrectionInitiated = false;
+    static bool QueryCorrectionFirstRun = true;
 
-    if (!QueryCorrectionInitiated)
+    if (QueryCorrectionFirstRun)
     {
-        std::string query_support_path = config_->mining_config_.query_correction_param.base_path;
-        std::string query_correction_res_path = config_->system_resource_path_ + "/speller-support";
-        std::string query_correction_path = query_support_path + "/querycorrection";
-        boost::filesystem::create_directories(query_correction_path);
-        QueryCorrectionSubmanagerParam::set(
-            query_correction_res_path,
-            query_correction_path,
-            config_->mining_config_.query_correction_param.enableEK,
-            config_->mining_config_.query_correction_param.enableCN
-        );
+        std::string resource_path = config_->system_resource_path_ + "/speller-support";
+        std::string working_path = config_->system_working_path_ + "/query-support";
+        QueryCorrectionSubmanager::setPath(resource_path, working_path);
         QueryCorrectionSubmanager::getInstance();
 
-        QueryCorrectionInitiated = true;
+        QueryCorrectionFirstRun = false;
     }
 }
 

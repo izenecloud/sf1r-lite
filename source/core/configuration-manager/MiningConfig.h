@@ -169,8 +169,15 @@ public:
 class QueryCorrectionPara
 {
 
+private:
+    friend class boost::serialization::access;
+
+    template <typename Archive>
+    void serialize( Archive & ar, const unsigned int version )
+    {
+        ar & enableEK & enableCN;
+    }
 public:
-    std::string base_path;
     bool enableEK;
     bool enableCN;
 
@@ -205,6 +212,7 @@ private:
         ar & similarity_param;
         ar & dc_param;
         ar & ise_param;
+        ar & query_correction_param;
     }
 
 public:

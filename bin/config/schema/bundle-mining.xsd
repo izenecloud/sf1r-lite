@@ -132,7 +132,6 @@
         <xs:attribute name="storeimagelocally" type="YesNoType" use="required"/>
     </xs:complexType>
     <xs:complexType name="QueryCorrectionParaType">
-        <xs:attribute name="basepath" use="required"/>
         <xs:attribute name="enableCN" type="YesNoType" use="required"/>
         <xs:attribute name="enableEK" type="YesNoType" use="required"/>
     </xs:complexType>
