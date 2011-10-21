@@ -17,7 +17,7 @@ public:
 
     void setSchema(const std::set<PropertyConfig, PropertyComp>& schema);
 public:
-    bool enabled_;
+    int mode_;
 
     std::string collectionName_;
 

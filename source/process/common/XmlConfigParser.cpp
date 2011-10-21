@@ -1164,9 +1164,16 @@ void CollectionConfig::parseProductBundleParam(const ticpp::Element * product_pa
 void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_schema, CollectionMeta & collectionMeta)
 {
     ProductBundleConfiguration& productBundleConfig = *(collectionMeta.productBundleConfig_);
-    productBundleConfig.enabled_ = true;
+    productBundleConfig.mode_ = 0;
     productBundleConfig.collPath_ = collectionMeta.collPath_;
     productBundleConfig.setSchema(collectionMeta.indexBundleConfig_->schema_);
+    
+    std::string mode_str;
+    getAttribute(product_schema, "mode", mode_str);
+    //m or a, m as default
+    if(mode_str=="a") productBundleConfig.mode_ = 2;
+    else productBundleConfig.mode_ = 1;
+    
     std::string property_name;
     ticpp::Element* property_node = 0;
     property_node = getUniqChildElement( product_schema, "PriceProperty", false );

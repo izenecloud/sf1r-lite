@@ -15,6 +15,11 @@ using namespace izenelib::driver;
 
 bool ProductController::check_product_manager_()
 {
+    if(collectionHandler_->productSearchService_==NULL)
+    {
+        response().addError("ProductManager not enabled.");
+        return false;
+    }
     product_manager_ = collectionHandler_->productSearchService_->GetProductManager();
 
     if(!product_manager_)

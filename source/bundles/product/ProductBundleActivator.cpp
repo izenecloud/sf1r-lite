@@ -12,6 +12,7 @@
 #include <product-manager/product_manager.h>
 #include <product-manager/collection_product_data_source.h>
 #include <product-manager/scd_operation_processor.h>
+#include <product-manager/product_scd_receiver.h>
 #include <util/singleton.h>
 
 #include <boost/filesystem.hpp>
@@ -37,6 +38,7 @@ ProductBundleActivator::ProductBundleActivator()
     ,config_(0)
     ,data_source_(0)
     ,op_processor_(0)
+    ,scd_receiver_(0)
 {
 }
 
@@ -49,6 +51,10 @@ ProductBundleActivator::~ProductBundleActivator()
     if(op_processor_!=0)
     {
         delete op_processor_;
+    }
+    if(scd_receiver_!=0)
+    {
+        delete scd_receiver_;
     }
 }
 
@@ -107,14 +113,21 @@ bool ProductBundleActivator::addingService( const ServiceReference& ref )
         {
             IndexSearchService* service = reinterpret_cast<IndexSearchService*> ( const_cast<IService*>(ref.getService()) );
             std::cout << "[ProductBundleActivator#addingService] Calling IndexSearchService..." << std::endl;
-            productManager_ = createProductManager_(service);
             
-            searchService_ = new ProductSearchService(config_);
-            searchService_->productManager_ = productManager_;
-            
-            if(refIndexTaskService_)
+            if(config_->mode_==1)//in m
             {
-                addIndexHook_(refIndexTaskService_);
+                productManager_ = createProductManager_(service);
+                
+                searchService_ = new ProductSearchService(config_);
+                searchService_->productManager_ = productManager_;
+                
+                if(refIndexTaskService_ )
+                {
+                    addIndexHook_(refIndexTaskService_);
+                }
+            }
+            else//in a
+            {
             }
             
             taskService_ = new ProductTaskService(config_);
@@ -133,10 +146,19 @@ bool ProductBundleActivator::addingService( const ServiceReference& ref )
         if ( props.get( "collection" ) == config_->collectionName_)
         {
             refIndexTaskService_ = reinterpret_cast<IndexTaskService*> ( const_cast<IService*>(ref.getService()) );
-            if(productManager_)
+            if(config_->mode_==1)//in m
             {
-                addIndexHook_(refIndexTaskService_);
+                if(productManager_)
+                {
+                    addIndexHook_(refIndexTaskService_);
+                }
             }
+            else//in a
+            {
+                scd_receiver_ = new ProductScdReceiver();
+                scd_receiver_->Set(refIndexTaskService_);
+            }
+            
         }
         else
         {
@@ -158,10 +180,9 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
     std::string dir = getCurrentCollectionDataPath_()+"/product";
     std::cout<<"dir : "<<dir<<std::endl;
     boost::filesystem::create_directories(dir);
-    PMConfig config = PMConfig::GetDefaultPMConfig();
-    data_source_ = new CollectionProductDataSource(indexService->workerService_->documentManager_, indexService->workerService_->indexManager_, config, config_->schema_);
+    data_source_ = new CollectionProductDataSource(indexService->workerService_->documentManager_, indexService->workerService_->indexManager_, config_->pm_config_, config_->schema_);
     op_processor_ = new ScdOperationProcessor(dir);
-    boost::shared_ptr<ProductManager> product_manager(new ProductManager(data_source_, op_processor_, config));
+    boost::shared_ptr<ProductManager> product_manager(new ProductManager(data_source_, op_processor_, config_->pm_config_));
     return product_manager;
     
 }

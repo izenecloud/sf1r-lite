@@ -31,6 +31,10 @@ public:
     void Finish();
     
 private:
+    
+    void AfterProcess_(bool is_succ);
+    
+private:
     std::string dir_;
     ScdWriter* writer_;
     int last_op_;

@@ -56,6 +56,8 @@ public:
     bool getIndexStatus(Status& status);
 
     uint32_t getDocNum();
+    
+    std::string getScdDir() const;
 
 private:
     void createPropertyList_();

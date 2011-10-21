@@ -1549,5 +1549,11 @@ uint32_t IndexTaskService::getDocNum()
     return indexManager_->getIndexReader()->numDocs();
 }
 
+std::string IndexTaskService::getScdDir() const
+{
+    return bundleConfig_->collPath_.getScdPath() + "index/";
+}
+
+
 }
 

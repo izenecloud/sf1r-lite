@@ -7,14 +7,20 @@
 	  <xs:complexType>
             <xs:sequence>
             	<xs:element name="Schema" minOccurs="0">
-            		<xs:complexType>
-		            <xs:sequence>
+                        <xs:complexType>
+                            <xs:sequence>
                                 <xs:element ref="PriceProperty" minOccurs="1" maxOccurs="1" />
                                 <xs:element ref="DOCIDProperty" minOccurs="1" maxOccurs="1" />
                                 <xs:element ref="UuidProperty" minOccurs="1" maxOccurs="1" />
                                 <xs:element ref="ItemCountProperty" minOccurs="1" maxOccurs="1" />
-
-          		    </xs:sequence>
+                            </xs:sequence>
+                            <xs:attribute name="mode" use="required">
+	    		        <xs:simpleType>
+	    			    <xs:restriction base="xs:string">
+	    				<xs:pattern value="m|a"/>
+	    			    </xs:restriction>
+	    		        </xs:simpleType>
+	    	            </xs:attribute>
             		</xs:complexType>
             	</xs:element>
                 <xs:element name="Parameter" minOccurs="0">
