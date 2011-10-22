@@ -8,6 +8,7 @@
 #include "pm_def.h"
 #include "pm_types.h"
 #include "operation_processor.h"
+#include "distributed_process_synchronizer.h"
 
 
 namespace sf1r
@@ -37,6 +38,8 @@ private:
     ScdWriter* writer_;
     int last_op_;
     
+    DistributedProcessSynchronizer dsSyn_;
+
 };
 
 }

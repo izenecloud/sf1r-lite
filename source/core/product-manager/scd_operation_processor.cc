@@ -1,5 +1,4 @@
 #include "scd_operation_processor.h"
-#include "distributed_process_synchronizer.h"
 #include <sstream>
 #include <common/ScdWriter.h>
 #include <boost/filesystem.hpp>
@@ -45,10 +44,13 @@ bool ScdOperationProcessor::Finish()
     }
     std::cout<<"ScdOperationProcessor::Finish "<<dir_<<std::endl;
     //TODO HOW to get the bool result?
-    DistributedProcessSynchronizer dsSyn;
-    dsSyn.generated(dir_);
-    dsSyn.watchProcess(boost::bind(&ScdOperationProcessor::AfterProcess_, this,_1));
-    return true;
+    dsSyn_.generated(dir_);
+    dsSyn_.watchProcess(boost::bind(&ScdOperationProcessor::AfterProcess_, this,_1));
+
+    bool processResult = false;
+    dsSyn_.joinProcess(processResult);
+
+    return processResult;
 }
 
 void ScdOperationProcessor::AfterProcess_(bool is_succ)

@@ -27,17 +27,15 @@ public:
     DistributedProcessSynchronizer();
 
 public:
-    void generated(std::string& path);
+    bool generated(std::string& path);
 
-    void processed(bool success);
+    bool processed(bool success);
 
     void watchGenerate(callback_on_generated_t callback_on_generated);
 
     void watchProcess(callback_on_processed_t callback_on_processed);
 
-    bool isGenerated(std::string& path);
-
-    bool isProcessed(std::string& path);
+    void joinProcess(bool& result);
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
@@ -50,6 +48,10 @@ public:
 
 private:
     void initOnConnected();
+
+    void do_generated(std::string& path);
+
+    void do_processed(bool success);
 
 private:
     callback_on_generated_t callback_on_generated_;
@@ -64,6 +66,9 @@ private:
     bool generated_;
     bool generated_znode_;
     std::string generatedDataPath_;
+    bool watched_process_;
+    bool process_result_;
+
     bool processed_;
     bool processed_znode_;
     bool processedSuccess_;
