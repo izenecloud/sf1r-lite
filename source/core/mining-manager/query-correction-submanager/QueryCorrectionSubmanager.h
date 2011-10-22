@@ -13,6 +13,7 @@
  */
 #ifndef _QUERY_CORRECTION_SUBMANAGER_H_
 #define _QUERY_CORRECTION_SUBMANAGER_H_
+
 #include <log-manager/LogManager.h>
 #include <query-manager/QueryManager.h>
 #include <idmlib/query-correction/cn_query_correction.h>
@@ -30,14 +31,13 @@ class QueryCorrectionSubmanager : public boost::noncopyable
     typedef boost::tuple<uint32_t, uint32_t, izenelib::util::UString> QueryLogItemType;
     typedef std::list<QueryLogItemType> QueryLogListType;
     static const int DEFAULT_MAX_EDITDISTANCE_ = 2;
+
 public:
-    QueryCorrectionSubmanager(const std::string& queryDataPath, bool enableEK, bool enableChn, int ed=DEFAULT_MAX_EDITDISTANCE_);
+    QueryCorrectionSubmanager(const std::string& queryDataPath, bool enableEK, bool enableChn, int ed = DEFAULT_MAX_EDITDISTANCE_);
 
     ~QueryCorrectionSubmanager();
 
     static QueryCorrectionSubmanager& getInstance();
-
-    static void setPath(const std::string& resourcePath, const std::string& workingPath);
 
     /**
      * @brief The main interface to refine a user query,the query can be set of tokens
@@ -46,10 +46,9 @@ public:
      * @return true if success false if failed.
      */
 
-    bool getRefinedQuery(const UString& queryUString,
-                         UString& refinedQueryUString);
+    bool getRefinedQuery(const UString& queryUString, UString& refinedQueryUString);
 
-    bool getPinyin(const izenelib::util::UString& hanzis,
+    bool getPinyin(const izenelib::util::UString& hanzi,
                    std::vector<izenelib::util::UString>& pinyin);
 
     void updateCogramAndDict(const QueryLogListType& recentQueryList);
@@ -59,7 +58,6 @@ public:
     void FinishInject();
 
 protected:
-
     /**
      * @brief Initialize some member variables
      * @return true if success false if failed.
@@ -68,13 +66,15 @@ protected:
 
     bool getRefinedToken_(const izenelib::util::UString& token, izenelib::util::UString& result);
 
-private:
-    static std::string resourcePath_;
-    static std::string workingPath_;
+public:
+    static const std::string& system_resource_path_;
+    static const std::string& system_working_path_;
 
+private:
     std::string queryDataPath_;
     bool enableEK_;
     bool enableChn_;
+    int ed_;
 
     /**
      *  max edit distance used to canididae generation
@@ -83,15 +83,17 @@ private:
 
     boost::mutex logMutex_;
 
-    idmlib::qc::CnQueryCorrection cmgr_;
+    boost::shared_ptr<idmlib::qc::CnQueryCorrection> cmgr_;
 
     //English or Korean Query CorrectionManager
     static boost::shared_ptr<EkQueryCorrection> ekmgr_;
 
-    boost::unordered_map<std::string, izenelib::util::UString> inject_data_;
+    static boost::unordered_map<izenelib::util::UString, izenelib::util::UString> global_inject_data_;
+    boost::unordered_map<izenelib::util::UString, izenelib::util::UString> collection_inject_data_;
+    boost::unordered_map<izenelib::util::UString, izenelib::util::UString>& default_inject_data_;
     bool has_new_inject_;
-
 };
 
 }
+
 #endif/*_QUERY_CORRECTION_SUBMANAGER_H_*/

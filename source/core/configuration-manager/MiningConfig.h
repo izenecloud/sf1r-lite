@@ -8,7 +8,6 @@
 #include <string>
 #include <map>
 
-
 namespace sf1r
 {
 
@@ -34,7 +33,6 @@ private:
         ar & max_locnum;
         ar & max_orgnum;
     }
-
 
 public:
     /**
@@ -91,7 +89,6 @@ public:
 
 };
 
-
 /**
   * @brief   Stores "Store strategy" configuration of IndexManager
   */
@@ -138,7 +135,6 @@ public:
     bool customize_training;
     izenelib::util::UString::EncodingType encoding_type;
 
-
 };
 
 /**
@@ -166,6 +162,9 @@ public:
 
 };
 
+/**
+  * @brief   the parameters for query correction.
+  */
 class QueryCorrectionPara
 {
 
@@ -187,18 +186,11 @@ class MiningConfig
 {
 
 public:
-
-
-
-
-public:
     //----------------------------  CONSTRUCTORS  ----------------------------
 
     MiningConfig() {}
 
     ~MiningConfig() {}
-
-
 
 private:
 

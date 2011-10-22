@@ -21,9 +21,9 @@ public:
 
     CollectionPath collPath_;
 
-    std::string system_resource_path_;
+    static const std::string& system_resource_path_;
 
-    std::string system_working_path_;
+    static const std::string& system_working_path_;
 
     std::vector<std::string> collectionDataDirectories_;
 
@@ -36,4 +36,3 @@ public:
 }
 
 #endif
-

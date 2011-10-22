@@ -8,4 +8,3 @@ MiningBundleConfiguration::MiningBundleConfiguration(const std::string& collecti
 {
 }
 }
-

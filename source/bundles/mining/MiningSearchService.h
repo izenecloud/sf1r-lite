@@ -140,6 +140,10 @@ public:
 
     void GetRefinedQuery(const izenelib::util::UString& query, izenelib::util::UString& result);
 
+    void InjectQueryCorrection(const izenelib::util::UString& query, const izenelib::util::UString& result);
+
+    void FinishQueryCorrectionInject();
+
     void InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result);
 
     void FinishQueryRecommendInject();

@@ -1,7 +1,6 @@
 #ifndef SF1V5_MINING_SCHEMA_H_
 #define SF1V5_MINING_SCHEMA_H_
 
-
 #include "GroupConfig.h"
 #include "AttrConfig.h"
 #include "PropertyRerankConfig.h"
@@ -49,8 +48,8 @@ private:
         ar & tdt_enable;
         ar & ise_enable & ise_property;
         ar & recommend_tg & recommend_querylog & recommend_properties;
-        
     }
+
 public:
     bool tg_enable;
     bool tg_kpe_only;
@@ -77,7 +76,6 @@ public:
     bool recommend_tg;
     bool recommend_querylog;
     std::vector<std::string> recommend_properties;
-
 };
 
 } // namespace

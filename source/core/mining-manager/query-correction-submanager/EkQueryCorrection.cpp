@@ -42,13 +42,13 @@ using namespace izenelib::util::ustring_tool;
 namespace sf1r
 {
 
-EkQueryCorrection::EkQueryCorrection(const string& path,
-                                     const std::string& workingPath, int ed) :
-        path_(path), workingPath_(workingPath),activate_(true), max_ed_(ed), s_(NULL), s_k_(NULL),
-        dictEN_(path_ + "/dictionary_english"), dictKR_(path_
-                + "/dictionary_korean"), dictENHash_(), dictKRHash_()
+std::string EkQueryCorrection::dictEN_;
+std::string EkQueryCorrection::dictKR_;
+
+EkQueryCorrection::EkQueryCorrection(int ed)
+        : path_(path), activate_(true), max_ed_(ed), s_(NULL), s_k_(NULL)
+        , dictENHash_(), dictKRHash_()
 {
-    //initialize();
 }
 
 void EkQueryCorrection::initDictHash(izenelib::am::rde_hash<izenelib::util::UString, bool>& hashdb, const std::string& fileName)
@@ -117,6 +117,13 @@ void EkQueryCorrection::constructDAutoMata(const std::string& path)
 bool EkQueryCorrection::ReloadEnResource()
 {
     boost::lock_guard<boost::shared_mutex> lock(mutex_);
+    if (!boost::filesystem::exists(dictEN_))
+    {
+        std::cout << "[EkQueryCorrection] failed loading english dictionary." << std::endl;
+        activate_ = false;
+        return false;
+    }
+
     dictENHash_.clear();
     initDictHash(dictENHash_, dictEN_);
 
@@ -142,6 +149,13 @@ bool EkQueryCorrection::ReloadEnResource()
 bool EkQueryCorrection::ReloadKrResource()
 {
     boost::lock_guard<boost::shared_mutex> lock(mutex_);
+    if (!boost::filesystem::exists(dictKR_))
+    {
+        std::cout << "[EkQueryCorrection] failed loading korean dictionary." << std::endl;
+        activate_ = false;
+        return false;
+    }
+
     dictKRHash_.clear();
     initDictHash(dictKRHash_, dictKR_);
     if(s_k_!=NULL)
@@ -207,9 +221,6 @@ bool EkQueryCorrection::initialize()
     update_thread_.addRelatedDict(dictEN_.c_str(), updater);
     update_thread_.start();
     std::cout<<"Start checking English dictionary on interval "<<interval<<std::endl;
-//     initDictHash(dictENHash_, dictEN_);
-//     initDictHash(dictKRHash_, dictKR_);
-//     constructDAutoMata( path_);
 
     return true;
 }

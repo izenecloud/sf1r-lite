@@ -115,18 +115,6 @@ void KeywordsController::index()
             it->convertString(convertBuffer, kEncoding);
             recentField() = convertBuffer;
         }
-
-//         LogManager::LogManagerPtr logManager = &LogManager::instance();
-//         if (logManager)
-//         {
-//
-//         }
-//         else
-//         {
-//             response().addWarning(
-//                 "Cannot find recent keywords log for given collection."
-//             );
-//         }
     }
 
     // realtime and popular
@@ -232,6 +220,7 @@ void KeywordsController::index()
  */
 void KeywordsController::inject_query_correction()
 {
+    std::string collection = asString(request()[Keys::collection]);
     Value& resources = request()[Keys::resource];
     std::vector<std::pair<izenelib::util::UString,izenelib::util::UString> > input;
     for(uint32_t i=0;i<resources.size();i++)
@@ -256,11 +245,29 @@ void KeywordsController::inject_query_correction()
     }
     if(!input.empty())
     {
-        for(uint32_t i=0;i<input.size();i++)
+        if (collection.empty())
         {
-            QueryCorrectionSubmanager::getInstance().Inject(input[i].first, input[i].second);
+            for(uint32_t i=0;i<input.size();i++)
+            {
+                QueryCorrectionSubmanager::getInstance().Inject(input[i].first, input[i].second);
+            }
+            QueryCorrectionSubmanager::getInstance().FinishInject();
         }
-        QueryCorrectionSubmanager::getInstance().FinishInject();
+        else
+        {
+            if (!SF1Config::get()->checkCollectionAndACL(collection, request().aclTokens()))
+            {
+                response().addError("Collection access denied");
+                return;
+            }
+            CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
+            MiningSearchService* service = collectionHandler->miningSearchService_;
+            for(uint32_t i=0;i<input.size();i++)
+            {
+                service->InjectQueryCorrection(input[i].first, input[i].second);
+            }
+            service->FinishQueryCorrectionInject();
+       }
     }
 }
 
@@ -312,8 +319,6 @@ void KeywordsController::inject_query_recommend()
         response().addError("Collection access denied");
         return;
     }
-    CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
-    MiningSearchService* service = collectionHandler->miningSearchService_;
     Value& resources = request()[Keys::resource];
     std::vector<std::pair<izenelib::util::UString,izenelib::util::UString> > input;
     for(uint32_t i=0;i<resources.size();i++)
@@ -338,6 +343,8 @@ void KeywordsController::inject_query_recommend()
     }
     if(!input.empty())
     {
+        CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
+        MiningSearchService* service = collectionHandler->miningSearchService_;
         for(uint32_t i=0;i<input.size();i++)
         {
             service->InjectQueryRecommend(input[i].first, input[i].second);
@@ -346,18 +353,5 @@ void KeywordsController::inject_query_recommend()
     }
 
 }
-
-// void KeywordsController::finish_inject()
-// {
-//     QueryCorrectionSubmanager::getInstance().FinishInject();
-//     CollectionManager::handler_const_iterator it = CollectionManager::get()->handlerBegin();
-//     while( it!= CollectionManager::get()->handlerEnd() )
-//     {
-//         CollectionHandler* collectionHandler = it->second;
-//         MiningSearchService* service = collectionHandler->miningSearchService_;
-//         service->FinishQueryRecommendInject();
-//         ++it;
-//     }
-// }
 
 } // namespace sf1r

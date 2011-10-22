@@ -21,13 +21,9 @@ class RecommendManager;
 class AutoFillController : public CollectionMiningController
 {
 public:
-
     enum
     {
         kDefaultCount = 8       /**< Default count of result */
-    };
-    enum
-    {
         kMaxCount = 100         /**< Max count of result */
     };
     void index();

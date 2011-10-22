@@ -252,6 +252,10 @@ public:
 
     void GetRefinedQuery(const izenelib::util::UString& query, izenelib::util::UString& result);
 
+    void InjectQueryCorrection(const izenelib::util::UString& query, const izenelib::util::UString& result);
+
+    void FinishQueryCorrectionInject();
+
     void InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result);
 
     void FinishQueryRecommendInject();
@@ -347,7 +351,8 @@ private:
 
 public:
     /// Should be initialized after construction
-    std::string system_resource_path_;
+    static const std::string& system_resource_path_;
+    static const std::string& system_working_path_;
 
 private:
 
