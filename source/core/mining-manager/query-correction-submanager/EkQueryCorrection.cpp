@@ -42,11 +42,12 @@ using namespace izenelib::util::ustring_tool;
 namespace sf1r
 {
 
+std::string EkQueryCorrection::path_;
 std::string EkQueryCorrection::dictEN_;
 std::string EkQueryCorrection::dictKR_;
 
 EkQueryCorrection::EkQueryCorrection(int ed)
-        : path_(path), activate_(true), max_ed_(ed), s_(NULL), s_k_(NULL)
+        : activate_(true), max_ed_(ed), s_(NULL), s_k_(NULL)
         , dictENHash_(), dictKRHash_()
 {
 }
@@ -311,12 +312,10 @@ bool EkQueryCorrection::candidateRanking(
         bool queryFlag)
 {
 
-    // 	std::string candidate;
     if (queryFlag)// candidate is english
     {
         for (unsigned int i = 0; i < queryCandidates.size(); i++)
         {
-            // 			queryCandidates[i].convertString(candidate, UString::UTF_8);
             float score = model_.getErrorModel(queryToken, queryCandidates[i]);
             CandidateScoreItem oneItem(queryCandidates[i], score);
             scoredCandidates.push_back(oneItem);
@@ -329,7 +328,6 @@ bool EkQueryCorrection::candidateRanking(
 
         for (unsigned int i = 0; i < queryCandidates.size(); i++)
         {
-            // 			queryCandidates[i].convertString(candidate, UString::UTF_8);
             UString queryCandidateDecomposer;
             processKoreanDecomposer(queryCandidates[i],
                                     queryCandidateDecomposer);
@@ -513,87 +511,87 @@ void EkQueryCorrection::updateCogramAndDict(const std::list<std::pair<izenelib::
 {
     boost::lock_guard<boost::shared_mutex> lock(mutex_);
     DLOG(INFO) << "updateCogramAndDict..." << endl;
-    const std::list<std::pair<izenelib::util::UString, uint32_t> >& queryList =
-        recentQueryList;
-    std::list<std::pair<izenelib::util::UString, uint32_t> >::const_iterator
-    lit;
+//    const std::list<std::pair<izenelib::util::UString, uint32_t> >& queryList =
+//        recentQueryList;
+//    std::list<std::pair<izenelib::util::UString, uint32_t> >::const_iterator
+//    lit;
 
-    //  LogManager::getRecentQueryList(queryList);
-    //update Chinese Ngram
+//    LogManager::getRecentQueryList(queryList);
+//update Chinese Ngram
 
-    //update English and Korean
-    //     bool isReconstruct = false;
-    //     izenelib::am::NullType nul;
-    //     std::vector<izenelib::util::UString> querywords;
-    //     std::vector<izenelib::util::UString>::iterator wit;
-    //
-    //     //What about korean?
-    //     for (lit=queryList.begin(); lit != queryList.end(); lit++) {
-    //         //cout<<lit->first<<"  "<<lit->second<<endl;
-    //         Tokenize(lit->first, querywords);
-    //
-    //         //assert(querywords.size() >=1);
-    //         if (querywords.size() < 1)
-    //             continue;
-    //         string last_str = "";
-    //         for (wit=querywords.begin(); wit != querywords.end(); wit++) {
-    //             uint32_t freq = lit->second;
-    //             if ((int)freq > UNIGRAM_FREQ_THRESHOLD) {
-    //                 if (isKoreanWord(*wit) ) {
-    //                     if (dictKRSdb_.insert(*wit, nul) ) {
-    //                         isReconstruct = true;
-    //                         dictKRSdb_.commit();
-    //                     }
-    //                 } else  if ( !hasChineseChar(*wit) )
-    //                 {
-    //                     if (dictENSdb_.insert(*wit, nul) ) {
-    //                         isReconstruct = true;
-    //                         dictENSdb_.commit();
-    //                     }
-    //                 }
-    //             }
-    //
-    //             //to be fixed,updation of cogram
-    //          float num=0.0;
-    //          string word;
-    //          wit->convertString(word, UString::UTF_8);
-    //
-    //          //cout<<"update "<<word<<endl;
-    //          if (inDict_( *wit) ) {
-    //              unsigned int key = hashFunc(word);
-    //              //if( cogram_->get(key, num) )
-    //              {
-    //                  DLOG(INFO)<<"update: word="<<word<<", increase freq="
-    //                          <<freq<<endl;
-    //                  cogram_->update(key, num+freq*UNIGRAM_FACTOR);
-    //              }
-    //          }
-    //
-    //          //update bigram
-    //          if (last_str != "") {
-    //              string bigram = last_str +" " + word;
-    //              UString ubigram = izenelib::util::UString(bigram, UString::UTF_8);
-    //              int bfreq = lit->second
-    //              unsigned int key = hashFunc(bigram);
-    //              float num = 0.0;
-    //              if (cogram_->get(key, num) || (inDict_(izenelib::util::UString(
-    //                      last_str, UString::UTF_8) ) && inDict_(*wit) && bfreq
-    //                      > BIGRAM_FREQ_THRESHOLD )) {
-    //                  DLOG(INFO)<<"update: bigram="<<last_str<<" + "<<word
-    //                          <<", increase  freq=" <<num<<endl;
-    //                  cogram_ -> update(key, num + bfreq*BIGRAM_FACTOR);
-    //              }
-    //          }
-    //          last_str = word;
-    //         }
-    //
-    //     }
-    //     cogram_->commit();
-    //     if (isReconstruct) {
-    //         DLOG(INFO)<<" Reconstructing DAutoMata..."<<endl;
-    //         //dictENSdb_->display();
-    //         constructDAutoMata(path_);
-    //     }
+//update English and Korean
+//    bool isReconstruct = false;
+//    izenelib::am::NullType nul;
+//    std::vector<izenelib::util::UString> querywords;
+//    std::vector<izenelib::util::UString>::iterator wit;
+//
+//    //What about korean?
+//    for (lit=queryList.begin(); lit != queryList.end(); lit++) {
+//        //cout<<lit->first<<"  "<<lit->second<<endl;
+//        Tokenize(lit->first, querywords);
+//
+//        //assert(querywords.size() >=1);
+//        if (querywords.size() < 1)
+//            continue;
+//        string last_str = "";
+//        for (wit=querywords.begin(); wit != querywords.end(); wit++) {
+//            uint32_t freq = lit->second;
+//            if ((int)freq > UNIGRAM_FREQ_THRESHOLD) {
+//                if (isKoreanWord(*wit) ) {
+//                    if (dictKRSdb_.insert(*wit, nul) ) {
+//                        isReconstruct = true;
+//                        dictKRSdb_.commit();
+//                    }
+//                } else  if ( !hasChineseChar(*wit) )
+//                {
+//                    if (dictENSdb_.insert(*wit, nul) ) {
+//                        isReconstruct = true;
+//                        dictENSdb_.commit();
+//                    }
+//                }
+//            }
+//
+//            //to be fixed,updation of cogram
+//         float num=0.0;
+//         string word;
+//         wit->convertString(word, UString::UTF_8);
+//
+//         //cout<<"update "<<word<<endl;
+//         if (inDict_( *wit) ) {
+//             unsigned int key = hashFunc(word);
+//             //if( cogram_->get(key, num) )
+//             {
+//                 DLOG(INFO)<<"update: word="<<word<<", increase freq="
+//                         <<freq<<endl;
+//                 cogram_->update(key, num+freq*UNIGRAM_FACTOR);
+//             }
+//         }
+//
+//         //update bigram
+//         if (last_str != "") {
+//             string bigram = last_str +" " + word;
+//             UString ubigram = izenelib::util::UString(bigram, UString::UTF_8);
+//             int bfreq = lit->second
+//             unsigned int key = hashFunc(bigram);
+//             float num = 0.0;
+//             if (cogram_->get(key, num) || (inDict_(izenelib::util::UString(
+//                     last_str, UString::UTF_8) ) && inDict_(*wit) && bfreq
+//                     > BIGRAM_FREQ_THRESHOLD )) {
+//                 DLOG(INFO)<<"update: bigram="<<last_str<<" + "<<word
+//                         <<", increase  freq=" <<num<<endl;
+//                 cogram_ -> update(key, num + bfreq*BIGRAM_FACTOR);
+//             }
+//         }
+//         last_str = word;
+//        }
+//
+//    }
+//    cogram_->commit();
+//    if (isReconstruct) {
+//        DLOG(INFO)<<" Reconstructing DAutoMata..."<<endl;
+//        //dictENSdb_->display();
+//        constructDAutoMata(path_);
+//    }
 }
 
 float EkQueryCorrection::transProb(const izenelib::util::UString& w1,
@@ -767,4 +765,3 @@ bool EkQueryCorrection::getBestPath_(
 }
 
 }/*namespace sf1r*/
-

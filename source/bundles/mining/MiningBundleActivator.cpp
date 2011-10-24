@@ -192,8 +192,14 @@ MiningBundleActivator::createMiningManager_(IndexSearchService* indexService) co
         )
     );
 
-    MiningManager::system_resource_path_ = config_->system_resource_path_;
-    MiningManager::system_working_path_ = config_->system_working_path_;
+    static bool FirstRun = true;
+    if (FirstRun)
+    {
+        FirstRun = false;
+
+        MiningManager::system_resource_path_ = config_->system_resource_path_;
+        MiningManager::system_working_path_ = config_->system_working_path_;
+    }
 
     bool succ = ret->open();
     if(!succ)

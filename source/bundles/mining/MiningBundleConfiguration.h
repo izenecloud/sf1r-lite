@@ -21,9 +21,9 @@ public:
 
     CollectionPath collPath_;
 
-    static const std::string& system_resource_path_;
+    static std::string system_resource_path_;
 
-    static const std::string& system_working_path_;
+    static std::string system_working_path_;
 
     std::vector<std::string> collectionDataDirectories_;
 

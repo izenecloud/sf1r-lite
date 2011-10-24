@@ -160,18 +160,19 @@ private:
     bool inDict_(const izenelib::util::UString& str);
 
 public:
+    static std::string path_;
+
     /**
      *  directory of english dictionary
      */
     static std::string dictEN_;
+
     /**
      *  directory of korean dictionary
      */
     static std::string dictKR_;
 
 private:
-    std::string path_;
-
     bool activate_;
 
     /**
@@ -257,4 +258,3 @@ struct CandidateGenerateItem
 
 }
 #endif
-

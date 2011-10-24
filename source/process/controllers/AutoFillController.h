@@ -23,7 +23,7 @@ class AutoFillController : public CollectionMiningController
 public:
     enum
     {
-        kDefaultCount = 8       /**< Default count of result */
+        kDefaultCount = 8,      /**< Default count of result */
         kMaxCount = 100         /**< Max count of result */
     };
     void index();

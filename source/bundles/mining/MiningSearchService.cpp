@@ -274,7 +274,7 @@ void MiningSearchService::FinishQueryCorrectionInject()
     miningManager_->FinishQueryCorrectionInject();
 }
 
-}void MiningSearchService::InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result)
+void MiningSearchService::InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result)
 {
     miningManager_->InjectQueryRecommend(query, result);
 }

@@ -67,8 +67,8 @@ protected:
     bool getRefinedToken_(const izenelib::util::UString& token, izenelib::util::UString& result);
 
 public:
-    static const std::string& system_resource_path_;
-    static const std::string& system_working_path_;
+    static std::string system_resource_path_;
+    static std::string system_working_path_;
 
 private:
     std::string queryDataPath_;
@@ -88,9 +88,9 @@ private:
     //English or Korean Query CorrectionManager
     static boost::shared_ptr<EkQueryCorrection> ekmgr_;
 
-    static boost::unordered_map<izenelib::util::UString, izenelib::util::UString> global_inject_data_;
-    boost::unordered_map<izenelib::util::UString, izenelib::util::UString> collection_inject_data_;
-    boost::unordered_map<izenelib::util::UString, izenelib::util::UString>& default_inject_data_;
+    static boost::unordered_map<std::string, izenelib::util::UString> global_inject_data_;
+    boost::unordered_map<std::string, izenelib::util::UString> collection_inject_data_;
+    boost::unordered_map<std::string, izenelib::util::UString>& default_inject_data_;
     bool has_new_inject_;
 };
 

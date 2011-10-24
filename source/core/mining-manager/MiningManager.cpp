@@ -78,8 +78,8 @@ using namespace izenelib::ir::idmanager;
 using namespace sf1r;
 namespace bfs = boost::filesystem;
 
-const std::string& MiningManager::system_resource_path_;
-const std::string& MiningManager::system_working_path_;
+std::string MiningManager::system_resource_path_;
+std::string MiningManager::system_working_path_;
 
 MiningManager::MiningManager(const std::string& collectionDataPath, const std::string& queryDataPath,
                              const boost::shared_ptr<LAManager>& laManager,
@@ -222,8 +222,14 @@ bool MiningManager::open()
         ///TODO Yingfeng
         uint32_t logdays = 7;
 
-        QueryCorrectionSubmanager::system_resource_path_ = system_resource_path_;
-        QueryCorrectionSubmanager::system_working_path_ = system_working_path_;
+        static bool FirstRun = true;
+        if (FirstRun)
+        {
+            FirstRun = false;
+
+            QueryCorrectionSubmanager::system_resource_path_ = system_resource_path_;
+            QueryCorrectionSubmanager::system_working_path_ = system_working_path_;
+        }
 
         qcManager_.reset(new QueryCorrectionSubmanager(queryDataPath_, miningConfig_.query_correction_param.enableEK,
                     miningConfig_.query_correction_param.enableCN));
