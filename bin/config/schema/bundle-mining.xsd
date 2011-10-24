@@ -194,14 +194,10 @@
     <xs:element name="QueryRecommend">
         <xs:complexType>
             <xs:sequence>
-                <xs:element ref="TG" minOccurs="0"/>
                 <xs:element name="Property" type="PropertyType" minOccurs="0" maxOccurs="unbounded"/>
                 <xs:element ref="QueryLog" minOccurs="0"/>
             </xs:sequence>
         </xs:complexType>
-    </xs:element>
-    <xs:element name="TG">
-        <xs:complexType/>
     </xs:element>
     <xs:element name="QueryLog">
         <xs:complexType/>

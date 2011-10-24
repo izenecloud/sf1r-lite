@@ -1488,7 +1488,6 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
 
         //for recommend schema
         task_node = getUniqChildElement( mining_schema_node, "QueryRecommend", false );
-        mining_schema.recommend_tg = false;
         mining_schema.recommend_querylog = false;
         mining_schema.recommend_properties.resize(0);
         if( task_node!= NULL )
@@ -1504,12 +1503,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 }
                 mining_schema.recommend_properties.push_back(property_name);
             }
-            ticpp::Element * intern_node = getUniqChildElement(task_node, "TG", false);
-            if( intern_node!= NULL)
-            {
-                mining_schema.recommend_tg = true;
-            }
-            intern_node = getUniqChildElement(task_node, "QueryLog", false);
+            ticpp::Element * intern_node = getUniqChildElement(task_node, "QueryLog", false);
             if( intern_node!= NULL)
             {
                 mining_schema.recommend_querylog = true;

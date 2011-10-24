@@ -26,7 +26,7 @@ public:
             , attr_enable(false), attr_property()
             , property_rerank_enable(false), prop_rerank_property()
             , ise_enable(false), ise_property()
-            , recommend_tg(false), recommend_querylog(true), recommend_properties()
+            , recommend_querylog(true), recommend_properties()
     {
     }
     ~MiningSchema() {}
@@ -47,7 +47,7 @@ private:
         ar & property_rerank_enable & prop_rerank_property;
         ar & tdt_enable;
         ar & ise_enable & ise_property;
-        ar & recommend_tg & recommend_querylog & recommend_properties;
+        ar & recommend_querylog & recommend_properties;
     }
 
 public:
@@ -73,7 +73,6 @@ public:
     bool ise_enable;
     std::string ise_property;
 
-    bool recommend_tg;
     bool recommend_querylog;
     std::vector<std::string> recommend_properties;
 };

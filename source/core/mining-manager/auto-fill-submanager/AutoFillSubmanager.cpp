@@ -84,43 +84,14 @@ bool AutoFillSubManager::Init(
         autoFillTrie_ = new Trie_(triePath_, top_);
     }
 
-// buildFromLabelFile( "/home/wps/codebase/sf1-revolution/bin/1.label" );
-// buildFromLogFile( "/home/wps/codebase/sf1-revolution/bin/20101222.log" );
     return true;
-
-//     boost::thread updateLogThread(boost::bind(
-//             &AutoFillSubManager::updateLogWorker, this));
-//     updateLogThread.detach();
-//
-//     boost::thread buildThread(boost::bind(&AutoFillSubManager::buildProcess,
-//             this));
-//     buildThread.detach();
-
 }
-
-// void AutoFillSubManager::updateLogWorker()
-// {
-//     while (true)
-//     {
-//         boost::system_time wakeupTime = boost::get_system_time()
-//                 + boost::posix_time::milliseconds(queryUpdateTime_*3600*1000);
-//         boost::thread::sleep(wakeupTime);
-//         updateRecentLog();
-//     }
-// }
-//
 
 bool AutoFillSubManager::buildIndex(const std::list<ItemValueType>& queryList)
 {
-    std::vector<boost::shared_ptr<LabelManager> > tmp;
-    return buildIndex(queryList, tmp);
-}
-
-bool AutoFillSubManager::buildIndex(const std::list<ItemValueType>& queryList, const std::vector<boost::shared_ptr<LabelManager> >& label_manager_list)
-{
-    if (queryList.size()==0 && label_manager_list.size()==0 )
+    if (queryList.empty())
     {
-        std::cout<<"no data to build autofill"<<std::endl;
+        std::cout << "no query log data to build for autofill" << std::endl;
         return true;
     }
     std::string tempTriePath;
@@ -141,21 +112,7 @@ bool AutoFillSubManager::buildIndex(const std::list<ItemValueType>& queryList, c
         std::list<ItemValueType>::const_iterator it;
         for (it = queryList.begin(); it != queryList.end(); it++)
             buildTrieItem(tempTrie, *it);
-        //for labels
-        izenelib::util::UString label_str;
-        uint32_t label_df = 0;
-        for (uint32_t i=0;i<label_manager_list.size();i++)
-        {
-            boost::shared_ptr<LabelManager> label_manager = label_manager_list[i];
-            uint32_t max_label_id = label_manager->getMaxLabelID();
-            for (uint32_t id=1; id<max_label_id;id++)
-            {
-                if ( !label_manager->getLabelStringByLabelId(id, label_str) ) continue;
-                if ( !label_manager->getLabelDF(id, label_df) ) continue;
-                ItemValueType item(label_df, label_df, label_str);
-                buildTrieItem(tempTrie, item);
-            }
-        }
+
         tempTrie->flush();
     }
     catch (...)
@@ -190,11 +147,7 @@ bool AutoFillSubManager::buildIndex(const std::list<ItemValueType>& queryList, c
         return false;
     }
     return true;
-
-
 }
-
-
 
 bool AutoFillSubManager::getAutoFillList(const izenelib::util::UString& query,
         std::vector<std::pair<izenelib::util::UString,uint32_t> >& list)
@@ -237,11 +190,6 @@ void AutoFillSubManager::updateTrie(Trie_* trie, const izenelib::util::UString& 
 
 void AutoFillSubManager::buildTrieItem(Trie_* trie, const ItemValueType& item)
 {
-//     if (!QueryCorrectionSubmanager::getInstance().isPinyin(key))
-//     {
-//         ItemValueType item(value, key);
-//         buildTrieItem(trie, key, item);
-//     }
     izenelib::util::UString key = item.get<2>();
     string keystr;
     key.convertString(keystr, UString::UTF_8);
@@ -322,7 +270,6 @@ void AutoFillSubManager::buildTrieItem(Trie_* trie,
         tempKey.toLowerString();
         updateTrie(trie, tempKey, item);
     }
-
 }
 
 }

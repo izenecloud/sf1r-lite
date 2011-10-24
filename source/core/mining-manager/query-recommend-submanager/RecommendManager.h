@@ -72,7 +72,6 @@ public:
                      const std::string& collection_name,
                      const MiningSchema& mining_schema,
                      const boost::shared_ptr<DocumentManager>& documentManager,
-                     boost::shared_ptr<LabelManager> labelManager,
                      boost::shared_ptr<QueryCorrectionSubmanager> query_correction,
                      idmlib::util::IDMAnalyzer* analyzer_,
                      uint32_t logdays);
@@ -114,11 +113,6 @@ public:
         return max_docid_;
     }
 
-    boost::shared_ptr<LabelManager> GetLabelManager()
-    {
-        return labelManager_;
-    }
-
 private:
 
     uint8_t LabelScore_(uint32_t df);
@@ -126,8 +120,6 @@ private:
     uint8_t QueryLogScore_(uint32_t freq);
 
     bool AddRecommendItem_(MIRDatabase* db, uint32_t item_id, const izenelib::util::UString& text, uint8_t type, uint32_t score);
-
-    bool getConceptStringByConceptId_(uint32_t id, izenelib::util::UString& ustr);
 
     uint32_t getRelatedOnes_(
         MIRDatabase* db,
@@ -148,10 +140,8 @@ private:
     boost::shared_ptr<DocumentManager> document_manager_;
     MIRDatabase* recommend_db_;
     ConceptIDManager* concept_id_manager_;
-    boost::shared_ptr<LabelManager> labelManager_;
     boost::shared_ptr<AutoFillSubManager> autofill_;
     boost::shared_ptr<QueryCorrectionSubmanager> query_correction_;
-    uint32_t max_labelid_in_recommend_;
     idmlib::util::IDMAnalyzer* analyzer_;
     uint32_t logdays_;
     boost::shared_mutex mutex_;
