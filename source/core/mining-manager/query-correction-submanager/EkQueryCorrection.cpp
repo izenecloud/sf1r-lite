@@ -181,6 +181,7 @@ bool EkQueryCorrection::ReloadKrResource()
 //Initialize some member variables
 bool EkQueryCorrection::initialize()
 {
+    std::cout << "[EkQueryCorrection] start loading English and Korean resources." << std::endl;
     cogram_.reset(new
                   //izenelib::am::sdb_fixedhash<
                   izenelib::sdb::unordered_sdb_fixed<unsigned int, float,
@@ -204,16 +205,19 @@ bool EkQueryCorrection::initialize()
 
     if(!ReloadEnResource())
     {
-        std::cout<<"Load En Resource failed"<<std::endl;
+        std::cout << "[EkQueryCorrection] failed loading English resources." << std::endl;
         activate_ = false;
         return false;
     }
+    std::cout << "[EkQueryCorrection] loaded English resources." << std::endl;
+
     if(!ReloadKrResource())
     {
-        std::cout<<"Load Kr Resource failed"<<std::endl;
+        std::cout << "[EkQueryCorrection] failed loading Korean resources." << std::endl;
         activate_ = false;
         return false;
     }
+    std::cout << "[EkQueryCorrection] loaded Korean resources." << std::endl;
 
     //start update
     uint32_t interval = 30;
@@ -221,7 +225,7 @@ bool EkQueryCorrection::initialize()
     boost::shared_ptr<la::UpdatableDict> updater(new EnUpdatableDict(this) );
     update_thread_.addRelatedDict(dictEN_.c_str(), updater);
     update_thread_.start();
-    std::cout<<"Start checking English dictionary on interval "<<interval<<std::endl;
+    std::cout<<"[EkQueryCorrection] start checking English dictionary by interval of " << interval << " second(s)." << std::endl;
 
     return true;
 }
