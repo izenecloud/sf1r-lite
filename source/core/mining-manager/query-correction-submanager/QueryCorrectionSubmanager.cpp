@@ -94,7 +94,7 @@ bool QueryCorrectionSubmanager::initialize()
         {
             FirstRun = false;
 
-            std::string inject_file = system_working_path_ + "/correction_inject.txt";
+            std::string inject_file = system_working_path_ + "/query-correction/correction_inject.txt";
             std::vector<izenelib::util::UString> str_list;
             std::ifstream ifs(inject_file.c_str());
             std::string line;
@@ -127,7 +127,7 @@ bool QueryCorrectionSubmanager::initialize()
     //load collection-specific inject
     if (!queryDataPath_.empty())
     {
-        std::string inject_file = queryDataPath_ + "/correction_inject.txt";
+        std::string inject_file = queryDataPath_ + "/query-corrction/correction_inject.txt";
         std::vector<izenelib::util::UString> str_list;
         std::ifstream ifs(inject_file.c_str());
         std::string line;
@@ -298,13 +298,14 @@ void QueryCorrectionSubmanager::Inject(const izenelib::util::UString& query, con
     if(str_query.empty()) return;
     boost::algorithm::to_lower(str_query);
 
-    std::cout << "Inject query correction : " << str_query << std::endl;
     if (str_result == "__delete__")
     {
+    std::cout << "Delete injected keyword for query correction: " << str_query << std::endl;
         default_inject_data_.erase(str_query);
     }
     else
     {
+        std::cout << "Inject keyword for query correction: " << str_query << std::endl;
         default_inject_data_[str_query] = result;
     }
     has_new_inject_ = true;
@@ -312,12 +313,26 @@ void QueryCorrectionSubmanager::Inject(const izenelib::util::UString& query, con
 
 void QueryCorrectionSubmanager::FinishInject()
 {
-    if (!has_new_inject_) return;
-    std::string inject_file = (queryDataPath_.empty() ? system_working_path_ : queryDataPath_) + "/correction_inject.txt";
-    if (boost::filesystem::exists(inject_file))
+    if (!has_new_inject_)
+        return;
+
+    std::string dir = (queryDataPath_.empty() ? system_working_path_ : queryDataPath_) + "/query-correction";
+    std::string inject_file = dir + "/correction_inject.txt";
+
+    if (boost::filesystem::exists(dir))
     {
-        boost::filesystem::remove_all(inject_file);
+        if (!boost::filesystem::is_directory(dir))
+        {
+            boost::filesystem::remove_all(dir);
+            boost::filesystem::create_directories(dir);
+        }
+
+        if (boost::filesystem::exists(inject_file))
+            boost::filesystem::remove_all(inject_file);
     }
+    else
+        boost::filesystem::create_directories(dir);
+
     std::ofstream ofs(inject_file.c_str());
     for (boost::unordered_map<std::string, izenelib::util::UString>::const_iterator it = default_inject_data_.begin();
             it!= default_inject_data_.end(); ++it)
@@ -329,6 +344,7 @@ void QueryCorrectionSubmanager::FinishInject()
         ofs << std::endl;
     }
     ofs.close();
+
     has_new_inject_ = false;
     std::cout << "Finish inject query correction." << std::endl;
 }
