@@ -99,7 +99,7 @@ bool DistributedProcessSynchronizer::processed(bool success)
 
         if (!processed_znode_)
         {
-            std::cout << " Timeout !! " <<std::endl;
+            //std::cout << " Timeout !! " <<std::endl;
             return false;
         }
     }
@@ -221,6 +221,15 @@ void DistributedProcessSynchronizer::do_generated(std::string& path)
         }
         else
         {
+            if (zookeeper_->isZNodeExists(generateNodePath_))
+            {
+                if (zookeeper_->setZNodeData(generateNodePath_, path))
+                {
+                    generated_znode_ = true; // xxx
+                    return;
+                }
+            }
+
             std::cout<<"[DistributedProcessSynchronizer] failed to create generate node: "<<zookeeper_->getErrorCode()<<std::endl;
         }
     }
