@@ -69,6 +69,7 @@ bool QueryCorrectionSubmanager::initialize()
     }
 
     {
+        boost::mutex::scoped_lock scopedLock(logMutex_);
         static bool FirstRun = true;
         if (FirstRun && enableEK_)
         {
@@ -87,6 +88,7 @@ bool QueryCorrectionSubmanager::initialize()
 
     //load global inject
     {
+        boost::mutex::scoped_lock scopedLock(logMutex_);
         static bool FirstRun = true;
         if (FirstRun)
         {
