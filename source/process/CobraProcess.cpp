@@ -73,6 +73,8 @@ bool CobraProcess::initialize(const std::string& configFileDir)
 
     initDriverServer();
 
+    initNodeManager();
+
     return true;
 }
 
@@ -203,6 +205,14 @@ bool CobraProcess::initDriverServer()
     return true;
 }
 
+bool CobraProcess::initNodeManager()
+{
+    NodeManagerSingleton::get()->setDSTopologyConfig(SF1Config::get()->distributedTopologyConfig_);
+    NodeManagerSingleton::get()->setDSUtilConfig(SF1Config::get()->distributedUtilConfig_);
+
+    return true;
+}
+
 void CobraProcess::stopDriver()
 {
     if (driverServer_)
@@ -213,10 +223,6 @@ void CobraProcess::stopDriver()
 
 bool CobraProcess::startDistributedServer()
 {
-    // init node manager
-    NodeManagerSingleton::get()->setDSTopologyConfig(SF1Config::get()->distributedTopologyConfig_);
-    NodeManagerSingleton::get()->setDSUtilConfig(SF1Config::get()->distributedUtilConfig_);
-
     if (!SF1Config::get()->distributedTopologyConfig_.enabled_)
         return false;
 

@@ -10,8 +10,6 @@
  *      -2010.03.05 add log manager periodical worker.
  */
 #include "QueryCorrectionSubmanager.h"
-#include <common/SFLogger.h>
-#include <util/ustring/ustr_tool.h>
 #include <boost/algorithm/string.hpp>
 
 using namespace izenelib::util::ustring_tool;
@@ -225,7 +223,7 @@ bool QueryCorrectionSubmanager::getRefinedQuery(const UString& queryUString, USt
                            "QueryCorrectionSubmanager :: getRealRefinedQuery");
 
     typedef tokenizer<char_separator<char> > tokenizers;
-    char_separator<char> sep(QueryManager::separatorString.c_str());
+    char_separator<char> sep;
 
     std::string queryStr;
     queryUString.convertString(queryStr, izenelib::util::UString::UTF_8);
@@ -282,10 +280,10 @@ bool QueryCorrectionSubmanager::getPinyin(
     return pinyin.size() > 0;
 }
 
-void QueryCorrectionSubmanager::updateCogramAndDict(const QueryLogListType& recentQueryList)
+void QueryCorrectionSubmanager::updateCogramAndDict(const std::list<QueryLogType>& queryList, const std::list<PropertyLabelType>& labelList)
 {
     DLOG(INFO) << "updateCogramAndDict..." << endl;
-    cmgr_->Update(recentQueryList);
+    cmgr_->Update(queryList, labelList);
 }
 
 void QueryCorrectionSubmanager::Inject(const izenelib::util::UString& query, const izenelib::util::UString& result)

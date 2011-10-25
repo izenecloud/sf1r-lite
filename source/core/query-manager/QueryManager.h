@@ -86,10 +86,6 @@ class QueryManager
                 std::string& errMsg
                 ) const;
 
-    public: // public static variables
-
-        static const std::string separatorString;
-
     private: // private static variables
 
         static std::map<CollPropertyKey_T, sf1r::PropertyDataType> collectionPropertyInfoMap_;
