@@ -282,10 +282,10 @@ bool QueryCorrectionSubmanager::getPinyin(
     return pinyin.size() > 0;
 }
 
-void QueryCorrectionSubmanager::updateCogramAndDict(const QueryLogListType& recentQueryList)
+void QueryCorrectionSubmanager::updateCogramAndDict(const std::list<QueryLogType>& queryList, const std::list<PropertyLabelType>& labelList)
 {
     DLOG(INFO) << "updateCogramAndDict..." << endl;
-    cmgr_->Update(recentQueryList);
+    cmgr_->Update(queryList, labelList);
 }
 
 void QueryCorrectionSubmanager::Inject(const izenelib::util::UString& query, const izenelib::util::UString& result)
