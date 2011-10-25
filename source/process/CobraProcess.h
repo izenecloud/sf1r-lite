@@ -32,6 +32,8 @@ private:
 
     bool initDriverServer();
 
+    bool initNodeManager();
+
     void stopDriver();
 
     bool startDistributedServer();
