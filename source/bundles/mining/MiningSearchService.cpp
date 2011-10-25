@@ -264,6 +264,16 @@ void MiningSearchService::GetRefinedQuery(const izenelib::util::UString& query, 
     miningManager_->GetRefinedQuery(query, result);
 }
 
+void MiningSearchService::InjectQueryCorrection(const izenelib::util::UString& query, const izenelib::util::UString& result)
+{
+    miningManager_->InjectQueryCorrection(query, result);
+}
+
+void MiningSearchService::FinishQueryCorrectionInject()
+{
+    miningManager_->FinishQueryCorrectionInject();
+}
+
 void MiningSearchService::InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result)
 {
     miningManager_->InjectQueryRecommend(query, result);

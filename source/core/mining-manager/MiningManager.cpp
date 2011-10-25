@@ -77,6 +77,10 @@ using namespace boost::filesystem;
 using namespace izenelib::ir::idmanager;
 using namespace sf1r;
 namespace bfs = boost::filesystem;
+
+std::string MiningManager::system_resource_path_;
+std::string MiningManager::system_working_path_;
+
 MiningManager::MiningManager(const std::string& collectionDataPath, const std::string& queryDataPath,
                              const boost::shared_ptr<LAManager>& laManager,
                              const boost::shared_ptr<DocumentManager>& documentManager,
@@ -217,6 +221,15 @@ bool MiningManager::open()
         FSUtil::createDir(queryDataPath_);
         ///TODO Yingfeng
         uint32_t logdays = 7;
+
+        static bool FirstRun = true;
+        if (FirstRun)
+        {
+            FirstRun = false;
+
+            QueryCorrectionSubmanager::system_resource_path_ = system_resource_path_;
+            QueryCorrectionSubmanager::system_working_path_ = system_working_path_;
+        }
 
         qcManager_.reset(new QueryCorrectionSubmanager(queryDataPath_, miningConfig_.query_correction_param.enableEK,
                     miningConfig_.query_correction_param.enableCN));
@@ -1465,6 +1478,18 @@ void MiningManager::GetRefinedQuery(const izenelib::util::UString& query, izenel
 {
     if(!qcManager_) return;
     qcManager_->getRefinedQuery(query, result);
+}
+
+void MiningManager::InjectQueryCorrection(const izenelib::util::UString& query, const izenelib::util::UString& result)
+{
+    if(!qcManager_) return;
+    qcManager_->Inject(query, result);
+}
+
+void MiningManager::FinishQueryCorrectionInject()
+{
+    if(!qcManager_) return;
+    qcManager_->FinishInject();
 }
 
 void MiningManager::InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result)

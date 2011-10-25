@@ -26,7 +26,7 @@ izenelib::util::ReadWriteLock> CogramType;
 class EkQueryCorrection : public boost::noncopyable
 {
 public:
-    EkQueryCorrection(const string& path, const std::string& workingPath, int ed);
+    EkQueryCorrection(int ed);
     ~EkQueryCorrection();
 
     /**
@@ -159,15 +159,24 @@ private:
 
     bool inDict_(const izenelib::util::UString& str);
 
+public:
+    static std::string path_;
+
+    /**
+     *  directory of english dictionary
+     */
+    static std::string dictEN_;
+
+    /**
+     *  directory of korean dictionary
+     */
+    static std::string dictKR_;
+
 private:
-    std::string path_;
-
-    std::string workingPath_;
-
     bool activate_;
 
     /**
-     *  max edit distance used to canididae generation
+     *  max edit distance used for candidate generation
      */
     int max_ed_;
     /**
@@ -190,15 +199,6 @@ private:
      *  Dictionary automata generated according to korean dictionary
      */
     DictState *s_k_;
-
-    /**
-     *  directory of english dictionary
-     */
-    std::string dictEN_;
-    /**
-     *  directory of korean dictionary
-     */
-    std::string dictKR_;
 
     /**
      *  lexion used to combine the dictionary
@@ -258,4 +258,3 @@ struct CandidateGenerateItem
 
 }
 #endif
-

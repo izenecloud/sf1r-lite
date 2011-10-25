@@ -8,9 +8,6 @@
 #include <node-manager/NodeManager.h>
 #include <node-manager/MasterNodeManager.h>
 
-#include <bundles/mining/MiningBundleConfiguration.h>
-#include <bundles/mining/MiningBundleActivator.h>
-
 #include <OnSignal.h>
 #include <common/XmlConfigParser.h>
 #include <common/CollectionManager.h>

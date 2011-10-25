@@ -554,7 +554,7 @@ public:
         homeDir_ = homeDir;
     }
 
-    std::string getHomeDirectory()
+    const std::string& getHomeDirectory() const
     {
         return homeDir_;
     }

@@ -2,10 +2,8 @@
 #include "CollectionHandler.h"
 
 #include <common/Keys.h>
-#include <common/XmlConfigParser.h>
 #include <common/CollectionManager.h>
 #include <bundles/mining/MiningSearchService.h>
-
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 
 #include <util/ustring/UString.h>
@@ -18,10 +16,41 @@ namespace sf1r
 
 using driver::Keys;
 
+/**
+ * @brief Action \b index. Refines a user query which can be a set of tokens. 
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b keywords* (@c String): Specified query string.
+ *
+ * @section response
+ *
+ *   specified prefix.
+ * - @b refined_query (@c String): A refined query string.
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection": "example",
+ *   "keywords": "shanghai yiyao"
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ *   "refined_query": "上海 医药"
+ * }
+ * @endcode
+ */
 void QueryCorrectionController::index()
 {
     std::string collection = asString(request()[Keys::collection]);
-    std::string queryString = asString( request()[Keys::keywords] );
+    std::string queryString = asString(request()[Keys::keywords]);
 
     UString queryUString(queryString, UString::UTF_8);
     UString refinedQueryUString;

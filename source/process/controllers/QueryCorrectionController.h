@@ -17,11 +17,6 @@ namespace sf1r
 class QueryCorrectionController : public ::izenelib::driver::Controller
 {
 public:
-    enum
-    {
-        kDefaultCount = 8       /**< Default count of result */
-    };
-
     void index();
 };
 

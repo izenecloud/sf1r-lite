@@ -40,18 +40,6 @@ void MiningBundleActivator::start( IBundleContext::ConstPtr context )
     config_ = static_cast<MiningBundleConfiguration*>(bundleConfigPtr.get());
     tracker_ = new ServiceTracker( context, "IndexSearchService", this );
     tracker_->startTracking();
-
-    static bool QueryCorrectionFirstRun = true;
-
-    if (QueryCorrectionFirstRun)
-    {
-        std::string resource_path = config_->system_resource_path_ + "/speller-support";
-        std::string working_path = config_->system_working_path_ + "/query-support";
-        QueryCorrectionSubmanager::setPath(resource_path, working_path);
-        QueryCorrectionSubmanager::getInstance();
-
-        QueryCorrectionFirstRun = false;
-    }
 }
 
 void MiningBundleActivator::stop( IBundleContext::ConstPtr context )
@@ -102,10 +90,10 @@ bool MiningBundleActivator::addingService( const ServiceReference& ref )
             searchService_->miningManager_ = miningManager_;
             searchService_->aggregatorManager_ = service->aggregatorManager_;
             searchService_->workerService_ = service->workerService_;
-            
+
             taskService_ = new MiningTaskService;
             taskService_->miningManager_ = miningManager_;
-            
+
             Properties props;
             props.put( "collection", config_->collectionName_);
             searchServiceReg_ = context_->registerService( "MiningSearchService", searchService_, props );
@@ -161,7 +149,7 @@ bool MiningBundleActivator::openDataDirectories_()
         if (!directoryRotator_.appendDirectory(dataDir))
 	{
 	  std::string msg = dataDir.file_string() + " corrupted, delete it!";
-	  sflog->error( SFL_SYS, msg.c_str() ); 
+	  sflog->error( SFL_SYS, msg.c_str() );
 	  std::cout<<msg<<std::endl;
 	  //clean the corrupt dir
 	  boost::filesystem::remove_all( dataDir );
@@ -204,7 +192,14 @@ MiningBundleActivator::createMiningManager_(IndexSearchService* indexService) co
         )
     );
 
-    ret->system_resource_path_ = config_->system_resource_path_;
+    static bool FirstRun = true;
+    if (FirstRun)
+    {
+        FirstRun = false;
+
+        MiningManager::system_resource_path_ = config_->system_resource_path_;
+        MiningManager::system_working_path_ = config_->system_working_path_;
+    }
 
     bool succ = ret->open();
     if(!succ)
@@ -215,4 +210,3 @@ MiningBundleActivator::createMiningManager_(IndexSearchService* indexService) co
 }
 
 }
-
