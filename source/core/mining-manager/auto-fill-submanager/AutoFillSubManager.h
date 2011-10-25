@@ -10,10 +10,7 @@
 #include <iostream>
 #include <fstream>
 #include <string.h>
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <log-manager/LogManager.h>
 #include <util/ThreadModel.h>
 #include <util/ustring/UString.h>
 
