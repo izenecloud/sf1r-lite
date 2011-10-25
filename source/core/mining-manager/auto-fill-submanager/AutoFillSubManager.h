@@ -14,7 +14,6 @@
 #include <boost/filesystem.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <log-manager/LogManager.h>
-#include <mining-manager/taxonomy-generation-submanager/LabelManager.h>
 #include <util/ThreadModel.h>
 #include <util/ustring/UString.h>
 
@@ -38,15 +37,9 @@ namespace sf1r
  */
 class AutoFillSubManager: public boost::noncopyable
 {
-//     struct ItemValueType
-//     {
-//         izenelib::util::UString text;
-//         uint32_t df;
-//         uint32_t value;
-//     };
-
     //freq, df, text
     typedef boost::tuple<count_t, count_t, izenelib::util::UString> ItemValueType;
+    typedef std::pair<uint32_t, izenelib::util::UString> PropertyLabelType;
     typedef WordCompletionTable Trie_;
 
 public:
@@ -67,25 +60,15 @@ private:
     Trie_* autoFillTrie_;
     boost::shared_mutex mutex_;
     idmlib::util::DirectorySwitcher* dir_switcher_;
+
 public:
-
-//     static AutoFillSubManager* get()
-//     {
-//         return izenelib::util::Singleton<AutoFillSubManager>::get();
-//     }
-
-    bool Init(const std::string& fillSupportPath, uint32_t top=10, uint32_t queryUpdateTime=24);
-
+    bool Init(const std::string& fillSupportPath, uint32_t top = 10, uint32_t queryUpdateTime = 24);
 
     /**
      * @brief build the B-tree index for the collection and query log.
      * @param queryList The recent queries got from query log.
      */
-    bool buildIndex(const std::list<ItemValueType>& queryList,
-                    const std::vector<boost::shared_ptr<LabelManager> >& label_manager_list);
-
-    bool buildIndex(const std::list<ItemValueType>& queryList	);
-
+    bool buildIndex(const std::list<ItemValueType>& queryList, const std::list<PropertyLabelType>& labelList);
 
     /**
      * @brief Get the autocompletion list for a give query.
@@ -95,13 +78,6 @@ public:
     bool getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
 
 private:
-
-
-    // worker for update the query log information.
-//     void updateLogWorker();
-//
-//     void updateRecentLog();
-
     void updateTrie(Trie_* trie, const izenelib::util::UString& key , const ItemValueType& value);
 
     void buildTrieItem(Trie_* trie, const ItemValueType& item);

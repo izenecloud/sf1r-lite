@@ -750,6 +750,4 @@ bool  LabelManager::selectDocLabels(
         sorted_label[i]=labelItemList[i].first;
     }
     return true;
-
 }
-

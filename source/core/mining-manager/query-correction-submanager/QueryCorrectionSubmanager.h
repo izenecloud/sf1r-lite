@@ -28,8 +28,8 @@ namespace sf1r
 
 class QueryCorrectionSubmanager : public boost::noncopyable
 {
-    typedef boost::tuple<uint32_t, uint32_t, izenelib::util::UString> QueryLogItemType;
-    typedef std::list<QueryLogItemType> QueryLogListType;
+    typedef boost::tuple<uint32_t, uint32_t, izenelib::util::UString> QueryLogType;
+    typedef std::pair<uint32_t, izenelib::util::UString> PropertyLabelType;
     static const int DEFAULT_MAX_EDITDISTANCE_ = 2;
 
 public:
@@ -51,7 +51,7 @@ public:
     bool getPinyin(const izenelib::util::UString& hanzi,
                    std::vector<izenelib::util::UString>& pinyin);
 
-    void updateCogramAndDict(const QueryLogListType& recentQueryList);
+    void updateCogramAndDict(const std::list<QueryLogType>& queryList, const std::list<PropertyLabelType>& labelList);
 
     void Inject(const izenelib::util::UString& query, const izenelib::util::UString& result);
 
