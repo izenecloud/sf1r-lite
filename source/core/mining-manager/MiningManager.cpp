@@ -235,6 +235,7 @@ bool MiningManager::open()
                     miningConfig_.query_correction_param.enableCN));
         rmDb_.reset(new RecommendManager(queryDataPath_, collectionName_, mining_schema_, document_manager_,
                     qcManager_, analyzer_, logdays));
+        rmDb_->RebuildForAll();
 
         /** log manager */
         MiningQueryLogHandler* handler = MiningQueryLogHandler::getInstance();

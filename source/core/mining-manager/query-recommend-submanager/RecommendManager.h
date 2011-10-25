@@ -10,7 +10,6 @@
 #include <string>
 
 #include <mining-manager/MiningManagerDef.h>
-#include "QueryLogManager.h"
 #include <3rdparty/am/rde_hashmap/hash_map.h>
 #include <am/3rdparty/rde_hash.h>
 #include <util/hashFunction.h>
@@ -61,12 +60,9 @@ class RecommendManager : public boost::noncopyable
     typedef izenelib::ir::irdb::IRDatabase< IR_DATA_TYPES, IR_DB_TYPES  >  MIRDatabase;
     typedef izenelib::ir::irdb::IRDocument< IR_DATA_TYPES >  MIRDocument;
 
-    typedef izenelib::am::SSFType<uint8_t, izenelib::util::UString , uint32_t, false> PropertySSFType;
-    typedef PropertySSFType::WriterType property_writer_t;
+    typedef boost::tuple<uint32_t, uint32_t, izenelib::util::UString> QueryLogType;
+    typedef std::pair<uint32_t, izenelib::util::UString> PropertyLabelType;
 
-    typedef boost::tuple<uint32_t, uint32_t, izenelib::util::UString> QueryLogItemType;
-    typedef std::list<QueryLogItemType> QueryLogListType;
-    
 public:
     RecommendManager(const std::string& path,
                      const std::string& collection_name,
@@ -87,7 +83,7 @@ public:
 
     void insertQuery(const izenelib::util::UString& queryStr, uint32_t freq = 1);
 
-    
+
     void insertProperty(const izenelib::util::UString& queryStr, uint32_t docid);
 
     /**
@@ -97,16 +93,16 @@ public:
         const izenelib::util::UString& query,
         uint32_t maxNum,
         std::deque<izenelib::util::UString>& queries);
-        
+
     bool getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
 
     void RebuildForAll();
 
-    void RebuildForRecommend(const QueryLogListType &logItems);
+    void RebuildForRecommend(const std::list<QueryLogType>& queryList, const std::list<PropertyLabelType>& labelList);
 
-    void RebuildForCorrection(const QueryLogListType &logItems);
+    void RebuildForCorrection(const std::list<QueryLogType>& queryList, const std::list<PropertyLabelType>& labelList);
 
-    void RebuildForAutofill(const QueryLogListType &logItems);
+    void RebuildForAutofill(const std::list<QueryLogType>& queryList, const std::list<PropertyLabelType>& labelList);
 
     uint32_t GetMaxDocId() const
     {

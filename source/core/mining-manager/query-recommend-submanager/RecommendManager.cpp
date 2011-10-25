@@ -117,15 +117,14 @@ void RecommendManager::RebuildForAll()
     boost::gregorian::days dd(days);
     boost::posix_time::ptime p = time_now-dd;
     std::string time_string = boost::posix_time::to_iso_string(p);
-    std::string freq_sql = "SELECT query, count(*) AS freq, max(hit_docs_num) AS df FROM user_queries WHERE collection='" + collection_name_ + "' AND hit_docs_num>0 AND TimeStamp>='" + time_string + "' GROUP BY query";
-    std::string label_sql = "SELECT label_name AS query, sum(hit_docs_num) AS freq, sum(hit_docs_num) AS df from property_labels WHERE collection='" + collection_name_ + "' GROUP BY label_name";
-    std::list<std::map<std::string, std::string> > db_records;
-    UserQuery::find_by_sql(freq_sql, db_records);
-    PropertyLabel::find_by_sql(label_sql, db_records);
+    typedef std::map<std::string, std::string> DbRecordType;
 
-    std::list<std::map<std::string, std::string> >::iterator it = db_records.begin();
-    QueryLogListType logItems;
-    for (; it != db_records.end(); ++it)
+    std::string query_sql = "SELECT query, count(*) AS freq, max(hit_docs_num) AS df FROM user_queries WHERE collection='" + collection_name_ + "' AND hit_docs_num>0 AND TimeStamp>='" + time_string + "' GROUP BY query";
+    std::list<DbRecordType> query_records;
+    UserQuery::find_by_sql(query_sql, query_records);
+    std::list<QueryLogType> queryList;
+    for (std::list<DbRecordType>::iterator it = query_records.begin();
+            it != query_records.end(); ++it)
     {
         izenelib::util::UString uquery((*it)["query"], izenelib::util::UString::UTF_8);
         if (QueryUtility::isRestrictWord(uquery))
@@ -134,12 +133,28 @@ void RecommendManager::RebuildForAll()
         }
         uint32_t freq = boost::lexical_cast<uint32_t>((*it)["freq"]);
         uint32_t df = boost::lexical_cast<uint32_t>((*it)["df"]);
-        logItems.push_back(QueryLogItemType(freq, df, uquery));
+        queryList.push_back(QueryLogType(freq, df, uquery));
     }
 
-    RebuildForRecommend(logItems);
-    RebuildForCorrection(logItems);
-    RebuildForAutofill(logItems);
+    std::string label_sql = "SELECT label_name, sum(hit_docs_num) AS df from property_labels WHERE collection='" + collection_name_ + "' GROUP BY label_name";
+    std::list<std::map<std::string, std::string> > label_records;
+    PropertyLabel::find_by_sql(label_sql, label_records);
+    std::list<PropertyLabelType> labelList;
+    for (std::list<DbRecordType>::iterator it = label_records.begin();
+            it != label_records.end(); ++it)
+    {
+        izenelib::util::UString uquery((*it)["label_name"], izenelib::util::UString::UTF_8);
+        if (QueryUtility::isRestrictWord(uquery))
+        {
+            continue;
+        }
+        uint32_t df = boost::lexical_cast<uint32_t>((*it)["df"]);
+        labelList.push_back(PropertyLabelType(df, uquery));
+    }
+
+    RebuildForRecommend(queryList, labelList);
+    RebuildForCorrection(queryList, labelList);
+    RebuildForAutofill(queryList, labelList);
 }
 
 uint8_t RecommendManager::LabelScore_(uint32_t df)
@@ -205,38 +220,51 @@ bool RecommendManager::AddRecommendItem_(MIRDatabase* db, uint32_t item_id, cons
     return true;
 }
 
-void RecommendManager::RebuildForRecommend(const QueryLogListType &logItems)
+void RecommendManager::RebuildForRecommend(const std::list<QueryLogType>& queryList, const std::list<PropertyLabelType>& labelList)
 {
     std::string newPath;
     if (!dir_switcher_.GetNextWithDelete(newPath))
         return;
 
-    std::cout<<"switching recommend manager to "<<newPath<<std::endl;
+    std::cout << "switching recommend manager to " << newPath << std::endl;
     MIRDatabase* new_db = new MIRDatabase(newPath);
     new_db->setCacheSize<0>(100000000);
     new_db->setCacheSize<1>(0);
     new_db->open();
-    std::string path_tocreate = newPath+"/concept-id";
+    std::string path_tocreate = newPath + "/concept-id";
     boost::filesystem::create_directories(path_tocreate);
     ConceptIDManager* new_concept_id_manager = new ConceptIDManager(path_tocreate);
     if (!new_concept_id_manager->Open())
     {
         //TODO
     }
-    std::cout<<newPath<<" opened"<<std::endl;
+    std::cout << newPath << " opened" << std::endl;
 
     uint32_t item_id = 1;
+
+    if (mining_schema_.recommend_tg) //use tg's kp
+    {
+        std::list<PropertyLabelType>::const_iterator it = labelList.begin();
+
+        for (; it != labelList.end(); ++it)
+        {
+            const izenelib::util::UString &uquery = it->second;
+            const uint32_t &freq = it->first;
+            if (AddRecommendItem_(new_db, item_id, uquery, 1, QueryLogScore_(freq)))
+            {
+                new_concept_id_manager->Put(item_id, uquery);
+                item_id++;
+            }
+        }
+    }
+
     if (mining_schema_.recommend_querylog) //use query log
     {
-        QueryLogListType::const_iterator it = logItems.begin();
+        std::list<QueryLogType>::const_iterator it = queryList.begin();
 
-        for (; it != logItems.end(); ++it)
+        for (; it != queryList.end(); ++it)
         {
             const izenelib::util::UString &uquery = it->get<2>();
-            if (QueryUtility::isRestrictWord(uquery))
-            {
-                continue;
-            }
             const uint32_t &freq = it->get<0>();
             if (AddRecommendItem_(new_db, item_id, uquery, 1, QueryLogScore_(freq)))
             {
@@ -249,21 +277,21 @@ void RecommendManager::RebuildForRecommend(const QueryLogListType &logItems)
     if (mining_schema_.recommend_properties.size() > 0 && document_manager_)
     {
         izenelib::am::rde_hash<std::string, bool> recommend_properties;
-        for (uint32_t i=0;i<mining_schema_.recommend_properties.size();i++)
+        for (uint32_t i = 0; i < mining_schema_.recommend_properties.size(); i++)
         {
             recommend_properties.insert(mining_schema_.recommend_properties[i], 0);
         }
 
         uint32_t process_count = 0;
         Document doc;
-        for (uint32_t docid = max_docid_+1; docid<document_manager_->getMaxDocId(); docid++)
+        for (uint32_t docid = max_docid_+1; docid < document_manager_->getMaxDocId(); docid++)
         {
             bool b = document_manager_->getDocument(docid, doc);
             if (!b) continue;
             Document::property_iterator property_it = doc.propertyBegin();
             while (property_it != doc.propertyEnd())
             {
-                if (recommend_properties.find(property_it->first)!= NULL)
+                if (recommend_properties.find(property_it->first) != NULL)
                 {
                     const izenelib::util::UString& content = property_it->second.get<izenelib::util::UString>();
                     bool succ = AddRecommendItem_(new_db, item_id, content, 2, 40);
@@ -298,17 +326,17 @@ void RecommendManager::RebuildForRecommend(const QueryLogListType &logItems)
         delete new_concept_id_manager;
     }
     catch (std::exception& exe)
-        {}
+    {}
 }
 
-void RecommendManager::RebuildForCorrection(const QueryLogListType &logItems)
+void RecommendManager::RebuildForCorrection(const std::list<QueryLogType>& queryList, const std::list<PropertyLabelType>& labelList)
 {
-    query_correction_->updateCogramAndDict(logItems);
+    query_correction_->updateCogramAndDict(queryList, labelList);
 }
 
-void RecommendManager::RebuildForAutofill(const QueryLogListType &logItems)
+void RecommendManager::RebuildForAutofill(const std::list<QueryLogType>& queryList, const std::list<PropertyLabelType>& labelList)
 {
-    autofill_->buildIndex(logItems);
+    autofill_->buildIndex(queryList, labelList);
 }
 
 bool RecommendManager::getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list)

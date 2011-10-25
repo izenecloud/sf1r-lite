@@ -87,7 +87,7 @@ bool AutoFillSubManager::Init(
     return true;
 }
 
-bool AutoFillSubManager::buildIndex(const std::list<ItemValueType>& queryList)
+bool AutoFillSubManager::buildIndex(const std::list<ItemValueType>& queryList, const std::list<PropertyLabelType>& labelList)
 {
     if (queryList.empty())
     {
@@ -109,10 +109,17 @@ bool AutoFillSubManager::buildIndex(const std::list<ItemValueType>& queryList)
         }
         tempTrie = new Trie_(tempTriePath , top_);
 
-        std::list<ItemValueType>::const_iterator it;
-        for (it = queryList.begin(); it != queryList.end(); it++)
+        for (std::list<ItemValueType>::const_iterator it = queryList.begin();
+                it != queryList.end(); ++it)
+        {
             buildTrieItem(tempTrie, *it);
+        }
 
+        for (std::list<PropertyLabelType>::const_iterator it = labelList.begin();
+                it != labelList.end(); ++it)
+        {
+            buildTrieItem(tempTrie, ItemValueType(it->first, it->first, it->second));
+        }
         tempTrie->flush();
     }
     catch (...)

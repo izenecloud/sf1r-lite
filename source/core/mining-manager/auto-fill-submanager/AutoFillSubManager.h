@@ -39,6 +39,7 @@ class AutoFillSubManager: public boost::noncopyable
 {
     //freq, df, text
     typedef boost::tuple<count_t, count_t, izenelib::util::UString> ItemValueType;
+    typedef std::pair<uint32_t, izenelib::util::UString> PropertyLabelType;
     typedef WordCompletionTable Trie_;
 
 public:
@@ -67,7 +68,7 @@ public:
      * @brief build the B-tree index for the collection and query log.
      * @param queryList The recent queries got from query log.
      */
-    bool buildIndex(const std::list<ItemValueType>& queryList);
+    bool buildIndex(const std::list<ItemValueType>& queryList, const std::list<PropertyLabelType>& labelList);
 
     /**
      * @brief Get the autocompletion list for a give query.

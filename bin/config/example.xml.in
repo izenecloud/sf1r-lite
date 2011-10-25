@@ -53,6 +53,7 @@
           <Property name="Content"/>
         </DuplicateDetection>
         <QueryRecommend>
+          <TG/>
           <QueryLog/>
         </QueryRecommend>
         <Similarity>
