@@ -56,7 +56,7 @@ bool SynchroProducer::produce(const std::string& dataPath, callback_on_consumed_
     return false;
 }
 
-bool SynchroProducer::waitConsumers(bool& isSuccess, int findConsumerTimeout)
+bool SynchroProducer::waitConsumers(bool& isConsumed, int findConsumerTimeout)
 {
     //std::cout<<"SynchroProducer::waitConsumers"<<std::endl;
 
@@ -84,7 +84,7 @@ bool SynchroProducer::waitConsumers(bool& isSuccess, int findConsumerTimeout)
         sleep(1);
     }
 
-    isSuccess = result_on_consumed_;
+    isConsumed = result_on_consumed_;
     return true;
 }
 

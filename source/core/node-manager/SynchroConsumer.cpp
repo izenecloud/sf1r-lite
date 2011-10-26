@@ -12,7 +12,7 @@ SynchroConsumer::SynchroConsumer(
         const std::string zkSyncNodePath,
         replicaid_t replicaId,
         nodeid_t nodeId)
-:replicaId_(replicaId), nodeId_(nodeId), syncNodePath_(zkSyncNodePath), consumerStatus_(CONSUMER_STATUS_INIT)
+:replicaId_(replicaId), nodeId_(nodeId), syncNodePath_(zkSyncNodePath), consumerStatus_(CONSUMER_STATUS_INIT), replyProducer_(true)
 {
     zookeeper_.reset(new ZooKeeper(zkHosts, zkTimeout, true));
     zookeeper_->registerEventHandler(this);
@@ -26,6 +26,7 @@ SynchroConsumer::SynchroConsumer(
 void SynchroConsumer::watchProducer(callback_on_produced_t callback_on_produced, bool replyProducer)
 {
     consumerStatus_ = CONSUMER_STATUS_WATCHING;
+    replyProducer_ = replyProducer;
 
     callback_on_produced_ = callback_on_produced;
 
@@ -104,8 +105,11 @@ void SynchroConsumer::doWatchProducer()
 
         // Consuming
         bool ret = callback_on_produced_(dataPath);
-        std::string retstr = ret ? "success" : "failure";
-        zookeeper_->setZNodeData(consumerRealNodePath_, retstr);
+        if (replyProducer_)
+        {
+            std::string retstr = ret ? "success" : "failure";
+            zookeeper_->setZNodeData(consumerRealNodePath_, retstr);
+        }
 
         consumerStatus_ = CONSUMER_STATUS_WATCHING;
     }

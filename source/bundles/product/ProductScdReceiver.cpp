@@ -2,20 +2,23 @@
 #include <bundles/index/IndexTaskService.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
+#include <node-manager/DistributedSynchroFactory.h>
 using namespace sf1r;
 namespace bfs = boost::filesystem;
 ProductScdReceiver::ProductScdReceiver():index_service_(NULL)
 {
-    dsSyn.watchGenerate(boost::bind(&ProductScdReceiver::Run, this,_1));
+    SynchroConsumerPtr syncConsumer =
+        DistributedSynchroFactory::makeConsumer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER);
+
+    syncConsumer->watchProducer(boost::bind(&ProductScdReceiver::Run, this, _1), true);
 }
     
-void ProductScdReceiver::Run(const std::string& scd_source_dir)
+bool ProductScdReceiver::Run(const std::string& scd_source_dir)
 {
     std::cout<<"ProductScdReceiver::Run "<<scd_source_dir<<std::endl;
     if(index_service_==NULL)
     {
-        dsSyn.processed(false);
-        return;
+        return false;
     }
     std::string index_scd_dir = index_service_->getScdDir();
     bfs::create_directories(index_scd_dir);
@@ -37,23 +40,21 @@ void ProductScdReceiver::Run(const std::string& scd_source_dir)
     }
     if(scd_list.empty()) 
     {
-        dsSyn.processed(false);
-        return;
+        return false;
     }
     bfs::path to_dir(index_scd_dir);
     if(!CopyFileListToDir_(scd_list, to_dir))
     {
-        dsSyn.processed(false);
-        return;
+        return false;
     }
     
     //call buildCollection
     if(!index_service_->buildCollection(0))
     {
-        dsSyn.processed(false);
-        return;
+        return false;
     }
-    dsSyn.processed(true);
+
+    return true;
 }
 
 bool ProductScdReceiver::CopyFileListToDir_(const std::vector<boost::filesystem::path>& file_list, const boost::filesystem::path& to_dir)
