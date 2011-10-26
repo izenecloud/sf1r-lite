@@ -12,7 +12,7 @@
 #include "pm_config.h"
 #include "product_price.h"
 #include <boost/shared_ptr.hpp>
-
+#include <boost/thread/mutex.hpp>
 
 namespace sf1r
 {
@@ -71,7 +71,8 @@ private:
     UuidGenerator* uuid_gen_;
     PMConfig config_;
     std::string error_;
-
+    bool inhook_;
+    boost::mutex human_mutex_;
 };
 
 }

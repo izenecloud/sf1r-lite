@@ -7,7 +7,7 @@
 using namespace sf1r;
 
 ProductManager::ProductManager(ProductDataSource* data_source, OperationProcessor* op_processor, const PMConfig& config)
-:data_source_(data_source), op_processor_(op_processor), uuid_gen_(new UuidGenerator()), config_(config)
+:data_source_(data_source), op_processor_(op_processor), uuid_gen_(new UuidGenerator()), config_(config), inhook_(false)
 {
 }
 
@@ -19,6 +19,8 @@ ProductManager::~ProductManager()
 
 bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager::IndexerDocument& index_document)
 {
+    inhook_ = true;
+    boost::mutex::scoped_lock lock(human_mutex_);
     izenelib::util::UString uuid = uuid_gen_->Gen(doc);
     if(!data_source_->SetUuid(index_document, uuid)) return false;
     PMDocumentType new_doc(doc);
@@ -31,6 +33,8 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
 
 bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::IndexerDocument& index_document, bool r_type)
 {
+    inhook_ = true;
+    boost::mutex::scoped_lock lock(human_mutex_);
     uint32_t fromid = index_document.getId(); //oldid
     PMDocumentType from;
     if(!data_source_->GetDocument(fromid, from)) return false;
@@ -75,6 +79,8 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
 
 bool ProductManager::HookDelete(uint32_t docid)
 {
+    inhook_ = true;
+    boost::mutex::scoped_lock lock(human_mutex_);
     PMDocumentType from;
     if(!data_source_->GetDocument(docid, from)) return false;
     izenelib::util::UString from_uuid;
@@ -102,12 +108,14 @@ bool ProductManager::HookDelete(uint32_t docid)
 
 bool ProductManager::GenOperations()
 {
+    bool result = true;
     if(!op_processor_->Finish())
     {
         error_ = op_processor_->GetLastError();
-        return false;
+        result = false;
     }
-    return true;
+    if(inhook_) inhook_ = false;
+    return result;
 
     /// M
     /*
@@ -145,6 +153,12 @@ bool ProductManager::GenOperations()
 
 bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib::util::UString& gen_uuid)
 {
+    if(inhook_)
+    {
+        error_ = "In Hook locks, collection was indexing, plz wait.";
+        return false;
+    }
+    boost::mutex::scoped_lock lock(human_mutex_);
     std::cout<<"ProductManager::AddGroup"<<std::endl;
     if(docid_list.size()<2) 
     {
@@ -256,6 +270,12 @@ bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const s
 
 bool ProductManager::AppendToGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list)
 {
+    if(inhook_)
+    {
+        error_ = "In Hook locks, collection was indexing, plz wait.";
+        return false;
+    }
+    boost::mutex::scoped_lock lock(human_mutex_);
     std::cout<<"ProductManager::AppendToGroup"<<std::endl;
     return AppendToGroup_(uuid, docid_list);
     
@@ -263,6 +283,12 @@ bool ProductManager::AppendToGroup(const izenelib::util::UString& uuid, const st
     
 bool ProductManager::RemoveFromGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list)
 {
+    if(inhook_)
+    {
+        error_ = "In Hook locks, collection was indexing, plz wait.";
+        return false;
+    }
+    boost::mutex::scoped_lock lock(human_mutex_);
     std::cout<<"ProductManager::RemoveFromGroup"<<std::endl;
     if(docid_list.empty()) 
     {

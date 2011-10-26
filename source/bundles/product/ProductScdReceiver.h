@@ -1,5 +1,5 @@
-#ifndef SF1R_PRODUCTMANAGER_PRODUCTSCDRECEIVER_H
-#define SF1R_PRODUCTMANAGER_PRODUCTSCDRECEIVER_H
+#ifndef SF1R_PRODUCT_BUNDLE_PRODUCTSCDRECEIVER_H
+#define SF1R_PRODUCT_BUNDLE_PRODUCTSCDRECEIVER_H
 
 #include <sstream>
 #include <common/type_defs.h>
@@ -8,9 +8,9 @@
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
-#include "pm_def.h"
-#include "pm_types.h"
-#include "distributed_process_synchronizer.h"
+#include <product-manager/pm_def.h>
+#include <product-manager/pm_types.h>
+#include <product-manager/distributed_process_synchronizer.h>
 
 namespace sf1r
 {

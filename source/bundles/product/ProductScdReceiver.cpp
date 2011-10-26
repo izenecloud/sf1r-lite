@@ -1,4 +1,4 @@
-#include "product_scd_receiver.h"
+#include "ProductScdReceiver.h"
 #include <bundles/index/IndexTaskService.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
@@ -30,6 +30,7 @@ void ProductScdReceiver::Run(const std::string& scd_source_dir)
             std::string fileName = itr->path().filename();
             if (parser.checkSCDFormat(fileName) )
             {
+                std::cout<<"[ProductScdReceiver] find SCD "<<fileName<<std::endl;
                 scd_list.push_back(itr->path());
             }
         }
