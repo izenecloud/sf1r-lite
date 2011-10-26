@@ -31,16 +31,17 @@ public:
 
     ~NodeManager();
 
-    void setDSTopologyConfig(const DistributedTopologyConfig& dsTopologyConfig)
+    void initWithConfig(
+            const DistributedTopologyConfig& dsTopologyConfig,
+            const DistributedUtilConfig& dsUtilConfig)
     {
         dsTopologyConfig_ = dsTopologyConfig;
+        dsUtilConfig_ = dsUtilConfig;
 
         NodeDef::setClusterIdNodeName(dsTopologyConfig_.clusterId_);
-    }
 
-    void setDSUtilConfig(const DistributedUtilConfig dsUtilConfig)
-    {
-        dsUtilConfig_ = dsUtilConfig;
+        initZooKeeper(dsUtilConfig_.zkConfig_.zkHosts_, dsUtilConfig_.zkConfig_.zkRecvTimeout_);
+        initTopology();
     }
 
     const DistributedTopologyConfig& getDSTopologyConfig() const
@@ -83,6 +84,8 @@ public:
 private:
     void ensureNodeParents(nodeid_t nodeId, replicaid_t replicaId);
 
+    void initTopology();
+
     void retryRegister();
 
 private:
@@ -91,6 +94,7 @@ private:
 
     boost::shared_ptr<ZooKeeper> zookeeper_;
 
+    bool registercalled_;
     bool registered_;
     SF1NodeInfo nodeInfo_;
     std::string nodePath_;

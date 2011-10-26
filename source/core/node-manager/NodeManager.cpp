@@ -5,7 +5,7 @@
 using namespace sf1r;
 
 NodeManager::NodeManager()
-: registered_(false), masterPort_(0), workerPort_(0)
+: registercalled_(false), registered_(false), masterPort_(0), workerPort_(0)
 {
 }
 
@@ -27,6 +27,8 @@ void NodeManager::setCurrentNodeInfo(SF1NodeInfo& sf1NodeInfo)
 
 void NodeManager::registerNode()
 {
+    registercalled_ = true;
+
     if (zookeeper_->isConnected())
     {
         ensureNodeParents(nodeInfo_.nodeId_, nodeInfo_.replicaId_);
@@ -102,9 +104,14 @@ void NodeManager::process(ZooKeeperEvent& zkEvent)
 {
     ///std::cout<<"NodeManager::process "<< zkEvent.toString();
 
-    if (!registered_)
+    if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTING_STATE)
     {
-        retryRegister();
+        initTopology();
+
+        if (registercalled_ && !registered_)
+        {
+            retryRegister();
+        }
     }
 }
 
@@ -113,6 +120,11 @@ void NodeManager::ensureNodeParents(nodeid_t nodeId, replicaid_t replicaId)
     zookeeper_->createZNode(NodeDef::getSF1RootPath());
     zookeeper_->createZNode(NodeDef::getSF1TopologyPath());
     zookeeper_->createZNode(NodeDef::getReplicaPath(replicaId));
+}
+
+void NodeManager::initTopology()
+{
+
 }
 
 void NodeManager::retryRegister()

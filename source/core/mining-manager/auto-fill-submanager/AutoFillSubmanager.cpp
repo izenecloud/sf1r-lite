@@ -7,8 +7,6 @@
  */
 #include "AutoFillSubManager.h"
 #include <mining-manager/util/LabelDistance.h>
-#include <util/ustring/algo.hpp>
-#include <util/ustring/ustr_tool.h>
 #include <common/SFLogger.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 #include <util/filesystem.h>

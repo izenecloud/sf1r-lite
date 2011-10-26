@@ -14,14 +14,11 @@
 #ifndef _QUERY_CORRECTION_SUBMANAGER_H_
 #define _QUERY_CORRECTION_SUBMANAGER_H_
 
-#include <log-manager/LogManager.h>
-#include <query-manager/QueryManager.h>
 #include <idmlib/query-correction/cn_query_correction.h>
 #include "EkQueryCorrection.h"
 #include <boost/noncopyable.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/shared_ptr.hpp>
-#include <sdb/SequentialDB.h>
 
 namespace sf1r
 {

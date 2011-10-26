@@ -16,12 +16,9 @@
 #include "QueryManager.h"
 #include <common/SFLogger.h>
 
-#include <boost/tokenizer.hpp>
-
 namespace sf1r {
 
 std::map<QueryManager::CollPropertyKey_T, sf1r::PropertyDataType> QueryManager::collectionPropertyInfoMap_;
-const std::string QueryManager::separatorString("!#$%&()*+,-./:;<=>?@[]^_`{|}~ ");
 QueryManager::DPM_T QueryManager::displayPropertyMap_;
 QueryManager::SPS_T QueryManager::searchPropertySet_;
 boost::shared_mutex QueryManager::dpmSM_;

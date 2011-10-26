@@ -10,8 +10,6 @@
  *      -2010.03.05 add log manager periodical worker.
  */
 #include "QueryCorrectionSubmanager.h"
-#include <common/SFLogger.h>
-#include <util/ustring/ustr_tool.h>
 #include <boost/algorithm/string.hpp>
 
 using namespace izenelib::util::ustring_tool;
@@ -71,6 +69,7 @@ bool QueryCorrectionSubmanager::initialize()
     }
 
     {
+        boost::mutex::scoped_lock scopedLock(logMutex_);
         static bool FirstRun = true;
         if (FirstRun && enableEK_)
         {
@@ -89,6 +88,7 @@ bool QueryCorrectionSubmanager::initialize()
 
     //load global inject
     {
+        boost::mutex::scoped_lock scopedLock(logMutex_);
         static bool FirstRun = true;
         if (FirstRun)
         {
@@ -225,7 +225,7 @@ bool QueryCorrectionSubmanager::getRefinedQuery(const UString& queryUString, USt
                            "QueryCorrectionSubmanager :: getRealRefinedQuery");
 
     typedef tokenizer<char_separator<char> > tokenizers;
-    char_separator<char> sep(QueryManager::separatorString.c_str());
+    char_separator<char> sep;
 
     std::string queryStr;
     queryUString.convertString(queryStr, izenelib::util::UString::UTF_8);
