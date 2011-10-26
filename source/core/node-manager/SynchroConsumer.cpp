@@ -1,7 +1,6 @@
 #include "SynchroConsumer.h"
 
 #include <sstream>
-#include <node-manager/NodeManager.h>
 
 using namespace sf1r;
 using namespace zookeeper;
@@ -17,11 +16,6 @@ SynchroConsumer::SynchroConsumer(
 {
     zookeeper_.reset(new ZooKeeper(zkHosts, zkTimeout, true));
     zookeeper_->registerEventHandler(this);
-
-    if (!NodeManagerSingleton::get()->isInited())
-    {
-        zookeeper_->deleteZNode(zkSyncNodePath, true); //xxx
-    }
 
     // "/SF1R-xxxx/Synchro/ProductManager/ProducerRXNX/"
     //std::stringstream ss;
@@ -46,17 +40,17 @@ void SynchroConsumer::watchProducer(callback_on_produced_t callback_on_produced,
 void SynchroConsumer::process(ZooKeeperEvent& zkEvent)
 {
     std::cout<<"[SynchroConsumer::process] "<< zkEvent.toString();
-    //if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
-    //{
+    if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
+    {
         if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
             doWatchProducer();
-    //}
+    }
 }
 
 /*virtual*/
 void SynchroConsumer::onDataChanged(const std::string& path)
 {
-    std::cout<<"[SynchroConsumer::onDataChanged] "<< path<<std::endl;
+    //std::cout<<"[SynchroConsumer::onDataChanged] "<< path<<std::endl;
     if (path == producerRealNodePath_)
     {
         // new data may produced
@@ -67,7 +61,7 @@ void SynchroConsumer::onDataChanged(const std::string& path)
 /*virtual*/
 void SynchroConsumer::onChildrenChanged(const std::string& path)
 {
-    std::cout<<"[SynchroConsumer::onChildrenChanged] "<< path<<std::endl;
+    //std::cout<<"[SynchroConsumer::onChildrenChanged] "<< path<<std::endl;
     if (path == syncNodePath_)
     {
         if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
@@ -79,14 +73,14 @@ void SynchroConsumer::onChildrenChanged(const std::string& path)
 
 void SynchroConsumer::doWatchProducer()
 {
-    std::cout<<"[SynchroConsumer::doWatchProducer]... "<<std::endl;
+    //std::cout<<"[SynchroConsumer::doWatchProducer]... "<<std::endl;
     boost::unique_lock<boost::mutex> lock(mutex_);
 
     // todo watch M node
     std::vector<std::string> childrenList;
     zookeeper_->getZNodeChildren(syncNodePath_, childrenList, ZooKeeper::WATCH);
 
-    std::cout<<"[SynchroConsumer::doWatchProducer] watching: "<<syncNodePath_<<", "<<childrenList.size()<<std::endl;
+    std::cout<<"[SynchroConsumer::doWatchProducer] watching children of: "<<syncNodePath_<<", "<<childrenList.size()<<std::endl;
 
     if (childrenList.size() > 0)
     {

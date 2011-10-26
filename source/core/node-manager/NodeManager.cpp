@@ -1,5 +1,7 @@
 #include "NodeManager.h"
 
+#include <node-manager/DistributedSynchroFactory.h>
+
 #include <sstream>
 
 using namespace sf1r;
@@ -47,8 +49,8 @@ void NodeManager::registerNode()
             registered_ = true;
         }
     }
-
-    std::cout<<"[NodeManager] waiting for ZooKeeper Service..."<<std::endl;
+    else
+        std::cout<<"[NodeManager] waiting for ZooKeeper Service..."<<std::endl;
 }
 
 void NodeManager::registerMaster(unsigned int port)
@@ -102,9 +104,9 @@ void NodeManager::deregisterNode()
 
 void NodeManager::process(ZooKeeperEvent& zkEvent)
 {
-    ///std::cout<<"NodeManager::process "<< zkEvent.toString();
+    std::cout<<"[NodeManager] "<< zkEvent.toString();
 
-    if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTING_STATE)
+    if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {
         if (!inited_)
             initZKNodes();
@@ -128,9 +130,13 @@ void NodeManager::initZKNodes()
     if (zookeeper_->isConnected())
     {
         // SF1 maybe exited abnormally last time
+        zookeeper_->createZNode(NodeDef::getSF1RootPath());
+        // topology, xxx
+        zookeeper_->createZNode(NodeDef::getSF1TopologyPath());
+        // synchro
+        zookeeper_->createZNode(NodeDef::getSynchroPath());
+        DistributedSynchroFactory::initZKNodes(zookeeper_);
         inited_ = true;
-        deregisterNode();
-        zookeeper_->deleteZNode(NodeDef::getSynchroPath(), true);
     }
 }
 

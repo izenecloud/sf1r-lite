@@ -59,6 +59,16 @@ public:
         return syncConsumer_[stype];
     }
 
+    static void initZKNodes(boost::shared_ptr<ZooKeeper>& zookeeper)
+    {
+        for (int i = 0; i < SYNCHRO_TYPE_NUM; i++)
+        {
+            std::string syncModulePath = NodeDef::getSynchroPath() + synchroType2ZNode_[i];
+            zookeeper->deleteZNode(syncModulePath, true); // clear children (dirty data)
+            zookeeper->createZNode(syncModulePath); // consumers have to watch this node
+        }
+    }
+
 private:
     static std::string synchroType2ZNode_[SYNCHRO_TYPE_NUM];
     static SynchroProducerPtr syncProducer_[SYNCHRO_TYPE_NUM];
