@@ -10,7 +10,6 @@
 #include <boost/filesystem.hpp>
 #include <product-manager/pm_def.h>
 #include <product-manager/pm_types.h>
-#include <product-manager/distributed_process_synchronizer.h>
 
 namespace sf1r
 {
@@ -26,7 +25,7 @@ public:
         index_service_ = index_service;
     }
     
-    void Run(const std::string& scd_source_dir);
+    bool Run(const std::string& scd_source_dir);
     
 private:
     
@@ -37,7 +36,6 @@ private:
     
 private:
     IndexTaskService* index_service_;
-    DistributedProcessSynchronizer dsSyn;
 };
 
 }
