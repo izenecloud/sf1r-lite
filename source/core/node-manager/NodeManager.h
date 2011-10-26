@@ -41,7 +41,8 @@ public:
         NodeDef::setClusterIdNodeName(dsTopologyConfig_.clusterId_);
 
         initZooKeeper(dsUtilConfig_.zkConfig_.zkHosts_, dsUtilConfig_.zkConfig_.zkRecvTimeout_);
-        initTopology();
+
+        initZKNodes();
     }
 
     const DistributedTopologyConfig& getDSTopologyConfig() const
@@ -52,6 +53,11 @@ public:
     const DistributedUtilConfig& getDSUtilConfig() const
     {
         return dsUtilConfig_;
+    }
+
+    bool isInited()
+    {
+        return inited_;
     }
 
 public:
@@ -84,13 +90,15 @@ public:
 private:
     void ensureNodeParents(nodeid_t nodeId, replicaid_t replicaId);
 
-    void initTopology();
+    void initZKNodes();
 
     void retryRegister();
 
 private:
     DistributedTopologyConfig dsTopologyConfig_;
     DistributedUtilConfig dsUtilConfig_;
+
+    bool inited_;
 
     boost::shared_ptr<ZooKeeper> zookeeper_;
 

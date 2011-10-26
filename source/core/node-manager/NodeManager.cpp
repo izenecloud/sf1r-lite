@@ -5,7 +5,7 @@
 using namespace sf1r;
 
 NodeManager::NodeManager()
-: registercalled_(false), registered_(false), masterPort_(0), workerPort_(0)
+: inited_(false), registercalled_(false), registered_(false), masterPort_(0), workerPort_(0)
 {
 }
 
@@ -106,7 +106,8 @@ void NodeManager::process(ZooKeeperEvent& zkEvent)
 
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTING_STATE)
     {
-        initTopology();
+        if (!inited_)
+            initZKNodes();
 
         if (registercalled_ && !registered_)
         {
@@ -122,9 +123,15 @@ void NodeManager::ensureNodeParents(nodeid_t nodeId, replicaid_t replicaId)
     zookeeper_->createZNode(NodeDef::getReplicaPath(replicaId));
 }
 
-void NodeManager::initTopology()
+void NodeManager::initZKNodes()
 {
-
+    if (zookeeper_->isConnected())
+    {
+        // SF1 maybe exited abnormally last time
+        inited_ = true;
+        deregisterNode();
+        zookeeper_->deleteZNode(NodeDef::getSynchroPath(), true);
+    }
 }
 
 void NodeManager::retryRegister()

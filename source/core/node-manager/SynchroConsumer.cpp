@@ -1,6 +1,7 @@
 #include "SynchroConsumer.h"
 
 #include <sstream>
+#include <node-manager/NodeManager.h>
 
 using namespace sf1r;
 using namespace zookeeper;
@@ -16,6 +17,11 @@ SynchroConsumer::SynchroConsumer(
 {
     zookeeper_.reset(new ZooKeeper(zkHosts, zkTimeout, true));
     zookeeper_->registerEventHandler(this);
+
+    if (!NodeManagerSingleton::get()->isInited())
+    {
+        zookeeper_->deleteZNode(zkSyncNodePath, true); //xxx
+    }
 
     // "/SF1R-xxxx/Synchro/ProductManager/ProducerRXNX/"
     //std::stringstream ss;
