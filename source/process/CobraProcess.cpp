@@ -295,6 +295,7 @@ void CobraProcess::stopDistributedServer()
     if (workerServer_)
     {
         workerServer_->end();
+        workerServer_->join();
     }
 }
 
