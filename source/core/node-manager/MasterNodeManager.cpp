@@ -1,4 +1,6 @@
 #include "MasterNodeManager.h"
+#include "NodeManager.h"
+
 #include <aggregator-manager/AggregatorManager.h>
 
 #include <boost/lexical_cast.hpp>
@@ -9,6 +11,9 @@ using namespace sf1r;
 MasterNodeManager::MasterNodeManager()
 : topology_(), curNodeInfo_(), isReady_(false)
 {
+    initZooKeeper(
+            NodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkHosts_,
+            NodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkRecvTimeout_);
 }
 
 void MasterNodeManager::initZooKeeper(const std::string& zkHosts, const int recvTimeout)

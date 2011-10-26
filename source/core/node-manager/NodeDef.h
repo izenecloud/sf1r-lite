@@ -48,6 +48,7 @@ Using ZooKeeper for distributed coordination, the associated data structure is d
       |--- Service
              |--- Server00000000     # ---->  "/Topology/Replica1/Node1/Master"
              |--- Server00000001     # ---->  "/Topology/Replica2/Node2/Master"
+      |--- Synchro
  *
  */
 class NodeDef
