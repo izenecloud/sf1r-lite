@@ -72,6 +72,7 @@ private:
     std::string consumerRealNodePath_;
 
     callback_on_produced_t callback_on_produced_;
+    bool replyProducer_;
 
 };
 
