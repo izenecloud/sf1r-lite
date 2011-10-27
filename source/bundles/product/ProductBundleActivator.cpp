@@ -2,7 +2,7 @@
 #include "ProductSearchService.h"
 #include "ProductTaskService.h"
 #include "ProductIndexHooker.h"
-
+#include "ProductScdReceiver.h"
 #include <bundles/index/IndexTaskService.h>
 #include <bundles/index/IndexSearchService.h>
 
@@ -12,7 +12,6 @@
 #include <product-manager/product_manager.h>
 #include <product-manager/collection_product_data_source.h>
 #include <product-manager/scd_operation_processor.h>
-#include <product-manager/product_scd_receiver.h>
 #include <util/singleton.h>
 
 #include <boost/filesystem.hpp>

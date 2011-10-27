@@ -87,9 +87,9 @@ bool AutoFillSubManager::Init(
 
 bool AutoFillSubManager::buildIndex(const std::list<ItemValueType>& queryList, const std::list<PropertyLabelType>& labelList)
 {
-    if (queryList.empty())
+    if (queryList.empty() && labelList.empty())
     {
-        std::cout << "no query log data to build for autofill" << std::endl;
+        std::cout << "no collection data to build for autofill" << std::endl;
         return true;
     }
     std::string tempTriePath;

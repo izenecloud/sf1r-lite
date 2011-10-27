@@ -29,6 +29,15 @@ FILE(GLOB_RECURSE recommend_SRC "recommend-manager/*.cpp")
 FILE(GLOB_RECURSE aggregator_SRC "aggregator-manager/*.cpp")
 FILE(GLOB_RECURSE node_SRC "node-manager/*.cpp")
 FILE(GLOB_RECURSE product_SRC "product-manager/*.cc")
+# FILE(GLOB product_SRC
+#   "product-manager/collection_product_data_source.cc"
+#   "product-manager/collection_product_data_source.cc"
+#   "product-manager/collection_product_data_source.cc"
+#   "product-manager/collection_product_data_source.cc"
+#   "product-manager/collection_product_data_source.cc"
+#   "product-manager/collection_product_data_source.cc"
+#   )
+
 
 FILE(GLOB document_SRC
   "document-manager/*.cpp"

@@ -482,6 +482,7 @@ IndexBundleActivator::createAggregatorManager_() const
     MasterNodeManagerSingleton::get()->registerAggregator(ret);
     ret->initLocalWorkerCaller(workerService_);
     ret->TOP_K_NUM = config_->topKNum_;
+    ret->debug_ = true;
     return ret;
 }
 

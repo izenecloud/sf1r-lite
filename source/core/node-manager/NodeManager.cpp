@@ -1,11 +1,13 @@
 #include "NodeManager.h"
 
+#include <node-manager/DistributedSynchroFactory.h>
+
 #include <sstream>
 
 using namespace sf1r;
 
 NodeManager::NodeManager()
-: registered_(false), masterPort_(0), workerPort_(0)
+: inited_(false), registercalled_(false), registered_(false), masterPort_(0), workerPort_(0)
 {
 }
 
@@ -27,6 +29,8 @@ void NodeManager::setCurrentNodeInfo(SF1NodeInfo& sf1NodeInfo)
 
 void NodeManager::registerNode()
 {
+    registercalled_ = true;
+
     if (zookeeper_->isConnected())
     {
         ensureNodeParents(nodeInfo_.nodeId_, nodeInfo_.replicaId_);
@@ -45,8 +49,8 @@ void NodeManager::registerNode()
             registered_ = true;
         }
     }
-
-    std::cout<<"[NodeManager] waiting for ZooKeeper Service..."<<std::endl;
+    else
+        std::cout<<"[NodeManager] waiting for ZooKeeper Service..."<<std::endl;
 }
 
 void NodeManager::registerMaster(unsigned int port)
@@ -100,11 +104,17 @@ void NodeManager::deregisterNode()
 
 void NodeManager::process(ZooKeeperEvent& zkEvent)
 {
-    ///std::cout<<"NodeManager::process "<< zkEvent.toString();
+    std::cout<<"[NodeManager] "<< zkEvent.toString();
 
-    if (!registered_)
+    if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {
-        retryRegister();
+        if (!inited_)
+            initZKNodes();
+
+        if (registercalled_ && !registered_)
+        {
+            retryRegister();
+        }
     }
 }
 
@@ -113,6 +123,21 @@ void NodeManager::ensureNodeParents(nodeid_t nodeId, replicaid_t replicaId)
     zookeeper_->createZNode(NodeDef::getSF1RootPath());
     zookeeper_->createZNode(NodeDef::getSF1TopologyPath());
     zookeeper_->createZNode(NodeDef::getReplicaPath(replicaId));
+}
+
+void NodeManager::initZKNodes()
+{
+    if (zookeeper_->isConnected())
+    {
+        // SF1 maybe exited abnormally last time
+        zookeeper_->createZNode(NodeDef::getSF1RootPath());
+        // topology, xxx
+        zookeeper_->createZNode(NodeDef::getSF1TopologyPath());
+        // synchro
+        zookeeper_->createZNode(NodeDef::getSynchroPath());
+        DistributedSynchroFactory::initZKNodes(zookeeper_);
+        inited_ = true;
+    }
 }
 
 void NodeManager::retryRegister()

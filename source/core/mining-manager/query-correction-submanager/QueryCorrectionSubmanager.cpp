@@ -69,11 +69,9 @@ bool QueryCorrectionSubmanager::initialize()
     }
 
     {
-        static bool FirstRun = true;
-        if (FirstRun && enableEK_)
+        boost::mutex::scoped_lock scopedLock(logMutex_);
+        if (enableEK_ && !ekmgr_)
         {
-            FirstRun = false;
-
             ekmgr_.reset(new EkQueryCorrection(ed_));
             if (!ekmgr_->initialize())
             {
@@ -87,11 +85,9 @@ bool QueryCorrectionSubmanager::initialize()
 
     //load global inject
     {
-        static bool FirstRun = true;
-        if (FirstRun)
+        boost::mutex::scoped_lock scopedLock(logMutex_);
+        if (global_inject_data_.empty())
         {
-            FirstRun = false;
-
             std::string inject_file = system_working_path_ + "/query-correction/correction_inject.txt";
             std::vector<izenelib::util::UString> str_list;
             std::ifstream ifs(inject_file.c_str());

@@ -2,6 +2,8 @@
 #include <sstream>
 #include <common/ScdWriter.h>
 #include <boost/filesystem.hpp>
+#include <node-manager/DistributedSynchroFactory.h>
+
 using namespace sf1r;
 
 ScdOperationProcessor::ScdOperationProcessor(const std::string& dir)
@@ -43,14 +45,18 @@ bool ScdOperationProcessor::Finish()
         //notify zookeeper on dir_
     }
     std::cout<<"ScdOperationProcessor::Finish "<<dir_<<std::endl;
-    //TODO HOW to get the bool result?
-    dsSyn_.generated(dir_);
-    dsSyn_.watchProcess(boost::bind(&ScdOperationProcessor::AfterProcess_, this,_1));
 
-    bool processResult = false;
-    dsSyn_.joinProcess(processResult);
+    SynchroProducerPtr syncProducer =
+            DistributedSynchroFactory::makeProcuder(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER);
 
-    return processResult;
+    if (syncProducer->produce(dir_, boost::bind(&ScdOperationProcessor::AfterProcess_, this,_1)))
+    {
+        bool isConsumed = false;
+        syncProducer->waitConsumers(isConsumed);
+        return isConsumed;
+    }
+
+    return false;
 }
 
 void ScdOperationProcessor::AfterProcess_(bool is_succ)

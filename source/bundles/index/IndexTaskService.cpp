@@ -263,7 +263,12 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
         
         if(hooker_)
         {
-            if(!hooker_->Finish()) return false;
+            if(!hooker_->Finish()) 
+            {
+                std::cout<<"[IndexTaskService] Hooker Finish failed."<<std::endl;
+                return false;
+            }
+            std::cout<<"[IndexTaskService] Hooker Finished."<<std::endl;
         }
 
         if( miningTaskService_ )

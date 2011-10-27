@@ -1,5 +1,5 @@
-#ifndef SF1R_PRODUCTMANAGER_PRODUCTSCDRECEIVER_H
-#define SF1R_PRODUCTMANAGER_PRODUCTSCDRECEIVER_H
+#ifndef SF1R_PRODUCT_BUNDLE_PRODUCTSCDRECEIVER_H
+#define SF1R_PRODUCT_BUNDLE_PRODUCTSCDRECEIVER_H
 
 #include <sstream>
 #include <common/type_defs.h>
@@ -8,9 +8,8 @@
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
-#include "pm_def.h"
-#include "pm_types.h"
-#include "distributed_process_synchronizer.h"
+#include <product-manager/pm_def.h>
+#include <product-manager/pm_types.h>
 
 namespace sf1r
 {
@@ -26,7 +25,7 @@ public:
         index_service_ = index_service;
     }
     
-    void Run(const std::string& scd_source_dir);
+    bool Run(const std::string& scd_source_dir);
     
 private:
     
@@ -37,7 +36,6 @@ private:
     
 private:
     IndexTaskService* index_service_;
-    DistributedProcessSynchronizer dsSyn;
 };
 
 }
