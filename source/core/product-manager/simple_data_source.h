@@ -31,8 +31,16 @@ public:
     
     bool SetUuid(izenelib::ir::indexmanager::IndexerDocument& doc, const izenelib::util::UString& uuid);
     
+    bool AddDocument(uint32_t docid, const PMDocumentType& doc);
+    
+    bool UpdateDocument(uint32_t docid, const PMDocumentType& doc);
+    
+    bool DeleteDocument(uint32_t docid);
+    
     
 private:
+    
+    void RebuildIndex_();
     
     bool GetUuid_(uint32_t docid, izenelib::util::UString& uuid);
     
@@ -53,4 +61,5 @@ private:
 }
 
 #endif
+
 

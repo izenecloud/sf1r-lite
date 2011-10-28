@@ -177,6 +177,13 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib:
         error_ = "Can not get uuid in document "+boost::lexical_cast<std::string>(docid_list[0]);
         return false;
     }
+    std::vector<uint32_t> same_docid_list;
+    data_source_->GetDocIdList(first_uuid, same_docid_list, docid_list[0]);
+    if(!same_docid_list.empty())
+    {
+        error_ = "Document id "+boost::lexical_cast<std::string>(docid_list[0])+" belongs to other group";
+        return false;
+    }
     std::vector<uint32_t> remain(docid_list.begin()+1, docid_list.end());
     if(!AppendToGroup_(first_uuid, remain))
     {
@@ -238,7 +245,7 @@ bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const s
     all_docid_list.insert(all_docid_list.end(), docid_list.begin(), docid_list.end());
     ProductPrice price;
     GetPrice_(all_docid_list, price);
-
+//     std::cout<<"validation finished here."<<std::endl;
     //validation finished here.
     
     PMDocumentType output;
@@ -265,7 +272,7 @@ bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const s
         error_ = "Update uuid failed";
         return false;
     }
-    return false;
+    return true;
 }
 
 bool ProductManager::AppendToGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list)

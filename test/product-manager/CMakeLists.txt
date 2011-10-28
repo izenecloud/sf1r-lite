@@ -56,6 +56,17 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   INCLUDE_DIRECTORIES(
     ${Boost_INCLUDE_DIRS}
   )
+
+  ADD_EXECUTABLE(t_product_price
+    Runner.cpp
+    t_product_price.cc
+  )
+  TARGET_LINK_LIBRARIES(t_product_price ${libs})
+  SET_TARGET_PROPERTIES(t_product_price PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(product "${SF1RENGINE_ROOT}/testbin/t_product_price")
+
   ADD_EXECUTABLE(t_data_source
     Runner.cpp
     t_data_source.cc
