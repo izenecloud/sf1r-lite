@@ -5,6 +5,48 @@ using namespace sf1r;
 SimpleDataSource::SimpleDataSource(const PMConfig& config, std::vector<PMDocumentType>* document_list)
 :config_(config), document_list_(document_list)
 {
+    RebuildIndex_();
+}
+
+SimpleDataSource::~SimpleDataSource()
+{
+}
+
+bool SimpleDataSource::GetDocument(uint32_t docid, PMDocumentType& doc)
+{
+    if(docid>document_list_->size()) return false;
+    doc = (*document_list_)[docid-1];
+    return true;
+}
+
+bool SimpleDataSource::AddDocument(uint32_t docid, const PMDocumentType& doc)
+{
+    if(docid<=document_list_->size()) return false;
+    document_list_->resize(docid);
+    (*document_list_)[docid-1] = doc;
+    RebuildIndex_();
+    return true;
+}
+    
+bool SimpleDataSource::UpdateDocument(uint32_t docid, const PMDocumentType& doc)
+{
+    if(docid>document_list_->size()) return false;
+    (*document_list_)[docid-1] = doc;
+    RebuildIndex_();
+    return true;
+}
+
+bool SimpleDataSource::DeleteDocument(uint32_t docid)
+{
+    if(docid>document_list_->size()) return false;
+    (*document_list_)[docid-1] = PMDocumentType();
+    RebuildIndex_();
+    return true;
+}
+
+void SimpleDataSource::RebuildIndex_()
+{
+    uuid_index_.clear();
     for(uint32_t i=0;i<document_list_->size();i++)
     {
         uint32_t docid = i+1;
@@ -21,17 +63,6 @@ SimpleDataSource::SimpleDataSource(const PMConfig& config, std::vector<PMDocumen
             it->second.push_back(docid);
         }
     }
-}
-
-SimpleDataSource::~SimpleDataSource()
-{
-}
-
-bool SimpleDataSource::GetDocument(uint32_t docid, PMDocumentType& doc)
-{
-    if(docid>document_list_->size()) return false;
-    doc = (*document_list_)[docid-1];
-    return true;
 }
 
 void SimpleDataSource::GetDocIdList(const izenelib::util::UString& uuid, std::vector<uint32_t>& docid_list, uint32_t exceptid)
@@ -58,34 +89,21 @@ void SimpleDataSource::GetDocIdList(const izenelib::util::UString& uuid, std::ve
 
 bool SimpleDataSource::UpdateUuid(const std::vector<uint32_t>& docid_list, const izenelib::util::UString& uuid)
 {
+//     std::string suuid;
+//     uuid.convertString(suuid, izenelib::util::UString::UTF_8);
+//     std::cout<<"UpdateUuid to "<<suuid<<std::endl;
+//     for(uint32_t i=0;i<docid_list.size();i++)
+//     {
+//         std::cout<<"docid "<<docid_list[i]<<std::endl;
+//     }
     for(uint32_t i=0;i<docid_list.size();i++)
     {
         uint32_t docid = docid_list[i];
-        std::string suuid;
-        if(!GetUuid_(docid, suuid)) return false;
-        UuidIndexType::iterator it = uuid_index_.find(suuid);
-        if(it==uuid_index_.end())
-        {
-            return false;
-        }
-        else
-        {
-            std::vector<uint32_t>& value = it->second;
-            VectorRemove_(value, docid);
-        }
+        PMDocumentType doc;
+        if(!GetDocument(docid, doc)) return false;
+        (*document_list_)[docid-1].property(config_.uuid_property_name) = uuid;
     }
-    std::string suuid;
-    uuid.convertString(suuid, izenelib::util::UString::UTF_8);
-    UuidIndexType::iterator it = uuid_index_.find(suuid);
-    if(it==uuid_index_.end())
-    {
-        uuid_index_.insert(std::make_pair(suuid, docid_list));
-    }
-    else
-    {
-        std::vector<uint32_t>& value = it->second;
-        value.insert(value.end(), docid_list.begin(), docid_list.end());
-    }
+    RebuildIndex_();
     return true;
 }
 
