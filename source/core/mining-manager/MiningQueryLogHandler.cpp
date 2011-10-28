@@ -10,7 +10,6 @@
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <log-manager/UserQuery.h>
 #include <query-manager/QMCommonFunc.h>
 #include <util/scheduler.h>
 
