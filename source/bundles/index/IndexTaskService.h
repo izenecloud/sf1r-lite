@@ -75,7 +75,19 @@ private:
         bool isInsert,
         uint32_t numdoc
     );
-    
+
+    bool createUpdateDocId_(
+        const izenelib::util::UString& scdDocId,
+        bool rType,
+        docid_t& oldId,
+        docid_t& newId
+    );
+
+    bool createInsertDocId_(
+        const izenelib::util::UString& scdDocId,
+        docid_t& newId
+    );
+
     bool deleteSCD_(ScdParser& parser);
     
     bool insertDoc_(Document& document, IndexerDocument& indexDocument);
@@ -150,7 +162,6 @@ private:
     boost::shared_ptr<SearchManager> searchManager_;
 
     unsigned int collectionId_;
-    docid_t maxDocId_;
     IndexingProgress indexProgress_;
     bool checkInsert_;
     unsigned int numDeletedDocs_;

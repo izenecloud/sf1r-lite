@@ -338,6 +338,12 @@ void LabelManager::buildDocLabelMap()
     Doc2LabelSSFType::WriterType doc2LabelWriter(FSUtil::getTmpFileFullName(path_));
     doc2LabelWriter.open();
     {
+        {
+            // TODO: keep consistency of collection data and db table when distributed
+            std::string sql = "DELETE FROM property_labels WHERE collection='" + collection_name_ + "'";
+            DbConnection::instance().exec(sql, true);
+        }
+
         std::vector<std::list<uint32_t> > label2DocList;
         std::list<std::pair<uint32_t, Label2DocItem> >::const_iterator it = label2DocWriter_.begin();
 #ifdef GEN_LABEL_INVERTED_TEXT

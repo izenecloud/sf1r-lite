@@ -97,6 +97,10 @@ private:
 
     void clear(const std::string& property);
 
+    bool split_int(const izenelib::util::UString& szText, int64_t& out, izenelib::util::UString::EncodingType encoding, char Separator = ' ');
+
+    bool split_float(const izenelib::util::UString& szText, float& out, izenelib::util::UString::EncodingType encoding, char Separator = ' ');
+
 private:
     ///All data would be got through IndexManager
     IndexManager* pIndexer_;
@@ -112,6 +116,9 @@ private:
     boost::mutex mutex_;	
 
     IndexBundleConfiguration* config_;
+
+    enum SeparatorChar { BrokenLine, WaveLine, Comma, EoC };
+    static const char Separator[EoC];
 
     friend class SearchManager;
 };

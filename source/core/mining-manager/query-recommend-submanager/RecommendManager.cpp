@@ -119,7 +119,7 @@ void RecommendManager::RebuildForAll()
     std::string time_string = boost::posix_time::to_iso_string(p);
     typedef std::map<std::string, std::string> DbRecordType;
 
-    std::string query_sql = "SELECT query, count(*) AS freq, max(hit_docs_num) AS df FROM user_queries WHERE collection='" + collection_name_ + "' AND hit_docs_num>0 AND TimeStamp>='" + time_string + "' GROUP BY query";
+    std::string query_sql = "SELECT query, count(*) AS freq, hit_docs_num AS df FROM user_queries WHERE collection='" + collection_name_ + "' AND hit_docs_num>0 AND TimeStamp>='" + time_string + "' GROUP BY query";
     std::list<DbRecordType> query_records;
     UserQuery::find_by_sql(query_sql, query_records);
     std::list<QueryLogType> queryList;
