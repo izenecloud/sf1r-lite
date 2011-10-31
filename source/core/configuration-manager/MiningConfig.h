@@ -8,7 +8,6 @@
 #include <string>
 #include <map>
 
-
 namespace sf1r
 {
 
@@ -34,7 +33,6 @@ private:
         ar & max_locnum;
         ar & max_orgnum;
     }
-
 
 public:
     /**
@@ -91,7 +89,6 @@ public:
 
 };
 
-
 /**
   * @brief   Stores "Store strategy" configuration of IndexManager
   */
@@ -138,7 +135,6 @@ public:
     bool customize_training;
     izenelib::util::UString::EncodingType encoding_type;
 
-
 };
 
 /**
@@ -166,23 +162,23 @@ public:
 
 };
 
+/**
+  * @brief   the parameters for query correction.
+  */
 class QueryCorrectionPara
 {
 
+private:
+    friend class boost::serialization::access;
+
+    template <typename Archive>
+    void serialize( Archive & ar, const unsigned int version )
+    {
+        ar & enableEK & enableCN;
+    }
 public:
-    std::string base_path;
     bool enableEK;
     bool enableCN;
-
-};
-
-class QueryLogPara
-{
-
-public:
-    uint32_t update_time;
-    uint32_t log_days;
-    std::string cron;
 
 };
 
@@ -190,18 +186,11 @@ class MiningConfig
 {
 
 public:
-
-
-
-
-public:
     //----------------------------  CONSTRUCTORS  ----------------------------
 
     MiningConfig() {}
 
     ~MiningConfig() {}
-
-
 
 private:
 
@@ -215,6 +204,7 @@ private:
         ar & similarity_param;
         ar & dc_param;
         ar & ise_param;
+        ar & query_correction_param;
     }
 
 public:
@@ -228,8 +218,7 @@ public:
 
     IsePara ise_param;
 
-    static QueryCorrectionPara query_correction_param;
-    static QueryLogPara query_log_param;
+    QueryCorrectionPara query_correction_param;
 
 };
 

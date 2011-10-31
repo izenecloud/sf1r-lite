@@ -36,7 +36,6 @@
 
 #include "group-label-logger/GroupLabelLogger.h"
 
-
 #include <search-manager/SearchManager.h>
 #include <index-manager/IndexManager.h>
 
@@ -78,6 +77,10 @@ using namespace boost::filesystem;
 using namespace izenelib::ir::idmanager;
 using namespace sf1r;
 namespace bfs = boost::filesystem;
+
+std::string MiningManager::system_resource_path_;
+std::string MiningManager::system_working_path_;
+
 MiningManager::MiningManager(const std::string& collectionDataPath, const std::string& queryDataPath,
                              const boost::shared_ptr<LAManager>& laManager,
                              const boost::shared_ptr<DocumentManager>& documentManager,
@@ -140,8 +143,6 @@ bool MiningManager::open()
     /** Global variables **/
     try
     {
-
-
         bfs::path cookiePath(bfs::path(basicPath_) / "cookie");
         directory::DirectoryCookie cookie(cookiePath);
         if ( cookie.read() )
@@ -166,7 +167,6 @@ bool MiningManager::open()
         LAPool::getInstance()->get_cma_path(cma_path );
         std::string jma_path;
         LAPool::getInstance()->get_jma_path(jma_path );
-
 
         IDMAnalyzerConfig config1 = idmlib::util::IDMAnalyzerConfig::GetCommonConfig(kma_path,"",jma_path);
         analyzer_ = new idmlib::util::IDMAnalyzer(config1);
@@ -218,19 +218,31 @@ bool MiningManager::open()
         }
 
         /** Recommend */
-        qr_path_ = queryDataPath_;
-        FSUtil::createDir(qr_path_);
+        FSUtil::createDir(queryDataPath_);
         ///TODO Yingfeng
-        uint32_t logdays = 7;//SF1Config::get()->getQuerySupportConfig().log_days;
-        rmDb_.reset(new RecommendManager(qr_path_, collectionName_,miningConfig_.recommend_param,
-                                         mining_schema_, document_manager_, labelManager_, analyzer_, logdays));
+        uint32_t logdays = 7;
+
+        static bool FirstRun = true;
+        if (FirstRun)
+        {
+            FirstRun = false;
+
+            QueryCorrectionSubmanager::system_resource_path_ = system_resource_path_;
+            QueryCorrectionSubmanager::system_working_path_ = system_working_path_;
+        }
+
+        qcManager_.reset(new QueryCorrectionSubmanager(queryDataPath_, miningConfig_.query_correction_param.enableEK,
+                    miningConfig_.query_correction_param.enableCN));
+        rmDb_.reset(new RecommendManager(queryDataPath_, collectionName_, mining_schema_, document_manager_,
+                    qcManager_, analyzer_, logdays));
 
         /** log manager */
         MiningQueryLogHandler* handler = MiningQueryLogHandler::getInstance();
         handler->addCollection(collectionName_, rmDb_);
 
-        qrManager_.reset(new QueryRecommendSubmanager(rmDb_, qr_path_+"/recommend_inject.txt"));
+        qrManager_.reset(new QueryRecommendSubmanager(rmDb_, queryDataPath_ + "/recommend_inject.txt"));
         qrManager_->Load();
+
         /** DUPD */
         if ( mining_schema_.dupd_enable )
         {
@@ -411,7 +423,7 @@ bool MiningManager::open()
                 return false;
             }
         }
-        
+
         //do mining continue;
         try
         {
@@ -605,8 +617,8 @@ bool MiningManager::DoMiningCollection()
     //         }
         }
     }
-    
-    
+
+
     //do Similarity
     if ( mining_schema_.sim_enable )
     {
@@ -740,7 +752,6 @@ bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
     return bResult;
 }
 
-
 bool MiningManager::getSimilarImageDocIdList(
     const std::string& targetImageURI,
     SimilarImageDocIdList& imageDocIdList
@@ -812,9 +823,6 @@ bool MiningManager::getSimilarImageDocIdList(
 //     }
 // }
 
-
-
-
 // bool MiningManager::getQuerySpecificTaxonomy_(
 //         const std::vector<docid_t>& docIdList,
 //         const izenelib::util::UString& queryStr,
@@ -841,7 +849,6 @@ bool MiningManager::getSimilarImageDocIdList(
 //     return ret;
 //
 // }
-
 
 bool MiningManager::getRecommendQuery_(const izenelib::util::UString& queryStr,
                                        const std::vector<docid_t>& topDocIdList,
@@ -886,9 +893,6 @@ bool MiningManager::getDuplicateDocIdList(uint32_t docId, std::vector<
     }
     return false;
 }
-
-
-
 
 bool MiningManager::computeSimilarity_(izenelib::ir::indexmanager::IndexReader* pIndexReader, const std::vector<std::string>& property_names)
 {
@@ -1025,7 +1029,6 @@ bool MiningManager::computeSimilarityESA_(const std::vector<std::string>& proper
 	return true;
 }
 
-
 bool MiningManager::getSimilarDocIdList(uint32_t documentId, uint32_t maxNum,
                                         std::vector<std::pair<uint32_t, float> >& result)
 {
@@ -1137,7 +1140,6 @@ bool MiningManager::getLabelListByDocId(uint32_t docid, std::vector<std::pair<ui
     return true;
 }
 
-
 // void MiningManager::tgTermList_(const izenelib::util::UString& text, std::vector<TgTerm>& termList)
 // {
 //
@@ -1151,15 +1153,6 @@ bool MiningManager::getLabelListByDocId(uint32_t docid, std::vector<std::pair<ui
 //     idManager_->getAnalysisTermIdList2(text, termList);
 //
 // }
-
-
-
-
-
-
-
-
-
 
 bool MiningManager::addQrResult_(KeywordSearchResult& miaInput)
 {
@@ -1184,7 +1177,6 @@ bool MiningManager::addQrResult_(KeywordSearchResult& miaInput)
         }
         miaInput.error_ += "[QR: "+msg+"]";
     }
-
 
     if ( !ret  ) return false;
     return true;
@@ -1255,7 +1247,6 @@ bool MiningManager::addSimilarityResult_(KeywordSearchResult& miaInput)
 //    boost::mutex::scoped_lock lock(sim_mtx_);
     if ( !similarityIndex_ && !similarityIndexEsa_) return true;
     miaInput.numberOfSimilarDocs_.resize(miaInput.topKDocs_.size());
-
 
     for(uint32_t i=0;i<miaInput.topKDocs_.size();i++)
     {
@@ -1483,6 +1474,24 @@ bool MiningManager::GetTdtTopicInfo(const izenelib::util::UString& text, idmlib:
     return storage->GetTopicInfo(text, info);
 }
 
+void MiningManager::GetRefinedQuery(const izenelib::util::UString& query, izenelib::util::UString& result)
+{
+    if(!qcManager_) return;
+    qcManager_->getRefinedQuery(query, result);
+}
+
+void MiningManager::InjectQueryCorrection(const izenelib::util::UString& query, const izenelib::util::UString& result)
+{
+    if(!qcManager_) return;
+    qcManager_->Inject(query, result);
+}
+
+void MiningManager::FinishQueryCorrectionInject()
+{
+    if(!qcManager_) return;
+    qcManager_->FinishInject();
+}
+
 void MiningManager::InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result)
 {
     if(!qrManager_) return;
@@ -1494,7 +1503,6 @@ void MiningManager::FinishQueryRecommendInject()
     if(!qrManager_) return;
     qrManager_->FinishInject();
 }
-
 
 bool MiningManager::doTgInfoInit_()
 {

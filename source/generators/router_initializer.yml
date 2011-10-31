@@ -8,7 +8,6 @@ headers:
   - controllers/LogAnalysisController.h
   - controllers/FacetedController.h
   - controllers/QueryCorrectionController.h
-  - mining/QueryLogSearchService.h
   - controllers/TopicController.h
   - controllers/RecommendController.h
   - controllers/ServiceController.h
@@ -16,7 +15,7 @@ headers:
 
 controllers:
   AutoFillController:
-  
+
   QueryCorrectionController:
     service: true
 
@@ -102,7 +101,7 @@ controllers:
       - rate_item
       - do_recommend
       - top_item_bundle
-      
+
   ServiceController:
     actions:
       - process_overdue
@@ -111,4 +110,3 @@ controllers:
   ProductController:
     actions:
       - add_new_group
-

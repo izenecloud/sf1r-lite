@@ -26,15 +26,16 @@ public:
     
     void Append(int op, const PMDocumentType& doc);
     
-    void ScdEnd();
+    bool Finish();
     
-    void Finish();
+private:
+    
+    void AfterProcess_(bool is_succ);
     
 private:
     std::string dir_;
     ScdWriter* writer_;
     int last_op_;
-    
 };
 
 }

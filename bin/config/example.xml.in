@@ -14,11 +14,11 @@
 
     <DocumentSchema>
 
-      <Property name="DOCID" type="string" />
+      <Property name="DOCID" type="string"/>
 
       <Property name="DATE" type="string"/>
 
-      <Property name="Title" type="string" />
+      <Property name="Title" type="string"/>
 
       <Property name="Content" type="string"/>
 
@@ -30,7 +30,7 @@
     <IndexBundle>
       <Schema>
         <Property name="Title">
-          <Indexing filter="no" multivalue="no" doclen="yes" analyzer="la_sia" tokenizer="" rankweight="0.8" />
+          <Indexing filter="no" multivalue="no" doclen="yes" analyzer="la_sia" tokenizer="" rankweight="0.8"/>
         </Property>
 
         <Property name="Content">
@@ -45,24 +45,24 @@
     <MiningBundle>
       <Schema>
         <TaxonomyGeneration kpe_only="n"> 
-          <Property name="Title" />
-          <Property name="Content" />
+          <Property name="Title"/>
+          <Property name="Content"/>
         </TaxonomyGeneration>
         <DuplicateDetection>
-          <Property name="Title" />
-          <Property name="Content" />
+          <Property name="Title"/>
+          <Property name="Content"/>
         </DuplicateDetection>
         <QueryRecommend>
           <TG/>
-          <QueryLog />
+          <QueryLog/>
         </QueryRecommend>
         <Similarity>
-          <Property name="Title" />
-          <Property name="Content" />
+          <Property name="Title"/>
+          <Property name="Content"/>
         </Similarity>
         <Faceted>
-          <Property name="Title" />
-          <Property name="Content" />
+          <Property name="Title"/>
+          <Property name="Content"/>
         </Faceted>
       </Schema>
     </MiningBundle>
@@ -70,21 +70,21 @@
     <RecommendBundle>
       <Schema>
         <User>
-          <Property name="gender" />
-          <Property name="age" />
-          <Property name="area" />
+          <Property name="gender"/>
+          <Property name="age"/>
+          <Property name="area"/>
         </User>
         <Item>
-          <Property name="name" />
-          <Property name="link" />
-          <Property name="price" />
-          <Property name="category" />
+          <Property name="name"/>
+          <Property name="link"/>
+          <Property name="price"/>
+          <Property name="category"/>
         </Item>
         <Track>
-          <Event name="wish_list" />
-          <Event name="own" />
-          <Event name="like" />
-          <Event name="favorite" />
+          <Event name="wish_list"/>
+          <Event name="own"/>
+          <Event name="like"/>
+          <Event name="favorite"/>
         </Track>
       </Schema>
     </RecommendBundle>

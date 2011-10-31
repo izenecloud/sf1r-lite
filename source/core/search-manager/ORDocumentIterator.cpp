@@ -216,7 +216,7 @@ docid_t ORDocumentIterator::do_skipTo(docid_t target)
         currDoc_ = top->doc();
 		
         for (std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin(); iter != docIteratorList_.end(); ++iter)
-            if ((*iter)->doc() == currDoc_)
+            if (*iter && (*iter)->doc() == currDoc_)
                 (*iter)->setCurrent(true);
 
         if (currDoc_ >= target) 

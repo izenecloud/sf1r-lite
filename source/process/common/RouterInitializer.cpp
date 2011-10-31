@@ -22,7 +22,6 @@
 #include "controllers/LogAnalysisController.h"
 #include "controllers/FacetedController.h"
 #include "controllers/QueryCorrectionController.h"
-#include "mining/QueryLogSearchService.h"
 #include "controllers/TopicController.h"
 #include "controllers/RecommendController.h"
 #include "controllers/ServiceController.h"

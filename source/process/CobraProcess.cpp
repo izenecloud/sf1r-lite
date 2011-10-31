@@ -8,9 +8,6 @@
 #include <node-manager/NodeManager.h>
 #include <node-manager/MasterNodeManager.h>
 
-#include <bundles/mining/MiningBundleConfiguration.h>
-#include <bundles/mining/MiningBundleActivator.h>
-
 #include <OnSignal.h>
 #include <common/XmlConfigParser.h>
 #include <common/CollectionManager.h>
@@ -75,6 +72,8 @@ bool CobraProcess::initialize(const std::string& configFileDir)
     if(!initLicenseManager()) return false;
 
     initDriverServer();
+
+    initNodeManager();
 
     return true;
 }
@@ -206,6 +205,16 @@ bool CobraProcess::initDriverServer()
     return true;
 }
 
+bool CobraProcess::initNodeManager()
+{
+    NodeManagerSingleton::get()->initWithConfig(
+            SF1Config::get()->distributedTopologyConfig_,
+            SF1Config::get()->distributedUtilConfig_
+            );
+
+    return true;
+}
+
 void CobraProcess::stopDriver()
 {
     if (driverServer_)
@@ -220,20 +229,16 @@ bool CobraProcess::startDistributedServer()
         return false;
 
     // Initial information from configuration
-    std::string  zkHosts       = SF1Config::get()->distributedUtilConfig_.zkConfig_.zkHosts_;
-    unsigned int zkRecvTimeout = SF1Config::get()->distributedUtilConfig_.zkConfig_.zkRecvTimeout_;
-
     Topology topology;
     topology.nodeNum_ = SF1Config::get()->distributedTopologyConfig_.nodeNum_;
-    topology.mirrorNum_ = SF1Config::get()->distributedTopologyConfig_.mirrorNum_;
+    topology.workerNum_ = SF1Config::get()->distributedTopologyConfig_.workerNum_;
 
     SF1NodeInfo curNodeInfo;
-    curNodeInfo.mirrorId_ = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.mirrorId_;
+    curNodeInfo.replicaId_ = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.replicaId_;
     curNodeInfo.nodeId_ = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.nodeId_;
     curNodeInfo.localHost_ = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.host_;
     curNodeInfo.baPort_ = SF1Config::get()->brokerAgentConfig_.port_;
 
-    NodeManagerSingleton::get()->initZooKeeper(zkHosts, zkRecvTimeout);
     NodeManagerSingleton::get()->setCurrentNodeInfo(curNodeInfo);
     NodeManagerSingleton::get()->registerNode();
 
@@ -271,7 +276,6 @@ bool CobraProcess::startDistributedServer()
         NodeManagerSingleton::get()->registerMaster(masterPort);
 
         // Initialize master node manager
-        MasterNodeManagerSingleton::get()->initZooKeeper(zkHosts, zkRecvTimeout);
         MasterNodeManagerSingleton::get()->setNodeInfo(topology, curNodeInfo);
         MasterNodeManagerSingleton::get()->startServer();
 
@@ -291,6 +295,7 @@ void CobraProcess::stopDistributedServer()
     if (workerServer_)
     {
         workerServer_->end();
+        workerServer_->join();
     }
 }
 

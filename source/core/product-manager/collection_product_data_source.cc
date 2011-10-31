@@ -63,7 +63,10 @@ bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_
     indexerPropertyConfig.setIsFilter(iter->getIsFilter());
     indexerPropertyConfig.setIsMultiValue(iter->getIsMultiValue());
     indexerPropertyConfig.setIsStoreDocLen(iter->getIsStoreDocLen());
-    
+//     {
+//         std::cout<<"XXXXProperty:"<<indexerPropertyConfig.getPropertyId()<<","<<indexerPropertyConfig.getName()
+//         <<","<<(int)(indexerPropertyConfig.isIndex())<<","<<(int)(indexerPropertyConfig.isFilter())<<std::endl;
+//     }
     std::vector<PMDocumentType> doc_list(docid_list.size());
     for(uint32_t i=0;i<docid_list.size();i++)
     {
@@ -112,6 +115,13 @@ bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_
         IndexerDocument indexDocument;
         indexDocument.setDocId(docid_list[i], 1);
         indexDocument.insertProperty(indexerPropertyConfig, uuid);
+//         {
+//             std::string suid1;
+//             std::string suid2;
+//             uuid_list[i].convertString(suid1, izenelib::util::UString::UTF_8);
+//             uuid.convertString(suid2, izenelib::util::UString::UTF_8);
+//             std::cout<<"Update uuid in doc "<<docid_list[i]<<", from "<<suid1<<" to "<<suid2<<std::endl;
+//         }
         if(!index_manager_->updateRtypeDocument(oldIndexDocument, indexDocument))
         {
             //TODO how to rollback in IM?
@@ -119,5 +129,24 @@ bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_
     }
     return true;
 }
+
+bool CollectionProductDataSource::SetUuid(izenelib::ir::indexmanager::IndexerDocument& doc, const izenelib::util::UString& uuid)
+{
+    PropertyConfig property_config;
+    property_config.propertyName_ = config_.uuid_property_name;
+    std::set<PropertyConfig, PropertyComp>::iterator iter = schema_.find(property_config);
+    if(iter==schema_.end()) return false;
+    IndexerPropertyConfig indexerPropertyConfig;
+    indexerPropertyConfig.setPropertyId(iter->getPropertyId());
+    indexerPropertyConfig.setName(iter->getName());
+    indexerPropertyConfig.setIsIndex(iter->isIndex());
+    indexerPropertyConfig.setIsAnalyzed(iter->isAnalyzed());
+    indexerPropertyConfig.setIsFilter(iter->getIsFilter());
+    indexerPropertyConfig.setIsMultiValue(iter->getIsMultiValue());
+    indexerPropertyConfig.setIsStoreDocLen(iter->getIsStoreDocLen());
+    doc.insertProperty(indexerPropertyConfig, uuid);
+    return true;
+}
+
 
 

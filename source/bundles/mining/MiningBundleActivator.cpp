@@ -3,9 +3,7 @@
 #include <common/SFLogger.h>
 #include <bundles/index/IndexSearchService.h>
 
-#include <mining-manager/MiningQueryLogHandler.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
-#include <mining-manager/auto-fill-submanager/AutoFillSubManager.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
@@ -34,9 +32,6 @@ MiningBundleActivator::~MiningBundleActivator()
 {
 }
 
-QueryCorrectionPara MiningConfig::query_correction_param;
-QueryLogPara MiningConfig::query_log_param;
-
 void MiningBundleActivator::start( IBundleContext::ConstPtr context )
 {
     context_ = context;
@@ -45,31 +40,6 @@ void MiningBundleActivator::start( IBundleContext::ConstPtr context )
     config_ = static_cast<MiningBundleConfiguration*>(bundleConfigPtr.get());
     tracker_ = new ServiceTracker( context, "IndexSearchService", this );
     tracker_->startTracking();
-
-    static bool QueryCorrectionInitiated = false;
-
-    if (!QueryCorrectionInitiated)
-    {
-        MiningQueryLogHandler* handler = MiningQueryLogHandler::getInstance();
-        handler->SetParam(MiningConfig::query_log_param.update_time, MiningConfig::query_log_param.log_days);
-        if ( !handler->cronStart(MiningConfig::query_log_param.cron) )
-        {
-            std::cout << "Can not start cron job for recommend, cron_string: " << MiningConfig::query_log_param.cron << std::endl;
-        }
-        std::string query_support_path = MiningConfig::query_correction_param.base_path;
-        std::string query_correction_res_path = config_->system_resource_path_ + "/speller-support";
-        std::string query_correction_path = query_support_path + "/querycorrection";
-        boost::filesystem::create_directories(query_correction_path);
-        QueryCorrectionSubmanagerParam::set(
-            query_correction_res_path,
-            query_correction_path,
-            MiningConfig::query_correction_param.enableEK,
-            MiningConfig::query_correction_param.enableCN
-        );
-        QueryCorrectionSubmanager::getInstance();
-
-        QueryCorrectionInitiated = true;
-    }
 }
 
 void MiningBundleActivator::stop( IBundleContext::ConstPtr context )
@@ -120,10 +90,10 @@ bool MiningBundleActivator::addingService( const ServiceReference& ref )
             searchService_->miningManager_ = miningManager_;
             searchService_->aggregatorManager_ = service->aggregatorManager_;
             searchService_->workerService_ = service->workerService_;
-            
+
             taskService_ = new MiningTaskService;
             taskService_->miningManager_ = miningManager_;
-            
+
             Properties props;
             props.put( "collection", config_->collectionName_);
             searchServiceReg_ = context_->registerService( "MiningSearchService", searchService_, props );
@@ -179,7 +149,7 @@ bool MiningBundleActivator::openDataDirectories_()
         if (!directoryRotator_.appendDirectory(dataDir))
 	{
 	  std::string msg = dataDir.file_string() + " corrupted, delete it!";
-	  sflog->error( SFL_SYS, msg.c_str() ); 
+	  sflog->error( SFL_SYS, msg.c_str() );
 	  std::cout<<msg<<std::endl;
 	  //clean the corrupt dir
 	  boost::filesystem::remove_all( dataDir );
@@ -222,7 +192,14 @@ MiningBundleActivator::createMiningManager_(IndexSearchService* indexService) co
         )
     );
 
-    ret->system_resource_path_ = config_->system_resource_path_;
+    static bool FirstRun = true;
+    if (FirstRun)
+    {
+        FirstRun = false;
+
+        MiningManager::system_resource_path_ = config_->system_resource_path_;
+        MiningManager::system_working_path_ = config_->system_working_path_;
+    }
 
     bool succ = ret->open();
     if(!succ)
@@ -233,4 +210,3 @@ MiningBundleActivator::createMiningManager_(IndexSearchService* indexService) co
 }
 
 }
-

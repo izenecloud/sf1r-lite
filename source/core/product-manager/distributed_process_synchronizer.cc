@@ -1,7 +1,7 @@
 #include "distributed_process_synchronizer.h"
-#include <process/common/XmlConfigParser.h>
 
 #include <node-manager/NodeDef.h>
+#include <node-manager/NodeManager.h>
 
 using namespace sf1r;
 using namespace zookeeper;
@@ -21,15 +21,16 @@ ZooKeeper node definition for this synchronizer:
 
 
 DistributedProcessSynchronizer::DistributedProcessSynchronizer()
-: generated_(false), generated_znode_(false), processed_(false), processed_znode_(false)
+: generated_(false), generated_znode_(false), watched_process_(false), process_result_(false),
+  processed_(false), processed_znode_(false)
 {
-    std::string zkHosts = SF1Config::get()->distributedUtilConfig_.zkConfig_.zkHosts_;
-    int recvTimeout = SF1Config::get()->distributedUtilConfig_.zkConfig_.zkRecvTimeout_;
+    std::string zkHosts = NodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkHosts_;
+    int recvTimeout = NodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkRecvTimeout_;
     zookeeper_.reset(new ZooKeeper(zkHosts, recvTimeout));
     zookeeper_->registerEventHandler(this);
 
     // set node paths
-    prodNodePath_ = NodeUtil::getSynchroPath() + "/ProdManager";
+    prodNodePath_ = NodeDef::getSynchroPath() + "/ProdManager";
     generateNodePath_ = prodNodePath_ + "/generate";
     processNodePath_ = prodNodePath_ + "/process";
 
@@ -44,56 +45,66 @@ DistributedProcessSynchronizer::DistributedProcessSynchronizer()
     }
 }
 
-void DistributedProcessSynchronizer::generated(std::string& path)
+bool DistributedProcessSynchronizer::generated(std::string& path)
 {
     generated_ = true;
     generatedDataPath_ = path;
 
-    //generated_znode_ = false;
-    if (zookeeper_->isConnected())
-    {
-        if (zookeeper_->createZNode(generateNodePath_, path, ZooKeeper::ZNODE_EPHEMERAL))
-        {
-            generated_znode_ = true;
-        }
-        else
-        {
-            std::cout<<"[DistributedProcessSynchronizer] failed to create generate node: "<<zookeeper_->getErrorCode()<<std::endl;
-        }
-    }
-    else
+    generated_znode_ = false;
+    do_generated(generatedDataPath_);
+
+    if (!generated_znode_)
     {
         std::cout<<"[DistributedProcessSynchronizer] generated, waiting for ZooKeeper Service..."<<std::endl;
+
+        int timewait = 0;
+        while (!generated_znode_)
+        {
+            usleep(100000);
+            timewait += 100000;
+            if (timewait >= 4000000)
+                break;
+        }
+
+        if (!generated_znode_)
+        {
+            std::cout << " Timeout !! " <<std::endl;
+            return false;
+        }
     }
+
+    return true;
 }
 
-void DistributedProcessSynchronizer::processed(bool success)
+bool DistributedProcessSynchronizer::processed(bool success)
 {
     processed_ = true;
     processedSuccess_ = success;
 
-    //processed_znode_ = false;
-    if (zookeeper_->isConnected())
-    {
-        std::string data;
-        if (success)
-            data = "success";
-        else
-            data = "failed";
+    processed_znode_ = false;
+    do_processed(success);
 
-        if (zookeeper_->createZNode(processNodePath_, data, ZooKeeper::ZNODE_EPHEMERAL))
-        {
-            processed_znode_ = false;
-        }
-        else
-        {
-            std::cout<<"[DistributedProcessSynchronizer] failed to create process node: "<<zookeeper_->getErrorCode()<<std::endl;
-        }
-    }
-    else
+    if (!processed_znode_)
     {
         std::cout<<"[DistributedProcessSynchronizer] processed, waiting for ZooKeeper Service..."<<std::endl;
+
+        int timewait = 0;
+        while (!processed_znode_)
+        {
+            usleep(100000);
+            timewait += 100000;
+            if (timewait >= 4000000)
+                break;
+        }
+
+        if (!processed_znode_)
+        {
+            //std::cout << " Timeout !! " <<std::endl;
+            return false;
+        }
     }
+
+    return true;
 }
 
 void DistributedProcessSynchronizer::watchGenerate(callback_on_generated_t callback_on_generated)
@@ -110,12 +121,30 @@ void DistributedProcessSynchronizer::watchProcess(callback_on_processed_t callba
     processOnProcessed();
 }
 
+void DistributedProcessSynchronizer::joinProcess(bool& result)
+{
+    result = false;
+
+    int timewait = 0;
+    while (!watched_process_)
+    {
+        usleep(10000);
+        timewait += 10000;
+
+        if (timewait >= 4000000)
+            break;
+    }
+
+    if (watched_process_)
+        result = process_result_;
+}
+
 /// private
 
 /* virtual */
 void DistributedProcessSynchronizer::process(ZooKeeperEvent& zkEvent)
 {
-    std::cout<<"NodeManager::process "<< zkEvent.toString();
+    std::cout<<"DistributedProcessSynchronizer::process "<< zkEvent.toString();
 
     if (!isZkConnected_)
     {
@@ -125,12 +154,12 @@ void DistributedProcessSynchronizer::process(ZooKeeperEvent& zkEvent)
 
     if (generated_ && !generated_znode_)
     {
-        generated(generatedDataPath_);
+        do_generated(generatedDataPath_);
     }
 
     if (processed_ && !processed_znode_)
     {
-        processed(processedSuccess_);
+        do_processed(processedSuccess_);
     }
 }
 
@@ -155,7 +184,8 @@ void DistributedProcessSynchronizer::processOnGenerated()
         std::string generatedDataPath;
         zookeeper_->getZNodeData(generateNodePath_, generatedDataPath);
 
-        callback_on_generated_(generatedDataPath);
+        if (callback_on_generated_)
+            callback_on_generated_(generatedDataPath);
     }
 }
 
@@ -166,14 +196,62 @@ void DistributedProcessSynchronizer::processOnProcessed()
         std::string data;
         zookeeper_->getZNodeData(processNodePath_, data);
 
-        callback_on_processed_( (data=="success" ? true : false) );
+        watched_process_ = true;
+        process_result_ = (data=="success" ? true : false);
+
+        if (callback_on_processed_)
+            callback_on_processed_( process_result_ );
     }
 }
 
 void DistributedProcessSynchronizer::initOnConnected()
 {
-    // ensure parent paths
-    zookeeper_->createZNode(NodeUtil::getSF1RootPath());
-    zookeeper_->createZNode(NodeUtil::getSynchroPath());
+    zookeeper_->createZNode(NodeDef::getSF1RootPath());
+    zookeeper_->createZNode(NodeDef::getSynchroPath());
     zookeeper_->createZNode(prodNodePath_);
+}
+
+void DistributedProcessSynchronizer::do_generated(std::string& path)
+{
+    if (zookeeper_->isConnected())
+    {
+        if (zookeeper_->createZNode(generateNodePath_, path, ZooKeeper::ZNODE_EPHEMERAL))
+        {
+            generated_znode_ = true;
+        }
+        else
+        {
+            if (zookeeper_->isZNodeExists(generateNodePath_))
+            {
+                if (zookeeper_->setZNodeData(generateNodePath_, path))
+                {
+                    generated_znode_ = true; // xxx
+                    return;
+                }
+            }
+
+            std::cout<<"[DistributedProcessSynchronizer] failed to create generate node: "<<zookeeper_->getErrorCode()<<std::endl;
+        }
+    }
+}
+
+void DistributedProcessSynchronizer::do_processed(bool success)
+{
+    if (zookeeper_->isConnected())
+    {
+        std::string data;
+        if (success)
+            data = "success";
+        else
+            data = "failed";
+
+        if (zookeeper_->createZNode(processNodePath_, data, ZooKeeper::ZNODE_EPHEMERAL))
+        {
+            processed_znode_ = false;
+        }
+        else
+        {
+            std::cout<<"[DistributedProcessSynchronizer] failed to create process node: "<<zookeeper_->getErrorCode()<<std::endl;
+        }
+    }
 }

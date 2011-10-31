@@ -9,7 +9,7 @@ class PropertyLabel : public DbRecordBase {
 
 public:
 
-    enum Column { Collection, LabelId, LabelName, HitDocsNum, EoC };
+    enum Column { Collection, LabelName, HitDocsNum, EoC };
 
     static const char* ColumnName[EoC];
 
@@ -21,7 +21,6 @@ public:
 
     PropertyLabel() : DbRecordBase(),
         collectionPresent_(false),
-        labelIdPresent_(false),
         labelNamePresent_(false),
         hitDocsNumPresent_(false){}
 
@@ -39,20 +38,6 @@ public:
 
     inline bool hasCollection() {
         return collectionPresent_;
-    }
-
-    inline std::size_t getLabelId()
-    {
-        return labelId_;
-    }
-
-    inline void setLabelId( const std::size_t labelId ) {
-        labelId_ = labelId;
-        labelIdPresent_ = true;
-    }
-
-    inline bool hasLabelId() {
-        return labelIdPresent_;
     }
 
     inline const std::string & getLabelName()
@@ -91,9 +76,6 @@ private:
 
     std::string collection_;
     bool collectionPresent_;
-
-    std::size_t labelId_;
-    bool labelIdPresent_;
 
     std::string labelName_;
     bool labelNamePresent_;

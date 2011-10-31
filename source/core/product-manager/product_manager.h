@@ -5,13 +5,14 @@
 
 
 #include <document-manager/Document.h>
+#include <ir/index_manager/index/IndexerDocument.h>
 
 #include "pm_def.h"
 #include "pm_types.h"
 #include "pm_config.h"
 #include "product_price.h"
 #include <boost/shared_ptr.hpp>
-
+#include <boost/thread/mutex.hpp>
 
 namespace sf1r
 {
@@ -28,13 +29,13 @@ public:
     ~ProductManager();
     
     
-    bool HookInsert(PMDocumentType& doc);
+    bool HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager::IndexerDocument& index_document);
     
-    bool HookUpdate(uint32_t fromid, PMDocumentType& to, bool r_type);
+    bool HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::IndexerDocument& index_document, bool r_type);
     
     bool HookDelete(uint32_t docid);
     
-    void GenOperations();
+    bool GenOperations();
     
     const std::string& GetLastError() const
     {
@@ -44,11 +45,17 @@ public:
     //all intervention functions.
     bool AddGroup(const std::vector<uint32_t>& docid_list, izenelib::util::UString& gen_uuid);
     
+    bool AppendToGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list);
+    
+    bool RemoveFromGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list);
+    
 private:
     
-    bool HookUpdateNew_(uint32_t fromid, PMDocumentType& to);
+    bool AppendToGroup_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list);
     
     bool GetPrice_(uint32_t docid, ProductPrice& price);
+    
+    bool GetPrice_(const PMDocumentType& doc, ProductPrice& price);
     
     void GetPrice_(const std::vector<uint32_t>& docid_list, ProductPrice& price);
     
@@ -64,7 +71,8 @@ private:
     UuidGenerator* uuid_gen_;
     PMConfig config_;
     std::string error_;
-
+    bool inhook_;
+    boost::mutex human_mutex_;
 };
 
 }

@@ -10,7 +10,6 @@
 #include <string>
 
 #include <mining-manager/MiningManagerDef.h>
-#include "QueryLogManager.h"
 #include <3rdparty/am/rde_hashmap/hash_map.h>
 #include <am/3rdparty/rde_hash.h>
 #include <util/hashFunction.h>
@@ -25,6 +24,7 @@
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/taxonomy-generation-submanager/LabelManager.h>
 #include <mining-manager/auto-fill-submanager/AutoFillSubManager.h>
+#include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 #include <mining-manager/util/FSUtil.hpp>
 #include <configuration-manager/MiningConfig.h>
 #include <configuration-manager/MiningSchema.h>
@@ -49,7 +49,6 @@ namespace sf1r
 {
 namespace iii = izenelib::ir::indexmanager;
 
-
 ///@brief The structure used to store the offline data used for query recommendation., used to
 ///@brief manage collectino specific task.
 class RecommendManager : public boost::noncopyable
@@ -61,17 +60,15 @@ class RecommendManager : public boost::noncopyable
     typedef izenelib::ir::irdb::IRDatabase< IR_DATA_TYPES, IR_DB_TYPES  >  MIRDatabase;
     typedef izenelib::ir::irdb::IRDocument< IR_DATA_TYPES >  MIRDocument;
 
-    typedef izenelib::am::SSFType<uint8_t, izenelib::util::UString , uint32_t, false> PropertySSFType;
-    typedef PropertySSFType::WriterType property_writer_t;
-    typedef izenelib::am::SSFType<uint64_t, std::pair<izenelib::util::UString, uint32_t> , uint32_t, false> QueryLogSSFType;
-    
+    typedef boost::tuple<uint32_t, uint32_t, izenelib::util::UString> QueryLogType;
+    typedef std::pair<uint32_t, izenelib::util::UString> PropertyLabelType;
+
 public:
     RecommendManager(const std::string& path,
                      const std::string& collection_name,
-                     const RecommendPara& recommend_param,
                      const MiningSchema& mining_schema,
                      const boost::shared_ptr<DocumentManager>& documentManager,
-                     boost::shared_ptr<LabelManager> labelManager,
+                     boost::shared_ptr<QueryCorrectionSubmanager> query_correction,
                      idmlib::util::IDMAnalyzer* analyzer_,
                      uint32_t logdays);
     ~RecommendManager();
@@ -84,10 +81,9 @@ public:
     */
     void close();
 
-
     void insertQuery(const izenelib::util::UString& queryStr, uint32_t freq = 1);
 
-    
+
     void insertProperty(const izenelib::util::UString& queryStr, uint32_t docid);
 
     /**
@@ -97,30 +93,20 @@ public:
         const izenelib::util::UString& query,
         uint32_t maxNum,
         std::deque<izenelib::util::UString>& queries);
-        
+
     bool getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
 
-    
-//     void rebuild();
+    void RebuildForAll();
 
-    bool RebuildForAll();
+    void RebuildForRecommend(const std::list<QueryLogType>& queryList, const std::list<PropertyLabelType>& labelList);
 
-    bool RebuildForRecommend();
+    void RebuildForCorrection(const std::list<QueryLogType>& queryList, const std::list<PropertyLabelType>& labelList);
 
-    bool RebuildForCorrection();
-
-    bool RebuildForAutofill();
-
-//     MIRDatabase* getNewDB() const;
+    void RebuildForAutofill(const std::list<QueryLogType>& queryList, const std::list<PropertyLabelType>& labelList);
 
     uint32_t GetMaxDocId() const
     {
         return max_docid_;
-    }
-
-    boost::shared_ptr<LabelManager> GetLabelManager()
-    {
-        return labelManager_;
     }
 
 private:
@@ -131,9 +117,6 @@ private:
 
     bool AddRecommendItem_(MIRDatabase* db, uint32_t item_id, const izenelib::util::UString& text, uint8_t type, uint32_t score);
 
-
-    bool getConceptStringByConceptId_(uint32_t id, izenelib::util::UString& ustr);
-
     uint32_t getRelatedOnes_(
         MIRDatabase* db,
         const std::vector<termid_t>& termIdList,
@@ -142,23 +125,19 @@ private:
         izenelib::am::rde_hash<uint64_t>& obtIdList ,
         std::deque<izenelib::util::UString>& queries);
 
-
-
 private:
 
     std::string path_;
     bool isOpen_;
     std::string collection_name_;
-    RecommendPara recommend_param_;
     MiningSchema mining_schema_;
     INFO_TYPE info_;
     izenelib::am::tc_hash<bool, INFO_TYPE > serInfo_;
     boost::shared_ptr<DocumentManager> document_manager_;
     MIRDatabase* recommend_db_;
     ConceptIDManager* concept_id_manager_;
-    boost::shared_ptr<LabelManager> labelManager_;
     boost::shared_ptr<AutoFillSubManager> autofill_;
-    uint32_t max_labelid_in_recommend_;
+    boost::shared_ptr<QueryCorrectionSubmanager> query_correction_;
     idmlib::util::IDMAnalyzer* analyzer_;
     uint32_t logdays_;
     boost::shared_mutex mutex_;

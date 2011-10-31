@@ -369,6 +369,8 @@ namespace sf1r
         }
 
         queryUStr.swap(normQueryUStr);
+        if (queryUStr.empty())
+            return false;
 
         tree_parse_info<const uint16_t *> info = ast_parse(queryUStr.c_str(), *this);
 
@@ -376,6 +378,7 @@ namespace sf1r
         {
             if ( !getQueryTree(info.trees.begin(), queryTree, unigramFlag) )
                 return false;
+
             queryTree->postProcess();
         }
 

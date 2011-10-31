@@ -31,6 +31,8 @@ public:
     
     bool UpdateUuid(const std::vector<uint32_t>& docid_list, const izenelib::util::UString& uuid);
     
+    bool SetUuid(izenelib::ir::indexmanager::IndexerDocument& doc, const izenelib::util::UString& uuid);
+    
 private:
     boost::shared_ptr<DocumentManager> document_manager_;
     boost::shared_ptr<IndexManager> index_manager_;

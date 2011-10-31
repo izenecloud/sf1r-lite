@@ -14,7 +14,6 @@
 #if !defined(_QUERY_MANAGER_)
 #define _QUERY_MANAGER_
 
-
 #include "ActionItem.h"
 
 #include <util/ticpp/tinyxml.h>
@@ -43,28 +42,28 @@ class QueryManager
 
     public: // public static ()
 
-        static void setCollectionPropertyInfoMap(std::map<CollPropertyKey_T, 
+        static void setCollectionPropertyInfoMap(std::map<CollPropertyKey_T,
                 sf1r::PropertyDataType>& collectionPropertyInfoMap );
 
-        static const std::map<CollPropertyKey_T, 
+        static const std::map<CollPropertyKey_T,
                      sf1r::PropertyDataType>& getCollectionPropertyInfoMap(void);
 
         static void swapPropertyInfo(DPM_T& displayPropertyMap, SPS_T& searchPropertySet);
 
 //         static bool getRefinedQuery(const RequesterEnvironment& env, std::string& refinedQuery);
 
-	static void addCollectionPropertyInfo(CollPropertyKey_T colPropertyKey, 
+	static void addCollectionPropertyInfo(CollPropertyKey_T colPropertyKey,
 			sf1r::PropertyDataType colPropertyData );
-	
-	static void addCollectionDisplayProperty(CollPropertyKey_T colPropertyKey, 
+
+	static void addCollectionDisplayProperty(CollPropertyKey_T colPropertyKey,
 			DisplayProperty& displayProperty );
-	
+
 	static void addCollectionSearchProperty(CollPropertyKey_T colPropertyKey);
 
     private: // private ()
 
         bool checkDisplayProperty(
-                const std::string& collectionName, 
+                const std::string& collectionName,
                 DisplayProperty& displayProperty,
                 std::string& errMsg
                 ) const;
@@ -82,18 +81,12 @@ class QueryManager
                 ) const;
 
         bool checkSearchPropertyList(
-                const std::string& collectionName, 
+                const std::string& collectionName,
                 const std::vector<std::string>& searchPropertyList,
                 std::string& errMsg
                 ) const;
 
-    public: // public static variables
-
-        static const std::string seperatorString;
-
     private: // private static variables
-
-        
 
         static std::map<CollPropertyKey_T, sf1r::PropertyDataType> collectionPropertyInfoMap_;
 
@@ -103,7 +96,6 @@ class QueryManager
         static SPS_T searchPropertySet_;
 
 }; // end - class QueryManager
-
 
 } // end - namespace sf1r
 

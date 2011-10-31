@@ -34,7 +34,7 @@ struct DFSConfig
     unsigned int port_;
 
     DFSConfig()
-    : isSupportFuse_(true)
+    : isSupportFuse_(true), port_(0)
     {
 
     }
@@ -42,10 +42,12 @@ struct DFSConfig
     std::string toString()
     {
         std::stringstream ss;
+        ss << "========= DistributedUtilConfig ========"<<endl;
         ss << "[DFS Config] "<<type_
                 << (isSupportFuse_?", support fuse" : ", not support fuse")
                 << ", mount on "<<mountDir_
                 << ", server="<<server_<<":"<<port_<<endl;
+        ss << "========================================"<<endl;
         return ss.str();
     }
 };
@@ -55,9 +57,7 @@ class DistributedUtilConfig
 public:
     std::string toString()
     {
-        return
-        zkConfig_.toString() +
-        dfsConfig_.toString();
+        return zkConfig_.toString() + dfsConfig_.toString();
     }
 
 public:

@@ -41,6 +41,7 @@
 		<xs:complexType>
 			<xs:sequence>
 				<xs:element ref="Resource"/>
+				<xs:element ref="WorkingDir"/>
 				<xs:element ref="LogConnection"/>
 				<xs:element ref="BundlesDefault"/>
 				<xs:element ref="Firewall"/>
@@ -49,7 +50,14 @@
 			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
+
 	<xs:element name="Resource">
+		<xs:complexType>
+			<xs:attribute name="path" use="required"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="WorkingDir">
 		<xs:complexType>
 			<xs:attribute name="path" use="required"/>
 		</xs:complexType>
@@ -198,6 +206,7 @@
 				<xs:element ref="CurrentNode" minOccurs="1" maxOccurs="1"/>
 			</xs:sequence>
 			<xs:attribute name="enable" type="YesNoType" use="required"/>
+			<xs:attribute name="clusterid" type="xs:string" use="required"/>
 			<xs:attribute name="nodenum" use="required">
 				<xs:simpleType>
 					<xs:restriction base="xs:integer">
@@ -206,14 +215,14 @@
 					</xs:restriction>
 				</xs:simpleType>
 			</xs:attribute>
-			<xs:attribute name="mirrornum" use="required">
+			<xs:attribute name="workernum" use="optional">
 				<xs:simpleType>
 					<xs:restriction base="xs:integer">
 						<xs:minInclusive value="1"/>
 						<xs:maxInclusive value="10"/>
 					</xs:restriction>
 				</xs:simpleType>
-			</xs:attribute>
+			</xs:attribute>			
 		</xs:complexType>
 	</xs:element>
 	<xs:element name="CurrentNode">
@@ -230,7 +239,7 @@
 					</xs:restriction>
 				</xs:simpleType>
                         </xs:attribute>
-			<xs:attribute name="mirrorid" use="required">
+			<xs:attribute name="replicaid" use="required">
 				<xs:simpleType>
 					<xs:restriction base="xs:integer">
 						<xs:minInclusive value="1"/>

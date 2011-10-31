@@ -9,8 +9,6 @@
 #define UTIL_H_
 
 #include <util/ustring/UString.h>
-#include <util/ustring/ustr_tool.h>
-
 
 namespace sf1r
 {
