@@ -1133,13 +1133,6 @@ bool IndexTaskService::prepareDocument_(
                 return false;
             }
 
-            if (docId <= documentManager_->getMaxDocId())
-            {
-                LOG(WARNING) << "skip insert/update SCD DOC " << fieldValue
-                             << ", as DocId " << docId << " is less than max DocId";
-                return false;
-            }
-
             document.setId(docId);
             document.property(fieldStr) = propertyValueU;
             indexDocument.setId(oldId);
@@ -1459,6 +1452,12 @@ bool IndexTaskService::createInsertDocId_(
             LOG(WARNING) << "duplicated doc id " << docId << ", it has already been inserted before";
             return false;
         }
+    }
+
+    if (docId <= documentManager_->getMaxDocId())
+    {
+        LOG(WARNING) << "skip insert doc id " << docId << ", it is less than max DocId";
+        return false;
     }
 
     newId = docId;
