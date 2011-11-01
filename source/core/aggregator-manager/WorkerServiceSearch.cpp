@@ -313,6 +313,10 @@ bool WorkerService::getSearchResult_(
     DLOG(INFO) << "Top K count: " << resultItem.topKDocs_.size() << endl;
     DLOG(INFO) << "Page Count: " << resultItem.count_ << endl;
 
+    cout << "Total count: " << resultItem.totalCount_ << endl;
+    cout << "Top K count: " << resultItem.topKDocs_.size() << endl;
+    cout << "Page Count: " << resultItem.count_ << endl;
+
     return true;
 }
 
