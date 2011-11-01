@@ -75,6 +75,7 @@ bool SynchroProducer::waitConsumers(bool& isConsumed, int findConsumerTimeout)
         if (waited >= findConsumerTimeout)
         {
             std::cout<<"Timeout, not saw any consumer."<<std::endl;
+            endSynchroning();
             return false;
         }
     }
@@ -91,7 +92,7 @@ bool SynchroProducer::waitConsumers(bool& isConsumed, int findConsumerTimeout)
 /* virtual */
 void SynchroProducer::process(ZooKeeperEvent& zkEvent)
 {
-//    std::cout<<"SynchroProducer::process "<< zkEvent.toString();
+    std::cout<<"SynchroProducer::process "<< zkEvent.toString();
 //
 //    if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
 //    {
@@ -296,9 +297,7 @@ void SynchroProducer::checkConsumers()
             callback_on_consumed_(result_on_consumed_);
 
         // Synchronizing finished
-        zookeeper_->deleteZNode(prodNodePath_);
-        isSynchronizing_ = false;
-        std::cout<<"Synchronizing finished"<<std::endl;
+        endSynchroning();
     }
 }
 
@@ -319,6 +318,14 @@ void SynchroProducer::init()
     result_on_consumed_ = false;
 }
 
+
+void SynchroProducer::endSynchroning()
+{
+    // Synchronizing finished
+    zookeeper_->deleteZNode(prodNodePath_);
+    isSynchronizing_ = false;
+    std::cout<<"Synchronizing finished"<<std::endl;
+}
 
 
 
