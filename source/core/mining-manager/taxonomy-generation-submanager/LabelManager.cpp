@@ -500,7 +500,6 @@ bool LabelManager::updateLabelDb_()
         getLabelDF(labelid, df);
         PropertyLabel plabel;
         plabel.setCollection(collection_name_);
-        plabel.setLabelId(labelid);
         plabel.setLabelName(str);
         plabel.setHitDocsNum(df);
         plabel.save();
