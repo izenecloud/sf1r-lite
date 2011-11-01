@@ -338,12 +338,6 @@ void LabelManager::buildDocLabelMap()
     Doc2LabelSSFType::WriterType doc2LabelWriter(FSUtil::getTmpFileFullName(path_));
     doc2LabelWriter.open();
     {
-        {
-            // TODO: keep consistency of collection data and db table when distributed
-            std::string sql = "DELETE FROM property_labels WHERE collection='" + collection_name_ + "'";
-            DbConnection::instance().exec(sql, true);
-        }
-
         std::vector<std::list<uint32_t> > label2DocList;
         std::list<std::pair<uint32_t, Label2DocItem> >::const_iterator it = label2DocWriter_.begin();
 #ifdef GEN_LABEL_INVERTED_TEXT
@@ -481,7 +475,37 @@ void LabelManager::buildDocLabelMap()
     typeInfo_->flush();
 //     MUtil::MEMINFO("After label db flush");
     labelStream_.flush();
+    if (!updateLabelDb_())
+    {
+        std::cout << "Update label DB failed" << std::endl;
+    }
+}
 
+bool LabelManager::updateLabelDb_()
+{
+    if (collection_name_ == "")
+        return true;
+
+    // TODO: keep consistency between collection data and db table when distributed
+    std::string sql = "DELETE FROM property_labels WHERE collection='" + collection_name_ + "'";
+    DbConnection::instance().exec(sql, true);
+    uint32_t max_labelid = getMaxLabelID();
+    for (uint32_t labelid = 1; labelid <= max_labelid; labelid++)
+    {
+        izenelib::util::UString labelstr;
+        if (!getLabelStringByLabelId(labelid, labelstr)) continue;
+        std::string str;
+        labelstr.convertString(str, izenelib::util::UString::UTF_8);
+        uint32_t df = 0;
+        getLabelDF(labelid, df);
+        PropertyLabel plabel;
+        plabel.setCollection(collection_name_);
+        plabel.setLabelId(labelid);
+        plabel.setLabelName(str);
+        plabel.setHitDocsNum(df);
+        plabel.save();
+    }
+    return true;
 }
 
 bool LabelManager::getLabelStringByLabelId(labelid_t labelId, izenelib::util::UString& labelStr)
@@ -671,15 +695,14 @@ uint32_t LabelManager::getLabelId_(const izenelib::util::UString& text, uint32_t
         typeInfo_->update(label_id, type);//update the type in first time.
     }
 
-    //insert to db if SetDbSave
-    if (!collection_name_.empty())
-    {
-        PropertyLabel plabel;
-        plabel.setCollection(collection_name_);
-        plabel.setLabelName(str);
-        plabel.setHitDocsNum(df);
-        plabel.save();
-    }
+//  if (!collection_name_.empty())
+//  {
+//      PropertyLabel plabel;
+//      plabel.setCollection(collection_name_);
+//      plabel.setLabelName(str);
+//      plabel.setHitDocsNum(df);
+//      plabel.save();
+//  }
     odf += df;
     setLabelDF(label_id, odf);
     return label_id;
