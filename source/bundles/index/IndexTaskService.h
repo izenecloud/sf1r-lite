@@ -19,6 +19,7 @@
 #include <util/driver/Value.h>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/variant/get.hpp>
 
 namespace sf1r
 {
@@ -55,9 +56,13 @@ public:
     bool getIndexStatus(Status& status);
 
     uint32_t getDocNum();
+    
+    std::string getScdDir() const;
 
 private:
     void createPropertyList_();
+
+    bool getPropertyValue_( const PropertyValue& value, std::string& valueStr );
 
     bool doBuildCollection_(
         const std::string& scdFile, 
@@ -70,7 +75,19 @@ private:
         bool isInsert,
         uint32_t numdoc
     );
-    
+
+    bool createUpdateDocId_(
+        const izenelib::util::UString& scdDocId,
+        bool rType,
+        docid_t& oldId,
+        docid_t& newId
+    );
+
+    bool createInsertDocId_(
+        const izenelib::util::UString& scdDocId,
+        docid_t& newId
+    );
+
     bool deleteSCD_(ScdParser& parser);
     
     bool insertDoc_(Document& document, IndexerDocument& indexDocument);
@@ -145,7 +162,6 @@ private:
     boost::shared_ptr<SearchManager> searchManager_;
 
     unsigned int collectionId_;
-    docid_t maxDocId_;
     IndexingProgress indexProgress_;
     bool checkInsert_;
     unsigned int numDeletedDocs_;

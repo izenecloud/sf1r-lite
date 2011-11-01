@@ -52,7 +52,6 @@ IndexTaskService::IndexTaskService(
     , recommendTaskService_(NULL)
     , indexManager_(indexManager)
     , collectionId_(1)
-    , maxDocId_(0)
     , indexProgress_()
     , checkInsert_(false)
     , numDeletedDocs_(0)
@@ -263,7 +262,12 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
         
         if(hooker_)
         {
-            if(!hooker_->Finish()) return false;
+            if(!hooker_->Finish()) 
+            {
+                std::cout<<"[IndexTaskService] Hooker Finish failed."<<std::endl;
+                return false;
+            }
+            std::cout<<"[IndexTaskService] Hooker Finished."<<std::endl;
         }
 
         if( miningTaskService_ )
@@ -343,14 +347,14 @@ bool IndexTaskService::createDocument(const Value& documentValue)
     }
     sf1r::Status::Guard statusGuard(indexStatus_);
 
-    maxDocId_ = documentManager_->getMaxDocId();
+    const docid_t maxDocId = documentManager_->getMaxDocId();
     if ( LicenseManager::continueIndex_ )
     {
-        COBRA_RESTRICT_EXCEED_N_RETURN_FALSE(maxDocId_, LICENSE_MAX_DOC,  0);
+        COBRA_RESTRICT_EXCEED_N_RETURN_FALSE(maxDocId, LICENSE_MAX_DOC,  0);
     }
     else
     {
-        COBRA_RESTRICT_EXCEED_N_RETURN_FALSE(maxDocId_, LicenseManager::TRIAL_MAX_DOC,  0);
+        COBRA_RESTRICT_EXCEED_N_RETURN_FALSE(maxDocId, LicenseManager::TRIAL_MAX_DOC,  0);
     }
 
     SCDDoc scddoc;
@@ -610,8 +614,8 @@ bool IndexTaskService::destroyDocument(const Value& documentValue)
     if (!bundleConfig_->productSourceField_.empty()
             && documentManager_->getPropertyValue(docid, bundleConfig_->productSourceField_, value))
     {
-        izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
-        sourceFieldValue.convertString(source, izenelib::util::UString::UTF_8);
+        if(!getPropertyValue_(value, source))
+            return false;
 
         if(!source.empty())
         {
@@ -624,7 +628,6 @@ bool IndexTaskService::destroyDocument(const Value& documentValue)
             productInfo.save();
         }
     }
-
 
     return true;
 }
@@ -719,23 +722,10 @@ bool IndexTaskService::insertOrUpdateSCD_(
         }
 
         uint32_t oldId = indexDocument.getId();
-        // begin insert and update document
         if (isInsert || oldId == 0)
         {
-            if(!insertDoc_(document, indexDocument)) continue;
-//             START_PROFILER( proDocumentIndexing );
-//             if (documentManager_->insertDocument(document) == false)
-//             {
-//                 LOG(ERROR) << "Document Insert Failed in SDB. " << document.property("DOCID");
-//                 continue;
-//             }
-//             STOP_PROFILER( proDocumentIndexing );
-// 
-//             START_PROFILER( proIndexing );
-//             indexManager_->insertDocument(indexDocument);
-//             STOP_PROFILER( proIndexing );
-// 
-//             indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
+            if(!insertDoc_(document, indexDocument))
+                continue;
         }
         else
         {
@@ -758,7 +748,7 @@ bool IndexTaskService::insertDoc_(Document& document, IndexerDocument& indexDocu
 {
     if(hooker_)
     {
-        if(!hooker_->HookInsert(document)) return false;
+        if(!hooker_->HookInsert(document, indexDocument)) return false;
     }
     if (documentManager_->insertDocument(document))
     {
@@ -793,7 +783,7 @@ bool IndexTaskService::updateDoc_(
 {
     if(hooker_)
     {
-        if(!hooker_->HookUpdate(indexDocument.getId(), document, rType)) return false;
+        if(!hooker_->HookUpdate(document, indexDocument, rType)) return false;
     }
     if (rType)
     {
@@ -877,10 +867,15 @@ bool IndexTaskService::deleteSCD_(ScdParser& parser)
             PropertyValue value;
             if (documentManager_->getPropertyValue(*iter, bundleConfig_->productSourceField_, value))
             {
-                izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
                 std::string source("");
-                sourceFieldValue.convertString(source, izenelib::util::UString::UTF_8);
-                ++productSourceCount_[source];
+                if (getPropertyValue_(value, source))
+                {
+                    ++productSourceCount_[source];
+                }
+                else
+                {
+                    return false;
+                }
             }
         }
 
@@ -934,6 +929,21 @@ void IndexTaskService::saveProductInfo_(int op)
     }
 }
 
+bool IndexTaskService::getPropertyValue_( const PropertyValue& value, std::string& valueStr )
+{
+    try
+    {
+        izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>( value );
+        sourceFieldValue.convertString(valueStr, izenelib::util::UString::UTF_8);
+        return true;
+    }
+    catch(boost::bad_get& e)
+    {
+        LOG(WARNING) << "exception in get property value: " << e.what();
+        return false;
+    }
+}
+
 bool IndexTaskService::checkRtype_(
     SCDDoc& doc,
     std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue
@@ -943,7 +953,7 @@ bool IndexTaskService::checkRtype_(
     bool rType = false;
     PropertyDataType dataType;
     sf1r::docid_t docId;
-    izenelib::util::UString newPropertyValue;
+    izenelib::util::UString newPropertyValue, oldPropertyValue;
     vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
     for (p = doc.begin(); p != doc.end(); p++)
     {
@@ -974,13 +984,21 @@ bool IndexTaskService::checkRtype_(
                     sf1r::Utilities::convertDate(propertyValueU, bundleConfig_->encoding_, dateStr);
                     newPropertyValue = dateStr;
                 }
+
+                string newValueStr(""), oldValueStr("");
+                newPropertyValue.convertString(newValueStr, izenelib::util::UString::UTF_8);
+
                 PropertyValue value;
                 if (documentManager_->getPropertyValue(docId, iter->getName(), value))
                 {
-                    izenelib::util::UString oldPropertyValue = get<izenelib::util::UString>(value);
-                    if ( newPropertyValue == oldPropertyValue )
+                    if(getPropertyValue_(value, oldValueStr))
                     {
-                        continue;
+                        if (newValueStr == oldValueStr)
+                            continue;
+                    }
+                    else
+                    {
+                        return false;
                     }
                 }
 
@@ -1043,7 +1061,7 @@ bool IndexTaskService::prepareDocument_(
 )
 {
     sf1r::docid_t docId = 0;
-    sf1r::docid_t Id = 0;///old doc id for update
+    sf1r::docid_t oldId = 0;
     string fieldStr;
     vector<CharacterOffset> sentenceOffsetList;
     AnalysisInfo analysisInfo;
@@ -1098,47 +1116,26 @@ bool IndexTaskService::prepareDocument_(
             // update
             if (!insert)
             {
-                //R-type check
                 rType = checkRtype_(doc, rTypeFieldValue);
-                bool isExist = false;
-                if ( !rType )
+                if (rType && rTypeFieldValue.empty())
                 {
-                    isExist = idManager_->updateDocIdByDocName(propertyValueU, Id, docId);
+                    LOG(WARNING) << "skip updating SCD DOC " << fieldValue << ", as none of its property values is changed";
+                    return false;
                 }
-                else
-                {
-                    if (rTypeFieldValue.empty())
-                        return false;
-                    isExist = idManager_->getDocIdByDocName(propertyValueU, Id, false);
-                    docId = Id;
-                }
-                if (!isExist)
-                {
-                    // docid not inserted before, change from update type to insert
+
+                if (! createUpdateDocId_(propertyValueU, rType, oldId, docId))
                     insert = true;
-                }
             }
 
-            if(insert)
+            if(insert && !createInsertDocId_(propertyValueU, docId))
             {
-                if (idManager_->getDocIdByDocName(propertyValueU, docId))
-                {
-                    string scdDocId;
-                    propertyValueU.convertString(scdDocId, encoding );
-                    //sflog->warn(SFL_IDX, 10125, docId, scdDocId.c_str());
-                    LOG(WARNING) << "Duplicated Doc ID  " << docId << " Duplicated SCD DOCID " << scdDocId;
-                    return false;
-                }
-                if (docId <= maxDocId_)
-                {
-                    LOG(WARNING) << "DocId skipped while indexing. DocId " << docId;
-                    return false;
-                }
+                LOG(WARNING) << "failed to create id for SCD DOC " << fieldValue;
+                return false;
             }
 
             document.setId(docId);
             document.property(fieldStr) = propertyValueU;
-            indexDocument.setId(Id);
+            indexDocument.setId(oldId);
             indexDocument.setDocId(docId, collectionId_);
         }
         else if (propertyNameL == izenelib::util::UString("date", encoding) )
@@ -1407,6 +1404,66 @@ bool IndexTaskService::prepareDocument_(
     return true;
 }
 
+bool IndexTaskService::createUpdateDocId_(
+    const izenelib::util::UString& scdDocId,
+    bool rType,
+    docid_t& oldId,
+    docid_t& newId
+)
+{
+    bool result = false;
+
+    if (rType)
+    {
+        if ((result = idManager_->getDocIdByDocName(scdDocId, oldId, false)))
+        {
+            newId = oldId;
+        }
+    }
+    else
+    {
+        result = idManager_->updateDocIdByDocName(scdDocId, oldId, newId);
+    }
+
+    return result;
+}
+
+bool IndexTaskService::createInsertDocId_(
+    const izenelib::util::UString& scdDocId,
+    docid_t& newId
+)
+{
+    docid_t docId = 0;
+
+    // already converted
+    if (idManager_->getDocIdByDocName(scdDocId, docId))
+    {
+        if (documentManager_->isDeleted(docId))
+        {
+            docid_t oldId = 0;
+            if (! idManager_->updateDocIdByDocName(scdDocId, oldId, docId))
+            {
+                LOG(WARNING) << "doc id " << docId << " should have been converted";
+                return false;
+            }
+        }
+        else
+        {
+            LOG(WARNING) << "duplicated doc id " << docId << ", it has already been inserted before";
+            return false;
+        }
+    }
+
+    if (docId <= documentManager_->getMaxDocId())
+    {
+        LOG(WARNING) << "skip insert doc id " << docId << ", it is less than max DocId";
+        return false;
+    }
+
+    newId = docId;
+    return true;
+}
+
 /// @desc Make a forward index of a given text.
 /// You can specify an Language Analysis option through AnalysisInfo parameter.
 /// You have to get a proper AnalysisInfo value from the configuration. (Currently not implemented.)
@@ -1521,6 +1578,12 @@ uint32_t IndexTaskService::getDocNum()
 {
     return indexManager_->getIndexReader()->numDocs();
 }
+
+std::string IndexTaskService::getScdDir() const
+{
+    return bundleConfig_->collPath_.getScdPath() + "index/";
+}
+
 
 }
 

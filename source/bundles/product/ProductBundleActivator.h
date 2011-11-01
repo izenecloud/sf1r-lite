@@ -20,6 +20,7 @@ using namespace izenelib::osgi;
 class ProductManager;
 class ProductDataSource;
 class OperationProcessor;
+class ProductScdReceiver;
 class IndexTaskService;
 class IndexSearchService;
 
@@ -35,14 +36,14 @@ private:
     ProductTaskService* taskService_;
     IServiceRegistration* taskServiceReg_;
     IndexTaskService* refIndexTaskService_;
-
+    
     ProductBundleConfiguration* config_;
     std::string currentCollectionDataName_;
     DirectoryRotator directoryRotator_;
     ProductDataSource* data_source_;
     OperationProcessor* op_processor_;
     boost::shared_ptr<ProductManager> productManager_;
-
+    ProductScdReceiver* scd_receiver_;
     bool openDataDirectories_();
     std::string getCollectionDataPath_() const;
     

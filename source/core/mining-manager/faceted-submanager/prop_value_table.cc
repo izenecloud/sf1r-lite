@@ -41,16 +41,22 @@ PropValueTable::pvid_t PropValueTable::propValueId(const std::vector<izenelib::u
         pathIt != path.end(); ++pathIt)
     {
         PropStrMap& propStrMap = childMapTable_[pvId];
-        std::pair<PropStrMap::iterator, bool> result = propStrMap.insert(
-                PropStrMap::value_type(*pathIt, propStrVec_.size()));
+        const izenelib::util::UString& pathNode = *pathIt;
 
-        if (result.second)
+        PropStrMap::const_iterator findIt = propStrMap.find(pathNode);
+        if (findIt != propStrMap.end())
+        {
+            pvId = findIt->second;
+        }
+        else
         {
             pvid_t parentId = pvId;
-            pvId = result.first->second;
+            pvId = propStrVec_.size();
+
             if (pvId != 0)
             {
-                propStrVec_.push_back(*pathIt);
+                propStrMap.insert(PropStrMap::value_type(pathNode, pvId));
+                propStrVec_.push_back(pathNode);
                 parentIdVec_.push_back(parentId);
                 childMapTable_.push_back(PropStrMap());
             }
@@ -63,10 +69,6 @@ PropValueTable::pvid_t PropValueTable::propValueId(const std::vector<izenelib::u
                     "PropValueTable::propValueId"
                 );
             }
-        }
-        else
-        {
-            pvId = result.first->second;
         }
     }
 

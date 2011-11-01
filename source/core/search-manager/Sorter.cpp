@@ -2,6 +2,8 @@
 
 using namespace sf1r;
 
+const char SortPropertyCache::Separator[] = {'-', '~', ','};
+
 SortProperty::SortProperty(const SortProperty& src)
         :property_(src.property_)
         ,propertyDataType_(src.propertyDataType_)
@@ -182,6 +184,62 @@ bool SortPropertyCache::getSortPropertyData(const std::string& propertyName, Pro
         return false;
 }
 
+bool SortPropertyCache::split_int(const izenelib::util::UString& szText, int64_t& out, izenelib::util::UString::EncodingType encoding, char Separator )
+{
+    izenelib::util::UString str(szText);
+    izenelib::util::UString sep(" ",encoding);
+    sep[0] = Separator;
+    size_t n = 0;
+
+    n = str.find(sep,0);
+    if (n != izenelib::util::UString::npos)
+    {
+        if (n != 0)
+        {
+            try
+            {
+                izenelib::util::UString tmpStr = str.substr(0, n);
+                trim( tmpStr );
+                out = boost::lexical_cast< int64_t >( tmpStr );
+                return true;
+            }
+            catch( const boost::bad_lexical_cast & )
+            {
+                return false;
+            }
+        }
+    }
+    return false;
+}
+
+bool SortPropertyCache::split_float(const izenelib::util::UString& szText, float& out, izenelib::util::UString::EncodingType encoding, char Separator )
+{
+    izenelib::util::UString str(szText);
+    izenelib::util::UString sep(" ",encoding);
+    sep[0] = Separator;
+    size_t n = 0;
+
+    n = str.find(sep,0);
+    if (n != izenelib::util::UString::npos)
+    {
+        if (n != 0)
+        {
+            try
+            {
+                izenelib::util::UString tmpStr = str.substr(0, n);
+                trim( tmpStr );
+                out = boost::lexical_cast< float >( tmpStr );
+                return true;
+            }
+            catch( const boost::bad_lexical_cast & )
+            {
+                return false;
+            }
+        }
+    }
+    return false;
+}
+
 void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue)
 {
     boost::mutex::scoped_lock lock(this->mutex_);
@@ -201,24 +259,24 @@ void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, p
                 iter->second.second.convertString(str, encoding);
                 int64_t value = 0;
                 int64_t* data;
-                value = boost::lexical_cast< int64_t >( str );
+                try
+                {
+                    value = boost::lexical_cast< int64_t >( iter->second.second );
+                }
+                catch( const boost::bad_lexical_cast & )
+                {
+                    for(int i = 0; i < EoC; i++)
+                        if (split_int(iter->second.second, value, encoding, Separator[i]))
+                            break;
+                    if(value == 0)
+                    {
+                        LOG(ERROR) << "Wrong format of number value. value:"<<str;
+                        break;
+                    }
+                }
                 if ((it = sortDataCache_.find(propertyName)) != sortDataCache_.end())
                 {
                     data = (int64_t*)(it->second.second);
-                    data[id] = value;
-                }
-            }
-            break;
-        case UNSIGNED_INT_PROPERTY_TYPE:
-            {
-                std::string str("");
-                iter->second.second.convertString(str, encoding);
-                uint64_t value = 0;
-                uint64_t* data;
-                value = boost::lexical_cast< uint64_t >( str );
-                if ((it = sortDataCache_.find(propertyName)) != sortDataCache_.end())
-                {
-                    data = (uint64_t*)(it->second.second);
                     data[id] = value;
                 }
             }
@@ -229,24 +287,24 @@ void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, p
                 iter->second.second.convertString(str, encoding);
                 float value = 0.0;
                 float* data;
-                value = boost::lexical_cast< float >( str );
+                try
+                {
+                    value = boost::lexical_cast< float >( iter->second.second );
+                }
+                catch( const boost::bad_lexical_cast & )
+                {
+                    for(int i = 0; i < EoC; i++)
+                        if (split_float(iter->second.second, value, encoding, Separator[i]))
+                            break;
+                    if(value == 0.0)
+                    {
+                        LOG(ERROR) << "Wrong format of number value. value:"<<str;
+                        break;
+                    }
+                }
                 if ((it = sortDataCache_.find(propertyName)) != sortDataCache_.end())
                 {
                     data = (float*)(it->second.second);
-                    data[id] = value;
-                }
-            }
-            break;
-        case DOUBLE_PROPERTY_TYPE:
-            {
-                std::string str("");
-                iter->second.second.convertString(str, encoding);
-                double value = 0.0;
-                double* data;
-                value = boost::lexical_cast< double >( str );
-                if ((it = sortDataCache_.find(propertyName)) != sortDataCache_.end())
-                {
-                    data = (double*)(it->second.second);
                     data[id] = value;
                 }
             }

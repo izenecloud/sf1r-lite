@@ -6,9 +6,14 @@ namespace sf1r
 {
 ProductBundleConfiguration::ProductBundleConfiguration(const std::string& collectionName)
     : ::izenelib::osgi::BundleConfiguration("ProductBundle-"+collectionName, "ProductBundleActivator" )
-    , enabled_(false)
+    , mode_(0)
     , collectionName_(collectionName)
 {}
+
+void ProductBundleConfiguration::setSchema(const std::set<PropertyConfig, PropertyComp>& schema)
+{
+    schema_ = schema;
+}
 
 
 }

@@ -79,6 +79,7 @@ class GroupLabelLogger;
 class QueryRecommendSubmanager;
 class QueryRecommendRep;
 class RecommendManager;
+class QueryCorrectionSubmanager;
 class LabelManager;
 class TaxonomyGenerationSubManager;
 class TaxonomyInfo;
@@ -100,11 +101,6 @@ class AttrManager;
 class PropertyDiversityReranker;
 class OntologyManager;
 class CTRManager;
-}
-
-namespace ec
-{
-class EcManager;
 }
 
 /**
@@ -142,8 +138,6 @@ public:
 
     bool open();
 
-//     void setConfigClient(const boost::shared_ptr<ConfigurationManagerClient>& configClient);
-
     bool DoMiningCollection();
 
 
@@ -151,10 +145,6 @@ public:
      * @brief The online querying interface.
      */
     bool getMiningResult(KeywordSearchResult& miaInput);
-    
-    ///@brief 1) add price comparasion result, 2) ...
-    bool ecFilter(KeywordSearchResult& input);
-    bool ecFilter(DistKeywordSearchResult& input);
 
     /**
      * @brief Gets list of documents with images similar to the target image.
@@ -260,6 +250,12 @@ public:
 
     bool GetTdtTopicInfo(const izenelib::util::UString& text, std::pair<idmlib::tdt::TrackResult, std::vector<izenelib::util::UString> >& info);
 
+    void GetRefinedQuery(const izenelib::util::UString& query, izenelib::util::UString& result);
+
+    void InjectQueryCorrection(const izenelib::util::UString& query, const izenelib::util::UString& result);
+
+    void FinishQueryCorrectionInject();
+
     void InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result);
 
     void FinishQueryRecommendInject();
@@ -275,17 +271,12 @@ public:
     {
         return tgManager_;
     }
-    
-    boost::shared_ptr<ec::EcManager> GetEcManager()
-    {
-        return ec_manager_;
-    }
 
     boost::shared_ptr<DocumentManager> GetDocumentManager()
     {
         return  document_manager_;
     }
-    
+
     boost::shared_ptr<RecommendManager> GetRecommendManager()
     {
         return rmDb_;
@@ -360,7 +351,8 @@ private:
 
 public:
     /// Should be initialized after construction
-    std::string system_resource_path_;
+    static std::string system_resource_path_;
+    static std::string system_working_path_;
 
 private:
 
@@ -372,16 +364,11 @@ private:
 
     MiningConfig miningConfig_;
     MiningSchema mining_schema_;
-//     boost::shared_ptr<ConfigurationManagerClient> configClient_;
     std::string basicPath_;
     std::string mainPath_;
     std::string backupPath_;
     std::string kpe_res_path_;
     std::string rig_path_;
-
-    /** Global status */
-//     boost::shared_ptr<MiningStatus> status_;
-//     bool bProcessBroken_;
 
     /**all analyzer used in mining manager */
     boost::shared_ptr<LAManager> laManager_;
@@ -393,7 +380,8 @@ private:
 
     boost::shared_ptr<DocumentManager> document_manager_;
     boost::shared_ptr<IndexManager> index_manager_;
-    boost::shared_ptr<SearchManager> searchManager_;	
+    boost::shared_ptr<SearchManager> searchManager_;
+
     /** TG */
     TaxonomyInfo* tgInfo_;
     boost::shared_ptr<LabelManager> labelManager_;
@@ -407,7 +395,7 @@ private:
     /** QR */
     boost::shared_ptr<RecommendManager> rmDb_;
     boost::shared_ptr<QueryRecommendSubmanager> qrManager_;
-    std::string qr_path_;
+    boost::shared_ptr<QueryCorrectionSubmanager> qcManager_;
 
     /** DUPD */
     boost::shared_ptr<DupDType> dupManager_;
@@ -418,6 +406,7 @@ private:
     boost::shared_ptr<sim::SimilarityIndex> similarityIndex_;
     std::string sim_path_;
     boost::shared_ptr<idmlib::sim::DocSimOutput> similarityIndexEsa_;
+
     /** FACETED */
     boost::shared_ptr<faceted::OntologyManager> faceted_;
     std::string faceted_path_;
@@ -442,9 +431,7 @@ private:
     /** TDT */
     std::string tdt_path_;
     TdtStorageType* tdt_storage_;
-    
-    std::string ec_path_;
-    boost::shared_ptr<ec::EcManager> ec_manager_;
+
 };
 
 }

@@ -29,10 +29,19 @@ public:
 
     std::vector<std::string> collectionDataDirectories_;
 
-    // <CronPara> in "sf1config.xml"
+    // <RecommendBundle><Parameter><CronPara>
     std::string cronStr_;
 
-    // recommend schema in "collection.xml"
+    // <RecommendBundle><Parameter><CacheSize>
+    std::size_t purchaseCacheSize_;
+    std::size_t visitCacheSize_;
+    int64_t indexCacheSize_;
+
+    // <RecommendBundle><Parameter><FreqItemSet>
+    bool freqItemSetEnable_;
+    std::size_t itemSetMinFreq_;
+
+    // <Collection><RecommendBundle><Schema>
     RecommendSchema recommendSchema_;
 
     std::string userSCDPath() const

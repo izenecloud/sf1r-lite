@@ -239,7 +239,6 @@ bool DocumentManager::getPropertyValue(
     PropertyValue& result
 )
 {
-
     Document doc;
     const std::string* realPropertyName = &propertyName;
 
@@ -257,7 +256,8 @@ bool DocumentManager::getPropertyValue(
     }
     else
     {
-        getDocument(docId, doc);
+        if(getDocument(docId, doc) == false)
+            return false;
         documentCache_.insertValue(docId, doc);
         result = doc.property(*realPropertyName);
     }

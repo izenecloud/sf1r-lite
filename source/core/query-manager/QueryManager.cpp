@@ -16,17 +16,14 @@
 #include "QueryManager.h"
 #include <common/SFLogger.h>
 
-#include <boost/tokenizer.hpp>
-
 namespace sf1r {
 
 std::map<QueryManager::CollPropertyKey_T, sf1r::PropertyDataType> QueryManager::collectionPropertyInfoMap_;
-const std::string QueryManager::seperatorString("!#$%&()*+,-./:;<=>?@[]^_`{|}~ ");
 QueryManager::DPM_T QueryManager::displayPropertyMap_;
 QueryManager::SPS_T QueryManager::searchPropertySet_;
 boost::shared_mutex QueryManager::dpmSM_;
 
-void QueryManager::setCollectionPropertyInfoMap(std::map<QueryManager::CollPropertyKey_T, 
+void QueryManager::setCollectionPropertyInfoMap(std::map<QueryManager::CollPropertyKey_T,
         sf1r::PropertyDataType>& collectionPropertyInfoMap )
 {
     static boost::mutex localMutex;
@@ -36,7 +33,7 @@ void QueryManager::setCollectionPropertyInfoMap(std::map<QueryManager::CollPrope
     }
 }
 
-void QueryManager::addCollectionPropertyInfo(CollPropertyKey_T colPropertyKey, 
+void QueryManager::addCollectionPropertyInfo(CollPropertyKey_T colPropertyKey,
         sf1r::PropertyDataType  colPropertyData )
 {
     static boost::mutex localMutex;
@@ -46,7 +43,7 @@ void QueryManager::addCollectionPropertyInfo(CollPropertyKey_T colPropertyKey,
     }
 }
 
-void QueryManager::addCollectionDisplayProperty(CollPropertyKey_T colPropertyKey, 
+void QueryManager::addCollectionDisplayProperty(CollPropertyKey_T colPropertyKey,
         DisplayProperty& displayProperty )
 {
     boost::upgrade_lock<boost::shared_mutex> lock(dpmSM_);
@@ -61,7 +58,7 @@ void QueryManager::addCollectionSearchProperty(CollPropertyKey_T colPropertyKey)
     searchPropertySet_.insert(colPropertyKey);
 }
 
-const std::map<QueryManager::CollPropertyKey_T, 
+const std::map<QueryManager::CollPropertyKey_T,
       sf1r::PropertyDataType>& QueryManager::getCollectionPropertyInfoMap(void)
 {
     return QueryManager::collectionPropertyInfoMap_;
@@ -75,8 +72,8 @@ void QueryManager::swapPropertyInfo(DPM_T& displayPropertyMap, SPS_T& searchProp
     searchPropertySet_.swap( searchPropertySet );
 } // end - setDisplayPropertyMap()
 
-bool QueryManager::checkDisplayProperty( 
-        const std::string& collectionName, 
+bool QueryManager::checkDisplayProperty(
+        const std::string& collectionName,
         DisplayProperty& displayProperty,
         std::string& errMsg
         ) const
@@ -85,12 +82,12 @@ bool QueryManager::checkDisplayProperty(
         return true;
 
     boost::shared_lock<boost::shared_mutex> lock(dpmSM_);
-    DPM_T::const_iterator iter = 
+    DPM_T::const_iterator iter =
         displayPropertyMap_.find( make_pair(collectionName, displayProperty.propertyString_) );
 
     if ( iter == displayPropertyMap_.end() )
     {
-        errMsg = "Property(" + displayProperty.propertyString_ 
+        errMsg = "Property(" + displayProperty.propertyString_
             + ") is not found in " + collectionName + " or wrongly set in configuration.";
         return false;
     }
@@ -105,7 +102,7 @@ bool QueryManager::checkDisplayProperty(
     }
 
     if ( configDisplayProperty.isSummaryOn_ == true
-            && displayProperty.isSummaryOn_ == true 
+            && displayProperty.isSummaryOn_ == true
             && configDisplayProperty.summarySentenceNum_ < displayProperty.summarySentenceNum_ )
     {
         sflog->warn(SFL_SRCH, 110135, displayProperty.propertyString_.c_str(), configDisplayProperty.summarySentenceNum_);
@@ -153,7 +150,7 @@ bool QueryManager::checkSearchProperty(
 } // end - checkSearchProperty()
 
 bool QueryManager::checkSearchPropertyList(
-        const std::string& collectionName, 
+        const std::string& collectionName,
         const std::vector<std::string>& searchPropertyList,
         std::string& errMsg
         ) const
@@ -167,7 +164,6 @@ bool QueryManager::checkSearchPropertyList(
     return true;
 } // end - checkSearchPropertyList()
 
-
 // ----------------------------------------------------------------------------------
 
 QueryManager::QueryManager()
@@ -177,6 +173,5 @@ QueryManager::QueryManager()
 QueryManager::~QueryManager()
 {
 }
-
 
 } // end - namespace sf1r

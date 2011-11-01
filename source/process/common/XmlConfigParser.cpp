@@ -14,6 +14,7 @@
 #include <la-manager/LAPool.h>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <glog/logging.h>
 
@@ -54,7 +55,6 @@ void parseByComma( const string & str, vector<string> & subStrList )
 
     std::size_t startIndex=0, endIndex=0;
 
-
     while ( (startIndex = str.find_first_not_of( " ,\t", startIndex )) != std::string::npos )
     {
         endIndex = str.find_first_of( " ,\t", startIndex + 1 );
@@ -78,7 +78,6 @@ ticpp::Element * XmlConfigParser::getUniqChildElement(
 {
     ticpp::Element * temp = NULL;
     temp = ele->FirstChildElement( name, false );
-
 
     if( temp == NULL )
     {
@@ -114,7 +113,6 @@ inline bool XmlConfigParser::getAttribute(
 
     return true;
 }
-
 
 bool XmlConfigParser::getAttribute(
         const ticpp::Element * ele,
@@ -175,7 +173,7 @@ SF1Config::~SF1Config()
 {
 }
 
-bool SF1Config::parseConfigFile( const string & fileName ) throw( XmlConfigParserException  )
+bool SF1Config::parseConfigFile( const string & fileName ) throw( XmlConfigParserException )
 {
     namespace bf=boost::filesystem;
 
@@ -188,44 +186,44 @@ bool SF1Config::parseConfigFile( const string & fileName ) throw( XmlConfigParse
         }
 
         /** schema validate begin */
-         bf::path config_file(fileName);
-         bf::path config_dir = config_file.parent_path();
-         bf::path schema_file = config_dir/"schema"/"sf1config.xsd";
-         std::string schema_file_string = schema_file.file_string();
-         std::cout<<"XML Schema File: "<<schema_file_string<<std::endl;
-         if( !boost::filesystem::exists(schema_file_string) )
-         {
-             std::cerr << "[SF1Config] Schema File doesn't exist." << std::endl;
-             return false;
-         }
+        bf::path config_file(fileName);
+        bf::path config_dir = config_file.parent_path();
+        bf::path schema_file = config_dir/"schema"/"sf1config.xsd";
+        std::string schema_file_string = schema_file.file_string();
+        std::cout<<"XML Schema File: "<<schema_file_string<<std::endl;
+        if( !boost::filesystem::exists(schema_file_string) )
+        {
+            std::cerr << "[SF1Config] Schema File doesn't exist." << std::endl;
+            return false;
+        }
 
-         XmlSchema schema(schema_file_string);
-         bool schema_valid = schema.validate(fileName);
-         std::list<std::string> schema_warning = schema.getSchemaValidityWarnings();
-         if(schema_warning.size()>0)
-         {
-           std::list<std::string>::iterator it = schema_warning.begin();
-           while( it!= schema_warning.end() )
-           {
-             std::cout<<"[Schema-Waring] "<<*it<<std::endl;
-             it++;
-           }
-         }
-         if( !schema_valid )
-         {
-           //output schema errors
-           std::list<std::string> schema_error = schema.getSchemaValidityErrors();
-           if(schema_error.size()>0)
-           {
-             std::list<std::string>::iterator it = schema_error.begin();
-             while( it!= schema_error.end() )
-             {
-               std::cerr<<"[Schema-Error] "<<*it<<std::endl;
-               it++;
-             }
-           }
-           return false;
-         }
+        XmlSchema schema(schema_file_string);
+        bool schema_valid = schema.validate(fileName);
+        std::list<std::string> schema_warning = schema.getSchemaValidityWarnings();
+        if(schema_warning.size()>0)
+        {
+            std::list<std::string>::iterator it = schema_warning.begin();
+            while( it!= schema_warning.end() )
+            {
+                std::cout<<"[Schema-Waring] "<<*it<<std::endl;
+                it++;
+            }
+        }
+        if( !schema_valid )
+        {
+            //output schema errors
+            std::list<std::string> schema_error = schema.getSchemaValidityErrors();
+            if(schema_error.size()>0)
+            {
+                std::list<std::string>::iterator it = schema_error.begin();
+                while( it!= schema_error.end() )
+                {
+                    std::cerr<<"[Schema-Error] "<<*it<<std::endl;
+                    it++;
+                }
+            }
+            return false;
+        }
         /** schema validate end */
 
         ticpp::Document configDocument(fileName.c_str());
@@ -233,7 +231,7 @@ bool SF1Config::parseConfigFile( const string & fileName ) throw( XmlConfigParse
 
         // make sure the top level element is "SF1Config"; if it isn't, an exception is thrown
         Element * sf1config = NULL;
-        if( (sf1config =  configDocument.FirstChildElement( "SF1Config", false )) == NULL )
+        if( (sf1config = configDocument.FirstChildElement( "SF1Config", false )) == NULL )
         {
             throw_NoElement( "SF1Config" );
         }
@@ -245,7 +243,6 @@ bool SF1Config::parseConfigFile( const string & fileName ) throw( XmlConfigParse
     {
         size_t substart = err.m_details.find( "\nDescription: " );
         substart = substart + strlen("\nDescription: ");
-
 
         string msg = err.m_details.substr( substart);
         size_t pos = 0;
@@ -264,24 +261,24 @@ bool SF1Config::parseConfigFile( const string & fileName ) throw( XmlConfigParse
     return true;
 } // END - SF1Config::parseConfigFile()
 
-
 // 1. SYSTEM SETTINGS  -------------------------------------
 
 void SF1Config::parseSystemSettings( const ticpp::Element * system )
 {
-  //get resource dir
-  getAttribute( getUniqChildElement( system, "Resource" ), "path", resource_dir_);
+    //get resource dir
+    getAttribute( getUniqChildElement( system, "Resource" ), "path", resource_dir_);
 
-  getAttribute( getUniqChildElement( system, "LogConnection" ), "str", log_conn_str_);
+    getAttribute( getUniqChildElement( system, "WorkingDir" ), "path", working_dir_);
 
-  parseBundlesDefault(getUniqChildElement( system, "BundlesDefault" ));
+    getAttribute( getUniqChildElement( system, "LogConnection" ), "str", log_conn_str_);
 
-  parseFirewall( getUniqChildElement( system, "Firewall" ) );
+    parseBundlesDefault(getUniqChildElement( system, "BundlesDefault" ));
 
-  parseTokenizer( getUniqChildElement( system, "Tokenizing" ) );
+    parseFirewall( getUniqChildElement( system, "Firewall" ) );
 
-  parseLanguageAnalyzer( getUniqChildElement( system, "LanguageAnalyzer" ) );
+    parseTokenizer( getUniqChildElement( system, "Tokenizing" ) );
 
+    parseLanguageAnalyzer( getUniqChildElement( system, "LanguageAnalyzer" ) );
 }
 
 void SF1Config::parseBrokerAgent( const ticpp::Element * brokerAgent )
@@ -297,22 +294,49 @@ void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
     if (!topology)
         return;
 
+    std::string clusterId;
     getAttribute( topology, "enable", distributedTopologyConfig_.enabled_ );
+    getAttribute( topology, "clusterid", clusterId );
     getAttribute( topology, "nodenum", distributedTopologyConfig_.nodeNum_ );
-    getAttribute( topology, "mirrornum", distributedTopologyConfig_.mirrorNum_ );
+    if (!getAttribute( topology, "workernum", distributedTopologyConfig_.workerNum_ , false))
+    {
+        distributedTopologyConfig_.workerNum_ = distributedTopologyConfig_.nodeNum_;
+    }
+
+    size_t pos = clusterId.rfind('/');
+    if (pos != std::string::npos)
+        clusterId = clusterId.substr(pos+1);
+    if (!clusterId.empty())
+        distributedTopologyConfig_.clusterId_ = clusterId;
+    else
+    {
+        distributedTopologyConfig_.clusterId_ = "unknown";
+        std::cout<<"Warning: unknown hostname for clusterid."<<std::endl;
+    }
 
     // Current SF1 node
     ticpp::Element * cursf1node = getUniqChildElement( topology, "CurrentNode" );
     getAttribute( cursf1node, "nodeid", distributedTopologyConfig_.curSF1Node_.nodeId_ );
-    getAttribute( cursf1node, "mirrorid", distributedTopologyConfig_.curSF1Node_.mirrorId_ );
+    getAttribute( cursf1node, "replicaid", distributedTopologyConfig_.curSF1Node_.replicaId_ );
     getAttribute( cursf1node, "host", distributedTopologyConfig_.curSF1Node_.host_ );
     parseMasterAgent( getUniqChildElement( cursf1node, "MasterAgent", false ) );
     parseWorkerAgent( getUniqChildElement( cursf1node, "WorkerAgent", false ) );
+}
 
+void SF1Config::parseDistributedUtil(const ticpp::Element * distributedUtil)
+{
     // ZooKeeper configuration
-    ticpp::Element* zk = getUniqChildElement( topology, "ZooKeeper" );
-    getAttribute(zk, "servers", distributedTopologyConfig_.zkHosts_);
-    getAttribute(zk, "sessiontimeout", distributedTopologyConfig_.zkRecvTimeout_);
+    ticpp::Element* zk = getUniqChildElement( distributedUtil, "ZooKeeper" );
+    getAttribute(zk, "servers", distributedUtilConfig_.zkConfig_.zkHosts_);
+    getAttribute(zk, "sessiontimeout", distributedUtilConfig_.zkConfig_.zkRecvTimeout_);
+
+    // Distributed File System configuration
+    ticpp::Element* dfs = getUniqChildElement( distributedUtil, "DFS" );
+    getAttribute(dfs, "type", distributedUtilConfig_.dfsConfig_.type_, false);
+    getAttribute(dfs, "supportfuse", distributedUtilConfig_.dfsConfig_.isSupportFuse_, false);
+    getAttribute(dfs, "mountdir", distributedUtilConfig_.dfsConfig_.mountDir_, true);
+    getAttribute(dfs, "server", distributedUtilConfig_.dfsConfig_.server_, false);
+    getAttribute(dfs, "port", distributedUtilConfig_.dfsConfig_.port_, false);
 }
 
 void SF1Config::parseMasterAgent( const ticpp::Element * master )
@@ -418,7 +442,6 @@ void SF1Config::parseFirewall( const ticpp::Element * fireElement )
     }
 }
 
-
 void SF1Config::parseTokenizer( const ticpp::Element * tokenizing )
 {
     string id, method, value, code;
@@ -450,7 +473,6 @@ void SF1Config::parseTokenizer( const ticpp::Element * tokenizing )
             throw XmlConfigParserException( message.str() );
         }
 
-
         TokenizerConfigUnit tkUnit(id, method, value, code);
 
         if ( tokenizerConfigNameMap_.insert( pair<string, TokenizerConfigUnit>(id, tkUnit) ).second == false )
@@ -462,7 +484,6 @@ void SF1Config::parseTokenizer( const ticpp::Element * tokenizing )
     }
 }
 
-
 void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
 {
     // 1. <LanguageAnalyzer>
@@ -470,7 +491,7 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
 
     getAttribute( languageAnalyzer, "dictionarypath", dictionaryPath );
 
-    unsigned int  updateDictInterval;
+    unsigned int updateDictInterval;
 
     getAttribute( languageAnalyzer, "updatedictinterval", updateDictInterval );
 
@@ -479,11 +500,9 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
 
     // 2. <Method>
 
-
     // common settings among analyzers
     string id;
     string analysis;
-
 
     Iterator<Element> analyzer_it( "Method" );
     for ( analyzer_it = analyzer_it.begin( languageAnalyzer ); analyzer_it != analyzer_it.end(); analyzer_it++ )
@@ -492,7 +511,6 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
         getAttribute( analyzer_it.Get(), "analysis", analysis );
 
         downCase(analysis);
-
 
         if( !validateID(id) ) throw_TypeMismatch( analyzer_it.Get(), "id", id, "Alphabets, Numbers, Dot(.), Dash(-) and Underscore(_)");
 
@@ -504,7 +522,6 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
         {
             laUnit.setCaseSensitive( bCaseSensitive );
         }
-
 
         for( int flagIdx = 0; flagIdx < 2; ++flagIdx )
         {
@@ -682,7 +699,6 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
                 getAttribute( settings, "mode", mode, false );
                 downCase( mode );
 
-
                 if(mode != "all" && mode != "noun" && mode != "label") throw_TypeMismatch( settings, "mode", mode, "\"all\", \"noun\" or \"label\"" );
 
                 laUnit.setMode( mode );
@@ -691,7 +707,7 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
         }
         else
         {
-            stringstream  message;
+            stringstream message;
             message << "\"" << id << "\": Wrong analysis name. Should be one of "
 #ifdef USE_IZENECMA
                 << "\"chinese\", "
@@ -703,12 +719,11 @@ void SF1Config::parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer )
                 << "\"korean\", "
 #endif
                 << "\"token\", \"char\", \"ngram\", \"matrix\", or \"english\". (currently:"
-                <<  analysis << ")";
+                << analysis << ")";
             throw XmlConfigParserException( message.str() );
         }
 
-
-        if ( laConfigIdNameMap_.insert( pair<string, LAConfigUnit>( id, laUnit ) ).second ==  false )
+        if ( laConfigIdNameMap_.insert( pair<string, LAConfigUnit>( id, laUnit ) ).second == false )
         {
             throw XmlConfigParserException( "Duplicate LanguageAnalyzer Method IDs" );
         }
@@ -724,6 +739,8 @@ void SF1Config::parseDeploymentSettings(const ticpp::Element * deploy)
     parseBrokerAgent( getUniqChildElement( deploy, "BrokerAgent" ) );
 
     parseDistributedTopology( getUniqChildElement( deploy, "DistributedTopology", false ) );
+
+    parseDistributedUtil( getUniqChildElement( deploy, "DistributedUtil" ) );
 }
 
 // ------------------------- CollectionConfig-------------------------
@@ -735,7 +752,7 @@ CollectionConfig::~CollectionConfig()
 {
 }
 
-bool CollectionConfig::parseConfigFile( const string& collectionName ,const string & fileName, CollectionMeta& collectionMeta) throw( XmlConfigParserException  )
+bool CollectionConfig::parseConfigFile( const string& collectionName ,const string & fileName, CollectionMeta& collectionMeta) throw( XmlConfigParserException )
 {
     namespace bf=boost::filesystem;
 
@@ -748,44 +765,44 @@ bool CollectionConfig::parseConfigFile( const string& collectionName ,const stri
         }
 
         /** schema validate begin */
-         bf::path config_file(fileName);
-         bf::path config_dir = config_file.parent_path();
-         bf::path schema_file = config_dir/"schema"/"collection.xsd";
-         std::string schema_file_string = schema_file.file_string();
-         std::cout<<"XML Schema File: "<<schema_file_string<<std::endl;
-         if( !boost::filesystem::exists(schema_file_string) )
-         {
-             std::cerr << "[SF1Config] Schema File doesn't exist." << std::endl;
-             return false;
-         }
+        bf::path config_file(fileName);
+        bf::path config_dir = config_file.parent_path();
+        bf::path schema_file = config_dir/"schema"/"collection.xsd";
+        std::string schema_file_string = schema_file.file_string();
+        std::cout<<"XML Schema File: "<<schema_file_string<<std::endl;
+        if( !boost::filesystem::exists(schema_file_string) )
+        {
+            std::cerr << "[SF1Config] Schema File doesn't exist." << std::endl;
+            return false;
+        }
 
-         XmlSchema schema(schema_file_string);
-         bool schema_valid = schema.validate(fileName);
-         std::list<std::string> schema_warning = schema.getSchemaValidityWarnings();
-         if(schema_warning.size()>0)
-         {
-           std::list<std::string>::iterator it = schema_warning.begin();
-           while( it!= schema_warning.end() )
-           {
-             std::cout<<"[Schema-Waring] "<<*it<<std::endl;
-             it++;
-           }
-         }
-         if( !schema_valid )
-         {
-           //output schema errors
-           std::list<std::string> schema_error = schema.getSchemaValidityErrors();
-           if(schema_error.size()>0)
-           {
-             std::list<std::string>::iterator it = schema_error.begin();
-             while( it!= schema_error.end() )
-             {
-               std::cerr<<"[Schema-Error] "<<*it<<std::endl;
-               it++;
-             }
-           }
-           return false;
-         }
+        XmlSchema schema(schema_file_string);
+        bool schema_valid = schema.validate(fileName);
+        std::list<std::string> schema_warning = schema.getSchemaValidityWarnings();
+        if(schema_warning.size()>0)
+        {
+            std::list<std::string>::iterator it = schema_warning.begin();
+            while( it!= schema_warning.end() )
+            {
+                std::cout<<"[Schema-Waring] "<<*it<<std::endl;
+                it++;
+            }
+        }
+        if( !schema_valid )
+        {
+            //output schema errors
+            std::list<std::string> schema_error = schema.getSchemaValidityErrors();
+            if(schema_error.size()>0)
+            {
+                std::list<std::string>::iterator it = schema_error.begin();
+                while( it!= schema_error.end() )
+                {
+                    std::cerr<<"[Schema-Error] "<<*it<<std::endl;
+                    it++;
+                }
+            }
+            return false;
+        }
         /** schema validate end */
 
         ticpp::Document configDocument(fileName.c_str());
@@ -793,7 +810,7 @@ bool CollectionConfig::parseConfigFile( const string& collectionName ,const stri
 
         // make sure the top level element is "SF1Config"; if it isn't, an exception is thrown
         Element * collection = NULL;
-        if( (collection =  configDocument.FirstChildElement( "Collection", false )) == NULL )
+        if( (collection = configDocument.FirstChildElement( "Collection", false )) == NULL )
         {
             throw_NoElement( "Collection" );
         }
@@ -807,7 +824,6 @@ bool CollectionConfig::parseConfigFile( const string& collectionName ,const stri
     {
         size_t substart = err.m_details.find( "\nDescription: " );
         substart = substart + strlen("\nDescription: ");
-
 
         string msg = err.m_details.substr( substart);
         size_t pos = 0;
@@ -847,19 +863,19 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
     }
 
     // IndexBundle
-    Element* indexBundle = getUniqChildElement( collection, "IndexBundle", false  );
+    Element* indexBundle = getUniqChildElement( collection, "IndexBundle", false );
     Element* indexParam = getUniqChildElement( indexBundle, "Parameter", false );
     parseIndexBundleParam(indexParam, collectionMeta);
     parseIndexEcSchema(getUniqChildElement( indexBundle, "EcSchema", false), collectionMeta);
     parseIndexBundleSchema(getUniqChildElement( indexBundle, "Schema" ), collectionMeta);
 
     // ProductBundle
-    Element* productBundle = getUniqChildElement( collection, "ProductBundle", false  );
+    Element* productBundle = getUniqChildElement( collection, "ProductBundle", false );
     if(productBundle)
     {
         Element* productParam = getUniqChildElement( productBundle, "Parameter", false );
         parseProductBundleParam(productParam, collectionMeta);
-        
+
         Element* product_schema = getUniqChildElement( productBundle, "Schema", false );
         if(product_schema) parseProductBundleSchema(product_schema, collectionMeta);
     }
@@ -868,9 +884,9 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
     Element* miningBundle = getUniqChildElement( collection, "MiningBundle" , false );
     if(miningBundle)
     {
-        Element* miningSchema = getUniqChildElement( miningBundle, "Schema", false  );
+        Element* miningSchema = getUniqChildElement( miningBundle, "Schema", false );
         if(miningSchema) parseMiningBundleSchema(miningSchema, collectionMeta);
-        Element* miningParam = getUniqChildElement( miningBundle, "Parameter", false  );
+        Element* miningParam = getUniqChildElement( miningBundle, "Parameter", false );
         parseMiningBundleParam(miningParam, collectionMeta);
     }
 
@@ -879,15 +895,13 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
     Element* recommendParam = NULL;
     if(recommendBundle)
     {
-        Element* recommendSchema = getUniqChildElement( recommendBundle, "Schema", false  );
+        Element* recommendSchema = getUniqChildElement( recommendBundle, "Schema", false );
         if(recommendSchema) parseRecommendBundleSchema(recommendSchema, collectionMeta);
-        recommendParam = getUniqChildElement( recommendBundle, "Parameter", false  );
+        recommendParam = getUniqChildElement( recommendBundle, "Parameter", false );
     }
-    // also load recommend param in <BundlesDefault>
-    // even when "RecommendBundle" is not configured in <Collection>
+    // the <Parameter> in <Collection> would overwrite that in <BundlesDefault>
     parseRecommendBundleParam(recommendParam, collectionMeta);
 }
-
 
 void CollectionConfig::parseCollectionPath( const ticpp::Element * path, CollectionMeta & collectionMeta )
 {
@@ -983,19 +997,19 @@ void CollectionConfig::parseCollectionSchema( const ticpp::Element * documentSch
             boost::to_lower(propertyName);
             if(propertyName == "date" )
                 hasDate = true;
-         }
-         catch ( XmlConfigParserException & e )
-         {
-              throw e;
-          }
-     } //property iteration
+        }
+        catch ( XmlConfigParserException & e )
+        {
+            throw e;
+        }
+    } //property iteration
 
     if( hasDate == false )
     {
-	PropertyConfigBase propertyConfig;
-	propertyConfig.propertyName_ = "DATE";
-	propertyConfig.propertyType_ = STRING_PROPERTY_TYPE;
-	collectionMeta.insertProperty( propertyConfig );
+        PropertyConfigBase propertyConfig;
+        propertyConfig.propertyName_ = "DATE";
+        propertyConfig.propertyType_ = STRING_PROPERTY_TYPE;
+        collectionMeta.insertProperty( propertyConfig );
     }
 
     ///we set property Id here
@@ -1042,7 +1056,6 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
         indexmanager_config.indexStrategy_.indexLevel_ = DOCLEVEL;
     else if(indexLevel == "wordlevel")
         indexmanager_config.indexStrategy_.indexLevel_ = WORDLEVEL;
-  //  params.GetString("IndexStrategy/indexlevel", indexmanager_config.indexStrategy_.indexLevel_, "wordlevel");
     params.GetString("IndexStrategy/indexpolicy", indexmanager_config.indexStrategy_.indexMode_, "default");
     std::string indexMergePolicy;
     params.GetString("IndexStrategy/mergepolicy",indexMergePolicy, "file");
@@ -1084,17 +1097,17 @@ void CollectionConfig::parseIndexEcSchema(const ticpp::Element * indexEcSchema, 
         std::string property_name;
         if( child_node != NULL )
         {
-          Iterator<Element> it( "Property" );
-          for ( it = it.begin( child_node ); it != it.end(); it++ )
-          {
-              getAttribute( it.Get(), "name", property_name );
-              bool gottype = collectionMeta.getPropertyType(property_name, property_type);
-              if( !gottype)
-              {
-                throw XmlConfigParserException("Property ["+property_name+"] used in ProductSourceField is not in DocumentSchema.");
-              }
-              indexBundleConfig.productSourceField_ = property_name;
-          }
+            Iterator<Element> it( "Property" );
+            for ( it = it.begin( child_node ); it != it.end(); it++ )
+            {
+                getAttribute( it.Get(), "name", property_name );
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if( !gottype)
+                {
+                    throw XmlConfigParserException("Property ["+property_name+"] used in ProductSourceField is not in DocumentSchema.");
+                }
+                indexBundleConfig.productSourceField_ = property_name;
+            }
         }
     }
 }
@@ -1108,14 +1121,14 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
 
     for ( property = property.begin( indexSchema ); property != property.end(); property++ )
     {
-	try
-	{
-	    parseIndexSchemaProperty( property.Get(), collectionMeta);
-	}
-	catch ( XmlConfigParserException & e )
-	{
-	    throw e;
-	}
+    try
+    {
+        parseIndexSchemaProperty( property.Get(), collectionMeta);
+    }
+    catch ( XmlConfigParserException & e )
+    {
+        throw e;
+    }
     }
 
     ///we update property Id here
@@ -1157,22 +1170,30 @@ void CollectionConfig::parseProductBundleParam(const ticpp::Element * product_pa
 void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_schema, CollectionMeta & collectionMeta)
 {
     ProductBundleConfiguration& productBundleConfig = *(collectionMeta.productBundleConfig_);
-    productBundleConfig.enabled_ = true;
+    productBundleConfig.mode_ = 0;
     productBundleConfig.collPath_ = collectionMeta.collPath_;
+    productBundleConfig.setSchema(collectionMeta.indexBundleConfig_->schema_);
+
+    std::string mode_str;
+    getAttribute(product_schema, "mode", mode_str);
+    //m or a, m as default
+    if(mode_str=="a") productBundleConfig.mode_ = 2;
+    else productBundleConfig.mode_ = 1;
+
     std::string property_name;
     ticpp::Element* property_node = 0;
     property_node = getUniqChildElement( product_schema, "PriceProperty", false );
     getAttribute(property_node, "name", productBundleConfig.pm_config_.price_property_name );
-    
+
     property_node = getUniqChildElement( product_schema, "DOCIDProperty", false );
     getAttribute(property_node, "name", productBundleConfig.pm_config_.docid_property_name );
-    
+
     property_node = getUniqChildElement( product_schema, "UuidProperty", false );
     getAttribute(property_node, "name", productBundleConfig.pm_config_.uuid_property_name );
-    
+
     property_node = getUniqChildElement( product_schema, "ItemCountProperty", false );
     getAttribute(property_node, "name", productBundleConfig.pm_config_.itemcount_property_name );
-    
+
 }
 
 void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, CollectionMeta & collectionMeta)
@@ -1206,21 +1227,9 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     params.GetString("ClassificationPara/trainingencoding", encoding_str);
     mining_config.dc_param.encoding_type = parseEncodingType(encoding_str);
 
-    static bool QueryCorrectionInitiated = false;
-
-    if (!QueryCorrectionInitiated)
-    {
-        //for query correction
-        params.GetString("QueryCorrectionPara/basepath", MiningConfig::query_correction_param.base_path);
-        params.Get("QueryCorrectionPara/enableEK", MiningConfig::query_correction_param.enableEK);
-        params.Get("QueryCorrectionPara/enableCN", MiningConfig::query_correction_param.enableCN);
-        //for query log
-        params.Get<uint32_t>("QueryLogPara/updatetime", MiningConfig::query_log_param.update_time);
-        params.Get<uint32_t>("QueryLogPara/logdays", MiningConfig::query_log_param.log_days);
-        params.GetString("QueryLogPara/cron", MiningConfig::query_log_param.cron);
-
-        QueryCorrectionInitiated = true;
-    }
+    //for query correction
+    params.Get("QueryCorrectionPara/enableEK", mining_config.query_correction_param.enableEK);
+    params.Get("QueryCorrectionPara/enableCN", mining_config.query_correction_param.enableCN);
 
     std::set<std::string> directories;
     params.Get("CollectionDataDirectory", directories);
@@ -1229,8 +1238,15 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     {
         collectionMeta.miningBundleConfig_->collectionDataDirectories_.assign(directories.begin(), directories.end());
     }
-    collectionMeta.miningBundleConfig_->system_resource_path_ = SF1Config::get()->getResourceDir();
 
+    static bool FirstRun = true;
+    if (FirstRun)
+    {
+        FirstRun = false;
+
+        MiningBundleConfiguration::system_resource_path_ = SF1Config::get()->getResourceDir();
+        MiningBundleConfiguration::system_working_path_ = SF1Config::get()->getWorkingDir();
+    }
 }
 
 void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_schema_node, CollectionMeta & collectionMeta)
@@ -1243,100 +1259,100 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
     PropertyDataType property_type;
     if( mining_schema_node!= NULL )
     {
-      ticpp::Element * task_node = getUniqChildElement( mining_schema_node, "TaxonomyGeneration", false );
-      mining_schema.tg_enable = false;
-      mining_schema.tg_kpe_only = false;
-      std::string property_name;
-      if( task_node!= NULL )
-      {
-        bool kpe_only = false;
-        if( getAttribute( task_node, "kpe_only", kpe_only, false ) )
+        ticpp::Element * task_node = getUniqChildElement( mining_schema_node, "TaxonomyGeneration", false );
+        mining_schema.tg_enable = false;
+        mining_schema.tg_kpe_only = false;
+        std::string property_name;
+        if( task_node!= NULL )
         {
-            mining_schema.tg_kpe_only = kpe_only;
-        }
-        Iterator<Element> it( "Property" );
-        for ( it = it.begin( task_node ); it != it.end(); it++ )
-        {
-            getAttribute( it.Get(), "name", property_name );
-            bool gottype = collectionMeta.getPropertyType(property_name, property_type);
-            if( !gottype || property_type != STRING_PROPERTY_TYPE )
+            bool kpe_only = false;
+            if( getAttribute( task_node, "kpe_only", kpe_only, false ) )
             {
-              throw XmlConfigParserException("Property ["+property_name+"] used in TaxonomyGeneration is not string type.");
+                mining_schema.tg_kpe_only = kpe_only;
             }
-            mining_schema.tg_properties.push_back(property_name);
-        }
-        mining_schema.tg_enable = true;
-      }
-      task_node = getUniqChildElement( mining_schema_node, "DuplicateDetection", false );
-      mining_schema.dupd_enable = false;
-      if( task_node!= NULL )
-      {
-        Iterator<Element> it( "Property" );
-        for ( it = it.begin( task_node ); it != it.end(); it++ )
-        {
-            getAttribute( it.Get(), "name", property_name );
-            bool gottype = collectionMeta.getPropertyType(property_name, property_type);
-            if( !gottype || property_type != STRING_PROPERTY_TYPE )
+            Iterator<Element> it( "Property" );
+            for ( it = it.begin( task_node ); it != it.end(); it++ )
             {
-              throw XmlConfigParserException("Property ["+property_name+"] used in DuplicateDetection is not string type.");
+                getAttribute( it.Get(), "name", property_name );
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if( !gottype || property_type != STRING_PROPERTY_TYPE )
+                {
+                    throw XmlConfigParserException("Property ["+property_name+"] used in TaxonomyGeneration is not string type.");
+                }
+                mining_schema.tg_properties.push_back(property_name);
             }
-            mining_schema.dupd_properties.push_back(property_name);
+            mining_schema.tg_enable = true;
         }
-        mining_schema.dupd_enable = true;
-      }
-      task_node = getUniqChildElement( mining_schema_node, "Similarity", false );
-      mining_schema.sim_enable = false;
-      if( task_node!= NULL )
-      {
-        Iterator<Element> it( "Property" );
-        for ( it = it.begin( task_node ); it != it.end(); it++ )
+        task_node = getUniqChildElement( mining_schema_node, "DuplicateDetection", false );
+        mining_schema.dupd_enable = false;
+        if( task_node!= NULL )
         {
-            getAttribute( it.Get(), "name", property_name );
-            bool gottype = collectionMeta.getPropertyType(property_name, property_type);
-            if( !gottype || property_type != STRING_PROPERTY_TYPE )
+            Iterator<Element> it( "Property" );
+            for ( it = it.begin( task_node ); it != it.end(); it++ )
             {
-              throw XmlConfigParserException("Property ["+property_name+"] used in Similarity is not string type.");
+                getAttribute( it.Get(), "name", property_name );
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if( !gottype || property_type != STRING_PROPERTY_TYPE )
+                {
+                    throw XmlConfigParserException("Property ["+property_name+"] used in DuplicateDetection is not string type.");
+                }
+                mining_schema.dupd_properties.push_back(property_name);
             }
-            mining_schema.sim_properties.push_back(property_name);
+            mining_schema.dupd_enable = true;
         }
-        mining_schema.sim_enable = true;
-      }
+        task_node = getUniqChildElement( mining_schema_node, "Similarity", false );
+        mining_schema.sim_enable = false;
+        if( task_node!= NULL )
+        {
+            Iterator<Element> it( "Property" );
+            for ( it = it.begin( task_node ); it != it.end(); it++ )
+            {
+                getAttribute( it.Get(), "name", property_name );
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if( !gottype || property_type != STRING_PROPERTY_TYPE )
+                {
+                    throw XmlConfigParserException("Property ["+property_name+"] used in Similarity is not string type.");
+                }
+                mining_schema.sim_properties.push_back(property_name);
+            }
+            mining_schema.sim_enable = true;
+        }
 
-      task_node = getUniqChildElement( mining_schema_node, "DocumentClassification", false );
-      mining_schema.dc_enable = false;
-      if( task_node!= NULL )
-      {
-        Iterator<Element> it( "Property" );
-        for ( it = it.begin( task_node ); it != it.end(); it++ )
+        task_node = getUniqChildElement( mining_schema_node, "DocumentClassification", false );
+        mining_schema.dc_enable = false;
+        if( task_node!= NULL )
         {
-            getAttribute( it.Get(), "name", property_name );
-            bool gottype = collectionMeta.getPropertyType(property_name, property_type);
-            if( !gottype || property_type != STRING_PROPERTY_TYPE )
+            Iterator<Element> it( "Property" );
+            for ( it = it.begin( task_node ); it != it.end(); it++ )
             {
-              throw XmlConfigParserException("Property ["+property_name+"] used in DocumentClassification is not string type.");
+                getAttribute( it.Get(), "name", property_name );
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if( !gottype || property_type != STRING_PROPERTY_TYPE )
+                {
+                    throw XmlConfigParserException("Property ["+property_name+"] used in DocumentClassification is not string type.");
+                }
+                mining_schema.dc_properties.push_back(property_name);
             }
-            mining_schema.dc_properties.push_back(property_name);
+            mining_schema.dc_enable = true;
         }
-        mining_schema.dc_enable = true;
-      }
 
-      task_node = getUniqChildElement( mining_schema_node, "Faceted", false );
-      mining_schema.faceted_enable = false;
-      if( task_node!= NULL )
-      {
-          Iterator<Element> it( "Property" );
-          for ( it = it.begin( task_node ); it != it.end(); it++ )
-          {
-              getAttribute( it.Get(), "name", property_name );
-              bool gottype = collectionMeta.getPropertyType(property_name, property_type);
-              if( !gottype || property_type != STRING_PROPERTY_TYPE )
-              {
-                  throw XmlConfigParserException("Property ["+property_name+"] used in Faceted is not string type.");
-              }
-              mining_schema.faceted_properties.push_back(property_name);
-          }
-          mining_schema.faceted_enable = true;
-      }
+        task_node = getUniqChildElement( mining_schema_node, "Faceted", false );
+        mining_schema.faceted_enable = false;
+        if( task_node!= NULL )
+        {
+            Iterator<Element> it( "Property" );
+            for ( it = it.begin( task_node ); it != it.end(); it++ )
+            {
+                getAttribute( it.Get(), "name", property_name );
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if( !gottype || property_type != STRING_PROPERTY_TYPE )
+                {
+                    throw XmlConfigParserException("Property ["+property_name+"] used in Faceted is not string type.");
+                }
+                mining_schema.faceted_properties.push_back(property_name);
+            }
+            mining_schema.faceted_enable = true;
+        }
 
         task_node = getUniqChildElement(mining_schema_node, "Group", false);
         mining_schema.group_enable = false;
@@ -1361,11 +1377,11 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                     p.setName(property_name);
                     std::set<PropertyConfig, PropertyComp>::const_iterator propIt = indexSchema.find(p);
                     if (propIt == indexSchema.end()
-                        || !propIt->isIndex() || !propIt->getIsFilter())
+                            || !propIt->isIndex() || !propIt->getIsFilter())
                     {
                         throw XmlConfigParserException("As property ["+property_name+"] in <Group> is int or float type, "
-                                                       "it needs to be configured as a filter property like below:\n"
-                                                       "<IndexBundle> <Schema> <Property name=\"Price\"> <Indexing filter=\"yes\" ...");
+                                "it needs to be configured as a filter property like below:\n"
+                                "<IndexBundle> <Schema> <Property name=\"Price\"> <Indexing filter=\"yes\" ...");
                     }
                 }
                 else if( !groupConfig.isStringType() )
@@ -1376,7 +1392,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 mining_schema.group_properties.push_back(groupConfig);
 
                 LOG(INFO) << "group property: " << property_name
-                          << ", type: " << property_type;
+                    << ", type: " << property_type;
             }
             mining_schema.group_enable = true;
         }
@@ -1405,130 +1421,105 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             }
         }
 
-      task_node = getUniqChildElement( mining_schema_node, "Rerank", false );
-      mining_schema.property_rerank_enable = false;
-      if( task_node!= NULL )
-      {
-          int propNum = 0;
-          Iterator<Element> it( "Property" );
-          for ( it = it.begin( task_node ); it != it.end(); it++ )
-          {
-              getAttribute( it.Get(), "name", property_name );
-              std::vector<GroupConfig>& group_properties = mining_schema.group_properties;
-              bool gottype = false;
-              for(std::vector<GroupConfig>::iterator git = group_properties.begin(); git != group_properties.end(); ++git)
-              	{
-              	    if(git->propName == property_name)
-              	    {
-              	        gottype = true;
-                       break;
-              	    }
-              	}
-              if( !gottype )
-              {
-                  throw XmlConfigParserException("<Property> ["+property_name+"] in <Rerank> is not configured in <Group>.");
-              }
-              mining_schema.prop_rerank_property.propName = property_name;
-              mining_schema.property_rerank_enable = true;
-          }
-          propNum = 0;
-          Iterator<Element> bit( "Boosting" );
-          for ( bit = bit.begin( task_node ); bit != bit.end(); bit++ )
-          {
-              getAttribute( bit.Get(), "name", property_name );
-              std::vector<GroupConfig>& group_properties = mining_schema.group_properties;
-              bool gottype = false;
-              for(std::vector<GroupConfig>::iterator git = group_properties.begin(); git != group_properties.end(); ++git)
-              	{
-              	    if(git->propName == property_name)
-              	    {
-              	        gottype = true;
-                       break;
-              	    }
-              	}
-              if( !gottype )
-              {
-                  throw XmlConfigParserException("<Boosting> ["+property_name+"] in <Rerank> is not string type.");
-              }
-              mining_schema.prop_rerank_property.boostingPropName = property_name;
-          }
-      }
-
-      task_node = getUniqChildElement( mining_schema_node, "TDT", false );
-      mining_schema.tdt_enable = false;
-      if( task_node!= NULL )
-      {
-          mining_schema.tdt_enable = true;
-      }
-
-      task_node = getUniqChildElement( mining_schema_node, "EC", false );
-      mining_schema.ec_enable = false;
-      if( task_node!= NULL )
-      {
-        mining_schema.ec_enable = true;
+        task_node = getUniqChildElement( mining_schema_node, "Rerank", false );
+        mining_schema.property_rerank_enable = false;
+        if( task_node!= NULL )
         {
-            Iterator<Element> it( "TitleProperty" );
+            int propNum = 0;
+            Iterator<Element> it( "Property" );
             for ( it = it.begin( task_node ); it != it.end(); it++ )
             {
                 getAttribute( it.Get(), "name", property_name );
-                mining_schema.ec_title_property = property_name;
+                std::vector<GroupConfig>& group_properties = mining_schema.group_properties;
+                bool gottype = false;
+                for(std::vector<GroupConfig>::iterator git = group_properties.begin(); git != group_properties.end(); ++git)
+                {
+                    if(git->propName == property_name)
+                    {
+                        gottype = true;
+                        break;
+                    }
+                }
+                if( !gottype )
+                {
+                    throw XmlConfigParserException("<Property> ["+property_name+"] in <Rerank> is not configured in <Group>.");
+                }
+                mining_schema.prop_rerank_property.propName = property_name;
+                mining_schema.property_rerank_enable = true;
             }
-        }
-
-        {
-            Iterator<Element> it( "ContentProperty" );
-            for ( it = it.begin( task_node ); it != it.end(); it++ )
+            propNum = 0;
+            Iterator<Element> bit( "Boosting" );
+            for ( bit = bit.begin( task_node ); bit != bit.end(); bit++ )
             {
-                getAttribute( it.Get(), "name", property_name );
-                mining_schema.ec_content_property = property_name;
+                getAttribute( bit.Get(), "name", property_name );
+                std::vector<GroupConfig>& group_properties = mining_schema.group_properties;
+                bool gottype = false;
+                for(std::vector<GroupConfig>::iterator git = group_properties.begin(); git != group_properties.end(); ++git)
+                {
+                    if(git->propName == property_name)
+                    {
+                        gottype = true;
+                        break;
+                    }
+                }
+                if( !gottype )
+                {
+                    throw XmlConfigParserException("<Boosting> ["+property_name+"] in <Rerank> is not string type.");
+                }
+                mining_schema.prop_rerank_property.boostingPropName = property_name;
             }
         }
 
-      }
-
-      task_node = getUniqChildElement( mining_schema_node, "IISE", false );
-      mining_schema.ise_enable = false;
-      if( task_node!= NULL )
-      {
-        getAttribute( task_node, "property", property_name );
-        bool gottype = collectionMeta.getPropertyType(property_name, property_type);
-        if( !gottype || property_type != STRING_PROPERTY_TYPE )
+        task_node = getUniqChildElement( mining_schema_node, "TDT", false );
+        mining_schema.tdt_enable = false;
+        if( task_node!= NULL )
         {
-          throw XmlConfigParserException("Property ["+property_name+"] used in IISE is not string type.");
+            mining_schema.tdt_enable = true;
         }
-        mining_schema.ise_property = property_name;
-        mining_schema.ise_enable = true;
-      }
 
-      //for recommend schema
-      task_node = getUniqChildElement( mining_schema_node, "QueryRecommend", false );
-      mining_schema.recommend_tg = false;
-      mining_schema.recommend_querylog = false;
-      mining_schema.recommend_properties.resize(0);
-      if( task_node!= NULL )
-      {
-        Iterator<Element> it( "Property" );
-        for ( it = it.begin( task_node ); it != it.end(); it++ )
+        task_node = getUniqChildElement( mining_schema_node, "IISE", false );
+        mining_schema.ise_enable = false;
+        if( task_node!= NULL )
         {
-            getAttribute( it.Get(), "name", property_name );
+            getAttribute( task_node, "property", property_name );
             bool gottype = collectionMeta.getPropertyType(property_name, property_type);
             if( !gottype || property_type != STRING_PROPERTY_TYPE )
             {
-              throw XmlConfigParserException("Property ["+property_name+"] used in QueryRecommend is not string type.");
+                throw XmlConfigParserException("Property ["+property_name+"] used in IISE is not string type.");
             }
-            mining_schema.recommend_properties.push_back(property_name);
+            mining_schema.ise_property = property_name;
+            mining_schema.ise_enable = true;
         }
-        ticpp::Element * intern_node = getUniqChildElement(task_node, "TG", false);
-        if( intern_node!= NULL)
+
+        //for recommend schema
+        task_node = getUniqChildElement( mining_schema_node, "QueryRecommend", false );
+        mining_schema.recommend_tg = false;
+        mining_schema.recommend_querylog = false;
+        mining_schema.recommend_properties.resize(0);
+        if( task_node!= NULL )
         {
-          mining_schema.recommend_tg = true;
+            Iterator<Element> it( "Property" );
+            for ( it = it.begin( task_node ); it != it.end(); it++ )
+            {
+                getAttribute( it.Get(), "name", property_name );
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if( !gottype || property_type != STRING_PROPERTY_TYPE )
+                {
+                    throw XmlConfigParserException("Property ["+property_name+"] used in QueryRecommend is not string type.");
+                }
+                mining_schema.recommend_properties.push_back(property_name);
+            }
+            ticpp::Element * intern_node = getUniqChildElement(task_node, "TG", false);
+            if( intern_node!= NULL)
+            {
+                mining_schema.recommend_tg = true;
+            }
+            intern_node = getUniqChildElement(task_node, "QueryLog", false);
+            if( intern_node!= NULL)
+            {
+                mining_schema.recommend_querylog = true;
+            }
         }
-        intern_node = getUniqChildElement(task_node, "QueryLog", false);
-        if( intern_node!= NULL)
-        {
-          mining_schema.recommend_querylog = true;
-        }
-      }
     }
 
 }
@@ -1541,15 +1532,31 @@ void CollectionConfig::parseRecommendBundleParam(const ticpp::Element * recParam
         params.LoadXML(recParamNode, true);
     }
 
+    boost::shared_ptr<RecommendBundleConfiguration> recBundleConfig = collectionMeta.recommendBundleConfig_;
     std::set<std::string> directories;
     params.Get("CollectionDataDirectory", directories);
-    if(!directories.empty())
+    if(directories.empty())
     {
-        collectionMeta.recommendBundleConfig_->collectionDataDirectories_.assign(directories.begin(), directories.end());
+        throw XmlConfigParserException("Require configure <RecommendBundle> <Parameter> <CollectionDataDirectory>");
+    }
+    else
+    {
+        recBundleConfig->collectionDataDirectories_.assign(directories.begin(), directories.end());
     }
 
-    params.Get("CronPara/value", collectionMeta.recommendBundleConfig_->cronStr_);
-    LOG(INFO) << "RecommendBundle CronPara: " << collectionMeta.recommendBundleConfig_->cronStr_;
+    params.Get("CronPara/value", recBundleConfig->cronStr_);
+    params.Get("CacheSize/purchase", recBundleConfig->purchaseCacheSize_);
+    params.Get("CacheSize/visit", recBundleConfig->visitCacheSize_);
+    params.Get("CacheSize/index", recBundleConfig->indexCacheSize_);
+    params.Get("FreqItemSet/enable", recBundleConfig->freqItemSetEnable_);
+    params.Get("FreqItemSet/minfreq", recBundleConfig->itemSetMinFreq_);
+
+    LOG(INFO) << "RecommendBundle [CronPara] value: " << recBundleConfig->cronStr_;
+    LOG(INFO) << "RecommendBundle [CacheSize] purchase: " << recBundleConfig->purchaseCacheSize_;
+    LOG(INFO) << "RecommendBundle [CacheSize] visit: " << recBundleConfig->visitCacheSize_;
+    LOG(INFO) << "RecommendBundle [CacheSize] index: " << recBundleConfig->indexCacheSize_;
+    LOG(INFO) << "RecommendBundle [FreqItemSet] enable: " << recBundleConfig->freqItemSetEnable_;
+    LOG(INFO) << "RecommendBundle [FreqItemSet] min freq: " << recBundleConfig->itemSetMinFreq_;
 }
 
 void CollectionConfig::parseRecommendBundleSchema(const ticpp::Element * recSchemaNode, CollectionMeta & collectionMeta)
@@ -1562,7 +1569,7 @@ void CollectionConfig::parseRecommendBundleSchema(const ticpp::Element * recSche
     RecommendSchema& recommendSchema = recommendBundleConfig.recommendSchema_;
 
     // get user schema
-    Element* userSchemaNode = getUniqChildElement( recSchemaNode, "User", false  );
+    Element* userSchemaNode = getUniqChildElement( recSchemaNode, "User", false );
     if (userSchemaNode)
     {
         Iterator<Element> property("Property");
@@ -1590,7 +1597,7 @@ void CollectionConfig::parseRecommendBundleSchema(const ticpp::Element * recSche
     }
 
     // get item schema
-    Element* itemSchemaNode = getUniqChildElement( recSchemaNode, "Item", false  );
+    Element* itemSchemaNode = getUniqChildElement( recSchemaNode, "Item", false );
     if (itemSchemaNode)
     {
         Iterator<Element> property("Property");
@@ -1618,7 +1625,7 @@ void CollectionConfig::parseRecommendBundleSchema(const ticpp::Element * recSche
     }
 
     // get track schema
-    Element* trackSchemaNode = getUniqChildElement( recSchemaNode, "Track", false  );
+    Element* trackSchemaNode = getUniqChildElement( recSchemaNode, "Track", false );
     if (trackSchemaNode)
     {
         Iterator<Element> event("Event");
@@ -1707,7 +1714,7 @@ void CollectionConfig::parseIndexSchemaProperty(
     //there are several cases where it is allowed. Need to identify & narrow the cases
     Element * indexing = property->FirstChildElement( "Indexing", false );
 
-    //if <Indexing> element  exists
+    //if <Indexing> element exists
     if ( indexing != NULL )
     {
         //the number of original names. One alias name has to be the same as the original name
@@ -1735,7 +1742,6 @@ void CollectionConfig::parseIndexSchemaProperty(
             {
                 nOriginalName++;
             }
-
             //add this property setting(alias) to DocumentSchema
             indexSchema.insert( propertyConfig );
         }
@@ -1766,12 +1772,12 @@ void CollectionConfig::parseIndexSchemaProperty(
 
         if ( nOriginalName == 0 )
         {
-            throw XmlConfigParserException( "[Property : " +  propertyConfig.getName()
+            throw XmlConfigParserException( "[Property : " + propertyConfig.getName()
                     + "] No <Indexing> setting for the original property name. (only alias?)" );
         }
         else if ( nOriginalName != 1 )
         {
-            throw XmlConfigParserException( "[Property : " +  propertyConfig.getName()
+            throw XmlConfigParserException( "[Property : " + propertyConfig.getName()
                     + "Only one alias name has to be the same as the property name" );
         }
     }
@@ -1779,12 +1785,10 @@ void CollectionConfig::parseIndexSchemaProperty(
     {
         if( propertyConfig.isIndex() )
         {
-            throw XmlConfigParserException( "[Property : " +  propertyConfig.getName()
+            throw XmlConfigParserException( "[Property : " + propertyConfig.getName()
                     + " filter=\"yes/no\" or analyzer=\"\" required." );
         }
     }
-
-
 
     //add this property setting(alias) to DocumentSchema
     indexSchema.insert( propertyConfig );
@@ -1801,16 +1805,13 @@ void CollectionConfig::parseProperty_Display( const ticpp::Element * display, Pr
 
     if( length < 140 || length > 200 ) throw_TypeMismatch(display, "length", length, "140 to 200");
 
-
     propertyConfig.setDisplayLength( length );
     propertyConfig.setIsSnippet( bSnippet );
     propertyConfig.setIsSummary( bSummary );
 
-
     //==================== OPTIONAL SETTINGS ====================
 
-
-    Element * settings   = getUniqChildElement( display, "settings", false );
+    Element * settings = getUniqChildElement( display, "settings", false );
     if ( settings != NULL )
     {
         unsigned int summaryNum = 0;
@@ -1832,7 +1833,6 @@ void CollectionConfig::parseProperty_Indexing( const ticpp::Element * indexing, 
     bool bStoreDocLen = true;
     float rankWeight = 0.0f;
 
-
     // read XML
     //
     getAttribute( indexing, "alias", alias, false );
@@ -1846,13 +1846,12 @@ void CollectionConfig::parseProperty_Indexing( const ticpp::Element * indexing, 
     downCase( analyzer );
     downCase( tokenizers );
 
-
     // handle exceptions
     //
     if( bFilter == false && analyzer.empty() )
     {
         stringstream msg;
-        msg << propertyConfig.getName() << ":  filter=\"yes/no\" or analyzer=\"\" required.";
+        msg << propertyConfig.getName() << ": filter=\"yes/no\" or analyzer=\"\" required.";
         throw XmlConfigParserException( msg.str() );
     }
 
@@ -1876,8 +1875,6 @@ void CollectionConfig::parseProperty_Indexing( const ticpp::Element * indexing, 
         msg << propertyConfig.getName() << "\": an \"analyzer\" is required as a pair of the tokenizer";
         throw XmlConfigParserException( msg.str() );
     }
-
-
 
     // save la-relate data
     //
@@ -1910,7 +1907,6 @@ void CollectionConfig::parseProperty_Indexing( const ticpp::Element * indexing, 
         }
     }
 
-
     if( !validateID(alias) ) throw_TypeMismatch( indexing, "alias", alias, "Alphabets, Numbers, Dot(.), Dash(-) and Underscore(_)");
     // add alias name if any
     if ( !alias.empty() )
@@ -1922,7 +1918,6 @@ void CollectionConfig::parseProperty_Indexing( const ticpp::Element * indexing, 
     propertyConfig.setAnalysisInfo( analysisInfo );
     propertyConfig.setRankWeight( rankWeight );
 
-
     // push to the list of all analysis Information in the configuration file.
     SF1Config::get()->analysisPairList_.insert( analysisInfo );
 
@@ -1933,7 +1928,6 @@ void CollectionConfig::parseProperty_Indexing( const ticpp::Element * indexing, 
     }
     SF1Config::get()->analysisPairList_.insert( analysisInfo );
 }
-
 
 } // END - namespace sf1r
 

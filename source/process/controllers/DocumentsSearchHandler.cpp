@@ -832,7 +832,7 @@ void DocumentsSearchKeywordsLogger::log(
         UserQuery queryLog;
         queryLog.setQuery(actionItem.env_.queryString_);
         queryLog.setCollection(actionItem.collectionName_);
-        queryLog.setHitDocsNum(searchResult.topKDocs_.size());
+        queryLog.setHitDocsNum(searchResult.totalCount_);
         queryLog.setPageStart(actionItem.pageInfo_.start_);
         queryLog.setPageCount(actionItem.pageInfo_.count_);
         //queryLog.topNDocIdList_ = siaResult.topKDocs_;

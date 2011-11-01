@@ -14,6 +14,7 @@
 #include <configuration-manager/LAManagerConfig.h>
 #include <configuration-manager/BrokerAgentConfig.h>
 #include <configuration-manager/DistributedTopologyConfig.h>
+#include <configuration-manager/DistributedUtilConfig.h>
 #include <configuration-manager/FirewallConfig.h>
 #include <configuration-manager/CollectionParameterConfig.h>
 #include <mining-manager/faceted-submanager/ontology_rep_item.h>
@@ -42,15 +43,14 @@ namespace ticpp = izenelib::util::ticpp;
 /// @brief  Converts the given string to lower-case letters (only for ascii)
 void downCase( std::string & str );
 
-/// 
+///
 /// @brief The method finds out if the string is true(y, yes) or false(n, no), or neither
 /// @return  -1:false, 0:neither,  1:true
-/// 
+///
 int parseTruth( const string & str );
 
 /// @brief  Parses a given string based on commas ','
 void parseByComma( const std::string & str, std::vector<std::string> & subStrList );
-
 
 ///@ brief  The exception class
 class XmlConfigParserException : public std::exception
@@ -69,7 +69,7 @@ public:
         return details_.c_str();
     }
 
-    std::string details_; 
+    std::string details_;
 };
 
 class XmlConfigParser
@@ -79,27 +79,25 @@ protected:
     /// @brief  Gets a single child element. There should be no multiple definitions of the element
     /// @param ele The parent element
     /// @param name The name of the Child element
-    /// @param throwIfNoElement If set to "true", the method will throw exception if there is 
-    ///              no Child Element
-    inline ticpp::Element * getUniqChildElement( 
+    /// @param throwIfNoElement If set to "true", the method will throw exception if there is
+    ///             no Child Element
+    inline ticpp::Element * getUniqChildElement(
             const ticpp::Element * ele, const std::string & name, bool throwIfNoElement = true ) const;
 
-
     /// @brief The internal method for getAttribute_* methods. Checks if a value exists and retrieves in
-    ///             std::string form if it exists. User can decide if the attribute is essential with the 
+    ///             std::string form if it exists. User can decide if the attribute is essential with the
     ///             attribute throwIfNoAttribute
     /// @param ele The element that holds the attribute
     /// @param name The name of the attribute
     /// @param val The return container of the attribute
     /// @param torhowIfNoAttribute  Throws exception if attribute does not exist.
-    /// @return Returns true  if the attribute is found and has a value. 
+    /// @return Returns true  if the attribute is found and has a value.
     //               false if the attribute is not found or has no value.
-    bool getAttribute( 
-            const ticpp::Element * ele, 
-            const std::string & name, 
-            std::string & val, 
+    bool getAttribute(
+            const ticpp::Element * ele,
+            const std::string & name,
+            std::string & val,
             bool throwIfNoAttribute = true ) const;
-
 
     /// @brief  Gets a float type attribute. User can decide if the attribute is essential
     /// with the attribute throwIfNoAttribute
@@ -110,45 +108,44 @@ protected:
     /// @return Returns true  if the attribute is found and has a value.
     //               false if the attribute is not found or has no value.
     inline bool getAttribute_FloatType(
-                const ticpp::Element * ele,
-                const std::string & name,
-                float & val,
-                bool throwIfNoAttribute = true ) const
+            const ticpp::Element * ele,
+            const std::string & name,
+            float & val,
+            bool throwIfNoAttribute = true ) const
+    {
+        std::string temp;
+
+        if( !getAttribute( ele, name, temp, throwIfNoAttribute ) )
+            return false;
+
+        if ( TermTypeDetector::checkFloatFormat(temp) )
         {
-            std::string temp;
-
-            if( !getAttribute( ele, name, temp, throwIfNoAttribute ) )
-                return false;
-
-            if ( TermTypeDetector::checkFloatFormat(temp) )
-            {
-                stringstream ss;
-                ss << temp;
-                ss >> val;
-            }
-            else
-            {
-                 throw_TypeMismatch( ele, name, temp );
-            }
-
-            return true;
+            stringstream ss;
+            ss << temp;
+            ss >> val;
+        }
+        else
+        {
+            throw_TypeMismatch( ele, name, temp );
         }
 
+        return true;
+    }
 
-    /// @brief  Gets a integer type attribute. User can decide if the attribute is essential 
+    /// @brief  Gets a integer type attribute. User can decide if the attribute is essential
     /// with the attribute throwIfNoAttribute
     /// @param ele The element that holds the attribute
     /// @param name The name of the attribute
     /// @param val The return container of the attribute
     /// @param torhowIfNoAttribute  Throws exception if attribute does not exist.
-    /// @return Returns true  if the attribute is found and has a value. 
+    /// @return Returns true  if the attribute is found and has a value.
     //               false if the attribute is not found or has no value.
     template <class Type>
-    inline bool getAttribute_IntType( 
-            const ticpp::Element * ele, 
-            const std::string & name, 
-            Type & val, 
-            bool throwIfNoAttribute = true ) const 
+    inline bool getAttribute_IntType(
+            const ticpp::Element * ele,
+            const std::string & name,
+            Type & val,
+            bool throwIfNoAttribute = true ) const
     {
         std::string temp;
 
@@ -170,67 +167,67 @@ protected:
     }
 
     /// @brief      Overloaded function for getting "int" attributes
-    inline bool getAttribute( 
-            const ticpp::Element * ele, 
-            const std::string & name, 
-            int & val, 
-            bool throwIfNoAttribute = true ) const 
+    inline bool getAttribute(
+            const ticpp::Element * ele,
+            const std::string & name,
+            int & val,
+            bool throwIfNoAttribute = true ) const
     {
         return getAttribute_IntType( ele, name, val, throwIfNoAttribute );
     }
 
     /// @brief      Overloaded function for getting "unsigned int" attributes
-    inline bool getAttribute( 
-            const ticpp::Element * ele, 
-            const std::string & name, 
-            unsigned int & val, 
-            bool throwIfNoAttribute = true ) const 
+    inline bool getAttribute(
+            const ticpp::Element * ele,
+            const std::string & name,
+            unsigned int & val,
+            bool throwIfNoAttribute = true ) const
     {
         return getAttribute_IntType( ele, name, val, throwIfNoAttribute );
     }
 
     /// @brief      Overloaded function for getting "int64_t" attributes
-    inline bool getAttribute( 
-            const ticpp::Element * ele, 
-            const std::string & name, 
-            int64_t & val, 
-            bool throwIfNoAttribute = true ) const 
+    inline bool getAttribute(
+            const ticpp::Element * ele,
+            const std::string & name,
+            int64_t & val,
+            bool throwIfNoAttribute = true ) const
     {
         return getAttribute_IntType( ele, name, val, throwIfNoAttribute );
     }
 
-#ifdef __x86_64    
+#ifdef __x86_64
     /// @brief      Overloaded function for getting "size_t" attributes
-    inline bool getAttribute( 
-            const ticpp::Element * ele, 
-            const std::string & name, 
-            size_t & val, 
-            bool throwIfNoAttribute = true ) const 
+    inline bool getAttribute(
+            const ticpp::Element * ele,
+            const std::string & name,
+            size_t & val,
+            bool throwIfNoAttribute = true ) const
     {
         return getAttribute_IntType( ele, name, val, throwIfNoAttribute );
     }
-#endif    
+#endif
 
-    /// @brief  Gets a bool type attribute. User can decide if the attribute is essential 
-    ///         with the attribute throwIfNoAttribute. 
-    /// @details This version will always throw an exception is the given value is neither of 
+    /// @brief  Gets a bool type attribute. User can decide if the attribute is essential
+    ///         with the attribute throwIfNoAttribute.
+    /// @details This version will always throw an exception is the given value is neither of
     ///          "yes/y/no/n" (case insesitive)
     /// @param ele                  The element that holds the attribute
     /// @param name                 The name of the attribute
     /// @param val                  The return container of the attribute
     /// @param torhowIfNoAttribute  Throws exception if attribute does not exist.
-    /// @return     Returns true  if the attribute is found and has a value. 
+    /// @return     Returns true  if the attribute is found and has a value.
     //                      false if the attribute is not found or has no value.
-    inline bool getAttribute( 
-            const ticpp::Element * ele, 
-            const std::string & name, 
-            bool & val, 
+    inline bool getAttribute(
+            const ticpp::Element * ele,
+            const std::string & name,
+            bool & val,
             bool throwIfNoAttribute = true ) const;
 
     // ----------------------------- THROW METHODS -----------------------------
 
     // 1. ELEMENTS ---------------
-    
+
     /// @brief  Throws an exception when an element does not exist
     /// @param  name  The name of the element
     inline void throw_MultipleElement( const std::string & name ) const
@@ -256,9 +253,9 @@ protected:
     /// @param ele      The Element which holds the attribute
     /// @param name The name of the attribute
     /// @param valuStr The value parsed for the attribute, which was incorrect
-    inline void throw_TypeMismatch( 
-            const ticpp::Element * ele, 
-            const std::string & name, 
+    inline void throw_TypeMismatch(
+            const ticpp::Element * ele,
+            const std::string & name,
             const std::string & valueStr = "" ) const
     {
         stringstream msg;
@@ -273,9 +270,9 @@ protected:
     /// @param name The name of the attribute
     /// @param valuStr The value parsed for the attribute, which was incorrect
     /// @param validValuStr  The value(s) which are valid for the attribute
-    inline void throw_TypeMismatch( 
-            const ticpp::Element * ele, 
-            const std::string & name, 
+    inline void throw_TypeMismatch(
+            const ticpp::Element * ele,
+            const std::string & name,
             const std::string & valueStr,
             const std::string & validValueStr) const
     {
@@ -293,9 +290,9 @@ protected:
     /// @param name     The name of the attribute
     /// @param valuLong  The value parsed for the attribute, which was incorrect
     /// @param validValuStr  The value(s) which are valid for the attribute
-    inline void throw_TypeMismatch( 
-            const ticpp::Element * ele, 
-            const std::string & name, 
+    inline void throw_TypeMismatch(
+            const ticpp::Element * ele,
+            const std::string & name,
             const long valueLong,
             const std::string & validValueStr) const
     {
@@ -337,42 +334,44 @@ protected:
 };
 
 /// @brief   This class parses a SF-1 v5.0 configuration file, in the form of a xml file
-/// 
+///
 class SF1Config : boost::noncopyable, XmlConfigParser
 {
 public:
     //----------------------------  PUBLIC FUNCTIONS  ----------------------------
 
     SF1Config();
-    ~SF1Config(); 
+    ~SF1Config();
 
     static SF1Config* get()
     {
-      return izenelib::util::Singleton<SF1Config>::get();
+        return izenelib::util::Singleton<SF1Config>::get();
     }
-    
+
     /// @brief Starts parsing the configruation file
     /// @param fileName  The path of the configuration file
     /// @details
     /// The configuration file <System>, <Environment>, and"<Document> are processed
-    /// 
+    ///
     bool parseConfigFile( const std::string & fileName ) throw(XmlConfigParserException );
 
     const std::string& getResourceDir() const
     {
-      return resource_dir_;
+        return resource_dir_;
     }
-    
+
+    const std::string& getWorkingDir() const
+    {
+        return working_dir_;
+    }
     const std::string& getLogConnString() const
     {
-      return log_conn_str_;
+        return log_conn_str_;
     }
-    
-    
-    
+
     /// @brief Gets the configuration related to LAManager
     /// @return The settings for LAManager
-    /// 
+    ///
     const LAManagerConfig & getLAManagerConfig()
     {
         //laManagerConfig_.setAnalysisPairList( analysisPairList_ );
@@ -390,7 +389,6 @@ public:
     {
         laManagerConfig = getLAManagerConfig();
     }
-
 
     /// @brief Gets the configuration related to BrokerAgent
     /// @return The settings for BrokerAgent
@@ -439,7 +437,7 @@ public:
     {
         firewallConfig = firewallConfig;
     }
-    
+
     bool getCollectionMetaByName(
         const std::string& collectionName,
         CollectionMeta& collectionMeta
@@ -503,7 +501,7 @@ public:
                 && distributedTopologyConfig_.curSF1Node_.workerAgent_.enabled_
                 && distributedTopologyConfig_.curSF1Node_.workerAgent_.checkServiceByName(downcaseName))
         {
-             return true;
+            return true;
         }
 
         return false;
@@ -541,12 +539,11 @@ public:
         return false;
     }
 
-	
     const std::map<std::string, CollectionMeta>& getCollectionMetaMap()
     {
         return collectionMetaMap_;
     }
-    
+
     std::map<std::string, CollectionMeta>& mutableCollectionMetaMap()
     {
         return collectionMetaMap_;
@@ -557,7 +554,7 @@ public:
         homeDir_ = homeDir;
     }
 
-    std::string getHomeDirectory()
+    const std::string& getHomeDirectory() const
     {
         return homeDir_;
     }
@@ -591,6 +588,9 @@ private:
     /// @brief                  Parse <Broker> settings
     /// @param system           Pointer to the Element
     void parseDistributedTopology(const ticpp::Element * topology);
+    /// @brief                  Parse <Broker> settings
+    /// @param system           Pointer to the Element
+    void parseDistributedUtil(const ticpp::Element * distributedUtil);
     /// @brief                  Parse <RemoteAgent> settings
     /// @param system           Pointer to the Element
     void parseMasterAgent(const ticpp::Element * master);
@@ -613,9 +613,11 @@ public:
     static const int DATE_MAXLEN = 1024;
 
     // CONFIGURATION ITEMS ---------------
-    
+
     std::string resource_dir_;
-    
+
+    std::string working_dir_;
+
     std::string log_conn_str_;
 
     /// @brief  Configurations for BrokerAgent
@@ -624,12 +626,15 @@ public:
     /// @brief Configurations for distributed search system
     DistributedTopologyConfig distributedTopologyConfig_;
 
+    /// @brief Configurations for distributed util
+    DistributedUtilConfig distributedUtilConfig_;
+
     /// @brief default IndexBundleConfig
     CollectionParameterConfig defaultIndexBundleParam_;
 
     /// @brief default ProductBundleConfig
     CollectionParameterConfig defaultProductBundleParam_;
-    
+
     /// @brief default MiningBundleConfig
     CollectionParameterConfig defaultMiningBundleParam_;
 
@@ -638,13 +643,13 @@ public:
 
     /// @brief  Configurations for FireWall
     FirewallConfig firewallConfig_;
-    
+
     /// @brief  Configuraitons for LAManager
     LAManagerConfig laManagerConfig_;
 
      // MAPPING TABLES  ----------------------
 
-    // used to check duplicates 
+    // used to check duplicates
 
     /// @brief  Maps tokenizer unit IDs to their instances.
     ///         Used when assigning units in document settings
@@ -659,36 +664,35 @@ public:
     std::map<std::string, CollectionMeta> collectionMetaMap_;
 
     /// @brief  Stores all the analyzer-tokenizer pairs that are applied to Properties in
-    /// the configuration. 
+    /// the configuration.
     boost::unordered_set<AnalysisInfo> analysisPairList_;
-    
+
     /// @bried home of configuration files
     std::string homeDir_;
 
 };
-
 
 class CollectionConfig : boost::noncopyable, XmlConfigParser
 {
 public:
     CollectionConfig();
 
-    ~CollectionConfig(); 
+    ~CollectionConfig();
 
     static CollectionConfig* get()
     {
         return izenelib::util::Singleton<CollectionConfig>::get();
     }
-    
+
     /// @brief           Starts parsing the configruation file
     /// @param fileName  The path of the configuration file
     /// @details
-    /// 
+    ///
     bool parseConfigFile( const string& collectionName , const std::string & fileName, CollectionMeta& collectionMeta) throw(XmlConfigParserException );
 
 private:
 
-    /// @brief                  Parse <IndexBundle> <Parameter> 
+    /// @brief                  Parse <IndexBundle> <Parameter>
     /// @param index           Pointer to the Element
     void parseIndexBundleParam(const ticpp::Element * index, CollectionMeta & collectionMeta);
 
@@ -696,31 +700,31 @@ private:
     /// @param index           Pointer to the Element
     void parseIndexEcSchema(const ticpp::Element * index, CollectionMeta & collectionMeta);
 
-    /// @brief                  Parse <IndexBundle> <Schema> 
+    /// @brief                  Parse <IndexBundle> <Schema>
     /// @param index           Pointer to the Element
     void parseIndexBundleSchema(const ticpp::Element * index, CollectionMeta & collectionMeta);
 
-    /// @brief                  Parse <ProductBundle> <Parameter> 
+    /// @brief                  Parse <ProductBundle> <Parameter>
     /// @param product           Pointer to the Element
     void parseProductBundleParam(const ticpp::Element * product, CollectionMeta & collectionMeta);
-    
-    /// @brief                  Parse <ProductBundle> <Schema> 
+
+    /// @brief                  Parse <ProductBundle> <Schema>
     /// @param product           Pointer to the Element
     void parseProductBundleSchema(const ticpp::Element * product, CollectionMeta & collectionMeta);
 
-    /// @brief                  Parse <MiningBundle> <Parameter> 
+    /// @brief                  Parse <MiningBundle> <Parameter>
     /// @param mining           Pointer to the Element
     void parseMiningBundleParam(const ticpp::Element * mining, CollectionMeta & collectionMeta);
 
-    /// @brief                  Parse <MiningBundle> <Schema> 
+    /// @brief                  Parse <MiningBundle> <Schema>
     /// @param mining           Pointer to the Element
     void parseMiningBundleSchema(const ticpp::Element * mining, CollectionMeta & collectionMeta);
 
-    /// @brief                  Parse <RecommendBundle> <Parameter> 
+    /// @brief                  Parse <RecommendBundle> <Parameter>
     /// @param recParamNode           Pointer to the Element
     void parseRecommendBundleParam(const ticpp::Element * recParamNode, CollectionMeta & collectionMeta);
 
-    /// @brief                  Parse <RecommendBundle> <Schema> 
+    /// @brief                  Parse <RecommendBundle> <Schema>
     /// @param recSchemaNode           Pointer to the Element
     void parseRecommendBundleSchema(const ticpp::Element * recSchemaNode, CollectionMeta & collectionMeta);
 
@@ -744,15 +748,15 @@ private:
     /// @brief                  Parse <Display> settings
     /// @param system           Pointer to the Element
     /// @param propertyConfig   Property settings
-    /// 
+    ///
     void parseProperty_Display( const ticpp::Element * display, PropertyConfig & propertyConfig );
 
     /// @brief                  Parse <Indexing> settings
     /// @param system           Pointer to the Element
     /// @param propertyConfig   Property settings
-    /// 
+    ///
     void parseProperty_Indexing( const ticpp::Element * indexing, PropertyConfig & propertyConfig );
-    
+
 private:
     //----------------------------  PRIVATE MEMBER VARIABLES  ----------------------------
     // STATIC VALUES -----------------
@@ -769,7 +773,6 @@ private:
     /// @brief  Max length for <Date> field
     static const int DATE_MAXLEN = 1024;
 };
-
 
 } // namespace sf1r
 

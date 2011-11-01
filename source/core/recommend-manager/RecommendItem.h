@@ -22,6 +22,7 @@ struct ReasonItem
     itemid_t itemId_;
     Item item_;
     std::string event_;
+    std::string value_;
 
     ReasonItem()
         : itemId_(0)

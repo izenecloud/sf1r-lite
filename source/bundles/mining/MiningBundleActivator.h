@@ -25,7 +25,7 @@ private:
     IServiceRegistration* searchServiceReg_;
     MiningTaskService* taskService_;
     IServiceRegistration* taskServiceReg_;
-	
+
     MiningBundleConfiguration* config_;
     std::string currentCollectionDataName_;
 
@@ -38,9 +38,9 @@ private:
     boost::shared_ptr<MiningManager> createMiningManager_(IndexSearchService* indexService) const;
 
     std::string getCollectionDataPath_() const;
-    
+
     std::string getCurrentCollectionDataPath_() const;
-    
+
     std::string getQueryDataPath_() const;
 
 public:
@@ -54,4 +54,3 @@ public:
 
 }
 #endif
-

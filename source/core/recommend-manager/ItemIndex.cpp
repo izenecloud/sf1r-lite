@@ -11,7 +11,7 @@
 namespace sf1r
 {
 
-ItemIndex::ItemIndex(const std::string& path)
+ItemIndex::ItemIndex(const std::string& path, int64_t memorySize)
         : property_("content")
         , propertyId_(1)
 {
@@ -20,7 +20,7 @@ ItemIndex::ItemIndex(const std::string& path)
     iii::IndexManagerConfig indexManagerConfig;
     indexManagerConfig.indexStrategy_.indexLocation_ = path;
     indexManagerConfig.indexStrategy_.indexMode_ = "realtime";
-    indexManagerConfig.indexStrategy_.memory_ = 10000000;
+    indexManagerConfig.indexStrategy_.memory_ = memorySize;
     indexManagerConfig.indexStrategy_.indexDocLength_ = false;
     indexManagerConfig.indexStrategy_.isIndexBTree_ = false;
     indexManagerConfig.mergeStrategy_.param_ = "default";

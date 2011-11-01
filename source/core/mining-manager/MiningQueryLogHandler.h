@@ -21,7 +21,6 @@
 #include <common/type_defs.h>
 #include "query-recommend-submanager/RecommendManager.h"
 #include <configuration-manager/MiningConfig.h>
-#include "query-correction-submanager/QueryCorrectionSubmanager.h"
 #include <util/singleton.h>
 #include <util/cronexpression.h>
 namespace sf1r
@@ -58,12 +57,6 @@ public:
 
 private:
     void cronJob_();
-
-    void processCollectionIndependent_(const boost::posix_time::ptime& nowTime);
-
-
-
-
 
 private:
     std::map<std::string, boost::shared_ptr<RecommendManager> > recommendManagerList_;

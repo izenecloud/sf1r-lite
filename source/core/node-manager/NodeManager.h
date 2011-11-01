@@ -13,6 +13,9 @@
 #include <3rdparty/zookeeper/ZooKeeperEvent.hpp>
 #include <util/singleton.h>
 
+#include <configuration-manager/DistributedTopologyConfig.h>
+#include <configuration-manager/DistributedUtilConfig.h>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
@@ -28,6 +31,36 @@ public:
 
     ~NodeManager();
 
+    void initWithConfig(
+            const DistributedTopologyConfig& dsTopologyConfig,
+            const DistributedUtilConfig& dsUtilConfig)
+    {
+        dsTopologyConfig_ = dsTopologyConfig;
+        dsUtilConfig_ = dsUtilConfig;
+
+        NodeDef::setClusterIdNodeName(dsTopologyConfig_.clusterId_);
+
+        initZooKeeper(dsUtilConfig_.zkConfig_.zkHosts_, dsUtilConfig_.zkConfig_.zkRecvTimeout_);
+
+        initZKNodes();
+    }
+
+    const DistributedTopologyConfig& getDSTopologyConfig() const
+    {
+        return dsTopologyConfig_;
+    }
+
+    const DistributedUtilConfig& getDSUtilConfig() const
+    {
+        return dsUtilConfig_;
+    }
+
+    bool isInited()
+    {
+        return inited_;
+    }
+
+public:
     void initZooKeeper(const std::string& zkHosts, const int recvTimeout);
 
     void setCurrentNodeInfo(SF1NodeInfo& sf1NodeInfo);
@@ -55,13 +88,21 @@ public:
     virtual void process(ZooKeeperEvent& zkEvent);
 
 private:
-    void ensureNodeParents(nodeid_t nodeId, mirrorid_t mirrorId);
+    void ensureNodeParents(nodeid_t nodeId, replicaid_t replicaId);
+
+    void initZKNodes();
 
     void retryRegister();
 
 private:
+    DistributedTopologyConfig dsTopologyConfig_;
+    DistributedUtilConfig dsUtilConfig_;
+
+    bool inited_;
+
     boost::shared_ptr<ZooKeeper> zookeeper_;
 
+    bool registercalled_;
     bool registered_;
     SF1NodeInfo nodeInfo_;
     std::string nodePath_;

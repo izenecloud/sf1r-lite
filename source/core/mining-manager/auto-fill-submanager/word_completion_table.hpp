@@ -32,8 +32,7 @@ class WordCompletionTable
     std::string dir_name_;
     izenelib::sdb::ordered_sdb<std::string, std::string, izenelib::util::ReadWriteLock>* sdb_;
     bool has_count_;
-    //ValueSharedTable* vst_;
-    izenelib::am::IzeneSort<CHAR_TYPE, uint32_t, true>* sortor_;
+    izenelib::am::IzeneSort<CHAR_TYPE, uint32_t, true>* sorter_;
     char* buffer_;
     uint32_t bs_;
     uint32_t top_;
@@ -189,7 +188,7 @@ class WordCompletionTable
 
 public:
     WordCompletionTable(const std::string& dir_nm, uint32_t top = 10, uint32_t max_buf = 100000000)
-            :dir_name_(dir_nm), sdb_(NULL), has_count_(false), sortor_(NULL),
+            :dir_name_(dir_nm), sdb_(NULL), has_count_(false), sorter_(NULL),
             buffer_(NULL), bs_(0), top_(top)
     {
         if (!boost::filesystem::is_directory(dir_name_))
@@ -209,7 +208,6 @@ public:
         {
             has_count_ = true;
         }
-        //vst_ = new ValueSharedTable((dir_name_+"/table").c_str(), max_buf);
         sdb_  = new izenelib::sdb::ordered_sdb<std::string, std::string, izenelib::util::ReadWriteLock>(dir_name_+"/table");
         sdb_->setCacheSize(30000);
         sdb_->open();
@@ -221,8 +219,8 @@ public:
     {
         if (buffer_)
             free(buffer_);
-        if (sortor_)
-            delete sortor_;
+        if (sorter_)
+            delete sorter_;
         // if (vst_)
 //         delete vst_;
         if (sdb_)
@@ -239,9 +237,9 @@ public:
         if (!sdb_)
             return;
 
-        if (!sortor_)
+        if (!sorter_)
         {
-            sortor_ = new izenelib::am::IzeneSort<CHAR_TYPE, uint32_t, true>((dir_name_+"/sort").c_str());
+            sorter_ = new izenelib::am::IzeneSort<CHAR_TYPE, uint32_t, true>((dir_name_+"/sort").c_str());
         }
 
         uint32_t len = key.length() + value.length() + sizeof(df) + sizeof(freq) + 2*sizeof(CHAR_TYPE);
@@ -254,7 +252,7 @@ public:
         *(FREQ_TYPE*)(buffer_+key.length() + sizeof(CHAR_TYPE) + value.length() + sizeof(CHAR_TYPE) ) = df;
         *(FREQ_TYPE*)(buffer_+key.length() + sizeof(CHAR_TYPE) + value.length() + sizeof(CHAR_TYPE) + sizeof(DF_TYPE) ) = freq;
 
-        sortor_->add_data(len, buffer_);
+        sorter_->add_data(len, buffer_);
     }
 
     void add_item(const izenelib::util::UString& key, const izenelib::util::UString& value, DF_TYPE df, FREQ_TYPE freq)
@@ -322,16 +320,16 @@ public:
 
     void flush()
     {
-        if (!sortor_)
+        if (!sorter_)
             return;
 
-        sortor_->sort();
+        sorter_->sort();
 
         enlarge_buf_(10000000);
         uint32_t buf_pos = 0;
 
         char* buf = NULL;
-        if (!sortor_->begin())
+        if (!sorter_->begin())
             return;
 
         std::vector<uint32_t> lens;
@@ -340,10 +338,10 @@ public:
         std::string last_str = "";
         uint32_t i = 0;
         std::cout<<"autofill begin flushing.."<<std::endl;
-        while (sortor_->next_data(len, &buf))
+        while (sorter_->next_data(len, &buf))
         {
             ++i;
-//         std::cout<<"\r"<<1.0*i/sortor_->item_num()*100.<<"%"<<std::flush;
+//         std::cout<<"\r"<<1.0*i/sorter_->item_num()*100.<<"%"<<std::flush;
             if (first!=(CHAR_TYPE)-1 && first!=*(CHAR_TYPE*)buf)
             {
                 pack_up_(0, lens.size(), 1, lens);
@@ -358,7 +356,6 @@ public:
             {
                 FREQ_TYPE max_freq = std::max( *(FREQ_TYPE*)(buffer_+buf_pos-sizeof(FREQ_TYPE)), *(FREQ_TYPE*)(buf+len-sizeof(FREQ_TYPE)) );
                 *(FREQ_TYPE*)(buffer_+buf_pos-sizeof(FREQ_TYPE)) = max_freq;
-//                 *(FREQ_TYPE*)(buffer_+buf_pos-sizeof(FREQ_TYPE)) += *(FREQ_TYPE*)(buf+len-sizeof(FREQ_TYPE));
                 free(buf);
                 continue;
             }
@@ -384,9 +381,9 @@ public:
         if (buf_pos)
             pack_up_(0, lens.size(), 1, lens);
 
-        sortor_->clear_files();
-        delete sortor_;
-        sortor_ = NULL;
+        sorter_->clear_files();
+        delete sorter_;
+        sorter_ = NULL;
 
         //vst_->flush();
         sdb_->flush();

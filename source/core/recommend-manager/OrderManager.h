@@ -29,7 +29,8 @@ class OrderManager
 public:
     OrderManager(
         const std::string& path,
-        const ItemManager* itemManager
+        const ItemManager* itemManager,
+        int64_t indexMemorySize
     );
 
     ~OrderManager();
