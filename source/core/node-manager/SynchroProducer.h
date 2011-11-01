@@ -52,7 +52,7 @@ public:
      * @param findConsumerTimeout  timeout (seconds) for saw any consumer.
      * @return
      */
-    bool waitConsumers(bool& isConsumed, int findConsumerTimeout = 30);
+    bool waitConsumers(bool& isConsumed, int findConsumerTimeout = 60);
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
@@ -72,6 +72,7 @@ private:
 
     void checkConsumers();
 
+    void endSynchroning();
 
 
 private:
