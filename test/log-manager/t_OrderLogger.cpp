@@ -6,7 +6,7 @@
 ///
 
 #include <log-manager/OrderLogger.h>
-#include <log-manager/DbConnection.h>
+#include <log-manager/RDbConnection.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
@@ -56,7 +56,7 @@ struct OrderLoggerTestFixture
     string dbPath_;
     string mySqlDBName_;
 
-    DbConnection& dbConnection_;
+    RDbConnection& rdbConnection_;
     OrderLogger& orderLogger_;
 
     OrderLoggerColumn columns_;
@@ -67,7 +67,7 @@ struct OrderLoggerTestFixture
     RowList rowList_;
 
     OrderLoggerTestFixture()
-        : dbConnection_(DbConnection::instance())
+        : rdbConnection_(RDbConnection::instance())
         , orderLogger_(OrderLogger::instance())
         , orderId_(0)
     {
@@ -84,10 +84,10 @@ struct OrderLoggerTestFixture
         {
             stringstream sql;
             sql << "drop database " << mySqlDBName_ << ";";
-            BOOST_CHECK(dbConnection_.exec(sql.str()));
+            BOOST_CHECK(rdbConnection_.exec(sql.str()));
         }
 
-        dbConnection_.close();
+        rdbConnection_.close();
     }
 
     void initSqlite()
@@ -111,15 +111,15 @@ struct OrderLoggerTestFixture
     void initDbConnection()
     {
         cout << "dbPath: " << dbPath_ << endl;
-        BOOST_CHECK(dbConnection_.init(dbPath_));
+        BOOST_CHECK(rdbConnection_.init(dbPath_));
 
         OrderLogger::createTable();
     }
 
     void resetDbConnection()
     {
-        dbConnection_.close();
-        BOOST_CHECK(dbConnection_.init(dbPath_));
+        rdbConnection_.close();
+        BOOST_CHECK(rdbConnection_.init(dbPath_));
     }
 
     void run()
@@ -161,7 +161,7 @@ struct OrderLoggerTestFixture
             << " order by " << columns_.id_ << " asc;";
 
         RowList sqlResult;
-        BOOST_CHECK(dbConnection_.exec(sql.str(), sqlResult));
+        BOOST_CHECK(rdbConnection_.exec(sql.str(), sqlResult));
 
         BOOST_TEST_MESSAGE(print(sqlResult));
         BOOST_CHECK_EQUAL(sqlResult.size(), rowList_.size());

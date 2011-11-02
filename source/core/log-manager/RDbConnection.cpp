@@ -1,5 +1,5 @@
-#include "DbConnection.h"
-#include "DbConnectionBase.h"
+#include "RDbConnection.h"
+#include "RDbConnectionBase.h"
 #include "Sqlite3DbConnection.h"
 #include "MysqlDbConnection.h"
 
@@ -8,12 +8,12 @@ using namespace std;
 
 namespace sf1r {
 
-DbConnection::DbConnection()
+RDbConnection::RDbConnection()
 :impl_(NULL)
 {
 }
 
-DbConnection::~DbConnection()
+RDbConnection::~RDbConnection()
 {
     if(impl_)
     {
@@ -21,7 +21,7 @@ DbConnection::~DbConnection()
     }
 }
 
-void DbConnection::close()
+void RDbConnection::close()
 {
     if(impl_)
     {
@@ -29,7 +29,7 @@ void DbConnection::close()
     }
 }
 
-bool DbConnection::init(const std::string& str )
+bool RDbConnection::init(const std::string& str )
 {
     std::string sqlite3_prefix = "sqlite3://";
     std::string mysql_prefix = "mysql://";
@@ -47,26 +47,25 @@ bool DbConnection::init(const std::string& str )
     }
     else
     {
-        std::cerr<<"[DbConnection::init] "<<str<<" unrecognized"<<std::endl;
+        std::cerr<<"[RDbConnection::init] "<<str<<" unrecognized"<<std::endl;
         return false;
     }
     
 }
 
-
-bool DbConnection::exec(const std::string & sql, bool omitError)
+bool RDbConnection::exec(const std::string & sql, bool omitError)
 {
     return impl_->exec(sql, omitError);
 }
 
-bool DbConnection::exec(const std::string & sql,
+bool RDbConnection::exec(const std::string & sql,
     std::list< std::map<std::string, std::string> > & results,
     bool omitError)
 {
     return impl_->exec(sql, results, omitError);
 }
 
-const std::string& DbConnection::getSqlKeyword(SQL_KEYWORD type) const
+const std::string& RDbConnection::getSqlKeyword(SQL_KEYWORD type) const
 {
     return impl_->getSqlKeyword(type);
 }

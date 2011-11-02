@@ -1,5 +1,5 @@
 #include "OrderLogger.h"
-#include "DbConnection.h"
+#include "RDbConnection.h"
 
 #include <sstream>
 #include <boost/lexical_cast.hpp>
@@ -30,7 +30,7 @@ const char* OrderLogger::TableName = "order_logs";
 
 void OrderLogger::createTable()
 {
-    DbConnection& dbConnection = DbConnection::instance();
+    RDbConnection& rdbConnection = RDbConnection::instance();
     std::ostringstream oss;
 
     oss << "create table if not exists " << TableName << "(";
@@ -39,7 +39,7 @@ void OrderLogger::createTable()
     // declare column "Id" with auto increment attribute
     oss << ColumnName[0] << " "
         << ColumnMeta[0] << " "
-        << dbConnection.getSqlKeyword(DbConnection::ATTR_AUTO_INCREMENT) << ", ";
+        << rdbConnection.getSqlKeyword(RDbConnection::ATTR_AUTO_INCREMENT) << ", ";
 
     for (int i=1; i<EoC; ++i)
     {
@@ -51,7 +51,7 @@ void OrderLogger::createTable()
     }
     oss << ");";
 
-    dbConnection.exec(oss.str(), true);
+    rdbConnection.exec(oss.str(), true);
 }
 
 bool OrderLogger::insertOrder(
@@ -72,7 +72,7 @@ bool OrderLogger::insertOrder(
     prepareSql_(orderId, collection, userId, date, sql);
 
     RowList sqlResult;
-    if (!DbConnection::instance().exec(sql, sqlResult))
+    if (!RDbConnection::instance().exec(sql, sqlResult))
         return false;
 
     if (!getLastIdFromRows_(sqlResult, newId))
@@ -120,8 +120,8 @@ void OrderLogger::prepareSql_(
 
 const std::string& OrderLogger::getLastIdFunc_() const
 {
-    DbConnection& dbConnection = DbConnection::instance();
-    return dbConnection.getSqlKeyword(DbConnection::FUNC_LAST_INSERT_ID);
+    RDbConnection& rdbConnection = RDbConnection::instance();
+    return rdbConnection.getSqlKeyword(RDbConnection::FUNC_LAST_INSERT_ID);
 }
 
 bool OrderLogger::getLastIdFromRows_(

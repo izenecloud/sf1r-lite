@@ -1,19 +1,14 @@
 #ifndef SF1R_SQLITE3_DBCONNECTION_H_
 #define SF1R_SQLITE3_DBCONNECTION_H_
 
-#include <iostream>
-#include <string>
-#include <map>
-#include <list>
-
 #include <sqlite3.h>
 
 #include <util/ThreadModel.h>
-#include "DbConnectionBase.h"
+#include "RDbConnectionBase.h"
 
 namespace sf1r {
 
-class Sqlite3DbConnection : public DbConnectionBase
+class Sqlite3DbConnection : public RDbConnectionBase
 {
 public:
 

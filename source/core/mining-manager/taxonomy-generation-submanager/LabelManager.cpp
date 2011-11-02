@@ -488,7 +488,7 @@ bool LabelManager::updateLabelDb_()
 
     // TODO: keep consistency between collection data and db table when distributed
     std::string sql = "DELETE FROM property_labels WHERE collection='" + collection_name_ + "'";
-    DbConnection::instance().exec(sql, true);
+    RDbConnection::instance().exec(sql, true);
     uint32_t max_labelid = getMaxLabelID();
     for (uint32_t labelid = 1; labelid <= max_labelid; labelid++)
     {
