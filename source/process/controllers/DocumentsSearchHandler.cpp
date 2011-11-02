@@ -793,7 +793,16 @@ void DocumentsSearchKeywordsLogger::log(
     bool success
 )
 {
-    if (!actionItem.env_.isLogging_)
+    // only log success queries
+    if (!success || !actionItem.env_.isLogging_)
+    {
+        return;
+    }
+    // only log untruncated queries
+    if (!actionItem.groupParam_.groupLabels_.empty() ||
+        !actionItem.groupParam_.attrLabels_.empty() ||
+        !actionItem.env_.taxonomyLabel_.empty() ||
+        !actionItem.filteringList_.empty())
     {
         return;
     }
@@ -820,29 +829,18 @@ void DocumentsSearchKeywordsLogger::log(
         izenelib::util::UString::UTF_8
     );
 
-    // log in BA logs, by default: bin/log/BA/querylog/...
-    std::vector<std::pair<std::string, int> > queryCollectionInfo(1);
-    queryCollectionInfo.back().first = actionItem.collectionName_;
-    queryCollectionInfo.back().second = searchResult.topKDocs_.size();
-
-    // only log success query
-    if (success)
-    {
-        // log for mining features, such as recent keywords
-        UserQuery queryLog;
-        queryLog.setQuery(actionItem.env_.queryString_);
-        queryLog.setCollection(actionItem.collectionName_);
-        queryLog.setHitDocsNum(searchResult.totalCount_);
-        queryLog.setPageStart(actionItem.pageInfo_.start_);
-        queryLog.setPageCount(actionItem.pageInfo_.count_);
-        //queryLog.topNDocIdList_ = siaResult.topKDocs_;
-        queryLog.setSessionId(session);
-        queryLog.setTimeStamp(startTimeInPrecisonSecond);
-        queryLog.setDuration(duration);
-        queryLog.save();
-    }
+    // log for mining features, such as recent keywords
+    UserQuery queryLog;
+    queryLog.setQuery(actionItem.env_.queryString_);
+    queryLog.setCollection(actionItem.collectionName_);
+    queryLog.setHitDocsNum(searchResult.totalCount_);
+    queryLog.setPageStart(actionItem.pageInfo_.start_);
+    queryLog.setPageCount(actionItem.pageInfo_.count_);
+    queryLog.setSessionId(session);
+    queryLog.setTimeStamp(startTimeInPrecisonSecond);
+    queryLog.setDuration(duration);
+    queryLog.save();
 }
 } // namespace detail
 
 } // namespace sf1r
-
