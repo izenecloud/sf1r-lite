@@ -84,7 +84,7 @@ bool ProductController::require_uuid_()
  * Request
  * @code
  * {
- *   "collection" : "intelm",
+ *   "collection" : "b5mm",
  *   "docid_list": [5,6,7,8]
  * }
  * @endcode
@@ -130,7 +130,7 @@ void ProductController::add_new_group()
  * Request
  * @code
  * {
- *   "collection" : "intelm",
+ *   "collection" : "b5mm",
  *   "uuid" : "xxx-yyy-zzz",
  *   "docid_list": [5,6,7,8]
  * }
@@ -173,7 +173,7 @@ void ProductController::append_to_group()
  * Request
  * @code
  * {
- *   "collection" : "intelm",
+ *   "collection" : "b5mm",
  *   "uuid" : "xxx-yyy-zzz",
  *   "docid_list": [5,6,7,8]
  * }
@@ -192,6 +192,43 @@ void ProductController::remove_from_group()
     IZENELIB_DRIVER_BEFORE_HOOK(require_uuid_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_docs_());
     if(!product_manager_->RemoveFromGroup(uuid_, docid_list_))
+    {
+        response().addError(product_manager_->GetLastError());
+        return;
+    }
+}
+
+/**
+ * @brief Action \b recover. Recover product-manager data from backup
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ *
+ * @section response
+ *
+ * 
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection" : "b5mm",
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ * }
+ * @endcode
+ */
+void ProductController::recover()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
+    if(!product_manager_->Recover())
     {
         response().addError(product_manager_->GetLastError());
         return;

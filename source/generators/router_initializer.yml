@@ -110,3 +110,6 @@ controllers:
   ProductController:
     actions:
       - add_new_group
+      - append_to_group
+      - remove_from_group
+      - recover

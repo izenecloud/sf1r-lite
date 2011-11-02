@@ -1188,6 +1188,12 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
 
     property_node = getUniqChildElement( product_schema, "ItemCountProperty", false );
     getAttribute(property_node, "name", productBundleConfig.pm_config_.itemcount_property_name );
+    
+    ticpp::Element* backup_node = getUniqChildElement( product_schema, "Backup", false );
+    if(backup_node!=NULL)
+    {
+        getAttribute(backup_node, "path", productBundleConfig.pm_config_.backup_path );
+    }
 
 }
 

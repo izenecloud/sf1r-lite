@@ -18,6 +18,7 @@ struct PMConfig
     std::string docid_property_name;
     std::string itemcount_property_name;
     std::string uuid_property_name;
+    std::string backup_path;
     
     static PMConfig GetDefaultPMConfig()
     {

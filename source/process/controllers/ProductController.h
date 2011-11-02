@@ -27,6 +27,8 @@ public:
     void append_to_group();
     
     void remove_from_group();
+    
+    void recover();
 //     
 //     void get_all_product_info();
 

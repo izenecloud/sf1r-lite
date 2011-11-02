@@ -2,11 +2,13 @@
 #include <document-manager/DocumentManager.h>
 #include <index-manager/IndexManager.h>
 
+
 using namespace sf1r;
 using namespace izenelib::ir::indexmanager;
+using namespace izenelib::ir::idmanager;
 
-CollectionProductDataSource::CollectionProductDataSource(const boost::shared_ptr<DocumentManager>& document_manager, const boost::shared_ptr<IndexManager>& index_manager, const PMConfig& config, const std::set<PropertyConfig, PropertyComp>& schema)
-: document_manager_(document_manager), index_manager_(index_manager), config_(config), schema_(schema)
+CollectionProductDataSource::CollectionProductDataSource(const boost::shared_ptr<DocumentManager>& document_manager, const boost::shared_ptr<IndexManager>& index_manager, const boost::shared_ptr<IDManager>& id_manager, const PMConfig& config, const std::set<PropertyConfig, PropertyComp>& schema)
+: document_manager_(document_manager), index_manager_(index_manager), id_manager_(id_manager), config_(config), schema_(schema)
 {
 }
     
@@ -148,5 +150,21 @@ bool CollectionProductDataSource::SetUuid(izenelib::ir::indexmanager::IndexerDoc
     return true;
 }
 
+bool CollectionProductDataSource::GetInternalDocidList(const std::vector<izenelib::util::UString>& sdocid_list, std::vector<uint32_t>& docid_list)
+{
+    docid_list.resize(sdocid_list.size());
+    for(uint32_t i=0;i<sdocid_list.size();i++)
+    {
+        if(!id_manager_->getDocIdByDocName(sdocid_list[i], docid_list[i],false))
+        {
+            docid_list.clear();
+            std::string sdocid;
+            sdocid_list[i].convertString(sdocid, izenelib::util::UString::UTF_8);
+            SetError_("Can not get docid for "+sdocid);
+            return false;
+        }
+    }
+    return true;
+}
 
 

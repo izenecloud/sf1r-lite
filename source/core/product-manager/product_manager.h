@@ -20,6 +20,7 @@ namespace sf1r
 class ProductDataSource;
 class OperationProcessor;
 class UuidGenerator;
+class ProductBackup;
 
 class ProductManager
 {
@@ -27,6 +28,8 @@ public:
     ProductManager(ProductDataSource* data_source, OperationProcessor* op_processor, const PMConfig& config);
 
     ~ProductManager();
+    
+    bool Recover();
     
     
     bool HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager::IndexerDocument& index_document);
@@ -37,21 +40,35 @@ public:
     
     bool GenOperations();
     
+    
+    //update documents in A, so need transfer
+    bool UpdateADoc(const Document& doc, bool backup);
+    
+    //all intervention functions.
+    bool AddGroup(const std::vector<uint32_t>& docid_list, izenelib::util::UString& gen_uuid, bool backup = true);
+    
+    bool AppendToGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, bool backup = true);
+    
+    bool RemoveFromGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, bool backup = true);
+    
+    bool AddGroupWithInfo(const std::vector<uint32_t>& docid_list, const Document& doc, bool backup = true);
+    
+    bool AddGroupWithInfo(const std::vector<izenelib::util::UString>& docid_list, const Document& doc, bool backup = true);
+    
+    
+    
     const std::string& GetLastError() const
     {
         return error_;
     }
     
-    //all intervention functions.
-    bool AddGroup(const std::vector<uint32_t>& docid_list, izenelib::util::UString& gen_uuid);
-    
-    bool AppendToGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list);
-    
-    bool RemoveFromGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list);
-    
 private:
     
-    bool AppendToGroup_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list);
+    void BackupPCItem_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, int type);
+    
+    bool UpdateADoc_(const Document& doc);
+    
+    bool AppendToGroup_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& uuid_docid_list, const std::vector<uint32_t>& docid_list, bool backup = true);
     
     bool GetPrice_(uint32_t docid, ProductPrice& price);
     
@@ -69,6 +86,7 @@ private:
     ProductDataSource* data_source_;
     OperationProcessor* op_processor_;
     UuidGenerator* uuid_gen_;
+    ProductBackup* backup_;
     PMConfig config_;
     std::string error_;
     bool inhook_;
