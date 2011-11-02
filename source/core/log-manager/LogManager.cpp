@@ -1,6 +1,6 @@
 #include "LogManager.h"
 #include "SFLogMessages.h"
-#include "DbConnection.h"
+#include "RDbConnection.h"
 #include "SystemEvent.h"
 #include "UserQuery.h"
 #include "PropertyLabel.h"
@@ -46,7 +46,7 @@ namespace sf1r
     {
         SFLogMessage::initLogMsg(language);
 
-        if( !DbConnection::instance().init(pathParam) )
+        if( !RDbConnection::instance().init(pathParam) )
             return false;
 
         SystemEvent::createTable();
@@ -68,7 +68,7 @@ namespace sf1r
         //do not delete it on file
 //          string order = "rm " + logPath;
 // 
-//          DbConnection::instance().close();
+//          RDbConnection::instance().close();
 //          std::system(order.c_str());
 //          if(!init(logPath))
 //              return false;

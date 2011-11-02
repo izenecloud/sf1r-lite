@@ -98,4 +98,4 @@ std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam);
 
 NS_FACETED_END
 
-#endif 
+#endif

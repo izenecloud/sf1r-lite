@@ -11,8 +11,8 @@ namespace sf1r {
 MysqlDbConnection::MysqlDbConnection()
 :PoolSize(16)
 {
-    sqlKeywords_[DbConnection::ATTR_AUTO_INCREMENT] = "AUTO_INCREMENT";
-    sqlKeywords_[DbConnection::FUNC_LAST_INSERT_ID] = "last_insert_id()";
+    sqlKeywords_[RDbConnection::ATTR_AUTO_INCREMENT] = "AUTO_INCREMENT";
+    sqlKeywords_[RDbConnection::FUNC_LAST_INSERT_ID] = "last_insert_id()";
 }
 
 MysqlDbConnection::~MysqlDbConnection()
@@ -27,7 +27,7 @@ void MysqlDbConnection::close()
         mysql_close(*it);
     }
     pool_.clear();
-    
+
     //release it at last
     mysql_library_end();
     mutex_.release_write_lock();
@@ -91,23 +91,23 @@ bool MysqlDbConnection::init(const std::string& str )
             return false;
         }
         mysql_options(mysql, MYSQL_SET_CHARSET_NAME, default_charset.c_str());
-        
+
         if (!mysql_real_connect(mysql, host.c_str(), username.c_str(), password.c_str(), NULL, port, NULL, flags))
         {
             fprintf(stderr, "Couldn't connect mysql : %d:(%s) %s\n", mysql_errno(mysql), mysql_sqlstate(mysql), mysql_error(mysql));
             mysql_close(mysql);
             return false;
         }
-        
+
         mysql_query(mysql, "SET NAMES utf8");
-        
+
         std::string create_db_query = "create database IF NOT EXISTS "+database+" default character set utf8";
         if ( mysql_query(mysql, create_db_query.c_str())>0 ) {
             fprintf(stderr, "Error %u: %s\n", mysql_errno(mysql), mysql_error(mysql));
             mysql_close(mysql);
             return false;
         }
-        
+
         std::string use_db_query = "use "+database;
         if ( mysql_query(mysql, use_db_query.c_str())>0 ) {
             fprintf(stderr, "Error %u: %s\n", mysql_errno(mysql), mysql_error(mysql));
@@ -153,7 +153,7 @@ bool MysqlDbConnection::exec(const std::string & sql, bool omitError)
     if( mysql_real_query(db, sql.c_str(), sql.length()) >0 && mysql_errno(db) )
     {
         fprintf(stderr, "Error : %d:(%s) %s\n", mysql_errno(db), mysql_sqlstate(db), mysql_error(db));
-        ret = false; 
+        ret = false;
     }
 
     putDb(db);
@@ -170,11 +170,11 @@ bool MysqlDbConnection::exec(const std::string & sql,
         std::cerr << "[LogManager] No available connection in pool" << std::endl;
         return false;
     }
-    
+
     if( mysql_real_query(db, sql.c_str(), sql.length()) >0 && mysql_errno(db) )
     {
         fprintf(stderr, "Error : %d:(%s) %s\n", mysql_errno(db), mysql_sqlstate(db), mysql_error(db));
-        ret = false; 
+        ret = false;
     }
     else
     {

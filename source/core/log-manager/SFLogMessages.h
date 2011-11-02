@@ -7,7 +7,7 @@
 #include<util/ustring/UString.h>
 
 
-/** 
+/**
  * @name SfLogMessages.h
  * @date 2009-12-31
  * @author deepesh
@@ -19,7 +19,7 @@
  */
 
 #define TOT_ERRORS 200
-namespace SFLogMessage 
+namespace SFLogMessage
 {
     static std::map<int, std::string> errMsgIdPair;
     //static bool bErrMsgInit = false;
@@ -41,4 +41,3 @@ namespace SFLogMessage
 }
 
 #endif// SF_LOG_MESSAGES
-

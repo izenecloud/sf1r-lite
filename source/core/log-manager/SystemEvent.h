@@ -1,12 +1,12 @@
 #ifndef _SYSTEM_EVENT_H_
 #define _SYSTEM_EVENT_H_
 
-#include "DbRecordBase.h"
+#include "RDbRecordBase.h"
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace sf1r {
 
-class SystemEvent : public DbRecordBase {
+class SystemEvent : public RDbRecordBase {
 
 public:
 
@@ -18,9 +18,9 @@ public:
 
     static const char* TableName;
 
-    DEFINE_DB_RECORD_COMMON_ROUTINES(SystemEvent)
+    DEFINE_RDB_RECORD_COMMON_ROUTINES(SystemEvent)
 
-    SystemEvent() : DbRecordBase(),
+    SystemEvent() : RDbRecordBase(),
         levelPresent_(false),
         sourcePresent_(false),
         contentPresent_(false),

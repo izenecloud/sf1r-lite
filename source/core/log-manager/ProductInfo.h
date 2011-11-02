@@ -8,12 +8,12 @@
 #ifndef _PRODUCT_INFO_H_
 #define _PRODUCT_INFO_H_
 
-#include "DbRecordBase.h"
+#include "RDbRecordBase.h"
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace sf1r {
 
-class ProductInfo : public DbRecordBase {
+class ProductInfo : public RDbRecordBase {
 
 public:
 
@@ -25,9 +25,9 @@ public:
 
     static const char* TableName;
 
-    DEFINE_DB_RECORD_COMMON_ROUTINES(ProductInfo)
+    DEFINE_RDB_RECORD_COMMON_ROUTINES(ProductInfo)
 
-    ProductInfo() : DbRecordBase(),
+    ProductInfo() : RDbRecordBase(),
         sourcePresent_(false),
         collectionPresent_(false),
         numPresent_(false),

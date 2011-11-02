@@ -1,13 +1,13 @@
 #ifndef _USER_QUERY_H_
 #define _USER_QUERY_H_
 
-#include "DbRecordBase.h"
+#include "RDbRecordBase.h"
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/algorithm/string/replace.hpp>
 
 namespace sf1r {
 
-class UserQuery : public DbRecordBase {
+class UserQuery : public RDbRecordBase {
 
 public:
 
@@ -19,9 +19,9 @@ public:
 
     static const char* TableName;
 
-    DEFINE_DB_RECORD_COMMON_ROUTINES(UserQuery)
+    DEFINE_RDB_RECORD_COMMON_ROUTINES(UserQuery)
 
-    UserQuery() : DbRecordBase(),
+    UserQuery() : RDbRecordBase(),
         queryPresent_(false),
         collectionPresent_(false),
         hitDocsNumPresent_(false),
