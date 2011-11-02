@@ -242,7 +242,7 @@ unsigned ScdParser::checkSCDDate( const string& file)
 unsigned ScdParser::checkSCDTime( const string& file)
 {
     static const unsigned kOffset = 13; // strlen("B-01-YYYYMMDD")
-    static const unsigned kCount = 10; // strlen("HHmm-SSssss")
+    static const unsigned kCount = 10; // strlen("HHmm-SSsss")
 
     try
     {
@@ -293,16 +293,25 @@ SCD_TYPE ScdParser::checkSCDType( const string& file )
     return type;
 }
 
-bool ScdParser::compareSCD (const string & file1, const string & file2)
+bool ScdParser::compareSCD(const string & file1, const string & file2)
 {
-    if (checkSCDType(file1) == checkSCDType(file2) )
+    const unsigned date1 = checkSCDDate(file1);
+    const unsigned date2 = checkSCDDate(file2);
+
+    if (date1 == date2)
     {
-        if (checkSCDDate(file1) == checkSCDDate(file2))
-            return (checkSCDTime(file1) < checkSCDTime(file2));
-        return (checkSCDDate(file1) < checkSCDDate(file2));
+        const unsigned time1 = checkSCDTime(file1);
+        const unsigned time2 = checkSCDTime(file2);
+
+        if (time1 == time2)
+        {
+            return (checkSCDType(file1) < checkSCDType(file2));
+        }
+
+        return (time1 < time2);
     }
 
-    return (checkSCDType(file1) < checkSCDType(file2));
+    return (date1 < date2);
 }
 
 
