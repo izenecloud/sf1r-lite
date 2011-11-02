@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 
 using namespace izenelib::ir::indexmanager;
 
@@ -24,15 +25,13 @@ namespace sf1r{
 class Filter
 {
 public:
-    Filter(boost::shared_ptr<EWAHBoolArray<uword32> > docIdSet) : docIdSet_(docIdSet){
-        uncompressedIDSet_.reset(new BoolArray<uword32>());
-        (*uncompressedIDSet_) = docIdSet_->toBoolArray();
+    Filter(boost::shared_ptr<EWAHBoolArray<uword32> > docIdSet){
+        uncompressedIDSet_ = make_shared<BoolArray<uword32> >(docIdSet->toBoolArray());
     }
     virtual ~Filter(){}
 public:
     bool test(docid_t docId){ return uncompressedIDSet_->get(docId); }
 private:
-    boost::shared_ptr<EWAHBoolArray<uword32> > docIdSet_;
     boost::shared_ptr<BoolArray<uword32> > uncompressedIDSet_;
 };
 

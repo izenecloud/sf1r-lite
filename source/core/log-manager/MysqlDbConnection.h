@@ -1,19 +1,14 @@
 #ifndef SF1R_MYSQL_DBCONNECTION_H_
 #define SF1R_MYSQL_DBCONNECTION_H_
 
-#include <iostream>
-#include <string>
-#include <map>
-#include <list>
-
 #include <mysql/mysql.h>
 
 #include <util/ThreadModel.h>
-#include "DbConnectionBase.h"
+#include "RDbConnectionBase.h"
 
 namespace sf1r {
 
-class MysqlDbConnection : public DbConnectionBase
+class MysqlDbConnection : public RDbConnectionBase
 {
 public:
 
@@ -52,7 +47,6 @@ private:
     std::list<MYSQL*> pool_;
 
 };
-
 
 }
 

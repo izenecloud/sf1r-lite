@@ -63,7 +63,7 @@ class DisplayProperty
             propertyString_(obj) {};
 
 
-        void print(std::ostream& out = std::cout) const 
+        void print(std::ostream& out = std::cout) const
         {
             stringstream ss;
             ss << endl;
@@ -138,7 +138,7 @@ inline bool operator==( const DisplayProperty& a, const DisplayProperty& b)
 } // end - operator==()
 
 ///
-/// @brief This class contains environment values of query requester. 
+/// @brief This class contains environment values of query requester.
 ///        It is stored in most of the ActionItems.
 ///
 class RequesterEnvironment
@@ -180,7 +180,7 @@ class RequesterEnvironment
         std::string     encodingType_;
 
         ///
-        /// @brief a query string. The encoding type of query string 
+        /// @brief a query string. The encoding type of query string
         ///        and result XML will follow encodingType_.
         ///
         std::string     queryString_;
@@ -213,7 +213,7 @@ class RequesterEnvironment
         ///
         std::string     ipAddress_;
 
-        DATA_IO_LOAD_SAVE(RequesterEnvironment, 
+        DATA_IO_LOAD_SAVE(RequesterEnvironment,
                 &isLogging_&isLogGroupLabels_&encodingType_&queryString_&expandedQueryString_
                 &userID_&taxonomyLabel_&nameEntityItem_&nameEntityType_&ipAddress_);
 
@@ -237,7 +237,7 @@ class RequesterEnvironment
             ar & nameEntityItem_;
             ar & nameEntityType_;
             ar & ipAddress_;
-        } 
+        }
 }; // end - queryEnvironment
 
 inline bool operator==(
@@ -334,7 +334,7 @@ class KeywordSearchActionItem
 
     public:
         // property name - sorting order(true : Ascending, false : Descending)
-        typedef std::pair<std::string , bool> SortPriorityType; 
+        typedef std::pair<std::string , bool> SortPriorityType;
         // Filter Option - propertyName
 
         KeywordSearchActionItem() :
@@ -559,7 +559,7 @@ class KeywordSearchActionItem
                 rangePropertyName_,groupParam_,strExp_,paramConstValueMap_,paramPropertyValueMap_);
 
     private:
-        
+
         // Log : 2009.09.08
         // ---------------------------------------
         friend class boost::serialization::access;
@@ -600,7 +600,7 @@ class GetDocumentsByIdsActionItem
 
         /// @brief Collection name.
         std::string collectionName_;
-        
+
 
         /// @brief List of display properties which is shown in the result.
         std::vector<DisplayProperty> displayPropertyList_;
@@ -697,7 +697,7 @@ class MiningCommandActionItem
         /// @brief the number of documents to be mining.
         ///
         size_t                          numOfDocs_;
-	        
+
         ///
         /// @brief a list of collection name which should be mined.
         ///
@@ -729,7 +729,7 @@ class RecentKeywordActionItem
         ///
         /// @brief a list of recent keyword list.
         /// @details
-        /// First index means collection index which is the same order of 
+        /// First index means collection index which is the same order of
         /// collectionNameKeywordNoList_
         ///
         std::vector< std::vector<izenelib::util::UString> > recentKeywordList_;

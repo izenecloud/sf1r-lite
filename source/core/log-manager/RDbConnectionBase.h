@@ -1,23 +1,23 @@
-#ifndef SF1R__DBCONNECTIONBASE_H_
-#define SF1R__DBCONNECTIONBASE_H_
+#ifndef SF1R_RDBCONNECTIONBASE_H_
+#define SF1R_RDBCONNECTIONBASE_H_
 
-#include "DbConnection.h" // SQL_KEYWORD
+#include "RDbConnection.h" // SQL_KEYWORD
 
 #include <iostream>
 #include <string>
 
 namespace sf1r {
 
-class DbConnectionBase
+class RDbConnectionBase
 {
 public:
 
-    DbConnectionBase(){}
+    RDbConnectionBase(){}
 
-    virtual ~DbConnectionBase(){}
+    virtual ~RDbConnectionBase(){}
 
     
-    virtual bool init(const std::string& str ){return true;}
+    virtual bool init(const std::string& str){return true;}
 
     virtual void close(){}
 
@@ -31,12 +31,12 @@ public:
     /// @throw exception if underlying database reports error
     virtual bool exec(const std::string & sql, std::list< std::map<std::string, std::string> > & results, bool omitError=false){return true;}
 
-    const std::string& getSqlKeyword(DbConnection::SQL_KEYWORD type) const {
+    const std::string& getSqlKeyword(RDbConnection::SQL_KEYWORD type) const {
         return sqlKeywords_[type];
     }
 
 protected:
-    std::string sqlKeywords_[DbConnection::SQL_KEYWORD_NUM];
+    std::string sqlKeywords_[RDbConnection::SQL_KEYWORD_NUM];
 };
 
 }

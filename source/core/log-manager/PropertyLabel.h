@@ -1,11 +1,11 @@
 #ifndef _PROPERTY_LABEL_H_
 #define _PROPERTY_LABEL_H_
 
-#include "DbRecordBase.h"
+#include "RDbRecordBase.h"
 
 namespace sf1r {
 
-class PropertyLabel : public DbRecordBase {
+class PropertyLabel : public RDbRecordBase {
 
 public:
 
@@ -17,9 +17,9 @@ public:
 
     static const char* TableName;
 
-    DEFINE_DB_RECORD_COMMON_ROUTINES(PropertyLabel)
+    DEFINE_RDB_RECORD_COMMON_ROUTINES(PropertyLabel)
 
-    PropertyLabel() : DbRecordBase(),
+    PropertyLabel() : RDbRecordBase(),
         collectionPresent_(false),
         labelNamePresent_(false),
         hitDocsNumPresent_(false){}

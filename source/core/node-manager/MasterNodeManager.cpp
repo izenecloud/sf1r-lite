@@ -264,6 +264,8 @@ void MasterNodeManager::deregisterServer()
 
 void MasterNodeManager::resetAggregatorConfig()
 {
+    std::cout << "[MasterNodeManager::resetAggregatorConfig] "<<std::endl;
+
     aggregatorConfig_.reset();
 
     WorkerStateMapT::iterator it;
@@ -280,6 +282,8 @@ void MasterNodeManager::resetAggregatorConfig()
             aggregatorConfig_.addWorker(workerState->host_, workerState->port_);
         }
     }
+
+    std::cout << aggregatorConfig_.toString()<<std::endl;
 
     // set aggregator configuration
     std::vector<boost::shared_ptr<AggregatorManager> >::iterator agg_it;
