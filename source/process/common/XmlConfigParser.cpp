@@ -1052,7 +1052,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     indexmanager_config.storeStrategy_.param_ = "file";
     std::string indexLevel;
     params.GetString("IndexStrategy/indexlevel", indexLevel, "wordlevel");
-    indexmanager_config.indexStrategy_.indexLevel_ = (indexlevel == "wordlevel")?
+    indexmanager_config.indexStrategy_.indexLevel_ = (indexLevel == "wordlevel")?
         izenelib::ir::indexmanager::WORDLEVEL : izenelib::ir::indexmanager::DOCLEVEL;
 
     params.GetString("IndexStrategy/indexpolicy", indexmanager_config.indexStrategy_.indexMode_, "default");
