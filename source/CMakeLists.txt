@@ -225,7 +225,10 @@ ENDIF(ENABLE_TEST)
 ##################################################
 # Config
 #####
-SET(HOME_USER $ENV{HOME})
+SET(DEFAULT_CLUSTER_ID $ENV{USER})
+IF(NOT DEFAULT_CLUSTER_ID)
+  SET(DEFAULT_CLUSTER_ID $ENV{USERNAME})
+ENDIF(NOT DEFAULT_CLUSTER_ID)
 
 CONFIGURE_FILE(
   "${SF1RENGINE_ROOT}/bin/config/sf1config.xml.in"

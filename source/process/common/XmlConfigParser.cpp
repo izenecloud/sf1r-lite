@@ -294,24 +294,18 @@ void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
     if (!topology)
         return;
 
-    std::string clusterId;
     getAttribute( topology, "enable", distributedTopologyConfig_.enabled_ );
-    getAttribute( topology, "clusterid", clusterId );
+    getAttribute( topology, "clusterid", distributedTopologyConfig_.clusterId_ );
     getAttribute( topology, "nodenum", distributedTopologyConfig_.nodeNum_ );
     if (!getAttribute( topology, "workernum", distributedTopologyConfig_.workerNum_ , false))
     {
         distributedTopologyConfig_.workerNum_ = distributedTopologyConfig_.nodeNum_;
     }
 
-    size_t pos = clusterId.rfind('/');
-    if (pos != std::string::npos)
-        clusterId = clusterId.substr(pos+1);
-    if (!clusterId.empty())
-        distributedTopologyConfig_.clusterId_ = clusterId;
-    else
+    if (distributedTopologyConfig_.clusterId_.empty())
     {
         distributedTopologyConfig_.clusterId_ = "unknown";
-        std::cout<<"Warning: unknown hostname for clusterid."<<std::endl;
+        std::cout<<"Warning: unknown machine USER/USERNAME, set default clusterid as unknown."<<std::endl;
     }
 
     // Current SF1 node
