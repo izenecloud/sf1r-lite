@@ -19,25 +19,17 @@ public:
 
     RDbRecordBase() : exist_(false) {}
 
-    virtual ~RDbRecordBase();
+    virtual ~RDbRecordBase() {}
 
     static bool find_by_sql(const std::string & sql,
         std::list<std::map<std::string, std::string> > & records)
     {
-        if ( ! RDbConnection::instance().exec(sql, records) )
-        {
-            return false;
-        }
-        return true;
+        return RDbConnection::instance().exec(sql, records);
     }
 
     static bool delete_by_sql(const std::string & sql)
     {
-        if( ! RDbConnection::instance().exec(sql) )
-        {
-            return false;
-        }
-        return true;
+        return RDbConnection::instance().exec(sql);
     }
 
 
@@ -54,7 +46,7 @@ protected:
 
 };
 
-template <typename RDbRecordType >
+template <typename RDbRecordType>
 void createTable()
 {
     std::stringstream sql;
@@ -73,7 +65,7 @@ void createTable()
     RDbConnection::instance().exec(sql.str(), true);
 }
 
-template <typename RDbRecordType >
+template <typename RDbRecordType>
 void save( RDbRecordType & record )
 {
     std::map<std::string, std::string> rawdata;
@@ -97,7 +89,7 @@ void save( RDbRecordType & record )
     RDbConnection::instance().exec(sql.str());
 }
 
-template <typename RDbRecordType >
+template <typename RDbRecordType>
 static bool find(const std::string & select,
                  const std::string & conditions,
                  const std::string & group,
@@ -109,19 +101,19 @@ static bool find(const std::string & select,
 
     sql << "select " << (select.size() ? select : "*");
     sql << " from " << RDbRecordType::TableName ;
-    if ( conditions.size() )
+    if ( !conditions.empty() )
     {
         sql << " where " << conditions;
     }
-    if ( group.size() )
+    if ( !group.empty() )
     {
         sql << " group by " << group;
     }
-    if ( order.size() )
+    if ( !order.empty() )
     {
         sql << " order by " << order;
     }
-    if ( limit.size() )
+    if ( !limit.empty() )
     {
         sql << " limit " << limit;
     }
@@ -129,7 +121,7 @@ static bool find(const std::string & select,
     std::cerr << sql.str() << std::endl;
 
     std::list< std::map<std::string, std::string> >sqlResults;
-    if( RDbRecordType::find_by_sql(sql.str(), sqlResults) == true ) {
+    if( RDbRecordType::find_by_sql(sql.str(), sqlResults) ) {
         for (std::list< std::map<std::string, std::string> >::iterator it = sqlResults.begin();
             it!=sqlResults.end(); it++)
         {
@@ -143,13 +135,12 @@ static bool find(const std::string & select,
     return false;
 }
 
-template <typename RDbRecordType >
+template <typename RDbRecordType>
 static bool del_record(const std::string & conditions)
 {
     std::stringstream sql;
 
-    sql << "delete ";
-    sql << " from " << RDbRecordType::TableName ;
+    sql << "delete from " << RDbRecordType::TableName ;
 
     if(!conditions.empty())
     {
@@ -158,10 +149,7 @@ static bool del_record(const std::string & conditions)
     sql << ";";
     std::cerr<< sql.str() << std::endl;
 
-    if( RDbRecordType::delete_by_sql(sql.str()) == true && RDbConnection::instance().exec("vacuum") == true)
-        return true;
-
-    return false;
+    return RDbRecordType::delete_by_sql(sql.str()) && RDbConnection::instance().exec("vacuum");
 }
 
 

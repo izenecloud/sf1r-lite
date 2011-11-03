@@ -119,37 +119,46 @@ void RecommendManager::RebuildForAll()
     std::string time_string = boost::posix_time::to_iso_string(p);
     typedef std::map<std::string, std::string> DbRecordType;
 
-    std::string query_sql = "SELECT query, count(*) AS freq, hit_docs_num AS df FROM user_queries WHERE collection='" + collection_name_ + "' AND hit_docs_num>0 AND TimeStamp>='" + time_string + "' GROUP BY query";
-    std::list<DbRecordType> query_records;
-    UserQuery::find_by_sql(query_sql, query_records);
+    std::vector<UserQuery> query_records;
+    UserQuery::find(
+            "query, hit_docs_num, count(*) AS page_count",
+            "collection = '" + collection_name_ + "' AND hit_docs_num > 0 AND TimeStamp >= '" + time_string + "'",
+            "query",
+            "",
+            "",
+            query_records);
+
     std::list<QueryLogType> queryList;
-    for (std::list<DbRecordType>::iterator it = query_records.begin();
+    for (std::vector<UserQuery>::const_iterator it = query_records.begin();
             it != query_records.end(); ++it)
     {
-        izenelib::util::UString uquery((*it)["query"], izenelib::util::UString::UTF_8);
+        izenelib::util::UString uquery(it->getQuery(), izenelib::util::UString::UTF_8);
         if (QueryUtility::isRestrictWord(uquery))
         {
             continue;
         }
-        uint32_t freq = boost::lexical_cast<uint32_t>((*it)["freq"]);
-        uint32_t df = boost::lexical_cast<uint32_t>((*it)["df"]);
-        queryList.push_back(QueryLogType(freq, df, uquery));
+        queryList.push_back(QueryLogType(it->getPageCount(), it->getHitDocsNum(), uquery));
     }
 
-    std::string label_sql = "SELECT label_name, sum(hit_docs_num) AS df from property_labels WHERE collection='" + collection_name_ + "' GROUP BY label_name";
-    std::list<std::map<std::string, std::string> > label_records;
-    PropertyLabel::find_by_sql(label_sql, label_records);
+    std::vector<PropertyLabel> label_records;
+    PropertyLabel::find(
+            "label_name, sum(hit_docs_num) AS hit_docs_num",
+            "collection = '" + collection_name_ + "'",
+            "label_name",
+            "",
+            "",
+            label_records);
+
     std::list<PropertyLabelType> labelList;
-    for (std::list<DbRecordType>::iterator it = label_records.begin();
+    for (std::vector<PropertyLabel>::const_iterator it = label_records.begin();
             it != label_records.end(); ++it)
     {
-        izenelib::util::UString uquery((*it)["label_name"], izenelib::util::UString::UTF_8);
-        if (QueryUtility::isRestrictWord(uquery))
+        izenelib::util::UString plabel(it->getLabelName(), izenelib::util::UString::UTF_8);
+        if (QueryUtility::isRestrictWord(plabel))
         {
             continue;
         }
-        uint32_t df = boost::lexical_cast<uint32_t>((*it)["df"]);
-        labelList.push_back(PropertyLabelType(df, uquery));
+        labelList.push_back(PropertyLabelType(it->getHitDocsNum(), plabel));
     }
 
     RebuildForRecommend(queryList, labelList);

@@ -28,58 +28,67 @@ public:
 
     ~SystemEvent(){}
 
-    inline const std::string & getLevel()
+    inline const std::string & getLevel() const
     {
         return level_;
     }
 
-    inline void setLevel( const std::string & level ) {
+    inline void setLevel( const std::string & level )
+    {
         level_ = level;
         levelPresent_ = true;
     }
 
-    inline bool hasLevel() {
+    inline bool hasLevel() const
+    {
         return levelPresent_;
     }
 
-    inline const std::string & getSource()
+    inline const std::string & getSource() const
     {
         return source_;
     }
 
-    inline void setSource( const std::string & source ) {
+    inline void setSource( const std::string & source )
+    {
         source_ = source;
         sourcePresent_ = true;
     }
 
-    inline bool hasSource() {
+    inline bool hasSource() const
+    {
         return sourcePresent_;
     }
 
-    inline const std::string & getContent()
+    inline const std::string & getContent() const
     {
         return content_;
     }
 
-    inline void setContent( const std::string & content ) {
+    inline void setContent( const std::string & content )
+    {
         content_ = content;
         contentPresent_ = true;
     }
 
-    inline bool hasContent() {
+    inline bool hasContent() const
+    {
         return contentPresent_;
     }
 
-    inline void setTimeStamp( const boost::posix_time::ptime & timeStamp ) {
+    inline const boost::posix_time::ptime & getTimeStamp() const
+    {
+        return timeStamp_;
+    }
+
+    inline void setTimeStamp( const boost::posix_time::ptime & timeStamp )
+    {
         timeStamp_ = timeStamp;
         timeStampPresent_ = true;
     }
 
-    inline const boost::posix_time::ptime & getTimeStamp() {
-        return timeStamp_;
-    }
-
-    inline bool hasTimeStamp() {
+    inline bool hasTimeStamp() const
+    {
         return timeStampPresent_;
     }
 

@@ -33,113 +33,131 @@ public:
 
     ~UserQuery(){}
 
-    inline const std::string & getQuery()
+    inline const std::string & getQuery() const
     {
         return query_;
     }
 
-    inline void setQuery( const std::string & query ) {
+    inline void setQuery( const std::string & query )
+    {
         query_ = boost::replace_all_copy(query, "\"", "\"\"");
         queryPresent_ = true;
     }
 
-    inline bool hasQuery() {
+    inline bool hasQuery() const
+    {
         return queryPresent_;
     }
 
-    inline const std::string & getCollection()
+    inline const std::string & getCollection() const
     {
         return collection_;
     }
 
-    inline void setCollection( const std::string & collection ) {
+    inline void setCollection( const std::string & collection )
+    {
         collection_ = collection;
         collectionPresent_ = true;
     }
 
-    inline bool hasCollection() {
+    inline bool hasCollection() const
+    {
         return collectionPresent_;
     }
 
-    inline const size_t getHitDocsNum()
+    inline const size_t getHitDocsNum() const
     {
         return hitDocsNum_;
     }
 
-    inline void setHitDocsNum( const size_t hitDocsNum ) {
+    inline void setHitDocsNum( const size_t hitDocsNum )
+    {
         hitDocsNum_ = hitDocsNum;
         hitDocsNumPresent_ = true;
     }
 
-    inline bool hasHitDocsNum() {
+    inline bool hasHitDocsNum() const
+    {
         return hitDocsNumPresent_;
     }
 
-    inline const uint32_t getPageStart()
+    inline const uint32_t getPageStart() const
     {
         return pageStart_;
     }
 
-    inline void setPageStart( const uint32_t pageStart ) {
+    inline void setPageStart( const uint32_t pageStart )
+    {
         pageStart_ = pageStart;
         pageStartPresent_ = true;
     }
 
-    inline bool hasPageStart() {
+    inline bool hasPageStart() const
+    {
         return pageStartPresent_;
     }
 
-    inline const uint32_t getPageCount()
+    inline const uint32_t getPageCount() const
     {
         return pageCount_;
     }
 
-    inline void setPageCount( const uint32_t pageCount ) {
+    inline void setPageCount( const uint32_t pageCount )
+    {
         pageCount_ = pageCount;
         pageCountPresent_ = true;
     }
 
-    inline bool hasPageCount() {
+    inline bool hasPageCount() const
+    {
         return pageCountPresent_;
     }
 
-    inline const std::string & getSessionId()
+    inline const std::string & getSessionId() const
     {
         return sessionId_;
     }
 
-    inline void setSessionId( const std::string & sessionId ) {
+    inline void setSessionId( const std::string & sessionId )
+    {
         sessionId_ = sessionId;
         sessionIdPresent_ = true;
     }
 
-    inline bool hasSessionId() {
+    inline bool hasSessionId() const
+    {
         return sessionIdPresent_;
     }
 
-    inline void setDuration( const boost::posix_time::time_duration & duration ) {
+    inline const boost::posix_time::time_duration & getDuration() const
+    {
+        return duration_;
+    }
+
+    inline void setDuration( const boost::posix_time::time_duration & duration )
+    {
         duration_ = duration;
         durationPresent_ = true;
     }
 
-    inline const boost::posix_time::time_duration & getDuration() {
-        return duration_;
-    }
-
-    inline bool hasDuration() {
+    inline bool hasDuration() const
+    {
         return durationPresent_;
     }
 
-    inline void setTimeStamp( const boost::posix_time::ptime & timeStamp ) {
+    inline const boost::posix_time::ptime & getTimeStamp() const
+    {
+        return timeStamp_;
+    }
+
+    inline void setTimeStamp( const boost::posix_time::ptime & timeStamp )
+    {
         timeStamp_ = timeStamp;
         timeStampPresent_ = true;
     }
 
-    inline const boost::posix_time::ptime & getTimeStamp() {
-        return timeStamp_;
-    }
-
-    inline bool hasTimeStamp() {
+    inline bool hasTimeStamp() const
+    {
         return timeStampPresent_;
     }
 
