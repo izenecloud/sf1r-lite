@@ -311,11 +311,11 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
     numUpdatedDocs_ = 0;
 
     indexProgress_.reset();
+    STOP_PROFILER(buildIndex);
     REPORT_PROFILE_TO_FILE( "PerformanceIndexResult.SIAProcess" )
     LOG(INFO) << "End BuildCollection: ";
     LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
 
-    STOP_PROFILER(buildIndex);
     return true;
 }
 
@@ -672,8 +672,7 @@ bool IndexTaskService::insertOrUpdateSCD_(
     uint32_t numdoc
 )
 {
-    CREATE_PROFILER(proDocumentIndexing, "Index:SIAProcess", "Indexer : InsertDocument")
-    CREATE_PROFILER(proIndexing, "Index:SIAProcess", "Indexer : indexing")
+    CREATE_SCOPED_PROFILER ( insertOrUpdateSCD, "IndexTaskService", "IndexTaskService::insertOrUpdateSCD_");
 
     uint32_t n = 0;
     long lastOffset = 0;
@@ -707,6 +706,7 @@ bool IndexTaskService::insertOrUpdateSCD_(
         std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
         sf1r::docid_t id = 0;
         std::string source = "";
+
 
         if (!prepareDocument_( *doc, document, indexDocument, rType, rTypeFieldValue, source, isInsert))
             continue;
@@ -746,13 +746,21 @@ bool IndexTaskService::insertOrUpdateSCD_(
 
 bool IndexTaskService::insertDoc_(Document& document, IndexerDocument& indexDocument)
 {
+    CREATE_PROFILER(proDocumentIndexing, "IndexTaskService", "IndexTaskService : InsertDocument")
+    CREATE_PROFILER(proIndexing, "IndexTaskService", "IndexTaskService : indexing")
+
     if(hooker_)
     {
         if(!hooker_->HookInsert(document, indexDocument)) return false;
     }
+    START_PROFILER(proDocumentIndexing); 	
     if (documentManager_->insertDocument(document))
     {
+        STOP_PROFILER(proDocumentIndexing);
+
+        START_PROFILER(proIndexing);    
         indexManager_->insertDocument(indexDocument);
+        STOP_PROFILER(proIndexing);		
         indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
         return true;
     }
@@ -761,6 +769,8 @@ bool IndexTaskService::insertDoc_(Document& document, IndexerDocument& indexDocu
 
 bool IndexTaskService::deleteDoc_(docid_t docid)
 {
+    CREATE_SCOPED_PROFILER ( proDocumentDeleting, "IndexTaskService", "IndexTaskService::DeleteDocument");
+
     if(hooker_)
     {
         if(!hooker_->HookDelete(docid)) return false;
@@ -781,6 +791,8 @@ bool IndexTaskService::updateDoc_(
     bool rType
 )
 {
+    CREATE_SCOPED_PROFILER ( proDocumentUpdating, "IndexTaskService", "IndexTaskService::UpdateDocument");
+
     if(hooker_)
     {
         if(!hooker_->HookUpdate(document, indexDocument, rType)) return false;
@@ -806,7 +818,7 @@ bool IndexTaskService::updateDoc_(
         uint32_t oldId = indexDocument.getId();
         if (!documentManager_->removeDocument(oldId))
         {
-            LOG(WARNING) << "document " << oldId << " is already deleted";
+            //LOG(WARNING) << "document " << oldId << " is already deleted";
         }
         if (documentManager_->insertDocument(document) == false)
         {
@@ -846,7 +858,7 @@ bool IndexTaskService::deleteSCD_(ScdParser& parser)
         {
             string property;
             iter->convertString(property, bundleConfig_->encoding_ );
-            LOG(ERROR) << "Deleted document " << property << " does not exist, skip it";
+            //LOG(ERROR) << "Deleted document " << property << " does not exist, skip it";
         }
     }
     std::sort( docIdList.begin(), docIdList.end());
@@ -1061,6 +1073,8 @@ bool IndexTaskService::prepareDocument_(
     bool insert
 )
 {
+    CREATE_SCOPED_PROFILER ( preparedocument, "IndexTaskService", "IndexTaskService::prepareDocument_");
+
     sf1r::docid_t docId = 0;
     sf1r::docid_t oldId = 0;
     string fieldStr;
@@ -1120,7 +1134,7 @@ bool IndexTaskService::prepareDocument_(
                 rType = checkRtype_(doc, rTypeFieldValue);
                 if (rType && rTypeFieldValue.empty())
                 {
-                    LOG(WARNING) << "skip updating SCD DOC " << fieldValue << ", as none of its property values is changed";
+                    //LOG(WARNING) << "skip updating SCD DOC " << fieldValue << ", as none of its property values is changed";
                     return false;
                 }
 
@@ -1130,7 +1144,7 @@ bool IndexTaskService::prepareDocument_(
 
             if(insert && !createInsertDocId_(propertyValueU, docId))
             {
-                LOG(WARNING) << "failed to create id for SCD DOC " << fieldValue;
+                //LOG(WARNING) << "failed to create id for SCD DOC " << fieldValue;
                 return false;
             }
 
@@ -1444,20 +1458,20 @@ bool IndexTaskService::createInsertDocId_(
             docid_t oldId = 0;
             if (! idManager_->updateDocIdByDocName(scdDocId, oldId, docId))
             {
-                LOG(WARNING) << "doc id " << docId << " should have been converted";
+                //LOG(WARNING) << "doc id " << docId << " should have been converted";
                 return false;
             }
         }
         else
         {
-            LOG(WARNING) << "duplicated doc id " << docId << ", it has already been inserted before";
+            //LOG(WARNING) << "duplicated doc id " << docId << ", it has already been inserted before";
             return false;
         }
     }
 
     if (docId <= documentManager_->getMaxDocId())
     {
-        LOG(WARNING) << "skip insert doc id " << docId << ", it is less than max DocId";
+        //LOG(WARNING) << "skip insert doc id " << docId << ", it is less than max DocId";
         return false;
     }
 

@@ -138,7 +138,7 @@ IF (CMAKE_COMPILER_IS_GNUCXX)
     "Sf1 Debug build type"
 
     SF1TIMECHECK
-    "-O3 -DDEBUG -g -Wno-deprecated -DSF1_TIME_CHECK"
+    "-O3 -DNDEBUG -g -Wno-deprecated -DSF1_TIME_CHECK"
     "Sf1 time check build type"
 
     SF1PCHECK
