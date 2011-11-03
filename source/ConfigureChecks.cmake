@@ -39,6 +39,7 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   beansdb
   msgpack
   zookeeper
+  udt
   )
 
 FIND_PACKAGE(ilplib REQUIRED)

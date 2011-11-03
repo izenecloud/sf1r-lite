@@ -8,6 +8,9 @@
 #include <iostream>
 
 #include <node-manager/DistributedSynchroFactory.h>
+#include <node-manager/ScdSharding.h>
+#include <node-manager/ShardingStrategy.h>
+#include <node-manager/ScdDispatcher.h>
 
 using namespace std;
 using namespace sf1r;
@@ -41,6 +44,8 @@ BOOST_AUTO_TEST_SUITE( t_zookeeper )
 
 BOOST_AUTO_TEST_CASE( node_manager_synchro )
 {
+    return;
+
     // set default config
     DistributedTopologyConfig dsTopologyConfig;
     dsTopologyConfig.clusterId_ = "zhongxia";
@@ -68,10 +73,32 @@ BOOST_AUTO_TEST_CASE( node_manager_synchro )
 
     spd->produce("/data/scd2", callback_on_consumed);
 
-    while (true)
-        sleep(1);
+    //while (true)
+        sleep(60);
     }
 }
+
+BOOST_AUTO_TEST_CASE( scd_dispatcher )
+{
+    // create scd sharding object
+    ShardingConfig cfg;
+    cfg.setShardNum(3);
+    cfg.addShardKey("URL");
+    cfg.addShardKey("Title");
+    ShardingStrategy* shardingStrategy = new HashShardingStrategy;
+    ScdSharding scdSharding(cfg, shardingStrategy);
+
+    // create scd dispatcher
+    DispatchAction* dispatchAction = new DispatchActionToFile;
+    ScdDispatcher scdDispatcher(&scdSharding, dispatchAction);
+
+    std::string dir = "/home/zhongxia/codebase/sf1r-engine/bin/collection/chinese-wiki/scd/index";
+    scdDispatcher.dispatch(dir, 10);
+
+    delete shardingStrategy;
+    delete dispatchAction;
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
 
