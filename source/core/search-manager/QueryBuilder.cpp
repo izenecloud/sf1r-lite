@@ -67,7 +67,7 @@ bool QueryBuilder::prepare_filter(
 {
     boost::shared_ptr<EWAHBoolArray<uword32> > pDocIdSet;
     boost::shared_ptr<BitVector> pBitVector;
-    unsigned int bitsNum = pIndexReader_->numDocs() + 1;
+    unsigned int bitsNum = pIndexReader_->maxDoc() + 1;
     unsigned int wordsNum = bitsNum/(sizeof(uword32) * 8) + (bitsNum % (sizeof(uword32) * 8) == 0 ? 0 : 1);
 
     if (filtingList.size() == 1)

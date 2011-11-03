@@ -16,7 +16,6 @@ namespace SFLogMessage
     void initErrMsgsInKor();
     void initErrMsgsInChi();
 
-
     bool initLogMsg(const std::string& language)
     {
         std::string lang("LANG");
@@ -36,13 +35,11 @@ namespace SFLogMessage
             bErrMsgInit = true;
         }
 
-
         if (bErrMsgInit == false)
             return false;
         return true;
 
     }
-
 
     char* get_env_(const char* envVarName)
     {
@@ -73,7 +70,6 @@ namespace SFLogMessage
             encodingStr = "UTF-8";
         logEncodingType_ = izenelib::util::UString::convertEncodingTypeFromStringToEnum(encodingStr.c_str());
     }
-
 
     std::string getLogMsg(int id)
     {
@@ -207,8 +203,6 @@ namespace SFLogMessage
         errMsgIdPair[30601]="Configuration file Parsing Error : %s";
         errMsgIdPair[30602]="BACache is refreshed.";
 
-
-
         // 3 MIAProcess
         // 3.1 MIAProcess.cpp
         errMsgIdPair[40101]="Failed to initialize MIA process";
@@ -224,7 +218,6 @@ namespace SFLogMessage
         // 3.2 MIAServiceHandler.cpp
         errMsgIdPair[40201]="Mining Collection Started";
         errMsgIdPair[40202]="Mining Collection Finished";
-
 
         // 4 DocumentManager
         // 4.1 DocumentManager.cpp
@@ -381,7 +374,6 @@ namespace SFLogMessage
         errMsgIdPair[140103]="Process Service Request From Client";
         errMsgIdPair[140104]="Process Service Result For Client";
 
-
         // 15 LicenseManager
         // 15.1 LicenseManager.cpp
         errMsgIdPair[150001]="Total Index Size reached to the MAXIMUM size of license : %ju - %ju";
@@ -402,6 +394,5 @@ namespace SFLogMessage
         errMsgIdPair[NO_ERR] = "No Error";
         errMsgIdPair[UNKNOWN]= "Unknown Error";
     }
-
 
 }

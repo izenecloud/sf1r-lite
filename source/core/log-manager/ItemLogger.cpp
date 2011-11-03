@@ -1,5 +1,5 @@
 #include "ItemLogger.h"
-#include "DbConnection.h"
+#include "RDbConnection.h"
 
 #include <sstream>
 #include <glog/logging.h>
@@ -27,7 +27,7 @@ const char* ItemLogger::TableName = "item_logs";
 
 void ItemLogger::createTable()
 {
-    DbConnection& dbConnection = DbConnection::instance();
+    RDbConnection& rdbConnection = RDbConnection::instance();
     std::ostringstream oss;
 
     oss << "create table if not exists " << TableName << "(";
@@ -41,7 +41,7 @@ void ItemLogger::createTable()
     }
     oss << ");";
 
-    dbConnection.exec(oss.str(), true);
+    rdbConnection.exec(oss.str(), true);
 }
 
 bool ItemLogger::insertItem(
@@ -66,7 +66,7 @@ bool ItemLogger::insertItem(
         << quantity << ", "
         << isRec << ");";
 
-    if (!DbConnection::instance().exec(oss.str()))
+    if (!RDbConnection::instance().exec(oss.str()))
         return false;
 
     return true;

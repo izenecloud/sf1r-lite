@@ -1,7 +1,7 @@
-#ifndef _DB_RECORD_BASE_H_
-#define _DB_RECORD_BASE_H_
+#ifndef _RDB_RECORD_BASE_H_
+#define _RDB_RECORD_BASE_H_
 
-#include "DbConnection.h"
+#include "RDbConnection.h"
 
 #include <iostream>
 #include <sstream>
@@ -12,32 +12,24 @@
 
 namespace sf1r {
 
-class DbRecordBase
+class RDbRecordBase
 {
 
 public:
 
-    DbRecordBase() : exist_(false) {}
+    RDbRecordBase() : exist_(false) {}
 
-    virtual ~DbRecordBase();
+    virtual ~RDbRecordBase() {}
 
     static bool find_by_sql(const std::string & sql,
         std::list<std::map<std::string, std::string> > & records)
     {
-        if ( ! DbConnection::instance().exec(sql, records) )
-        {
-            return false;
-        }
-        return true;
+        return RDbConnection::instance().exec(sql, records);
     }
 
     static bool delete_by_sql(const std::string & sql)
     {
-        if( ! DbConnection::instance().exec(sql) )
-        {
-            return false;
-        }
-        return true;
+        return RDbConnection::instance().exec(sql);
     }
 
 
@@ -54,74 +46,74 @@ protected:
 
 };
 
-template <typename DbRecordType >
+template <typename RDbRecordType>
 void createTable()
 {
     std::stringstream sql;
 
-    sql << "create table IF NOT EXISTS " << DbRecordType::TableName << "(";
-    for ( int i=0 ; i<DbRecordType::EoC; i++ )
+    sql << "create table IF NOT EXISTS " << RDbRecordType::TableName << "(";
+    for ( int i=0 ; i<RDbRecordType::EoC; i++ )
     {
-        sql << DbRecordType::ColumnName[i] << " " << DbRecordType::ColumnMeta[i];
-        if ( i != DbRecordType::EoC-1 )
+        sql << RDbRecordType::ColumnName[i] << " " << RDbRecordType::ColumnMeta[i];
+        if ( i != RDbRecordType::EoC-1 )
         {
             sql << ", ";
         }
     }
     sql << ");";
 
-    DbConnection::instance().exec(sql.str(), true);
+    RDbConnection::instance().exec(sql.str(), true);
 }
 
-template <typename DbRecordType >
-void save( DbRecordType & record )
+template <typename RDbRecordType>
+void save( RDbRecordType & record )
 {
     std::map<std::string, std::string> rawdata;
     record.save(rawdata);
 
     std::stringstream sql;
-    sql << "insert into " << DbRecordType::TableName << " values(";
-    for ( int i=0 ; i<DbRecordType::EoC; i++ )
+    sql << "insert into " << RDbRecordType::TableName << " values(";
+    for ( int i=0 ; i<RDbRecordType::EoC; i++ )
     {
-        if( rawdata.find(DbRecordType::ColumnName[i]) == rawdata.end() ) {
+        if( rawdata.find(RDbRecordType::ColumnName[i]) == rawdata.end() ) {
             sql << "NULL";
         } else {
-            sql << "\"" << rawdata[DbRecordType::ColumnName[i]] << "\"";
+            sql << "\"" << rawdata[RDbRecordType::ColumnName[i]] << "\"";
         }
-        if ( i != DbRecordType::EoC-1 )
+        if ( i != RDbRecordType::EoC-1 )
         {
             sql << ", ";
         }
     }
     sql << ");";
-    DbConnection::instance().exec(sql.str());
+    RDbConnection::instance().exec(sql.str());
 }
 
-template <typename DbRecordType >
+template <typename RDbRecordType>
 static bool find(const std::string & select,
                  const std::string & conditions,
                  const std::string & group,
                  const std::string & order,
                  const std::string & limit,
-                 std::vector<DbRecordType> & records)
+                 std::vector<RDbRecordType> & records)
 {
     std::stringstream sql;
 
     sql << "select " << (select.size() ? select : "*");
-    sql << " from " << DbRecordType::TableName ;
-    if ( conditions.size() )
+    sql << " from " << RDbRecordType::TableName ;
+    if ( !conditions.empty() )
     {
         sql << " where " << conditions;
     }
-    if ( group.size() )
+    if ( !group.empty() )
     {
         sql << " group by " << group;
     }
-    if ( order.size() )
+    if ( !order.empty() )
     {
         sql << " order by " << order;
     }
-    if ( limit.size() )
+    if ( !limit.empty() )
     {
         sql << " limit " << limit;
     }
@@ -129,11 +121,11 @@ static bool find(const std::string & select,
     std::cerr << sql.str() << std::endl;
 
     std::list< std::map<std::string, std::string> >sqlResults;
-    if( DbRecordType::find_by_sql(sql.str(), sqlResults) == true ) {
+    if( RDbRecordType::find_by_sql(sql.str(), sqlResults) ) {
         for (std::list< std::map<std::string, std::string> >::iterator it = sqlResults.begin();
             it!=sqlResults.end(); it++)
         {
-            DbRecordType record;
+            RDbRecordType record;
             record.load(*it);
             records.push_back(record);
         }
@@ -143,13 +135,12 @@ static bool find(const std::string & select,
     return false;
 }
 
-template <typename DbRecordType >
+template <typename RDbRecordType>
 static bool del_record(const std::string & conditions)
 {
     std::stringstream sql;
 
-    sql << "delete ";
-    sql << " from " << DbRecordType::TableName ;
+    sql << "delete from " << RDbRecordType::TableName ;
 
     if(!conditions.empty())
     {
@@ -158,15 +149,12 @@ static bool del_record(const std::string & conditions)
     sql << ";";
     std::cerr<< sql.str() << std::endl;
 
-    if( DbRecordType::delete_by_sql(sql.str()) == true && DbConnection::instance().exec("vacuum") == true)
-        return true;
-
-    return false;
+    return RDbRecordType::delete_by_sql(sql.str()) && RDbConnection::instance().exec("vacuum");
 }
 
 
 
-#define DEFINE_DB_RECORD_COMMON_ROUTINES(ClassName) \
+#define DEFINE_RDB_RECORD_COMMON_ROUTINES(ClassName) \
     static void createTable() { \
         ::sf1r::createTable<ClassName>(); \
     } \
@@ -192,4 +180,3 @@ static bool del_record(const std::string & conditions)
 }
 
 #endif
-

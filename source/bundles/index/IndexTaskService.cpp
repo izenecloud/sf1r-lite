@@ -849,6 +849,7 @@ bool IndexTaskService::deleteSCD_(ScdParser& parser)
             LOG(ERROR) << "Deleted document " << property << " does not exist, skip it";
         }
     }
+    std::sort( docIdList.begin(), docIdList.end());
 
     //process delete document in index manager
     for (std::vector<sf1r::docid_t>::iterator iter = docIdList.begin(); iter

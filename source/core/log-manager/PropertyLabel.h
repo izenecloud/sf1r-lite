@@ -1,11 +1,11 @@
 #ifndef _PROPERTY_LABEL_H_
 #define _PROPERTY_LABEL_H_
 
-#include "DbRecordBase.h"
+#include "RDbRecordBase.h"
 
 namespace sf1r {
 
-class PropertyLabel : public DbRecordBase {
+class PropertyLabel : public RDbRecordBase {
 
 public:
 
@@ -17,54 +17,60 @@ public:
 
     static const char* TableName;
 
-    DEFINE_DB_RECORD_COMMON_ROUTINES(PropertyLabel)
+    DEFINE_RDB_RECORD_COMMON_ROUTINES(PropertyLabel)
 
-    PropertyLabel() : DbRecordBase(),
+    PropertyLabel() : RDbRecordBase(),
         collectionPresent_(false),
         labelNamePresent_(false),
         hitDocsNumPresent_(false){}
 
     ~PropertyLabel(){}
 
-    inline const std::string & getCollection()
+    inline const std::string & getCollection() const
     {
         return collection_;
     }
 
-    inline void setCollection( const std::string & collection ) {
+    inline void setCollection( const std::string & collection )
+    {
         collection_ = collection;
         collectionPresent_ = true;
     }
 
-    inline bool hasCollection() {
+    inline bool hasCollection() const
+    {
         return collectionPresent_;
     }
 
-    inline const std::string & getLabelName()
+    inline const std::string & getLabelName() const
     {
         return labelName_;
     }
 
-    inline void setLabelName( const std::string & labelName ) {
+    inline void setLabelName( const std::string & labelName )
+    {
         labelName_ = labelName;
         labelNamePresent_ = true;
     }
 
-    inline bool hasLabelName() {
+    inline bool hasLabelName() const
+    {
         return labelNamePresent_;
     }
 
-    inline const size_t getHitDocsNum()
+    inline const size_t getHitDocsNum() const
     {
         return hitDocsNum_;
     }
 
-    inline void setHitDocsNum( const size_t hitDocsNum ) {
+    inline void setHitDocsNum( const size_t hitDocsNum )
+    {
         hitDocsNum_ = hitDocsNum;
         hitDocsNumPresent_ = true;
     }
 
-    inline bool hasHitDocsNum() {
+    inline bool hasHitDocsNum() const
+    {
         return hitDocsNumPresent_;
     }
 

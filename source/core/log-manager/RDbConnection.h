@@ -1,28 +1,24 @@
-#ifndef _DB_CONNECTION_H_
-#define _DB_CONNECTION_H_
+#ifndef _RDB_CONNECTION_H_
+#define _RDB_CONNECTION_H_
 
-#include <iostream>
 #include <string>
 #include <map>
 #include <list>
-
-#include <sqlite3.h>
 
 #include <util/ThreadModel.h>
 
 #include "LogManagerSingleton.h"
 
-
 namespace sf1r {
 
-class DbConnectionBase;
+class RDbConnectionBase;
 
-class DbConnection : public LogManagerSingleton<DbConnection>
+class RDbConnection : public LogManagerSingleton<RDbConnection>
 {
 public:
-    DbConnection();
+    RDbConnection();
 
-    ~DbConnection();
+    ~RDbConnection();
 
     bool init(const std::string& str);
 
@@ -32,12 +28,12 @@ public:
     /// @sql SQL command
     /// @return no result
     /// @throw exception if underlying database reports error
-    bool exec(const std::string & sql, bool omitError=false);
+    bool exec(const std::string & sql, bool omitError = false);
 
     /// @sql SQL command
     /// @results execution results of executing the SQL command
     /// @throw exception if underlying database reports error
-    bool exec(const std::string & sql, std::list< std::map<std::string, std::string> > & results, bool omitError=false);
+    bool exec(const std::string & sql, std::list< std::map<std::string, std::string> > & results, bool omitError = false);
 
     enum SQL_KEYWORD {
         ATTR_AUTO_INCREMENT, // the attribute to automatically generate unique id for new row
@@ -48,7 +44,7 @@ public:
     const std::string& getSqlKeyword(SQL_KEYWORD type) const;
 
 private:
-    DbConnectionBase* impl_;
+    RDbConnectionBase* impl_;
 };
 
 }

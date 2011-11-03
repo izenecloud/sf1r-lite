@@ -8,12 +8,12 @@
 #ifndef _PRODUCT_INFO_H_
 #define _PRODUCT_INFO_H_
 
-#include "DbRecordBase.h"
+#include "RDbRecordBase.h"
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace sf1r {
 
-class ProductInfo : public DbRecordBase {
+class ProductInfo : public RDbRecordBase {
 
 public:
 
@@ -25,9 +25,9 @@ public:
 
     static const char* TableName;
 
-    DEFINE_DB_RECORD_COMMON_ROUTINES(ProductInfo)
+    DEFINE_RDB_RECORD_COMMON_ROUTINES(ProductInfo)
 
-    ProductInfo() : DbRecordBase(),
+    ProductInfo() : RDbRecordBase(),
         sourcePresent_(false),
         collectionPresent_(false),
         numPresent_(false),
@@ -35,35 +35,39 @@ public:
 
     ~ProductInfo(){}
 
-    inline const std::string & getSource()
+    inline const std::string & getSource() const
     {
         return source_;
     }
 
-    inline void setSource( const std::string & source ) {
+    inline void setSource( const std::string & source )
+    {
         source_ = source;
         sourcePresent_ = true;
     }
 
-    inline bool hasSource() {
+    inline bool hasSource() const
+    {
         return sourcePresent_;
     }
 
-    inline const std::string & getCollection()
+    inline const std::string & getCollection() const
     {
         return collection_;
     }
 
-    inline void setCollection( const std::string & collection ) {
+    inline void setCollection( const std::string & collection )
+    {
         collection_ = collection;
         collectionPresent_ = true;
     }
 
-    inline bool hasCollection() {
+    inline bool hasCollection() const
+    {
         return collectionPresent_;
     }
 
-    inline const uint32_t getNum()
+    inline const uint32_t getNum() const
     {
         return num_;
     }
@@ -74,12 +78,12 @@ public:
         numPresent_ = true;
     }
 
-    inline bool hasNum()
+    inline bool hasNum() const
     {
         return numPresent_;
     }
 
-    inline const std::string& getFlag()
+    inline const std::string& getFlag() const
     {
         return flag_;
     }
@@ -90,21 +94,24 @@ public:
         flagPresent_ = true;
     }
 
-    inline bool hasFlag()
+    inline bool hasFlag() const
     {
         return flagPresent_;
     }
 
-    inline void setTimeStamp( const boost::posix_time::ptime & timeStamp ) {
+    inline const boost::posix_time::ptime & getTimeStamp() const
+    {
+        return timeStamp_;
+    }
+
+    inline void setTimeStamp( const boost::posix_time::ptime & timeStamp )
+    {
         timeStamp_ = timeStamp;
         timeStampPresent_ = true;
     }
 
-    inline const boost::posix_time::ptime & getTimeStamp() {
-        return timeStamp_;
-    }
-
-    inline bool hasTimeStamp() {
+    inline bool hasTimeStamp() const
+    {
         return timeStampPresent_;
     }
 

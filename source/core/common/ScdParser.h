@@ -43,7 +43,7 @@ public:
     static unsigned checkSCDDate( const string& file);
     static unsigned checkSCDTime( const string& file);
     static SCD_TYPE checkSCDType( const string & file );
-    static bool compareSCD (const string & file1, const string & file2);
+    static bool compareSCD(const string & file1, const string & file2);
 
 
     /// @brief Release allocated memory and make it as initial state.

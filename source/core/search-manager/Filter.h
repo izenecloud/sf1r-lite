@@ -24,15 +24,14 @@ namespace sf1r{
 class Filter
 {
 public:
-    Filter(boost::shared_ptr<EWAHBoolArray<uword32> > docIdSet) : docIdSet_(docIdSet){
+    Filter(boost::shared_ptr<EWAHBoolArray<uword32> > docIdSet){
         uncompressedIDSet_.reset(new BoolArray<uword32>());
-        (*uncompressedIDSet_) = docIdSet_->toBoolArray();
+        docIdSet->toBoolArray(*uncompressedIDSet_);
     }
     virtual ~Filter(){}
 public:
     bool test(docid_t docId){ return uncompressedIDSet_->get(docId); }
 private:
-    boost::shared_ptr<EWAHBoolArray<uword32> > docIdSet_;
     boost::shared_ptr<BoolArray<uword32> > uncompressedIDSet_;
 };
 

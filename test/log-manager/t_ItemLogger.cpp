@@ -6,7 +6,7 @@
 ///
 
 #include <log-manager/ItemLogger.h>
-#include <log-manager/DbConnection.h>
+#include <log-manager/RDbConnection.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
@@ -73,7 +73,7 @@ struct ItemLoggerTestFixture
     string dbPath_;
     string mySqlDBName_;
 
-    DbConnection& dbConnection_;
+    RDbConnection& rdbConnection_;
     ItemLogger& itemLogger_;
 
     ItemLoggerColumn columns_;
@@ -86,7 +86,7 @@ struct ItemLoggerTestFixture
     RecordList recordList_;
 
     ItemLoggerTestFixture()
-        : dbConnection_(DbConnection::instance())
+        : rdbConnection_(RDbConnection::instance())
         , itemLogger_(ItemLogger::instance())
         , rowNum_(0)
     {
@@ -103,10 +103,10 @@ struct ItemLoggerTestFixture
         {
             stringstream sql;
             sql << "drop database " << mySqlDBName_ << ";";
-            BOOST_CHECK(dbConnection_.exec(sql.str()));
+            BOOST_CHECK(rdbConnection_.exec(sql.str()));
         }
 
-        dbConnection_.close();
+        rdbConnection_.close();
     }
 
     void initSqlite()
@@ -130,15 +130,15 @@ struct ItemLoggerTestFixture
     void initDbConnection()
     {
         cout << "dbPath: " << dbPath_ << endl;
-        BOOST_CHECK(dbConnection_.init(dbPath_));
+        BOOST_CHECK(rdbConnection_.init(dbPath_));
 
         ItemLogger::createTable();
     }
 
     void resetDbConnection()
     {
-        dbConnection_.close();
-        BOOST_CHECK(dbConnection_.init(dbPath_));
+        rdbConnection_.close();
+        BOOST_CHECK(rdbConnection_.init(dbPath_));
     }
 
     void run()
@@ -174,7 +174,7 @@ struct ItemLoggerTestFixture
         sql << "select * from " << ItemLogger::TableName << ";";
 
         RowList sqlResult;
-        BOOST_CHECK(dbConnection_.exec(sql.str(), sqlResult));
+        BOOST_CHECK(rdbConnection_.exec(sql.str(), sqlResult));
 
         BOOST_TEST_MESSAGE(print(sqlResult));
         BOOST_CHECK_EQUAL(sqlResult.size(), recordList_.size());
