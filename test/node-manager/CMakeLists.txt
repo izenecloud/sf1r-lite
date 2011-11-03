@@ -26,6 +26,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
       ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
       
       sf1r_node_manager
+      sf1r_common
     
       ${izenelib_LIBRARIES}
       
