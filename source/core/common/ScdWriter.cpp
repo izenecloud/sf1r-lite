@@ -1,6 +1,7 @@
 #include "ScdWriter.h"
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/thread/thread.hpp>
 using namespace sf1r;
 
 ScdWriter::ScdWriter(const std::string& dir, int op)
@@ -15,6 +16,8 @@ ScdWriter::~ScdWriter()
 
 std::string ScdWriter::GenSCDFileName( int op)
 {
+    const static int wait_ms = 100;
+    boost::this_thread::sleep( boost::posix_time::milliseconds(wait_ms) );
     //B-00-201109081700-11111-I-C.SCD
     boost::posix_time::ptime now(boost::posix_time::microsec_clock::local_time());
     //20020131T100001,123456789

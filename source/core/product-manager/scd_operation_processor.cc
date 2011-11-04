@@ -34,6 +34,18 @@ void ScdOperationProcessor::Append(int op, const PMDocumentType& doc)
     last_op_ = op;
 }
 
+void ScdOperationProcessor::Clear()
+{
+    if(writer_!=NULL)
+    {
+        writer_->Close();
+        delete writer_;
+        writer_ = NULL;
+    }
+    last_op_ = 0;
+    ClearScds_();
+}
+
 bool ScdOperationProcessor::Finish()
 {
     if(writer_!=NULL)
@@ -59,18 +71,23 @@ bool ScdOperationProcessor::Finish()
     return false;
 }
 
+void ScdOperationProcessor::ClearScds_()
+{
+    namespace bfs = boost::filesystem;
+    static const bfs::directory_iterator kItrEnd;
+    
+    for (bfs::directory_iterator itr(dir_); itr != kItrEnd; ++itr)
+    {
+        bfs::remove_all(itr->path());
+    }
+}
+
 void ScdOperationProcessor::AfterProcess_(bool is_succ)
 {
     if(is_succ)
     {
         std::cout<<"Scd transmission and processed successfully!"<<std::endl;
-        namespace bfs = boost::filesystem;
-        static const bfs::directory_iterator kItrEnd;
-        
-        for (bfs::directory_iterator itr(dir_); itr != kItrEnd; ++itr)
-        {
-            bfs::remove_all(itr->path());
-        }
+        ClearScds_();
     }
     else
     {

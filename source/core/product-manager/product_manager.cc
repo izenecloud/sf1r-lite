@@ -2,18 +2,38 @@
 #include "product_data_source.h"
 #include "operation_processor.h"
 #include "uuid_generator.h"
+#include "product_backup.h"
 #include <boost/unordered_set.hpp>
 
 using namespace sf1r;
 
 ProductManager::ProductManager(ProductDataSource* data_source, OperationProcessor* op_processor, const PMConfig& config)
-:data_source_(data_source), op_processor_(op_processor), uuid_gen_(new UuidGenerator()), config_(config), inhook_(false)
+:data_source_(data_source), op_processor_(op_processor), uuid_gen_(new UuidGenerator()), backup_(NULL), config_(config), inhook_(false)
 {
+    if(config_.backup_path!="")
+    {
+        backup_ = new ProductBackup(config_.backup_path);
+    }
 }
 
 ProductManager::~ProductManager()
 {
     delete uuid_gen_;
+}
+
+bool ProductManager::Recover()
+{
+    if(backup_==NULL)
+    {
+        error_ = "Backup not initialzed.";
+        return false;
+    }
+    if(!backup_->Recover(this))
+    {
+        error_ = "Backup recover failed.";
+        return false;
+    }
+    return true;
 }
 
 
@@ -151,7 +171,105 @@ bool ProductManager::GenOperations()
     */
 }
 
-bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib::util::UString& gen_uuid)
+
+bool ProductManager::UpdateADoc(const Document& doc, bool backup)
+{
+    if(!UpdateADoc_(doc))
+    {
+        error_ = "Update A Doc failed";
+        return false;
+    }
+    if(!GenOperations())
+    {
+        return false;
+    }
+    if(backup && backup_)
+    {
+        backup_->AddProductUpdateItem(doc);
+    }
+    return true;
+}
+
+bool ProductManager::UpdateADoc_(const Document& doc)
+{
+    op_processor_->Append(2, doc);
+    return true;
+}
+
+
+
+bool ProductManager::AddGroupWithInfo(const std::vector<izenelib::util::UString>& docid_list, const Document& doc, bool backup)
+{
+    std::vector<uint32_t> idocid_list;
+    if(!data_source_->GetInternalDocidList(docid_list, idocid_list))
+    {
+        error_ = data_source_->GetLastError();
+        return false;
+    }
+    return AddGroupWithInfo(idocid_list, doc, backup);
+}
+
+void ProductManager::BackupPCItem_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, int type)
+{
+    std::vector<izenelib::util::UString> docname_list;
+    for(uint32_t i=0;i<docid_list.size();i++)
+    {
+        PMDocumentType doc;
+        if(data_source_->GetDocument(docid_list[i], doc))
+        {
+            docname_list.push_back(doc.property(config_.docid_property_name).get<izenelib::util::UString>());
+        }
+    }
+    if(!backup_->AddPriceComparisonItem(uuid, docname_list, type))
+    {
+        std::cout<<"backup failed"<<std::endl;
+    }
+}
+
+bool ProductManager::AddGroupWithInfo(const std::vector<uint32_t>& docid_list, const Document& doc, bool backup)
+{
+    if(inhook_)
+    {
+        error_ = "In Hook locks, collection was indexing, plz wait.";
+        return false;
+    }
+    boost::mutex::scoped_lock lock(human_mutex_);
+    std::cout<<"ProductManager::AddGroupWithInfo"<<std::endl;
+    izenelib::util::UString uuid = doc.property(config_.docid_property_name).get<izenelib::util::UString>();
+    if(uuid.length()==0)
+    {
+        error_ = "DOCID(uuid) not set";
+        return false;
+    }
+    std::vector<uint32_t> uuid_docid_list;
+    data_source_->GetDocIdList(uuid, uuid_docid_list, 0);
+    if(!uuid_docid_list.empty())
+    {
+        std::string suuid;
+        uuid.convertString(suuid, izenelib::util::UString::UTF_8);
+        error_ = suuid+" already exists";
+        return false;
+    }
+    //call updateA
+    
+    if(!AppendToGroup_(uuid, uuid_docid_list, docid_list, doc))
+    {
+        return false;
+    }
+    
+    if(!GenOperations())
+    {
+        return false;
+    }
+    if(backup && backup_)
+    {
+        BackupPCItem_(uuid, docid_list, 1);
+        backup_->AddProductUpdateItem(doc);
+    }
+    return true;
+}
+
+bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib::util::UString& gen_uuid, bool backup)
 {
     if(inhook_)
     {
@@ -177,38 +295,46 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib:
         error_ = "Can not get uuid in document "+boost::lexical_cast<std::string>(docid_list[0]);
         return false;
     }
-    std::vector<uint32_t> same_docid_list;
-    data_source_->GetDocIdList(first_uuid, same_docid_list, docid_list[0]);
-    if(!same_docid_list.empty())
+    std::vector<uint32_t> uuid_docid_list;
+    data_source_->GetDocIdList(first_uuid, uuid_docid_list, 0);
+    if(uuid_docid_list.empty())
+    {
+        std::string suuid;
+        first_uuid.convertString(suuid, izenelib::util::UString::UTF_8);
+        error_ = suuid+" not exists";
+        return false;
+    }
+    if(uuid_docid_list.size()>1 || uuid_docid_list[0]!= docid_list[0] )
     {
         error_ = "Document id "+boost::lexical_cast<std::string>(docid_list[0])+" belongs to other group";
         return false;
     }
+
     std::vector<uint32_t> remain(docid_list.begin()+1, docid_list.end());
-    if(!AppendToGroup_(first_uuid, remain))
+    if(!AppendToGroup_(first_uuid, uuid_docid_list, remain, PMDocumentType()))
     {
         return false;
+    }
+    if(!GenOperations())
+    {
+        return false;
+    }
+    if(backup && backup_)
+    {
+        BackupPCItem_(first_uuid, docid_list, 1);
     }
     gen_uuid = first_uuid;
     return true;
 }
 
-bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list)
+bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& uuid_docid_list, const std::vector<uint32_t>& docid_list, const PMDocumentType& uuid_doc)
 {
     if(docid_list.empty()) 
     {
         error_ = "Docid list size must larger than 0";
         return false;
     }
-    std::vector<uint32_t> uuid_docid_list;
-    data_source_->GetDocIdList(uuid, uuid_docid_list, 0);
-    if(uuid_docid_list.empty())
-    {
-        std::string suuid;
-        uuid.convertString(suuid, izenelib::util::UString::UTF_8);
-        error_ = suuid+" not exists";
-        return false;
-    }
+
     std::vector<PMDocumentType> doc_list(docid_list.size());
     for(uint32_t i=0;i<docid_list.size();i++)
     {
@@ -248,10 +374,7 @@ bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const s
 //     std::cout<<"validation finished here."<<std::endl;
     //validation finished here.
     
-    PMDocumentType output;
-    output.property(config_.docid_property_name) = uuid;
-    SetItemCount_(output, all_docid_list.size());
-    output.property(config_.price_property_name) = price.ToUString();
+    
     
     //commit firstly, then update DM and IM
     for(uint32_t i=0;i<uuid_list.size();i++)
@@ -260,10 +383,33 @@ bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const s
         del_doc.property(config_.docid_property_name) = uuid_list[i];
         op_processor_->Append(3, del_doc);
     }
-    op_processor_->Append(2, output);
-    if(!GenOperations())
+    if(uuid_docid_list.empty())
     {
-        return false;
+        //this uuid is a new, use the first doc as base;
+        PMDocumentType output(doc_list[0]);
+        PMDocumentType::property_const_iterator uit = uuid_doc.propertyBegin();
+        while( uit != uuid_doc.propertyEnd())
+        {
+            output.property(uit->first) = uit->second;
+            ++uit;
+        }
+        output.property(config_.docid_property_name) = uuid;
+        SetItemCount_(output, all_docid_list.size());
+        output.property(config_.price_property_name) = price.ToUString();
+        output.eraseProperty(config_.uuid_property_name);
+        op_processor_->Append(1, output);
+    }
+    else
+    {
+        PMDocumentType output;
+        if(uuid_doc.hasProperty(config_.docid_property_name))
+        {
+            output = uuid_doc;
+        }
+        output.property(config_.docid_property_name) = uuid;
+        SetItemCount_(output, all_docid_list.size());
+        output.property(config_.price_property_name) = price.ToUString();
+        op_processor_->Append(2, output);
     }
     
     //update DM and IM then
@@ -275,7 +421,7 @@ bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const s
     return true;
 }
 
-bool ProductManager::AppendToGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list)
+bool ProductManager::AppendToGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, bool backup)
 {
     if(inhook_)
     {
@@ -284,11 +430,31 @@ bool ProductManager::AppendToGroup(const izenelib::util::UString& uuid, const st
     }
     boost::mutex::scoped_lock lock(human_mutex_);
     std::cout<<"ProductManager::AppendToGroup"<<std::endl;
-    return AppendToGroup_(uuid, docid_list);
-    
+    std::vector<uint32_t> uuid_docid_list;
+    data_source_->GetDocIdList(uuid, uuid_docid_list, 0);
+    if(uuid_docid_list.empty())
+    {
+        std::string suuid;
+        uuid.convertString(suuid, izenelib::util::UString::UTF_8);
+        error_ = suuid+" not exists";
+        return false;
+    }
+    if(!AppendToGroup_(uuid, uuid_docid_list, docid_list, PMDocumentType()))
+    {
+        return false;
+    }
+    if(!GenOperations())
+    {
+        return false;
+    }
+    if(backup && backup_)
+    {
+        BackupPCItem_(uuid, docid_list, 1);
+    }
+    return true;
 }
     
-bool ProductManager::RemoveFromGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list)
+bool ProductManager::RemoveFromGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, bool backup)
 {
     if(inhook_)
     {
@@ -373,6 +539,10 @@ bool ProductManager::RemoveFromGroup(const izenelib::util::UString& uuid, const 
     if(!GenOperations())
     {
         return false;
+    }
+    if(backup && backup_)
+    {
+        BackupPCItem_(uuid, docid_list, 2);
     }
     //update DM and IM here
     for(uint32_t i=0;i<docid_list.size();i++)

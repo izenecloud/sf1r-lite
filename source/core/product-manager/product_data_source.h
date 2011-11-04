@@ -27,6 +27,23 @@ public:
     
     virtual bool SetUuid(izenelib::ir::indexmanager::IndexerDocument& doc, const izenelib::util::UString& uuid) {return false;}
     
+    virtual bool GetInternalDocidList(const std::vector<izenelib::util::UString>& sdocid_list, std::vector<uint32_t>& docid_list) {return false;}
+    
+   
+    const std::string& GetLastError()
+    {
+        return error_;
+    }
+    
+protected:
+    void SetError_(const std::string& error)
+    {
+        error_ = error;
+    }
+    
+private:
+    std::string error_;
+    
 };
 
 }

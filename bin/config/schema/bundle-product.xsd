@@ -13,6 +13,7 @@
                                 <xs:element ref="DOCIDProperty" minOccurs="1" maxOccurs="1" />
                                 <xs:element ref="UuidProperty" minOccurs="1" maxOccurs="1" />
                                 <xs:element ref="ItemCountProperty" minOccurs="1" maxOccurs="1" />
+                                <xs:element ref="Backup" minOccurs="0" maxOccurs="1" />
                             </xs:sequence>
                             <xs:attribute name="mode" use="required">
 	    		        <xs:simpleType>
@@ -37,5 +38,10 @@
         <xs:element name="DOCIDProperty" type="PropertyType" />
         <xs:element name="UuidProperty" type="PropertyType" />
         <xs:element name="ItemCountProperty" type="PropertyType" />
+        <xs:element name="Backup">
+             <xs:complexType>
+                  <xs:attribute name="path" type="xs:string" use="required" />
+             </xs:complexType>
+        </xs:element>
 
 </xs:schema>

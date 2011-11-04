@@ -27,6 +27,11 @@ public:
     
     bool Finish();
     
+    void Clear()
+    {
+        operations_.clear();
+    }
+    
     std::vector<std::pair<int, PMDocumentType> >& Data()
     {
         return operations_;

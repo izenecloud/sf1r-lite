@@ -20,14 +20,14 @@ class PMTestRunner
 {
 public:
     PMTestRunner()
+        : pm_config_()
+        , document_list_(new std::vector<PMDocumentType>())
+        , data_source_(new SimpleDataSource(pm_config_, document_list_))
+        , op_processor_(new SimpleOperationProcessor())
+        , pm_(new ProductManager(data_source_, op_processor_, pm_config_))
     {
-        pm_config_ = PMConfig::GetDefaultPMConfig();
-        document_list_ = new std::vector<PMDocumentType>();
-        data_source_ = new SimpleDataSource(pm_config_, document_list_);
-        op_processor_ = new SimpleOperationProcessor();
-        pm_ = new ProductManager(data_source_, op_processor_, pm_config_);
     }
-    
+
     ~PMTestRunner()
     {
         delete document_list_;
@@ -35,7 +35,7 @@ public:
         delete op_processor_;
         delete pm_;
     }
-    
+
     void Test(const std::vector<std::string>& input_list, const std::vector<std::string>& result_list)
     {
         std::vector<std::pair<int, PMDocumentType> >& source = op_processor_->Data();
@@ -100,7 +100,7 @@ public:
         Validation_(source_start, result_list);
 //         ShowAllDocs();
     }
-    
+
     void ShowAllDocs()
     {
         for(uint32_t i=0;i<document_list_->size();i++)
@@ -118,11 +118,11 @@ public:
             }
             std::cout<<std::endl;
         }
-        
+
     }
-    
+
 private:
-    
+
     void I_(PMDocumentType& doc)
     {
         uint32_t docid = doc.getId();
@@ -139,7 +139,7 @@ private:
         BOOST_CHECK( data_source_->AddDocument(docid, doc) );
 //         (*document_list_)[docid-1] = doc;
     }
-    
+
     void U_(PMDocumentType& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, bool r_type)
     {
         uint32_t docid = doc.getId();
@@ -161,9 +161,9 @@ private:
 //             (*document_list_)[docid-1] = doc;
 //             (*document_list_)[oldid-1] = PMDocumentType();
         }
-        
+
     }
-    
+
     void D_(uint32_t docid)
     {
         if(docid > document_list_->size()) return;
@@ -171,7 +171,7 @@ private:
         BOOST_CHECK( data_source_->DeleteDocument(docid) );
 //         (*document_list_)[docid-1] = PMDocumentType();
     }
-    
+
     void C_(const std::vector<uint32_t>& docid_list, bool succ)
     {
         izenelib::util::UString gen_uuid;
@@ -182,7 +182,7 @@ private:
         }
         BOOST_CHECK( bsucc==succ);
     }
-    
+
     void GetUuid_(uint32_t docid, izenelib::util::UString& uuid)
     {
         BOOST_CHECK( document_list_->size()>=docid);
@@ -191,7 +191,7 @@ private:
         BOOST_CHECK( it != doc.propertyEnd());
         uuid = it->second.get<izenelib::util::UString>();
     }
-    
+
     void A_(uint32_t uuid_docid, const std::vector<uint32_t>& docid_list, bool succ)
     {
         izenelib::util::UString uuid;
@@ -203,7 +203,7 @@ private:
         }
         BOOST_CHECK( bsucc==succ);
     }
-    
+
     void R_(uint32_t uuid_docid, const std::vector<uint32_t>& docid_list, bool succ)
     {
         izenelib::util::UString uuid;
@@ -215,13 +215,13 @@ private:
         }
         BOOST_CHECK( bsucc==succ);
     }
-    
+
     void Validation_(uint32_t start, const std::vector<std::string>& result_list)
     {
         std::vector<std::pair<int, PMDocumentType> >& all_source = op_processor_->Data();
         std::vector<std::pair<int, PMDocumentType> > source(all_source.begin()+start, all_source.end());
         BOOST_CHECK(source.size()==result_list.size());
-        
+
         for(uint32_t i=0;i<result_list.size();i++)
         {
             PMTestResultItem item;
@@ -229,7 +229,7 @@ private:
             ResultCheck_(item, source[i]);
         }
     }
-    
+
     void ResultCheck_(const PMTestResultItem& item, const std::pair<int, PMDocumentType>& result)
     {
         BOOST_CHECK( item.op == result.first );
@@ -274,14 +274,14 @@ private:
             BOOST_CHECK( uuid == source_uuid );
         }
     }
-    
+
 private:
     PMConfig pm_config_;
     std::vector<PMDocumentType>* document_list_;
     SimpleDataSource* data_source_;
     SimpleOperationProcessor* op_processor_;
     ProductManager* pm_;
-    
+
 };
 
 #endif

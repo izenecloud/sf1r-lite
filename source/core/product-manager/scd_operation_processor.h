@@ -28,7 +28,11 @@ public:
     
     bool Finish();
     
+    void Clear();
+    
 private:
+    
+    void ClearScds_();
     
     void AfterProcess_(bool is_succ);
     

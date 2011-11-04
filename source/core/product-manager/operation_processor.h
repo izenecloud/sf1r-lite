@@ -30,6 +30,10 @@ public:
         return false;
     }
     
+    virtual void Clear()
+    {
+    }
+    
     const std::string& GetLastError() const
     {
         return error_;
