@@ -10,13 +10,19 @@ namespace sf1r
     {
         recentKeywords.resize(0);
         if (limit==0 ) return;
-        std::string query_sql = "select DISTINCT query from user_queries where collection='"+collectionName+"'  order by TimeStamp desc limit "+boost::lexical_cast<std::string>(limit);
-        std::list<std::map<std::string, std::string> > query_records;
-        UserQuery::find_by_sql(query_sql, query_records);
-        std::list<std::map<std::string, std::string> >::iterator it = query_records.begin();
+        std::vector<UserQuery> query_records;
+        UserQuery::find(
+                "DISTINCT query",
+                "collection = '" + collectionName + "'",
+                "",
+                "TimeStamp desc",
+                boost::lexical_cast<std::string>(limit),
+                query_records);
+
+        std::vector<UserQuery>::const_iterator it = query_records.begin();
         for( ;it!=query_records.end();++it )
         {
-            izenelib::util::UString uquery( (*it)["query"], izenelib::util::UString::UTF_8);
+            izenelib::util::UString uquery(it->getQuery(), izenelib::util::UString::UTF_8);
             if( QueryUtility::isRestrictWord( uquery ) )
             {
                 continue;

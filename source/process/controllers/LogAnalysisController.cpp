@@ -24,7 +24,7 @@ namespace sf1r
 using driver::Keys;
 using namespace izenelib::driver;
 
-std::string LogAnalysisController::parseSelect(bool & isExistAggregateFunc)
+std::string LogAnalysisController::parseSelect(bool & existAggregateFunc)
 {
     vector<string> results;
     SelectArrayParser selectArrayParser;
@@ -36,8 +36,8 @@ std::string LogAnalysisController::parseSelect(bool & isExistAggregateFunc)
         {
             if (!(it->func()).empty())
             {
-                isExistAggregateFunc = true;
-                 results.push_back( str_concat(it->func(), "(", it->property(), ") as count") );
+                existAggregateFunc = true;
+                results.push_back( str_concat(it->func(), "(", it->property(), ") as count") );
             }
             else
             {
@@ -161,8 +161,8 @@ std::string LogAnalysisController::parseGroupBy()
  */
 void LogAnalysisController::system_events()
 {
-    bool isExistAggregateFunc = false;
-    string select = parseSelect(isExistAggregateFunc);
+    bool existAggregateFunc = false;
+    string select = parseSelect(existAggregateFunc);
     string conditions = parseConditions();
     string group = parseGroupBy();
     string order = parseOrder();
@@ -203,8 +203,8 @@ void LogAnalysisController::system_events()
  */
 void LogAnalysisController::user_queries()
 {
-    bool isExistAggregateFunc = false;
-    string select = parseSelect(isExistAggregateFunc);
+    bool existAggregateFunc = false;
+    string select = parseSelect(existAggregateFunc);
     string conditions = parseConditions();
     string group = parseGroupBy();
     string order = parseOrder();
@@ -212,13 +212,7 @@ void LogAnalysisController::user_queries()
     vector<UserQuery> results;
     std::list< std::map<std::string, std::string> > sqlResults;
 
-    if ( !UserQuery::find(select, conditions, group, order, limit, results) )
-    {
-        response().addError("[LogManager] Fail to process such a request");
-        return;
-    }
-
-    if (isExistAggregateFunc)
+    if (existAggregateFunc)
     {
         std::stringstream sql;
 
@@ -241,42 +235,72 @@ void LogAnalysisController::user_queries()
             sql << " limit " << limit;
         }
         sql << ";";
-        UserQuery::find_by_sql(sql.str(), sqlResults);
+
+        if ( !UserQuery::find_by_sql(sql.str(), sqlResults) )
+        {
+            response().addError("[LogManager] Fail to process such a request");
+            return;
+        }
+    }
+    else if ( !UserQuery::find(select, conditions, group, order, limit, results) )
+    {
+        response().addError("[LogManager] Fail to process such a request");
+        return;
     }
 
     Value& userQueries = response()[Keys::user_queries];
     userQueries.reset<Value::ArrayType>();
-    std::size_t i = 0;
-    if (isExistAggregateFunc)
+    if (existAggregateFunc)
     {
-        for (std::list< std::map<std::string, std::string> >::iterator it = sqlResults.begin();
-                it!=sqlResults.end() && i < results.size(); it++, i++)
+        for (std::list<std::map<std::string, std::string> >::const_iterator it = sqlResults.begin();
+                it!=sqlResults.end(); it++)
         {
             Value& userQuery = userQueries();
-            if (results[i].hasQuery()) userQuery[Keys::query] = results[i].getQuery();
-            if (results[i].hasCollection()) userQuery[Keys::collection] = results[i].getCollection();
-            if (results[i].hasHitDocsNum()) userQuery[Keys::hit_docs_num] = results[i].getHitDocsNum();
-            if (results[i].hasPageStart()) userQuery[Keys::page_start] = results[i].getPageStart();
-            if (results[i].hasPageCount()) userQuery[Keys::page_count] = results[i].getPageCount();
-            if (results[i].hasSessionId()) userQuery[Keys::session_id] = results[i].getSessionId();
-            if (results[i].hasDuration()) userQuery[Keys::duration] = to_simple_string(results[i].getDuration());
-            if (results[i].hasTimeStamp()) userQuery[Keys::timestamp] = to_simple_string(results[i].getTimeStamp());
-            userQuery[Keys::count] = (*it)["count"];
+            for (std::map<std::string, std::string>::const_iterator mit = it->begin();
+                    mit != it->end(); mit++ )
+            {
+                if (mit->first == UserQuery::ColumnName[UserQuery::Query])
+                    userQuery[Keys::query] = mit->second;
+                else if (mit->first == UserQuery::ColumnName[UserQuery::Collection])
+                    userQuery[Keys::collection] = mit->second;
+                else if (mit->first == UserQuery::ColumnName[UserQuery::HitDocsNum])
+                    userQuery[Keys::hit_docs_num] = mit->second;
+                else if (mit->first == UserQuery::ColumnName[UserQuery::PageStart])
+                    userQuery[Keys::page_start] = mit->second;
+                else if (mit->first == UserQuery::ColumnName[UserQuery::PageCount])
+                    userQuery[Keys::page_count] = mit->second;
+                else if (mit->first == UserQuery::ColumnName[UserQuery::SessionId])
+                    userQuery[Keys::session_id] = mit->second;
+                else if (mit->first == UserQuery::ColumnName[UserQuery::Duration])
+                    userQuery[Keys::duration] = mit->second;
+                else if (mit->first == UserQuery::ColumnName[UserQuery::TimeStamp])
+                    userQuery[Keys::timestamp] = mit->second;
+                else if (mit->first == "count")
+                    userQuery[Keys::count] = mit->second;
+            }
         }
     }
     else
     {
-        for (std::vector<UserQuery>::iterator it = results.begin(); it != results.end(); it++)
+        for (std::vector<UserQuery>::const_iterator it = results.begin(); it != results.end(); it++)
         {
             Value& userQuery = userQueries();
-            if (it->hasQuery()) userQuery[Keys::query] = it->getQuery();
-            if (it->hasCollection()) userQuery[Keys::collection] = it->getCollection();
-            if (it->hasHitDocsNum()) userQuery[Keys::hit_docs_num] = it->getHitDocsNum();
-            if (it->hasPageStart()) userQuery[Keys::page_start] = it->getPageStart();
-            if (it->hasPageCount()) userQuery[Keys::page_count] = it->getPageCount();
-            if (it->hasSessionId()) userQuery[Keys::session_id] = it->getSessionId();
-            if (it->hasDuration()) userQuery[Keys::duration] = to_simple_string(it->getDuration());
-            if (it->hasTimeStamp()) userQuery[Keys::timestamp] = to_simple_string(it->getTimeStamp());
+            if (it->hasQuery())
+                userQuery[Keys::query] = it->getQuery();
+            if (it->hasCollection())
+                userQuery[Keys::collection] = it->getCollection();
+            if (it->hasHitDocsNum())
+                userQuery[Keys::hit_docs_num] = it->getHitDocsNum();
+            if (it->hasPageStart())
+                userQuery[Keys::page_start] = it->getPageStart();
+            if (it->hasPageCount())
+                userQuery[Keys::page_count] = it->getPageCount();
+            if (it->hasSessionId())
+                userQuery[Keys::session_id] = it->getSessionId();
+            if (it->hasDuration())
+                userQuery[Keys::duration] = to_simple_string(it->getDuration());
+            if (it->hasTimeStamp())
+                userQuery[Keys::timestamp] = to_simple_string(it->getTimeStamp());
         }
     }
 }

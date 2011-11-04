@@ -47,7 +47,7 @@ public:
 
 private:
 
-    std::string parseSelect(bool & isExistAggregateFunc);
+    std::string parseSelect(bool & existAggregateFunc);
 
     std::string parseOrder();
 
