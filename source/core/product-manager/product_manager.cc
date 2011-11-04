@@ -252,13 +252,13 @@ bool ProductManager::AddGroupWithInfo(const std::vector<uint32_t>& docid_list, c
     }
     //call updateA
     
-    if(!AppendToGroup_(uuid, uuid_docid_list, docid_list))
+    if(!AppendToGroup_(uuid, uuid_docid_list, docid_list, doc))
     {
         return false;
     }
-    if(!UpdateADoc_(doc))
+    
+    if(!GenOperations())
     {
-        op_processor_->Clear();
         return false;
     }
     if(backup && backup_)
@@ -311,7 +311,11 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib:
     }
 
     std::vector<uint32_t> remain(docid_list.begin()+1, docid_list.end());
-    if(!AppendToGroup_(first_uuid, uuid_docid_list, remain))
+    if(!AppendToGroup_(first_uuid, uuid_docid_list, remain, PMDocumentType()))
+    {
+        return false;
+    }
+    if(!GenOperations())
     {
         return false;
     }
@@ -323,7 +327,7 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib:
     return true;
 }
 
-bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& uuid_docid_list, const std::vector<uint32_t>& docid_list)
+bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& uuid_docid_list, const std::vector<uint32_t>& docid_list, const PMDocumentType& uuid_doc)
 {
     if(docid_list.empty()) 
     {
@@ -370,10 +374,7 @@ bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const s
 //     std::cout<<"validation finished here."<<std::endl;
     //validation finished here.
     
-    PMDocumentType output;
-    output.property(config_.docid_property_name) = uuid;
-    SetItemCount_(output, all_docid_list.size());
-    output.property(config_.price_property_name) = price.ToUString();
+    
     
     //commit firstly, then update DM and IM
     for(uint32_t i=0;i<uuid_list.size();i++)
@@ -382,12 +383,34 @@ bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const s
         del_doc.property(config_.docid_property_name) = uuid_list[i];
         op_processor_->Append(3, del_doc);
     }
-    op_processor_->Append(2, output);
-    if(!GenOperations())
+    if(uuid_docid_list.empty())
     {
-        return false;
+        //this uuid is a new, use the first doc as base;
+        PMDocumentType output(doc_list[0]);
+        PMDocumentType::property_const_iterator uit = uuid_doc.propertyBegin();
+        while( uit != uuid_doc.propertyEnd())
+        {
+            output.property(uit->first) = uit->second;
+            ++uit;
+        }
+        output.property(config_.docid_property_name) = uuid;
+        SetItemCount_(output, all_docid_list.size());
+        output.property(config_.price_property_name) = price.ToUString();
+        output.eraseProperty(config_.uuid_property_name);
+        op_processor_->Append(1, output);
     }
-    
+    else
+    {
+        PMDocumentType output;
+        if(uuid_doc.hasProperty(config_.docid_property_name))
+        {
+            output = uuid_doc;
+        }
+        output.property(config_.docid_property_name) = uuid;
+        SetItemCount_(output, all_docid_list.size());
+        output.property(config_.price_property_name) = price.ToUString();
+        op_processor_->Append(2, output);
+    }
     
     //update DM and IM then
     if(!data_source_->UpdateUuid(docid_list, uuid))
@@ -416,7 +439,11 @@ bool ProductManager::AppendToGroup(const izenelib::util::UString& uuid, const st
         error_ = suuid+" not exists";
         return false;
     }
-    if(!AppendToGroup_(uuid, uuid_docid_list, docid_list))
+    if(!AppendToGroup_(uuid, uuid_docid_list, docid_list, PMDocumentType()))
+    {
+        return false;
+    }
+    if(!GenOperations())
     {
         return false;
     }

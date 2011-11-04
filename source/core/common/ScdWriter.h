@@ -58,6 +58,7 @@ private:
     UStringVisitor ustring_visitor_;
     
     PropertyNameFilterType pname_filter_;
+    
 };
 
 
