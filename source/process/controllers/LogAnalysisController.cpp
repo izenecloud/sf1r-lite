@@ -363,20 +363,17 @@ void LogAnalysisController::merchant_count()
     productInfo[Keys::count] = (*it)["count"];
 }
 
-
 /**
- * @brief Action @b product_update_info.
+ * @brief Action @b product_count.
  *
  * @section request
  *
- * - @b conditions (@c Array): Result filtering conditions, while Collection and source must be given. See ConditionArrayParser.
+ * - @b conditions (@c Array): Result filtering conditions. See ConditionArrayParser.
  *
  * @section response
  *
- * - @b product_update_info: The product updated information for records with specified source which fit conditions.
- *   - @b count (@c Uint): overall products for specified source.
- *   - @b update_info (@c Uint): updated products number for specified source.
- *   - @b delete_info (@c Uint): deleted products number for specified source.
+ * - @b product_count (@c Object): The product count in all the records which fit the conditions.
+ *   - @b count (@c Uint): all product count in ProductInfo table.
  *
  * @section example
  *
@@ -385,9 +382,7 @@ void LogAnalysisController::merchant_count()
  * @code
  * {
  *   "conditions":[
- *       {"property":"source", "operator":"=", "value":"当当网"},
- *       {"property":"collection", "operator":"=", "value":"intel"},
- *       {"property":"timestamp", "operator":"range", "value":[1.0, 10.0]}
+ *       {"property":"collection", "operator":"=", "value":"intel"}
  *    ]
  * }
  * @endcode
@@ -396,14 +391,14 @@ void LogAnalysisController::merchant_count()
  *
  * @code
  * {
- *   "product_update_info": {
- *      "count":"1000", "update_info":"50", "delete_info":"20"
+ *   "product_count":{
+ *      "count":"100"
  *   }
  * }
  * @endcode
  *
  */
-void LogAnalysisController::product_update_info()
+void LogAnalysisController::product_count()
 {
     string select = "sum(Num) as sum";
     string conditions = parseConditions() + " and ";
@@ -423,11 +418,91 @@ void LogAnalysisController::product_update_info()
     std::cerr << sql.str() << std::endl;
     ProductInfo::find_by_sql(sql.str(), insertResults);
 
+    ///Output
+    Value& productInfo = response()[Keys::product_count];
+    std::list< std::map<std::string, std::string> >::iterator iter = insertResults.begin();
+    productInfo[Keys::count] = (*iter)["sum"];
+}
+
+/**
+ * @brief Action @b product_update_info.
+ *
+ * @section request
+ *
+ * - @b conditions (@c Array): Result filtering conditions, while Collection and source must be given. See ConditionArrayParser.
+ *
+ * @section response
+ *
+ * - @b product_update_info: The product updated information for records with specified source which fit conditions.
+ *   - @b source (@c String): prduct's merchant.
+ *   - @b count (@c Uint): overall products for specified source.
+ *   - @b update_info (@c Uint): updated products number for specified source.
+ *   - @b delete_info (@c Uint): deleted products number for specified source.
+ *   - @b time_info (@c String): products' latest update time.
+ *
+ * @section example
+ *
+ * Request
+ *
+ * @code
+ * {
+ *   "conditions":[ *
+ *       {"property":"collection", "operator":"=", "value":"intel"}, *
+ * }
+ * @endcode
+ *
+ * Response
+ *
+ * @code
+ * {
+ *   "product_update_info": [
+ *      { "source":"当当网", "count":"1000", "update_info":"50", "delete_info":"20", "time_info": "2010-Jul-16 18:11:38"}
+ *   ]
+ * }
+ * @endcode
+ *
+ */
+void LogAnalysisController::product_update_info()
+{
+    string select = "Source, sum(Num) as sum";
+    string conditions = parseConditions() + " and ";
+    conditions += "Flag = " + str_concat("'", "insert", "'");
+    string group = "Source";
+
+    map<string, string> insertInfo;
+    map<string, string> updateInfo;
+    map<string, string> deleteInfo;
+    map<string, string> timeInfo;
+    std::list< std::map<std::string, std::string> > results;
+    std::stringstream sql;
+    std::list< std::map<std::string, std::string> >::iterator it;
+
+    //Get index result
+    sql << "select " << select;
+    sql << " from " << ProductInfo::TableName;
+    if( conditions.size() )
+    {
+        sql << " where " << conditions;
+    }
+    if ( group.size() )
+    {
+         sql << " group by " << group;
+    }
+    sql << ";";
+    std::cerr << sql.str() << std::endl;
+    ProductInfo::find_by_sql(sql.str(), results);
+
+    //Store insert info to map;
+    for(it = results.begin(); it != results.end(); it++)
+    {
+        insertInfo[(*it)["Source"]] = (*it)["sum"];
+    }
+
     //Get updated result
     conditions = parseConditions() + " and ";
     conditions += "Flag = " + str_concat("'", "update", "'");
 
-    std::list< std::map<std::string, std::string> > updateResults;
+    results.clear();
     sql.clear();
     sql.str("");
 
@@ -437,15 +512,53 @@ void LogAnalysisController::product_update_info()
     {
         sql << " where " << conditions;
     }
+    if ( group.size() )
+    {
+         sql << " group by " << group;
+    }
     sql <<";";
     std::cerr<< sql.str() << std::endl;
-    ProductInfo::find_by_sql(sql.str(), updateResults);
+    ProductInfo::find_by_sql(sql.str(), results);
+
+    //Store update info to map
+    for(it = results.begin(); it != results.end(); it++)
+    {
+        updateInfo[(*it)["Source"]] = (*it)["sum"];
+    }
 
     //Get deleted result
     conditions = parseConditions() + " and ";
     conditions += "Flag = " + str_concat("'", "delete", "'");
 
-    std::list< std::map<std::string, std::string> > deleteResults;
+    results.clear();
+    sql.clear();
+    sql.str("");
+
+    sql<<"select " << select;
+    sql<<" from "<< ProductInfo::TableName;
+    if( conditions.size() )
+    {
+        sql<<" where " << conditions;
+    }
+    if ( group.size() )
+    {
+         sql << " group by " << group;
+    }
+    sql<<";";
+    std::cerr<< sql.str() <<std::endl;
+    ProductInfo::find_by_sql(sql.str(), results);
+
+    //Store delete info to map
+    for(it = results.begin(); it != results.end(); it++)
+    {
+        deleteInfo[(*it)["Source"]] = (*it)["sum"];
+    }
+
+    //Get updated time info
+    select = "Source, TimeStamp";
+    conditions = parseConditions();
+
+    results.clear();
     sql.clear();
     sql.str("");
 
@@ -457,21 +570,36 @@ void LogAnalysisController::product_update_info()
     }
     sql<<";";
     std::cerr<< sql.str() <<std::endl;
-    ProductInfo::find_by_sql(sql.str(), deleteResults);
+    ProductInfo::find_by_sql(sql.str(), results);
+
+    //Store time info to map
+    for(it = results.begin(); it != results.end(); it++)
+    {
+        timeInfo[(*it)["Source"]] = (*it)["TimeStamp"];
+    }
 
     ///Output
-    Value& productInfo = response()[Keys::product_update_info];
-    std::list< std::map<std::string, std::string> >::iterator iter = insertResults.begin();
-    std::map<std::string, std::string>::const_iterator map_iter;
+    Value& productInfos = response()[Keys::product_update_info];
+    productInfos.reset<Value::ArrayType>();
+    map<std::string, std::string>::iterator iter, map_it;
 
-    productInfo[Keys::count] = (*iter)["sum"];
-    if( updateResults.size() && (map_iter = updateResults.front().find("sum")) != updateResults.front().end())
+    for (iter = insertInfo.begin(); iter != insertInfo.end(); iter++ )
     {
-        productInfo[Keys::update_info] = map_iter->second;
-    }
-    if( deleteResults.size() && (map_iter = deleteResults.front().find("sum")) != deleteResults.front().end())
-    {
-        productInfo[Keys::delete_info] = map_iter->second;
+        Value& productInfo = productInfos();
+        productInfo[Keys::merchant] = iter->first;
+        productInfo[Keys::count] = iter->second;
+        if( updateInfo.size() && (map_it = updateInfo.find(iter->first)) != updateInfo.end())
+        {
+            productInfo[Keys::update_info] = map_it->second;
+        }
+        if( deleteInfo.size() && (map_it = deleteInfo.find(iter->first)) != deleteInfo.end())
+        {
+            productInfo[Keys::delete_info] = map_it->second;
+        }
+        if( timeInfo.size() && (map_it = timeInfo.find(iter->first)) != timeInfo.end())
+        {
+            productInfo[Keys::time_info] = map_it->second;
+        }
     }
 }
 

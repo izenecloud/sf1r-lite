@@ -62,6 +62,7 @@ controllers:
       - system_events
       - user_queries
       - merchant_count
+      - product_count
       - product_update_info
       - inject_user_queries
       - delete_record_from_system_events

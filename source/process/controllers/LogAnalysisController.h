@@ -35,6 +35,8 @@ public:
 
     void merchant_count();
 
+    void product_count();
+
     void product_update_info();
 
     void inject_user_queries();
