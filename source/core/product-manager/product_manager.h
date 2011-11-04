@@ -42,7 +42,7 @@ public:
     
     
     //update documents in A, so need transfer
-    bool UpdateADoc(const Document& doc, bool backup);
+    bool UpdateADoc(const Document& doc, bool backup = true);
     
     //all intervention functions.
     bool AddGroup(const std::vector<uint32_t>& docid_list, izenelib::util::UString& gen_uuid, bool backup = true);
@@ -62,13 +62,18 @@ public:
         return error_;
     }
     
+    const PMConfig& GetConfig() const
+    {
+        return config_;
+    }
+    
 private:
     
     void BackupPCItem_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, int type);
     
     bool UpdateADoc_(const Document& doc);
     
-    bool AppendToGroup_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& uuid_docid_list, const std::vector<uint32_t>& docid_list, bool backup = true);
+    bool AppendToGroup_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& uuid_docid_list, const std::vector<uint32_t>& docid_list);
     
     bool GetPrice_(uint32_t docid, ProductPrice& price);
     

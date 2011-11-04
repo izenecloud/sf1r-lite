@@ -113,3 +113,4 @@ controllers:
       - append_to_group
       - remove_from_group
       - recover
+      - update_a_doc

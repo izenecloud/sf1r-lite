@@ -251,20 +251,20 @@ bool ProductManager::AddGroupWithInfo(const std::vector<uint32_t>& docid_list, c
         return false;
     }
     //call updateA
-    if(!UpdateADoc_(doc))
+    
+    if(!AppendToGroup_(uuid, uuid_docid_list, docid_list))
     {
         return false;
     }
-    if(!AppendToGroup_(uuid, uuid_docid_list, docid_list, backup))
+    if(!UpdateADoc_(doc))
     {
         op_processor_->Clear();
         return false;
     }
     if(backup && backup_)
     {
-        backup_->AddProductUpdateItem(doc);
         BackupPCItem_(uuid, docid_list, 1);
-        
+        backup_->AddProductUpdateItem(doc);
     }
     return true;
 }
@@ -311,15 +311,19 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib:
     }
 
     std::vector<uint32_t> remain(docid_list.begin()+1, docid_list.end());
-    if(!AppendToGroup_(first_uuid, uuid_docid_list, remain, backup))
+    if(!AppendToGroup_(first_uuid, uuid_docid_list, remain))
     {
         return false;
+    }
+    if(backup && backup_)
+    {
+        BackupPCItem_(first_uuid, docid_list, 1);
     }
     gen_uuid = first_uuid;
     return true;
 }
 
-bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& uuid_docid_list, const std::vector<uint32_t>& docid_list, bool backup)
+bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& uuid_docid_list, const std::vector<uint32_t>& docid_list)
 {
     if(docid_list.empty()) 
     {
@@ -383,10 +387,7 @@ bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const s
     {
         return false;
     }
-    if(backup && backup_)
-    {
-        BackupPCItem_(uuid, docid_list, 1);
-    }
+    
     
     //update DM and IM then
     if(!data_source_->UpdateUuid(docid_list, uuid))
@@ -415,8 +416,15 @@ bool ProductManager::AppendToGroup(const izenelib::util::UString& uuid, const st
         error_ = suuid+" not exists";
         return false;
     }
-    return AppendToGroup_(uuid, uuid_docid_list, docid_list, backup);
-    
+    if(!AppendToGroup_(uuid, uuid_docid_list, docid_list))
+    {
+        return false;
+    }
+    if(backup && backup_)
+    {
+        BackupPCItem_(uuid, docid_list, 1);
+    }
+    return true;
 }
     
 bool ProductManager::RemoveFromGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, bool backup)

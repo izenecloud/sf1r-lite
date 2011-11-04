@@ -63,7 +63,38 @@ bool ProductController::require_uuid_()
     return true;
 }
 
-
+bool ProductController::require_doc_()
+{
+    doc_.clear();
+    Value& resource = request()[Keys::resource];
+    const Value::ObjectType& objectValue = resource.getObject();
+    
+    for (Value::ObjectType::const_iterator it = objectValue.begin();
+         it != objectValue.end(); ++it)
+    {
+        std::string pname = it->first;
+        izenelib::util::UString pvalue( asString(it->second), izenelib::util::UString::UTF_8 );
+        doc_.property(pname) = pvalue;
+    }
+    const PMConfig& config = product_manager_->GetConfig();
+    //check validation
+    if(!doc_.hasProperty(config.docid_property_name))
+    {
+        response().addError("Require DOCID property in request.");
+        return false;
+    }
+    if(doc_.hasProperty(config.price_property_name))
+    {
+        response().addError("Can not update Price property manually.");
+        return false;
+    }
+    if(doc_.hasProperty(config.itemcount_property_name))
+    {
+        response().addError("Can not update itemcount property manually.");
+        return false;
+    }
+    return true;
+}
 
 
 /**
@@ -229,6 +260,44 @@ void ProductController::recover()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
     if(!product_manager_->Recover())
+    {
+        response().addError(product_manager_->GetLastError());
+        return;
+    }
+}
+
+/**
+ * @brief Action @b update_a_doc. Updates documents for A collection for product-manager
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name for 'M'(b5mm).
+ * - @b resource* (@c Object): A document resource in 'A' collection. Property key name is used as
+ *   key. The corresponding value is the content of the property. Property @b
+ *   DOCID is required, which is a unique document identifier specified by
+ *   client. This DOCID is always the uuid in 'M' collection.
+ *
+ * @section response
+ *
+ * No extra fields.
+ *
+ * @section example
+ *
+ * @code
+ * {
+ *   "resource": {
+ *     "DOCID": "xxx-yyy-zzz",
+ *     "Title": "Hello, World (revision)",
+ *     "Content": "This is a revised test post."
+ *   }
+ * }
+ * @endcode
+ */
+void ProductController::update_a_doc()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
+    IZENELIB_DRIVER_BEFORE_HOOK(require_doc_());
+    if(!product_manager_->UpdateADoc(doc_))
     {
         response().addError(product_manager_->GetLastError());
         return;
