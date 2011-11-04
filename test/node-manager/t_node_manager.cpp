@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_SUITE( t_zookeeper )
 
 BOOST_AUTO_TEST_CASE( node_manager_synchro )
 {
-    return;
+    return; // disable autotest
 
     // set default config
     DistributedTopologyConfig dsTopologyConfig;
@@ -89,14 +89,13 @@ BOOST_AUTO_TEST_CASE( scd_dispatcher )
     ScdSharding scdSharding(cfg, shardingStrategy);
 
     // create scd dispatcher
-    DispatchAction* dispatchAction = new DispatchActionToFile;
-    ScdDispatcher scdDispatcher(&scdSharding, dispatchAction);
+    ScdDispatcher* scdDispatcher = new BatchScdDispatcher(&scdSharding);
 
     std::string dir = "/home/zhongxia/codebase/sf1r-engine/bin/collection/chinese-wiki/scd/index";
-    scdDispatcher.dispatch(dir, 10);
+    scdDispatcher->dispatch(dir, 0);
 
     delete shardingStrategy;
-    delete dispatchAction;
+    delete scdDispatcher;
 }
 
 

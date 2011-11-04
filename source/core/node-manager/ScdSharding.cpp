@@ -1,39 +1,42 @@
 #include "ScdSharding.h"
 
+#include <boost/assert.hpp>
+
 using namespace sf1r;
 
 ScdSharding::ScdSharding(ShardingConfig& shardingConfig, ShardingStrategy* shardingStrategy)
 :shardingConfig_(shardingConfig), shardingStrategy_(shardingStrategy)
 {
+    BOOST_ASSERT(shardingStrategy_);
 }
 
 shardid_t ScdSharding::sharding(SCDDoc& scdDoc)
 {
-    if (!shardingStrategy_)
-        return 0;
-
-    // Initialize shardFieldList_
-    makeShardFieldList(scdDoc);
+    // set sharding fields
+    setShardKeyValues(scdDoc);
 
     ShardingStrategy::ShardingParams shardingParams;
     shardingParams.shardNum_ = shardingConfig_.getShardNum();
 
-    return shardingStrategy_->sharding(shardFieldList_, shardingParams);
+    return shardingStrategy_->sharding(ShardFieldList_, shardingParams);
 }
 
-void ScdSharding::makeShardFieldList(SCDDoc& scdDoc)
+void ScdSharding::setShardKeyValues(SCDDoc& scdDoc)
 {
-    shardFieldList_.clear(); // xxx init
+    ShardFieldList_.clear();
 
     SCDDoc::iterator propertyIter;
     for (propertyIter = scdDoc.begin(); propertyIter != scdDoc.end(); propertyIter++)
     {
-        std::string shardKey;
-        (*propertyIter).first.convertString(shardKey, izenelib::util::UString::UTF_8);
-        if (shardingConfig_.hasShardKey(shardKey))
+        std::string propertyName;
+        std::string propertyValue;
+        (*propertyIter).first.convertString(propertyName, izenelib::util::UString::UTF_8);
+        (*propertyIter).second.convertString(propertyValue, izenelib::util::UString::UTF_8);
+
+        if (shardingConfig_.hasShardKey(propertyName))
         {
-            shardFieldList_.push_back(std::make_pair((*propertyIter).first, (*propertyIter).second));
-            //std::cout<<"makeShardFieldList: "<<shardKey<<std::endl;
+            ShardFieldList_.push_back(std::make_pair(propertyName, propertyValue));
+            //std::cout<< "ShardFieldList_ k-v:" <<propertyName<<" - "<<propertyValue<<std::endl;
         }
     }
 }

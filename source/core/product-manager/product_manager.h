@@ -73,7 +73,7 @@ private:
     
     bool UpdateADoc_(const Document& doc);
     
-    bool AppendToGroup_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& uuid_docid_list, const std::vector<uint32_t>& docid_list);
+    bool AppendToGroup_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& uuid_docid_list, const std::vector<uint32_t>& docid_list, const PMDocumentType& uuid_doc);
     
     bool GetPrice_(uint32_t docid, ProductPrice& price);
     
