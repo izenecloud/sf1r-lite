@@ -11,32 +11,18 @@
 
 #include <common/ScdParser.h>
 
+#include <iostream>
+
+#include <boost/shared_ptr.hpp>
+
 namespace sf1r{
-
-
-class DispatchAction
-{
-public:
-    virtual void init(ShardingConfig& shardConfig) {};
-    virtual void dispatch(shardid_t shardid, SCDDoc& scdDoc) = 0;
-    virtual void finish() {}
-};
-
-class DispatchActionToFile : public DispatchAction
-{
-public:
-    virtual void init(ShardingConfig& shardConfig);
-    virtual void dispatch(shardid_t shardid, SCDDoc& scdDoc);
-    virtual void finish();
-
-private:
-    std::map<shardid_t, std::string> subFiles_;
-};
 
 class ScdDispatcher
 {
 public:
-    ScdDispatcher(ScdSharding* scdSharding, DispatchAction* dispatchAction);
+    ScdDispatcher(ScdSharding* scdSharding);
+
+    virtual ~ScdDispatcher() {}
 
     /**
      * Sharding & dispatching
@@ -45,14 +31,52 @@ public:
      */
     bool dispatch(const std::string& dir, unsigned int docNum = 0);
 
-private:
+protected:
     bool getScdFileList(const std::string& dir, std::vector<std::string>& fileList);
 
-private:
+    virtual bool dispatch_impl(shardid_t shardid, SCDDoc& scdDoc) = 0;
+
+    virtual void finish() {}
+
+protected:
     ScdSharding* scdSharding_;
-    DispatchAction* dispatchAction_;
 
     izenelib::util::UString::EncodingType scdEncoding_;
+    std::string curScdFileName_;
+};
+
+/**
+ * SCD will be splitted into sub files according shard id,
+ * and then be sent to each shard server.
+ */
+class BatchScdDispatcher : public ScdDispatcher
+{
+public:
+    BatchScdDispatcher(ScdSharding* scdSharding);
+
+    ~BatchScdDispatcher();
+
+protected:
+    virtual bool dispatch_impl(shardid_t shardid, SCDDoc& scdDoc);
+
+    virtual void finish();
+
+private:
+    std::string dispatchTempDir_;
+    std::map<shardid_t, std::string> shardScdfileMap_;
+    std::vector<std::ofstream*> ofList_;
+};
+
+/**
+ * Each SCD doc will be dispatching instantly after sharding (got shard id).
+ */
+class InstantScdDispatcher : public ScdDispatcher
+{
+public:
+    ;
+
+protected:
+    virtual bool dispatch_impl(shardid_t shardid, SCDDoc& scdDoc);
 };
 
 }
