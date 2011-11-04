@@ -592,13 +592,25 @@ void LogAnalysisController::product_update_info()
         {
             productInfo[Keys::update_info] = map_it->second;
         }
+        else
+        {
+            productInfo[Keys::update_info] = 0;
+        }
         if( deleteInfo.size() && (map_it = deleteInfo.find(iter->first)) != deleteInfo.end())
         {
             productInfo[Keys::delete_info] = map_it->second;
         }
+        else
+        {
+            productInfo[Keys::delete_info] = 0;
+        }
         if( timeInfo.size() && (map_it = timeInfo.find(iter->first)) != timeInfo.end())
         {
             productInfo[Keys::time_info] = map_it->second;
+        }
+        else
+        {
+            productInfo[Keys::time_info] = 0;
         }
     }
 }
