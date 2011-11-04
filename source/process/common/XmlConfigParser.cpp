@@ -867,17 +867,16 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
     Element* productBundle = getUniqChildElement( collection, "ProductBundle", false );
     if(productBundle)
     {
-        Element* productParam = getUniqChildElement( productBundle, "Parameter", false );
-        parseProductBundleParam(productParam, collectionMeta);
-
         Element* product_schema = getUniqChildElement( productBundle, "Schema", false );
         if(product_schema) parseProductBundleSchema(product_schema, collectionMeta);
+        Element* productParam = getUniqChildElement( productBundle, "Parameter", false );
+        parseProductBundleParam(productParam, collectionMeta);
     }
     // MiningBundle
-    collectionMeta.miningBundleConfig_->isSupportByAggregator_ = collectionMeta.indexBundleConfig_->isSupportByAggregator_;
     Element* miningBundle = getUniqChildElement( collection, "MiningBundle" , false );
     if(miningBundle)
     {
+        collectionMeta.miningBundleConfig_->isSupportByAggregator_ = collectionMeta.indexBundleConfig_->isSupportByAggregator_;
         Element* miningSchema = getUniqChildElement( miningBundle, "Schema", false );
         if(miningSchema) parseMiningBundleSchema(miningSchema, collectionMeta);
         Element* miningParam = getUniqChildElement( miningBundle, "Parameter", false );
@@ -886,15 +885,13 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
 
     // RecommendBundle
     Element* recommendBundle = getUniqChildElement( collection, "RecommendBundle" , false );
-    Element* recommendParam = NULL;
     if(recommendBundle)
     {
         Element* recommendSchema = getUniqChildElement( recommendBundle, "Schema", false );
         if(recommendSchema) parseRecommendBundleSchema(recommendSchema, collectionMeta);
-        recommendParam = getUniqChildElement( recommendBundle, "Parameter", false );
+        Element* recommendParam = getUniqChildElement( recommendBundle, "Parameter", false );
+        parseRecommendBundleParam(recommendParam, collectionMeta);
     }
-    // the <Parameter> in <Collection> would overwrite that in <BundlesDefault>
-    parseRecommendBundleParam(recommendParam, collectionMeta);
 }
 
 void CollectionConfig::parseCollectionPath( const ticpp::Element * path, CollectionMeta & collectionMeta )
@@ -1186,7 +1183,7 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
 
     property_node = getUniqChildElement( product_schema, "ItemCountProperty", false );
     getAttribute(property_node, "name", productBundleConfig.pm_config_.itemcount_property_name );
-    
+
     ticpp::Element* backup_node = getUniqChildElement( product_schema, "Backup", false );
     if(backup_node!=NULL)
     {
