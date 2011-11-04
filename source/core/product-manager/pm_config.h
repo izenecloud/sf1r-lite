@@ -19,15 +19,14 @@ struct PMConfig
     std::string itemcount_property_name;
     std::string uuid_property_name;
     std::string backup_path;
-    
-    static PMConfig GetDefaultPMConfig()
+
+    PMConfig()
+        : price_property_name("Price")
+        , docid_property_name("DOCID")
+        , itemcount_property_name("itemcount")
+        , uuid_property_name("uuid")
+        , backup_path()
     {
-        PMConfig config;
-        config.price_property_name = "Price";
-        config.docid_property_name = "DOCID";
-        config.itemcount_property_name = "itemcount";
-        config.uuid_property_name = "uuid";
-        return config;
     }
 };
 
@@ -36,4 +35,3 @@ struct PMConfig
 }
 
 #endif
-

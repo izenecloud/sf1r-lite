@@ -10,7 +10,7 @@ void CheckUuid(SimpleDataSource* data_source, const std::string& suuid, uint32_t
 {
     std::vector<uint32_t> cresult(result);
     std::sort(cresult.begin(), cresult.end());
-    
+
     izenelib::util::UString uuid(suuid, izenelib::util::UString::UTF_8);
     std::vector<uint32_t> gresult;
     data_source->GetDocIdList(uuid, gresult, exceptid);
@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE(normal_test)
 {
     //test GetDocIdList and UpdateUuid
     std::vector<PMDocumentType>* document_list = new std::vector<PMDocumentType>();
-    PMConfig pm_config = PMConfig::GetDefaultPMConfig();
+    PMConfig pm_config;
     std::vector<std::string> suuid_list(10);
     for(uint32_t docid=1; docid<=10; docid++)
     {
@@ -45,8 +45,8 @@ BOOST_AUTO_TEST_CASE(normal_test)
         }
         suuid_list[docid-1] = suuid;
     }
-    
-    
+
+
     for(uint32_t docid=1; docid<=10; docid++)
     {
         PMDocumentType doc;
@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(normal_test)
         result.erase( std::remove(result.begin(), result.end(), (uint32_t)4),result.end());
         CheckUuid(&data_source, "uuid-3", 4, result);
     }
-    
+
     {
         std::vector<uint32_t> docid_list(3);
         docid_list[0] = 2;
@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(normal_test)
         izenelib::util::UString uuid = izenelib::util::UString("uuid-x", izenelib::util::UString::UTF_8);
         BOOST_CHECK( data_source.UpdateUuid( docid_list, uuid) );
     }
-    
+
     {
         izenelib::util::UString uuid = izenelib::util::UString("uuid-1", izenelib::util::UString::UTF_8);
         std::vector<uint32_t> result(1,1);
@@ -100,11 +100,11 @@ BOOST_AUTO_TEST_CASE(normal_test)
         }
         CheckUuid(&data_source, "uuid-x", 100, result);
     }
-    
-    
+
+
     delete document_list;
-    
+
 }
 
 
-BOOST_AUTO_TEST_SUITE_END() 
+BOOST_AUTO_TEST_SUITE_END()
