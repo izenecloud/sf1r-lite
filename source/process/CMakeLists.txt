@@ -18,7 +18,6 @@ INCLUDE_DIRECTORIES(
   ${Glog_INCLUDE_DIRS}
   ${xml2_INCLUDE_DIRS}
   ${sqlite3_INCLUDE_DIRS}
-  ${Thrift_INCLUDE_DIRS}
   )
 
 SET(POSCharExtractor_SRC tools/POSCharExtractor.cpp)
@@ -61,15 +60,15 @@ TARGET_LINK_LIBRARIES(CobraProcess
   ${izenecma_LIBRARIES}
   ${izenejma_LIBRARIES}
   ${izenelib_LIBRARIES}
-  ${xml2_LIBRARIES}
 
   #external
+  ${xml2_LIBRARIES}
   ${Boost_LIBRARIES}
   ${TokyoCabinet_LIBRARIES}
   ${Glog_LIBRARIES}
   ${sqlite3_LIBRARIES}
   ${MYSQL_LIBRARIES}
-  ${Thrift_LIBRARIES}
+  ${Thrift_LIBS}
 )
 
 

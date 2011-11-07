@@ -8,11 +8,9 @@
 namespace sf1r
 {
 
-
-typedef Document PMDocumentType;
-
+    typedef float ProductPriceType;
+    typedef Document PMDocumentType;
 
 }
 
 #endif
-

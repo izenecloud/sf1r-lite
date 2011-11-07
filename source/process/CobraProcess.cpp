@@ -81,8 +81,8 @@ bool CobraProcess::initialize(const std::string& configFileDir)
 bool CobraProcess::initLogManager()
 {
     std::string log_conn = SF1Config::get()->getLogConnString();
-//     bfs::path logPath(bfs::path(".") / "log" / "COBRA");
-    if( !sflog->init(log_conn) )
+    std::string cassandra_conn = SF1Config::get()->getCassandraConnString();
+    if (!sflog->init(log_conn) || !sflog->initCassandra(cassandra_conn))
     {
         std::cerr<<"Init LogManager with "<<log_conn<<" failed!"<<std::endl;
         return false;
@@ -370,4 +370,3 @@ int CobraProcess::run()
 
     return caughtException ? 1 : 0;
 }
-

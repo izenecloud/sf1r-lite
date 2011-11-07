@@ -40,15 +40,12 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   msgpack
   zookeeper
   udt
-  libcassandra
+  cassandra
   )
 
 FIND_PACKAGE(ilplib REQUIRED)
 FIND_PACKAGE(idmlib REQUIRED)
 FIND_PACKAGE(imllib REQUIRED)
-FIND_PACKAGE(xml2 REQUIRED)
-FIND_PACKAGE(xml2 REQUIRED)
-FIND_PACKAGE(Thrift)
 
 IF( USE_IISE )
   FIND_PACKAGE(iise REQUIRED)
@@ -90,6 +87,7 @@ ENDIF( USE_IZENEJMA )
 # Other Libraries
 #####
 
+FIND_PACKAGE(xml2 REQUIRED)
 FIND_PACKAGE(Threads REQUIRED)
 
 SET(Boost_ADDITIONAL_VERSIONS 1.40 1.40.0 1.39 1.39.0 1.38 1.38.0 1.37 1.37.0)
@@ -110,6 +108,7 @@ FIND_PACKAGE(TokyoCabinet 1.4.29 REQUIRED)
 FIND_PACKAGE(Glog REQUIRED)
 FIND_PACKAGE(sqlite3 REQUIRED)
 FIND_PACKAGE(MySQL REQUIRED)
+FIND_PACKAGE(Thrift REQUIRED)
 
 ##################################################
 # Driver Docs

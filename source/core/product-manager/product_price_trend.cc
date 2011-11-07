@@ -1,23 +1,24 @@
 #include "product_price_trend.h"
 
+#include <log-manager/CassandraConnection.h>
+
 using namespace sf1r;
 
 ProductPriceTrend::ProductPriceTrend()
-    : product_info_list_()
+    : cassandraClient_(CassandraConnection::instance().getCassandraClient())
 {
 }
 
 ProductPriceTrend::~ProductPriceTrend()
 {
-    product_info_list_.clear();
 }
 
-bool ProductPriceTrend::Load()
+bool ProductPriceTrend::insertHistory(int64_t time, ProductPriceType price)
 {
     return true;
 }
 
-bool ProductPriceTrend::Flush()
+bool ProductPriceTrend::getHistory(std::vector<int64_t, ProductPriceType>& price_history, int64_t from, int64_t to)
 {
     return true;
 }

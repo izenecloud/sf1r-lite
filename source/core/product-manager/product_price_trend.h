@@ -1,10 +1,13 @@
 #ifndef SF1R_PRODUCTMANAGER_PRODUCTPRICETREND_H
 #define SF1R_PRODUCTMANAGER_PRODUCTPRICETREND_H
 
-#include "product_price.h"
-#include "product_info_type.h"
+#include "pm_types.h"
 
 #include <boost/shared_ptr.hpp>
+
+namespace libcassandra {
+class Cassandra;
+}
 
 namespace sf1r
 {
@@ -16,12 +19,17 @@ public:
 
     ~ProductPriceTrend();
 
-    bool Load();
+    bool insertHistory(int64_t time, ProductPriceType price);
 
-    bool Flush();
+    bool getHistory(std::vector<int64_t, ProductPriceType>& price_history, int64_t from, int64_t to);
 
 private:
-    std::vector<ProductInfoType> product_info_list_;
+    std::string collection_name;
+    std::string vendor_name_;
+    std::string product_name_;
+    std::string product_uuid_;
+
+    boost::shared_ptr<libcassandra::Cassandra> cassandraClient_;
 };
 
 }

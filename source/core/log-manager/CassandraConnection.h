@@ -1,30 +1,38 @@
-#ifndef SF1R_CASSANDRA_CONNECTION_H_
-#define SF1R_CASSANDRA_CONNECTION_H_
+#ifndef _CASSANDRA_CONNECTION_H_
+#define _CASSANDRA_CONNECTION_H_
 
-#include <libcassandra/cassandra.h>
+#include <string>
+#include <map>
+#include <list>
 
 #include <util/ThreadModel.h>
-#include "NoSqlConnectionBase.h"
+
+#include "LogManagerSingleton.h"
+
+namespace libcassandra {
+class Cassandra;
+}
 
 namespace sf1r {
 
-class CassandraConnection : public NoSqlConnectionBase
+class CassandraConnection : public LogManagerSingleton<CassandraConnection>
 {
 public:
-
     CassandraConnection();
 
     ~CassandraConnection();
 
     bool init(const std::string& str);
 
-    /// close all database connections
-    void close();
+    boost::shared_ptr<libcassandra::Cassandra>& getCassandraClient()
+    {
+        return cassandraClient_;
+    }
 
 private:
     static const int PoolSize;
 
-    boost::shared_ptr<libcassandra::Cassandra> cassandraClient;
+    boost::shared_ptr<libcassandra::Cassandra> cassandraClient_;
 };
 
 }

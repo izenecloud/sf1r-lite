@@ -16,7 +16,6 @@ public:
 
     virtual ~RDbConnectionBase(){}
 
-    
     virtual bool init(const std::string& str){return true;}
 
     virtual void close(){}

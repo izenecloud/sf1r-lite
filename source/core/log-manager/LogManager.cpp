@@ -1,6 +1,7 @@
 #include "LogManager.h"
 #include "SFLogMessages.h"
 #include "RDbConnection.h"
+#include "CassandraConnection.h"
 #include "SystemEvent.h"
 #include "UserQuery.h"
 #include "PropertyLabel.h"
@@ -59,6 +60,11 @@ namespace sf1r
         return true;
     }
 
+    bool LogManager::initCassandra(const std::string& logPath)
+    {
+        return CassandraConnection::instance().init(logPath);
+    }
+
     LogManager::~LogManager()
     {
     }
@@ -67,7 +73,7 @@ namespace sf1r
     {
         //do not delete it on file
 //          string order = "rm " + logPath;
-// 
+//
 //          RDbConnection::instance().close();
 //          std::system(order.c_str());
 //          if(!init(logPath))
