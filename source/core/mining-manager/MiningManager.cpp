@@ -238,6 +238,11 @@ bool MiningManager::open()
 
         /** log manager */
         MiningQueryLogHandler* handler = MiningQueryLogHandler::getInstance();
+        if(!handler->cronStart(miningConfig_.recommend_param.cron))
+        {
+            std::cout<<"Init query long cron task failed."<<std::endl;
+            return false;
+        }
         handler->addCollection(collectionName_, rmDb_);
 
         qrManager_.reset(new QueryRecommendSubmanager(rmDb_, queryDataPath_ + "/recommend_inject.txt"));
