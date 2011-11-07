@@ -1211,8 +1211,8 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     params.Get<uint32_t>("TaxonomyPara/maxorgnum", mining_config.taxonomy_param.max_orgnum);
     //for recommend
     params.Get<uint32_t>("RecommendPara/recommendnum", mining_config.recommend_param.recommend_num);
-    params.Get<uint32_t>("RecommendPara/popularnum", mining_config.recommend_param.popular_num);
-    params.Get<uint32_t>("RecommendPara/realtimenum", mining_config.recommend_param.realtime_num);
+    params.GetString("RecommendPara/cron", mining_config.recommend_param.cron);
+    
     //for similarity
     params.Get<uint32_t>("SimilarityPara/docnumlimit", mining_config.similarity_param.docnum_limit);
     params.Get<uint32_t>("SimilarityPara/termnumlimit", mining_config.similarity_param.termnum_limit);

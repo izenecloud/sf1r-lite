@@ -64,6 +64,7 @@ private:
     uint32_t waitSec_;
     uint32_t days_;
     izenelib::util::CronExpression cron_expression_;
+    bool cron_started_;
     boost::mutex mtx_;
 
 };

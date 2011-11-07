@@ -75,7 +75,7 @@ private:
     template <typename Archive>
     void serialize( Archive & ar, const unsigned int version )
     {
-        ar & recommend_num & popular_num & realtime_num ;
+        ar & recommend_num & cron ;
     }
 public:
     /**
@@ -83,9 +83,8 @@ public:
       */
     uint32_t recommend_num;
 
-    uint32_t popular_num;
+    std::string cron;
 
-    uint32_t realtime_num;
 
 };
 
