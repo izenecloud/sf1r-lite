@@ -119,7 +119,7 @@ bool TermDocumentIterator::accept()
     }
     else
     {
-        boost::shared_ptr<EWAHBoolArray<uword32> > pDocIdSet;
+        boost::shared_ptr<EWAHBoolArray<uint32_t> > pDocIdSet;
         boost::shared_ptr<BitVector> pBitVector;
         if (!TermTypeDetector::isTypeMatch(rawTerm_, dataType_))
             return false;
@@ -131,7 +131,7 @@ bool TermDocumentIterator::accept()
         bool find = indexManagerPtr_->seekTermFromBTreeIndex(colID_, property_, value);
         if (find)
         {
-             pDocIdSet.reset(new EWAHBoolArray<uword32>());
+             pDocIdSet.reset(new EWAHBoolArray<uint32_t>());
              pBitVector.reset(new BitVector(pIndexReader_->numDocs() + 1));
 
              indexManagerPtr_->getDocsByNumericValue(colID_, property_, value, *pBitVector);
