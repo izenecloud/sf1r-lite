@@ -136,9 +136,7 @@ bool TermDocumentIterator::accept()
 
              indexManagerPtr_->getDocsByNumericValue(colID_, property_, value, *pBitVector);
              pBitVector->compressed(*pDocIdSet);
-             vector<uint> idList;
-             pDocIdSet->appendRowIDs(idList);
-             pTermDocReader_ = new BitMapIterator(idList);
+             pTermDocReader_ = (TermDocFreqs*)(new EWAHBoolArrayBitIterator<uint32_t>(pDocIdSet->bit_iterator()));
              df_ = pTermDocReader_->docFreq();
          }
         return find;

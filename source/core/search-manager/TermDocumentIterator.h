@@ -14,7 +14,6 @@
 #include <ir/index_manager/index/AbsTermReader.h>
 #include <ir/index_manager/index/IndexReader.h>
 #include <ir/index_manager/index/TermDocFreqs.h>
-#include <ir/index_manager/utility/BitMapIterator.h>
 #include <ir/index_manager/utility/PriorityQueue.h>
 
 #include <boost/assert.hpp>

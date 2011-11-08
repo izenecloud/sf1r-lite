@@ -7,6 +7,7 @@
 #include <aggregator-manager/MasterServer.h>
 #include <node-manager/NodeManager.h>
 #include <node-manager/MasterNodeManager.h>
+#include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 
 #include <OnSignal.h>
 #include <common/XmlConfigParser.h>
@@ -119,13 +120,16 @@ bool CobraProcess::initLAManager()
 void CobraProcess::initQuery()
 {
     ilplib::qa::QuestionAnalysis* pQA = Singleton<ilplib::qa::QuestionAnalysis>::get();
-    std::string qahome = SF1Config::get()->getResourceDir();
+    const std::string& qahome = SF1Config::get()->getResourceDir();
     bfs::path path(bfs::path(qahome) / "qa" / "questionwords.txt");
     std::string qaPath = path.string();
     if( boost::filesystem::exists(qaPath) )
     {
         pQA->load(qaPath);
     }
+    QueryCorrectionSubmanager::system_resource_path_ = SF1Config::get()->getResourceDir();
+    QueryCorrectionSubmanager::system_working_path_ = SF1Config::get()->getWorkingDir();
+    QueryCorrectionSubmanager::getInstance();
 }
 
 bool CobraProcess::initLicenseManager()
@@ -357,4 +361,3 @@ int CobraProcess::run()
 
     return caughtException ? 1 : 0;
 }
-
