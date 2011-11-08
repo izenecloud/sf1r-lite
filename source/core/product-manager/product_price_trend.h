@@ -19,16 +19,19 @@ public:
 
     ~ProductPriceTrend();
 
-    bool insertHistory(int64_t time, ProductPriceType price);
+    bool update(const ProductInfoType& product_info);
 
-    bool getHistory(std::vector<int64_t, ProductPriceType>& price_history, int64_t from, int64_t to);
+    bool clear(const ProductInfoType& product_info);
+
+    bool put(const ProductInfoType& product_info);
+
+    bool get(ProductInfoType& product_info);
+
+public:
+    static const std::string column_family_;
+    static const std::string super_column_;
 
 private:
-    std::string collection_name;
-    std::string vendor_name_;
-    std::string product_name_;
-    std::string product_uuid_;
-
     boost::shared_ptr<libcassandra::Cassandra> cassandra_client_;
 };
 
