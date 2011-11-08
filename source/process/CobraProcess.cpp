@@ -7,6 +7,7 @@
 #include <aggregator-manager/MasterServer.h>
 #include <node-manager/NodeManager.h>
 #include <node-manager/MasterNodeManager.h>
+#include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 
 #include <OnSignal.h>
 #include <common/XmlConfigParser.h>
@@ -119,13 +120,16 @@ bool CobraProcess::initLAManager()
 void CobraProcess::initQuery()
 {
     ilplib::qa::QuestionAnalysis* pQA = Singleton<ilplib::qa::QuestionAnalysis>::get();
-    std::string qahome = SF1Config::get()->getResourceDir();
+    const std::string& qahome = SF1Config::get()->getResourceDir();
     bfs::path path(bfs::path(qahome) / "qa" / "questionwords.txt");
     std::string qaPath = path.string();
     if( boost::filesystem::exists(qaPath) )
     {
         pQA->load(qaPath);
     }
+    QueryCorrectionSubmanager::system_resource_path_ = SF1Config::get()->getResourceDir();
+    QueryCorrectionSubmanager::system_working_path_ = SF1Config::get()->getWorkingDir();
+    QueryCorrectionSubmanager::getInstance();
 }
 
 bool CobraProcess::initLicenseManager()
@@ -228,32 +232,18 @@ bool CobraProcess::startDistributedServer()
     if (!SF1Config::get()->distributedTopologyConfig_.enabled_)
         return false;
 
-    // Initial information from configuration
-    Topology topology;
-    topology.nodeNum_ = SF1Config::get()->distributedTopologyConfig_.nodeNum_;
-    topology.workerNum_ = SF1Config::get()->distributedTopologyConfig_.workerNum_;
-
-    SF1NodeInfo curNodeInfo;
-    curNodeInfo.replicaId_ = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.replicaId_;
-    curNodeInfo.nodeId_ = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.nodeId_;
-    curNodeInfo.localHost_ = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.host_;
-    curNodeInfo.baPort_ = SF1Config::get()->brokerAgentConfig_.port_;
-
-    NodeManagerSingleton::get()->setCurrentNodeInfo(curNodeInfo);
+    // Register current SF1 node through zookeeper
     NodeManagerSingleton::get()->registerNode();
 
     if (sf1r::SF1Config::get()->isWorkerEnabled())
     {
         try
         {
-            uint16_t workerPort = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.port_;
-
-            // Register Worker on current SF1 node
-            NodeManagerSingleton::get()->registerWorker(workerPort);
-
             // worker rpc server
+            std::string localHost = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.host_;
+            uint16_t workerPort = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.port_;
             std::size_t threadNum = SF1Config::get()->brokerAgentConfig_.threadNum_;
-            workerServer_.reset(new WorkerServer(curNodeInfo.localHost_, workerPort, threadNum));
+            workerServer_.reset(new WorkerServer(localHost, workerPort, threadNum));
             workerServer_->start();
             cout << "#[Worker Server]started, listening at localhost:"<<workerPort<<" ..."<<endl;
 
@@ -261,6 +251,9 @@ bool CobraProcess::startDistributedServer()
             //std::string masterHost = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.masterHost_;
             //uint16_t masterPort = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.masterPort_;
             //MasterNotifierSingleton::get()->setMasterServerInfo(masterHost, masterPort);
+
+            // Let current node work as Worker
+            NodeManagerSingleton::get()->registerWorker();
         }
         catch (std::exception& e)
         {
@@ -270,17 +263,15 @@ bool CobraProcess::startDistributedServer()
 
     if (SF1Config::get()->isMasterEnabled())
     {
-        uint16_t masterPort = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.masterAgent_.port_;
-
-        // Register Master on current SF1 node
-        NodeManagerSingleton::get()->registerMaster(masterPort);
-
-        // Initialize master node manager
-        MasterNodeManagerSingleton::get()->setNodeInfo(topology, curNodeInfo);
-        MasterNodeManagerSingleton::get()->startServer();
-
         // master rpc server
         //MasterServer::get()->start(curNodeInfo.localHost_, masterPort);
+
+        // Let current node work as Master
+        NodeManagerSingleton::get()->registerMaster();
+
+        // Initialize & Start Master Node Manager
+        MasterNodeManagerSingleton::get()->init();
+        MasterNodeManagerSingleton::get()->startServer();
     }
 
     addExitHook(boost::bind(&CobraProcess::stopDistributedServer, this));

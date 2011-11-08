@@ -12,9 +12,10 @@ ScdSharding::ScdSharding(ShardingConfig& shardingConfig, ShardingStrategy* shard
 
 shardid_t ScdSharding::sharding(SCDDoc& scdDoc)
 {
-    // set sharding fields
+    // set sharding key values
     setShardKeyValues(scdDoc);
 
+    // set sharding parameters
     ShardingStrategy::ShardingParams shardingParams;
     shardingParams.shardNum_ = shardingConfig_.getShardNum();
 
@@ -38,5 +39,10 @@ void ScdSharding::setShardKeyValues(SCDDoc& scdDoc)
             ShardFieldList_.push_back(std::make_pair(propertyName, propertyValue));
             //std::cout<< "ShardFieldList_ k-v:" <<propertyName<<" - "<<propertyValue<<std::endl;
         }
+    }
+
+    if (ShardFieldList_.empty())
+    {
+        std::cerr<<"WARN: current DOC did not match any shard key!"<<std::endl;
     }
 }

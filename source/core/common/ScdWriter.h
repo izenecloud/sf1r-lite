@@ -1,5 +1,5 @@
-#ifndef __SCD__WRITER__H__
-#define __SCD__WRITER__H__
+#ifndef SF1R_COMMON_SCDWRITER_H_
+#define SF1R_COMMON_SCDWRITER_H_
 
 #include "ScdParser.h"
 #include <document-manager/Document.h>
@@ -37,11 +37,13 @@ typedef boost::function<bool
 public:
     ScdWriter(const std::string& dir, int op);
 
-    virtual ~ScdWriter();
+    ~ScdWriter();
 
     static std::string GenSCDFileName( int op);
     
     void Append(const Document& doc);
+    
+    bool Append(const SCDDoc& doc);
     
     void Close();
     
@@ -49,10 +51,16 @@ public:
     {
         pname_filter_ = filter;
     }
+    
+private:
+    
+    void Open_();
 
     
 private:
-
+    std::string dir_;
+    std::string filename_;
+    int op_;
     std::ofstream ofs_;
     
     UStringVisitor ustring_visitor_;
