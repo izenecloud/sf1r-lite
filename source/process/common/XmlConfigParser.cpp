@@ -287,6 +287,7 @@ void SF1Config::parseBrokerAgent( const ticpp::Element * brokerAgent )
     getAttribute( brokerAgent, "enabletest", brokerAgentConfig_.enableTest_,false );
     getAttribute( brokerAgent, "threadnum", brokerAgentConfig_.threadNum_,false );
     getAttribute( brokerAgent, "port", brokerAgentConfig_.port_,false );
+    distributedTopologyConfig_.curSF1Node_.baPort_ = brokerAgentConfig_.port_;
 }
 
 void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
