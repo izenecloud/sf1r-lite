@@ -26,6 +26,7 @@ bool ScdDispatcher::dispatch(const std::string& dir, unsigned int docNum)
     {
         path scd_path(scdFileList[i-1]);
         curScdFileName_ = scd_path.filename();
+        switchFile();
 
         ScdParser scdParser(scdEncoding_);
         if(!scdParser.load(scd_path.string()) )
@@ -52,6 +53,8 @@ bool ScdDispatcher::dispatch(const std::string& dir, unsigned int docNum)
             if (docProcessed >= docNum && docNum > 0)
                 break;
         }
+        std::cout<<"\rProcessed documents: "<<docProcessed<<std::flush;
+        std::cout<<std::endl;
 
         if (docProcessed >= docNum  && docNum > 0)
             break;
@@ -142,6 +145,36 @@ BatchScdDispatcher::~BatchScdDispatcher()
     }
 }
 
+bool BatchScdDispatcher::switchFile()
+{
+    //std::cout<<"switchFile to "<<curScdFileName_<<std::endl;
+
+    for (unsigned int shardid = scdSharding_->getMinShardID();
+                shardid <= scdSharding_->getMaxShardID(); shardid++)
+    {
+        std::ofstream*& rof = ofList_[shardid];
+
+        if (!rof)
+            rof = new std::ofstream;
+
+        // close former file
+        if (rof->is_open())
+            rof->close();
+
+        // open new file
+        std::string shardScdFilePath = shardScdfileMap_[shardid]+"/"+curScdFileName_;
+        std::cout<<"Open file: "<<shardScdFilePath<<std::endl;
+        rof->open(shardScdFilePath.c_str(), ios_base::out);
+        if (!rof->is_open())
+        {
+            std::cerr<<"Failed to open(create): "<<shardScdFilePath<<std::endl;
+            return false;
+        }
+    }
+
+    return true;
+}
+
 std::ostream& operator<<(std::ostream& out, SCDDoc& scdDoc)
 {
     SCDDoc::iterator propertyIter;
@@ -161,19 +194,11 @@ bool BatchScdDispatcher::dispatch_impl(shardid_t shardid, SCDDoc& scdDoc)
 {
     //std::cout<<"BatchScdDispatcher::dispatch_impl shardid: "<<shardid<<std::endl;
 
-    std::string shardScdFilePath = shardScdfileMap_[shardid]+"/"+curScdFileName_;
-
     std::ofstream*& rof = ofList_[shardid];
-    if (!rof->is_open())
-    {
-        rof->open(shardScdFilePath.c_str(), ios_base::out);
-        if (!rof->is_open())
-            return false;
-    }
 
     (*rof) << scdDoc;
 
-    /// xxx add shardid property
+    /// xxx add shardid property?
     //(*rof) << "<SHARDID>" << shardid << std::endl;
 
     return true;

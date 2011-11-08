@@ -20,6 +20,7 @@ struct SF1Node
     unsigned int nodeId_;
     unsigned int replicaId_;
     std::string host_;
+    unsigned int baPort_;
 
     MasterAgentConfig masterAgent_;
     WorkerAgentConfig workerAgent_;

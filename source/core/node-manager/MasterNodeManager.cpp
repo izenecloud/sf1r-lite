@@ -22,7 +22,7 @@ void MasterNodeManager::initZooKeeper(const std::string& zkHosts, const int recv
     zookeeper_->registerEventHandler(this);
 }
 
-void MasterNodeManager::setNodeInfo(Topology& topology, SF1NodeInfo& sf1NodeInfo)
+void MasterNodeManager::setNodeInfo(Topology& topology, const SF1NodeInfo& sf1NodeInfo)
 {
     topology_ = topology;
     curNodeInfo_ = sf1NodeInfo;
@@ -37,6 +37,15 @@ void MasterNodeManager::setNodeInfo(Topology& topology, SF1NodeInfo& sf1NodeInfo
         workerState->zkPath_ = NodeDef::getNodePath(workerState->replicaId_, i)+"/Worker";
         workerStateMap_[workerState->zkPath_] = workerState;
     }
+}
+
+void MasterNodeManager::init()
+{
+    Topology topology;
+    topology.nodeNum_ =  NodeManagerSingleton::get()->getDSTopologyConfig().nodeNum_;
+    topology.workerNum_ =  NodeManagerSingleton::get()->getDSTopologyConfig().workerNum_;
+
+    setNodeInfo(topology, NodeManagerSingleton::get()->getNodeInfo());
 }
 
 void MasterNodeManager::startServer()
