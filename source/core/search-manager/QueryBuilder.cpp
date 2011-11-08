@@ -16,7 +16,6 @@
 #include <common/TermTypeDetector.h>
 
 #include <ir/index_manager/utility/BitVector.h>
-#include <ir/index_manager/utility/BitMapIterator.h>
 
 #include <util/get.h>
 
@@ -65,10 +64,10 @@ bool QueryBuilder::prepare_filter(
     Filter* &pFilter
 )
 {
-    boost::shared_ptr<EWAHBoolArray<uword32> > pDocIdSet;
+    boost::shared_ptr<EWAHBoolArray<uint32_t> > pDocIdSet;
     boost::shared_ptr<BitVector> pBitVector;
     unsigned int bitsNum = pIndexReader_->maxDoc() + 1;
-    unsigned int wordsNum = bitsNum/(sizeof(uword32) * 8) + (bitsNum % (sizeof(uword32) * 8) == 0 ? 0 : 1);
+    unsigned int wordsNum = bitsNum/(sizeof(uint32_t) * 8) + (bitsNum % (sizeof(uint32_t) * 8) == 0 ? 0 : 1);
 
     if (filtingList.size() == 1)
     {
@@ -78,7 +77,7 @@ bool QueryBuilder::prepare_filter(
         const std::vector<PropertyValue>& filterParam = filteringItem.second;
         if (!filterCache_->get(filteringItem, pDocIdSet))
         {
-            pDocIdSet.reset(new EWAHBoolArray<uword32>());
+            pDocIdSet.reset(new EWAHBoolArray<uint32_t>());
             pBitVector.reset(new BitVector(bitsNum));
             indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pBitVector);
             //Compress bit vector
@@ -88,10 +87,10 @@ bool QueryBuilder::prepare_filter(
     }
     else
     {
-        pDocIdSet.reset(new EWAHBoolArray<uword32>());
+        pDocIdSet.reset(new EWAHBoolArray<uint32_t>());
         pDocIdSet->addStreamOfEmptyWords(true, wordsNum);
-        boost::shared_ptr<EWAHBoolArray<uword32> > pDocIdSet2;
-        boost::shared_ptr<EWAHBoolArray<uword32> > pDocIdSet3;
+        boost::shared_ptr<EWAHBoolArray<uint32_t> > pDocIdSet2;
+        boost::shared_ptr<EWAHBoolArray<uint32_t> > pDocIdSet3;
         try
         {
             std::vector<QueryFiltering::FilteringType>::const_iterator iter = filtingList.begin();
@@ -102,13 +101,13 @@ bool QueryBuilder::prepare_filter(
                 const std::vector<PropertyValue>& filterParam = iter->second;
                 if (!filterCache_->get(*iter, pDocIdSet2))
                 {
-                    pDocIdSet2.reset(new EWAHBoolArray<uword32>());
+                    pDocIdSet2.reset(new EWAHBoolArray<uint32_t>());
                     pBitVector.reset(new BitVector(bitsNum));
                     indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pBitVector);
                     pBitVector->compressed(*pDocIdSet2);
                     filterCache_->set(*iter, pDocIdSet2);
                 }
-                pDocIdSet3.reset(new EWAHBoolArray<uword32>());
+                pDocIdSet3.reset(new EWAHBoolArray<uint32_t>());
                 (*pDocIdSet).rawlogicaland(*pDocIdSet2, *pDocIdSet3);
                 (*pDocIdSet).swap(*pDocIdSet3);
             }
@@ -225,7 +224,7 @@ void QueryBuilder::prepare_for_property_(
         }
         else
         {
-            boost::shared_ptr<EWAHBoolArray<uword32> > pDocIdSet;
+            boost::shared_ptr<EWAHBoolArray<uint32_t> > pDocIdSet;
             boost::shared_ptr<BitVector> pBitVector;
 
             if (!TermTypeDetector::isTypeMatch(termStr, dataType))
@@ -246,18 +245,14 @@ void QueryBuilder::prepare_for_property_(
                 filteringRule.second = filterParam;
                 if(!filterCache_->get(filteringRule, pDocIdSet))
                 {
-                    pDocIdSet.reset(new EWAHBoolArray<uword32>());
+                    pDocIdSet.reset(new EWAHBoolArray<uint32_t>());
                     pBitVector.reset(new BitVector(pIndexReader_->numDocs() + 1));
 
                     indexManagerPtr_->getDocsByNumericValue(colID, property, value, *pBitVector);
                     pBitVector->compressed(*pDocIdSet);
                     filterCache_->set(filteringRule, pDocIdSet);
                 }
-                vector<uint> idList;
-                pDocIdSet->appendRowIDs(idList);
-
-                TermDocFreqs* pTermDocReader = 0;
-                pTermDocReader = new BitMapIterator(idList);
+                TermDocFreqs* pTermDocReader = (TermDocFreqs*)(new EWAHBoolArrayBitIterator<uint32_t>(pDocIdSet->bit_iterator()));
                 termDocReaders[termId].push_back(pTermDocReader);
             }
         }
