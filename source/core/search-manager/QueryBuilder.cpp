@@ -16,6 +16,7 @@
 #include <common/TermTypeDetector.h>
 
 #include <ir/index_manager/utility/BitVector.h>
+#include <ir/index_manager/utility/BitMapIterator.h>
 
 #include <util/get.h>
 
@@ -252,7 +253,7 @@ void QueryBuilder::prepare_for_property_(
                     pBitVector->compressed(*pDocIdSet);
                     filterCache_->set(filteringRule, pDocIdSet);
                 }
-                TermDocFreqs* pTermDocReader = (TermDocFreqs*)(new EWAHBoolArrayBitIterator<uint32_t>(pDocIdSet->bit_iterator()));
+                TermDocFreqs* pTermDocReader = new BitMapIterator( pDocIdSet->bit_iterator() );
                 termDocReaders[termId].push_back(pTermDocReader);
             }
         }
