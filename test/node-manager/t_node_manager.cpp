@@ -44,7 +44,6 @@ BOOST_AUTO_TEST_SUITE( t_zookeeper )
 
 BOOST_AUTO_TEST_CASE( node_manager_synchro )
 {
-    return;
     // set default config
     DistributedTopologyConfig dsTopologyConfig;
     dsTopologyConfig.clusterId_ = "zhongxia";
@@ -70,10 +69,10 @@ BOOST_AUTO_TEST_CASE( node_manager_synchro )
     spd->waitConsumers(ret);
     cout << "Producer: wait consumers ended " <<ret<<endl;
 
-    spd->produce("/data/scd2", callback_on_consumed);
+    //spd->produce("/data/scd2", callback_on_consumed);
 
     //while (true)
-        sleep(6);
+    //    sleep(4);
     }
 }
 
