@@ -12,7 +12,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-using namespace izenelib::ir::indexmanager;
+using namespace izenelib::am;
 
 namespace sf1r{
 

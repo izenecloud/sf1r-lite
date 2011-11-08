@@ -24,7 +24,7 @@
 namespace sf1r
 {
 using izenelib::ir::idmanager::IDManager;
-
+class ScdWriterController;
 class MiningTaskService;
 class RecommendTaskService;
 class IndexManager;
@@ -154,6 +154,8 @@ private:
     PropertyConfig dateProperty_;
     config_tool::PROPERTY_ALIAS_MAP_T propertyAliasMap_;
 
+    ScdWriterController* scd_writer_;
+    
     boost::shared_ptr<LAManager> laManager_;
     boost::shared_ptr<IDManager> idManager_;
     boost::shared_ptr<DocumentManager> documentManager_;
