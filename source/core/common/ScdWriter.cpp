@@ -5,13 +5,18 @@
 using namespace sf1r;
 
 ScdWriter::ScdWriter(const std::string& dir, int op)
+:dir_(dir), op_(op)
 {
-    std::string filename = GenSCDFileName(op);
-    ofs_.open( (dir+"/"+filename).c_str() );
+    filename_ = GenSCDFileName(op);
 }
 
 ScdWriter::~ScdWriter()
 {
+}
+
+void ScdWriter::Open_()
+{
+    ofs_.open( (dir_+"/"+filename_).c_str() );
 }
 
 std::string ScdWriter::GenSCDFileName( int op)
@@ -54,6 +59,10 @@ void ScdWriter::Append(const Document& doc)
     {
         return;
     }
+    if(!ofs_.is_open())
+    {
+        Open_();
+    }
     std::string sdocid;
     docid_it->second.get<izenelib::util::UString>().convertString(sdocid, izenelib::util::UString::UTF_8);
     ofs_<<"<"<<DOCID<<">"<<sdocid<<std::endl;
@@ -85,8 +94,69 @@ void ScdWriter::Append(const Document& doc)
         ++it;
     }
 }
+
+bool ScdWriter::Append(const SCDDoc& doc)
+{
+    if(op_!=DELETE_SCD)
+    {
+        if(doc.size()<2)//at least two properties including DOCID in I and U scd
+        {
+            std::cout<<"at least two properties including DOCID in I and U document"<<std::endl;
+            return false;
+        }
+    }
+    else
+    {
+        if(doc.size()!=1)
+        {
+            std::cout<<"D document only need the DOCID property"<<std::endl;
+            return false;
+        }
+    }
+    bool docid_found = false;
+    std::string docid_value;
+    for(SCDDoc::const_iterator it = doc.begin();it!=doc.end();++it)
+    {
+        std::string name;
+        it->first.convertString(name, izenelib::util::UString::UTF_8);
+        if(name=="DOCID")
+        {
+            it->second.convertString(docid_value, izenelib::util::UString::UTF_8);
+            docid_found = true;
+            break;
+        }
+    }
+    if(!docid_found)
+    {
+        std::cout<<"DOCID property not found"<<std::endl;
+        return false;
+    }
+    if(!ofs_.is_open())
+    {
+        Open_();
+    }
+    ofs_<<"<DOCID>"<<docid_value<<std::endl;
+    if(op_!=DELETE_SCD)
+    {
+        for(SCDDoc::const_iterator it = doc.begin();it!=doc.end();++it)
+        {
+            std::string name;
+            it->first.convertString(name, izenelib::util::UString::UTF_8);
+            if(name!="DOCID")
+            {
+                std::string value;
+                it->second.convertString(value, izenelib::util::UString::UTF_8);
+                ofs_<<"<"<<name<<">"<<value<<std::endl;
+            }
+        }
+    }
+    return true;
+}
     
 void ScdWriter::Close()
 {
-    ofs_.close();
+    if(ofs_.is_open())
+    {
+        ofs_.close();
+    }
 }
