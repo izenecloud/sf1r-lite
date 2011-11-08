@@ -40,11 +40,10 @@ void thread_consumer_run()
     scp->watchProducer(callback_on_produced, true);
 }
 
-BOOST_AUTO_TEST_SUITE( t_zookeeper )
+BOOST_AUTO_TEST_SUITE( NodeManager_test )
 
-BOOST_AUTO_TEST_CASE( node_manager_synchro )
+BOOST_AUTO_TEST_CASE( NodeManager_synchro_test )
 {
-    return;
     // set default config
     DistributedTopologyConfig dsTopologyConfig;
     dsTopologyConfig.clusterId_ = "zhongxia";
@@ -56,6 +55,7 @@ BOOST_AUTO_TEST_CASE( node_manager_synchro )
     dsUtilConfig.zkConfig_.zkHosts_ = "172.16.0.161:2181,172.16.0.162:2181,172.16.0.163:2181";
     dsUtilConfig.zkConfig_.zkRecvTimeout_ = 2000;
 
+    /*
     NodeManagerSingleton::get()->initWithConfig(dsTopologyConfig, dsUtilConfig);
 
     // Consumer
@@ -63,18 +63,18 @@ BOOST_AUTO_TEST_CASE( node_manager_synchro )
 
     // Producer
     {
-    SynchroProducerPtr spd =
-        DistributedSynchroFactory::makeProcuder(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER);
-    spd->produce("/data/scd", callback_on_consumed);
-    bool ret;
-    spd->waitConsumers(ret);
-    cout << "Producer: wait consumers ended " <<ret<<endl;
+        SynchroProducerPtr spd =
+            DistributedSynchroFactory::makeProcuder(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER);
+        spd->produce("/data/scd", callback_on_consumed);
+        bool ret;
+        spd->waitConsumers(ret);
+        cout << "Producer: wait consumers ended " <<ret<<endl;
 
-    spd->produce("/data/scd2", callback_on_consumed);
+        spd->produce("/data/scd2", callback_on_consumed);
 
-    //while (true)
-        sleep(6);
+        sleep(4);
     }
+    */
 }
 
 BOOST_AUTO_TEST_SUITE_END()
