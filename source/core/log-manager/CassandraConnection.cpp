@@ -8,12 +8,11 @@
 #include <libcassandra/connection_manager.h>
 
 using namespace std;
-using namespace org::apache::cassandra;
 using namespace libcassandra;
 
 namespace sf1r {
 
-const int CassandraConnection::PoolSize = 16;
+const int CassandraConnection::pool_size = 16;
 
 CassandraConnection::CassandraConnection()
 {
@@ -31,51 +30,89 @@ bool CassandraConnection::init(const std::string& str)
         std::string path = str.substr(cassandra_prefix.length());
         std::string host;
         std::string portStr;
+        std::string ks_name;
         uint16_t port = 9160;
-//      std::string username;
-//      std::string password;
+        std::string username;
+        std::string password;
+        bool hasAuth = false;
 
-        std::size_t pos = path.find(":");
-//      if (pos == 0 || pos == std::string::npos) return false;
-//      username = path.substr(0, pos);
-//      path = path.substr(pos + 1);
-//      pos = path.find("@");
-//      if (pos == std::string::npos) return false;
-//      password = path.substr(0, pos);
-//      path = path.substr(pos + 1);
-//      pos = path.find(":");
-        if (pos == 0 || pos == std::string::npos) return false;
+        // Parse authentication information
+        std::size_t pos = path.find('@');
+        if (pos == 0)
+            goto UNRECOGNIZED;
+        if (pos != std::string::npos)
+        {
+            hasAuth = true;
+            std::string auth = path.substr(0, pos);
+            path = path.substr(pos + 1);
+            pos = auth.find(':');
+            if (pos == 0)
+                goto UNRECOGNIZED;
+            username = auth.substr(0, pos);
+            if (pos != std::string::npos)
+                password = auth.substr(pos + 1);
+        }
+
+        // Parse keyspace name
+        pos = path.find('/');
+        if (pos == 0)
+            goto UNRECOGNIZED;
+        if (pos == std::string::npos)
+            ks_name= "SF1R";
+        else
+        {
+            ks_name= path.substr(pos + 1);
+            path = path.substr(0, pos);
+        }
+
+        // Parse host and port
+        pos = path.find(':');
+        if (pos == 0)
+            goto UNRECOGNIZED;
         host = path.substr(0, pos);
-        path = path.substr(pos + 1);
-//      pos = path.find("/");
-//      if (pos == 0) return false;
-        portStr = path;
-        try
+        if (pos == std::string::npos)
+            port = 9160;
+        else
         {
-            port = boost::lexical_cast<uint16_t>(portStr);
-        }
-        catch (std::exception& ex)
-        {
-            return false;
+            path = path.substr(pos + 1);
+            portStr = path;
+            try
+            {
+                port = boost::lexical_cast<uint16_t>(portStr);
+            }
+            catch (std::exception& ex)
+            {
+                goto UNRECOGNIZED;
+            }
         }
 
         try
         {
-            CassandraConnectionManager::instance()->init(host, port, PoolSize);
-            cassandraClient_.reset(new Cassandra());
- //         if (!username.empty() || !password.empty())
- //             cassandraClient_->login(username, password);
+            CassandraConnectionManager::instance()->init(host, port, pool_size);
+            cassandra_client_.reset(new Cassandra());
+            if (hasAuth)
+                cassandra_client_->login(username, password);
+
+            KeyspaceDefinition ks_def;
+            ks_def.setName(ks_name);
+            if (!cassandra_client_->findKeyspace(ks_name))
+            {
+                cassandra_client_->createKeyspace(ks_def);
+            }
+            cassandra_client_->setKeyspace(ks_def.getName());
         }
-        catch (InvalidRequestException &ire)
+        catch (org::apache::cassandra::InvalidRequestException &ire)
         {
-            std::cerr << ire.why << std::endl;
+            std::cerr << "[CassandraConnection::init] " << ire.why << std::endl;
             return false;
         }
+        std::cerr << "[CassandraConnection::init] " << str << std::endl;
         return true;
     }
     else
     {
-        std::cerr << "[DbConnection::init] " << str << " unrecognized" << std::endl;
+        UNRECOGNIZED:
+        std::cerr << "[CassandraConnection::init] " << str << " unrecognized" << std::endl;
         return false;
     }
 }

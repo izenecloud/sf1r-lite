@@ -29,7 +29,7 @@ private:
     std::string product_name_;
     std::string product_uuid_;
 
-    boost::shared_ptr<libcassandra::Cassandra> cassandraClient_;
+    boost::shared_ptr<libcassandra::Cassandra> cassandra_client_;
 };
 
 }

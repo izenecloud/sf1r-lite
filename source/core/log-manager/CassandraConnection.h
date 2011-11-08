@@ -26,13 +26,13 @@ public:
 
     boost::shared_ptr<libcassandra::Cassandra>& getCassandraClient()
     {
-        return cassandraClient_;
+        return cassandra_client_;
     }
 
 private:
-    static const int PoolSize;
+    static const int pool_size;
 
-    boost::shared_ptr<libcassandra::Cassandra> cassandraClient_;
+    boost::shared_ptr<libcassandra::Cassandra> cassandra_client_;
 };
 
 }

@@ -17,21 +17,20 @@ namespace sf1r
 
 class ProductTaskService : public ::izenelib::osgi::IService
 {
-    
+
 public:
     ProductTaskService(
         ProductBundleConfiguration* bundleConfig);
 
     ~ProductTaskService();
-    
+
 
 private:
     ProductBundleConfiguration* bundleConfig_;
-    
+
     friend class ProductBundleActivator;
 };
 
 }
 
 #endif
-

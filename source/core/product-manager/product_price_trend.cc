@@ -5,7 +5,7 @@
 using namespace sf1r;
 
 ProductPriceTrend::ProductPriceTrend()
-    : cassandraClient_(CassandraConnection::instance().getCassandraClient())
+    : cassandra_client_(CassandraConnection::instance().getCassandraClient())
 {
 }
 
