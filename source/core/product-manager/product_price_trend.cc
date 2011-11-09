@@ -49,7 +49,7 @@ bool ProductPriceTrend::update() const
         {
             cassandra_client_->insertColumn(
                     lexical_cast<string>(it->second),
-                    product_info_.product_uuid_,
+                    product_info_.uuid_,
                     column_family_,
                     super_column_,
                     serializeLong(it->first)
@@ -69,7 +69,7 @@ bool ProductPriceTrend::clear() const
     try
     {
         cassandra_client_->removeSuperColumn(
-                product_info_.product_uuid_,
+                product_info_.uuid_,
                 column_family_,
                 super_column_);
     }
@@ -101,7 +101,7 @@ bool ProductPriceTrend::get()
         vector<Column> column_list;
         cassandra_client_->getSlice(
                 column_list,
-                product_info_.product_uuid_,
+                product_info_.uuid_,
                 col_parent,
                 pred
                 );
