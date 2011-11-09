@@ -1,6 +1,3 @@
-#include <boost/test/unit_test.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
@@ -8,14 +5,8 @@
 #include <iostream>
 
 #include <node-manager/DistributedSynchroFactory.h>
-#include <node-manager/ScdSharding.h>
-#include <node-manager/ShardingStrategy.h>
-#include <node-manager/ScdDispatcher.h>
 
-using namespace std;
 using namespace sf1r;
-using namespace boost;
-using namespace boost::lambda;
 
 void callback_on_consumed(bool isSuccess)
 {
@@ -40,9 +31,7 @@ void thread_consumer_run()
     scp->watchProducer(callback_on_produced, true);
 }
 
-BOOST_AUTO_TEST_SUITE( NodeManager_test )
-
-BOOST_AUTO_TEST_CASE( NodeManager_synchro_test )
+int main(int argc, char** argv)
 {
     // set default config
     DistributedTopologyConfig dsTopologyConfig;
@@ -55,7 +44,6 @@ BOOST_AUTO_TEST_CASE( NodeManager_synchro_test )
     dsUtilConfig.zkConfig_.zkHosts_ = "172.16.0.161:2181,172.16.0.162:2181,172.16.0.163:2181";
     dsUtilConfig.zkConfig_.zkRecvTimeout_ = 2000;
 
-    /*
     NodeManagerSingleton::get()->initWithConfig(dsTopologyConfig, dsUtilConfig);
 
     // Consumer
@@ -74,8 +62,6 @@ BOOST_AUTO_TEST_CASE( NodeManager_synchro_test )
 
         sleep(4);
     }
-    */
+
+    return 0;
 }
-
-BOOST_AUTO_TEST_SUITE_END()
-
