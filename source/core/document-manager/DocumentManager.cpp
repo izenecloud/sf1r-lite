@@ -66,6 +66,8 @@ DocumentManager::DocumentManager(
 
 DocumentManager::~DocumentManager()
 {
+    flush();
+
     if(propertyValueTable_) delete propertyValueTable_;
     if(snippetGenerator_) delete snippetGenerator_;
     if(highlighter_) delete highlighter_;
@@ -187,9 +189,9 @@ bool DocumentManager::updatePartialDocument(const Document& document)
     return updateDocument(oldDoc);
 }
 
-bool DocumentManager::isDeleted(docid_t docId)
+bool DocumentManager::isDeleted(docid_t docId) const
 {
-    if(delfilter_.size()<docId)
+    if(docId == 0 || docId > delfilter_.size())
     {
         return false;
     }
@@ -301,7 +303,7 @@ bool DocumentManager::getDocument_impl(
     return false;
 }
 
-docid_t DocumentManager::getMaxDocId()
+docid_t DocumentManager::getMaxDocId() const
 {
     return propertyValueTable_->getMaxDocId();
 }

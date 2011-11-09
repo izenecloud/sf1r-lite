@@ -142,7 +142,7 @@ public:
      * @return \c true if document is already deleted \c false
      *         otherwise.
      */
-    bool isDeleted(docid_t docId);
+    bool isDeleted(docid_t docId) const;
 
     /**
      * @brief gets one document by id
@@ -284,7 +284,7 @@ public:
      *         by IndexBuilder for correctly processing I/U/D/R SCDs and indexing.
      * @return  returns maximum docId value managed by document manager
      */
-    docid_t getMaxDocId();
+    docid_t getMaxDocId() const;
     
     bool getDeletedDocIdList(std::vector<docid_t>& docid_list);
     

@@ -158,7 +158,7 @@ public:
         return ret;
     }
 
-    docid_t getMaxDocId()
+    docid_t getMaxDocId() const
     {
         return maxDocID_;
     }
