@@ -17,21 +17,28 @@ class ProductPriceTrend
 public:
     ProductPriceTrend();
 
+    ProductPriceTrend(const ProductInfoType& product_info);
+
     ~ProductPriceTrend();
 
-    bool update(const ProductInfoType& product_info);
+    void setProductInfo(const ProductInfoType& product_info);
 
-    bool clear(const ProductInfoType& product_info);
+    const ProductInfoType& getProductInfo() const;
 
-    bool put(const ProductInfoType& product_info);
+    bool update() const;
 
-    bool get(ProductInfoType& product_info);
+    bool clear() const;
+
+    bool set() const;
+
+    bool get();
 
 public:
     static const std::string column_family_;
     static const std::string super_column_;
 
 private:
+    ProductInfoType product_info_;
     boost::shared_ptr<libcassandra::Cassandra> cassandra_client_;
 };
 

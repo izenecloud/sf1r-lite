@@ -20,20 +20,36 @@ ProductPriceTrend::ProductPriceTrend()
 {
 }
 
+ProductPriceTrend::ProductPriceTrend(const ProductInfoType& product_info)
+    : product_info_(product_info)
+    , cassandra_client_(CassandraConnection::instance().getCassandraClient())
+{
+}
+
 ProductPriceTrend::~ProductPriceTrend()
 {
 }
 
-bool ProductPriceTrend::update(const ProductInfoType& product_info)
+void ProductPriceTrend::setProductInfo(const ProductInfoType& product_info)
+{
+    product_info_ = product_info;
+}
+
+const ProductInfoType& ProductPriceTrend::getProductInfo() const
+{
+    return product_info_;
+}
+
+bool ProductPriceTrend::update() const
 {
     try
     {
-        for (PriceHistoryType::const_iterator it = product_info.price_history_.begin();
-                it != product_info.price_history_.end(); ++it)
+        for (PriceHistoryType::const_iterator it = product_info_.price_history_.begin();
+                it != product_info_.price_history_.end(); ++it)
         {
             cassandra_client_->insertColumn(
                     lexical_cast<string>(it->second),
-                    product_info.product_uuid_,
+                    product_info_.product_uuid_,
                     column_family_,
                     super_column_,
                     to_iso_string(it->first)
@@ -48,11 +64,14 @@ bool ProductPriceTrend::update(const ProductInfoType& product_info)
     return true;
 }
 
-bool ProductPriceTrend::clear(const ProductInfoType& product_info)
+bool ProductPriceTrend::clear() const
 {
     try
     {
-        cassandra_client_->remove(product_info.product_uuid_, column_family_, "", "");
+        cassandra_client_->removeSuperColumn(
+                product_info_.product_uuid_,
+                column_family_,
+                super_column_);
     }
     catch (InvalidRequestException &ire)
     {
@@ -62,12 +81,12 @@ bool ProductPriceTrend::clear(const ProductInfoType& product_info)
     return true;
 }
 
-bool ProductPriceTrend::put(const ProductInfoType& product_info)
+bool ProductPriceTrend::set() const
 {
-    return clear(product_info) && update(product_info);
+    return clear() && update();
 }
 
-bool ProductPriceTrend::get(ProductInfoType& product_info)
+bool ProductPriceTrend::get()
 {
     try
     {
@@ -76,22 +95,21 @@ bool ProductPriceTrend::get(ProductInfoType& product_info)
         col_parent.__set_super_column(super_column_);
 
         SlicePredicate pred;
-        pred.slice_range.__set_start(to_iso_string(product_info.from_time_));
-        pred.slice_range.__set_finish(to_iso_string(product_info.to_time_));
+        pred.slice_range.__set_start(to_iso_string(product_info_.from_time_));
+        pred.slice_range.__set_finish(to_iso_string(product_info_.to_time_));
 
         vector<Column> column_list;
         cassandra_client_->getSlice(
                 column_list,
-                product_info.product_uuid_,
+                product_info_.product_uuid_,
                 col_parent,
                 pred
                 );
 
-        PriceHistoryType& price_history = product_info.price_history_;
         for (vector<Column>::const_iterator it = column_list.begin();
                 it != column_list.end(); ++it)
         {
-            price_history.push_back(make_pair(from_iso_string(it->name), lexical_cast<ProductPriceType>(it->value)));
+            product_info_.setHistory(from_iso_string(it->name), lexical_cast<ProductPriceType>(it->value));
         }
     }
     catch (InvalidRequestException &ire)

@@ -95,11 +95,12 @@ bool CassandraConnection::init(const std::string& str)
 
             KeyspaceDefinition ks_def;
             ks_def.setName(ks_name);
+            // TODO: detail configuration for keyspace
             if (!cassandra_client_->findKeyspace(ks_name))
-            {
                 cassandra_client_->createKeyspace(ks_def);
-            }
-            cassandra_client_->setKeyspace(ks_def.getName());
+            else
+                cassandra_client_->updateKeyspace(ks_def);
+            cassandra_client_->setKeyspace(ks_name);
         }
         catch (org::apache::cassandra::InvalidRequestException &ire)
         {

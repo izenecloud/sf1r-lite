@@ -29,6 +29,14 @@ public:
         return cassandra_client_;
     }
 
+public:
+    enum COLUMN_FAMILY_ID {
+        PRODUCT_INFO = 1000,
+        CUSTOMER_INFO = 2000,
+        VENDOR_INFO = 3000,
+        SYSTEM_INFO = 4000,
+    };
+
 private:
     static const int pool_size;
 
