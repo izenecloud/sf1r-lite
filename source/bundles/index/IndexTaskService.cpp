@@ -347,6 +347,7 @@ bool IndexTaskService::createDocument(const Value& documentValue)
     }
     sf1r::Status::Guard statusGuard(indexStatus_);
 
+#ifdef COBRA_RESTRICT
     const docid_t maxDocId = documentManager_->getMaxDocId();
     if ( LicenseManager::continueIndex_ )
     {
@@ -356,6 +357,7 @@ bool IndexTaskService::createDocument(const Value& documentValue)
     {
         COBRA_RESTRICT_EXCEED_N_RETURN_FALSE(maxDocId, LicenseManager::TRIAL_MAX_DOC,  0);
     }
+#endif
 
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
