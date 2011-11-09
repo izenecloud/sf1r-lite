@@ -25,13 +25,13 @@ public:
 
     const ProductInfoType& getProductInfo() const;
 
-    bool update() const;
+    bool updateHistory() const;
 
-    bool clear() const;
+    bool clearHistory() const;
 
-    bool set() const;
+    bool setHistory() const;
 
-    bool get();
+    bool getHistory();
 
 public:
     static const std::string column_family_;

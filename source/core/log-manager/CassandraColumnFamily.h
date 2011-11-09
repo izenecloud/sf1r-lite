@@ -3,6 +3,9 @@
 
 #include "CassandraConnection.h"
 
+#include <libcassandra/genthrift/cassandra_types.h>
+#include <libcassandra/cassandra.h>
+
 namespace sf1r {
 
 class CassandraColumnFamily
@@ -14,51 +17,56 @@ public:
 
     virtual ~CassandraColumnFamily() {}
 
+    static boost::shared_ptr<libcassandra::Cassandra>& cassandraClient()
+    {
+        return CassandraConnection::instance().getCassandraClient();
+    }
+
 protected:
     bool exist_;
 };
 
 #define DECLARE_COLUMN_FAMILY_COMMON_ROUTINES \
 public: \
-    static const std::string name; \
-    static const std::string column_type; \
-    static const std::string comparator_type; \
-    static const std::string sub_comparator_type; \
-    static const std::string comment; \
-    static const double row_cache_size; \
-    static const double key_cache_size; \
-    static const double read_repair_chance; \
-    static const std::vector<org::apache::cassandra::ColumnDef> column_metadata; \
-    static const int32_t gc_grace_seconds; \
-    static const std::string default_validation_class; \
-    static const int32_t id; \
-    static const int32_t min_compaction_threshold; \
-    static const int32_t max_compaction_threshold; \
-    static const int32_t row_cache_save_period_in_seconds; \
-    static const int32_t key_cache_save_period_in_seconds; \
-    static const std::map<std::string, std::string> compression_options; \
+    static const std::string cassandra_name; \
+    static const std::string cassandra_column_type; \
+    static const std::string cassandra_comparator_type; \
+    static const std::string cassandra_sub_comparator_type; \
+    static const std::string cassandra_comment; \
+    static const double cassandra_row_cache_size; \
+    static const double cassandra_key_cache_size; \
+    static const double cassandra_read_repair_chance; \
+    static const std::vector<org::apache::cassandra::ColumnDef> cassandra_column_metadata; \
+    static const int32_t cassandra_gc_grace_seconds; \
+    static const std::string cassandra_default_validation_class; \
+    static const int32_t cassandra_id; \
+    static const int32_t cassandra_min_compaction_threshold; \
+    static const int32_t cassandra_max_compaction_threshold; \
+    static const int32_t cassandra_row_cache_save_period_in_seconds; \
+    static const int32_t cassandra_key_cache_save_period_in_seconds; \
+    static const std::map<std::string, std::string> cassandra_compression_options; \
     \
     static void createColumnFamily() \
     { \
         libcassandra::ColumnFamilyDefinition definition( \
             CassandraConnection::instance().getKeyspaceName(), \
-            name, \
-            column_type, \
-            comparator_type, \
-            sub_comparator_type, \
-            comment, \
-            row_cache_size, \
-            key_cache_size, \
-            read_repair_chance, \
-            column_metadata, \
-            gc_grace_seconds, \
-            default_validation_class, \
-            id, \
-            min_compaction_threshold, \
-            max_compaction_threshold, \
-            row_cache_save_period_in_seconds, \
-            key_cache_save_period_in_seconds, \
-            compression_options); \
+            cassandra_name, \
+            cassandra_column_type, \
+            cassandra_comparator_type, \
+            cassandra_sub_comparator_type, \
+            cassandra_comment, \
+            cassandra_row_cache_size, \
+            cassandra_key_cache_size, \
+            cassandra_read_repair_chance, \
+            cassandra_column_metadata, \
+            cassandra_gc_grace_seconds, \
+            cassandra_default_validation_class, \
+            cassandra_id, \
+            cassandra_min_compaction_threshold, \
+            cassandra_max_compaction_threshold, \
+            cassandra_row_cache_save_period_in_seconds, \
+            cassandra_key_cache_save_period_in_seconds, \
+            cassandra_compression_options); \
         \
         try \
         { \

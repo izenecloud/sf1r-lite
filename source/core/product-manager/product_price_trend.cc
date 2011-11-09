@@ -40,7 +40,7 @@ const ProductInfoType& ProductPriceTrend::getProductInfo() const
     return product_info_;
 }
 
-bool ProductPriceTrend::update() const
+bool ProductPriceTrend::updateHistory() const
 {
     try
     {
@@ -64,14 +64,15 @@ bool ProductPriceTrend::update() const
     return true;
 }
 
-bool ProductPriceTrend::clear() const
+bool ProductPriceTrend::clearHistory() const
 {
     try
     {
         cassandra_client_->removeSuperColumn(
                 product_info_.uuid_,
                 column_family_,
-                super_column_);
+                super_column_
+                );
     }
     catch (InvalidRequestException &ire)
     {
@@ -81,12 +82,12 @@ bool ProductPriceTrend::clear() const
     return true;
 }
 
-bool ProductPriceTrend::set() const
+bool ProductPriceTrend::setHistory() const
 {
-    return clear() && update();
+    return clearHistory() && updateHistory();
 }
 
-bool ProductPriceTrend::get()
+bool ProductPriceTrend::getHistory()
 {
     try
     {

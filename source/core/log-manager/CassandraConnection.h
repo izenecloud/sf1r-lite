@@ -38,7 +38,8 @@ public:
         PRODUCT_INFO = 2000,
         CUSTOMER_INFO,
         VENDOR_INFO,
-        SYSTEM_INFO,
+        ECOMM_INFO,
+        SYSTEM_INFO = 9999 //XXX Please add new entries right before this line
     };
 
 private:

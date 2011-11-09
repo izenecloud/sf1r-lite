@@ -8,7 +8,7 @@
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
 #include <search-manager/SearchManager.h>
-#include <log-manager/ProductInfo.h>
+#include <log-manager/ECommInfo.h>
 
 #include <bundles/mining/MiningTaskService.h>
 #include <bundles/recommend/RecommendTaskService.h>
@@ -30,6 +30,8 @@
 #include <memory> // for auto_ptr
 #include <signal.h>
 #include <protect/RestrictMacro.h>
+#include <sys/time.h>
+
 namespace bfs = boost::filesystem;
 
 using namespace izenelib::driver;
@@ -804,28 +806,30 @@ void IndexTaskService::saveProductInfo_(int op)
     if (bundleConfig_->productSourceField_.empty())
         return;
 
-    boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
+    struct timeval tv;
+    struct timezone tz;
+    gettimeofday(&tv, &tz);
     for (map<std::string, uint32_t>::const_iterator iter = productSourceCount_.begin();
         iter != productSourceCount_.end(); ++iter)
     {
-//      ProductInfo productInfo;
-//      productInfo.setSource(iter->first);
-//      productInfo.setCollection(bundleConfig_->collectionName_);
-//      productInfo.setNum(iter->second);
-//      if (op == 1)
-//      {
-//          productInfo.setFlag("insert");
-//      }
-//      else if (op == 2)
-//      {
-//          productInfo.setFlag("update");
-//      }
-//      else
-//      {
-//          productInfo.setFlag("delete");
-//      }
-//      productInfo.setTimeStamp(now);
-//      productInfo.save();
+        ECommInfo eCommInfo;
+        eCommInfo.setSource(iter->first);
+        eCommInfo.setCollection(bundleConfig_->collectionName_);
+        eCommInfo.setNum(iter->second);
+        if (op == 1)
+        {
+            eCommInfo.setFlag("insert");
+        }
+        else if (op == 2)
+        {
+            eCommInfo.setFlag("update");
+        }
+        else
+        {
+            eCommInfo.setFlag("delete");
+        }
+        eCommInfo.setTimeStamp(tv.tv_sec);
+        eCommInfo.save();
     }
 }
 

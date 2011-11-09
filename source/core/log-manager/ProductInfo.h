@@ -9,8 +9,6 @@
 #define _PRODUCT_INFO_H_
 
 #include "CassandraColumnFamily.h"
-#include <libcassandra/genthrift/cassandra_types.h>
-#include <libcassandra/cassandra.h>
 
 namespace sf1r {
 
