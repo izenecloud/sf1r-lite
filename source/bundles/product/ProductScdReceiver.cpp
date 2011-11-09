@@ -12,7 +12,7 @@ ProductScdReceiver::ProductScdReceiver():index_service_(NULL)
 
     syncConsumer->watchProducer(boost::bind(&ProductScdReceiver::Run, this, _1), true);
 }
-    
+
 bool ProductScdReceiver::Run(const std::string& scd_source_dir)
 {
     std::cout<<"ProductScdReceiver::Run "<<scd_source_dir<<std::endl;
@@ -38,7 +38,7 @@ bool ProductScdReceiver::Run(const std::string& scd_source_dir)
             }
         }
     }
-    if(scd_list.empty()) 
+    if(scd_list.empty())
     {
         return false;
     }
@@ -47,7 +47,7 @@ bool ProductScdReceiver::Run(const std::string& scd_source_dir)
     {
         return false;
     }
-    
+
     //call buildCollection
     if(!index_service_->buildCollection(0))
     {
@@ -77,7 +77,7 @@ bool ProductScdReceiver::CopyFileListToDir_(const std::vector<boost::filesystem:
             }
             catch(std::exception& ex)
             {
-                
+
             }
             if(!failed)
             {
@@ -116,6 +116,3 @@ bool ProductScdReceiver::NextScdFileName_(std::string& filename) const
     filename += ofilename.substr(4, ofilename.length()-4);
     return true;
 }
-
-
-

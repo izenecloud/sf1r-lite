@@ -5,6 +5,7 @@
 #include <document-manager/DocumentManager.h>
 
 #include <log-manager/ProductInfo.h>
+#include <log-manager/ECommInfo.h>
 
 #include <common/SFLogger.h>
 #include <common/Utilities.h>
@@ -34,6 +35,7 @@ const char* SCD_BACKUP_DIR = "backup";
 
 namespace sf1r
 {
+
 ProductTaskService::ProductTaskService(
     ProductBundleConfiguration* bundleConfig
     )
@@ -46,7 +48,4 @@ ProductTaskService::~ProductTaskService()
 {
 }
 
-
-
 }
-

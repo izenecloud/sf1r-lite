@@ -1,6 +1,7 @@
 #include "LogManager.h"
 #include "SFLogMessages.h"
 #include "RDbConnection.h"
+#include "CassandraConnection.h"
 #include "SystemEvent.h"
 #include "UserQuery.h"
 #include "PropertyLabel.h"
@@ -46,16 +47,24 @@ namespace sf1r
     {
         SFLogMessage::initLogMsg(language);
 
-        if( !RDbConnection::instance().init(pathParam) )
+        if (!RDbConnection::instance().init(pathParam))
             return false;
 
         SystemEvent::createTable();
         UserQuery::createTable();
         PropertyLabel::createTable();
-        ProductInfo::createTable();
         OrderLogger::createTable();
         ItemLogger::createTable();
 
+        return true;
+    }
+
+    bool LogManager::initCassandra(const std::string& logPath)
+    {
+        if (!CassandraConnection::instance().init(logPath))
+            return false;
+
+        ProductInfo::createColumnFamily();
         return true;
     }
 
@@ -67,7 +76,7 @@ namespace sf1r
     {
         //do not delete it on file
 //          string order = "rm " + logPath;
-// 
+//
 //          RDbConnection::instance().close();
 //          std::system(order.c_str());
 //          if(!init(logPath))

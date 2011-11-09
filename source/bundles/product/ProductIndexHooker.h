@@ -22,10 +22,10 @@ public:
     bool HookUpdate(Document& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, bool r_type);
     bool HookDelete(docid_t docid);
     bool Finish();
-    
+
 private:
     boost::shared_ptr<ProductManager> product_manager_;
-    
+
 };
 
 

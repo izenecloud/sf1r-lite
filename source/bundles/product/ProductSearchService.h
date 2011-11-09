@@ -23,22 +23,21 @@ public:
     ProductSearchService(ProductBundleConfiguration* config);
 
     ~ProductSearchService();
-    
+
     boost::shared_ptr<ProductManager> GetProductManager()
     {
         return productManager_;
     }
 
 public:
-    
+
 private:
     ProductBundleConfiguration* bundleConfig_;
     boost::shared_ptr<ProductManager> productManager_;
-    
+
     friend class ProductBundleActivator;
 };
 
 }
 
 #endif
-

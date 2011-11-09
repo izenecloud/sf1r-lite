@@ -2,7 +2,6 @@
 
 #include <log-manager/SystemEvent.h>
 #include <log-manager/UserQuery.h>
-#include <log-manager/ProductInfo.h>
 #include <common/SFLogger.h>
 #include <common/parsers/OrderArrayParser.h>
 #include <common/parsers/ConditionArrayParser.h>
@@ -342,25 +341,25 @@ void LogAnalysisController::user_queries()
  */
 void LogAnalysisController::merchant_count()
 {
-    string select = "count(distinct Source) as count";
-    string conditions = parseConditions();
+//  string select = "count(distinct Source) as count";
+//  string conditions = parseConditions();
 
-    std::list< std::map<std::string, std::string> > sqlResults;
-    std::stringstream sql;
+//  std::list< std::map<std::string, std::string> > sqlResults;
+//  std::stringstream sql;
 
-    sql << "select " << select;
-    sql << " from " << ProductInfo::TableName;
-    if ( conditions.size() )
-    {
-         sql << " where " << conditions;
-    }
-    sql << ";";
-    std::cerr << sql.str() << std::endl;
-    ProductInfo::find_by_sql(sql.str(), sqlResults);
+//  sql << "select " << select;
+//  sql << " from " << ProductInfo::TableName;
+//  if ( conditions.size() )
+//  {
+//       sql << " where " << conditions;
+//  }
+//  sql << ";";
+//  std::cerr << sql.str() << std::endl;
+//  ProductInfo::find_by_sql(sql.str(), sqlResults);
 
-    Value& productInfo = response()[Keys::merchant_count];
-    std::list< std::map<std::string, std::string> >::iterator it = sqlResults.begin();
-    productInfo[Keys::count] = (*it)["count"];
+//  Value& productInfo = response()[Keys::merchant_count];
+//  std::list< std::map<std::string, std::string> >::iterator it = sqlResults.begin();
+//  productInfo[Keys::count] = (*it)["count"];
 }
 
 /**
@@ -400,28 +399,28 @@ void LogAnalysisController::merchant_count()
  */
 void LogAnalysisController::product_count()
 {
-    string select = "sum(Num) as sum";
-    string conditions = parseConditions() + " and ";
-    conditions += "Flag = " + str_concat("'", "insert", "'");
+//  string select = "sum(Num) as sum";
+//  string conditions = parseConditions() + " and ";
+//  conditions += "Flag = " + str_concat("'", "insert", "'");
 
-    //Get index result
-    std::list< std::map<std::string, std::string> > insertResults;
-    std::stringstream sql;
+//  //Get index result
+//  std::list< std::map<std::string, std::string> > insertResults;
+//  std::stringstream sql;
 
-    sql << "select " << select;
-    sql << " from " << ProductInfo::TableName;
-    if( conditions.size() )
-    {
-        sql << " where " << conditions;
-    }
-    sql << ";";
-    std::cerr << sql.str() << std::endl;
-    ProductInfo::find_by_sql(sql.str(), insertResults);
+//  sql << "select " << select;
+//  sql << " from " << ProductInfo::TableName;
+//  if( conditions.size() )
+//  {
+//      sql << " where " << conditions;
+//  }
+//  sql << ";";
+//  std::cerr << sql.str() << std::endl;
+//  ProductInfo::find_by_sql(sql.str(), insertResults);
 
-    ///Output
-    Value& productInfo = response()[Keys::product_count];
-    std::list< std::map<std::string, std::string> >::iterator iter = insertResults.begin();
-    productInfo[Keys::count] = (*iter)["sum"];
+//  ///Output
+//  Value& productInfo = response()[Keys::product_count];
+//  std::list< std::map<std::string, std::string> >::iterator iter = insertResults.begin();
+//  productInfo[Keys::count] = (*iter)["sum"];
 }
 
 /**
@@ -464,155 +463,155 @@ void LogAnalysisController::product_count()
  */
 void LogAnalysisController::product_update_info()
 {
-    string select = "Source, sum(Num) as sum";
-    string conditions = parseConditions() + " and ";
-    conditions += "Flag = " + str_concat("'", "insert", "'");
-    string group = "Source";
+//  string select = "Source, sum(Num) as sum";
+//  string conditions = parseConditions() + " and ";
+//  conditions += "Flag = " + str_concat("'", "insert", "'");
+//  string group = "Source";
 
-    map<string, string> insertInfo;
-    map<string, string> updateInfo;
-    map<string, string> deleteInfo;
-    map<string, string> timeInfo;
-    std::list< std::map<std::string, std::string> > results;
-    std::stringstream sql;
-    std::list< std::map<std::string, std::string> >::iterator it;
+//  map<string, string> insertInfo;
+//  map<string, string> updateInfo;
+//  map<string, string> deleteInfo;
+//  map<string, string> timeInfo;
+//  std::list< std::map<std::string, std::string> > results;
+//  std::stringstream sql;
+//  std::list< std::map<std::string, std::string> >::iterator it;
 
-    //Get index result
-    sql << "select " << select;
-    sql << " from " << ProductInfo::TableName;
-    if( conditions.size() )
-    {
-        sql << " where " << conditions;
-    }
-    if ( group.size() )
-    {
-         sql << " group by " << group;
-    }
-    sql << ";";
-    std::cerr << sql.str() << std::endl;
-    ProductInfo::find_by_sql(sql.str(), results);
+//  //Get index result
+//  sql << "select " << select;
+//  sql << " from " << ProductInfo::TableName;
+//  if( conditions.size() )
+//  {
+//      sql << " where " << conditions;
+//  }
+//  if ( group.size() )
+//  {
+//       sql << " group by " << group;
+//  }
+//  sql << ";";
+//  std::cerr << sql.str() << std::endl;
+//  ProductInfo::find_by_sql(sql.str(), results);
 
-    //Store insert info to map;
-    for(it = results.begin(); it != results.end(); it++)
-    {
-        insertInfo[(*it)["Source"]] = (*it)["sum"];
-    }
+//  //Store insert info to map;
+//  for(it = results.begin(); it != results.end(); it++)
+//  {
+//      insertInfo[(*it)["Source"]] = (*it)["sum"];
+//  }
 
-    //Get updated result
-    conditions = parseConditions() + " and ";
-    conditions += "Flag = " + str_concat("'", "update", "'");
+//  //Get updated result
+//  conditions = parseConditions() + " and ";
+//  conditions += "Flag = " + str_concat("'", "update", "'");
 
-    results.clear();
-    sql.clear();
-    sql.str("");
+//  results.clear();
+//  sql.clear();
+//  sql.str("");
 
-    sql << "select " << select;
-    sql << " from " << ProductInfo::TableName;
-    if( conditions.size() )
-    {
-        sql << " where " << conditions;
-    }
-    if ( group.size() )
-    {
-         sql << " group by " << group;
-    }
-    sql <<";";
-    std::cerr<< sql.str() << std::endl;
-    ProductInfo::find_by_sql(sql.str(), results);
+//  sql << "select " << select;
+//  sql << " from " << ProductInfo::TableName;
+//  if( conditions.size() )
+//  {
+//      sql << " where " << conditions;
+//  }
+//  if ( group.size() )
+//  {
+//       sql << " group by " << group;
+//  }
+//  sql <<";";
+//  std::cerr<< sql.str() << std::endl;
+//  ProductInfo::find_by_sql(sql.str(), results);
 
-    //Store update info to map
-    for(it = results.begin(); it != results.end(); it++)
-    {
-        updateInfo[(*it)["Source"]] = (*it)["sum"];
-    }
+//  //Store update info to map
+//  for(it = results.begin(); it != results.end(); it++)
+//  {
+//      updateInfo[(*it)["Source"]] = (*it)["sum"];
+//  }
 
-    //Get deleted result
-    conditions = parseConditions() + " and ";
-    conditions += "Flag = " + str_concat("'", "delete", "'");
+//  //Get deleted result
+//  conditions = parseConditions() + " and ";
+//  conditions += "Flag = " + str_concat("'", "delete", "'");
 
-    results.clear();
-    sql.clear();
-    sql.str("");
+//  results.clear();
+//  sql.clear();
+//  sql.str("");
 
-    sql<<"select " << select;
-    sql<<" from "<< ProductInfo::TableName;
-    if( conditions.size() )
-    {
-        sql<<" where " << conditions;
-    }
-    if ( group.size() )
-    {
-         sql << " group by " << group;
-    }
-    sql<<";";
-    std::cerr<< sql.str() <<std::endl;
-    ProductInfo::find_by_sql(sql.str(), results);
+//  sql<<"select " << select;
+//  sql<<" from "<< ProductInfo::TableName;
+//  if( conditions.size() )
+//  {
+//      sql<<" where " << conditions;
+//  }
+//  if ( group.size() )
+//  {
+//       sql << " group by " << group;
+//  }
+//  sql<<";";
+//  std::cerr<< sql.str() <<std::endl;
+//  ProductInfo::find_by_sql(sql.str(), results);
 
-    //Store delete info to map
-    for(it = results.begin(); it != results.end(); it++)
-    {
-        deleteInfo[(*it)["Source"]] = (*it)["sum"];
-    }
+//  //Store delete info to map
+//  for(it = results.begin(); it != results.end(); it++)
+//  {
+//      deleteInfo[(*it)["Source"]] = (*it)["sum"];
+//  }
 
-    //Get updated time info
-    select = "Source, TimeStamp";
-    conditions = parseConditions();
+//  //Get updated time info
+//  select = "Source, TimeStamp";
+//  conditions = parseConditions();
 
-    results.clear();
-    sql.clear();
-    sql.str("");
+//  results.clear();
+//  sql.clear();
+//  sql.str("");
 
-    sql<<"select " << select;
-    sql<<" from "<< ProductInfo::TableName;
-    if( conditions.size() )
-    {
-        sql<<" where " << conditions;
-    }
-    sql<<";";
-    std::cerr<< sql.str() <<std::endl;
-    ProductInfo::find_by_sql(sql.str(), results);
+//  sql<<"select " << select;
+//  sql<<" from "<< ProductInfo::TableName;
+//  if( conditions.size() )
+//  {
+//      sql<<" where " << conditions;
+//  }
+//  sql<<";";
+//  std::cerr<< sql.str() <<std::endl;
+//  ProductInfo::find_by_sql(sql.str(), results);
 
-    //Store time info to map
-    for(it = results.begin(); it != results.end(); it++)
-    {
-        timeInfo[(*it)["Source"]] = (*it)["TimeStamp"];
-    }
+//  //Store time info to map
+//  for(it = results.begin(); it != results.end(); it++)
+//  {
+//      timeInfo[(*it)["Source"]] = (*it)["TimeStamp"];
+//  }
 
-    ///Output
-    Value& productInfos = response()[Keys::product_update_info];
-    productInfos.reset<Value::ArrayType>();
-    map<std::string, std::string>::iterator iter, map_it;
+//  ///Output
+//  Value& productInfos = response()[Keys::product_update_info];
+//  productInfos.reset<Value::ArrayType>();
+//  map<std::string, std::string>::iterator iter, map_it;
 
-    for (iter = insertInfo.begin(); iter != insertInfo.end(); iter++ )
-    {
-        Value& productInfo = productInfos();
-        productInfo[Keys::merchant] = iter->first;
-        productInfo[Keys::count] = iter->second;
-        if( updateInfo.size() && (map_it = updateInfo.find(iter->first)) != updateInfo.end())
-        {
-            productInfo[Keys::update_info] = map_it->second;
-        }
-        else
-        {
-            productInfo[Keys::update_info] = 0;
-        }
-        if( deleteInfo.size() && (map_it = deleteInfo.find(iter->first)) != deleteInfo.end())
-        {
-            productInfo[Keys::delete_info] = map_it->second;
-        }
-        else
-        {
-            productInfo[Keys::delete_info] = 0;
-        }
-        if( timeInfo.size() && (map_it = timeInfo.find(iter->first)) != timeInfo.end())
-        {
-            productInfo[Keys::time_info] = map_it->second;
-        }
-        else
-        {
-            productInfo[Keys::time_info] = 0;
-        }
-    }
+//  for (iter = insertInfo.begin(); iter != insertInfo.end(); iter++ )
+//  {
+//      Value& productInfo = productInfos();
+//      productInfo[Keys::merchant] = iter->first;
+//      productInfo[Keys::count] = iter->second;
+//      if( updateInfo.size() && (map_it = updateInfo.find(iter->first)) != updateInfo.end())
+//      {
+//          productInfo[Keys::update_info] = map_it->second;
+//      }
+//      else
+//      {
+//          productInfo[Keys::update_info] = 0;
+//      }
+//      if( deleteInfo.size() && (map_it = deleteInfo.find(iter->first)) != deleteInfo.end())
+//      {
+//          productInfo[Keys::delete_info] = map_it->second;
+//      }
+//      else
+//      {
+//          productInfo[Keys::delete_info] = 0;
+//      }
+//      if( timeInfo.size() && (map_it = timeInfo.find(iter->first)) != timeInfo.end())
+//      {
+//          productInfo[Keys::time_info] = map_it->second;
+//      }
+//      else
+//      {
+//          productInfo[Keys::time_info] = 0;
+//      }
+//  }
 }
 
 /**
