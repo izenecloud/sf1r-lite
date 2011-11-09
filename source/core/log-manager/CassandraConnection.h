@@ -22,6 +22,10 @@ public:
 
     ~CassandraConnection();
 
+    const std::string& getKeyspaceName() const;
+
+    void setKeyspaceName(const std::string& keyspace_name);
+
     bool init(const std::string& str);
 
     boost::shared_ptr<libcassandra::Cassandra>& getCassandraClient()
@@ -31,14 +35,14 @@ public:
 
 public:
     enum COLUMN_FAMILY_ID {
-        PRODUCT_INFO = 1000,
-        CUSTOMER_INFO = 2000,
-        VENDOR_INFO = 3000,
-        SYSTEM_INFO = 4000,
+        PRODUCT_INFO = 2000,
+        CUSTOMER_INFO,
+        VENDOR_INFO,
+        SYSTEM_INFO,
     };
 
 private:
-    static const int pool_size;
+    std::string keyspace_name_;
 
     boost::shared_ptr<libcassandra::Cassandra> cassandra_client_;
 };

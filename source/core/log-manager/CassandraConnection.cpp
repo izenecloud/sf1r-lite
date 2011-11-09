@@ -12,14 +12,22 @@ using namespace libcassandra;
 
 namespace sf1r {
 
-const int CassandraConnection::pool_size = 16;
-
 CassandraConnection::CassandraConnection()
 {
 }
 
 CassandraConnection::~CassandraConnection()
 {
+}
+
+const string& CassandraConnection::getKeyspaceName() const
+{
+    return keyspace_name_;
+}
+
+void CassandraConnection::setKeyspaceName(const string& keyspace_name)
+{
+    keyspace_name_ = keyspace_name;
 }
 
 bool CassandraConnection::init(const std::string& str)
@@ -35,6 +43,7 @@ bool CassandraConnection::init(const std::string& str)
         std::string username;
         std::string password;
         bool hasAuth = false;
+        static const size_t pool_size = 16;
 
         // Parse authentication information
         std::size_t pos = path.find('@');
@@ -64,6 +73,7 @@ bool CassandraConnection::init(const std::string& str)
             ks_name= path.substr(pos + 1);
             path = path.substr(0, pos);
         }
+        keyspace_name_ = ks_name;
 
         // Parse host and port
         pos = path.find(':');
@@ -95,6 +105,7 @@ bool CassandraConnection::init(const std::string& str)
 
             KeyspaceDefinition ks_def;
             ks_def.setName(ks_name);
+            ks_def.setStrategyClass("NetworkTopologyStrategy");
             // TODO: detail configuration for keyspace
             if (!cassandra_client_->findKeyspace(ks_name))
                 cassandra_client_->createKeyspace(ks_def);

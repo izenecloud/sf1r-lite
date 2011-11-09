@@ -1,53 +1,57 @@
 /**
- * \file ProductInfo.cpp
- * \brief 
- * \date Sep 9, 2011
- * \author Xin Liu
+ *file ProductInfo.cpp
+ *brief
+ *date Sep 9, 2011
+ *author Xin Liu
  */
 
 #include "ProductInfo.h"
-#include <boost/lexical_cast.hpp>
+
+#include <libcassandra/cassandra.h>
+#include <libcassandra/column_family_definition.h>
+
+#include <boost/assign/list_of.hpp>
 
 using namespace std;
-using namespace boost;
-using namespace boost::posix_time;
+using namespace boost::assign;
+using namespace org::apache::cassandra;
 
 namespace sf1r {
 
-const char* ProductInfo::ColumnName[EoC] = { "Source", "Collection", "Num", "Flag", "TimeStamp" };
+//XXX Below are configurations for column family. Don't omit any one of them!
 
-const char* ProductInfo::ColumnMeta[EoC] = { "TEXT", "TEXT", "integer", "TEXT", "TEXT" };
+const string ProductInfo::name("ProductInfo");
 
-const char* ProductInfo::TableName = "product_info";
+const string ProductInfo::column_type("Super");
 
-void ProductInfo::save( std::map<std::string, std::string> & rawdata ) {
-    rawdata.clear();
-    if(hasSource() )
-        rawdata[ ColumnName[Source] ] = getSource();
-    if(hasCollection() )
-        rawdata[ ColumnName[Collection] ] = getCollection();
-    if(hasNum() )
-        rawdata[ ColumnName[Num] ] = boost::lexical_cast<std::string>(getNum());
-    if(hasFlag() )
-        rawdata[ ColumnName[Flag] ] = getFlag();
-    if(hasTimeStamp() )
-        rawdata[ ColumnName[TimeStamp] ] = to_iso_string(getTimeStamp());
-}
+const string ProductInfo::comparator_type;
 
-void ProductInfo::load( const std::map<std::string, std::string> & rawdata ) {
-    for( map<string,string>::const_iterator it = rawdata.begin(); it != rawdata.end(); it++ ) {
-        if(it->first == ColumnName[Source] ) {
-            setSource(it->second);
-        } else if(it->first == ColumnName[Collection]) {
-            setCollection(it->second);
-        } else if(it->first == ColumnName[Num]) {
-            setNum(boost::lexical_cast<uint32_t>(it->second));
-        } else if(it->first == ColumnName[Flag]) {
-            setFlag(it->second);
-        } else if(it->first == ColumnName[TimeStamp]) {
-            setTimeStamp(from_iso_string(it->second));
-        }
-    }
-}
+const string ProductInfo::sub_comparator_type;
+
+const string ProductInfo::comment;
+
+const double ProductInfo::row_cache_size(0);
+
+const double ProductInfo::key_cache_size(200000);
+
+const double ProductInfo::read_repair_chance(1);
+
+const vector<ColumnDef> ProductInfo::column_metadata;
+
+const int32_t ProductInfo::gc_grace_seconds(864000);
+
+const string ProductInfo::default_validation_class;
+
+const int32_t ProductInfo::id(CassandraConnection::PRODUCT_INFO);
+
+const int32_t ProductInfo::min_compaction_threshold(4);
+
+const int32_t ProductInfo::max_compaction_threshold(22);
+
+const int32_t ProductInfo::row_cache_save_period_in_seconds(0);
+
+const int32_t ProductInfo::key_cache_save_period_in_seconds(0);
+
+const map<string, string> ProductInfo::compression_options = map_list_of("sstable_compression", "SnappyCompressor")("chunk_length_kb", "64");
 
 }

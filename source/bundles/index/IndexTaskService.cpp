@@ -138,10 +138,10 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
     LOG(INFO) << "start BuildCollection";
 
     izenelib::util::ClockTimer timer;
-    
+
     //flush all writing SCDs
     scd_writer_->Flush();
-    
+
     indexProgress_.reset();
 
     ScdParser parser(bundleConfig_->encoding_);
@@ -195,7 +195,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
 
     //sort scdList
     sort(scdList.begin(), scdList.end(), ScdParser::compareSCD);
-    
+
     //here, try to set the index mode(default[batch] or realtime)
     //The threshold is set to the scd_file_size/exist_doc_num, if smaller or equal than this threshold then realtime mode will turn on.
     //when the scd file size(M) larger than max_realtime_msize, the default mode will turn on while ignore the threshold above.
@@ -274,10 +274,10 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
             idManager_->joinWildcardProcess();
 #endif
         }
-        
+
         if(hooker_)
         {
-            if(!hooker_->Finish()) 
+            if(!hooker_->Finish())
             {
                 std::cout<<"[IndexTaskService] Hooker Finish failed."<<std::endl;
                 return false;
@@ -640,14 +640,14 @@ bool IndexTaskService::insertDoc_(Document& document, IndexerDocument& indexDocu
     {
         if(!hooker_->HookInsert(document, indexDocument)) return false;
     }
-    START_PROFILER(proDocumentIndexing); 	
+    START_PROFILER(proDocumentIndexing);
     if (documentManager_->insertDocument(document))
     {
         STOP_PROFILER(proDocumentIndexing);
 
-        START_PROFILER(proIndexing);    
+        START_PROFILER(proIndexing);
         indexManager_->insertDocument(indexDocument);
-        STOP_PROFILER(proIndexing);		
+        STOP_PROFILER(proIndexing);
         indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
         return true;
     }
@@ -780,7 +780,7 @@ bool IndexTaskService::deleteSCD_(ScdParser& parser)
         }
 
         //marks delete key to true in DB
-        
+
         if(!deleteDoc_(*iter))
         {
             LOG(WARNING) << "Cannot delete removed Document. docid. " << *iter;
@@ -808,24 +808,24 @@ void IndexTaskService::saveProductInfo_(int op)
     for (map<std::string, uint32_t>::const_iterator iter = productSourceCount_.begin();
         iter != productSourceCount_.end(); ++iter)
     {
-        ProductInfo productInfo;
-        productInfo.setSource(iter->first);
-        productInfo.setCollection(bundleConfig_->collectionName_);
-        productInfo.setNum(iter->second);
-        if (op == 1)
-        {
-            productInfo.setFlag("insert");
-        }
-        else if (op == 2)
-        {
-            productInfo.setFlag("update");
-        }
-        else
-        {
-            productInfo.setFlag("delete");
-        }
-        productInfo.setTimeStamp(now);
-        productInfo.save();
+//      ProductInfo productInfo;
+//      productInfo.setSource(iter->first);
+//      productInfo.setCollection(bundleConfig_->collectionName_);
+//      productInfo.setNum(iter->second);
+//      if (op == 1)
+//      {
+//          productInfo.setFlag("insert");
+//      }
+//      else if (op == 2)
+//      {
+//          productInfo.setFlag("update");
+//      }
+//      else
+//      {
+//          productInfo.setFlag("delete");
+//      }
+//      productInfo.setTimeStamp(now);
+//      productInfo.save();
     }
 }
 
@@ -1011,7 +1011,7 @@ bool IndexTaskService::prepareDocument_(
         {
             source = fieldValue;
         }
-        
+
         if ( (propertyNameL == izenelib::util::UString("docid", encoding) )
                 && (!extraProperty))
         {
@@ -1488,4 +1488,3 @@ std::string IndexTaskService::getScdDir() const
 
 
 }
-

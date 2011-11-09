@@ -47,13 +47,12 @@ namespace sf1r
     {
         SFLogMessage::initLogMsg(language);
 
-        if( !RDbConnection::instance().init(pathParam) )
+        if (!RDbConnection::instance().init(pathParam))
             return false;
 
         SystemEvent::createTable();
         UserQuery::createTable();
         PropertyLabel::createTable();
-        ProductInfo::createTable();
         OrderLogger::createTable();
         ItemLogger::createTable();
 
@@ -62,7 +61,11 @@ namespace sf1r
 
     bool LogManager::initCassandra(const std::string& logPath)
     {
-        return CassandraConnection::instance().init(logPath);
+        if (!CassandraConnection::instance().init(logPath))
+            return false;
+
+        ProductInfo::createColumnFamily();
+        return true;
     }
 
     LogManager::~LogManager()
