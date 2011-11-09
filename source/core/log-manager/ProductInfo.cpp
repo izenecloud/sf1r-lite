@@ -26,7 +26,7 @@ const string ProductInfo::column_type("Super");
 
 const string ProductInfo::comparator_type;
 
-const string ProductInfo::sub_comparator_type;
+const string ProductInfo::sub_comparator_type("IntType");
 
 const string ProductInfo::comment;
 

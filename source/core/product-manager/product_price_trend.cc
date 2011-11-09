@@ -2,6 +2,7 @@
 
 #include <log-manager/CassandraConnection.h>
 #include <libcassandra/cassandra.h>
+#include <libcassandra/util_functions.h>
 
 #include <boost/lexical_cast.hpp>
 
@@ -10,7 +11,6 @@ using namespace sf1r;
 using namespace std;
 using namespace libcassandra;
 using namespace org::apache::cassandra;
-using namespace boost::posix_time;
 
 const string ProductPriceTrend::column_family_("ProductInfo");
 const string ProductPriceTrend::super_column_("PriceHistory");
@@ -52,7 +52,7 @@ bool ProductPriceTrend::update() const
                     product_info_.product_uuid_,
                     column_family_,
                     super_column_,
-                    to_iso_string(it->first)
+                    serializeLong(it->first)
                     );
         }
     }
@@ -95,8 +95,8 @@ bool ProductPriceTrend::get()
         col_parent.__set_super_column(super_column_);
 
         SlicePredicate pred;
-        pred.slice_range.__set_start(to_iso_string(product_info_.from_time_));
-        pred.slice_range.__set_finish(to_iso_string(product_info_.to_time_));
+        pred.slice_range.__set_start(serializeLong(product_info_.from_time_));
+        pred.slice_range.__set_finish(serializeLong(product_info_.to_time_));
 
         vector<Column> column_list;
         cassandra_client_->getSlice(
@@ -109,7 +109,7 @@ bool ProductPriceTrend::get()
         for (vector<Column>::const_iterator it = column_list.begin();
                 it != column_list.end(); ++it)
         {
-            product_info_.setHistory(from_iso_string(it->name), lexical_cast<ProductPriceType>(it->value));
+            product_info_.setHistory(deserializeLong(it->name), lexical_cast<ProductPriceType>(it->value));
         }
     }
     catch (InvalidRequestException &ire)
