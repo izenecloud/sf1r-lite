@@ -34,7 +34,7 @@ const int32_t CollectionInfo::cassandra_gc_grace_seconds(864000);
 
 const string CollectionInfo::cassandra_default_validation_class;
 
-const int32_t CollectionInfo::cassandra_id(CassandraConnection::COLLECTION_INFO);
+const int32_t CollectionInfo::cassandra_id(0);
 
 const int32_t CollectionInfo::cassandra_min_compaction_threshold(4);
 

@@ -33,7 +33,7 @@ const int32_t ProductInfo::cassandra_gc_grace_seconds(864000);
 
 const string ProductInfo::cassandra_default_validation_class;
 
-const int32_t ProductInfo::cassandra_id(CassandraConnection::PRODUCT_INFO);
+const int32_t ProductInfo::cassandra_id(0);
 
 const int32_t ProductInfo::cassandra_min_compaction_threshold(4);
 

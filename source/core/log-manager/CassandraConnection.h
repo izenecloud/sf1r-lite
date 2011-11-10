@@ -92,15 +92,6 @@ public:
 
     bool dropColumnFamily(const std::string& in_name);
 
-public:
-    enum COLUMN_FAMILY_ID {
-        PRODUCT_INFO = 2000,
-        COLLECTION_INFO,
-        CUSTOMER_INFO,
-        VENDOR_INFO,
-        SYSTEM_INFO = 9999 //XXX Please add new entries right before this line
-    };
-
 private:
     std::string keyspace_name_;
 

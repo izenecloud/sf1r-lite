@@ -108,10 +108,7 @@ bool CassandraConnection::init(const std::string& str)
             ks_def.setName(ks_name);
             ks_def.setStrategyClass("NetworkTopologyStrategy");
             // TODO: detail configuration for keyspace
-            if (!cassandra_client_->findKeyspace(ks_name))
-                cassandra_client_->createKeyspace(ks_def);
-            else
-                cassandra_client_->updateKeyspace(ks_def);
+            cassandra_client_->createKeyspace(ks_def);
             cassandra_client_->setKeyspace(ks_name);
         }
         catch (org::apache::cassandra::InvalidRequestException &ire)
@@ -191,19 +188,7 @@ bool CassandraConnection::createColumnFamily(
     }
     catch (InvalidRequestException& ire)
     {
-        try
-        {
-            cassandra_client_->updateColumnFamily(definition);
-        }
-        catch (...)
-        {
-            cerr << "[CassandraConnection::init] Unknown error!" << endl;
-            return false;
-        }
-    }
-    catch (...)
-    {
-        cerr << "[CassandraConnection::init] Unknown error!" << endl;
+        cerr << "[CassandraConnection::init] error: " << ire.why << endl;
         return false;
     }
     return true;
