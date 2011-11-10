@@ -5,6 +5,7 @@ namespace sf1r
 
 RecommendBundleConfiguration::RecommendBundleConfiguration(const std::string& collectionName)
     : ::izenelib::osgi::BundleConfiguration("RecommendBundle-"+collectionName, "RecommendBundleActivator" )
+    , isSchemaEnable_(false)
     , collectionName_(collectionName)
     , purchaseCacheSize_(0x40000000) // 1G
     , visitCacheSize_(0x20000000) // 512M

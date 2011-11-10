@@ -37,7 +37,7 @@ bool VAVRecommender::recommendImpl_(
     for (std::vector<itemid_t>::const_iterator it = results.begin();
         it != results.end(); ++it)
     {
-        recItem.itemId_ = *it;
+        recItem.item_.setId(*it);
         recItemVec.push_back(recItem);
     }
 

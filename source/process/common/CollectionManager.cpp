@@ -55,6 +55,7 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
         ProductTaskService* productTaskService = static_cast<ProductTaskService*>(osgiLauncher_.getService(bundleName, "ProductTaskService"));
         collectionHandler->registerService(productTaskService);
     }
+
     ///createMiningBundle
     bundleName = "MiningBundle-" + collectionName;
     DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, MiningBundleActivator);	
@@ -63,15 +64,18 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
     collectionHandler->registerService(miningSearchService);
     collectionHandler->setBundleSchema(miningBundleConfig->mining_schema_);
 
-    ///createRecommendBundle
-    bundleName = "RecommendBundle-" + collectionName;
-    DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, RecommendBundleActivator);	
-    osgiLauncher_.start(recommendBundleConfig);
-    RecommendTaskService* recommendTaskService = static_cast<RecommendTaskService*>(osgiLauncher_.getService(bundleName, "RecommendTaskService"));
-    collectionHandler->registerService(recommendTaskService);
-    RecommendSearchService* recommendSearchService = static_cast<RecommendSearchService*>(osgiLauncher_.getService(bundleName, "RecommendSearchService"));
-    collectionHandler->registerService(recommendSearchService);
-    collectionHandler->setBundleSchema(recommendBundleConfig->recommendSchema_);
+    if (recommendBundleConfig->isSchemaEnable_)
+    {
+        ///createRecommendBundle
+        bundleName = "RecommendBundle-" + collectionName;
+        DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, RecommendBundleActivator);	
+        osgiLauncher_.start(recommendBundleConfig);
+        RecommendTaskService* recommendTaskService = static_cast<RecommendTaskService*>(osgiLauncher_.getService(bundleName, "RecommendTaskService"));
+        collectionHandler->registerService(recommendTaskService);
+        RecommendSearchService* recommendSearchService = static_cast<RecommendSearchService*>(osgiLauncher_.getService(bundleName, "RecommendSearchService"));
+        collectionHandler->registerService(recommendSearchService);
+        collectionHandler->setBundleSchema(recommendBundleConfig->recommendSchema_);
+    }
 
     // insert first, then assign to ensure exception safe
     std::pair<handler_map_type::iterator, bool> insertResult =

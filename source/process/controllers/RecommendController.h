@@ -6,6 +6,7 @@
  * @date Created <2011-04-21>
  */
 #include "Sf1Controller.h"
+#include <util/osgi/IService.h>
 
 #include <string>
 #include <map>
@@ -41,11 +42,6 @@ public:
     void remove_user();
     void get_user();
 
-    void add_item();
-    void update_item();
-    void remove_item();
-    void get_item();
-
     void visit_item();
     void purchase_item();
     void update_shopping_cart();
@@ -57,9 +53,12 @@ public:
     void top_item_bundle();
 
 private:
-    bool requireProperty(const std::string& propName);
-    bool value2User(const izenelib::driver::Value& value, User& user);
-    bool value2Item(const izenelib::driver::Value& value, Item& item);
+    bool requireProperty(
+        const std::string& propName,
+        std::string& propValue
+    );
+    bool requireService(::izenelib::osgi::IService* service);
+    bool value2User(User& user);
     bool value2ItemIdVec(const std::string& propName, std::vector<std::string>& itemIdVec);
     bool value2ItemCondition(ItemCondition& itemCondition);
     bool parseRecommendParam(RecommendParam& param);

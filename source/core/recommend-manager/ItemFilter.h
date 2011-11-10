@@ -9,14 +9,14 @@
 
 #include <idmlib/resys/ItemRescorer.h>
 #include "RecTypes.h"
-#include "ItemManager.h"
-#include "ItemCondition.h"
-#include "RecommendParam.h"
 
-#include <vector>
+#include <set>
 
 namespace sf1r
 {
+class ItemManager;
+class ItemCondition;
+struct RecommendParam;
 
 class ItemFilter : public idmlib::recommender::ItemRescorer
 {
@@ -24,50 +24,22 @@ public:
     ItemFilter(
         ItemManager& itemManager,
         const RecommendParam& param
-    )
-        : itemManager_(itemManager)
-        , condition_(param.condition)
-    {
-        insert(param.includeItemIds.begin(), param.includeItemIds.end());
-        insert(param.excludeItemIds.begin(), param.excludeItemIds.end());
-    }
+    );
 
-    float rescore(itemid_t itemId, float originalScore)
-    {
-        return 0;
-    }
+    float rescore(itemid_t itemId, float originalScore) { return 0; }
 
     /**
      * Check whether to filter this item.
      * @param itemId the item id to check
      * @return true to filter @p itemId, false to assume @p itemId as recommendation candidate.
      */
-    bool isFiltered(itemid_t itemId)
-    {
-        // check filter set first
-        if (filterSet_.find(itemId) != filterSet_.end())
-            return true;
-
-        // no condition
-        if (condition_.propName_.empty())
-            return itemManager_.hasItem(itemId) == false;
-
-        // not exist
-        Item item;
-        if (itemManager_.getItem(itemId, item) == false)
-            return true;
-
-        return condition_.checkItem(item) == false;
-    }
+    bool isFiltered(itemid_t itemId);
 
     /**
      * Insert the item id to filter.
      * @param itemId the item id to filter
      */
-    void insert(itemid_t itemId)
-    {
-        filterSet_.insert(itemId);
-    }
+    void insert(itemid_t itemId) { filterSet_.insert(itemId); }
 
     /**
      * Insert the item ids in the range [first, last) to filter.

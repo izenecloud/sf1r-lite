@@ -18,15 +18,13 @@
 
 namespace sf1r
 {
-class ItemManager;
 
 class PurchaseManager
 {
 public:
     PurchaseManager(
         const std::string& path,
-        ItemCFManager* itemCFManager,
-        const ItemManager* itemManager
+        ItemCFManager& itemCFManager
     );
 
     ~PurchaseManager();
@@ -73,8 +71,7 @@ public:
 
 private:
     SDBType container_;
-    ItemCFManager* itemCFManager_;
-    const ItemManager* itemManager_;
+    ItemCFManager& itemCFManager_;
 };
 
 } // namespace sf1r

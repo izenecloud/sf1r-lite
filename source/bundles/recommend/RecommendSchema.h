@@ -43,7 +43,6 @@ struct RecommendSchema
     static const std::string RATE_EVENT;
 
     std::vector<RecommendProperty> userSchema_;
-    std::vector<RecommendProperty> itemSchema_;
 
     std::set<std::string> eventSet_;
 
@@ -54,14 +53,6 @@ struct RecommendSchema
      * @return true for found, false for not found
      */
     bool getUserProperty(const std::string& name, RecommendProperty& property) const;
-
-    /**
-     * Find item property by @p name.
-     * @param name the property name in item schema
-     * @param property the object store the result
-     * @return true for found, false for not found
-     */
-    bool getItemProperty(const std::string& name, RecommendProperty& property) const;
 
     /**
      * Whether @p event is one of @c eventSet_, @c NOT_REC_RESULT_EVENT or @c NOT_REC_INPUT_EVENT.

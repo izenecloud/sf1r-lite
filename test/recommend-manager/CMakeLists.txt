@@ -70,6 +70,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   ADD_EXECUTABLE(t_ItemManager
     Runner.cpp
     t_ItemManager.cpp
+    ItemManagerTestFixture.cpp
   )
   TARGET_LINK_LIBRARIES(t_ItemManager ${libs})
   SET_TARGET_PROPERTIES(t_ItemManager PROPERTIES
@@ -120,6 +121,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   ADD_EXECUTABLE(t_OrderManager
     Runner.cpp
     t_OrderManager.cpp
+    OrderManagerTestFixture.cpp
   )
   TARGET_LINK_LIBRARIES(t_OrderManager ${libs})
   SET_TARGET_PROPERTIES(t_OrderManager PROPERTIES

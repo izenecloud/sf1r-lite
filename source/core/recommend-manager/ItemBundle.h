@@ -8,8 +8,7 @@
 #ifndef ITEM_BUNDLE_H
 #define ITEM_BUNDLE_H
 
-#include "Item.h"
-#include "RecTypes.h"
+#include <document-manager/Document.h>
 
 #include <vector>
 
@@ -21,8 +20,7 @@ struct ItemBundle
     ItemBundle() : freq(0) {}
 
     int freq;
-    std::vector<Item> items;
-    std::vector<itemid_t> itemIds;
+    std::vector<Document> items;
 };
 
 } // namespace sf1r

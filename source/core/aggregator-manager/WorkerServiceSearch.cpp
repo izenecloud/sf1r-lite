@@ -17,8 +17,10 @@ namespace sf1r
 {
 
 WorkerService::WorkerService()
+    : bundleConfig_(NULL)
+    , recommendSearchService_(NULL)
+    , pQA_(NULL)
 {
-    recommendSearchService_ = NULL;
     ///LA can only be got from a pool because it is not thread safe
     ///For some situation, we need to get the la not according to the property
     ///So we had to hard code here. A better solution is to set a default

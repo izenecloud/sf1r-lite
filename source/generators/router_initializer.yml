@@ -22,7 +22,6 @@ controllers:
   CommandsController:
     actions:
       - index
-      - index_recommend
       - optimize_index
       - index_query_log
 
@@ -91,10 +90,6 @@ controllers:
       - get_user
       - update_user
       - remove_user
-      - add_item
-      - get_item
-      - update_item
-      - remove_item
       - visit_item
       - purchase_item
       - update_shopping_cart
