@@ -36,9 +36,9 @@ public:
 public:
     enum COLUMN_FAMILY_ID {
         PRODUCT_INFO = 2000,
+        COLLECTION_INFO,
         CUSTOMER_INFO,
         VENDOR_INFO,
-        ECOMM_INFO,
         SYSTEM_INFO = 9999 //XXX Please add new entries right before this line
     };
 

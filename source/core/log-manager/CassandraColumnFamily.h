@@ -46,7 +46,7 @@ public: \
     static const int32_t cassandra_key_cache_save_period_in_seconds; \
     static const std::map<std::string, std::string> cassandra_compression_options; \
     \
-    static void createColumnFamily() \
+    static bool createColumnFamily() \
     { \
         libcassandra::ColumnFamilyDefinition definition( \
             CassandraConnection::instance().getKeyspaceName(), \
@@ -79,10 +79,15 @@ public: \
                 CassandraConnection::instance().getCassandraClient()->updateColumnFamily(definition); \
             } \
             catch (...) \
-            {} \
+            { \
+                return false; \
+            } \
         } \
         catch (...) \
-        {} \
+        { \
+            return false; \
+        } \
+        return true; \
     } \
 
 

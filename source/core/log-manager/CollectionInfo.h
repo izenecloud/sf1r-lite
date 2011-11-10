@@ -1,23 +1,18 @@
-/**
- * \file ECommInfo.h
- * \brief
- * \date Sep 9, 2011
- * \author Xin Liu
- */
-
-#ifndef _ECOMM_INFO_H_
-#define _ECOMM_INFO_H_
+#ifndef _COLLECTION_INFO_H_
+#define _COLLECTION_INFO_H_
 
 #include "CassandraColumnFamily.h"
 
+#include <boost/date_time/posix_time/posix_time.h>
+
 namespace sf1r {
 
-class ECommInfo : public CassandraColumnFamily
+class CollectionInfo : public CassandraColumnFamily
 {
 public:
-    ECommInfo() : CassandraColumnFamily() {}
+    CollectionInfo() : CassandraColumnFamily() {}
 
-    ~ECommInfo() {}
+    ~CollectionInfo() {}
 
     void save();
 
@@ -87,12 +82,12 @@ public:
         return flagPresent_;
     }
 
-    inline const time_t & getTimeStamp() const
+    inline const boost::posix_time::ptime& getTimeStamp() const
     {
         return timeStamp_;
     }
 
-    inline void setTimeStamp(const time_t timeStamp)
+    inline void setTimeStamp(const boost::posix_time::ptime& timeStamp)
     {
         timeStamp_ = timeStamp;
         timeStampPresent_ = true;
@@ -117,9 +112,9 @@ private:
     std::string flag_;
     bool flagPresent_;
 
-    time_t timeStamp_;
+    boost::posix_time::ptime timeStamp_;
     bool timeStampPresent_;
 };
 
 }
-#endif /*_ECOMM_INFO_H_ */
+#endif /*_COLLECTION_INFO_H_ */

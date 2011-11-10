@@ -6,6 +6,7 @@
 #include "UserQuery.h"
 #include "PropertyLabel.h"
 #include "ProductInfo.h"
+#include "CollectionInfo.h"
 #include "OrderLogger.h"
 #include "ItemLogger.h"
 
@@ -61,10 +62,12 @@ namespace sf1r
 
     bool LogManager::initCassandra(const std::string& logPath)
     {
-        if (!CassandraConnection::instance().init(logPath))
+        if (!CassandraConnection::instance().init(logPath) ||
+            !ProductInfo::createColumnFamily() ||
+            !CollectionInfo::createColumnFamily()
+        )
             return false;
 
-        ProductInfo::createColumnFamily();
         return true;
     }
 
