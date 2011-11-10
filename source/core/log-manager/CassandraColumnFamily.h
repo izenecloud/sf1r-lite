@@ -16,6 +16,12 @@ public:
 
     virtual ~CassandraColumnFamily() {}
 
+    virtual bool updateRow() const = 0;
+
+    virtual bool deleteRow() = 0;
+
+    virtual bool getRow() = 0;
+
 protected:
     bool exist_;
 };

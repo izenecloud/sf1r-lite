@@ -3,33 +3,26 @@
 
 #include "CassandraColumnFamily.h"
 
+#include <boost/tuple/tuple.hpp>
+
 namespace sf1r {
 
 class CollectionInfo : public CassandraColumnFamily
 {
 public:
-    CollectionInfo()
-        : CassandraColumnFamily()
-        , collectionPresent_(false)
-        , sourcePresent_(false)
-        , numPresent_(false)
-        , flagPresent_(false)
-    {}
+    CollectionInfo(const std::string& collection = "");
 
-    CollectionInfo(const std::string& collection)
-        : CassandraColumnFamily()
-        , collection_(collection)
-        , collectionPresent_(true)
-        , sourcePresent_(false)
-        , numPresent_(false)
-        , flagPresent_(false)
-    {}
+    ~CollectionInfo();
 
-    ~CollectionInfo() {}
+    bool updateRow() const;
+
+    bool deleteRow();
+
+    bool getRow();
 
     bool save();
 
-    void reset(const std::string& newCollection);
+    void reset(const std::string& newCollection = "");
 
     DEFINE_COLUMN_FAMILY_COMMON_ROUTINES( CollectionInfo )
 
@@ -65,20 +58,20 @@ public:
         return sourcePresent_;
     }
 
-    inline const uint32_t getNum() const
+    inline const uint32_t getCount() const
     {
-        return num_;
+        return count_;
     }
 
-    inline void setNum(const uint32_t num)
+    inline void setCount(const uint32_t count)
     {
-        num_ = num;
-        numPresent_ = true;
+        count_ = count;
+        countPresent_ = true;
     }
 
-    inline bool hasNum() const
+    inline bool hasCount() const
     {
-        return numPresent_;
+        return countPresent_;
     }
 
     inline const std::string& getFlag() const
@@ -120,8 +113,8 @@ private:
     std::string source_;
     bool sourcePresent_;
 
-    uint32_t num_;
-    bool numPresent_;
+    uint32_t count_;
+    bool countPresent_;
 
     std::string flag_;
     bool flagPresent_;

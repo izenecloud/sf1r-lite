@@ -49,7 +49,20 @@ const map<string, string> ProductInfo::cassandra_compression_options
 
 const string ProductInfo::SuperColumns[] = {"StringProperties", "PriceHistory"};
 
-bool ProductInfo::update() const
+ProductInfo::ProductInfo(const string& docId)
+    : CassandraColumnFamily()
+    , docId_(docId)
+    , docIdPresent_(!docId.empty())
+    , collectionPresent_(false)
+    , sourcePresent_(false)
+    , titlePresent_(false)
+    , priceHistoryPresent_(false)
+{}
+
+ProductInfo::~ProductInfo()
+{}
+
+bool ProductInfo::updateRow() const
 {
     if (!docIdPresent_) return false;
     try
@@ -74,15 +87,18 @@ bool ProductInfo::update() const
                     SuperColumns[0],
                     "Title");
         }
-        for (PriceHistoryType::const_iterator it = priceHistory_.begin();
-                it != priceHistory_.end(); ++it)
+        if (priceHistoryPresent_)
         {
-            client->insertColumn(
-                    lexical_cast<string>(it->second),
-                    row_key,
-                    cassandra_name,
-                    SuperColumns[1],
-                    to_iso_string(it->first));
+            for (PriceHistoryType::const_iterator it = priceHistory_.begin();
+                    it != priceHistory_.end(); ++it)
+            {
+                client->insertColumn(
+                        lexical_cast<string>(it->second),
+                        row_key,
+                        cassandra_name,
+                        SuperColumns[1],
+                        to_iso_string(it->first));
+            }
         }
     }
     catch (InvalidRequestException &ire)
@@ -93,7 +109,7 @@ bool ProductInfo::update() const
     return true;
 }
 
-bool ProductInfo::clear() const
+bool ProductInfo::deleteRow()
 {
     if (!docIdPresent_) return false;
     try
@@ -103,6 +119,7 @@ bool ProductInfo::clear() const
         CassandraConnection::instance().getCassandraClient()->remove(
                 collectionPresent_ ? collection_ + "_" + docId_ :docId_,
                 col_path);
+        reset();
     }
     catch (InvalidRequestException &ire)
     {
@@ -112,7 +129,7 @@ bool ProductInfo::clear() const
     return true;
 }
 
-bool ProductInfo::get()
+bool ProductInfo::getRow()
 {
     if (!docIdPresent_) return false;
     try
@@ -146,8 +163,13 @@ bool ProductInfo::get()
                         setTitle(cit->value);
                 }
             }
-            else if (sit->name == SuperColumns[1])
+            else if (sit->name == SuperColumns[1] && !sit->columns.empty())
             {
+                if (!priceHistoryPresent_)
+                {
+                    priceHistory_.clear();
+                    priceHistoryPresent_ = true;
+                }
                 for (vector<Column>::const_iterator cit = sit->columns.begin();
                         cit != sit->columns.end(); ++cit)
                 {
@@ -164,7 +186,23 @@ bool ProductInfo::get()
     return true;
 }
 
-bool ProductInfo::getRangeHistory(PriceHistoryType& history, ptime from, ptime to)
+void ProductInfo::insertHistory(boost::posix_time::ptime timeStamp, ProductPriceType price)
+{
+    if (!priceHistoryPresent_)
+    {
+        priceHistory_.clear();
+        priceHistoryPresent_ = true;
+    }
+    priceHistory_[timeStamp] = price;
+}
+
+void ProductInfo::clearHistory()
+{
+    priceHistory_.clear();
+    priceHistoryPresent_ = false;
+}
+
+bool ProductInfo::getRangeHistory(PriceHistoryType& history, ptime from, ptime to) const
 {
     if (!docIdPresent_) return false;
     try
@@ -208,8 +246,8 @@ bool ProductInfo::getRangeHistory(PriceHistoryType& history, ptime from, ptime t
 
 void ProductInfo::reset(const string& newDocId)
 {
-    docId_.assign(newDocId);
-    docIdPresent_ = !docId_.empty();
+    if (!newDocId.empty())
+        docId_.assign(newDocId);
     collectionPresent_ = sourcePresent_ = titlePresent_ = priceHistoryPresent_ = false;
 }
 

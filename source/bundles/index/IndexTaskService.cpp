@@ -810,18 +810,18 @@ void IndexTaskService::saveProductInfo_(int op)
     {
         CollectionInfo collectionInfo(bundleConfig_->collectionName_);
         collectionInfo.setSource(iter->first);
-        collectionInfo.setNum(iter->second);
-        if (op == 1)
+        collectionInfo.setCount(iter->second);
+        switch (op)
         {
+        case 1:
             collectionInfo.setFlag("insert");
-        }
-        else if (op == 2)
-        {
+            break;
+        case 2:
             collectionInfo.setFlag("update");
-        }
-        else
-        {
+            break;
+        default:
             collectionInfo.setFlag("delete");
+            break;
         }
         collectionInfo.save();
     }

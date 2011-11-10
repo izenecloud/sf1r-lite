@@ -14,36 +14,23 @@ public:
 
     static const std::string SuperColumns[];
 
-    ProductInfo()
-        : CassandraColumnFamily()
-        , docIdPresent_(false)
-        , collectionPresent_(false)
-        , sourcePresent_(false)
-        , titlePresent_(false)
-        , priceHistoryPresent_(false)
-    {}
+    ProductInfo(const std::string& docId = "");
 
-    ProductInfo(const std::string& docId)
-        : CassandraColumnFamily()
-        , docId_(docId)
-        , docIdPresent_(true)
-        , collectionPresent_(false)
-        , sourcePresent_(false)
-        , titlePresent_(false)
-        , priceHistoryPresent_(false)
-    {}
+    ~ProductInfo();
 
-    ~ProductInfo() {}
+    bool updateRow() const;
 
-    bool update() const;
+    bool deleteRow();
 
-    bool clear() const;
+    bool getRow();
 
-    bool get();
+    void insertHistory(boost::posix_time::ptime timeStamp, ProductPriceType price);
 
-    bool getRangeHistory(PriceHistoryType& history, boost::posix_time::ptime from, boost::posix_time::ptime to);
+    void clearHistory();
 
-    void reset(const std::string& newDocId);
+    bool getRangeHistory(PriceHistoryType& history, boost::posix_time::ptime from, boost::posix_time::ptime to) const;
+
+    void reset(const std::string& newDocId = "");
 
     DEFINE_COLUMN_FAMILY_COMMON_ROUTINES( ProductInfo )
 

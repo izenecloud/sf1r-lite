@@ -47,6 +47,46 @@ const int32_t CollectionInfo::cassandra_key_cache_save_period_in_seconds(0);
 const map<string, string> CollectionInfo::cassandra_compression_options
     = map_list_of("sstable_compression", "SnappyCompressor")("chunk_length_kb", "64");
 
+CollectionInfo::CollectionInfo(const std::string& collection)
+    : CassandraColumnFamily()
+    , collection_(collection)
+    , collectionPresent_(!collection.empty())
+    , sourcePresent_(false)
+    , countPresent_(false)
+    , flagPresent_(false)
+{}
+
+CollectionInfo::~CollectionInfo()
+{}
+
+bool CollectionInfo::updateRow() const
+{
+}
+
+bool CollectionInfo::deleteRow()
+{
+    if (!collectionPresent_) return false;
+    try
+    {
+        ColumnPath col_path;
+        col_path.__set_column_family(cassandra_name);
+        CassandraConnection::instance().getCassandraClient()->remove(
+                collection_,
+                col_path);
+        reset();
+    }
+    catch (InvalidRequestException &ire)
+    {
+        cout << ire.why << endl;
+        return false;
+    }
+    return true;
+}
+
+bool CollectionInfo::getRow()
+{
+}
+
 bool CollectionInfo::save()
 {
     if (!hasCollection())
@@ -68,14 +108,14 @@ bool CollectionInfo::save()
                     time_string,
                     "Source");
         }
-        if (hasNum())
+        if (hasCount())
         {
             client->insertColumn(
-                    num_,
+                    count_,
                     collection_,
                     cassandra_name,
                     time_string,
-                    "Num");
+                    "Count");
         }
         if (hasFlag())
         {
@@ -97,9 +137,9 @@ bool CollectionInfo::save()
 
 void CollectionInfo::reset(const string& newCollection)
 {
-    collection_.assign(newCollection);
-    collectionPresent_ = !collection_.empty();
-    sourcePresent_ = numPresent_ = flagPresent_ = timeStampPresent_ = false;
+    if (!newCollection.empty())
+        collection_.assign(newCollection);
+    sourcePresent_ = countPresent_ = flagPresent_ = timeStampPresent_ = false;
 }
 
 }
