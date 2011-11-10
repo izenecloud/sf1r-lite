@@ -207,7 +207,6 @@ bool ProductInfo::getRangeHistory(PriceHistoryType& history, ptime from, ptime t
     if (!docIdPresent_) return false;
     try
     {
-        boost::shared_ptr<Cassandra> client(CassandraConnection::instance().getCassandraClient());
         string row_key = collectionPresent_ ? collection_ + "_" + docId_ :docId_;
 
         ColumnParent col_parent;
@@ -221,7 +220,7 @@ bool ProductInfo::getRangeHistory(PriceHistoryType& history, ptime from, ptime t
             pred.slice_range.__set_finish(to_iso_string(to));
 
         vector<Column> column_list;
-        client->getSlice(
+        CassandraConnection::instance().getCassandraClient()->getSlice(
                 column_list,
                 row_key,
                 col_parent,

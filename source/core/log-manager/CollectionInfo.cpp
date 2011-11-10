@@ -3,12 +3,15 @@
 #include <libcassandra/cassandra.h>
 
 #include <boost/assign/list_of.hpp>
+#include <boost/algorithm/string.hpp>
 
 using namespace std;
 using namespace libcassandra;
 using namespace org::apache::cassandra;
+using namespace boost;
 using namespace boost::assign;
 using namespace boost::posix_time;
+using namespace boost::algorithm;
 
 namespace sf1r {
 
@@ -47,7 +50,7 @@ const int32_t CollectionInfo::cassandra_key_cache_save_period_in_seconds(0);
 const map<string, string> CollectionInfo::cassandra_compression_options
     = map_list_of("sstable_compression", "SnappyCompressor")("chunk_length_kb", "64");
 
-const string CollectionInfo::SourceCountSchema[] = {"Count", "Flag", "Source"};
+const string CollectionInfo::SuperColumns[] = {"SourceCount"};
 
 CollectionInfo::CollectionInfo(const std::string& collection)
     : CassandraColumnFamily()
@@ -64,29 +67,17 @@ bool CollectionInfo::updateRow() const
     if (!collectionPresent_) return false;
     try
     {
-        boost::shared_ptr<Cassandra> client(CassandraConnection::instance().getCassandraClient());
         for (SourceCountType::const_iterator it = sourceCount_.begin();
                 it != sourceCount_.end(); ++it)
         {
-            string time_string = to_iso_string(it->first);
-            client->insertColumn(
-                    it->second.get<0>(),
+            CassandraConnection::instance().getCassandraClient()->insertColumn(
+                    join(list_of(lexical_cast<string>(it->second.get<0>()))
+                                (it->second.get<1>())
+                                (it->second.get<2>()), ":"),
                     collection_,
                     cassandra_name,
-                    time_string,
-                    SourceCountSchema[0]);
-            client->insertColumn(
-                    it->second.get<1>(),
-                    collection_,
-                    cassandra_name,
-                    time_string,
-                    SourceCountSchema[1]);
-            client->insertColumn(
-                    it->second.get<2>(),
-                    collection_,
-                    cassandra_name,
-                    time_string,
-                    SourceCountSchema[2]);
+                    SuperColumns[0],
+                    to_iso_string(it->first));
         }
     }
     catch (InvalidRequestException& ire)
@@ -122,6 +113,26 @@ bool CollectionInfo::getRow()
     if (!collectionPresent_) return false;
     try
     {
+        SuperColumn super_column;
+        CassandraConnection::instance().getCassandraClient()->getSuperColumn(
+                super_column,
+                collection_,
+                cassandra_name,
+                SuperColumns[0]);
+        if (super_column.columns.empty())
+            return true;
+        if (!sourceCountPresent_)
+        {
+            sourceCount_.clear();
+            sourceCountPresent_ = true;
+        }
+        for (vector<Column>::const_iterator it = super_column.columns.begin();
+                it != super_column.columns.end(); ++it)
+        {
+            vector<string> tokens(3);
+            split(tokens, it->value, is_any_of(":"));
+            sourceCount_[from_iso_string(it->name)] = SourceCountItemType(lexical_cast<uint32_t>(tokens[0]), tokens[1], tokens[2]);
+        }
     }
     catch (InvalidRequestException &ire)
     {
