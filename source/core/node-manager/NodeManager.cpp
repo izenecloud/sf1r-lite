@@ -15,16 +15,33 @@ NodeManager::~NodeManager()
 {
 }
 
+void NodeManager::initWithConfig(
+        const DistributedTopologyConfig& dsTopologyConfig,
+        const DistributedUtilConfig& dsUtilConfig)
+{
+    // set distributed configurations
+    dsTopologyConfig_ = dsTopologyConfig;
+    dsUtilConfig_ = dsUtilConfig;
+
+    // initialization
+    NodeDef::setClusterIdNodeName(dsTopologyConfig_.clusterId_);
+
+    initZooKeeper(dsUtilConfig_.zkConfig_.zkHosts_, dsUtilConfig_.zkConfig_.zkRecvTimeout_);
+
+    nodeInfo_.replicaId_ = dsTopologyConfig_.curSF1Node_.replicaId_;
+    nodeInfo_.nodeId_ = dsTopologyConfig_.curSF1Node_.nodeId_;
+    nodeInfo_.localHost_ = dsTopologyConfig_.curSF1Node_.host_;
+    nodeInfo_.baPort_ = dsTopologyConfig_.curSF1Node_.baPort_;
+
+    nodePath_ = NodeDef::getNodePath(nodeInfo_.replicaId_, nodeInfo_.nodeId_);
+
+    initZKNodes();
+}
+
 void NodeManager::initZooKeeper(const std::string& zkHosts, const int recvTimeout)
 {
     zookeeper_.reset(new ZooKeeper(zkHosts, recvTimeout));
     zookeeper_->registerEventHandler(this);
-}
-
-void NodeManager::setCurrentNodeInfo(SF1NodeInfo& sf1NodeInfo)
-{
-    nodeInfo_ = sf1NodeInfo;
-    nodePath_ = NodeDef::getNodePath(nodeInfo_.replicaId_, nodeInfo_.nodeId_);
 }
 
 void NodeManager::registerNode()
@@ -53,9 +70,9 @@ void NodeManager::registerNode()
         std::cout<<"[NodeManager] waiting for ZooKeeper Service..."<<std::endl;
 }
 
-void NodeManager::registerMaster(unsigned int port)
+void NodeManager::registerMaster()
 {
-    masterPort_ = port;
+    masterPort_ = dsTopologyConfig_.curSF1Node_.masterAgent_.port_;
 
     std::string path = nodePath_+"/Master";
     std::stringstream data;
@@ -67,9 +84,9 @@ void NodeManager::registerMaster(unsigned int port)
     }
 }
 
-void NodeManager::registerWorker(unsigned int port)
+void NodeManager::registerWorker()
 {
-    workerPort_ = port;
+    workerPort_ = dsTopologyConfig_.curSF1Node_.workerAgent_.port_;
 
     std::string path = nodePath_+"/Worker";
     std::stringstream data;
@@ -146,7 +163,7 @@ void NodeManager::retryRegister()
     registerNode();
 
     if (masterPort_ != 0)
-        registerMaster(masterPort_);
+        registerMaster();
     if (workerPort_ != 0)
-        registerWorker(workerPort_);
+        registerWorker();
 }

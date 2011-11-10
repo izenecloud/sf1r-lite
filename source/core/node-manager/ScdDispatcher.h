@@ -34,6 +34,8 @@ public:
 protected:
     bool getScdFileList(const std::string& dir, std::vector<std::string>& fileList);
 
+    virtual bool switchFile() { return true; }
+
     virtual bool dispatch_impl(shardid_t shardid, SCDDoc& scdDoc) = 0;
 
     virtual void finish() {}
@@ -57,6 +59,8 @@ public:
     ~BatchScdDispatcher();
 
 protected:
+    virtual bool switchFile();
+
     virtual bool dispatch_impl(shardid_t shardid, SCDDoc& scdDoc);
 
     virtual void finish();

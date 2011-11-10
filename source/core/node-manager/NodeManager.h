@@ -33,17 +33,7 @@ public:
 
     void initWithConfig(
             const DistributedTopologyConfig& dsTopologyConfig,
-            const DistributedUtilConfig& dsUtilConfig)
-    {
-        dsTopologyConfig_ = dsTopologyConfig;
-        dsUtilConfig_ = dsUtilConfig;
-
-        NodeDef::setClusterIdNodeName(dsTopologyConfig_.clusterId_);
-
-        initZooKeeper(dsUtilConfig_.zkConfig_.zkHosts_, dsUtilConfig_.zkConfig_.zkRecvTimeout_);
-
-        initZKNodes();
-    }
+            const DistributedUtilConfig& dsUtilConfig);
 
     const DistributedTopologyConfig& getDSTopologyConfig() const
     {
@@ -55,6 +45,11 @@ public:
         return dsUtilConfig_;
     }
 
+    const SF1NodeInfo& getNodeInfo() const
+    {
+        return nodeInfo_;
+    }
+
     bool isInited()
     {
         return inited_;
@@ -62,8 +57,6 @@ public:
 
 public:
     void initZooKeeper(const std::string& zkHosts, const int recvTimeout);
-
-    void setCurrentNodeInfo(SF1NodeInfo& sf1NodeInfo);
 
     /**
      * Register SF1 node for start up.
@@ -73,12 +66,12 @@ public:
     /**
      * Register Master on current SF1 node.
      */
-    void registerMaster(unsigned int port);
+    void registerMaster();
 
     /**
      * Register Worker on current SF1 node.
      */
-    void registerWorker(unsigned int port);
+    void registerWorker();
 
     /**
      * Deregister SF1 node on exit
