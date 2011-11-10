@@ -14,7 +14,6 @@ INCLUDE_DIRECTORIES(
   ${Boost_INCLUDE_DIRS}
   ${TokyoCabinet_INCLUDE_DIRS}
   ${Glog_INCLUDE_DIRS}
-  ${Thrift_INCLUDE_DIR}
   )
 
 FILE(GLOB_RECURSE index_SRC "index/*.cpp")

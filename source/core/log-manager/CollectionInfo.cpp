@@ -1,10 +1,13 @@
 #include "CollectionInfo.h"
 
+#include <libcassandra/cassandra.h>
+
 #include <boost/assign/list_of.hpp>
 
 using namespace std;
-using namespace boost::assign;
+using namespace libcassandra;
 using namespace org::apache::cassandra;
+using namespace boost::assign;
 using namespace boost::posix_time;
 
 namespace sf1r {
@@ -25,7 +28,7 @@ const double CollectionInfo::cassandra_key_cache_size(200000);
 
 const double CollectionInfo::cassandra_read_repair_chance(1);
 
-const vector<ColumnDef> CollectionInfo::cassandra_column_metadata;
+const vector<ColumnDefFake> CollectionInfo::cassandra_column_metadata;
 
 const int32_t CollectionInfo::cassandra_gc_grace_seconds(864000);
 
@@ -44,44 +47,59 @@ const int32_t CollectionInfo::cassandra_key_cache_save_period_in_seconds(0);
 const map<string, string> CollectionInfo::cassandra_compression_options
     = map_list_of("sstable_compression", "SnappyCompressor")("chunk_length_kb", "64");
 
-void CollectionInfo::save()
+bool CollectionInfo::save()
 {
     if (!hasCollection())
-        return;
+        return false;
 
     if (!hasTimeStamp())
         timeStamp_ = microsec_clock::local_time();
     string time_string = to_iso_string(timeStamp_);
 
-    if (hasSource())
+    boost::shared_ptr<Cassandra> client(CassandraConnection::instance().getCassandraClient());
+    try
     {
-        cassandraClient()->insertColumn(
-                source_,
-                collection_,
-                cassandra_name,
-                time_string,
-                "Source");
+        if (hasSource())
+        {
+            client->insertColumn(
+                    source_,
+                    collection_,
+                    cassandra_name,
+                    time_string,
+                    "Source");
+        }
+        if (hasNum())
+        {
+            client->insertColumn(
+                    num_,
+                    collection_,
+                    cassandra_name,
+                    time_string,
+                    "Num");
+        }
+        if (hasFlag())
+        {
+            client->insertColumn(
+                    flag_,
+                    collection_,
+                    cassandra_name,
+                    time_string,
+                    "Flag");
+        }
     }
+    catch (InvalidRequestException& ire)
+    {
+        cerr << ire.why << endl;
+        return false;
+    }
+    return true;
+}
 
-    if (hasNum())
-    {
-        cassandraClient()->insertColumn(
-                num_,
-                collection_,
-                cassandra_name,
-                time_string,
-                "Num");
-    }
-
-    if (hasFlag())
-    {
-        cassandraClient()->insertColumn(
-                flag_,
-                collection_,
-                cassandra_name,
-                time_string,
-                "Flag");
-    }
+void CollectionInfo::reset(const string& newCollection)
+{
+    collection_.assign(newCollection);
+    collectionPresent_ = !collection_.empty();
+    sourcePresent_ = numPresent_ = flagPresent_ = timeStampPresent_ = false;
 }
 
 }

@@ -808,9 +808,8 @@ void IndexTaskService::saveProductInfo_(int op)
     for (map<std::string, uint32_t>::const_iterator iter = productSourceCount_.begin();
         iter != productSourceCount_.end(); ++iter)
     {
-        CollectionInfo collectionInfo;
+        CollectionInfo collectionInfo(bundleConfig_->collectionName_);
         collectionInfo.setSource(iter->first);
-        collectionInfo.setCollection(bundleConfig_->collectionName_);
         collectionInfo.setNum(iter->second);
         if (op == 1)
         {

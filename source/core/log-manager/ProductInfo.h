@@ -1,16 +1,9 @@
-/**
- * \file ProductInfo.h
- * \brief
- * \date Sep 9, 2011
- * \author Xin Liu
- */
-
 #ifndef _PRODUCT_INFO_H_
 #define _PRODUCT_INFO_H_
 
 #include "CassandraColumnFamily.h"
 
-#include <boost/date_time/posix_time/posix_time.h>
+#include <product-manager/pm_types.h>
 
 namespace sf1r {
 
@@ -19,42 +12,55 @@ class ProductInfo : public CassandraColumnFamily
 public:
     typedef std::map<boost::posix_time::ptime, ProductPriceType> PriceHistoryType;
 
-    ProductInfo() : CassandraColumnFamily() {}
+    ProductInfo()
+        : CassandraColumnFamily()
+        , docIdPresent_(false)
+        , collectionPresent_(false)
+        , sourcePresent_(false)
+        , titlePresent_(false)
+        , fromTimePresent_(false)
+        , toTimePresent_(false)
+        , priceHistoryPresent_(false)
+    {}
+
+    ProductInfo(const std::string& docId)
+        : CassandraColumnFamily()
+        , docId_(docId)
+        , docIdPresent_(true)
+        , collectionPresent_(false)
+        , sourcePresent_(false)
+        , titlePresent_(false)
+        , fromTimePresent_(false)
+        , toTimePresent_(false)
+        , priceHistoryPresent_(false)
+    {}
 
     ~ProductInfo() {}
 
-    DECLARE_COLUMN_FAMILY_COMMON_ROUTINES
+    bool update() const;
 
-    inline const std::string& getUuid() const
+    bool clear() const;
+
+    bool get();
+
+    void reset(const std::string& newDocId);
+
+    DEFINE_COLUMN_FAMILY_COMMON_ROUTINES( ProductInfo )
+
+    inline const std::string& getDocId() const
     {
-        return uuid_;
+        return docId_;
     }
 
-    inline void setUuid(const std::string& uuid)
+    inline void setDocId(const std::string& docId)
     {
-        uuid_ = uuid;
-        uuidPresent_ = true;
+        docId_ = docId;
+        docIdPresent_ = true;
     }
 
-    inline bool hasUuid() const
+    inline bool hasDocId() const
     {
-        return uuidPresent_;
-    }
-
-    inline const std::string& getTitle() const
-    {
-        return title_;
-    }
-
-    inline void setTitle(const std::string& title)
-    {
-        title_ = title;
-        titlePresent_ = true;
-    }
-
-    inline bool hasTitle() const
-    {
-        return titlePresent_;
+        return docIdPresent_;
     }
 
     inline const std::string& getCollection() const
@@ -71,6 +77,38 @@ public:
     inline bool hasCollection() const
     {
         return collectionPresent_;
+    }
+
+    inline const std::string& getSource() const
+    {
+        return source_;
+    }
+
+    inline void setSource(const std::string& source)
+    {
+        source_ = source;
+        sourcePresent_ = true;
+    }
+
+    inline bool hasSource() const
+    {
+        return sourcePresent_;
+    }
+
+    inline const std::string& getTitle() const
+    {
+        return title_;
+    }
+
+    inline void setTitle(const std::string& title)
+    {
+        title_ = title;
+        titlePresent_ = true;
+    }
+
+    inline bool hasTitle() const
+    {
+        return titlePresent_;
     }
 
     inline const boost::posix_time::ptime& getFromTime() const
@@ -122,17 +160,17 @@ public:
     }
 
 private:
-    std::string uuid_;
-    bool uuidPresent_;
+    std::string docId_;
+    bool docIdPresent_;
+
+    std::string collection_;
+    bool collectionPresent_;
 
     std::string source_;
     bool sourcePresent_;
 
     std::string title_;
     bool titlePresent_;
-
-    std::string collection_;
-    bool collectionPresent_;
 
     boost::posix_time::ptime fromTime_;
     bool fromTimePresent_;

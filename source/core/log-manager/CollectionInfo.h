@@ -3,36 +3,35 @@
 
 #include "CassandraColumnFamily.h"
 
-#include <boost/date_time/posix_time/posix_time.h>
-
 namespace sf1r {
 
 class CollectionInfo : public CassandraColumnFamily
 {
 public:
-    CollectionInfo() : CassandraColumnFamily() {}
+    CollectionInfo()
+        : CassandraColumnFamily()
+        , collectionPresent_(false)
+        , sourcePresent_(false)
+        , numPresent_(false)
+        , flagPresent_(false)
+    {}
+
+    CollectionInfo(const std::string& collection)
+        : CassandraColumnFamily()
+        , collection_(collection)
+        , collectionPresent_(true)
+        , sourcePresent_(false)
+        , numPresent_(false)
+        , flagPresent_(false)
+    {}
 
     ~CollectionInfo() {}
 
-    void save();
+    bool save();
 
-    DECLARE_COLUMN_FAMILY_COMMON_ROUTINES
+    void reset(const std::string& newCollection);
 
-    inline const std::string& getSource() const
-    {
-        return source_;
-    }
-
-    inline void setSource(const std::string& source)
-    {
-        source_ = source;
-        sourcePresent_ = true;
-    }
-
-    inline bool hasSource() const
-    {
-        return sourcePresent_;
-    }
+    DEFINE_COLUMN_FAMILY_COMMON_ROUTINES( CollectionInfo )
 
     inline const std::string& getCollection() const
     {
@@ -48,6 +47,22 @@ public:
     inline bool hasCollection() const
     {
         return collectionPresent_;
+    }
+
+    inline const std::string& getSource() const
+    {
+        return source_;
+    }
+
+    inline void setSource(const std::string& source)
+    {
+        source_ = source;
+        sourcePresent_ = true;
+    }
+
+    inline bool hasSource() const
+    {
+        return sourcePresent_;
     }
 
     inline const uint32_t getNum() const
@@ -99,12 +114,11 @@ public:
     }
 
 private:
+    std::string collection_;
+    bool collectionPresent_;
 
     std::string source_;
     bool sourcePresent_;
-
-    std::string collection_;
-    bool collectionPresent_;
 
     uint32_t num_;
     bool numPresent_;

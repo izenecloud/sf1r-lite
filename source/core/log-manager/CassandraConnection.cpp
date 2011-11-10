@@ -9,6 +9,7 @@
 
 using namespace std;
 using namespace libcassandra;
+using namespace org::apache::cassandra;
 
 namespace sf1r {
 
@@ -127,6 +128,113 @@ bool CassandraConnection::init(const std::string& str)
         std::cerr << "[CassandraConnection::init] " << str << " unrecognized" << std::endl;
         return false;
     }
+}
+
+bool CassandraConnection::createColumnFamily(
+        const string& in_name,
+        const string& in_column_type,
+        const string& in_comparator_type,
+        const string& in_sub_comparator_type,
+        const string& in_comment,
+        const double in_row_cache_size,
+        const double in_key_cache_size,
+        const double in_read_repair_chance,
+        const vector<ColumnDefFake>& in_column_metadata,
+        const int32_t in_gc_grace_seconds,
+        const string& in_default_validation_class,
+        const int32_t in_id,
+        const int32_t in_min_compaction_threshold,
+        const int32_t in_max_compaction_threshold,
+        const int32_t in_row_cache_save_period_in_seconds,
+        const int32_t in_key_cache_save_period_in_seconds,
+        const map<string, string>& in_compression_options)
+{
+    vector<ColumnDef> column_metadata;
+    for (vector<ColumnDefFake>::const_iterator it = in_column_metadata.begin();
+            it != in_column_metadata.end(); ++it)
+    {
+        ColumnDef col_def;
+        if (!it->name_.empty())
+            col_def.__set_name(it->name_);
+        if (!it->validation_class_.empty())
+            col_def.__set_validation_class(it->validation_class_);
+        if (it->index_type_ != ColumnDefFake::UNSET)
+            col_def.__set_index_type((IndexType::type) it->index_type_);
+        if (!it->index_name_.empty())
+            col_def.__set_index_name(it->index_name_);
+        if (!it->index_options_.empty())
+            col_def.__set_index_options(it->index_options_);
+        column_metadata.push_back(col_def);
+    }
+    ColumnFamilyDefinition definition(
+                keyspace_name_,
+                in_name,
+                in_column_type,
+                in_comparator_type,
+                in_sub_comparator_type,
+                in_comment,
+                in_row_cache_size,
+                in_key_cache_size,
+                in_read_repair_chance,
+                column_metadata,
+                in_gc_grace_seconds,
+                in_default_validation_class,
+                in_id,
+                in_min_compaction_threshold,
+                in_max_compaction_threshold,
+                in_row_cache_save_period_in_seconds,
+                in_key_cache_save_period_in_seconds,
+                in_compression_options);
+    try
+    {
+        cassandra_client_->createColumnFamily(definition);
+    }
+    catch (InvalidRequestException& ire)
+    {
+        try
+        {
+            cassandra_client_->updateColumnFamily(definition);
+        }
+        catch (...)
+        {
+            cerr << "[CassandraConnection::init] Unknown error!" << endl;
+            return false;
+        }
+    }
+    catch (...)
+    {
+        cerr << "[CassandraConnection::init] Unknown error!" << endl;
+        return false;
+    }
+    return true;
+}
+
+bool CassandraConnection::truncateColumnFamily(const string& in_name)
+{
+    try
+    {
+        cassandra_client_->truncateColumnFamily(in_name);
+    }
+    catch (InvalidRequestException& ire)
+    {
+        cerr << ire.why << endl;
+        return false;
+    }
+    return true;
+}
+
+bool CassandraConnection::dropColumnFamily(const string& in_name)
+{
+    try
+    {
+        cassandra_client_->dropColumnFamily(in_name);
+    }
+    catch (InvalidRequestException& ire)
+    {
+        cerr << ire.why << endl;
+        return false;
+    }
+    return true;
 }
 
 }

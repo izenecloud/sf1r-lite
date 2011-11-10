@@ -3,8 +3,7 @@
 
 #include "CassandraConnection.h"
 
-#include <libcassandra/genthrift/cassandra_types.h>
-#include <libcassandra/cassandra.h>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace sf1r {
 
@@ -17,16 +16,46 @@ public:
 
     virtual ~CassandraColumnFamily() {}
 
-    static boost::shared_ptr<libcassandra::Cassandra>& cassandraClient()
-    {
-        return CassandraConnection::instance().getCassandraClient();
-    }
-
 protected:
     bool exist_;
 };
 
-#define DECLARE_COLUMN_FAMILY_COMMON_ROUTINES \
+template <typename ColumnFamilyType>
+bool createColumnFamily()
+{
+    return CassandraConnection::instance().createColumnFamily(
+            ColumnFamilyType::cassandra_name,
+            ColumnFamilyType::cassandra_column_type,
+            ColumnFamilyType::cassandra_comparator_type,
+            ColumnFamilyType::cassandra_sub_comparator_type,
+            ColumnFamilyType::cassandra_comment,
+            ColumnFamilyType::cassandra_row_cache_size,
+            ColumnFamilyType::cassandra_key_cache_size,
+            ColumnFamilyType::cassandra_read_repair_chance,
+            ColumnFamilyType::cassandra_column_metadata,
+            ColumnFamilyType::cassandra_gc_grace_seconds,
+            ColumnFamilyType::cassandra_default_validation_class,
+            ColumnFamilyType::cassandra_id,
+            ColumnFamilyType::cassandra_min_compaction_threshold,
+            ColumnFamilyType::cassandra_max_compaction_threshold,
+            ColumnFamilyType::cassandra_row_cache_save_period_in_seconds,
+            ColumnFamilyType::cassandra_key_cache_save_period_in_seconds,
+            ColumnFamilyType::cassandra_compression_options);
+}
+
+template <typename ColumnFamilyType>
+bool truncateColumnFamily()
+{
+    return CassandraConnection::instance().truncateColumnFamily(ColumnFamilyType::cassandra_name);
+}
+
+template <typename ColumnFamilyType>
+bool dropColumnFamily()
+{
+    return CassandraConnection::instance().dropColumnFamily(ColumnFamilyType::cassandra_name);
+}
+
+#define DEFINE_COLUMN_FAMILY_COMMON_ROUTINES(ClassName) \
 public: \
     static const std::string cassandra_name; \
     static const std::string cassandra_column_type; \
@@ -36,7 +65,7 @@ public: \
     static const double cassandra_row_cache_size; \
     static const double cassandra_key_cache_size; \
     static const double cassandra_read_repair_chance; \
-    static const std::vector<org::apache::cassandra::ColumnDef> cassandra_column_metadata; \
+    static const std::vector<ColumnDefFake> cassandra_column_metadata; \
     static const int32_t cassandra_gc_grace_seconds; \
     static const std::string cassandra_default_validation_class; \
     static const int32_t cassandra_id; \
@@ -48,46 +77,17 @@ public: \
     \
     static bool createColumnFamily() \
     { \
-        libcassandra::ColumnFamilyDefinition definition( \
-            CassandraConnection::instance().getKeyspaceName(), \
-            cassandra_name, \
-            cassandra_column_type, \
-            cassandra_comparator_type, \
-            cassandra_sub_comparator_type, \
-            cassandra_comment, \
-            cassandra_row_cache_size, \
-            cassandra_key_cache_size, \
-            cassandra_read_repair_chance, \
-            cassandra_column_metadata, \
-            cassandra_gc_grace_seconds, \
-            cassandra_default_validation_class, \
-            cassandra_id, \
-            cassandra_min_compaction_threshold, \
-            cassandra_max_compaction_threshold, \
-            cassandra_row_cache_save_period_in_seconds, \
-            cassandra_key_cache_save_period_in_seconds, \
-            cassandra_compression_options); \
-        \
-        try \
-        { \
-            CassandraConnection::instance().getCassandraClient()->createColumnFamily(definition); \
-        } \
-        catch (org::apache::cassandra::InvalidRequestException &ire) \
-        { \
-            try \
-            { \
-                CassandraConnection::instance().getCassandraClient()->updateColumnFamily(definition); \
-            } \
-            catch (...) \
-            { \
-                return false; \
-            } \
-        } \
-        catch (...) \
-        { \
-            return false; \
-        } \
-        return true; \
+        return ::sf1r::createColumnFamily<ClassName>(); \
+    } \
+    \
+    static bool truncateColumnFamily() \
+    { \
+        return ::sf1r::truncateColumnFamily<ClassName>(); \
+    } \
+    \
+    static bool dropColumnFamily() \
+    { \
+        return ::sf1r::dropColumnFamily<ClassName>(); \
     } \
 
 
