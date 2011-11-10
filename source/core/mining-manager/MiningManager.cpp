@@ -222,15 +222,6 @@ bool MiningManager::open()
         ///TODO Yingfeng
         uint32_t logdays = 7;
 
-        static bool FirstRun = true;
-        if (FirstRun)
-        {
-            FirstRun = false;
-
-            QueryCorrectionSubmanager::system_resource_path_ = system_resource_path_;
-            QueryCorrectionSubmanager::system_working_path_ = system_working_path_;
-        }
-
         qcManager_.reset(new QueryCorrectionSubmanager(queryDataPath_, miningConfig_.query_correction_param.enableEK,
                     miningConfig_.query_correction_param.enableCN));
         rmDb_.reset(new RecommendManager(queryDataPath_, collectionName_, mining_schema_, document_manager_,
@@ -238,6 +229,11 @@ bool MiningManager::open()
 
         /** log manager */
         MiningQueryLogHandler* handler = MiningQueryLogHandler::getInstance();
+        if(!handler->cronStart(miningConfig_.recommend_param.cron))
+        {
+            std::cout<<"Init query long cron task failed."<<std::endl;
+            return false;
+        }
         handler->addCollection(collectionName_, rmDb_);
 
         qrManager_.reset(new QueryRecommendSubmanager(rmDb_, queryDataPath_ + "/recommend_inject.txt"));
@@ -952,13 +948,13 @@ bool MiningManager::computeSimilarity_(izenelib::ir::indexmanager::IndexReader* 
 
 bool MiningManager::computeSimilarityESA_(const std::vector<std::string>& property_names)
 {
-	using namespace idmlib::ssp;
-	using namespace idmlib::sim;
+    using namespace idmlib::ssp;
+    using namespace idmlib::sim;
 
-	std::cout << "Start to compute similarity index (ESA), please wait..."<< std::endl;
-	try
-	{
-		std::string colBasePath = sim_path_;
+    std::cout << "Start to compute similarity index (ESA), please wait..."<< std::endl;
+    try
+    {
+        std::string colBasePath = sim_path_;
         size_t pos = colBasePath.find("/collection-data");
         colBasePath = colBasePath.replace(pos, colBasePath.length(), ""); // xxx
 //		CollectionMeta colMeta;
@@ -977,56 +973,56 @@ bool MiningManager::computeSimilarityESA_(const std::vector<std::string>& proper
 
         // document representation
         size_t maxDoc = 0;
-		DocumentRepresentor docRepresentor(colBasePath, cmaPath, esaSimTmpPath, property_names, maxDoc);
-		docRepresentor.represent();
+        DocumentRepresentor docRepresentor(colBasePath, cmaPath, esaSimTmpPath, property_names, maxDoc);
+        docRepresentor.represent();
 
-		// interpretation
-		std::string wikiIndexdir = system_resource_path_ + "/sim/esa";
-		cout <<wikiIndexdir<<endl;
-		ExplicitSemanticInterpreter esInter(wikiIndexdir, esaSimTmpPath);
-		if (!esInter.getWikiIndexState()) {
-		    std::cerr << "WikiIndex load failed! \n"<< std::endl;
-		    return false;
-		}
-		esInter.interpret(10000, maxDoc);
+        // interpretation
+        std::string wikiIndexdir = system_resource_path_ + "/sim/esa";
+        cout <<wikiIndexdir<<endl;
+        ExplicitSemanticInterpreter esInter(wikiIndexdir, esaSimTmpPath);
+        if (!esInter.getWikiIndexState()) {
+            std::cerr << "WikiIndex load failed! \n"<< std::endl;
+            return false;
+        }
+        esInter.interpret(10000, maxDoc);
 
-		// all pairs similarity search
+        // all pairs similarity search
         boost::shared_ptr<DocSimOutput> output(new DocSimOutput(esaSimPath));
         float thresholdSim = 0.8; // TODO
         AllPairsSearch allPairs(output, thresholdSim);
 
         /// single input file (build inverted index in memory)
-		///string datafile = esaSimTmpPath+"/doc_int.vec1";
-	    ///boost::shared_ptr<DataSetIterator> dataSetIterator(new SparseVectorSetIterator(datafile));
-	    ///allPairs.findAllSimilarPairs(dataSetIterator, maxDoc);
+        ///string datafile = esaSimTmpPath+"/doc_int.vec1";
+        ///boost::shared_ptr<DataSetIterator> dataSetIterator(new SparseVectorSetIterator(datafile));
+        ///allPairs.findAllSimilarPairs(dataSetIterator, maxDoc);
 
         /// multiple input file
-	    std::vector<boost::shared_ptr<DataSetIterator> > dataSetIteratorList;
-	    {
-	        directory_iterator iterEnd;
-	        for (directory_iterator iter(esaSimTmpPath); iter != iterEnd; iter ++)
-	        {
-	            string datafile = iter->path().string();
-	            if (datafile.find("doc_int.vec") != string::npos)
-	            {
-	                //cout << "file path : "<<datafile << endl;
-	                boost::shared_ptr<DataSetIterator> dataSetIterator(new SparseVectorSetIterator(datafile));
-	                dataSetIteratorList.push_back(dataSetIterator);
-	            }
-	        }
-	    }
-	    allPairs.findAllSimilarPairs(dataSetIteratorList, maxDoc);
+        std::vector<boost::shared_ptr<DataSetIterator> > dataSetIteratorList;
+        {
+            directory_iterator iterEnd;
+            for (directory_iterator iter(esaSimTmpPath); iter != iterEnd; iter ++)
+            {
+                string datafile = iter->path().string();
+                if (datafile.find("doc_int.vec") != string::npos)
+                {
+                    //cout << "file path : "<<datafile << endl;
+                    boost::shared_ptr<DataSetIterator> dataSetIterator(new SparseVectorSetIterator(datafile));
+                    dataSetIteratorList.push_back(dataSetIterator);
+                }
+            }
+        }
+        allPairs.findAllSimilarPairs(dataSetIteratorList, maxDoc);
 
-	    // remove tmp files
-	    boost::filesystem::remove_all(esaSimTmpPath);
-	}
-	catch(std::exception& ex)
-	{
-		std::cerr<<"Exception:"<<ex.what()<<std::endl;
-	}
-	std::cout << "Finish computing similarity index (ESA)." << std::endl;
+        // remove tmp files
+        boost::filesystem::remove_all(esaSimTmpPath);
+    }
+    catch(std::exception& ex)
+    {
+        std::cerr<<"Exception:"<<ex.what()<<std::endl;
+    }
+    std::cout << "Finish computing similarity index (ESA)." << std::endl;
 
-	return true;
+    return true;
 }
 
 bool MiningManager::getSimilarDocIdList(uint32_t documentId, uint32_t maxNum,
@@ -1528,4 +1524,3 @@ void MiningManager::doTgInfoRelease_()
         tgInfo_ = NULL;
     }
 }
-

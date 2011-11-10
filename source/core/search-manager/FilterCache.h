@@ -8,7 +8,7 @@
 
 #include <query-manager/ActionItem.h>
 
-#include <ir/index_manager/utility/Ewah.h>
+#include <am/bitmap/Ewah.h>
 #include <cache/IzeneCache.h>
 
 #include <boost/shared_ptr.hpp>
@@ -19,7 +19,8 @@ class FilterCache
 {
 public:
     typedef QueryFiltering::FilteringType key_type;
-    typedef boost::shared_ptr<izenelib::ir::indexmanager::EWAHBoolArray<uword32> > value_type;
+    typedef boost::shared_ptr<izenelib::am::EWAHBoolArray<uint32_t> > value_type;
+
 public:
     explicit FilterCache(unsigned cacheSize)
             : cache_(cacheSize)

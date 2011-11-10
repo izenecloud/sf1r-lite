@@ -35,7 +35,7 @@ public:
 
     void initZooKeeper(const std::string& zkHosts, const int recvTimeout);
 
-    void setNodeInfo(Topology& topology, SF1NodeInfo& sf1NodeInfo);
+    void setNodeInfo(Topology& topology, const SF1NodeInfo& sf1NodeInfo);
 
     /**
      * Register aggregator which requiring info of workers
@@ -45,6 +45,8 @@ public:
     {
         aggregatorList_.push_back(aggregator);
     }
+
+    void init();
 
     /**
      * Resiger master server after all workers ready

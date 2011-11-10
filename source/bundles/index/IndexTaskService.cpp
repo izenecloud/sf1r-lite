@@ -3,6 +3,8 @@
 
 #include <index-manager/IndexManager.h>
 #include <index-manager/IndexHooker.h>
+#include <index-manager/IndexModeSelector.h>
+#include <common/ScdWriterController.h>
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
 #include <search-manager/SearchManager.h>
@@ -50,6 +52,7 @@ IndexTaskService::IndexTaskService(
     , directoryRotator_(directoryRotator)
     , miningTaskService_(NULL)
     , recommendTaskService_(NULL)
+    , scd_writer_(new ScdWriterController(bundleConfig_->collPath_.getScdPath() + "index/"))
     , indexManager_(indexManager)
     , collectionId_(1)
     , indexProgress_()
@@ -95,6 +98,7 @@ IndexTaskService::IndexTaskService(
 
 IndexTaskService::~IndexTaskService()
 {
+    delete scd_writer_;
 }
 
 void IndexTaskService::createPropertyList_()
@@ -134,7 +138,10 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
     LOG(INFO) << "start BuildCollection";
 
     izenelib::util::ClockTimer timer;
-
+    
+    //flush all writing SCDs
+    scd_writer_->Flush();
+    
     indexProgress_.reset();
 
     ScdParser parser(bundleConfig_->encoding_);
@@ -188,6 +195,14 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
 
     //sort scdList
     sort(scdList.begin(), scdList.end(), ScdParser::compareSCD);
+    
+    //here, try to set the index mode(default[batch] or realtime)
+    //The threshold is set to the scd_file_size/exist_doc_num, if smaller or equal than this threshold then realtime mode will turn on.
+    //when the scd file size(M) larger than max_realtime_msize, the default mode will turn on while ignore the threshold above.
+    long max_realtime_msize = 50L; //set to 50M
+    double threshold = 50.0/500000.0;
+    IndexModeSelector index_mode_selector(indexManager_, threshold, max_realtime_msize);
+    index_mode_selector.TrySetIndexMode(indexProgress_.totalFileSize_);
 
     LOG(INFO) << "SCD Files in Path processed in given order. Path " << scdPath;
     vector<string>::iterator scd_it;
@@ -336,8 +351,6 @@ bool IndexTaskService::optimizeIndex()
 
 bool IndexTaskService::createDocument(const Value& documentValue)
 {
-    if(!backup_() )
-        return false;
 
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
@@ -345,64 +358,13 @@ bool IndexTaskService::createDocument(const Value& documentValue)
         LOG(ERROR) << "Index directory is corrupted";
         return false;
     }
-    sf1r::Status::Guard statusGuard(indexStatus_);
-
-#ifdef COBRA_RESTRICT
-    const docid_t maxDocId = documentManager_->getMaxDocId();
-    if ( LicenseManager::continueIndex_ )
-    {
-        COBRA_RESTRICT_EXCEED_N_RETURN_FALSE(maxDocId, LICENSE_MAX_DOC,  0);
-    }
-    else
-    {
-        COBRA_RESTRICT_EXCEED_N_RETURN_FALSE(maxDocId, LicenseManager::TRIAL_MAX_DOC,  0);
-    }
-#endif
-
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
-
-    Document document;
-    IndexerDocument indexDocument;
-    bool rType = false;
-    std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
-    sf1r::docid_t id = 0;
-    std::string source = "";
-    if (!prepareDocument_(scddoc, document, indexDocument, rType, rTypeFieldValue, source))
-    {
-        return false;
-    }
-
-    if (rType)
-    {
-        id = document.getId();
-    }
-
-    boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
-    if(!source.empty())
-    {
-        ProductInfo productInfo;
-        productInfo.setSource(source);
-        productInfo.setCollection(bundleConfig_->collectionName_);
-        productInfo.setNum(1);
-        productInfo.setFlag("insert");
-        productInfo.setTimeStamp(now);
-        productInfo.save();
-    }
-
-    // DEBUG
-    static int docnum = 1;
-    fprintf(stderr, "\n-----[%-6d] Document is inserted\n", docnum++);
-    // DEBUG
-    if(!insertDoc_(document ,indexDocument)) return false;
-    searchManager_->reset_cache(rType, id, rTypeFieldValue);
-    return true;
+    return scd_writer_->Write(scddoc, INSERT_SCD);
 }
 
 bool IndexTaskService::updateDocument(const Value& documentValue)
 {
-    if(!backup_() )
-        return false;
 
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
@@ -410,53 +372,25 @@ bool IndexTaskService::updateDocument(const Value& documentValue)
         LOG(ERROR) << "Index directory is corrupted";
         return false;
     }
-    sf1r::Status::Guard statusGuard(indexStatus_);
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
 
-    Document document;
-    IndexerDocument indexDocument;
-    bool rType = false;
-    std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
-    sf1r::docid_t id = 0;
-    std::string source = "";
-    if (!prepareDocument_(scddoc, document, indexDocument, rType, rTypeFieldValue, source, false))
+    return scd_writer_->Write(scddoc, UPDATE_SCD);
+}
+
+bool IndexTaskService::destroyDocument(const Value& documentValue)
+{
+
+    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
+    if (!dirGuard)
     {
+        LOG(ERROR) << "Index directory is corrupted";
         return false;
     }
+    SCDDoc scddoc;
+    value2SCDDoc(documentValue, scddoc);
 
-    if (rType)
-    {
-        id = document.getId();
-    }
-
-    boost::posix_time::ptime now =
-                boost::posix_time::microsec_clock::local_time();
-    if(!source.empty())
-    {
-        ProductInfo productInfo;
-        productInfo.setSource(source);
-        productInfo.setCollection(bundleConfig_->collectionName_);
-        productInfo.setNum(1);
-        productInfo.setFlag("update");
-        productInfo.setTimeStamp(now);
-        productInfo.save();
-    }
-
-    sf1r::docid_t oldId = indexDocument.getId();
-    if(oldId == 0)
-    {
-        /// document does not exist, directly index
-        if(!insertDoc_(document ,indexDocument)) return false;
-        searchManager_->reset_cache(rType, id, rTypeFieldValue);
-    }
-    else
-    {
-        if(!updateDoc_(document, indexDocument, rType)) return false;
-        ++numUpdatedDocs_;
-        searchManager_->reset_cache(rType, id, rTypeFieldValue);
-    }
-    return true;
+    return scd_writer_->Write(scddoc, DELETE_SCD);
 }
 
 bool IndexTaskService::preparePartialDocument_(
@@ -583,56 +517,7 @@ bool IndexTaskService::preparePartialDocument_(
     return true;
 }
 
-bool IndexTaskService::destroyDocument(const Value& documentValue)
-{
-    if(!backup_() )
-        return false;
 
-    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
-    if (!dirGuard)
-    {
-        LOG(ERROR) << "Index directory is corrupted";
-        return false;
-    }
-    sf1r::Status::Guard statusGuard(indexStatus_);
-    sf1r::docid_t docid;
-    izenelib::util::UString docName(asString(documentValue["DOCID"]), UString::UTF_8);
-
-    if (!idManager_->getDocIdByDocName(docName, docid, false))
-    {
-        string property;
-        docName.convertString(property, bundleConfig_->encoding_ );
-        LOG(ERROR) << "Deleted document " <<property <<" does not exist, skip it.";
-    }
-    
-    if(!deleteDoc_(docid)) return false;
-    std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
-    searchManager_->reset_cache(false, 0, rTypeFieldValue);
-
-    boost::posix_time::ptime now =
-                boost::posix_time::microsec_clock::local_time();
-    PropertyValue value;
-    std::string source = "";
-    if (!bundleConfig_->productSourceField_.empty()
-            && documentManager_->getPropertyValue(docid, bundleConfig_->productSourceField_, value))
-    {
-        if(!getPropertyValue_(value, source))
-            return false;
-
-        if(!source.empty())
-        {
-            ProductInfo productInfo;
-            productInfo.setSource(source);
-            productInfo.setCollection(bundleConfig_->collectionName_);
-            productInfo.setNum(1);
-            productInfo.setFlag("delete");
-            productInfo.setTimeStamp(now);
-            productInfo.save();
-        }
-    }
-
-    return true;
-}
 
 bool IndexTaskService::doBuildCollection_(
     const std::string& fileName,

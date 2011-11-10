@@ -330,7 +330,7 @@ void DocumentsController::duplicate_with()
 }
 
 /**
- * @brief Action @b create. Creates a documents in SIA and MIA though BA.
+ * @brief Action @b create. Create a document and write to SCD in specific collection, call index command to apply the changes.
  *
  * @section request
  *
@@ -374,7 +374,7 @@ void DocumentsController::create()
 }
 
 /**
- * @brief Action @b update. Updates documents in SIA and MIA though BA.
+ * @brief Action @b update. Update a document and write to SCD in specific collection, call index command to apply the changes.
  *
  * @section request
  *
@@ -418,7 +418,7 @@ void DocumentsController::update()
 }
 
 /**
- * @brief Action @b destroy. Destroys documents in SIA and MIA though BA.
+ * @brief Action @b destroy. Destroy a document and write to SCD in specific collection, call index command to apply the changes.
  *
  * @section request
  *

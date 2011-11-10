@@ -178,19 +178,19 @@ BOOST_AUTO_TEST_CASE(parseQuery_basic_test)
         keywordTreeCheck(child, "하지마라");
     }
     { // AND type with chinese character
-        queryStr = "가나北京 天安门abc 123";
-        queryUStr.assign(queryStr, izenelib::util::UString::UTF_8);
-        BOOST_CHECK( queryParser.parseQuery(queryUStr, queryTree, true, true) );
-        BOOST_CHECK_EQUAL( "", queryTree->keyword_ );
-        BOOST_CHECK_EQUAL( 0U , queryTree->keywordId_ );
-        BOOST_CHECK_EQUAL( 2U , queryTree->children_.size() );
+//      queryStr = "가나北京 天安门abc 123";
+//      queryUStr.assign(queryStr, izenelib::util::UString::UTF_8);
+//      BOOST_CHECK( queryParser.parseQuery(queryUStr, queryTree, true, true) );
+//      BOOST_CHECK_EQUAL( "", queryTree->keyword_ );
+//      BOOST_CHECK_EQUAL( 0U , queryTree->keywordId_ );
+//      BOOST_CHECK_EQUAL( 2U , queryTree->children_.size() );
 
-        std::list<QueryTreePtr>::const_iterator iter = queryTree->children_.begin();
-        QueryTreePtr child = *iter;
-        keywordTreeCheck(child, "가나北京天安门abc");
+//      std::list<QueryTreePtr>::const_iterator iter = queryTree->children_.begin();
+//      QueryTreePtr child = *iter;
+//      keywordTreeCheck(child, "가나北京天安门abc");
 
-        child = *(++iter);
-        keywordTreeCheck(child, "123");
+//      child = *(++iter);
+//      keywordTreeCheck(child, "123");
     }
     { // OR type
         queryStr = "본케나오게|하지마라";
