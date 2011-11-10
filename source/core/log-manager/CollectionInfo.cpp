@@ -47,13 +47,13 @@ const int32_t CollectionInfo::cassandra_key_cache_save_period_in_seconds(0);
 const map<string, string> CollectionInfo::cassandra_compression_options
     = map_list_of("sstable_compression", "SnappyCompressor")("chunk_length_kb", "64");
 
+const string CollectionInfo::SourceCountSchema[] = {"Count", "Flag", "Source"};
+
 CollectionInfo::CollectionInfo(const std::string& collection)
     : CassandraColumnFamily()
     , collection_(collection)
     , collectionPresent_(!collection.empty())
-    , sourcePresent_(false)
-    , countPresent_(false)
-    , flagPresent_(false)
+    , sourceCountPresent_(false)
 {}
 
 CollectionInfo::~CollectionInfo()
@@ -61,6 +61,40 @@ CollectionInfo::~CollectionInfo()
 
 bool CollectionInfo::updateRow() const
 {
+    if (!collectionPresent_) return false;
+    try
+    {
+        boost::shared_ptr<Cassandra> client(CassandraConnection::instance().getCassandraClient());
+        for (SourceCountType::const_iterator it = sourceCount_.begin();
+                it != sourceCount_.end(); ++it)
+        {
+            string time_string = to_iso_string(it->first);
+            client->insertColumn(
+                    it->second.get<0>(),
+                    collection_,
+                    cassandra_name,
+                    time_string,
+                    SourceCountSchema[0]);
+            client->insertColumn(
+                    it->second.get<1>(),
+                    collection_,
+                    cassandra_name,
+                    time_string,
+                    SourceCountSchema[1]);
+            client->insertColumn(
+                    it->second.get<2>(),
+                    collection_,
+                    cassandra_name,
+                    time_string,
+                    SourceCountSchema[2]);
+        }
+    }
+    catch (InvalidRequestException& ire)
+    {
+        cerr << ire.why << endl;
+        return false;
+    }
+    return true;
 }
 
 bool CollectionInfo::deleteRow()
@@ -85,61 +119,33 @@ bool CollectionInfo::deleteRow()
 
 bool CollectionInfo::getRow()
 {
-}
-
-bool CollectionInfo::save()
-{
-    if (!hasCollection())
-        return false;
-
-    if (!hasTimeStamp())
-        timeStamp_ = microsec_clock::local_time();
-    string time_string = to_iso_string(timeStamp_);
-
-    boost::shared_ptr<Cassandra> client(CassandraConnection::instance().getCassandraClient());
+    if (!collectionPresent_) return false;
     try
     {
-        if (hasSource())
-        {
-            client->insertColumn(
-                    source_,
-                    collection_,
-                    cassandra_name,
-                    time_string,
-                    "Source");
-        }
-        if (hasCount())
-        {
-            client->insertColumn(
-                    count_,
-                    collection_,
-                    cassandra_name,
-                    time_string,
-                    "Count");
-        }
-        if (hasFlag())
-        {
-            client->insertColumn(
-                    flag_,
-                    collection_,
-                    cassandra_name,
-                    time_string,
-                    "Flag");
-        }
     }
-    catch (InvalidRequestException& ire)
+    catch (InvalidRequestException &ire)
     {
-        cerr << ire.why << endl;
+        cout << ire.why << endl;
         return false;
     }
     return true;
+}
+
+void CollectionInfo::insertSourceCount(ptime timeStamp, const SourceCountItemType& sourceCountItem)
+{
+    if (!sourceCountPresent_)
+    {
+        sourceCount_.clear();
+        sourceCountPresent_ = true;
+    }
+    sourceCount_[timeStamp] = sourceCountItem;
 }
 
 void CollectionInfo::reset(const string& newCollection)
 {
     if (!newCollection.empty())
         collection_.assign(newCollection);
-    sourcePresent_ = countPresent_ = flagPresent_ = timeStampPresent_ = false;
+    sourceCountPresent_ = false;
 }
 
 }

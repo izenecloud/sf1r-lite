@@ -157,7 +157,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
             return false;
         }
     }
-    catch(boost::filesystem::filesystem_error& e)
+    catch(bfs::filesystem_error& e)
     {
         LOG(ERROR) << "Error while opening directory " << e.what();
         return false;
@@ -208,7 +208,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
     LOG(INFO) << "SCD Files in Path processed in given order. Path " << scdPath;
     vector<string>::iterator scd_it;
     for ( scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
-        LOG(INFO) << "SCD File " << boost::filesystem::path(*scd_it).stem();
+        LOG(INFO) << "SCD File " << bfs::path(*scd_it).stem();
 
     try
     {
@@ -221,7 +221,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
             indexProgress_.currentFileName = filename;
             indexProgress_.currentFilePos_ = 0;
 
-            LOG(INFO) << "Processing SCD file. " << boost::filesystem::path(*scd_it).stem();
+            LOG(INFO) << "Processing SCD file. " << bfs::path(*scd_it).stem();
 
             switch ( parser.checkSCDType(*scd_it) )
             {
@@ -244,7 +244,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
                 }
                 else
                 {
-                    LOG(WARNING) << "Indexed documents do not exist. File " << boost::filesystem::path(*scd_it).stem();
+                    LOG(WARNING) << "Indexed documents do not exist. File " << bfs::path(*scd_it).stem();
                 }
             }
             break;
@@ -805,26 +805,28 @@ void IndexTaskService::saveProductInfo_(int op)
     if (bundleConfig_->productSourceField_.empty())
         return;
 
+    CollectionInfo collectionInfo(bundleConfig_->collectionName_);
     for (map<std::string, uint32_t>::const_iterator iter = productSourceCount_.begin();
         iter != productSourceCount_.end(); ++iter)
     {
-        CollectionInfo collectionInfo(bundleConfig_->collectionName_);
-        collectionInfo.setSource(iter->first);
-        collectionInfo.setCount(iter->second);
+        std::string flag;
         switch (op)
         {
         case 1:
-            collectionInfo.setFlag("insert");
+            flag.assign("insert");
             break;
         case 2:
-            collectionInfo.setFlag("update");
+            flag.assign("update");
             break;
         default:
-            collectionInfo.setFlag("delete");
+            flag.assign("delete");
             break;
         }
-        collectionInfo.save();
+        collectionInfo.insertSourceCount(
+                boost::posix_time::microsec_clock::local_time(),
+                CollectionInfo::SourceCountItemType(iter->second, flag, iter->first));
     }
+    collectionInfo.updateRow();
 }
 
 bool IndexTaskService::getPropertyValue_( const PropertyValue& value, std::string& valueStr )
@@ -1454,7 +1456,7 @@ bool IndexTaskService::backup_()
             next->copyFrom(*current);
             return true;
         }
-        catch(boost::filesystem::filesystem_error& e)
+        catch(bfs::filesystem_error& e)
         {
             LOG(ERROR) << "Failed to copy index directory " << e.what();
         }

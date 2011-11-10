@@ -10,6 +10,11 @@ namespace sf1r {
 class CollectionInfo : public CassandraColumnFamily
 {
 public:
+    typedef boost::tuple<uint32_t, std::string, std::string> SourceCountItemType;
+    typedef std::map<boost::posix_time::ptime, SourceCountItemType> SourceCountType;
+
+    static const std::string SourceCountSchema[];
+
     CollectionInfo(const std::string& collection = "");
 
     ~CollectionInfo();
@@ -20,7 +25,7 @@ public:
 
     bool getRow();
 
-    bool save();
+    void insertSourceCount(boost::posix_time::ptime timeStamp, const SourceCountItemType& sourceCountItem);
 
     void reset(const std::string& newCollection = "");
 
@@ -42,85 +47,28 @@ public:
         return collectionPresent_;
     }
 
-    inline const std::string& getSource() const
+    inline const SourceCountType& getSourceCount() const
     {
-        return source_;
+        return sourceCount_;
     }
 
-    inline void setSource(const std::string& source)
+    inline void setSourceCount(const SourceCountType& sourceCount)
     {
-        source_ = source;
-        sourcePresent_ = true;
+        sourceCount_ = sourceCount;
+        sourceCountPresent_ = true;
     }
 
-    inline bool hasSource() const
+    inline bool hasSourceCount() const
     {
-        return sourcePresent_;
-    }
-
-    inline const uint32_t getCount() const
-    {
-        return count_;
-    }
-
-    inline void setCount(const uint32_t count)
-    {
-        count_ = count;
-        countPresent_ = true;
-    }
-
-    inline bool hasCount() const
-    {
-        return countPresent_;
-    }
-
-    inline const std::string& getFlag() const
-    {
-        return flag_;
-    }
-
-    inline void setFlag(const std::string& flag)
-    {
-        flag_ = flag;
-        flagPresent_ = true;
-    }
-
-    inline bool hasFlag() const
-    {
-        return flagPresent_;
-    }
-
-    inline const boost::posix_time::ptime& getTimeStamp() const
-    {
-        return timeStamp_;
-    }
-
-    inline void setTimeStamp(const boost::posix_time::ptime& timeStamp)
-    {
-        timeStamp_ = timeStamp;
-        timeStampPresent_ = true;
-    }
-
-    inline bool hasTimeStamp() const
-    {
-        return timeStampPresent_;
+        return sourceCountPresent_;
     }
 
 private:
     std::string collection_;
     bool collectionPresent_;
 
-    std::string source_;
-    bool sourcePresent_;
-
-    uint32_t count_;
-    bool countPresent_;
-
-    std::string flag_;
-    bool flagPresent_;
-
-    boost::posix_time::ptime timeStamp_;
-    bool timeStampPresent_;
+    SourceCountType sourceCount_;
+    bool sourceCountPresent_;
 };
 
 }
