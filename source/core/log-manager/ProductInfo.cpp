@@ -7,6 +7,7 @@
 using namespace std;
 using namespace boost::assign;
 using namespace boost::posix_time;
+using namespace libcassandra;
 using namespace org::apache::cassandra;
 
 namespace sf1r {
@@ -46,18 +47,41 @@ const int32_t ProductInfo::cassandra_key_cache_save_period_in_seconds(0);
 const map<string, string> ProductInfo::cassandra_compression_options
     = map_list_of("sstable_compression", "SnappyCompressor")("chunk_length_kb", "64");
 
+const string ProductInfo::SuperColumns[] = {"StringProperties", "PriceHistory"};
+
 bool ProductInfo::update() const
 {
+    if (!docIdPresent_) return false;
     try
     {
+        boost::shared_ptr<Cassandra> client(CassandraConnection::instance().getCassandraClient());
+        string row_key = collectionPresent_ ? collection_ + "_" + docId_ :docId_;
+        if (sourcePresent_)
+        {
+            client->insertColumn(
+                    source_,
+                    row_key,
+                    cassandra_name,
+                    SuperColumns[0],
+                    "Source");
+        }
+        if (titlePresent_)
+        {
+            client->insertColumn(
+                    title_,
+                    row_key,
+                    cassandra_name,
+                    SuperColumns[0],
+                    "Title");
+        }
         for (PriceHistoryType::const_iterator it = priceHistory_.begin();
                 it != priceHistory_.end(); ++it)
         {
-            CassandraConnection::instance().getCassandraClient()->insertColumn(
+            client->insertColumn(
                     lexical_cast<string>(it->second),
-                    collectionPresent_ ? collection_ + "_" + docId_ :docId_,
+                    row_key,
                     cassandra_name,
-                    "PriceHistory",
+                    SuperColumns[1],
                     to_iso_string(it->first));
         }
     }
@@ -71,6 +95,7 @@ bool ProductInfo::update() const
 
 bool ProductInfo::clear() const
 {
+    if (!docIdPresent_) return false;
     try
     {
         ColumnPath col_path;
@@ -89,32 +114,87 @@ bool ProductInfo::clear() const
 
 bool ProductInfo::get()
 {
+    if (!docIdPresent_) return false;
     try
     {
+        boost::shared_ptr<Cassandra> client(CassandraConnection::instance().getCassandraClient());
+        string row_key = collectionPresent_ ? collection_ + "_" + docId_ :docId_;
+
         ColumnParent col_parent;
         col_parent.__set_column_family(cassandra_name);
-        col_parent.__set_super_column("PriceHistory");
 
         SlicePredicate pred;
-        if (fromTimePresent_)
-            pred.slice_range.__set_start(to_iso_string(fromTime_));
-        if (toTimePresent_)
-            pred.slice_range.__set_finish(to_iso_string(toTime_));
+
+        vector<SuperColumn> super_column_list;
+        client->getSuperSlice(
+                super_column_list,
+                row_key,
+                col_parent,
+                pred);
+
+        for (vector<SuperColumn>::const_iterator sit = super_column_list.begin();
+                sit != super_column_list.end(); ++sit)
+        {
+            if (sit->name == SuperColumns[0])
+            {
+                for (vector<Column>::const_iterator cit = sit->columns.begin();
+                        cit != sit->columns.end(); ++cit)
+                {
+                    if (cit->name == "Source")
+                        setSource(cit->value);
+                    else if (cit->name == "Title")
+                        setTitle(cit->value);
+                }
+            }
+            else if (sit->name == SuperColumns[1])
+            {
+                for (vector<Column>::const_iterator cit = sit->columns.begin();
+                        cit != sit->columns.end(); ++cit)
+                {
+                    priceHistory_[from_iso_string(cit->name)] = lexical_cast<ProductPriceType>(cit->value);
+                }
+            }
+        }
+    }
+    catch (InvalidRequestException &ire)
+    {
+        cout << ire.why << endl;
+        return false;
+    }
+    return true;
+}
+
+bool ProductInfo::getRangeHistory(PriceHistoryType& history, ptime from, ptime to)
+{
+    if (!docIdPresent_) return false;
+    try
+    {
+        boost::shared_ptr<Cassandra> client(CassandraConnection::instance().getCassandraClient());
+        string row_key = collectionPresent_ ? collection_ + "_" + docId_ :docId_;
+
+        ColumnParent col_parent;
+        col_parent.__set_column_family(cassandra_name);
+        col_parent.__set_super_column(SuperColumns[1]);
+
+        SlicePredicate pred;
+        if (from != not_a_date_time)
+            pred.slice_range.__set_start(to_iso_string(from));
+        if (to != not_a_date_time)
+            pred.slice_range.__set_finish(to_iso_string(to));
 
         vector<Column> column_list;
-        CassandraConnection::instance().getCassandraClient()->getSlice(
+        client->getSlice(
                 column_list,
-                collectionPresent_ ? collection_ + "_" + docId_ :docId_,
+                row_key,
                 col_parent,
                 pred);
 
         if (!column_list.empty())
         {
-            priceHistoryPresent_ = true;
             for (vector<Column>::const_iterator it = column_list.begin();
                     it != column_list.end(); ++it)
             {
-                priceHistory_[from_iso_string(it->name)] = lexical_cast<ProductPriceType>(it->value);
+                history[from_iso_string(it->name)] = lexical_cast<ProductPriceType>(it->value);
             }
         }
     }
@@ -130,7 +210,7 @@ void ProductInfo::reset(const string& newDocId)
 {
     docId_.assign(newDocId);
     docIdPresent_ = !docId_.empty();
-    collectionPresent_ = sourcePresent_ = titlePresent_ = fromTimePresent_ = toTimePresent_ = priceHistoryPresent_ = false;
+    collectionPresent_ = sourcePresent_ = titlePresent_ = priceHistoryPresent_ = false;
 }
 
 }

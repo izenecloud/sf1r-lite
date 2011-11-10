@@ -12,14 +12,14 @@ class ProductInfo : public CassandraColumnFamily
 public:
     typedef std::map<boost::posix_time::ptime, ProductPriceType> PriceHistoryType;
 
+    static const std::string SuperColumns[];
+
     ProductInfo()
         : CassandraColumnFamily()
         , docIdPresent_(false)
         , collectionPresent_(false)
         , sourcePresent_(false)
         , titlePresent_(false)
-        , fromTimePresent_(false)
-        , toTimePresent_(false)
         , priceHistoryPresent_(false)
     {}
 
@@ -30,8 +30,6 @@ public:
         , collectionPresent_(false)
         , sourcePresent_(false)
         , titlePresent_(false)
-        , fromTimePresent_(false)
-        , toTimePresent_(false)
         , priceHistoryPresent_(false)
     {}
 
@@ -42,6 +40,8 @@ public:
     bool clear() const;
 
     bool get();
+
+    bool getRangeHistory(PriceHistoryType& history, boost::posix_time::ptime from, boost::posix_time::ptime to);
 
     void reset(const std::string& newDocId);
 
@@ -111,38 +111,6 @@ public:
         return titlePresent_;
     }
 
-    inline const boost::posix_time::ptime& getFromTime() const
-    {
-        return fromTime_;
-    }
-
-    inline void setFromTime(const boost::posix_time::ptime& fromTime)
-    {
-        fromTime_ = fromTime;
-        fromTimePresent_ = true;
-    }
-
-    inline bool hasFromTime() const
-    {
-        return fromTimePresent_;
-    }
-
-    inline const boost::posix_time::ptime& getToTime() const
-    {
-        return toTime_;
-    }
-
-    inline void setToTime(const boost::posix_time::ptime& toTime)
-    {
-        toTime_ = toTime;
-        toTimePresent_ = true;
-    }
-
-    inline bool hasToTime() const
-    {
-        return toTimePresent_;
-    }
-
     inline const PriceHistoryType& getPriceHistory() const
     {
         return priceHistory_;
@@ -171,12 +139,6 @@ private:
 
     std::string title_;
     bool titlePresent_;
-
-    boost::posix_time::ptime fromTime_;
-    bool fromTimePresent_;
-
-    boost::posix_time::ptime toTime_;
-    bool toTimePresent_;
 
     PriceHistoryType priceHistory_;
     bool priceHistoryPresent_;
