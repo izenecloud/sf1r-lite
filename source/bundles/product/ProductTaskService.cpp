@@ -5,7 +5,7 @@
 #include <document-manager/DocumentManager.h>
 
 #include <log-manager/ProductInfo.h>
-#include <log-manager/ECommInfo.h>
+#include <log-manager/CollectionInfo.h>
 
 #include <common/SFLogger.h>
 #include <common/Utilities.h>

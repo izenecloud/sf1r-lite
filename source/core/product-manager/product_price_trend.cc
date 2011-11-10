@@ -52,8 +52,7 @@ bool ProductPriceTrend::updateHistory() const
                     product_info_.uuid_,
                     column_family_,
                     super_column_,
-                    serializeLong(it->first)
-                    );
+                    serializeLong(it->first));
         }
     }
     catch (InvalidRequestException &ire)
@@ -71,8 +70,7 @@ bool ProductPriceTrend::clearHistory() const
         cassandra_client_->removeSuperColumn(
                 product_info_.uuid_,
                 column_family_,
-                super_column_
-                );
+                super_column_);
     }
     catch (InvalidRequestException &ire)
     {
@@ -104,8 +102,7 @@ bool ProductPriceTrend::getHistory()
                 column_list,
                 product_info_.uuid_,
                 col_parent,
-                pred
-                );
+                pred);
 
         for (vector<Column>::const_iterator it = column_list.begin();
                 it != column_list.end(); ++it)
