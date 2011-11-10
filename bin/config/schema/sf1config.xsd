@@ -211,7 +211,7 @@
 				<xs:simpleType>
 					<xs:restriction base="xs:integer">
 						<xs:minInclusive value="1"/>
-						<xs:maxInclusive value="10"/>
+						<xs:maxInclusive value="100"/>
 					</xs:restriction>
 				</xs:simpleType>
 			</xs:attribute>
@@ -219,7 +219,7 @@
 				<xs:simpleType>
 					<xs:restriction base="xs:integer">
 						<xs:minInclusive value="1"/>
-						<xs:maxInclusive value="10"/>
+						<xs:maxInclusive value="100"/>
 					</xs:restriction>
 				</xs:simpleType>
 			</xs:attribute>			
@@ -231,6 +231,7 @@
 				<xs:element ref="MasterAgent" minOccurs="0" maxOccurs="1"/>
 				<xs:element ref="WorkerAgent" minOccurs="0" maxOccurs="1"/>
 			</xs:sequence>
+			<xs:attribute name="host" type="xs:string" use="required"/>
 			<xs:attribute name="nodeid" use="required">
 				<xs:simpleType>
 					<xs:restriction base="xs:integer">
@@ -247,7 +248,14 @@
 					</xs:restriction>
 				</xs:simpleType>
                         </xs:attribute>
-			<xs:attribute name="host" type="xs:string" use="required"/>
+			<xs:attribute name="shardid" use="required">
+				<xs:simpleType>
+					<xs:restriction base="xs:integer">
+						<xs:minInclusive value="1"/>
+						<xs:maxInclusive value="10"/>
+					</xs:restriction>
+				</xs:simpleType>
+                        </xs:attribute>	
 		</xs:complexType>
 	</xs:element>
 	<xs:element name="MasterAgent">

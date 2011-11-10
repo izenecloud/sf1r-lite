@@ -232,9 +232,6 @@ bool CobraProcess::startDistributedServer()
     if (!SF1Config::get()->distributedTopologyConfig_.enabled_)
         return false;
 
-    // Register current SF1 node through zookeeper
-    NodeManagerSingleton::get()->registerNode();
-
     if (sf1r::SF1Config::get()->isWorkerEnabled())
     {
         try
@@ -251,9 +248,6 @@ bool CobraProcess::startDistributedServer()
             //std::string masterHost = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.masterHost_;
             //uint16_t masterPort = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.masterPort_;
             //MasterNotifierSingleton::get()->setMasterServerInfo(masterHost, masterPort);
-
-            // Let current node work as Worker
-            NodeManagerSingleton::get()->registerWorker();
         }
         catch (std::exception& e)
         {
@@ -266,13 +260,12 @@ bool CobraProcess::startDistributedServer()
         // master rpc server
         //MasterServer::get()->start(curNodeInfo.localHost_, masterPort);
 
-        // Let current node work as Master
-        NodeManagerSingleton::get()->registerMaster();
-
-        // Initialize & Start Master Node Manager
-        MasterNodeManagerSingleton::get()->init();
-        MasterNodeManagerSingleton::get()->startServer();
+        // Initialize & Start Master Node Manager, xxx
+        ///MasterNodeManagerSingleton::get()->init();
+        ///MasterNodeManagerSingleton::get()->startServer();
     }
+
+    NodeManagerSingleton::get()->start();
 
     addExitHook(boost::bind(&CobraProcess::stopDistributedServer, this));
 
@@ -281,13 +274,13 @@ bool CobraProcess::startDistributedServer()
 
 void CobraProcess::stopDistributedServer()
 {
-    NodeManagerSingleton::get()->deregisterNode();
-
     if (workerServer_)
     {
         workerServer_->end();
         workerServer_->join();
     }
+
+    NodeManagerSingleton::get()->stop();
 }
 
 int CobraProcess::run()

@@ -171,8 +171,13 @@
   <Deployment>
     <BrokerAgent usecache="n" threadnum="50" enabletest="y" port="18181"/>
 
-    <DistributedTopology enable="n" clusterid="@DEFAULT_CLUSTER_ID@" nodenum="2" >
-      <CurrentNode nodeid="1" replicaid="1" host="172.16.0.36">
+    <!-- (ids are started with 1)
+         nodeid    : id of current node in a cluster
+         replicaid : id of current node in a replication set
+         shardid   : id of data shard(partition) for current node
+    -->
+    <DistributedTopology enable="n" clusterid="@DEFAULT_CLUSTER_ID@" nodenum="2">
+      <CurrentNode host="172.16.0.36" replicaid="1" nodeid="1" shardid="1">
         <!--as master-->
         <MasterAgent enable="y" port="18151" >
           <Aggregator name="chinese-wiki-dist"/>
