@@ -119,7 +119,7 @@ bool ProductInfo::deleteRow()
         CassandraConnection::instance().getCassandraClient()->remove(
                 collectionPresent_ ? collection_ + "_" + docId_ :docId_,
                 col_path);
-        reset();
+        resetKey();
     }
     catch (const InvalidRequestException &ire)
     {
@@ -142,20 +142,20 @@ bool ProductInfo::getRow()
 
         SlicePredicate pred;
 
-        vector<SuperColumn> super_column_list;
-        client->getSuperSlice(
-                super_column_list,
+        vector<ColumnOrSuperColumn> raw_column_list;
+        client->getRawSlice(
+                raw_column_list,
                 row_key,
                 col_parent,
                 pred);
 
-        for (vector<SuperColumn>::const_iterator sit = super_column_list.begin();
-                sit != super_column_list.end(); ++sit)
+        for (vector<ColumnOrSuperColumn>::const_iterator rit = raw_column_list.begin();
+                rit != raw_column_list.end(); ++rit)
         {
-            if (sit->name == SuperColumnName[0])
+            if (rit->super_column.name == SuperColumnName[0])
             {
-                for (vector<Column>::const_iterator cit = sit->columns.begin();
-                        cit != sit->columns.end(); ++cit)
+                for (vector<Column>::const_iterator cit = rit->super_column.columns.begin();
+                        cit != rit->super_column.columns.end(); ++cit)
                 {
                     if (cit->name == "Source")
                         setSource(cit->value);
@@ -163,15 +163,15 @@ bool ProductInfo::getRow()
                         setTitle(cit->value);
                 }
             }
-            else if (sit->name == SuperColumnName[1] && !sit->columns.empty())
+            else if (rit->super_column.name == SuperColumnName[1] && !rit->super_column.columns.empty())
             {
                 if (!priceHistoryPresent_)
                 {
                     priceHistory_.clear();
                     priceHistoryPresent_ = true;
                 }
-                for (vector<Column>::const_iterator cit = sit->columns.begin();
-                        cit != sit->columns.end(); ++cit)
+                for (vector<Column>::const_iterator cit = rit->super_column.columns.begin();
+                        cit != rit->super_column.columns.end(); ++cit)
                 {
                     priceHistory_[deserializeLong(cit->name)] = lexical_cast<ProductPriceType>(cit->value);
                 }
@@ -184,6 +184,16 @@ bool ProductInfo::getRow()
         return false;
     }
     return true;
+}
+
+void ProductInfo::insertHistory(ProductPriceType price)
+{
+    if (!priceHistoryPresent_)
+    {
+        priceHistory_.clear();
+        priceHistoryPresent_ = true;
+    }
+    priceHistory_[createTimestamp()] = price;
 }
 
 void ProductInfo::insertHistory(time_t timeStamp, ProductPriceType price)
@@ -219,19 +229,19 @@ bool ProductInfo::getRangeHistory(PriceHistoryType& history, time_t from, time_t
         if (to != -1)
             pred.slice_range.__set_finish(serializeLong(to));
 
-        vector<Column> column_list;
-        CassandraConnection::instance().getCassandraClient()->getSlice(
-                column_list,
+        vector<ColumnOrSuperColumn> raw_column_list;
+        CassandraConnection::instance().getCassandraClient()->getRawSlice(
+                raw_column_list,
                 row_key,
                 col_parent,
                 pred);
 
-        if (!column_list.empty())
+        if (!raw_column_list.empty())
         {
-            for (vector<Column>::const_iterator it = column_list.begin();
-                    it != column_list.end(); ++it)
+            for (vector<ColumnOrSuperColumn>::const_iterator it = raw_column_list.begin();
+                    it != raw_column_list.end(); ++it)
             {
-                history[deserializeLong(it->name)] = lexical_cast<ProductPriceType>(it->value);
+                history[deserializeLong(it->column.name)] = lexical_cast<ProductPriceType>(it->column.value);
             }
         }
     }
@@ -243,7 +253,7 @@ bool ProductInfo::getRangeHistory(PriceHistoryType& history, time_t from, time_t
     return true;
 }
 
-void ProductInfo::reset(const string& newDocId)
+void ProductInfo::resetKey(const string& newDocId)
 {
     if (!newDocId.empty())
         docId_.assign(newDocId);

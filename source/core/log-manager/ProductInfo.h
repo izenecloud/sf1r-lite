@@ -18,19 +18,21 @@ public:
 
     ~ProductInfo();
 
-    bool updateRow() const;
+    virtual bool updateRow() const;
 
-    bool deleteRow();
+    virtual bool deleteRow();
 
-    bool getRow();
+    virtual bool getRow();
+
+    virtual void resetKey(const std::string& newDocId = "");
+
+    void insertHistory(ProductPriceType price);
 
     void insertHistory(time_t timeStamp, ProductPriceType price);
 
     void clearHistory();
 
     bool getRangeHistory(PriceHistoryType& history, time_t from, time_t to) const;
-
-    void reset(const std::string& newDocId = "");
 
     DEFINE_COLUMN_FAMILY_COMMON_ROUTINES( ProductInfo )
 

@@ -98,7 +98,7 @@ bool CollectionInfo::deleteRow()
         CassandraConnection::instance().getCassandraClient()->remove(
                 collection_,
                 col_path);
-        reset();
+        resetKey();
     }
     catch (const InvalidRequestException &ire)
     {
@@ -142,6 +142,16 @@ bool CollectionInfo::getRow()
     return true;
 }
 
+void CollectionInfo::insertSourceCount(const SourceCountItemType& sourceCountItem)
+{
+    if (!sourceCountPresent_)
+    {
+        sourceCount_.clear();
+        sourceCountPresent_ = true;
+    }
+    sourceCount_[createTimestamp()] = sourceCountItem;
+}
+
 void CollectionInfo::insertSourceCount(time_t timeStamp, const SourceCountItemType& sourceCountItem)
 {
     if (!sourceCountPresent_)
@@ -152,7 +162,7 @@ void CollectionInfo::insertSourceCount(time_t timeStamp, const SourceCountItemTy
     sourceCount_[timeStamp] = sourceCountItem;
 }
 
-void CollectionInfo::reset(const string& newCollection)
+void CollectionInfo::resetKey(const string& newCollection)
 {
     if (!newCollection.empty())
         collection_.assign(newCollection);

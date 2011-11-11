@@ -22,6 +22,8 @@ public:
 
     virtual bool getRow() = 0;
 
+    virtual void resetKey(const std::string& newKey) = 0;
+
 protected:
     bool exist_;
 };
@@ -61,6 +63,26 @@ bool dropColumnFamily()
     return CassandraConnection::instance().dropColumnFamily(ColumnFamilyType::cf_name);
 }
 
+template <typename ColumnFamilyType>
+bool getSingleRow(ColumnFamilyType& row, const std::string& key)
+{
+    row.resetKey(key);
+    return row.getRow();
+}
+
+template <typename ColumnFamilyType>
+bool getMultiRow(std::vector<ColumnFamilyType>& row_list, const std::vector<std::string>& key_list)
+{
+    for (std::vector<std::string>::const_iterator it = key_list.begin();
+            it != key_list.end(); ++it)
+    {
+        row_list.push_back(ColumnFamilyType(*it));
+        if (!row_list.back().getRow())
+            return false;
+    }
+    return true;
+}
+
 #define DEFINE_COLUMN_FAMILY_COMMON_ROUTINES(ClassName) \
 public: \
     static const std::string cf_name; \
@@ -95,7 +117,18 @@ public: \
     { \
         return ::sf1r::dropColumnFamily<ClassName>(); \
     } \
-
+    \
+    static bool getSingleRow(ClassName& row, const std::string& key) \
+    { \
+        return ::sf1r::getSingleRow(row, key); \
+    } \
+    \
+    static bool getMultiRow(std::vector<ClassName>& row_list, const std::vector<std::string>& key_list) \
+    { \
+        return ::sf1r::getMultiRow(row_list, key_list); \
+    } \
+    \
+//  static bool getRangeRow(std::vector<ClassName>& row_list, const std::string& start_key, const std::string& end_key);
 
 }
 

@@ -19,15 +19,17 @@ public:
 
     ~CollectionInfo();
 
-    bool updateRow() const;
+    virtual bool updateRow() const;
 
-    bool deleteRow();
+    virtual bool deleteRow();
 
-    bool getRow();
+    virtual bool getRow();
+
+    virtual void resetKey(const std::string& newCollection = "");
+
+    void insertSourceCount(const SourceCountItemType& sourceCountItem);
 
     void insertSourceCount(time_t timeStamp, const SourceCountItemType& sourceCountItem);
-
-    void reset(const std::string& newCollection = "");
 
     DEFINE_COLUMN_FAMILY_COMMON_ROUTINES( CollectionInfo )
 
