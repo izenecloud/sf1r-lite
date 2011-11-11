@@ -1,7 +1,7 @@
 #ifndef _COLLECTION_INFO_H_
 #define _COLLECTION_INFO_H_
 
-#include "CassandraColumnFamily.h"
+#include "ColumnFamilyBase.h"
 
 #include <boost/tuple/tuple.hpp>
 

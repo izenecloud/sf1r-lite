@@ -1,7 +1,7 @@
 #ifndef _PRODUCT_INFO_H_
 #define _PRODUCT_INFO_H_
 
-#include "CassandraColumnFamily.h"
+#include "ColumnFamilyBase.h"
 
 #include <product-manager/pm_types.h>
 

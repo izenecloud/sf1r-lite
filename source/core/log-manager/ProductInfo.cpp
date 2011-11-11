@@ -12,39 +12,39 @@ using namespace org::apache::cassandra;
 
 namespace sf1r {
 
-const string ProductInfo::cassandra_name("ProductInfo");
+const string ProductInfo::cf_name("ProductInfo");
 
-const string ProductInfo::cassandra_column_type("Super");
+const string ProductInfo::cf_column_type("Super");
 
-const string ProductInfo::cassandra_comparator_type;
+const string ProductInfo::cf_comparator_type;
 
-const string ProductInfo::cassandra_sub_comparator_type;
+const string ProductInfo::cf_sub_comparator_type;
 
-const string ProductInfo::cassandra_comment;
+const string ProductInfo::cf_comment;
 
-const double ProductInfo::cassandra_row_cache_size(0);
+const double ProductInfo::cf_row_cache_size(0);
 
-const double ProductInfo::cassandra_key_cache_size(200000);
+const double ProductInfo::cf_key_cache_size(200000);
 
-const double ProductInfo::cassandra_read_repair_chance(1);
+const double ProductInfo::cf_read_repair_chance(1);
 
-const vector<ColumnDefFake> ProductInfo::cassandra_column_metadata;
+const vector<ColumnDef> ProductInfo::cf_column_metadata;
 
-const int32_t ProductInfo::cassandra_gc_grace_seconds(864000);
+const int32_t ProductInfo::cf_gc_grace_seconds(864000);
 
-const string ProductInfo::cassandra_default_validation_class;
+const string ProductInfo::cf_default_validation_class;
 
-const int32_t ProductInfo::cassandra_id(0);
+const int32_t ProductInfo::cf_id(0);
 
-const int32_t ProductInfo::cassandra_min_compaction_threshold(4);
+const int32_t ProductInfo::cf_min_compaction_threshold(4);
 
-const int32_t ProductInfo::cassandra_max_compaction_threshold(22);
+const int32_t ProductInfo::cf_max_compaction_threshold(22);
 
-const int32_t ProductInfo::cassandra_row_cache_save_period_in_seconds(0);
+const int32_t ProductInfo::cf_row_cache_save_period_in_seconds(0);
 
-const int32_t ProductInfo::cassandra_key_cache_save_period_in_seconds(0);
+const int32_t ProductInfo::cf_key_cache_save_period_in_seconds(0);
 
-const map<string, string> ProductInfo::cassandra_compression_options
+const map<string, string> ProductInfo::cf_compression_options
     = map_list_of("sstable_compression", "SnappyCompressor")("chunk_length_kb", "64");
 
 const string ProductInfo::SuperColumns[] = {"StringProperties", "PriceHistory"};
@@ -74,7 +74,7 @@ bool ProductInfo::updateRow() const
             client->insertColumn(
                     source_,
                     row_key,
-                    cassandra_name,
+                    cf_name,
                     SuperColumns[0],
                     "Source");
         }
@@ -83,7 +83,7 @@ bool ProductInfo::updateRow() const
             client->insertColumn(
                     title_,
                     row_key,
-                    cassandra_name,
+                    cf_name,
                     SuperColumns[0],
                     "Title");
         }
@@ -95,7 +95,7 @@ bool ProductInfo::updateRow() const
                 client->insertColumn(
                         lexical_cast<string>(it->second),
                         row_key,
-                        cassandra_name,
+                        cf_name,
                         SuperColumns[1],
                         to_iso_string(it->first));
             }
@@ -115,7 +115,7 @@ bool ProductInfo::deleteRow()
     try
     {
         ColumnPath col_path;
-        col_path.__set_column_family(cassandra_name);
+        col_path.__set_column_family(cf_name);
         CassandraConnection::instance().getCassandraClient()->remove(
                 collectionPresent_ ? collection_ + "_" + docId_ :docId_,
                 col_path);
@@ -138,7 +138,7 @@ bool ProductInfo::getRow()
         string row_key = collectionPresent_ ? collection_ + "_" + docId_ :docId_;
 
         ColumnParent col_parent;
-        col_parent.__set_column_family(cassandra_name);
+        col_parent.__set_column_family(cf_name);
 
         SlicePredicate pred;
 
@@ -210,7 +210,7 @@ bool ProductInfo::getRangeHistory(PriceHistoryType& history, ptime from, ptime t
         string row_key = collectionPresent_ ? collection_ + "_" + docId_ :docId_;
 
         ColumnParent col_parent;
-        col_parent.__set_column_family(cassandra_name);
+        col_parent.__set_column_family(cf_name);
         col_parent.__set_super_column(SuperColumns[1]);
 
         SlicePredicate pred;

@@ -103,7 +103,6 @@ bool CassandraConnection::init(const std::string& str)
             cassandra_client_.reset(new Cassandra());
             if (hasAuth)
                 cassandra_client_->login(username, password);
-
             KeyspaceDefinition ks_def;
             ks_def.setName(ks_name);
             ks_def.setStrategyClass("NetworkTopologyStrategy");
@@ -136,7 +135,7 @@ bool CassandraConnection::createColumnFamily(
         const double in_row_cache_size,
         const double in_key_cache_size,
         const double in_read_repair_chance,
-        const vector<ColumnDefFake>& in_column_metadata,
+        const vector<ColumnDef>& in_column_metadata,
         const int32_t in_gc_grace_seconds,
         const string& in_default_validation_class,
         const int32_t in_id,
@@ -146,23 +145,6 @@ bool CassandraConnection::createColumnFamily(
         const int32_t in_key_cache_save_period_in_seconds,
         const map<string, string>& in_compression_options)
 {
-    vector<ColumnDef> column_metadata;
-    for (vector<ColumnDefFake>::const_iterator it = in_column_metadata.begin();
-            it != in_column_metadata.end(); ++it)
-    {
-        ColumnDef col_def;
-        if (!it->name_.empty())
-            col_def.__set_name(it->name_);
-        if (!it->validation_class_.empty())
-            col_def.__set_validation_class(it->validation_class_);
-        if (it->index_type_ != ColumnDefFake::UNSET)
-            col_def.__set_index_type((IndexType::type) it->index_type_);
-        if (!it->index_name_.empty())
-            col_def.__set_index_name(it->index_name_);
-        if (!it->index_options_.empty())
-            col_def.__set_index_options(it->index_options_);
-        column_metadata.push_back(col_def);
-    }
     ColumnFamilyDefinition definition(
                 keyspace_name_,
                 in_name,
@@ -173,7 +155,7 @@ bool CassandraConnection::createColumnFamily(
                 in_row_cache_size,
                 in_key_cache_size,
                 in_read_repair_chance,
-                column_metadata,
+                in_column_metadata,
                 in_gc_grace_seconds,
                 in_default_validation_class,
                 in_id,

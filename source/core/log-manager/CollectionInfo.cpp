@@ -15,39 +15,39 @@ using namespace boost::algorithm;
 
 namespace sf1r {
 
-const string CollectionInfo::cassandra_name("CollectionInfo");
+const string CollectionInfo::cf_name("CollectionInfo");
 
-const string CollectionInfo::cassandra_column_type("Super");
+const string CollectionInfo::cf_column_type("Super");
 
-const string CollectionInfo::cassandra_comparator_type;
+const string CollectionInfo::cf_comparator_type;
 
-const string CollectionInfo::cassandra_sub_comparator_type;
+const string CollectionInfo::cf_sub_comparator_type;
 
-const string CollectionInfo::cassandra_comment;
+const string CollectionInfo::cf_comment;
 
-const double CollectionInfo::cassandra_row_cache_size(0);
+const double CollectionInfo::cf_row_cache_size(0);
 
-const double CollectionInfo::cassandra_key_cache_size(200000);
+const double CollectionInfo::cf_key_cache_size(200000);
 
-const double CollectionInfo::cassandra_read_repair_chance(1);
+const double CollectionInfo::cf_read_repair_chance(1);
 
-const vector<ColumnDefFake> CollectionInfo::cassandra_column_metadata;
+const vector<ColumnDef> CollectionInfo::cf_column_metadata;
 
-const int32_t CollectionInfo::cassandra_gc_grace_seconds(864000);
+const int32_t CollectionInfo::cf_gc_grace_seconds(864000);
 
-const string CollectionInfo::cassandra_default_validation_class;
+const string CollectionInfo::cf_default_validation_class;
 
-const int32_t CollectionInfo::cassandra_id(0);
+const int32_t CollectionInfo::cf_id(0);
 
-const int32_t CollectionInfo::cassandra_min_compaction_threshold(4);
+const int32_t CollectionInfo::cf_min_compaction_threshold(4);
 
-const int32_t CollectionInfo::cassandra_max_compaction_threshold(22);
+const int32_t CollectionInfo::cf_max_compaction_threshold(22);
 
-const int32_t CollectionInfo::cassandra_row_cache_save_period_in_seconds(0);
+const int32_t CollectionInfo::cf_row_cache_save_period_in_seconds(0);
 
-const int32_t CollectionInfo::cassandra_key_cache_save_period_in_seconds(0);
+const int32_t CollectionInfo::cf_key_cache_save_period_in_seconds(0);
 
-const map<string, string> CollectionInfo::cassandra_compression_options
+const map<string, string> CollectionInfo::cf_compression_options
     = map_list_of("sstable_compression", "SnappyCompressor")("chunk_length_kb", "64");
 
 const string CollectionInfo::SuperColumns[] = {"SourceCount"};
@@ -75,7 +75,7 @@ bool CollectionInfo::updateRow() const
                                 (it->second.get<1>())
                                 (it->second.get<2>()), ":"),
                     collection_,
-                    cassandra_name,
+                    cf_name,
                     SuperColumns[0],
                     to_iso_string(it->first));
         }
@@ -94,7 +94,7 @@ bool CollectionInfo::deleteRow()
     try
     {
         ColumnPath col_path;
-        col_path.__set_column_family(cassandra_name);
+        col_path.__set_column_family(cf_name);
         CassandraConnection::instance().getCassandraClient()->remove(
                 collection_,
                 col_path);
@@ -117,7 +117,7 @@ bool CollectionInfo::getRow()
         CassandraConnection::instance().getCassandraClient()->getSuperColumn(
                 super_column,
                 collection_,
-                cassandra_name,
+                cf_name,
                 SuperColumns[0]);
         if (super_column.columns.empty())
             return true;
