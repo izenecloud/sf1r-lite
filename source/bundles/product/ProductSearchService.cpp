@@ -25,6 +25,4 @@ ProductSearchService::~ProductSearchService()
 {
 }
 
-
 }
-

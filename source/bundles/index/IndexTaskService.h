@@ -37,7 +37,7 @@ class IndexTaskService : public ::izenelib::osgi::IService
     typedef uint32_t CharacterOffset;
 public:
     IndexTaskService(
-        IndexBundleConfiguration* bundleConfig, 
+        IndexBundleConfiguration* bundleConfig,
         DirectoryRotator& directoryRotator,
         boost::shared_ptr<IndexManager> indexManager);
 
@@ -56,7 +56,7 @@ public:
     bool getIndexStatus(Status& status);
 
     uint32_t getDocNum();
-    
+
     std::string getScdDir() const;
 
 private:
@@ -65,8 +65,8 @@ private:
     bool getPropertyValue_( const PropertyValue& value, std::string& valueStr );
 
     bool doBuildCollection_(
-        const std::string& scdFile, 
-        int op, 
+        const std::string& scdFile,
+        int op,
         uint32_t numdoc
     );
 
@@ -89,14 +89,16 @@ private:
     );
 
     bool deleteSCD_(ScdParser& parser);
-    
+
     bool insertDoc_(Document& document, IndexerDocument& indexDocument);
-    
+
     bool updateDoc_(Document& document, IndexerDocument& indexDocument, bool rType);
-    
+
     bool deleteDoc_(docid_t docid);
-    
+
     void saveProductInfo_(int op);
+
+    void saveCollectionInfo_(int op);
 
     bool prepareDocument_(
         SCDDoc& doc,
@@ -115,7 +117,7 @@ private:
     );
 
     bool preparePartialDocument_(
-        Document& document, 
+        Document& document,
         IndexerDocument& oldIndexDocument
     );
 
@@ -141,7 +143,7 @@ private:
     bool backup_();
 
     static void value2SCDDoc(
-        const ::izenelib::driver::Value& value, 
+        const ::izenelib::driver::Value& value,
         SCDDoc& scddoc
     );
 
@@ -155,7 +157,7 @@ private:
     config_tool::PROPERTY_ALIAS_MAP_T propertyAliasMap_;
 
     ScdWriterController* scd_writer_;
-    
+
     boost::shared_ptr<LAManager> laManager_;
     boost::shared_ptr<IDManager> idManager_;
     boost::shared_ptr<DocumentManager> documentManager_;
@@ -176,7 +178,7 @@ private:
     std::vector<string> propertyList_;
 
     std::map<std::string, uint32_t> productSourceCount_;
-    
+
     boost::shared_ptr<IndexHooker> hooker_;
 
     friend class IndexBundleActivator;
@@ -186,4 +188,3 @@ private:
 }
 
 #endif
-

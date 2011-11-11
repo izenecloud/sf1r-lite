@@ -3,316 +3,323 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.izenesoft.com" xmlns:t="http://www.izenesoft.com" targetNamespace="http://www.izenesoft.com" elementFormDefault="qualified">
     <xs:include schemaLocation="common.xsd"/>
     <xs:include schemaLocation="bundle-index.xsd"/>
-    <xs:include schemaLocation="bundle-product.xsd"/>    
+    <xs:include schemaLocation="bundle-product.xsd"/>
     <xs:include schemaLocation="bundle-mining.xsd"/>
     <xs:include schemaLocation="bundle-recommend.xsd"/>
-        
-	<xs:simpleType name="PortType">
-		<xs:restriction base="xs:integer">
-			<xs:minInclusive value="1025"/>
-			<xs:maxInclusive value="65535"/>
-		</xs:restriction>
-	</xs:simpleType>
-	<xs:element name="SF1Config">
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element ref="System"/>
-				<xs:element ref="Deployment"/>
-			</xs:sequence>
-		</xs:complexType>
-		<xs:key name="analyzerKey">
-			<xs:selector xpath="t:System/t:LanguageAnalyzer/t:Method"/>
-			<xs:field xpath="@id"/>
-		</xs:key>
-		<xs:keyref name="analyzerKeyRef" refer="analyzerKey">
-			<xs:selector xpath="t:Collection/t:DocumentSchema/t:Property/t:Indexing"/>
-			<xs:field xpath="@analyzer"/>
-		</xs:keyref>
-		<xs:key name="collectionNameKey">
-			<xs:selector xpath="t:Collection"/>
-			<xs:field xpath="@name"/>
-		</xs:key>
-		<xs:keyref name="collectionNameKeyRef" refer="collectionNameKey">
-			<xs:selector xpath="t:Deployment/t:SMIA"/>
-			<xs:field xpath="@collection"/>
-		</xs:keyref>
-	</xs:element>
-	<xs:element name="System">
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element ref="Resource"/>
-				<xs:element ref="WorkingDir"/>
-				<xs:element ref="LogConnection"/>
-				<xs:element ref="BundlesDefault"/>
-				<xs:element ref="Firewall"/>
-				<xs:element ref="Tokenizing"/>
-				<xs:element ref="LanguageAnalyzer"/>
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
 
-	<xs:element name="Resource">
-		<xs:complexType>
-			<xs:attribute name="path" use="required"/>
-		</xs:complexType>
-	</xs:element>
+    <xs:simpleType name="PortType">
+        <xs:restriction base="xs:integer">
+            <xs:minInclusive value="1025"/>
+            <xs:maxInclusive value="65535"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:element name="SF1Config">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="System"/>
+                <xs:element ref="Deployment"/>
+            </xs:sequence>
+        </xs:complexType>
+        <xs:key name="analyzerKey">
+            <xs:selector xpath="t:System/t:LanguageAnalyzer/t:Method"/>
+            <xs:field xpath="@id"/>
+        </xs:key>
+        <xs:keyref name="analyzerKeyRef" refer="analyzerKey">
+            <xs:selector xpath="t:Collection/t:DocumentSchema/t:Property/t:Indexing"/>
+            <xs:field xpath="@analyzer"/>
+        </xs:keyref>
+        <xs:key name="collectionNameKey">
+            <xs:selector xpath="t:Collection"/>
+            <xs:field xpath="@name"/>
+        </xs:key>
+        <xs:keyref name="collectionNameKeyRef" refer="collectionNameKey">
+            <xs:selector xpath="t:Deployment/t:SMIA"/>
+            <xs:field xpath="@collection"/>
+        </xs:keyref>
+    </xs:element>
+    <xs:element name="System">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="Resource"/>
+                <xs:element ref="WorkingDir"/>
+                <xs:element ref="LogConnection"/>
+                <xs:element ref="CassandraConnection"/>
+                <xs:element ref="BundlesDefault"/>
+                <xs:element ref="Firewall"/>
+                <xs:element ref="Tokenizing"/>
+                <xs:element ref="LanguageAnalyzer"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
 
-	<xs:element name="WorkingDir">
-		<xs:complexType>
-			<xs:attribute name="path" use="required"/>
-		</xs:complexType>
-	</xs:element>
+    <xs:element name="Resource">
+        <xs:complexType>
+            <xs:attribute name="path" use="required"/>
+        </xs:complexType>
+    </xs:element>
 
-	<xs:element name="LogConnection">
-		<xs:complexType>
-			<xs:attribute name="str" use="required"/>
-		</xs:complexType>
-	</xs:element>
+    <xs:element name="WorkingDir">
+        <xs:complexType>
+            <xs:attribute name="path" use="required"/>
+        </xs:complexType>
+    </xs:element>
 
-	<xs:element name="BundlesDefault">
-		<xs:complexType>
-			<xs:sequence>
+    <xs:element name="LogConnection">
+        <xs:complexType>
+            <xs:attribute name="str" use="required"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="CassandraConnection">
+        <xs:complexType>
+            <xs:attribute name="str" use="required"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="BundlesDefault">
+        <xs:complexType>
+            <xs:sequence>
                 <xs:element ref="IndexBundle"/>
                 <xs:element ref="ProductBundle"/>
                 <xs:element ref="MiningBundle"/>
                 <xs:element ref="RecommendBundle"/>
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="Firewall"/>
-	<xs:element name="Tokenizing">
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element ref="Tokenizer" maxOccurs="unbounded"/>
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="Tokenizer">
-		<xs:complexType>
-			<xs:attribute name="code" use="required"/>
-			<xs:attribute name="id" type="xs:NCName" use="required"/>
-			<xs:attribute name="method" use="required">
-				<xs:simpleType>
-					<xs:restriction base="xs:string">
-						<xs:enumeration value="divide"/>
-						<xs:enumeration value="unite"/>
-						<xs:enumeration value="allow"/>
-					</xs:restriction>
-				</xs:simpleType>
-			</xs:attribute>
-			<xs:attribute name="value" use="required"/>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="LanguageAnalyzer">
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element ref="Method" maxOccurs="unbounded"/>
-			</xs:sequence>
-			<xs:attribute name="dictionarypath" use="required"/>
-			<xs:attribute name="updatedictinterval" type="xs:integer" use="required"/>
-		</xs:complexType>
-	</xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Firewall"/>
+    <xs:element name="Tokenizing">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="Tokenizer" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Tokenizer">
+        <xs:complexType>
+            <xs:attribute name="code" use="required"/>
+            <xs:attribute name="id" type="xs:NCName" use="required"/>
+            <xs:attribute name="method" use="required">
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="divide"/>
+                        <xs:enumeration value="unite"/>
+                        <xs:enumeration value="allow"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="value" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="LanguageAnalyzer">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="Method" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute name="dictionarypath" use="required"/>
+            <xs:attribute name="updatedictinterval" type="xs:integer" use="required"/>
+        </xs:complexType>
+    </xs:element>
 
-	<xs:element name="settings">
-		<xs:complexType>
-			<xs:attribute name="dictionarypath"/>
-			<xs:attribute name="mode" type="xs:NCName"/>
-			<xs:attribute name="option"/>
-			<xs:attribute name="specialchar"/>
-		</xs:complexType>
-	</xs:element>
+    <xs:element name="settings">
+        <xs:complexType>
+            <xs:attribute name="dictionarypath"/>
+            <xs:attribute name="mode" type="xs:NCName"/>
+            <xs:attribute name="option"/>
+            <xs:attribute name="specialchar"/>
+        </xs:complexType>
+    </xs:element>
 
-	<xs:element name="Method">
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element ref="settings" minOccurs="0"/>
-			</xs:sequence>
-			
-			<xs:attribute name="advoption"/>
-			<xs:attribute name="analysis" use="required">
-				<xs:simpleType>
-					<xs:restriction base="xs:string">
-						<xs:enumeration value="ID"/>
-						<xs:enumeration value="token"/>
-						<xs:enumeration value="char"/>
-						<xs:enumeration value="ngram"/>
-						<xs:enumeration value="matrix"/>
-						<xs:enumeration value="chinese"/>
-						<xs:enumeration value="korean"/>
-						<xs:enumeration value="japanese"/>
-						<xs:enumeration value="english"/>
-						<xs:enumeration value="multilang"/>
-					</xs:restriction>
-				</xs:simpleType>
-			</xs:attribute>
-			<xs:attribute name="apart" type="xs:NCName"/>
-			<xs:attribute name="casesensitive" type="YesNoType"/>
-			<xs:attribute name="id" type="xs:NCName" use="required"/>
-			<xs:attribute name="idxflag">
-				<xs:simpleType>
-					<xs:restriction base="xs:string">
-						<xs:enumeration value="all"/>
-						<xs:enumeration value="prime"/>
-						<xs:enumeration value="second"/>
-						<xs:enumeration value="none"/>
-					</xs:restriction>
-				</xs:simpleType>
-			</xs:attribute>
-			<xs:attribute name="lower" type="xs:NCName"/>
-			<xs:attribute name="max" type="xs:integer"/>
-			<xs:attribute name="maxno" type="xs:integer"/>
-			<xs:attribute name="min" type="xs:integer"/>
-			<xs:attribute name="prefix" type="YesNoType"/>
-			<xs:attribute name="schflag">
-				<xs:simpleType>
-					<xs:restriction base="xs:string">
-						<xs:enumeration value="all"/>
-						<xs:enumeration value="prime"/>
-						<xs:enumeration value="second"/>
-						<xs:enumeration value="none"/>
-					</xs:restriction>
-				</xs:simpleType>
-			</xs:attribute>
-			<xs:attribute name="suffix" type="YesNoType"/>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="Deployment">
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element ref="BrokerAgent"/>
-				<xs:element ref="DistributedTopology" minOccurs="0" maxOccurs="1"/>
-				<xs:element ref="DistributedUtil" minOccurs="1" maxOccurs="1"/>
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="BrokerAgent">
-		<xs:complexType>
-			<xs:attribute name="enabletest" type="YesNoType" use="required"/>
-			<xs:attribute name="threadnum" use="required">
-				<xs:simpleType>
-					<xs:restriction base="xs:integer">
-						<xs:minInclusive value="1"/>
-						<xs:maxInclusive value="100"/>
-					</xs:restriction>
-				</xs:simpleType>
-			</xs:attribute>
-			<xs:attribute name="usecache" type="YesNoType" use="required"/>
-			<xs:attribute name="port" type="PortType" use="required"/>	
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="DistributedTopology">
-		<xs:complexType>                        
-			<xs:sequence>
-				<xs:element ref="CurrentNode" minOccurs="1" maxOccurs="1"/>
-			</xs:sequence>
-			<xs:attribute name="enable" type="YesNoType" use="required"/>
-			<xs:attribute name="clusterid" type="xs:string" use="required"/>
-			<xs:attribute name="nodenum" use="required">
-				<xs:simpleType>
-					<xs:restriction base="xs:integer">
-						<xs:minInclusive value="1"/>
-						<xs:maxInclusive value="10"/>
-					</xs:restriction>
-				</xs:simpleType>
-			</xs:attribute>
-			<xs:attribute name="workernum" use="optional">
-				<xs:simpleType>
-					<xs:restriction base="xs:integer">
-						<xs:minInclusive value="1"/>
-						<xs:maxInclusive value="10"/>
-					</xs:restriction>
-				</xs:simpleType>
-			</xs:attribute>			
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="CurrentNode">
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element ref="MasterAgent" minOccurs="0" maxOccurs="1"/>
-				<xs:element ref="WorkerAgent" minOccurs="0" maxOccurs="1"/>
-			</xs:sequence>
-			<xs:attribute name="nodeid" use="required">
-				<xs:simpleType>
-					<xs:restriction base="xs:integer">
-						<xs:minInclusive value="1"/>
-						<xs:maxInclusive value="10"/>
-					</xs:restriction>
-				</xs:simpleType>
+    <xs:element name="Method">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="settings" minOccurs="0"/>
+            </xs:sequence>
+
+            <xs:attribute name="advoption"/>
+            <xs:attribute name="analysis" use="required">
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="ID"/>
+                        <xs:enumeration value="token"/>
+                        <xs:enumeration value="char"/>
+                        <xs:enumeration value="ngram"/>
+                        <xs:enumeration value="matrix"/>
+                        <xs:enumeration value="chinese"/>
+                        <xs:enumeration value="korean"/>
+                        <xs:enumeration value="japanese"/>
+                        <xs:enumeration value="english"/>
+                        <xs:enumeration value="multilang"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="apart" type="xs:NCName"/>
+            <xs:attribute name="casesensitive" type="YesNoType"/>
+            <xs:attribute name="id" type="xs:NCName" use="required"/>
+            <xs:attribute name="idxflag">
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="all"/>
+                        <xs:enumeration value="prime"/>
+                        <xs:enumeration value="second"/>
+                        <xs:enumeration value="none"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="lower" type="xs:NCName"/>
+            <xs:attribute name="max" type="xs:integer"/>
+            <xs:attribute name="maxno" type="xs:integer"/>
+            <xs:attribute name="min" type="xs:integer"/>
+            <xs:attribute name="prefix" type="YesNoType"/>
+            <xs:attribute name="schflag">
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="all"/>
+                        <xs:enumeration value="prime"/>
+                        <xs:enumeration value="second"/>
+                        <xs:enumeration value="none"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="suffix" type="YesNoType"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Deployment">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="BrokerAgent"/>
+                <xs:element ref="DistributedTopology" minOccurs="0" maxOccurs="1"/>
+                <xs:element ref="DistributedUtil" minOccurs="1" maxOccurs="1"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="BrokerAgent">
+        <xs:complexType>
+            <xs:attribute name="enabletest" type="YesNoType" use="required"/>
+            <xs:attribute name="threadnum" use="required">
+                <xs:simpleType>
+                    <xs:restriction base="xs:integer">
+                        <xs:minInclusive value="1"/>
+                        <xs:maxInclusive value="100"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="usecache" type="YesNoType" use="required"/>
+            <xs:attribute name="port" type="PortType" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="DistributedTopology">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="CurrentNode" minOccurs="1" maxOccurs="1"/>
+            </xs:sequence>
+            <xs:attribute name="enable" type="YesNoType" use="required"/>
+            <xs:attribute name="clusterid" type="xs:string" use="required"/>
+            <xs:attribute name="nodenum" use="required">
+                <xs:simpleType>
+                    <xs:restriction base="xs:integer">
+                        <xs:minInclusive value="1"/>
+                        <xs:maxInclusive value="10"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="workernum" use="optional">
+                <xs:simpleType>
+                    <xs:restriction base="xs:integer">
+                        <xs:minInclusive value="1"/>
+                        <xs:maxInclusive value="10"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="CurrentNode">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="MasterAgent" minOccurs="0" maxOccurs="1"/>
+                <xs:element ref="WorkerAgent" minOccurs="0" maxOccurs="1"/>
+            </xs:sequence>
+            <xs:attribute name="nodeid" use="required">
+                <xs:simpleType>
+                    <xs:restriction base="xs:integer">
+                        <xs:minInclusive value="1"/>
+                        <xs:maxInclusive value="10"/>
+                    </xs:restriction>
+                </xs:simpleType>
                         </xs:attribute>
-			<xs:attribute name="replicaid" use="required">
-				<xs:simpleType>
-					<xs:restriction base="xs:integer">
-						<xs:minInclusive value="1"/>
-						<xs:maxInclusive value="10"/>
-					</xs:restriction>
-				</xs:simpleType>
+            <xs:attribute name="replicaid" use="required">
+                <xs:simpleType>
+                    <xs:restriction base="xs:integer">
+                        <xs:minInclusive value="1"/>
+                        <xs:maxInclusive value="10"/>
+                    </xs:restriction>
+                </xs:simpleType>
                         </xs:attribute>
-			<xs:attribute name="host" type="xs:string" use="required"/>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="MasterAgent">
-		<xs:complexType>                        
-			<xs:sequence>
-				<xs:element ref="Aggregator" minOccurs="1" maxOccurs="unbounded"/>
-				<xs:element ref="Worker" minOccurs="0" maxOccurs="unbounded"/>
-			</xs:sequence>
-			<xs:attribute name="enable" type="YesNoType" use="required"/>
-			<xs:attribute name="port" type="PortType" use="required"/>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="Aggregator">
-		<xs:complexType>
-			<xs:attribute name="name" type="xs:NCName" use="required"/>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="Worker">
-		<xs:complexType>
-			<xs:attribute name="host" type="xs:string" use="required"/>
-			<xs:attribute name="port" type="xs:integer" use="required"/>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="WorkerAgent">
-		<xs:complexType>                        
-			<xs:sequence>				
-				<xs:element ref="Service" minOccurs="1" maxOccurs="unbounded"/>
-				<xs:element ref="Master" minOccurs="0" maxOccurs="unbounded"/>
-			</xs:sequence>
-			<xs:attribute name="enable" type="YesNoType" use="required"/>
-			<xs:attribute name="port" type="PortType" use="required"/>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="Service">
-		<xs:complexType>
-			<xs:attribute name="name" type="xs:NCName" use="required"/>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="Master">
-		<xs:complexType>
-			<xs:attribute name="host" type="xs:string" use="required"/>
-			<xs:attribute name="port" type="xs:integer" use="required"/>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="DistributedUtil">
-		<xs:complexType>                        
-			<xs:sequence>
-				<xs:element ref="ZooKeeper" minOccurs="1" maxOccurs="1"/>
-				<xs:element ref="DFS" minOccurs="1" maxOccurs="1"/>
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="ZooKeeper">
-		<xs:complexType>
-			<xs:attribute name="servers" type="xs:string" use="required"/>
-			<xs:attribute name="sessiontimeout" type="xs:integer" use="required"/>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="DFS">
-		<xs:complexType>
-			<xs:attribute name="type" type="xs:string" use="optional"/>
-			<xs:attribute name="supportfuse" type="YesNoType" use="optional"/>
-			<xs:attribute name="mountdir" type="xs:string" use="required"/>
-			<xs:attribute name="server" type="xs:string" use="optional"/>
-			<xs:attribute name="port" type="PortType" use="optional"/>
-		</xs:complexType>
-	</xs:element>
+            <xs:attribute name="host" type="xs:string" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="MasterAgent">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="Aggregator" minOccurs="1" maxOccurs="unbounded"/>
+                <xs:element ref="Worker" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute name="enable" type="YesNoType" use="required"/>
+            <xs:attribute name="port" type="PortType" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Aggregator">
+        <xs:complexType>
+            <xs:attribute name="name" type="xs:NCName" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Worker">
+        <xs:complexType>
+            <xs:attribute name="host" type="xs:string" use="required"/>
+            <xs:attribute name="port" type="xs:integer" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="WorkerAgent">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="Service" minOccurs="1" maxOccurs="unbounded"/>
+                <xs:element ref="Master" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute name="enable" type="YesNoType" use="required"/>
+            <xs:attribute name="port" type="PortType" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Service">
+        <xs:complexType>
+            <xs:attribute name="name" type="xs:NCName" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Master">
+        <xs:complexType>
+            <xs:attribute name="host" type="xs:string" use="required"/>
+            <xs:attribute name="port" type="xs:integer" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="DistributedUtil">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="ZooKeeper" minOccurs="1" maxOccurs="1"/>
+                <xs:element ref="DFS" minOccurs="1" maxOccurs="1"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="ZooKeeper">
+        <xs:complexType>
+            <xs:attribute name="servers" type="xs:string" use="required"/>
+            <xs:attribute name="sessiontimeout" type="xs:integer" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="DFS">
+        <xs:complexType>
+            <xs:attribute name="type" type="xs:string" use="optional"/>
+            <xs:attribute name="supportfuse" type="YesNoType" use="optional"/>
+            <xs:attribute name="mountdir" type="xs:string" use="required"/>
+            <xs:attribute name="server" type="xs:string" use="optional"/>
+            <xs:attribute name="port" type="PortType" use="optional"/>
+        </xs:complexType>
+    </xs:element>
 </xs:schema>
