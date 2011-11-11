@@ -128,7 +128,8 @@ public: \
         return ::sf1r::getMultiRow(row_list, key_list); \
     } \
     \
-//  static bool getRangeRow(std::vector<ClassName>& row_list, const std::string& start_key, const std::string& end_key);
+    /* static bool getRangeRow(std::vector<ClassName>& row_list, const std::string& start_key, const std::string& end_key); */ \
+
 
 }
 
