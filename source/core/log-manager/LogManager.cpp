@@ -5,6 +5,7 @@
 #include "SystemEvent.h"
 #include "UserQuery.h"
 #include "PropertyLabel.h"
+#include "ProductCount.h"
 #include "ProductInfo.h"
 #include "CollectionInfo.h"
 #include "OrderLogger.h"
@@ -54,6 +55,7 @@ namespace sf1r
         SystemEvent::createTable();
         UserQuery::createTable();
         PropertyLabel::createTable();
+        ProductCount::createTable();
         OrderLogger::createTable();
         ItemLogger::createTable();
 

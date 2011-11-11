@@ -8,7 +8,7 @@
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
 #include <search-manager/SearchManager.h>
-#include <log-manager/CollectionInfo.h>
+#include <log-manager/ProductCount.h>
 
 #include <bundles/mining/MiningTaskService.h>
 #include <bundles/recommend/RecommendTaskService.h>
@@ -30,7 +30,6 @@
 #include <memory> // for auto_ptr
 #include <signal.h>
 #include <protect/RestrictMacro.h>
-
 namespace bfs = boost::filesystem;
 
 using namespace izenelib::driver;
@@ -162,7 +161,6 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
         LOG(ERROR) << "Error while opening directory " << e.what();
         return false;
     }
-
 
     // search the directory for files
     static const bfs::directory_iterator kItrEnd;
@@ -518,8 +516,6 @@ bool IndexTaskService::preparePartialDocument_(
     return true;
 }
 
-
-
 bool IndexTaskService::doBuildCollection_(
     const std::string& fileName,
     int op,
@@ -595,7 +591,6 @@ bool IndexTaskService::insertOrUpdateSCD_(
         sf1r::docid_t id = 0;
         std::string source = "";
 
-
         if (!prepareDocument_( *doc, document, indexDocument, rType, rTypeFieldValue, source, isInsert))
             continue;
 
@@ -630,7 +625,6 @@ bool IndexTaskService::insertOrUpdateSCD_(
 
     return true;
 }
-
 
 bool IndexTaskService::insertDoc_(Document& document, IndexerDocument& indexDocument)
 {
@@ -809,28 +803,29 @@ void IndexTaskService::saveCollectionInfo_(int op)
     if (bundleConfig_->productSourceField_.empty())
         return;
 
-    CollectionInfo collectionInfo(bundleConfig_->collectionName_);
+    boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
     for (map<std::string, uint32_t>::const_iterator iter = productSourceCount_.begin();
         iter != productSourceCount_.end(); ++iter)
     {
-        std::string flag;
-        switch (op)
+        ProductCount productCount;
+        productCount.setSource(iter->first);
+        productCount.setCollection(bundleConfig_->collectionName_);
+        productCount.setNum(iter->second);
+        if (op == 1)
         {
-        case 1:
-            flag.assign("insert");
-            break;
-        case 2:
-            flag.assign("update");
-            break;
-        default:
-            flag.assign("delete");
-            break;
+            productCount.setFlag("insert");
         }
-        collectionInfo.insertSourceCount(
-                boost::posix_time::microsec_clock::local_time(),
-                CollectionInfo::SourceCountItemType(iter->second, flag, iter->first));
+        else if (op == 2)
+        {
+            productCount.setFlag("update");
+        }
+        else
+        {
+            productCount.setFlag("delete");
+        }
+        productCount.setTimeStamp(now);
+        productCount.save();
     }
-    collectionInfo.updateRow();
 }
 
 bool IndexTaskService::getPropertyValue_( const PropertyValue& value, std::string& valueStr )
@@ -1123,7 +1118,6 @@ bool IndexTaskService::prepareDocument_(
                             indexDocument.insertProperty(
                                 indexerPropertyConfig, laInputs_[iter->getPropertyId()]);
 
-
                         document.property(fieldStr) = propertyValueU;
                         unsigned int numOfSummary = 0;
                         if ( (iter->getIsSummary() == true))
@@ -1141,7 +1135,6 @@ bool IndexTaskService::prepareDocument_(
                             document.property(fieldStr + ".blocks")
                             = sentenceOffsetList;
                         }
-
 
                         // For alias indexing
                         config_tool::PROPERTY_ALIAS_MAP_T::iterator mapIter =
@@ -1489,6 +1482,5 @@ std::string IndexTaskService::getScdDir() const
 {
     return bundleConfig_->collPath_.getScdPath() + "index/";
 }
-
 
 }
