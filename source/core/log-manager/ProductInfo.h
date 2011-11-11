@@ -34,6 +34,8 @@ public:
 
     bool getRangeHistory(PriceHistoryType& history, time_t from, time_t to) const;
 
+    bool getRangeHistoryBound(ProductPriceType& lower, ProductPriceType& upper, time_t from, time_t to) const;
+
     DEFINE_COLUMN_FAMILY_COMMON_ROUTINES( ProductInfo )
 
     inline const std::string& getDocId() const

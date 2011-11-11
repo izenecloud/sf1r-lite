@@ -253,6 +253,16 @@ bool ProductInfo::getRangeHistory(PriceHistoryType& history, time_t from, time_t
     return true;
 }
 
+bool ProductInfo::getRangeHistoryBound(ProductPriceType& lower, ProductPriceType& upper, time_t from, time_t to) const
+{
+    PriceHistoryType history;
+    if (!getRangeHistory(history, from, to))
+        return false;
+    lower = history.begin()->second;
+    upper = history.rbegin()->second;
+    return true;
+}
+
 void ProductInfo::resetKey(const string& newDocId)
 {
     if (!newDocId.empty())
