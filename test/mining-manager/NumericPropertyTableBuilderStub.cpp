@@ -5,6 +5,42 @@
 
 #include <glog/logging.h>
 
+#include <cstring> // memcpy
+
+namespace
+{
+using namespace sf1r;
+
+template<typename T>
+void* createPropertyData(
+   typename NumericPropertyTableBuilderStub::PropertyMap<T>::map_type& propMap,
+   const std::string& propName
+)
+{
+    typename NumericPropertyTableBuilderStub::PropertyMap<T>::table_type& propTable = propMap[propName];
+    std::size_t num = propTable.size();
+    void* data = new T[num];
+    memcpy(data, &propTable[0], num*sizeof(T));
+
+    return data;
+}
+
+template<typename T>
+void insertPropertyMap(
+    const std::string& propName,
+    const PropertyValue* propValue,
+    typename NumericPropertyTableBuilderStub::PropertyMap<T>::map_type& propMap
+)
+{
+    T value = 0;
+    if (propValue)
+        value = propValue->get<T>();
+
+    propMap[propName].push_back(value);
+}
+
+}
+
 namespace sf1r
 {
 
@@ -43,19 +79,19 @@ NumericPropertyTable* NumericPropertyTableBuilderStub::createPropertyTable(const
     switch(propType)
     {
     case INT_PROPERTY_TYPE:
-        data = &intPropMap_[propertyName][0];
+        data = createPropertyData<int64_t>(intPropMap_, propertyName);
         break;
 
     case UNSIGNED_INT_PROPERTY_TYPE:
-        data = &uintPropMap_[propertyName][0];
+        data = createPropertyData<uint64_t>(uintPropMap_, propertyName);
         break;
 
     case FLOAT_PROPERTY_TYPE:
-        data = &floatPropMap_[propertyName][0];
+        data = createPropertyData<float>(floatPropMap_, propertyName);
         break;
 
     case DOUBLE_PROPERTY_TYPE:
-        data = &doublePropMap_[propertyName][0];
+        data = createPropertyData<double>(doublePropMap_, propertyName);
         break;
 
     default:
@@ -65,7 +101,10 @@ NumericPropertyTable* NumericPropertyTableBuilderStub::createPropertyTable(const
     }
 
     if (data)
-        return new NumericPropertyTable(propertyName, propType, data);
+    {
+        boost::shared_ptr<PropertyData> propData(new PropertyData(propType, data));
+        return new NumericPropertyTable(propertyName, propData);
+    }
 
     return NULL;
 }
@@ -122,48 +161,24 @@ void NumericPropertyTableBuilderStub::insertPropMap_(
 {
     switch(type)
     {
-        case INT_PROPERTY_TYPE:
-        {
-            int64_t value = 0;
-            if (propValue)
-                value = propValue->get<int64_t>();
+    case INT_PROPERTY_TYPE:
+        insertPropertyMap<int64_t>(prop, propValue, intPropMap_);
+        break;
 
-            intPropMap_[prop].push_back(value);
-            break;
-        }
+    case UNSIGNED_INT_PROPERTY_TYPE:
+        insertPropertyMap<uint64_t>(prop, propValue, uintPropMap_);
+        break;
 
-        case UNSIGNED_INT_PROPERTY_TYPE:
-        {
-            uint64_t value = 0;
-            if (propValue)
-                value = propValue->get<uint64_t>();
+    case FLOAT_PROPERTY_TYPE:
+        insertPropertyMap<float>(prop, propValue, floatPropMap_);
+        break;
 
-            uintPropMap_[prop].push_back(value);
-            break;
-        }
+    case DOUBLE_PROPERTY_TYPE:
+        insertPropertyMap<double>(prop, propValue, doublePropMap_);
+        break;
 
-        case FLOAT_PROPERTY_TYPE:
-        {
-            float value = 0;
-            if (propValue)
-                value = propValue->get<float>();
-
-            floatPropMap_[prop].push_back(value);
-            break;
-        }
-
-        case DOUBLE_PROPERTY_TYPE:
-        {
-            double value = 0;
-            if (propValue)
-                value = propValue->get<double>();
-
-            doublePropMap_[prop].push_back(value);
-            break;
-        }
-
-        default:
-            break;
+    default:
+        break;
     }
 }
 

@@ -22,6 +22,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 #include <algorithm>
 
 #include <boost/token_iterator.hpp>
@@ -60,10 +61,7 @@ void QueryBuilder::reset_cache()
     filterCache_->clear();
 }
 
-bool QueryBuilder::prepare_filter(
-    const std::vector<QueryFiltering::FilteringType>& filtingList,
-    Filter* &pFilter
-)
+Filter* QueryBuilder::prepare_filter(const std::vector<QueryFiltering::FilteringType>& filtingList)
 {
     boost::shared_ptr<EWAHBoolArray<uint32_t> > pDocIdSet;
     boost::shared_ptr<BitVector> pBitVector;
@@ -117,24 +115,22 @@ bool QueryBuilder::prepare_filter(
         {
         }
     }
-    pFilter = new Filter(pDocIdSet);
-    return true;
+    return new Filter(pDocIdSet);
 }
 
-bool QueryBuilder::prepare_dociterator(
+MultiPropertyScorer* QueryBuilder::prepare_dociterator(
     SearchKeywordOperation& actionOperation,
     collectionid_t colID,
     const property_weight_map& propertyWeightMap,
     const std::vector<std::string>& properties,
     const std::vector<unsigned int>& propertyIds,
     bool readPositions,
-    const std::vector<std::map<termid_t, unsigned> >& termIndexMaps,
-    MultiPropertyScorer* &pDocIterator
+    const std::vector<std::map<termid_t, unsigned> >& termIndexMaps
 )
 {
     size_t size_of_properties = propertyIds.size();
 
-    pDocIterator = new MultiPropertyScorer(propertyWeightMap, propertyIds);
+    std::auto_ptr<MultiPropertyScorer> docIterPtr(new MultiPropertyScorer(propertyWeightMap, propertyIds));
     if (pIndexReader_->isDirty())
     {
         pIndexReader_ = indexManagerPtr_->getIndexReader();
@@ -144,7 +140,7 @@ bool QueryBuilder::prepare_dociterator(
     for (size_t i = 0; i < size_of_properties; i++)
     {
         prepare_for_property_(
-            pDocIterator,
+            docIterPtr.get(),
             success_properties,
             actionOperation,
             colID,
@@ -155,13 +151,10 @@ bool QueryBuilder::prepare_dociterator(
         );
     }
 
-    if (success_properties == 0)
-    {
-        delete pDocIterator;
-        pDocIterator = 0;
-    }
+    if (success_properties)
+        return docIterPtr.release();
 
-    return success_properties > 0;
+    return NULL;
 }
 
 

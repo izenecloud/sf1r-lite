@@ -115,11 +115,12 @@ bool CustomRanker::buildExpSyntaxTree(const ast_info_trees& astrees, ExpSyntaxTr
 bool CustomRanker::setInnerPropertyData(ExpSyntaxTreePtr& estree, SortPropertyCache* pPropertyData)
 {
     if (estree->type_ == ExpSyntaxTree::PARAMETER) {
-        estree->dataType_ = propertyDataTypeMap_[estree->name_];
-        if (!pPropertyData->getSortPropertyData(estree->name_, estree->dataType_, estree->pData_)) {
+        PropertyDataType dataType = propertyDataTypeMap_[estree->name_];
+        estree->propertyData_ = pPropertyData->getSortPropertyData(estree->name_, dataType);
+        if (!! estree->propertyData_) {
             stringstream ss;
             ss << "Failed to get sort data for property: " << estree->name_
-               << " with data type: " << estree->dataType_ << endl;
+               << " with data type: " << dataType << endl;
             errorInfo_ = ss.str();
             return false;
         }
@@ -153,20 +154,23 @@ bool CustomRanker::sub_evaluate(ExpSyntaxTreePtr& estree, docid_t& docid)
         }
         case ExpSyntaxTree::PARAMETER:
         {
-            // get value from property data, TODO
-            switch(estree->dataType_)
+            if (! estree->propertyData_)
+                break;
+
+            void* data = estree->propertyData_->data_;
+            switch(estree->propertyData_->type_)
             {
                 case INT_PROPERTY_TYPE:
-                    estree->value_ = ((int64_t*)estree->pData_)[docid];
+                    estree->value_ = ((int64_t*)data)[docid];
                     break;
                 case UNSIGNED_INT_PROPERTY_TYPE:
-                    estree->value_ = ((uint64_t*)estree->pData_)[docid];
+                    estree->value_ = ((uint64_t*)data)[docid];
                     break;
                 case FLOAT_PROPERTY_TYPE:
-                    estree->value_ = ((float*)estree->pData_)[docid];
+                    estree->value_ = ((float*)data)[docid];
                     break;
                 case DOUBLE_PROPERTY_TYPE:
-                    estree->value_ = ((double*)estree->pData_)[docid];
+                    estree->value_ = ((double*)data)[docid];
                     break;
                 default:
                     break;
@@ -259,7 +263,7 @@ void CustomRanker::showEST(est_trees& trees, int level)
     for (est_iterator iter = trees.begin(); iter != trees.end(); iter++)
     {
         stringstream ss;
-        ss << string(" : ") << iter->get()->name_ << " : &data = " << iter->get()->pData_;
+        ss << string(" : ") << iter->get()->name_ << " : &data = " << iter->get()->propertyData_.get();
 
         cout << string(level*4, ' ') << "|--["
              << ExpSyntaxTree::getTypeString(iter->get()->type_) << " : " << iter->get()->value_
