@@ -2,7 +2,7 @@
  * @file MasterNodeManager.h
  * @author Zhongxia Li
  * @date Sep 20, 2011S
- * @brief Management of Master node using ZooKeeper.
+ * @brief Management (Coordination) for Master node using ZooKeeper.
  */
 #ifndef MASTER_NODE_MANAGER_H_
 #define MASTER_NODE_MANAGER_H_
@@ -31,34 +31,30 @@ class AggregatorManager;
 class MasterNodeManager : public ZooKeeperEventHandler
 {
 public:
+    enum MasterStateType
+    {
+        MASTER_STATE_INIT,
+        MASTER_STATE_STARTING,
+        MASTER_STATE_STARTING_WAIT_ZOOKEEPER,
+        MASTER_STATE_STARTING_WAIT_WORKERS,
+        MASTER_STATE_STARTED,
+        MASTER_STATE_FAILOVERING,
+        MASTER_STATE_RECOVERING
+    };
+
     MasterNodeManager();
 
-    void initZooKeeper(const std::string& zkHosts, const int recvTimeout);
+    void init();
 
-    void setNodeInfo(Topology& topology, const SF1NodeInfo& sf1NodeInfo);
+    void start();
 
     /**
-     * Register aggregator which requiring info of workers
+     * Register aggregators
      * @param aggregator
      */
     void registerAggregator(boost::shared_ptr<AggregatorManager> aggregator)
     {
         aggregatorList_.push_back(aggregator);
-    }
-
-    void init();
-
-    /**
-     * Resiger master server after all workers ready
-     */
-    void startServer();
-
-    /**
-     * Whether master is ready
-     */
-    bool isReady()
-    {
-        return isReady_;
     }
 
     net::aggregator::AggregatorConfig& getAggregatorConfig()
@@ -73,66 +69,58 @@ public:
 
     virtual void onNodeDeleted(const std::string& path);
 
-    virtual void onDataChanged(const std::string& path);
+    virtual void onChildrenChanged(const std::string& path);
 
     /// test
     void showWorkers();
 
 private:
-    /**
-     * Check whether master node has been ready
-     * @return
-     */
-    bool checkMaster();
+    void initZooKeeper(const std::string& zkHosts, const int recvTimeout);
+
+    void doStart();
+
+    int detectWorkers();
+
+    void detectReplicaSet();
 
     /**
-     * Check whether all workers ready (i.e., master it's ready).
-     * @return
+     * If any node in current cluster replica is broken down,
+     * switch to another node in its replica set.
      */
-    bool checkWorkers();
+    void failover(const std::string& zpath);
+
+    bool failover(boost::shared_ptr<WorkerNode>& pworkerNode);
+
+    /**
+     * Recover after came back from failure, for nodes in current cluster replica.
+     */
+    void recover(const std::string& zpath);
 
     /**
      * Register SF1 Server atfer master ready.
      */
-    void registerServer();
+    void registerSearchServer();
 
     /**
      * Deregister SF1 server on failure.
      */
-    void deregisterServer();
+    void deregisterSearchServer();
 
     /***/
     void resetAggregatorConfig();
 
-
-public:
-    struct WorkerState
-    {
-        bool isRunning_;
-        replicaid_t replicaId_;
-        nodeid_t nodeId_;
-        std::string zkPath_;
-        std::string host_;
-        unsigned int port_;
-
-        std::string toString()
-        {
-            std::stringstream ss;
-            ss <<"[WorkerState]"<<isRunning_<<" "<<zkPath_<<" "<<host_<<":"<<port_<<endl;
-            return ss.str();
-        }
-    };
-
-    typedef std::map<std::string, boost::shared_ptr<WorkerState> > WorkerStateMapT;
-
 private:
+    typedef std::map<shardid_t, boost::shared_ptr<WorkerNode> > WorkerMapT;
+
     boost::shared_ptr<ZooKeeper> zookeeper_;
 
     Topology topology_;
     SF1NodeInfo curNodeInfo_;
 
-    bool isReady_;
-    WorkerStateMapT workerStateMap_;
+    WorkerMapT workerMap_;
+    std::vector<replicaid_t> replicaIdList_;
+
+    MasterStateType masterState_;
 
     std::string serverPath_;
     net::aggregator::AggregatorConfig aggregatorConfig_;

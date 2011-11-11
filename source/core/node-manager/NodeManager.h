@@ -58,11 +58,6 @@ public:
         return nodeInfo_;
     }
 
-//    bool isInited()
-//    {
-//        return inited_;
-//    }
-
 public:
     /**
      * Start node manager
@@ -73,21 +68,6 @@ public:
      * Stop node manager
      */
     void stop();
-
-//    /**
-//     * Register SF1 node for start up. xxx
-//     */
-//    void registerNode();
-//
-//    /**
-//     * Register Master on current SF1 node. xxx
-//     */
-//    void registerMaster();
-//
-//    /**
-//     * Register Worker on current SF1 node. xxx
-//     */
-//    void registerWorker();
 
     virtual void process(ZooKeeperEvent& zkEvent);
 
@@ -107,30 +87,17 @@ private:
      */
     void leaveCluster();
 
-//    void ensureNodeParents(nodeid_t nodeId, replicaid_t replicaId);
-//
-//    void initZKNodes();
-//
-//    void retryRegister();
-
 private:
     DistributedTopologyConfig dsTopologyConfig_;
     DistributedUtilConfig dsUtilConfig_;
-
-//    bool inited_;
 
     boost::shared_ptr<ZooKeeper> zookeeper_;
 
     // node state
     NodeStateType nodeState_;
 
-//    bool registercalled_;
-//    bool registered_;
     SF1NodeInfo nodeInfo_;
     std::string nodePath_;
-
-//    unsigned int masterPort_;
-//    unsigned int workerPort_;
 
     boost::mutex mutex_;
 };

@@ -171,23 +171,26 @@
   <Deployment>
     <BrokerAgent usecache="n" threadnum="50" enabletest="y" port="18181"/>
 
-    <!-- (ids are started with 1)
-         nodeid    : id of current node in a cluster
-         replicaid : id of current node in a replication set
-         shardid   : id of data shard(partition) for current node
+    <!-- Distributed Search Topology: (ids are started with 1)
+         clusterid : identity of the cluster
+         nodeid    : id of current node (sf1) in the cluster.
+         replicaid : id of current node (sf1) in a replication set.
+         shardid   : id of data shard (partition), also used as workerid.
+                     * shardids (workerids) range from 1 to 'shardnum', without break.
+                     * recommended to be consistent with nodeid, i.e., only-master node assigned the max nodeid.
     -->
-    <DistributedTopology enable="n" clusterid="@DEFAULT_CLUSTER_ID@" nodenum="2">
-      <CurrentNode host="172.16.0.36" replicaid="1" nodeid="1" shardid="1">
-        <!--as master-->
+    <DistributedTopology enable="n" clusterid="@DEFAULT_CLUSTER_ID@" nodenum="3" shardnum="2">
+      <CurrentNode host="172.16.0.36" replicaid="1" nodeid="1">
+        <!--is a Worker or not-->
+        <WorkerAgent enable="y" port="18111" shardid="1">
+          <Service name="chinese-wiki-dist"/>
+          <Service name="icson"/>
+        </WorkerAgent>
+        <!--is a Master or not-->
         <MasterAgent enable="y" port="18151" >
           <Aggregator name="chinese-wiki-dist"/>
           <Aggregator name="icson"/>
         </MasterAgent>
-        <!--as worker-->
-        <WorkerAgent enable="y" port="18111" >
-          <Service name="chinese-wiki-dist"/>
-          <Service name="icson"/>
-        </WorkerAgent>
       </CurrentNode>
     </DistributedTopology>
 

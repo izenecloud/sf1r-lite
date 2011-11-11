@@ -215,7 +215,7 @@
 					</xs:restriction>
 				</xs:simpleType>
 			</xs:attribute>
-			<xs:attribute name="workernum" use="optional">
+			<xs:attribute name="shardnum" use="optional">
 				<xs:simpleType>
 					<xs:restriction base="xs:integer">
 						<xs:minInclusive value="1"/>
@@ -228,8 +228,8 @@
 	<xs:element name="CurrentNode">
 		<xs:complexType>
 			<xs:sequence>
-				<xs:element ref="MasterAgent" minOccurs="0" maxOccurs="1"/>
 				<xs:element ref="WorkerAgent" minOccurs="0" maxOccurs="1"/>
+				<xs:element ref="MasterAgent" minOccurs="0" maxOccurs="1"/>				
 			</xs:sequence>
 			<xs:attribute name="host" type="xs:string" use="required"/>
 			<xs:attribute name="nodeid" use="required">
@@ -248,6 +248,16 @@
 					</xs:restriction>
 				</xs:simpleType>
                         </xs:attribute>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="WorkerAgent">
+		<xs:complexType>                        
+			<xs:sequence>				
+				<xs:element ref="Service" minOccurs="1" maxOccurs="unbounded"/>
+				<xs:element ref="Master" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+			<xs:attribute name="enable" type="YesNoType" use="required"/>
+			<xs:attribute name="port" type="PortType" use="required"/>
 			<xs:attribute name="shardid" use="required">
 				<xs:simpleType>
 					<xs:restriction base="xs:integer">
@@ -256,6 +266,17 @@
 					</xs:restriction>
 				</xs:simpleType>
                         </xs:attribute>	
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Service">
+		<xs:complexType>
+			<xs:attribute name="name" type="xs:NCName" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Master">
+		<xs:complexType>
+			<xs:attribute name="host" type="xs:string" use="required"/>
+			<xs:attribute name="port" type="xs:integer" use="required"/>
 		</xs:complexType>
 	</xs:element>
 	<xs:element name="MasterAgent">
@@ -274,27 +295,6 @@
 		</xs:complexType>
 	</xs:element>
 	<xs:element name="Worker">
-		<xs:complexType>
-			<xs:attribute name="host" type="xs:string" use="required"/>
-			<xs:attribute name="port" type="xs:integer" use="required"/>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="WorkerAgent">
-		<xs:complexType>                        
-			<xs:sequence>				
-				<xs:element ref="Service" minOccurs="1" maxOccurs="unbounded"/>
-				<xs:element ref="Master" minOccurs="0" maxOccurs="unbounded"/>
-			</xs:sequence>
-			<xs:attribute name="enable" type="YesNoType" use="required"/>
-			<xs:attribute name="port" type="PortType" use="required"/>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="Service">
-		<xs:complexType>
-			<xs:attribute name="name" type="xs:NCName" use="required"/>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="Master">
 		<xs:complexType>
 			<xs:attribute name="host" type="xs:string" use="required"/>
 			<xs:attribute name="port" type="xs:integer" use="required"/>

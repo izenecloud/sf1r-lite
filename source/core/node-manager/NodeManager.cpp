@@ -1,4 +1,5 @@
 #include "NodeManager.h"
+#include "MasterNodeManager.h"
 #include "NodeData.h"
 
 #include <node-manager/DistributedSynchroFactory.h>
@@ -32,12 +33,16 @@ void NodeManager::initWithConfig(
 
     nodeInfo_.replicaId_ = dsTopologyConfig_.curSF1Node_.replicaId_;
     nodeInfo_.nodeId_ = dsTopologyConfig_.curSF1Node_.nodeId_;
-    nodeInfo_.localHost_ = dsTopologyConfig_.curSF1Node_.host_;
+    nodeInfo_.host_ = dsTopologyConfig_.curSF1Node_.host_;
     nodeInfo_.baPort_ = dsTopologyConfig_.curSF1Node_.baPort_;
 
     nodePath_ = NodeDef::getNodePath(nodeInfo_.replicaId_, nodeInfo_.nodeId_);
 
-    ///initZKNodes();
+    // initialize Master node manager if this is Master
+//    if (dsTopologyConfig_.curSF1Node_.masterAgent_.enabled_)
+//    {
+//        MasterNodeManagerSingleton::get()->init();
+//    }
 }
 
 void NodeManager::start()
@@ -65,60 +70,6 @@ void NodeManager::stop()
     leaveCluster();
 }
 
-//void NodeManager::registerNode()
-//{
-//    registercalled_ = true;
-//
-//    if (zookeeper_->isConnected())
-//    {
-//        ensureNodeParents(nodeInfo_.nodeId_, nodeInfo_.replicaId_);
-//        if (!zookeeper_->createZNode(nodePath_, nodeInfo_.localHost_))
-//        {
-//            if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
-//            {
-//                zookeeper_->setZNodeData(nodePath_, nodeInfo_.localHost_);
-//                std::cout<<"[NodeManager] warning: overwrote exsited node \""<<nodePath_<<"\"!"<<std::endl;
-//            }
-//        }
-//
-//        if (zookeeper_->isZNodeExists(nodePath_))
-//        {
-//            std::cout<<"[NodeManager] node registered at \""<<nodePath_<<"\" "<<nodeInfo_.localHost_<<std::endl;
-//            registered_ = true;
-//        }
-//    }
-//    else
-//        std::cout<<"[NodeManager] waiting for ZooKeeper Service..."<<std::endl;
-//}
-//
-//void NodeManager::registerMaster()
-//{
-//    masterPort_ = dsTopologyConfig_.curSF1Node_.masterAgent_.port_;
-//
-//    std::string path = nodePath_+"/Master";
-//    std::stringstream data;
-//    data << masterPort_;
-//
-//    if (registered_)
-//    {
-//        zookeeper_->createZNode(path, data.str(), ZooKeeper::ZNODE_EPHEMERAL);
-//    }
-//}
-//
-//void NodeManager::registerWorker()
-//{
-//    workerPort_ = dsTopologyConfig_.curSF1Node_.workerAgent_.port_;
-//
-//    std::string path = nodePath_+"/Worker";
-//    std::stringstream data;
-//    data << workerPort_;
-//
-//    if (registered_)
-//    {
-//        zookeeper_->createZNode(path, data.str(), ZooKeeper::ZNODE_EPHEMERAL);
-//    }
-//}
-
 void NodeManager::process(ZooKeeperEvent& zkEvent)
 {
     std::cout<<"[NodeManager] "<< zkEvent.toString();
@@ -131,14 +82,6 @@ void NodeManager::process(ZooKeeperEvent& zkEvent)
             nodeState_ = NODE_STATE_STARTING;
             enterCluster();
         }
-
-//        if (!inited_)
-//            initZKNodes();
-//
-//        if (registercalled_ && !registered_)
-//        {
-//            retryRegister();
-//        }
     }
 }
 
@@ -158,7 +101,9 @@ void NodeManager::initZkNameSpace()
     zookeeper_->createZNode(NodeDef::getSF1RootPath());
     // topology
     zookeeper_->createZNode(NodeDef::getSF1TopologyPath());
-    zookeeper_->createZNode(NodeDef::getReplicaPath(dsTopologyConfig_.curSF1Node_.replicaId_));
+    std::stringstream ss;
+    ss << dsTopologyConfig_.curSF1Node_.replicaId_;
+    zookeeper_->createZNode(NodeDef::getReplicaPath(dsTopologyConfig_.curSF1Node_.replicaId_), ss.str());
     // synchro, todo
     zookeeper_->createZNode(NodeDef::getSynchroPath());
     DistributedSynchroFactory::initZKNodes(zookeeper_);
@@ -166,8 +111,11 @@ void NodeManager::initZkNameSpace()
 
 void NodeManager::enterCluster()
 {
-    // Not strictly synchronized here, it's not fatal.
     std::cout<<"[NodeManager] staring ..."<<std::endl;
+
+    boost::unique_lock<boost::mutex> lock(mutex_);
+    if (nodeState_ == NODE_STATE_STARTED)
+        return;
 
     // Ensure connecting to zookeeper
     if (!zookeeper_->isConnected())
@@ -194,13 +142,11 @@ void NodeManager::enterCluster()
     if (dsTopologyConfig_.curSF1Node_.masterAgent_.enabled_)
     {
         ndata.setValue(NDATA_KEY_MASTER_PORT, dsTopologyConfig_.curSF1Node_.masterAgent_.port_);
-
-        // start master here?
     }
     if (dsTopologyConfig_.curSF1Node_.workerAgent_.enabled_)
     {
         ndata.setValue(NDATA_KEY_WORKER_PORT, dsTopologyConfig_.curSF1Node_.workerAgent_.port_);
-        ndata.setValue(NDATA_KEY_SHARD_ID, dsTopologyConfig_.curSF1Node_.workerAgent_.port_);
+        ndata.setValue(NDATA_KEY_SHARD_ID, dsTopologyConfig_.curSF1Node_.workerAgent_.shardId_);
     }
 
     // Register node to zookeeper
@@ -210,7 +156,7 @@ void NodeManager::enterCluster()
         if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
         {
             zookeeper_->setZNodeData(nodePath_, sndata);
-            std::cout<<"[NodeManager] warning: overwrote exsited node \""<<nodePath_<<"\"!"<<std::endl;
+            std::cout<<"[NodeManager] Conflict!! overwrote exsited node \""<<nodePath_<<"\"!"<<std::endl;
         }
         else
         {
@@ -221,8 +167,15 @@ void NodeManager::enterCluster()
         }
     }
 
-    std::cout<<"[NodeManager] node registered at \""<<nodePath_<<"\" "<<std::endl;
     nodeState_ = NODE_STATE_STARTED;
+    //std::cout<<"[NodeManager] node registered at \""<<nodePath_<<"\" "<<std::endl;
+    std::cout<<"[NodeManager] started, "<<nodeInfo_.toString()<<std::endl;
+
+    // Start Master manager
+    if (dsTopologyConfig_.curSF1Node_.masterAgent_.enabled_)
+    {
+        MasterNodeManagerSingleton::get()->start();
+    }
 }
 
 void NodeManager::leaveCluster()
@@ -251,36 +204,3 @@ void NodeManager::leaveCluster()
         zookeeper_->deleteZNode(NodeDef::getSF1RootPath());
     }
 }
-
-//void NodeManager::ensureNodeParents(nodeid_t nodeId, replicaid_t replicaId)
-//{
-//    zookeeper_->createZNode(NodeDef::getSF1RootPath());
-//    zookeeper_->createZNode(NodeDef::getSF1TopologyPath());
-//    zookeeper_->createZNode(NodeDef::getReplicaPath(replicaId));
-//}
-//
-//void NodeManager::initZKNodes()
-//{
-//    if (zookeeper_->isConnected())
-//    {
-//        // SF1 maybe exited abnormally last time
-//        zookeeper_->createZNode(NodeDef::getSF1RootPath());
-//        // topology, xxx
-//        zookeeper_->createZNode(NodeDef::getSF1TopologyPath());
-//        // synchro
-//        zookeeper_->createZNode(NodeDef::getSynchroPath());
-//        DistributedSynchroFactory::initZKNodes(zookeeper_);
-//        inited_ = true;
-//    }
-//}
-//
-//void NodeManager::retryRegister()
-//{
-//    //std::cout<<"NodeManager::retryRegister"<<std::endl;
-//    registerNode();
-//
-//    if (masterPort_ != 0)
-//        registerMaster();
-//    if (workerPort_ != 0)
-//        registerWorker();
-//}
