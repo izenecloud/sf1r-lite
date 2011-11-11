@@ -44,11 +44,11 @@ void CassandraConnection::setKeyspaceName(const string& keyspace_name)
 
 bool CassandraConnection::init(const std::string& str)
 {
+    if (str == "__disabled__") return false;
     std::string cassandra_prefix = "cassandra://";
     if (boost::algorithm::starts_with(str, cassandra_prefix))
     {
         std::string path = str.substr(cassandra_prefix.length());
-        if (path == "__disabled__") return false;
         std::string host;
         std::string portStr;
         std::string ks_name;
@@ -98,7 +98,7 @@ bool CassandraConnection::init(const std::string& str)
             {
                 port = boost::lexical_cast<uint16_t>(portStr);
             }
-            catch (boost::bad_lexical_cast &)
+            catch (const boost::bad_lexical_cast &)
             {
                 goto UNRECOGNIZED;
             }
@@ -118,9 +118,9 @@ bool CassandraConnection::init(const std::string& str)
             cassandra_client_->createKeyspace(ks_def);
             cassandra_client_->setKeyspace(ks_name);
         }
-        catch (org::apache::cassandra::InvalidRequestException &ire)
+        catch (const ::apache::thrift::TException &ex)
         {
-            std::cerr << "[CassandraConnection::init] " << ire.why << std::endl;
+            std::cerr << "[CassandraConnection::init] " << ex.what() << std::endl;
             return false;
         }
         std::cerr << "[CassandraConnection::init] " << str << std::endl;
@@ -178,7 +178,7 @@ bool CassandraConnection::createColumnFamily(
     {
         cassandra_client_->createColumnFamily(definition);
     }
-    catch (InvalidRequestException& ire)
+    catch (const InvalidRequestException& ire)
     {
         cerr << "[CassandraConnection::init] error: " << ire.why << endl;
         return false;
@@ -193,7 +193,7 @@ bool CassandraConnection::truncateColumnFamily(const string& in_name)
     {
         cassandra_client_->truncateColumnFamily(in_name);
     }
-    catch (InvalidRequestException& ire)
+    catch (const InvalidRequestException& ire)
     {
         cerr << ire.why << endl;
         return false;
@@ -208,7 +208,7 @@ bool CassandraConnection::dropColumnFamily(const string& in_name)
     {
         cassandra_client_->dropColumnFamily(in_name);
     }
-    catch (InvalidRequestException& ire)
+    catch (const InvalidRequestException& ire)
     {
         cerr << ire.why << endl;
         return false;

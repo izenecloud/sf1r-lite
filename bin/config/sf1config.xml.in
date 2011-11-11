@@ -16,6 +16,7 @@
          for mysql db: "mysql://root:123456@127.0.0.1:3306/SF1R"
     -->
     <LogConnection str="sqlite3://./log/COBRA"/>
+    <!-- To fully disable use of Cassandra, you should just set the value of str to "__disabled__" -->
     <CassandraConnection str="cassandra://172.16.0.163:9160"/>
     <BundlesDefault>
       <!-- Index Bundle Default -->

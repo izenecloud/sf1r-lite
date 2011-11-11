@@ -101,7 +101,7 @@ bool ProductInfo::updateRow() const
             }
         }
     }
-    catch (InvalidRequestException &ire)
+    catch (const InvalidRequestException &ire)
     {
         cout << ire.why << endl;
         return false;
@@ -121,7 +121,7 @@ bool ProductInfo::deleteRow()
                 col_path);
         reset();
     }
-    catch (InvalidRequestException &ire)
+    catch (const InvalidRequestException &ire)
     {
         cout << ire.why << endl;
         return false;
@@ -178,7 +178,7 @@ bool ProductInfo::getRow()
             }
         }
     }
-    catch (InvalidRequestException &ire)
+    catch (const InvalidRequestException &ire)
     {
         cout << ire.why << endl;
         return false;
@@ -235,7 +235,7 @@ bool ProductInfo::getRangeHistory(PriceHistoryType& history, ptime from, ptime t
             }
         }
     }
-    catch (InvalidRequestException &ire)
+    catch (const InvalidRequestException &ire)
     {
         cout << ire.why << endl;
         return false;

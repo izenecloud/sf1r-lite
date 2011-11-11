@@ -80,7 +80,7 @@ bool CollectionInfo::updateRow() const
                     to_iso_string(it->first));
         }
     }
-    catch (InvalidRequestException& ire)
+    catch (const InvalidRequestException& ire)
     {
         cerr << ire.why << endl;
         return false;
@@ -100,7 +100,7 @@ bool CollectionInfo::deleteRow()
                 col_path);
         reset();
     }
-    catch (InvalidRequestException &ire)
+    catch (const InvalidRequestException &ire)
     {
         cout << ire.why << endl;
         return false;
@@ -134,7 +134,7 @@ bool CollectionInfo::getRow()
             sourceCount_[from_iso_string(it->name)] = SourceCountItemType(lexical_cast<uint32_t>(tokens[0]), tokens[1], tokens[2]);
         }
     }
-    catch (InvalidRequestException &ire)
+    catch (const InvalidRequestException &ire)
     {
         cout << ire.why << endl;
         return false;
