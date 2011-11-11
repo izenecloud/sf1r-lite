@@ -7,14 +7,14 @@
 
 namespace sf1r {
 
-class CassandraColumnFamily
+class ColumnFamilyBase
 {
 
 public:
-    CassandraColumnFamily() : exist_(false)
+    ColumnFamilyBase() : exist_(false)
     {}
 
-    virtual ~CassandraColumnFamily() {}
+    virtual ~ColumnFamilyBase() {}
 
     virtual bool updateRow() const = 0;
 

@@ -7,12 +7,12 @@
 
 namespace sf1r {
 
-class ProductInfo : public CassandraColumnFamily
+class ProductInfo : public ColumnFamilyBase
 {
 public:
     typedef std::map<boost::posix_time::ptime, ProductPriceType> PriceHistoryType;
 
-    static const std::string SuperColumns[];
+    static const std::string SuperColumnName[];
 
     ProductInfo(const std::string& docId = "");
 

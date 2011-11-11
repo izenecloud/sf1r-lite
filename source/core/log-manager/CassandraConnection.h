@@ -41,10 +41,9 @@ public:
 
     bool init(const std::string& str);
 
-    boost::shared_ptr<libcassandra::Cassandra>& getCassandraClient()
-    {
-        return cassandra_client_;
-    }
+    bool isEnabled();
+
+    boost::shared_ptr<libcassandra::Cassandra>& getCassandraClient();
 
     bool createColumnFamily(
             const std::string& in_name,
@@ -70,6 +69,8 @@ public:
     bool dropColumnFamily(const std::string& in_name);
 
 private:
+    bool isEnabled_;
+
     std::string keyspace_name_;
 
     boost::shared_ptr<libcassandra::Cassandra> cassandra_client_;

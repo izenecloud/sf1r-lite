@@ -47,10 +47,10 @@ const int32_t ProductInfo::cf_key_cache_save_period_in_seconds(0);
 const map<string, string> ProductInfo::cf_compression_options
     = map_list_of("sstable_compression", "SnappyCompressor")("chunk_length_kb", "64");
 
-const string ProductInfo::SuperColumns[] = {"StringProperties", "PriceHistory"};
+const string ProductInfo::SuperColumnName[] = {"StringProperties", "PriceHistory"};
 
 ProductInfo::ProductInfo(const string& docId)
-    : CassandraColumnFamily()
+    : ColumnFamilyBase()
     , docId_(docId)
     , docIdPresent_(!docId.empty())
     , collectionPresent_(false)
@@ -64,7 +64,7 @@ ProductInfo::~ProductInfo()
 
 bool ProductInfo::updateRow() const
 {
-    if (!docIdPresent_) return false;
+    if (!CassandraConnection::instance().isEnabled() || !docIdPresent_) return false;
     try
     {
         boost::shared_ptr<Cassandra> client(CassandraConnection::instance().getCassandraClient());
@@ -75,7 +75,7 @@ bool ProductInfo::updateRow() const
                     source_,
                     row_key,
                     cf_name,
-                    SuperColumns[0],
+                    SuperColumnName[0],
                     "Source");
         }
         if (titlePresent_)
@@ -84,7 +84,7 @@ bool ProductInfo::updateRow() const
                     title_,
                     row_key,
                     cf_name,
-                    SuperColumns[0],
+                    SuperColumnName[0],
                     "Title");
         }
         if (priceHistoryPresent_)
@@ -96,7 +96,7 @@ bool ProductInfo::updateRow() const
                         lexical_cast<string>(it->second),
                         row_key,
                         cf_name,
-                        SuperColumns[1],
+                        SuperColumnName[1],
                         to_iso_string(it->first));
             }
         }
@@ -111,7 +111,7 @@ bool ProductInfo::updateRow() const
 
 bool ProductInfo::deleteRow()
 {
-    if (!docIdPresent_) return false;
+    if (!CassandraConnection::instance().isEnabled() || !docIdPresent_) return false;
     try
     {
         ColumnPath col_path;
@@ -131,7 +131,7 @@ bool ProductInfo::deleteRow()
 
 bool ProductInfo::getRow()
 {
-    if (!docIdPresent_) return false;
+    if (!CassandraConnection::instance().isEnabled() || !docIdPresent_) return false;
     try
     {
         boost::shared_ptr<Cassandra> client(CassandraConnection::instance().getCassandraClient());
@@ -152,7 +152,7 @@ bool ProductInfo::getRow()
         for (vector<SuperColumn>::const_iterator sit = super_column_list.begin();
                 sit != super_column_list.end(); ++sit)
         {
-            if (sit->name == SuperColumns[0])
+            if (sit->name == SuperColumnName[0])
             {
                 for (vector<Column>::const_iterator cit = sit->columns.begin();
                         cit != sit->columns.end(); ++cit)
@@ -163,7 +163,7 @@ bool ProductInfo::getRow()
                         setTitle(cit->value);
                 }
             }
-            else if (sit->name == SuperColumns[1] && !sit->columns.empty())
+            else if (sit->name == SuperColumnName[1] && !sit->columns.empty())
             {
                 if (!priceHistoryPresent_)
                 {
@@ -204,14 +204,14 @@ void ProductInfo::clearHistory()
 
 bool ProductInfo::getRangeHistory(PriceHistoryType& history, ptime from, ptime to) const
 {
-    if (!docIdPresent_) return false;
+    if (!CassandraConnection::instance().isEnabled() || !docIdPresent_) return false;
     try
     {
         string row_key = collectionPresent_ ? collection_ + "_" + docId_ :docId_;
 
         ColumnParent col_parent;
         col_parent.__set_column_family(cf_name);
-        col_parent.__set_super_column(SuperColumns[1]);
+        col_parent.__set_super_column(SuperColumnName[1]);
 
         SlicePredicate pred;
         if (from != not_a_date_time)

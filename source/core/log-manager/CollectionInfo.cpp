@@ -50,10 +50,10 @@ const int32_t CollectionInfo::cf_key_cache_save_period_in_seconds(0);
 const map<string, string> CollectionInfo::cf_compression_options
     = map_list_of("sstable_compression", "SnappyCompressor")("chunk_length_kb", "64");
 
-const string CollectionInfo::SuperColumns[] = {"SourceCount"};
+const string CollectionInfo::SuperColumnName[] = {"SourceCount"};
 
 CollectionInfo::CollectionInfo(const std::string& collection)
-    : CassandraColumnFamily()
+    : ColumnFamilyBase()
     , collection_(collection)
     , collectionPresent_(!collection.empty())
     , sourceCountPresent_(false)
@@ -64,19 +64,19 @@ CollectionInfo::~CollectionInfo()
 
 bool CollectionInfo::updateRow() const
 {
-    if (!collectionPresent_) return false;
+    if (!CassandraConnection::instance().isEnabled() || !collectionPresent_) return false;
     try
     {
         for (SourceCountType::const_iterator it = sourceCount_.begin();
                 it != sourceCount_.end(); ++it)
         {
             CassandraConnection::instance().getCassandraClient()->insertColumn(
-                    join(list_of(lexical_cast<string>(it->second.get<0>()))
-                                (it->second.get<1>())
-                                (it->second.get<2>()), ":"),
+                    lexical_cast<string>(it->second.get<0>())
+                        + ":" + it->second.get<1>()
+                        + ":" + it->second.get<2>(),
                     collection_,
                     cf_name,
-                    SuperColumns[0],
+                    SuperColumnName[0],
                     to_iso_string(it->first));
         }
     }
@@ -90,7 +90,7 @@ bool CollectionInfo::updateRow() const
 
 bool CollectionInfo::deleteRow()
 {
-    if (!collectionPresent_) return false;
+    if (!CassandraConnection::instance().isEnabled() || !collectionPresent_) return false;
     try
     {
         ColumnPath col_path;
@@ -110,7 +110,7 @@ bool CollectionInfo::deleteRow()
 
 bool CollectionInfo::getRow()
 {
-    if (!collectionPresent_) return false;
+    if (!CassandraConnection::instance().isEnabled() || !collectionPresent_) return false;
     try
     {
         SuperColumn super_column;
@@ -118,7 +118,7 @@ bool CollectionInfo::getRow()
                 super_column,
                 collection_,
                 cf_name,
-                SuperColumns[0]);
+                SuperColumnName[0]);
         if (super_column.columns.empty())
             return true;
         if (!sourceCountPresent_)

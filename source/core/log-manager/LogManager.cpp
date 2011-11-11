@@ -62,12 +62,11 @@ namespace sf1r
 
     bool LogManager::initCassandra(const std::string& logPath)
     {
-        if (!CassandraConnection::instance().init(logPath) ||
-            !ProductInfo::createColumnFamily() ||
-            !CollectionInfo::createColumnFamily()
-        )
-            return false;
-
+        if (CassandraConnection::instance().init(logPath))
+        {
+            return ProductInfo::createColumnFamily() ||
+                CollectionInfo::createColumnFamily();
+        }
         return true;
     }
 

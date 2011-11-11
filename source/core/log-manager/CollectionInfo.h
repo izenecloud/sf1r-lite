@@ -7,13 +7,13 @@
 
 namespace sf1r {
 
-class CollectionInfo : public CassandraColumnFamily
+class CollectionInfo : public ColumnFamilyBase
 {
 public:
     typedef boost::tuple<uint32_t, std::string, std::string> SourceCountItemType;
     typedef std::map<boost::posix_time::ptime, SourceCountItemType> SourceCountType;
 
-    static const std::string SuperColumns[];
+    static const std::string SuperColumnName[];
 
     CollectionInfo(const std::string& collection = "");
 
