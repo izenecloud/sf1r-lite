@@ -35,3 +35,12 @@ void IndexModeSelector::TrySetIndexMode(long scd_file_size)
     }
     
 }
+
+void IndexModeSelector::TryCommit()
+{
+    if(! index_manager_->isRealTime())
+    {
+	index_manager_->flush();
+    }
+}
+

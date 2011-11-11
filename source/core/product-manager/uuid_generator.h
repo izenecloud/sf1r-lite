@@ -13,36 +13,19 @@
 namespace sf1r
 {
 
-class UuidGenerator
+void generateUUID(std::string& uuid_str, const PMDocumentType& doc)
 {
-public:
-    
-    UuidGenerator()
-    {
-    }
-    
-    ~UuidGenerator()
-    {
-    }
+    boost::uuids::uuid uuid = boost::uuids::random_generator()();
+    uuid_str = boost::uuids::to_string(uuid);
+}
 
-    
-    std::string GenS(const PMDocumentType& doc)
-    {
-        boost::uuids::uuid uuid = boost::uuids::random_generator()();
-        return boost::uuids::to_string(uuid);
-    }
-    
-    izenelib::util::UString Gen(const PMDocumentType& doc)
-    {
-        return izenelib::util::UString(GenS(doc), izenelib::util::UString::UTF_8);
-    }
-    
-    
-private:
-
-};
+void generateUUID(izenelib::util::UString& uuid_ustr, const PMDocumentType& doc)
+{
+    std::string uuid_str;
+    generateUUID(uuid_str, doc);
+    uuid_ustr.assign(uuid_str, izenelib::util::UString::UTF_8);
+}
 
 }
 
 #endif
-

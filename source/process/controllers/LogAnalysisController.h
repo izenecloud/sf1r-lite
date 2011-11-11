@@ -119,4 +119,3 @@ private:
 } // namespace sf1r
 
 #endif // PROCESS_CONTROLLERS_LOGANALYSIS_CONTROLLER_H
-
