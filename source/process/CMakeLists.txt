@@ -2,7 +2,7 @@ INCLUDE_DIRECTORIES(
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/core/
   ${CMAKE_SOURCE_DIR}/bundles/
-  ${CMAKE_CURRENT_SOURCE_DIR}  
+  ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/common
 
   ${idmlib_INCLUDE_DIRS}
@@ -10,7 +10,7 @@ INCLUDE_DIRECTORIES(
   ${ilplib_INCLUDE_DIRS}
   ${wisekma_INCLUDE_DIRS}
   ${izenecma_INCLUDE_DIRS}
-  ${izenejma_INCLUDE_DIRS}  
+  ${izenejma_INCLUDE_DIRS}
   ${izenelib_INCLUDE_DIRS}
   ${iise_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
@@ -25,7 +25,7 @@ SET(TGTrainerBridge_SRC tools/TGTrainerBridge.cpp)
 SET(TGTrainer_SRC tools/TGTrainer.cpp)
 
 FILE(GLOB_RECURSE cobra_SRC "*.cpp")
-ADD_DEFINITIONS("-fno-strict-aliasing") 
+ADD_DEFINITIONS("-fno-strict-aliasing")
 ADD_EXECUTABLE(CobraProcess ${cobra_SRC})
 
 TARGET_LINK_LIBRARIES(CobraProcess
@@ -47,8 +47,8 @@ TARGET_LINK_LIBRARIES(CobraProcess
   sf1r_node_manager
   sf1r_product_manager
 
-  sf1r_bundle_index 
-  sf1r_bundle_product 
+  sf1r_bundle_index
+  sf1r_bundle_product
   sf1r_bundle_mining
   sf1r_bundle_recommend
 
@@ -58,21 +58,21 @@ TARGET_LINK_LIBRARIES(CobraProcess
   ${ilplib_LIBRARIES}
   ${wisekma_LIBRARIES}
   ${izenecma_LIBRARIES}
-  ${izenejma_LIBRARIES}  
+  ${izenejma_LIBRARIES}
   ${izenelib_LIBRARIES}
-  ${xml2_LIBRARIES}
 
   #external
+  ${xml2_LIBRARIES}
   ${Boost_LIBRARIES}
   ${TokyoCabinet_LIBRARIES}
   ${Glog_LIBRARIES}
   ${sqlite3_LIBRARIES}
   ${MYSQL_LIBRARIES}
+  ${Thrift_LIBS}
 )
 
 
-INSTALL(TARGETS 
-    CobraProcess 
+INSTALL(TARGETS
+    CobraProcess
     RUNTIME DESTINATION bin
-    COMPONENT sf1r_apps)    
-
+    COMPONENT sf1r_apps)

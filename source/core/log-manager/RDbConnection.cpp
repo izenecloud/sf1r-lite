@@ -50,7 +50,7 @@ bool RDbConnection::init(const std::string& str )
         std::cerr<<"[RDbConnection::init] "<<str<<" unrecognized"<<std::endl;
         return false;
     }
-    
+
 }
 
 bool RDbConnection::exec(const std::string & sql, bool omitError)

@@ -14,26 +14,25 @@
 namespace sf1r
 {
 class IndexTaskService;
-class ProductScdReceiver 
+class ProductScdReceiver
 {
 public:
-    
+
     ProductScdReceiver();
-    
+
     void Set(IndexTaskService* index_service)
     {
         index_service_ = index_service;
     }
-    
+
     bool Run(const std::string& scd_source_dir);
-    
+
 private:
-    
+
     bool CopyFileListToDir_(const std::vector<boost::filesystem::path>& file_list, const boost::filesystem::path& to_dir);
-    
+
     bool NextScdFileName_(std::string& filename) const;
-        
-    
+
 private:
     IndexTaskService* index_service_;
 };
@@ -41,4 +40,3 @@ private:
 }
 
 #endif
-

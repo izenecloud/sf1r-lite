@@ -272,6 +272,8 @@ void SF1Config::parseSystemSettings( const ticpp::Element * system )
 
     getAttribute( getUniqChildElement( system, "LogConnection" ), "str", log_conn_str_);
 
+    getAttribute( getUniqChildElement( system, "CassandraConnection" ), "str", cassandra_conn_str_);
+
     parseBundlesDefault(getUniqChildElement( system, "BundlesDefault" ));
 
     parseFirewall( getUniqChildElement( system, "Firewall" ) );
@@ -1927,4 +1929,3 @@ void CollectionConfig::parseProperty_Indexing( const ticpp::Element * indexing, 
 }
 
 } // END - namespace sf1r
-

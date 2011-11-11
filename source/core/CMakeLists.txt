@@ -1,11 +1,11 @@
 INCLUDE_DIRECTORIES(
   ${CMAKE_SOURCE_DIR}/core/
   ${CMAKE_SOURCE_DIR}
-  
+
   ${izenelib_INCLUDE_DIRS}
   ${wisekma_INCLUDE_DIRS}
   ${izenecma_INCLUDE_DIRS}
-  ${izenejma_INCLUDE_DIRS}  
+  ${izenejma_INCLUDE_DIRS}
   ${ilplib_INCLUDE_DIRS}
   ${idmlib_INCLUDE_DIRS}
   ${imllib_INCLUDE_DIRS}
@@ -13,6 +13,7 @@ INCLUDE_DIRECTORIES(
   ${Boost_INCLUDE_DIRS}
   ${TokyoCabinet_INCLUDE_DIRS}
   ${Glog_INCLUDE_DIRS}
+  ${Thrift_INCLUDE_DIR}
   )
 
 FILE(GLOB_RECURSE configuration_SRC "configuration-manager/*.cpp")
@@ -66,7 +67,7 @@ FILE(GLOB mining_SRC
   "mining-manager/group-label-logger/*.cpp"
   "mining-manager/ec-submanager/*.cc"
   )
-ADD_DEFINITIONS("-fno-strict-aliasing") 
+ADD_DEFINITIONS("-fno-strict-aliasing")
 ADD_LIBRARY(sf1r_configuration_manager ${configuration_SRC})
 ADD_LIBRARY(sf1r_la_manager ${la_SRC})
 ADD_LIBRARY(sf1r_license_manager ${license_SRC})
@@ -84,19 +85,19 @@ ADD_LIBRARY(sf1r_aggregator_manager ${aggregator_SRC})
 ADD_LIBRARY(sf1r_node_manager ${node_SRC})
 ADD_LIBRARY(sf1r_product_manager ${product_SRC})
 
-INSTALL(TARGETS 
-    sf1r_configuration_manager 
-    sf1r_la_manager 
-    sf1r_license_manager 
-    sf1r_ranking_manager 
-    sf1r_common 
-    sf1r_index_manager 
-    sf1r_log_manager 
-    sf1r_directory_manager 
-    sf1r_query_manager 
-    sf1r_search_manager 
-    sf1r_mining_manager 
-    sf1r_document_manager 
+INSTALL(TARGETS
+    sf1r_configuration_manager
+    sf1r_la_manager
+    sf1r_license_manager
+    sf1r_ranking_manager
+    sf1r_common
+    sf1r_index_manager
+    sf1r_log_manager
+    sf1r_directory_manager
+    sf1r_query_manager
+    sf1r_search_manager
+    sf1r_mining_manager
+    sf1r_document_manager
     sf1r_recommend_manager
     sf1r_aggregator_manager
     sf1r_node_manager
@@ -104,4 +105,3 @@ INSTALL(TARGETS
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
     COMPONENT sf1r_libraries)
-
