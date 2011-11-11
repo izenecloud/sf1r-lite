@@ -48,27 +48,22 @@ public:
 public:
     /***********************
     *@brief Generate the DocumentIterator according to query tree
-    * pDocIterator is required to be set to NULL before prepare is called. This design is not good,
-    * but it has to reuse the existing PropertyExpr structure
+    *@return if failed, NULL is returned
     */
-    bool prepare_dociterator(
+    MultiPropertyScorer* prepare_dociterator(
         SearchKeywordOperation& actionOperation,
         collectionid_t colID,
         const property_weight_map& propertyWeightMap_,
         const std::vector<std::string>& properties,
         const std::vector<unsigned int>& propertyIds,
         bool readPositions,
-        const std::vector<std::map<termid_t, unsigned> >& termIndexMaps,
-        MultiPropertyScorer* &pDocIterator
+        const std::vector<std::map<termid_t, unsigned> >& termIndexMaps
     );
 
     /*
     *@brief Generate Filter, filter will be released by the user.
     */
-    bool prepare_filter(
-        const std::vector<QueryFiltering::FilteringType>& filtingList, 
-        Filter* &filter
-    );
+    Filter* prepare_filter(const std::vector<QueryFiltering::FilteringType>& filtingList);
 
     void reset_cache();
 

@@ -26,12 +26,6 @@
 namespace bfs = boost::filesystem;
 
 
-namespace
-{
-/** the directory for scd file backup */
-const char* SCD_BACKUP_DIR = "backup";
-}
-
 namespace sf1r
 {
 

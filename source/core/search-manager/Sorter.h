@@ -8,11 +8,13 @@
 #define _SORTER_H
 
 #include <index-manager/IndexManager.h>
+#include "PropertyData.h"
 #include "SortPropertyComparator.h"
 #include <util/ustring/UString.h>
 #include <bundles/index/IndexBundleConfiguration.h>
 
 #include <boost/thread.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <list>
 #include <map>
@@ -79,7 +81,6 @@ class SortPropertyCache
 public:
     SortPropertyCache(IndexManager* pIndexer, IndexBundleConfiguration* config);
 
-    ~SortPropertyCache();
 public:
     ///If index has been changed, we should reload
     void setDirty(bool dirty) { dirty_ = dirty;}
@@ -88,14 +89,10 @@ public:
 
     void updateSortData(docid_t id, const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
 
-    bool getSortPropertyData(const std::string& propertyName, PropertyDataType propertyType, void* &data);
+    boost::shared_ptr<PropertyData> getSortPropertyData(const std::string& propertyName, PropertyDataType propertyType);
 
 private:
     void loadSortData(const std::string& property, PropertyDataType type);
-
-    void clear();
-
-    void clear(const std::string& property);
 
     bool split_int(const izenelib::util::UString& szText, int64_t& out, izenelib::util::UString::EncodingType encoding, char Separator = ' ');
 
@@ -109,9 +106,8 @@ private:
 
     ///key: the name of sorted property
     ///value: memory pool containing the property data 
-    ///We use void* to store the data, therefore PropertyDataType is required to be
-    ///specified for malloc/free the memory
-    std::map<std::string, std::pair<PropertyDataType,void*> > sortDataCache_;
+    typedef std::map<std::string, boost::shared_ptr<PropertyData> > SortDataCache;
+    SortDataCache sortDataCache_;
 
     boost::mutex mutex_;	
 
