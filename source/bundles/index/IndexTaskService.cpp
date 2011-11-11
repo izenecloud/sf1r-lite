@@ -266,7 +266,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
 
         documentManager_->flush();
         idManager_->flush();
-        indexManager_->flush();
+        index_mode_selector.TryCommit();
         //indexManager_->optimizeIndex();
         if( bundleConfig_->isTrieWildcard()) {
 #ifdef __x86_64

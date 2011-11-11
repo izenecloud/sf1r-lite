@@ -19,7 +19,8 @@ public:
     IndexModeSelector(const boost::shared_ptr<IndexManager>& index_manager, double threshold, long max_realtime_msize);
 
     void TrySetIndexMode(long scd_file_size);
-    
+
+    void TryCommit();
 private:
     boost::shared_ptr<IndexManager> index_manager_;
     double threshold_;
