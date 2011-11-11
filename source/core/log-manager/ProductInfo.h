@@ -10,7 +10,7 @@ namespace sf1r {
 class ProductInfo : public ColumnFamilyBase
 {
 public:
-    typedef std::map<boost::posix_time::ptime, ProductPriceType> PriceHistoryType;
+    typedef std::map<time_t, ProductPriceType> PriceHistoryType;
 
     static const std::string SuperColumnName[];
 
@@ -24,11 +24,11 @@ public:
 
     bool getRow();
 
-    void insertHistory(boost::posix_time::ptime timeStamp, ProductPriceType price);
+    void insertHistory(time_t timeStamp, ProductPriceType price);
 
     void clearHistory();
 
-    bool getRangeHistory(PriceHistoryType& history, boost::posix_time::ptime from, boost::posix_time::ptime to) const;
+    bool getRangeHistory(PriceHistoryType& history, time_t from, time_t to) const;
 
     void reset(const std::string& newDocId = "");
 

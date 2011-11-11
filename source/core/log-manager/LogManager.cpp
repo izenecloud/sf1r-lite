@@ -1,15 +1,17 @@
 #include "LogManager.h"
 #include "SFLogMessages.h"
+
 #include "RDbConnection.h"
-#include "CassandraConnection.h"
 #include "SystemEvent.h"
 #include "UserQuery.h"
 #include "PropertyLabel.h"
 #include "ProductCount.h"
-#include "ProductInfo.h"
-#include "CollectionInfo.h"
 #include "OrderLogger.h"
 #include "ItemLogger.h"
+
+#include "CassandraConnection.h"
+#include "ProductInfo.h"
+#include "CollectionInfo.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>

@@ -1,6 +1,7 @@
 #include "CollectionInfo.h"
 
 #include <libcassandra/cassandra.h>
+#include <libcassandra/util_functions.h>
 
 #include <boost/assign/list_of.hpp>
 #include <boost/algorithm/string.hpp>
@@ -10,7 +11,6 @@ using namespace libcassandra;
 using namespace org::apache::cassandra;
 using namespace boost;
 using namespace boost::assign;
-using namespace boost::posix_time;
 using namespace boost::algorithm;
 
 namespace sf1r {
@@ -77,7 +77,7 @@ bool CollectionInfo::updateRow() const
                     collection_,
                     cf_name,
                     SuperColumnName[0],
-                    to_iso_string(it->first));
+                    serializeLong(it->first));
         }
     }
     catch (const InvalidRequestException& ire)
@@ -131,7 +131,7 @@ bool CollectionInfo::getRow()
         {
             vector<string> tokens(3);
             split(tokens, it->value, is_any_of(":"));
-            sourceCount_[from_iso_string(it->name)] = SourceCountItemType(lexical_cast<uint32_t>(tokens[0]), tokens[1], tokens[2]);
+            sourceCount_[deserializeLong(it->name)] = SourceCountItemType(lexical_cast<uint32_t>(tokens[0]), tokens[1], tokens[2]);
         }
     }
     catch (const InvalidRequestException &ire)
@@ -142,7 +142,7 @@ bool CollectionInfo::getRow()
     return true;
 }
 
-void CollectionInfo::insertSourceCount(ptime timeStamp, const SourceCountItemType& sourceCountItem)
+void CollectionInfo::insertSourceCount(time_t timeStamp, const SourceCountItemType& sourceCountItem)
 {
     if (!sourceCountPresent_)
     {

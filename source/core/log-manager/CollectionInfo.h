@@ -11,7 +11,7 @@ class CollectionInfo : public ColumnFamilyBase
 {
 public:
     typedef boost::tuple<uint32_t, std::string, std::string> SourceCountItemType;
-    typedef std::map<boost::posix_time::ptime, SourceCountItemType> SourceCountType;
+    typedef std::map<time_t, SourceCountItemType> SourceCountType;
 
     static const std::string SuperColumnName[];
 
@@ -25,7 +25,7 @@ public:
 
     bool getRow();
 
-    void insertSourceCount(boost::posix_time::ptime timeStamp, const SourceCountItemType& sourceCountItem);
+    void insertSourceCount(time_t timeStamp, const SourceCountItemType& sourceCountItem);
 
     void reset(const std::string& newCollection = "");
 

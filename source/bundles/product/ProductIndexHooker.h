@@ -28,7 +28,6 @@ private:
 
 };
 
-
 }
 
 #endif

@@ -45,6 +45,8 @@ public:
 
     boost::shared_ptr<libcassandra::Cassandra>& getCassandraClient();
 
+    time_t createTimestamp();
+
     bool createColumnFamily(
             const std::string& in_name,
             const std::string& in_column_type,

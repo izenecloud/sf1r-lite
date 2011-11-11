@@ -6,6 +6,7 @@
 
 #include <libcassandra/cassandra.h>
 #include <libcassandra/connection_manager.h>
+#include <libcassandra/util_functions.h>
 
 using namespace std;
 using namespace libcassandra;
@@ -30,6 +31,11 @@ bool CassandraConnection::isEnabled()
 boost::shared_ptr<libcassandra::Cassandra>& CassandraConnection::getCassandraClient()
 {
     return cassandra_client_;
+}
+
+time_t CassandraConnection::createTimestamp()
+{
+    return libcassandra::createTimestamp();
 }
 
 const string& CassandraConnection::getKeyspaceName() const

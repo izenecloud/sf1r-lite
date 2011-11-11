@@ -1,12 +1,12 @@
 #include "ProductInfo.h"
 
 #include <libcassandra/cassandra.h>
+#include <libcassandra/util_functions.h>
 
 #include <boost/assign/list_of.hpp>
 
 using namespace std;
 using namespace boost::assign;
-using namespace boost::posix_time;
 using namespace libcassandra;
 using namespace org::apache::cassandra;
 
@@ -97,7 +97,7 @@ bool ProductInfo::updateRow() const
                         row_key,
                         cf_name,
                         SuperColumnName[1],
-                        to_iso_string(it->first));
+                        serializeLong(it->first));
             }
         }
     }
@@ -173,7 +173,7 @@ bool ProductInfo::getRow()
                 for (vector<Column>::const_iterator cit = sit->columns.begin();
                         cit != sit->columns.end(); ++cit)
                 {
-                    priceHistory_[from_iso_string(cit->name)] = lexical_cast<ProductPriceType>(cit->value);
+                    priceHistory_[deserializeLong(cit->name)] = lexical_cast<ProductPriceType>(cit->value);
                 }
             }
         }
@@ -186,7 +186,7 @@ bool ProductInfo::getRow()
     return true;
 }
 
-void ProductInfo::insertHistory(boost::posix_time::ptime timeStamp, ProductPriceType price)
+void ProductInfo::insertHistory(time_t timeStamp, ProductPriceType price)
 {
     if (!priceHistoryPresent_)
     {
@@ -202,7 +202,7 @@ void ProductInfo::clearHistory()
     priceHistoryPresent_ = false;
 }
 
-bool ProductInfo::getRangeHistory(PriceHistoryType& history, ptime from, ptime to) const
+bool ProductInfo::getRangeHistory(PriceHistoryType& history, time_t from, time_t to) const
 {
     if (!CassandraConnection::instance().isEnabled() || !docIdPresent_) return false;
     try
@@ -214,10 +214,10 @@ bool ProductInfo::getRangeHistory(PriceHistoryType& history, ptime from, ptime t
         col_parent.__set_super_column(SuperColumnName[1]);
 
         SlicePredicate pred;
-        if (from != not_a_date_time)
-            pred.slice_range.__set_start(to_iso_string(from));
-        if (to != not_a_date_time)
-            pred.slice_range.__set_finish(to_iso_string(to));
+        if (from != -1)
+            pred.slice_range.__set_start(serializeLong(from));
+        if (to != -1)
+            pred.slice_range.__set_finish(serializeLong(to));
 
         vector<Column> column_list;
         CassandraConnection::instance().getCassandraClient()->getSlice(
@@ -231,7 +231,7 @@ bool ProductInfo::getRangeHistory(PriceHistoryType& history, ptime from, ptime t
             for (vector<Column>::const_iterator it = column_list.begin();
                     it != column_list.end(); ++it)
             {
-                history[from_iso_string(it->name)] = lexical_cast<ProductPriceType>(it->value);
+                history[deserializeLong(it->name)] = lexical_cast<ProductPriceType>(it->value);
             }
         }
     }
