@@ -33,7 +33,7 @@ boost::shared_ptr<libcassandra::Cassandra>& CassandraConnection::getCassandraCli
     return cassandra_client_;
 }
 
-time_t CassandraConnection::createTimestamp()
+int64_t CassandraConnection::createTimestamp()
 {
     return libcassandra::createTimestamp();
 }
@@ -48,42 +48,42 @@ void CassandraConnection::setKeyspaceName(const string& keyspace_name)
     keyspace_name_ = keyspace_name;
 }
 
-bool CassandraConnection::init(const std::string& str)
+bool CassandraConnection::init(const string& str)
 {
     if (str == "__disabled__") return false;
-    std::string cassandra_prefix = "cassandra://";
+    string cassandra_prefix = "cassandra://";
     if (boost::algorithm::starts_with(str, cassandra_prefix))
     {
-        std::string path = str.substr(cassandra_prefix.length());
-        std::string host;
-        std::string portStr;
-        std::string ks_name;
+        string path = str.substr(cassandra_prefix.length());
+        string host;
+        string portStr;
+        string ks_name;
         uint16_t port = 9160;
-        std::string username;
-        std::string password;
+        string username;
+        string password;
         bool hasAuth = false;
         static const size_t pool_size = 16;
 
         // Parse authentication information
-        std::size_t pos = path.find('@');
+        size_t pos = path.find('@');
         if (pos == 0) goto UNRECOGNIZED;
-        if (pos != std::string::npos)
+        if (pos != string::npos)
         {
             hasAuth = true;
-            std::string auth = path.substr(0, pos);
+            string auth = path.substr(0, pos);
             path = path.substr(pos + 1);
             pos = auth.find(':');
             if (pos == 0)
                 goto UNRECOGNIZED;
             username = auth.substr(0, pos);
-            if (pos != std::string::npos)
+            if (pos != string::npos)
                 password = auth.substr(pos + 1);
         }
 
         // Parse keyspace name
         pos = path.find('/');
         if (pos == 0) goto UNRECOGNIZED;
-        if (pos == std::string::npos)
+        if (pos == string::npos)
             ks_name= "SF1R";
         else
         {
@@ -96,7 +96,7 @@ bool CassandraConnection::init(const std::string& str)
         pos = path.find(':');
         if (pos == 0) goto UNRECOGNIZED;
         host = path.substr(0, pos);
-        if (pos != std::string::npos)
+        if (pos != string::npos)
         {
             path = path.substr(pos + 1);
             portStr = path;
@@ -117,26 +117,26 @@ bool CassandraConnection::init(const std::string& str)
             cassandra_client_.reset(new Cassandra());
             if (hasAuth)
                 cassandra_client_->login(username, password);
-            KeyspaceDefinition ks_def;
-            ks_def.setName(ks_name);
-            ks_def.setStrategyClass("NetworkTopologyStrategy");
+            KsDef ks_def;
+            ks_def.__set_name(ks_name);
+            ks_def.__set_strategy_class("NetworkTopologyStrategy");
             // TODO: more tricks for keyspace
             cassandra_client_->createKeyspace(ks_def);
             cassandra_client_->setKeyspace(ks_name);
         }
         catch (const ::apache::thrift::TException &ex)
         {
-            std::cerr << "[CassandraConnection::init] " << ex.what() << std::endl;
+            cerr << "[CassandraConnection::init] " << str << " " << ex.what() << endl;
             return false;
         }
-        std::cerr << "[CassandraConnection::init] " << str << std::endl;
+        cout << "[CassandraConnection::init] " << str << endl;
         isEnabled_ = true;
         return true;
     }
     else
     {
         UNRECOGNIZED:
-        std::cerr << "[CassandraConnection::init] " << str << " unrecognized" << std::endl;
+        cerr << "[CassandraConnection::init] " << str << " unrecognized" << endl;
         return false;
     }
 }
@@ -158,28 +158,46 @@ bool CassandraConnection::createColumnFamily(
         const int32_t in_max_compaction_threshold,
         const int32_t in_row_cache_save_period_in_seconds,
         const int32_t in_key_cache_save_period_in_seconds,
+        const int8_t in_replicate_on_write,
+        const double in_merge_shards_chance,
+        const string& in_key_validation_class,
+        const string& in_row_cache_provider,
+        const string& in_key_alias,
+        const string& in_compaction_strategy,
+        const map<string, string>& in_compaction_strategy_options,
+        const int32_t in_row_cache_keys_to_save,
         const map<string, string>& in_compression_options)
 {
     if (!isEnabled_) return false;
-    ColumnFamilyDefinition definition(
-                keyspace_name_,
-                in_name,
-                in_column_type,
-                in_comparator_type,
-                in_sub_comparator_type,
-                in_comment,
-                in_row_cache_size,
-                in_key_cache_size,
-                in_read_repair_chance,
-                in_column_metadata,
-                in_gc_grace_seconds,
-                in_default_validation_class,
-                in_id,
-                in_min_compaction_threshold,
-                in_max_compaction_threshold,
-                in_row_cache_save_period_in_seconds,
-                in_key_cache_save_period_in_seconds,
-                in_compression_options);
+    CfDef definition;
+    createCfDefObject(
+            definition,
+            keyspace_name_,
+            in_name,
+            in_column_type,
+            in_comparator_type,
+            in_sub_comparator_type,
+            in_comment,
+            in_row_cache_size,
+            in_key_cache_size,
+            in_read_repair_chance,
+            in_column_metadata,
+            in_gc_grace_seconds,
+            in_default_validation_class,
+            in_id,
+            in_min_compaction_threshold,
+            in_max_compaction_threshold,
+            in_row_cache_save_period_in_seconds,
+            in_key_cache_save_period_in_seconds,
+            in_replicate_on_write,
+            in_merge_shards_chance,
+            in_key_validation_class,
+            in_row_cache_provider,
+            in_key_alias,
+            in_compaction_strategy,
+            in_compaction_strategy_options,
+            in_row_cache_keys_to_save,
+            in_compression_options);
     try
     {
         cassandra_client_->createColumnFamily(definition);

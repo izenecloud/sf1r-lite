@@ -545,7 +545,7 @@ bool IndexTaskService::doBuildCollection_(
             return false;
     }
 
-    saveCollectionInfo_(op);
+    saveSourceCount_(op);
 
     return true;
 }
@@ -794,11 +794,11 @@ bool IndexTaskService::deleteSCD_(ScdParser& parser)
     return true;
 }
 
-void IndexTaskService::saveProductInfo_(int op)
+void IndexTaskService::savePriceHistory_(int op)
 {
 }
 
-void IndexTaskService::saveCollectionInfo_(int op)
+void IndexTaskService::saveSourceCount_(int op)
 {
     if (bundleConfig_->productSourceField_.empty())
         return;

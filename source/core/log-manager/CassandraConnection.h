@@ -45,7 +45,7 @@ public:
 
     boost::shared_ptr<libcassandra::Cassandra>& getCassandraClient();
 
-    time_t createTimestamp();
+    int64_t createTimestamp();
 
     bool createColumnFamily(
             const std::string& in_name,
@@ -64,6 +64,14 @@ public:
             const int32_t in_max_compaction_threshold,
             const int32_t in_row_cache_save_period_in_seconds,
             const int32_t in_key_cache_save_period_in_seconds,
+            const int8_t in_replicate_on_write,
+            const double in_merge_shards_chance,
+            const std::string& in_key_validation_class,
+            const std::string& in_row_cache_provider,
+            const std::string& in_key_alias,
+            const std::string& in_compaction_strategy,
+            const std::map<std::string, std::string>& in_compaction_strategy_options,
+            const int32_t in_row_cache_keys_to_save,
             const std::map<std::string, std::string>& in_compression_options);
 
     bool truncateColumnFamily(const std::string& in_name);

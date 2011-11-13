@@ -96,9 +96,9 @@ private:
 
     bool deleteDoc_(docid_t docid);
 
-    void saveProductInfo_(int op);
+    void savePriceHistory_(int op);
 
-    void saveCollectionInfo_(int op);
+    void saveSourceCount_(int op);
 
     bool prepareDocument_(
         SCDDoc& doc,

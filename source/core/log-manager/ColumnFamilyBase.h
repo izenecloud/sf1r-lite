@@ -3,8 +3,6 @@
 
 #include "CassandraConnection.h"
 
-#include <boost/date_time/posix_time/posix_time.hpp>
-
 namespace sf1r {
 
 class ColumnFamilyBase
@@ -16,17 +14,29 @@ public:
 
     virtual ~ColumnFamilyBase() {}
 
+    virtual const std::string& getKey() const = 0;
+
+    virtual const std::string& getName() const = 0;
+
     virtual bool updateRow() const = 0;
 
-    virtual bool deleteRow() = 0;
-
     virtual bool getRow() = 0;
+
+    virtual bool deleteRow();
+
+    virtual bool getCount(int32_t& count, const std::string& start, const std::string& finish) const;
 
     virtual void resetKey(const std::string& newKey) = 0;
 
 protected:
     bool exist_;
 };
+
+template <typename ColumnFamilyType>
+const std::string& getColumnFamilyName()
+{
+    return ColumnFamilyType::cf_name;
+}
 
 template <typename ColumnFamilyType>
 bool createColumnFamily()
@@ -48,6 +58,14 @@ bool createColumnFamily()
             ColumnFamilyType::cf_max_compaction_threshold,
             ColumnFamilyType::cf_row_cache_save_period_in_seconds,
             ColumnFamilyType::cf_key_cache_save_period_in_seconds,
+            ColumnFamilyType::cf_replicate_on_write,
+            ColumnFamilyType::cf_merge_shards_chance,
+            ColumnFamilyType::cf_key_validation_class,
+            ColumnFamilyType::cf_row_cache_provider,
+            ColumnFamilyType::cf_key_alias,
+            ColumnFamilyType::cf_compaction_strategy,
+            ColumnFamilyType::cf_compaction_strategy_options,
+            ColumnFamilyType::cf_row_cache_keys_to_save,
             ColumnFamilyType::cf_compression_options);
 }
 
@@ -83,6 +101,18 @@ bool getMultiRow(std::vector<ColumnFamilyType>& row_list, const std::vector<std:
     return true;
 }
 
+template <typename T>
+std::string toBytes(const T& val)
+{
+    return std::string(reinterpret_cast<const char *>(&val), sizeof(T));
+}
+
+template <typename T>
+T fromBytes(const std::string& str)
+{
+    return *(reinterpret_cast<const T *>(str.c_str()));
+}
+
 #define DEFINE_COLUMN_FAMILY_COMMON_ROUTINES(ClassName) \
 public: \
     static const std::string cf_name; \
@@ -101,7 +131,20 @@ public: \
     static const int32_t cf_max_compaction_threshold; \
     static const int32_t cf_row_cache_save_period_in_seconds; \
     static const int32_t cf_key_cache_save_period_in_seconds; \
+    static const int8_t cf_replicate_on_write; \
+    static const double cf_merge_shards_chance; \
+    static const std::string cf_key_validation_class; \
+    static const std::string cf_row_cache_provider; \
+    static const std::string cf_key_alias; \
+    static const std::string cf_compaction_strategy; \
+    static const std::map<std::string, std::string> cf_compaction_strategy_options; \
+    static const int32_t cf_row_cache_keys_to_save; \
     static const std::map<std::string, std::string> cf_compression_options; \
+    \
+    const std::string& getName() const \
+    { \
+        return ::sf1r::getColumnFamilyName<ClassName>(); \
+    } \
     \
     static bool createColumnFamily() \
     { \
