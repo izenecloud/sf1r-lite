@@ -7,4 +7,11 @@ std::string NodeDef::sf1rCluster_ = "/SF1R-unknown";         // identify SF1R cl
 const std::string NodeDef::sf1rTopology_ = "/Topology";
 const std::string NodeDef::sf1rService_ = "/Service";
 
+/// NodeData
+const char* NodeData::NDATA_KEY_HOST = "host";
+const char* NodeData::NDATA_KEY_BA_PORT = "baport";
+const char* NodeData::NDATA_KEY_MASTER_PORT = "mport";
+const char* NodeData::NDATA_KEY_WORKER_PORT = "wport";
+const char* NodeData::NDATA_KEY_SHARD_ID = "shardid";
+
 }

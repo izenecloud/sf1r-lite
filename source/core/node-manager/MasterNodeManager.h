@@ -77,11 +77,15 @@ public:
 private:
     void initZooKeeper(const std::string& zkHosts, const int recvTimeout);
 
+    std::string state2string(MasterStateType e);
+
+    void watchAll();
+
     void doStart();
 
     int detectWorkers();
 
-    void detectReplicaSet();
+    void detectReplicaSet(const std::string& zpath="");
 
     /**
      * If any node in current cluster replica is broken down,
@@ -92,7 +96,7 @@ private:
     bool failover(boost::shared_ptr<WorkerNode>& pworkerNode);
 
     /**
-     * Recover after came back from failure, for nodes in current cluster replica.
+     * Recover after nodes in current cluster replica came back from failure.
      */
     void recover(const std::string& zpath);
 
@@ -122,7 +126,7 @@ private:
 
     MasterStateType masterState_;
 
-    std::string serverPath_;
+    std::string serverRealPath_;
     net::aggregator::AggregatorConfig aggregatorConfig_;
     std::vector<boost::shared_ptr<AggregatorManager> > aggregatorList_;
 
