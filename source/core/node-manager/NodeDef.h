@@ -8,7 +8,7 @@
 #define NODE_DEF_H_
 
 #include "TypeDef.h"
-
+#include <3rdparty/zookeeper/ZkDataPack.hpp>
 #include <sstream>
 
 namespace sf1r {
@@ -100,6 +100,16 @@ public:
     {
         return sf1rCluster_+"/Synchro"; // todo
     }
+};
+
+class NodeData : public zookeeper::ZkDataPack
+{
+public:
+    const static char* NDATA_KEY_HOST;
+    const static char* NDATA_KEY_BA_PORT;
+    const static char* NDATA_KEY_MASTER_PORT;
+    const static char* NDATA_KEY_WORKER_PORT;
+    const static char* NDATA_KEY_SHARD_ID;
 };
 
 }

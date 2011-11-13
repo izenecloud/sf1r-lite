@@ -23,6 +23,7 @@ typedef uint32_t shardid_t;
 struct Topology
 {
     std::string clusterId_;
+    uint32_t replicaNum_;
     uint32_t nodeNum_;
     uint32_t shardNum_;
 
@@ -69,11 +70,13 @@ struct MasterNode : public SF1NodeInfo
 
 struct WorkerNode : public SF1NodeInfo
 {
+    bool isGood_;
     shardid_t shardId_;
     uint32_t workerPort_;
 
     WorkerNode()
-    : shardId_(0)
+    : isGood_(false)
+    , shardId_(0)
     , workerPort_(0)
     {}
 
@@ -81,7 +84,8 @@ struct WorkerNode : public SF1NodeInfo
     {
         std::stringstream ss;
         ss <<SF1NodeInfo::toString()
-           <<" :worker"<<workerPort_<<", shard"<<shardId_;
+           <<" :worker"<<workerPort_<<", shard"<<shardId_
+           <<" , status: "<< (isGood_?"good!!":"bad!!");
         return ss.str();
     }
 };

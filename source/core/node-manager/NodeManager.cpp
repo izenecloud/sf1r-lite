@@ -1,6 +1,5 @@
 #include "NodeManager.h"
 #include "MasterNodeManager.h"
-#include "NodeData.h"
 
 #include <node-manager/DistributedSynchroFactory.h>
 
@@ -137,16 +136,16 @@ void NodeManager::enterCluster()
 
     // Set node info
     NodeData ndata;
-    ndata.setValue(NDATA_KEY_HOST, dsTopologyConfig_.curSF1Node_.host_);
-    ndata.setValue(NDATA_KEY_BA_PORT, dsTopologyConfig_.curSF1Node_.baPort_);
+    ndata.setValue(NodeData::NDATA_KEY_HOST, dsTopologyConfig_.curSF1Node_.host_);
+    ndata.setValue(NodeData::NDATA_KEY_BA_PORT, dsTopologyConfig_.curSF1Node_.baPort_);
     if (dsTopologyConfig_.curSF1Node_.masterAgent_.enabled_)
     {
-        ndata.setValue(NDATA_KEY_MASTER_PORT, dsTopologyConfig_.curSF1Node_.masterAgent_.port_);
+        ndata.setValue(NodeData::NDATA_KEY_MASTER_PORT, dsTopologyConfig_.curSF1Node_.masterAgent_.port_);
     }
     if (dsTopologyConfig_.curSF1Node_.workerAgent_.enabled_)
     {
-        ndata.setValue(NDATA_KEY_WORKER_PORT, dsTopologyConfig_.curSF1Node_.workerAgent_.port_);
-        ndata.setValue(NDATA_KEY_SHARD_ID, dsTopologyConfig_.curSF1Node_.workerAgent_.shardId_);
+        ndata.setValue(NodeData::NDATA_KEY_WORKER_PORT, dsTopologyConfig_.curSF1Node_.workerAgent_.port_);
+        ndata.setValue(NodeData::NDATA_KEY_SHARD_ID, dsTopologyConfig_.curSF1Node_.workerAgent_.shardId_);
     }
 
     // Register node to zookeeper
