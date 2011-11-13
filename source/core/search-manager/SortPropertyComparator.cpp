@@ -2,17 +2,24 @@
 
 namespace sf1r{
 
-SortPropertyComparator::SortPropertyComparator():type_(UNKNOWN_DATA_PROPERTY_TYPE)
+SortPropertyComparator::SortPropertyComparator()
+    : type_(UNKNOWN_DATA_PROPERTY_TYPE)
+    , data_(NULL)
 {
     initComparator();
 }
 
-SortPropertyComparator::SortPropertyComparator(void* data, PropertyDataType type):data_(data), type_(type)
+SortPropertyComparator::SortPropertyComparator(boost::shared_ptr<PropertyData> propData)
+    : propertyData_(propData)
+    , type_(propData->type_)
+    , data_(propData->data_)
 {
     initComparator();
 }
 
-SortPropertyComparator::SortPropertyComparator(PropertyDataType dataType): type_(dataType)
+SortPropertyComparator::SortPropertyComparator(PropertyDataType dataType)
+    : type_(dataType)
+    , data_(NULL)
 {
     initComparator();
 }

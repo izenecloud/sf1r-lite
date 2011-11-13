@@ -4,7 +4,7 @@
 #include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
 
-#include <log-manager/ProductInfo.h>
+#include <log-manager/ProductCount.h>
 
 #include <common/SFLogger.h>
 #include <common/Utilities.h>
@@ -28,6 +28,7 @@ namespace bfs = boost::filesystem;
 
 namespace sf1r
 {
+
 ProductTaskService::ProductTaskService(
     ProductBundleConfiguration* bundleConfig
     )
@@ -40,7 +41,4 @@ ProductTaskService::~ProductTaskService()
 {
 }
 
-
-
 }
-

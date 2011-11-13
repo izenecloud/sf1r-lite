@@ -103,15 +103,18 @@ private:
      * does not exist.
      * @see CollectionMeta::numberPropertyConfig
      */
-    propertyid_t getPropertyIdByName(const std::string& name) const;
+    propertyid_t getPropertyIdByName_(const std::string& name) const;
 
+    bool getPropertyTypeByName_(const std::string& name, PropertyDataType& type) const;
+
+    boost::shared_ptr<PropertyData> getPropertyData_(const std::string& name);
 
     /**
      * rebuild custom ranker.
      * @param actionItem
      * @return
      */
-    CustomRankerPtr buildCustomRanker(KeywordSearchActionItem& actionItem);
+    CustomRankerPtr buildCustomRanker_(KeywordSearchActionItem& actionItem);
 
     /**
      * @brief get data list of each sort property for documents referred by docIdList,
@@ -120,13 +123,13 @@ private:
      * @param docIdList [IN]
      * @param distSearchInfo [OUT]
      */
-    void getSortPropertyData(Sorter* pSorter, std::vector<unsigned int>& docIdList, DistKeywordSearchInfo& distSearchInfo);
+    void getSortPropertyData_(Sorter* pSorter, std::vector<unsigned int>& docIdList, DistKeywordSearchInfo& distSearchInfo);
 
 private:
     /**
      * @brief for testing
      */
-    void printDFCTF(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties ctfmap);
+    void printDFCTF_(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties ctfmap);
 
 private:
     std::string collectionName_;

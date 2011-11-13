@@ -272,6 +272,8 @@ void SF1Config::parseSystemSettings( const ticpp::Element * system )
 
     getAttribute( getUniqChildElement( system, "LogConnection" ), "str", log_conn_str_);
 
+    getAttribute( getUniqChildElement( system, "CassandraConnection" ), "str", cassandra_conn_str_);
+
     parseBundlesDefault(getUniqChildElement( system, "BundlesDefault" ));
 
     parseFirewall( getUniqChildElement( system, "Firewall" ) );
@@ -287,6 +289,7 @@ void SF1Config::parseBrokerAgent( const ticpp::Element * brokerAgent )
     getAttribute( brokerAgent, "enabletest", brokerAgentConfig_.enableTest_,false );
     getAttribute( brokerAgent, "threadnum", brokerAgentConfig_.threadNum_,false );
     getAttribute( brokerAgent, "port", brokerAgentConfig_.port_,false );
+    distributedTopologyConfig_.curSF1Node_.baPort_ = brokerAgentConfig_.port_;
 }
 
 void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
@@ -295,12 +298,9 @@ void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
         return;
 
     getAttribute( topology, "enable", distributedTopologyConfig_.enabled_ );
-    getAttribute( topology, "clusterid", distributedTopologyConfig_.clusterId_ );
+    getAttribute( topology, "clusterid", distributedTopologyConfig_.clusterId_, false );
     getAttribute( topology, "nodenum", distributedTopologyConfig_.nodeNum_ );
-    if (!getAttribute( topology, "workernum", distributedTopologyConfig_.workerNum_ , false))
-    {
-        distributedTopologyConfig_.workerNum_ = distributedTopologyConfig_.nodeNum_;
-    }
+    getAttribute( topology, "shardnum", distributedTopologyConfig_.shardNum_ );
 
     if (distributedTopologyConfig_.clusterId_.empty())
     {
@@ -310,9 +310,10 @@ void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
 
     // Current SF1 node
     ticpp::Element * cursf1node = getUniqChildElement( topology, "CurrentNode" );
-    getAttribute( cursf1node, "nodeid", distributedTopologyConfig_.curSF1Node_.nodeId_ );
-    getAttribute( cursf1node, "replicaid", distributedTopologyConfig_.curSF1Node_.replicaId_ );
     getAttribute( cursf1node, "host", distributedTopologyConfig_.curSF1Node_.host_ );
+    getAttribute( cursf1node, "replicaid", distributedTopologyConfig_.curSF1Node_.replicaId_ );
+    getAttribute( cursf1node, "nodeid", distributedTopologyConfig_.curSF1Node_.nodeId_ );
+
     parseMasterAgent( getUniqChildElement( cursf1node, "MasterAgent", false ) );
     parseWorkerAgent( getUniqChildElement( cursf1node, "WorkerAgent", false ) );
 }
@@ -375,6 +376,7 @@ void SF1Config::parseWorkerAgent( const ticpp::Element * worker )
 
     getAttribute(worker, "enable", workerAgent.enabled_);
     getAttribute(worker, "port", workerAgent.port_);
+    getAttribute(worker, "shardid", workerAgent.shardId_);
 
     Iterator<Element> aggregator_it( "Service" );
     for (aggregator_it = aggregator_it.begin(worker); aggregator_it != aggregator_it.end(); aggregator_it++)
@@ -1211,8 +1213,8 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     params.Get<uint32_t>("TaxonomyPara/maxorgnum", mining_config.taxonomy_param.max_orgnum);
     //for recommend
     params.Get<uint32_t>("RecommendPara/recommendnum", mining_config.recommend_param.recommend_num);
-    params.Get<uint32_t>("RecommendPara/popularnum", mining_config.recommend_param.popular_num);
-    params.Get<uint32_t>("RecommendPara/realtimenum", mining_config.recommend_param.realtime_num);
+    params.GetString("RecommendPara/cron", mining_config.recommend_param.cron);
+    
     //for similarity
     params.Get<uint32_t>("SimilarityPara/docnumlimit", mining_config.similarity_param.docnum_limit);
     params.Get<uint32_t>("SimilarityPara/termnumlimit", mining_config.similarity_param.termnum_limit);
@@ -1900,4 +1902,3 @@ void CollectionConfig::parseProperty_Indexing( const ticpp::Element * indexing, 
 }
 
 } // END - namespace sf1r
-

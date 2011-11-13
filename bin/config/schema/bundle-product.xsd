@@ -3,10 +3,10 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.izenesoft.com" xmlns:t="http://www.izenesoft.com" targetNamespace="http://www.izenesoft.com" elementFormDefault="qualified">
     <xs:include schemaLocation="common.xsd"/>
 
-	<xs:element name="ProductBundle">
-	  <xs:complexType>
-            <xs:sequence>
-            	<xs:element name="Schema" minOccurs="0">
+        <xs:element name="ProductBundle">
+            <xs:complexType>
+                <xs:sequence>
+                    <xs:element name="Schema" minOccurs="0">
                         <xs:complexType>
                             <xs:sequence>
                                 <xs:element ref="PriceProperty" minOccurs="1" maxOccurs="1" />
@@ -16,32 +16,32 @@
                                 <xs:element ref="Backup" minOccurs="0" maxOccurs="1" />
                             </xs:sequence>
                             <xs:attribute name="mode" use="required">
-	    		        <xs:simpleType>
-	    			    <xs:restriction base="xs:string">
-	    				<xs:pattern value="m|a"/>
-	    			    </xs:restriction>
-	    		        </xs:simpleType>
-	    	            </xs:attribute>
-            		</xs:complexType>
-            	</xs:element>
-                <xs:element name="Parameter" minOccurs="0">
-                    <xs:complexType>
-                        <xs:sequence>
-                            <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="1" maxOccurs="2"/>
-                        </xs:sequence>
-                    </xs:complexType>
-                </xs:element>
-            </xs:sequence>
-	  </xs:complexType>
-	</xs:element>
+                                <xs:simpleType>
+                                    <xs:restriction base="xs:string">
+                                        <xs:pattern value="m|a"/>
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:attribute>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="Parameter" minOccurs="0">
+                        <xs:complexType>
+                            <xs:sequence>
+                                <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="1" maxOccurs="2"/>
+                            </xs:sequence>
+                        </xs:complexType>
+                    </xs:element>
+                </xs:sequence>
+            </xs:complexType>
+        </xs:element>
         <xs:element name="PriceProperty" type="PropertyType" />
         <xs:element name="DOCIDProperty" type="PropertyType" />
         <xs:element name="UuidProperty" type="PropertyType" />
         <xs:element name="ItemCountProperty" type="PropertyType" />
         <xs:element name="Backup">
-             <xs:complexType>
-                  <xs:attribute name="path" type="xs:string" use="required" />
-             </xs:complexType>
+            <xs:complexType>
+                <xs:attribute name="path" type="xs:string" use="required" />
+            </xs:complexType>
         </xs:element>
 
 </xs:schema>

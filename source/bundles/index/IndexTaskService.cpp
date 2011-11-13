@@ -3,10 +3,12 @@
 
 #include <index-manager/IndexManager.h>
 #include <index-manager/IndexHooker.h>
+#include <index-manager/IndexModeSelector.h>
+#include <common/ScdWriterController.h>
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
 #include <search-manager/SearchManager.h>
-#include <log-manager/ProductInfo.h>
+#include <log-manager/ProductCount.h>
 
 #include <bundles/mining/MiningTaskService.h>
 #include <bundles/recommend/RecommendTaskService.h>
@@ -50,6 +52,7 @@ IndexTaskService::IndexTaskService(
     , directoryRotator_(directoryRotator)
     , miningTaskService_(NULL)
     , recommendTaskService_(NULL)
+    , scd_writer_(new ScdWriterController(bundleConfig_->collPath_.getScdPath() + "index/"))
     , indexManager_(indexManager)
     , collectionId_(1)
     , indexProgress_()
@@ -95,6 +98,7 @@ IndexTaskService::IndexTaskService(
 
 IndexTaskService::~IndexTaskService()
 {
+    delete scd_writer_;
 }
 
 void IndexTaskService::createPropertyList_()
@@ -135,6 +139,9 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
 
     izenelib::util::ClockTimer timer;
 
+    //flush all writing SCDs
+    scd_writer_->Flush();
+
     indexProgress_.reset();
 
     ScdParser parser(bundleConfig_->encoding_);
@@ -149,12 +156,11 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
             return false;
         }
     }
-    catch(boost::filesystem::filesystem_error& e)
+    catch(bfs::filesystem_error& e)
     {
         LOG(ERROR) << "Error while opening directory " << e.what();
         return false;
     }
-
 
     // search the directory for files
     static const bfs::directory_iterator kItrEnd;
@@ -189,10 +195,18 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
     //sort scdList
     sort(scdList.begin(), scdList.end(), ScdParser::compareSCD);
 
+    //here, try to set the index mode(default[batch] or realtime)
+    //The threshold is set to the scd_file_size/exist_doc_num, if smaller or equal than this threshold then realtime mode will turn on.
+    //when the scd file size(M) larger than max_realtime_msize, the default mode will turn on while ignore the threshold above.
+    long max_realtime_msize = 50L; //set to 50M
+    double threshold = 50.0/500000.0;
+    IndexModeSelector index_mode_selector(indexManager_, threshold, max_realtime_msize);
+    index_mode_selector.TrySetIndexMode(indexProgress_.totalFileSize_);
+
     LOG(INFO) << "SCD Files in Path processed in given order. Path " << scdPath;
     vector<string>::iterator scd_it;
     for ( scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
-        LOG(INFO) << "SCD File " << boost::filesystem::path(*scd_it).stem();
+        LOG(INFO) << "SCD File " << bfs::path(*scd_it).stem();
 
     try
     {
@@ -205,7 +219,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
             indexProgress_.currentFileName = filename;
             indexProgress_.currentFilePos_ = 0;
 
-            LOG(INFO) << "Processing SCD file. " << boost::filesystem::path(*scd_it).stem();
+            LOG(INFO) << "Processing SCD file. " << bfs::path(*scd_it).stem();
 
             switch ( parser.checkSCDType(*scd_it) )
             {
@@ -228,7 +242,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
                 }
                 else
                 {
-                    LOG(WARNING) << "Indexed documents do not exist. File " << boost::filesystem::path(*scd_it).stem();
+                    LOG(WARNING) << "Indexed documents do not exist. File " << bfs::path(*scd_it).stem();
                 }
             }
             break;
@@ -251,7 +265,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
 
         documentManager_->flush();
         idManager_->flush();
-        indexManager_->flush();
+        index_mode_selector.TryCommit();
         //indexManager_->optimizeIndex();
         if( bundleConfig_->isTrieWildcard()) {
 #ifdef __x86_64
@@ -259,10 +273,10 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
             idManager_->joinWildcardProcess();
 #endif
         }
-        
+
         if(hooker_)
         {
-            if(!hooker_->Finish()) 
+            if(!hooker_->Finish())
             {
                 std::cout<<"[IndexTaskService] Hooker Finish failed."<<std::endl;
                 return false;
@@ -336,8 +350,6 @@ bool IndexTaskService::optimizeIndex()
 
 bool IndexTaskService::createDocument(const Value& documentValue)
 {
-    if(!backup_() )
-        return false;
 
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
@@ -345,64 +357,13 @@ bool IndexTaskService::createDocument(const Value& documentValue)
         LOG(ERROR) << "Index directory is corrupted";
         return false;
     }
-    sf1r::Status::Guard statusGuard(indexStatus_);
-
-#ifdef COBRA_RESTRICT
-    const docid_t maxDocId = documentManager_->getMaxDocId();
-    if ( LicenseManager::continueIndex_ )
-    {
-        COBRA_RESTRICT_EXCEED_N_RETURN_FALSE(maxDocId, LICENSE_MAX_DOC,  0);
-    }
-    else
-    {
-        COBRA_RESTRICT_EXCEED_N_RETURN_FALSE(maxDocId, LicenseManager::TRIAL_MAX_DOC,  0);
-    }
-#endif
-
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
-
-    Document document;
-    IndexerDocument indexDocument;
-    bool rType = false;
-    std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
-    sf1r::docid_t id = 0;
-    std::string source = "";
-    if (!prepareDocument_(scddoc, document, indexDocument, rType, rTypeFieldValue, source))
-    {
-        return false;
-    }
-
-    if (rType)
-    {
-        id = document.getId();
-    }
-
-    boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
-    if(!source.empty())
-    {
-        ProductInfo productInfo;
-        productInfo.setSource(source);
-        productInfo.setCollection(bundleConfig_->collectionName_);
-        productInfo.setNum(1);
-        productInfo.setFlag("insert");
-        productInfo.setTimeStamp(now);
-        productInfo.save();
-    }
-
-    // DEBUG
-    static int docnum = 1;
-    fprintf(stderr, "\n-----[%-6d] Document is inserted\n", docnum++);
-    // DEBUG
-    if(!insertDoc_(document ,indexDocument)) return false;
-    searchManager_->reset_cache(rType, id, rTypeFieldValue);
-    return true;
+    return scd_writer_->Write(scddoc, INSERT_SCD);
 }
 
 bool IndexTaskService::updateDocument(const Value& documentValue)
 {
-    if(!backup_() )
-        return false;
 
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
@@ -410,53 +371,25 @@ bool IndexTaskService::updateDocument(const Value& documentValue)
         LOG(ERROR) << "Index directory is corrupted";
         return false;
     }
-    sf1r::Status::Guard statusGuard(indexStatus_);
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
 
-    Document document;
-    IndexerDocument indexDocument;
-    bool rType = false;
-    std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
-    sf1r::docid_t id = 0;
-    std::string source = "";
-    if (!prepareDocument_(scddoc, document, indexDocument, rType, rTypeFieldValue, source, false))
+    return scd_writer_->Write(scddoc, UPDATE_SCD);
+}
+
+bool IndexTaskService::destroyDocument(const Value& documentValue)
+{
+
+    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
+    if (!dirGuard)
     {
+        LOG(ERROR) << "Index directory is corrupted";
         return false;
     }
+    SCDDoc scddoc;
+    value2SCDDoc(documentValue, scddoc);
 
-    if (rType)
-    {
-        id = document.getId();
-    }
-
-    boost::posix_time::ptime now =
-                boost::posix_time::microsec_clock::local_time();
-    if(!source.empty())
-    {
-        ProductInfo productInfo;
-        productInfo.setSource(source);
-        productInfo.setCollection(bundleConfig_->collectionName_);
-        productInfo.setNum(1);
-        productInfo.setFlag("update");
-        productInfo.setTimeStamp(now);
-        productInfo.save();
-    }
-
-    sf1r::docid_t oldId = indexDocument.getId();
-    if(oldId == 0)
-    {
-        /// document does not exist, directly index
-        if(!insertDoc_(document ,indexDocument)) return false;
-        searchManager_->reset_cache(rType, id, rTypeFieldValue);
-    }
-    else
-    {
-        if(!updateDoc_(document, indexDocument, rType)) return false;
-        ++numUpdatedDocs_;
-        searchManager_->reset_cache(rType, id, rTypeFieldValue);
-    }
-    return true;
+    return scd_writer_->Write(scddoc, DELETE_SCD);
 }
 
 bool IndexTaskService::preparePartialDocument_(
@@ -583,57 +516,6 @@ bool IndexTaskService::preparePartialDocument_(
     return true;
 }
 
-bool IndexTaskService::destroyDocument(const Value& documentValue)
-{
-    if(!backup_() )
-        return false;
-
-    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
-    if (!dirGuard)
-    {
-        LOG(ERROR) << "Index directory is corrupted";
-        return false;
-    }
-    sf1r::Status::Guard statusGuard(indexStatus_);
-    sf1r::docid_t docid;
-    izenelib::util::UString docName(asString(documentValue["DOCID"]), UString::UTF_8);
-
-    if (!idManager_->getDocIdByDocName(docName, docid, false))
-    {
-        string property;
-        docName.convertString(property, bundleConfig_->encoding_ );
-        LOG(ERROR) << "Deleted document " <<property <<" does not exist, skip it.";
-    }
-    
-    if(!deleteDoc_(docid)) return false;
-    std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
-    searchManager_->reset_cache(false, 0, rTypeFieldValue);
-
-    boost::posix_time::ptime now =
-                boost::posix_time::microsec_clock::local_time();
-    PropertyValue value;
-    std::string source = "";
-    if (!bundleConfig_->productSourceField_.empty()
-            && documentManager_->getPropertyValue(docid, bundleConfig_->productSourceField_, value))
-    {
-        if(!getPropertyValue_(value, source))
-            return false;
-
-        if(!source.empty())
-        {
-            ProductInfo productInfo;
-            productInfo.setSource(source);
-            productInfo.setCollection(bundleConfig_->collectionName_);
-            productInfo.setNum(1);
-            productInfo.setFlag("delete");
-            productInfo.setTimeStamp(now);
-            productInfo.save();
-        }
-    }
-
-    return true;
-}
-
 bool IndexTaskService::doBuildCollection_(
     const std::string& fileName,
     int op,
@@ -663,7 +545,7 @@ bool IndexTaskService::doBuildCollection_(
             return false;
     }
 
-    saveProductInfo_(op);
+    saveCollectionInfo_(op);
 
     return true;
 }
@@ -709,7 +591,6 @@ bool IndexTaskService::insertOrUpdateSCD_(
         sf1r::docid_t id = 0;
         std::string source = "";
 
-
         if (!prepareDocument_( *doc, document, indexDocument, rType, rTypeFieldValue, source, isInsert))
             continue;
 
@@ -745,7 +626,6 @@ bool IndexTaskService::insertOrUpdateSCD_(
     return true;
 }
 
-
 bool IndexTaskService::insertDoc_(Document& document, IndexerDocument& indexDocument)
 {
     CREATE_PROFILER(proDocumentIndexing, "IndexTaskService", "IndexTaskService : InsertDocument")
@@ -755,14 +635,14 @@ bool IndexTaskService::insertDoc_(Document& document, IndexerDocument& indexDocu
     {
         if(!hooker_->HookInsert(document, indexDocument)) return false;
     }
-    START_PROFILER(proDocumentIndexing); 	
+    START_PROFILER(proDocumentIndexing);
     if (documentManager_->insertDocument(document))
     {
         STOP_PROFILER(proDocumentIndexing);
 
-        START_PROFILER(proIndexing);    
+        START_PROFILER(proIndexing);
         indexManager_->insertDocument(indexDocument);
-        STOP_PROFILER(proIndexing);		
+        STOP_PROFILER(proIndexing);
         indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
         return true;
     }
@@ -895,7 +775,7 @@ bool IndexTaskService::deleteSCD_(ScdParser& parser)
         }
 
         //marks delete key to true in DB
-        
+
         if(!deleteDoc_(*iter))
         {
             LOG(WARNING) << "Cannot delete removed Document. docid. " << *iter;
@@ -916,6 +796,10 @@ bool IndexTaskService::deleteSCD_(ScdParser& parser)
 
 void IndexTaskService::saveProductInfo_(int op)
 {
+}
+
+void IndexTaskService::saveCollectionInfo_(int op)
+{
     if (bundleConfig_->productSourceField_.empty())
         return;
 
@@ -923,24 +807,24 @@ void IndexTaskService::saveProductInfo_(int op)
     for (map<std::string, uint32_t>::const_iterator iter = productSourceCount_.begin();
         iter != productSourceCount_.end(); ++iter)
     {
-        ProductInfo productInfo;
-        productInfo.setSource(iter->first);
-        productInfo.setCollection(bundleConfig_->collectionName_);
-        productInfo.setNum(iter->second);
+        ProductCount productCount;
+        productCount.setSource(iter->first);
+        productCount.setCollection(bundleConfig_->collectionName_);
+        productCount.setNum(iter->second);
         if (op == 1)
         {
-            productInfo.setFlag("insert");
+            productCount.setFlag("insert");
         }
         else if (op == 2)
         {
-            productInfo.setFlag("update");
+            productCount.setFlag("update");
         }
         else
         {
-            productInfo.setFlag("delete");
+            productCount.setFlag("delete");
         }
-        productInfo.setTimeStamp(now);
-        productInfo.save();
+        productCount.setTimeStamp(now);
+        productCount.save();
     }
 }
 
@@ -1126,7 +1010,7 @@ bool IndexTaskService::prepareDocument_(
         {
             source = fieldValue;
         }
-        
+
         if ( (propertyNameL == izenelib::util::UString("docid", encoding) )
                 && (!extraProperty))
         {
@@ -1234,7 +1118,6 @@ bool IndexTaskService::prepareDocument_(
                             indexDocument.insertProperty(
                                 indexerPropertyConfig, laInputs_[iter->getPropertyId()]);
 
-
                         document.property(fieldStr) = propertyValueU;
                         unsigned int numOfSummary = 0;
                         if ( (iter->getIsSummary() == true))
@@ -1252,7 +1135,6 @@ bool IndexTaskService::prepareDocument_(
                             document.property(fieldStr + ".blocks")
                             = sentenceOffsetList;
                         }
-
 
                         // For alias indexing
                         config_tool::PROPERTY_ALIAS_MAP_T::iterator mapIter =
@@ -1571,7 +1453,7 @@ bool IndexTaskService::backup_()
             next->copyFrom(*current);
             return true;
         }
-        catch(boost::filesystem::filesystem_error& e)
+        catch(bfs::filesystem_error& e)
         {
             LOG(ERROR) << "Failed to copy index directory " << e.what();
         }
@@ -1601,6 +1483,4 @@ std::string IndexTaskService::getScdDir() const
     return bundleConfig_->collPath_.getScdPath() + "index/";
 }
 
-
 }
-

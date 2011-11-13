@@ -1,62 +1,65 @@
-/**
- * \file ProductInfo.h
- * \brief 
- * \date Sep 9, 2011
- * \author Xin Liu
- */
-
 #ifndef _PRODUCT_INFO_H_
 #define _PRODUCT_INFO_H_
 
-#include "RDbRecordBase.h"
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include "ColumnFamilyBase.h"
+
+#include <product-manager/pm_types.h>
 
 namespace sf1r {
 
-class ProductInfo : public RDbRecordBase {
-
+class ProductInfo : public ColumnFamilyBase
+{
 public:
+    typedef std::map<time_t, ProductPriceType> PriceHistoryType;
 
-    enum Column { Source, Collection, Num, Flag, TimeStamp, EoC };
+    static const std::string SuperColumnName[];
 
-    static const char* ColumnName[EoC];
+    ProductInfo(const std::string& docId = "");
 
-    static const char* ColumnMeta[EoC];
+    ~ProductInfo();
 
-    static const char* TableName;
+    virtual bool updateRow() const;
 
-    DEFINE_RDB_RECORD_COMMON_ROUTINES(ProductInfo)
+    virtual bool deleteRow();
 
-    ProductInfo() : RDbRecordBase(),
-        sourcePresent_(false),
-        collectionPresent_(false),
-        numPresent_(false),
-        timeStampPresent_(false){}
+    virtual bool getRow();
 
-    ~ProductInfo(){}
+    virtual void resetKey(const std::string& newDocId = "");
 
-    inline const std::string & getSource() const
+    void insertHistory(ProductPriceType price);
+
+    void insertHistory(time_t timeStamp, ProductPriceType price);
+
+    void clearHistory();
+
+    bool getRangeHistory(PriceHistoryType& history, time_t from, time_t to) const;
+
+    bool getRangeHistoryBound(ProductPriceType& lower, ProductPriceType& upper, time_t from, time_t to) const;
+
+    DEFINE_COLUMN_FAMILY_COMMON_ROUTINES( ProductInfo )
+
+    inline const std::string& getDocId() const
     {
-        return source_;
+        return docId_;
     }
 
-    inline void setSource( const std::string & source )
+    inline void setDocId(const std::string& docId)
     {
-        source_ = source;
-        sourcePresent_ = true;
+        docId_ = docId;
+        docIdPresent_ = true;
     }
 
-    inline bool hasSource() const
+    inline bool hasDocId() const
     {
-        return sourcePresent_;
+        return docIdPresent_;
     }
 
-    inline const std::string & getCollection() const
+    inline const std::string& getCollection() const
     {
         return collection_;
     }
 
-    inline void setCollection( const std::string & collection )
+    inline void setCollection(const std::string& collection)
     {
         collection_ = collection;
         collectionPresent_ = true;
@@ -67,74 +70,69 @@ public:
         return collectionPresent_;
     }
 
-    inline const uint32_t getNum() const
+    inline const std::string& getSource() const
     {
-        return num_;
+        return source_;
     }
 
-    inline void setNum(const uint32_t num)
+    inline void setSource(const std::string& source)
     {
-        num_ = num;
-        numPresent_ = true;
+        source_ = source;
+        sourcePresent_ = true;
     }
 
-    inline bool hasNum() const
+    inline bool hasSource() const
     {
-        return numPresent_;
+        return sourcePresent_;
     }
 
-    inline const std::string& getFlag() const
+    inline const std::string& getTitle() const
     {
-        return flag_;
+        return title_;
     }
 
-    inline void setFlag( const std::string& flag )
+    inline void setTitle(const std::string& title)
     {
-        flag_ = flag;
-        flagPresent_ = true;
+        title_ = title;
+        titlePresent_ = true;
     }
 
-    inline bool hasFlag() const
+    inline bool hasTitle() const
     {
-        return flagPresent_;
+        return titlePresent_;
     }
 
-    inline const boost::posix_time::ptime & getTimeStamp() const
+    inline const PriceHistoryType& getPriceHistory() const
     {
-        return timeStamp_;
+        return priceHistory_;
     }
 
-    inline void setTimeStamp( const boost::posix_time::ptime & timeStamp )
+    inline void setPriceHistory(const PriceHistoryType& priceHistory)
     {
-        timeStamp_ = timeStamp;
-        timeStampPresent_ = true;
+        priceHistory_ = priceHistory;
+        priceHistoryPresent_ = true;
     }
 
-    inline bool hasTimeStamp() const
+    inline bool hasPriceHistory() const
     {
-        return timeStampPresent_;
+        return priceHistoryPresent_;
     }
-
-    void save( std::map<std::string, std::string> & rawdata );
-
-    void load( const std::map<std::string, std::string> & rawdata );
 
 private:
-
-    std::string source_;
-    bool sourcePresent_;
+    std::string docId_;
+    bool docIdPresent_;
 
     std::string collection_;
     bool collectionPresent_;
 
-    uint32_t num_;
-    bool numPresent_;
+    std::string source_;
+    bool sourcePresent_;
 
-    std::string flag_;
-    bool flagPresent_;
+    std::string title_;
+    bool titlePresent_;
 
-    boost::posix_time::ptime timeStamp_;
-    bool timeStampPresent_;
+    PriceHistoryType priceHistory_;
+    bool priceHistoryPresent_;
 };
 
 }

@@ -1,12 +1,17 @@
 #include "LogManager.h"
 #include "SFLogMessages.h"
+
 #include "RDbConnection.h"
 #include "SystemEvent.h"
 #include "UserQuery.h"
 #include "PropertyLabel.h"
-#include "ProductInfo.h"
+#include "ProductCount.h"
 #include "OrderLogger.h"
 #include "ItemLogger.h"
+
+#include "CassandraConnection.h"
+#include "ProductInfo.h"
+#include "CollectionInfo.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
@@ -46,16 +51,26 @@ namespace sf1r
     {
         SFLogMessage::initLogMsg(language);
 
-        if( !RDbConnection::instance().init(pathParam) )
+        if (!RDbConnection::instance().init(pathParam))
             return false;
 
         SystemEvent::createTable();
         UserQuery::createTable();
         PropertyLabel::createTable();
-        ProductInfo::createTable();
+        ProductCount::createTable();
         OrderLogger::createTable();
         ItemLogger::createTable();
 
+        return true;
+    }
+
+    bool LogManager::initCassandra(const std::string& logPath)
+    {
+        if (CassandraConnection::instance().init(logPath))
+        {
+            return ProductInfo::createColumnFamily() ||
+                CollectionInfo::createColumnFamily();
+        }
         return true;
     }
 
@@ -67,7 +82,7 @@ namespace sf1r
     {
         //do not delete it on file
 //          string order = "rm " + logPath;
-// 
+//
 //          RDbConnection::instance().close();
 //          std::system(order.c_str());
 //          if(!init(logPath))

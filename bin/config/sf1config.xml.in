@@ -16,6 +16,8 @@
          for mysql db: "mysql://root:123456@127.0.0.1:3306/SF1R"
     -->
     <LogConnection str="sqlite3://./log/COBRA"/>
+    <!-- To fully disable use of Cassandra, you should just set the value of str to "__disabled__" -->
+    <CassandraConnection str="cassandra://172.16.0.163:9160"/>
     <BundlesDefault>
       <!-- Index Bundle Default -->
       <IndexBundle>
@@ -57,7 +59,7 @@
           <!-- Specify multiple index directory to support backup and directory rotating -->
           <CollectionDataDirectory>default-collection-dir</CollectionDataDirectory>
           <TaxonomyPara topdocnum="100" levels="3" perlevelnum="8" candlabelnum="250" enablenec="n" maxpeopnum="20" maxlocnum="20" maxorgnum="20"/>
-          <RecommendPara recommendnum="9" popularnum="20" realtimenum="5"/>
+          <RecommendPara recommendnum="9" cron="0 2 * * *" />
           <SimilarityPara docnumlimit="100" termnumlimit="400000" enableesa="n"/>
           <ClassificationPara customizetraining="n" trainingencoding="UTF-8"/>
           <!-- index mode for image search
@@ -171,18 +173,26 @@
   <Deployment>
     <BrokerAgent usecache="n" threadnum="50" enabletest="y" port="18181"/>
 
-    <DistributedTopology enable="n" clusterid="@DEFAULT_CLUSTER_ID@" nodenum="2" >
-      <CurrentNode nodeid="1" replicaid="1" host="172.16.0.36">
-        <!--as master-->
+    <!-- Distributed Search Topology: (ids are started with 1)
+         clusterid : identity of the cluster
+         nodeid    : id of current node (sf1) in the cluster.
+         replicaid : id of current node (sf1) in a replication set.
+         shardid   : id of data shard (partition), also used as workerid.
+                     * shardids (workerids) range from 1 to 'shardnum', without break.
+                     * recommended to be consistent with nodeid, i.e., only-master node assigned the max nodeid.
+    -->
+    <DistributedTopology enable="n" clusterid="@DEFAULT_CLUSTER_ID@" nodenum="3" shardnum="2">
+      <CurrentNode host="172.16.0.36" replicaid="1" nodeid="1">
+        <!--is a Worker or not-->
+        <WorkerAgent enable="y" port="18111" shardid="1">
+          <Service name="chinese-wiki-dist"/>
+          <Service name="icson"/>
+        </WorkerAgent>
+        <!--is a Master or not-->
         <MasterAgent enable="y" port="18151" >
           <Aggregator name="chinese-wiki-dist"/>
           <Aggregator name="icson"/>
         </MasterAgent>
-        <!--as worker-->
-        <WorkerAgent enable="y" port="18111" >
-          <Service name="chinese-wiki-dist"/>
-          <Service name="icson"/>
-        </WorkerAgent>
       </CurrentNode>
     </DistributedTopology>
 

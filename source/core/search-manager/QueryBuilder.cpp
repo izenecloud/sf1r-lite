@@ -22,6 +22,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 #include <algorithm>
 
 #include <boost/token_iterator.hpp>
@@ -60,15 +61,12 @@ void QueryBuilder::reset_cache()
     filterCache_->clear();
 }
 
-bool QueryBuilder::prepare_filter(
-    const std::vector<QueryFiltering::FilteringType>& filtingList,
-    Filter* &pFilter
-)
+Filter* QueryBuilder::prepare_filter(const std::vector<QueryFiltering::FilteringType>& filtingList)
 {
-    boost::shared_ptr<EWAHBoolArray<uword32> > pDocIdSet;
+    boost::shared_ptr<EWAHBoolArray<uint32_t> > pDocIdSet;
     boost::shared_ptr<BitVector> pBitVector;
     unsigned int bitsNum = pIndexReader_->maxDoc() + 1;
-    unsigned int wordsNum = bitsNum/(sizeof(uword32) * 8) + (bitsNum % (sizeof(uword32) * 8) == 0 ? 0 : 1);
+    unsigned int wordsNum = bitsNum/(sizeof(uint32_t) * 8) + (bitsNum % (sizeof(uint32_t) * 8) == 0 ? 0 : 1);
 
     if (filtingList.size() == 1)
     {
@@ -78,7 +76,7 @@ bool QueryBuilder::prepare_filter(
         const std::vector<PropertyValue>& filterParam = filteringItem.second;
         if (!filterCache_->get(filteringItem, pDocIdSet))
         {
-            pDocIdSet.reset(new EWAHBoolArray<uword32>());
+            pDocIdSet.reset(new EWAHBoolArray<uint32_t>());
             pBitVector.reset(new BitVector(bitsNum));
             indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pBitVector);
             //Compress bit vector
@@ -88,10 +86,10 @@ bool QueryBuilder::prepare_filter(
     }
     else
     {
-        pDocIdSet.reset(new EWAHBoolArray<uword32>());
+        pDocIdSet.reset(new EWAHBoolArray<uint32_t>());
         pDocIdSet->addStreamOfEmptyWords(true, wordsNum);
-        boost::shared_ptr<EWAHBoolArray<uword32> > pDocIdSet2;
-        boost::shared_ptr<EWAHBoolArray<uword32> > pDocIdSet3;
+        boost::shared_ptr<EWAHBoolArray<uint32_t> > pDocIdSet2;
+        boost::shared_ptr<EWAHBoolArray<uint32_t> > pDocIdSet3;
         try
         {
             std::vector<QueryFiltering::FilteringType>::const_iterator iter = filtingList.begin();
@@ -102,13 +100,13 @@ bool QueryBuilder::prepare_filter(
                 const std::vector<PropertyValue>& filterParam = iter->second;
                 if (!filterCache_->get(*iter, pDocIdSet2))
                 {
-                    pDocIdSet2.reset(new EWAHBoolArray<uword32>());
+                    pDocIdSet2.reset(new EWAHBoolArray<uint32_t>());
                     pBitVector.reset(new BitVector(bitsNum));
                     indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pBitVector);
                     pBitVector->compressed(*pDocIdSet2);
                     filterCache_->set(*iter, pDocIdSet2);
                 }
-                pDocIdSet3.reset(new EWAHBoolArray<uword32>());
+                pDocIdSet3.reset(new EWAHBoolArray<uint32_t>());
                 (*pDocIdSet).rawlogicaland(*pDocIdSet2, *pDocIdSet3);
                 (*pDocIdSet).swap(*pDocIdSet3);
             }
@@ -117,24 +115,22 @@ bool QueryBuilder::prepare_filter(
         {
         }
     }
-    pFilter = new Filter(pDocIdSet);
-    return true;
+    return new Filter(pDocIdSet);
 }
 
-bool QueryBuilder::prepare_dociterator(
+MultiPropertyScorer* QueryBuilder::prepare_dociterator(
     SearchKeywordOperation& actionOperation,
     collectionid_t colID,
     const property_weight_map& propertyWeightMap,
     const std::vector<std::string>& properties,
     const std::vector<unsigned int>& propertyIds,
     bool readPositions,
-    const std::vector<std::map<termid_t, unsigned> >& termIndexMaps,
-    MultiPropertyScorer* &pDocIterator
+    const std::vector<std::map<termid_t, unsigned> >& termIndexMaps
 )
 {
     size_t size_of_properties = propertyIds.size();
 
-    pDocIterator = new MultiPropertyScorer(propertyWeightMap, propertyIds);
+    std::auto_ptr<MultiPropertyScorer> docIterPtr(new MultiPropertyScorer(propertyWeightMap, propertyIds));
     if (pIndexReader_->isDirty())
     {
         pIndexReader_ = indexManagerPtr_->getIndexReader();
@@ -144,7 +140,7 @@ bool QueryBuilder::prepare_dociterator(
     for (size_t i = 0; i < size_of_properties; i++)
     {
         prepare_for_property_(
-            pDocIterator,
+            docIterPtr.get(),
             success_properties,
             actionOperation,
             colID,
@@ -155,13 +151,10 @@ bool QueryBuilder::prepare_dociterator(
         );
     }
 
-    if (success_properties == 0)
-    {
-        delete pDocIterator;
-        pDocIterator = 0;
-    }
+    if (success_properties)
+        return docIterPtr.release();
 
-    return success_properties > 0;
+    return NULL;
 }
 
 
@@ -225,7 +218,7 @@ void QueryBuilder::prepare_for_property_(
         }
         else
         {
-            boost::shared_ptr<EWAHBoolArray<uword32> > pDocIdSet;
+            boost::shared_ptr<EWAHBoolArray<uint32_t> > pDocIdSet;
             boost::shared_ptr<BitVector> pBitVector;
 
             if (!TermTypeDetector::isTypeMatch(termStr, dataType))
@@ -246,18 +239,14 @@ void QueryBuilder::prepare_for_property_(
                 filteringRule.second = filterParam;
                 if(!filterCache_->get(filteringRule, pDocIdSet))
                 {
-                    pDocIdSet.reset(new EWAHBoolArray<uword32>());
+                    pDocIdSet.reset(new EWAHBoolArray<uint32_t>());
                     pBitVector.reset(new BitVector(pIndexReader_->numDocs() + 1));
 
                     indexManagerPtr_->getDocsByNumericValue(colID, property, value, *pBitVector);
                     pBitVector->compressed(*pDocIdSet);
                     filterCache_->set(filteringRule, pDocIdSet);
                 }
-                vector<uint> idList;
-                pDocIdSet->appendRowIDs(idList);
-
-                TermDocFreqs* pTermDocReader = 0;
-                pTermDocReader = new BitMapIterator(idList);
+                TermDocFreqs* pTermDocReader = new BitMapIterator( pDocIdSet->bit_iterator() );
                 termDocReaders[termId].push_back(pTermDocReader);
             }
         }

@@ -10,8 +10,11 @@
 #define SORT_PROPERTY_COMPARATOR_H
 
 #include <common/type_defs.h>
+#include "PropertyData.h"
 #include "ScoreDoc.h"
 #include "CustomRanker.h"
+
+#include <boost/shared_ptr.hpp>
 
 namespace sf1r{
 
@@ -23,15 +26,15 @@ public:
     int compare(ScoreDoc doc1, ScoreDoc doc2);
 
 private:
-    void* data_;
+    boost::shared_ptr<PropertyData> propertyData_;
     PropertyDataType type_;
+    void* data_;
     int (SortPropertyComparator::*comparator_)(ScoreDoc, ScoreDoc);
 
 public:
     SortPropertyComparator();
-    SortPropertyComparator(void* data, PropertyDataType type);
+    SortPropertyComparator(boost::shared_ptr<PropertyData> propData);
     SortPropertyComparator(PropertyDataType dataType);
-    ~SortPropertyComparator() {}
 
 private:
     void initComparator();

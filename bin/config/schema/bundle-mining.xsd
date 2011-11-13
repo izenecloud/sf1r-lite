@@ -63,22 +63,7 @@
         </xs:attribute>
     </xs:complexType>
     <xs:complexType name="RecommendParaType">
-        <xs:attribute name="popularnum" use="required">
-            <xs:simpleType>
-                <xs:restriction base="xs:integer">
-                    <xs:minInclusive value="1"/>
-                    <xs:maxInclusive value="50"/>
-                </xs:restriction>
-            </xs:simpleType>
-        </xs:attribute>
-        <xs:attribute name="realtimenum" use="required">
-            <xs:simpleType>
-                <xs:restriction base="xs:integer">
-                    <xs:minInclusive value="1"/>
-                    <xs:maxInclusive value="50"/>
-                </xs:restriction>
-            </xs:simpleType>
-        </xs:attribute>
+        <xs:attribute name="cron" type="xs:string" use="required" />
         <xs:attribute name="recommendnum" use="required">
             <xs:simpleType>
                 <xs:restriction base="xs:integer">

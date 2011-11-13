@@ -17,7 +17,7 @@ using namespace sf1r;
 
 
 MiningQueryLogHandler::MiningQueryLogHandler()
-        :recommendManagerList_(),collectionSet_(),waitSec_(3600), days_(7)
+:recommendManagerList_(),collectionSet_(),waitSec_(3600), days_(7), cron_started_(false)
 {
 
 }
@@ -64,6 +64,10 @@ void MiningQueryLogHandler::runEvents()
 
 bool MiningQueryLogHandler::cronStart(const std::string& cron_job)
 {
+    if(cron_started_)
+    {
+        return true;
+    }
     std::cout << "MiningQueryLogHandler cron starting : " << cron_job << std::endl;
     if (!cron_expression_.setExpression(cron_job))
     {
@@ -71,6 +75,7 @@ bool MiningQueryLogHandler::cronStart(const std::string& cron_job)
     }
     boost::function<void (void)> task = boost::bind(&MiningQueryLogHandler::cronJob_,this);
     izenelib::util::Scheduler::addJob("MiningQueryLogHandler", 60 * 1000, 0, task);
+    cron_started_ = true;
     return true;
 }
 

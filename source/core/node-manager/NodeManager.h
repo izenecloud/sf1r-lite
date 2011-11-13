@@ -27,23 +27,21 @@ namespace sf1r
 class NodeManager : public ZooKeeperEventHandler
 {
 public:
+    enum NodeStateType
+    {
+        NODE_STATE_INIT,
+        NODE_STATE_STARTING,
+        NODE_STATE_STARTING_WAIT_RETRY,
+        NODE_STATE_STARTED
+    };
+
     NodeManager();
 
     ~NodeManager();
 
     void initWithConfig(
             const DistributedTopologyConfig& dsTopologyConfig,
-            const DistributedUtilConfig& dsUtilConfig)
-    {
-        dsTopologyConfig_ = dsTopologyConfig;
-        dsUtilConfig_ = dsUtilConfig;
-
-        NodeDef::setClusterIdNodeName(dsTopologyConfig_.clusterId_);
-
-        initZooKeeper(dsUtilConfig_.zkConfig_.zkHosts_, dsUtilConfig_.zkConfig_.zkRecvTimeout_);
-
-        initZKNodes();
-    }
+            const DistributedUtilConfig& dsUtilConfig);
 
     const DistributedTopologyConfig& getDSTopologyConfig() const
     {
@@ -55,60 +53,51 @@ public:
         return dsUtilConfig_;
     }
 
-    bool isInited()
+    const SF1NodeInfo& getNodeInfo() const
     {
-        return inited_;
+        return nodeInfo_;
     }
 
 public:
-    void initZooKeeper(const std::string& zkHosts, const int recvTimeout);
-
-    void setCurrentNodeInfo(SF1NodeInfo& sf1NodeInfo);
+    /**
+     * Start node manager
+     */
+    void start();
 
     /**
-     * Register SF1 node for start up.
+     * Stop node manager
      */
-    void registerNode();
-
-    /**
-     * Register Master on current SF1 node.
-     */
-    void registerMaster(unsigned int port);
-
-    /**
-     * Register Worker on current SF1 node.
-     */
-    void registerWorker(unsigned int port);
-
-    /**
-     * Deregister SF1 node on exit
-     */
-    void deregisterNode();
+    void stop();
 
     virtual void process(ZooKeeperEvent& zkEvent);
 
 private:
-    void ensureNodeParents(nodeid_t nodeId, replicaid_t replicaId);
+    void initZooKeeper(const std::string& zkHosts, const int recvTimeout);
 
-    void initZKNodes();
+    /**
+     * Make sure zookeeper namaspace (znodes) is initialized properly
+     * for all distributed coordination tasks.
+     */
+    void initZkNameSpace();
 
-    void retryRegister();
+    void enterCluster();
+
+    /**
+     * Deregister SF1 node on exit
+     */
+    void leaveCluster();
 
 private:
     DistributedTopologyConfig dsTopologyConfig_;
     DistributedUtilConfig dsUtilConfig_;
 
-    bool inited_;
-
     boost::shared_ptr<ZooKeeper> zookeeper_;
 
-    bool registercalled_;
-    bool registered_;
+    // node state
+    NodeStateType nodeState_;
+
     SF1NodeInfo nodeInfo_;
     std::string nodePath_;
-
-    unsigned int masterPort_;
-    unsigned int workerPort_;
 
     boost::mutex mutex_;
 };

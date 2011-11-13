@@ -8,7 +8,7 @@
 using namespace sf1r;
 
 ProductManager::ProductManager(ProductDataSource* data_source, OperationProcessor* op_processor, const PMConfig& config)
-:data_source_(data_source), op_processor_(op_processor), uuid_gen_(new UuidGenerator()), backup_(NULL), config_(config), inhook_(false)
+:data_source_(data_source), op_processor_(op_processor), backup_(NULL), config_(config), inhook_(false)
 {
     if(config_.backup_path!="")
     {
@@ -18,7 +18,6 @@ ProductManager::ProductManager(ProductDataSource* data_source, OperationProcesso
 
 ProductManager::~ProductManager()
 {
-    delete uuid_gen_;
 }
 
 bool ProductManager::Recover()
@@ -36,12 +35,12 @@ bool ProductManager::Recover()
     return true;
 }
 
-
 bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager::IndexerDocument& index_document)
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
-    izenelib::util::UString uuid = uuid_gen_->Gen(doc);
+    izenelib::util::UString uuid;
+    generateUUID(uuid, doc);
     if(!data_source_->SetUuid(index_document, uuid)) return false;
     PMDocumentType new_doc(doc);
     doc.property(config_.uuid_property_name) = uuid;
@@ -73,7 +72,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
     }
     else
     {
-        //need not to update(insert) to.uuid, 
+        //need not to update(insert) to.uuid,
         ProductPrice from_price;
         ProductPrice to_price;
         if(!GetPrice_(fromid, from_price)) return false;
@@ -90,7 +89,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
             diff_properties.property(config_.docid_property_name) = from_uuid;
             //auto r_type? itemcount no need?
 //                 diff_properties.property(config_.itemcount_property_name) = izenelib::util::UString(boost::lexical_cast<std::string>(docid_list.size()+1), izenelib::util::UString::UTF_8);
-            
+
             op_processor_->Append( 2, diff_properties );
         }
     }
@@ -171,7 +170,6 @@ bool ProductManager::GenOperations()
     */
 }
 
-
 bool ProductManager::UpdateADoc(const Document& doc, bool backup)
 {
     if(!UpdateADoc_(doc))
@@ -195,8 +193,6 @@ bool ProductManager::UpdateADoc_(const Document& doc)
     op_processor_->Append(2, doc);
     return true;
 }
-
-
 
 bool ProductManager::AddGroupWithInfo(const std::vector<izenelib::util::UString>& docid_list, const Document& doc, bool backup)
 {
@@ -251,12 +247,12 @@ bool ProductManager::AddGroupWithInfo(const std::vector<uint32_t>& docid_list, c
         return false;
     }
     //call updateA
-    
+
     if(!AppendToGroup_(uuid, uuid_docid_list, docid_list, doc))
     {
         return false;
     }
-    
+
     if(!GenOperations())
     {
         return false;
@@ -278,7 +274,7 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib:
     }
     boost::mutex::scoped_lock lock(human_mutex_);
     std::cout<<"ProductManager::AddGroup"<<std::endl;
-    if(docid_list.size()<2) 
+    if(docid_list.size()<2)
     {
         error_ = "Docid list size must larger than 1";
         return false;
@@ -329,7 +325,7 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib:
 
 bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& uuid_docid_list, const std::vector<uint32_t>& docid_list, const PMDocumentType& uuid_doc)
 {
-    if(docid_list.empty()) 
+    if(docid_list.empty())
     {
         error_ = "Docid list size must larger than 0";
         return false;
@@ -365,17 +361,14 @@ bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const s
             return false;
         }
     }
-    
-    
+
     std::vector<uint32_t> all_docid_list(uuid_docid_list);
     all_docid_list.insert(all_docid_list.end(), docid_list.begin(), docid_list.end());
     ProductPrice price;
     GetPrice_(all_docid_list, price);
 //     std::cout<<"validation finished here."<<std::endl;
     //validation finished here.
-    
-    
-    
+
     //commit firstly, then update DM and IM
     for(uint32_t i=0;i<uuid_list.size();i++)
     {
@@ -411,7 +404,7 @@ bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const s
         output.property(config_.price_property_name) = price.ToUString();
         op_processor_->Append(2, output);
     }
-    
+
     //update DM and IM then
     if(!data_source_->UpdateUuid(docid_list, uuid))
     {
@@ -453,7 +446,7 @@ bool ProductManager::AppendToGroup(const izenelib::util::UString& uuid, const st
     }
     return true;
 }
-    
+
 bool ProductManager::RemoveFromGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, bool backup)
 {
     if(inhook_)
@@ -463,7 +456,7 @@ bool ProductManager::RemoveFromGroup(const izenelib::util::UString& uuid, const 
     }
     boost::mutex::scoped_lock lock(human_mutex_);
     std::cout<<"ProductManager::RemoveFromGroup"<<std::endl;
-    if(docid_list.empty()) 
+    if(docid_list.empty())
     {
         error_ = "Docid list size must larger than 0";
         return false;
@@ -507,7 +500,7 @@ bool ProductManager::RemoveFromGroup(const izenelib::util::UString& uuid, const 
             return false;
         }
     }
-    
+
     if( remain.empty())
     {
         PMDocumentType del_doc;
@@ -519,7 +512,7 @@ bool ProductManager::RemoveFromGroup(const izenelib::util::UString& uuid, const 
         ProductPrice price;
         GetPrice_(remain, price);
         //validation finished here.
-        
+
         PMDocumentType update_doc;
         update_doc.property(config_.docid_property_name) = uuid;
         SetItemCount_(update_doc, remain.size());
@@ -530,7 +523,7 @@ bool ProductManager::RemoveFromGroup(const izenelib::util::UString& uuid, const 
     for(uint32_t i=0;i<doc_list.size();i++)
     {
         //TODO need to be more strong here.
-        uuid_list[i] = uuid_gen_->Gen(doc_list[i]);
+        generateUUID(uuid_list[i], doc_list[i]);
         doc_list[i].property(config_.docid_property_name) = uuid_list[i];
         SetItemCount_(doc_list[i], doc_list.size());
         doc_list[i].eraseProperty(config_.uuid_property_name);
@@ -613,5 +606,3 @@ void ProductManager::SetItemCount_(PMDocumentType& doc, uint32_t item_count)
 {
     doc.property(config_.itemcount_property_name) = izenelib::util::UString(boost::lexical_cast<std::string>(item_count), izenelib::util::UString::UTF_8);
 }
-
-

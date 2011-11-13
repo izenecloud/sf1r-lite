@@ -67,6 +67,8 @@ public:
 
     void clearShardKeys() { shardKeys_.clear(); }
 
+    bool isShardKeysEmpty() { return shardKeys_.empty(); }
+
 private:
     unsigned int shardNum_;
     std::set<std::string> shardKeys_;

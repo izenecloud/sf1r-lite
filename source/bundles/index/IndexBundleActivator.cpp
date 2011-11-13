@@ -78,6 +78,7 @@ void IndexBundleActivator::start( IBundleContext::ConstPtr context )
 
 void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
 {
+    indexManager_->flush();
     if(miningSearchTracker_)
     {
         miningSearchTracker_->stopTracking();
