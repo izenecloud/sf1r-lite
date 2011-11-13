@@ -31,13 +31,16 @@ const std::size_t kDefaultMinFreq = 1;
 
 const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
 
-void convertPropertyValue(
+void renderPropertyValue(
     const sf1r::PropertyValue& propValue,
-    std::string& str
+    izenelib::driver::Value& renderValue
 )
 {
     const izenelib::util::UString& ustr = propValue.get<izenelib::util::UString>();
-    ustr.convertString(str, ENCODING_TYPE);
+    std::string utf8;
+    ustr.convertString(utf8, ENCODING_TYPE);
+
+    renderValue = utf8;
 }
 
 const std::string DOCID("DOCID");
@@ -972,8 +975,7 @@ void RecommendController::renderRecommendResult(const RecommendParam& param, con
             it != endIt; ++it)
         {
             const std::string& propName = docIdToItemId(it->first);
-            convertPropertyValue(it->second,
-                                 itemValue[propName].get<std::string>());
+            renderPropertyValue(it->second, itemValue[propName]);
         }
 
         const std::vector<ReasonItem>& reasonItems = recIt->reasonItems_;
@@ -991,8 +993,7 @@ void RecommendController::renderRecommendResult(const RecommendParam& param, con
                 Document::property_const_iterator findIt = reasonItem.findProperty(DOCID);
                 if (findIt != reasonItem.propertyEnd())
                 {
-                    convertPropertyValue(findIt->second,
-                                         value[ITEMID].get<std::string>());
+                    renderPropertyValue(findIt->second, value[ITEMID]);
                 }
 
                 if(! it->value_.empty())
@@ -1120,8 +1121,7 @@ void RecommendController::renderBundleResult(const std::vector<ItemBundle>& bund
                 it != endIt; ++it)
             {
                 const std::string& propName = docIdToItemId(it->first);
-                convertPropertyValue(it->second,
-                                     itemValue[propName].get<std::string>());
+                renderPropertyValue(it->second, itemValue[propName]);
             }
         }
     }
