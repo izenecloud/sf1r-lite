@@ -117,7 +117,6 @@ T fromBytes(const std::string& str)
 }
 
 #define DEFINE_COLUMN_FAMILY_COMMON_ROUTINES(ClassName) \
-public: \
     static const ColumnType column_type; \
     static const std::string cf_name; \
     static const std::string cf_column_type; \
@@ -170,7 +169,17 @@ public: \
         return ::sf1r::getSingleCount<ClassName>(count, key, start, finish); \
     } \
     \
-    static bool getMultiSlice(std::vector<ClassName>& row_list, const std::vector<std::string>& key_list, const std::string& start, const std::string& finish); \
+    static bool getMultiSlice( \
+            std::map<std::string, ClassName>& row_map, \
+            const std::vector<std::string>& key_list, \
+            const std::string& start, \
+            const std::string& finish); \
+    \
+    static bool getMultiCount( \
+            std::map<std::string, int32_t>& count_map, \
+            const std::vector<std::string>& key_list, \
+            const std::string& start, \
+            const std::string& finish); \
 
 
 }

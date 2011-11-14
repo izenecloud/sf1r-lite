@@ -43,15 +43,15 @@ ProductBundleActivator::ProductBundleActivator()
 
 ProductBundleActivator::~ProductBundleActivator()
 {
-    if(data_source_!=0)
+    if(data_source_)
     {
         delete data_source_;
     }
-    if(op_processor_!=0)
+    if(op_processor_)
     {
         delete op_processor_;
     }
-    if(scd_receiver_!=0)
+    if(scd_receiver_)
     {
         delete scd_receiver_;
     }

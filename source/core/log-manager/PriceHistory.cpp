@@ -86,6 +86,82 @@ const string& PriceHistory::getKey() const
     return uuid_;
 }
 
+bool PriceHistory::getMultiSlice(
+        map<string, PriceHistory>& row_map,
+        const vector<string>& key_list,
+        const string& start,
+        const string& finish)
+{
+    if (!CassandraConnection::instance().isEnabled()) return false;
+    try
+    {
+        ColumnParent col_parent;
+        col_parent.__set_column_family(cf_name);
+
+        SlicePredicate pred;
+        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
+        pred.slice_range.__set_start(start);
+        pred.slice_range.__set_finish(finish);
+
+        map<string, vector<ColumnOrSuperColumn> > raw_column_map;
+        CassandraConnection::instance().getCassandraClient()->getMultiSlice(
+                raw_column_map,
+                key_list,
+                col_parent,
+                pred);
+        if (raw_column_map.empty()) return true;
+
+        for (map<string, vector<ColumnOrSuperColumn> >::const_iterator mit = raw_column_map.begin();
+                mit != raw_column_map.end(); ++mit)
+        {
+            row_map[mit->first] = PriceHistory(mit->first);
+            PriceHistory& price_history = row_map[mit->first];
+            for (vector<ColumnOrSuperColumn>::const_iterator vit = mit->second.begin();
+                    vit != mit->second.end(); ++vit)
+            {
+                price_history.insert(vit->column.name, vit->column.value);
+            }
+        }
+    }
+    catch (const InvalidRequestException &ire)
+    {
+        cout << ire.why << endl;
+        return false;
+    }
+    return true;
+}
+
+bool PriceHistory::getMultiCount(
+        map<string, int32_t>& count_map,
+        const vector<string>& key_list,
+        const string& start,
+        const string& finish)
+{
+    if (!CassandraConnection::instance().isEnabled()) return false;
+    try
+    {
+        ColumnParent col_parent;
+        col_parent.__set_column_family(cf_name);
+
+        SlicePredicate pred;
+        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
+        pred.slice_range.__set_start(start);
+        pred.slice_range.__set_finish(finish);
+
+        CassandraConnection::instance().getCassandraClient()->getMultiCount(
+                count_map,
+                key_list,
+                col_parent,
+                pred);
+    }
+    catch (const InvalidRequestException &ire)
+    {
+        cout << ire.why << endl;
+        return false;
+    }
+    return true;
+}
+
 bool PriceHistory::updateRow() const
 {
     if (!CassandraConnection::instance().isEnabled() || uuid_.empty()) return false;
