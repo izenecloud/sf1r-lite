@@ -145,7 +145,7 @@ void iterateVisitManager(const VisitMap& visitMap, VisitManager& visitManager)
 }
 
 void checkCoVisitResult(
-    CoVisitManager* coVisitManager,
+    CoVisitManager& coVisitManager,
     itemid_t inputItem,
     const char* recItemStr
 )
@@ -160,8 +160,8 @@ void checkCoVisitResult(
     sort(goldRecItems.begin(), goldRecItems.end());
 
     vector<itemid_t> results;
-    coVisitManager->getCoVisitation(goldRecItems.size() + 10,
-                                    inputItem, results);
+    coVisitManager.getCoVisitation(goldRecItems.size() + 10,
+                                   inputItem, results);
     sort(results.begin(), results.end());
 
     BOOST_CHECK_EQUAL_COLLECTIONS(results.begin(), results.end(),
@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE(checkVisit)
     bfs::path sessionDBPath(bfs::path(TEST_DIR_STR) / SESSION_DB_STR);
     bfs::path covisitPath(bfs::path(TEST_DIR_STR) / COVISIT_DIR_STR);
 
-    CoVisitManager* coVisitManager = new CoVisitManager(covisitPath.string());
+    CoVisitManager coVisitManager(covisitPath.string());
     VisitMap visitMap;
     SessionMap sessionMap;
     RecommendMap recommendMap;
@@ -248,8 +248,6 @@ BOOST_AUTO_TEST_CASE(checkVisit)
 
         visitManager.flush();
     }
-
-    delete coVisitManager;
 }
 
 BOOST_AUTO_TEST_SUITE_END() 

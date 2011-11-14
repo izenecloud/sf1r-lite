@@ -24,7 +24,7 @@ void copyIncludeItems(
 
     for (std::size_t i = 0; i < includeNum; ++i)
     {
-        recItem.itemId_ = param.includeItemIds[i];
+        recItem.item_.setId(param.includeItemIds[i]);
         recItemVec.push_back(recItem);
     }
 

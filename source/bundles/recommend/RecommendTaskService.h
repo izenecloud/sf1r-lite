@@ -11,6 +11,7 @@
 
 #include <util/osgi/IService.h>
 #include <util/cronexpression.h>
+#include <common/JobScheduler.h>
 
 #include <string>
 #include <vector>
@@ -20,7 +21,6 @@
 namespace sf1r
 {
 class User;
-class Item;
 class UserManager;
 class ItemManager;
 class VisitManager;
@@ -30,7 +30,7 @@ class OrderManager;
 class EventManager;
 class RateManager;
 class RecommendBundleConfiguration;
-class JobScheduler;
+class ItemIdGenerator;
 struct RateParam;
 
 namespace directory
@@ -42,18 +42,18 @@ class RecommendTaskService : public ::izenelib::osgi::IService
 {
 public:
     RecommendTaskService(
-        RecommendBundleConfiguration* bundleConfig,
-        directory::DirectoryRotator* directoryRotator,
-        UserManager* userManager,
-        ItemManager* itemManager,
-        VisitManager* visitManager,
-        PurchaseManager* purchaseManager,
-        CartManager* cartManager,
-        OrderManager* orderManager,
-        EventManager* eventManager,
-        RateManager* rateManager,
-        RecIdGenerator* userIdGenerator,
-        RecIdGenerator* itemIdGenerator
+        RecommendBundleConfiguration& bundleConfig,
+        directory::DirectoryRotator& directoryRotator,
+        UserManager& userManager,
+        ItemManager& itemManager,
+        VisitManager& visitManager,
+        PurchaseManager& purchaseManager,
+        CartManager& cartManager,
+        OrderManager& orderManager,
+        EventManager& eventManager,
+        RateManager& rateManager,
+        UserIdGenerator& userIdGenerator,
+        ItemIdGenerator& itemIdGenerator
     );
 
     ~RecommendTaskService();
@@ -77,21 +77,6 @@ public:
      * @p userIdStr must not be empty.
      */
     bool removeUser(const std::string& userIdStr);
-
-    /**
-     * @p item.idStr_ must not be empty.
-     */
-    bool addItem(const Item& item);
-
-    /**
-     * @p item.idStr_ must not be empty.
-     */
-    bool updateItem(const Item& item);
-
-    /**
-     * @p itemIdStr must not be empty.
-     */
-    bool removeItem(const std::string& itemIdStr);
 
     /**
      * @p sessionIdStr, @p userIdStr and @p itemIdStr must not be empty.
@@ -203,18 +188,6 @@ private:
     bool parseUserSCD_(const std::string& scdPath);
 
     /**
-     * Load item SCD files.
-     */
-    bool loadItemSCD_();
-
-    /**
-     * Parse item SCD file.
-     * @param scdPath the item SCD file path
-     * @return true for success, false for failure
-     */
-    bool parseItemSCD_(const std::string& scdPath);
-
-    /**
      * Load order SCD files.
      */
     bool loadOrderSCD_();
@@ -278,21 +251,21 @@ private:
     void flush_();
 
 private:
-    RecommendBundleConfiguration* bundleConfig_;
-    directory::DirectoryRotator* directoryRotator_;
+    RecommendBundleConfiguration& bundleConfig_;
+    directory::DirectoryRotator& directoryRotator_;
 
-    UserManager* userManager_;
-    ItemManager* itemManager_;
-    VisitManager* visitManager_;
-    PurchaseManager* purchaseManager_;
-    CartManager* cartManager_;
-    OrderManager* orderManager_;
-    EventManager* eventManager_;
-    RateManager* rateManager_;
-    RecIdGenerator* userIdGenerator_;
-    RecIdGenerator* itemIdGenerator_;
+    UserManager& userManager_;
+    ItemManager& itemManager_;
+    VisitManager& visitManager_;
+    PurchaseManager& purchaseManager_;
+    CartManager& cartManager_;
+    OrderManager& orderManager_;
+    EventManager& eventManager_;
+    RateManager& rateManager_;
+    UserIdGenerator& userIdGenerator_;
+    ItemIdGenerator& itemIdGenerator_;
 
-    JobScheduler* jobScheduler_;
+    JobScheduler jobScheduler_;
 
     izenelib::util::CronExpression cronExpression_;
     const std::string cronJobName_;

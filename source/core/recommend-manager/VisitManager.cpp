@@ -11,7 +11,7 @@ VisitManager::VisitManager(
     const std::string& visitDBPath,
     const std::string& recommendDBPath,
     const std::string& sessionDBPath,
-    CoVisitManager* coVisitManager
+    CoVisitManager& coVisitManager
 )
     : visitDB_(visitDBPath)
     , recommendDB_(recommendDBPath)
@@ -30,7 +30,7 @@ void VisitManager::flush()
         visitDB_.flush();
         recommendDB_.flush();
         sessionDB_.flush();
-        coVisitManager_->flush();
+        coVisitManager_.flush();
     }
     catch(izenelib::util::IZENELIBException& e)
     {
@@ -207,7 +207,7 @@ bool VisitManager::updateSessionDB_(
                 }
             }
 
-            coVisitManager_->visit(oldItems, newItems);
+            coVisitManager_.visit(oldItems, newItems);
         }
 
         return result;

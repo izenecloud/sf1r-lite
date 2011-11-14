@@ -1,5 +1,4 @@
 #include "PurchaseManager.h"
-#include "ItemManager.h"
 
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
@@ -9,12 +8,10 @@ namespace sf1r
 
 PurchaseManager::PurchaseManager(
     const std::string& path,
-    ItemCFManager* itemCFManager,
-    const ItemManager* itemManager
+    ItemCFManager& itemCFManager
 )
     : container_(path)
     , itemCFManager_(itemCFManager)
-    , itemManager_(itemManager)
 {
     container_.open();
 }
@@ -29,7 +26,7 @@ void PurchaseManager::flush()
     try
     {
         container_.flush();
-        itemCFManager_->flush();
+        itemCFManager_.flush();
     }
     catch(izenelib::util::IZENELIBException& e)
     {
@@ -80,11 +77,11 @@ bool PurchaseManager::addPurchaseItem(
 
         if (isUpdateSimMatrix)
         {
-            itemCFManager_->updateMatrix(oldItems, newItems);
+            itemCFManager_.updateMatrix(oldItems, newItems);
         }
         else
         {
-            itemCFManager_->updateVisitMatrix(oldItems, newItems);
+            itemCFManager_.updateVisitMatrix(oldItems, newItems);
         }
     }
 
@@ -93,7 +90,7 @@ bool PurchaseManager::addPurchaseItem(
 
 void PurchaseManager::buildSimMatrix()
 {
-    itemCFManager_->buildSimMatrix();
+    itemCFManager_.buildSimMatrix();
 }
 
 bool PurchaseManager::getPurchaseItemSet(userid_t userId, ItemIdSet& itemIdSet)

@@ -9,35 +9,22 @@
 #include <recommend-manager/EventManager.h>
 #include <recommend-manager/RateManager.h>
 #include <recommend-manager/RecommenderFactory.h>
+#include <recommend-manager/ItemIdGenerator.h>
+#include <bundles/index/IndexSearchService.h>
 
 #include <common/SFLogger.h>
 
 #include <memory> // auto_ptr
 
-#include <boost/filesystem.hpp>
+#include <glog/logging.h>
+
+namespace bfs = boost::filesystem;
 
 namespace sf1r
 {
 
 RecommendBundleActivator::RecommendBundleActivator()
     :context_(NULL)
-    ,taskService_(NULL)
-    ,taskServiceReg_(NULL)
-    ,searchService_(NULL)
-    ,searchServiceReg_(NULL)
-    ,userManager_(NULL)
-    ,itemManager_(NULL)
-    ,visitManager_(NULL)
-    ,purchaseManager_(NULL)
-    ,cartManager_(NULL)
-    ,orderManager_(NULL)
-    ,eventManager_(NULL)
-    ,rateManager_(NULL)
-    ,recommenderFactory_(NULL)
-    ,userIdGenerator_(NULL)
-    ,itemIdGenerator_(NULL)
-    ,coVisitManager_(NULL)
-    ,itemCFManager_(NULL)
 {
 }
 
@@ -48,157 +35,104 @@ RecommendBundleActivator::~RecommendBundleActivator()
 void RecommendBundleActivator::start(IBundleContext::ConstPtr context)
 {
     context_ = context;
+    config_ = static_pointer_cast<RecommendBundleConfiguration>(context_->getBundleConfig());
 
-    config_ = static_pointer_cast<RecommendBundleConfiguration>(context->getBundleConfig());
-
-    init_();
-
-    Properties props;
-    props.put("collection", config_->collectionName_);
-    taskServiceReg_ = context->registerService("RecommendTaskService", taskService_, props);
-    searchServiceReg_ = context->registerService("RecommendSearchService", searchService_, props);
+    indexSearchTracker_.reset(new ServiceTracker(context, "IndexSearchService", this));
+    indexSearchTracker_->startTracking();
 }
 
 void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
 {
+    if(indexSearchTracker_)
+    {
+        indexSearchTracker_->stopTracking();
+        indexSearchTracker_.reset();
+    }
+
     if (taskServiceReg_)
     {
         taskServiceReg_->unregister();
-        delete taskServiceReg_;
-        delete taskService_;
-        taskServiceReg_ = NULL;
-        taskService_ = NULL;
+        taskServiceReg_.reset();
+        taskService_.reset();
     }
 
     if (searchServiceReg_)
     {
         searchServiceReg_->unregister();
-        delete searchServiceReg_;
-        delete searchService_;
-        searchServiceReg_ = NULL;
-        searchService_ = NULL;
+        searchServiceReg_.reset();
+        searchService_.reset();
     }
 
-    delete userManager_;
-    delete itemManager_;
-    delete visitManager_;
-    delete purchaseManager_;
-    delete cartManager_;
-    delete orderManager_;
-    delete eventManager_;
-    delete rateManager_;
-    delete recommenderFactory_;
-    delete userIdGenerator_;
-    delete itemIdGenerator_;
-    delete coVisitManager_;
-    delete itemCFManager_;
-    userManager_ = NULL;
-    itemManager_ = NULL;
-    visitManager_ = NULL;
-    purchaseManager_ = NULL;
-    cartManager_ = NULL;
-    orderManager_ = NULL;
-    eventManager_ = NULL;
-    rateManager_ = NULL;
-    recommenderFactory_ = NULL;
-    userIdGenerator_ = NULL;
-    itemIdGenerator_ = NULL;
-    coVisitManager_ = NULL;
-    itemCFManager_ = NULL;
+    userManager_.reset();
+    itemManager_.reset();
+    visitManager_.reset();
+    purchaseManager_.reset();
+    cartManager_.reset();
+    orderManager_.reset();
+    eventManager_.reset();
+    rateManager_.reset();
+    recommenderFactory_.reset();
+    userIdGenerator_.reset();
+    itemIdGenerator_.reset();
+    coVisitManager_.reset();
+    itemCFManager_.reset();
 }
 
-bool RecommendBundleActivator::init_()
+bool RecommendBundleActivator::addingService(const ServiceReference& ref)
 {
-    // create SCD directories
-    boost::filesystem::create_directories(config_->userSCDPath());
-    boost::filesystem::create_directories(config_->itemSCDPath());
-    boost::filesystem::create_directories(config_->orderSCDPath());
+    if (ref.getServiceName() == "IndexSearchService")
+    {
+        Properties props = ref.getServiceProperties();
+        if (props.get("collection") == config_->collectionName_)
+        {
+            IndexSearchService* service = reinterpret_cast<IndexSearchService*>(const_cast<IService*>(ref.getService()));
+            if (! init_(service))
+            {
+                LOG(ERROR) << "failed in RecommendBundleActivator::init_(), collection:  " << config_->collectionName_;
+                return false;
+            }
 
-    // create data directory
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void RecommendBundleActivator::removedService(const ServiceReference& ref)
+{
+}
+
+bool RecommendBundleActivator::init_(IndexSearchService* indexSearchService)
+{
+    createSCDDir_();
+
+    if (! createDataDir_())
+        return false;
+
+    createUser_();
+    createItem_(indexSearchService);
+    createMining_();
+    createEvent_();
+    createOrder_();
+    createRecommender_();
+    createService_();
+
+    return true;
+}
+
+bool RecommendBundleActivator::createDataDir_()
+{
     std::string dir;
-    openDataDirectory_(dir);
-    boost::filesystem::path dataDir(dir);
-    boost::filesystem::create_directories(dataDir);
+    if (! openDataDirectory_(dir))
+    {
+        LOG(ERROR) << "failed in RecommendBundleActivator::openDataDirectory_(), collection: "
+                   << config_->collectionName_;
+        return false;
+    }
 
-    boost::filesystem::path userDir = dataDir / "user";
-    boost::filesystem::create_directory(userDir);
-    auto_ptr<UserManager> userManagerPtr(new UserManager((userDir / "user.db").string()));
-
-    boost::filesystem::path itemDir = dataDir / "item";
-    boost::filesystem::create_directory(itemDir);
-    auto_ptr<ItemManager> itemManagerPtr(new ItemManager((itemDir / "item.db").string(),
-                                                         (itemDir / "max_itemid.txt").string()));
-
-    boost::filesystem::path miningDir = dataDir / "mining";
-    boost::filesystem::create_directory(miningDir);
-
-    boost::filesystem::path cfPath = miningDir / "cf";
-    boost::filesystem::create_directory(cfPath);
-    const std::size_t matrixSize = config_->purchaseCacheSize_ >> 1;
-    auto_ptr<ItemCFManager> itemCFManagerPtr(new ItemCFManager((cfPath / "covisit").string(), matrixSize,
-                                                               (cfPath / "sim").string(), matrixSize,
-                                                               (cfPath / "nb.sdb").string(), 30));
-
-    auto_ptr<CoVisitManager> coVisitManagerPtr(new CoVisitManager((miningDir / "covisit").string(),
-                                                                  config_->visitCacheSize_));
-
-    boost::filesystem::path eventDir = dataDir / "event";
-    boost::filesystem::create_directory(eventDir);
-
-    auto_ptr<VisitManager> visitManagerPtr(new VisitManager((eventDir / "visit_item.db").string(),
-                                                            (eventDir / "visit_recommend.db").string(),
-                                                            (eventDir / "visit_session.db").string(),
-                                                            coVisitManagerPtr.get()));
-
-    auto_ptr<PurchaseManager> purchaseManagerPtr(new PurchaseManager((eventDir / "purchase.db").string(),
-                                                                     itemCFManagerPtr.get(),
-                                                                     itemManagerPtr.get()));
-
-    auto_ptr<CartManager> cartManagerPtr(new CartManager((eventDir / "cart.db").string()));
-    auto_ptr<EventManager> eventManagerPtr(new EventManager((eventDir / "event.db").string()));
-    auto_ptr<RateManager> rateManagerPtr(new RateManager((eventDir / "rate.db").string()));
-
-    boost::filesystem::path orderDir = dataDir / "order";
-    boost::filesystem::create_directory(orderDir);
-    auto_ptr<OrderManager> orderManagerPtr(new OrderManager(orderDir.string(),
-                                                            itemManagerPtr.get(),
-                                                            config_->indexCacheSize_));
-    orderManagerPtr->setMinThreshold(config_->itemSetMinFreq_);
-
-    auto_ptr<RecommenderFactory> recommenderFactoryPtr(new RecommenderFactory(*itemManagerPtr,
-                                                                              *visitManagerPtr, *purchaseManagerPtr,
-                                                                              *cartManagerPtr, *orderManagerPtr,
-                                                                              *eventManagerPtr, *rateManagerPtr,
-                                                                              *coVisitManagerPtr, *itemCFManagerPtr));
-
-    boost::filesystem::path idDir = dataDir / "id";
-    boost::filesystem::create_directory(idDir);
-
-    auto_ptr<RecIdGenerator> userIdGeneratorPtr(new RecIdGenerator((idDir / "userid").string()));
-    auto_ptr<RecIdGenerator> itemIdGeneratorPtr(new RecIdGenerator((idDir / "itemid").string()));
-
-    userManager_ = userManagerPtr.release();
-    itemManager_ = itemManagerPtr.release();
-    visitManager_ = visitManagerPtr.release();
-    purchaseManager_ = purchaseManagerPtr.release();
-    cartManager_ = cartManagerPtr.release();
-    orderManager_ = orderManagerPtr.release();
-    eventManager_ = eventManagerPtr.release();
-    rateManager_ = rateManagerPtr.release();
-    recommenderFactory_ = recommenderFactoryPtr.release();
-
-    userIdGenerator_ = userIdGeneratorPtr.release();
-    itemIdGenerator_ = itemIdGeneratorPtr.release();
-
-    coVisitManager_ = coVisitManagerPtr.release();
-    itemCFManager_ = itemCFManagerPtr.release();
-
-    taskService_ = new RecommendTaskService(config_.get(), &directoryRotator_, userManager_, itemManager_,
-                                            visitManager_, purchaseManager_, cartManager_, orderManager_,
-                                            eventManager_, rateManager_, userIdGenerator_, itemIdGenerator_);
-    searchService_ = new RecommendSearchService(userManager_, itemManager_, recommenderFactory_,
-                                                userIdGenerator_, itemIdGenerator_);
-
+    dataDir_ = dir;
+    bfs::create_directories(dataDir_);
     return true;
 }
 
@@ -210,20 +144,20 @@ bool RecommendBundleActivator::openDataDirectory_(std::string& dataDir)
         std::cout<<"no data dir config"<<std::endl;
         return false;
     }
+
     directoryRotator_.setCapacity(directories.size());
     typedef std::vector<std::string>::const_iterator iterator;
-    namespace bfs = boost::filesystem;
-    boost::filesystem::path dataPath = config_->collPath_.getCollectionDataPath();
+    bfs::path dataPath = config_->collPath_.getCollectionDataPath();
     for (iterator it = directories.begin(); it != directories.end(); ++it)
     {
-        boost::filesystem::path dir = dataPath / *it;
+        bfs::path dir = dataPath / *it;
         if (!directoryRotator_.appendDirectory(dir))
 	{
 	  std::string msg = dir.file_string() + " corrupted, delete it!";
 	  sflog->error( SFL_SYS, msg.c_str() ); 
 	  std::cout<<msg<<std::endl;
 	  //clean the corrupt dir
-	  boost::filesystem::remove_all(dir);
+	  bfs::remove_all(dir);
 	  directoryRotator_.appendDirectory(dir);
 	}
     }
@@ -237,6 +171,102 @@ bool RecommendBundleActivator::openDataDirectory_(std::string& dataDir)
     }
 
     return false;
+}
+
+void RecommendBundleActivator::createSCDDir_()
+{
+    bfs::create_directories(config_->userSCDPath());
+    bfs::create_directories(config_->orderSCDPath());
+}
+
+void RecommendBundleActivator::createUser_()
+{
+    bfs::path userDir = dataDir_ / "user";
+    bfs::create_directory(userDir);
+    userManager_.reset(new UserManager((userDir / "user.db").string()));
+
+    bfs::path idDir = dataDir_ / "id";
+    bfs::create_directory(idDir);
+    userIdGenerator_.reset(new UserIdGenerator((idDir / "userid").string()));
+}
+
+void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchService)
+{
+    DocumentManager* docManager = indexSearchService->workerService_->documentManager_.get();
+    itemManager_.reset(new ItemManager(docManager));
+
+    IDManager* idManager = indexSearchService->workerService_->idManager_.get();
+    itemIdGenerator_.reset(new ItemIdGenerator(idManager));
+}
+
+void RecommendBundleActivator::createMining_()
+{
+    bfs::path miningDir = dataDir_ / "mining";
+    bfs::create_directory(miningDir);
+
+    bfs::path cfPath = miningDir / "cf";
+    bfs::create_directory(cfPath);
+    const std::size_t matrixSize = config_->purchaseCacheSize_ >> 1;
+    itemCFManager_.reset(new ItemCFManager((cfPath / "covisit").string(), matrixSize,
+                                           (cfPath / "sim").string(), matrixSize,
+                                           (cfPath / "nb.sdb").string(), 30));
+
+    coVisitManager_.reset(new CoVisitManager((miningDir / "covisit").string(),
+                                             config_->visitCacheSize_));
+}
+
+void RecommendBundleActivator::createEvent_()
+{
+    bfs::path eventDir = dataDir_ / "event";
+    bfs::create_directory(eventDir);
+
+    visitManager_.reset(new VisitManager((eventDir / "visit_item.db").string(),
+                                         (eventDir / "visit_recommend.db").string(),
+                                         (eventDir / "visit_session.db").string(),
+                                         *coVisitManager_));
+
+    purchaseManager_.reset(new PurchaseManager((eventDir / "purchase.db").string(),
+                                               *itemCFManager_));
+
+    cartManager_.reset(new CartManager((eventDir / "cart.db").string()));
+    eventManager_.reset(new EventManager((eventDir / "event.db").string()));
+    rateManager_.reset(new RateManager((eventDir / "rate.db").string()));
+}
+
+void RecommendBundleActivator::createOrder_()
+{
+    bfs::path orderDir = dataDir_ / "order";
+    bfs::create_directory(orderDir);
+
+    orderManager_.reset(new OrderManager(orderDir.string(),
+                                         config_->indexCacheSize_));
+
+    orderManager_->setMinThreshold(config_->itemSetMinFreq_);
+
+}
+
+void RecommendBundleActivator::createRecommender_()
+{
+    recommenderFactory_.reset(new RecommenderFactory(*itemManager_,
+                                                     *visitManager_, *purchaseManager_,
+                                                     *cartManager_, *orderManager_,
+                                                     *eventManager_, *rateManager_,
+                                                     *coVisitManager_, *itemCFManager_));
+}
+
+void RecommendBundleActivator::createService_()
+{
+    taskService_.reset(new RecommendTaskService(*config_, directoryRotator_, *userManager_, *itemManager_,
+                                                *visitManager_, *purchaseManager_, *cartManager_, *orderManager_,
+                                                *eventManager_, *rateManager_, *userIdGenerator_, *itemIdGenerator_));
+
+    searchService_.reset(new RecommendSearchService(*userManager_, *itemManager_, *recommenderFactory_,
+                                                    *userIdGenerator_, *itemIdGenerator_));
+
+    Properties props;
+    props.put("collection", config_->collectionName_);
+    taskServiceReg_.reset(context_->registerService("RecommendTaskService", taskService_.get(), props));
+    searchServiceReg_.reset(context_->registerService("RecommendSearchService", searchService_.get(), props));
 }
 
 } // namespace sf1r

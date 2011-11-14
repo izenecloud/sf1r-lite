@@ -890,7 +890,9 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
     if(recommendBundle)
     {
         Element* recommendSchema = getUniqChildElement( recommendBundle, "Schema", false );
-        if(recommendSchema) parseRecommendBundleSchema(recommendSchema, collectionMeta);
+        if(recommendSchema)
+            parseRecommendBundleSchema(recommendSchema, collectionMeta);
+
         Element* recommendParam = getUniqChildElement( recommendBundle, "Parameter", false );
         parseRecommendBundleParam(recommendParam, collectionMeta);
     }
@@ -1559,11 +1561,11 @@ void CollectionConfig::parseRecommendBundleParam(const ticpp::Element * recParam
 
 void CollectionConfig::parseRecommendBundleSchema(const ticpp::Element * recSchemaNode, CollectionMeta & collectionMeta)
 {
-    if (recSchemaNode == NULL)
-        return;
+    assert(recSchemaNode);
 
     //** PARSE RECOMMEND SCHEMA BEGIN
     RecommendBundleConfiguration& recommendBundleConfig = *(collectionMeta.recommendBundleConfig_);
+    recommendBundleConfig.isSchemaEnable_ = true;
     RecommendSchema& recommendSchema = recommendBundleConfig.recommendSchema_;
 
     // get user schema
@@ -1585,34 +1587,6 @@ void CollectionConfig::parseRecommendBundleSchema(const ticpp::Element * recSche
                     RecommendProperty recommendProperty;
                     recommendProperty.propertyName_ = propName;
                     recommendSchema.userSchema_.push_back(recommendProperty);
-                }
-            }
-            catch ( XmlConfigParserException & e )
-            {
-                throw e;
-            }
-        } //property iteration
-    }
-
-    // get item schema
-    Element* itemSchemaNode = getUniqChildElement( recSchemaNode, "Item", false );
-    if (itemSchemaNode)
-    {
-        Iterator<Element> property("Property");
-
-        for (property = property.begin(itemSchemaNode); property != property.end(); ++property)
-        {
-            try
-            {
-                string propName;
-                getAttribute(property.Get(), "name", propName);
-
-                // ignore default property
-                if (propName != "ITEMID")
-                {
-                    RecommendProperty recommendProperty;
-                    recommendProperty.propertyName_ = propName;
-                    recommendSchema.itemSchema_.push_back(recommendProperty);
                 }
             }
             catch ( XmlConfigParserException & e )

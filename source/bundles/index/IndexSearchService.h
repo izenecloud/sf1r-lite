@@ -59,6 +59,7 @@ private:
     friend class IndexBundleActivator;
     friend class MiningBundleActivator;
     friend class ProductBundleActivator;
+    friend class RecommendBundleActivator;
 };
 
 }

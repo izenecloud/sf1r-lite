@@ -9,7 +9,6 @@
 #include <bundles/recommend/RecommendTaskService.h>
 #include <bundles/recommend/RecommendSearchService.h>
 #include <recommend-manager/User.h>
-#include <recommend-manager/Item.h>
 #include <recommend-manager/RecommendItem.h>
 #include <recommend-manager/ItemCondition.h>
 #include <recommend-manager/RecTypes.h>
@@ -18,6 +17,7 @@
 #include <recommend-manager/ItemBundle.h>
 #include <recommend-manager/RateParam.h>
 
+#include <common/IndexBundleSchemaHelpers.h>
 #include <common/Keys.h>
 #include <common/Utilities.h> // Utilities::toUpper()
 
@@ -29,7 +29,37 @@ const std::size_t kDefaultRecommendCount = 10;
 /// @brief default min frequency of each bundle in @p top_item_bundle().
 const std::size_t kDefaultMinFreq = 1;
 
-const izenelib::util::UString::EncodingType kEncoding = izenelib::util::UString::UTF_8;
+const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
+
+void renderPropertyValue(
+    const sf1r::PropertyValue& propValue,
+    izenelib::driver::Value& renderValue
+)
+{
+    const izenelib::util::UString& ustr = propValue.get<izenelib::util::UString>();
+    std::string utf8;
+    ustr.convertString(utf8, ENCODING_TYPE);
+
+    renderValue = utf8;
+}
+
+const std::string DOCID("DOCID");
+const std::string ITEMID("ITEMID");
+
+const std::string& docIdToItemId(const std::string& propName)
+{
+    if (propName == DOCID)
+        return ITEMID;
+
+    return propName;
+}
+
+void itemIdToDocId(std::string& propName)
+{
+    if (propName == ITEMID)
+        propName = DOCID;
+}
+
 }
 
 namespace sf1r
@@ -48,77 +78,64 @@ RecommendController::RecommendController()
     recTypeMap_["BOS"] = BASED_ON_SHOP_CART;
 }
 
-bool RecommendController::requireProperty(const std::string& propName)
+bool RecommendController::requireProperty(
+    const std::string& propName,
+    std::string& propValue
+)
 {
-    if (!request()[Keys::resource].hasKey(propName))
+    const Value& resourceValue = request()[Keys::resource];
+
+    if (! resourceValue.hasKey(propName))
     {
         response().addError("Require property \"" + propName + "\" in request[resource].");
+        return false;
+    }
+
+    propValue = asString(resourceValue[propName]);
+    if (propValue.empty())
+    {
+        response().addError("Require non-empty value for property \"" + propName + "\" in request[resource].");
         return false;
     }
 
     return true;
 }
 
-bool RecommendController::value2User(const izenelib::driver::Value& value, User& user)
+bool RecommendController::requireService(::izenelib::osgi::IService* service)
 {
-    const Value::ObjectType& objectValue = value.getObject();
-
-    const RecommendSchema& recommendSchema = collectionHandler_->recommendSchema_;	
-    RecommendProperty recommendProperty;
-    for (Value::ObjectType::const_iterator it = objectValue.begin();
-        it != objectValue.end(); ++it)
+    if (! service)
     {
-        const std::string& propName = it->first;
-        if (propName == Keys::USERID)
-        {
-            user.idStr_ = asString(it->second);
-        }
-        else
-        {
-            if (recommendSchema.getUserProperty(propName, recommendProperty))
-            {
-                user.propValueMap_[propName].assign(
-                    asString(it->second),
-                    kEncoding
-                );
-            }
-            else
-            {
-                response().addError("Unknown user property \"" + propName + "\" in request[resource].");
-                return false;
-            }
-        }
+        response().addError("Request failed, no recommend service found.");
+        return false;
     }
 
     return true;
 }
 
-bool RecommendController::value2Item(const izenelib::driver::Value& value, Item& item)
+bool RecommendController::value2User(User& user)
 {
-    const Value::ObjectType& objectValue = value.getObject();
+    if (! requireProperty(Keys::USERID, user.idStr_))
+        return false;
 
+    const Value& resourceValue = request()[Keys::resource];
+    const Value::ObjectType& objectValue = resourceValue.getObject();
     const RecommendSchema& recommendSchema = collectionHandler_->recommendSchema_;	
     RecommendProperty recommendProperty;
+
     for (Value::ObjectType::const_iterator it = objectValue.begin();
         it != objectValue.end(); ++it)
     {
         const std::string& propName = it->first;
-        if (propName == Keys::ITEMID)
+        if (propName != Keys::USERID)
         {
-            item.idStr_ = asString(it->second);
-        }
-        else
-        {
-            if (recommendSchema.getItemProperty(propName, recommendProperty))
+            if (recommendSchema.getUserProperty(propName, recommendProperty))
             {
-                item.propValueMap_[propName].assign(
-                    asString(it->second),
-                    kEncoding
-                );
+                user.propValueMap_[propName].assign(asString(it->second),
+                                                    ENCODING_TYPE);
             }
             else
             {
-                response().addError("Unknown item property \"" + propName + "\" in request[resource].");
+                response().addError("Unknown user property \"" + propName + "\" in request[resource].");
                 return false;
             }
         }
@@ -189,16 +206,15 @@ bool RecommendController::value2ItemCondition(ItemCondition& itemCondition)
         response().addError("Require \"" + Keys::property + "\" in request[resource][condition].");
         return false;
     }
-    itemCondition.propName_ = propName;
+    itemIdToDocId(propName);
 
-    RecommendProperty recommendProperty;
-    const RecommendSchema& recommendSchema = collectionHandler_->recommendSchema_;	
-    if (propName != Keys::ITEMID
-        && recommendSchema.getItemProperty(propName, recommendProperty) == false)
+    PropertyConfig propType;
+    if (! getPropertyConfig(collectionHandler_->indexSchema_, propName, propType))
     {
         response().addError("Unknown item property \"" + propName + "\" in request[resource][condition].");
         return false;
     }
+    itemCondition.propName_ = propName;
 
     const izenelib::driver::Value& arrayValue = condValue[Keys::value];
     if (arrayValue.type() != izenelib::driver::Value::kArrayType)
@@ -217,7 +233,7 @@ bool RecommendController::value2ItemCondition(ItemCondition& itemCondition)
             return false;
         }
 
-        itemCondition.propValueSet_.insert(izenelib::util::UString(valueStr, kEncoding));
+        itemCondition.propValueSet_.insert(izenelib::util::UString(valueStr, ENCODING_TYPE));
     }
 
     if (itemCondition.propValueSet_.empty())
@@ -266,13 +282,13 @@ bool RecommendController::value2ItemCondition(ItemCondition& itemCondition)
  */
 void RecommendController::add_user()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
-
-    User user;
-    IZENELIB_DRIVER_BEFORE_HOOK(value2User(request()[Keys::resource], user));
-
     RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
-    if (!service->addUser(user))
+    User user;
+
+    IZENELIB_DRIVER_BEFORE_HOOK(requireService(service)
+                                && value2User(user));
+
+    if (! service->addUser(user))
     {
         response().addError("Failed to add user to given collection.");
     }
@@ -315,13 +331,13 @@ void RecommendController::add_user()
  */
 void RecommendController::update_user()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
-
-    User user;
-    IZENELIB_DRIVER_BEFORE_HOOK(value2User(request()[Keys::resource], user));
-
     RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
-    if (!service->updateUser(user))
+    User user;
+
+    IZENELIB_DRIVER_BEFORE_HOOK(requireService(service)
+                                && value2User(user));
+
+    if (! service->updateUser(user))
     {
         response().addError("Failed to update user to given collection.");
     }
@@ -359,12 +375,12 @@ void RecommendController::update_user()
  */
 void RecommendController::remove_user()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
-
-    std::string userIdStr = asString(request()[Keys::resource][Keys::USERID]);
-
     RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
-    if (!service->removeUser(userIdStr))
+    std::string userIdStr;
+    IZENELIB_DRIVER_BEFORE_HOOK(requireService(service)
+                                && requireProperty(Keys::USERID, userIdStr));
+
+    if (! service->removeUser(userIdStr))
     {
         response().addError("Failed to remove user from given collection.");
     }
@@ -410,237 +426,27 @@ void RecommendController::remove_user()
  */
 void RecommendController::get_user()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
+    RecommendSearchService* service = collectionHandler_->recommendSearchService_;
+    std::string userIdStr;
+    IZENELIB_DRIVER_BEFORE_HOOK(requireService(service)
+                                && requireProperty(Keys::USERID, userIdStr));
 
     User user;
-    std::string userIdStr = asString(request()[Keys::resource][Keys::USERID]);
-
-    RecommendSearchService* service = collectionHandler_->recommendSearchService_;
     if (service->getUser(userIdStr, user))
     {
         Value& resource = response()[Keys::resource];
         resource[Keys::USERID] = user.idStr_;
 
-        std::string convertBuffer;
         for (User::PropValueMap::const_iterator it = user.propValueMap_.begin();
             it != user.propValueMap_.end(); ++it)
         {
-            it->second.convertString(convertBuffer, kEncoding);
-            resource[it->first] = convertBuffer;
+            it->second.convertString(resource[it->first].get<std::string>(),
+                                     ENCODING_TYPE);
         }
     }
     else
     {
         response().addError("Failed to get user from given collection.");
-    }
-}
-
-/**
- * @brief Action @b add_item. Add a product item.
- *
- * @section request
- *
- * - @b collection* (@c String): Add item in this collection.
- * - @b resource* (@c Object): An item resource.@n
- *   Property key name is used as key. The corresponding value is the content of the property.@n
- *   Property @b ITEMID is required, which is a unique item identifier specified by client.
- *
- * @section response
- *
- * - @b header (@c Object): Property @b success gives the result, true or false.
- *
- * @section example
- *
- * Request
- * @code
- * {
- *   "resource": {
- *     "ITEMID": "item_001",
- *     "name": "iphone",
- *     "link": "www.shop.com/product/item_001",
- *     "price": "5000"
- *     "category": "digital"
- *   }
- * }
- * @endcode
- *
- * Response
- * @code
- * {
- *   "header": {"success": true}
- * }
- * @endcode
- */
-void RecommendController::add_item()
-{
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::ITEMID));
-
-    Item item;
-    IZENELIB_DRIVER_BEFORE_HOOK(value2Item(request()[Keys::resource], item));
-
-    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
-    if (!service->addItem(item))
-    {
-        response().addError("Failed to add item to given collection.");
-    }
-}
-
-/**
- * @brief Action @b update_item. Update a product item.
- *
- * @section request
- *
- * - @b collection* (@c String): Update item in this collection.
- * - @b resource* (@c Object): An item resource.@n
- *   Property key name is used as key. The corresponding value is the content of the property.@n
- *   Property @b ITEMID is required, which is a unique item identifier specified by client.@n
- *
- * @section response
- *
- * - @b header (@c Object): Property @b success gives the result, true or false.
- *
- * @section example
- *
- * Request
- * @code
- * {
- *   "resource": {
- *     "ITEMID": "item_001",
- *     "name": "iphone",
- *     "link": "www.shop.com/product/item_001",
- *     "price": "5000"
- *     "category": "digital"
- *   }
- * }
- * @endcode
- *
- * Response
- * @code
- * {
- *   "header": {"success": true}
- * }
- * @endcode
- */
-void RecommendController::update_item()
-{
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::ITEMID));
-
-    Item item;
-    IZENELIB_DRIVER_BEFORE_HOOK(value2Item(request()[Keys::resource], item));
-
-    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
-    if (!service->updateItem(item))
-    {
-        response().addError("Failed to update item to given collection.");
-    }
-}
-
-/**
- * @brief Action @b remove_item. Remove a product by item id.
- *
- * @section request
- *
- * - @b collection* (@c String): Search in this collection.
- * - @b resource* (@c Object): Only field @b ITEMID is used to remove the item.
- *
- * @section response
- *
- * - @b header (@c Object): Property @b success gives the result, true or false.
- *
- * @section example
- *
- * Request
- * @code
- * {
- *   "resource": {
- *     "ITEMID": "item_001"
- *   }
- * }
- * @endcode
- *
- * Response
- * @code
- * {
- *   "header": {"success": true}
- * }
- * @endcode
- */
-void RecommendController::remove_item()
-{
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::ITEMID));
-
-    std::string itemIdStr = asString(request()[Keys::resource][Keys::ITEMID]);
-
-    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
-    if (!service->removeItem(itemIdStr))
-    {
-        response().addError("Failed to remove item from given collection.");
-    }
-}
-
-/**
- * @brief Action @b get_item. Get item from SF1 by item id.
- *
- * @section request
- *
- * - @b collection* (@c String): Search in this collection.
- * - @b resource* (@c Object): Only field @b ITEMID is used to get the item.
- *
- * @section response
- *
- * - @b header (@c Object): Property @b success gives the result, true or false.
- * - @b resource (@c Object): An item resource.@n
- *   Property key name is used as key. The corresponding value is the content of the property.
- *
- * @section example
- *
- * Request
- * @code
- * {
- *   "resource": {
- *     "ITEMID": "item_001"
- *   }
- * }
- * @endcode
- *
- * Response
- * @code
- * {
- *   "header": {"success": true},
- *   "resource": {
- *     "ITEMID": "item_001",
- *     "name": "iphone",
- *     "link": "www.shop.com/product/item_001",
- *     "price": "5000"
- *     "category": "digital"
- *   }
- * }
- * @endcode
- */
-void RecommendController::get_item()
-{
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::ITEMID));
-
-    Item item;
-    std::string itemIdStr = asString(request()[Keys::resource][Keys::ITEMID]);
-
-    RecommendSearchService* service = collectionHandler_->recommendSearchService_;
-    if (service->getItem(itemIdStr, item))
-    {
-        Value& resource = response()[Keys::resource];
-        resource[Keys::ITEMID] = item.idStr_;
-
-        std::string convertBuffer;
-        for (Item::PropValueMap::const_iterator it = item.propValueMap_.begin();
-            it != item.propValueMap_.end(); ++it)
-        {
-            it->second.convertString(convertBuffer, kEncoding);
-            resource[it->first] = convertBuffer;
-        }
-    }
-    else
-    {
-        response().addError("Failed to get item from given collection.");
     }
 }
 
@@ -688,18 +494,17 @@ void RecommendController::get_item()
  */
 void RecommendController::visit_item()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::session_id));
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::ITEMID));
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    std::string sessionIdStr, userIdStr, itemIdStr;
+    IZENELIB_DRIVER_BEFORE_HOOK(requireService(service)
+                                && requireProperty(Keys::session_id, sessionIdStr)
+                                && requireProperty(Keys::USERID, userIdStr)
+                                && requireProperty(Keys::ITEMID, itemIdStr));
 
     izenelib::driver::Value& resourceValue = request()[Keys::resource];
-    std::string sessionIdStr = asString(resourceValue[Keys::session_id]);
-    std::string userIdStr = asString(resourceValue[Keys::USERID]);
-    std::string itemIdStr = asString(resourceValue[Keys::ITEMID]);
     bool isRecItem = asBoolOr(resourceValue[Keys::is_recommend_item], false);
 
-    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
-    if (!service->visitItem(sessionIdStr, userIdStr, itemIdStr, isRecItem))
+    if (! service->visitItem(sessionIdStr, userIdStr, itemIdStr, isRecItem))
     {
         response().addError("Failed to add visit to given collection.");
     }
@@ -749,10 +554,12 @@ void RecommendController::visit_item()
  */
 void RecommendController::purchase_item()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    std::string userIdStr;
+    IZENELIB_DRIVER_BEFORE_HOOK(requireService(service)
+                                && requireProperty(Keys::USERID, userIdStr));
 
     izenelib::driver::Value& resourceValue = request()[Keys::resource];
-    std::string userIdStr = asString(resourceValue[Keys::USERID]);
     std::string orderIdStr = asString(resourceValue[Keys::order_id]);
 
     const izenelib::driver::Value& itemsValue = resourceValue[Keys::items];
@@ -779,8 +586,7 @@ void RecommendController::purchase_item()
         orderItemVec.push_back(RecommendTaskService::OrderItem(itemIdStr, quantity, price));
     }
 
-    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
-    if (!service->purchaseItem(userIdStr, orderIdStr, orderItemVec))
+    if (! service->purchaseItem(userIdStr, orderIdStr, orderItemVec))
     {
         response().addError("Failed to add purchase to given collection.");
     }
@@ -828,11 +634,14 @@ void RecommendController::purchase_item()
  */
 void RecommendController::update_shopping_cart()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
-    izenelib::driver::Value& resourceValue = request()[Keys::resource];
-    std::string userIdStr = asString(resourceValue[Keys::USERID]);
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    std::string userIdStr;
+    IZENELIB_DRIVER_BEFORE_HOOK(requireService(service)
+                                && requireProperty(Keys::USERID, userIdStr));
 
+    izenelib::driver::Value& resourceValue = request()[Keys::resource];
     const izenelib::driver::Value& itemsValue = resourceValue[Keys::items];
+
     if (nullValue(itemsValue) || itemsValue.type() != izenelib::driver::Value::kArrayType)
     {
         response().addError("Require an array of items in request[resource][items].");
@@ -854,8 +663,7 @@ void RecommendController::update_shopping_cart()
         cartItemVec.push_back(RecommendTaskService::OrderItem(itemIdStr));
     }
 
-    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
-    if (!service->updateShoppingCart(userIdStr, cartItemVec))
+    if (! service->updateShoppingCart(userIdStr, cartItemVec))
     {
         response().addError("Failed to update shopping cart to given collection.");
     }
@@ -908,24 +716,23 @@ void RecommendController::update_shopping_cart()
  */
 void RecommendController::track_event()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::event));
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::ITEMID));
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    std::string eventStr, userIdStr, itemIdStr;
+    IZENELIB_DRIVER_BEFORE_HOOK(requireService(service)
+                                && requireProperty(Keys::event, eventStr)
+                                && requireProperty(Keys::USERID, userIdStr)
+                                && requireProperty(Keys::ITEMID, itemIdStr));
 
     izenelib::driver::Value& resourceValue = request()[Keys::resource];
     bool isAdd = asBoolOr(resourceValue[Keys::is_add], true);
-    std::string eventStr = asString(resourceValue[Keys::event]);
-    std::string userIdStr = asString(resourceValue[Keys::USERID]);
-    std::string itemIdStr = asString(resourceValue[Keys::ITEMID]);
 
-    if (!collectionHandler_->recommendSchema_.hasEvent(eventStr))
+    if (! collectionHandler_->recommendSchema_.hasEvent(eventStr))
     {
         response().addError("Unknown event type \"" + eventStr + "\" in request[resource].");
         return;
     }
 
-    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
-    if (!service->trackEvent(isAdd, eventStr, userIdStr, itemIdStr))
+    if (! service->trackEvent(isAdd, eventStr, userIdStr, itemIdStr))
     {
         response().addError("Failed to track event in given collection.");
     }
@@ -975,14 +782,13 @@ void RecommendController::track_event()
  */
 void RecommendController::rate_item()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID));
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::ITEMID));
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    IZENELIB_DRIVER_BEFORE_HOOK(requireService(service));
 
     RateParam param;
-    if (!parseRateParam(param))
+    if (! parseRateParam(param))
         return;
 
-    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
     if (! service->rateItem(param))
     {
         response().addError("Failed to rate item in given collection.");
@@ -991,6 +797,10 @@ void RecommendController::rate_item()
 
 bool RecommendController::parseRateParam(RateParam& param)
 {
+    if (! (requireProperty(Keys::USERID, param.userIdStr)
+           && requireProperty(Keys::ITEMID, param.itemIdStr)))
+        return false;
+
     izenelib::driver::Value& resourceValue = request()[Keys::resource];
 
     param.userIdStr = asString(resourceValue[Keys::USERID]);
@@ -999,7 +809,7 @@ bool RecommendController::parseRateParam(RateParam& param)
     param.rate = asUintOr(resourceValue[Keys::star], 0);
 
     std::string errorMsg;
-    if (!param.check(errorMsg))
+    if (! param.check(errorMsg))
     {
         response().addError(errorMsg);
         return false;
@@ -1092,14 +902,14 @@ bool RecommendController::parseRateParam(RateParam& param)
  */
 void RecommendController::do_recommend()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::rec_type));
+    RecommendSearchService* service = collectionHandler_->recommendSearchService_;
+    IZENELIB_DRIVER_BEFORE_HOOK(requireService(service));
 
     RecommendParam recParam;
-    if (!parseRecommendParam(recParam))
+    if (! parseRecommendParam(recParam))
         return;
 
     std::vector<RecommendItem> recItemVec;
-    RecommendSearchService* service = collectionHandler_->recommendSearchService_;
     if (service->recommend(recParam, recItemVec))
     {
         renderRecommendResult(recParam, recItemVec);
@@ -1112,14 +922,18 @@ void RecommendController::do_recommend()
 
 bool RecommendController::parseRecommendParam(RecommendParam& param)
 {
+    std::string recTypeStr;
+    if (! requireProperty(Keys::rec_type, recTypeStr))
+        return false;
+
     izenelib::driver::Value& resourceValue = request()[Keys::resource];
     param.limit = asUintOr(resourceValue[Keys::max_count],
                            kDefaultRecommendCount);
 
-    if (!value2ItemIdVec(Keys::input_items, param.inputItems)
-        || !value2ItemIdVec(Keys::include_items, param.includeItems)
-        || !value2ItemIdVec(Keys::exclude_items, param.excludeItems)
-        || !value2ItemCondition(param.condition))
+    if (! (value2ItemIdVec(Keys::input_items, param.inputItems)
+           && value2ItemIdVec(Keys::include_items, param.includeItems)
+           && value2ItemIdVec(Keys::exclude_items, param.excludeItems)
+           && value2ItemCondition(param.condition)))
     {
         return false;
     }
@@ -1127,7 +941,6 @@ bool RecommendController::parseRecommendParam(RecommendParam& param)
     param.userIdStr = asString(resourceValue[Keys::USERID]);
     param.sessionIdStr = asString(resourceValue[Keys::session_id]);
 
-    std::string recTypeStr = asString(resourceValue[Keys::rec_type]);
     std::map<std::string, int>::const_iterator mapIt = recTypeMap_.find(Utilities::toUpper(recTypeStr));
     if (mapIt == recTypeMap_.end())
     {
@@ -1137,7 +950,7 @@ bool RecommendController::parseRecommendParam(RecommendParam& param)
     param.type = static_cast<RecommendType>(mapIt->second);
 
     std::string errorMsg;
-    if (!param.check(errorMsg))
+    if (! param.check(errorMsg))
     {
         response().addError(errorMsg);
         return false;
@@ -1149,22 +962,20 @@ bool RecommendController::parseRecommendParam(RecommendParam& param)
 void RecommendController::renderRecommendResult(const RecommendParam& param, const std::vector<RecommendItem>& recItemVec)
 {
     Value& resources = response()[Keys::resources];
-    std::string convertBuffer;
 
     for (std::vector<RecommendItem>::const_iterator recIt = recItemVec.begin();
         recIt != recItemVec.end(); ++recIt)
     {
         Value& itemValue = resources();
-        const Item& item = recIt->item_;
-
         itemValue[Keys::weight] = recIt->weight_;
-        itemValue[Keys::ITEMID] = item.idStr_;
 
-        for (Item::PropValueMap::const_iterator it = item.propValueMap_.begin();
-            it != item.propValueMap_.end(); ++it)
+        const Document& item = recIt->item_;
+        Document::property_const_iterator endIt = item.propertyEnd();
+        for (Document::property_const_iterator it = item.propertyBegin();
+            it != endIt; ++it)
         {
-            it->second.convertString(convertBuffer, kEncoding);
-            itemValue[it->first] = convertBuffer;
+            const std::string& propName = docIdToItemId(it->first);
+            renderPropertyValue(it->second, itemValue[propName]);
         }
 
         const std::vector<ReasonItem>& reasonItems = recIt->reasonItems_;
@@ -1177,10 +988,18 @@ void RecommendController::renderRecommendResult(const RecommendParam& param, con
             {
                 Value& value = reasonsValue();
                 value[Keys::event] = it->event_;
-                value[Keys::ITEMID] = it->item_.idStr_;
+
+                const Document& reasonItem = it->item_;
+                Document::property_const_iterator findIt = reasonItem.findProperty(DOCID);
+                if (findIt != reasonItem.propertyEnd())
+                {
+                    renderPropertyValue(findIt->second, value[ITEMID]);
+                }
 
                 if(! it->value_.empty())
+                {
                     value[Keys::value] = it->value_;
+                }
             }
         }
     }
@@ -1243,12 +1062,14 @@ void RecommendController::renderRecommendResult(const RecommendParam& param, con
  */
 void RecommendController::top_item_bundle()
 {
+    RecommendSearchService* service = collectionHandler_->recommendSearchService_;
+    IZENELIB_DRIVER_BEFORE_HOOK(requireService(service));
+
     TIBParam tibParam;
-    if (!parseTIBParam(tibParam))
+    if (! parseTIBParam(tibParam))
         return;
 
     std::vector<ItemBundle> bundleVec;
-    RecommendSearchService* service = collectionHandler_->recommendSearchService_;
     if (service->topItemBundle(tibParam, bundleVec))
     {
         renderBundleResult(bundleVec);
@@ -1269,7 +1090,7 @@ bool RecommendController::parseTIBParam(TIBParam& param)
                              kDefaultMinFreq);
 
     std::string errorMsg;
-    if (!param.check(errorMsg))
+    if (! param.check(errorMsg))
     {
         response().addError(errorMsg);
         return false;
@@ -1281,7 +1102,6 @@ bool RecommendController::parseTIBParam(TIBParam& param)
 void RecommendController::renderBundleResult(const std::vector<ItemBundle>& bundleVec)
 {
     Value& resources = response()[Keys::resources];
-    std::string convertBuffer;
 
     for (std::vector<ItemBundle>::const_iterator bundleIt = bundleVec.begin();
         bundleIt != bundleVec.end(); ++bundleIt)
@@ -1290,18 +1110,18 @@ void RecommendController::renderBundleResult(const std::vector<ItemBundle>& bund
         bundleValue[Keys::freq] = bundleIt->freq;
 
         Value& itemsValue = bundleValue[Keys::items];
-        const std::vector<Item>& items = bundleIt->items;
-        for (std::vector<Item>::const_iterator itemIt = items.begin();
+        const std::vector<Document>& items = bundleIt->items;
+        for (std::vector<Document>::const_iterator itemIt = items.begin();
             itemIt != items.end(); ++itemIt)
         {
             Value& itemValue = itemsValue();
-            const Item& item = *itemIt;
-            itemValue[Keys::ITEMID] = item.idStr_;
-            for (Item::PropValueMap::const_iterator propIt = item.propValueMap_.begin();
-                    propIt != item.propValueMap_.end(); ++propIt)
+            const Document& item = *itemIt;
+            Document::property_const_iterator endIt = item.propertyEnd();
+            for (Document::property_const_iterator it = item.propertyBegin();
+                it != endIt; ++it)
             {
-                propIt->second.convertString(convertBuffer, kEncoding);
-                itemValue[propIt->first] = convertBuffer;
+                const std::string& propName = docIdToItemId(it->first);
+                renderPropertyValue(it->second, itemValue[propName]);
             }
         }
     }

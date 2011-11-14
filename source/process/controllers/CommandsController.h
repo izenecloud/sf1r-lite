@@ -24,13 +24,16 @@ class CommandsController : public ::izenelib::driver::Controller
 public:
     void index();
 
-    void index_recommend();
-    
     void index_query_log();
 
     void optimize_index();
 
-    bool parseCollection();
+private:
+    bool parseCollection_();
+
+    bool indexSearch_();
+
+    void indexRecommend_();
 
 private:
     std::string collection_;

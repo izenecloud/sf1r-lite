@@ -7,8 +7,6 @@
 #ifndef ITEM_CONDITION_H
 #define ITEM_CONDITION_H
 
-#include "Item.h"
-
 #include <util/ustring/UString.h>
 
 #include <string>
@@ -16,6 +14,7 @@
 
 namespace sf1r
 {
+class Document;
 
 struct ItemCondition
 {
@@ -31,22 +30,7 @@ struct ItemCondition
      * @param item the item to check
      * @return true for the item meets condition, false for not meet condition.
      */
-    bool checkItem(const Item& item) const
-    {
-        izenelib::util::UString propValue;
-        if (propName_ == "ITEMID")
-        {
-            propValue.assign(item.idStr_, izenelib::util::UString::UTF_8);
-        }
-        else
-        {
-            Item::PropValueMap::const_iterator it = item.propValueMap_.find(propName_);
-            if (it != item.propValueMap_.end())
-                propValue = it->second;
-        }
-
-        return propValueSet_.find(propValue) != propValueSet_.end();
-    }
+    bool checkItem(const Document& item) const;
 };
 
 } // namespace sf1r

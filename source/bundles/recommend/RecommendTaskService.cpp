@@ -1,7 +1,6 @@
 #include "RecommendTaskService.h"
 #include "RecommendBundleConfiguration.h"
 #include <recommend-manager/User.h>
-#include <recommend-manager/Item.h>
 #include <recommend-manager/UserManager.h>
 #include <recommend-manager/ItemManager.h>
 #include <recommend-manager/VisitManager.h>
@@ -11,12 +10,12 @@
 #include <recommend-manager/EventManager.h>
 #include <recommend-manager/RateManager.h>
 #include <recommend-manager/RateParam.h>
+#include <recommend-manager/ItemIdGenerator.h>
 #include <log-manager/OrderLogger.h>
 #include <log-manager/ItemLogger.h>
 #include <common/ScdParser.h>
 #include <directory-manager/Directory.h>
 #include <directory-manager/DirectoryRotator.h>
-#include <common/JobScheduler.h>
 
 #include <sdb/SDBCursorIterator.h>
 #include <util/scheduler.h>
@@ -179,42 +178,6 @@ bool doc2User(const SCDDoc& doc, sf1r::User& user, const sf1r::RecommendSchema& 
     return true;
 }
 
-bool doc2Item(const SCDDoc& doc, sf1r::Item& item, const sf1r::RecommendSchema& schema)
-{
-    for (SCDDoc::const_iterator it = doc.begin(); it != doc.end(); ++it)
-    {
-        std::string propName;
-        it->first.convertString(propName, DEFAULT_ENCODING);
-        const izenelib::util::UString & propValueU = it->second;
-
-        if (propName == "ITEMID")
-        {
-            propValueU.convertString(item.idStr_, DEFAULT_ENCODING);
-        }
-        else
-        {
-            sf1r::RecommendProperty recommendProperty;
-            if (schema.getItemProperty(propName, recommendProperty))
-            {
-                item.propValueMap_[propName] = propValueU;
-            }
-            else
-            {
-                LOG(ERROR) << "Unknown item property " + propName + " in SCD file";
-                return false;
-            }
-        }
-    }
-
-    if (item.idStr_.empty())
-    {
-        LOG(ERROR) << "missing item property <ITEMID> in SCD file";
-        return false;
-    }
-
-    return true;
-}
-
 bool doc2Order(
     const SCDDoc& doc,
     std::string& userIdStr,
@@ -281,18 +244,18 @@ namespace sf1r
 {
 
 RecommendTaskService::RecommendTaskService(
-    RecommendBundleConfiguration* bundleConfig,
-    directory::DirectoryRotator* directoryRotator,
-    UserManager* userManager,
-    ItemManager* itemManager,
-    VisitManager* visitManager,
-    PurchaseManager* purchaseManager,
-    CartManager* cartManager,
-    OrderManager* orderManager,
-    EventManager* eventManager,
-    RateManager* rateManager,
-    RecIdGenerator* userIdGenerator,
-    RecIdGenerator* itemIdGenerator
+    RecommendBundleConfiguration& bundleConfig,
+    directory::DirectoryRotator& directoryRotator,
+    UserManager& userManager,
+    ItemManager& itemManager,
+    VisitManager& visitManager,
+    PurchaseManager& purchaseManager,
+    CartManager& cartManager,
+    OrderManager& orderManager,
+    EventManager& eventManager,
+    RateManager& rateManager,
+    UserIdGenerator& userIdGenerator,
+    ItemIdGenerator& itemIdGenerator
 )
     :bundleConfig_(bundleConfig)
     ,directoryRotator_(directoryRotator)
@@ -306,10 +269,9 @@ RecommendTaskService::RecommendTaskService(
     ,rateManager_(rateManager)
     ,userIdGenerator_(userIdGenerator)
     ,itemIdGenerator_(itemIdGenerator)
-    ,jobScheduler_(new JobScheduler())
-    ,cronJobName_("RecommendTaskService-" + bundleConfig->collectionName_)
+    ,cronJobName_("RecommendTaskService-" + bundleConfig.collectionName_)
 {
-    if (cronExpression_.setExpression(bundleConfig_->cronStr_))
+    if (cronExpression_.setExpression(bundleConfig_.cronStr_))
     {
         bool result = izenelib::util::Scheduler::addJob(cronJobName_,
                                                         60*1000, // each minute
@@ -325,7 +287,6 @@ RecommendTaskService::RecommendTaskService(
 RecommendTaskService::~RecommendTaskService()
 {
     izenelib::util::Scheduler::removeJob(cronJobName_);
-    delete jobScheduler_;
 }
 
 bool RecommendTaskService::addUser(const User& user)
@@ -336,78 +297,38 @@ bool RecommendTaskService::addUser(const User& user)
     }
 
     userid_t userId = 0;
-    if (userIdGenerator_->conv(user.idStr_, userId))
+    if (userIdGenerator_.conv(user.idStr_, userId))
     {
         LOG(WARNING) << "in addUser(), user id " << user.idStr_ << " already exists";
         // not return false here, if the user id was once removed in userManager_,
         // it would still exists in userIdGenerator_
     }
 
-    return userManager_->addUser(userId, user);
+    return userManager_.addUser(userId, user);
 }
 
 bool RecommendTaskService::updateUser(const User& user)
 {
     userid_t userId = 0;
-    if (userIdGenerator_->conv(user.idStr_, userId, false) == false)
+    if (! userIdGenerator_.conv(user.idStr_, userId, false))
     {
         LOG(ERROR) << "error in updateUser(), user id " << user.idStr_ << " not yet added before";
         return false;
     }
 
-    return userManager_->updateUser(userId, user);
+    return userManager_.updateUser(userId, user);
 }
 
 bool RecommendTaskService::removeUser(const std::string& userIdStr)
 {
     userid_t userId = 0;
-    if (userIdGenerator_->conv(userIdStr, userId, false) == false)
+    if (! userIdGenerator_.conv(userIdStr, userId, false))
     {
         LOG(ERROR) << "error in removeUser(), user id " << userIdStr << " not yet added before";
         return false;
     }
 
-    return userManager_->removeUser(userId);
-}
-
-bool RecommendTaskService::addItem(const Item& item)
-{
-    if (item.idStr_.empty())
-    {
-        return false;
-    }
-
-    itemid_t itemId = 0;
-    if (itemIdGenerator_->conv(item.idStr_, itemId))
-    {
-        LOG(WARNING) << "in addItem(), item id " << item.idStr_ << " already exists";
-    }
-
-    return itemManager_->addItem(itemId, item);
-}
-
-bool RecommendTaskService::updateItem(const Item& item)
-{
-    itemid_t itemId = 0;
-    if (itemIdGenerator_->conv(item.idStr_, itemId, false) == false)
-    {
-        LOG(ERROR) << "error in updateItem(), item id " << item.idStr_ << " not yet added before";
-        return false;
-    }
-
-    return itemManager_->updateItem(itemId, item);
-}
-
-bool RecommendTaskService::removeItem(const std::string& itemIdStr)
-{
-    itemid_t itemId = 0;
-    if (itemIdGenerator_->conv(itemIdStr, itemId, false) == false)
-    {
-        LOG(ERROR) << "error in removeItem(), item id " << itemIdStr << " not yet added before";
-        return false;
-    }
-
-    return itemManager_->removeItem(itemId);
+    return userManager_.removeUser(userId);
 }
 
 bool RecommendTaskService::visitItem(
@@ -424,21 +345,21 @@ bool RecommendTaskService::visitItem(
     }
 
     userid_t userId = 0;
-    if (userIdGenerator_->conv(userIdStr, userId, false) == false)
+    if (! userIdGenerator_.conv(userIdStr, userId, false))
     {
         LOG(ERROR) << "error in visitItem(), user id " << userIdStr << " not yet added before";
         return false;
     }
 
     itemid_t itemId = 0;
-    if (itemIdGenerator_->conv(itemIdStr, itemId, false) == false)
+    if (! itemIdGenerator_.getItemIdByStrId(itemIdStr, itemId))
     {
         LOG(ERROR) << "error in visitItem(), item id " << itemIdStr << " not yet added before";
         return false;
     }
 
-    jobScheduler_->addTask(boost::bind(&VisitManager::addVisitItem, visitManager_,
-                                       sessionIdStr, userId, itemId, isRecItem));
+    jobScheduler_.addTask(boost::bind(&VisitManager::addVisitItem, &visitManager_,
+                                      sessionIdStr, userId, itemId, isRecItem));
 
     return true;
 }
@@ -449,7 +370,7 @@ bool RecommendTaskService::purchaseItem(
     const OrderItemVec& orderItemVec
 )
 {
-    jobScheduler_->addTask(boost::bind(&RecommendTaskService::saveOrder_, this,
+    jobScheduler_.addTask(boost::bind(&RecommendTaskService::saveOrder_, this,
                                        userIdStr, orderIdStr, orderItemVec, true));
 
     return true;
@@ -468,7 +389,7 @@ bool RecommendTaskService::updateShoppingCart(
         return false;
     }
 
-    return cartManager_->updateCart(userId, itemIdVec);
+    return cartManager_.updateCart(userId, itemIdVec);
 }
 
 bool RecommendTaskService::trackEvent(
@@ -479,14 +400,14 @@ bool RecommendTaskService::trackEvent(
 )
 {
     userid_t userId = 0;
-    if (userIdGenerator_->conv(userIdStr, userId, false) == false)
+    if (! userIdGenerator_.conv(userIdStr, userId, false))
     {
         LOG(ERROR) << "error in trackEvent(), user id " << userIdStr << " not yet added before";
         return false;
     }
 
     itemid_t itemId = 0;
-    if (itemIdGenerator_->conv(itemIdStr, itemId, false) == false)
+    if (! itemIdGenerator_.getItemIdByStrId(itemIdStr, itemId))
     {
         LOG(ERROR) << "error in trackEvent(), item id " << itemIdStr << " not yet added before";
         return false;
@@ -495,11 +416,11 @@ bool RecommendTaskService::trackEvent(
     bool result = false;
     if (isAdd)
     {
-        result = eventManager_->addEvent(eventStr, userId, itemId);
+        result = eventManager_.addEvent(eventStr, userId, itemId);
     }
     else
     {
-        result = eventManager_->removeEvent(eventStr, userId, itemId);
+        result = eventManager_.removeEvent(eventStr, userId, itemId);
     }
 
     return result;
@@ -508,14 +429,14 @@ bool RecommendTaskService::trackEvent(
 bool RecommendTaskService::rateItem(const RateParam& param)
 {
     userid_t userId = 0;
-    if (userIdGenerator_->conv(param.userIdStr, userId, false) == false)
+    if (! userIdGenerator_.conv(param.userIdStr, userId, false))
     {
         LOG(ERROR) << "error in rateItem(), user id " << param.userIdStr << " not yet added before";
         return false;
     }
 
     itemid_t itemId = 0;
-    if (itemIdGenerator_->conv(param.itemIdStr, itemId, false) == false)
+    if (! itemIdGenerator_.getItemIdByStrId(param.itemIdStr, itemId))
     {
         LOG(ERROR) << "error in rateItem(), item id " << param.itemIdStr << " not yet added before";
         return false;
@@ -524,11 +445,11 @@ bool RecommendTaskService::rateItem(const RateParam& param)
     bool result = false;
     if (param.isAdd)
     {
-        result = rateManager_->addRate(userId, itemId, param.rate);
+        result = rateManager_.addRate(userId, itemId, param.rate);
     }
     else
     {
-        result = rateManager_->removeRate(userId, itemId);
+        result = rateManager_.removeRate(userId, itemId);
     }
 
     return result;
@@ -539,13 +460,13 @@ bool RecommendTaskService::buildCollection()
     LOG(INFO) << "Start building recommend collection...";
     izenelib::util::ClockTimer timer;
 
-    if(!backupDataFiles(*directoryRotator_))
+    if(!backupDataFiles(directoryRotator_))
     {
         LOG(ERROR) << "Failed in backup data files, exit recommend collection build";
         return false;
     }
 
-    DirectoryGuard dirGuard(directoryRotator_->currentDirectory().get());
+    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
     {
         LOG(ERROR) << "Dirty recommend collection data, exit recommend collection build";
@@ -554,7 +475,7 @@ bool RecommendTaskService::buildCollection()
 
     boost::mutex::scoped_lock lock(buildCollectionMutex_);
 
-    if (loadUserSCD_() && loadItemSCD_() && loadOrderSCD_())
+    if (loadUserSCD_() && loadOrderSCD_())
     {
         LOG(INFO) << "End recommend collection build, elapsed time: " << timer.elapsed() << " seconds";
         return true;
@@ -566,7 +487,7 @@ bool RecommendTaskService::buildCollection()
 
 bool RecommendTaskService::loadUserSCD_()
 {
-    std::string scdDir = bundleConfig_->userSCDPath();
+    std::string scdDir = bundleConfig_.userSCDPath();
     std::vector<string> scdList;
 
     if (scanSCDFiles(scdDir, scdList) == false)
@@ -586,8 +507,8 @@ bool RecommendTaskService::loadUserSCD_()
         parseUserSCD_(*scdIt);
     }
 
-    userIdGenerator_->flush();
-    userManager_->flush();
+    userIdGenerator_.flush();
+    userManager_.flush();
 
     backupSCDFiles(scdDir, scdList);
 
@@ -625,7 +546,7 @@ bool RecommendTaskService::parseUserSCD_(const std::string& scdPath)
         const SCDDoc& doc = *docPtr;
 
         User user;
-        if (doc2User(doc, user, bundleConfig_->recommendSchema_) == false)
+        if (doc2User(doc, user, bundleConfig_.recommendSchema_) == false)
         {
             LOG(ERROR) << "error in parsing User, userNum: " << userNum;
             continue;
@@ -668,113 +589,9 @@ bool RecommendTaskService::parseUserSCD_(const std::string& scdPath)
     return true;
 }
 
-bool RecommendTaskService::loadItemSCD_()
-{
-    std::string scdDir = bundleConfig_->itemSCDPath();
-    std::vector<string> scdList;
-
-    if (scanSCDFiles(scdDir, scdList) == false)
-    {
-        return false;
-    }
-
-    if (scdList.empty())
-    {
-        LOG(WARNING) << "no item SCD files to load";
-        return true;
-    }
-
-    for (std::vector<string>::const_iterator scdIt = scdList.begin();
-        scdIt != scdList.end(); ++scdIt)
-    {
-        parseItemSCD_(*scdIt);
-    }
-
-    itemIdGenerator_->flush();
-    itemManager_->flush();
-
-    backupSCDFiles(scdDir, scdList);
-
-    return true;
-}
-
-bool RecommendTaskService::parseItemSCD_(const std::string& scdPath)
-{
-    LOG(INFO) << "parsing SCD file: " << scdPath;
-
-    ScdParser itemParser(DEFAULT_ENCODING, "<ITEMID>");
-    if (itemParser.load(scdPath) == false)
-    {
-        LOG(ERROR) << "ScdParser loading failed";
-        return false;
-    }
-
-    const SCD_TYPE scdType = ScdParser::checkSCDType(scdPath);
-    if (scdType == NOT_SCD)
-    {
-        LOG(ERROR) << "Unknown SCD type";
-        return false;
-    }
-
-    int itemNum = 0;
-    for (ScdParser::iterator docIter = itemParser.begin();
-        docIter != itemParser.end(); ++docIter)
-    {
-        if (++itemNum % 10000 == 0)
-        {
-            std::cout << "\rloading item num: " << itemNum << "\t" << std::flush;
-        }
-
-        SCDDocPtr docPtr = (*docIter);
-        const SCDDoc& doc = *docPtr;
-
-        Item item;
-        if (doc2Item(doc, item, bundleConfig_->recommendSchema_) == false)
-        {
-            LOG(ERROR) << "error in parsing item, itemNum: " << itemNum;
-            continue;
-        }
-
-        switch(scdType)
-        {
-        case INSERT_SCD:
-            if (addItem(item) == false)
-            {
-                LOG(ERROR) << "error in adding item, ITEMID: " << item.idStr_;
-            }
-            break;
-
-        case UPDATE_SCD:
-            if (updateItem(item) == false)
-            {
-                LOG(ERROR) << "error in updating item, ITEMID: " << item.idStr_;
-            }
-            break;
-
-        case DELETE_SCD:
-            if (removeItem(item.idStr_) == false)
-            {
-                LOG(ERROR) << "error in removing item, ITEMID: " << item.idStr_;
-            }
-            break;
-
-        default:
-            LOG(ERROR) << "unknown SCD type " << scdType;
-            break;
-        }
-
-        // terminate execution if interrupted
-        boost::this_thread::interruption_point();
-    }
-
-    std::cout << "\rloading item num: " << itemNum << "\t" << std::endl;
-
-    return true;
-}
-
 bool RecommendTaskService::loadOrderSCD_()
 {
-    std::string scdDir = bundleConfig_->orderSCDPath();
+    std::string scdDir = bundleConfig_.orderSCDPath();
     std::vector<string> scdList;
 
     if (scanSCDFiles(scdDir, scdList) == false)
@@ -794,10 +611,10 @@ bool RecommendTaskService::loadOrderSCD_()
         parseOrderSCD_(*scdIt);
     }
 
-    orderManager_->flush();
+    orderManager_.flush();
 
-    purchaseManager_->buildSimMatrix();
-    purchaseManager_->flush();
+    purchaseManager_.buildSimMatrix();
+    purchaseManager_.flush();
 
     buildFreqItemSet_();
 
@@ -935,9 +752,9 @@ bool RecommendTaskService::saveOrder_(
     }
     assert(orderItemVec.size() == itemIdVec.size());
 
-    orderManager_->addOrder(itemIdVec);
+    orderManager_.addOrder(itemIdVec);
 
-    if (purchaseManager_->addPurchaseItem(userId, itemIdVec, isUpdateSimMatrix)
+    if (purchaseManager_.addPurchaseItem(userId, itemIdVec, isUpdateSimMatrix)
         && insertOrderDB_(userIdStr, orderIdStr, orderItemVec, userId, itemIdVec))
     {
         return true;
@@ -957,7 +774,7 @@ bool RecommendTaskService::insertOrderDB_(
     assert(orderItemVec.empty() == false);
 
     ItemIdSet recItemSet;
-    if (!visitManager_->getRecommendItemSet(userId, recItemSet))
+    if (!visitManager_.getRecommendItemSet(userId, recItemSet))
     {
         LOG(ERROR) << "error in VisitManager::getRecItemSet(), user id: " << userId;
         return false;
@@ -966,7 +783,7 @@ bool RecommendTaskService::insertOrderDB_(
     OrderLogger& orderLogger = OrderLogger::instance();
     ItemLogger& itemLogger = ItemLogger::instance();
     int orderId = 0;
-    if (!orderLogger.insertOrder(orderIdStr, bundleConfig_->collectionName_,
+    if (!orderLogger.insertOrder(orderIdStr, bundleConfig_.collectionName_,
                                  userIdStr, orderItemVec[0].dateStr_, orderId))
     {
         return false;
@@ -997,7 +814,7 @@ bool RecommendTaskService::convertUserItemId_(
     std::vector<itemid_t>& itemIdVec
 )
 {
-    if (userIdGenerator_->conv(userIdStr, userId, false) == false)
+    if (! userIdGenerator_.conv(userIdStr, userId, false))
     {
         LOG(ERROR) << "error in convertUserItemId(), user id " << userIdStr << " not yet added before";
         return false;
@@ -1007,7 +824,7 @@ bool RecommendTaskService::convertUserItemId_(
         it != orderItemVec.end(); ++it)
     {
         itemid_t itemId = 0;
-        if (itemIdGenerator_->conv(it->itemIdStr_, itemId, false) == false)
+        if (! itemIdGenerator_.getItemIdByStrId(it->itemIdStr_, itemId))
         {
             LOG(ERROR) << "error in convertUserItemId(), item id " << it->itemIdStr_ << " not yet added before";
             return false;
@@ -1021,21 +838,21 @@ bool RecommendTaskService::convertUserItemId_(
 
 void RecommendTaskService::buildFreqItemSet_()
 {
-    if (! bundleConfig_->freqItemSetEnable_)
+    if (! bundleConfig_.freqItemSetEnable_)
         return;
 
-    LOG(INFO) << "start building frequent item set for collection " << bundleConfig_->collectionName_;
+    LOG(INFO) << "start building frequent item set for collection " << bundleConfig_.collectionName_;
 
     boost::mutex::scoped_try_lock lock(buildFreqItemMutex_);
     if (lock.owns_lock() == false)
     {
-        LOG(INFO) << "exit frequent item set building as it has already been started for collection " << bundleConfig_->collectionName_;
+        LOG(INFO) << "exit frequent item set building as it has already been started for collection " << bundleConfig_.collectionName_;
         return;
     }
 
-    orderManager_->buildFreqItemsets();
+    orderManager_.buildFreqItemsets();
 
-    LOG(INFO) << "finish building frequent item set for collection " << bundleConfig_->collectionName_;
+    LOG(INFO) << "finish building frequent item set for collection " << bundleConfig_.collectionName_;
 }
 
 void RecommendTaskService::cronJob_()
@@ -1050,28 +867,24 @@ void RecommendTaskService::cronJob_()
 
 void RecommendTaskService::flush_()
 {
-    LOG(INFO) << "start flushing recommend data for collection " << bundleConfig_->collectionName_;
+    LOG(INFO) << "start flushing recommend data for collection " << bundleConfig_.collectionName_;
 
     boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
     if (lock.owns_lock() == false)
     {
-        LOG(INFO) << "exit flushing recommend data as in building collection " << bundleConfig_->collectionName_;
+        LOG(INFO) << "exit flushing recommend data as in building collection " << bundleConfig_.collectionName_;
         return;
     }
 
-    userIdGenerator_->flush();
-    itemIdGenerator_->flush();
+    userIdGenerator_.flush();
+    userManager_.flush();
+    visitManager_.flush();
+    cartManager_.flush();
+    eventManager_.flush();
+    orderManager_.flush();
+    purchaseManager_.flush();
 
-    userManager_->flush();
-    itemManager_->flush();
-
-    visitManager_->flush();
-    cartManager_->flush();
-    eventManager_->flush();
-    orderManager_->flush();
-    purchaseManager_->flush();
-
-    LOG(INFO) << "finish flushing recommend data for collection " << bundleConfig_->collectionName_;
+    LOG(INFO) << "finish flushing recommend data for collection " << bundleConfig_.collectionName_;
 }
 
 } // namespace sf1r

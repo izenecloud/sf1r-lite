@@ -25,8 +25,14 @@ bool TIBRecommender::recommend(
     for (std::size_t i = 0; i < resultNum; ++i)
     {
         ItemBundle& bundle = bundleVec[i];
-        bundle.itemIds.swap(results[i].first);
         bundle.freq = results[i].second;
+
+        const std::vector<itemid_t>& itemIds = results[i].first;
+        for (vector<itemid_t>::const_iterator it = itemIds.begin();
+            it != itemIds.end(); ++it)
+        {
+            bundle.items.push_back(Document(*it));
+        }
     }
 
     return true;

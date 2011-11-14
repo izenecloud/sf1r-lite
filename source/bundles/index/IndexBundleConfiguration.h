@@ -68,7 +68,7 @@ public:
     CollectionPath collPath_;
 	
     /// Schema
-    std::set<PropertyConfig, PropertyComp> schema_;
+    IndexBundleSchema schema_;
 
     /// @brief whether add unigram properties
     bool bIndexUnigramProperty_;
