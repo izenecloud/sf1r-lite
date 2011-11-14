@@ -8,6 +8,36 @@ using namespace org::apache::cassandra;
 
 namespace sf1r {
 
+bool ColumnFamilyBase::truncateColumnFamily() const
+{
+    if (!CassandraConnection::instance().isEnabled()) return false;
+    try
+    {
+        CassandraConnection::instance().getCassandraClient()->truncateColumnFamily(getName());
+    }
+    catch (const InvalidRequestException& ire)
+    {
+        cerr << ire.why << endl;
+        return false;
+    }
+    return true;
+}
+
+bool ColumnFamilyBase::dropColumnFamily() const
+{
+    if (!CassandraConnection::instance().isEnabled()) return false;
+    try
+    {
+        CassandraConnection::instance().getCassandraClient()->dropColumnFamily(getName());
+    }
+    catch (const InvalidRequestException& ire)
+    {
+        cerr << ire.why << endl;
+        return false;
+    }
+    return true;
+}
+
 bool ColumnFamilyBase::getSlice(const string& start, const string& finish)
 {
     if (!CassandraConnection::instance().isEnabled() || getKey().empty()) return false;
@@ -68,7 +98,7 @@ bool ColumnFamilyBase::deleteRow()
         CassandraConnection::instance().getCassandraClient()->remove(
                 getKey(),
                 col_path);
-        resetKey();
+//      resetKey();
     }
     catch (const InvalidRequestException &ire)
     {

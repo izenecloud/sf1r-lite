@@ -131,7 +131,6 @@ bool CassandraConnection::init(const string& str)
         }
         cout << "[CassandraConnection::init] " << str << endl;
         isEnabled_ = true;
-        return true;
     }
     else
     {
@@ -139,6 +138,7 @@ bool CassandraConnection::init(const string& str)
         cerr << "[CassandraConnection::init] " << str << " unrecognized" << endl;
         return false;
     }
+    return true;
 }
 
 bool CassandraConnection::createColumnFamily(
@@ -205,36 +205,6 @@ bool CassandraConnection::createColumnFamily(
     catch (const InvalidRequestException& ire)
     {
         cerr << "[CassandraConnection::init] error: " << ire.why << endl;
-        return false;
-    }
-    return true;
-}
-
-bool CassandraConnection::truncateColumnFamily(const string& in_name)
-{
-    if (!isEnabled_) return false;
-    try
-    {
-        cassandra_client_->truncateColumnFamily(in_name);
-    }
-    catch (const InvalidRequestException& ire)
-    {
-        cerr << ire.why << endl;
-        return false;
-    }
-    return true;
-}
-
-bool CassandraConnection::dropColumnFamily(const string& in_name)
-{
-    if (!isEnabled_) return false;
-    try
-    {
-        cassandra_client_->dropColumnFamily(in_name);
-    }
-    catch (const InvalidRequestException& ire)
-    {
-        cerr << ire.why << endl;
         return false;
     }
     return true;

@@ -20,6 +20,10 @@ public:
         COUNTER
     };
 
+    virtual bool truncateColumnFamily() const;
+
+    virtual bool dropColumnFamily() const;
+
     virtual const std::string& getKey() const = 0;
 
     virtual const std::string& getName() const = 0;
@@ -84,18 +88,6 @@ bool createColumnFamily()
             ColumnFamilyType::cf_compaction_strategy_options,
             ColumnFamilyType::cf_row_cache_keys_to_save,
             ColumnFamilyType::cf_compression_options);
-}
-
-template <typename ColumnFamilyType>
-bool truncateColumnFamily()
-{
-    return CassandraConnection::instance().truncateColumnFamily(ColumnFamilyType::cf_name);
-}
-
-template <typename ColumnFamilyType>
-bool dropColumnFamily()
-{
-    return CassandraConnection::instance().dropColumnFamily(ColumnFamilyType::cf_name);
 }
 
 template <typename ColumnFamilyType>
@@ -166,16 +158,6 @@ public: \
     static bool createColumnFamily() \
     { \
         return ::sf1r::createColumnFamily<ClassName>(); \
-    } \
-    \
-    static bool truncateColumnFamily() \
-    { \
-        return ::sf1r::truncateColumnFamily<ClassName>(); \
-    } \
-    \
-    static bool dropColumnFamily() \
-    { \
-        return ::sf1r::dropColumnFamily<ClassName>(); \
     } \
     \
     static bool getSingleSlice(ClassName& row, const std::string& key, const std::string& start, const std::string& finish) \

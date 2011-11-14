@@ -74,10 +74,6 @@ public:
             const int32_t in_row_cache_keys_to_save,
             const std::map<std::string, std::string>& in_compression_options);
 
-    bool truncateColumnFamily(const std::string& in_name);
-
-    bool dropColumnFamily(const std::string& in_name);
-
 private:
     bool isEnabled_;
 
