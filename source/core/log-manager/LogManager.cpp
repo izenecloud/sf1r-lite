@@ -10,8 +10,8 @@
 #include "ItemLogger.h"
 
 #include "CassandraConnection.h"
-#include "ProductInfo.h"
-#include "CollectionInfo.h"
+#include "PriceHistory.h"
+#include "SourceCount.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
@@ -68,8 +68,8 @@ namespace sf1r
     {
         if (CassandraConnection::instance().init(logPath))
         {
-            return ProductInfo::createColumnFamily() ||
-                CollectionInfo::createColumnFamily();
+            return PriceHistory::createColumnFamily() ||
+                SourceCount::createColumnFamily();
         }
         return true;
     }

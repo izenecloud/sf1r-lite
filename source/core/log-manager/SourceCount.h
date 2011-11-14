@@ -1,37 +1,30 @@
-#ifndef _COLLECTION_INFO_H_
-#define _COLLECTION_INFO_H_
+#ifndef _SOURCE_COUNT_H_
+#define _SOURCE_COUNT_H_
 
 #include "ColumnFamilyBase.h"
 
-#include <boost/tuple/tuple.hpp>
-
 namespace sf1r {
 
-class CollectionInfo : public ColumnFamilyBase
+class SourceCount : public ColumnFamilyBase
 {
 public:
-    typedef boost::tuple<uint32_t, std::string, std::string> SourceCountItemType;
-    typedef std::map<time_t, SourceCountItemType> SourceCountType;
+    typedef std::map<std::string, int64_t> SourceCountType;
 
-    static const std::string SuperColumnName[];
+    SourceCount(const std::string& collection = "");
 
-    CollectionInfo(const std::string& collection = "");
+    ~SourceCount();
 
-    ~CollectionInfo();
+    virtual const std::string& getKey() const;
 
     virtual bool updateRow() const;
-
-    virtual bool deleteRow();
 
     virtual bool getRow();
 
     virtual void resetKey(const std::string& newCollection = "");
 
-    void insertSourceCount(const SourceCountItemType& sourceCountItem);
+    void insertSourceCount(const std::string& source, int64_t count);
 
-    void insertSourceCount(time_t timeStamp, const SourceCountItemType& sourceCountItem);
-
-    DEFINE_COLUMN_FAMILY_COMMON_ROUTINES( CollectionInfo )
+    DEFINE_COLUMN_FAMILY_COMMON_ROUTINES( SourceCount )
 
     inline const std::string& getCollection() const
     {
@@ -41,12 +34,11 @@ public:
     inline void setCollection(const std::string& collection)
     {
         collection_ = collection;
-        collectionPresent_ = true;
     }
 
     inline bool hasCollection() const
     {
-        return collectionPresent_;
+        return !collection_.empty();
     }
 
     inline const SourceCountType& getSourceCount() const
@@ -67,11 +59,10 @@ public:
 
 private:
     std::string collection_;
-    bool collectionPresent_;
 
     SourceCountType sourceCount_;
     bool sourceCountPresent_;
 };
 
 }
-#endif /*_COLLECTION_INFO_H_ */
+#endif /*_SOURCE_COUNT_H_ */
