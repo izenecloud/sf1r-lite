@@ -12,7 +12,7 @@ class PriceHistory : public ColumnFamilyBase
 public:
     typedef std::map<time_t, ProductPriceType> PriceHistoryType;
 
-    PriceHistory(const std::string& uuid = "");
+    explicit PriceHistory(const std::string& uuid = "");
 
     ~PriceHistory();
 
@@ -20,17 +20,13 @@ public:
 
     virtual bool updateRow() const;
 
-    virtual bool getRow();
+    virtual void insert(const std::string& name, const std::string& value);
 
     virtual void resetKey(const std::string& newUuid = "");
 
-    void insertHistory(time_t timestamp, ProductPriceType price);
+    virtual void clear();
 
-    void clearHistory();
-
-    bool getRangeHistory(PriceHistoryType& history, time_t from, time_t to) const;
-
-    bool getRangeHistoryBound(ProductPriceType& lower, ProductPriceType& upper, time_t from, time_t to) const;
+    void insert(time_t timestamp, ProductPriceType price);
 
     DEFINE_COLUMN_FAMILY_COMMON_ROUTINES( PriceHistory )
 

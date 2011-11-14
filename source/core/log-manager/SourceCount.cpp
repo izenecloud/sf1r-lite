@@ -11,6 +11,8 @@ using namespace org::apache::cassandra;
 
 namespace sf1r {
 
+const ColumnFamilyBase::ColumnType SourceCount::column_type = ColumnFamilyBase::COUNTER;
+
 const string SourceCount::cf_name("SourceCount");
 
 const string SourceCount::cf_column_type;
@@ -108,52 +110,14 @@ bool SourceCount::updateRow() const
     return true;
 }
 
-bool SourceCount::getRow()
-{
-    if (!CassandraConnection::instance().isEnabled() || collection_.empty()) return false;
-    try
-    {
-        ColumnParent col_parent;
-        col_parent.__set_column_family(cf_name);
-
-        SlicePredicate pred;
-        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
-
-        vector<ColumnOrSuperColumn> raw_column_list;
-        CassandraConnection::instance().getCassandraClient()->getRawSlice(
-                raw_column_list,
-                collection_,
-                col_parent,
-                pred);
-
-        if (raw_column_list.empty()) return true;
-        if (!sourceCountPresent_)
-        {
-            sourceCount_.clear();
-            sourceCountPresent_ = true;
-        }
-        for (vector<ColumnOrSuperColumn>::const_iterator it = raw_column_list.begin();
-                it != raw_column_list.end(); ++it)
-        {
-            sourceCount_[it->counter_column.name] = it->counter_column.value;
-        }
-    }
-    catch (const InvalidRequestException &ire)
-    {
-        cout << ire.why << endl;
-        return false;
-    }
-    return true;
-}
-
-void SourceCount::insertSourceCount(const string& source, int64_t count)
+void SourceCount::insertCounter(const string& name, int64_t value)
 {
     if (!sourceCountPresent_)
     {
         sourceCount_.clear();
         sourceCountPresent_ = true;
     }
-    sourceCount_[source] = count;
+    sourceCount_[name] = value;
 }
 
 void SourceCount::resetKey(const string& newCollection)
@@ -161,6 +125,13 @@ void SourceCount::resetKey(const string& newCollection)
     if (!newCollection.empty())
         collection_.assign(newCollection);
     sourceCountPresent_ = false;
+}
+
+void SourceCount::clear()
+{
+    if (sourceCountPresent_ == false)
+        sourceCount_.clear();
+    sourceCountPresent_ = true;
 }
 
 }

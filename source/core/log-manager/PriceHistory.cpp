@@ -11,6 +11,8 @@ using namespace org::apache::cassandra;
 
 namespace sf1r {
 
+const ColumnFamilyBase::ColumnType PriceHistory::column_type = ColumnFamilyBase::NORMAL;
+
 const string PriceHistory::cf_name("PriceHistory");
 
 const string PriceHistory::cf_column_type;
@@ -110,45 +112,17 @@ bool PriceHistory::updateRow() const
     return true;
 }
 
-bool PriceHistory::getRow()
+void PriceHistory::insert(const string& name, const string& value)
 {
-    if (!CassandraConnection::instance().isEnabled() || uuid_.empty()) return false;
-    try
+    if (!priceHistoryPresent_)
     {
-        ColumnParent col_parent;
-        col_parent.__set_column_family(cf_name);
-
-        SlicePredicate pred;
-        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
-
-        vector<ColumnOrSuperColumn> raw_column_list;
-        CassandraConnection::instance().getCassandraClient()->getRawSlice(
-                raw_column_list,
-                uuid_,
-                col_parent,
-                pred);
-
-        if (raw_column_list.empty()) return true;
-        if (!priceHistoryPresent_)
-        {
-            priceHistory_.clear();
-            priceHistoryPresent_ = true;
-        }
-        for (vector<ColumnOrSuperColumn>::const_iterator it = raw_column_list.begin();
-                it != raw_column_list.end(); ++it)
-        {
-            priceHistory_[fromBytes<time_t>(it->column.name)] = fromBytes<ProductPriceType>(it->column.value);
-        }
+        priceHistory_.clear();
+        priceHistoryPresent_ = true;
     }
-    catch (const InvalidRequestException &ire)
-    {
-        cout << ire.why << endl;
-        return false;
-    }
-    return true;
+    priceHistory_[fromBytes<time_t>(name)] = fromBytes<ProductPriceType>(value);
 }
 
-void PriceHistory::insertHistory(time_t timestamp, ProductPriceType price)
+void PriceHistory::insert(time_t timestamp, ProductPriceType price)
 {
     if (!priceHistoryPresent_)
     {
@@ -158,66 +132,18 @@ void PriceHistory::insertHistory(time_t timestamp, ProductPriceType price)
     priceHistory_[timestamp] = price;
 }
 
-void PriceHistory::clearHistory()
-{
-    priceHistory_.clear();
-    priceHistoryPresent_ = false;
-}
-
-bool PriceHistory::getRangeHistory(PriceHistoryType& history, time_t from, time_t to) const
-{
-    if (!CassandraConnection::instance().isEnabled() || uuid_.empty()) return false;
-    try
-    {
-        ColumnParent col_parent;
-        col_parent.__set_column_family(cf_name);
-
-        SlicePredicate pred;
-        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
-        if (from != -1)
-            pred.slice_range.__set_start(toBytes(from));
-        if (to != -1)
-            pred.slice_range.__set_finish(toBytes(to));
-
-        vector<ColumnOrSuperColumn> raw_column_list;
-        CassandraConnection::instance().getCassandraClient()->getRawSlice(
-                raw_column_list,
-                uuid_,
-                col_parent,
-                pred);
-
-        if (!raw_column_list.empty())
-        {
-            for (vector<ColumnOrSuperColumn>::const_iterator it = raw_column_list.begin();
-                    it != raw_column_list.end(); ++it)
-            {
-                history[fromBytes<time_t>(it->column.name)] = fromBytes<ProductPriceType>(it->column.value);
-            }
-        }
-    }
-    catch (const InvalidRequestException &ire)
-    {
-        cout << ire.why << endl;
-        return false;
-    }
-    return true;
-}
-
-bool PriceHistory::getRangeHistoryBound(ProductPriceType& lower, ProductPriceType& upper, time_t from, time_t to) const
-{
-    PriceHistoryType history;
-    if (!getRangeHistory(history, from, to))
-        return false;
-    lower = history.begin()->second;
-    upper = history.rbegin()->second;
-    return true;
-}
-
 void PriceHistory::resetKey(const string& newUuid)
 {
     if (!newUuid.empty())
         uuid_.assign(newUuid);
     priceHistoryPresent_ = false;
+}
+
+void PriceHistory::clear()
+{
+    if (priceHistoryPresent_ == false)
+        priceHistory_.clear();
+    priceHistoryPresent_ = true;
 }
 
 }

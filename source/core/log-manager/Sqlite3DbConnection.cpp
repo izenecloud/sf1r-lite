@@ -38,7 +38,7 @@ bool Sqlite3DbConnection::init(const std::string & path )
     }
     bool ret = true;
     boost::unique_lock<boost::mutex> lock(mutex_);
-	
+
     for(int i=0; i<PoolSize; i++) {
         sqlite3* db;
         int rc = sqlite3_open(path.c_str(), &db);
