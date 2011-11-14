@@ -89,7 +89,7 @@ const string& PriceHistory::getKey() const
 bool PriceHistory::updateRow() const
 {
     if (!CassandraConnection::instance().isEnabled() || uuid_.empty()) return false;
-    if (priceHistoryPresent_) return true;
+    if (!priceHistoryPresent_) return true;
     try
     {
         for (PriceHistoryType::const_iterator it = priceHistory_.begin();
@@ -114,36 +114,34 @@ bool PriceHistory::updateRow() const
 
 void PriceHistory::insert(const string& name, const string& value)
 {
-    if (!priceHistoryPresent_)
-    {
-        priceHistory_.clear();
-        priceHistoryPresent_ = true;
-    }
+    clear();
     priceHistory_[fromBytes<time_t>(name)] = fromBytes<ProductPriceType>(value);
 }
 
 void PriceHistory::insert(time_t timestamp, ProductPriceType price)
 {
-    if (!priceHistoryPresent_)
-    {
-        priceHistory_.clear();
-        priceHistoryPresent_ = true;
-    }
+    clear();
     priceHistory_[timestamp] = price;
 }
 
 void PriceHistory::resetKey(const string& newUuid)
 {
-    if (!newUuid.empty())
+    if (newUuid.empty())
+    {
+        uuid_.clear();
+        priceHistoryPresent_ = false;
+    }
+    else
         uuid_.assign(newUuid);
-    priceHistoryPresent_ = false;
 }
 
 void PriceHistory::clear()
 {
-    if (priceHistoryPresent_ == false)
+    if (!priceHistoryPresent_)
+    {
         priceHistory_.clear();
-    priceHistoryPresent_ = true;
+        priceHistoryPresent_ = true;
+    }
 }
 
 }

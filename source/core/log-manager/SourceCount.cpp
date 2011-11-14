@@ -112,26 +112,28 @@ bool SourceCount::updateRow() const
 
 void SourceCount::insertCounter(const string& name, int64_t value)
 {
-    if (!sourceCountPresent_)
-    {
-        sourceCount_.clear();
-        sourceCountPresent_ = true;
-    }
+    clear();
     sourceCount_[name] = value;
 }
 
 void SourceCount::resetKey(const string& newCollection)
 {
-    if (!newCollection.empty())
+    if (newCollection.empty())
+    {
+        collection_.clear();
+        sourceCountPresent_ = false;
+    }
+    else
         collection_.assign(newCollection);
-    sourceCountPresent_ = false;
 }
 
 void SourceCount::clear()
 {
-    if (sourceCountPresent_ == false)
+    if (!sourceCountPresent_)
+    {
         sourceCount_.clear();
-    sourceCountPresent_ = true;
+        sourceCountPresent_ = true;
+    }
 }
 
 }
