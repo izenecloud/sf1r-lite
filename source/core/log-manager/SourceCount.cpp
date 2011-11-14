@@ -62,7 +62,7 @@ const string SourceCount::cf_row_cache_provider("SerializingCacheProvider");
 
 const string SourceCount::cf_key_alias;
 
-const string SourceCount::cf_compaction_strategy;
+const string SourceCount::cf_compaction_strategy("LeveledCompactionStrategy");
 
 const map<string, string> SourceCount::cf_compaction_strategy_options;
 

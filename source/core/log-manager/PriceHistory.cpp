@@ -62,7 +62,7 @@ const string PriceHistory::cf_row_cache_provider("SerializingCacheProvider");
 
 const string PriceHistory::cf_key_alias;
 
-const string PriceHistory::cf_compaction_strategy;
+const string PriceHistory::cf_compaction_strategy("LeveledCompactionStrategy");
 
 const map<string, string> PriceHistory::cf_compaction_strategy_options;
 
