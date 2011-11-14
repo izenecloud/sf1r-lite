@@ -3,7 +3,6 @@
 
 #include <sqlite3.h>
 
-#include <util/ThreadModel.h>
 #include "RDbConnectionBase.h"
 
 namespace sf1r {
@@ -45,7 +44,9 @@ private:
 
     void putDb(sqlite3 *);
 
-    izenelib::util::ReadWriteLock mutex_;
+    boost::mutex mutex_;
+
+    boost::condition_variable cond_;
 
     std::list<sqlite3*> pool_;
 
