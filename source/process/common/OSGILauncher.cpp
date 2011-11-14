@@ -58,8 +58,11 @@ void OSGILauncher::start(boost::shared_ptr<BundleConfiguration> bundleConfig)
 
 IService* OSGILauncher::getService(const std::string& bundleName, const std::string& serviceName)
 {
-    std::vector<ServiceInfoPtr> services = this->getRegistry().getBundleInfo(bundleName)->getRegisteredServices();
+    BundleInfoBase* bundleInfo = getRegistry().getBundleInfo(bundleName);
+    if (! bundleInfo)
+        return NULL;
 
+    std::vector<ServiceInfoPtr> services = bundleInfo->getRegisteredServices();
     for(size_t i = 0; i < services.size(); ++i)
     {
         if(services[i]->getServiceName() == serviceName)
@@ -68,6 +71,7 @@ IService* OSGILauncher::getService(const std::string& bundleName, const std::str
             return service;
 	}
     }
+
     return NULL;
 }
 
