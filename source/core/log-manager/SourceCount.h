@@ -18,8 +18,6 @@ public:
 
     virtual bool updateRow() const;
 
-    virtual bool deleteRow();
-
     virtual bool getRow();
 
     virtual void resetKey(const std::string& newCollection = "");

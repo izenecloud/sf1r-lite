@@ -68,7 +68,7 @@ public:
 private:
     std::string uuid_;
 
-    ProductPriceType priceHistory_;
+    PriceHistoryType priceHistory_;
     bool priceHistoryPresent_;
 };
 

@@ -19,15 +19,14 @@ const string PriceHistory::cf_comparator_type("LongType");
 
 const string PriceHistory::cf_sub_comparator_type;
 
-const string PriceHistory::cf_comment
-    ( "This column family stores recent two years price history for each product.\n"
-    + "Schema:\n\n"
-    + "    column family PriceHistory = list of {\n"
-    + "        key \"product uuid\" : list of {\n"
-    + "            name \"index timestamp\" : value \"product price\"\n"
-    + "        }\n"
-    + "    }\n"
-    );
+const string PriceHistory::cf_comment(
+    "This column family stores recent two years price history for each product.\n"
+    "Schema:\n\n"
+    "    column family PriceHistory = list of {\n"
+    "        key \"product uuid\" : list of {\n"
+    "            name \"index timestamp\" : value \"product price\"\n"
+    "        }\n"
+    "    }\n");
 
 const double PriceHistory::cf_row_cache_size(0);
 

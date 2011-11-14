@@ -3,6 +3,8 @@
 
 #include "CassandraConnection.h"
 
+#include <iostream>
+
 namespace sf1r {
 
 class ColumnFamilyBase
@@ -26,7 +28,7 @@ public:
 
     virtual bool getCount(int32_t& count, const std::string& start, const std::string& finish) const;
 
-    virtual void resetKey(const std::string& newKey) = 0;
+    virtual void resetKey(const std::string& newKey = "") = 0;
 
 protected:
     bool exist_;

@@ -19,15 +19,14 @@ const string SourceCount::cf_comparator_type("UTF8Type");
 
 const string SourceCount::cf_sub_comparator_type;
 
-const string SourceCount::cf_comment
-    ( "This column family stores sources and their product counts for each collection.\n"
-    + "Schema:\n\n"
-    + "    column family SourceCount = list of {\n"
-    + "        key \"collection name\" : list of {\n"
-    + "            name \"source name\" : value \"product count\"\n"
-    + "        }\n"
-    + "    }\n"
-    );
+const string SourceCount::cf_comment(
+    "This column family stores sources and their product counts for each collection.\n"
+    "Schema:\n\n"
+    "    column family SourceCount = list of {\n"
+    "        key \"collection name\" : list of {\n"
+    "            name \"source name\" : value \"product count\"\n"
+    "        }\n"
+    "    }\n");
 
 const double SourceCount::cf_row_cache_size(0);
 
