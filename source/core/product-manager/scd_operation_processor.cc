@@ -2,7 +2,7 @@
 #include <sstream>
 #include <common/ScdWriter.h>
 #include <boost/filesystem.hpp>
-#include <node-manager/DistributedSynchroFactory.h>
+#include <node-manager/synchro/DistributedSynchroFactory.h>
 
 using namespace sf1r;
 

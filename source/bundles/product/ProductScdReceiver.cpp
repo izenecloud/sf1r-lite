@@ -2,7 +2,7 @@
 #include <bundles/index/IndexTaskService.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
-#include <node-manager/DistributedSynchroFactory.h>
+#include <node-manager/synchro/DistributedSynchroFactory.h>
 using namespace sf1r;
 namespace bfs = boost::filesystem;
 ProductScdReceiver::ProductScdReceiver():index_service_(NULL)

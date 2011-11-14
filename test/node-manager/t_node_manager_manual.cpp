@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-#include <node-manager/DistributedSynchroFactory.h>
+#include <node-manager/synchro/DistributedSynchroFactory.h>
 
 using namespace sf1r;
 
