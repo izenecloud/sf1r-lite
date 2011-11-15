@@ -176,7 +176,7 @@ bool PriceHistory::updateRow() const
                     uuid_,
                     cf_name,
                     toBytes(it->first),
-                    CassandraConnection::instance().createTimestamp(),
+                    createTimeStamp(),
                     63072000); // Keep the price history for two years at most
         }
     }

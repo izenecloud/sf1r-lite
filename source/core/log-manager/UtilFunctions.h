@@ -20,11 +20,13 @@ T fromBytes(const std::string& str)
     return *(reinterpret_cast<const T *>(str.c_str()));
 }
 
-time_t to_time_t(boost::posix_time::ptime pt);
+time_t createTimeStamp();
 
-bool timeFromUString(time_t& tt, const izenelib::util::UString& text);
+time_t createTimeStamp(boost::posix_time::ptime pt);
 
-bool timeFromString(time_t& tt, const std::string& text);
+time_t createTimeStamp(const izenelib::util::UString& text);
+
+time_t createTimeStamp(const std::string& text);
 
 }
 

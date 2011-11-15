@@ -32,11 +32,6 @@ boost::shared_ptr<libcassandra::Cassandra>& CassandraConnection::getCassandraCli
     return cassandra_client_;
 }
 
-int64_t CassandraConnection::createTimestamp()
-{
-    return libcassandra::createTimestamp();
-}
-
 const string& CassandraConnection::getKeyspaceName() const
 {
     return keyspace_name_;

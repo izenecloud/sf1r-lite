@@ -1,23 +1,30 @@
 #include "UtilFunctions.h"
 
+#include <time.h>
+
 namespace sf1r {
 
-time_t to_time_t(boost::posix_time::ptime pt)
+time_t createTimeStamp()
 {
-    boost::posix_time::ptime epoch(boost::gregorian::date(1970, 1, 1));
-    boost::posix_time::time_duration::sec_type x = (pt - epoch).total_seconds();
-
-    return time_t(x);
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
-bool timeFromUString(time_t& tt, const izenelib::util::UString& text)
+time_t createTimeStamp(boost::posix_time::ptime pt)
+{
+    boost::posix_time::ptime epoch(boost::gregorian::date(1970, 1, 1));
+    return (pt - epoch).total_microseconds() + timezone * 1000000;
+}
+
+time_t createTimeStamp(const izenelib::util::UString& text)
 {
     std::string str;
     text.convertString(str, izenelib::util::UString::UTF_8);
-    return timeFromString(tt, str);
+    return createTimeStamp(str);
 }
 
-bool timeFromString(time_t& tt, const string& text)
+time_t createTimeStamp(const string& text)
 {
     boost::gregorian::date date;
     try
@@ -29,10 +36,9 @@ bool timeFromString(time_t& tt, const string& text)
     }
     if (!date.is_not_a_date())
     {
-        tt = to_time_t(boost::posix_time::ptime(date));
-        return true;
+        return createTimeStamp(boost::posix_time::ptime(date));
     }
-    if (text.length() < 8) return false;
+    if (text.length() < 8) return -1;
     std::string cand_text = text.substr(0, 8);
     try
     {
@@ -43,10 +49,9 @@ bool timeFromString(time_t& tt, const string& text)
     }
     if (!date.is_not_a_date())
     {
-        tt = to_time_t(boost::posix_time::ptime(date));
-        return true;
+        return createTimeStamp(boost::posix_time::ptime(date));
     }
-    return false;
+    return -1;
 }
 
 }

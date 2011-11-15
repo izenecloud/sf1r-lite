@@ -57,7 +57,7 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
     if(GetPrice_(doc, price))
     {
         PriceHistory price_history(uuid_str);
-        price_history.insert(CassandraConnection::instance().createTimestamp(), price);
+        price_history.insert(createTimeStamp(), price);
         price_history.updateRow();
     }
     return true;
@@ -89,7 +89,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
             std::string uuid_str;
             from_uuid.convertString(uuid_str, UString::UTF_8);
             PriceHistory price_history(uuid_str);
-            price_history.insert(CassandraConnection::instance().createTimestamp(), price);
+            price_history.insert(createTimeStamp(), price);
             price_history.updateRow();
         }
     }
@@ -119,7 +119,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
         std::string uuid_str;
         from_uuid.convertString(uuid_str, UString::UTF_8);
         PriceHistory price_history(uuid_str);
-        price_history.insert(CassandraConnection::instance().createTimestamp(), to_price);
+        price_history.insert(createTimeStamp(), to_price);
         price_history.updateRow();
     }
     return true;
