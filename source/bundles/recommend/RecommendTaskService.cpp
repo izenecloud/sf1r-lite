@@ -491,15 +491,10 @@ bool RecommendTaskService::loadUserSCD_()
     std::vector<string> scdList;
 
     if (scanSCDFiles(scdDir, scdList) == false)
-    {
         return false;
-    }
 
     if (scdList.empty())
-    {
-        LOG(WARNING) << "no user SCD files to load";
         return true;
-    }
 
     for (std::vector<string>::const_iterator scdIt = scdList.begin();
         scdIt != scdList.end(); ++scdIt)
@@ -595,15 +590,10 @@ bool RecommendTaskService::loadOrderSCD_()
     std::vector<string> scdList;
 
     if (scanSCDFiles(scdDir, scdList) == false)
-    {
         return false;
-    }
 
     if (scdList.empty())
-    {
-        LOG(WARNING) << "no order SCD files to load";
         return true;
-    }
 
     for (std::vector<string>::const_iterator scdIt = scdList.begin();
         scdIt != scdList.end(); ++scdIt)
