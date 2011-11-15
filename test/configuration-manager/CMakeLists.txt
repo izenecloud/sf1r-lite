@@ -10,6 +10,9 @@ SET(libs
   sf1r_log_manager
   sf1r_la_manager
   sf1r_configuration_manager
+  sf1r_product_manager
+  sf1r_node_manager
+  sf1r_document_manager
   sf1r_common
 
   ${ilplib_LIBRARIES}
@@ -24,6 +27,7 @@ SET(libs
   ${sqlite3_LIBRARIES}
   ${xml2_LIBRARIES}
   ${MYSQL_LIBRARIES}
+  ${TokyoCabinet_LIBRARIES}
   )
 
 SET(Boost_USE_STATIC_LIBS OFF)

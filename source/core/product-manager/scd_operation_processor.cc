@@ -9,8 +9,6 @@ using namespace sf1r;
 ScdOperationProcessor::ScdOperationProcessor(const std::string& dir)
 :dir_(dir), writer_(NULL), last_op_(0)
 {
-    
-    
 }
 
 ScdOperationProcessor::~ScdOperationProcessor()
@@ -59,7 +57,7 @@ bool ScdOperationProcessor::Finish()
     std::cout<<"ScdOperationProcessor::Finish "<<dir_<<std::endl;
 
     SynchroProducerPtr syncProducer =
-            DistributedSynchroFactory::makeProcuder(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER);
+            DistributedSynchroFactory::makeProducer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER);
 
     if (syncProducer->produce(dir_, boost::bind(&ScdOperationProcessor::AfterProcess_, this,_1)))
     {
@@ -75,7 +73,7 @@ void ScdOperationProcessor::ClearScds_()
 {
     namespace bfs = boost::filesystem;
     static const bfs::directory_iterator kItrEnd;
-    
+
     for (bfs::directory_iterator itr(dir_); itr != kItrEnd; ++itr)
     {
         bfs::remove_all(itr->path());
@@ -94,5 +92,3 @@ void ScdOperationProcessor::AfterProcess_(bool is_succ)
         std::cout<<"ERROR: Scd transmission and processed failed!"<<std::endl;
     }
 }
-
-

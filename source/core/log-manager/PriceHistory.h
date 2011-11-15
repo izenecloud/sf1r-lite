@@ -3,14 +3,16 @@
 
 #include "ColumnFamilyBase.h"
 
-#include <product-manager/pm_types.h>
+#include <product-manager/product_price.h>
 
 namespace sf1r {
+
+class ProductPrice;
 
 class PriceHistory : public ColumnFamilyBase
 {
 public:
-    typedef std::map<time_t, ProductPriceType> PriceHistoryType;
+    typedef std::map<time_t, ProductPrice> PriceHistoryType;
 
     explicit PriceHistory(const std::string& uuid = "");
 
@@ -26,7 +28,7 @@ public:
 
     virtual void clear();
 
-    void insert(time_t timestamp, ProductPriceType price);
+    void insert(time_t timestamp, ProductPrice price);
 
     DEFINE_COLUMN_FAMILY_COMMON_ROUTINES( PriceHistory )
 
@@ -50,7 +52,7 @@ public:
         return priceHistory_;
     }
 
-    inline void setPrice(const PriceHistoryType& priceHistory)
+    inline void setPriceHistory(const PriceHistoryType& priceHistory)
     {
         priceHistory_ = priceHistory;
         priceHistoryPresent_ = true;

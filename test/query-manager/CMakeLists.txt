@@ -3,7 +3,7 @@ INCLUDE_DIRECTORIES(
     ${ilplib_INCLUDE_DIRS}
     ${wisekma_INCLUDE_DIRS}
     ${izenecma_INCLUDE_DIRS}
-    ${izenejma_INCLUDE_DIRS}    
+    ${izenejma_INCLUDE_DIRS}
     ${izenelib_INCLUDE_DIRS}
     ${wiselib_INCLUDE_DIRS}
     ${idmlib_INCLUDE_DIRS}
@@ -25,7 +25,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     t_QueryParser.cpp
     t_SearchKeywordOperation.cpp
     )
-  TARGET_LINK_LIBRARIES(t_query_manager 
+  TARGET_LINK_LIBRARIES(t_query_manager
       ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
       sf1r_log_manager
       sf1r_license_manager
@@ -33,14 +33,16 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
       sf1r_la_manager
       sf1r_configuration_manager
       sf1r_common
-      
+      sf1r_document_manager
+      sf1r_directory_manager
+      sf1r_product_manager
+      sf1r_node_manager
+
       ${ilplib_LIBRARIES}
       ${wisekma_LIBRARIES}
       ${izenecma_LIBRARIES}
       ${izenejma_LIBRARIES}
       ${izenelib_LIBRARIES}
-      sf1r_document_manager
-      sf1r_directory_manager
       ${idmlib_LIBRARIES}
       ${imllib_LIBRARIES}
       ${xml2_LIBRARIES}

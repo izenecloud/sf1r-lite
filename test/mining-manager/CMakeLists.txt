@@ -1,4 +1,4 @@
-INCLUDE_DIRECTORIES(		 
+INCLUDE_DIRECTORIES(
   ${CMAKE_SOURCE_DIR}/core
   ${izenelib_INCLUDE_DIRS}
   ${ilplib_INCLUDE_DIRS}
@@ -6,7 +6,7 @@ INCLUDE_DIRECTORIES(
   ${imllib_INCLUDE_DIRS}
   ${wisekma_INCLUDE_DIRS}
   ${izenecma_INCLUDE_DIRS}
-  ${izenejma_INCLUDE_DIRS}  
+  ${izenejma_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
   ${TokyoCabinet_INCLUDE_DIRS}
   ${Glog_INCLUDE_DIRS}
@@ -28,6 +28,8 @@ SET(libs
   sf1r_la_manager
   sf1r_configuration_manager
   sf1r_index_manager
+  sf1r_product_manager
+  sf1r_node_manager
   sf1r_common
 
   ${ilplib_LIBRARIES}
@@ -96,7 +98,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
   ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_GroupLabelLogger")
-  
+
   ADD_EXECUTABLE(t_ec_manager
     Runner.cpp
     t_ec_manager.cc
@@ -106,7 +108,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
   ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_ec_manager")
-  
+
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
 
 INCLUDE_DIRECTORIES(
@@ -119,4 +121,3 @@ TARGET_LINK_LIBRARIES(dd_group_gen ${libs})
 SET_TARGET_PROPERTIES(dd_group_gen PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
 )
-
