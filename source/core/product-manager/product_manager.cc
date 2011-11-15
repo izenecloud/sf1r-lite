@@ -587,13 +587,15 @@ bool ProductManager::GetPriceHistory(
     for (std::map<std::string, PriceHistory>::const_iterator it = price_history_map.begin();
             it != price_history_map.end(); ++it)
     {
-        PriceHistoryList& history = history_map[docid_map[it->first]];
+        PriceHistoryList history;
         for (PriceHistory::PriceHistoryType::const_iterator hit = it->second.getPriceHistory().begin();
                 hit != it->second.getPriceHistory().end(); ++hit)
         {
             std::string time_str(boost::posix_time::to_iso_string(boost::posix_time::from_time_t(hit->first / 1000000 + timezone)));
             history.push_back(make_pair(UString(time_str, UString::UTF_8), hit->second.value));
         }
+        if (!history.empty())
+            history.swap(history_map[docid_map[it->first]]);
     }
     return true;
 }
@@ -633,7 +635,8 @@ bool ProductManager::GetPriceRange(
         {
             price_range += hit->second;
         }
-        range_map[docid_map[it->first]] = price_range.value;
+        if (price_range.Valid())
+            range_map[docid_map[it->first]] = price_range.value;
     }
     return true;
 }
