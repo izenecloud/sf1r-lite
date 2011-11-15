@@ -1,4 +1,5 @@
 #include "GroupParam.h"
+#include <configuration-manager/MiningSchema.h>
 
 namespace
 {
@@ -48,17 +49,99 @@ bool GroupParam::isAttrEmpty() const
     return isAttrGroup_ == false && attrLabels_.empty();
 }
 
-bool GroupParam::checkParam(std::string& message) const
+bool GroupParam::checkParam(const MiningSchema& miningSchema, std::string& message) const
 {
-    for (std::vector<GroupPropParam>::const_iterator propIt = groupProps_.begin();
-        propIt != groupProps_.end(); ++propIt)
+    return checkGroupParam_(miningSchema, message)
+           && checkAttrParam_(miningSchema, message);
+}
+
+bool GroupParam::checkGroupParam_(const MiningSchema& miningSchema, std::string& message) const
+{
+    if (isGroupEmpty())
+        return true;
+
+    if (! miningSchema.group_enable)
     {
-        const std::string& propName = propIt->property_;
-        if (propIt->isRange_ && isRangeLabel_(propName))
+        message = "The GroupBy properties have not been configured in <MiningBundle>::<Schema>::<Group> yet.";
+        return false;
+    }
+
+    return checkGroupProps_(miningSchema.group_properties, message)
+           && checkGroupLabels_(miningSchema.group_properties, message);
+}
+
+bool GroupParam::checkGroupProps_(const std::vector<GroupConfig>& groupProps, std::string& message) const
+{
+    for (std::vector<GroupPropParam>::const_iterator paramIt = groupProps_.begin();
+        paramIt != groupProps_.end(); ++paramIt)
+    {
+        const std::string& propName = paramIt->property_;
+        std::vector<GroupConfig>::const_iterator configIt;
+
+        for (configIt = groupProps.begin(); configIt != groupProps.end(); ++configIt)
+        {
+            if (configIt->propName == propName)
+                break;
+        }
+
+        if (configIt == groupProps.end())
+        {
+            message = "property " + propName + " should be configured in <MiningBundle>::<Schema>::<Group>.";
+            return false;
+        }
+
+        if (! paramIt->isRange_)
+            continue;
+
+        if (! configIt->isNumericType())
+        {
+            message = "the property type of " + propName + " should be int or float for group range result.";
+            return false;
+        }
+
+        if (isRangeLabel_(propName))
         {
             message = "the property " + propName + " in request[search][group_label] could not be specified in request[group] at the same time";
             return false;
         }
+    }
+
+    return true;
+}
+
+bool GroupParam::checkGroupLabels_(const std::vector<GroupConfig>& groupProps, std::string& message) const
+{
+    for (GroupLabelMap::const_iterator labelIt = groupLabels_.begin();
+        labelIt != groupLabels_.end(); ++labelIt)
+    {
+        const std::string& propName = labelIt->first;
+        std::vector<GroupConfig>::const_iterator configIt;
+
+        for (configIt = groupProps.begin(); configIt != groupProps.end(); ++configIt)
+        {
+            if (configIt->propName == propName)
+                break;
+        }
+
+        if (configIt == groupProps.end())
+        {
+            message = "property " + propName + " should be configured in <MiningBundle>::<Schema>::<Group>.";
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool GroupParam::checkAttrParam_(const MiningSchema& miningSchema, std::string& message) const
+{
+    if (isAttrEmpty())
+        return true;
+
+    if (! miningSchema.attr_enable)
+    {
+        message = "To get group results by attribute value, the attribute property should be configured in <MiningBundle>::<Schema>::<Attr>.";
+        return false;
     }
 
     return true;

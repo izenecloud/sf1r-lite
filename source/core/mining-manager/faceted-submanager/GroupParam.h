@@ -20,6 +20,12 @@
 #include <iostream>
 #include <utility> // pair
 
+namespace sf1r
+{
+class MiningSchema;
+class GroupConfig;
+}
+
 NS_FACETED_BEGIN
 
 struct GroupPropParam
@@ -77,7 +83,7 @@ struct GroupParam
     bool isEmpty() const;
     bool isGroupEmpty() const;
     bool isAttrEmpty() const;
-    bool checkParam(std::string& message) const;
+    bool checkParam(const MiningSchema& miningSchema, std::string& message) const;
 
     DATA_IO_LOAD_SAVE(GroupParam, &groupProps_&groupLabels_
             &isAttrGroup_&attrGroupNum_&attrLabels_);
@@ -96,6 +102,10 @@ struct GroupParam
     }
 
 private:
+    bool checkGroupParam_(const MiningSchema& miningSchema, std::string& message) const;
+    bool checkGroupProps_(const std::vector<GroupConfig>& groupProps, std::string& message) const;
+    bool checkGroupLabels_(const std::vector<GroupConfig>& groupProps, std::string& message) const;
+    bool checkAttrParam_(const MiningSchema& miningSchema, std::string& message) const;
     bool isRangeLabel_(const std::string& propName) const;
 };
 
