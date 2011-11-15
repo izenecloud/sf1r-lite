@@ -125,7 +125,7 @@ bool SourceCount::getMultiSlice(
     }
     catch (const InvalidRequestException &ire)
     {
-        cout << ire.why << endl;
+        cerr << ire.why << endl;
         return false;
     }
     return true;
@@ -156,7 +156,7 @@ bool SourceCount::getMultiCount(
     }
     catch (const InvalidRequestException &ire)
     {
-        cout << ire.why << endl;
+        cerr << ire.why << endl;
         return false;
     }
     return true;

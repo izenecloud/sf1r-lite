@@ -55,6 +55,17 @@ public:
 
     bool AddGroupWithInfo(const std::vector<izenelib::util::UString>& docid_list, const Document& doc, bool backup = true);
 
+    bool GetPriceHistory(
+            std::vector<std::pair<izenelib::util::UString, std::pair<ProductPriceType, ProductPriceType> > >& history,
+            const uint32_t docid,
+            const izenelib::util::UString& from_time,
+            const izenelib::util::UString& to_time);
+
+    bool GetPriceRange(
+            std::pair<ProductPriceType, ProductPriceType>& range,
+            const uint32_t docid,
+            const izenelib::util::UString& from_time,
+            const izenelib::util::UString& to_time);
 
 
     const std::string& GetLastError() const
@@ -75,17 +86,19 @@ private:
 
     bool AppendToGroup_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& uuid_docid_list, const std::vector<uint32_t>& docid_list, const PMDocumentType& uuid_doc);
 
-    bool GetPrice_(uint32_t docid, ProductPrice& price);
+    bool GetPrice_(uint32_t docid, ProductPrice& price) const;
 
-    bool GetPrice_(const PMDocumentType& doc, ProductPrice& price);
+    bool GetPrice_(const PMDocumentType& doc, ProductPrice& price) const;
 
-    void GetPrice_(const std::vector<uint32_t>& docid_list, ProductPrice& price);
+    void GetPrice_(const std::vector<uint32_t>& docid_list, ProductPrice& price) const;
 
-    bool GetUuid_(const PMDocumentType& doc, izenelib::util::UString& uuid);
+    bool GetUuid_(const PMDocumentType& doc, izenelib::util::UString& uuid) const;
 
-    bool GetDOCID_(const PMDocumentType& doc, izenelib::util::UString& docid);
+    bool GetDOCID_(const PMDocumentType& doc, izenelib::util::UString& docid) const;
 
     void SetItemCount_(PMDocumentType& doc, uint32_t item_count);
+
+    bool UpdatePriceHistory_(const PMDocumentType& doc) const;
 
 private:
     ProductDataSource* data_source_;

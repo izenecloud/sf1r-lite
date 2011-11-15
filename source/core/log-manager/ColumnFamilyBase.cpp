@@ -82,7 +82,7 @@ bool ColumnFamilyBase::getSlice(const string& start, const string& finish)
     }
     catch (const InvalidRequestException &ire)
     {
-        cout << ire.why << endl;
+        cerr << ire.why << endl;
         return false;
     }
     return true;
@@ -102,7 +102,7 @@ bool ColumnFamilyBase::deleteRow()
     }
     catch (const InvalidRequestException &ire)
     {
-        cout << ire.why << endl;
+        cerr << ire.why << endl;
         return false;
     }
     return true;
@@ -128,7 +128,7 @@ bool ColumnFamilyBase::getCount(int32_t& count, const string& start, const strin
     }
     catch (const InvalidRequestException &ire)
     {
-        cout << ire.why << endl;
+        cerr << ire.why << endl;
         return false;
     }
     return true;

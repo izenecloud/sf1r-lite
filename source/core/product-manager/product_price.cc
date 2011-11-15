@@ -10,7 +10,6 @@ ProductPrice::ProductPrice(ProductPriceType a, ProductPriceType b): value(a,b)
     Check_();
 }
 
-
 ProductPrice& ProductPrice::operator+=(const ProductPrice& a)
 {
     if(!Valid())
@@ -43,7 +42,6 @@ bool ProductPrice::Parse(const izenelib::util::UString& ustr)
     ustr.convertString(str, izenelib::util::UString::UTF_8);
     return Parse(str);
 }
-
 
 bool ProductPrice::Parse(const std::string& str)
 {
@@ -104,7 +102,6 @@ bool ProductPrice::Valid() const
 {
     return value.first>=0.0 && value.second>=0.0;
 }
-
 
 void ProductPrice::Check_()
 {

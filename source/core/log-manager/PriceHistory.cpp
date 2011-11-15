@@ -25,7 +25,7 @@ const string PriceHistory::cf_comment(
     "This column family stores recent two years price history for each product.\n"
     "Schema:\n\n"
     "    column family PriceHistory = list of {\n"
-    "        key \"product uuid\" : list of {\n"
+    "        key \"product docId\" : list of {\n"
     "            name \"index timestamp\" : value \"product price\"\n"
     "        }\n"
     "    }\n");
@@ -72,9 +72,9 @@ const map<string, string> PriceHistory::cf_compression_options = map_list_of
     ("sstable_compression", "SnappyCompressor")
     ("chunk_length_kb", "64");
 
-PriceHistory::PriceHistory(const string& uuid)
+PriceHistory::PriceHistory(const string& docId)
     : ColumnFamilyBase()
-    , uuid_(uuid)
+    , docId_(docId)
     , priceHistoryPresent_(false)
 {}
 
@@ -83,7 +83,7 @@ PriceHistory::~PriceHistory()
 
 const string& PriceHistory::getKey() const
 {
-    return uuid_;
+    return docId_;
 }
 
 bool PriceHistory::getMultiSlice(
@@ -164,7 +164,7 @@ bool PriceHistory::getMultiCount(
 
 bool PriceHistory::updateRow() const
 {
-    if (!CassandraConnection::instance().isEnabled() || uuid_.empty()) return false;
+    if (!CassandraConnection::instance().isEnabled() || docId_.empty()) return false;
     if (!priceHistoryPresent_) return true;
     try
     {
@@ -173,7 +173,7 @@ bool PriceHistory::updateRow() const
         {
             CassandraConnection::instance().getCassandraClient()->insertColumn(
                     toBytes(it->second),
-                    uuid_,
+                    docId_,
                     cf_name,
                     toBytes(it->first),
                     createTimeStamp(),
@@ -188,10 +188,16 @@ bool PriceHistory::updateRow() const
     return true;
 }
 
-void PriceHistory::insert(const string& name, const string& value)
+bool PriceHistory::insert(const string& name, const string& value)
 {
     clear();
+    if (value.length() != sizeof(ProductPrice))
+    {
+        cerr << "Bad insert!" << endl;
+        return false;
+    }
     priceHistory_[fromBytes<time_t>(name)] = fromBytes<ProductPrice>(value);
+    return true;
 }
 
 void PriceHistory::insert(time_t timestamp, ProductPrice price)
@@ -200,15 +206,15 @@ void PriceHistory::insert(time_t timestamp, ProductPrice price)
     priceHistory_[timestamp] = price;
 }
 
-void PriceHistory::resetKey(const string& newUuid)
+void PriceHistory::resetKey(const string& newDocId)
 {
-    if (newUuid.empty())
+    if (newDocId.empty())
     {
-        uuid_.clear();
+        docId_.clear();
         priceHistoryPresent_ = false;
     }
     else
-        uuid_.assign(newUuid);
+        docId_.assign(newDocId);
 }
 
 void PriceHistory::clear()

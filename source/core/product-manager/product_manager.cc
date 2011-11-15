@@ -7,6 +7,7 @@
 #include <log-manager/PriceHistory.h>
 
 #include <boost/unordered_set.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 using namespace sf1r;
 using izenelib::util::UString;
@@ -43,23 +44,16 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
-    std::string uuid_str;
-    generateUUID(uuid_str, doc);
-    UString uuid(uuid_str, UString::UTF_8);
+    UString uuid;
+    generateUUID(uuid, doc);
     if(!data_source_->SetUuid(index_document, uuid)) return false;
     PMDocumentType new_doc(doc);
     doc.property(config_.uuid_property_name) = uuid;
     new_doc.property(config_.docid_property_name) = uuid;
     SetItemCount_(new_doc, 1);
     op_processor_->Append(1, new_doc);
+    UpdatePriceHistory_(doc);
 
-    ProductPrice price;
-    if(GetPrice_(doc, price))
-    {
-        PriceHistory price_history(uuid_str);
-        price_history.insert(createTimeStamp(), price);
-        price_history.updateRow();
-    }
     return true;
 }
 
@@ -82,16 +76,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
         new_doc.property(config_.docid_property_name) = from_uuid;
         SetItemCount_(new_doc, 1);
         op_processor_->Append( 2, new_doc);// if r_type, only numberic properties in 'to'
-
-        ProductPrice price;
-        if (GetPrice_(to, price))
-        {
-            std::string uuid_str;
-            from_uuid.convertString(uuid_str, UString::UTF_8);
-            PriceHistory price_history(uuid_str);
-            price_history.insert(createTimeStamp(), price);
-            price_history.updateRow();
-        }
+        UpdatePriceHistory_(to);
     }
     else
     {
@@ -114,13 +99,8 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
 //                 diff_properties.property(config_.itemcount_property_name) = UString(boost::lexical_cast<std::string>(docid_list.size()+1), UString::UTF_8);
 
             op_processor_->Append( 2, diff_properties );
+            UpdatePriceHistory_(to);
         }
-
-        std::string uuid_str;
-        from_uuid.convertString(uuid_str, UString::UTF_8);
-        PriceHistory price_history(uuid_str);
-        price_history.insert(createTimeStamp(), to_price);
-        price_history.updateRow();
     }
     return true;
 }
@@ -578,14 +558,68 @@ bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint
     return true;
 }
 
-bool ProductManager::GetPrice_(uint32_t docid, ProductPrice& price)
+bool ProductManager::GetPriceHistory(
+        std::vector<std::pair<izenelib::util::UString, std::pair<ProductPriceType, ProductPriceType> > >& history,
+        const uint32_t docid,
+        const UString& from_time,
+        const UString& to_time)
+{
+    PMDocumentType doc;
+    if(!data_source_->GetDocument(docid, doc)) return false;
+    UString docid_ustr;
+    if(!GetDOCID_(doc, docid_ustr)) return false;
+
+    std::string docid_str, from_str, to_str;
+    docid_ustr.convertString(docid_str, UString::UTF_8);
+    from_time.convertString(from_str, UString::UTF_8);
+    to_time.convertString(to_str, UString::UTF_8);
+
+    PriceHistory price_history(docid_str);
+    price_history.getSlice(from_str, to_str);
+    for (PriceHistory::PriceHistoryType::const_iterator it = price_history.getPriceHistory().begin();
+            it != price_history.getPriceHistory().end(); ++it)
+    {
+        std::string time_str(boost::posix_time::to_iso_string(boost::posix_time::from_time_t(it->first / 1000000 + timezone)));
+        history.push_back(make_pair(UString(time_str, UString::UTF_8), it->second.value));
+    }
+    return true;
+}
+
+bool ProductManager::GetPriceRange(
+        std::pair<ProductPriceType, ProductPriceType>& range,
+        const uint32_t docid,
+        const UString& from_time,
+        const UString& to_time)
+{
+    PMDocumentType doc;
+    if(!data_source_->GetDocument(docid, doc)) return false;
+    UString docid_ustr;
+    if(!GetDOCID_(doc, docid_ustr)) return false;
+
+    std::string docid_str, from_str, to_str;
+    docid_ustr.convertString(docid_str, UString::UTF_8);
+    from_time.convertString(from_str, UString::UTF_8);
+    to_time.convertString(to_str, UString::UTF_8);
+
+    PriceHistory price_history(docid_str);
+    price_history.getSlice(from_str, to_str);
+    ProductPrice price_range;
+    for (PriceHistory::PriceHistoryType::const_iterator it = price_history.getPriceHistory().begin();
+            it != price_history.getPriceHistory().end(); ++it)
+    {
+        price_range += it->second;
+    }
+    range = price_range.value;
+    return true;
+}
+bool ProductManager::GetPrice_(uint32_t docid, ProductPrice& price) const
 {
     PMDocumentType doc;
     if(!data_source_->GetDocument(docid, doc)) return false;
     return GetPrice_(doc, price);
 }
 
-bool ProductManager::GetPrice_(const PMDocumentType& doc, ProductPrice& price)
+bool ProductManager::GetPrice_(const PMDocumentType& doc, ProductPrice& price) const
 {
     Document::property_const_iterator it = doc.findProperty(config_.price_property_name);
     if(it == doc.propertyEnd())
@@ -597,7 +631,7 @@ bool ProductManager::GetPrice_(const PMDocumentType& doc, ProductPrice& price)
     return true;
 }
 
-void ProductManager::GetPrice_(const std::vector<uint32_t>& docid_list, ProductPrice& price)
+void ProductManager::GetPrice_(const std::vector<uint32_t>& docid_list, ProductPrice& price) const
 {
     for(uint32_t i=0;i<docid_list.size();i++)
     {
@@ -609,7 +643,7 @@ void ProductManager::GetPrice_(const std::vector<uint32_t>& docid_list, ProductP
     }
 }
 
-bool ProductManager::GetUuid_(const PMDocumentType& doc, UString& uuid)
+bool ProductManager::GetUuid_(const PMDocumentType& doc, UString& uuid) const
 {
     PMDocumentType::property_const_iterator it = doc.findProperty(config_.uuid_property_name);
     if(it == doc.propertyEnd())
@@ -620,7 +654,7 @@ bool ProductManager::GetUuid_(const PMDocumentType& doc, UString& uuid)
     return true;
 }
 
-bool ProductManager::GetDOCID_(const PMDocumentType& doc, UString& docid)
+bool ProductManager::GetDOCID_(const PMDocumentType& doc, UString& docid) const
 {
     PMDocumentType::property_const_iterator it = doc.findProperty(config_.docid_property_name);
     if(it == doc.propertyEnd())
@@ -634,4 +668,17 @@ bool ProductManager::GetDOCID_(const PMDocumentType& doc, UString& docid)
 void ProductManager::SetItemCount_(PMDocumentType& doc, uint32_t item_count)
 {
     doc.property(config_.itemcount_property_name) = UString(boost::lexical_cast<std::string>(item_count), UString::UTF_8);
+}
+
+bool ProductManager::UpdatePriceHistory_(const PMDocumentType& doc) const
+{
+    ProductPrice price;
+    if(!GetPrice_(doc, price)) return false;
+    UString docid;
+    if(!GetDOCID_(doc, docid)) return false;
+    std::string docid_str;
+    docid.convertString(docid_str, izenelib::util::UString::UTF_8);
+    PriceHistory price_history(docid_str);
+    price_history.insert(createTimeStamp(), price);
+    return price_history.updateRow();
 }

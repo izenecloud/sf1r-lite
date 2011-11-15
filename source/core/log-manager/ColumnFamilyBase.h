@@ -36,7 +36,7 @@ public:
 
     virtual bool getCount(int32_t& count, const std::string& start, const std::string& finish) const;
 
-    virtual void insert(const std::string& name, const std::string& value) {}
+    virtual bool insert(const std::string& name, const std::string& value) { return true; }
 
     virtual void insertCounter(const std::string& name, int64_t value) {}
 
