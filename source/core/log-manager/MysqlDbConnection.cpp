@@ -137,6 +137,7 @@ void MysqlDbConnection::putDb(MYSQL* db)
 {
     boost::unique_lock<boost::mutex> lock(mutex_);
     pool_.push_back(db);
+    cond_.notify_one();
 }
 
 bool MysqlDbConnection::exec(const std::string & sql, bool omitError)

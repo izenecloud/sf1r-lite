@@ -83,6 +83,7 @@ void Sqlite3DbConnection::putDb(sqlite3* db)
 {
     boost::unique_lock<boost::mutex> lock(mutex_);
     pool_.push_back(db);
+    cond_.notify_one();
 }
 
 bool Sqlite3DbConnection::exec(const std::string & sql, bool omitError)
