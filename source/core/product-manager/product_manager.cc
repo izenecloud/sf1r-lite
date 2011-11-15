@@ -3,9 +3,13 @@
 #include "operation_processor.h"
 #include "uuid_generator.h"
 #include "product_backup.h"
+
+#include <log-manager/PriceHistory.h>
+
 #include <boost/unordered_set.hpp>
 
 using namespace sf1r;
+using izenelib::util::UString;
 
 ProductManager::ProductManager(ProductDataSource* data_source, OperationProcessor* op_processor, const PMConfig& config)
 :data_source_(data_source), op_processor_(op_processor), backup_(NULL), config_(config), inhook_(false)
@@ -39,14 +43,23 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
-    izenelib::util::UString uuid;
-    generateUUID(uuid, doc);
+    std::string uuid_str;
+    generateUUID(uuid_str, doc);
+    UString uuid(uuid_str, UString::UTF_8);
     if(!data_source_->SetUuid(index_document, uuid)) return false;
     PMDocumentType new_doc(doc);
     doc.property(config_.uuid_property_name) = uuid;
     new_doc.property(config_.docid_property_name) = uuid;
     SetItemCount_(new_doc, 1);
     op_processor_->Append(1, new_doc);
+
+    ProductPrice price;
+    if(GetPrice_(doc, price))
+    {
+        PriceHistory price_history(uuid_str);
+        price_history.insert(CassandraConnection::instance().createTimestamp(), price.value.first);
+        price_history.updateRow();
+    }
     return true;
 }
 
@@ -57,7 +70,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
     uint32_t fromid = index_document.getId(); //oldid
     PMDocumentType from;
     if(!data_source_->GetDocument(fromid, from)) return false;
-    izenelib::util::UString from_uuid;
+    UString from_uuid;
     if(!GetUuid_(from, from_uuid)) return false;
     std::vector<uint32_t> docid_list;
     data_source_->GetDocIdList(from_uuid, docid_list, fromid); // except from.docid
@@ -69,6 +82,16 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
         new_doc.property(config_.docid_property_name) = from_uuid;
         SetItemCount_(new_doc, 1);
         op_processor_->Append( 2, new_doc);// if r_type, only numberic properties in 'to'
+
+        ProductPrice price;
+        if (GetPrice_(to, price))
+        {
+            std::string uuid_str;
+            from_uuid.convertString(uuid_str, UString::UTF_8);
+            PriceHistory price_history(uuid_str);
+            price_history.insert(CassandraConnection::instance().createTimestamp(), price.value.first);
+            price_history.updateRow();
+        }
     }
     else
     {
@@ -88,10 +111,16 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
             diff_properties.property(config_.price_property_name) = price.ToUString();
             diff_properties.property(config_.docid_property_name) = from_uuid;
             //auto r_type? itemcount no need?
-//                 diff_properties.property(config_.itemcount_property_name) = izenelib::util::UString(boost::lexical_cast<std::string>(docid_list.size()+1), izenelib::util::UString::UTF_8);
+//                 diff_properties.property(config_.itemcount_property_name) = UString(boost::lexical_cast<std::string>(docid_list.size()+1), UString::UTF_8);
 
             op_processor_->Append( 2, diff_properties );
         }
+
+        std::string uuid_str;
+        from_uuid.convertString(uuid_str, UString::UTF_8);
+        PriceHistory price_history(uuid_str);
+        price_history.insert(CassandraConnection::instance().createTimestamp(), to_price.value.first);
+        price_history.updateRow();
     }
     return true;
 }
@@ -102,7 +131,7 @@ bool ProductManager::HookDelete(uint32_t docid)
     boost::mutex::scoped_lock lock(human_mutex_);
     PMDocumentType from;
     if(!data_source_->GetDocument(docid, from)) return false;
-    izenelib::util::UString from_uuid;
+    UString from_uuid;
     if(!GetUuid_(from, from_uuid)) return false;
     std::vector<uint32_t> docid_list;
     data_source_->GetDocIdList(from_uuid, docid_list, docid); // except from.docid
@@ -194,7 +223,7 @@ bool ProductManager::UpdateADoc_(const Document& doc)
     return true;
 }
 
-bool ProductManager::AddGroupWithInfo(const std::vector<izenelib::util::UString>& docid_list, const Document& doc, bool backup)
+bool ProductManager::AddGroupWithInfo(const std::vector<UString>& docid_list, const Document& doc, bool backup)
 {
     std::vector<uint32_t> idocid_list;
     if(!data_source_->GetInternalDocidList(docid_list, idocid_list))
@@ -205,15 +234,15 @@ bool ProductManager::AddGroupWithInfo(const std::vector<izenelib::util::UString>
     return AddGroupWithInfo(idocid_list, doc, backup);
 }
 
-void ProductManager::BackupPCItem_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, int type)
+void ProductManager::BackupPCItem_(const UString& uuid, const std::vector<uint32_t>& docid_list, int type)
 {
-    std::vector<izenelib::util::UString> docname_list;
+    std::vector<UString> docname_list;
     for(uint32_t i=0;i<docid_list.size();i++)
     {
         PMDocumentType doc;
         if(data_source_->GetDocument(docid_list[i], doc))
         {
-            docname_list.push_back(doc.property(config_.docid_property_name).get<izenelib::util::UString>());
+            docname_list.push_back(doc.property(config_.docid_property_name).get<UString>());
         }
     }
     if(!backup_->AddPriceComparisonItem(uuid, docname_list, type))
@@ -231,7 +260,7 @@ bool ProductManager::AddGroupWithInfo(const std::vector<uint32_t>& docid_list, c
     }
     boost::mutex::scoped_lock lock(human_mutex_);
     std::cout<<"ProductManager::AddGroupWithInfo"<<std::endl;
-    izenelib::util::UString uuid = doc.property(config_.docid_property_name).get<izenelib::util::UString>();
+    UString uuid = doc.property(config_.docid_property_name).get<UString>();
     if(uuid.length()==0)
     {
         error_ = "DOCID(uuid) not set";
@@ -242,7 +271,7 @@ bool ProductManager::AddGroupWithInfo(const std::vector<uint32_t>& docid_list, c
     if(!uuid_docid_list.empty())
     {
         std::string suuid;
-        uuid.convertString(suuid, izenelib::util::UString::UTF_8);
+        uuid.convertString(suuid, UString::UTF_8);
         error_ = suuid+" already exists";
         return false;
     }
@@ -265,7 +294,7 @@ bool ProductManager::AddGroupWithInfo(const std::vector<uint32_t>& docid_list, c
     return true;
 }
 
-bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib::util::UString& gen_uuid, bool backup)
+bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, UString& gen_uuid, bool backup)
 {
     if(inhook_)
     {
@@ -285,7 +314,7 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib:
         error_ = "Can not get document "+boost::lexical_cast<std::string>(docid_list[0]);
         return false;
     }
-    izenelib::util::UString first_uuid;
+    UString first_uuid;
     if(!GetUuid_(first_doc, first_uuid))
     {
         error_ = "Can not get uuid in document "+boost::lexical_cast<std::string>(docid_list[0]);
@@ -296,7 +325,7 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib:
     if(uuid_docid_list.empty())
     {
         std::string suuid;
-        first_uuid.convertString(suuid, izenelib::util::UString::UTF_8);
+        first_uuid.convertString(suuid, UString::UTF_8);
         error_ = suuid+" not exists";
         return false;
     }
@@ -323,7 +352,7 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, izenelib:
     return true;
 }
 
-bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& uuid_docid_list, const std::vector<uint32_t>& docid_list, const PMDocumentType& uuid_doc)
+bool ProductManager::AppendToGroup_(const UString& uuid, const std::vector<uint32_t>& uuid_docid_list, const std::vector<uint32_t>& docid_list, const PMDocumentType& uuid_doc)
 {
     if(docid_list.empty())
     {
@@ -340,7 +369,7 @@ bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const s
             return false;
         }
     }
-    std::vector<izenelib::util::UString> uuid_list(doc_list.size());
+    std::vector<UString> uuid_list(doc_list.size());
     for(uint32_t i=0;i<doc_list.size();i++)
     {
         if(!GetUuid_(doc_list[i], uuid_list[i]))
@@ -414,7 +443,7 @@ bool ProductManager::AppendToGroup_(const izenelib::util::UString& uuid, const s
     return true;
 }
 
-bool ProductManager::AppendToGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, bool backup)
+bool ProductManager::AppendToGroup(const UString& uuid, const std::vector<uint32_t>& docid_list, bool backup)
 {
     if(inhook_)
     {
@@ -428,7 +457,7 @@ bool ProductManager::AppendToGroup(const izenelib::util::UString& uuid, const st
     if(uuid_docid_list.empty())
     {
         std::string suuid;
-        uuid.convertString(suuid, izenelib::util::UString::UTF_8);
+        uuid.convertString(suuid, UString::UTF_8);
         error_ = suuid+" not exists";
         return false;
     }
@@ -447,7 +476,7 @@ bool ProductManager::AppendToGroup(const izenelib::util::UString& uuid, const st
     return true;
 }
 
-bool ProductManager::RemoveFromGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, bool backup)
+bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint32_t>& docid_list, bool backup)
 {
     if(inhook_)
     {
@@ -466,7 +495,7 @@ bool ProductManager::RemoveFromGroup(const izenelib::util::UString& uuid, const 
     if(uuid_docid_list.empty())
     {
         std::string suuid;
-        uuid.convertString(suuid, izenelib::util::UString::UTF_8);
+        uuid.convertString(suuid, UString::UTF_8);
         error_ = suuid+" not exists";
         return false;
     }
@@ -519,7 +548,7 @@ bool ProductManager::RemoveFromGroup(const izenelib::util::UString& uuid, const 
         update_doc.property(config_.price_property_name) = price.ToUString();
         op_processor_->Append(2, update_doc);
     }
-    std::vector<izenelib::util::UString> uuid_list(doc_list.size());
+    std::vector<UString> uuid_list(doc_list.size());
     for(uint32_t i=0;i<doc_list.size();i++)
     {
         //TODO need to be more strong here.
@@ -563,7 +592,7 @@ bool ProductManager::GetPrice_(const PMDocumentType& doc, ProductPrice& price)
     {
         return false;
     }
-    izenelib::util::UString price_str = it->second.get<izenelib::util::UString>();
+    UString price_str = it->second.get<UString>();
     if(!price.Parse(price_str)) return false;
     return true;
 }
@@ -580,29 +609,29 @@ void ProductManager::GetPrice_(const std::vector<uint32_t>& docid_list, ProductP
     }
 }
 
-bool ProductManager::GetUuid_(const PMDocumentType& doc, izenelib::util::UString& uuid)
+bool ProductManager::GetUuid_(const PMDocumentType& doc, UString& uuid)
 {
     PMDocumentType::property_const_iterator it = doc.findProperty(config_.uuid_property_name);
     if(it == doc.propertyEnd())
     {
         return false;
     }
-    uuid = it->second.get<izenelib::util::UString>();
+    uuid = it->second.get<UString>();
     return true;
 }
 
-bool ProductManager::GetDOCID_(const PMDocumentType& doc, izenelib::util::UString& docid)
+bool ProductManager::GetDOCID_(const PMDocumentType& doc, UString& docid)
 {
     PMDocumentType::property_const_iterator it = doc.findProperty(config_.docid_property_name);
     if(it == doc.propertyEnd())
     {
         return false;
     }
-    docid = it->second.get<izenelib::util::UString>();
+    docid = it->second.get<UString>();
     return true;
 }
 
 void ProductManager::SetItemCount_(PMDocumentType& doc, uint32_t item_count)
 {
-    doc.property(config_.itemcount_property_name) = izenelib::util::UString(boost::lexical_cast<std::string>(item_count), izenelib::util::UString::UTF_8);
+    doc.property(config_.itemcount_property_name) = UString(boost::lexical_cast<std::string>(item_count), UString::UTF_8);
 }

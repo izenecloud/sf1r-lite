@@ -154,7 +154,7 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
             return false;
         }
     }
-    else if ( ref.getServiceName() == "MiningTaskService" )	
+    else if ( ref.getServiceName() == "MiningTaskService" )
     {
         Properties props = ref.getServiceProperties();
         if ( props.get( "collection" ) == config_->collectionName_)
@@ -185,7 +185,7 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
             return false;
         }
     }
-    else if ( ref.getServiceName() == "ProductTaskService" )	
+    else if ( ref.getServiceName() == "ProductTaskService" )
     {
         Properties props = ref.getServiceProperties();
         if ( props.get( "collection" ) == config_->collectionName_)
@@ -291,8 +291,8 @@ bool IndexBundleActivator::init_()
     taskService_->documentManager_ = documentManager_;
     taskService_->searchManager_ = searchManager_;
     taskService_->summarizer_.init(documentManager_->getLangId(), idManager_);
-    
-    
+
+
 
     return true;
 }
@@ -326,23 +326,23 @@ bool IndexBundleActivator::openDataDirectories_()
     {
         bfs::path dataDir = bfs::path( getCollectionDataPath_() ) / *it;
         if (!directoryRotator_.appendDirectory(dataDir))
-	{
-	  std::string msg = dataDir.file_string() + " corrupted, delete it!";
-	  DLOG(ERROR) <<msg <<endl;		  
-	  //clean the corrupt dir
-	  boost::filesystem::remove_all( dataDir );
-	  directoryRotator_.appendDirectory(dataDir);
-	}
+        {
+            std::string msg = dataDir.file_string() + " corrupted, delete it!";
+            DLOG(ERROR) <<msg <<endl;
+            //clean the corrupt dir
+            boost::filesystem::remove_all( dataDir );
+            directoryRotator_.appendDirectory(dataDir);
+        }
     }
 
     directoryRotator_.rotateToNewest();
     boost::shared_ptr<Directory> newest = directoryRotator_.currentDirectory();
     if (newest)
     {
-	bfs::path p = newest->path();
-	currentCollectionDataName_ = p.filename();
-	//std::cout << "Current Index Directory: " << indexPath_() << std::endl;
-	return true;
+        bfs::path p = newest->path();
+        currentCollectionDataName_ = p.filename();
+        //std::cout << "Current Index Directory: " << indexPath_() << std::endl;
+        return true;
     }
 
     return false;
@@ -410,7 +410,7 @@ IndexBundleActivator::createIndexManager_() const
             indexerPropertyConfig.setIsStoreDocLen(iter->getIsStoreDocLen());
             indexCollectionMeta.addPropertyConfig(indexerPropertyConfig);
         }
-		
+
         config.addCollectionMeta(indexCollectionMeta);
 
         std::map<std::string, unsigned int> collectionIdMapping;
@@ -422,7 +422,7 @@ IndexBundleActivator::createIndexManager_() const
     return ret;
 }
 
-boost::shared_ptr<RankingManager> 
+boost::shared_ptr<RankingManager>
 IndexBundleActivator::createRankingManager_() const
 {
     boost::shared_ptr<RankingManager> ret(new RankingManager);
@@ -443,7 +443,7 @@ IndexBundleActivator::createRankingManager_() const
     return ret;
 }
 
-boost::shared_ptr<SearchManager> 
+boost::shared_ptr<SearchManager>
 IndexBundleActivator::createSearchManager_() const
 {
     boost::shared_ptr<SearchManager> ret;
@@ -464,7 +464,7 @@ IndexBundleActivator::createSearchManager_() const
     return ret;
 }
 
-boost::shared_ptr<LAManager> 
+boost::shared_ptr<LAManager>
 IndexBundleActivator::createLAManager_() const
 {
     boost::shared_ptr<LAManager> ret(new LAManager());
@@ -515,7 +515,7 @@ bool IndexBundleActivator::initializeQueryManager_() const
         displayProperty.summarySentenceNum_ = docSchemaIter->summaryNum_;
         displayProperty.isHighlightOn_ = docSchemaIter->bHighlight_;
 
-        QueryManager::addCollectionDisplayProperty(key, displayProperty); 
+        QueryManager::addCollectionDisplayProperty(key, displayProperty);
     }
 
     return true;
@@ -523,4 +523,3 @@ bool IndexBundleActivator::initializeQueryManager_() const
 
 
 }
-

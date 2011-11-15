@@ -1,6 +1,6 @@
 #include "product_price.h"
 using namespace sf1r;
-    
+
 ProductPrice::ProductPrice():value(-1.0,-1.0)
 {
 }
@@ -71,7 +71,7 @@ bool ProductPrice::Parse(const std::string& str)
                 break;
             }
         }
-        if(!found) 
+        if(!found)
         {
             Reset_();
             return false;
@@ -179,5 +179,3 @@ bool ProductPrice::split_float_(const std::string& str, char sep )
         return false;
     }
 }
-    
-
