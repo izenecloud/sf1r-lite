@@ -9,33 +9,52 @@ namespace sf1r {
 
 class ColumnFamilyBase
 {
-
 public:
-    ColumnFamilyBase() : exist_(false)
-    {}
+    ColumnFamilyBase() {}
 
     virtual ~ColumnFamilyBase() {}
+
+    enum ColumnType {
+        UNKNOWN,
+        NORMAL,
+        COUNTER
+    };
+
+    virtual bool truncateColumnFamily() const;
+
+    virtual bool dropColumnFamily() const;
 
     virtual const std::string& getKey() const = 0;
 
     virtual const std::string& getName() const = 0;
 
+    virtual const ColumnType getColumnType() const = 0;
+
     virtual bool updateRow() const = 0;
 
-    virtual bool getRow() = 0;
+    virtual bool getSlice(const std::string& start, const std::string& finish);
 
     virtual bool deleteRow();
 
     virtual bool getCount(int32_t& count, const std::string& start, const std::string& finish) const;
 
+    virtual void insert(const std::string& name, const std::string& value) {}
+
+    virtual void insertCounter(const std::string& name, int64_t value) {}
+
     virtual void resetKey(const std::string& newKey = "") = 0;
 
-protected:
-    bool exist_;
+    virtual void clear() = 0;
 };
 
 template <typename ColumnFamilyType>
-const std::string& getColumnFamilyName()
+const ColumnFamilyBase::ColumnType getColumnType()
+{
+    return ColumnFamilyType::column_type;
+}
+
+template <typename ColumnFamilyType>
+const std::string& getName()
 {
     return ColumnFamilyType::cf_name;
 }
@@ -72,35 +91,17 @@ bool createColumnFamily()
 }
 
 template <typename ColumnFamilyType>
-bool truncateColumnFamily()
-{
-    return CassandraConnection::instance().truncateColumnFamily(ColumnFamilyType::cf_name);
-}
-
-template <typename ColumnFamilyType>
-bool dropColumnFamily()
-{
-    return CassandraConnection::instance().dropColumnFamily(ColumnFamilyType::cf_name);
-}
-
-template <typename ColumnFamilyType>
-bool getSingleRow(ColumnFamilyType& row, const std::string& key)
+bool getSingleSlice(ColumnFamilyType& row, const std::string& key, const std::string& start, const std::string& finish)
 {
     row.resetKey(key);
-    return row.getRow();
+    return row.getSlice(start, finish);
 }
 
 template <typename ColumnFamilyType>
-bool getMultiRow(std::vector<ColumnFamilyType>& row_list, const std::vector<std::string>& key_list)
+bool getSingleCount(int32_t& count, const std::string& key, const std::string& start, const std::string& finish)
 {
-    for (std::vector<std::string>::const_iterator it = key_list.begin();
-            it != key_list.end(); ++it)
-    {
-        row_list.push_back(ColumnFamilyType(*it));
-        if (!row_list.back().getRow())
-            return false;
-    }
-    return true;
+    ColumnFamilyType row(key);
+    return row.getCount(count, start, finish);
 }
 
 template <typename T>
@@ -116,7 +117,7 @@ T fromBytes(const std::string& str)
 }
 
 #define DEFINE_COLUMN_FAMILY_COMMON_ROUTINES(ClassName) \
-public: \
+    static const ColumnType column_type; \
     static const std::string cf_name; \
     static const std::string cf_column_type; \
     static const std::string cf_comparator_type; \
@@ -143,9 +144,14 @@ public: \
     static const int32_t cf_row_cache_keys_to_save; \
     static const std::map<std::string, std::string> cf_compression_options; \
     \
-    const std::string& getName() const \
+    virtual const ColumnType getColumnType() const \
     { \
-        return ::sf1r::getColumnFamilyName<ClassName>(); \
+        return ::sf1r::getColumnType<ClassName>(); \
+    } \
+    \
+    virtual const std::string& getName() const \
+    { \
+        return ::sf1r::getName<ClassName>(); \
     } \
     \
     static bool createColumnFamily() \
@@ -153,27 +159,28 @@ public: \
         return ::sf1r::createColumnFamily<ClassName>(); \
     } \
     \
-    static bool truncateColumnFamily() \
+    static bool getSingleSlice(ClassName& row, const std::string& key, const std::string& start, const std::string& finish) \
     { \
-        return ::sf1r::truncateColumnFamily<ClassName>(); \
+        return ::sf1r::getSingleSlice(row, key, start, finish); \
     } \
     \
-    static bool dropColumnFamily() \
+    static bool getSingleCount(int32_t& count, const std::string& key, const std::string& start, const std::string& finish) \
     { \
-        return ::sf1r::dropColumnFamily<ClassName>(); \
+        return ::sf1r::getSingleCount<ClassName>(count, key, start, finish); \
     } \
     \
-    static bool getSingleRow(ClassName& row, const std::string& key) \
-    { \
-        return ::sf1r::getSingleRow(row, key); \
-    } \
+    /* XXX Don't forget to implement the following two in your ColumnFamily class */ \
+    static bool getMultiSlice( \
+            std::map<std::string, ClassName>& row_map, \
+            const std::vector<std::string>& key_list, \
+            const std::string& start, \
+            const std::string& finish); \
     \
-    static bool getMultiRow(std::vector<ClassName>& row_list, const std::vector<std::string>& key_list) \
-    { \
-        return ::sf1r::getMultiRow(row_list, key_list); \
-    } \
-    \
-    /* static bool getRangeRow(std::vector<ClassName>& row_list, const std::string& start_key, const std::string& end_key); */ \
+    static bool getMultiCount( \
+            std::map<std::string, int32_t>& count_map, \
+            const std::vector<std::string>& key_list, \
+            const std::string& start, \
+            const std::string& finish); \
 
 
 }

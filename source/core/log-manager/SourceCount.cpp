@@ -11,6 +11,8 @@ using namespace org::apache::cassandra;
 
 namespace sf1r {
 
+const ColumnFamilyBase::ColumnType SourceCount::column_type = ColumnFamilyBase::COUNTER;
+
 const string SourceCount::cf_name("SourceCount");
 
 const string SourceCount::cf_column_type;
@@ -60,7 +62,7 @@ const string SourceCount::cf_row_cache_provider("SerializingCacheProvider");
 
 const string SourceCount::cf_key_alias;
 
-const string SourceCount::cf_compaction_strategy;
+const string SourceCount::cf_compaction_strategy("LeveledCompactionStrategy");
 
 const map<string, string> SourceCount::cf_compaction_strategy_options;
 
@@ -82,6 +84,82 @@ SourceCount::~SourceCount()
 const string& SourceCount::getKey() const
 {
     return collection_;
+}
+
+bool SourceCount::getMultiSlice(
+        map<string, SourceCount>& row_map,
+        const vector<string>& key_list,
+        const string& start,
+        const string& finish)
+{
+    if (!CassandraConnection::instance().isEnabled()) return false;
+    try
+    {
+        ColumnParent col_parent;
+        col_parent.__set_column_family(cf_name);
+
+        SlicePredicate pred;
+        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
+        pred.slice_range.__set_start(start);
+        pred.slice_range.__set_finish(finish);
+
+        map<string, vector<ColumnOrSuperColumn> > raw_column_map;
+        CassandraConnection::instance().getCassandraClient()->getMultiSlice(
+                raw_column_map,
+                key_list,
+                col_parent,
+                pred);
+        if (raw_column_map.empty()) return true;
+
+        for (map<string, vector<ColumnOrSuperColumn> >::const_iterator mit = raw_column_map.begin();
+                mit != raw_column_map.end(); ++mit)
+        {
+            row_map[mit->first] = SourceCount(mit->first);
+            SourceCount& source_count = row_map[mit->first];
+            for (vector<ColumnOrSuperColumn>::const_iterator vit = mit->second.begin();
+                    vit != mit->second.end(); ++vit)
+            {
+                source_count.insertCounter(vit->counter_column.name, vit->counter_column.value);
+            }
+        }
+    }
+    catch (const InvalidRequestException &ire)
+    {
+        cout << ire.why << endl;
+        return false;
+    }
+    return true;
+}
+
+bool SourceCount::getMultiCount(
+        map<string, int32_t>& count_map,
+        const vector<string>& key_list,
+        const string& start,
+        const string& finish)
+{
+    if (!CassandraConnection::instance().isEnabled()) return false;
+    try
+    {
+        ColumnParent col_parent;
+        col_parent.__set_column_family(cf_name);
+
+        SlicePredicate pred;
+        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
+        pred.slice_range.__set_start(start);
+        pred.slice_range.__set_finish(finish);
+
+        CassandraConnection::instance().getCassandraClient()->getMultiCount(
+                count_map,
+                key_list,
+                col_parent,
+                pred);
+    }
+    catch (const InvalidRequestException &ire)
+    {
+        cout << ire.why << endl;
+        return false;
+    }
+    return true;
 }
 
 bool SourceCount::updateRow() const
@@ -108,59 +186,30 @@ bool SourceCount::updateRow() const
     return true;
 }
 
-bool SourceCount::getRow()
+void SourceCount::insertCounter(const string& name, int64_t value)
 {
-    if (!CassandraConnection::instance().isEnabled() || collection_.empty()) return false;
-    try
-    {
-        ColumnParent col_parent;
-        col_parent.__set_column_family(cf_name);
-
-        SlicePredicate pred;
-        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
-
-        vector<ColumnOrSuperColumn> raw_column_list;
-        CassandraConnection::instance().getCassandraClient()->getRawSlice(
-                raw_column_list,
-                collection_,
-                col_parent,
-                pred);
-
-        if (raw_column_list.empty()) return true;
-        if (!sourceCountPresent_)
-        {
-            sourceCount_.clear();
-            sourceCountPresent_ = true;
-        }
-        for (vector<ColumnOrSuperColumn>::const_iterator it = raw_column_list.begin();
-                it != raw_column_list.end(); ++it)
-        {
-            sourceCount_[it->counter_column.name] = it->counter_column.value;
-        }
-    }
-    catch (const InvalidRequestException &ire)
-    {
-        cout << ire.why << endl;
-        return false;
-    }
-    return true;
+    clear();
+    sourceCount_[name] = value;
 }
 
-void SourceCount::insertSourceCount(const string& source, int64_t count)
+void SourceCount::resetKey(const string& newCollection)
+{
+    if (newCollection.empty())
+    {
+        collection_.clear();
+        sourceCountPresent_ = false;
+    }
+    else
+        collection_.assign(newCollection);
+}
+
+void SourceCount::clear()
 {
     if (!sourceCountPresent_)
     {
         sourceCount_.clear();
         sourceCountPresent_ = true;
     }
-    sourceCount_[source] = count;
-}
-
-void SourceCount::resetKey(const string& newCollection)
-{
-    if (!newCollection.empty())
-        collection_.assign(newCollection);
-    sourceCountPresent_ = false;
 }
 
 }

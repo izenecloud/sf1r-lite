@@ -1,7 +1,7 @@
 #include "NodeManager.h"
 #include "MasterNodeManager.h"
 
-#include <node-manager/DistributedSynchroFactory.h>
+#include <node-manager/synchro/DistributedSynchroFactory.h>
 
 #include <sstream>
 

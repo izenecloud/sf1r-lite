@@ -3,7 +3,6 @@
 
 #include <mysql/mysql.h>
 
-#include <util/ThreadModel.h>
 #include "RDbConnectionBase.h"
 
 namespace sf1r {
@@ -42,7 +41,9 @@ private:
 
     void putDb(MYSQL *);
 
-    izenelib::util::ReadWriteLock mutex_;
+    boost::mutex mutex_;
+
+    boost::condition_variable cond_;
 
     std::list<MYSQL*> pool_;
 

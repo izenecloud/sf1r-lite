@@ -3,8 +3,9 @@
 #include <boost/shared_ptr.hpp>
 
 #include <iostream>
+#include "string.h"
 
-#include <node-manager/DistributedSynchroFactory.h>
+#include <node-manager/synchro/DistributedSynchroFactory.h>
 
 using namespace sf1r;
 
@@ -18,7 +19,7 @@ bool callback_on_produced(const std::string& datapath)
     cout<<"--> callback on produced: "<<datapath<<endl;
 
     cout<<"Consuming ..." <<endl;
-    sleep(5);
+    sleep(2);
 
     return true;
 }
@@ -33,6 +34,16 @@ void thread_consumer_run()
 
 int main(int argc, char** argv)
 {
+    if (argc > 1)
+    {
+        for (int i = 1; i < argc; i++)
+        {
+            // disable auto test
+            if (strcasecmp(argv[i], "--build_info") == 0)
+                exit(0);
+        }
+    }
+
     // set default config
     DistributedTopologyConfig dsTopologyConfig;
     dsTopologyConfig.clusterId_ = "zhongxia";
@@ -58,10 +69,11 @@ int main(int argc, char** argv)
         spd->waitConsumers(ret);
         cout << "Producer: wait consumers ended " <<ret<<endl;
 
-        spd->produce("/data/scd2", callback_on_consumed);
-
-        sleep(4);
+        //spd->produce("/data/scd2", callback_on_consumed);
+        //sleep(3);
     }
 
-    return 0;
+    consumer_thread.join();
+
+    exit(0);
 }

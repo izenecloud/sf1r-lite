@@ -10,7 +10,7 @@ class SourceCount : public ColumnFamilyBase
 public:
     typedef std::map<std::string, int64_t> SourceCountType;
 
-    SourceCount(const std::string& collection = "");
+    explicit SourceCount(const std::string& collection = "");
 
     ~SourceCount();
 
@@ -18,11 +18,11 @@ public:
 
     virtual bool updateRow() const;
 
-    virtual bool getRow();
+    virtual void insertCounter(const std::string& name, int64_t value);
 
     virtual void resetKey(const std::string& newCollection = "");
 
-    void insertSourceCount(const std::string& source, int64_t count);
+    virtual void clear();
 
     DEFINE_COLUMN_FAMILY_COMMON_ROUTINES( SourceCount )
 

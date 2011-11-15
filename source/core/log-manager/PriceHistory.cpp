@@ -11,6 +11,8 @@ using namespace org::apache::cassandra;
 
 namespace sf1r {
 
+const ColumnFamilyBase::ColumnType PriceHistory::column_type = ColumnFamilyBase::NORMAL;
+
 const string PriceHistory::cf_name("PriceHistory");
 
 const string PriceHistory::cf_column_type;
@@ -60,7 +62,7 @@ const string PriceHistory::cf_row_cache_provider("SerializingCacheProvider");
 
 const string PriceHistory::cf_key_alias;
 
-const string PriceHistory::cf_compaction_strategy;
+const string PriceHistory::cf_compaction_strategy("LeveledCompactionStrategy");
 
 const map<string, string> PriceHistory::cf_compaction_strategy_options;
 
@@ -84,10 +86,86 @@ const string& PriceHistory::getKey() const
     return uuid_;
 }
 
+bool PriceHistory::getMultiSlice(
+        map<string, PriceHistory>& row_map,
+        const vector<string>& key_list,
+        const string& start,
+        const string& finish)
+{
+    if (!CassandraConnection::instance().isEnabled()) return false;
+    try
+    {
+        ColumnParent col_parent;
+        col_parent.__set_column_family(cf_name);
+
+        SlicePredicate pred;
+        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
+        pred.slice_range.__set_start(start);
+        pred.slice_range.__set_finish(finish);
+
+        map<string, vector<ColumnOrSuperColumn> > raw_column_map;
+        CassandraConnection::instance().getCassandraClient()->getMultiSlice(
+                raw_column_map,
+                key_list,
+                col_parent,
+                pred);
+        if (raw_column_map.empty()) return true;
+
+        for (map<string, vector<ColumnOrSuperColumn> >::const_iterator mit = raw_column_map.begin();
+                mit != raw_column_map.end(); ++mit)
+        {
+            row_map[mit->first] = PriceHistory(mit->first);
+            PriceHistory& price_history = row_map[mit->first];
+            for (vector<ColumnOrSuperColumn>::const_iterator vit = mit->second.begin();
+                    vit != mit->second.end(); ++vit)
+            {
+                price_history.insert(vit->column.name, vit->column.value);
+            }
+        }
+    }
+    catch (const InvalidRequestException &ire)
+    {
+        cout << ire.why << endl;
+        return false;
+    }
+    return true;
+}
+
+bool PriceHistory::getMultiCount(
+        map<string, int32_t>& count_map,
+        const vector<string>& key_list,
+        const string& start,
+        const string& finish)
+{
+    if (!CassandraConnection::instance().isEnabled()) return false;
+    try
+    {
+        ColumnParent col_parent;
+        col_parent.__set_column_family(cf_name);
+
+        SlicePredicate pred;
+        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
+        pred.slice_range.__set_start(start);
+        pred.slice_range.__set_finish(finish);
+
+        CassandraConnection::instance().getCassandraClient()->getMultiCount(
+                count_map,
+                key_list,
+                col_parent,
+                pred);
+    }
+    catch (const InvalidRequestException &ire)
+    {
+        cout << ire.why << endl;
+        return false;
+    }
+    return true;
+}
+
 bool PriceHistory::updateRow() const
 {
     if (!CassandraConnection::instance().isEnabled() || uuid_.empty()) return false;
-    if (priceHistoryPresent_) return true;
+    if (!priceHistoryPresent_) return true;
     try
     {
         for (PriceHistoryType::const_iterator it = priceHistory_.begin();
@@ -110,114 +188,36 @@ bool PriceHistory::updateRow() const
     return true;
 }
 
-bool PriceHistory::getRow()
+void PriceHistory::insert(const string& name, const string& value)
 {
-    if (!CassandraConnection::instance().isEnabled() || uuid_.empty()) return false;
-    try
-    {
-        ColumnParent col_parent;
-        col_parent.__set_column_family(cf_name);
-
-        SlicePredicate pred;
-        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
-
-        vector<ColumnOrSuperColumn> raw_column_list;
-        CassandraConnection::instance().getCassandraClient()->getRawSlice(
-                raw_column_list,
-                uuid_,
-                col_parent,
-                pred);
-
-        if (raw_column_list.empty()) return true;
-        if (!priceHistoryPresent_)
-        {
-            priceHistory_.clear();
-            priceHistoryPresent_ = true;
-        }
-        for (vector<ColumnOrSuperColumn>::const_iterator it = raw_column_list.begin();
-                it != raw_column_list.end(); ++it)
-        {
-            priceHistory_[fromBytes<time_t>(it->column.name)] = fromBytes<ProductPriceType>(it->column.value);
-        }
-    }
-    catch (const InvalidRequestException &ire)
-    {
-        cout << ire.why << endl;
-        return false;
-    }
-    return true;
+    clear();
+    priceHistory_[fromBytes<time_t>(name)] = fromBytes<ProductPriceType>(value);
 }
 
-void PriceHistory::insertHistory(time_t timestamp, ProductPriceType price)
+void PriceHistory::insert(time_t timestamp, ProductPriceType price)
+{
+    clear();
+    priceHistory_[timestamp] = price;
+}
+
+void PriceHistory::resetKey(const string& newUuid)
+{
+    if (newUuid.empty())
+    {
+        uuid_.clear();
+        priceHistoryPresent_ = false;
+    }
+    else
+        uuid_.assign(newUuid);
+}
+
+void PriceHistory::clear()
 {
     if (!priceHistoryPresent_)
     {
         priceHistory_.clear();
         priceHistoryPresent_ = true;
     }
-    priceHistory_[timestamp] = price;
-}
-
-void PriceHistory::clearHistory()
-{
-    priceHistory_.clear();
-    priceHistoryPresent_ = false;
-}
-
-bool PriceHistory::getRangeHistory(PriceHistoryType& history, time_t from, time_t to) const
-{
-    if (!CassandraConnection::instance().isEnabled() || uuid_.empty()) return false;
-    try
-    {
-        ColumnParent col_parent;
-        col_parent.__set_column_family(cf_name);
-
-        SlicePredicate pred;
-        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
-        if (from != -1)
-            pred.slice_range.__set_start(toBytes(from));
-        if (to != -1)
-            pred.slice_range.__set_finish(toBytes(to));
-
-        vector<ColumnOrSuperColumn> raw_column_list;
-        CassandraConnection::instance().getCassandraClient()->getRawSlice(
-                raw_column_list,
-                uuid_,
-                col_parent,
-                pred);
-
-        if (!raw_column_list.empty())
-        {
-            for (vector<ColumnOrSuperColumn>::const_iterator it = raw_column_list.begin();
-                    it != raw_column_list.end(); ++it)
-            {
-                history[fromBytes<time_t>(it->column.name)] = fromBytes<ProductPriceType>(it->column.value);
-            }
-        }
-    }
-    catch (const InvalidRequestException &ire)
-    {
-        cout << ire.why << endl;
-        return false;
-    }
-    return true;
-}
-
-bool PriceHistory::getRangeHistoryBound(ProductPriceType& lower, ProductPriceType& upper, time_t from, time_t to) const
-{
-    PriceHistoryType history;
-    if (!getRangeHistory(history, from, to))
-        return false;
-    lower = history.begin()->second;
-    upper = history.rbegin()->second;
-    return true;
-}
-
-void PriceHistory::resetKey(const string& newUuid)
-{
-    if (!newUuid.empty())
-        uuid_.assign(newUuid);
-    priceHistoryPresent_ = false;
 }
 
 }
