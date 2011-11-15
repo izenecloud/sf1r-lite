@@ -81,11 +81,11 @@ public:
         return nameEntityType_;
     }
 
-    faceted::GroupParam::GroupLabelVec& mutableGroupLabels()
+    faceted::GroupParam::GroupLabelMap& mutableGroupLabels()
     {
         return groupLabels_;
     }
-    const faceted::GroupParam::GroupLabelVec& groupLabels() const
+    const faceted::GroupParam::GroupLabelMap& groupLabels() const
     {
         return groupLabels_;
     }
@@ -129,6 +129,10 @@ public:
     }
 
 private:
+    bool parseGroupLabel_(const Value& search);
+    bool parseAttrLabel_(const Value& search);
+
+private:
     const IndexBundleSchema& indexSchema_;
 
     std::string keywords_;
@@ -136,7 +140,7 @@ private:
     std::string taxonomyLabel_;
     std::string nameEntityType_;
     std::string nameEntityItem_;
-    faceted::GroupParam::GroupLabelVec groupLabels_;
+    faceted::GroupParam::GroupLabelMap groupLabels_;
     faceted::GroupParam::AttrLabelVec attrLabels_;
     bool logKeywords_;
     bool logGroupLabels_;

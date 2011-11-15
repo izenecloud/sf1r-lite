@@ -15,6 +15,7 @@
 #include <boost/serialization/access.hpp>
 
 #include <vector>
+#include <map>
 #include <string>
 #include <iostream>
 #include <utility> // pair
@@ -51,12 +52,14 @@ struct GroupParam
 
     /** the group path contains values from root to leaf node */
     typedef std::vector<std::string> GroupPath;
-    /** the group label contains property name and group path */
-    typedef std::pair<std::string, GroupPath> GroupLabel;
-    /** a list of group labels */
-    typedef std::vector<GroupLabel> GroupLabelVec;
+    /** a list of group paths for one property */
+    typedef std::vector<GroupPath> GroupPathVec;
+    /** map from property name to group paths */
+    typedef std::map<std::string, GroupPathVec> GroupLabelMap;
+    /** a pair of property name and group path */
+    typedef GroupLabelMap::value_type GroupLabelParam;
     /** selected group labels */
-    GroupLabelVec groupLabels_;
+    GroupLabelMap groupLabels_;
 
     /** true for need doc counts for each attribute value */
     bool isAttrGroup_;
@@ -91,6 +94,9 @@ struct GroupParam
         ar & attrGroupNum_;
         ar & attrLabels_;
     }
+
+private:
+    bool isRangeLabel_(const std::string& propName) const;
 };
 
 bool operator==(const GroupParam& a, const GroupParam& b);

@@ -39,9 +39,11 @@ using driver::Keys;
  * - @b name_entity_item (@c Object): Only get documents in the specified name
  *   entity item. Must be used with @b name_entity_type together and cannot be
  *   used with @b taxonomy_label.
- * - @b group_label (@c Array): Only get documents in the specified groups. Multiple
- *   groups could be specified, so that the documents returned must be contained
- *   in each groups.
+ * - @b group_label (@c Array): Only get documents in the specified group labels.@n
+ *   Each label is an object consisting of a property name and value.@n
+ *   You could specify multiple labels, for example, there are 4 labels named as "A1", "A2", "B1", "B2".@n
+ *   If the property name of label "A1" and "A2" is "A", while the property name of label "B1" and "B2" is "B",@n
+ *   then the documents returned would belong to the labels with the condition of ("A1" or "A2") and ("B1" or "B2").
  *   - @b property* (@c String): the property name.
  *   - @b value* (@c Array): the label value.@n
  *   For the property type of string, it's an array of the path from root to leaf node.
@@ -135,72 +137,8 @@ bool SearchParser::parse(const Value& search)
         return false;
     }
 
-    // group label
-    const Value& groupNode = search[Keys::group_label];
-    if (! nullValue(groupNode))
-    {
-        if (groupNode.type() == Value::kArrayType)
-        {
-            groupLabels_.resize(groupNode.size());
-
-            for (std::size_t i = 0; i < groupNode.size(); ++i)
-            {
-                const Value& groupPair = groupNode(i);
-                groupLabels_[i].first = asString(groupPair[Keys::property]);
-                faceted::GroupParam::GroupPath& groupPath = groupLabels_[i].second;
-
-                const Value& pathNode = groupPair[Keys::value];
-                if (pathNode.type() == Value::kArrayType)
-                {
-                    groupPath.resize(pathNode.size());
-                    for (std::size_t j = 0; j < pathNode.size(); ++j)
-                    {
-                        groupPath[j] = asString(pathNode(j));
-                    }
-                }
-
-                if (groupLabels_[i].first.empty() || groupLabels_[i].second.empty())
-                {
-                    error() = "Must specify both property name and array of value path for group label";
-                    return false;
-                }
-            }
-        }
-        else
-        {
-            error() = "Require an array for group labels.";
-            return false;
-        }
-    }
-
-    // attr label
-    const Value& attrNode = search[Keys::attr_label];
-    if (! nullValue(attrNode))
-    {
-        if (attrNode.type() == Value::kArrayType)
-        {
-            attrLabels_.resize(attrNode.size());
-
-            for (std::size_t i = 0; i < attrNode.size(); ++i)
-            {
-                const Value& attrPair = attrNode(i);
-                faceted::GroupParam::AttrLabel& attrLabel = attrLabels_[i];
-                attrLabel.first = asString(attrPair[Keys::attr_name]);
-                attrLabel.second = asString(attrPair[Keys::attr_value]);
-
-                if (attrLabel.first.empty() || attrLabel.second.empty())
-                {
-                    error() = "Must specify both attribute name and value for attr label";
-                    return false;
-                }
-            }
-        }
-        else
-        {
-            error() = "Require an array for attr labels.";
-            return false;
-        }
-    }
+    if (!parseGroupLabel_(search) || !parseAttrLabel_(search))
+        return false;
 
     logKeywords_ = asBoolOr(search[Keys::log_keywords], true);
     logGroupLabels_ = asBoolOr(search[Keys::log_group_labels], true);
@@ -284,6 +222,83 @@ bool SearchParser::parse(const Value& search)
         else
         {
             warning() = "Unknown rankingModel. Default one is used.";
+        }
+    }
+
+    return true;
+}
+
+bool SearchParser::parseGroupLabel_(const Value& search)
+{
+    const Value& groupNode = search[Keys::group_label];
+
+    if (nullValue(groupNode))
+        return true;
+
+    if (groupNode.type() != Value::kArrayType)
+    {
+        error() = "Require an array for group labels.";
+        return false;
+    }
+
+    for (std::size_t i = 0; i < groupNode.size(); ++i)
+    {
+        const Value& groupPair = groupNode(i);
+        std::string propName = asString(groupPair[Keys::property]);
+
+        const Value& pathNode = groupPair[Keys::value];
+        faceted::GroupParam::GroupPath groupPath;
+        if (pathNode.type() == Value::kArrayType)
+        {
+            for (std::size_t j = 0; j < pathNode.size(); ++j)
+            {
+                std::string nodeValue = asString(pathNode(j));
+                if (nodeValue.empty())
+                {
+                    error() = "request[search][group_label][value] is empty for property " + propName;
+                    return false;
+                }
+                groupPath.push_back(nodeValue);
+            }
+        }
+
+        if (propName.empty() || groupPath.empty())
+        {
+            error() = "Must specify both property name and array of value path for group label";
+            return false;
+        }
+
+        groupLabels_[propName].push_back(groupPath);
+    }
+
+    return true;
+}
+
+bool SearchParser::parseAttrLabel_(const Value& search)
+{
+    const Value& attrNode = search[Keys::attr_label];
+
+    if (nullValue(attrNode))
+        return true;
+
+    if (attrNode.type() != Value::kArrayType)
+    {
+        error() = "Require an array for attr labels.";
+        return false;
+    }
+
+    attrLabels_.resize(attrNode.size());
+    for (std::size_t i = 0; i < attrNode.size(); ++i)
+    {
+        const Value& attrPair = attrNode(i);
+        faceted::GroupParam::AttrLabel& attrLabel = attrLabels_[i];
+        attrLabel.first = asString(attrPair[Keys::attr_name]);
+        attrLabel.second = asString(attrPair[Keys::attr_value]);
+
+        if (attrLabel.first.empty() || attrLabel.second.empty())
+        {
+            error() = "Must specify both attribute name and value for attr label";
+            return false;
         }
     }
 

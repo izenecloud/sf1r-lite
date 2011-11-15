@@ -1,5 +1,10 @@
 #include "GroupParam.h"
 
+namespace
+{
+const char* NUMERIC_RANGE_DELIMITER = "-";
+}
+
 NS_FACETED_BEGIN
 
 GroupPropParam::GroupPropParam()
@@ -45,33 +50,38 @@ bool GroupParam::isAttrEmpty() const
 
 bool GroupParam::checkParam(std::string& message) const
 {
-    for (GroupLabelVec::const_iterator labelIt = groupLabels_.begin();
-        labelIt != groupLabels_.end(); ++labelIt)
+    for (std::vector<GroupPropParam>::const_iterator propIt = groupProps_.begin();
+        propIt != groupProps_.end(); ++propIt)
     {
-        const std::string& propName = labelIt->first;
-        const GroupPath& groupPath = labelIt->second;
-        if (groupPath.empty())
+        const std::string& propName = propIt->property_;
+        if (propIt->isRange_ && isRangeLabel_(propName))
         {
-            message = "request[search][group_label][value] is empty for property " + propName;
+            message = "the property " + propName + " in request[search][group_label] could not be specified in request[group] at the same time";
             return false;
-        }
-
-        // range label
-        if (groupPath[0].find('-') != std::string::npos)
-        {
-            for (std::vector<GroupPropParam>::const_iterator propIt = groupProps_.begin();
-                propIt != groupProps_.end(); ++propIt)
-            {
-                if (propIt->property_ == propName && propIt->isRange_)
-                {
-                    message = "the property " + propName + " in request[search][group_label] could not be specified in request[group] at the same time";
-                    return false;
-                }
-            }
         }
     }
 
     return true;
+}
+
+bool GroupParam::isRangeLabel_(const std::string& propName) const
+{
+    GroupLabelMap::const_iterator findIt = groupLabels_.find(propName);
+    if (findIt == groupLabels_.end())
+        return false;
+
+    const GroupPathVec& paths = findIt->second;
+    for (GroupPathVec::const_iterator pathIt = paths.begin();
+        pathIt != paths.end(); ++pathIt)
+    {
+        if (!pathIt->empty()
+            && pathIt->front().find(NUMERIC_RANGE_DELIMITER) != std::string::npos)
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool operator==(const GroupParam& a, const GroupParam& b)
@@ -92,16 +102,23 @@ std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam)
     }
 
     out << "groupLabels_: ";
-    for (std::size_t i = 0; i < groupParam.groupLabels_.size(); ++i)
+    for (GroupParam::GroupLabelMap::const_iterator labelIt = groupParam.groupLabels_.begin();
+        labelIt != groupParam.groupLabels_.end(); ++labelIt)
     {
-        const GroupParam::GroupLabel& groupLabel = groupParam.groupLabels_[i];
-        out << "\t" << groupLabel.first << ": ";
-        const GroupParam::GroupPath& groupPath = groupLabel.second;
-        for (std::size_t j = 0; j < groupPath.size(); ++j)
+        const std::string& propName = labelIt->first;
+        const GroupParam::GroupPathVec& pathVec = labelIt->second;
+
+        for (GroupParam::GroupPathVec::const_iterator pathIt = pathVec.begin();
+            pathIt != pathVec.end(); ++pathIt)
         {
-            out << groupPath[j] << ", ";
+            out << "\t" << propName << ": ";
+            for (GroupParam::GroupPath::const_iterator nodeIt = pathIt->begin();
+                nodeIt != pathIt->end(); ++nodeIt)
+            {
+                out << *nodeIt << ", ";
+            }
+            out << std::endl;
         }
-        out << std::endl;
     }
 
     out << "isAttrGroup_: " << groupParam.isAttrGroup_ << std::endl;
