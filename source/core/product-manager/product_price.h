@@ -36,9 +36,6 @@ public:
 
     bool Valid() const;
 
-    std::pair<ProductPriceType, ProductPriceType> value;
-
-
 private:
     void Check_();
 
@@ -48,6 +45,9 @@ private:
 
     bool split_float_(const std::string& szText, char Separator );
 
+
+public:
+    std::pair<ProductPriceType, ProductPriceType> value;
 };
 
 }

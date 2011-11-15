@@ -40,7 +40,7 @@ const vector<ColumnDef> PriceHistory::cf_column_metadata;
 
 const int32_t PriceHistory::cf_gc_grace_seconds(0);
 
-const string PriceHistory::cf_default_validation_class("LongType");
+const string PriceHistory::cf_default_validation_class;
 
 const int32_t PriceHistory::cf_id(0);
 
@@ -191,10 +191,10 @@ bool PriceHistory::updateRow() const
 void PriceHistory::insert(const string& name, const string& value)
 {
     clear();
-    priceHistory_[fromBytes<time_t>(name)] = fromBytes<ProductPriceType>(value);
+    priceHistory_[fromBytes<time_t>(name)] = fromBytes<ProductPrice>(value);
 }
 
-void PriceHistory::insert(time_t timestamp, ProductPriceType price)
+void PriceHistory::insert(time_t timestamp, ProductPrice price)
 {
     clear();
     priceHistory_[timestamp] = price;

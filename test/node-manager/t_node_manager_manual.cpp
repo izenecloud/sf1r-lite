@@ -63,7 +63,7 @@ int main(int argc, char** argv)
     // Producer
     {
         SynchroProducerPtr spd =
-            DistributedSynchroFactory::makeProcuder(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER);
+            DistributedSynchroFactory::makeProducer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER);
         spd->produce("/data/scd", callback_on_consumed);
         bool ret;
         spd->waitConsumers(ret);

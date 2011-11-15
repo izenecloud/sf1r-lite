@@ -2,7 +2,7 @@ INCLUDE_DIRECTORIES(
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/core/
   ${CMAKE_SOURCE_DIR}/bundles/
-  ${CMAKE_CURRENT_SOURCE_DIR}  
+  ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/common
 
   ${idmlib_INCLUDE_DIRS}
@@ -10,7 +10,7 @@ INCLUDE_DIRECTORIES(
   ${ilplib_INCLUDE_DIRS}
   ${wisekma_INCLUDE_DIRS}
   ${izenecma_INCLUDE_DIRS}
-  ${izenejma_INCLUDE_DIRS}  
+  ${izenejma_INCLUDE_DIRS}
   ${izenelib_INCLUDE_DIRS}
   ${iise_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
@@ -30,13 +30,16 @@ TARGET_LINK_LIBRARIES(LicenseFileGenerator
   sf1r_query_manager
   sf1r_log_manager
   sf1r_license_manager
+  sf1r_product_manager
+  sf1r_document_manager
+  sf1r_node_manager
   sf1r_common
   ${idmlib_LIBRARIES}
   ${imllib_LIBRARIES}
   ${ilplib_LIBRARIES}
   ${wisekma_LIBRARIES}
   ${izenecma_LIBRARIES}
-  ${izenejma_LIBRARIES}  
+  ${izenejma_LIBRARIES}
   ${izenelib_LIBRARIES}
   ${xml2_LIBRARIES}
 
@@ -47,4 +50,3 @@ TARGET_LINK_LIBRARIES(LicenseFileGenerator
   ${sqlite3_LIBRARIES}
   ${MYSQL_LIBRARIES}
 )
-
