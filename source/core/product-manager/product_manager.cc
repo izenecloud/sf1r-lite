@@ -15,7 +15,7 @@ using izenelib::util::UString;
 ProductManager::ProductManager(ProductDataSource* data_source, OperationProcessor* op_processor, const PMConfig& config)
 :data_source_(data_source), op_processor_(op_processor), backup_(NULL), config_(config), inhook_(false)
 {
-    if(config_.backup_path!="")
+    if (config_.backup_path!="")
     {
         backup_ = new ProductBackup(config_.backup_path);
     }
@@ -27,12 +27,12 @@ ProductManager::~ProductManager()
 
 bool ProductManager::Recover()
 {
-    if(backup_==NULL)
+    if (backup_==NULL)
     {
         error_ = "Backup not initialzed.";
         return false;
     }
-    if(!backup_->Recover(this))
+    if (!backup_->Recover(this))
     {
         error_ = "Backup recover failed.";
         return false;
@@ -46,7 +46,7 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
     boost::mutex::scoped_lock lock(human_mutex_);
     UString uuid;
     generateUUID(uuid, doc);
-    if(!data_source_->SetUuid(index_document, uuid)) return false;
+    if (!data_source_->SetUuid(index_document, uuid)) return false;
     PMDocumentType new_doc(doc);
     doc.property(config_.uuid_property_name) = uuid;
     new_doc.property(config_.docid_property_name) = uuid;
@@ -63,19 +63,19 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
     boost::mutex::scoped_lock lock(human_mutex_);
     uint32_t fromid = index_document.getId(); //oldid
     PMDocumentType from;
-    if(!data_source_->GetDocument(fromid, from)) return false;
+    if (!data_source_->GetDocument(fromid, from)) return false;
     UString from_uuid;
-    if(!GetUuid_(from, from_uuid)) return false;
+    if (!GetUuid_(from, from_uuid)) return false;
     std::vector<uint32_t> docid_list;
     data_source_->GetDocIdList(from_uuid, docid_list, fromid); // except from.docid
-    if(docid_list.empty()) // the from doc is unique, so delete it and insert 'to'
+    if (docid_list.empty()) // the from doc is unique, so delete it and insert 'to'
     {
-        if(!data_source_->SetUuid(index_document, from_uuid)) return false;
+        if (!data_source_->SetUuid(index_document, from_uuid)) return false;
         PMDocumentType new_doc(to);
         to.property(config_.uuid_property_name) = from_uuid;
         new_doc.property(config_.docid_property_name) = from_uuid;
         SetItemCount_(new_doc, 1);
-        op_processor_->Append( 2, new_doc);// if r_type, only numberic properties in 'to'
+        op_processor_->Append(2, new_doc);// if r_type, only numberic properties in 'to'
         UpdatePriceHistory_(to);
     }
     else
@@ -83,12 +83,12 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
         //need not to update(insert) to.uuid,
         ProductPrice from_price;
         ProductPrice to_price;
-        if(!GetPrice_(fromid, from_price)) return false;
-        if(!GetPrice_(to, to_price)) return false;
-        if(!data_source_->SetUuid(index_document, from_uuid)) return false;
+        if (!GetPrice_(fromid, from_price)) return false;
+        if (!GetPrice_(to, to_price)) return false;
+        if (!data_source_->SetUuid(index_document, from_uuid)) return false;
         to.property(config_.uuid_property_name) = from_uuid;
         //update price only
-        if(from_price!=to_price)
+        if (from_price!=to_price)
         {
             PMDocumentType diff_properties;
             ProductPrice price(to_price);
@@ -98,7 +98,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
             //auto r_type? itemcount no need?
 //                 diff_properties.property(config_.itemcount_property_name) = UString(boost::lexical_cast<std::string>(docid_list.size()+1), UString::UTF_8);
 
-            op_processor_->Append( 2, diff_properties );
+            op_processor_->Append(2, diff_properties);
             UpdatePriceHistory_(to);
         }
     }
@@ -110,12 +110,12 @@ bool ProductManager::HookDelete(uint32_t docid)
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
     PMDocumentType from;
-    if(!data_source_->GetDocument(docid, from)) return false;
+    if (!data_source_->GetDocument(docid, from)) return false;
     UString from_uuid;
-    if(!GetUuid_(from, from_uuid)) return false;
+    if (!GetUuid_(from, from_uuid)) return false;
     std::vector<uint32_t> docid_list;
     data_source_->GetDocIdList(from_uuid, docid_list, docid); // except from.docid
-    if(docid_list.empty()) // the from doc is unique, so delete it in A
+    if (docid_list.empty()) // the from doc is unique, so delete it in A
     {
         PMDocumentType del_doc;
         del_doc.property(config_.docid_property_name) = from_uuid;
@@ -137,12 +137,12 @@ bool ProductManager::HookDelete(uint32_t docid)
 bool ProductManager::GenOperations()
 {
     bool result = true;
-    if(!op_processor_->Finish())
+    if (!op_processor_->Finish())
     {
         error_ = op_processor_->GetLastError();
         result = false;
     }
-    if(inhook_) inhook_ = false;
+    if (inhook_) inhook_ = false;
     return result;
 
     /// M
@@ -181,16 +181,16 @@ bool ProductManager::GenOperations()
 
 bool ProductManager::UpdateADoc(const Document& doc, bool backup)
 {
-    if(!UpdateADoc_(doc))
+    if (!UpdateADoc_(doc))
     {
         error_ = "Update A Doc failed";
         return false;
     }
-    if(!GenOperations())
+    if (!GenOperations())
     {
         return false;
     }
-    if(backup && backup_)
+    if (backup && backup_)
     {
         backup_->AddProductUpdateItem(doc);
     }
@@ -206,7 +206,7 @@ bool ProductManager::UpdateADoc_(const Document& doc)
 bool ProductManager::AddGroupWithInfo(const std::vector<UString>& docid_list, const Document& doc, bool backup)
 {
     std::vector<uint32_t> idocid_list;
-    if(!data_source_->GetInternalDocidList(docid_list, idocid_list))
+    if (!data_source_->GetInternalDocidList(docid_list, idocid_list))
     {
         error_ = data_source_->GetLastError();
         return false;
@@ -217,15 +217,15 @@ bool ProductManager::AddGroupWithInfo(const std::vector<UString>& docid_list, co
 void ProductManager::BackupPCItem_(const UString& uuid, const std::vector<uint32_t>& docid_list, int type)
 {
     std::vector<UString> docname_list;
-    for(uint32_t i=0;i<docid_list.size();i++)
+    for (uint32_t i = 0; i < docid_list.size(); i++)
     {
         PMDocumentType doc;
-        if(data_source_->GetDocument(docid_list[i], doc))
+        if (data_source_->GetDocument(docid_list[i], doc))
         {
             docname_list.push_back(doc.property(config_.docid_property_name).get<UString>());
         }
     }
-    if(!backup_->AddPriceComparisonItem(uuid, docname_list, type))
+    if (!backup_->AddPriceComparisonItem(uuid, docname_list, type))
     {
         std::cout<<"backup failed"<<std::endl;
     }
@@ -233,7 +233,7 @@ void ProductManager::BackupPCItem_(const UString& uuid, const std::vector<uint32
 
 bool ProductManager::AddGroupWithInfo(const std::vector<uint32_t>& docid_list, const Document& doc, bool backup)
 {
-    if(inhook_)
+    if (inhook_)
     {
         error_ = "In Hook locks, collection was indexing, plz wait.";
         return false;
@@ -241,14 +241,14 @@ bool ProductManager::AddGroupWithInfo(const std::vector<uint32_t>& docid_list, c
     boost::mutex::scoped_lock lock(human_mutex_);
     std::cout<<"ProductManager::AddGroupWithInfo"<<std::endl;
     UString uuid = doc.property(config_.docid_property_name).get<UString>();
-    if(uuid.length()==0)
+    if (uuid.length()==0)
     {
         error_ = "DOCID(uuid) not set";
         return false;
     }
     std::vector<uint32_t> uuid_docid_list;
     data_source_->GetDocIdList(uuid, uuid_docid_list, 0);
-    if(!uuid_docid_list.empty())
+    if (!uuid_docid_list.empty())
     {
         std::string suuid;
         uuid.convertString(suuid, UString::UTF_8);
@@ -257,16 +257,16 @@ bool ProductManager::AddGroupWithInfo(const std::vector<uint32_t>& docid_list, c
     }
     //call updateA
 
-    if(!AppendToGroup_(uuid, uuid_docid_list, docid_list, doc))
+    if (!AppendToGroup_(uuid, uuid_docid_list, docid_list, doc))
     {
         return false;
     }
 
-    if(!GenOperations())
+    if (!GenOperations())
     {
         return false;
     }
-    if(backup && backup_)
+    if (backup && backup_)
     {
         BackupPCItem_(uuid, docid_list, 1);
         backup_->AddProductUpdateItem(doc);
@@ -276,55 +276,55 @@ bool ProductManager::AddGroupWithInfo(const std::vector<uint32_t>& docid_list, c
 
 bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, UString& gen_uuid, bool backup)
 {
-    if(inhook_)
+    if (inhook_)
     {
         error_ = "In Hook locks, collection was indexing, plz wait.";
         return false;
     }
     boost::mutex::scoped_lock lock(human_mutex_);
     std::cout<<"ProductManager::AddGroup"<<std::endl;
-    if(docid_list.size()<2)
+    if (docid_list.size()<2)
     {
         error_ = "Docid list size must larger than 1";
         return false;
     }
     PMDocumentType first_doc;
-    if(!data_source_->GetDocument(docid_list[0], first_doc))
+    if (!data_source_->GetDocument(docid_list[0], first_doc))
     {
         error_ = "Can not get document "+boost::lexical_cast<std::string>(docid_list[0]);
         return false;
     }
     UString first_uuid;
-    if(!GetUuid_(first_doc, first_uuid))
+    if (!GetUuid_(first_doc, first_uuid))
     {
         error_ = "Can not get uuid in document "+boost::lexical_cast<std::string>(docid_list[0]);
         return false;
     }
     std::vector<uint32_t> uuid_docid_list;
     data_source_->GetDocIdList(first_uuid, uuid_docid_list, 0);
-    if(uuid_docid_list.empty())
+    if (uuid_docid_list.empty())
     {
         std::string suuid;
         first_uuid.convertString(suuid, UString::UTF_8);
         error_ = suuid+" not exists";
         return false;
     }
-    if(uuid_docid_list.size()>1 || uuid_docid_list[0]!= docid_list[0] )
+    if (uuid_docid_list.size()>1 || uuid_docid_list[0]!= docid_list[0])
     {
         error_ = "Document id "+boost::lexical_cast<std::string>(docid_list[0])+" belongs to other group";
         return false;
     }
 
     std::vector<uint32_t> remain(docid_list.begin()+1, docid_list.end());
-    if(!AppendToGroup_(first_uuid, uuid_docid_list, remain, PMDocumentType()))
+    if (!AppendToGroup_(first_uuid, uuid_docid_list, remain, PMDocumentType()))
     {
         return false;
     }
-    if(!GenOperations())
+    if (!GenOperations())
     {
         return false;
     }
-    if(backup && backup_)
+    if (backup && backup_)
     {
         BackupPCItem_(first_uuid, docid_list, 1);
     }
@@ -334,37 +334,37 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, UString& 
 
 bool ProductManager::AppendToGroup_(const UString& uuid, const std::vector<uint32_t>& uuid_docid_list, const std::vector<uint32_t>& docid_list, const PMDocumentType& uuid_doc)
 {
-    if(docid_list.empty())
+    if (docid_list.empty())
     {
         error_ = "Docid list size must larger than 0";
         return false;
     }
 
     std::vector<PMDocumentType> doc_list(docid_list.size());
-    for(uint32_t i=0;i<docid_list.size();i++)
+    for (uint32_t i = 0; i < docid_list.size(); i++)
     {
-        if(!data_source_->GetDocument(docid_list[i], doc_list[i]))
+        if (!data_source_->GetDocument(docid_list[i], doc_list[i]))
         {
             error_ = "Can not get document "+boost::lexical_cast<std::string>(docid_list[i]);
             return false;
         }
     }
     std::vector<UString> uuid_list(doc_list.size());
-    for(uint32_t i=0;i<doc_list.size();i++)
+    for (uint32_t i = 0; i < doc_list.size(); i++)
     {
-        if(!GetUuid_(doc_list[i], uuid_list[i]))
+        if (!GetUuid_(doc_list[i], uuid_list[i]))
         {
             error_ = "Can not get uuid in document "+boost::lexical_cast<std::string>(docid_list[i]);
             return false;
         }
         std::vector<uint32_t> same_docid_list;
         data_source_->GetDocIdList(uuid_list[i], same_docid_list, docid_list[i]);
-        if(!same_docid_list.empty())
+        if (!same_docid_list.empty())
         {
             error_ = "Document id "+boost::lexical_cast<std::string>(docid_list[i])+" belongs to other group";
             return false;
         }
-        if(uuid_list[i] == uuid)
+        if (uuid_list[i] == uuid)
         {
             error_ = "Document id "+boost::lexical_cast<std::string>(docid_list[i])+" has the same uuid with request";
             return false;
@@ -379,18 +379,18 @@ bool ProductManager::AppendToGroup_(const UString& uuid, const std::vector<uint3
     //validation finished here.
 
     //commit firstly, then update DM and IM
-    for(uint32_t i=0;i<uuid_list.size();i++)
+    for (uint32_t i = 0; i < uuid_list.size(); i++)
     {
         PMDocumentType del_doc;
         del_doc.property(config_.docid_property_name) = uuid_list[i];
         op_processor_->Append(3, del_doc);
     }
-    if(uuid_docid_list.empty())
+    if (uuid_docid_list.empty())
     {
         //this uuid is a new, use the first doc as base;
         PMDocumentType output(doc_list[0]);
         PMDocumentType::property_const_iterator uit = uuid_doc.propertyBegin();
-        while( uit != uuid_doc.propertyEnd())
+        while (uit != uuid_doc.propertyEnd())
         {
             output.property(uit->first) = uit->second;
             ++uit;
@@ -404,7 +404,7 @@ bool ProductManager::AppendToGroup_(const UString& uuid, const std::vector<uint3
     else
     {
         PMDocumentType output;
-        if(uuid_doc.hasProperty(config_.docid_property_name))
+        if (uuid_doc.hasProperty(config_.docid_property_name))
         {
             output = uuid_doc;
         }
@@ -415,7 +415,7 @@ bool ProductManager::AppendToGroup_(const UString& uuid, const std::vector<uint3
     }
 
     //update DM and IM then
-    if(!data_source_->UpdateUuid(docid_list, uuid))
+    if (!data_source_->UpdateUuid(docid_list, uuid))
     {
         error_ = "Update uuid failed";
         return false;
@@ -425,7 +425,7 @@ bool ProductManager::AppendToGroup_(const UString& uuid, const std::vector<uint3
 
 bool ProductManager::AppendToGroup(const UString& uuid, const std::vector<uint32_t>& docid_list, bool backup)
 {
-    if(inhook_)
+    if (inhook_)
     {
         error_ = "In Hook locks, collection was indexing, plz wait.";
         return false;
@@ -434,22 +434,22 @@ bool ProductManager::AppendToGroup(const UString& uuid, const std::vector<uint32
     std::cout<<"ProductManager::AppendToGroup"<<std::endl;
     std::vector<uint32_t> uuid_docid_list;
     data_source_->GetDocIdList(uuid, uuid_docid_list, 0);
-    if(uuid_docid_list.empty())
+    if (uuid_docid_list.empty())
     {
         std::string suuid;
         uuid.convertString(suuid, UString::UTF_8);
         error_ = suuid+" not exists";
         return false;
     }
-    if(!AppendToGroup_(uuid, uuid_docid_list, docid_list, PMDocumentType()))
+    if (!AppendToGroup_(uuid, uuid_docid_list, docid_list, PMDocumentType()))
     {
         return false;
     }
-    if(!GenOperations())
+    if (!GenOperations())
     {
         return false;
     }
-    if(backup && backup_)
+    if (backup && backup_)
     {
         BackupPCItem_(uuid, docid_list, 1);
     }
@@ -458,21 +458,21 @@ bool ProductManager::AppendToGroup(const UString& uuid, const std::vector<uint32
 
 bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint32_t>& docid_list, bool backup)
 {
-    if(inhook_)
+    if (inhook_)
     {
         error_ = "In Hook locks, collection was indexing, plz wait.";
         return false;
     }
     boost::mutex::scoped_lock lock(human_mutex_);
     std::cout<<"ProductManager::RemoveFromGroup"<<std::endl;
-    if(docid_list.empty())
+    if (docid_list.empty())
     {
         error_ = "Docid list size must larger than 0";
         return false;
     }
     std::vector<uint32_t> uuid_docid_list;
     data_source_->GetDocIdList(uuid, uuid_docid_list, 0);
-    if(uuid_docid_list.empty())
+    if (uuid_docid_list.empty())
     {
         std::string suuid;
         uuid.convertString(suuid, UString::UTF_8);
@@ -480,13 +480,13 @@ bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint
         return false;
     }
     boost::unordered_set<uint32_t> contains;
-    for(uint32_t i=0;i<uuid_docid_list.size();i++)
+    for (uint32_t i = 0; i < uuid_docid_list.size(); i++)
     {
         contains.insert(uuid_docid_list[i]);
     }
-    for(uint32_t i=0;i<docid_list.size();i++)
+    for (uint32_t i = 0; i < docid_list.size(); i++)
     {
-        if( contains.find(docid_list[i]) == contains.end() )
+        if (contains.find(docid_list[i]) == contains.end())
         {
             error_ = "Document "+boost::lexical_cast<std::string>(docid_list[i])+" not in specific uuid";
             return false;
@@ -495,22 +495,22 @@ bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint
     }
     std::vector<uint32_t> remain;
     boost::unordered_set<uint32_t>::iterator it = contains.begin();
-    while( it!=contains.end())
+    while (it!=contains.end())
     {
         remain.push_back(*it);
         ++it;
     }
     std::vector<PMDocumentType> doc_list(docid_list.size());
-    for(uint32_t i=0;i<docid_list.size();i++)
+    for (uint32_t i = 0; i < docid_list.size(); i++)
     {
-        if(!data_source_->GetDocument(docid_list[i], doc_list[i]))
+        if (!data_source_->GetDocument(docid_list[i], doc_list[i]))
         {
             error_ = "Can not get document "+boost::lexical_cast<std::string>(docid_list[i]);
             return false;
         }
     }
 
-    if( remain.empty())
+    if (remain.empty())
     {
         PMDocumentType del_doc;
         del_doc.property(config_.docid_property_name) = uuid;
@@ -529,7 +529,7 @@ bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint
         op_processor_->Append(2, update_doc);
     }
     std::vector<UString> uuid_list(doc_list.size());
-    for(uint32_t i=0;i<doc_list.size();i++)
+    for (uint32_t i = 0; i < doc_list.size(); i++)
     {
         //TODO need to be more strong here.
         generateUUID(uuid_list[i], doc_list[i]);
@@ -538,19 +538,19 @@ bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint
         doc_list[i].eraseProperty(config_.uuid_property_name);
         op_processor_->Append(1, doc_list[i]);
     }
-    if(!GenOperations())
+    if (!GenOperations())
     {
         return false;
     }
-    if(backup && backup_)
+    if (backup && backup_)
     {
         BackupPCItem_(uuid, docid_list, 2);
     }
     //update DM and IM here
-    for(uint32_t i=0;i<docid_list.size();i++)
+    for (uint32_t i=0; i < docid_list.size(); i++)
     {
         std::vector<uint32_t> tmp_list(1, docid_list[i]);
-        if(!data_source_->UpdateUuid(tmp_list, uuid_list[i]))
+        if (!data_source_->UpdateUuid(tmp_list, uuid_list[i]))
         {
             //TODO how to rollback?
         }
@@ -559,84 +559,110 @@ bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint
 }
 
 bool ProductManager::GetPriceHistory(
-        std::vector<std::pair<izenelib::util::UString, std::pair<ProductPriceType, ProductPriceType> > >& history,
-        const uint32_t docid,
+        std::map<uint32_t, PriceHistoryList>& history_map,
+        const std::vector<uint32_t>& docid_list,
         const UString& from_time,
         const UString& to_time)
 {
-    PMDocumentType doc;
-    if(!data_source_->GetDocument(docid, doc)) return false;
-    UString docid_ustr;
-    if(!GetDOCID_(doc, docid_ustr)) return false;
+    std::vector<std::string> docid_str_list;
+    std::map<std::string, uint32_t> docid_map;
+    for (uint32_t i = 0; i < docid_list.size(); i++)
+    {
+        PMDocumentType doc;
+        if (!data_source_->GetDocument(docid_list[i], doc)) continue;
+        UString docid_ustr;
+        if (!GetDOCID_(doc, docid_ustr)) continue;
+        docid_str_list.push_back(std::string());
+        docid_ustr.convertString(docid_str_list.back(), UString::UTF_8);
+        docid_map[docid_str_list.back()] = docid_list[i];
+    }
+    if (docid_str_list.empty()) return true;
 
-    std::string docid_str, from_str, to_str;
-    docid_ustr.convertString(docid_str, UString::UTF_8);
+    std::string from_str, to_str;
     from_time.convertString(from_str, UString::UTF_8);
     to_time.convertString(to_str, UString::UTF_8);
 
-    PriceHistory price_history(docid_str);
-    price_history.getSlice(from_str, to_str);
-    for (PriceHistory::PriceHistoryType::const_iterator it = price_history.getPriceHistory().begin();
-            it != price_history.getPriceHistory().end(); ++it)
+    std::map<std::string, PriceHistory> price_history_map;
+    if (!PriceHistory::getMultiSlice(price_history_map, docid_str_list, from_str, to_str)) return false;
+    for (std::map<std::string, PriceHistory>::const_iterator it = price_history_map.begin();
+            it != price_history_map.end(); ++it)
     {
-        std::string time_str(boost::posix_time::to_iso_string(boost::posix_time::from_time_t(it->first / 1000000 + timezone)));
-        history.push_back(make_pair(UString(time_str, UString::UTF_8), it->second.value));
+        PriceHistoryList& history = history_map[docid_map[it->first]];
+        for (PriceHistory::PriceHistoryType::const_iterator hit = it->second.getPriceHistory().begin();
+                hit != it->second.getPriceHistory().end(); ++hit)
+        {
+            std::string time_str(boost::posix_time::to_iso_string(boost::posix_time::from_time_t(hit->first / 1000000 + timezone)));
+            history.push_back(make_pair(UString(time_str, UString::UTF_8), hit->second.value));
+        }
     }
     return true;
 }
 
 bool ProductManager::GetPriceRange(
-        std::pair<ProductPriceType, ProductPriceType>& range,
-        const uint32_t docid,
+        std::map<uint32_t, std::pair<ProductPriceType, ProductPriceType> >& range_map,
+        const std::vector<uint32_t>& docid_list,
         const UString& from_time,
         const UString& to_time)
 {
-    PMDocumentType doc;
-    if(!data_source_->GetDocument(docid, doc)) return false;
-    UString docid_ustr;
-    if(!GetDOCID_(doc, docid_ustr)) return false;
+    std::vector<std::string> docid_str_list;
+    std::map<std::string, uint32_t> docid_map;
+    for (uint32_t i = 0; i < docid_list.size(); i++)
+    {
+        PMDocumentType doc;
+        if (!data_source_->GetDocument(docid_list[i], doc)) continue;
+        UString docid_ustr;
+        if (!GetDOCID_(doc, docid_ustr)) continue;
+        docid_str_list.push_back(std::string());
+        docid_ustr.convertString(docid_str_list.back(), UString::UTF_8);
+        docid_map[docid_str_list.back()] = docid_list[i];
+    }
+    if (docid_str_list.empty()) return true;
 
-    std::string docid_str, from_str, to_str;
-    docid_ustr.convertString(docid_str, UString::UTF_8);
+    std::string from_str, to_str;
     from_time.convertString(from_str, UString::UTF_8);
     to_time.convertString(to_str, UString::UTF_8);
 
-    PriceHistory price_history(docid_str);
-    price_history.getSlice(from_str, to_str);
-    ProductPrice price_range;
-    for (PriceHistory::PriceHistoryType::const_iterator it = price_history.getPriceHistory().begin();
-            it != price_history.getPriceHistory().end(); ++it)
+    std::map<std::string, PriceHistory> price_history_map;
+    if (!PriceHistory::getMultiSlice(price_history_map, docid_str_list, from_str, to_str)) return false;
+    for (std::map<std::string, PriceHistory>::const_iterator it = price_history_map.begin();
+            it != price_history_map.end(); ++it)
     {
-        price_range += it->second;
+        ProductPrice price_range;
+        for (PriceHistory::PriceHistoryType::const_iterator hit = it->second.getPriceHistory().begin();
+                hit != it->second.getPriceHistory().end(); ++hit)
+        {
+            price_range += hit->second;
+        }
+        range_map[docid_map[it->first]] = price_range.value;
     }
-    range = price_range.value;
     return true;
 }
+
 bool ProductManager::GetPrice_(uint32_t docid, ProductPrice& price) const
 {
     PMDocumentType doc;
-    if(!data_source_->GetDocument(docid, doc)) return false;
+    if (!data_source_->GetDocument(docid, doc)) return false;
     return GetPrice_(doc, price);
 }
 
 bool ProductManager::GetPrice_(const PMDocumentType& doc, ProductPrice& price) const
 {
     Document::property_const_iterator it = doc.findProperty(config_.price_property_name);
-    if(it == doc.propertyEnd())
+    if (it == doc.propertyEnd())
     {
         return false;
     }
     UString price_str = it->second.get<UString>();
-    if(!price.Parse(price_str)) return false;
+    if (!price.Parse(price_str)) return false;
     return true;
 }
 
 void ProductManager::GetPrice_(const std::vector<uint32_t>& docid_list, ProductPrice& price) const
 {
-    for(uint32_t i=0;i<docid_list.size();i++)
+    for (uint32_t i = 0; i < docid_list.size(); i++)
     {
         ProductPrice p;
-        if(GetPrice_(docid_list[i], p))
+        if (GetPrice_(docid_list[i], p))
         {
             price += p;
         }
@@ -646,7 +672,7 @@ void ProductManager::GetPrice_(const std::vector<uint32_t>& docid_list, ProductP
 bool ProductManager::GetUuid_(const PMDocumentType& doc, UString& uuid) const
 {
     PMDocumentType::property_const_iterator it = doc.findProperty(config_.uuid_property_name);
-    if(it == doc.propertyEnd())
+    if (it == doc.propertyEnd())
     {
         return false;
     }
@@ -657,7 +683,7 @@ bool ProductManager::GetUuid_(const PMDocumentType& doc, UString& uuid) const
 bool ProductManager::GetDOCID_(const PMDocumentType& doc, UString& docid) const
 {
     PMDocumentType::property_const_iterator it = doc.findProperty(config_.docid_property_name);
-    if(it == doc.propertyEnd())
+    if (it == doc.propertyEnd())
     {
         return false;
     }
@@ -673,9 +699,9 @@ void ProductManager::SetItemCount_(PMDocumentType& doc, uint32_t item_count)
 bool ProductManager::UpdatePriceHistory_(const PMDocumentType& doc) const
 {
     ProductPrice price;
-    if(!GetPrice_(doc, price)) return false;
+    if (!GetPrice_(doc, price)) return false;
     UString docid;
-    if(!GetDOCID_(doc, docid)) return false;
+    if (!GetDOCID_(doc, docid)) return false;
     std::string docid_str;
     docid.convertString(docid_str, izenelib::util::UString::UTF_8);
     PriceHistory price_history(docid_str);
