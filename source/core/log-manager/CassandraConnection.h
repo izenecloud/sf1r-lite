@@ -1,14 +1,15 @@
 #ifndef _CASSANDRA_CONNECTION_H_
 #define _CASSANDRA_CONNECTION_H_
 
-#include <string>
 #include <map>
 #include <list>
 #include <vector>
+#include <iostream>
 
 #include <util/ThreadModel.h>
 
 #include "LogManagerSingleton.h"
+#include "UtilFunctions.h"
 
 namespace libcassandra
 {

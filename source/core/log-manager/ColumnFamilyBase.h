@@ -3,8 +3,6 @@
 
 #include "CassandraConnection.h"
 
-#include <iostream>
-
 namespace sf1r {
 
 class ColumnFamilyBase
@@ -102,18 +100,6 @@ bool getSingleCount(int32_t& count, const std::string& key, const std::string& s
 {
     ColumnFamilyType row(key);
     return row.getCount(count, start, finish);
-}
-
-template <typename T>
-std::string toBytes(const T& val)
-{
-    return std::string(reinterpret_cast<const char *>(&val), sizeof(T));
-}
-
-template <typename T>
-T fromBytes(const std::string& str)
-{
-    return *(reinterpret_cast<const T *>(str.c_str()));
 }
 
 #define DEFINE_COLUMN_FAMILY_COMMON_ROUTINES(ClassName) \
