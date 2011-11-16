@@ -145,6 +145,21 @@ public:
         return propertyList_.size();
     }
 
+    void copyPropertiesFromDocument(const Document& doc, bool override = true)
+    {
+        for(property_const_iterator it = doc.propertyBegin(); it!=doc.propertyEnd(); ++it)
+        {
+            if(!hasProperty(it->first))
+            {
+                property(it->first) = it->second;
+            }
+            else if(override)
+            {
+                property(it->first) = it->second;
+            }
+        }
+    }
+
 private:
     /// document identifier in the collection
     docid_t id_;

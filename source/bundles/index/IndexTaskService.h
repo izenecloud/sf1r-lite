@@ -62,8 +62,6 @@ public:
 private:
     void createPropertyList_();
 
-    bool isPartialDocument_(docid_t oldId, const Document& doc);
-
     bool completePartialDocument_(docid_t oldId, Document& doc);
 
     bool getPropertyValue_( const PropertyValue& value, std::string& valueStr );

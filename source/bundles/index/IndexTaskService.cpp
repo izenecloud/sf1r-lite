@@ -830,21 +830,6 @@ void IndexTaskService::saveSourceCount_(int op)
     }
 }
 
-bool IndexTaskService::isPartialDocument_(docid_t oldId, const Document& doc)
-{
-    Document oldDoc;
-    if ( !documentManager_->getDocument(oldId, oldDoc) )
-    {
-        return false;
-    }
-
-    if(doc.getPropertySize() == oldDoc.getPropertySize())
-    {
-        return false;
-    }
-    return true;
-}
-
 bool IndexTaskService::completePartialDocument_(docid_t oldId, Document& doc)
 {
     docid_t newId = doc.getId();
@@ -854,14 +839,7 @@ bool IndexTaskService::completePartialDocument_(docid_t oldId, Document& doc)
         return false;
     }
 
-    typedef Document::property_const_iterator document_iterator;
-    for(document_iterator iter = doc.propertyBegin(); iter != doc.propertyEnd(); iter++)
-    {
-        if(oldDoc.findProperty(iter->first) != oldDoc.propertyEnd())
-        {
-            oldDoc.property(iter->first) = iter->second;
-        }
-    }
+    oldDoc.copyPropertiesFromDocument(doc);
 
     doc.swap(oldDoc);
     doc.setId(newId);
@@ -939,6 +917,10 @@ bool IndexTaskService::checkRtype_(
                     {
                         return false;
                     }
+                }
+                else
+                {
+                    break;
                 }
 
                 if ( iter->isIndex() && iter->getIsFilter() && !iter->isAnalyzed())
@@ -1124,12 +1106,8 @@ bool IndexTaskService::prepareDocument_(
 
     if (!insert && !rType)
     {
-        isPartial = isPartialDocument_(oldId, document);
-        if(isPartial)
-        {
-            if(!completePartialDocument_(oldId, document))
-                return false;
-        }
+        if(!completePartialDocument_(oldId, document))
+             return false;
     }
     return true;
 }
