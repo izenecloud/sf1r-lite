@@ -564,6 +564,7 @@ bool ProductManager::GetPriceHistory(
         const UString& from_time,
         const UString& to_time)
 {
+    history_map.clear();
     std::vector<std::string> docid_str_list;
     std::map<std::string, uint32_t> docid_map;
     for (uint32_t i = 0; i < docid_list.size(); i++)
@@ -578,9 +579,10 @@ bool ProductManager::GetPriceHistory(
     }
     if (docid_str_list.empty()) return true;
 
-    std::string from_str, to_str;
-    from_time.convertString(from_str, UString::UTF_8);
-    to_time.convertString(to_str, UString::UTF_8);
+    time_t from_tt = createTimeStamp(from_time);
+    time_t to_tt = createTimeStamp(to_time);
+    std::string from_str = (from_tt == -1) ? "" : toBytes(from_tt);
+    std::string to_str = (to_tt == -1) ? "" : toBytes(to_tt);
 
     std::map<std::string, PriceHistory> price_history_map;
     if (!PriceHistory::getMultiSlice(price_history_map, docid_str_list, from_str, to_str)) return false;
@@ -606,6 +608,7 @@ bool ProductManager::GetPriceRange(
         const UString& from_time,
         const UString& to_time)
 {
+    range_map.clear();
     std::vector<std::string> docid_str_list;
     std::map<std::string, uint32_t> docid_map;
     for (uint32_t i = 0; i < docid_list.size(); i++)
@@ -620,9 +623,10 @@ bool ProductManager::GetPriceRange(
     }
     if (docid_str_list.empty()) return true;
 
-    std::string from_str, to_str;
-    from_time.convertString(from_str, UString::UTF_8);
-    to_time.convertString(to_str, UString::UTF_8);
+    time_t from_tt = createTimeStamp(from_time);
+    time_t to_tt = createTimeStamp(to_time);
+    std::string from_str = (from_tt == -1) ? "" : toBytes(from_tt);
+    std::string to_str = (to_tt == -1) ? "" : toBytes(to_tt);
 
     std::map<std::string, PriceHistory> price_history_map;
     if (!PriceHistory::getMultiSlice(price_history_map, docid_str_list, from_str, to_str)) return false;
