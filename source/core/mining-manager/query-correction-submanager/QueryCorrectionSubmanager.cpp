@@ -59,7 +59,10 @@ bool QueryCorrectionSubmanager::initialize()
 
     if (enableChn_)
     {
-        cmgr_.reset(new idmlib::qc::CnQueryCorrection());
+        if (queryDataPath_.empty())
+            cmgr_.reset(new idmlib::qc::CnQueryCorrection());
+        else
+            cmgr_.reset(new idmlib::qc::CnQueryCorrection(queryDataPath_ + "/query-correction"));
         if (!cmgr_->Load())
         {
             std::cerr << "Failed loading resources for Chinese query correction" << std::endl;
