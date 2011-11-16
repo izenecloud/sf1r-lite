@@ -44,6 +44,7 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
+    UpdatePriceHistory_(doc);
     UString uuid;
     generateUUID(uuid, doc);
     if (!data_source_->SetUuid(index_document, uuid)) return false;
@@ -52,7 +53,6 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
     new_doc.property(config_.docid_property_name) = uuid;
     SetItemCount_(new_doc, 1);
     op_processor_->Append(1, new_doc);
-    UpdatePriceHistory_(doc);
 
     return true;
 }
@@ -61,6 +61,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
+    UpdatePriceHistory_(to);
     uint32_t fromid = index_document.getId(); //oldid
     PMDocumentType from;
     if (!data_source_->GetDocument(fromid, from)) return false;
@@ -76,7 +77,6 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
         new_doc.property(config_.docid_property_name) = from_uuid;
         SetItemCount_(new_doc, 1);
         op_processor_->Append(2, new_doc);// if r_type, only numberic properties in 'to'
-        UpdatePriceHistory_(to);
     }
     else
     {
@@ -99,7 +99,6 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
 //                 diff_properties.property(config_.itemcount_property_name) = UString(boost::lexical_cast<std::string>(docid_list.size()+1), UString::UTF_8);
 
             op_processor_->Append(2, diff_properties);
-            UpdatePriceHistory_(to);
         }
     }
     return true;

@@ -340,7 +340,7 @@ void ProductController::get_multi_price_history()
     IZENELIB_DRIVER_BEFORE_HOOK(require_docs_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_date_range_());
     ProductManager::PriceHistoryList history_list;
-    if (!product_manager_->GetMultiPriceHistory(history_list, docid_list_, from_tt_, to_tt_))
+    if (!product_manager_->GetMultiPriceHistory(history_list, docid_list_, from_tt_, to_tt_ + 86399999999L))
     {
         response().addError(product_manager_->GetLastError());
         return;
@@ -372,7 +372,7 @@ void ProductController::get_multi_price_range()
     IZENELIB_DRIVER_BEFORE_HOOK(require_docs_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_date_range_());
     ProductManager::PriceRangeList range_list;
-    if (!product_manager_->GetMultiPriceRange(range_list, docid_list_, from_tt_, to_tt_))
+    if (!product_manager_->GetMultiPriceRange(range_list, docid_list_, from_tt_, to_tt_ + 86399999999L))
     {
         response().addError(product_manager_->GetLastError());
         return;
