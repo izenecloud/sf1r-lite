@@ -62,6 +62,12 @@ void MasterNodeManager::start()
     }
 }
 
+void MasterNodeManager::stop()
+{
+    // stop events on exit
+    zookeeper_->disconnect();
+}
+
 void MasterNodeManager::process(ZooKeeperEvent& zkEvent)
 {
     std::cout << "[MasterNodeManager] "<<zkEvent.toString();

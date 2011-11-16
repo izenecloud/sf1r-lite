@@ -48,6 +48,8 @@ public:
 
     void start();
 
+    void stop();
+
     /**
      * Register aggregators
      * @param aggregator

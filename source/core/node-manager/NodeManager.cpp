@@ -9,7 +9,7 @@ using namespace sf1r;
 using namespace zookeeper;
 
 NodeManager::NodeManager()
-: nodeState_(NODE_STATE_INIT)
+: nodeState_(NODE_STATE_INIT), masterStarted_(false)
 {
 }
 
@@ -66,6 +66,11 @@ void NodeManager::start()
 
 void NodeManager::stop()
 {
+    if (masterStarted_)
+    {
+        MasterNodeManagerSingleton::get()->stop();
+    }
+
     leaveCluster();
 }
 
@@ -174,6 +179,7 @@ void NodeManager::enterCluster()
     if (dsTopologyConfig_.curSF1Node_.masterAgent_.enabled_)
     {
         MasterNodeManagerSingleton::get()->start();
+        masterStarted_ = true;
     }
 }
 

@@ -95,9 +95,10 @@ private:
 
     // node state
     NodeStateType nodeState_;
-
     SF1NodeInfo nodeInfo_;
     std::string nodePath_;
+
+    bool masterStarted_;
 
     boost::mutex mutex_;
 };
