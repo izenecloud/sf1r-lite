@@ -41,7 +41,7 @@ void TopicController::get_similar()
 //   std::cout<<"TopicController::get_similar"<<std::endl;
     IZENELIB_DRIVER_BEFORE_HOOK(requireTID_());
     std::vector<izenelib::util::UString> label_list;
-    MiningSearchService* service = collectionHandler_->miningSearchService_;	
+    MiningSearchService* service = collectionHandler_->miningSearchService_;
     bool requestSent = service->getSimilarLabelStringList(tid_, label_list);
 
     if (!requestSent)
@@ -97,7 +97,7 @@ void TopicController::get_in_date_range()
     IZENELIB_DRIVER_BEFORE_HOOK(requireDateRange_());
     std::vector<izenelib::util::UString> topic_list;
     MiningSearchService* service = collectionHandler_->miningSearchService_;
-    
+
     bool requestSent = service->GetTdtInTimeRange(start_date_, end_date_, topic_list);
 
     if (!requestSent)
@@ -116,7 +116,7 @@ void TopicController::get_in_date_range()
         std::string str;
         topic_list[i].convertString(str, izenelib::util::UString::UTF_8);
         new_resource[Keys::name] = str;
-        
+
     }
 }
 
@@ -189,7 +189,7 @@ void TopicController::get_temporal_similar()
         new_ts_item[Keys::date] = date_str;
         new_ts_item[Keys::freq] = tr.ts[i];
     }
-    
+
     const std::vector<izenelib::util::UString>& similar_topics = topic_info.second;
     Value& similar = resources[Keys::similar];
     similar.reset<Value::ArrayType>();
@@ -232,7 +232,7 @@ bool TopicController::requireDateRange_()
         response().addError("Require field date_range in request.");
         return false;
     }
-    
+
     if(!idmlib::util::TimeUtil::GetDateByUString(start_date_, start_))
     {
         response().addError("start date not valid.");

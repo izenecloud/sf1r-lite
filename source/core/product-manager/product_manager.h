@@ -55,18 +55,21 @@ public:
 
     bool AddGroupWithInfo(const std::vector<izenelib::util::UString>& docid_list, const Document& doc, bool backup = true);
 
-    typedef std::vector<std::pair<izenelib::util::UString, std::pair<ProductPriceType, ProductPriceType> > > PriceHistoryList;
-    bool GetPriceHistory(
-            std::map<uint32_t, PriceHistoryList>& history_map,
-            const std::vector<uint32_t>& docid_list,
-            const izenelib::util::UString& from_time,
-            const izenelib::util::UString& to_time);
+    typedef std::vector<std::pair<izenelib::util::UString, ProductPrice> > PriceHistoryItem;
+    typedef std::vector<std::pair<uint32_t, PriceHistoryItem> > PriceHistoryList;
+    typedef std::vector<std::pair<uint32_t, ProductPrice> > PriceRangeList;
 
-    bool GetPriceRange(
-            std::map<uint32_t, std::pair<ProductPriceType, ProductPriceType> >& range_map,
+    bool GetMultiPriceHistory(
+            PriceHistoryList& history_list,
             const std::vector<uint32_t>& docid_list,
-            const izenelib::util::UString& from_time,
-            const izenelib::util::UString& to_time);
+            time_t from_tt,
+            time_t to_tt);
+
+    bool GetMultiPriceRange(
+            PriceRangeList& range_list,
+            const std::vector<uint32_t>& docid_list,
+            time_t from_tt,
+            time_t to_tt);
 
 
     const std::string& GetLastError() const

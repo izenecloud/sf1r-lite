@@ -28,7 +28,7 @@ const string SourceCount::cf_comment(
     "        key \"collection name\" : list of {\n"
     "            name \"source name\" : value \"product count\"\n"
     "        }\n"
-    "    }\n");
+    "    }");
 
 const double SourceCount::cf_row_cache_size(0);
 
@@ -68,9 +68,7 @@ const map<string, string> SourceCount::cf_compaction_strategy_options;
 
 const int32_t SourceCount::cf_row_cache_keys_to_save(0);
 
-const map<string, string> SourceCount::cf_compression_options = map_list_of
-    ("sstable_compression", "SnappyCompressor")
-    ("chunk_length_kb", "64");
+const map<string, string> SourceCount::cf_compression_options;
 
 SourceCount::SourceCount(const string& collection)
     : ColumnFamilyBase()
