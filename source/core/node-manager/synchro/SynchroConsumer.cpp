@@ -45,6 +45,8 @@ void SynchroConsumer::process(ZooKeeperEvent& zkEvent)
         if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
             doWatchProducer();
     }
+
+    resetWatch();
 }
 
 /*virtual*/
@@ -113,6 +115,15 @@ void SynchroConsumer::doWatchProducer()
 
         consumerStatus_ = CONSUMER_STATUS_WATCHING;
     }
+}
+
+void SynchroConsumer::resetWatch()
+{
+    std::vector<std::string> childrenList;
+    zookeeper_->getZNodeChildren(syncNodePath_, childrenList, ZooKeeper::WATCH);
+
+    std::string dataPath;
+    zookeeper_->getZNodeData(producerRealNodePath_, dataPath, ZooKeeper::WATCH);
 }
 
 

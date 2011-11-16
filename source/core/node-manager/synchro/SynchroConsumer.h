@@ -56,6 +56,8 @@ public:
 private:
     void doWatchProducer();
 
+    void resetWatch();
+
 private:
     replicaid_t replicaId_;
     nodeid_t nodeId_;
