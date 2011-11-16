@@ -461,7 +461,12 @@ public:
         return false;
     }
 
-    bool isMasterEnabled()
+    bool isDistributedSearchNode()
+    {
+        return distributedTopologyConfig_.enabled_;
+    }
+
+    bool isMaster()
     {
         if (distributedTopologyConfig_.enabled_
                 && distributedTopologyConfig_.curSF1Node_.masterAgent_.enabled_
@@ -487,7 +492,7 @@ public:
         return false;
     }
 
-    bool isWorkerEnabled()
+    bool isWorker()
     {
         if (distributedTopologyConfig_.enabled_
                 && distributedTopologyConfig_.curSF1Node_.workerAgent_.enabled_

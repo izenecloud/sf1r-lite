@@ -10,7 +10,7 @@
 #include <net/aggregator/JobWorker.h>
 #include "WorkerService.h"
 
-//#include <util/singleton.h>
+#include <util/singleton.h>
 
 #include <common/CollectionManager.h>
 #include <common/Utilities.h>
@@ -35,14 +35,16 @@ private:
     boost::shared_ptr<WorkerService> workerService_;
 
 public:
-//    static WorkerServer* get()
+//    WorkerServer(const std::string& host, uint16_t port, unsigned int threadNum)
+//    : JobWorker<WorkerServer>(host, port, threadNum)
 //    {
-//        return izenelib::util::Singleton<WorkerServer>::get();
 //    }
 
-    WorkerServer(const std::string& host, uint16_t port, unsigned int threadNum)
-    : JobWorker<WorkerServer>(host, port, threadNum)
+    WorkerServer() {}
+
+    void init(const std::string& host, uint16_t port, unsigned int threadNum, bool debug=false)
     {
+        JobWorker<WorkerServer>::init(host, port, threadNum, debug);
     }
 
 public:
@@ -183,6 +185,7 @@ private:
     std::string identity_;
 };
 
+typedef izenelib::util::Singleton<WorkerServer> WorkerServerSingle;
 
 }
 

@@ -46,8 +46,6 @@ private:
     boost::scoped_ptr<izenelib::driver::DriverServer> driverServer_;
 
     boost::shared_ptr<izenelib::driver::Router> router_;
-
-    boost::shared_ptr<sf1r::WorkerServer> workerServer_;
 };
 
 #endif /*COBRAPROCESS_H_*/

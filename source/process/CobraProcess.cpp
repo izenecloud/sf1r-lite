@@ -234,10 +234,10 @@ void CobraProcess::stopDriver()
 
 bool CobraProcess::startDistributedServer()
 {
-    if (!SF1Config::get()->distributedTopologyConfig_.enabled_)
+    if (!SF1Config::get()->isDistributedSearchNode())
         return false;
 
-    if (sf1r::SF1Config::get()->isWorkerEnabled())
+    if (SF1Config::get()->isWorker())
     {
         try
         {
@@ -245,9 +245,10 @@ bool CobraProcess::startDistributedServer()
             std::string localHost = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.host_;
             uint16_t workerPort = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.port_;
             std::size_t threadNum = SF1Config::get()->brokerAgentConfig_.threadNum_;
-            workerServer_.reset(new WorkerServer(localHost, workerPort, threadNum));
-            workerServer_->start();
-            cout << "#[Worker Server]started, listening at localhost:"<<workerPort<<" ..."<<endl;
+
+            WorkerServerSingle::get()->init(localHost, workerPort, threadNum);
+            WorkerServerSingle::get()->start();
+            cout << "#[Worker Server]started, listening at "<<localHost<<":"<<workerPort<<" ..."<<endl;
 
             // master notifier, xxx
             //std::string masterHost = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.masterHost_;
@@ -260,7 +261,7 @@ bool CobraProcess::startDistributedServer()
         }
     }
 
-    if (SF1Config::get()->isMasterEnabled())
+    if (SF1Config::get()->isMaster())
     {
         // master rpc server
         //MasterServer::get()->start(curNodeInfo.localHost_, masterPort);
@@ -279,10 +280,10 @@ bool CobraProcess::startDistributedServer()
 
 void CobraProcess::stopDistributedServer()
 {
-    if (workerServer_)
+    if (SF1Config::get()->isDistributedSearchNode()
+            && SF1Config::get()->isWorker())
     {
-        workerServer_->end();
-        workerServer_->join();
+        WorkerServerSingle::get()->stop();
     }
 
     NodeManagerSingleton::get()->stop();
