@@ -28,7 +28,7 @@ const string SourceCount::cf_comment(
     "        key \"collection name\" : list of {\n"
     "            name \"source name\" : value \"product count\"\n"
     "        }\n"
-    "    }\n");
+    "    }");
 
 const double SourceCount::cf_row_cache_size(0);
 

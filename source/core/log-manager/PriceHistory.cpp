@@ -25,10 +25,10 @@ const string PriceHistory::cf_comment(
     "This column family stores recent two years price history for each product.\n"
     "Schema:\n\n"
     "    column family PriceHistory = list of {\n"
-    "        key \"product docId\" : list of {\n"
+    "        key \"product docid\" : list of {\n"
     "            name \"index timestamp\" : value \"product price\"\n"
     "        }\n"
-    "    }\n");
+    "    }");
 
 const double PriceHistory::cf_row_cache_size(0);
 
