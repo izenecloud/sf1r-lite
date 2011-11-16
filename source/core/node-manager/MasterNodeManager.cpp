@@ -520,7 +520,7 @@ void MasterNodeManager::deregisterSearchServer()
 
 void MasterNodeManager::resetAggregatorConfig()
 {
-    std::cout << "[MasterNodeManager::resetAggregatorConfig] "<<std::endl;
+    std::cout << "[MasterNodeManager::resetAggregatorConfig] for "<<aggregatorList_.size()<<" aggregators"<<std::endl;
 
     aggregatorConfig_.reset();
 
@@ -530,14 +530,8 @@ void MasterNodeManager::resetAggregatorConfig()
         boost::shared_ptr<WorkerNode>& pworkerNode = it->second;
         if (pworkerNode->isGood_)
         {
-            if (pworkerNode->nodeId_ == curNodeInfo_.nodeId_)
-            {
-                aggregatorConfig_.enableLocalWorker_ = true;
-            }
-            else
-            {
-                aggregatorConfig_.addWorker(pworkerNode->host_, pworkerNode->workerPort_);
-            }
+            bool isLocal = (pworkerNode->nodeId_ == curNodeInfo_.nodeId_);
+            aggregatorConfig_.addWorker(pworkerNode->host_, pworkerNode->workerPort_, pworkerNode->shardId_, isLocal);
         }
     }
 
@@ -548,8 +542,6 @@ void MasterNodeManager::resetAggregatorConfig()
     for (agg_it = aggregatorList_.begin(); agg_it != aggregatorList_.end(); agg_it++)
     {
         (*agg_it)->setAggregatorConfig(aggregatorConfig_);
-
-        ///std::cout << aggregatorConfig_.toString() <<std::endl;
     }
 }
 

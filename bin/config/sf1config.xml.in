@@ -181,7 +181,7 @@
                      * shardids (workerids) range from 1 to 'shardnum', without break.
                      * recommended to be consistent with nodeid, i.e., only-master node assigned the max nodeid.
     -->
-    <DistributedTopology enable="n" clusterid="@DEFAULT_CLUSTER_ID@" nodenum="3" shardnum="2">
+    <DistributedTopology enable="n" clusterid="@DEFAULT_CLUSTER_ID@" nodenum="2" shardnum="2">
       <CurrentNode host="172.16.0.36" replicaid="1" nodeid="1">
         <!--is a Worker or not-->
         <WorkerAgent enable="y" port="18111" shardid="1">

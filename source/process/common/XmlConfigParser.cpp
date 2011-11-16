@@ -355,15 +355,15 @@ void SF1Config::parseMasterAgent( const ticpp::Element * master )
     }
 
     // todo, remove
-    masterAgent.aggregatorConfig_.enableLocalWorker_ = true;
     Iterator<Element> worker_it( "Worker" );
+    uint32_t workerid = 1;
     for (worker_it = worker_it.begin(master); worker_it != worker_it.end(); worker_it++)
     {
         std::string host;
         int port;
         getAttribute(worker_it.Get(), "host", host, true);
         getAttribute(worker_it.Get(), "port", port, true);
-        masterAgent.aggregatorConfig_.addWorker(host, static_cast<uint16_t>(port));
+        masterAgent.aggregatorConfig_.addWorker(host, static_cast<uint16_t>(port), workerid++);
     }
 }
 
