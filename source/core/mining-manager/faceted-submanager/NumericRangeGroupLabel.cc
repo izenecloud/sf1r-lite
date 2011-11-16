@@ -3,16 +3,15 @@
 
 NS_FACETED_BEGIN
 
-NumericRangeGroupLabel::NumericRangeGroupLabel(const NumericPropertyTable *propertyTable, const float &targetValue)
+NumericRangeGroupLabel::NumericRangeGroupLabel(const NumericPropertyTable *propertyTable, const std::vector<float>& targetValues)
     : propertyTable_(propertyTable)
-    , targetValue_(targetValue)
+    , targetValueSet_(targetValues.begin(), targetValues.end())
     , test_(&NumericRangeGroupLabel::test1)
 {}
 
-NumericRangeGroupLabel::NumericRangeGroupLabel(const NumericPropertyTable *propertyTable, const int64_t &lowerBound, const int64_t &upperBound)
+NumericRangeGroupLabel::NumericRangeGroupLabel(const NumericPropertyTable *propertyTable, const NumericRangeVec& ranges)
     : propertyTable_(propertyTable)
-    , lowerBound_(lowerBound)
-    , upperBound_(upperBound)
+    , ranges_(ranges)
     , test_(&NumericRangeGroupLabel::test2)
 {}
 
@@ -30,7 +29,9 @@ bool NumericRangeGroupLabel::test1(docid_t doc) const
 {
     float value = 0;
     if (propertyTable_->convertPropertyValue(doc, value))
-        return (value == targetValue_);
+    {
+        return targetValueSet_.find(value) != targetValueSet_.end();
+    }
 
     return false;
 }
@@ -39,7 +40,14 @@ bool NumericRangeGroupLabel::test2(docid_t doc) const
 {
     int64_t value = 0;
     if (propertyTable_->convertPropertyValue(doc, value))
-        return (value >= lowerBound_ && value <= upperBound_);
+    {
+        for (NumericRangeVec::const_iterator rangeIt = ranges_.begin();
+            rangeIt != ranges_.end(); ++rangeIt)
+        {
+            if (value >= rangeIt->first && value <= rangeIt->second)
+                return true;
+        }
+    }
 
     return false;
 }

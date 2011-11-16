@@ -17,7 +17,7 @@
     -->
     <LogConnection str="sqlite3://./log/COBRA"/>
     <!-- To fully disable use of Cassandra, you should just set the value of str to "__disabled__" -->
-    <CassandraConnection str="cassandra://172.16.0.163:9160"/>
+    <CassandraConnection str="__disabled__"/>
     <BundlesDefault>
       <!-- Index Bundle Default -->
       <IndexBundle>

@@ -1,6 +1,6 @@
 #include "product_price.h"
 using namespace sf1r;
-    
+
 ProductPrice::ProductPrice():value(-1.0,-1.0)
 {
 }
@@ -9,7 +9,6 @@ ProductPrice::ProductPrice(ProductPriceType a, ProductPriceType b): value(a,b)
 {
     Check_();
 }
-
 
 ProductPrice& ProductPrice::operator+=(const ProductPrice& a)
 {
@@ -44,7 +43,6 @@ bool ProductPrice::Parse(const izenelib::util::UString& ustr)
     return Parse(str);
 }
 
-
 bool ProductPrice::Parse(const std::string& str)
 {
     try
@@ -71,7 +69,7 @@ bool ProductPrice::Parse(const std::string& str)
                 break;
             }
         }
-        if(!found) 
+        if(!found)
         {
             Reset_();
             return false;
@@ -104,7 +102,6 @@ bool ProductPrice::Valid() const
 {
     return value.first>=0.0 && value.second>=0.0;
 }
-
 
 void ProductPrice::Check_()
 {
@@ -179,5 +176,3 @@ bool ProductPrice::split_float_(const std::string& str, char sep )
         return false;
     }
 }
-    
-

@@ -75,12 +75,12 @@ bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
         }
     }
 
-    const GroupParam::GroupLabelVec& labels = groupParam_.groupLabels_;
-    for (GroupParam::GroupLabelVec::const_iterator it = labels.begin();
-        it != labels.end(); ++it)
+    const GroupParam::GroupLabelMap& labels = groupParam_.groupLabels_;
+    for (GroupParam::GroupLabelMap::const_iterator labelIt = labels.begin();
+        labelIt != labels.end(); ++labelIt)
     {
-        const std::string& propName = it->first;
-        GroupLabel* label = builder.createGroupLabel(*it);
+        const std::string& propName = labelIt->first;
+        GroupLabel* label = builder.createGroupLabel(*labelIt);
         if (label)
         {
             GroupCounterMap::iterator counterIt = groupCounterMap.find(propName);

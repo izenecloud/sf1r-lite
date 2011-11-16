@@ -1,4 +1,4 @@
-INCLUDE_DIRECTORIES(		 
+INCLUDE_DIRECTORIES(
   ${CMAKE_SOURCE_DIR}/core/
   ${izenelib_INCLUDE_DIRS}
   ${ilplib_INCLUDE_DIRS}
@@ -6,7 +6,7 @@ INCLUDE_DIRECTORIES(
   ${imllib_INCLUDE_DIRS}
   ${wisekma_INCLUDE_DIRS}
   ${izenecma_INCLUDE_DIRS}
-  ${izenejma_INCLUDE_DIRS}  
+  ${izenejma_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
   ${TokyoCabinet_INCLUDE_DIRS}
   ${Glog_INCLUDE_DIRS}
@@ -24,6 +24,8 @@ SET(libs
   sf1r_la_manager
   sf1r_configuration_manager
   sf1r_index_manager
+  sf1r_product_manager
+  sf1r_node_manager
   sf1r_common
 
   ${ilplib_LIBRARIES}

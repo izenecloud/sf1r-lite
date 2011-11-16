@@ -1,6 +1,5 @@
 #include "CassandraConnection.h"
 
-#include <iostream>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -31,11 +30,6 @@ bool CassandraConnection::isEnabled()
 boost::shared_ptr<libcassandra::Cassandra>& CassandraConnection::getCassandraClient()
 {
     return cassandra_client_;
-}
-
-int64_t CassandraConnection::createTimestamp()
-{
-    return libcassandra::createTimestamp();
 }
 
 const string& CassandraConnection::getKeyspaceName() const

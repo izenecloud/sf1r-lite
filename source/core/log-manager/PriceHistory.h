@@ -3,16 +3,18 @@
 
 #include "ColumnFamilyBase.h"
 
-#include <product-manager/pm_types.h>
+#include <product-manager/product_price.h>
 
 namespace sf1r {
+
+class ProductPrice;
 
 class PriceHistory : public ColumnFamilyBase
 {
 public:
-    typedef std::map<time_t, ProductPriceType> PriceHistoryType;
+    typedef std::map<time_t, ProductPrice> PriceHistoryType;
 
-    explicit PriceHistory(const std::string& uuid = "");
+    explicit PriceHistory(const std::string& docId = "");
 
     ~PriceHistory();
 
@@ -20,29 +22,29 @@ public:
 
     virtual bool updateRow() const;
 
-    virtual void insert(const std::string& name, const std::string& value);
+    virtual bool insert(const std::string& name, const std::string& value);
 
-    virtual void resetKey(const std::string& newUuid = "");
+    virtual void resetKey(const std::string& newDocId = "");
 
     virtual void clear();
 
-    void insert(time_t timestamp, ProductPriceType price);
+    void insert(time_t timestamp, ProductPrice price);
 
     DEFINE_COLUMN_FAMILY_COMMON_ROUTINES( PriceHistory )
 
-    inline const std::string& getUuid() const
+    inline const std::string& getDocId() const
     {
-        return uuid_;
+        return docId_;
     }
 
-    inline void setUuid(const std::string& uuid)
+    inline void setDocId(const std::string& docId)
     {
-        uuid_ = uuid;
+        docId_ = docId;
     }
 
-    inline bool hasUuid() const
+    inline bool hasDocId() const
     {
-        return !uuid_.empty();
+        return !docId_.empty();
     }
 
     inline const PriceHistoryType& getPriceHistory() const
@@ -50,7 +52,7 @@ public:
         return priceHistory_;
     }
 
-    inline void setPrice(const PriceHistoryType& priceHistory)
+    inline void setPriceHistory(const PriceHistoryType& priceHistory)
     {
         priceHistory_ = priceHistory;
         priceHistoryPresent_ = true;
@@ -62,7 +64,7 @@ public:
     }
 
 private:
-    std::string uuid_;
+    std::string docId_;
 
     PriceHistoryType priceHistory_;
     bool priceHistoryPresent_;

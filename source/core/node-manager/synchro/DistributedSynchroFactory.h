@@ -27,7 +27,7 @@ public:
     };
 
 public:
-    static SynchroProducerPtr makeProcuder(SynchroType stype)
+    static SynchroProducerPtr makeProducer(SynchroType stype)
     {
         if (!syncProducer_[stype])
         {

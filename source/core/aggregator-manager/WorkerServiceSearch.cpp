@@ -356,14 +356,21 @@ bool WorkerService::getSummaryMiningResult_(
 
         if (actionItem.env_.isLogGroupLabels_)
         {
-            const faceted::GroupParam::GroupLabelVec& groupLabels = actionItem.groupParam_.groupLabels_;
-            for (faceted::GroupParam::GroupLabelVec::const_iterator it = groupLabels.begin();
-                it != groupLabels.end(); ++it)
+            const faceted::GroupParam::GroupLabelMap& groupLabels = actionItem.groupParam_.groupLabels_;
+            for (faceted::GroupParam::GroupLabelMap::const_iterator labelIt = groupLabels.begin();
+                labelIt != groupLabels.end(); ++labelIt)
             {
-                if (miningManager_->clickGroupLabel(actionItem.env_.queryString_, it->first, it->second) == false)
+                const std::string& propName = labelIt->first;
+                const faceted::GroupParam::GroupPathVec& pathVec = labelIt->second;
+
+                for (faceted::GroupParam::GroupPathVec::const_iterator pathIt = pathVec.begin();
+                    pathIt != pathVec.end(); ++pathIt)
                 {
-                    LOG(ERROR) << "error in log group label click, query: " << actionItem.env_.queryString_
-                               << ", property name: " << it->first << ", path size: " << it->second.size();
+                    if (! miningManager_->clickGroupLabel(actionItem.env_.queryString_, propName, *pathIt))
+                    {
+                        LOG(ERROR) << "error in log group label click, query: " << actionItem.env_.queryString_
+                                << ", property name: " << propName << ", path size: " << pathIt->size();
+                    }
                 }
             }
         }

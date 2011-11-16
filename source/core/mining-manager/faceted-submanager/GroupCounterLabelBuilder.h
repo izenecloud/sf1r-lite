@@ -18,6 +18,7 @@ namespace sf1r
 {
 class GroupConfig;
 class NumericPropertyTableBuilder;
+class NumericPropertyTable;
 }
 
 NS_FACETED_BEGIN
@@ -36,20 +37,22 @@ public:
     );
 
     GroupCounter* createGroupCounter(const GroupPropParam& groupPropParam);
-    GroupLabel* createGroupLabel(const GroupParam::GroupLabel& labelParam);
+    GroupLabel* createGroupLabel(const GroupParam::GroupLabelParam& labelParam);
 
 private:
     PropertyDataType getPropertyType_(const std::string& prop) const;
     const GroupConfig* getGroupConfig_(const std::string& prop) const;
 
-    GroupCounter* createValueCounter(const std::string& prop) const;
-    GroupCounter* createNumericRangeCounter(const std::string& prop) const;
+    GroupCounter* createValueCounter_(const std::string& prop) const;
+    GroupCounter* createNumericRangeCounter_(const std::string& prop) const;
 
-    GroupCounter* createStringCounter(const std::string& prop) const;
-    GroupCounter* createNumericCounter(const std::string& prop) const;
+    GroupCounter* createStringCounter_(const std::string& prop) const;
+    GroupCounter* createNumericCounter_(const std::string& prop) const;
 
-    GroupLabel* createStringLabel(const GroupParam::GroupLabel& labelParam) const;
-    GroupLabel* createNumericRangeLabel(const GroupParam::GroupLabel& labelParam) const;
+    GroupLabel* createStringLabel_(const GroupParam::GroupLabelParam& labelParam) const;
+    GroupLabel* createNumericRangeLabel_(const GroupParam::GroupLabelParam& labelParam) const;
+    GroupLabel* createNumericLabel_(const GroupParam::GroupLabelParam& labelParam) const;
+    GroupLabel* createRangeLabel_(const GroupParam::GroupLabelParam& labelParam) const;
 
 private:
     const std::vector<GroupConfig>& groupConfigs_;

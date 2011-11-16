@@ -15,7 +15,7 @@ using namespace izenelib::driver;
 
 bool ProductController::check_product_manager_()
 {
-    if(collectionHandler_->productSearchService_==NULL)
+    if(!collectionHandler_->productSearchService_)
     {
         response().addError("ProductManager not enabled.");
         return false;
@@ -56,10 +56,7 @@ bool ProductController::require_uuid_()
         response().addError("Require uuid in request.");
         return false;
     }
-    else
-    {
-        uuid_ = izenelib::util::UString(suuid, izenelib::util::UString::UTF_8);
-    }
+    uuid_ = izenelib::util::UString(suuid, izenelib::util::UString::UTF_8);
     return true;
 }
 
@@ -68,7 +65,7 @@ bool ProductController::require_doc_()
     doc_.clear();
     Value& resource = request()[Keys::resource];
     const Value::ObjectType& objectValue = resource.getObject();
-    
+
     for (Value::ObjectType::const_iterator it = objectValue.begin();
          it != objectValue.end(); ++it)
     {
@@ -96,7 +93,6 @@ bool ProductController::require_doc_()
     return true;
 }
 
-
 /**
  * @brief Action \b add_new_group. Use new documents id list to generate a new group
  *
@@ -108,7 +104,7 @@ bool ProductController::require_doc_()
  * @section response
  *
  * - @b uuid (@c String): Generated uuid.
- * 
+ *
  *
  * @section Example
  *
@@ -154,7 +150,7 @@ void ProductController::add_new_group()
  *
  * @section response
  *
- * 
+ *
  *
  * @section Example
  *
@@ -197,7 +193,7 @@ void ProductController::append_to_group()
  *
  * @section response
  *
- * 
+ *
  *
  * @section Example
  *
@@ -238,7 +234,7 @@ void ProductController::remove_from_group()
  *
  * @section response
  *
- * 
+ *
  *
  * @section Example
  *
@@ -304,5 +300,5 @@ void ProductController::update_a_doc()
     }
 }
 
-    
+
 }

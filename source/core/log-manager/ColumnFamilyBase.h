@@ -3,8 +3,6 @@
 
 #include "CassandraConnection.h"
 
-#include <iostream>
-
 namespace sf1r {
 
 class ColumnFamilyBase
@@ -38,7 +36,7 @@ public:
 
     virtual bool getCount(int32_t& count, const std::string& start, const std::string& finish) const;
 
-    virtual void insert(const std::string& name, const std::string& value) {}
+    virtual bool insert(const std::string& name, const std::string& value) { return true; }
 
     virtual void insertCounter(const std::string& name, int64_t value) {}
 
@@ -104,20 +102,7 @@ bool getSingleCount(int32_t& count, const std::string& key, const std::string& s
     return row.getCount(count, start, finish);
 }
 
-template <typename T>
-std::string toBytes(const T& val)
-{
-    return std::string(reinterpret_cast<const char *>(&val), sizeof(T));
-}
-
-template <typename T>
-T fromBytes(const std::string& str)
-{
-    return *(reinterpret_cast<const T *>(str.c_str()));
-}
-
 #define DEFINE_COLUMN_FAMILY_COMMON_ROUTINES(ClassName) \
-public: \
     static const ColumnType column_type; \
     static const std::string cf_name; \
     static const std::string cf_column_type; \
@@ -170,7 +155,18 @@ public: \
         return ::sf1r::getSingleCount<ClassName>(count, key, start, finish); \
     } \
     \
-    static bool getMultiSlice(std::vector<ClassName>& row_list, const std::vector<std::string>& key_list, const std::string& start, const std::string& finish); \
+    /* XXX Don't forget to implement the following two in your ColumnFamily class */ \
+    static bool getMultiSlice( \
+            std::map<std::string, ClassName>& row_map, \
+            const std::vector<std::string>& key_list, \
+            const std::string& start, \
+            const std::string& finish); \
+    \
+    static bool getMultiCount( \
+            std::map<std::string, int32_t>& count_map, \
+            const std::vector<std::string>& key_list, \
+            const std::string& start, \
+            const std::string& finish); \
 
 
 }

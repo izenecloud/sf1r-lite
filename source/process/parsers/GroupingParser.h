@@ -8,7 +8,6 @@
 #include <util/driver/Parser.h>
 #include <util/driver/Value.h>
 
-#include <configuration-manager/MiningSchema.h>
 #include <mining-manager/faceted-submanager/GroupParam.h>
 
 #include <string>
@@ -26,10 +25,6 @@ using namespace izenelib::driver;
 class GroupingParser : public ::izenelib::driver::Parser
 {
 public:
-    explicit GroupingParser(const MiningSchema& miningSchema)
-    : miningSchema_(miningSchema)
-    {}
-
     bool parse(const Value& grouping);
 
     std::vector<faceted::GroupPropParam>& mutableGroupPropertyList()
@@ -40,9 +35,8 @@ public:
     {
         return propertyList_;
     }
-private:
-    const MiningSchema& miningSchema_;
 
+private:
     std::vector<faceted::GroupPropParam> propertyList_;
 };
 

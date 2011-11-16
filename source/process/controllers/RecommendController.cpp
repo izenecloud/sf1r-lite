@@ -871,7 +871,7 @@ bool RecommendController::parseRateParam(RateParam& param)
  *     - @b event (@c String): the event type, it could be @b purchase, @b shopping_cart, @b browse, @b rate, or the event values in @c track_event().
  *     - @b ITEMID (@c String): a unique item identifier, which item appears in the above event.
  *     - @b value (@c String): if @b event is @b rate, the @b value would be returned as rating star, such as "5".
- *   - The item properties added by @c add_item() would also be returned here.@n
+ *   - The item properties would also be returned here, such as "name", "link", etc.@n
  *     Property key name is used as key. The corresponding value is the content of that property.
  *
  * @section example
@@ -1023,7 +1023,7 @@ void RecommendController::renderRecommendResult(const RecommendParam& param, con
  *   - @b freq (@c Uint): the frequency of the bundle, that is, how many times this bundle is contained in all orders.
  *   - @b items (@c Array): each is an item in the bundle.
  *     - @b ITEMID (@c String): a unique item identifier.
- *     - each item properties in @c add_item() would also be included here.@n
+ *     - each item properties would also be included here, such as "name", "link", etc.@n
  *       Property key name is used as key. The corresponding value is the content of the property.
  *
  * @section example

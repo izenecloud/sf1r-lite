@@ -1,14 +1,15 @@
 #ifndef _CASSANDRA_CONNECTION_H_
 #define _CASSANDRA_CONNECTION_H_
 
-#include <string>
 #include <map>
 #include <list>
 #include <vector>
+#include <iostream>
 
 #include <util/ThreadModel.h>
 
 #include "LogManagerSingleton.h"
+#include "UtilFunctions.h"
 
 namespace libcassandra
 {
@@ -44,8 +45,6 @@ public:
     bool isEnabled();
 
     boost::shared_ptr<libcassandra::Cassandra>& getCassandraClient();
-
-    int64_t createTimestamp();
 
     bool createColumnFamily(
             const std::string& in_name,

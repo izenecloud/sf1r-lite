@@ -361,11 +361,11 @@ bool DocumentsSearchHandler::parse()
     parsers.push_back(&pageInfoParser);
     values.push_back(&request_.get());
 
-    GroupingParser groupingParser(miningSchema_);
+    GroupingParser groupingParser;
     parsers.push_back(&groupingParser);
     values.push_back(&request_[Keys::group]);
 
-    AttrParser attrParser(miningSchema_);
+    AttrParser attrParser;
     parsers.push_back(&attrParser);
     values.push_back(&request_[Keys::attr]);
 
@@ -471,7 +471,7 @@ bool DocumentsSearchHandler::parse()
     actionItem_.rangePropertyName_ = rangeParser.rangeProperty();
 
     std::string message;
-    if (!actionItem_.groupParam_.checkParam(message))
+    if (!actionItem_.groupParam_.checkParam(miningSchema_, message))
     {
         response_.addError(message);
         return false;

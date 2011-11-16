@@ -1189,7 +1189,7 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
     getAttribute(property_node, "name", productBundleConfig.pm_config_.itemcount_property_name );
 
     ticpp::Element* backup_node = getUniqChildElement( product_schema, "Backup", false );
-    if(backup_node!=NULL)
+    if(backup_node)
     {
         getAttribute(backup_node, "path", productBundleConfig.pm_config_.backup_path );
     }
@@ -1214,7 +1214,7 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     //for recommend
     params.Get<uint32_t>("RecommendPara/recommendnum", mining_config.recommend_param.recommend_num);
     params.GetString("RecommendPara/cron", mining_config.recommend_param.cron);
-    
+
     //for similarity
     params.Get<uint32_t>("SimilarityPara/docnumlimit", mining_config.similarity_param.docnum_limit);
     params.Get<uint32_t>("SimilarityPara/termnumlimit", mining_config.similarity_param.termnum_limit);
