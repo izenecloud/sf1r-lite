@@ -586,13 +586,16 @@ bool IndexTaskService::insertOrUpdateSCD_(
         SCDDocPtr doc = (*doc_iter);
         Document document;
         IndexerDocument indexDocument;
+        docid_t oldId = 0;
         bool rType = false;
         std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
         sf1r::docid_t id = 0;
         std::string source = "";
 
-        if (!prepareDocument_( *doc, document, indexDocument, rType, rTypeFieldValue, source, isInsert))
+        if(!prepareDocument_( *doc, document, oldId, rType, rTypeFieldValue, source, isInsert))
             continue;
+
+        prepareIndexDocument_(oldId, document, indexDocument);
 
         if (!source.empty())
         {
@@ -604,7 +607,6 @@ bool IndexTaskService::insertOrUpdateSCD_(
             id = document.getId();
         }
 
-        uint32_t oldId = indexDocument.getId();
         if (isInsert || oldId == 0)
         {
             if(!insertDoc_(document, indexDocument))
@@ -689,7 +691,7 @@ bool IndexTaskService::updateDoc_(
         // Update document data in the SDB repository.
         if ( documentManager_->updatePartialDocument(document) == false )
         {
-            LOG(ERROR) << "Document Insert Failed in SDB. " << document.property("DOCID");
+            LOG(ERROR) << "Document Update Failed in SDB. " << document.property("DOCID");
             return false;
         }
 
@@ -828,6 +830,44 @@ void IndexTaskService::saveSourceCount_(int op)
     }
 }
 
+bool IndexTaskService::isPartialDocument_(docid_t oldId, const Document& doc)
+{
+    Document oldDoc;
+    if ( !documentManager_->getDocument(oldId, oldDoc) )
+    {
+        return false;
+    }
+
+    if(doc.getPropertySize() == oldDoc.getPropertySize())
+    {
+        return false;
+    }
+    return true;
+}
+
+bool IndexTaskService::completePartialDocument_(docid_t oldId, Document& doc)
+{
+    docid_t newId = doc.getId();
+    Document oldDoc;
+    if (!documentManager_->getDocument(oldId, oldDoc))
+    {
+        return false;
+    }
+
+    typedef Document::property_const_iterator document_iterator;
+    for(document_iterator iter = doc.propertyBegin(); iter != doc.propertyEnd(); iter++)
+    {
+        if(oldDoc.findProperty(iter->first) != oldDoc.propertyEnd())
+        {
+            oldDoc.property(iter->first) = iter->second;
+        }
+    }
+
+    doc.swap(oldDoc);
+    doc.setId(newId);
+    return true;
+}
+
 bool IndexTaskService::getPropertyValue_( const PropertyValue& value, std::string& valueStr )
 {
     try
@@ -952,7 +992,7 @@ bool IndexTaskService::checkSeparatorType_(const izenelib::util::UString& proper
 bool IndexTaskService::prepareDocument_(
     SCDDoc& doc,
     Document& document,
-    IndexerDocument& indexDocument,
+    docid_t& oldId,
     bool& rType,
     std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
     std::string& source,
@@ -962,7 +1002,7 @@ bool IndexTaskService::prepareDocument_(
     CREATE_SCOPED_PROFILER ( preparedocument, "IndexTaskService", "IndexTaskService::prepareDocument_");
 
     sf1r::docid_t docId = 0;
-    sf1r::docid_t oldId = 0;
+    bool isPartial = false;
     string fieldStr;
     vector<CharacterOffset> sentenceOffsetList;
     AnalysisInfo analysisInfo;
@@ -972,6 +1012,7 @@ bool IndexTaskService::prepareDocument_(
 
     vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
     bool dateExistInSCD = false;
+
     for (p = doc.begin(); p != doc.end(); p++)
     {
         bool extraProperty = false;
@@ -989,17 +1030,6 @@ bool IndexTaskService::prepareDocument_(
         izenelib::util::UString propertyNameL = p->first;
         propertyNameL.toLowerString();
         const izenelib::util::UString & propertyValueU = p->second; // preventing copy
-
-        if (!extraProperty)
-        {
-            indexerPropertyConfig.setPropertyId(iter->getPropertyId());
-            indexerPropertyConfig.setName(iter->getName());
-            indexerPropertyConfig.setIsIndex(iter->isIndex());
-            indexerPropertyConfig.setIsAnalyzed(iter->isAnalyzed());
-            indexerPropertyConfig.setIsFilter(iter->getIsFilter());
-            indexerPropertyConfig.setIsMultiValue(iter->getIsMultiValue());
-            indexerPropertyConfig.setIsStoreDocLen(iter->getIsStoreDocLen());
-        }
 
         izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
         std::string fieldValue("");
@@ -1036,13 +1066,117 @@ bool IndexTaskService::prepareDocument_(
 
             document.setId(docId);
             document.property(fieldStr) = propertyValueU;
+        }
+        else if (propertyNameL == izenelib::util::UString("date", encoding) )
+        {
+            /// format <DATE>20091009163011
+            dateExistInSCD = true;
+            izenelib::util::UString dateStr;
+            sf1r::Utilities::convertDate(propertyValueU, encoding, dateStr);
+            document.property(dateProperty_.getName()) = dateStr;
+        }
+        else if (!extraProperty)
+        {
+            if (iter->getType() == STRING_PROPERTY_TYPE)
+            {
+                document.property(fieldStr) = propertyValueU;
+                analysisInfo.clear();
+                analysisInfo = iter->getAnalysisInfo();
+                if (analysisInfo.analyzerId_.size() != 0)
+                {
+                    unsigned int numOfSummary = 0;
+                    if ( (iter->getIsSummary() == true))
+                    {
+                        numOfSummary = iter->getSummaryNum();
+                        if (numOfSummary <= 0)
+                            numOfSummary = 1; //atleast one sentence required for summary
+
+                        if (makeSentenceBlocks_(propertyValueU, iter->getDisplayLength(),
+                                                numOfSummary, sentenceOffsetList) == false)
+                        {
+                            LOG(ERROR) << "Make Sentence Blocks Failes ";
+                        }
+
+                        document.property(fieldStr + ".blocks")
+                        = sentenceOffsetList;
+                    }
+                }
+            }
+            else if(iter->getType() == INT_PROPERTY_TYPE
+                    || iter->getType() == FLOAT_PROPERTY_TYPE
+                    || iter->getType() == NOMINAL_PROPERTY_TYPE)
+            {
+                document.property(fieldStr) = propertyValueU;
+            }
+            else
+            {
+            }
+        }
+    }
+
+    if (!dateExistInSCD)
+    {
+        izenelib::util::UString dateStr;
+        izenelib::util::UString emptyDateStr;
+        sf1r::Utilities::convertDate(emptyDateStr, izenelib::util::UString::UTF_8, dateStr);
+        document.property(dateProperty_.getName()) = dateStr;
+    }
+
+    if (!insert && !rType)
+    {
+        isPartial = isPartialDocument_(oldId, document);
+        if(isPartial)
+        {
+            if(!completePartialDocument_(oldId, document))
+                return false;
+        }
+    }
+    return true;
+}
+
+bool IndexTaskService::prepareIndexDocument_(docid_t oldId, const Document& document, IndexerDocument& indexDocument)
+{
+    CREATE_SCOPED_PROFILER ( preparedocument, "IndexTaskService", "IndexTaskService::prepareIndexDocument_");
+
+    sf1r::docid_t docId = document.getId();//new id;
+    izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
+    string fieldStr;
+    AnalysisInfo analysisInfo;
+    typedef Document::property_const_iterator document_iterator;
+    document_iterator p;
+    // the iterator is not const because the p-second value may change
+    // due to the maxlen setting
+    for (p = document.propertyBegin(); p != document.propertyEnd(); ++p)
+    {
+        std::set<PropertyConfig, PropertyComp>::iterator iter;
+        fieldStr = p->first;
+
+        PropertyConfig temp;
+        temp.propertyName_ = fieldStr;
+        iter = bundleConfig_->schema_.find(temp);
+
+        IndexerPropertyConfig indexerPropertyConfig;
+
+        izenelib::util::UString propertyNameL = izenelib::util::UString(fieldStr, encoding);
+        propertyNameL.toLowerString();
+        const izenelib::util::UString & propertyValueU = *(get<izenelib::util::UString>(&(p->second)));
+        indexerPropertyConfig.setPropertyId(iter->getPropertyId());
+        indexerPropertyConfig.setName(iter->getName());
+        indexerPropertyConfig.setIsIndex(iter->isIndex());
+        indexerPropertyConfig.setIsAnalyzed(iter->isAnalyzed());
+        indexerPropertyConfig.setIsFilter(iter->getIsFilter());
+        indexerPropertyConfig.setIsMultiValue(iter->getIsMultiValue());
+        indexerPropertyConfig.setIsStoreDocLen(iter->getIsStoreDocLen());
+
+
+        if ( propertyNameL == izenelib::util::UString("docid", encoding) )
+        {
             indexDocument.setId(oldId);
             indexDocument.setDocId(docId, collectionId_);
         }
         else if (propertyNameL == izenelib::util::UString("date", encoding) )
         {
             /// format <DATE>20091009163011
-            dateExistInSCD = true;
             izenelib::util::UString dateStr;
             int64_t time = sf1r::Utilities::convertDate(propertyValueU, encoding, dateStr);
             indexerPropertyConfig.setPropertyId(dateProperty_.getPropertyId());
@@ -1052,134 +1186,103 @@ bool IndexTaskService::prepareDocument_(
             indexerPropertyConfig.setIsAnalyzed(false);
             indexerPropertyConfig.setIsMultiValue(false);
             indexDocument.insertProperty(indexerPropertyConfig, time);
-            document.property(dateProperty_.getName()) = dateStr;
         }
-        else if (!extraProperty)
+        else
         {
             if (iter->getType() == STRING_PROPERTY_TYPE)
             {
-                ///process for properties that requires forward index to be created
-                if(propertyValueU.empty())
+                if(!propertyValueU.empty())
                 {
-                    if (!extraProperty)
+                    ///process for properties that requires forward index to be created
+                    if ( iter->isIndex() == true )
                     {
-                        document.property(fieldStr) = propertyValueU;
-                    }
-                    continue;
-                }
-                if ( (iter->isIndex() == true) && (!extraProperty))
-                {
-                    analysisInfo.clear();
-                    analysisInfo = iter->getAnalysisInfo();
-                    if (analysisInfo.analyzerId_.size() == 0)
-                    {
-                        document.property(fieldStr) = propertyValueU;
-                        if (iter->getIsFilter() && iter->getIsMultiValue())
+                        analysisInfo.clear();
+                        analysisInfo = iter->getAnalysisInfo();
+                        if (analysisInfo.analyzerId_.size() == 0)
                         {
-                            MultiValuePropertyType props;
-                            split_string(propertyValueU,props, encoding,',');
-                            indexDocument.insertProperty(indexerPropertyConfig, props);
-                        }
-                        else
-                            indexDocument.insertProperty(indexerPropertyConfig,
-                                                      propertyValueU);
-                    }
-                    else
-                    {
-                        laInputs_[iter->getPropertyId()]->setDocId(docId);
-                        if (makeForwardIndex_(propertyValueU, fieldStr, iter->getPropertyId(), analysisInfo) == false)
-                        {
-                            LOG(ERROR) << "Forward Indexing Failed Error Line : " << __LINE__;
-                            return false;
-                        }
-                        if (iter->getIsFilter())
-                        {
-                            if(iter->getIsMultiValue())
+                            if (iter->getIsFilter() && iter->getIsMultiValue())
                             {
                                 MultiValuePropertyType props;
                                 split_string(propertyValueU,props, encoding,',');
-
-                                MultiValueIndexPropertyType
-                                indexData = std::make_pair(laInputs_[iter->getPropertyId()],props );
-                                indexDocument.insertProperty(indexerPropertyConfig, indexData);
-
+                                indexDocument.insertProperty(indexerPropertyConfig, props);
                             }
                             else
-                            {
-                                IndexPropertyType
-                                indexData =
-                                    std::make_pair(
-                                        laInputs_[iter->getPropertyId()],
-                                        const_cast<izenelib::util::UString &>(propertyValueU) );
-                                indexDocument.insertProperty(indexerPropertyConfig, indexData);
-                            }
+                                indexDocument.insertProperty(indexerPropertyConfig,
+                                                          propertyValueU);
                         }
                         else
-                            indexDocument.insertProperty(
-                                indexerPropertyConfig, laInputs_[iter->getPropertyId()]);
-
-                        document.property(fieldStr) = propertyValueU;
-                        unsigned int numOfSummary = 0;
-                        if ( (iter->getIsSummary() == true))
                         {
-                            numOfSummary = iter->getSummaryNum();
-                            if (numOfSummary <= 0)
-                                numOfSummary = 1; //atleast one sentence required for summary
-
-                            if (makeSentenceBlocks_(propertyValueU, iter->getDisplayLength(),
-                                                    numOfSummary, sentenceOffsetList) == false)
+                            laInputs_[iter->getPropertyId()]->setDocId(docId);
+                            if (makeForwardIndex_(propertyValueU, fieldStr, iter->getPropertyId(), analysisInfo) == false)
                             {
-                                LOG(ERROR) << "Make Sentence Blocks Failes ";
+                                LOG(ERROR) << "Forward Indexing Failed Error Line : " << __LINE__;
+                                return false;
                             }
-
-                            document.property(fieldStr + ".blocks")
-                            = sentenceOffsetList;
-                        }
-
-                        // For alias indexing
-                        config_tool::PROPERTY_ALIAS_MAP_T::iterator mapIter =
-                            propertyAliasMap_.find(iter->getName() );
-                        if (mapIter != propertyAliasMap_.end() ) // if there's alias property
-                        {
-                            std::vector<PropertyConfig>::iterator vecIter =
-                                mapIter->second.begin();
-                            for (; vecIter != mapIter->second.end(); vecIter++)
+                            if (iter->getIsFilter())
                             {
-                                AnalysisInfo aliasAnalysisInfo =
-                                    vecIter->getAnalysisInfo();
-                                laInputs_[vecIter->getPropertyId()]->setDocId(docId);
-                                if (makeForwardIndex_(propertyValueU,
-                                                      fieldStr,
-                                                      vecIter->getPropertyId(),
-                                                      aliasAnalysisInfo) == false)
+                                if(iter->getIsMultiValue())
                                 {
-                                    LOG(ERROR) << "Forward Indexing Failed Error Line : " << __LINE__;
-                                    return false;
-                                }
-                                IndexerPropertyConfig
-                                aliasIndexerPropertyConfig(
-                                    vecIter->getPropertyId(),
-                                    vecIter->getName(),
-                                    vecIter->isIndex(),
-                                    vecIter->isAnalyzed());
-                                aliasIndexerPropertyConfig.setIsFilter(vecIter->getIsFilter());
-                                aliasIndexerPropertyConfig.setIsMultiValue(vecIter->getIsMultiValue());
-                                aliasIndexerPropertyConfig.setIsStoreDocLen(vecIter->getIsStoreDocLen());
-                                indexDocument.insertProperty(
-                                    aliasIndexerPropertyConfig,laInputs_[vecIter->getPropertyId()]);
-                            } // end - for
-                        } // end - if ( mapIter != end() )
+                                    MultiValuePropertyType props;
+                                    split_string(propertyValueU,props, encoding,',');
 
+                                    MultiValueIndexPropertyType
+                                    indexData = std::make_pair(laInputs_[iter->getPropertyId()],props );
+                                    indexDocument.insertProperty(indexerPropertyConfig, indexData);
+
+                                }
+                                else
+                                {
+                                    IndexPropertyType
+                                    indexData =
+                                        std::make_pair(
+                                            laInputs_[iter->getPropertyId()],
+                                            const_cast<izenelib::util::UString &>(propertyValueU) );
+                                    indexDocument.insertProperty(indexerPropertyConfig, indexData);
+                                }
+                            }
+                            else
+                                indexDocument.insertProperty(
+                                    indexerPropertyConfig, laInputs_[iter->getPropertyId()]);
+
+                            // For alias indexing
+                            config_tool::PROPERTY_ALIAS_MAP_T::iterator mapIter =
+                                propertyAliasMap_.find(iter->getName() );
+                            if (mapIter != propertyAliasMap_.end() ) // if there's alias property
+                            {
+                                std::vector<PropertyConfig>::iterator vecIter =
+                                    mapIter->second.begin();
+                                for (; vecIter != mapIter->second.end(); vecIter++)
+                                {
+                                    AnalysisInfo aliasAnalysisInfo =
+                                        vecIter->getAnalysisInfo();
+                                    laInputs_[vecIter->getPropertyId()]->setDocId(docId);
+                                    if (makeForwardIndex_(propertyValueU,
+                                                          fieldStr,
+                                                          vecIter->getPropertyId(),
+                                                          aliasAnalysisInfo) == false)
+                                    {
+                                        LOG(ERROR) << "Forward Indexing Failed Error Line : " << __LINE__;
+                                        return false;
+                                    }
+                                    IndexerPropertyConfig
+                                    aliasIndexerPropertyConfig(
+                                        vecIter->getPropertyId(),
+                                        vecIter->getName(),
+                                        vecIter->isIndex(),
+                                        vecIter->isAnalyzed());
+                                    aliasIndexerPropertyConfig.setIsFilter(vecIter->getIsFilter());
+                                    aliasIndexerPropertyConfig.setIsMultiValue(vecIter->getIsMultiValue());
+                                    aliasIndexerPropertyConfig.setIsStoreDocLen(vecIter->getIsStoreDocLen());
+                                    indexDocument.insertProperty(
+                                        aliasIndexerPropertyConfig,laInputs_[vecIter->getPropertyId()]);
+                                } // end - for
+                            } // end - if ( mapIter != end() )
+
+                        }
                     }
-                }
-                // insert property name and value for other properties that is not DOCID and neither required to be indexed
-                else
-                {
-                    //insert only if property that exist in collection configuration
-                    if (!extraProperty)
+                    // insert property name and value for other properties that is not DOCID and neither required to be indexed
+                    else
                     {
-                        //extra properties that need not be indexed to be stored only in document manager
-                        document.property(fieldStr) = propertyValueU;
                         //other extra properties that need not be in index manager
                         indexDocument.insertProperty(indexerPropertyConfig,
                                                       propertyValueU);
@@ -1188,8 +1291,7 @@ bool IndexTaskService::prepareDocument_(
             }
             else if (iter->getType() == INT_PROPERTY_TYPE)
             {
-                document.property(fieldStr) = propertyValueU;
-                if ( (iter->isIndex() == true) && (!extraProperty))
+                if ( iter->isIndex() == true )
                 {
                     if(iter->getIsMultiValue())
                     {
@@ -1235,8 +1337,7 @@ bool IndexTaskService::prepareDocument_(
             }
             else if (iter->getType() == FLOAT_PROPERTY_TYPE)
             {
-                document.property(fieldStr) = propertyValueU;
-                if ( (iter->isIndex() == true) && (!extraProperty))
+                if ( iter->isIndex() == true )
                 {
                     if(iter->getIsMultiValue())
                     {
@@ -1275,31 +1376,12 @@ bool IndexTaskService::prepareDocument_(
                     }
                 }
             }
-            else if (iter->getType() == NOMINAL_PROPERTY_TYPE)
-            {
-                document.property(fieldStr) = propertyValueU;
-
-            }
             else
             {
             }
         }
     }
-    if (!dateExistInSCD)
-    {
-        IndexerPropertyConfig indexerPropertyConfig;
-        indexerPropertyConfig.setPropertyId(dateProperty_.getPropertyId());
-        indexerPropertyConfig.setName(dateProperty_.getName());
-        indexerPropertyConfig.setIsIndex(true);
-        indexerPropertyConfig.setIsFilter(true);
-        indexerPropertyConfig.setIsAnalyzed(false);
-        indexerPropertyConfig.setIsMultiValue(false);
-        izenelib::util::UString dateStr;
-        izenelib::util::UString emptyDateStr;
-        int64_t time = sf1r::Utilities::convertDate(emptyDateStr, izenelib::util::UString::UTF_8, dateStr);
-        indexDocument.insertProperty(indexerPropertyConfig, time);
-        document.property(dateProperty_.getName()) = dateStr;
-    }
+
     return true;
 }
 

@@ -140,6 +140,11 @@ public:
         swap(propertyList_, rhs.propertyList_);
     }
 
+    size_t getPropertySize() const
+    {
+        return propertyList_.size();
+    }
+
 private:
     /// document identifier in the collection
     docid_t id_;

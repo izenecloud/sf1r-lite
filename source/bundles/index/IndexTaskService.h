@@ -62,6 +62,10 @@ public:
 private:
     void createPropertyList_();
 
+    bool isPartialDocument_(docid_t oldId, const Document& doc);
+
+    bool completePartialDocument_(docid_t oldId, Document& doc);
+
     bool getPropertyValue_( const PropertyValue& value, std::string& valueStr );
 
     bool doBuildCollection_(
@@ -103,12 +107,14 @@ private:
     bool prepareDocument_(
         SCDDoc& doc,
         Document& document,
-        IndexerDocument& indexDocument,
+        docid_t& oldId,
         bool& rType,
         std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
         std::string& source,
         bool insert = true
     );
+
+    bool prepareIndexDocument_(docid_t oldId, const Document& document, IndexerDocument& indexDocument);
 
     bool checkSeparatorType_(
         const izenelib::util::UString& propertyValueStr,
