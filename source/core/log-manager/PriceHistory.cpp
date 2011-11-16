@@ -56,7 +56,7 @@ const int8_t PriceHistory::cf_replicate_on_write(-1);
 
 const double PriceHistory::cf_merge_shards_chance(0);
 
-const string PriceHistory::cf_key_validation_class("LexicalUUIDType");
+const string PriceHistory::cf_key_validation_class;
 
 const string PriceHistory::cf_row_cache_provider("SerializingCacheProvider");
 

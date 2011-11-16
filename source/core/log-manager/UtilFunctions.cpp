@@ -24,8 +24,10 @@ time_t createTimeStamp(const izenelib::util::UString& text)
     return createTimeStamp(str);
 }
 
+// Return -1 when empty, -2 when invalid.
 time_t createTimeStamp(const string& text)
 {
+    if (text.empty()) return -1;
     boost::gregorian::date date;
     try
     {
@@ -38,7 +40,7 @@ time_t createTimeStamp(const string& text)
     {
         return createTimeStamp(boost::posix_time::ptime(date));
     }
-    if (text.length() < 8) return -1;
+    if (text.length() < 8) return -2;
     std::string cand_text = text.substr(0, 8);
     try
     {
@@ -51,7 +53,7 @@ time_t createTimeStamp(const string& text)
     {
         return createTimeStamp(boost::posix_time::ptime(date));
     }
-    return -1;
+    return -2;
 }
 
 }
