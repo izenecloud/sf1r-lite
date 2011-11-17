@@ -63,9 +63,9 @@ public:
 
     void set(izenelib::ir::indexmanager::TermDocFreqs* pTermDocReader)
     {
+        if(pTermDocReader_) delete pTermDocReader_;
         pTermDocReader_ = pTermDocReader;
         df_ = pTermDocReader_->docFreq();
-        destroy_ = true;
     }
 
     bool next()
@@ -141,8 +141,6 @@ protected:
     unsigned int df_;
 
     bool readPositions_;
-
-    bool destroy_;
 };
 
 }

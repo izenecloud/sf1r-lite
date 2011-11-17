@@ -12,10 +12,19 @@
 using namespace sf1r;
 using izenelib::util::UString;
 
-ProductManager::ProductManager(ProductDataSource* data_source, OperationProcessor* op_processor, const PMConfig& config)
-:data_source_(data_source), op_processor_(op_processor), backup_(NULL), config_(config), inhook_(false)
+ProductManager::ProductManager(
+        const std::string& collection_name,
+        ProductDataSource* data_source,
+        OperationProcessor* op_processor,
+        const PMConfig& config)
+    : collection_name_(collection_name)
+    , data_source_(data_source)
+    , op_processor_(op_processor)
+    , backup_(NULL)
+    , config_(config)
+    , inhook_(false)
 {
-    if (config_.backup_path!="")
+    if (!config_.backup_path.empty())
     {
         backup_ = new ProductBackup(config_.backup_path);
     }
@@ -40,11 +49,11 @@ bool ProductManager::Recover()
     return true;
 }
 
-bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager::IndexerDocument& index_document)
+bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, const boost::posix_time::ptime& timestamp)
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
-    UpdatePriceHistory_(doc);
+    UpdatePriceHistory_(doc, timestamp);
     UString uuid;
     generateUUID(uuid, doc);
     if (!data_source_->SetUuid(index_document, uuid)) return false;
@@ -57,11 +66,11 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
     return true;
 }
 
-bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::IndexerDocument& index_document, bool r_type)
+bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::IndexerDocument& index_document, const boost::posix_time::ptime& timestamp, bool r_type)
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
-    UpdatePriceHistory_(to);
+    UpdatePriceHistory_(to, timestamp);
     uint32_t fromid = index_document.getId(); //oldid
     PMDocumentType from;
     if (!data_source_->GetDocument(fromid, from)) return false;
@@ -104,7 +113,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
     return true;
 }
 
-bool ProductManager::HookDelete(uint32_t docid)
+bool ProductManager::HookDelete(uint32_t docid, const boost::posix_time::ptime& timestamp)
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
@@ -573,8 +582,10 @@ bool ProductManager::GetMultiPriceHistory(
         UString docid_ustr;
         if (!GetDOCID_(doc, docid_ustr)) continue;
         docid_str_list.push_back(std::string());
-        docid_ustr.convertString(docid_str_list.back(), UString::UTF_8);
-        docid_map[docid_str_list.back()] = docid_list[i];
+        std::string& docid_str = docid_str_list.back();
+        docid_ustr.convertString(docid_str, UString::UTF_8);
+        docid_str = collection_name_ + "_" + docid_str;
+        docid_map[docid_str] = docid_list[i];
     }
     if (docid_str_list.empty())
     {
@@ -599,7 +610,7 @@ bool ProductManager::GetMultiPriceHistory(
         for (PriceHistory::PriceHistoryType::const_iterator hit = it->second.getPriceHistory().begin();
                 hit != it->second.getPriceHistory().end(); ++hit)
         {
-            std::string time_str(boost::posix_time::to_iso_string(boost::posix_time::from_time_t(hit->first / 1000000 + timezone)));
+            std::string time_str(boost::posix_time::to_iso_string(boost::posix_time::from_time_t(hit->first / 1000000 - timezone)));
             history.push_back(make_pair(UString(), hit->second));
             history.back().first.assign(time_str, UString::UTF_8);
         }
@@ -628,8 +639,10 @@ bool ProductManager::GetMultiPriceRange(
         UString docid_ustr;
         if (!GetDOCID_(doc, docid_ustr)) continue;
         docid_str_list.push_back(std::string());
-        docid_ustr.convertString(docid_str_list.back(), UString::UTF_8);
-        docid_map[docid_str_list.back()] = docid_list[i];
+        std::string& docid_str = docid_str_list.back();
+        docid_ustr.convertString(docid_str, UString::UTF_8);
+        docid_str = collection_name_ + "_" + docid_str;
+        docid_map[docid_str] = docid_list[i];
     }
     if (docid_str_list.empty())
     {
@@ -715,12 +728,36 @@ bool ProductManager::GetDOCID_(const PMDocumentType& doc, UString& docid) const
     return true;
 }
 
+bool ProductManager::GetTimestamp_(const PMDocumentType& doc, time_t& tt) const
+{
+    PMDocumentType::property_const_iterator it = doc.findProperty(config_.date_property_name);
+    if (it == doc.propertyEnd())
+    {
+        return false;
+    }
+    UString time_ustr = it->second.get<UString>();
+    std::string time_str;
+    time_ustr.convertString(time_str, UString::UTF_8);
+    boost::posix_time::ptime pt;
+    try
+    {
+        pt = boost::posix_time::from_iso_string(time_str.substr(0, 8) + "T" + time_str.substr(8));
+        tt = createTimeStamp(pt);
+    }
+    catch (const std::exception& ex)
+    {
+        tt = -2;
+        return false;
+    }
+    return true;
+}
+
 void ProductManager::SetItemCount_(PMDocumentType& doc, uint32_t item_count)
 {
     doc.property(config_.itemcount_property_name) = UString(boost::lexical_cast<std::string>(item_count), UString::UTF_8);
 }
 
-bool ProductManager::UpdatePriceHistory_(const PMDocumentType& doc) const
+bool ProductManager::UpdatePriceHistory_(const PMDocumentType& doc, const boost::posix_time::ptime& timestamp) const
 {
     ProductPrice price;
     if (!GetPrice_(doc, price)) return false;
@@ -728,7 +765,10 @@ bool ProductManager::UpdatePriceHistory_(const PMDocumentType& doc) const
     if (!GetDOCID_(doc, docid)) return false;
     std::string docid_str;
     docid.convertString(docid_str, izenelib::util::UString::UTF_8);
-    PriceHistory price_history(docid_str);
-    price_history.insert(createTimeStamp(), price);
+    time_t tt;
+    if (!GetTimestamp_(doc, tt) && (tt = createTimeStamp(timestamp)) == -1)
+        tt = createTimeStamp();
+    PriceHistory price_history(collection_name_ + "_" + docid_str);
+    price_history.insert(tt, price);
     return price_history.updateRow();
 }

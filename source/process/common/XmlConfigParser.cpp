@@ -1179,6 +1179,9 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
     property_node = getUniqChildElement( product_schema, "PriceProperty", false );
     getAttribute(property_node, "name", productBundleConfig.pm_config_.price_property_name );
 
+    property_node = getUniqChildElement( product_schema, "DateProperty", false );
+    getAttribute(property_node, "name", productBundleConfig.pm_config_.date_property_name );
+
     property_node = getUniqChildElement( product_schema, "DOCIDProperty", false );
     getAttribute(property_node, "name", productBundleConfig.pm_config_.docid_property_name );
 

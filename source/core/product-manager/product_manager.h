@@ -25,18 +25,22 @@ class ProductBackup;
 class ProductManager
 {
 public:
-    ProductManager(ProductDataSource* data_source, OperationProcessor* op_processor, const PMConfig& config);
+    ProductManager(
+            const std::string& collection_name,
+            ProductDataSource* data_source,
+            OperationProcessor* op_processor,
+            const PMConfig& config);
 
     ~ProductManager();
 
     bool Recover();
 
 
-    bool HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager::IndexerDocument& index_document);
+    bool HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, const boost::posix_time::ptime& timestamp);
 
-    bool HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::IndexerDocument& index_document, bool r_type);
+    bool HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::IndexerDocument& index_document, const boost::posix_time::ptime& timestamp, bool r_type);
 
-    bool HookDelete(uint32_t docid);
+    bool HookDelete(uint32_t docid, const boost::posix_time::ptime& timestamp);
 
     bool GenOperations();
 
@@ -100,11 +104,14 @@ private:
 
     bool GetDOCID_(const PMDocumentType& doc, izenelib::util::UString& docid) const;
 
+    bool GetTimestamp_(const PMDocumentType& doc, time_t& tt) const;
+
     void SetItemCount_(PMDocumentType& doc, uint32_t item_count);
 
-    bool UpdatePriceHistory_(const PMDocumentType& doc) const;
+    bool UpdatePriceHistory_(const PMDocumentType& doc, const boost::posix_time::ptime& timestamp) const;
 
 private:
+    std::string collection_name_;
     ProductDataSource* data_source_;
     OperationProcessor* op_processor_;
     UuidGenerator* uuid_gen_;
