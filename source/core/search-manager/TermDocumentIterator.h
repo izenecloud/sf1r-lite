@@ -56,12 +56,10 @@ public:
 public:
     void add(DocumentIterator* pDocIterator){}
 
-    void ensure_accept(izenelib::ir::indexmanager::TermDocFreqs* pTermDocReader)
-    { pTermDocReader_ = pTermDocReader; }
-
     bool accept();
 
-    void set(izenelib::ir::indexmanager::TermDocFreqs* pTermDocReader)
+    void set(
+        izenelib::ir::indexmanager::TermDocFreqs* pTermDocReader)
     {
         if(pTermDocReader_) delete pTermDocReader_;
         pTermDocReader_ = pTermDocReader;
@@ -94,7 +92,9 @@ public:
 
     void set_df(unsigned int df) {df_ = df;}
 
-    void df_ctf(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties& ctfmap);
+    void df_ctf(
+        DocumentFrequencyInProperties& dfmap, 
+        CollectionTermFrequencyInProperties& ctfmap);
 
     count_t tf()
     {
@@ -110,6 +110,10 @@ public:
                 << "TermIter " << current_
                 << " - termid: " << termId_ << " " << property_<<" ]"<< endl;
     }
+
+private:
+    TermDocumentIterator(const TermDocumentIterator&);
+    void operator=(const TermDocumentIterator&);
 
 protected:
     termid_t termId_;

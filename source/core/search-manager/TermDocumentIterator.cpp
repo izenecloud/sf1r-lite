@@ -65,6 +65,7 @@ TermDocumentIterator::TermDocumentIterator(
         ,df_(0)
         ,readPositions_(readPositions)
 {
+    LOG(INFO)<<"Constructing TermDocumentIterator "<<this;
 }
 
 TermDocumentIterator::~TermDocumentIterator()
@@ -73,6 +74,7 @@ TermDocumentIterator::~TermDocumentIterator()
         delete pTermDocReader_;
     if(pTermReader_)
         delete pTermReader_;
+    LOG(INFO)<<"Destroying TermDocumentIterator "<<this;
 }
 
 bool TermDocumentIterator::accept()
@@ -80,32 +82,22 @@ bool TermDocumentIterator::accept()
     if(!isNumericFilter_)
     {
         Term term(property_.c_str(),termId_);
-        pTermReader_ = pIndexReader_->getTermReader(colID_);
+        if(!pTermReader_)
+            pTermReader_ = pIndexReader_->getTermReader(colID_);
 
         if (!pTermReader_)
             return false;
-    //    if(pIndexReader_->isDirty())
-    //    {
-    //        if (pTermReader_) delete pTermReader_;
-    //        pTermReader_ = 0;
-    //        return false;
-    //    }
         bool find = pTermReader_->seek(&term);
 
-    //    if(pIndexReader_->isDirty())
-    //    {
-    //        if (pTermReader_) delete pTermReader_;
-    //        pTermReader_ = 0;
-    //        return false;
-    //    }
         if (find)
         {
             df_ = pTermReader_->docFreq(&term);
-            //entry->pPositions = 0;//pPositions;
+            if(pTermDocReader_) delete pTermDocReader_;
             if (readPositions_)
                 pTermDocReader_ = pTermReader_->termPositions();
             else
                 pTermDocReader_ = pTermReader_->termDocFreqs();
+            if(!pTermDocReader_) find = false;
         }
         else
         {
@@ -134,6 +126,7 @@ bool TermDocumentIterator::accept()
 
              indexManagerPtr_->getDocsByNumericValue(colID_, property_, value, *pBitVector);
              pBitVector->compressed(*pDocIdSet);
+             if(pTermDocReader_) delete pTermDocReader_;			 
              pTermDocReader_ = new BitMapIterator(pDocIdSet->bit_iterator());
              df_ = pTermDocReader_->docFreq();
          }
@@ -141,7 +134,8 @@ bool TermDocumentIterator::accept()
     }
 }
 
-void TermDocumentIterator::doc_item(RankDocumentProperty& rankDocumentProperty)
+void TermDocumentIterator::doc_item(
+    RankDocumentProperty& rankDocumentProperty)
 {
     CREATE_PROFILER ( get_position, "SearchManager", "doSearch_: getting positions");
 
@@ -177,7 +171,9 @@ void TermDocumentIterator::doc_item(RankDocumentProperty& rankDocumentProperty)
 }
 
 
-void TermDocumentIterator::df_ctf(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties& ctfmap)
+void TermDocumentIterator::df_ctf(
+    DocumentFrequencyInProperties& dfmap, 
+    CollectionTermFrequencyInProperties& ctfmap)
 {
     if (pTermDocReader_ == 0)
     {
