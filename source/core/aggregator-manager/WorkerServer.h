@@ -155,7 +155,8 @@ public:
 
     bool index(JobRequest& req)
     {
-        WORKER_HANDLE_REQUEST_1_1_(req, unsigned int, index, bool)
+        //WORKER_HANDLE_REQUEST_1_1_(req, unsigned int, index, bool)
+        WORKER_HANDLE_REQUEST_1_1(req, unsigned int, bool, workerService_, index)
         return true;
     }
 

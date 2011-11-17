@@ -77,6 +77,8 @@ private:
 
     boost::shared_ptr<LAManager> createLAManager_() const;
 
+    boost::shared_ptr<WorkerService> createWorkerService_() ;
+
     boost::shared_ptr<AggregatorManager> createAggregatorManager_() const;
 
     bool initializeQueryManager_() const;

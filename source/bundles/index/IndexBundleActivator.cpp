@@ -265,7 +265,7 @@ bool IndexBundleActivator::init_()
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open search manager.."<<std::endl;
     searchManager_ = createSearchManager_();
     SF1R_ENSURE_INIT(searchManager_);
-    workerService_.reset(new WorkerService());
+    workerService_ = createWorkerService_();
     SF1R_ENSURE_INIT(workerService_);
     aggregatorManager_ = createAggregatorManager_();
     SF1R_ENSURE_INIT(aggregatorManager_);
@@ -275,7 +275,6 @@ bool IndexBundleActivator::init_()
 
     searchService_->aggregatorManager_ = aggregatorManager_;
     searchService_->workerService_ = workerService_;
-    searchService_->workerService_->bundleConfig_ = config_;
     searchService_->workerService_->laManager_ = laManager_;
     searchService_->workerService_->idManager_ = idManager_;
     searchService_->workerService_->documentManager_ = documentManager_;
@@ -286,6 +285,8 @@ bool IndexBundleActivator::init_()
 
     taskService_ = new IndexTaskService(config_, directoryRotator_, indexManager_);
 
+    //taskService_->workerService_ = workerService_;
+    //taskService_->workerService_->summarizer_.init(documentManager_->getLangId(), idManager_);
     taskService_->idManager_ = idManager_;
     taskService_->laManager_ = laManager_;
     taskService_->documentManager_ = documentManager_;
@@ -472,6 +473,13 @@ IndexBundleActivator::createLAManager_() const
     LAPool::getInstance()->get_kma_path(kma_path);
     string temp = kma_path + "/stopword.txt";
     ret->loadStopDict( temp );
+    return ret;
+}
+
+boost::shared_ptr<WorkerService>
+IndexBundleActivator::createWorkerService_()
+{
+    boost::shared_ptr<WorkerService> ret(new WorkerService(config_, directoryRotator_));
     return ret;
 }
 

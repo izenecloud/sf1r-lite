@@ -11,6 +11,8 @@ using namespace org::apache::cassandra;
 
 namespace sf1r {
 
+bool PriceHistory::is_enabled(false);
+
 const ColumnFamilyBase::ColumnType PriceHistory::column_type = ColumnFamilyBase::NORMAL;
 
 const string PriceHistory::cf_name("PriceHistory");
@@ -56,7 +58,7 @@ const int8_t PriceHistory::cf_replicate_on_write(-1);
 
 const double PriceHistory::cf_merge_shards_chance(0);
 
-const string PriceHistory::cf_key_validation_class("AsciiType");
+const string PriceHistory::cf_key_validation_class("UTF8Type");
 
 const string PriceHistory::cf_row_cache_provider("SerializingCacheProvider");
 
@@ -90,7 +92,7 @@ bool PriceHistory::getMultiSlice(
         const string& start,
         const string& finish)
 {
-    if (!CassandraConnection::instance().isEnabled()) return false;
+    if (!is_enabled) return false;
     try
     {
         ColumnParent col_parent;
@@ -135,7 +137,7 @@ bool PriceHistory::getMultiCount(
         const string& start,
         const string& finish)
 {
-    if (!CassandraConnection::instance().isEnabled()) return false;
+    if (!is_enabled) return false;
     try
     {
         ColumnParent col_parent;
@@ -162,7 +164,7 @@ bool PriceHistory::getMultiCount(
 
 bool PriceHistory::updateRow() const
 {
-    if (!CassandraConnection::instance().isEnabled() || docId_.empty()) return false;
+    if (!is_enabled || docId_.empty()) return false;
     if (!priceHistoryPresent_) return true;
     try
     {

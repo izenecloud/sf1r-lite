@@ -81,6 +81,7 @@ bool CommandsController::indexSearch_()
     Value::UintType documentCount = asUint(request()[Keys::document_count]);
 
     // check if perform distributed indexing
+    // Todo: forward call to indexTaskService->index()
     if (SF1Config::get()->checkAggregatorSupport(collection_))
     {
         CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection_);
@@ -94,7 +95,7 @@ bool CommandsController::indexSearch_()
         collectionHandler->indexSearchService_->getAggregatorManager()
             ->distributeRequest(collection_, "index", documentCount, ret);
 
-        //return;
+        return ret;
     }
 
     std::string bundleName = "IndexBundle-" + collection_;
