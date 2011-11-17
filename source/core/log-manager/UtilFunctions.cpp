@@ -13,6 +13,9 @@ time_t createTimeStamp()
 
 time_t createTimeStamp(boost::posix_time::ptime pt)
 {
+    if (pt.is_not_a_date_time())
+        return -1;
+
     boost::posix_time::ptime epoch(boost::gregorian::date(1970, 1, 1));
     return (pt - epoch).total_microseconds() + timezone * 1000000;
 }

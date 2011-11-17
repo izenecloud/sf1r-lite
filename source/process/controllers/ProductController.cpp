@@ -118,10 +118,14 @@ bool ProductController::require_date_range_()
         response().addError("end date not valid.");
         return false;
     }
-    if (to_tt_ != -1 && from_tt_ > to_tt_)
+    if (to_tt_ != -1)
     {
-        response().addError("date range not valid.");
-        return false;
+        if (from_tt_ > to_tt_)
+        {
+            response().addError("date range not valid.");
+            return false;
+        }
+        to_tt_ += 86399999999L;
     }
 
     return true;
@@ -340,7 +344,7 @@ void ProductController::get_multi_price_history()
     IZENELIB_DRIVER_BEFORE_HOOK(require_docs_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_date_range_());
     ProductManager::PriceHistoryList history_list;
-    if (!product_manager_->GetMultiPriceHistory(history_list, docid_list_, from_tt_, to_tt_ + 86399999999L))
+    if (!product_manager_->GetMultiPriceHistory(history_list, docid_list_, from_tt_, to_tt_))
     {
         response().addError(product_manager_->GetLastError());
         return;
@@ -372,7 +376,7 @@ void ProductController::get_multi_price_range()
     IZENELIB_DRIVER_BEFORE_HOOK(require_docs_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_date_range_());
     ProductManager::PriceRangeList range_list;
-    if (!product_manager_->GetMultiPriceRange(range_list, docid_list_, from_tt_, to_tt_ + 86399999999L))
+    if (!product_manager_->GetMultiPriceRange(range_list, docid_list_, from_tt_, to_tt_))
     {
         response().addError(product_manager_->GetLastError());
         return;

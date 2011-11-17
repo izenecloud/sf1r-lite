@@ -18,9 +18,9 @@ class ProductIndexHooker : public IndexHooker
 public:
     ProductIndexHooker(const boost::shared_ptr<ProductManager>& product_manager);
     ~ProductIndexHooker();
-    bool HookInsert(Document& doc, izenelib::ir::indexmanager::IndexerDocument& index_document);
-    bool HookUpdate(Document& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, bool r_type);
-    bool HookDelete(docid_t docid);
+    bool HookInsert(Document& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, const boost::posix_time::ptime& timestamp);
+    bool HookUpdate(Document& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, const boost::posix_time::ptime& timestamp, bool r_type);
+    bool HookDelete(docid_t docid, const boost::posix_time::ptime& timestamp);
     bool Finish();
 
 private:
