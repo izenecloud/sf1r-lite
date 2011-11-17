@@ -599,7 +599,7 @@ bool ProductManager::GetMultiPriceHistory(
         for (PriceHistory::PriceHistoryType::const_iterator hit = it->second.getPriceHistory().begin();
                 hit != it->second.getPriceHistory().end(); ++hit)
         {
-            std::string time_str(boost::posix_time::to_iso_string(boost::posix_time::from_time_t(hit->first / 1000000 + timezone)));
+            std::string time_str(boost::posix_time::to_iso_string(boost::posix_time::from_time_t(hit->first / 1000000 - timezone)));
             history.push_back(make_pair(UString(), hit->second));
             history.back().first.assign(time_str, UString::UTF_8);
         }
