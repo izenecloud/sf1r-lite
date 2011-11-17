@@ -70,7 +70,9 @@ const map<string, string> PriceHistory::cf_compaction_strategy_options;
 
 const int32_t PriceHistory::cf_row_cache_keys_to_save(0);
 
-const map<string, string> PriceHistory::cf_compression_options;
+const map<string, string> PriceHistory::cf_compression_options = map_list_of
+    ("sstable_compression", "SnappyCompressor")
+    ("chunk_length_kb", "64");
 
 PriceHistory::PriceHistory(const string& docId)
     : ColumnFamilyBase()
