@@ -123,7 +123,7 @@ public:
         T low = NumericUtil<T>::Low();
         T high = NumericUtil<T>::High();
         data = new T[maxLength]();
-        if (pBTreeIndexer->getValueBetween(low,high,data,maxLength) == 0)
+        if (pBTreeIndexer->getValueBetween(low,high,maxLength, data) == 0)
         {
             delete[] data;
             data = NULL;
