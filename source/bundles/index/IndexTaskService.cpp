@@ -544,7 +544,14 @@ bool IndexTaskService::doBuildCollection_(
     ss << fileName.substr(18, 2);
     ss << ",";
     ss << fileName.substr(20, 3);
-    boost::posix_time::ptime timestamp = boost::posix_time::from_iso_string(ss.str());
+    boost::posix_time::ptime timestamp;
+    try
+    {
+        timestamp = boost::posix_time::from_iso_string(ss.str());
+    }
+    catch (const std::exception& ex)
+    {}
+
     if (op <= 2) // insert or update
     {
         bool isInsert = (op == 1);
