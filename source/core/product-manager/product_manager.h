@@ -25,7 +25,11 @@ class ProductBackup;
 class ProductManager
 {
 public:
-    ProductManager(ProductDataSource* data_source, OperationProcessor* op_processor, const PMConfig& config);
+    ProductManager(
+            const std::string& collection_name,
+            ProductDataSource* data_source,
+            OperationProcessor* op_processor,
+            const PMConfig& config);
 
     ~ProductManager();
 
@@ -107,6 +111,7 @@ private:
     bool UpdatePriceHistory_(const PMDocumentType& doc, const boost::posix_time::ptime& timestamp) const;
 
 private:
+    std::string collection_name_;
     ProductDataSource* data_source_;
     OperationProcessor* op_processor_;
     UuidGenerator* uuid_gen_;

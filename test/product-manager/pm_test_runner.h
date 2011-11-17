@@ -24,7 +24,7 @@ public:
         , document_list_(new std::vector<PMDocumentType>())
         , data_source_(new SimpleDataSource(pm_config_, document_list_))
         , op_processor_(new SimpleOperationProcessor())
-        , pm_(new ProductManager(data_source_, op_processor_, pm_config_))
+        , pm_(new ProductManager("", data_source_, op_processor_, pm_config_))
     {
     }
 

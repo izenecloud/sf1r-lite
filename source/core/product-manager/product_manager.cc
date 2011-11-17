@@ -12,10 +12,19 @@
 using namespace sf1r;
 using izenelib::util::UString;
 
-ProductManager::ProductManager(ProductDataSource* data_source, OperationProcessor* op_processor, const PMConfig& config)
-:data_source_(data_source), op_processor_(op_processor), backup_(NULL), config_(config), inhook_(false)
+ProductManager::ProductManager(
+        const std::string& collection_name,
+        ProductDataSource* data_source,
+        OperationProcessor* op_processor,
+        const PMConfig& config)
+    : collection_name_(collection_name)
+    , data_source_(data_source)
+    , op_processor_(op_processor)
+    , backup_(NULL)
+    , config_(config)
+    , inhook_(false)
 {
-    if (config_.backup_path!="")
+    if (!config_.backup_path.empty())
     {
         backup_ = new ProductBackup(config_.backup_path);
     }
@@ -573,8 +582,10 @@ bool ProductManager::GetMultiPriceHistory(
         UString docid_ustr;
         if (!GetDOCID_(doc, docid_ustr)) continue;
         docid_str_list.push_back(std::string());
-        docid_ustr.convertString(docid_str_list.back(), UString::UTF_8);
-        docid_map[docid_str_list.back()] = docid_list[i];
+        std::string& docid_str = docid_str_list.back();
+        docid_ustr.convertString(docid_str, UString::UTF_8);
+        docid_str = collection_name_ + "_" + docid_str;
+        docid_map[docid_str] = docid_list[i];
     }
     if (docid_str_list.empty())
     {
@@ -628,8 +639,10 @@ bool ProductManager::GetMultiPriceRange(
         UString docid_ustr;
         if (!GetDOCID_(doc, docid_ustr)) continue;
         docid_str_list.push_back(std::string());
-        docid_ustr.convertString(docid_str_list.back(), UString::UTF_8);
-        docid_map[docid_str_list.back()] = docid_list[i];
+        std::string& docid_str = docid_str_list.back();
+        docid_ustr.convertString(docid_str, UString::UTF_8);
+        docid_str = collection_name_ + "_" + docid_str;
+        docid_map[docid_str] = docid_list[i];
     }
     if (docid_str_list.empty())
     {
@@ -755,7 +768,7 @@ bool ProductManager::UpdatePriceHistory_(const PMDocumentType& doc, const boost:
     time_t tt;
     if (!GetTimestamp_(doc, tt) && (tt = createTimeStamp(timestamp)) == -1)
         tt = createTimeStamp();
-    PriceHistory price_history(docid_str);
+    PriceHistory price_history(collection_name_ + "_" + docid_str);
     price_history.insert(tt, price);
     return price_history.updateRow();
 }
