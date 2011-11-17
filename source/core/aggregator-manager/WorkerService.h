@@ -142,7 +142,8 @@ private:
     bool insertOrUpdateSCD_(
             ScdParser& parser,
             bool isInsert,
-            uint32_t numdoc
+            uint32_t numdoc,
+            const boost::posix_time::ptime& timestamp
         );
 
     bool createUpdateDocId_(
@@ -157,30 +158,38 @@ private:
         docid_t& newId
     );
 
-    bool deleteSCD_(ScdParser& parser);
+    bool deleteSCD_(ScdParser& parser, const boost::posix_time::ptime& timestamp);
 
-    bool insertDoc_(Document& document, IndexerDocument& indexDocument);
+    bool insertDoc_(Document& document, IndexerDocument& indexDocument, const boost::posix_time::ptime& timestamp);
 
-    bool updateDoc_(Document& document, IndexerDocument& indexDocument, bool rType);
+    bool updateDoc_(Document& document, IndexerDocument& indexDocument, const boost::posix_time::ptime& timestamp, bool rType);
 
-    bool deleteDoc_(docid_t docid);
+    bool deleteDoc_(docid_t docid, const boost::posix_time::ptime& timestamp);
 
     void saveSourceCount_(int op);
 
     bool prepareDocument_(
-        SCDDoc& doc,
-        Document& document,
-        IndexerDocument& indexDocument,
-        bool& rType,
-        std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
-        std::string& source,
-        bool insert = true
+            SCDDoc& doc,
+            Document& document,
+            docid_t& oldId,
+            bool& rType,
+            std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
+            std::string& source,
+            bool insert = true
+    );
+
+    bool prepareIndexDocument_(
+            docid_t oldId,
+            const Document& document,
+            IndexerDocument& indexDocument
     );
 
     bool preparePartialDocument_(
             Document& document,
             IndexerDocument& oldIndexDocument
     );
+
+    bool completePartialDocument_(docid_t oldId, Document& doc);
 
     bool checkSeparatorType_(
         const izenelib::util::UString& propertyValueStr,
