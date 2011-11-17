@@ -34,7 +34,6 @@ TermDocumentIterator::TermDocumentIterator(
         ,pTermDocReader_(0)
         ,df_(0)
         ,readPositions_(readPositions)
-        ,destroy_(true)
 {
 }
 
@@ -65,15 +64,13 @@ TermDocumentIterator::TermDocumentIterator(
         ,indexManagerPtr_(indexManagerPtr)
         ,df_(0)
         ,readPositions_(readPositions)
-        ,destroy_(true)
 {
 }
 
 TermDocumentIterator::~TermDocumentIterator()
 {
-    if(destroy_)
-        if(pTermDocReader_)
-            delete pTermDocReader_;
+    if(pTermDocReader_)
+        delete pTermDocReader_;
     if(pTermReader_)
         delete pTermReader_;
 }
