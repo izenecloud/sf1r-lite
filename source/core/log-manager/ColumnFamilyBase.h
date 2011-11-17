@@ -18,6 +18,8 @@ public:
         COUNTER
     };
 
+    virtual bool isEnabled() const = 0;
+
     virtual bool truncateColumnFamily() const;
 
     virtual bool dropColumnFamily() const;
@@ -103,6 +105,9 @@ bool getSingleCount(int32_t& count, const std::string& key, const std::string& s
 }
 
 #define DEFINE_COLUMN_FAMILY_COMMON_ROUTINES(ClassName) \
+private: \
+    static bool is_enabled; \
+public: \
     static const ColumnType column_type; \
     static const std::string cf_name; \
     static const std::string cf_column_type; \
@@ -140,9 +145,15 @@ bool getSingleCount(int32_t& count, const std::string& key, const std::string& s
         return ::sf1r::getName<ClassName>(); \
     } \
     \
-    static bool createColumnFamily() \
+    virtual bool isEnabled() const \
     { \
-        return ::sf1r::createColumnFamily<ClassName>(); \
+        return is_enabled; \
+    } \
+    \
+    static void createColumnFamily() \
+    { \
+        if (::sf1r::createColumnFamily<ClassName>()) \
+            is_enabled = true; \
     } \
     \
     static bool getSingleSlice(ClassName& row, const std::string& key, const std::string& start, const std::string& finish) \

@@ -68,9 +68,10 @@ namespace sf1r
     {
         if (CassandraConnection::instance().init(logPath))
         {
-            return PriceHistory::createColumnFamily() &&
-                SourceCount::createColumnFamily();
+            PriceHistory::createColumnFamily();
+//          SourceCount::createColumnFamily();
         }
+
         return true;
     }
 

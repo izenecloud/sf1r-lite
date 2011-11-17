@@ -10,7 +10,7 @@ namespace sf1r {
 
 bool ColumnFamilyBase::truncateColumnFamily() const
 {
-    if (!CassandraConnection::instance().isEnabled()) return false;
+    if (!isEnabled()) return false;
     try
     {
         CassandraConnection::instance().getCassandraClient()->truncateColumnFamily(getName());
@@ -25,7 +25,7 @@ bool ColumnFamilyBase::truncateColumnFamily() const
 
 bool ColumnFamilyBase::dropColumnFamily() const
 {
-    if (!CassandraConnection::instance().isEnabled()) return false;
+    if (!isEnabled()) return false;
     try
     {
         CassandraConnection::instance().getCassandraClient()->dropColumnFamily(getName());
@@ -40,7 +40,7 @@ bool ColumnFamilyBase::dropColumnFamily() const
 
 bool ColumnFamilyBase::getSlice(const string& start, const string& finish)
 {
-    if (!CassandraConnection::instance().isEnabled() || getKey().empty()) return false;
+    if (!isEnabled() || getKey().empty()) return false;
     try
     {
         ColumnParent col_parent;
@@ -90,7 +90,7 @@ bool ColumnFamilyBase::getSlice(const string& start, const string& finish)
 
 bool ColumnFamilyBase::deleteRow()
 {
-    if (!CassandraConnection::instance().isEnabled() || getKey().empty()) return false;
+    if (!isEnabled() || getKey().empty()) return false;
     try
     {
         ColumnPath col_path;
@@ -110,7 +110,7 @@ bool ColumnFamilyBase::deleteRow()
 
 bool ColumnFamilyBase::getCount(int32_t& count, const string& start, const string& finish) const
 {
-    if (!CassandraConnection::instance().isEnabled() || getKey().empty()) return false;
+    if (!isEnabled() || getKey().empty()) return false;
     try
     {
         ColumnParent col_parent;

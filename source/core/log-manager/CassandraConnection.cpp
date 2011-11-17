@@ -113,7 +113,10 @@ bool CassandraConnection::init(const string& str)
                 cassandra_client_->login(username, password);
             KsDef ks_def;
             ks_def.__set_name(ks_name);
-            ks_def.__set_strategy_class("NetworkTopologyStrategy");
+            ks_def.__set_strategy_class("SimpleStrategy");
+            map<string, string> strategy_options;
+            strategy_options["replication_factor"] = "1";
+            ks_def.__set_strategy_options(strategy_options);
             // TODO: more tricks for keyspace
             cassandra_client_->createKeyspace(ks_def);
             cassandra_client_->setKeyspace(ks_name);

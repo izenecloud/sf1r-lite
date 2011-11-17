@@ -537,13 +537,14 @@ bool IndexTaskService::doBuildCollection_(
 
     // Filename: B-00-YYYYMMDDhhmm-ssuuu-I-C.SCD
     // Timestamp: YYYYMMDDThhmmss,fff
+    std::string baseName(basename(fileName.c_str()));
     std::stringstream ss;
-    ss << fileName.substr(5, 8);
+    ss << baseName.substr(5, 8);
     ss << "T";
-    ss << fileName.substr(13, 4);
-    ss << fileName.substr(18, 2);
+    ss << baseName.substr(13, 4);
+    ss << baseName.substr(18, 2);
     ss << ",";
-    ss << fileName.substr(20, 3);
+    ss << baseName.substr(20, 3);
     boost::posix_time::ptime timestamp;
     try
     {

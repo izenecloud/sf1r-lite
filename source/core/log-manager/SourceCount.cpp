@@ -11,6 +11,8 @@ using namespace org::apache::cassandra;
 
 namespace sf1r {
 
+bool SourceCount::is_enabled(false);
+
 const ColumnFamilyBase::ColumnType SourceCount::column_type = ColumnFamilyBase::COUNTER;
 
 const string SourceCount::cf_name("SourceCount");
@@ -90,7 +92,7 @@ bool SourceCount::getMultiSlice(
         const string& start,
         const string& finish)
 {
-    if (!CassandraConnection::instance().isEnabled()) return false;
+    if (!is_enabled) return false;
     try
     {
         ColumnParent col_parent;
@@ -135,7 +137,7 @@ bool SourceCount::getMultiCount(
         const string& start,
         const string& finish)
 {
-    if (!CassandraConnection::instance().isEnabled()) return false;
+    if (!is_enabled) return false;
     try
     {
         ColumnParent col_parent;
@@ -162,7 +164,7 @@ bool SourceCount::getMultiCount(
 
 bool SourceCount::updateRow() const
 {
-    if (!CassandraConnection::instance().isEnabled() || collection_.empty()) return false;
+    if (!is_enabled || collection_.empty()) return false;
     if (!sourceCountPresent_) return true;
     try
     {
