@@ -63,7 +63,10 @@ public:
     /*
     *@brief Generate Filter, filter will be released by the user.
     */
-    Filter* prepare_filter(const std::vector<QueryFiltering::FilteringType>& filtingList);
+    void prepare_filter(
+            const std::vector<QueryFiltering::FilteringType>& filtingList,
+            boost::shared_ptr<EWAHBoolArray<uint32_t> >& pDocIdSet
+    );
 
     void reset_cache();
 

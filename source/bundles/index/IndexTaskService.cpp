@@ -984,7 +984,6 @@ bool IndexTaskService::prepareDocument_(
     CREATE_SCOPED_PROFILER ( preparedocument, "IndexTaskService", "IndexTaskService::prepareDocument_");
 
     sf1r::docid_t docId = 0;
-    bool isPartial = false;
     string fieldStr;
     vector<CharacterOffset> sentenceOffsetList;
     AnalysisInfo analysisInfo;
@@ -1132,6 +1131,9 @@ bool IndexTaskService::prepareIndexDocument_(docid_t oldId, const Document& docu
         PropertyConfig temp;
         temp.propertyName_ = fieldStr;
         iter = bundleConfig_->schema_.find(temp);
+
+        if(iter == bundleConfig_->schema_.end())
+            continue;
 
         IndexerPropertyConfig indexerPropertyConfig;
 

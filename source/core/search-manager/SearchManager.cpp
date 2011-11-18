@@ -18,6 +18,8 @@
 #include "QueryBuilder.h"
 #include "Sorter.h"
 #include "HitQueue.h"
+#include "FilterDocumentIterator.h"
+#include "ANDDocumentIterator.h"
 
 #include <util/swap.h>
 #include <util/get.h>
@@ -264,16 +266,26 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
     rankingManagerPtr_->createPropertyRankers(pTextRankingType, indexPropertySize, propertyRankers);
     bool readTermPosition = propertyRankers[0]->requireTermPosition();
 
-    boost::scoped_ptr<MultiPropertyScorer> pDocIterator;
+    boost::scoped_ptr<ANDDocumentIterator> pDocIterator;
+    MultiPropertyScorer* pMultiPropertyIterator = NULL;
+    FilterDocumentIterator* pFilterIterator = NULL;
     std::vector<QueryFiltering::FilteringType>& filtingList
                                                     = actionOperation.actionItem_.filteringList_;
-    boost::scoped_ptr<Filter> pFilter;
+    boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet;
     try
     {
         if (!filtingList.empty())
-            pFilter.reset(queryBuilder_->prepare_filter(filtingList));
+            queryBuilder_->prepare_filter(filtingList, pFilterIdSet);
 
-        pDocIterator.reset(queryBuilder_->prepare_dociterator(
+        std::vector<docid_t> vec;
+        pFilterIdSet->appendRowIDs(vec);
+
+        std::cout<<"********output that fit the filter condition id list:********"<<std::endl;
+        for(size_t i = 0; i < vec.size(); i++)
+            std::cout<<vec[i]<<" ";
+        std::cout<<std::endl;
+
+        pMultiPropertyIterator = queryBuilder_->prepare_dociterator(
             actionOperation,
             collectionId,
             propertyWeightMap_,
@@ -281,8 +293,32 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             indexPropertyIdList,
             readTermPosition,
             termIndexMaps
-        ));
-        if (! pDocIterator)
+        );
+
+        if(pFilterIdSet)
+        {
+            BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet->bit_iterator());
+            pFilterIterator = new FilterDocumentIterator( pBitmapIter );
+
+            pDocIterator.reset(new ANDDocumentIterator());
+            pDocIterator->add((DocumentIterator*)pFilterIterator);
+            std::cout<<"***********the filter exist and BTree iterator has added to DocIterator**********"<<std::endl;
+        }
+
+        if(pMultiPropertyIterator)
+        {
+            if(!pDocIterator)
+            {
+                pDocIterator.reset(new ANDDocumentIterator());
+            }
+            pDocIterator->add((DocumentIterator*)pMultiPropertyIterator);
+        }
+
+        if(pDocIterator)
+        {
+            std::cout<<"******the filter is not null********"<<std::endl;
+        }
+        if(!pDocIterator)
             return false;
     }
     catch (std::exception& e)
@@ -503,12 +539,14 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
 
         while (pDocIterator->next())
         {
-            if (pFilter && !pFilter->test(pDocIterator->doc()))
-                continue;
+            //if (pFilter && !pFilter->test(pDocIterator->doc()))
+              //  continue;
 
+            std::cout<<"***********the output docid is:"<<pDocIterator->doc()<<std::endl;
             if (groupFilter && !groupFilter->test(pDocIterator->doc()))
                 continue;
 
+            std::cout<<"***********the groupFilter output docid is:"<<pDocIterator->doc()<<std::endl;
             if(rangePropertyTable)
             {
                 float docPropertyValue = 0;
@@ -530,10 +568,13 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             ScoreDoc scoreItem(pDocIterator->doc());
             START_PROFILER ( computerankscore )
             ++totalCount;
-            scoreItem.score = pDocIterator->score(
-                rankQueryProperties,
-                propertyRankers
-            );
+            if(pMultiPropertyIterator)
+                scoreItem.score = pMultiPropertyIterator->score(
+                    rankQueryProperties,
+                    propertyRankers
+                );
+            else
+                scoreItem.score = 1;
             STOP_PROFILER ( computerankscore )
 
             START_PROFILER ( computecustomrankscore )
