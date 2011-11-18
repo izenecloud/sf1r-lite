@@ -40,7 +40,6 @@ public:
     ~NodeManager();
 
     /**
-     * Initializations before start collections(run)
      * @param dsTopologyConfig
      * @param dsUtilConfig
      */
@@ -80,8 +79,12 @@ private:
     void initZooKeeper(const std::string& zkHosts, const int recvTimeout);
 
     /**
+     * Initializations needed to be done before start collections (run)
+     */
+    void initBeforeStart();
+
+    /**
      * Make sure zookeeper namaspace (znodes) is initialized properly
-     * for all distributed coordination tasks.
      */
     void initZkNameSpace();
 
@@ -97,6 +100,7 @@ private:
     DistributedUtilConfig dsUtilConfig_;
 
     boost::shared_ptr<ZooKeeper> zookeeper_;
+    bool isInitBeforeStartDone_;
 
     // node state
     NodeStateType nodeState_;

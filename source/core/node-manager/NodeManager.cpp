@@ -10,7 +10,7 @@ using namespace sf1r;
 using namespace zookeeper;
 
 NodeManager::NodeManager()
-: nodeState_(NODE_STATE_INIT), masterStarted_(false)
+: isInitBeforeStartDone_(false), nodeState_(NODE_STATE_INIT), masterStarted_(false)
 {
 }
 
@@ -22,6 +22,8 @@ void NodeManager::init(
         const DistributedTopologyConfig& dsTopologyConfig,
         const DistributedUtilConfig& dsUtilConfig)
 {
+    // Initializations which should be done before process run.
+
     // set distributed configurations
     dsTopologyConfig_ = dsTopologyConfig;
     dsUtilConfig_ = dsUtilConfig;
@@ -38,8 +40,11 @@ void NodeManager::init(
 
     nodePath_ = NodeDef::getNodePath(nodeInfo_.replicaId_, nodeInfo_.nodeId_);
 
-    // ZooKeeper monitor,
-    ZkMonitor::get();
+    // ZooKeeper monitor
+    ZkMonitor::get()->start();
+
+    // !! Initializations needed to be done before start collections (run)
+    initBeforeStart();
 }
 
 void NodeManager::start()
@@ -78,9 +83,18 @@ void NodeManager::process(ZooKeeperEvent& zkEvent)
 {
     std::cout<<"[NodeManager] "<< zkEvent.toString();
 
+    if (!isInitBeforeStartDone_)
+    {
+        initBeforeStart();
+    }
+
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {
-        if (nodeState_ == NODE_STATE_STARTING_WAIT_RETRY)
+        if (nodeState_ == NODE_STATE_INIT)
+        {
+
+        }
+        else if (nodeState_ == NODE_STATE_STARTING_WAIT_RETRY)
         {
             // retry start
             nodeState_ = NODE_STATE_STARTING;
@@ -99,10 +113,20 @@ void NodeManager::initZooKeeper(const std::string& zkHosts, const int recvTimeou
     zookeeper_->registerEventHandler(this);
 }
 
+void NodeManager::initBeforeStart()
+{
+    if (zookeeper_->isConnected())
+    {
+        // xxx synchro
+        DistributedSynchroFactory::initZKNodes(zookeeper_);
+
+        isInitBeforeStartDone_ = true;
+    }
+}
+
 void NodeManager::initZkNameSpace()
 {
     // Make sure zookeeper namaspace (znodes) is initialized properly
-    // for all distributed coordination tasks.
 
     zookeeper_->createZNode(NodeDef::getSF1RootPath());
     // topology
@@ -110,9 +134,6 @@ void NodeManager::initZkNameSpace()
     std::stringstream ss;
     ss << dsTopologyConfig_.curSF1Node_.replicaId_;
     zookeeper_->createZNode(NodeDef::getReplicaPath(dsTopologyConfig_.curSF1Node_.replicaId_), ss.str());
-    // synchro, todo
-    zookeeper_->createZNode(NodeDef::getSynchroPath());
-    DistributedSynchroFactory::initZKNodes(zookeeper_);
 }
 
 void NodeManager::enterCluster()
