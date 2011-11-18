@@ -105,11 +105,21 @@ public:
 class NodeData : public zookeeper::ZkDataPack
 {
 public:
+    // topology
     const static char* NDATA_KEY_HOST;
     const static char* NDATA_KEY_BA_PORT;
     const static char* NDATA_KEY_MASTER_PORT;
     const static char* NDATA_KEY_WORKER_PORT;
     const static char* NDATA_KEY_SHARD_ID;
+
+    // synchronizer
+    const static char* ND_KEY_SYNC_PRODUCER;
+    const static char* ND_KEY_SYNC_CONSUMER;
+
+    // data
+    const static char* ND_KEY_FILE;
+    const static char* ND_KEY_DIR;
+
 };
 
 }
