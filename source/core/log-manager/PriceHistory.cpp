@@ -1,6 +1,7 @@
 #include "PriceHistory.h"
 
 #include <libcassandra/cassandra.h>
+#include <libcassandra/util_functions.h>
 
 #include <boost/assign/list_of.hpp>
 
@@ -101,6 +102,7 @@ bool PriceHistory::getMultiSlice(
         col_parent.__set_column_family(cf_name);
 
         SlicePredicate pred;
+        pred.__isset.slice_range = true;
         //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);
@@ -146,6 +148,7 @@ bool PriceHistory::getMultiCount(
         col_parent.__set_column_family(cf_name);
 
         SlicePredicate pred;
+        pred.__isset.slice_range = true;
         //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);
@@ -177,7 +180,7 @@ bool PriceHistory::updateRow() const
                     toBytes(it->second),
                     docId_,
                     cf_name,
-                    toBytes(it->first),
+                    serializeLong(it->first),
                     createTimeStamp(),
                     63072000); // Keep the price history for two years at most
         }
@@ -198,7 +201,7 @@ bool PriceHistory::insert(const string& name, const string& value)
         cerr << "Bad insert!" << endl;
         return false;
     }
-    priceHistory_[fromBytes<time_t>(name)] = fromBytes<ProductPrice>(value);
+    priceHistory_[deserializeLong(name)] = fromBytes<ProductPrice>(value);
     return true;
 }
 

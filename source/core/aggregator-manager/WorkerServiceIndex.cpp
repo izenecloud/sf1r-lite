@@ -9,6 +9,7 @@
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
 #include <log-manager/ProductCount.h>
+#include <log-manager/UtilFunctions.h>
 #include <common/JobScheduler.h>
 #include <common/Utilities.h>
 //#include <license-manager/LicenseManager.h>
@@ -339,13 +340,16 @@ bool WorkerService::doBuildCollection_(
     ss << fileName.substr(18, 2);
     ss << ",";
     ss << fileName.substr(20, 3);
-    boost::posix_time::ptime timestamp;
+    boost::posix_time::ptime pt;
     try
     {
-        timestamp = boost::posix_time::from_iso_string(ss.str());
+        pt = boost::posix_time::from_iso_string(ss.str());
     }
     catch (const std::exception& ex)
     {}
+    time_t timestamp = createTimeStamp(pt);
+    if (timestamp == -1)
+        timestamp = createTimeStamp();
 
     if (op <= 2) // insert or update
     {
@@ -368,7 +372,7 @@ bool WorkerService::insertOrUpdateSCD_(
         ScdParser& parser,
         bool isInsert,
         uint32_t numdoc,
-        const boost::posix_time::ptime& timestamp
+        time_t timestamp
 )
 {
     CREATE_SCOPED_PROFILER (insertOrUpdateSCD, "IndexTaskService", "IndexTaskService::insertOrUpdateSCD_");
@@ -503,7 +507,7 @@ bool WorkerService::createInsertDocId_(
     return true;
 }
 
-bool WorkerService::deleteSCD_(ScdParser& parser, const boost::posix_time::ptime& timestamp)
+bool WorkerService::deleteSCD_(ScdParser& parser, time_t timestamp)
 {
     std::vector<izenelib::util::UString> rawDocIDList;
     if (!parser.getDocIdList(rawDocIDList))
@@ -583,7 +587,7 @@ bool WorkerService::deleteSCD_(ScdParser& parser, const boost::posix_time::ptime
     return true;
 }
 
-bool WorkerService::insertDoc_(Document& document, IndexerDocument& indexDocument, const boost::posix_time::ptime& timestamp)
+bool WorkerService::insertDoc_(Document& document, IndexerDocument& indexDocument, time_t timestamp)
 {
     CREATE_PROFILER(proDocumentIndexing, "IndexTaskService", "IndexTaskService : InsertDocument")
     CREATE_PROFILER(proIndexing, "IndexTaskService", "IndexTaskService : indexing")
@@ -609,7 +613,7 @@ bool WorkerService::insertDoc_(Document& document, IndexerDocument& indexDocumen
 bool WorkerService::updateDoc_(
         Document& document,
         IndexerDocument& indexDocument,
-        const boost::posix_time::ptime& timestamp,
+        time_t timestamp,
         bool rType
 )
 {
@@ -654,7 +658,7 @@ bool WorkerService::updateDoc_(
     return true;
 }
 
-bool WorkerService::deleteDoc_(docid_t docid, const boost::posix_time::ptime& timestamp)
+bool WorkerService::deleteDoc_(docid_t docid, time_t timestamp)
 {
     CREATE_SCOPED_PROFILER (proDocumentDeleting, "IndexTaskService", "IndexTaskService::DeleteDocument");
 

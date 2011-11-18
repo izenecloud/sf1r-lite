@@ -36,11 +36,11 @@ public:
     bool Recover();
 
 
-    bool HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, const boost::posix_time::ptime& timestamp);
+    bool HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, time_t timestamp);
 
-    bool HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::IndexerDocument& index_document, const boost::posix_time::ptime& timestamp, bool r_type);
+    bool HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::IndexerDocument& index_document, time_t timestamp, bool r_type);
 
-    bool HookDelete(uint32_t docid, const boost::posix_time::ptime& timestamp);
+    bool HookDelete(uint32_t docid, time_t timestamp);
 
     bool GenOperations();
 
@@ -59,19 +59,19 @@ public:
 
     bool AddGroupWithInfo(const std::vector<izenelib::util::UString>& docid_list, const Document& doc, bool backup = true);
 
-    typedef std::vector<std::pair<izenelib::util::UString, ProductPrice> > PriceHistoryItem;
-    typedef std::vector<std::pair<uint32_t, PriceHistoryItem> > PriceHistoryList;
-    typedef std::vector<std::pair<uint32_t, ProductPrice> > PriceRangeList;
+    typedef std::vector<std::pair<std::string, ProductPrice> > PriceHistoryItem;
+    typedef std::vector<std::pair<std::string, PriceHistoryItem> > PriceHistoryList;
+    typedef std::vector<std::pair<std::string, ProductPrice> > PriceRangeList;
 
     bool GetMultiPriceHistory(
             PriceHistoryList& history_list,
-            const std::vector<uint32_t>& docid_list,
+            const std::vector<std::string>& docid_list,
             time_t from_tt,
             time_t to_tt);
 
     bool GetMultiPriceRange(
             PriceRangeList& range_list,
-            const std::vector<uint32_t>& docid_list,
+            const std::vector<std::string>& docid_list,
             time_t from_tt,
             time_t to_tt);
 
@@ -104,11 +104,19 @@ private:
 
     bool GetDOCID_(const PMDocumentType& doc, izenelib::util::UString& docid) const;
 
-    bool GetTimestamp_(const PMDocumentType& doc, time_t& tt) const;
+    bool GetTimestamp_(const PMDocumentType& doc, time_t& timestamp) const;
 
     void SetItemCount_(PMDocumentType& doc, uint32_t item_count);
 
-    bool UpdatePriceHistory_(const PMDocumentType& doc, const boost::posix_time::ptime& timestamp) const;
+    bool UpdatePriceHistory_(const PMDocumentType& doc, time_t timestamp) const;
+
+    void ParseDocid_(std::string& dest, const std::string& src) const;
+
+    void StripDocid_(std::string& dest, const std::string& src) const;
+
+    void ParseDocidList_(std::vector<std::string>& dest, const std::vector<std::string>& src) const;
+
+    void StripDocidList_(std::vector<std::string>& dest, const std::vector<std::string>& src) const;
 
 private:
     std::string collection_name_;

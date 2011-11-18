@@ -123,7 +123,7 @@ private:
     bool removeDuplicateDocs(
             const KeywordSearchActionItem& actionItem,
             ResultItemType& resultItem);
-            
+
     /// @{
     /// index task
 
@@ -143,7 +143,7 @@ private:
             ScdParser& parser,
             bool isInsert,
             uint32_t numdoc,
-            const boost::posix_time::ptime& timestamp
+            time_t timestamp
         );
 
     bool createUpdateDocId_(
@@ -158,13 +158,13 @@ private:
         docid_t& newId
     );
 
-    bool deleteSCD_(ScdParser& parser, const boost::posix_time::ptime& timestamp);
+    bool deleteSCD_(ScdParser& parser, time_t timestamp);
 
-    bool insertDoc_(Document& document, IndexerDocument& indexDocument, const boost::posix_time::ptime& timestamp);
+    bool insertDoc_(Document& document, IndexerDocument& indexDocument, time_t timestamp);
 
-    bool updateDoc_(Document& document, IndexerDocument& indexDocument, const boost::posix_time::ptime& timestamp, bool rType);
+    bool updateDoc_(Document& document, IndexerDocument& indexDocument, time_t timestamp, bool rType);
 
-    bool deleteDoc_(docid_t docid, const boost::posix_time::ptime& timestamp);
+    bool deleteDoc_(docid_t docid, time_t timestamp);
 
     void saveSourceCount_(int op);
 

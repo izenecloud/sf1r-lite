@@ -101,6 +101,7 @@ bool SourceCount::getMultiSlice(
         col_parent.__set_column_family(cf_name);
 
         SlicePredicate pred;
+        pred.__isset.slice_range = true;
         //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);
@@ -146,6 +147,7 @@ bool SourceCount::getMultiCount(
         col_parent.__set_column_family(cf_name);
 
         SlicePredicate pred;
+        pred.__isset.slice_range = true;
         //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);
