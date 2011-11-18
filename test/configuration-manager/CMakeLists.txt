@@ -13,6 +13,7 @@ SET(libs
   sf1r_product_manager
   sf1r_node_manager
   sf1r_document_manager
+  sf1r_license_manager
   sf1r_common
 
   ${ilplib_LIBRARIES}
