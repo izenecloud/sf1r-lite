@@ -11,6 +11,8 @@ using namespace org::apache::cassandra;
 
 namespace sf1r {
 
+bool SourceCount::is_enabled(false);
+
 const ColumnFamilyBase::ColumnType SourceCount::column_type = ColumnFamilyBase::COUNTER;
 
 const string SourceCount::cf_name("SourceCount");
@@ -68,7 +70,9 @@ const map<string, string> SourceCount::cf_compaction_strategy_options;
 
 const int32_t SourceCount::cf_row_cache_keys_to_save(0);
 
-const map<string, string> SourceCount::cf_compression_options;
+const map<string, string> SourceCount::cf_compression_options = map_list_of
+    ("sstable_compression", "SnappyCompressor")
+    ("chunk_length_kb", "64");
 
 SourceCount::SourceCount(const string& collection)
     : ColumnFamilyBase()
@@ -84,19 +88,53 @@ const string& SourceCount::getKey() const
     return collection_;
 }
 
+bool SourceCount::updateMultiRow(const map<string, SourceCount>& row_map)
+{
+    if (!is_enabled) return false;
+    try
+    {
+        map<string, map<string, vector<Mutation> > > mutation_map;
+        for (map<string, SourceCount>::const_iterator it = row_map.begin();
+                it != row_map.end(); ++it)
+        {
+            vector<Mutation>& mutation_list = mutation_map[it->first][cf_name];
+            for (SourceCountType::const_iterator sit = it->second.getSourceCount().begin();
+                    sit != it->second.getSourceCount().end(); ++sit)
+            {
+                mutation_list.push_back(Mutation());
+                Mutation& mut = mutation_list.back();
+                mut.__isset.column_or_supercolumn = true;
+                mut.column_or_supercolumn.__isset.counter_column = true;
+                CounterColumn& col = mut.column_or_supercolumn.counter_column;
+                col.__set_name(sit->first);
+                col.__set_value(sit->second);
+            }
+        }
+
+        CassandraConnection::instance().getCassandraClient()->batchMutate(mutation_map);
+    }
+    catch (const InvalidRequestException &ire)
+    {
+        cout << ire.why << endl;
+        return false;
+    }
+    return true;
+}
+
 bool SourceCount::getMultiSlice(
         map<string, SourceCount>& row_map,
         const vector<string>& key_list,
         const string& start,
         const string& finish)
 {
-    if (!CassandraConnection::instance().isEnabled()) return false;
+    if (!is_enabled) return false;
     try
     {
         ColumnParent col_parent;
         col_parent.__set_column_family(cf_name);
 
         SlicePredicate pred;
+        pred.__isset.slice_range = true;
         //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);
@@ -135,13 +173,14 @@ bool SourceCount::getMultiCount(
         const string& start,
         const string& finish)
 {
-    if (!CassandraConnection::instance().isEnabled()) return false;
+    if (!is_enabled) return false;
     try
     {
         ColumnParent col_parent;
         col_parent.__set_column_family(cf_name);
 
         SlicePredicate pred;
+        pred.__isset.slice_range = true;
         //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);
@@ -162,7 +201,7 @@ bool SourceCount::getMultiCount(
 
 bool SourceCount::updateRow() const
 {
-    if (!CassandraConnection::instance().isEnabled() || collection_.empty()) return false;
+    if (!is_enabled || collection_.empty()) return false;
     if (!sourceCountPresent_) return true;
     try
     {

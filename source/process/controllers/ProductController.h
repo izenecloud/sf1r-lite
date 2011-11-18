@@ -34,11 +34,10 @@ public:
 
     void get_multi_price_history();
 
-    void get_multi_price_range();
-
 private:
     bool check_product_manager_();
-    bool require_docs_();
+    bool require_docid_list_();
+    bool require_str_docid_list_();
     bool require_uuid_();
     bool require_doc_();
     bool require_date_range_();
@@ -46,6 +45,7 @@ private:
 private:
     boost::shared_ptr<ProductManager> product_manager_;
     std::vector<uint32_t> docid_list_;
+    std::vector<std::string> str_docid_list_;
     izenelib::util::UString uuid_;
     izenelib::util::UString from_date_;
     izenelib::util::UString to_date_;

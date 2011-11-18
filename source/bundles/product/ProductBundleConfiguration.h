@@ -16,21 +16,21 @@ public:
     ProductBundleConfiguration(const std::string& collectionName);
 
     void setSchema(const std::set<PropertyConfig, PropertyComp>& schema);
+
 public:
     int mode_;
 
     std::string collectionName_;
 
     CollectionPath collPath_;
-    
+
     std::set<PropertyConfig, PropertyComp> schema_;
-    
+
     std::vector<std::string> collectionDataDirectories_;
-    
+
     PMConfig pm_config_;
 
 };
 }
 
 #endif
-

@@ -11,18 +11,16 @@ class IndexHooker
 {
 public:
     virtual ~IndexHooker() {}
-    virtual bool HookInsert(Document& doc, izenelib::ir::indexmanager::IndexerDocument& index_document)
+    virtual bool HookInsert(Document& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, time_t timestamp)
     {return false;}
-    virtual bool HookUpdate(Document& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, bool r_type)
+    virtual bool HookUpdate(Document& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, time_t timestamp, bool r_type)
     {return false;}
 //     virtual bool HookInsert(Document& doc) {return false;}
 //     virtual bool HookUpdate(docid_t oldid, Document& doc, bool r_type) {return false;}
-    virtual bool HookDelete(docid_t docid) {return false;}
+    virtual bool HookDelete(docid_t docid, time_t timestamp) {return false;}
     virtual bool Finish() {return false;}
 };
 
-
- 
 }
 
 #endif

@@ -31,7 +31,7 @@ bool ProductController::check_product_manager_()
     return true;
 }
 
-bool ProductController::require_docs_()
+bool ProductController::require_docid_list_()
 {
     Value& resources = request()[Keys::docid_list];
     for (uint32_t i = 0; i < resources.size(); i++)
@@ -43,6 +43,23 @@ bool ProductController::require_docs_()
     if (docid_list_.empty())
     {
         response().addError("Require docid_list in request.");
+        return false;
+    }
+    return true;
+}
+
+bool ProductController::require_str_docid_list_()
+{
+    Value& resources = request()[Keys::str_docid_list];
+    for (uint32_t i = 0; i < resources.size(); i++)
+    {
+        Value& resource = resources(i);
+        std::string str_docid = asString(resource);
+        str_docid_list_.push_back(str_docid);
+    }
+    if (str_docid_list_.empty())
+    {
+        response().addError("Require str_docid_list in request.");
         return false;
     }
     return true;
@@ -118,10 +135,14 @@ bool ProductController::require_date_range_()
         response().addError("end date not valid.");
         return false;
     }
-    if (to_tt_ != -1 && from_tt_ > to_tt_)
+    if (to_tt_ != -1)
     {
-        response().addError("date range not valid.");
-        return false;
+        if (from_tt_ > to_tt_)
+        {
+            response().addError("date range not valid.");
+            return false;
+        }
+        to_tt_ += 86399999999L;
     }
 
     return true;
@@ -161,7 +182,7 @@ bool ProductController::require_date_range_()
 void ProductController::add_new_group()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
-    IZENELIB_DRIVER_BEFORE_HOOK(require_docs_());
+    IZENELIB_DRIVER_BEFORE_HOOK(require_docid_list_());
     izenelib::util::UString uuid;
     if (!product_manager_->AddGroup(docid_list_, uuid))
     {
@@ -208,7 +229,7 @@ void ProductController::append_to_group()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_uuid_());
-    IZENELIB_DRIVER_BEFORE_HOOK(require_docs_());
+    IZENELIB_DRIVER_BEFORE_HOOK(require_docid_list_());
     if (!product_manager_->AppendToGroup(uuid_, docid_list_))
     {
         response().addError(product_manager_->GetLastError());
@@ -251,7 +272,7 @@ void ProductController::remove_from_group()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_uuid_());
-    IZENELIB_DRIVER_BEFORE_HOOK(require_docs_());
+    IZENELIB_DRIVER_BEFORE_HOOK(require_docid_list_());
     if (!product_manager_->RemoveFromGroup(uuid_, docid_list_))
     {
         response().addError(product_manager_->GetLastError());
@@ -337,55 +358,54 @@ void ProductController::update_a_doc()
 void ProductController::get_multi_price_history()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
-    IZENELIB_DRIVER_BEFORE_HOOK(require_docs_());
+    IZENELIB_DRIVER_BEFORE_HOOK(require_str_docid_list_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_date_range_());
-    ProductManager::PriceHistoryList history_list;
-    if (!product_manager_->GetMultiPriceHistory(history_list, docid_list_, from_tt_, to_tt_ + 86399999999L))
-    {
-        response().addError(product_manager_->GetLastError());
-        return;
-    }
 
-    Value& price_history_list = response()[Keys::price_history_list];
-    for (Value::UintType i = 0; i < history_list.size(); ++i)
+    bool is_range = asBool(request()[Keys::range]);
+    if (!is_range)
     {
-        Value& doc_item = price_history_list();
-        doc_item[Keys::docid] = history_list[i].first;
-        Value& price_history = doc_item[Keys::price_history];
-        ProductManager::PriceHistoryItem& history = history_list[i].second;
-        for (Value::UintType j = 0; j < history.size(); ++j)
+        ProductManager::PriceHistoryList history_list;
+        if (!product_manager_->GetMultiPriceHistory(history_list, str_docid_list_, from_tt_, to_tt_))
         {
-            Value& history_item = price_history();
-            std::string time_str;
-            history[j].first.convertString(time_str, izenelib::util::UString::UTF_8);
-            history_item[Keys::timestamp] = time_str;
-            Value& price_range = history_item[Keys::price_range];
-            price_range[Keys::price_low] = history[j].second.value.first;
-            price_range[Keys::price_high] = history[j].second.value.second;
+            response().addError(product_manager_->GetLastError());
+            return;
+        }
+
+        Value& price_history_list = response()[Keys::price_history_list];
+        for (Value::UintType i = 0; i < history_list.size(); ++i)
+        {
+            Value& doc_item = price_history_list();
+            doc_item[Keys::docid] = history_list[i].first;
+            Value& price_history = doc_item[Keys::price_history];
+            ProductManager::PriceHistoryItem& history = history_list[i].second;
+            for (Value::UintType j = 0; j < history.size(); ++j)
+            {
+                Value& history_item = price_history();
+                history_item[Keys::timestamp] = history[j].first;
+                Value& price_range = history_item[Keys::price_range];
+                price_range[Keys::price_low] = history[j].second.value.first;
+                price_range[Keys::price_high] = history[j].second.value.second;
+            }
         }
     }
-}
-
-void ProductController::get_multi_price_range()
-{
-    IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
-    IZENELIB_DRIVER_BEFORE_HOOK(require_docs_());
-    IZENELIB_DRIVER_BEFORE_HOOK(require_date_range_());
-    ProductManager::PriceRangeList range_list;
-    if (!product_manager_->GetMultiPriceRange(range_list, docid_list_, from_tt_, to_tt_ + 86399999999L))
+    else
     {
-        response().addError(product_manager_->GetLastError());
-        return;
-    }
+        ProductManager::PriceRangeList range_list;
+        if (!product_manager_->GetMultiPriceRange(range_list, str_docid_list_, from_tt_, to_tt_))
+        {
+            response().addError(product_manager_->GetLastError());
+            return;
+        }
 
-    Value& price_range_list = response()[Keys::price_range_list];
-    for (Value::UintType i = 0; i < range_list.size(); ++i)
-    {
-        Value& doc_item = price_range_list();
-        doc_item[Keys::docid] = range_list[i].first;
-        Value& price_range = doc_item[Keys::price_range];
-        price_range[Keys::price_low] = range_list[i].second.value.first;
-        price_range[Keys::price_high] = range_list[i].second.value.second;
+        Value& price_range_list = response()[Keys::price_range_list];
+        for (Value::UintType i = 0; i < range_list.size(); ++i)
+        {
+            Value& doc_item = price_range_list();
+            doc_item[Keys::docid] = range_list[i].first;
+            Value& price_range = doc_item[Keys::price_range];
+            price_range[Keys::price_low] = range_list[i].second.value.first;
+            price_range[Keys::price_high] = range_list[i].second.value.second;
+        }
     }
 }
 

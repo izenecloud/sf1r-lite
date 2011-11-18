@@ -81,7 +81,7 @@ bool ValueSharedTable::get(const std::string& key_str, std::string& value)
         char* b = new char[len];
         THROW(fread(b, len, 1, f_)==1, "file read error");
         value.assign(b, len);
-        delete b;
+        delete[] b;
         return true;
     }
 

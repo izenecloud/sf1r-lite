@@ -9,6 +9,7 @@
 #include <la-manager/LAManager.h>
 #include <search-manager/SearchManager.h>
 #include <log-manager/ProductCount.h>
+#include <log-manager/UtilFunctions.h>
 
 #include <bundles/mining/MiningTaskService.h>
 #include <bundles/recommend/RecommendTaskService.h>
@@ -108,7 +109,7 @@ void IndexTaskService::createPropertyList_()
 
     const std::set<PropertyConfigBase, PropertyBaseComp>& propertyList = meta.schema_;
     std::set<PropertyConfigBase, PropertyBaseComp>::const_iterator propertyIter;
-    for(propertyIter = propertyList.begin(); propertyIter != propertyList.end(); propertyIter++)
+    for (propertyIter = propertyList.begin(); propertyIter != propertyList.end(); propertyIter++)
     {
         string propertyName = propertyIter->propertyName_;
         boost::to_lower(propertyName);
@@ -120,7 +121,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
 {
     string scdPath = bundleConfig_->collPath_.getScdPath() + "index/";
 
-    if(!backup_() )
+    if (!backup_())
         return false;
 
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
@@ -150,13 +151,13 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
     vector<string> scdList;
     try
     {
-        if (bfs::is_directory(scdPath) == false)
+        if (!bfs::is_directory(scdPath))
         {
             LOG(ERROR) << "SCD Path does not exist. Path " << scdPath;
             return false;
         }
     }
-    catch(bfs::filesystem_error& e)
+    catch (bfs::filesystem_error& e)
     {
         LOG(ERROR) << "Error while opening directory " << e.what();
         return false;
@@ -169,9 +170,9 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
         if (bfs::is_regular_file(itr->status()))
         {
             std::string fileName = itr->path().filename();
-            if (parser.checkSCDFormat(fileName) )
+            if (parser.checkSCDFormat(fileName))
             {
-                scdList.push_back(itr->path().string() );
+                scdList.push_back(itr->path().string());
                 parser.load(scdPath+fileName);
                 indexProgress_.totalFileSize_ += parser.getFileSize();
             }
@@ -205,14 +206,14 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
 
     LOG(INFO) << "SCD Files in Path processed in given order. Path " << scdPath;
     vector<string>::iterator scd_it;
-    for ( scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
+    for (scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
         LOG(INFO) << "SCD File " << bfs::path(*scd_it).stem();
 
     try
     {
         // loops the list of SCD files that belongs to this collection
         long proccessedFileSize = 0;
-        for ( scd_it = scdList.begin(); scd_it != scdList.end(); scd_it++ )
+        for (scd_it = scdList.begin(); scd_it != scdList.end(); scd_it++)
         {
             size_t pos = scd_it ->rfind("/")+1;
             string filename = scd_it ->substr(pos);
@@ -221,11 +222,11 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
 
             LOG(INFO) << "Processing SCD file. " << bfs::path(*scd_it).stem();
 
-            switch ( parser.checkSCDType(*scd_it) )
+            switch (parser.checkSCDType(*scd_it))
             {
             case INSERT_SCD:
             {
-                if (doBuildCollection_( *scd_it, 1, numdoc ) == false)
+                if (!doBuildCollection_(*scd_it, 1, numdoc))
                 {
                     //continue;
                 }
@@ -237,7 +238,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
             {
                 if (documentManager_->getMaxDocId()> 0)
                 {
-                    doBuildCollection_( *scd_it, 3, 0 );
+                    doBuildCollection_(*scd_it, 3, 0);
                     LOG(INFO) << "Delete Finished";
                 }
                 else
@@ -248,14 +249,14 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
             break;
             case UPDATE_SCD:
             {
-                doBuildCollection_( *scd_it, 2, 0 );
+                doBuildCollection_(*scd_it, 2, 0);
                 LOG(INFO) << "Update Finished";
             }
             break;
             default:
                 break;
             }
-            parser.load( *scd_it );
+            parser.load(*scd_it);
             proccessedFileSize += parser.getFileSize();
             indexProgress_.totalFilePos_ = proccessedFileSize;
             indexProgress_.getIndexingStatus(indexStatus_);
@@ -267,16 +268,17 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
         idManager_->flush();
         index_mode_selector.TryCommit();
         //indexManager_->optimizeIndex();
-        if( bundleConfig_->isTrieWildcard()) {
 #ifdef __x86_64
+        if (bundleConfig_->isTrieWildcard())
+        {
             idManager_->startWildcardProcess();
             idManager_->joinWildcardProcess();
-#endif
         }
+#endif
 
-        if(hooker_)
+        if (hooker_)
         {
-            if(!hooker_->Finish())
+            if (!hooker_->Finish())
             {
                 std::cout<<"[IndexTaskService] Hooker Finish failed."<<std::endl;
                 return false;
@@ -284,7 +286,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
             std::cout<<"[IndexTaskService] Hooker Finished."<<std::endl;
         }
 
-        if( miningTaskService_ )
+        if (miningTaskService_)
         {
           indexManager_->pauseMerge();
           miningTaskService_->DoMiningCollection();
@@ -309,7 +311,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
         {
             bfs::rename(*scd_it, bkDir / bfs::path(*scd_it).filename());
         }
-        catch(bfs::filesystem_error& e)
+        catch (bfs::filesystem_error& e)
         {
             LOG(WARNING) << "exception in rename file " << *scd_it << ": " << e.what();
         }
@@ -326,7 +328,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
 
     indexProgress_.reset();
     STOP_PROFILER(buildIndex);
-    REPORT_PROFILE_TO_FILE( "PerformanceIndexResult.SIAProcess" )
+    REPORT_PROFILE_TO_FILE("PerformanceIndexResult.SIAProcess")
     LOG(INFO) << "End BuildCollection: ";
     LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
 
@@ -335,7 +337,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
 
 bool IndexTaskService::optimizeIndex()
 {
-    if(!backup_() )
+    if (!backup_())
         return false;
 
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
@@ -401,7 +403,7 @@ bool IndexTaskService::preparePartialDocument_(
     sf1r::docid_t docId = document.getId();
     Document oldDoc;
 
-    if ( !documentManager_->getDocument(docId, oldDoc) )
+    if (!documentManager_->getDocument(docId, oldDoc))
     {
         return false;
     }
@@ -409,7 +411,8 @@ bool IndexTaskService::preparePartialDocument_(
     typedef Document::property_const_iterator iterator;
     for (iterator it = document.propertyBegin(), itEnd = document.propertyEnd(); it
                  != itEnd; ++it) {
-        if (it->first != "DOCID" && it->first != "DATE" ) {
+        if (it->first != "DOCID" && it->first != "DATE")
+        {
             std::set<PropertyConfig, PropertyComp>::iterator iter;
             PropertyConfig temp;
             temp.propertyName_ = it->first;
@@ -422,7 +425,7 @@ bool IndexTaskService::preparePartialDocument_(
                 continue;
             }
 
-            if(iter->isIndex() && iter->getIsFilter())
+            if (iter->isIndex() && iter->getIsFilter())
             {
                 indexerPropertyConfig.setPropertyId(iter->getPropertyId());
                 indexerPropertyConfig.setName(iter->getName());
@@ -438,9 +441,9 @@ bool IndexTaskService::preparePartialDocument_(
                 izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
                 std::string str("");
                 stringValue->convertString(str, encoding);
-                if ( iter->getType() == INT_PROPERTY_TYPE )
+                if (iter->getType() == INT_PROPERTY_TYPE)
                 {
-                    if(iter->getIsMultiValue())
+                    if (iter->getIsMultiValue())
                     {
                         MultiValuePropertyType props;
                         split_int(*stringValue, props, encoding, ',');
@@ -451,21 +454,21 @@ bool IndexTaskService::preparePartialDocument_(
                         int64_t value = 0;
                         try
                         {
-                            value = boost::lexical_cast< int64_t >( str );
+                            value = boost::lexical_cast<int64_t>(str);
                             oldIndexDocument.insertProperty(indexerPropertyConfig, value);
                         }
-                        catch( const boost::bad_lexical_cast & )
+                        catch (const boost::bad_lexical_cast &)
                         {
                             MultiValuePropertyType props;
-                            if( checkSeparatorType_(*stringValue, encoding, '-') )
+                            if (checkSeparatorType_(*stringValue, encoding, '-'))
                             {
                                 split_int(*stringValue, props, encoding,'-');
                             }
-                            else if( checkSeparatorType_(*stringValue, encoding, '~') )
+                            else if (checkSeparatorType_(*stringValue, encoding, '~'))
                             {
                                 split_int(*stringValue, props, encoding,'~');
                             }
-                            else if( checkSeparatorType_(*stringValue, encoding, ',') )
+                            else if (checkSeparatorType_(*stringValue, encoding, ','))
                             {
                                 split_int(*stringValue, props, encoding,',');
                             }
@@ -474,9 +477,9 @@ bool IndexTaskService::preparePartialDocument_(
                          }
                     }
                 }
-                else if ( iter->getType() == FLOAT_PROPERTY_TYPE )
+                else if (iter->getType() == FLOAT_PROPERTY_TYPE)
                 {
-                    if(iter->getIsMultiValue())
+                    if (iter->getIsMultiValue())
                     {
                         MultiValuePropertyType props;
                         split_float(*stringValue, props, encoding,',');
@@ -487,21 +490,21 @@ bool IndexTaskService::preparePartialDocument_(
                         float value = 0.0;
                         try
                         {
-                            value = boost::lexical_cast< float >( str );
+                            value = boost::lexical_cast< float >(str);
                             oldIndexDocument.insertProperty(indexerPropertyConfig, value);
                         }
-                        catch( const boost::bad_lexical_cast & )
+                        catch (const boost::bad_lexical_cast &)
                         {
                             MultiValuePropertyType props;
-                            if( checkSeparatorType_(*stringValue, encoding, '-') )
+                            if (checkSeparatorType_(*stringValue, encoding, '-'))
                             {
                                 split_float(*stringValue, props, encoding,'-');
                             }
-                            else if( checkSeparatorType_(*stringValue, encoding, '~') )
+                            else if (checkSeparatorType_(*stringValue, encoding, '~'))
                             {
                                 split_float(*stringValue, props, encoding,'~');
                             }
-                            else if( checkSeparatorType_(*stringValue, encoding, ',') )
+                            else if (checkSeparatorType_(*stringValue, encoding, ','))
                             {
                                 split_float(*stringValue, props, encoding,',');
                             }
@@ -523,7 +526,7 @@ bool IndexTaskService::doBuildCollection_(
 )
 {
     ScdParser parser(bundleConfig_->encoding_);
-    if (parser.load(fileName) == false)
+    if (!parser.load(fileName))
     {
         LOG(ERROR) << "Could not Load Scd File. File " << fileName;
         return false;
@@ -533,15 +536,36 @@ bool IndexTaskService::doBuildCollection_(
     indexProgress_.currentFilePos_ = 0;
     productSourceCount_.clear();
 
-    if( op <= 2 ) // insert or update
+    // Filename: B-00-YYYYMMDDhhmm-ssuuu-I-C.SCD
+    // Timestamp: YYYYMMDDThhmmss,fff
+    std::string baseName(basename(fileName.c_str()));
+    std::stringstream ss;
+    ss << baseName.substr(5, 8);
+    ss << "T";
+    ss << baseName.substr(13, 4);
+    ss << baseName.substr(18, 2);
+    ss << ",";
+    ss << baseName.substr(20, 3);
+    boost::posix_time::ptime pt;
+    try
+    {
+        pt = boost::posix_time::from_iso_string(ss.str());
+    }
+    catch (const std::exception& ex)
+    {}
+    time_t timestamp = createTimeStamp(pt);
+    if (timestamp == -1)
+        timestamp = createTimeStamp();
+
+    if (op <= 2) // insert or update
     {
         bool isInsert = (op == 1);
-        if (!insertOrUpdateSCD_(parser, isInsert, numdoc))
+        if (!insertOrUpdateSCD_(parser, isInsert, numdoc, timestamp))
             return false;
     }
     else //delete
     {
-        if (!deleteSCD_(parser))
+        if (!deleteSCD_(parser, timestamp))
             return false;
     }
 
@@ -551,12 +575,13 @@ bool IndexTaskService::doBuildCollection_(
 }
 
 bool IndexTaskService::insertOrUpdateSCD_(
-    ScdParser& parser,
-    bool isInsert,
-    uint32_t numdoc
+        ScdParser& parser,
+        bool isInsert,
+        uint32_t numdoc,
+        time_t timestamp
 )
 {
-    CREATE_SCOPED_PROFILER ( insertOrUpdateSCD, "IndexTaskService", "IndexTaskService::insertOrUpdateSCD_");
+    CREATE_SCOPED_PROFILER (insertOrUpdateSCD, "IndexTaskService", "IndexTaskService::insertOrUpdateSCD_");
 
     uint32_t n = 0;
     long lastOffset = 0;
@@ -575,7 +600,7 @@ bool IndexTaskService::insertOrUpdateSCD_(
         if (0 < numdoc && numdoc <= n)
             break;
 
-        if (n%1000 == 0)
+        if (n % 1000 == 0)
         {
             indexProgress_.getIndexingStatus(indexStatus_);
             indexStatus_.progress_ = indexProgress_.getTotalPercent();
@@ -592,7 +617,7 @@ bool IndexTaskService::insertOrUpdateSCD_(
         sf1r::docid_t id = 0;
         std::string source = "";
 
-        if(!prepareDocument_( *doc, document, oldId, rType, rTypeFieldValue, source, isInsert))
+        if (!prepareDocument_(*doc, document, oldId, rType, rTypeFieldValue, source, isInsert))
             continue;
 
         prepareIndexDocument_(oldId, document, indexDocument);
@@ -609,12 +634,12 @@ bool IndexTaskService::insertOrUpdateSCD_(
 
         if (isInsert || oldId == 0)
         {
-            if(!insertDoc_(document, indexDocument))
+            if (!insertDoc_(document, indexDocument, timestamp))
                 continue;
         }
         else
         {
-            if (!updateDoc_(document, indexDocument, rType))
+            if (!updateDoc_(document, indexDocument, timestamp, rType))
                 continue;
 
             ++numUpdatedDocs_;
@@ -628,14 +653,14 @@ bool IndexTaskService::insertOrUpdateSCD_(
     return true;
 }
 
-bool IndexTaskService::insertDoc_(Document& document, IndexerDocument& indexDocument)
+bool IndexTaskService::insertDoc_(Document& document, IndexerDocument& indexDocument, time_t timestamp)
 {
     CREATE_PROFILER(proDocumentIndexing, "IndexTaskService", "IndexTaskService : InsertDocument")
     CREATE_PROFILER(proIndexing, "IndexTaskService", "IndexTaskService : indexing")
 
-    if(hooker_)
+    if (hooker_)
     {
-        if(!hooker_->HookInsert(document, indexDocument)) return false;
+        if (!hooker_->HookInsert(document, indexDocument, timestamp)) return false;
     }
     START_PROFILER(proDocumentIndexing);
     if (documentManager_->insertDocument(document))
@@ -651,13 +676,13 @@ bool IndexTaskService::insertDoc_(Document& document, IndexerDocument& indexDocu
     else return false;
 }
 
-bool IndexTaskService::deleteDoc_(docid_t docid)
+bool IndexTaskService::deleteDoc_(docid_t docid, time_t timestamp)
 {
-    CREATE_SCOPED_PROFILER ( proDocumentDeleting, "IndexTaskService", "IndexTaskService::DeleteDocument");
+    CREATE_SCOPED_PROFILER (proDocumentDeleting, "IndexTaskService", "IndexTaskService::DeleteDocument");
 
-    if(hooker_)
+    if (hooker_)
     {
-        if(!hooker_->HookDelete(docid)) return false;
+        if (!hooker_->HookDelete(docid, timestamp)) return false;
     }
     if (documentManager_->removeDocument(docid))
     {
@@ -670,26 +695,27 @@ bool IndexTaskService::deleteDoc_(docid_t docid)
 }
 
 bool IndexTaskService::updateDoc_(
-    Document& document,
-    IndexerDocument& indexDocument,
-    bool rType
+        Document& document,
+        IndexerDocument& indexDocument,
+        time_t timestamp,
+        bool rType
 )
 {
-    CREATE_SCOPED_PROFILER ( proDocumentUpdating, "IndexTaskService", "IndexTaskService::UpdateDocument");
+    CREATE_SCOPED_PROFILER (proDocumentUpdating, "IndexTaskService", "IndexTaskService::UpdateDocument");
 
-    if(hooker_)
+    if (hooker_)
     {
-        if(!hooker_->HookUpdate(document, indexDocument, rType)) return false;
+        if (!hooker_->HookUpdate(document, indexDocument, timestamp, rType)) return false;
     }
     if (rType)
     {
         // Store the old property value.
         IndexerDocument oldIndexDocument;
-        if ( !preparePartialDocument_(document, oldIndexDocument) )
+        if (!preparePartialDocument_(document, oldIndexDocument))
             return false;
 
         // Update document data in the SDB repository.
-        if ( documentManager_->updatePartialDocument(document) == false )
+        if (!documentManager_->updatePartialDocument(document))
         {
             LOG(ERROR) << "Document Update Failed in SDB. " << document.property("DOCID");
             return false;
@@ -704,7 +730,7 @@ bool IndexTaskService::updateDoc_(
         {
             //LOG(WARNING) << "document " << oldId << " is already deleted";
         }
-        if (documentManager_->insertDocument(document) == false)
+        if (!documentManager_->insertDocument(document))
         {
             LOG(ERROR) << "Document Insert Failed in SDB. " << document.property("DOCID");
             return false;
@@ -716,10 +742,10 @@ bool IndexTaskService::updateDoc_(
     return true;
 }
 
-bool IndexTaskService::deleteSCD_(ScdParser& parser)
+bool IndexTaskService::deleteSCD_(ScdParser& parser, time_t timestamp)
 {
     std::vector<izenelib::util::UString> rawDocIDList;
-    if (parser.getDocIdList(rawDocIDList) == false)
+    if (!parser.getDocIdList(rawDocIDList))
     {
         LOG(WARNING) << "SCD File not valid.";
         return false;
@@ -741,17 +767,17 @@ bool IndexTaskService::deleteSCD_(ScdParser& parser)
         else
         {
             string property;
-            iter->convertString(property, bundleConfig_->encoding_ );
+            iter->convertString(property, bundleConfig_->encoding_);
             //LOG(ERROR) << "Deleted document " << property << " does not exist, skip it";
         }
     }
-    std::sort( docIdList.begin(), docIdList.end());
+    std::sort(docIdList.begin(), docIdList.end());
 
     //process delete document in index manager
     for (std::vector<sf1r::docid_t>::iterator iter = docIdList.begin(); iter
             != docIdList.end(); ++iter)
     {
-        if (numDeletedDocs_%1000 == 0)
+        if (numDeletedDocs_ % 1000 == 0)
         {
             indexProgress_.getIndexingStatus(indexStatus_);
             indexStatus_.progress_ = indexProgress_.getTotalPercent();
@@ -778,7 +804,7 @@ bool IndexTaskService::deleteSCD_(ScdParser& parser)
 
         //marks delete key to true in DB
 
-        if(!deleteDoc_(*iter))
+        if (!deleteDoc_(*iter, timestamp))
         {
             LOG(WARNING) << "Cannot delete removed Document. docid. " << *iter;
             continue;
@@ -846,15 +872,15 @@ bool IndexTaskService::completePartialDocument_(docid_t oldId, Document& doc)
     return true;
 }
 
-bool IndexTaskService::getPropertyValue_( const PropertyValue& value, std::string& valueStr )
+bool IndexTaskService::getPropertyValue_(const PropertyValue& value, std::string& valueStr)
 {
     try
     {
-        izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>( value );
+        izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
         sourceFieldValue.convertString(valueStr, izenelib::util::UString::UTF_8);
         return true;
     }
-    catch(boost::bad_get& e)
+    catch (boost::bad_get& e)
     {
         LOG(WARNING) << "exception in get property value: " << e.what();
         return false;
@@ -879,15 +905,15 @@ bool IndexTaskService::checkRtype_(
         const izenelib::util::UString & propertyValueU = p->second;
         std::set<PropertyConfig, PropertyComp>::iterator iter;
         string fieldName;
-        p->first.convertString(fieldName, bundleConfig_->encoding_ );
+        p->first.convertString(fieldName, bundleConfig_->encoding_);
 
         PropertyConfig tempPropertyConfig;
         tempPropertyConfig.propertyName_ = fieldName;
         iter = bundleConfig_->schema_.find(tempPropertyConfig);
 
-        if ( iter != bundleConfig_->schema_.end() )
+        if (iter != bundleConfig_->schema_.end())
         {
-            if ( propertyNameL == izenelib::util::UString("docid", bundleConfig_->encoding_) )
+            if (propertyNameL == izenelib::util::UString("docid", bundleConfig_->encoding_))
             {
                 if (!idManager_->getDocIdByDocName(propertyValueU, docId, false))
                     break;
@@ -895,7 +921,7 @@ bool IndexTaskService::checkRtype_(
             else
             {
                 newPropertyValue = propertyValueU;
-                if( propertyNameL == izenelib::util::UString("date", bundleConfig_->encoding_) )
+                if (propertyNameL == izenelib::util::UString("date", bundleConfig_->encoding_))
                 {
                     izenelib::util::UString dateStr;
                     sf1r::Utilities::convertDate(propertyValueU, bundleConfig_->encoding_, dateStr);
@@ -908,7 +934,7 @@ bool IndexTaskService::checkRtype_(
                 PropertyValue value;
                 if (documentManager_->getPropertyValue(docId, iter->getName(), value))
                 {
-                    if(getPropertyValue_(value, oldValueStr))
+                    if (getPropertyValue_(value, oldValueStr))
                     {
                         if (newValueStr == oldValueStr)
                             continue;
@@ -923,11 +949,11 @@ bool IndexTaskService::checkRtype_(
                     break;
                 }
 
-                if ( iter->isIndex() && iter->getIsFilter() && !iter->isAnalyzed())
+                if (iter->isIndex() && iter->getIsFilter() && !iter->isAnalyzed())
                 {
                     dataType = iter->getType();
-                    if ( dataType != INT_PROPERTY_TYPE && dataType != UNSIGNED_INT_PROPERTY_TYPE
-                        && dataType != FLOAT_PROPERTY_TYPE && dataType != DOUBLE_PROPERTY_TYPE )
+                    if (dataType != INT_PROPERTY_TYPE && dataType != UNSIGNED_INT_PROPERTY_TYPE
+                        && dataType != FLOAT_PROPERTY_TYPE && dataType != DOUBLE_PROPERTY_TYPE)
                     {
                         break;
                     }
@@ -947,7 +973,7 @@ bool IndexTaskService::checkRtype_(
             break;
         }
     }
-    if ( p == doc.end() )
+    if (p == doc.end())
     {
         rType = true;
     }
@@ -981,14 +1007,13 @@ bool IndexTaskService::prepareDocument_(
     bool insert
 )
 {
-    CREATE_SCOPED_PROFILER ( preparedocument, "IndexTaskService", "IndexTaskService::prepareDocument_");
+    CREATE_SCOPED_PROFILER (preparedocument, "IndexTaskService", "IndexTaskService::prepareDocument_");
 
     sf1r::docid_t docId = 0;
-    bool isPartial = false;
     string fieldStr;
     vector<CharacterOffset> sentenceOffsetList;
     AnalysisInfo analysisInfo;
-    if(doc.empty()) return false;
+    if (doc.empty()) return false;
     // the iterator is not const because the p-second value may change
     // due to the maxlen setting
 
@@ -999,7 +1024,7 @@ bool IndexTaskService::prepareDocument_(
     {
         bool extraProperty = false;
         std::set<PropertyConfig, PropertyComp>::iterator iter;
-        p->first.convertString(fieldStr, bundleConfig_->encoding_ );
+        p->first.convertString(fieldStr, bundleConfig_->encoding_);
 
         PropertyConfig temp;
         temp.propertyName_ = fieldStr;
@@ -1023,8 +1048,8 @@ bool IndexTaskService::prepareDocument_(
             source = fieldValue;
         }
 
-        if ( (propertyNameL == izenelib::util::UString("docid", encoding) )
-                && (!extraProperty))
+        if (propertyNameL == izenelib::util::UString("docid", encoding)
+                && !extraProperty)
         {
             // update
             if (!insert)
@@ -1040,7 +1065,7 @@ bool IndexTaskService::prepareDocument_(
                     insert = true;
             }
 
-            if(insert && !createInsertDocId_(propertyValueU, docId))
+            if (insert && !createInsertDocId_(propertyValueU, docId))
             {
                 //LOG(WARNING) << "failed to create id for SCD DOC " << fieldValue;
                 return false;
@@ -1049,7 +1074,7 @@ bool IndexTaskService::prepareDocument_(
             document.setId(docId);
             document.property(fieldStr) = propertyValueU;
         }
-        else if (propertyNameL == izenelib::util::UString("date", encoding) )
+        else if (propertyNameL == izenelib::util::UString("date", encoding))
         {
             /// format <DATE>20091009163011
             dateExistInSCD = true;
@@ -1067,14 +1092,14 @@ bool IndexTaskService::prepareDocument_(
                 if (analysisInfo.analyzerId_.size() != 0)
                 {
                     unsigned int numOfSummary = 0;
-                    if ( (iter->getIsSummary() == true))
+                    if (iter->getIsSummary())
                     {
                         numOfSummary = iter->getSummaryNum();
                         if (numOfSummary <= 0)
                             numOfSummary = 1; //atleast one sentence required for summary
 
-                        if (makeSentenceBlocks_(propertyValueU, iter->getDisplayLength(),
-                                                numOfSummary, sentenceOffsetList) == false)
+                        if (!makeSentenceBlocks_(propertyValueU, iter->getDisplayLength(),
+                                                numOfSummary, sentenceOffsetList))
                         {
                             LOG(ERROR) << "Make Sentence Blocks Failes ";
                         }
@@ -1084,7 +1109,7 @@ bool IndexTaskService::prepareDocument_(
                     }
                 }
             }
-            else if(iter->getType() == INT_PROPERTY_TYPE
+            else if (iter->getType() == INT_PROPERTY_TYPE
                     || iter->getType() == FLOAT_PROPERTY_TYPE
                     || iter->getType() == NOMINAL_PROPERTY_TYPE)
             {
@@ -1106,7 +1131,7 @@ bool IndexTaskService::prepareDocument_(
 
     if (!insert && !rType)
     {
-        if(!completePartialDocument_(oldId, document))
+        if (!completePartialDocument_(oldId, document))
              return false;
     }
     return true;
@@ -1114,7 +1139,7 @@ bool IndexTaskService::prepareDocument_(
 
 bool IndexTaskService::prepareIndexDocument_(docid_t oldId, const Document& document, IndexerDocument& indexDocument)
 {
-    CREATE_SCOPED_PROFILER ( preparedocument, "IndexTaskService", "IndexTaskService::prepareIndexDocument_");
+    CREATE_SCOPED_PROFILER (preparedocument, "IndexTaskService", "IndexTaskService::prepareIndexDocument_");
 
     sf1r::docid_t docId = document.getId();//new id;
     izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
@@ -1150,12 +1175,12 @@ bool IndexTaskService::prepareIndexDocument_(docid_t oldId, const Document& docu
         indexerPropertyConfig.setIsStoreDocLen(iter->getIsStoreDocLen());
 
 
-        if ( propertyNameL == izenelib::util::UString("docid", encoding) )
+        if (propertyNameL == izenelib::util::UString("docid", encoding))
         {
             indexDocument.setId(oldId);
             indexDocument.setDocId(docId, collectionId_);
         }
-        else if (propertyNameL == izenelib::util::UString("date", encoding) )
+        else if (propertyNameL == izenelib::util::UString("date", encoding))
         {
             /// format <DATE>20091009163011
             izenelib::util::UString dateStr;
@@ -1172,10 +1197,10 @@ bool IndexTaskService::prepareIndexDocument_(docid_t oldId, const Document& docu
         {
             if (iter->getType() == STRING_PROPERTY_TYPE)
             {
-                if(!propertyValueU.empty())
+                if (!propertyValueU.empty())
                 {
                     ///process for properties that requires forward index to be created
-                    if ( iter->isIndex() == true )
+                    if (iter->isIndex())
                     {
                         analysisInfo.clear();
                         analysisInfo = iter->getAnalysisInfo();
@@ -1194,20 +1219,20 @@ bool IndexTaskService::prepareIndexDocument_(docid_t oldId, const Document& docu
                         else
                         {
                             laInputs_[iter->getPropertyId()]->setDocId(docId);
-                            if (makeForwardIndex_(propertyValueU, fieldStr, iter->getPropertyId(), analysisInfo) == false)
+                            if (!makeForwardIndex_(propertyValueU, fieldStr, iter->getPropertyId(), analysisInfo))
                             {
                                 LOG(ERROR) << "Forward Indexing Failed Error Line : " << __LINE__;
                                 return false;
                             }
                             if (iter->getIsFilter())
                             {
-                                if(iter->getIsMultiValue())
+                                if (iter->getIsMultiValue())
                                 {
                                     MultiValuePropertyType props;
                                     split_string(propertyValueU,props, encoding,',');
 
                                     MultiValueIndexPropertyType
-                                    indexData = std::make_pair(laInputs_[iter->getPropertyId()],props );
+                                    indexData = std::make_pair(laInputs_[iter->getPropertyId()],props);
                                     indexDocument.insertProperty(indexerPropertyConfig, indexData);
 
                                 }
@@ -1217,7 +1242,7 @@ bool IndexTaskService::prepareIndexDocument_(docid_t oldId, const Document& docu
                                     indexData =
                                         std::make_pair(
                                             laInputs_[iter->getPropertyId()],
-                                            const_cast<izenelib::util::UString &>(propertyValueU) );
+                                            const_cast<izenelib::util::UString &>(propertyValueU));
                                     indexDocument.insertProperty(indexerPropertyConfig, indexData);
                                 }
                             }
@@ -1227,8 +1252,8 @@ bool IndexTaskService::prepareIndexDocument_(docid_t oldId, const Document& docu
 
                             // For alias indexing
                             config_tool::PROPERTY_ALIAS_MAP_T::iterator mapIter =
-                                propertyAliasMap_.find(iter->getName() );
-                            if (mapIter != propertyAliasMap_.end() ) // if there's alias property
+                                propertyAliasMap_.find(iter->getName());
+                            if (mapIter != propertyAliasMap_.end()) // if there's alias property
                             {
                                 std::vector<PropertyConfig>::iterator vecIter =
                                     mapIter->second.begin();
@@ -1237,10 +1262,11 @@ bool IndexTaskService::prepareIndexDocument_(docid_t oldId, const Document& docu
                                     AnalysisInfo aliasAnalysisInfo =
                                         vecIter->getAnalysisInfo();
                                     laInputs_[vecIter->getPropertyId()]->setDocId(docId);
-                                    if (makeForwardIndex_(propertyValueU,
-                                                          fieldStr,
-                                                          vecIter->getPropertyId(),
-                                                          aliasAnalysisInfo) == false)
+                                    if (!makeForwardIndex_(
+                                                propertyValueU,
+                                                fieldStr,
+                                                vecIter->getPropertyId(),
+                                                aliasAnalysisInfo))
                                     {
                                         LOG(ERROR) << "Forward Indexing Failed Error Line : " << __LINE__;
                                         return false;
@@ -1257,7 +1283,7 @@ bool IndexTaskService::prepareIndexDocument_(docid_t oldId, const Document& docu
                                     indexDocument.insertProperty(
                                         aliasIndexerPropertyConfig,laInputs_[vecIter->getPropertyId()]);
                                 } // end - for
-                            } // end - if ( mapIter != end() )
+                            } // end - if (mapIter != end())
 
                         }
                     }
@@ -1272,9 +1298,9 @@ bool IndexTaskService::prepareIndexDocument_(docid_t oldId, const Document& docu
             }
             else if (iter->getType() == INT_PROPERTY_TYPE)
             {
-                if ( iter->isIndex() == true )
+                if (iter->isIndex())
                 {
-                    if(iter->getIsMultiValue())
+                    if (iter->getIsMultiValue())
                     {
                         MultiValuePropertyType props;
                         split_int(propertyValueU,props, encoding,',');
@@ -1287,21 +1313,21 @@ bool IndexTaskService::prepareIndexDocument_(docid_t oldId, const Document& docu
                         int64_t value = 0;
                         try
                         {
-                            value = boost::lexical_cast< int64_t >( str );
+                            value = boost::lexical_cast< int64_t >(str);
                             indexDocument.insertProperty(indexerPropertyConfig, value);
                         }
-                        catch( const boost::bad_lexical_cast & )
+                        catch (const boost::bad_lexical_cast &)
                         {
                             MultiValuePropertyType multiProps;
-                            if( checkSeparatorType_(propertyValueU, encoding, '-') )
+                            if (checkSeparatorType_(propertyValueU, encoding, '-'))
                             {
                                 split_int(propertyValueU, multiProps, encoding,'-');
                             }
-                            else if( checkSeparatorType_(propertyValueU, encoding, '~') )
+                            else if (checkSeparatorType_(propertyValueU, encoding, '~'))
                             {
                                 split_int(propertyValueU, multiProps, encoding,'~');
                             }
-                            else if( checkSeparatorType_(propertyValueU, encoding, ',') )
+                            else if (checkSeparatorType_(propertyValueU, encoding, ','))
                             {
                                 split_int(propertyValueU, multiProps, encoding,',');
                             }
@@ -1318,9 +1344,9 @@ bool IndexTaskService::prepareIndexDocument_(docid_t oldId, const Document& docu
             }
             else if (iter->getType() == FLOAT_PROPERTY_TYPE)
             {
-                if ( iter->isIndex() == true )
+                if (iter->isIndex())
                 {
-                    if(iter->getIsMultiValue())
+                    if (iter->getIsMultiValue())
                     {
                         MultiValuePropertyType props;
                         split_float(propertyValueU,props, encoding,',');
@@ -1333,21 +1359,21 @@ bool IndexTaskService::prepareIndexDocument_(docid_t oldId, const Document& docu
                         float value = 0;
                         try
                         {
-                            value = boost::lexical_cast< float >( str );
+                            value = boost::lexical_cast< float >(str);
                             indexDocument.insertProperty(indexerPropertyConfig, value);
                         }
-                        catch( const boost::bad_lexical_cast & )
+                        catch (const boost::bad_lexical_cast &)
                         {
                             MultiValuePropertyType multiProps;
-                            if( checkSeparatorType_(propertyValueU, encoding, '-') )
+                            if (checkSeparatorType_(propertyValueU, encoding, '-'))
                             {
                                 split_float(propertyValueU, multiProps, encoding,'-');
                             }
-                            else if( checkSeparatorType_(propertyValueU, encoding, '~') )
+                            else if (checkSeparatorType_(propertyValueU, encoding, '~'))
                             {
                                 split_float(propertyValueU, multiProps, encoding,'~');
                             }
-                            else if( checkSeparatorType_(propertyValueU, encoding, ',') )
+                            else if (checkSeparatorType_(propertyValueU, encoding, ','))
                             {
                                 split_float(propertyValueU, multiProps, encoding,',');
                             }
@@ -1444,19 +1470,19 @@ bool IndexTaskService::makeForwardIndex_(
     START_PROFILER(proTermExtracting);
     // Remove the spaces between two Chinese Characters
 //    izenelib::util::UString refinedText;
-//    la::removeRedundantSpaces( text, refinedText );
-//    if (laManager_->getTermList(refinedText, analysisInfo, true, termList, true ) == false)
+//    la::removeRedundantSpaces(text, refinedText);
+//    if (!laManager_->getTermList(refinedText, analysisInfo, true, termList, true))
     la::MultilangGranularity indexingLevel = bundleConfig_->indexMultilangGranularity_;
     if (indexingLevel == la::SENTENCE_LEVEL)
     {
-        if(bundleConfig_->bIndexUnigramProperty_)
+        if (bundleConfig_->bIndexUnigramProperty_)
         {
-            if(propertyName.find("_unigram") != std::string::npos)
+            if (propertyName.find("_unigram") != std::string::npos)
                 indexingLevel = la::FIELD_LEVEL;  /// for unigram property, we do not need sentence level indexing
         }
     }
 
-    if (laManager_->getTermIdList(idManager_.get(), text, analysisInfo, (*laInputs_[propertyId]), indexingLevel) == false)
+    if (!laManager_->getTermIdList(idManager_.get(), text, analysisInfo, (*laInputs_[propertyId]), indexingLevel))
             return false;
 
     STOP_PROFILER(proTermExtracting);
@@ -1471,7 +1497,7 @@ bool IndexTaskService::makeSentenceBlocks_(
 )
 {
     sentenceOffsetList.clear();
-    if (summarizer_.getOffsetPairs(text, maxDisplayLength, numOfSummary, sentenceOffsetList) == false)
+    if (!summarizer_.getOffsetPairs(text, maxDisplayLength, numOfSummary, sentenceOffsetList))
     {
         return false;
     }
@@ -1516,7 +1542,7 @@ bool IndexTaskService::backup_()
             next->copyFrom(*current);
             return true;
         }
-        catch(bfs::filesystem_error& e)
+        catch (bfs::filesystem_error& e)
         {
             LOG(ERROR) << "Failed to copy index directory " << e.what();
         }
