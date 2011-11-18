@@ -39,9 +39,24 @@ public:
 
     ~NodeManager();
 
-    void initWithConfig(
+    /**
+     * Initializations before start collections(run)
+     * @param dsTopologyConfig
+     * @param dsUtilConfig
+     */
+    void init(
             const DistributedTopologyConfig& dsTopologyConfig,
             const DistributedUtilConfig& dsUtilConfig);
+
+    /**
+     * Start node manager
+     */
+    void start();
+
+    /**
+     * Stop node manager
+     */
+    void stop();
 
     const DistributedTopologyConfig& getDSTopologyConfig() const
     {
@@ -59,16 +74,6 @@ public:
     }
 
 public:
-    /**
-     * Start node manager
-     */
-    void start();
-
-    /**
-     * Stop node manager
-     */
-    void stop();
-
     virtual void process(ZooKeeperEvent& zkEvent);
 
 private:

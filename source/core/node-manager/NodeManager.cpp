@@ -1,5 +1,6 @@
 #include "NodeManager.h"
 #include "MasterNodeManager.h"
+#include "ZkMonitor.h"
 
 #include <node-manager/synchro/DistributedSynchroFactory.h>
 
@@ -17,7 +18,7 @@ NodeManager::~NodeManager()
 {
 }
 
-void NodeManager::initWithConfig(
+void NodeManager::init(
         const DistributedTopologyConfig& dsTopologyConfig,
         const DistributedUtilConfig& dsUtilConfig)
 {
@@ -37,18 +38,15 @@ void NodeManager::initWithConfig(
 
     nodePath_ = NodeDef::getNodePath(nodeInfo_.replicaId_, nodeInfo_.nodeId_);
 
-    // initialize Master node manager if this is Master
-//    if (dsTopologyConfig_.curSF1Node_.masterAgent_.enabled_)
-//    {
-//        MasterNodeManagerSingleton::get()->init();
-//    }
+    // ZooKeeper monitor,
+    ZkMonitor::get();
 }
 
 void NodeManager::start()
 {
     if (!dsTopologyConfig_.enabled_)
     {
-        // not invovled in distributed deployment
+        // not a distributed deployment
         return;
     }
 
@@ -66,6 +64,8 @@ void NodeManager::start()
 
 void NodeManager::stop()
 {
+    ZkMonitor::get()->stop();
+
     if (masterStarted_)
     {
         MasterNodeManagerSingleton::get()->stop();
@@ -87,6 +87,8 @@ void NodeManager::process(ZooKeeperEvent& zkEvent)
             enterCluster();
         }
     }
+
+    // ZOO_EXPIRED_SESSION_STATE
 }
 
 /// private ////////////////////////////////////////////////////////////////////
