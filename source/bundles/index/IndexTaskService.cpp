@@ -1133,6 +1133,9 @@ bool IndexTaskService::prepareIndexDocument_(docid_t oldId, const Document& docu
         temp.propertyName_ = fieldStr;
         iter = bundleConfig_->schema_.find(temp);
 
+        if(iter == bundleConfig_->schema_.end())
+            continue;
+
         IndexerPropertyConfig indexerPropertyConfig;
 
         izenelib::util::UString propertyNameL = izenelib::util::UString(fieldStr, encoding);
