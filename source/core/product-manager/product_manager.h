@@ -19,8 +19,8 @@ namespace sf1r
 
 class ProductDataSource;
 class OperationProcessor;
-class UuidGenerator;
 class ProductBackup;
+class PriceHistory;
 
 class ProductManager
 {
@@ -108,7 +108,9 @@ private:
 
     void SetItemCount_(PMDocumentType& doc, uint32_t item_count);
 
-    bool UpdatePriceHistory_(const PMDocumentType& doc, time_t timestamp) const;
+    void InsertPriceHistory_(const PMDocumentType& doc, time_t timestamp);
+
+    bool FlushPriceHistory_();
 
     void ParseDocid_(std::string& dest, const std::string& src) const;
 
@@ -122,10 +124,10 @@ private:
     std::string collection_name_;
     ProductDataSource* data_source_;
     OperationProcessor* op_processor_;
-    UuidGenerator* uuid_gen_;
     ProductBackup* backup_;
     PMConfig config_;
     std::string error_;
+    std::map<std::string, PriceHistory> price_history_map_;
     bool inhook_;
     boost::mutex human_mutex_;
 };

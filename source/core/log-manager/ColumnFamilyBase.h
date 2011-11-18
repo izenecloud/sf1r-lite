@@ -160,7 +160,9 @@ public: \
         return ::sf1r::getSingleCount<ClassName>(count, key, start, finish); \
     } \
     \
-    /* XXX Don't forget to implement the following two */ \
+    /* XXX Don't forget to implement the following methods */ \
+    static bool updateMultiRow(const std::map<std::string, ClassName>& row_map); \
+    \
     static bool getMultiSlice( \
             std::map<std::string, ClassName>& row_map, \
             const std::vector<std::string>& key_list, \

@@ -56,7 +56,7 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
-    UpdatePriceHistory_(doc, timestamp);
+    InsertPriceHistory_(doc, timestamp);
     UString uuid;
     generateUUID(uuid, doc);
     if (!data_source_->SetUuid(index_document, uuid)) return false;
@@ -73,7 +73,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
-    UpdatePriceHistory_(to, timestamp);
+    InsertPriceHistory_(to, timestamp);
     uint32_t fromid = index_document.getId(); //oldid
     PMDocumentType from;
     if (!data_source_->GetDocument(fromid, from)) return false;
@@ -148,6 +148,8 @@ bool ProductManager::HookDelete(uint32_t docid, time_t timestamp)
 bool ProductManager::GenOperations()
 {
     bool result = true;
+    FlushPriceHistory_();
+    price_history_map_.clear();
     if (!op_processor_->Finish())
     {
         error_ = op_processor_->GetLastError();
@@ -738,19 +740,30 @@ void ProductManager::SetItemCount_(PMDocumentType& doc, uint32_t item_count)
     doc.property(config_.itemcount_property_name) = UString(boost::lexical_cast<std::string>(item_count), UString::UTF_8);
 }
 
-bool ProductManager::UpdatePriceHistory_(const PMDocumentType& doc, time_t timestamp) const
+void ProductManager::InsertPriceHistory_(const PMDocumentType& doc, time_t timestamp)
 {
     ProductPrice price;
-    if (!GetPrice_(doc, price)) return false;
+    if (!GetPrice_(doc, price)) return;
     UString docid;
-    if (!GetDOCID_(doc, docid)) return false;
+    if (!GetDOCID_(doc, docid)) return;
     std::string docid_str, key_str;
     docid.convertString(docid_str, izenelib::util::UString::UTF_8);
     ParseDocid_(key_str, docid_str);
-    PriceHistory price_history(key_str);
     GetTimestamp_(doc, timestamp);
+
+    PriceHistory& price_history = price_history_map_[key_str];
     price_history.insert(timestamp, price);
-    return price_history.updateRow();
+
+    if (price_history_map_.size() >= 1000)
+    {
+        FlushPriceHistory_();
+        price_history_map_.clear();
+    }
+}
+
+bool ProductManager::FlushPriceHistory_()
+{
+    return PriceHistory::updateMultiRow(price_history_map_);
 }
 
 void ProductManager::ParseDocid_(std::string& dest, const std::string& src) const
