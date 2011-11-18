@@ -105,21 +105,6 @@ public:
         return it!=propertyEnd() ;
     }
     
-    void copyPropertiesFromDocument(const Document& doc, bool override)
-    {
-        for(property_const_iterator it = doc.propertyBegin(); it!=doc.propertyEnd(); ++it)
-        {
-            if(!hasProperty(it->first))
-            {
-                property(it->first) = it->second;
-            }
-            else if(override)
-            {
-                property(it->first) = it->second;
-            }
-        }
-    }
-
     property_iterator propertyBegin()
     {
         return propertyList_.begin();
