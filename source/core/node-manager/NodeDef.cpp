@@ -14,4 +14,9 @@ const char* NodeData::NDATA_KEY_MASTER_PORT = "mport";
 const char* NodeData::NDATA_KEY_WORKER_PORT = "wport";
 const char* NodeData::NDATA_KEY_SHARD_ID = "shardid";
 
+const char* NodeData::ND_KEY_SYNC_PRODUCER = "sync-p";
+const char* NodeData::ND_KEY_SYNC_CONSUMER = "sync-c";
+
+const char* NodeData::ND_KEY_FILE = "file";
+const char* NodeData::ND_KEY_DIR = "dir";
 }

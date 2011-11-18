@@ -94,7 +94,6 @@ bool SourceCount::updateMultiRow(const map<string, SourceCount>& row_map)
     try
     {
         map<string, map<string, vector<Mutation> > > mutation_map;
-        time_t timestamp = createTimeStamp();
         for (map<string, SourceCount>::const_iterator it = row_map.begin();
                 it != row_map.end(); ++it)
         {

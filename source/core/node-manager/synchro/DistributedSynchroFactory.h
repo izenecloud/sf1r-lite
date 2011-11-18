@@ -61,6 +61,8 @@ public:
 
     static void initZKNodes(boost::shared_ptr<ZooKeeper>& zookeeper)
     {
+        zookeeper->createZNode(NodeDef::getSynchroPath());
+
         for (int i = 0; i < SYNCHRO_TYPE_NUM; i++)
         {
             std::string syncModulePath = NodeDef::getSynchroPath() + synchroType2ZNode_[i];

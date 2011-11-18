@@ -590,12 +590,6 @@ bool ProductManager::GetMultiPriceHistory(
         return false;
     }
 
-    if (price_history_map.empty())
-    {
-        error_ = "Have not got any valid docid";
-        return false;
-    }
-
     for (std::map<std::string, PriceHistory>::const_iterator it = price_history_map.begin();
             it != price_history_map.end(); ++it)
     {
@@ -613,6 +607,12 @@ bool ProductManager::GetMultiPriceHistory(
             history_list.back().second.swap(history);
         }
     }
+    if (history_list.empty())
+    {
+        error_ = "Have not got any valid docid";
+        return false;
+    }
+
     return true;
 }
 
@@ -635,12 +635,6 @@ bool ProductManager::GetMultiPriceRange(
         return false;
     }
 
-    if (price_history_map.empty())
-    {
-        error_ = "Have not got any valid docid";
-        return false;
-    }
-
     for (std::map<std::string, PriceHistory>::const_iterator it = price_history_map.begin();
             it != price_history_map.end(); ++it)
     {
@@ -656,6 +650,12 @@ bool ProductManager::GetMultiPriceRange(
             StripDocid_(range_list.back().first, it->first);
         }
     }
+    if (range_list.empty())
+    {
+        error_ = "Have not got any valid docid";
+        return false;
+    }
+
     return true;
 }
 
@@ -754,7 +754,7 @@ void ProductManager::InsertPriceHistory_(const PMDocumentType& doc, time_t times
     PriceHistory& price_history = price_history_map_[key_str];
     price_history.insert(timestamp, price);
 
-    if (price_history_map_.size() >= 1000)
+    if (price_history_map_.size() >= 64000)
     {
         FlushPriceHistory_();
         price_history_map_.clear();

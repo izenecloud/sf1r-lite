@@ -16,6 +16,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/thread.hpp>
 
 using namespace zookeeper;
 
@@ -47,6 +48,8 @@ public:
 
     void watchProducer(callback_on_produced_t callback_on_produced, bool replyProducer = true);
 
+    void monitor();
+
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
 
@@ -57,6 +60,11 @@ private:
     void doWatchProducer();
 
     void resetWatch();
+
+    /**
+     * In case network broken, zookeeper may be disconnected to service.
+     */
+    void runMonitor();
 
 private:
     replicaid_t replicaId_;
@@ -76,6 +84,7 @@ private:
     callback_on_produced_t callback_on_produced_;
     bool replyProducer_;
 
+    boost::thread thread_;
 };
 
 typedef boost::shared_ptr<SynchroConsumer> SynchroConsumerPtr;
