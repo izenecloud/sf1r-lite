@@ -56,7 +56,7 @@ enum RecommendType
 typedef std::set<itemid_t> ItemIdSet;
 typedef std::map<itemid_t, rate_t> ItemRateMap;
 
-typedef izenelib::ir::idmanager::UniqueIDGenerator<std::string, uint32_t, ReadWriteLock> RecIdGenerator;
+typedef izenelib::ir::idmanager::UniqueIDGenerator<std::string, uint32_t, ReadWriteLock> UserIdGenerator;
 
 typedef idmlib::recommender::ItemCoVisitation<idmlib::recommender::CoVisitFreq> CoVisitManager;
 typedef idmlib::recommender::IncrementalItemCF ItemCFManager;

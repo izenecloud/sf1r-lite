@@ -8,6 +8,7 @@
 #define NUMERIC_PROPERTY_TABLE_H
 
 #include <common/type_defs.h>
+#include "PropertyData.h"
 
 #include <string>
 
@@ -16,10 +17,11 @@ namespace sf1r{
 class NumericPropertyTable
 {
 public:
-    NumericPropertyTable(const std::string &name, PropertyDataType type, void *data)
+    NumericPropertyTable(const std::string &name, boost::shared_ptr<PropertyData> propData)
         : name_(name)
-        , type_(type)
-        , data_(data)
+        , propertyData_(propData)
+        , type_(propData->type_)
+        , data_(propData->data_)
     {}
 
     const std::string &getPropertyName() const
@@ -62,6 +64,8 @@ public:
 
 private:
     std::string name_;
+
+    boost::shared_ptr<PropertyData> propertyData_;
 
     PropertyDataType type_;
 

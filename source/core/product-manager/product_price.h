@@ -17,42 +17,39 @@ namespace sf1r
 class ProductPrice : boost::addable< ProductPrice, boost::equality_comparable<ProductPrice> >
 {
 public:
-    typedef float ProductPriceType;
-    
     ProductPrice();
-    
+
     ProductPrice(ProductPriceType a, ProductPriceType b);
-    
-    
+
+
     ProductPrice& operator+=(const ProductPrice& a);
-    
+
     bool operator==(const ProductPrice& b) const;
-    
+
     bool Parse(const izenelib::util::UString& ustr);
-    
+
     bool Parse(const std::string& str);
-    
+
     std::string ToString() const;
-    
+
     izenelib::util::UString ToUString() const;
-    
+
     bool Valid() const;
-    
-    std::pair<ProductPriceType, ProductPriceType> value;
-    
-    
+
 private:
     void Check_();
-    
+
     void Reset_();
-    
+
     bool checkSeparatorType_(const std::string& propertyValueStr, char separator);
-    
+
     bool split_float_(const std::string& szText, char Separator );
-    
+
+
+public:
+    std::pair<ProductPriceType, ProductPriceType> value;
 };
 
 }
 
 #endif
-

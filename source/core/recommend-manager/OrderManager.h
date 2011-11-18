@@ -17,19 +17,15 @@
 #include <vector>
 #include <set>
 
-#include <boost/thread/mutex.hpp>
-
 namespace sf1r
 {
-class ItemManager;
-
 typedef std::vector<std::pair<std::vector<itemid_t>, size_t > > FrequentItemSetResultType;
+
 class OrderManager
 {
 public:
     OrderManager(
         const std::string& path,
-        const ItemManager* itemManager,
         int64_t indexMemorySize
     );
 
@@ -43,6 +39,9 @@ public:
     /**
      * Add the items from one order.
      * @param items the items to add
+     * @attention as this method does not protect against mutual write on members such as
+     *            @c maxOrderId_, @c maxItemId_ and @c order_db_, it should not be called in
+     *            multi-thread at the same time
      */
     void addOrder(const std::vector<itemid_t>& items);
 
@@ -82,8 +81,10 @@ public:
     void buildFreqItemsets();
 
 private:
-    bool _saveFreqItemsetDb() const ;
+    bool _saveMaxId() const;
+    bool _restoreMaxId();
 
+    bool _saveFreqItemsetDb() const ;
     bool _restoreFreqItemsetDb();
 
     void _writeRecord(
@@ -109,11 +110,6 @@ private:
         FrequentItemSetResultType& frequent_itemsets);
 
     /**
-     * generate new order id.
-     */
-    orderid_t _newOrderId();
-
-    /**
      * as the time cost in @c _judgeFrequentItemset() is exponential
      * to item number in each order, this function splits @p items into
      * smaller orders with max item num @p maxItemNum, it also adds
@@ -136,10 +132,9 @@ private:
     FILE* order_db_;
     izenelib::util::ReadWriteLock result_lock_;
     FrequentItemSetResultType frequent_itemsets_;
-    const ItemManager* itemManager_; // for max item id
-    std::string orderIdPath_;
-    orderid_t orderId_;
-    boost::mutex orderIdMutex_;
+    std::string maxIdPath_;
+    orderid_t maxOrderId_;
+    itemid_t maxItemId_;
 };
 
 } // namespace sf1r

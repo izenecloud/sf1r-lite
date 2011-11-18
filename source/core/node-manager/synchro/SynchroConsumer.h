@@ -11,7 +11,7 @@
 #include <3rdparty/zookeeper/ZooKeeper.hpp>
 #include <3rdparty/zookeeper/ZooKeeperEvent.hpp>
 
-#include "NodeDef.h"
+#include <node-manager/NodeDef.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
@@ -55,6 +55,8 @@ public:
 
 private:
     void doWatchProducer();
+
+    void resetWatch();
 
 private:
     replicaid_t replicaId_;

@@ -8,8 +8,6 @@
 #include <util/driver/Parser.h>
 #include <util/driver/Value.h>
 
-#include <configuration-manager/MiningSchema.h>
-
 namespace sf1r {
 
 /// @addtogroup parsers
@@ -22,9 +20,8 @@ using namespace izenelib::driver;
 class AttrParser : public ::izenelib::driver::Parser
 {
 public:
-    explicit AttrParser(const MiningSchema& miningSchema)
-    : miningSchema_(miningSchema)
-    , attrResult_(false)
+    AttrParser()
+    : attrResult_(false)
     , attrTop_(0)
     {}
 
@@ -41,8 +38,6 @@ public:
     }
 
 private:
-    const MiningSchema& miningSchema_;
-
     bool attrResult_; /// true for group by attribute
 
     int attrTop_; /// the number of attributes to return, 0 for return all attributes

@@ -17,12 +17,11 @@ Sqlite3DbConnection::~Sqlite3DbConnection()
 
 void Sqlite3DbConnection::close()
 {
-    mutex_.acquire_write_lock();
+    boost::unique_lock<boost::mutex> lock(mutex_);
     for(list<sqlite3*>::iterator it= pool_.begin(); it!=pool_.end(); it++ ) {
         sqlite3_close(*it);
     }
     pool_.clear();
-    mutex_.release_write_lock();
 }
 
 bool Sqlite3DbConnection::init(const std::string & path )
@@ -38,7 +37,8 @@ bool Sqlite3DbConnection::init(const std::string & path )
         boost::filesystem::create_directories(log_dir);
     }
     bool ret = true;
-    mutex_.acquire_write_lock();
+    boost::unique_lock<boost::mutex> lock(mutex_);
+
     for(int i=0; i<PoolSize; i++) {
         sqlite3* db;
         int rc = sqlite3_open(path.c_str(), &db);
@@ -61,7 +61,6 @@ bool Sqlite3DbConnection::init(const std::string & path )
 
         pool_.push_back(db);
     }
-    mutex_.release_write_lock();
     if(!ret) close();
     return ret;
 }
@@ -69,20 +68,22 @@ bool Sqlite3DbConnection::init(const std::string & path )
 sqlite3* Sqlite3DbConnection::getDb()
 {
     sqlite3* db = NULL;
-    mutex_.acquire_write_lock();
-    if(!pool_.empty()) {
-        db = pool_.front();
-        pool_.pop_front();
+    boost::unique_lock<boost::mutex> lock(mutex_);
+    while(pool_.empty())
+    {
+        cond_.wait(lock);
     }
-    mutex_.release_write_lock();
+    db = pool_.front();
+    pool_.pop_front();
+
     return db;
 }
 
 void Sqlite3DbConnection::putDb(sqlite3* db)
 {
-    mutex_.acquire_write_lock();
+    boost::unique_lock<boost::mutex> lock(mutex_);
     pool_.push_back(db);
-    mutex_.release_write_lock();
+    cond_.notify_one();
 }
 
 bool Sqlite3DbConnection::exec(const std::string & sql, bool omitError)

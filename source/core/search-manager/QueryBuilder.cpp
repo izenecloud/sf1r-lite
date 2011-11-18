@@ -22,6 +22,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 #include <algorithm>
 
 #include <boost/token_iterator.hpp>
@@ -60,10 +61,7 @@ void QueryBuilder::reset_cache()
     filterCache_->clear();
 }
 
-bool QueryBuilder::prepare_filter(
-    const std::vector<QueryFiltering::FilteringType>& filtingList,
-    Filter* &pFilter
-)
+Filter* QueryBuilder::prepare_filter(const std::vector<QueryFiltering::FilteringType>& filtingList)
 {
     boost::shared_ptr<EWAHBoolArray<uint32_t> > pDocIdSet;
     boost::shared_ptr<BitVector> pBitVector;
@@ -117,34 +115,32 @@ bool QueryBuilder::prepare_filter(
         {
         }
     }
-    pFilter = new Filter(pDocIdSet);
-    return true;
+    return new Filter(pDocIdSet);
 }
 
-bool QueryBuilder::prepare_dociterator(
+MultiPropertyScorer* QueryBuilder::prepare_dociterator(
     SearchKeywordOperation& actionOperation,
     collectionid_t colID,
     const property_weight_map& propertyWeightMap,
     const std::vector<std::string>& properties,
     const std::vector<unsigned int>& propertyIds,
     bool readPositions,
-    const std::vector<std::map<termid_t, unsigned> >& termIndexMaps,
-    MultiPropertyScorer* &pDocIterator
+    const std::vector<std::map<termid_t, unsigned> >& termIndexMaps
 )
 {
     size_t size_of_properties = propertyIds.size();
 
-    pDocIterator = new MultiPropertyScorer(propertyWeightMap, propertyIds);
+    MultiPropertyScorer* docIterPtr = new MultiPropertyScorer(propertyWeightMap, propertyIds);
     if (pIndexReader_->isDirty())
     {
         pIndexReader_ = indexManagerPtr_->getIndexReader();
     }
-
+    try{
     size_t success_properties = 0;
     for (size_t i = 0; i < size_of_properties; i++)
     {
         prepare_for_property_(
-            pDocIterator,
+            docIterPtr,
             success_properties,
             actionOperation,
             colID,
@@ -155,13 +151,16 @@ bool QueryBuilder::prepare_dociterator(
         );
     }
 
-    if (success_properties == 0)
-    {
-        delete pDocIterator;
-        pDocIterator = 0;
-    }
+    if (success_properties)
+        return docIterPtr;
+    else
+        delete docIterPtr;
 
-    return success_properties > 0;
+    return NULL;
+    }catch(std::exception& e){
+        delete docIterPtr;
+        return NULL;
+    }
 }
 
 
@@ -219,7 +218,8 @@ void QueryBuilder::prepare_for_property_(
                     pTermDocReader = pTermReader->termPositions();
                 else
                     pTermDocReader = pTermReader->termDocFreqs();
-                termDocReaders[termId].push_back(pTermDocReader);
+                if(pTermDocReader) ///NULL when exception
+                    termDocReaders[termId].push_back(pTermDocReader);
             }
 
         }
@@ -330,6 +330,7 @@ bool QueryBuilder::do_prepare_for_property_(
                              );
 
         TermDocumentIterator* pIterator = NULL;
+        try{
         if (!isUnigramSearchMode)
         {
             pIterator = new TermDocumentIterator(
@@ -419,6 +420,10 @@ bool QueryBuilder::do_prepare_for_property_(
                     return false;
             }
         }
+        }catch(std::exception& e){
+            delete pIterator;
+            return false;
+        }
         return true;
         break;
     } // end - QueryTree::KEYWORD
@@ -446,6 +451,7 @@ bool QueryBuilder::do_prepare_for_property_(
                                      termIndex,
                                      readPositions);
         pIterator->setNot(true);
+        try{
 #if PREFETCH_TERMID
         std::map<termid_t, std::vector<TermDocFreqs*> >::iterator constIt
         = termDocReaders.find(keywordId);
@@ -465,8 +471,11 @@ bool QueryBuilder::do_prepare_for_property_(
             else
                 delete pIterator;
         }
-
-        return true;
+        }catch(std::exception& e)
+        {
+            delete pIterator;
+            return true;
+        }
         break;
     } // end QueryTree::NOT
     case QueryTree::UNIGRAM_WILDCARD:
@@ -576,6 +585,7 @@ bool QueryBuilder::do_prepare_for_property_(
 #endif
         DocumentIterator* pIterator = new ANDDocumentIterator();
         bool ret = false;
+        try{
         for (QTIter andChildIter = queryTree->children_.begin();
                 andChildIter != queryTree->children_.end(); ++andChildIter)
         {
@@ -607,6 +617,10 @@ bool QueryBuilder::do_prepare_for_property_(
                 pDocIterator->add(pIterator);
         else
             delete pIterator;
+        }catch(std::exception& e){
+            delete pIterator;
+            return false;
+        }
         break;
     } // end - QueryTree::AND
     case QueryTree::OR:
@@ -616,6 +630,7 @@ bool QueryBuilder::do_prepare_for_property_(
 #endif
         DocumentIterator* pIterator = new ORDocumentIterator();
         bool ret = false;
+        try{
         for (QTIter orChildIter = queryTree->children_.begin();
                 orChildIter != queryTree->children_.end(); ++orChildIter)
         {
@@ -647,6 +662,10 @@ bool QueryBuilder::do_prepare_for_property_(
                 pDocIterator->add(pIterator);
         else
             delete pIterator;
+        }catch(std::exception& e)            {
+            delete pIterator;
+            return false;
+        }
         break;
     } // end - QueryTree::OR
     case QueryTree::AND_PERSONAL:
@@ -658,6 +677,7 @@ bool QueryBuilder::do_prepare_for_property_(
 #endif
         DocumentIterator* pIterator = new PersonalSearchDocumentIterator(true);
         bool ret = false;
+        try{
         for (QTIter andChildIter = queryTree->children_.begin();
                 andChildIter != queryTree->children_.end(); ++andChildIter)
         {
@@ -687,6 +707,10 @@ bool QueryBuilder::do_prepare_for_property_(
                 pDocIterator->add(pIterator);
         else
             delete pIterator;
+        }catch(std::exception& e){
+            delete pIterator;
+            return false;
+        }
         break;
     } // end - QueryTree::AND_PERSONAL
     case QueryTree::OR_PERSONAL:
@@ -699,6 +723,7 @@ bool QueryBuilder::do_prepare_for_property_(
 #endif
         DocumentIterator* pIterator = new PersonalSearchDocumentIterator(false);
         bool ret = false;
+        try{
         for (QTIter orChildIter = queryTree->children_.begin();
                 orChildIter != queryTree->children_.end(); ++orChildIter)
         {
@@ -728,6 +753,10 @@ bool QueryBuilder::do_prepare_for_property_(
                 pDocIterator->add(pIterator);
         else
             delete pIterator;
+        }catch(std::exception& e){
+            delete pIterator;
+            return false;
+        }
         break;
     } // end - QueryTree::OR_PERSONAL
     case QueryTree::EXACT:

@@ -1,4 +1,10 @@
 #include "GroupParam.h"
+#include <configuration-manager/MiningSchema.h>
+
+namespace
+{
+const char* NUMERIC_RANGE_DELIMITER = "-";
+}
 
 NS_FACETED_BEGIN
 
@@ -43,35 +49,122 @@ bool GroupParam::isAttrEmpty() const
     return isAttrGroup_ == false && attrLabels_.empty();
 }
 
-bool GroupParam::checkParam(std::string& message) const
+bool GroupParam::checkParam(const MiningSchema& miningSchema, std::string& message) const
 {
-    for (GroupLabelVec::const_iterator labelIt = groupLabels_.begin();
-        labelIt != groupLabels_.end(); ++labelIt)
+    return checkGroupParam_(miningSchema, message)
+           && checkAttrParam_(miningSchema, message);
+}
+
+bool GroupParam::checkGroupParam_(const MiningSchema& miningSchema, std::string& message) const
+{
+    if (isGroupEmpty())
+        return true;
+
+    if (! miningSchema.group_enable)
     {
-        const std::string& propName = labelIt->first;
-        const GroupPath& groupPath = labelIt->second;
-        if (groupPath.empty())
+        message = "The GroupBy properties have not been configured in <MiningBundle>::<Schema>::<Group> yet.";
+        return false;
+    }
+
+    return checkGroupProps_(miningSchema.group_properties, message)
+           && checkGroupLabels_(miningSchema.group_properties, message);
+}
+
+bool GroupParam::checkGroupProps_(const std::vector<GroupConfig>& groupProps, std::string& message) const
+{
+    for (std::vector<GroupPropParam>::const_iterator paramIt = groupProps_.begin();
+        paramIt != groupProps_.end(); ++paramIt)
+    {
+        const std::string& propName = paramIt->property_;
+        std::vector<GroupConfig>::const_iterator configIt;
+
+        for (configIt = groupProps.begin(); configIt != groupProps.end(); ++configIt)
         {
-            message = "request[search][group_label][value] is empty for property " + propName;
+            if (configIt->propName == propName)
+                break;
+        }
+
+        if (configIt == groupProps.end())
+        {
+            message = "property " + propName + " should be configured in <MiningBundle>::<Schema>::<Group>.";
             return false;
         }
 
-        // range label
-        if (groupPath[0].find('-') != std::string::npos)
+        if (! paramIt->isRange_)
+            continue;
+
+        if (! configIt->isNumericType())
         {
-            for (std::vector<GroupPropParam>::const_iterator propIt = groupProps_.begin();
-                propIt != groupProps_.end(); ++propIt)
-            {
-                if (propIt->property_ == propName && propIt->isRange_)
-                {
-                    message = "the property " + propName + " in request[search][group_label] could not be specified in request[group] at the same time";
-                    return false;
-                }
-            }
+            message = "the property type of " + propName + " should be int or float for group range result.";
+            return false;
+        }
+
+        if (isRangeLabel_(propName))
+        {
+            message = "the property " + propName + " in request[search][group_label] could not be specified in request[group] at the same time";
+            return false;
         }
     }
 
     return true;
+}
+
+bool GroupParam::checkGroupLabels_(const std::vector<GroupConfig>& groupProps, std::string& message) const
+{
+    for (GroupLabelMap::const_iterator labelIt = groupLabels_.begin();
+        labelIt != groupLabels_.end(); ++labelIt)
+    {
+        const std::string& propName = labelIt->first;
+        std::vector<GroupConfig>::const_iterator configIt;
+
+        for (configIt = groupProps.begin(); configIt != groupProps.end(); ++configIt)
+        {
+            if (configIt->propName == propName)
+                break;
+        }
+
+        if (configIt == groupProps.end())
+        {
+            message = "property " + propName + " should be configured in <MiningBundle>::<Schema>::<Group>.";
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool GroupParam::checkAttrParam_(const MiningSchema& miningSchema, std::string& message) const
+{
+    if (isAttrEmpty())
+        return true;
+
+    if (! miningSchema.attr_enable)
+    {
+        message = "To get group results by attribute value, the attribute property should be configured in <MiningBundle>::<Schema>::<Attr>.";
+        return false;
+    }
+
+    return true;
+}
+
+bool GroupParam::isRangeLabel_(const std::string& propName) const
+{
+    GroupLabelMap::const_iterator findIt = groupLabels_.find(propName);
+    if (findIt == groupLabels_.end())
+        return false;
+
+    const GroupPathVec& paths = findIt->second;
+    for (GroupPathVec::const_iterator pathIt = paths.begin();
+        pathIt != paths.end(); ++pathIt)
+    {
+        if (!pathIt->empty()
+            && pathIt->front().find(NUMERIC_RANGE_DELIMITER) != std::string::npos)
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool operator==(const GroupParam& a, const GroupParam& b)
@@ -92,16 +185,23 @@ std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam)
     }
 
     out << "groupLabels_: ";
-    for (std::size_t i = 0; i < groupParam.groupLabels_.size(); ++i)
+    for (GroupParam::GroupLabelMap::const_iterator labelIt = groupParam.groupLabels_.begin();
+        labelIt != groupParam.groupLabels_.end(); ++labelIt)
     {
-        const GroupParam::GroupLabel& groupLabel = groupParam.groupLabels_[i];
-        out << "\t" << groupLabel.first << ": ";
-        const GroupParam::GroupPath& groupPath = groupLabel.second;
-        for (std::size_t j = 0; j < groupPath.size(); ++j)
+        const std::string& propName = labelIt->first;
+        const GroupParam::GroupPathVec& pathVec = labelIt->second;
+
+        for (GroupParam::GroupPathVec::const_iterator pathIt = pathVec.begin();
+            pathIt != pathVec.end(); ++pathIt)
         {
-            out << groupPath[j] << ", ";
+            out << "\t" << propName << ": ";
+            for (GroupParam::GroupPath::const_iterator nodeIt = pathIt->begin();
+                nodeIt != pathIt->end(); ++nodeIt)
+            {
+                out << *nodeIt << ", ";
+            }
+            out << std::endl;
         }
-        out << std::endl;
     }
 
     out << "isAttrGroup_: " << groupParam.isAttrGroup_ << std::endl;

@@ -1,8 +1,8 @@
 #include <stdlib.h>
 
-#include <node-manager/ScdSharding.h>
-#include <node-manager/ShardingStrategy.h>
-#include <node-manager/ScdDispatcher.h>
+#include <node-manager/sharding/ScdSharding.h>
+#include <node-manager/sharding/ShardingStrategy.h>
+#include <node-manager/sharding/ScdDispatcher.h>
 
 using namespace std;
 using namespace sf1r;

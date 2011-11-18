@@ -2,7 +2,7 @@
 
 #include <log-manager/SystemEvent.h>
 #include <log-manager/UserQuery.h>
-#include <log-manager/ProductInfo.h>
+#include <log-manager/ProductCount.h>
 #include <common/SFLogger.h>
 #include <common/parsers/OrderArrayParser.h>
 #include <common/parsers/ConditionArrayParser.h>
@@ -315,7 +315,7 @@ void LogAnalysisController::user_queries()
  * @section response
  *
  * - @b merchant_count (@c Object): The merchant count in all the records which fit the conditions.
- *   - @b count (@c Uint): all distinct merchant count in ProductInfo table.
+ *   - @b count (@c Uint): all distinct merchant count in ProductCount table.
  *
  * @section example
  *
@@ -349,18 +349,18 @@ void LogAnalysisController::merchant_count()
     std::stringstream sql;
 
     sql << "select " << select;
-    sql << " from " << ProductInfo::TableName;
+    sql << " from " << ProductCount::TableName;
     if ( conditions.size() )
     {
          sql << " where " << conditions;
     }
     sql << ";";
     std::cerr << sql.str() << std::endl;
-    ProductInfo::find_by_sql(sql.str(), sqlResults);
+    ProductCount::find_by_sql(sql.str(), sqlResults);
 
-    Value& productInfo = response()[Keys::merchant_count];
+    Value& productCount = response()[Keys::merchant_count];
     std::list< std::map<std::string, std::string> >::iterator it = sqlResults.begin();
-    productInfo[Keys::count] = (*it)["count"];
+    productCount[Keys::count] = (*it)["count"];
 }
 
 /**
@@ -373,7 +373,7 @@ void LogAnalysisController::merchant_count()
  * @section response
  *
  * - @b product_count (@c Object): The product count in all the records which fit the conditions.
- *   - @b count (@c Uint): all product count in ProductInfo table.
+ *   - @b count (@c Uint): all product count in ProductCount table.
  *
  * @section example
  *
@@ -409,19 +409,19 @@ void LogAnalysisController::product_count()
     std::stringstream sql;
 
     sql << "select " << select;
-    sql << " from " << ProductInfo::TableName;
+    sql << " from " << ProductCount::TableName;
     if( conditions.size() )
     {
         sql << " where " << conditions;
     }
     sql << ";";
     std::cerr << sql.str() << std::endl;
-    ProductInfo::find_by_sql(sql.str(), insertResults);
+    ProductCount::find_by_sql(sql.str(), insertResults);
 
     ///Output
-    Value& productInfo = response()[Keys::product_count];
+    Value& productCount = response()[Keys::product_count];
     std::list< std::map<std::string, std::string> >::iterator iter = insertResults.begin();
-    productInfo[Keys::count] = (*iter)["sum"];
+    productCount[Keys::count] = (*iter)["sum"];
 }
 
 /**
@@ -479,7 +479,7 @@ void LogAnalysisController::product_update_info()
 
     //Get index result
     sql << "select " << select;
-    sql << " from " << ProductInfo::TableName;
+    sql << " from " << ProductCount::TableName;
     if( conditions.size() )
     {
         sql << " where " << conditions;
@@ -490,7 +490,7 @@ void LogAnalysisController::product_update_info()
     }
     sql << ";";
     std::cerr << sql.str() << std::endl;
-    ProductInfo::find_by_sql(sql.str(), results);
+    ProductCount::find_by_sql(sql.str(), results);
 
     //Store insert info to map;
     for(it = results.begin(); it != results.end(); it++)
@@ -507,7 +507,7 @@ void LogAnalysisController::product_update_info()
     sql.str("");
 
     sql << "select " << select;
-    sql << " from " << ProductInfo::TableName;
+    sql << " from " << ProductCount::TableName;
     if( conditions.size() )
     {
         sql << " where " << conditions;
@@ -518,7 +518,7 @@ void LogAnalysisController::product_update_info()
     }
     sql <<";";
     std::cerr<< sql.str() << std::endl;
-    ProductInfo::find_by_sql(sql.str(), results);
+    ProductCount::find_by_sql(sql.str(), results);
 
     //Store update info to map
     for(it = results.begin(); it != results.end(); it++)
@@ -535,7 +535,7 @@ void LogAnalysisController::product_update_info()
     sql.str("");
 
     sql<<"select " << select;
-    sql<<" from "<< ProductInfo::TableName;
+    sql<<" from "<< ProductCount::TableName;
     if( conditions.size() )
     {
         sql<<" where " << conditions;
@@ -546,7 +546,7 @@ void LogAnalysisController::product_update_info()
     }
     sql<<";";
     std::cerr<< sql.str() <<std::endl;
-    ProductInfo::find_by_sql(sql.str(), results);
+    ProductCount::find_by_sql(sql.str(), results);
 
     //Store delete info to map
     for(it = results.begin(); it != results.end(); it++)
@@ -563,14 +563,14 @@ void LogAnalysisController::product_update_info()
     sql.str("");
 
     sql<<"select " << select;
-    sql<<" from "<< ProductInfo::TableName;
+    sql<<" from "<< ProductCount::TableName;
     if( conditions.size() )
     {
         sql<<" where " << conditions;
     }
     sql<<";";
     std::cerr<< sql.str() <<std::endl;
-    ProductInfo::find_by_sql(sql.str(), results);
+    ProductCount::find_by_sql(sql.str(), results);
 
     //Store time info to map
     for(it = results.begin(); it != results.end(); it++)
@@ -579,38 +579,38 @@ void LogAnalysisController::product_update_info()
     }
 
     ///Output
-    Value& productInfos = response()[Keys::product_update_info];
-    productInfos.reset<Value::ArrayType>();
+    Value& productCounts = response()[Keys::product_update_info];
+    productCounts.reset<Value::ArrayType>();
     map<std::string, std::string>::iterator iter, map_it;
 
     for (iter = insertInfo.begin(); iter != insertInfo.end(); iter++ )
     {
-        Value& productInfo = productInfos();
-        productInfo[Keys::merchant] = iter->first;
-        productInfo[Keys::count] = iter->second;
+        Value& productCount = productCounts();
+        productCount[Keys::merchant] = iter->first;
+        productCount[Keys::count] = iter->second;
         if( updateInfo.size() && (map_it = updateInfo.find(iter->first)) != updateInfo.end())
         {
-            productInfo[Keys::update_info] = map_it->second;
+            productCount[Keys::update_info] = map_it->second;
         }
         else
         {
-            productInfo[Keys::update_info] = 0;
+            productCount[Keys::update_info] = 0;
         }
         if( deleteInfo.size() && (map_it = deleteInfo.find(iter->first)) != deleteInfo.end())
         {
-            productInfo[Keys::delete_info] = map_it->second;
+            productCount[Keys::delete_info] = map_it->second;
         }
         else
         {
-            productInfo[Keys::delete_info] = 0;
+            productCount[Keys::delete_info] = 0;
         }
         if( timeInfo.size() && (map_it = timeInfo.find(iter->first)) != timeInfo.end())
         {
-            productInfo[Keys::time_info] = map_it->second;
+            productCount[Keys::time_info] = map_it->second;
         }
         else
         {
-            productInfo[Keys::time_info] = 0;
+            productCount[Keys::time_info] = 0;
         }
     }
 }

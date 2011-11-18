@@ -6,7 +6,6 @@
 
 #include <util/ustring/UString.h>
 #include <recommend-manager/PurchaseManager.h>
-#include <recommend-manager/ItemManager.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
@@ -105,21 +104,13 @@ BOOST_AUTO_TEST_CASE(checkPurchase)
     bfs::path cfPath(bfs::path(TEST_DIR_STR) / CF_DIR_STR);
     string cfPathStr = cfPath.string();
     bfs::create_directories(cfPath);
-    ItemCFManager* itemCFManager = new ItemCFManager(cfPathStr + "/covisit", 1000,
-                                                     cfPathStr + "/sim", 1000,
-                                                     cfPathStr + "/nb", 30);
-    // add items first
-    ItemManager* itemManager = new ItemManager(itemPath.string(), maxIdPath.string());
-    const itemid_t MAX_ITEM_ID = 50;
-    for (itemid_t i = 1; i <= MAX_ITEM_ID; ++i)
-    {
-        BOOST_CHECK(itemManager->addItem(i, Item()));
-    }
-
+    ItemCFManager itemCFManager(cfPathStr + "/covisit", 1000,
+                                cfPathStr + "/sim", 1000,
+                                cfPathStr + "/nb", 30);
     {
         BOOST_TEST_MESSAGE("add purchase...");
 
-        PurchaseManager purchaseManager(purchasePath.string(), itemCFManager, itemManager);
+        PurchaseManager purchaseManager(purchasePath.string(), itemCFManager);
         std::vector<itemid_t> orderItemVec;
 
         orderItemVec.push_back(20);
@@ -166,7 +157,7 @@ BOOST_AUTO_TEST_CASE(checkPurchase)
     {
         BOOST_TEST_MESSAGE("continue add purchase...");
 
-        PurchaseManager purchaseManager(purchasePath.string(), itemCFManager, itemManager);
+        PurchaseManager purchaseManager(purchasePath.string(), itemCFManager);
         checkPurchaseManager(purchaseMap, purchaseManager);
         iteratePurchaseManager(purchaseMap, purchaseManager);
 
@@ -192,9 +183,6 @@ BOOST_AUTO_TEST_CASE(checkPurchase)
 
         purchaseManager.flush();
     }
-
-    delete itemCFManager;
-    delete itemManager;
 }
 
 BOOST_AUTO_TEST_SUITE_END() 

@@ -240,8 +240,8 @@ CONFIGURE_FILE(
 
 CONFIGURE_FILE( "${SF1RENGINE_ROOT}/bin/config/example.xml.in"
   "${SF1RENGINE_ROOT}/bin/config/example.xml"
-  ESCAPE_QUOTES @ONLY) 
-  
+  ESCAPE_QUOTES @ONLY)
+
 CONFIGURE_FILE(
   "${SF1RENGINE_ROOT}/source/core/config.h.in"
   "${SF1RENGINE_ROOT}/source/core/config.h"
@@ -409,6 +409,13 @@ IF(VERBOSE)
   ELSE(Glog_FOUND)
     MESSAGE(STATUS "Google-glog: not found")
   ENDIF(Glog_FOUND)
+
+  IF(Thrift_FOUND)
+    MESSAGE(STATUS "Apache Thrift:")
+    MESSAGE(STATUS "  header: ${Thrift_INCLUDE_DIR}")
+  ELSE(Thrift_FOUND)
+    MESSAGE(STATUS "Apache Thrift: not found")
+  ENDIF(Thrift_FOUND)
 
   IF(Threads_FOUND)
     MESSAGE(STATUS "Threads Library: ${CMAKE_THREAD_LIBS_INIT}")

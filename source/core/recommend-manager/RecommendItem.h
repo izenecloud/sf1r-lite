@@ -8,7 +8,7 @@
 #define RECOMMEND_ITEM_H
 
 #include "RecTypes.h"
-#include "Item.h"
+#include <document-manager/Document.h>
 #include <idmlib/resys/RecommendItem.h>
 
 #include <string>
@@ -19,36 +19,29 @@ namespace sf1r
 
 struct ReasonItem
 {
-    itemid_t itemId_;
-    Item item_;
+    Document item_;
     std::string event_;
     std::string value_;
-
-    ReasonItem()
-        : itemId_(0)
-    {}
 };
 
 struct RecommendItem
 {
-    itemid_t itemId_;
-    Item item_;
+    Document item_;
     double weight_;
     std::vector<ReasonItem> reasonItems_;
 
     RecommendItem()
-        : itemId_(0)
-        , weight_(0)
+        : weight_(0)
     {}
 
     RecommendItem(const idmlib::recommender::RecommendItem& recItem)
-        : itemId_(recItem.itemId_)
+        : item_(recItem.itemId_)
         , weight_(recItem.weight_)
         , reasonItems_(recItem.reasonItemIds_.size())
     {
         for (unsigned int i = 0; i < reasonItems_.size(); ++i)
         {
-            reasonItems_[i].itemId_ = recItem.reasonItemIds_[i];
+            reasonItems_[i].item_.setId(recItem.reasonItemIds_[i]);
         }
     }
 };

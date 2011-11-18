@@ -23,7 +23,7 @@ using driver::Keys;
 using namespace izenelib::driver;
 using namespace izenelib::osgi;
 
-bool CommandsController::parseCollection()
+bool CommandsController::parseCollection_()
 {
     collection_ = asString(request()[Keys::collection]);
     if (collection_.empty())
@@ -61,96 +61,69 @@ bool CommandsController::parseCollection()
  */
 void CommandsController::index()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
+    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection_());
 
+    if (!SF1Config::get()->checkCollectionExist(collection_))
+    {
+        response().addError("Request failed, collection not found.");
+        return;
+    }
+
+    if (!indexSearch_())
+        return;
+
+    indexRecommend_();
+}
+
+bool CommandsController::indexSearch_()
+{
     // 0 indicates no limit
     Value::UintType documentCount = asUint(request()[Keys::document_count]);
 
     // check if perform distributed indexing
+    // Todo: forward call to indexTaskService->index()
     if (SF1Config::get()->checkAggregatorSupport(collection_))
     {
         CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection_);
         if (!collectionHandler)
         {
             response().addError("No Handler for this collection.");
-            return;
+            return false;
         }
 
         bool ret = true;
         collectionHandler->indexSearchService_->getAggregatorManager()
             ->distributeRequest(collection_, "index", documentCount, ret);
 
-        //return;
+        return ret;
     }
 
-    if (!SF1Config::get()->checkCollectionExist(collection_))
-    {
-        response().addError(
-            "Request Failed."
-        );
-        return;
-    }
     std::string bundleName = "IndexBundle-" + collection_;
     IndexTaskService* indexService = static_cast<IndexTaskService*>(
-                                         CollectionManager::get()->getOSGILauncher().getService(bundleName, "IndexTaskService"));
+                                     CollectionManager::get()->getOSGILauncher().getService(bundleName, "IndexTaskService"));
     if (!indexService)
     {
-        response().addError(
-            "Request Failed."
-        );
-        return;
+        response().addError("Request failed, index service not found");
+        return false;
     }
+
     task_type task = boost::bind(&IndexTaskService::buildCollection, indexService, documentCount);
     JobScheduler::get()->addTask(task);
+
+    return true;
 }
 
-/**
- * @brief Action \b index_recommend. Sends command "index_recommend" to load SCD files (user, item, order) into recommend manager.
- *
- * @section request
- *
- * - @b collection* (@c String): Collection name.
- *
- * @section response
- *
- * No extra fields.
- *
- * @section example
- *
- * Request
- * @code
- * {
- *   "collection": "ChnWiki",
- * }
- * @endcode
- */
-void CommandsController::index_recommend()
+void CommandsController::indexRecommend_()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
-
-    if (!SF1Config::get()->checkCollectionExist(collection_))
-    {
-        response().addError(
-            "Request Failed."
-        );
-        return;
-    }
-
     std::string bundleName = "RecommendBundle-" + collection_;
     RecommendTaskService* taskService = static_cast<RecommendTaskService*>(
                                         CollectionManager::get()->getOSGILauncher().getService(bundleName, "RecommendTaskService"));
-    if (!taskService)
+    if (taskService)
     {
-        response().addError(
-            "Request Failed."
-        );
-        return;
+        task_type task = boost::bind(&RecommendTaskService::buildCollection, taskService);
+        JobScheduler::get()->addTask(task);
     }
-
-    task_type task = boost::bind(&RecommendTaskService::buildCollection, taskService);
-    JobScheduler::get()->addTask(task);
 }
-
 
 /**
  * @brief Action \b index_query_log. Sends command "index_query_log" to rebuild all query related features.
@@ -190,13 +163,11 @@ void CommandsController::index_query_log()
  */
 void CommandsController::optimize_index()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
+    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection_());
 
     if (!SF1Config::get()->checkCollectionExist(collection_))
     {
-        response().addError(
-            "Request Failed."
-        );
+        response().addError("Request failed, collection not found.");
         return;
     }
     std::string bundleName = "IndexBundle-" + collection_;
@@ -204,9 +175,7 @@ void CommandsController::optimize_index()
                                          CollectionManager::get()->getOSGILauncher().getService(bundleName, "IndexTaskService"));
     if (!indexService)
     {
-        response().addError(
-            "Request Failed."
-        );
+        response().addError("Request failed, index service not found");
         return;
     }
     task_type task = boost::bind(&IndexTaskService::optimizeIndex, indexService);

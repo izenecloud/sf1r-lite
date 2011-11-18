@@ -118,15 +118,6 @@ bool GroupManager::processCollection()
                                    << ", doc id: " << docId;
                     }
                 }
-                else
-                {
-                    LOG(WARNING) << "Document::findProperty, doc id " << docId
-                                 << " has no value on property " << propName;
-                }
-            }
-            else
-            {
-                LOG(ERROR) << "DocumentManager::getDocument() failed, doc id: " << docId;
             }
 
             if (docId % 100000 == 0)

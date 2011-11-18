@@ -46,7 +46,7 @@ bool FBTRecommender::recommendImpl_(
     for (std::list<itemid_t>::const_iterator it = results.begin();
         it != results.end(); ++it)
     {
-        recItem.itemId_ = *it;
+        recItem.item_.setId(*it);
         recItemVec.push_back(recItem);
     }
 

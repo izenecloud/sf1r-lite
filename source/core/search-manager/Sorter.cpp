@@ -52,136 +52,61 @@ SortPropertyCache::SortPropertyCache(IndexManager* pIndexer, IndexBundleConfigur
 {
 }
 
-SortPropertyCache::~SortPropertyCache()
-{
-    clear();
-}
-
-void SortPropertyCache::clear()
-{
-    for (std::map<std::string, std::pair<PropertyDataType,void*> >::iterator iter = sortDataCache_.begin();
-            iter != sortDataCache_.end(); ++iter)
-    {
-        void* data = iter->second.second;
-        if (data == NULL)
-            continue;
-        switch (iter->second.first)
-        {
-        case INT_PROPERTY_TYPE:
-            delete[] (int64_t*)data;
-            break;
-        case UNSIGNED_INT_PROPERTY_TYPE:
-            delete[] (uint64_t*)data;
-            break;
-        case FLOAT_PROPERTY_TYPE:
-            delete[] (float*)data;
-            break;
-        case DOUBLE_PROPERTY_TYPE:
-            delete[] (double*)data;
-            break;
-        default:
-            break;
-        }
-    }
-}
-
-void SortPropertyCache::clear(const std::string& property)
-{
-    std::map<std::string, std::pair<PropertyDataType,void*> >::iterator iter = sortDataCache_.find(property);
-
-    if(iter != sortDataCache_.end())
-    {
-        void* data = iter->second.second;
-        if (data == NULL)
-            return;
-        switch (iter->second.first)
-        {
-        case INT_PROPERTY_TYPE:
-            delete[] (int64_t*)data;
-            break;
-        case UNSIGNED_INT_PROPERTY_TYPE:
-            delete[] (uint64_t*)data;
-            break;
-        case FLOAT_PROPERTY_TYPE:
-            delete[] (float*)data;
-            break;
-        case DOUBLE_PROPERTY_TYPE:
-            delete[] (double*)data;
-            break;
-        default:
-            break;
-        }
-    }
-}
-
 void SortPropertyCache::loadSortData(const std::string& property, PropertyDataType type)
 {
-    clear(property);
+    void* data = NULL;
+
     switch (type)
     {
     case INT_PROPERTY_TYPE:
-    {
-        int64_t* data = NULL;
-        pIndexer_->loadPropertyDataForSorting(property, data);
-        sortDataCache_[property] = make_pair(INT_PROPERTY_TYPE, data);
-    }
+        pIndexer_->loadPropertyDataForSorting(property, (int64_t*&)data);
         break;
+
     case UNSIGNED_INT_PROPERTY_TYPE:
-    {
-        uint64_t* data = NULL;
-        pIndexer_->loadPropertyDataForSorting(property, data);
-        sortDataCache_[property] = make_pair(UNSIGNED_INT_PROPERTY_TYPE, data);
-    }
+        pIndexer_->loadPropertyDataForSorting(property, (uint64_t*&)data);
         break;
+
     case FLOAT_PROPERTY_TYPE:
-    {
-        float* data = NULL;
-        pIndexer_->loadPropertyDataForSorting(property, data);
-        sortDataCache_[property] = make_pair(FLOAT_PROPERTY_TYPE, data);
-    }
+        pIndexer_->loadPropertyDataForSorting(property, (float*&)data);
         break;
+
     case DOUBLE_PROPERTY_TYPE:
-    {
-        double* data = NULL;
-        pIndexer_->loadPropertyDataForSorting(property, data);
-        sortDataCache_[property] = make_pair(DOUBLE_PROPERTY_TYPE, data);
-    }
+        pIndexer_->loadPropertyDataForSorting(property, (double*&)data);
         break;
+
     default:
         break;
     }
+
+    if (data)
+    {
+        sortDataCache_[property].reset(new PropertyData(type, data));
+    }
 }
 
-bool SortPropertyCache::getSortPropertyData(const std::string& propertyName, PropertyDataType propertyType, void* &data)
+boost::shared_ptr<PropertyData> SortPropertyCache::getSortPropertyData(const std::string& propertyName, PropertyDataType propertyType)
 {
     boost::mutex::scoped_lock lock(this->mutex_);
 
     if (dirty_)
     {
-        for (std::map<std::string, std::pair<PropertyDataType,void*> >::iterator iter = sortDataCache_.begin();
-                iter != sortDataCache_.end(); ++iter)
+        for (SortDataCache::iterator iter = sortDataCache_.begin();
+            iter != sortDataCache_.end(); ++iter)
         {
-            cout<<"dirty "<<iter->first<<endl;
-            loadSortData(iter->first, iter->second.first);
+            LOG(INFO) << "dirty sort data cache on property: " << iter->first;
+            loadSortData(iter->first, iter->second->type_);
         }
         dirty_ = false;
     }
 
-    std::map<std::string, std::pair<PropertyDataType,void*> >::iterator iter = sortDataCache_.find(propertyName) ;
+    SortDataCache::iterator iter = sortDataCache_.find(propertyName) ;
     if (iter == sortDataCache_.end())
     {
-        void* data = NULL;
-        sortDataCache_[propertyName] = make_pair(propertyType, data);
-        cout << "first load <" << propertyName << ">" << endl;
+        LOG(INFO) << "first load sort data cache on property: " << propertyName;
         loadSortData(propertyName, propertyType);
     }
 
-    data = sortDataCache_[propertyName].second;
-
-    if (data != NULL)
-        return true;
-    else
-        return false;
+    return sortDataCache_[propertyName];
 }
 
 bool SortPropertyCache::split_int(const izenelib::util::UString& szText, int64_t& out, izenelib::util::UString::EncodingType encoding, char Separator )
@@ -246,7 +171,7 @@ void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, p
 
     izenelib::util::UString::EncodingType encoding = config_->encoding_;
     std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >::const_iterator iter;
-    std::map<std::string, std::pair<PropertyDataType,void*> >::const_iterator it;
+    SortDataCache::const_iterator it;
     for(iter = rTypeFieldValue.begin(); iter != rTypeFieldValue.end(); iter++)
     {
         string propertyName = iter->first;
@@ -258,7 +183,6 @@ void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, p
                 std::string str("");
                 iter->second.second.convertString(str, encoding);
                 int64_t value = 0;
-                int64_t* data;
                 try
                 {
                     value = boost::lexical_cast< int64_t >( iter->second.second );
@@ -276,7 +200,7 @@ void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, p
                 }
                 if ((it = sortDataCache_.find(propertyName)) != sortDataCache_.end())
                 {
-                    data = (int64_t*)(it->second.second);
+                    int64_t* data = (int64_t*)(it->second->data_);
                     data[id] = value;
                 }
             }
@@ -286,7 +210,6 @@ void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, p
                 std::string str("");
                 iter->second.second.convertString(str, encoding);
                 float value = 0.0;
-                float* data;
                 try
                 {
                     value = boost::lexical_cast< float >( iter->second.second );
@@ -304,7 +227,7 @@ void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, p
                 }
                 if ((it = sortDataCache_.find(propertyName)) != sortDataCache_.end())
                 {
-                    data = (float*)(it->second.second);
+                    float* data = (float*)(it->second->data_);
                     data[id] = value;
                 }
             }
@@ -317,10 +240,11 @@ void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, p
 
 SortPropertyComparator* SortPropertyCache::getComparator(SortProperty* pSortProperty)
 {
-    void *data;
-    getSortPropertyData(pSortProperty->getProperty(), pSortProperty->getPropertyDataType(), data);
+    const std::string& propName = pSortProperty->getProperty();
+    const PropertyDataType propType = pSortProperty->getPropertyDataType();
+    boost::shared_ptr<PropertyData> propData = getSortPropertyData(propName, propType);
 
-    return new SortPropertyComparator(data, pSortProperty->getPropertyDataType());
+    return new SortPropertyComparator(propData);
 }
 
 Sorter::Sorter(SortPropertyCache* pCache)

@@ -50,17 +50,17 @@ private:
     const std::vector<GroupConfig>& groupConfigs_;
     unsigned int lastDocId_;
 
-    typedef std::vector<int64_t> IntPropTable; // doc id => prop value
-    std::map<std::string, IntPropTable> intPropMap_; // prop name => prop value table
+    template <typename T>
+    struct PropertyMap
+    {
+        typedef std::vector<T> table_type; // doc id => prop value
+        typedef std::map<std::string, table_type> map_type; // prop name => prop value table
+    };
 
-    typedef std::vector<uint64_t> UIntPropTable;
-    std::map<std::string, UIntPropTable> uintPropMap_;
-
-    typedef std::vector<float> FloatPropTable;
-    std::map<std::string, FloatPropTable> floatPropMap_;
-
-    typedef std::vector<double> DoublePropTable;
-    std::map<std::string, DoublePropTable> doublePropMap_;
+    PropertyMap<int64_t>::map_type intPropMap_;
+    PropertyMap<uint64_t>::map_type uintPropMap_;
+    PropertyMap<float>::map_type floatPropMap_;
+    PropertyMap<double>::map_type doublePropMap_;
 };
 
 }

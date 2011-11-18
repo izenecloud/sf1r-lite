@@ -23,6 +23,9 @@ class RecommendBundleConfiguration : public ::izenelib::osgi::BundleConfiguratio
 public:
     RecommendBundleConfiguration(const std::string& collectionName);
 
+    // <RecommendBundle><Schema>
+    bool isSchemaEnable_;
+
     std::string collectionName_;
 
     CollectionPath collPath_;
@@ -47,11 +50,6 @@ public:
     std::string userSCDPath() const
     {
         return collPath_.getScdPath() + "/recommend/user/";
-    }
-
-    std::string itemSCDPath() const
-    {
-        return collPath_.getScdPath() + "/recommend/item/";
     }
 
     std::string orderSCDPath() const

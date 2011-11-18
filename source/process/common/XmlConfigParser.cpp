@@ -272,6 +272,8 @@ void SF1Config::parseSystemSettings( const ticpp::Element * system )
 
     getAttribute( getUniqChildElement( system, "LogConnection" ), "str", log_conn_str_);
 
+    getAttribute( getUniqChildElement( system, "CassandraConnection" ), "str", cassandra_conn_str_);
+
     parseBundlesDefault(getUniqChildElement( system, "BundlesDefault" ));
 
     parseFirewall( getUniqChildElement( system, "Firewall" ) );
@@ -296,12 +298,9 @@ void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
         return;
 
     getAttribute( topology, "enable", distributedTopologyConfig_.enabled_ );
-    getAttribute( topology, "clusterid", distributedTopologyConfig_.clusterId_ );
+    getAttribute( topology, "clusterid", distributedTopologyConfig_.clusterId_, false );
     getAttribute( topology, "nodenum", distributedTopologyConfig_.nodeNum_ );
-    if (!getAttribute( topology, "workernum", distributedTopologyConfig_.workerNum_ , false))
-    {
-        distributedTopologyConfig_.workerNum_ = distributedTopologyConfig_.nodeNum_;
-    }
+    getAttribute( topology, "shardnum", distributedTopologyConfig_.shardNum_ );
 
     if (distributedTopologyConfig_.clusterId_.empty())
     {
@@ -311,9 +310,10 @@ void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
 
     // Current SF1 node
     ticpp::Element * cursf1node = getUniqChildElement( topology, "CurrentNode" );
-    getAttribute( cursf1node, "nodeid", distributedTopologyConfig_.curSF1Node_.nodeId_ );
-    getAttribute( cursf1node, "replicaid", distributedTopologyConfig_.curSF1Node_.replicaId_ );
     getAttribute( cursf1node, "host", distributedTopologyConfig_.curSF1Node_.host_ );
+    getAttribute( cursf1node, "replicaid", distributedTopologyConfig_.curSF1Node_.replicaId_ );
+    getAttribute( cursf1node, "nodeid", distributedTopologyConfig_.curSF1Node_.nodeId_ );
+
     parseMasterAgent( getUniqChildElement( cursf1node, "MasterAgent", false ) );
     parseWorkerAgent( getUniqChildElement( cursf1node, "WorkerAgent", false ) );
 }
@@ -355,15 +355,15 @@ void SF1Config::parseMasterAgent( const ticpp::Element * master )
     }
 
     // todo, remove
-    masterAgent.aggregatorConfig_.enableLocalWorker_ = true;
     Iterator<Element> worker_it( "Worker" );
+    uint32_t workerid = 1;
     for (worker_it = worker_it.begin(master); worker_it != worker_it.end(); worker_it++)
     {
         std::string host;
         int port;
         getAttribute(worker_it.Get(), "host", host, true);
         getAttribute(worker_it.Get(), "port", port, true);
-        masterAgent.aggregatorConfig_.addWorker(host, static_cast<uint16_t>(port));
+        masterAgent.aggregatorConfig_.addWorker(host, static_cast<uint16_t>(port), workerid++);
     }
 }
 
@@ -376,6 +376,7 @@ void SF1Config::parseWorkerAgent( const ticpp::Element * worker )
 
     getAttribute(worker, "enable", workerAgent.enabled_);
     getAttribute(worker, "port", workerAgent.port_);
+    getAttribute(worker, "shardid", workerAgent.shardId_);
 
     Iterator<Element> aggregator_it( "Service" );
     for (aggregator_it = aggregator_it.begin(worker); aggregator_it != aggregator_it.end(); aggregator_it++)
@@ -889,7 +890,9 @@ void CollectionConfig::parseCollectionSettings( const ticpp::Element * collectio
     if(recommendBundle)
     {
         Element* recommendSchema = getUniqChildElement( recommendBundle, "Schema", false );
-        if(recommendSchema) parseRecommendBundleSchema(recommendSchema, collectionMeta);
+        if(recommendSchema)
+            parseRecommendBundleSchema(recommendSchema, collectionMeta);
+
         Element* recommendParam = getUniqChildElement( recommendBundle, "Parameter", false );
         parseRecommendBundleParam(recommendParam, collectionMeta);
     }
@@ -1176,6 +1179,9 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
     property_node = getUniqChildElement( product_schema, "PriceProperty", false );
     getAttribute(property_node, "name", productBundleConfig.pm_config_.price_property_name );
 
+    property_node = getUniqChildElement( product_schema, "DateProperty", false );
+    getAttribute(property_node, "name", productBundleConfig.pm_config_.date_property_name );
+
     property_node = getUniqChildElement( product_schema, "DOCIDProperty", false );
     getAttribute(property_node, "name", productBundleConfig.pm_config_.docid_property_name );
 
@@ -1186,7 +1192,7 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
     getAttribute(property_node, "name", productBundleConfig.pm_config_.itemcount_property_name );
 
     ticpp::Element* backup_node = getUniqChildElement( product_schema, "Backup", false );
-    if(backup_node!=NULL)
+    if(backup_node)
     {
         getAttribute(backup_node, "path", productBundleConfig.pm_config_.backup_path );
     }
@@ -1211,7 +1217,7 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     //for recommend
     params.Get<uint32_t>("RecommendPara/recommendnum", mining_config.recommend_param.recommend_num);
     params.GetString("RecommendPara/cron", mining_config.recommend_param.cron);
-    
+
     //for similarity
     params.Get<uint32_t>("SimilarityPara/docnumlimit", mining_config.similarity_param.docnum_limit);
     params.Get<uint32_t>("SimilarityPara/termnumlimit", mining_config.similarity_param.termnum_limit);
@@ -1558,11 +1564,11 @@ void CollectionConfig::parseRecommendBundleParam(const ticpp::Element * recParam
 
 void CollectionConfig::parseRecommendBundleSchema(const ticpp::Element * recSchemaNode, CollectionMeta & collectionMeta)
 {
-    if (recSchemaNode == NULL)
-        return;
+    assert(recSchemaNode);
 
     //** PARSE RECOMMEND SCHEMA BEGIN
     RecommendBundleConfiguration& recommendBundleConfig = *(collectionMeta.recommendBundleConfig_);
+    recommendBundleConfig.isSchemaEnable_ = true;
     RecommendSchema& recommendSchema = recommendBundleConfig.recommendSchema_;
 
     // get user schema
@@ -1584,34 +1590,6 @@ void CollectionConfig::parseRecommendBundleSchema(const ticpp::Element * recSche
                     RecommendProperty recommendProperty;
                     recommendProperty.propertyName_ = propName;
                     recommendSchema.userSchema_.push_back(recommendProperty);
-                }
-            }
-            catch ( XmlConfigParserException & e )
-            {
-                throw e;
-            }
-        } //property iteration
-    }
-
-    // get item schema
-    Element* itemSchemaNode = getUniqChildElement( recSchemaNode, "Item", false );
-    if (itemSchemaNode)
-    {
-        Iterator<Element> property("Property");
-
-        for (property = property.begin(itemSchemaNode); property != property.end(); ++property)
-        {
-            try
-            {
-                string propName;
-                getAttribute(property.Get(), "name", propName);
-
-                // ignore default property
-                if (propName != "ITEMID")
-                {
-                    RecommendProperty recommendProperty;
-                    recommendProperty.propertyName_ = propName;
-                    recommendSchema.itemSchema_.push_back(recommendProperty);
                 }
             }
             catch ( XmlConfigParserException & e )
@@ -1927,4 +1905,3 @@ void CollectionConfig::parseProperty_Indexing( const ticpp::Element * indexing, 
 }
 
 } // END - namespace sf1r
-

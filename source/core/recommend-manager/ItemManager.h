@@ -8,48 +8,24 @@
 #define ITEM_MANAGER_H
 
 #include "RecTypes.h"
-#include "Item.h"
-#include <sdb/SequentialDB.h>
-#include <sdb/SDBCursorIterator.h>
-
-#include <string>
-
-#include <boost/thread/mutex.hpp>
 
 namespace sf1r
 {
 
+class DocumentManager;
+class Document;
+
 class ItemManager
 {
 public:
-    ItemManager(const std::string& dbPath, const std::string& maxIdPath);
+    ItemManager(DocumentManager* docManager);
 
-    ~ItemManager();
+    bool getItem(itemid_t itemId, Document& doc);
 
-    void flush();
-
-    bool addItem(itemid_t itemId, const Item& item);
-    bool updateItem(itemid_t itemId, const Item& item);
-    bool removeItem(itemid_t itemId);
-
-    bool hasItem(itemid_t itemId);
-    bool getItem(itemid_t itemId, Item& item);
-    unsigned int itemNum();
-
-    itemid_t maxItemId() const {
-        return maxItemId_;
-    }
-
-    typedef izenelib::sdb::unordered_sdb_tc<itemid_t, Item, ReadWriteLock> SDBType;
-    typedef izenelib::sdb::SDBCursorIterator<SDBType> SDBIterator;
-    SDBIterator begin();
-    SDBIterator end();
+    bool hasItem(itemid_t itemId) const;
 
 private:
-    SDBType container_;
-    itemid_t maxItemId_;
-    std::string maxIdPath_;
-    boost::mutex maxIdMutex_;
+    DocumentManager* docManager_;
 };
 
 } // namespace sf1r

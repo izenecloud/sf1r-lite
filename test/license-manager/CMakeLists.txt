@@ -17,13 +17,16 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
         t_LicenseTool.cpp
         t_LicenseRequestFileGenerator.cpp
         )
-    TARGET_LINK_LIBRARIES(t_license_manager 
+    TARGET_LINK_LIBRARIES(t_license_manager
         sf1r_license_manager
         sf1r_log_manager
         sf1r_common
         sf1r_query_manager
         sf1r_la_manager
         sf1r_configuration_manager
+        sf1r_product_manager
+        sf1r_document_manager
+        sf1r_node_manager
         ${Glog_LIBRARIES}
         ${Boost_LIBRARIES}
         ${ilplib_LIBRARIES}
@@ -33,14 +36,15 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
         ${izenelib_LIBRARIES}
         ${xml2_LIBRARIES}
         sqlite3
-	${MYSQL_LIBRARIES}
+        ${MYSQL_LIBRARIES}
+        ${TokyoCabinet_LIBRARIES}
         )
     SET_TARGET_PROPERTIES(t_license_manager
         PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY 
+        RUNTIME_OUTPUT_DIRECTORY
         ${SF1RENGINE_ROOT}/testbin
         )
-    ADD_TEST(license_manager 
+    ADD_TEST(license_manager
         "${SF1RENGINE_ROOT}/testbin/t_license_manager"
         )
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)

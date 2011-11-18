@@ -33,15 +33,7 @@ bool GroupingParser::parse(const Value& grouping)
     propertyList_.clear();
 
     if (nullValue(grouping))
-    {
         return true;
-    }
-
-    if (!miningSchema_.group_enable)
-    {
-        error() = "The GroupBy properties have not been configured in <MiningBundle>::<Schema>::<Group> yet.";
-        return false;
-    }
 
     if (grouping.type() != Value::kArrayType)
     {
@@ -49,7 +41,6 @@ bool GroupingParser::parse(const Value& grouping)
         return false;
     }
 
-    const std::vector<GroupConfig> groupProps = miningSchema_.group_properties;
     for (std::size_t i = 0; i < grouping.size(); ++i)
     {
         const Value& groupingRule = grouping(i);
@@ -66,26 +57,6 @@ bool GroupingParser::parse(const Value& grouping)
         else
         {
             propParam.property_ = asString(groupingRule);
-        }
-
-        const std::string& propName = propParam.property_;
-        std::vector<GroupConfig>::const_iterator configIt;
-        for (configIt = groupProps.begin(); configIt != groupProps.end(); ++configIt)
-        {
-            if (configIt->propName == propName)
-                break;
-        }
-
-        if (configIt == groupProps.end())
-        {
-            error() = "\"" + propName + "\" is not GroupBy property, it should be configured in <MiningBundle>::<Schema>::<Group>.";
-            return false;
-        }
-
-        if (propParam.isRange_ && !configIt->isNumericType())
-        {
-            error() = "the property type of \"" + propName + "\" is not int or float for group range result.";
-            return false;
         }
 
         propertyList_.push_back(propParam);

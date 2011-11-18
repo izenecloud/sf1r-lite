@@ -35,3 +35,18 @@ void IndexModeSelector::TrySetIndexMode(long scd_file_size)
     }
     
 }
+
+void IndexModeSelector::TryCommit()
+{
+    if(! index_manager_->isRealTime())
+    {
+	index_manager_->flush();
+    }
+    else
+    {
+        ///Only flush BTreeIndexer
+        ///It might be removed for new IndexSDB
+        index_manager_->getBTreeIndexer()->flush();
+    }
+}
+

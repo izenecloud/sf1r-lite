@@ -364,9 +364,15 @@ public:
     {
         return working_dir_;
     }
+
     const std::string& getLogConnString() const
     {
         return log_conn_str_;
+    }
+
+    const std::string& getCassandraConnString() const
+    {
+        return cassandra_conn_str_;
     }
 
     /// @brief Gets the configuration related to LAManager
@@ -455,7 +461,12 @@ public:
         return false;
     }
 
-    bool isMasterEnabled()
+    bool isDistributedSearchNode()
+    {
+        return distributedTopologyConfig_.enabled_;
+    }
+
+    bool isMaster()
     {
         if (distributedTopologyConfig_.enabled_
                 && distributedTopologyConfig_.curSF1Node_.masterAgent_.enabled_
@@ -481,7 +492,7 @@ public:
         return false;
     }
 
-    bool isWorkerEnabled()
+    bool isWorker()
     {
         if (distributedTopologyConfig_.enabled_
                 && distributedTopologyConfig_.curSF1Node_.workerAgent_.enabled_
@@ -619,6 +630,8 @@ public:
     std::string working_dir_;
 
     std::string log_conn_str_;
+
+    std::string cassandra_conn_str_;
 
     /// @brief  Configurations for BrokerAgent
     BrokerAgentConfig brokerAgentConfig_;
@@ -777,4 +790,3 @@ private:
 } // namespace sf1r
 
 #endif //_XML_CONFIG_PARSER_H_
-

@@ -1,27 +1,50 @@
 #include "StringGroupLabel.h"
 #include <util/ustring/UString.h>
 
+#include <set>
+
 NS_FACETED_BEGIN
 
 StringGroupLabel::StringGroupLabel(
-    const std::vector<std::string>& labelPath,
+    const GroupParam::GroupPathVec& labelPaths,
     const PropValueTable& pvTable
 )
     : propValueTable_(pvTable)
-    , targetValueId_(0)
 {
-    std::vector<izenelib::util::UString> ustrPath;
-    for (std::vector<std::string>::const_iterator it = labelPath.begin();
-        it != labelPath.end(); ++it)
-    {
-        ustrPath.push_back(izenelib::util::UString(*it, izenelib::util::UString::UTF_8));
-    }
-    targetValueId_ = propValueTable_.propValueId(ustrPath);
+    getTargetValueIds_(labelPaths);
 }
 
 bool StringGroupLabel::test(docid_t doc) const
 {
-    return propValueTable_.testDoc(doc, targetValueId_);
+    std::set<PropValueTable::pvid_t> parentSet;
+    propValueTable_.parentIdSet(doc, parentSet);
+    std::set<PropValueTable::pvid_t>::const_iterator parentEndIt = parentSet.end();
+
+    for (std::vector<PropValueTable::pvid_t>::const_iterator it = targetValueIds_.begin();
+        it != targetValueIds_.end(); ++it)
+    {
+        if (parentSet.find(*it) != parentEndIt)
+            return true;
+    }
+
+    return false;
+}
+
+void StringGroupLabel::getTargetValueIds_(const GroupParam::GroupPathVec& labelPaths)
+{
+    for (GroupParam::GroupPathVec::const_iterator pathIt = labelPaths.begin();
+        pathIt != labelPaths.end(); ++pathIt)
+    {
+        std::vector<izenelib::util::UString> ustrPath;
+        for (std::vector<std::string>::const_iterator nodeIt = pathIt->begin();
+            nodeIt != pathIt->end(); ++nodeIt)
+        {
+            ustrPath.push_back(izenelib::util::UString(*nodeIt, izenelib::util::UString::UTF_8));
+        }
+
+        PropValueTable::pvid_t targetId = propValueTable_.propValueId(ustrPath);
+        targetValueIds_.push_back(targetId);
+    }
 }
 
 NS_FACETED_END

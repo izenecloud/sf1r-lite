@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Collection xmlns="http://www.izenesoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+<Collection xmlns="http://www.izenesoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:schemaLocation="http://www.izenesoft.com collection.xsd">
 
     <!-- format: none_time_t, time_t, utc_sec, no_date -->
@@ -26,7 +26,6 @@
 
     </DocumentSchema>
 
-   
     <IndexBundle>
       <Schema>
         <Property name="Title">
@@ -44,7 +43,7 @@
 
     <MiningBundle>
       <Schema>
-        <TaxonomyGeneration kpe_only="n"> 
+        <TaxonomyGeneration kpe_only="n">
           <Property name="Title"/>
           <Property name="Content"/>
         </TaxonomyGeneration>
@@ -74,12 +73,6 @@
           <Property name="age"/>
           <Property name="area"/>
         </User>
-        <Item>
-          <Property name="name"/>
-          <Property name="link"/>
-          <Property name="price"/>
-          <Property name="category"/>
-        </Item>
         <Track>
           <Event name="wish_list"/>
           <Event name="own"/>

@@ -1,5 +1,4 @@
 #include "OrderManager.h"
-#include "ItemManager.h"
 
 #include <idmlib/itemset/all-maximal-sets-satelite.h>
 #include <idmlib/itemset/data-source-iterator.h>
@@ -11,6 +10,8 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/archive_exception.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/thread/locks.hpp>
@@ -24,6 +25,12 @@ using namespace std;
 
 namespace
 {
+
+/** max item nums allowed in each order */
+const int MAX_ORDER_ITEM_NUM = 10;
+
+const char* MAX_ORDER_ID = "MaxOrderId";
+const char* MAX_ITEM_ID = "MaxItemId";
 
 /**
  * Get unique items from @p srcItems to @p destItems. 
@@ -44,9 +51,6 @@ void unique_items(
         }
     }
 }
-
-/** max item nums allowed in each order */
-const int MAX_ORDER_ITEM_NUM = 10;
 
 typedef std::pair<sf1r::itemid_t, int> ItemFreq;
 
@@ -114,7 +118,6 @@ bool itemSetPredicate (const std::pair<std::vector<itemid_t>, size_t >& p1, cons
 
 OrderManager::OrderManager(
     const std::string& path,
-    const ItemManager* itemManager,
     int64_t indexMemorySize
 )
     :item_order_index_(path+"/index", indexMemorySize)
@@ -123,23 +126,18 @@ OrderManager::OrderManager(
     ,max_itemsets_results_path_(path+"/maxitemsets.txt")
     ,frequent_itemsets_results_path_(path+"/frequentitemsets.db")
     ,threshold_(1)
-    ,itemManager_(itemManager)
-    ,orderIdPath_(path+"/orderId.txt")
-    ,orderId_(0)
+    ,maxIdPath_(path+"/max_id.xml")
+    ,maxOrderId_(0)
+    ,maxItemId_(0)
 {
     _restoreFreqItemsetDb();
+    _restoreMaxId();
 
     struct stat statbuf;
     bool creating = stat(order_key_path_.c_str(), &statbuf);
     order_key_ = fopen(order_key_path_.c_str(), creating ? "w+b" : "r+b");
     creating = stat(order_db_path_.c_str(), &statbuf);
     order_db_ = fopen(order_db_path_.c_str(), "ab");
-
-    std::ifstream ifs(orderIdPath_.c_str());
-    if (ifs)
-    {
-        ifs >> orderId_;
-    }
 }
 
 OrderManager::~OrderManager()
@@ -178,9 +176,9 @@ void OrderManager::_splitOrder(
             lastIt = items.end();
         }
 
-        orderid_t orderId = _newOrderId();
-        item_order_index_.add(orderId, firstIt, lastIt);
-        _writeRecord(orderId, firstIt, lastIt);
+        orderid_t newOrderId = ++maxOrderId_;
+        item_order_index_.add(newOrderId, firstIt, lastIt);
+        _writeRecord(newOrderId, firstIt, lastIt);
 
         firstIt = lastIt;
     }
@@ -260,16 +258,7 @@ void OrderManager::getAllFreqItemSets(
 
 void OrderManager::flush()
 {
-    std::ofstream ofs(orderIdPath_.c_str());
-    if (ofs)
-    {
-        ofs << orderId_;
-    }
-    else
-    {
-        LOG(ERROR) << "failed to write file " << orderIdPath_;
-    }
-
+    _saveMaxId();
     item_order_index_.flush();
     fflush(order_key_);
     fflush(order_db_);
@@ -302,6 +291,11 @@ void OrderManager::_writeRecord(
           iter != lastIt; ++iter)
     {
         itemid_t itemId = *iter;
+        if (itemId > maxItemId_)
+        {
+            maxItemId_ = itemId;
+        }
+
         fwrite(&itemId, sizeof(itemid_t), 1, order_db_); //itemId
     }
     ///flush for the new order could be fetched in _getOrder()
@@ -354,7 +348,7 @@ void OrderManager::_findMaxItemsets()
     idmlib::AllMaximalSetsSateLite ap;
     bool result = ap.FindAllMaximalSets(
         data.get(),
-        itemManager_->maxItemId()+1,
+        maxItemId_+1,
         1000000000/*max_items_in_ram*/,
         max_itemsets_results);
     if (!result) 
@@ -476,10 +470,52 @@ bool OrderManager::_restoreFreqItemsetDb()
     }
 }
 
-orderid_t OrderManager::_newOrderId()
+bool OrderManager::_saveMaxId() const
 {
-    boost::mutex::scoped_lock lock(orderIdMutex_);
-    return ++orderId_;
+    std::ofstream ofs(maxIdPath_.c_str());
+    if (ofs)
+    {
+        try
+        {
+            boost::archive::xml_oarchive oa(ofs);
+            oa << boost::serialization::make_nvp(MAX_ORDER_ID, maxOrderId_)
+               << boost::serialization::make_nvp(MAX_ITEM_ID, maxItemId_);
+        }
+        catch (boost::archive::archive_exception& e)
+        {
+            LOG(ERROR) << "failed to write file " << maxIdPath_
+                       << ", exception: " << e.what();
+            return false;
+        }
+    }
+    else
+    {
+        LOG(ERROR) << "failed to create file " << maxIdPath_;
+    }
+
+    return ofs;
+}
+
+bool OrderManager::_restoreMaxId()
+{
+    std::ifstream ifs(maxIdPath_.c_str());
+    if (ifs)
+    {
+        try
+        {
+            boost::archive::xml_iarchive ia(ifs);
+            ia >> boost::serialization::make_nvp(MAX_ORDER_ID, maxOrderId_)
+               >> boost::serialization::make_nvp(MAX_ITEM_ID, maxItemId_);
+        }
+        catch (boost::archive::archive_exception& e)
+        {
+            LOG(ERROR) << "failed to read file " << maxIdPath_
+                       << ", exception: " << e.what();
+            return false;
+        }
+    }
+
+    return ifs;
 }
 
 }

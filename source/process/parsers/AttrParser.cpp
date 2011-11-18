@@ -17,32 +17,22 @@ bool AttrParser::parse(const Value& attrValue)
     clearMessages();
 
     if (nullValue(attrValue))
-    {
         return true;
-    }
 
-    if (attrValue.type() == Value::kObjectType)
-    {
-        if (attrValue.hasKey(Keys::attr_result))
-        {
-            attrResult_ = asBool(attrValue[Keys::attr_result]);
-        }
-
-        if (attrValue.hasKey(Keys::attr_top))
-        {
-            attrTop_ = asUint(attrValue[Keys::attr_top]);
-        }
-    }
-    else
+    if (attrValue.type() != Value::kObjectType)
     {
         error() = "Require an object for request[\"attr\"].";
         return false;
     }
 
-    if (attrResult_ && !miningSchema_.group_enable)
+    if (attrValue.hasKey(Keys::attr_result))
     {
-        error() = "To get group results by attribute value, the attribute property should be configured in <MiningBundle>::<Schema>::<Attr>.";
-        return false;
+        attrResult_ = asBool(attrValue[Keys::attr_result]);
+    }
+
+    if (attrValue.hasKey(Keys::attr_top))
+    {
+        attrTop_ = asUint(attrValue[Keys::attr_top]);
     }
 
     return true;

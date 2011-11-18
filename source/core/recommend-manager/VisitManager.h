@@ -42,7 +42,7 @@ public:
         const std::string& visitDBPath,
         const std::string& recommendDBPath,
         const std::string& sessionDBPath,
-        CoVisitManager* coVisitManager
+        CoVisitManager& coVisitManager
     );
 
     void flush();
@@ -120,7 +120,7 @@ private:
     typedef izenelib::sdb::unordered_sdb_tc<userid_t, VisitSession, ReadWriteLock> SessionDBType;
     SessionDBType sessionDB_; // the items in current session
 
-    CoVisitManager* coVisitManager_;
+    CoVisitManager& coVisitManager_;
 };
 
 } // namespace sf1r

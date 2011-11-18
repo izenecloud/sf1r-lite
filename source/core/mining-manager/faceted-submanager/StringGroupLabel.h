@@ -10,6 +10,7 @@
 
 #include "GroupLabel.h"
 #include "prop_value_table.h"
+#include "GroupParam.h"
 
 #include <vector>
 #include <string>
@@ -20,15 +21,18 @@ class StringGroupLabel : public GroupLabel
 {
 public:
     StringGroupLabel(
-        const std::vector<std::string>& labelPath,
+        const GroupParam::GroupPathVec& labelPaths,
         const PropValueTable& pvTable
     );
 
     bool test(docid_t doc) const;
 
 private:
+    void getTargetValueIds_(const GroupParam::GroupPathVec& labelPaths);
+
+private:
     const PropValueTable& propValueTable_;
-    PropValueTable::pvid_t targetValueId_;
+    std::vector<PropValueTable::pvid_t> targetValueIds_;
 };
 
 NS_FACETED_END

@@ -18,6 +18,11 @@ bool buildQueryTree(
         IndexBundleConfiguration& bundleConfig,
         std::string& btqError,
         PersonalSearchInfo& personalSearchInfo);
-}
+
+void split_string(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, char Separator = ' ');
+void split_int(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, char Separator = ' ');
+void split_float(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, char Separator = ' ');
+
+} //namespace
 
 #endif

@@ -1,11 +1,11 @@
 /**
- * \file ProductInfo.cpp
- * \brief 
+ * \file ProductCount.cpp
+ * \brief
  * \date Sep 9, 2011
  * \author Xin Liu
  */
 
-#include "ProductInfo.h"
+#include "ProductCount.h"
 #include <boost/lexical_cast.hpp>
 
 using namespace std;
@@ -14,13 +14,13 @@ using namespace boost::posix_time;
 
 namespace sf1r {
 
-const char* ProductInfo::ColumnName[EoC] = { "Source", "Collection", "Num", "Flag", "TimeStamp" };
+const char* ProductCount::ColumnName[EoC] = { "Source", "Collection", "Num", "Flag", "TimeStamp" };
 
-const char* ProductInfo::ColumnMeta[EoC] = { "TEXT", "TEXT", "integer", "TEXT", "TEXT" };
+const char* ProductCount::ColumnMeta[EoC] = { "TEXT", "TEXT", "integer", "TEXT", "TEXT" };
 
-const char* ProductInfo::TableName = "product_info";
+const char* ProductCount::TableName = "product_info";
 
-void ProductInfo::save( std::map<std::string, std::string> & rawdata ) {
+void ProductCount::save( std::map<std::string, std::string> & rawdata ) {
     rawdata.clear();
     if(hasSource() )
         rawdata[ ColumnName[Source] ] = getSource();
@@ -34,7 +34,7 @@ void ProductInfo::save( std::map<std::string, std::string> & rawdata ) {
         rawdata[ ColumnName[TimeStamp] ] = to_iso_string(getTimeStamp());
 }
 
-void ProductInfo::load( const std::map<std::string, std::string> & rawdata ) {
+void ProductCount::load( const std::map<std::string, std::string> & rawdata ) {
     for( map<string,string>::const_iterator it = rawdata.begin(); it != rawdata.end(); it++ ) {
         if(it->first == ColumnName[Source] ) {
             setSource(it->second);

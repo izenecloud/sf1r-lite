@@ -36,7 +36,7 @@ private:
     ProductTaskService* taskService_;
     IServiceRegistration* taskServiceReg_;
     IndexTaskService* refIndexTaskService_;
-    
+
     ProductBundleConfiguration* config_;
     std::string currentCollectionDataName_;
     DirectoryRotator directoryRotator_;
@@ -46,11 +46,11 @@ private:
     ProductScdReceiver* scd_receiver_;
     bool openDataDirectories_();
     std::string getCollectionDataPath_() const;
-    
+
     std::string getCurrentCollectionDataPath_() const;
-    
+
     std::string getQueryDataPath_() const;
-    
+
     boost::shared_ptr<ProductManager> createProductManager_(IndexSearchService* indexService);
     void addIndexHook_(IndexTaskService* indexService) const;
 
@@ -65,4 +65,3 @@ public:
 
 }
 #endif
-

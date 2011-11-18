@@ -34,7 +34,7 @@ void setReasonEvent(
         for (std::vector<ReasonItem>::iterator reasonIt = reasonItems.begin();
             reasonIt != reasonItems.end(); ++reasonIt)
         {
-            itemid_t itemId = reasonIt->itemId_;
+            itemid_t itemId = reasonIt->item_.getId();
             reasonIt->event_ = itemEventMap[itemId];
 
             if (reasonIt->event_ == RecommendSchema::RATE_EVENT)

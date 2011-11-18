@@ -4,15 +4,12 @@
 #include <common/type_defs.h>
 #include <document-manager/Document.h>
 
-
 namespace sf1r
 {
 
-
+typedef double ProductPriceType;
 typedef Document PMDocumentType;
-
 
 }
 
 #endif
-

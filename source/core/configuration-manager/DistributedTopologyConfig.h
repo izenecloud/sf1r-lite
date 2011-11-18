@@ -17,10 +17,11 @@ namespace sf1r
 
 struct SF1Node
 {
-    unsigned int nodeId_;
-    unsigned int replicaId_;
     std::string host_;
     unsigned int baPort_;
+
+    unsigned int nodeId_;
+    unsigned int replicaId_;
 
     MasterAgentConfig masterAgent_;
     WorkerAgentConfig workerAgent_;
@@ -42,7 +43,7 @@ class DistributedTopologyConfig
 {
 public:
     DistributedTopologyConfig()
-    : enabled_(false), nodeNum_(0), workerNum_(0)
+    : enabled_(false), nodeNum_(0), shardNum_(0)
     {
     }
 
@@ -51,7 +52,7 @@ public:
         std::stringstream ss;
         ss << "==== [DistributedTopology] ===="<<endl;
         ss << "enabled ? "<<enabled_<<", clusterId "<<clusterId_
-           <<" nodeNum: "<<nodeNum_<<" workerNum: "<<workerNum_<<endl;
+           <<" nodeNum: "<<nodeNum_<<" workerNum: "<<shardNum_<<endl;
 
         ss << curSF1Node_.toString();
         ss << "==============================="<<endl;
@@ -63,7 +64,7 @@ public:
     bool enabled_;
     std::string clusterId_;
     unsigned int nodeNum_;
-    unsigned int workerNum_;
+    unsigned int shardNum_;
 
     // current SF1 node configuration
     SF1Node curSF1Node_;

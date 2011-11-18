@@ -1,19 +1,19 @@
 /**
- * \file ProductInfo.h
- * \brief 
+ * \file ProductCount.h
+ * \brief
  * \date Sep 9, 2011
  * \author Xin Liu
  */
 
-#ifndef _PRODUCT_INFO_H_
-#define _PRODUCT_INFO_H_
+#ifndef _PRODUCT_COUNT_H_
+#define _PRODUCT_COUNT_H_
 
 #include "RDbRecordBase.h"
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace sf1r {
 
-class ProductInfo : public RDbRecordBase {
+class ProductCount : public RDbRecordBase {
 
 public:
 
@@ -25,15 +25,15 @@ public:
 
     static const char* TableName;
 
-    DEFINE_RDB_RECORD_COMMON_ROUTINES(ProductInfo)
+    DEFINE_RDB_RECORD_COMMON_ROUTINES(ProductCount)
 
-    ProductInfo() : RDbRecordBase(),
+    ProductCount() : RDbRecordBase(),
         sourcePresent_(false),
         collectionPresent_(false),
         numPresent_(false),
         timeStampPresent_(false){}
 
-    ~ProductInfo(){}
+    ~ProductCount(){}
 
     inline const std::string & getSource() const
     {
@@ -138,4 +138,4 @@ private:
 };
 
 }
-#endif /*_PRODUCT_INFO_H_ */
+#endif /*_PRODUCT_COUNT_H_ */

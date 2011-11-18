@@ -82,10 +82,15 @@ bool CobraProcess::initialize(const std::string& configFileDir)
 bool CobraProcess::initLogManager()
 {
     std::string log_conn = SF1Config::get()->getLogConnString();
-//     bfs::path logPath(bfs::path(".") / "log" / "COBRA");
-    if( !sflog->init(log_conn) )
+    std::string cassandra_conn = SF1Config::get()->getCassandraConnString();
+    if (!sflog->init(log_conn))
     {
-        std::cerr<<"Init LogManager with "<<log_conn<<" failed!"<<std::endl;
+        std::cerr << "Init LogManager with " << log_conn << " failed!" << std::endl;
+        return false;
+    }
+    if (!sflog->initCassandra(cassandra_conn))
+    {
+        std::cerr << "Init CassandraConnection with " << cassandra_conn << " failed!" << std::endl;
         return false;
     }
     return true;
@@ -229,13 +234,10 @@ void CobraProcess::stopDriver()
 
 bool CobraProcess::startDistributedServer()
 {
-    if (!SF1Config::get()->distributedTopologyConfig_.enabled_)
+    if (!SF1Config::get()->isDistributedSearchNode())
         return false;
 
-    // Register current SF1 node through zookeeper
-    NodeManagerSingleton::get()->registerNode();
-
-    if (sf1r::SF1Config::get()->isWorkerEnabled())
+    if (SF1Config::get()->isWorker())
     {
         try
         {
@@ -243,17 +245,15 @@ bool CobraProcess::startDistributedServer()
             std::string localHost = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.host_;
             uint16_t workerPort = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.port_;
             std::size_t threadNum = SF1Config::get()->brokerAgentConfig_.threadNum_;
-            workerServer_.reset(new WorkerServer(localHost, workerPort, threadNum));
-            workerServer_->start();
-            cout << "#[Worker Server]started, listening at localhost:"<<workerPort<<" ..."<<endl;
+
+            WorkerServerSingle::get()->init(localHost, workerPort, threadNum, true);
+            WorkerServerSingle::get()->start();
+            cout << "#[Worker Server]started, listening at "<<localHost<<":"<<workerPort<<" ..."<<endl;
 
             // master notifier, xxx
             //std::string masterHost = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.masterHost_;
             //uint16_t masterPort = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.masterPort_;
             //MasterNotifierSingleton::get()->setMasterServerInfo(masterHost, masterPort);
-
-            // Let current node work as Worker
-            NodeManagerSingleton::get()->registerWorker();
         }
         catch (std::exception& e)
         {
@@ -261,18 +261,13 @@ bool CobraProcess::startDistributedServer()
         }
     }
 
-    if (SF1Config::get()->isMasterEnabled())
+    if (SF1Config::get()->isMaster())
     {
         // master rpc server
         //MasterServer::get()->start(curNodeInfo.localHost_, masterPort);
-
-        // Let current node work as Master
-        NodeManagerSingleton::get()->registerMaster();
-
-        // Initialize & Start Master Node Manager
-        MasterNodeManagerSingleton::get()->init();
-        MasterNodeManagerSingleton::get()->startServer();
     }
+
+    NodeManagerSingleton::get()->start();
 
     addExitHook(boost::bind(&CobraProcess::stopDistributedServer, this));
 
@@ -281,13 +276,13 @@ bool CobraProcess::startDistributedServer()
 
 void CobraProcess::stopDistributedServer()
 {
-    NodeManagerSingleton::get()->deregisterNode();
-
-    if (workerServer_)
+    if (SF1Config::get()->isDistributedSearchNode()
+            && SF1Config::get()->isWorker())
     {
-        workerServer_->end();
-        workerServer_->join();
+        WorkerServerSingle::get()->stop();
     }
+
+    NodeManagerSingleton::get()->stop();
 }
 
 int CobraProcess::run()

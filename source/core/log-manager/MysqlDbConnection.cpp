@@ -22,7 +22,7 @@ MysqlDbConnection::~MysqlDbConnection()
 
 void MysqlDbConnection::close()
 {
-    mutex_.acquire_write_lock();
+    boost::unique_lock<boost::mutex> lock(mutex_);
     for(std::list<MYSQL*>::iterator it= pool_.begin(); it!=pool_.end(); it++ ) {
         mysql_close(*it);
     }
@@ -30,7 +30,6 @@ void MysqlDbConnection::close()
 
     //release it at last
     mysql_library_end();
-    mutex_.release_write_lock();
 }
 
 bool MysqlDbConnection::init(const std::string& str )
@@ -82,7 +81,7 @@ bool MysqlDbConnection::init(const std::string& str )
     int flags = CLIENT_MULTI_STATEMENTS;
 
     bool ret = true;
-    mutex_.acquire_write_lock();
+    boost::unique_lock<boost::mutex> lock(mutex_);
     for(int i=0; i<PoolSize; i++) {
         MYSQL* mysql = mysql_init(NULL);
         if (!mysql)
@@ -117,7 +116,6 @@ bool MysqlDbConnection::init(const std::string& str )
 
         pool_.push_back(mysql);
     }
-    mutex_.release_write_lock();
     if(!ret) close();
     return ret;
 }
@@ -125,20 +123,21 @@ bool MysqlDbConnection::init(const std::string& str )
 MYSQL* MysqlDbConnection::getDb()
 {
     MYSQL* db = NULL;
-    mutex_.acquire_write_lock();
-    if(!pool_.empty()) {
-        db = pool_.front();
-        pool_.pop_front();
+    boost::unique_lock<boost::mutex> lock(mutex_);
+    while(pool_.empty())
+    {
+        cond_.wait(lock);
     }
-    mutex_.release_write_lock();
+    db = pool_.front();
+    pool_.pop_front();
     return db;
 }
 
 void MysqlDbConnection::putDb(MYSQL* db)
 {
-    mutex_.acquire_write_lock();
+    boost::unique_lock<boost::mutex> lock(mutex_);
     pool_.push_back(db);
-    mutex_.release_write_lock();
+    cond_.notify_one();
 }
 
 bool MysqlDbConnection::exec(const std::string & sql, bool omitError)

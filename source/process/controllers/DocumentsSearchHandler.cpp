@@ -361,11 +361,11 @@ bool DocumentsSearchHandler::parse()
     parsers.push_back(&pageInfoParser);
     values.push_back(&request_.get());
 
-    GroupingParser groupingParser(miningSchema_);
+    GroupingParser groupingParser;
     parsers.push_back(&groupingParser);
     values.push_back(&request_[Keys::group]);
 
-    AttrParser attrParser(miningSchema_);
+    AttrParser attrParser;
     parsers.push_back(&attrParser);
     values.push_back(&request_[Keys::attr]);
 
@@ -471,7 +471,7 @@ bool DocumentsSearchHandler::parse()
     actionItem_.rangePropertyName_ = rangeParser.rangeProperty();
 
     std::string message;
-    if (!actionItem_.groupParam_.checkParam(message))
+    if (!actionItem_.groupParam_.checkParam(miningSchema_, message))
     {
         response_.addError(message);
         return false;
@@ -813,15 +813,6 @@ void DocumentsSearchKeywordsLogger::log(
     boost::posix_time::ptime now =
         boost::posix_time::microsec_clock::local_time();
 
-    boost::posix_time::ptime startTimeInPrecisonSecond(
-        start_.date(),
-        boost::posix_time::time_duration(
-            start_.time_of_day().hours(),
-            start_.time_of_day().minutes(),
-            start_.time_of_day().seconds()
-        )
-    );
-
     boost::posix_time::time_duration duration = now - start_;
 
     izenelib::util::UString queryString(
@@ -837,7 +828,7 @@ void DocumentsSearchKeywordsLogger::log(
     queryLog.setPageStart(actionItem.pageInfo_.start_);
     queryLog.setPageCount(actionItem.pageInfo_.count_);
     queryLog.setSessionId(session);
-    queryLog.setTimeStamp(startTimeInPrecisonSecond);
+    queryLog.setTimeStamp(start_);
     queryLog.setDuration(duration);
     queryLog.save();
 }

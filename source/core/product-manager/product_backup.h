@@ -16,16 +16,16 @@
 
 namespace sf1r
 {
-    
+
 class ProductManager;
 
 ///@brief Not thread safe, controlled by ProductManager
 class ProductBackup
 {
-    
+
     typedef ProductBackupWriter WriterType;
 public:
-    
+
     ProductBackup(const std::string& file)
     :file_(file), writer_(NULL)
     {
@@ -34,7 +34,7 @@ public:
     ~ProductBackup()
     {
     }
-    
+
 //     bool Open()
 //     {
 //         data_.clear();
@@ -49,9 +49,9 @@ public:
 //             data_.insert(std::make_pair(str_key, value));
 //         }
 //         reader.Close();
-//         
+//
 //     }
-    
+
     bool Recover(ProductManager* pm)
     {
         std::string DOCID = "DOCID";
@@ -66,8 +66,7 @@ public:
             std::cout<<"ProductBackupReader::CheckValidation failed"<<std::endl;
             return false;
         }
-        
-        
+
         ProductBackupDataType::iterator it = data.begin();
         while(it!=data.end())
         {
@@ -88,7 +87,7 @@ public:
         }
         return true;
     }
-    
+
     bool AddPriceComparisonItem(const izenelib::util::UString& uuid, const std::vector<izenelib::util::UString>& docid_list, int type)
     {
         WriterType* writer = GetWriter_();
@@ -97,9 +96,9 @@ public:
             return false;
         }
         return writer->AddPriceComparisonItem(uuid, docid_list, type);
-       
+
     }
-    
+
     bool AddProductUpdateItem(const PMDocumentType& doc)
     {
         WriterType* writer = GetWriter_();
@@ -108,9 +107,9 @@ public:
             return false;
         }
         return writer->AddProductUpdateItem(doc);
-        
+
     }
-    
+
 private:
     WriterType* GetWriter_()
     {
@@ -125,18 +124,13 @@ private:
         }
         return writer_;
     }
-    
-    
-    
-    
-        
+
 private:
     std::string file_;
     WriterType* writer_;
-    
+
 };
 
 }
 
 #endif
-

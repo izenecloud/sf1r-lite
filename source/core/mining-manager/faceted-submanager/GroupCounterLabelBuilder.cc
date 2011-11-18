@@ -7,10 +7,107 @@
 #include "NumericRangeGroupLabel.h"
 #include <configuration-manager/GroupConfig.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
+#include <search-manager/NumericPropertyTable.h>
 
 #include <limits>
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
+
+namespace
+{
+const char* NUMERIC_RANGE_DELIMITER = "-";
+
+using namespace sf1r::faceted;
+
+/**
+ * check parameter of group label
+ * @param[in] labelParam parameter to check
+ * @param[out] isRange true for group on range, false for group on single numeric value
+ * @return true for success, false for failure
+*/
+bool checkLabelParam(const GroupParam::GroupLabelParam& labelParam, bool& isRange)
+{
+    const GroupParam::GroupPathVec& labelPaths = labelParam.second;
+
+    if (labelPaths.empty())
+        return false;
+
+    const GroupParam::GroupPath& path = labelPaths.front();
+    if (path.empty())
+        return false;
+
+    const std::string& propValue = path.front();
+    std::size_t delimitPos = propValue.find(NUMERIC_RANGE_DELIMITER);
+    isRange = (delimitPos != std::string::npos);
+
+    return true;
+}
+
+bool convertNumericLabel(const std::string& src, float& target)
+{
+    std::size_t delimitPos = src.find(NUMERIC_RANGE_DELIMITER);
+    if (delimitPos != std::string::npos)
+    {
+        LOG(ERROR) << "group label parameter: " << src
+                   << ", it should be specified as single numeric value";
+        return false;
+    }
+
+    try
+    {
+        target = boost::lexical_cast<float>(src);
+    }
+    catch(const boost::bad_lexical_cast& e)
+    {
+        LOG(ERROR) << "failed in casting label from " << src
+                   << " to numeric value, exception: " << e.what();
+        return false;
+    }
+
+    return true;
+}
+
+bool convertRangeLabel(const std::string& src, NumericRangeGroupLabel::NumericRange& target)
+{
+    std::size_t delimitPos = src.find(NUMERIC_RANGE_DELIMITER);
+    if (delimitPos == std::string::npos)
+    {
+        LOG(ERROR) << "group label parameter: " << src
+                   << ", it should be specified as numeric range value";
+        return false;
+    }
+
+    int64_t lowerBound = std::numeric_limits<int64_t>::min();
+    int64_t upperBound = std::numeric_limits<int64_t>::max();
+
+    try
+    {
+        if (delimitPos)
+        {
+            std::string sub = src.substr(0, delimitPos);
+            lowerBound = boost::lexical_cast<int64_t>(sub);
+        }
+
+        if (delimitPos+1 != src.size())
+        {
+            std::string sub = src.substr(delimitPos+1);
+            upperBound = boost::lexical_cast<int64_t>(sub);
+        }
+    }
+    catch(const boost::bad_lexical_cast& e)
+    {
+        LOG(ERROR) << "failed in casting label from " << src
+                    << " to numeric value, exception: " << e.what();
+        return false;
+    }
+
+    target.first = lowerBound;
+    target.second = upperBound;
+
+    return true;
+}
+
+}
 
 NS_FACETED_BEGIN
 
@@ -56,17 +153,17 @@ GroupCounter* GroupCounterLabelBuilder::createGroupCounter(const GroupPropParam&
     const std::string& propName = groupPropParam.property_;
     if (groupPropParam.isRange_)
     {
-        counter = createNumericRangeCounter(propName);
+        counter = createNumericRangeCounter_(propName);
     }
     else
     {
-        counter = createValueCounter(propName);
+        counter = createValueCounter_(propName);
     }
 
     return counter;
 }
 
-GroupCounter* GroupCounterLabelBuilder::createValueCounter(const std::string& prop) const
+GroupCounter* GroupCounterLabelBuilder::createValueCounter_(const std::string& prop) const
 {
     GroupCounter* counter = NULL;
 
@@ -74,14 +171,14 @@ GroupCounter* GroupCounterLabelBuilder::createValueCounter(const std::string& pr
     switch(type)
     {
     case STRING_PROPERTY_TYPE:
-        counter = createStringCounter(prop);
+        counter = createStringCounter_(prop);
         break;
 
     case INT_PROPERTY_TYPE:
     case UNSIGNED_INT_PROPERTY_TYPE:
     case FLOAT_PROPERTY_TYPE:
     case DOUBLE_PROPERTY_TYPE:
-         counter = createNumericCounter(prop);
+         counter = createNumericCounter_(prop);
          break;
 
     default:
@@ -93,7 +190,7 @@ GroupCounter* GroupCounterLabelBuilder::createValueCounter(const std::string& pr
     return counter;
 }
 
-GroupCounter* GroupCounterLabelBuilder::createStringCounter(const std::string& prop) const
+GroupCounter* GroupCounterLabelBuilder::createStringCounter_(const std::string& prop) const
 {
     GroupCounter* counter = NULL;
 
@@ -110,7 +207,7 @@ GroupCounter* GroupCounterLabelBuilder::createStringCounter(const std::string& p
     return counter;
 }
 
-GroupCounter* GroupCounterLabelBuilder::createNumericCounter(const std::string& prop) const
+GroupCounter* GroupCounterLabelBuilder::createNumericCounter_(const std::string& prop) const
 {
     NumericPropertyTable *propertyTable = numericTableBuilder_->createPropertyTable(prop);
 
@@ -122,8 +219,7 @@ GroupCounter* GroupCounterLabelBuilder::createNumericCounter(const std::string& 
     return NULL;
 }
 
-
-GroupCounter* GroupCounterLabelBuilder::createNumericRangeCounter(const std::string& prop) const
+GroupCounter* GroupCounterLabelBuilder::createNumericRangeCounter_(const std::string& prop) const
 {
     const GroupConfig* groupConfig = getGroupConfig_(prop);
     if (!groupConfig || !groupConfig->isNumericType())
@@ -141,7 +237,7 @@ GroupCounter* GroupCounterLabelBuilder::createNumericRangeCounter(const std::str
     return NULL;
 }
 
-GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLabel& labelParam)
+GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLabelParam& labelParam)
 {
     GroupLabel* label = NULL;
 
@@ -150,14 +246,14 @@ GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLa
     switch(type)
     {
     case STRING_PROPERTY_TYPE:
-        label = createStringLabel(labelParam);
+        label = createStringLabel_(labelParam);
         break;
 
     case INT_PROPERTY_TYPE:
     case UNSIGNED_INT_PROPERTY_TYPE:
     case FLOAT_PROPERTY_TYPE:
     case DOUBLE_PROPERTY_TYPE:
-        label = createNumericRangeLabel(labelParam);
+        label = createNumericRangeLabel_(labelParam);
         break;
 
     default:
@@ -169,7 +265,7 @@ GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLa
     return label;
 }
 
-GroupLabel* GroupCounterLabelBuilder::createStringLabel(const GroupParam::GroupLabel& labelParam) const
+GroupLabel* GroupCounterLabelBuilder::createStringLabel_(const GroupParam::GroupLabelParam& labelParam) const
 {
     GroupLabel* label = NULL;
 
@@ -187,56 +283,89 @@ GroupLabel* GroupCounterLabelBuilder::createStringLabel(const GroupParam::GroupL
     return label;
 }
 
-GroupLabel* GroupCounterLabelBuilder::createNumericRangeLabel(const GroupParam::GroupLabel& labelParam) const
+GroupLabel* GroupCounterLabelBuilder::createNumericRangeLabel_(const GroupParam::GroupLabelParam& labelParam) const
 {
     const std::string& propName = labelParam.first;
-    if (labelParam.second.empty())
+    bool isRange = false;
+
+    if (! checkLabelParam(labelParam, isRange))
     {
         LOG(ERROR) << "empty group label value for property " << propName;
         return NULL;
     }
 
-    NumericPropertyTable *propertyTable = numericTableBuilder_->createPropertyTable(propName);
-    if (!propertyTable)
+    if (isRange)
+        return createRangeLabel_(labelParam);
+
+    return createNumericLabel_(labelParam);
+}
+
+GroupLabel* GroupCounterLabelBuilder::createNumericLabel_(const GroupParam::GroupLabelParam& labelParam) const
+{
+    const std::string& propName = labelParam.first;
+    const GroupParam::GroupPathVec& paths = labelParam.second;
+
+    const NumericPropertyTable *propTable = numericTableBuilder_->createPropertyTable(propName);
+    if (!propTable)
     {
         LOG(ERROR) << "failed in creating numeric table for property " << propName;
         return NULL;
     }
 
-    const std::string& propValue = labelParam.second[0];
-    try
+    std::vector<float> targetValues;
+    for (GroupParam::GroupPathVec::const_iterator pathIt = paths.begin();
+        pathIt != paths.end(); ++pathIt)
     {
-        std::size_t delimitPos = propValue.find('-');
-        if (delimitPos == std::string::npos)
+        const GroupParam::GroupPath& path = *pathIt;
+        if (path.empty())
         {
-            float value = boost::lexical_cast<float>(propValue);
-            return new NumericRangeGroupLabel(propertyTable, value);
+            LOG(ERROR) << "empty group label value for property " << propName;
+            return NULL;
         }
 
-        int64_t lowerBound = std::numeric_limits<int64_t>::min();
-        int64_t upperBound = std::numeric_limits<int64_t>::max();
+        const std::string& propValue = path.front();
+        float value = 0;
+        if (! convertNumericLabel(propValue, value))
+            return NULL;
 
-        if (delimitPos)
-        {
-            std::string sub = propValue.substr(0, delimitPos);
-            lowerBound = boost::lexical_cast<int64_t>(sub);
-        }
-
-        if (delimitPos+1 != propValue.size())
-        {
-            std::string sub = propValue.substr(delimitPos+1);
-            upperBound = boost::lexical_cast<int64_t>(sub);
-        }
-
-        return new NumericRangeGroupLabel(propertyTable, lowerBound, upperBound);
-    }
-    catch(const boost::bad_lexical_cast& e)
-    {
-        LOG(ERROR) << "failed in casting label from " << propValue
-                    << " to numeric value, exception: " << e.what();
+        targetValues.push_back(value);
     }
 
-    return NULL;
+    return new NumericRangeGroupLabel(propTable, targetValues);
+}
+
+GroupLabel* GroupCounterLabelBuilder::createRangeLabel_(const GroupParam::GroupLabelParam& labelParam) const
+{
+    const std::string& propName = labelParam.first;
+    const GroupParam::GroupPathVec& paths = labelParam.second;
+
+    const NumericPropertyTable *propTable = numericTableBuilder_->createPropertyTable(propName);
+    if (!propTable)
+    {
+        LOG(ERROR) << "failed in creating numeric table for property " << propName;
+        return NULL;
+    }
+
+    NumericRangeGroupLabel::NumericRangeVec ranges;
+    for (GroupParam::GroupPathVec::const_iterator pathIt = paths.begin();
+        pathIt != paths.end(); ++pathIt)
+    {
+        const GroupParam::GroupPath& path = *pathIt;
+        if (path.empty())
+        {
+            LOG(ERROR) << "empty group label value for property " << propName;
+            return NULL;
+        }
+
+        const std::string& propValue = path.front();
+        NumericRangeGroupLabel::NumericRange range;
+        if (! convertRangeLabel(propValue, range))
+            return NULL;
+
+        ranges.push_back(range);
+    }
+
+    return new NumericRangeGroupLabel(propTable, ranges);
 }
 
 NS_FACETED_END

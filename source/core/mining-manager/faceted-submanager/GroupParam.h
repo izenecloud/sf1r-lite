@@ -15,9 +15,16 @@
 #include <boost/serialization/access.hpp>
 
 #include <vector>
+#include <map>
 #include <string>
 #include <iostream>
 #include <utility> // pair
+
+namespace sf1r
+{
+class MiningSchema;
+class GroupConfig;
+}
 
 NS_FACETED_BEGIN
 
@@ -51,12 +58,14 @@ struct GroupParam
 
     /** the group path contains values from root to leaf node */
     typedef std::vector<std::string> GroupPath;
-    /** the group label contains property name and group path */
-    typedef std::pair<std::string, GroupPath> GroupLabel;
-    /** a list of group labels */
-    typedef std::vector<GroupLabel> GroupLabelVec;
+    /** a list of group paths for one property */
+    typedef std::vector<GroupPath> GroupPathVec;
+    /** map from property name to group paths */
+    typedef std::map<std::string, GroupPathVec> GroupLabelMap;
+    /** a pair of property name and group path */
+    typedef GroupLabelMap::value_type GroupLabelParam;
     /** selected group labels */
-    GroupLabelVec groupLabels_;
+    GroupLabelMap groupLabels_;
 
     /** true for need doc counts for each attribute value */
     bool isAttrGroup_;
@@ -74,7 +83,7 @@ struct GroupParam
     bool isEmpty() const;
     bool isGroupEmpty() const;
     bool isAttrEmpty() const;
-    bool checkParam(std::string& message) const;
+    bool checkParam(const MiningSchema& miningSchema, std::string& message) const;
 
     DATA_IO_LOAD_SAVE(GroupParam, &groupProps_&groupLabels_
             &isAttrGroup_&attrGroupNum_&attrLabels_);
@@ -91,6 +100,13 @@ struct GroupParam
         ar & attrGroupNum_;
         ar & attrLabels_;
     }
+
+private:
+    bool checkGroupParam_(const MiningSchema& miningSchema, std::string& message) const;
+    bool checkGroupProps_(const std::vector<GroupConfig>& groupProps, std::string& message) const;
+    bool checkGroupLabels_(const std::vector<GroupConfig>& groupProps, std::string& message) const;
+    bool checkAttrParam_(const MiningSchema& miningSchema, std::string& message) const;
+    bool isRangeLabel_(const std::string& propName) const;
 };
 
 bool operator==(const GroupParam& a, const GroupParam& b);

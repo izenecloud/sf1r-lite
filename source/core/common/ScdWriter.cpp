@@ -50,7 +50,7 @@ std::string ScdWriter::GenSCDFileName( int op)
     ss<<"-C.SCD";
     return ss.str();
 }
-    
+
 void ScdWriter::Append(const Document& doc)
 {
     const static std::string DOCID = "DOCID";
@@ -83,7 +83,7 @@ void ScdWriter::Append(const Document& doc)
 //             }
 //         }
         bool is_ustr = boost::apply_visitor( ustring_visitor_, it->second.getVariant());
-        if(!is_ustr) 
+        if(!is_ustr)
         {
             ++it;
             continue;
@@ -152,7 +152,7 @@ bool ScdWriter::Append(const SCDDoc& doc)
     }
     return true;
 }
-    
+
 void ScdWriter::Close()
 {
     if(ofs_.is_open())

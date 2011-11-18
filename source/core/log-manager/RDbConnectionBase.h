@@ -2,6 +2,10 @@
 #define SF1R_RDBCONNECTIONBASE_H_
 
 #include "RDbConnection.h" // SQL_KEYWORD
+#include <boost/thread/condition_variable.hpp>
+#include <boost/thread/locks.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/thread.hpp>
 
 #include <iostream>
 #include <string>
@@ -16,7 +20,6 @@ public:
 
     virtual ~RDbConnectionBase(){}
 
-    
     virtual bool init(const std::string& str){return true;}
 
     virtual void close(){}

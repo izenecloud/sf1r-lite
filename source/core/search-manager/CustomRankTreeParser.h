@@ -12,6 +12,7 @@
 #include <boost/spirit/include/classic.hpp>
 #include <boost/spirit/include/classic_ast.hpp>
 
+#include "PropertyData.h"
 #include <common/type_defs.h>
 
 namespace sf1r {
@@ -73,19 +74,17 @@ public:
     string name_; // param name or property name
     double value_;
 
-    PropertyDataType dataType_;
-    void* pData_;
-
+    boost::shared_ptr<PropertyData> propertyData_;
     std::vector<boost::shared_ptr<ExpSyntaxTree> > children_;
 
     ExpSyntaxTree()
-    :type_(UNKNOWN), name_(), value_(0), dataType_(UNKNOWN_DATA_PROPERTY_TYPE), pData_(NULL)
+    :type_(UNKNOWN), name_(), value_(0)
     {
 
     }
 
     ExpSyntaxTree(NodeType type)
-    :type_(type), name_(), value_(0), dataType_(UNKNOWN_DATA_PROPERTY_TYPE), pData_(NULL)
+    :type_(type), name_(), value_(0)
     {
 
     }

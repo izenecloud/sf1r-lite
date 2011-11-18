@@ -39,7 +39,7 @@ public:
     std::string toString()
     {
         std::stringstream ss;
-        ss<<"[WorkerAgentConfig] enabled ? "<<enabled_<<" port : "<<port_<<endl;
+        ss<<"[WorkerAgentConfig] enabled? "<<enabled_<<" port: "<<port_<<", shardid: "<<shardId_<<endl;
         ss<<"Master host "<< masterHost_<<" port "<<masterPort_<<endl;
 
         std::map<std::string, ServiceUnit>::iterator it;
@@ -54,6 +54,7 @@ public:
 public:
     bool enabled_;
     unsigned int port_;
+    unsigned int shardId_;
 
     std::map<std::string, ServiceUnit> serviceMap_;
 

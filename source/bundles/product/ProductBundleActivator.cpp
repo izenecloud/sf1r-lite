@@ -43,15 +43,15 @@ ProductBundleActivator::ProductBundleActivator()
 
 ProductBundleActivator::~ProductBundleActivator()
 {
-    if(data_source_!=0)
+    if(data_source_)
     {
         delete data_source_;
     }
-    if(op_processor_!=0)
+    if(op_processor_)
     {
         delete op_processor_;
     }
-    if(scd_receiver_!=0)
+    if(scd_receiver_)
     {
         delete scd_receiver_;
     }
@@ -112,14 +112,14 @@ bool ProductBundleActivator::addingService( const ServiceReference& ref )
         {
             IndexSearchService* service = reinterpret_cast<IndexSearchService*> ( const_cast<IService*>(ref.getService()) );
             std::cout << "[ProductBundleActivator#addingService] Calling IndexSearchService..." << std::endl;
-            
+
             if(config_->mode_==1)//in m
             {
                 productManager_ = createProductManager_(service);
-                
+
                 searchService_ = new ProductSearchService(config_);
                 searchService_->productManager_ = productManager_;
-                
+
                 if(refIndexTaskService_ )
                 {
                     addIndexHook_(refIndexTaskService_);
@@ -128,7 +128,7 @@ bool ProductBundleActivator::addingService( const ServiceReference& ref )
             else//in a
             {
             }
-            
+
             taskService_ = new ProductTaskService(config_);
             searchServiceReg_ = context_->registerService( "ProductSearchService", searchService_, props );
             taskServiceReg_ = context_->registerService( "ProductTaskService", taskService_, props );
@@ -157,7 +157,7 @@ bool ProductBundleActivator::addingService( const ServiceReference& ref )
                 scd_receiver_ = new ProductScdReceiver();
                 scd_receiver_->Set(refIndexTaskService_);
             }
-            
+
         }
         else
         {
@@ -171,7 +171,7 @@ bool ProductBundleActivator::addingService( const ServiceReference& ref )
     return true;
 }
 
-boost::shared_ptr<ProductManager> 
+boost::shared_ptr<ProductManager>
 ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
 {
     std::cout<<"ProductBundleActivator::createProductManager_"<<std::endl;
@@ -181,9 +181,9 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
     boost::filesystem::create_directories(dir);
     data_source_ = new CollectionProductDataSource(indexService->workerService_->documentManager_, indexService->workerService_->indexManager_, indexService->workerService_->idManager_, config_->pm_config_, config_->schema_);
     op_processor_ = new ScdOperationProcessor(dir);
-    boost::shared_ptr<ProductManager> product_manager(new ProductManager(data_source_, op_processor_, config_->pm_config_));
+    boost::shared_ptr<ProductManager> product_manager(new ProductManager(config_->collectionName_, data_source_, op_processor_, config_->pm_config_));
     return product_manager;
-    
+
 }
 
 void ProductBundleActivator::addIndexHook_(IndexTaskService* indexService) const
@@ -212,7 +212,7 @@ bool ProductBundleActivator::openDataDirectories_()
         if (!directoryRotator_.appendDirectory(dataDir))
         {
             std::string msg = dataDir.file_string() + " corrupted, delete it!";
-            sflog->error( SFL_SYS, msg.c_str() ); 
+            sflog->error( SFL_SYS, msg.c_str() );
             std::cout<<msg<<std::endl;
             //clean the corrupt dir
             boost::filesystem::remove_all( dataDir );
@@ -247,7 +247,4 @@ std::string ProductBundleActivator::getQueryDataPath_() const
     return config_->collPath_.getQueryDataPath();
 }
 
-
-
 }
-
