@@ -26,12 +26,17 @@ SynchroProducer::SynchroProducer(
     prodNodePath_ = ss.str();
 }
 
+SynchroProducer::~SynchroProducer()
+{
+    zookeeper_->deleteZNode(prodNodePath_, true);
+}
+
 bool SynchroProducer::produce(const std::string& dataPath, callback_on_consumed_t callback_on_consumed)
 {
+    // xxx lock
     if (isSynchronizing_)
     {
-        // xxx
-        std::cout<<"[SynchroProducer::produce] Re-entry error: synchronizer is working !"<<std::endl;
+        std::cout<<"[SynchroProducer] Re-entry error: synchronizer is working !"<<std::endl;
         return false;
     }
     else
@@ -53,6 +58,8 @@ bool SynchroProducer::produce(const std::string& dataPath, callback_on_consumed_
 
         return true;
     }
+
+    endSynchroning();
     return false;
 }
 
@@ -92,7 +99,7 @@ bool SynchroProducer::waitConsumers(bool& isConsumed, int findConsumerTimeout)
 /* virtual */
 void SynchroProducer::process(ZooKeeperEvent& zkEvent)
 {
-    std::cout<<"SynchroProducer::process "<< zkEvent.toString();
+    std::cout<<"[SynchroProducer] "<< zkEvent.toString();
 //
 //    if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
 //    {
@@ -145,22 +152,28 @@ bool SynchroProducer::doProcude(const std::string& dataPath)
     {
         ensureParentNodes();
 
+//        NodeData ndata;
+//        ndata.setValue(NodeData::ND_KEY_SYNC_PRODUCER, "producer");
+//        ndata.setValue(NodeData::ND_KEY_DIR, dataPath);
+
         if (!zookeeper_->createZNode(prodNodePath_, dataPath))
         {
             if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
             {
                 zookeeper_->setZNodeData(prodNodePath_, dataPath);
-                std::cout<<"[SynchroProducer::produce] overwrote "<<prodNodePath_<<" : "<<dataPath<<std::endl;
+                std::cout<<"[SynchroProducer] overwrote "<<prodNodePath_<<std::endl;
+                std::cout<<"with data: "<<dataPath<<std::endl;
                 return true;
             }
 
-            std::cout<<"[SynchroProducer::produce] failed to create "<<
-                    prodNodePath_<<"("<<zookeeper_->getErrorCode()<<")"<<std::endl;
+            std::cout<<"[SynchroProducer] failed to create "<<
+                    prodNodePath_<<" ("<<zookeeper_->getErrorString()<<")"<<std::endl;
             return false;
         }
         else
         {
-            std::cout<<"[SynchroProducer::produce] "<<prodNodePath_<<" : "<<dataPath<<std::endl;
+            std::cout<<"[SynchroProducer] created "<<prodNodePath_<<std::endl;
+            std::cout<<"with data: "<<dataPath<<std::endl;
             return true;
         }
     }
@@ -169,12 +182,12 @@ bool SynchroProducer::doProcude(const std::string& dataPath)
         std::cout<<"[SynchroProducer::produce] waiting for ZooKeeper Service ("
                 <<zookeeper_->getHosts()<<")"<<std::endl;
 
-        int timewait = 0;
+        int retryCnt = 0;
         while (!zookeeper_->isConnected())
         {
-            usleep(100000);
-            timewait += 100000;
-            if (timewait >= 4000000) // xxx
+            zookeeper_->connect(true);
+
+            if ((retryCnt++) > 10)
                 break;
         }
 
@@ -212,7 +225,7 @@ void SynchroProducer::watchConsumers()
             if (consumersMap_.find(childrenList[i]) == consumersMap_.end())
             {
                 consumersMap_[childrenList[i]] = std::make_pair(false, false);
-                std::cout<<"[SynchroProducer] watched new consumer "<<childrenList[i]<<std::endl;
+                std::cout<<"[SynchroProducer] watched a consumer "<<childrenList[i]<<std::endl;
             }
         }
     }
@@ -265,7 +278,7 @@ void SynchroProducer::checkConsumers()
                 it->second.second = false;
                 consumedCount_ ++;
 
-                std::cout<<"-- disconnected!!"<<std::endl;
+                std::cout<<"--  disconnected!!"<<std::endl;
             }
         }
     }
@@ -276,7 +289,7 @@ void SynchroProducer::checkConsumers()
     }
     else
     {
-        std::cout<<"[SynchroProducer] finished consumer "<<consumedCount_<<", all "<<consumersMap_.size()<<std::endl;
+        std::cout<<"[SynchroProducer] consumed by "<<consumedCount_<<" consumers, all "<<consumersMap_.size()<<std::endl;
     }
 
     if (consumedCount_ == consumersMap_.size())

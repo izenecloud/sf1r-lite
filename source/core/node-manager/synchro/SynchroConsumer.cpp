@@ -1,4 +1,5 @@
 #include "SynchroConsumer.h"
+#include <node-manager/ZkMonitor.h>
 
 #include <sstream>
 
@@ -17,17 +18,19 @@ SynchroConsumer::SynchroConsumer(
     zookeeper_.reset(new ZooKeeper(zkHosts, zkTimeout, true));
     zookeeper_->registerEventHandler(this);
 
+    ZkMonitor::get()->addMonitorHandler(
+            boost::bind(&SynchroConsumer::monitor, this) );
+
     // "/SF1R-xxxx/Synchro/ProductManager/ProducerRXNX/"
     //std::stringstream ss;
     //ss<<syncNodePath_<<"/ProducerR"<<replicaId<<"N"<<nodeId;
 }
 
-
 void SynchroConsumer::watchProducer(callback_on_produced_t callback_on_produced, bool replyProducer)
 {
     consumerStatus_ = CONSUMER_STATUS_WATCHING;
-    replyProducer_ = replyProducer;
 
+    replyProducer_ = replyProducer;
     callback_on_produced_ = callback_on_produced;
 
     if (zookeeper_->isConnected())
@@ -36,17 +39,29 @@ void SynchroConsumer::watchProducer(callback_on_produced_t callback_on_produced,
     }
 }
 
+void SynchroConsumer::monitor()
+{
+    if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
+    {
+        resetWatch();
+    }
+}
+
 /*virtual*/
 void SynchroConsumer::process(ZooKeeperEvent& zkEvent)
 {
-    std::cout<<"[SynchroConsumer::process] "<< zkEvent.toString();
+    std::cout<<"[SynchroConsumer] "<< zkEvent.toString();
+
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {
         if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
             doWatchProducer();
     }
 
-    resetWatch();
+    if (zkEvent.path_ == syncNodePath_)
+    {
+        resetWatch();
+    }
 }
 
 /*virtual*/
@@ -79,10 +94,13 @@ void SynchroConsumer::doWatchProducer()
     boost::unique_lock<boost::mutex> lock(mutex_);
 
     // todo watch M node
+    if (!zookeeper_->isZNodeExists(syncNodePath_, ZooKeeper::WATCH))
+        return;
+
     std::vector<std::string> childrenList;
     zookeeper_->getZNodeChildren(syncNodePath_, childrenList, ZooKeeper::WATCH);
 
-    std::cout<<"[SynchroConsumer::doWatchProducer] watching children of: "<<syncNodePath_<<", "<<childrenList.size()<<std::endl;
+    std::cout<<"[SynchroConsumer] watching producers: "<<syncNodePath_<<", "<<childrenList.size()<<std::endl;
 
     if (childrenList.size() > 0)
     {
@@ -90,7 +108,7 @@ void SynchroConsumer::doWatchProducer()
 
         // Get producer info
         producerRealNodePath_ = childrenList[0]; // xxx, 1 producer
-        std::cout<<"watched:"<<producerRealNodePath_<<std::endl;
+        std::cout<<"[SynchroConsumer] watched producer: "<<producerRealNodePath_<<std::endl;
         std::string dataPath;
         zookeeper_->getZNodeData(producerRealNodePath_, dataPath, ZooKeeper::WATCH);
 
@@ -98,7 +116,7 @@ void SynchroConsumer::doWatchProducer()
         std::stringstream ss;
         ss<<producerRealNodePath_<<"/ConsumerR"<<replicaId_<<"N"<<nodeId_;
         consumerRealNodePath_ = ss.str();
-        std::cout<<"register consumer:"<<consumerRealNodePath_<<std::endl;
+        //std::cout<<"register consumer:"<<consumerRealNodePath_<<std::endl;
         if (!zookeeper_->createZNode(consumerRealNodePath_, "running", ZooKeeper::ZNODE_EPHEMERAL))
         {
             // is consuming, or
@@ -106,7 +124,13 @@ void SynchroConsumer::doWatchProducer()
         }
 
         // Consuming
-        bool ret = callback_on_produced_(dataPath);
+        std::cout<<"[SynchroConsumer] consuming ..."<<std::endl;
+
+        bool ret = true;
+        if (callback_on_produced_)
+        {
+            ret = callback_on_produced_(dataPath);
+        }
         if (replyProducer_)
         {
             std::string retstr = ret ? "success" : "failure";
@@ -119,11 +143,13 @@ void SynchroConsumer::doWatchProducer()
 
 void SynchroConsumer::resetWatch()
 {
+    zookeeper_->isZNodeExists(syncNodePath_, ZooKeeper::WATCH);
+
     std::vector<std::string> childrenList;
     zookeeper_->getZNodeChildren(syncNodePath_, childrenList, ZooKeeper::WATCH);
 
-    std::string dataPath;
-    zookeeper_->getZNodeData(producerRealNodePath_, dataPath, ZooKeeper::WATCH);
+    //std::string dataPath;
+    //zookeeper_->getZNodeData(producerRealNodePath_, dataPath, ZooKeeper::WATCH);
 }
 
 

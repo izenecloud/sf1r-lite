@@ -754,7 +754,7 @@ void ProductManager::InsertPriceHistory_(const PMDocumentType& doc, time_t times
     PriceHistory& price_history = price_history_map_[key_str];
     price_history.insert(timestamp, price);
 
-    if (price_history_map_.size() >= 1000)
+    if (price_history_map_.size() >= 64000)
     {
         FlushPriceHistory_();
         price_history_map_.clear();

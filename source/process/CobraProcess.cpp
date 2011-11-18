@@ -216,10 +216,9 @@ bool CobraProcess::initDriverServer()
 
 bool CobraProcess::initNodeManager()
 {
-    NodeManagerSingleton::get()->initWithConfig(
+    NodeManagerSingleton::get()->init(
             SF1Config::get()->distributedTopologyConfig_,
-            SF1Config::get()->distributedUtilConfig_
-            );
+            SF1Config::get()->distributedUtilConfig_);
 
     return true;
 }
