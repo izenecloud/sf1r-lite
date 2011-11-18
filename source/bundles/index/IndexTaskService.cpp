@@ -9,6 +9,7 @@
 #include <la-manager/LAManager.h>
 #include <search-manager/SearchManager.h>
 #include <log-manager/ProductCount.h>
+#include <log-manager/UtilFunctions.h>
 
 #include <bundles/mining/MiningTaskService.h>
 #include <bundles/recommend/RecommendTaskService.h>
@@ -545,13 +546,16 @@ bool IndexTaskService::doBuildCollection_(
     ss << baseName.substr(18, 2);
     ss << ",";
     ss << baseName.substr(20, 3);
-    boost::posix_time::ptime timestamp;
+    boost::posix_time::ptime pt;
     try
     {
-        timestamp = boost::posix_time::from_iso_string(ss.str());
+        pt = boost::posix_time::from_iso_string(ss.str());
     }
     catch (const std::exception& ex)
     {}
+    time_t timestamp = createTimeStamp(pt);
+    if (timestamp == -1)
+        timestamp = createTimeStamp();
 
     if (op <= 2) // insert or update
     {
@@ -574,7 +578,7 @@ bool IndexTaskService::insertOrUpdateSCD_(
         ScdParser& parser,
         bool isInsert,
         uint32_t numdoc,
-        const boost::posix_time::ptime& timestamp
+        time_t timestamp
 )
 {
     CREATE_SCOPED_PROFILER (insertOrUpdateSCD, "IndexTaskService", "IndexTaskService::insertOrUpdateSCD_");
@@ -649,7 +653,7 @@ bool IndexTaskService::insertOrUpdateSCD_(
     return true;
 }
 
-bool IndexTaskService::insertDoc_(Document& document, IndexerDocument& indexDocument, const boost::posix_time::ptime& timestamp)
+bool IndexTaskService::insertDoc_(Document& document, IndexerDocument& indexDocument, time_t timestamp)
 {
     CREATE_PROFILER(proDocumentIndexing, "IndexTaskService", "IndexTaskService : InsertDocument")
     CREATE_PROFILER(proIndexing, "IndexTaskService", "IndexTaskService : indexing")
@@ -672,7 +676,7 @@ bool IndexTaskService::insertDoc_(Document& document, IndexerDocument& indexDocu
     else return false;
 }
 
-bool IndexTaskService::deleteDoc_(docid_t docid, const boost::posix_time::ptime& timestamp)
+bool IndexTaskService::deleteDoc_(docid_t docid, time_t timestamp)
 {
     CREATE_SCOPED_PROFILER (proDocumentDeleting, "IndexTaskService", "IndexTaskService::DeleteDocument");
 
@@ -693,7 +697,7 @@ bool IndexTaskService::deleteDoc_(docid_t docid, const boost::posix_time::ptime&
 bool IndexTaskService::updateDoc_(
         Document& document,
         IndexerDocument& indexDocument,
-        const boost::posix_time::ptime& timestamp,
+        time_t timestamp,
         bool rType
 )
 {
@@ -738,7 +742,7 @@ bool IndexTaskService::updateDoc_(
     return true;
 }
 
-bool IndexTaskService::deleteSCD_(ScdParser& parser, const boost::posix_time::ptime& timestamp)
+bool IndexTaskService::deleteSCD_(ScdParser& parser, time_t timestamp)
 {
     std::vector<izenelib::util::UString> rawDocIDList;
     if (!parser.getDocIdList(rawDocIDList))
@@ -1153,6 +1157,9 @@ bool IndexTaskService::prepareIndexDocument_(docid_t oldId, const Document& docu
         PropertyConfig temp;
         temp.propertyName_ = fieldStr;
         iter = bundleConfig_->schema_.find(temp);
+
+        if(iter == bundleConfig_->schema_.end())
+            continue;
 
         IndexerPropertyConfig indexerPropertyConfig;
 

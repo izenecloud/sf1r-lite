@@ -1,6 +1,7 @@
 #include "PriceHistory.h"
 
 #include <libcassandra/cassandra.h>
+#include <libcassandra/util_functions.h>
 
 #include <boost/assign/list_of.hpp>
 
@@ -88,6 +89,42 @@ const string& PriceHistory::getKey() const
     return docId_;
 }
 
+bool PriceHistory::updateMultiRow(const map<string, PriceHistory>& row_map)
+{
+    if (!is_enabled) return false;
+    try
+    {
+        map<string, map<string, vector<Mutation> > > mutation_map;
+        time_t timestamp = createTimeStamp();
+        for (map<string, PriceHistory>::const_iterator it = row_map.begin();
+                it != row_map.end(); ++it)
+        {
+            vector<Mutation>& mutation_list = mutation_map[it->first][cf_name];
+            for (PriceHistoryType::const_iterator hit = it->second.getPriceHistory().begin();
+                    hit != it->second.getPriceHistory().end(); ++hit)
+            {
+                mutation_list.push_back(Mutation());
+                Mutation& mut = mutation_list.back();
+                mut.__isset.column_or_supercolumn = true;
+                mut.column_or_supercolumn.__isset.column = true;
+                Column& col = mut.column_or_supercolumn.column;
+                col.__set_name(serializeLong(hit->first));
+                col.__set_value(toBytes(hit->second));
+                col.__set_timestamp(timestamp);
+                col.__set_ttl(63072000);
+            }
+        }
+
+        CassandraConnection::instance().getCassandraClient()->batchMutate(mutation_map);
+    }
+    catch (const InvalidRequestException &ire)
+    {
+        cout << ire.why << endl;
+        return false;
+    }
+    return true;
+}
+
 bool PriceHistory::getMultiSlice(
         map<string, PriceHistory>& row_map,
         const vector<string>& key_list,
@@ -101,6 +138,7 @@ bool PriceHistory::getMultiSlice(
         col_parent.__set_column_family(cf_name);
 
         SlicePredicate pred;
+        pred.__isset.slice_range = true;
         //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);
@@ -146,6 +184,7 @@ bool PriceHistory::getMultiCount(
         col_parent.__set_column_family(cf_name);
 
         SlicePredicate pred;
+        pred.__isset.slice_range = true;
         //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);
@@ -177,7 +216,7 @@ bool PriceHistory::updateRow() const
                     toBytes(it->second),
                     docId_,
                     cf_name,
-                    toBytes(it->first),
+                    serializeLong(it->first),
                     createTimeStamp(),
                     63072000); // Keep the price history for two years at most
         }
@@ -198,7 +237,7 @@ bool PriceHistory::insert(const string& name, const string& value)
         cerr << "Bad insert!" << endl;
         return false;
     }
-    priceHistory_[fromBytes<time_t>(name)] = fromBytes<ProductPrice>(value);
+    priceHistory_[deserializeLong(name)] = fromBytes<ProductPrice>(value);
     return true;
 }
 
