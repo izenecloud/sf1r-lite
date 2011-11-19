@@ -3,7 +3,6 @@
 
 #include <common/type_defs.h>
 
-
 #include <document-manager/Document.h>
 #include <ir/index_manager/index/IndexerDocument.h>
 
@@ -35,7 +34,6 @@ public:
 
     bool Recover();
 
-
     bool HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, time_t timestamp);
 
     bool HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::IndexerDocument& index_document, time_t timestamp, bool r_type);
@@ -43,7 +41,6 @@ public:
     bool HookDelete(uint32_t docid, time_t timestamp);
 
     bool GenOperations();
-
 
     //update documents in A, so need transfer
     bool UpdateADoc(const Document& doc, bool backup = true);
@@ -74,7 +71,6 @@ public:
             const std::vector<std::string>& docid_list,
             time_t from_tt,
             time_t to_tt);
-
 
     const std::string& GetLastError() const
     {
@@ -110,8 +106,6 @@ private:
 
     void InsertPriceHistory_(const PMDocumentType& doc, time_t timestamp);
 
-    bool FlushPriceHistory_();
-
     void ParseDocid_(std::string& dest, const std::string& src) const;
 
     void StripDocid_(std::string& dest, const std::string& src) const;
@@ -127,7 +121,7 @@ private:
     ProductBackup* backup_;
     PMConfig config_;
     std::string error_;
-    std::map<std::string, PriceHistory> price_history_map_;
+    std::vector<PriceHistory> price_history_cache_;
     bool inhook_;
     boost::mutex human_mutex_;
 };

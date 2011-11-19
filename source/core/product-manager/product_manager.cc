@@ -13,6 +13,7 @@
 
 using namespace sf1r;
 using namespace libcassandra;
+using namespace boost::posix_time;
 using izenelib::util::UString;
 
 ProductManager::ProductManager(
@@ -148,8 +149,8 @@ bool ProductManager::HookDelete(uint32_t docid, time_t timestamp)
 bool ProductManager::GenOperations()
 {
     bool result = true;
-    FlushPriceHistory_();
-    price_history_map_.clear();
+    PriceHistory::updateMultiRow(price_history_cache_);
+    price_history_cache_.clear();
     if (!op_processor_->Finish())
     {
         error_ = op_processor_->GetLastError();
@@ -580,31 +581,33 @@ bool ProductManager::GetMultiPriceHistory(
     std::vector<std::string> key_list;
     ParseDocidList_(key_list, docid_list);
 
-    std::string from_str = (from_tt == -1) ? "" : serializeLong(from_tt);
-    std::string to_str = (to_tt == -1) ? "" : serializeLong(to_tt);
+    std::string from_str(from_tt == -1 ? "" : serializeLong(from_tt));
+    std::string to_str(to_tt == -1 ? "" : serializeLong(to_tt));
 
-    std::map<std::string, PriceHistory> price_history_map;
-    if (!PriceHistory::getMultiSlice(price_history_map, key_list, from_str, to_str))
+    std::map<std::string, PriceHistory> row_map;
+    if (!PriceHistory::getMultiSlice(row_map, key_list, from_str, to_str))
     {
         error_ = "Failed retrieving price histories from Cassandra";
         return false;
     }
 
-    for (std::map<std::string, PriceHistory>::const_iterator it = price_history_map.begin();
-            it != price_history_map.end(); ++it)
+    for (std::map<std::string, PriceHistory>::const_iterator it = row_map.begin();
+            it != row_map.end(); ++it)
     {
-        PriceHistoryItem history;
+        PriceHistoryItem history_item;
         for (PriceHistory::PriceHistoryType::const_iterator hit = it->second.getPriceHistory().begin();
                 hit != it->second.getPriceHistory().end(); ++hit)
         {
-            std::string time_str(boost::posix_time::to_iso_string(boost::posix_time::from_time_t(hit->first / 1000000 - timezone)));
-            history.push_back(make_pair(time_str, hit->second));
+            history_item.push_back(make_pair(std::string(), hit->second));
+            history_item.back().first.assign(to_iso_string(
+                        from_time_t(hit->first / 1000000 - timezone)
+                        + microseconds(hit->first % 1000000)));
         }
-        if (!history.empty())
+        if (!history_item.empty())
         {
             history_list.push_back(make_pair(std::string(), PriceHistoryItem()));
             StripDocid_(history_list.back().first, it->first);
-            history_list.back().second.swap(history);
+            history_list.back().second.swap(history_item);
         }
     }
     if (history_list.empty())
@@ -625,28 +628,28 @@ bool ProductManager::GetMultiPriceRange(
     std::vector<std::string> key_list;
     ParseDocidList_(key_list, docid_list);
 
-    std::string from_str = (from_tt == -1) ? "" : serializeLong(from_tt);
-    std::string to_str = (to_tt == -1) ? "" : serializeLong(to_tt);
+    std::string from_str(from_tt == -1 ? "" : serializeLong(from_tt));
+    std::string to_str(to_tt == -1 ? "" : serializeLong(to_tt));
 
-    std::map<std::string, PriceHistory> price_history_map;
-    if (!PriceHistory::getMultiSlice(price_history_map, key_list, from_str, to_str))
+    std::map<std::string, PriceHistory> row_map;
+    if (!PriceHistory::getMultiSlice(row_map, key_list, from_str, to_str))
     {
         error_ = "Failed retrieving price histories from Cassandra";
         return false;
     }
 
-    for (std::map<std::string, PriceHistory>::const_iterator it = price_history_map.begin();
-            it != price_history_map.end(); ++it)
+    for (std::map<std::string, PriceHistory>::const_iterator it = row_map.begin();
+            it != row_map.end(); ++it)
     {
-        ProductPrice price_range;
+        ProductPrice range_item;
         for (PriceHistory::PriceHistoryType::const_iterator hit = it->second.getPriceHistory().begin();
                 hit != it->second.getPriceHistory().end(); ++hit)
         {
-            price_range += hit->second;
+            range_item += hit->second;
         }
-        if (price_range.Valid())
+        if (range_item.Valid())
         {
-            range_list.push_back(make_pair(std::string(), price_range));
+            range_list.push_back(make_pair(std::string(), range_item));
             StripDocid_(range_list.back().first, it->first);
         }
     }
@@ -722,10 +725,10 @@ bool ProductManager::GetTimestamp_(const PMDocumentType& doc, time_t& timestamp)
     UString time_ustr = it->second.get<UString>();
     std::string time_str;
     time_ustr.convertString(time_str, UString::UTF_8);
-    boost::posix_time::ptime pt;
+    ptime pt;
     try
     {
-        pt = boost::posix_time::from_iso_string(time_str.substr(0, 8) + "T" + time_str.substr(8));
+        pt = from_iso_string(time_str.substr(0, 8) + "T" + time_str.substr(8));
         timestamp = createTimeStamp(pt);
     }
     catch (const std::exception& ex)
@@ -751,19 +754,14 @@ void ProductManager::InsertPriceHistory_(const PMDocumentType& doc, time_t times
     ParseDocid_(key_str, docid_str);
     GetTimestamp_(doc, timestamp);
 
-    PriceHistory& price_history = price_history_map_[key_str];
-    price_history.insert(timestamp, price);
+    price_history_cache_.push_back(PriceHistory(key_str));
+    price_history_cache_.back().insert(timestamp, price);
 
-    if (price_history_map_.size() >= 64000)
+    if (price_history_cache_.size() == 10000)
     {
-        FlushPriceHistory_();
-        price_history_map_.clear();
+        PriceHistory::updateMultiRow(price_history_cache_);
+        price_history_cache_.clear();
     }
-}
-
-bool ProductManager::FlushPriceHistory_()
-{
-    return PriceHistory::updateMultiRow(price_history_map_);
 }
 
 void ProductManager::ParseDocid_(std::string& dest, const std::string& src) const

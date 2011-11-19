@@ -161,7 +161,7 @@ public: \
     } \
     \
     /* XXX Don't forget to implement the following methods */ \
-    static bool updateMultiRow(const std::map<std::string, ClassName>& row_map); \
+    static bool updateMultiRow(const std::vector<ClassName>& row_list); \
     \
     static bool getMultiSlice( \
             std::map<std::string, ClassName>& row_map, \

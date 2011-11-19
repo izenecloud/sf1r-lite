@@ -25,13 +25,13 @@ const string PriceHistory::cf_comparator_type("LongType");
 const string PriceHistory::cf_sub_comparator_type;
 
 const string PriceHistory::cf_comment(
-    "This column family stores recent two years price history for each product.\n"
+    "\n\nThis column family stores recent two years price history for each product.\n"
     "Schema:\n\n"
     "    column family PriceHistory = list of {\n"
-    "        key \"product docid\" : list of {\n"
-    "            name \"index timestamp\" : value \"product price\"\n"
+    "        key \"docid\" : list of {\n"
+    "            name \"timestamp\" : value \"price\"\n"
     "        }\n"
-    "    }");
+    "    }\n\n");
 
 const double PriceHistory::cf_row_cache_size(0);
 
@@ -89,27 +89,27 @@ const string& PriceHistory::getKey() const
     return docId_;
 }
 
-bool PriceHistory::updateMultiRow(const map<string, PriceHistory>& row_map)
+bool PriceHistory::updateMultiRow(const vector<PriceHistory>& row_list)
 {
     if (!is_enabled) return false;
     try
     {
         map<string, map<string, vector<Mutation> > > mutation_map;
         time_t timestamp = createTimeStamp();
-        for (map<string, PriceHistory>::const_iterator it = row_map.begin();
-                it != row_map.end(); ++it)
+        for (vector<PriceHistory>::const_iterator vit = row_list.begin();
+                vit != row_list.end(); ++vit)
         {
-            vector<Mutation>& mutation_list = mutation_map[it->first][cf_name];
-            for (PriceHistoryType::const_iterator hit = it->second.getPriceHistory().begin();
-                    hit != it->second.getPriceHistory().end(); ++hit)
+            vector<Mutation>& mutation_list = mutation_map[vit->docId_][cf_name];
+            for (PriceHistoryType::const_iterator mit = vit->priceHistory_.begin();
+                    mit != vit->priceHistory_.end(); ++mit)
             {
                 mutation_list.push_back(Mutation());
                 Mutation& mut = mutation_list.back();
                 mut.__isset.column_or_supercolumn = true;
                 mut.column_or_supercolumn.__isset.column = true;
                 Column& col = mut.column_or_supercolumn.column;
-                col.__set_name(serializeLong(hit->first));
-                col.__set_value(toBytes(hit->second));
+                col.__set_name(serializeLong(mit->first));
+                col.__set_value(toBytes(mit->second));
                 col.__set_timestamp(timestamp);
                 col.__set_ttl(63072000);
             }
