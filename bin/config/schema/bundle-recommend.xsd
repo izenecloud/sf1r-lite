@@ -3,23 +3,23 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.izenesoft.com" xmlns:t="http://www.izenesoft.com" targetNamespace="http://www.izenesoft.com" elementFormDefault="qualified">
     <xs:include schemaLocation="common.xsd"/>
 
-	<xs:element name="RecommendBundle">
-		<xs:complexType>
-		<xs:sequence>
+    <xs:element name="RecommendBundle">
+        <xs:complexType>
+        <xs:sequence>
 
                 <xs:element name="Schema" minOccurs="0">
             		<xs:complexType>
             			<xs:sequence>
-	            			<xs:element ref="User" minOccurs="0"/>
-	            			<xs:element ref="Track" minOccurs="0"/>
+                			<xs:element ref="User" minOccurs="0"/>
+                			<xs:element ref="Track" minOccurs="0"/>
             			</xs:sequence>
             		</xs:complexType>
             	</xs:element>
-			    
+
                 <xs:element name="Parameter" minOccurs="0">
                   <xs:complexType>
                     <xs:sequence>
-                      <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="0" maxOccurs="2"/>                    
+                      <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="0" maxOccurs="2"/>
                       <xs:element ref="CronPara" minOccurs="0"/>
                       <xs:element ref="CacheSize" minOccurs="0"/>
                       <xs:element ref="FreqItemSet" minOccurs="0"/>
@@ -27,49 +27,49 @@
                   </xs:complexType>
                 </xs:element>
 
-		</xs:sequence>
-		</xs:complexType>
-	</xs:element>
+        </xs:sequence>
+        </xs:complexType>
+    </xs:element>
 
-	<xs:element name="User">
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="unbounded"/>
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
+    <xs:element name="User">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
 
-	<xs:element name="Track">
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element name="Event" type="EventType" minOccurs="1" maxOccurs="unbounded"/>
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
+    <xs:element name="Track">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="Event" type="EventType" minOccurs="1" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
 
-	<xs:complexType name="EventType">
-		<xs:attribute name="name" type="xs:string" use="required"/>
-	</xs:complexType>
+    <xs:complexType name="EventType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+    </xs:complexType>
 
-	<xs:element name="CronPara">
-		<xs:complexType>
-			<xs:attribute name="value" use="required"/>
-		</xs:complexType>
-	</xs:element>
+    <xs:element name="CronPara">
+        <xs:complexType>
+            <xs:attribute name="value" use="required"/>
+        </xs:complexType>
+    </xs:element>
 
-	<xs:element name="CacheSize">
-		<xs:complexType>
-			<xs:attribute name="purchase" use="required"/>
-			<xs:attribute name="visit" use="required"/>
-			<xs:attribute name="index" use="required"/>
-		</xs:complexType>
-	</xs:element>
+    <xs:element name="CacheSize">
+        <xs:complexType>
+            <xs:attribute name="purchase" use="required"/>
+            <xs:attribute name="visit" use="required"/>
+            <xs:attribute name="index" use="required"/>
+        </xs:complexType>
+    </xs:element>
 
-	<xs:element name="FreqItemSet">
-		<xs:complexType>
-			<xs:attribute name="enable" use="required"/>
-			<xs:attribute name="minfreq" use="required"/>
-		</xs:complexType>
-	</xs:element>
+    <xs:element name="FreqItemSet">
+        <xs:complexType>
+            <xs:attribute name="enable" use="required"/>
+            <xs:attribute name="minfreq" use="required"/>
+        </xs:complexType>
+    </xs:element>
 
 </xs:schema>

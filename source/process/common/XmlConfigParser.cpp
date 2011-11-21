@@ -1171,30 +1171,32 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
     std::string mode_str;
     getAttribute(product_schema, "mode", mode_str);
     //m or a, m as default
-    if(mode_str=="a") productBundleConfig.mode_ = 2;
+    if (mode_str=="a") productBundleConfig.mode_ = 2;
     else productBundleConfig.mode_ = 1;
 
-    std::string property_name;
+    getAttribute(product_schema, "enablePH", productBundleConfig.pm_config_.enablePH, false);
+
     ticpp::Element* property_node = 0;
-    property_node = getUniqChildElement( product_schema, "PriceProperty", false );
-    getAttribute(property_node, "name", productBundleConfig.pm_config_.price_property_name );
 
-    property_node = getUniqChildElement( product_schema, "DateProperty", false );
-    getAttribute(property_node, "name", productBundleConfig.pm_config_.date_property_name );
+    property_node = getUniqChildElement(product_schema, "PriceProperty", false);
+    getAttribute(property_node, "name", productBundleConfig.pm_config_.price_property_name);
 
-    property_node = getUniqChildElement( product_schema, "DOCIDProperty", false );
-    getAttribute(property_node, "name", productBundleConfig.pm_config_.docid_property_name );
+    property_node = getUniqChildElement(product_schema, "DateProperty", false);
+    getAttribute(property_node, "name", productBundleConfig.pm_config_.date_property_name);
 
-    property_node = getUniqChildElement( product_schema, "UuidProperty", false );
-    getAttribute(property_node, "name", productBundleConfig.pm_config_.uuid_property_name );
+    property_node = getUniqChildElement(product_schema, "DOCIDProperty", false);
+    getAttribute(property_node, "name", productBundleConfig.pm_config_.docid_property_name);
 
-    property_node = getUniqChildElement( product_schema, "ItemCountProperty", false );
-    getAttribute(property_node, "name", productBundleConfig.pm_config_.itemcount_property_name );
+    property_node = getUniqChildElement(product_schema, "UuidProperty", false);
+    getAttribute(property_node, "name", productBundleConfig.pm_config_.uuid_property_name);
 
-    ticpp::Element* backup_node = getUniqChildElement( product_schema, "Backup", false );
+    property_node = getUniqChildElement(product_schema, "ItemCountProperty", false);
+    getAttribute(property_node, "name", productBundleConfig.pm_config_.itemcount_property_name);
+
+    ticpp::Element* backup_node = getUniqChildElement(product_schema, "Backup", false);
     if(backup_node)
     {
-        getAttribute(backup_node, "path", productBundleConfig.pm_config_.backup_path );
+        getAttribute(backup_node, "path", productBundleConfig.pm_config_.backup_path);
     }
 
 }

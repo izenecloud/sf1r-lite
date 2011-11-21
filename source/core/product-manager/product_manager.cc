@@ -148,8 +148,11 @@ bool ProductManager::HookDelete(uint32_t docid, time_t timestamp)
 
 bool ProductManager::Finish()
 {
-    PriceHistory::updateMultiRow(price_history_cache_);
-    price_history_cache_.clear();
+    if (config_.enablePH)
+    {
+        PriceHistory::updateMultiRow(price_history_cache_);
+        price_history_cache_.clear();
+    }
     return GenOperations_();
 }
 
@@ -583,6 +586,12 @@ bool ProductManager::GetMultiPriceHistory(
         time_t from_tt,
         time_t to_tt)
 {
+    if (!config_.enablePH)
+    {
+        error_ = "The price history is not enabled for this collection";
+        return false;
+    }
+
     std::vector<std::string> key_list;
     ParseDocidList_(key_list, docid_list);
 
@@ -630,6 +639,12 @@ bool ProductManager::GetMultiPriceRange(
         time_t from_tt,
         time_t to_tt)
 {
+    if (!config_.enablePH)
+    {
+        error_ = "The price history is not enabled for this collection";
+        return false;
+    }
+
     std::vector<std::string> key_list;
     ParseDocidList_(key_list, docid_list);
 
@@ -750,6 +765,8 @@ void ProductManager::SetItemCount_(PMDocumentType& doc, uint32_t item_count)
 
 void ProductManager::InsertPriceHistory_(const PMDocumentType& doc, time_t timestamp)
 {
+    if (!config_.enablePH) return;
+
     ProductPrice price;
     if (!GetPrice_(doc, price)) return;
     UString docid;

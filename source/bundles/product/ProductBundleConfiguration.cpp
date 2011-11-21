@@ -8,6 +8,7 @@ ProductBundleConfiguration::ProductBundleConfiguration(const std::string& collec
     : ::izenelib::osgi::BundleConfiguration("ProductBundle-"+collectionName, "ProductBundleActivator" )
     , mode_(0)
     , collectionName_(collectionName)
+    , pm_config_()
 {}
 
 void ProductBundleConfiguration::setSchema(const std::set<PropertyConfig, PropertyComp>& schema)
