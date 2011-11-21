@@ -17,7 +17,7 @@ namespace sf1r
 using driver::Keys;
 
 /**
- * @brief Action \b index. Refines a user query which can be a set of tokens. 
+ * @brief Action \b index. Refines a user query which can be a set of tokens.
  *
  * @section request
  *

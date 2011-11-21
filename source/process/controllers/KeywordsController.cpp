@@ -191,9 +191,10 @@ void KeywordsController::index()
  *
  * @section request
  *
- * - @b resource (@c Array): all inject queries.
+ * - @b collection (@c String): collection name.
+ * - @b resource* (@c Array): all inject queries.
  *   - @b query (@c String) : inject query
- *   - @b result (@c String) : inject result to query. if equals '__delete__', means delete the injection of this query.
+ *   - @b result (@c String) : inject result to query, or '__delete__' meaning delete the injection of this query.
  *
  * @section response
  *
@@ -204,6 +205,7 @@ void KeywordsController::index()
  * Request
  * @code
  * {
+ *   "collection" : "intel",
  *   "resource": [
  *       { "query" : "chinesa", "result" : "Chinese" },
  *       { "query" : "iphone", "result" : "" }
@@ -277,10 +279,10 @@ void KeywordsController::inject_query_correction()
  *
  * @section request
  *
- * - @b collection* (@c String): Collection name.
+ * - @b collection* (@c String): collection name.
  * - @b resource* (@c Array): all inject queries.
  *   - @b query (@c String) : inject query
- *   - @b result (@c String) : results to query, splited by '|', if equals '__delete__', means delete the injection of this query.
+ *   - @b result (@c String) : results to query splited by '|', or '__delete__' meaning delete the injection of this query.
  *
  * @section response
  *
