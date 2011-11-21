@@ -2,7 +2,7 @@
  * @file sf1r/search-manager/ORDocumentIterator.h
  * @author Yingfeng Zhang
  * @date Created <2009-09-22>
- * @date Updated <2010-03-24 14:42:03> 
+ * @date Updated <2010-03-24 14:42:03>
  * @brief DocumentIterator which implements the OR semantics
  * NOT semantics is also included
  */
@@ -23,12 +23,12 @@ public:
     class DocumentIteratorQueue : public izenelib::ir::indexmanager::PriorityQueue<DocumentIterator*>
     {
     public:
-        DocumentIteratorQueue(size_t size) 
+        DocumentIteratorQueue(size_t size)
         {
             initialize(size,false);
         }
     protected:
-        bool lessThan(DocumentIterator* o1, DocumentIterator* o2) 
+        bool lessThan(DocumentIterator* o1, DocumentIterator* o2)
         {
             return o1->doc() < o2->doc();
         }
@@ -59,7 +59,7 @@ public:
     void print(int level=0);
 
 #if SKIP_ENABLED
-    docid_t skipTo(docid_t target); 
+    docid_t skipTo(docid_t target);
 
 protected:
     docid_t do_skipTo(docid_t target);
@@ -86,7 +86,7 @@ private:
 
     docid_t currDocOfNOTIter_;
 
-    bool initNOTIterator_;	
+    bool initNOTIterator_;
 
     NOTDocumentIterator* pNOTDocIterator_;
 };

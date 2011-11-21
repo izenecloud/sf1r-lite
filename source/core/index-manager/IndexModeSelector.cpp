@@ -33,14 +33,14 @@ void IndexModeSelector::TrySetIndexMode(long scd_file_size)
     {
         index_manager_->setIndexMode("default");
     }
-    
+
 }
 
 void IndexModeSelector::TryCommit()
 {
     if(! index_manager_->isRealTime())
     {
-	index_manager_->flush();
+    index_manager_->flush();
     }
     else
     {
@@ -49,4 +49,3 @@ void IndexModeSelector::TryCommit()
         index_manager_->getBTreeIndexer()->flush();
     }
 }
-

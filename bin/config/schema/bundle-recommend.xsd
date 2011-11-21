@@ -7,25 +7,25 @@
         <xs:complexType>
         <xs:sequence>
 
-                <xs:element name="Schema" minOccurs="0">
-            		<xs:complexType>
-            			<xs:sequence>
-                			<xs:element ref="User" minOccurs="0"/>
-                			<xs:element ref="Track" minOccurs="0"/>
-            			</xs:sequence>
-            		</xs:complexType>
-            	</xs:element>
-
-                <xs:element name="Parameter" minOccurs="0">
-                  <xs:complexType>
+            <xs:element name="Schema" minOccurs="0">
+                <xs:complexType>
                     <xs:sequence>
-                      <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="0" maxOccurs="2"/>
-                      <xs:element ref="CronPara" minOccurs="0"/>
-                      <xs:element ref="CacheSize" minOccurs="0"/>
-                      <xs:element ref="FreqItemSet" minOccurs="0"/>
+                        <xs:element ref="User" minOccurs="0"/>
+                        <xs:element ref="Track" minOccurs="0"/>
                     </xs:sequence>
-                  </xs:complexType>
-                </xs:element>
+                </xs:complexType>
+            </xs:element>
+
+            <xs:element name="Parameter" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="0" maxOccurs="2"/>
+                        <xs:element ref="CronPara" minOccurs="0"/>
+                        <xs:element ref="CacheSize" minOccurs="0"/>
+                        <xs:element ref="FreqItemSet" minOccurs="0"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
 
         </xs:sequence>
         </xs:complexType>

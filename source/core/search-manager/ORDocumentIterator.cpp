@@ -159,7 +159,7 @@ bool ORDocumentIterator::do_next()
     //for (size_t i = 0; i < pDocIteratorQueue_->size(); ++i)
     ///we can not use priority queue here because if some dociterator
     ///is removed from that queue, we should set flag for it.
-    for (std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin(); 
+    for (std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();
       iter != docIteratorList_.end(); ++iter)
     {
         //DocumentIterator* pEntry = pDocIteratorQueue_->getAt(i);
@@ -203,12 +203,12 @@ docid_t ORDocumentIterator::do_skipTo(docid_t target)
             return MAX_DOC_ID;
     }
 
-    if (pDocIteratorQueue_->size() < 1) 
+    if (pDocIteratorQueue_->size() < 1)
     {
         return MAX_DOC_ID;
-    }						
+    }
     docid_t nFoundId = MAX_DOC_ID;
-    do 
+    do
     {
         DocumentIterator* top = pDocIteratorQueue_->top();
         currDoc_ = top->doc();
@@ -218,25 +218,25 @@ docid_t ORDocumentIterator::do_skipTo(docid_t target)
             if (*iter && (*iter)->doc() == currDoc_)
                 (*iter)->setCurrent(true);
 
-        if (currDoc_ >= target) 
+        if (currDoc_ >= target)
         {
             if(pDocIteratorQueue_->size() < 1)
             {
-                return MAX_DOC_ID;				
+                return MAX_DOC_ID;
             }
-            else 
+            else
             {
                 return currDoc_;
             }
         }
-        else 
+        else
         {
             nFoundId = top->skipTo(target);
 
             if((MAX_DOC_ID == nFoundId)||(nFoundId < target))
             {
                 pDocIteratorQueue_->pop();
-                if (pDocIteratorQueue_->size() < 1) 
+                if (pDocIteratorQueue_->size() < 1)
                 {
                     return MAX_DOC_ID;
                 }
@@ -246,7 +246,7 @@ docid_t ORDocumentIterator::do_skipTo(docid_t target)
                 pDocIteratorQueue_->adjustTop();
             }
         }
-    } while (true); 						
+    } while (true);
 
 }
 #endif
@@ -264,7 +264,7 @@ void ORDocumentIterator::doc_item(
 }
 
 void ORDocumentIterator::df_ctf(
-    DocumentFrequencyInProperties& dfmap, 
+    DocumentFrequencyInProperties& dfmap,
     CollectionTermFrequencyInProperties& ctfmap)
 {
     DocumentIterator* pEntry;
@@ -287,8 +287,8 @@ count_t ORDocumentIterator::tf()
         pEntry = pDocIteratorQueue_->getAt(i);
         if (pEntry->isCurrent())
         {
-        	tf = pEntry->tf();
-        	if (tf > maxtf)
+            tf = pEntry->tf();
+            if (tf > maxtf)
                 maxtf = tf;
         }
     }
@@ -298,7 +298,7 @@ count_t ORDocumentIterator::tf()
 }
 
 void ORDocumentIterator::queryBoosting(
-    double& score, 
+    double& score,
     double& weight)
 {
     DocumentIterator* pEntry;
@@ -324,4 +324,3 @@ void ORDocumentIterator::print(int level)
             pEntry->print(level+1);
     }
 }
-

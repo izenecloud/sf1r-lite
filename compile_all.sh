@@ -21,7 +21,7 @@ dependencie=(izenelib icma ijma ilplib imllib idmlib sf1r-engine)
 element_count=${#dependencie[@]}
 index=0
 while [ "$index" -lt "$element_count" ]
-do 
+do
   echo "build ${dependencie[$index]} ..."
 
   if [ ! -d $CODEBASE_DIR/${dependencie[$index]} ];then
@@ -42,7 +42,7 @@ do
   else
     if [ -f $CODEBASE_DIR/${dependencie[$index]}/CMakeLists.txt ];then
       cmake -DEXTRA_CMAKE_MODULES_DIRS=$PROJECT_CMAKE_PATH ..
-    elif [ -f $CODEBASE_DIR/${dependencie[$index]}/source/CMakeLists.txt ];then 
+    elif [ -f $CODEBASE_DIR/${dependencie[$index]}/source/CMakeLists.txt ];then
       cmake -DEXTRA_CMAKE_MODULES_DIRS=$PROJECT_CMAKE_PATH ../source
     else
       echo "ERROR: no CMakeLists.txt found in ${dependencie[$index]}!"
@@ -63,4 +63,3 @@ do
 
   let "index = $index + 1"
 done
-

@@ -33,8 +33,8 @@ void IndexManager::convertData(const std::string& property, const PropertyValue&
         boost::apply_visitor(converter, in.getVariant());
 }
 
-void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property, 
-	   const std::vector<PropertyValue>& filterParam, boost::shared_ptr<BitVector> docIdSet)
+void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,
+        const std::vector<PropertyValue>& filterParam, boost::shared_ptr<BitVector> docIdSet)
 {
     collectionid_t colId = 1;
     std::string propertyL = sf1r::Utilities::toUpper(property);
@@ -150,4 +150,3 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
 }
 
 }
-

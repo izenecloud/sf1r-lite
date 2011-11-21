@@ -498,7 +498,7 @@ ScdParser::iterator& ScdParser::iterator::operator=(const iterator& other)
     offset_ = other.offset_;
     doc_ = other.doc_;
     codingType_ = other.codingType_;
-    buffer_	 = other.buffer_;
+    buffer_ = other.buffer_;
     docDelimiter_ = other.docDelimiter_;
     return *this;
 }

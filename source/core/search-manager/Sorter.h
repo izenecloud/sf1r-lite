@@ -58,7 +58,7 @@ public:
     SortPropertyComparator* getComparator() { return pComparator_; }
 
 private:
-    ///name of property to be sorted 
+    ///name of property to be sorted
     string property_;
     ///type of data of this sorted proeprty
     PropertyDataType propertyDataType_;
@@ -105,11 +105,11 @@ private:
     bool dirty_;
 
     ///key: the name of sorted property
-    ///value: memory pool containing the property data 
+    ///value: memory pool containing the property data
     typedef std::map<std::string, boost::shared_ptr<PropertyData> > SortDataCache;
     SortDataCache sortDataCache_;
 
-    boost::mutex mutex_;	
+    boost::mutex mutex_;
 
     IndexBundleConfiguration* config_;
 
@@ -120,7 +120,7 @@ private:
 };
 
 /*
-* @brief Sorter main interface exposed. 
+* @brief Sorter main interface exposed.
 */
 class Sorter
 {
@@ -156,13 +156,13 @@ private:
 inline bool Sorter::lessThan(ScoreDoc doc1,ScoreDoc doc2)
 {
     int c = 0;
-    size_t i=0; 
+    size_t i=0;
     SortProperty* pSortProperty;
     while((i<nNumProperties_) &&(c==0))
     {
         pSortProperty = ppSortProperties_[i];
-        c = (pSortProperty->isReverse()) ? pSortProperty->pComparator_->compare (doc2, doc1) 
-               : pSortProperty->pComparator_->compare (doc1, doc2);
+        c = (pSortProperty->isReverse()) ? pSortProperty->pComparator_->compare(doc2, doc1)
+               : pSortProperty->pComparator_->compare(doc1, doc2);
         i++;
     }
 

@@ -29,8 +29,8 @@ enum SCD_TYPE
 
 class ScdParser
 {
-    /// @brief	Reads a document from the loaded SCD file, when given a DOCID value.
-    //			prerequisites: SCD file must be loaded by load(), and getDocIdList() must be called.
+    /// @brief  Reads a document from the loaded SCD file, when given a DOCID value.
+    //          prerequisites: SCD file must be loaded by load(), and getDocIdList() must be called.
     bool getDoc( const izenelib::util::UString & docId, SCDDoc& doc );
 
 public:
@@ -147,4 +147,3 @@ private:
 
 
 #endif
-

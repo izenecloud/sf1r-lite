@@ -69,7 +69,7 @@ IService* OSGILauncher::getService(const std::string& bundleName, const std::str
         {
             IService* service = services[i]->getService();
             return service;
-	}
+        }
     }
 
     return NULL;
@@ -86,4 +86,3 @@ void OSGILauncher::stop()
 }
 
 }
-

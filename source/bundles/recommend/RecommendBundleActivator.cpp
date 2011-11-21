@@ -152,22 +152,22 @@ bool RecommendBundleActivator::openDataDirectory_(std::string& dataDir)
     {
         bfs::path dir = dataPath / *it;
         if (!directoryRotator_.appendDirectory(dir))
-	{
-	  std::string msg = dir.file_string() + " corrupted, delete it!";
-	  sflog->error( SFL_SYS, msg.c_str() ); 
-	  std::cout<<msg<<std::endl;
-	  //clean the corrupt dir
-	  bfs::remove_all(dir);
-	  directoryRotator_.appendDirectory(dir);
-	}
+    {
+      std::string msg = dir.file_string() + " corrupted, delete it!";
+      sflog->error( SFL_SYS, msg.c_str() );
+      std::cout<<msg<<std::endl;
+      //clean the corrupt dir
+      bfs::remove_all(dir);
+      directoryRotator_.appendDirectory(dir);
+    }
     }
 
     directoryRotator_.rotateToNewest();
     boost::shared_ptr<Directory> newest = directoryRotator_.currentDirectory();
     if (newest)
     {
-	dataDir = newest->path().string();
-	return true;
+    dataDir = newest->path().string();
+    return true;
     }
 
     return false;

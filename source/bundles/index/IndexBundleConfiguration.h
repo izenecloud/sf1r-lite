@@ -66,7 +66,7 @@ public:
     std::string collectionName_;
 
     CollectionPath collPath_;
-	
+
     /// Schema
     IndexBundleSchema schema_;
 
@@ -122,10 +122,9 @@ public:
 
     std::vector<std::string> collectionDataDirectories_;
 
-    /// @brief	Configurations for RankingManager
+    /// @brief Configurations for RankingManager
     RankingManagerConfig rankingManagerConfig_;
 };
 }
 
 #endif
-

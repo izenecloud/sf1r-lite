@@ -4,7 +4,7 @@
 * FILE:         SEED_256_KISA.c
 *
 * DESCRIPTION: Core routines for the enhanced SEED
-* 
+*
 *******************************************************************************/
 
 #include "SEED_256_KISA.h"
@@ -44,11 +44,11 @@
 /************************ Block Encryption *************************/
 void SeedEncrypt(BYTE *pbData, DWORD *pdwRoundKey)
 {
-	DWORD L0, L1, R0, R1, T0, T1, *K = pdwRoundKey;
+    DWORD L0, L1, R0, R1, T0, T1, *K = pdwRoundKey;
 
     L0 = ((DWORD *)pbData)[0];
     L1 = ((DWORD *)pbData)[1];
-	R0 = ((DWORD *)pbData)[2];
+    R0 = ((DWORD *)pbData)[2];
     R1 = ((DWORD *)pbData)[3];
 #ifndef SEED_BIG_ENDIAN
     L0 = EndianChange(L0);
@@ -73,11 +73,11 @@ void SeedEncrypt(BYTE *pbData, DWORD *pdwRoundKey)
     SeedRound(R0, R1, L0, L1, K+26); /*  14 */
     SeedRound(L0, L1, R0, R1, K+28); /*  15 */
     SeedRound(R0, R1, L0, L1, K+30); /*  16 */
-	SeedRound(L0, L1, R0, R1, K+32); /*  17 */
+    SeedRound(L0, L1, R0, R1, K+32); /*  17 */
     SeedRound(R0, R1, L0, L1, K+34); /*  18 */
     SeedRound(L0, L1, R0, R1, K+36); /*  19 */
     SeedRound(R0, R1, L0, L1, K+38); /*  20 */
-	SeedRound(L0, L1, R0, R1, K+40); /*  21 */
+    SeedRound(L0, L1, R0, R1, K+40); /*  21 */
     SeedRound(R0, R1, L0, L1, K+42); /*  22 */
     SeedRound(L0, L1, R0, R1, K+44); /*  23 */
     SeedRound(R0, R1, L0, L1, K+46); /*  24 */
@@ -111,11 +111,11 @@ void SeedDecrypt(BYTE *pbData, DWORD *pdwRoundKey)
     R1 = EndianChange(R1);
 #endif
 
-	SeedRound(L0, L1, R0, R1, K+46); /*   1 */
+    SeedRound(L0, L1, R0, R1, K+46); /*   1 */
     SeedRound(R0, R1, L0, L1, K+44); /*   2 */
     SeedRound(L0, L1, R0, R1, K+42); /*   3 */
-    SeedRound(R0, R1, L0, L1, K+40); /*   4 */    
-	SeedRound(L0, L1, R0, R1, K+38); /*   5 */
+    SeedRound(R0, R1, L0, L1, K+40); /*   4 */
+    SeedRound(L0, L1, R0, R1, K+38); /*   5 */
     SeedRound(R0, R1, L0, L1, K+36); /*   6 */
     SeedRound(L0, L1, R0, R1, K+34); /*   7 */
     SeedRound(R0, R1, L0, L1, K+32); /*   8 */
@@ -185,8 +185,8 @@ KC0 = golden ratio; KCi = ROTL(KCi-1, 1) */
     T0 = A;                                      \
     A = (A>>rot) ^ (B<<(32-rot));                \
     B = (B>>rot) ^ (C<<(32-rot));                \
-	C = (C>>rot) ^ (D<<(32-rot));                \
-	D = (D>>rot) ^ (T0<<(32-rot));               \
+    C = (C>>rot) ^ (D<<(32-rot));                \
+    D = (D>>rot) ^ (T0<<(32-rot));               \
     T0 = (((A + C) ^ E ) - F) ^ KC;              \
     T1 = (((B - D) ^ G ) + H) ^ KC;              \
     (K)[0] = SS0[GetB0(T0)] ^ SS1[GetB1(T0)] ^   \
@@ -200,8 +200,8 @@ KC0 = golden ratio; KCi = ROTL(KCi-1, 1) */
     T0 = E;                                      \
     E = (E<<rot) ^ (F>>(32-rot));                \
     F = (F<<rot) ^ (G>>(32-rot));                \
-	G = (G<<rot) ^ (H>>(32-rot));                \
-	H = (H<<rot) ^ (T0>>(32-rot));               \
+    G = (G<<rot) ^ (H>>(32-rot));                \
+    H = (H<<rot) ^ (T0>>(32-rot));               \
     T0 = (((A + C) ^ E ) - F) ^ KC;              \
     T1 = (((B - D) ^ G ) + H) ^ KC;              \
     (K)[0] = SS0[GetB0(T0)] ^ SS1[GetB1(T0)] ^   \
@@ -235,8 +235,8 @@ void SeedRoundKey(DWORD *pdwRoundKey, BYTE *pbUserKey)
   G = EndianChange(G);
   H = EndianChange(H);
 #endif
-    T0 = (((A + C) ^ E ) - F) ^ KC0;              
-    T1 = (((B - D) ^ G ) + H) ^ KC0;              
+    T0 = (((A + C) ^ E ) - F) ^ KC0;
+    T1 = (((B - D) ^ G ) + H) ^ KC0;
     K[0] = SS0[GetB0(T0)] ^ SS1[GetB1(T0)] ^
            SS2[GetB2(T0)] ^ SS3[GetB3(T0)];
     K[1] = SS0[GetB0(T1)] ^ SS1[GetB1(T1)] ^
@@ -257,11 +257,11 @@ void SeedRoundKey(DWORD *pdwRoundKey, BYTE *pbUserKey)
     EncRoundKeyUpdate0(K+26, A, B, C, D, E, F, G, H, KC13,  9);
     EncRoundKeyUpdate1(K+28, A, B, C, D, E, F, G, H, KC14,  9);
     EncRoundKeyUpdate0(K+30, A, B, C, D, E, F, G, H, KC15, 11);
-	EncRoundKeyUpdate1(K+32, A, B, C, D, E, F, G, H, KC16, 11);
+    EncRoundKeyUpdate1(K+32, A, B, C, D, E, F, G, H, KC16, 11);
     EncRoundKeyUpdate0(K+34, A, B, C, D, E, F, G, H, KC17, 12);
     EncRoundKeyUpdate1(K+36, A, B, C, D, E, F, G, H, KC18, 12);
     EncRoundKeyUpdate0(K+38, A, B, C, D, E, F, G, H, KC19,  9);
-	EncRoundKeyUpdate1(K+40, A, B, C, D, E, F, G, H, KC20,  9);
+    EncRoundKeyUpdate1(K+40, A, B, C, D, E, F, G, H, KC20,  9);
     EncRoundKeyUpdate0(K+42, A, B, C, D, E, F, G, H, KC21, 11);
     EncRoundKeyUpdate1(K+44, A, B, C, D, E, F, G, H, KC22, 11);
     EncRoundKeyUpdate0(K+46, A, B, C, D, E, F, G, H, KC23, 12);

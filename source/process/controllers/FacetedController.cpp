@@ -91,7 +91,7 @@ void FacetedController::set_ontology()
 void FacetedController::get_ontology()
 {
     std::string xml;
-    MiningSearchService* service = collectionHandler_->miningSearchService_;	
+    MiningSearchService* service = collectionHandler_->miningSearchService_;
     bool requestSent = service->GetOntology(xml);
 
     if (!requestSent)
@@ -135,7 +135,7 @@ void FacetedController::get_ontology()
 void FacetedController::get_static_rep()
 {
     faceted::OntologyRep rep;
-    MiningSearchService* service = collectionHandler_->miningSearchService_;	
+    MiningSearchService* service = collectionHandler_->miningSearchService_;
     bool requestSent =service->GetStaticOntologyRepresentation(rep);
 
     if (!requestSent)
@@ -198,7 +198,7 @@ void FacetedController::static_click()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireCID_());
     std::list<uint32_t> docid_list;
-    MiningSearchService* service = collectionHandler_->miningSearchService_;	
+    MiningSearchService* service = collectionHandler_->miningSearchService_;
     bool requestSent = service->OntologyStaticClick(cid_, docid_list);
 
     if (!requestSent)
@@ -252,7 +252,7 @@ void FacetedController::get_rep()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireSearchResult_());
     faceted::OntologyRep rep;
-    MiningSearchService* service = collectionHandler_->miningSearchService_;	
+    MiningSearchService* service = collectionHandler_->miningSearchService_;
     bool requestSent = service->GetOntologyRepresentation(search_result_, rep);
 
     if (!requestSent)
@@ -316,7 +316,7 @@ void FacetedController::click()
     IZENELIB_DRIVER_BEFORE_HOOK(requireCID_());
     IZENELIB_DRIVER_BEFORE_HOOK(requireSearchResult_());
     std::list<uint32_t> docid_list;
-    MiningSearchService* service = collectionHandler_->miningSearchService_;	
+    MiningSearchService* service = collectionHandler_->miningSearchService_;
     bool requestSent = service->OntologyClick(search_result_, cid_, docid_list);
     if (!requestSent)
     {
@@ -397,7 +397,7 @@ void FacetedController::manmade()
         item.cname = asString(manmades()[Keys::cname]);
         items.push_back(item);
     }
-    MiningSearchService* service = collectionHandler_->miningSearchService_;	
+    MiningSearchService* service = collectionHandler_->miningSearchService_;
     bool requestSent = service->DefineDocCategory(items);
 
     if (!requestSent)
@@ -456,4 +456,3 @@ bool FacetedController::requireSearchResult_()
 }
 
 }
-

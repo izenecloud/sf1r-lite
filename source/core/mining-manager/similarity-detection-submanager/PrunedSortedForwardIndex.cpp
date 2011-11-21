@@ -33,10 +33,10 @@ PrunedSortedForwardIndex::PrunedSortedForwardIndex(
     unsigned int maxDoc
 )
     :workingDir_(workingDir)
-    ,indexReader_(reader)    
+    ,indexReader_(reader)
     ,prunedBound_(prunedBound)
     ,forwardIndexPath_(boost::filesystem::path(boost::filesystem::path(workingDir)/"forward").string())
-    ,forwardIndex_(docNum*1000*8 > MAX_MEMORY_USED ? MAX_MEMORY_USED : docNum*1000*8, 
+    ,forwardIndex_(docNum*1000*8 > MAX_MEMORY_USED ? MAX_MEMORY_USED : docNum*1000*8,
                            forwardIndexPath_)
     ,prunedForwardContainer_(workingDir)
     ,numDocs_(docNum)
@@ -83,18 +83,18 @@ void PrunedSortedForwardIndex::buildForward_()
                     termDocFreq->reset(termIterator->termPosting(),*(termIterator->termInfo()),false);
                     while(termDocFreq->next())
                     {
-                    	   std::size_t docLen = indexReader_->docLength(termDocFreq->doc(), fieldId);
-                    	   float weight = 0.0F;
-                    	   if (docLen > 0)
-                    	   {
-                    	       float dfNorm=std::log((numDocs_-df+0.5)/(df+0.5));
-                    	       float tf=termDocFreq->freq();
-                    	       float tfNormDenorm=default_k1_*((1-default_b_)+default_b_*docLen/avgDocLen)+tf;
-                    	       float tfNorm= (default_k1_+1)*tf/tfNormDenorm;
-                    	       weight=tfNorm*dfNorm;
-                    	   }
-                         weight = termDocFreq->freq()*std::log(numDocs_/df);
-                         forwardIndex_.incre(termDocFreq->doc(), termIterator->term()->value, weight*fieldWeight);
+                        std::size_t docLen = indexReader_->docLength(termDocFreq->doc(), fieldId);
+                        float weight = 0.0F;
+                        if (docLen > 0)
+                        {
+                            float dfNorm=std::log((numDocs_-df+0.5)/(df+0.5));
+                            float tf=termDocFreq->freq();
+                            float tfNormDenorm=default_k1_*((1-default_b_)+default_b_*docLen/avgDocLen)+tf;
+                            float tfNorm= (default_k1_+1)*tf/tfNormDenorm;
+                            weight=tfNorm*dfNorm;
+                        }
+                        weight = termDocFreq->freq()*std::log(numDocs_/df);
+                        forwardIndex_.incre(termDocFreq->doc(), termIterator->term()->value, weight*fieldWeight);
                     }
                 }
             }
@@ -106,7 +106,7 @@ void PrunedSortedForwardIndex::buildPrunedForward_()
 {
     forwardIndex_.clear();//save memory
     typedef izenelib::am::MatrixDB<uint32_t, float>::row_type RowType;
-	
+
     for(uint32_t did = 1; did <= maxDoc_; ++did)
     {
         RowType row_data;
@@ -128,14 +128,14 @@ void PrunedSortedForwardIndex::buildPrunedForward_()
                 sum += element.second * element.second;
                 prunedForward.push_back(element);
             }
-            if(sum > 0) 
+            if(sum > 0)
             {
                 sum = std::sqrt(sum);
                 for(PrunedForwardType::iterator fit = prunedForward.begin(); fit != prunedForward.end(); ++fit)
                 {
                     fit->second /= sum;
                 }
-/*				
+/*
                 std::cout<<"prun doc "<<did<<" ";
                 for(PrunedForwardType::iterator fit = prunedForward.begin(); fit != prunedForward.end(); ++fit)
                 {

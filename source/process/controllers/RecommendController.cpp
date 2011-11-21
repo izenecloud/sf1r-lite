@@ -119,7 +119,7 @@ bool RecommendController::value2User(User& user)
 
     const Value& resourceValue = request()[Keys::resource];
     const Value::ObjectType& objectValue = resourceValue.getObject();
-    const RecommendSchema& recommendSchema = collectionHandler_->recommendSchema_;	
+    const RecommendSchema& recommendSchema = collectionHandler_->recommendSchema_;
     RecommendProperty recommendProperty;
 
     for (Value::ObjectType::const_iterator it = objectValue.begin();
@@ -282,7 +282,7 @@ bool RecommendController::value2ItemCondition(ItemCondition& itemCondition)
  */
 void RecommendController::add_user()
 {
-    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;
     User user;
 
     IZENELIB_DRIVER_BEFORE_HOOK(requireService(service)
@@ -331,7 +331,7 @@ void RecommendController::add_user()
  */
 void RecommendController::update_user()
 {
-    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;
     User user;
 
     IZENELIB_DRIVER_BEFORE_HOOK(requireService(service)
@@ -375,7 +375,7 @@ void RecommendController::update_user()
  */
 void RecommendController::remove_user()
 {
-    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;
     std::string userIdStr;
     IZENELIB_DRIVER_BEFORE_HOOK(requireService(service)
                                 && requireProperty(Keys::USERID, userIdStr));
@@ -494,7 +494,7 @@ void RecommendController::get_user()
  */
 void RecommendController::visit_item()
 {
-    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;
     std::string sessionIdStr, userIdStr, itemIdStr;
     IZENELIB_DRIVER_BEFORE_HOOK(requireService(service)
                                 && requireProperty(Keys::session_id, sessionIdStr)
@@ -554,7 +554,7 @@ void RecommendController::visit_item()
  */
 void RecommendController::purchase_item()
 {
-    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;
     std::string userIdStr;
     IZENELIB_DRIVER_BEFORE_HOOK(requireService(service)
                                 && requireProperty(Keys::USERID, userIdStr));
@@ -634,7 +634,7 @@ void RecommendController::purchase_item()
  */
 void RecommendController::update_shopping_cart()
 {
-    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;
     std::string userIdStr;
     IZENELIB_DRIVER_BEFORE_HOOK(requireService(service)
                                 && requireProperty(Keys::USERID, userIdStr));
@@ -716,7 +716,7 @@ void RecommendController::update_shopping_cart()
  */
 void RecommendController::track_event()
 {
-    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;
     std::string eventStr, userIdStr, itemIdStr;
     IZENELIB_DRIVER_BEFORE_HOOK(requireService(service)
                                 && requireProperty(Keys::event, eventStr)
@@ -782,7 +782,7 @@ void RecommendController::track_event()
  */
 void RecommendController::rate_item()
 {
-    RecommendTaskService* service = collectionHandler_->recommendTaskService_;	
+    RecommendTaskService* service = collectionHandler_->recommendTaskService_;
     IZENELIB_DRIVER_BEFORE_HOOK(requireService(service));
 
     RateParam param;

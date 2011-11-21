@@ -1,7 +1,7 @@
 /**
  * @file index-manager/IndexManager.h
  * @author Yingfeng Zhang
- * @brief Providing an encapsulation on operations that are not suitable to 
+ * @brief Providing an encapsulation on operations that are not suitable to
  * put into izenelib for indexer
  */
 #ifndef SF1V5_INDEX_MANAGER_H
@@ -18,7 +18,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-#define MAX_NUMERICSIZER 32768	
+#define MAX_NUMERICSIZER 32768
 
 using namespace std;
 using namespace izenelib::ir::indexmanager;
@@ -100,7 +100,7 @@ public:
 public:
     ///load data for BTree index.
     ///@param data - the buffer provided by user
-    template<typename T>	
+    template<typename T>
     void loadPropertyDataForSorting(const string& property, T* &data)
     {
         int32_t fid = getPropertyIDByName(1,property);
@@ -121,7 +121,7 @@ public:
     }
 
     ///Make range query on BTree index to fill the Filter, which is required by the filter utility of SearchManager
-    void makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property, 
+    void makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,
            const std::vector<PropertyValue>& filterParam, boost::shared_ptr<BitVector> docIdSet);
 
 private:
@@ -129,7 +129,7 @@ private:
 private:
     static std::string DATE;
 };
- 
+
 }
 
 #endif

@@ -147,24 +147,24 @@ bool MiningBundleActivator::openDataDirectories_()
     {
         bfs::path dataDir = bfs::path( getCollectionDataPath_() ) / *it;
         if (!directoryRotator_.appendDirectory(dataDir))
-	{
-	  std::string msg = dataDir.file_string() + " corrupted, delete it!";
-	  sflog->error( SFL_SYS, msg.c_str() );
-	  std::cout<<msg<<std::endl;
-	  //clean the corrupt dir
-	  boost::filesystem::remove_all( dataDir );
-	  directoryRotator_.appendDirectory(dataDir);
-	}
+        {
+            std::string msg = dataDir.file_string() + " corrupted, delete it!";
+            sflog->error( SFL_SYS, msg.c_str() );
+            std::cout<<msg<<std::endl;
+            //clean the corrupt dir
+            boost::filesystem::remove_all( dataDir );
+            directoryRotator_.appendDirectory(dataDir);
+        }
     }
 
     directoryRotator_.rotateToNewest();
     boost::shared_ptr<Directory> newest = directoryRotator_.currentDirectory();
     if (newest)
     {
-	bfs::path p = newest->path();
-	currentCollectionDataName_ = p.filename();
-	//std::cout << "Current Index Directory: " << indexPath_() << std::endl;
-	return true;
+        bfs::path p = newest->path();
+        currentCollectionDataName_ = p.filename();
+        //std::cout << "Current Index Directory: " << indexPath_() << std::endl;
+        return true;
     }
     return false;
 }
@@ -177,20 +177,20 @@ MiningBundleActivator::createMiningManager_(IndexSearchService* indexService) co
     boost::shared_ptr<MiningManager> ret;
 
     ret.reset(
-        new MiningManager(
-            dir,
-            getQueryDataPath_(),
-            indexService->workerService_->laManager_,
-            indexService->workerService_->documentManager_,
-            indexService->workerService_->indexManager_,
-            indexService->workerService_->searchManager_,
-            indexService->workerService_->idManager_,
-            config_->collectionName_,
-            config_->schema_,
-            config_->mining_config_,
-            config_->mining_schema_
-        )
-    );
+            new MiningManager(
+                dir,
+                getQueryDataPath_(),
+                indexService->workerService_->laManager_,
+                indexService->workerService_->documentManager_,
+                indexService->workerService_->indexManager_,
+                indexService->workerService_->searchManager_,
+                indexService->workerService_->idManager_,
+                config_->collectionName_,
+                config_->schema_,
+                config_->mining_config_,
+                config_->mining_schema_
+                )
+            );
 
     static bool FirstRun = true;
     if (FirstRun)
@@ -204,7 +204,7 @@ MiningBundleActivator::createMiningManager_(IndexSearchService* indexService) co
     bool succ = ret->open();
     if(!succ)
     {
-      ret.reset();
+        ret.reset();
     }
     return ret;
 }

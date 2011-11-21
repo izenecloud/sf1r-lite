@@ -6,96 +6,96 @@
     <xs:include schemaLocation="bundle-product.xsd"/>
     <xs:include schemaLocation="bundle-mining.xsd"/>
     <xs:include schemaLocation="bundle-recommend.xsd"/>
-    	
-	<xs:element name="Path">
-		<xs:complexType>
-			<xs:sequence minOccurs="0">
-				<xs:element ref="SCD"/>
-				<xs:element ref="CollectionData"/>
-				<xs:element ref="Query"/>
-			</xs:sequence>
-			<xs:attribute name="basepath" use="required"/>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="SCD">
-		<xs:complexType>
-			<xs:attribute name="path" use="required"/>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="CollectionData">
-		<xs:complexType>
-			<xs:attribute name="path" use="required"/>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="Query">
-		<xs:complexType>
-			<xs:attribute name="path" use="required"/>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="settings">
-		<xs:complexType>
-			<xs:attribute name="summarynum" type="xs:integer"/>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="Collection">
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element ref="Date" minOccurs="0"/>
-				<xs:element ref="Path"/>
-				<xs:element name="DocumentSchema" type="DocumentSchemaType" minOccurs="0" maxOccurs="1" />
+
+    <xs:element name="Path">
+        <xs:complexType>
+            <xs:sequence minOccurs="0">
+                <xs:element ref="SCD"/>
+                <xs:element ref="CollectionData"/>
+                <xs:element ref="Query"/>
+            </xs:sequence>
+            <xs:attribute name="basepath" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="SCD">
+        <xs:complexType>
+            <xs:attribute name="path" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="CollectionData">
+        <xs:complexType>
+            <xs:attribute name="path" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Query">
+        <xs:complexType>
+            <xs:attribute name="path" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="settings">
+        <xs:complexType>
+            <xs:attribute name="summarynum" type="xs:integer"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Collection">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="Date" minOccurs="0"/>
+                <xs:element ref="Path"/>
+                <xs:element name="DocumentSchema" type="DocumentSchemaType" minOccurs="0" maxOccurs="1" />
                 <xs:element ref="ACL" minOccurs="0"/>
-				<xs:element ref="IndexBundle"/>
-				<xs:element ref="ProductBundle" minOccurs="0"/>
-				<xs:element ref="MiningBundle" minOccurs="0"/>
-				<xs:element ref="RecommendBundle" minOccurs="0"/>
-			</xs:sequence>
-		</xs:complexType>
-		<!-- Key and KeyRef should be put together -->
-		<xs:key name="SchemaPropertyKey">
-			<xs:selector xpath="t:DocumentSchema/t:Property"/>
-			<xs:field xpath="@name"/>
-		</xs:key>
+                <xs:element ref="IndexBundle"/>
+                <xs:element ref="ProductBundle" minOccurs="0"/>
+                <xs:element ref="MiningBundle" minOccurs="0"/>
+                <xs:element ref="RecommendBundle" minOccurs="0"/>
+            </xs:sequence>
+        </xs:complexType>
+        <!-- Key and KeyRef should be put together -->
+        <xs:key name="SchemaPropertyKey">
+            <xs:selector xpath="t:DocumentSchema/t:Property"/>
+            <xs:field xpath="@name"/>
+        </xs:key>
         <xs:keyref name="IndexBundleSchemaKeyRef" refer="SchemaPropertyKey">
             <xs:selector xpath="t:IndexBundle/t:Schema/t:Property"/>
             <xs:field xpath="@name"/>
         </xs:keyref>
-		<xs:keyref name="tgPropertyNameKeyRef" refer="SchemaPropertyKey">
-			<xs:selector xpath="t:MiningBundle/t:Schema/t:TaxonomyGeneration/t:Property"/>
-			<xs:field xpath="@name"/>
-		</xs:keyref>
-		<xs:keyref name="ddPropertyNameKeyRef" refer="SchemaPropertyKey">
-			<xs:selector xpath="t:MiningBundle/t:Schema/t:DuplicateDetection/t:Property"/>
-			<xs:field xpath="@name"/>
-		</xs:keyref>		
-		<xs:keyref name="qrPropertyNameKeyRef" refer="SchemaPropertyKey">
-			<xs:selector xpath="t:MiningBundle/t:Schema/t:QueryRecommend/t:Property"/>
-			<xs:field xpath="@name"/>
-		</xs:keyref>		
-		<xs:keyref name="similarityPropertyNameKeyRef" refer="SchemaPropertyKey">
-			<xs:selector xpath="t:MiningBundle/t:Schema/t:Similarity/t:Property"/>
-			<xs:field xpath="@name"/>
-		</xs:keyref>		
-		<xs:keyref name="dcPropertyNameKeyRef" refer="SchemaPropertyKey">
-			<xs:selector xpath="t:MiningBundle/t:Schema/t:DocumentClassification/t:Property"/>
-			<xs:field xpath="@name"/>
-		</xs:keyref>		
-		<xs:keyref name="facetedPropertyNameKeyRef" refer="SchemaPropertyKey">
-			<xs:selector xpath="t:MiningBundle/t:Schema/t:DocumentClassification/t:Property"/>
-			<xs:field xpath="@name"/>
-		</xs:keyref>		
-        
-	</xs:element>
+        <xs:keyref name="tgPropertyNameKeyRef" refer="SchemaPropertyKey">
+            <xs:selector xpath="t:MiningBundle/t:Schema/t:TaxonomyGeneration/t:Property"/>
+            <xs:field xpath="@name"/>
+        </xs:keyref>
+        <xs:keyref name="ddPropertyNameKeyRef" refer="SchemaPropertyKey">
+            <xs:selector xpath="t:MiningBundle/t:Schema/t:DuplicateDetection/t:Property"/>
+            <xs:field xpath="@name"/>
+        </xs:keyref>
+        <xs:keyref name="qrPropertyNameKeyRef" refer="SchemaPropertyKey">
+            <xs:selector xpath="t:MiningBundle/t:Schema/t:QueryRecommend/t:Property"/>
+            <xs:field xpath="@name"/>
+        </xs:keyref>
+        <xs:keyref name="similarityPropertyNameKeyRef" refer="SchemaPropertyKey">
+            <xs:selector xpath="t:MiningBundle/t:Schema/t:Similarity/t:Property"/>
+            <xs:field xpath="@name"/>
+        </xs:keyref>
+        <xs:keyref name="dcPropertyNameKeyRef" refer="SchemaPropertyKey">
+            <xs:selector xpath="t:MiningBundle/t:Schema/t:DocumentClassification/t:Property"/>
+            <xs:field xpath="@name"/>
+        </xs:keyref>
+        <xs:keyref name="facetedPropertyNameKeyRef" refer="SchemaPropertyKey">
+            <xs:selector xpath="t:MiningBundle/t:Schema/t:DocumentClassification/t:Property"/>
+            <xs:field xpath="@name"/>
+        </xs:keyref>
 
-	<xs:element name="Date">
-		<xs:complexType>
-			<xs:attribute name="format" type="xs:NCName" use="required"/>
-		</xs:complexType>
-	</xs:element>
-	<xs:element name="ACL">
-		<xs:complexType>
-			<xs:attribute name="allow" type="xs:string" />
-			<xs:attribute name="deny" type="xs:string" />
-			<xs:attribute name="action" type="xs:string" />
-		</xs:complexType>
-	</xs:element>
-</xs:schema>	
+    </xs:element>
+
+    <xs:element name="Date">
+        <xs:complexType>
+            <xs:attribute name="format" type="xs:NCName" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="ACL">
+        <xs:complexType>
+            <xs:attribute name="allow" type="xs:string" />
+            <xs:attribute name="deny" type="xs:string" />
+            <xs:attribute name="action" type="xs:string" />
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

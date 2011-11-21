@@ -458,11 +458,11 @@ std::ostream & printTerm( const la::Term & term, std::ostream & out )
     //term.text_.convertString(tmp, SYSTEM_ENCODING );
     term.text_.convertString(tmp, izenelib::util::UString::UTF_8 );
 
-    out << "len=" 		    << (term.text_.length()) 	<< "\t";
-    out << "pos=" 		    << term.pos_ 		            << "\t";
-    out << "morpheme=" 		<< bitset<32>(term.morpheme_) 	<< "\t";
-    out << "woffset=" 	    << term.wordOffset_			    << "\t";
-    out << "\ttext=[" 		<< tmp			                << "]";
+    out << "len="           << (term.text_.length())        << "\t";
+    out << "pos="           << term.pos_                    << "\t";
+    out << "morpheme="      << bitset<32>(term.morpheme_)   << "\t";
+    out << "woffset="       << term.wordOffset_             << "\t";
+    out << "\ttext=["       << tmp                          << "]";
     out << std::endl;
     return out;
 }

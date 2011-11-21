@@ -19,28 +19,28 @@ class PriorityQueue
 {
 
 private:
-    Type*	heap_;
-    size_t	size_;
-    size_t	maxSize_;
+    Type*   heap_;
+    size_t  size_;
+    size_t  maxSize_;
 
     void upHeap()
     {
         size_t i = size_;
-        Type node = heap_[i];			  // save bottom node (WAS object)
+        Type node = heap_[i];  // save bottom node (WAS object)
         int32_t j = ((uint32_t)i) >> 1;
         while (j > 0 && lessThan(node,heap_[j]))
         {
-            heap_[i] = heap_[j];			  // shift parents down
+            heap_[i] = heap_[j];  // shift parents down
             i = j;
             j = ((uint32_t)j) >> 1;
         }
-        heap_[i] = node;				  // install saved node
+        heap_[i] = node;  // install saved node
     }
     void downHeap()
     {
         size_t i = 1;
-        Type node = heap_[i];			  // save top node
-        size_t j = i << 1;				  // find smaller child
+        Type node = heap_[i];  // save top node
+        size_t j = i << 1;  // find smaller child
         size_t k = j + 1;
         if (k <= size_ && lessThan(heap_[k], heap_[j]))
         {
@@ -48,7 +48,7 @@ private:
         }
         while (j <= size_ && lessThan(heap_[j],node))
         {
-            heap_[i] = heap_[j];			  // shift up child
+            heap_[i] = heap_[j];  // shift up child
             i = j;
             j = i << 1;
             k = j + 1;
@@ -57,7 +57,7 @@ private:
                 j = k;
             }
         }
-        heap_[i] = node;				  // install saved node
+        heap_[i] = node;  // install saved node
     }
 
 protected:
@@ -144,12 +144,12 @@ public:
     {
         if (size_ > 0)
         {
-            Type result = heap_[1];			  // save first value
-            heap_[1] = heap_[size_];			  // move last to first
+            Type result = heap_[1];  // save first value
+            heap_[1] = heap_[size_];  // move last to first
 
-            heap_[size_] = (Type)0;			  // permit GC of objects
+            heap_[size_] = (Type)0;  // permit GC of objects
             size_--;
-            downHeap();				  // adjust heap_
+            downHeap();  // adjust heap_
             return result;
         }
         else

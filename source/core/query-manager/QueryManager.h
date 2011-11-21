@@ -52,13 +52,13 @@ class QueryManager
 
 //         static bool getRefinedQuery(const RequesterEnvironment& env, std::string& refinedQuery);
 
-	static void addCollectionPropertyInfo(CollPropertyKey_T colPropertyKey,
-			sf1r::PropertyDataType colPropertyData );
+        static void addCollectionPropertyInfo(CollPropertyKey_T colPropertyKey,
+                sf1r::PropertyDataType colPropertyData );
 
-	static void addCollectionDisplayProperty(CollPropertyKey_T colPropertyKey,
-			DisplayProperty& displayProperty );
+        static void addCollectionDisplayProperty(CollPropertyKey_T colPropertyKey,
+                DisplayProperty& displayProperty );
 
-	static void addCollectionSearchProperty(CollPropertyKey_T colPropertyKey);
+        static void addCollectionSearchProperty(CollPropertyKey_T colPropertyKey);
 
     private: // private ()
 
