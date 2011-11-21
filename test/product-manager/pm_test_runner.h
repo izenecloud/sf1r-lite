@@ -97,7 +97,7 @@ public:
                 BOOST_CHECK_MESSAGE( false, "invalid input "+line);
             }
         }
-        BOOST_CHECK( pm_->GenOperations()==true);
+        BOOST_CHECK( pm_->Finish() );
         Validation_(source_start, result_list);
 //         ShowAllDocs();
     }

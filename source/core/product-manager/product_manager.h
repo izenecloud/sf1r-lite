@@ -40,7 +40,7 @@ public:
 
     bool HookDelete(uint32_t docid, time_t timestamp);
 
-    bool GenOperations();
+    bool Finish();
 
     //update documents in A, so need transfer
     bool UpdateADoc(const Document& doc, bool backup = true);
@@ -83,6 +83,8 @@ public:
     }
 
 private:
+
+    bool GenOperations_();
 
     void BackupPCItem_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, int type);
 

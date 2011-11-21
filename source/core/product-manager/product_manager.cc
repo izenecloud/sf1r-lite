@@ -146,51 +146,11 @@ bool ProductManager::HookDelete(uint32_t docid, time_t timestamp)
     return true;
 }
 
-bool ProductManager::GenOperations()
+bool ProductManager::Finish()
 {
-    bool result = true;
     PriceHistory::updateMultiRow(price_history_cache_);
     price_history_cache_.clear();
-    if (!op_processor_->Finish())
-    {
-        error_ = op_processor_->GetLastError();
-        result = false;
-    }
-    if (inhook_) inhook_ = false;
-    return result;
-
-    /// M
-    /*
-    void ProductManager::onProcessed(bool success)
-    {
-        // action after SCDs have been processed
-    }
-
-    DistributedProcessSynchronizer dsSyn;
-    std::string scdDir = "/tmp/hdfs/scd"; // generated scd files in scdDir
-    dsSyn.generated(scdDir);
-    dsSyn.watchProcess(boost::bind(&ProductManager::onProcessed, this,_1));
-    */
-
-    /// A
-    /*
-    class Receiver {
-    public:
-        Receiver()
-        {
-            dsSyn.watchGenerate(boost::bind(&Receiver::onGenerated, this,_1));
-        }
-
-        void Receiver::onGenerated(const std::string& s)
-        {
-            // process SCDs
-
-            dsSyn.processed(true);
-        }
-
-        DistributedProcessSynchronizer dsSyn;
-    }
-    */
+    return GenOperations_();
 }
 
 bool ProductManager::UpdateADoc(const Document& doc, bool backup)
@@ -200,7 +160,7 @@ bool ProductManager::UpdateADoc(const Document& doc, bool backup)
         error_ = "Update A Doc failed";
         return false;
     }
-    if (!GenOperations())
+    if (!GenOperations_())
     {
         return false;
     }
@@ -276,7 +236,7 @@ bool ProductManager::AddGroupWithInfo(const std::vector<uint32_t>& docid_list, c
         return false;
     }
 
-    if (!GenOperations())
+    if (!GenOperations_())
     {
         return false;
     }
@@ -334,7 +294,7 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, UString& 
     {
         return false;
     }
-    if (!GenOperations())
+    if (!GenOperations_())
     {
         return false;
     }
@@ -344,6 +304,51 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, UString& 
     }
     gen_uuid = first_uuid;
     return true;
+}
+
+bool ProductManager::GenOperations_()
+{
+    bool result = true;
+    if (!op_processor_->Finish())
+    {
+        error_ = op_processor_->GetLastError();
+        result = false;
+    }
+    if (inhook_) inhook_ = false;
+    return result;
+
+    /// M
+    /*
+    void ProductManager::onProcessed(bool success)
+    {
+        // action after SCDs have been processed
+    }
+
+    DistributedProcessSynchronizer dsSyn;
+    std::string scdDir = "/tmp/hdfs/scd"; // generated scd files in scdDir
+    dsSyn.generated(scdDir);
+    dsSyn.watchProcess(boost::bind(&ProductManager::onProcessed, this,_1));
+    */
+
+    /// A
+    /*
+    class Receiver {
+    public:
+        Receiver()
+        {
+            dsSyn.watchGenerate(boost::bind(&Receiver::onGenerated, this,_1));
+        }
+
+        void Receiver::onGenerated(const std::string& s)
+        {
+            // process SCDs
+
+            dsSyn.processed(true);
+        }
+
+        DistributedProcessSynchronizer dsSyn;
+    }
+    */
 }
 
 bool ProductManager::AppendToGroup_(const UString& uuid, const std::vector<uint32_t>& uuid_docid_list, const std::vector<uint32_t>& docid_list, const PMDocumentType& uuid_doc)
@@ -459,7 +464,7 @@ bool ProductManager::AppendToGroup(const UString& uuid, const std::vector<uint32
     {
         return false;
     }
-    if (!GenOperations())
+    if (!GenOperations_())
     {
         return false;
     }
@@ -552,7 +557,7 @@ bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint
         doc_list[i].eraseProperty(config_.uuid_property_name);
         op_processor_->Append(1, doc_list[i]);
     }
-    if (!GenOperations())
+    if (!GenOperations_())
     {
         return false;
     }
