@@ -22,6 +22,12 @@
 
              "cassandra://[username:password@]host:port[/keyspace]"
 
+         Examples:
+
+             "cassandra://localhost"
+             "cassandra://172.16.0.163"
+             "cassandra://172.16.0.163/SF1R_TEST"
+
          Notes:
              - Fields in square brackets are optional
              - IPv6 ip address has not been properly parsed now (lacking demand)
