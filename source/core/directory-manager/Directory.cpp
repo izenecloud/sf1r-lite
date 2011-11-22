@@ -14,8 +14,8 @@
 namespace sf1r {
 namespace directory {
 
-const std::string Directory::kNotName = "";
-const std::string Directory::kCookieFileName = "cookie";
+const std::string Directory::kNotName;
+const std::string Directory::kCookieFileName("cookie");
 
 namespace { // {anonymous}
 bool notCookieFile(const bfs::path& path)
@@ -47,7 +47,7 @@ boost::shared_ptr<Directory> Directory::open(const bfs::path& path)
 {
     // not empty dir
     if (bfs::is_directory(path)
-        && bfs::directory_iterator(path) != bfs::directory_iterator())
+            && bfs::directory_iterator(path) != bfs::directory_iterator())
     {
         boost::shared_ptr<Directory> dir(new Directory(path));
         // check error while reading cookie
@@ -75,8 +75,8 @@ bool Directory::validate(const bfs::path& path)
 }
 
 Directory::Directory(const bfs::path& path)
-: path_(path)
-, cookie_()
+    : path_(path)
+    , cookie_()
 {
     if ("." == path_.filename())
     {
@@ -177,8 +177,8 @@ bool Directory::copyFrom(const Directory& d)
 }
 
 DirectoryGuard::DirectoryGuard(Directory* dir)
-: dir_(dir)
-, good_(false)
+    : dir_(dir)
+    , good_(false)
 {
     if (dir_)
     {

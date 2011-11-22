@@ -101,7 +101,7 @@ struct DirectoryGuard
     typedef bool (DirectoryGuard::*unspecified_bool_type)() const;
     operator unspecified_bool_type() const
     {
-        return good_ ? &DirectoryGuard::good : 0;
+        return &DirectoryGuard::good;
     }
 
 private:
