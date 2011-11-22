@@ -9,18 +9,22 @@
 
 #include "ScdSharding.h"
 
+#include <net/aggregator/AggregatorConfig.h>
+
 #include <common/ScdParser.h>
 
 #include <iostream>
 
 #include <boost/shared_ptr.hpp>
 
+using namespace net::aggregator;
+
 namespace sf1r{
 
 class ScdDispatcher
 {
 public:
-    ScdDispatcher(ScdSharding* scdSharding);
+    ScdDispatcher(ScdSharding* scdSharding, AggregatorConfig& aggregatorConfig);
 
     virtual ~ScdDispatcher() {}
 
@@ -38,10 +42,11 @@ protected:
 
     virtual bool dispatch_impl(shardid_t shardid, SCDDoc& scdDoc) = 0;
 
-    virtual void finish() {}
+    virtual bool finish() { return true; }
 
 protected:
     ScdSharding* scdSharding_;
+    AggregatorConfig aggregatorConfig_;
 
     izenelib::util::UString::EncodingType scdEncoding_;
     std::string curScdFileName_;
@@ -54,7 +59,11 @@ protected:
 class BatchScdDispatcher : public ScdDispatcher
 {
 public:
-    BatchScdDispatcher(ScdSharding* scdSharding);
+    BatchScdDispatcher(
+            ScdSharding* scdSharding,
+            AggregatorConfig& aggregatorConfig,
+            const std::string& collectionName,
+            const std::string& dispatchTempDir="./ScdDispatcherTemp");
 
     ~BatchScdDispatcher();
 
@@ -63,9 +72,10 @@ protected:
 
     virtual bool dispatch_impl(shardid_t shardid, SCDDoc& scdDoc);
 
-    virtual void finish();
+    virtual bool finish();
 
 private:
+    std::string collectionName_;
     std::string dispatchTempDir_;
     std::map<shardid_t, std::string> shardScdfileMap_;
     std::vector<std::ofstream*> ofList_;

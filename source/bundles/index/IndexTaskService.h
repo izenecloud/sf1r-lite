@@ -21,6 +21,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/variant/get.hpp>
 
+
 namespace sf1r
 {
 using izenelib::ir::idmanager::IDManager;
@@ -64,6 +65,8 @@ public:
     std::string getScdDir() const;
 
 private:
+    bool indexMaster_(unsigned int numdoc);
+
     void createPropertyList_();
 
     bool completePartialDocument_(docid_t oldId, Document& doc);

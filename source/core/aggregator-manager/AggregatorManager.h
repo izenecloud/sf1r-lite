@@ -157,6 +157,12 @@ public:
             std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >& actionItemMap);
 
 
+    bool ScdDispatch(
+            unsigned int numdoc,
+            const std::string& collectionName,
+            const std::string& scdPath);
+
+
 private:
     boost::shared_ptr<MiningManager> miningManager_;
     int TOP_K_NUM;

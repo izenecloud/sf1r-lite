@@ -37,6 +37,9 @@ using namespace izenelib::driver;
 using izenelib::util::UString;
 
 #include <common/JobScheduler.h>
+#include <aggregator-manager/AggregatorManager.h>
+#include <aggregator-manager/WorkerService.h>
+
 
 namespace
 {
@@ -106,15 +109,34 @@ IndexTaskService::~IndexTaskService()
 
 bool IndexTaskService::index(unsigned int numdoc)
 {
-    // if (bundleConfig_->isSupportByAggregator()) {}
+    if (bundleConfig_->isSupportByAggregator())
+    {
+        task_type task = boost::bind(&IndexTaskService::indexMaster_, this, numdoc);
+        JobScheduler::get()->addTask(task);
+        return true;
+    }
 
-    // xxx move process to WorkerService,
-    // boost::bind(&WorkerService::buildCollection, workerService_.get(), numdoc);
-
+    // xxx move process to WorkerService
     task_type task = boost::bind(&IndexTaskService::buildCollection, this, numdoc);
     JobScheduler::get()->addTask(task);
 
     return true;
+}
+
+bool IndexTaskService::indexMaster_(unsigned int numdoc)
+{
+    // scd sharding and dispatch
+    string scdPath = bundleConfig_->collPath_.getScdPath() + "index/";
+    if (aggregatorManager_->ScdDispatch(numdoc, bundleConfig_->collectionName_, scdPath))
+    {
+        // backup scd of master
+    }
+
+    // distributed indexing request
+    std::cout<<" start distributed indexing "<<std::endl;
+    bool ret = false;
+    ///aggregatorManager_->distributeRequest("index", numdoc, ret);
+    return ret;
 }
 
 void IndexTaskService::createPropertyList_()
