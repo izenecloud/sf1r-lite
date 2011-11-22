@@ -96,8 +96,8 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
         //need not to update(insert) to.uuid,
         ProductPrice from_price;
         ProductPrice to_price;
-        if (!GetPrice_(fromid, from_price)) return false;
-        if (!GetPrice_(to, to_price)) return false;
+        GetPrice_(fromid, from_price);
+        GetPrice_(to, to_price);
         if (!data_source_->SetUuid(index_document, from_uuid)) return false;
         to.property(config_.uuid_property_name) = from_uuid;
         //update price only
