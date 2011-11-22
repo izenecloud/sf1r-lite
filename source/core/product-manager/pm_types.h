@@ -10,6 +10,10 @@ namespace sf1r
 typedef double ProductPriceType;
 typedef Document PMDocumentType;
 
+typedef std::vector<std::pair<std::string, std::pair<ProductPriceType, ProductPriceType> > > PriceHistoryItem;
+typedef std::vector<std::pair<std::string, PriceHistoryItem> > PriceHistoryList;
+typedef std::vector<std::pair<std::string, std::pair<ProductPriceType, ProductPriceType> > > PriceRangeList;
+
 }
 
 #endif
