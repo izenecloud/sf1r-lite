@@ -277,14 +277,6 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
         if (!filtingList.empty())
             queryBuilder_->prepare_filter(filtingList, pFilterIdSet);
 
-        std::vector<docid_t> vec;
-        pFilterIdSet->appendRowIDs(vec);
-
-        std::cout<<"********output that fit the filter condition id list:********"<<std::endl;
-        for(size_t i = 0; i < vec.size(); i++)
-            std::cout<<vec[i]<<" ";
-        std::cout<<std::endl;
-
         pMultiPropertyIterator = queryBuilder_->prepare_dociterator(
             actionOperation,
             collectionId,
@@ -302,7 +294,6 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
 
             pDocIterator.reset(new ANDDocumentIterator());
             pDocIterator->add((DocumentIterator*)pFilterIterator);
-            std::cout<<"***********the filter exist and BTree iterator has added to DocIterator**********"<<std::endl;
         }
 
         if(pMultiPropertyIterator)
@@ -314,10 +305,6 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             pDocIterator->add((DocumentIterator*)pMultiPropertyIterator);
         }
 
-        if(pDocIterator)
-        {
-            std::cout<<"******the filter is not null********"<<std::endl;
-        }
         if(!pDocIterator)
             return false;
     }
@@ -539,14 +526,9 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
 
         while (pDocIterator->next())
         {
-            //if (pFilter && !pFilter->test(pDocIterator->doc()))
-              //  continue;
-
-            std::cout<<"***********the output docid is:"<<pDocIterator->doc()<<std::endl;
             if (groupFilter && !groupFilter->test(pDocIterator->doc()))
                 continue;
 
-            std::cout<<"***********the groupFilter output docid is:"<<pDocIterator->doc()<<std::endl;
             if(rangePropertyTable)
             {
                 float docPropertyValue = 0;

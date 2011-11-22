@@ -127,6 +127,11 @@ MultiPropertyScorer* QueryBuilder::prepare_dociterator(
     const std::vector<std::map<termid_t, unsigned> >& termIndexMaps
 )
 {
+    if(actionOperation.rawQueryTree_->type_ == QueryTree::FILTER_QUERY)
+    {
+        return NULL;
+    }
+
     size_t size_of_properties = propertyIds.size();
 
     std::auto_ptr<MultiPropertyScorer> docIterPtr(new MultiPropertyScorer(propertyWeightMap, propertyIds));

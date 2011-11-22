@@ -84,18 +84,12 @@ inline bool ANDDocumentIterator::move_together_with_not()
 
 inline bool ANDDocumentIterator::do_next()
 {
-    std::cout<<"***********enter the ANDDocumentIterator::do_next function************"<<std::endl;
     docid_t target,nearTarget;
     size_t nIteratorNum = docIterList_.size();
 
-    std::cout<<"**********nIteratorNum = "<<nIteratorNum<<std::endl;
-
-    //cout<<"************docIterList_.front()->next():::::************"<<docIterList_.front()->next()<<std::endl;
     if (docIterList_.empty()||(docIterList_.front()->next()==false))
         return false;
-    std::cout<<"************docIterList_.front()->next():::::************"<<1<<std::endl;
     target = docIterList_.front()->doc();
-    std::cout<<"************the target = "<<target<<std::endl;
     docIterList_.push_back(docIterList_.front());
     docIterList_.pop_front();
 

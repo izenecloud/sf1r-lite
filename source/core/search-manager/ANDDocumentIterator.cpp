@@ -35,7 +35,6 @@ void ANDDocumentIterator::add(DocumentIterator* pDocIterator)
 
 bool ANDDocumentIterator::next()
 {
-    std::cout<<"**********enter the ANDDocumentIterator next function*********"<<std::endl;
     if (!hasNot_)
         return do_next();
     else
@@ -52,7 +51,6 @@ bool ANDDocumentIterator::next()
         }
 
         bool ret = do_next();
-        std::cout<<"*************the do_next run successful? :"<<ret<<std::endl;
         if (currDoc_ == currDocOfNOTIter_) {
             return move_together_with_not();
         }
