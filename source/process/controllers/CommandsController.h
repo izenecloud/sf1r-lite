@@ -6,6 +6,7 @@
  * @date Created <2010-06-01 10:20:39>
  */
 #include <util/driver/Controller.h>
+#include "Sf1Controller.h"
 
 #include <string>
 
@@ -19,7 +20,7 @@ namespace sf1r
  *
  * Sends commands to cooresponding collection
  */
-class CommandsController : public ::izenelib::driver::Controller
+class CommandsController : public Sf1Controller
 {
 public:
     void index();

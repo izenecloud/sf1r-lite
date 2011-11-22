@@ -32,6 +32,8 @@ class DocumentManager;
 class LAManager;
 class SearchManager;
 class IndexHooker;
+class AggregatorManager;
+class WorkerService;
 class IndexTaskService : public ::izenelib::osgi::IService
 {
     typedef uint32_t CharacterOffset;
@@ -42,6 +44,8 @@ public:
         boost::shared_ptr<IndexManager> indexManager);
 
     ~IndexTaskService();
+
+    bool index(unsigned int numdoc);
 
     bool buildCollection(unsigned int numdoc);
 
@@ -185,6 +189,9 @@ private:
     std::map<std::string, uint32_t> productSourceCount_;
 
     boost::shared_ptr<IndexHooker> hooker_;
+
+    boost::shared_ptr<AggregatorManager> aggregatorManager_;
+    boost::shared_ptr<WorkerService> workerService_;
 
     friend class IndexBundleActivator;
     friend class ProductBundleActivator;

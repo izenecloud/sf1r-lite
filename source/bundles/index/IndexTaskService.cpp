@@ -36,6 +36,8 @@ namespace bfs = boost::filesystem;
 using namespace izenelib::driver;
 using izenelib::util::UString;
 
+#include <common/JobScheduler.h>
+
 namespace
 {
 /** the directory for scd file backup */
@@ -100,6 +102,19 @@ IndexTaskService::IndexTaskService(
 IndexTaskService::~IndexTaskService()
 {
     delete scd_writer_;
+}
+
+bool IndexTaskService::index(unsigned int numdoc)
+{
+    // if (bundleConfig_->isSupportByAggregator()) {}
+
+    // xxx move process to WorkerService,
+    // boost::bind(&WorkerService::buildCollection, workerService_.get(), numdoc);
+
+    task_type task = boost::bind(&IndexTaskService::buildCollection, this, numdoc);
+    JobScheduler::get()->addTask(task);
+
+    return true;
 }
 
 void IndexTaskService::createPropertyList_()

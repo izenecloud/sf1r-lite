@@ -285,8 +285,9 @@ bool IndexBundleActivator::init_()
 
     taskService_ = new IndexTaskService(config_, directoryRotator_, indexManager_);
 
-    //taskService_->workerService_ = workerService_;
-    //taskService_->workerService_->summarizer_.init(documentManager_->getLangId(), idManager_);
+    taskService_->aggregatorManager_ = aggregatorManager_;
+    taskService_->workerService_ = workerService_;
+    taskService_->workerService_->summarizer_.init(documentManager_->getLangId(), idManager_);
     taskService_->idManager_ = idManager_;
     taskService_->laManager_ = laManager_;
     taskService_->documentManager_ = documentManager_;

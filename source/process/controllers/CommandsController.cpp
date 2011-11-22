@@ -80,37 +80,13 @@ bool CommandsController::indexSearch_()
     // 0 indicates no limit
     Value::UintType documentCount = asUint(request()[Keys::document_count]);
 
-    // check if perform distributed indexing
-    // Todo: forward call to indexTaskService->index()
-    if (SF1Config::get()->checkAggregatorSupport(collection_))
-    {
-        CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection_);
-        if (!collectionHandler)
-        {
-            response().addError("No Handler for this collection.");
-            return false;
-        }
-
-        bool ret = true;
-        collectionHandler->indexSearchService_->getAggregatorManager()
-            ->distributeRequest(collection_, "index", documentCount, ret);
-
-        return ret;
-    }
-
-    std::string bundleName = "IndexBundle-" + collection_;
-    IndexTaskService* indexService = static_cast<IndexTaskService*>(
-                                     CollectionManager::get()->getOSGILauncher().getService(bundleName, "IndexTaskService"));
-    if (!indexService)
+    if (!collectionHandler_->indexTaskService_)
     {
         response().addError("Request failed, index service not found");
         return false;
     }
 
-    task_type task = boost::bind(&IndexTaskService::buildCollection, indexService, documentCount);
-    JobScheduler::get()->addTask(task);
-
-    return true;
+    return collectionHandler_->indexTaskService_->index(documentCount);
 }
 
 void CommandsController::indexRecommend_()
