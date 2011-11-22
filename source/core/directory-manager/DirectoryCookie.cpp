@@ -22,11 +22,11 @@ const unsigned kNumLines = 4; // magic, update, parent, valid
 } // namespace {anonymous}
 
 DirectoryCookie::DirectoryCookie(const bfs::path& filePath)
-: path_(filePath.file_string())
-, updateTime_(0)
-, parentName_(DirectoryTraits::kNotName)
-, valid_(true)
-, fs_()
+    : path_(filePath.file_string())
+    , updateTime_(0)
+    , parentName_(DirectoryTraits::kNotName)
+    , valid_(true)
+    , fs_()
 {
 }
 
@@ -67,6 +67,7 @@ bool DirectoryCookie::read()
         // 3, valid
         if (lines[3] != kTrue && lines[3] != kFalse)
         {
+            valid_ = false;
             return false;
         }
 
@@ -114,7 +115,7 @@ void DirectoryCookie::setUpdateTime(long time)
 
 bool DirectoryCookie::invalidate()
 {
-    setValid(false);
+    valid_ = false;
     return write();
 }
 
@@ -154,4 +155,3 @@ bool DirectoryCookie::reopenForWrite_()
 }
 
 }} // namespace sf1r::directory
-
