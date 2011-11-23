@@ -67,9 +67,19 @@ private:
 
     void StripDocidList_(std::vector<std::string>& dest, const std::vector<std::string>& src) const;
 
+    friend class boost::serialization::access;
+
+    template <typename Archive>
+    void serialize( Archive & ar, const unsigned int version )
+    {
+        ar & category_top_map_;
+        ar & source_top_map_;
+    }
+
 private:
     std::string collection_name_;
-    std::string dir_;
+    std::string top_price_cuts_file_;
+    std::string price_history_file_;
     std::string category_property_;
     std::string source_property_;
     std::vector<PriceHistory> price_history_cache_;

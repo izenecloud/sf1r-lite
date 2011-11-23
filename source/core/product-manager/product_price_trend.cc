@@ -14,7 +14,8 @@ namespace sf1r
 
 ProductPriceTrend::ProductPriceTrend(const std::string& collection_name, const std::string& dir, const std::string& category_property, const std::string& source_property)
     : collection_name_(collection_name)
-    , dir_(dir)
+    , top_price_cuts_file_(dir + "/top_price_cuts.data")
+    , price_history_file_(dir + "/price_history.data")
     , category_property_(category_property)
     , source_property_(source_property)
 {
@@ -27,7 +28,13 @@ ProductPriceTrend::~ProductPriceTrend()
 
 void ProductPriceTrend::Init()
 {
-    //TODO load top price-cut maps from disk file
+    std::ifstream ifs(top_price_cuts_file_.c_str());
+    if (!ifs.eof())
+    {
+        boost::archive::binary_iarchive ia(ifs);
+        ia >> *this;
+        ifs.close();
+    }
 }
 
 bool ProductPriceTrend::Finish()
@@ -126,7 +133,10 @@ bool ProductPriceTrend::Flush_()
 
 void ProductPriceTrend::Save_()
 {
-    //TODO save top price-cut maps to disk file
+    std::ofstream ofs(top_price_cuts_file_.c_str());
+    boost::archive::binary_oarchive oa(ofs);
+    oa << *this;
+    ofs.close();
 }
 
 bool ProductPriceTrend::GetMultiPriceHistory(
