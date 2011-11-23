@@ -108,11 +108,11 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
         {
             std::string docid_str;
             docid.convertString(docid_str, UString::UTF_8);
-            uint32_t category_id = -1, source_id = -1;
-            GetTopCategoryId_(to, category_id);
-            GetSourceId_(to, source_id);
+            std::string category, source;
+            GetTopCategory_(to, category);
+            GetSource_(to, source);
             GetTimestamp_(to, timestamp);
-            price_trend_->Update(category_id, source_id, fromid, docid_str, from_price, to_price, timestamp);
+            price_trend_->Update(category, source, fromid, docid_str, from_price, to_price, timestamp);
         }
     }
 
@@ -716,15 +716,15 @@ bool ProductManager::GetTimestamp_(const PMDocumentType& doc, time_t& timestamp)
     return true;
 }
 
-bool ProductManager::GetTopCategoryId_(const PMDocumentType& doc, uint32_t& category_id) const
+bool ProductManager::GetTopCategory_(const PMDocumentType& doc, std::string& category) const
 {
-    //TODO get top-level category id for the corresponding doc
+    //TODO
     return true;
 }
 
-bool ProductManager::GetSourceId_(const PMDocumentType& doc, uint32_t& source_id) const
+bool ProductManager::GetSource_(const PMDocumentType& doc, std::string& source) const
 {
-    //TODO get source id for the corresponding doc
+    //TODO
     return true;
 }
 

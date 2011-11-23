@@ -50,7 +50,7 @@ bool ProductPriceTrend::Insert(const std::string& docid, const ProductPrice& pri
     return true;
 }
 
-bool ProductPriceTrend::Update(uint32_t category_id, uint32_t source_id, uint32_t num_docid, const std::string& str_docid, const ProductPrice& from_price, const ProductPrice& to_price, time_t timestamp)
+bool ProductPriceTrend::Update(const std::string& category, const std::string& source, uint32_t num_docid, const std::string& str_docid, const ProductPrice& from_price, const ProductPrice& to_price, time_t timestamp)
 {
     bool ret = true;
 
@@ -60,13 +60,13 @@ bool ProductPriceTrend::Update(uint32_t category_id, uint32_t source_id, uint32_
     price_history_cache_.back().insert(timestamp, to_price);
 
     float price_cut = from_price.value.first > 0 ? to_price.value.first / from_price.value.first : 1;
-    if (category_id != (uint32_t) -1)
+    if (!category.empty())
     {
-        ret = UpdateTopPriceCuts_(category_top_map_, category_id, price_cut, timestamp, num_docid) && ret;
+        ret = UpdateTopPriceCuts_(category_top_map_[category], price_cut, timestamp, num_docid) && ret;
     }
-    if (source_id != (uint32_t) -1)
+    if (!source.empty())
     {
-        ret = UpdateTopPriceCuts_(source_top_map_, source_id, price_cut, timestamp, num_docid) && ret;
+        ret = UpdateTopPriceCuts_(source_top_map_[source], price_cut, timestamp, num_docid) && ret;
     }
 
     if (price_history_cache_.size() == 10000)
@@ -83,11 +83,10 @@ bool ProductPriceTrend::CronJob()
     return true;
 }
 
-bool ProductPriceTrend::UpdateTopPriceCuts_(TopPriceCutMap& top_map, uint32_t map_id, float price_cut, time_t timestamp, uint32_t docid)
+bool ProductPriceTrend::UpdateTopPriceCuts_(TopPriceCutMap::mapped_type& top_price_cuts, float price_cut, time_t timestamp, uint32_t docid)
 {
     std::vector<float> price_cuts(3);
     if (!GetPriceCut_(price_cuts, docid)) return false;
-    std::vector<std::multimap<float, uint32_t> >& top_price_cuts = top_map[map_id];
     if (top_price_cuts.empty())
     {
         top_price_cuts.resize(3);

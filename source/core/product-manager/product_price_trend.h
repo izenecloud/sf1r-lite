@@ -12,7 +12,7 @@ class PriceHistory;
 
 class ProductPriceTrend
 {
-    typedef std::map<uint32_t, std::vector<std::multimap<float, uint32_t> > > TopPriceCutMap;
+    typedef std::map<std::string, std::vector<std::multimap<float, uint32_t> > > TopPriceCutMap;
 
 public:
     ProductPriceTrend(const std::string& collection_name, const std::string& dir, const std::string& category_property, const std::string& source_property);
@@ -25,7 +25,7 @@ public:
 
     bool Insert(const std::string& docid, const ProductPrice& price, time_t timestamp);
 
-    bool Update(uint32_t category_id, uint32_t source_id, uint32_t num_docid, const std::string& str_docid, const ProductPrice& from_price, const ProductPrice& to_price, time_t timestamp);
+    bool Update(const std::string& category, const std::string& source, uint32_t num_docid, const std::string& str_docid, const ProductPrice& from_price, const ProductPrice& to_price, time_t timestamp);
 
     bool GetMultiPriceHistory(
             PriceHistoryList& history_list,
@@ -57,7 +57,7 @@ private:
 
     bool SavePriceCut_(const std::vector<float>& price_cuts, uint32_t docid) const;
 
-    bool UpdateTopPriceCuts_(TopPriceCutMap& top_map, uint32_t map_id, float price_cut, time_t timestamp, uint32_t docid);
+    bool UpdateTopPriceCuts_(TopPriceCutMap::mapped_type& top_price_cuts, float price_cut, time_t timestamp, uint32_t docid);
 
     void ParseDocid_(std::string& dest, const std::string& src) const;
 

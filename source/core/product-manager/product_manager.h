@@ -101,9 +101,9 @@ private:
 
     bool GetTimestamp_(const PMDocumentType& doc, time_t& timestamp) const;
 
-    bool GetTopCategoryId_(const PMDocumentType& doc, uint32_t& category_id) const;
+    bool GetTopCategory_(const PMDocumentType& doc, std::string& category) const;
 
-    bool GetSourceId_(const PMDocumentType& doc, uint32_t& source_id) const;
+    bool GetSource_(const PMDocumentType& doc, std::string& source) const;
 
 private:
     ProductDataSource* data_source_;
