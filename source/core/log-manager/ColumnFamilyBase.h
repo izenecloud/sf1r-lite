@@ -93,11 +93,9 @@ bool getSingleCount(int32_t& count, const std::string& key, const std::string& s
 }
 
 #define DEFINE_COLUMN_FAMILY_COMMON_ROUTINES(ClassName) \
-private: \
+public: \
     static bool is_enabled; \
     static const ColumnType column_type; \
-    \
-public: \
     /**
      * XXX Below are the metadata of the column family. Some of them cannot be
      * changed if the column family has already been created (and not yet
