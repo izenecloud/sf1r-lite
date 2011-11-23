@@ -12,6 +12,7 @@
 #include <boost/scoped_ptr.hpp>
 
 #include <string>
+#include <fstream>
 
 namespace sf1r {
 namespace directory {
@@ -23,6 +24,7 @@ class Directory : boost::noncopyable
 public:
     const static std::string kNotName;
     const static std::string kCookieFileName;
+    const static std::string kSCDLogFileName;   
 
     /**
      * @brief creates a new directory. If the directory pointed by \a path is an
@@ -81,9 +83,12 @@ public:
 
     bool copyFrom(const Directory& d);
 
+    void appendSCD(const std::string& scdName);
+    const std::string scdLogString() const;
 private:
     bfs::path path_;
     DirectoryCookieHandle cookie_;
+    std::ofstream scdLog_;
 
     friend class DirectoryGuard;
 };

@@ -101,24 +101,17 @@ public:
     }
 
 
-    /// @brief  Sets the "Log path" of the Collection. The basepath should be set for the default
-    ///         path to be applied
-    /// @param path     The path
-//             void setLogPath( const std::string & path )
-//             {
-//                 if( path.empty() )
-//                     logPath_ = basePath_ + logRelativePath_;
-//                 else
-//                     logPath_ = path;
-//                 ensureTrailingSlash(logPath_);
-//             }
+    /// @brief	Sets the current collection directory, which is called by directory rotator
+    void setCurrCollectionDir( const std::string & dir )
+    {
+        currCollectionDir_ = dir;
+    }
 
-    /// @brief  Gets the log path
-    /// @return The log path
-//             std::string getLogPath() const
-//             {
-//                 return logPath_;
-//             }
+    /// @return The current collection data directory
+    std::string getCurrCollectionDir() const
+    {
+        return currCollectionDir_;
+    }
 
 
 protected:
@@ -132,6 +125,7 @@ protected:
         ar & scdPath_;
         ar & collectionDataPath_;
         ar & queryDataPath_;
+        ar & currCollectionDir_;
     }
 
 private:
@@ -160,17 +154,12 @@ private:
     static const std::string collectionDataRelativePath_;
     static const std::string queryDataRelativePath_;
 
-    /*
-    static const char * scdRelativePath_ = "scd";
-    static const char * indexRelativePath_ = "index-data";
-    static const char * miningRelativePath_ = "mining-data";
-    static const char * logRelativePath_ = "log-data";
-    */
-
     std::string basePath_;
     std::string scdPath_;
     std::string collectionDataPath_;
     std::string queryDataPath_;
+
+    std::string currCollectionDir_;
 };
 
 }

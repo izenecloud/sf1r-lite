@@ -23,12 +23,14 @@
 #include <util/profiler/ProfilerGroup.h>
 
 #include <boost/filesystem.hpp>
+#include <boost/unordered_set.hpp>
 
 #include <la/util/UStringUtil.h>
 
 #include <glog/logging.h>
 
 #include <memory> // for auto_ptr
+#include <iterator>
 #include <signal.h>
 #include <protect/RestrictMacro.h>
 namespace bfs = boost::filesystem;
@@ -58,13 +60,14 @@ IndexTaskService::IndexTaskService(
     , directoryRotator_(directoryRotator)
     , miningTaskService_(NULL)
     , recommendTaskService_(NULL)
-    , scd_writer_(new ScdWriterController(bundleConfig_->collPath_.getScdPath() + "index/"))
+    , scd_writer_(new ScdWriterController(bundleConfig_->indexSCDPath()))
     , indexManager_(indexManager)
     , collectionId_(1)
     , indexProgress_()
     , checkInsert_(false)
     , numDeletedDocs_(0)
     , numUpdatedDocs_(0)
+    , totalSCDSizeSinceLastBackup_(0)
 {
     std::set<PropertyConfig, PropertyComp>::iterator piter;
     bool hasDateInConfig = false;
@@ -126,7 +129,7 @@ bool IndexTaskService::index(unsigned int numdoc)
 bool IndexTaskService::indexMaster_(unsigned int numdoc)
 {
     // scd sharding and dispatch
-    string scdPath = bundleConfig_->collPath_.getScdPath() + "index/";
+    string scdPath = bundleConfig_->indexSCDPath();
     if (aggregatorManager_->ScdDispatch(numdoc, bundleConfig_->collectionName_, scdPath))
     {
         // backup scd of master
@@ -156,18 +159,14 @@ void IndexTaskService::createPropertyList_()
 
 bool IndexTaskService::buildCollection(unsigned int numdoc)
 {
-    string scdPath = bundleConfig_->collPath_.getScdPath() + "index/";
+    size_t currTotalSCDSize = getTotalScdSize_();
+    ///If current directory is the one rotated from the backup directory,
+    ///there should exist some missed SCDs since the last backup time,
+    ///so we move those SCDs from backup directory, so that these data
+    ///could be recovered through indexing
+    recoverSCD_();
 
-    if (!backup_())
-        return false;
-
-    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
-    if (!dirGuard)
-    {
-        LOG(ERROR) << "Index directory is corrupted";
-        return false;
-    }
-
+    string scdPath = bundleConfig_->indexSCDPath();
     sf1r::Status::Guard statusGuard(indexStatus_);
     CREATE_PROFILER(buildIndex, "Index:SIAProcess", "Indexer : buildIndex")
 
@@ -240,6 +239,14 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
     double threshold = 50.0/500000.0;
     IndexModeSelector index_mode_selector(indexManager_, threshold, max_realtime_msize);
     index_mode_selector.TrySetIndexMode(indexProgress_.totalFileSize_);
+
+    {
+    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
+    if (!dirGuard)
+    {
+        LOG(ERROR) << "Index directory is corrupted";
+        return false;
+    }
 
     LOG(INFO) << "SCD Files in Path processed in given order. Path " << scdPath;
     vector<string>::iterator scd_it;
@@ -342,11 +349,14 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
     bfs::path bkDir = bfs::path(scdPath) / SCD_BACKUP_DIR;
     bfs::create_directory(bkDir);
     LOG(INFO) << "moving " << scdList.size() << " SCD files to directory " << bkDir;
+    const boost::shared_ptr<Directory>& currentDir = directoryRotator_.currentDirectory();
+	
     for (scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
     {
         try
         {
             bfs::rename(*scd_it, bkDir / bfs::path(*scd_it).filename());
+            currentDir->appendSCD(bfs::path(*scd_it).filename());
         }
         catch (bfs::filesystem_error& e)
         {
@@ -364,10 +374,25 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
     numUpdatedDocs_ = 0;
 
     indexProgress_.reset();
+
     STOP_PROFILER(buildIndex);
+
     REPORT_PROFILE_TO_FILE("PerformanceIndexResult.SIAProcess")
     LOG(INFO) << "End BuildCollection: ";
     LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
+
+    }
+
+    if(requireBackup_(currTotalSCDSize))
+    {
+        ///When index can support binlog, this step is not necessary
+        ///It means when work under realtime mode, the benefits of reduced merging
+        ///caused by frequently updating can not be achieved if Backup is required
+        index_mode_selector.ForceCommit();
+        if (!backup_())
+            return false;
+        totalSCDSizeSinceLastBackup_ = 0;
+    }
 
     return true;
 }
@@ -1558,6 +1583,49 @@ void IndexTaskService::value2SCDDoc(const Value& value, SCDDoc& scddoc)
     }
 }
 
+size_t IndexTaskService::getTotalScdSize_()
+{
+    string scdPath = bundleConfig_->indexSCDPath();
+	
+    ScdParser parser(bundleConfig_->encoding_);
+	
+    size_t sizeInBytes = 0;	
+    // search the directory for files
+    static const bfs::directory_iterator kItrEnd;
+    for (bfs::directory_iterator itr(scdPath); itr != kItrEnd; ++itr)
+    {
+        if (bfs::is_regular_file(itr->status()))
+        {
+            std::string fileName = itr->path().filename();
+            if (parser.checkSCDFormat(fileName))
+            {
+                parser.load(scdPath+fileName);
+                sizeInBytes += parser.getFileSize();
+            }
+	}
+    }
+    return sizeInBytes/(1024*1024);
+}
+
+bool IndexTaskService::requireBackup_(size_t currTotalScdSizeInMB)
+{
+    static size_t threshold = 200;//200M
+    totalSCDSizeSinceLastBackup_ += currTotalScdSizeInMB;
+    const boost::shared_ptr<Directory>& current
+        = directoryRotator_.currentDirectory();
+    const boost::shared_ptr<Directory>& next
+        = directoryRotator_.nextDirectory();
+    if (next
+        && current->name() != next->name())
+        //&& ! (next->valid() && next->parentName() == current->name()))
+    {
+        ///TODO policy required here
+        if(totalSCDSizeSinceLastBackup_ > threshold)
+        return true;
+    }
+    return false;
+}
+
 bool IndexTaskService::backup_()
 {
     const boost::shared_ptr<Directory>& current
@@ -1569,8 +1637,8 @@ bool IndexTaskService::backup_()
     // && not the same directory
     // && have not copied successfully yet
     if (next
-        && current->name() != next->name()
-        && ! (next->valid() && next->parentName() == current->name()))
+        && current->name() != next->name())
+        //&& ! (next->valid() && next->parentName() == current->name()))
     {
         try
         {
@@ -1592,6 +1660,67 @@ bool IndexTaskService::backup_()
     return true;
 }
 
+bool IndexTaskService::recoverSCD_()
+{
+    const boost::shared_ptr<Directory>& currentDir
+        = directoryRotator_.currentDirectory();
+    const boost::shared_ptr<Directory>& next
+        = directoryRotator_.nextDirectory();
+
+    if (!(next && currentDir->name() != next->name()))
+	return false;
+
+    std::ifstream scdLogInput;
+    scdLogInput.open(currentDir->scdLogString().c_str());
+    std::istream_iterator<std::string> begin(scdLogInput);
+    std::istream_iterator<std::string> end;
+    boost::unordered_set<std::string> existingSCDs;
+    for(std::istream_iterator<std::string> it = begin; it != end; ++it)
+    {
+        std::cout << *it << "@@"<<std::endl;
+        existingSCDs.insert(*it);
+    }
+    if(existingSCDs.empty()) return false;
+    bfs::path scdBkDir = bfs::path(bundleConfig_->indexSCDPath()) / SCD_BACKUP_DIR;
+
+    try
+    {
+        if (!bfs::is_directory(scdBkDir))
+        {
+            return false;
+        }
+    }
+    catch (bfs::filesystem_error& e)
+    {
+        return false;
+    }
+
+    // search the directory for files
+    static const bfs::directory_iterator kItrEnd;
+    bfs::path scdIndexDir = bfs::path(bundleConfig_->indexSCDPath());
+	
+    for (bfs::directory_iterator itr(scdBkDir); itr != kItrEnd; ++itr)
+    {
+        if (bfs::is_regular_file(itr->status()))
+        {
+            std::string fileName = itr->path().filename();
+            if(existingSCDs.find(fileName) == existingSCDs.end())
+            {
+                try
+                {
+                    bfs::rename(*itr, scdIndexDir / bfs::path(fileName));
+                }
+                catch (bfs::filesystem_error& e)
+                {
+                    LOG(WARNING) << "exception in recovering file " << fileName << ": " << e.what();
+                }
+            }
+        }
+    }
+	
+    return true;
+}
+
 bool IndexTaskService::getIndexStatus(Status& status)
 {
     indexProgress_.getIndexingStatus(indexStatus_);
@@ -1606,7 +1735,7 @@ uint32_t IndexTaskService::getDocNum()
 
 std::string IndexTaskService::getScdDir() const
 {
-    return bundleConfig_->collPath_.getScdPath() + "index/";
+    return bundleConfig_->indexSCDPath();
 }
 
 }
