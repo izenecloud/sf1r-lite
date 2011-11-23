@@ -1,9 +1,9 @@
 #include "product_price_trend.h"
-#include "product_manager.h"
 
 #include <log-manager/PriceHistory.h>
-
 #include <libcassandra/util_functions.h>
+
+#include <algorithm>
 
 using namespace libcassandra;
 using namespace boost::posix_time;
@@ -12,19 +12,22 @@ using izenelib::util::UString;
 namespace sf1r
 {
 
-ProductPriceTrend::ProductPriceTrend(const std::string& collection_name, ProductManager* product_manager)
+ProductPriceTrend::ProductPriceTrend(const std::string& collection_name, const std::string& dir, const std::string& category_property, const std::string& source_property)
     : collection_name_(collection_name)
-    , product_manager_(product_manager)
+    , dir_(dir)
+    , category_property_(category_property)
+    , source_property_(source_property)
 {
 }
 
 ProductPriceTrend::~ProductPriceTrend()
 {
+    Finish();
 }
 
 void ProductPriceTrend::Init()
 {
-    //TODO load some initial price data
+    //TODO load top price-cut maps from disk file
 }
 
 bool ProductPriceTrend::Finish()
@@ -33,24 +36,79 @@ bool ProductPriceTrend::Finish()
     return Flush_();
 }
 
-bool ProductPriceTrend::Insert(const PMDocumentType& doc, time_t timestamp, bool r_type)
+bool ProductPriceTrend::Insert(const std::string& docid, const ProductPrice& price, time_t timestamp)
 {
-    ProductPrice price;
-    if (!product_manager_->GetPrice(doc, price)) return true;
-    UString docid;
-    if (!product_manager_->GetDOCID(doc, docid)) return true;
-    std::string docid_str, key_str;
-    docid.convertString(docid_str, UString::UTF_8);
-    ParseDocid_(key_str, docid_str);
-    product_manager_->GetTimestamp(doc, timestamp);
-
-    price_history_cache_.push_back(PriceHistory(key_str));
+    std::string key;
+    ParseDocid_(key, docid);
+    price_history_cache_.push_back(PriceHistory(key));
     price_history_cache_.back().insert(timestamp, price);
 
     if (price_history_cache_.size() == 10000)
     {
         return Flush_();
     }
+    return true;
+}
+
+bool ProductPriceTrend::Update(uint32_t category_id, uint32_t source_id, uint32_t num_docid, const std::string& str_docid, const ProductPrice& from_price, const ProductPrice& to_price, time_t timestamp)
+{
+    bool ret = true;
+
+    std::string key;
+    ParseDocid_(key, str_docid);
+    price_history_cache_.push_back(PriceHistory(key));
+    price_history_cache_.back().insert(timestamp, to_price);
+
+    float price_cut = from_price.value.first > 0 ? to_price.value.first / from_price.value.first : 1;
+    if (category_id != (uint32_t) -1)
+    {
+        ret = UpdateTopPriceCuts_(category_top_map_, category_id, price_cut, timestamp, num_docid) && ret;
+    }
+    if (source_id != (uint32_t) -1)
+    {
+        ret = UpdateTopPriceCuts_(source_top_map_, source_id, price_cut, timestamp, num_docid) && ret;
+    }
+
+    if (price_history_cache_.size() == 10000)
+    {
+        ret = Flush_() && ret;
+    }
+
+    return ret;
+}
+
+bool ProductPriceTrend::UpdateTopPriceCuts_(TopPriceCutMap& top_map, uint32_t map_id, float price_cut, time_t timestamp, uint32_t docid)
+{
+    std::vector<float> price_cuts(3);
+    if (!GetPriceCut_(price_cuts, docid)) return false;
+    std::vector<std::multimap<float, uint32_t> >& top_price_cuts = top_map[map_id];
+    if (top_price_cuts.empty())
+    {
+        top_price_cuts.resize(3);
+    }
+    for (uint32_t i = 0; i < 3; i++)
+    {
+        price_cuts[i] = price_cuts[i] == 0 ? 1 : price_cuts[i] * price_cut;
+
+        top_price_cuts[i].insert(std::make_pair(price_cuts[i], docid));
+        if (top_price_cuts[i].size() > 20)
+        {
+            std::multimap<float, uint32_t>::iterator it(top_price_cuts[i].end());
+            top_price_cuts[i].erase(--it);
+        }
+    }
+    return SavePriceCut_(price_cuts, docid);
+}
+
+bool ProductPriceTrend::GetPriceCut_(std::vector<float>& price_cuts, uint32_t docid) const
+{
+    //TODO
+    return true;
+}
+
+bool ProductPriceTrend::SavePriceCut_(const std::vector<float>& price_cuts, uint32_t docid) const
+{
+    //TODO
     return true;
 }
 
@@ -63,7 +121,7 @@ bool ProductPriceTrend::Flush_()
 
 void ProductPriceTrend::Save_()
 {
-    //TODO save some price data to disk file
+    //TODO save top price-cut maps to disk file
 }
 
 bool ProductPriceTrend::GetMultiPriceHistory(

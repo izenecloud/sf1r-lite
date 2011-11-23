@@ -25,9 +25,9 @@ class ProductManager
 {
 public:
     ProductManager(
-            const std::string& collection_name,
             ProductDataSource* data_source,
             OperationProcessor* op_processor,
+            ProductPriceTrend* price_trend,
             const PMConfig& config);
 
     ~ProductManager();
@@ -55,18 +55,6 @@ public:
     bool AddGroupWithInfo(const std::vector<uint32_t>& docid_list, const Document& doc, bool backup = true);
 
     bool AddGroupWithInfo(const std::vector<izenelib::util::UString>& docid_list, const Document& doc, bool backup = true);
-
-    bool GetPrice(uint32_t docid, ProductPrice& price) const;
-
-    bool GetPrice(const PMDocumentType& doc, ProductPrice& price) const;
-
-    void GetPrice(const std::vector<uint32_t>& docid_list, ProductPrice& price) const;
-
-    bool GetUuid(const PMDocumentType& doc, izenelib::util::UString& uuid) const;
-
-    bool GetDOCID(const PMDocumentType& doc, izenelib::util::UString& docid) const;
-
-    bool GetTimestamp(const PMDocumentType& doc, time_t& timestamp) const;
 
     bool GetMultiPriceHistory(
             PriceHistoryList& history_list,
@@ -101,10 +89,26 @@ private:
 
     void SetItemCount_(PMDocumentType& doc, uint32_t item_count);
 
+    bool GetPrice_(uint32_t docid, ProductPrice& price) const;
+
+    bool GetPrice_(const PMDocumentType& doc, ProductPrice& price) const;
+
+    void GetPrice_(const std::vector<uint32_t>& docid_list, ProductPrice& price) const;
+
+    bool GetUuid_(const PMDocumentType& doc, izenelib::util::UString& uuid) const;
+
+    bool GetDOCID_(const PMDocumentType& doc, izenelib::util::UString& docid) const;
+
+    bool GetTimestamp_(const PMDocumentType& doc, time_t& timestamp) const;
+
+    bool GetTopCategoryId_(const PMDocumentType& doc, uint32_t& category_id) const;
+
+    bool GetSourceId_(const PMDocumentType& doc, uint32_t& source_id) const;
+
 private:
-    ProductPriceTrend* price_trend_;
     ProductDataSource* data_source_;
     OperationProcessor* op_processor_;
+    ProductPriceTrend* price_trend_;
     ProductBackup* backup_;
     PMConfig config_;
     std::string error_;

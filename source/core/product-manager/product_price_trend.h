@@ -9,13 +9,14 @@
 namespace sf1r
 {
 
-class ProductManager;
 class PriceHistory;
 
 class ProductPriceTrend
 {
+    typedef std::map<uint32_t, std::vector<std::multimap<float, uint32_t> > > TopPriceCutMap;
+
 public:
-    ProductPriceTrend(const std::string& collection_name, ProductManager* product_manager);
+    ProductPriceTrend(const std::string& collection_name, const std::string& dir, const std::string& category_property, const std::string& source_property);
 
     ~ProductPriceTrend();
 
@@ -23,7 +24,9 @@ public:
 
     bool Finish();
 
-    bool Insert(const PMDocumentType& doc, time_t timestamp, bool r_type = false);
+    bool Insert(const std::string& docid, const ProductPrice& price, time_t timestamp);
+
+    bool Update(uint32_t category_id, uint32_t source_id, uint32_t num_docid, const std::string& str_docid, const ProductPrice& from_price, const ProductPrice& to_price, time_t timestamp);
 
     bool GetMultiPriceHistory(
             PriceHistoryList& history_list,
@@ -44,6 +47,12 @@ private:
 
     void Save_();
 
+    bool GetPriceCut_(std::vector<float>& price_cuts, uint32_t docid) const;
+
+    bool SavePriceCut_(const std::vector<float>& price_cuts, uint32_t docid) const;
+
+    bool UpdateTopPriceCuts_(TopPriceCutMap& top_map, uint32_t map_id, float price_cut, time_t timestamp, uint32_t docid);
+
     void ParseDocid_(std::string& dest, const std::string& src) const;
 
     void StripDocid_(std::string& dest, const std::string& src) const;
@@ -54,9 +63,12 @@ private:
 
 private:
     std::string collection_name_;
-    ProductManager* product_manager_;
+    std::string dir_;
+    std::string category_property_;
+    std::string source_property_;
     std::vector<PriceHistory> price_history_cache_;
-    std::vector<std::vector<std::pair<uint32_t, ProductPriceType> > > category_tops_;
+    TopPriceCutMap category_top_map_;
+    TopPriceCutMap source_top_map_;
 };
 
 }

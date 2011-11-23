@@ -14,19 +14,19 @@ using namespace boost::posix_time;
 using izenelib::util::UString;
 
 ProductManager::ProductManager(
-        const std::string& collection_name,
         ProductDataSource* data_source,
         OperationProcessor* op_processor,
+        ProductPriceTrend* price_trend,
         const PMConfig& config)
     : data_source_(data_source)
     , op_processor_(op_processor)
+    , price_trend_(price_trend)
     , backup_(NULL)
     , config_(config)
     , inhook_(false)
 {
-    if (config_.enablePH)
+    if (price_trend_)
     {
-        price_trend_ = new ProductPriceTrend(collection_name, this);
         price_trend_->Init();
     }
     if (!config_.backup_path.empty())
@@ -37,7 +37,6 @@ ProductManager::ProductManager(
 
 ProductManager::~ProductManager()
 {
-    delete price_trend_;
 }
 
 bool ProductManager::Recover()
@@ -59,10 +58,23 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
-    if (config_.enablePH)
+
+    if (price_trend_)
     {
-        price_trend_->Insert(doc, timestamp);
+        ProductPrice price;
+        if (GetPrice_(doc, price))
+        {
+            UString docid;
+            if (GetDOCID_(doc, docid))
+            {
+                std::string docid_str;
+                docid.convertString(docid_str, UString::UTF_8);
+                GetTimestamp_(doc, timestamp);
+                price_trend_->Insert(docid_str, price, timestamp);
+            }
+        }
     }
+
     UString uuid;
     generateUUID(uuid, doc);
     if (!data_source_->SetUuid(index_document, uuid)) return false;
@@ -79,15 +91,31 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
-    if (config_.enablePH)
-    {
-        price_trend_->Insert(to, timestamp, r_type);
-    }
     uint32_t fromid = index_document.getId(); //oldid
     PMDocumentType from;
     if (!data_source_->GetDocument(fromid, from)) return false;
     UString from_uuid;
-    if (!GetUuid(from, from_uuid)) return false;
+    if (!GetUuid_(from, from_uuid)) return false;
+    ProductPrice from_price;
+    ProductPrice to_price;
+    GetPrice_(fromid, from_price);
+    GetPrice_(to, to_price);
+
+    if (price_trend_ && to_price.Valid() && from_price != to_price)
+    {
+        UString docid;
+        if (GetDOCID_(to, docid))
+        {
+            std::string docid_str;
+            docid.convertString(docid_str, UString::UTF_8);
+            uint32_t category_id = -1, source_id = -1;
+            GetTopCategoryId_(to, category_id);
+            GetSourceId_(to, source_id);
+            GetTimestamp_(to, timestamp);
+            price_trend_->Update(category_id, source_id, fromid, docid_str, from_price, to_price, timestamp);
+        }
+    }
+
     std::vector<uint32_t> docid_list;
     data_source_->GetDocIdList(from_uuid, docid_list, fromid); // except from.docid
     if (docid_list.empty()) // the from doc is unique, so delete it and insert 'to'
@@ -102,18 +130,14 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
     else
     {
         //need not to update(insert) to.uuid,
-        ProductPrice from_price;
-        ProductPrice to_price;
-        GetPrice(fromid, from_price);
-        GetPrice(to, to_price);
         if (!data_source_->SetUuid(index_document, from_uuid)) return false;
         to.property(config_.uuid_property_name) = from_uuid;
         //update price only
-        if (from_price!=to_price)
+        if (from_price != to_price)
         {
             PMDocumentType diff_properties;
             ProductPrice price(to_price);
-            GetPrice(docid_list, price);
+            GetPrice_(docid_list, price);
             diff_properties.property(config_.price_property_name) = price.ToUString();
             diff_properties.property(config_.docid_property_name) = from_uuid;
             //auto r_type? itemcount no need?
@@ -132,7 +156,7 @@ bool ProductManager::HookDelete(uint32_t docid, time_t timestamp)
     PMDocumentType from;
     if (!data_source_->GetDocument(docid, from)) return false;
     UString from_uuid;
-    if (!GetUuid(from, from_uuid)) return false;
+    if (!GetUuid_(from, from_uuid)) return false;
     std::vector<uint32_t> docid_list;
     data_source_->GetDocIdList(from_uuid, docid_list, docid); // except from.docid
     if (docid_list.empty()) // the from doc is unique, so delete it in A
@@ -145,7 +169,7 @@ bool ProductManager::HookDelete(uint32_t docid, time_t timestamp)
     {
         PMDocumentType diff_properties;
         ProductPrice price;
-        GetPrice(docid_list, price);
+        GetPrice_(docid_list, price);
         diff_properties.property(config_.price_property_name) = price.ToUString();
         diff_properties.property(config_.docid_property_name) = from_uuid;
         SetItemCount_(diff_properties, docid_list.size());
@@ -156,7 +180,7 @@ bool ProductManager::HookDelete(uint32_t docid, time_t timestamp)
 
 bool ProductManager::Finish()
 {
-    if (config_.enablePH)
+    if (price_trend_)
     {
         price_trend_->Finish();
     }
@@ -279,7 +303,7 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, UString& 
         return false;
     }
     UString first_uuid;
-    if (!GetUuid(first_doc, first_uuid))
+    if (!GetUuid_(first_doc, first_uuid))
     {
         error_ = "Can not get uuid in document "+boost::lexical_cast<std::string>(docid_list[0]);
         return false;
@@ -381,7 +405,7 @@ bool ProductManager::AppendToGroup_(const UString& uuid, const std::vector<uint3
     std::vector<UString> uuid_list(doc_list.size());
     for (uint32_t i = 0; i < doc_list.size(); i++)
     {
-        if (!GetUuid(doc_list[i], uuid_list[i]))
+        if (!GetUuid_(doc_list[i], uuid_list[i]))
         {
             error_ = "Can not get uuid in document "+boost::lexical_cast<std::string>(docid_list[i]);
             return false;
@@ -403,7 +427,7 @@ bool ProductManager::AppendToGroup_(const UString& uuid, const std::vector<uint3
     std::vector<uint32_t> all_docid_list(uuid_docid_list);
     all_docid_list.insert(all_docid_list.end(), docid_list.begin(), docid_list.end());
     ProductPrice price;
-    GetPrice(all_docid_list, price);
+    GetPrice_(all_docid_list, price);
 //     std::cout<<"validation finished here."<<std::endl;
     //validation finished here.
 
@@ -548,7 +572,7 @@ bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint
     else
     {
         ProductPrice price;
-        GetPrice(remain, price);
+        GetPrice_(remain, price);
         //validation finished here.
 
         PMDocumentType update_doc;
@@ -593,7 +617,7 @@ bool ProductManager::GetMultiPriceHistory(
         time_t from_tt,
         time_t to_tt)
 {
-    if (!config_.enablePH)
+    if (!price_trend_)
     {
         error_ = "The price history is not enabled for this collection";
         return false;
@@ -608,7 +632,7 @@ bool ProductManager::GetMultiPriceRange(
         time_t from_tt,
         time_t to_tt)
 {
-    if (!config_.enablePH)
+    if (!price_trend_)
     {
         error_ = "The price history is not enabled for this collection";
         return false;
@@ -617,14 +641,14 @@ bool ProductManager::GetMultiPriceRange(
     return price_trend_->GetMultiPriceRange(range_list, docid_list, from_tt, to_tt, error_);
 }
 
-bool ProductManager::GetPrice(uint32_t docid, ProductPrice& price) const
+bool ProductManager::GetPrice_(uint32_t docid, ProductPrice& price) const
 {
     PMDocumentType doc;
     if (!data_source_->GetDocument(docid, doc)) return false;
-    return GetPrice(doc, price);
+    return GetPrice_(doc, price);
 }
 
-bool ProductManager::GetPrice(const PMDocumentType& doc, ProductPrice& price) const
+bool ProductManager::GetPrice_(const PMDocumentType& doc, ProductPrice& price) const
 {
     Document::property_const_iterator it = doc.findProperty(config_.price_property_name);
     if (it == doc.propertyEnd())
@@ -632,23 +656,22 @@ bool ProductManager::GetPrice(const PMDocumentType& doc, ProductPrice& price) co
         return false;
     }
     UString price_str = it->second.get<UString>();
-    if (!price.Parse(price_str)) return false;
-    return true;
+    return price.Parse(price_str);
 }
 
-void ProductManager::GetPrice(const std::vector<uint32_t>& docid_list, ProductPrice& price) const
+void ProductManager::GetPrice_(const std::vector<uint32_t>& docid_list, ProductPrice& price) const
 {
     for (uint32_t i = 0; i < docid_list.size(); i++)
     {
         ProductPrice p;
-        if (GetPrice(docid_list[i], p))
+        if (GetPrice_(docid_list[i], p))
         {
             price += p;
         }
     }
 }
 
-bool ProductManager::GetUuid(const PMDocumentType& doc, UString& uuid) const
+bool ProductManager::GetUuid_(const PMDocumentType& doc, UString& uuid) const
 {
     PMDocumentType::property_const_iterator it = doc.findProperty(config_.uuid_property_name);
     if (it == doc.propertyEnd())
@@ -659,7 +682,7 @@ bool ProductManager::GetUuid(const PMDocumentType& doc, UString& uuid) const
     return true;
 }
 
-bool ProductManager::GetDOCID(const PMDocumentType& doc, UString& docid) const
+bool ProductManager::GetDOCID_(const PMDocumentType& doc, UString& docid) const
 {
     PMDocumentType::property_const_iterator it = doc.findProperty(config_.docid_property_name);
     if (it == doc.propertyEnd())
@@ -670,7 +693,7 @@ bool ProductManager::GetDOCID(const PMDocumentType& doc, UString& docid) const
     return true;
 }
 
-bool ProductManager::GetTimestamp(const PMDocumentType& doc, time_t& timestamp) const
+bool ProductManager::GetTimestamp_(const PMDocumentType& doc, time_t& timestamp) const
 {
     PMDocumentType::property_const_iterator it = doc.findProperty(config_.date_property_name);
     if (it == doc.propertyEnd())
@@ -690,6 +713,18 @@ bool ProductManager::GetTimestamp(const PMDocumentType& doc, time_t& timestamp) 
     {
         return false;
     }
+    return true;
+}
+
+bool ProductManager::GetTopCategoryId_(const PMDocumentType& doc, uint32_t& category_id) const
+{
+    //TODO get top-level category id for the corresponding doc
+    return true;
+}
+
+bool ProductManager::GetSourceId_(const PMDocumentType& doc, uint32_t& source_id) const
+{
+    //TODO get source id for the corresponding doc
     return true;
 }
 

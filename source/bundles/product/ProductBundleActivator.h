@@ -19,6 +19,7 @@ using namespace izenelib::osgi;
 
 class ProductManager;
 class ProductDataSource;
+class ProductPriceTrend;
 class OperationProcessor;
 class ProductScdReceiver;
 class IndexTaskService;
@@ -42,6 +43,7 @@ private:
     DirectoryRotator directoryRotator_;
     ProductDataSource* data_source_;
     OperationProcessor* op_processor_;
+    ProductPriceTrend* price_trend_;
     boost::shared_ptr<ProductManager> productManager_;
     ProductScdReceiver* scd_receiver_;
     bool openDataDirectories_();
