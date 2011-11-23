@@ -29,12 +29,11 @@ void ProductPriceTrend::Init()
 
 bool ProductPriceTrend::Finish()
 {
-    bool ret = Flush_();
     Save_();
-    return ret;
+    return Flush_();
 }
 
-bool ProductPriceTrend::Insert(const PMDocumentType& doc, time_t timestamp)
+bool ProductPriceTrend::Insert(const PMDocumentType& doc, time_t timestamp, bool r_type)
 {
     ProductPrice price;
     if (!product_manager_->GetPrice(doc, price)) return true;

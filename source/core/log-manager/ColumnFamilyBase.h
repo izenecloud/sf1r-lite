@@ -32,11 +32,11 @@ public:
 
     virtual bool updateRow() const = 0;
 
-    virtual bool getSlice(const std::string& start, const std::string& finish);
+    virtual bool getSlice(const std::string& start = "", const std::string& finish = "", int32_t count = 100, bool reversed = false);
 
     virtual bool deleteRow();
 
-    virtual bool getCount(int32_t& count, const std::string& start, const std::string& finish) const;
+    virtual bool getCount(int32_t& count, const std::string& start = "", const std::string& finish = "") const;
 
     virtual bool insert(const std::string& name, const std::string& value) { return true; }
 
@@ -79,10 +79,10 @@ bool createColumnFamily()
 }
 
 template <typename ColumnFamilyType>
-bool getSingleSlice(ColumnFamilyType& row, const std::string& key, const std::string& start, const std::string& finish)
+bool getSingleSlice(ColumnFamilyType& row, const std::string& key, const std::string& start, const std::string& finish, int32_t count, bool reversed)
 {
     row.resetKey(key);
-    return row.getSlice(start, finish);
+    return row.getSlice(start, finish, count, reversed);
 }
 
 template <typename ColumnFamilyType>
@@ -146,16 +146,15 @@ public: \
     \
     static void createColumnFamily() \
     { \
-        if (::sf1r::createColumnFamily<ClassName>()) \
-            is_enabled = true; \
+        is_enabled = ::sf1r::createColumnFamily<ClassName>(); \
     } \
     \
-    static bool getSingleSlice(ClassName& row, const std::string& key, const std::string& start, const std::string& finish) \
+    static bool getSingleSlice(ClassName& row, const std::string& key, const std::string& start = "", const std::string& finish = "", int32_t count = 100, bool reversed = false) \
     { \
-        return ::sf1r::getSingleSlice(row, key, start, finish); \
+        return ::sf1r::getSingleSlice(row, key, start, finish, count, reversed); \
     } \
     \
-    static bool getSingleCount(int32_t& count, const std::string& key, const std::string& start, const std::string& finish) \
+    static bool getSingleCount(int32_t& count, const std::string& key, const std::string& start = "", const std::string& finish = "") \
     { \
         return ::sf1r::getSingleCount<ClassName>(count, key, start, finish); \
     } \
@@ -166,14 +165,16 @@ public: \
     static bool getMultiSlice( \
             std::map<std::string, ClassName>& row_map, \
             const std::vector<std::string>& key_list, \
-            const std::string& start, \
-            const std::string& finish); \
+            const std::string& start = "", \
+            const std::string& finish = "", \
+            int32_t count = 100, \
+            bool reversed = false); \
     \
     static bool getMultiCount( \
             std::map<std::string, int32_t>& count_map, \
             const std::vector<std::string>& key_list, \
-            const std::string& start, \
-            const std::string& finish); \
+            const std::string& start = "", \
+            const std::string& finish = ""); \
 
 
 }

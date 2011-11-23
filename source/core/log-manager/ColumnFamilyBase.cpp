@@ -38,7 +38,7 @@ bool ColumnFamilyBase::dropColumnFamily() const
     return true;
 }
 
-bool ColumnFamilyBase::getSlice(const string& start, const string& finish)
+bool ColumnFamilyBase::getSlice(const string& start, const string& finish, int32_t count, bool reversed)
 {
     if (!isEnabled() || getKey().empty()) return false;
     try
@@ -47,9 +47,11 @@ bool ColumnFamilyBase::getSlice(const string& start, const string& finish)
         col_parent.__set_column_family(getName());
 
         SlicePredicate pred;
-        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
+        pred.__isset.slice_range = true;
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);
+        pred.slice_range.__set_count(count);
+        pred.slice_range.__set_reversed(reversed);
 
         vector<ColumnOrSuperColumn> raw_column_list;
         CassandraConnection::instance().getCassandraClient()->getRawSlice(
@@ -98,7 +100,6 @@ bool ColumnFamilyBase::deleteRow()
         CassandraConnection::instance().getCassandraClient()->remove(
                 getKey(),
                 col_path);
-//      resetKey();
     }
     catch (const InvalidRequestException &ire)
     {
@@ -117,9 +118,10 @@ bool ColumnFamilyBase::getCount(int32_t& count, const string& start, const strin
         col_parent.__set_column_family(getName());
 
         SlicePredicate pred;
-        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
+        pred.__isset.slice_range = true;
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);
+        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
 
         count = CassandraConnection::instance().getCassandraClient()->getCount(
                 getKey(),

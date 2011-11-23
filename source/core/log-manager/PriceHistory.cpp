@@ -129,7 +129,9 @@ bool PriceHistory::getMultiSlice(
         map<string, PriceHistory>& row_map,
         const vector<string>& key_list,
         const string& start,
-        const string& finish)
+        const string& finish,
+        int32_t count,
+        bool reversed)
 {
     if (!is_enabled) return false;
     try
@@ -139,9 +141,10 @@ bool PriceHistory::getMultiSlice(
 
         SlicePredicate pred;
         pred.__isset.slice_range = true;
-        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);
+        pred.slice_range.__set_count(count);
+        pred.slice_range.__set_reversed(reversed);
 
         map<string, vector<ColumnOrSuperColumn> > raw_column_map;
         CassandraConnection::instance().getCassandraClient()->getMultiSlice(
@@ -185,9 +188,9 @@ bool PriceHistory::getMultiCount(
 
         SlicePredicate pred;
         pred.__isset.slice_range = true;
-        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);
+        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
 
         CassandraConnection::instance().getCassandraClient()->getMultiCount(
                 count_map,

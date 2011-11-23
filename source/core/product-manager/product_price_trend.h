@@ -23,7 +23,7 @@ public:
 
     bool Finish();
 
-    bool Insert(const PMDocumentType& doc, time_t timestamp);
+    bool Insert(const PMDocumentType& doc, time_t timestamp, bool r_type = false);
 
     bool GetMultiPriceHistory(
             PriceHistoryList& history_list,
@@ -56,6 +56,7 @@ private:
     std::string collection_name_;
     ProductManager* product_manager_;
     std::vector<PriceHistory> price_history_cache_;
+    std::vector<std::vector<std::pair<uint32_t, ProductPriceType> > > category_tops_;
 };
 
 }

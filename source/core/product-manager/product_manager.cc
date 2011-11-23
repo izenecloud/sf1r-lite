@@ -81,7 +81,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
     boost::mutex::scoped_lock lock(human_mutex_);
     if (config_.enablePH)
     {
-        price_trend_->Insert(to, timestamp);
+        price_trend_->Insert(to, timestamp, r_type);
     }
     uint32_t fromid = index_document.getId(); //oldid
     PMDocumentType from;
@@ -97,7 +97,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
         to.property(config_.uuid_property_name) = from_uuid;
         new_doc.property(config_.docid_property_name) = from_uuid;
         SetItemCount_(new_doc, 1);
-        op_processor_->Append(2, new_doc);// if r_type, only numberic properties in 'to'
+        op_processor_->Append(2, new_doc);// if r_type, only numeric properties in 'to'
     }
     else
     {
