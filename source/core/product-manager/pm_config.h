@@ -31,7 +31,6 @@ struct PMConfig
         , uuid_property_name("uuid")
         , category_property_name("Category")
         , source_property_name("Source")
-        , backup_path()
     {
     }
 };

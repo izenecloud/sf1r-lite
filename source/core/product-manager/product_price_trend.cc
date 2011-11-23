@@ -77,6 +77,12 @@ bool ProductPriceTrend::Update(uint32_t category_id, uint32_t source_id, uint32_
     return ret;
 }
 
+bool ProductPriceTrend::CronJob()
+{
+    //TODO
+    return true;
+}
+
 bool ProductPriceTrend::UpdateTopPriceCuts_(TopPriceCutMap& top_map, uint32_t map_id, float price_cut, time_t timestamp, uint32_t docid)
 {
     std::vector<float> price_cuts(3);

@@ -13,6 +13,7 @@
 #include <product-manager/collection_product_data_source.h>
 #include <product-manager/scd_operation_processor.h>
 #include <product-manager/product_price_trend.h>
+#include <product-manager/product_cron_job_handler.h>
 #include <util/singleton.h>
 
 #include <boost/filesystem.hpp>
@@ -190,6 +191,12 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
     if (config_->pm_config_.enablePH)
     {
         price_trend_ = new ProductPriceTrend(config_->collectionName_, dir, config_->pm_config_.category_property_name, config_->pm_config_.source_property_name);
+        ProductCronJobHandler* handler = ProductCronJobHandler::getInstance();
+        if (!handler->cronStart(config_->cron_))
+        {
+            std::cerr << "Init price trend cron task failed." << std::endl;
+        }
+        handler->addCollection(price_trend_);
     }
     boost::shared_ptr<ProductManager> product_manager(new ProductManager(data_source_, op_processor_, price_trend_, config_->pm_config_));
     return product_manager;

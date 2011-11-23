@@ -3,7 +3,6 @@
 
 #include "pm_def.h"
 #include "pm_types.h"
-#include "pm_config.h"
 #include "product_price.h"
 
 namespace sf1r
@@ -41,6 +40,13 @@ public:
             time_t from_tt,
             time_t to_tt,
             std::string& error_msg);
+
+    bool CronJob();
+
+    inline const std::string& getCollectionName() const
+    {
+        return collection_name_;
+    }
 
 private:
     bool Flush_();

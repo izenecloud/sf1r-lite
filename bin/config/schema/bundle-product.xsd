@@ -32,6 +32,7 @@
                         <xs:complexType>
                             <xs:sequence>
                                 <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="1" maxOccurs="2"/>
+                                <xs:element ref="CronPara" minOccurs="0"/>
                             </xs:sequence>
                         </xs:complexType>
                     </xs:element>
