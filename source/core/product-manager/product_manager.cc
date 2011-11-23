@@ -718,13 +718,28 @@ bool ProductManager::GetTimestamp_(const PMDocumentType& doc, time_t& timestamp)
 
 bool ProductManager::GetTopCategory_(const PMDocumentType& doc, std::string& category) const
 {
-    //TODO
+    Document::property_const_iterator it = doc.findProperty(config_.category_property_name);
+    if (it == doc.propertyEnd())
+    {
+        return false;
+    }
+    UString category_str = it->second.get<UString>();
+    category_str.convertString(category, UString::UTF_8);
+    uint32_t pos;
+    if ((pos = category.find('>')) != std::string::npos)
+        category = category.substr(0, pos);
     return true;
 }
 
 bool ProductManager::GetSource_(const PMDocumentType& doc, std::string& source) const
 {
-    //TODO
+    Document::property_const_iterator it = doc.findProperty(config_.source_property_name);
+    if (it == doc.propertyEnd())
+    {
+        return false;
+    }
+    UString source_str = it->second.get<UString>();
+    source_str.convertString(source, UString::UTF_8);
     return true;
 }
 
