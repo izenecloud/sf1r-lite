@@ -15,7 +15,6 @@ namespace sf1r
 ProductPriceTrend::ProductPriceTrend(const std::string& collection_name, const std::string& dir, const std::string& category_property, const std::string& source_property)
     : collection_name_(collection_name)
     , top_price_cuts_file_(dir + "/top_price_cuts.data")
-    , price_history_file_(dir + "/price_history.data")
     , category_property_(category_property)
     , source_property_(source_property)
 {
@@ -33,8 +32,8 @@ void ProductPriceTrend::Init()
     {
         boost::archive::binary_iarchive ia(ifs);
         ia >> *this;
-        ifs.close();
     }
+    ifs.close();
 }
 
 bool ProductPriceTrend::Finish()

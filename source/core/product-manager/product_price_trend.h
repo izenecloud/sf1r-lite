@@ -79,7 +79,6 @@ private:
 private:
     std::string collection_name_;
     std::string top_price_cuts_file_;
-    std::string price_history_file_;
     std::string category_property_;
     std::string source_property_;
     std::vector<PriceHistory> price_history_cache_;
