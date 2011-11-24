@@ -6,14 +6,22 @@
  */
 
 #include "RecommendManager.h"
+#include <mining-manager/concept-id-manager.h>
+#include <mining-manager/auto-fill-submanager/AutoFillSubManager.h>
+#include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 #include <mining-manager/util/TermUtil.hpp>
+
+#include <document-manager/DocumentManager.h>
 #include <common/SFLogger.h>
-#include <cmath>
 #include <log-manager/LogManager.h>
 #include <log-manager/UserQuery.h>
 #include <log-manager/PropertyLabel.h>
 #include <query-manager/QMCommonFunc.h>
-#include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
+
+#include <idmlib/util/idm_analyzer.h>
+
+#include <cmath>
+
 using namespace sf1r;
 
 RecommendManager::RecommendManager(
@@ -195,7 +203,12 @@ uint8_t RecommendManager::QueryLogScore_(uint32_t freq)
     return score;
 }
 
-bool RecommendManager::AddRecommendItem_(MIRDatabase* db, uint32_t item_id, const izenelib::util::UString& text, uint8_t type, uint32_t score)
+bool RecommendManager::AddRecommendItem_(
+        MIRDatabase* db, 
+        uint32_t item_id, 
+        const izenelib::util::UString& text, 
+        uint8_t type, 
+        uint32_t score)
 {
     MIRDocument doc;
     std::vector<termid_t> termIdList;
@@ -227,7 +240,9 @@ bool RecommendManager::AddRecommendItem_(MIRDatabase* db, uint32_t item_id, cons
     return true;
 }
 
-void RecommendManager::RebuildForRecommend(const std::list<QueryLogType>& queryList, const std::list<PropertyLabelType>& labelList)
+void RecommendManager::RebuildForRecommend(
+        const std::list<QueryLogType>& queryList, 
+        const std::list<PropertyLabelType>& labelList)
 {
     std::string newPath;
     if (!dir_switcher_.GetNextWithDelete(newPath))
@@ -336,22 +351,31 @@ void RecommendManager::RebuildForRecommend(const std::list<QueryLogType>& queryL
     {}
 }
 
-void RecommendManager::RebuildForCorrection(const std::list<QueryLogType>& queryList, const std::list<PropertyLabelType>& labelList)
+void RecommendManager::RebuildForCorrection(
+        const std::list<QueryLogType>& queryList, 
+        const std::list<PropertyLabelType>& labelList)
 {
     query_correction_->updateCogramAndDict(queryList, labelList);
 }
 
-void RecommendManager::RebuildForAutofill(const std::list<QueryLogType>& queryList, const std::list<PropertyLabelType>& labelList)
+void RecommendManager::RebuildForAutofill(
+        const std::list<QueryLogType>& queryList, 
+        const std::list<PropertyLabelType>& labelList)
 {
     autofill_->buildIndex(queryList, labelList);
 }
 
-bool RecommendManager::getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list)
+bool RecommendManager::getAutoFillList(
+        const izenelib::util::UString& query, 
+        std::vector<std::pair<izenelib::util::UString,uint32_t> >& list)
 {
     return autofill_->getAutoFillList(query, list);
 }
 
-uint32_t RecommendManager::getRelatedConcepts(const izenelib::util::UString& queryStr, uint32_t maxNum, std::deque<izenelib::util::UString>& queries)
+uint32_t RecommendManager::getRelatedConcepts(
+        const izenelib::util::UString& queryStr, 
+        uint32_t maxNum, 
+        std::deque<izenelib::util::UString>& queries)
 {
 
     izenelib::am::rde_hash<uint64_t> obtIdList;
@@ -367,12 +391,12 @@ uint32_t RecommendManager::getRelatedConcepts(const izenelib::util::UString& que
 }
 
 uint32_t RecommendManager::getRelatedOnes_(
-    MIRDatabase* db,
-    const std::vector<termid_t>& termIdList,
-    const std::vector<double>& weightList,
-    uint32_t maxNum,
-    izenelib::am::rde_hash<uint64_t>& obtIdList ,
-    std::deque<izenelib::util::UString>& queries)
+        MIRDatabase* db,
+        const std::vector<termid_t>& termIdList,
+        const std::vector<double>& weightList,
+        uint32_t maxNum,
+        izenelib::am::rde_hash<uint64_t>& obtIdList ,
+        std::deque<izenelib::util::UString>& queries)
 {
     // Now, we don't use term specific statistics. Those could
     // be added to this function after adjusting the online time

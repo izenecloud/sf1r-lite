@@ -10,47 +10,45 @@
 #include <string>
 
 #include <mining-manager/MiningManagerDef.h>
-#include <3rdparty/am/rde_hashmap/hash_map.h>
+#include <mining-manager/util/FSUtil.hpp>
+
+#include <configuration-manager/MiningConfig.h>
+#include <configuration-manager/MiningSchema.h>
+
 #include <am/3rdparty/rde_hash.h>
+#include <am/sequence_file/SequenceFile.hpp>
 #include <util/hashFunction.h>
-#include <ctime>
+#include <util/functional.h>
+#include <ir/ir_database/IRDatabase.hpp>
+
+#include <idmlib/util/file_object.h>
+#include <idmlib/util/directory_switcher.h>
+
+#include <boost/bind.hpp>
+#include <boost/serialization/deque.hpp>
+#include <boost/thread/shared_mutex.hpp>
+#include <boost/thread/thread.hpp>
 #include <boost/tuple/tuple.hpp>
+
+#include <ctime>
 #include <algorithm>
 #include <queue>
 #include <vector>
 
-#include <boost/bind.hpp>
-#include <mining-manager/concept-id-manager.h>
-#include <document-manager/DocumentManager.h>
-#include <mining-manager/taxonomy-generation-submanager/LabelManager.h>
-#include <mining-manager/auto-fill-submanager/AutoFillSubManager.h>
-#include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
-#include <mining-manager/util/FSUtil.hpp>
-#include <configuration-manager/MiningConfig.h>
-#include <configuration-manager/MiningSchema.h>
-#include <boost/serialization/deque.hpp>
-#include <boost/thread/shared_mutex.hpp>
-#include <boost/thread/thread.hpp>
-#include <am/cccr_hash/cccr_hash.h>
-#include <am/sequence_file/SequenceFile.hpp>
-#include <ir/index_manager/index/IndexReader.h>
-#include <ir/index_manager/index/Indexer.h>
-#include <ir/index_manager/index/TermIterator.h>
-#include <ir/index_manager/index/TermReader.h>
-#include <ir/index_manager/index/Term.h>
-#include <ir/ir_database/IRDatabase.hpp>
+namespace idmlib{namespace util{
+class IDMAnalyzer;
+}}
 
-#include <util/functional.h>
-
-#include <idmlib/util/file_object.h>
-#include <idmlib/util/idm_analyzer.h>
-#include <idmlib/util/directory_switcher.h>
 namespace sf1r
 {
 namespace iii = izenelib::ir::indexmanager;
 
 ///@brief The structure used to store the offline data used for query recommendation., used to
 ///@brief manage collectino specific task.
+class ConceptIDManager;
+class DocumentManager;
+class QueryCorrectionSubmanager;
+class AutoFillSubManager;
 class RecommendManager : public boost::noncopyable
 {
     typedef uint32_t INFO_TYPE;
@@ -64,13 +62,14 @@ class RecommendManager : public boost::noncopyable
     typedef std::pair<uint32_t, izenelib::util::UString> PropertyLabelType;
 
 public:
-    RecommendManager(const std::string& path,
-                     const std::string& collection_name,
-                     const MiningSchema& mining_schema,
-                     const boost::shared_ptr<DocumentManager>& documentManager,
-                     boost::shared_ptr<QueryCorrectionSubmanager> query_correction,
-                     idmlib::util::IDMAnalyzer* analyzer_,
-                     uint32_t logdays);
+    RecommendManager(
+        const std::string& path,
+        const std::string& collection_name,
+        const MiningSchema& mining_schema,
+        const boost::shared_ptr<DocumentManager>& documentManager,
+        boost::shared_ptr<QueryCorrectionSubmanager> query_correction,
+        idmlib::util::IDMAnalyzer* analyzer_,
+        uint32_t logdays);
     ~RecommendManager();
     /**
     * @brief Open the data.
@@ -81,10 +80,14 @@ public:
     */
     void close();
 
-    void insertQuery(const izenelib::util::UString& queryStr, uint32_t freq = 1);
+    void insertQuery(
+        const izenelib::util::UString& queryStr, 
+        uint32_t freq = 1);
 
 
-    void insertProperty(const izenelib::util::UString& queryStr, uint32_t docid);
+    void insertProperty(
+        const izenelib::util::UString& queryStr, 
+        uint32_t docid);
 
     /**
     * @brief get the related queries from the data base.
@@ -94,15 +97,23 @@ public:
         uint32_t maxNum,
         std::deque<izenelib::util::UString>& queries);
 
-    bool getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
+    bool getAutoFillList(
+        const izenelib::util::UString& query, 
+        std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
 
     void RebuildForAll();
 
-    void RebuildForRecommend(const std::list<QueryLogType>& queryList, const std::list<PropertyLabelType>& labelList);
+    void RebuildForRecommend(
+        const std::list<QueryLogType>& queryList, 
+        const std::list<PropertyLabelType>& labelList);
 
-    void RebuildForCorrection(const std::list<QueryLogType>& queryList, const std::list<PropertyLabelType>& labelList);
+    void RebuildForCorrection(
+        const std::list<QueryLogType>& queryList, 
+        const std::list<PropertyLabelType>& labelList);
 
-    void RebuildForAutofill(const std::list<QueryLogType>& queryList, const std::list<PropertyLabelType>& labelList);
+    void RebuildForAutofill(
+        const std::list<QueryLogType>& queryList, 
+        const std::list<PropertyLabelType>& labelList);
 
     uint32_t GetMaxDocId() const
     {
@@ -115,7 +126,12 @@ private:
 
     uint8_t QueryLogScore_(uint32_t freq);
 
-    bool AddRecommendItem_(MIRDatabase* db, uint32_t item_id, const izenelib::util::UString& text, uint8_t type, uint32_t score);
+    bool AddRecommendItem_(
+        MIRDatabase* db, 
+        uint32_t item_id, 
+        const izenelib::util::UString& text, 
+        uint8_t type, 
+        uint32_t score);
 
     uint32_t getRelatedOnes_(
         MIRDatabase* db,

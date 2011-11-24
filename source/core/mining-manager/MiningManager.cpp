@@ -9,22 +9,24 @@
 #include "MiningManager.h"
 #include "MiningQueryLogHandler.h"
 #include "duplicate-detection-submanager/DupDetector2.h"
+#include "auto-fill-submanager/AutoFillSubManager.h"
+#include "query-correction-submanager/QueryCorrectionSubmanager.h"
 #include "query-recommend-submanager/QueryRecommendSubmanager.h"
 #include "query-recommend-submanager/RecommendManager.h"
 #include "query-recommend-submanager/QueryRecommendRep.h"
 #include "taxonomy-generation-submanager/TaxonomyGenerationSubManager.h"
-#include "taxonomy-generation-submanager/TaxonomyInfo.h"
 #include "taxonomy-generation-submanager/label_similarity.h"
+#include "taxonomy-generation-submanager/TaxonomyRep.h"
+#include "taxonomy-generation-submanager/TaxonomyInfo.h"
+#include "taxonomy-generation-submanager/LabelManager.h"
+
+#include "similarity-detection-submanager/PrunedSortedTermInvertedIndexReader.h"
+#include "similarity-detection-submanager/DocWeightListPrunedInvertedIndexReader.h"
+#include "similarity-detection-submanager/SemanticKernel.h"
 #include "similarity-detection-submanager/SimilarityIndex.h"
 #include "faceted-submanager/ontology_manager.h"
 #include <idmlib/tdt/integrator.h>
 #include <idmlib/util/container_switch.h>
-#include "taxonomy-generation-submanager/TaxonomyRep.h"
-#include "taxonomy-generation-submanager/TaxonomyInfo.h"
-#include "taxonomy-generation-submanager/LabelManager.h"
-#include "similarity-detection-submanager/PrunedSortedTermInvertedIndexReader.h"
-#include "similarity-detection-submanager/DocWeightListPrunedInvertedIndexReader.h"
-#include "similarity-detection-submanager/SemanticKernel.h"
 
 #include "faceted-submanager/ontology_rep_item.h"
 #include "faceted-submanager/ontology_rep.h"
@@ -48,7 +50,10 @@
 #include <idmlib/similarity/term_similarity.h>
 #include <idmlib/tdt/tdt_types.h>
 #include <directory-manager/DirectoryCookie.h>
+
 #include <ir/index_manager/index/IndexReader.h>
+#include <ir/id_manager/IDManager.h>
+
 #include <am/3rdparty/rde_hash.h>
 #include <util/ClockTimer.h>
 #include <util/filesystem.h>

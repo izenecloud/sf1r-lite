@@ -25,8 +25,15 @@
 
 #include "LabelManager.h"
 #include <am/3rdparty/rde_hash.h>
-#include <idmlib/util/idm_analyzer.h>
 #include <idmlib/concept-clustering/concept_clustering.h>
+
+namespace idmlib
+{
+namespace util
+{
+class IDMAnalyzer;
+}
+}
 
 namespace sf1r
 {

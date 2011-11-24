@@ -15,12 +15,12 @@
 #include <boost/noncopyable.hpp>
 
 #include <common/type_defs.h>
-#include "query-recommend-submanager/RecommendManager.h"
 #include <util/singleton.h>
 #include <util/cronexpression.h>
 namespace sf1r
 {
 
+class RecommendManager;
 class MiningQueryLogHandler : public boost::noncopyable
 {
     typedef std::map<std::string, boost::shared_ptr<RecommendManager> >::iterator map_it_type;
@@ -44,7 +44,9 @@ public:
 
     ~MiningQueryLogHandler();
 
-    void addCollection(const std::string& name, const boost::shared_ptr<RecommendManager>& recommendManager);
+    void addCollection(
+        const std::string& name, 
+        const boost::shared_ptr<RecommendManager>& recommendManager);
 
     bool cronStart(const std::string& cron_job);
 

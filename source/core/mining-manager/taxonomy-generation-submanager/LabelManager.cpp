@@ -1,5 +1,6 @@
 #include <util/functional.h>
 #include "LabelManager.h"
+#include <mining-manager/concept-id-manager.h>
 #include <mining-manager/util/MUtil.hpp>
 #include <mining-manager/util/TermUtil.hpp>
 #include <mining-manager/util/FSUtil.hpp>

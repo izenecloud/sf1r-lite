@@ -1,5 +1,8 @@
 #include "TaxonomyGenerationSubManager.h"
 #include "NERRanking.hpp"
+
+#include <idmlib/util/idm_analyzer.h>
+
 #include <boost/bind.hpp>
 #include <net/aggregator/Util.h>
 #include <cmath>
