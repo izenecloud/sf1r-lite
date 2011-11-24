@@ -39,6 +39,15 @@ SortProperty::SortProperty(const string& property, PropertyDataType propertyType
 {
 }
 
+SortProperty::SortProperty(const string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, SortPropertyType type, bool reverse)
+        :property_(property)
+        ,propertyDataType_(propertyType)
+        ,type_(type)
+        ,reverse_(reverse)
+        ,pComparator_(pComparator)
+{
+}
+
 SortProperty::~SortProperty()
 {
     if (pComparator_)
@@ -295,7 +304,8 @@ void Sorter::getComparators()
                 pSortProperty->pComparator_= new SortPropertyComparator();
                 break;
             case SortProperty::AUTO:
-                pSortProperty->pComparator_ = pCache_->getComparator(pSortProperty);
+                if(!pSortProperty->pComparator_)
+                    pSortProperty->pComparator_ = pCache_->getComparator(pSortProperty);
                 break;
             case SortProperty::CUSTOM:
                 pSortProperty->pComparator_ = new SortPropertyComparator(CUSTOM_RANKING_PROPERTY_TYPE);

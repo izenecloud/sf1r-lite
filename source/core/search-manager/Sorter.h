@@ -44,6 +44,8 @@ public:
     ///pComparator is generated outside by customer
     SortProperty(const string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, bool reverse = false);
 
+    SortProperty(const string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, SortPropertyType type, bool reverse);
+
     ~SortProperty();
 
 public:
