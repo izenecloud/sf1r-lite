@@ -1,6 +1,7 @@
 #include "IndexManager.h"
 
 #include <ir/index_manager/utility/StringUtils.h>
+#include <ir/index_manager/utility/BitVector.h>
 
 #include <common/Utilities.h>
 
