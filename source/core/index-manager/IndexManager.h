@@ -21,7 +21,6 @@
 
 using namespace std;
 using namespace izenelib::ir::indexmanager;
-using namespace izenelib::sdb;
 
 namespace sf1r
 {
