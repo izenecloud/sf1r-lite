@@ -5,9 +5,11 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/algorithm/string/replace.hpp>
 
-namespace sf1r {
+namespace sf1r
+{
 
-class UserQuery : public RDbRecordBase {
+class UserQuery : public RDbRecordBase
+{
 
 public:
 
@@ -22,16 +24,16 @@ public:
     DEFINE_RDB_RECORD_COMMON_ROUTINES(UserQuery)
 
     UserQuery() : RDbRecordBase(),
-        queryPresent_(false),
-        collectionPresent_(false),
-        hitDocsNumPresent_(false),
-        pageStartPresent_(false),
-        pageCountPresent_(false),
-        sessionIdPresent_(false),
-        durationPresent_(false),
-        timeStampPresent_(false){}
+            queryPresent_(false),
+            collectionPresent_(false),
+            hitDocsNumPresent_(false),
+            pageStartPresent_(false),
+            pageCountPresent_(false),
+            sessionIdPresent_(false),
+            durationPresent_(false),
+            timeStampPresent_(false) {}
 
-    ~UserQuery(){}
+    ~UserQuery() {}
 
     inline const std::string & getQuery() const
     {

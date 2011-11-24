@@ -1,4 +1,3 @@
-#include <la-manager/LAManager.h>
 #include <configuration-manager/PropertyConfig.h>
 #include <document-manager/DocumentManager.h>
 #include "MiningManager.h"
@@ -20,8 +19,6 @@
 #include "similarity-detection-submanager/SimilarityIndex.h"
 
 #include "faceted-submanager/ontology_manager.h"
-#include "faceted-submanager/ontology_rep_item.h"
-#include "faceted-submanager/ontology_rep.h"
 #include "faceted-submanager/group_manager.h"
 #include "faceted-submanager/attr_manager.h"
 #include "faceted-submanager/property_diversity_reranker.h"
@@ -83,7 +80,6 @@ std::string MiningManager::system_working_path_;
 MiningManager::MiningManager(
     const std::string& collectionDataPath, 
     const std::string& queryDataPath,
-    const boost::shared_ptr<LAManager>& laManager,
     const boost::shared_ptr<DocumentManager>& documentManager,
     const boost::shared_ptr<IndexManager>& index_manager,
     const boost::shared_ptr<SearchManager>& searchManager,
@@ -98,7 +94,6 @@ MiningManager::MiningManager(
         , schema_(schema)
         , miningConfig_(miningConfig)
         , mining_schema_(miningSchema)
-        , laManager_(laManager)
         , analyzer_(NULL)
         , kpe_analyzer_(NULL)
         , document_manager_(documentManager)

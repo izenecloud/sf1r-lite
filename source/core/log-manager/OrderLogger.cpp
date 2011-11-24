@@ -10,7 +10,8 @@
 namespace sf1r
 {
 
-const char* OrderLogger::ColumnName[EoC] = {
+const char* OrderLogger::ColumnName[EoC] =
+{
     "Id",
     "StrId",
     "Collection",
@@ -18,7 +19,8 @@ const char* OrderLogger::ColumnName[EoC] = {
     "TimeStamp"
 };
 
-const char* OrderLogger::ColumnMeta[EoC] = {
+const char* OrderLogger::ColumnMeta[EoC] =
+{
     "INTEGER PRIMARY KEY",
     "TEXT",
     "TEXT",
@@ -38,8 +40,8 @@ void OrderLogger::createTable()
     // as insertOrder() needs a unique id for each new row,
     // declare column "Id" with auto increment attribute
     oss << ColumnName[0] << " "
-        << ColumnMeta[0] << " "
-        << rdbConnection.getSqlKeyword(RDbConnection::ATTR_AUTO_INCREMENT) << ", ";
+    << ColumnMeta[0] << " "
+    << rdbConnection.getSqlKeyword(RDbConnection::ATTR_AUTO_INCREMENT) << ", ";
 
     for (int i=1; i<EoC; ++i)
     {
@@ -97,22 +99,22 @@ void OrderLogger::prepareSql_(
             boost::gregorian::date greDate = boost::gregorian::from_simple_string(date);
             pt = boost::posix_time::ptime(greDate);
         }
-        catch(const std::exception& e)
+        catch (const std::exception& e)
         {
             LOG(WARNING) << "exception in converting date " << date
-                         << ": " << e.what()
-                         << ", expect format: YYYY-mm-dd, use current time instead";
+            << ": " << e.what()
+            << ", expect format: YYYY-mm-dd, use current time instead";
         }
     }
     std::string isoTime = boost::posix_time::to_iso_string(pt);
 
     std::ostringstream oss;
     oss << "insert into " << TableName << " values("
-        << "NULL, "
-        << "\"" << orderId << "\", "
-        << "\"" << collection << "\", "
-        << "\"" << userId << "\", "
-        << "\"" << isoTime << "\");";
+    << "NULL, "
+    << "\"" << orderId << "\", "
+    << "\"" << collection << "\", "
+    << "\"" << userId << "\", "
+    << "\"" << isoTime << "\");";
 
     oss << "select " << getLastIdFunc_() << ";";
     sql = oss.str();
@@ -149,10 +151,10 @@ bool OrderLogger::getLastIdFromRows_(
     {
         lastId = boost::lexical_cast<int>(lastIdStr);
     }
-    catch(const boost::bad_lexical_cast& e)
+    catch (const boost::bad_lexical_cast& e)
     {
         LOG(ERROR) << "failed to convert last insert id: " << lastIdStr
-                    << ", exception: " << e.what();
+        << ", exception: " << e.what();
         return false;
     }
 
