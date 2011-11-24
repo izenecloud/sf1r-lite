@@ -3,31 +3,32 @@
 #include "operation_processor.h"
 #include "uuid_generator.h"
 #include "product_backup.h"
+#include "product_price_trend.h"
 
-#include <log-manager/PriceHistory.h>
-
-#include <libcassandra/util_functions.h>
-
+#include <log-manager/UtilFunctions.h>
 #include <boost/unordered_set.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 using namespace sf1r;
-using namespace libcassandra;
 using namespace boost::posix_time;
 using izenelib::util::UString;
 
 ProductManager::ProductManager(
-        const std::string& collection_name,
         ProductDataSource* data_source,
         OperationProcessor* op_processor,
+        ProductPriceTrend* price_trend,
         const PMConfig& config)
-    : collection_name_(collection_name)
-    , data_source_(data_source)
+    : data_source_(data_source)
     , op_processor_(op_processor)
+    , price_trend_(price_trend)
     , backup_(NULL)
     , config_(config)
     , inhook_(false)
 {
+    if (price_trend_)
+    {
+        price_trend_->Init();
+    }
     if (!config_.backup_path.empty())
     {
         backup_ = new ProductBackup(config_.backup_path);
@@ -57,7 +58,23 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
-    InsertPriceHistory_(doc, timestamp);
+
+    if (price_trend_)
+    {
+        ProductPrice price;
+        if (GetPrice_(doc, price))
+        {
+            UString docid;
+            if (GetDOCID_(doc, docid))
+            {
+                std::string docid_str;
+                docid.convertString(docid_str, UString::UTF_8);
+                GetTimestamp_(doc, timestamp);
+                price_trend_->Insert(docid_str, price, timestamp);
+            }
+        }
+    }
+
     UString uuid;
     generateUUID(uuid, doc);
     if (!data_source_->SetUuid(index_document, uuid)) return false;
@@ -74,12 +91,31 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
-    InsertPriceHistory_(to, timestamp);
     uint32_t fromid = index_document.getId(); //oldid
     PMDocumentType from;
     if (!data_source_->GetDocument(fromid, from)) return false;
     UString from_uuid;
     if (!GetUuid_(from, from_uuid)) return false;
+    ProductPrice from_price;
+    ProductPrice to_price;
+    GetPrice_(fromid, from_price);
+    GetPrice_(to, to_price);
+
+    if (price_trend_ && to_price.Valid() && from_price != to_price)
+    {
+        UString docid;
+        if (GetDOCID_(to, docid))
+        {
+            std::string docid_str;
+            docid.convertString(docid_str, UString::UTF_8);
+            std::string category, source;
+            GetTopCategory_(to, category);
+            GetSource_(to, source);
+            GetTimestamp_(to, timestamp);
+            price_trend_->Update(category, source, fromid, docid_str, from_price, to_price, timestamp);
+        }
+    }
+
     std::vector<uint32_t> docid_list;
     data_source_->GetDocIdList(from_uuid, docid_list, fromid); // except from.docid
     if (docid_list.empty()) // the from doc is unique, so delete it and insert 'to'
@@ -89,19 +125,15 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
         to.property(config_.uuid_property_name) = from_uuid;
         new_doc.property(config_.docid_property_name) = from_uuid;
         SetItemCount_(new_doc, 1);
-        op_processor_->Append(2, new_doc);// if r_type, only numberic properties in 'to'
+        op_processor_->Append(2, new_doc);// if r_type, only numeric properties in 'to'
     }
     else
     {
         //need not to update(insert) to.uuid,
-        ProductPrice from_price;
-        ProductPrice to_price;
-        GetPrice_(fromid, from_price);
-        GetPrice_(to, to_price);
         if (!data_source_->SetUuid(index_document, from_uuid)) return false;
         to.property(config_.uuid_property_name) = from_uuid;
         //update price only
-        if (from_price!=to_price)
+        if (from_price != to_price)
         {
             PMDocumentType diff_properties;
             ProductPrice price(to_price);
@@ -148,10 +180,9 @@ bool ProductManager::HookDelete(uint32_t docid, time_t timestamp)
 
 bool ProductManager::Finish()
 {
-    if (config_.enablePH)
+    if (price_trend_)
     {
-        PriceHistory::updateMultiRow(price_history_cache_);
-        price_history_cache_.clear();
+        price_trend_->Finish();
     }
     return GenOperations_();
 }
@@ -586,51 +617,13 @@ bool ProductManager::GetMultiPriceHistory(
         time_t from_tt,
         time_t to_tt)
 {
-    if (!config_.enablePH)
+    if (!price_trend_)
     {
         error_ = "The price history is not enabled for this collection";
         return false;
     }
 
-    std::vector<std::string> key_list;
-    ParseDocidList_(key_list, docid_list);
-
-    std::string from_str(from_tt == -1 ? "" : serializeLong(from_tt));
-    std::string to_str(to_tt == -1 ? "" : serializeLong(to_tt));
-
-    std::map<std::string, PriceHistory> row_map;
-    if (!PriceHistory::getMultiSlice(row_map, key_list, from_str, to_str))
-    {
-        error_ = "Failed retrieving price histories from Cassandra";
-        return false;
-    }
-
-    for (std::map<std::string, PriceHistory>::const_iterator it = row_map.begin();
-            it != row_map.end(); ++it)
-    {
-        PriceHistoryItem history_item;
-        for (PriceHistory::PriceHistoryType::const_iterator hit = it->second.getPriceHistory().begin();
-                hit != it->second.getPriceHistory().end(); ++hit)
-        {
-            history_item.push_back(make_pair(std::string(), hit->second));
-            history_item.back().first.assign(to_iso_string(
-                        from_time_t(hit->first / 1000000 - timezone)
-                        + microseconds(hit->first % 1000000)));
-        }
-        if (!history_item.empty())
-        {
-            history_list.push_back(make_pair(std::string(), PriceHistoryItem()));
-            StripDocid_(history_list.back().first, it->first);
-            history_list.back().second.swap(history_item);
-        }
-    }
-    if (history_list.empty())
-    {
-        error_ = "Have not got any valid docid";
-        return false;
-    }
-
-    return true;
+    return price_trend_->GetMultiPriceHistory(history_list, docid_list, from_tt, to_tt, error_);
 }
 
 bool ProductManager::GetMultiPriceRange(
@@ -639,47 +632,13 @@ bool ProductManager::GetMultiPriceRange(
         time_t from_tt,
         time_t to_tt)
 {
-    if (!config_.enablePH)
+    if (!price_trend_)
     {
         error_ = "The price history is not enabled for this collection";
         return false;
     }
 
-    std::vector<std::string> key_list;
-    ParseDocidList_(key_list, docid_list);
-
-    std::string from_str(from_tt == -1 ? "" : serializeLong(from_tt));
-    std::string to_str(to_tt == -1 ? "" : serializeLong(to_tt));
-
-    std::map<std::string, PriceHistory> row_map;
-    if (!PriceHistory::getMultiSlice(row_map, key_list, from_str, to_str))
-    {
-        error_ = "Failed retrieving price histories from Cassandra";
-        return false;
-    }
-
-    for (std::map<std::string, PriceHistory>::const_iterator it = row_map.begin();
-            it != row_map.end(); ++it)
-    {
-        ProductPrice range_item;
-        for (PriceHistory::PriceHistoryType::const_iterator hit = it->second.getPriceHistory().begin();
-                hit != it->second.getPriceHistory().end(); ++hit)
-        {
-            range_item += hit->second;
-        }
-        if (range_item.Valid())
-        {
-            range_list.push_back(make_pair(std::string(), range_item));
-            StripDocid_(range_list.back().first, it->first);
-        }
-    }
-    if (range_list.empty())
-    {
-        error_ = "Have not got any valid docid";
-        return false;
-    }
-
-    return true;
+    return price_trend_->GetMultiPriceRange(range_list, docid_list, from_tt, to_tt, error_);
 }
 
 bool ProductManager::GetPrice_(uint32_t docid, ProductPrice& price) const
@@ -697,8 +656,7 @@ bool ProductManager::GetPrice_(const PMDocumentType& doc, ProductPrice& price) c
         return false;
     }
     UString price_str = it->second.get<UString>();
-    if (!price.Parse(price_str)) return false;
-    return true;
+    return price.Parse(price_str);
 }
 
 void ProductManager::GetPrice_(const std::vector<uint32_t>& docid_list, ProductPrice& price) const
@@ -758,66 +716,34 @@ bool ProductManager::GetTimestamp_(const PMDocumentType& doc, time_t& timestamp)
     return true;
 }
 
+bool ProductManager::GetTopCategory_(const PMDocumentType& doc, std::string& category) const
+{
+    Document::property_const_iterator it = doc.findProperty(config_.category_property_name);
+    if (it == doc.propertyEnd())
+    {
+        return false;
+    }
+    UString category_str = it->second.get<UString>();
+    category_str.convertString(category, UString::UTF_8);
+    uint32_t pos;
+    if ((pos = category.find('>')) != std::string::npos)
+        category = category.substr(0, pos);
+    return true;
+}
+
+bool ProductManager::GetSource_(const PMDocumentType& doc, std::string& source) const
+{
+    Document::property_const_iterator it = doc.findProperty(config_.source_property_name);
+    if (it == doc.propertyEnd())
+    {
+        return false;
+    }
+    UString source_str = it->second.get<UString>();
+    source_str.convertString(source, UString::UTF_8);
+    return true;
+}
+
 void ProductManager::SetItemCount_(PMDocumentType& doc, uint32_t item_count)
 {
     doc.property(config_.itemcount_property_name) = UString(boost::lexical_cast<std::string>(item_count), UString::UTF_8);
-}
-
-void ProductManager::InsertPriceHistory_(const PMDocumentType& doc, time_t timestamp)
-{
-    if (!config_.enablePH) return;
-
-    ProductPrice price;
-    if (!GetPrice_(doc, price)) return;
-    UString docid;
-    if (!GetDOCID_(doc, docid)) return;
-    std::string docid_str, key_str;
-    docid.convertString(docid_str, izenelib::util::UString::UTF_8);
-    ParseDocid_(key_str, docid_str);
-    GetTimestamp_(doc, timestamp);
-
-    price_history_cache_.push_back(PriceHistory(key_str));
-    price_history_cache_.back().insert(timestamp, price);
-
-    if (price_history_cache_.size() == 10000)
-    {
-        PriceHistory::updateMultiRow(price_history_cache_);
-        price_history_cache_.clear();
-    }
-}
-
-void ProductManager::ParseDocid_(std::string& dest, const std::string& src) const
-{
-    if (!collection_name_.empty())
-        dest.assign(collection_name_ + "_" + src);
-    else
-        dest.assign(src);
-}
-
-void ProductManager::StripDocid_(std::string& dest, const std::string& src) const
-{
-    if (!collection_name_.empty() && src.length() > collection_name_.length() + 1)
-        dest.assign(src.substr(collection_name_.length() + 1));
-    else
-        dest.assign(src);
-}
-
-void ProductManager::ParseDocidList_(std::vector<std::string>& dest, const std::vector<std::string>& src) const
-{
-    for (uint32_t i = 0; i < src.size(); i++)
-    {
-        if (src[i].empty()) continue;
-        dest.push_back(std::string());
-        ParseDocid_(dest.back(), src[i]);
-    }
-}
-
-void ProductManager::StripDocidList_(std::vector<std::string>& dest, const std::vector<std::string>& src) const
-{
-    for (uint32_t i = 0; i < src.size(); i++)
-    {
-        if (src[i].empty()) continue;
-        dest.push_back(std::string());
-        StripDocid_(dest.back(), src[i]);
-    }
 }

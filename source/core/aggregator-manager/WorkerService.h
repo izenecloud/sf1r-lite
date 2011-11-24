@@ -22,12 +22,12 @@
 #include <common/IndexingProgress.h>
 #include <common/ScdParser.h>
 #include <common/ScdWriterController.h>
+
 #include <ir/id_manager/IDManager.h>
 #include <ir/index_manager/index/IndexerDocument.h>
 
 #include <util/get.h>
 #include <net/aggregator/JobInfo.h>
-#include <ir/id_manager/IDManager.h>
 #include <question-answering/QuestionAnalysis.h>
 
 #include <boost/shared_ptr.hpp>

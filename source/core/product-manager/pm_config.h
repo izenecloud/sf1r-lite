@@ -18,6 +18,8 @@ struct PMConfig
     std::string docid_property_name;
     std::string itemcount_property_name;
     std::string uuid_property_name;
+    std::string category_property_name;
+    std::string source_property_name;
     std::string backup_path;
 
     PMConfig()
@@ -27,7 +29,8 @@ struct PMConfig
         , docid_property_name("DOCID")
         , itemcount_property_name("itemcount")
         , uuid_property_name("uuid")
-        , backup_path()
+        , category_property_name("Category")
+        , source_property_name("Source")
     {
     }
 };

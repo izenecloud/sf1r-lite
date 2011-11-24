@@ -456,7 +456,7 @@ void ProductController::get_multi_price_history()
     bool is_range = asBool(request()[Keys::range]);
     if (!is_range)
     {
-        ProductManager::PriceHistoryList history_list;
+        PriceHistoryList history_list;
         if (!product_manager_->GetMultiPriceHistory(history_list, str_docid_list_, from_tt_, to_tt_))
         {
             response().addError(product_manager_->GetLastError());
@@ -469,20 +469,20 @@ void ProductController::get_multi_price_history()
             Value& doc_item = price_history_list();
             doc_item[Keys::docid] = history_list[i].first;
             Value& price_history = doc_item[Keys::price_history];
-            ProductManager::PriceHistoryItem& history = history_list[i].second;
+            PriceHistoryItem& history = history_list[i].second;
             for (Value::UintType j = 0; j < history.size(); ++j)
             {
                 Value& history_item = price_history();
                 history_item[Keys::timestamp] = history[j].first;
                 Value& price_range = history_item[Keys::price_range];
-                price_range[Keys::price_low] = history[j].second.value.first;
-                price_range[Keys::price_high] = history[j].second.value.second;
+                price_range[Keys::price_low] = history[j].second.first;
+                price_range[Keys::price_high] = history[j].second.second;
             }
         }
     }
     else
     {
-        ProductManager::PriceRangeList range_list;
+        PriceRangeList range_list;
         if (!product_manager_->GetMultiPriceRange(range_list, str_docid_list_, from_tt_, to_tt_))
         {
             response().addError(product_manager_->GetLastError());
@@ -495,8 +495,8 @@ void ProductController::get_multi_price_history()
             Value& doc_item = price_range_list();
             doc_item[Keys::docid] = range_list[i].first;
             Value& price_range = doc_item[Keys::price_range];
-            price_range[Keys::price_low] = range_list[i].second.value.first;
-            price_range[Keys::price_high] = range_list[i].second.value.second;
+            price_range[Keys::price_low] = range_list[i].second.first;
+            price_range[Keys::price_high] = range_list[i].second.second;
         }
     }
 }

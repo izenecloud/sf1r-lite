@@ -5,6 +5,7 @@
 
 #include <cstdlib> // rand()
 #include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/test/unit_test.hpp>
 
 namespace bfs = boost::filesystem;

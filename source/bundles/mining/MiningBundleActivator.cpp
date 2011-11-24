@@ -78,7 +78,7 @@ bool MiningBundleActivator::addingService( const ServiceReference& ref )
         {
             IndexSearchService* service = reinterpret_cast<IndexSearchService*> ( const_cast<IService*>(ref.getService()) );
             cout << "[MiningBundleActivator#addingService] Calling IndexSearchService..." << endl;
-            openDataDirectories_();
+            currentCollectionDataName_ = service->bundleConfig_->collPath_.getCurrCollectionDir();
             miningManager_ = createMiningManager_(service);
             if (!miningManager_)
             {
@@ -132,42 +132,6 @@ std::string MiningBundleActivator::getQueryDataPath_() const
     return config_->collPath_.getQueryDataPath();
 }
 
-
-bool MiningBundleActivator::openDataDirectories_()
-{
-    std::vector<std::string>& directories = config_->collectionDataDirectories_;
-    if( directories.size() == 0 )
-    {
-        std::cout<<"no data dir config"<<std::endl;
-        return false;
-    }
-    directoryRotator_.setCapacity(directories.size());
-    typedef std::vector<std::string>::const_iterator iterator;
-    for (iterator it = directories.begin(); it != directories.end(); ++it)
-    {
-        bfs::path dataDir = bfs::path( getCollectionDataPath_() ) / *it;
-        if (!directoryRotator_.appendDirectory(dataDir))
-        {
-            std::string msg = dataDir.file_string() + " corrupted, delete it!";
-            sflog->error( SFL_SYS, msg.c_str() );
-            std::cout<<msg<<std::endl;
-            //clean the corrupt dir
-            boost::filesystem::remove_all( dataDir );
-            directoryRotator_.appendDirectory(dataDir);
-        }
-    }
-
-    directoryRotator_.rotateToNewest();
-    boost::shared_ptr<Directory> newest = directoryRotator_.currentDirectory();
-    if (newest)
-    {
-        bfs::path p = newest->path();
-        currentCollectionDataName_ = p.filename();
-        //std::cout << "Current Index Directory: " << indexPath_() << std::endl;
-        return true;
-    }
-    return false;
-}
 
 boost::shared_ptr<MiningManager>
 MiningBundleActivator::createMiningManager_(IndexSearchService* indexService) const

@@ -25,7 +25,8 @@ public:
         , document_list_(new std::vector<PMDocumentType>())
         , data_source_(new SimpleDataSource(pm_config_, document_list_))
         , op_processor_(new SimpleOperationProcessor())
-        , pm_(new ProductManager("", data_source_, op_processor_, pm_config_))
+        , price_trend_(NULL)
+        , pm_(new ProductManager(data_source_, op_processor_, price_trend_, pm_config_))
     {
     }
 
@@ -281,6 +282,7 @@ private:
     std::vector<PMDocumentType>* document_list_;
     SimpleDataSource* data_source_;
     SimpleOperationProcessor* op_processor_;
+    ProductPriceTrend* price_trend_;
     ProductManager* pm_;
 
 };

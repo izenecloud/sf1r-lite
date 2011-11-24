@@ -53,6 +53,11 @@ public:
         std::string& language
     ) const;
 
+    std::string indexSCDPath() const
+    {
+        return collPath_.getScdPath() + "index/";
+    }
+
 private:
 
     bool eraseProperty(const std::string& name)

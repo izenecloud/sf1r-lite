@@ -152,7 +152,13 @@ private:
             const AnalysisInfo& analysisInfo
     );
 
+    size_t getTotalScdSize_();
+
+    bool requireBackup_(size_t currTotalScdSize);
+
     bool backup_();
+
+    bool recoverSCD_();
 
     static void value2SCDDoc(
             const ::izenelib::driver::Value& value,
@@ -195,6 +201,8 @@ private:
 
     boost::shared_ptr<AggregatorManager> aggregatorManager_;
     boost::shared_ptr<WorkerService> workerService_;
+
+    size_t totalSCDSizeSinceLastBackup_;
 
     friend class IndexBundleActivator;
     friend class ProductBundleActivator;

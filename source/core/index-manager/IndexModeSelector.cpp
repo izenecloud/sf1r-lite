@@ -40,7 +40,7 @@ void IndexModeSelector::TryCommit()
 {
     if(! index_manager_->isRealTime())
     {
-    index_manager_->flush();
+        index_manager_->flush();
     }
     else
     {
@@ -49,3 +49,12 @@ void IndexModeSelector::TryCommit()
         index_manager_->getBTreeIndexer()->flush();
     }
 }
+
+void IndexModeSelector::ForceCommit()
+{
+    if(index_manager_->isRealTime())
+    {
+        index_manager_->flush();
+    }
+}
+

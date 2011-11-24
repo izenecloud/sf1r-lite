@@ -14,7 +14,7 @@ GroupTable::~GroupTable()
 
 bool GroupTable::Load()
 {
-    if(!boost::filesystem::exists(file_))
+    if (!boost::filesystem::exists(file_))
     {
         return true;
     }
@@ -102,7 +102,7 @@ void GroupTable::AddDoc(uint32_t docid1, uint32_t docid2)
             docid_group_.insert(docid1, group_id);
             group_info_[group_id].push_back(docid1);
 #ifdef GT_DEBUG
-                std::cout<<"[c2] "<<group_id<<","<<docid1<<","<<docid2<<std::endl;
+            std::cout<<"[c2] "<<group_id<<","<<docid1<<","<<docid2<<std::endl;
 #endif
         }
     }
@@ -114,7 +114,7 @@ void GroupTable::AddDoc(uint32_t docid1, uint32_t docid2)
             docid_group_.insert(docid2, group_id);
             group_info_[group_id].push_back(docid2);
 #ifdef GT_DEBUG
-                std::cout<<"[c3] "<<group_id<<","<<docid1<<","<<docid2<<std::endl;
+            std::cout<<"[c3] "<<group_id<<","<<docid1<<","<<docid2<<std::endl;
 #endif
         }
         else

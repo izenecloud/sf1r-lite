@@ -6,6 +6,7 @@
  * @details
  */
 #include "AutoFillSubManager.h"
+#include "word_completion_table.hpp"
 #include <mining-manager/util/LabelDistance.h>
 #include <common/SFLogger.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
