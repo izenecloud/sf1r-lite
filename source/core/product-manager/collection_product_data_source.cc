@@ -1,6 +1,7 @@
 #include "collection_product_data_source.h"
 #include <document-manager/DocumentManager.h>
 #include <index-manager/IndexManager.h>
+#include <search-manager/SearchManager.h>
 
 
 using namespace sf1r;

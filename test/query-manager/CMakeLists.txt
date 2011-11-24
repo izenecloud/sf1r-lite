@@ -37,7 +37,10 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
       sf1r_directory_manager
       sf1r_product_manager
       sf1r_node_manager
-
+      sf1r_search_manager
+      sf1r_mining_manager
+      sf1r_ranking_manager
+      sf1r_index_manager
       ${ilplib_LIBRARIES}
       ${wisekma_LIBRARIES}
       ${izenecma_LIBRARIES}
@@ -56,3 +59,4 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
       )
 
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
+

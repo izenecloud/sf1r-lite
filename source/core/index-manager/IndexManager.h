@@ -13,7 +13,6 @@
 
 #include <ir/index_manager/index/Indexer.h>
 #include <ir/index_manager/index/IndexReader.h>
-#include <ir/index_manager/index/BTreeIndex.h>
 #include <ir/index_manager/utility/BitVector.h>
 #include <ir/index_manager/index/rtype/BTreeIndexerManager.h>
 #include <boost/shared_ptr.hpp>
