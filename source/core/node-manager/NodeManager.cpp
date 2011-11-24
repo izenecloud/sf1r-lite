@@ -16,6 +16,7 @@ NodeManager::NodeManager()
 
 NodeManager::~NodeManager()
 {
+    ZkMonitor::get()->stop();
 }
 
 void NodeManager::init(
