@@ -49,6 +49,15 @@ time_t createTimeStamp(const izenelib::util::UString& text);
 
 time_t createTimeStamp(const std::string& text);
 
+struct KeyLess
+{
+    template <typename T1, typename T2>
+    bool operator()(const std::pair<T1, T2>& p1, const std::pair<T1, T2>& p2) const
+    {
+        return p1.first < p2.first;
+    }
+};
+
 }
 
 #endif

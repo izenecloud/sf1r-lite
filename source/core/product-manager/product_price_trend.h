@@ -12,7 +12,7 @@ class PriceHistory;
 
 class ProductPriceTrend
 {
-    // map<"docid", multimap<"price-cut", pair<"start time", "property value"> > >
+    // map<"property value", multimap<"price-cut", pair<"start time", "docid"> > >
     typedef std::map<std::string, std::multimap<float, std::pair<time_t, std::string> > > TopPriceCutMap;
 
 public:
