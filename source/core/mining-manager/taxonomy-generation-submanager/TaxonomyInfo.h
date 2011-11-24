@@ -9,41 +9,35 @@
 #ifndef TAXONOMYINFO_H_
 #define TAXONOMYINFO_H_
 
-#include <document-manager/UniqueDocIdentifier.h>
 #include "TgTypes.h"
 #include <mining-manager/MiningManagerDef.h>
 #include <common/PropertyTermInfo.h>
-#include <string>
-#include <vector>
-#include <boost/shared_ptr.hpp>
-#include <boost/noncopyable.hpp>
-#include <am/cccr_hash/cccr_hash.h>
-#include <am/3rdparty/rde_hash.h>
-#include <am/fromylib/LinearHashTable.h>
-#include <am/sdb_hash/sdb_hash.h>
-#include <am/sdb_btree/sdb_btree.h>
-#include <am/tokyo_cabinet/tc_hash.h>
-#include <3rdparty/febird/io/DataIO.h>
-#include <3rdparty/febird/io/StreamBuffer.h>
-#include <3rdparty/febird/io/FileStream.h>
-//#include <wiselib/stemmer/Stemmer.h>
-#include <la/stem/Stemmer.h>
-#include "TgTypes.h"
-#include <boost/function.hpp>
 #include <common/type_defs.h>
-#include "LabelManager.h"
 #include <configuration-manager/MiningConfig.h>
 #include <idmlib/keyphrase-extraction/kpe_algorithm.h>
 #include <idmlib/keyphrase-extraction/kpe_output.h>
-#include <idmlib/nec/NameEntity.h>
-#include <idmlib/nec/nec.h>
-// #include <idmlib/nec/NameEntityUtil.h>
-#include <idmlib/nec/NameEntityDict.h>
-#include <idmlib/nec/NameEntityManager.h>
 #include <idmlib/util/file_object.h>
+
+#include <boost/shared_ptr.hpp>
+#include <boost/noncopyable.hpp>
+#include <boost/function.hpp>
+
+#include <string>
+#include <vector>
+
+namespace idmlib
+{
+class NameEntityManager;
+namespace nec
+{
+class NEC;
+}
+}
+
 namespace sf1r
 {
 
+class LabelManager;
 class TaxonomyInfo : public boost::noncopyable
 {
 

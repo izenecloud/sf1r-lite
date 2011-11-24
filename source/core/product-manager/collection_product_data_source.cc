@@ -1,14 +1,15 @@
 #include "collection_product_data_source.h"
 #include <document-manager/DocumentManager.h>
 #include <index-manager/IndexManager.h>
+#include <search-manager/SearchManager.h>
 
 
 using namespace sf1r;
 using namespace izenelib::ir::indexmanager;
 using namespace izenelib::ir::idmanager;
 
-CollectionProductDataSource::CollectionProductDataSource(const boost::shared_ptr<DocumentManager>& document_manager, const boost::shared_ptr<IndexManager>& index_manager, const boost::shared_ptr<IDManager>& id_manager, const PMConfig& config, const std::set<PropertyConfig, PropertyComp>& schema)
-: document_manager_(document_manager), index_manager_(index_manager), id_manager_(id_manager), config_(config), schema_(schema)
+CollectionProductDataSource::CollectionProductDataSource(const boost::shared_ptr<DocumentManager>& document_manager, const boost::shared_ptr<IndexManager>& index_manager, const boost::shared_ptr<IDManager>& id_manager, const boost::shared_ptr<SearchManager>& search_manager, const PMConfig& config, const std::set<PropertyConfig, PropertyComp>& schema)
+: document_manager_(document_manager), index_manager_(index_manager), id_manager_(id_manager), search_manager_(search_manager), config_(config), schema_(schema)
 {
 }
 
@@ -97,6 +98,7 @@ bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_
         newdoc.property(config_.uuid_property_name) = uuid;
         if(!document_manager_->updatePartialDocument(newdoc))
         {
+            std::cout<<"updatePartialDocument failed : "<<docid_list[index]<<std::endl;
             //rollback in DM
             for(uint32_t i=0;i<=index;i++)
             {
@@ -129,6 +131,9 @@ bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_
             //TODO how to rollback in IM?
         }
     }
+    document_manager_->flush();
+    index_manager_->flush();
+    search_manager_->reset_all_property_cache();
     return true;
 }
 

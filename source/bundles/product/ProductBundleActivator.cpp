@@ -187,7 +187,7 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
     std::string dir = getCurrentCollectionDataPath_()+"/product";
     std::cout<<"dir : "<<dir<<std::endl;
     boost::filesystem::create_directories(dir);
-    data_source_ = new CollectionProductDataSource(indexService->workerService_->documentManager_, indexService->workerService_->indexManager_, indexService->workerService_->idManager_, config_->pm_config_, config_->schema_);
+    data_source_ = new CollectionProductDataSource(indexService->workerService_->documentManager_, indexService->workerService_->indexManager_, indexService->workerService_->idManager_, indexService->workerService_->searchManager_, config_->pm_config_, config_->schema_);
     op_processor_ = new ScdOperationProcessor(dir);
     if (config_->pm_config_.enablePH && PriceHistory::is_enabled)
     {

@@ -16,6 +16,7 @@ NodeManager::NodeManager()
 
 NodeManager::~NodeManager()
 {
+    ZkMonitor::get()->stop();
 }
 
 void NodeManager::init(
@@ -196,7 +197,7 @@ void NodeManager::enterCluster()
 
     nodeState_ = NODE_STATE_STARTED;
     //std::cout<<"[NodeManager] node registered at \""<<nodePath_<<"\" "<<std::endl;
-    std::cout<<"[NodeManager] join cluster: "<<dsTopologyConfig_.clusterId_<<", "<<nodeInfo_.toString()<<std::endl;
+    std::cout<<"[NodeManager] joined cluster ["<<dsTopologyConfig_.clusterId_<<"] - "<<nodeInfo_.toString()<<std::endl;
 
     // Start Master manager
     if (dsTopologyConfig_.curSF1Node_.masterAgent_.enabled_)

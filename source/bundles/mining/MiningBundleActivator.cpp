@@ -144,7 +144,6 @@ MiningBundleActivator::createMiningManager_(IndexSearchService* indexService) co
             new MiningManager(
                 dir,
                 getQueryDataPath_(),
-                indexService->workerService_->laManager_,
                 indexService->workerService_->documentManager_,
                 indexService->workerService_->indexManager_,
                 indexService->workerService_->searchManager_,

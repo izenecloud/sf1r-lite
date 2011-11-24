@@ -4,9 +4,11 @@
 #include "RDbRecordBase.h"
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-namespace sf1r {
+namespace sf1r
+{
 
-class SystemEvent : public RDbRecordBase {
+class SystemEvent : public RDbRecordBase
+{
 
 public:
 
@@ -21,12 +23,12 @@ public:
     DEFINE_RDB_RECORD_COMMON_ROUTINES(SystemEvent)
 
     SystemEvent() : RDbRecordBase(),
-        levelPresent_(false),
-        sourcePresent_(false),
-        contentPresent_(false),
-        timeStampPresent_(false){}
+            levelPresent_(false),
+            sourcePresent_(false),
+            contentPresent_(false),
+            timeStampPresent_(false) {}
 
-    ~SystemEvent(){}
+    ~SystemEvent() {}
 
     inline const std::string & getLevel() const
     {

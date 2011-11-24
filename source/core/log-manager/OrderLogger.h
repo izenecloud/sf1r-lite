@@ -19,7 +19,8 @@ namespace sf1r
 class OrderLogger : public LogManagerSingleton<OrderLogger>
 {
 public:
-    enum Column {
+    enum Column
+    {
         Id, // the primary key which is automatically incremented
         StrId, // the string id supplied by customer
         Collection,

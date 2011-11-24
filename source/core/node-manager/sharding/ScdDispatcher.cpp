@@ -225,14 +225,16 @@ bool BatchScdDispatcher::finish()
 
         if (workerSrv != NULL)
         {
-            LOG(INFO) << "Transfer scd from "<<shardScdfileMap_[shardid]<<" to shard "<<shardid<<" : "<<workerSrv->host_;
+            LOG(INFO) << "Transfer scd from "<<shardScdfileMap_[shardid]
+                      <<"/ to shard "<<shardid<<" ("<<workerSrv->host_<<")";
+            // thread?
             DataTransfer transfer(workerSrv->host_, 18121); // todo, config port
             transfer.syncSend(shardScdfileMap_[shardid], collectionName_+"/scd/index");
         }
         else
         {
             ret = false; // xxx
-            LOG(INFO) << "Not found server info for shard "<<shardid;
+            LOG(ERROR) << "Not found server info for shard "<<shardid;
         }
     }
 

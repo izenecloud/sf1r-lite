@@ -27,7 +27,10 @@ SET(libs
   sf1r_document_manager
   sf1r_node_manager
   sf1r_common
-
+  sf1r_search_manager
+  sf1r_mining_manager
+  sf1r_ranking_manager
+  
   ${idmlib_LIBRARIES}
   ${imllib_LIBRARIES}
   ${ilplib_LIBRARIES}
