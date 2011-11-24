@@ -1,7 +1,6 @@
 #ifndef SF1V5_MINING_CONFIG_H_
 #define SF1V5_MINING_CONFIG_H_
 
-#include <ir/index_manager/index/IndexerCollectionMeta.h>
 #include <util/ustring/UString.h>
 
 #include <stdint.h>

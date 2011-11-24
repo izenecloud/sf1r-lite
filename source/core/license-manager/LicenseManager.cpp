@@ -15,7 +15,9 @@
 #include <boost/bind.hpp>
 
 #include <sstream>
-
+#include <fstream>
+#include <iostream>
+using namespace std;
 using namespace sf1r;
 using namespace license_module;
 

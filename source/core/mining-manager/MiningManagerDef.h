@@ -21,20 +21,11 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/filesystem.hpp>
 #include <am/tokyo_cabinet/tc_hash.h>
-#include <am/sdb_storage/sdb_storage.h>
 #include <util/ustring/algo.hpp>
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 #include "util/TermUtil.hpp"
-#include <la-manager/LAManager.h>
-#include <ir/ir_database/IRDatabase.hpp>
 #include <limits>
 #include "taxonomy-generation-submanager/TgTypes.h"
 #include "MiningException.hpp"
-namespace sf1r
-{
-typedef izenelib::ir::irdb::PureIRDatabase  TIRDatabase;
-typedef izenelib::ir::irdb::PureIRDocument  TIRDocument;
-
-}
 #endif

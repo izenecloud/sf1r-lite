@@ -7,7 +7,8 @@
 namespace sf1r
 {
 
-const char* ItemLogger::ColumnName[EoC] = {
+const char* ItemLogger::ColumnName[EoC] =
+{
     "OrderId",
     "ItemId",
     "Price",
@@ -15,7 +16,8 @@ const char* ItemLogger::ColumnName[EoC] = {
     "IsRec"
 };
 
-const char* ItemLogger::ColumnMeta[EoC] = {
+const char* ItemLogger::ColumnMeta[EoC] =
+{
     "INTEGER",
     "TEXT",
     "REAL",
@@ -60,11 +62,11 @@ bool ItemLogger::insertItem(
 
     std::ostringstream oss;
     oss << "insert into " << TableName << " values("
-        << orderId << ", "
-        << "\"" << itemId << "\", "
-        << price << ", "
-        << quantity << ", "
-        << isRec << ");";
+    << orderId << ", "
+    << "\"" << itemId << "\", "
+    << price << ", "
+    << quantity << ", "
+    << isRec << ");";
 
     if (!RDbConnection::instance().exec(oss.str()))
         return false;

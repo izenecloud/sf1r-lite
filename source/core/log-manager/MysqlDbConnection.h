@@ -5,7 +5,8 @@
 
 #include "RDbConnectionBase.h"
 
-namespace sf1r {
+namespace sf1r
+{
 
 class MysqlDbConnection : public RDbConnectionBase
 {

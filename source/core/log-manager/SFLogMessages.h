@@ -21,23 +21,24 @@
 #define TOT_ERRORS 200
 namespace SFLogMessage
 {
-    static std::map<int, std::string> errMsgIdPair;
-    //static bool bErrMsgInit = false;
+static std::map<int, std::string> errMsgIdPair;
+//static bool bErrMsgInit = false;
 
-    enum ERROR_NUM {
-        NO_ERR=0,
-        UNKNOWN=999999
-    };
+enum ERROR_NUM
+{
+    NO_ERR=0,
+    UNKNOWN=999999
+};
 
 
-    /**
-     * @brief get the error string correspondingto ID
-     */
-    std::string getLogMsg(int id);
-    bool initLogMsg(const std::string& language);
-    char* get_env_(const char* envVarName);
+/**
+ * @brief get the error string correspondingto ID
+ */
+std::string getLogMsg(int id);
+bool initLogMsg(const std::string& language);
+char* get_env_(const char* envVarName);
 
-    void parse_Lang(const std::string& evnStr);
+void parse_Lang(const std::string& evnStr);
 }
 
 #endif// SF_LOG_MESSAGES

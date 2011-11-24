@@ -3,17 +3,25 @@
 #include <mining-manager/util/FSUtil.hpp>
 #include "TaxonomyInfo.h"
 #include "TgTypes.h"
+#include "LabelManager.h"
 
-#include <la/stem/Stemmer.h>
+#include <idmlib/nec/NameEntityManager.h>
+#include <idmlib/nec/NameEntity.h>
+#include <idmlib/nec/nec.h>
+// #include <idmlib/nec/NameEntityUtil.h>
+#include <idmlib/nec/NameEntityDict.h>
+
+#include <util/profiler/ProfilerGroup.h>
+#include <am/3rdparty/rde_hash.h>
+#include <ctime>
+#include "math.h"
+
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
-#include <util/profiler/ProfilerGroup.h>
-#include <am/3rdparty/rde_hash.h>
-#include <ctime>
-#include "math.h"
+
 using namespace sf1r;
 namespace bfs=boost::filesystem;
 

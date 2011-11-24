@@ -13,6 +13,7 @@
 #include <common/type_defs.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/serialization/list.hpp>
 
 #define GEN_LABEL_INVERTED_TEXT ;
 

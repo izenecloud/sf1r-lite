@@ -83,7 +83,6 @@ class QueryCorrectionSubmanager;
 class LabelManager;
 class TaxonomyGenerationSubManager;
 class TaxonomyInfo;
-class LAManager;
 class Document;
 class DocumentManager;
 class IndexManager;
@@ -124,7 +123,6 @@ public:
      * @param docIdManager used for generating docIds in parsing the SCD file.
      */
     MiningManager(const std::string& collectionDataPath, const std::string& queryDataPath,
-                  const boost::shared_ptr<LAManager>& laManager,
                   const boost::shared_ptr<DocumentManager>& documentManager,
                   const boost::shared_ptr<IndexManager>& index_manager,
                   const boost::shared_ptr<SearchManager>& searchManager,
@@ -371,7 +369,6 @@ private:
     std::string rig_path_;
 
     /**all analyzer used in mining manager */
-    boost::shared_ptr<LAManager> laManager_;
     idmlib::util::IDMAnalyzer* analyzer_;
     idmlib::util::IDMAnalyzer* c_analyzer_;
     idmlib::util::IDMAnalyzer* kpe_analyzer_;
