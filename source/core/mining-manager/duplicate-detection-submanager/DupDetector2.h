@@ -73,8 +73,8 @@ public:
     bool isDuplicated( uint32_t docId1, uint32_t docId2);
 
     bool ProcessCollection();
-    
-    
+
+
     void insertDocument(uint32_t docid, const std::vector<std::string>& v);
 
     bool runDuplicateDetectionAnalysis(bool force=false);
@@ -84,8 +84,8 @@ public:
     /**
      * @brief Insert new documents to a collection
      */
-// 	bool insertDocuments(const std::vector<unsigned int>& docIdList,
-// 	        const std::vector<std::vector<unsigned int> >& documentList);
+//  bool insertDocuments(const std::vector<unsigned int>& docIdList,
+//          const std::vector<std::vector<unsigned int> >& documentList);
 
 
     void SetIDManager(const boost::shared_ptr<izenelib::ir::idmanager::IDManager>& id_manager)
@@ -95,10 +95,10 @@ public:
 
 
 private:
-    
+
     bool ProcessCollectionBySimhash_();
     bool ProcessCollectionBySim_();
-    
+
     uint32_t GetProcessedMaxId_();
 
     void FindDD_(const std::vector<FpItem>& object, const FpTable& table, uint32_t table_id);
@@ -112,11 +112,11 @@ private:
     uint8_t GetK_(uint32_t doc_length);
 
     void SetParameters_();
-    
+
     void FindSim_(uint32_t docid1, uint32_t docid2, double score);
-    
+
     bool GetPropertyString_(uint32_t docid, const std::string& property, std::string& value);
-    
+
     void OutputResult_(const std::string& file);
 
 

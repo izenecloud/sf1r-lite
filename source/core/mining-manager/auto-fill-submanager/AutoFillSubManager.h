@@ -1,7 +1,7 @@
 /*!
- \file	AutoFillSubmanager.h
- \author	Jinglei&&Kevin
- \brief	AutoFillSubManager will get the search keyword list which match the prefix of the keyword user typed.
+ \file      AutoFillSubmanager.h
+ \author    Jinglei&&Kevin
+ \brief     AutoFillSubManager will get the search keyword list which match the prefix of the keyword user typed.
  */
 #if !defined(_AUTO_FILL_SUBMANAGER_)
 #define _AUTO_FILL_SUBMANAGER_

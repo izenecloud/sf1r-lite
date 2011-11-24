@@ -24,7 +24,7 @@ namespace sf1r
     LAManager::LAManager( bool isMultiThreadEnv )
         : isMultiThreadEnv_( isMultiThreadEnv )
     {
-    	laPool_ = LAPool::getInstance();
+        laPool_ = LAPool::getInstance();
     }
 
     LAManager::~LAManager()
@@ -78,7 +78,7 @@ namespace sf1r
     {
         LA * pLA = NULL;
         pLA = isMultiThreadEnv_ ? laPool_->popSearchLA( analysisInfo ) :
-			laPool_->topSearchLA( analysisInfo );
+            laPool_->topSearchLA( analysisInfo );
 
         if(!pLA)
         {
@@ -136,7 +136,7 @@ namespace sf1r
 //        if( stopDict.get() != NULL )
 //            LA::removeStopwords( termList, stopDict );
     }
-    
+
     la::LA* LAManager::get_la(const AnalysisInfo& analysisInfo)
     {
       LA * p_la = NULL;

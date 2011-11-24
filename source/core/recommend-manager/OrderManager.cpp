@@ -6,7 +6,7 @@
 #include <util/PriorityQueue.h>
 
 #include <boost/filesystem.hpp>
-#include <boost/algorithm/string.hpp> 
+#include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
@@ -33,7 +33,7 @@ const char* MAX_ORDER_ID = "MaxOrderId";
 const char* MAX_ITEM_ID = "MaxItemId";
 
 /**
- * Get unique items from @p srcItems to @p destItems. 
+ * Get unique items from @p srcItems to @p destItems.
  */
 void unique_items(
     const std::vector<sf1r::itemid_t>& srcItems,
@@ -185,8 +185,8 @@ void OrderManager::_splitOrder(
 }
 
 bool OrderManager::getFreqItemSets(
-    int howmany, 
-    std::list<itemid_t>& items, 
+    int howmany,
+    std::list<itemid_t>& items,
     std::list<itemid_t>& results,
     idmlib::recommender::ItemRescorer* rescorer)
 {
@@ -230,7 +230,7 @@ bool OrderManager::getFreqItemSets(
 }
 
 void OrderManager::getAllFreqItemSets(
-    int howmany, 
+    int howmany,
     size_t threshold,
     FrequentItemSetResultType& results
 )
@@ -278,7 +278,7 @@ void OrderManager::_writeRecord(
 {
     {
     ///write keys
-    izenelib::util::ScopedWriteLock<izenelib::util::ReadWriteLock> lock(db_lock_);	
+    izenelib::util::ScopedWriteLock<izenelib::util::ReadWriteLock> lock(db_lock_);
     off_t pos = ftell(order_db_);
     fseek(order_key_, orderId*sizeof(off_t), SEEK_SET);
     fwrite(&pos, 1, sizeof(off_t), order_key_);
@@ -303,15 +303,15 @@ void OrderManager::_writeRecord(
 }
 
 bool OrderManager::_getOrder(
-	orderid_t orderId,
-	std::vector<itemid_t>& items
+    orderid_t orderId,
+    std::vector<itemid_t>& items
 )
 {
     off_t pos;
     {
     izenelib::util::ScopedReadLock<izenelib::util::ReadWriteLock> lock(db_lock_);
     fseek(order_key_, orderId*sizeof(off_t), SEEK_SET);
-    fread(&pos, 1, sizeof(off_t), order_key_);
+    if (fread(&pos, 1, sizeof(off_t), order_key_) == 0);
     }
 
     FILE* order_db = fopen(order_db_path_.c_str(), "rb" );
@@ -344,14 +344,14 @@ void OrderManager::_findMaxItemsets()
 {
     std::fstream max_itemsets_results;
     max_itemsets_results.open (max_itemsets_results_path_.c_str(), fstream::out/* | fstream::app*/);
-    std::auto_ptr<idmlib::DataSourceIterator> data(idmlib::DataSourceIterator::Get(order_db_path_.c_str()));	
+    std::auto_ptr<idmlib::DataSourceIterator> data(idmlib::DataSourceIterator::Get(order_db_path_.c_str()));
     idmlib::AllMaximalSetsSateLite ap;
     bool result = ap.FindAllMaximalSets(
         data.get(),
         maxItemId_+1,
         1000000000/*max_items_in_ram*/,
         max_itemsets_results);
-    if (!result) 
+    if (!result)
     {
         LOG(ERROR) << "IO ERROR:: " << data->GetErrorMessage();
     }
@@ -374,7 +374,7 @@ void OrderManager::_findFrequentItemsets()
         }
         std::vector<std::string> item_strs;
         boost::algorithm::split( item_strs, line, boost::algorithm::is_any_of(" ") );
-        if(item_strs.size() <= 1) continue; 
+        if(item_strs.size() <= 1) continue;
         std::vector<itemid_t> max_itemset;
         max_itemset.reserve(item_strs.size());
         for(std::vector<std::string>::iterator it = item_strs.begin();
@@ -400,7 +400,7 @@ void OrderManager::_findFrequentItemsets()
 }
 
 void OrderManager::_judgeFrequentItemset(
-    std::vector<itemid_t>& max_itemset , 
+    std::vector<itemid_t>& max_itemset ,
     FrequentItemSetResultType& frequent_itemsets)
 {
     // as itemSetCompare() compares item set in lexicographical order,
@@ -410,7 +410,7 @@ void OrderManager::_judgeFrequentItemset(
 
     std::vector<itemid_t> sub_itemset(max_itemset.size());
     std::vector<itemid_t>::iterator last_item = sub_itemset.begin();
-    while ( 
+    while (
         ( last_item = izenelib::util::next_subset( max_itemset.begin(), max_itemset.end(),
                      sub_itemset.begin(), last_item ) )
             != sub_itemset.begin() ) {
@@ -425,7 +425,7 @@ void OrderManager::_judgeFrequentItemset(
     }
 }
 
-bool OrderManager::_saveFreqItemsetDb() const 
+bool OrderManager::_saveFreqItemsetDb() const
 {
     try
     {
@@ -447,7 +447,7 @@ bool OrderManager::_saveFreqItemsetDb() const
     }
 }
 
-bool OrderManager::_restoreFreqItemsetDb() 
+bool OrderManager::_restoreFreqItemsetDb()
 {
     try
     {

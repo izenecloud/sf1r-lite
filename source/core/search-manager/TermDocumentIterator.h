@@ -28,27 +28,27 @@ class TermDocumentIterator: public DocumentIterator
 {
 public:
     TermDocumentIterator(
-                termid_t termid,
-                collectionid_t colID,
-                izenelib::ir::indexmanager::IndexReader* pIndexReader,
-                const std::string& property,
-                unsigned int propertyId,
-                unsigned int termIndex,
-                bool readPositions
+            termid_t termid,
+            collectionid_t colID,
+            izenelib::ir::indexmanager::IndexReader* pIndexReader,
+            const std::string& property,
+            unsigned int propertyId,
+            unsigned int termIndex,
+            bool readPositions
     );
 
     TermDocumentIterator(
-                termid_t termid,
-                std::string rawTerm,
-                collectionid_t colID,
-                izenelib::ir::indexmanager::IndexReader* pIndexReader,
-                boost::shared_ptr<IndexManager> indexManagerPtr,
-                const std::string& property,
-                unsigned int propertyId,
-                sf1r::PropertyDataType dataType,
-                bool isNumericFilter,
-                unsigned int termIndex,
-                bool readPositions
+            termid_t termid,
+            std::string rawTerm,
+            collectionid_t colID,
+            izenelib::ir::indexmanager::IndexReader* pIndexReader,
+            boost::shared_ptr<IndexManager> indexManagerPtr,
+            const std::string& property,
+            unsigned int propertyId,
+            sf1r::PropertyDataType dataType,
+            bool isNumericFilter,
+            unsigned int termIndex,
+            bool readPositions
     );
 
     ~TermDocumentIterator();
@@ -70,7 +70,7 @@ public:
     {
         if (pTermDocReader_)
             return pTermDocReader_->next();
-	return false;
+    return false;
     }
 
     docid_t doc()
@@ -93,13 +93,13 @@ public:
     void set_df(unsigned int df) {df_ = df;}
 
     void df_ctf(
-        DocumentFrequencyInProperties& dfmap, 
+        DocumentFrequencyInProperties& dfmap,
         CollectionTermFrequencyInProperties& ctfmap);
 
     count_t tf()
     {
-    	BOOST_ASSERT(pTermDocReader_);
-    	return pTermDocReader_->freq();
+        BOOST_ASSERT(pTermDocReader_);
+        return pTermDocReader_->freq();
     }
 
     termid_t termId() {return termId_;}

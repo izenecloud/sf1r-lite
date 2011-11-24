@@ -72,7 +72,7 @@ public:
     void getDocWeightList(doc_weight_list_type& result);
     size_t size() const
     {
-    	return idFreqList_.size();
+        return idFreqList_.size();
     }
 
 private:

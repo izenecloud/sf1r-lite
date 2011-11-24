@@ -11,7 +11,7 @@
 #include <ranking-manager/RankDocumentProperty.h>
 
 #define MAX_DOC_ID      0xFFFFFFFF
-#define MAX_COUNT		0xFFFFFFFF // max value of count_t type
+#define MAX_COUNT       0xFFFFFFFF // max value of count_t type
 
 #define PREFETCH_TERMID 1
 
@@ -49,16 +49,16 @@ public:
                 return MAX_DOC_ID;
             currDoc = doc();
         } while(target > currDoc);
-	
+
         return currDoc;
     }
-	
+
     virtual void queryBoosting(double& score, double& weight) {}
 
     virtual void print(int level = 0) {}
 
     void setCurrent(bool current){ current_ = current; }
-	
+
     bool isCurrent(){ return current_; }
 
     void setNot(bool isNot) { not_ = isNot; }

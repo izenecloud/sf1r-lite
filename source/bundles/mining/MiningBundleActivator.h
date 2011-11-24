@@ -33,8 +33,6 @@ private:
 
     boost::shared_ptr<MiningManager> miningManager_;
 
-    bool openDataDirectories_();
-
     boost::shared_ptr<MiningManager> createMiningManager_(IndexSearchService* indexService) const;
 
     std::string getCollectionDataPath_() const;

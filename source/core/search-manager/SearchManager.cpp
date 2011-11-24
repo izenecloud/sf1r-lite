@@ -38,9 +38,9 @@ bool action_rerankable(SearchKeywordOperation& actionOperation)
 {
     bool rerank = false;
     if (actionOperation.actionItem_.env_.taxonomyLabel_.empty() &&
-	actionOperation.actionItem_.env_.nameEntityItem_.empty() &&
-	actionOperation.actionItem_.groupParam_.groupLabels_.empty() &&
-	actionOperation.actionItem_.groupParam_.attrLabels_.empty())
+    actionOperation.actionItem_.env_.nameEntityItem_.empty() &&
+    actionOperation.actionItem_.groupParam_.groupLabels_.empty() &&
+    actionOperation.actionItem_.groupParam_.attrLabels_.empty())
     {
         std::vector<std::pair<std::string , bool> >& sortPropertyList = actionOperation.actionItem_.sortPriorityList_;
         if(sortPropertyList.empty())
@@ -313,20 +313,20 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
 
     if (distSearchInfo.actionType_ == DistKeywordSearchInfo::ACTION_FETCH)
     {
-    	pDocIterator->df_ctf(dfmap, ctfmap);
+        pDocIterator->df_ctf(dfmap, ctfmap);
 
-    	distSearchInfo.dfmap_ = dfmap;
-    	distSearchInfo.ctfmap_ = ctfmap;
-    	return true;
+        distSearchInfo.dfmap_ = dfmap;
+        distSearchInfo.ctfmap_ = ctfmap;
+        return true;
     }
     else if (distSearchInfo.actionType_ == DistKeywordSearchInfo::ACTION_SEND)
     {
-    	dfmap = distSearchInfo.dfmap_;
-    	ctfmap = distSearchInfo.ctfmap_;
+        dfmap = distSearchInfo.dfmap_;
+        ctfmap = distSearchInfo.ctfmap_;
     }
     else
     {
-    	pDocIterator->df_ctf(dfmap, ctfmap);
+        pDocIterator->df_ctf(dfmap, ctfmap);
     }
 
 

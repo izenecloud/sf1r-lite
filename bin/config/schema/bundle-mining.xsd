@@ -165,7 +165,7 @@
             <xs:sequence>
                 <xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="unbounded"/>
             </xs:sequence>
-                        <xs:attribute name="kpe_only" type="YesNoType"/>
+            <xs:attribute name="kpe_only" type="YesNoType"/>
         </xs:complexType>
     </xs:element>
 

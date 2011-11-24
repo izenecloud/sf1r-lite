@@ -9,7 +9,7 @@ usage() {
 }
 
 if [ $# -lt 1 ] || [ $# -gt 2 ]
-then 
+then
   usage
   exit 0
 fi
@@ -52,7 +52,7 @@ then
   then
     dir_name='all'
   fi
-  
+
   if [ "$dir_name" != "" ] && [ "$dir_name" != "all" ]
   then
 #    echo "rsyncing $dir_name only, type the password: $password"
@@ -69,4 +69,3 @@ else
 #  echo "rsyncing all, type the password: $password"
   rsync -azvP --delete "$username@izenesoft.cn:/data/sf1r-resource/$1/resource/" "$home/package/resource/"
 fi
-

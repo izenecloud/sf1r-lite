@@ -122,9 +122,9 @@ void Graph::calcWeights()
         vector<TermID>::iterator iterA=vecStartTokens.begin();
         vector<TermID>::iterator iterB;
         for(;iterA!=vecStartTokens.end();iterA++){
-        	for(iterB=vecEndTokens.begin();iterB!=vecEndTokens.end();iterB++){
-        		if(*iterA==*iterB) 	counter++;
-        	}
+            for(iterB=vecEndTokens.begin();iterB!=vecEndTokens.end();iterB++){
+                if(*iterA==*iterB) counter++;
+            }
         } */
 
         vecWeights[i] = ((double) counter) / (log(vecStartTokens.size())
@@ -208,7 +208,7 @@ void Graph::searchByEnd(Vertex& vertexEnd, vector<Edge> & vecEdges)
 
 void Graph::doTs(vector<Sentence>& sentences)
 {
-    if (isFirstInstantiate_ == true)	isFirstInstantiate_ = false;
+    if (isFirstInstantiate_) isFirstInstantiate_ = false;
 
     initVertices(sentences);
     initEdges();
@@ -229,4 +229,3 @@ void Graph::copyResult(vector<SentenceNO> &result, int cnt)
 
 }
 }
-

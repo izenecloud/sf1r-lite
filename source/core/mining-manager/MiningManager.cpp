@@ -621,11 +621,11 @@ bool MiningManager::DoMiningCollection()
         MEMLOG("[Mining] SIM starting..");
         if ( miningConfig_.similarity_param.enable_esa == false )
         {
-        	computeSimilarity_(index_manager_->getIndexReader(), mining_schema_.sim_properties);
+            computeSimilarity_(index_manager_->getIndexReader(), mining_schema_.sim_properties);
         }
         else
         {
-        	computeSimilarityESA_(mining_schema_.sim_properties);
+            computeSimilarityESA_(mining_schema_.sim_properties);
         }
         MEMLOG("[Mining] SIM finished.");
     }
@@ -830,7 +830,7 @@ bool MiningManager::getSimilarImageDocIdList(
 //     std::cout << "[MiningManager::getQuerySpecificTaxonomy]" << std::endl;
 //     struct timeval tv_start;
 //     struct timeval tv_end;
-//     // 	struct timezone tz;
+//     //struct timezone tz;
 //     gettimeofday(&tv_start, NULL);
 //     boost::timer timer;
 //     bool ret = tgManager_->getQuerySpecificTaxonomyInfo(docIdList,
@@ -839,7 +839,7 @@ bool MiningManager::getSimilarImageDocIdList(
 //     gettimeofday(&tv_end, NULL);
 //     double timespend = (double) tv_end.tv_sec - (double) tv_start.tv_sec
 //             + ((double) tv_end.tv_usec - (double) tv_start.tv_usec) / 1000000;
-//     // 	time_t second = end - start;
+//     //time_t second = end - start;
 //     std::cout << "TG cost CPU " << cpu_time << " seconds." << std::endl;
 //     std::cout << "TG all cost " << timespend << " seconds." << std::endl;
 //     return ret;
@@ -957,9 +957,9 @@ bool MiningManager::computeSimilarityESA_(const std::vector<std::string>& proper
         std::string colBasePath = sim_path_;
         size_t pos = colBasePath.find("/collection-data");
         colBasePath = colBasePath.replace(pos, colBasePath.length(), ""); // xxx
-//		CollectionMeta colMeta;
-//		SF1Config::get()->getCollectionMetaByName(collectionName_,colMeta);
-//		colBasePath = colMeta.getCollectionPath().getBasePath();
+//      CollectionMeta colMeta;
+//      SF1Config::get()->getCollectionMetaByName(collectionName_,colMeta);
+//      colBasePath = colMeta.getCollectionPath().getBasePath();
 
         std::string cmaPath;
         LAPool::getInstance()->get_cma_path(cmaPath);

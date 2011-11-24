@@ -13,12 +13,12 @@ using namespace sf1r;
 
 
 RankingScoreItem::RankingScoreItem() {
-	/// TODO Auto-generated constructor stub
+    /// TODO Auto-generated constructor stub
 
 }
 
 RankingScoreItem::~RankingScoreItem() {
-	/// TODO Auto-generated destructor stub
+    /// TODO Auto-generated destructor stub
 }
 
 bool RankingScoreItem::operator<(const RankingScoreItem& rightItem)   const

@@ -12,13 +12,13 @@ namespace sf1r
 
 CollectionHandler* CollectionManager::kEmptyHandler_ = 0;
 
-std::auto_ptr<CollectionHandler> 
+std::auto_ptr<CollectionHandler>
 CollectionManager::startCollection(const string& collectionName, const std::string& configFileName)
 {
     std::auto_ptr<CollectionHandler> collectionHandler(new CollectionHandler(collectionName));
 
     boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig(new IndexBundleConfiguration(collectionName));
-    boost::shared_ptr<ProductBundleConfiguration> productBundleConfig(new ProductBundleConfiguration(collectionName));	
+    boost::shared_ptr<ProductBundleConfiguration> productBundleConfig(new ProductBundleConfiguration(collectionName));
     boost::shared_ptr<MiningBundleConfiguration> miningBundleConfig(new MiningBundleConfiguration(collectionName));
     boost::shared_ptr<RecommendBundleConfiguration> recommendBundleConfig(new RecommendBundleConfiguration(collectionName));
 
@@ -58,7 +58,7 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
 
     ///createMiningBundle
     bundleName = "MiningBundle-" + collectionName;
-    DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, MiningBundleActivator);	
+    DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, MiningBundleActivator);
     osgiLauncher_.start(miningBundleConfig);
     MiningSearchService* miningSearchService = static_cast<MiningSearchService*>(osgiLauncher_.getService(bundleName, "MiningSearchService"));
     collectionHandler->registerService(miningSearchService);
@@ -68,7 +68,7 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
     {
         ///createRecommendBundle
         bundleName = "RecommendBundle-" + collectionName;
-        DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, RecommendBundleActivator);	
+        DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, RecommendBundleActivator);
         osgiLauncher_.start(recommendBundleConfig);
         RecommendTaskService* recommendTaskService = static_cast<RecommendTaskService*>(osgiLauncher_.getService(bundleName, "RecommendTaskService"));
         collectionHandler->registerService(recommendTaskService);
@@ -88,7 +88,7 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
 void CollectionManager::stopCollection(const std::string& collectionName)
 {
     std::string bundleName = "IndexBundle-" + collectionName;
-    //boost::shared_ptr<BundleConfiguration> bundleConfigPtr = 
+    //boost::shared_ptr<BundleConfiguration> bundleConfigPtr =
     //    osgiLauncher_->getBundleInfo(bundleName)->getBundleContext()->getBundleConfig();
     //config_ = dynamic_cast<IndexBundleConfiguration*>(bundleConfigPtr.get());
 
@@ -128,4 +128,3 @@ CollectionManager::handler_const_iterator CollectionManager::handlerEnd() const
 }
 
 }
-

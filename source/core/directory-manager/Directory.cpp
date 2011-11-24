@@ -10,12 +10,13 @@
 #include "DirectoryTraits.h"
 
 #include <util/filesystem.h>
-
+#include <iostream>
 namespace sf1r {
 namespace directory {
 
-const std::string Directory::kNotName = "";
-const std::string Directory::kCookieFileName = "cookie";
+const std::string Directory::kNotName;
+const std::string Directory::kCookieFileName("cookie");
+const std::string Directory::kSCDLogFileName("scdlogs");
 
 namespace { // {anonymous}
 bool notCookieFile(const bfs::path& path)
@@ -47,7 +48,7 @@ boost::shared_ptr<Directory> Directory::open(const bfs::path& path)
 {
     // not empty dir
     if (bfs::is_directory(path)
-        && bfs::directory_iterator(path) != bfs::directory_iterator())
+            && bfs::directory_iterator(path) != bfs::directory_iterator())
     {
         boost::shared_ptr<Directory> dir(new Directory(path));
         // check error while reading cookie
@@ -75,8 +76,8 @@ bool Directory::validate(const bfs::path& path)
 }
 
 Directory::Directory(const bfs::path& path)
-: path_(path)
-, cookie_()
+    : path_(path)
+    , cookie_()
 {
     if ("." == path_.filename())
     {
@@ -84,6 +85,7 @@ Directory::Directory(const bfs::path& path)
     }
 
     cookie_.reset(new DirectoryCookie(path_ / kCookieFileName));
+    scdLog_.open( scdLogString().c_str(),std::ios_base::app);
 }
 
 Directory::~Directory()
@@ -146,6 +148,20 @@ const std::string Directory::pathString() const
     return path_.file_string() + "/";
 }
 
+void Directory::appendSCD(const std::string& scdName)
+{
+    if(!scdLog_.is_open())
+    {
+        scdLog_.open( scdLogString().c_str(),std::ios_base::app);
+    }
+    scdLog_<<scdName<<std::endl;
+}
+
+const std::string Directory::scdLogString() const
+{
+    return (path_ / kSCDLogFileName).file_string();
+}
+
 bool Directory::copyFrom(const Directory& d)
 {
     if (!cookie_)
@@ -171,14 +187,16 @@ bool Directory::copyFrom(const Directory& d)
 
     // update cookie
     cookie_->setParentName(d.name());
-    cookie_->setUpdateTime(d.getUpdateTime());
+    // make sure the source directory is newer than target
+    // because target directory is always a backup one
+    cookie_->setUpdateTime(d.getUpdateTime()-1);
     cookie_->setValid();
     return flush();
 }
 
 DirectoryGuard::DirectoryGuard(Directory* dir)
-: dir_(dir)
-, good_(false)
+    : dir_(dir)
+    , good_(false)
 {
     if (dir_)
     {

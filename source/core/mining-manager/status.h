@@ -24,7 +24,7 @@ class MiningStatus : public Status
 {
     int status_;
     boost::shared_mutex mutex_;
-//	typedef boost::mutex::scoped_lock scoped_lock;
+//  typedef boost::mutex::scoped_lock scoped_lock;
     std::string file_;
 
 public:

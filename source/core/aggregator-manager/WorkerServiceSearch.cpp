@@ -44,11 +44,11 @@ WorkerService::WorkerService(
 bool WorkerService::getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem)
 {
     DistKeywordSearchResult fakeResultItem;
-	fakeResultItem.distSearchInfo_.actionType_ = DistKeywordSearchInfo::ACTION_FETCH;
+    fakeResultItem.distSearchInfo_.actionType_ = DistKeywordSearchInfo::ACTION_FETCH;
 
     getSearchResult_(actionItem, fakeResultItem);
 
-	resultItem = fakeResultItem.distSearchInfo_;
+    resultItem = fakeResultItem.distSearchInfo_;
     return true;
 }
 

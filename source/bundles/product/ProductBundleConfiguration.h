@@ -22,6 +22,8 @@ public:
 
     std::string collectionName_;
 
+    std::string cron_;
+
     CollectionPath collPath_;
 
     std::set<PropertyConfig, PropertyComp> schema_;

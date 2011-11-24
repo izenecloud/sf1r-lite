@@ -11,16 +11,11 @@
 
 #include <common/SFLogger.h>
 #include <log-manager/LogManager.h>
-#include <string>
-#include <vector>
-#include <set>
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
 
-#include <boost/function.hpp>
 #include <common/type_defs.h>
 #include "query-recommend-submanager/RecommendManager.h"
-#include <configuration-manager/MiningConfig.h>
 #include <util/singleton.h>
 #include <util/cronexpression.h>
 namespace sf1r
@@ -34,8 +29,8 @@ public:
     /*MiningQueryLogHandler(const boost::shared_ptr<MiningManagerConfig>& miningConfig,
     const std::string& collectionName, LogManager* pLogManager,
     const boost::shared_ptr<RecommendManager>& recommendManager,
-    const std::string& workingPath)*/
-    ;
+    const std::string& workingPath);*/
+
     static MiningQueryLogHandler* getInstance()
     {
         return izenelib::util::Singleton<MiningQueryLogHandler>::get();
