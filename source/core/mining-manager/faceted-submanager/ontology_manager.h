@@ -7,27 +7,18 @@
 
 #ifndef SF1R_ONTOLOGY_MANAGER_H_
 #define SF1R_ONTOLOGY_MANAGER_H_
-#include <sdb/IndexSDB.h>
 #include <common/type_defs.h>
 #include <common/ResultType.h>
 #include <configuration-manager/MiningSchema.h>
+#include <configuration-manager/PropertyConfig.h>
+#include <document-manager/Document.h>
 #include "faceted_types.h"
 #include "manmade_doc_category_item.h"
 #include "ontology_searcher.h"
 
-#include <document-manager/Document.h>
-#include <configuration-manager/PropertyConfig.h>
-
-#include <index-manager/IndexManager.h>
 #include <ir/id_manager/IDManager.h>
 
 #include <idmlib/util/file_object.h>
-
-#include <boost/serialization/access.hpp>
-#include <boost/serialization/serialization.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/mpl/and.hpp>
 
 namespace idmlib
 {
@@ -42,11 +33,11 @@ namespace sf1r
 class DocumentManager;
 class LAManager;
 class LabelManager;
+class IndexManager;
 }
 
 NS_FACETED_BEGIN
 using namespace izenelib::ir::idmanager;
-using namespace izenelib::ir::indexmanager;
 typedef std::pair<uint32_t, uint32_t> id2count_t;
 
 class Ontology;
@@ -102,7 +93,6 @@ public:
     
 
     bool DefineDocCategory(const std::vector<ManmadeDocCategoryItem>& items);
-    typedef izenelib::ir::indexmanager::termid_t izene_termid_t;
     int getCoOccurence(uint32_t labelTermId,uint32_t topicTermId);
 private:
     void OutputToFile_(const std::string& file, Ontology* ontology);
@@ -146,7 +136,6 @@ private:
     boost::shared_ptr<LAManager> laManager_;
     idmlib::util::FileObject<uint32_t> max_docid_file_;
     idmlib::util::FileObject<std::vector<std::list<uint32_t> > > docItemListFile_;
-    //idmlib::util::FileObject<std::map<std::pair<izene_termid_t, izene_termid_t>, int> > cooccurenceFile_;
     boost::mutex mutex_;
     std::string scdpath_;
     std::string tgPath_;

@@ -11,7 +11,7 @@
 #include "query-recommend-submanager/QueryRecommendRep.h"
 #include "taxonomy-generation-submanager/TaxonomyGenerationSubManager.h"
 #include "taxonomy-generation-submanager/label_similarity.h"
-#include "taxonomy-generation-submanager/TaxonomyRep.h"
+//#include "taxonomy-generation-submanager/TaxonomyRep.h"
 #include "taxonomy-generation-submanager/TaxonomyInfo.h"
 #include "taxonomy-generation-submanager/LabelManager.h"
 

@@ -10,7 +10,6 @@
 #include <string>
 
 #include <mining-manager/MiningManagerDef.h>
-#include <mining-manager/util/FSUtil.hpp>
 
 #include <configuration-manager/MiningConfig.h>
 #include <configuration-manager/MiningSchema.h>
@@ -25,7 +24,6 @@
 #include <idmlib/util/directory_switcher.h>
 
 #include <boost/bind.hpp>
-#include <boost/serialization/deque.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/tuple/tuple.hpp>

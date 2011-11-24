@@ -14,12 +14,15 @@
 #include <la/common/Term.h>
 
 #include <ir/index_manager/index/LAInput.h>
+#include <index-manager/IndexManager.h>
+
 #include <idmlib/util/idm_analyzer.h>
 
 #include <boost/unordered_map.hpp>
 #include <algorithm>
 
 using namespace sf1r::faceted;
+using namespace izenelib::ir::indexmanager;
 
 bool myfunction (std::pair<uint32_t, uint32_t> p1,std::pair<uint32_t, uint32_t> p2)
 {
