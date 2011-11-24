@@ -109,6 +109,20 @@ void SearchManager::reset_cache(bool rType, docid_t id, const std::map<std::stri
     queryBuilder_->reset_cache();
 }
 
+void SearchManager::reset_all_property_cache()
+{
+    pSorterCache_->setDirty(true);
+    cache_->clear();
+    {
+        NotifyMSG msg;
+        msg.identity = collectionName_;
+        msg.method = "clear_search_cache";
+        MasterNotifierSingleton::get()->notify(msg);
+    }
+
+    queryBuilder_->reset_cache();
+}
+
 /// @brief change working dir by setting new underlying componenets
 void SearchManager::chdir(const boost::shared_ptr<IDManager>& idManager,
                           const boost::shared_ptr<DocumentManager>& documentManager,
