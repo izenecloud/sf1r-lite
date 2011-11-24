@@ -129,17 +129,23 @@ bool IndexTaskService::index(unsigned int numdoc)
 bool IndexTaskService::indexMaster_(unsigned int numdoc)
 {
     // scd sharding and dispatch
-    string scdPath = bundleConfig_->indexSCDPath();
+    std::cout<<"start scd sharding & dispatching "<<std::endl;
+    string scdPath = bundleConfig_->collPath_.getScdPath() + "master";
     if (aggregatorManager_->ScdDispatch(numdoc, bundleConfig_->collectionName_, scdPath))
     {
-        // backup scd of master
+        // backup master
+    }
+    else
+    {
+        std::cout<<"scd dispatch not completed!"<<std::endl;
+        //return false; xxx
     }
 
     // distributed indexing request
-    std::cout<<" start distributed indexing "<<std::endl;
-    bool ret = false;
-    ///aggregatorManager_->distributeRequest("index", numdoc, ret);
-    return ret;
+    std::cout<<"start distributed indexing "<<std::endl;
+    bool ret = true;
+    aggregatorManager_->distributeRequest(bundleConfig_->collectionName_, "index", numdoc, ret);
+    return true;
 }
 
 void IndexTaskService::createPropertyList_()

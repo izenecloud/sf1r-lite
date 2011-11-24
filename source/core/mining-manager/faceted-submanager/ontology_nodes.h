@@ -8,18 +8,13 @@
 #ifndef SF1R_ONTOLOGY_NODES_H_
 #define SF1R_ONTOLOGY_NODES_H_
 
-#include <boost/serialization/access.hpp>
-#include <boost/serialization/serialization.hpp>
 #include <common/type_defs.h>
 #include "faceted_types.h"
 #include "ontology_node_value.h"
 NS_FACETED_BEGIN
 
-
 class OntologyNodes
 {
-
-
 public:
     typedef std::list<CategoryIdType> ChildrenType;
     OntologyNodes();

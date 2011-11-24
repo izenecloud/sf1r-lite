@@ -10,8 +10,6 @@
 
 #include <stack>
 #include <queue>
-#include <boost/serialization/access.hpp>
-#include <boost/serialization/serialization.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <common/type_defs.h>
 #include "faceted_types.h"

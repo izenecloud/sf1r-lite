@@ -6,6 +6,7 @@
  */
 
 #include "MiningQueryLogHandler.h"
+#include "query-recommend-submanager/RecommendManager.h"
 
 #include <util/scheduler.h>
 
@@ -30,7 +31,9 @@ void MiningQueryLogHandler::SetParam(uint32_t wait_sec, uint32_t days)
     days_ = days;
 }
 
-void MiningQueryLogHandler::addCollection(const std::string& name, const boost::shared_ptr<RecommendManager>& recommendManager)
+void MiningQueryLogHandler::addCollection(
+        const std::string& name, 
+        const boost::shared_ptr<RecommendManager>& recommendManager)
 {
     boost::mutex::scoped_lock lock(mtx_);
     recommendManagerList_.insert(std::make_pair(name, recommendManager));

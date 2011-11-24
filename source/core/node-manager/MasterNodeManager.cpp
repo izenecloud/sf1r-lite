@@ -70,8 +70,7 @@ void MasterNodeManager::stop()
 
 void MasterNodeManager::process(ZooKeeperEvent& zkEvent)
 {
-    std::cout << "[MasterNodeManager] "<<zkEvent.toString();
-    std::cout << "Master state: " << state2string(masterState_) << std::endl;
+    std::cout << "[MasterNodeManager] "<<state2string(masterState_)<<" "<<zkEvent.toString();
     // xxx, handle all events here?
 
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
@@ -299,8 +298,8 @@ int MasterNodeManager::detectWorkers()
     else
     {
         masterState_ = MASTER_STATE_STARTING_WAIT_WORKERS;
-        std::cout<<"[MasterNodeManager] waiting Workers to join... (detected "
-                 <<detected<<", good "<<good<<", all "<<topology_.shardNum_<<")"<<std::endl;
+        std::cout<<"[MasterNodeManager] waiting for Workers: detected "<<detected
+                 <<" (good "<<good<<"), all "<<topology_.shardNum_<<std::endl;
     }
 
     // update config
@@ -353,7 +352,7 @@ void MasterNodeManager::detectReplicaSet(const std::string& zpath)
         {
             // try failover
             failover(pworkerNode);
-         }
+        }
     }
 }
 
@@ -513,7 +512,7 @@ void MasterNodeManager::registerSearchServer()
     {
         serverRealPath_ = zookeeper_->getLastCreatedNodePath();
 
-        std::cout << "[MasterNodeManager] Master ready to serve -- "<<serverRealPath_<<std::endl;//
+        // std::cout << "[MasterNodeManager] Master ready to serve -- "<<serverRealPath_<<std::endl;//
     }
 }
 
@@ -526,7 +525,7 @@ void MasterNodeManager::deregisterSearchServer()
 
 void MasterNodeManager::resetAggregatorConfig()
 {
-    std::cout << "[MasterNodeManager::resetAggregatorConfig] for "<<aggregatorList_.size()<<" aggregators"<<std::endl;
+    std::cout << "[MasterNodeManager] set config for "<<aggregatorList_.size()<<" aggregators"<<std::endl;
 
     aggregatorConfig_.reset();
 
@@ -541,7 +540,7 @@ void MasterNodeManager::resetAggregatorConfig()
         }
     }
 
-    std::cout << aggregatorConfig_.toString()<<std::endl;
+    std::cout << aggregatorConfig_.toString();
 
     // set aggregator configuration
     std::vector<boost::shared_ptr<AggregatorManager> >::iterator agg_it;

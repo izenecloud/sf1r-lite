@@ -15,6 +15,9 @@
 #include <util/profiler/ProfilerGroup.h>
 #include <license-manager/LicenseManager.h>
 #include <la/analyzer/MultiLanguageAnalyzer.h>
+#include <am/sequence_file/ssfr.h>
+
+#include <langid/langid.h>
 
 #include <fstream>
 #include <boost/archive/xml_oarchive.hpp>

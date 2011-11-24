@@ -17,7 +17,8 @@ namespace sf1r
 class ItemLogger : public LogManagerSingleton<ItemLogger>
 {
 public:
-    enum Column {
+    enum Column
+    {
         OrderId, // reference the column "Id" in OrderLogger
         ItemId,
         Price,

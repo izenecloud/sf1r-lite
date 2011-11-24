@@ -15,22 +15,28 @@
 #include <mining-manager/MiningManagerDef.h>
 #include <common/PropertyTermInfo.h>
 #include <configuration-manager/MiningConfig.h>
-#include <string>
-#include <vector>
 #include <boost/shared_ptr.hpp>
 
-#include <am/cccr_hash/cccr_hash.h>
-#include <am/tokyo_cabinet/tc_hash.h>
 #include <common/type_defs.h>
 
-#include "LabelManager.h"
 #include <am/3rdparty/rde_hash.h>
-#include <idmlib/util/idm_analyzer.h>
 #include <idmlib/concept-clustering/concept_clustering.h>
+
+#include <string>
+#include <vector>
+
+namespace idmlib
+{
+namespace util
+{
+class IDMAnalyzer;
+}
+}
 
 namespace sf1r
 {
 
+class LabelManager;
 class TaxonomyGenerationSubManager : public boost::noncopyable
 {
 

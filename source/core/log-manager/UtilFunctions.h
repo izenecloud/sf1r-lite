@@ -6,7 +6,8 @@
 #include <string>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-namespace sf1r {
+namespace sf1r
+{
 
 template <typename T>
 std::string toBytes(const T& val)

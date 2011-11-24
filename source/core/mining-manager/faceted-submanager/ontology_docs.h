@@ -10,9 +10,6 @@
 
 #include <am/tokyo_cabinet/tc_hash.h>
 
-#include <boost/serialization/access.hpp>
-#include <boost/serialization/serialization.hpp>
-
 #include <common/type_defs.h>
 #include <common/ResultType.h>
 #include "faceted_types.h"
@@ -69,16 +66,12 @@ private:
     void ProcessOnCategory_(const std::vector<OntologyDocsOp>& changes_on_category);
 
 
-
-
 private:
     bool is_open_;
     std::string dir_;
     Cid2DocType* cid2doc_;
     std::vector<CidListType> doc2cid_;
     std::vector<OntologyDocsOp> changes_;
-
-
 };
 NS_FACETED_END
 #endif

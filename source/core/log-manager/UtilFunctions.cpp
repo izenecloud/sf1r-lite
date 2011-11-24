@@ -2,7 +2,8 @@
 
 #include <time.h>
 
-namespace sf1r {
+namespace sf1r
+{
 
 time_t createTimeStamp()
 {

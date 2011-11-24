@@ -9,21 +9,23 @@
 #include <util/ustring/UString.h>
 #include <util/ustring/algo.hpp>
 
-namespace sf1r {
+namespace sf1r
+{
 
-    class LogAnalysis  {
+class LogAnalysis
+{
 
-        public:
+public:
 
-            static void getRecentKeywordList(const std::string& collectionName, uint32_t limit, std::vector<izenelib::util::UString>& recentKeywords);
+    static void getRecentKeywordList(const std::string& collectionName, uint32_t limit, std::vector<izenelib::util::UString>& recentKeywords);
 
 
-        private:
+private:
 
-            LogAnalysis() {}
+    LogAnalysis() {}
 
-    };
+};
 
-} 
+}
 
-#endif 
+#endif
