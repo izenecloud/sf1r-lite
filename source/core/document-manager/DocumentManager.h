@@ -20,15 +20,10 @@
 #include "Document.h"
 
 #include <configuration-manager/PropertyConfig.h>
+
 #include <util/IdMapper.h>
-
-#include <ir/id_manager/IDManager.h>
-
-#include <am/sequence_file/ssfr.h>
-
 #include <util/ustring/UString.h>
-
-#include <langid/langid.h>
+#include <cache/IzeneCache.h>
 
 #include <string>
 #include <set>
@@ -39,6 +34,15 @@
 #include <boost/threadpool.hpp>
 #include <boost/dynamic_bitset.hpp>
 
+namespace ilplib
+{
+namespace langid
+{
+class Analyzer;
+class Knowledge;
+class Factory;
+}
+}
 namespace sf1r
 {
 

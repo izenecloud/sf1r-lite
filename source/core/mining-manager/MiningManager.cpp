@@ -1,11 +1,6 @@
-/// @details
-/// - Log
-///     - 2009.08.27 change variable names. (topKDocs_ -> topKDocs_ , topKDocItemList_ -> topKDocItemList_) by Dohyun Yun
-///     - 2009.11.25 refine the code writing -Jinglei
-
 #include <la-manager/LAManager.h>
 #include <configuration-manager/PropertyConfig.h>
-#include <document-manager/Document.h>
+#include <document-manager/DocumentManager.h>
 #include "MiningManager.h"
 #include "MiningQueryLogHandler.h"
 #include "duplicate-detection-submanager/DupDetector2.h"
@@ -22,12 +17,9 @@
 
 #include "similarity-detection-submanager/PrunedSortedTermInvertedIndexReader.h"
 #include "similarity-detection-submanager/DocWeightListPrunedInvertedIndexReader.h"
-#include "similarity-detection-submanager/SemanticKernel.h"
 #include "similarity-detection-submanager/SimilarityIndex.h"
-#include "faceted-submanager/ontology_manager.h"
-#include <idmlib/tdt/integrator.h>
-#include <idmlib/util/container_switch.h>
 
+#include "faceted-submanager/ontology_manager.h"
 #include "faceted-submanager/ontology_rep_item.h"
 #include "faceted-submanager/ontology_rep.h"
 #include "faceted-submanager/group_manager.h"
@@ -41,6 +33,8 @@
 #include <search-manager/SearchManager.h>
 #include <index-manager/IndexManager.h>
 
+#include <idmlib/tdt/integrator.h>
+#include <idmlib/util/container_switch.h>
 #include <idmlib/util/idm_analyzer.h>
 #include <idmlib/semantic_space/esa/DocumentRepresentor.h>
 #include <idmlib/semantic_space/esa/ExplicitSemanticInterpreter.h>
@@ -86,21 +80,29 @@ namespace bfs = boost::filesystem;
 std::string MiningManager::system_resource_path_;
 std::string MiningManager::system_working_path_;
 
-MiningManager::MiningManager(const std::string& collectionDataPath, const std::string& queryDataPath,
-                             const boost::shared_ptr<LAManager>& laManager,
-                             const boost::shared_ptr<DocumentManager>& documentManager,
-                             const boost::shared_ptr<IndexManager>& index_manager,
-                             const boost::shared_ptr<SearchManager>& searchManager,
-                             const boost::shared_ptr<IDManager>& idManager,
-                             const std::string& collectionName,
-                             const schema_type& schema,
-                             const MiningConfig& miningConfig,
-                             const MiningSchema& miningSchema
-                            )
-        :collectionDataPath_(collectionDataPath), queryDataPath_(queryDataPath)
-        ,collectionName_(collectionName), schema_(schema), miningConfig_(miningConfig), mining_schema_(miningSchema)
-        , laManager_(laManager), analyzer_(NULL), kpe_analyzer_(NULL)
-        , document_manager_(documentManager), index_manager_(index_manager)
+MiningManager::MiningManager(
+    const std::string& collectionDataPath, 
+    const std::string& queryDataPath,
+    const boost::shared_ptr<LAManager>& laManager,
+    const boost::shared_ptr<DocumentManager>& documentManager,
+    const boost::shared_ptr<IndexManager>& index_manager,
+    const boost::shared_ptr<SearchManager>& searchManager,
+    const boost::shared_ptr<IDManager>& idManager,
+    const std::string& collectionName,
+    const schema_type& schema,
+    const MiningConfig& miningConfig,
+    const MiningSchema& miningSchema)
+        :collectionDataPath_(collectionDataPath)
+        , queryDataPath_(queryDataPath)
+        , collectionName_(collectionName)
+        , schema_(schema)
+        , miningConfig_(miningConfig)
+        , mining_schema_(miningSchema)
+        , laManager_(laManager)
+        , analyzer_(NULL)
+        , kpe_analyzer_(NULL)
+        , document_manager_(documentManager)
+        , index_manager_(index_manager)
         , searchManager_(searchManager)
         , tgInfo_(NULL)
         , idManager_(idManager)
@@ -194,10 +196,6 @@ bool MiningManager::open()
             return false;
         }
 
-//       id_path_ = prefix_path + "/id";
-//       FSUtil::createDir(id_path_);
-//       doIDManagerInit_();
-
         /** TG */
         if ( mining_schema_.tg_enable )
         {
@@ -282,22 +280,6 @@ bool MiningManager::open()
         {
             faceted_path_ = prefix_path + "/faceted";
             FSUtil::createDir(faceted_path_);
-/*
-            std::string reader_dir = tg_label_path_+"/labeldistribute";
-            boost::shared_ptr<LabelManager::LabelDistributeSSFType::ReaderType> reader(new LabelManager::LabelDistributeSSFType::ReaderType(reader_dir));
-            faceted_.reset(new faceted::OntologyManager(faceted_path_,
-                           tg_label_path_,
-                           collectionName_,
-                           schema_,
-                           mining_schema_,
-                           document_manager_,
-                           analyzer_,
-                           index_manager_,
-                           labelManager_,
-                           idManager_,
-                           reader,
-                           laManager_));
-*/
             faceted_.reset(new faceted::OntologyManager(faceted_path_, document_manager_, mining_schema_.faceted_properties, analyzer_));
             faceted_->Open();
 
@@ -914,9 +896,6 @@ bool MiningManager::computeSimilarity_(izenelib::ir::indexmanager::IndexReader* 
             else assert(false);
             property_ids[i] = property_config.propertyId_;
         }
-        //SemanticKernel simBuilders(sim_path_+"/semantic",document_manager_, index_manager_, laManager_, idManager_, searchManager_);
-        //simBuilders.setSchema( property_ids, property_names, "Title", "Source");
-        //simBuilders.doSearch();
 
         // customize the concrete reader
         typedef sim::PrunedSortedTermInvertedIndexReader base_reader_type;
