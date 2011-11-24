@@ -122,7 +122,7 @@ bool SourceCount::updateMultiRow(const vector<SourceCount>& row_list)
 }
 
 bool SourceCount::getMultiSlice(
-        map<string, SourceCount>& row_map,
+        vector<SourceCount>& row_list,
         const vector<string>& key_list,
         const string& start,
         const string& finish,
@@ -153,8 +153,9 @@ bool SourceCount::getMultiSlice(
         for (map<string, vector<ColumnOrSuperColumn> >::const_iterator mit = raw_column_map.begin();
                 mit != raw_column_map.end(); ++mit)
         {
-            row_map[mit->first] = SourceCount(mit->first);
-            SourceCount& source_count = row_map[mit->first];
+            if (mit->second.empty()) continue;
+            row_list.push_back(SourceCount(mit->first));
+            SourceCount& source_count = row_list.back();
             for (vector<ColumnOrSuperColumn>::const_iterator vit = mit->second.begin();
                     vit != mit->second.end(); ++vit)
             {

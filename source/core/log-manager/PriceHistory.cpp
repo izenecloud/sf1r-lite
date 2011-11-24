@@ -126,7 +126,7 @@ bool PriceHistory::updateMultiRow(const vector<PriceHistory>& row_list)
 }
 
 bool PriceHistory::getMultiSlice(
-        map<string, PriceHistory>& row_map,
+        vector<PriceHistory>& row_list,
         const vector<string>& key_list,
         const string& start,
         const string& finish,
@@ -157,8 +157,9 @@ bool PriceHistory::getMultiSlice(
         for (map<string, vector<ColumnOrSuperColumn> >::const_iterator mit = raw_column_map.begin();
                 mit != raw_column_map.end(); ++mit)
         {
-            row_map[mit->first] = PriceHistory(mit->first);
-            PriceHistory& price_history = row_map[mit->first];
+            if (mit->second.empty()) continue;
+            row_list.push_back(PriceHistory(mit->first));
+            PriceHistory& price_history = row_list.back();
             for (vector<ColumnOrSuperColumn>::const_iterator vit = mit->second.begin();
                     vit != mit->second.end(); ++vit)
             {

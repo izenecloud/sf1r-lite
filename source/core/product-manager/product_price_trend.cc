@@ -5,6 +5,7 @@
 
 #include <algorithm>
 
+using namespace std;
 using namespace libcassandra;
 using namespace boost::posix_time;
 using izenelib::util::UString;
@@ -12,7 +13,7 @@ using izenelib::util::UString;
 namespace sf1r
 {
 
-ProductPriceTrend::ProductPriceTrend(const std::string& collection_name, const std::string& dir, const std::string& category_property, const std::string& source_property)
+ProductPriceTrend::ProductPriceTrend(const string& collection_name, const string& dir, const string& category_property, const string& source_property)
     : collection_name_(collection_name)
     , top_price_cuts_file_(dir + "/top_price_cuts.data")
     , category_property_(category_property)
@@ -27,13 +28,21 @@ ProductPriceTrend::~ProductPriceTrend()
 
 void ProductPriceTrend::Init()
 {
-    std::ifstream ifs(top_price_cuts_file_.c_str());
-    if (!ifs.eof())
+    ifstream ifs(top_price_cuts_file_.c_str());
+    if (!ifs.fail())
     {
         boost::archive::binary_iarchive ia(ifs);
         ia >> *this;
     }
-    ifs.close();
+
+    if (category_tpc_.empty())
+    {
+        category_tpc_.resize(3);
+    }
+    if (source_tpc_.empty())
+    {
+        source_tpc_.resize(3);
+    }
 }
 
 bool ProductPriceTrend::Finish()
@@ -42,12 +51,21 @@ bool ProductPriceTrend::Finish()
     return Flush_();
 }
 
-bool ProductPriceTrend::Insert(const std::string& docid, const ProductPrice& price, time_t timestamp)
+bool ProductPriceTrend::Insert(const string& docid, const ProductPrice& price, time_t timestamp, const string& category, const string& source)
 {
-    std::string key;
+    string key;
     ParseDocid_(key, docid);
     price_history_cache_.push_back(PriceHistory(key));
     price_history_cache_.back().insert(timestamp, price);
+
+    if (!category.empty() && price.value.first > 0)
+    {
+        category_map_[docid] = make_pair(price.value.first, category);
+    }
+    if (!source.empty() && price.value.first > 0)
+    {
+        source_map_[docid] = make_pair(price.value.first, source);
+    }
 
     if (price_history_cache_.size() == 10000)
     {
@@ -56,127 +74,208 @@ bool ProductPriceTrend::Insert(const std::string& docid, const ProductPrice& pri
     return true;
 }
 
-bool ProductPriceTrend::Update(const std::string& category, const std::string& source, uint32_t num_docid, const std::string& str_docid, const ProductPrice& from_price, const ProductPrice& to_price, time_t timestamp)
-{
-    bool ret = true;
-
-    std::string key;
-    ParseDocid_(key, str_docid);
-    price_history_cache_.push_back(PriceHistory(key));
-    price_history_cache_.back().insert(timestamp, to_price);
-
-    float price_cut = from_price.value.first > 0 ? to_price.value.first / from_price.value.first : 1;
-    if (!category.empty())
-    {
-        ret = UpdateTopPriceCuts_(category_top_map_[category], price_cut, timestamp, num_docid) && ret;
-    }
-    if (!source.empty())
-    {
-        ret = UpdateTopPriceCuts_(source_top_map_[source], price_cut, timestamp, num_docid) && ret;
-    }
-
-    if (price_history_cache_.size() == 10000)
-    {
-        ret = Flush_() && ret;
-    }
-
-    return ret;
-}
-
 bool ProductPriceTrend::CronJob()
 {
     //TODO
     return true;
 }
 
-bool ProductPriceTrend::UpdateTopPriceCuts_(TopPriceCutMap::mapped_type& top_price_cuts, float price_cut, time_t timestamp, uint32_t docid)
+void ProductPriceTrend::UpdateTPCMap_(TopPriceCutMap& tpc_map, const vector<PriceHistory>& row_list, const map<string, pair<ProductPriceType, string> >& cache_map)
 {
-    std::vector<float> price_cuts(3);
-    if (!GetPriceCut_(price_cuts, docid)) return false;
-    if (top_price_cuts.empty())
-    {
-        top_price_cuts.resize(3);
-    }
-    for (uint32_t i = 0; i < 3; i++)
-    {
-        price_cuts[i] = price_cuts[i] == 0 ? 1 : price_cuts[i] * price_cut;
+    uint32_t i = 0;
 
-        top_price_cuts[i].insert(std::make_pair(price_cuts[i], docid));
-        if (top_price_cuts[i].size() > 20)
+    while (tpc_map.size() < 50 && i < row_list.size())
+    {
+        string docid;
+        StripDocid_(docid, row_list[i].getDocId());
+        const pair<time_t, ProductPrice>& price_record = *(row_list[i].getPriceHistory().begin());
+        const pair<ProductPriceType, string>& cache_record = cache_map.find(docid)->second;
+
+        float price_cut;
+        double old_price = price_record.second.value.first;
+        if (old_price == 0)
         {
-            std::multimap<float, uint32_t>::iterator it(top_price_cuts[i].end());
-            top_price_cuts[i].erase(--it);
+            price_cut = 1;
         }
+        else
+        {
+            price_cut = cache_record.first / old_price;
+        }
+
+        tpc_map[cache_record.second].insert(make_pair(price_cut, make_pair(price_record.first, docid)));
+        i++;
     }
-    return SavePriceCut_(price_cuts, docid);
-}
 
-bool ProductPriceTrend::GetPriceCut_(std::vector<float>& price_cuts, uint32_t docid) const
-{
-    //TODO
-    return true;
-}
+    for (; i < row_list.size(); i++)
+    {
+        string docid;
+        StripDocid_(docid, row_list[i].getDocId());
+        const pair<time_t, ProductPrice>& price_record = *(row_list[i].getPriceHistory().begin());
+        const pair<ProductPriceType, string>& cache_record = cache_map.find(docid)->second;
 
-bool ProductPriceTrend::SavePriceCut_(const std::vector<float>& price_cuts, uint32_t docid) const
-{
-    //TODO
-    return true;
+        float price_cut;
+        double old_price = price_record.second.value.first;
+        if (old_price == 0)
+        {
+            price_cut = 1;
+        }
+        else
+        {
+            price_cut = cache_record.first / old_price;
+        }
+
+        tpc_map[cache_record.second].insert(make_pair(price_cut, make_pair(price_record.first, docid)));
+
+        TopPriceCutMap::mapped_type::iterator it(tpc_map[cache_record.second].end());
+        tpc_map[cache_record.second].erase(--it);
+    }
 }
 
 bool ProductPriceTrend::Flush_()
 {
-    bool ret = PriceHistory::updateMultiRow(price_history_cache_);
+    bool ret = true;
+    time_t now = createTimeStamp();
+
+    if (!category_map_.empty())
+    {
+        vector<string> docid_list, key_list;
+        getKeyList(docid_list, category_map_);
+        ParseDocidList_(key_list, docid_list);
+
+        string from_str(serializeLong(now - 365 * 86400000000L));
+
+        vector<PriceHistory> row_list;
+        if (PriceHistory::getMultiSlice(row_list, key_list, from_str, "", 1))
+        {
+            UpdateTPCMap_(category_tpc_[0], row_list, category_map_);
+        }
+        else
+        {
+            ret = false;
+        }
+
+        from_str.assign(serializeLong(now - 183 * 86400000000L));
+        row_list.clear();
+        if (PriceHistory::getMultiSlice(row_list, key_list, from_str, "", 1))
+        {
+            UpdateTPCMap_(category_tpc_[0], row_list, category_map_);
+        }
+        else
+        {
+            ret = false;
+        }
+
+        from_str.assign(serializeLong(now - 7 * 86400000000L));
+        row_list.clear();
+        if (PriceHistory::getMultiSlice(row_list, key_list, from_str, "", 1))
+        {
+            UpdateTPCMap_(category_tpc_[0], row_list, category_map_);
+        }
+        else
+        {
+            ret = false;
+        }
+
+        category_map_.clear();
+    }
+
+    if (!source_map_.empty())
+    {
+        vector<string> docid_list, key_list;
+        getKeyList(docid_list, source_map_);
+        ParseDocidList_(key_list, docid_list);
+
+        string from_str(serializeLong(now - 365 * 86400000000L));
+
+        vector<PriceHistory> row_list;
+        if (PriceHistory::getMultiSlice(row_list, key_list, from_str, "", 1))
+        {
+            UpdateTPCMap_(source_tpc_[0], row_list, source_map_);
+        }
+        else
+        {
+            ret = false;
+        }
+
+        from_str.assign(serializeLong(now - 183 * 86400000000L));
+        row_list.clear();
+        if (PriceHistory::getMultiSlice(row_list, key_list, from_str, "", 1))
+        {
+            UpdateTPCMap_(source_tpc_[0], row_list, source_map_);
+        }
+        else
+        {
+            ret = false;
+        }
+
+        from_str.assign(serializeLong(now - 7 * 86400000000L));
+        row_list.clear();
+        if (PriceHistory::getMultiSlice(row_list, key_list, from_str, "", 1))
+        {
+            UpdateTPCMap_(source_tpc_[0], row_list, source_map_);
+        }
+        else
+        {
+            ret = false;
+        }
+
+        source_map_.clear();
+    }
+
+    if (!PriceHistory::updateMultiRow(price_history_cache_))
+    {
+        ret = false;
+    }
     price_history_cache_.clear();
+
     return ret;
 }
 
 void ProductPriceTrend::Save_()
 {
-    std::ofstream ofs(top_price_cuts_file_.c_str());
+    ofstream ofs(top_price_cuts_file_.c_str());
     boost::archive::binary_oarchive oa(ofs);
     oa << *this;
-    ofs.close();
 }
 
 bool ProductPriceTrend::GetMultiPriceHistory(
         PriceHistoryList& history_list,
-        const std::vector<std::string>& docid_list,
+        const vector<string>& docid_list,
         time_t from_tt,
         time_t to_tt,
-        std::string& error_msg)
+        string& error_msg)
 {
-    std::vector<std::string> key_list;
+    vector<string> key_list;
     ParseDocidList_(key_list, docid_list);
 
-    std::string from_str(from_tt == -1 ? "" : serializeLong(from_tt));
-    std::string to_str(to_tt == -1 ? "" : serializeLong(to_tt));
+    string from_str(from_tt == -1 ? "" : serializeLong(from_tt));
+    string to_str(to_tt == -1 ? "" : serializeLong(to_tt));
 
-    std::map<std::string, PriceHistory> row_map;
-    if (!PriceHistory::getMultiSlice(row_map, key_list, from_str, to_str))
+    vector<PriceHistory> row_list;
+    if (!PriceHistory::getMultiSlice(row_list, key_list, from_str, to_str))
     {
         error_msg = "Failed retrieving price histories from Cassandra";
         return false;
     }
 
-    for (std::map<std::string, PriceHistory>::const_iterator it = row_map.begin();
-            it != row_map.end(); ++it)
+    for (vector<PriceHistory>::const_iterator it = row_list.begin();
+            it != row_list.end(); ++it)
     {
+        if (it->getPriceHistory().empty()) continue;
         PriceHistoryItem history_item;
-        for (PriceHistory::PriceHistoryType::const_iterator hit = it->second.getPriceHistory().begin();
-                hit != it->second.getPriceHistory().end(); ++hit)
+        for (PriceHistory::PriceHistoryType::const_iterator hit = it->getPriceHistory().begin();
+                hit != it->getPriceHistory().end(); ++hit)
         {
-            history_item.push_back(make_pair(std::string(), hit->second.value));
+            history_item.push_back(make_pair(string(), hit->second.value));
             history_item.back().first.assign(to_iso_string(
                         from_time_t(hit->first / 1000000 - timezone)
                         + microseconds(hit->first % 1000000)));
         }
-        if (!history_item.empty())
-        {
-            history_list.push_back(make_pair(std::string(), PriceHistoryItem()));
-            StripDocid_(history_list.back().first, it->first);
-            history_list.back().second.swap(history_item);
-        }
+        history_list.push_back(make_pair(string(), PriceHistoryItem()));
+        StripDocid_(history_list.back().first, it->getDocId());
+        history_list.back().second.swap(history_item);
     }
+
     if (history_list.empty())
     {
         error_msg = "Have not got any valid docid";
@@ -188,39 +287,38 @@ bool ProductPriceTrend::GetMultiPriceHistory(
 
 bool ProductPriceTrend::GetMultiPriceRange(
         PriceRangeList& range_list,
-        const std::vector<std::string>& docid_list,
+        const vector<string>& docid_list,
         time_t from_tt,
         time_t to_tt,
-        std::string& error_msg)
+        string& error_msg)
 {
-    std::vector<std::string> key_list;
+    vector<string> key_list;
     ParseDocidList_(key_list, docid_list);
 
-    std::string from_str(from_tt == -1 ? "" : serializeLong(from_tt));
-    std::string to_str(to_tt == -1 ? "" : serializeLong(to_tt));
+    string from_str(from_tt == -1 ? "" : serializeLong(from_tt));
+    string to_str(to_tt == -1 ? "" : serializeLong(to_tt));
 
-    std::map<std::string, PriceHistory> row_map;
-    if (!PriceHistory::getMultiSlice(row_map, key_list, from_str, to_str))
+    vector<PriceHistory> row_list;
+    if (!PriceHistory::getMultiSlice(row_list, key_list, from_str, to_str))
     {
         error_msg = "Failed retrieving price histories from Cassandra";
         return false;
     }
 
-    for (std::map<std::string, PriceHistory>::const_iterator it = row_map.begin();
-            it != row_map.end(); ++it)
+    for (vector<PriceHistory>::const_iterator it = row_list.begin();
+            it != row_list.end(); ++it)
     {
+        if (it->getPriceHistory().empty()) continue;
         ProductPrice range_item;
-        for (PriceHistory::PriceHistoryType::const_iterator hit = it->second.getPriceHistory().begin();
-                hit != it->second.getPriceHistory().end(); ++hit)
+        for (PriceHistory::PriceHistoryType::const_iterator hit = it->getPriceHistory().begin();
+                hit != it->getPriceHistory().end(); ++hit)
         {
             range_item += hit->second;
         }
-        if (range_item.Valid())
-        {
-            range_list.push_back(make_pair(std::string(), range_item.value));
-            StripDocid_(range_list.back().first, it->first);
-        }
+        range_list.push_back(make_pair(string(), range_item.value));
+        StripDocid_(range_list.back().first, it->getDocId());
     }
+
     if (range_list.empty())
     {
         error_msg = "Have not got any valid docid";
@@ -230,38 +328,46 @@ bool ProductPriceTrend::GetMultiPriceRange(
     return true;
 }
 
-void ProductPriceTrend::ParseDocid_(std::string& dest, const std::string& src) const
+void ProductPriceTrend::ParseDocid_(string& dest, const string& src) const
 {
     if (!collection_name_.empty())
+    {
         dest.assign(collection_name_ + "_" + src);
+    }
     else
+    {
         dest.assign(src);
+    }
 }
 
-void ProductPriceTrend::StripDocid_(std::string& dest, const std::string& src) const
+void ProductPriceTrend::StripDocid_(string& dest, const string& src) const
 {
     if (!collection_name_.empty() && src.length() > collection_name_.length() + 1)
+    {
         dest.assign(src.substr(collection_name_.length() + 1));
+    }
     else
+    {
         dest.assign(src);
+    }
 }
 
-void ProductPriceTrend::ParseDocidList_(std::vector<std::string>& dest, const std::vector<std::string>& src) const
+void ProductPriceTrend::ParseDocidList_(vector<string>& dest, const vector<string>& src) const
 {
     for (uint32_t i = 0; i < src.size(); i++)
     {
         if (src[i].empty()) continue;
-        dest.push_back(std::string());
+        dest.push_back(string());
         ParseDocid_(dest.back(), src[i]);
     }
 }
 
-void ProductPriceTrend::StripDocidList_(std::vector<std::string>& dest, const std::vector<std::string>& src) const
+void ProductPriceTrend::StripDocidList_(vector<string>& dest, const vector<string>& src) const
 {
     for (uint32_t i = 0; i < src.size(); i++)
     {
         if (src[i].empty()) continue;
-        dest.push_back(std::string());
+        dest.push_back(string());
         StripDocid_(dest.back(), src[i]);
     }
 }

@@ -12,7 +12,8 @@ class PriceHistory;
 
 class ProductPriceTrend
 {
-    typedef std::map<std::string, std::vector<std::multimap<float, uint32_t> > > TopPriceCutMap;
+    // map<"docid", multimap<"price-cut", pair<"start time", "property value"> > >
+    typedef std::map<std::string, std::multimap<float, std::pair<time_t, std::string> > > TopPriceCutMap;
 
 public:
     ProductPriceTrend(const std::string& collection_name, const std::string& dir, const std::string& category_property, const std::string& source_property);
@@ -23,9 +24,7 @@ public:
 
     bool Finish();
 
-    bool Insert(const std::string& docid, const ProductPrice& price, time_t timestamp);
-
-    bool Update(const std::string& category, const std::string& source, uint32_t num_docid, const std::string& str_docid, const ProductPrice& from_price, const ProductPrice& to_price, time_t timestamp);
+    bool Insert(const std::string& docid, const ProductPrice& price, time_t timestamp, const std::string& category = "", const std::string& source = "");
 
     bool GetMultiPriceHistory(
             PriceHistoryList& history_list,
@@ -53,11 +52,7 @@ private:
 
     void Save_();
 
-    bool GetPriceCut_(std::vector<float>& price_cuts, uint32_t docid) const;
-
-    bool SavePriceCut_(const std::vector<float>& price_cuts, uint32_t docid) const;
-
-    bool UpdateTopPriceCuts_(TopPriceCutMap::mapped_type& top_price_cuts, float price_cut, time_t timestamp, uint32_t docid);
+    void UpdateTPCMap_(TopPriceCutMap& tpc_map, const vector<PriceHistory>& row_list, const map<string, pair<ProductPriceType, string> >& cache_map);
 
     void ParseDocid_(std::string& dest, const std::string& src) const;
 
@@ -72,8 +67,8 @@ private:
     template <typename Archive>
     void serialize( Archive & ar, const unsigned int version )
     {
-        ar & category_top_map_;
-        ar & source_top_map_;
+        ar & category_tpc_;
+        ar & source_tpc_;
     }
 
 private:
@@ -82,8 +77,11 @@ private:
     std::string category_property_;
     std::string source_property_;
     std::vector<PriceHistory> price_history_cache_;
-    TopPriceCutMap category_top_map_;
-    TopPriceCutMap source_top_map_;
+    std::vector<TopPriceCutMap> category_tpc_;
+    std::vector<TopPriceCutMap> source_tpc_;
+    // map<"docid", pair<"low price", "property value"> >
+    std::map<std::string, std::pair<ProductPriceType, std::string> > category_map_;
+    std::map<std::string, std::pair<ProductPriceType, std::string> > source_map_;
 };
 
 }

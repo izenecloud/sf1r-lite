@@ -350,7 +350,7 @@ bool IndexTaskService::buildCollection(unsigned int numdoc)
     bfs::create_directory(bkDir);
     LOG(INFO) << "moving " << scdList.size() << " SCD files to directory " << bkDir;
     const boost::shared_ptr<Directory>& currentDir = directoryRotator_.currentDirectory();
-	
+
     for (scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
     {
         try
@@ -1586,10 +1586,10 @@ void IndexTaskService::value2SCDDoc(const Value& value, SCDDoc& scddoc)
 size_t IndexTaskService::getTotalScdSize_()
 {
     string scdPath = bundleConfig_->indexSCDPath();
-	
+
     ScdParser parser(bundleConfig_->encoding_);
-	
-    size_t sizeInBytes = 0;	
+
+    size_t sizeInBytes = 0;
     // search the directory for files
     static const bfs::directory_iterator kItrEnd;
     for (bfs::directory_iterator itr(scdPath); itr != kItrEnd; ++itr)
@@ -1602,7 +1602,7 @@ size_t IndexTaskService::getTotalScdSize_()
                 parser.load(scdPath+fileName);
                 sizeInBytes += parser.getFileSize();
             }
-	}
+        }
     }
     return sizeInBytes/(1024*1024);
 }
@@ -1668,7 +1668,7 @@ bool IndexTaskService::recoverSCD_()
         = directoryRotator_.nextDirectory();
 
     if (!(next && currentDir->name() != next->name()))
-	return false;
+        return false;
 
     std::ifstream scdLogInput;
     scdLogInput.open(currentDir->scdLogString().c_str());
@@ -1698,7 +1698,7 @@ bool IndexTaskService::recoverSCD_()
     // search the directory for files
     static const bfs::directory_iterator kItrEnd;
     bfs::path scdIndexDir = bfs::path(bundleConfig_->indexSCDPath());
-	
+
     for (bfs::directory_iterator itr(scdBkDir); itr != kItrEnd; ++itr)
     {
         if (bfs::is_regular_file(itr->status()))
@@ -1717,7 +1717,7 @@ bool IndexTaskService::recoverSCD_()
             }
         }
     }
-	
+
     return true;
 }
 

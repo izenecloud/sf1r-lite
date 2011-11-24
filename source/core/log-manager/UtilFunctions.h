@@ -20,6 +20,26 @@ T fromBytes(const std::string& str)
     return *(reinterpret_cast<const T *>(str.c_str()));
 }
 
+template <typename Key, typename T>
+void getKeyList(std::vector<Key>& key_list, const std::map<Key, T>& src_map)
+{
+    for (typename std::map<Key, T>::const_iterator it = src_map.begin();
+            it != src_map.end(); ++it)
+    {
+        key_list.push_back(it->first);
+    }
+}
+
+template <typename Key, typename T>
+void getValueList(std::vector<T>& value_list, const std::map<Key, T>& src_map)
+{
+    for (typename std::map<Key, T>::const_iterator it = src_map.begin();
+            it != src_map.end(); ++it)
+    {
+        value_list.push_back(it->second);
+    }
+}
+
 time_t createTimeStamp();
 
 time_t createTimeStamp(boost::posix_time::ptime pt);

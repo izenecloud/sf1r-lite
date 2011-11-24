@@ -161,7 +161,7 @@ public: \
     static bool updateMultiRow(const std::vector<ClassName>& row_list); \
     \
     static bool getMultiSlice( \
-            std::map<std::string, ClassName>& row_map, \
+            std::vector<ClassName>& row_list, \
             const std::vector<std::string>& key_list, \
             const std::string& start = "", \
             const std::string& finish = "", \
