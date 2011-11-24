@@ -50,7 +50,9 @@ struct SF1NodeInfo
     {
         std::stringstream ss;
         ss <<"[Replica "<<replicaId_<<", Node "<<nodeId_<<"] "
-           <<host_<<" :baPort"<<baPort_;
+           <<host_;
+        if (baPort_ != 0)
+            ss <<" :baPort"<<baPort_;
         return ss.str();
     }
 };
@@ -85,7 +87,7 @@ struct WorkerNode : public SF1NodeInfo
         std::stringstream ss;
         ss <<SF1NodeInfo::toString()
            <<" :worker"<<workerPort_<<", shard"<<shardId_
-           <<" , status: "<< (isGood_?"good!!":"bad!!");
+           <<", status: "<< (isGood_?"good!":"bad!");
         return ss.str();
     }
 };
