@@ -173,7 +173,7 @@ void TextSummarization::computeSummaryLSA()
                 mval = v[j*n+i];
             }
         }
-        //	cout<<endl;
+        //cout<<endl;
         //cout<<max<<" "<<mval<<endl;
 
         vecTextSummary_.push_back(max);
@@ -190,7 +190,7 @@ void TextSummarization::computeSummaryPR()
 {
     graph_.doTs(sentenceSet_);
     graph_.copyResult(vecTextSummary_, summarySize_);
-    /*	graph_.printOrderedVertices("dbg.txt");	//for dbg*/
+    /*graph_.printOrderedVertices("dbg.txt"); //for dbg*/
 
 }
 
@@ -366,4 +366,3 @@ void TextSummarization::getSentencesOrderedBySignificantTerms(
 
 }
 }
-

@@ -192,13 +192,13 @@ private:
     unsigned int prunedBound_;
     std::string forwardIndexPath_;
     izenelib::am::MatrixDB<uint32_t, float> forwardIndex_;
-    boost::scoped_ptr<TermReader> termReader_;	
+    boost::scoped_ptr<TermReader> termReader_;
     std::map<std::pair<std::string, uint32_t>, std::pair<float,float> > fields_;
 
     PrunedForwardContainer prunedForwardContainer_;
 
     size_t numDocs_;
-    uint32_t maxDoc_;	
+    uint32_t maxDoc_;
 
     static const float default_k1_=1.2;
     static const float default_b_=0.75;
@@ -208,4 +208,3 @@ private:
 }
 
 #endif
-

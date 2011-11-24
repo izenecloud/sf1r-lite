@@ -203,8 +203,8 @@ void MasterNodeManager::doStart()
 
     detectWorkers();
 
-    // Register SF1, which work as Master, as search server without
-    // waiting for all workers to be ready. Because if one worker is
+    // Register SF1, who works as Master, as search server without
+    // waiting for all workers to be ready. Because even if one worker is
     // broken down and not recovered, other workers should be in serve.
     registerSearchServer();
 }

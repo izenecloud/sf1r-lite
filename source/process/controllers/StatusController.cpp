@@ -56,7 +56,7 @@ void StatusController::index()
     indexStatusResponse[Keys::document_count] = 0;
 
     Status indexStatus;
-    IndexTaskService* service = collectionHandler_->indexTaskService_;	
+    IndexTaskService* service = collectionHandler_->indexTaskService_;
 
     if (service->getIndexStatus(indexStatus))
     {

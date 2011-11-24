@@ -27,11 +27,11 @@ public:
 
     virtual ~DAutomata() {}
 
-    /** @brief	Builds a trie from dictionary, note dictionary only with one word in each line.
+    /** @brief Builds a trie from dictionary, note dictionary only with one word in each line.
      *  @param dictFileName  the path of  dictionary
      *  @param phonemes the set of phoneme,which is the smallest unit of one character.
      *  @param alphabet it contains pairs made of phoneme and phoneme's hash number. eg: <a,1>
-     *  @return	The initial state of the automaton.
+     *  @return The initial state of the automaton.
      */
     DictState *buildTrie( string dictFileName,
                           vector<mychar>& phonemes,
@@ -51,4 +51,3 @@ public:
 
 }/*end of sf1r*/
 #endif
-

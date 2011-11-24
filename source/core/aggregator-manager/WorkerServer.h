@@ -2,7 +2,7 @@
  * @file WorkerServer.h
  * @author Zhongxia Li
  * @date Jul 5, 2011
- * @brief 
+ * @brief
  */
 #ifndef WORKER_SERVER_H_
 #define WORKER_SERVER_H_
@@ -126,7 +126,7 @@ public:
     bool getDocumentsByIds(JobRequest& req)
     {
         WORKER_HANDLE_REQUEST_1_1(req, GetDocumentsByIdsActionItem, RawTextResultFromSIA, workerService_, getDocumentsByIds)
-    	return true;
+        return true;
     }
 
     bool getInternalDocumentId(JobRequest& req)

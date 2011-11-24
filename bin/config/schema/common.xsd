@@ -1,40 +1,40 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.izenesoft.com" xmlns:t="http://www.izenesoft.com" targetNamespace="http://www.izenesoft.com" elementFormDefault="qualified">
-	<xs:simpleType name="EncodingType">
-		<xs:restriction base="xs:string">
-			<xs:enumeration value="UTF-8"/>
-			<xs:enumeration value="EUC-KR"/>
-			<xs:enumeration value="GBK"/>
-		</xs:restriction>
-	</xs:simpleType>
+    <xs:simpleType name="EncodingType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="UTF-8"/>
+            <xs:enumeration value="EUC-KR"/>
+            <xs:enumeration value="GBK"/>
+        </xs:restriction>
+    </xs:simpleType>
 
-	<xs:simpleType name="YesNoType">
-		<xs:restriction base="xs:string">
-			<xs:pattern value="yes|no|y|n"/>
-		</xs:restriction>
-	</xs:simpleType>
+    <xs:simpleType name="YesNoType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="yes|no|y|n"/>
+        </xs:restriction>
+    </xs:simpleType>
 
-	
-	<xs:complexType name="PropertyType">
-		<xs:attribute name="name" type="xs:string" use="required"/>
-		<xs:attribute name="type">
+
+    <xs:complexType name="PropertyType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="type">
             <xs:simpleType>
-            	<xs:restriction base="xs:string">
-            		<xs:enumeration value="string"/>
-    		       	<xs:enumeration value="int"/>
-            		<xs:enumeration value="float"/>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="string"/>
+                    <xs:enumeration value="int"/>
+                    <xs:enumeration value="float"/>
                 </xs:restriction>
             </xs:simpleType>
-    	</xs:attribute>	
-	</xs:complexType>
+        </xs:attribute>
+    </xs:complexType>
 
-	<xs:complexType name="DocumentSchemaType">
-		<xs:sequence>
-			<xs:element name="Property" type="PropertyType" maxOccurs="unbounded"/>
-		</xs:sequence>
-	</xs:complexType>
+    <xs:complexType name="DocumentSchemaType">
+        <xs:sequence>
+            <xs:element name="Property" type="PropertyType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
 
-	<xs:simpleType name="CollectionDataDirectoryType">
-		<xs:restriction base="xs:string"/>
-	</xs:simpleType>
-	
+    <xs:simpleType name="CollectionDataDirectoryType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+
 </xs:schema>

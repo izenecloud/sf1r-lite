@@ -62,18 +62,18 @@
 
 /**************** Function Prototype Declarations **************/
 
-void SeedEncrypt(		/* encryption function */
-		BYTE *pbData, 				// [in,out]	data to be encrypted
-		DWORD *pdwRoundKey			// [in]			round keys for encryption
-		);
-void SeedDecrypt(		/* decryption function */
-		BYTE *pbData, 				// [in,out]	data to be decrypted
-		DWORD *pdwRoundKey			// [in]			round keys for decryption
-		);
-void SeedRoundKey(		/* key scheduling function */
-		DWORD *pdwRoundKey, 		// [out]		round keys for encryption or decryption
-		BYTE *pbUserKey				// [in]			secret user key 
-		);
+void SeedEncrypt(           /* encryption function */
+        BYTE *pbData,       // [in,out] data to be encrypted
+        DWORD *pdwRoundKey  // [in]     round keys for encryption
+        );
+void SeedDecrypt(           /* decryption function */
+        BYTE *pbData,       // [in,out] data to be decrypted
+        DWORD *pdwRoundKey  // [in]     round keys for decryption
+        );
+void SeedRoundKey(          /* key scheduling function */
+        DWORD *pdwRoundKey, // [out]    round keys for encryption or decryption
+        BYTE *pbUserKey     // [in]     secret user key
+        );
 
 /*************************** END OF FILE **************************************/
 #endif

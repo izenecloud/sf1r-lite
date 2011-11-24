@@ -50,7 +50,7 @@ bool ProductController::require_docid_list_()
 
 bool ProductController::require_str_docid_list_()
 {
-    Value& resources = request()[Keys::str_docid_list];
+    Value& resources = request()[Keys::docid_list];
     for (uint32_t i = 0; i < resources.size(); i++)
     {
         Value& resource = resources(i);
@@ -59,7 +59,7 @@ bool ProductController::require_str_docid_list_()
     }
     if (str_docid_list_.empty())
     {
-        response().addError("Require str_docid_list in request.");
+        response().addError("Require docid_list in request.");
         return false;
     }
     return true;
@@ -355,6 +355,98 @@ void ProductController::update_a_doc()
     }
 }
 
+/**
+ * @brief Action \b get_multi_price_history. Get price history for given document id list and optional date range.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b docid_list* (@c Array): string-type document id list
+ * - @b date_range* (@c Object): specify the date range
+ *   - @c start (@c String): start date string
+ *   - @c end (@c String): end date string
+ * - @b range* (@c Bool = @c false): indicate whether to return full history or lower and upper bounds
+ *
+ * @section response
+ *
+ * if range is not set
+ *
+ * - @b resources (@c Array): All returned items
+ *   - @b docid (@c String): The string_type docid
+ *   - @b price_history (@c Array): The price history
+ *     - @b timestamp (@c String): The timestamp
+ *     - @b price_range (@c Object): the price range
+ *       - @c price_low (@c Double): the lowest price
+ *       - @c price_high (@c Double): the highest price
+ *
+ * if range is set
+ *
+ * - @b resources (@c Array): All returned items
+ *   - @b docid (@c String): The string_type docid
+ *   - @b price_range (@c Object): the price range
+ *     - @c price_low (@c Double): the lowest price
+ *     - @c price_high (@c Double): the highest price
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection":"b5mm",
+ *   "docid_list":
+ *   [
+ *     "f16940a39c79dc84bf14b94dab0624fd",
+ *     "cbb3c856bda004e3d9dd441a3995b090"
+ *   ],
+ *   "date_range":
+ *   {
+ *     "start":"2010-01-01",
+ *     "end":""
+ *   }
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header":
+ *   {
+ *     "success":true
+ *   },
+ *   "resources":
+ *   [
+ *     {
+ *       "docid":"cbb3c856bda004e3d9dd441a3995b090",
+ *       "price_history":
+ *       [
+ *         {
+ *           "timestamp":"20110908T170011.111000",
+ *           "price_range":
+ *           {
+ *             "price_high":45,
+ *             "price_low":45
+ *           }
+ *         }
+ *       ]
+ *     },
+ *     {
+ *       "docid":"f16940a39c79dc84bf14b94dab0624fd",
+ *       "price_history":
+ *       [
+ *         {
+ *           "timestamp":"20110908T170011.111000",
+ *           "price_range":
+ *           {
+ *             "price_high":85,
+ *             "price_low":85
+ *           }
+ *         }
+ *       ]
+ *     }
+ *   ]
+ * }
+ * @endcode
+ */
 void ProductController::get_multi_price_history()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
@@ -364,47 +456,47 @@ void ProductController::get_multi_price_history()
     bool is_range = asBool(request()[Keys::range]);
     if (!is_range)
     {
-        ProductManager::PriceHistoryList history_list;
+        PriceHistoryList history_list;
         if (!product_manager_->GetMultiPriceHistory(history_list, str_docid_list_, from_tt_, to_tt_))
         {
             response().addError(product_manager_->GetLastError());
             return;
         }
 
-        Value& price_history_list = response()[Keys::price_history_list];
+        Value& price_history_list = response()[Keys::resources];
         for (Value::UintType i = 0; i < history_list.size(); ++i)
         {
             Value& doc_item = price_history_list();
             doc_item[Keys::docid] = history_list[i].first;
             Value& price_history = doc_item[Keys::price_history];
-            ProductManager::PriceHistoryItem& history = history_list[i].second;
+            PriceHistoryItem& history = history_list[i].second;
             for (Value::UintType j = 0; j < history.size(); ++j)
             {
                 Value& history_item = price_history();
                 history_item[Keys::timestamp] = history[j].first;
                 Value& price_range = history_item[Keys::price_range];
-                price_range[Keys::price_low] = history[j].second.value.first;
-                price_range[Keys::price_high] = history[j].second.value.second;
+                price_range[Keys::price_low] = history[j].second.first;
+                price_range[Keys::price_high] = history[j].second.second;
             }
         }
     }
     else
     {
-        ProductManager::PriceRangeList range_list;
+        PriceRangeList range_list;
         if (!product_manager_->GetMultiPriceRange(range_list, str_docid_list_, from_tt_, to_tt_))
         {
             response().addError(product_manager_->GetLastError());
             return;
         }
 
-        Value& price_range_list = response()[Keys::price_range_list];
+        Value& price_range_list = response()[Keys::resources];
         for (Value::UintType i = 0; i < range_list.size(); ++i)
         {
             Value& doc_item = price_range_list();
             doc_item[Keys::docid] = range_list[i].first;
             Value& price_range = doc_item[Keys::price_range];
-            price_range[Keys::price_low] = range_list[i].second.value.first;
-            price_range[Keys::price_high] = range_list[i].second.value.second;
+            price_range[Keys::price_low] = range_list[i].second.first;
+            price_range[Keys::price_high] = range_list[i].second.second;
         }
     }
 }

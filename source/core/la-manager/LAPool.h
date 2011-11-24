@@ -70,7 +70,7 @@ namespace sf1r
             ///
             virtual ~LAPool();
 
-            /// for singleton 
+            /// for singleton
             static LAPool* getInstance()
             {
                 return ::izenelib::util::Singleton<LAPool>::get();
@@ -104,22 +104,22 @@ namespace sf1r
             la::LA * topSearchLA(const AnalysisInfo& analysisInfo );
 
             bool getLAConfigUnit( const string & laConfigId, LAConfigUnit & laConfigUnit ) const;
-            
+
             void set_kma_path(const std::string& path)
             {
               kma_path_ = path;
             }
-            
+
             void get_kma_path(std::string& path)
             {
               path=  kma_path_;
             }
-            
+
             void set_cma_path(const std::string& path)
             {
                 cma_path_ = path;
             }
-            
+
             void get_cma_path(std::string& path)
             {
                 path=  cma_path_;
@@ -129,7 +129,7 @@ namespace sf1r
             {
                 jma_path_ = path;
             }
-		
+
             void get_jma_path(std::string& path)
             {
                 path=  jma_path_;
@@ -156,10 +156,10 @@ namespace sf1r
             izenelib::util::ReadWriteLock lock_;
 
             std::map<std::string, AnalysisInfo> innerAnalysisInfos_;
-            
+
             /// @brief resource path for KMA
             std::string kma_path_;
-            
+
             std::string cma_path_;
 
             std::string jma_path_;

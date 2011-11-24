@@ -36,7 +36,7 @@ MACRO(THREE_PART_VERSION_TO_VARS version major minor patch)
     ELSEIF(${version} MATCHES ${NONE_PART_VERSION_REGEX})
         SET(${major} "0")
         SET(${minor} "0")
-        SET(${patch} "0")    
+        SET(${patch} "0")
     ELSE(${version} MATCHES ${THREE_PART_VERSION_REGEX})
         MESSAGE(STATUS "MACRO(THREE_PART_VERSION_TO_VARS ${version} ${major} ${minor} ${patch}")
         MESSAGE(FATAL_ERROR "Problem parsing version string, I can't parse it properly.")
@@ -152,9 +152,9 @@ IF(NOT ENV_ONLY_PACKAGE_SF1)
     COMPONENT sf1r_packings
     REGEX ".xml.in" EXCLUDE
     )
-  INSTALL( PROGRAMS 
-    ${CMAKE_SOURCE_DIR}/../bin/sf1r-engine 
-	#    ${CMAKE_SOURCE_DIR}/../bin/clean.query 
+  INSTALL( PROGRAMS
+    ${CMAKE_SOURCE_DIR}/../bin/sf1r-engine
+    #    ${CMAKE_SOURCE_DIR}/../bin/clean.query
     DESTINATION "bin"
     COMPONENT sf1r_packings
     )

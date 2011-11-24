@@ -131,7 +131,7 @@ public:
             hasNext_ = init();
             inited_ = true;
         }
-    
+
         for( size_t i = 0; i < termDocReaders_.size(); i++ ) {
             TermDocFreqs* pTermDocReader = termDocReaders_[i];
             ID_FREQ_MAP_T& df = dfmap[origProperty_];
@@ -144,8 +144,8 @@ public:
 
     count_t tf()
     {
-    	// here return the minimum tf,
-    	//
+        // here return the minimum tf,
+        //
         if(!inited_) {
             hasNext_ = init();
             inited_ = true;
@@ -155,11 +155,11 @@ public:
         count_t mintf = MAX_COUNT;
         count_t tf;
         for( size_t i = 0; i < termDocReaders_.size(); i++ ) {
-        	pTermDocReader = termDocReaders_[i];
-        	tf = pTermDocReader->freq();
-        	if (tf < mintf) {
-        		mintf = tf;
-        	}
+            pTermDocReader = termDocReaders_[i];
+            tf = pTermDocReader->freq();
+            if (tf < mintf) {
+                mintf = tf;
+            }
         }
 
         return mintf;
@@ -256,10 +256,10 @@ protected:
 
     unsigned int propertyId_;
 
-    ///2010-10-12  Yingfeng 
-    ///Very ugly here!! 
+    ///2010-10-12  Yingfeng
+    ///Very ugly here!!
     ///in some cases, when performing phrase queries, the practical query is not performed over
-    ///property_, eg:  an exact query over "Content" might be applied over "Content_unigram" 
+    ///property_, eg:  an exact query over "Content" might be applied over "Content_unigram"
     ///automatically instead of "Content", however, this automatic conversion is not known by ranker:
     ///it still think the query is performed over "Content". So a trick here is to record the original property.
     std::string origProperty_;

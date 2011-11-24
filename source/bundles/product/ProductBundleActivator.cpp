@@ -12,6 +12,9 @@
 #include <product-manager/product_manager.h>
 #include <product-manager/collection_product_data_source.h>
 #include <product-manager/scd_operation_processor.h>
+#include <product-manager/product_price_trend.h>
+#include <product-manager/product_cron_job_handler.h>
+#include <log-manager/PriceHistory.h>
 #include <util/singleton.h>
 
 #include <boost/filesystem.hpp>
@@ -26,32 +29,37 @@ namespace sf1r
 
 using namespace izenelib::osgi;
 ProductBundleActivator::ProductBundleActivator()
-    :searchTracker_(0)
-    ,taskTracker_(0)
-    ,context_(0)
-    ,searchService_(0)
-    ,searchServiceReg_(0)
-    ,taskService_(0)
-    ,taskServiceReg_(0)
-    ,refIndexTaskService_(0)
-    ,config_(0)
-    ,data_source_(0)
-    ,op_processor_(0)
-    ,scd_receiver_(0)
+    : searchTracker_(0)
+    , taskTracker_(0)
+    , context_(0)
+    , searchService_(0)
+    , searchServiceReg_(0)
+    , taskService_(0)
+    , taskServiceReg_(0)
+    , refIndexTaskService_(0)
+    , config_(0)
+    , data_source_(0)
+    , op_processor_(0)
+    , price_trend_(0)
+    , scd_receiver_(0)
 {
 }
 
 ProductBundleActivator::~ProductBundleActivator()
 {
-    if(data_source_)
+    if (data_source_)
     {
         delete data_source_;
     }
-    if(op_processor_)
+    if (op_processor_)
     {
         delete op_processor_;
     }
-    if(scd_receiver_)
+    if (price_trend_)
+    {
+        delete price_trend_;
+    }
+    if (scd_receiver_)
     {
         delete scd_receiver_;
     }
@@ -179,11 +187,20 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
     std::string dir = getCurrentCollectionDataPath_()+"/product";
     std::cout<<"dir : "<<dir<<std::endl;
     boost::filesystem::create_directories(dir);
-    data_source_ = new CollectionProductDataSource(indexService->workerService_->documentManager_, indexService->workerService_->indexManager_, indexService->workerService_->idManager_, config_->pm_config_, config_->schema_);
+    data_source_ = new CollectionProductDataSource(indexService->workerService_->documentManager_, indexService->workerService_->indexManager_, indexService->workerService_->idManager_, indexService->workerService_->searchManager_, config_->pm_config_, config_->schema_);
     op_processor_ = new ScdOperationProcessor(dir);
-    boost::shared_ptr<ProductManager> product_manager(new ProductManager(config_->collectionName_, data_source_, op_processor_, config_->pm_config_));
+    if (config_->pm_config_.enablePH && PriceHistory::is_enabled)
+    {
+        price_trend_ = new ProductPriceTrend(config_->collectionName_, dir, config_->pm_config_.category_property_name, config_->pm_config_.source_property_name);
+        ProductCronJobHandler* handler = ProductCronJobHandler::getInstance();
+        if (!handler->cronStart(config_->cron_))
+        {
+            std::cerr << "Init price trend cron task failed." << std::endl;
+        }
+        handler->addCollection(price_trend_);
+    }
+    boost::shared_ptr<ProductManager> product_manager(new ProductManager(data_source_, op_processor_, price_trend_, config_->pm_config_));
     return product_manager;
-
 }
 
 void ProductBundleActivator::addIndexHook_(IndexTaskService* indexService) const
@@ -193,7 +210,6 @@ void ProductBundleActivator::addIndexHook_(IndexTaskService* indexService) const
 
 void ProductBundleActivator::removedService( const ServiceReference& ref )
 {
-
 }
 
 bool ProductBundleActivator::openDataDirectories_()

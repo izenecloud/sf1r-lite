@@ -43,11 +43,11 @@ void gregorianISO8601Parser(const std::string& dataStr, struct tm& atm)
                 size_t day = boost::lexical_cast<size_t>(ps[len-3]);
                 if (year > 1900 && month <= 12 && month > 0 && day <=31 && day >0)
                 {
-                   /// format 10/02/2009
-                   atm.tm_year = year > 1900 ? (year-1900):(year+2000-1900);	// tm_year is 1900 based
-                   atm.tm_mon = month >= 0 ? month:0;		// tm_mon is 0 based
-                   atm.tm_mday = day >0 ? day:1;
-               }
+                    /// format 10/02/2009
+                    atm.tm_year = year > 1900 ? (year-1900):(year+2000-1900);   // tm_year is 1900 based
+                    atm.tm_mon = month >= 0 ? month:0;                          // tm_mon is 0 based
+                    atm.tm_mday = day >0 ? day:1;
+                }
             }
         }
     }
@@ -66,8 +66,8 @@ void gregorianISOParser(const std::string& dataStr, struct tm& atm)
         size_t month = ymd.month;
         size_t day = ymd.day;
 
-        atm.tm_year = year > 1900 ? (year-1900):(year+2000-1900);	 // tm_year is 1900 based
-        atm.tm_mon = month >= 0 ? month:0;		 // tm_mon is 0 based
+        atm.tm_year = year > 1900 ? (year-1900):(year+2000-1900);   // tm_year is 1900 based
+        atm.tm_mon = month >= 0 ? month:0;                          // tm_mon is 0 based
         atm.tm_mday = day >0 ? day:1;
 
     }catch(std::exception& e)
@@ -122,8 +122,8 @@ void convert(const std::string& dataStr, struct tm& atm)
                 datetime[i] = 0;
         }
 
-        atm.tm_year = datetime[0] > 1900? (datetime[0]-1900):(datetime[0]+2000-1900);	// tm_year is 1900 based
-        atm.tm_mon = datetime[1] > 0? (datetime[1]-1):0;		// tm_mon is 0 based
+        atm.tm_year = datetime[0] > 1900? (datetime[0]-1900):(datetime[0]+2000-1900);   // tm_year is 1900 based
+        atm.tm_mon = datetime[1] > 0? (datetime[1]-1):0;                                // tm_mon is 0 based
         atm.tm_mday = datetime[2] > 0?datetime[2]:1;
         atm.tm_hour = datetime[3] > 0?datetime[3]:0;
         atm.tm_min = datetime[4] > 0?datetime[4]:0;
@@ -131,9 +131,9 @@ void convert(const std::string& dataStr, struct tm& atm)
     }
     else
     {
-	ptime now = second_clock::local_time();
-	atm = to_tm(now);
-	gregorianISOParser(dataStr,atm);
+        ptime now = second_clock::local_time();
+        atm = to_tm(now);
+        gregorianISOParser(dataStr,atm);
     }
 }
 

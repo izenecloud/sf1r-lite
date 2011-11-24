@@ -98,7 +98,8 @@ int main(int argc, char** argv)
     ScdSharding scdSharding(cfg, shardingStrategy);
 
     // create scd dispatcher
-    ScdDispatcher* scdDispatcher = new BatchScdDispatcher(&scdSharding);
+    AggregatorConfig aggregatorConfig;
+    ScdDispatcher* scdDispatcher = new BatchScdDispatcher(&scdSharding, aggregatorConfig, "chinese-wiki");
 
     scdDispatcher->dispatch(dir, maxDoc);
 

@@ -64,8 +64,8 @@ uint32_t SimilarityIndex::getSimilarDocNum(uint32_t documentId) const
 {
     boost::shared_lock<boost::shared_mutex> lg(mutex_);
     uint8_t result = 0;
-	simCount_->get(documentId, result);
-	return (uint32_t)result;
+    simCount_->get(documentId, result);
+    return (uint32_t)result;
 }
 
 void SimilarityIndex::constructSimIndex(uint32_t docsLimit)
@@ -133,7 +133,7 @@ void SimilarityIndex::constructSimIndex(uint32_t docsLimit)
     //release the memory of sorter;
     delete sorter_;
     sorter_=new izenelib::am::IzeneSort<uint32_t, uint8_t, true>((filePrefix_+"/pair.sort").c_str(), 100000000);
-    
+
     //flush new data.
     db->flush();
     simCount->commit();
@@ -143,7 +143,7 @@ void SimilarityIndex::constructSimIndex(uint32_t docsLimit)
         std::string currentFileName=filePrefix_ + (useFirst_ ? "/similarity.idx.1" : "/similarity.idx.2");
         std::remove(currentFileName.c_str());
         db_=db;
-        
+
         simCount_.reset();
         currentFileName=filePrefix_ + (useFirst_ ? "/similarity_num.idx.1" : "/similarity_num.idx.2");
         std::remove(currentFileName.c_str());

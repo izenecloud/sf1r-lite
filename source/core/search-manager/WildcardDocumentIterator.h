@@ -30,12 +30,12 @@ class WildcardDocumentIterator : public ORDocumentIterator
 
 public:
     WildcardDocumentIterator(
-	collectionid_t colID,
-	izenelib::ir::indexmanager::IndexReader* pIndexReader,
-	const std::string& property,
-	unsigned int propertyId,
-	bool readPositions,
-	int maxTerms);
+            collectionid_t colID,
+            izenelib::ir::indexmanager::IndexReader* pIndexReader,
+            const std::string& property,
+            unsigned int propertyId,
+            bool readPositions,
+            int maxTerms);
 
     ~WildcardDocumentIterator();
 

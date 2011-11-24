@@ -53,6 +53,11 @@ public:
         std::string& language
     ) const;
 
+    std::string indexSCDPath() const
+    {
+        return collPath_.getScdPath() + "index/";
+    }
+
 private:
 
     bool eraseProperty(const std::string& name)
@@ -66,7 +71,7 @@ public:
     std::string collectionName_;
 
     CollectionPath collPath_;
-	
+
     /// Schema
     IndexBundleSchema schema_;
 
@@ -122,10 +127,9 @@ public:
 
     std::vector<std::string> collectionDataDirectories_;
 
-    /// @brief	Configurations for RankingManager
+    /// @brief Configurations for RankingManager
     RankingManagerConfig rankingManagerConfig_;
 };
 }
 
 #endif
-

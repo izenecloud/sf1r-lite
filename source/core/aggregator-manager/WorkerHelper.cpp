@@ -130,86 +130,84 @@ void split_string(const izenelib::util::UString& szText, std::list<PropertyType>
     out.push_back(str.substr(nOld, str.length()-nOld));
 }
 
-void split_int(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, char Separator )
+void split_int(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, char sep )
 {
-    izenelib::util::UString str(szText);
-    izenelib::util::UString sep(" ",encoding);
-    sep[0] = Separator;
-    size_t n = 0, nOld=0;
-    while (n != izenelib::util::UString::npos)
+    std::string str;
+    szText.convertString(str, encoding);
+    std::size_t n = 0, nOld=0;
+    while (n != std::string::npos)
     {
         n = str.find(sep,n);
-        if (n != izenelib::util::UString::npos)
+        if (n != std::string::npos)
         {
             if (n != nOld)
             {
-                int64_t value = 0;
                 try
                 {
-                    izenelib::util::UString tmpStr = str.substr(nOld, n-nOld);
-                    trim( tmpStr );
-                    value = boost::lexical_cast< int64_t >( tmpStr );
+                    std::string tmpStr = str.substr(nOld, n-nOld);
+                    boost::algorithm::trim( tmpStr );
+                    int64_t value = boost::lexical_cast< int64_t >( tmpStr );
                     out.push_back(value);
                 }
-                catch( const boost::bad_lexical_cast & )
-                {}
+                catch(boost::bad_lexical_cast & )
+                {
+                }
             }
-            n += sep.length();
+            n += 1;
             nOld = n;
         }
     }
 
-    int64_t value = 0;
     try
     {
-        izenelib::util::UString tmpStr = str.substr(nOld, str.length()-nOld);
-        trim( tmpStr );
-        value = boost::lexical_cast< int64_t >( tmpStr );
+        std::string tmpStr = str.substr(nOld, str.length()-nOld);
+        boost::algorithm::trim( tmpStr );
+        int64_t value = boost::lexical_cast< int64_t >( tmpStr );
         out.push_back(value);
     }
-    catch( const boost::bad_lexical_cast & )
-    {}
+    catch(boost::bad_lexical_cast & )
+    {
+    }
 }
 
-void split_float(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, char Separator )
+void split_float(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, char sep )
 {
-    izenelib::util::UString str(szText);
-    izenelib::util::UString sep(" ",encoding);
-    sep[0] = Separator;
-    size_t n = 0, nOld=0;
-    while (n != izenelib::util::UString::npos)
+    std::string str;
+    szText.convertString(str, encoding);
+    std::size_t n = 0, nOld=0;
+    while (n != std::string::npos)
     {
         n = str.find(sep,n);
-        if (n != izenelib::util::UString::npos)
+        if (n != std::string::npos)
         {
             if (n != nOld)
             {
-                float value = 0;
                 try
                 {
-                    izenelib::util::UString tmpStr = str.substr(nOld, n-nOld);
-                    trim( tmpStr );
-                    value = boost::lexical_cast< float >( tmpStr );
+                    std::string tmpStr = str.substr(nOld, n-nOld);
+                    boost::algorithm::trim( tmpStr );
+                    float value = boost::lexical_cast< float >( tmpStr );
                     out.push_back(value);
                 }
-                catch( const boost::bad_lexical_cast & )
-                {}
+                catch(boost::bad_lexical_cast & )
+                {
+                }
             }
-            n += sep.length();
+            n += 1;
             nOld = n;
         }
     }
 
-    float value = 0;
     try
     {
-        izenelib::util::UString tmpStr = str.substr(nOld, str.length()-nOld);
-        trim( tmpStr );
-        value = boost::lexical_cast< float >( tmpStr );
+        std::string tmpStr = str.substr(nOld, str.length()-nOld);
+        boost::algorithm::trim( tmpStr );
+        float value = boost::lexical_cast< float >( tmpStr );
         out.push_back(value);
     }
-    catch( const boost::bad_lexical_cast & )
-    {}
+    catch(boost::bad_lexical_cast & )
+    {
+    }
 }
 
 }

@@ -23,102 +23,102 @@ namespace sf1r{
  */
 
 struct IndexingProgress {
-	int currentFileIdx;
-	std::string currentFileName;
-	int totalFileNum;
+    int currentFileIdx;
+    std::string currentFileName;
+    int totalFileNum;
 
-	long totalFileSize_;
-	long totalFilePos_;
+    long totalFileSize_;
+    long totalFilePos_;
 
-	long currentFilePos_;
-	long currentFileSize_;
-	izenelib::util::ClockTimer timer;
+    long currentFilePos_;
+    long currentFileSize_;
+    izenelib::util::ClockTimer timer;
 
-	IndexingProgress() {
-		reset();
-	}
+    IndexingProgress() {
+        reset();
+    }
 
-	float getTotalPercent() {
-		if (currentFileIdx > totalFileNum) {
-			return 1.0f;
-		} else if (totalFileNum == 1) {
-			if (currentFileSize_ == 0)
-				return 0.0f;
-			else
-				return (float) currentFilePos_ / (float) currentFileSize_;
-		} else {
-			if (totalFileSize_ == 0)
-				return 0.0f;
-			else
-				return (float) totalFilePos_ / (float) totalFileSize_;
-		}
-	}
+    float getTotalPercent() {
+        if (currentFileIdx > totalFileNum) {
+            return 1.0f;
+        } else if (totalFileNum == 1) {
+            if (currentFileSize_ == 0)
+                return 0.0f;
+            else
+                return (float) currentFilePos_ / (float) currentFileSize_;
+        } else {
+            if (totalFileSize_ == 0)
+                return 0.0f;
+            else
+                return (float) totalFilePos_ / (float) totalFileSize_;
+        }
+    }
 
-	float getElapsed() {
-		return timer.elapsed();
-	}
+    float getElapsed() {
+        return timer.elapsed();
+    }
 
-	float getLeft() {
-		if (totalFilePos_ != 0) {
-			return getElapsed() * (totalFileSize_ - totalFilePos_)
-					/ totalFilePos_;
-		} else {
-			return 24 * 3600;
-		}
-	}
+    float getLeft() {
+        if (totalFilePos_ != 0) {
+            return getElapsed() * (totalFileSize_ - totalFilePos_)
+                    / totalFilePos_;
+        } else {
+            return 24 * 3600;
+        }
+    }
 
-	void getIndexingStatus(Status& status) {
-		int currentPercent = 0;
-		int totalPercent = 0;
-		if (currentFileSize_ != 0)
-			currentPercent = 100 * currentFilePos_ / currentFileSize_;
+    void getIndexingStatus(Status& status) {
+        int currentPercent = 0;
+        int totalPercent = 0;
+        if (currentFileSize_ != 0)
+            currentPercent = 100 * currentFilePos_ / currentFileSize_;
 
-		if (totalFileNum == 1)
-			totalPercent = currentPercent;
-		else if (totalFileSize_ != 0)
-			totalPercent
-					= (int) ((double) totalFilePos_ / totalFileSize_ * 100);
+        if (totalFileNum == 1)
+            totalPercent = currentPercent;
+        else if (totalFileSize_ != 0)
+            totalPercent
+                    = (int) ((double) totalFilePos_ / totalFileSize_ * 100);
 
-		float elapse = timer.elapsed();
-		float timeLeft;
-		int leftmin = 0;
-		int leftsec = 0;
-		if (totalFilePos_ != 0) {
-			timeLeft = elapse * (totalFileSize_ - totalFilePos_)
-					/ totalFilePos_;
-			leftmin = int(timeLeft / 60);
-			leftsec = int(timeLeft) - 60 * leftmin;
-		}
+        float elapse = timer.elapsed();
+        float timeLeft;
+        int leftmin = 0;
+        int leftsec = 0;
+        if (totalFilePos_ != 0) {
+            timeLeft = elapse * (totalFileSize_ - totalFilePos_)
+                    / totalFilePos_;
+            leftmin = int(timeLeft / 60);
+            leftsec = int(timeLeft) - 60 * leftmin;
+        }
 
-		if (currentFileIdx > totalFileNum) {
-			currentFileIdx = totalFileNum;
-			timeLeft = leftmin = leftsec = 0;
-			currentPercent = totalPercent = 100;
-		}
+        if (currentFileIdx > totalFileNum) {
+            currentFileIdx = totalFileNum;
+            timeLeft = leftmin = leftsec = 0;
+            currentPercent = totalPercent = 100;
+        }
 
-		std::stringstream ss;
-		ss << "  [" << currentFileIdx << "/" << totalFileNum << "]"
-				<< currentFileName << "[" << currentPercent << "% - Total:"
-				<< totalPercent << "%]";
-		ss << "\t[left: " << leftmin << "m" << leftsec << "s]";
+        std::stringstream ss;
+        ss << "  [" << currentFileIdx << "/" << totalFileNum << "]"
+                << currentFileName << "[" << currentPercent << "% - Total:"
+                << totalPercent << "%]";
+        ss << "\t[left: " << leftmin << "m" << leftsec << "s]";
 
-		std::cout << "\r";
-		std::cout << ss.str() << std::flush;
-		status.metaInfo_ = ss.str();
-	}
+        std::cout << "\r";
+        std::cout << ss.str() << std::flush;
+        status.metaInfo_ = ss.str();
+    }
 
-	int getNumOfIndexedFiles() {
-		return totalFileNum;
-	}
+    int getNumOfIndexedFiles() {
+        return totalFileNum;
+    }
 
-	void reset() {
-		currentFileIdx = 0;
-		currentFileName = "";
-		totalFileNum = 0;
-		totalFileSize_ = totalFilePos_ = 0;
-		currentFilePos_ = currentFileSize_ = 0;
-		timer.restart();
-	}
+    void reset() {
+        currentFileIdx = 0;
+        currentFileName = "";
+        totalFileNum = 0;
+        totalFileSize_ = totalFilePos_ = 0;
+        currentFilePos_ = currentFileSize_ = 0;
+        timer.restart();
+    }
 };
 
 }

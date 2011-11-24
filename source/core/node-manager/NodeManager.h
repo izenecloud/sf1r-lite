@@ -72,6 +72,11 @@ public:
         return nodeInfo_;
     }
 
+    unsigned int getShardNum() const
+    {
+        return dsTopologyConfig_.shardNum_;
+    }
+
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
 

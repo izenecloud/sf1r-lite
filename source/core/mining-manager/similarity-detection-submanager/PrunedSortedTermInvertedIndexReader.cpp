@@ -62,9 +62,9 @@ PrunedSortedTermInvertedIndexReader::PrunedSortedTermInvertedIndexReader(
         {
             while (termIterator->next())
             {
-            	if ((termIterator->termInfo()->docFreq() > 1)/*&&
-            	        (termIterator->termInfo()->docFreq() <=docLimits)*/)
-            	        /*((float)termIterator->termInfo()->docFreq()/(numDocs+1))<0.1)*/
+                if ((termIterator->termInfo()->docFreq() > 1)/*&&
+                        (termIterator->termInfo()->docFreq() <=docLimits)*/)
+                        /*((float)termIterator->termInfo()->docFreq()/(numDocs+1))<0.1)*/
                 {
                     std::pair<id_type, size_type> element(
                         termIterator->term()->value,

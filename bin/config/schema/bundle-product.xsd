@@ -14,6 +14,8 @@
                                 <xs:element ref="DOCIDProperty" minOccurs="1" maxOccurs="1" />
                                 <xs:element ref="UuidProperty" minOccurs="1" maxOccurs="1" />
                                 <xs:element ref="ItemCountProperty" minOccurs="1" maxOccurs="1" />
+                                <xs:element ref="CategoryProperty" minOccurs="1" maxOccurs="1" />
+                                <xs:element ref="SourceProperty" minOccurs="1" maxOccurs="1" />
                                 <xs:element ref="Backup" minOccurs="0" maxOccurs="1" />
                             </xs:sequence>
                             <xs:attribute name="mode" use="required">
@@ -23,12 +25,14 @@
                                     </xs:restriction>
                                 </xs:simpleType>
                             </xs:attribute>
+                            <xs:attribute name="enablePH" type="YesNoType" />
                         </xs:complexType>
                     </xs:element>
                     <xs:element name="Parameter" minOccurs="0">
                         <xs:complexType>
                             <xs:sequence>
                                 <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="1" maxOccurs="2"/>
+                                <xs:element ref="CronPara" minOccurs="0"/>
                             </xs:sequence>
                         </xs:complexType>
                     </xs:element>
@@ -40,6 +44,8 @@
         <xs:element name="DOCIDProperty" type="PropertyType" />
         <xs:element name="UuidProperty" type="PropertyType" />
         <xs:element name="ItemCountProperty" type="PropertyType" />
+        <xs:element name="CategoryProperty" type="PropertyType" />
+        <xs:element name="SourceProperty" type="PropertyType" />
         <xs:element name="Backup">
             <xs:complexType>
                 <xs:attribute name="path" type="xs:string" use="required" />

@@ -188,7 +188,7 @@ bool IndexSearchService::getDocumentsByIds(
         aggregatorManager_->distributeRequest(actionItem.collectionName_, "getDocumentsByIds", requestGroup, resultItem);
     }
 
-	return true;
+    return true;
 }
 
 bool IndexSearchService::getInternalDocumentId(
@@ -211,4 +211,3 @@ bool IndexSearchService::getInternalDocumentId(
 }
 
 }
-

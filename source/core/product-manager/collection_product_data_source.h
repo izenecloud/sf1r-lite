@@ -17,12 +17,13 @@ namespace sf1r
 
 class DocumentManager;
 class IndexManager;
+class SearchManager;
 
 class CollectionProductDataSource : public ProductDataSource
 {
 public:
 
-    CollectionProductDataSource(const boost::shared_ptr<DocumentManager>& document_manager, const boost::shared_ptr<IndexManager>& index_manager, const boost::shared_ptr<izenelib::ir::idmanager::IDManager>& id_manager, const PMConfig& config, const std::set<PropertyConfig, PropertyComp>& schema);
+    CollectionProductDataSource(const boost::shared_ptr<DocumentManager>& document_manager, const boost::shared_ptr<IndexManager>& index_manager, const boost::shared_ptr<izenelib::ir::idmanager::IDManager>& id_manager, const boost::shared_ptr<SearchManager>& search_manager, const PMConfig& config, const std::set<PropertyConfig, PropertyComp>& schema);
 
     ~CollectionProductDataSource();
 
@@ -40,6 +41,7 @@ private:
     boost::shared_ptr<DocumentManager> document_manager_;
     boost::shared_ptr<IndexManager> index_manager_;
     boost::shared_ptr<izenelib::ir::idmanager::IDManager> id_manager_;
+    boost::shared_ptr<SearchManager> search_manager_;
     PMConfig config_;
     std::set<PropertyConfig, PropertyComp> schema_;
 };
