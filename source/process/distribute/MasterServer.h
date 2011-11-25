@@ -10,6 +10,7 @@
 #include <net/aggregator/MasterServerBase.h>
 
 #include <common/CollectionManager.h>
+#include <controllers/CollectionHandler.h>
 
 using namespace net::aggregator;
 

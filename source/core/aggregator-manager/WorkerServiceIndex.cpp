@@ -9,7 +9,7 @@
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
 #include <log-manager/ProductCount.h>
-#include <log-manager/UtilFunctions.h>
+#include <common/UtilFunctions.h>
 #include <common/JobScheduler.h>
 #include <common/Utilities.h>
 //#include <license-manager/LicenseManager.h>

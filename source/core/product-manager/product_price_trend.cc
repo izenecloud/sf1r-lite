@@ -82,9 +82,7 @@ bool ProductPriceTrend::CronJob()
 
 void ProductPriceTrend::UpdateTPCMap_(TopPriceCutMap& tpc_map, const vector<PriceHistory>& row_list, const map<string, pair<ProductPriceType, string> >& cache_map)
 {
-    uint32_t i = 0;
-
-    while (tpc_map.size() < 50 && i < row_list.size())
+    for (uint32_t i = 0; i < row_list.size(); i++)
     {
         string docid;
         StripDocid_(docid, row_list[i].getDocId());
@@ -95,39 +93,22 @@ void ProductPriceTrend::UpdateTPCMap_(TopPriceCutMap& tpc_map, const vector<Pric
         double old_price = price_record.second.value.first;
         if (old_price == 0)
         {
-            price_cut = 1;
+            price_cut = 0;
         }
         else
         {
-            price_cut = cache_record.first / old_price;
+            price_cut = 1 - cache_record.first / old_price;
         }
 
-        tpc_map[cache_record.second].insert(make_pair(price_cut, make_pair(price_record.first, docid)));
-        i++;
-    }
+        TopPriceCutQueue& que = tpc_map[cache_record.second];
+        que.push_back(make_pair(price_cut, make_pair(price_record.first, docid)));
+        push_heap(que.begin(), que.end(), rel_ops::operator><TopPriceCutQueue::value_type>);
 
-    for (; i < row_list.size(); i++)
-    {
-        string docid;
-        StripDocid_(docid, row_list[i].getDocId());
-        const pair<time_t, ProductPrice>& price_record = *(row_list[i].getPriceHistory().begin());
-        const pair<ProductPriceType, string>& cache_record = cache_map.find(docid)->second;
-
-        float price_cut;
-        double old_price = price_record.second.value.first;
-        if (old_price == 0)
+        if (que.size() > 1000)
         {
-            price_cut = 1;
+            pop_heap(que.begin(), que.end(), rel_ops::operator><TopPriceCutQueue::value_type>);
+            que.pop_back();
         }
-        else
-        {
-            price_cut = cache_record.first / old_price;
-        }
-
-        tpc_map[cache_record.second].insert(make_pair(price_cut, make_pair(price_record.first, docid)));
-
-        TopPriceCutMap::mapped_type::iterator it(tpc_map[cache_record.second].end());
-        tpc_map[cache_record.second].erase(--it);
     }
 }
 

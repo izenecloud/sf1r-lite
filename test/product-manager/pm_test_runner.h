@@ -12,7 +12,7 @@
 #include <product-manager/pm_types.h>
 #include <product-manager/pm_config.h>
 #include <product-manager/product_price.h>
-#include <log-manager/UtilFunctions.h>
+#include <common/UtilFunctions.h>
 #include <boost/test/unit_test.hpp>
 
 using namespace sf1r;

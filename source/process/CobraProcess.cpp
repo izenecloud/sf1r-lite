@@ -4,7 +4,6 @@
 #include <common/SFLogger.h>
 #include <la-manager/LAPool.h>
 #include <license-manager/LicenseManager.h>
-#include <aggregator-manager/MasterServer.h>
 #include <aggregator-manager/CollectionDataReceiver.h>
 #include <node-manager/NodeManager.h>
 #include <node-manager/MasterNodeManager.h>
@@ -13,6 +12,8 @@
 #include <OnSignal.h>
 #include <common/XmlConfigParser.h>
 #include <common/CollectionManager.h>
+#include <distribute/WorkerServer.h>
+#include <distribute/MasterServer.h>
 
 #include <util/ustring/UString.h>
 #include <util/driver/IPRestrictor.h>
@@ -244,8 +245,8 @@ bool CobraProcess::startDistributedServer()
             uint16_t workerPort = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.port_;
             std::size_t threadNum = SF1Config::get()->brokerAgentConfig_.threadNum_;
 
-            WorkerServerSingle::get()->init(localHost, workerPort, threadNum, true);
-            WorkerServerSingle::get()->start();
+            WorkerServer::get()->init(localHost, workerPort, threadNum, true);
+            WorkerServer::get()->start();
             cout << "#[Worker Server]started, listening at "<<localHost<<":"<<workerPort<<" ..."<<endl;
 
             // master notifier, xxx

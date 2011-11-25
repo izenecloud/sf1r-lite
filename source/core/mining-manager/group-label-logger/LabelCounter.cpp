@@ -19,7 +19,7 @@ public:
     }
 
 protected:
-    bool lessThan(ValueFreq p1, ValueFreq p2)
+    bool lessThan(const ValueFreq& p1, const ValueFreq& p2) const
     {
         return (p1.second < p2.second);
     }
