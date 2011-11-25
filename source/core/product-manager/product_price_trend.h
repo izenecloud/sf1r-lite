@@ -5,6 +5,8 @@
 #include "pm_types.h"
 #include "product_price.h"
 
+#include <common/UtilFunctions.h>
+
 namespace sf1r
 {
 
@@ -12,8 +14,8 @@ class PriceHistory;
 
 class ProductPriceTrend
 {
-    // map<"property value", multimap<"price-cut", pair<"start time", "docid"> > >
-    typedef std::map<std::string, std::multimap<float, std::pair<time_t, std::string> > > TopPriceCutMap;
+    typedef std::vector<std::pair<float, std::pair<time_t, std::string> > > TopPriceCutQueue;
+    typedef std::map<std::string, TopPriceCutQueue> TopPriceCutMap;
 
 public:
     ProductPriceTrend(const std::string& collection_name, const std::string& dir, const std::string& category_property, const std::string& source_property);

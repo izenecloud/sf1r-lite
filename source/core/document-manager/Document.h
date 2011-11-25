@@ -98,13 +98,13 @@ public:
     {
         return propertyList_.find(propertyName);
     }
-    
+
     bool hasProperty(const std::string& pname) const
     {
         property_const_iterator it = findProperty(pname);
         return it!=propertyEnd() ;
     }
-    
+
     property_iterator propertyBegin()
     {
         return propertyList_.begin();

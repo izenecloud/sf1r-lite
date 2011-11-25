@@ -11,7 +11,7 @@
 
 #include <common/type_defs.h>
 #include "Sorter.h"
-#include "PriorityQueue.h"
+#include <util/PriorityQueue.h>
 
 
 namespace sf1r{
@@ -30,7 +30,7 @@ public:
 
 class ScoreSortedHitQueue : public HitQueue
 {
-    class Queue_ : public sf1r::PriorityQueue<ScoreDoc>
+    class Queue_ : public izenelib::util::PriorityQueue<ScoreDoc>
     {
     public:
         Queue_(size_t size)
@@ -38,7 +38,7 @@ class ScoreSortedHitQueue : public HitQueue
             initialize(size);
         }
     protected:
-        bool lessThan(ScoreDoc o1, ScoreDoc o2)
+        bool lessThan(const ScoreDoc& o1, const ScoreDoc& o2) const
         {
             return (o1.score < o2.score);
         }
@@ -68,7 +68,7 @@ private:
 
 class PropertySortedHitQueue : public HitQueue
 {
-    class Queue_ : public sf1r::PriorityQueue<ScoreDoc>
+    class Queue_ : public izenelib::util::PriorityQueue<ScoreDoc>
     {
     public:
         Queue_(Sorter* pSorter, size_t size)
@@ -79,7 +79,7 @@ class PropertySortedHitQueue : public HitQueue
             initialize(size);
         }
     protected:
-        bool lessThan(ScoreDoc o1, ScoreDoc o2)
+        bool lessThan(const ScoreDoc& o1, const ScoreDoc& o2) const
         {
             return pSorter_->lessThan(o1,o2);
         }

@@ -34,6 +34,17 @@ using namespace net::aggregator;
 namespace sf1r
 {
 
+const char* RANK_PROPERTY = "_rank";
+const char* DATE_PROPERTY = "date";
+
+bool hasRelevenceSort(const std::pair<std::string , bool>& element)
+{
+    std::string fieldNameL = element.first;
+    boost::to_lower(fieldNameL);
+    if (fieldNameL == RANK_PROPERTY)
+      return true;
+    return false;
+}
 
 bool action_rerankable(SearchKeywordOperation& actionOperation)
 {
@@ -50,7 +61,14 @@ bool action_rerankable(SearchKeywordOperation& actionOperation)
         {
             std::string fieldNameL = sortPropertyList[0].first;
             boost::to_lower(fieldNameL);
-            if (fieldNameL == "_rank")
+            if (fieldNameL == RANK_PROPERTY)
+                rerank = true;
+        }
+        else
+        {
+            std::vector<std::pair<std::string , bool> >::iterator it = 
+                std::find_if(sortPropertyList.begin(),sortPropertyList.end(),hasRelevenceSort);
+            if(it != sortPropertyList.end())
                 rerank = true;
         }
     }
@@ -370,7 +388,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                     continue;
                 }
                 // sort by rank
-                if (fieldNameL == "_rank")
+                if (fieldNameL == RANK_PROPERTY)
                 {
                     if (!pSorter) pSorter.reset(new Sorter(pSorterCache_));
                     SortProperty* pSortProperty = new SortProperty("RANK", UNKNOWN_DATA_PROPERTY_TYPE, SortProperty::SCORE, iter->second);
@@ -378,7 +396,7 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
                     continue;
                 }
                 // sort by date
-                if (fieldNameL == "date")
+                if (fieldNameL == DATE_PROPERTY)
                 {
                     if (!pSorter) pSorter.reset(new Sorter(pSorterCache_));
 
@@ -691,9 +709,18 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
         {
             std::string fieldNameL = sortPropertyList[0].first;
             boost::to_lower(fieldNameL);
-            if (fieldNameL == "_rank")
+            if (fieldNameL == RANK_PROPERTY)
                 rerank = true;
-            }
+        }
+        else
+        {
+            std::vector<std::pair<std::string , bool> >::iterator it = 
+                std::find_if(sortPropertyList.begin(),sortPropertyList.end(),hasRelevenceSort);
+            if(it != sortPropertyList.end())
+                rerank = true;
+        }
+
+
         if(rerank && reranker_)
         {
             reranker_(docIdList,rankScoreList,actionOperation.actionItem_.env_.queryString_);

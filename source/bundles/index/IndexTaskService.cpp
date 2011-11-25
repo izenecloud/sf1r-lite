@@ -9,7 +9,7 @@
 #include <la-manager/LAManager.h>
 #include <search-manager/SearchManager.h>
 #include <log-manager/ProductCount.h>
-#include <log-manager/UtilFunctions.h>
+#include <common/UtilFunctions.h>
 
 #include <bundles/mining/MiningTaskService.h>
 #include <bundles/recommend/RecommendTaskService.h>

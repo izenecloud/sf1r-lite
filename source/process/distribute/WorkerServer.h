@@ -7,9 +7,9 @@
 #ifndef WORKER_SERVER_H_
 #define WORKER_SERVER_H_
 
-#include <net/aggregator/JobWorker.h>
-#include "WorkerService.h"
+#include <aggregator-manager/WorkerService.h>
 
+#include <net/aggregator/JobWorker.h>
 #include <util/singleton.h>
 
 #include <common/CollectionManager.h>
@@ -29,18 +29,13 @@ class KeywordSearchResult;
 
 class WorkerServer : public JobWorker<WorkerServer>
 {
-private:
-    // A coming request should be target at a specified collection or a bundle which not limited
-    // to any collection, set to corresponding worker service before handling request.
-    boost::shared_ptr<WorkerService> workerService_;
-
 public:
-//    WorkerServer(const std::string& host, uint16_t port, unsigned int threadNum)
-//    : JobWorker<WorkerServer>(host, port, threadNum)
-//    {
-//    }
-
     WorkerServer() {}
+
+    static WorkerServer* get()
+    {
+        return izenelib::util::Singleton<WorkerServer>::get();
+    }
 
     void init(const std::string& host, uint16_t port, unsigned int threadNum, bool debug=false)
     {
@@ -100,6 +95,7 @@ public:
         ADD_WORKER_HANDLER_LIST_END()
     }
 
+public:
     /**
      * Publish worker services to remote procedure (as remote server)
      * @{
@@ -163,26 +159,10 @@ public:
     /** @} */
 
 private:
-    bool index(const unsigned int& numdoc, bool& ret)
-    {
-        std::string bundleName = "IndexBundle-" + identity_;
-        IndexTaskService* indexService = static_cast<IndexTaskService*>(
-                                             CollectionManager::get()->getOSGILauncher().getService(bundleName, "IndexTaskService"));
-        if (!indexService)
-        {
-            ret = false;
-        }
-        else
-        {
-            ret = true;
-            task_type task = boost::bind(&IndexTaskService::buildCollection, indexService, numdoc);
-            JobScheduler::get()->addTask(task);
-        }
+    // A coming request should be target at a specified collection or a bundle,
+    // set to corresponding worker service before handling request.
+    boost::shared_ptr<WorkerService> workerService_;
 
-        return ret;
-    }
-
-private:
     std::string identity_;
 };
 

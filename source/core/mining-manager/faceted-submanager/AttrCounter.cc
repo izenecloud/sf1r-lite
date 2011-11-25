@@ -18,7 +18,7 @@ class AttrFreqQueue : public izenelib::util::PriorityQueue<AttrFreq>
         }
 
     protected:
-        bool lessThan(AttrFreq p1, AttrFreq p2)
+        bool lessThan(const AttrFreq& p1, const AttrFreq& p2) const
         {
             return (p1.second < p2.second);
         }

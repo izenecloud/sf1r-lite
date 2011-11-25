@@ -5,7 +5,7 @@
 #include "product_backup.h"
 #include "product_price_trend.h"
 
-#include <log-manager/UtilFunctions.h>
+#include <common/UtilFunctions.h>
 #include <boost/unordered_set.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 

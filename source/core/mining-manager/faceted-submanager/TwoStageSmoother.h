@@ -7,19 +7,27 @@
 
 #ifndef TWOSTAGESMOOTHER_H_
 #define TWOSTAGESMOOTHER_H_
+
 typedef unsigned int uint32_t;
+
 class TwoStageSmoother
 {
 public:
-    TwoStageSmoother(uint32_t docTermCount ,uint32_t collectionTermCount,
-                     double bkgCoefficient, double dirichletCoefficient);
+    TwoStageSmoother(
+            uint32_t docTermCount,
+            uint32_t collectionTermCount,
+            double bkgCoefficient,
+            double dirichletCoefficient);
+
     virtual ~TwoStageSmoother();
-    double computeSmoothedProb(uint32_t dtf,uint32_t qtf);
+
+    double computeSmoothedProb(uint32_t dtf, uint32_t qtf);
+
 private:
-    double bkgCoefficient_;
-    double dirichletCoefficient_;
     uint32_t docTermCount_;
     uint32_t collectionTermCount_;
-
+    double bkgCoefficient_;
+    double dirichletCoefficient_;
 };
+
 #endif /* TWOSTAGESMOOTHER_H_ */
