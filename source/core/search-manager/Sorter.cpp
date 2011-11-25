@@ -244,7 +244,10 @@ SortPropertyComparator* SortPropertyCache::getComparator(SortProperty* pSortProp
     const PropertyDataType propType = pSortProperty->getPropertyDataType();
     boost::shared_ptr<PropertyData> propData = getSortPropertyData(propName, propType);
 
-    return new SortPropertyComparator(propData);
+    if(propData)
+        return new SortPropertyComparator(propData);
+    else
+        return NULL;
 }
 
 Sorter::Sorter(SortPropertyCache* pCache)
@@ -282,6 +285,7 @@ void Sorter::getComparators()
     nNumProperties_ = sortProperties_.size();
     ppSortProperties_ = new SortProperty*[nNumProperties_];
     size_t i = 0;
+    size_t numOfInValidComparators = 0;
     for (std::list<SortProperty*>::iterator iter = sortProperties_.begin();
             iter != sortProperties_.end(); ++iter, ++i)
     {
@@ -296,6 +300,8 @@ void Sorter::getComparators()
                 break;
             case SortProperty::AUTO:
                 pSortProperty->pComparator_ = pCache_->getComparator(pSortProperty);
+                if(! pSortProperty->pComparator_)
+                    ++numOfInValidComparators;
                 break;
             case SortProperty::CUSTOM:
                 pSortProperty->pComparator_ = new SortPropertyComparator(CUSTOM_RANKING_PROPERTY_TYPE);
@@ -303,5 +309,35 @@ void Sorter::getComparators()
             }
         }
     }
+    if(numOfInValidComparators > 0)
+    {
+        SortProperty** ppSortProperties = NULL;
+        if(numOfInValidComparators == nNumProperties_)
+        {
+            nNumProperties_ = 1;
+            ppSortProperties = new SortProperty*[nNumProperties_];
+            SortProperty* pSortProperty = new SortProperty("RANK", UNKNOWN_DATA_PROPERTY_TYPE);
+            pSortProperty->pComparator_ = new SortPropertyComparator();
+            ppSortProperties[0] = pSortProperty;
+            sortProperties_.push_back(pSortProperty);
+        }
+        else
+        {
+            ppSortProperties = new SortProperty*[nNumProperties_];
+            size_t j = 0;
+            for(i = 0; i < nNumProperties_; ++i)
+            {
+                SortProperty* pSortProperty = ppSortProperties_[i];
+                if(pSortProperty->pComparator_)
+                {
+                    ppSortProperties[j++] = pSortProperty;
+                }
+            }
+            nNumProperties_ = j;
+        }
+        delete [] ppSortProperties_;
+        ppSortProperties_ = ppSortProperties;
+    }
+
 }
 
