@@ -12,6 +12,7 @@
 #include <product-manager/pm_types.h>
 #include <product-manager/pm_config.h>
 #include <product-manager/product_price.h>
+#include <log-manager/UtilFunctions.h>
 #include <boost/test/unit_test.hpp>
 
 using namespace sf1r;
@@ -24,7 +25,7 @@ public:
         , document_list_(new std::vector<PMDocumentType>())
         , data_source_(new SimpleDataSource(pm_config_, document_list_))
         , op_processor_(new SimpleOperationProcessor())
-        , pm_(new ProductManager(data_source_, op_processor_, pm_config_))
+        , pm_(new ProductManager("", data_source_, op_processor_, pm_config_))
     {
     }
 
@@ -135,7 +136,7 @@ private:
             return;//not new
         }
         izenelib::ir::indexmanager::IndexerDocument index_document;
-        BOOST_CHECK( pm_->HookInsert(doc, index_document) );
+        BOOST_CHECK( pm_->HookInsert(doc, index_document, createTimeStamp()) );
         BOOST_CHECK( data_source_->AddDocument(docid, doc) );
 //         (*document_list_)[docid-1] = doc;
     }
@@ -147,7 +148,7 @@ private:
         if(oldid > document_list_->size()) return;
         if(r_type && docid>document_list_->size() ) return;
         if(!r_type && docid<=document_list_->size() ) return;
-        BOOST_CHECK( pm_->HookUpdate(doc, index_document, r_type) );
+        BOOST_CHECK( pm_->HookUpdate(doc, index_document, createTimeStamp(), r_type) );
         if(r_type)
         {
             BOOST_CHECK( data_source_->UpdateDocument(docid, doc) );
@@ -167,7 +168,7 @@ private:
     void D_(uint32_t docid)
     {
         if(docid > document_list_->size()) return;
-        BOOST_CHECK( pm_->HookDelete(docid) );
+        BOOST_CHECK( pm_->HookDelete(docid, createTimeStamp()) );
         BOOST_CHECK( data_source_->DeleteDocument(docid) );
 //         (*document_list_)[docid-1] = PMDocumentType();
     }

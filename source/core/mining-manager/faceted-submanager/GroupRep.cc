@@ -110,7 +110,7 @@ void GroupRep::mergeStringGroup(const GroupRep& other)
 
     if (stringGroupRep_.empty())
     {
-        stringGroupRep_.swap(((GroupRep &) other).stringGroupRep_);
+        stringGroupRep_.swap(const_cast<GroupRep &>(other).stringGroupRep_);
         return;
     }
 
@@ -170,7 +170,7 @@ void GroupRep::mergeNumericGroup(const GroupRep& other)
 
     if (numericGroupRep_.empty())
     {
-        numericGroupRep_.swap(((GroupRep &) other).numericGroupRep_);
+        numericGroupRep_.swap(const_cast<GroupRep &>(other).numericGroupRep_);
         return;
     }
 
@@ -221,7 +221,7 @@ void GroupRep::mergeNumericRangeGroup(const GroupRep& other)
 
     if (numericRangeGroupRep_.empty())
     {
-        numericRangeGroupRep_.swap(((GroupRep &) other).numericRangeGroupRep_);
+        numericRangeGroupRep_.swap(const_cast<GroupRep &>(other).numericRangeGroupRep_);
         return;
     }
 

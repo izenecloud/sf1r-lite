@@ -216,10 +216,9 @@ bool CobraProcess::initDriverServer()
 
 bool CobraProcess::initNodeManager()
 {
-    NodeManagerSingleton::get()->initWithConfig(
+    NodeManagerSingleton::get()->init(
             SF1Config::get()->distributedTopologyConfig_,
-            SF1Config::get()->distributedUtilConfig_
-            );
+            SF1Config::get()->distributedUtilConfig_);
 
     return true;
 }
@@ -246,7 +245,7 @@ bool CobraProcess::startDistributedServer()
             uint16_t workerPort = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.port_;
             std::size_t threadNum = SF1Config::get()->brokerAgentConfig_.threadNum_;
 
-            WorkerServerSingle::get()->init(localHost, workerPort, threadNum);
+            WorkerServerSingle::get()->init(localHost, workerPort, threadNum, true);
             WorkerServerSingle::get()->start();
             cout << "#[Worker Server]started, listening at "<<localHost<<":"<<workerPort<<" ..."<<endl;
 
@@ -265,10 +264,6 @@ bool CobraProcess::startDistributedServer()
     {
         // master rpc server
         //MasterServer::get()->start(curNodeInfo.localHost_, masterPort);
-
-        // Initialize & Start Master Node Manager, xxx
-        ///MasterNodeManagerSingleton::get()->init();
-        ///MasterNodeManagerSingleton::get()->startServer();
     }
 
     NodeManagerSingleton::get()->start();

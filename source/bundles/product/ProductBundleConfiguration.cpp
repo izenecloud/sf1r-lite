@@ -17,4 +17,3 @@ void ProductBundleConfiguration::setSchema(const std::set<PropertyConfig, Proper
 
 
 }
-

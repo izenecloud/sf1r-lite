@@ -67,88 +67,89 @@ private:
     bool getPropertyValue_( const PropertyValue& value, std::string& valueStr );
 
     bool doBuildCollection_(
-        const std::string& scdFile,
-        int op,
-        uint32_t numdoc
+            const std::string& scdFile,
+            int op,
+            uint32_t numdoc
     );
 
     bool insertOrUpdateSCD_(
-        ScdParser& parser,
-        bool isInsert,
-        uint32_t numdoc
+            ScdParser& parser,
+            bool isInsert,
+            uint32_t numdoc,
+            time_t timestamp
     );
 
     bool createUpdateDocId_(
-        const izenelib::util::UString& scdDocId,
-        bool rType,
-        docid_t& oldId,
-        docid_t& newId
+            const izenelib::util::UString& scdDocId,
+            bool rType,
+            docid_t& oldId,
+            docid_t& newId
     );
 
     bool createInsertDocId_(
-        const izenelib::util::UString& scdDocId,
-        docid_t& newId
+            const izenelib::util::UString& scdDocId,
+            docid_t& newId
     );
 
-    bool deleteSCD_(ScdParser& parser);
+    bool deleteSCD_(ScdParser& parser, time_t timestamp);
 
-    bool insertDoc_(Document& document, IndexerDocument& indexDocument);
+    bool insertDoc_(Document& document, IndexerDocument& indexDocument, time_t timestamp);
 
-    bool updateDoc_(Document& document, IndexerDocument& indexDocument, bool rType);
+    bool updateDoc_(Document& document, IndexerDocument& indexDocument, time_t timestamp, bool rType);
 
-    bool deleteDoc_(docid_t docid);
+    bool deleteDoc_(docid_t docid, time_t timestamp);
 
     void savePriceHistory_(int op);
 
     void saveSourceCount_(int op);
 
     bool prepareDocument_(
-        SCDDoc& doc,
-        Document& document,
-        docid_t& oldId,
-        bool& rType,
-        std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
-        std::string& source,
-        bool insert = true
+            SCDDoc& doc,
+            Document& document,
+            docid_t& oldId,
+            bool& rType,
+            std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
+            std::string& source,
+            bool insert = true
     );
 
     bool prepareIndexDocument_(docid_t oldId, const Document& document, IndexerDocument& indexDocument);
 
     bool checkSeparatorType_(
-        const izenelib::util::UString& propertyValueStr,
-        izenelib::util::UString::EncodingType encoding,
-        char separator
+            const izenelib::util::UString& propertyValueStr,
+            izenelib::util::UString::EncodingType encoding,
+            char separator
     );
 
     bool preparePartialDocument_(
-        Document& document,
-        IndexerDocument& oldIndexDocument
+            Document& document,
+            IndexerDocument& oldIndexDocument
     );
 
     bool checkRtype_(
-        SCDDoc& doc,
-        std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue
+            SCDDoc& doc,
+            std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue
     );
 
     bool makeSentenceBlocks_(
-        const izenelib::util::UString& text,
-        const unsigned int numOfSummary,
-        const unsigned int maxDisplayLength,
-        std::vector<CharacterOffset>& sentenceOffsetList
+            const izenelib::util::UString& text,
+            const unsigned int numOfSummary,
+            const unsigned int maxDisplayLength,
+            std::vector<CharacterOffset>& sentenceOffsetList
     );
 
     bool makeForwardIndex_(
-        const izenelib::util::UString& text,
-        const std::string& propertyName,
-        unsigned int propertyId,
-        const AnalysisInfo& analysisInfo
+            const izenelib::util::UString& text,
+            const std::string& propertyName,
+            unsigned int propertyId,
+            const AnalysisInfo& analysisInfo
     );
 
     bool backup_();
 
     static void value2SCDDoc(
-        const ::izenelib::driver::Value& value,
-        SCDDoc& scddoc
+            const ::izenelib::driver::Value& value,
+            SCDDoc& scddoc
     );
 
 private:

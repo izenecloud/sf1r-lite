@@ -134,17 +134,17 @@ MultiPropertyScorer* QueryBuilder::prepare_dociterator(
 
     size_t size_of_properties = propertyIds.size();
 
-    std::auto_ptr<MultiPropertyScorer> docIterPtr(new MultiPropertyScorer(propertyWeightMap, propertyIds));
+    MultiPropertyScorer* docIterPtr = new MultiPropertyScorer(propertyWeightMap, propertyIds);
     if (pIndexReader_->isDirty())
     {
         pIndexReader_ = indexManagerPtr_->getIndexReader();
     }
-
+    try{
     size_t success_properties = 0;
     for (size_t i = 0; i < size_of_properties; i++)
     {
         prepare_for_property_(
-            docIterPtr.get(),
+            docIterPtr,
             success_properties,
             actionOperation,
             colID,
@@ -156,9 +156,15 @@ MultiPropertyScorer* QueryBuilder::prepare_dociterator(
     }
 
     if (success_properties)
-        return docIterPtr.release();
+        return docIterPtr;
+    else
+        delete docIterPtr;
 
     return NULL;
+    }catch(std::exception& e){
+        delete docIterPtr;
+        return NULL;
+    }
 }
 
 
@@ -216,7 +222,8 @@ void QueryBuilder::prepare_for_property_(
                     pTermDocReader = pTermReader->termPositions();
                 else
                     pTermDocReader = pTermReader->termDocFreqs();
-                termDocReaders[termId].push_back(pTermDocReader);
+                if(pTermDocReader) ///NULL when exception
+                    termDocReaders[termId].push_back(pTermDocReader);
             }
 
         }
@@ -327,6 +334,7 @@ bool QueryBuilder::do_prepare_for_property_(
                              );
 
         TermDocumentIterator* pIterator = NULL;
+        try{
         if (!isUnigramSearchMode)
         {
             pIterator = new TermDocumentIterator(
@@ -416,6 +424,10 @@ bool QueryBuilder::do_prepare_for_property_(
                     return false;
             }
         }
+        }catch(std::exception& e){
+            delete pIterator;
+            return false;
+        }
         return true;
         break;
     } // end - QueryTree::KEYWORD
@@ -443,6 +455,7 @@ bool QueryBuilder::do_prepare_for_property_(
                                      termIndex,
                                      readPositions);
         pIterator->setNot(true);
+        try{
 #if PREFETCH_TERMID
         std::map<termid_t, std::vector<TermDocFreqs*> >::iterator constIt
         = termDocReaders.find(keywordId);
@@ -462,8 +475,11 @@ bool QueryBuilder::do_prepare_for_property_(
             else
                 delete pIterator;
         }
-
-        return true;
+        }catch(std::exception& e)
+        {
+            delete pIterator;
+            return true;
+        }
         break;
     } // end QueryTree::NOT
     case QueryTree::UNIGRAM_WILDCARD:
@@ -573,6 +589,7 @@ bool QueryBuilder::do_prepare_for_property_(
 #endif
         DocumentIterator* pIterator = new ANDDocumentIterator();
         bool ret = false;
+        try{
         for (QTIter andChildIter = queryTree->children_.begin();
                 andChildIter != queryTree->children_.end(); ++andChildIter)
         {
@@ -604,6 +621,10 @@ bool QueryBuilder::do_prepare_for_property_(
                 pDocIterator->add(pIterator);
         else
             delete pIterator;
+        }catch(std::exception& e){
+            delete pIterator;
+            return false;
+        }
         break;
     } // end - QueryTree::AND
     case QueryTree::OR:
@@ -613,6 +634,7 @@ bool QueryBuilder::do_prepare_for_property_(
 #endif
         DocumentIterator* pIterator = new ORDocumentIterator();
         bool ret = false;
+        try{
         for (QTIter orChildIter = queryTree->children_.begin();
                 orChildIter != queryTree->children_.end(); ++orChildIter)
         {
@@ -644,6 +666,10 @@ bool QueryBuilder::do_prepare_for_property_(
                 pDocIterator->add(pIterator);
         else
             delete pIterator;
+        }catch(std::exception& e)            {
+            delete pIterator;
+            return false;
+        }
         break;
     } // end - QueryTree::OR
     case QueryTree::AND_PERSONAL:
@@ -655,6 +681,7 @@ bool QueryBuilder::do_prepare_for_property_(
 #endif
         DocumentIterator* pIterator = new PersonalSearchDocumentIterator(true);
         bool ret = false;
+        try{
         for (QTIter andChildIter = queryTree->children_.begin();
                 andChildIter != queryTree->children_.end(); ++andChildIter)
         {
@@ -684,6 +711,10 @@ bool QueryBuilder::do_prepare_for_property_(
                 pDocIterator->add(pIterator);
         else
             delete pIterator;
+        }catch(std::exception& e){
+            delete pIterator;
+            return false;
+        }
         break;
     } // end - QueryTree::AND_PERSONAL
     case QueryTree::OR_PERSONAL:
@@ -696,6 +727,7 @@ bool QueryBuilder::do_prepare_for_property_(
 #endif
         DocumentIterator* pIterator = new PersonalSearchDocumentIterator(false);
         bool ret = false;
+        try{
         for (QTIter orChildIter = queryTree->children_.begin();
                 orChildIter != queryTree->children_.end(); ++orChildIter)
         {
@@ -725,6 +757,10 @@ bool QueryBuilder::do_prepare_for_property_(
                 pDocIterator->add(pIterator);
         else
             delete pIterator;
+        }catch(std::exception& e){
+            delete pIterator;
+            return false;
+        }
         break;
     } // end - QueryTree::OR_PERSONAL
     case QueryTree::EXACT:

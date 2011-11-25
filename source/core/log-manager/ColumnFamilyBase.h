@@ -18,6 +18,8 @@ public:
         COUNTER
     };
 
+    virtual bool isEnabled() const = 0;
+
     virtual bool truncateColumnFamily() const;
 
     virtual bool dropColumnFamily() const;
@@ -44,18 +46,6 @@ public:
 
     virtual void clear() = 0;
 };
-
-template <typename ColumnFamilyType>
-const ColumnFamilyBase::ColumnType getColumnType()
-{
-    return ColumnFamilyType::column_type;
-}
-
-template <typename ColumnFamilyType>
-const std::string& getName()
-{
-    return ColumnFamilyType::cf_name;
-}
 
 template <typename ColumnFamilyType>
 bool createColumnFamily()
@@ -103,11 +93,20 @@ bool getSingleCount(int32_t& count, const std::string& key, const std::string& s
 }
 
 #define DEFINE_COLUMN_FAMILY_COMMON_ROUTINES(ClassName) \
+private: \
+    static bool is_enabled; \
     static const ColumnType column_type; \
-    static const std::string cf_name; \
-    static const std::string cf_column_type; \
-    static const std::string cf_comparator_type; \
-    static const std::string cf_sub_comparator_type; \
+    \
+public: \
+    /**
+     * XXX Below are the metadata of the column family. Some of them cannot be
+     * changed if the column family has already been created (and not yet
+     * dropped) at server. So be cautious enough to determine them!
+     */ \
+    static const std::string cf_name; /* XXX unchangeable */ \
+    static const std::string cf_column_type; /* XXX unchangeable */ \
+    static const std::string cf_comparator_type; /* XXX unchangeable */ \
+    static const std::string cf_sub_comparator_type; /* XXX unchangeable */ \
     static const std::string cf_comment; \
     static const double cf_row_cache_size; \
     static const double cf_key_cache_size; \
@@ -115,7 +114,7 @@ bool getSingleCount(int32_t& count, const std::string& key, const std::string& s
     static const std::vector<org::apache::cassandra::ColumnDef> cf_column_metadata; \
     static const int32_t cf_gc_grace_seconds; \
     static const std::string cf_default_validation_class; \
-    static const int32_t cf_id; \
+    static const int32_t cf_id; /* XXX you never want to manually set this one */ \
     static const int32_t cf_min_compaction_threshold; \
     static const int32_t cf_max_compaction_threshold; \
     static const int32_t cf_row_cache_save_period_in_seconds; \
@@ -132,17 +131,23 @@ bool getSingleCount(int32_t& count, const std::string& key, const std::string& s
     \
     virtual const ColumnType getColumnType() const \
     { \
-        return ::sf1r::getColumnType<ClassName>(); \
+        return column_type; \
     } \
     \
     virtual const std::string& getName() const \
     { \
-        return ::sf1r::getName<ClassName>(); \
+        return cf_name; \
     } \
     \
-    static bool createColumnFamily() \
+    virtual bool isEnabled() const \
     { \
-        return ::sf1r::createColumnFamily<ClassName>(); \
+        return is_enabled; \
+    } \
+    \
+    static void createColumnFamily() \
+    { \
+        if (::sf1r::createColumnFamily<ClassName>()) \
+            is_enabled = true; \
     } \
     \
     static bool getSingleSlice(ClassName& row, const std::string& key, const std::string& start, const std::string& finish) \
@@ -155,7 +160,9 @@ bool getSingleCount(int32_t& count, const std::string& key, const std::string& s
         return ::sf1r::getSingleCount<ClassName>(count, key, start, finish); \
     } \
     \
-    /* XXX Don't forget to implement the following two in your ColumnFamily class */ \
+    /* XXX Don't forget to implement the following methods */ \
+    static bool updateMultiRow(const std::map<std::string, ClassName>& row_map); \
+    \
     static bool getMultiSlice( \
             std::map<std::string, ClassName>& row_map, \
             const std::vector<std::string>& key_list, \

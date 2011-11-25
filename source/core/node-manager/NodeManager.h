@@ -39,9 +39,23 @@ public:
 
     ~NodeManager();
 
-    void initWithConfig(
+    /**
+     * @param dsTopologyConfig
+     * @param dsUtilConfig
+     */
+    void init(
             const DistributedTopologyConfig& dsTopologyConfig,
             const DistributedUtilConfig& dsUtilConfig);
+
+    /**
+     * Start node manager
+     */
+    void start();
+
+    /**
+     * Stop node manager
+     */
+    void stop();
 
     const DistributedTopologyConfig& getDSTopologyConfig() const
     {
@@ -59,24 +73,18 @@ public:
     }
 
 public:
-    /**
-     * Start node manager
-     */
-    void start();
-
-    /**
-     * Stop node manager
-     */
-    void stop();
-
     virtual void process(ZooKeeperEvent& zkEvent);
 
 private:
     void initZooKeeper(const std::string& zkHosts, const int recvTimeout);
 
     /**
+     * Initializations needed to be done before start collections (run)
+     */
+    void initBeforeStart();
+
+    /**
      * Make sure zookeeper namaspace (znodes) is initialized properly
-     * for all distributed coordination tasks.
      */
     void initZkNameSpace();
 
@@ -92,6 +100,7 @@ private:
     DistributedUtilConfig dsUtilConfig_;
 
     boost::shared_ptr<ZooKeeper> zookeeper_;
+    bool isInitBeforeStartDone_;
 
     // node state
     NodeStateType nodeState_;

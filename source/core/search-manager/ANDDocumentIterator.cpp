@@ -13,7 +13,8 @@ ANDDocumentIterator::ANDDocumentIterator()
 
 ANDDocumentIterator::~ANDDocumentIterator()
 {
-    for (std::list<DocumentIterator*>::iterator iter = docIterList_.begin(); iter != docIterList_.end(); ++iter)
+    std::list<DocumentIterator*>::iterator iter = docIterList_.begin();
+    for (; iter != docIterList_.end(); ++iter)
         delete *iter;
     if (pNOTDocIterator_)
         delete pNOTDocIterator_;
@@ -116,18 +117,21 @@ docid_t ANDDocumentIterator::do_skipTo(docid_t target)
 }
 #endif
 
-void ANDDocumentIterator::doc_item(RankDocumentProperty& rankDocumentProperty)
+void ANDDocumentIterator::doc_item(
+    RankDocumentProperty& rankDocumentProperty)
 {
     DocumentIterator* pEntry;
-    for (std::list<DocumentIterator*>::iterator iter = docIterList_.begin(); iter != docIterList_.end(); ++iter)
+    std::list<DocumentIterator*>::iterator iter = docIterList_.begin();
+    for (; iter != docIterList_.end(); ++iter)
     {
         pEntry = (*iter);
         pEntry->doc_item(rankDocumentProperty);
     }
 }
 
-void ANDDocumentIterator::df_ctf(DocumentFrequencyInProperties& dfmap,
-        CollectionTermFrequencyInProperties& ctfmap)
+void ANDDocumentIterator::df_ctf(
+    DocumentFrequencyInProperties& dfmap,
+    CollectionTermFrequencyInProperties& ctfmap)
 {
     DocumentIterator* pEntry;
     std::list<DocumentIterator*>::iterator iter = docIterList_.begin();
@@ -156,7 +160,9 @@ count_t ANDDocumentIterator::tf()
     return mintf;
 }
 
-void ANDDocumentIterator::queryBoosting(double& score, double& weight)
+void ANDDocumentIterator::queryBoosting(
+    double& score, 
+    double& weight)
 {
     DocumentIterator* pEntry;
     std::list<DocumentIterator*>::iterator iter = docIterList_.begin();

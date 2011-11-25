@@ -16,10 +16,19 @@
 namespace sf1r
 {
 
-WorkerService::WorkerService()
-    : bundleConfig_(NULL)
+WorkerService::WorkerService(
+        IndexBundleConfiguration* bundleConfig,
+        DirectoryRotator& directoryRotator)
+    : bundleConfig_(bundleConfig)
     , recommendSearchService_(NULL)
     , pQA_(NULL)
+    , directoryRotator_(directoryRotator)
+    , scd_writer_(new ScdWriterController(bundleConfig_->collPath_.getScdPath() + "index/"))
+    , collectionId_(1)
+    , indexProgress_()
+    , checkInsert_(false)
+    , numDeletedDocs_(0)
+    , numUpdatedDocs_(0)
 {
     ///LA can only be got from a pool because it is not thread safe
     ///For some situation, we need to get the la not according to the property

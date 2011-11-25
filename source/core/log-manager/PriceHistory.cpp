@@ -1,6 +1,7 @@
 #include "PriceHistory.h"
 
 #include <libcassandra/cassandra.h>
+#include <libcassandra/util_functions.h>
 
 #include <boost/assign/list_of.hpp>
 
@@ -10,6 +11,8 @@ using namespace libcassandra;
 using namespace org::apache::cassandra;
 
 namespace sf1r {
+
+bool PriceHistory::is_enabled(false);
 
 const ColumnFamilyBase::ColumnType PriceHistory::column_type = ColumnFamilyBase::NORMAL;
 
@@ -56,7 +59,7 @@ const int8_t PriceHistory::cf_replicate_on_write(-1);
 
 const double PriceHistory::cf_merge_shards_chance(0);
 
-const string PriceHistory::cf_key_validation_class("AsciiType");
+const string PriceHistory::cf_key_validation_class("UTF8Type");
 
 const string PriceHistory::cf_row_cache_provider("SerializingCacheProvider");
 
@@ -68,7 +71,9 @@ const map<string, string> PriceHistory::cf_compaction_strategy_options;
 
 const int32_t PriceHistory::cf_row_cache_keys_to_save(0);
 
-const map<string, string> PriceHistory::cf_compression_options;
+const map<string, string> PriceHistory::cf_compression_options = map_list_of
+    ("sstable_compression", "SnappyCompressor")
+    ("chunk_length_kb", "64");
 
 PriceHistory::PriceHistory(const string& docId)
     : ColumnFamilyBase()
@@ -84,19 +89,56 @@ const string& PriceHistory::getKey() const
     return docId_;
 }
 
+bool PriceHistory::updateMultiRow(const map<string, PriceHistory>& row_map)
+{
+    if (!is_enabled) return false;
+    try
+    {
+        map<string, map<string, vector<Mutation> > > mutation_map;
+        time_t timestamp = createTimeStamp();
+        for (map<string, PriceHistory>::const_iterator it = row_map.begin();
+                it != row_map.end(); ++it)
+        {
+            vector<Mutation>& mutation_list = mutation_map[it->first][cf_name];
+            for (PriceHistoryType::const_iterator hit = it->second.getPriceHistory().begin();
+                    hit != it->second.getPriceHistory().end(); ++hit)
+            {
+                mutation_list.push_back(Mutation());
+                Mutation& mut = mutation_list.back();
+                mut.__isset.column_or_supercolumn = true;
+                mut.column_or_supercolumn.__isset.column = true;
+                Column& col = mut.column_or_supercolumn.column;
+                col.__set_name(serializeLong(hit->first));
+                col.__set_value(toBytes(hit->second));
+                col.__set_timestamp(timestamp);
+                col.__set_ttl(63072000);
+            }
+        }
+
+        CassandraConnection::instance().getCassandraClient()->batchMutate(mutation_map);
+    }
+    catch (const InvalidRequestException &ire)
+    {
+        cout << ire.why << endl;
+        return false;
+    }
+    return true;
+}
+
 bool PriceHistory::getMultiSlice(
         map<string, PriceHistory>& row_map,
         const vector<string>& key_list,
         const string& start,
         const string& finish)
 {
-    if (!CassandraConnection::instance().isEnabled()) return false;
+    if (!is_enabled) return false;
     try
     {
         ColumnParent col_parent;
         col_parent.__set_column_family(cf_name);
 
         SlicePredicate pred;
+        pred.__isset.slice_range = true;
         //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);
@@ -135,13 +177,14 @@ bool PriceHistory::getMultiCount(
         const string& start,
         const string& finish)
 {
-    if (!CassandraConnection::instance().isEnabled()) return false;
+    if (!is_enabled) return false;
     try
     {
         ColumnParent col_parent;
         col_parent.__set_column_family(cf_name);
 
         SlicePredicate pred;
+        pred.__isset.slice_range = true;
         //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);
@@ -162,7 +205,7 @@ bool PriceHistory::getMultiCount(
 
 bool PriceHistory::updateRow() const
 {
-    if (!CassandraConnection::instance().isEnabled() || docId_.empty()) return false;
+    if (!is_enabled || docId_.empty()) return false;
     if (!priceHistoryPresent_) return true;
     try
     {
@@ -173,7 +216,7 @@ bool PriceHistory::updateRow() const
                     toBytes(it->second),
                     docId_,
                     cf_name,
-                    toBytes(it->first),
+                    serializeLong(it->first),
                     createTimeStamp(),
                     63072000); // Keep the price history for two years at most
         }
@@ -194,7 +237,7 @@ bool PriceHistory::insert(const string& name, const string& value)
         cerr << "Bad insert!" << endl;
         return false;
     }
-    priceHistory_[fromBytes<time_t>(name)] = fromBytes<ProductPrice>(value);
+    priceHistory_[deserializeLong(name)] = fromBytes<ProductPrice>(value);
     return true;
 }
 
