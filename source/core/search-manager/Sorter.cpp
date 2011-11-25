@@ -255,15 +255,10 @@ SortPropertyComparator* SortPropertyCache::getComparator(SortProperty* pSortProp
 
 
     if(propData)
-    {
-        std::cout<<"**********price comparator construct successfully******"<<std::endl;
         return new SortPropertyComparator(propData);
-    }
     else
-    {
-        std::cout<<"*************price comparator construct failed********"<<std::endl;
         return NULL;
-    }
+
 }
 
 Sorter::Sorter(SortPropertyCache* pCache)
@@ -315,13 +310,11 @@ void Sorter::getComparators()
                 pSortProperty->pComparator_= new SortPropertyComparator();
                 break;
             case SortProperty::AUTO:
-                {
-                    //if(!pSortProperty->pComparator_)
+                    if(!pSortProperty->pComparator_)
                         pSortProperty->pComparator_ = pCache_->getComparator(pSortProperty);
 
                     if(! pSortProperty->pComparator_)
                         ++numOfInValidComparators;
-                }
                 break;
             case SortProperty::CUSTOM:
                 pSortProperty->pComparator_ = new SortPropertyComparator(CUSTOM_RANKING_PROPERTY_TYPE);
