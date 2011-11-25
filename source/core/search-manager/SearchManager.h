@@ -8,6 +8,8 @@
 #include <common/ResultType.h>
 #include "NumericPropertyTable.h"
 #include "NumericPropertyTableBuilder.h"
+#include "ANDDocumentIterator.h"
+#include "Sorter.h"
 
 #include <ir/index_manager/utility/IndexManagerConfig.h>
 #include <ir/id_manager/IDManager.h>
@@ -97,6 +99,8 @@ private:
                    DistKeywordSearchInfo& distSearchInfo,
                    int topK,
                    int start);
+
+    void prepareDocIterWithOnlyOrderby_(ANDDocumentIterator* pDocIterator,  boost::shared_ptr<EWAHBoolArray<uint32_t> >& pFilterIdSet);
 
     /**
      * @brief get corresponding id of the property, returns 0 if the property
