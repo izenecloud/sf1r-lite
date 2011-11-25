@@ -3,7 +3,6 @@
 
 #include <util/ustring/UString.h>
 
-#include <string>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace sf1r
@@ -48,15 +47,6 @@ time_t createTimeStamp(boost::posix_time::ptime pt);
 time_t createTimeStamp(const izenelib::util::UString& text);
 
 time_t createTimeStamp(const std::string& text);
-
-struct KeyLess
-{
-    template <typename T1, typename T2>
-    bool operator()(const std::pair<T1, T2>& p1, const std::pair<T1, T2>& p2) const
-    {
-        return p1.first < p2.first;
-    }
-};
 
 }
 

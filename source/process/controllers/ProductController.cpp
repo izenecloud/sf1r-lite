@@ -1,7 +1,7 @@
 #include <bundles/product/ProductSearchService.h>
 #include "ProductController.h"
 #include <product-manager/product_manager.h>
-#include <log-manager/UtilFunctions.h>
+#include <common/UtilFunctions.h>
 #include <common/Keys.h>
 #include <util/ustring/UString.h>
 #include <vector>
