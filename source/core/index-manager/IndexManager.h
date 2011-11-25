@@ -113,7 +113,7 @@ public:
 //             delete[] data;
 //             data = NULL;
 //         }
-        CBTreeIndexer<T>* pBTreeIndexer = pBTreeIndexer_->getIndexer<T>(property);
+        BTreeIndexer<T>* pBTreeIndexer = pBTreeIndexer_->getIndexer<T>(property);
         size_t maxLength = getIndexReader()->maxDoc()+1;
         T low = NumericUtil<T>::Low();
         T high = NumericUtil<T>::High();
