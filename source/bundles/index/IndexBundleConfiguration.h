@@ -75,6 +75,8 @@ public:
     /// Schema
     IndexBundleSchema schema_;
 
+    std::set<PropertyConfigBase, PropertyBaseComp> rawSchema_;
+
     /// @brief whether add unigram properties
     bool bIndexUnigramProperty_;
 

@@ -18,6 +18,7 @@ void IndexBundleConfiguration::setSchema(
     const std::set<PropertyConfigBase, PropertyBaseComp>& schema
 )
 {
+    rawSchema_ = schema;
     std::set<PropertyConfigBase, PropertyBaseComp>::const_iterator iter = schema.begin();
     for(; iter != schema.end(); ++iter)
     {

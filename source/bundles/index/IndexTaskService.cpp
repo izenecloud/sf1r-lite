@@ -17,8 +17,6 @@
 #include <common/SFLogger.h>
 #include <common/Utilities.h>
 #include <license-manager/LicenseManager.h>
-#include <process/common/CollectionMeta.h>
-#include <process/common/XmlConfigParser.h>
 
 #include <util/profiler/ProfilerGroup.h>
 
@@ -150,12 +148,9 @@ bool IndexTaskService::indexMaster_(unsigned int numdoc)
 
 void IndexTaskService::createPropertyList_()
 {
-    CollectionMeta meta;
-    SF1Config::get()->getCollectionMetaByName(bundleConfig_->collectionName_, meta);
-
-    const std::set<PropertyConfigBase, PropertyBaseComp>& propertyList = meta.schema_;
-    std::set<PropertyConfigBase, PropertyBaseComp>::const_iterator propertyIter;
-    for (propertyIter = propertyList.begin(); propertyIter != propertyList.end(); propertyIter++)
+    std::set<PropertyConfigBase, PropertyBaseComp>::const_iterator propertyIter
+        = bundleConfig_->rawSchema_.begin();
+    for (; propertyIter != bundleConfig_->rawSchema_.end(); propertyIter++)
     {
         string propertyName = propertyIter->propertyName_;
         boost::to_lower(propertyName);

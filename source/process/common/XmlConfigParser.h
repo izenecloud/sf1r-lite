@@ -18,7 +18,6 @@
 #include <configuration-manager/FirewallConfig.h>
 #include <configuration-manager/CollectionParameterConfig.h>
 #include <mining-manager/faceted-submanager/ontology_rep_item.h>
-#include <search-manager/QueryBuilder.h>
 #include <core/common/TermTypeDetector.h>
 
 #include "CollectionMeta.h"
