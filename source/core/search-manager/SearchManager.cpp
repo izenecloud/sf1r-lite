@@ -326,7 +326,7 @@ bool SearchManager::doSearch_(
     MultiPropertyScorer* pMultiPropertyIterator = NULL;
     std::vector<QueryFiltering::FilteringType>& filtingList
     = actionOperation.actionItem_.filteringList_;
-    boost::scoped_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet;
+    boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet;
     try
     {
         if (!filtingList.empty())
