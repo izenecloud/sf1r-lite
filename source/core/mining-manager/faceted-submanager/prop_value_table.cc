@@ -21,15 +21,15 @@ PropValueTable::PropValueTable(
     const std::string& dirPath,
     const std::string& propName
 )
-: dirPath_(dirPath)
-, propName_(propName)
-, propStrVec_(1)
-, savePropStrNum_(0)
-, parentIdVec_(1)
-, saveParentIdNum_(0)
-, childMapTable_(1)
-, valueIdTable_(1)
-, saveDocIdNum_(0)
+    : dirPath_(dirPath)
+    , propName_(propName)
+    , propStrVec_(1)
+    , savePropStrNum_(0)
+    , parentIdVec_(1)
+    , saveParentIdNum_(0)
+    , childMapTable_(1)
+    , valueIdTable_(1)
+    , saveDocIdNum_(0)
 {
 }
 

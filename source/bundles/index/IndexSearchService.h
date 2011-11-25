@@ -9,25 +9,18 @@
 
 #include <query-manager/SearchKeywordOperation.h>
 #include <query-manager/ActionItem.h>
-#include <document-manager/Document.h>
-#include <aggregator-manager/WorkerService.h>
-#include <configuration-manager/BrokerAgentConfig.h>
-
-#include <ir/id_manager/IDManager.h>
-#include <question-answering/QuestionAnalysis.h>
 
 #include <util/osgi/IService.h>
 
 #include <boost/shared_ptr.hpp>
 
-
 namespace sf1r
 {
-using izenelib::ir::idmanager::IDManager;
 using namespace net::aggregator;
 
 class AggregatorManager;
 class SearchCache;
+class WorkerService;
 class IndexSearchService : public ::izenelib::osgi::IService
 {
 public:

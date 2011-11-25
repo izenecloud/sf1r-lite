@@ -12,4 +12,3 @@ namespace directory {
 const std::string DirectoryTraits::kNotName;
 
 }} // namespace sf1r::directory
-

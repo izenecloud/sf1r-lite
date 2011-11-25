@@ -71,6 +71,8 @@ public:
 
 
     void reset_cache(bool rType, docid_t id, const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
+    
+    void reset_all_property_cache();
 
     /// @brief change working dir by setting new underlying componenets
     void chdir(const boost::shared_ptr<IDManager>& idManager,

@@ -15,6 +15,9 @@
 #include <util/profiler/ProfilerGroup.h>
 #include <license-manager/LicenseManager.h>
 #include <la/analyzer/MultiLanguageAnalyzer.h>
+#include <am/sequence_file/ssfr.h>
+
+#include <langid/langid.h>
 
 #include <fstream>
 #include <boost/archive/xml_oarchive.hpp>
@@ -233,7 +236,7 @@ std::size_t DocumentManager::getTotalPropertyLength(const std::string& property)
 
 bool DocumentManager::getPropertyValue(
     docid_t docId,
-    const std::string& propertyName, 
+    const std::string& propertyName,
     PropertyValue& result
 )
 {
@@ -259,13 +262,13 @@ bool DocumentManager::getPropertyValue(
         documentCache_.insertValue(docId, doc);
         result = doc.property(*realPropertyName);
     }
-//	if( getDocument(docId, doc) )
-//		result = doc.property(*realPropertyName);
+//  if( getDocument(docId, doc) )
+//      result = doc.property(*realPropertyName);
     return true;
 }
 
 bool DocumentManager::getDocument(
-    docid_t docId, 
+    docid_t docId,
     Document& document
 )
 {
@@ -283,7 +286,7 @@ bool DocumentManager::getDocumentAsync(docid_t docId)
 }
 
 bool DocumentManager::getDocument_impl(
-    docid_t docId, 
+    docid_t docId,
     Document& document,
     boost::detail::atomic_count* finishedJobs
 )
@@ -334,7 +337,7 @@ bool DocumentManager::loadDelFilter_()
 
     return true;
 }
-    
+
 bool DocumentManager::saveDelFilter_()
 {
     boost::mutex::scoped_lock lock(delfilter_mutex_);
@@ -535,7 +538,7 @@ bool DocumentManager::getDocumentsParallel(
 }
 
 bool DocumentManager::getRawTextOfDocuments(
-    const std::vector<docid_t>& docIdList, 
+    const std::vector<docid_t>& docIdList,
     const string& propertyName,
     const unsigned int option,
     const std::vector<izenelib::util::UString>& queryTerms,
@@ -560,7 +563,7 @@ bool DocumentManager::getRawTextOfDocuments(
     }
     getDocumentsParallel(ids, docs);
     //make getRawTextOfOneDocument_(...) called in the order of docid
-    //	map<docid_t, int>::iterator
+    //    map<docid_t, int>::iterator
     it = doc_idx_map.begin();
     for (; it != doc_idx_map.end(); it++)
     {
@@ -576,17 +579,17 @@ bool DocumentManager::getRawTextOfDocuments(
 
 bool DocumentManager::getRawTextOfOneDocument_(
     const docid_t docId,
-    const string& propertyName, 
+    const string& propertyName,
     const unsigned int option,
     const std::vector<izenelib::util::UString>& queryTerms,
-    izenelib::util::UString& outSnippet, 
+    izenelib::util::UString& outSnippet,
     izenelib::util::UString& rawText
 )
 {
 
     if (!getPropertyValue(docId, propertyName, rawText))
     {
-        //	return false;
+        //    return false;
     }
     if (rawText.empty())
     {
@@ -649,7 +652,7 @@ bool DocumentManager::processOptionForRawText(
 bool DocumentManager::getSummary(
     const izenelib::util::UString& rawText,
     const std::vector<CharacterOffset>& sentenceOffsets,
-    unsigned int numSentences, 
+    unsigned int numSentences,
     const unsigned int option,
     const std::vector<izenelib::util::UString>& queryTerms,
     izenelib::util::UString& summary
@@ -707,7 +710,7 @@ unsigned int DocumentManager::getDisplayLength_(const string& propertyName)
 
 bool DocumentManager::highlightText(
     const izenelib::util::UString& text,
-    const std::vector<izenelib::util::UString> queryTerms, 
+    const std::vector<izenelib::util::UString> queryTerms,
     izenelib::util::UString& outText
 )
 {
@@ -719,4 +722,3 @@ bool DocumentManager::highlightText(
 }
 
 }
-

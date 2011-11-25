@@ -21,7 +21,7 @@ namespace sf1r{
 ///This class represents a document's ranking score information.
 class RankingScoreItem {
 public:
-	RankingScoreItem();
+    RankingScoreItem();
     //# SeungEun added a new constructor.
     RankingScoreItem(unsigned int documentID, float score) : docId_(documentID), score_(score)
     {
@@ -39,13 +39,13 @@ public:
         return *this;
     }
 
-	virtual ~RankingScoreItem();
-	///the document's unique ID.
-	unsigned int docId_;
-	///the document's score.
-	float score_;
-	///For sorting the scoreItem in ascending order of score.
-	bool operator<(const RankingScoreItem& rightItem) const;
+    virtual ~RankingScoreItem();
+    ///the document's unique ID.
+    unsigned int docId_;
+    ///the document's score.
+    float score_;
+    ///For sorting the scoreItem in ascending order of score.
+    bool operator<(const RankingScoreItem& rightItem) const;
 
 private:
     // For serialization

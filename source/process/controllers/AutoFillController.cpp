@@ -6,6 +6,7 @@
 #include "AutoFillController.h"
 
 #include <mining-manager/query-recommend-submanager/RecommendManager.h>
+#include <mining-manager/MiningManager.h>
 
 #include <common/Keys.h>
 

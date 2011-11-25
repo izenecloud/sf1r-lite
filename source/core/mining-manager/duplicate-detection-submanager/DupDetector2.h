@@ -9,29 +9,36 @@
 
 
 #include "DupTypes.h"
-#include <document-manager/Document.h>
-#include <document-manager/DocumentManager.h>
-#include "charikar_algo.h"
 #include "group_table.h"
 #include "fp_storage.h"
 #include "fp_tables.h"
 #include <string>
 #include <vector>
 
+#include <ir/id_manager/IDManager.h>
+#include <idmlib/util/file_object.h>
+
 #include <boost/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include <idmlib/util/file_object.h>
-#include <idmlib/util/idm_analyzer.h>
+namespace idmlib
+{
+namespace util
+{
+class IDMAnalyzer;
+}
+}
+
 namespace sf1r
 {
-
 /**
  * @brief The interface of duplicate detection.
  * It manages all the offline and online algorithms in duplication detection which
  * aims to eliminate the duplicate and near-duplicate documents from the collection and
  * search result.
   */
+class DocumentManager;
+class CharikarAlgo;
 class DupDetector2
 {
     typedef izenelib::am::SimpleSequenceFileWriter<uint32_t, izenelib::util::CBitArray, uint8_t> WriterType;
@@ -41,8 +48,13 @@ class DupDetector2
 //   typedef FingerprintsCompare<64,3,6> FPCompareType;
     typedef idmlib::util::FileObject<uint32_t > FileObjectType;
 public:
-    DupDetector2(const std::string& container);
-    DupDetector2(const std::string& container, const boost::shared_ptr<DocumentManager>& document_manager, const std::vector<std::string>& properties, idmlib::util::IDMAnalyzer* analyzer);
+    DupDetector2(
+        const std::string& container);
+    DupDetector2(
+        const std::string& container,
+        const boost::shared_ptr<DocumentManager>& document_manager,
+        const std::vector<std::string>& properties,
+        idmlib::util::IDMAnalyzer* analyzer);
     ~DupDetector2();
 
 //   void SetDocAvgLength(uint32_t avg)
@@ -73,8 +85,8 @@ public:
     bool isDuplicated( uint32_t docId1, uint32_t docId2);
 
     bool ProcessCollection();
-    
-    
+
+
     void insertDocument(uint32_t docid, const std::vector<std::string>& v);
 
     bool runDuplicateDetectionAnalysis(bool force=false);
@@ -84,8 +96,8 @@ public:
     /**
      * @brief Insert new documents to a collection
      */
-// 	bool insertDocuments(const std::vector<unsigned int>& docIdList,
-// 	        const std::vector<std::vector<unsigned int> >& documentList);
+//  bool insertDocuments(const std::vector<unsigned int>& docIdList,
+//          const std::vector<std::vector<unsigned int> >& documentList);
 
 
     void SetIDManager(const boost::shared_ptr<izenelib::ir::idmanager::IDManager>& id_manager)
@@ -95,10 +107,10 @@ public:
 
 
 private:
-    
+
     bool ProcessCollectionBySimhash_();
     bool ProcessCollectionBySim_();
-    
+
     uint32_t GetProcessedMaxId_();
 
     void FindDD_(const std::vector<FpItem>& object, const FpTable& table, uint32_t table_id);
@@ -112,11 +124,11 @@ private:
     uint8_t GetK_(uint32_t doc_length);
 
     void SetParameters_();
-    
+
     void FindSim_(uint32_t docid1, uint32_t docid2, double score);
-    
+
     bool GetPropertyString_(uint32_t docid, const std::string& property, std::string& value);
-    
+
     void OutputResult_(const std::string& file);
 
 

@@ -1,4 +1,4 @@
-INCLUDE_DIRECTORIES(		 
+INCLUDE_DIRECTORIES(
   ${CMAKE_SOURCE_DIR}/core
   ${izenelib_INCLUDE_DIRS}
   ${ilplib_INCLUDE_DIRS}
@@ -6,7 +6,7 @@ INCLUDE_DIRECTORIES(
   ${imllib_INCLUDE_DIRS}
   ${wisekma_INCLUDE_DIRS}
   ${izenecma_INCLUDE_DIRS}
-  ${izenejma_INCLUDE_DIRS}  
+  ${izenejma_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
   ${TokyoCabinet_INCLUDE_DIRS}
   ${Glog_INCLUDE_DIRS}
@@ -87,8 +87,6 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   ADD_TEST(product "${SF1RENGINE_ROOT}/testbin/t_product_manager")
 
-  
-  
+
+
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
-
-

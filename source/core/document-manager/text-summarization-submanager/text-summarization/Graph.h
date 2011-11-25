@@ -27,7 +27,7 @@ public:
     static bool compare(const Vertex& vertLeft, const Vertex& vertRight);
 
     /* Added by wps, for use this class in class TextSummarization.
-     * 	4.27, 2008
+     *  4.27, 2008
      */
 public:
     //Read program properties.
@@ -71,4 +71,3 @@ private:
 }
 }
 #endif
-

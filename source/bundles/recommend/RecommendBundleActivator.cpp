@@ -12,6 +12,10 @@
 #include <recommend-manager/ItemIdGenerator.h>
 #include <bundles/index/IndexSearchService.h>
 
+#include <aggregator-manager/WorkerService.h>
+
+#include <ir/id_manager/IDManager.h>
+
 #include <common/SFLogger.h>
 
 #include <memory> // auto_ptr
@@ -19,6 +23,8 @@
 #include <glog/logging.h>
 
 namespace bfs = boost::filesystem;
+
+using izenelib::ir::idmanager::IDManager;
 
 namespace sf1r
 {
@@ -146,28 +152,44 @@ bool RecommendBundleActivator::openDataDirectory_(std::string& dataDir)
     }
 
     directoryRotator_.setCapacity(directories.size());
+    std::vector<bfs::path> dirtyDirectories;
     typedef std::vector<std::string>::const_iterator iterator;
     bfs::path dataPath = config_->collPath_.getCollectionDataPath();
     for (iterator it = directories.begin(); it != directories.end(); ++it)
     {
         bfs::path dir = dataPath / *it;
         if (!directoryRotator_.appendDirectory(dir))
-	{
-	  std::string msg = dir.file_string() + " corrupted, delete it!";
-	  sflog->error( SFL_SYS, msg.c_str() ); 
-	  std::cout<<msg<<std::endl;
-	  //clean the corrupt dir
-	  bfs::remove_all(dir);
-	  directoryRotator_.appendDirectory(dir);
-	}
+        {
+            std::string msg = dir.file_string() + " corrupted, delete it!";
+            LOG(ERROR) <<msg <<endl;
+            //clean the corrupt dir
+            bfs::remove_all(dir);
+        }
     }
 
     directoryRotator_.rotateToNewest();
     boost::shared_ptr<Directory> newest = directoryRotator_.currentDirectory();
     if (newest)
     {
-	dataDir = newest->path().string();
-	return true;
+        dataDir = newest->path().string();
+        std::vector<bfs::path>::iterator it = dirtyDirectories.begin();
+        for( ; it != dirtyDirectories.end(); ++it)
+            directoryRotator_.appendDirectory(*it);
+        return true;
+    }
+    else
+    {
+        std::vector<bfs::path>::iterator it = dirtyDirectories.begin();
+        for( ; it != dirtyDirectories.end(); ++it)
+            directoryRotator_.appendDirectory(*it);
+		
+        directoryRotator_.rotateToNewest();
+        boost::shared_ptr<Directory> dir = directoryRotator_.currentDirectory();
+        if(dir)
+        {
+            dataDir = newest->path().string();
+            return true;
+        }
     }
 
     return false;

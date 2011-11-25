@@ -1,7 +1,7 @@
 /**
  * @file index-manager/IndexManager.h
  * @author Yingfeng Zhang
- * @brief Providing an encapsulation on operations that are not suitable to 
+ * @brief Providing an encapsulation on operations that are not suitable to
  * put into izenelib for indexer
  */
 #ifndef SF1V5_INDEX_MANAGER_H
@@ -13,16 +13,11 @@
 
 #include <ir/index_manager/index/Indexer.h>
 #include <ir/index_manager/index/IndexReader.h>
-#include <ir/index_manager/index/BTreeIndex.h>
-#include <ir/index_manager/utility/BitVector.h>
-
+#include <ir/index_manager/index/rtype/BTreeIndexerManager.h>
 #include <boost/shared_ptr.hpp>
-
-#define MAX_NUMERICSIZER 32768	
 
 using namespace std;
 using namespace izenelib::ir::indexmanager;
-using namespace izenelib::sdb;
 
 namespace sf1r
 {
@@ -100,20 +95,30 @@ public:
 public:
     ///load data for BTree index.
     ///@param data - the buffer provided by user
-    template<typename T>	
+    template<typename T>
     void loadPropertyDataForSorting(const string& property, T* &data)
     {
-        int32_t fid = getPropertyIDByName(1,property);
-        collectionid_t cid = 1;
+//         int32_t fid = getPropertyIDByName(1,property);
+//         collectionid_t cid = 1;
+//         size_t maxLength = getIndexReader()->maxDoc()+1;
+// 
+//         BTreeIndex<IndexKeyType<T> >* pBTreeIndexer = pBTreeIndexer_->getIndexer<T>();
+//         T low = NumericUtil<T>::Low();
+//         T high = NumericUtil<T>::High();
+//         data = new T[maxLength]();
+//         IndexKeyType<T> lowkey(cid, fid, low);
+//         IndexKeyType<T> highkey(cid, fid, high);
+//         if (pBTreeIndexer->get_between(lowkey,highkey,data,maxLength) == 0)
+//         {
+//             delete[] data;
+//             data = NULL;
+//         }
+        BTreeIndexer<T>* pBTreeIndexer = pBTreeIndexer_->getIndexer<T>(property);
         size_t maxLength = getIndexReader()->maxDoc()+1;
-
-        BTreeIndex<IndexKeyType<T> >* pBTreeIndexer = pBTreeIndexer_->getIndexer<T>();
         T low = NumericUtil<T>::Low();
         T high = NumericUtil<T>::High();
         data = new T[maxLength]();
-        IndexKeyType<T> lowkey(cid, fid, low);
-        IndexKeyType<T> highkey(cid, fid, high);
-        if (pBTreeIndexer->get_between(lowkey,highkey,data,maxLength) == 0)
+        if (pBTreeIndexer->getValueBetween(low,high,maxLength, data) == 0)
         {
             delete[] data;
             data = NULL;
@@ -121,7 +126,7 @@ public:
     }
 
     ///Make range query on BTree index to fill the Filter, which is required by the filter utility of SearchManager
-    void makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property, 
+    void makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,
            const std::vector<PropertyValue>& filterParam, boost::shared_ptr<BitVector> docIdSet);
 
 private:
@@ -129,7 +134,7 @@ private:
 private:
     static std::string DATE;
 };
- 
+
 }
 
 #endif

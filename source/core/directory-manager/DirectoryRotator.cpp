@@ -4,7 +4,7 @@
  * @date Created <2009-10-27 17:20:44>
  * @date Updated <2009-11-04 18:22:37>
  */
-#include "Directory.h"
+
 #include "DirectoryRotator.h"
 
 #include <boost/next_prior.hpp>
@@ -67,24 +67,21 @@ void DirectoryRotator::rotate()
 {
     if (directories_.size() > 1)
     {
-        std::rotate(directories_.begin(),
-                    boost::next(directories_.begin()),
-                    directories_.end());
+        directories_.rotate(boost::next(directories_.begin()));
     }
 }
 
 void DirectoryRotator::rotateToNewest()
 {
-    Container::iterator newest = std::max_element(
-        directories_.begin(),
-        directories_.end(),
-        &sortByUpdateTime_
-    );
-    std::rotate(
-        directories_.begin(),
-        newest,
-        directories_.end()
-    );
+    if (directories_.size() > 1)
+    {
+        Container::iterator newest = std::max_element(
+                directories_.begin(),
+                directories_.end(),
+                &sortByUpdateTime_
+        );
+        directories_.rotate(newest);
+    }
 }
 
 bool DirectoryRotator::sortByUpdateTime_(const DirectoryHandle& a,

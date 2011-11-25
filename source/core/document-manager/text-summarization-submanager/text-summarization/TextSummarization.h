@@ -98,10 +98,9 @@ struct SentenceRelScore
 };
 
 //void computeSummaryRM(unsigned int summarySize_,
-//		const std::vector<std::vector<unsigned int> >& input,
-//		std::vector<unsigned int>& result);
+//        const std::vector<std::vector<unsigned int> >& input,
+//        std::vector<unsigned int>& result);
 }
 }
 
 #endif //TEXTSUMMARY_H
-

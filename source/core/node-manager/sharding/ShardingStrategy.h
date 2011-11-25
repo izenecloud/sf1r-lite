@@ -29,6 +29,8 @@ public:
     };
 
     virtual shardid_t sharding(ShardFieldListT& shardFieldList, ShardingParams& shardingParams) = 0;
+
+    virtual ~ShardingStrategy(){}
 };
 
 class HashShardingStrategy : public ShardingStrategy

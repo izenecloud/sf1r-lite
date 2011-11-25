@@ -24,7 +24,7 @@ public:
     : nextResponse_(nextResponse)
     , hasNext_(true)
     {
-    	currDoc_ = 0; // needed
+        currDoc_ = 0; // needed
     }
 
 public:
@@ -65,17 +65,17 @@ public:
      */
     docid_t skipTo(docid_t target)
     {
-    	if (target > currDoc_) {
-    		currDoc_ = ANDDocumentIterator::skipTo(target);
-    	}
+        if (target > currDoc_) {
+            currDoc_ = ANDDocumentIterator::skipTo(target);
+        }
 
-    	if (target == currDoc_)
-    		personal_current_ = true;
-    	else
-    		personal_current_ = false;
+        if (target == currDoc_)
+            personal_current_ = true;
+        else
+            personal_current_ = false;
 
-    	//cout << " [ PersonalSearchDocumentIterator::skipTo() ] "<<target<<" - current:"<<currDoc_<< endl;
-    	return target;
+        //cout << " [ PersonalSearchDocumentIterator::skipTo() ] "<<target<<" - current:"<<currDoc_<< endl;
+        return target;
     }
 #endif
 
@@ -83,16 +83,16 @@ public:
 
     void queryBoosting(double& score, double& weight)
     {
-    	if (personal_current_)
-    	{
-    		score_method(score, weight);
-    	}
+        if (personal_current_)
+        {
+            score_method(score, weight);
+        }
     }
 
     void print(int level=0)
     {
         cout << std::string(level*4, ' ') << "|--[ "
-        		<< "PersonalSearchIter "<< personal_current_<<" "<<  currDoc_<<" ]"<< endl;
+            << "PersonalSearchIter "<< personal_current_<<" "<<  currDoc_<<" ]"<< endl;
 
         DocumentIterator* pEntry;
         std::list<DocumentIterator*>::iterator iter = docIterList_.begin();
@@ -112,7 +112,7 @@ private:
     {
         score += tf() * weight * 0.1;
         //cout << "Query Boosting for doc " << currDoc_ << " : "
-        //		<< tf() << " * " << weight * 0.1 << " = " << tf() * weight * 0.1 << endl;
+        //    << tf() << " * " << weight * 0.1 << " = " << tf() * weight * 0.1 << endl;
     }
 
 private:

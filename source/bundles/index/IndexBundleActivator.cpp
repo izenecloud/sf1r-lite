@@ -7,7 +7,6 @@
 #include <query-manager/QueryManager.h>
 #include <index-manager/IndexManager.h>
 #include <search-manager/SearchManager.h>
-#include <search-manager/PersonalizedSearchInfo.h>
 #include <ranking-manager/RankingManager.h>
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
@@ -16,6 +15,8 @@
 #include <aggregator-manager/WorkerService.h>
 #include <node-manager/MasterNodeManager.h>
 #include <util/singleton.h>
+
+#include <question-answering/QuestionAnalysis.h>
 
 #include <boost/filesystem.hpp>
 
@@ -246,6 +247,7 @@ bool IndexBundleActivator::init_()
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open data directories.."<<std::endl;
     bool bOpenDataDir = openDataDirectories_();
     SF1R_ENSURE_INIT(bOpenDataDir);
+    LOG(INFO)<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] working directory "<<currentCollectionDataName_<<std::endl;
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open id manager.."<<std::endl;
     idManager_ = createIDManager_();
     SF1R_ENSURE_INIT(idManager_);
@@ -285,8 +287,9 @@ bool IndexBundleActivator::init_()
 
     taskService_ = new IndexTaskService(config_, directoryRotator_, indexManager_);
 
-    //taskService_->workerService_ = workerService_;
-    //taskService_->workerService_->summarizer_.init(documentManager_->getLangId(), idManager_);
+    taskService_->aggregatorManager_ = aggregatorManager_;
+    taskService_->workerService_ = workerService_;
+    taskService_->workerService_->summarizer_.init(documentManager_->getLangId(), idManager_);
     taskService_->idManager_ = idManager_;
     taskService_->laManager_ = laManager_;
     taskService_->documentManager_ = documentManager_;
@@ -315,13 +318,16 @@ std::string IndexBundleActivator::getQueryDataPath_() const
 
 bool IndexBundleActivator::openDataDirectories_()
 {
+    bfs::create_directories(config_->indexSCDPath());
+
     std::vector<std::string>& directories = config_->collectionDataDirectories_;
     if( directories.size() == 0 )
     {
-        std::cout<<"no data dir config"<<std::endl;
+        LOG(ERROR)<<"no data dir config"<<std::endl;
         return false;
     }
     directoryRotator_.setCapacity(directories.size());
+    std::vector<bfs::path> dirtyDirectories;
     typedef std::vector<std::string>::const_iterator iterator;
     for (iterator it = directories.begin(); it != directories.end(); ++it)
     {
@@ -329,10 +335,10 @@ bool IndexBundleActivator::openDataDirectories_()
         if (!directoryRotator_.appendDirectory(dataDir))
         {
             std::string msg = dataDir.file_string() + " corrupted, delete it!";
-            DLOG(ERROR) <<msg <<endl;
+            LOG(ERROR) <<msg <<endl;
             //clean the corrupt dir
             boost::filesystem::remove_all( dataDir );
-            directoryRotator_.appendDirectory(dataDir);
+            dirtyDirectories.push_back(dataDir);
         }
     }
 
@@ -342,8 +348,26 @@ bool IndexBundleActivator::openDataDirectories_()
     {
         bfs::path p = newest->path();
         currentCollectionDataName_ = p.filename();
-        //std::cout << "Current Index Directory: " << indexPath_() << std::endl;
+        config_->collPath_.setCurrCollectionDir(currentCollectionDataName_);
+        std::vector<bfs::path>::iterator it = dirtyDirectories.begin();
+        for( ; it != dirtyDirectories.end(); ++it)
+            directoryRotator_.appendDirectory(*it);
         return true;
+    }
+    else
+    {
+        std::vector<bfs::path>::iterator it = dirtyDirectories.begin();
+        for( ; it != dirtyDirectories.end(); ++it)
+            directoryRotator_.appendDirectory(*it);
+
+        directoryRotator_.rotateToNewest();
+        boost::shared_ptr<Directory> dir = directoryRotator_.currentDirectory();
+        if(dir)
+        {
+            currentCollectionDataName_ = dir->path().filename();
+            config_->collPath_.setCurrCollectionDir(currentCollectionDataName_);
+            return true;
+        }
     }
 
     return false;

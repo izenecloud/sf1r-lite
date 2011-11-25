@@ -1,5 +1,6 @@
 #include <util/functional.h>
 #include "LabelManager.h"
+#include <mining-manager/concept-id-manager.h>
 #include <mining-manager/util/MUtil.hpp>
 #include <mining-manager/util/TermUtil.hpp>
 #include <mining-manager/util/FSUtil.hpp>
@@ -12,6 +13,7 @@
 #include <common/type_defs.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/serialization/list.hpp>
 
 #define GEN_LABEL_INVERTED_TEXT ;
 

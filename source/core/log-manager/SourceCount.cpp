@@ -24,13 +24,13 @@ const string SourceCount::cf_comparator_type("UTF8Type");
 const string SourceCount::cf_sub_comparator_type;
 
 const string SourceCount::cf_comment(
-    "This column family stores sources and their product counts for each collection.\n"
+    "\n\nThis column family stores sources and their product counts for each collection.\n"
     "Schema:\n\n"
     "    column family SourceCount = list of {\n"
-    "        key \"collection name\" : list of {\n"
-    "            name \"source name\" : value \"product count\"\n"
+    "        key \"collection\" : list of {\n"
+    "            name \"source\" : value \"count\"\n"
     "        }\n"
-    "    }");
+    "    }\n\n");
 
 const double SourceCount::cf_row_cache_size(0);
 
@@ -88,26 +88,26 @@ const string& SourceCount::getKey() const
     return collection_;
 }
 
-bool SourceCount::updateMultiRow(const map<string, SourceCount>& row_map)
+bool SourceCount::updateMultiRow(const vector<SourceCount>& row_list)
 {
     if (!is_enabled) return false;
     try
     {
         map<string, map<string, vector<Mutation> > > mutation_map;
-        for (map<string, SourceCount>::const_iterator it = row_map.begin();
-                it != row_map.end(); ++it)
+        for (vector<SourceCount>::const_iterator vit = row_list.begin();
+                vit != row_list.end(); ++vit)
         {
-            vector<Mutation>& mutation_list = mutation_map[it->first][cf_name];
-            for (SourceCountType::const_iterator sit = it->second.getSourceCount().begin();
-                    sit != it->second.getSourceCount().end(); ++sit)
+            vector<Mutation>& mutation_list = mutation_map[vit->collection_][cf_name];
+            for (SourceCountType::const_iterator mit = vit->sourceCount_.begin();
+                    mit != vit->sourceCount_.end(); ++mit)
             {
                 mutation_list.push_back(Mutation());
                 Mutation& mut = mutation_list.back();
                 mut.__isset.column_or_supercolumn = true;
                 mut.column_or_supercolumn.__isset.counter_column = true;
                 CounterColumn& col = mut.column_or_supercolumn.counter_column;
-                col.__set_name(sit->first);
-                col.__set_value(sit->second);
+                col.__set_name(mit->first);
+                col.__set_value(mit->second);
             }
         }
 
@@ -122,10 +122,12 @@ bool SourceCount::updateMultiRow(const map<string, SourceCount>& row_map)
 }
 
 bool SourceCount::getMultiSlice(
-        map<string, SourceCount>& row_map,
+        vector<SourceCount>& row_list,
         const vector<string>& key_list,
         const string& start,
-        const string& finish)
+        const string& finish,
+        int32_t count,
+        bool reversed)
 {
     if (!is_enabled) return false;
     try
@@ -135,9 +137,10 @@ bool SourceCount::getMultiSlice(
 
         SlicePredicate pred;
         pred.__isset.slice_range = true;
-        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);
+        pred.slice_range.__set_count(count);
+        pred.slice_range.__set_reversed(reversed);
 
         map<string, vector<ColumnOrSuperColumn> > raw_column_map;
         CassandraConnection::instance().getCassandraClient()->getMultiSlice(
@@ -150,8 +153,9 @@ bool SourceCount::getMultiSlice(
         for (map<string, vector<ColumnOrSuperColumn> >::const_iterator mit = raw_column_map.begin();
                 mit != raw_column_map.end(); ++mit)
         {
-            row_map[mit->first] = SourceCount(mit->first);
-            SourceCount& source_count = row_map[mit->first];
+            if (mit->second.empty()) continue;
+            row_list.push_back(SourceCount(mit->first));
+            SourceCount& source_count = row_list.back();
             for (vector<ColumnOrSuperColumn>::const_iterator vit = mit->second.begin();
                     vit != mit->second.end(); ++vit)
             {
@@ -181,9 +185,9 @@ bool SourceCount::getMultiCount(
 
         SlicePredicate pred;
         pred.__isset.slice_range = true;
-        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);
+        //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
 
         CassandraConnection::instance().getCassandraClient()->getMultiCount(
                 count_map,

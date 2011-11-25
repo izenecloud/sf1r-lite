@@ -53,8 +53,8 @@ public:
      * @param rescorer if not NULL, the items filtered by @p rescorer would not appear in @p results
      */
     bool getFreqItemSets(
-        int howmany, 
-        std::list<itemid_t>& items, 
+        int howmany,
+        std::list<itemid_t>& items,
         std::list<itemid_t>& results,
         idmlib::recommender::ItemRescorer* rescorer = NULL);
 
@@ -66,7 +66,7 @@ public:
      * @note to get latest result, you have to call @c buildFreqItemsets() beforehand.
      */
     void getAllFreqItemSets(
-        int howmany, 
+        int howmany,
         size_t threshold,
         FrequentItemSetResultType& results);
 
@@ -106,7 +106,7 @@ private:
      * otherwise, it would lead to forever loop in @c izenelib::util::next_subset().
      */
     void _judgeFrequentItemset(
-        std::vector<itemid_t>& max_itemset , 
+        std::vector<itemid_t>& max_itemset ,
         FrequentItemSetResultType& frequent_itemsets);
 
     /**
@@ -125,7 +125,7 @@ private:
     std::string order_key_path_;
     std::string order_db_path_;
     std::string max_itemsets_results_path_;
-    std::string frequent_itemsets_results_path_;	
+    std::string frequent_itemsets_results_path_;
     size_t threshold_;
     izenelib::util::ReadWriteLock db_lock_;
     FILE* order_key_;
@@ -140,4 +140,3 @@ private:
 } // namespace sf1r
 
 #endif // ORDER_MANAGER_H
-

@@ -52,7 +52,7 @@ void WildcardDocumentIterator::add(
 {
 #if PREFETCH_TERMID
     std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >::iterator constIt
-				 = termDocReaders.find(termId);
+        = termDocReaders.find(termId);
     if(constIt != termDocReaders.end())
     {
         TermDocumentIterator* pIterator =

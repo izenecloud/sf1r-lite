@@ -27,12 +27,19 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
         sf1r_product_manager
         sf1r_document_manager
         sf1r_node_manager
+        sf1r_search_manager
+        sf1r_mining_manager
+        sf1r_ranking_manager
+        sf1r_index_manager
+        sf1r_directory_manager
         ${Glog_LIBRARIES}
         ${Boost_LIBRARIES}
         ${ilplib_LIBRARIES}
         ${wisekma_LIBRARIES}
         ${izenecma_LIBRARIES}
         ${izenejma_LIBRARIES}
+        ${idmlib_LIBRARIES}
+        ${imllib_LIBRARIES}
         ${izenelib_LIBRARIES}
         ${xml2_LIBRARIES}
         sqlite3
@@ -48,3 +55,4 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
         "${SF1RENGINE_ROOT}/testbin/t_license_manager"
         )
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
+

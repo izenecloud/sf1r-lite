@@ -14,15 +14,20 @@
 #ifndef _QUERY_CORRECTION_SUBMANAGER_H_
 #define _QUERY_CORRECTION_SUBMANAGER_H_
 
-#include <idmlib/query-correction/cn_query_correction.h>
-#include "EkQueryCorrection.h"
+#include <util/ustring/UString.h>
+
 #include <boost/noncopyable.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/unordered_map.hpp>
+
+namespace idmlib{namespace qc{
+class CnQueryCorrection;
+}}
 
 namespace sf1r
 {
-
+class EkQueryCorrection;
 class QueryCorrectionSubmanager : public boost::noncopyable
 {
     typedef boost::tuple<uint32_t, uint32_t, izenelib::util::UString> QueryLogType;
@@ -30,7 +35,11 @@ class QueryCorrectionSubmanager : public boost::noncopyable
     static const int DEFAULT_MAX_EDITDISTANCE_ = 2;
 
 public:
-    QueryCorrectionSubmanager(const std::string& queryDataPath, bool enableEK, bool enableChn, int ed = DEFAULT_MAX_EDITDISTANCE_);
+    QueryCorrectionSubmanager(
+        const std::string& queryDataPath, 
+        bool enableEK, 
+        bool enableChn, 
+        int ed = DEFAULT_MAX_EDITDISTANCE_);
 
     ~QueryCorrectionSubmanager();
 
@@ -43,14 +52,21 @@ public:
      * @return true if success false if failed.
      */
 
-    bool getRefinedQuery(const UString& queryUString, UString& refinedQueryUString);
+    bool getRefinedQuery(
+        const UString& queryUString, 
+        UString& refinedQueryUString);
 
-    bool getPinyin(const izenelib::util::UString& hanzi,
-                   std::vector<izenelib::util::UString>& pinyin);
+    bool getPinyin(
+        const izenelib::util::UString& hanzi,
+        std::vector<izenelib::util::UString>& pinyin);
 
-    void updateCogramAndDict(const std::list<QueryLogType>& queryList, const std::list<PropertyLabelType>& labelList);
+    void updateCogramAndDict(
+        const std::list<QueryLogType>& queryList, 
+        const std::list<PropertyLabelType>& labelList);
 
-    void Inject(const izenelib::util::UString& query, const izenelib::util::UString& result);
+    void Inject(
+        const izenelib::util::UString& query, 
+        const izenelib::util::UString& result);
 
     void FinishInject();
 
@@ -61,7 +77,9 @@ protected:
      */
     bool initialize();
 
-    bool getRefinedToken_(const izenelib::util::UString& token, izenelib::util::UString& result);
+    bool getRefinedToken_(
+        const izenelib::util::UString& token, 
+        izenelib::util::UString& result);
 
 public:
     static std::string system_resource_path_;

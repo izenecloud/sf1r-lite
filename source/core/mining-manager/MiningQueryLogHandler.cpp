@@ -1,25 +1,23 @@
 /*
- * QueryDataBase.cpp
+ * MiningQueryLogHandler.cpp
  *
  *  Created on: 2009-11-25
  *      Author: jinglei
  */
 
 #include "MiningQueryLogHandler.h"
+#include "query-recommend-submanager/RecommendManager.h"
 
-#include <boost/date_time/gregorian/gregorian.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <query-manager/QMCommonFunc.h>
 #include <util/scheduler.h>
 
 using namespace sf1r;
 
 
 MiningQueryLogHandler::MiningQueryLogHandler()
-:recommendManagerList_(),collectionSet_(),waitSec_(3600), days_(7), cron_started_(false)
+    : waitSec_(3600)
+    , days_(7)
+    , cron_started_(false)
 {
-
 }
 
 MiningQueryLogHandler::~MiningQueryLogHandler()
@@ -33,7 +31,9 @@ void MiningQueryLogHandler::SetParam(uint32_t wait_sec, uint32_t days)
     days_ = days;
 }
 
-void MiningQueryLogHandler::addCollection(const std::string& name, const boost::shared_ptr<RecommendManager>& recommendManager)
+void MiningQueryLogHandler::addCollection(
+        const std::string& name, 
+        const boost::shared_ptr<RecommendManager>& recommendManager)
 {
     boost::mutex::scoped_lock lock(mtx_);
     recommendManagerList_.insert(std::make_pair(name, recommendManager));
@@ -49,12 +49,10 @@ void MiningQueryLogHandler::runEvents()
         return;
     }
     std::cout << "[Start to update query information]" << std::endl;
-    boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
-    //collection specific feature: query recommend, query reminder, query correction
 
-    //for query recommend
-    map_it_type mlit = recommendManagerList_.begin();
-    for (; mlit!=recommendManagerList_.end(); ++mlit)
+    //collection specific feature: query recommend, query reminder, query correction
+    for (map_it_type mlit = recommendManagerList_.begin();
+            mlit != recommendManagerList_.end(); ++mlit)
     {
         mlit->second->RebuildForAll();
     }
@@ -64,7 +62,7 @@ void MiningQueryLogHandler::runEvents()
 
 bool MiningQueryLogHandler::cronStart(const std::string& cron_job)
 {
-    if(cron_started_)
+    if (cron_started_)
     {
         return true;
     }
@@ -73,7 +71,7 @@ bool MiningQueryLogHandler::cronStart(const std::string& cron_job)
     {
         return false;
     }
-    boost::function<void (void)> task = boost::bind(&MiningQueryLogHandler::cronJob_,this);
+    boost::function<void (void)> task = boost::bind(&MiningQueryLogHandler::cronJob_, this);
     izenelib::util::Scheduler::addJob("MiningQueryLogHandler", 60 * 1000, 0, task);
     cron_started_ = true;
     return true;

@@ -41,5 +41,5 @@ bool ProductIndexHooker::HookDelete(docid_t docid, time_t timestamp)
 
 bool ProductIndexHooker::Finish()
 {
-    return product_manager_->GenOperations();
+    return product_manager_->Finish();
 }

@@ -9,9 +9,6 @@
 #include <common/SFLogger.h>
 #include <common/Utilities.h>
 #include <license-manager/LicenseManager.h>
-#include <process/common/CollectionMeta.h>
-#include <process/common/XmlConfigParser.h>
-
 #include <util/profiler/ProfilerGroup.h>
 
 #include <boost/filesystem.hpp>

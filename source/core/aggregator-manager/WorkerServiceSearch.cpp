@@ -1,15 +1,14 @@
 #include "WorkerService.h"
 #include "WorkerHelper.h"
 
-#include <bundles/index/IndexSearchService.h>
 #include <bundles/index/IndexBundleConfiguration.h>
-#include <bundles/mining/MiningSearchService.h>
 #include <bundles/recommend/RecommendSearchService.h>
 
 #include <index-manager/IndexManager.h>
 #include <search-manager/SearchManager.h>
 #include <search-manager/PersonalizedSearchInfo.h>
 #include <document-manager/DocumentManager.h>
+#include <mining-manager/MiningManager.h>
 #include <la-manager/LAManager.h>
 
 
@@ -44,11 +43,11 @@ WorkerService::WorkerService(
 bool WorkerService::getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem)
 {
     DistKeywordSearchResult fakeResultItem;
-	fakeResultItem.distSearchInfo_.actionType_ = DistKeywordSearchInfo::ACTION_FETCH;
+    fakeResultItem.distSearchInfo_.actionType_ = DistKeywordSearchInfo::ACTION_FETCH;
 
     getSearchResult_(actionItem, fakeResultItem);
 
-	resultItem = fakeResultItem.distSearchInfo_;
+    resultItem = fakeResultItem.distSearchInfo_;
     return true;
 }
 

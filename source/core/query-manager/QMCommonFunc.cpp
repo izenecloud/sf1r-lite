@@ -12,7 +12,7 @@
 
 namespace sf1r {
 
-    
+
     boost::shared_ptr<
         izenelib::am::rde_hash<izenelib::util::UString,bool>
         > QueryUtility::restrictTermDicPtr_;
@@ -54,7 +54,7 @@ namespace sf1r {
             {
                 sflog->warn(SFL_INIT, 110401, dicPath.c_str());
                 //std::cerr << "[QueryUtility] Warning : (Line " << __LINE__
-                //    << ") : Restrict word ditionary File(" << dicPath << ") is not opened." 
+                //    << ") : Restrict word ditionary File(" << dicPath << ") is not opened."
                 //            << std::endl;
                 return false;
             }
@@ -129,11 +129,11 @@ namespace sf1r {
         std::vector<izenelib::util::UString> tmpResultTokens;
 
         std::set<izenelib::util::UString> queryTermSet;
-        useOriginalQuery = true;       
-	
+        useOriginalQuery = true;
+
         //insert original query string in its form
         if ( useOriginalQuery )
-            queryTermSet.insert(rawString);  
+            queryTermSet.insert(rawString);
 
         { // get tokenized query terms form LAManager
             la::TermList termList;
@@ -142,7 +142,7 @@ namespace sf1r {
             for (la::TermList::iterator p = termList.begin(); p != termList.end(); ++p)
             {
                 QueryParser::removeEscapeChar(p->text_);
-                queryTermSet.insert(p->text_);			
+                queryTermSet.insert(p->text_);
             }
         }
 
@@ -151,7 +151,7 @@ namespace sf1r {
         for (; termIter != inputTokens.end(); ++termIter)
             queryTermSet.insert(*termIter);
 
-        //pack all in one vector with word-restriction processing 
+        //pack all in one vector with word-restriction processing
         std::set<izenelib::util::UString>::iterator iter = queryTermSet.begin();
         for (; iter != queryTermSet.end(); ++iter)
         {
@@ -160,7 +160,7 @@ namespace sf1r {
             tmpResultTokens.push_back(*iter);
         }
 
-        resultTokens.swap(tmpResultTokens);	
+        resultTokens.swap(tmpResultTokens);
     } // end - getMergedUniqueTokens()
 
     void QueryUtility::getMergedUniqueTokens(
@@ -171,10 +171,10 @@ namespace sf1r {
             )
     {
         QueryUtility::getMergedUniqueTokens(
-                std::vector<izenelib::util::UString>(), 
-                rawString, 
-                laManager, 
-                resultTokens, 
+                std::vector<izenelib::util::UString>(),
+                rawString,
+                laManager,
+                resultTokens,
                 useOriginalQuery
                 );
     } // end - getMergedUniqueTokens()

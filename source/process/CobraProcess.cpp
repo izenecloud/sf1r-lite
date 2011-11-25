@@ -5,6 +5,7 @@
 #include <la-manager/LAPool.h>
 #include <license-manager/LicenseManager.h>
 #include <aggregator-manager/MasterServer.h>
+#include <aggregator-manager/CollectionDataReceiver.h>
 #include <node-manager/NodeManager.h>
 #include <node-manager/MasterNodeManager.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
@@ -12,8 +13,6 @@
 #include <OnSignal.h>
 #include <common/XmlConfigParser.h>
 #include <common/CollectionManager.h>
-#include <controllers/CollectionHandler.h>
-#include <controllers/Sf1Controller.h>
 
 #include <util/ustring/UString.h>
 #include <util/driver/IPRestrictor.h>
@@ -268,6 +267,9 @@ bool CobraProcess::startDistributedServer()
 
     NodeManagerSingleton::get()->start();
 
+    CollectionDataReceiver::get()->init(18121, "./collection"); //xxx
+    CollectionDataReceiver::get()->start();
+
     addExitHook(boost::bind(&CobraProcess::stopDistributedServer, this));
 
     return true;
@@ -275,13 +277,15 @@ bool CobraProcess::startDistributedServer()
 
 void CobraProcess::stopDistributedServer()
 {
-    if (SF1Config::get()->isDistributedSearchNode()
-            && SF1Config::get()->isWorker())
-    {
-        WorkerServerSingle::get()->stop();
-    }
-
     NodeManagerSingleton::get()->stop();
+
+    if (SF1Config::get()->isDistributedSearchNode())
+    {
+        if (SF1Config::get()->isWorker())
+            WorkerServerSingle::get()->stop();
+
+        CollectionDataReceiver::get()->stop();
+    }
 }
 
 int CobraProcess::run()

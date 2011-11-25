@@ -15,13 +15,18 @@ SET(libs
   sf1r_document_manager
   sf1r_license_manager
   sf1r_common
-
+  sf1r_search_manager
+  sf1r_mining_manager
+  sf1r_ranking_manager
+  sf1r_index_manager
+  sf1r_directory_manager
   ${ilplib_LIBRARIES}
   ${wisekma_LIBRARIES}
   ${izenecma_LIBRARIES}
   ${izenejma_LIBRARIES}
   ${izenelib_LIBRARIES}
-
+  ${idmlib_LIBRARIES}
+  ${imllib_LIBRARIES}
   # #external
   ${Boost_LIBRARIES}
   ${Glog_LIBRARIES}

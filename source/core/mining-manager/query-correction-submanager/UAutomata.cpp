@@ -379,8 +379,8 @@ void UAutomata::buildAutomaton(vector<STATE>& states,
                     }
                 }
             }//end if
-        }//end	for
-    }//end	while
+        }//end for
+    }//end while
 }//end
 }/*end of sf1r*/
 /*int main()
@@ -388,13 +388,12 @@ void UAutomata::buildAutomaton(vector<STATE>& states,
 
 
     //#ifdef PRINT
-	int n=2;
-	vector<STATE> stateVector;
-	rde::hash_map<rde_tran, int> autoTest;
-	UAutomata uAutomata;
-	uAutomata.Build_Automaton(n,stateVector,autoTest);
+    int n=2;
+    vector<STATE> stateVector;
+    rde::hash_map<rde_tran, int> autoTest;
+    UAutomata uAutomata;
+    uAutomata.Build_Automaton(n,stateVector,autoTest);
    //#endif
-	return 0;
+    return 0;
 
 }*/
-

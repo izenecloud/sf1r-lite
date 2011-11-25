@@ -1,7 +1,7 @@
 /*!
- \file	AutoFillSubmanager.h
- \author	Jinglei&&Kevin
- \brief	AutoFillSubManager will get the search keyword list which match the prefix of the keyword user typed.
+ \file      AutoFillSubmanager.h
+ \author    Jinglei&&Kevin
+ \brief     AutoFillSubManager will get the search keyword list which match the prefix of the keyword user typed.
  */
 #if !defined(_AUTO_FILL_SUBMANAGER_)
 #define _AUTO_FILL_SUBMANAGER_
@@ -16,7 +16,6 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/thread/shared_mutex.hpp>
-#include "word_completion_table.hpp"
 #include <util/singleton.h>
 #include <idmlib/util/directory_switcher.h>
 
@@ -32,10 +31,11 @@ namespace sf1r
  * buildIndex  : To build the index.
  * getAutoFillList : To get the list of matched items for a given prefix.
  */
+class  WordCompletionTable;
 class AutoFillSubManager: public boost::noncopyable
 {
     //freq, df, text
-    typedef boost::tuple<count_t, count_t, izenelib::util::UString> ItemValueType;
+    typedef boost::tuple<uint32_t, uint32_t, izenelib::util::UString> ItemValueType;
     typedef std::pair<uint32_t, izenelib::util::UString> PropertyLabelType;
     typedef WordCompletionTable Trie_;
 

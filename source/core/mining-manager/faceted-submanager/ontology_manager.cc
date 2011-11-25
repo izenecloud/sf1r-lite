@@ -2,30 +2,44 @@
 #include "counting_trie.h"
 #include "JMSmoother.h"
 #include "TwoStageSmoother.h"
+#include "ontology.h"
+
+#include <mining-manager/taxonomy-generation-submanager/LabelManager.h>
+
+#include <document-manager/DocumentManager.h>
+#include <search-manager/ANDDocumentIterator.h>
+#include <search-manager/ORDocumentIterator.h>
+#include <search-manager/TermDocumentIterator.h>
+#include <la-manager/LAManager.h>
+#include <la/common/Term.h>
+
+#include <ir/index_manager/index/LAInput.h>
+#include <index-manager/IndexManager.h>
+
+#include <idmlib/util/idm_analyzer.h>
+
 #include <boost/unordered_map.hpp>
 #include <algorithm>
+
 using namespace sf1r::faceted;
-#define MAXDOCS 3000
-#define MAXDOCID 200
+using namespace izenelib::ir::indexmanager;
 
-// #define SIMPLE_DEBUG;
-
-static int degree = 8;
-static size_t cacheSize = 1000000;
-OntologyManager::OntologyManager(const std::string& container, idmlib::util::IDMAnalyzer* analyzer)
-        :container_(container), document_manager_()
-        , analyzer_(analyzer), service_(NULL), searcher_(new OntologySearcher())
-        , manmade_(new ManmadeDocCategory(container_+"/manmade"))
-        , max_docid_file_(container_+"/max_id")
-        ,docItemListFile_(container_+"/label/docItemList")
+bool myfunction (std::pair<uint32_t, uint32_t> p1,std::pair<uint32_t, uint32_t> p2)
 {
-
+    return p1.second > p2.second;
 }
 
 //used for jia's baseline
-OntologyManager::OntologyManager(const std::string& container, const boost::shared_ptr<DocumentManager>& document_manager, const std::vector<std::string>& properties, idmlib::util::IDMAnalyzer* analyzer)
-        :container_(container), document_manager_(document_manager)
-        , analyzer_(analyzer), service_(NULL), searcher_(new OntologySearcher())
+OntologyManager::OntologyManager(
+    const std::string& container, 
+    const boost::shared_ptr<DocumentManager>& document_manager, 
+    const std::vector<std::string>& properties, 
+    idmlib::util::IDMAnalyzer* analyzer)
+        :container_(container)
+        , document_manager_(document_manager)
+        , analyzer_(analyzer)
+        , service_(NULL)
+        , searcher_(new OntologySearcher())
         , manmade_(new ManmadeDocCategory(container_+"/manmade"))
         , max_docid_file_(container_+"/max_id")
         ,docItemListFile_(container_+"/label/docItemList")
@@ -36,8 +50,9 @@ OntologyManager::OntologyManager(const std::string& container, const boost::shar
     }
 }
 
-
 //used for new ontology_manager
+//Can not work, bad design
+#if 0
 OntologyManager::OntologyManager(
     std::string& facetedPath,
     std::string& tgLabelPath,
@@ -93,9 +108,9 @@ OntologyManager::OntologyManager(
     string sdbfile(tgLabelPath+"/doc_label_tf.dat");
 
     docRuleTFSDB_ = new IndexSDB<unsigned int, unsigned int,izenelib::util::ReadWriteLock> (sdbfile);
-    docRuleTFSDB_->initialize(20, degree, 1024, cacheSize);
-
+    docRuleTFSDB_->initialize(20, 8, 1024, 1000000);
 }
+#endif 
 
 OntologyManager::~OntologyManager()
 {
@@ -124,8 +139,8 @@ bool OntologyManager::Open()
 
 bool OntologyManager::close()
 {
-    if (reader_->isOpen())
-        reader_->close();
+    //if (reader_->isOpen())
+        //reader_->close();
     if (labelManager_->isOpen())
         labelManager_->close();
     return true;
@@ -175,7 +190,6 @@ int OntologyManager::getCollectionTermsCount()
         pIndexReader = index_manager_->getIndexReader();
         for ( uint32_t docid = max_docid+1; docid<=document_manager_->getMaxDocId(); docid++)
         {
-            //for( uint32_t docid = max_docid+1; docid<=MAXDOCS; docid++){
             uint32_t docTermCount=pIndexReader->docLength(docid,1);
             collection_terms_cnt +=docTermCount;
         }
@@ -187,13 +201,6 @@ int OntologyManager::getCollectionTermsCount()
 
     return collection_terms_cnt;
 }
-
-
-bool myfunction (std::pair<uint32_t, uint32_t> p1,std::pair<uint32_t, uint32_t> p2)
-{
-    return p1.second > p2.second;
-}
-
 
 
 std::map<std::pair<uint32_t, uint32_t>, int> coOccurence;
@@ -208,15 +215,14 @@ int OntologyManager::getCoOccurence(uint32_t labelTermId,uint32_t topicTermId)
     else
         return 0;
 }
-#include <la/common/Term.h>
-#define MAX_COUNT		0xFFFFFFFF // max value of count_t type
+
 //std::map<std::pair<uint32_t,izene_termid_t>, uint32_t> docLabelTF;
 //std::map<std::pair<uint32_t,uint32_t>, uint32_t> docLabelTF;
 std::map<uint32_t,uint32_t> labelDF;
 
-
-void  OntologyManager::calculateCoOccurenceBySearchManager(Ontology* ontology)
+void OntologyManager::calculateCoOccurenceBySearchManager(Ontology* ontology)
 {
+#if 0
     std::cout<<"OntologyManager::calculateCoOccurenceBySearchManager"<<std::endl;
     izenelib::util::ClockTimer timer;
     IndexReader* pIndexReader=0;
@@ -357,8 +363,8 @@ void  OntologyManager::calculateCoOccurenceBySearchManager(Ontology* ontology)
 
 
 
-//							std::pair<uint32_t,uint32_t> doc_label(docid, ruleId);
-//							docLabelTF[doc_label] = tf;
+//                  std::pair<uint32_t,uint32_t> doc_label(docid, ruleId);
+//                  docLabelTF[doc_label] = tf;
 
                     std::vector<unsigned int> vectfs;
                     if (docRuleTFSDB_->getValue(docid,vectfs)==false)
@@ -409,14 +415,14 @@ void  OntologyManager::calculateCoOccurenceBySearchManager(Ontology* ontology)
 
 
     /* for(int i=0;i<topic2DocList.size();i++){
-     	std::list<uint32_t> docList = topic2DocList[i];
-         labelDF[i+1] = docList.size();
+        std::list<uint32_t> docList = topic2DocList[i];
+        labelDF[i+1] = docList.size();
      }
     */
     cout<<"calculate cooccurence cost time is "<<timer.elapsed()<<endl;
     delete pTermReader;
 
-
+#endif
 }
 
 bool OntologyManager::SetXML(const std::string& xml)
@@ -443,6 +449,8 @@ bool OntologyManager::ProcessCollection(bool rebuild)
 */
 bool OntologyManager::ProcessCollectionWithSmooth_(bool rebuild)
 {
+    return false;
+#if 0
     //do on documents
     MEMLOG("[Mining] FACETED starting, rebuild=%d",rebuild);
     izenelib::util::ClockTimer timer;
@@ -485,7 +493,7 @@ bool OntologyManager::ProcessCollectionWithSmooth_(bool rebuild)
     {
         maxDocid_ = GetProcessedMaxId_();
     }
-    
+
     std::cout<<"last max docid : "<<maxDocid_<<std::endl;
 
     uint32_t process_count = 0;
@@ -604,11 +612,11 @@ bool OntologyManager::ProcessCollectionWithSmooth_(bool rebuild)
 
                  if( iter!=docLabelTF.end())
                  {
-                	 tfInDoc =iter->second;
-                	 cout<<"tf is "<<tfInDoc<<endl;
+                     tfInDoc =iter->second;
+                     cout<<"tf is "<<tfInDoc<<endl;
                  }
                  else
-                	 continue;*/
+                     continue;*/
 
                 probBasic += (tfInDoc*1.0)/docTermCount;
 
@@ -618,9 +626,9 @@ bool OntologyManager::ProcessCollectionWithSmooth_(bool rebuild)
                     uint32_t topicDF=0;
                     //cout<<"topicItemList[k].second is "<<topicItemList[k].second<<endl;
                     /* if(labelDF.find(topicItemList[k].first) != labelDF.end())
-                    	 topicDF =labelDF.find(topicItemList[k].first)->second;
-                     else
-                    	 continue;*/
+                       topicDF =labelDF.find(topicItemList[k].first)->second;
+                    else
+                        continue;*/
                     labelManager_->getLabelDF(topicItemList[k].first, topicDF);
                     if (topicDF <1)
                         continue;
@@ -725,6 +733,7 @@ bool OntologyManager::ProcessCollectionWithSmooth_(bool rebuild)
     std::cout<<"total time is "<<timer.elapsed()<<endl;
     //std::cout<<"average time is "<<timer.elapsed()*1.0/document_manager_->getMaxDocId()<<" second."<<std::endl;
     return true;
+#endif
 }
 
 
@@ -1140,7 +1149,7 @@ bool OntologyManager::DefineDocCategory(const std::vector<ManmadeDocCategoryItem
     //sort and unique items
 //     std::vector<ManmadeDocCategoryItem> sorted(items);
 //     std::stable_sort(sorted.begin(), sorted.end(), ManmadeDocCategoryItem::CompareStrDocId );
-//     
+//
 //     izenelib::util::UString last_str_docid;
 //     for (uint32_t i=0;i<sorted.size();i++)
 //     {
@@ -1199,10 +1208,10 @@ void OntologyManager::OutputToFile_(const std::string& file, Ontology* ontology)
 {
     std::ofstream ofs(file.c_str());
     Document doc;
-    
+
     for ( uint32_t docid = 1; docid<=document_manager_->getMaxDocId(); docid++)
     {
-        
+
         if ( docid %1000 == 0 )
         {
             MEMLOG("[FACETED-OUTPUT] docid: %d", docid);
@@ -1245,7 +1254,3 @@ void OntologyManager::OutputToFile_(const std::string& file, Ontology* ontology)
     }
     ofs.close();
 }
-
-
-
-

@@ -7,7 +7,8 @@
 
 // Warning: If T's constructor throws, instance() will return a null reference.
 
-namespace sf1r {
+namespace sf1r
+{
 
 template<class T>
 
@@ -28,11 +29,11 @@ public:
 
 protected:
     ~LogManagerSingleton() {}
-     LogManagerSingleton() {}
+    LogManagerSingleton() {}
 
 private:
-     static boost::scoped_ptr<T> t;
-     static boost::once_flag flag;
+    static boost::scoped_ptr<T> t;
+    static boost::once_flag flag;
 
 };
 

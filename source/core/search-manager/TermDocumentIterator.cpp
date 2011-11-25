@@ -126,7 +126,7 @@ bool TermDocumentIterator::accept()
 
              indexManagerPtr_->getDocsByNumericValue(colID_, property_, value, *pBitVector);
              pBitVector->compressed(*pDocIdSet);
-             if(pTermDocReader_) delete pTermDocReader_;			 
+             if(pTermDocReader_) delete pTermDocReader_;
              pTermDocReader_ = new BitMapIterator(pDocIdSet->bit_iterator());
              df_ = pTermDocReader_->docFreq();
          }
@@ -172,7 +172,7 @@ void TermDocumentIterator::doc_item(
 
 
 void TermDocumentIterator::df_ctf(
-    DocumentFrequencyInProperties& dfmap, 
+    DocumentFrequencyInProperties& dfmap,
     CollectionTermFrequencyInProperties& ctfmap)
 {
     if (pTermDocReader_ == 0)

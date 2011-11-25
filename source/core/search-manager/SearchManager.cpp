@@ -39,9 +39,9 @@ bool action_rerankable(SearchKeywordOperation& actionOperation)
 {
     bool rerank = false;
     if (actionOperation.actionItem_.env_.taxonomyLabel_.empty() &&
-	actionOperation.actionItem_.env_.nameEntityItem_.empty() &&
-	actionOperation.actionItem_.groupParam_.groupLabels_.empty() &&
-	actionOperation.actionItem_.groupParam_.attrLabels_.empty())
+    actionOperation.actionItem_.env_.nameEntityItem_.empty() &&
+    actionOperation.actionItem_.groupParam_.groupLabels_.empty() &&
+    actionOperation.actionItem_.groupParam_.attrLabels_.empty())
     {
         std::vector<std::pair<std::string , bool> >& sortPropertyList = actionOperation.actionItem_.sortPriorityList_;
         if(sortPropertyList.empty())
@@ -99,6 +99,20 @@ void SearchManager::reset_cache(bool rType, docid_t id, const std::map<std::stri
         pSorterCache_->updateSortData(id, rTypeFieldValue);
     }
 
+    cache_->clear();
+    {
+        NotifyMSG msg;
+        msg.identity = collectionName_;
+        msg.method = "clear_search_cache";
+        MasterNotifierSingleton::get()->notify(msg);
+    }
+
+    queryBuilder_->reset_cache();
+}
+
+void SearchManager::reset_all_property_cache()
+{
+    pSorterCache_->setDirty(true);
     cache_->clear();
     {
         NotifyMSG msg;
@@ -287,9 +301,19 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
 
         if(pFilterIdSet)
         {
+            vector<uint32_t> vec;
+            pFilterIdSet->appendRowIDs(vec);
+            cout<<"************the filter doc id list*****"<<std::endl;
+            for(int i = 0; i < vec.size(); i++)
+                cout<<vec[i]<<" ";
+            cout<<endl;
             BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet->bit_iterator());
             FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
 
+            std::cout<<endl<<"*********the filter output doc id list******"<<std::endl;
+            while(pFilterIterator->next())
+                 cout<<pFilterIterator->doc()<<" ";
+            std::cout<<std::endl;
             pDocIterator.reset(new ANDDocumentIterator());
             pDocIterator->add((DocumentIterator*)pFilterIterator);
         }

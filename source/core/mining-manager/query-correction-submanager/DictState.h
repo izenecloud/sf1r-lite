@@ -19,7 +19,7 @@ typedef uint16_t mychar;
 using izenelib::util::UString;
 
 class DictState;
-/** @brief	Defination of class transition used for constructing
+/** @brief Defination of class transition used for constructing
  *   dictionary automata(DAutomata),one transition consists of label and one target state.
  */
 class transition
@@ -57,17 +57,17 @@ public:
     }
 private:
     ///label used in transition can be seen as weight of edge in graph
-    mychar	label;
+    mychar label;
     ///target state can be seen as end vertex of one edge in graph
     DictState  *target;
 };
 
 
-typedef vector<transition>	trans_vec;
+typedef vector<transition> trans_vec;
 
 
 
-/** @brief	Defination of class DictState used for constructing dictionary automata(DAutomata),
+/** @brief Defination of class DictState used for constructing dictionary automata(DAutomata),
  *  one DictState can be seens as set of transitions
  */
 class DictState
@@ -127,15 +127,15 @@ public:
 protected:
 
     ///outgoing transitions
-    trans_vec	outTrans;
+    trans_vec   outTrans;
     /// number of incoming transitions
-    int			inCount;
+    int         inCount;
     /// accepting state
-    bool			final;
+    bool        final;
     /// state number
-    int			stateNo;
+    int         stateNo;
     /// number of states in the automaton
-    static int		TOTAL_STATES;
+    static int  TOTAL_STATES;
 
 
 };//end of class DictState
@@ -143,9 +143,3 @@ protected:
 
 }/*end of sf1r*/
 #endif /*__D_AUTOMATA_TYPES_H_*/
-
-
-
-
-
-

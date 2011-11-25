@@ -1,12 +1,8 @@
 #ifndef SF1R_PRODUCTMANAGER_PRODUCTPRICE_H
 #define SF1R_PRODUCTMANAGER_PRODUCTPRICE_H
 
-#include <sstream>
 #include <common/type_defs.h>
 
-#include <boost/operators.hpp>
-#include <boost/algorithm/string/trim.hpp>
-#include <boost/lexical_cast.hpp>
 #include "pm_def.h"
 #include "pm_types.h"
 
@@ -43,7 +39,7 @@ private:
 
     bool checkSeparatorType_(const std::string& propertyValueStr, char separator);
 
-    bool split_float_(const std::string& szText, char Separator );
+    bool split_float_(const std::string& szText, char Separator);
 
 
 public:

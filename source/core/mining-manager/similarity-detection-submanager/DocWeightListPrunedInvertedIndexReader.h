@@ -60,7 +60,7 @@ public:
 
     size_t size() const
     {
-    	return base_->size();
+        return base_->size();
     }
 
 private:

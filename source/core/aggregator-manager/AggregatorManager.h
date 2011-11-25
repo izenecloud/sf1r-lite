@@ -2,7 +2,7 @@
  * @file AggregatorManager.h
  * @author Zhongxia Li
  * @date Jul 5, 2011
- * @brief 
+ * @brief
  */
 #ifndef AGGREGATOR_MANAGER_H_
 #define AGGREGATOR_MANAGER_H_
@@ -47,7 +47,7 @@ public:
 
 public:
     /**
-     * TODO, overload aggregate() to aggregate result(s) got from server node(s).
+     * TODO overload aggregate() to aggregate result(s) got from server node(s).
      *
      * @{
      */
@@ -67,30 +67,30 @@ public:
     {
         if (func == "getDistSearchResult")
         {
-        	aggregateDistSearchResult(result, resultList);
-        	return true;
+            aggregateDistSearchResult(result, resultList);
+            return true;
         }
         return false;
     }
 
     bool aggregate(const std::string& func, KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
     {
-    	if (func == "getSummaryMiningResult")
+        if (func == "getSummaryMiningResult")
         {
-        	aggregateSummaryMiningResult(result, resultList);
-        	return true;
+            aggregateSummaryMiningResult(result, resultList);
+            return true;
         }
-    	return false;
+        return false;
     }
 
     bool aggregate(const std::string& func, RawTextResultFromSIA& result, const std::vector<std::pair<workerid_t, RawTextResultFromSIA> >& resultList)
     {
-    	if (func == "getDocumentsByIds")
-    	{
-    		aggregateDocumentsResult(result, resultList);
-    		return true;
-    	}
-    	return false;
+        if (func == "getDocumentsByIds")
+        {
+            aggregateDocumentsResult(result, resultList);
+            return true;
+        }
+        return false;
     }
 
     bool aggregate(const std::string& func, uint64_t& result, const std::vector<std::pair<workerid_t, uint64_t> >& resultList)
@@ -155,7 +155,13 @@ public:
     bool splitGetDocsActionItemByWorkerid(
             const GetDocumentsByIdsActionItem& actionItem,
             std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >& actionItemMap);
-    
+
+
+    bool ScdDispatch(
+            unsigned int numdoc,
+            const std::string& collectionName,
+            const std::string& scdPath);
+
 
 private:
     boost::shared_ptr<MiningManager> miningManager_;

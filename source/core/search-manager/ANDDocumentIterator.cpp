@@ -153,7 +153,7 @@ count_t ANDDocumentIterator::tf()
         pEntry = (*iter);
         tf = pEntry->tf();
         if (tf < mintf) {
-        	mintf = tf;
+            mintf = tf;
         }
     }
 
@@ -161,16 +161,16 @@ count_t ANDDocumentIterator::tf()
 }
 
 void ANDDocumentIterator::queryBoosting(
-    double& score, 
+    double& score,
     double& weight)
 {
     DocumentIterator* pEntry;
     std::list<DocumentIterator*>::iterator iter = docIterList_.begin();
     for (; iter != docIterList_.end(); ++iter)
     {
-    	pEntry = (*iter);
-    	if (pEntry)
-    	    pEntry->queryBoosting(score, weight);
+        pEntry = (*iter);
+        if (pEntry)
+            pEntry->queryBoosting(score, weight);
     }
 }
 

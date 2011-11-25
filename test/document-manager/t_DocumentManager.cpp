@@ -70,7 +70,7 @@ boost::shared_ptr<DocumentManager>
 createDocumentManager()
 {
     bfs::path dmPath(bfs::path(".") /"document/");
-    bfs::create_directories(dmPath);	
+    bfs::create_directories(dmPath);
     std::set<PropertyConfig, PropertyComp> propertyConfig;
     makeSchema(propertyConfig);
 
@@ -199,7 +199,7 @@ BOOST_AUTO_TEST_CASE(get)
         Document document;
         BOOST_CHECK_EQUAL(documentManager->getDocument(i, document),true);
     }
-	
+
 }
 
 BOOST_AUTO_TEST_CASE(summary)
@@ -232,7 +232,4 @@ BOOST_AUTO_TEST_CASE(summary)
     BOOST_CHECK_EQUAL( outFullTextList.empty(), !expectedValue );
 }
 
-
-
-BOOST_AUTO_TEST_SUITE_END() 
-
+BOOST_AUTO_TEST_SUITE_END()

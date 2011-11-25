@@ -9,7 +9,7 @@
 
 #include <common/type_defs.h>
 #include <am/tc/raw/Hash.h>
-#include <hdb/HugeDB.h>
+//#include <hdb/HugeDB.h>
 
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/shared_mutex.hpp>
@@ -102,21 +102,21 @@ public:
 
     ~SimilarityIndex()
     {
-    	if(useFirstSdb_)
-    	{
-    		delete useFirstSdb_;
-    		useFirstSdb_=0;
-    	}
-//    	if(pairTable_)
-//    	{
-//    	    delete pairTable_;
-//    	    pairTable_=0;
-//    	}
-    	if(sorter_)
-    	{
-    	    delete sorter_;
-    	    sorter_=0;
-    	}
+        if(useFirstSdb_)
+        {
+            delete useFirstSdb_;
+            useFirstSdb_=0;
+        }
+//      if(pairTable_)
+//      {
+//          delete pairTable_;
+//          pairTable_=0;
+//      }
+        if(sorter_)
+        {
+            delete sorter_;
+            sorter_=0;
+        }
     }
 
     void setCache(const boost::shared_ptr<Hash>& db, unsigned cacheSize)
@@ -227,17 +227,17 @@ void SimilarityIndex::indexWorker(const std::vector<boost::shared_ptr<ReaderT> >
     // use hdb to reduce document pair-wise similarity
     for(size_t i=0;i<readers.size();i++)
     {
-    	std::cout<<"Processing property: "<<i+1<<std::endl;
-    	boost::shared_ptr<ReaderT> reader=readers[i];
-    	int count=0;
-    	while (reader->next())
+        std::cout<<"Processing property: "<<i+1<<std::endl;
+        boost::shared_ptr<ReaderT> reader=readers[i];
+        int count=0;
+        while (reader->next())
         {
-        	if(count%1001==0)
-        	{
-        		std::cout << "\r";
-     	  		std::cout<<"processed terms: "<<(float)count/reader->size()*100<<"%"<<std::flush;
-        	}
-        	count++;
+            if(count%1001==0)
+            {
+                std::cout << "\r";
+                 std::cout<<"processed terms: "<<(float)count/reader->size()*100<<"%"<<std::flush;
+            }
+            count++;
             if (reader->getDocFreq() > 0)
             {
                 doc_weight_list_type docWeightList;
@@ -247,18 +247,18 @@ void SimilarityIndex::indexWorker(const std::vector<boost::shared_ptr<ReaderT> >
                 {
                     typedef typename doc_weight_list_type::const_iterator iterator;
                     for (iterator outer = docWeightList.begin(),
-                               outerEnd = boost::prior(docWeightList.end());
-                         outer != outerEnd; ++outer)
+                            outerEnd = boost::prior(docWeightList.end());
+                            outer != outerEnd; ++outer)
                     {
                         for (iterator inner = boost::next(outer),
-                                   innerEnd = docWeightList.end();
-                             inner != innerEnd; ++inner)
+                                innerEnd = docWeightList.end();
+                                inner != innerEnd; ++inner)
                         {
                             uint32_t doc1=outer->first;
                             uint32_t doc2=inner->first;
                             float weight=outer->second*inner->second;
                             uint8_t len=0;
-//                            std::cout<<"weight: "<<weight<<std::endl;
+                            //                            std::cout<<"weight: "<<weight<<std::endl;
                             convert(data, doc1, doc2, weight, len);
                             sorter_->add_data(len, data);
                             convert(data, doc2, doc1, weight, len);
@@ -296,7 +296,7 @@ OutputIterator SimilarityIndex::getSimilarDocIdScoreList(
     OutputIterator result
 ) const
 {
-	boost::lock_guard<boost::shared_mutex> lg(mutex_);
+    boost::lock_guard<boost::shared_mutex> lg(mutex_);
     if (!db_->is_open() && !db_->open())
     {
         std::cerr << "similarity index db is not opened" << std::endl;

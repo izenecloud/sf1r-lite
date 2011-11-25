@@ -126,7 +126,7 @@ bool CassandraConnection::init(const string& str)
             cerr << "[CassandraConnection::init] " << str << " " << ex.what() << endl;
             return false;
         }
-        cout << "[CassandraConnection::init] " << str << endl;
+        cout << "[CassandraConnection::init] " << "successfully connected to " << str << endl;
         isEnabled_ = true;
     }
     else

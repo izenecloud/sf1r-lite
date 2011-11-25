@@ -2,7 +2,8 @@
 #include <boost/filesystem.hpp>
 using namespace std;
 
-namespace sf1r {
+namespace sf1r
+{
 
 Sqlite3DbConnection::Sqlite3DbConnection()
 {
@@ -18,7 +19,8 @@ Sqlite3DbConnection::~Sqlite3DbConnection()
 void Sqlite3DbConnection::close()
 {
     boost::unique_lock<boost::mutex> lock(mutex_);
-    for(list<sqlite3*>::iterator it= pool_.begin(); it!=pool_.end(); it++ ) {
+    for (list<sqlite3*>::iterator it= pool_.begin(); it!=pool_.end(); it++ )
+    {
         sqlite3_close(*it);
     }
     pool_.clear();
@@ -28,21 +30,27 @@ bool Sqlite3DbConnection::init(const std::string & path )
 {
     boost::filesystem::path log_path(path);
     boost::filesystem::path log_dir = log_path.parent_path();
-    if(boost::filesystem::exists(log_dir)) {
-        if (!boost::filesystem::is_directory(log_dir)) {
+    if (boost::filesystem::exists(log_dir))
+    {
+        if (!boost::filesystem::is_directory(log_dir))
+        {
             std::cerr << "Log Directory " << log_dir << " is a file" << std::endl;
             return false;
         }
-    } else {
+    }
+    else
+    {
         boost::filesystem::create_directories(log_dir);
     }
     bool ret = true;
     boost::unique_lock<boost::mutex> lock(mutex_);
 
-    for(int i=0; i<PoolSize; i++) {
+    for (int i=0; i<PoolSize; i++)
+    {
         sqlite3* db;
         int rc = sqlite3_open(path.c_str(), &db);
-        if ( rc ) {
+        if ( rc )
+        {
             cerr << "[LogManager] could not open database: " << sqlite3_errmsg(db) << endl;
             ret = false;
             break;
@@ -51,8 +59,9 @@ bool Sqlite3DbConnection::init(const std::string & path )
         sqlite3_busy_handler(db, &Sqlite3DbConnection::busyhandler , NULL);
 
         char* zErrMsg;
-        if( sqlite3_exec(db, "PRAGMA synchronous=OFF;", NULL, NULL, &zErrMsg) != SQLITE_OK ||
-           sqlite3_exec(db, "PRAGMA journal_mode = OFF;", NULL, NULL, &zErrMsg) != SQLITE_OK ) {
+        if ( sqlite3_exec(db, "PRAGMA synchronous=OFF;", NULL, NULL, &zErrMsg) != SQLITE_OK ||
+                sqlite3_exec(db, "PRAGMA journal_mode = OFF;", NULL, NULL, &zErrMsg) != SQLITE_OK )
+        {
             cerr << "[LogManager] fail to initialize: " << zErrMsg << endl;
             sqlite3_free(zErrMsg);
             ret = false;
@@ -61,7 +70,7 @@ bool Sqlite3DbConnection::init(const std::string & path )
 
         pool_.push_back(db);
     }
-    if(!ret) close();
+    if (!ret) close();
     return ret;
 }
 
@@ -69,7 +78,7 @@ sqlite3* Sqlite3DbConnection::getDb()
 {
     sqlite3* db = NULL;
     boost::unique_lock<boost::mutex> lock(mutex_);
-    while(pool_.empty())
+    while (pool_.empty())
     {
         cond_.wait(lock);
     }
@@ -90,7 +99,8 @@ bool Sqlite3DbConnection::exec(const std::string & sql, bool omitError)
 {
     char *zErrMsg = NULL;
     sqlite3* db = getDb();
-    if( db == NULL ) {
+    if ( db == NULL )
+    {
         cerr << "[LogManager] No available connection in pool" << endl;
         return false;
     }
@@ -107,12 +117,13 @@ bool Sqlite3DbConnection::exec(const std::string & sql, bool omitError)
 }
 
 bool Sqlite3DbConnection::exec(const std::string & sql,
-    std::list< std::map<std::string, std::string> > & results,
-    bool omitError)
+                               std::list< std::map<std::string, std::string> > & results,
+                               bool omitError)
 {
     char *zErrMsg = NULL;
     sqlite3* db = getDb();
-    if( db == NULL ) {
+    if ( db == NULL )
+    {
         cerr << "[LogManager] No available connection in pool" << endl;
         return false;
     }
@@ -130,29 +141,34 @@ bool Sqlite3DbConnection::exec(const std::string & sql,
 
 int Sqlite3DbConnection::busyhandler(void *data, int times)
 {
-    if(times >= 256) {
+    if (times >= 256)
+    {
         return 0;
-    } else {
+    }
+    else
+    {
         sqlite3_sleep(23);
         return 1;
     }
 }
 
 int Sqlite3DbConnection::callback(void *data, int argc,
-    char **argv, char **azColName)
+                                  char **argv, char **azColName)
 {
     list< map<string,string> >* resultListPtr =
         (list< map<string,string> >*) data;
 
     map<string,string> result;
-    for(int i=0; i<argc; i++){
+    for (int i=0; i<argc; i++)
+    {
         string colName(azColName[i]);
-        if( argv[i] ) {
+        if ( argv[i] )
+        {
             string colValue(argv[i]);
             result[colName] = colValue;
         }
     }
-    if(resultListPtr)
+    if (resultListPtr)
         resultListPtr->push_back(result);
     return 0;
 }

@@ -7,6 +7,8 @@
 ///     - 2009.07.09 Merged some interfaces into one by dohyun Yun.
 
 #include "LAManager.h"
+
+#include <la/dict/PlainDictionary.h>
 #include <util/profiler/ProfilerGroup.h>
 #include <list>
 #include <sstream>
@@ -21,128 +23,129 @@ using namespace la;
 namespace sf1r
 {
 
-    LAManager::LAManager( bool isMultiThreadEnv )
+LAManager::LAManager( bool isMultiThreadEnv )
         : isMultiThreadEnv_( isMultiThreadEnv )
+{
+    laPool_ = LAPool::getInstance();
+}
+
+LAManager::~LAManager()
+{
+}
+
+void LAManager::loadStopDict( const std::string & path )
+{
+    if ( stopDict_.get() == NULL )
+        stopDict_.reset( new PlainDictionary() );
+    stopDict_->reloadDict( path.c_str() );
+}
+
+bool LAManager::getTermList(
+    const izenelib::util::UString & text,
+    const AnalysisInfo& analysisInfo,
+    la::TermList& termList )
+{
+    LA * pLA = NULL;
+
+    pLA = isMultiThreadEnv_ ? laPool_->popSearchLA( analysisInfo ) :
+          laPool_->topSearchLA( analysisInfo );
+
+    if (!pLA)
     {
-    	laPool_ = LAPool::getInstance();
+        // std::cerr << "[LAManager] Error : Cannot get LA instance in " << __FILE__ << ":" << __LINE__ << std::endl;
+        return false;
     }
 
-    LAManager::~LAManager()
+    LAConfigUnit config;
+    if (laPool_->getLAConfigUnit( analysisInfo.analyzerId_, config ))
     {
+        if (config.getAnalysis() == "multilang" )
+            static_cast<la::MultiLanguageAnalyzer*>(pLA->getAnalyzer().get())->setExtractSynonym(false);
     }
 
-    void LAManager::loadStopDict( const std::string & path )
+    pLA->process( text, termList );
+
+    if ( isMultiThreadEnv_ )
+        laPool_->pushSearchLA(analysisInfo, pLA);
+
+    return true;
+}
+
+bool LAManager::getExpandedQuery(
+    const izenelib::util::UString& text,
+    const AnalysisInfo& analysisInfo,
+    bool isCaseSensitive,
+    bool isSynonymInclude,
+    izenelib::util::UString& expQuery )
+{
+    LA * pLA = NULL;
+    pLA = isMultiThreadEnv_ ? laPool_->popSearchLA( analysisInfo ) :
+          laPool_->topSearchLA( analysisInfo );
+
+    if (!pLA)
     {
-        if( stopDict_.get() == NULL )
-            stopDict_.reset( new PlainDictionary() );
-        stopDict_->reloadDict( path.c_str() );
+        // Error
+        //std::cerr << "[LAManager] Error : Cannot get LA instance in " << __FILE__ << ":" << __LINE__ << std::endl;
+        return false;
     }
 
-    bool LAManager::getTermList(
-            const izenelib::util::UString & text,
-            const AnalysisInfo& analysisInfo,
-            la::TermList& termList )
+    TermList termList;
+
+    LAConfigUnit config;
+    if ( laPool_->getLAConfigUnit( analysisInfo.analyzerId_, config ) )
     {
-        LA * pLA = NULL;
-
-        pLA = isMultiThreadEnv_ ? laPool_->popSearchLA( analysisInfo ) :
-                laPool_->topSearchLA( analysisInfo );
-
-        if(!pLA)
-        {
-            // std::cerr << "[LAManager] Error : Cannot get LA instance in " << __FILE__ << ":" << __LINE__ << std::endl;
-            return false;
-        }
-
-        LAConfigUnit config;
-        if(laPool_->getLAConfigUnit( analysisInfo.analyzerId_, config ))
-        {
-            if (config.getAnalysis() == "multilang" )
-                static_cast<la::MultiLanguageAnalyzer*>(pLA->getAnalyzer().get())->setExtractSynonym(false);
-        }
-
-        pLA->process( text, termList );
-
-        if( isMultiThreadEnv_ )
-            laPool_->pushSearchLA(analysisInfo, pLA);
-
-        return true;
-    }
-
-    bool LAManager::getExpandedQuery(
-            const izenelib::util::UString& text,
-            const AnalysisInfo& analysisInfo,
-            bool isCaseSensitive,
-            bool isSynonymInclude,
-            izenelib::util::UString& expQuery )
-    {
-        LA * pLA = NULL;
-        pLA = isMultiThreadEnv_ ? laPool_->popSearchLA( analysisInfo ) :
-			laPool_->topSearchLA( analysisInfo );
-
-        if(!pLA)
-        {
-            // Error
-            //std::cerr << "[LAManager] Error : Cannot get LA instance in " << __FILE__ << ":" << __LINE__ << std::endl;
-            return false;
-        }
-
-        TermList termList;
-
-        LAConfigUnit config;
-        if( laPool_->getLAConfigUnit( analysisInfo.analyzerId_, config ) )
-        {
 //            if (config.getAnalysis() == "multilang" )
 //                static_cast<MultiLanguageAnalyzer*>(pLA->getAnalyzer().get())->setExtractSynonym(isSynonymInclude);
-        }
-
-        /*if( isCaseSensitive )
-        {*/
-            if (isSynonymInclude)
-                pLA->processSynonym( text, termList );
-            else
-                pLA->process( text, termList );
-        /*}
-        else
-        {
-            UString temp = text;
-            temp.toLowerString();
-            pLA->process_search( temp, termList );
-        }*/
-
-        removeStopwords( termList, stopDict_ );
-
-        for(TermList::iterator it = termList.begin(); it!=termList.end(); it++ ) {
-            cout << "^^^^" << la::to_utf8(it->text_) << endl;
-        }
-
-         expQuery = toExpandedString( termList );
-
-        cout << "##########################" << la::to_utf8(expQuery) << endl;
-
-
-        if( isMultiThreadEnv_ )
-            laPool_->pushSearchLA(analysisInfo, pLA);
-
-        return true;
     }
 
-    void LAManager::removeStopwords(
-            TermList & termList,
-            shared_ptr<la::PlainDictionary>&  stopDict
-            )
+    /*if( isCaseSensitive )
+    {*/
+    if (isSynonymInclude)
+        pLA->processSynonym( text, termList );
+    else
+        pLA->process( text, termList );
+    /*}
+    else
     {
-        /// TODO: add stopDict support
+        UString temp = text;
+        temp.toLowerString();
+        pLA->process_search( temp, termList );
+    }*/
+
+    removeStopwords( termList, stopDict_ );
+
+    for (TermList::iterator it = termList.begin(); it!=termList.end(); it++ )
+    {
+        cout << "^^^^" << la::to_utf8(it->text_) << endl;
+    }
+
+    expQuery = toExpandedString( termList );
+
+    cout << "##########################" << la::to_utf8(expQuery) << endl;
+
+
+    if ( isMultiThreadEnv_ )
+        laPool_->pushSearchLA(analysisInfo, pLA);
+
+    return true;
+}
+
+void LAManager::removeStopwords(
+    TermList & termList,
+    shared_ptr<la::PlainDictionary>&  stopDict
+)
+{
+    /// TODO: add stopDict support
 //        if( stopDict.get() != NULL )
 //            LA::removeStopwords( termList, stopDict );
-    }
-    
-    la::LA* LAManager::get_la(const AnalysisInfo& analysisInfo)
-    {
-      LA * p_la = NULL;
-      p_la = isMultiThreadEnv_ ? laPool_->popSearchLA( analysisInfo ) :
-      laPool_->topSearchLA( analysisInfo );
-      return p_la;
-    }
+}
+
+la::LA* LAManager::get_la(const AnalysisInfo& analysisInfo)
+{
+    LA * p_la = NULL;
+    p_la = isMultiThreadEnv_ ? laPool_->popSearchLA( analysisInfo ) :
+           laPool_->topSearchLA( analysisInfo );
+    return p_la;
+}
 
 } // namespace sf1r

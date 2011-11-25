@@ -13,15 +13,12 @@
 #include <mining-manager/doc_table.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/random.hpp>
-#include <am/sdb_btree/sdb_bptree.h>
 #include <3rdparty/am/rde_hashmap/hash_map.h>
-#include <am/external_sort/alpha_sort.hpp>
 #include <am/external_sort/izene_sort.hpp>
 #include <am/sequence_file/SimpleSequenceFile.hpp>
 #include <am/sequence_file/SequenceFile.hpp>
 #include <ir/ir_database/IRDatabase.hpp>
 #include "TgTypes.h"
-#include <mining-manager/concept-id-manager.h>
 #include <util/error_handler.h>
 #include <idmlib/util/file_object.h>
 #include <boost/serialization/vector.hpp>
@@ -78,6 +75,7 @@ public:
 /**
 * @brief Label Manager manages the labels and other related data in TG.
 */
+class ConceptIDManager;
 class LabelManager : public izenelib::util::ErrorHandler
 {
 public:

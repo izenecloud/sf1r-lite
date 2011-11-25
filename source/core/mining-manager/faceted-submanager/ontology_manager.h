@@ -7,41 +7,54 @@
 
 #ifndef SF1R_ONTOLOGY_MANAGER_H_
 #define SF1R_ONTOLOGY_MANAGER_H_
-#include <sdb/IndexSDB.h>
-#include <boost/serialization/access.hpp>
-#include <boost/serialization/serialization.hpp>
 #include <common/type_defs.h>
 #include <common/ResultType.h>
 #include <configuration-manager/MiningSchema.h>
+#include <configuration-manager/PropertyConfig.h>
+#include <document-manager/Document.h>
 #include "faceted_types.h"
-#include "ontology.h"
+#include "manmade_doc_category_item.h"
 #include "ontology_searcher.h"
-#include <document-manager/DocumentManager.h>
-#include <index-manager/IndexManager.h>
-#include <idmlib/util/idm_analyzer.h>
-#include <idmlib/util/file_object.h>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/mpl/and.hpp>
-#include <mining-manager/taxonomy-generation-submanager/LabelManager.h>
+
 #include <ir/id_manager/IDManager.h>
-#include <la-manager/LAManager.h>
-#include <search-manager/ANDDocumentIterator.h>
-#include <search-manager/ORDocumentIterator.h>
-#include <search-manager/TermDocumentIterator.h>
-#include <ir/index_manager/index/LAInput.h>
+
+#include <idmlib/util/file_object.h>
+
+namespace idmlib
+{
+namespace util
+{
+class IDMAnalyzer;
+}
+}
+
+namespace sf1r
+{
+class DocumentManager;
+class LAManager;
+class LabelManager;
+class IndexManager;
+}
+
 NS_FACETED_BEGIN
 using namespace izenelib::ir::idmanager;
-using namespace izenelib::ir::indexmanager;
 typedef std::pair<uint32_t, uint32_t> id2count_t;
+
+class Ontology;
+class OntologySearcher;
+class ManmadeDocCategory;
+
 class OntologyManager
 {
 
 public:
-    OntologyManager(const std::string& container, idmlib::util::IDMAnalyzer* analyzer);
+    OntologyManager(
+        const std::string& container, 
+        const boost::shared_ptr<DocumentManager>& document_manager, 
+        const std::vector<std::string>& properties, 
+        idmlib::util::IDMAnalyzer* analyzer);
 
-    OntologyManager(const std::string& container, const boost::shared_ptr<DocumentManager>& document_manager, const std::vector<std::string>& properties, idmlib::util::IDMAnalyzer* analyzer);
-
+#if 0
     OntologyManager(
         std::string& facetedPath,
         std::string& tgLabelPath,
@@ -56,6 +69,7 @@ public:
         boost::shared_ptr<LabelManager::LabelDistributeSSFType::ReaderType> reader,
         boost::shared_ptr<LAManager>& laManager
     );
+#endif
     ~OntologyManager();
 
     bool Open();
@@ -77,11 +91,8 @@ public:
         return searcher_;
     }
     
-    
-    
 
     bool DefineDocCategory(const std::vector<ManmadeDocCategoryItem>& items);
-    typedef izenelib::ir::indexmanager::termid_t izene_termid_t;
     int getCoOccurence(uint32_t labelTermId,uint32_t topicTermId);
 private:
     void OutputToFile_(const std::string& file, Ontology* ontology);
@@ -121,11 +132,10 @@ private:
     boost::shared_ptr<IndexManager> index_manager_;
     boost::shared_ptr<LabelManager> labelManager_;
     boost::shared_ptr<IDManager> idManager_;
-    boost::shared_ptr<LabelManager::LabelDistributeSSFType::ReaderType> reader_;
+    //boost::shared_ptr<LabelManager::LabelDistributeSSFType::ReaderType> reader_;
     boost::shared_ptr<LAManager> laManager_;
     idmlib::util::FileObject<uint32_t> max_docid_file_;
     idmlib::util::FileObject<std::vector<std::list<uint32_t> > > docItemListFile_;
-    //idmlib::util::FileObject<std::map<std::pair<izene_termid_t, izene_termid_t>, int> > cooccurenceFile_;
     boost::mutex mutex_;
     std::string scdpath_;
     std::string tgPath_;
@@ -134,8 +144,9 @@ private:
     uint32_t maxDocid_;
     std::vector<uint32_t> property_ids_;
     std::vector<std::string> property_names_;
+#if 0	
     IndexSDB<unsigned int, unsigned int,izenelib::util::ReadWriteLock>* docRuleTFSDB_;
-
+#endif
 };
 NS_FACETED_END
 #endif

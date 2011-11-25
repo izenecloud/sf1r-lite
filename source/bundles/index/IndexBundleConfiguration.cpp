@@ -18,6 +18,7 @@ void IndexBundleConfiguration::setSchema(
     const std::set<PropertyConfigBase, PropertyBaseComp>& schema
 )
 {
+    rawSchema_ = schema;
     std::set<PropertyConfigBase, PropertyBaseComp>::const_iterator iter = schema.begin();
     for(; iter != schema.end(); ++iter)
     {
@@ -41,7 +42,7 @@ void IndexBundleConfiguration::setIndexMultiLangGranularity(
     const std::string& granularity
 )
 {
-    if(! granularity.compare("sentence")) indexMultilangGranularity_ = la::SENTENCE_LEVEL;		
+    if(! granularity.compare("sentence")) indexMultilangGranularity_ = la::SENTENCE_LEVEL;
     else if(! granularity.compare("block")) indexMultilangGranularity_ = la::BLOCK_LEVEL;
     else indexMultilangGranularity_ = la::FIELD_LEVEL;
 }
@@ -59,7 +60,7 @@ void IndexBundleConfiguration::numberProperty()
 }
 
 bool IndexBundleConfiguration::getPropertyConfig(
-    const std::string& name, 
+    const std::string& name,
     PropertyConfig& config
 ) const
 {
@@ -75,7 +76,7 @@ bool IndexBundleConfiguration::getPropertyConfig(
     return false;
 }
 
-bool IndexBundleConfiguration::getAnalysisInfo( 
+bool IndexBundleConfiguration::getAnalysisInfo(
     const std::string& propertyName,
     AnalysisInfo& analysisInfo,
     std::string& analysis,
@@ -100,4 +101,3 @@ bool IndexBundleConfiguration::getAnalysisInfo(
 }
 
 }
-

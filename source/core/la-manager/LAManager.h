@@ -9,13 +9,16 @@
 #define _LA_MANAGER_
 
 #include "AnalysisInformation.h"
-#include "LAInformation.h"
 #include "LAPool.h"
 
 #include <la/LA.h>
-#include <la/dict/PlainDictionary.h>
 
 #include <util/ustring/UString.h>
+
+namespace la
+{
+class PlainDictionary;
+}
 
 namespace sf1r
 {

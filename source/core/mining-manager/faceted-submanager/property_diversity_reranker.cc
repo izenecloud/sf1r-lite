@@ -80,12 +80,12 @@ void PropertyDiversityReranker::rerank(
         std::size_t numDoc = docIdList.size();
 
         std::vector<unsigned int> boostingDocIdList;
-        std::vector<float> boostingScoreList;	
+        std::vector<float> boostingScoreList;
         boostingDocIdList.reserve(numDoc);;
         boostingScoreList.reserve(numDoc);
 
         std::vector<unsigned int> leftDocIdList;
-        std::vector<float> leftScoreList;	
+        std::vector<float> leftScoreList;
         leftDocIdList.reserve(numDoc);;
         leftScoreList.reserve(numDoc);
 
@@ -171,7 +171,7 @@ void PropertyDiversityReranker::rerankDiversity_(
     for (std::size_t i = 0; i < numDoc; ++i)
     {
         docid_t docId = docIdList[i];
-        
+
         if (docId < idTable.size() && idTable[docId].empty() == false)
         {
             // use 1st group value
@@ -263,4 +263,3 @@ void PropertyDiversityReranker::rerankCTR_(
 }
 
 NS_FACETED_END
-

@@ -21,6 +21,8 @@ public:
     void TrySetIndexMode(long scd_file_size);
 
     void TryCommit();
+
+    void ForceCommit();
 private:
     boost::shared_ptr<IndexManager> index_manager_;
     double threshold_;

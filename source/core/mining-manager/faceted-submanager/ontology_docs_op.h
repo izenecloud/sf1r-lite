@@ -8,8 +8,6 @@
 #ifndef SF1R_ONTOLOGY_DOCS_OP_H_
 #define SF1R_ONTOLOGY_DOCS_OP_H_
 
-#include <boost/serialization/access.hpp>
-#include <boost/serialization/serialization.hpp>
 #include <common/type_defs.h>
 #include <common/ResultType.h>
 #include "faceted_types.h"
@@ -41,8 +39,6 @@ public:
     }
 
 };
-
-
 
 
 NS_FACETED_END
