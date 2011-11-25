@@ -332,15 +332,16 @@ bool SearchManager::doSearch_(
         if (!filtingList.empty())
             queryBuilder_->prepare_filter(filtingList, pFilterIdSet);
 
-        pMultiPropertyIterator = queryBuilder_->prepare_dociterator(
-                                     actionOperation,
-                                     collectionId,
-                                     propertyWeightMap_,
-                                     indexPropertyList,
-                                     indexPropertyIdList,
-                                     readTermPosition,
-                                     termIndexMaps
-                                 );
+        if(actionOperation.rawQueryTree_->type_ != QueryTree::FILTER_QUERY)
+            pMultiPropertyIterator = queryBuilder_->prepare_dociterator(
+                                         actionOperation,
+                                         collectionId,
+                                         propertyWeightMap_,
+                                         indexPropertyList,
+                                         indexPropertyIdList,
+                                         readTermPosition,
+                                         termIndexMaps
+                                     );
 
         if (pFilterIdSet)
         {
