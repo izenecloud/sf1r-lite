@@ -7,7 +7,6 @@
 #include <query-manager/QueryManager.h>
 #include <index-manager/IndexManager.h>
 #include <search-manager/SearchManager.h>
-#include <search-manager/PersonalizedSearchInfo.h>
 #include <ranking-manager/RankingManager.h>
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
@@ -16,6 +15,8 @@
 #include <aggregator-manager/WorkerService.h>
 #include <node-manager/MasterNodeManager.h>
 #include <util/singleton.h>
+
+#include <question-answering/QuestionAnalysis.h>
 
 #include <boost/filesystem.hpp>
 

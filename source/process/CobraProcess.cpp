@@ -13,8 +13,6 @@
 #include <OnSignal.h>
 #include <common/XmlConfigParser.h>
 #include <common/CollectionManager.h>
-#include <controllers/CollectionHandler.h>
-#include <controllers/Sf1Controller.h>
 
 #include <util/ustring/UString.h>
 #include <util/driver/IPRestrictor.h>

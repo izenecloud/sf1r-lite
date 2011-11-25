@@ -1,4 +1,5 @@
 #include "MiningSearchService.h"
+#include <mining-manager/MiningManager.h>
 #include <mining-manager/faceted-submanager/ontology_manager.h>
 
 #include <aggregator-manager/WorkerService.h>

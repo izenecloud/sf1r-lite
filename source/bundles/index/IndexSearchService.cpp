@@ -1,33 +1,11 @@
 #include "IndexSearchService.h"
-#include "IndexBundleHelper.h"
-#include <bundles/mining/MiningSearchService.h>
-#include <bundles/recommend/RecommendSearchService.h>
 
-#include <index-manager/IndexManager.h>
-#include <search-manager/SearchManager.h>
-#include <search-manager/PersonalizedSearchInfo.h>
 #include <search-manager/SearchCache.h>
-#include <query-manager/QueryIdentity.h>
-#include <ranking-manager/RankingManager.h>
-#include <document-manager/DocumentManager.h>
-#include <la-manager/LAManager.h>
-
+#include <aggregator-manager/WorkerService.h>
 #include <aggregator-manager/AggregatorManager.h>
 
 #include <common/SFLogger.h>
-
-#include <query-manager/QMCommonFunc.h>
-#include <recommend-manager/User.h>
 #include <common/type_defs.h>
-#include <la-manager/LAPool.h>
-
-#include <util/profiler/Profiler.h>
-#include <util/profiler/ProfilerGroup.h>
-#include <util/singleton.h>
-#include <util/get.h>
-
-using namespace izenelib::util;
-
 
 namespace sf1r
 {

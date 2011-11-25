@@ -12,6 +12,10 @@
 #include <recommend-manager/ItemIdGenerator.h>
 #include <bundles/index/IndexSearchService.h>
 
+#include <aggregator-manager/WorkerService.h>
+
+#include <ir/id_manager/IDManager.h>
+
 #include <common/SFLogger.h>
 
 #include <memory> // auto_ptr
@@ -19,6 +23,8 @@
 #include <glog/logging.h>
 
 namespace bfs = boost::filesystem;
+
+using izenelib::ir::idmanager::IDManager;
 
 namespace sf1r
 {

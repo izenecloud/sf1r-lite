@@ -14,6 +14,14 @@
 
 #include <boost/shared_ptr.hpp>
 
+namespace ilplib
+{
+namespace qa
+{
+class QuestionAnalysis;
+}
+}
+
 namespace sf1r
 {
 using namespace izenelib::osgi;

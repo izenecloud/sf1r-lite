@@ -9,6 +9,7 @@
 #include <common/SFLogger.h>
 #include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
+#include <aggregator-manager/WorkerService.h>
 #include <product-manager/product_manager.h>
 #include <product-manager/collection_product_data_source.h>
 #include <product-manager/scd_operation_processor.h>
