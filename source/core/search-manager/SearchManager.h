@@ -57,29 +57,33 @@ public:
 
     ~SearchManager();
 
-    bool search(SearchKeywordOperation& actionOperation,
-                std::vector<unsigned int>& docIdList,
-                std::vector<float>& rankScoreList,
-                std::vector<float>& customRankScoreList,
-                std::size_t& totalCount,
-                faceted::GroupRep& groupRep,
-                faceted::OntologyRep& attrRep,
-                sf1r::PropertyRange& propertyRange,
-                DistKeywordSearchInfo& distSearchInfo,
-                int topK = 200,
-                int start = 0);
+    bool search(
+        SearchKeywordOperation& actionOperation,
+        std::vector<unsigned int>& docIdList,
+        std::vector<float>& rankScoreList,
+        std::vector<float>& customRankScoreList,
+        std::size_t& totalCount,
+        faceted::GroupRep& groupRep,
+        faceted::OntologyRep& attrRep,
+        sf1r::PropertyRange& propertyRange,
+        DistKeywordSearchInfo& distSearchInfo,
+        int topK = 200,
+        int start = 0);
 
 
-    void reset_cache(bool rType, docid_t id, const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
+    void reset_cache(
+        bool rType, 
+        docid_t id, 
+        const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
     
     void reset_all_property_cache();
 
     /// @brief change working dir by setting new underlying componenets
-    void chdir(const boost::shared_ptr<IDManager>& idManager,
-               const boost::shared_ptr<DocumentManager>& documentManager,
-               const boost::shared_ptr<IndexManager>& indexManager,
-               IndexBundleConfiguration* config
-               );
+    void chdir(
+        const boost::shared_ptr<IDManager>& idManager,
+        const boost::shared_ptr<DocumentManager>& documentManager,
+        const boost::shared_ptr<IndexManager>& indexManager,
+        IndexBundleConfiguration* config);
 
     void set_reranker(reranker_t reranker){
         reranker_ = reranker;
@@ -90,19 +94,22 @@ public:
     NumericPropertyTable* createPropertyTable(const std::string& propertyName);
 
 private:
-    bool doSearch_(SearchKeywordOperation& actionOperation,
-                   std::vector<unsigned int>& docIdList,
-                   std::vector<float>& rankScoreList,
-                   std::vector<float>& customRankScoreList,
-                   std::size_t& totalCount,
-                   faceted::GroupRep& groupRep,
-                   faceted::OntologyRep& attrRep,
-                   sf1r::PropertyRange& propertyRange,
-                   DistKeywordSearchInfo& distSearchInfo,
-                   int topK,
-                   int start);
+    bool doSearch_(
+        SearchKeywordOperation& actionOperation,
+        std::vector<unsigned int>& docIdList,
+        std::vector<float>& rankScoreList,
+        std::vector<float>& customRankScoreList,
+        std::size_t& totalCount,
+        faceted::GroupRep& groupRep,
+        faceted::OntologyRep& attrRep,
+        sf1r::PropertyRange& propertyRange,
+        DistKeywordSearchInfo& distSearchInfo,
+        int topK,
+        int start);
 
-    void prepareDocIterWithOnlyOrderby_(ANDDocumentIterator* pDocIterator,  boost::shared_ptr<EWAHBoolArray<uint32_t> >& pFilterIdSet);
+    void prepareDocIterWithOnlyOrderby_(
+        ANDDocumentIterator* pDocIterator,  
+        boost::shared_ptr<EWAHBoolArray<uint32_t> >& pFilterIdSet);
 
     /**
      * @brief get corresponding id of the property, returns 0 if the property
@@ -111,7 +118,9 @@ private:
      */
     propertyid_t getPropertyIdByName_(const std::string& name) const;
 
-    bool getPropertyTypeByName_(const std::string& name, PropertyDataType& type) const;
+    bool getPropertyTypeByName_(
+        const std::string& name, 
+        PropertyDataType& type) const;
 
     boost::shared_ptr<PropertyData> getPropertyData_(const std::string& name);
 
@@ -129,13 +138,18 @@ private:
      * @param docIdList [IN]
      * @param distSearchInfo [OUT]
      */
-    void getSortPropertyData_(Sorter* pSorter, std::vector<unsigned int>& docIdList, DistKeywordSearchInfo& distSearchInfo);
+    void getSortPropertyData_(
+        Sorter* pSorter, 
+        std::vector<unsigned int>& docIdList, 
+        DistKeywordSearchInfo& distSearchInfo);
 
 private:
     /**
      * @brief for testing
      */
-    void printDFCTF_(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties ctfmap);
+    void printDFCTF_(
+        DocumentFrequencyInProperties& dfmap, 
+        CollectionTermFrequencyInProperties ctfmap);
 
 private:
     std::string collectionName_;
