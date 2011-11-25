@@ -319,9 +319,19 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
 
         if(pFilterIdSet)
         {
+            vector<uint32_t> vec;
+            pFilterIdSet->appendRowIDs(vec);
+            cout<<"************the filter doc id list*****"<<std::endl;
+            for(int i = 0; i < vec.size(); i++)
+                cout<<vec[i]<<" ";
+            cout<<endl;
             BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet->bit_iterator());
             FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
 
+            std::cout<<endl<<"*********the filter output doc id list******"<<std::endl;
+            while(pFilterIterator->next())
+                 cout<<pFilterIterator->doc()<<" ";
+            std::cout<<std::endl;
             pDocIterator.reset(new ANDDocumentIterator());
             pDocIterator->add((DocumentIterator*)pFilterIterator);
         }
@@ -569,9 +579,11 @@ bool SearchManager::doSearch_(SearchKeywordOperation& actionOperation,
             rangePropertyTable.reset(createPropertyTable(rangePropertyName));
         }
 
-
+        std::cout<<endl<<"************enter the looped procedure********"<<std::endl;
+        ofstream outfile("rowid.txt");
         while (pDocIterator->next())
         {
+            outfile<<pDocIterator->doc()<<std::endl;
             if (groupFilter && !groupFilter->test(pDocIterator->doc()))
                 continue;
 
