@@ -65,7 +65,6 @@ TermDocumentIterator::TermDocumentIterator(
         ,df_(0)
         ,readPositions_(readPositions)
 {
-    LOG(INFO)<<"Constructing TermDocumentIterator "<<this;
 }
 
 TermDocumentIterator::~TermDocumentIterator()
@@ -74,7 +73,6 @@ TermDocumentIterator::~TermDocumentIterator()
         delete pTermDocReader_;
     if(pTermReader_)
         delete pTermReader_;
-    LOG(INFO)<<"Destroying TermDocumentIterator "<<this;
 }
 
 bool TermDocumentIterator::accept()

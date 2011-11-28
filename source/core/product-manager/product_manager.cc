@@ -112,7 +112,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
             GetTopCategory_(to, category);
             GetSource_(to, source);
             GetTimestamp_(to, timestamp);
-            price_trend_->Insert(docid_str, to_price, timestamp, category, source);
+            price_trend_->Insert(docid_str, to_price, timestamp, fromid, category, source);
         }
     }
 
@@ -182,7 +182,7 @@ bool ProductManager::Finish()
 {
     if (price_trend_)
     {
-        price_trend_->Finish();
+        price_trend_->Flush();
     }
     return GenOperations_();
 }

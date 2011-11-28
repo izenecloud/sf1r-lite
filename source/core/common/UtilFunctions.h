@@ -48,6 +48,42 @@ time_t createTimeStamp(const izenelib::util::UString& text);
 
 time_t createTimeStamp(const std::string& text);
 
+template <std::size_t Index, typename TupleType>
+bool tupleLess(const TupleType& t1, const TupleType& t2)
+{
+    return t1.get<Index>() < t2.get<Index>();
+}
+
+template <std::size_t Index, typename TupleType>
+bool tupleGreater(const TupleType& t1, const TupleType& t2)
+{
+    return t1.get<Index>() > t2.get<Index>();
+}
+
+template <std::size_t Index, typename TupleType>
+bool tupleLessEqual(const TupleType& t1, const TupleType& t2)
+{
+    return t1.get<Index>() <= t2.get<Index>();
+}
+
+template <std::size_t Index, typename TupleType>
+bool tupleGreaterEqual(const TupleType& t1, const TupleType& t2)
+{
+    return t1.get<Index>() >= t2.get<Index>();
+}
+
+template <std::size_t Index, typename TupleType>
+bool tupleEqual(const TupleType& t1, const TupleType& t2)
+{
+    return t1.get<Index>() == t2.get<Index>();
+}
+
+template <std::size_t Index, typename TupleType>
+bool tupleNotEqual(const TupleType& t1, const TupleType& t2)
+{
+    return t1.get<Index>() != t2.get<Index>();
+}
+
 }
 
 #endif
