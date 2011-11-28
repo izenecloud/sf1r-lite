@@ -505,8 +505,8 @@ bool SearchManager::doSearch_(
 
     STOP_PROFILER ( preparesort )
 
-    if (!pMultiPropertyIterator)
-    {
+    if (!pMultiPropertyIterator && !pFilterIdSet)
+    {//SELECT * , and filter is null
         if (pSorter)
         {
             ///SELECT * ORDER BY
