@@ -501,4 +501,28 @@ void ProductController::get_multi_price_history()
     }
 }
 
+void ProductController::get_top_price_cut_list()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
+
+    prop_name_ = asString(request()[Keys::property]);
+    prop_value_ = asString(request()[Keys::value]);
+    days_ = asUint(request()[Keys::days]);
+
+    TPCQueue tpc_queue;
+    if (!product_manager_->GetTopPriceCutList(tpc_queue, prop_name_, prop_value_, days_))
+    {
+        response().addError(product_manager_->GetLastError());
+        return;
+    }
+
+    Value& tpc_list = response()[Keys::resources];
+    for (uint32_t i = 0; i < tpc_queue.size(); i++)
+    {
+        Value& tpc_item = tpc_list();
+        tpc_item[Keys::price_cut] = tpc_queue[i].first;
+        tpc_item[Keys::docid] = tpc_queue[i].second;
+    }
+}
+
 }

@@ -15,7 +15,6 @@
 #include <product-manager/scd_operation_processor.h>
 #include <product-manager/product_price_trend.h>
 #include <product-manager/product_cron_job_handler.h>
-#include <log-manager/PriceHistory.h>
 #include <util/singleton.h>
 
 #include <boost/filesystem.hpp>
@@ -190,9 +189,9 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
     boost::filesystem::create_directories(dir);
     data_source_ = new CollectionProductDataSource(indexService->workerService_->documentManager_, indexService->workerService_->indexManager_, indexService->workerService_->idManager_, indexService->workerService_->searchManager_, config_->pm_config_, config_->schema_);
     op_processor_ = new ScdOperationProcessor(dir);
-    if (config_->pm_config_.enablePH && PriceHistory::is_enabled)
+    if (config_->pm_config_.enablePH)
     {
-        price_trend_ = new ProductPriceTrend(config_->collectionName_, dir, config_->pm_config_.category_property_name, config_->pm_config_.source_property_name);
+        price_trend_ = new ProductPriceTrend(config_->collectionName_, dir, config_->pm_config_.group_property_names, config_->pm_config_.time_interval_days);
         ProductCronJobHandler* handler = ProductCronJobHandler::getInstance();
         if (!handler->cronStart(config_->cron_))
         {
