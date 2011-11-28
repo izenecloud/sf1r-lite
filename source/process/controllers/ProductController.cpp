@@ -501,6 +501,55 @@ void ProductController::get_multi_price_history()
     }
 }
 
+/**
+ * @brief Action \b get_top_price_cut_list. Get 20 doc ids with greatest price-cut ratio for given property value and time interval.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b property* (@c String): property name
+ * - @c value* (@c String): property value
+ * - @b days* (@c Uint): time interval to calculate price-cut ratio
+ *
+ * @section response
+ *
+ * - @b resources (@c Array): All returned items
+ *   - @b price_cut (@c Float): The price-cut ratio
+ *   - @b docid (@c String): The string_type docid
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection":"b5mm",
+ *   "property":"Category",
+ *   "value":"手机通讯",
+ *   "days":"7"
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header":
+ *   {
+ *     "success":true
+ *   },
+ *   "resources":
+ *   [
+ *     {
+         "price_cut":"0.35",
+ *       "docid":"cbb3c856bda004e3d9dd441a3995b090"
+ *     },
+ *     {
+         "price_cut":"0.15",
+ *       "docid":"f16940a39c79dc84bf14b94dab0624fd"
+ *     }
+ *   ]
+ * }
+ * @endcode
+ */
 void ProductController::get_top_price_cut_list()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());

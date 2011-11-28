@@ -48,7 +48,7 @@
                     <xs:element name="GroupProperty" type="PropertyType" minOccurs="1" maxOccurs="unbounded"/>
                     <xs:element name="TimeInterval" minOccurs="1" maxOccurs="unbounded">
                         <xs:complexType>
-                            <xs:attribute name="days" type="xs:nonNegativeInteger" use="required" />
+                            <xs:attribute name="days" type="xs:positiveInteger" use="required" />
                         </xs:complexType>
                     </xs:element>
                 </xs:sequence>
