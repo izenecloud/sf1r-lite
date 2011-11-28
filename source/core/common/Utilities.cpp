@@ -5,6 +5,7 @@
 #include "Utilities.h"
 
 #include <ir/index_manager/utility/StringUtils.h>
+#include <util/mkgmtime.h>
 
 #include <vector>
 
@@ -152,7 +153,8 @@ int64_t Utilities::convertDate(const izenelib::util::UString& dateStr,const izen
 #ifdef WIN32
     return _mktime64(&atm);
 #else
-    return mktime(&atm);
+    //return mktime(&atm);
+    return fastmktime(&atm);
 #endif
 }
 
@@ -163,7 +165,8 @@ int64_t Utilities::convertDate(const std::string& dataStr)
 #ifdef WIN32
     return _mktime64(&atm);
 #else
-    return mktime(&atm);
+    //return mktime(&atm);
+    return fastmktime(&atm);
 #endif
 
 }

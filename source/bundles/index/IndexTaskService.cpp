@@ -1202,7 +1202,10 @@ bool IndexTaskService::prepareDocument_(
     return true;
 }
 
-bool IndexTaskService::prepareIndexDocument_(docid_t oldId, const Document& document, IndexerDocument& indexDocument)
+bool IndexTaskService::prepareIndexDocument_(
+    docid_t oldId, 
+    const Document& document, 
+    IndexerDocument& indexDocument)
 {
     CREATE_SCOPED_PROFILER (preparedocument, "IndexTaskService", "IndexTaskService::prepareIndexDocument_");
 
@@ -1527,12 +1530,11 @@ bool IndexTaskService::makeForwardIndex_(
     const AnalysisInfo& analysisInfo
 )
 {
-    CREATE_PROFILER(proTermExtracting, "IndexTaskService:SIAProcess", "Forward Index Building : extracting Terms");
+    CREATE_SCOPED_PROFILER(proTermExtracting, "IndexTaskService", "Analyzer overhead");
 
 //    la::TermIdList termIdList;
     laInputs_[propertyId]->resize(0);
 
-    START_PROFILER(proTermExtracting);
     // Remove the spaces between two Chinese Characters
 //    izenelib::util::UString refinedText;
 //    la::removeRedundantSpaces(text, refinedText);
@@ -1550,7 +1552,6 @@ bool IndexTaskService::makeForwardIndex_(
     if (!laManager_->getTermIdList(idManager_.get(), text, analysisInfo, (*laInputs_[propertyId]), indexingLevel))
             return false;
 
-    STOP_PROFILER(proTermExtracting);
     return true;
 }
 
