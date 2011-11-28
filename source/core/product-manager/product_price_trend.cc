@@ -1,6 +1,7 @@
 #include "product_price_trend.h"
 
 #include <log-manager/PriceHistory.h>
+#include <am/range/AmIterator.h>
 #include <libcassandra/util_functions.h>
 
 #include <algorithm>
@@ -54,10 +55,30 @@ bool ProductPriceTrend::Init()
             prop_tpc.push_back(new TPCBTree(data_dir_ + "/tpc_data." + *it + "." + lexical_cast<string>(time_ints_[i])));
             if (!prop_tpc.back()->open())
                 ret = false;
+//          else TraverseTPCBtree_(*prop_tpc.back());
         }
     }
 
     return ret;
+}
+
+void ProductPriceTrend::TraverseTPCBtree(TPCBTree& tpc_btree)
+{
+    typedef izenelib::am::AMIterator<TPCBTree> AMIteratorType;
+    AMIteratorType iter(tpc_btree);
+    AMIteratorType end;
+    for(; iter != end; ++iter)
+    {
+        cout << "Key: " << iter->first << endl;
+        const TPCQueue& v = iter->second;
+
+        cout << "Value:" << endl;
+        for (TPCQueue::const_iterator vit = v.begin();
+                vit != v.end(); ++vit)
+        {
+            cout << "\t" << vit->first << "\t" << vit->second << endl;
+        }
+    }
 }
 
 bool ProductPriceTrend::Insert(

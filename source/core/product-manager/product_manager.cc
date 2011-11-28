@@ -98,28 +98,28 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
     boost::mutex::scoped_lock lock(human_mutex_);
 
     uint32_t fromid = index_document.getId(); //oldid
+    PMDocumentType from;
+    if (!data_source_->GetDocument(fromid, from)) return false;
+    UString from_uuid;
+    if (!GetUuid_(from, from_uuid)) return false;
     ProductPrice from_price;
     ProductPrice to_price;
     GetPrice_(fromid, from_price);
     GetPrice_(to, to_price);
-    if (price_trend_ && to_price.Valid() && from_price != to_price)
+
+    if (has_price_trend_ && to_price.Valid() && from_price != to_price)
     {
         UString docid;
         if (GetDOCID_(to, docid))
         {
             std::string docid_str;
             docid.convertString(docid_str, UString::UTF_8);
-            std::map<std::string, string> group_prop_map;
-            GetGroupProperties_(to, group_prop_map);
             GetTimestamp_(to, timestamp);
+            std::map<std::string, std::string> group_prop_map;
+            GetGroupProperties_(to, group_prop_map);
             price_trend_->Update(docid_str, to_price, timestamp, group_prop_map);
         }
     }
-
-    PMDocumentType from;
-    if (!data_source_->GetDocument(fromid, from)) return false;
-    UString from_uuid;
-    if (!GetUuid_(from, from_uuid)) return false;
 
     std::vector<uint32_t> docid_list;
     data_source_->GetDocIdList(from_uuid, docid_list, fromid); // except from.docid
@@ -622,7 +622,7 @@ bool ProductManager::GetMultiPriceHistory(
         time_t from_tt,
         time_t to_tt)
 {
-    if (!price_trend_)
+    if (!has_price_trend_)
     {
         error_ = "Price trend is not enabled for this collection";
         return false;
@@ -637,7 +637,7 @@ bool ProductManager::GetMultiPriceRange(
         time_t from_tt,
         time_t to_tt)
 {
-    if (!price_trend_)
+    if (!has_price_trend_)
     {
         error_ = "Price trend is not enabled for this collection";
         return false;
@@ -652,7 +652,7 @@ bool ProductManager::GetTopPriceCutList(
         const std::string& prop_value,
         uint32_t days)
 {
-    if (!price_trend_)
+    if (!has_price_trend_)
     {
         error_ = "Price trend is not enabled for this collection";
         return false;
