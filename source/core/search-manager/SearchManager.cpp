@@ -662,7 +662,7 @@ bool SearchManager::doSearch_(
             scoreItem.score = pMultiPropertyIterator ? 
                                         pMultiPropertyIterator->score(
                                             rankQueryProperties,
-                                            propertyRankers) : 1;
+                                            propertyRankers) : 1.0;
             STOP_PROFILER ( computerankscore )
 
             START_PROFILER ( computecustomrankscore )
