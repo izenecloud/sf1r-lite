@@ -357,7 +357,7 @@ bool SearchManager::doSearch_(
                                          termIndexMaps
                                      );
 
-            if(!pMultiPropertyIterator)
+            if (!pMultiPropertyIterator)
             {
                 return false;
             }
@@ -373,6 +373,8 @@ bool SearchManager::doSearch_(
 
     if (pFilterIdSet)
     {
+        ///1. Search Filter
+        ///2. Select * WHERE    (FilterQuery)
         BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet->bit_iterator());
         FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
         pDocIterator->add((DocumentIterator*)pFilterIterator);
@@ -380,6 +382,7 @@ bool SearchManager::doSearch_(
 
     if (pMultiPropertyIterator)
     {
+        ///Relevance query
         pDocIterator->add((DocumentIterator*)pMultiPropertyIterator);
     }
 
@@ -391,8 +394,8 @@ bool SearchManager::doSearch_(
     boost::scoped_ptr<Sorter> pSorter;
     try
     {
-        std::vector<std::pair<std::string , bool> >& sortPropertyList 
-            = actionOperation.actionItem_.sortPriorityList_;
+        std::vector<std::pair<std::string , bool> >& sortPropertyList
+        = actionOperation.actionItem_.sortPriorityList_;
         if (!sortPropertyList.empty())
         {
             std::vector<std::pair<std::string , bool> >::iterator iter = sortPropertyList.begin();
@@ -506,7 +509,11 @@ bool SearchManager::doSearch_(
     {
         if (pSorter)
         {
-            prepareDocIterWithOnlyOrderby_(pDocIterator.get(), pFilterIdSet);
+            ///SELECT * ORDER BY
+            prepareDocIterWithOnlyOrderby_(pFilterIdSet);
+            BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet->bit_iterator());
+            FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
+            pDocIterator->add((DocumentIterator*)pFilterIterator);
         }
         else
         {
@@ -652,13 +659,10 @@ bool SearchManager::doSearch_(
             ScoreDoc scoreItem(pDocIterator->doc());
             START_PROFILER ( computerankscore )
             ++totalCount;
-            if (pMultiPropertyIterator)
-                scoreItem.score = pMultiPropertyIterator->score(
-                                      rankQueryProperties,
-                                      propertyRankers
-                                  );
-            else
-                scoreItem.score = 1;
+            scoreItem.score = pMultiPropertyIterator ? 
+                                        pMultiPropertyIterator->score(
+                                            rankQueryProperties,
+                                            propertyRankers) : 1;
             STOP_PROFILER ( computerankscore )
 
             START_PROFILER ( computecustomrankscore )
@@ -800,7 +804,6 @@ propertyid_t SearchManager::getPropertyIdByName_(const std::string& name) const
 }
 
 void SearchManager::prepareDocIterWithOnlyOrderby_(
-    ANDDocumentIterator* pDocIterator,
     boost::shared_ptr<EWAHBoolArray<uint32_t> >& pFilterIdSet)
 {
     unsigned int bitsNum = documentManagerPtr_->getMaxDocId() + 1;
@@ -812,10 +815,6 @@ void SearchManager::prepareDocIterWithOnlyOrderby_(
     pFilterIdSet->addStreamOfEmptyWords(true, wordsNum - 1);
     for (unsigned int num = wordsNum * (sizeof(uint32_t) * 8); num <= bitsNum - 1; num++)
         pFilterIdSet->set(num);
-
-    BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet->bit_iterator());
-    FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
-    pDocIterator->add((DocumentIterator*)pFilterIterator);
 }
 
 bool SearchManager::getPropertyTypeByName_(
@@ -875,7 +874,7 @@ void SearchManager::getSortPropertyData_(
         pSortProperty = *iter;
         std::string SortPropertyName = pSortProperty->getProperty();
         distSearchInfo.sortPropertyList_.push_back(
-                std::make_pair(SortPropertyName, pSortProperty->isReverse()));
+            std::make_pair(SortPropertyName, pSortProperty->isReverse()));
 
         if (SortPropertyName == "CUSTOM_RANK" || SortPropertyName == "RANK")
             continue;

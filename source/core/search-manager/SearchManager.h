@@ -112,7 +112,6 @@ private:
         int start);
 
     void prepareDocIterWithOnlyOrderby_(
-        ANDDocumentIterator* pDocIterator,  
         boost::shared_ptr<EWAHBoolArray<uint32_t> >& pFilterIdSet);
 
     /**
