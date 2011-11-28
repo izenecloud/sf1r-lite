@@ -5,9 +5,7 @@
 #include "pm_types.h"
 #include "product_price.h"
 
-#include <am/tc/Hash.h>
-
-#include <boost/tuple/tuple.hpp>
+#include <am/tc/BTree.h>
 
 namespace sf1r
 {
@@ -16,16 +14,18 @@ class PriceHistory;
 
 class ProductPriceTrend
 {
-    typedef std::vector<boost::tuple<float, time_t, uint32_t> > TPCQueue;
-    typedef izenelib::am::tc::Hash<std::string, TPCQueue> TPCStorage;
-    typedef std::map<std::string, boost::tuple<uint32_t, ProductPriceType, std::string> > CacheMap;
+    typedef izenelib::am::tc::BTree<std::string, TPCQueue> TPCBTree;
+    typedef std::map<std::string, std::vector<TPCBTree *> > TPCStorage;
+
+    typedef std::pair<ProductPriceType, std::map<std::string, std::string> > PropCacheItem;
+    typedef std::map<std::string, PropCacheItem> PropCacheMap;
 
 public:
     ProductPriceTrend(
             const std::string& collection_name,
-            const std::string& dir,
-            const std::string& category_property,
-            const std::string& source_property);
+            const std::string& data_dir,
+            const std::vector<std::string>& group_props,
+            const std::vector<uint32_t>& time_ints);
 
     ~ProductPriceTrend();
 
@@ -36,10 +36,13 @@ public:
     bool Insert(
             const std::string& docid,
             const ProductPrice& price,
+            time_t timestamp);
+
+    bool Update(
+            const std::string& docid,
+            const ProductPrice& price,
             time_t timestamp,
-            uint32_t num_docid = 0,
-            const std::string& category = "",
-            const std::string& source = "");
+            std::map<std::string, std::string>& group_prop_map);
 
     bool GetMultiPriceHistory(
             PriceHistoryList& history_list,
@@ -55,25 +58,12 @@ public:
             time_t to_tt,
             std::string& error_msg);
 
-    enum TimeInterval
-    {
-        ONE_WEEK = 0,
-        HALF_YEAR,
-        ONE_YEAR
-    };
-
-    enum PropertyName
-    {
-        CATEGORY = 0,
-        SOURCE
-    };
-
     bool GetTopPriceCutList(
-            std::vector<std::pair<float, std::string> >& tpc_list,
+            TPCQueue& tpc_queue,
+            const std::string& prop_name,
             const std::string& prop_value,
-            std::string& error_msg,
-            PropertyName prop_name = CATEGORY,
-            TimeInterval time_int = ONE_WEEK);
+            uint32_t days,
+            std::string& error_msg);
 
     bool CronJob();
 
@@ -83,7 +73,7 @@ public:
     }
 
 private:
-    bool UpdateTPC_(TPCStorage* tpc_storage, const vector<string>& key_list, const CacheMap& cache_map, time_t timestamp);
+    bool UpdateTPC_(uint32_t time_int, time_t timestamp = -1);
 
     void ParseDocid_(std::string& dest, const std::string& src) const;
 
@@ -95,14 +85,12 @@ private:
 
 private:
     std::string collection_name_;
-    std::string category_property_;
-    std::string source_property_;
+    std::string data_dir_;
+    std::vector<std::string> group_props_;
+    std::vector<uint32_t> time_ints_;
     std::vector<PriceHistory> price_history_cache_;
-    std::vector<TPCStorage *> category_tpc_;
-    std::vector<TPCStorage *> source_tpc_;
-    // map<"docid", pair<"low price", "property value"> >
-    CacheMap category_map_;
-    CacheMap source_map_;
+    PropCacheMap prop_cache_;
+    TPCStorage tpc_storage_;
 };
 
 }

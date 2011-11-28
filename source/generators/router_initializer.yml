@@ -111,3 +111,4 @@ controllers:
       - recover
       - update_a_doc
       - get_multi_price_history
+      - get_top_price_cut_list

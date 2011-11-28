@@ -15,8 +15,8 @@ namespace sf1r
 
 void generateUUID(std::string& uuid_str, const PMDocumentType& doc)
 {
-    boost::uuids::uuid uuid = boost::uuids::random_generator()();
-    uuid_str = boost::uuids::to_string(uuid);
+    static boost::uuids::random_generator random_gen;
+    uuid_str = boost::uuids::to_string(random_gen());
 }
 
 void generateUUID(izenelib::util::UString& uuid_ustr, const PMDocumentType& doc)

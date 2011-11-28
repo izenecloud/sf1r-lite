@@ -34,6 +34,8 @@ public:
 
     void get_multi_price_history();
 
+    void get_top_price_cut_list();
+
 private:
     bool check_product_manager_();
     bool require_docid_list_();
@@ -49,6 +51,9 @@ private:
     izenelib::util::UString uuid_;
     izenelib::util::UString from_date_;
     izenelib::util::UString to_date_;
+    std::string prop_name_;
+    std::string prop_value_;
+    uint32_t days_;
     time_t from_tt_;
     time_t to_tt_;
     Document doc_;

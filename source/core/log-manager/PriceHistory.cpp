@@ -91,6 +91,7 @@ const string& PriceHistory::getKey() const
 
 bool PriceHistory::updateMultiRow(const vector<PriceHistory>& row_list)
 {
+    if (row_list.empty()) return true;
     if (!is_enabled) return false;
     try
     {
