@@ -11,7 +11,6 @@
 #include "ANDDocumentIterator.h"
 #include "Sorter.h"
 
-#include <ir/index_manager/utility/IndexManagerConfig.h>
 #include <ir/id_manager/IDManager.h>
 #include <util/ustring/UString.h>
 
@@ -43,6 +42,11 @@ class OntologyRep;
 class SearchManager : public NumericPropertyTableBuilder
 {
     typedef izenelib::ir::idmanager::IDManager IDManager;
+    enum IndexLevel
+    {
+        DOCLEVEL,  /// position posting does not create
+        WORDLEVEL ///  position postings create
+    };
 
 public:
     typedef boost::function< void( std::vector<unsigned int>&, std::vector<float>&, const std::string& ) > reranker_t;
@@ -166,6 +170,8 @@ private:
     reranker_t reranker_;
 
     boost::scoped_ptr<faceted::GroupFilterBuilder> groupFilterBuilder_;
+
+    IndexLevel indexLevel_;
 };
 
 } // end - namespace sf1r

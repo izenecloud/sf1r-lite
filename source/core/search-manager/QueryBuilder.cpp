@@ -158,6 +158,7 @@ MultiPropertyScorer* QueryBuilder::prepare_dociterator(
     return NULL;
     }catch(std::exception& e){
         delete docIterPtr;
+        throw std::runtime_error("Failed to prepare dociterator");
         return NULL;
     }
 }
