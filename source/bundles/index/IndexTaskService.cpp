@@ -1152,14 +1152,17 @@ bool IndexTaskService::prepareDocument_(
                 document.property(fieldStr) = propertyValueU;
                 analysisInfo.clear();
                 analysisInfo = iter->getAnalysisInfo();
-                if (analysisInfo.analyzerId_.size() != 0)
+                if (analysisInfo.analyzerId_.size())
                 {
                     unsigned int numOfSummary = 0;
-                    if (iter->getIsSummary())
+                    if ((iter->getIsSnippet() || iter->getIsSummary()))
                     {
-                        numOfSummary = iter->getSummaryNum();
-                        if (numOfSummary <= 0)
-                            numOfSummary = 1; //atleast one sentence required for summary
+                        if (iter->getIsSummary())
+                        {
+                            numOfSummary = iter->getSummaryNum();
+                            if (numOfSummary <= 0)
+                                numOfSummary = 1; //atleast one sentence required for summary
+                        }
 
                         if (!makeSentenceBlocks_(propertyValueU, iter->getDisplayLength(),
                                                 numOfSummary, sentenceOffsetList))
@@ -1167,8 +1170,7 @@ bool IndexTaskService::prepareDocument_(
                             LOG(ERROR) << "Make Sentence Blocks Failes ";
                         }
 
-                        document.property(fieldStr + ".blocks")
-                        = sentenceOffsetList;
+                        document.property(fieldStr + ".blocks") = sentenceOffsetList;
                     }
                 }
             }
