@@ -52,7 +52,7 @@ bool ProductPriceTrend::Init()
         vector<TPCBTree *>& prop_tpc = tpc_storage_[*it];
         for (uint32_t i = 0; i < time_ints_.size(); i++)
         {
-            prop_tpc.push_back(new TPCBTree(data_dir_ + "/tpc_data." + *it + "." + lexical_cast<string>(time_ints_[i])));
+            prop_tpc.push_back(new TPCBTree(data_dir_ + "/" + *it + "." + lexical_cast<string>(time_ints_[i]) + ".tpc"));
             if (!prop_tpc.back()->open())
                 ret = false;
 //          else TraverseTPCBtree_(*prop_tpc.back());
