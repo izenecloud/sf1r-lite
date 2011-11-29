@@ -85,13 +85,14 @@ bool RecommendSearchService::convertItemId_(
 
     for (std::size_t i = 0; i < inputItemVec.size(); ++i)
     {
-        if (! itemIdGenerator_.getItemIdByStrId(inputItemVec[i], itemId))
+        if (itemIdGenerator_.getItemIdByStrId(inputItemVec[i], itemId))
         {
-            LOG(ERROR) << "error in convertItemId_(), item id " << inputItemVec[i] << " not yet added before";
-            return false;
+            outputItemVec.push_back(itemId);
         }
-
-        outputItemVec.push_back(itemId);
+        else
+        {
+            LOG(WARNING) << "in convertItemId_(), item id " << inputItemVec[i] << " not yet added before";
+        }
     }
 
     return true;
