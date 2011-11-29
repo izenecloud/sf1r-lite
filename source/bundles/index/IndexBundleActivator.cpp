@@ -510,12 +510,11 @@ IndexBundleActivator::createWorkerService_()
 boost::shared_ptr<AggregatorManager>
 IndexBundleActivator::createAggregatorManager_() const
 {
-    boost::shared_ptr<AggregatorManager> ret(new AggregatorManager());
-    ret->setAggregatorConfig(config_->aggregatorConfig_);
-    MasterNodeManagerSingleton::get()->registerAggregator(ret);
-    ret->initLocalWorkerCaller(workerService_);
+    boost::shared_ptr<AggregatorManager> ret(new AggregatorManager(workerService_.get()));
     ret->TOP_K_NUM = config_->topKNum_;
-    ret->debug_ = true;
+    ret->setDebug(true);
+    // workers will be detected and set by master node manager
+    MasterNodeManagerSingleton::get()->registerAggregator(ret);
     return ret;
 }
 

@@ -7,8 +7,8 @@
 #ifndef AGGREGATOR_MANAGER_H_
 #define AGGREGATOR_MANAGER_H_
 
-#include <net/aggregator/JobInfo.h>
-#include <net/aggregator/JobAggregator.h>
+#include <net/aggregator/Typedef.h>
+#include <net/aggregator/Aggregator.h>
 #include <net/aggregator/AggregatorConfig.h>
 
 #include "WorkerService.h"
@@ -23,26 +23,26 @@ class MiningManager;
 
 typedef WorkerCaller<WorkerService> LocalWorkerCaller;
 
-class AggregatorManager : public JobAggregator<AggregatorManager, LocalWorkerCaller>
+class AggregatorManager : public Aggregator<AggregatorManager, LocalWorkerCaller>
 {
 public:
     AggregatorManager() : TOP_K_NUM(4000) {}
 
 public:
-    void initLocalWorkerCaller(const boost::shared_ptr<WorkerService> localWorkerService)
+    AggregatorManager(WorkerService* workerService)
     {
-        localWorkerCaller_.reset(new LocalWorkerCaller);
-        localWorkerCaller_->setInvoker(localWorkerService.get());
+        localWorkerCaller_.reset(new LocalWorkerCaller(workerService));
 
-        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getDistSearchInfo);
-        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getDistSearchResult);
-        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getSummaryMiningResult);
-        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getDocumentsByIds);
-        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getInternalDocumentId);
-        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, getSimilarDocIdList);
-        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, clickGroupLabel);
-        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, visitDoc);
-        ADD_WORKER_CALLER_METHOD(LocalWorkerCaller, localWorkerCaller_, WorkerService, index);
+        // TODO, add more
+        ADD_FUNC_TO_WORKER_CALLER(LocalWorkerCaller, localWorkerCaller_, WorkerService, getDistSearchInfo);
+        ADD_FUNC_TO_WORKER_CALLER(LocalWorkerCaller, localWorkerCaller_, WorkerService, getDistSearchResult);
+        ADD_FUNC_TO_WORKER_CALLER(LocalWorkerCaller, localWorkerCaller_, WorkerService, getSummaryMiningResult);
+        ADD_FUNC_TO_WORKER_CALLER(LocalWorkerCaller, localWorkerCaller_, WorkerService, getDocumentsByIds);
+        ADD_FUNC_TO_WORKER_CALLER(LocalWorkerCaller, localWorkerCaller_, WorkerService, getInternalDocumentId);
+        ADD_FUNC_TO_WORKER_CALLER(LocalWorkerCaller, localWorkerCaller_, WorkerService, getSimilarDocIdList);
+        ADD_FUNC_TO_WORKER_CALLER(LocalWorkerCaller, localWorkerCaller_, WorkerService, clickGroupLabel);
+        ADD_FUNC_TO_WORKER_CALLER(LocalWorkerCaller, localWorkerCaller_, WorkerService, visitDoc);
+        ADD_FUNC_TO_WORKER_CALLER(LocalWorkerCaller, localWorkerCaller_, WorkerService, index);
     }
 
 public:
