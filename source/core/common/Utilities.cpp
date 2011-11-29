@@ -140,14 +140,14 @@ void convert(const std::string& dataStr, struct tm& atm)
 
 int64_t Utilities::convertDate(const izenelib::util::UString& dateStr,const izenelib::util::UString::EncodingType& encoding, izenelib::util::UString& outDateStr)
 {
-    std::string datestr("");
-    dateStr.convertString( datestr, encoding);
+    std::string datestr;
+    dateStr.convertString(datestr, encoding);
     struct tm atm;
     convert(datestr, atm);
     char str[15];
     memset(str,0,15);
 
-    sprintf(str,"%04d%02d%02d%02d%02d%02d",atm.tm_year+1900,atm.tm_mon+1,atm.tm_mday, atm.tm_hour,atm.tm_min,atm.tm_sec);
+    strftime(str, 14, "%Y%m%d%H%M%S", &atm);
 
     outDateStr.assign(str,encoding);
 #ifdef WIN32

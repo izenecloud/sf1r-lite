@@ -34,6 +34,7 @@
 namespace bfs = boost::filesystem;
 
 using namespace izenelib::driver;
+using namespace boost::posix_time;
 using izenelib::util::UString;
 
 #include <common/JobScheduler.h>
@@ -679,8 +680,9 @@ bool IndexTaskService::insertOrUpdateSCD_(
         std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
         sf1r::docid_t id = 0;
         std::string source = "";
+        time_t new_timestamp = timestamp;
 
-        if (!prepareDocument_(*doc, document, oldId, rType, rTypeFieldValue, source, isInsert))
+        if (!prepareDocument_(*doc, document, oldId, rType, rTypeFieldValue, source, new_timestamp, isInsert))
             continue;
 
         prepareIndexDocument_(oldId, document, indexDocument);
@@ -697,12 +699,12 @@ bool IndexTaskService::insertOrUpdateSCD_(
 
         if (isInsert || oldId == 0)
         {
-            if (!insertDoc_(document, indexDocument, timestamp))
+            if (!insertDoc_(document, indexDocument, new_timestamp))
                 continue;
         }
         else
         {
-            if (!updateDoc_(document, indexDocument, timestamp, rType))
+            if (!updateDoc_(document, indexDocument, new_timestamp, rType))
                 continue;
 
             ++numUpdatedDocs_;
@@ -1067,6 +1069,7 @@ bool IndexTaskService::prepareDocument_(
     bool& rType,
     std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
     std::string& source,
+    time_t& timestamp,
     bool insert
 )
 {
@@ -1186,12 +1189,11 @@ bool IndexTaskService::prepareDocument_(
         }
     }
 
-    if (!dateExistInSCD)
+    if (dateExistInSCD) timestamp = -1;
+    else
     {
-        izenelib::util::UString dateStr;
-        izenelib::util::UString emptyDateStr;
-        sf1r::Utilities::convertDate(emptyDateStr, izenelib::util::UString::UTF_8, dateStr);
-        document.property(dateProperty_.getName()) = dateStr;
+        std::string dateStr = to_iso_string(from_time_t(timestamp / 1000000 - timezone)).erase(8, 1);
+        document.property(dateProperty_.getName()) = izenelib::util::UString(dateStr, izenelib::util::UString::UTF_8);
     }
 
     if (!insert && !rType)
@@ -1203,8 +1205,8 @@ bool IndexTaskService::prepareDocument_(
 }
 
 bool IndexTaskService::prepareIndexDocument_(
-    docid_t oldId, 
-    const Document& document, 
+    docid_t oldId,
+    const Document& document,
     IndexerDocument& indexDocument)
 {
     CREATE_SCOPED_PROFILER (preparedocument, "IndexTaskService", "IndexTaskService::prepareIndexDocument_");

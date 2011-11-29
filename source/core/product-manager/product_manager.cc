@@ -74,7 +74,7 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
             {
                 std::string docid_str;
                 docid.convertString(docid_str, UString::UTF_8);
-                GetTimestamp_(doc, timestamp);
+                if (timestamp == -1) GetTimestamp_(doc, timestamp);
                 price_trend_->Insert(docid_str, price, timestamp);
             }
         }
@@ -114,7 +114,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
         {
             std::string docid_str;
             docid.convertString(docid_str, UString::UTF_8);
-            GetTimestamp_(to, timestamp);
+            if (timestamp == -1) GetTimestamp_(to, timestamp);
             std::map<std::string, std::string> group_prop_map;
             GetGroupProperties_(to, group_prop_map);
             price_trend_->Update(docid_str, to_price, timestamp, group_prop_map);
@@ -723,11 +723,9 @@ bool ProductManager::GetTimestamp_(const PMDocumentType& doc, time_t& timestamp)
     UString time_ustr = it->second.get<UString>();
     std::string time_str;
     time_ustr.convertString(time_str, UString::UTF_8);
-    ptime pt;
     try
     {
-        pt = from_iso_string(time_str.substr(0, 8) + "T" + time_str.substr(8));
-        timestamp = createTimeStamp(pt);
+        timestamp = createTimeStamp(from_iso_string(time_str.insert(8, 1, 'T')));
     }
     catch (const std::exception& ex)
     {
