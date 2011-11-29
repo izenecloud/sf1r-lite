@@ -1,7 +1,7 @@
 #include <bundles/product/ProductSearchService.h>
 #include "ProductController.h"
 #include <product-manager/product_manager.h>
-#include <common/UtilFunctions.h>
+#include <common/Utilities.h>
 #include <common/Keys.h>
 #include <util/ustring/UString.h>
 #include <vector>
@@ -125,12 +125,12 @@ bool ProductController::require_date_range_()
         return false;
     }
 
-    if ((from_tt_ = createTimeStamp(from_date_)) == -2)
+    if ((from_tt_ = Utilities::createTimeStamp(from_date_)) == -2)
     {
         response().addError("start date not valid.");
         return false;
     }
-    if ((to_tt_ = createTimeStamp(to_date_)) == -2)
+    if ((to_tt_ = Utilities::createTimeStamp(to_date_)) == -2)
     {
         response().addError("end date not valid.");
         return false;

@@ -5,12 +5,11 @@
 #include "product_backup.h"
 #include "product_price_trend.h"
 
-#include <common/UtilFunctions.h>
+#include <common/Utilities.h>
 #include <boost/unordered_set.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 using namespace sf1r;
-using namespace boost::posix_time;
 using izenelib::util::UString;
 
 ProductManager::ProductManager(
@@ -725,7 +724,7 @@ bool ProductManager::GetTimestamp_(const PMDocumentType& doc, time_t& timestamp)
     time_ustr.convertString(time_str, UString::UTF_8);
     try
     {
-        timestamp = createTimeStamp(from_iso_string(time_str.insert(8, 1, 'T')));
+        timestamp = Utilities::createTimeStamp(boost::posix_time::from_iso_string(time_str.insert(8, 1, 'T')));
     }
     catch (const std::exception& ex)
     {

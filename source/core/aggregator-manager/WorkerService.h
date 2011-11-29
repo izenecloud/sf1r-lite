@@ -137,14 +137,14 @@ private:
             const std::string& scdFile,
             int op,
             uint32_t numdoc
-        );
+    );
 
     bool insertOrUpdateSCD_(
             ScdParser& parser,
             bool isInsert,
             uint32_t numdoc,
             time_t timestamp
-        );
+    );
 
     bool createUpdateDocId_(
         const izenelib::util::UString& scdDocId,
@@ -175,6 +175,7 @@ private:
             bool& rType,
             std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
             std::string& source,
+            time_t& timestamp,
             bool insert = true
     );
 
@@ -203,17 +204,17 @@ private:
     );
 
     bool makeForwardIndex_(
-        const izenelib::util::UString& text,
-        const std::string& propertyName,
-        unsigned int propertyId,
-        const AnalysisInfo& analysisInfo
+            const izenelib::util::UString& text,
+            const std::string& propertyName,
+            unsigned int propertyId,
+            const AnalysisInfo& analysisInfo
     );
 
     bool makeSentenceBlocks_(
-        const izenelib::util::UString& text,
-        const unsigned int numOfSummary,
-        const unsigned int maxDisplayLength,
-        std::vector<CharacterOffset>& sentenceOffsetList
+            const izenelib::util::UString& text,
+            const unsigned int numOfSummary,
+            const unsigned int maxDisplayLength,
+            std::vector<CharacterOffset>& sentenceOffsetList
     );
 
     /// @}
