@@ -87,7 +87,7 @@ ticpp::Element * XmlConfigParser::getUniqChildElement(
             return NULL;
     }
 
-    if (temp->NextSibling(name, false) != NULL)
+    if (temp->NextSibling(name, false))
     {
         throw_MultipleElement(name);
     }
@@ -615,7 +615,7 @@ void SF1Config::parseLanguageAnalyzer(const ticpp::Element * languageAnalyzer)
             string mode, option, specialChar, dictionaryPath_inner;
 
             settings = getUniqChildElement(analyzer_it.Get(), "settings", false);
-            if (settings != NULL)
+            if (settings)
             {
                 getAttribute(settings, "mode", mode, false);
                 getAttribute(settings, "option", option, false);
@@ -690,7 +690,7 @@ void SF1Config::parseLanguageAnalyzer(const ticpp::Element * languageAnalyzer)
             string mode;
 
             settings = getUniqChildElement(analyzer_it.Get(), "settings", false);
-            if (settings != NULL)
+            if (settings)
             {
                 getAttribute(settings, "mode", mode, false);
                 downCase(mode);
@@ -911,21 +911,21 @@ void CollectionConfig::parseCollectionPath(const ticpp::Element * path, Collecti
     collPath.setBasePath(basepath);
 
     specificPath = getUniqChildElement(path, "SCD", false);
-    if (specificPath != NULL)
+    if (specificPath)
     {
         getAttribute(specificPath, "path", subPath, false);
         collPath.setScdPath(subPath);
     }
 
     specificPath = getUniqChildElement(path, "CollectionData", false);
-    if (specificPath != NULL)
+    if (specificPath)
     {
         getAttribute(specificPath, "path", subPath, false);
         collPath.setCollectionDataPath(subPath);
     }
 
     specificPath = getUniqChildElement(path, "Query", false);
-    if (specificPath != NULL)
+    if (specificPath)
     {
         getAttribute(specificPath, "path", subPath, false);
         collPath.setQueryDataPath(subPath);
@@ -1085,11 +1085,11 @@ void CollectionConfig::parseIndexEcSchema(const ticpp::Element * indexEcSchema, 
 {
     IndexBundleConfiguration& indexBundleConfig = *(collectionMeta.indexBundleConfig_);
     PropertyDataType property_type;
-    if (indexEcSchema != NULL)
+    if (indexEcSchema)
     {
         ticpp::Element * child_node = getUniqChildElement(indexEcSchema, "ProductSourceField", false);
         std::string property_name;
-        if (child_node != NULL)
+        if (child_node)
         {
             Iterator<Element> it("Property");
             for (it = it.begin(child_node); it != it.end(); it++)
@@ -1175,37 +1175,49 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
     if (mode_str=="a") productBundleConfig.mode_ = 2;
     else productBundleConfig.mode_ = 1;
 
-    getAttribute(product_schema, "enablePH", productBundleConfig.pm_config_.enablePH, false);
-
+    PMConfig& pm_config = productBundleConfig.pm_config_;
     ticpp::Element* property_node = 0;
 
     property_node = getUniqChildElement(product_schema, "PriceProperty", false);
-    getAttribute(property_node, "name", productBundleConfig.pm_config_.price_property_name);
+    getAttribute(property_node, "name", pm_config.price_property_name);
 
     property_node = getUniqChildElement(product_schema, "DateProperty", false);
-    getAttribute(property_node, "name", productBundleConfig.pm_config_.date_property_name);
+    getAttribute(property_node, "name", pm_config.date_property_name);
 
     property_node = getUniqChildElement(product_schema, "DOCIDProperty", false);
-    getAttribute(property_node, "name", productBundleConfig.pm_config_.docid_property_name);
+    getAttribute(property_node, "name", pm_config.docid_property_name);
 
     property_node = getUniqChildElement(product_schema, "UuidProperty", false);
-    getAttribute(property_node, "name", productBundleConfig.pm_config_.uuid_property_name);
+    getAttribute(property_node, "name", pm_config.uuid_property_name);
 
     property_node = getUniqChildElement(product_schema, "ItemCountProperty", false);
-    getAttribute(property_node, "name", productBundleConfig.pm_config_.itemcount_property_name);
+    getAttribute(property_node, "name", pm_config.itemcount_property_name);
 
-    property_node = getUniqChildElement(product_schema, "CategoryProperty", false);
-    getAttribute(property_node, "name", productBundleConfig.pm_config_.category_property_name);
+    ticpp::Element* price_trend_node = getUniqChildElement(product_schema, "PriceTrend", false);
+    if (price_trend_node)
+    {
+        Iterator<Element> group_it("GroupProperty");
+        for (group_it = group_it.begin(price_trend_node); group_it != group_it.end(); ++group_it)
+        {
+            pm_config.group_property_names.push_back(std::string());
+            getAttribute(group_it.Get(), "name", pm_config.group_property_names.back());
+        }
 
-    property_node = getUniqChildElement(product_schema, "SourceProperty", false);
-    getAttribute(property_node, "name", productBundleConfig.pm_config_.source_property_name);
+        Iterator<Element> time_it("TimeInterval");
+        for (time_it = time_it.begin(price_trend_node); time_it != time_it.end(); ++time_it)
+        {
+            pm_config.time_interval_days.push_back(0);
+            getAttribute(time_it.Get(), "days", pm_config.time_interval_days.back());
+        }
+
+        pm_config.enablePH = !pm_config.group_property_names.empty() && !pm_config.time_interval_days.empty();
+    }
 
     ticpp::Element* backup_node = getUniqChildElement(product_schema, "Backup", false);
     if (backup_node)
     {
-        getAttribute(backup_node, "path", productBundleConfig.pm_config_.backup_path);
+        getAttribute(backup_node, "path", pm_config.backup_path);
     }
-
 }
 
 void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, CollectionMeta & collectionMeta)
@@ -1269,13 +1281,13 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
 
     MiningSchema& mining_schema = miningBundleConfig.mining_schema_;
     PropertyDataType property_type;
-    if (mining_schema_node!= NULL)
+    if (mining_schema_node)
     {
         ticpp::Element * task_node = getUniqChildElement(mining_schema_node, "TaxonomyGeneration", false);
         mining_schema.tg_enable = false;
         mining_schema.tg_kpe_only = false;
         std::string property_name;
-        if (task_node!= NULL)
+        if (task_node)
         {
             bool kpe_only = false;
             if (getAttribute(task_node, "kpe_only", kpe_only, false))
@@ -1297,7 +1309,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         }
         task_node = getUniqChildElement(mining_schema_node, "DuplicateDetection", false);
         mining_schema.dupd_enable = false;
-        if (task_node!= NULL)
+        if (task_node)
         {
             Iterator<Element> it("Property");
             for (it = it.begin(task_node); it != it.end(); it++)
@@ -1314,7 +1326,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         }
         task_node = getUniqChildElement(mining_schema_node, "Similarity", false);
         mining_schema.sim_enable = false;
-        if (task_node!= NULL)
+        if (task_node)
         {
             Iterator<Element> it("Property");
             for (it = it.begin(task_node); it != it.end(); it++)
@@ -1332,7 +1344,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
 
         task_node = getUniqChildElement(mining_schema_node, "DocumentClassification", false);
         mining_schema.dc_enable = false;
-        if (task_node!= NULL)
+        if (task_node)
         {
             Iterator<Element> it("Property");
             for (it = it.begin(task_node); it != it.end(); it++)
@@ -1350,7 +1362,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
 
         task_node = getUniqChildElement(mining_schema_node, "Faceted", false);
         mining_schema.faceted_enable = false;
-        if (task_node!= NULL)
+        if (task_node)
         {
             Iterator<Element> it("Property");
             for (it = it.begin(task_node); it != it.end(); it++)
@@ -1368,7 +1380,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
 
         task_node = getUniqChildElement(mining_schema_node, "Group", false);
         mining_schema.group_enable = false;
-        if (task_node != NULL)
+        if (task_node)
         {
             Iterator<Element> it("Property");
             for (it = it.begin(task_node); it != it.end(); ++it)
@@ -1411,7 +1423,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
 
         task_node = getUniqChildElement(mining_schema_node, "Attr", false);
         mining_schema.attr_enable = false;
-        if (task_node!= NULL)
+        if (task_node)
         {
             int propNum = 0;
             Iterator<Element> it("Property");
@@ -1435,7 +1447,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
 
         task_node = getUniqChildElement(mining_schema_node, "Rerank", false);
         mining_schema.property_rerank_enable = false;
-        if (task_node!= NULL)
+        if (task_node)
         {
             int propNum = 0;
             Iterator<Element> it("Property");
@@ -1484,14 +1496,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
 
         task_node = getUniqChildElement(mining_schema_node, "TDT", false);
         mining_schema.tdt_enable = false;
-        if (task_node!= NULL)
+        if (task_node)
         {
             mining_schema.tdt_enable = true;
         }
 
         task_node = getUniqChildElement(mining_schema_node, "IISE", false);
         mining_schema.ise_enable = false;
-        if (task_node!= NULL)
+        if (task_node)
         {
             getAttribute(task_node, "property", property_name);
             bool gottype = collectionMeta.getPropertyType(property_name, property_type);
@@ -1508,7 +1520,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         mining_schema.recommend_tg = false;
         mining_schema.recommend_querylog = false;
         mining_schema.recommend_properties.resize(0);
-        if (task_node!= NULL)
+        if (task_node)
         {
             Iterator<Element> it("Property");
             for (it = it.begin(task_node); it != it.end(); it++)
@@ -1522,12 +1534,12 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 mining_schema.recommend_properties.push_back(property_name);
             }
             ticpp::Element * intern_node = getUniqChildElement(task_node, "TG", false);
-            if (intern_node!= NULL)
+            if (intern_node)
             {
                 mining_schema.recommend_tg = true;
             }
             intern_node = getUniqChildElement(task_node, "QueryLog", false);
-            if (intern_node!= NULL)
+            if (intern_node)
             {
                 mining_schema.recommend_querylog = true;
             }
@@ -1669,7 +1681,7 @@ void CollectionConfig::parseIndexSchemaProperty(
     Element * display = getUniqChildElement(property, "Display", false);
 
     // the setting is optional
-    if (display != NULL)
+    if (display)
     {
         PropertyDataType dataType;
         collectionMeta.getPropertyType(propertyName, dataType);
@@ -1699,7 +1711,7 @@ void CollectionConfig::parseIndexSchemaProperty(
     Element * indexing = property->FirstChildElement("Indexing", false);
 
     //if <Indexing> element exists
-    if (indexing != NULL)
+    if (indexing)
     {
         //the number of original names. One alias name has to be the same as the original name
         int nOriginalName = 0;
@@ -1796,7 +1808,7 @@ void CollectionConfig::parseProperty_Display(const ticpp::Element * display, Pro
     //==================== OPTIONAL SETTINGS ====================
 
     Element * settings = getUniqChildElement(display, "settings", false);
-    if (settings != NULL)
+    if (settings)
     {
         unsigned int summaryNum = 0;
 

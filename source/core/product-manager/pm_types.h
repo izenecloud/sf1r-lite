@@ -14,6 +14,8 @@ typedef std::vector<std::pair<std::string, std::pair<ProductPriceType, ProductPr
 typedef std::vector<std::pair<std::string, PriceHistoryItem> > PriceHistoryList;
 typedef std::vector<std::pair<std::string, std::pair<ProductPriceType, ProductPriceType> > > PriceRangeList;
 
+typedef std::vector<std::pair<float, std::string> > TPCQueue;
+
 }
 
 #endif

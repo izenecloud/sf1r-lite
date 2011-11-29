@@ -12,30 +12,30 @@
 
 namespace sf1r
 {
-    
+
 class ScdWriter;
 
 class ScdOperationProcessor : public OperationProcessor
 {
 public:
-    
+
     ScdOperationProcessor(const std::string& dir);
-    
+
     ~ScdOperationProcessor();
-    
-    
+
+
     void Append(int op, const PMDocumentType& doc);
-    
+
     bool Finish();
-    
+
     void Clear();
-    
+
 private:
-    
+
     void ClearScds_();
-    
+
     void AfterProcess_(bool is_succ);
-    
+
 private:
     std::string dir_;
     ScdWriter* writer_;
@@ -45,4 +45,3 @@ private:
 }
 
 #endif
-

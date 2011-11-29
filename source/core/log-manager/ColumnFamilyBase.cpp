@@ -8,6 +8,14 @@ using namespace org::apache::cassandra;
 
 namespace sf1r {
 
+ColumnFamilyBase::ColumnFamilyBase()
+{
+}
+
+ColumnFamilyBase::~ColumnFamilyBase()
+{
+}
+
 bool ColumnFamilyBase::truncateColumnFamily() const
 {
     if (!isEnabled()) return false;

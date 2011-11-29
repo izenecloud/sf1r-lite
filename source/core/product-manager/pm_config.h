@@ -18,9 +18,9 @@ struct PMConfig
     std::string docid_property_name;
     std::string itemcount_property_name;
     std::string uuid_property_name;
-    std::string category_property_name;
-    std::string source_property_name;
     std::string backup_path;
+    std::vector<std::string> group_property_names;
+    std::vector<uint32_t> time_interval_days;
 
     PMConfig()
         : enablePH(false)
@@ -29,8 +29,6 @@ struct PMConfig
         , docid_property_name("DOCID")
         , itemcount_property_name("itemcount")
         , uuid_property_name("uuid")
-        , category_property_name("Category")
-        , source_property_name("Source")
     {
     }
 };
