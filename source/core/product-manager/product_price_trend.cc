@@ -55,7 +55,7 @@ bool ProductPriceTrend::Init()
             prop_tpc.push_back(new TPCBTree(data_dir_ + "/" + *it + "." + boost::lexical_cast<string>(time_ints_[i]) + ".tpc"));
             if (!prop_tpc.back()->open())
                 ret = false;
-//          else TraverseTPCBtree_(*prop_tpc.back());
+//          else TraverseTPCBtree(*prop_tpc.back());
         }
     }
 
@@ -69,10 +69,10 @@ void ProductPriceTrend::TraverseTPCBtree(TPCBTree& tpc_btree)
     AMIteratorType end;
     for(; iter != end; ++iter)
     {
-        cout << "Key: " << iter->first << endl;
+        cout << "====== Key: " << iter->first << endl;
         const TPCQueue& v = iter->second;
 
-        cout << "Value:" << endl;
+        cout << "====== Value:" << endl;
         for (TPCQueue::const_iterator vit = v.begin();
                 vit != v.end(); ++vit)
         {
@@ -201,7 +201,7 @@ bool ProductPriceTrend::UpdateTPC_(uint32_t time_int, time_t timestamp)
     {
         TPCBTree* tpc_btree = tpc_storage_[it->first][time_int];
         for (map<string, TPCQueue>::const_iterator mit = it->second.begin();
-                mit != it->second.begin(); ++mit)
+                mit != it->second.end(); ++mit)
         {
             tpc_btree->update(mit->first, mit->second);
         }
