@@ -131,6 +131,7 @@
                             <xs:element ref="DuplicateDetection" minOccurs="0"/>
                             <xs:element ref="QueryRecommend" minOccurs="0"/>
                             <xs:element ref="Similarity" minOccurs="0"/>
+                            <xs:element ref="Summarization" minOccurs="0"/>
                             <xs:element ref="DocumentClassification" minOccurs="0"/>
                             <xs:element ref="Faceted" minOccurs="0"/>
                             <xs:element ref="Group" minOccurs="0"/>
@@ -201,6 +202,14 @@
         </xs:complexType>
     </xs:element>
 
+    <xs:element name="Summarization">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    
     <xs:element name="DocumentClassification">
         <xs:complexType>
             <xs:sequence>

@@ -63,6 +63,10 @@
           <Property name="Title"/>
           <Property name="Content"/>
         </Faceted>
+        <Summarization>
+          <Property name="Title"/>
+          <Property name="Content"/>
+        </Summarization>
       </Schema>
     </MiningBundle>
 

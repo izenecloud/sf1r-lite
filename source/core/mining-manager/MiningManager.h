@@ -87,6 +87,7 @@ class Document;
 class DocumentManager;
 class IndexManager;
 class SearchManager;
+class MultiDocSummarizationSubManager;
 
 namespace sim
 {
@@ -310,6 +311,10 @@ private:
 
     bool addFacetedResult_(KeywordSearchResult& miaInput);
 
+    /**
+     * @brief Building multi document summarization offline
+     */
+    bool computeSummarization_();
 
     /**
      *@brief The online querying interface for query recommendation.
@@ -429,6 +434,9 @@ private:
     std::string tdt_path_;
     TdtStorageType* tdt_storage_;
 
+    /** SUMMARIZATION */
+    std::string summarization_path_;
+    MultiDocSummarizationSubManager* summarizationManager_;
 };
 
 }
