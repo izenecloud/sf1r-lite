@@ -160,7 +160,17 @@ public:
         while(it!=data.end())
         {
             std::string suuid = it->first;
+            if(suuid.empty())
+            {
+                std::cout<<"Find empty uuid"<<std::endl;
+                return false;
+            }
             const ProductBackupDataValueType& value = it->second;
+            if(value.docid_list.empty())
+            {
+                std::cout<<"docid_list empty for uuid : "<<suuid<<std::endl;
+                return false;
+            }
             for(uint32_t i=0;i<value.docid_list.size();i++)
             {
                 std::string sdocid;
