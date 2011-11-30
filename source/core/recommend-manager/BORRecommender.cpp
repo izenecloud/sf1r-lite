@@ -3,6 +3,7 @@
 #include "ItemFilter.h"
 #include "RecommendParam.h"
 #include "RecommendItem.h"
+#include "UserEventFilter.h"
 
 #include <glog/logging.h>
 
@@ -11,8 +12,12 @@
 namespace sf1r
 {
 
-BORRecommender::BORRecommender(ItemManager& itemManager)
+BORRecommender::BORRecommender(
+    ItemManager& itemManager,
+    const UserEventFilter& userEventFilter
+)
     : Recommender(itemManager)
+    , userEventFilter_(userEventFilter)
 {
     rand_.seed(std::time(NULL));
 }
@@ -25,6 +30,12 @@ bool BORRecommender::recommendImpl_(
 {
     const std::vector<itemid_t>& inputItemIds = param.inputItemIds;
     filter.insert(inputItemIds.begin(), inputItemIds.end());
+
+    if (param.userId && !userEventFilter_.filter(param.userId, param.inputItemIds, filter))
+    {
+        LOG(ERROR) << "failed to filter user event for user id " << param.userId;
+        return false;
+    }
 
     RecommendItem recItem;
     recItem.weight_ = 1;

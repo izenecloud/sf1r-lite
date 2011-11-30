@@ -21,7 +21,7 @@ RecommenderFactory::RecommenderFactory(
     , bobRecommender_(itemManager, itemCFManager, userEventFilter_, visitManager)
     , bosRecommender_(itemManager, itemCFManager, userEventFilter_, cartManager)
     , boeRecommender_(itemManager, itemCFManager, userEventFilter_)
-    , borRecommender_(itemManager)
+    , borRecommender_(itemManager, userEventFilter_)
     , tibRecommender_(orderManager)
 {
 }
