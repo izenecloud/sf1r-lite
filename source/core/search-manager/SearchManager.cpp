@@ -1,5 +1,3 @@
-#include <common/SFLogger.h>
-
 #include <bundles/index/IndexBundleConfiguration.h>
 #include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
@@ -32,8 +30,9 @@
 namespace sf1r
 {
 
-const char* RANK_PROPERTY = "_rank";
-const char* DATE_PROPERTY = "date";
+const std::string RANK_PROPERTY("_rank");
+const std::string DATE_PROPERTY("date");
+const std::string CUSTOM_RANK_PROPERTY("custom_rank");
 
 bool hasRelevenceSort(const std::pair<std::string , bool>& element)
 {
@@ -52,7 +51,8 @@ bool action_rerankable(SearchKeywordOperation& actionOperation)
             actionOperation.actionItem_.groupParam_.groupLabels_.empty() &&
             actionOperation.actionItem_.groupParam_.attrLabels_.empty())
     {
-        std::vector<std::pair<std::string , bool> >& sortPropertyList = actionOperation.actionItem_.sortPriorityList_;
+        std::vector<std::pair<std::string , bool> >& sortPropertyList =
+            actionOperation.actionItem_.sortPriorityList_;
         if (sortPropertyList.empty())
             rerank = true;
         else if (sortPropertyList.size() == 1)
@@ -89,13 +89,22 @@ SearchManager::SearchManager(
         , reranker_(0)
 {
     collectionName_ = config->collectionName_;
-    for (std::set<PropertyConfig, PropertyComp>::iterator iter = schema.begin(); iter != schema.end(); ++iter)
+    std::set<PropertyConfig, PropertyComp>::iterator iter = schema.begin();
+    for (; iter != schema.end(); ++iter)
         schemaMap_[iter->getName()] = *iter;
 
     pSorterCache_ = new SortPropertyCache(indexManagerPtr_.get(), config);
-    queryBuilder_.reset(new QueryBuilder(indexManager,documentManager,idManager,schemaMap_, config->filterCacheNum_));
+    queryBuilder_.reset(new QueryBuilder(
+                            indexManager,
+                            documentManager,
+                            idManager,
+                            schemaMap_,
+                            config->filterCacheNum_));
     cache_.reset(new SearchCache(config->searchCacheNum_));
     rankingManagerPtr_->getPropertyWeightMap(propertyWeightMap_);
+
+    indexLevel_ = indexManagerPtr_->getIndexManagerConfig()->indexStrategy_.indexLevel_
+                  ==  izenelib::ir::indexmanager::DOCLEVEL ? DOCLEVEL : WORDLEVEL;
 }
 
 SearchManager::~SearchManager()
@@ -155,7 +164,12 @@ void SearchManager::chdir(
     documentManagerPtr_ = documentManager;
 
     // init query builder
-    queryBuilder_.reset(new QueryBuilder(indexManager, documentManager, idManager, schemaMap_, config->filterCacheNum_));
+    queryBuilder_.reset(new QueryBuilder(
+                            indexManager,
+                            documentManager,
+                            idManager,
+                            schemaMap_,
+                            config->filterCacheNum_));
 
     // clear cache
     delete pSorterCache_;
@@ -180,8 +194,7 @@ bool SearchManager::search(
 
     START_PROFILER ( cacheoverhead )
 
-    izenelib::ir::indexmanager::IndexManagerConfig* pIndexManagerConfig = indexManagerPtr_->getIndexManagerConfig();
-    if ( pIndexManagerConfig->indexStrategy_.indexLevel_ == izenelib::ir::indexmanager::DOCLEVEL &&
+    if ( indexLevel_ == DOCLEVEL &&
             actionOperation.actionItem_.rankingType_ == RankingType::PLM )
     {
         actionOperation.actionItem_.rankingType_ = RankingType::BM25;
@@ -320,7 +333,7 @@ bool SearchManager::doSearch_(
     rankingManagerPtr_->createPropertyRankers(pTextRankingType, indexPropertySize, propertyRankers);
     bool readTermPosition = propertyRankers[0]->requireTermPosition();
 
-    boost::scoped_ptr<ANDDocumentIterator> pDocIterator;
+    boost::scoped_ptr<ANDDocumentIterator> pDocIterator(new ANDDocumentIterator());
     MultiPropertyScorer* pMultiPropertyIterator = NULL;
     std::vector<QueryFiltering::FilteringType>& filtingList
     = actionOperation.actionItem_.filteringList_;
@@ -330,7 +343,8 @@ bool SearchManager::doSearch_(
         if (!filtingList.empty())
             queryBuilder_->prepare_filter(filtingList, pFilterIdSet);
 
-        if(actionOperation.rawQueryTree_->type_ != QueryTree::FILTER_QUERY)
+        if (actionOperation.rawQueryTree_->type_ != QueryTree::FILTER_QUERY)
+        {
             pMultiPropertyIterator = queryBuilder_->prepare_dociterator(
                                          actionOperation,
                                          collectionId,
@@ -341,30 +355,35 @@ bool SearchManager::doSearch_(
                                          termIndexMaps
                                      );
 
-        if (pFilterIdSet)
-        {
-            BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet->bit_iterator());
-            FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
-            pDocIterator.reset(new ANDDocumentIterator());
-            pDocIterator->add((DocumentIterator*)pFilterIterator);
-        }
-
-        if (pMultiPropertyIterator)
-        {
-            if (!pDocIterator)
+            if (!pMultiPropertyIterator)
             {
-                pDocIterator.reset(new ANDDocumentIterator());
+                return false;
             }
-            pDocIterator->add((DocumentIterator*)pMultiPropertyIterator);
         }
 
-        //if(!pDocIterator)
-        //  return false;
     }
     catch (std::exception& e)
     {
+        if (pMultiPropertyIterator)
+            delete pMultiPropertyIterator;
         return false;
     }
+
+    if (pFilterIdSet)
+    {
+        ///1. Search Filter
+        ///2. Select * WHERE    (FilterQuery)
+        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet->bit_iterator());
+        FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
+        pDocIterator->add((DocumentIterator*)pFilterIterator);
+    }
+
+    if (pMultiPropertyIterator)
+    {
+        ///Relevance query
+        pDocIterator->add((DocumentIterator*)pMultiPropertyIterator);
+    }
+
     STOP_PROFILER ( preparedociter )
 
     START_PROFILER ( preparesort )
@@ -373,15 +392,17 @@ bool SearchManager::doSearch_(
     boost::scoped_ptr<Sorter> pSorter;
     try
     {
-        std::vector<std::pair<std::string , bool> >& sortPropertyList = actionOperation.actionItem_.sortPriorityList_;
+        std::vector<std::pair<std::string , bool> >& sortPropertyList
+        = actionOperation.actionItem_.sortPriorityList_;
         if (!sortPropertyList.empty())
         {
-            for (std::vector<std::pair<std::string , bool> >::iterator iter = sortPropertyList.begin(); iter != sortPropertyList.end(); ++iter)
+            std::vector<std::pair<std::string , bool> >::iterator iter = sortPropertyList.begin();
+            for (; iter != sortPropertyList.end(); ++iter)
             {
                 std::string fieldNameL = iter->first;
                 boost::to_lower(fieldNameL);
                 // sort by custom ranking
-                if (fieldNameL == "custom_rank")
+                if (fieldNameL == CUSTOM_RANK_PROPERTY)
                 {
                     // prepare custom ranker
                     customRanker = actionOperation.actionItem_.customRanker_;
@@ -397,7 +418,11 @@ bool SearchManager::doSearch_(
                     customRanker->printESTree(); //test
 
                     if (!pSorter) pSorter.reset(new Sorter(pSorterCache_));
-                    SortProperty* pSortProperty = new SortProperty("CUSTOM_RANK", CUSTOM_RANKING_PROPERTY_TYPE, SortProperty::CUSTOM, iter->second);
+                    SortProperty* pSortProperty = new SortProperty(
+                        "CUSTOM_RANK",
+                        CUSTOM_RANKING_PROPERTY_TYPE,
+                        SortProperty::CUSTOM,
+                        iter->second);
                     pSorter->addSortProperty(pSortProperty);
                     continue;
                 }
@@ -405,7 +430,11 @@ bool SearchManager::doSearch_(
                 if (fieldNameL == RANK_PROPERTY)
                 {
                     if (!pSorter) pSorter.reset(new Sorter(pSorterCache_));
-                    SortProperty* pSortProperty = new SortProperty("RANK", UNKNOWN_DATA_PROPERTY_TYPE, SortProperty::SCORE, iter->second);
+                    SortProperty* pSortProperty = new SortProperty(
+                        "RANK",
+                        UNKNOWN_DATA_PROPERTY_TYPE,
+                        SortProperty::SCORE,
+                        iter->second);
                     pSorter->addSortProperty(pSortProperty);
                     continue;
                 }
@@ -414,14 +443,17 @@ bool SearchManager::doSearch_(
                 {
                     if (!pSorter) pSorter.reset(new Sorter(pSorterCache_));
 
-                    SortProperty* pSortProperty = new SortProperty(iter->first, INT_PROPERTY_TYPE, iter->second);
+                    SortProperty* pSortProperty = new SortProperty(
+                        iter->first,
+                        INT_PROPERTY_TYPE,
+                        iter->second);
                     pSorter->addSortProperty(pSortProperty);
                     continue;
                 }
 
                 // sort by arbitrary property
-                boost::unordered_map<std::string, PropertyConfig>::iterator it = schemaMap_.find(iter->first);
-                //std::cout << "sort by " << iter->first << std::endl;
+                boost::unordered_map<std::string, PropertyConfig>::iterator it
+                = schemaMap_.find(iter->first);
                 if (it == schemaMap_.end())
                     continue;
 
@@ -439,7 +471,10 @@ bool SearchManager::doSearch_(
                 case DOUBLE_PROPERTY_TYPE:
                 {
                     if (!pSorter) pSorter.reset(new Sorter(pSorterCache_));
-                    SortProperty* pSortProperty = new SortProperty(iter->first, propertyType, iter->second);
+                    SortProperty* pSortProperty = new SortProperty(
+                        iter->first,
+                        propertyType,
+                        iter->second);
                     pSorter->addSortProperty(pSortProperty);
                     break;
                 }
@@ -468,12 +503,15 @@ bool SearchManager::doSearch_(
 
     STOP_PROFILER ( preparesort )
 
-    if (!pDocIterator)
-    {
+    if (!pMultiPropertyIterator && !pFilterIdSet)
+    {//SELECT * , and filter is null
         if (pSorter)
         {
-            pDocIterator.reset(new ANDDocumentIterator());
-            prepareDocIterWithOnlyOrderby_(pDocIterator.get(), pFilterIdSet);
+            ///SELECT * ORDER BY
+            prepareDocIterWithOnlyOrderby_(pFilterIdSet);
+            BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet->bit_iterator());
+            FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
+            pDocIterator->add((DocumentIterator*)pFilterIterator);
         }
         else
         {
@@ -506,8 +544,7 @@ bool SearchManager::doSearch_(
         pDocIterator->df_ctf(dfmap, ctfmap);
     }
 
-
-    vector<RankQueryProperty> rankQueryProperties(indexPropertySize);
+    std::vector<RankQueryProperty> rankQueryProperties(indexPropertySize);
 
     for (property_size_type i = 0; i < indexPropertySize; ++i)
     {
@@ -575,7 +612,8 @@ bool SearchManager::doSearch_(
     boost::scoped_ptr<faceted::GroupFilter> groupFilter;
     if (groupFilterBuilder_)
     {
-        groupFilter.reset(groupFilterBuilder_->createFilter(actionOperation.actionItem_.groupParam_));
+        groupFilter.reset(
+            groupFilterBuilder_->createFilter(actionOperation.actionItem_.groupParam_));
     }
 
     START_PROFILER ( dociterating )
@@ -619,13 +657,10 @@ bool SearchManager::doSearch_(
             ScoreDoc scoreItem(pDocIterator->doc());
             START_PROFILER ( computerankscore )
             ++totalCount;
-            if (pMultiPropertyIterator)
-                scoreItem.score = pMultiPropertyIterator->score(
-                                      rankQueryProperties,
-                                      propertyRankers
-                                  );
-            else
-                scoreItem.score = 1;
+            scoreItem.score = pMultiPropertyIterator ? 
+                                        pMultiPropertyIterator->score(
+                                            rankQueryProperties,
+                                            propertyRankers) : 1.0;
             STOP_PROFILER ( computerankscore )
 
             START_PROFILER ( computecustomrankscore )
@@ -713,7 +748,8 @@ bool SearchManager::doSearch_(
 #endif
 
         ///rerank is only used for pure ranking
-        std::vector<std::pair<std::string , bool> >& sortPropertyList = actionOperation.actionItem_.sortPriorityList_;
+        std::vector<std::pair<std::string , bool> >& sortPropertyList
+        = actionOperation.actionItem_.sortPriorityList_;
         bool rerank = false;
         if (!pSorter) rerank = true;
         else if (sortPropertyList.size() == 1)
@@ -766,7 +802,6 @@ propertyid_t SearchManager::getPropertyIdByName_(const std::string& name) const
 }
 
 void SearchManager::prepareDocIterWithOnlyOrderby_(
-    ANDDocumentIterator* pDocIterator,
     boost::shared_ptr<EWAHBoolArray<uint32_t> >& pFilterIdSet)
 {
     unsigned int bitsNum = documentManagerPtr_->getMaxDocId() + 1;
@@ -778,17 +813,14 @@ void SearchManager::prepareDocIterWithOnlyOrderby_(
     pFilterIdSet->addStreamOfEmptyWords(true, wordsNum - 1);
     for (unsigned int num = wordsNum * (sizeof(uint32_t) * 8); num <= bitsNum - 1; num++)
         pFilterIdSet->set(num);
-
-    BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet->bit_iterator());
-    FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
-    pDocIterator->add((DocumentIterator*)pFilterIterator);
 }
 
 bool SearchManager::getPropertyTypeByName_(
     const std::string& name,
     PropertyDataType& type) const
 {
-    boost::unordered_map<std::string, PropertyConfig>::const_iterator it = schemaMap_.find(name);
+    boost::unordered_map<std::string, PropertyConfig>::const_iterator it
+    = schemaMap_.find(name);
 
     if (it != schemaMap_.end())
     {
@@ -810,9 +842,11 @@ SearchManager::buildCustomRanker_(
 
     customRanker->parse(actionItem.strExp_);
 
-    std::map<std::string, PropertyDataType>& propertyDataTypeMap = customRanker->getPropertyDataTypeMap();
-    std::map<std::string, PropertyDataType>::iterator iter;
-    for (iter = propertyDataTypeMap.begin(); iter != propertyDataTypeMap.end(); iter++)
+    std::map<std::string, PropertyDataType>& propertyDataTypeMap
+    = customRanker->getPropertyDataTypeMap();
+    std::map<std::string, PropertyDataType>::iterator iter
+    = propertyDataTypeMap.begin();
+    for (; iter != propertyDataTypeMap.end(); iter++)
     {
         getPropertyTypeByName_(iter->first, iter->second);
     }
@@ -837,7 +871,8 @@ void SearchManager::getSortPropertyData_(
     {
         pSortProperty = *iter;
         std::string SortPropertyName = pSortProperty->getProperty();
-        distSearchInfo.sortPropertyList_.push_back(std::make_pair(SortPropertyName, pSortProperty->isReverse()));
+        distSearchInfo.sortPropertyList_.push_back(
+            std::make_pair(SortPropertyName, pSortProperty->isReverse()));
 
         if (SortPropertyName == "CUSTOM_RANK" || SortPropertyName == "RANK")
             continue;
@@ -856,7 +891,8 @@ void SearchManager::getSortPropertyData_(
             {
                 dataList[i] = ((int64_t*)data)[docIdList[i]];
             }
-            distSearchInfo.sortPropertyIntDataList_.push_back(std::make_pair(SortPropertyName, dataList));
+            distSearchInfo.sortPropertyIntDataList_.push_back(
+                std::make_pair(SortPropertyName, dataList));
         }
         break;
         case UNSIGNED_INT_PROPERTY_TYPE:
