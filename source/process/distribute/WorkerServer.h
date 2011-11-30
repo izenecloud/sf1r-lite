@@ -4,12 +4,12 @@
  * @date Jul 5, 2011
  * @brief
  */
-#ifndef WORKER_SERVER_H_
-#define WORKER_SERVER_H_
+#ifndef PROCESS_DISTRIBUTE_WORKER_SERVER_H_
+#define PROCESS_DISTRIBUTE_WORKER_SERVER_H_
 
 #include <aggregator-manager/WorkerService.h>
 
-#include <net/aggregator/JobWorker.h>
+#include <net/aggregator/WorkerServerBase.h>
 #include <util/singleton.h>
 
 #include <common/CollectionManager.h>
@@ -27,7 +27,7 @@ namespace sf1r
 class KeywordSearchActionItem;
 class KeywordSearchResult;
 
-class WorkerServer : public JobWorker<WorkerServer>
+class WorkerServer : public WorkerServerBase<WorkerServer>
 {
 public:
     WorkerServer() {}
@@ -39,7 +39,7 @@ public:
 
     void init(const std::string& host, uint16_t port, unsigned int threadNum, bool debug=false)
     {
-        JobWorker<WorkerServer>::init(host, port, threadNum, debug);
+        WorkerServerBase<WorkerServer>::init(host, port, threadNum, debug);
     }
 
 public:
@@ -48,7 +48,7 @@ public:
      * Pre-process before dispatch (handle) a received request,
      * identity is info such as collection, bundle name.
      */
-    virtual bool preHandle(const std::string& identity, std::string& error)
+    virtual bool preprocess(const std::string& identity, std::string& error)
     {
         if (debug_)
             cout << "#[WorkerServer::preHandle] identity : " << identity << endl;
@@ -58,17 +58,21 @@ public:
         std::string identityLow = sf1r::Utilities::toLower(identity);
         if (sf1r::SF1Config::get()->checkWorkerServiceByName(identity))
         {
-            CollectionHandler* collectionHandler_ = CollectionManager::get()->findHandler(identity);
+            collectionHandler_ = CollectionManager::get()->findHandler(identity);
+
             if (!collectionHandler_)
             {
                 error = "No collectionHandler found for " + identity;
+                std::cout << error << std::endl;
                 return false;
             }
+
             workerService_ = collectionHandler_->indexSearchService_->workerService_;
         }
         else
         {
             error = "Worker service is not enabled for " + identity;
+            std::cout << error << std::endl;
             return false;
         }
 
@@ -76,9 +80,9 @@ public:
     }
 
     /**
-     * Handlers for processing received remote requests.
+     * Handlers for handling received requests.
      */
-    virtual void addHandlers()
+    virtual void addServerHandlers()
     {
         ADD_WORKER_HANDLER_LIST_BEGIN( WorkerServer )
 
@@ -101,66 +105,57 @@ public:
      * @{
      */
 
-    bool getDistSearchInfo(JobRequest& req)
+    void getDistSearchInfo(request_t& req)
     {
-        WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, DistKeywordSearchInfo, workerService_, getDistSearchInfo)
-        return true;
+        WORKER_HANDLE_1_1(req, KeywordSearchActionItem, workerService_->getDistSearchInfo, DistKeywordSearchInfo)
     }
 
-    bool getDistSearchResult(JobRequest& req)
+    void getDistSearchResult(request_t& req)
     {
-        WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, DistKeywordSearchResult, workerService_, getDistSearchResult)
-        return true;
+        WORKER_HANDLE_1_1(req, KeywordSearchActionItem, workerService_->getDistSearchResult, DistKeywordSearchResult)
     }
 
-    bool getSummaryMiningResult(JobRequest& req)
+    void getSummaryMiningResult(request_t& req)
     {
-        WORKER_HANDLE_REQUEST_1_1(req, KeywordSearchActionItem, KeywordSearchResult, workerService_, getSummaryMiningResult)
-        return true;
+        WORKER_HANDLE_1_1(req, KeywordSearchActionItem, workerService_->getSummaryMiningResult, KeywordSearchResult)
     }
 
-    bool getDocumentsByIds(JobRequest& req)
+    void getDocumentsByIds(request_t& req)
     {
-        WORKER_HANDLE_REQUEST_1_1(req, GetDocumentsByIdsActionItem, RawTextResultFromSIA, workerService_, getDocumentsByIds)
-        return true;
+        WORKER_HANDLE_1_1(req, GetDocumentsByIdsActionItem, workerService_->getDocumentsByIds, RawTextResultFromSIA)
     }
 
-    bool getInternalDocumentId(JobRequest& req)
+    void getInternalDocumentId(request_t& req)
     {
-        WORKER_HANDLE_REQUEST_1_1(req, izenelib::util::UString, uint64_t, workerService_, getInternalDocumentId)
-        return true;
+        WORKER_HANDLE_1_1(req, izenelib::util::UString, workerService_->getInternalDocumentId, uint64_t)
     }
 
-    bool getSimilarDocIdList(JobRequest& req)
+    void getSimilarDocIdList(request_t& req)
     {
-        WORKER_HANDLE_REQUEST_2_1(req, uint64_t, uint32_t, workerService_->getSimilarDocIdList, SimilarDocIdListType)
-        return true;
+        WORKER_HANDLE_2_1(req, uint64_t, uint32_t, workerService_->getSimilarDocIdList, SimilarDocIdListType)
     }
 
-    bool clickGroupLabel(JobRequest& req)
+    void clickGroupLabel(request_t& req)
     {
-        WORKER_HANDLE_REQUEST_1_1(req, ClickGroupLabelActionItem, bool, workerService_, clickGroupLabel)
-        return true;
+        WORKER_HANDLE_1_1(req, ClickGroupLabelActionItem, workerService_->clickGroupLabel, bool)
     }
 
-    bool visitDoc(JobRequest& req)
+    void visitDoc(request_t& req)
     {
-        WORKER_HANDLE_REQUEST_1_1(req, uint32_t, bool, workerService_, visitDoc)
-        return true;
+        WORKER_HANDLE_1_1(req, uint32_t, workerService_->visitDoc, bool)
     }
 
-    bool index(JobRequest& req)
+    void index(request_t& req)
     {
-        //WORKER_HANDLE_REQUEST_1_1_(req, unsigned int, index, bool)
-        WORKER_HANDLE_REQUEST_1_1(req, unsigned int, bool, workerService_, index)
-        return true;
+        WORKER_HANDLE_1_1(req, unsigned int, workerService_->index, bool)
     }
 
     /** @} */
 
 private:
-    // A coming request should be target at a specified collection or a bundle,
-    // set to corresponding worker service before handling request.
+    // A coming request is targeted at a specified collection or a bundle,
+    // so find corresponding collectionHandler before handling the request.
+    CollectionHandler* collectionHandler_;
     boost::shared_ptr<WorkerService> workerService_;
 
     std::string identity_;
@@ -170,4 +165,4 @@ typedef izenelib::util::Singleton<WorkerServer> WorkerServerSingle;
 
 }
 
-#endif /* WORKER_SERVER_H_ */
+#endif /* PROCESS_DISTRIBUTE_WORKER_SERVER_H_ */

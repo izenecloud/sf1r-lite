@@ -1,4 +1,3 @@
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/token_iterator.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -9,13 +8,15 @@
 
 #include <vector>
 
-using namespace sf1r;
+using namespace boost::gregorian;
+using namespace boost::posix_time;
 using namespace izenelib::ir::indexmanager;
+
+namespace sf1r
+{
 
 void gregorianISO8601Parser(const std::string& dataStr, struct tm& atm)
 {
-    using namespace boost::gregorian;
-    using namespace boost::posix_time;
     try
     {
         if(dataStr.find(" ") != string::npos)
@@ -56,9 +57,6 @@ void gregorianISO8601Parser(const std::string& dataStr, struct tm& atm)
 
 void gregorianISOParser(const std::string& dataStr, struct tm& atm)
 {
-    using namespace boost::gregorian;
-    using namespace boost::posix_time;
-
     try
     {
         date d(from_undelimited_string(dataStr));
@@ -93,9 +91,6 @@ bool isAllDigit(const string& str)
 
 void convert(const std::string& dataStr, struct tm& atm)
 {
-    using namespace boost::posix_time;
-    using namespace boost::gregorian;
-
     if((dataStr.find("/") != string::npos)||(dataStr.find("-") != string::npos))
     {
         /// format 2009-10-02
@@ -140,14 +135,14 @@ void convert(const std::string& dataStr, struct tm& atm)
 
 int64_t Utilities::convertDate(const izenelib::util::UString& dateStr,const izenelib::util::UString::EncodingType& encoding, izenelib::util::UString& outDateStr)
 {
-    std::string datestr("");
-    dateStr.convertString( datestr, encoding);
+    std::string datestr;
+    dateStr.convertString(datestr, encoding);
     struct tm atm;
     convert(datestr, atm);
     char str[15];
     memset(str,0,15);
 
-    sprintf(str,"%04d%02d%02d%02d%02d%02d",atm.tm_year+1900,atm.tm_mon+1,atm.tm_mday, atm.tm_hour,atm.tm_min,atm.tm_sec);
+    strftime(str, 14, "%Y%m%d%H%M%S", &atm);
 
     outDateStr.assign(str,encoding);
 #ifdef WIN32
@@ -183,4 +178,61 @@ std::string Utilities::toUpper(const std::string& str)
     std::string szResp(str);
     std::transform(szResp.begin(),szResp.end(), szResp.begin(), (int(*)(int))std::toupper);
     return szResp;
+}
+
+time_t Utilities::createTimeStamp()
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec * 1000000 + tv.tv_usec;
+}
+
+time_t Utilities::createTimeStamp(ptime pt)
+{
+    if (pt.is_not_a_date_time())
+        return -1;
+
+    ptime epoch(date(1970, 1, 1));
+    return (pt - epoch).total_microseconds() + timezone * 1000000;
+}
+
+time_t Utilities::createTimeStamp(const izenelib::util::UString& text)
+{
+    std::string str;
+    text.convertString(str, izenelib::util::UString::UTF_8);
+    return createTimeStamp(str);
+}
+
+// Return -1 when empty, -2 when invalid.
+time_t Utilities::createTimeStamp(const string& text)
+{
+    if (text.empty()) return -1;
+    date date_time;
+    try
+    {
+        date_time = from_string(text);
+    }
+    catch (const std::exception& ex)
+    {
+    }
+    if (!date_time.is_not_a_date())
+    {
+        return createTimeStamp(ptime(date_time));
+    }
+    if (text.length() < 8) return -2;
+    std::string cand_text = text.substr(0, 8);
+    try
+    {
+        date_time = from_undelimited_string(cand_text);
+    }
+    catch (const std::exception& ex)
+    {
+    }
+    if (!date_time.is_not_a_date())
+    {
+        return createTimeStamp(ptime(date_time));
+    }
+    return -2;
+}
+
 }

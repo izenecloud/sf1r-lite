@@ -6,7 +6,6 @@
 #include <vector>
 #include <iostream>
 
-#include <common/UtilFunctions.h>
 #include <util/ThreadModel.h>
 
 #include "LogManagerSingleton.h"
