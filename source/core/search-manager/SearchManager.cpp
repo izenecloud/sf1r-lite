@@ -404,18 +404,16 @@ bool SearchManager::doSearch_(
                 // sort by custom ranking
                 if (fieldNameL == CUSTOM_RANK_PROPERTY)
                 {
-                    // prepare custom ranker
+                    // prepare custom ranker data, custom score will be evaluated later as rank score
                     customRanker = actionOperation.actionItem_.customRanker_;
                     if (!customRanker)
                         customRanker = buildCustomRanker_(actionOperation.actionItem_);
-                    //customRanker->printESTree(); //test
                     if (!customRanker->setPropertyData(pSorterCache_))
                     {
-                        // error info
                         LOG(ERROR) << customRanker->getErrorInfo() << endl;
-                        return false;
+                        continue;
                     }
-                    customRanker->printESTree(); //test
+                    //customRanker->printESTree();
 
                     if (!pSorter) pSorter.reset(new Sorter(pSorterCache_));
                     SortProperty* pSortProperty = new SortProperty(
@@ -705,7 +703,8 @@ bool SearchManager::doSearch_(
             rankScoreList[count - i - 1] = pScoreItem.score;
             if (customRanker.get())
             {
-                customRankScoreList[count - i - 1] = pScoreItem.custom_score; // should not be normalized
+                // should not be normalized
+                customRankScoreList[count - i - 1] = pScoreItem.custom_score;
             }
 
             if (pScoreItem.score < min)
