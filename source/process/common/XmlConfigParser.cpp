@@ -1196,6 +1196,8 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
     ticpp::Element* price_trend_node = getUniqChildElement(product_schema, "PriceTrend", false);
     if (price_trend_node)
     {
+        pm_config.enable_price_trend = true;
+
         Iterator<Element> group_it("GroupProperty");
         for (group_it = group_it.begin(price_trend_node); group_it != group_it.end(); ++group_it)
         {
@@ -1209,8 +1211,7 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
             pm_config.time_interval_days.push_back(0);
             getAttribute(time_it.Get(), "days", pm_config.time_interval_days.back());
         }
-
-        pm_config.enablePH = !pm_config.group_property_names.empty() && !pm_config.time_interval_days.empty();
+        std::sort(pm_config.time_interval_days.begin(), pm_config.time_interval_days.end());
     }
 
     ticpp::Element* backup_node = getUniqChildElement(product_schema, "Backup", false);

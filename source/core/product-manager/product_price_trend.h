@@ -24,8 +24,8 @@ public:
     ProductPriceTrend(
             const std::string& collection_name,
             const std::string& data_dir,
-            const std::vector<std::string>& group_props,
-            const std::vector<uint32_t>& time_ints);
+            const std::vector<std::string>& group_prop_vec,
+            const std::vector<uint32_t>& time_int_vec);
 
     ~ProductPriceTrend();
 
@@ -67,7 +67,7 @@ public:
 
     bool CronJob();
 
-    void TraverseTPCBtree(TPCBTree& tpc_btree);
+//    void TraverseTPCBtree(TPCBTree& tpc_btree);
 
     inline const std::string& getCollectionName() const
     {
@@ -88,8 +88,9 @@ private:
 private:
     std::string collection_name_;
     std::string data_dir_;
-    std::vector<std::string> group_props_;
-    std::vector<uint32_t> time_ints_;
+    std::vector<std::string> group_prop_vec_;
+    std::vector<uint32_t> time_int_vec_;
+    bool enable_tpc_;
     std::vector<PriceHistory> price_history_cache_;
     PropCacheMap prop_cache_;
     TPCStorage tpc_storage_;
