@@ -25,3 +25,9 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND AND Boost_SERIALIZATION_FOUND
   TARGET_LINK_LIBRARIES(t_ScdParser ${libs})
 
 ENDIF()
+
+ADD_EXECUTABLE(ScdMerger
+    ScdMerger.cpp
+    )
+  TARGET_LINK_LIBRARIES(ScdMerger ${libs} ${TokyoCabinet_LIBRARIES})
+
