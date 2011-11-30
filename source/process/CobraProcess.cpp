@@ -5,6 +5,7 @@
 #include <la-manager/LAPool.h>
 #include <license-manager/LicenseManager.h>
 #include <aggregator-manager/CollectionDataReceiver.h>
+#include <aggregator-manager/NotifyReceiver.h>
 #include <node-manager/NodeManager.h>
 #include <node-manager/MasterNodeManager.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
@@ -13,7 +14,6 @@
 #include <common/XmlConfigParser.h>
 #include <common/CollectionManager.h>
 #include <distribute/WorkerServer.h>
-#include <distribute/MasterServer.h>
 
 #include <util/ustring/UString.h>
 #include <util/driver/IPRestrictor.h>
@@ -252,7 +252,7 @@ bool CobraProcess::startDistributedServer()
             // master notifier, xxx
             //std::string masterHost = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.masterHost_;
             //uint16_t masterPort = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.workerAgent_.masterPort_;
-            //MasterNotifierSingleton::get()->setMasterServerInfo(masterHost, masterPort);
+            //NotifyReceiver::get()->setReceiverAddress(masterHost, masterPort);
         }
         catch (std::exception& e)
         {
@@ -263,7 +263,7 @@ bool CobraProcess::startDistributedServer()
     if (SF1Config::get()->isMaster())
     {
         // master rpc server
-        //MasterServer::get()->start(curNodeInfo.localHost_, masterPort);
+        //NotifyReceiver::get()->start(curNodeInfo.localHost_, masterPort);
     }
 
     NodeManagerSingleton::get()->start();

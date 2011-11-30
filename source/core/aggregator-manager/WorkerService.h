@@ -27,7 +27,7 @@
 #include <ir/index_manager/index/IndexerDocument.h>
 
 #include <util/get.h>
-#include <net/aggregator/JobInfo.h>
+#include <net/aggregator/Typedef.h>
 #include <question-answering/QuestionAnalysis.h>
 
 #include <boost/shared_ptr.hpp>
