@@ -26,11 +26,12 @@ public:
         : generator_(Engine(), Distribution())
     {}
 
-    void seed(int value)
+    void seed(unsigned int value)
     {
         ScopedWriteLock lock(lock_);
 
-        generator_.engine().seed(value);
+        Engine& engine = generator_.engine();
+        engine.seed(value);		
     }
 
     ValueType generate(ValueType min, ValueType max)
