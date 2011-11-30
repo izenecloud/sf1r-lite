@@ -437,11 +437,12 @@ void RecommendController::get_user()
         Value& resource = response()[Keys::resource];
         resource[Keys::USERID] = user.idStr_;
 
+        std::string convertBuffer;
         for (User::PropValueMap::const_iterator it = user.propValueMap_.begin();
             it != user.propValueMap_.end(); ++it)
         {
-            it->second.convertString(resource[it->first].get<std::string>(),
-                                     ENCODING_TYPE);
+            it->second.convertString(convertBuffer, ENCODING_TYPE);
+            resource[it->first] = convertBuffer;
         }
     }
     else
