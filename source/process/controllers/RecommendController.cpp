@@ -76,6 +76,7 @@ RecommendController::RecommendController()
     recTypeMap_["BOE"] = BASED_ON_EVENT;
     recTypeMap_["BOB"] = BASED_ON_BROWSE_HISTORY;
     recTypeMap_["BOS"] = BASED_ON_SHOP_CART;
+    recTypeMap_["BOR"] = BASED_ON_RANDOM;
 }
 
 bool RecommendController::requireProperty(
@@ -843,6 +844,8 @@ bool RecommendController::parseRateParam(RateParam& param)
  *       If @b input_items is specified, the @b input_items would be used as the items in user's shopping cart.@n
  *       Otherwise, the items added in @c update_shopping_cart() with the same @b USERID would be used as shoppint cart.@n
  *       In the recommendation results, the items added by @c purchase_item(), @c update_shopping_cart(), @c track_event() and @c rate_item() would be excluded.
+ *     - @b BOR (<b>Based on Random</b>): get randomly selected items as recommendation results.@n
+ *       In the recommendation results, it would exclude @b input_items, and the items added by @c purchase_item(), @c update_shopping_cart(), @c track_event(), @c rate_item() by the same @b USERID.
  *   - @b max_count (@c Uint = 10): max item number allowed in recommendation result.
  *   - @b USERID (@c String): a unique user identifier.@n
  *     This parameter is required for rec_type of @b BOE, and optional for @b BOB and @b BOS.

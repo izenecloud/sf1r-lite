@@ -349,6 +349,7 @@ bool ProductPriceTrend::GetTopPriceCutList(
         const string& prop_name,
         const string& prop_value,
         uint32_t days,
+        uint32_t count,
         string& error_msg)
 {
     if (!enable_tpc_)
@@ -373,8 +374,8 @@ bool ProductPriceTrend::GetTopPriceCutList(
     }
 
     sort_heap(tpc_queue.begin(), tpc_queue.end(), rel_ops::operator><TPCQueue::value_type>);
-    if (tpc_queue.size() > 20)
-        tpc_queue.resize(20);
+    if (tpc_queue.size() > count)
+        tpc_queue.resize(count);
 
     return true;
 }
