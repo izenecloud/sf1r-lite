@@ -24,6 +24,8 @@ public:
 
     bool hasItem(itemid_t itemId) const;
 
+    itemid_t maxItemId() const;
+
 private:
     DocumentManager* docManager_;
 };

@@ -20,4 +20,9 @@ bool ItemManager::hasItem(itemid_t itemId) const
     return docManager_->isDeleted(itemId) == false;
 }
 
+itemid_t ItemManager::maxItemId() const
+{
+    return docManager_->getMaxDocId();
+}
+
 } // namespace sf1r
