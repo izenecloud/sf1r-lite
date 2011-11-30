@@ -573,6 +573,19 @@ bool IndexTaskService::preparePartialDocument_(
                          }
                     }
                 }
+                else if(iter->getType() == STRING_PROPERTY_TYPE)
+                {
+                    if (iter->getIsMultiValue())
+                    {
+                        MultiValuePropertyType props;
+                        split_string(*stringValue, props, encoding, ',');
+                        oldIndexDocument.insertProperty(indexerPropertyConfig, props);
+                    }
+                    else
+                    {
+                        oldIndexDocument.insertProperty(indexerPropertyConfig, * stringValue);
+                    }
+                }
             }
         }
     }
@@ -952,7 +965,6 @@ bool IndexTaskService::checkRtype_(
 {
     //R-type check
     bool rType = false;
-    PropertyDataType dataType;
     docid_t docId;
     izenelib::util::UString newPropertyValue, oldPropertyValue;
     vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
@@ -1009,16 +1021,7 @@ bool IndexTaskService::checkRtype_(
 
                 if (iter->isIndex() && iter->getIsFilter() && !iter->isAnalyzed())
                 {
-                    dataType = iter->getType();
-                    if (dataType != INT_PROPERTY_TYPE && dataType != UNSIGNED_INT_PROPERTY_TYPE
-                        && dataType != FLOAT_PROPERTY_TYPE && dataType != DOUBLE_PROPERTY_TYPE)
-                    {
-                        break;
-                    }
-                    pair<PropertyDataType, izenelib::util::UString> fieldValue;
-                    fieldValue.first = dataType;
-                    fieldValue.second = newPropertyValue;
-                    rTypeFieldValue[iter->getName()] = fieldValue;
+                    rTypeFieldValue[iter->getName()] = std::make_pair(iter->getType(),newPropertyValue);
                 }
                 else
                 {
