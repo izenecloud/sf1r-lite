@@ -63,6 +63,7 @@ public:
             const std::string& prop_name,
             const std::string& prop_value,
             uint32_t days,
+            uint32_t count,
             std::string& error_msg);
 
     bool CronJob();
