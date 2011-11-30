@@ -8,6 +8,7 @@
 #include <mining-manager/faceted-submanager/GroupFilterBuilder.h>
 #include <mining-manager/faceted-submanager/GroupFilter.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
+#include <aggregator-manager/Notifier.h>
 #include <common/SFLogger.h>
 
 #include "SearchManager.h"
@@ -20,14 +21,11 @@
 
 #include <util/swap.h>
 #include <util/get.h>
-#include <net/aggregator/MasterServerBase.h>
 
 #include <boost/algorithm/string.hpp>
 
 #include <fstream>
 #include <algorithm>
-
-using namespace net::aggregator;
 
 namespace sf1r
 {
@@ -131,12 +129,12 @@ void SearchManager::reset_cache(
     }
 
     cache_->clear();
-    {
-        NotifyMSG msg;
-        msg.identity = collectionName_;
-        msg.method = "clear_search_cache";
-        MasterNotifierSingleton::get()->notify(msg);
-    }
+
+    // notify master
+    NotifyMSG msg;
+    msg.identity = collectionName_;
+    msg.method = "clear_search_cache";
+    Notifier::get()->notify(msg);
 
     queryBuilder_->reset_cache();
 }
@@ -145,12 +143,12 @@ void SearchManager::reset_all_property_cache()
 {
     pSorterCache_->setDirty(true);
     cache_->clear();
-    {
-        NotifyMSG msg;
-        msg.identity = collectionName_;
-        msg.method = "clear_search_cache";
-        MasterNotifierSingleton::get()->notify(msg);
-    }
+
+    // notify master
+    NotifyMSG msg;
+    msg.identity = collectionName_;
+    msg.method = "clear_search_cache";
+    Notifier::get()->notify(msg);
 
     queryBuilder_->reset_cache();
 }

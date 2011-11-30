@@ -76,7 +76,8 @@ void ScdOperationProcessor::ClearScds_()
 
     for (bfs::directory_iterator itr(dir_); itr != kItrEnd; ++itr)
     {
-        bfs::remove_all(itr->path());
+        if (itr->path().extension() == ".SCD")
+            bfs::remove_all(itr->path());
     }
 }
 

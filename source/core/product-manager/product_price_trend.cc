@@ -1,15 +1,16 @@
 #include "product_price_trend.h"
 
+#include <common/Utilities.h>
 #include <log-manager/PriceHistory.h>
+#include <am/range/AmIterator.h>
 #include <libcassandra/util_functions.h>
 
+#include <boost/lexical_cast.hpp>
 #include <algorithm>
 
 using namespace std;
 using namespace libcassandra;
 using izenelib::util::UString;
-using namespace boost;
-using namespace boost::posix_time;
 
 namespace sf1r
 {
@@ -51,13 +52,33 @@ bool ProductPriceTrend::Init()
         vector<TPCBTree *>& prop_tpc = tpc_storage_[*it];
         for (uint32_t i = 0; i < time_ints_.size(); i++)
         {
-            prop_tpc.push_back(new TPCBTree(data_dir_ + "/tpc_data." + *it + "." + lexical_cast<string>(time_ints_[i])));
+            prop_tpc.push_back(new TPCBTree(data_dir_ + "/" + *it + "." + boost::lexical_cast<string>(time_ints_[i]) + ".tpc"));
             if (!prop_tpc.back()->open())
                 ret = false;
+//          else TraverseTPCBtree_(*prop_tpc.back());
         }
     }
 
     return ret;
+}
+
+void ProductPriceTrend::TraverseTPCBtree(TPCBTree& tpc_btree)
+{
+    typedef izenelib::am::AMIterator<TPCBTree> AMIteratorType;
+    AMIteratorType iter(tpc_btree);
+    AMIteratorType end;
+    for(; iter != end; ++iter)
+    {
+        cout << "Key: " << iter->first << endl;
+        const TPCQueue& v = iter->second;
+
+        cout << "Value:" << endl;
+        for (TPCQueue::const_iterator vit = v.begin();
+                vit != v.end(); ++vit)
+        {
+            cout << "\t" << vit->first << "\t" << vit->second << endl;
+        }
+    }
 }
 
 bool ProductPriceTrend::Insert(
@@ -109,7 +130,7 @@ bool ProductPriceTrend::Update(
 bool ProductPriceTrend::Flush()
 {
     bool ret = true;
-    time_t now = createTimeStamp();
+    time_t now = Utilities::createTimeStamp();
 
     if (!prop_cache_.empty())
     {
@@ -139,9 +160,9 @@ bool ProductPriceTrend::CronJob()
 bool ProductPriceTrend::UpdateTPC_(uint32_t time_int, time_t timestamp)
 {
     vector<string> key_list;
-    getKeyList(key_list, prop_cache_);
+    Utilities::getKeyList(key_list, prop_cache_);
     if (timestamp == -1)
-        timestamp = createTimeStamp();
+        timestamp = Utilities::createTimeStamp();
     timestamp -= 86400000000L * time_ints_[time_int];
 
     vector<PriceHistory> row_list;
@@ -219,9 +240,9 @@ bool ProductPriceTrend::GetMultiPriceHistory(
                 hit != it->getPriceHistory().end(); ++hit)
         {
             history_item.push_back(make_pair(string(), hit->second.value));
-            history_item.back().first.assign(to_iso_string(
-                        from_time_t(hit->first / 1000000 - timezone)
-                        + microseconds(hit->first % 1000000)));
+            history_item.back().first.assign(boost::posix_time::to_iso_string(
+                        boost::posix_time::from_time_t(hit->first / 1000000 - timezone)
+                        + boost::posix_time::microseconds(hit->first % 1000000)));
         }
         history_list.push_back(make_pair(string(), PriceHistoryItem()));
         StripDocid_(history_list.back().first, it->getDocId());

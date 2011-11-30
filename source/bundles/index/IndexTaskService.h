@@ -117,6 +117,7 @@ private:
             bool& rType,
             std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
             std::string& source,
+            time_t& timestamp,
             bool insert = true
     );
 

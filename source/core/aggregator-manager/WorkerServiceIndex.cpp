@@ -9,7 +9,6 @@
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
 #include <log-manager/ProductCount.h>
-#include <common/UtilFunctions.h>
 #include <common/JobScheduler.h>
 #include <common/Utilities.h>
 //#include <license-manager/LicenseManager.h>
@@ -265,7 +264,7 @@ bool WorkerService::buildCollection(unsigned int numdoc)
     return true;
 }
 
-bool WorkerService::getPropertyValue_( const PropertyValue& value, std::string& valueStr )
+bool WorkerService::getPropertyValue_(const PropertyValue& value, std::string& valueStr)
 {
     try
     {
@@ -315,10 +314,9 @@ bool WorkerService::backup_()
 }
 
 bool WorkerService::doBuildCollection_(
-    const std::string& fileName,
-    int op,
-    uint32_t numdoc
-)
+        const std::string& fileName,
+        int op,
+        uint32_t numdoc)
 {
     ScdParser parser(bundleConfig_->encoding_);
     if (!parser.load(fileName))
@@ -333,13 +331,14 @@ bool WorkerService::doBuildCollection_(
 
     // Filename: B-00-YYYYMMDDhhmm-ssuuu-I-C.SCD
     // Timestamp: YYYYMMDDThhmmss,fff
+    std::string baseName(basename(fileName.c_str()));
     std::stringstream ss;
-    ss << fileName.substr(5, 8);
+    ss << baseName.substr(5, 8);
     ss << "T";
-    ss << fileName.substr(13, 4);
-    ss << fileName.substr(18, 2);
+    ss << baseName.substr(13, 4);
+    ss << baseName.substr(18, 2);
     ss << ",";
-    ss << fileName.substr(20, 3);
+    ss << baseName.substr(20, 3);
     boost::posix_time::ptime pt;
     try
     {
@@ -347,9 +346,9 @@ bool WorkerService::doBuildCollection_(
     }
     catch (const std::exception& ex)
     {}
-    time_t timestamp = createTimeStamp(pt);
+    time_t timestamp = Utilities::createTimeStamp(pt);
     if (timestamp == -1)
-        timestamp = createTimeStamp();
+        timestamp = Utilities::createTimeStamp();
 
     if (op <= 2) // insert or update
     {
@@ -372,8 +371,7 @@ bool WorkerService::insertOrUpdateSCD_(
         ScdParser& parser,
         bool isInsert,
         uint32_t numdoc,
-        time_t timestamp
-)
+        time_t timestamp)
 {
     CREATE_SCOPED_PROFILER (insertOrUpdateSCD, "IndexTaskService", "IndexTaskService::insertOrUpdateSCD_");
 
@@ -410,8 +408,9 @@ bool WorkerService::insertOrUpdateSCD_(
         std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
         sf1r::docid_t id = 0;
         std::string source = "";
+        time_t new_timestamp = timestamp;
 
-        if (!prepareDocument_(*doc, document, oldId, rType, rTypeFieldValue, source, isInsert))
+        if (!prepareDocument_(*doc, document, oldId, rType, rTypeFieldValue, source, new_timestamp, isInsert))
             continue;
 
         prepareIndexDocument_(oldId, document, indexDocument);
@@ -428,12 +427,12 @@ bool WorkerService::insertOrUpdateSCD_(
 
         if (isInsert || oldId == 0)
         {
-            if (!insertDoc_(document, indexDocument, timestamp))
+            if (!insertDoc_(document, indexDocument, new_timestamp))
                 continue;
         }
         else
         {
-            if (!updateDoc_(document, indexDocument, timestamp, rType))
+            if (!updateDoc_(document, indexDocument, new_timestamp, rType))
                 continue;
 
             ++numUpdatedDocs_;
@@ -448,11 +447,10 @@ bool WorkerService::insertOrUpdateSCD_(
 }
 
 bool WorkerService::createUpdateDocId_(
-    const izenelib::util::UString& scdDocId,
-    bool rType,
-    docid_t& oldId,
-    docid_t& newId
-)
+        const izenelib::util::UString& scdDocId,
+        bool rType,
+        docid_t& oldId,
+        docid_t& newId)
 {
     bool result = false;
 
@@ -472,9 +470,8 @@ bool WorkerService::createUpdateDocId_(
 }
 
 bool WorkerService::createInsertDocId_(
-    const izenelib::util::UString& scdDocId,
-    docid_t& newId
-)
+        const izenelib::util::UString& scdDocId,
+        docid_t& newId)
 {
     docid_t docId = 0;
 
@@ -614,8 +611,7 @@ bool WorkerService::updateDoc_(
         Document& document,
         IndexerDocument& indexDocument,
         time_t timestamp,
-        bool rType
-)
+        bool rType)
 {
     CREATE_SCOPED_PROFILER (proDocumentUpdating, "IndexTaskService", "IndexTaskService::UpdateDocument");
 
@@ -713,8 +709,8 @@ bool WorkerService::prepareDocument_(
         bool& rType,
         std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
         std::string& source,
-        bool insert
-)
+        time_t& timestamp,
+        bool insert)
 {
     CREATE_SCOPED_PROFILER (preparedocument, "IndexTaskService", "IndexTaskService::prepareDocument_");
 
@@ -798,7 +794,7 @@ bool WorkerService::prepareDocument_(
                 document.property(fieldStr) = propertyValueU;
                 analysisInfo.clear();
                 analysisInfo = iter->getAnalysisInfo();
-                if (analysisInfo.analyzerId_.size() != 0)
+                if (!analysisInfo.analyzerId_.empty())
                 {
                     unsigned int numOfSummary = 0;
                     if (iter->getIsSummary())
@@ -813,8 +809,7 @@ bool WorkerService::prepareDocument_(
                             LOG(ERROR) << "Make Sentence Blocks Failes ";
                         }
 
-                        document.property(fieldStr + ".blocks")
-                        = sentenceOffsetList;
+                        document.property(fieldStr + ".blocks") = sentenceOffsetList;
                     }
                 }
             }
@@ -830,12 +825,11 @@ bool WorkerService::prepareDocument_(
         }
     }
 
-    if (!dateExistInSCD)
+    if (dateExistInSCD) timestamp = -1;
+    else
     {
-        izenelib::util::UString dateStr;
-        izenelib::util::UString emptyDateStr;
-        sf1r::Utilities::convertDate(emptyDateStr, izenelib::util::UString::UTF_8, dateStr);
-        document.property(dateProperty_.getName()) = dateStr;
+        std::string dateStr = boost::posix_time::to_iso_string(boost::posix_time::from_time_t(timestamp / 1000000 - timezone));
+        document.property(dateProperty_.getName()) = izenelib::util::UString(dateStr.erase(8, 1), izenelib::util::UString::UTF_8);
     }
 
     if (!insert && !rType)
@@ -847,7 +841,10 @@ bool WorkerService::prepareDocument_(
 }
 
 
-bool WorkerService::prepareIndexDocument_(docid_t oldId, const Document& document, IndexerDocument& indexDocument)
+bool WorkerService::prepareIndexDocument_(
+        docid_t oldId,
+        const Document& document,
+        IndexerDocument& indexDocument)
 {
     CREATE_SCOPED_PROFILER (preparedocument, "IndexTaskService", "IndexTaskService::prepareIndexDocument_");
 
@@ -911,7 +908,7 @@ bool WorkerService::prepareIndexDocument_(docid_t oldId, const Document& documen
                     {
                         analysisInfo.clear();
                         analysisInfo = iter->getAnalysisInfo();
-                        if (analysisInfo.analyzerId_.size() == 0)
+                        if (analysisInfo.analyzerId_.empty())
                         {
                             if (iter->getIsFilter() && iter->getIsMultiValue())
                             {
@@ -1100,9 +1097,8 @@ bool WorkerService::prepareIndexDocument_(docid_t oldId, const Document& documen
 }
 
 bool WorkerService::preparePartialDocument_(
-    Document& document,
-    IndexerDocument& oldIndexDocument
-)
+        Document& document,
+        IndexerDocument& oldIndexDocument)
 {
     // Store the old property value.
     sf1r::docid_t docId = document.getId();
@@ -1252,9 +1248,8 @@ bool WorkerService::checkSeparatorType_(const izenelib::util::UString& propertyV
 }
 
 bool WorkerService::checkRtype_(
-    SCDDoc& doc,
-    std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue
-)
+        SCDDoc& doc,
+        std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue)
 {
     //R-type check
     bool rType = false;
@@ -1349,18 +1344,16 @@ bool WorkerService::checkRtype_(
 /// You can specify an Language Analysis option through AnalysisInfo parameter.
 /// You have to get a proper AnalysisInfo value from the configuration. (Currently not implemented.)
 bool WorkerService::makeForwardIndex_(
-    const izenelib::util::UString& text,
-    const std::string& propertyName,
-    unsigned int propertyId,
-    const AnalysisInfo& analysisInfo
-)
+        const izenelib::util::UString& text,
+        const std::string& propertyName,
+        unsigned int propertyId,
+        const AnalysisInfo& analysisInfo)
 {
-    CREATE_PROFILER(proTermExtracting, "IndexTaskService:SIAProcess", "Forward Index Building : extracting Terms");
+    CREATE_SCOPED_PROFILER(proTermExtracting, "IndexTaskService", "Analyzer overhead");
 
 //    la::TermIdList termIdList;
     laInputs_[propertyId]->resize(0);
 
-    START_PROFILER(proTermExtracting);
     // Remove the spaces between two Chinese Characters
 //    izenelib::util::UString refinedText;
 //    la::removeRedundantSpaces( text, refinedText );
@@ -1378,16 +1371,14 @@ bool WorkerService::makeForwardIndex_(
     if (laManager_->getTermIdList(idManager_.get(), text, analysisInfo, (*laInputs_[propertyId]), indexingLevel) == false)
             return false;
 
-    STOP_PROFILER(proTermExtracting);
     return true;
 }
 
 bool WorkerService::makeSentenceBlocks_(
-    const izenelib::util::UString & text,
-    const unsigned int maxDisplayLength,
-    const unsigned int numOfSummary,
-    vector<CharacterOffset>& sentenceOffsetList
-)
+        const izenelib::util::UString & text,
+        const unsigned int maxDisplayLength,
+        const unsigned int numOfSummary,
+        vector<CharacterOffset>& sentenceOffsetList)
 {
     sentenceOffsetList.clear();
     if (summarizer_.getOffsetPairs(text, maxDisplayLength, numOfSummary, sentenceOffsetList) == false)
