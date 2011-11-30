@@ -41,7 +41,14 @@ void SynchroConsumer::watchProducer(callback_on_produced_t callback_on_produced,
 
 void SynchroConsumer::monitor()
 {
-    if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
+    if (!zookeeper_->isConnected())
+    {
+        zookeeper_->connect(true);
+
+        if (zookeeper_->isConnected())
+            resetWatch();
+    }
+    else if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
     {
         resetWatch();
     }

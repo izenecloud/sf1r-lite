@@ -56,6 +56,8 @@ public:
 
     bool AddGroupWithInfo(const std::vector<izenelib::util::UString>& docid_list, const Document& doc, bool backup = true);
 
+    bool CheckAddGroupWithInfo(const std::vector<izenelib::util::UString>& docid_list, const Document& doc);
+    
     bool GetMultiPriceHistory(
             PriceHistoryList& history_list,
             const std::vector<std::string>& docid_list,
@@ -67,6 +69,12 @@ public:
             const std::vector<std::string>& docid_list,
             time_t from_tt,
             time_t to_tt);
+
+    bool GetTopPriceCutList(
+            TPCQueue& tpc_queue,
+            const std::string& prop_name,
+            const std::string& prop_value,
+            uint32_t days);
 
     inline const std::string& GetLastError() const
     {
@@ -101,9 +109,7 @@ private:
 
     bool GetTimestamp_(const PMDocumentType& doc, time_t& timestamp) const;
 
-    bool GetTopCategory_(const PMDocumentType& doc, std::string& category) const;
-
-    bool GetSource_(const PMDocumentType& doc, std::string& source) const;
+    bool GetGroupProperties_(const PMDocumentType& doc, std::map<std::string, std::string>& group_prop_map) const;
 
 private:
     ProductDataSource* data_source_;
@@ -112,6 +118,7 @@ private:
     ProductBackup* backup_;
     PMConfig config_;
     std::string error_;
+    bool has_price_trend_;
     bool inhook_;
     boost::mutex human_mutex_;
 };

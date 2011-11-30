@@ -90,6 +90,7 @@ const string& SourceCount::getKey() const
 
 bool SourceCount::updateMultiRow(const vector<SourceCount>& row_list)
 {
+    if (row_list.empty()) return true;
     if (!is_enabled) return false;
     try
     {

@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
+# Usage: ./compile_all [JOB_NUM]
+# the default value of JOB_NUM is 2, it specifies the number of jobs to run simultaneously
 
-CPU_NUM=`grep -c "^processor" /proc/cpuinfo`
+JOB_NUM=2
+[ $# -gt 0 ] && JOB_NUM=$1
 
 cd ..
 CODEBASE_DIR="$(pwd)"
@@ -55,7 +58,7 @@ do
     fi
   fi
 
-  make -j$CPU_NUM
+  make -j$JOB_NUM
   if [ ! $? -eq 0 ];then
     echo "ERROR: compiling ${dependencie[$index]}!"
     exit 1

@@ -14,8 +14,7 @@
                                 <xs:element ref="DOCIDProperty" minOccurs="1" maxOccurs="1" />
                                 <xs:element ref="UuidProperty" minOccurs="1" maxOccurs="1" />
                                 <xs:element ref="ItemCountProperty" minOccurs="1" maxOccurs="1" />
-                                <xs:element ref="CategoryProperty" minOccurs="1" maxOccurs="1" />
-                                <xs:element ref="SourceProperty" minOccurs="1" maxOccurs="1" />
+                                <xs:element ref="PriceTrend" minOccurs="0" maxOccurs="1" />
                                 <xs:element ref="Backup" minOccurs="0" maxOccurs="1" />
                             </xs:sequence>
                             <xs:attribute name="mode" use="required">
@@ -25,7 +24,6 @@
                                     </xs:restriction>
                                 </xs:simpleType>
                             </xs:attribute>
-                            <xs:attribute name="enablePH" type="YesNoType" />
                         </xs:complexType>
                     </xs:element>
                     <xs:element name="Parameter" minOccurs="0">
@@ -44,8 +42,18 @@
         <xs:element name="DOCIDProperty" type="PropertyType" />
         <xs:element name="UuidProperty" type="PropertyType" />
         <xs:element name="ItemCountProperty" type="PropertyType" />
-        <xs:element name="CategoryProperty" type="PropertyType" />
-        <xs:element name="SourceProperty" type="PropertyType" />
+        <xs:element name="PriceTrend">
+            <xs:complexType>
+                <xs:sequence>
+                    <xs:element name="GroupProperty" type="PropertyType" minOccurs="0" maxOccurs="unbounded"/>
+                    <xs:element name="TimeInterval" minOccurs="0" maxOccurs="unbounded">
+                        <xs:complexType>
+                            <xs:attribute name="days" type="xs:positiveInteger" use="required" />
+                        </xs:complexType>
+                    </xs:element>
+                </xs:sequence>
+            </xs:complexType>
+        </xs:element>
         <xs:element name="Backup">
             <xs:complexType>
                 <xs:attribute name="path" type="xs:string" use="required" />

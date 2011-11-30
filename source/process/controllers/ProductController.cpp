@@ -1,7 +1,7 @@
 #include <bundles/product/ProductSearchService.h>
 #include "ProductController.h"
 #include <product-manager/product_manager.h>
-#include <common/UtilFunctions.h>
+#include <common/Utilities.h>
 #include <common/Keys.h>
 #include <util/ustring/UString.h>
 #include <vector>
@@ -125,12 +125,12 @@ bool ProductController::require_date_range_()
         return false;
     }
 
-    if ((from_tt_ = createTimeStamp(from_date_)) == -2)
+    if ((from_tt_ = Utilities::createTimeStamp(from_date_)) == -2)
     {
         response().addError("start date not valid.");
         return false;
     }
-    if ((to_tt_ = createTimeStamp(to_date_)) == -2)
+    if ((to_tt_ = Utilities::createTimeStamp(to_date_)) == -2)
     {
         response().addError("end date not valid.");
         return false;
@@ -498,6 +498,79 @@ void ProductController::get_multi_price_history()
             price_range[Keys::price_low] = range_list[i].second.first;
             price_range[Keys::price_high] = range_list[i].second.second;
         }
+    }
+}
+
+/**
+ * @brief Action \b get_top_price_cut_list. Get 20 doc ids with greatest price-cut ratio for given property value and time interval.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b property* (@c String): property name
+ * - @c value* (@c String): property value
+ * - @b days* (@c Uint): time interval to calculate price-cut ratio
+ *
+ * @section response
+ *
+ * - @b resources (@c Array): All returned items
+ *   - @b price_cut (@c Float): The price-cut ratio
+ *   - @b docid (@c String): The string_type docid
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection":"b5mm",
+ *   "property":"Category",
+ *   "value":"手机通讯",
+ *   "days":"7"
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header":
+ *   {
+ *     "success":true
+ *   },
+ *   "resources":
+ *   [
+ *     {
+         "price_cut":"0.35",
+ *       "docid":"cbb3c856bda004e3d9dd441a3995b090"
+ *     },
+ *     {
+         "price_cut":"0.15",
+ *       "docid":"f16940a39c79dc84bf14b94dab0624fd"
+ *     }
+ *   ]
+ * }
+ * @endcode
+ */
+void ProductController::get_top_price_cut_list()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
+
+    prop_name_ = asString(request()[Keys::property]);
+    prop_value_ = asString(request()[Keys::value]);
+    days_ = asUint(request()[Keys::days]);
+
+    TPCQueue tpc_queue;
+    if (!product_manager_->GetTopPriceCutList(tpc_queue, prop_name_, prop_value_, days_))
+    {
+        response().addError(product_manager_->GetLastError());
+        return;
+    }
+
+    Value& tpc_list = response()[Keys::resources];
+    for (uint32_t i = 0; i < tpc_queue.size(); i++)
+    {
+        Value& tpc_item = tpc_list();
+        tpc_item[Keys::price_cut] = tpc_queue[i].first;
+        tpc_item[Keys::docid] = tpc_queue[i].second;
     }
 }
 

@@ -1,128 +1,127 @@
 #include "product_price_trend.h"
 
+#include <common/Utilities.h>
 #include <log-manager/PriceHistory.h>
+#include <am/range/AmIterator.h>
 #include <libcassandra/util_functions.h>
 
+#include <boost/lexical_cast.hpp>
 #include <algorithm>
 
 using namespace std;
 using namespace libcassandra;
 using izenelib::util::UString;
-using namespace boost;
-using namespace boost::posix_time;
 
 namespace sf1r
 {
 
 ProductPriceTrend::ProductPriceTrend(
         const string& collection_name,
-        const string& dir,
-        const string& category_property,
-        const string& source_property)
+        const string& data_dir,
+        const vector<string>& group_prop_vec,
+        const vector<uint32_t>& time_int_vec)
     : collection_name_(collection_name)
-    , category_property_(category_property)
-    , source_property_(source_property)
+    , data_dir_(data_dir)
+    , group_prop_vec_(group_prop_vec)
+    , time_int_vec_(time_int_vec)
+    , enable_tpc_(!group_prop_vec_.empty() && !time_int_vec_.empty())
 {
-    category_tpc_.push_back(new TPCStorage(dir + "/category_top_price_cut.0"));
-    category_tpc_.push_back(new TPCStorage(dir + "/category_top_price_cut.1"));
-    category_tpc_.push_back(new TPCStorage(dir + "/category_top_price_cut.2"));
-
-    source_tpc_.push_back(new TPCStorage(dir + "/source_top_price_cut.0"));
-    source_tpc_.push_back(new TPCStorage(dir + "/source_top_price_cut.1"));
-    source_tpc_.push_back(new TPCStorage(dir + "/source_top_price_cut.2"));
 }
 
 ProductPriceTrend::~ProductPriceTrend()
 {
     Flush();
-    for (uint32_t i = 0; i < 3; i++)
+    for (TPCStorage::iterator it = tpc_storage_.begin();
+            it != tpc_storage_.end(); ++it)
     {
-        delete category_tpc_[i];
-        delete source_tpc_[i];
+        for (uint32_t i = 0; i < time_int_vec_.size(); i++)
+            delete it->second[i];
     }
 }
 
 bool ProductPriceTrend::Init()
 {
+    if (!PriceHistory::is_enabled) return false;
+
     bool ret = true;
 
-    for (uint32_t i = 0; i < 3; i++)
+    for (vector<string>::const_iterator it = group_prop_vec_.begin();
+            it != group_prop_vec_.end(); ++it)
     {
-        if (!category_tpc_[i]->open()) ret = false;
-        if (!source_tpc_[i]->open()) ret = false;
+        vector<TPCBTree *>& prop_tpc = tpc_storage_[*it];
+        for (uint32_t i = 0; i < time_int_vec_.size(); i++)
+        {
+            prop_tpc.push_back(new TPCBTree(data_dir_ + "/" + *it + "." + boost::lexical_cast<string>(time_int_vec_[i]) + ".tpc"));
+            if (!prop_tpc.back()->open())
+                ret = false;
+//            else TraverseTPCBtree(*prop_tpc.back());
+        }
     }
 
     return ret;
 }
 
+//void ProductPriceTrend::TraverseTPCBtree(TPCBTree& tpc_btree)
+//{
+//    typedef izenelib::am::AMIterator<TPCBTree> AMIteratorType;
+//    AMIteratorType iter(tpc_btree);
+//    AMIteratorType end;
+//    for(; iter != end; ++iter)
+//    {
+//        cout << "====== Key: " << iter->first << endl;
+//        const TPCQueue& v = iter->second;
+//
+//        cout << "====== Value: length = " << v.size() << endl;
+//        for (TPCQueue::const_iterator vit = v.begin();
+//                vit != v.end(); ++vit)
+//        {
+//            cout << "\t" << vit->first << "\t" << vit->second << endl;
+//        }
+//    }
+//}
+
 bool ProductPriceTrend::Insert(
         const string& docid,
         const ProductPrice& price,
-        time_t timestamp,
-        uint32_t num_docid,
-        const string& category,
-        const string& source)
+        time_t timestamp)
 {
     string key;
     ParseDocid_(key, docid);
-    price_history_cache_.push_back(PriceHistory(key));
+    price_history_cache_.push_back(PriceHistory());
+    price_history_cache_.back().resetKey(key);
     price_history_cache_.back().insert(timestamp, price);
 
-    if (price.value.first > 0 && num_docid > 0)
+    if (price_history_cache_.size() == 10000)
     {
-        if (!category.empty())
-        {
-            category_map_[docid] = make_tuple(num_docid, price.value.first, category);
-        }
-        if (!source.empty())
-        {
-            source_map_[docid] = make_tuple(num_docid, price.value.first, source);
-        }
+        return Flush();
+    }
+
+    return true;
+}
+
+bool ProductPriceTrend::Update(
+        const string& docid,
+        const ProductPrice& price,
+        time_t timestamp,
+        map<string, string>& group_prop_map)
+{
+    string key;
+    ParseDocid_(key, docid);
+    price_history_cache_.push_back(PriceHistory());
+    price_history_cache_.back().resetKey(key);
+    price_history_cache_.back().insert(timestamp, price);
+
+    if (enable_tpc_ && !group_prop_map.empty() && price.value.first > 0)
+    {
+        PropCacheItem& cache_item = prop_cache_[key];
+        cache_item.first = price.value.first;
+        cache_item.second.swap(group_prop_map);
     }
 
     if (price_history_cache_.size() == 10000)
     {
         return Flush();
     }
-    return true;
-}
-
-bool ProductPriceTrend::CronJob()
-{
-    //TODO
-    return true;
-}
-
-bool ProductPriceTrend::UpdateTPC_(TPCStorage* tpc_storage, const vector<string>& key_list, const CacheMap& cache_map, time_t timestamp)
-{
-    string from_str(serializeLong(timestamp));
-    vector<PriceHistory> row_list;
-    if (!PriceHistory::getMultiSlice(row_list, key_list, from_str, "", 1))
-        return false;
-
-    for (uint32_t i = 0; i < row_list.size(); i++)
-    {
-        string docid;
-        StripDocid_(docid, row_list[i].getDocId());
-        const CacheMap::mapped_type& cache_record = cache_map.find(docid)->second;
-
-        const pair<time_t, ProductPrice>& price_record = *(row_list[i].getPriceHistory().begin());
-        double old_price = price_record.second.value.first;
-        float price_cut = old_price == 0 ? 0 : 1 - cache_record.get<1>() / old_price;
-
-        TPCQueue tpc_queue;
-        tpc_storage->get(cache_record.get<2>(), tpc_queue);
-        tpc_queue.push_back(make_tuple(price_cut, price_record.first, cache_record.get<0>()));
-        push_heap(tpc_queue.begin(), tpc_queue.end(), rel_ops::operator><TPCQueue::value_type>);
-
-        if (tpc_queue.size() > 100)
-        {
-            pop_heap(tpc_queue.begin(), tpc_queue.end(), rel_ops::operator><TPCQueue::value_type>);
-            tpc_queue.pop_back();
-        }
-        tpc_storage->update(cache_record.get<2>(), tpc_queue);
-    }
-    tpc_storage->flush();
 
     return true;
 }
@@ -130,42 +129,17 @@ bool ProductPriceTrend::UpdateTPC_(TPCStorage* tpc_storage, const vector<string>
 bool ProductPriceTrend::Flush()
 {
     bool ret = true;
-    time_t now = createTimeStamp();
+    time_t now = Utilities::createTimeStamp();
 
-    if (!category_map_.empty())
+    if (!prop_cache_.empty())
     {
-        vector<string> docid_list, key_list;
-        getKeyList(docid_list, category_map_);
-        ParseDocidList_(key_list, docid_list);
+        for (uint32_t i = 0; i < time_int_vec_.size(); i++)
+        {
+            if (!UpdateTPC_(i, now))
+                ret = false;
+        }
 
-        if (!UpdateTPC_(category_tpc_[0], key_list, category_map_, now - 86400000000L * 7))
-            ret = false;
-
-        if (!UpdateTPC_(category_tpc_[1], key_list, category_map_, now - 86400000000L * 183))
-            ret = false;
-
-        if (!UpdateTPC_(category_tpc_[2], key_list, category_map_, now - 86400000000L * 365))
-            ret = false;
-
-        category_map_.clear();
-    }
-
-    if (!source_map_.empty())
-    {
-        vector<string> docid_list, key_list;
-        getKeyList(docid_list, source_map_);
-        ParseDocidList_(key_list, docid_list);
-
-        if (!UpdateTPC_(source_tpc_[0], key_list, source_map_, now - 86400000000L * 7))
-            ret = false;
-
-        if (!UpdateTPC_(source_tpc_[1], key_list, source_map_, now - 86400000000L * 183))
-            ret = false;
-
-        if (!UpdateTPC_(source_tpc_[2], key_list, source_map_, now - 86400000000L * 365))
-            ret = false;
-
-        source_map_.clear();
+        prop_cache_.clear();
     }
 
     if (!PriceHistory::updateMultiRow(price_history_cache_))
@@ -174,6 +148,66 @@ bool ProductPriceTrend::Flush()
     price_history_cache_.clear();
 
     return ret;
+}
+
+bool ProductPriceTrend::CronJob()
+{
+    //TODO
+    return true;
+}
+
+bool ProductPriceTrend::UpdateTPC_(uint32_t time_int, time_t timestamp)
+{
+    vector<string> key_list;
+    Utilities::getKeyList(key_list, prop_cache_);
+    if (timestamp == -1)
+        timestamp = Utilities::createTimeStamp();
+    timestamp -= 86400000000L * time_int_vec_[time_int];
+
+    vector<PriceHistory> row_list;
+    if (!PriceHistory::getMultiSlice(row_list, key_list, serializeLong(timestamp), "", 1))
+        return false;
+
+    map<string, map<string, TPCQueue> > tpc_cache;
+    for (uint32_t i = 0; i < row_list.size(); i++)
+    {
+        const PropCacheItem& cache_item = prop_cache_.find(row_list[i].getDocId())->second;
+        const pair<time_t, ProductPrice>& price_record = *(row_list[i].getPriceHistory().begin());
+        const ProductPriceType& old_price = price_record.second.value.first;
+        float price_cut = old_price == 0 ? 0 : 1 - cache_item.first / old_price;
+
+        for (map<string, string>::const_iterator it = cache_item.second.begin();
+                it != cache_item.second.end(); ++it)
+        {
+            TPCQueue& tpc_queue = tpc_cache[it->first][it->second];
+            if (tpc_queue.empty())
+                tpc_storage_[it->first][time_int]->get(it->second, tpc_queue);
+
+            tpc_queue.push_back(make_pair(price_cut, string()));
+            StripDocid_(tpc_queue.back().second, row_list[i].getDocId());
+            push_heap(tpc_queue.begin(), tpc_queue.end(), rel_ops::operator> <TPCQueue::value_type>);
+
+            if (tpc_queue.size() > 1000)
+            {
+                pop_heap(tpc_queue.begin(), tpc_queue.end(), rel_ops::operator> <TPCQueue::value_type>);
+                tpc_queue.pop_back();
+            }
+        }
+    }
+
+    for (map<string, map<string, TPCQueue> >::const_iterator it = tpc_cache.begin();
+            it != tpc_cache.end(); ++it)
+    {
+        TPCBTree* tpc_btree = tpc_storage_[it->first][time_int];
+        for (map<string, TPCQueue>::const_iterator mit = it->second.begin();
+                mit != it->second.end(); ++mit)
+        {
+            tpc_btree->update(mit->first, mit->second);
+        }
+        tpc_btree->flush();
+    }
+
+    return true;
 }
 
 bool ProductPriceTrend::GetMultiPriceHistory(
@@ -205,9 +239,9 @@ bool ProductPriceTrend::GetMultiPriceHistory(
                 hit != it->getPriceHistory().end(); ++hit)
         {
             history_item.push_back(make_pair(string(), hit->second.value));
-            history_item.back().first.assign(to_iso_string(
-                        from_time_t(hit->first / 1000000 - timezone)
-                        + microseconds(hit->first % 1000000)));
+            history_item.back().first.assign(boost::posix_time::to_iso_string(
+                        boost::posix_time::from_time_t(hit->first / 1000000 - timezone)
+                        + boost::posix_time::microseconds(hit->first % 1000000)));
         }
         history_list.push_back(make_pair(string(), PriceHistoryItem()));
         StripDocid_(history_list.back().first, it->getDocId());
@@ -311,35 +345,36 @@ void ProductPriceTrend::StripDocidList_(vector<string>& dest, const vector<strin
 }
 
 bool ProductPriceTrend::GetTopPriceCutList(
-        vector<pair<float, string> >& tpc_list,
+        TPCQueue& tpc_queue,
+        const string& prop_name,
         const string& prop_value,
-        string& error_msg,
-        ProductPriceTrend::PropertyName prop_name,
-        ProductPriceTrend::TimeInterval time_int)
+        uint32_t days,
+        string& error_msg)
 {
-    TPCStorage* tpc_storage;
-    switch (prop_name)
+    if (!enable_tpc_)
     {
-    case CATEGORY:
-        tpc_storage = category_tpc_[time_int];
-        break;
-    case SOURCE:
-        tpc_storage = source_tpc_[time_int];
-        break;
-    default:
+        error_msg = "Top price-cut list is not enabled for this collection.";
         return false;
     }
 
-    TPCQueue tpc_queue;
-    if (!tpc_storage->get(prop_value, tpc_queue))
+    TPCStorage::const_iterator tpc_it = tpc_storage_.find(prop_name);
+    if (tpc_it == tpc_storage_.end())
     {
-        error_msg = "Can't find this property name: " + prop_value;
+        error_msg = "Don't find data for this property name: " + prop_name;
         return false;
     }
+
+    uint32_t time_int = 0;
+    while (days > time_int_vec_[time_int++] && time_int < time_int_vec_.size() - 1);
+    if (!tpc_it->second[time_int]->get(prop_value, tpc_queue))
+    {
+        error_msg = "Don't find price-cut record for this property value: " + prop_value;
+        return false;
+    }
+
     sort_heap(tpc_queue.begin(), tpc_queue.end(), rel_ops::operator><TPCQueue::value_type>);
-    if (tpc_queue.size() > 20) tpc_queue.resize(20);
-    sort(tpc_queue.begin(), tpc_queue.end(), tupleLess<2, TPCQueue::value_type>);
-    //TODO convert the numeric doc ids to string-type ones
+    if (tpc_queue.size() > 20)
+        tpc_queue.resize(20);
 
     return true;
 }

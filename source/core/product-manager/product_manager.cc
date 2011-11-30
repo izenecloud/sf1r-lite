@@ -5,12 +5,11 @@
 #include "product_backup.h"
 #include "product_price_trend.h"
 
-#include <common/UtilFunctions.h>
+#include <common/Utilities.h>
 #include <boost/unordered_set.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 using namespace sf1r;
-using namespace boost::posix_time;
 using izenelib::util::UString;
 
 ProductManager::ProductManager(
@@ -23,12 +22,17 @@ ProductManager::ProductManager(
     , price_trend_(price_trend)
     , backup_(NULL)
     , config_(config)
+    , has_price_trend_(false)
     , inhook_(false)
 {
     if (price_trend_)
     {
-        price_trend_->Init();
+        if (price_trend_->Init())
+            has_price_trend_ = true;
+        else
+            std::cerr << "Error: Price trend has not been properly initialized" << std::endl;
     }
+
     if (!config_.backup_path.empty())
     {
         backup_ = new ProductBackup(config_.backup_path);
@@ -48,7 +52,11 @@ bool ProductManager::Recover()
     }
     if (!backup_->Recover(this))
     {
-        error_ = "Backup recover failed.";
+//         error_ = "Backup recover failed.";
+        return false;
+    }
+    if (!GenOperations_())
+    {
         return false;
     }
     return true;
@@ -59,7 +67,7 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
 
-    if (price_trend_)
+    if (has_price_trend_)
     {
         ProductPrice price;
         if (GetPrice_(doc, price))
@@ -69,7 +77,7 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
             {
                 std::string docid_str;
                 docid.convertString(docid_str, UString::UTF_8);
-                GetTimestamp_(doc, timestamp);
+                if (timestamp == -1) GetTimestamp_(doc, timestamp);
                 price_trend_->Insert(docid_str, price, timestamp);
             }
         }
@@ -91,6 +99,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
+
     uint32_t fromid = index_document.getId(); //oldid
     PMDocumentType from;
     if (!data_source_->GetDocument(fromid, from)) return false;
@@ -101,18 +110,17 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
     GetPrice_(fromid, from_price);
     GetPrice_(to, to_price);
 
-    if (price_trend_ && to_price.Valid() && from_price != to_price)
+    if (has_price_trend_ && to_price.Valid() && from_price != to_price)
     {
         UString docid;
         if (GetDOCID_(to, docid))
         {
             std::string docid_str;
             docid.convertString(docid_str, UString::UTF_8);
-            std::string category, source;
-            GetTopCategory_(to, category);
-            GetSource_(to, source);
-            GetTimestamp_(to, timestamp);
-            price_trend_->Insert(docid_str, to_price, timestamp, fromid, category, source);
+            if (timestamp == -1) GetTimestamp_(to, timestamp);
+            std::map<std::string, std::string> group_prop_map;
+            GetGroupProperties_(to, group_prop_map);
+            price_trend_->Update(docid_str, to_price, timestamp, group_prop_map);
         }
     }
 
@@ -180,7 +188,7 @@ bool ProductManager::HookDelete(uint32_t docid, time_t timestamp)
 
 bool ProductManager::Finish()
 {
-    if (price_trend_)
+    if (has_price_trend_)
     {
         price_trend_->Flush();
     }
@@ -239,6 +247,64 @@ void ProductManager::BackupPCItem_(const UString& uuid, const std::vector<uint32
     }
 }
 
+bool ProductManager::CheckAddGroupWithInfo(const std::vector<izenelib::util::UString>& sdocid_list, const Document& doc)
+{
+    std::vector<uint32_t> docid_list;
+    if (!data_source_->GetInternalDocidList(sdocid_list, docid_list))
+    {
+        error_ = data_source_->GetLastError();
+        return false;
+    }
+    UString uuid = doc.property(config_.docid_property_name).get<UString>();
+    if (uuid.length()==0)
+    {
+        error_ = "DOCID(uuid) not set";
+        return false;
+    }
+    std::vector<uint32_t> uuid_docid_list;
+    data_source_->GetDocIdList(uuid, uuid_docid_list, 0);
+    if (!uuid_docid_list.empty())
+    {
+        std::string suuid;
+        uuid.convertString(suuid, UString::UTF_8);
+        error_ = suuid+" already exists";
+        return false;
+    }
+    
+    
+    std::vector<PMDocumentType> doc_list(docid_list.size());
+    for (uint32_t i = 0; i < docid_list.size(); i++)
+    {
+        if (!data_source_->GetDocument(docid_list[i], doc_list[i]))
+        {
+            error_ = "Can not get document "+boost::lexical_cast<std::string>(docid_list[i]);
+            return false;
+        }
+    }
+    std::vector<UString> uuid_list(doc_list.size());
+    for (uint32_t i = 0; i < doc_list.size(); i++)
+    {
+        if (!GetUuid_(doc_list[i], uuid_list[i]))
+        {
+            error_ = "Can not get uuid in document "+boost::lexical_cast<std::string>(docid_list[i]);
+            return false;
+        }
+        std::vector<uint32_t> same_docid_list;
+        data_source_->GetDocIdList(uuid_list[i], same_docid_list, docid_list[i]);
+        if (!same_docid_list.empty())
+        {
+            error_ = "Document id "+boost::lexical_cast<std::string>(docid_list[i])+" belongs to other group";
+            return false;
+        }
+        if (uuid_list[i] == uuid)
+        {
+            error_ = "Document id "+boost::lexical_cast<std::string>(docid_list[i])+" has the same uuid with request";
+            return false;
+        }
+    }
+    return true;
+}
+
 bool ProductManager::AddGroupWithInfo(const std::vector<uint32_t>& docid_list, const Document& doc, bool backup)
 {
     if (inhook_)
@@ -270,10 +336,10 @@ bool ProductManager::AddGroupWithInfo(const std::vector<uint32_t>& docid_list, c
         return false;
     }
 
-    if (!GenOperations_())
-    {
-        return false;
-    }
+//     if (!GenOperations_())
+//     {
+//         return false;
+//     }
     if (backup && backup_)
     {
         BackupPCItem_(uuid, docid_list, 1);
@@ -617,9 +683,9 @@ bool ProductManager::GetMultiPriceHistory(
         time_t from_tt,
         time_t to_tt)
 {
-    if (!price_trend_)
+    if (!has_price_trend_)
     {
-        error_ = "The price history is not enabled for this collection";
+        error_ = "Price trend is not enabled for this collection";
         return false;
     }
 
@@ -632,13 +698,28 @@ bool ProductManager::GetMultiPriceRange(
         time_t from_tt,
         time_t to_tt)
 {
-    if (!price_trend_)
+    if (!has_price_trend_)
     {
-        error_ = "The price history is not enabled for this collection";
+        error_ = "Price trend is not enabled for this collection";
         return false;
     }
 
     return price_trend_->GetMultiPriceRange(range_list, docid_list, from_tt, to_tt, error_);
+}
+
+bool ProductManager::GetTopPriceCutList(
+        TPCQueue& tpc_queue,
+        const std::string& prop_name,
+        const std::string& prop_value,
+        uint32_t days)
+{
+    if (!has_price_trend_)
+    {
+        error_ = "Price trend is not enabled for this collection";
+        return false;
+    }
+
+    return price_trend_->GetTopPriceCutList(tpc_queue, prop_name, prop_value, days, error_);
 }
 
 bool ProductManager::GetPrice_(uint32_t docid, ProductPrice& price) const
@@ -703,11 +784,9 @@ bool ProductManager::GetTimestamp_(const PMDocumentType& doc, time_t& timestamp)
     UString time_ustr = it->second.get<UString>();
     std::string time_str;
     time_ustr.convertString(time_str, UString::UTF_8);
-    ptime pt;
     try
     {
-        pt = from_iso_string(time_str.substr(0, 8) + "T" + time_str.substr(8));
-        timestamp = createTimeStamp(pt);
+        timestamp = Utilities::createTimeStamp(boost::posix_time::from_iso_string(time_str.insert(8, 1, 'T')));
     }
     catch (const std::exception& ex)
     {
@@ -716,31 +795,21 @@ bool ProductManager::GetTimestamp_(const PMDocumentType& doc, time_t& timestamp)
     return true;
 }
 
-bool ProductManager::GetTopCategory_(const PMDocumentType& doc, std::string& category) const
+bool ProductManager::GetGroupProperties_(const PMDocumentType& doc, std::map<std::string, std::string>& group_prop_map) const
 {
-    Document::property_const_iterator it = doc.findProperty(config_.category_property_name);
-    if (it == doc.propertyEnd())
+    for (uint32_t i = 0; i < config_.group_property_names.size(); i++)
     {
-        return false;
+        Document::property_const_iterator it = doc.findProperty(config_.group_property_names[i]);
+        if (it == doc.propertyEnd()) continue;
+        UString prop_ustr = it->second.get<UString>();
+        std::string prop_str;
+        prop_ustr.convertString(prop_str, UString::UTF_8);
+        size_t pos;
+        if ((pos = prop_str.find('>')) != std::string::npos)
+            prop_str.resize(pos);
+        prop_str.swap(group_prop_map[config_.group_property_names[i]]);
     }
-    UString category_str = it->second.get<UString>();
-    category_str.convertString(category, UString::UTF_8);
-    uint32_t pos;
-    if ((pos = category.find('>')) != std::string::npos)
-        category = category.substr(0, pos);
-    return true;
-}
-
-bool ProductManager::GetSource_(const PMDocumentType& doc, std::string& source) const
-{
-    Document::property_const_iterator it = doc.findProperty(config_.source_property_name);
-    if (it == doc.propertyEnd())
-    {
-        return false;
-    }
-    UString source_str = it->second.get<UString>();
-    source_str.convertString(source, UString::UTF_8);
-    return true;
+    return group_prop_map.empty();
 }
 
 void ProductManager::SetItemCount_(PMDocumentType& doc, uint32_t item_count)

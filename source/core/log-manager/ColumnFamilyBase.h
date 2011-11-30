@@ -8,14 +8,16 @@ namespace sf1r {
 class ColumnFamilyBase
 {
 public:
-    ColumnFamilyBase() {}
+    ColumnFamilyBase();
 
-    virtual ~ColumnFamilyBase() {}
+    virtual ~ColumnFamilyBase();
 
     enum ColumnType {
         UNKNOWN,
         NORMAL,
-        COUNTER
+        COUNTER,
+        SUPER,
+        SUPER_COUNTER
     };
 
     virtual bool isEnabled() const = 0;

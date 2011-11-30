@@ -1,5 +1,6 @@
 #include "PriceHistory.h"
 
+#include <common/Utilities.h>
 #include <libcassandra/cassandra.h>
 #include <libcassandra/util_functions.h>
 
@@ -91,11 +92,12 @@ const string& PriceHistory::getKey() const
 
 bool PriceHistory::updateMultiRow(const vector<PriceHistory>& row_list)
 {
+    if (row_list.empty()) return true;
     if (!is_enabled) return false;
     try
     {
         map<string, map<string, vector<Mutation> > > mutation_map;
-        time_t timestamp = createTimeStamp();
+        time_t timestamp = Utilities::createTimeStamp();
         for (vector<PriceHistory>::const_iterator vit = row_list.begin();
                 vit != row_list.end(); ++vit)
         {
@@ -109,7 +111,7 @@ bool PriceHistory::updateMultiRow(const vector<PriceHistory>& row_list)
                 mut.column_or_supercolumn.__isset.column = true;
                 Column& col = mut.column_or_supercolumn.column;
                 col.__set_name(serializeLong(mit->first));
-                col.__set_value(toBytes(mit->second));
+                col.__set_value(Utilities::toBytes(mit->second));
                 col.__set_timestamp(timestamp);
                 col.__set_ttl(63072000);
             }
@@ -217,11 +219,11 @@ bool PriceHistory::updateRow() const
                 it != priceHistory_.end(); ++it)
         {
             CassandraConnection::instance().getCassandraClient()->insertColumn(
-                    toBytes(it->second),
+                    Utilities::toBytes(it->second),
                     docId_,
                     cf_name,
                     serializeLong(it->first),
-                    createTimeStamp(),
+                    Utilities::createTimeStamp(),
                     63072000); // Keep the price history for two years at most
         }
     }
@@ -241,7 +243,7 @@ bool PriceHistory::insert(const string& name, const string& value)
         cerr << "Bad insert!" << endl;
         return false;
     }
-    priceHistory_[deserializeLong(name)] = fromBytes<ProductPrice>(value);
+    priceHistory_[deserializeLong(name)] = Utilities::fromBytes<ProductPrice>(value);
     return true;
 }
 
