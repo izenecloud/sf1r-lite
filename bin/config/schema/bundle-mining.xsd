@@ -131,13 +131,13 @@
                             <xs:element ref="DuplicateDetection" minOccurs="0"/>
                             <xs:element ref="QueryRecommend" minOccurs="0"/>
                             <xs:element ref="Similarity" minOccurs="0"/>
-                            <xs:element ref="Summarization" minOccurs="0"/>
                             <xs:element ref="DocumentClassification" minOccurs="0"/>
                             <xs:element ref="Faceted" minOccurs="0"/>
                             <xs:element ref="Group" minOccurs="0"/>
                             <xs:element ref="Attr" minOccurs="0"/>
                             <xs:element ref="Rerank" minOccurs="0"/>
                             <xs:element ref="TDT" minOccurs="0"/>
+                            <xs:element ref="Summarization" minOccurs="0"/>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
