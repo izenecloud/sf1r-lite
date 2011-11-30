@@ -12,7 +12,7 @@ namespace sf1r
 
 struct PMConfig
 {
-    bool enablePH;
+    bool enable_price_trend;
     std::string price_property_name;
     std::string date_property_name;
     std::string docid_property_name;
@@ -23,9 +23,9 @@ struct PMConfig
     std::vector<uint32_t> time_interval_days;
 
     PMConfig()
-        : enablePH(false)
+        : enable_price_trend(false)
         , price_property_name("Price")
-        , date_property_name("Date")
+        , date_property_name("DATE")
         , docid_property_name("DOCID")
         , itemcount_property_name("itemcount")
         , uuid_property_name("uuid")
