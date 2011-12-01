@@ -19,7 +19,7 @@
 
 #include <common/IndexBundleSchemaHelpers.h>
 #include <common/Keys.h>
-#include <common/Utilities.h> // Utilities::toUpper()
+#include <common/Utilities.h> // Utilities::toUpperCopy()
 
 namespace
 {
@@ -962,7 +962,7 @@ bool RecommendController::parseRecommendParam(RecommendParam& param)
     param.userIdStr = asString(resourceValue[Keys::USERID]);
     param.sessionIdStr = asString(resourceValue[Keys::session_id]);
 
-    std::map<std::string, int>::const_iterator mapIt = recTypeMap_.find(Utilities::toUpper(recTypeStr));
+    std::map<std::string, int>::const_iterator mapIt = recTypeMap_.find(Utilities::toUpperCopy(recTypeStr));
     if (mapIt == recTypeMap_.end())
     {
         response().addError("Unknown recommendation type \"" + recTypeStr + "\" in request[resource][rec_type].");

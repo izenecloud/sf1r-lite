@@ -64,7 +64,10 @@
           <Property name="Content"/>
         </Faceted>
         <Summarization>
-          <ExternalKey name="URL"/>
+          <ParentKeyLog path="@SF1RENGINE_ROOT@/bin/collection/chinese-wiki/scd/summarizelog">
+            <Property name="uuid"/>
+          </ParentKeyLog>
+          <ForeignKey name="URL"/>
           <ContentProperty name="Content"/>
         </Summarization>
       </Schema>

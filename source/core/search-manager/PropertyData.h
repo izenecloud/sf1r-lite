@@ -15,10 +15,16 @@ struct PropertyData
 {
     PropertyDataType type_;
     void* data_;
+    size_t size_;
     time_t lastLoadTime_;
 
-    PropertyData(PropertyDataType type, void* data)
-        : type_(type), data_(data)
+    PropertyData(
+      PropertyDataType type, 
+      void* data,
+       size_t size)
+        : type_(type)
+        , data_(data)
+          ,  size_(size)
     {
         resetLoadTime();
     }

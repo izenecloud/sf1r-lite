@@ -2,6 +2,7 @@
 #define SF1R_SUMMARIZATION_CONFIG_H_
 
 #include <string>
+
 #include <boost/serialization/access.hpp>
 
 namespace sf1r
@@ -13,16 +14,21 @@ namespace sf1r
 class SummarizeConfig
 {
 public:
+    /// log path that store parent key logs (SCD format)
+    std::string parentKeyLogPath;
+    std::string parentKey;
     /// property name
-    std::string externalKeyPropName;
+    std::string foreignKeyPropName;
     std::string contentPropName;
-private:
+
     friend class boost::serialization::access;
 
     template <typename Archive>
     void serialize( Archive & ar, const unsigned int version )
     {
-        ar & externalKeyPropName;
+        ar & parentKeyLogPath;
+        ar & parentKey;
+        ar & foreignKeyPropName;
         ar & contentPropName;
     }
 };

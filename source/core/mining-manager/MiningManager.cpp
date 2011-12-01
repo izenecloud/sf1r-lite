@@ -80,34 +80,34 @@ std::string MiningManager::system_resource_path_;
 std::string MiningManager::system_working_path_;
 
 MiningManager::MiningManager(
-    const std::string& collectionDataPath,
-    const std::string& queryDataPath,
-    const boost::shared_ptr<DocumentManager>& documentManager,
-    const boost::shared_ptr<IndexManager>& index_manager,
-    const boost::shared_ptr<SearchManager>& searchManager,
-    const boost::shared_ptr<IDManager>& idManager,
-    const std::string& collectionName,
-    const schema_type& schema,
-    const MiningConfig& miningConfig,
-    const MiningSchema& miningSchema)
-        :collectionDataPath_(collectionDataPath)
-        , queryDataPath_(queryDataPath)
-        , collectionName_(collectionName)
-        , schema_(schema)
-        , miningConfig_(miningConfig)
-        , mining_schema_(miningSchema)
-        , analyzer_(NULL)
-        , kpe_analyzer_(NULL)
-        , document_manager_(documentManager)
-        , index_manager_(index_manager)
-        , searchManager_(searchManager)
-        , tgInfo_(NULL)
-        , idManager_(idManager)
-        , groupManager_(NULL)
-        , attrManager_(NULL)
-        , groupReranker_(NULL)
-        , tdt_storage_(NULL)
-        , summarizationManager_(NULL)
+        const std::string& collectionDataPath,
+        const std::string& queryDataPath,
+        const boost::shared_ptr<DocumentManager>& documentManager,
+        const boost::shared_ptr<IndexManager>& index_manager,
+        const boost::shared_ptr<SearchManager>& searchManager,
+        const boost::shared_ptr<IDManager>& idManager,
+        const std::string& collectionName,
+        const schema_type& schema,
+        const MiningConfig& miningConfig,
+        const MiningSchema& miningSchema)
+    : collectionDataPath_(collectionDataPath)
+    , queryDataPath_(queryDataPath)
+    , collectionName_(collectionName)
+    , schema_(schema)
+    , miningConfig_(miningConfig)
+    , mining_schema_(miningSchema)
+    , analyzer_(NULL)
+    , kpe_analyzer_(NULL)
+    , document_manager_(documentManager)
+    , index_manager_(index_manager)
+    , searchManager_(searchManager)
+    , tgInfo_(NULL)
+    , idManager_(idManager)
+    , groupManager_(NULL)
+    , attrManager_(NULL)
+    , groupReranker_(NULL)
+    , tdt_storage_(NULL)
+    , summarizationManager_(NULL)
 {
 }
 
@@ -755,8 +755,8 @@ bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
 }
 
 bool MiningManager::getSimilarImageDocIdList(
-    const std::string& targetImageURI,
-    SimilarImageDocIdList& imageDocIdList
+        const std::string& targetImageURI,
+        SimilarImageDocIdList& imageDocIdList
 )
 {
     return false;
@@ -869,8 +869,8 @@ bool MiningManager::getRecommendQuery_(const izenelib::util::UString& queryStr,
 }
 
 bool MiningManager::getReminderQuery(
-    std::vector<izenelib::util::UString>& popularQueries,
-    std::vector<izenelib::util::UString>& realtimeQueries)
+        std::vector<izenelib::util::UString>& popularQueries,
+        std::vector<izenelib::util::UString>& realtimeQueries)
 {
     return true;
 }
@@ -1363,8 +1363,8 @@ bool MiningManager::getFreqGroupLabel(
 }
 
 faceted::PropValueTable::pvid_t MiningManager::propValueId_(
-    const std::string& propName,
-    const std::vector<std::string>& groupPath
+        const std::string& propName,
+        const std::vector<std::string>& groupPath
 ) const
 {
     faceted::PropValueTable::pvid_t pvId = 0;
@@ -1402,9 +1402,9 @@ faceted::PropValueTable::pvid_t MiningManager::propValueId_(
 }
 
 bool MiningManager::setTopGroupLabel(
-    const std::string& query,
-    const std::string& propName,
-    const std::vector<std::string>& groupPath
+        const std::string& query,
+        const std::string& propName,
+        const std::vector<std::string>& groupPath
 )
 {
     GroupLabelLogger* logger = groupLabelLoggerMap_[propName];
