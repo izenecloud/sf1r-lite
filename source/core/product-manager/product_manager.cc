@@ -78,7 +78,10 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
                 std::string docid_str;
                 docid.convertString(docid_str, UString::UTF_8);
                 if (timestamp == -1) GetTimestamp_(doc, timestamp);
-                price_trend_->Insert(docid_str, price, timestamp);
+//              price_trend_->Insert(docid_str, price, timestamp);
+                std::map<std::string, std::string> group_prop_map;
+                GetGroupProperties_(doc, group_prop_map);
+                price_trend_->Update(docid_str, price, timestamp, group_prop_map);
             }
         }
     }
