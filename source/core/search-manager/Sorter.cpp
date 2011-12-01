@@ -226,6 +226,7 @@ void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, p
     {
         string propertyName = iter->first;
         PropertyDataType dataType = iter->second.first;
+        if(id >= it->second->size_) continue;
         switch(dataType)
         {
         case INT_PROPERTY_TYPE:
