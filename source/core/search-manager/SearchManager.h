@@ -30,6 +30,7 @@ class QueryBuilder;
 class DocumentManager;
 class RankingManager;
 class IndexManager;
+class MiningManager;
 class Sorter;
 class IndexBundleConfiguration;
 
@@ -94,6 +95,8 @@ public:
     }
 
     void setGroupFilterBuilder(faceted::GroupFilterBuilder* builder);
+
+    void setMiningManager(boost::shared_ptr<MiningManager> miningManagerPtr);
 
     NumericPropertyTable* createPropertyTable(const std::string& propertyName);
 
@@ -160,6 +163,7 @@ private:
     boost::shared_ptr<IndexManager> indexManagerPtr_;
     boost::shared_ptr<DocumentManager> documentManagerPtr_;
     boost::shared_ptr<RankingManager> rankingManagerPtr_;
+    boost::shared_ptr<MiningManager> miningManagerPtr_;
     boost::shared_ptr<QueryBuilder> queryBuilder_;
     std::map<propertyid_t, float> propertyWeightMap_;
 

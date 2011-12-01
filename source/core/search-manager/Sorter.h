@@ -8,6 +8,7 @@
 #define _SORTER_H
 
 #include <index-manager/IndexManager.h>
+#include <mining-manager/faceted-submanager/ctr_manager.h>
 #include "PropertyData.h"
 #include "SortPropertyComparator.h"
 #include <util/ustring/UString.h>
@@ -31,9 +32,10 @@ class SortProperty
 public:
     enum SortPropertyType
     {
-        SCORE, ///sort by ranking score
+        SCORE,  ///sort by ranking score
         AUTO,   ///sort by ranking score and property
-        CUSTOM  ///sort by customized comparator
+        CUSTOM, ///sort by customized comparator
+        CTR     ///sort by click through rate
     };
 public:
     SortProperty(const SortProperty& src);
@@ -83,6 +85,8 @@ class SortPropertyCache
 public:
     SortPropertyCache(IndexManager* pIndexer, IndexBundleConfiguration* config);
 
+    void setCtrManager(faceted::CTRManager* pCTRManager);
+
 public:
     ///If index has been changed, we should reload
     void setDirty(bool dirty) { dirty_ = dirty;}
@@ -92,6 +96,8 @@ public:
     void updateSortData(docid_t id, const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
 
     boost::shared_ptr<PropertyData> getSortPropertyData(const std::string& propertyName, PropertyDataType propertyType);
+
+    boost::shared_ptr<PropertyData> getCTRPropertyData(const std::string& propertyName, PropertyDataType propertyType);
 
 private:
     void loadSortData(const std::string& property, PropertyDataType type);
@@ -103,6 +109,12 @@ private:
 private:
     ///All data would be got through IndexManager
     IndexManager* pIndexer_;
+
+    ///CTR data will be get from CTRManager
+    faceted::CTRManager* pCTRManager_;
+
+    ///Time interval (seconds) to refresh cache for properties which update frequently (e.g. CTR).
+    time_t updateInterval_;
 
     bool dirty_;
 

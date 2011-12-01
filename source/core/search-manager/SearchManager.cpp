@@ -5,6 +5,8 @@
 #include <query-manager/ActionItem.h>
 #include <ranking-manager/RankingManager.h>
 #include <ranking-manager/RankQueryProperty.h>
+#include <mining-manager/MiningManager.h>
+#include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <mining-manager/faceted-submanager/GroupFilterBuilder.h>
 #include <mining-manager/faceted-submanager/GroupFilter.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
@@ -33,6 +35,7 @@ namespace sf1r
 const std::string RANK_PROPERTY("_rank");
 const std::string DATE_PROPERTY("date");
 const std::string CUSTOM_RANK_PROPERTY("custom_rank");
+const std::string CTR_PROPERTY("_ctr");
 
 bool hasRelevenceSort(const std::pair<std::string , bool>& element)
 {
@@ -175,6 +178,30 @@ void SearchManager::chdir(
     delete pSorterCache_;
     pSorterCache_ = new SortPropertyCache(indexManagerPtr_.get(), config);
     cache_.reset(new SearchCache(config->searchCacheNum_));
+}
+
+void SearchManager::setGroupFilterBuilder(
+    faceted::GroupFilterBuilder* builder)
+{
+    groupFilterBuilder_.reset(builder);
+}
+
+void SearchManager::setMiningManager(
+    boost::shared_ptr<MiningManager> miningManagerPtr)
+{
+    miningManagerPtr_ = miningManagerPtr;
+}
+
+NumericPropertyTable*
+SearchManager::createPropertyTable(const std::string& propertyName)
+{
+    boost::shared_ptr<PropertyData> propData = getPropertyData_(propertyName);
+    if (propData)
+    {
+        return new NumericPropertyTable(propertyName, propData);
+    }
+
+    return NULL;
 }
 
 bool SearchManager::search(
@@ -401,6 +428,7 @@ bool SearchManager::doSearch_(
             {
                 std::string fieldNameL = iter->first;
                 boost::to_lower(fieldNameL);
+                std::cout<<"---> sort property: "<<fieldNameL<<std::endl;//:~
                 // sort by custom ranking
                 if (fieldNameL == CUSTOM_RANK_PROPERTY)
                 {
@@ -444,6 +472,32 @@ bool SearchManager::doSearch_(
                     SortProperty* pSortProperty = new SortProperty(
                         iter->first,
                         INT_PROPERTY_TYPE,
+                        iter->second);
+                    pSorter->addSortProperty(pSortProperty);
+                    continue;
+                }
+                // sort by ctr (click through rate)
+                if (fieldNameL == CTR_PROPERTY)
+                {
+                    if (!miningManagerPtr_) {
+                        DLOG(ERROR)<<"Skipped CTR sort property: Mining Manager was not initialized";
+                        continue;
+                    }
+
+                    boost::shared_ptr<faceted::CTRManager> ctrManangerPtr
+                    = miningManagerPtr_->GetCtrManager();
+                    if (!ctrManangerPtr) {
+                        DLOG(ERROR)<<"Skipped CTR sort property: CTR Manager was not initialized";
+                        continue;
+                    }
+
+                    pSorterCache_->setCtrManager(ctrManangerPtr.get());
+                    if (!pSorter) pSorter.reset(new Sorter(pSorterCache_));
+
+                    SortProperty* pSortProperty = new SortProperty(
+                        iter->first,
+                        UNSIGNED_INT_PROPERTY_TYPE,
+                        SortProperty::CTR,
                         iter->second);
                     pSorter->addSortProperty(pSortProperty);
                     continue;
@@ -931,18 +985,6 @@ void SearchManager::getSortPropertyData_(
 
 }
 
-NumericPropertyTable*
-SearchManager::createPropertyTable(const std::string& propertyName)
-{
-    boost::shared_ptr<PropertyData> propData = getPropertyData_(propertyName);
-    if (propData)
-    {
-        return new NumericPropertyTable(propertyName, propData);
-    }
-
-    return NULL;
-}
-
 boost::shared_ptr<PropertyData>
 SearchManager::getPropertyData_(const std::string& name)
 {
@@ -984,12 +1026,6 @@ void SearchManager::printDFCTF_(
         }
     }
     cout << "-----------------------" << endl;
-}
-
-void SearchManager::setGroupFilterBuilder(
-    faceted::GroupFilterBuilder* builder)
-{
-    groupFilterBuilder_.reset(builder);
 }
 
 } // namespace sf1r

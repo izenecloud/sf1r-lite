@@ -64,9 +64,6 @@ void CTRManager::updateDocNum(size_t docNum)
     }
 }
 
-/// TODO, remove lock to reduce overhead.
-/// use atomic operation, or it can only update disk(db) data here,
-/// memory data can be loaded from disk wholly periodically.
 bool CTRManager::update(uint32_t docId)
 {
     boost::lock_guard<boost::shared_mutex> lg(mutex_);
@@ -87,6 +84,8 @@ bool CTRManager::getClickCountListByDocIdList(
         const std::vector<unsigned int>& docIdList,
         std::vector<std::pair<size_t, count_t> >& posClickCountList)
 {
+    boost::lock_guard<boost::shared_mutex> lg(mutex_);
+
     bool result = false;
     const size_t listSize = docIdList.size();
     posClickCountList.resize(listSize);
@@ -110,6 +109,8 @@ bool CTRManager::getClickCountListByDocIdList(
         const std::vector<unsigned int>& docIdList,
         std::vector<count_t>& clickCountList)
 {
+    boost::lock_guard<boost::shared_mutex> lg(mutex_);
+
     clickCountList.resize(docIdList.size(), 0);
 
     bool result = false;
@@ -124,6 +125,19 @@ bool CTRManager::getClickCountListByDocIdList(
     }
 
     return result;
+}
+
+void CTRManager::loadCtrDataInt64(uint64_t*& data)
+{
+    boost::lock_guard<boost::shared_mutex> lg(mutex_);
+
+    size_t docNum = docClickCountList_.size();
+
+    data = new uint64_t[docNum];
+    for (size_t i = 0; i < docNum; i++)
+    {
+        data[i] = docClickCountList_[i];
+    }
 }
 
 count_t CTRManager::getClickCountByDocId(uint32_t docId)

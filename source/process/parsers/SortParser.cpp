@@ -45,7 +45,11 @@ bool SortParser::parse(const Value& orders)
     sortPriorityList_.resize(parsedOrderCount());
     for (std::size_t i = 0; i < parsedOrderCount(); ++i)
     {
-        if (parsedOrders(i).property() == "custom_rank")
+        if (parsedOrders(i).property() == "_ctr")
+        {
+            //nothing
+        }
+        else if (parsedOrders(i).property() == "custom_rank")
         {
             if (!bCustomRank_) {
                 error() = "Please make sure \"custom_rank\" field is available, which is set as a sort property.";

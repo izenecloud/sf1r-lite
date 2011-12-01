@@ -56,9 +56,16 @@ SortProperty::~SortProperty()
 
 SortPropertyCache::SortPropertyCache(IndexManager* pIndexer, IndexBundleConfiguration* config)
         :pIndexer_(pIndexer)
+        ,pCTRManager_(NULL)
+        ,updateInterval_(20)
         ,dirty_(true)
         ,config_(config)
 {
+}
+
+void SortPropertyCache::setCtrManager(faceted::CTRManager* pCTRManager)
+{
+    pCTRManager_ = pCTRManager;
 }
 
 void SortPropertyCache::loadSortData(const std::string& property, PropertyDataType type)
@@ -113,6 +120,39 @@ boost::shared_ptr<PropertyData> SortPropertyCache::getSortPropertyData(const std
     {
         LOG(INFO) << "first load sort data cache on property: " << propertyName;
         loadSortData(propertyName, propertyType);
+    }
+
+    return sortDataCache_[propertyName];
+}
+
+boost::shared_ptr<PropertyData> SortPropertyCache::getCTRPropertyData(const std::string& propertyName, PropertyDataType propertyType)
+{
+    boost::mutex::scoped_lock lock(this->mutex_);
+
+    bool updateCache = false;
+
+    SortDataCache::iterator iter = sortDataCache_.find(propertyName) ;
+    if (iter == sortDataCache_.end())
+    {
+        LOG(INFO) << "first load sort data cache on property: " << propertyName;
+        updateCache = true;
+    }
+    else if (iter->second->elapsedFromLastLoad() > updateInterval_)
+    {
+        //LOG(INFO) << "Refresh sort data cache for property: " << propertyName
+        //          << " after "<<iter->second->elapsedFromLastLoad()<<" seconds";
+        updateCache = true;
+    }
+
+    if (updateCache)
+    {
+        void* data = NULL;
+        pCTRManager_->loadCtrDataInt64((uint64_t*&)data);
+
+        if (data)
+        {
+            sortDataCache_[propertyName].reset(new PropertyData(propertyType, data));
+        }
     }
 
     return sortDataCache_[propertyName];
@@ -249,10 +289,24 @@ void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, p
 
 SortPropertyComparator* SortPropertyCache::getComparator(SortProperty* pSortProperty)
 {
+    SortProperty::SortPropertyType propSortType = pSortProperty->getType();
     const std::string& propName = pSortProperty->getProperty();
-    const PropertyDataType propType = pSortProperty->getPropertyDataType();
-    boost::shared_ptr<PropertyData> propData = getSortPropertyData(propName, propType);
+    const PropertyDataType propDataType = pSortProperty->getPropertyDataType();
 
+    boost::shared_ptr<PropertyData> propData;
+    if (propSortType == SortProperty::AUTO)
+    {
+        propData = getSortPropertyData(propName, propDataType);
+    }
+    else if (propSortType == SortProperty::CTR)
+    {
+        if (pCTRManager_)
+            propData = getCTRPropertyData(propName, propDataType);
+    }
+    else
+    {
+        // to extend
+    }
 
     if(propData)
         return new SortPropertyComparator(propData);
@@ -313,12 +367,17 @@ void Sorter::getComparators()
                     if(!pSortProperty->pComparator_)
                         pSortProperty->pComparator_ = pCache_->getComparator(pSortProperty);
 
-                    if(! pSortProperty->pComparator_)
+                    if(!pSortProperty->pComparator_)
                         ++numOfInValidComparators;
                 }
                 break;
             case SortProperty::CUSTOM:
                 pSortProperty->pComparator_ = new SortPropertyComparator(CUSTOM_RANKING_PROPERTY_TYPE);
+                break;
+            case SortProperty::CTR:
+                pSortProperty->pComparator_ = pCache_->getComparator(pSortProperty);
+                if (!pSortProperty->pComparator_)
+                    ++numOfInValidComparators;
                 break;
             }
         }
