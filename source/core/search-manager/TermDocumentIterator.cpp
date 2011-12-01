@@ -120,7 +120,7 @@ bool TermDocumentIterator::accept()
         if (find)
         {
              pDocIdSet.reset(new izenelib::am::EWAHBoolArray<uint32_t>());
-             pBitVector.reset(new izenelib::ir::indexmanager::BitVector(pIndexReader_->numDocs() + 1));
+             pBitVector.reset(new izenelib::ir::indexmanager::BitVector(pIndexReader_->maxDoc() + 1));
 
              indexManagerPtr_->getDocsByNumericValue(colID_, property_, value, *pBitVector);
              pBitVector->compressed(*pDocIdSet);
