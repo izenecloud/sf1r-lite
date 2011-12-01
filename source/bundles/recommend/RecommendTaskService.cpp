@@ -679,12 +679,7 @@ void RecommendTaskService::loadOrderItem_(
     {
         OrderItemVec orderItemVec;
         orderItemVec.push_back(orderItem);
-        if (saveOrder_(userIdStr, orderIdStr, orderItemVec, false) == false)
-        {
-            LOG(ERROR) << "error in loading order, USERID: " << userIdStr
-                        << ", order id: " << orderIdStr
-                        << ", item num: " << orderItemVec.size();
-        }
+        saveOrder_(userIdStr, orderIdStr, orderItemVec, false);
     }
     else
     {
@@ -711,12 +706,7 @@ void RecommendTaskService::saveOrderMap_(const OrderMap& orderMap)
 {
     for (OrderMap::const_iterator it = orderMap.begin(); it != orderMap.end(); ++it)
     {
-        if (saveOrder_(it->first.first, it->first.second, it->second, false) == false)
-        {
-            LOG(ERROR) << "error in adding order, USERID: " << it->first.first
-                       << ", order id: " << it->first.second
-                       << ", item num: " << it->second.size();
-        }
+        saveOrder_(it->first.first, it->first.second, it->second, false);
     }
 }
 
@@ -750,6 +740,9 @@ bool RecommendTaskService::saveOrder_(
         return true;
     }
 
+    LOG(ERROR) << "failed in saveOrder_(), USERID: " << userIdStr
+               << ", order id: " << orderIdStr
+               << ", item num: " << itemIdVec.size();
     return false;
 }
 

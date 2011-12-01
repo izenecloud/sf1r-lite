@@ -66,8 +66,27 @@ public:
             std::cout<<"ProductBackupReader::CheckValidation failed"<<std::endl;
             return false;
         }
-
+        
         ProductBackupDataType::iterator it = data.begin();
+        while(it!=data.end())
+        {
+            izenelib::util::UString uuid(it->first, izenelib::util::UString::UTF_8);
+            ProductBackupDataValueType& value = it->second;
+            Document& doc = value.doc_info;
+            Document::property_const_iterator pit = doc.findProperty(DOCID);
+            if(pit == doc.propertyEnd())
+            {
+                doc.property(DOCID) = uuid;
+            }
+            if(!pm->CheckAddGroupWithInfo(value.docid_list, doc)) 
+            {
+                std::cout<<pm->GetLastError()<<std::endl;
+                return false;
+            }
+            ++it;
+        }
+
+        it = data.begin();
         while(it!=data.end())
         {
             izenelib::util::UString uuid(it->first, izenelib::util::UString::UTF_8);
@@ -81,7 +100,7 @@ public:
             if(!pm->AddGroupWithInfo(value.docid_list, doc, false)) //do not backup again
             {
                 std::cout<<pm->GetLastError()<<std::endl;
-                return false;
+//                 return false;
             }
             ++it;
         }

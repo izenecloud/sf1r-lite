@@ -65,6 +65,11 @@ bool RecommendParam::check(std::string& errorMsg) const
             break;
         }
 
+        case BASED_ON_RANDOM:
+        {
+            break;
+        }
+
         default:
         {
             errorMsg = "Unknown recommendation type in request[resource][rec_type].";

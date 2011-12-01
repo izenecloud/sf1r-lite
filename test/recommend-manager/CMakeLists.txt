@@ -151,4 +151,14 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   ADD_TEST(recommend-manager "${SF1RENGINE_ROOT}/testbin/t_RateManager")
 
+  ADD_EXECUTABLE(t_RandGenerator
+    Runner.cpp
+    t_RandGenerator.cpp
+  )
+  TARGET_LINK_LIBRARIES(t_RandGenerator ${Boost_LIBRARIES})
+  SET_TARGET_PROPERTIES(t_RandGenerator PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(recommend-manager "${SF1RENGINE_ROOT}/testbin/t_RandGenerator")
+
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)

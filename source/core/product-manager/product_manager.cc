@@ -52,7 +52,11 @@ bool ProductManager::Recover()
     }
     if (!backup_->Recover(this))
     {
-        error_ = "Backup recover failed.";
+//         error_ = "Backup recover failed.";
+        return false;
+    }
+    if (!GenOperations_())
+    {
         return false;
     }
     return true;
@@ -74,7 +78,10 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
                 std::string docid_str;
                 docid.convertString(docid_str, UString::UTF_8);
                 if (timestamp == -1) GetTimestamp_(doc, timestamp);
-                price_trend_->Insert(docid_str, price, timestamp);
+//              price_trend_->Insert(docid_str, price, timestamp);
+                std::map<std::string, std::string> group_prop_map;
+                GetGroupProperties_(doc, group_prop_map);
+                price_trend_->Update(docid_str, price, timestamp, group_prop_map);
             }
         }
     }
@@ -243,6 +250,63 @@ void ProductManager::BackupPCItem_(const UString& uuid, const std::vector<uint32
     }
 }
 
+bool ProductManager::CheckAddGroupWithInfo(const std::vector<izenelib::util::UString>& sdocid_list, const Document& doc)
+{
+    std::vector<uint32_t> docid_list;
+    if (!data_source_->GetInternalDocidList(sdocid_list, docid_list))
+    {
+        error_ = data_source_->GetLastError();
+        return false;
+    }
+    UString uuid = doc.property(config_.docid_property_name).get<UString>();
+    if (uuid.length()==0)
+    {
+        error_ = "DOCID(uuid) not set";
+        return false;
+    }
+    std::vector<uint32_t> uuid_docid_list;
+    data_source_->GetDocIdList(uuid, uuid_docid_list, 0);
+    if (!uuid_docid_list.empty())
+    {
+        std::string suuid;
+        uuid.convertString(suuid, UString::UTF_8);
+        error_ = suuid+" already exists";
+        return false;
+    }
+
+    std::vector<PMDocumentType> doc_list(docid_list.size());
+    for (uint32_t i = 0; i < docid_list.size(); i++)
+    {
+        if (!data_source_->GetDocument(docid_list[i], doc_list[i]))
+        {
+            error_ = "Can not get document "+boost::lexical_cast<std::string>(docid_list[i]);
+            return false;
+        }
+    }
+    std::vector<UString> uuid_list(doc_list.size());
+    for (uint32_t i = 0; i < doc_list.size(); i++)
+    {
+        if (!GetUuid_(doc_list[i], uuid_list[i]))
+        {
+            error_ = "Can not get uuid in document "+boost::lexical_cast<std::string>(docid_list[i]);
+            return false;
+        }
+        std::vector<uint32_t> same_docid_list;
+        data_source_->GetDocIdList(uuid_list[i], same_docid_list, docid_list[i]);
+        if (!same_docid_list.empty())
+        {
+            error_ = "Document id "+boost::lexical_cast<std::string>(docid_list[i])+" belongs to other group";
+            return false;
+        }
+        if (uuid_list[i] == uuid)
+        {
+            error_ = "Document id "+boost::lexical_cast<std::string>(docid_list[i])+" has the same uuid with request";
+            return false;
+        }
+    }
+    return true;
+}
+
 bool ProductManager::AddGroupWithInfo(const std::vector<uint32_t>& docid_list, const Document& doc, bool backup)
 {
     if (inhook_)
@@ -274,10 +338,10 @@ bool ProductManager::AddGroupWithInfo(const std::vector<uint32_t>& docid_list, c
         return false;
     }
 
-    if (!GenOperations_())
-    {
-        return false;
-    }
+//     if (!GenOperations_())
+//     {
+//         return false;
+//     }
     if (backup && backup_)
     {
         BackupPCItem_(uuid, docid_list, 1);
@@ -649,7 +713,8 @@ bool ProductManager::GetTopPriceCutList(
         TPCQueue& tpc_queue,
         const std::string& prop_name,
         const std::string& prop_value,
-        uint32_t days)
+        uint32_t days,
+        uint32_t count)
 {
     if (!has_price_trend_)
     {
@@ -657,7 +722,7 @@ bool ProductManager::GetTopPriceCutList(
         return false;
     }
 
-    return price_trend_->GetTopPriceCutList(tpc_queue, prop_name, prop_value, days, error_);
+    return price_trend_->GetTopPriceCutList(tpc_queue, prop_name, prop_value, days, count, error_);
 }
 
 bool ProductManager::GetPrice_(uint32_t docid, ProductPrice& price) const

@@ -18,15 +18,14 @@ namespace sf1r
 ProductPriceTrend::ProductPriceTrend(
         const string& collection_name,
         const string& data_dir,
-        const vector<string>& group_props,
-        const vector<uint32_t>& time_ints)
+        const vector<string>& group_prop_vec,
+        const vector<uint32_t>& time_int_vec)
     : collection_name_(collection_name)
     , data_dir_(data_dir)
-    , group_props_(group_props)
+    , group_prop_vec_(group_prop_vec)
+    , time_int_vec_(time_int_vec)
+    , enable_tpc_(!group_prop_vec_.empty() && !time_int_vec_.empty())
 {
-    set<uint32_t> ints_set;
-    ints_set.insert(time_ints.begin(), time_ints.end());
-    time_ints_.insert(time_ints_.begin(), ints_set.begin(), ints_set.end());
 }
 
 ProductPriceTrend::~ProductPriceTrend()
@@ -35,7 +34,7 @@ ProductPriceTrend::~ProductPriceTrend()
     for (TPCStorage::iterator it = tpc_storage_.begin();
             it != tpc_storage_.end(); ++it)
     {
-        for (uint32_t i = 0; i < time_ints_.size(); i++)
+        for (uint32_t i = 0; i < time_int_vec_.size(); i++)
             delete it->second[i];
     }
 }
@@ -46,40 +45,40 @@ bool ProductPriceTrend::Init()
 
     bool ret = true;
 
-    for (vector<string>::const_iterator it = group_props_.begin();
-            it != group_props_.end(); ++it)
+    for (vector<string>::const_iterator it = group_prop_vec_.begin();
+            it != group_prop_vec_.end(); ++it)
     {
         vector<TPCBTree *>& prop_tpc = tpc_storage_[*it];
-        for (uint32_t i = 0; i < time_ints_.size(); i++)
+        for (uint32_t i = 0; i < time_int_vec_.size(); i++)
         {
-            prop_tpc.push_back(new TPCBTree(data_dir_ + "/" + *it + "." + boost::lexical_cast<string>(time_ints_[i]) + ".tpc"));
+            prop_tpc.push_back(new TPCBTree(data_dir_ + "/" + *it + "." + boost::lexical_cast<string>(time_int_vec_[i]) + ".tpc"));
             if (!prop_tpc.back()->open())
                 ret = false;
-//          else TraverseTPCBtree_(*prop_tpc.back());
+//            else TraverseTPCBtree(*prop_tpc.back());
         }
     }
 
     return ret;
 }
 
-void ProductPriceTrend::TraverseTPCBtree(TPCBTree& tpc_btree)
-{
-    typedef izenelib::am::AMIterator<TPCBTree> AMIteratorType;
-    AMIteratorType iter(tpc_btree);
-    AMIteratorType end;
-    for(; iter != end; ++iter)
-    {
-        cout << "Key: " << iter->first << endl;
-        const TPCQueue& v = iter->second;
-
-        cout << "Value:" << endl;
-        for (TPCQueue::const_iterator vit = v.begin();
-                vit != v.end(); ++vit)
-        {
-            cout << "\t" << vit->first << "\t" << vit->second << endl;
-        }
-    }
-}
+//void ProductPriceTrend::TraverseTPCBtree(TPCBTree& tpc_btree)
+//{
+//    typedef izenelib::am::AMIterator<TPCBTree> AMIteratorType;
+//    AMIteratorType iter(tpc_btree);
+//    AMIteratorType end;
+//    for(; iter != end; ++iter)
+//    {
+//        cout << "====== Key: " << iter->first << endl;
+//        const TPCQueue& v = iter->second;
+//
+//        cout << "====== Value: length = " << v.size() << endl;
+//        for (TPCQueue::const_iterator vit = v.begin();
+//                vit != v.end(); ++vit)
+//        {
+//            cout << "\t" << vit->first << "\t" << vit->second << endl;
+//        }
+//    }
+//}
 
 bool ProductPriceTrend::Insert(
         const string& docid,
@@ -112,7 +111,7 @@ bool ProductPriceTrend::Update(
     price_history_cache_.back().resetKey(key);
     price_history_cache_.back().insert(timestamp, price);
 
-    if (!group_prop_map.empty() && price.value.first > 0)
+    if (enable_tpc_ && !group_prop_map.empty() && price.value.first > 0)
     {
         PropCacheItem& cache_item = prop_cache_[key];
         cache_item.first = price.value.first;
@@ -134,7 +133,7 @@ bool ProductPriceTrend::Flush()
 
     if (!prop_cache_.empty())
     {
-        for (uint32_t i = 0; i < time_ints_.size(); i++)
+        for (uint32_t i = 0; i < time_int_vec_.size(); i++)
         {
             if (!UpdateTPC_(i, now))
                 ret = false;
@@ -163,7 +162,7 @@ bool ProductPriceTrend::UpdateTPC_(uint32_t time_int, time_t timestamp)
     Utilities::getKeyList(key_list, prop_cache_);
     if (timestamp == -1)
         timestamp = Utilities::createTimeStamp();
-    timestamp -= 86400000000L * time_ints_[time_int];
+    timestamp -= 86400000000L * time_int_vec_[time_int];
 
     vector<PriceHistory> row_list;
     if (!PriceHistory::getMultiSlice(row_list, key_list, serializeLong(timestamp), "", 1))
@@ -201,7 +200,7 @@ bool ProductPriceTrend::UpdateTPC_(uint32_t time_int, time_t timestamp)
     {
         TPCBTree* tpc_btree = tpc_storage_[it->first][time_int];
         for (map<string, TPCQueue>::const_iterator mit = it->second.begin();
-                mit != it->second.begin(); ++mit)
+                mit != it->second.end(); ++mit)
         {
             tpc_btree->update(mit->first, mit->second);
         }
@@ -350,8 +349,15 @@ bool ProductPriceTrend::GetTopPriceCutList(
         const string& prop_name,
         const string& prop_value,
         uint32_t days,
+        uint32_t count,
         string& error_msg)
 {
+    if (!enable_tpc_)
+    {
+        error_msg = "Top price-cut list is not enabled for this collection.";
+        return false;
+    }
+
     TPCStorage::const_iterator tpc_it = tpc_storage_.find(prop_name);
     if (tpc_it == tpc_storage_.end())
     {
@@ -360,7 +366,7 @@ bool ProductPriceTrend::GetTopPriceCutList(
     }
 
     uint32_t time_int = 0;
-    while (days > time_ints_[time_int++] && time_int < time_ints_.size() - 1);
+    while (days > time_int_vec_[time_int++] && time_int < time_int_vec_.size() - 1);
     if (!tpc_it->second[time_int]->get(prop_value, tpc_queue))
     {
         error_msg = "Don't find price-cut record for this property value: " + prop_value;
@@ -368,8 +374,8 @@ bool ProductPriceTrend::GetTopPriceCutList(
     }
 
     sort_heap(tpc_queue.begin(), tpc_queue.end(), rel_ops::operator><TPCQueue::value_type>);
-    if (tpc_queue.size() > 20)
-        tpc_queue.resize(20);
+    if (tpc_queue.size() > count)
+        tpc_queue.resize(count);
 
     return true;
 }

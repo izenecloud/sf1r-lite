@@ -45,8 +45,8 @@
         <xs:element name="PriceTrend">
             <xs:complexType>
                 <xs:sequence>
-                    <xs:element name="GroupProperty" type="PropertyType" minOccurs="1" maxOccurs="unbounded"/>
-                    <xs:element name="TimeInterval" minOccurs="1" maxOccurs="unbounded">
+                    <xs:element name="GroupProperty" type="PropertyType" minOccurs="0" maxOccurs="unbounded"/>
+                    <xs:element name="TimeInterval" minOccurs="0" maxOccurs="unbounded">
                         <xs:complexType>
                             <xs:attribute name="days" type="xs:positiveInteger" use="required" />
                         </xs:complexType>

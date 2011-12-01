@@ -506,16 +506,18 @@ void ProductController::get_multi_price_history()
  *
  * @section request
  *
- * - @b collection* (@c String): Collection name.
+ * - @b collection* (@c String): collection name.
  * - @b property* (@c String): property name
  * - @c value* (@c String): property value
  * - @b days* (@c Uint): time interval to calculate price-cut ratio
+ * - @b count (@c Uint): max count of returned products
  *
  * @section response
  *
- * - @b resources (@c Array): All returned items
- *   - @b price_cut (@c Float): The price-cut ratio
- *   - @b docid (@c String): The string_type docid
+ * - @b count (@c Uint): count of returned items
+ * - @b resources (@c Array): all returned items
+ *   - @b price_cut (@c Float): the price-cut ratio
+ *   - @b docid (@c String): the string_type docid
  *
  * @section Example
  *
@@ -536,6 +538,7 @@ void ProductController::get_multi_price_history()
  *   {
  *     "success":true
  *   },
+ *   "count":"2",
  *   "resources":
  *   [
  *     {
@@ -557,14 +560,19 @@ void ProductController::get_top_price_cut_list()
     prop_name_ = asString(request()[Keys::property]);
     prop_value_ = asString(request()[Keys::value]);
     days_ = asUint(request()[Keys::days]);
+    if (!izenelib::driver::nullValue(request()[Keys::count]))
+        count_ = asUint(request()[Keys::count]);
+    else
+        count_ = 20;
 
     TPCQueue tpc_queue;
-    if (!product_manager_->GetTopPriceCutList(tpc_queue, prop_name_, prop_value_, days_))
+    if (!product_manager_->GetTopPriceCutList(tpc_queue, prop_name_, prop_value_, days_, count_))
     {
         response().addError(product_manager_->GetLastError());
         return;
     }
 
+    response()[Keys::count] = tpc_queue.size();
     Value& tpc_list = response()[Keys::resources];
     for (uint32_t i = 0; i < tpc_queue.size(); i++)
     {

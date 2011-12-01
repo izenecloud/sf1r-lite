@@ -44,9 +44,7 @@ void IndexModeSelector::TryCommit()
     }
     else
     {
-        ///Only flush BTreeIndexer
-        ///It might be removed for new IndexSDB
-        index_manager_->getBTreeIndexer()->flush();
+        index_manager_->flush(false);
     }
 }
 

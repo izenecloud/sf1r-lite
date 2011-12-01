@@ -154,7 +154,6 @@ bool PriceHistory::getMultiSlice(
                 key_list,
                 col_parent,
                 pred);
-        if (raw_column_map.empty()) return true;
 
         for (map<string, vector<ColumnOrSuperColumn> >::const_iterator mit = raw_column_map.begin();
                 mit != raw_column_map.end(); ++mit)

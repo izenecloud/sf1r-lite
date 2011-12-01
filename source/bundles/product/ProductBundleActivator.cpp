@@ -189,7 +189,7 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
     boost::filesystem::create_directories(dir);
     data_source_ = new CollectionProductDataSource(indexService->workerService_->documentManager_, indexService->workerService_->indexManager_, indexService->workerService_->idManager_, indexService->workerService_->searchManager_, config_->pm_config_, config_->schema_);
     op_processor_ = new ScdOperationProcessor(dir);
-    if (config_->pm_config_.enablePH)
+    if (config_->pm_config_.enable_price_trend)
     {
         price_trend_ = new ProductPriceTrend(config_->collectionName_, dir, config_->pm_config_.group_property_names, config_->pm_config_.time_interval_days);
         ProductCronJobHandler* handler = ProductCronJobHandler::getInstance();
