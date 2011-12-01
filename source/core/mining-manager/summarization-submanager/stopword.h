@@ -7,12 +7,15 @@
 #ifndef SF1R_MINING_MANAGER_SUMMARIZATION_STOPWORD_H_
 #define SF1R_MINING_MANAGER_SUMMARIZATION_STOPWORD_H_
 
-#include "ts_common.h"
+#include <boost/unordered_set.hpp>
+
+namespace sf1r
+{
 
 class Stopword
 {
 private:
-    typedef __gnu_cxx::hash_set<std::string> HashSet;
+    typedef boost::unordered_set<std::string> HashSet;
     static HashSet m_oStopwordSet;
     static Stopword * INSTANCE;
     Stopword() {}
@@ -28,7 +31,9 @@ public:
     }
 
     static void load(const std::string& file = "../resource/stopwords.txt");
-    static bool is_stop_word(std::string& word);
+    static bool is_stop_word(const std::string& word);
 };
+
+}
 
 #endif /* STOPWORD_H_ */

@@ -14,7 +14,10 @@
 
 using namespace std;
 
-void Preprocess::add_doc_to_corpus(vector<string> sentences,  Corpus& corpus)
+namespace sf1r
+{
+
+void Preprocess::add_doc_to_corpus(const vector<string>& sentences,  Corpus& corpus)
 {
     for (unsigned int i=0; i<sentences.size() ; i++)
     {
@@ -37,7 +40,7 @@ void Preprocess::add_doc_to_corpus(vector<string> sentences,  Corpus& corpus)
     }
 }
 
-void Preprocess::runPreprocess(string corpus_root, string stop_word_file, Corpus& corpus)
+void Preprocess::runPreprocess(const string& corpus_root, const string& stop_word_file, Corpus& corpus)
 {
     Stopword::getInstance()->load(stop_word_file);
 
@@ -69,7 +72,9 @@ void Preprocess::runPreprocess(string corpus_root, string stop_word_file, Corpus
             while (!infile.eof())
             {
                 getline(infile,STRING);
-                add_doc_to_corpus(SentenceBoundaryDetection::sbd(STRING), corpus);
+                vector<string> sentences;
+                SentenceBoundaryDetection::sbd(STRING, sentences);
+                add_doc_to_corpus(sentences, corpus);
             }
             infile.close();
         }
@@ -84,4 +89,6 @@ void Preprocess::runPreprocess(string corpus_root, string stop_word_file, Corpus
         perror("closedir");
         return;
     }
+}
+
 }

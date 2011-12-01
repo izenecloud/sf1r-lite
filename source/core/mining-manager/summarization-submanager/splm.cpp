@@ -9,54 +9,67 @@
 
 using namespace std;
 
-vector<double> SPLM::getSmoothedTfDocument(
-        int c, int* sentOffs,
-        int* collOffs, map<int,int> wordmapping, int* W, int numSentences,
-        double ** U, double **S, double **TF)
+namespace sf1r
 {
-    vector<double> smoothed_tf;
+
+void SPLM::getSmoothedTfDocument(
+        vector<double>& smoothed_tf,
+        int c, int* sentOffs, int* collOffs,
+        map<int,int> wordmapping,
+        int* W, int numSentences,
+        double ** U, double **S, double **TF
+)
+{
     set<int> chosenIndices;
     int s_start = 0;
-    for (int i = collOffs[c]; i< collOffs[c+1]; i++) {
+    for (int i = collOffs[c]; i < collOffs[c + 1]; i++)
+    {
         int Ui = wordmapping[W[i]];
-        if(chosenIndices.find(Ui) != chosenIndices.end())
+        if (chosenIndices.find(Ui) != chosenIndices.end())
             continue;
         chosenIndices.insert(Ui);
         double val = 0.;
-        for (int j=0; j<numSentences; j++) {
-            val += sqrt( U[Ui][j]*U[Ui][j]*S[0][j]*S[0][j] ) ;
+        for (int j = 0; j < numSentences; j++)
+        {
+            val += abs(U[Ui][j] * S[0][j]);
         }
 
-        if(i >= sentOffs[s_start+1])
+        if (i >= sentOffs[s_start+1])
             s_start++;
-        smoothed_tf.push_back(val*(sentOffs[s_start+1]-sentOffs[s_start]));
+        smoothed_tf.push_back(val * (sentOffs[s_start + 1] - sentOffs[s_start]));
     }
-
-    return smoothed_tf;
 }
 
-vector<double> SPLM::getSmoothedTfSentence(
-        int s, int* sentOffs, map<int,int> wordmapping, int* W, int numSentences,
-        double ** U, double **S, double ** TF)
+void SPLM::getSmoothedTfSentence(
+        vector<double>& smoothed_tf,
+        int s, int* sentOffs,
+        map<int,int> wordmapping,
+        int* W, int numSentences,
+        double ** U, double **S, double ** TF
+)
 {
-    vector<double> smoothed_tf;
     set<int> chosenIndices;
-    for (int i = sentOffs[s]; i< sentOffs[s+1]; i++) {
+    for (int i = sentOffs[s]; i < sentOffs[s + 1]; i++)
+    {
         int Ui = wordmapping[W[i]];
-        if(chosenIndices.find(Ui) != chosenIndices.end())
+        if (chosenIndices.find(Ui) != chosenIndices.end())
             continue;
         chosenIndices.insert(Ui);
         double val = 0.;
-        for (int j=0; j<numSentences; j++) {
-            val += sqrt( U[Ui][j]*U[Ui][j]*S[0][j]*S[0][j] ) ;
+        for (int j = 0; j < numSentences; j++)
+        {
+            val += abs(U[Ui][j] * S[0][j]);
         }
-        smoothed_tf.push_back(val*(sentOffs[s+1]-sentOffs[s]));
+        smoothed_tf.push_back(val * (sentOffs[s + 1] - sentOffs[s]));
     }
-
-    return smoothed_tf;
 }
 
-void SPLM::generateSummary(const string& pid, const string& result_root, float mu, float lambda, Corpus corpus)
+void SPLM::generateSummary(
+        const string& pid,
+        const string& result_root,
+        float mu, float lambda,
+        Corpus corpus
+)
 {
     const TermProximityMeasure* termProximityMeasure =
         new MinClosestPositionTermProximityMeasure;
@@ -75,13 +88,13 @@ void SPLM::generateSummary(const string& pid, const string& result_root, float m
     int d_start = 0;
     int d_end = 0;
 
-    for(int c = 0 ; c < nColls; ++ c)
+    for (int c = 0 ; c < nColls; ++c)
     {
         cout << "C = " << c << ", gen: " << result_root + corpus.get_coll_name(c) + "." + pid << endl;
 
         // Advance s_end and d_end indices
-        for(; sentOffs[s_end] < collOffs[c + 1]; ++ s_end);
-        for(; docOffs[d_end] < collOffs[c + 1]; ++ d_end);
+        for (; sentOffs[s_end] < collOffs[c + 1]; ++s_end);
+        for (; docOffs[d_end] < collOffs[c + 1]; ++d_end);
 
         // Translates original word numbers into numbers in the range (0, # of words in the collection - 1)
         map<int, int> collWordMap = SPLMUtil::getCollectionWordMapping(collOffs, c, W);
@@ -97,35 +110,40 @@ void SPLM::generateSummary(const string& pid, const string& result_root, float m
         mat_svd(TF,collWordMap.size(),numOfSentences,U,S[0],V);
 
         // Get SVD-smoothed term frequencies for the collection
-        vector<double> coll_tf = SPLM::getSmoothedTfDocument(c, sentOffs, collOffs, collWordMap, W, numOfSentences, U,S,TF);
+        vector<double> coll_tf;
+        getSmoothedTfDocument(coll_tf, c, sentOffs, collOffs, collWordMap, W, numOfSentences, U,S,TF);
 
         int docI = d_start; // Current document index
         int s_start_doc = s_start; // Sentence index marking start of a document
         int s_end_doc = s_start; // Sentence index marking end of a document
         set<pair<double, int> > result; // (score, sentence index) pairs
 
-        for(int s = s_start ; s < s_end; ++ s) {
+        for (int s = s_start ; s < s_end; ++s)
+        {
             float sentenceScore = 0.;
 
             // Construct RankQueryProperty (used for proximity calculation)
             RankQueryProperty rqp = SPLMUtil::getRankQueryProperty(sentOffs, s, W, collOffs[c+1] - collOffs[c]);
 
-            vector<double> query_tf = SPLM::getSmoothedTfSentence(s, sentOffs, collWordMap, W, numOfSentences, U, S,TF);
+            vector<double> query_tf;
+            getSmoothedTfSentence(query_tf, s, sentOffs, collWordMap, W, numOfSentences, U, S,TF);
             vector<double> query_tf_doc = query_tf;
 
             // Used to only compare occurrences of words that occur in a sentence
             set<int> uniqueWords;
-            for(int j = sentOffs[s]; j < sentOffs[s + 1]; ++ j)
+            for (int j = sentOffs[s]; j < sentOffs[s + 1]; ++j)
                 uniqueWords.insert(W[j]);
 
             map<int,int> sentenceWordMapping = SPLMUtil::getWordMapping(uniqueWords);
 
             // Changing to a new document
-            if(sentOffs[s] > docOffs[docI] ) {
-                for(; sentOffs[s_end_doc] < docOffs[docI + 1]; ++ s_end_doc);
+            if (sentOffs[s] > docOffs[docI] )
+            {
+                for (; sentOffs[s_end_doc] < docOffs[docI + 1]; ++s_end_doc);
                 s_start_doc = s;
 
-                if(s_end_doc > s_start_doc) {
+                if (s_end_doc > s_start_doc)
+                {
                     double **TF_doc = SPLMUtil::getTF(collWordMap, s_start_doc, s_end_doc, sentOffs, W);
                     int numOfS_doc = s_end_doc - s_start_doc;
 
@@ -135,18 +153,19 @@ void SPLM::generateSummary(const string& pid, const string& result_root, float m
                     double **V_doc = mat_alloc(numOfS_doc,numOfS_doc);
 
                     mat_svd(TF_doc, collWordMap.size(),numOfS_doc,U_doc,S_doc[0],V_doc);
-                    query_tf_doc = SPLM::getSmoothedTfSentence(s, sentOffs, collWordMap, W, numOfS_doc, U_doc, S_doc,TF_doc);
+                    getSmoothedTfSentence(query_tf_doc, s, sentOffs, collWordMap, W, numOfS_doc, U_doc, S_doc,TF_doc);
                 }
                 docI++;
             }
 
-            for(int docIndex = d_start; docIndex < d_end; docIndex++) {
+            for (int docIndex = d_start; docIndex < d_end; docIndex++)
+            {
                 RankDocumentProperty rdp = SPLMUtil::getRankDocumentProperty(nWords, docOffs, docIndex, W, sentenceWordMapping);
-                coll_tf = SPLM::getSmoothedTfDocument(docIndex, sentOffs, docOffs, collWordMap, W, numOfSentences, U,S,TF);
+                getSmoothedTfDocument(coll_tf, docIndex, sentOffs, docOffs, collWordMap, W, numOfSentences, U,S,TF);
                 sentenceScore += plm.getScoreSVD(rqp, rdp, query_tf_doc, query_tf, coll_tf);
             }
 
-            if(sentOffs[s+1] - sentOffs[s] > 5)
+            if (sentOffs[s+1] - sentOffs[s] > 5)
                 result.insert(make_pair(sentenceScore, s));
         }
 
@@ -156,4 +175,6 @@ void SPLM::generateSummary(const string& pid, const string& result_root, float m
         s_start = s_end;
         d_start = d_end;
     }
+}
+
 }

@@ -10,59 +10,61 @@
 
 #include "ts_common.h"
 
+namespace sf1r
+{
+
 class Corpus
 {
 public:
     Corpus()
+        : _word_pos(0)
+        , _max_word_id(0)
     {
-        _word_pos = 0;
-        _max_word_id = -1;
     }
 
-    int ndocs()
+    inline int ndocs() const
     {
-        return _doc_offs.size() - 1;
+        return _doc_offs.size();
     }
 
-    int nwords()
+    inline int nwords() const
     {
-        return _max_word_id + 1;
+        return _max_word_id;
     }
 
-    int ntotal()
+    inline int ntotal() const
     {
         return _word_seqs.size();
     }
 
-    int nsents()
+    inline int nsents() const
     {
-        return _sent_offs.size() - 1;
+        return _sent_offs.size();
     }
 
-    int ncolls()
+    inline int ncolls() const
     {
-        return _coll_offs.size() - 1;
+        return _coll_offs.size();
     }
 
-
-    int* get_doc_offs()
+    inline int* get_doc_offs()
     {
-        return &_doc_offs[0];
+        return &_doc_offs.at(0);
     }
 
-    int* get_word_seq()
+    inline int* get_word_seq()
     {
-        return &_word_seqs[0];
+        return &_word_seqs.at(0);
     }
 
-    int* get_sent_offs()
+    inline int* get_sent_offs()
     {
-        return &_sent_offs[0];
+        return &_sent_offs.at(0);
     }
 
-    int* get_coll_offs()
+    inline int* get_coll_offs()
     {
-        return &_coll_offs[0];
+        return &_coll_offs.at(0);
     }
 
     void init()
@@ -71,7 +73,7 @@ public:
         _doc_offs.clear();
         _sent_offs.clear();
         _word_pos = 0;
-        _max_word_id = -1;
+        _max_word_id = 0;
     }
 
     void start_new_doc()
@@ -83,7 +85,7 @@ public:
     {
         _sent_offs.push_back(_word_pos);
     }
-    void start_new_sent(std::string& sent)
+    void start_new_sent(const std::string& sent)
     {
         _sent_offs.push_back(_word_pos);
         _sents.push_back(sent);
@@ -92,7 +94,7 @@ public:
     {
         _coll_offs.push_back(_word_pos);
     }
-    void start_new_coll(std::string& name)
+    void start_new_coll(const std::string& name)
     {
         _coll_offs.push_back(_word_pos);
         _coll_names.push_back(name);
@@ -105,7 +107,7 @@ public:
         ++_word_pos;
     }
 
-    friend std::ostream& operator<<(std::ostream& out, Corpus& corp)
+    friend std::ostream& operator<<(std::ostream& out, const Corpus& corp)
     {
         out << "nDocs:" << corp.ndocs() << std::endl;
         out << "nWords:" << corp.nwords() << std::endl;
@@ -131,19 +133,19 @@ public:
         return 0;
     }
 
-    void add_sent(std::string& sent)
+    void add_sent(const std::string& sent)
     {
         _sents.push_back(sent);
     }
 
-    std::string get_sent(int s)
+    const std::string get_sent(int s) const
     {
-        return _sents[s];
+        return _sents.at(s);
     }
 
-    std::string get_coll_name(int c)
+    const std::string get_coll_name(int c) const
     {
-        return _coll_names[c];
+        return _coll_names.at(c);
     }
 
 
@@ -160,5 +162,7 @@ private:
     std::vector<std::string> _coll_names;
 
 };
+
+}
 
 #endif /* CORPUS_H_ */

@@ -21,7 +21,8 @@
 #define THR  0.3
 #define WORD_LIMIT 100
 
-using namespace sf1r;
+namespace sf1r
+{
 
 class SPLMUtil
 {
@@ -118,5 +119,7 @@ public:
     static RankDocumentProperty getRankDocumentProperty(int nWords,
             int* collOffs, int c, int* W, std::map<int, int> wordMapping);
 };
+
+}
 
 #endif

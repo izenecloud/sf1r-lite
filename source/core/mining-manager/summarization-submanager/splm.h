@@ -13,6 +13,9 @@
 
 #include <map>
 
+namespace sf1r
+{
+
 class SPLM
 {
 public:
@@ -28,9 +31,13 @@ public:
     /// @param S Sigma matrix from SVD calculation
     /// @param TF Term frequency matrix
     ///
-    static std::vector<double> getSmoothedTfDocument(int c, int* sentOffs,
-            int* collOffs, std::map<int,int> wordmapping, int* W, int numSentences,
-            double ** U, double **S, double **TF);
+    static void getSmoothedTfDocument(
+            std::vector<double>& smoothed_tf,
+            int c, int* sentOffs, int* collOffs,
+            std::map<int,int> wordmapping,
+            int* W, int numSentences,
+            double ** U, double **S, double **TF
+    );
 
     ///
     /// @brief Generates SVD-smoothed term frequencies for a sentence
@@ -43,9 +50,13 @@ public:
     /// @param S Sigma matrix from SVD calculation
     /// @param TF Term frequency matrix
     ///
-    static std::vector <double> getSmoothedTfSentence(int s, int* sentOffs,
-            std::map<int,int> wordmapping, int* W, int numSentences,
-            double ** U, double **S, double ** TF);
+    static void getSmoothedTfSentence(
+            std::vector<double>& smoothed_tf,
+            int s, int* sentOffs,
+            std::map<int,int> wordmapping,
+            int* W, int numSentences,
+            double ** U, double **S, double ** TF
+    );
 
     ///
     /// @brief Generates summary for a corpus, using the SPLM algorithm
@@ -55,9 +66,15 @@ public:
     /// @param lambda Lambda parameter for PLM
     /// @param corpus Corpus to be summarized
     ///
-    static void generateSummary(const std::string& pid, const std::string& result_root,
-            float mu, float lambda, Corpus corpus);
+    static void generateSummary(
+            const std::string& pid,
+            const std::string& result_root,
+            float mu, float lambda,
+            Corpus corpus
+    );
 
 };
+
+}
 
 #endif

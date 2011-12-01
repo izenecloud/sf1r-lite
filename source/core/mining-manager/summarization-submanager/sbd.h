@@ -12,28 +12,34 @@
 class SentenceBoundaryDetection
 {
 public:
-    static bool startsWithLowercase(std::string str)
+    static bool startsWithLowercase(const std::string& str)
     {
         return !str.empty() && str[0] >= 'a' && str[0] <= 'z';
     }
 
-    static bool endsWith(std::string str, std::string substr)
+    static bool endsWith(const std::string& str, const std::string& substr)
     {
-        size_t i = str.rfind(substr);
-        return i != std::string::npos && i == str.length() - substr.length();
+        if (str.length() < substr.length()) return false;
+        size_t pos = str.length() - 1;
+        size_t subpos = substr.length() - 1;
+        for (; subpos >= 0; --pos, --subpos)
+        {
+            if (str[pos] != substr[subpos])
+                return false;
+        }
+        return true;
     }
 
-    static std::vector<std::string> sbd(std::string text)
+    static void sbd(const std::string& text, std::vector<std::string>& sentences)
     {
         std::string currentString;
         std::stringstream sss(text);
         std::string stc;
-        std::vector<std::string> sentences;
         while (getline(sss, stc, '\n'))
         {
             std::stringstream ss(stc);
 
-            std::getline(ss, currentString, ' ');
+            getline(ss, currentString, ' ');
             std::string nextString;
             std::string sentence;
             while (getline(ss, nextString, ' '))
@@ -70,7 +76,6 @@ public:
                 sentences.push_back(sentence);
 
         }
-        return sentences;
     }
 
 };
