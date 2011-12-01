@@ -58,7 +58,7 @@ public:
             const std::vector<unsigned int>& docIdList,
             std::vector<count_t>& clickCountList);
 
-    void loadCtrDataInt64(uint64_t*& data);
+    void loadCtrDataInt64(uint64_t*& data, size_t& size);
 
     /**
      * Get click-count for specified document

@@ -147,11 +147,12 @@ boost::shared_ptr<PropertyData> SortPropertyCache::getCTRPropertyData(const std:
     if (updateCache)
     {
         void* data = NULL;
-        pCTRManager_->loadCtrDataInt64((uint64_t*&)data);
+        size_t size = 0;
+        pCTRManager_->loadCtrDataInt64((uint64_t*&)data,size);
 
         if (data)
         {
-            sortDataCache_[propertyName].reset(new PropertyData(propertyType, data));
+            sortDataCache_[propertyName].reset(new PropertyData(propertyType, data,size));
         }
     }
 

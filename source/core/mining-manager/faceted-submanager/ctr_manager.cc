@@ -127,7 +127,7 @@ bool CTRManager::getClickCountListByDocIdList(
     return result;
 }
 
-void CTRManager::loadCtrDataInt64(uint64_t*& data)
+void CTRManager::loadCtrDataInt64(uint64_t*& data, size_t& size)
 {
     boost::lock_guard<boost::shared_mutex> lg(mutex_);
 
@@ -138,6 +138,7 @@ void CTRManager::loadCtrDataInt64(uint64_t*& data)
     {
         data[i] = docClickCountList_[i];
     }
+    size = docNum;
 }
 
 count_t CTRManager::getClickCountByDocId(uint32_t docId)
