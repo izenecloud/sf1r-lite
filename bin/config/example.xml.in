@@ -64,8 +64,8 @@
           <Property name="Content"/>
         </Faceted>
         <Summarization>
-          <Property name="Title"/>
-          <Property name="Content"/>
+          <ExternalKey name="URL"/>
+          <ContentProperty name="Content"/>
         </Summarization>
       </Schema>
     </MiningBundle>

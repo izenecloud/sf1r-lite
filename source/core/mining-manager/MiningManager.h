@@ -312,11 +312,6 @@ private:
     bool addFacetedResult_(KeywordSearchResult& miaInput);
 
     /**
-     * @brief Building multi document summarization offline
-     */
-    bool computeSummarization_();
-
-    /**
      *@brief The online querying interface for query recommendation.
      *@param primaryTermIdList The primary terms in the query.
      *@param secondaryTermIdList The secondary terms in the query.
