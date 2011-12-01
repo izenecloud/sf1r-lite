@@ -253,7 +253,7 @@ void QueryBuilder::prepare_for_property_(
                     pBitVector->compressed(*pDocIdSet);
                     filterCache_->set(filteringRule, pDocIdSet);
                 }
-                TermDocFreqs* pTermDocReader = new BitMapIterator( pDocIdSet->bit_iterator() );
+                TermDocFreqs* pTermDocReader = new BitMapIterator( pDocIdSet);
                 termDocReaders[termId].push_back(pTermDocReader);
             }
         }

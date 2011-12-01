@@ -400,7 +400,7 @@ bool SearchManager::doSearch_(
     {
         ///1. Search Filter
         ///2. Select * WHERE    (FilterQuery)
-        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet->bit_iterator());
+        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
         FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
         pDocIterator->add((DocumentIterator*)pFilterIterator);
     }
@@ -560,7 +560,7 @@ bool SearchManager::doSearch_(
         {
             ///SELECT * ORDER BY
             prepareDocIterWithOnlyOrderby_(pFilterIdSet);
-            BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet->bit_iterator());
+            BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
             FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
             pDocIterator->add((DocumentIterator*)pFilterIterator);
         }
