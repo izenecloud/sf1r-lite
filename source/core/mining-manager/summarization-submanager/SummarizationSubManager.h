@@ -3,6 +3,7 @@
 
 #include <configuration-manager/SummarizeConfig.h>
 
+
 #include <boost/shared_ptr.hpp>
 
 #include <string>
@@ -12,6 +13,8 @@ namespace sf1r
 
 class DocumentManager;
 class IndexManager;
+
+class ParentKeyStorage;
 
 class MultiDocSummarizationSubManager
 {
@@ -28,10 +31,22 @@ public:
     void ComputeSummarization();
 
 private:
+    void BuildIndexOfParentKey_();
+
+    void DoInsertBuildIndexOfParentKey_(
+            const std::string& fileName);
+
+    void DoDelBuildIndexOfParentKey_(
+            const std::string& fileName);
+	
+    void DoUpdateIndexOfParentKey_(
+            const std::string& fileName);
+
     SummarizeConfig schema_;
     boost::shared_ptr<DocumentManager> document_manager_;
     boost::shared_ptr<IndexManager> index_manager_;
 
+    ParentKeyStorage* parent_key_storage_;
 };
 
 }

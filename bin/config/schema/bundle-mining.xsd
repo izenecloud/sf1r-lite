@@ -160,7 +160,6 @@
     </xs:element>
 
 
-
     <xs:element name="TaxonomyGeneration">
         <xs:complexType>
             <xs:sequence>
@@ -205,9 +204,19 @@
     <xs:element name="Summarization">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="ExternalKey" type="PropertyType" minOccurs="1" maxOccurs="1"/>
+                <xs:element ref="ParentKeyLog" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="ForeignKey" type="PropertyType" minOccurs="1" maxOccurs="1"/>
                 <xs:element name="ContentProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
             </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="ParentKeyLog" >
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="Property" type="xs:string" minOccurs="1" maxOccurs="1"/>
+            </xs:sequence>
+        <xs:attribute name="path" type="xs:string" use="required" />
         </xs:complexType>
     </xs:element>
     

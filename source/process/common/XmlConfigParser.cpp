@@ -1347,17 +1347,29 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         mining_schema.summarization_enable= false;
         if (task_node)
         {
+            ticpp::Element* parentkeylog_node = getUniqChildElement(task_node, "ParentKeyLog", false);
+            if (parentkeylog_node)
             {
-            Iterator<Element> it("ExternalKey");
+                getAttribute(parentkeylog_node, "path", mining_schema.summarization_schema.parentKeyLogPath);
+
+                Iterator<Element> it("Property");
+                for (it = it.begin(task_node); it != it.end(); it++)
+                {
+                    getAttribute(it.Get(), "name", property_name);
+                    mining_schema.summarization_schema.parentKey = property_name;
+                }
+            }
+            {
+            Iterator<Element> it("ForeignKey");
             for (it = it.begin(task_node); it != it.end(); it++)
             {
                 getAttribute(it.Get(), "name", property_name);
                 bool gottype = collectionMeta.getPropertyType(property_name, property_type);
                 if (!gottype || property_type != STRING_PROPERTY_TYPE)
                 {
-                    throw XmlConfigParserException("ExternalKey ["+property_name+"] used in Summarization is not string type.");
+                    throw XmlConfigParserException("ForeignKey ["+property_name+"] used in Summarization is not string type.");
                 }
-                mining_schema.summarization_schema.externalKeyPropName = property_name;
+                mining_schema.summarization_schema.foreignKeyPropName = property_name;
             }
             }
             {
