@@ -33,7 +33,7 @@ public:
         ScopedWriteLock lock(lock_);
 
         Engine& engine = generator_.engine();
-        engine.seed(value);		
+        engine.seed(value);
     }
 
     ValueType generate(ValueType min, ValueType max)

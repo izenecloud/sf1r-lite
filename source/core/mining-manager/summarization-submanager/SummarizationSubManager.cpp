@@ -9,14 +9,15 @@ using namespace izenelib::ir::indexmanager;
 using izenelib::util::UString;
 namespace sf1r
 {
+
 MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
-    const std::string& homePath,
-    SummarizeConfig schema,
-    boost::shared_ptr<DocumentManager> document_manager,
-    boost::shared_ptr<IndexManager> index_manager)
-    :schema_(schema)
-    ,document_manager_(document_manager)
-    ,index_manager_(index_manager)
+        const std::string& homePath,
+        SummarizeConfig schema,
+        boost::shared_ptr<DocumentManager> document_manager,
+        boost::shared_ptr<IndexManager> index_manager)
+    : schema_(schema)
+    , document_manager_(document_manager)
+    , index_manager_(index_manager)
 {
 }
 
