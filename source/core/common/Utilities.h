@@ -18,8 +18,10 @@ public:
 public:
     static int64_t convertDate(const izenelib::util::UString& dataStr, const izenelib::util::UString::EncodingType& encoding, izenelib::util::UString& outDateStr);
     static int64_t convertDate(const std::string& dataStr);
-    static std::string toLower(const std::string& str);
-    static std::string toUpper(const std::string& str);
+    static std::string toLowerCopy(const std::string& str);
+    static std::string toUpperCopy(const std::string& str);
+    static void toLower(std::string& str);
+    static void toUpper(std::string& str);
 
     static time_t createTimeStamp();
     static time_t createTimeStamp(boost::posix_time::ptime pt);

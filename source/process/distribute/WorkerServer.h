@@ -55,7 +55,7 @@ public:
 
         identity_ = identity;
 
-        std::string identityLow = sf1r::Utilities::toLower(identity);
+        std::string identityLow = sf1r::Utilities::toLowerCopy(identity);
         if (sf1r::SF1Config::get()->checkWorkerServiceByName(identity))
         {
             collectionHandler_ = CollectionManager::get()->findHandler(identity);

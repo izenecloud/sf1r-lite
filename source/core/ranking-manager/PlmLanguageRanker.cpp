@@ -15,17 +15,19 @@
 #include <cmath>
 #include <numeric>
 
+using namespace std;
+
 namespace sf1r {
 
 PlmLanguageRanker::PlmLanguageRanker(
-    const TermProximityMeasure* termProximityMeasure,
-    float smooth,
-    float proximity
+        const TermProximityMeasure* termProximityMeasure,
+        float smooth,
+        float proximity
 )
-: termProximityMeasure_(termProximityMeasure)
-, smoothArg_(smooth)
-, proximityArg_(proximity)
-, termProximityArray_()
+    : termProximityMeasure_(termProximityMeasure)
+    , smoothArg_(smooth)
+    , proximityArg_(proximity)
+    , termProximityArray_()
 {}
 
 PlmLanguageRanker::~PlmLanguageRanker()
@@ -35,9 +37,9 @@ PlmLanguageRanker::~PlmLanguageRanker()
 }
 
 PlmLanguageRanker::PlmLanguageRanker(const PlmLanguageRanker& rhs)
-: termProximityMeasure_(0)
-, smoothArg_(rhs.smoothArg_)
-, proximityArg_(rhs.proximityArg_)
+    : termProximityMeasure_(0)
+    , smoothArg_(rhs.smoothArg_)
+    , proximityArg_(rhs.proximityArg_)
 {
     if (rhs.termProximityMeasure_)
     {
@@ -64,7 +66,7 @@ PlmLanguageRanker& PlmLanguageRanker::operator=(const PlmLanguageRanker& rhs)
 }
 
 void PlmLanguageRanker::setTermProximityMeasure(
-    const TermProximityMeasure* termProximityMeasure
+        const TermProximityMeasure* termProximityMeasure
 )
 {
     if (termProximityMeasure != termProximityMeasure_)
@@ -75,16 +77,107 @@ void PlmLanguageRanker::setTermProximityMeasure(
     }
 }
 
-float PlmLanguageRanker::getScore(
-    const RankQueryProperty& queryProperty,
-    const RankDocumentProperty& documentProperty
+
+
+
+float PlmLanguageRanker::getScoreSVD(
+        const RankQueryProperty& queryProperty,
+        const RankDocumentProperty& documentProperty,
+        vector<double> queryTF_d,
+        vector<double> queryTF,
+        vector<double> collTF
 ) const
 {
-    BOOST_ASSERT(termProximityMeasure_);
+    float score = 0.0F;
+    if (0.0F == queryProperty.getAveragePropertyLength()) {
+        return score;
+    }
+
+    std::size_t numTerms = documentProperty.size();
+    termProximityArray_.resize(numTerms);
+
+    if (numTerms > 1)
+    {
+        // calculates term proximity in array parallel to
+        // textQuery.termPositions
+        termProximityMeasure_->calculate(
+                documentProperty,
+                termProximityArray_
+        );
+    }
+    else if (numTerms == 1)
+    {
+        termProximityArray_[0] = 0.0F;
+    }
+
+    TermProximityMeasure::array_type::const_iterator termProximity
+    = termProximityArray_.begin();
+    for (RankDocumentProperty::size_type i = 0;
+            i != documentProperty.size(); ++i, ++termProximity)
+    {
+        //float tfInDoc = documentProperty.termFreqAt(i);
+        // float tfInQuery = queryProperty.termFreqAt(i);
+
+        double tfInDoc = collTF[i];
+
+        //double tfInQuery = queryTF[i];
+        double tfInQuery = queryTF_d[i];
+
+        if(tfInDoc > 0.0F )
+        {
+            float proximityFactor = *termProximity;
+            //double proximityFactor = termProximityVector[i];
+
+            //float collectionMLE =
+            //    queryProperty.totalTermFreqAt(i) /
+            //    queryProperty.getTotalPropertyLength();
+
+            double collectionMLE = queryTF[i];
+
+            float seenDocProb =
+                tfInDoc
+                + smoothArg_ * collectionMLE
+                + proximityArg_ * proximityFactor;
+            // / (smoothArg_ + docTokenCount + proxWeight)
+
+            float unseenDocProb = collectionMLE * smoothArg_;
+            // / (smoothArg_ + docTokenCount + proxWeight)
+
+            score += tfInQuery
+                / queryProperty.getQueryLength()
+                * std::log(seenDocProb / unseenDocProb);
+        }
+    }
+
+    if (score > 0.0F)
+    {
+        float docTokenCount = documentProperty.docLength();
+        float proxWeight =
+            proximityArg_
+            * std::accumulate(
+                    termProximityArray_.begin(),
+                    termProximityArray_.begin() + documentProperty.size(),
+                    0.0F
+                    );
+
+        score += std::log((smoothArg_) / (smoothArg_ + docTokenCount + proxWeight));
+
+        //score += std::log((smoothArg_ ) / (smoothArg_ + docTokenCount + proxWeight*10000));
+    } // end - if
+
+    return score;
+} // end PlmLanguageRanker::getScore()
+
+float PlmLanguageRanker::getScore(
+        const RankQueryProperty& queryProperty,
+        const RankDocumentProperty& documentProperty
+) const
+{
+    //BOOST_ASSERT(termProximityMeasure_);
     if (!termProximityMeasure_)
     {
         throw std::runtime_error(
-            "Term Proximity Measure has not been specified"
+                "Term Proximity Measure has not been specified"
         );
     }
 
@@ -102,8 +195,8 @@ float PlmLanguageRanker::getScore(
         // calculates term proximity in array parallel to
         // textQuery.termPositions
         termProximityMeasure_->calculate(
-            documentProperty,
-            termProximityArray_
+                documentProperty,
+                termProximityArray_
         );
     }
     else if (numTerms == 1)
@@ -112,20 +205,22 @@ float PlmLanguageRanker::getScore(
     }
 
     TermProximityMeasure::array_type::const_iterator termProximity
-        = termProximityArray_.begin();
+    = termProximityArray_.begin();
     for (RankDocumentProperty::size_type i = 0;
-         i != documentProperty.size(); ++i, ++termProximity)
+            i != documentProperty.size(); ++i, ++termProximity)
     {
         float tfInDoc = documentProperty.termFreqAt(i);
         float tfInQuery = queryProperty.termFreqAt(i);
+        // cout << "TF: " << i << "," << tfInQuery << "," << tfInDoc << endl;
 
-        if(tfInDoc > 0.0F)
+        if(tfInDoc > 0.0F )
         {
             float proximityFactor = *termProximity;
 
             float collectionMLE =
                 queryProperty.totalTermFreqAt(i) /
                 queryProperty.getTotalPropertyLength();
+
 
             float seenDocProb =
                 tfInDoc
@@ -137,8 +232,8 @@ float PlmLanguageRanker::getScore(
             // / (smoothArg_ + docTokenCount + proxWeight)
 
             score += tfInQuery
-                     / queryProperty.getQueryLength()
-                     * std::log(seenDocProb / unseenDocProb);
+                / queryProperty.getQueryLength()
+                * std::log(seenDocProb / unseenDocProb);
         }
     }
 
@@ -148,14 +243,14 @@ float PlmLanguageRanker::getScore(
         float proxWeight =
             proximityArg_
             * std::accumulate(
-                termProximityArray_.begin(),
-                termProximityArray_.begin() + documentProperty.size(),
-                0.0F
-            );
+                    termProximityArray_.begin(),
+                    termProximityArray_.begin() + documentProperty.size(),
+                    0.0F
+                    );
 
         score += std::log(
-            (smoothArg_ )
-            / (smoothArg_ + docTokenCount + proxWeight)
+                (smoothArg_ )
+                / (smoothArg_ + docTokenCount + proxWeight)
         );
     } // end - if
 
