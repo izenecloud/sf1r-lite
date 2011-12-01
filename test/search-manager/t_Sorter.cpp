@@ -29,9 +29,10 @@ public:
     ~MockIndexManager(){}
 
 public:
-    void loadPropertyDataForSorting(const string& property, uint64_t* &data)
+    void loadPropertyDataForSorting(const string& property, uint64_t* &data, size_t& size)
     {
         data = new uint64_t[MAXDOC];
+        size = MAXDOC;
         if(property == "date")
         {
             for(size_t i = 0; i < MAXDOC; ++i)
@@ -53,9 +54,10 @@ BOOST_AUTO_TEST_CASE(sorter1)
 {
     MockIndexManager indexManager;
     uint64_t* data;
-    indexManager.loadPropertyDataForSorting("date", data);
+    size_t size;
+    indexManager.loadPropertyDataForSorting("date", data, size);
 
-    boost::shared_ptr<PropertyData> propDate(new PropertyData(UNSIGNED_INT_PROPERTY_TYPE, data));
+    boost::shared_ptr<PropertyData> propDate(new PropertyData(UNSIGNED_INT_PROPERTY_TYPE, data, size));
     SortPropertyComparator* pComparator =
         new SortPropertyComparator(propDate);
 
@@ -84,16 +86,17 @@ BOOST_AUTO_TEST_CASE(sorter2)
 {
     MockIndexManager indexManager;
     uint64_t* data1;
-    indexManager.loadPropertyDataForSorting("date", data1);
+    size_t size;
+    indexManager.loadPropertyDataForSorting("date", data1, size);
 
-    boost::shared_ptr<PropertyData> propDate1(new PropertyData(UNSIGNED_INT_PROPERTY_TYPE, data1));
+    boost::shared_ptr<PropertyData> propDate1(new PropertyData(UNSIGNED_INT_PROPERTY_TYPE, data1, size));
     SortPropertyComparator* pComparator1 = 
         new SortPropertyComparator(propDate1);
 
     uint64_t* data2;
-    indexManager.loadPropertyDataForSorting("count", data2);
+    indexManager.loadPropertyDataForSorting("count", data2, size);
 
-    boost::shared_ptr<PropertyData> propDate2(new PropertyData(UNSIGNED_INT_PROPERTY_TYPE, data2));
+    boost::shared_ptr<PropertyData> propDate2(new PropertyData(UNSIGNED_INT_PROPERTY_TYPE, data2, size));
     SortPropertyComparator* pComparator2 = 
         new SortPropertyComparator(propDate2);
 
@@ -124,16 +127,17 @@ BOOST_AUTO_TEST_CASE(sorter3)
 {
     MockIndexManager indexManager;
     uint64_t* data1;
-    indexManager.loadPropertyDataForSorting("date", data1);
+    size_t size;
+    indexManager.loadPropertyDataForSorting("date", data1, size);
 
-    boost::shared_ptr<PropertyData> propDate1(new PropertyData(UNSIGNED_INT_PROPERTY_TYPE, data1));
+    boost::shared_ptr<PropertyData> propDate1(new PropertyData(UNSIGNED_INT_PROPERTY_TYPE, data1, size));
     SortPropertyComparator* pComparator1 =
         new SortPropertyComparator(propDate1);
 
     uint64_t* data2;
-    indexManager.loadPropertyDataForSorting("count", data2);
+    indexManager.loadPropertyDataForSorting("count", data2, size);
 
-    boost::shared_ptr<PropertyData> propDate2(new PropertyData(UNSIGNED_INT_PROPERTY_TYPE, data2));
+    boost::shared_ptr<PropertyData> propDate2(new PropertyData(UNSIGNED_INT_PROPERTY_TYPE, data2, size));
     SortPropertyComparator* pComparator2 = 
         new SortPropertyComparator(propDate2);
 
