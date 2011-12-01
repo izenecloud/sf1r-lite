@@ -7,6 +7,8 @@
 #include <ranking-manager/PlmLanguageRanker.h>
 #include <ranking-manager/ClosestPositionTermProximityMeasure.h>
 
+#include <cmath>
+
 using namespace std;
 
 namespace sf1r
