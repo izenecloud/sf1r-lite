@@ -10,6 +10,8 @@
 
 #include <util/ThreadModel.h>
 
+#include <stdexcept>
+#include <sstream>
 #include <boost/random.hpp>
 
 namespace sf1r
@@ -36,6 +38,13 @@ public:
 
     ValueType generate(ValueType min, ValueType max)
     {
+        if (min > max)
+        {
+            std::ostringstream oss;
+            oss << "failed in pre-condition (min " << min << " <= max " << max << ")";
+            throw std::invalid_argument(oss.str());
+        }
+
         ScopedWriteLock lock(lock_);
 
         Distribution& dist = generator_.distribution();
