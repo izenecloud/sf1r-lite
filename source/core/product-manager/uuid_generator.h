@@ -26,6 +26,16 @@ void generateUUID(izenelib::util::UString& uuid_ustr, const PMDocumentType& doc)
     uuid_ustr.assign(uuid_str, izenelib::util::UString::UTF_8);
 }
 
+void generateUUID(const izenelib::util::UString& docname, izenelib::util::UString& uuid_ustr)
+{
+    static izenelib::util::UString appender("_uuid", izenelib::util::UString::UTF_8);
+    if(uuid_ustr.length()==0)
+    {
+        uuid_ustr = docname;
+    }
+    uuid_ustr.append(appender);
+}
+
 }
 
 #endif

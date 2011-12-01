@@ -3,23 +3,27 @@
 #include "operation_processor.h"
 #include "uuid_generator.h"
 #include "product_backup.h"
+#include "product_clustering.h"
 #include "product_price_trend.h"
 
 #include <common/Utilities.h>
 #include <boost/unordered_set.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-
+#include <boost/dynamic_bitset.hpp>
 using namespace sf1r;
 using izenelib::util::UString;
 
 ProductManager::ProductManager(
+        const std::string& work_dir,
         ProductDataSource* data_source,
         OperationProcessor* op_processor,
         ProductPriceTrend* price_trend,
         const PMConfig& config)
-    : data_source_(data_source)
+    : work_dir_(work_dir)
+    , data_source_(data_source)
     , op_processor_(op_processor)
     , price_trend_(price_trend)
+    , clustering_(NULL)
     , backup_(NULL)
     , config_(config)
     , has_price_trend_(false)
@@ -32,7 +36,8 @@ ProductManager::ProductManager(
         else
             std::cerr << "Error: Price trend has not been properly initialized" << std::endl;
     }
-
+    
+    
     if (!config_.backup_path.empty())
     {
         backup_ = new ProductBackup(config_.backup_path);
@@ -62,6 +67,24 @@ bool ProductManager::Recover()
     return true;
 }
 
+ProductClustering* ProductManager::GetClustering_()
+{
+    if(clustering_==NULL)
+    {
+        if(config_.enableClusteringAlgorithm)
+        {
+            clustering_ = new ProductClustering(work_dir_+"/clustering", config_);
+            if(!clustering_->Open())
+            {
+                std::cout<<"ProductClustering open failed"<<std::endl;
+                delete clustering_;
+                clustering_ = NULL;
+            }
+        }
+    }
+    return clustering_;
+}
+
 bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, time_t timestamp)
 {
     inhook_ = true;
@@ -82,15 +105,25 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
             }
         }
     }
-
-    UString uuid;
-    generateUUID(uuid, doc);
-    if (!data_source_->SetUuid(index_document, uuid)) return false;
-    PMDocumentType new_doc(doc);
-    doc.property(config_.uuid_property_name) = uuid;
-    new_doc.property(config_.docid_property_name) = uuid;
-    SetItemCount_(new_doc, 1);
-    op_processor_->Append(1, new_doc);
+    ProductClustering* clustering = GetClustering_();
+    if( clustering == NULL )
+    {
+        UString uuid;
+        generateUUID(uuid, doc);
+        if (!data_source_->SetUuid(index_document, uuid)) return false;
+        PMDocumentType new_doc(doc);
+        doc.property(config_.uuid_property_name) = uuid;
+        new_doc.property(config_.docid_property_name) = uuid;
+        SetItemCount_(new_doc, 1);
+        op_processor_->Append(1, new_doc);
+    }
+    else
+    {
+        UString uuid;
+        doc.property(config_.uuid_property_name) = uuid;
+        if (!data_source_->SetUuid(index_document, uuid)) return false; // set a empty uuid for rtype update later
+        clustering->Insert(doc);
+    }
 
     return true;
 }
@@ -186,12 +219,189 @@ bool ProductManager::HookDelete(uint32_t docid, time_t timestamp)
     return true;
 }
 
+
+///process for category and price info
+void ProductManager::PostProcessGroupTable_(idmlib::dd::GroupTable* group_table)
+{
+    std::cout<<"start PostProcessGroupTable"<<std::endl;
+    const std::vector<std::vector<std::string> >& ogroup_info = group_table->GetGroupInfo();
+    std::vector<std::vector<std::string> > group_info;
+    std::vector<std::string> in_group;
+    boost::dynamic_bitset<> flag;
+    std::cout<<"Total ogroup_info size "<<ogroup_info.size()<<std::endl;
+    for(uint32_t groupid=0;groupid<ogroup_info.size();groupid++)
+    {
+        if(groupid%100==0)
+        {
+            std::cout<<"Process groupid "<<groupid<<std::endl;
+        }
+        const std::vector<std::string>& oin_group = ogroup_info[groupid];
+        std::vector<ProductClusteringPostItem> postitems;
+        if(!GetClusteringPostItems_(oin_group, postitems)) 
+        {
+            std::cout<<"GetClusteringPostItems failed"<<std::endl;
+            continue;
+        }
+        uint32_t oin_group_size = postitems.size();
+        flag.reset();
+        if(flag.size()<oin_group_size)
+        {
+            flag.resize(oin_group_size);
+        }
+        for(uint32_t i=0;i<oin_group_size;i++)
+        {
+            if(flag[i]) continue;
+            if(!postitems[i].valid) 
+            {
+//                 std::cout<<"not valid in i"<<std::endl;
+                continue;
+            }
+            in_group.resize(0);
+            in_group.push_back(postitems[i].docid);
+            for(uint32_t j=i+1;j<oin_group_size;++j)
+            {
+                if(flag[j]) continue;
+                if(!postitems[j].valid) 
+                {
+//                     std::cout<<"not valid in j"<<std::endl;
+                    continue;
+                }
+                if(postitems[i].Sim(postitems[j]))
+                {
+                    in_group.push_back(postitems[j].docid);
+                    flag.set(j);
+                }
+                else
+                {
+//                     std::cout<<"not sim"<<std::endl;
+                }
+            }
+            if(in_group.size()>1)
+            {
+                group_info.push_back(in_group);
+//                 std::cout<<"Find new group, size : "<<in_group.size()<<std::endl;
+            }
+        }
+    }
+    group_table->Set(group_info);
+}
+
 bool ProductManager::Finish()
 {
     if (has_price_trend_)
     {
         price_trend_->Flush();
     }
+    
+    if(clustering_!=NULL)
+    {
+        if(!clustering_->Run())
+        {
+            std::cout<<"ProductClustering Run failed"<<std::endl;
+            return false;
+        }
+        idmlib::dd::GroupTable* group_table = clustering_->GetGroupTable();
+//         PostProcessGroupTable_(group_table);
+        typedef izenelib::util::UString UuidType;
+        boost::unordered_map<idmlib::dd::GroupIdType, UuidType> g2u_map;
+        std::vector<std::pair<uint32_t, izenelib::util::UString> > uuid_update_list;
+        uint32_t append_count = 0;
+        for(uint32_t docid=1; docid <= data_source_->GetMaxDocId(); ++docid )
+        {
+            if(docid%1000==0)
+            {
+                std::cout<<"Process "<<docid<<" docs"<<std::endl;
+            }
+            PMDocumentType doc;
+            if(!data_source_->GetDocument(docid, doc) )
+            {
+                continue;
+            }
+            UString udocid;
+            std::string sdocid;
+            GetDOCID_(doc, udocid);
+            udocid.convertString(sdocid, izenelib::util::UString::UTF_8);
+            UString uuid;
+            idmlib::dd::GroupIdType group_id;
+            uint32_t itemcount = 1;
+            std::vector<std::string> docid_list_in_group;
+            bool append = true;
+            if(group_table->GetGroupId(sdocid, group_id) )
+            {
+                boost::unordered_map<idmlib::dd::GroupIdType, UuidType>::iterator g2u_it = g2u_map.find(group_id);
+                if(g2u_it!=g2u_map.end())
+                {
+                    //in the group appears before.
+                    uuid = g2u_it->second;
+                    append = false;
+                }
+                else
+                {
+                    // in a new group
+                    
+                    if(group_table->GetDocIdList(group_id, docid_list_in_group))
+                    {
+                        itemcount = docid_list_in_group.size();
+                    }
+                    generateUUID(uuid, doc);
+                    g2u_map.insert(std::make_pair( group_id, uuid ) );
+                }
+            }
+            else
+            {
+                //not in any group
+                generateUUID(uuid, doc);
+            }
+            doc.property(config_.uuid_property_name) = uuid;
+            uuid_update_list.push_back(std::make_pair(docid, uuid));
+            
+            if(append)
+            {
+                PMDocumentType new_doc(doc);
+                new_doc.property(config_.docid_property_name) = uuid;
+                new_doc.eraseProperty(config_.uuid_property_name);
+                SetItemCount_(new_doc, itemcount);
+                ProductPrice price;
+                GetPrice_(new_doc, price);
+                if(docid_list_in_group.size()>0) //update price
+                {
+                    std::vector<izenelib::util::UString> udocid_list(docid_list_in_group.size());
+                    for(uint32_t i=0;i<docid_list_in_group.size();i++)
+                    {
+                        udocid_list[i] = izenelib::util::UString(docid_list_in_group[i], izenelib::util::UString::UTF_8);
+                    }
+                    std::vector<uint32_t> id_list;
+                    if(data_source_->GetInternalDocidList(udocid_list, id_list))
+                    {
+                        ProductPrice aprice;
+                        GetPrice_(id_list, aprice);
+                        price = aprice;
+                    }
+                }
+                new_doc.property(config_.price_property_name) = price.ToUString();
+                op_processor_->Append(1, new_doc);
+                ++append_count;
+            }
+        }
+        std::cout<<"Total update list count : "<<uuid_update_list.size()<<std::endl;
+        for(uint32_t i=0;i<uuid_update_list.size();i++)
+        {
+            if(i%100==0)
+            {
+                std::cout<<"Updated "<<i<<std::endl;
+            }
+            std::vector<uint32_t> update_docid_list(1, uuid_update_list[i].first);
+            if(!data_source_->UpdateUuid(update_docid_list, uuid_update_list[i].second) )
+            {
+                std::cout<<"UpdateUuid fail for docid : "<<docid<<std::endl;
+            }
+        }
+        data_source_->Flush();
+        std::cout<<"Generate "<<append_count<<" docs for b5ma"<<std::endl;
+        delete clustering_;
+        clustering_ = NULL;
+    }
+    
     return GenOperations_();
 }
 
@@ -539,6 +749,7 @@ bool ProductManager::AppendToGroup_(const UString& uuid, const std::vector<uint3
         error_ = "Update uuid failed";
         return false;
     }
+    data_source_->Flush();
     return true;
 }
 
@@ -674,6 +885,7 @@ bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint
             //TODO how to rollback?
         }
     }
+    data_source_->Flush();
     return true;
 }
 
@@ -772,6 +984,49 @@ bool ProductManager::GetDOCID_(const PMDocumentType& doc, UString& docid) const
     }
     docid = it->second.get<UString>();
     return true;
+}
+
+bool ProductManager::GetClusteringPostItems_(const std::vector<std::string>& docid_list, std::vector<ProductClusteringPostItem>& items)
+{
+    std::vector<izenelib::util::UString> udocid_list(docid_list.size());
+    for(uint32_t i=0;i<docid_list.size();i++)
+    {
+        udocid_list[i] = izenelib::util::UString(docid_list[i], izenelib::util::UString::UTF_8);
+    }
+    std::vector<uint32_t> id_list;
+    if(!data_source_->GetInternalDocidList(udocid_list, id_list)) 
+    {
+        std::cout<<"GetInternalDocidList failed"<<std::endl;
+        return false;
+    }
+    if(id_list.size()!=docid_list.size()) return false;
+    for(uint32_t i=0;i<id_list.size(); ++i )
+    {
+        ProductClusteringPostItem item;
+        item.docid = docid_list[i];
+        item.valid = false;
+        PMDocumentType doc;
+        if(data_source_->GetDocument(id_list[i], doc))
+        {
+            izenelib::util::UString category;
+            ProductPrice price;
+            if(GetCategory_(doc, item.category) && GetPrice_(doc, item.price))
+            {
+                if(item.price.value.first>0.0)
+                {
+                    item.valid = true;
+                }
+            }
+        }
+        items.push_back(item);
+        
+    }
+    return true;
+}
+    
+bool ProductManager::GetCategory_(const PMDocumentType& doc, izenelib::util::UString& category)
+{
+    return doc.getProperty(config_.category_property_name, category);
 }
 
 bool ProductManager::GetTimestamp_(const PMDocumentType& doc, time_t& timestamp) const

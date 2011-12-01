@@ -31,6 +31,8 @@ public:
     izenelib::util::UString ToUString() const;
 
     bool Valid() const;
+    
+    bool GetMid(ProductPriceType& mid) const;
 
 private:
     void Check_();

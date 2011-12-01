@@ -185,10 +185,12 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
     std::cout<<"ProductBundleActivator::createProductManager_"<<std::endl;
     openDataDirectories_();
     std::string dir = getCurrentCollectionDataPath_()+"/product";
-    std::cout<<"dir : "<<dir<<std::endl;
+    std::cout<<"product dir : "<<dir<<std::endl;
     boost::filesystem::create_directories(dir);
+    std::string scd_dir = dir+"/scd";
+    boost::filesystem::create_directories(scd_dir);
     data_source_ = new CollectionProductDataSource(indexService->workerService_->documentManager_, indexService->workerService_->indexManager_, indexService->workerService_->idManager_, indexService->workerService_->searchManager_, config_->pm_config_, config_->schema_);
-    op_processor_ = new ScdOperationProcessor(dir);
+    op_processor_ = new ScdOperationProcessor(scd_dir);
     if (config_->pm_config_.enablePH)
     {
         price_trend_ = new ProductPriceTrend(config_->collectionName_, dir, config_->pm_config_.group_property_names, config_->pm_config_.time_interval_days);
@@ -199,7 +201,9 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
         }
         handler->addCollection(price_trend_);
     }
-    boost::shared_ptr<ProductManager> product_manager(new ProductManager(data_source_, op_processor_, price_trend_, config_->pm_config_));
+    std::string work_dir = dir+"/work_dir";
+    config_->pm_config_.enableClusteringAlgorithm = true;
+    boost::shared_ptr<ProductManager> product_manager(new ProductManager(work_dir, data_source_, op_processor_, price_trend_, config_->pm_config_));
     return product_manager;
 }
 

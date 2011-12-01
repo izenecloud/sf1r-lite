@@ -13,22 +13,28 @@ namespace sf1r
 struct PMConfig
 {
     bool enablePH;
+    bool enableClusteringAlgorithm;
     std::string price_property_name;
     std::string date_property_name;
     std::string docid_property_name;
     std::string itemcount_property_name;
     std::string uuid_property_name;
+    std::string title_property_name;
+    std::string category_property_name;
     std::string backup_path;
     std::vector<std::string> group_property_names;
     std::vector<uint32_t> time_interval_days;
 
     PMConfig()
         : enablePH(false)
+        , enableClusteringAlgorithm(false)
         , price_property_name("Price")
         , date_property_name("Date")
         , docid_property_name("DOCID")
         , itemcount_property_name("itemcount")
         , uuid_property_name("uuid")
+        , title_property_name("Title")
+        , category_property_name("Category")
     {
     }
 };
