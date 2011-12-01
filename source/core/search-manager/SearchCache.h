@@ -150,7 +150,6 @@ private:
         }
 
         if (check){
-            std::cout<< "check refresh: "<<std::time(NULL)<<" - "<<timestamp<<" > "<<refreshInterval_<<std::endl;
             return (std::time(NULL) - timestamp) > refreshInterval_;
         }
         else
