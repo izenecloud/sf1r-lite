@@ -21,10 +21,10 @@ struct PropertyData
     PropertyData(
       PropertyDataType type, 
       void* data,
-       size_t size)
+      size_t size)
         : type_(type)
         , data_(data)
-          ,  size_(size)
+        , size_(size)
     {
         resetLoadTime();
     }
