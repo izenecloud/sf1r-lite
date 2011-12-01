@@ -4,6 +4,7 @@
 #include "GroupConfig.h"
 #include "AttrConfig.h"
 #include "PropertyRerankConfig.h"
+#include "SummarizeConfig.h"
 
 #include <stdint.h>
 #include <string>
@@ -27,7 +28,7 @@ public:
             , property_rerank_enable(false), prop_rerank_property()
             , ise_enable(false), ise_property()
             , recommend_tg(false), recommend_querylog(true), recommend_properties()
-            , summarization_enable(false),summarization_properties()
+            , summarization_enable(false),summarization_schema()
     {
     }
     ~MiningSchema() {}
@@ -49,7 +50,7 @@ private:
         ar & tdt_enable;
         ar & ise_enable & ise_property;
         ar & recommend_tg & recommend_querylog & recommend_properties;
-        ar & summarization_enable & summarization_properties;
+        ar & summarization_enable & summarization_schema;
     }
 
 public:
@@ -80,7 +81,7 @@ public:
     std::vector<std::string> recommend_properties;
 
     bool summarization_enable;
-    std::vector<std::string> summarization_properties;
+    SummarizeConfig summarization_schema;
 };
 
 } // namespace

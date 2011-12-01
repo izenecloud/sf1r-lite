@@ -37,6 +37,11 @@ bool BORRecommender::recommendImpl_(
         return false;
     }
 
+    const itemid_t minItemId = 1;
+    const itemid_t maxItemId = itemManager_.maxItemId();
+    if (minItemId > maxItemId)
+        return true;
+
     RecommendItem recItem;
     recItem.weight_ = 1;
 
@@ -44,9 +49,6 @@ bool BORRecommender::recommendImpl_(
     const int maxTryNum = param.limit << 1;
     int insertNum = 0;
     int tryNum = 0;
-
-    const itemid_t minItemId = 1;
-    const itemid_t maxItemId = itemManager_.maxItemId();
 
     while (insertNum < maxInsertNum
            && tryNum < maxTryNum)
