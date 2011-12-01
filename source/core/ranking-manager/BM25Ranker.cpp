@@ -73,10 +73,10 @@ float BM25Ranker::getScore(
             float tf_LNPart = (k1_ + 1) * tfInDoc / denominatorTF_LN;
             float qtfPart = (k3_ + 1) * tfInQuery / (k3_ + tfInQuery);
             score += idfParts_[i] * qtfPart * tf_LNPart;
-            
+
 //             std::cout<<"[1] "<<tfInDoc<<" "<<tfInQuery<<" "<<df<<" "<<nDocs<<" "<<idfParts_[i]<<" "<<propLength<<" "<<avgPropLength<<" "<<b_<<" "<<k1_<<" "<<score<<std::endl;
         }
-        
+
     }
     return score;
 } // BM25Ranker::getScore
