@@ -29,6 +29,7 @@ private:
     boost::shared_ptr<PropertyData> propertyData_;
     PropertyDataType type_;
     void* data_;
+    size_t size_;
     int (SortPropertyComparator::*comparator_)(ScoreDoc, ScoreDoc);
 
 public:
