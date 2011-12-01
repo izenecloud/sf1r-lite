@@ -5,6 +5,8 @@
 #include <query-manager/ActionItem.h>
 #include <ranking-manager/RankingManager.h>
 #include <ranking-manager/RankQueryProperty.h>
+#include <mining-manager/MiningManager.h>
+#include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <mining-manager/faceted-submanager/GroupFilterBuilder.h>
 #include <mining-manager/faceted-submanager/GroupFilter.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
@@ -33,6 +35,7 @@ namespace sf1r
 const std::string RANK_PROPERTY("_rank");
 const std::string DATE_PROPERTY("date");
 const std::string CUSTOM_RANK_PROPERTY("custom_rank");
+const std::string CTR_PROPERTY("_ctr");
 
 bool hasRelevenceSort(const std::pair<std::string , bool>& element)
 {
@@ -175,6 +178,30 @@ void SearchManager::chdir(
     delete pSorterCache_;
     pSorterCache_ = new SortPropertyCache(indexManagerPtr_.get(), config);
     cache_.reset(new SearchCache(config->searchCacheNum_));
+}
+
+void SearchManager::setGroupFilterBuilder(
+    faceted::GroupFilterBuilder* builder)
+{
+    groupFilterBuilder_.reset(builder);
+}
+
+void SearchManager::setMiningManager(
+    boost::shared_ptr<MiningManager> miningManagerPtr)
+{
+    miningManagerPtr_ = miningManagerPtr;
+}
+
+NumericPropertyTable*
+SearchManager::createPropertyTable(const std::string& propertyName)
+{
+    boost::shared_ptr<PropertyData> propData = getPropertyData_(propertyName);
+    if (propData)
+    {
+        return new NumericPropertyTable(propertyName, propData);
+    }
+
+    return NULL;
 }
 
 bool SearchManager::search(
@@ -404,18 +431,16 @@ bool SearchManager::doSearch_(
                 // sort by custom ranking
                 if (fieldNameL == CUSTOM_RANK_PROPERTY)
                 {
-                    // prepare custom ranker
+                    // prepare custom ranker data, custom score will be evaluated later as rank score
                     customRanker = actionOperation.actionItem_.customRanker_;
                     if (!customRanker)
                         customRanker = buildCustomRanker_(actionOperation.actionItem_);
-                    //customRanker->printESTree(); //test
                     if (!customRanker->setPropertyData(pSorterCache_))
                     {
-                        // error info
                         LOG(ERROR) << customRanker->getErrorInfo() << endl;
-                        return false;
+                        continue;
                     }
-                    customRanker->printESTree(); //test
+                    //customRanker->printESTree();
 
                     if (!pSorter) pSorter.reset(new Sorter(pSorterCache_));
                     SortProperty* pSortProperty = new SortProperty(
@@ -446,6 +471,32 @@ bool SearchManager::doSearch_(
                     SortProperty* pSortProperty = new SortProperty(
                         iter->first,
                         INT_PROPERTY_TYPE,
+                        iter->second);
+                    pSorter->addSortProperty(pSortProperty);
+                    continue;
+                }
+                // sort by ctr (click through rate)
+                if (fieldNameL == CTR_PROPERTY)
+                {
+                    if (!miningManagerPtr_) {
+                        DLOG(ERROR)<<"Skipped CTR sort property: Mining Manager was not initialized";
+                        continue;
+                    }
+
+                    boost::shared_ptr<faceted::CTRManager> ctrManangerPtr
+                    = miningManagerPtr_->GetCtrManager();
+                    if (!ctrManangerPtr) {
+                        DLOG(ERROR)<<"Skipped CTR sort property: CTR Manager was not initialized";
+                        continue;
+                    }
+
+                    pSorterCache_->setCtrManager(ctrManangerPtr.get());
+                    if (!pSorter) pSorter.reset(new Sorter(pSorterCache_));
+
+                    SortProperty* pSortProperty = new SortProperty(
+                        iter->first,
+                        UNSIGNED_INT_PROPERTY_TYPE,
+                        SortProperty::CTR,
                         iter->second);
                     pSorter->addSortProperty(pSortProperty);
                     continue;
@@ -705,7 +756,8 @@ bool SearchManager::doSearch_(
             rankScoreList[count - i - 1] = pScoreItem.score;
             if (customRanker.get())
             {
-                customRankScoreList[count - i - 1] = pScoreItem.custom_score; // should not be normalized
+                // should not be normalized
+                customRankScoreList[count - i - 1] = pScoreItem.custom_score;
             }
 
             if (pScoreItem.score < min)
@@ -932,18 +984,6 @@ void SearchManager::getSortPropertyData_(
 
 }
 
-NumericPropertyTable*
-SearchManager::createPropertyTable(const std::string& propertyName)
-{
-    boost::shared_ptr<PropertyData> propData = getPropertyData_(propertyName);
-    if (propData)
-    {
-        return new NumericPropertyTable(propertyName, propData);
-    }
-
-    return NULL;
-}
-
 boost::shared_ptr<PropertyData>
 SearchManager::getPropertyData_(const std::string& name)
 {
@@ -985,12 +1025,6 @@ void SearchManager::printDFCTF_(
         }
     }
     cout << "-----------------------" << endl;
-}
-
-void SearchManager::setGroupFilterBuilder(
-    faceted::GroupFilterBuilder* builder)
-{
-    groupFilterBuilder_.reset(builder);
 }
 
 } // namespace sf1r

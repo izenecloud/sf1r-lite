@@ -15,10 +15,23 @@ struct PropertyData
 {
     PropertyDataType type_;
     void* data_;
+    time_t lastLoadTime_;
 
     PropertyData(PropertyDataType type, void* data)
         : type_(type), data_(data)
-    {}
+    {
+        resetLoadTime();
+    }
+
+    void resetLoadTime()
+    {
+        lastLoadTime_ = std::time(NULL);
+    }
+
+    time_t elapsedFromLastLoad()
+    {
+        return (std::time(NULL) - lastLoadTime_);
+    }
 
     ~PropertyData()
     {

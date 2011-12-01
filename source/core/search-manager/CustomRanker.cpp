@@ -117,7 +117,7 @@ bool CustomRanker::setInnerPropertyData(ExpSyntaxTreePtr& estree, SortPropertyCa
     if (estree->type_ == ExpSyntaxTree::PARAMETER) {
         PropertyDataType dataType = propertyDataTypeMap_[estree->name_];
         estree->propertyData_ = pPropertyData->getSortPropertyData(estree->name_, dataType);
-        if (!! estree->propertyData_) {
+        if (!estree->propertyData_) {
             stringstream ss;
             ss << "Failed to get sort data for property: " << estree->name_
                << " with data type: " << dataType << endl;
