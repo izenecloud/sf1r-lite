@@ -214,7 +214,7 @@
     <xs:element name="ParentKeyLog" >
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="Property" type="xs:string" minOccurs="1" maxOccurs="1"/>
+                <xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="1"/>
             </xs:sequence>
         <xs:attribute name="path" type="xs:string" use="required" />
         </xs:complexType>
