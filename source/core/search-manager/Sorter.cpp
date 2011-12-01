@@ -57,7 +57,7 @@ SortProperty::~SortProperty()
 SortPropertyCache::SortPropertyCache(IndexManager* pIndexer, IndexBundleConfiguration* config)
         :pIndexer_(pIndexer)
         ,pCTRManager_(NULL)
-        ,updateInterval_(20)
+        ,updateInterval_(30*60)
         ,dirty_(true)
         ,config_(config)
 {
