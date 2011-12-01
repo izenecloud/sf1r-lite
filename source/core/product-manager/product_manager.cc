@@ -270,8 +270,7 @@ bool ProductManager::CheckAddGroupWithInfo(const std::vector<izenelib::util::USt
         error_ = suuid+" already exists";
         return false;
     }
-    
-    
+
     std::vector<PMDocumentType> doc_list(docid_list.size());
     for (uint32_t i = 0; i < docid_list.size(); i++)
     {
@@ -711,7 +710,8 @@ bool ProductManager::GetTopPriceCutList(
         TPCQueue& tpc_queue,
         const std::string& prop_name,
         const std::string& prop_value,
-        uint32_t days)
+        uint32_t days,
+        uint32_t count)
 {
     if (!has_price_trend_)
     {
@@ -719,7 +719,7 @@ bool ProductManager::GetTopPriceCutList(
         return false;
     }
 
-    return price_trend_->GetTopPriceCutList(tpc_queue, prop_name, prop_value, days, error_);
+    return price_trend_->GetTopPriceCutList(tpc_queue, prop_name, prop_value, days, count, error_);
 }
 
 bool ProductManager::GetPrice_(uint32_t docid, ProductPrice& price) const

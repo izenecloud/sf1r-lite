@@ -18,6 +18,8 @@
 #include "similarity-detection-submanager/DocWeightListPrunedInvertedIndexReader.h"
 #include "similarity-detection-submanager/SimilarityIndex.h"
 
+#include "summarization-submanager/SummarizationSubManager.h"
+
 #include "faceted-submanager/ontology_manager.h"
 #include "faceted-submanager/group_manager.h"
 #include "faceted-submanager/attr_manager.h"
@@ -105,6 +107,7 @@ MiningManager::MiningManager(
         , attrManager_(NULL)
         , groupReranker_(NULL)
         , tdt_storage_(NULL)
+        , summarizationManager_(NULL)
 {
 }
 
@@ -116,6 +119,7 @@ MiningManager::~MiningManager()
     if(attrManager_) delete attrManager_;
     if(groupReranker_) delete groupReranker_;
     if(tdt_storage_) delete tdt_storage_;
+    if(summarizationManager_) delete summarizationManager_;
     close();
 }
 
@@ -402,6 +406,16 @@ bool MiningManager::open()
             }
         }
 
+
+        /** Summarization */
+        if ( mining_schema_.summarization_enable)
+        {
+            summarization_path_ = prefix_path + "/summarization";
+            boost::filesystem::create_directories(summarization_path_);
+            summarizationManager_ = new MultiDocSummarizationSubManager(summarization_path_); 
+        }
+
+
         //do mining continue;
         try
         {
@@ -610,6 +624,12 @@ bool MiningManager::DoMiningCollection()
             computeSimilarityESA_(mining_schema_.sim_properties);
         }
         MEMLOG("[Mining] SIM finished.");
+    }
+
+    // do Summarization
+    if ( mining_schema_.summarization_enable )
+    {
+        computeSummarization_();
     }
     return true;
 }
@@ -1247,6 +1267,11 @@ bool MiningManager::addFacetedResult_(KeywordSearchResult& miaInput)
     if ( !faceted_ ) return true;
     faceted_->GetSearcher()->GetRepresentation(miaInput.topKDocs_, miaInput.onto_rep_);
 
+    return true;
+}
+
+bool MiningManager::computeSummarization_()
+{
     return true;
 }
 

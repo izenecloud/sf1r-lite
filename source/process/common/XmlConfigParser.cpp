@@ -1343,6 +1343,24 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             mining_schema.sim_enable = true;
         }
 
+        task_node = getUniqChildElement(mining_schema_node, "Summarization", false);
+        mining_schema.summarization_enable= false;
+        if (task_node)
+        {
+            Iterator<Element> it("Property");
+            for (it = it.begin(task_node); it != it.end(); it++)
+            {
+                getAttribute(it.Get(), "name", property_name);
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if (!gottype || property_type != STRING_PROPERTY_TYPE)
+                {
+                    throw XmlConfigParserException("Property ["+property_name+"] used in Summarization is not string type.");
+                }
+                mining_schema.summarization_properties.push_back(property_name);
+            }
+            mining_schema.summarization_enable = true;
+        }
+
         task_node = getUniqChildElement(mining_schema_node, "DocumentClassification", false);
         mining_schema.dc_enable = false;
         if (task_node)

@@ -21,6 +21,7 @@ RecommenderFactory::RecommenderFactory(
     , bobRecommender_(itemManager, itemCFManager, userEventFilter_, visitManager)
     , bosRecommender_(itemManager, itemCFManager, userEventFilter_, cartManager)
     , boeRecommender_(itemManager, itemCFManager, userEventFilter_)
+    , borRecommender_(itemManager, userEventFilter_)
     , tibRecommender_(orderManager)
 {
 }
@@ -46,6 +47,9 @@ Recommender* RecommenderFactory::getRecommender(RecommendType type)
 
         case BASED_ON_SHOP_CART:
             return &bosRecommender_;
+
+        case BASED_ON_RANDOM:
+            return &borRecommender_;
 
         default:
             LOG(ERROR) << "RecommendType " << type << " is not supported yet";
