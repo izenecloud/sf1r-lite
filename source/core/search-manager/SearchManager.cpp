@@ -428,7 +428,6 @@ bool SearchManager::doSearch_(
             {
                 std::string fieldNameL = iter->first;
                 boost::to_lower(fieldNameL);
-                std::cout<<"---> sort property: "<<fieldNameL<<std::endl;//:~
                 // sort by custom ranking
                 if (fieldNameL == CUSTOM_RANK_PROPERTY)
                 {
