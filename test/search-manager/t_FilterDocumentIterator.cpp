@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE(filter_test)
         boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet(new EWAHBoolArray<uint32_t>());
         pFilterIdSet->set(0);
         pFilterIdSet->set(2);
-        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet->bit_iterator());
+        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
         FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
         iter.add(pFilterIterator);
 
@@ -152,7 +152,7 @@ BOOST_AUTO_TEST_CASE(filter_test)
         boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet(new EWAHBoolArray<uint32_t>());
         pFilterIdSet->set(2);
         pFilterIdSet->set(3);
-        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet->bit_iterator());
+        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
         FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
         iter.add(pFilterIterator);
 
@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE(filter_test)
         boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet(new EWAHBoolArray<uint32_t>());
         pFilterIdSet->set(0);
         pFilterIdSet->set(1);
-        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet->bit_iterator());
+        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
         FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
         iter.add(pFilterIterator);
 
@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE(filter_test)
         pFilterIdSet->set(1);
         pFilterIdSet->set(2);
         pFilterIdSet->set(3);
-        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet->bit_iterator());
+        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
         FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
         iter.add(pFilterIterator);
 
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_CASE(filter_test)
         pFilterIdSet->set(0);
         pFilterIdSet->set(2);
         pFilterIdSet->set(3);
-        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet->bit_iterator());
+        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
         FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
         iter.add(pFilterIterator);
 
