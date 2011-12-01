@@ -166,18 +166,28 @@ int64_t Utilities::convertDate(const std::string& dataStr)
 
 }
 
-std::string Utilities::toLower(const std::string& str)
+std::string Utilities::toLowerCopy(const std::string& str)
 {
     std::string szResp(str);
-    std::transform(szResp.begin(),szResp.end(), szResp.begin(), (int(*)(int))std::tolower);
+    std::transform(szResp.begin(), szResp.end(), szResp.begin(), (int(*)(int))std::tolower);
     return szResp;
 }
 
-std::string Utilities::toUpper(const std::string& str)
+std::string Utilities::toUpperCopy(const std::string& str)
 {
     std::string szResp(str);
-    std::transform(szResp.begin(),szResp.end(), szResp.begin(), (int(*)(int))std::toupper);
+    std::transform(szResp.begin(), szResp.end(), szResp.begin(), (int(*)(int))std::toupper);
     return szResp;
+}
+
+void Utilities::toLower(std::string& str)
+{
+    std::transform(str.begin(), str.end(), str.begin(), (int(*)(int))std::tolower);
+}
+
+void Utilities::toUpper(std::string& str)
+{
+    std::transform(str.begin(), str.end(), str.begin(), (int(*)(int))std::toupper);
 }
 
 time_t Utilities::createTimeStamp()

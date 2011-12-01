@@ -6,17 +6,15 @@
 #ifndef SF1R_MINING_MANAGER_SUMMARIZATION_UTIL_H_
 #define SF1R_MINING_MANAGER_SUMMARIZATION_UTIL_H_
 
-#include <vector>
-#include <map>
-#include <set>
-#include <iterator>
-#include <sstream>
-
 #include "corpus.h"
 #include "svd/d-mat2d.h"
 
 #include <ranking-manager/RankQueryProperty.h>
 #include <ranking-manager/RankDocumentProperty.h>
+
+#include <set>
+#include <map>
+#include <sstream>
 
 #define THR  0.3
 #define WORD_LIMIT 100
@@ -29,14 +27,9 @@ class SPLMUtil
 public:
 
     ///
-    /// @brief Converts string to lowercase
-    ///
-    static void to_lowercase(std::string&s);
-
-    ///
     /// @brief Calculates the KL divergence between probability distributions px and qx
     ///
-    static double kl(std::vector<double>& px , std::vector<double>& qx);
+    static double kl(const std::vector<double>& px, const std::vector<double>& qx);
 
     ///
     /// @brief Calculates the term frequency matrix for a text selection
@@ -46,7 +39,7 @@ public:
     /// @param sentOffs Sentence offsets
     /// @param W Word IDs
     ///
-    static double** getTF(std::map<int,int> wordMap, int s_start,
+    static double** getTF(const std::map<int,int>& wordMap, int s_start,
             int s_end, int* sentOffs, int* W);
 
     ///
@@ -60,24 +53,24 @@ public:
     /// @param docOffs Document offsets
     /// @param W Word IDs
     ///
-    static double** getTFIDF(std::map<int,int> wordMap, int s_start, int s_end, int* sentOffs,
+    static double** getTFIDF(const std::map<int,int>& wordMap, int s_start, int s_end, int* sentOffs,
             int d_start, int d_end, int* docOffs, int* W);
 
     ///
     /// @brief Retrieves ISF: mapping between word index and the number of sentences containing the word
     ///
-    static std::map<int, int> getISF(int s_start, int s_end, int* sentOffs, int* W);
+    static void getISF(std::map<int, int>& ISF_map, int s_start, int s_end, int* sentOffs, int* W);
 
     ///
     /// @brief Retrieves IDF: mapping between word index and the number of documents containing the word
     ///
-    static std::map<int, int> getIDF(int s_start, int d_start,
+    static void getIDF(std::map<int, int>& IDF_map, int s_start, int d_start,
             int d_end, int* sentOffs, int* docOffs, int* W);
 
     ///
     /// @brief Retrieves ICF: mapping between word index and the number of documents in the whole collection containing the word
     ///
-    static std::map<int, int> getICF(int nColls, int* sentOffs,
+    static void getICF(std::map<int, int>& ICF_map, int nColls, int* sentOffs,
             int* collOffs, int* W);
 
     ///
@@ -94,12 +87,12 @@ public:
     ///
     /// @brief Gives a mapping from a word ID to a number in a minimized range
     ///
-    static std::map<int, int> getWordMapping(std::set<int> words);
+    static void getWordMapping(std::map<int, int>& wordmapping, std::set<int> words);
 
     ///
     /// @brief Gives a word mapping for the entire collection
     ///
-    static std::map<int, int> getCollectionWordMapping(int* collOffs, int c, int* W);
+    static void getCollectionWordMapping(std::map<int, int>& wordmapping, int* collOffs, int c, int* W);
 
     ///
     /// @brief Selects sentences for the summary set
@@ -110,13 +103,13 @@ public:
     ///
     /// @brief Converts a sentence into RankQueryProperty (for PLM calculation)
     ///
-    static RankQueryProperty getRankQueryProperty(int* sentOffs, int s,
+    static void getRankQueryProperty(RankQueryProperty& rqp, int* sentOffs, int s,
             int* W, int documentLength);
 
     ///
     /// @brief Converts a document into RankDocumentProperty (for PLM calculation)
     ///
-    static RankDocumentProperty getRankDocumentProperty(int nWords,
+    static void getRankDocumentProperty(RankDocumentProperty& rdp, int nWords,
             int* collOffs, int c, int* W, std::map<int, int> wordMapping);
 };
 

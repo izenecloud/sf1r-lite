@@ -1,5 +1,6 @@
 #include "stopword.h"
-#include "ts_common.h"
+
+#include <fstream>
 
 namespace sf1r
 {

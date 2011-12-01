@@ -97,7 +97,8 @@ void SPLM::generateSummary(
         for (; docOffs[d_end] < collOffs[c + 1]; ++d_end);
 
         // Translates original word numbers into numbers in the range (0, # of words in the collection - 1)
-        map<int, int> collWordMap = SPLMUtil::getCollectionWordMapping(collOffs, c, W);
+        map<int, int> collWordMap;
+        SPLMUtil::getCollectionWordMapping(collWordMap, collOffs, c, W);
 
         //Build the TF matrix
         double ** TF = SPLMUtil::getTF(collWordMap, s_start, s_end, sentOffs, W);
@@ -123,7 +124,8 @@ void SPLM::generateSummary(
             float sentenceScore = 0.;
 
             // Construct RankQueryProperty (used for proximity calculation)
-            RankQueryProperty rqp = SPLMUtil::getRankQueryProperty(sentOffs, s, W, collOffs[c+1] - collOffs[c]);
+            RankQueryProperty rqp;
+            SPLMUtil::getRankQueryProperty(rqp, sentOffs, s, W, collOffs[c+1] - collOffs[c]);
 
             vector<double> query_tf;
             getSmoothedTfSentence(query_tf, s, sentOffs, collWordMap, W, numOfSentences, U, S,TF);
@@ -134,7 +136,8 @@ void SPLM::generateSummary(
             for (int j = sentOffs[s]; j < sentOffs[s + 1]; ++j)
                 uniqueWords.insert(W[j]);
 
-            map<int,int> sentenceWordMapping = SPLMUtil::getWordMapping(uniqueWords);
+            map<int,int> sentenceWordMapping;
+            SPLMUtil::getWordMapping(sentenceWordMapping, uniqueWords);
 
             // Changing to a new document
             if (sentOffs[s] > docOffs[docI] )
@@ -160,7 +163,8 @@ void SPLM::generateSummary(
 
             for (int docIndex = d_start; docIndex < d_end; docIndex++)
             {
-                RankDocumentProperty rdp = SPLMUtil::getRankDocumentProperty(nWords, docOffs, docIndex, W, sentenceWordMapping);
+                RankDocumentProperty rdp;
+                SPLMUtil::getRankDocumentProperty(rdp, nWords, docOffs, docIndex, W, sentenceWordMapping);
                 getSmoothedTfDocument(coll_tf, docIndex, sentOffs, docOffs, collWordMap, W, numOfSentences, U,S,TF);
                 sentenceScore += plm.getScoreSVD(rqp, rdp, query_tf_doc, query_tf, coll_tf);
             }

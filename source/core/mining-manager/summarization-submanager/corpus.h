@@ -8,7 +8,8 @@
 #ifndef SF1R_MINING_MANAGER_SUMMARIZATION_CORPUS_H_
 #define SF1R_MINING_MANAGER_SUMMARIZATION_CORPUS_H_
 
-#include "ts_common.h"
+#include <iostream>
+#include <vector>
 
 namespace sf1r
 {

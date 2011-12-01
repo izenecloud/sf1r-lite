@@ -3,6 +3,7 @@
 #include "sbd.h"
 #include "stopword.h"
 
+#include <common/Utilities.h>
 #include <util/hashFunction.h>
 
 #include <iostream>
@@ -30,7 +31,7 @@ void Preprocess::add_doc_to_corpus(const vector<string>& sentences,  Corpus& cor
 
         while (getline(ss, token, ' '))
         {
-            SPLMUtil::to_lowercase(token);
+            Utilities::toLower(token);
             if (Stopword::getInstance()->is_stop_word(token) || token.length() <= 1)
                 continue;
 

@@ -38,7 +38,7 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
         const std::vector<PropertyValue>& filterParam, boost::shared_ptr<BitVector> docIdSet)
 {
     collectionid_t colId = 1;
-    std::string propertyL = sf1r::Utilities::toUpper(property);
+    std::string propertyL = sf1r::Utilities::toUpperCopy(property);
     switch (filterOperation)
     {
     case QueryFiltering::EQUAL:

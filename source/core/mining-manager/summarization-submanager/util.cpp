@@ -2,23 +2,15 @@
 #include "corpus.h"
 
 #include <vector>
-#include <map>
-#include <set>
-#include <iterator>
-#include <sstream>
+#include <fstream>
+#include <cmath>
 
 using namespace std;
 
 namespace sf1r
 {
 
-void SPLMUtil::to_lowercase(std::string&s)
-{
-    for (std::string::iterator i = s.begin(); i != s.end(); ++i)
-        *i = tolower(*i);
-}
-
-double SPLMUtil::kl(vector<double>& px , vector<double>& qx)
+double SPLMUtil::kl(const vector<double>& px, const vector<double>& qx)
 {
     assert(px.size() == qx.size());
     double val = 0;
@@ -30,39 +22,47 @@ double SPLMUtil::kl(vector<double>& px , vector<double>& qx)
     return val;
 }
 
-double** SPLMUtil::getTF(map<int,int> wordMap, int s_start, int s_end, int* sentOffs, int* W)
+double** SPLMUtil::getTF(const map<int, int>& wordMap, int s_start, int s_end, int* sentOffs, int* W)
 {
     double ** TF = mat_alloc_init(wordMap.size(), s_end-s_start, 0.);
     for (int s = s_start ; s < s_end; ++s)
     {
         for (int i = sentOffs[s]; i < sentOffs[s + 1]; ++i)
         {
-            ++TF[wordMap[W[i]]][s-s_start];
+            map<int, int>::const_iterator it = wordMap.find(W[i]);
+            if (it != wordMap.end())
+                ++TF[it->second][s - s_start];
+            else
+                ++TF[0][s - s_start];
         }
     }
     return TF;
 }
 
-double** SPLMUtil::getTFIDF(map<int,int> wordMap, int s_start, int s_end, int* sentOffs,
+double** SPLMUtil::getTFIDF(const map<int,int>& wordMap, int s_start, int s_end, int* sentOffs,
         int d_start, int d_end, int* docOffs, int* W)
 {
     double ** TF = mat_alloc_init(wordMap.size(), s_end-s_start, 0.);
-    map<int,int> IDF = getIDF(s_start, d_start, d_end, sentOffs, docOffs, W);
+    map<int,int> IDF;
+    getIDF(IDF, s_start, d_start, d_end, sentOffs, docOffs, W);
 
     for (int s = s_start ; s < s_end; ++s)
     {
         for (int i = sentOffs[s]; i < sentOffs[s + 1]; ++i)
         {
-            TF[wordMap[W[i]]][s - s_start] += log((s_end-s_start) / ( 1 + IDF[W[i]]));
+            map<int, int>::const_iterator it = wordMap.find(W[i]);
+            if (it != wordMap.end())
+                TF[it->second][s - s_start] += log((s_end-s_start) / ( 1 + IDF[W[i]]));
+            else
+                TF[0][s - s_start] += log((s_end-s_start) / ( 1 + IDF[W[i]]));
         }
     }
     return TF;
 }
 
 // Mapping between word index and the number of sentences containing the word
-map<int, int> SPLMUtil::getISF(int s_start, int s_end, int* sentOffs, int* W)
+void SPLMUtil::getISF(map<int, int>& ISF_map, int s_start, int s_end, int* sentOffs, int* W)
 {
-    map<int, int> ISF_map;
     for (int s = s_start; s < s_end; ++s)
     {
         map<int, bool> wordFound; //Keeps track of whether a word appears in the sentence
@@ -76,13 +76,11 @@ map<int, int> SPLMUtil::getISF(int s_start, int s_end, int* sentOffs, int* W)
             }
         }
     }
-    return ISF_map;
 }
 
 // Mapping between word index and the number of documents containing the word
-map<int, int> SPLMUtil::getIDF(int s_start, int d_start, int d_end, int* sentOffs, int* docOffs, int* W)
+void SPLMUtil::getIDF(map<int, int>& IDF_map, int s_start, int d_start, int d_end, int* sentOffs, int* docOffs, int* W)
 {
-    map <int, int> IDF_map;
     int s_end = s_start;
     for (int d = d_start; d < d_end; ++d)
     {
@@ -102,13 +100,11 @@ map<int, int> SPLMUtil::getIDF(int s_start, int d_start, int d_end, int* sentOff
         }
         s_start = s_end;
     }
-    return IDF_map;
 }
 
 // Mapping between word index and the number of documents in the whole collection containing the word
-map<int, int> SPLMUtil::getICF(int nColls, int* sentOffs, int* collOffs, int* W)
+void SPLMUtil::getICF(map<int, int>& ICF_map, int nColls, int* sentOffs, int* collOffs, int* W)
 {
-    map <int, int> ICF_map;
     int s_start = 0;
     int s_end = 0;
     for (int c = 0 ; c < nColls; ++c)
@@ -128,7 +124,6 @@ map<int, int> SPLMUtil::getICF(int nColls, int* sentOffs, int* collOffs, int* W)
         }
         s_start = s_end;
     }
-    return ICF_map;
 }
 
 double SPLMUtil::calculateOverlap(set<int>& set1, set<int>& set2)
@@ -153,9 +148,8 @@ bool SPLMUtil::exceedOverlapThreshold(int* sentOffs, int s, int* W, set<int> sel
     return olp >= THR;
 }
 
-map<int, int> SPLMUtil::getWordMapping(set<int> words)
+void SPLMUtil::getWordMapping(map<int, int>& wordmapping, set<int> words)
 {
-    map<int,int> wordmapping;
     int wordIndex = 0;
     for (set<int>::iterator it = words.begin(); it != words.end(); ++it)
     {
@@ -165,12 +159,10 @@ map<int, int> SPLMUtil::getWordMapping(set<int> words)
             ++wordIndex;
         }
     }
-    return wordmapping;
 }
 
-map<int, int> SPLMUtil::getCollectionWordMapping(int* collOffs, int c, int* W)
+void SPLMUtil::getCollectionWordMapping(map<int, int>& wordmapping, int* collOffs, int c, int* W)
 {
-    map<int, int> wordmapping;
     int wordIndex = 0;
     for (int i = collOffs[c]; i < collOffs[c + 1]; ++i)
     {
@@ -180,7 +172,6 @@ map<int, int> SPLMUtil::getCollectionWordMapping(int* collOffs, int c, int* W)
             ++wordIndex;
         }
     }
-    return wordmapping;
 }
 
 void SPLMUtil::selectSentences(string fileName, Corpus corpus, int* sentOffs, int* W,
@@ -224,7 +215,7 @@ void SPLMUtil::selectSentences(string fileName, Corpus corpus, int* sentOffs, in
     ofs.close();
 }
 
-RankQueryProperty SPLMUtil::getRankQueryProperty(int* sentOffs, int s, int* W, int documentLength)
+void SPLMUtil::getRankQueryProperty(RankQueryProperty& rqp, int* sentOffs, int s, int* W, int documentLength)
 {
     map<int, vector<int> > uniqueWordPos;
     for (int i = sentOffs[s]; i < sentOffs[s + 1]; ++i)
@@ -241,7 +232,6 @@ RankQueryProperty SPLMUtil::getRankQueryProperty(int* sentOffs, int s, int* W, i
         }
     }
 
-    RankQueryProperty rqp;
     rqp.setNumDocs(1);
     rqp.setTotalPropertyLength(documentLength);
 
@@ -265,10 +255,9 @@ RankQueryProperty SPLMUtil::getRankQueryProperty(int* sentOffs, int s, int* W, i
         ++wordIndex;
     }
     rqp.setQueryLength(sentOffs[s + 1] - sentOffs[s]);
-    return rqp;
 }
 
-RankDocumentProperty SPLMUtil::getRankDocumentProperty(int nWords, int* collOffs, int c, int* W, map<int, int> wordMapping)
+void SPLMUtil::getRankDocumentProperty(RankDocumentProperty& rdp, int nWords, int* collOffs, int c, int* W, map<int, int> wordMapping)
 {
     map<int, vector<int> > uniqueWordPos;
     for (int i = collOffs[c]; i < collOffs[c + 1]; ++i)
@@ -288,7 +277,6 @@ RankDocumentProperty SPLMUtil::getRankDocumentProperty(int nWords, int* collOffs
         }
     }
 
-    RankDocumentProperty rdp;
     rdp.resize(uniqueWordPos.size() );
     rdp.setDocLength(collOffs[c + 1] - collOffs[c]); //Test
 
@@ -304,7 +292,6 @@ RankDocumentProperty SPLMUtil::getRankDocumentProperty(int nWords, int* collOffs
         }
         ++wordIndex;
     }
-    return rdp;
 }
 
 }
