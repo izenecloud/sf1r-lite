@@ -22,6 +22,7 @@ class SearchCache
 public:
     struct value_type
     {
+        std::time_t timestamp;
         std::vector<float> scores;
         std::vector<float> customScores;
         std::vector<unsigned int> docIdList;
@@ -38,6 +39,7 @@ public:
 
     explicit SearchCache(unsigned cacheSize)
             : cache_(cacheSize)
+            , refreshInterval_(60*60)
     {}
 
     /**
@@ -73,7 +75,12 @@ public:
                 (*propertyQueryTermList).swap(value.propertyQueryTermList);
             if (workerIdList)
                 (*workerIdList).swap(value.workerIdList);
-            return true;
+
+            std::time_t timestamp = value.timestamp;
+            if (isNeedRefresh(key, timestamp))
+                return false;
+            else
+                return true;
         }
 
         return false;
@@ -96,6 +103,7 @@ public:
             return;
 
         value_type value;
+        value.timestamp = std::time(NULL);
         scores.swap(value.scores);
         customScores.swap(value.customScores);
         docIdList.swap(value.docIdList);
@@ -111,13 +119,44 @@ public:
             value.propertyQueryTermList = *propertyQueryTermList;
         if (workerIdList)
             value.workerIdList = *workerIdList;
-        cache_.insertValue(key, value);
+        cache_.updateValue(key, value);
     }
 
     void clear()
     {
         cache_.clear();
     }
+
+private:
+    /**
+     * For keys with static values, we need not to refresh cache;
+     * but for those with volatile values, we need to refresh cache periodically.
+     * @return true if need refresh, or false;
+     */
+    bool isNeedRefresh(const key_type& key, std::time_t timestamp)
+    {
+        bool check = false;
+
+        // check "_ctr" sort property
+        const std::vector<std::pair<std::string , bool> >& sortProperties = key.sortInfo;
+        std::vector<std::pair<std::string , bool> >::const_iterator cit;
+        for (cit = sortProperties.begin(); cit != sortProperties.end(); cit++)
+        {
+            if (cit->first == "_ctr")
+            {
+                check = true;
+                break;
+            }
+        }
+
+        if (check){
+            std::cout<< "check refresh: "<<std::time(NULL)<<" - "<<timestamp<<" > "<<refreshInterval_<<std::endl;
+            return (std::time(NULL) - timestamp) > refreshInterval_;
+        }
+        else
+            return false;
+    }
+
 private:
     typedef izenelib::cache::IzeneCache<
     key_type,
@@ -128,6 +167,7 @@ private:
     > cache_type;
 
     cache_type cache_;
+    time_t refreshInterval_; // seconds
 };
 
 } // namespace sf1r
