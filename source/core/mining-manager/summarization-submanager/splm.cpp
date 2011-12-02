@@ -141,7 +141,7 @@ void SPLM::generateSummary(
             for (int j = sentOffs[s]; j < sentOffs[s + 1]; ++j)
                 uniqueWords.insert(W[j]);
 
-            map<int,int> sentenceWordMapping;
+            map<int, int> sentenceWordMapping;
             SPLMUtil::getWordMapping(sentenceWordMapping, uniqueWords);
 
             // Changing to a new document
@@ -161,7 +161,12 @@ void SPLM::generateSummary(
                     double **V_doc = mat_alloc(numOfS_doc, numOfS_doc);
 
                     mat_svd(TF_doc, collWordMap.size(), numOfS_doc, U_doc, S_doc[0], V_doc);
-                    getSmoothedTfSentence(query_tf_doc, s, sentOffs, collWordMap, W, numOfS_doc, U_doc, S_doc,TF_doc);
+                    getSmoothedTfSentence(query_tf_doc, s, sentOffs, collWordMap, W, numOfS_doc, U_doc, S_doc, TF_doc);
+
+                    mat_free(TF_doc);
+                    mat_free(U_doc);
+                    mat_free(S_doc);
+                    mat_free(V_doc);
                 }
                 docI++;
             }
@@ -183,6 +188,11 @@ void SPLM::generateSummary(
 
         s_start = s_end;
         d_start = d_end;
+
+        mat_free(TF);
+        mat_free(U);
+        mat_free(S);
+        mat_free(V);
     }
 }
 

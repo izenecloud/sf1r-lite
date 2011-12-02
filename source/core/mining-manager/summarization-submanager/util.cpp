@@ -43,7 +43,7 @@ double **SPLMUtil::getTF(const map<int, int>& wordMap, int s_start, int s_end,
     return TF;
 }
 
-double **SPLMUtil::getTFIDF(const map<int,int>& wordMap, int s_start, int s_end,
+double **SPLMUtil::getTFIDF(const map<int, int>& wordMap, int s_start, int s_end,
         const int *sentOffs, int d_start, int d_end, const int *docOffs, const int *W)
 {
     double **TF = mat_alloc(wordMap.size(), s_end - s_start);
@@ -181,7 +181,7 @@ void SPLMUtil::getCollectionWordMapping(map<int, int>& wordmapping, const int *c
 
 void SPLMUtil::selectSentences(const string& fileName, const Corpus& corpus,
         const int *sentOffs, const int *W,
-        const set<pair<double,int> >& result)
+        const set<pair<double, int> >& result)
 {
     ofstream ofs;
     ofs.open(fileName.c_str());

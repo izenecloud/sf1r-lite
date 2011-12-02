@@ -39,7 +39,7 @@ public:
     /// @param sentOffs Sentence offsets
     /// @param W Word IDs
     ///
-    static double **getTF(const std::map<int,int>& wordMap, int s_start, int s_end,
+    static double **getTF(const std::map<int, int>& wordMap, int s_start, int s_end,
             const int *sentOffs, const int *W);
 
     ///
@@ -53,7 +53,7 @@ public:
     /// @param docOffs Document offsets
     /// @param W Word IDs
     ///
-    static double **getTFIDF(const std::map<int,int>& wordMap, int s_start, int s_end,
+    static double **getTFIDF(const std::map<int, int>& wordMap, int s_start, int s_end,
             const int *sentOffs, int d_start, int d_end, const int *docOffs, const int *W);
 
     ///
@@ -101,7 +101,7 @@ public:
     ///
     static void selectSentences(const std::string& fileName, const Corpus& corpus,
             const int *sentOffs, const int *W,
-            const std::set<std::pair<double,int> >& result);
+            const std::set<std::pair<double, int> >& result);
 
     ///
     /// @brief Converts a sentence into RankQueryProperty (for PLM calculation)

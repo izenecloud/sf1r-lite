@@ -98,8 +98,8 @@ static __INLINE__ double **mat_clone_diag(double *A, int m)
     int r;
     assert(m > 0 && A);
 
-    B = mat_alloc(m,m);
-    mat_zero(B,m,m);
+    B = mat_alloc(m, m);
+    mat_zero(B, m, m);
     for (r = 0; r < m; r++) B[r][r] = A[r];
 
     return B;

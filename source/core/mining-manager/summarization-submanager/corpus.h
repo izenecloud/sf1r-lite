@@ -22,11 +22,6 @@ public:
     {
     }
 
-    inline int ndocs() const
-    {
-        return _doc_offs.size();
-    }
-
     inline int ntotal() const
     {
         return _word_seqs.size();
@@ -35,6 +30,11 @@ public:
     inline int nsents() const
     {
         return _sent_offs.size();
+    }
+
+    inline int ndocs() const
+    {
+        return _doc_offs.size();
     }
 
     inline int ncolls() const
@@ -62,12 +62,26 @@ public:
         return &_coll_offs.at(0);
     }
 
-    void init()
+    void reset()
     {
-        _word_seqs.clear();
-        _doc_offs.clear();
-        _sent_offs.clear();
         _word_pos = 0;
+        _word_seqs.clear();
+        _sent_offs.clear();
+        _doc_offs.clear();
+        _coll_offs.clear();
+        _sents.clear();
+        _coll_names.clear();
+    }
+
+    void start_new_sent()
+    {
+        _sent_offs.push_back(_word_pos);
+    }
+
+    void start_new_sent(const std::string& sent)
+    {
+        _sent_offs.push_back(_word_pos);
+        _sents.push_back(sent);
     }
 
     void start_new_doc()
@@ -75,19 +89,11 @@ public:
         _doc_offs.push_back(_word_pos);
     }
 
-    void start_new_sent()
-    {
-        _sent_offs.push_back(_word_pos);
-    }
-    void start_new_sent(const std::string& sent)
-    {
-        _sent_offs.push_back(_word_pos);
-        _sents.push_back(sent);
-    }
     void start_new_coll()
     {
         _coll_offs.push_back(_word_pos);
     }
+
     void start_new_coll(const std::string& name)
     {
         _coll_offs.push_back(_word_pos);
@@ -140,18 +146,15 @@ public:
         return _coll_names.at(c);
     }
 
-
 private:
-
     int _word_pos;
     std::vector<int> _word_seqs;
-    std::vector<int> _doc_offs;
     std::vector<int> _sent_offs;
+    std::vector<int> _doc_offs;
+    std::vector<int> _coll_offs;
 
     std::vector<std::string> _sents;
-    std::vector<int> _coll_offs;
     std::vector<std::string> _coll_names;
-
 };
 
 }

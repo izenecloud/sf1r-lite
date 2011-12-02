@@ -72,7 +72,7 @@ void Preprocess::runPreprocess(const string& corpus_root, const string& stop_wor
             infile.open(fileName.c_str());
             while (!infile.eof())
             {
-                getline(infile,STRING);
+                getline(infile, STRING);
                 vector<string> sentences;
                 SentenceBoundaryDetection::sbd(STRING, sentences);
                 add_doc_to_corpus(sentences, corpus);
