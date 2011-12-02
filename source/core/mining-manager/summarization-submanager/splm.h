@@ -3,8 +3,8 @@
 /// @author Hogyeong Jeong ( hogyeong.jeong@gmail.com )
 ///
 
-#ifndef SF1R_MINING_MANAGER_SUMMARIZATION_SPLM_H_
-#define SF1R_MINING_MANAGER_SUMMARIZATION_SPLM_H_
+#ifndef SF1R_MINING_MANAGER_SUMMARIZATION_SUBMANAGER_SPLM_H_
+#define SF1R_MINING_MANAGER_SUMMARIZATION_SUBMANAGER_SPLM_H_
 
 
 #include "corpus.h"
@@ -67,14 +67,13 @@ public:
     /// @param corpus Corpus to be summarized
     ///
     static void generateSummary(
-            const std::string& pid,
-            const std::string& result_root,
-            float mu, float lambda,
-            const Corpus& corpus
+            std::vector<izenelib::util::UString>& summary_list,
+            const Corpus& corpus,
+            float mu = 1100, float lambda = 300
     );
 
 };
 
 }
 
-#endif
+#endif /* SF1R_MINING_MANAGER_SUMMARIZATION_SPLM_H_ */

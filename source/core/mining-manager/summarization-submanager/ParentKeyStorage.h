@@ -8,7 +8,7 @@
 
 #include <boost/thread.hpp>
 
-#include <list>
+#include <vector>
 
 namespace sf1r
 {
@@ -17,8 +17,8 @@ using izenelib::util::UString;
 
 class ParentKeyStorage
 {
-    typedef izenelib::am::leveldb::Table<UString, UString> ParentKeyDbType;
-    typedef stx::btree_map<UString, UString> BufferType;
+    typedef izenelib::am::leveldb::Table<UString, std::vector<UString> > ParentKeyDbType;
+    typedef stx::btree_map<UString, std::vector<UString> > BufferType;
 
 public:
     ParentKeyStorage(
@@ -31,7 +31,7 @@ public:
 
     void Flush();
 
-    bool Get(const UString& key, std::list<UString>& results);
+    bool Get(const UString& key, std::vector<UString>& results);
 
 private:
     inline bool IsBufferFull_()

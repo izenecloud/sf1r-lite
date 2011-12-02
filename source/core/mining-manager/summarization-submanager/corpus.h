@@ -8,8 +8,9 @@
 #ifndef SF1R_MINING_MANAGER_SUMMARIZATION_CORPUS_H_
 #define SF1R_MINING_MANAGER_SUMMARIZATION_CORPUS_H_
 
+#include <util/ustring/UString.h>
+
 #include <boost/unordered_map.hpp>
-#include <iostream>
 #include <vector>
 
 namespace sf1r
@@ -18,10 +19,9 @@ namespace sf1r
 class Corpus
 {
 public:
-    Corpus()
-        : _word_pos(0)
-    {
-    }
+    Corpus();
+
+    ~Corpus();
 
     inline int ntotal() const
     {
@@ -68,102 +68,21 @@ public:
         return &_coll_offs.at(0);
     }
 
-    void reset()
-    {
-        _word_pos = 0;
-        _word_seqs.clear();
-        _sent_offs.clear();
-        _doc_offs.clear();
-        _coll_offs.clear();
-        _sents.clear();
-        _coll_names.clear();
-        _map_str2id.clear();
-        _map_id2str.clear();
-    }
+    void reset();
 
-    void start_new_sent()
-    {
-        _sent_offs.push_back(_word_pos);
-    }
+    void start_new_sent();
 
-    void start_new_sent(const std::string& sent)
-    {
-        _sent_offs.push_back(_word_pos);
-        _sents.push_back(sent);
-    }
+    void start_new_doc();
 
-    void start_new_doc()
-    {
-        _doc_offs.push_back(_word_pos);
-    }
+    void start_new_coll();
 
-    void start_new_coll()
-    {
-        _coll_offs.push_back(_word_pos);
-    }
+    const izenelib::util::UString& get_sent(int s) const;
 
-    void start_new_coll(const std::string& name)
-    {
-        _coll_offs.push_back(_word_pos);
-        _coll_names.push_back(name);
-    }
+    void add_word(const izenelib::util::UString word);
 
-    void add_word(const std::string word)
-    {
-        int wid;
-        if (_map_str2id.find(word) == _map_str2id.end())
-        {
-            wid = _map_id2str.size();
-            _map_str2id[word] = wid;
-            _map_id2str.push_back(word);
-        }
-        else
-        {
-            wid = _map_str2id[word];
-        }
-        _word_seqs.push_back(wid);
-        ++_word_pos;
-    }
+    void add_sent(const izenelib::util::UString& sent);
 
-    friend std::ostream& operator<<(std::ostream& out, const Corpus& corp)
-    {
-        out << "nDocs:" << corp.ndocs() << std::endl;
-        out << "nTotal:" << corp.ntotal() << std::endl;
-        out << "nSentences:" << corp.nsents() << std::endl;
-//      out << "DocOffs:";
-//      for(int i = 0; i < corp.m_aDocOffs.size(); ++ i)
-//          out << corp.m_aDocOffs[i] << ",";
-//      out << std::endl;
-//      out << "SentOffs:";
-//      for(int i = 0; i < corp.m_aSentOffs.size(); ++ i)
-//          out << corp.m_aSentOffs[i] << ",";
-//      out << std::endl;
-//      out << "Words:";
-//      for(int i = 0; i < corp.m_aWords.size(); ++ i)
-//          out << i << ":" << IDManager::get_string(corp.m_aWords[i] ) << "(" << corp.m_aWords[i] << ")"<< ",";
-//      out << std::endl;
-        return out;
-    }
-
-    int* pack()
-    {
-        return 0;
-    }
-
-    void add_sent(const std::string& sent)
-    {
-        _sents.push_back(sent);
-    }
-
-    const std::string get_sent(int s) const
-    {
-        return _sents.at(s);
-    }
-
-    const std::string get_coll_name(int c) const
-    {
-        return _coll_names.at(c);
-    }
+    void add_doc(const izenelib::util::UString& doc);
 
 private:
     int _word_pos;
@@ -172,13 +91,12 @@ private:
     std::vector<int> _doc_offs;
     std::vector<int> _coll_offs;
 
-    std::vector<std::string> _sents;
-    std::vector<std::string> _coll_names;
+    std::vector<izenelib::util::UString> _sents;
 
-    boost::unordered_map<std::string, int> _map_str2id;
-    std::vector<std::string> _map_id2str;
+    boost::unordered_map<izenelib::util::UString, int> _map_str2id;
+    std::vector<izenelib::util::UString> _map_id2str;
 };
 
 }
 
-#endif /* CORPUS_H_ */
+#endif /* SF1R_MINING_MANAGER_SUMMARIZATION_CORPUS_H_ */

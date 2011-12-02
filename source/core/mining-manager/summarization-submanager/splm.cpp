@@ -71,10 +71,9 @@ void SPLM::getSmoothedTfSentence(
 }
 
 void SPLM::generateSummary(
-        const string& pid,
-        const string& result_root,
-        float mu, float lambda,
-        const Corpus& corpus
+        vector<izenelib::util::UString>& summary_list,
+        const Corpus& corpus,
+        float mu, float lambda
 )
 {
     const TermProximityMeasure* termProximityMeasure =
@@ -96,8 +95,6 @@ void SPLM::generateSummary(
 
     for (int c = 0 ; c < nColls; ++c)
     {
-        cout << "C = " << c << ", gen: " << result_root + corpus.get_coll_name(c) + "." + pid << endl;
-
         // Advance s_end and d_end indices
         while (sentOffs[s_end] < collOffs[c + 1]) ++s_end;
         while (docOffs[d_end] < collOffs[c + 1]) ++d_end;
@@ -184,8 +181,8 @@ void SPLM::generateSummary(
                 result.insert(make_pair(sentenceScore, s));
         }
 
-        string fileName = result_root + corpus.get_coll_name(c) + "." + pid.data();
-        SPLMUtil::selectSentences(fileName, corpus, sentOffs, W, result);
+        string fileName;
+        SPLMUtil::selectSentences(summary_list, corpus, sentOffs, W, result);
 
         s_start = s_end;
         d_start = d_end;
