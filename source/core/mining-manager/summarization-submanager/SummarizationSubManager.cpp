@@ -20,6 +20,21 @@ namespace bfs = boost::filesystem;
 
 namespace sf1r
 {
+
+static const UString DOCID("DOCID",UString::UTF_8);
+
+bool CheckParentKeyLogFormat(
+    const SCDDocPtr& doc,
+    const UString& parent_key_name)
+{
+    if(doc->size() != 2) return false;
+    const UString& first = (*doc)[0].first;
+    const UString& second = (*doc)[1].first;
+    //TODO case insensitive compare, but it requires extra string conversion,
+    //which introduces unnecessary memory fragments
+    return (first == DOCID&& second == parent_key_name);
+}
+
 MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         const std::string& homePath,
         SummarizeConfig schema,
@@ -28,9 +43,11 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     :schema_(schema)
     ,document_manager_(document_manager)
     ,index_manager_(index_manager)
+    ,parent_key_ustr_name_(schema_.parentKey, UString::UTF_8)
 {
     if (!schema_.parentKeyLogPath.empty())
         boost::filesystem::create_directories(schema_.parentKeyLogPath);
+
 
     parent_key_storage_ = new ParentKeyStorage(bfs::path(bfs::path(homePath) / "parentkey" ).string());
 }
@@ -110,6 +127,7 @@ void MultiDocSummarizationSubManager::BuildIndexOfParentKey_()
         }
         parser.load(*scd_it);
     }
+    parent_key_storage_->Flush();
 
     bfs::path bkDir = bfs::path(schema_.parentKeyLogPath) / "backup";
     bfs::create_directory(bkDir);
@@ -141,7 +159,9 @@ void MultiDocSummarizationSubManager::DoInsertBuildIndexOfParentKey_(
             return;
         }
         SCDDocPtr doc = (*doc_iter);
-        
+        if(!CheckParentKeyLogFormat(doc,parent_key_ustr_name_))
+            continue;
+        parent_key_storage_->AppendUpdate((*doc)[1].second,(*doc)[0].second);
     }	
 }
 

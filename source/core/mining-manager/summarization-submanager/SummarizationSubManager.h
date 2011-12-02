@@ -3,6 +3,7 @@
 
 #include <configuration-manager/SummarizeConfig.h>
 
+#include <util/ustring/UString.h>
 
 #include <boost/shared_ptr.hpp>
 
@@ -10,6 +11,7 @@
 
 namespace sf1r
 {
+using izenelib::util::UString;
 
 class DocumentManager;
 class IndexManager;
@@ -47,6 +49,7 @@ private:
     boost::shared_ptr<IndexManager> index_manager_;
 
     ParentKeyStorage* parent_key_storage_;
+    UString parent_key_ustr_name_;	
 };
 
 }
