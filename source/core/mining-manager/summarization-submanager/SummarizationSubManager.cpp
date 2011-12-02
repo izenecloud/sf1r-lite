@@ -102,6 +102,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
                 PropertyType foreignKey(*fit);
                 std::vector<uint32_t> docs;
                 pBTreeIndexer->getValue(schema_.foreignKeyPropName, foreignKey,docs);
+                std::sort(docs.begin(), docs.end());
                 DoEvaluateSummarization_(*fit, docs);
             }
         }
