@@ -5,7 +5,6 @@
 
 #include <glog/logging.h>
 
-#include <utility>
 #include <cstring> // memcpy
 
 namespace
