@@ -5,6 +5,7 @@
 
 #include <glog/logging.h>
 
+#include <utility>
 #include <cstring> // memcpy
 
 namespace
@@ -12,7 +13,8 @@ namespace
 using namespace sf1r;
 
 template<typename T>
-void* createPropertyData(
+boost::shared_ptr<PropertyData> createPropertyData(
+   PropertyDataType type,
    typename NumericPropertyTableBuilderStub::PropertyMap<T>::map_type& propMap,
    const std::string& propName
 )
@@ -20,9 +22,11 @@ void* createPropertyData(
     typename NumericPropertyTableBuilderStub::PropertyMap<T>::table_type& propTable = propMap[propName];
     std::size_t num = propTable.size();
     void* data = new T[num];
-    memcpy(data, &propTable[0], num*sizeof(T));
+    size_t size = num*sizeof(T);
+    memcpy(data, &propTable[0], size);
 
-    return data;
+    boost::shared_ptr<PropertyData> propData(new PropertyData(type, data, size));
+    return propData;
 }
 
 template<typename T>
@@ -74,24 +78,24 @@ PropertyDataType NumericPropertyTableBuilderStub::getPropertyType_(const std::st
 NumericPropertyTable* NumericPropertyTableBuilderStub::createPropertyTable(const std::string& propertyName)
 {
     PropertyDataType propType = getPropertyType_(propertyName);
-    void* data = NULL;
+    boost::shared_ptr<PropertyData> propData;
 
     switch(propType)
     {
     case INT_PROPERTY_TYPE:
-        data = createPropertyData<int64_t>(intPropMap_, propertyName);
+        propData = createPropertyData<int64_t>(INT_PROPERTY_TYPE, intPropMap_, propertyName);
         break;
 
     case UNSIGNED_INT_PROPERTY_TYPE:
-        data = createPropertyData<uint64_t>(uintPropMap_, propertyName);
+        propData = createPropertyData<uint64_t>(UNSIGNED_INT_PROPERTY_TYPE, uintPropMap_, propertyName);
         break;
 
     case FLOAT_PROPERTY_TYPE:
-        data = createPropertyData<float>(floatPropMap_, propertyName);
+        propData = createPropertyData<float>(FLOAT_PROPERTY_TYPE, floatPropMap_, propertyName);
         break;
 
     case DOUBLE_PROPERTY_TYPE:
-        data = createPropertyData<double>(doublePropMap_, propertyName);
+        propData = createPropertyData<double>(DOUBLE_PROPERTY_TYPE, doublePropMap_, propertyName);
         break;
 
     default:
@@ -100,9 +104,8 @@ NumericPropertyTable* NumericPropertyTableBuilderStub::createPropertyTable(const
         break;
     }
 
-    if (data)
+    if (propData)
     {
-        boost::shared_ptr<PropertyData> propData(new PropertyData(propType, data));
         return new NumericPropertyTable(propertyName, propData);
     }
 
