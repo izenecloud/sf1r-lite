@@ -2,14 +2,14 @@
 
 #include <stdio.h>
 
-void mat_print(double ** mat, int m, int n, const char *fmt)
+void mat_print(double **mat, int m, int n, const char *fmt)
 {
     int r, c;
 
-    for (r=0; r<m; r++)
+    for (r = 0; r < m; r++)
     {
         fprintf(stdout, "|");
-        for (c=0; c<n; c++)
+        for (c = 0; c < n; c++)
         {
             fprintf(stdout, fmt, mat[r][c]);
         }
@@ -17,13 +17,13 @@ void mat_print(double ** mat, int m, int n, const char *fmt)
     }
 }
 
-void mat_file_print(double ** mat, int m, int n, const char *fmt, FILE* f)
+void mat_file_print(double **mat, int m, int n, const char *fmt, FILE *f)
 {
     int r, c;
-    for (r=0; r<m; r++)
+    for (r = 0; r < m; r++)
     {
         fprintf(f, "|");
-        for (c=0; c<n; c++)
+        for (c = 0; c < n; c++)
         {
             fprintf(f, fmt, mat[r][c]);
         }
@@ -32,17 +32,18 @@ void mat_file_print(double ** mat, int m, int n, const char *fmt, FILE* f)
     fclose(f);
 }
 
-int mat_save(double ** mat, int m, int n, const char *fn)
+int mat_save(double **mat, int m, int n, const char *fn)
 {
     int r;
     FILE *fp = fopen(fn, "wb");
     if (!fp) return 0;
 
-    if (1!=fwrite(&m, sizeof(int), 1, fp)) goto quit;
-    if (1!=fwrite(&n, sizeof(int), 1, fp)) goto quit;
+    if (1 != fwrite(&m, sizeof(int), 1, fp)) goto quit;
+    if (1 != fwrite(&n, sizeof(int), 1, fp)) goto quit;
 
-    for (r=0; r<m; r++) {
-        if (n!=fwrite(mat[r],sizeof(double),n,fp)) goto quit;
+    for (r = 0; r < m; r++)
+    {
+        if (n != fwrite(mat[r], sizeof(double), n, fp)) goto quit;
     }
 
     fclose(fp); return 1;
@@ -58,14 +59,15 @@ double **mat_load(int *m, int *n, const char *fn)
     FILE *fp = fopen(fn, "rb");
     if (!fp) return 0;
 
-    if (1!=fread(m, sizeof(int), 1, fp)) goto quit;
-    if (1!=fread(n, sizeof(int), 1, fp)) goto quit;
+    if (1 != fread(m, sizeof(int), 1, fp)) goto quit;
+    if (1 != fread(n, sizeof(int), 1, fp)) goto quit;
 
     mat = mat_alloc(*m, *n);
     if (!mat) goto quit;
 
-    for (r=0; r<*m; r++) {
-        if (*n!=fread(mat[r], sizeof(double), *n, fp)) goto error;
+    for (r = 0; r < *m; r++)
+    {
+        if (*n != fread(mat[r], sizeof(double), *n, fp)) goto error;
     }
 
     fclose(fp); return mat;

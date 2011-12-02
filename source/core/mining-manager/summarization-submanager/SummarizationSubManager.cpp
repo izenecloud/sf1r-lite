@@ -20,6 +20,21 @@ namespace bfs = boost::filesystem;
 
 namespace sf1r
 {
+
+static const UString DOCID("DOCID",UString::UTF_8);
+
+bool CheckParentKeyLogFormat(
+    const SCDDocPtr& doc,
+    const UString& parent_key_name)
+{
+    if(doc->size() != 2) return false;
+    const UString& first = (*doc)[0].first;
+    const UString& second = (*doc)[1].first;
+    //TODO case insensitive compare, but it requires extra string conversion,
+    //which introduces unnecessary memory fragments
+    return (first == DOCID&& second == parent_key_name);
+}
+
 MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         const std::string& homePath,
         SummarizeConfig schema,
@@ -28,6 +43,7 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     :schema_(schema)
     ,document_manager_(document_manager)
     ,index_manager_(index_manager)
+    ,parent_key_ustr_name_(schema_.parentKey, UString::UTF_8)
 {
     if (!schema_.parentKeyLogPath.empty())
         boost::filesystem::create_directories(schema_.parentKeyLogPath);
@@ -40,7 +56,7 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
     delete parent_key_storage_;
 }
 
-void MultiDocSummarizationSubManager::ComputeSummarization()
+void MultiDocSummarizationSubManager::EvaluateSummarization()
 {
     BuildIndexOfParentKey_();
     BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
@@ -80,36 +96,31 @@ void MultiDocSummarizationSubManager::BuildIndexOfParentKey_()
 
     for (; scd_it != scdList.end(); ++scd_it)
     {
-        size_t pos = scd_it ->rfind("/")+1;
-        string filename = scd_it ->substr(pos);
+        size_t pos = scd_it->rfind("/") + 1;
+        string filename = scd_it->substr(pos);
 
         LOG(INFO) << "Processing SCD file. " << bfs::path(*scd_it).stem();
 
         switch (parser.checkSCDType(*scd_it))
         {
         case INSERT_SCD:
-        {
             DoInsertBuildIndexOfParentKey_(*scd_it);
             LOG(INFO) << "Indexing Finished";
-        }
-        break;
+            break;
         case DELETE_SCD:
-        {
             DoDelBuildIndexOfParentKey_(*scd_it);
             LOG(INFO) << "Delete Finished";
-        }
-        break;
+            break;
         case UPDATE_SCD:
-        {
             DoUpdateIndexOfParentKey_(*scd_it);
             LOG(INFO) << "Update Finished";
-        }
-        break;
+            break;
         default:
             break;
         }
         parser.load(*scd_it);
     }
+    parent_key_storage_->Flush();
 
     bfs::path bkDir = bfs::path(schema_.parentKeyLogPath) / "backup";
     bfs::create_directory(bkDir);
@@ -133,7 +144,7 @@ void MultiDocSummarizationSubManager::DoInsertBuildIndexOfParentKey_(
 {
     ScdParser parser(UString::UTF_8);
     for (ScdParser::iterator doc_iter = parser.begin();
-        doc_iter != parser.end(); ++doc_iter)
+            doc_iter != parser.end(); ++doc_iter)
     {
         if (*doc_iter == NULL)
         {
@@ -141,7 +152,9 @@ void MultiDocSummarizationSubManager::DoInsertBuildIndexOfParentKey_(
             return;
         }
         SCDDocPtr doc = (*doc_iter);
-        
+        if(!CheckParentKeyLogFormat(doc,parent_key_ustr_name_))
+            continue;
+        parent_key_storage_->AppendUpdate((*doc)[1].second,(*doc)[0].second);
     }	
 }
 
@@ -154,6 +167,5 @@ void MultiDocSummarizationSubManager::DoDelBuildIndexOfParentKey_(
     const std::string& fileName)
 {
 }
-
 
 }

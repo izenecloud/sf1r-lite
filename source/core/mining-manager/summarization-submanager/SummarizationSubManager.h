@@ -3,6 +3,7 @@
 
 #include <configuration-manager/SummarizeConfig.h>
 
+#include <util/ustring/UString.h>
 
 #include <boost/shared_ptr.hpp>
 
@@ -10,6 +11,7 @@
 
 namespace sf1r
 {
+using izenelib::util::UString;
 
 class DocumentManager;
 class IndexManager;
@@ -28,25 +30,23 @@ public:
 
     ~MultiDocSummarizationSubManager();
 
-    void ComputeSummarization();
+    void EvaluateSummarization();
 
 private:
     void BuildIndexOfParentKey_();
 
-    void DoInsertBuildIndexOfParentKey_(
-            const std::string& fileName);
+    void DoInsertBuildIndexOfParentKey_(const std::string& fileName);
 
-    void DoDelBuildIndexOfParentKey_(
-            const std::string& fileName);
-	
-    void DoUpdateIndexOfParentKey_(
-            const std::string& fileName);
+    void DoDelBuildIndexOfParentKey_(const std::string& fileName);
+
+    void DoUpdateIndexOfParentKey_(const std::string& fileName);
 
     SummarizeConfig schema_;
     boost::shared_ptr<DocumentManager> document_manager_;
     boost::shared_ptr<IndexManager> index_manager_;
 
     ParentKeyStorage* parent_key_storage_;
+    UString parent_key_ustr_name_;	
 };
 
 }

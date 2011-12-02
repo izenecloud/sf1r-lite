@@ -14,6 +14,9 @@
 #include <ir/index_manager/index/Indexer.h>
 #include <ir/index_manager/index/IndexReader.h>
 #include <ir/index_manager/index/rtype/BTreeIndexerManager.h>
+
+#include <util/string/StringUtils.h>
+
 #include <boost/shared_ptr.hpp>
 
 using namespace std;
@@ -54,12 +57,12 @@ struct PropertyValue2IndexPropertyType
     }
     void operator()(const std::string& value)
     {
-        izenelib::ir::indexmanager::trim(const_cast<std::string&>(value));
+        izenelib::util::Trim(const_cast<std::string&>(value));
         out_ = izenelib::util::UString(value,izenelib::util::UString::UTF_8);
     }
     void operator()(const izenelib::util::UString& value)
     {
-        izenelib::ir::indexmanager::trim(const_cast<izenelib::util::UString&>(value));
+        izenelib::util::Trim(const_cast<izenelib::util::UString&>(value));
         out_ = value;
     }
 

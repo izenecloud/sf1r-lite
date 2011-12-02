@@ -18,9 +18,9 @@ using namespace std;
 namespace sf1r
 {
 
-void Preprocess::add_doc_to_corpus(const vector<string>& sentences,  Corpus& corpus)
+void Preprocess::add_doc_to_corpus(const vector<string>& sentences, Corpus& corpus)
 {
-    for (unsigned int i=0; i<sentences.size() ; i++)
+    for (unsigned int i = 0; i < sentences.size(); i++)
     {
         string sent(sentences[i]);
         corpus.start_new_sent(sent);
@@ -35,7 +35,7 @@ void Preprocess::add_doc_to_corpus(const vector<string>& sentences,  Corpus& cor
             if (Stopword::getInstance()->is_stop_word(token) || token.length() <= 1)
                 continue;
 
-            uint32_t wid = izenelib::util::izene_hashing(token);
+            int wid = izenelib::util::izene_hashing(token);
             corpus.add_word(wid);
         }
     }
@@ -69,10 +69,10 @@ void Preprocess::runPreprocess(const string& corpus_root, const string& stop_wor
             string fileName = dirStr + dit->d_name;
 
             ifstream infile;
-            infile.open (fileName.c_str());
+            infile.open(fileName.c_str());
             while (!infile.eof())
             {
-                getline(infile,STRING);
+                getline(infile, STRING);
                 vector<string> sentences;
                 SentenceBoundaryDetection::sbd(STRING, sentences);
                 add_doc_to_corpus(sentences, corpus);
@@ -81,8 +81,8 @@ void Preprocess::runPreprocess(const string& corpus_root, const string& stop_wor
         }
     }
 
-    corpus.start_new_doc();
     corpus.start_new_sent();
+    corpus.start_new_doc();
     corpus.start_new_coll();
 
     if (closedir(dip) == -1)
