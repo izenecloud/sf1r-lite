@@ -107,6 +107,9 @@ namespace sf1r {
             case QueryTree::QUESTION_MARK:
                 ss << "QUESTION_MARK       : ]" << endl;
                 break;
+            case QueryTree::FILTER_QUERY:
+                ss << "FILTER_QUERY     : (" << keyword_ <<","<< keywordId_ << ") ]" <<endl;
+                break;
             default:
                 ss << "UNKNOWN  : ]" << endl;
                 break;

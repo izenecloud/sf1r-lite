@@ -61,9 +61,9 @@ void QueryBuilder::reset_cache()
     filterCache_->clear();
 }
 
-Filter* QueryBuilder::prepare_filter(const std::vector<QueryFiltering::FilteringType>& filtingList)
+void QueryBuilder::prepare_filter(const std::vector<QueryFiltering::FilteringType>& filtingList,
+                                 boost::shared_ptr<EWAHBoolArray<uint32_t> >& pDocIdSet)
 {
-    boost::shared_ptr<EWAHBoolArray<uint32_t> > pDocIdSet;
     boost::shared_ptr<BitVector> pBitVector;
     unsigned int bitsNum = pIndexReader_->maxDoc() + 1;
     unsigned int wordsNum = bitsNum/(sizeof(uint32_t) * 8) + (bitsNum % (sizeof(uint32_t) * 8) == 0 ? 0 : 1);
@@ -115,7 +115,6 @@ Filter* QueryBuilder::prepare_filter(const std::vector<QueryFiltering::Filtering
         {
         }
     }
-    return new Filter(pDocIdSet);
 }
 
 MultiPropertyScorer* QueryBuilder::prepare_dociterator(
@@ -159,6 +158,7 @@ MultiPropertyScorer* QueryBuilder::prepare_dociterator(
     return NULL;
     }catch(std::exception& e){
         delete docIterPtr;
+        throw std::runtime_error("Failed to prepare dociterator");
         return NULL;
     }
 }
@@ -253,7 +253,7 @@ void QueryBuilder::prepare_for_property_(
                     pBitVector->compressed(*pDocIdSet);
                     filterCache_->set(filteringRule, pDocIdSet);
                 }
-                TermDocFreqs* pTermDocReader = new BitMapIterator( pDocIdSet );
+                TermDocFreqs* pTermDocReader = new BitMapIterator( pDocIdSet);
                 termDocReaders[termId].push_back(pTermDocReader);
             }
         }

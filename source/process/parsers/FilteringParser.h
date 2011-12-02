@@ -9,6 +9,7 @@
 #include <util/driver/Value.h>
 
 #include <bundles/index/IndexBundleConfiguration.h>
+#include <bundles/mining/MiningBundleConfiguration.h>
 #include <query-manager/QueryTypeDef.h>
 
 #include <string>
@@ -19,8 +20,11 @@ using namespace izenelib::driver;
 class FilteringParser : public ::izenelib::driver::Parser
 {
 public:
-    explicit FilteringParser(const IndexBundleSchema& indexSchema)
+    explicit FilteringParser(
+        const IndexBundleSchema& indexSchema,
+        const MiningSchema& miningSchema)
     : indexSchema_(indexSchema)
+    , miningSchema_(miningSchema)
     {}
 
     bool parse(const Value& conditions);
@@ -43,6 +47,7 @@ public:
     
 private:
     const IndexBundleSchema& indexSchema_;
+    const MiningSchema& miningSchema_;
 
     std::vector<QueryFiltering::FilteringType> filteringRules_;
 };
