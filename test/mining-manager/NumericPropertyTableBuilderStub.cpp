@@ -14,14 +14,15 @@ using namespace sf1r;
 template<typename T>
 void* createPropertyData(
    typename NumericPropertyTableBuilderStub::PropertyMap<T>::map_type& propMap,
-   const std::string& propName
+   const std::string& propName,
+   size_t& size
 )
 {
     typename NumericPropertyTableBuilderStub::PropertyMap<T>::table_type& propTable = propMap[propName];
     std::size_t num = propTable.size();
     void* data = new T[num];
     memcpy(data, &propTable[0], num*sizeof(T));
-
+    size = num;
     return data;
 }
 
@@ -75,23 +76,23 @@ NumericPropertyTable* NumericPropertyTableBuilderStub::createPropertyTable(const
 {
     PropertyDataType propType = getPropertyType_(propertyName);
     void* data = NULL;
-
+    size_t size = 0;
     switch(propType)
     {
     case INT_PROPERTY_TYPE:
-        data = createPropertyData<int64_t>(intPropMap_, propertyName);
+        data = createPropertyData<int64_t>(intPropMap_, propertyName, size);
         break;
 
     case UNSIGNED_INT_PROPERTY_TYPE:
-        data = createPropertyData<uint64_t>(uintPropMap_, propertyName);
+        data = createPropertyData<uint64_t>(uintPropMap_, propertyName, size);
         break;
 
     case FLOAT_PROPERTY_TYPE:
-        data = createPropertyData<float>(floatPropMap_, propertyName);
+        data = createPropertyData<float>(floatPropMap_, propertyName, size);
         break;
 
     case DOUBLE_PROPERTY_TYPE:
-        data = createPropertyData<double>(doublePropMap_, propertyName);
+        data = createPropertyData<double>(doublePropMap_, propertyName, size);
         break;
 
     default:
@@ -102,7 +103,7 @@ NumericPropertyTable* NumericPropertyTableBuilderStub::createPropertyTable(const
 
     if (data)
     {
-        boost::shared_ptr<PropertyData> propData(new PropertyData(propType, data));
+        boost::shared_ptr<PropertyData> propData(new PropertyData(propType, data, size));
         return new NumericPropertyTable(propertyName, propData);
     }
 
