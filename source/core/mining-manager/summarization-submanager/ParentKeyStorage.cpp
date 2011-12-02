@@ -10,6 +10,7 @@ ParentKeyStorage::ParentKeyStorage(
         unsigned bufferSize)
     : parent_key_db_(dbPath)
     , buffer_capacity_(bufferSize)
+    , buffer_size_(0)
     , delimit_(",", UString::UTF_8)
 {
 }
@@ -20,8 +21,12 @@ ParentKeyStorage::~ParentKeyStorage()
 
 void ParentKeyStorage::AppendUpdate(const UString& key, const UString& value)
 {
-    buffer_db_.insert(key, value);
+    UString& v = buffer_db_[key];
+    if (!v.empty())
+        v.append(delimit_);
+    v.append(value);
 
+    ++buffer_size_;
     if (IsBufferFull_())
         Flush();
 }
@@ -32,7 +37,7 @@ void ParentKeyStorage::Flush()
     for (; it != buffer_db_.end(); ++it)
     {
         UString v;
-        if (parent_key_db_.get(it->first,v))
+        if (parent_key_db_.get(it->first, v))
         {
             v.append(delimit_);
             v.append(it->second);
@@ -40,7 +45,7 @@ void ParentKeyStorage::Flush()
         }
         else
         {
-            parent_key_db_.insert(it->first,it->second);
+            parent_key_db_.insert(it->first, it->second);
         }
     }
     parent_key_db_.flush();

@@ -121,7 +121,7 @@ void MultiDocSummarizationSubManager::BuildIndexOfParentKey_()
 }
 
 void MultiDocSummarizationSubManager::DoInsertBuildIndexOfParentKey_(
-    const std::string& fileName)
+        const std::string& fileName)
 {
     ScdParser parser(UString::UTF_8);
     for (ScdParser::iterator doc_iter = parser.begin();
@@ -137,12 +137,12 @@ void MultiDocSummarizationSubManager::DoInsertBuildIndexOfParentKey_(
 }
 
 void MultiDocSummarizationSubManager::DoUpdateIndexOfParentKey_(
-    const std::string& fileName)
+        const std::string& fileName)
 {
 }
 
 void MultiDocSummarizationSubManager::DoDelBuildIndexOfParentKey_(
-    const std::string& fileName)
+        const std::string& fileName)
 {
 }
 

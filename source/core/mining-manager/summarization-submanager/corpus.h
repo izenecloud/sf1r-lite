@@ -8,6 +8,7 @@
 #ifndef SF1R_MINING_MANAGER_SUMMARIZATION_CORPUS_H_
 #define SF1R_MINING_MANAGER_SUMMARIZATION_CORPUS_H_
 
+#include <boost/unordered_map.hpp>
 #include <iostream>
 #include <vector>
 
@@ -25,6 +26,11 @@ public:
     inline int ntotal() const
     {
         return _word_seqs.size();
+    }
+
+    inline int nwords() const
+    {
+        return _map_id2str.size();
     }
 
     inline int nsents() const
@@ -71,6 +77,8 @@ public:
         _coll_offs.clear();
         _sents.clear();
         _coll_names.clear();
+        _map_str2id.clear();
+        _map_id2str.clear();
     }
 
     void start_new_sent()
@@ -100,8 +108,19 @@ public:
         _coll_names.push_back(name);
     }
 
-    void add_word(int wid)
+    void add_word(const std::string word)
     {
+        int wid;
+        if (_map_str2id.find(word) == _map_str2id.end())
+        {
+            wid = _map_id2str.size();
+            _map_str2id[word] = wid;
+            _map_id2str.push_back(word);
+        }
+        else
+        {
+            wid = _map_str2id[word];
+        }
         _word_seqs.push_back(wid);
         ++_word_pos;
     }
@@ -155,6 +174,9 @@ private:
 
     std::vector<std::string> _sents;
     std::vector<std::string> _coll_names;
+
+    boost::unordered_map<std::string, int> _map_str2id;
+    std::vector<std::string> _map_id2str;
 };
 
 }

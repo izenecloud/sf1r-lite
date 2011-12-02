@@ -81,6 +81,7 @@ void SPLM::generateSummary(
         new MinClosestPositionTermProximityMeasure;
     PlmLanguageRanker plm(termProximityMeasure, mu, lambda);
 
+    int nWords = corpus.nwords();
     int nColls = corpus.ncolls();
     const int *sentOffs = corpus.get_sent_offs();
     const int *docOffs = corpus.get_doc_offs();
@@ -174,7 +175,7 @@ void SPLM::generateSummary(
             for (int docIndex = d_start; docIndex < d_end; docIndex++)
             {
                 RankDocumentProperty rdp;
-                SPLMUtil::getRankDocumentProperty(rdp, docOffs, docIndex, W, sentenceWordMapping);
+                SPLMUtil::getRankDocumentProperty(rdp, nWords, docOffs, docIndex, W, sentenceWordMapping);
                 getSmoothedTfDocument(coll_tf, docIndex, sentOffs, docOffs, collWordMap, W, numOfSentences, U, S, TF);
                 sentenceScore += plm.getScoreSVD(rqp, rdp, query_tf_doc, query_tf, coll_tf);
             }

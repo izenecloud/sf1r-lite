@@ -112,7 +112,7 @@ public:
     ///
     /// @brief Converts a document into RankDocumentProperty (for PLM calculation)
     ///
-    static void getRankDocumentProperty(RankDocumentProperty& rdp, const int *collOffs,
+    static void getRankDocumentProperty(RankDocumentProperty& rdp, int nWords, const int *collOffs,
             int c, const int *W, const std::map<int, int>& wordMapping);
 };
 

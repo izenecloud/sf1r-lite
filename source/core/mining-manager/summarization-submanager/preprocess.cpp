@@ -4,7 +4,6 @@
 #include "stopword.h"
 
 #include <common/Utilities.h>
-#include <util/hashFunction.h>
 
 #include <iostream>
 #include <fstream>
@@ -35,8 +34,7 @@ void Preprocess::add_doc_to_corpus(const vector<string>& sentences, Corpus& corp
             if (Stopword::getInstance()->is_stop_word(token) || token.length() <= 1)
                 continue;
 
-            int wid = izenelib::util::izene_hashing(token);
-            corpus.add_word(wid);
+            corpus.add_word(token);
         }
     }
 }

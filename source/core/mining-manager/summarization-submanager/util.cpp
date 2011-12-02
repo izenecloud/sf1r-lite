@@ -265,7 +265,7 @@ void SPLMUtil::getRankQueryProperty(RankQueryProperty& rqp, const int *sentOffs,
     rqp.setQueryLength(sentOffs[s + 1] - sentOffs[s]);
 }
 
-void SPLMUtil::getRankDocumentProperty(RankDocumentProperty& rdp, const int *collOffs,
+void SPLMUtil::getRankDocumentProperty(RankDocumentProperty& rdp, int nWords, const int *collOffs,
         int c, const int *W, const map<int, int>& wordMapping)
 {
     map<int, vector<int> > uniqueWordPos;

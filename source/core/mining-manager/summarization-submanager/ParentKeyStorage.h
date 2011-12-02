@@ -30,14 +30,15 @@ public:
 private:
     inline bool IsBufferFull_()
     {
-        return buffer_db_.size() >= buffer_capacity_;
+        return buffer_size_ >= buffer_capacity_;
     }
 
 private:
     friend class MultiDocSummarizationSubManager;
     ParentKeyDbType parent_key_db_;
     BufferType buffer_db_;
-    unsigned buffer_capacity_;
+    unsigned int buffer_capacity_;
+    unsigned int buffer_size_;
     UString delimit_;
 };
 
