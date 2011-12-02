@@ -1382,7 +1382,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 {
                     throw XmlConfigParserException("ContentProperty ["+property_name+"] used in Summarization is not string type.");
                 }
-                mining_schema.summarization_schema.contentPropName= property_name;
+                mining_schema.summarization_schema.contentPropName = property_name;
             }
             }
             mining_schema.summarization_enable = true;

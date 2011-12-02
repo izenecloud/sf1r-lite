@@ -179,13 +179,12 @@ void SPLMUtil::getCollectionWordMapping(map<int, int>& wordmapping, const int *c
     }
 }
 
-void SPLMUtil::selectSentences(const string& fileName, const Corpus& corpus,
+void SPLMUtil::selectSentences(
+        vector<izenelib::util::UString>& summary_list,
+        const Corpus& corpus,
         const int *sentOffs, const int *W,
         const set<pair<double, int> >& result)
 {
-    ofstream ofs;
-    ofs.open(fileName.c_str());
-
     set<int> selected_word_set;
     int word_count = 0;
     for (set<pair<double, int> >::const_reverse_iterator it = result.rbegin();
@@ -199,26 +198,14 @@ void SPLMUtil::selectSentences(const string& fileName, const Corpus& corpus,
         double olp = SPLMUtil::calculateOverlap(cur_word_set, selected_word_set);
         if (olp >= THR)
             continue;
+
         selected_word_set.insert(cur_word_set.begin(), cur_word_set.end());
-        string sent = corpus.get_sent(s);
+        summary_list.push_back(corpus.get_sent(s));
 
-        stringstream ss(sent);
-        string token;
-
-        while (getline(ss, token, ' '))
-        {
-            ofs << token << " " ;
-            ++word_count;
-            if (word_count == WORD_LIMIT)
-                break;
-        }
-
-        if (word_count == WORD_LIMIT)
+        word_count += summary_list.back().size();
+        if (summary_list.size() > SENTENCE_LIMIT)
             break;
-        ofs << endl;
-
     }
-    ofs.close();
 }
 
 void SPLMUtil::getRankQueryProperty(RankQueryProperty& rqp, const int *sentOffs, int s,

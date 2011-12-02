@@ -739,7 +739,7 @@ bool ProductManager::GetPrice_(const PMDocumentType& doc, ProductPrice& price) c
     {
         return false;
     }
-    UString price_str = it->second.get<UString>();
+    const UString& price_str = it->second.get<UString>();
     return price.Parse(price_str);
 }
 
@@ -784,7 +784,7 @@ bool ProductManager::GetTimestamp_(const PMDocumentType& doc, time_t& timestamp)
     {
         return false;
     }
-    UString time_ustr = it->second.get<UString>();
+    const UString& time_ustr = it->second.get<UString>();
     std::string time_str;
     time_ustr.convertString(time_str, UString::UTF_8);
     try

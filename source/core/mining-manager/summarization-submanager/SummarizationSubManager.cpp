@@ -1,5 +1,6 @@
 #include "SummarizationSubManager.h"
 #include "ParentKeyStorage.h"
+#include "splm.h"
 
 #include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
@@ -78,8 +79,24 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     IteratorType itEnd = pBTreeIndexer->end<UString>();
     for (; it != itEnd; ++it)
     {
-        //const std::vector<uint32_t>& docs = it->second;
-        //const UString& key = it->first;
+        const std::vector<uint32_t>& docs = it->second;
+        const UString& key = it->first;
+        Corpus corpus;
+
+        corpus.start_new_coll();
+        for (uint32_t i = 0; i < docs.size(); i++)
+        {
+            Document doc;
+            document_manager_->getDocument(docs[i], doc);
+            Document::property_const_iterator it = doc.findProperty(schema_.contentPropName);
+            if (it == doc.propertyEnd())
+                continue;
+
+            const UString& content = it->second.get<UString>();
+            corpus.add_doc(content);
+        }
+
+        //TODO
     }
 }
 

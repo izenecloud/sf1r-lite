@@ -27,13 +27,13 @@ LOG_FILE=$CONSOLE_LOG_DIR/log.$TIMENOW.log
     ;;
   stop)
     echo -e "Stopping $NAME..."
-    ps -ef|grep "CobraProcess"|grep -v grep|awk '{print $2}'|xargs kill -9 2>/dev/null
+    ps -ef|grep "CobraProcess"|grep -v grep|awk '{print $2}'|xargs kill -2 2>/dev/null
     sleep 1
     echo -e "Done.\n"
     ;;
   restart)
     echo -e "Restarting $NAME..."
-    ps -ef|grep "CobraProcess"|grep -v grep|awk '{print $2}'|xargs kill -9 2>/dev/null
+    ps -ef|grep "CobraProcess"|grep -v grep|awk '{print $2}'|xargs kill -2 2>/dev/null
     sleep 1
     ./CobraProcess -F config > $LOG_FILE 2>&1 &
     sleep 4
