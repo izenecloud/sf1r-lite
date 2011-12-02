@@ -74,30 +74,59 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 {
     BuildIndexOfParentKey_();
     BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
-    typedef BTreeIndexerManager::Iterator<UString> IteratorType;
-    IteratorType it = pBTreeIndexer->begin<UString>(schema_.foreignKeyPropName);
-    IteratorType itEnd = pBTreeIndexer->end<UString>();
-    for (; it != itEnd; ++it)
+    if (schema_.parentKeyLogPath.empty())
     {
-        const std::vector<uint32_t>& docs = it->second;
-        const UString& key = it->first;
-        Corpus corpus;
-
-        corpus.start_new_coll();
-        for (uint32_t i = 0; i < docs.size(); i++)
+        ///No parentKey, directly build summarization
+        typedef BTreeIndexerManager::Iterator<UString> IteratorType;
+        IteratorType it = pBTreeIndexer->begin<UString>(schema_.foreignKeyPropName);
+        IteratorType itEnd = pBTreeIndexer->end<UString>();
+        for (; it != itEnd; ++it)
         {
-            Document doc;
-            document_manager_->getDocument(docs[i], doc);
-            Document::property_const_iterator it = doc.findProperty(schema_.contentPropName);
-            if (it == doc.propertyEnd())
-                continue;
-
-            const UString& content = it->second.get<UString>();
-            corpus.add_doc(content);
+            std::vector<uint32_t> docs(it->second);
+            const UString& key = it->first;
+            std::sort(docs.begin(), docs.end());
+            DoEvaluateSummarization_(key, docs);
         }
-
-        //TODO
     }
+    else
+    {
+        ///For each parentKey, get all its values(foreign key)
+        ParentKeyStorage::ParentKeyIteratorType parentKeyIt(parent_key_storage_->parent_key_db_);
+        ParentKeyStorage::ParentKeyIteratorType parentKeyEnd;		
+        for(; parentKeyIt != parentKeyEnd; ++parentKeyIt )
+        {
+            const std::vector<UString>& foreignKeys = parentKeyIt->second;
+            std::vector<UString>::const_iterator fit = foreignKeys.begin();
+            for(; fit != foreignKeys.end(); ++fit)
+            {
+                PropertyType foreignKey(*fit);
+                std::vector<uint32_t> docs;
+                pBTreeIndexer->getValue(schema_.foreignKeyPropName, foreignKey,docs);
+                DoEvaluateSummarization_(*fit, docs);
+            }
+        }
+    }
+}
+
+void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
+        const UString& key,
+        const std::vector<uint32_t>& docs)
+{
+    Corpus corpus;
+    corpus.start_new_coll();
+    for (uint32_t i = 0; i < docs.size(); i++)
+    {
+        Document doc;
+        document_manager_->getDocument(docs[i], doc);
+        Document::property_const_iterator it = doc.findProperty(schema_.contentPropName);
+        if (it == doc.propertyEnd())
+            continue;
+
+        const UString& content = it->second.get<UString>();
+        corpus.add_doc(content);
+    }
+
+    //TODO
 }
 
 void MultiDocSummarizationSubManager::AppendSearchFilter(
@@ -121,13 +150,13 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
             try{
                 const std::string & paramValue = get<std::string>(filterParam[0]);
                 UString paramUStr(paramValue, UString::UTF_8);
-                std::list<UString> results;
+                std::vector<UString> results;
                 if(parent_key_storage_->Get(paramUStr, results))
                 {
                     QueryFiltering::FilteringType filterRule;
                     filterRule.first.first = QueryFiltering::EQUAL;
                     filterRule.first.second = schema_.foreignKeyPropName;
-                    std::list<UString>::iterator rit = results.begin();
+                    std::vector<UString>::iterator rit = results.begin();
                     for(; rit!=results.end(); ++rit)
                     {
                         PropertyValue v(*rit);

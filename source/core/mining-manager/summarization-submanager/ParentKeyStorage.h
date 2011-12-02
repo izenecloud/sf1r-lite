@@ -2,6 +2,7 @@
 #define SF1R_MINING_MANAGER_SUMMARIZATION_SUBMANAGER_PARENT_KEY_STORAGE_H
 
 #include <am/leveldb/Table.h>
+#include <am/range/AmIterator.h>
 #include <util/ustring/UString.h>
 
 #include <3rdparty/am/stx/btree_map.h>
@@ -18,6 +19,7 @@ using izenelib::util::UString;
 class ParentKeyStorage
 {
     typedef izenelib::am::leveldb::Table<UString, std::vector<UString> > ParentKeyDbType;
+    typedef izenelib::am::AMIterator<ParentKeyDbType > ParentKeyIteratorType;
     typedef stx::btree_map<UString, std::vector<UString> > BufferType;
 
 public:

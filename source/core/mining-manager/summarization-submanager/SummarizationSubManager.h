@@ -33,9 +33,14 @@ public:
 
     void EvaluateSummarization();
 
-    void AppendSearchFilter(std::vector<QueryFiltering::FilteringType>& filtingList);
+    void AppendSearchFilter(
+        std::vector<QueryFiltering::FilteringType>& filtingList);
 
 private:
+    void DoEvaluateSummarization_(
+        const UString& key,
+        const std::vector<uint32_t>& docs);
+
     void BuildIndexOfParentKey_();
 
     void DoInsertBuildIndexOfParentKey_(const std::string& fileName);
