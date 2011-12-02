@@ -16,6 +16,12 @@ public:
     ProductPrice();
 
     ProductPrice(ProductPriceType a, ProductPriceType b);
+    
+    template<class Archive> 
+    void serialize(Archive& ar, const unsigned int version) 
+    {
+        ar & value;
+    }
 
 
     ProductPrice& operator+=(const ProductPrice& a);

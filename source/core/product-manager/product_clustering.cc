@@ -29,11 +29,11 @@ bool ProductClustering::Open()
         bfs::create_directories(work_dir_);
         std::string dd_container = work_dir_ +"/dd_container";
         std::string group_table_file = work_dir_ +"/group_table";
-        group_table_ = new idmlib::dd::GroupTable(group_table_file);
+        group_table_ = new GroupTableType(group_table_file);
         group_table_->Load();
-        dd_ = new idmlib::dd::DupDetector(dd_container, group_table_);
+        dd_ = new DDType(dd_container, group_table_);
         dd_->SetFixK(3);
-        dd_->SetMaxProcessTable(40);
+//         dd_->SetMaxProcessTable(40);
         if(!dd_->Open())
         {
             std::cout<<"DD open failed"<<std::endl;
@@ -100,11 +100,17 @@ void ProductClustering::Insert(const PMDocumentType& doc)
         error_ = "Price is invalid.";
         return;
     }
+    ProductClusteringAttach attach;
+//     udocid.convertString(attach.docid, izenelib::util::UString::UTF_8);
+    attach.category = category;
+    attach.price = price;
+    
     std::vector<izenelib::util::UString> termStrList;
     analyzer_->GetFilteredStringList( title, termStrList );
-    std::vector<std::vector<std::string> > v_list(2);
-    v_list[0].resize(termStrList.size() );
-    v_list[1].resize(1);
+    std::vector<std::string> v;
+    
+    v.resize(termStrList.size() );
+    
 #ifdef PM_CLUST_TEXT_DEBUG
     std::string stitle;
     title.convertString(stitle, izenelib::util::UString::UTF_8);
@@ -117,16 +123,14 @@ void ProductClustering::Insert(const PMDocumentType& doc)
 #ifdef PM_CLUST_TEXT_DEBUG
         std::cout<<display<<",";
 #endif
-        v_list[0][u] = display;
+        v[u] = display;
     }
 #ifdef PM_CLUST_TEXT_DEBUG
     std::cout<<std::endl;
 #endif
-    category.convertString(v_list[1][0], izenelib::util::UString::UTF_8);
     std::string docid;
     udocid.convertString(docid, izenelib::util::UString::UTF_8);
-    dd_->InsertDoc(docid, v_list[0]);
-//     dd_->InsertDoc(docid, v_list);
+    dd_->InsertDoc(docid, v, attach);
     
 }
 

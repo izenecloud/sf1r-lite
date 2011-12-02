@@ -93,8 +93,7 @@ public:
 private:
     ProductClustering* GetClustering_();
     
-    void PostProcessGroupTable_(idmlib::dd::GroupTable* group_table);
-    
+        
     bool GenOperations_();
 
     void BackupPCItem_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, int type);
@@ -118,8 +117,6 @@ private:
     bool GetTimestamp_(const PMDocumentType& doc, time_t& timestamp) const;
 
     bool GetGroupProperties_(const PMDocumentType& doc, std::map<std::string, std::string>& group_prop_map) const;
-    
-    bool GetClusteringPostItems_(const std::vector<std::string>& docid_list, std::vector<ProductClusteringPostItem>& item);
     
     bool GetCategory_(const PMDocumentType& doc, izenelib::util::UString& category);
     

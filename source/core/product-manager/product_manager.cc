@@ -220,72 +220,6 @@ bool ProductManager::HookDelete(uint32_t docid, time_t timestamp)
 }
 
 
-///process for category and price info
-void ProductManager::PostProcessGroupTable_(idmlib::dd::GroupTable* group_table)
-{
-    std::cout<<"start PostProcessGroupTable"<<std::endl;
-    const std::vector<std::vector<std::string> >& ogroup_info = group_table->GetGroupInfo();
-    std::vector<std::vector<std::string> > group_info;
-    std::vector<std::string> in_group;
-    boost::dynamic_bitset<> flag;
-    std::cout<<"Total ogroup_info size "<<ogroup_info.size()<<std::endl;
-    for(uint32_t groupid=0;groupid<ogroup_info.size();groupid++)
-    {
-        if(groupid%100==0)
-        {
-            std::cout<<"Process groupid "<<groupid<<std::endl;
-        }
-        const std::vector<std::string>& oin_group = ogroup_info[groupid];
-        std::vector<ProductClusteringPostItem> postitems;
-        if(!GetClusteringPostItems_(oin_group, postitems)) 
-        {
-            std::cout<<"GetClusteringPostItems failed"<<std::endl;
-            continue;
-        }
-        uint32_t oin_group_size = postitems.size();
-        flag.reset();
-        if(flag.size()<oin_group_size)
-        {
-            flag.resize(oin_group_size);
-        }
-        for(uint32_t i=0;i<oin_group_size;i++)
-        {
-            if(flag[i]) continue;
-            if(!postitems[i].valid) 
-            {
-//                 std::cout<<"not valid in i"<<std::endl;
-                continue;
-            }
-            in_group.resize(0);
-            in_group.push_back(postitems[i].docid);
-            for(uint32_t j=i+1;j<oin_group_size;++j)
-            {
-                if(flag[j]) continue;
-                if(!postitems[j].valid) 
-                {
-//                     std::cout<<"not valid in j"<<std::endl;
-                    continue;
-                }
-                if(postitems[i].Sim(postitems[j]))
-                {
-                    in_group.push_back(postitems[j].docid);
-                    flag.set(j);
-                }
-                else
-                {
-//                     std::cout<<"not sim"<<std::endl;
-                }
-            }
-            if(in_group.size()>1)
-            {
-                group_info.push_back(in_group);
-//                 std::cout<<"Find new group, size : "<<in_group.size()<<std::endl;
-            }
-        }
-    }
-    group_table->Set(group_info);
-}
-
 bool ProductManager::Finish()
 {
     if (has_price_trend_)
@@ -300,10 +234,10 @@ bool ProductManager::Finish()
             std::cout<<"ProductClustering Run failed"<<std::endl;
             return false;
         }
-        idmlib::dd::GroupTable* group_table = clustering_->GetGroupTable();
-//         PostProcessGroupTable_(group_table);
+        typedef ProductClustering::GroupTableType GroupTableType;
+        GroupTableType* group_table = clustering_->GetGroupTable();
         typedef izenelib::util::UString UuidType;
-        boost::unordered_map<idmlib::dd::GroupIdType, UuidType> g2u_map;
+        boost::unordered_map<GroupTableType::GroupIdType, UuidType> g2u_map;
         std::vector<std::pair<uint32_t, izenelib::util::UString> > uuid_update_list;
         uint32_t append_count = 0;
         for(uint32_t docid=1; docid <= data_source_->GetMaxDocId(); ++docid )
@@ -322,13 +256,13 @@ bool ProductManager::Finish()
             GetDOCID_(doc, udocid);
             udocid.convertString(sdocid, izenelib::util::UString::UTF_8);
             UString uuid;
-            idmlib::dd::GroupIdType group_id;
+            GroupTableType::GroupIdType group_id;
             uint32_t itemcount = 1;
             std::vector<std::string> docid_list_in_group;
             bool append = true;
             if(group_table->GetGroupId(sdocid, group_id) )
             {
-                boost::unordered_map<idmlib::dd::GroupIdType, UuidType>::iterator g2u_it = g2u_map.find(group_id);
+                boost::unordered_map<GroupTableType::GroupIdType, UuidType>::iterator g2u_it = g2u_map.find(group_id);
                 if(g2u_it!=g2u_map.end())
                 {
                     //in the group appears before.
@@ -393,7 +327,7 @@ bool ProductManager::Finish()
             std::vector<uint32_t> update_docid_list(1, uuid_update_list[i].first);
             if(!data_source_->UpdateUuid(update_docid_list, uuid_update_list[i].second) )
             {
-                std::cout<<"UpdateUuid fail for docid : "<<docid<<std::endl;
+                std::cout<<"UpdateUuid fail for docid : "<<uuid_update_list[i].first<<std::endl;
             }
         }
         data_source_->Flush();
@@ -986,44 +920,6 @@ bool ProductManager::GetDOCID_(const PMDocumentType& doc, UString& docid) const
     return true;
 }
 
-bool ProductManager::GetClusteringPostItems_(const std::vector<std::string>& docid_list, std::vector<ProductClusteringPostItem>& items)
-{
-    std::vector<izenelib::util::UString> udocid_list(docid_list.size());
-    for(uint32_t i=0;i<docid_list.size();i++)
-    {
-        udocid_list[i] = izenelib::util::UString(docid_list[i], izenelib::util::UString::UTF_8);
-    }
-    std::vector<uint32_t> id_list;
-    if(!data_source_->GetInternalDocidList(udocid_list, id_list)) 
-    {
-        std::cout<<"GetInternalDocidList failed"<<std::endl;
-        return false;
-    }
-    if(id_list.size()!=docid_list.size()) return false;
-    for(uint32_t i=0;i<id_list.size(); ++i )
-    {
-        ProductClusteringPostItem item;
-        item.docid = docid_list[i];
-        item.valid = false;
-        PMDocumentType doc;
-        if(data_source_->GetDocument(id_list[i], doc))
-        {
-            izenelib::util::UString category;
-            ProductPrice price;
-            if(GetCategory_(doc, item.category) && GetPrice_(doc, item.price))
-            {
-                if(item.price.value.first>0.0)
-                {
-                    item.valid = true;
-                }
-            }
-        }
-        items.push_back(item);
-        
-    }
-    return true;
-}
-    
 bool ProductManager::GetCategory_(const PMDocumentType& doc, izenelib::util::UString& category)
 {
     return doc.getProperty(config_.category_property_name, category);

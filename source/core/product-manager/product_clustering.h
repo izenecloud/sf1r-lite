@@ -15,17 +15,21 @@
 namespace sf1r
 {
     
-class ProductClusteringPostItem
+class ProductClusteringAttach
 {
 public:
-    std::string docid;
+//     std::string docid;
     izenelib::util::UString category;
     ProductPrice price;
-    bool valid;
     
-    bool Sim(const ProductClusteringPostItem& other) const
+    template<class Archive> 
+    void serialize(Archive& ar, const unsigned int version) 
     {
-        if(!valid || !other.valid) return false;
+        ar & category & price;
+    }
+        
+    bool dd(const ProductClusteringAttach& other) const
+    {
         if(category!=other.category) return false;
         ProductPriceType mid1;
         ProductPriceType mid2;
@@ -43,6 +47,8 @@ public:
 class ProductClustering
 {
 public:
+    typedef idmlib::dd::DupDetector<std::string, uint32_t, ProductClusteringAttach> DDType;
+    typedef typename DDType::GroupTableType GroupTableType;
     ProductClustering(const std::string& work_dir, const PMConfig& config);
 
     ~ProductClustering();
@@ -53,7 +59,7 @@ public:
 
     bool Run();
     
-    idmlib::dd::GroupTable* GetGroupTable() const
+    GroupTableType* GetGroupTable() const
     {
         return group_table_;
     }
@@ -76,8 +82,8 @@ private:
     PMConfig config_;
     std::string error_;
     idmlib::util::IDMAnalyzer* analyzer_;
-    idmlib::dd::DupDetector* dd_;
-    idmlib::dd::GroupTable* group_table_;
+    DDType* dd_;
+    GroupTableType* group_table_;
 };
 
 }
