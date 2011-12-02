@@ -67,7 +67,7 @@ public:
     /// @param corpus Corpus to be summarized
     ///
     static void generateSummary(
-            std::vector<izenelib::util::UString>& summary_list,
+            std::vector<std::pair<UString, std::vector<UString> > >& summary_list,
             const Corpus& corpus,
             float mu = 1100, float lambda = 300
     );

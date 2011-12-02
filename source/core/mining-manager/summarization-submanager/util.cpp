@@ -196,8 +196,7 @@ void SPLMUtil::selectSentences(
         cur_word_set.insert(&W[sentOffs[s]], &W[sentOffs[s + 1]]);
 
         double olp = SPLMUtil::calculateOverlap(cur_word_set, selected_word_set);
-        if (olp >= THR)
-            continue;
+        if (olp >= THR) continue;
 
         selected_word_set.insert(cur_word_set.begin(), cur_word_set.end());
         summary_list.push_back(corpus.get_sent(s));

@@ -46,8 +46,8 @@ public:
 
 
     void init(
-        ilplib::langid::Analyzer* langIdAnalyzer, 
-        boost::shared_ptr<izenelib::ir::idmanager::IDManager> idManager 
+        ilplib::langid::Analyzer* langIdAnalyzer,
+        boost::shared_ptr<izenelib::ir::idmanager::IDManager> idManager
     );
 
     /**
@@ -78,6 +78,5 @@ public:
 };
 
 }
-
 
 #endif  //_TEXT_SUMMARIZATION_SUBMANAGER_H_

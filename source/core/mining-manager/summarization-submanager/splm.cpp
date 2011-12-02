@@ -71,7 +71,7 @@ void SPLM::getSmoothedTfSentence(
 }
 
 void SPLM::generateSummary(
-        vector<izenelib::util::UString>& summary_list,
+        vector<pair<UString, vector<UString> > >& summary_list,
         const Corpus& corpus,
         float mu, float lambda
 )
@@ -181,8 +181,9 @@ void SPLM::generateSummary(
                 result.insert(make_pair(sentenceScore, s));
         }
 
-        string fileName;
-        SPLMUtil::selectSentences(summary_list, corpus, sentOffs, W, result);
+        summary_list.push_back(make_pair(UString(), vector<UString>()));
+        summary_list.back().first.assign(corpus.get_coll_name(c));
+        SPLMUtil::selectSentences(summary_list.back().second, corpus, sentOffs, W, result);
 
         s_start = s_end;
         d_start = d_end;

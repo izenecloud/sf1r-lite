@@ -6,6 +6,7 @@
 #include <document-manager/DocumentManager.h>
 
 #include <common/ScdParser.h>
+#include <la/analyzer/MultiLanguageAnalyzer.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/path.hpp>
@@ -60,6 +61,9 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 {
     BuildIndexOfParentKey_();
     BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
+    ilplib::langid::Analyzer* langIdAnalyzer = document_manager_->getLangId();
+    Corpus corpus;
+
     typedef BTreeIndexerManager::Iterator<UString> IteratorType;
     IteratorType it = pBTreeIndexer->begin<UString>(schema_.foreignKeyPropName);
     IteratorType itEnd = pBTreeIndexer->end<UString>();
@@ -67,9 +71,9 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     {
         const std::vector<uint32_t>& docs = it->second;
         const UString& key = it->first;
-        Corpus corpus;
 
-        corpus.start_new_coll();
+        corpus.start_new_coll(key);
+
         for (uint32_t i = 0; i < docs.size(); i++)
         {
             Document doc;
@@ -78,12 +82,31 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             if (it == doc.propertyEnd())
                 continue;
 
+            corpus.start_new_doc();
             const UString& content = it->second.get<UString>();
-            corpus.add_doc(content);
-        }
 
-        //TODO
+            UString sentence;
+            std::size_t startPos = 0;
+            while (std::size_t len = langIdAnalyzer->sentenceLength(content, startPos))
+            {
+                sentence.assign(content, startPos, len);
+                corpus.start_new_sent(sentence);
+
+                //TODO word-segmentation
+
+                startPos += len;
+            }
+        }
     }
+
+    corpus.start_new_sent();
+    corpus.start_new_doc();
+    corpus.start_new_coll();
+
+    std::vector<std::pair<UString, std::vector<UString> > > summary_list;
+    SPLM::generateSummary(summary_list, corpus);
+
+    //TODO store the generated summary list
 }
 
 void MultiDocSummarizationSubManager::BuildIndexOfParentKey_()

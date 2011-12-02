@@ -1,7 +1,5 @@
 #include "corpus.h"
 
-using izenelib::util::UString;
-
 namespace sf1r
 {
 
@@ -22,6 +20,7 @@ void Corpus::reset()
     _doc_offs.clear();
     _coll_offs.clear();
     _sents.clear();
+    _coll_names.clear();
     _map_str2id.clear();
     _map_id2str.clear();
 }
@@ -29,6 +28,12 @@ void Corpus::reset()
 void Corpus::start_new_sent()
 {
     _sent_offs.push_back(_word_pos);
+}
+
+void Corpus::start_new_sent(const UString& sent)
+{
+    _sent_offs.push_back(_word_pos);
+    _sents.push_back(sent);
 }
 
 void Corpus::start_new_doc()
@@ -41,9 +46,20 @@ void Corpus::start_new_coll()
     _coll_offs.push_back(_word_pos);
 }
 
+void Corpus::start_new_coll(const UString& name)
+{
+    _coll_offs.push_back(_word_pos);
+    _coll_names.push_back(name);
+}
+
 const UString& Corpus::get_sent(int s) const
 {
     return _sents.at(s);
+}
+
+const UString& Corpus::get_coll_name(int c) const
+{
+    return _coll_names.at(c);
 }
 
 void Corpus::add_word(const UString word)
@@ -65,13 +81,7 @@ void Corpus::add_word(const UString word)
 
 void Corpus::add_sent(const UString& sent)
 {
-    start_new_sent();
     _sents.push_back(sent);
-}
-
-void Corpus::add_doc(const UString& doc)
-{
-    start_new_doc();
 }
 
 }
