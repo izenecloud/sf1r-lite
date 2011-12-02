@@ -39,8 +39,8 @@ public:
     /// @param sentOffs Sentence offsets
     /// @param W Word IDs
     ///
-    static double** getTF(const std::map<int,int>& wordMap, int s_start,
-            int s_end, int* sentOffs, int* W);
+    static double **getTF(const std::map<int,int>& wordMap, int s_start, int s_end,
+            const int *sentOffs, const int *W);
 
     ///
     /// @brief Calculates tf-idf matrix for a text selection
@@ -53,64 +53,67 @@ public:
     /// @param docOffs Document offsets
     /// @param W Word IDs
     ///
-    static double** getTFIDF(const std::map<int,int>& wordMap, int s_start, int s_end, int* sentOffs,
-            int d_start, int d_end, int* docOffs, int* W);
+    static double **getTFIDF(const std::map<int,int>& wordMap, int s_start, int s_end,
+            const int *sentOffs, int d_start, int d_end, const int *docOffs, const int *W);
 
     ///
     /// @brief Retrieves ISF: mapping between word index and the number of sentences containing the word
     ///
-    static void getISF(std::map<int, int>& ISF_map, int s_start, int s_end, int* sentOffs, int* W);
+    static void getISF(std::map<int, int>& ISF_map, int s_start, int s_end,
+            const int *sentOffs, const int *W);
 
     ///
     /// @brief Retrieves IDF: mapping between word index and the number of documents containing the word
     ///
-    static void getIDF(std::map<int, int>& IDF_map, int s_start, int d_start,
-            int d_end, int* sentOffs, int* docOffs, int* W);
+    static void getIDF(std::map<int, int>& IDF_map, int s_start, int d_start, int d_end,
+            const int *sentOffs, const int *docOffs, const int *W);
 
     ///
     /// @brief Retrieves ICF: mapping between word index and the number of documents in the whole collection containing the word
     ///
-    static void getICF(std::map<int, int>& ICF_map, int nColls, int* sentOffs,
-            int* collOffs, int* W);
+    static void getICF(std::map<int, int>& ICF_map, int nColls, const int *sentOffs,
+            const int *collOffs, const int *W);
 
     ///
     /// @brief Calculates percentage overlap between two sets
     ///
-    static double calculateOverlap(std::set<int>& set1, std::set<int>& set2);
+    static double calculateOverlap(const std::set<int>& set1, const std::set<int>& set2);
 
     ///
     /// @brief Examines whether a sentence in question exceeds the overlap threshold
     ///
-    static bool exceedOverlapThreshold(int* sentOffs, int s, int* W,
-            std::set<int> selected_word_set);
+    static bool exceedOverlapThreshold(const int *sentOffs, int s, const int *W,
+            const std::set<int>& selected_word_set);
 
     ///
     /// @brief Gives a mapping from a word ID to a number in a minimized range
     ///
-    static void getWordMapping(std::map<int, int>& wordmapping, std::set<int> words);
+    static void getWordMapping(std::map<int, int>& wordmapping, const std::set<int>& words);
 
     ///
     /// @brief Gives a word mapping for the entire collection
     ///
-    static void getCollectionWordMapping(std::map<int, int>& wordmapping, int* collOffs, int c, int* W);
+    static void getCollectionWordMapping(std::map<int, int>& wordmapping, const int *collOffs,
+            int c, const int *W);
 
     ///
     /// @brief Selects sentences for the summary set
     ///
-    static void selectSentences(std::string fileName, Corpus corpus, int* sentOffs, int* W,
-            std::set<std::pair<double,int> > result);
+    static void selectSentences(const std::string& fileName, const Corpus& corpus,
+            const int *sentOffs, const int *W,
+            const std::set<std::pair<double,int> >& result);
 
     ///
     /// @brief Converts a sentence into RankQueryProperty (for PLM calculation)
     ///
-    static void getRankQueryProperty(RankQueryProperty& rqp, int* sentOffs, int s,
-            int* W, int documentLength);
+    static void getRankQueryProperty(RankQueryProperty& rqp, const int *sentOffs, int s,
+            const int *W, int documentLength);
 
     ///
     /// @brief Converts a document into RankDocumentProperty (for PLM calculation)
     ///
-    static void getRankDocumentProperty(RankDocumentProperty& rdp, int nWords,
-            int* collOffs, int c, int* W, std::map<int, int> wordMapping);
+    static void getRankDocumentProperty(RankDocumentProperty& rdp, const int *collOffs,
+            int c, const int *W, const std::map<int, int>& wordMapping);
 };
 
 }

@@ -19,30 +19,28 @@ class ParentKeyStorage
 public:
     ParentKeyStorage(
         const std::string& dbPath,
-        unsigned bufferSize = 20000 );
+        unsigned bufferSize = 20000);
 
     ~ParentKeyStorage();
 
-    void AppendUpdate(const UString& value);
+    void AppendUpdate(const UString& key, const UString& value);
 
     void Flush();
+
 private:
-    bool IsBufferFull_()
+    inline bool IsBufferFull_()
     {
-        return buffer_size_ >= buffer_capacity_;
+        return buffer_db_.size() >= buffer_capacity_;
     }
 
-    void FlushBuffer_();
 private:
     friend class MultiDocSummarizationSubManager;
     ParentKeyDbType parent_key_db_;
     BufferType buffer_db_;
     unsigned buffer_capacity_;
-    unsigned buffer_size_;
     UString delimit_;
 };
 
 }
 
 #endif
-

@@ -7,7 +7,6 @@
 #include <common/ScdParser.h>
 
 #include <boost/filesystem.hpp>
-#include <boost/filesystem/path.hpp>
 
 #include <glog/logging.h>
 
@@ -15,7 +14,6 @@
 #include <vector>
 
 using namespace izenelib::ir::indexmanager;
-using namespace boost::filesystem;
 namespace bfs = boost::filesystem;
 
 namespace sf1r
@@ -25,14 +23,14 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         SummarizeConfig schema,
         boost::shared_ptr<DocumentManager> document_manager,
         boost::shared_ptr<IndexManager> index_manager)
-    :schema_(schema)
-    ,document_manager_(document_manager)
-    ,index_manager_(index_manager)
+    : schema_(schema)
+    , document_manager_(document_manager)
+    , index_manager_(index_manager)
 {
     if (!schema_.parentKeyLogPath.empty())
         boost::filesystem::create_directories(schema_.parentKeyLogPath);
 
-    parent_key_storage_ = new ParentKeyStorage(bfs::path(bfs::path(homePath) / "parentkey" ).string());
+    parent_key_storage_ = new ParentKeyStorage(homePath + "/parentkey");
 }
 
 MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
@@ -40,7 +38,7 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
     delete parent_key_storage_;
 }
 
-void MultiDocSummarizationSubManager::ComputeSummarization()
+void MultiDocSummarizationSubManager::EvaluateSummarization()
 {
     BuildIndexOfParentKey_();
     BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
@@ -80,31 +78,25 @@ void MultiDocSummarizationSubManager::BuildIndexOfParentKey_()
 
     for (; scd_it != scdList.end(); ++scd_it)
     {
-        size_t pos = scd_it ->rfind("/")+1;
-        string filename = scd_it ->substr(pos);
+        size_t pos = scd_it->rfind("/") + 1;
+        string filename = scd_it->substr(pos);
 
         LOG(INFO) << "Processing SCD file. " << bfs::path(*scd_it).stem();
 
         switch (parser.checkSCDType(*scd_it))
         {
         case INSERT_SCD:
-        {
             DoInsertBuildIndexOfParentKey_(*scd_it);
             LOG(INFO) << "Indexing Finished";
-        }
-        break;
+            break;
         case DELETE_SCD:
-        {
             DoDelBuildIndexOfParentKey_(*scd_it);
             LOG(INFO) << "Delete Finished";
-        }
-        break;
+            break;
         case UPDATE_SCD:
-        {
             DoUpdateIndexOfParentKey_(*scd_it);
             LOG(INFO) << "Update Finished";
-        }
-        break;
+            break;
         default:
             break;
         }
@@ -133,7 +125,7 @@ void MultiDocSummarizationSubManager::DoInsertBuildIndexOfParentKey_(
 {
     ScdParser parser(UString::UTF_8);
     for (ScdParser::iterator doc_iter = parser.begin();
-        doc_iter != parser.end(); ++doc_iter)
+            doc_iter != parser.end(); ++doc_iter)
     {
         if (*doc_iter == NULL)
         {
@@ -141,8 +133,7 @@ void MultiDocSummarizationSubManager::DoInsertBuildIndexOfParentKey_(
             return;
         }
         SCDDocPtr doc = (*doc_iter);
-        
-    }	
+    }
 }
 
 void MultiDocSummarizationSubManager::DoUpdateIndexOfParentKey_(
@@ -154,6 +145,5 @@ void MultiDocSummarizationSubManager::DoDelBuildIndexOfParentKey_(
     const std::string& fileName)
 {
 }
-
 
 }
