@@ -8,11 +8,13 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/algorithm/string/compare.hpp>
 
 #include <glog/logging.h>
 
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 using namespace izenelib::ir::indexmanager;
 namespace bfs = boost::filesystem;
@@ -33,6 +35,18 @@ bool CheckParentKeyLogFormat(
     //which introduces unnecessary memory fragments
     return (first == DOCID && second == parent_key_name);
 }
+
+struct IsParentKeyFilterProperty
+{
+    const std::string& parent_key_property;
+    IsParentKeyFilterProperty(const std::string& property)
+        :parent_key_property(property) {}
+    bool operator() (QueryFiltering::FilteringType& filterType)
+    {
+	return boost::is_iequal()(parent_key_property,filterType.first.second);
+    }
+};
+
 
 MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         const std::string& homePath,
@@ -66,6 +80,52 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     {
         //const std::vector<uint32_t>& docs = it->second;
         //const UString& key = it->first;
+    }
+}
+
+void MultiDocSummarizationSubManager::AppendSearchFilter(
+        std::vector<QueryFiltering::FilteringType>& filtingList)
+{
+    ///When search filter is based on ParentKey, get its associated values,
+    ///and add those values to filter conditions.
+    ///The typical situation of this happen when :
+    ///SELECT * FROM comments WHERE product_type="XXX"
+    ///This hook will translate the semantic into:
+    ///SELECT * FROM comments WHERE product_id="1" OR product_id="2" ...
+    
+    typedef std::vector<QueryFiltering::FilteringType>::iterator IteratorType;
+    IteratorType it = std::find_if (filtingList.begin(), 
+        filtingList.end(), IsParentKeyFilterProperty(schema_.parentKey));
+    if(it != filtingList.end())
+    {
+        const std::vector<PropertyValue>& filterParam = it->second;
+        if(!filterParam.empty())
+        {
+            try{
+                const std::string & paramValue = get<std::string>(filterParam[0]);
+                UString paramUStr(paramValue, UString::UTF_8);
+                std::list<UString> results;
+                if(parent_key_storage_->Get(paramUStr, results))
+                {
+                    QueryFiltering::FilteringType filterRule;
+                    filterRule.first.first = QueryFiltering::EQUAL;
+                    filterRule.first.second = schema_.foreignKeyPropName;
+                    std::list<UString>::iterator rit = results.begin();
+                    for(; rit!=results.end(); ++rit)
+                    {
+                        PropertyValue v(*rit);
+                        filterRule.second.push_back(v);
+                        filtingList.push_back(filterRule);
+                    }
+                }
+            }catch(const boost::bad_lexical_cast &)
+            {
+                filtingList.erase(it);
+                return;
+            }
+        }
+        filtingList.erase(it);
+        return;
     }
 }
 

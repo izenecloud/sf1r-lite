@@ -7,6 +7,7 @@
 #include <common/parsers/ConditionArrayParser.h>
 
 #include <common/IndexBundleSchemaHelpers.h>
+#include <common/MiningBundleSchemaHelpers.h>
 #include <common/ValueConverter.h>
 
 namespace sf1r {
@@ -34,8 +35,9 @@ bool FilteringParser::parse(const Value& conditions)
         // validation
         if (!isPropertyFilterable(indexSchema_, condition.property()))
         {
-            error() = "Property is not filterable in condition: " +
-                      condition.property();
+            if(!isPropertyForeignKey(miningSchema_, condition.property()))
+                error() = "Property is not filterable in condition: " +
+                          condition.property();
             return false;
         }
 

@@ -2,6 +2,7 @@
 #define SF1R_MINING_MANAGER_MULTI_DOC_SUMMARIZATION_SUBMANAGER_H
 
 #include <configuration-manager/SummarizeConfig.h>
+#include <query-manager/QueryTypeDef.h>
 
 #include <util/ustring/UString.h>
 
@@ -31,6 +32,8 @@ public:
     ~MultiDocSummarizationSubManager();
 
     void EvaluateSummarization();
+
+    void AppendSearchFilter(std::vector<QueryFiltering::FilteringType>& filtingList);
 
 private:
     void BuildIndexOfParentKey_();

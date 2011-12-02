@@ -51,6 +51,8 @@ class SearchManager : public NumericPropertyTableBuilder
 
 public:
     typedef boost::function< void( std::vector<unsigned int>&, std::vector<float>&, const std::string& ) > reranker_t;
+    typedef boost::function< void( std::vector<QueryFiltering::FilteringType>& ) > filter_hook_t;
+	
     SearchManager(
         std::set<PropertyConfig, PropertyComp> schema,
         const boost::shared_ptr<IDManager>& idManager,
@@ -92,6 +94,10 @@ public:
 
     void set_reranker(reranker_t reranker){
         reranker_ = reranker;
+    }
+
+    void set_filter_hook(filter_hook_t filter_hook){
+        filter_hook_ = filter_hook;
     }
 
     void setGroupFilterBuilder(faceted::GroupFilterBuilder* builder);
@@ -169,6 +175,8 @@ private:
 
     boost::scoped_ptr<SearchCache> cache_;
     SortPropertyCache* pSorterCache_;
+
+    filter_hook_t filter_hook_;
 
     reranker_t reranker_;
 

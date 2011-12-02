@@ -89,6 +89,7 @@ SearchManager::SearchManager(
         , documentManagerPtr_(documentManager)
         , rankingManagerPtr_(rankingManager)
         , queryBuilder_()
+        , filter_hook_(0)
         , reranker_(0)
 {
     collectionName_ = config->collectionName_;
@@ -367,6 +368,8 @@ bool SearchManager::doSearch_(
     boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet;
     try
     {
+        if(filter_hook_)
+            filter_hook_(filtingList);
         if (!filtingList.empty())
             queryBuilder_->prepare_filter(filtingList, pFilterIdSet);
 
