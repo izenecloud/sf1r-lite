@@ -22,6 +22,7 @@ SortPropertyComparator::SortPropertyComparator(boost::shared_ptr<PropertyData> p
 SortPropertyComparator::SortPropertyComparator(PropertyDataType dataType)
     : type_(dataType)
     , data_(NULL)
+    , size_(0)
 {
     initComparator();
 }

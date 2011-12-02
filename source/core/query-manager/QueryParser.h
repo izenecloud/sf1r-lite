@@ -44,6 +44,8 @@ namespace sf1r {
             static const int orderedQueryID     = 400;
             static const int nearbyQueryID      = 500;
 
+            static const std::string filterQuery;
+
             template <typename ScannerT> struct definition
             {
                 definition(const QueryParser&) // Rule definition area
@@ -240,6 +242,7 @@ namespace sf1r {
             static void initOnlyOnceCore();
 
             bool getQueryTree(iter_t const& i, QueryTreePtr& queryTree, bool unigramFlag);
+            bool getFilterQueryTree(const UString& queryUStr, QueryTreePtr& queryTree);
             bool processKeywordAssignQuery( iter_t const& i, QueryTreePtr& queryTree, bool unigramFlag);
             bool processExactQuery( iter_t const& i, QueryTreePtr& queryTree);
             bool processBracketQuery( iter_t const& i, QueryTree::QueryType queryType, QueryTreePtr& queryTree, bool unigramFlag);

@@ -89,7 +89,6 @@ inline bool ANDDocumentIterator::do_next()
 
     if (docIterList_.empty()||(docIterList_.front()->next()==false))
         return false;
-
     target = docIterList_.front()->doc();
     docIterList_.push_back(docIterList_.front());
     docIterList_.pop_front();
