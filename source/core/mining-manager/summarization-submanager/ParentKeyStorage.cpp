@@ -1,5 +1,7 @@
 #include "ParentKeyStorage.h"
 
+#include <util/string/StringUtils.h>
+
 #include <iostream>
 
 namespace sf1r
@@ -50,6 +52,18 @@ void ParentKeyStorage::Flush()
     }
     parent_key_db_.flush();
     buffer_db_.clear();
+    buffer_size_ = 0;
+}
+
+bool ParentKeyStorage::Get(const UString& key, std::list<UString>& results)
+{
+    boost::shared_lock<boost::shared_mutex> lock(mutex_);
+    UString value;
+    if (!parent_key_db_.get(key, value))
+        return false;
+
+    izenelib::util::Split<UString, std::list<UString> >(value, results, delimit_);
+    return true;
 }
 
 }

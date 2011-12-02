@@ -6,6 +6,10 @@
 
 #include <3rdparty/am/stx/btree_map.h>
 
+#include <boost/thread.hpp>
+
+#include <list>
+
 namespace sf1r
 {
 
@@ -18,14 +22,16 @@ class ParentKeyStorage
 
 public:
     ParentKeyStorage(
-        const std::string& dbPath,
-        unsigned bufferSize = 20000);
+            const std::string& dbPath,
+            unsigned bufferSize = 20000);
 
     ~ParentKeyStorage();
 
     void AppendUpdate(const UString& key, const UString& value);
 
     void Flush();
+
+    bool Get(const UString& key, std::list<UString>& results);
 
 private:
     inline bool IsBufferFull_()
@@ -40,6 +46,7 @@ private:
     unsigned int buffer_capacity_;
     unsigned int buffer_size_;
     UString delimit_;
+    boost::shared_mutex mutex_;
 };
 
 }
