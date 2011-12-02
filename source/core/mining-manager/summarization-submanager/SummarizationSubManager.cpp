@@ -135,7 +135,7 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
                         filtingList.push_back(filterRule);
                     }
                 }
-            }catch(const boost::bad_lexical_cast &)
+            }catch(const boost::bad_get &)
             {
                 filtingList.erase(it);
                 return;
