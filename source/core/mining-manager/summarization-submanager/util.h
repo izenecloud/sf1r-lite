@@ -3,8 +3,8 @@
 /// @author Hogyeong Jeong ( hogyeong.jeong@gmail.com )
 ///
 
-#ifndef SF1R_MINING_MANAGER_SUMMARIZATION_UTIL_H_
-#define SF1R_MINING_MANAGER_SUMMARIZATION_UTIL_H_
+#ifndef SF1R_MINING_MANAGER_SUMMARIZATION_SUBMANAGER_UTIL_H_
+#define SF1R_MINING_MANAGER_SUMMARIZATION_SUBMANAGER_UTIL_H_
 
 #include "corpus.h"
 #include "svd/d-mat2d.h"
@@ -17,7 +17,7 @@
 #include <sstream>
 
 #define THR  0.3
-#define WORD_LIMIT 100
+#define SENTENCE_LIMIT 8
 
 namespace sf1r
 {
@@ -99,8 +99,8 @@ public:
     ///
     /// @brief Selects sentences for the summary set
     ///
-    static void selectSentences(const std::string& fileName, const Corpus& corpus,
-            const int *sentOffs, const int *W,
+    static void selectSentences(std::vector<izenelib::util::UString>& summary_list,
+            const Corpus& corpus, const int *sentOffs, const int *W,
             const std::set<std::pair<double, int> >& result);
 
     ///
@@ -118,4 +118,4 @@ public:
 
 }
 
-#endif
+#endif /* SF1R_MINING_MANAGER_SUMMARIZATION_UTIL_H_ */
