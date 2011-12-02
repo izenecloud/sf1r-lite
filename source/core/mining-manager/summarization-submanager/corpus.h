@@ -19,18 +19,7 @@ class Corpus
 public:
     Corpus()
         : _word_pos(0)
-        , _max_word_id(0)
     {
-    }
-
-    inline int ndocs() const
-    {
-        return _doc_offs.size();
-    }
-
-    inline int nwords() const
-    {
-        return _max_word_id;
     }
 
     inline int ntotal() const
@@ -43,38 +32,56 @@ public:
         return _sent_offs.size();
     }
 
+    inline int ndocs() const
+    {
+        return _doc_offs.size();
+    }
+
     inline int ncolls() const
     {
         return _coll_offs.size();
     }
 
-    inline int* get_doc_offs()
+    inline const int* get_doc_offs() const
     {
         return &_doc_offs.at(0);
     }
 
-    inline int* get_word_seq()
+    inline const int* get_word_seq() const
     {
         return &_word_seqs.at(0);
     }
 
-    inline int* get_sent_offs()
+    inline const int* get_sent_offs() const
     {
         return &_sent_offs.at(0);
     }
 
-    inline int* get_coll_offs()
+    inline const int* get_coll_offs() const
     {
         return &_coll_offs.at(0);
     }
 
-    void init()
+    void reset()
     {
-        _word_seqs.clear();
-        _doc_offs.clear();
-        _sent_offs.clear();
         _word_pos = 0;
-        _max_word_id = 0;
+        _word_seqs.clear();
+        _sent_offs.clear();
+        _doc_offs.clear();
+        _coll_offs.clear();
+        _sents.clear();
+        _coll_names.clear();
+    }
+
+    void start_new_sent()
+    {
+        _sent_offs.push_back(_word_pos);
+    }
+
+    void start_new_sent(const std::string& sent)
+    {
+        _sent_offs.push_back(_word_pos);
+        _sents.push_back(sent);
     }
 
     void start_new_doc()
@@ -82,19 +89,11 @@ public:
         _doc_offs.push_back(_word_pos);
     }
 
-    void start_new_sent()
-    {
-        _sent_offs.push_back(_word_pos);
-    }
-    void start_new_sent(const std::string& sent)
-    {
-        _sent_offs.push_back(_word_pos);
-        _sents.push_back(sent);
-    }
     void start_new_coll()
     {
         _coll_offs.push_back(_word_pos);
     }
+
     void start_new_coll(const std::string& name)
     {
         _coll_offs.push_back(_word_pos);
@@ -103,7 +102,6 @@ public:
 
     void add_word(int wid)
     {
-        _max_word_id = std::max(wid, _max_word_id);
         _word_seqs.push_back(wid);
         ++_word_pos;
     }
@@ -111,7 +109,6 @@ public:
     friend std::ostream& operator<<(std::ostream& out, const Corpus& corp)
     {
         out << "nDocs:" << corp.ndocs() << std::endl;
-        out << "nWords:" << corp.nwords() << std::endl;
         out << "nTotal:" << corp.ntotal() << std::endl;
         out << "nSentences:" << corp.nsents() << std::endl;
 //      out << "DocOffs:";
@@ -149,19 +146,15 @@ public:
         return _coll_names.at(c);
     }
 
-
 private:
-
     int _word_pos;
-    int _max_word_id;
     std::vector<int> _word_seqs;
-    std::vector<int> _doc_offs;
     std::vector<int> _sent_offs;
+    std::vector<int> _doc_offs;
+    std::vector<int> _coll_offs;
 
     std::vector<std::string> _sents;
-    std::vector<int> _coll_offs;
     std::vector<std::string> _coll_names;
-
 };
 
 }

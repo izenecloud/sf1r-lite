@@ -30,19 +30,16 @@ public:
 
     ~MultiDocSummarizationSubManager();
 
-    void ComputeSummarization();
+    void EvaluateSummarization();
 
 private:
     void BuildIndexOfParentKey_();
 
-    void DoInsertBuildIndexOfParentKey_(
-            const std::string& fileName);
+    void DoInsertBuildIndexOfParentKey_(const std::string& fileName);
 
-    void DoDelBuildIndexOfParentKey_(
-            const std::string& fileName);
-	
-    void DoUpdateIndexOfParentKey_(
-            const std::string& fileName);
+    void DoDelBuildIndexOfParentKey_(const std::string& fileName);
+
+    void DoUpdateIndexOfParentKey_(const std::string& fileName);
 
     SummarizeConfig schema_;
     boost::shared_ptr<DocumentManager> document_manager_;

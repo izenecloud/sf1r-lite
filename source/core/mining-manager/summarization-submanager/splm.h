@@ -33,10 +33,10 @@ public:
     ///
     static void getSmoothedTfDocument(
             std::vector<double>& smoothed_tf,
-            int c, int* sentOffs, int* collOffs,
-            std::map<int,int> wordmapping,
-            int* W, int numSentences,
-            double ** U, double **S, double **TF
+            int c, const int *sentOffs, const int *collOffs,
+            const std::map<int, int>& wordmapping,
+            const int *W, int numSentences,
+            double **U, double **S, double **TF
     );
 
     ///
@@ -52,10 +52,10 @@ public:
     ///
     static void getSmoothedTfSentence(
             std::vector<double>& smoothed_tf,
-            int s, int* sentOffs,
-            std::map<int,int> wordmapping,
-            int* W, int numSentences,
-            double ** U, double **S, double ** TF
+            int s, const int *sentOffs,
+            const std::map<int, int>& wordmapping,
+            const int *W, int numSentences,
+            double **U, double **S, double **TF
     );
 
     ///
@@ -70,7 +70,7 @@ public:
             const std::string& pid,
             const std::string& result_root,
             float mu, float lambda,
-            Corpus corpus
+            const Corpus& corpus
     );
 
 };

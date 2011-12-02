@@ -633,7 +633,7 @@ bool MiningManager::DoMiningCollection()
     // do Summarization
     if ( mining_schema_.summarization_enable )
     {
-        summarizationManager_->ComputeSummarization();
+        summarizationManager_->EvaluateSummarization();
     }
     return true;
 }

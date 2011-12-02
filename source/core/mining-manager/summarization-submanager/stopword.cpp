@@ -14,7 +14,7 @@ void Stopword::load(const std::string& file)
     std::string line;
     m_oStopwordSet.clear();
     if (!ifs) return;
-    while (getline(ifs,line))
+    while (getline(ifs, line))
         m_oStopwordSet.insert(line);
 }
 
