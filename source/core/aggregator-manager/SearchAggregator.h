@@ -1,11 +1,11 @@
 /**
- * @file AggregatorManager.h
+ * @file SearchAggregator.h
  * @author Zhongxia Li
  * @date Jul 5, 2011
  * @brief
  */
-#ifndef AGGREGATOR_MANAGER_H_
-#define AGGREGATOR_MANAGER_H_
+#ifndef SEARCH_AGGREGATOR_H_
+#define SEARCH_AGGREGATOR_H_
 
 #include <net/aggregator/Typedef.h>
 #include <net/aggregator/Aggregator.h>
@@ -23,13 +23,13 @@ class MiningManager;
 
 typedef WorkerCaller<WorkerService> LocalWorkerCaller;
 
-class AggregatorManager : public Aggregator<AggregatorManager, LocalWorkerCaller>
+class SearchAggregator : public Aggregator<SearchAggregator, LocalWorkerCaller>
 {
 public:
-    AggregatorManager() : TOP_K_NUM(4000) {}
+    SearchAggregator() : TOP_K_NUM(4000) {}
 
 public:
-    AggregatorManager(WorkerService* workerService)
+    SearchAggregator(WorkerService* workerService)
     {
         localWorkerCaller_.reset(new LocalWorkerCaller(workerService));
 
@@ -174,4 +174,4 @@ private:
 
 } // end - namespace
 
-#endif /* AGGREGATOR_MANAGER_H_ */
+#endif /* SEARCH_AGGREGATOR_H_ */

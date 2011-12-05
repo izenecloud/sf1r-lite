@@ -18,7 +18,7 @@ namespace sf1r
 {
 using namespace net::aggregator;
 
-class AggregatorManager;
+class SearchAggregator;
 class SearchCache;
 class WorkerService;
 class IndexSearchService : public ::izenelib::osgi::IService
@@ -28,7 +28,7 @@ public:
 
     ~IndexSearchService();
 
-    boost::shared_ptr<AggregatorManager> getAggregatorManager();
+    boost::shared_ptr<SearchAggregator> getSearchAggregator();
 
     const IndexBundleConfiguration* getBundleConfig();
 
@@ -43,7 +43,7 @@ public:
 
 private:
     IndexBundleConfiguration* bundleConfig_;
-    boost::shared_ptr<AggregatorManager> aggregatorManager_;
+    boost::shared_ptr<SearchAggregator> searchAggregator_;
     boost::shared_ptr<WorkerService> workerService_;
 
     boost::scoped_ptr<SearchCache> cache_; // for Master Node

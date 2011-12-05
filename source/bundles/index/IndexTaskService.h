@@ -33,7 +33,7 @@ class DocumentManager;
 class LAManager;
 class SearchManager;
 class IndexHooker;
-class AggregatorManager;
+class SearchAggregator;
 class WorkerService;
 class IndexTaskService : public ::izenelib::osgi::IService
 {
@@ -200,7 +200,7 @@ private:
 
     boost::shared_ptr<IndexHooker> hooker_;
 
-    boost::shared_ptr<AggregatorManager> aggregatorManager_;
+    boost::shared_ptr<SearchAggregator> searchAggregator_;
     boost::shared_ptr<WorkerService> workerService_;
 
     size_t totalSCDSizeSinceLastBackup_;

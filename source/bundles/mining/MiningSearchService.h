@@ -17,7 +17,7 @@ namespace sf1r
 {
 
 class WorkerService;
-class AggregatorManager;
+class SearchAggregator;
 class MiningManager;
 class MiningSearchService : public ::izenelib::osgi::IService
 {
@@ -152,7 +152,7 @@ private:
     boost::shared_ptr<MiningManager> miningManager_;
 
     boost::shared_ptr<WorkerService> workerService_;
-    boost::shared_ptr<AggregatorManager> aggregatorManager_;
+    boost::shared_ptr<SearchAggregator> searchAggregator_;
 
     friend class MiningBundleActivator;
 };

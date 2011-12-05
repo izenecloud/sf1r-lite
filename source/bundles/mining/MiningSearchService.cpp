@@ -3,7 +3,7 @@
 #include <mining-manager/faceted-submanager/ontology_manager.h>
 
 #include <aggregator-manager/WorkerService.h>
-#include <aggregator-manager/AggregatorManager.h>
+#include <aggregator-manager/SearchAggregator.h>
 
 namespace sf1r
 {
@@ -46,7 +46,7 @@ bool MiningSearchService::getSimilarDocIdList(
     else
     {
         sf1r::workerid_t workerId = net::aggregator::Util::GetWorkerAndDocId(documentId).first;
-        return aggregatorManager_->singleRequest(collectionName, "getSimilarDocIdList", documentId, maxNum, result, workerId);
+        return searchAggregator_->singleRequest(collectionName, "getSimilarDocIdList", documentId, maxNum, result, workerId);
     }
 }
 
@@ -217,7 +217,7 @@ bool MiningSearchService::visitDoc(const std::string& collectionName, uint64_t w
         return workerService_->visitDoc(docId, ret);
     }
 
-    aggregatorManager_->singleRequest(collectionName, "visitDoc", docId, ret, workerId);
+    searchAggregator_->singleRequest(collectionName, "visitDoc", docId, ret, workerId);
     return ret;
 }
 

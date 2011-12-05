@@ -26,7 +26,7 @@ using namespace zookeeper;
 namespace sf1r
 {
 
-class AggregatorManager;
+class SearchAggregator;
 
 class MasterNodeManager : public ZooKeeperEventHandler
 {
@@ -54,7 +54,7 @@ public:
      * Register aggregators
      * @param aggregator
      */
-    void registerAggregator(boost::shared_ptr<AggregatorManager> aggregator)
+    void registerAggregator(boost::shared_ptr<SearchAggregator> aggregator)
     {
         aggregatorList_.push_back(aggregator);
     }
@@ -130,7 +130,7 @@ private:
 
     std::string serverRealPath_;
     net::aggregator::AggregatorConfig aggregatorConfig_;
-    std::vector<boost::shared_ptr<AggregatorManager> > aggregatorList_;
+    std::vector<boost::shared_ptr<SearchAggregator> > aggregatorList_;
 
     boost::mutex mutex_;
 };

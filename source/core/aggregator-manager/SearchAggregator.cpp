@@ -1,4 +1,4 @@
-#include "AggregatorManager.h"
+#include "SearchAggregator.h"
 #include "MergeComparator.h"
 
 #include <common/ResultType.h>
@@ -43,9 +43,9 @@ void printDFCTF(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInP
     cout << "-----------------------" << endl;
 }
 
-void AggregatorManager::aggregateDistSearchInfo(DistKeywordSearchInfo& result, const std::vector<std::pair<workerid_t, DistKeywordSearchInfo> >& resultList)
+void SearchAggregator::aggregateDistSearchInfo(DistKeywordSearchInfo& result, const std::vector<std::pair<workerid_t, DistKeywordSearchInfo> >& resultList)
 {
-    cout << "#[AggregatorManager::aggregateDistSearchInfo] " << resultList.size() << endl;
+    cout << "#[SearchAggregator::aggregateDistSearchInfo] " << resultList.size() << endl;
 
     size_t resultNum = resultList.size();
 
@@ -81,9 +81,9 @@ void AggregatorManager::aggregateDistSearchInfo(DistKeywordSearchInfo& result, c
     }
 }
 
-void AggregatorManager::aggregateDistSearchResult(DistKeywordSearchResult& result, const std::vector<std::pair<workerid_t, DistKeywordSearchResult> >& resultList)
+void SearchAggregator::aggregateDistSearchResult(DistKeywordSearchResult& result, const std::vector<std::pair<workerid_t, DistKeywordSearchResult> >& resultList)
 {
-    cout << "#[AggregatorManager::aggregateSearchResult] " << resultList.size() << endl;
+    cout << "#[SearchAggregator::aggregateSearchResult] " << resultList.size() << endl;
 
     size_t workerNum = resultList.size();
 
@@ -216,16 +216,16 @@ void AggregatorManager::aggregateDistSearchResult(DistKeywordSearchResult& resul
     //result.attrRep_;
 }
 
-void AggregatorManager::aggregateSummaryMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
+void SearchAggregator::aggregateSummaryMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
 {
-    cout << "#[AggregatorManager::aggregateSummaryMiningResult] " << resultList.size() << endl;
+    cout << "#[SearchAggregator::aggregateSummaryMiningResult] " << resultList.size() << endl;
 
     aggregateSummaryResult(result, resultList);
 
     aggregateMiningResult(result, resultList);
 }
 
-void AggregatorManager::aggregateSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
+void SearchAggregator::aggregateSummaryResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
 {
     size_t subResultNum = resultList.size();
 
@@ -308,7 +308,7 @@ void AggregatorManager::aggregateSummaryResult(KeywordSearchResult& result, cons
     delete[] iter;
 }
 
-void AggregatorManager::aggregateMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
+void SearchAggregator::aggregateMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
 {
     if(!miningManager_) return;
     std::cout<<"call mergeMiningResult"<<std::endl;
@@ -341,9 +341,9 @@ void AggregatorManager::aggregateMiningResult(KeywordSearchResult& result, const
     }
 }
 
-void AggregatorManager::aggregateDocumentsResult(RawTextResultFromSIA& result, const std::vector<std::pair<workerid_t, RawTextResultFromSIA> >& resultList)
+void SearchAggregator::aggregateDocumentsResult(RawTextResultFromSIA& result, const std::vector<std::pair<workerid_t, RawTextResultFromSIA> >& resultList)
 {
-    cout << "#[AggregatorManager::aggregateDocumentsResult] " << resultList.size() << endl;
+    cout << "#[SearchAggregator::aggregateDocumentsResult] " << resultList.size() << endl;
 
     size_t workerNum = resultList.size();
 
@@ -390,7 +390,7 @@ void AggregatorManager::aggregateDocumentsResult(RawTextResultFromSIA& result, c
     }
 }
 
-void AggregatorManager::aggregateInternalDocumentId(uint64_t& result, const std::vector<std::pair<workerid_t, uint64_t> >& resultList)
+void SearchAggregator::aggregateInternalDocumentId(uint64_t& result, const std::vector<std::pair<workerid_t, uint64_t> >& resultList)
 {
     result = 0;
 
@@ -406,7 +406,7 @@ void AggregatorManager::aggregateInternalDocumentId(uint64_t& result, const std:
     }
 }
 
-//void AggregatorManager::aggregateSimilarDocIdList(SimilarDocIdListType& result, const std::vector<std::pair<workerid_t, SimilarDocIdListType> >& resultList)
+//void SearchAggregator::aggregateSimilarDocIdList(SimilarDocIdListType& result, const std::vector<std::pair<workerid_t, SimilarDocIdListType> >& resultList)
 //{
 //    size_t subResultNum = resultList.size();
 //
@@ -464,7 +464,7 @@ void AggregatorManager::aggregateInternalDocumentId(uint64_t& result, const std:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool AggregatorManager::splitSearchResultByWorkerid(const KeywordSearchResult& result, std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >& resultMap)
+bool SearchAggregator::splitSearchResultByWorkerid(const KeywordSearchResult& result, std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >& resultMap)
 {
     const std::vector<uint32_t>& topKWorkerIds = result.topKWorkerIds_;
     if (topKWorkerIds.size() <= 0)
@@ -508,7 +508,7 @@ bool AggregatorManager::splitSearchResultByWorkerid(const KeywordSearchResult& r
     return true;
 }
 
-bool AggregatorManager::splitGetDocsActionItemByWorkerid(
+bool SearchAggregator::splitGetDocsActionItemByWorkerid(
         const GetDocumentsByIdsActionItem& actionItem,
         std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >& actionItemMap)
 {
@@ -544,7 +544,7 @@ bool AggregatorManager::splitGetDocsActionItemByWorkerid(
     return true;
 }
 
-bool AggregatorManager::ScdDispatch(
+bool SearchAggregator::ScdDispatch(
         unsigned int numdoc,
         const std::string& collectionName,
         const std::string& scdPath)

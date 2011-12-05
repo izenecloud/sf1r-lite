@@ -11,7 +11,7 @@
 #include <bundles/index/IndexTaskService.h>
 #include <bundles/index/IndexSearchService.h>
 #include <bundles/recommend/RecommendTaskService.h>
-#include <aggregator-manager/AggregatorManager.h>
+#include <aggregator-manager/SearchAggregator.h>
 #include <mining-manager/MiningQueryLogHandler.h>
 #include <common/Keys.h>
 

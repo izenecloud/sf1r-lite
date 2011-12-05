@@ -64,7 +64,7 @@ public:
     /**
      * Worker services (interfaces)
      * 1) add to WorkerServer to provide remote procedure call
-     * 2) add to AggregatorManager::initLocalWorkerCaller to provide in-procedure call
+     * 2) add Aggregator to provide in-procedure call
      * @{
      */
 

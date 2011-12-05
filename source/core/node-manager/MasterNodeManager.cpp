@@ -1,7 +1,7 @@
 #include "MasterNodeManager.h"
 #include "NodeManager.h"
 
-#include <aggregator-manager/AggregatorManager.h>
+#include <aggregator-manager/SearchAggregator.h>
 
 #include <boost/lexical_cast.hpp>
 
@@ -543,7 +543,7 @@ void MasterNodeManager::resetAggregatorConfig()
     std::cout << aggregatorConfig_.toString();
 
     // set aggregator configuration
-    std::vector<boost::shared_ptr<AggregatorManager> >::iterator agg_it;
+    std::vector<boost::shared_ptr<SearchAggregator> >::iterator agg_it;
     for (agg_it = aggregatorList_.begin(); agg_it != aggregatorList_.end(); agg_it++)
     {
         (*agg_it)->setAggregatorConfig(aggregatorConfig_);

@@ -2,7 +2,7 @@
 
 #include <search-manager/SearchCache.h>
 #include <aggregator-manager/WorkerService.h>
-#include <aggregator-manager/AggregatorManager.h>
+#include <aggregator-manager/SearchAggregator.h>
 
 #include <common/SFLogger.h>
 #include <common/type_defs.h>
@@ -20,9 +20,9 @@ IndexSearchService::~IndexSearchService()
 {
 }
 
-boost::shared_ptr<AggregatorManager> IndexSearchService::getAggregatorManager()
+boost::shared_ptr<SearchAggregator> IndexSearchService::getSearchAggregator()
 {
-    return aggregatorManager_;
+    return searchAggregator_;
 }
 
 const IndexBundleConfiguration* IndexSearchService::getBundleConfig()
@@ -48,7 +48,7 @@ bool IndexSearchService::getSearchResult(
         bool ret = workerService_->doLocalSearch(actionItem, resultItem);
         std::vector<std::pair<workerid_t, KeywordSearchResult> > resultList;
         resultList.push_back(std::make_pair(0,resultItem));
-        aggregatorManager_->aggregateMiningResult(resultItem, resultList);
+        searchAggregator_->aggregateMiningResult(resultItem, resultList);
         STOP_PROFILER ( query );
         return ret;
     }
@@ -59,7 +59,7 @@ bool IndexSearchService::getSearchResult(
 
 #ifdef PREFETCH_INFO
     distResultItem.distSearchInfo_.actionType_ = DistKeywordSearchInfo::ACTION_FETCH;
-    aggregatorManager_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchInfo>(
+    searchAggregator_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchInfo>(
             actionItem.collectionName_, "getDistSearchInfo", actionItem, distResultItem.distSearchInfo_);
 
     distResultItem.distSearchInfo_.actionType_ = DistKeywordSearchInfo::ACTION_SEND;
@@ -86,7 +86,7 @@ bool IndexSearchService::getSearchResult(
         distResultItem.start_ = actionItem.pageInfo_.start_;
         distResultItem.count_ = actionItem.pageInfo_.count_;
 
-        aggregatorManager_->distributeRequest(
+        searchAggregator_->distributeRequest(
                 actionItem.collectionName_, "getDistSearchResult", actionItem, distResultItem);
 
         resultItem.swap(distResultItem);
@@ -116,7 +116,7 @@ bool IndexSearchService::getSearchResult(
     typedef std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >::iterator ResultMapIterT;
 
     ResultMapT resultMap;
-    aggregatorManager_->splitSearchResultByWorkerid(resultItem, resultMap);
+    searchAggregator_->splitSearchResultByWorkerid(resultItem, resultMap);
     RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
     for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
     {
@@ -125,7 +125,7 @@ bool IndexSearchService::getSearchResult(
         requestGroup.addRequest(workerid, &actionItem, subResultItem.get());
     }
 
-    aggregatorManager_->distributeRequest(
+    searchAggregator_->distributeRequest(
             actionItem.collectionName_, "getSummaryMiningResult", requestGroup, resultItem);
 
     STOP_PROFILER ( query );
@@ -149,9 +149,9 @@ bool IndexSearchService::getDocumentsByIds(
     typedef std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >::iterator ActionItemMapIterT;
 
     ActionItemMapT actionItemMap;
-    if (!aggregatorManager_->splitGetDocsActionItemByWorkerid(actionItem, actionItemMap))
+    if (!searchAggregator_->splitGetDocsActionItemByWorkerid(actionItem, actionItemMap))
     {
-        aggregatorManager_->distributeRequest(actionItem.collectionName_, "getDocumentsByIds", actionItem, resultItem);
+        searchAggregator_->distributeRequest(actionItem.collectionName_, "getDocumentsByIds", actionItem, resultItem);
     }
     else
     {
@@ -163,7 +163,7 @@ bool IndexSearchService::getDocumentsByIds(
             requestGroup.addRequest(workerid, subActionItem.get());
         }
 
-        aggregatorManager_->distributeRequest(actionItem.collectionName_, "getDocumentsByIds", requestGroup, resultItem);
+        searchAggregator_->distributeRequest(actionItem.collectionName_, "getDocumentsByIds", requestGroup, resultItem);
     }
 
     return true;
@@ -182,7 +182,7 @@ bool IndexSearchService::getInternalDocumentId(
 
     /// Perform distributed search by aggregator
     internalId = 0;
-    aggregatorManager_->distributeRequest<izenelib::util::UString, uint64_t>(
+    searchAggregator_->distributeRequest<izenelib::util::UString, uint64_t>(
             collectionName, "getInternalDocumentId", scdDocumentId, internalId);
 
     return (internalId != 0);
