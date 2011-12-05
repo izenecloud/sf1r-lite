@@ -839,7 +839,7 @@ void DocumentsController::visit()
  *
  * - @b resources (@c Array): Every item is an aspect of summarization.
  *   - @b aspect (@c String): The name of summary aspect
- *   - @b summary (@c String): The content of the aspect summary
+ *   - @b summary (@c Array): The content of the aspect summary, each item indicates a sub aspect
  *
  *
  * @section example
