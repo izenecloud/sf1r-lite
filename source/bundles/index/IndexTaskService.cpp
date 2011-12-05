@@ -37,7 +37,7 @@ using izenelib::util::UString;
 
 #include <common/JobScheduler.h>
 #include <aggregator-manager/SearchAggregator.h>
-#include <aggregator-manager/WorkerService.h>
+#include <aggregator-manager/SearchWorker.h>
 
 
 namespace
@@ -115,7 +115,7 @@ bool IndexTaskService::index(unsigned int numdoc)
         return true;
     }
 
-    // xxx move process to WorkerService
+    // xxx move process to SearchWorker
     task_type task = boost::bind(&IndexTaskService::buildCollection, this, numdoc);
     JobScheduler::get()->addTask(task);
 

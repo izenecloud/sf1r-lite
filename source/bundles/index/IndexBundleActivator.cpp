@@ -12,7 +12,7 @@
 #include <la-manager/LAManager.h>
 #include <la-manager/LAPool.h>
 #include <aggregator-manager/SearchAggregator.h>
-#include <aggregator-manager/WorkerService.h>
+#include <aggregator-manager/SearchWorker.h>
 #include <node-manager/MasterNodeManager.h>
 #include <util/singleton.h>
 
@@ -147,7 +147,7 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
             MiningSearchService* service = reinterpret_cast<MiningSearchService*> ( const_cast<IService*>(ref.getService()) );
             cout << "[IndexBundleActivator#addingService] Calling MiningSearchService..." << endl;
             searchService_->searchAggregator_->miningManager_ = service->GetMiningManager();
-            searchService_->workerService_->miningManager_ = service->GetMiningManager();
+            searchService_->searchWorker_->miningManager_ = service->GetMiningManager();
             searchManager_->setMiningManager(service->GetMiningManager());
             return true;
         }
@@ -209,7 +209,7 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
         {
             RecommendSearchService* service = reinterpret_cast<RecommendSearchService*> ( const_cast<IService*>(ref.getService()) );
             cout << "[IndexBundleActivator#addingService] Calling RecommendSearchService..." << endl;
-            searchService_->workerService_->recommendSearchService_ = service;
+            searchService_->searchWorker_->recommendSearchService_ = service;
             return true;
         }
         else
@@ -268,8 +268,8 @@ bool IndexBundleActivator::init_()
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open search manager.."<<std::endl;
     searchManager_ = createSearchManager_();
     SF1R_ENSURE_INIT(searchManager_);
-    workerService_ = createWorkerService_();
-    SF1R_ENSURE_INIT(workerService_);
+    searchWorker_ = createSearchWorker_();
+    SF1R_ENSURE_INIT(searchWorker_);
     searchAggregator_ = createSearchAggregator_();
     SF1R_ENSURE_INIT(searchAggregator_);
     pQA_ = Singleton<ilplib::qa::QuestionAnalysis>::get();
@@ -277,20 +277,20 @@ bool IndexBundleActivator::init_()
     searchService_ = new IndexSearchService(config_);
 
     searchService_->searchAggregator_ = searchAggregator_;
-    searchService_->workerService_ = workerService_;
-    searchService_->workerService_->laManager_ = laManager_;
-    searchService_->workerService_->idManager_ = idManager_;
-    searchService_->workerService_->documentManager_ = documentManager_;
-    searchService_->workerService_->indexManager_ = indexManager_;
-    //searchService_->workerService_->rankingManager_ = rankingManager_;
-    searchService_->workerService_->searchManager_ = searchManager_;
-    searchService_->workerService_->pQA_ = pQA_;
+    searchService_->searchWorker_ = searchWorker_;
+    searchService_->searchWorker_->laManager_ = laManager_;
+    searchService_->searchWorker_->idManager_ = idManager_;
+    searchService_->searchWorker_->documentManager_ = documentManager_;
+    searchService_->searchWorker_->indexManager_ = indexManager_;
+    //searchService_->searchWorker_->rankingManager_ = rankingManager_;
+    searchService_->searchWorker_->searchManager_ = searchManager_;
+    searchService_->searchWorker_->pQA_ = pQA_;
 
     taskService_ = new IndexTaskService(config_, directoryRotator_, indexManager_);
 
     taskService_->searchAggregator_ = searchAggregator_;
-    taskService_->workerService_ = workerService_;
-    taskService_->workerService_->summarizer_.init(documentManager_->getLangId(), idManager_);
+    taskService_->searchWorker_ = searchWorker_;
+    taskService_->searchWorker_->summarizer_.init(documentManager_->getLangId(), idManager_);
     taskService_->idManager_ = idManager_;
     taskService_->laManager_ = laManager_;
     taskService_->documentManager_ = documentManager_;
@@ -501,17 +501,17 @@ IndexBundleActivator::createLAManager_() const
     return ret;
 }
 
-boost::shared_ptr<WorkerService>
-IndexBundleActivator::createWorkerService_()
+boost::shared_ptr<SearchWorker>
+IndexBundleActivator::createSearchWorker_()
 {
-    boost::shared_ptr<WorkerService> ret(new WorkerService(config_, directoryRotator_));
+    boost::shared_ptr<SearchWorker> ret(new SearchWorker(config_, directoryRotator_));
     return ret;
 }
 
 boost::shared_ptr<SearchAggregator>
 IndexBundleActivator::createSearchAggregator_() const
 {
-    boost::shared_ptr<SearchAggregator> ret(new SearchAggregator(workerService_.get()));
+    boost::shared_ptr<SearchAggregator> ret(new SearchAggregator(searchWorker_.get()));
     ret->TOP_K_NUM = config_->topKNum_;
     ret->setDebug(true);
     // workers will be detected and set by master node manager

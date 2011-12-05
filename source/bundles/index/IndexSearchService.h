@@ -20,7 +20,7 @@ using namespace net::aggregator;
 
 class SearchAggregator;
 class SearchCache;
-class WorkerService;
+class SearchWorker;
 class IndexSearchService : public ::izenelib::osgi::IService
 {
 public:
@@ -44,7 +44,7 @@ public:
 private:
     IndexBundleConfiguration* bundleConfig_;
     boost::shared_ptr<SearchAggregator> searchAggregator_;
-    boost::shared_ptr<WorkerService> workerService_;
+    boost::shared_ptr<SearchWorker> searchWorker_;
 
     boost::scoped_ptr<SearchCache> cache_; // for Master Node
 
