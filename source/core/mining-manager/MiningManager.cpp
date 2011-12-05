@@ -151,9 +151,9 @@ bool MiningManager::open()
     {
         bfs::path cookiePath(bfs::path(basicPath_) / "cookie");
         directory::DirectoryCookie cookie(cookiePath);
-        if ( cookie.read() )
+        if (cookie.read())
         {
-            if ( !cookie.valid() )
+            if (!cookie.valid())
             {
                 sflog->info(SFL_MINE, "Mining data is broken.");
                 boost::filesystem::remove_all(basicPath_);
@@ -168,35 +168,35 @@ bool MiningManager::open()
         /** analyzer */
 
         std::string kma_path;
-        LAPool::getInstance()->get_kma_path(kma_path );
+        LAPool::getInstance()->get_kma_path(kma_path);
         std::string cma_path;
-        LAPool::getInstance()->get_cma_path(cma_path );
+        LAPool::getInstance()->get_cma_path(cma_path);
         std::string jma_path;
-        LAPool::getInstance()->get_jma_path(jma_path );
+        LAPool::getInstance()->get_jma_path(jma_path);
 
         IDMAnalyzerConfig config1 = idmlib::util::IDMAnalyzerConfig::GetCommonConfig(kma_path,"",jma_path);
         analyzer_ = new idmlib::util::IDMAnalyzer(config1);
-        if ( !analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct") )
+        if (!analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct"))
         {
             return false;
         }
 
         IDMAnalyzerConfig config2 = idmlib::util::IDMAnalyzerConfig::GetCommonConfig(kma_path,cma_path,jma_path);
         c_analyzer_ = new idmlib::util::IDMAnalyzer(config2);
-        if ( !c_analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct") )
+        if (!c_analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct"))
         {
             return false;
         }
 
         IDMAnalyzerConfig config3 = idmlib::util::IDMAnalyzerConfig::GetCommonTgConfig(kma_path,"",jma_path);
         kpe_analyzer_ = new idmlib::util::IDMAnalyzer(config3);
-        if ( !kpe_analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct") )
+        if (!kpe_analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct"))
         {
             return false;
         }
 
         /** TG */
-        if ( mining_schema_.tg_enable )
+        if (mining_schema_.tg_enable)
         {
             tg_path_ = prefix_path + "/tg";
             tg_label_path_ = tg_path_ + "/label";
@@ -242,7 +242,7 @@ bool MiningManager::open()
         qrManager_->Load();
 
         /** DUPD */
-        if ( mining_schema_.dupd_enable )
+        if (mining_schema_.dupd_enable)
         {
             dupd_path_ = prefix_path + "/dupd/";
             FSUtil::createDir(dupd_path_);
@@ -257,12 +257,12 @@ bool MiningManager::open()
         }
 
         /** SIM */
-        if ( mining_schema_.sim_enable )
+        if (mining_schema_.sim_enable)
         {
             sim_path_ = prefix_path + "/sim";
             FSUtil::createDir(sim_path_);
 
-            if ( miningConfig_.similarity_param.enable_esa == false )
+            if (!miningConfig_.similarity_param.enable_esa)
             {
                 std::string hdb_path = sim_path_ + "/hdb";
                 boost::filesystem::create_directories(hdb_path);
@@ -275,7 +275,7 @@ bool MiningManager::open()
         }
 
         /** faceted */
-        if ( mining_schema_.faceted_enable )
+        if (mining_schema_.faceted_enable)
         {
             faceted_path_ = prefix_path + "/faceted";
             FSUtil::createDir(faceted_path_);
@@ -285,7 +285,7 @@ bool MiningManager::open()
         }
 
         /** CTR */
-        if ( true )
+        if (true)
         {
             std::string ctr_path = prefix_path + "/ctr";
             FSUtil::createDir(ctr_path);
@@ -305,7 +305,7 @@ bool MiningManager::open()
         }
 
         /** group */
-        if ( mining_schema_.group_enable )
+        if (mining_schema_.group_enable)
         {
             if (groupManager_) delete groupManager_;
             std::string groupPath = prefix_path + "/group";
@@ -319,7 +319,7 @@ bool MiningManager::open()
         }
 
         /** attr */
-        if ( mining_schema_.attr_enable )
+        if (mining_schema_.attr_enable)
         {
             if (attrManager_) delete attrManager_;
             std::string attrPath = prefix_path + "/attr";
@@ -342,7 +342,7 @@ bool MiningManager::open()
         }
 
         /** group label log */
-        if ( mining_schema_.group_enable )
+        if (mining_schema_.group_enable)
         {
             std::string logPath = prefix_path + "/group_label_log";
             try
@@ -362,7 +362,7 @@ bool MiningManager::open()
                     continue;
 
                 const std::string& propName = it->propName;
-                if (groupLabelLoggerMap_[propName] == NULL)
+                if (!groupLabelLoggerMap_[propName])
                 {
                     std::auto_ptr<GroupLabelLogger> loggerPtr(new GroupLabelLogger(logPath, propName));
                     if (! loggerPtr->open())
@@ -389,11 +389,11 @@ bool MiningManager::open()
             groupReranker_ = new faceted::PropertyDiversityReranker(groupManager_, diversityProperty, boostingProperty);
             groupReranker_->setGroupLabelLogger(groupLabelLoggerMap_[boostingProperty]);
             groupReranker_->setCTRManager(ctrManager_);
-            searchManager_->set_reranker(boost::bind(&faceted::PropertyDiversityReranker::rerank,groupReranker_,_1,_2,_3));
+            searchManager_->set_reranker(boost::bind(&faceted::PropertyDiversityReranker::rerank,groupReranker_, _1, _2, _3));
         }
 
         /** tdt **/
-        if ( mining_schema_.tdt_enable )
+        if (mining_schema_.tdt_enable)
         {
             tdt_path_ = prefix_path + "/tdt";
             boost::filesystem::create_directories(tdt_path_);
@@ -408,21 +408,20 @@ bool MiningManager::open()
 
 
         /** Summarization */
-        if ( mining_schema_.summarization_enable)
+        if (mining_schema_.summarization_enable)
         {
             summarization_path_ = prefix_path + "/summarization";
             boost::filesystem::create_directories(summarization_path_);
             summarizationManager_ =
-                new MultiDocSummarizationSubManager(summarization_path_
-                                                    ,mining_schema_.summarization_schema
-                                                    ,document_manager_
-                                                    ,index_manager_);
+                new MultiDocSummarizationSubManager(summarization_path_,
+                                                    mining_schema_.summarization_schema,
+                                                    document_manager_,
+                                                    index_manager_);
 
-           if( !mining_schema_.summarization_schema.parentKey.empty())
+           if (!mining_schema_.summarization_schema.parentKey.empty())
            {
-               searchManager_->set_filter_hook(boost::bind(&MultiDocSummarizationSubManager::AppendSearchFilter,summarizationManager_,_1));
+               searchManager_->set_filter_hook(boost::bind(&MultiDocSummarizationSubManager::AppendSearchFilter, summarizationManager_, _1));
            }
-			
         }
 
 
@@ -430,7 +429,7 @@ bool MiningManager::open()
         try
         {
             std::string continue_file = collectionDataPath_+"/continue";
-            if ( boost::filesystem::exists(continue_file) )
+            if (boost::filesystem::exists(continue_file))
             {
                 boost::filesystem::remove_all(continue_file);
                 DoMiningCollection();
@@ -490,7 +489,7 @@ bool MiningManager::DoMiningCollection()
 {
     MEMLOG("[Mining] DoMiningCollection");
     //do TG
-    if ( mining_schema_.tg_enable )
+    if (mining_schema_.tg_enable)
     {
         MEMLOG("[Mining] TG starting..");
         if (doTgInfoInit_())
@@ -498,7 +497,7 @@ bool MiningManager::DoMiningCollection()
             izenelib::am::rde_hash<std::string, bool> tg_properties;
             for (uint32_t i=0;i<mining_schema_.tg_properties.size();i++)
             {
-                tg_properties.insert( mining_schema_.tg_properties[i], 0);
+                tg_properties.insert(mining_schema_.tg_properties[i], 0);
             }
             uint32_t max_docid = tgInfo_->GetMaxDocId();
             uint32_t dm_maxid = document_manager_->getMaxDocId();
@@ -513,19 +512,19 @@ bool MiningManager::DoMiningCollection()
                 return false;
             }
 
-            LabelManager::TaskFunctionType label_sim_task = boost::bind( &LabelSimilarity::Append, &label_sim, _1, _2, _3, _4, _5);
+            LabelManager::TaskFunctionType label_sim_task = boost::bind(&LabelSimilarity::Append, &label_sim, _1, _2, _3, _4, _5);
             labelManager_->AddTask(label_sim_task);
 
             Document doc;
             std::cout<<"Will processing from "<<max_docid+1<<" to "<<dm_maxid<<std::endl;
-            for ( uint32_t docid = max_docid+1; docid<=dm_maxid; docid++)
+            for (uint32_t docid = max_docid+1; docid<=dm_maxid; docid++)
             {
                 bool b = document_manager_->getDocument(docid, doc);
                 if (!b) continue;
                 Document::property_iterator property_it = doc.propertyBegin();
-                while (property_it != doc.propertyEnd() )
+                while (property_it != doc.propertyEnd())
                 {
-                    if ( tg_properties.find( property_it->first)!= NULL)
+                    if (tg_properties.find(property_it->first))
                     {
                         const izenelib::util::UString& content = property_it->second.get<izenelib::util::UString>();
                         tgInfo_->addDocument(docid, content);
@@ -533,7 +532,7 @@ bool MiningManager::DoMiningCollection()
                     property_it++;
                 }
                 process_count++;
-                if ( process_count %1000 == 0 )
+                if (process_count % 1000 == 0)
                 {
                     MEMLOG("[TG] inserted %d. docid: %d", process_count, docid);
                 }
@@ -552,19 +551,19 @@ bool MiningManager::DoMiningCollection()
         MiningQueryLogHandler::getInstance()->runEvents();
     }
     //do DUPD
-    if ( mining_schema_.dupd_enable)
+    if (mining_schema_.dupd_enable)
     {
         MEMLOG("[Mining] DUPD starting..");
         dupManager_->ProcessCollection();
         MEMLOG("[Mining] DUPD finished.");
     }
-    if ( mining_schema_.faceted_enable )
+    if (mining_schema_.faceted_enable)
     {
         faceted_->ProcessCollection(false);
     }
 
     //do ctr
-    if ( ctrManager_ )
+    if (ctrManager_)
     {
         size_t docNum = 0;
         if (index_manager_)
@@ -576,22 +575,22 @@ bool MiningManager::DoMiningCollection()
     }
 
     //do group
-    if ( mining_schema_.group_enable )
+    if (mining_schema_.group_enable)
     {
         groupManager_->processCollection();
     }
 
     //do attr
-    if ( mining_schema_.attr_enable )
+    if (mining_schema_.attr_enable)
     {
         attrManager_->processCollection();
     }
 
     //do tdt
-    if ( mining_schema_.tdt_enable )
+    if (mining_schema_.tdt_enable)
     {
         idmlib::tdt::Storage* next_storage = tdt_storage_->Next();
-        if (next_storage==NULL)
+        if (!next_storage)
         {
             std::cerr<<"can not get next tdt storage"<<std::endl;
         }
@@ -622,10 +621,10 @@ bool MiningManager::DoMiningCollection()
 
 
     //do Similarity
-    if ( mining_schema_.sim_enable )
+    if (mining_schema_.sim_enable)
     {
         MEMLOG("[Mining] SIM starting..");
-        if ( miningConfig_.similarity_param.enable_esa == false )
+        if (!miningConfig_.similarity_param.enable_esa)
         {
             computeSimilarity_(index_manager_->getIndexReader(), mining_schema_.sim_properties);
         }
@@ -637,7 +636,7 @@ bool MiningManager::DoMiningCollection()
     }
 
     // do Summarization
-    if ( mining_schema_.summarization_enable )
+    if (mining_schema_.summarization_enable)
     {
         summarizationManager_->EvaluateSummarization();
     }
@@ -670,7 +669,7 @@ bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
     bool bResult = true;
     try
     {
-        START_PROFILER( qr);
+        START_PROFILER(qr);
         if (true)
         {
             izenelib::util::ClockTimer clocker;
@@ -679,7 +678,7 @@ bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
         }
         STOP_PROFILER(qr);
 
-        START_PROFILER( tg);
+        START_PROFILER(tg);
         if (mining_schema_.tg_enable && !mining_schema_.tg_kpe_only)
         {
             izenelib::util::ClockTimer clocker;
@@ -688,7 +687,7 @@ bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
         }
         STOP_PROFILER(tg);
 
-        START_PROFILER( dupd);
+        START_PROFILER(dupd);
         //get dupd result
         if (mining_schema_.dupd_enable)
         {
@@ -755,7 +754,7 @@ bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
         bResult = false;
     }
     //get query recommend result
-    REPORT_PROFILE_TO_FILE( "PerformanceQueryResult.MiningManager" )
+    REPORT_PROFILE_TO_FILE("PerformanceQueryResult.MiningManager")
     std::cout << "[getMiningResult finished]" << std::endl;
     return bResult;
 }
@@ -825,7 +824,7 @@ bool MiningManager::getSimilarImageDocIdList(
 
 // void MiningManager::getMiningStatus(Status& status)
 // {
-//     if( status_ )
+//     if(status_)
 //     {
 //         status = *status_;
 //     }
@@ -884,7 +883,7 @@ bool MiningManager::getReminderQuery(
 bool MiningManager::getUniqueDocIdList(const std::vector<uint32_t>& docIdList,
                                        std::vector<uint32_t>& cleanDocs)
 {
-    if ( !mining_schema_.dupd_enable || !dupManager_)
+    if (!mining_schema_.dupd_enable || !dupManager_)
     {
         return false;
     }
@@ -895,7 +894,7 @@ bool MiningManager::getUniqueDocIdList(const std::vector<uint32_t>& docIdList,
 bool MiningManager::getDuplicateDocIdList(uint32_t docId, std::vector<
         uint32_t>& docIdList)
 {
-    if ( dupManager_ )
+    if (dupManager_)
     {
         return dupManager_->getDuplicatedDocIdList(docId, docIdList);
     }
@@ -904,12 +903,12 @@ bool MiningManager::getDuplicateDocIdList(uint32_t docId, std::vector<
 
 bool MiningManager::computeSimilarity_(izenelib::ir::indexmanager::IndexReader* pIndexReader, const std::vector<std::string>& property_names)
 {
-//   if(pIndexReader->maxDoc()> similarityIndex_->GetMaxDocId() )
+//   if(pIndexReader->maxDoc()> similarityIndex_->GetMaxDocId())
     if (true)
     {
         std::cout << "Start to compute similarity index, please wait..."<< std::endl;
         // we should be able get information from index manager by property name only
-        std::vector<uint32_t> property_ids(property_names.size() );
+        std::vector<uint32_t> property_ids(property_names.size());
         PropertyConfigBase property_config;
         for (uint32_t i=0;i<property_ids.size();i++)
         {
@@ -1047,7 +1046,7 @@ bool MiningManager::getSimilarDocIdList(uint32_t documentId, uint32_t maxNum,
     }
 
     result.clear();
-    if ( miningConfig_.similarity_param.enable_esa == false )
+    if (!miningConfig_.similarity_param.enable_esa)
     {
         similarityIndex_->getSimilarDocIdScoreList(documentId, maxNum,
                 std::back_inserter(result));
@@ -1184,14 +1183,13 @@ bool MiningManager::addQrResult_(KeywordSearchResult& miaInput)
         miaInput.error_ += "[QR: "+msg+"]";
     }
 
-    if ( !ret  ) return false;
-    return true;
+    return ret;
 }
 
 bool MiningManager::addTgResult_(KeywordSearchResult& miaInput)
 {
     std::cout << "[MiningManager::getTGResult]" << std::endl;
-    if ( miaInput.topKDocs_.size()==0 ) return true;
+    if (miaInput.topKDocs_.empty()) return true;
 
     izenelib::util::UString query(miaInput.rawQueryString_, miaInput.encodingType_);
 //     TaxonomyRep taxonomyRep;
@@ -1230,7 +1228,7 @@ bool MiningManager::addTgResult_(KeywordSearchResult& miaInput)
 bool MiningManager::addDupResult_(KeywordSearchResult& miaInput)
 {
 //    boost::mutex::scoped_lock lock(dup_mtx_);
-    if ( !dupManager_ ) return true;
+    if (!dupManager_) return true;
     miaInput.numberOfDuplicatedDocs_.resize(miaInput.topKDocs_.size());
     std::vector<count_t>::iterator result =
         miaInput.numberOfDuplicatedDocs_.begin();
@@ -1251,14 +1249,14 @@ bool MiningManager::addDupResult_(KeywordSearchResult& miaInput)
 bool MiningManager::addSimilarityResult_(KeywordSearchResult& miaInput)
 {
 //    boost::mutex::scoped_lock lock(sim_mtx_);
-    if ( !similarityIndex_ && !similarityIndexEsa_) return true;
+    if (!similarityIndex_ && !similarityIndexEsa_) return true;
     miaInput.numberOfSimilarDocs_.resize(miaInput.topKDocs_.size());
 
     for (uint32_t i=0;i<miaInput.topKDocs_.size();i++)
     {
         uint32_t docid = miaInput.topKDocs_[i];
         uint32_t count = 0;
-        if ( miningConfig_.similarity_param.enable_esa == false )
+        if (!miningConfig_.similarity_param.enable_esa)
         {
             count = similarityIndex_->getSimilarDocNum(docid);
         }
@@ -1275,7 +1273,7 @@ bool MiningManager::addSimilarityResult_(KeywordSearchResult& miaInput)
 bool MiningManager::addFacetedResult_(KeywordSearchResult& miaInput)
 {
 //    boost::mutex::scoped_lock lock(sim_mtx_);
-    if ( !faceted_ ) return true;
+    if (!faceted_) return true;
     faceted_->GetSearcher()->GetRepresentation(miaInput.topKDocs_, miaInput.onto_rep_);
 
     return true;
@@ -1458,9 +1456,9 @@ bool MiningManager::GetTdtInTimeRange(const izenelib::util::UString& start, cons
 
 bool MiningManager::GetTdtInTimeRange(const idmlib::tdt::TimeIdType& start, const idmlib::tdt::TimeIdType& end, std::vector<izenelib::util::UString>& topic_list)
 {
-    if ( !mining_schema_.tdt_enable || tdt_storage_== NULL) return false;
+    if (!mining_schema_.tdt_enable || !tdt_storage_) return false;
     idmlib::tdt::Storage* storage = tdt_storage_->Current();
-    if (storage==NULL)
+    if (!storage)
     {
         std::cerr<<"can not get current storage for tdt"<<std::endl;
         return false;
@@ -1470,9 +1468,9 @@ bool MiningManager::GetTdtInTimeRange(const idmlib::tdt::TimeIdType& start, cons
 
 bool MiningManager::GetTdtTopicInfo(const izenelib::util::UString& text, idmlib::tdt::TopicInfoType& info)
 {
-    if ( !mining_schema_.tdt_enable || tdt_storage_== NULL) return false;
+    if (!mining_schema_.tdt_enable || !tdt_storage_) return false;
     idmlib::tdt::Storage* storage = tdt_storage_->Current();
-    if (storage==NULL)
+    if (!storage)
     {
         std::cerr<<"can not get current storage for tdt"<<std::endl;
         return false;
@@ -1510,13 +1508,21 @@ void MiningManager::FinishQueryRecommendInject()
     qrManager_->FinishInject();
 }
 
+bool MiningManager::GetSummarizationByRawKey(
+    const izenelib::util::UString& rawKey, 
+    Summarization& result)
+{
+    if(!summarizationManager_) return false;
+    return summarizationManager_->GetSummarizationByRawKey(rawKey,result);
+}
+
 bool MiningManager::doTgInfoInit_()
 {
-    if ( tgInfo_ == NULL)
+    if (!tgInfo_)
     {
         tgInfo_ = new TaxonomyInfo(tg_path_,miningConfig_.taxonomy_param, labelManager_, kpe_analyzer_, system_resource_path_);
         tgInfo_->setKPECacheSize(1000000);
-        if ( !tgInfo_->Open())
+        if (!tgInfo_->Open())
         {
             delete tgInfo_;
             tgInfo_ = NULL;
@@ -1528,7 +1534,7 @@ bool MiningManager::doTgInfoInit_()
 
 void MiningManager::doTgInfoRelease_()
 {
-    if ( tgInfo_ != NULL)
+    if (tgInfo_)
     {
         delete tgInfo_;
         tgInfo_ = NULL;

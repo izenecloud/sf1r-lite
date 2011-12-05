@@ -16,6 +16,7 @@
 #define SF1R_MINING_MANAGER_H_
 
 #include "faceted-submanager/prop_value_table.h" // pvid_t
+#include "summarization-submanager/Summarization.h" //Summarization
 
 #include <common/ResultType.h>
 #include <configuration-manager/PropertyConfig.h>
@@ -255,6 +256,8 @@ public:
     void InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result);
 
     void FinishQueryRecommendInject();
+
+    bool GetSummarizationByRawKey(const izenelib::util::UString& rawKey, Summarization& result);
 
     void close();
 

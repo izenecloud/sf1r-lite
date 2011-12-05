@@ -1,8 +1,8 @@
 #include "util.h"
-#include "corpus.h"
 
-#include <vector>
-#include <fstream>
+#include <ranking-manager/RankQueryProperty.h>
+#include <ranking-manager/RankDocumentProperty.h>
+
 #include <cmath>
 
 using namespace std;
@@ -180,7 +180,7 @@ void SPLMUtil::getCollectionWordMapping(map<int, int>& wordmapping, const int *c
 }
 
 void SPLMUtil::selectSentences(
-        vector<izenelib::util::UString>& summary_list,
+        vector<UString>& summary_list,
         const Corpus& corpus,
         const int *sentOffs, const int *W,
         const set<pair<double, int> >& result)

@@ -45,7 +45,7 @@ public:
     void get_freq_group_labels();
     void set_top_group_label();
     void visit();
-
+    void get_summarization();
 private:
     bool requireDOCID();
     bool setLimit();

@@ -9,18 +9,17 @@
 #include "corpus.h"
 #include "svd/d-mat2d.h"
 
-#include <ranking-manager/RankQueryProperty.h>
-#include <ranking-manager/RankDocumentProperty.h>
-
 #include <set>
 #include <map>
-#include <sstream>
 
 #define THR  0.3
 #define SENTENCE_LIMIT 8
 
 namespace sf1r
 {
+
+class RankQueryProperty;
+class RankDocumentProperty;
 
 class SPLMUtil
 {
@@ -99,7 +98,7 @@ public:
     ///
     /// @brief Selects sentences for the summary set
     ///
-    static void selectSentences(std::vector<izenelib::util::UString>& summary_list,
+    static void selectSentences(std::vector<UString>& summary_list,
             const Corpus& corpus, const int *sentOffs, const int *W,
             const std::set<std::pair<double, int> >& result);
 

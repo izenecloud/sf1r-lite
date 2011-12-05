@@ -10,6 +10,7 @@
 
 #include <query-manager/ActionItem.h>
 #include <mining-manager/faceted-submanager/manmade_doc_category_item.h>
+#include <mining-manager/summarization-submanager/Summarization.h>
 #include <idmlib/tdt/tdt_types.h>
 #include <boost/shared_ptr.hpp>
 
@@ -147,6 +148,10 @@ public:
 
     void FinishQueryRecommendInject();
 
+    bool GetSummarizationByRawKey(
+        const std::string& collection,
+        const izenelib::util::UString& rawKey, 
+        Summarization& result);
 private:
     MiningBundleConfiguration* bundleConfig_;
     boost::shared_ptr<MiningManager> miningManager_;

@@ -6,6 +6,7 @@
 #include <libcassandra/util_functions.h>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/filesystem.hpp>
 #include <algorithm>
 
 using namespace std;
@@ -43,22 +44,24 @@ bool ProductPriceTrend::Init()
 {
     if (!PriceHistory::is_enabled) return false;
 
-    bool ret = true;
-
     for (vector<string>::const_iterator it = group_prop_vec_.begin();
             it != group_prop_vec_.end(); ++it)
     {
         vector<TPCBTree *>& prop_tpc = tpc_storage_[*it];
         for (uint32_t i = 0; i < time_int_vec_.size(); i++)
         {
-            prop_tpc.push_back(new TPCBTree(data_dir_ + "/" + *it + "." + boost::lexical_cast<string>(time_int_vec_[i]) + ".tpc"));
+            string db_path = data_dir_ + "/" + *it + "." + boost::lexical_cast<string>(time_int_vec_[i]) + ".tpc";
+            prop_tpc.push_back(new TPCBTree(db_path));
             if (!prop_tpc.back()->open())
-                ret = false;
+            {
+                boost::filesystem::remove_all(db_path);
+                prop_tpc.back()->open();
+            }
 //            else TraverseTPCBtree(*prop_tpc.back());
         }
     }
 
-    return ret;
+    return true;
 }
 
 //void ProductPriceTrend::TraverseTPCBtree(TPCBTree& tpc_btree)
