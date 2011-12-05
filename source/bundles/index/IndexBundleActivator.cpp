@@ -165,7 +165,7 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
         {
             MiningTaskService* service = reinterpret_cast<MiningTaskService*> ( const_cast<IService*>(ref.getService()) );
             cout << "[IndexBundleActivator#addingService] Calling MiningTaskService..." << endl;
-            taskService_->miningTaskService_= service;
+            taskService_->indexWorker_->miningTaskService_= service;
             return true;
         }
         else
@@ -226,7 +226,7 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
         {
             RecommendTaskService* service = reinterpret_cast<RecommendTaskService*> ( const_cast<IService*>(ref.getService()) );
             cout << "[IndexBundleActivator#addingService] Calling RecommendTaskService..." << endl;
-            taskService_->recommendTaskService_= service;
+            taskService_->indexWorker_->recommendTaskService_= service;
             return true;
         }
         else
@@ -292,7 +292,7 @@ bool IndexBundleActivator::init_()
     searchService_->searchWorker_->searchManager_ = searchManager_;
     searchService_->searchWorker_->pQA_ = pQA_;
 
-    taskService_ = new IndexTaskService(config_, directoryRotator_, indexManager_);
+    taskService_ = new IndexTaskService(config_);
 
     taskService_->indexAggregator_ = indexAggregator_;
     taskService_->indexWorker_ = indexWorker_;
@@ -301,13 +301,6 @@ bool IndexBundleActivator::init_()
     taskService_->indexWorker_->documentManager_ = documentManager_;
     taskService_->indexWorker_->searchManager_ = searchManager_;
     taskService_->indexWorker_->summarizer_.init(documentManager_->getLangId(), idManager_);
-    taskService_->idManager_ = idManager_;
-    taskService_->laManager_ = laManager_;
-    taskService_->documentManager_ = documentManager_;
-    taskService_->searchManager_ = searchManager_;
-    taskService_->summarizer_.init(documentManager_->getLangId(), idManager_);
-
-
 
     return true;
 }
@@ -531,7 +524,7 @@ IndexBundleActivator::createSearchAggregator_() const
 boost::shared_ptr<IndexWorker>
 IndexBundleActivator::createIndexWorker_()
 {
-    boost::shared_ptr<IndexWorker> ret(new IndexWorker(config_, directoryRotator_));
+    boost::shared_ptr<IndexWorker> ret(new IndexWorker(config_, directoryRotator_, indexManager_));
     return ret;
 }
 

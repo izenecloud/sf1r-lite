@@ -4,51 +4,29 @@
 #include "IndexBundleConfiguration.h"
 
 #include <directory-manager/DirectoryRotator.h>
-#include <document-manager/Document.h>
-#include <document-manager/text-summarization-submanager/TextSummarizationSubManager.h>
-#include <configuration-manager/PropertyConfig.h>
-#include <configuration-manager/ConfigurationTool.h>
 #include <common/Status.h>
-#include <common/IndexingProgress.h>
 #include <common/ScdParser.h>
 
-#include <ir/id_manager/IDManager.h>
-#include <ir/index_manager/index/IndexerDocument.h>
-
-#include <util/osgi/IService.h>
 #include <util/driver/Value.h>
+#include <util/osgi/IService.h>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/variant/get.hpp>
-
 
 namespace sf1r
 {
 using izenelib::ir::idmanager::IDManager;
-class ScdWriterController;
-class MiningTaskService;
-class RecommendTaskService;
-class IndexManager;
-class DocumentManager;
-class LAManager;
-class SearchManager;
-class IndexHooker;
+
 class IndexAggregator;
 class IndexWorker;
+
 class IndexTaskService : public ::izenelib::osgi::IService
 {
-    typedef uint32_t CharacterOffset;
 public:
-    IndexTaskService(
-        IndexBundleConfiguration* bundleConfig,
-        DirectoryRotator& directoryRotator,
-        boost::shared_ptr<IndexManager> indexManager);
+    IndexTaskService(IndexBundleConfiguration* bundleConfig);
 
     ~IndexTaskService();
 
     bool index(unsigned int numdoc);
-
-    bool buildCollection(unsigned int numdoc);
 
     bool optimizeIndex();
 
@@ -67,143 +45,11 @@ public:
 private:
     bool indexMaster_(unsigned int numdoc);
 
-    void createPropertyList_();
-
-    bool completePartialDocument_(docid_t oldId, Document& doc);
-
-    bool getPropertyValue_( const PropertyValue& value, std::string& valueStr );
-
-    bool doBuildCollection_(
-            const std::string& scdFile,
-            int op,
-            uint32_t numdoc
-    );
-
-    bool insertOrUpdateSCD_(
-            ScdParser& parser,
-            bool isInsert,
-            uint32_t numdoc,
-            time_t timestamp
-    );
-
-    bool createUpdateDocId_(
-            const izenelib::util::UString& scdDocId,
-            bool rType,
-            docid_t& oldId,
-            docid_t& newId
-    );
-
-    bool createInsertDocId_(
-            const izenelib::util::UString& scdDocId,
-            docid_t& newId
-    );
-
-    bool deleteSCD_(ScdParser& parser, time_t timestamp);
-
-    bool insertDoc_(Document& document, IndexerDocument& indexDocument, time_t timestamp);
-
-    bool updateDoc_(Document& document, IndexerDocument& indexDocument, time_t timestamp, bool rType);
-
-    bool deleteDoc_(docid_t docid, time_t timestamp);
-
-    void savePriceHistory_(int op);
-
-    void saveSourceCount_(int op);
-
-    bool prepareDocument_(
-            SCDDoc& doc,
-            Document& document,
-            docid_t& oldId,
-            bool& rType,
-            std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
-            std::string& source,
-            time_t& timestamp,
-            bool insert = true
-    );
-
-    bool prepareIndexDocument_(docid_t oldId, const Document& document, IndexerDocument& indexDocument);
-
-    bool checkSeparatorType_(
-            const izenelib::util::UString& propertyValueStr,
-            izenelib::util::UString::EncodingType encoding,
-            char separator
-    );
-
-    bool preparePartialDocument_(
-            Document& document,
-            IndexerDocument& oldIndexDocument
-    );
-
-    bool checkRtype_(
-            SCDDoc& doc,
-            std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue
-    );
-
-    bool makeSentenceBlocks_(
-            const izenelib::util::UString& text,
-            const unsigned int numOfSummary,
-            const unsigned int maxDisplayLength,
-            std::vector<CharacterOffset>& sentenceOffsetList
-    );
-
-    bool makeForwardIndex_(
-            const izenelib::util::UString& text,
-            const std::string& propertyName,
-            unsigned int propertyId,
-            const AnalysisInfo& analysisInfo
-    );
-
-    size_t getTotalScdSize_();
-
-    bool requireBackup_(size_t currTotalScdSize);
-
-    bool backup_();
-
-    bool recoverSCD_();
-
-    static void value2SCDDoc(
-            const ::izenelib::driver::Value& value,
-            SCDDoc& scddoc
-    );
-
 private:
     IndexBundleConfiguration* bundleConfig_;
-    DirectoryRotator& directoryRotator_;
-    MiningTaskService* miningTaskService_;
-    RecommendTaskService* recommendTaskService_;
-
-    PropertyConfig dateProperty_;
-    config_tool::PROPERTY_ALIAS_MAP_T propertyAliasMap_;
-
-    ScdWriterController* scd_writer_;
-
-    boost::shared_ptr<LAManager> laManager_;
-    boost::shared_ptr<IDManager> idManager_;
-    boost::shared_ptr<DocumentManager> documentManager_;
-    boost::shared_ptr<IndexManager> indexManager_;
-    TextSummarizationSubManager summarizer_;
-    boost::shared_ptr<SearchManager> searchManager_;
-
-    unsigned int collectionId_;
-    IndexingProgress indexProgress_;
-    bool checkInsert_;
-    unsigned int numDeletedDocs_;
-    unsigned int numUpdatedDocs_;
-
-    Status indexStatus_;
-
-    std::vector<boost::shared_ptr<LAInput> > laInputs_;
-
-    std::vector<string> propertyList_;
-
-    std::map<std::string, uint32_t> productSourceCount_;
-
-    boost::shared_ptr<IndexHooker> hooker_;
 
     boost::shared_ptr<IndexAggregator> indexAggregator_;
     boost::shared_ptr<IndexWorker> indexWorker_;
-
-    size_t totalSCDSizeSinceLastBackup_;
 
     friend class WorkerServer;
     friend class IndexBundleActivator;
