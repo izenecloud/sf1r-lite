@@ -49,7 +49,7 @@ bool ProductScdReceiver::Run(const std::string& scd_source_dir)
     }
 
     //call buildCollection
-    if(!index_service_->buildCollection(0))
+    if(!index_service_->index(0))
     {
         return false;
     }

@@ -10,6 +10,7 @@
 #include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
 #include <aggregator-manager/SearchWorker.h>
+#include <aggregator-manager/IndexWorker.h>
 #include <product-manager/product_manager.h>
 #include <product-manager/collection_product_data_source.h>
 #include <product-manager/scd_operation_processor.h>
@@ -205,7 +206,7 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
 
 void ProductBundleActivator::addIndexHook_(IndexTaskService* indexService) const
 {
-    indexService->hooker_.reset(new ProductIndexHooker(productManager_));
+    indexService->indexWorker_->hooker_.reset(new ProductIndexHooker(productManager_));
 }
 
 void ProductBundleActivator::removedService( const ServiceReference& ref )

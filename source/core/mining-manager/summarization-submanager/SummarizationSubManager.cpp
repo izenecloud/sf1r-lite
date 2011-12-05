@@ -34,7 +34,7 @@ bool CheckParentKeyLogFormat(
     if (doc->size() != 2) return false;
     const UString& first = (*doc)[0].first;
     const UString& second = (*doc)[1].first;
-    //TODO case insensitive compare, but it requires extra string conversion,
+    //FIXME case insensitive compare, but it requires extra string conversion,
     //which introduces unnecessary memory fragments
     return (first == DOCID && second == parent_key_name);
 }
@@ -42,11 +42,15 @@ bool CheckParentKeyLogFormat(
 struct IsParentKeyFilterProperty
 {
     const std::string& parent_key_property;
+
     IsParentKeyFilterProperty(const std::string& property)
-        :parent_key_property(property) {}
-    bool operator() (QueryFiltering::FilteringType& filterType)
+        : parent_key_property(property)
+    {}
+
+    bool operator()(const QueryFiltering::FilteringType& filterType)
     {
-        return boost::is_iequal()(parent_key_property,filterType.first.second);
+        static boost::is_iequal comparator;
+        return comparator(parent_key_property, filterType.first.second);
     }
 };
 
@@ -59,20 +63,20 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     : schema_(schema)
     , document_manager_(document_manager)
     , index_manager_(index_manager)
+    , parent_key_storage_(new ParentKeyStorage(homePath + "/parentkey"))
+    , summarization_storage_(new SummarizationStorage(homePath + "/summarization"))
     , parent_key_ustr_name_(schema_.parentKey, UString::UTF_8)
     , corpus_(new Corpus())
 {
     if (!schema_.parentKeyLogPath.empty())
-        boost::filesystem::create_directories(schema_.parentKeyLogPath);
-
-    parent_key_storage_ = new ParentKeyStorage(homePath + "/parentkey");
-    summarization_storage_ = new SummarizationStorage(homePath + "/summarization");
+        bfs::create_directories(schema_.parentKeyLogPath);
 }
 
 MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 {
     delete parent_key_storage_;
     delete summarization_storage_;
+    delete corpus_;
 }
 
 void MultiDocSummarizationSubManager::EvaluateSummarization()
@@ -112,7 +116,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             DoEvaluateSummarization_(*fit, docs);
         }
     }
-    summarization_storage_->Flush	();
+    summarization_storage_->Flush();
 }
 
 void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
@@ -120,7 +124,7 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
         const std::vector<uint32_t>& docs)
 {
     Summarization summarization(docs);
-    if(! summarization_storage_->IsRebuildSummarizeRequired(key, summarization))
+    if (!summarization_storage_->IsRebuildSummarizeRequired(key, summarization))
         return;
 
     ilplib::langid::Analyzer* langIdAnalyzer = document_manager_->getLangId();
@@ -134,6 +138,8 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
         Document::property_const_iterator it = doc.findProperty(schema_.contentPropName);
         if (it == doc.propertyEnd())
             continue;
+
+        corpus_->start_new_doc();
 
         const UString& content = it->second.get<UString>();
         UString sentence;
@@ -151,15 +157,28 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     }
 
     corpus_->start_new_sent();
+    corpus_->start_new_doc();
     corpus_->start_new_coll();
 
     std::vector<std::pair<UString, std::vector<UString> > > summary_list;
     SPLM::generateSummary(summary_list, *corpus_);
 
-    //TODO store the generated summary list
+    //XXX store the generated summary list
+    std::vector<UString>& summary = summary_list[0].second;
+    if (!summary.empty())
+    {
+        summarization.property("overview").swap(summary);
+    }
     summarization_storage_->Update(key, summarization);
 
     corpus_->reset();
+}
+
+bool MultiDocSummarizationSubManager::GetSummarizationByRawKey(
+        const UString& rawKey,
+        Summarization& result)
+{
+    return summarization_storage_->Get(rawKey, result);
 }
 
 void MultiDocSummarizationSubManager::AppendSearchFilter(
@@ -168,13 +187,13 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
     ///When search filter is based on ParentKey, get its associated values,
     ///and add those values to filter conditions.
     ///The typical situation of this happen when :
-    ///SELECT * FROM comments WHERE product_type="XXX"
+    ///SELECT * FROM comments WHERE product_type="foo"
     ///This hook will translate the semantic into:
     ///SELECT * FROM comments WHERE product_id="1" OR product_id="2" ...
 
     typedef std::vector<QueryFiltering::FilteringType>::iterator IteratorType;
-    IteratorType it = std::find_if (filtingList.begin(),
-        filtingList.end(), IsParentKeyFilterProperty(schema_.parentKey));
+    IteratorType it = std::find_if(filtingList.begin(),
+            filtingList.end(), IsParentKeyFilterProperty(schema_.parentKey));
     if (it != filtingList.end())
     {
         const std::vector<PropertyValue>& filterParam = it->second;
@@ -182,7 +201,7 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
         {
             try
             {
-                const std::string & paramValue = get<std::string>(filterParam[0]);
+                const std::string& paramValue = get<std::string>(filterParam[0]);
                 UString paramUStr(paramValue, UString::UTF_8);
                 std::vector<UString> results;
                 if (parent_key_storage_->Get(paramUStr, results))
@@ -190,8 +209,8 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
                     QueryFiltering::FilteringType filterRule;
                     filterRule.first.first = QueryFiltering::EQUAL;
                     filterRule.first.second = schema_.foreignKeyPropName;
-                    std::vector<UString>::iterator rit = results.begin();
-                    for(; rit!=results.end(); ++rit)
+                    std::vector<UString>::const_iterator rit = results.begin();
+                    for (; rit != results.end(); ++rit)
                     {
                         PropertyValue v(*rit);
                         filterRule.second.push_back(v);
@@ -206,7 +225,6 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
             }
         }
         filtingList.erase(it);
-        return;
     }
 }
 
@@ -232,7 +250,7 @@ void MultiDocSummarizationSubManager::BuildIndexOfParentKey_()
         }
     }
 
-    std::vector<std::string>::iterator scd_it = scdList.begin();
+    std::vector<std::string>::const_iterator scd_it = scdList.begin();
 
     for (; scd_it != scdList.end(); ++scd_it)
     {

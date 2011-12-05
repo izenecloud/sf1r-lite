@@ -1,6 +1,8 @@
 #ifndef SF1R_MINING_MANAGER_MULTI_DOC_SUMMARIZATION_SUBMANAGER_H
 #define SF1R_MINING_MANAGER_MULTI_DOC_SUMMARIZATION_SUBMANAGER_H
 
+#include "Summarization.h"
+
 #include <configuration-manager/SummarizeConfig.h>
 #include <query-manager/QueryTypeDef.h>
 
@@ -37,6 +39,10 @@ public:
 
     void AppendSearchFilter(
             std::vector<QueryFiltering::FilteringType>& filtingList);
+
+    bool GetSummarizationByRawKey(
+            const UString& rawKey,
+            Summarization& result);
 
 private:
     void DoEvaluateSummarization_(

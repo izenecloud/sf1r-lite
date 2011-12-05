@@ -1,4 +1,4 @@
-#include "SearchWorker.h"
+#include "IndexWorker.h"
 #include "WorkerHelper.h"
 
 #include <index-manager/IndexManager.h>
@@ -11,11 +11,11 @@
 #include <log-manager/ProductCount.h>
 #include <common/JobScheduler.h>
 #include <common/Utilities.h>
-//#include <license-manager/LicenseManager.h>
-//#include <process/common/CollectionMeta.h>
-//#include <process/common/XmlConfigParser.h>
 
+// xxx
 #include <bundles/index/IndexBundleConfiguration.h>
+#include <bundles/mining/MiningTaskService.h>
+#include <bundles/recommend/RecommendTaskService.h>
 
 #include <util/profiler/ProfilerGroup.h>
 
@@ -24,10 +24,11 @@
 #include <glog/logging.h>
 
 #include <boost/filesystem.hpp>
-
 namespace bfs = boost::filesystem;
 
 using izenelib::util::UString;
+using namespace izenelib::driver;
+
 
 namespace sf1r
 {
@@ -38,30 +39,84 @@ namespace
 const char* SCD_BACKUP_DIR = "backup";
 }
 
-bool SearchWorker::index(const unsigned int& numdoc, bool& ret)
+IndexWorker::IndexWorker(
+        IndexBundleConfiguration* bundleConfig,
+        DirectoryRotator& directoryRotator,
+        boost::shared_ptr<IndexManager> indexManager)
+    : bundleConfig_(bundleConfig)
+    , miningTaskService_(NULL)
+    , recommendTaskService_(NULL)
+    , indexManager_(indexManager)
+    , directoryRotator_(directoryRotator)
+    , scd_writer_(new ScdWriterController(bundleConfig_->indexSCDPath()))
+    , collectionId_(1)
+    , indexProgress_()
+    , checkInsert_(false)
+    , numDeletedDocs_(0)
+    , numUpdatedDocs_(0)
+    , totalSCDSizeSinceLastBackup_(0)
 {
-    task_type task = boost::bind(&SearchWorker::buildCollection, this, numdoc);
+    std::set<PropertyConfig, PropertyComp>::iterator piter;
+    bool hasDateInConfig = false;
+    for (piter = bundleConfig_->schema_.begin();
+            piter != bundleConfig_->schema_.end(); ++piter)
+    {
+        std::string propertyName = piter->getName();
+        boost::to_lower(propertyName);
+        if (propertyName=="date")
+        {
+            hasDateInConfig = true;
+            dateProperty_ = *piter;
+            break;
+        }
+    }
+    if (!hasDateInConfig)
+        throw std::runtime_error("Date Property Doesn't exist in config");
+
+    indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
+
+    config_tool::buildPropertyAliasMap(bundleConfig_->schema_, propertyAliasMap_);
+
+    ///propertyId starts from 1
+    laInputs_.resize(bundleConfig_->schema_.size() + 1);
+
+    typedef IndexBundleSchema::iterator prop_iterator;
+    for (prop_iterator iter = bundleConfig_->schema_.begin(),
+                    iterEnd = bundleConfig_->schema_.end();
+         iter != iterEnd; ++iter)
+    {
+        boost::shared_ptr<LAInput> laInput(new LAInput);
+        laInputs_[iter->getPropertyId()] = laInput;
+    }
+
+    createPropertyList_();
+}
+
+IndexWorker::~IndexWorker()
+{
+    delete scd_writer_;
+}
+
+bool IndexWorker::index(const unsigned int& numdoc, bool& ret)
+{
+    task_type task = boost::bind(&IndexWorker::buildCollection, this, numdoc);
     JobScheduler::get()->addTask(task);
 
     ret = true;
     return ret;
 }
 
-bool SearchWorker::buildCollection(unsigned int numdoc)
+bool IndexWorker::buildCollection(unsigned int numdoc)
 {
-    string scdPath = bundleConfig_->collPath_.getScdPath() + "index/";
+    size_t currTotalSCDSize = getTotalScdSize_();
+    ///If current directory is the one rotated from the backup directory,
+    ///there should exist some missed SCDs since the last backup time,
+    ///so we move those SCDs from backup directory, so that these data
+    ///could be recovered through indexing
+    recoverSCD_();
 
-    if(!backup_() )
-        return false;
-
-    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
-    if (!dirGuard)
-    {
-        LOG(ERROR) << "Index directory is corrupted";
-        return false;
-    }
-
-    sf1r::Status::Guard statusGuard(indexStatus_);
+    string scdPath = bundleConfig_->indexSCDPath();
+    Status::Guard statusGuard(indexStatus_);
     CREATE_PROFILER(buildIndex, "Index:SIAProcess", "Indexer : buildIndex")
 
     START_PROFILER(buildIndex);
@@ -81,13 +136,13 @@ bool SearchWorker::buildCollection(unsigned int numdoc)
     vector<string> scdList;
     try
     {
-        if (bfs::is_directory(scdPath) == false)
+        if (!bfs::is_directory(scdPath))
         {
             LOG(ERROR) << "SCD Path does not exist. Path " << scdPath;
             return false;
         }
     }
-    catch(bfs::filesystem_error& e)
+    catch (bfs::filesystem_error& e)
     {
         LOG(ERROR) << "Error while opening directory " << e.what();
         return false;
@@ -100,9 +155,9 @@ bool SearchWorker::buildCollection(unsigned int numdoc)
         if (bfs::is_regular_file(itr->status()))
         {
             std::string fileName = itr->path().filename();
-            if (parser.checkSCDFormat(fileName) )
+            if (parser.checkSCDFormat(fileName))
             {
-                scdList.push_back(itr->path().string() );
+                scdList.push_back(itr->path().string());
                 parser.load(scdPath+fileName);
                 indexProgress_.totalFileSize_ += parser.getFileSize();
             }
@@ -134,16 +189,24 @@ bool SearchWorker::buildCollection(unsigned int numdoc)
     IndexModeSelector index_mode_selector(indexManager_, threshold, max_realtime_msize);
     index_mode_selector.TrySetIndexMode(indexProgress_.totalFileSize_);
 
+    {
+    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
+    if (!dirGuard)
+    {
+        LOG(ERROR) << "Index directory is corrupted";
+        return false;
+    }
+
     LOG(INFO) << "SCD Files in Path processed in given order. Path " << scdPath;
     vector<string>::iterator scd_it;
-    for ( scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
+    for (scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
         LOG(INFO) << "SCD File " << bfs::path(*scd_it).stem();
 
     try
     {
         // loops the list of SCD files that belongs to this collection
         long proccessedFileSize = 0;
-        for ( scd_it = scdList.begin(); scd_it != scdList.end(); scd_it++ )
+        for (scd_it = scdList.begin(); scd_it != scdList.end(); scd_it++)
         {
             size_t pos = scd_it ->rfind("/")+1;
             string filename = scd_it ->substr(pos);
@@ -152,11 +215,11 @@ bool SearchWorker::buildCollection(unsigned int numdoc)
 
             LOG(INFO) << "Processing SCD file. " << bfs::path(*scd_it).stem();
 
-            switch ( parser.checkSCDType(*scd_it) )
+            switch (parser.checkSCDType(*scd_it))
             {
             case INSERT_SCD:
             {
-                if (doBuildCollection_( *scd_it, 1, numdoc ) == false)
+                if (!doBuildCollection_(*scd_it, 1, numdoc))
                 {
                     //continue;
                 }
@@ -168,7 +231,7 @@ bool SearchWorker::buildCollection(unsigned int numdoc)
             {
                 if (documentManager_->getMaxDocId()> 0)
                 {
-                    doBuildCollection_( *scd_it, 3, 0 );
+                    doBuildCollection_(*scd_it, 3, 0);
                     LOG(INFO) << "Delete Finished";
                 }
                 else
@@ -179,14 +242,14 @@ bool SearchWorker::buildCollection(unsigned int numdoc)
             break;
             case UPDATE_SCD:
             {
-                doBuildCollection_( *scd_it, 2, 0 );
+                doBuildCollection_(*scd_it, 2, 0);
                 LOG(INFO) << "Update Finished";
             }
             break;
             default:
                 break;
             }
-            parser.load( *scd_it );
+            parser.load(*scd_it);
             proccessedFileSize += parser.getFileSize();
             indexProgress_.totalFilePos_ = proccessedFileSize;
             indexProgress_.getIndexingStatus(indexStatus_);
@@ -198,27 +261,28 @@ bool SearchWorker::buildCollection(unsigned int numdoc)
         idManager_->flush();
         index_mode_selector.TryCommit();
         //indexManager_->optimizeIndex();
-        if( bundleConfig_->isTrieWildcard()) {
 #ifdef __x86_64
+        if (bundleConfig_->isTrieWildcard())
+        {
             idManager_->startWildcardProcess();
             idManager_->joinWildcardProcess();
-#endif
         }
+#endif
 
-        if(hooker_)
+        if (hooker_)
         {
-            if(!hooker_->Finish())
+            if (!hooker_->Finish())
             {
-                std::cout<<"[IndexTaskService] Hooker Finish failed."<<std::endl;
+                std::cout<<"[IndexWorker] Hooker Finish failed."<<std::endl;
                 return false;
             }
-            std::cout<<"[IndexTaskService] Hooker Finished."<<std::endl;
+            std::cout<<"[IndexWorker] Hooker Finished."<<std::endl;
         }
 
-        if( miningManager_ )
+        if (miningTaskService_)
         {
           indexManager_->pauseMerge();
-          miningManager_->DoMiningCollection();
+          miningTaskService_->DoMiningCollection();
           indexManager_->resumeMerge();
         }
     }
@@ -234,13 +298,16 @@ bool SearchWorker::buildCollection(unsigned int numdoc)
     bfs::path bkDir = bfs::path(scdPath) / SCD_BACKUP_DIR;
     bfs::create_directory(bkDir);
     LOG(INFO) << "moving " << scdList.size() << " SCD files to directory " << bkDir;
+    const boost::shared_ptr<Directory>& currentDir = directoryRotator_.currentDirectory();
+
     for (scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
     {
         try
         {
             bfs::rename(*scd_it, bkDir / bfs::path(*scd_it).filename());
+            currentDir->appendSCD(bfs::path(*scd_it).filename());
         }
-        catch(bfs::filesystem_error& e)
+        catch (bfs::filesystem_error& e)
         {
             LOG(WARNING) << "exception in rename file " << *scd_it << ": " << e.what();
         }
@@ -256,64 +323,146 @@ bool SearchWorker::buildCollection(unsigned int numdoc)
     numUpdatedDocs_ = 0;
 
     indexProgress_.reset();
+
     STOP_PROFILER(buildIndex);
-    REPORT_PROFILE_TO_FILE( "PerformanceIndexResult.SIAProcess" )
+
+    REPORT_PROFILE_TO_FILE("PerformanceIndexResult.SIAProcess")
     LOG(INFO) << "End BuildCollection: ";
     LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
+
+    }
+
+    if(requireBackup_(currTotalSCDSize))
+    {
+        ///When index can support binlog, this step is not necessary
+        ///It means when work under realtime mode, the benefits of reduced merging
+        ///caused by frequently updating can not be achieved if Backup is required
+        index_mode_selector.ForceCommit();
+        if (!backup_())
+            return false;
+        totalSCDSizeSinceLastBackup_ = 0;
+    }
 
     return true;
 }
 
-bool SearchWorker::getPropertyValue_(const PropertyValue& value, std::string& valueStr)
+bool IndexWorker::optimizeIndex()
+{
+    if (!backup_())
+        return false;
+
+    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
+    if (!dirGuard)
+    {
+        LOG(ERROR) << "Index directory is corrupted";
+        return false;
+    }
+    indexManager_->optimizeIndex();
+    return true;
+}
+
+bool IndexWorker::createDocument(const Value& documentValue)
+{
+
+    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
+    if (!dirGuard)
+    {
+        LOG(ERROR) << "Index directory is corrupted";
+        return false;
+    }
+    SCDDoc scddoc;
+    value2SCDDoc(documentValue, scddoc);
+    return scd_writer_->Write(scddoc, INSERT_SCD);
+}
+
+bool IndexWorker::updateDocument(const Value& documentValue)
+{
+
+    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
+    if (!dirGuard)
+    {
+        LOG(ERROR) << "Index directory is corrupted";
+        return false;
+    }
+    SCDDoc scddoc;
+    value2SCDDoc(documentValue, scddoc);
+
+    return scd_writer_->Write(scddoc, UPDATE_SCD);
+}
+
+bool IndexWorker::destroyDocument(const Value& documentValue)
+{
+
+    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
+    if (!dirGuard)
+    {
+        LOG(ERROR) << "Index directory is corrupted";
+        return false;
+    }
+    SCDDoc scddoc;
+    value2SCDDoc(documentValue, scddoc);
+
+    return scd_writer_->Write(scddoc, DELETE_SCD);
+}
+
+bool IndexWorker::getIndexStatus(Status& status)
+{
+    indexProgress_.getIndexingStatus(indexStatus_);
+    status = indexStatus_;
+    return true;
+}
+
+uint32_t IndexWorker::getDocNum()
+{
+    return indexManager_->getIndexReader()->numDocs();
+}
+
+/// private ////////////////////////////////////////////////////////////////////
+
+void IndexWorker::createPropertyList_()
+{
+    std::set<PropertyConfigBase, PropertyBaseComp>::const_iterator propertyIter
+        = bundleConfig_->rawSchema_.begin();
+    for (; propertyIter != bundleConfig_->rawSchema_.end(); propertyIter++)
+    {
+        string propertyName = propertyIter->propertyName_;
+        boost::to_lower(propertyName);
+        propertyList_.push_back(propertyName);
+    }
+}
+
+bool IndexWorker::completePartialDocument_(docid_t oldId, Document& doc)
+{
+    docid_t newId = doc.getId();
+    Document oldDoc;
+    if (!documentManager_->getDocument(oldId, oldDoc))
+    {
+        return false;
+    }
+
+    oldDoc.copyPropertiesFromDocument(doc);
+
+    doc.swap(oldDoc);
+    doc.setId(newId);
+    return true;
+}
+
+bool IndexWorker::getPropertyValue_(const PropertyValue& value, std::string& valueStr)
 {
     try
     {
-        izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>( value );
+        izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
         sourceFieldValue.convertString(valueStr, izenelib::util::UString::UTF_8);
         return true;
     }
-    catch(boost::bad_get& e)
+    catch (boost::bad_get& e)
     {
         LOG(WARNING) << "exception in get property value: " << e.what();
         return false;
     }
 }
 
-bool SearchWorker::backup_()
-{
-    const boost::shared_ptr<Directory>& current
-        = directoryRotator_.currentDirectory();
-    const boost::shared_ptr<Directory>& next
-        = directoryRotator_.nextDirectory();
-
-    // valid pointer
-    // && not the same directory
-    // && have not copied successfully yet
-    if (next
-        && current->name() != next->name()
-        && ! (next->valid() && next->parentName() == current->name()))
-    {
-        try
-        {
-            LOG(INFO) << "Copy index dir from " << current->name()
-                      << " to " << next->name();
-            next->copyFrom(*current);
-            return true;
-        }
-        catch(bfs::filesystem_error& e)
-        {
-            LOG(ERROR) << "Failed to copy index directory " << e.what();
-        }
-
-        // try copying but failed
-        return false;
-    }
-
-    // not copy, always returns true
-    return true;
-}
-
-bool SearchWorker::doBuildCollection_(
+bool IndexWorker::doBuildCollection_(
         const std::string& fileName,
         int op,
         uint32_t numdoc)
@@ -367,13 +516,13 @@ bool SearchWorker::doBuildCollection_(
     return true;
 }
 
-bool SearchWorker::insertOrUpdateSCD_(
+bool IndexWorker::insertOrUpdateSCD_(
         ScdParser& parser,
         bool isInsert,
         uint32_t numdoc,
         time_t timestamp)
 {
-    CREATE_SCOPED_PROFILER (insertOrUpdateSCD, "IndexTaskService", "IndexTaskService::insertOrUpdateSCD_");
+    CREATE_SCOPED_PROFILER (insertOrUpdateSCD, "IndexWorker", "IndexWorker::insertOrUpdateSCD_");
 
     uint32_t n = 0;
     long lastOffset = 0;
@@ -406,7 +555,7 @@ bool SearchWorker::insertOrUpdateSCD_(
         docid_t oldId = 0;
         bool rType = false;
         std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
-        sf1r::docid_t id = 0;
+        docid_t id = 0;
         std::string source = "";
         time_t new_timestamp = timestamp;
 
@@ -446,7 +595,7 @@ bool SearchWorker::insertOrUpdateSCD_(
     return true;
 }
 
-bool SearchWorker::createUpdateDocId_(
+bool IndexWorker::createUpdateDocId_(
         const izenelib::util::UString& scdDocId,
         bool rType,
         docid_t& oldId,
@@ -469,7 +618,7 @@ bool SearchWorker::createUpdateDocId_(
     return result;
 }
 
-bool SearchWorker::createInsertDocId_(
+bool IndexWorker::createInsertDocId_(
         const izenelib::util::UString& scdDocId,
         docid_t& newId)
 {
@@ -504,7 +653,7 @@ bool SearchWorker::createInsertDocId_(
     return true;
 }
 
-bool SearchWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
+bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
 {
     std::vector<izenelib::util::UString> rawDocIDList;
     if (!parser.getDocIdList(rawDocIDList))
@@ -514,14 +663,14 @@ bool SearchWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
     }
 
     //get the docIds for deleting
-    std::vector<sf1r::docid_t> docIdList;
+    std::vector<docid_t> docIdList;
     docIdList.reserve(rawDocIDList.size());
     indexProgress_.currentFileSize_ =rawDocIDList.size();
     indexProgress_.currentFilePos_ = 0;
     for (std::vector<izenelib::util::UString>::iterator iter = rawDocIDList.begin();
         iter != rawDocIDList.end(); ++iter)
     {
-        sf1r::docid_t docId;
+        docid_t docId;
         if (idManager_->getDocIdByDocName(*iter, docId, false))
         {
             docIdList.push_back(docId);
@@ -536,7 +685,7 @@ bool SearchWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
     std::sort(docIdList.begin(), docIdList.end());
 
     //process delete document in index manager
-    for (std::vector<sf1r::docid_t>::iterator iter = docIdList.begin(); iter
+    for (std::vector<docid_t>::iterator iter = docIdList.begin(); iter
             != docIdList.end(); ++iter)
     {
         if (numDeletedDocs_ % 1000 == 0)
@@ -584,10 +733,10 @@ bool SearchWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
     return true;
 }
 
-bool SearchWorker::insertDoc_(Document& document, IndexerDocument& indexDocument, time_t timestamp)
+bool IndexWorker::insertDoc_(Document& document, IndexerDocument& indexDocument, time_t timestamp)
 {
-    CREATE_PROFILER(proDocumentIndexing, "IndexTaskService", "IndexTaskService : InsertDocument")
-    CREATE_PROFILER(proIndexing, "IndexTaskService", "IndexTaskService : indexing")
+    CREATE_PROFILER(proDocumentIndexing, "IndexWorker", "IndexWorker : InsertDocument")
+    CREATE_PROFILER(proIndexing, "IndexWorker", "IndexWorker : indexing")
 
     if (hooker_)
     {
@@ -607,13 +756,13 @@ bool SearchWorker::insertDoc_(Document& document, IndexerDocument& indexDocument
     else return false;
 }
 
-bool SearchWorker::updateDoc_(
+bool IndexWorker::updateDoc_(
         Document& document,
         IndexerDocument& indexDocument,
         time_t timestamp,
         bool rType)
 {
-    CREATE_SCOPED_PROFILER (proDocumentUpdating, "IndexTaskService", "IndexTaskService::UpdateDocument");
+    CREATE_SCOPED_PROFILER (proDocumentUpdating, "IndexWorker", "IndexWorker::UpdateDocument");
 
     if (hooker_)
     {
@@ -654,9 +803,9 @@ bool SearchWorker::updateDoc_(
     return true;
 }
 
-bool SearchWorker::deleteDoc_(docid_t docid, time_t timestamp)
+bool IndexWorker::deleteDoc_(docid_t docid, time_t timestamp)
 {
-    CREATE_SCOPED_PROFILER (proDocumentDeleting, "IndexTaskService", "IndexTaskService::DeleteDocument");
+    CREATE_SCOPED_PROFILER (proDocumentDeleting, "IndexWorker", "IndexWorker::DeleteDocument");
 
     if (hooker_)
     {
@@ -672,7 +821,11 @@ bool SearchWorker::deleteDoc_(docid_t docid, time_t timestamp)
     else return false;
 }
 
-void SearchWorker::saveSourceCount_(int op)
+void IndexWorker::savePriceHistory_(int op)
+{
+}
+
+void IndexWorker::saveSourceCount_(int op)
 {
     if (bundleConfig_->productSourceField_.empty())
         return;
@@ -702,7 +855,7 @@ void SearchWorker::saveSourceCount_(int op)
     }
 }
 
-bool SearchWorker::prepareDocument_(
+bool IndexWorker::prepareDocument_(
         SCDDoc& doc,
         Document& document,
         docid_t& oldId,
@@ -712,9 +865,9 @@ bool SearchWorker::prepareDocument_(
         time_t& timestamp,
         bool insert)
 {
-    CREATE_SCOPED_PROFILER (preparedocument, "IndexTaskService", "IndexTaskService::prepareDocument_");
+    CREATE_SCOPED_PROFILER (preparedocument, "IndexWorker", "IndexWorker::prepareDocument_");
 
-    sf1r::docid_t docId = 0;
+    docid_t docId = 0;
     string fieldStr;
     vector<CharacterOffset> sentenceOffsetList;
     AnalysisInfo analysisInfo;
@@ -784,7 +937,7 @@ bool SearchWorker::prepareDocument_(
             /// format <DATE>20091009163011
             dateExistInSCD = true;
             izenelib::util::UString dateStr;
-            sf1r::Utilities::convertDate(propertyValueU, encoding, dateStr);
+            Utilities::convertDate(propertyValueU, encoding, dateStr);
             document.property(dateProperty_.getName()) = dateStr;
         }
         else if (!extraProperty)
@@ -797,11 +950,14 @@ bool SearchWorker::prepareDocument_(
                 if (!analysisInfo.analyzerId_.empty())
                 {
                     unsigned int numOfSummary = 0;
-                    if (iter->getIsSummary())
+                    if ((iter->getIsSnippet() || iter->getIsSummary()))
                     {
-                        numOfSummary = iter->getSummaryNum();
-                        if (numOfSummary <= 0)
-                            numOfSummary = 1; //atleast one sentence required for summary
+                        if (iter->getIsSummary())
+                        {
+                            numOfSummary = iter->getSummaryNum();
+                            if (numOfSummary <= 0)
+                                numOfSummary = 1; //atleast one sentence required for summary
+                        }
 
                         if (!makeSentenceBlocks_(propertyValueU, iter->getDisplayLength(),
                                                 numOfSummary, sentenceOffsetList))
@@ -840,15 +996,14 @@ bool SearchWorker::prepareDocument_(
     return true;
 }
 
-
-bool SearchWorker::prepareIndexDocument_(
+bool IndexWorker::prepareIndexDocument_(
         docid_t oldId,
         const Document& document,
         IndexerDocument& indexDocument)
 {
-    CREATE_SCOPED_PROFILER (preparedocument, "IndexTaskService", "IndexTaskService::prepareIndexDocument_");
+    CREATE_SCOPED_PROFILER (preparedocument, "IndexWorker", "IndexWorker::prepareIndexDocument_");
 
-    sf1r::docid_t docId = document.getId();//new id;
+    docid_t docId = document.getId();//new id;
     izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
     string fieldStr;
     AnalysisInfo analysisInfo;
@@ -864,6 +1019,9 @@ bool SearchWorker::prepareIndexDocument_(
         PropertyConfig temp;
         temp.propertyName_ = fieldStr;
         iter = bundleConfig_->schema_.find(temp);
+
+        if(iter == bundleConfig_->schema_.end())
+            continue;
 
         IndexerPropertyConfig indexerPropertyConfig;
 
@@ -888,7 +1046,7 @@ bool SearchWorker::prepareIndexDocument_(
         {
             /// format <DATE>20091009163011
             izenelib::util::UString dateStr;
-            int64_t time = sf1r::Utilities::convertDate(propertyValueU, encoding, dateStr);
+            int64_t time = Utilities::convertDate(propertyValueU, encoding, dateStr);
             indexerPropertyConfig.setPropertyId(dateProperty_.getPropertyId());
             indexerPropertyConfig.setName(dateProperty_.getName());
             indexerPropertyConfig.setIsIndex(true);
@@ -1096,15 +1254,30 @@ bool SearchWorker::prepareIndexDocument_(
     return true;
 }
 
-bool SearchWorker::preparePartialDocument_(
+bool IndexWorker::checkSeparatorType_(
+        const izenelib::util::UString& propertyValueStr,
+        izenelib::util::UString::EncodingType encoding,
+        char separator)
+{
+    izenelib::util::UString tmpStr(propertyValueStr);
+    izenelib::util::UString sep(" ",encoding);
+    sep[0] = separator;
+    size_t n = 0;
+    n = tmpStr.find(sep,0);
+    if (n != izenelib::util::UString::npos)
+        return true;
+    return false;
+}
+
+bool IndexWorker::preparePartialDocument_(
         Document& document,
         IndexerDocument& oldIndexDocument)
 {
     // Store the old property value.
-    sf1r::docid_t docId = document.getId();
+    docid_t docId = document.getId();
     Document oldDoc;
 
-    if ( !documentManager_->getDocument(docId, oldDoc) )
+    if (!documentManager_->getDocument(docId, oldDoc))
     {
         return false;
     }
@@ -1112,7 +1285,8 @@ bool SearchWorker::preparePartialDocument_(
     typedef Document::property_const_iterator iterator;
     for (iterator it = document.propertyBegin(), itEnd = document.propertyEnd(); it
                  != itEnd; ++it) {
-        if (it->first != "DOCID" && it->first != "DATE" ) {
+        if (it->first != "DOCID" && it->first != "DATE")
+        {
             std::set<PropertyConfig, PropertyComp>::iterator iter;
             PropertyConfig temp;
             temp.propertyName_ = it->first;
@@ -1125,7 +1299,7 @@ bool SearchWorker::preparePartialDocument_(
                 continue;
             }
 
-            if(iter->isIndex() && iter->getIsFilter())
+            if (iter->isIndex() && iter->getIsFilter())
             {
                 indexerPropertyConfig.setPropertyId(iter->getPropertyId());
                 indexerPropertyConfig.setName(iter->getName());
@@ -1141,9 +1315,9 @@ bool SearchWorker::preparePartialDocument_(
                 izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
                 std::string str("");
                 stringValue->convertString(str, encoding);
-                if ( iter->getType() == INT_PROPERTY_TYPE )
+                if (iter->getType() == INT_PROPERTY_TYPE)
                 {
-                    if(iter->getIsMultiValue())
+                    if (iter->getIsMultiValue())
                     {
                         MultiValuePropertyType props;
                         split_int(*stringValue, props, encoding, ',');
@@ -1154,21 +1328,21 @@ bool SearchWorker::preparePartialDocument_(
                         int64_t value = 0;
                         try
                         {
-                            value = boost::lexical_cast< int64_t >( str );
+                            value = boost::lexical_cast<int64_t>(str);
                             oldIndexDocument.insertProperty(indexerPropertyConfig, value);
                         }
-                        catch( const boost::bad_lexical_cast & )
+                        catch (const boost::bad_lexical_cast &)
                         {
                             MultiValuePropertyType props;
-                            if( checkSeparatorType_(*stringValue, encoding, '-') )
+                            if (checkSeparatorType_(*stringValue, encoding, '-'))
                             {
                                 split_int(*stringValue, props, encoding,'-');
                             }
-                            else if( checkSeparatorType_(*stringValue, encoding, '~') )
+                            else if (checkSeparatorType_(*stringValue, encoding, '~'))
                             {
                                 split_int(*stringValue, props, encoding,'~');
                             }
-                            else if( checkSeparatorType_(*stringValue, encoding, ',') )
+                            else if (checkSeparatorType_(*stringValue, encoding, ','))
                             {
                                 split_int(*stringValue, props, encoding,',');
                             }
@@ -1177,9 +1351,9 @@ bool SearchWorker::preparePartialDocument_(
                          }
                     }
                 }
-                else if ( iter->getType() == FLOAT_PROPERTY_TYPE )
+                else if (iter->getType() == FLOAT_PROPERTY_TYPE)
                 {
-                    if(iter->getIsMultiValue())
+                    if (iter->getIsMultiValue())
                     {
                         MultiValuePropertyType props;
                         split_float(*stringValue, props, encoding,',');
@@ -1190,21 +1364,21 @@ bool SearchWorker::preparePartialDocument_(
                         float value = 0.0;
                         try
                         {
-                            value = boost::lexical_cast< float >( str );
+                            value = boost::lexical_cast< float >(str);
                             oldIndexDocument.insertProperty(indexerPropertyConfig, value);
                         }
-                        catch( const boost::bad_lexical_cast & )
+                        catch (const boost::bad_lexical_cast &)
                         {
                             MultiValuePropertyType props;
-                            if( checkSeparatorType_(*stringValue, encoding, '-') )
+                            if (checkSeparatorType_(*stringValue, encoding, '-'))
                             {
                                 split_float(*stringValue, props, encoding,'-');
                             }
-                            else if( checkSeparatorType_(*stringValue, encoding, '~') )
+                            else if (checkSeparatorType_(*stringValue, encoding, '~'))
                             {
                                 split_float(*stringValue, props, encoding,'~');
                             }
-                            else if( checkSeparatorType_(*stringValue, encoding, ',') )
+                            else if (checkSeparatorType_(*stringValue, encoding, ','))
                             {
                                 split_float(*stringValue, props, encoding,',');
                             }
@@ -1213,48 +1387,33 @@ bool SearchWorker::preparePartialDocument_(
                          }
                     }
                 }
+                else if(iter->getType() == STRING_PROPERTY_TYPE)
+                {
+                    if (iter->getIsMultiValue())
+                    {
+                        MultiValuePropertyType props;
+                        split_string(*stringValue, props, encoding, ',');
+                        oldIndexDocument.insertProperty(indexerPropertyConfig, props);
+                    }
+                    else
+                    {
+                        oldIndexDocument.insertProperty(indexerPropertyConfig, * stringValue);
+                    }
+                }
             }
         }
     }
     return true;
 }
 
-bool SearchWorker::completePartialDocument_(docid_t oldId, Document& doc)
-{
-    docid_t newId = doc.getId();
-    Document oldDoc;
-    if (!documentManager_->getDocument(oldId, oldDoc))
-    {
-        return false;
-    }
-
-    oldDoc.copyPropertiesFromDocument(doc);
-
-    doc.swap(oldDoc);
-    doc.setId(newId);
-    return true;
-}
-
-bool SearchWorker::checkSeparatorType_(const izenelib::util::UString& propertyValueStr, izenelib::util::UString::EncodingType encoding, char separator)
-{
-    izenelib::util::UString tmpStr(propertyValueStr);
-    izenelib::util::UString sep(" ",encoding);
-    sep[0] = separator;
-    size_t n = 0;
-    n = tmpStr.find(sep,0);
-    if (n != izenelib::util::UString::npos)
-        return true;
-    return false;
-}
-
-bool SearchWorker::checkRtype_(
-        SCDDoc& doc,
-        std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue)
+bool IndexWorker::checkRtype_(
+    SCDDoc& doc,
+    std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue
+)
 {
     //R-type check
     bool rType = false;
-    PropertyDataType dataType;
-    sf1r::docid_t docId;
+    docid_t docId;
     izenelib::util::UString newPropertyValue, oldPropertyValue;
     vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
     for (p = doc.begin(); p != doc.end(); p++)
@@ -1264,15 +1423,15 @@ bool SearchWorker::checkRtype_(
         const izenelib::util::UString & propertyValueU = p->second;
         std::set<PropertyConfig, PropertyComp>::iterator iter;
         string fieldName;
-        p->first.convertString(fieldName, bundleConfig_->encoding_ );
+        p->first.convertString(fieldName, bundleConfig_->encoding_);
 
         PropertyConfig tempPropertyConfig;
         tempPropertyConfig.propertyName_ = fieldName;
         iter = bundleConfig_->schema_.find(tempPropertyConfig);
 
-        if ( iter != bundleConfig_->schema_.end() )
+        if (iter != bundleConfig_->schema_.end())
         {
-            if ( propertyNameL == izenelib::util::UString("docid", bundleConfig_->encoding_) )
+            if (propertyNameL == izenelib::util::UString("docid", bundleConfig_->encoding_))
             {
                 if (!idManager_->getDocIdByDocName(propertyValueU, docId, false))
                     break;
@@ -1280,10 +1439,10 @@ bool SearchWorker::checkRtype_(
             else
             {
                 newPropertyValue = propertyValueU;
-                if( propertyNameL == izenelib::util::UString("date", bundleConfig_->encoding_) )
+                if (propertyNameL == izenelib::util::UString("date", bundleConfig_->encoding_))
                 {
                     izenelib::util::UString dateStr;
-                    sf1r::Utilities::convertDate(propertyValueU, bundleConfig_->encoding_, dateStr);
+                    Utilities::convertDate(propertyValueU, bundleConfig_->encoding_, dateStr);
                     newPropertyValue = dateStr;
                 }
 
@@ -1293,7 +1452,7 @@ bool SearchWorker::checkRtype_(
                 PropertyValue value;
                 if (documentManager_->getPropertyValue(docId, iter->getName(), value))
                 {
-                    if(getPropertyValue_(value, oldValueStr))
+                    if (getPropertyValue_(value, oldValueStr))
                     {
                         if (newValueStr == oldValueStr)
                             continue;
@@ -1303,19 +1462,14 @@ bool SearchWorker::checkRtype_(
                         return false;
                     }
                 }
-
-                if ( iter->isIndex() && iter->getIsFilter() && !iter->isAnalyzed())
+                else
                 {
-                    dataType = iter->getType();
-                    if ( dataType != INT_PROPERTY_TYPE && dataType != UNSIGNED_INT_PROPERTY_TYPE
-                        && dataType != FLOAT_PROPERTY_TYPE && dataType != DOUBLE_PROPERTY_TYPE )
-                    {
-                        break;
-                    }
-                    pair<PropertyDataType, izenelib::util::UString> fieldValue;
-                    fieldValue.first = dataType;
-                    fieldValue.second = newPropertyValue;
-                    rTypeFieldValue[iter->getName()] = fieldValue;
+                    break;
+                }
+
+                if (iter->isIndex() && iter->getIsFilter() && !iter->isAnalyzed())
+                {
+                    rTypeFieldValue[iter->getName()] = std::make_pair(iter->getType(),newPropertyValue);
                 }
                 else
                 {
@@ -1328,7 +1482,7 @@ bool SearchWorker::checkRtype_(
             break;
         }
     }
-    if ( p == doc.end() )
+    if (p == doc.end())
     {
         rType = true;
     }
@@ -1340,52 +1494,207 @@ bool SearchWorker::checkRtype_(
     return rType;
 }
 
-/// @desc Make a forward index of a given text.
-/// You can specify an Language Analysis option through AnalysisInfo parameter.
-/// You have to get a proper AnalysisInfo value from the configuration. (Currently not implemented.)
-bool SearchWorker::makeForwardIndex_(
-        const izenelib::util::UString& text,
-        const std::string& propertyName,
-        unsigned int propertyId,
-        const AnalysisInfo& analysisInfo)
-{
-    CREATE_SCOPED_PROFILER(proTermExtracting, "IndexTaskService", "Analyzer overhead");
-
-//    la::TermIdList termIdList;
-    laInputs_[propertyId]->resize(0);
-
-    // Remove the spaces between two Chinese Characters
-//    izenelib::util::UString refinedText;
-//    la::removeRedundantSpaces( text, refinedText );
-//    if (laManager_->getTermList(refinedText, analysisInfo, true, termList, true ) == false)
-    la::MultilangGranularity indexingLevel = bundleConfig_->indexMultilangGranularity_;
-    if (indexingLevel == la::SENTENCE_LEVEL)
-    {
-        if(bundleConfig_->bIndexUnigramProperty_)
-        {
-            if(propertyName.find("_unigram") != std::string::npos)
-                indexingLevel = la::FIELD_LEVEL;  /// for unigram property, we do not need sentence level indexing
-        }
-    }
-
-    if (laManager_->getTermIdList(idManager_.get(), text, analysisInfo, (*laInputs_[propertyId]), indexingLevel) == false)
-            return false;
-
-    return true;
-}
-
-bool SearchWorker::makeSentenceBlocks_(
+bool IndexWorker::makeSentenceBlocks_(
         const izenelib::util::UString & text,
         const unsigned int maxDisplayLength,
         const unsigned int numOfSummary,
         vector<CharacterOffset>& sentenceOffsetList)
 {
     sentenceOffsetList.clear();
-    if (summarizer_.getOffsetPairs(text, maxDisplayLength, numOfSummary, sentenceOffsetList) == false)
+    if (!summarizer_.getOffsetPairs(text, maxDisplayLength, numOfSummary, sentenceOffsetList))
     {
         return false;
     }
     return true;
+}
+
+/// @desc Make a forward index of a given text.
+/// You can specify an Language Analysis option through AnalysisInfo parameter.
+/// You have to get a proper AnalysisInfo value from the configuration. (Currently not implemented.)
+bool IndexWorker::makeForwardIndex_(
+        const izenelib::util::UString& text,
+        const std::string& propertyName,
+        unsigned int propertyId,
+        const AnalysisInfo& analysisInfo)
+{
+    CREATE_SCOPED_PROFILER(proTermExtracting, "IndexWorker", "Analyzer overhead");
+
+//    la::TermIdList termIdList;
+    laInputs_[propertyId]->resize(0);
+
+    // Remove the spaces between two Chinese Characters
+//    izenelib::util::UString refinedText;
+//    la::removeRedundantSpaces(text, refinedText);
+//    if (!laManager_->getTermList(refinedText, analysisInfo, true, termList, true))
+    la::MultilangGranularity indexingLevel = bundleConfig_->indexMultilangGranularity_;
+    if (indexingLevel == la::SENTENCE_LEVEL)
+    {
+        if (bundleConfig_->bIndexUnigramProperty_)
+        {
+            if (propertyName.find("_unigram") != std::string::npos)
+                indexingLevel = la::FIELD_LEVEL;  /// for unigram property, we do not need sentence level indexing
+        }
+    }
+
+    if (!laManager_->getTermIdList(idManager_.get(), text, analysisInfo, (*laInputs_[propertyId]), indexingLevel))
+            return false;
+
+    return true;
+}
+
+size_t IndexWorker::getTotalScdSize_()
+{
+    string scdPath = bundleConfig_->indexSCDPath();
+
+    ScdParser parser(bundleConfig_->encoding_);
+
+    size_t sizeInBytes = 0;
+    // search the directory for files
+    static const bfs::directory_iterator kItrEnd;
+    for (bfs::directory_iterator itr(scdPath); itr != kItrEnd; ++itr)
+    {
+        if (bfs::is_regular_file(itr->status()))
+        {
+            std::string fileName = itr->path().filename();
+            if (parser.checkSCDFormat(fileName))
+            {
+                parser.load(scdPath+fileName);
+                sizeInBytes += parser.getFileSize();
+            }
+        }
+    }
+    return sizeInBytes/(1024*1024);
+}
+
+bool IndexWorker::requireBackup_(size_t currTotalScdSizeInMB)
+{
+    static size_t threshold = 200;//200M
+    totalSCDSizeSinceLastBackup_ += currTotalScdSizeInMB;
+    const boost::shared_ptr<Directory>& current
+        = directoryRotator_.currentDirectory();
+    const boost::shared_ptr<Directory>& next
+        = directoryRotator_.nextDirectory();
+    if (next
+        && current->name() != next->name())
+        //&& ! (next->valid() && next->parentName() == current->name()))
+    {
+        ///TODO policy required here
+        if(totalSCDSizeSinceLastBackup_ > threshold)
+        return true;
+    }
+    return false;
+}
+
+bool IndexWorker::backup_()
+{
+    const boost::shared_ptr<Directory>& current
+        = directoryRotator_.currentDirectory();
+    const boost::shared_ptr<Directory>& next
+        = directoryRotator_.nextDirectory();
+
+    // valid pointer
+    // && not the same directory
+    // && have not copied successfully yet
+    if (next
+        && current->name() != next->name())
+        //&& ! (next->valid() && next->parentName() == current->name()))
+    {
+        try
+        {
+            LOG(INFO) << "Copy index dir from " << current->name()
+                      << " to " << next->name();
+            next->copyFrom(*current);
+            return true;
+        }
+        catch (bfs::filesystem_error& e)
+        {
+            LOG(ERROR) << "Failed to copy index directory " << e.what();
+        }
+
+        // try copying but failed
+        return false;
+    }
+
+    // not copy, always returns true
+    return true;
+}
+
+bool IndexWorker::recoverSCD_()
+{
+    const boost::shared_ptr<Directory>& currentDir
+        = directoryRotator_.currentDirectory();
+    const boost::shared_ptr<Directory>& next
+        = directoryRotator_.nextDirectory();
+
+    if (!(next && currentDir->name() != next->name()))
+        return false;
+
+    std::ifstream scdLogInput;
+    scdLogInput.open(currentDir->scdLogString().c_str());
+    std::istream_iterator<std::string> begin(scdLogInput);
+    std::istream_iterator<std::string> end;
+    boost::unordered_set<std::string> existingSCDs;
+    for(std::istream_iterator<std::string> it = begin; it != end; ++it)
+    {
+        std::cout << *it << "@@"<<std::endl;
+        existingSCDs.insert(*it);
+    }
+    if(existingSCDs.empty()) return false;
+    bfs::path scdBkDir = bfs::path(bundleConfig_->indexSCDPath()) / SCD_BACKUP_DIR;
+
+    try
+    {
+        if (!bfs::is_directory(scdBkDir))
+        {
+            return false;
+        }
+    }
+    catch (bfs::filesystem_error& e)
+    {
+        return false;
+    }
+
+    // search the directory for files
+    static const bfs::directory_iterator kItrEnd;
+    bfs::path scdIndexDir = bfs::path(bundleConfig_->indexSCDPath());
+
+    for (bfs::directory_iterator itr(scdBkDir); itr != kItrEnd; ++itr)
+    {
+        if (bfs::is_regular_file(itr->status()))
+        {
+            std::string fileName = itr->path().filename();
+            if(existingSCDs.find(fileName) == existingSCDs.end())
+            {
+                try
+                {
+                    bfs::rename(*itr, scdIndexDir / bfs::path(fileName));
+                }
+                catch (bfs::filesystem_error& e)
+                {
+                    LOG(WARNING) << "exception in recovering file " << fileName << ": " << e.what();
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+void IndexWorker::value2SCDDoc(const Value& value, SCDDoc& scddoc)
+{
+    const Value::ObjectType& objectValue = value.getObject();
+    scddoc.resize(objectValue.size());
+
+    std::size_t propertyId = 0;
+    for (Value::ObjectType::const_iterator it = objectValue.begin();
+         it != objectValue.end(); ++it, ++propertyId)
+    {
+        scddoc[propertyId].first.assign(it->first, izenelib::util::UString::UTF_8);
+        scddoc[propertyId].second.assign(
+            asString(it->second),
+            izenelib::util::UString::UTF_8
+        );
+    }
 }
 
 

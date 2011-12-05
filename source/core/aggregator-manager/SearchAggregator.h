@@ -21,28 +21,25 @@ namespace sf1r
 class KeywordSearchResult;
 class MiningManager;
 
-typedef WorkerCaller<SearchWorker> LocalWorkerCaller;
+typedef WorkerCaller<SearchWorker> SearchWorkerCaller;
 
-class SearchAggregator : public Aggregator<SearchAggregator, LocalWorkerCaller>
+class SearchAggregator : public Aggregator<SearchAggregator, SearchWorkerCaller>
 {
 public:
-    SearchAggregator() : TOP_K_NUM(4000) {}
-
-public:
     SearchAggregator(SearchWorker* searchWorker)
+    : TOP_K_NUM(4000)
     {
-        localWorkerCaller_.reset(new LocalWorkerCaller(searchWorker));
+        localWorkerCaller_.reset(new SearchWorkerCaller(searchWorker));
 
-        // TODO, add more
-        ADD_FUNC_TO_WORKER_CALLER(LocalWorkerCaller, localWorkerCaller_, SearchWorker, getDistSearchInfo);
-        ADD_FUNC_TO_WORKER_CALLER(LocalWorkerCaller, localWorkerCaller_, SearchWorker, getDistSearchResult);
-        ADD_FUNC_TO_WORKER_CALLER(LocalWorkerCaller, localWorkerCaller_, SearchWorker, getSummaryMiningResult);
-        ADD_FUNC_TO_WORKER_CALLER(LocalWorkerCaller, localWorkerCaller_, SearchWorker, getDocumentsByIds);
-        ADD_FUNC_TO_WORKER_CALLER(LocalWorkerCaller, localWorkerCaller_, SearchWorker, getInternalDocumentId);
-        ADD_FUNC_TO_WORKER_CALLER(LocalWorkerCaller, localWorkerCaller_, SearchWorker, getSimilarDocIdList);
-        ADD_FUNC_TO_WORKER_CALLER(LocalWorkerCaller, localWorkerCaller_, SearchWorker, clickGroupLabel);
-        ADD_FUNC_TO_WORKER_CALLER(LocalWorkerCaller, localWorkerCaller_, SearchWorker, visitDoc);
-        ADD_FUNC_TO_WORKER_CALLER(LocalWorkerCaller, localWorkerCaller_, SearchWorker, index);
+        // xxx
+        ADD_FUNC_TO_WORKER_CALLER(SearchWorkerCaller, localWorkerCaller_, SearchWorker, getDistSearchInfo);
+        ADD_FUNC_TO_WORKER_CALLER(SearchWorkerCaller, localWorkerCaller_, SearchWorker, getDistSearchResult);
+        ADD_FUNC_TO_WORKER_CALLER(SearchWorkerCaller, localWorkerCaller_, SearchWorker, getSummaryMiningResult);
+        ADD_FUNC_TO_WORKER_CALLER(SearchWorkerCaller, localWorkerCaller_, SearchWorker, getDocumentsByIds);
+        ADD_FUNC_TO_WORKER_CALLER(SearchWorkerCaller, localWorkerCaller_, SearchWorker, getInternalDocumentId);
+        ADD_FUNC_TO_WORKER_CALLER(SearchWorkerCaller, localWorkerCaller_, SearchWorker, getSimilarDocIdList);
+        ADD_FUNC_TO_WORKER_CALLER(SearchWorkerCaller, localWorkerCaller_, SearchWorker, clickGroupLabel);
+        ADD_FUNC_TO_WORKER_CALLER(SearchWorkerCaller, localWorkerCaller_, SearchWorker, visitDoc);
     }
 
 public:
@@ -155,13 +152,6 @@ public:
     bool splitGetDocsActionItemByWorkerid(
             const GetDocumentsByIdsActionItem& actionItem,
             std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >& actionItemMap);
-
-
-    bool ScdDispatch(
-            unsigned int numdoc,
-            const std::string& collectionName,
-            const std::string& scdPath);
-
 
 private:
     boost::shared_ptr<MiningManager> miningManager_;

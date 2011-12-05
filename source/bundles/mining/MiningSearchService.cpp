@@ -285,4 +285,13 @@ void MiningSearchService::FinishQueryRecommendInject()
     miningManager_->FinishQueryRecommendInject();
 }
 
+bool MiningSearchService::GetSummarizationByRawKey(
+    const std::string& collection,
+    const izenelib::util::UString& rawKey, 
+    Summarization& result)
+{
+    ///TODO distributed request is not available
+    return miningManager_->GetSummarizationByRawKey(rawKey,result);
+}
+
 }

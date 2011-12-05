@@ -9,6 +9,11 @@ SummarizationStorage::SummarizationStorage(
         const std::string& dbPath)
     : summarization_db_(dbPath)
 {
+    if (!summarization_db_.open())
+    {
+        boost::filesystem::remove_all(dbPath);
+        summarization_db_.open();
+    }
 }
 
 SummarizationStorage::~SummarizationStorage()
@@ -17,7 +22,7 @@ SummarizationStorage::~SummarizationStorage()
 
 void SummarizationStorage::Update(const UString& key, const Summarization& value)
 {
-    summarization_db_.update(key,value);
+    summarization_db_.update(key, value);
 }
 
 void SummarizationStorage::Flush()
@@ -35,14 +40,7 @@ bool SummarizationStorage::IsRebuildSummarizeRequired(
         const Summarization& value)
 {
     Summarization summarization;
-    if(summarization_db_.get(key,summarization))
-    {
-        return summarization != value;
-    }
-    else
-    {
-        return false;
-    }
+    return !summarization_db_.get(key, summarization) || summarization != value;
 }
 
 }

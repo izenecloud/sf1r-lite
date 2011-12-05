@@ -63,7 +63,7 @@ public:
             ScdSharding* scdSharding,
             AggregatorConfig& aggregatorConfig,
             const std::string& collectionName,
-            const std::string& dispatchTempDir="./ScdDispatcherTemp");
+            const std::string& dispatchTempDir="./scd-dispatch-temp");
 
     ~BatchScdDispatcher();
 
