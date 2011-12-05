@@ -1,11 +1,11 @@
 /**
- * @file WorkerService.h
+ * @file SearchWorker.h
  * @author Zhongxia Li
  * @date Jul 5, 2011
- * @brief Worker Service encapsulated service interfaces (such as Search, Mining..) of SF1.
+ * @brief SearchWorker provides index and mining search interfaces.
  */
-#ifndef WORKER_SERVICE_H_
-#define WORKER_SERVICE_H_
+#ifndef SEARCH_WORKER_H_
+#define SEARCH_WORKER_H_
 
 #include <query-manager/ActionItem.h>
 #include <query-manager/SearchKeywordOperation.h>
@@ -51,12 +51,12 @@ class MiningManager;
 // index task
 class ScdWriterController;
 class IndexHooker;
-class WorkerService
+class SearchWorker
 {
     typedef uint32_t CharacterOffset;
 
 public:
-    WorkerService(
+    SearchWorker(
             IndexBundleConfiguration* bundleConfig,
             DirectoryRotator& directoryRotator);
 
@@ -264,4 +264,4 @@ private:
 
 }
 
-#endif /* WORKER_SERVICE_H_ */
+#endif /* SEARCH_WORKER_H_ */

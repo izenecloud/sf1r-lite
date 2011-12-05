@@ -7,7 +7,7 @@
 #ifndef PROCESS_DISTRIBUTE_WORKER_SERVER_H_
 #define PROCESS_DISTRIBUTE_WORKER_SERVER_H_
 
-#include <aggregator-manager/WorkerService.h>
+#include <aggregator-manager/SearchWorker.h>
 
 #include <net/aggregator/WorkerServerBase.h>
 #include <util/singleton.h>
@@ -67,7 +67,7 @@ public:
                 return false;
             }
 
-            workerService_ = collectionHandler_->indexSearchService_->workerService_;
+            searchWorker_ = collectionHandler_->indexSearchService_->searchWorker_;
         }
         else
         {
@@ -107,47 +107,47 @@ public:
 
     void getDistSearchInfo(request_t& req)
     {
-        WORKER_HANDLE_1_1(req, KeywordSearchActionItem, workerService_->getDistSearchInfo, DistKeywordSearchInfo)
+        WORKER_HANDLE_1_1(req, KeywordSearchActionItem, searchWorker_->getDistSearchInfo, DistKeywordSearchInfo)
     }
 
     void getDistSearchResult(request_t& req)
     {
-        WORKER_HANDLE_1_1(req, KeywordSearchActionItem, workerService_->getDistSearchResult, DistKeywordSearchResult)
+        WORKER_HANDLE_1_1(req, KeywordSearchActionItem, searchWorker_->getDistSearchResult, DistKeywordSearchResult)
     }
 
     void getSummaryMiningResult(request_t& req)
     {
-        WORKER_HANDLE_1_1(req, KeywordSearchActionItem, workerService_->getSummaryMiningResult, KeywordSearchResult)
+        WORKER_HANDLE_1_1(req, KeywordSearchActionItem, searchWorker_->getSummaryMiningResult, KeywordSearchResult)
     }
 
     void getDocumentsByIds(request_t& req)
     {
-        WORKER_HANDLE_1_1(req, GetDocumentsByIdsActionItem, workerService_->getDocumentsByIds, RawTextResultFromSIA)
+        WORKER_HANDLE_1_1(req, GetDocumentsByIdsActionItem, searchWorker_->getDocumentsByIds, RawTextResultFromSIA)
     }
 
     void getInternalDocumentId(request_t& req)
     {
-        WORKER_HANDLE_1_1(req, izenelib::util::UString, workerService_->getInternalDocumentId, uint64_t)
+        WORKER_HANDLE_1_1(req, izenelib::util::UString, searchWorker_->getInternalDocumentId, uint64_t)
     }
 
     void getSimilarDocIdList(request_t& req)
     {
-        WORKER_HANDLE_2_1(req, uint64_t, uint32_t, workerService_->getSimilarDocIdList, SimilarDocIdListType)
+        WORKER_HANDLE_2_1(req, uint64_t, uint32_t, searchWorker_->getSimilarDocIdList, SimilarDocIdListType)
     }
 
     void clickGroupLabel(request_t& req)
     {
-        WORKER_HANDLE_1_1(req, ClickGroupLabelActionItem, workerService_->clickGroupLabel, bool)
+        WORKER_HANDLE_1_1(req, ClickGroupLabelActionItem, searchWorker_->clickGroupLabel, bool)
     }
 
     void visitDoc(request_t& req)
     {
-        WORKER_HANDLE_1_1(req, uint32_t, workerService_->visitDoc, bool)
+        WORKER_HANDLE_1_1(req, uint32_t, searchWorker_->visitDoc, bool)
     }
 
     void index(request_t& req)
     {
-        WORKER_HANDLE_1_1(req, unsigned int, workerService_->index, bool)
+        WORKER_HANDLE_1_1(req, unsigned int, searchWorker_->index, bool)
     }
 
     /** @} */
@@ -156,7 +156,7 @@ private:
     // A coming request is targeted at a specified collection or a bundle,
     // so find corresponding collectionHandler before handling the request.
     CollectionHandler* collectionHandler_;
-    boost::shared_ptr<WorkerService> workerService_;
+    boost::shared_ptr<SearchWorker> searchWorker_;
 
     std::string identity_;
 };

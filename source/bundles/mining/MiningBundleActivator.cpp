@@ -4,7 +4,7 @@
 #include <bundles/index/IndexSearchService.h>
 
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
-#include <aggregator-manager/WorkerService.h>
+#include <aggregator-manager/SearchWorker.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
@@ -90,7 +90,7 @@ bool MiningBundleActivator::addingService( const ServiceReference& ref )
             searchService_->bundleConfig_ = config_;
             searchService_->miningManager_ = miningManager_;
             searchService_->searchAggregator_ = service->searchAggregator_;
-            searchService_->workerService_ = service->workerService_;
+            searchService_->searchWorker_ = service->searchWorker_;
 
             taskService_ = new MiningTaskService;
             taskService_->miningManager_ = miningManager_;
@@ -145,10 +145,10 @@ MiningBundleActivator::createMiningManager_(IndexSearchService* indexService) co
             new MiningManager(
                 dir,
                 getQueryDataPath_(),
-                indexService->workerService_->documentManager_,
-                indexService->workerService_->indexManager_,
-                indexService->workerService_->searchManager_,
-                indexService->workerService_->idManager_,
+                indexService->searchWorker_->documentManager_,
+                indexService->searchWorker_->indexManager_,
+                indexService->searchWorker_->searchManager_,
+                indexService->searchWorker_->idManager_,
                 config_->collectionName_,
                 config_->schema_,
                 config_->mining_config_,

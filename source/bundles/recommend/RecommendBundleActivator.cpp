@@ -12,7 +12,7 @@
 #include <recommend-manager/ItemIdGenerator.h>
 #include <bundles/index/IndexSearchService.h>
 
-#include <aggregator-manager/WorkerService.h>
+#include <aggregator-manager/SearchWorker.h>
 
 #include <ir/id_manager/IDManager.h>
 
@@ -214,10 +214,10 @@ void RecommendBundleActivator::createUser_()
 
 void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchService)
 {
-    DocumentManager* docManager = indexSearchService->workerService_->documentManager_.get();
+    DocumentManager* docManager = indexSearchService->searchWorker_->documentManager_.get();
     itemManager_.reset(new ItemManager(docManager));
 
-    IDManager* idManager = indexSearchService->workerService_->idManager_.get();
+    IDManager* idManager = indexSearchService->searchWorker_->idManager_.get();
     itemIdGenerator_.reset(new ItemIdGenerator(idManager));
 }
 

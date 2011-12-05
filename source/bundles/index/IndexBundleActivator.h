@@ -60,7 +60,7 @@ private:
     boost::shared_ptr<IndexManager> indexManager_;
     boost::shared_ptr<RankingManager> rankingManager_;
     boost::shared_ptr<SearchManager> searchManager_;
-    boost::shared_ptr<WorkerService> workerService_;
+    boost::shared_ptr<SearchWorker> searchWorker_;
     boost::shared_ptr<SearchAggregator> searchAggregator_;
     ilplib::qa::QuestionAnalysis* pQA_;
     DirectoryRotator directoryRotator_;
@@ -85,7 +85,7 @@ private:
 
     boost::shared_ptr<LAManager> createLAManager_() const;
 
-    boost::shared_ptr<WorkerService> createWorkerService_() ;
+    boost::shared_ptr<SearchWorker> createSearchWorker_() ;
 
     boost::shared_ptr<SearchAggregator> createSearchAggregator_() const;
 

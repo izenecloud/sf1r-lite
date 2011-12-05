@@ -1,7 +1,7 @@
 #include "IndexSearchService.h"
 
 #include <search-manager/SearchCache.h>
-#include <aggregator-manager/WorkerService.h>
+#include <aggregator-manager/SearchWorker.h>
 #include <aggregator-manager/SearchAggregator.h>
 
 #include <common/SFLogger.h>
@@ -45,7 +45,7 @@ bool IndexSearchService::getSearchResult(
 
     if (!bundleConfig_->isSupportByAggregator())
     {
-        bool ret = workerService_->doLocalSearch(actionItem, resultItem);
+        bool ret = searchWorker_->doLocalSearch(actionItem, resultItem);
         std::vector<std::pair<workerid_t, KeywordSearchResult> > resultList;
         resultList.push_back(std::make_pair(0,resultItem));
         searchAggregator_->aggregateMiningResult(resultItem, resultList);
@@ -141,7 +141,7 @@ bool IndexSearchService::getDocumentsByIds(
 {
     if (!bundleConfig_->isSupportByAggregator())
     {
-        return workerService_->getDocumentsByIds(actionItem, resultItem);
+        return searchWorker_->getDocumentsByIds(actionItem, resultItem);
     }
 
     /// Perform distributed search by aggregator
@@ -177,7 +177,7 @@ bool IndexSearchService::getInternalDocumentId(
 {
     if (!bundleConfig_->isSupportByAggregator())
     {
-        return workerService_->getInternalDocumentId(scdDocumentId, internalId);
+        return searchWorker_->getInternalDocumentId(scdDocumentId, internalId);
     }
 
     /// Perform distributed search by aggregator

@@ -34,7 +34,7 @@ class LAManager;
 class SearchManager;
 class IndexHooker;
 class SearchAggregator;
-class WorkerService;
+class SearchWorker;
 class IndexTaskService : public ::izenelib::osgi::IService
 {
     typedef uint32_t CharacterOffset;
@@ -201,7 +201,7 @@ private:
     boost::shared_ptr<IndexHooker> hooker_;
 
     boost::shared_ptr<SearchAggregator> searchAggregator_;
-    boost::shared_ptr<WorkerService> workerService_;
+    boost::shared_ptr<SearchWorker> searchWorker_;
 
     size_t totalSCDSizeSinceLastBackup_;
 

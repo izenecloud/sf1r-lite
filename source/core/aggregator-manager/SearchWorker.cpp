@@ -1,4 +1,4 @@
-#include "WorkerService.h"
+#include "SearchWorker.h"
 #include "WorkerHelper.h"
 
 #include <bundles/index/IndexBundleConfiguration.h>
@@ -15,7 +15,7 @@
 namespace sf1r
 {
 
-WorkerService::WorkerService(
+SearchWorker::SearchWorker(
         IndexBundleConfiguration* bundleConfig,
         DirectoryRotator& directoryRotator)
     : bundleConfig_(bundleConfig)
@@ -38,9 +38,9 @@ WorkerService::WorkerService(
     analysisInfo_.tokenizerNameList_.insert("tok_unite");
 }
 
-/// public service interfaces
+/// Index Search
 
-bool WorkerService::getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem)
+bool SearchWorker::getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem)
 {
     DistKeywordSearchResult fakeResultItem;
     fakeResultItem.distSearchInfo_.actionType_ = DistKeywordSearchInfo::ACTION_FETCH;
@@ -51,9 +51,9 @@ bool WorkerService::getDistSearchInfo(const KeywordSearchActionItem& actionItem,
     return true;
 }
 
-bool WorkerService::getDistSearchResult(const KeywordSearchActionItem& actionItem, DistKeywordSearchResult& resultItem)
+bool SearchWorker::getDistSearchResult(const KeywordSearchActionItem& actionItem, DistKeywordSearchResult& resultItem)
 {
-    cout << "#[WorkerService::processGetSearchResult] " << actionItem.collectionName_ << endl;
+    cout << "[SearchWorker::processGetSearchResult] " << actionItem.collectionName_ << endl;
 
     if (! getSearchResult_(actionItem, resultItem))
     {
@@ -63,9 +63,9 @@ bool WorkerService::getDistSearchResult(const KeywordSearchActionItem& actionIte
     return true;
 }
 
-bool WorkerService::getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+bool SearchWorker::getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
-    cout << "#[WorkerService::processGetSummaryResult] " << actionItem.collectionName_ << endl;
+    cout << "[SearchWorker::processGetSummaryResult] " << actionItem.collectionName_ << endl;
 
     if (!getSummaryMiningResult_(actionItem, resultItem))
     {
@@ -75,7 +75,7 @@ bool WorkerService::getSummaryMiningResult(const KeywordSearchActionItem& action
     return true;
 }
 
-bool WorkerService::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem)
+bool SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem)
 {
     const izenelib::util::UString::EncodingType kEncodingType =
         izenelib::util::UString::convertEncodingTypeFromStringToEnum(
@@ -139,7 +139,7 @@ bool WorkerService::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionI
     return false;
 }
 
-bool WorkerService::getInternalDocumentId(const izenelib::util::UString& scdDocumentId, uint64_t& internalId)
+bool SearchWorker::getInternalDocumentId(const izenelib::util::UString& scdDocumentId, uint64_t& internalId)
 {
     uint32_t docid = 0;
     internalId = 0;
@@ -150,9 +150,8 @@ bool WorkerService::getInternalDocumentId(const izenelib::util::UString& scdDocu
     return true;
 }
 
-///
-
-bool WorkerService::doLocalSearch(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+// local interface
+bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
     if (! getSearchResult_(actionItem, resultItem, false))
     {
@@ -167,10 +166,50 @@ bool WorkerService::doLocalSearch(const KeywordSearchActionItem& actionItem, Key
     return true;
 }
 
+/// Mining Search
+
+bool SearchWorker::getSimilarDocIdList(uint64_t& documentId, uint32_t& maxNum, SimilarDocIdListType& result)
+{
+    // todo get all similar docs in global space?
+    //return miningManager_->getSimilarDocIdList(documentId, maxNum, result);
+
+    std::pair<sf1r::workerid_t, sf1r::docid_t> wd = net::aggregator::Util::GetWorkerAndDocId(documentId);
+    sf1r::workerid_t workerId = wd.first;
+    sf1r::docid_t docId = wd.second;
+
+    std::vector<std::pair<uint32_t, float> > simDocList;
+    bool ret = miningManager_->getSimilarDocIdList(docId, maxNum, simDocList); //get similar docs in current machine.
+
+    result.resize(simDocList.size());
+    for (size_t i = 0; i < simDocList.size(); i ++)
+    {
+        uint64_t wdocid = net::aggregator::Util::GetWDocId(workerId, simDocList[i].first);
+        result[i] = std::make_pair(wdocid, simDocList[i].second);
+    }
+
+    return ret;
+}
+
+bool SearchWorker::clickGroupLabel(const ClickGroupLabelActionItem& actionItem, bool& ret)
+{
+    ret = miningManager_->clickGroupLabel(
+            actionItem.queryString_,
+            actionItem.propName_,
+            actionItem.groupPath_);
+
+    return ret;
+}
+
+bool SearchWorker::visitDoc(const uint32_t& docId, bool& ret)
+{
+    ret = miningManager_->visitDoc(docId);
+    return ret;
+}
+
 /// private methods ////////////////////////////////////////////////////////////
 
 template <typename ResultItemType>
-bool WorkerService::getSearchResult_(
+bool SearchWorker::getSearchResult_(
         const KeywordSearchActionItem& actionItem,
         ResultItemType& resultItem,
         bool isDistributedSearch)
@@ -317,7 +356,7 @@ bool WorkerService::getSearchResult_(
     return true;
 }
 
-bool WorkerService::getSummaryMiningResult_(
+bool SearchWorker::getSummaryMiningResult_(
         const KeywordSearchActionItem& actionItem,
         KeywordSearchResult& resultItem,
         bool isDistributedSearch)
@@ -374,7 +413,7 @@ bool WorkerService::getSummaryMiningResult_(
     return true;
 }
 
-void WorkerService::analyze_(const std::string& qstr, std::vector<izenelib::util::UString>& results)
+void SearchWorker::analyze_(const std::string& qstr, std::vector<izenelib::util::UString>& results)
 {
     results.clear();
     izenelib::util::UString question(qstr, izenelib::util::UString::UTF_8);
@@ -403,7 +442,7 @@ void WorkerService::analyze_(const std::string& qstr, std::vector<izenelib::util
 }
 
 template <typename ResultItemT>
-bool WorkerService::buildQuery(
+bool SearchWorker::buildQuery(
     SearchKeywordOperation& actionOperation,
     std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList,
     ResultItemT& resultItem,
@@ -473,7 +512,7 @@ bool WorkerService::buildQuery(
 }
 
 template<typename ActionItemT, typename ResultItemT>
-bool  WorkerService::getResultItem(ActionItemT& actionItem, const std::vector<sf1r::docid_t>& docsInPage,
+bool  SearchWorker::getResultItem(ActionItemT& actionItem, const std::vector<sf1r::docid_t>& docsInPage,
         const vector<vector<izenelib::util::UString> >& propertyQueryTermList, ResultItemT&  resultItem)
 {
     using izenelib::util::UString;
@@ -584,7 +623,7 @@ bool  WorkerService::getResultItem(ActionItemT& actionItem, const std::vector<sf
 }
 
 template <typename ResultItemType>
-bool WorkerService::removeDuplicateDocs(
+bool SearchWorker::removeDuplicateDocs(
     const KeywordSearchActionItem& actionItem,
     ResultItemType& resultItem
 )

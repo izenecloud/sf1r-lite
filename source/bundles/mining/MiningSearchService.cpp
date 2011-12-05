@@ -2,7 +2,7 @@
 #include <mining-manager/MiningManager.h>
 #include <mining-manager/faceted-submanager/ontology_manager.h>
 
-#include <aggregator-manager/WorkerService.h>
+#include <aggregator-manager/SearchWorker.h>
 #include <aggregator-manager/SearchAggregator.h>
 
 namespace sf1r
@@ -41,7 +41,7 @@ bool MiningSearchService::getSimilarDocIdList(
 {
     if (!bundleConfig_->isSupportByAggregator_)
     {
-        return workerService_->getSimilarDocIdList(documentId, maxNum, result);;
+        return searchWorker_->getSimilarDocIdList(documentId, maxNum, result);;
     }
     else
     {
@@ -214,7 +214,7 @@ bool MiningSearchService::visitDoc(const std::string& collectionName, uint64_t w
 
     if (!bundleConfig_->isSupportByAggregator_)
     {
-        return workerService_->visitDoc(docId, ret);
+        return searchWorker_->visitDoc(docId, ret);
     }
 
     searchAggregator_->singleRequest(collectionName, "visitDoc", docId, ret, workerId);

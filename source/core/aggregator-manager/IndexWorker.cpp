@@ -1,4 +1,4 @@
-#include "WorkerService.h"
+#include "SearchWorker.h"
 #include "WorkerHelper.h"
 
 #include <index-manager/IndexManager.h>
@@ -38,16 +38,16 @@ namespace
 const char* SCD_BACKUP_DIR = "backup";
 }
 
-bool WorkerService::index(const unsigned int& numdoc, bool& ret)
+bool SearchWorker::index(const unsigned int& numdoc, bool& ret)
 {
-    task_type task = boost::bind(&WorkerService::buildCollection, this, numdoc);
+    task_type task = boost::bind(&SearchWorker::buildCollection, this, numdoc);
     JobScheduler::get()->addTask(task);
 
     ret = true;
     return ret;
 }
 
-bool WorkerService::buildCollection(unsigned int numdoc)
+bool SearchWorker::buildCollection(unsigned int numdoc)
 {
     string scdPath = bundleConfig_->collPath_.getScdPath() + "index/";
 
@@ -264,7 +264,7 @@ bool WorkerService::buildCollection(unsigned int numdoc)
     return true;
 }
 
-bool WorkerService::getPropertyValue_(const PropertyValue& value, std::string& valueStr)
+bool SearchWorker::getPropertyValue_(const PropertyValue& value, std::string& valueStr)
 {
     try
     {
@@ -279,7 +279,7 @@ bool WorkerService::getPropertyValue_(const PropertyValue& value, std::string& v
     }
 }
 
-bool WorkerService::backup_()
+bool SearchWorker::backup_()
 {
     const boost::shared_ptr<Directory>& current
         = directoryRotator_.currentDirectory();
@@ -313,7 +313,7 @@ bool WorkerService::backup_()
     return true;
 }
 
-bool WorkerService::doBuildCollection_(
+bool SearchWorker::doBuildCollection_(
         const std::string& fileName,
         int op,
         uint32_t numdoc)
@@ -367,7 +367,7 @@ bool WorkerService::doBuildCollection_(
     return true;
 }
 
-bool WorkerService::insertOrUpdateSCD_(
+bool SearchWorker::insertOrUpdateSCD_(
         ScdParser& parser,
         bool isInsert,
         uint32_t numdoc,
@@ -446,7 +446,7 @@ bool WorkerService::insertOrUpdateSCD_(
     return true;
 }
 
-bool WorkerService::createUpdateDocId_(
+bool SearchWorker::createUpdateDocId_(
         const izenelib::util::UString& scdDocId,
         bool rType,
         docid_t& oldId,
@@ -469,7 +469,7 @@ bool WorkerService::createUpdateDocId_(
     return result;
 }
 
-bool WorkerService::createInsertDocId_(
+bool SearchWorker::createInsertDocId_(
         const izenelib::util::UString& scdDocId,
         docid_t& newId)
 {
@@ -504,7 +504,7 @@ bool WorkerService::createInsertDocId_(
     return true;
 }
 
-bool WorkerService::deleteSCD_(ScdParser& parser, time_t timestamp)
+bool SearchWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
 {
     std::vector<izenelib::util::UString> rawDocIDList;
     if (!parser.getDocIdList(rawDocIDList))
@@ -584,7 +584,7 @@ bool WorkerService::deleteSCD_(ScdParser& parser, time_t timestamp)
     return true;
 }
 
-bool WorkerService::insertDoc_(Document& document, IndexerDocument& indexDocument, time_t timestamp)
+bool SearchWorker::insertDoc_(Document& document, IndexerDocument& indexDocument, time_t timestamp)
 {
     CREATE_PROFILER(proDocumentIndexing, "IndexTaskService", "IndexTaskService : InsertDocument")
     CREATE_PROFILER(proIndexing, "IndexTaskService", "IndexTaskService : indexing")
@@ -607,7 +607,7 @@ bool WorkerService::insertDoc_(Document& document, IndexerDocument& indexDocumen
     else return false;
 }
 
-bool WorkerService::updateDoc_(
+bool SearchWorker::updateDoc_(
         Document& document,
         IndexerDocument& indexDocument,
         time_t timestamp,
@@ -654,7 +654,7 @@ bool WorkerService::updateDoc_(
     return true;
 }
 
-bool WorkerService::deleteDoc_(docid_t docid, time_t timestamp)
+bool SearchWorker::deleteDoc_(docid_t docid, time_t timestamp)
 {
     CREATE_SCOPED_PROFILER (proDocumentDeleting, "IndexTaskService", "IndexTaskService::DeleteDocument");
 
@@ -672,7 +672,7 @@ bool WorkerService::deleteDoc_(docid_t docid, time_t timestamp)
     else return false;
 }
 
-void WorkerService::saveSourceCount_(int op)
+void SearchWorker::saveSourceCount_(int op)
 {
     if (bundleConfig_->productSourceField_.empty())
         return;
@@ -702,7 +702,7 @@ void WorkerService::saveSourceCount_(int op)
     }
 }
 
-bool WorkerService::prepareDocument_(
+bool SearchWorker::prepareDocument_(
         SCDDoc& doc,
         Document& document,
         docid_t& oldId,
@@ -841,7 +841,7 @@ bool WorkerService::prepareDocument_(
 }
 
 
-bool WorkerService::prepareIndexDocument_(
+bool SearchWorker::prepareIndexDocument_(
         docid_t oldId,
         const Document& document,
         IndexerDocument& indexDocument)
@@ -1096,7 +1096,7 @@ bool WorkerService::prepareIndexDocument_(
     return true;
 }
 
-bool WorkerService::preparePartialDocument_(
+bool SearchWorker::preparePartialDocument_(
         Document& document,
         IndexerDocument& oldIndexDocument)
 {
@@ -1219,7 +1219,7 @@ bool WorkerService::preparePartialDocument_(
     return true;
 }
 
-bool WorkerService::completePartialDocument_(docid_t oldId, Document& doc)
+bool SearchWorker::completePartialDocument_(docid_t oldId, Document& doc)
 {
     docid_t newId = doc.getId();
     Document oldDoc;
@@ -1235,7 +1235,7 @@ bool WorkerService::completePartialDocument_(docid_t oldId, Document& doc)
     return true;
 }
 
-bool WorkerService::checkSeparatorType_(const izenelib::util::UString& propertyValueStr, izenelib::util::UString::EncodingType encoding, char separator)
+bool SearchWorker::checkSeparatorType_(const izenelib::util::UString& propertyValueStr, izenelib::util::UString::EncodingType encoding, char separator)
 {
     izenelib::util::UString tmpStr(propertyValueStr);
     izenelib::util::UString sep(" ",encoding);
@@ -1247,7 +1247,7 @@ bool WorkerService::checkSeparatorType_(const izenelib::util::UString& propertyV
     return false;
 }
 
-bool WorkerService::checkRtype_(
+bool SearchWorker::checkRtype_(
         SCDDoc& doc,
         std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue)
 {
@@ -1343,7 +1343,7 @@ bool WorkerService::checkRtype_(
 /// @desc Make a forward index of a given text.
 /// You can specify an Language Analysis option through AnalysisInfo parameter.
 /// You have to get a proper AnalysisInfo value from the configuration. (Currently not implemented.)
-bool WorkerService::makeForwardIndex_(
+bool SearchWorker::makeForwardIndex_(
         const izenelib::util::UString& text,
         const std::string& propertyName,
         unsigned int propertyId,
@@ -1374,7 +1374,7 @@ bool WorkerService::makeForwardIndex_(
     return true;
 }
 
-bool WorkerService::makeSentenceBlocks_(
+bool SearchWorker::makeSentenceBlocks_(
         const izenelib::util::UString & text,
         const unsigned int maxDisplayLength,
         const unsigned int numOfSummary,
