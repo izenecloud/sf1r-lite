@@ -517,7 +517,7 @@ IndexBundleActivator::createSearchAggregator_() const
     boost::shared_ptr<SearchAggregator> ret(new SearchAggregator(searchWorker_.get()));
     ret->TOP_K_NUM = config_->topKNum_;
     // workers will be detected and set by master node manager
-    MasterNodeManagerSingleton::get()->registerAggregator(ret);
+    MasterNodeManagerSingleton::get()->registerAggregator(ret.get());
     return ret;
 }
 
@@ -532,7 +532,7 @@ boost::shared_ptr<IndexAggregator>
 IndexBundleActivator::createIndexAggregator_() const
 {
     boost::shared_ptr<IndexAggregator> ret(new IndexAggregator(indexWorker_.get()));
-    //XXX MasterNodeManagerSingleton::get()->registerAggregator(ret);
+    MasterNodeManagerSingleton::get()->registerAggregator(ret.get());
     return ret;
 }
 

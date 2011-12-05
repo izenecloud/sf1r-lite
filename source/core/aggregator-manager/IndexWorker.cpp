@@ -11,9 +11,6 @@
 #include <log-manager/ProductCount.h>
 #include <common/JobScheduler.h>
 #include <common/Utilities.h>
-//#include <license-manager/LicenseManager.h>
-//#include <process/common/CollectionMeta.h>
-//#include <process/common/XmlConfigParser.h>
 
 // xxx
 #include <bundles/index/IndexBundleConfiguration.h>
