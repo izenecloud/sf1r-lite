@@ -155,6 +155,9 @@ void OrderManager::addOrder(const std::vector<itemid_t>& items)
     std::vector<itemid_t> uniqueItems;
     unique_items(items, uniqueItems);
 
+    if (uniqueItems.size() < 2)
+        return;
+
     _splitOrder(uniqueItems, MAX_ORDER_ITEM_NUM);
 }
 
