@@ -6,7 +6,7 @@
 
 #include <bundles/index/IndexSearchService.h>
 #include <bundles/mining/MiningSearchService.h>
- 
+
 #include "DocumentsController.h"
 #include "DocumentsGetHandler.h"
 #include "DocumentsSearchHandler.h"
@@ -487,7 +487,7 @@ void DocumentsController::destroy()
 void DocumentsController::get_topic()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
-  
+
     uint64_t internal_id = 0;
     Value& input = request()[Keys::resource];
     Value& docid_value = input[Keys::DOCID];
@@ -501,7 +501,7 @@ void DocumentsController::get_topic()
         response().addError("Cannot convert DOCID to internal ID");
         return;
     }
-  
+
     std::vector<std::pair<uint32_t, izenelib::util::UString> > label_list;
     bool requestSent = collectionHandler_->miningSearchService_->getDocLabelList(
         internal_id, label_list
@@ -556,7 +556,7 @@ void DocumentsController::get_topic()
 void DocumentsController::get_topic_with_sim()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
-  
+
     uint64_t internal_id = 0;
     Value& input = request()[Keys::resource];
     Value& docid_value = input[Keys::DOCID];
@@ -571,7 +571,7 @@ void DocumentsController::get_topic_with_sim()
         response().addError("Cannot convert DOCID to internal ID");
         return;
     }
-  
+
     std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > > label_list;
     bool requestSent = collectionHandler_->miningSearchService_->getLabelListWithSimByDocId(
         internal_id, label_list
@@ -601,7 +601,7 @@ void DocumentsController::get_topic_with_sim()
         label_list[i].second[j].convertString(str, izenelib::util::UString::UTF_8);
         new_sim[Keys::name] = str;
       }
-    
+
     }
 }
 
@@ -874,11 +874,15 @@ void DocumentsController::get_summarization()
     Summarization::property_const_iterator sIt = result.propertyBegin();
     for(;sIt != result.propertyEnd();++sIt)
     {
-      Value& new_resource = resources();
-      new_resource[Keys::aspect] = sIt->first;
-      std::string str;
-      sIt->second.convertString(str, izenelib::util::UString::UTF_8);
-      new_resource[Keys::summary] = str;
+        Value& new_resource = resources();
+        new_resource[Keys::aspect] = sIt->first;
+        std::string str;
+        Value& summary = new_resource[Keys::summary];
+        for (uint32_t i = 0; i < sIt->second.size(); i++)
+        {
+            sIt->second[i].convertString(str, izenelib::util::UString::UTF_8);
+            summary() = str;
+        }
     }
 }
 
@@ -917,4 +921,3 @@ bool DocumentsController::parseCollection()
 }
 
 } // namespace sf1r
-
