@@ -40,7 +40,7 @@ bool SummarizationStorage::IsRebuildSummarizeRequired(
         const Summarization& value)
 {
     Summarization summarization;
-    return summarization_db_.get(key, summarization) && summarization != value;
+    return !summarization_db_.get(key, summarization) || summarization != value;
 }
 
 }
