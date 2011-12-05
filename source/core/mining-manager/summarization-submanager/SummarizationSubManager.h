@@ -18,6 +18,7 @@ class DocumentManager;
 class IndexManager;
 
 class ParentKeyStorage;
+class SummarizationStorage;
 class Corpus;
 
 class MultiDocSummarizationSubManager
@@ -55,6 +56,8 @@ private:
     boost::shared_ptr<IndexManager> index_manager_;
 
     ParentKeyStorage* parent_key_storage_;
+    SummarizationStorage* summarization_storage_;
+
     UString parent_key_ustr_name_;
     Corpus* corpus_;
 };

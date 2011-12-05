@@ -1,5 +1,6 @@
 #include "SummarizationSubManager.h"
 #include "ParentKeyStorage.h"
+#include "SummarizationStorage.h"
 #include "splm.h"
 
 #include <index-manager/IndexManager.h>
@@ -65,11 +66,13 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         boost::filesystem::create_directories(schema_.parentKeyLogPath);
 
     parent_key_storage_ = new ParentKeyStorage(homePath + "/parentkey");
+    summarization_storage_ = new SummarizationStorage(homePath + "/summarization");
 }
 
 MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 {
     delete parent_key_storage_;
+    delete summarization_storage_;
 }
 
 void MultiDocSummarizationSubManager::EvaluateSummarization()
@@ -109,12 +112,17 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             DoEvaluateSummarization_(*fit, docs);
         }
     }
+    summarization_storage_->Flush	();
 }
 
 void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
         const UString& key,
         const std::vector<uint32_t>& docs)
 {
+    Summarization summarization(docs);
+    if(! summarization_storage_->IsRebuildSummarizeRequired(key, summarization))
+        return;
+
     ilplib::langid::Analyzer* langIdAnalyzer = document_manager_->getLangId();
 
     corpus_->start_new_coll(key);
@@ -149,6 +157,7 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     SPLM::generateSummary(summary_list, *corpus_);
 
     //TODO store the generated summary list
+    summarization_storage_->Update(key, summarization);
 
     corpus_->reset();
 }
