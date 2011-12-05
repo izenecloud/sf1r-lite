@@ -38,6 +38,15 @@ namespace
 /** the default encoding type */
 const izenelib::util::UString::EncodingType DEFAULT_ENCODING = izenelib::util::UString::UTF_8;
 
+const char* SCD_DELIM = "<USERID>";
+
+const char* PROP_USERID = "USERID";
+const char* PROP_ITEMID = "ITEMID";
+const char* PROP_ORDERID = "order_id";
+const char* PROP_DATE = "DATE";
+const char* PROP_QUANTITY = "quantity";
+const char* PROP_PRICE = "price";
+
 /** the directory for scd file backup */
 const char* SCD_BACKUP_DIR = "backup";
 
@@ -150,7 +159,7 @@ bool doc2User(const SCDDoc& doc, sf1r::User& user, const sf1r::RecommendSchema& 
         it->first.convertString(propName, DEFAULT_ENCODING);
         const izenelib::util::UString & propValueU = it->second;
 
-        if (propName == "USERID")
+        if (propName == PROP_USERID)
         {
             propValueU.convertString(user.idStr_, DEFAULT_ENCODING);
         }
@@ -171,7 +180,7 @@ bool doc2User(const SCDDoc& doc, sf1r::User& user, const sf1r::RecommendSchema& 
 
     if (user.idStr_.empty())
     {
-        LOG(ERROR) << "missing user property <USERID> in SCD file";
+        LOG(ERROR) << "missing user property <" << PROP_USERID << "> in SCD file";
         return false;
     }
 
@@ -194,44 +203,44 @@ bool doc2Order(
         it->second.convertString(docMap[propName], DEFAULT_ENCODING);
     }
 
-    userIdStr = docMap["USERID"];
+    userIdStr = docMap[PROP_USERID];
     if (userIdStr.empty())
     {
-        LOG(ERROR) << "missing property <USERID> in order SCD file";
+        LOG(ERROR) << "missing property <" << PROP_USERID << "> in order SCD file";
         return false;
     }
 
-    orderItem.itemIdStr_ = docMap["ITEMID"];
+    orderItem.itemIdStr_ = docMap[PROP_ITEMID];
     if (orderItem.itemIdStr_.empty())
     {
-        LOG(ERROR) << "missing property <ITEMID> in order SCD file";
+        LOG(ERROR) << "missing property <" << PROP_ITEMID << "> in order SCD file";
         return false;
     }
 
-    orderIdStr = docMap["order_id"];
-    orderItem.dateStr_ = docMap["DATE"];
+    orderIdStr = docMap[PROP_ORDERID];
+    orderItem.dateStr_ = docMap[PROP_DATE];
 
-    if (docMap["quantity"].empty() == false)
+    if (docMap[PROP_QUANTITY].empty() == false)
     {
         try
         {
-            orderItem.quantity_ = boost::lexical_cast<int>(docMap["quantity"]);
+            orderItem.quantity_ = boost::lexical_cast<int>(docMap[PROP_QUANTITY]);
         }
         catch(boost::bad_lexical_cast& e)
         {
-            LOG(WARNING) << "error in casting quantity " << docMap["quantity"] << " to int value";
+            LOG(WARNING) << "error in casting quantity " << docMap[PROP_QUANTITY] << " to int value";
         }
     }
 
-    if (docMap["price"].empty() == false)
+    if (docMap[PROP_PRICE].empty() == false)
     {
         try
         {
-            orderItem.price_ = boost::lexical_cast<double>(docMap["price"]);
+            orderItem.price_ = boost::lexical_cast<double>(docMap[PROP_PRICE]);
         }
         catch(boost::bad_lexical_cast& e)
         {
-            LOG(WARNING) << "error in casting price " << docMap["price"] << " to double value";
+            LOG(WARNING) << "error in casting price " << docMap[PROP_PRICE] << " to double value";
         }
     }
 
@@ -282,11 +291,31 @@ RecommendTaskService::RecommendTaskService(
             LOG(ERROR) << "failed in izenelib::util::Scheduler::addJob(), cron job name: " << cronJobName_;
         }
     }
+
+    initProps_();
 }
 
 RecommendTaskService::~RecommendTaskService()
 {
     izenelib::util::Scheduler::removeJob(cronJobName_);
+}
+
+void RecommendTaskService::initProps_()
+{
+    const std::vector<RecommendProperty>& userSchema = bundleConfig_.recommendSchema_.userSchema_;
+    for (std::vector<RecommendProperty>::const_iterator it = userSchema.begin();
+        it != userSchema.end(); ++it)
+    {
+        userProps_.push_back(it->propertyName_);
+    }
+    userProps_.push_back(PROP_USERID);
+
+    orderProps_.push_back(PROP_USERID);
+    orderProps_.push_back(PROP_ITEMID);
+    orderProps_.push_back(PROP_ORDERID);
+    orderProps_.push_back(PROP_DATE);
+    orderProps_.push_back(PROP_QUANTITY);
+    orderProps_.push_back(PROP_PRICE);
 }
 
 bool RecommendTaskService::addUser(const User& user)
@@ -514,7 +543,7 @@ bool RecommendTaskService::parseUserSCD_(const std::string& scdPath)
 {
     LOG(INFO) << "parsing SCD file: " << scdPath;
 
-    ScdParser userParser(DEFAULT_ENCODING, "<USERID>");
+    ScdParser userParser(DEFAULT_ENCODING, SCD_DELIM);
     if (userParser.load(scdPath) == false)
     {
         LOG(ERROR) << "ScdParser loading failed";
@@ -529,7 +558,7 @@ bool RecommendTaskService::parseUserSCD_(const std::string& scdPath)
     }
 
     int userNum = 0;
-    for (ScdParser::iterator docIter = userParser.begin();
+    for (ScdParser::iterator docIter = userParser.begin(userProps_);
         docIter != userParser.end(); ++docIter)
     {
         if (++userNum % 10000 == 0)
@@ -617,7 +646,7 @@ bool RecommendTaskService::parseOrderSCD_(const std::string& scdPath)
 {
     LOG(INFO) << "parsing SCD file: " << scdPath;
 
-    ScdParser orderParser(DEFAULT_ENCODING, "<USERID>");
+    ScdParser orderParser(DEFAULT_ENCODING, SCD_DELIM);
     if (orderParser.load(scdPath) == false)
     {
         LOG(ERROR) << "ScdParser loading failed";
@@ -633,7 +662,7 @@ bool RecommendTaskService::parseOrderSCD_(const std::string& scdPath)
 
     int orderNum = 0;
     OrderMap orderMap;
-    for (ScdParser::iterator docIter = orderParser.begin();
+    for (ScdParser::iterator docIter = orderParser.begin(orderProps_);
         docIter != orderParser.end(); ++docIter)
     {
         if (++orderNum % 10000 == 0)
