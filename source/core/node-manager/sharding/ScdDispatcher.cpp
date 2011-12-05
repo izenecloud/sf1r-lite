@@ -9,7 +9,7 @@
 
 using namespace sf1r;
 using namespace net::distribute;
-using namespace boost::filesystem;
+namespace bfs = boost::filesystem;
 
 ScdDispatcher::ScdDispatcher(ScdSharding* scdSharding, AggregatorConfig& aggregatorConfig)
 : scdSharding_(scdSharding), aggregatorConfig_(aggregatorConfig), scdEncoding_(izenelib::util::UString::UTF_8)
@@ -19,25 +19,23 @@ ScdDispatcher::ScdDispatcher(ScdSharding* scdSharding, AggregatorConfig& aggrega
 
 bool ScdDispatcher::dispatch(const std::string& dir, unsigned int docNum)
 {
-    std::vector<std::string> scdFileList;
-    if (!getScdFileList(dir, scdFileList)) {
-        LOG(INFO) << "Not found any SCD file.";
-        return false;
-    }
+    LOG(INFO) << "start SCD sharding";
 
-    LOG(INFO) << "Start sharding" ;
+    std::vector<std::string> scdFileList;
+    if (!getScdFileList(dir, scdFileList))
+        return false;
 
     unsigned int docProcessed = 0;
     for (size_t i = 1; i <= scdFileList.size(); i++)
     {
-        path scd_path(scdFileList[i-1]);
+        bfs::path scd_path(scdFileList[i-1]);
         curScdFileName_ = scd_path.filename();
         switchFile();
 
         ScdParser scdParser(scdEncoding_);
         if(!scdParser.load(scd_path.string()) )
         {
-            LOG(INFO) << "Load scd file failed: " << scd_path.string();
+            LOG(ERROR) << "Load scd file failed: " << scd_path.string();
             return false;
         }
 
@@ -65,11 +63,10 @@ bool ScdDispatcher::dispatch(const std::string& dir, unsigned int docNum)
         if (docProcessed >= docNum  && docNum > 0)
             break;
     }
-    //std::cout<<std::endl;
 
-    LOG(INFO) << "End sharding" ;
+    LOG(INFO) << "end SCD sharding";
 
-    // post process for batch dispatching
+    // post process of dispatching
     return finish();
 }
 
@@ -77,15 +74,15 @@ bool ScdDispatcher::getScdFileList(const std::string& dir, std::vector<std::stri
 {
     fileList.clear();
 
-    if ( exists(dir) )
+    if ( bfs::exists(dir) )
     {
-        if ( !is_directory(dir) ) {
+        if ( !bfs::is_directory(dir) ) {
             std::cout << "It's not a directory: " << dir << std::endl;
             return false;
         }
 
-        directory_iterator iterEnd;
-        for (directory_iterator iter(dir); iter != iterEnd; iter ++)
+        bfs::directory_iterator iterEnd;
+        for (bfs::directory_iterator iter(dir); iter != iterEnd; iter ++)
         {
             std::string file_name = iter->path().filename();
 
@@ -110,7 +107,7 @@ bool ScdDispatcher::getScdFileList(const std::string& dir, std::vector<std::stri
     }
     else
     {
-        std::cout << "File path dose not existed: " << dir << std::endl;
+        std::cout << "Directory dose not existed: " << dir << std::endl;
         return false;
     }
 }
@@ -126,7 +123,7 @@ BatchScdDispatcher::BatchScdDispatcher(
 , collectionName_(collectionName)
 , dispatchTempDir_(dispatchTempDir)
 {
-    create_directory(dispatchTempDir_);
+    bfs::create_directory(dispatchTempDir_);
 
     ofList_.resize(scdSharding->getMaxShardID()+1, NULL);
     for (unsigned int shardid = scdSharding->getMinShardID();
@@ -136,7 +133,7 @@ BatchScdDispatcher::BatchScdDispatcher(
         oss << dispatchTempDir_<<"/"<<shardid;
 
         std::string shardScdDir = oss.str();
-        create_directory(shardScdDir);
+        bfs::create_directory(shardScdDir);
 
         shardScdfileMap_.insert(std::make_pair(shardid, shardScdDir));
         ofList_[shardid] = new std::ofstream;
@@ -216,7 +213,9 @@ bool BatchScdDispatcher::dispatch_impl(shardid_t shardid, SCDDoc& scdDoc)
 
 bool BatchScdDispatcher::finish()
 {
-    bool ret = true;
+    bool ret = false;
+    LOG(INFO) << "start SCD dispatching" ;
+
     // Send splitted scd files in sub dirs to each shard server
     for (unsigned int shardid = scdSharding_->getMinShardID();
             shardid <= scdSharding_->getMaxShardID(); shardid++)
@@ -229,15 +228,20 @@ bool BatchScdDispatcher::finish()
                       <<"/ to shard "<<shardid<<" ("<<workerSrv->host_<<")";
             // thread?
             DataTransfer transfer(workerSrv->host_, 18121); // todo, config port
-            transfer.syncSend(shardScdfileMap_[shardid], collectionName_+"/scd/index");
+            if (transfer.syncSend(shardScdfileMap_[shardid], collectionName_+"/scd/index") == 0)
+            {
+                ret = true; // xxx
+                bfs::remove_all(shardScdfileMap_[shardid]);
+            }
         }
         else
         {
-            ret = false; // xxx
+            //ret = false;
             LOG(ERROR) << "Not found server info for shard "<<shardid;
         }
     }
 
+    LOG(INFO) << "end SCD dispatching" ;
     return ret;
 }
 

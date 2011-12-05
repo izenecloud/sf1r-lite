@@ -5,6 +5,8 @@
 #include <aggregator-manager/IndexAggregator.h>
 #include <aggregator-manager/IndexWorker.h>
 
+#include <glog/logging.h>
+
 using namespace izenelib::driver;
 
 namespace sf1r
@@ -37,22 +39,20 @@ bool IndexTaskService::index(unsigned int numdoc)
 
 bool IndexTaskService::indexMaster_(unsigned int numdoc)
 {
-    // scd sharding and dispatch
-    std::cout<<"start scd sharding & dispatching "<<std::endl;
-    string scdPath = bundleConfig_->collPath_.getScdPath() + "master";
-    if (indexAggregator_->ScdDispatch(numdoc, bundleConfig_->collectionName_, scdPath))
+    // scd sharding & dispatching
+    string scdPath = bundleConfig_->collPath_.getScdPath() + "index/master";
+    if (!indexAggregator_->ScdDispatch(numdoc, bundleConfig_->collectionName_, scdPath))
     {
-        // backup master
-    }
-    else
-    {
-        std::cout<<"scd dispatch not completed!"<<std::endl;
-        //return false; xxx
+        //xxx pending
+        return false;
     }
 
+    // backup master
+
     // distributed indexing request
-    std::cout<<"start distributed indexing "<<std::endl;
+    LOG(INFO) << "start distributed indexing";
     bool ret = true;
+    indexAggregator_->setDebug(true);//xxx
     indexAggregator_->distributeRequest(bundleConfig_->collectionName_, "index", numdoc, ret);
     return true;
 }

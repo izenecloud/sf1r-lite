@@ -21,6 +21,7 @@ bool IndexAggregator::ScdDispatch(
     cfg.setShardNum(NodeManagerSingleton::get()->getShardNum());
     cfg.addShardKey("Url");
     cfg.addShardKey("Title");
+    cfg.addShardKey("DOCID");
 
     // create scd sharding strategy
     ShardingStrategy* shardingStrategy = new HashShardingStrategy;
