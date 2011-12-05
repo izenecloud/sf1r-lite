@@ -14,9 +14,9 @@
 
 
 typedef std::pair<izenelib::util::UString, izenelib::util::UString> FieldPair;
-typedef vector< FieldPair > SCDDoc;
-typedef boost::shared_ptr< SCDDoc > SCDDocPtr;
-typedef std::pair<izenelib::util::UString,unsigned> DocIdPair;
+typedef std::vector<FieldPair> SCDDoc;
+typedef boost::shared_ptr<SCDDoc> SCDDocPtr;
+typedef std::pair<izenelib::util::UString, unsigned> DocIdPair;
 
 enum SCD_TYPE
 {
@@ -31,7 +31,7 @@ class ScdParser
 {
     /// @brief  Reads a document from the loaded SCD file, when given a DOCID value.
     //          prerequisites: SCD file must be loaded by load(), and getDocIdList() must be called.
-    bool getDoc( const izenelib::util::UString & docId, SCDDoc& doc );
+    bool getDoc(const izenelib::util::UString & docId, SCDDoc& doc);
 
 public:
     ScdParser();
@@ -39,10 +39,10 @@ public:
     ScdParser(const izenelib::util::UString::EncodingType & encodingType, const char* docDelimiter);
     virtual ~ScdParser();
 
-    static bool checkSCDFormat( const string & file );
-    static unsigned checkSCDDate( const string& file);
-    static unsigned checkSCDTime( const string& file);
-    static SCD_TYPE checkSCDType( const string & file );
+    static bool checkSCDFormat(const string & file);
+    static unsigned checkSCDDate(const string & file);
+    static unsigned checkSCDTime(const string & file);
+    static SCD_TYPE checkSCDType(const string & file);
     static bool compareSCD(const string & file1, const string & file2);
 
 
@@ -58,9 +58,9 @@ public:
     }
 
     /// @brief  A utility function to get all the DOCID values from an SCD
-    bool getDocIdList( std::vector<izenelib::util::UString> & list );
+    bool getDocIdList(std::vector<izenelib::util::UString> & list);
 
-    bool getDocIdList( std::vector<DocIdPair > & list );
+    bool getDocIdList(std::vector<DocIdPair > & list);
 
 
     /// @brief gets the encoding type from the config
@@ -83,15 +83,17 @@ public:
 
         ~iterator();
 
-        iterator& operator=(const iterator& other);
+        const iterator& operator=(const iterator& other);
 
         bool operator==(const iterator& other) const;
 
         bool operator!=(const iterator& other) const;
 
-        void operator++();
+        const iterator& operator++();
 
-        void operator++(int);
+        const iterator& operator++(int);
+
+        const iterator& operator+=(unsigned int offset);
 
         SCDDocPtr operator*();
 
@@ -131,7 +133,6 @@ public:
     iterator end();
 
 private:
-
     ifstream fs_;
 
     long size_;
@@ -142,8 +143,5 @@ private:
 
     const std::string docDelimiter_; /// the boundary between each docs
 };
-
-
-
 
 #endif

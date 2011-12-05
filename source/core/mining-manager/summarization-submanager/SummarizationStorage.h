@@ -16,7 +16,7 @@ using izenelib::util::UString;
 
 class SummarizationStorage
 {
-    typedef izenelib::am::leveldb::Table<UString, Summarization > SummarizationDBType;
+    typedef izenelib::am::leveldb::Table<UString, Summarization> SummarizationDBType;
 
 public:
     SummarizationStorage(
@@ -33,6 +33,7 @@ public:
     bool IsRebuildSummarizeRequired(
             const UString& key,
             const Summarization& value);
+
 private:
     SummarizationDBType summarization_db_;
 };

@@ -19,7 +19,7 @@ using izenelib::util::UString;
 class ParentKeyStorage
 {
     typedef izenelib::am::leveldb::Table<UString, std::vector<UString> > ParentKeyDbType;
-    typedef izenelib::am::AMIterator<ParentKeyDbType > ParentKeyIteratorType;
+    typedef izenelib::am::AMIterator<ParentKeyDbType> ParentKeyIteratorType;
     typedef stx::btree_map<UString, std::vector<UString> > BufferType;
 
 public:
@@ -47,7 +47,6 @@ private:
     BufferType buffer_db_;
     unsigned int buffer_capacity_;
     unsigned int buffer_size_;
-    UString delimit_;
     boost::shared_mutex mutex_;
 };
 

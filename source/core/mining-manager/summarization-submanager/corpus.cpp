@@ -4,7 +4,6 @@ namespace sf1r
 {
 
 Corpus::Corpus()
-    : _word_pos(0)
 {
 }
 
@@ -14,7 +13,6 @@ Corpus::~Corpus()
 
 void Corpus::reset()
 {
-    _word_pos = 0;
     _word_seqs.clear();
     _sent_offs.clear();
     _doc_offs.clear();
@@ -27,29 +25,34 @@ void Corpus::reset()
 
 void Corpus::start_new_sent()
 {
-    _sent_offs.push_back(_word_pos);
+    _sent_offs.push_back(_word_seqs.size());
 }
 
 void Corpus::start_new_sent(const UString& sent)
 {
-    _sent_offs.push_back(_word_pos);
+    _sent_offs.push_back(_word_seqs.size());
     _sents.push_back(sent);
 }
 
 void Corpus::start_new_doc()
 {
-    _doc_offs.push_back(_word_pos);
+    _doc_offs.push_back(_word_seqs.size());
 }
 
 void Corpus::start_new_coll()
 {
-    _coll_offs.push_back(_word_pos);
+    _coll_offs.push_back(_word_seqs.size());
 }
 
 void Corpus::start_new_coll(const UString& name)
 {
-    _coll_offs.push_back(_word_pos);
+    _coll_offs.push_back(_word_seqs.size());
     _coll_names.push_back(name);
+}
+
+const UString& Corpus::get_word(int w) const
+{
+    return _map_id2str.at(w);
 }
 
 const UString& Corpus::get_sent(int s) const
@@ -76,7 +79,6 @@ void Corpus::add_word(const UString word)
         wid = _map_str2id[word];
     }
     _word_seqs.push_back(wid);
-    ++_word_pos;
 }
 
 void Corpus::add_sent(const UString& sent)

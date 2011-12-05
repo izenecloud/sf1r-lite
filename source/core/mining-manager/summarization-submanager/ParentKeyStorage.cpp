@@ -11,8 +11,12 @@ ParentKeyStorage::ParentKeyStorage(
     : parent_key_db_(dbPath)
     , buffer_capacity_(bufferSize)
     , buffer_size_(0)
-    , delimit_(",", UString::UTF_8)
 {
+    if (!parent_key_db_.open())
+    {
+        boost::filesystem::remove_all(dbPath);
+        parent_key_db_.open();
+    }
 }
 
 ParentKeyStorage::~ParentKeyStorage()

@@ -15,7 +15,7 @@ namespace sf1r
 /// a list of summarization properties.
 class Summarization
 {
-    typedef std::map<std::string, UString> property_named_map;
+    typedef std::map<std::string, std::vector<UString> > property_named_map;
     typedef property_named_map::iterator property_mutable_iterator;
     typedef izenelib::am::EWAHBoolArray<uint32_t> fingerprint_type;
 public:
@@ -23,39 +23,41 @@ public:
     typedef property_named_map::iterator property_iterator;
 
     Summarization()
-            : propertyList_()
+        : propertyList_()
     {
     }
 
     Summarization(const std::vector<uint32_t>& ids)
-            : propertyList_()
+        : propertyList_()
     {
-        std::vector<uint32_t>::const_iterator it = ids.begin();
-        for(;it != ids.end(); ++it)
+        for (uint32_t i = 0; i < ids.size(); i++)
         {
-            fingerPrint_.set(*it);
+            fingerPrint_.set(ids[i]);
         }
     }
 
-    UString& property(const std::string& propertyName)
+    std::vector<UString>& property(const std::string& propertyName)
     {
         return propertyList_[propertyName];
     }
-    const UString property(const std::string& propertyName) const
+
+    const std::vector<UString>& property(const std::string& propertyName) const
     {
+        static std::vector<UString> empty_property;
+
         property_const_iterator found = findProperty(propertyName);
         if (found != propertyEnd())
         {
             return found->second;
         }
 
-        return UString();
+        return empty_property;
     }
 
     /// Insert a new property into the document.
     /// @return \c true if successful, \c false if already existed
     bool insertProperty(const std::string& propertyName,
-                        const UString& propertyValue)
+                        const std::vector<UString>& propertyValue)
     {
         return propertyList_.insert(
                    std::make_pair(propertyName, propertyValue)
@@ -64,7 +66,7 @@ public:
 
     /// Set a new value to a property of the document.
     void updateProperty(const std::string& propertyName,
-                        UString propertyValue)
+                        std::vector<UString> propertyValue)
     {
         propertyList_[propertyName].swap(propertyValue);
     }
@@ -88,8 +90,7 @@ public:
 
     bool hasProperty(const std::string& pname) const
     {
-        property_const_iterator it = findProperty(pname);
-        return it!=propertyEnd() ;
+        return findProperty(pname) != propertyEnd();
     }
 
     property_iterator propertyBegin()
@@ -116,14 +117,13 @@ public:
 
     bool isEmpty()
     {
-        return ( propertyList_.size() == 0 );
+        return propertyList_.empty();
     }
 
     void swap(Summarization& rhs)
     {
-        using std::swap;
-        swap(propertyList_, rhs.propertyList_);
-        swap(fingerPrint_, rhs.fingerPrint_);
+        propertyList_.swap(rhs.propertyList_);
+        fingerPrint_.swap(rhs.fingerPrint_);
     }
 
     size_t getPropertySize() const
@@ -146,7 +146,7 @@ private:
     fingerprint_type fingerPrint_;
 
     /// list of properties of the document
-    std::map<std::string, UString> propertyList_;
+    property_named_map propertyList_;
 
     template<class DataIO>
     friend void DataIO_loadObject(DataIO& dio, Summarization& x);

@@ -39,7 +39,7 @@ const char* FORMAT_LT_GT = "(?1<)(?2>)";
 }
 
 struct scd_grammar
-            : public grammar<scd_grammar>
+    : public grammar<scd_grammar>
 {
     SCDDoc& scddoc;
     izenelib::util::UString::EncodingType& codingType;
@@ -58,10 +58,10 @@ struct scd_grammar
     struct add_property_name
     {
         add_property_name(SCDDoc& doc, izenelib::util::UString::EncodingType& type, izenelib::util::UString& propertyname)
-                :scddoc(doc),codingType(type),property_name(propertyname) {}
+            : scddoc(doc), codingType(type), property_name(propertyname) {}
         void operator()(const char *begin, const char *end) const
         {
-            property_name.assign(std::string(begin,end),codingType);
+            property_name.assign(std::string(begin, end), codingType);
         }
         SCDDoc& scddoc;
         izenelib::util::UString::EncodingType& codingType;
@@ -71,14 +71,14 @@ struct scd_grammar
     struct add_property_value
     {
         add_property_value(SCDDoc& doc, izenelib::util::UString::EncodingType& type, izenelib::util::UString& propertyname)
-                :scddoc(doc),codingType(type),property_name(propertyname) {}
+            : scddoc(doc), codingType(type), property_name(propertyname) {}
         void operator()(const char *begin, const char *end) const
         {
             // in ScdParser::iterator::preProcessDoc(), "<" is replaced by "&lt;", and ">" by "&gt;",
             // as ">" is used to split group path values, they are converted back here
             std::string str;
             boost::regex_replace(std::back_inserter(str), begin, end,
-                PATTERN_LT_GT, FORMAT_LT_GT, boost::match_default | boost::format_all);
+                    PATTERN_LT_GT, FORMAT_LT_GT, boost::match_default | boost::format_all);
 
             izenelib::util::UString property_value(str,codingType);
             scddoc.push_back(FieldPair(property_name, property_value));
@@ -107,7 +107,7 @@ struct scd_grammar
             // WARN: This rule should also apply to field name on XmlConfigParser.cpp.
             // Those two should share same field name rule to make easy validating.
 
-            propertyName = *(alnum_p|ch_p('-')|ch_p('_'));
+            propertyName = *(alnum_p | ch_p('-') | ch_p('_'));
             propertyValue = *(~(ch_p('<')));
         }
 
@@ -119,15 +119,15 @@ struct scd_grammar
 };
 
 ScdParser::ScdParser()
-        :size_(0), encodingType_(izenelib::util::UString::UTF_8), docDelimiter_(DEFAULT_DOC_DELIMITER)
+    : size_(0), encodingType_(izenelib::util::UString::UTF_8), docDelimiter_(DEFAULT_DOC_DELIMITER)
 {}
 
-ScdParser::ScdParser( const izenelib::util::UString::EncodingType & encodingType )
-        :size_(0), encodingType_(encodingType), docDelimiter_(DEFAULT_DOC_DELIMITER)
+ScdParser::ScdParser(const izenelib::util::UString::EncodingType & encodingType)
+    : size_(0), encodingType_(encodingType), docDelimiter_(DEFAULT_DOC_DELIMITER)
 {}
 
 ScdParser::ScdParser(const izenelib::util::UString::EncodingType & encodingType, const char* docDelimiter)
-        :size_(0), encodingType_(encodingType), docDelimiter_(docDelimiter)
+    : size_(0), encodingType_(encodingType), docDelimiter_(docDelimiter)
 {}
 
 ScdParser::~ScdParser()
@@ -136,14 +136,14 @@ ScdParser::~ScdParser()
         fs_.close();
 }
 
-bool ScdParser::checkSCDFormat( const string & file )
+bool ScdParser::checkSCDFormat(const string & file)
 {
     //B-<document collector ID(2Bytes)>-<YYYYMMDDHHmm(12Bytes)>-
     //    <SSsss(second, millisecond, 5Bytes)>-<I/U/D/R(1Byte)>-
     //    <C/F(1Byte)>.SCD
 
     if ( boost::filesystem::path(file).extension() != ".SCD"
-            && boost::filesystem::path(file).extension() != ".scd"  )
+            && boost::filesystem::path(file).extension() != ".scd" )
         return false;
 
     string fileName = boost::filesystem::path(file).stem();
@@ -221,7 +221,7 @@ bool ScdParser::checkSCDFormat( const string & file )
     return true;
 }
 
-unsigned ScdParser::checkSCDDate( const string& file)
+unsigned ScdParser::checkSCDDate(const string& file)
 {
     static const unsigned kOffset = 5; // strlen("B-01-")
     static const unsigned kCount = 8; // strlen("YYYYMMDD")
@@ -239,7 +239,7 @@ unsigned ScdParser::checkSCDDate( const string& file)
     }
 }
 
-unsigned ScdParser::checkSCDTime( const string& file)
+unsigned ScdParser::checkSCDTime(const string& file)
 {
     static const unsigned kOffset = 13; // strlen("B-01-YYYYMMDD")
     static const unsigned kCount = 10; // strlen("HHmm-SSsss")
@@ -258,7 +258,7 @@ unsigned ScdParser::checkSCDTime( const string& file)
     }
 }
 
-SCD_TYPE ScdParser::checkSCDType( const string& file )
+SCD_TYPE ScdParser::checkSCDType(const string& file)
 {
     //B-<document collector ID(2Bytes)>-<YYYYMMDDHHmm(12Bytes)>-
     //    <SSsss(second, millisecond, 5Bytes)>-<I/U/D/R(1Byte)>-
@@ -305,13 +305,13 @@ bool ScdParser::compareSCD(const string & file1, const string & file2)
 
         if (time1 == time2)
         {
-            return (checkSCDType(file1) < checkSCDType(file2));
+            return checkSCDType(file1) < checkSCDType(file2);
         }
 
-        return (time1 < time2);
+        return time1 < time2;
     }
 
-    return (date1 < date2);
+    return date1 < date2;
 }
 
 
@@ -330,16 +330,16 @@ bool ScdParser::load(const string& path)
     return true;
 }
 
-bool ScdParser::getDocIdList( std::vector<izenelib::util::UString> & list )
+bool ScdParser::getDocIdList(std::vector<izenelib::util::UString> & list)
 {
     if ( !fs_.is_open() )
         return false;
 
     ScdParser::iterator it = this->begin();
-    for ( ; it != this->end(); it++ )
+    for ( ; it != this->end(); ++it )
     {
         //if the document is NULL
-        if ( (*it) == NULL  )
+        if ( (*it) == NULL )
         {
             return false;
         }
@@ -351,21 +351,21 @@ bool ScdParser::getDocIdList( std::vector<izenelib::util::UString> & list )
     return true;
 }
 
-bool ScdParser::getDocIdList( std::vector<DocIdPair > & list )
+bool ScdParser::getDocIdList(std::vector<DocIdPair > & list)
 {
     if ( !fs_.is_open() )
         return false;
 
     ScdParser::iterator it = this->begin();
 
-    for ( ; it != this->end(); it++ )
+    for (; it != this->end(); ++it)
     {
         //if the document is NULL
         if ( (*it) == NULL  )
         {
             return false;
         }
-        list.push_back( make_pair((*it)->at(0).second, 0 ));
+        list.push_back( make_pair((*it)->at(0).second, 0) );
         docOffsetList_.insert( (*it)->at(0).second, it.getOffset() );
     }
 
@@ -392,7 +392,7 @@ ScdParser::iterator ScdParser::end()
     return iterator(-1);
 }
 
-bool ScdParser::getDoc( const izenelib::util::UString & docId, SCDDoc& doc )
+bool ScdParser::getDoc(const izenelib::util::UString & docId, SCDDoc& doc)
 {
     long * val = docOffsetList_.find( docId );
     if ( val == NULL )
@@ -413,15 +413,15 @@ bool ScdParser::getDoc( const izenelib::util::UString & docId, SCDDoc& doc )
 }
 
 ScdParser::iterator::iterator(long offset)
-        :pfs_(NULL)
-        ,readLength_(0)
-        ,docDelimiter_(DEFAULT_DOC_DELIMITER)
+    : pfs_(NULL)
+    , readLength_(0)
+    , docDelimiter_(DEFAULT_DOC_DELIMITER)
 {
     offset_ = offset;
 }
 
 ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc)
-        :docDelimiter_(pScdParser->docDelimiter_)
+    : docDelimiter_(pScdParser->docDelimiter_)
 {
     pfs_ = &(pScdParser->fs_);
     pfs_->clear();
@@ -434,11 +434,7 @@ ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc)
     {
         buffer_->consume(readLength_);
         doc_.reset(getDoc());
-        if (start_doc > 0)
-        {
-            for (unsigned int i = 0; i < start_doc; ++i)
-                operator++();
-        }
+        operator+=(start_doc);
     }
     else
     {
@@ -448,8 +444,8 @@ ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc)
 }
 
 ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc, const std::vector<string>& propertyNameList)
-    :docDelimiter_(pScdParser->docDelimiter_)
-    ,propertyNameList_(propertyNameList)
+    : docDelimiter_(pScdParser->docDelimiter_)
+    , propertyNameList_(propertyNameList)
 {
     pfs_ = &(pScdParser->fs_);
     pfs_->clear();
@@ -457,16 +453,12 @@ ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc, con
     codingType_ = pScdParser->getEncodingType();
     offset_ = 0;
     buffer_.reset(new izenelib::util::izene_streambuf);
-    readLength_ = izenelib::util::izene_read_until(*pfs_,*buffer_,docDelimiter_);
+    readLength_ = izenelib::util::izene_read_until(*pfs_, *buffer_, docDelimiter_);
     if(readLength_ > 0)
     {
         buffer_->consume(readLength_);
         doc_.reset(getDoc());
-        if(start_doc > 0)
-        {
-            for(unsigned int i = 0; i < start_doc; ++i)
-                operator++();
-        }
+        operator+=(start_doc);
     }
     else
     {
@@ -475,14 +467,14 @@ ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc, con
 }
 
 ScdParser::iterator::iterator(const iterator& other)
-        :pfs_(other.pfs_)
-        ,readLength_(0)
-        ,prevOffset_(other.prevOffset_)
-        ,offset_(other.offset_)
-        ,doc_(other.doc_)
-        ,codingType_(other.codingType_)
-        ,buffer_(other.buffer_)
-        ,docDelimiter_(other.docDelimiter_)
+    : pfs_(other.pfs_)
+    , readLength_(0)
+    , prevOffset_(other.prevOffset_)
+    , offset_(other.offset_)
+    , doc_(other.doc_)
+    , codingType_(other.codingType_)
+    , buffer_(other.buffer_)
+    , docDelimiter_(other.docDelimiter_)
 {
 }
 
@@ -490,11 +482,11 @@ ScdParser::iterator::~iterator()
 {
 }
 
-ScdParser::iterator& ScdParser::iterator::operator=(const iterator& other)
+const ScdParser::iterator& ScdParser::iterator::operator=(const iterator& other)
 {
     pfs_ = other.pfs_;
     readLength_ = 0;
-    prevOffset_ =other.prevOffset_;
+    prevOffset_ = other.prevOffset_;
     offset_ = other.offset_;
     doc_ = other.doc_;
     codingType_ = other.codingType_;
@@ -513,7 +505,7 @@ bool ScdParser::iterator::operator!=(const iterator& other)const
     return (offset_ != other.offset_);
 }
 
-void ScdParser::iterator::operator++()
+const ScdParser::iterator& ScdParser::iterator::operator++()
 {
     if ( pfs_->eof() )
     {
@@ -524,10 +516,10 @@ void ScdParser::iterator::operator++()
         offset_ = prevOffset_;
         doc_.reset(getDoc());
     }
-    //return iterator(*this);
+    return *this;
 }
 
-void ScdParser::iterator::operator++(int)
+const ScdParser::iterator& ScdParser::iterator::operator++(int)
 {
     if ( pfs_->eof() )
     {
@@ -538,7 +530,26 @@ void ScdParser::iterator::operator++(int)
         offset_ = prevOffset_;
         doc_.reset(getDoc());
     }
-    //return iterator(*this);
+    return *this;
+}
+
+const ScdParser::iterator& ScdParser::iterator::operator+=(unsigned int offset)
+{
+    while (offset)
+    {
+        if ( pfs_->eof() )
+        {
+            offset_ = -1;
+            break;
+        }
+        else
+        {
+            offset_ = prevOffset_;
+            doc_.reset(getDoc());
+        }
+        --offset;
+    }
+    return *this;
 }
 
 SCDDocPtr ScdParser::iterator::operator*()
@@ -556,27 +567,22 @@ SCDDoc* ScdParser::iterator::getDoc()
     CREATE_PROFILER ( proScdParsing, "Index:SIAProcess", "Scd Parsing : parse SCD file");
 
     START_PROFILER ( proScdParsing );
-    readLength_ = izenelib::util::izene_read_until(*pfs_,*buffer_,docDelimiter_);
+    readLength_ = izenelib::util::izene_read_until(*pfs_, *buffer_, docDelimiter_);
     string str(docDelimiter_);
     if (readLength_ > 0)
     {
-        str.append(std::string(buffer_->gptr(),readLength_-docDelimiter_.size()));
+        str.append(buffer_->gptr(), readLength_ - docDelimiter_.size());
         buffer_->consume(readLength_);
         prevOffset_ = pfs_->tellg();
     }
     else
     {
-        do
+        while ((readLength_ = izenelib::util::izene_read_until(*pfs_, *buffer_, PATTERN_EOL)) != 0)
         {
-            readLength_ = izenelib::util::izene_read_until(*pfs_,*buffer_,PATTERN_EOL);
-            if (readLength_ > 0)
-            {
-                str.append(std::string(buffer_->gptr(),readLength_));
-            }
+            str.append(buffer_->gptr(), readLength_);
             buffer_->consume(readLength_);
         }
-        while (readLength_ != 0);
-        prevOffset_  = -1;
+        prevOffset_ = -1;
     }
     SCDDoc* doc = new SCDDoc;
     if (str == docDelimiter_)
@@ -602,7 +608,7 @@ void ScdParser::iterator::preProcessDoc(string& strDoc)
     size_t tagLen, tagEnd;
     bool matchName;
     char ch;
-    for (size_t i = 0; i < docLen; )
+    for (size_t i = 0; i < docLen;)
     {
         ch = strDoc[i];
 
@@ -610,21 +616,18 @@ void ScdParser::iterator::preProcessDoc(string& strDoc)
         {
             // match property name between '<' and '>'
             matchName = false;
-            for (size_t t = 0; t < propertyNameList_.size(); t ++)
+            for (size_t t = 0; t < propertyNameList_.size(); t++)
             {
                 tagLen = propertyNameList_[t].size();
-                tagEnd = i+tagLen+1;
+                tagEnd = i + tagLen + 1;
 
                 if ( tagEnd < docLen && strDoc[tagEnd] == '>'
-                        && boost::iequals(string(strDoc, i+1, tagLen), propertyNameList_[t])) // case insensitively
+                        && boost::iequals(strDoc.substr(i + 1, tagLen), propertyNameList_[t])) // case insensitively
                 {
                     matchName = true;
                     // keep property name tag
-                    while (i < tagEnd + 1)
-                    {
-                        tmpStr.push_back(strDoc[i]);
-                        i ++;
-                    }
+                    tmpStr.append(strDoc, i, tagLen + 2);
+                    i = tagEnd + 1;
                     break;
                 }
             }
@@ -632,24 +635,18 @@ void ScdParser::iterator::preProcessDoc(string& strDoc)
             // replace '<' with "&lt;" if not matched
             if (!matchName)
             {
-                i ++;
-                tmpStr.push_back('&');
-                tmpStr.push_back('l');
-                tmpStr.push_back('t');
-                tmpStr.push_back(';');
+                i++;
+                tmpStr.append("&lt;");
             }
         }
         else if (ch == '>')
         {
-            i ++;
-            tmpStr.push_back('&');
-            tmpStr.push_back('g');
-            tmpStr.push_back('t');
-            tmpStr.push_back(';');
+            i++;
+            tmpStr.append("&gt;");
         }
         else
         {
-            i ++;
+            i++;
             tmpStr.push_back(ch);
         }
     }

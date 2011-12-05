@@ -50,24 +50,36 @@ public:
         return _coll_offs.size() - 1;
     }
 
-    inline const int* get_doc_offs() const
-    {
-        return &_doc_offs.at(0);
-    }
-
     inline const int* get_word_seq() const
     {
-        return &_word_seqs.at(0);
+        if (_word_seqs.empty())
+            return NULL;
+
+        return &_word_seqs[0];
     }
 
     inline const int* get_sent_offs() const
     {
-        return &_sent_offs.at(0);
+        if (_sent_offs.empty())
+            return NULL;
+
+        return &_sent_offs[0];
+    }
+
+    inline const int* get_doc_offs() const
+    {
+        if (_doc_offs.empty())
+            return NULL;
+
+        return &_doc_offs[0];
     }
 
     inline const int* get_coll_offs() const
     {
-        return &_coll_offs.at(0);
+        if (_coll_offs.empty())
+            return NULL;
+
+        return &_coll_offs[0];
     }
 
     void reset();
@@ -82,6 +94,8 @@ public:
 
     void start_new_coll(const UString& name);
 
+    const UString& get_word(int w) const;
+
     const UString& get_sent(int s) const;
 
     const UString& get_coll_name(int c) const;
@@ -91,7 +105,6 @@ public:
     void add_sent(const UString& sent);
 
 private:
-    int _word_pos;
     std::vector<int> _word_seqs;
     std::vector<int> _sent_offs;
     std::vector<int> _doc_offs;

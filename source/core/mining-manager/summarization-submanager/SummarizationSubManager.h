@@ -41,7 +41,7 @@ public:
             std::vector<QueryFiltering::FilteringType>& filtingList);
 
     bool GetSummarizationByRawKey(
-            const UString& rawKey, 
+            const UString& rawKey,
             Summarization& result);
 
 private:
