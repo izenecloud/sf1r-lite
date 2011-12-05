@@ -162,6 +162,13 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     corpus_->reset();
 }
 
+bool MultiDocSummarizationSubManager::GetSummarizationByRawKey(
+        const UString& rawKey, 
+        Summarization& result)
+{
+    return summarization_storage_->Get(rawKey, result);
+}
+
 void MultiDocSummarizationSubManager::AppendSearchFilter(
         std::vector<QueryFiltering::FilteringType>& filtingList)
 {

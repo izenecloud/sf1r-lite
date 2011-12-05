@@ -41,7 +41,7 @@ bool SummarizationStorage::IsRebuildSummarizeRequired(
     }
     else
     {
-        return false;
+        return true;
     }
 }
 

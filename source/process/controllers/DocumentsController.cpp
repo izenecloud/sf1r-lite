@@ -827,6 +827,61 @@ void DocumentsController::visit()
     }
 }
 
+/**
+ * @brief Action @b get_summarization. Get summarization according to specific identifiers
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Find topics in this collection.
+ * - @b resource* (@c Object): Only field @b DOCID is used to find the document.
+ *
+ * @section response
+ *
+ * - @b resources (@c Array): Every item is an aspect of summarization.
+ *   - @b aspect (@c String): The name of summary aspect
+ *   - @b summary (@c String): The content of the aspect summary
+ *
+ *
+ * @section example
+ *
+ * @code
+ * {
+ *   "collection": "ChnWiki",
+ *   "resource": {
+ *     "DOCID": "docid-1",
+ *   }
+ * }
+ * @endcode
+ */
+void DocumentsController::get_summarization()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
+    Value& input = request()[Keys::resource];
+    Value& docid_value = input[Keys::DOCID];
+    std::string sdocid = asString(docid_value);
+    izenelib::util::UString udocid(sdocid, izenelib::util::UString::UTF_8);
+    std::string collectionName =  asString(request()[Keys::collection]);
+
+    Summarization result;
+    bool success = collectionHandler_->miningSearchService_->GetSummarizationByRawKey(collectionName, udocid, result);
+    if (!success)
+    {
+        response().addError("Cannot get results for "+sdocid);
+        return;
+    }
+    Value& resources = response()[Keys::resources];
+    resources.reset<Value::ArrayType>();
+    Summarization::property_const_iterator sIt = result.propertyBegin();
+    for(;sIt != result.propertyEnd();++sIt)
+    {
+      Value& new_resource = resources();
+      new_resource[Keys::aspect] = sIt->first;
+      std::string str;
+      sIt->second.convertString(str, izenelib::util::UString::UTF_8);
+      new_resource[Keys::summary] = str;
+    }
+}
+
 bool DocumentsController::requireDOCID()
 {
 

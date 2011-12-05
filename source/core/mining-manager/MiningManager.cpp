@@ -1510,6 +1510,14 @@ void MiningManager::FinishQueryRecommendInject()
     qrManager_->FinishInject();
 }
 
+bool MiningManager::GetSummarizationByRawKey(
+    const izenelib::util::UString& rawKey, 
+    Summarization& result)
+{
+    if(!summarizationManager_) return false;
+    return summarizationManager_->GetSummarizationByRawKey(rawKey,result);
+}
+
 bool MiningManager::doTgInfoInit_()
 {
     if ( tgInfo_ == NULL)
