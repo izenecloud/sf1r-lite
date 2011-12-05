@@ -1200,7 +1200,7 @@ bool IndexWorker::prepareIndexDocument_(
                                     value = (int64_t)(boost::lexical_cast< float >(str));
                                 }catch (const boost::bad_lexical_cast &)
                                 {
-                                    LOG(ERROR) << "Wrong format of number value. DocId " << docId <<" Property "<<fieldStr<< " Value" << str;
+                                    //LOG(ERROR) << "Wrong format of number value. DocId " << docId <<" Property "<<fieldStr<< " Value" << str;
                                 }
                             }
                             indexerPropertyConfig.setIsMultiValue(true);
