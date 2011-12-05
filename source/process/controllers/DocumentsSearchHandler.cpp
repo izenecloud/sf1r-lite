@@ -341,7 +341,7 @@ bool DocumentsSearchHandler::parse()
     parsers.push_back(&searchParser);
     values.push_back(&request_[Keys::search]);
 
-    FilteringParser filteringParser(indexSchema_);
+    FilteringParser filteringParser(indexSchema_,miningSchema_);
     parsers.push_back(&filteringParser);
     values.push_back(&request_[Keys::conditions]);
 

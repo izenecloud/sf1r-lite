@@ -13,6 +13,8 @@
 #include <boost/unordered_map.hpp>
 #include <vector>
 
+using izenelib::util::UString;
+
 namespace sf1r
 {
 
@@ -35,17 +37,17 @@ public:
 
     inline int nsents() const
     {
-        return _sent_offs.size();
+        return _sent_offs.size() - 1;
     }
 
     inline int ndocs() const
     {
-        return _doc_offs.size();
+        return _doc_offs.size() - 1;
     }
 
     inline int ncolls() const
     {
-        return _coll_offs.size();
+        return _coll_offs.size() - 1;
     }
 
     inline const int* get_doc_offs() const
@@ -72,17 +74,21 @@ public:
 
     void start_new_sent();
 
+    void start_new_sent(const UString& sent);
+
     void start_new_doc();
 
     void start_new_coll();
 
-    const izenelib::util::UString& get_sent(int s) const;
+    void start_new_coll(const UString& name);
 
-    void add_word(const izenelib::util::UString word);
+    const UString& get_sent(int s) const;
 
-    void add_sent(const izenelib::util::UString& sent);
+    const UString& get_coll_name(int c) const;
 
-    void add_doc(const izenelib::util::UString& doc);
+    void add_word(const UString word);
+
+    void add_sent(const UString& sent);
 
 private:
     int _word_pos;
@@ -91,10 +97,11 @@ private:
     std::vector<int> _doc_offs;
     std::vector<int> _coll_offs;
 
-    std::vector<izenelib::util::UString> _sents;
+    std::vector<UString> _sents;
+    std::vector<UString> _coll_names;
 
-    boost::unordered_map<izenelib::util::UString, int> _map_str2id;
-    std::vector<izenelib::util::UString> _map_id2str;
+    boost::unordered_map<UString, int> _map_str2id;
+    std::vector<UString> _map_id2str;
 };
 
 }

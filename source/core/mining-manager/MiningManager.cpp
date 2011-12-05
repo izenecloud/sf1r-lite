@@ -417,6 +417,12 @@ bool MiningManager::open()
                                                     ,mining_schema_.summarization_schema
                                                     ,document_manager_
                                                     ,index_manager_);
+
+           if( !mining_schema_.summarization_schema.parentKey.empty())
+           {
+               searchManager_->set_filter_hook(boost::bind(&MultiDocSummarizationSubManager::AppendSearchFilter,summarizationManager_,_1));
+           }
+			
         }
 
 

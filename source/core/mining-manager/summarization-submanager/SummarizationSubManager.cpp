@@ -6,14 +6,17 @@
 #include <document-manager/DocumentManager.h>
 
 #include <common/ScdParser.h>
+#include <la/analyzer/MultiLanguageAnalyzer.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/algorithm/string/compare.hpp>
 
 #include <glog/logging.h>
 
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 using namespace izenelib::ir::indexmanager;
 namespace bfs = boost::filesystem;
@@ -35,6 +38,18 @@ bool CheckParentKeyLogFormat(
     return (first == DOCID && second == parent_key_name);
 }
 
+struct IsParentKeyFilterProperty
+{
+    const std::string& parent_key_property;
+    IsParentKeyFilterProperty(const std::string& property)
+        :parent_key_property(property) {}
+    bool operator() (QueryFiltering::FilteringType& filterType)
+    {
+        return boost::is_iequal()(parent_key_property,filterType.first.second);
+    }
+};
+
+
 MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         const std::string& homePath,
         SummarizeConfig schema,
@@ -44,6 +59,7 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     , document_manager_(document_manager)
     , index_manager_(index_manager)
     , parent_key_ustr_name_(schema_.parentKey, UString::UTF_8)
+    , corpus_(new Corpus())
 {
     if (!schema_.parentKeyLogPath.empty())
         boost::filesystem::create_directories(schema_.parentKeyLogPath);
@@ -60,29 +76,128 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 {
     BuildIndexOfParentKey_();
     BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
-    typedef BTreeIndexerManager::Iterator<UString> IteratorType;
-    IteratorType it = pBTreeIndexer->begin<UString>(schema_.foreignKeyPropName);
-    IteratorType itEnd = pBTreeIndexer->end<UString>();
-    for (; it != itEnd; ++it)
+    if (schema_.parentKeyLogPath.empty())
     {
-        const std::vector<uint32_t>& docs = it->second;
-        const UString& key = it->first;
-        Corpus corpus;
-
-        corpus.start_new_coll();
-        for (uint32_t i = 0; i < docs.size(); i++)
+        ///No parentKey, directly build summarization
+        typedef BTreeIndexerManager::Iterator<UString> IteratorType;
+        IteratorType it = pBTreeIndexer->begin<UString>(schema_.foreignKeyPropName);
+        IteratorType itEnd = pBTreeIndexer->end<UString>();
+        for (; it != itEnd; ++it)
         {
-            Document doc;
-            document_manager_->getDocument(docs[i], doc);
-            Document::property_const_iterator it = doc.findProperty(schema_.contentPropName);
-            if (it == doc.propertyEnd())
-                continue;
-
-            const UString& content = it->second.get<UString>();
-            corpus.add_doc(content);
+            std::vector<uint32_t> docs(it->second);
+            std::sort(docs.begin(), docs.end());
+            const UString& key = it->first;
+            DoEvaluateSummarization_(key, docs);
         }
+    }
+    else
+    {
+        ///For each parentKey, get all its values(foreign key)
+        ParentKeyStorage::ParentKeyIteratorType parentKeyIt(parent_key_storage_->parent_key_db_);
+        ParentKeyStorage::ParentKeyIteratorType parentKeyEnd;
+        for (; parentKeyIt != parentKeyEnd; ++parentKeyIt)
+        {
+            std::vector<uint32_t> docs;
+            const std::vector<UString>& foreignKeys = parentKeyIt->second;
+            std::vector<UString>::const_iterator fit = foreignKeys.begin();
+            for (; fit != foreignKeys.end(); ++fit)
+            {
+                PropertyType foreignKey(*fit);
+                pBTreeIndexer->getValue(schema_.foreignKeyPropName, foreignKey, docs);
+            }
+            std::sort(docs.begin(), docs.end());
+            DoEvaluateSummarization_(*fit, docs);
+        }
+    }
+}
 
-        //TODO
+void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
+        const UString& key,
+        const std::vector<uint32_t>& docs)
+{
+    ilplib::langid::Analyzer* langIdAnalyzer = document_manager_->getLangId();
+
+    corpus_->start_new_coll(key);
+
+    for (uint32_t i = 0; i < docs.size(); i++)
+    {
+        Document doc;
+        document_manager_->getDocument(docs[i], doc);
+        Document::property_const_iterator it = doc.findProperty(schema_.contentPropName);
+        if (it == doc.propertyEnd())
+            continue;
+
+        const UString& content = it->second.get<UString>();
+        UString sentence;
+        std::size_t startPos = 0;
+        while (std::size_t len = langIdAnalyzer->sentenceLength(content, startPos))
+        {
+            sentence.assign(content, startPos, len);
+
+            corpus_->start_new_sent(sentence);
+
+            //TODO word-segmentation
+
+            startPos += len;
+        }
+    }
+
+    corpus_->start_new_sent();
+    corpus_->start_new_coll();
+
+    std::vector<std::pair<UString, std::vector<UString> > > summary_list;
+    SPLM::generateSummary(summary_list, *corpus_);
+
+    //TODO store the generated summary list
+
+    corpus_->reset();
+}
+
+void MultiDocSummarizationSubManager::AppendSearchFilter(
+        std::vector<QueryFiltering::FilteringType>& filtingList)
+{
+    ///When search filter is based on ParentKey, get its associated values,
+    ///and add those values to filter conditions.
+    ///The typical situation of this happen when :
+    ///SELECT * FROM comments WHERE product_type="XXX"
+    ///This hook will translate the semantic into:
+    ///SELECT * FROM comments WHERE product_id="1" OR product_id="2" ...
+
+    typedef std::vector<QueryFiltering::FilteringType>::iterator IteratorType;
+    IteratorType it = std::find_if (filtingList.begin(),
+        filtingList.end(), IsParentKeyFilterProperty(schema_.parentKey));
+    if (it != filtingList.end())
+    {
+        const std::vector<PropertyValue>& filterParam = it->second;
+        if (!filterParam.empty())
+        {
+            try
+            {
+                const std::string & paramValue = get<std::string>(filterParam[0]);
+                UString paramUStr(paramValue, UString::UTF_8);
+                std::vector<UString> results;
+                if (parent_key_storage_->Get(paramUStr, results))
+                {
+                    QueryFiltering::FilteringType filterRule;
+                    filterRule.first.first = QueryFiltering::EQUAL;
+                    filterRule.first.second = schema_.foreignKeyPropName;
+                    std::vector<UString>::iterator rit = results.begin();
+                    for(; rit!=results.end(); ++rit)
+                    {
+                        PropertyValue v(*rit);
+                        filterRule.second.push_back(v);
+                        filtingList.push_back(filterRule);
+                    }
+                }
+            }
+            catch (const boost::bad_get &)
+            {
+                filtingList.erase(it);
+                return;
+            }
+        }
+        filtingList.erase(it);
+        return;
     }
 }
 

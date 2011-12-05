@@ -10,6 +10,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <algorithm>
 
 #define USTRING(str) UString(str, UString::UTF_8)
@@ -24,6 +25,8 @@ namespace sf1r
     UString QueryParser::escOperUStr_;
     vector<pair<UString , UString> > QueryParser::operEncodeDic_;
     vector<pair<UString , UString> > QueryParser::operDecodeDic_;
+
+    const std::string QueryParser::filterQuery = "*";
 
     QueryParser::QueryParser(
             boost::shared_ptr<LAManager>& laManager,
@@ -346,6 +349,15 @@ namespace sf1r
 
     } // end - normalizeQuery()
 
+    bool QueryParser::getFilterQueryTree(const UString& queryUStr, QueryTreePtr& queryTree)
+    {
+         QueryTreePtr tmpQueryTree(new QueryTree(QueryTree::FILTER_QUERY));
+         if( !setKeyword(tmpQueryTree, queryUStr))
+             return false;
+         queryTree = tmpQueryTree;
+         return true;
+    }
+
     bool QueryParser::parseQuery(
             UString& queryUStr,
             QueryTreePtr& queryTree,
@@ -354,6 +366,14 @@ namespace sf1r
             bool removeChineseSpace
             )
     {
+        std::string queryStr("");
+        queryUStr.convertString(queryStr, izenelib::util::UString::UTF_8);
+        trim(queryStr);
+        if(queryStr == filterQuery)
+        {
+            if(getFilterQueryTree(queryUStr, queryTree) == true)
+                return true;
+        }
         // Check if given query is restrict word.
         if ( QueryUtility::isRestrictWord( queryUStr ) )
             return false;

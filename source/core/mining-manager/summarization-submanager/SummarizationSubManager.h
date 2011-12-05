@@ -2,6 +2,7 @@
 #define SF1R_MINING_MANAGER_MULTI_DOC_SUMMARIZATION_SUBMANAGER_H
 
 #include <configuration-manager/SummarizeConfig.h>
+#include <query-manager/QueryTypeDef.h>
 
 #include <util/ustring/UString.h>
 
@@ -17,6 +18,7 @@ class DocumentManager;
 class IndexManager;
 
 class ParentKeyStorage;
+class Corpus;
 
 class MultiDocSummarizationSubManager
 {
@@ -32,7 +34,14 @@ public:
 
     void EvaluateSummarization();
 
+    void AppendSearchFilter(
+            std::vector<QueryFiltering::FilteringType>& filtingList);
+
 private:
+    void DoEvaluateSummarization_(
+            const UString& key,
+            const std::vector<uint32_t>& docs);
+
     void BuildIndexOfParentKey_();
 
     void DoInsertBuildIndexOfParentKey_(const std::string& fileName);
@@ -47,6 +56,7 @@ private:
 
     ParentKeyStorage* parent_key_storage_;
     UString parent_key_ustr_name_;
+    Corpus* corpus_;
 };
 
 }

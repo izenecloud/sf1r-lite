@@ -28,7 +28,7 @@ TextSummarizationSubManager::~TextSummarizationSubManager()
 
 void TextSummarizationSubManager::init(
     ilplib::langid::Analyzer* langIdAnalyzer,
-    boost::shared_ptr<izenelib::ir::idmanager::IDManager> idManager 
+    boost::shared_ptr<izenelib::ir::idmanager::IDManager> idManager
 )
 {
     langIdAnalyzer_ = langIdAnalyzer;
@@ -36,7 +36,7 @@ void TextSummarizationSubManager::init(
 }
 
 ////@brief get requests for getting summary, snippet offsets, when given a text
-bool TextSummarizationSubManager::getOffsetPairs(  
+bool TextSummarizationSubManager::getOffsetPairs(
     const izenelib::util::UString& textBody,
     const unsigned int maxDisplayLength,
     const unsigned int numOfSentence,
@@ -120,6 +120,4 @@ bool TextSummarizationSubManager::getOffsetPairs(
         return false;
 }
 
-
 }
-

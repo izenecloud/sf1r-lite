@@ -278,6 +278,10 @@ public:
         return rmDb_;
     }
 
+    boost::shared_ptr<faceted::CTRManager> GetCtrManager()
+    {
+        return ctrManager_;
+    }
 
     void onIndexUpdated(size_t docNum);
 
