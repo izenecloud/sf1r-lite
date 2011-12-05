@@ -860,13 +860,13 @@ void DocumentsController::get_summarization()
     Value& docid_value = input[Keys::DOCID];
     std::string sdocid = asString(docid_value);
     izenelib::util::UString udocid(sdocid, izenelib::util::UString::UTF_8);
-    std::string collectionName =  asString(request()[Keys::collection]);
+    std::string collectionName = asString(request()[Keys::collection]);
 
     Summarization result;
     bool success = collectionHandler_->miningSearchService_->GetSummarizationByRawKey(collectionName, udocid, result);
     if (!success)
     {
-        response().addError("Cannot get results for "+sdocid);
+        response().addError("Cannot get results for " + sdocid);
         return;
     }
     Value& resources = response()[Keys::resources];

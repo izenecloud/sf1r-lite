@@ -7,7 +7,7 @@
 #include <document-manager/DocumentManager.h>
 
 #include <common/ScdParser.h>
-#include <la/analyzer/MultiLanguageAnalyzer.h>
+#include <idmlib/util/idm_analyzer.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/path.hpp>
@@ -59,10 +59,12 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         const std::string& homePath,
         SummarizeConfig schema,
         boost::shared_ptr<DocumentManager> document_manager,
-        boost::shared_ptr<IndexManager> index_manager)
+        boost::shared_ptr<IndexManager> index_manager,
+        idmlib::util::IDMAnalyzer* analyzer)
     : schema_(schema)
     , document_manager_(document_manager)
     , index_manager_(index_manager)
+    , analyzer_(analyzer)
     , parent_key_storage_(new ParentKeyStorage(homePath + "/parentkey"))
     , summarization_storage_(new SummarizationStorage(homePath + "/summarization"))
     , parent_key_ustr_name_(schema_.parentKey, UString::UTF_8)
@@ -150,7 +152,13 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 
             corpus_->start_new_sent(sentence);
 
-            //TODO word-segmentation
+            std::vector<UString> word_list;
+            analyzer_->GetStringList(sentence, word_list);
+            for (std::vector<UString>::const_iterator it = word_list.begin();
+                    it != word_list.end(); ++it)
+            {
+                corpus_->add_word(*it);
+            }
 
             startPos += len;
         }

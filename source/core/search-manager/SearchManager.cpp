@@ -711,7 +711,7 @@ bool SearchManager::doSearch_(
             ScoreDoc scoreItem(pDocIterator->doc());
             START_PROFILER ( computerankscore )
             ++totalCount;
-            scoreItem.score = pMultiPropertyIterator ? 
+            scoreItem.score = pMultiPropertyIterator ?
                                         pMultiPropertyIterator->score(
                                             rankQueryProperties,
                                             propertyRankers) : 1.0;
