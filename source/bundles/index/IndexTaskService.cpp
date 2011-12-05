@@ -36,8 +36,8 @@ using namespace izenelib::driver;
 using izenelib::util::UString;
 
 #include <common/JobScheduler.h>
-#include <aggregator-manager/SearchAggregator.h>
-#include <aggregator-manager/SearchWorker.h>
+#include <aggregator-manager/IndexAggregator.h>
+#include <aggregator-manager/IndexWorker.h>
 
 
 namespace
@@ -127,7 +127,7 @@ bool IndexTaskService::indexMaster_(unsigned int numdoc)
     // scd sharding and dispatch
     std::cout<<"start scd sharding & dispatching "<<std::endl;
     string scdPath = bundleConfig_->collPath_.getScdPath() + "master";
-    if (searchAggregator_->ScdDispatch(numdoc, bundleConfig_->collectionName_, scdPath))
+    if (indexAggregator_->ScdDispatch(numdoc, bundleConfig_->collectionName_, scdPath))
     {
         // backup master
     }
@@ -140,7 +140,7 @@ bool IndexTaskService::indexMaster_(unsigned int numdoc)
     // distributed indexing request
     std::cout<<"start distributed indexing "<<std::endl;
     bool ret = true;
-    searchAggregator_->distributeRequest(bundleConfig_->collectionName_, "index", numdoc, ret);
+    indexAggregator_->distributeRequest(bundleConfig_->collectionName_, "index", numdoc, ret);
     return true;
 }
 

@@ -8,6 +8,7 @@
 #define PROCESS_DISTRIBUTE_WORKER_SERVER_H_
 
 #include <aggregator-manager/SearchWorker.h>
+#include <aggregator-manager/IndexWorker.h>
 
 #include <net/aggregator/WorkerServerBase.h>
 #include <util/singleton.h>
@@ -147,7 +148,8 @@ public:
 
     void index(request_t& req)
     {
-        WORKER_HANDLE_1_1(req, unsigned int, searchWorker_->index, bool)
+        boost::shared_ptr<IndexWorker> indexWorker = collectionHandler_->indexTaskService_->indexWorker_;
+        WORKER_HANDLE_1_1(req, unsigned int, indexWorker->index, bool)
     }
 
     /** @} */
