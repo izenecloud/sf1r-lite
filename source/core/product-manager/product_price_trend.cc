@@ -31,7 +31,6 @@ ProductPriceTrend::ProductPriceTrend(
 
 ProductPriceTrend::~ProductPriceTrend()
 {
-    Flush();
     for (TPCStorage::iterator it = tpc_storage_.begin();
             it != tpc_storage_.end(); ++it)
     {

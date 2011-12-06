@@ -61,13 +61,13 @@ class RecommendManager : public boost::noncopyable
 
 public:
     RecommendManager(
-        const std::string& path,
-        const std::string& collection_name,
-        const MiningSchema& mining_schema,
-        const boost::shared_ptr<DocumentManager>& documentManager,
-        boost::shared_ptr<QueryCorrectionSubmanager> query_correction,
-        idmlib::util::IDMAnalyzer* analyzer_,
-        uint32_t logdays);
+            const std::string& path,
+            const std::string& collection_name,
+            const MiningSchema& mining_schema,
+            const boost::shared_ptr<DocumentManager>& documentManager,
+            boost::shared_ptr<QueryCorrectionSubmanager> query_correction,
+            idmlib::util::IDMAnalyzer* analyzer,
+            uint32_t logdays);
     ~RecommendManager();
     /**
     * @brief Open the data.
@@ -79,39 +79,39 @@ public:
     void close();
 
     void insertQuery(
-        const izenelib::util::UString& queryStr, 
-        uint32_t freq = 1);
+            const izenelib::util::UString& queryStr,
+            uint32_t freq = 1);
 
 
     void insertProperty(
-        const izenelib::util::UString& queryStr, 
-        uint32_t docid);
+            const izenelib::util::UString& queryStr,
+            uint32_t docid);
 
     /**
-    * @brief get the related queries from the data base.
-    */
+     * @brief get the related queries from the data base.
+     */
     uint32_t getRelatedConcepts(
-        const izenelib::util::UString& query,
-        uint32_t maxNum,
-        std::deque<izenelib::util::UString>& queries);
+            const izenelib::util::UString& query,
+            uint32_t maxNum,
+            std::deque<izenelib::util::UString>& queries);
 
     bool getAutoFillList(
-        const izenelib::util::UString& query, 
-        std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
+            const izenelib::util::UString& query,
+            std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
 
     void RebuildForAll();
 
     void RebuildForRecommend(
-        const std::list<QueryLogType>& queryList, 
-        const std::list<PropertyLabelType>& labelList);
+            const std::list<QueryLogType>& queryList,
+            const std::list<PropertyLabelType>& labelList);
 
     void RebuildForCorrection(
-        const std::list<QueryLogType>& queryList, 
-        const std::list<PropertyLabelType>& labelList);
+            const std::list<QueryLogType>& queryList,
+            const std::list<PropertyLabelType>& labelList);
 
     void RebuildForAutofill(
-        const std::list<QueryLogType>& queryList, 
-        const std::list<PropertyLabelType>& labelList);
+            const std::list<QueryLogType>& queryList,
+            const std::list<PropertyLabelType>& labelList);
 
     uint32_t GetMaxDocId() const
     {
@@ -125,19 +125,19 @@ private:
     uint8_t QueryLogScore_(uint32_t freq);
 
     bool AddRecommendItem_(
-        MIRDatabase* db, 
-        uint32_t item_id, 
-        const izenelib::util::UString& text, 
-        uint8_t type, 
-        uint32_t score);
+            MIRDatabase* db,
+            uint32_t item_id,
+            const izenelib::util::UString& text,
+            uint8_t type,
+            uint32_t score);
 
     uint32_t getRelatedOnes_(
-        MIRDatabase* db,
-        const std::vector<termid_t>& termIdList,
-        const std::vector<double>& weightList,
-        uint32_t maxNum,
-        izenelib::am::rde_hash<uint64_t>& obtIdList ,
-        std::deque<izenelib::util::UString>& queries);
+            MIRDatabase* db,
+            const std::vector<termid_t>& termIdList,
+            const std::vector<double>& weightList,
+            uint32_t maxNum,
+            izenelib::am::rde_hash<uint64_t>& obtIdList ,
+            std::deque<izenelib::util::UString>& queries);
 
 private:
 

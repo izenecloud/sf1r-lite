@@ -25,13 +25,13 @@
 using namespace sf1r;
 
 RecommendManager::RecommendManager(
-    const std::string& path,
-    const std::string& collection_name,
-    const MiningSchema& mining_schema,
-    const boost::shared_ptr<DocumentManager>& documentManager,
-    boost::shared_ptr<QueryCorrectionSubmanager> query_correction,
-    idmlib::util::IDMAnalyzer* analyzer,
-    uint32_t logdays
+        const std::string& path,
+        const std::string& collection_name,
+        const MiningSchema& mining_schema,
+        const boost::shared_ptr<DocumentManager>& documentManager,
+        boost::shared_ptr<QueryCorrectionSubmanager> query_correction,
+        idmlib::util::IDMAnalyzer* analyzer,
+        uint32_t logdays
 )
     : path_(path)
     , isOpen_(false)
@@ -204,10 +204,10 @@ uint8_t RecommendManager::QueryLogScore_(uint32_t freq)
 }
 
 bool RecommendManager::AddRecommendItem_(
-        MIRDatabase* db, 
-        uint32_t item_id, 
-        const izenelib::util::UString& text, 
-        uint8_t type, 
+        MIRDatabase* db,
+        uint32_t item_id,
+        const izenelib::util::UString& text,
+        uint8_t type,
         uint32_t score)
 {
     MIRDocument doc;
@@ -241,7 +241,7 @@ bool RecommendManager::AddRecommendItem_(
 }
 
 void RecommendManager::RebuildForRecommend(
-        const std::list<QueryLogType>& queryList, 
+        const std::list<QueryLogType>& queryList,
         const std::list<PropertyLabelType>& labelList)
 {
     std::string newPath;
@@ -352,29 +352,29 @@ void RecommendManager::RebuildForRecommend(
 }
 
 void RecommendManager::RebuildForCorrection(
-        const std::list<QueryLogType>& queryList, 
+        const std::list<QueryLogType>& queryList,
         const std::list<PropertyLabelType>& labelList)
 {
     query_correction_->updateCogramAndDict(queryList, labelList);
 }
 
 void RecommendManager::RebuildForAutofill(
-        const std::list<QueryLogType>& queryList, 
+        const std::list<QueryLogType>& queryList,
         const std::list<PropertyLabelType>& labelList)
 {
     autofill_->buildIndex(queryList, labelList);
 }
 
 bool RecommendManager::getAutoFillList(
-        const izenelib::util::UString& query, 
+        const izenelib::util::UString& query,
         std::vector<std::pair<izenelib::util::UString,uint32_t> >& list)
 {
     return autofill_->getAutoFillList(query, list);
 }
 
 uint32_t RecommendManager::getRelatedConcepts(
-        const izenelib::util::UString& queryStr, 
-        uint32_t maxNum, 
+        const izenelib::util::UString& queryStr,
+        uint32_t maxNum,
         std::deque<izenelib::util::UString>& queries)
 {
 

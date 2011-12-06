@@ -6,7 +6,7 @@
 #include "AttrParser.h"
 
 #include <common/ValueConverter.h>
-#include <common/IndexBundleSchemaHelpers.h>
+#include <common/BundleSchemaHelpers.h>
 #include <common/Keys.h>
 
 namespace sf1r {

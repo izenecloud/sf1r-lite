@@ -12,6 +12,14 @@
 
 #include <string>
 
+namespace idmlib
+{
+namespace util
+{
+class IDMAnalyzer;
+}
+}
+
 namespace sf1r
 {
 using izenelib::util::UString;
@@ -30,8 +38,8 @@ public:
             const std::string& homePath,
             SummarizeConfig schema,
             boost::shared_ptr<DocumentManager> document_manager,
-            boost::shared_ptr<IndexManager> index_manager
-    );
+            boost::shared_ptr<IndexManager> index_manager,
+            idmlib::util::IDMAnalyzer* analyzer);
 
     ~MultiDocSummarizationSubManager();
 
@@ -60,6 +68,7 @@ private:
     SummarizeConfig schema_;
     boost::shared_ptr<DocumentManager> document_manager_;
     boost::shared_ptr<IndexManager> index_manager_;
+    idmlib::util::IDMAnalyzer* analyzer_;
 
     ParentKeyStorage* parent_key_storage_;
     SummarizationStorage* summarization_storage_;

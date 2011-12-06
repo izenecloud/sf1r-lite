@@ -97,6 +97,7 @@ MiningManager::MiningManager(
     , miningConfig_(miningConfig)
     , mining_schema_(miningSchema)
     , analyzer_(NULL)
+    , c_analyzer_(NULL)
     , kpe_analyzer_(NULL)
     , document_manager_(documentManager)
     , index_manager_(index_manager)
@@ -114,6 +115,7 @@ MiningManager::MiningManager(
 MiningManager::~MiningManager()
 {
     if (analyzer_) delete analyzer_;
+    if (c_analyzer_) delete c_analyzer_;
     if (kpe_analyzer_) delete kpe_analyzer_;
     if (groupManager_) delete groupManager_;
     if (attrManager_) delete attrManager_;
@@ -389,7 +391,7 @@ bool MiningManager::open()
             groupReranker_ = new faceted::PropertyDiversityReranker(groupManager_, diversityProperty, boostingProperty);
             groupReranker_->setGroupLabelLogger(groupLabelLoggerMap_[boostingProperty]);
             groupReranker_->setCTRManager(ctrManager_);
-            searchManager_->set_reranker(boost::bind(&faceted::PropertyDiversityReranker::rerank,groupReranker_, _1, _2, _3));
+            searchManager_->set_reranker(boost::bind(&faceted::PropertyDiversityReranker::rerank, groupReranker_, _1, _2, _3));
         }
 
         /** tdt **/
@@ -416,7 +418,8 @@ bool MiningManager::open()
                 new MultiDocSummarizationSubManager(summarization_path_,
                                                     mining_schema_.summarization_schema,
                                                     document_manager_,
-                                                    index_manager_);
+                                                    index_manager_,
+                                                    c_analyzer_);
 
            if (!mining_schema_.summarization_schema.parentKey.empty())
            {
@@ -1509,7 +1512,7 @@ void MiningManager::FinishQueryRecommendInject()
 }
 
 bool MiningManager::GetSummarizationByRawKey(
-    const izenelib::util::UString& rawKey, 
+    const izenelib::util::UString& rawKey,
     Summarization& result)
 {
     if(!summarizationManager_) return false;

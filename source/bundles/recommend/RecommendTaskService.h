@@ -163,6 +163,8 @@ public:
     bool rateItem(const RateParam& param);
 
 private:
+    void initProps_();
+
     /**
      * Convert from @p userIdStr to @p userId,
      * and from @p orderItemVec to @p itemIdVec.
@@ -253,6 +255,10 @@ private:
 private:
     RecommendBundleConfiguration& bundleConfig_;
     directory::DirectoryRotator& directoryRotator_;
+
+    // property list used in loading SCD
+    std::vector<string> userProps_;
+    std::vector<string> orderProps_;
 
     UserManager& userManager_;
     ItemManager& itemManager_;

@@ -1372,7 +1372,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 getAttribute(parentkeylog_node, "path", mining_schema.summarization_schema.parentKeyLogPath);
 
                 Iterator<Element> it("Property");
-                for (it = it.begin(task_node); it != it.end(); it++)
+                for (it = it.begin(parentkeylog_node); it != it.end(); it++)
                 {
                     getAttribute(it.Get(), "name", property_name);
                     mining_schema.summarization_schema.parentKey = property_name;
