@@ -30,12 +30,6 @@ public:
         ADD_FUNC_TO_WORKER_CALLER(IndexWorkerCaller, localWorkerCaller_, IndexWorker, index);
     }
 
-
-    bool ScdDispatch(
-            unsigned int numdoc,
-            const std::string& collectionName,
-            const std::string& scdPath);
-
     bool aggregate(const std::string& func, bool& ret, const std::vector<std::pair<workerid_t, bool> >& resultList)
     {
         if (func == "index")
@@ -45,6 +39,22 @@ public:
         }
         return false;
     }
+
+public:
+    /**
+     * Dispatch SCDs from Master node to Worker nodes
+     * with specified sharding strategy.
+     * @param numdoc    max number of docs to be processed
+     * @param collectionName
+     * @param scdPath
+     * @param shardKeyList  shard keys
+     * @return
+     */
+    bool ScdDispatch(
+            unsigned int numdoc,
+            const std::string& collectionName,
+            const std::string& scdPath,
+            const std::vector<std::string>& shardKeyList);
 };
 
 }

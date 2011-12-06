@@ -712,12 +712,16 @@ private:
     /// @param index           Pointer to the Element
     void parseIndexEcSchema(const ticpp::Element * index, CollectionMeta & collectionMeta);
 
-    /// @brief                  Parse <IndexBundle> <Schema>
+    /// @brief                  Parse <IndexBundle> <ShardSchema>
+    /// @param shardSchema      Pointer to the Element
+    void parseIndexShardSchema(const ticpp::Element * shardSchema, CollectionMeta & collectionMeta);
+
+    /// @brief                 Parse <IndexBundle> <Schema>
     /// @param index           Pointer to the Element
     void parseIndexBundleSchema(const ticpp::Element * index, CollectionMeta & collectionMeta);
 
     /// @brief                  Parse <ProductBundle> <Parameter>
-    /// @param product           Pointer to the Element
+    /// @param product          Pointer to the Element
     void parseProductBundleParam(const ticpp::Element * product, CollectionMeta & collectionMeta);
 
     /// @brief                  Parse <ProductBundle> <Schema>

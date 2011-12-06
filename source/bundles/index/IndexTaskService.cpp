@@ -41,7 +41,11 @@ bool IndexTaskService::indexMaster_(unsigned int numdoc)
 {
     // scd sharding & dispatching
     string scdPath = bundleConfig_->collPath_.getScdPath() + "index/master";
-    if (!indexAggregator_->ScdDispatch(numdoc, bundleConfig_->collectionName_, scdPath))
+    if (!indexAggregator_->ScdDispatch(
+            numdoc,
+            bundleConfig_->collectionName_,
+            scdPath,
+            bundleConfig_->indexShardKeys_))
     {
         //xxx pending
         return false;

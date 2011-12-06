@@ -26,6 +26,7 @@ void ScdSharding::setShardKeyValues(SCDDoc& scdDoc)
 {
     ShardFieldList_.clear();
 
+    std::string docidVal;
     SCDDoc::iterator propertyIter;
     for (propertyIter = scdDoc.begin(); propertyIter != scdDoc.end(); propertyIter++)
     {
@@ -39,10 +40,15 @@ void ScdSharding::setShardKeyValues(SCDDoc& scdDoc)
             ShardFieldList_.push_back(std::make_pair(propertyName, propertyValue));
             //std::cout<< "ShardFieldList_ k-v:" <<propertyName<<" - "<<propertyValue<<std::endl;
         }
+
+        if (propertyName == "DOCID")
+            docidVal = propertyValue;
     }
 
     if (ShardFieldList_.empty())
     {
-        std::cerr<<"WARN: current DOC did not match any shard key!"<<std::endl;
+        // set DOCID as default shard key if miss shard keys, xxx
+        ShardFieldList_.push_back(std::make_pair("DOCID", docidVal));
+        std::cerr<<"WARN: miss shard keys (properties) in doc: "<<docidVal<<std::endl;
     }
 }

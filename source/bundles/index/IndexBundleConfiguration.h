@@ -25,12 +25,12 @@ public:
 
     void setSchema(const std::set<PropertyConfigBase, PropertyBaseComp>& schema);
 
+    void numberProperty();
+
     void setAggregatorConfig(const net::aggregator::AggregatorConfig& aggConfig)
     {
         aggregatorConfig_ = aggConfig;
     }
-
-    void numberProperty();
 
     const bool isUnigramWildcard() { return wildcardType_ == "unigram"; }
 
@@ -76,6 +76,8 @@ public:
     IndexBundleSchema schema_;
 
     std::set<PropertyConfigBase, PropertyBaseComp> rawSchema_;
+
+    std::vector<std::string> indexShardKeys_;
 
     /// @brief whether add unigram properties
     bool bIndexUnigramProperty_;
