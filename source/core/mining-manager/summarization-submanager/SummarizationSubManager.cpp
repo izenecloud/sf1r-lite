@@ -212,16 +212,23 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
                 std::vector<UString> results;
                 if (parent_key_storage_->Get(paramUStr, results))
                 {
+                    BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
                     QueryFiltering::FilteringType filterRule;
-                    filterRule.first.first = QueryFiltering::EQUAL;
+                    filterRule.first.first = QueryFiltering::INCLUDE;
                     filterRule.first.second = schema_.foreignKeyPropName;
                     std::vector<UString>::const_iterator rit = results.begin();
                     for (; rit != results.end(); ++rit)
                     {
-                        PropertyValue v(*rit);
-                        filterRule.second.push_back(v);
-                        filtingList.push_back(filterRule);
+                        if(pBTreeIndexer->seek(schema_.foreignKeyPropName, *rit))
+                        {
+                            ///Protection
+                            ///Or else, too many unexisted keys are added
+                            PropertyValue v(*rit);
+                            filterRule.second.push_back(v);
+                        }
                     }
+                    filtingList.erase(it);
+                    filtingList.push_back(filterRule);
                 }
             }
             catch (const boost::bad_get &)
@@ -230,7 +237,6 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
                 return;
             }
         }
-        filtingList.erase(it);
     }
 }
 
