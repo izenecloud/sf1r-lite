@@ -167,6 +167,7 @@ void NodeManager::enterCluster()
     NodeData ndata;
     ndata.setValue(NodeData::NDATA_KEY_HOST, dsTopologyConfig_.curSF1Node_.host_);
     ndata.setValue(NodeData::NDATA_KEY_BA_PORT, dsTopologyConfig_.curSF1Node_.baPort_);
+    ndata.setValue(NodeData::NDATA_KEY_DATA_PORT, dsTopologyConfig_.curSF1Node_.dataPort_);
     if (dsTopologyConfig_.curSF1Node_.masterAgent_.enabled_)
     {
         ndata.setValue(NodeData::NDATA_KEY_MASTER_PORT, dsTopologyConfig_.curSF1Node_.masterAgent_.port_);

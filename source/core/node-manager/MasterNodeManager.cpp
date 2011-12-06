@@ -23,14 +23,6 @@ void MasterNodeManager::init()
     topology_.shardNum_ =  NodeManagerSingleton::get()->getDSTopologyConfig().shardNum_;
 
     curNodeInfo_ = NodeManagerSingleton::get()->getNodeInfo();
-
-//    // initialize workers,
-//    for (shardid_t shardid = 1; shardid <= topology_.shardNum_; shardid++)
-//    {
-//        boost::shared_ptr<WorkerNode> pworkerNode(new WorkerNode);
-//        pworkerNode->shardId_ = shardid;
-//        workerMap_[shardid] = pworkerNode;
-//    }
 }
 
 void MasterNodeManager::start()
@@ -63,6 +55,26 @@ void MasterNodeManager::stop()
 {
     // stop events on exit
     zookeeper_->disconnect();
+}
+
+bool MasterNodeManager::getShardReceiver(
+        unsigned int shardid,
+        std::string& host,
+        unsigned int& recvPort)
+{
+    boost::lock_guard<boost::mutex> lock(mutex_);
+
+    WorkerMapT::iterator it = workerMap_.find(shardid);
+    if (it != workerMap_.end())
+    {
+        host = it->second->host_;
+        recvPort = it->second->dataPort_;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 void MasterNodeManager::process(ZooKeeperEvent& zkEvent)
@@ -207,6 +219,7 @@ void MasterNodeManager::doStart()
 
 int MasterNodeManager::detectWorkers()
 {
+    boost::lock_guard<boost::mutex> lock(mutex_);
     std::cout<<"[MasterNodeManager] detecting Workers ..."<<std::endl;
 
     // detect workers from "current" replica
@@ -263,8 +276,18 @@ int MasterNodeManager::detectWorkers()
                         std::cout <<"Error workerPort "<<ndata.getValue(NodeData::NDATA_KEY_WORKER_PORT)
                                   <<" from "<<ndata.getValue(NodeData::NDATA_KEY_HOST)<<std::endl;
                     }
+                    try {
+                        workerMap_[shardid]->dataPort_ =
+                                boost::lexical_cast<shardid_t>(ndata.getValue(NodeData::NDATA_KEY_DATA_PORT));
+                    }
+                    catch (std::exception& e)
+                    {
+                        workerMap_[shardid]->isGood_ = false;
+                        std::cout <<"Error dataPort "<<ndata.getValue(NodeData::NDATA_KEY_DATA_PORT)
+                                  <<" from "<<ndata.getValue(NodeData::NDATA_KEY_HOST)<<std::endl;
+                    }
 
-                    // xxx check more?
+                    // xxx check more info?
                     std::cout <<"detected "<<workerMap_[shardid]->toString()<<std::endl;
                     detected ++;
                     if (workerMap_[shardid]->isGood_)

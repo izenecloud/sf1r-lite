@@ -1,5 +1,7 @@
 #include "ScdDispatcher.h"
 
+#include <node-manager/MasterNodeManager.h>
+
 #include <net/distribute/DataTransfer.h>
 
 #include <boost/filesystem.hpp>
@@ -11,8 +13,8 @@ using namespace sf1r;
 using namespace net::distribute;
 namespace bfs = boost::filesystem;
 
-ScdDispatcher::ScdDispatcher(ScdSharding* scdSharding, AggregatorConfig& aggregatorConfig)
-: scdSharding_(scdSharding), aggregatorConfig_(aggregatorConfig), scdEncoding_(izenelib::util::UString::UTF_8)
+ScdDispatcher::ScdDispatcher(ScdSharding* scdSharding)
+: scdSharding_(scdSharding), scdEncoding_(izenelib::util::UString::UTF_8)
 {
     BOOST_ASSERT(scdSharding_);
 }
@@ -116,10 +118,9 @@ bool ScdDispatcher::getScdFileList(const std::string& dir, std::vector<std::stri
 
 BatchScdDispatcher::BatchScdDispatcher(
         ScdSharding* scdSharding,
-        AggregatorConfig& aggregatorConfig,
         const std::string& collectionName,
         const std::string& dispatchTempDir)
-: ScdDispatcher(scdSharding, aggregatorConfig)
+: ScdDispatcher(scdSharding)
 , collectionName_(collectionName)
 , dispatchTempDir_(dispatchTempDir)
 {
@@ -205,7 +206,7 @@ bool BatchScdDispatcher::dispatch_impl(shardid_t shardid, SCDDoc& scdDoc)
 
     (*rof) << scdDoc;
 
-    /// xxx add shardid property?
+    // add shardid property?
     //(*rof) << "<SHARDID>" << shardid << std::endl;
 
     return true;
@@ -220,14 +221,14 @@ bool BatchScdDispatcher::finish()
     for (unsigned int shardid = scdSharding_->getMinShardID();
             shardid <= scdSharding_->getMaxShardID(); shardid++)
     {
-        const WorkerServerInfo* workerSrv = aggregatorConfig_.getWorkerSrvInfoByWorkerId(shardid);
-
-        if (workerSrv != NULL)
+        std::string host;
+        unsigned int recvPort;
+        if (MasterNodeManagerSingleton::get()->getShardReceiver(shardid, host, recvPort))
         {
             LOG(INFO) << "Transfer scd from "<<shardScdfileMap_[shardid]
-                      <<"/ to shard "<<shardid<<" ("<<workerSrv->host_<<")";
+                      <<"/ to shard "<<shardid<<" ["<<host<<":"<<recvPort<<"]";
             // thread?
-            DataTransfer transfer(workerSrv->host_, 18121); // todo, config port
+            DataTransfer transfer(host, recvPort);
             if (transfer.syncSend(shardScdfileMap_[shardid], collectionName_+"/scd/index") == 0)
             {
                 ret = true; // xxx

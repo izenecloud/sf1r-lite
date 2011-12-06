@@ -98,9 +98,10 @@ int main(int argc, char** argv)
     ScdSharding scdSharding(cfg, shardingStrategy);
 
     // create scd dispatcher
-    AggregatorConfig aggregatorConfig;
-    ScdDispatcher* scdDispatcher = new BatchScdDispatcher(&scdSharding, aggregatorConfig, "chinese-wiki");
+    ScdDispatcher* scdDispatcher = new BatchScdDispatcher(&scdSharding, "chinese-wiki");
 
+    // In this test, there is no Worker and scd transmission will fail,
+    // but it dosen't matter, because we only need to test sharding.
     scdDispatcher->dispatch(dir, maxDoc);
 
     delete shardingStrategy;

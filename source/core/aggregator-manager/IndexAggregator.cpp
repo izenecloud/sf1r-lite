@@ -40,7 +40,6 @@ bool IndexAggregator::ScdDispatch(
     // create scd dispatcher
     ScdDispatcher* scdDispatcher = new BatchScdDispatcher(
             &scdSharding,
-            MasterNodeManagerSingleton::get()->getAggregatorConfig(),
             collectionName);
 
     // do dispatch

@@ -19,6 +19,7 @@ struct SF1Node
 {
     std::string host_;
     unsigned int baPort_;
+    unsigned int dataPort_;
 
     unsigned int nodeId_;
     unsigned int replicaId_;
@@ -29,7 +30,8 @@ struct SF1Node
     std::string toString()
     {
         std::stringstream ss;
-        ss << "--[Current SF1 Node] nodeId: "<<nodeId_<<" replicaId: "<<replicaId_<<" host: "<<host_<<endl;
+        ss << "--[Current SF1 Node] nodeId: "<<nodeId_<<" replicaId: "<<replicaId_
+           <<" host: "<<host_<<"baPort: "<<baPort_<<" dataPort:"<<dataPort_<<endl;
 
         ss << masterAgent_.toString();
         ss << workerAgent_.toString();

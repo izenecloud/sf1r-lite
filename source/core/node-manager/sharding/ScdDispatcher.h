@@ -24,7 +24,7 @@ namespace sf1r{
 class ScdDispatcher
 {
 public:
-    ScdDispatcher(ScdSharding* scdSharding, AggregatorConfig& aggregatorConfig);
+    ScdDispatcher(ScdSharding* scdSharding);
 
     virtual ~ScdDispatcher() {}
 
@@ -46,7 +46,6 @@ protected:
 
 protected:
     ScdSharding* scdSharding_;
-    AggregatorConfig aggregatorConfig_;
 
     izenelib::util::UString::EncodingType scdEncoding_;
     std::string curScdFileName_;
@@ -61,7 +60,6 @@ class BatchScdDispatcher : public ScdDispatcher
 public:
     BatchScdDispatcher(
             ScdSharding* scdSharding,
-            AggregatorConfig& aggregatorConfig,
             const std::string& collectionName,
             const std::string& dispatchTempDir="./scd-dispatch-temp");
 

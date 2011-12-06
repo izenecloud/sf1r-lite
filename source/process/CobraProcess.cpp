@@ -268,7 +268,8 @@ bool CobraProcess::startDistributedServer()
 
     NodeManagerSingleton::get()->start();
 
-    CollectionDataReceiver::get()->init(18121, "./collection"); //xxx
+    unsigned int dataPort = SF1Config::get()->distributedTopologyConfig_.curSF1Node_.dataPort_;
+    CollectionDataReceiver::get()->init(dataPort, "./collection"); //xxx
     CollectionDataReceiver::get()->start();
 
     addExitHook(boost::bind(&CobraProcess::stopDistributedServer, this));

@@ -311,6 +311,7 @@ void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
     // Current SF1 node
     ticpp::Element * cursf1node = getUniqChildElement(topology, "CurrentNode");
     getAttribute(cursf1node, "host", distributedTopologyConfig_.curSF1Node_.host_);
+    getAttribute(cursf1node, "dataport", distributedTopologyConfig_.curSF1Node_.dataPort_);
     getAttribute(cursf1node, "replicaid", distributedTopologyConfig_.curSF1Node_.replicaId_);
     getAttribute(cursf1node, "nodeid", distributedTopologyConfig_.curSF1Node_.nodeId_);
 
