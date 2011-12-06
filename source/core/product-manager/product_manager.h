@@ -60,7 +60,7 @@ public:
     bool AddGroupWithInfo(const std::vector<izenelib::util::UString>& docid_list, const Document& doc, bool backup = true);
 
     bool CheckAddGroupWithInfo(const std::vector<izenelib::util::UString>& docid_list, const Document& doc);
-    
+
     bool GetMultiPriceHistory(
             PriceHistoryList& history_list,
             const std::vector<std::string>& docid_list,
@@ -77,9 +77,9 @@ public:
             TPCQueue& tpc_queue,
             const std::string& prop_name,
             const std::string& prop_value,
-            uint32_t days);
-    
-    
+            uint32_t days,
+            uint32_t count);
+
     inline const std::string& GetLastError() const
     {
         return error_;

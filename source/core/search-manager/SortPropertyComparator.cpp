@@ -5,6 +5,7 @@ namespace sf1r{
 SortPropertyComparator::SortPropertyComparator()
     : type_(UNKNOWN_DATA_PROPERTY_TYPE)
     , data_(NULL)
+    , size_(0)
 {
     initComparator();
 }
@@ -13,6 +14,7 @@ SortPropertyComparator::SortPropertyComparator(boost::shared_ptr<PropertyData> p
     : propertyData_(propData)
     , type_(propData->type_)
     , data_(propData->data_)
+    , size_(propData->size_)
 {
     initComparator();
 }
@@ -64,6 +66,7 @@ int SortPropertyComparator::compareImplDefault(ScoreDoc doc1, ScoreDoc doc2)
 
 int SortPropertyComparator::compareImplInt(ScoreDoc doc1, ScoreDoc doc2)
 {
+    if((doc1.docId >= size_)||(doc2.docId >= size_)) return 0;
     int64_t f1 = ((int64_t*)data_)[doc1.docId];
     int64_t f2 = ((int64_t*)data_)[doc2.docId];
     if (f1 < f2) return -1;
@@ -73,6 +76,7 @@ int SortPropertyComparator::compareImplInt(ScoreDoc doc1, ScoreDoc doc2)
 
 int SortPropertyComparator::compareImplUnsigned(ScoreDoc doc1, ScoreDoc doc2)
 {
+    if((doc1.docId >= size_)||(doc2.docId >= size_)) return 0;
     uint64_t f1 = ((uint64_t*)data_)[doc1.docId];
     uint64_t f2 = ((uint64_t*)data_)[doc2.docId];
     if (f1 < f2) return -1;
@@ -82,6 +86,7 @@ int SortPropertyComparator::compareImplUnsigned(ScoreDoc doc1, ScoreDoc doc2)
 
 int SortPropertyComparator::compareImplFloat(ScoreDoc doc1, ScoreDoc doc2)
 {
+    if((doc1.docId >= size_)||(doc2.docId >= size_)) return 0;
     float f1 = ((float*)data_)[doc1.docId];
     float f2 = ((float*)data_)[doc2.docId];
     if (f1 < f2) return -1;
@@ -91,6 +96,7 @@ int SortPropertyComparator::compareImplFloat(ScoreDoc doc1, ScoreDoc doc2)
 
 int SortPropertyComparator::compareImplDouble(ScoreDoc doc1, ScoreDoc doc2)
 {
+    if((doc1.docId >= size_)||(doc2.docId >= size_)) return 0;
     double f1 = ((double*)data_)[doc1.docId];
     double f2 = ((double*)data_)[doc2.docId];
     if (f1 < f2) return -1;

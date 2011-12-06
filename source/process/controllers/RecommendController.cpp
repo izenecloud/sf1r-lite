@@ -19,7 +19,7 @@
 
 #include <common/IndexBundleSchemaHelpers.h>
 #include <common/Keys.h>
-#include <common/Utilities.h> // Utilities::toUpper()
+#include <common/Utilities.h> // Utilities::toUpperCopy()
 
 namespace
 {
@@ -76,6 +76,7 @@ RecommendController::RecommendController()
     recTypeMap_["BOE"] = BASED_ON_EVENT;
     recTypeMap_["BOB"] = BASED_ON_BROWSE_HISTORY;
     recTypeMap_["BOS"] = BASED_ON_SHOP_CART;
+    recTypeMap_["BOR"] = BASED_ON_RANDOM;
 }
 
 bool RecommendController::requireProperty(
@@ -264,6 +265,7 @@ bool RecommendController::value2ItemCondition(ItemCondition& itemCondition)
  * Request
  * @code
  * {
+ *   "collection": "example",
  *   "resource": {
  *     "USERID": "user_001",
  *     "gender": "male",
@@ -313,6 +315,7 @@ void RecommendController::add_user()
  * Request
  * @code
  * {
+ *   "collection": "example",
  *   "resource": {
  *     "USERID": "user_001",
  *     "gender": "male",
@@ -360,6 +363,7 @@ void RecommendController::update_user()
  * Request
  * @code
  * {
+ *   "collection": "example",
  *   "resource": {
  *     "USERID": "user_001"
  *   }
@@ -405,6 +409,7 @@ void RecommendController::remove_user()
  * Request
  * @code
  * {
+ *   "collection": "example",
  *   "resource": {
  *     "USERID": "user_001"
  *   }
@@ -465,9 +470,8 @@ void RecommendController::get_user()
  *   - @b USERID* (@c String): a unique user identifier.
  *   - @b ITEMID* (@c String): a unique item identifier.
  *   - @b is_recommend_item (@c Bool = @c false): this is an important flag to give feedback on recommendation result.@n
- *     @c true for @b USERID visits @b ITEMID because it was recommended to that user before,@n
- *     otherwise, @c false is set.
- *
+ *     If @b USERID visits @b ITEMID because it was recommended to that user, you need to specify this flag as @c true,@n
+ *     otherwise, you need to specify this flag as @c false.
  * @section response
  *
  * - @b header (@c Object): Property @b success gives the result, true or false.
@@ -477,6 +481,7 @@ void RecommendController::get_user()
  * Request
  * @code
  * {
+ *   "collection": "example",
  *   "resource": {
  *     "session_id": "session_001",
  *     "USERID": "user_001",
@@ -534,6 +539,7 @@ void RecommendController::visit_item()
  * Request
  * @code
  * {
+ *   "collection": "example",
  *   "resource": {
  *     "USERID": "user_001",
  *     "items": [
@@ -615,6 +621,7 @@ void RecommendController::purchase_item()
  * Request
  * @code
  * {
+ *   "collection": "example",
  *   "resource": {
  *     "USERID": "user_001",
  *     "items": [
@@ -700,6 +707,7 @@ void RecommendController::update_shopping_cart()
  * Request
  * @code
  * {
+ *   "collection": "example",
  *   "resource": {
  *     "event": "wish_list",
  *     "USERID": "user_001",
@@ -766,6 +774,7 @@ void RecommendController::track_event()
  * Request
  * @code
  * {
+ *   "collection": "example",
  *   "resource": {
  *     "USERID": "user_001",
  *     "ITEMID": "item_001",
@@ -826,32 +835,42 @@ bool RecommendController::parseRateParam(RateParam& param)
  *
  * - @b collection* (@c String): Get recommendation result in this collection.
  * - @b resource* (@c Object): A resource of the request for recommendation result.
- *   - @b rec_type* (@c String): Specify one of the 6 recommendation types, each with the acronym below:
- *     - @b FBT (<b>Frequently Bought Together</b>): get the items frequently bought together with @b input_items in one order.
- *     - @b BAB (<b>Bought Also Bought</b>): get the items also bought by the users who have bought @b input_items.
- *     - @b VAV (<b>Viewed Also View</b>): get the items also viewed by the users who have viewed @b input_items.@n
- *       In current version, it supports recommending items based on only one input item,@n
- *       that is, only <b> input_items[0]</b> is used as input, and the rest items in @b input_items are ignored.
- *     - @b BOE (<b>Based on Event</b>): get the recommendation items based on the user events by @b USERID,@n
+ *   - @b rec_type* (@c String): Specify one of the 7 recommendation types, each with the acronym below:
+ *     - @b FBT (<b>Frequently Bought Together</b>)@n
+ *       Get the items frequently bought together with @b input_items in one order.@n@n
+ *     - @b BAB (<b>Bought Also Bought</b>)@n
+ *       Get the items also bought by the users who have bought @b input_items.@n@n
+ *     - @b VAV (<b>Viewed Also View</b>)@n
+ *       Get the items also viewed by the users who have viewed @b input_items.@n
+ *       In current version, it supports only one input item, that is, only <b> input_items[0]</b> is used as input,@n
+ *       and the rest items in @b input_items are ignored.@n@n
+ *     - @b BOE (<b>Based on Event</b>)@n
+ *       Get the recommendation items based on the user events by @b USERID,@n
  *       which user events are from @c purchase_item(), @c update_shopping_cart(), @c track_event() and @c rate_item().@n
- *       The parameter @b input_items is not used for this recommendation type.
- *     - @b BOB (<b>Based on Browse History</b>): get the recommendation items based on the browse history of user @b USERID.@n
- *       If @b input_items is specified, the @b input_items would be used as the user's browse history.@n
- *       Otherwise, you have to specify both @b USERID and @b session_id, then the items added in @c visit_item() with the same @b USERID and @b session_id would be used as browse history.@n
- *       In the recommendation results, the items added by @c purchase_item(), @c update_shopping_cart(), @c track_event() and @c rate_item() would be excluded.
- *     - @b BOS (<b>Based on Shopping Cart</b>): get the recommendation items based on the shopping cart of user @b USERID.@n
- *       If @b input_items is specified, the @b input_items would be used as the items in user's shopping cart.@n
- *       Otherwise, the items added in @c update_shopping_cart() with the same @b USERID would be used as shoppint cart.@n
- *       In the recommendation results, the items added by @c purchase_item(), @c update_shopping_cart(), @c track_event() and @c rate_item() would be excluded.
+ *       The parameter @b input_items is not used for this recommendation type.@n@n
+ *     - @b BOB (<b>Based on Browse History</b>)@n
+ *       Get the recommendation items based on user's browse history.@n
+ *       For registered user, you need to specify both @b USERID and @b session_id,@n
+ *       then the items added in @c visit_item() with the same @b USERID and @b session_id would be used as browse history.@n
+ *       For anonymous user without @b USERID, you need to specify @b input_items as the user's browse history.@n@n
+ *     - @b BOS (<b>Based on Shopping Cart</b>)@n
+ *       Get the recommendation items based on user's shopping cart.@n
+ *       For registered user, you need to specify @b USERID,@n
+ *       then the items added in @c update_shopping_cart() with the same @b USERID would be used as shopping cart.@n
+ *       For anonymous user without @b USERID, you need to specify @b input_items as the user's shopping cart.@n@n
+ *     - @b BOR (<b>Based on Random</b>)@n
+ *       Get randomly selected items as recommendation results.@n
+ *       If @b input_items is specified, they would be excluded from recommendation results.@n
+ *       If @b USERID is specified, the items from the user's events would also be excluded from recommendation results.@n@n
  *   - @b max_count (@c Uint = 10): max item number allowed in recommendation result.
  *   - @b USERID (@c String): a unique user identifier.@n
- *     This parameter is required for rec_type of @b BOE, and optional for @b BOB and @b BOS.
+ *     This parameter is required for rec_type of @b BOE, and optional for @b BOB, @b BOS and @b BOR.
  *   - @b session_id (@c String): a session id.@n
  *     A session id is a unique identifier to identify the user's current interaction session.@n
  *     For each session between user logging in and logging out, the session id should be unique and not changed.@n
  *     In current version, this parameter is only used in @b BOB rec_type.
  *   - @b input_items (@c Array): the input items for recommendation.@n
- *     This parameter is required for rec_type of @b FBT, @b BAB, @b VAV, and optional for @b BOB and @b BOS.
+ *     This parameter is required for rec_type of @b FBT, @b BAB, @b VAV, and optional for @b BOB, @b BOS and @b BOR.
  *     - @b ITEMID* (@c String): a unique item identifier.
  *   - @b include_items (@c Array): the items must be included in recommendation result.
  *     - @b ITEMID* (@c String): a unique item identifier.
@@ -868,7 +887,7 @@ bool RecommendController::parseRateParam(RateParam& param)
  *   - @b ITEMID (@c String): a unique item identifier.
  *   - @b weight (@c Double): the recommendation weight, if this value is available, the items would be sorted by this value decreasingly.
  *   - @b reasons (@c Array): the reasons why this item is recommended. Each is an event which has major influence on recommendation.@n
- *     Please note that the @b reasons result would only be returned for rec_type of @b BOE, @b BOB, @b BOS.
+ *     Please note that the @b reasons result would only be returned for rec_type of @b BOE, @b BOB and @b BOS.
  *     - @b event (@c String): the event type, it could be @b purchase, @b shopping_cart, @b browse, @b rate, or the event values in @c track_event().
  *     - @b ITEMID (@c String): a unique item identifier, which item appears in the above event.
  *     - @b value (@c String): if @b event is @b rate, the @b value would be returned as rating star, such as "5".
@@ -880,6 +899,7 @@ bool RecommendController::parseRateParam(RateParam& param)
  * Request
  * @code
  * {
+ *   "collection": "example",
  *   "resource": {
  *     "rec_type": "BOE",
  *     "max_count": 20,
@@ -942,7 +962,7 @@ bool RecommendController::parseRecommendParam(RecommendParam& param)
     param.userIdStr = asString(resourceValue[Keys::USERID]);
     param.sessionIdStr = asString(resourceValue[Keys::session_id]);
 
-    std::map<std::string, int>::const_iterator mapIt = recTypeMap_.find(Utilities::toUpper(recTypeStr));
+    std::map<std::string, int>::const_iterator mapIt = recTypeMap_.find(Utilities::toUpperCopy(recTypeStr));
     if (mapIt == recTypeMap_.end())
     {
         response().addError("Unknown recommendation type \"" + recTypeStr + "\" in request[resource][rec_type].");
@@ -1032,6 +1052,7 @@ void RecommendController::renderRecommendResult(const RecommendParam& param, con
  * Request
  * @code
  * {
+ *   "collection": "example",
  *   "resource": {
  *     "max_count": 20,
  *     "min_freq": 10

@@ -96,7 +96,7 @@ public:
     ///load data for BTree index.
     ///@param data - the buffer provided by user
     template<typename T>
-    void loadPropertyDataForSorting(const string& property, T* &data)
+    void loadPropertyDataForSorting(const string& property, T* &data, size_t&size)
     {
 //         int32_t fid = getPropertyIDByName(1,property);
 //         collectionid_t cid = 1;
@@ -114,11 +114,11 @@ public:
 //             data = NULL;
 //         }
         BTreeIndexer<T>* pBTreeIndexer = pBTreeIndexer_->getIndexer<T>(property);
-        size_t maxLength = getIndexReader()->maxDoc()+1;
+        size = getIndexReader()->maxDoc()+1;
         T low = NumericUtil<T>::Low();
         T high = NumericUtil<T>::High();
-        data = new T[maxLength]();
-        if (pBTreeIndexer->getValueBetween(low,high,maxLength, data) == 0)
+        data = new T[size]();
+        if (pBTreeIndexer->getValueBetween(low,high,size, data) == 0)
         {
             delete[] data;
             data = NULL;

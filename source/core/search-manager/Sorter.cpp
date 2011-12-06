@@ -55,23 +55,23 @@ SortPropertyCache::SortPropertyCache(IndexManager* pIndexer, IndexBundleConfigur
 void SortPropertyCache::loadSortData(const std::string& property, PropertyDataType type)
 {
     void* data = NULL;
-
+    size_t size = 0;
     switch (type)
     {
     case INT_PROPERTY_TYPE:
-        pIndexer_->loadPropertyDataForSorting(property, (int64_t*&)data);
+        pIndexer_->loadPropertyDataForSorting(property, (int64_t*&)data, size);
         break;
 
     case UNSIGNED_INT_PROPERTY_TYPE:
-        pIndexer_->loadPropertyDataForSorting(property, (uint64_t*&)data);
+        pIndexer_->loadPropertyDataForSorting(property, (uint64_t*&)data, size);
         break;
 
     case FLOAT_PROPERTY_TYPE:
-        pIndexer_->loadPropertyDataForSorting(property, (float*&)data);
+        pIndexer_->loadPropertyDataForSorting(property, (float*&)data, size);
         break;
 
     case DOUBLE_PROPERTY_TYPE:
-        pIndexer_->loadPropertyDataForSorting(property, (double*&)data);
+        pIndexer_->loadPropertyDataForSorting(property, (double*&)data, size);
         break;
 
     default:
@@ -80,7 +80,7 @@ void SortPropertyCache::loadSortData(const std::string& property, PropertyDataTy
 
     if (data)
     {
-        sortDataCache_[property].reset(new PropertyData(type, data));
+        sortDataCache_[property].reset(new PropertyData(type, data, size));
     }
 }
 

@@ -18,7 +18,8 @@ namespace sf1r {
  * @brief Computes the score in the way s.t. a term in high proximity area
  * will have a high weight.
  */
-class PlmLanguageRanker : public PropertyRanker {
+class PlmLanguageRanker : public PropertyRanker
+{
 public:
     /**
      * @param termProximityMeasure term proximity calculation delegatee,
@@ -27,9 +28,9 @@ public:
      * @param proximity the paramter in BTS-KL model
      */
     explicit PlmLanguageRanker(
-        const TermProximityMeasure* termProximityMeasure,
-        float smooth = LANGUAGE_RANKER_SMOOTH,
-        float proximity = LANGUAGE_RANKER_PROXIMITY
+            const TermProximityMeasure* termProximityMeasure,
+            float smooth = LANGUAGE_RANKER_SMOOTH,
+            float proximity = LANGUAGE_RANKER_PROXIMITY
     );
 
     ~PlmLanguageRanker();
@@ -38,12 +39,20 @@ public:
     PlmLanguageRanker& operator=(const PlmLanguageRanker& rhs);
 
     void setTermProximityMeasure(
-        const TermProximityMeasure* termProximityMeasure
+            const TermProximityMeasure* termProximityMeasure
     );
 
+    float getScoreSVD(
+            const RankQueryProperty& queryProperty,
+            const RankDocumentProperty& documentProperty,
+            std::vector<double> queryTF_d,
+            std::vector<double> queryTF,
+            std::vector<double> collTF
+    ) const;
+
     float getScore(
-        const RankQueryProperty& queryProperty,
-        const RankDocumentProperty& documentProperty
+            const RankQueryProperty& queryProperty,
+            const RankDocumentProperty& documentProperty
     ) const;
 
     /**
@@ -53,6 +62,15 @@ public:
     {
         return true;
     }
+
+    void setMu(float mu ) {
+        smoothArg_ = mu;
+    }
+
+    void setLambda(float prox) {
+        proximityArg_ = prox;
+    }
+
 
     PlmLanguageRanker* clone() const;
 

@@ -18,6 +18,8 @@
 #include "similarity-detection-submanager/DocWeightListPrunedInvertedIndexReader.h"
 #include "similarity-detection-submanager/SimilarityIndex.h"
 
+#include "summarization-submanager/SummarizationSubManager.h"
+
 #include "faceted-submanager/ontology_manager.h"
 #include "faceted-submanager/group_manager.h"
 #include "faceted-submanager/attr_manager.h"
@@ -78,51 +80,53 @@ std::string MiningManager::system_resource_path_;
 std::string MiningManager::system_working_path_;
 
 MiningManager::MiningManager(
-    const std::string& collectionDataPath, 
-    const std::string& queryDataPath,
-    const boost::shared_ptr<DocumentManager>& documentManager,
-    const boost::shared_ptr<IndexManager>& index_manager,
-    const boost::shared_ptr<SearchManager>& searchManager,
-    const boost::shared_ptr<IDManager>& idManager,
-    const std::string& collectionName,
-    const schema_type& schema,
-    const MiningConfig& miningConfig,
-    const MiningSchema& miningSchema)
-        :collectionDataPath_(collectionDataPath)
-        , queryDataPath_(queryDataPath)
-        , collectionName_(collectionName)
-        , schema_(schema)
-        , miningConfig_(miningConfig)
-        , mining_schema_(miningSchema)
-        , analyzer_(NULL)
-        , kpe_analyzer_(NULL)
-        , document_manager_(documentManager)
-        , index_manager_(index_manager)
-        , searchManager_(searchManager)
-        , tgInfo_(NULL)
-        , idManager_(idManager)
-        , groupManager_(NULL)
-        , attrManager_(NULL)
-        , groupReranker_(NULL)
-        , tdt_storage_(NULL)
+        const std::string& collectionDataPath,
+        const std::string& queryDataPath,
+        const boost::shared_ptr<DocumentManager>& documentManager,
+        const boost::shared_ptr<IndexManager>& index_manager,
+        const boost::shared_ptr<SearchManager>& searchManager,
+        const boost::shared_ptr<IDManager>& idManager,
+        const std::string& collectionName,
+        const schema_type& schema,
+        const MiningConfig& miningConfig,
+        const MiningSchema& miningSchema)
+    : collectionDataPath_(collectionDataPath)
+    , queryDataPath_(queryDataPath)
+    , collectionName_(collectionName)
+    , schema_(schema)
+    , miningConfig_(miningConfig)
+    , mining_schema_(miningSchema)
+    , analyzer_(NULL)
+    , kpe_analyzer_(NULL)
+    , document_manager_(documentManager)
+    , index_manager_(index_manager)
+    , searchManager_(searchManager)
+    , tgInfo_(NULL)
+    , idManager_(idManager)
+    , groupManager_(NULL)
+    , attrManager_(NULL)
+    , groupReranker_(NULL)
+    , tdt_storage_(NULL)
+    , summarizationManager_(NULL)
 {
 }
 
 MiningManager::~MiningManager()
 {
-    if(analyzer_) delete analyzer_;
-    if(kpe_analyzer_) delete kpe_analyzer_;
-    if(groupManager_) delete groupManager_;
-    if(attrManager_) delete attrManager_;
-    if(groupReranker_) delete groupReranker_;
-    if(tdt_storage_) delete tdt_storage_;
+    if (analyzer_) delete analyzer_;
+    if (kpe_analyzer_) delete kpe_analyzer_;
+    if (groupManager_) delete groupManager_;
+    if (attrManager_) delete attrManager_;
+    if (groupReranker_) delete groupReranker_;
+    if (tdt_storage_) delete tdt_storage_;
+    if (summarizationManager_) delete summarizationManager_;
     close();
 }
 
 void MiningManager::close()
 {
     for (GroupLabelLoggerMap::iterator it = groupLabelLoggerMap_.begin();
-        it != groupLabelLoggerMap_.end(); ++it)
+            it != groupLabelLoggerMap_.end(); ++it)
     {
         delete it->second;
     }
@@ -179,7 +183,7 @@ bool MiningManager::open()
 
         IDMAnalyzerConfig config2 = idmlib::util::IDMAnalyzerConfig::GetCommonConfig(kma_path,cma_path,jma_path);
         c_analyzer_ = new idmlib::util::IDMAnalyzer(config2);
-        if( !c_analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct") )
+        if ( !c_analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct") )
         {
             return false;
         }
@@ -209,7 +213,7 @@ bool MiningManager::open()
             tgManager_.reset(new TaxonomyGenerationSubManager(miningConfig_.taxonomy_param,labelManager_, analyzer_));
 
             label_sim_collector_.reset(new SimCollectorType(tg_label_sim_table_path_, 10));
-            if(!label_sim_collector_->Open())
+            if (!label_sim_collector_->Open())
             {
                 std::cerr<<"open label sim collector failed"<<std::endl;
             }
@@ -221,13 +225,13 @@ bool MiningManager::open()
         uint32_t logdays = 7;
 
         qcManager_.reset(new QueryCorrectionSubmanager(queryDataPath_, miningConfig_.query_correction_param.enableEK,
-                    miningConfig_.query_correction_param.enableCN));
+                         miningConfig_.query_correction_param.enableCN));
         rmDb_.reset(new RecommendManager(queryDataPath_, collectionName_, mining_schema_, document_manager_,
-                    qcManager_, analyzer_, logdays));
+                                         qcManager_, analyzer_, logdays));
 
         /** log manager */
         MiningQueryLogHandler* handler = MiningQueryLogHandler::getInstance();
-        if(!handler->cronStart(miningConfig_.recommend_param.cron))
+        if (!handler->cronStart(miningConfig_.recommend_param.cron))
         {
             std::cout<<"Init query long cron task failed."<<std::endl;
             return false;
@@ -301,9 +305,9 @@ bool MiningManager::open()
         }
 
         /** group */
-        if( mining_schema_.group_enable )
+        if ( mining_schema_.group_enable )
         {
-            if(groupManager_) delete groupManager_;
+            if (groupManager_) delete groupManager_;
             std::string groupPath = prefix_path + "/group";
 
             groupManager_ = new faceted::GroupManager(document_manager_.get(), groupPath);
@@ -315,9 +319,9 @@ bool MiningManager::open()
         }
 
         /** attr */
-        if( mining_schema_.attr_enable )
+        if ( mining_schema_.attr_enable )
         {
-            if(attrManager_) delete attrManager_;
+            if (attrManager_) delete attrManager_;
             std::string attrPath = prefix_path + "/attr";
 
             attrManager_ = new faceted::AttrManager(document_manager_.get(), attrPath);
@@ -331,28 +335,28 @@ bool MiningManager::open()
         if (groupManager_ || attrManager_)
         {
             faceted::GroupFilterBuilder* filterBuilder = new faceted::GroupFilterBuilder(mining_schema_.group_properties,
-                                                                                         groupManager_,
-                                                                                         attrManager_,
-                                                                                         searchManager_.get());
+                    groupManager_,
+                    attrManager_,
+                    searchManager_.get());
             searchManager_->setGroupFilterBuilder(filterBuilder);
         }
 
         /** group label log */
-        if( mining_schema_.group_enable )
+        if ( mining_schema_.group_enable )
         {
             std::string logPath = prefix_path + "/group_label_log";
             try
             {
                 FSUtil::createDir(logPath);
             }
-            catch(FileOperationException& e)
+            catch (FileOperationException& e)
             {
                 LOG(ERROR) << "exception in FSUtil::createDir: " << e.what();
                 return false;
             }
 
             for (std::vector<GroupConfig>::const_iterator it = mining_schema_.group_properties.begin();
-                it != mining_schema_.group_properties.end(); ++it)
+                    it != mining_schema_.group_properties.end(); ++it)
             {
                 if (! it->isStringType())
                     continue;
@@ -389,18 +393,32 @@ bool MiningManager::open()
         }
 
         /** tdt **/
-        if( mining_schema_.tdt_enable )
+        if ( mining_schema_.tdt_enable )
         {
             tdt_path_ = prefix_path + "/tdt";
             boost::filesystem::create_directories(tdt_path_);
             std::string tdt_storage_path = tdt_path_+"/storage";
             tdt_storage_ = new TdtStorageType(tdt_storage_path);
-            if(!tdt_storage_->Open())
+            if (!tdt_storage_->Open())
             {
                 std::cerr<<"tdt init failed"<<std::endl;
                 return false;
             }
         }
+
+
+        /** Summarization */
+        if ( mining_schema_.summarization_enable)
+        {
+            summarization_path_ = prefix_path + "/summarization";
+            boost::filesystem::create_directories(summarization_path_);
+            summarizationManager_ =
+                new MultiDocSummarizationSubManager(summarization_path_
+                                                    ,mining_schema_.summarization_schema
+                                                    ,document_manager_
+                                                    ,index_manager_);
+        }
+
 
         //do mining continue;
         try
@@ -552,22 +570,22 @@ bool MiningManager::DoMiningCollection()
     }
 
     //do group
-    if( mining_schema_.group_enable )
+    if ( mining_schema_.group_enable )
     {
         groupManager_->processCollection();
     }
 
     //do attr
-    if( mining_schema_.attr_enable )
+    if ( mining_schema_.attr_enable )
     {
         attrManager_->processCollection();
     }
 
     //do tdt
-    if( mining_schema_.tdt_enable )
+    if ( mining_schema_.tdt_enable )
     {
         idmlib::tdt::Storage* next_storage = tdt_storage_->Next();
-        if(next_storage==NULL)
+        if (next_storage==NULL)
         {
             std::cerr<<"can not get next tdt storage"<<std::endl;
         }
@@ -579,20 +597,20 @@ bool MiningManager::DoMiningCollection()
             std::cout<<"got dm"<<std::endl;
             tdt_manager.SetDataSource(p_dm);
             tdt_manager.Process(next_storage);
-            if(!tdt_storage_->EnsureSwitch())
+            if (!tdt_storage_->EnsureSwitch())
             {
                 std::cerr<<"can not switch tdt storage"<<std::endl;
             }
-    //         boost::gregorian::date start = boost::gregorian::from_string("2011-03-01");
-    //         boost::gregorian::date end = boost::gregorian::from_string("2011-03-31");
-    //         std::vector<izenelib::util::UString> topic_list;
-    //         GetTdtInTimeRange(start, end, topic_list);
-    //         for(uint32_t i=0;i<topic_list.size();i++)
-    //         {
-    //             std::string str;
-    //             topic_list[i].convertString(str, izenelib::util::UString::UTF_8);
-    //             std::cout<<"find topic in date range : "<<str<<std::endl;
-    //         }
+            //         boost::gregorian::date start = boost::gregorian::from_string("2011-03-01");
+            //         boost::gregorian::date end = boost::gregorian::from_string("2011-03-31");
+            //         std::vector<izenelib::util::UString> topic_list;
+            //         GetTdtInTimeRange(start, end, topic_list);
+            //         for(uint32_t i=0;i<topic_list.size();i++)
+            //         {
+            //             std::string str;
+            //             topic_list[i].convertString(str, izenelib::util::UString::UTF_8);
+            //             std::cout<<"find topic in date range : "<<str<<std::endl;
+            //         }
         }
     }
 
@@ -610,6 +628,12 @@ bool MiningManager::DoMiningCollection()
             computeSimilarityESA_(mining_schema_.sim_properties);
         }
         MEMLOG("[Mining] SIM finished.");
+    }
+
+    // do Summarization
+    if ( mining_schema_.summarization_enable )
+    {
+        summarizationManager_->EvaluateSummarization();
     }
     return true;
 }
@@ -731,8 +755,8 @@ bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
 }
 
 bool MiningManager::getSimilarImageDocIdList(
-    const std::string& targetImageURI,
-    SimilarImageDocIdList& imageDocIdList
+        const std::string& targetImageURI,
+        SimilarImageDocIdList& imageDocIdList
 )
 {
     return false;
@@ -845,8 +869,8 @@ bool MiningManager::getRecommendQuery_(const izenelib::util::UString& queryStr,
 }
 
 bool MiningManager::getReminderQuery(
-    std::vector<izenelib::util::UString>& popularQueries,
-    std::vector<izenelib::util::UString>& realtimeQueries)
+        std::vector<izenelib::util::UString>& popularQueries,
+        std::vector<izenelib::util::UString>& realtimeQueries)
 {
     return true;
 }
@@ -959,7 +983,8 @@ bool MiningManager::computeSimilarityESA_(const std::vector<std::string>& proper
         std::string wikiIndexdir = system_resource_path_ + "/sim/esa";
         cout <<wikiIndexdir<<endl;
         ExplicitSemanticInterpreter esInter(wikiIndexdir, esaSimTmpPath);
-        if (!esInter.getWikiIndexState()) {
+        if (!esInter.getWikiIndexState())
+        {
             std::cerr << "WikiIndex load failed! \n"<< std::endl;
             return false;
         }
@@ -995,7 +1020,7 @@ bool MiningManager::computeSimilarityESA_(const std::vector<std::string>& proper
         // remove tmp files
         boost::filesystem::remove_all(esaSimTmpPath);
     }
-    catch(std::exception& ex)
+    catch (std::exception& ex)
     {
         std::cerr<<"Exception:"<<ex.what()<<std::endl;
     }
@@ -1031,14 +1056,14 @@ bool MiningManager::getSimilarDocIdList(uint32_t documentId, uint32_t maxNum,
 }
 bool MiningManager::getSimilarLabelList(uint32_t label_id, std::vector<uint32_t>& sim_list)
 {
-    if(!label_sim_collector_) return false;
+    if (!label_sim_collector_) return false;
     return label_sim_collector_->GetContainer()->Get(label_id, sim_list);
 
 }
 
 bool MiningManager::getSimilarLabelStringList(uint32_t label_id, std::vector<izenelib::util::UString>& sim_list)
 {
-    if(!labelManager_) return false;
+    if (!labelManager_) return false;
     std::vector<uint32_t> sim_id_list;
     if (!getSimilarLabelList(label_id, sim_id_list)) return false;
     for (uint32_t i=0;i<sim_id_list.size();i++)
@@ -1098,7 +1123,7 @@ void MiningManager::printSimilarLabelResult_(uint32_t label_id)
 
 bool MiningManager::getLabelListByDocId(uint32_t docid, std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list)
 {
-    if(!labelManager_) return false;
+    if (!labelManager_) return false;
     std::vector<uint32_t> label_id_list;
     if (!labelManager_->getSortedLabelsByDocId(docid, label_id_list))
     {
@@ -1223,7 +1248,7 @@ bool MiningManager::addSimilarityResult_(KeywordSearchResult& miaInput)
     if ( !similarityIndex_ && !similarityIndexEsa_) return true;
     miaInput.numberOfSimilarDocs_.resize(miaInput.topKDocs_.size());
 
-    for(uint32_t i=0;i<miaInput.topKDocs_.size();i++)
+    for (uint32_t i=0;i<miaInput.topKDocs_.size();i++)
     {
         uint32_t docid = miaInput.topKDocs_[i];
         uint32_t count = 0;
@@ -1267,7 +1292,7 @@ bool MiningManager::clickGroupLabel(
 )
 {
     GroupLabelLogger* logger = groupLabelLoggerMap_[propName];
-    if(logger)
+    if (logger)
     {
         faceted::PropValueTable::pvid_t pvId = propValueId_(propName, groupPath);
         if (pvId)
@@ -1290,7 +1315,7 @@ bool MiningManager::getFreqGroupLabel(
 )
 {
     GroupLabelLogger* logger = groupLabelLoggerMap_[propName];
-    if(logger)
+    if (logger)
     {
         std::vector<faceted::PropValueTable::pvid_t> pvIdVec;
         if (logger->getFreqLabel(query, limit, pvIdVec, freqVec))
@@ -1309,14 +1334,14 @@ bool MiningManager::getFreqGroupLabel(
             }
 
             for (std::vector<faceted::PropValueTable::pvid_t>::const_iterator idIt = pvIdVec.begin();
-                idIt != pvIdVec.end(); ++idIt)
+                    idIt != pvIdVec.end(); ++idIt)
             {
                 std::vector<izenelib::util::UString> ustrPath;
                 propValueTable->propValuePath(*idIt, ustrPath);
 
                 std::vector<std::string> path;
                 for (std::vector<izenelib::util::UString>::const_iterator ustrIt = ustrPath.begin();
-                    ustrIt != ustrPath.end(); ++ustrIt)
+                        ustrIt != ustrPath.end(); ++ustrIt)
                 {
                     std::string str;
                     ustrIt->convertString(str, UString::UTF_8);
@@ -1338,19 +1363,19 @@ bool MiningManager::getFreqGroupLabel(
 }
 
 faceted::PropValueTable::pvid_t MiningManager::propValueId_(
-    const std::string& propName,
-    const std::vector<std::string>& groupPath
+        const std::string& propName,
+        const std::vector<std::string>& groupPath
 ) const
 {
     faceted::PropValueTable::pvid_t pvId = 0;
     const faceted::PropValueTable* propValueTable = NULL;
 
     if (groupManager_
-        && (propValueTable = groupManager_->getPropValueTable(propName)))
+            && (propValueTable = groupManager_->getPropValueTable(propName)))
     {
         std::vector<izenelib::util::UString> ustrPath;
         for (std::vector<std::string>::const_iterator it = groupPath.begin();
-            it != groupPath.end(); ++it)
+                it != groupPath.end(); ++it)
         {
             ustrPath.push_back(izenelib::util::UString(*it, UString::UTF_8));
         }
@@ -1360,7 +1385,7 @@ faceted::PropValueTable::pvid_t MiningManager::propValueId_(
         {
             std::string pathStr;
             for (std::vector<std::string>::const_iterator it = groupPath.begin();
-                it != groupPath.end(); ++it)
+                    it != groupPath.end(); ++it)
             {
                 pathStr += *it;
                 pathStr += '>';
@@ -1377,13 +1402,13 @@ faceted::PropValueTable::pvid_t MiningManager::propValueId_(
 }
 
 bool MiningManager::setTopGroupLabel(
-    const std::string& query,
-    const std::string& propName,
-    const std::vector<std::string>& groupPath
+        const std::string& query,
+        const std::string& propName,
+        const std::vector<std::string>& groupPath
 )
 {
     GroupLabelLogger* logger = groupLabelLoggerMap_[propName];
-    if(logger)
+    if (logger)
     {
         faceted::PropValueTable::pvid_t pvId = 0;
         if (!groupPath.empty())
@@ -1407,7 +1432,7 @@ bool MiningManager::setTopGroupLabel(
 bool MiningManager::GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list)
 {
     idmlib::tdt::TimeIdType start_date;
-    if(!idmlib::util::TimeUtil::GetDateByUString(start, start_date))
+    if (!idmlib::util::TimeUtil::GetDateByUString(start, start_date))
     {
         std::string start_str;
         start.convertString(start_str, izenelib::util::UString::UTF_8);
@@ -1415,7 +1440,7 @@ bool MiningManager::GetTdtInTimeRange(const izenelib::util::UString& start, cons
         return false;
     }
     idmlib::tdt::TimeIdType end_date;
-    if(!idmlib::util::TimeUtil::GetDateByUString(end, end_date))
+    if (!idmlib::util::TimeUtil::GetDateByUString(end, end_date))
     {
         std::string end_str;
         end.convertString(end_str, izenelib::util::UString::UTF_8);
@@ -1427,9 +1452,9 @@ bool MiningManager::GetTdtInTimeRange(const izenelib::util::UString& start, cons
 
 bool MiningManager::GetTdtInTimeRange(const idmlib::tdt::TimeIdType& start, const idmlib::tdt::TimeIdType& end, std::vector<izenelib::util::UString>& topic_list)
 {
-    if( !mining_schema_.tdt_enable || tdt_storage_== NULL) return false;
+    if ( !mining_schema_.tdt_enable || tdt_storage_== NULL) return false;
     idmlib::tdt::Storage* storage = tdt_storage_->Current();
-    if(storage==NULL)
+    if (storage==NULL)
     {
         std::cerr<<"can not get current storage for tdt"<<std::endl;
         return false;
@@ -1439,9 +1464,9 @@ bool MiningManager::GetTdtInTimeRange(const idmlib::tdt::TimeIdType& start, cons
 
 bool MiningManager::GetTdtTopicInfo(const izenelib::util::UString& text, idmlib::tdt::TopicInfoType& info)
 {
-    if( !mining_schema_.tdt_enable || tdt_storage_== NULL) return false;
+    if ( !mining_schema_.tdt_enable || tdt_storage_== NULL) return false;
     idmlib::tdt::Storage* storage = tdt_storage_->Current();
-    if(storage==NULL)
+    if (storage==NULL)
     {
         std::cerr<<"can not get current storage for tdt"<<std::endl;
         return false;
@@ -1451,31 +1476,31 @@ bool MiningManager::GetTdtTopicInfo(const izenelib::util::UString& text, idmlib:
 
 void MiningManager::GetRefinedQuery(const izenelib::util::UString& query, izenelib::util::UString& result)
 {
-    if(!qcManager_) return;
+    if (!qcManager_) return;
     qcManager_->getRefinedQuery(query, result);
 }
 
 void MiningManager::InjectQueryCorrection(const izenelib::util::UString& query, const izenelib::util::UString& result)
 {
-    if(!qcManager_) return;
+    if (!qcManager_) return;
     qcManager_->Inject(query, result);
 }
 
 void MiningManager::FinishQueryCorrectionInject()
 {
-    if(!qcManager_) return;
+    if (!qcManager_) return;
     qcManager_->FinishInject();
 }
 
 void MiningManager::InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result)
 {
-    if(!qrManager_) return;
+    if (!qrManager_) return;
     qrManager_->Inject(query, result);
 }
 
 void MiningManager::FinishQueryRecommendInject()
 {
-    if(!qrManager_) return;
+    if (!qrManager_) return;
     qrManager_->FinishInject();
 }
 

@@ -16,6 +16,7 @@
 #include "BOBRecommender.h"
 #include "BOSRecommender.h"
 #include "BOERecommender.h"
+#include "BORRecommender.h"
 #include "TIBRecommender.h"
 
 namespace sf1r
@@ -55,6 +56,7 @@ private:
     BOBRecommender bobRecommender_;
     BOSRecommender bosRecommender_;
     BOERecommender boeRecommender_;
+    BORRecommender borRecommender_;
     TIBRecommender tibRecommender_;
 };
 

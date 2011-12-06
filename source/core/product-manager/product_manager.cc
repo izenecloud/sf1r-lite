@@ -101,7 +101,10 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
                 std::string docid_str;
                 docid.convertString(docid_str, UString::UTF_8);
                 if (timestamp == -1) GetTimestamp_(doc, timestamp);
-                price_trend_->Insert(docid_str, price, timestamp);
+//              price_trend_->Insert(docid_str, price, timestamp);
+                std::map<std::string, std::string> group_prop_map;
+                GetGroupProperties_(doc, group_prop_map);
+                price_trend_->Update(docid_str, price, timestamp, group_prop_map);
             }
         }
     }
@@ -414,8 +417,7 @@ bool ProductManager::CheckAddGroupWithInfo(const std::vector<izenelib::util::USt
         error_ = suuid+" already exists";
         return false;
     }
-    
-    
+
     std::vector<PMDocumentType> doc_list(docid_list.size());
     for (uint32_t i = 0; i < docid_list.size(); i++)
     {
@@ -857,7 +859,8 @@ bool ProductManager::GetTopPriceCutList(
         TPCQueue& tpc_queue,
         const std::string& prop_name,
         const std::string& prop_value,
-        uint32_t days)
+        uint32_t days,
+        uint32_t count)
 {
     if (!has_price_trend_)
     {
@@ -865,7 +868,7 @@ bool ProductManager::GetTopPriceCutList(
         return false;
     }
 
-    return price_trend_->GetTopPriceCutList(tpc_queue, prop_name, prop_value, days, error_);
+    return price_trend_->GetTopPriceCutList(tpc_queue, prop_name, prop_value, days, count, error_);
 }
 
 bool ProductManager::GetPrice_(uint32_t docid, ProductPrice& price) const

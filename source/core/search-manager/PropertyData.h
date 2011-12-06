@@ -15,9 +15,14 @@ struct PropertyData
 {
     PropertyDataType type_;
     void* data_;
-
-    PropertyData(PropertyDataType type, void* data)
-        : type_(type), data_(data)
+    size_t size_;
+    PropertyData(
+        PropertyDataType type, 
+        void* data,
+        size_t size)
+        : type_(type)
+        , data_(data)
+        , size_(size)
     {}
 
     ~PropertyData()

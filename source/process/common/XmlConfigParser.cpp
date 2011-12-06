@@ -1196,6 +1196,8 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
     ticpp::Element* price_trend_node = getUniqChildElement(product_schema, "PriceTrend", false);
     if (price_trend_node)
     {
+        pm_config.enable_price_trend = true;
+
         Iterator<Element> group_it("GroupProperty");
         for (group_it = group_it.begin(price_trend_node); group_it != group_it.end(); ++group_it)
         {
@@ -1209,8 +1211,7 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
             pm_config.time_interval_days.push_back(0);
             getAttribute(time_it.Get(), "days", pm_config.time_interval_days.back());
         }
-
-        pm_config.enablePH = !pm_config.group_property_names.empty() && !pm_config.time_interval_days.empty();
+        std::sort(pm_config.time_interval_days.begin(), pm_config.time_interval_days.end());
     }
 
     ticpp::Element* backup_node = getUniqChildElement(product_schema, "Backup", false);
@@ -1340,6 +1341,51 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 mining_schema.sim_properties.push_back(property_name);
             }
             mining_schema.sim_enable = true;
+        }
+
+        task_node = getUniqChildElement(mining_schema_node, "Summarization", false);
+        mining_schema.summarization_enable= false;
+        if (task_node)
+        {
+            ticpp::Element* parentkeylog_node = getUniqChildElement(task_node, "ParentKeyLog", false);
+            if (parentkeylog_node)
+            {
+                getAttribute(parentkeylog_node, "path", mining_schema.summarization_schema.parentKeyLogPath);
+
+                Iterator<Element> it("Property");
+                for (it = it.begin(task_node); it != it.end(); it++)
+                {
+                    getAttribute(it.Get(), "name", property_name);
+                    mining_schema.summarization_schema.parentKey = property_name;
+                }
+            }
+            {
+            Iterator<Element> it("ForeignKey");
+            for (it = it.begin(task_node); it != it.end(); it++)
+            {
+                getAttribute(it.Get(), "name", property_name);
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if (!gottype || property_type != STRING_PROPERTY_TYPE)
+                {
+                    throw XmlConfigParserException("ForeignKey ["+property_name+"] used in Summarization is not string type.");
+                }
+                mining_schema.summarization_schema.foreignKeyPropName = property_name;
+            }
+            }
+            {
+            Iterator<Element> it("ContentProperty");
+            for (it = it.begin(task_node); it != it.end(); it++)
+            {
+                getAttribute(it.Get(), "name", property_name);
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if (!gottype || property_type != STRING_PROPERTY_TYPE)
+                {
+                    throw XmlConfigParserException("ContentProperty ["+property_name+"] used in Summarization is not string type.");
+                }
+                mining_schema.summarization_schema.contentPropName= property_name;
+            }
+            }
+            mining_schema.summarization_enable = true;
         }
 
         task_node = getUniqChildElement(mining_schema_node, "DocumentClassification", false);

@@ -29,22 +29,8 @@ bool CollectionProductDataSource::GetDocument(uint32_t docid, PMDocumentType& do
 
 void CollectionProductDataSource::GetDocIdList(const izenelib::util::UString& uuid, std::vector<uint32_t>& docid_list, uint32_t exceptid)
 {
-    IndexReader* index_reader = index_manager_->getIndexReader();
-
-    uint32_t num_docs = index_reader->numDocs();
-    uint32_t bits_num = num_docs + 1;
-    BitVector bit_vector(bits_num);
     PropertyType value(uuid);
-    index_manager_->getDocsByNumericValue(1, config_.uuid_property_name, value, bit_vector);
-
-    for(uint32_t i=1;i<=num_docs;i++)
-    {
-        if(i==exceptid) continue;
-        if(bit_vector.test(i))
-        {
-            docid_list.push_back(i);
-        }
-    }
+    index_manager_->getDocsByPropertyValue(1, config_.uuid_property_name, value, docid_list);
 
 //     EWAHBoolArray<uword32> docid_set;
 //     bit_vector.compressed(docid_set);

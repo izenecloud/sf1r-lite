@@ -247,13 +247,13 @@ void QueryBuilder::prepare_for_property_(
                 if(!filterCache_->get(filteringRule, pDocIdSet))
                 {
                     pDocIdSet.reset(new EWAHBoolArray<uint32_t>());
-                    pBitVector.reset(new BitVector(pIndexReader_->numDocs() + 1));
+                    pBitVector.reset(new BitVector(pIndexReader_->maxDoc() + 1));
 
                     indexManagerPtr_->getDocsByNumericValue(colID, property, value, *pBitVector);
                     pBitVector->compressed(*pDocIdSet);
                     filterCache_->set(filteringRule, pDocIdSet);
                 }
-                TermDocFreqs* pTermDocReader = new BitMapIterator( pDocIdSet->bit_iterator() );
+                TermDocFreqs* pTermDocReader = new BitMapIterator( pDocIdSet );
                 termDocReaders[termId].push_back(pTermDocReader);
             }
         }

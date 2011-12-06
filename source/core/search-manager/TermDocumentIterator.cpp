@@ -120,12 +120,12 @@ bool TermDocumentIterator::accept()
         if (find)
         {
              pDocIdSet.reset(new izenelib::am::EWAHBoolArray<uint32_t>());
-             pBitVector.reset(new izenelib::ir::indexmanager::BitVector(pIndexReader_->numDocs() + 1));
+             pBitVector.reset(new izenelib::ir::indexmanager::BitVector(pIndexReader_->maxDoc() + 1));
 
              indexManagerPtr_->getDocsByNumericValue(colID_, property_, value, *pBitVector);
              pBitVector->compressed(*pDocIdSet);
              if(pTermDocReader_) delete pTermDocReader_;
-             pTermDocReader_ = new BitMapIterator(pDocIdSet->bit_iterator());
+             pTermDocReader_ = new BitMapIterator(pDocIdSet);
              df_ = pTermDocReader_->docFreq();
          }
         return find;

@@ -54,6 +54,7 @@ private:
     std::string prop_name_;
     std::string prop_value_;
     uint32_t days_;
+    uint32_t count_;
     time_t from_tt_;
     time_t to_tt_;
     Document doc_;

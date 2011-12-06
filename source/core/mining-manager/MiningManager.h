@@ -1,4 +1,3 @@
-
 /// @file MiningManager.h
 /// @date 2009-08-03
 /// @author Jia Guo&&Jinglei Zhao
@@ -31,7 +30,6 @@
 #include <map>
 
 
-
 namespace izenelib
 {
 namespace ir
@@ -43,7 +41,6 @@ class IndexReader;
 
 }
 }
-
 
 namespace idmlib
 {
@@ -87,6 +84,7 @@ class Document;
 class DocumentManager;
 class IndexManager;
 class SearchManager;
+class MultiDocSummarizationSubManager;
 
 namespace sim
 {
@@ -206,9 +204,9 @@ public:
      * @return true for success, false for failure
      */
     bool clickGroupLabel(
-        const std::string& query,
-        const std::string& propName,
-        const std::vector<std::string>& groupPath
+            const std::string& query,
+            const std::string& propName,
+            const std::vector<std::string>& groupPath
     );
 
     /**
@@ -222,11 +220,11 @@ public:
      * @post @p freqVec is sorted in descending order.
      */
     bool getFreqGroupLabel(
-        const std::string& query,
-        const std::string& propName,
-        int limit,
-        std::vector<std::vector<std::string> >& pathVec,
-        std::vector<int>& freqVec
+            const std::string& query,
+            const std::string& propName,
+            int limit,
+            std::vector<std::vector<std::string> >& pathVec,
+            std::vector<int>& freqVec
     );
 
     /**
@@ -237,9 +235,9 @@ public:
      * @return true for success, false for failure
      */
     bool setTopGroupLabel(
-        const std::string& query,
-        const std::string& propName,
-        const std::vector<std::string>& groupPath
+            const std::string& query,
+            const std::string& propName,
+            const std::vector<std::string>& groupPath
     );
 
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
@@ -282,9 +280,8 @@ public:
 
 
     void onIndexUpdated(size_t docNum);
+
 private:
-
-
     void printSimilarLabelResult_(uint32_t label_id);
 
     /**
@@ -310,7 +307,6 @@ private:
 
     bool addFacetedResult_(KeywordSearchResult& miaInput);
 
-
     /**
      *@brief The online querying interface for query recommendation.
      *@param primaryTermIdList The primary terms in the query.
@@ -325,9 +321,12 @@ private:
 
     bool isRecommendProperty_(const std::string& name);
 
-    void getAllMiningProperties_(const Document& document, std::vector<izenelib::util::UString>& values, std::vector<izenelib::util::UString>& recommendValues, std::string& imgUrl);
-
-
+    void getAllMiningProperties_(
+            const Document& document,
+            std::vector<izenelib::util::UString>& values,
+            std::vector<izenelib::util::UString>& recommendValues,
+            std::string& imgUrl
+    );
 
     void normalTermList_(const izenelib::util::UString& text,
                          std::vector<termid_t>& termList);
@@ -336,15 +335,13 @@ private:
 
     void doIDManagerInit_();
 
-
-
     bool doTgInfoInit_();
 
     void doTgInfoRelease_();
 
     faceted::PropValueTable::pvid_t propValueId_(
-        const std::string& propName,
-        const std::vector<std::string>& groupPath
+            const std::string& propName,
+            const std::vector<std::string>& groupPath
     ) const;
 
 public:
@@ -429,6 +426,9 @@ private:
     std::string tdt_path_;
     TdtStorageType* tdt_storage_;
 
+    /** SUMMARIZATION */
+    std::string summarization_path_;
+    MultiDocSummarizationSubManager* summarizationManager_;
 };
 
 }

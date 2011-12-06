@@ -14,7 +14,7 @@ INCLUDE_DIRECTORIES(
   ${TokyoCabinet_INCLUDE_DIRS}
   ${Glog_INCLUDE_DIRS}
   ${Thrift_INCLUDE_DIR}
-  )
+)
 
 FILE(GLOB_RECURSE configuration_SRC "configuration-manager/*.cpp")
 FILE(GLOB_RECURSE la_SRC "la-manager/*.cpp")
@@ -47,7 +47,7 @@ FILE(GLOB document_SRC
   "document-manager/text-summarization-submanager/text-summarization/*.cpp"
   "document-manager/text-summarization-submanager/text-summarization/*.C"
   "document-manager/highlighter/*.cpp"
-  )
+)
 
 FILE(GLOB mining_SRC
   "mining-manager/*.cpp"
@@ -66,7 +66,10 @@ FILE(GLOB mining_SRC
   "mining-manager/faceted-submanager/*.cc"
   "mining-manager/group-label-logger/*.cpp"
   "mining-manager/ec-submanager/*.cc"
-  )
+  "mining-manager/summarization-submanager/*.cpp"
+  "mining-manager/summarization-submanager/svd/*.c"
+)
+
 ADD_DEFINITIONS("-fno-strict-aliasing")
 ADD_LIBRARY(sf1r_configuration_manager ${configuration_SRC})
 ADD_LIBRARY(sf1r_la_manager ${la_SRC})
