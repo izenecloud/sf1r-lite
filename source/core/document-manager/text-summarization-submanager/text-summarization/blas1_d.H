@@ -1,6 +1,10 @@
 #ifndef  _BLAS1_D_H_
 #define _BLAS1_D_H_
 
+#if defined(__cplusplus) || defined(c_plusplus)
+extern "C" {
+#endif
+
 double dasum ( int n, double x[], int incx );
 void daxpy ( int n, double da, double dx[], int incx, double dy[], int incy );
 void dcopy ( int n, double dx[], int incx, double dy[], int incy );
@@ -20,5 +24,9 @@ double r8_abs ( double x );
 double r8_max ( double x, double y );
 double r8_sign ( double x );
 void xerbla ( char *srname, int info );
+
+#if defined(__cplusplus) || defined(c_plusplus)
+}
+#endif
 
 #endif //_BLAS1_D_H_
