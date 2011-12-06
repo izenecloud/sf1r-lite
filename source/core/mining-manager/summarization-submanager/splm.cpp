@@ -76,8 +76,8 @@ void SPLM::getSmoothedTfSentence(
 void SPLM::generateSummary(
         vector<pair<UString, vector<UString> > >& summary_list,
         const Corpus& corpus,
-        int lengthLimit,
         SPLM::SPLM_Alg algorithm,
+        int lengthLimit,
         int D, int E,
         float mu, float lambda
 )

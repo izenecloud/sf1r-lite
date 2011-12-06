@@ -76,8 +76,8 @@ public:
     static void generateSummary(
             std::vector<std::pair<UString, std::vector<UString> > >& summary_list,
             const Corpus& corpus,
-            int lengthLimit = 0,
             SPLM_Alg algorithm = SPLM_SVD,
+            int lengthLimit = 5,
             int D = 400, int E = 200,
             float mu = 2000, float lambda = 1000
     );
