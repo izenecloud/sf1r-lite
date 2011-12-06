@@ -1,13 +1,12 @@
 ///
-/// @file util.h
+/// @file splm_util.h
 /// @author Hogyeong Jeong ( hogyeong.jeong@gmail.com )
 ///
 
-#ifndef SF1R_MINING_MANAGER_SUMMARIZATION_SUBMANAGER_UTIL_H_
-#define SF1R_MINING_MANAGER_SUMMARIZATION_SUBMANAGER_UTIL_H_
+#ifndef SF1R_MINING_MANAGER_SUMMARIZATION_SUBMANAGER_SPLM_UTIL_H_
+#define SF1R_MINING_MANAGER_SUMMARIZATION_SUBMANAGER_SPLM_UTIL_H_
 
 #include "corpus.h"
-#include "svd/d-mat2d.h"
 
 #include <set>
 #include <map>
@@ -28,7 +27,7 @@ public:
     ///
     /// @brief Calculates the KL divergence between probability distributions px and qx
     ///
-    static double kl(const std::vector<double>& px, const std::vector<double>& qx);
+    static double getKLdivergence(const std::vector<double>& px, const std::vector<double>& qx);
 
     ///
     /// @brief Calculates the term frequency matrix for a text selection
@@ -58,19 +57,19 @@ public:
     ///
     /// @brief Retrieves ISF: mapping between word index and the number of sentences containing the word
     ///
-    static void getISF(std::map<int, int>& ISF_map, int s_start, int s_end,
+    static void getISF(std::set<int>& ISF_set, int s_start, int s_end,
             const int *sentOffs, const int *W);
 
     ///
     /// @brief Retrieves IDF: mapping between word index and the number of documents containing the word
     ///
-    static void getIDF(std::map<int, int>& IDF_map, int s_start, int d_start, int d_end,
+    static void getIDF(std::set<int>& IDFset, int s_start, int d_start, int d_end,
             const int *sentOffs, const int *docOffs, const int *W);
 
     ///
     /// @brief Retrieves ICF: mapping between word index and the number of documents in the whole collection containing the word
     ///
-    static void getICF(std::map<int, int>& ICF_map, int nColls, const int *sentOffs,
+    static void getICF(std::set<int>& ICF_set, int nColls, const int *sentOffs,
             const int *collOffs, const int *W);
 
     ///
@@ -117,4 +116,4 @@ public:
 
 }
 
-#endif /* SF1R_MINING_MANAGER_SUMMARIZATION_UTIL_H_ */
+#endif /* SF1R_MINING_MANAGER_SUMMARIZATION_SPLM_UTIL_H_ */

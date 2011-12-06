@@ -83,15 +83,14 @@ void PlmLanguageRanker::setTermProximityMeasure(
 float PlmLanguageRanker::getScoreSVD(
         const RankQueryProperty& queryProperty,
         const RankDocumentProperty& documentProperty,
-        vector<double> queryTF_d,
-        vector<double> queryTF,
-        vector<double> collTF
+        const vector<double>& queryTF_d,
+        const vector<double>& queryTF,
+        const vector<double>& collTF
 ) const
 {
     float score = 0.0F;
-    if (0.0F == queryProperty.getAveragePropertyLength()) {
+    if (0.0F == queryProperty.getAveragePropertyLength())
         return score;
-    }
 
     std::size_t numTerms = documentProperty.size();
     termProximityArray_.resize(numTerms);
@@ -111,7 +110,7 @@ float PlmLanguageRanker::getScoreSVD(
     }
 
     TermProximityMeasure::array_type::const_iterator termProximity
-    = termProximityArray_.begin();
+        = termProximityArray_.begin();
     for (RankDocumentProperty::size_type i = 0;
             i != documentProperty.size(); ++i, ++termProximity)
     {
@@ -123,7 +122,7 @@ float PlmLanguageRanker::getScoreSVD(
         //double tfInQuery = queryTF[i];
         double tfInQuery = queryTF_d[i];
 
-        if(tfInDoc > 0.0F )
+        if (tfInDoc > 0.0F)
         {
             float proximityFactor = *termProximity;
             //double proximityFactor = termProximityVector[i];
@@ -213,7 +212,7 @@ float PlmLanguageRanker::getScore(
         float tfInQuery = queryProperty.termFreqAt(i);
         // cout << "TF: " << i << "," << tfInQuery << "," << tfInDoc << endl;
 
-        if(tfInDoc > 0.0F )
+        if (tfInDoc > 0.0F)
         {
             float proximityFactor = *termProximity;
 

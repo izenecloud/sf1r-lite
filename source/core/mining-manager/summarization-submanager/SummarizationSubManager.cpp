@@ -167,12 +167,22 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     corpus_->start_new_coll();
 
     std::vector<std::pair<UString, std::vector<UString> > > summary_list;
+//  std::string key_str;
+//  key.convertString(key_str, UString::UTF_8);
+//  std::cout << "Begin evaluating: " << key_str << std::endl;
     SPLM::generateSummary(summary_list, *corpus_);
+//  std::cout << "End evaluating: " << key_str << std::endl;
 
     //XXX store the generated summary list
     std::vector<UString>& summary = summary_list[0].second;
     if (!summary.empty())
     {
+//      for (uint32_t i = 0; i < summary.size(); i++)
+//      {
+//          std::string sent;
+//          summary[i].convertString(sent, UString::UTF_8);
+//          std::cout << "\t" << sent << std::endl;
+//      }
         summarization.property("overview").swap(summary);
     }
     summarization_storage_->Update(key, summarization);

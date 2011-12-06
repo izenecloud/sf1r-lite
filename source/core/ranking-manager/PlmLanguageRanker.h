@@ -45,9 +45,9 @@ public:
     float getScoreSVD(
             const RankQueryProperty& queryProperty,
             const RankDocumentProperty& documentProperty,
-            std::vector<double> queryTF_d,
-            std::vector<double> queryTF,
-            std::vector<double> collTF
+            const std::vector<double>& queryTF_d,
+            const std::vector<double>& queryTF,
+            const std::vector<double>& collTF
     ) const;
 
     float getScore(
