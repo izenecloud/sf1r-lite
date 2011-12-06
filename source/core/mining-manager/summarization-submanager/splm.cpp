@@ -330,20 +330,13 @@ void SPLM::getVocabSet(set<int>& vocabulary, int row, int col, double **TF)
 double **SPLM::generateIndexVectors(double **TF, int row, int col, int D, int E)
 {
     D = col;
-    double value;
-    if (D < E / 2)
-        value = -1;
-    else if (D < E)
-        value = 1;
-    else
-        value = 0;
 
     double **indexVec = mat_alloc(col, D);
     for (int i = 0; i < col; i++)
     {
         for (int j = 0; j < D; j++)
         {
-            indexVec[i][j] = value;
+            indexVec[i][j] = rand() % 3 - 1;
         }
     }
 
