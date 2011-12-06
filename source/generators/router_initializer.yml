@@ -47,6 +47,7 @@ controllers:
       - get_freq_group_labels
       - set_top_group_label
       - visit
+      - get_summarization
 
   StatusController: ~
 
