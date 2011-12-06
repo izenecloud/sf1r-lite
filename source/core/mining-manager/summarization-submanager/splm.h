@@ -8,8 +8,8 @@
 
 
 #include "corpus.h"
-#include "svd/svd.h"
 #include "svd/d-mat2d.h"
+#include "svd/svd.h"
 
 #include <map>
 
@@ -19,6 +19,15 @@ namespace sf1r
 class SPLM
 {
 public:
+    enum SPLM_Alg
+    {
+        SPLM_SVD,
+        SPLM_RI,
+        SPLM_RI_SVD,
+//      SPLM_LDA,
+        SPLM_NONE
+    };
+
     ///
     /// @brief Generates SVD-smoothed term frequencies for a document (or a collection)
     /// @param c Index of the document (or a collection) whose term frequencies will be smoothed
@@ -29,14 +38,14 @@ public:
     /// @param numSentences Number of sentences
     /// @param U U matrix from SVD calculation
     /// @param S Sigma matrix from SVD calculation
-    /// @param TF Term frequency matrix
+    /// @param dim Reduced dimension size (for smoothing)
     ///
     static void getSmoothedTfDocument(
             std::vector<double>& smoothed_tf,
             int c, const int *sentOffs, const int *collOffs,
             const std::map<int, int>& wordmapping,
             const int *W, int numSentences,
-            double **U, double **S, double **TF
+            double **U, double **S, int dim = 20
     );
 
     ///
@@ -48,14 +57,13 @@ public:
     /// @param numSentences Number of sentences
     /// @param U U matrix from SVD calculation
     /// @param S Sigma matrix from SVD calculation
-    /// @param TF Term frequency matrix
     ///
     static void getSmoothedTfSentence(
             std::vector<double>& smoothed_tf,
             int s, const int *sentOffs,
             const std::map<int, int>& wordmapping,
             const int *W, int numSentences,
-            double **U, double **S, double **TF
+            double **U, double **S
     );
 
     ///
@@ -69,9 +77,16 @@ public:
     static void generateSummary(
             std::vector<std::pair<UString, std::vector<UString> > >& summary_list,
             const Corpus& corpus,
-            float mu = 1100, float lambda = 300
+            int lengthLimit = 0,
+            SPLM_Alg algorithm = SPLM_SVD,
+//          double alpha = 0.038, double beta = 0.1, int iter = 1002, int topic = 10,
+            int D = 400, int E = 200,
+            float mu = 2000, float lambda = 1000
     );
 
+    static void getVocabSet(std::set<int>& vocabulary, int row, int col, double **TF);
+
+    static double **generateIndexVectors(double **TF, int row, int col, int D, int E);
 };
 
 }

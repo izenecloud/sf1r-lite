@@ -52,7 +52,7 @@ class SearchManager : public NumericPropertyTableBuilder
 public:
     typedef boost::function< void( std::vector<unsigned int>&, std::vector<float>&, const std::string& ) > reranker_t;
     typedef boost::function< void( std::vector<QueryFiltering::FilteringType>& ) > filter_hook_t;
-	
+
     SearchManager(
         std::set<PropertyConfig, PropertyComp> schema,
         const boost::shared_ptr<IDManager>& idManager,
@@ -79,10 +79,10 @@ public:
 
 
     void reset_cache(
-        bool rType, 
-        docid_t id, 
+        bool rType,
+        docid_t id,
         const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
-    
+
     void reset_all_property_cache();
 
     /// @brief change working dir by setting new underlying componenets
@@ -131,7 +131,7 @@ private:
     propertyid_t getPropertyIdByName_(const std::string& name) const;
 
     bool getPropertyTypeByName_(
-        const std::string& name, 
+        const std::string& name,
         PropertyDataType& type) const;
 
     boost::shared_ptr<PropertyData> getPropertyData_(const std::string& name);
@@ -151,8 +151,8 @@ private:
      * @param distSearchInfo [OUT]
      */
     void getSortPropertyData_(
-        Sorter* pSorter, 
-        std::vector<unsigned int>& docIdList, 
+        Sorter* pSorter,
+        std::vector<unsigned int>& docIdList,
         DistKeywordSearchInfo& distSearchInfo);
 
 private:
@@ -160,7 +160,7 @@ private:
      * @brief for testing
      */
     void printDFCTF_(
-        DocumentFrequencyInProperties& dfmap, 
+        DocumentFrequencyInProperties& dfmap,
         CollectionTermFrequencyInProperties ctfmap);
 
 private:

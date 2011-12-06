@@ -26,7 +26,7 @@ public:
         , data_source_(new SimpleDataSource(pm_config_, document_list_))
         , op_processor_(new SimpleOperationProcessor())
         , price_trend_(NULL)
-        , pm_(new ProductManager(data_source_, op_processor_, price_trend_, pm_config_))
+        , pm_(new ProductManager("./", data_source_, op_processor_, price_trend_, pm_config_))
     {
     }
 
@@ -98,7 +98,7 @@ public:
                 BOOST_CHECK_MESSAGE( false, "invalid input "+line);
             }
         }
-        BOOST_CHECK( pm_->Finish() );
+        BOOST_CHECK( pm_->FinishHook() );
         Validation_(source_start, result_list);
 //         ShowAllDocs();
     }

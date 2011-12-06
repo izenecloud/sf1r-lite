@@ -41,6 +41,9 @@ public:
         MASTER_STATE_RECOVERING
     };
 
+    typedef std::map<shardid_t, boost::shared_ptr<WorkerNode> > WorkerMapT;
+
+public:
     MasterNodeManager();
 
     void init();
@@ -58,10 +61,17 @@ public:
         aggregatorList_.push_back(aggregator);
     }
 
-    net::aggregator::AggregatorConfig& getAggregatorConfig()
-    {
-        return aggregatorConfig_;
-    }
+    /**
+     * Get data receiver address by shard id.
+     * @param shardid   [IN]
+     * @param host      [OUT]
+     * @param recvPort  [OUT]
+     * @return true on success, false on failure.
+     */
+    bool getShardReceiver(
+            unsigned int shardid,
+            std::string& host,
+            unsigned int& recvPort);
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
@@ -115,8 +125,6 @@ private:
     void resetAggregatorConfig();
 
 private:
-    typedef std::map<shardid_t, boost::shared_ptr<WorkerNode> > WorkerMapT;
-
     boost::shared_ptr<ZooKeeper> zookeeper_;
 
     Topology topology_;

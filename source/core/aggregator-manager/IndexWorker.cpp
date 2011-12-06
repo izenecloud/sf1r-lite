@@ -271,7 +271,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
 
         if (hooker_)
         {
-            if (!hooker_->Finish())
+            if(!hooker_->FinishHook())
             {
                 std::cout<<"[IndexWorker] Hooker Finish failed."<<std::endl;
                 return false;
@@ -1200,7 +1200,7 @@ bool IndexWorker::prepareIndexDocument_(
                                     value = (int64_t)(boost::lexical_cast< float >(str));
                                 }catch (const boost::bad_lexical_cast &)
                                 {
-                                    LOG(ERROR) << "Wrong format of number value. DocId " << docId <<" Property "<<fieldStr<< " Value" << str;
+                                    //LOG(ERROR) << "Wrong format of number value. DocId " << docId <<" Property "<<fieldStr<< " Value" << str;
                                 }
                             }
                             indexerPropertyConfig.setIsMultiValue(true);

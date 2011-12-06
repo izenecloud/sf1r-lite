@@ -12,7 +12,7 @@
 #include <parsers/SearchParser.h>
 #include <parsers/SelectParser.h>
 #include <common/ValueConverter.h>
-#include <common/IndexBundleSchemaHelpers.h>
+#include <common/BundleSchemaHelpers.h>
 #include <common/parsers/PageInfoParser.h>
 #include <common/parsers/ConditionArrayParser.h>
 #include <common/Keys.h>

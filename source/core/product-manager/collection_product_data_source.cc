@@ -17,6 +17,11 @@ CollectionProductDataSource::~CollectionProductDataSource()
 {
 }
 
+uint32_t CollectionProductDataSource::GetMaxDocId() const
+{
+    return document_manager_->getMaxDocId();
+}
+
 bool CollectionProductDataSource::GetDocument(uint32_t docid, PMDocumentType& doc)
 {
     return document_manager_->getDocument(docid, doc);
@@ -40,6 +45,7 @@ void CollectionProductDataSource::GetDocIdList(const izenelib::util::UString& uu
 bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_list, const izenelib::util::UString& uuid)
 {
     if(docid_list.empty()) return false;
+    if(uuid.length()==0) return false;
     PropertyConfig property_config;
     property_config.propertyName_ = config_.uuid_property_name;
     std::set<PropertyConfig, PropertyComp>::iterator iter = schema_.find(property_config);
@@ -117,9 +123,7 @@ bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_
             //TODO how to rollback in IM?
         }
     }
-    document_manager_->flush();
-    index_manager_->flush();
-    search_manager_->reset_all_property_cache();
+    
     return true;
 }
 
@@ -157,3 +161,11 @@ bool CollectionProductDataSource::GetInternalDocidList(const std::vector<izeneli
     }
     return true;
 }
+
+void CollectionProductDataSource::Flush()
+{
+    document_manager_->flush();
+    index_manager_->flush();
+    search_manager_->reset_all_property_cache();
+}
+

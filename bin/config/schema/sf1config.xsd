@@ -235,8 +235,8 @@
     <xs:element name="CurrentNode">
         <xs:complexType>
             <xs:sequence>
-                <xs:element ref="WorkerAgent" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="MasterAgent" minOccurs="0" maxOccurs="1"/>
+                <xs:element ref="WorkerAgent" minOccurs="0" maxOccurs="1"/>
             </xs:sequence>
             <xs:attribute name="nodeid" use="required">
                 <xs:simpleType>
@@ -255,6 +255,7 @@
                 </xs:simpleType>
             </xs:attribute>
             <xs:attribute name="host" type="xs:string" use="required"/>
+            <xs:attribute name="dataport" type="PortType" use="required"/>
         </xs:complexType>
     </xs:element>
     <xs:element name="WorkerAgent">

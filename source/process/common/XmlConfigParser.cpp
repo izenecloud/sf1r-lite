@@ -311,6 +311,7 @@ void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
     // Current SF1 node
     ticpp::Element * cursf1node = getUniqChildElement(topology, "CurrentNode");
     getAttribute(cursf1node, "host", distributedTopologyConfig_.curSF1Node_.host_);
+    getAttribute(cursf1node, "dataport", distributedTopologyConfig_.curSF1Node_.dataPort_);
     getAttribute(cursf1node, "replicaid", distributedTopologyConfig_.curSF1Node_.replicaId_);
     getAttribute(cursf1node, "nodeid", distributedTopologyConfig_.curSF1Node_.nodeId_);
 
@@ -864,6 +865,7 @@ void CollectionConfig::parseCollectionSettings(const ticpp::Element * collection
     parseIndexBundleParam(indexParam, collectionMeta);
     parseIndexEcSchema(getUniqChildElement(indexBundle, "EcSchema", false), collectionMeta);
     parseIndexBundleSchema(getUniqChildElement(indexBundle, "Schema"), collectionMeta);
+    parseIndexShardSchema(getUniqChildElement(indexBundle, "ShardSchema", false), collectionMeta); //after Schema
 
     // ProductBundle
     Element* productBundle = getUniqChildElement(collection, "ProductBundle", false);
@@ -1106,6 +1108,24 @@ void CollectionConfig::parseIndexEcSchema(const ticpp::Element * indexEcSchema, 
     }
 }
 
+void CollectionConfig::parseIndexShardSchema(const ticpp::Element * shardSchema, CollectionMeta & collectionMeta)
+{
+    if (!shardSchema)
+    {
+        return;
+    }
+
+    IndexBundleConfiguration& indexBundleConfig = *(collectionMeta.indexBundleConfig_);
+
+    Iterator<Element> keyElem("ShardKey");
+    for (keyElem = keyElem.begin(shardSchema); keyElem != keyElem.end(); keyElem++)
+    {
+        std::string key;
+        getAttribute(keyElem.Get(), "name", key);
+        indexBundleConfig.indexShardKeys_.push_back(key);
+    }
+}
+
 void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema, CollectionMeta & collectionMeta)
 {
     IndexBundleConfiguration& indexBundleConfig = *(collectionMeta.indexBundleConfig_);
@@ -1218,6 +1238,12 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
     if (backup_node)
     {
         getAttribute(backup_node, "path", pm_config.backup_path);
+    }
+    
+    ticpp::Element* uuidmap_node = getUniqChildElement(product_schema, "UuidMap", false);
+    if (uuidmap_node)
+    {
+        getAttribute(uuidmap_node, "path", pm_config.uuid_map_path);
     }
 }
 
@@ -1353,7 +1379,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 getAttribute(parentkeylog_node, "path", mining_schema.summarization_schema.parentKeyLogPath);
 
                 Iterator<Element> it("Property");
-                for (it = it.begin(task_node); it != it.end(); it++)
+                for (it = it.begin(parentkeylog_node); it != it.end(); it++)
                 {
                     getAttribute(it.Get(), "name", property_name);
                     mining_schema.summarization_schema.parentKey = property_name;

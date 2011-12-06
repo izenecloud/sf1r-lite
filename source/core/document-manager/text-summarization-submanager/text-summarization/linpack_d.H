@@ -1,6 +1,9 @@
 #ifndef _LINPACK_D_H_
 #define _LINPACK_D_H_
 
+#if defined(__cplusplus) || defined(c_plusplus)
+extern "C" {
+#endif
 
 int dchdc ( double a[], int lda, int p, double work[], int ipvt[], int job );
 int dchdd ( double r[], int ldr, int p, double x[], double z[], int ldz,
@@ -55,5 +58,8 @@ double dtrco ( double t[], int ldt, int n, double z[], int job );
 int dtrdi ( double t[], int ldt, int n, double det[], int job );
 int dtrsl ( double t[], int ldt, int n, double b[], int job );
 
-#endif //_LINPACK_D_H_
+#if defined(__cplusplus) || defined(c_plusplus)
+}
+#endif
 
+#endif //_LINPACK_D_H_

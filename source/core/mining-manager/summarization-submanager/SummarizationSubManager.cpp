@@ -7,11 +7,11 @@
 #include <document-manager/DocumentManager.h>
 
 #include <common/ScdParser.h>
-#include <la/analyzer/MultiLanguageAnalyzer.h>
+#include <idmlib/util/idm_analyzer.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/path.hpp>
-#include <boost/algorithm/string/compare.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <glog/logging.h>
 
@@ -49,8 +49,7 @@ struct IsParentKeyFilterProperty
 
     bool operator()(const QueryFiltering::FilteringType& filterType)
     {
-        static boost::is_iequal comparator;
-        return comparator(parent_key_property, filterType.first.second);
+        return boost::iequals(parent_key_property, filterType.first.second);
     }
 };
 
@@ -59,10 +58,12 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         const std::string& homePath,
         SummarizeConfig schema,
         boost::shared_ptr<DocumentManager> document_manager,
-        boost::shared_ptr<IndexManager> index_manager)
+        boost::shared_ptr<IndexManager> index_manager,
+        idmlib::util::IDMAnalyzer* analyzer)
     : schema_(schema)
     , document_manager_(document_manager)
     , index_manager_(index_manager)
+    , analyzer_(analyzer)
     , parent_key_storage_(new ParentKeyStorage(homePath + "/parentkey"))
     , summarization_storage_(new SummarizationStorage(homePath + "/summarization"))
     , parent_key_ustr_name_(schema_.parentKey, UString::UTF_8)
@@ -82,6 +83,7 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 void MultiDocSummarizationSubManager::EvaluateSummarization()
 {
     BuildIndexOfParentKey_();
+    return;//Disable
     BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
     if (schema_.parentKeyLogPath.empty())
     {
@@ -130,7 +132,6 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     ilplib::langid::Analyzer* langIdAnalyzer = document_manager_->getLangId();
 
     corpus_->start_new_coll(key);
-
     for (uint32_t i = 0; i < docs.size(); i++)
     {
         Document doc;
@@ -150,23 +151,38 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 
             corpus_->start_new_sent(sentence);
 
-            //TODO word-segmentation
+            std::vector<UString> word_list;
+            analyzer_->GetStringList(sentence, word_list);
+            for (std::vector<UString>::const_iterator it = word_list.begin();
+                    it != word_list.end(); ++it)
+            {
+                corpus_->add_word(*it);
+            }
 
             startPos += len;
         }
     }
-
     corpus_->start_new_sent();
     corpus_->start_new_doc();
     corpus_->start_new_coll();
 
     std::vector<std::pair<UString, std::vector<UString> > > summary_list;
+//  std::string key_str;
+//  key.convertString(key_str, UString::UTF_8);
+//  std::cout << "Begin evaluating: " << key_str << std::endl;
     SPLM::generateSummary(summary_list, *corpus_);
+//  std::cout << "End evaluating: " << key_str << std::endl;
 
     //XXX store the generated summary list
     std::vector<UString>& summary = summary_list[0].second;
     if (!summary.empty())
     {
+//      for (uint32_t i = 0; i < summary.size(); i++)
+//      {
+//          std::string sent;
+//          summary[i].convertString(sent, UString::UTF_8);
+//          std::cout << "\t" << sent << std::endl;
+//      }
         summarization.property("overview").swap(summary);
     }
     summarization_storage_->Update(key, summarization);
@@ -206,16 +222,23 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
                 std::vector<UString> results;
                 if (parent_key_storage_->Get(paramUStr, results))
                 {
+                    BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
                     QueryFiltering::FilteringType filterRule;
-                    filterRule.first.first = QueryFiltering::EQUAL;
+                    filterRule.first.first = QueryFiltering::INCLUDE;
                     filterRule.first.second = schema_.foreignKeyPropName;
                     std::vector<UString>::const_iterator rit = results.begin();
                     for (; rit != results.end(); ++rit)
                     {
-                        PropertyValue v(*rit);
-                        filterRule.second.push_back(v);
-                        filtingList.push_back(filterRule);
+                        if(pBTreeIndexer->seek(schema_.foreignKeyPropName, *rit))
+                        {
+                            ///Protection
+                            ///Or else, too many unexisted keys are added
+                            PropertyValue v(*rit);
+                            filterRule.second.push_back(v);
+                        }
                     }
+                    filtingList.erase(it);
+                    filtingList.push_back(filterRule);
                 }
             }
             catch (const boost::bad_get &)
@@ -224,7 +247,6 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
                 return;
             }
         }
-        filtingList.erase(it);
     }
 }
 
@@ -301,6 +323,7 @@ void MultiDocSummarizationSubManager::DoInsertBuildIndexOfParentKey_(
         const std::string& fileName)
 {
     ScdParser parser(UString::UTF_8);
+    if (!parser.load(fileName)) return;
     for (ScdParser::iterator doc_iter = parser.begin();
             doc_iter != parser.end(); ++doc_iter)
     {

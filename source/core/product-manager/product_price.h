@@ -16,6 +16,12 @@ public:
     ProductPrice();
 
     ProductPrice(ProductPriceType a, ProductPriceType b);
+    
+    template<class Archive> 
+    void serialize(Archive& ar, const unsigned int version) 
+    {
+        ar & value;
+    }
 
 
     ProductPrice& operator+=(const ProductPrice& a);
@@ -31,6 +37,8 @@ public:
     izenelib::util::UString ToUString() const;
 
     bool Valid() const;
+    
+    bool GetMid(ProductPriceType& mid) const;
 
 private:
     void Check_();

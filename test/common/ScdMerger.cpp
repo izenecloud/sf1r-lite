@@ -51,6 +51,17 @@ public:
     
     void Merge(const std::string& scdPath)
     {
+        std::vector<string> propertyNameList;
+        propertyNameList.push_back("DOCID");
+        propertyNameList.push_back("Url");
+        propertyNameList.push_back("Title");
+        propertyNameList.push_back("Picture");
+        propertyNameList.push_back("Price");
+        propertyNameList.push_back("Source");
+        propertyNameList.push_back("Category");
+        propertyNameList.push_back("Attribute");
+        propertyNameList.push_back("Content");
+        propertyNameList.push_back("uuid");
         std::string working_file = work_dir_+"/working";
         bfs::remove_all(working_file);
         izenelib::am::ssf::Writer<> writer(working_file);
@@ -113,7 +124,7 @@ public:
                 break;
             }
             parser.load(*scd_it);
-            for (ScdParser::iterator doc_iter = parser.begin(); doc_iter != parser.end(); ++doc_iter, ++n)
+            for (ScdParser::iterator doc_iter = parser.begin(propertyNameList); doc_iter != parser.end(); ++doc_iter, ++n)
             {
                 if(n%1000==0)
                 {
@@ -173,7 +184,7 @@ public:
             }
         }
         scd_writer.Close();
-        
+        bfs::remove_all(working_file);
     }
     
     Document getDoc_(SCDDoc& doc)

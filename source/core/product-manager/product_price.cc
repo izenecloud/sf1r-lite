@@ -41,6 +41,13 @@ bool ProductPrice::operator==(const ProductPrice& b) const
     return Valid() && b.Valid() && value == b.value;
 }
 
+bool ProductPrice::GetMid(ProductPriceType& mid) const
+{
+    if(!Valid()) return false;
+    mid = (value.first+value.second)/2;
+    return true;
+}
+
 bool ProductPrice::Parse(const izenelib::util::UString& ustr)
 {
     std::string str;

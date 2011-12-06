@@ -75,6 +75,7 @@ struct WorkerNode : public SF1NodeInfo
     bool isGood_;
     shardid_t shardId_;
     uint32_t workerPort_;
+    uint32_t dataPort_;
 
     WorkerNode()
     : isGood_(false)
@@ -86,7 +87,7 @@ struct WorkerNode : public SF1NodeInfo
     {
         std::stringstream ss;
         ss <<SF1NodeInfo::toString()
-           <<" :worker"<<workerPort_<<", shard"<<shardId_
+           <<" worker:"<<workerPort_<<", dataRecver:"<<dataPort_<<", shard"<<shardId_
            <<", status: "<< (isGood_?"good!":"bad!");
         return ss.str();
     }

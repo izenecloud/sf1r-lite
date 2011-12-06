@@ -1,11 +1,12 @@
 /**
- * @file core/common/IndexBundleSchemaHelpers.cpp
+ * @file core/common/BundleSchemaHelpers.cpp
  * @author Ian Yang
  * @date Created <2010-07-12 11:19:38>
  */
-#include "IndexBundleSchemaHelpers.h"
+#include "BundleSchemaHelpers.h"
 
 #include <boost/algorithm/string/case_conv.hpp>
+#include <boost/algorithm/string.hpp>
 
 namespace sf1r {
 
@@ -178,6 +179,20 @@ sf1r::PropertyDataType getPropertyDataType(
     }
 
     return sf1r::UNKNOWN_DATA_PROPERTY_TYPE;
+}
+
+bool isPropertyForeignKey(
+    const MiningSchema& schema,
+    const std::string& property
+)
+{
+    if (schema.summarization_enable &&
+            !schema.summarization_schema.parentKey.empty())
+    {
+        return boost::iequals(property,schema.summarization_schema.parentKey);
+    }
+
+    return false;
 }
 
 } // NAMESPACE sf1r
