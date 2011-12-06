@@ -83,7 +83,6 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 void MultiDocSummarizationSubManager::EvaluateSummarization()
 {
     BuildIndexOfParentKey_();
-    return;//Disable
     BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
     if (schema_.parentKeyLogPath.empty())
     {

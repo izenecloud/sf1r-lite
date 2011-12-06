@@ -178,6 +178,9 @@ void SPLMUtil::selectSentences(
     for (set<pair<double, int> >::const_reverse_iterator it = result.rbegin();
             it != result.rend(); ++it)
     {
+        if (summary_list.size() >= SENTENCE_LIMIT)
+            break;
+
         int s = it->second;
 
         set<int> cur_word_set;
@@ -190,8 +193,6 @@ void SPLMUtil::selectSentences(
         summary_list.push_back(corpus.get_sent(s));
 
         word_count += summary_list.back().size();
-        if (summary_list.size() > SENTENCE_LIMIT)
-            break;
     }
 }
 
