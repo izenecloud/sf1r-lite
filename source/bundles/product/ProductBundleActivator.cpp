@@ -202,7 +202,7 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
         handler->addCollection(price_trend_);
     }
     std::string work_dir = dir+"/work_dir";
-    config_->pm_config_.enableClusteringAlgorithm = true;
+    config_->pm_config_.enable_clustering_algo = true;
     boost::shared_ptr<ProductManager> product_manager(new ProductManager(work_dir, data_source_, op_processor_, price_trend_, config_->pm_config_));
     return product_manager;
 }

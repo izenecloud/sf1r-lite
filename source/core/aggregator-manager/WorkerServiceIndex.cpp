@@ -207,7 +207,7 @@ bool WorkerService::buildCollection(unsigned int numdoc)
 
         if(hooker_)
         {
-            if(!hooker_->Finish())
+            if(!hooker_->FinishHook())
             {
                 std::cout<<"[IndexTaskService] Hooker Finish failed."<<std::endl;
                 return false;

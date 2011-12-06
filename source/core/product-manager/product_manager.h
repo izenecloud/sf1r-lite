@@ -43,7 +43,7 @@ public:
 
     bool HookDelete(uint32_t docid, time_t timestamp);
 
-    bool Finish();
+    bool FinishHook();
 
     //update documents in A, so need transfer
     bool UpdateADoc(const Document& doc, bool backup = true);

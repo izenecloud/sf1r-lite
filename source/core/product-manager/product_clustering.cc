@@ -32,7 +32,7 @@ bool ProductClustering::Open()
         group_table_ = new GroupTableType(group_table_file);
         group_table_->Load();
         dd_ = new DDType(dd_container, group_table_);
-        dd_->SetFixK(3);
+//         dd_->SetFixK(3);
 //         dd_->SetMaxProcessTable(40);
         if(!dd_->Open())
         {

@@ -45,6 +45,7 @@ void CollectionProductDataSource::GetDocIdList(const izenelib::util::UString& uu
 bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_list, const izenelib::util::UString& uuid)
 {
     if(docid_list.empty()) return false;
+    if(uuid.length()==0) return false;
     PropertyConfig property_config;
     property_config.propertyName_ = config_.uuid_property_name;
     std::set<PropertyConfig, PropertyComp>::iterator iter = schema_.find(property_config);
