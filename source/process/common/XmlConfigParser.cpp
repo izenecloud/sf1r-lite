@@ -1239,6 +1239,12 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
     {
         getAttribute(backup_node, "path", pm_config.backup_path);
     }
+    
+    ticpp::Element* uuidmap_node = getUniqChildElement(product_schema, "UuidMap", false);
+    if (uuidmap_node)
+    {
+        getAttribute(uuidmap_node, "path", pm_config.uuid_map_path);
+    }
 }
 
 void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, CollectionMeta & collectionMeta)

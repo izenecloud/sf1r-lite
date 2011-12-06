@@ -21,7 +21,7 @@ public:
     bool HookInsert(Document& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, time_t timestamp);
     bool HookUpdate(Document& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, time_t timestamp, bool r_type);
     bool HookDelete(docid_t docid, time_t timestamp);
-    bool Finish();
+    bool FinishHook();
 
 private:
     boost::shared_ptr<ProductManager> product_manager_;

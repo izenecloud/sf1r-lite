@@ -271,7 +271,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
 
         if (hooker_)
         {
-            if (!hooker_->Finish())
+            if(!hooker_->FinishHook())
             {
                 std::cout<<"[IndexWorker] Hooker Finish failed."<<std::endl;
                 return false;

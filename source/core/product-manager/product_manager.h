@@ -5,7 +5,7 @@
 
 #include <document-manager/Document.h>
 #include <ir/index_manager/index/IndexerDocument.h>
-
+#include <idmlib/duplicate-detection/dup_detector.h>
 #include "pm_def.h"
 #include "pm_types.h"
 #include "pm_config.h"
@@ -20,11 +20,14 @@ class ProductDataSource;
 class OperationProcessor;
 class ProductBackup;
 class ProductPriceTrend;
+class ProductClustering;
+class ProductClusteringPostItem;
 
 class ProductManager
 {
 public:
     ProductManager(
+            const std::string& work_dir,
             ProductDataSource* data_source,
             OperationProcessor* op_processor,
             ProductPriceTrend* price_trend,
@@ -40,7 +43,7 @@ public:
 
     bool HookDelete(uint32_t docid, time_t timestamp);
 
-    bool Finish();
+    bool FinishHook();
 
     //update documents in A, so need transfer
     bool UpdateADoc(const Document& doc, bool backup = true);
@@ -88,6 +91,9 @@ public:
     }
 
 private:
+    ProductClustering* GetClustering_();
+    
+        
     bool GenOperations_();
 
     void BackupPCItem_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, int type);
@@ -111,11 +117,16 @@ private:
     bool GetTimestamp_(const PMDocumentType& doc, time_t& timestamp) const;
 
     bool GetGroupProperties_(const PMDocumentType& doc, std::map<std::string, std::string>& group_prop_map) const;
+    
+    bool GetCategory_(const PMDocumentType& doc, izenelib::util::UString& category);
+    
 
 private:
+    std::string work_dir_;
     ProductDataSource* data_source_;
     OperationProcessor* op_processor_;
     ProductPriceTrend* price_trend_;
+    ProductClustering* clustering_;
     ProductBackup* backup_;
     PMConfig config_;
     std::string error_;

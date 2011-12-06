@@ -104,6 +104,16 @@ public:
         property_const_iterator it = findProperty(pname);
         return it!=propertyEnd() ;
     }
+    
+    /// may throw bad cast exception if type not match
+    template <class T>
+    bool getProperty(const std::string& pname, T& value) const
+    {
+        property_const_iterator it = findProperty(pname);
+        if(it==propertyEnd()) return false;
+        value = it->second.get<T>();
+        return true;
+    }
 
     property_iterator propertyBegin()
     {
