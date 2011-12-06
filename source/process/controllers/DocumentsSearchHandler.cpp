@@ -22,7 +22,7 @@
 #include <parsers/SearchParser.h>
 #include <parsers/SortParser.h>
 #include <parsers/CustomRankingParser.h>
-#include <common/IndexBundleSchemaHelpers.h>
+#include <common/BundleSchemaHelpers.h>
 
 #include <common/Keys.h>
 #include <common/parsers/PageInfoParser.h>

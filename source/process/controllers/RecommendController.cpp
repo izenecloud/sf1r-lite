@@ -17,7 +17,7 @@
 #include <recommend-manager/ItemBundle.h>
 #include <recommend-manager/RateParam.h>
 
-#include <common/IndexBundleSchemaHelpers.h>
+#include <common/BundleSchemaHelpers.h>
 #include <common/Keys.h>
 #include <common/Utilities.h> // Utilities::toUpperCopy()
 

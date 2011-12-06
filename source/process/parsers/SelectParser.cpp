@@ -5,7 +5,7 @@
  */
 #include "SelectParser.h"
 
-#include <common/IndexBundleSchemaHelpers.h>
+#include <common/BundleSchemaHelpers.h>
 
 #include <common/Keys.h>
 

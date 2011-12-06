@@ -1,13 +1,14 @@
-#ifndef SF1R_PROCESS_COMMON_INDEXBUNDLE_SCHEMA_HELPER_H
-#define SF1R_PROCESS_COMMON_INDEXBUNDLE_SCHEMA_HELPER_H
+#ifndef SF1R_PROCESS_COMMON_BUNDLE_SCHEMA_HELPER_H
+#define SF1R_PROCESS_COMMON_BUNDLE_SCHEMA_HELPER_H
 /**
- * @file process/common/IndexBundleSchemaHelpers.h
+ * @file process/common/BundleSchemaHelpers.h
  * @author Ian Yang
  * @date Created <2010-07-12 11:14:22>
  * @brief Helper functions for IndexBundleSchema
  */
 
 #include <bundles/index/IndexBundleConfiguration.h>
+#include <bundles/mining/MiningBundleConfiguration.h>
 
 #include <vector>
 #include <string>
@@ -53,6 +54,11 @@ sf1r::PropertyDataType getPropertyDataType(
     const std::string& property
 );
 
+bool isPropertyForeignKey(
+    const MiningSchema& schema,
+    const std::string& property
+);
+
 } // namespace sf1r
 
-#endif // SF1R_PROCESS_COMMON_INDEXBUNDLE_SCHEMA_HELPER_H
+#endif // SF1R_PROCESS_COMMON_BUNDLE_SCHEMA_HELPER_H

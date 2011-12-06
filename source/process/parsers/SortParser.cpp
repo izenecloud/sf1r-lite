@@ -5,7 +5,7 @@
  */
 #include "SortParser.h"
 
-#include <common/IndexBundleSchemaHelpers.h>
+#include <common/BundleSchemaHelpers.h>
 
 #include <query-manager/QueryManager.h>
 

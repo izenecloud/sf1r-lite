@@ -11,7 +11,7 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/path.hpp>
-#include <boost/algorithm/string/compare.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <glog/logging.h>
 
@@ -49,8 +49,7 @@ struct IsParentKeyFilterProperty
 
     bool operator()(const QueryFiltering::FilteringType& filterType)
     {
-        static boost::is_iequal comparator;
-        return comparator(parent_key_property, filterType.first.second);
+        return boost::iequals(parent_key_property, filterType.first.second);
     }
 };
 
@@ -84,6 +83,7 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 void MultiDocSummarizationSubManager::EvaluateSummarization()
 {
     BuildIndexOfParentKey_();
+    return;//Disable
     BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
     if (schema_.parentKeyLogPath.empty())
     {
@@ -132,7 +132,6 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     ilplib::langid::Analyzer* langIdAnalyzer = document_manager_->getLangId();
 
     corpus_->start_new_coll(key);
-
     for (uint32_t i = 0; i < docs.size(); i++)
     {
         Document doc;
@@ -163,7 +162,6 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
             startPos += len;
         }
     }
-
     corpus_->start_new_sent();
     corpus_->start_new_doc();
     corpus_->start_new_coll();
@@ -309,6 +307,7 @@ void MultiDocSummarizationSubManager::DoInsertBuildIndexOfParentKey_(
         const std::string& fileName)
 {
     ScdParser parser(UString::UTF_8);
+    if (!parser.load(fileName)) return;
     for (ScdParser::iterator doc_iter = parser.begin();
             doc_iter != parser.end(); ++doc_iter)
     {

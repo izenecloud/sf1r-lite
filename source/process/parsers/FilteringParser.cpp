@@ -6,8 +6,7 @@
 #include "FilteringParser.h"
 #include <common/parsers/ConditionArrayParser.h>
 
-#include <common/IndexBundleSchemaHelpers.h>
-#include <common/MiningBundleSchemaHelpers.h>
+#include <common/BundleSchemaHelpers.h>
 #include <common/ValueConverter.h>
 
 namespace sf1r {
@@ -33,23 +32,32 @@ bool FilteringParser::parse(const Value& conditions)
         QueryFiltering::FilteringType& filteringRule = filteringRules_[i];
 
         // validation
-        if (!isPropertyFilterable(indexSchema_, condition.property()))
+        sf1r::PropertyDataType dataType;
+
+        if (isPropertyFilterable(indexSchema_, condition.property()))
         {
-            if(!isPropertyForeignKey(miningSchema_, condition.property()))
+            dataType =getPropertyDataType(indexSchema_, condition.property());
+            if (dataType == sf1r::UNKNOWN_DATA_PROPERTY_TYPE)
+            {
+                error() = "Property's data type is unknown: " +
+                                condition.property();
+                return false;
+            }
+				
+        }
+        else
+        {
+            if(isPropertyForeignKey(miningSchema_, condition.property()))
+            {
+                dataType = sf1r::STRING_PROPERTY_TYPE;
+            }
+            else
+            {
                 error() = "Property is not filterable in condition: " +
-                          condition.property();
-            return false;
+                                condition.property();
+                return false;
+            }
         }
-
-        sf1r::PropertyDataType dataType =
-            getPropertyDataType(indexSchema_, condition.property());
-        if (dataType == sf1r::UNKNOWN_DATA_PROPERTY_TYPE)
-        {
-            error() = "Property's data type is unknown: " +
-                      condition.property();
-            return false;
-        }
-
         filteringRule.first.second = condition.property();
         filteringRule.first.first = toFilteringOperation(condition.op());
 
