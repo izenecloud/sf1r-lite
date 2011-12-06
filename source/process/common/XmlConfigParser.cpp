@@ -864,6 +864,7 @@ void CollectionConfig::parseCollectionSettings(const ticpp::Element * collection
     parseIndexBundleParam(indexParam, collectionMeta);
     parseIndexEcSchema(getUniqChildElement(indexBundle, "EcSchema", false), collectionMeta);
     parseIndexBundleSchema(getUniqChildElement(indexBundle, "Schema"), collectionMeta);
+    parseIndexShardSchema(getUniqChildElement(indexBundle, "ShardSchema", false), collectionMeta); //after Schema
 
     // ProductBundle
     Element* productBundle = getUniqChildElement(collection, "ProductBundle", false);
@@ -1103,6 +1104,24 @@ void CollectionConfig::parseIndexEcSchema(const ticpp::Element * indexEcSchema, 
                 indexBundleConfig.productSourceField_ = property_name;
             }
         }
+    }
+}
+
+void CollectionConfig::parseIndexShardSchema(const ticpp::Element * shardSchema, CollectionMeta & collectionMeta)
+{
+    if (!shardSchema)
+    {
+        return;
+    }
+
+    IndexBundleConfiguration& indexBundleConfig = *(collectionMeta.indexBundleConfig_);
+
+    Iterator<Element> keyElem("ShardKey");
+    for (keyElem = keyElem.begin(shardSchema); keyElem != keyElem.end(); keyElem++)
+    {
+        std::string key;
+        getAttribute(keyElem.Get(), "name", key);
+        indexBundleConfig.indexShardKeys_.push_back(key);
     }
 }
 

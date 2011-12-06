@@ -6,10 +6,18 @@
     <xs:element name="IndexBundle">
         <xs:complexType>
             <xs:sequence>
-            <xs:element name="EcSchema" minOccurs="0">
+                <xs:element name="EcSchema" minOccurs="0">
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element ref="ProductSourceField" minOccurs="0"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+
+                <xs:element name="ShardSchema" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element ref="ShardKey" minOccurs="1" maxOccurs="unbounded"/>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
@@ -49,6 +57,12 @@
             <xs:sequence>
                 <xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="1"/>
             </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="ShardKey">
+        <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required"/>
         </xs:complexType>
     </xs:element>
 

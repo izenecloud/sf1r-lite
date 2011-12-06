@@ -7,21 +7,31 @@
 #include <node-manager/sharding/ShardingStrategy.h>
 #include <node-manager/sharding/ScdDispatcher.h>
 
+#include <glog/logging.h>
+
 namespace sf1r{
 
 bool IndexAggregator::ScdDispatch(
         unsigned int numdoc,
         const std::string& collectionName,
-        const std::string& scdPath)
+        const std::string& scdPath,
+        const std::vector<std::string>& shardKeyList)
 {
     bool ret = false;
 
-    // xxx config
     ShardingConfig cfg;
     cfg.setShardNum(NodeManagerSingleton::get()->getShardNum());
-    cfg.addShardKey("Url");
-    cfg.addShardKey("Title");
-    cfg.addShardKey("DOCID");
+    size_t i = 0;
+    for ( ; i < shardKeyList.size(); i++)
+    {
+        cfg.addShardKey(shardKeyList[i]);
+        std::cout << "Shard Key: " << shardKeyList[i] << std::endl;
+    }
+    if (i == 0)
+    {
+        LOG(ERROR) << "No shard key!";
+        return ret;
+    }
 
     // create scd sharding strategy
     ShardingStrategy* shardingStrategy = new HashShardingStrategy;
