@@ -7,3 +7,5 @@
 !/config/schema/*.xsd
 !/config/sf1config.xml.in
 !/config/example.xml.in
+!/generate_recommend_scd
+!/generate_recommend_scd/*.rb

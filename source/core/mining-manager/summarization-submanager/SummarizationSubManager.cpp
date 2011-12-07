@@ -83,7 +83,6 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 void MultiDocSummarizationSubManager::EvaluateSummarization()
 {
     BuildIndexOfParentKey_();
-    return;//Disable
     BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
     if (schema_.parentKeyLogPath.empty())
     {
@@ -114,6 +113,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
                 PropertyType foreignKey(*fit);
                 pBTreeIndexer->getValue(schema_.foreignKeyPropName, foreignKey, docs);
             }
+            if(docs.empty()) continue;
             std::sort(docs.begin(), docs.end());
             DoEvaluateSummarization_(*fit, docs);
         }
@@ -167,12 +167,33 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     corpus_->start_new_coll();
 
     std::vector<std::pair<UString, std::vector<UString> > > summary_list;
-    SPLM::generateSummary(summary_list, *corpus_);
+//  std::string key_str;
+//  key.convertString(key_str, UString::UTF_8);
+//  std::cout << "Begin evaluating: " << key_str << std::endl;
+    if (docs.size() < 400 && corpus_->ntotal() < 5000)
+    {
+        SPLM::generateSummary(summary_list, *corpus_, SPLM::SPLM_SVD);
+    }
+    else if (docs.size() < 800 && corpus_->ntotal() < 10000)
+    {
+        SPLM::generateSummary(summary_list, *corpus_, SPLM::SPLM_RI);
+    }
+    else
+    {
+        SPLM::generateSummary(summary_list, *corpus_, SPLM::SPLM_NONE);
+    }
+//  std::cout << "End evaluating: " << key_str << std::endl;
 
     //XXX store the generated summary list
     std::vector<UString>& summary = summary_list[0].second;
     if (!summary.empty())
     {
+//      for (uint32_t i = 0; i < summary.size(); i++)
+//      {
+//          std::string sent;
+//          summary[i].convertString(sent, UString::UTF_8);
+//          std::cout << "\t" << sent << std::endl;
+//      }
         summarization.property("overview").swap(summary);
     }
     summarization_storage_->Update(key, summarization);

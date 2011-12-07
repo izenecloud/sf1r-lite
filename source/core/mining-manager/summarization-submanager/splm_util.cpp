@@ -1,4 +1,5 @@
-#include "util.h"
+#include "splm_util.h"
+#include "svd/d-mat2d.h"
 
 #include <ranking-manager/RankQueryProperty.h>
 #include <ranking-manager/RankDocumentProperty.h>
@@ -10,7 +11,7 @@ using namespace std;
 namespace sf1r
 {
 
-double SPLMUtil::kl(const vector<double>& px, const vector<double>& qx)
+double SPLMUtil::getKLdivergence(const vector<double>& px, const vector<double>& qx)
 {
     assert(px.size() == qx.size());
     double val = 0;
@@ -48,7 +49,7 @@ double **SPLMUtil::getTFIDF(const map<int, int>& wordMap, int s_start, int s_end
 {
     double **TF = mat_alloc(wordMap.size(), s_end - s_start);
     mat_zero(TF, wordMap.size(), s_end - s_start);
-    map<int, int> IDF;
+    set<int> IDF;
     getIDF(IDF, s_start, d_start, d_end, sentOffs, docOffs, W);
 
     for (int s = s_start ; s < s_end; ++s)
@@ -58,7 +59,7 @@ double **SPLMUtil::getTFIDF(const map<int, int>& wordMap, int s_start, int s_end
             map<int, int>::const_iterator it = wordMap.find(W[i]);
             if (it != wordMap.end())
             {
-                TF[it->second][s - s_start] += log((s_end - s_start) / ( 1 + IDF[W[i]]));
+                TF[it->second][s - s_start] += log((s_end - s_start) / ( 1 + IDF.count(W[i])));
             }
         }
     }
@@ -66,41 +67,32 @@ double **SPLMUtil::getTFIDF(const map<int, int>& wordMap, int s_start, int s_end
 }
 
 // Mapping between word index and the number of sentences containing the word
-void SPLMUtil::getISF(map<int, int>& ISF_map, int s_start, int s_end,
+void SPLMUtil::getISF(set<int>& ISF_set, int s_start, int s_end,
         const int *sentOffs, const int *W)
 {
     for (int s = s_start; s < s_end; ++s)
     {
-        set<int> wordFound; //Keeps track of whether a word appears in the sentence
-
         for (int i = sentOffs[s]; i < sentOffs[s + 1]; ++i)
         {
-            if (wordFound.insert(W[i]).second)
-            {
-                ++ISF_map[W[i]];
-            }
+            ISF_set.insert(W[i]);
         }
     }
 }
 
 // Mapping between word index and the number of documents containing the word
-void SPLMUtil::getIDF(map<int, int>& IDF_map, int s_start, int d_start, int d_end,
+void SPLMUtil::getIDF(set<int>& IDF_set, int s_start, int d_start, int d_end,
         const int *sentOffs, const int *docOffs, const int *W)
 {
     int s_end = s_start;
     for (int d = d_start; d < d_end; ++d)
     {
-        set<int> wordFound;
         while (sentOffs[s_end] < docOffs[d + 1]) ++s_end;
 
         for (int s = s_start; s < s_end; ++s)
         {
             for (int i = sentOffs[s]; i < sentOffs[s + 1]; ++i)
             {
-                if (wordFound.insert(W[i]).second)
-                {
-                    ++IDF_map[W[i]];
-                }
+                IDF_set.insert(W[i]);
             }
         }
         s_start = s_end;
@@ -108,24 +100,20 @@ void SPLMUtil::getIDF(map<int, int>& IDF_map, int s_start, int d_start, int d_en
 }
 
 // Mapping between word index and the number of documents in the whole collection containing the word
-void SPLMUtil::getICF(map<int, int>& ICF_map, int nColls, const int *sentOffs,
+void SPLMUtil::getICF(set<int>& ICF_set, int nColls, const int *sentOffs,
         const int *collOffs, const int *W)
 {
     int s_start = 0;
     int s_end = 0;
     for (int c = 0 ; c < nColls; ++c)
     {
-        set<int> wordFount;
         while (sentOffs[s_end] < collOffs[c + 1]) ++s_end;
 
         for (int s = s_start; s < s_end; ++s)
         {
             for (int i = sentOffs[s]; i < sentOffs[s + 1]; ++i)
             {
-                if (wordFount.insert(W[i]).second)
-                {
-                    ++ICF_map[W[i]];
-                }
+                ICF_set.insert(W[i]);
             }
         }
         s_start = s_end;
@@ -190,6 +178,9 @@ void SPLMUtil::selectSentences(
     for (set<pair<double, int> >::const_reverse_iterator it = result.rbegin();
             it != result.rend(); ++it)
     {
+        if (summary_list.size() >= SENTENCE_LIMIT)
+            break;
+
         int s = it->second;
 
         set<int> cur_word_set;
@@ -202,8 +193,6 @@ void SPLMUtil::selectSentences(
         summary_list.push_back(corpus.get_sent(s));
 
         word_count += summary_list.back().size();
-        if (summary_list.size() > SENTENCE_LIMIT)
-            break;
     }
 }
 
@@ -213,30 +202,17 @@ void SPLMUtil::getRankQueryProperty(RankQueryProperty& rqp, const int *sentOffs,
     map<int, vector<int> > uniqueWordPos;
     for (int i = sentOffs[s]; i < sentOffs[s + 1]; ++i)
     {
-        int collectionIndex = W[i];
-        if (uniqueWordPos.find(collectionIndex) == uniqueWordPos.end())
-        {
-            vector<int> newPosVec;
-            newPosVec.push_back(i);
-            uniqueWordPos[collectionIndex] = newPosVec;
-        }
-        else
-        {
-            uniqueWordPos[collectionIndex].push_back(i);
-        }
+        uniqueWordPos[W[i]].push_back(i);
     }
 
     rqp.setNumDocs(1);
     rqp.setTotalPropertyLength(documentLength);
 
-    int wordIndex = 0;
     map<int, vector<int> >::iterator it = uniqueWordPos.begin();
-
-    for (; it != uniqueWordPos.end(); ++it)
+    for (int wordIndex = 0; it != uniqueWordPos.end(); ++it, ++wordIndex)
     {
-
         rqp.addTerm(wordIndex);
-        vector<int> posVector = it->second;
+        const vector<int>& posVector = it->second;
 
         rqp.setTotalTermFreq(posVector.size());
         rqp.setDocumentFreq(uniqueWordPos.size());
@@ -245,8 +221,6 @@ void SPLMUtil::getRankQueryProperty(RankQueryProperty& rqp, const int *sentOffs,
         {
             rqp.pushPosition(posVector[i]);
         }
-
-        ++wordIndex;
     }
     rqp.setQueryLength(sentOffs[s + 1] - sentOffs[s]);
 }
@@ -259,32 +233,22 @@ void SPLMUtil::getRankDocumentProperty(RankDocumentProperty& rdp, int nWords, co
     {
         if (wordMapping.find(W[i]) == wordMapping.end())
             continue;
-        if (uniqueWordPos.find(W[i]) == uniqueWordPos.end())
-        {
-            vector<int> newPosVec;
-            newPosVec.push_back(i);
-            uniqueWordPos[W[i]] = newPosVec;
-        }
-        else
-        {
-            uniqueWordPos[W[i]].push_back(i);
-        }
+
+        uniqueWordPos[W[i]].push_back(i);
     }
 
     rdp.resize(uniqueWordPos.size() );
     rdp.setDocLength(collOffs[c + 1] - collOffs[c]); //Test
 
     map<int, vector<int> >::iterator it = uniqueWordPos.begin();
-    int wordIndex = 0;
-    for (; it != uniqueWordPos.end(); ++it)
+    for (int wordIndex = 0; it != uniqueWordPos.end(); ++it, ++wordIndex)
     {
         rdp.activate(wordIndex);
-        vector<int> posVector = it->second;
+        const vector<int>& posVector = it->second;
         for (unsigned int i = 0; i < posVector.size(); ++i)
         {
             rdp.pushPosition(posVector[i]);
         }
-        ++wordIndex;
     }
 }
 

@@ -50,7 +50,7 @@ class ProductClustering
 {
 public:
     typedef idmlib::dd::DupDetector<std::string, uint32_t, ProductClusteringAttach> DDType;
-    typedef typename DDType::GroupTableType GroupTableType;
+    typedef DDType::GroupTableType GroupTableType;
     ProductClustering(const std::string& work_dir, const PMConfig& config);
 
     ~ProductClustering();
