@@ -92,6 +92,11 @@ uint32_t IndexTaskService::getDocNum()
     return indexWorker_->getDocNum();
 }
 
+uint32_t IndexTaskService::getKeyCount(const std::string& property_name)
+{
+    return indexWorker_->getKeyCount(property_name);
+}
+
 std::string IndexTaskService::getScdDir() const
 {
     return bundleConfig_->indexSCDPath();

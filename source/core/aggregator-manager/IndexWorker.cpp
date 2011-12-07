@@ -417,6 +417,11 @@ uint32_t IndexWorker::getDocNum()
     return indexManager_->getIndexReader()->numDocs();
 }
 
+uint32_t IndexWorker::getKeyCount(const std::string& property_name)
+{
+    return indexManager_->getBTreeIndexer()->count(property_name);
+}
+
 /// private ////////////////////////////////////////////////////////////////////
 
 void IndexWorker::createPropertyList_()

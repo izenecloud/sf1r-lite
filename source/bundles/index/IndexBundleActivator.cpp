@@ -4,6 +4,7 @@
 #include <bundles/product/ProductTaskService.h>
 
 #include <common/SFLogger.h>
+#include <common/Utilities.h>
 #include <query-manager/QueryManager.h>
 #include <index-manager/IndexManager.h>
 #include <search-manager/SearchManager.h>
@@ -437,6 +438,14 @@ IndexBundleActivator::createIndexManager_() const
             indexerPropertyConfig.setIsFilter(iter->getIsFilter());
             indexerPropertyConfig.setIsMultiValue(iter->getIsMultiValue());
             indexerPropertyConfig.setIsStoreDocLen(iter->getIsStoreDocLen());
+            PropertyDataType sf1r_type = iter->getType();
+//             LOG(INFO)<<"Find property "<<iter->getName()<<","<<sf1r_type<<std::endl;
+            izenelib::ir::indexmanager::PropertyType type;
+            if(Utilities::convertPropertyDataType(iter->getName(), sf1r_type, type))
+            {
+//                 LOG(INFO)<<"Index get property "<<iter->getName()<<","<<type.which()<<std::endl;
+                indexerPropertyConfig.setType(type);
+            }
             indexCollectionMeta.addPropertyConfig(indexerPropertyConfig);
         }
 

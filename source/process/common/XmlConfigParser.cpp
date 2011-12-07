@@ -354,18 +354,6 @@ void SF1Config::parseMasterAgent(const ticpp::Element * master)
         downCase(aggregatorUnit.name_);
         masterAgent.addAggregatorConfig(aggregatorUnit);
     }
-
-    // todo, remove
-    Iterator<Element> worker_it("Worker");
-    uint32_t workerid = 1;
-    for (worker_it = worker_it.begin(master); worker_it != worker_it.end(); worker_it++)
-    {
-        std::string host;
-        int port;
-        getAttribute(worker_it.Get(), "host", host, true);
-        getAttribute(worker_it.Get(), "port", port, true);
-        masterAgent.aggregatorConfig_.addWorker(host, static_cast<uint16_t>(port), workerid++);
-    }
 }
 
 void SF1Config::parseWorkerAgent(const ticpp::Element * worker)
@@ -386,14 +374,6 @@ void SF1Config::parseWorkerAgent(const ticpp::Element * worker)
         getAttribute(aggregator_it.Get(), "name", serviceUnit.name_);
         downCase(serviceUnit.name_);
         workerAgent.addServiceUnit(serviceUnit);
-    }
-
-    // todo, remove
-    ticpp::Element* master = getUniqChildElement(worker, "Master", false);
-    if (master)
-    {
-        getAttribute(master, "host", workerAgent.masterHost_);
-        getAttribute(master, "port", workerAgent.masterPort_);
     }
 }
 

@@ -245,4 +245,33 @@ time_t Utilities::createTimeStamp(const string& text)
     return -2;
 }
 
+bool Utilities::convertPropertyDataType(const std::string& property_name, const PropertyDataType& sf1r_type, izenelib::ir::indexmanager::PropertyType& type)
+{
+    if(property_name == "DATE" )
+    {
+        type = int64_t(0);
+        return true;
+    }
+    if(sf1r_type==STRING_PROPERTY_TYPE)
+    {
+        type = izenelib::util::UString("", izenelib::util::UString::UTF_8);
+        return true;
+    }
+    else if(sf1r_type==INT_PROPERTY_TYPE)
+    {
+        type = int64_t(0);
+        return true;
+    }
+    else if(sf1r_type==FLOAT_PROPERTY_TYPE)
+    {
+        type = float(0.0);
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+    
+}
+
 }
