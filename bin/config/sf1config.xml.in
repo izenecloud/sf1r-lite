@@ -200,7 +200,7 @@
          * shardids (workerids) range from 1 to 'shardnum', without break.
          * it's recommended to keep the shardid consistent with nodeid, i.e., only-master node keeps the maximum nodeid.
     -->
-    <DistributedTopology enable="n" clusterid="zhongxia" nodenum="2" shardnum="2">
+    <DistributedTopology enable="n" clusterid="@DEFAULT_CLUSTER_ID@" nodenum="2" shardnum="2">
       <CurrentNode host="172.16.0.36" dataport="18171" replicaid="1" nodeid="1">
         <MasterAgent enable="y" port="18151" >
           <Aggregator name="b5mm"/>
