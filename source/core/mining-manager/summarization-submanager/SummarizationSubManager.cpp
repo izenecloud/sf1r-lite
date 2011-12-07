@@ -167,12 +167,12 @@ void MultiDocSummarizationSubManager::FlushCommentBuffer_()
                 value.push_back(std::make_pair(it->second[i].first, UString()));
                 value.back().second.swap(it->second[i].second);
             }
+            comment_cache_storage_->Update(it->first, value);
         }
         else
         {
-            value.swap(it->second);
+            comment_cache_storage_->Update(it->first, it->second);
         }
-        comment_cache_storage_->Update(it->first, value);
     }
     comment_cache_storage_->Flush();
 
