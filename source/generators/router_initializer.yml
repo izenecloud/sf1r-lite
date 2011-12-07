@@ -48,6 +48,8 @@ controllers:
       - set_top_group_label
       - visit
       - get_summarization
+      - get_doc_count
+      - get_key_count
 
   StatusController: ~
 

@@ -5,6 +5,7 @@
  */
 
 #include <bundles/index/IndexSearchService.h>
+#include <bundles/index/IndexTaskService.h>
 #include <bundles/mining/MiningSearchService.h>
 
 #include "DocumentsController.h"
@@ -884,6 +885,70 @@ void DocumentsController::get_summarization()
             summary() = str;
         }
     }
+}
+
+
+/**
+ * @brief Action @b get_doc_count. Get indexed document count.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Specify collection.
+ *
+ * @section response
+ *
+ * - @b count (@c Uint): Result count
+ *
+ *
+ * @section example
+ *
+ * @code
+ * {
+ *   "collection": "b5ma"
+ * }
+ * @endcode
+ */
+void DocumentsController::get_doc_count()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
+    uint32_t doc_count = collectionHandler_->indexTaskService_->getDocNum();
+    response()[Keys::count] = doc_count;
+}
+
+/**
+ * @brief Action @b get_key_count. Get distinct property value count(as the search key).
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Specify collection.
+ * - @b property* (@c String): Specify property name.
+ *
+ * @section response
+ *
+ * - @b count (@c Uint): Result count
+ *
+ *
+ * @section example
+ *
+ * @code
+ * {
+ *   "collection": "b5ma",
+ *   "property": "Source"
+ * }
+ * @endcode
+ */
+void DocumentsController::get_key_count()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
+    Value& pname = request()[Keys::property];
+    std::string property_name = asString(pname);
+    if(property_name.empty())
+    {
+        response().addError("Expect property name!");
+        return;
+    }
+    uint32_t doc_count = collectionHandler_->indexTaskService_->getKeyCount(property_name);
+    response()[Keys::count] = doc_count;
 }
 
 bool DocumentsController::requireDOCID()

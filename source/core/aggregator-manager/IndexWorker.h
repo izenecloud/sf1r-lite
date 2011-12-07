@@ -68,6 +68,8 @@ public:
     bool getIndexStatus(Status& status);
 
     uint32_t getDocNum();
+    
+    uint32_t getKeyCount(const std::string& property_name);
 
 private:
     void createPropertyList_();

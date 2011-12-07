@@ -46,6 +46,8 @@ public:
     void set_top_group_label();
     void visit();
     void get_summarization();
+    void get_doc_count();
+    void get_key_count();
 private:
     bool requireDOCID();
     bool setLimit();

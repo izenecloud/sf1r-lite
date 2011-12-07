@@ -78,8 +78,8 @@ PropValueTable::pvid_t PropValueTable::propValueId(const std::vector<izenelib::u
 bool PropValueTable::open()
 {
     if (!load_container(dirPath_, propName_ + ".prop.txt", propStrVec_, savePropStrNum_)
-        || !load_container(dirPath_, propName_ + ".parent.bin", parentIdVec_, saveParentIdNum_, true)
-        || !load_container(dirPath_, propName_ + ".doc.bin", valueIdTable_, saveDocIdNum_, true))
+        || !load_container(dirPath_, propName_ + ".parent_id.txt", parentIdVec_, saveParentIdNum_)
+        || !load_container(dirPath_, propName_ + ".doc.txt", valueIdTable_, saveDocIdNum_))
     {
         return false;
     }
@@ -107,8 +107,8 @@ bool PropValueTable::flush()
 {
     if (!saveParentId_(dirPath_, propName_ + ".parent.txt")
         || !save_container(dirPath_, propName_ + ".prop.txt", propStrVec_, savePropStrNum_)
-        || !save_container(dirPath_, propName_ + ".parent.bin", parentIdVec_, saveParentIdNum_, true)
-        || !save_container(dirPath_, propName_ + ".doc.bin", valueIdTable_, saveDocIdNum_, true))
+        || !save_container(dirPath_, propName_ + ".parent_id.txt", parentIdVec_, saveParentIdNum_)
+        || !save_container(dirPath_, propName_ + ".doc.txt", valueIdTable_, saveDocIdNum_))
     {
         return false;
     }
