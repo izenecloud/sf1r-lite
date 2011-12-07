@@ -22,13 +22,10 @@ BOOST_AUTO_TEST_CASE(MockIndex)
 
     BOOST_CHECK_EQUAL(indexer.numDocs(), 4U);
     BOOST_CHECK_EQUAL(indexer.maxDoc(), 3U);
-    BOOST_CHECK_EQUAL(indexer.docFreq(0, &Term("title", 1)), 2U);
-    BOOST_CHECK_EQUAL(indexer.docFreq(0, &Term("title", 6)), 2U);
-    BOOST_CHECK_EQUAL(indexer.docFreq(0, &Term("title", 8)), 2U);
-    BOOST_CHECK_EQUAL(indexer.docFreq(0, &Term("title", 10)), 3U);
 
     TermReader* reader = indexer.getTermReader(0);
-    reader->seek(&Term("title", 10U));
+    Term term("title", 10U);
+    reader->seek(&term);
 
     // Check termdocfreqs
     TermDocFreqs* freqs = reader->termDocFreqs();
