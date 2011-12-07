@@ -35,8 +35,7 @@ class Corpus;
 
 class MultiDocSummarizationSubManager
 {
-    typedef std::vector<std::pair<uint32_t, UString> > CommentBufferItemType;
-    typedef stx::btree_map<UString, CommentBufferItemType> CommentBufferType;
+    typedef std::vector<std::pair<uint32_t, UString> > CommentCacheItemType;
 
 public:
     MultiDocSummarizationSubManager(
@@ -60,7 +59,7 @@ public:
 private:
     void DoEvaluateSummarization_(
             const UString& key,
-            const CommentBufferItemType& comment_buffer_item);
+            const CommentCacheItemType& comment_cache_item);
 
     void BuildIndexOfParentKey_();
 
@@ -69,13 +68,6 @@ private:
     void DoDelBuildIndexOfParentKey_(const std::string& fileName);
 
     void DoUpdateIndexOfParentKey_(const std::string& fileName);
-
-    inline bool IsCommentBufferFull_() const
-    {
-        return comment_buffer_size_ >= 10000;
-    }
-
-    void FlushCommentBuffer_();
 
 private:
     SummarizeConfig schema_;
@@ -89,9 +81,6 @@ private:
     ParentKeyStorage* parent_key_storage_;
     SummarizationStorage* summarization_storage_;
     CommentCacheStorage* comment_cache_storage_;
-
-    CommentBufferType comment_buffer_;
-    uint32_t comment_buffer_size_;
 
     Corpus* corpus_;
 };
