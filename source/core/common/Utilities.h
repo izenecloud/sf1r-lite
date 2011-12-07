@@ -1,6 +1,8 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
+#include "type_defs.h"
+#include <ir/index_manager/index/IndexerPropertyConfig.h>
 #include <util/ustring/UString.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -95,6 +97,8 @@ public:
     {
         return t1.get<Index>() != t2.get<Index>();
     }
+    
+    static bool convertPropertyDataType(const std::string& property_name, const PropertyDataType& sf1r_type, izenelib::ir::indexmanager::PropertyType& type);
 
 };
 
