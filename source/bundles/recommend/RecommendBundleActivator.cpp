@@ -164,6 +164,7 @@ bool RecommendBundleActivator::openDataDirectory_(std::string& dataDir)
             LOG(ERROR) <<msg <<endl;
             //clean the corrupt dir
             bfs::remove_all(dir);
+            dirtyDirectories.push_back(dir);
         }
     }
 
@@ -187,7 +188,7 @@ bool RecommendBundleActivator::openDataDirectory_(std::string& dataDir)
         boost::shared_ptr<Directory> dir = directoryRotator_.currentDirectory();
         if(dir)
         {
-            dataDir = newest->path().string();
+            dataDir = dir->path().string();
             return true;
         }
     }
