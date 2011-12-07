@@ -3,6 +3,8 @@
 
 #include <node-manager/ZkMonitor.h>
 
+#include <util/string/StringUtils.h>
+
 #include <sstream>
 
 using namespace sf1r;
@@ -37,7 +39,10 @@ void SynchroConsumer::watchProducer(
 {
     consumerStatus_ = CONSUMER_STATUS_WATCHING;
 
-    syncNodePath_ += "/" + producerID;
+    std::string producer = producerID;
+    izenelib::util::Trim(producer);
+    if (!producer.empty())
+        syncNodePath_ += "/" + producer;
 
     replyProducer_ = replyProducer;
     callback_on_produced_ = callback_on_produced;
