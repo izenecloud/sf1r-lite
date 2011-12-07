@@ -100,9 +100,13 @@ void ProductClustering::Insert(const PMDocumentType& doc)
         error_ = "Price is invalid.";
         return;
     }
+    
+    izenelib::util::UString city;
+    doc.getProperty(config_.city_property_name, city);
     ProductClusteringAttach attach;
 //     udocid.convertString(attach.docid, izenelib::util::UString::UTF_8);
     attach.category = category;
+    attach.city = city;
     attach.price = price;
     
     std::vector<izenelib::util::UString> termStrList;
