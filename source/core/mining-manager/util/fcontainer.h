@@ -80,7 +80,7 @@ template<class T> bool save_container(
     catch(boost::archive::archive_exception& e)
     {
         LOG(ERROR) << "exception in boost::archive::text_oarchive or binary_oarchive: " << e.what()
-                    << ", pathStr: " << pathStr;
+                   << ", pathStr: " << pathStr;
         return false;
     }
 
@@ -117,34 +117,33 @@ template<class T> bool load_container(
     }
 
     std::ifstream ifs(pathStr.c_str(), openMode);
-    if (ifs)
+    if (! ifs)
+        return true;
+
+    LOG(INFO) << "start loading file: " << pathStr;
+
+    try
     {
-        LOG(INFO) << "start loading file: " << pathStr;
-
-        try
+        if (binary)
         {
-            if (binary)
-            {
-                boost::archive::binary_iarchive ia(ifs);
-                ia >> container;
-            }
-            else
-            {
-                boost::archive::text_iarchive ia(ifs);
-                ia >> container;
-            }
+            boost::archive::binary_iarchive ia(ifs);
+            ia >> container;
         }
-        catch(boost::archive::archive_exception& e)
+        else
         {
-            LOG(ERROR) << "exception in boost::archive::text_iarchive or binary_iarchive: " << e.what()
-                       << ", pathStr: " << pathStr;
-            return false;
+            boost::archive::text_iarchive ia(ifs);
+            ia >> container;
         }
-
-        count = container.size();
-
-        LOG(INFO) << "finished loading, element num: " << count;
     }
+    catch(boost::archive::archive_exception& e)
+    {
+        LOG(ERROR) << "exception in boost::archive::text_iarchive or binary_iarchive: " << e.what()
+                   << ", pathStr: " << pathStr;
+        return false;
+    }
+
+    count = container.size();
+    LOG(INFO) << "finished loading, element num: " << count;
 
     return true;
 }

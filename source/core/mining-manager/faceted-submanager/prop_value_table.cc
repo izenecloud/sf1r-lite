@@ -13,6 +13,14 @@
 
 #include <glog/logging.h>
 
+namespace
+{
+const char* SUFFIX_PROP_STR = ".prop_str.txt";
+const char* SUFFIX_PARENT_ID = ".parent_id.txt";
+const char* SUFFIX_VALUE_ID = ".value_id.txt";
+const char* SUFFIX_PARENT_STR = ".parent_str.txt";
+}
+
 NS_FACETED_BEGIN
 
 // as id 0 is reserved for empty value,
@@ -77,9 +85,9 @@ PropValueTable::pvid_t PropValueTable::propValueId(const std::vector<izenelib::u
 
 bool PropValueTable::open()
 {
-    if (!load_container(dirPath_, propName_ + ".prop.txt", propStrVec_, savePropStrNum_)
-        || !load_container(dirPath_, propName_ + ".parent.bin", parentIdVec_, saveParentIdNum_, true)
-        || !load_container(dirPath_, propName_ + ".doc.bin", valueIdTable_, saveDocIdNum_, true))
+    if (!load_container(dirPath_, propName_ + SUFFIX_PROP_STR, propStrVec_, savePropStrNum_) ||
+        !load_container(dirPath_, propName_ + SUFFIX_PARENT_ID, parentIdVec_, saveParentIdNum_) ||
+        !load_container(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
     {
         return false;
     }
@@ -105,10 +113,10 @@ bool PropValueTable::open()
 
 bool PropValueTable::flush()
 {
-    if (!saveParentId_(dirPath_, propName_ + ".parent.txt")
-        || !save_container(dirPath_, propName_ + ".prop.txt", propStrVec_, savePropStrNum_)
-        || !save_container(dirPath_, propName_ + ".parent.bin", parentIdVec_, saveParentIdNum_, true)
-        || !save_container(dirPath_, propName_ + ".doc.bin", valueIdTable_, saveDocIdNum_, true))
+    if (!saveParentId_(dirPath_, propName_ + SUFFIX_PARENT_STR) ||
+        !save_container(dirPath_, propName_ + SUFFIX_PROP_STR, propStrVec_, savePropStrNum_) ||
+        !save_container(dirPath_, propName_ + SUFFIX_PARENT_ID, parentIdVec_, saveParentIdNum_) ||
+        !save_container(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
     {
         return false;
     }

@@ -13,6 +13,14 @@
 
 using namespace sf1r::faceted;
 
+namespace
+{
+const char* SUFFIX_NAME_STR = ".name_str.txt";
+const char* SUFFIX_VALUE_STR = ".value_str.txt";
+const char* SUFFIX_NAME_ID = ".name_id.txt";
+const char* SUFFIX_VALUE_ID = ".value_id.txt";
+}
+
 // as id 0 is reserved for empty value
 // members are initialized to size 1
 AttrTable::AttrTable(
@@ -109,10 +117,10 @@ bool AttrTable::open(
     dirPath_ = dirPath;
     propName_ = propName;
 
-    if (!load_container(dirPath_, propName_ + ".name.map", nameStrVec_, saveNameStrNum_)
-        || !load_container(dirPath_, propName_ + ".value.map", valueStrVec_, saveValueStrNum_)
-        || !load_container(dirPath_, propName_ + ".name.table", nameIdVec_, saveNameIdNum_, true)
-        || !load_container(dirPath_, propName_ + ".value.table", valueIdTable_, saveDocIdNum_, true))
+    if (!load_container(dirPath_, propName_ + SUFFIX_NAME_STR, nameStrVec_, saveNameStrNum_) ||
+        !load_container(dirPath_, propName_ + SUFFIX_VALUE_STR, valueStrVec_, saveValueStrNum_) ||
+        !load_container(dirPath_, propName_ + SUFFIX_NAME_ID, nameIdVec_, saveNameIdNum_) ||
+        !load_container(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
     {
         return false;
     }
@@ -137,10 +145,10 @@ bool AttrTable::open(
 
 bool AttrTable::flush()
 {
-    if (!save_container(dirPath_, propName_ + ".name.map", nameStrVec_, saveNameStrNum_)
-        || !save_container(dirPath_, propName_ + ".value.map", valueStrVec_, saveValueStrNum_)
-        || !save_container(dirPath_, propName_ + ".name.table", nameIdVec_, saveNameIdNum_, true)
-        || !save_container(dirPath_, propName_ + ".value.table", valueIdTable_, saveDocIdNum_, true))
+    if (!save_container(dirPath_, propName_ + SUFFIX_NAME_STR, nameStrVec_, saveNameStrNum_) ||
+        !save_container(dirPath_, propName_ + SUFFIX_VALUE_STR, valueStrVec_, saveValueStrNum_) ||
+        !save_container(dirPath_, propName_ + SUFFIX_NAME_ID, nameIdVec_, saveNameIdNum_) ||
+        !save_container(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
     {
         return false;
     }
