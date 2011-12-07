@@ -25,6 +25,7 @@
                                     </xs:restriction>
                                 </xs:simpleType>
                             </xs:attribute>
+                            <xs:attribute name="id" use="required" type="xs:string" />
                         </xs:complexType>
                     </xs:element>
                     <xs:element name="Parameter" minOccurs="0">

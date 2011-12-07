@@ -1191,6 +1191,8 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
 
     std::string mode_str;
     getAttribute(product_schema, "mode", mode_str);
+    getAttribute(product_schema, "id", productBundleConfig.productId_);
+    
     //m or a, m as default
     if (mode_str=="a") productBundleConfig.mode_ = 2;
     else productBundleConfig.mode_ = 1;

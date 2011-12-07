@@ -22,7 +22,7 @@ public:
 
     std::string collectionName_;
 
-    std::string mCollectionName_;
+    std::string productId_;
 
     std::string cron_;
 
