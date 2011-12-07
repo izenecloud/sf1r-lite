@@ -18,22 +18,28 @@ using izenelib::util::UString;
 
 class ParentKeyStorage
 {
-    typedef izenelib::am::leveldb::Table<UString, std::vector<UString> > ParentKeyDbType;
-    typedef izenelib::am::AMIterator<ParentKeyDbType> ParentKeyIteratorType;
+    typedef izenelib::am::leveldb::Table<UString, std::vector<UString> > P2CDbType;
+    typedef izenelib::am::AMIterator<P2CDbType> P2CIteratorType;
+
+    typedef izenelib::am::leveldb::Table<UString, UString> C2PDbType;
+    typedef izenelib::am::AMIterator<C2PDbType> C2PIteratorType;
+
     typedef stx::btree_map<UString, std::vector<UString> > BufferType;
 
 public:
     ParentKeyStorage(
-            const std::string& dbPath,
+            const std::string& db_dir,
             unsigned bufferSize = 20000);
 
     ~ParentKeyStorage();
 
-    void AppendUpdate(const UString& key, const UString& value);
+    void AppendUpdate(const UString& parent, const UString& child);
 
     void Flush();
 
-    bool Get(const UString& key, std::vector<UString>& results);
+    bool GetChildren(const UString& parent, std::vector<UString>& children);
+
+    bool GetParent(const UString& child, UString& parent);
 
 private:
     inline bool IsBufferFull_()
@@ -43,10 +49,18 @@ private:
 
 private:
     friend class MultiDocSummarizationSubManager;
-    ParentKeyDbType parent_key_db_;
+
+    static const std::string p2c_path;
+    static const std::string c2p_path;
+
+    P2CDbType parent_to_children_db_;
+    C2PDbType child_to_parent_db_;
+
     BufferType buffer_db_;
+
     unsigned int buffer_capacity_;
     unsigned int buffer_size_;
+
     boost::shared_mutex mutex_;
 };
 

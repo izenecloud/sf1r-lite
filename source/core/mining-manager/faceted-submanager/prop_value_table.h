@@ -153,12 +153,12 @@ private:
 
     /** mapping from value id to value string */
     std::vector<izenelib::util::UString> propStrVec_;
-    /** the number of elements in @c propStrVec_ saved in ".prop.txt" file */
+    /** the number of elements in @c propStrVec_ saved in file */
     unsigned int savePropStrNum_;
 
     /** mapping from value id to parent value id */
     std::vector<pvid_t> parentIdVec_;
-    /** the number of elements in @c parentIdVec_ saved in ".parent.bin" file */
+    /** the number of elements in @c parentIdVec_ saved in file */
     unsigned int saveParentIdNum_;
 
     /** mapping from value id to the map of child values */
@@ -166,7 +166,7 @@ private:
 
     /** mapping from doc id to a list of property value id */
     ValueIdTable valueIdTable_;
-    /** the number of elements in @c valueIdTable_ saved in ".doc.bin" file */
+    /** the number of elements in @c valueIdTable_ saved in file */
     unsigned int saveDocIdNum_;
 };
 
