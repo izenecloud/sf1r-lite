@@ -24,7 +24,6 @@ public:
         SPLM_SVD,
         SPLM_RI,
         SPLM_RI_SVD,
-//      SPLM_LDA,
         SPLM_NONE
     };
 
@@ -77,14 +76,11 @@ public:
     static void generateSummary(
             std::vector<std::pair<UString, std::vector<UString> > >& summary_list,
             const Corpus& corpus,
-            int lengthLimit = 0,
             SPLM_Alg algorithm = SPLM_SVD,
-//          double alpha = 0.038, double beta = 0.1, int iter = 1002, int topic = 10,
+            int lengthLimit = 5,
             int D = 400, int E = 200,
             float mu = 2000, float lambda = 1000
     );
-
-    static void getVocabSet(std::set<int>& vocabulary, int row, int col, double **TF);
 
     static double **generateIndexVectors(double **TF, int row, int col, int D, int E);
 };

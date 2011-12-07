@@ -94,8 +94,6 @@ void MasterNodeManager::process(ZooKeeperEvent& zkEvent)
 
 void MasterNodeManager::onNodeCreated(const std::string& path)
 {
-    std::cout << "[MasterNodeManager::onNodeCreated] "<< path <<std::endl;
-
     if (masterState_ == MASTER_STATE_STARTING_WAIT_WORKERS)
     {
         // try detect workers
@@ -118,8 +116,6 @@ void MasterNodeManager::onNodeCreated(const std::string& path)
 
 void MasterNodeManager::onNodeDeleted(const std::string& path)
 {
-    std::cout << "[MasterNodeManager::onNodeDeleted] "<< path <<std::endl;
-
     if (masterState_ == MASTER_STATE_STARTED)
     {
         // try failover
@@ -129,8 +125,6 @@ void MasterNodeManager::onNodeDeleted(const std::string& path)
 
 void MasterNodeManager::onChildrenChanged(const std::string& path)
 {
-    std::cout << "[MasterNodeManager::onChildrenChanged] "<< path <<std::endl;
-
     if (masterState_ > MASTER_STATE_STARTING_WAIT_ZOOKEEPER)
     {
         detectReplicaSet(path);
@@ -213,14 +207,14 @@ void MasterNodeManager::doStart()
 
     // Register SF1, who works as Master, as search server without
     // waiting for all workers to be ready. Because even if one worker is
-    // broken down and not recovered, other workers should be in serve.
+    // broken down and not recovered, other workers should be in serving.
     registerSearchServer();
 }
 
 int MasterNodeManager::detectWorkers()
 {
     boost::lock_guard<boost::mutex> lock(mutex_);
-    std::cout<<"[MasterNodeManager] detecting Workers ..."<<std::endl;
+    //std::cout<<"[MasterNodeManager] detecting Workers ..."<<std::endl;
 
     // detect workers from "current" replica
     size_t detected = 0, good = 0;
@@ -288,7 +282,7 @@ int MasterNodeManager::detectWorkers()
                     }
 
                     // xxx check more info?
-                    std::cout <<"detected "<<workerMap_[shardid]->toString()<<std::endl;
+                    std::cout <<"[MasterNodeManager] detected "<<workerMap_[shardid]->toString()<<std::endl;
                     detected ++;
                     if (workerMap_[shardid]->isGood_)
                         good ++;
@@ -313,13 +307,13 @@ int MasterNodeManager::detectWorkers()
     {
         masterState_ = MASTER_STATE_STARTED;
         std::cout<<"[MasterNodeManager] all Workers are detected "<<topology_.shardNum_
-                 <<", good "<<good<<std::endl;
+                 <<" (good "<<good<<")"<<std::endl;
     }
     else
     {
         masterState_ = MASTER_STATE_STARTING_WAIT_WORKERS;
-        std::cout<<"[MasterNodeManager] waiting for Workers: detected "<<detected
-                 <<" (good "<<good<<"), all "<<topology_.shardNum_<<std::endl;
+        std::cout<<"[MasterNodeManager] detected "<<detected
+                 <<" worker(s) (good "<<good<<"), all "<<topology_.shardNum_<<" - waiting"<<std::endl;
     }
 
     // update config
@@ -333,7 +327,7 @@ int MasterNodeManager::detectWorkers()
 
 void MasterNodeManager::detectReplicaSet(const std::string& zpath)
 {
-    std::cout<<"[MasterNodeManager] detecting replicas ..."<<std::endl;
+    //std::cout<<"[MasterNodeManager] detecting replicas ..."<<std::endl;
 
     // xxx synchronize
     std::vector<std::string> childrenList;
@@ -346,7 +340,7 @@ void MasterNodeManager::detectReplicaSet(const std::string& zpath)
         zookeeper_->getZNodeData(childrenList[i], sreplicaId);
         try {
             replicaIdList_.push_back(boost::lexical_cast<replicaid_t>(sreplicaId));
-            std::cout<<"detected replica "<<replicaIdList_.back()<<std::endl;
+            ///std::cout<<"[MasterNodeManager] detected replica "<<replicaIdList_.back()<<std::endl;
         }
         catch (std::exception& e)
         {}
@@ -545,7 +539,7 @@ void MasterNodeManager::deregisterSearchServer()
 
 void MasterNodeManager::resetAggregatorConfig()
 {
-    std::cout << "[MasterNodeManager] set config for "<<aggregatorList_.size()<<" aggregators"<<std::endl;
+    //std::cout << "[MasterNodeManager] set config for "<<aggregatorList_.size()<<" aggregators"<<std::endl;
 
     aggregatorConfig_.reset();
 

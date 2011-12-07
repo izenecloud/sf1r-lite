@@ -19,7 +19,7 @@ class ScdOperationProcessor : public OperationProcessor
 {
 public:
 
-    ScdOperationProcessor(const std::string& dir);
+    ScdOperationProcessor(const std::string& collectionName, const std::string& dir);
 
     ~ScdOperationProcessor();
 
@@ -37,6 +37,7 @@ private:
     void AfterProcess_(bool is_succ);
 
 private:
+    std::string collectionName_;
     std::string dir_;
     ScdWriter* writer_;
     int last_op_;

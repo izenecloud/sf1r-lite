@@ -76,9 +76,8 @@ void SPLM::getSmoothedTfSentence(
 void SPLM::generateSummary(
         vector<pair<UString, vector<UString> > >& summary_list,
         const Corpus& corpus,
-        int lengthLimit,
         SPLM::SPLM_Alg algorithm,
-//      double alpha, double beta, int iter, int topic,
+        int lengthLimit,
         int D, int E,
         float mu, float lambda
 )
@@ -191,42 +190,6 @@ void SPLM::generateSummary(
                     }
                     break;
 
-//              case SPLM_LDA:
-//                  {
-//                      set<int> vocabulary = SPLM::getVocabSet(s_end_doc - s_start_doc, collWordMap.size(), TF_doc);
-//                      map<int, int> vocabMap;
-//                      int vocabIndex = 0;
-//                      vector<std::string> vocabVec;
-//                      for (set<int>::iterator iter = vocabulary.begin(); iter != vocabulary.end(); ++iter)
-//                      {
-//                          stringstream ss;
-//                          ss << *iter;
-//                          vocabVec.push_back(ss.str());
-//                          vocabMap[*iter] = vocabIndex;
-//                          vocabIndex++;
-//                      }
-//                      vector<vector<pair<size_t,size_t> > > matrixVec = getMatrixVec(
-//                              s_end_doc - s_start_doc, collWordMap.size(), TF_doc, vocabMap);
-
-//                      BOW *bw = new BOW();
-//                      bw->loadCorpusFileVectors(vocabVec, matrixVec);
-//                      LDA *ldaModel = new LDA;
-//                      ldaModel->loadCorpus(bw);
-//                      ldaModel->inference(iter, alpha, beta, topic);
-//                      double **theta, **phi;
-//                      ldaModel->exportModel(theta, phi, (size_t) (s_end_doc - s_start_doc), (size_t) collWordMap.size(), (size_t) topic);
-//                      double **phi_T = mat_transpose(phi, topic, collWordMap.size());
-
-//                      for(int m = 0; m < numOfS_doc; m++)
-//                          S_doc[0][m] = 1.0;
-
-//                      getSmoothedTfDocument(smoothedDoc, docIndex, sentOffs, docOffs,
-//                              collWordMap, W, topic, phi_T, S_doc);
-
-//                      mat_free(phi_T);
-//                  }
-//                  break;
-
                 default:
                     break;
                 }
@@ -312,38 +275,16 @@ void SPLM::generateSummary(
     }
 }
 
-void SPLM::getVocabSet(set<int>& vocabulary, int row, int col, double **TF)
-{
-    for (int i = 0; i < col; i++)
-    {
-        for (int j = 0; j < row; j++)
-        {
-            if (TF[i][j] > 0)
-            {
-                vocabulary.insert(i);
-                break;
-            }
-        }
-    }
-}
-
 double **SPLM::generateIndexVectors(double **TF, int row, int col, int D, int E)
 {
     D = col;
-    double value;
-    if (D < E / 2)
-        value = -1;
-    else if (D < E)
-        value = 1;
-    else
-        value = 0;
 
     double **indexVec = mat_alloc(col, D);
     for (int i = 0; i < col; i++)
     {
         for (int j = 0; j < D; j++)
         {
-            indexVec[i][j] = value;
+            indexVec[i][j] = rand() % 3 - 1;
         }
     }
 

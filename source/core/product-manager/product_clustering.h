@@ -20,17 +20,19 @@ class ProductClusteringAttach
 public:
 //     std::string docid;
     izenelib::util::UString category;
+    izenelib::util::UString city;
     ProductPrice price;
     
     template<class Archive> 
     void serialize(Archive& ar, const unsigned int version) 
     {
-        ar & category & price;
+        ar & category & city & price;
     }
         
     bool dd(const ProductClusteringAttach& other) const
     {
         if(category!=other.category) return false;
+        if(city!=other.city) return false;
         ProductPriceType mid1;
         ProductPriceType mid2;
         if(!price.GetMid(mid1)) return false;

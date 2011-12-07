@@ -28,10 +28,10 @@ SynchroProducer::SynchroProducer(
 
 SynchroProducer::~SynchroProducer()
 {
-    zookeeper_->deleteZNode(prodNodePath_, true);
+    zookeeper_->deleteZNode(prodColNodePath_, true);
 }
 
-bool SynchroProducer::produce(const std::string& dataPath, callback_on_consumed_t callback_on_consumed)
+bool SynchroProducer::produce(SynchroData& syncData, callback_on_consumed_t callback_on_consumed)
 {
     // xxx lock
     if (isSynchronizing_)
@@ -42,10 +42,18 @@ bool SynchroProducer::produce(const std::string& dataPath, callback_on_consumed_
     else
     {
         isSynchronizing_ = true;
+        prodColNodePath_ = prodNodePath_;
+        std::string producerID = syncData.getStrValue(SynchroData::KEY_COLLECTION);
+        if (!producerID.empty())
+        {
+            prodColNodePath_.append("/");
+            prodColNodePath_.append(producerID);
+        }
+
         init();
     }
 
-    if (doProcude(dataPath))
+    if (doProcude(syncData))
     {
         if (callback_on_consumed != NULL)
         {
@@ -59,7 +67,7 @@ bool SynchroProducer::produce(const std::string& dataPath, callback_on_consumed_
         return true;
     }
 
-    endSynchroning();
+    endSynchroning("synchronize error or timeout!");
     return false;
 }
 
@@ -81,8 +89,7 @@ bool SynchroProducer::waitConsumers(bool& isConsumed, int findConsumerTimeout)
         waited += step;
         if (waited >= findConsumerTimeout)
         {
-            std::cout<<"Timeout, not saw any consumer."<<std::endl;
-            endSynchroning();
+            endSynchroning("timeout!");
             return false;
         }
     }
@@ -99,23 +106,11 @@ bool SynchroProducer::waitConsumers(bool& isConsumed, int findConsumerTimeout)
 /* virtual */
 void SynchroProducer::process(ZooKeeperEvent& zkEvent)
 {
-    std::cout<<"[SynchroProducer] "<< zkEvent.toString();
-//
-//    if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
-//    {
-//        //std::cout<<"Connected to zookeeper."<<std::endl;
-//        // xxx, delay processes when zookeeper connected
-//    }
-//    else if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTING_STATE)
-//    {
-//        //std::cout<<"Connecting to zookeeper (not started or broken down)."<<std::endl;
-//    }
+    //std::cout<<"[SynchroProducer] "<< zkEvent.toString();
 }
 
 void SynchroProducer::onNodeDeleted(const std::string& path)
 {
-    //std::cout<<"SynchroProducer::onNodeDeleted "<< path<<std::endl;
-
     if (consumersMap_.find(path) != consumersMap_.end())
     {
         // check if consumer broken down
@@ -124,8 +119,6 @@ void SynchroProducer::onNodeDeleted(const std::string& path)
 }
 void SynchroProducer::onDataChanged(const std::string& path)
 {
-    //std::cout<<"SynchroProducer::onDataChanged "<< path<<std::endl;
-
     if (consumersMap_.find(path) != consumersMap_.end())
     {
         // check if consumer finished
@@ -134,9 +127,7 @@ void SynchroProducer::onDataChanged(const std::string& path)
 }
 void SynchroProducer::onChildrenChanged(const std::string& path)
 {
-    //std::cout<<"SynchroProducer::onChildrenChanged "<< path<<std::endl;
-
-    if (path == prodNodePath_)
+    if (path == prodColNodePath_)
     {
         // whether new consumer comes, or consumer break down.
         watchConsumers();
@@ -146,34 +137,30 @@ void SynchroProducer::onChildrenChanged(const std::string& path)
 
 /// private
 
-bool SynchroProducer::doProcude(const std::string& dataPath)
+bool SynchroProducer::doProcude(SynchroData& syncData)
 {
     if (zookeeper_->isConnected())
     {
         ensureParentNodes();
 
-//        NodeData ndata;
-//        ndata.setValue(NodeData::ND_KEY_SYNC_PRODUCER, "producer");
-//        ndata.setValue(NodeData::ND_KEY_DIR, dataPath);
-
-        if (!zookeeper_->createZNode(prodNodePath_, dataPath))
+        if (!zookeeper_->createZNode(prodColNodePath_, syncData.serialize()))
         {
             if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
             {
-                zookeeper_->setZNodeData(prodNodePath_, dataPath);
-                std::cout<<"[SynchroProducer] overwrote "<<prodNodePath_<<std::endl;
-                std::cout<<"with data: "<<dataPath<<std::endl;
+                zookeeper_->setZNodeData(prodColNodePath_, syncData.serialize());
+                std::cout<<"[SynchroProducer] overwrote "<<prodColNodePath_<<std::endl;
+                //std::cout<<"with data: "<<syncDataStr<<std::endl;
                 return true;
             }
 
             std::cout<<"[SynchroProducer] failed to create "<<
-                    prodNodePath_<<" ("<<zookeeper_->getErrorString()<<")"<<std::endl;
+                    prodColNodePath_<<" ("<<zookeeper_->getErrorString()<<")"<<std::endl;
             return false;
         }
         else
         {
-            std::cout<<"[SynchroProducer] created "<<prodNodePath_<<std::endl;
-            std::cout<<"with data: "<<dataPath<<std::endl;
+            //std::cout<<"[SynchroProducer] created "<<prodColNodePath_<<std::endl;
+            //std::cout<<"with data: "<<syncDataStr<<std::endl;
             return true;
         }
     }
@@ -198,7 +185,7 @@ bool SynchroProducer::doProcude(const std::string& dataPath)
         }
         else
         {
-            return doProcude(dataPath);
+            return doProcude(syncData);
         }
     }
 }
@@ -212,7 +199,7 @@ void SynchroProducer::watchConsumers()
         return;
 
     std::vector<std::string> childrenList;
-    zookeeper_->getZNodeChildren(prodNodePath_, childrenList, ZooKeeper::WATCH);
+    zookeeper_->getZNodeChildren(prodColNodePath_, childrenList, ZooKeeper::WATCH);
 
     // todo, consumers
     if (childrenList.size() > 0)
@@ -249,17 +236,20 @@ void SynchroProducer::checkConsumers()
         }
 
         const std::string& consumer = it->first;
-        std::cout<<"[SynchroProducer] checking consumer "<<consumer<<" ";
-        std::string data;
-        if (zookeeper_->getZNodeData(consumer, data, ZooKeeper::WATCH))
+        //std::cout<<"[SynchroProducer] checking consumer "<<consumer<<" ";
+        std::string sdata;
+        if (zookeeper_->getZNodeData(consumer, sdata, ZooKeeper::WATCH))
         {
-            std::cout<<data<<std::endl;
-            if (data == "success")
+            //std::cout<<sdata<<std::endl;
+            SynchroData syncData;
+            syncData.loadKvString(sdata);
+            std::string syncRet = syncData.getStrValue(SynchroData::KEY_RETURN);
+            if (syncRet == "success")
             {
                 it->second.first = true;  // got consumer result
                 it->second.second = true; // result is true
             }
-            else if (data == "failure")
+            else if (syncRet == "failure")
             {
                 it->second.first = true;  // got consumer result
                 it->second.second = false; // result is false
@@ -295,6 +285,7 @@ void SynchroProducer::checkConsumers()
     if (consumedCount_ == consumersMap_.size())
     {
         result_on_consumed_ = true;
+        std::string info = "process succeeded";
         consumermap_t::iterator it;
         for (it = consumersMap_.begin(); it != consumersMap_.end(); it++)
         {
@@ -302,6 +293,7 @@ void SynchroProducer::checkConsumers()
             if (it->second.second == false)
             {
                 result_on_consumed_ = false;
+                info = "process failed";
                 break;
             }
         }
@@ -310,7 +302,7 @@ void SynchroProducer::checkConsumers()
             callback_on_consumed_(result_on_consumed_);
 
         // Synchronizing finished
-        endSynchroning();
+        endSynchroning(info);
     }
 }
 
@@ -320,6 +312,7 @@ void SynchroProducer::ensureParentNodes()
     zookeeper_->createZNode(NodeDef::getSF1RootPath());
     zookeeper_->createZNode(NodeDef::getSynchroPath());
     zookeeper_->createZNode(syncNodePath_);
+    zookeeper_->createZNode(prodNodePath_);
 }
 
 void SynchroProducer::init()
@@ -332,12 +325,12 @@ void SynchroProducer::init()
 }
 
 
-void SynchroProducer::endSynchroning()
+void SynchroProducer::endSynchroning(const std::string& info)
 {
     // Synchronizing finished
-    zookeeper_->deleteZNode(prodNodePath_);
+    zookeeper_->deleteZNode(prodColNodePath_);
     isSynchronizing_ = false;
-    std::cout<<"Synchronizing finished"<<std::endl;
+    std::cout<<"Synchronizing finished - "<<info<<std::endl;
 }
 
 

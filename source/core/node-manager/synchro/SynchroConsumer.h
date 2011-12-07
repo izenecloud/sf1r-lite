@@ -46,7 +46,10 @@ public:
             nodeid_t nodeId
             );
 
-    void watchProducer(callback_on_produced_t callback_on_produced, bool replyProducer = true);
+    void watchProducer(
+            const std::string& producerID,
+            callback_on_produced_t callback_on_produced,
+            bool replyProducer = true);
 
     void monitor();
 
