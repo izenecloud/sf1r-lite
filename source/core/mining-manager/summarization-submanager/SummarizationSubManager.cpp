@@ -1,6 +1,7 @@
 #include "SummarizationSubManager.h"
 #include "ParentKeyStorage.h"
 #include "SummarizationStorage.h"
+#include "CommentCacheStorage.h"
 #include "splm.h"
 
 #include <index-manager/IndexManager.h>
@@ -61,12 +62,14 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         boost::shared_ptr<IndexManager> index_manager,
         idmlib::util::IDMAnalyzer* analyzer)
     : schema_(schema)
+    , parent_key_ustr_name_(schema_.parentKey, UString::UTF_8)
     , document_manager_(document_manager)
     , index_manager_(index_manager)
     , analyzer_(analyzer)
     , parent_key_storage_(new ParentKeyStorage(homePath + "/parentkey"))
     , summarization_storage_(new SummarizationStorage(homePath + "/summarization"))
-    , parent_key_ustr_name_(schema_.parentKey, UString::UTF_8)
+    , comment_cache_storage_(new CommentCacheStorage(homePath + "/comment_cache"))
+    , comment_buffer_size_(0)
     , corpus_(new Corpus())
 {
     if (!schema_.parentKeyLogPath.empty())
@@ -77,72 +80,133 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 {
     delete parent_key_storage_;
     delete summarization_storage_;
+    delete comment_cache_storage_;
     delete corpus_;
 }
 
 void MultiDocSummarizationSubManager::EvaluateSummarization()
 {
     BuildIndexOfParentKey_();
-    BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
     if (schema_.parentKeyLogPath.empty())
     {
         ///No parentKey, directly build summarization
-        typedef BTreeIndexerManager::Iterator<UString> IteratorType;
-        IteratorType it = pBTreeIndexer->begin<UString>(schema_.foreignKeyPropName);
-        IteratorType itEnd = pBTreeIndexer->end<UString>();
-        for (; it != itEnd; ++it)
+        for (uint32_t i = 1; i <= document_manager_->getMaxDocId(); i++)
         {
-            std::vector<uint32_t> docs(it->second);
-            std::sort(docs.begin(), docs.end());
-            const UString& key = it->first;
-            DoEvaluateSummarization_(key, docs);
+            Document doc;
+            document_manager_->getDocument(i, doc);
+            Document::property_const_iterator kit = doc.findProperty(schema_.foreignKeyPropName);
+            if (kit == doc.propertyEnd())
+                continue;
+
+            Document::property_const_iterator cit = doc.findProperty(schema_.contentPropName);
+            if (cit == doc.propertyEnd())
+                continue;
+
+            const UString& key = kit->second.get<UString>();
+            const UString& content = cit->second.get<UString>();
+            CommentBufferItemType& cache_item = comment_buffer_[key];
+            cache_item.push_back(make_pair(i, UString()));
+            cache_item.back().second.assign(content);
+
+            ++comment_buffer_size_;
+            if (IsCommentBufferFull_())
+                FlushCommentBuffer_();
         }
     }
     else
     {
-        ///For each parentKey, get all its values(foreign key)
-        ParentKeyStorage::ParentKeyIteratorType parentKeyIt(parent_key_storage_->parent_key_db_);
-        ParentKeyStorage::ParentKeyIteratorType parentKeyEnd;
-        for (; parentKeyIt != parentKeyEnd; ++parentKeyIt)
+        for (uint32_t i = 1; i <= document_manager_->getMaxDocId(); i++)
         {
-            std::vector<uint32_t> docs;
-            const std::vector<UString>& foreignKeys = parentKeyIt->second;
-            std::vector<UString>::const_iterator fit = foreignKeys.begin();
-            for (; fit != foreignKeys.end(); ++fit)
-            {
-                PropertyType foreignKey(*fit);
-                pBTreeIndexer->getValue(schema_.foreignKeyPropName, foreignKey, docs);
-            }
-            if(docs.empty()) continue;
-            std::sort(docs.begin(), docs.end());
-            DoEvaluateSummarization_(*fit, docs);
+            Document doc;
+            document_manager_->getDocument(i, doc);
+            //FIXME
+            Document::property_const_iterator pit = doc.findProperty(schema_.parentKey);
+            if (pit == doc.propertyEnd())
+                continue;
+
+            Document::property_const_iterator cit = doc.findProperty(schema_.contentPropName);
+            if (cit == doc.propertyEnd())
+                continue;
+
+            const UString& parent_key = pit->second.get<UString>();
+            const UString& content = cit->second.get<UString>();
+            CommentBufferItemType& cache_item = comment_buffer_[parent_key];
+            cache_item.push_back(make_pair(i, UString()));
+            cache_item.back().second.assign(content);
+
+            ++comment_buffer_size_;
+            if (IsCommentBufferFull_())
+                FlushCommentBuffer_();
         }
+    }
+    FlushCommentBuffer_();
+
+    CommentCacheStorage::CommentCacheIteratorType commentCacheIt(comment_cache_storage_->comment_cache_db_);
+    CommentCacheStorage::CommentCacheIteratorType commentCacheEnd;
+    for (; commentCacheIt != commentCacheEnd; ++commentCacheIt)
+    {
+        const UString& key = commentCacheIt->first;
+        const CommentBufferItemType& cache_item = commentCacheIt->second;
+        DoEvaluateSummarization_(key, cache_item);
     }
     summarization_storage_->Flush();
 }
 
+void MultiDocSummarizationSubManager::FlushCommentBuffer_()
+{
+    if (comment_buffer_.empty()) return;
+
+    for (CommentBufferType::iterator it = comment_buffer_.begin();
+            it != comment_buffer_.end(); ++it)
+    {
+        CommentBufferItemType value;
+        if (comment_cache_storage_->Get(it->first, value))
+        {
+            for (uint32_t i = 0; i < it->second.size(); i++)
+            {
+                value.push_back(std::make_pair(it->second[i].first, UString()));
+                value.back().second.swap(it->second[i].second);
+            }
+            comment_cache_storage_->Update(it->first, value);
+        }
+        else
+        {
+            comment_cache_storage_->Update(it->first, it->second);
+        }
+    }
+    comment_cache_storage_->Flush();
+
+    comment_buffer_.clear();
+    comment_buffer_size_ = 0;
+}
+
 void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
         const UString& key,
-        const std::vector<uint32_t>& docs)
+        const CommentBufferItemType& comment_buffer_item)
 {
-    Summarization summarization(docs);
+    Summarization summarization;
+    for (uint32_t i = 0; i < comment_buffer_item.size(); i++)
+    {
+        summarization.insertDoc(comment_buffer_item[i].first);
+    }
     if (!summarization_storage_->IsRebuildSummarizeRequired(key, summarization))
         return;
 
     ilplib::langid::Analyzer* langIdAnalyzer = document_manager_->getLangId();
 
     corpus_->start_new_coll(key);
-    for (uint32_t i = 0; i < docs.size(); i++)
+    for (CommentBufferItemType::const_iterator it = comment_buffer_item.begin();
+            it != comment_buffer_item.end(); ++it)
     {
-        Document doc;
-        document_manager_->getDocument(docs[i], doc);
-        Document::property_const_iterator it = doc.findProperty(schema_.contentPropName);
-        if (it == doc.propertyEnd())
-            continue;
+//      Document doc;
+//      document_manager_->getDocument(docs[i], doc);
+//      Document::property_const_iterator it = doc.findProperty(schema_.contentPropName);
+//      if (it == doc.propertyEnd())
+//          continue;
 
         corpus_->start_new_doc();
 
-        const UString& content = it->second.get<UString>();
+        const UString& content = it->second;
         UString sentence;
         std::size_t startPos = 0;
         while (std::size_t len = langIdAnalyzer->sentenceLength(content, startPos))
@@ -153,10 +217,10 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 
             std::vector<UString> word_list;
             analyzer_->GetStringList(sentence, word_list);
-            for (std::vector<UString>::const_iterator it = word_list.begin();
-                    it != word_list.end(); ++it)
+            for (std::vector<UString>::const_iterator wit = word_list.begin();
+                    wit != word_list.end(); ++it)
             {
-                corpus_->add_word(*it);
+                corpus_->add_word(*wit);
             }
 
             startPos += len;
@@ -170,11 +234,11 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 //  std::string key_str;
 //  key.convertString(key_str, UString::UTF_8);
 //  std::cout << "Begin evaluating: " << key_str << std::endl;
-    if (docs.size() < 400 && corpus_->ntotal() < 5000)
+    if (comment_buffer_item.size() < 400 && corpus_->ntotal() < 5000)
     {
         SPLM::generateSummary(summary_list, *corpus_, SPLM::SPLM_SVD);
     }
-    else if (docs.size() < 800 && corpus_->ntotal() < 10000)
+    else if (comment_buffer_item.size() < 800 && corpus_->ntotal() < 10000)
     {
         SPLM::generateSummary(summary_list, *corpus_, SPLM::SPLM_RI);
     }

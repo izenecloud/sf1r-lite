@@ -8,6 +8,8 @@
 #ifndef SYNCHROPRODUCER_H_
 #define SYNCHROPRODUCER_H_
 
+#include "SynchroData.h"
+
 #include <3rdparty/zookeeper/ZooKeeper.hpp>
 #include <3rdparty/zookeeper/ZooKeeperEvent.hpp>
 
@@ -46,7 +48,7 @@ public:
      *        Note: if callback is set,
      * @return true if success, else false;
      */
-    bool produce(const std::string& dataPath, callback_on_consumed_t callback_on_consumed = NULL);
+    bool produce(SynchroData& syncData, callback_on_consumed_t callback_on_consumed = NULL);
 
     /**
      *
@@ -68,13 +70,13 @@ private:
 
     void init();
 
-    bool doProcude(const std::string& dataPath);
+    bool doProcude(SynchroData& syncData);
 
     void watchConsumers();
 
     void checkConsumers();
 
-    void endSynchroning();
+    void endSynchroning(const std::string& info="success");
 
 
 private:
@@ -82,6 +84,7 @@ private:
 
     std::string syncNodePath_;
     std::string prodNodePath_;
+    std::string prodColNodePath_;
 
     bool isSynchronizing_; // perform one synchronization work at a time, xxx
 

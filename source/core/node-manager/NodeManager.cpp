@@ -23,7 +23,7 @@ void NodeManager::init(
         const DistributedTopologyConfig& dsTopologyConfig,
         const DistributedUtilConfig& dsUtilConfig)
 {
-    // Initializations which should be done before process run.
+    // Initializations which should be done before collections started.
 
     // set distributed configurations
     dsTopologyConfig_ = dsTopologyConfig;
@@ -139,9 +139,8 @@ void NodeManager::initZkNameSpace()
 
 void NodeManager::enterCluster()
 {
-    std::cout<<"[NodeManager] staring ..."<<std::endl;
-
     boost::unique_lock<boost::mutex> lock(mutex_);
+
     if (nodeState_ == NODE_STATE_STARTED)
         return;
 
@@ -153,7 +152,7 @@ void NodeManager::enterCluster()
         if (!zookeeper_->isConnected())
         {
             // If still not connected, assume zookeeper service was stopped
-            // and waiting for later process after zookeeper recovered.
+            // and waiting for later connection after zookeeper recovered.
             nodeState_ = NODE_STATE_STARTING_WAIT_RETRY;
             std::cout<<"[NodeManager] waiting for ZooKeeper Service..."<<std::endl;
             return;

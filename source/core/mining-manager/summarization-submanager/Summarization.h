@@ -18,22 +18,26 @@ class Summarization
     typedef std::map<std::string, std::vector<UString> > property_named_map;
     typedef property_named_map::iterator property_mutable_iterator;
     typedef izenelib::am::EWAHBoolArray<uint32_t> fingerprint_type;
+
 public:
     typedef property_named_map::const_iterator property_const_iterator;
     typedef property_named_map::iterator property_iterator;
 
     Summarization()
-        : propertyList_()
     {
     }
 
-    Summarization(const std::vector<uint32_t>& ids)
-        : propertyList_()
+    explicit Summarization(const std::vector<uint32_t>& docid_list)
     {
-        for (uint32_t i = 0; i < ids.size(); i++)
+        for (uint32_t i = 0; i < docid_list.size(); i++)
         {
-            fingerPrint_.set(ids[i]);
+            fingerPrint_.set(docid_list[i]);
         }
+    }
+
+    void insertDoc(uint32_t docid)
+    {
+        fingerPrint_.set(docid);
     }
 
     std::vector<UString>& property(const std::string& propertyName)
