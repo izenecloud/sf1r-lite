@@ -6,6 +6,7 @@
 #include "string.h"
 
 #include <node-manager/synchro/DistributedSynchroFactory.h>
+#include <node-manager/synchro/SynchroData.h>
 
 using namespace sf1r;
 
@@ -29,7 +30,7 @@ void thread_consumer_run()
     SynchroConsumerPtr scp =
             DistributedSynchroFactory::makeConsumer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER);
 
-    scp->watchProducer(callback_on_produced, true);
+    scp->watchProducer("test", callback_on_produced, true);
 }
 
 int main(int argc, char** argv)
@@ -64,7 +65,12 @@ int main(int argc, char** argv)
     {
         SynchroProducerPtr spd =
             DistributedSynchroFactory::makeProducer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER);
-        spd->produce("/data/scd", callback_on_consumed);
+
+        SynchroData sdata;
+        sdata.setValue(SynchroData::KEY_COLLECTION, "test");
+        sdata.setValue(SynchroData::KEY_DATA_PATH, "/data/scd");
+
+        spd->produce(sdata, callback_on_consumed);
         bool ret;
         spd->waitConsumers(ret);
         cout << "Producer: wait consumers ended " <<ret<<endl;

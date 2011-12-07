@@ -22,6 +22,8 @@ public:
 
     std::string collectionName_;
 
+    std::string mCollectionName_;
+
     std::string cron_;
 
     CollectionPath collPath_;

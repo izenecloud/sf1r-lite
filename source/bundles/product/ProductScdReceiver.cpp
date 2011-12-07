@@ -5,12 +5,14 @@
 #include <node-manager/synchro/DistributedSynchroFactory.h>
 using namespace sf1r;
 namespace bfs = boost::filesystem;
-ProductScdReceiver::ProductScdReceiver():index_service_(NULL)
+ProductScdReceiver::ProductScdReceiver(const std::string& collectionName)
+:index_service_(NULL)
+,collectionName_(collectionName)
 {
     SynchroConsumerPtr syncConsumer =
         DistributedSynchroFactory::makeConsumer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER);
 
-    syncConsumer->watchProducer(boost::bind(&ProductScdReceiver::Run, this, _1), true);
+    syncConsumer->watchProducer(collectionName_, boost::bind(&ProductScdReceiver::Run, this, _1), true);
 }
 
 bool ProductScdReceiver::Run(const std::string& scd_source_dir)

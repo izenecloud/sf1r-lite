@@ -18,7 +18,7 @@ class ProductScdReceiver
 {
 public:
 
-    ProductScdReceiver();
+    ProductScdReceiver(const std::string& collectionName);
 
     void Set(IndexTaskService* index_service)
     {
@@ -35,6 +35,8 @@ private:
 
 private:
     IndexTaskService* index_service_;
+
+    std::string collectionName_;
 };
 
 }

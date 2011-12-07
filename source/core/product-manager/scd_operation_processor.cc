@@ -6,8 +6,8 @@
 
 using namespace sf1r;
 
-ScdOperationProcessor::ScdOperationProcessor(const std::string& dir)
-:dir_(dir), writer_(NULL), last_op_(0)
+ScdOperationProcessor::ScdOperationProcessor(const std::string& collectionName, const std::string& dir)
+:collectionName_(collectionName), dir_(dir), writer_(NULL), last_op_(0)
 {
 }
 
@@ -59,7 +59,11 @@ bool ScdOperationProcessor::Finish()
     SynchroProducerPtr syncProducer =
             DistributedSynchroFactory::makeProducer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER);
 
-    if (syncProducer->produce(dir_, boost::bind(&ScdOperationProcessor::AfterProcess_, this,_1)))
+    SynchroData syncData;
+    syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
+    syncData.setValue(SynchroData::KEY_DATA_PATH, dir_);
+
+    if (syncProducer->produce(syncData, boost::bind(&ScdOperationProcessor::AfterProcess_, this,_1)))
     {
         bool isConsumed = false;
         syncProducer->waitConsumers(isConsumed);
