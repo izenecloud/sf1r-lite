@@ -20,7 +20,7 @@ bool IndexAggregator::ScdDispatch(
     bool ret = false;
 
     ShardingConfig cfg;
-    cfg.setShardNum(SearchNodeManagerSingleton::get()->getShardNum());
+    cfg.setShardNum(SearchNodeManager::get()->getShardNum());
     size_t i = 0;
     for ( ; i < shardKeyList.size(); i++)
     {

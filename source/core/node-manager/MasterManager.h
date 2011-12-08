@@ -17,7 +17,6 @@
 #include <3rdparty/zookeeper/ZooKeeperEvent.hpp>
 #include <net/aggregator/AggregatorConfig.h>
 #include <net/aggregator/Aggregator.h>
-#include <util/singleton.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>

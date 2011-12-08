@@ -216,7 +216,7 @@ bool CobraProcess::initDriverServer()
 
 bool CobraProcess::initNodeManager()
 {
-    SearchNodeManagerSingleton::get()->init(
+    SearchNodeManager::get()->init(
             SF1Config::get()->searchTopologyConfig_,
             SF1Config::get()->distributedUtilConfig_);
 
@@ -266,7 +266,7 @@ bool CobraProcess::startDistributedServer()
         //NotifyReceiver::get()->start(curNodeInfo.localHost_, masterPort);
     }
 
-    SearchNodeManagerSingleton::get()->start();
+    SearchNodeManager::get()->start();
 
     unsigned int dataPort = SF1Config::get()->searchTopologyConfig_.curSF1Node_.dataPort_;
     CollectionDataReceiver::get()->init(dataPort, "./collection"); //xxx
@@ -279,7 +279,7 @@ bool CobraProcess::startDistributedServer()
 
 void CobraProcess::stopDistributedServer()
 {
-    SearchNodeManagerSingleton::get()->stop();
+    SearchNodeManager::get()->stop();
 
     if (SF1Config::get()->isDistributedSearchNode())
     {

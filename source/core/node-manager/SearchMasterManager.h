@@ -9,6 +9,8 @@
 
 #include "MasterManager.h"
 
+#include <util/singleton.h>
+
 namespace sf1r
 {
 
@@ -17,10 +19,14 @@ class SearchMasterManager : public MasterManager
 public:
     SearchMasterManager();
 
+    static SearchMasterManager* get()
+    {
+        return izenelib::util::Singleton<SearchMasterManager>::get();
+    }
+
     virtual void init();
 };
 
-typedef izenelib::util::Singleton<SearchMasterManager> SearchMasterManagerSingleton;
 
 }
 

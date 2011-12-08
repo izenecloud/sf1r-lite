@@ -23,19 +23,23 @@ public:
         CLASSNAME = "[SearchNodeManager]";
     }
 
+    static SearchNodeManager* get()
+    {
+        return izenelib::util::Singleton<SearchNodeManager>::get();
+    }
+
 protected:
     virtual void startMasterManager()
     {
-        SearchMasterManagerSingleton::get()->start();
+        SearchMasterManager::get()->start();
     }
 
     virtual void stopMasterManager()
     {
-        SearchMasterManagerSingleton::get()->stop();
+        SearchMasterManager::get()->stop();
     }
 };
 
-typedef izenelib::util::Singleton<SearchNodeManager> SearchNodeManagerSingleton;
 
 }
 

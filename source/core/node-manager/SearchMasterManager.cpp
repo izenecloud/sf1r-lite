@@ -14,15 +14,15 @@ void SearchMasterManager::init()
 {
     // initialize zookeeper
     initZooKeeper(
-            SearchNodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkHosts_,
-            SearchNodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkRecvTimeout_);
+            SearchNodeManager::get()->getDSUtilConfig().zkConfig_.zkHosts_,
+            SearchNodeManager::get()->getDSUtilConfig().zkConfig_.zkRecvTimeout_);
 
     // initialize topology info
-    topology_.clusterId_ = SearchNodeManagerSingleton::get()->getDSTopologyConfig().clusterId_;
-    topology_.nodeNum_ =  SearchNodeManagerSingleton::get()->getDSTopologyConfig().nodeNum_;
-    topology_.shardNum_ =  SearchNodeManagerSingleton::get()->getDSTopologyConfig().shardNum_;
+    topology_.clusterId_ = SearchNodeManager::get()->getDSTopologyConfig().clusterId_;
+    topology_.nodeNum_ =  SearchNodeManager::get()->getDSTopologyConfig().nodeNum_;
+    topology_.shardNum_ =  SearchNodeManager::get()->getDSTopologyConfig().shardNum_;
 
-    curNodeInfo_ = SearchNodeManagerSingleton::get()->getNodeInfo();
+    curNodeInfo_ = SearchNodeManager::get()->getNodeInfo();
 }
 
 
