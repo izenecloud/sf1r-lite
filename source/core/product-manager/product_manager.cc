@@ -328,10 +328,19 @@ bool ProductManager::FinishHook()
             GetPrice_(doc, price);
             udocid.convertString(sdocid, izenelib::util::UString::UTF_8);
             GroupTableType::GroupIdType group_id;
+            bool in_group = false;
+            if(group_table->GetGroupId(sdocid, group_id))
+            {
+                if(g2doc_map.find(group_id)!=g2doc_map.end())
+                {
+                    in_group = true;
+                }
+            }
+
 //             uint32_t itemcount = 1;
 //             std::vector<std::string> docid_list_in_group;
 //             bool append = true;
-            if(group_table->GetGroupId(sdocid, group_id) )
+            if(in_group )
             {
 //                 boost::unordered_map<GroupTableType::GroupIdType, UuidType>::iterator g2u_it = g2u_map.find(group_id);
                 boost::unordered_map<GroupTableType::GroupIdType, PMDocumentType>::iterator g2doc_it = g2doc_map.find(group_id);
