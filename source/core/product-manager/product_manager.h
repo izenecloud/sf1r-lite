@@ -92,8 +92,7 @@ public:
 
 private:
     ProductClustering* GetClustering_();
-    
-        
+
     bool GenOperations_();
 
     void BackupPCItem_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, int type);
@@ -117,9 +116,8 @@ private:
     bool GetTimestamp_(const PMDocumentType& doc, time_t& timestamp) const;
 
     bool GetGroupProperties_(const PMDocumentType& doc, std::map<std::string, std::string>& group_prop_map) const;
-    
+
     bool GetCategory_(const PMDocumentType& doc, izenelib::util::UString& category);
-    
 
 private:
     std::string work_dir_;
