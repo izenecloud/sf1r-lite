@@ -1,5 +1,5 @@
-#include "NodeManager.h"
-#include "MasterNodeManager.h"
+#include "SearchNodeManager.h"
+#include "SearchMasterManager.h"
 #include "ZkMonitor.h"
 
 #include <node-manager/synchro/DistributedSynchroFactory.h>
@@ -9,17 +9,17 @@
 using namespace sf1r;
 using namespace zookeeper;
 
-NodeManager::NodeManager()
+SearchNodeManager::SearchNodeManager()
 : isInitBeforeStartDone_(false), nodeState_(NODE_STATE_INIT), masterStarted_(false)
 {
 }
 
-NodeManager::~NodeManager()
+SearchNodeManager::~SearchNodeManager()
 {
     ZkMonitor::get()->stop();
 }
 
-void NodeManager::init(
+void SearchNodeManager::init(
         const DistributedTopologyConfig& dsTopologyConfig,
         const DistributedUtilConfig& dsUtilConfig)
 {
@@ -48,7 +48,7 @@ void NodeManager::init(
     initBeforeStart();
 }
 
-void NodeManager::start()
+void SearchNodeManager::start()
 {
     if (!dsTopologyConfig_.enabled_)
     {
@@ -68,21 +68,21 @@ void NodeManager::start()
     }
 }
 
-void NodeManager::stop()
+void SearchNodeManager::stop()
 {
     ZkMonitor::get()->stop();
 
     if (masterStarted_)
     {
-        MasterNodeManagerSingleton::get()->stop();
+        SearchMasterManagerSingleton::get()->stop();
     }
 
     leaveCluster();
 }
 
-void NodeManager::process(ZooKeeperEvent& zkEvent)
+void SearchNodeManager::process(ZooKeeperEvent& zkEvent)
 {
-    std::cout<<"[NodeManager] "<< zkEvent.toString();
+    std::cout<<"[SearchNodeManager] "<< zkEvent.toString();
 
     if (!isInitBeforeStartDone_)
     {
@@ -108,13 +108,13 @@ void NodeManager::process(ZooKeeperEvent& zkEvent)
 
 /// private ////////////////////////////////////////////////////////////////////
 
-void NodeManager::initZooKeeper(const std::string& zkHosts, const int recvTimeout)
+void SearchNodeManager::initZooKeeper(const std::string& zkHosts, const int recvTimeout)
 {
     zookeeper_.reset(new ZooKeeper(zkHosts, recvTimeout));
     zookeeper_->registerEventHandler(this);
 }
 
-void NodeManager::initBeforeStart()
+void SearchNodeManager::initBeforeStart()
 {
     if (zookeeper_->isConnected())
     {
@@ -125,7 +125,7 @@ void NodeManager::initBeforeStart()
     }
 }
 
-void NodeManager::initZkNameSpace()
+void SearchNodeManager::initZkNameSpace()
 {
     // Make sure zookeeper namaspace (znodes) is initialized properly
 
@@ -137,7 +137,7 @@ void NodeManager::initZkNameSpace()
     zookeeper_->createZNode(NodeDef::getReplicaPath(dsTopologyConfig_.curSF1Node_.replicaId_), ss.str());
 }
 
-void NodeManager::enterCluster()
+void SearchNodeManager::enterCluster()
 {
     boost::unique_lock<boost::mutex> lock(mutex_);
 
@@ -154,7 +154,7 @@ void NodeManager::enterCluster()
             // If still not connected, assume zookeeper service was stopped
             // and waiting for later connection after zookeeper recovered.
             nodeState_ = NODE_STATE_STARTING_WAIT_RETRY;
-            std::cout<<"[NodeManager] waiting for ZooKeeper Service..."<<std::endl;
+            std::cout<<"[SearchNodeManager] waiting for ZooKeeper Service..."<<std::endl;
             return;
         }
     }
@@ -184,30 +184,30 @@ void NodeManager::enterCluster()
         if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
         {
             zookeeper_->setZNodeData(nodePath_, sndata);
-            std::cout<<"[NodeManager] Conflict!! overwrote exsited node \""<<nodePath_<<"\"!"<<std::endl;
+            std::cout<<"[SearchNodeManager] Conflict!! overwrote exsited node \""<<nodePath_<<"\"!"<<std::endl;
         }
         else
         {
             nodeState_ = NODE_STATE_STARTING_WAIT_RETRY;
-            std::cout<<"[NodeManager] failed to start (err:"<<zookeeper_->getErrorCode()
+            std::cout<<"[SearchNodeManager] failed to start (err:"<<zookeeper_->getErrorCode()
                      <<"), waiting retry ..."<<std::endl;
             return;
         }
     }
 
     nodeState_ = NODE_STATE_STARTED;
-    //std::cout<<"[NodeManager] node registered at \""<<nodePath_<<"\" "<<std::endl;
-    std::cout<<"[NodeManager] joined cluster ["<<dsTopologyConfig_.clusterId_<<"] - "<<nodeInfo_.toString()<<std::endl;
+    //std::cout<<"[SearchNodeManager] node registered at \""<<nodePath_<<"\" "<<std::endl;
+    std::cout<<"[SearchNodeManager] joined cluster ["<<dsTopologyConfig_.clusterId_<<"] - "<<nodeInfo_.toString()<<std::endl;
 
     // Start Master manager
     if (dsTopologyConfig_.curSF1Node_.masterAgent_.enabled_)
     {
-        MasterNodeManagerSingleton::get()->start();
+        SearchMasterManagerSingleton::get()->start();
         masterStarted_ = true;
     }
 }
 
-void NodeManager::leaveCluster()
+void SearchNodeManager::leaveCluster()
 {
     zookeeper_->deleteZNode(nodePath_, true);
 

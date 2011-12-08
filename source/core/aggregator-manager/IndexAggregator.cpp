@@ -1,7 +1,7 @@
 #include "IndexAggregator.h"
 
-#include <node-manager/NodeManager.h>
-#include <node-manager/MasterNodeManager.h>
+#include <node-manager/SearchNodeManager.h>
+#include <node-manager/SearchMasterManager.h>
 
 #include <node-manager/sharding/ScdSharding.h>
 #include <node-manager/sharding/ShardingStrategy.h>
@@ -20,7 +20,7 @@ bool IndexAggregator::ScdDispatch(
     bool ret = false;
 
     ShardingConfig cfg;
-    cfg.setShardNum(NodeManagerSingleton::get()->getShardNum());
+    cfg.setShardNum(SearchNodeManagerSingleton::get()->getShardNum());
     size_t i = 0;
     for ( ; i < shardKeyList.size(); i++)
     {

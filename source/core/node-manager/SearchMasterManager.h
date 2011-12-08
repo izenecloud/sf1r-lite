@@ -1,5 +1,5 @@
 /**
- * @file MasterNodeManager.h
+ * @file SearchMasterManager.h
  * @author Zhongxia Li
  * @date Sep 20, 2011S
  * @brief Management (Coordination) for Master node using ZooKeeper.
@@ -27,7 +27,7 @@ using namespace zookeeper;
 namespace sf1r
 {
 
-class MasterNodeManager : public ZooKeeperEventHandler
+class SearchMasterManager : public ZooKeeperEventHandler
 {
 public:
     enum MasterStateType
@@ -44,7 +44,7 @@ public:
     typedef std::map<shardid_t, boost::shared_ptr<WorkerNode> > WorkerMapT;
 
 public:
-    MasterNodeManager();
+    SearchMasterManager();
 
     void init();
 
@@ -142,7 +142,7 @@ private:
     boost::mutex mutex_;
 };
 
-typedef izenelib::util::Singleton<MasterNodeManager> MasterNodeManagerSingleton;
+typedef izenelib::util::Singleton<SearchMasterManager> SearchMasterManagerSingleton;
 
 }
 

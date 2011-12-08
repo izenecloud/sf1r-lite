@@ -1,5 +1,5 @@
 /**
- * @file NodeManager.h
+ * @file SearchNodeManager.h
  * @author Zhongxia Li
  * @date Sep 20, 2011
  * @brief Management of SF1 node using ZooKeeper.
@@ -24,7 +24,7 @@ using namespace zookeeper;
 namespace sf1r
 {
 
-class NodeManager : public ZooKeeperEventHandler
+class SearchNodeManager : public ZooKeeperEventHandler
 {
 public:
     enum NodeStateType
@@ -35,9 +35,9 @@ public:
         NODE_STATE_STARTED
     };
 
-    NodeManager();
+    SearchNodeManager();
 
-    ~NodeManager();
+    ~SearchNodeManager();
 
     /**
      * @param dsTopologyConfig
@@ -117,8 +117,7 @@ private:
     boost::mutex mutex_;
 };
 
-
-typedef izenelib::util::Singleton<NodeManager> NodeManagerSingleton;
+typedef izenelib::util::Singleton<SearchNodeManager> SearchNodeManagerSingleton;
 
 }
 

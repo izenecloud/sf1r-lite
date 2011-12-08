@@ -1,31 +1,31 @@
-#include "MasterNodeManager.h"
-#include "NodeManager.h"
+#include "SearchMasterManager.h"
+#include "SearchNodeManager.h"
 
 #include <boost/lexical_cast.hpp>
 
 using namespace sf1r;
 
-MasterNodeManager::MasterNodeManager()
+SearchMasterManager::SearchMasterManager()
 : masterState_(MASTER_STATE_INIT)
 {
 }
 
-void MasterNodeManager::init()
+void SearchMasterManager::init()
 {
     // initialize zookeeper
     initZooKeeper(
-            NodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkHosts_,
-            NodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkRecvTimeout_);
+            SearchNodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkHosts_,
+            SearchNodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkRecvTimeout_);
 
     // initialize topology info
-    topology_.clusterId_ = NodeManagerSingleton::get()->getDSTopologyConfig().clusterId_;
-    topology_.nodeNum_ =  NodeManagerSingleton::get()->getDSTopologyConfig().nodeNum_;
-    topology_.shardNum_ =  NodeManagerSingleton::get()->getDSTopologyConfig().shardNum_;
+    topology_.clusterId_ = SearchNodeManagerSingleton::get()->getDSTopologyConfig().clusterId_;
+    topology_.nodeNum_ =  SearchNodeManagerSingleton::get()->getDSTopologyConfig().nodeNum_;
+    topology_.shardNum_ =  SearchNodeManagerSingleton::get()->getDSTopologyConfig().shardNum_;
 
-    curNodeInfo_ = NodeManagerSingleton::get()->getNodeInfo();
+    curNodeInfo_ = SearchNodeManagerSingleton::get()->getNodeInfo();
 }
 
-void MasterNodeManager::start()
+void SearchMasterManager::start()
 {
     // call once
     if (masterState_ == MASTER_STATE_INIT)
@@ -42,7 +42,7 @@ void MasterNodeManager::start()
             if (!zookeeper_->isConnected())
             {
                 masterState_ = MASTER_STATE_STARTING_WAIT_ZOOKEEPER;
-                std::cout<<"[MasterNodeManager] waiting for ZooKeeper Service..."<<std::endl;
+                std::cout<<"[SearchMasterManager] waiting for ZooKeeper Service..."<<std::endl;
                 return;
             }
         }
@@ -51,13 +51,13 @@ void MasterNodeManager::start()
     }
 }
 
-void MasterNodeManager::stop()
+void SearchMasterManager::stop()
 {
     // stop events on exit
     zookeeper_->disconnect();
 }
 
-bool MasterNodeManager::getShardReceiver(
+bool SearchMasterManager::getShardReceiver(
         unsigned int shardid,
         std::string& host,
         unsigned int& recvPort)
@@ -77,9 +77,9 @@ bool MasterNodeManager::getShardReceiver(
     }
 }
 
-void MasterNodeManager::process(ZooKeeperEvent& zkEvent)
+void SearchMasterManager::process(ZooKeeperEvent& zkEvent)
 {
-    std::cout << "[MasterNodeManager] "<<state2string(masterState_)<<" "<<zkEvent.toString();
+    std::cout << "[SearchMasterManager] "<<state2string(masterState_)<<" "<<zkEvent.toString();
     // xxx, handle all events here?
 
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
@@ -92,7 +92,7 @@ void MasterNodeManager::process(ZooKeeperEvent& zkEvent)
     }
 }
 
-void MasterNodeManager::onNodeCreated(const std::string& path)
+void SearchMasterManager::onNodeCreated(const std::string& path)
 {
     if (masterState_ == MASTER_STATE_STARTING_WAIT_WORKERS)
     {
@@ -114,7 +114,7 @@ void MasterNodeManager::onNodeCreated(const std::string& path)
     }
 }
 
-void MasterNodeManager::onNodeDeleted(const std::string& path)
+void SearchMasterManager::onNodeDeleted(const std::string& path)
 {
     if (masterState_ == MASTER_STATE_STARTED)
     {
@@ -123,7 +123,7 @@ void MasterNodeManager::onNodeDeleted(const std::string& path)
     }
 }
 
-void MasterNodeManager::onChildrenChanged(const std::string& path)
+void SearchMasterManager::onChildrenChanged(const std::string& path)
 {
     if (masterState_ > MASTER_STATE_STARTING_WAIT_ZOOKEEPER)
     {
@@ -132,7 +132,7 @@ void MasterNodeManager::onChildrenChanged(const std::string& path)
 }
 
 
-void MasterNodeManager::showWorkers()
+void SearchMasterManager::showWorkers()
 {
     WorkerMapT::iterator it;
     for (it = workerMap_.begin(); it != workerMap_.end(); it++)
@@ -143,13 +143,13 @@ void MasterNodeManager::showWorkers()
 
 /// private ////////////////////////////////////////////////////////////////////
 
-void MasterNodeManager::initZooKeeper(const std::string& zkHosts, const int recvTimeout)
+void SearchMasterManager::initZooKeeper(const std::string& zkHosts, const int recvTimeout)
 {
     zookeeper_.reset(new ZooKeeper(zkHosts, recvTimeout));
     zookeeper_->registerEventHandler(this);
 }
 
-std::string MasterNodeManager::state2string(MasterStateType e)
+std::string SearchMasterManager::state2string(MasterStateType e)
 {
     std::stringstream ss;
     switch (e)
@@ -180,7 +180,7 @@ std::string MasterNodeManager::state2string(MasterStateType e)
     return "UNKNOWN";
 }
 
-void MasterNodeManager::watchAll()
+void SearchMasterManager::watchAll()
 {
     // for replica change
     std::vector<std::string> childrenList;
@@ -199,7 +199,7 @@ void MasterNodeManager::watchAll()
     }
 }
 
-void MasterNodeManager::doStart()
+void SearchMasterManager::doStart()
 {
     detectReplicaSet();
 
@@ -211,10 +211,10 @@ void MasterNodeManager::doStart()
     registerSearchServer();
 }
 
-int MasterNodeManager::detectWorkers()
+int SearchMasterManager::detectWorkers()
 {
     boost::lock_guard<boost::mutex> lock(mutex_);
-    //std::cout<<"[MasterNodeManager] detecting Workers ..."<<std::endl;
+    //std::cout<<"[SearchMasterManager] detecting Workers ..."<<std::endl;
 
     // detect workers from "current" replica
     size_t detected = 0, good = 0;
@@ -282,7 +282,7 @@ int MasterNodeManager::detectWorkers()
                     }
 
                     // xxx check more info?
-                    std::cout <<"[MasterNodeManager] detected "<<workerMap_[shardid]->toString()<<std::endl;
+                    std::cout <<"[SearchMasterManager] detected "<<workerMap_[shardid]->toString()<<std::endl;
                     detected ++;
                     if (workerMap_[shardid]->isGood_)
                         good ++;
@@ -306,13 +306,13 @@ int MasterNodeManager::detectWorkers()
     if (detected >= topology_.shardNum_)
     {
         masterState_ = MASTER_STATE_STARTED;
-        std::cout<<"[MasterNodeManager] all Workers are detected "<<topology_.shardNum_
+        std::cout<<"[SearchMasterManager] all Workers are detected "<<topology_.shardNum_
                  <<" (good "<<good<<")"<<std::endl;
     }
     else
     {
         masterState_ = MASTER_STATE_STARTING_WAIT_WORKERS;
-        std::cout<<"[MasterNodeManager] detected "<<detected
+        std::cout<<"[SearchMasterManager] detected "<<detected
                  <<" worker(s) (good "<<good<<"), all "<<topology_.shardNum_<<" - waiting"<<std::endl;
     }
 
@@ -325,9 +325,9 @@ int MasterNodeManager::detectWorkers()
     return good;
 }
 
-void MasterNodeManager::detectReplicaSet(const std::string& zpath)
+void SearchMasterManager::detectReplicaSet(const std::string& zpath)
 {
-    //std::cout<<"[MasterNodeManager] detecting replicas ..."<<std::endl;
+    //std::cout<<"[SearchMasterManager] detecting replicas ..."<<std::endl;
 
     // xxx synchronize
     std::vector<std::string> childrenList;
@@ -340,7 +340,7 @@ void MasterNodeManager::detectReplicaSet(const std::string& zpath)
         zookeeper_->getZNodeData(childrenList[i], sreplicaId);
         try {
             replicaIdList_.push_back(boost::lexical_cast<replicaid_t>(sreplicaId));
-            ///std::cout<<"[MasterNodeManager] detected replica "<<replicaIdList_.back()<<std::endl;
+            ///std::cout<<"[SearchMasterManager] detected replica "<<replicaIdList_.back()<<std::endl;
         }
         catch (std::exception& e)
         {}
@@ -370,7 +370,7 @@ void MasterNodeManager::detectReplicaSet(const std::string& zpath)
     }
 }
 
-void MasterNodeManager::failover(const std::string& zpath)
+void SearchMasterManager::failover(const std::string& zpath)
 {
     masterState_ = MASTER_STATE_FAILOVERING; //xxx, use lock
 
@@ -397,7 +397,7 @@ void MasterNodeManager::failover(const std::string& zpath)
     masterState_ = MASTER_STATE_STARTED;
 }
 
-bool MasterNodeManager::failover(boost::shared_ptr<WorkerNode>& pworkerNode)
+bool SearchMasterManager::failover(boost::shared_ptr<WorkerNode>& pworkerNode)
 {
     pworkerNode->isGood_ = false;
     for (size_t i = 0; i < replicaIdList_.size(); i++)
@@ -464,7 +464,7 @@ bool MasterNodeManager::failover(boost::shared_ptr<WorkerNode>& pworkerNode)
 }
 
 
-void MasterNodeManager::recover(const std::string& zpath)
+void SearchMasterManager::recover(const std::string& zpath)
 {
     masterState_ = MASTER_STATE_RECOVERING; // lock?
 
@@ -510,7 +510,7 @@ void MasterNodeManager::recover(const std::string& zpath)
     masterState_ = MASTER_STATE_STARTED;
 }
 
-void MasterNodeManager::registerSearchServer()
+void SearchMasterManager::registerSearchServer()
 {
     // This Master is ready to serve
     std::string path = NodeDef::getSF1ServicePath();
@@ -526,20 +526,20 @@ void MasterNodeManager::registerSearchServer()
     {
         serverRealPath_ = zookeeper_->getLastCreatedNodePath();
 
-        // std::cout << "[MasterNodeManager] Master ready to serve -- "<<serverRealPath_<<std::endl;//
+        // std::cout << "[SearchMasterManager] Master ready to serve -- "<<serverRealPath_<<std::endl;//
     }
 }
 
-void MasterNodeManager::deregisterSearchServer()
+void SearchMasterManager::deregisterSearchServer()
 {
     zookeeper_->deleteZNode(serverRealPath_);
 
-    std::cout << "[MasterNodeManager] Master is boken down... " <<std::endl;
+    std::cout << "[SearchMasterManager] Master is boken down... " <<std::endl;
 }
 
-void MasterNodeManager::resetAggregatorConfig()
+void SearchMasterManager::resetAggregatorConfig()
 {
-    //std::cout << "[MasterNodeManager] set config for "<<aggregatorList_.size()<<" aggregators"<<std::endl;
+    //std::cout << "[SearchMasterManager] set config for "<<aggregatorList_.size()<<" aggregators"<<std::endl;
 
     aggregatorConfig_.reset();
 

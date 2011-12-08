@@ -1,6 +1,6 @@
 #include "ScdDispatcher.h"
 
-#include <node-manager/MasterNodeManager.h>
+#include <node-manager/SearchMasterManager.h>
 
 #include <net/distribute/DataTransfer.h>
 
@@ -223,7 +223,7 @@ bool BatchScdDispatcher::finish()
     {
         std::string host;
         unsigned int recvPort;
-        if (MasterNodeManagerSingleton::get()->getShardReceiver(shardid, host, recvPort))
+        if (SearchMasterManagerSingleton::get()->getShardReceiver(shardid, host, recvPort))
         {
             LOG(INFO) << "Transfer scd from "<<shardScdfileMap_[shardid]
                       <<"/ to shard "<<shardid<<" ["<<host<<":"<<recvPort<<"]";
