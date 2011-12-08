@@ -7,6 +7,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 #include <am/luxio/BTree.h>
 #include <am/tc/BTree.h>
 #include <am/leveldb/Table.h>
@@ -42,26 +43,20 @@ class ScdMerger
     
     
 public:
-    ScdMerger(const std::string& work_dir): work_dir_(work_dir)
+    ScdMerger(const std::string& work_dir,const std::vector<string>& propertyNameList)
+    : work_dir_(work_dir), propertyNameList_(propertyNameList)
     {
         bfs::remove_all(work_dir_);
         bfs::create_directories(work_dir_);
-        
     }
     
     void Merge(const std::string& scdPath)
     {
-        std::vector<string> propertyNameList;
-        propertyNameList.push_back("DOCID");
-        propertyNameList.push_back("Url");
-        propertyNameList.push_back("Title");
-        propertyNameList.push_back("Picture");
-        propertyNameList.push_back("Price");
-        propertyNameList.push_back("Source");
-        propertyNameList.push_back("Category");
-        propertyNameList.push_back("Attribute");
-        propertyNameList.push_back("Content");
-        propertyNameList.push_back("uuid");
+        std::cout<<"Start merging, properties list : "<<std::endl;
+        for(uint32_t i=0;i<propertyNameList_.size();i++)
+        {
+            std::cout<<propertyNameList_[i]<<std::endl;
+        }
         std::string working_file = work_dir_+"/working";
         bfs::remove_all(working_file);
         izenelib::am::ssf::Writer<> writer(working_file);
@@ -124,7 +119,7 @@ public:
                 break;
             }
             parser.load(*scd_it);
-            for (ScdParser::iterator doc_iter = parser.begin(propertyNameList); doc_iter != parser.end(); ++doc_iter, ++n)
+            for (ScdParser::iterator doc_iter = parser.begin(propertyNameList_); doc_iter != parser.end(); ++doc_iter, ++n)
             {
                 if(n%1000==0)
                 {
@@ -202,7 +197,7 @@ public:
     
 private:
     std::string work_dir_;
-    
+    std::vector<string> propertyNameList_;
     
 };
 
@@ -211,8 +206,10 @@ private:
 int main(int argc, char** argv)
 {
     std::string scdPath = argv[1];
-    
-    ScdMerger merger("./scd_merger_workdir");
+    std::string properties = argv[2];
+    std::vector<std::string> p_vector;
+    boost::algorithm::split( p_vector, properties, boost::algorithm::is_any_of(",") );
+    ScdMerger merger("./scd_merger_workdir", p_vector);
     merger.Merge(scdPath);
 }
 

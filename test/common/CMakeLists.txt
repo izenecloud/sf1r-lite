@@ -29,5 +29,8 @@ ENDIF()
 ADD_EXECUTABLE(ScdMerger
     ScdMerger.cpp
     )
-  TARGET_LINK_LIBRARIES(ScdMerger ${libs} ${TokyoCabinet_LIBRARIES})
+TARGET_LINK_LIBRARIES(ScdMerger ${libs} ${TokyoCabinet_LIBRARIES})
+SET_TARGET_PROPERTIES(ScdMerger PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/scripts
+)
 
