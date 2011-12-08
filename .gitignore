@@ -44,3 +44,4 @@ TAGS
 /config
 /instances/*.xml
 /log
+scripts/ScdMerger

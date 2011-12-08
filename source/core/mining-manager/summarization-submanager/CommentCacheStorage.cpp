@@ -37,18 +37,19 @@ void CommentCacheStorage::Flush()
     BufferType::iterator it = buffer_db_.begin();
     for (; it != buffer_db_.end(); ++it)
     {
-//      CommentCacheItemType value;
-//      if (comment_cache_db_.get(it->first, value))
-//      {
+        CommentCacheItemType value;
+        if (comment_cache_db_.get(it->first, value))
+        {
 //          for (CommentCacheItemType::iterator vit = it->second.begin();
 //                  vit != it->second.end(); ++vit)
 //          {
 //              value.push_back(std::make_pair(vit->first, UString()));
 //              value.back().second.swap(vit->second);
 //          }
-//          comment_cache_db_.update(it->first, value);
-//      }
-//      else
+            value.insert(value.end(), it->second.begin(), it->second.end());
+            comment_cache_db_.update(it->first, value);
+        }
+        else
         {
             comment_cache_db_.update(it->first, it->second);
         }
