@@ -51,9 +51,21 @@ void ParentKeyStorage::Flush()
     for (; it != buffer_db_.end(); ++it)
     {
         std::vector<UString> v;
-        parent_to_children_db_.get(it->first, v);
-        v.insert(v.end(), it->second.begin(), it->second.end());
-        parent_to_children_db_.update(it->first, v);
+        if (parent_to_children_db_.get(it->first, v))
+        {
+//          for (std::vector<UString>::iterator vit = it->second.begin();
+//                  vit != it->second.end(); ++vit)
+//          {
+//              v.push_back(UString());
+//              v.back().swap(*vit);
+//          }
+            v.insert(v.end(), it->second.begin(), it->second.end());
+            parent_to_children_db_.update(it->first, v);
+        }
+        else
+        {
+            parent_to_children_db_.update(it->first, it->second);
+        }
     }
 
     parent_to_children_db_.flush();
