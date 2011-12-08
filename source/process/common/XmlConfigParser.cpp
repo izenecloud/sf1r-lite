@@ -289,34 +289,57 @@ void SF1Config::parseBrokerAgent(const ticpp::Element * brokerAgent)
     getAttribute(brokerAgent, "enabletest", brokerAgentConfig_.enableTest_,false);
     getAttribute(brokerAgent, "threadnum", brokerAgentConfig_.threadNum_,false);
     getAttribute(brokerAgent, "port", brokerAgentConfig_.port_,false);
-    distributedTopologyConfig_.curSF1Node_.baPort_ = brokerAgentConfig_.port_;
+    searchTopologyConfig_.curSF1Node_.baPort_ = brokerAgentConfig_.port_;
+    recommendTopologyConfig_.curSF1Node_.baPort_ = brokerAgentConfig_.port_;
 }
 
-void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
+void SF1Config::parseDistributedTopologies(const ticpp::Element * deploy)
+{
+    Iterator<Element> it("DistributedTopology");
+    for (it = it.begin(deploy); it != it.end(); it++)
+    {
+        ticpp::Element* topology = it.Get();
+
+        std::string type;
+        getAttribute(topology, "type", type);
+        if (type == "search")
+        {
+            parseDistributedTopology(topology, searchTopologyConfig_);
+        }
+        else if (type == "recommend")
+        {
+            parseDistributedTopology(topology, recommendTopologyConfig_);
+        }
+    }
+}
+
+void SF1Config::parseDistributedTopology(
+        const ticpp::Element * topology,
+        DistributedTopologyConfig& topologyConfig)
 {
     if (!topology)
         return;
 
-    getAttribute(topology, "enable", distributedTopologyConfig_.enabled_);
-    getAttribute(topology, "clusterid", distributedTopologyConfig_.clusterId_, false);
-    getAttribute(topology, "nodenum", distributedTopologyConfig_.nodeNum_);
-    getAttribute(topology, "shardnum", distributedTopologyConfig_.shardNum_);
+    getAttribute(topology, "enable", topologyConfig.enabled_);
+    getAttribute(topology, "clusterid", topologyConfig.clusterId_, false);
+    getAttribute(topology, "nodenum", topologyConfig.nodeNum_);
+    getAttribute(topology, "shardnum", topologyConfig.shardNum_);
 
-    if (distributedTopologyConfig_.clusterId_.empty())
+    if (topologyConfig.clusterId_.empty())
     {
-        distributedTopologyConfig_.clusterId_ = "unknown";
+        topologyConfig.clusterId_ = "unknown";
         std::cout<<"Warning: unknown machine USER/USERNAME, set default clusterid as unknown."<<std::endl;
     }
 
     // Current SF1 node
     ticpp::Element * cursf1node = getUniqChildElement(topology, "CurrentNode");
-    getAttribute(cursf1node, "host", distributedTopologyConfig_.curSF1Node_.host_);
-    getAttribute(cursf1node, "dataport", distributedTopologyConfig_.curSF1Node_.dataPort_);
-    getAttribute(cursf1node, "replicaid", distributedTopologyConfig_.curSF1Node_.replicaId_);
-    getAttribute(cursf1node, "nodeid", distributedTopologyConfig_.curSF1Node_.nodeId_);
+    getAttribute(cursf1node, "host", topologyConfig.curSF1Node_.host_);
+    getAttribute(cursf1node, "dataport", topologyConfig.curSF1Node_.dataPort_);
+    getAttribute(cursf1node, "replicaid", topologyConfig.curSF1Node_.replicaId_);
+    getAttribute(cursf1node, "nodeid", topologyConfig.curSF1Node_.nodeId_);
 
-    parseMasterAgent(getUniqChildElement(cursf1node, "MasterAgent", false));
-    parseWorkerAgent(getUniqChildElement(cursf1node, "WorkerAgent", false));
+    parseMasterAgent(getUniqChildElement(cursf1node, "MasterAgent", false), topologyConfig);
+    parseWorkerAgent(getUniqChildElement(cursf1node, "WorkerAgent", false), topologyConfig);
 }
 
 void SF1Config::parseDistributedUtil(const ticpp::Element * distributedUtil)
@@ -335,45 +358,45 @@ void SF1Config::parseDistributedUtil(const ticpp::Element * distributedUtil)
     getAttribute(dfs, "port", distributedUtilConfig_.dfsConfig_.port_, false);
 }
 
-void SF1Config::parseMasterAgent(const ticpp::Element * master)
+void SF1Config::parseMasterAgent(const ticpp::Element * master, DistributedTopologyConfig& topologyConfig)
 {
-    if (!master)
-        return;
-
-    MasterAgentConfig& masterAgent = distributedTopologyConfig_.curSF1Node_.masterAgent_;
-
-    getAttribute(master, "enable", masterAgent.enabled_);
-    getAttribute(master, "port", masterAgent.port_);
-    //getAttribute(master, "enablelocalworker", masterAgent.aggregatorConfig_.enableLocalWorker_);
-
-    Iterator<Element> aggregator_it("Aggregator");
-    for (aggregator_it = aggregator_it.begin(master); aggregator_it != aggregator_it.end(); aggregator_it++)
+    if (master)
     {
-        AggregatorUnit aggregatorUnit;
-        getAttribute(aggregator_it.Get(), "name", aggregatorUnit.name_);
-        downCase(aggregatorUnit.name_);
-        masterAgent.addAggregatorConfig(aggregatorUnit);
+        MasterAgentConfig& masterAgent = topologyConfig.curSF1Node_.masterAgent_;
+
+        getAttribute(master, "enable", masterAgent.enabled_);
+        getAttribute(master, "port", masterAgent.port_);
+        //getAttribute(master, "enablelocalworker", masterAgent.aggregatorConfig_.enableLocalWorker_);
+
+        Iterator<Element> aggregator_it("Aggregator");
+        for (aggregator_it = aggregator_it.begin(master); aggregator_it != aggregator_it.end(); aggregator_it++)
+        {
+            AggregatorUnit aggregatorUnit;
+            getAttribute(aggregator_it.Get(), "name", aggregatorUnit.name_);
+            downCase(aggregatorUnit.name_);
+            masterAgent.addAggregatorConfig(aggregatorUnit);
+        }
     }
 }
 
-void SF1Config::parseWorkerAgent(const ticpp::Element * worker)
+void SF1Config::parseWorkerAgent(const ticpp::Element * worker, DistributedTopologyConfig& topologyConfig)
 {
-    if (!worker)
-        return;
-
-    WorkerAgentConfig& workerAgent = distributedTopologyConfig_.curSF1Node_.workerAgent_;
-
-    getAttribute(worker, "enable", workerAgent.enabled_);
-    getAttribute(worker, "port", workerAgent.port_);
-    getAttribute(worker, "shardid", workerAgent.shardId_);
-
-    Iterator<Element> aggregator_it("Service");
-    for (aggregator_it = aggregator_it.begin(worker); aggregator_it != aggregator_it.end(); aggregator_it++)
+    if (worker)
     {
-        ServiceUnit serviceUnit;
-        getAttribute(aggregator_it.Get(), "name", serviceUnit.name_);
-        downCase(serviceUnit.name_);
-        workerAgent.addServiceUnit(serviceUnit);
+        WorkerAgentConfig& workerAgent = topologyConfig.curSF1Node_.workerAgent_;
+
+        getAttribute(worker, "enable", workerAgent.enabled_);
+        getAttribute(worker, "port", workerAgent.port_);
+        getAttribute(worker, "shardid", workerAgent.shardId_);
+
+        Iterator<Element> aggregator_it("Service");
+        for (aggregator_it = aggregator_it.begin(worker); aggregator_it != aggregator_it.end(); aggregator_it++)
+        {
+            ServiceUnit serviceUnit;
+            getAttribute(aggregator_it.Get(), "name", serviceUnit.name_);
+            downCase(serviceUnit.name_);
+            workerAgent.addServiceUnit(serviceUnit);
+        }
     }
 }
 
@@ -715,7 +738,7 @@ void SF1Config::parseDeploymentSettings(const ticpp::Element * deploy)
 {
     parseBrokerAgent(getUniqChildElement(deploy, "BrokerAgent"));
 
-    parseDistributedTopology(getUniqChildElement(deploy, "DistributedTopology", false));
+    parseDistributedTopologies(deploy);
 
     parseDistributedUtil(getUniqChildElement(deploy, "DistributedUtil"));
 }
@@ -1059,8 +1082,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     params.Get<std::size_t>("Sia/topknum", indexBundleConfig.topKNum_);
     params.GetString("LanguageIdentifier/dbpath", indexBundleConfig.languageIdentifierDbPath_, "");
 
-    indexBundleConfig.isSupportByAggregator_ = SF1Config::get()->checkAggregatorSupport(collectionMeta.getName());
-    indexBundleConfig.setAggregatorConfig(SF1Config::get()->getAggregatorConfig());
+    indexBundleConfig.isSupportByAggregator_ = SF1Config::get()->checkSearchMasterAggregator(collectionMeta.getName());
 }
 
 void CollectionConfig::parseIndexEcSchema(const ticpp::Element * indexEcSchema, CollectionMeta & collectionMeta)

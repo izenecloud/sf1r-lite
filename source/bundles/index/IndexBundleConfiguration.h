@@ -7,8 +7,6 @@
 
 #include <ir/index_manager/utility/IndexManagerConfig.h>
 
-#include <net/aggregator/AggregatorConfig.h>
-
 #include <util/osgi/BundleConfiguration.h>
 #include <util/ustring/UString.h>
 
@@ -26,11 +24,6 @@ public:
     void setSchema(const std::set<PropertyConfigBase, PropertyBaseComp>& schema);
 
     void numberProperty();
-
-    void setAggregatorConfig(const net::aggregator::AggregatorConfig& aggConfig)
-    {
-        aggregatorConfig_ = aggConfig;
-    }
 
     const bool isUnigramWildcard() { return wildcardType_ == "unigram"; }
 
@@ -119,9 +112,6 @@ public:
 
     /// @brief whether supported for distributed search
     bool isSupportByAggregator_;
-
-    /// @brief aggregator config
-    net::aggregator::AggregatorConfig aggregatorConfig_;
 
     /// @brief The encoding type of the Collection
     izenelib::util::UString::EncodingType encoding_;

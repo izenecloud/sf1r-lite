@@ -187,7 +187,7 @@
         <xs:complexType>
             <xs:sequence>
                 <xs:element ref="BrokerAgent"/>
-                <xs:element ref="DistributedTopology" minOccurs="0" maxOccurs="1"/>
+                <xs:element ref="DistributedTopology" minOccurs="0" maxOccurs="2"/>
                 <xs:element ref="DistributedUtil" minOccurs="1" maxOccurs="1"/>
             </xs:sequence>
         </xs:complexType>
@@ -213,6 +213,14 @@
                 <xs:element ref="CurrentNode" minOccurs="1" maxOccurs="1"/>
             </xs:sequence>
             <xs:attribute name="enable" type="YesNoType" use="required"/>
+            <xs:attribute name="type">
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="search"/>
+                        <xs:enumeration value="recommend"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
             <xs:attribute name="clusterid" type="xs:string" use="required"/>
             <xs:attribute name="nodenum" use="required">
                 <xs:simpleType>

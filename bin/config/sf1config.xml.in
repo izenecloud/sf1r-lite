@@ -192,15 +192,29 @@
   <Deployment>
     <BrokerAgent usecache="n" threadnum="50" enabletest="y" port="18181"/>
 
-    <!-- Distributed Search Topology (a SF1 node can work as Worker or Master or both).
+    <!-- Distributed Topology (a SF1 node can work as Worker or Master or both).
       clusterid : identity of the cluster
       nodeid    : id of current node (sf1) in the cluster.
       replicaid : id of current node (sf1) in the replication set.
       shardid   : id of data shard (partition), also used as workerid.
          * shardids (workerids) range from 1 to 'shardnum', without break.
-         * it's recommended to keep the shardid consistent with nodeid, i.e., only-master node keeps the maximum nodeid.
+         * it's recommended to keep the shardid consistent with nodeid.
     -->
-    <DistributedTopology enable="n" clusterid="@DEFAULT_CLUSTER_ID@" nodenum="2" shardnum="2">
+    <DistributedTopology enable="n" type="search" clusterid="@DEFAULT_CLUSTER_ID@" nodenum="2" shardnum="2">
+      <CurrentNode host="172.16.0.36" dataport="18171" replicaid="1" nodeid="1">
+        <MasterAgent enable="y" port="18151" >
+          <Aggregator name="b5mm"/>
+          <Aggregator name="icson"/>
+        </MasterAgent>
+
+        <WorkerAgent enable="y" port="18111" shardid="1">
+          <Service name="b5mm"/>
+          <Service name="icson"/>
+        </WorkerAgent>
+      </CurrentNode>
+    </DistributedTopology>
+
+    <DistributedTopology enable="n" type="recommend" clusterid="@DEFAULT_CLUSTER_ID@" nodenum="2" shardnum="2">
       <CurrentNode host="172.16.0.36" dataport="18171" replicaid="1" nodeid="1">
         <MasterAgent enable="y" port="18151" >
           <Aggregator name="b5mm"/>

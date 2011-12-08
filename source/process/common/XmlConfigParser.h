@@ -409,26 +409,6 @@ public:
         brokerAgentConfig = brokerAgentConfig_;
     }
 
-    /// @brief Get the configuration related to distributed deployment
-    /// @return The settings for DistributedTopologyConfig
-    const DistributedTopologyConfig& getMasterAgentConfig()
-    {
-        return distributedTopologyConfig_;
-    }
-
-    /// @brief Get the configuration related to distributed deployment
-    /// @param distributedTopologyConfig The settings for DistributedTopologyConfig
-    void getMasterAgentConfig( DistributedTopologyConfig& distributedTopologyConfig )
-    {
-        distributedTopologyConfig = distributedTopologyConfig_;
-    }
-
-    // xxx
-    const net::aggregator::AggregatorConfig& getAggregatorConfig()
-    {
-        return distributedTopologyConfig_.curSF1Node_.masterAgent_.aggregatorConfig_;
-    }
-
     /// @brief Gets the configuration related to Firewall
     /// @return The settings for Firewall
     const FirewallConfig& getFirewallConfig()
@@ -462,14 +442,14 @@ public:
 
     bool isDistributedSearchNode()
     {
-        return distributedTopologyConfig_.enabled_;
+        return searchTopologyConfig_.enabled_;
     }
 
-    bool isMaster()
+    bool isSearchMaster()
     {
-        if (distributedTopologyConfig_.enabled_
-                && distributedTopologyConfig_.curSF1Node_.masterAgent_.enabled_
-                && distributedTopologyConfig_.curSF1Node_.masterAgent_.aggregatorSupportMap_.size() > 0)
+        if (searchTopologyConfig_.enabled_
+                && searchTopologyConfig_.curSF1Node_.masterAgent_.enabled_
+                && searchTopologyConfig_.curSF1Node_.masterAgent_.aggregatorSupportMap_.size() > 0)
         {
             return true;
         }
@@ -477,13 +457,13 @@ public:
         return false;
     }
 
-    bool checkAggregatorSupport(const std::string& collectionOrBundleName)
+    bool checkSearchMasterAggregator(const std::string& aggregatorName)
     {
-        std::string downcaseName = collectionOrBundleName;
+        std::string downcaseName = aggregatorName;
         downCase(downcaseName);
-        if (distributedTopologyConfig_.enabled_
-                && distributedTopologyConfig_.curSF1Node_.masterAgent_.enabled_
-                && distributedTopologyConfig_.curSF1Node_.masterAgent_.checkAggregatorByName(downcaseName))
+        if (searchTopologyConfig_.enabled_
+                && searchTopologyConfig_.curSF1Node_.masterAgent_.enabled_
+                && searchTopologyConfig_.curSF1Node_.masterAgent_.checkAggregatorByName(downcaseName))
         {
             return true;
         }
@@ -491,11 +471,11 @@ public:
         return false;
     }
 
-    bool isWorker()
+    bool isSearchWorker()
     {
-        if (distributedTopologyConfig_.enabled_
-                && distributedTopologyConfig_.curSF1Node_.workerAgent_.enabled_
-                && distributedTopologyConfig_.curSF1Node_.workerAgent_.serviceMap_.size() > 0)
+        if (searchTopologyConfig_.enabled_
+                && searchTopologyConfig_.curSF1Node_.workerAgent_.enabled_
+                && searchTopologyConfig_.curSF1Node_.workerAgent_.serviceMap_.size() > 0)
         {
             return true;
         }
@@ -503,13 +483,13 @@ public:
         return false;
     }
 
-    bool checkWorkerServiceByName(const std::string& collectionOrBundleName)
+    bool checkSearchWorker(const std::string& workerName)
     {
-        std::string downcaseName = collectionOrBundleName;
+        std::string downcaseName = workerName;
         downCase(downcaseName);
-        if (distributedTopologyConfig_.enabled_
-                && distributedTopologyConfig_.curSF1Node_.workerAgent_.enabled_
-                && distributedTopologyConfig_.curSF1Node_.workerAgent_.checkServiceByName(downcaseName))
+        if (searchTopologyConfig_.enabled_
+                && searchTopologyConfig_.curSF1Node_.workerAgent_.enabled_
+                && searchTopologyConfig_.curSF1Node_.workerAgent_.checkServiceByName(downcaseName))
         {
             return true;
         }
@@ -591,20 +571,23 @@ private:
 
     /// @brief                  Parse <Deploy> settings
     /// @param system           Pointer to the Element
-    void parseDeploymentSettings( const ticpp::Element * environment );
+    void parseDeploymentSettings( const ticpp::Element * deploy );
     /// @brief                  Parse <BrokerAgnet> settings
     /// @param system           Pointer to the Element
     void parseBrokerAgent( const ticpp::Element * brokerAgent );
     /// @brief                  Parse <Broker> settings
     /// @param system           Pointer to the Element
-    void parseDistributedTopology(const ticpp::Element * topology);
+    void parseDistributedTopologies(const ticpp::Element * deploy);
+    void parseDistributedTopology(
+            const ticpp::Element * topology,
+            DistributedTopologyConfig& topologyConfig);
     /// @brief                  Parse <Broker> settings
     /// @param system           Pointer to the Element
     void parseDistributedUtil(const ticpp::Element * distributedUtil);
     /// @brief                  Parse <RemoteAgent> settings
     /// @param system           Pointer to the Element
-    void parseMasterAgent(const ticpp::Element * master);
-    void parseWorkerAgent(const ticpp::Element * worker);
+    void parseMasterAgent(const ticpp::Element * master, DistributedTopologyConfig& topologyConfig);
+    void parseWorkerAgent(const ticpp::Element * worker, DistributedTopologyConfig& topologyConfig);
 
 public:
     //----------------------------  PRIVATE MEMBER VARIABLES  ----------------------------
@@ -635,8 +618,9 @@ public:
     /// @brief  Configurations for BrokerAgent
     BrokerAgentConfig brokerAgentConfig_;
 
-    /// @brief Configurations for distributed search system
-    DistributedTopologyConfig distributedTopologyConfig_;
+    /// @brief Configurations for distributed topologies
+    DistributedTopologyConfig searchTopologyConfig_;
+    DistributedTopologyConfig recommendTopologyConfig_;
 
     /// @brief Configurations for distributed util
     DistributedUtilConfig distributedUtilConfig_;
