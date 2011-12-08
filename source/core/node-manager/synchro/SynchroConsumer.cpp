@@ -55,7 +55,7 @@ void SynchroConsumer::watchProducer(
 
 void SynchroConsumer::monitor()
 {
-    if (!zookeeper_->isConnected())
+    if (zookeeper_ && !zookeeper_->isConnected())
     {
         zookeeper_->connect(true);
 
@@ -79,9 +79,12 @@ void SynchroConsumer::process(ZooKeeperEvent& zkEvent)
             doWatchProducer();
     }
 
-    if (zkEvent.type_ == ZOO_CREATED_EVENT && zkEvent.path_ == syncNodePath_)
+    if (zkEvent.path_ == syncNodePath_)
     {
-        if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
+        resetWatch();
+
+        if (zkEvent.type_ == ZOO_CREATED_EVENT
+                && consumerStatus_ == CONSUMER_STATUS_WATCHING)
             doWatchProducer();
     }
 }
@@ -110,7 +113,7 @@ void SynchroConsumer::onChildrenChanged(const std::string& path)
 
 void SynchroConsumer::doWatchProducer()
 {
-    //std::cout<<"[SynchroConsumer::doWatchProducer]... "<<std::endl;
+    //std::cout<<"[SynchroConsumer] watch "<<syncNodePath_<<std::endl;
     boost::unique_lock<boost::mutex> lock(mutex_);
 
     // todo watch M node

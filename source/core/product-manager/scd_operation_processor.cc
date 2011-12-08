@@ -57,7 +57,7 @@ bool ScdOperationProcessor::Finish()
     std::cout<<"ScdOperationProcessor::Finish "<<dir_<<std::endl;
 
     SynchroProducerPtr syncProducer =
-            DistributedSynchroFactory::makeProducer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER);
+            DistributedSynchroFactory::makeProducer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER, collectionName_);
 
     SynchroData syncData;
     syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);

@@ -10,7 +10,7 @@ ProductScdReceiver::ProductScdReceiver(const std::string& collectionName)
 ,collectionName_(collectionName)
 {
     SynchroConsumerPtr syncConsumer =
-        DistributedSynchroFactory::makeConsumer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER);
+        DistributedSynchroFactory::makeConsumer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER, collectionName);
 
     syncConsumer->watchProducer(collectionName_, boost::bind(&ProductScdReceiver::Run, this, _1), true);
 }

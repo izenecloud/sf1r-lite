@@ -28,7 +28,7 @@ bool callback_on_produced(const std::string& datapath)
 void thread_consumer_run()
 {
     SynchroConsumerPtr scp =
-            DistributedSynchroFactory::makeConsumer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER);
+            DistributedSynchroFactory::makeConsumer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER, "test");
 
     scp->watchProducer("test", callback_on_produced, true);
 }
@@ -64,7 +64,7 @@ int main(int argc, char** argv)
     // Producer
     {
         SynchroProducerPtr spd =
-            DistributedSynchroFactory::makeProducer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER);
+            DistributedSynchroFactory::makeProducer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER, "test");
 
         SynchroData sdata;
         sdata.setValue(SynchroData::KEY_COLLECTION, "test");

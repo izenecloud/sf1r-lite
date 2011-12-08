@@ -27,9 +27,9 @@ public:
     };
 
 public:
-    static SynchroProducerPtr makeProducer(SynchroType stype)
+    static SynchroProducerPtr makeProducer(SynchroType stype, const std::string& id)
     {
-        if (!syncProducer_[stype])
+        if (syncProducer_.find(id) == syncProducer_.end())
         {
             std::string zkHosts = NodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkHosts_;
             int zkTimeout = NodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkRecvTimeout_;
@@ -37,15 +37,15 @@ public:
             replicaid_t replicaId = NodeManagerSingleton::get()->getDSTopologyConfig().curSF1Node_.replicaId_;
             nodeid_t nodeId = NodeManagerSingleton::get()->getDSTopologyConfig().curSF1Node_.nodeId_;
 
-            syncProducer_[stype].reset(new SynchroProducer(zkHosts, zkTimeout, syncNodePath, replicaId, nodeId));
+           syncProducer_[id].reset(new SynchroProducer(zkHosts, zkTimeout, syncNodePath, replicaId, nodeId));
         }
 
-        return syncProducer_[stype];
+        return syncProducer_[id];
     }
 
-    static SynchroConsumerPtr makeConsumer(SynchroType stype)
+    static SynchroConsumerPtr makeConsumer(SynchroType stype, const std::string& id)
     {
-        if (!syncConsumer_[stype])
+        if (syncConsumer_.find(id) == syncConsumer_.end())
         {
             std::string zkHosts = NodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkHosts_;
             int zkTimeout = NodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkRecvTimeout_;
@@ -53,10 +53,10 @@ public:
             replicaid_t replicaId = NodeManagerSingleton::get()->getDSTopologyConfig().curSF1Node_.replicaId_;
             nodeid_t nodeId = NodeManagerSingleton::get()->getDSTopologyConfig().curSF1Node_.nodeId_;
 
-            syncConsumer_[stype].reset(new SynchroConsumer(zkHosts, zkTimeout, syncNodePath, replicaId, nodeId));
+            syncConsumer_[id].reset(new SynchroConsumer(zkHosts, zkTimeout, syncNodePath, replicaId, nodeId));
         }
 
-        return syncConsumer_[stype];
+        return syncConsumer_[id];
     }
 
     static void initZKNodes(boost::shared_ptr<ZooKeeper>& zookeeper)
@@ -73,8 +73,8 @@ public:
 
 private:
     static std::string synchroType2ZNode_[SYNCHRO_TYPE_NUM];
-    static SynchroProducerPtr syncProducer_[SYNCHRO_TYPE_NUM];
-    static SynchroConsumerPtr syncConsumer_[SYNCHRO_TYPE_NUM];
+    static std::map<std::string, SynchroProducerPtr> syncProducer_;
+    static std::map<std::string, SynchroConsumerPtr> syncConsumer_;
 };
 
 }
