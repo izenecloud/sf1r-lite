@@ -6,8 +6,8 @@
 #include <license-manager/LicenseManager.h>
 #include <aggregator-manager/CollectionDataReceiver.h>
 #include <aggregator-manager/NotifyReceiver.h>
-#include <node-manager/NodeManager.h>
-#include <node-manager/MasterNodeManager.h>
+#include <node-manager/SearchNodeManager.h>
+#include <node-manager/SearchMasterManager.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 
 #include <OnSignal.h>
@@ -216,7 +216,7 @@ bool CobraProcess::initDriverServer()
 
 bool CobraProcess::initNodeManager()
 {
-    NodeManagerSingleton::get()->init(
+    SearchNodeManager::get()->init(
             SF1Config::get()->searchTopologyConfig_,
             SF1Config::get()->distributedUtilConfig_);
 
@@ -266,7 +266,7 @@ bool CobraProcess::startDistributedServer()
         //NotifyReceiver::get()->start(curNodeInfo.localHost_, masterPort);
     }
 
-    NodeManagerSingleton::get()->start();
+    SearchNodeManager::get()->start();
 
     unsigned int dataPort = SF1Config::get()->searchTopologyConfig_.curSF1Node_.dataPort_;
     CollectionDataReceiver::get()->init(dataPort, "./collection"); //xxx
@@ -279,7 +279,7 @@ bool CobraProcess::startDistributedServer()
 
 void CobraProcess::stopDistributedServer()
 {
-    NodeManagerSingleton::get()->stop();
+    SearchNodeManager::get()->stop();
 
     if (SF1Config::get()->isDistributedSearchNode())
     {

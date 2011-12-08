@@ -11,7 +11,6 @@
 
 #include <3rdparty/zookeeper/ZooKeeper.hpp>
 #include <3rdparty/zookeeper/ZooKeeperEvent.hpp>
-#include <util/singleton.h>
 
 #include <configuration-manager/DistributedTopologyConfig.h>
 #include <configuration-manager/DistributedUtilConfig.h>
@@ -37,7 +36,7 @@ public:
 
     NodeManager();
 
-    ~NodeManager();
+    virtual ~NodeManager();
 
     /**
      * @param dsTopologyConfig
@@ -80,7 +79,12 @@ public:
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
 
-private:
+protected:
+    virtual void startMasterManager() {}
+
+    virtual void stopMasterManager() {}
+
+protected:
     void initZooKeeper(const std::string& zkHosts, const int recvTimeout);
 
     /**
@@ -100,7 +104,7 @@ private:
      */
     void leaveCluster();
 
-private:
+protected:
     DistributedTopologyConfig dsTopologyConfig_;
     DistributedUtilConfig dsUtilConfig_;
 
@@ -115,10 +119,9 @@ private:
     bool masterStarted_;
 
     boost::mutex mutex_;
+
+    std::string CLASSNAME;
 };
-
-
-typedef izenelib::util::Singleton<NodeManager> NodeManagerSingleton;
 
 }
 

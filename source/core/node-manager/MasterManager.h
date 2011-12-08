@@ -1,5 +1,5 @@
 /**
- * @file MasterNodeManager.h
+ * @file MasterManager.h
  * @author Zhongxia Li
  * @date Sep 20, 2011S
  * @brief Management (Coordination) for Master node using ZooKeeper.
@@ -17,7 +17,6 @@
 #include <3rdparty/zookeeper/ZooKeeperEvent.hpp>
 #include <net/aggregator/AggregatorConfig.h>
 #include <net/aggregator/Aggregator.h>
-#include <util/singleton.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
@@ -27,7 +26,7 @@ using namespace zookeeper;
 namespace sf1r
 {
 
-class MasterNodeManager : public ZooKeeperEventHandler
+class MasterManager : public ZooKeeperEventHandler
 {
 public:
     enum MasterStateType
@@ -44,9 +43,11 @@ public:
     typedef std::map<shardid_t, boost::shared_ptr<WorkerNode> > WorkerMapT;
 
 public:
-    MasterNodeManager();
+    MasterManager();
 
-    void init();
+    virtual ~MasterManager() {};
+
+    virtual void init() = 0;
 
     void start();
 
@@ -85,7 +86,7 @@ public:
     /// test
     void showWorkers();
 
-private:
+protected:
     void initZooKeeper(const std::string& zkHosts, const int recvTimeout);
 
     std::string state2string(MasterStateType e);
@@ -124,7 +125,7 @@ private:
     /***/
     void resetAggregatorConfig();
 
-private:
+protected:
     boost::shared_ptr<ZooKeeper> zookeeper_;
 
     Topology topology_;
@@ -140,9 +141,11 @@ private:
     std::vector<net::aggregator::AggregatorBase*> aggregatorList_;
 
     boost::mutex mutex_;
+
+    std::string CLASSNAME;
 };
 
-typedef izenelib::util::Singleton<MasterNodeManager> MasterNodeManagerSingleton;
+
 
 }
 

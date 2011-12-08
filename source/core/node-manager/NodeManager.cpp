@@ -1,5 +1,4 @@
 #include "NodeManager.h"
-#include "MasterNodeManager.h"
 #include "ZkMonitor.h"
 
 #include <node-manager/synchro/DistributedSynchroFactory.h>
@@ -10,7 +9,10 @@ using namespace sf1r;
 using namespace zookeeper;
 
 NodeManager::NodeManager()
-: isInitBeforeStartDone_(false), nodeState_(NODE_STATE_INIT), masterStarted_(false)
+: isInitBeforeStartDone_(false)
+, nodeState_(NODE_STATE_INIT)
+, masterStarted_(false)
+, CLASSNAME("[NodeManager]")
 {
 }
 
@@ -41,7 +43,7 @@ void NodeManager::init(
 
     nodePath_ = NodeDef::getNodePath(nodeInfo_.replicaId_, nodeInfo_.nodeId_);
 
-    // ZooKeeper monitor
+    // ZooKeeper monitor, xxx move to new manager
     ZkMonitor::get()->start();
 
     // !! Initializations needed to be done before start collections (run)
@@ -74,7 +76,7 @@ void NodeManager::stop()
 
     if (masterStarted_)
     {
-        MasterNodeManagerSingleton::get()->stop();
+        stopMasterManager();
     }
 
     leaveCluster();
@@ -82,7 +84,7 @@ void NodeManager::stop()
 
 void NodeManager::process(ZooKeeperEvent& zkEvent)
 {
-    std::cout<<"[NodeManager] "<< zkEvent.toString();
+    std::cout<<CLASSNAME<< zkEvent.toString();
 
     if (!isInitBeforeStartDone_)
     {
@@ -106,7 +108,7 @@ void NodeManager::process(ZooKeeperEvent& zkEvent)
     // ZOO_EXPIRED_SESSION_STATE
 }
 
-/// private ////////////////////////////////////////////////////////////////////
+/// protected ////////////////////////////////////////////////////////////////////
 
 void NodeManager::initZooKeeper(const std::string& zkHosts, const int recvTimeout)
 {
@@ -154,7 +156,7 @@ void NodeManager::enterCluster()
             // If still not connected, assume zookeeper service was stopped
             // and waiting for later connection after zookeeper recovered.
             nodeState_ = NODE_STATE_STARTING_WAIT_RETRY;
-            std::cout<<"[NodeManager] waiting for ZooKeeper Service..."<<std::endl;
+            std::cout<<CLASSNAME<<" waiting for ZooKeeper Service..."<<std::endl;
             return;
         }
     }
@@ -184,25 +186,25 @@ void NodeManager::enterCluster()
         if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
         {
             zookeeper_->setZNodeData(nodePath_, sndata);
-            std::cout<<"[NodeManager] Conflict!! overwrote exsited node \""<<nodePath_<<"\"!"<<std::endl;
+            std::cout<<CLASSNAME<<" Conflict!! overwrote exsited node \""<<nodePath_<<"\"!"<<std::endl;
         }
         else
         {
             nodeState_ = NODE_STATE_STARTING_WAIT_RETRY;
-            std::cout<<"[NodeManager] failed to start (err:"<<zookeeper_->getErrorCode()
+            std::cout<<CLASSNAME<<" failed to start (err:"<<zookeeper_->getErrorCode()
                      <<"), waiting retry ..."<<std::endl;
             return;
         }
     }
 
     nodeState_ = NODE_STATE_STARTED;
-    //std::cout<<"[NodeManager] node registered at \""<<nodePath_<<"\" "<<std::endl;
-    std::cout<<"[NodeManager] joined cluster ["<<dsTopologyConfig_.clusterId_<<"] - "<<nodeInfo_.toString()<<std::endl;
+    //std::cout<<CLASSNAME<<" node registered at \""<<nodePath_<<"\" "<<std::endl;
+    std::cout<<CLASSNAME<<" joined cluster ["<<dsTopologyConfig_.clusterId_<<"] - "<<nodeInfo_.toString()<<std::endl;
 
     // Start Master manager
     if (dsTopologyConfig_.curSF1Node_.masterAgent_.enabled_)
     {
-        MasterNodeManagerSingleton::get()->start();
+        startMasterManager(); // virtual
         masterStarted_ = true;
     }
 }

@@ -86,30 +86,45 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 void MultiDocSummarizationSubManager::EvaluateSummarization()
 {
     BuildIndexOfParentKey_();
-    for (uint32_t i = 1; i <= document_manager_->getMaxDocId(); i++)
+    if (schema_.parentKeyLogPath.empty())
     {
-        Document doc;
-        document_manager_->getDocument(i, doc);
-        Document::property_const_iterator kit = doc.findProperty(schema_.foreignKeyPropName);
-        if (kit == doc.propertyEnd())
-            continue;
-
-        Document::property_const_iterator cit = doc.findProperty(schema_.contentPropName);
-        if (cit == doc.propertyEnd())
-            continue;
-
-        const UString& content = cit->second.get<UString>();
-        const UString key = kit->second.get<UString>();
-        if (schema_.parentKeyLogPath.empty())
+        for (uint32_t i = 1; i <= document_manager_->getMaxDocId(); i++)
         {
+            Document doc;
+            document_manager_->getDocument(i, doc);
+            Document::property_const_iterator kit = doc.findProperty(schema_.foreignKeyPropName);
+            if (kit == doc.propertyEnd())
+                continue;
+
+            Document::property_const_iterator cit = doc.findProperty(schema_.contentPropName);
+            if (cit == doc.propertyEnd())
+                continue;
+
+            const UString key = kit->second.get<UString>();
+            const UString& content = cit->second.get<UString>();
             comment_cache_storage_->AppendUpdate(key, i, content);
         }
-        else
+    }
+    else
+    {
+        for (uint32_t i = 1; i <= document_manager_->getMaxDocId(); i++)
         {
+            Document doc;
+            document_manager_->getDocument(i, doc);
+            Document::property_const_iterator kit = doc.findProperty(schema_.foreignKeyPropName);
+            if (kit == doc.propertyEnd())
+                continue;
+
+            Document::property_const_iterator cit = doc.findProperty(schema_.contentPropName);
+            if (cit == doc.propertyEnd())
+                continue;
+
+            const UString key = kit->second.get<UString>();
             UString parent_key;
             if (!parent_key_storage_->GetParent(key, parent_key))
                 continue;
 
+            const UString& content = cit->second.get<UString>();
             comment_cache_storage_->AppendUpdate(parent_key, i, content);
         }
     }
@@ -174,13 +189,9 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 //  std::string key_str;
 //  key.convertString(key_str, UString::UTF_8);
 //  std::cout << "Begin evaluating: " << key_str << std::endl;
-    if (comment_cache_item.size() < 400 && corpus_->ntotal() < 5000)
+    if (comment_cache_item.size() < 2000 && corpus_->ntotal() < 100000)
     {
         SPLM::generateSummary(summary_list, *corpus_, SPLM::SPLM_SVD);
-    }
-    else if (comment_cache_item.size() < 800 && corpus_->ntotal() < 10000)
-    {
-        SPLM::generateSummary(summary_list, *corpus_, SPLM::SPLM_RI);
     }
     else
     {

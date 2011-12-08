@@ -44,7 +44,7 @@ public:
             int c, const int *sentOffs, const int *collOffs,
             const std::map<int, int>& wordmapping,
             const int *W, int numSentences,
-            double **U, double **S, int dim = 20
+            double **U, double **S
     );
 
     ///
@@ -78,7 +78,7 @@ public:
             const Corpus& corpus,
             SPLM_Alg algorithm = SPLM_SVD,
             int lengthLimit = 5,
-            int D = 400, int E = 200,
+            int D = 400, int E = 30,
             float mu = 2000, float lambda = 1000
     );
 

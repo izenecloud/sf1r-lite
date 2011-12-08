@@ -7,6 +7,8 @@
 
 #include <am/tc/BTree.h>
 
+#include <boost/unordered_map.hpp>
+
 namespace sf1r
 {
 
@@ -17,8 +19,8 @@ class ProductPriceTrend
     typedef izenelib::am::tc::BTree<std::string, TPCQueue> TPCBTree;
     typedef std::map<std::string, std::vector<TPCBTree *> > TPCStorage;
 
-    typedef std::pair<ProductPriceType, std::map<std::string, std::string> > PropCacheItem;
-    typedef std::map<std::string, PropCacheItem> PropCacheMap;
+    typedef std::pair<ProductPriceType, std::map<std::string, std::string> > PropItemType;
+    typedef boost::unordered_map<std::string, PropItemType> PropMapType;
 
 public:
     ProductPriceTrend(
@@ -76,6 +78,8 @@ public:
     }
 
 private:
+    bool IsBufferFull_();
+
     bool UpdateTPC_(uint32_t time_int, time_t timestamp = -1);
 
     void ParseDocid_(std::string& dest, const std::string& src) const;
@@ -89,11 +93,14 @@ private:
 private:
     std::string collection_name_;
     std::string data_dir_;
+
     std::vector<std::string> group_prop_vec_;
     std::vector<uint32_t> time_int_vec_;
+
+    std::vector<PriceHistory> price_history_buffer_;
+
     bool enable_tpc_;
-    std::vector<PriceHistory> price_history_cache_;
-    PropCacheMap prop_cache_;
+    PropMapType prop_map_;
     TPCStorage tpc_storage_;
 };
 
