@@ -16,6 +16,7 @@ class ScdWriter
       end
       @o_file.puts "<#{key}>#{value}"
     end
+#     @o_file.flush
   end
   
   def close
