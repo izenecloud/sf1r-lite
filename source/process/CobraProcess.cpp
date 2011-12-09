@@ -6,6 +6,7 @@
 #include <license-manager/LicenseManager.h>
 #include <aggregator-manager/CollectionDataReceiver.h>
 #include <aggregator-manager/NotifyReceiver.h>
+#include <node-manager/ZooKeeperManager.h>
 #include <node-manager/SearchNodeManager.h>
 #include <node-manager/SearchMasterManager.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
@@ -231,56 +232,61 @@ void CobraProcess::stopDriver()
 
 bool CobraProcess::startDistributedServer()
 {
-    if (!SF1Config::get()->isDistributedSearchNode())
-        return false;
+    // Start for distributed coordination tasks
+    ZooKeeperManager::get()->start();
 
-    if (SF1Config::get()->isSearchWorker())
+    // Start distributed topology managers
+    if (SF1Config::get()->isDistributedSearchNode())
     {
-        try
+        if (SF1Config::get()->isSearchWorker())
         {
-            // worker rpc server
-            std::string localHost = SF1Config::get()->searchTopologyConfig_.curSF1Node_.host_;
-            uint16_t workerPort = SF1Config::get()->searchTopologyConfig_.curSF1Node_.workerAgent_.port_;
-            std::size_t threadNum = SF1Config::get()->brokerAgentConfig_.threadNum_;
+            try
+            {
+                // worker rpc server
+                std::string localHost = SF1Config::get()->searchTopologyConfig_.curSF1Node_.host_;
+                uint16_t workerPort = SF1Config::get()->searchTopologyConfig_.curSF1Node_.workerAgent_.port_;
+                std::size_t threadNum = SF1Config::get()->brokerAgentConfig_.threadNum_;
 
-            WorkerServer::get()->init(localHost, workerPort, threadNum, true);
-            WorkerServer::get()->start();
-            cout << "#[Worker Server]started, listening at "<<localHost<<":"<<workerPort<<" ..."<<endl;
+                WorkerServer::get()->init(localHost, workerPort, threadNum, true);
+                WorkerServer::get()->start();
+                cout << "#[Worker Server]started, listening at "<<localHost<<":"<<workerPort<<" ..."<<endl;
 
-            // master notifier, xxx
-            //std::string masterHost = SF1Config::get()->searchTopologyConfig_.curSF1Node_.workerAgent_.masterHost_;
-            //uint16_t masterPort = SF1Config::get()->searchTopologyConfig_.curSF1Node_.workerAgent_.masterPort_;
-            //NotifyReceiver::get()->setReceiverAddress(masterHost, masterPort);
+                // master notifier, xxx
+                //std::string masterHost = SF1Config::get()->searchTopologyConfig_.curSF1Node_.workerAgent_.masterHost_;
+                //uint16_t masterPort = SF1Config::get()->searchTopologyConfig_.curSF1Node_.workerAgent_.masterPort_;
+                //NotifyReceiver::get()->setReceiverAddress(masterHost, masterPort);
+            }
+            catch (std::exception& e)
+            {
+                cout << e.what() << endl;
+            }
         }
-        catch (std::exception& e)
+
+        if (SF1Config::get()->isSearchMaster())
         {
-            cout << e.what() << endl;
+            // master rpc server
+            //NotifyReceiver::get()->start(curNodeInfo.localHost_, masterPort);
         }
+
+        SearchNodeManager::get()->start();
+
+        unsigned int dataPort = SF1Config::get()->searchTopologyConfig_.curSF1Node_.dataPort_;
+        CollectionDataReceiver::get()->init(dataPort, "./collection"); //xxx
+        CollectionDataReceiver::get()->start();
     }
-
-    if (SF1Config::get()->isSearchMaster())
-    {
-        // master rpc server
-        //NotifyReceiver::get()->start(curNodeInfo.localHost_, masterPort);
-    }
-
-    SearchNodeManager::get()->start();
-
-    unsigned int dataPort = SF1Config::get()->searchTopologyConfig_.curSF1Node_.dataPort_;
-    CollectionDataReceiver::get()->init(dataPort, "./collection"); //xxx
-    CollectionDataReceiver::get()->start();
 
     addExitHook(boost::bind(&CobraProcess::stopDistributedServer, this));
-
     return true;
 }
 
 void CobraProcess::stopDistributedServer()
 {
-    SearchNodeManager::get()->stop();
+    ZooKeeperManager::get()->stop();
 
     if (SF1Config::get()->isDistributedSearchNode())
     {
+        SearchNodeManager::get()->stop();
+
         if (SF1Config::get()->isSearchWorker())
             WorkerServerSingle::get()->stop();
 

@@ -48,13 +48,13 @@ public:
             callback_on_produced_t callback_on_produced,
             bool replyProducer = true);
 
-    void onMonitor();
-
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
 
     virtual void onDataChanged(const std::string& path);
     virtual void onChildrenChanged(const std::string& path);
+
+    virtual void onMonitor();
 
 private:
     void doWatchProducer();

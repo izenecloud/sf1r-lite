@@ -1,8 +1,6 @@
 #include "SynchroConsumer.h"
 #include "SynchroData.h"
 
-#include <node-manager/ZkMonitor.h>
-
 #include <util/string/StringUtils.h>
 
 #include <sstream>
@@ -23,9 +21,6 @@ SynchroConsumer::SynchroConsumer(
 , replyProducer_(true)
 {
     zookeeper_ = ZooKeeperManager::get()->createClient(zkHosts, zkTimeout, this, true);
-
-    ZkMonitor::get()->addMonitorHandler(
-            boost::bind(&SynchroConsumer::onMonitor, this) );
 
     // "/SF1R-xxxx/Synchro/ProductManager/ProducerRXNX/",
     // xxx which node to watch in distributed se?
@@ -52,21 +47,6 @@ void SynchroConsumer::watchProducer(
     if (zookeeper_->isConnected())
     {
         doWatchProducer();
-    }
-}
-
-void SynchroConsumer::onMonitor()
-{
-    if (zookeeper_ && !zookeeper_->isConnected())
-    {
-        zookeeper_->connect(true);
-
-        if (zookeeper_->isConnected())
-            resetWatch();
-    }
-    else if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
-    {
-        resetWatch();
     }
 }
 
@@ -109,6 +89,21 @@ void SynchroConsumer::onChildrenChanged(const std::string& path)
 //        if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
 //            doWatchProducer();
 //    }
+}
+
+void SynchroConsumer::onMonitor()
+{
+    if (zookeeper_ && !zookeeper_->isConnected())
+    {
+        zookeeper_->connect(true);
+
+        if (zookeeper_->isConnected())
+            resetWatch();
+    }
+    else if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
+    {
+        resetWatch();
+    }
 }
 
 /// private

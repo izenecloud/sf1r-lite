@@ -50,10 +50,11 @@ public:
     /**
      *
      * @param isSuccess
-     * @param findConsumerTimeout  timeout (seconds) for saw any consumer.
+     * @param findConsumerTimeout  timeout (seconds) for waiting consumer(s),
+     *                             should larger then monitor interval.
      * @return
      */
-    bool waitConsumers(bool& isConsumed, int findConsumerTimeout = 120);
+    bool waitConsumers(bool& isConsumed, int findConsumerTimeout = 150);
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);

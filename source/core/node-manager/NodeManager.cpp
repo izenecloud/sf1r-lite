@@ -1,5 +1,4 @@
 #include "NodeManager.h"
-#include "ZkMonitor.h"
 
 #include <node-manager/synchro/DistributedSynchroFactory.h>
 
@@ -18,7 +17,6 @@ NodeManager::NodeManager()
 
 NodeManager::~NodeManager()
 {
-    ZkMonitor::get()->stop();
 }
 
 void NodeManager::init(
@@ -46,9 +44,6 @@ void NodeManager::init(
 
     nodePath_ = NodeDef::getNodePath(nodeInfo_.replicaId_, nodeInfo_.nodeId_);
 
-    // ZooKeeper monitor, xxx move to new manager
-    ZkMonitor::get()->start();
-
     // !! Initializations needed to be done before start collections (run)
     initBeforeStart();
 }
@@ -75,8 +70,6 @@ void NodeManager::start()
 
 void NodeManager::stop()
 {
-    ZkMonitor::get()->stop();
-
     if (masterStarted_)
     {
         stopMasterManager();

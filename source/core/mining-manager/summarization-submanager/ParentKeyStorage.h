@@ -26,14 +26,6 @@ class ParentKeyStorage
     typedef stx::btree_map<UString, std::pair<std::vector<UString>, std::vector<UString> > > BufferType;
 
 public:
-    enum OperMode
-    {
-        INSERT,
-        UPDATE,
-        DELETE,
-        NONE
-    };
-
     ParentKeyStorage(
             const std::string& db_dir,
             unsigned bufferSize = 20000);
@@ -67,7 +59,6 @@ private:
     P2CDbType parent_to_children_db_;
     C2PDbType child_to_parent_db_;
 
-    OperMode mode_;
     BufferType buffer_db_;
 
     unsigned int buffer_capacity_;
