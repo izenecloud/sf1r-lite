@@ -38,7 +38,7 @@ void ParentKeyStorage::Insert(const UString& parent, const UString& child)
     if (mode_ != INSERT) Flush();
     mode_ = INSERT;
     child_to_parent_db_.insert(child, parent);
-    buffer_db_[parent].push_back(make_pair(true, child));
+    buffer_db_[parent].first.push_back(child);
 
     ++buffer_size_;
     if (IsBufferFull_())
@@ -53,8 +53,8 @@ void ParentKeyStorage::Update(const UString& parent, const UString& child)
     child_to_parent_db_.get(child, old_parent);
     if (old_parent == parent) return;
     child_to_parent_db_.update(child, parent);
-    buffer_db_[parent].push_back(make_pair(true, child));
-    buffer_db_[old_parent].push_back(make_pair(false, child));
+    buffer_db_[parent].first.push_back(child);
+    buffer_db_[old_parent].second.push_back(child);
 
     buffer_size_ += 2;
     if (IsBufferFull_())
@@ -69,7 +69,7 @@ void ParentKeyStorage::Delete(const UString& parent, const UString& child)
     child_to_parent_db_.get(child, old_parent);
     if (!parent.empty() && old_parent != parent) return;
     child_to_parent_db_.del(child);
-    buffer_db_[old_parent].push_back(make_pair(false, child));
+    buffer_db_[old_parent].second.push_back(child);
 
     ++buffer_size_;
     if (IsBufferFull_())
@@ -80,18 +80,30 @@ void ParentKeyStorage::Flush()
 {
     if (mode_ == NONE || buffer_db_.empty()) return;
 
-    BufferType::iterator it = buffer_db_.begin();
-    for (; it != buffer_db_.end(); ++it)
+    for (BufferType::iterator it = buffer_db_.begin();
+            it != buffer_db_.end(); ++it)
     {
-        std::set<UString> v;
+        std::vector<UString> v;
         parent_to_children_db_.get(it->first, v);
-        for (BufferType::data_type::const_iterator cit = it->second.begin();
-                cit != it->second.end(); ++cit)
+        for (std::vector<UString>::const_iterator cit = it->second.second.begin();
+                cit != it->second.second.end(); ++cit)
         {
-            if (cit->first)
-                v.insert(cit->second);
-            else
-                v.erase(cit->second);
+            for (std::vector<UString>::iterator vit = v.begin();
+                    vit != v.end(); ++vit)
+            {
+                if (*vit == *cit)
+                {
+                    v.erase(vit);
+                    break;
+                }
+            }
+        }
+        v.reserve(v.size() + it->second.first.size());
+        for (std::vector<UString>::iterator vit = it->second.first.begin();
+                vit != it->second.first.end(); ++vit)
+        {
+            v.push_back(UString());
+            v.back().swap(*vit);
         }
         parent_to_children_db_.update(it->first, v);
     }
@@ -103,7 +115,7 @@ void ParentKeyStorage::Flush()
     mode_ = NONE;
 }
 
-bool ParentKeyStorage::GetChildren(const UString& parent, std::set<UString>& children)
+bool ParentKeyStorage::GetChildren(const UString& parent, std::vector<UString>& children)
 {
     boost::shared_lock<boost::shared_mutex> lock(mutex_);
     return parent_to_children_db_.get(parent, children);

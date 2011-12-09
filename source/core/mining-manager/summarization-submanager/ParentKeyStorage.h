@@ -10,10 +10,6 @@
 
 #include <boost/thread.hpp>
 
-#include <vector>
-
-MAKE_FEBIRD_SERIALIZATION(std::set<izenelib::util::UString>)
-
 namespace sf1r
 {
 
@@ -21,13 +17,13 @@ using izenelib::util::UString;
 
 class ParentKeyStorage
 {
-    typedef izenelib::am::leveldb::Table<UString, std::set<UString> > P2CDbType;
+    typedef izenelib::am::leveldb::Table<UString, std::vector<UString> > P2CDbType;
     typedef izenelib::am::AMIterator<P2CDbType> P2CIteratorType;
 
     typedef izenelib::am::leveldb::Table<UString, UString> C2PDbType;
     typedef izenelib::am::AMIterator<C2PDbType> C2PIteratorType;
 
-    typedef stx::btree_map<UString, std::vector<std::pair<bool, UString> > > BufferType;
+    typedef stx::btree_map<UString, std::pair<std::vector<UString>, std::vector<UString> > > BufferType;
 
 public:
     enum OperMode
@@ -52,7 +48,7 @@ public:
 
     void Flush();
 
-    bool GetChildren(const UString& parent, std::set<UString>& children);
+    bool GetChildren(const UString& parent, std::vector<UString>& children);
 
     bool GetParent(const UString& child, UString& parent);
 
