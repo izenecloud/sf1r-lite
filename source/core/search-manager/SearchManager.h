@@ -120,7 +120,7 @@ private:
         int topK,
         int start);
 
-    void prepareDocIterWithOnlyOrderby_(
+    bool prepareDocIterWithOnlyOrderby_(
         boost::shared_ptr<EWAHBoolArray<uint32_t> >& pFilterIdSet);
 
     /**
