@@ -574,7 +574,6 @@ bool SearchManager::doSearch_(
         }
     }
 
-return false;
     START_PROFILER ( preparerank )
 
     ///prepare data for rankingmanager;
