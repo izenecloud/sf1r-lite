@@ -271,7 +271,6 @@ bool Utilities::convertPropertyDataType(const std::string& property_name, const 
     {
         return false;
     }
-    
 }
 
 }

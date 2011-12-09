@@ -1,8 +1,7 @@
 require 'rubygems'
-# require 'rexml/document'
-require 'xmlsimple'
+require 'rexml/document'
 require 'iconv'
-# require 'regex'
+
 
 class Category
   attr_accessor :name, :labels

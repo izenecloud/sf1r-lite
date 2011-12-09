@@ -19,12 +19,9 @@ void SPLM::getSmoothedTfDocument(
         int c, const int *sentOffs, const int *collOffs,
         const map<int, int>& wordmapping,
         const int *W, int numSentences,
-        double **U, double **S, int dim
+        double **U, double **S
 )
 {
-    if (dim > numSentences)
-        dim = numSentences;
-
     set<int> chosenIndices;
     int s_start = 0;
     for (int i = collOffs[c]; i < collOffs[c + 1]; i++)
@@ -36,7 +33,7 @@ void SPLM::getSmoothedTfDocument(
             continue;
         chosenIndices.insert(Ui);
         double val = 0.;
-        for (int j = 0; j < dim; j++)
+        for (int j = 0; j < numSentences; j++)
         {
             val += fabs(U[Ui][j] * S[0][j]);
         }
@@ -109,8 +106,6 @@ void SPLM::generateSummary(
         map<int, int> collWordMap;
         SPLMUtil::getCollectionWordMapping(collWordMap, collOffs, c, W);
 
-        bool SMOOTH = true;
-
         int docI = d_start; // Current document index
         int s_start_doc = s_start; // Sentence index marking start of a document
         int s_end_doc = s_start; // Sentence index marking end of a document
@@ -128,8 +123,7 @@ void SPLM::generateSummary(
 
             map<int, vector<double> > smoothedQueryMap;
             if (s_end_doc == s_start_doc ||
-                    (int) collWordMap.size() <= numOfS_doc ||
-                    !SMOOTH)
+                    (int) collWordMap.size() <= numOfS_doc)
             {
                 smoothedDocuments.push_back(vector<double>());
                 smoothedQueries.push_back(smoothedQueryMap);
@@ -251,15 +245,16 @@ void SPLM::generateSummary(
                 SPLMUtil::getRankDocumentProperty(rdp, nWords, docOffs, docIndex, W, sentenceWordMapping);
 
                 vector<double> temp;
-                vector<double> smoothedDocument;
-                if (SMOOTH == true)
-                    smoothedDocument = smoothedDocuments[docIndex - d_start];
+                vector<double> smoothedDocument = smoothedDocuments[docIndex - d_start];
 
-                //sentenceScore += plm.getScoreSVD(rqp, rdp, query_tf_doc, temp, smoothedDocument);
                 if (algorithm == SPLM_NONE)
+                {
                     sentenceScore += plm.getScore(rqp, rdp);
+                }
                 else
+                {
                     sentenceScore += plm.getScoreSVD(rqp, rdp, query_tf_doc, temp, smoothedDocument);
+                }
             }
 
             if (sentOffs[s + 1] - sentOffs[s] > lengthLimit)
