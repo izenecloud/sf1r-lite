@@ -563,6 +563,7 @@ bool SearchManager::doSearch_(
         {
             ///SELECT * ORDER BY
             prepareDocIterWithOnlyOrderby_(pFilterIdSet);
+            if(!pFilterIdSet) return false;
             BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
             FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
             pDocIterator->add((DocumentIterator*)pFilterIterator);
@@ -573,7 +574,7 @@ bool SearchManager::doSearch_(
         }
     }
 
-
+return false;
     START_PROFILER ( preparerank )
 
     ///prepare data for rankingmanager;
@@ -871,9 +872,9 @@ void SearchManager::prepareDocIterWithOnlyOrderby_(
         return;
     }
 
-
     unsigned int bitsNum = documentManagerPtr_->getMaxDocId() + 1;
     unsigned int wordsNum = bitsNum/(sizeof(uint32_t) * 8);
+    if(!wordsNum) return;
 
     pFilterIdSet.reset(new EWAHBoolArray<uint32_t>());
     for (unsigned num = 1; num < sizeof(uint32_t) * 8; num++)

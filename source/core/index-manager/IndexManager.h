@@ -101,27 +101,17 @@ public:
     template<typename T>
     void loadPropertyDataForSorting(const string& property, T* &data, size_t&size)
     {
-//         int32_t fid = getPropertyIDByName(1,property);
-//         collectionid_t cid = 1;
-//         size_t maxLength = getIndexReader()->maxDoc()+1;
-// 
-//         BTreeIndex<IndexKeyType<T> >* pBTreeIndexer = pBTreeIndexer_->getIndexer<T>();
-//         T low = NumericUtil<T>::Low();
-//         T high = NumericUtil<T>::High();
-//         data = new T[maxLength]();
-//         IndexKeyType<T> lowkey(cid, fid, low);
-//         IndexKeyType<T> highkey(cid, fid, high);
-//         if (pBTreeIndexer->get_between(lowkey,highkey,data,maxLength) == 0)
-//         {
-//             delete[] data;
-//             data = NULL;
-//         }
         BTreeIndexer<T>* pBTreeIndexer = pBTreeIndexer_->getIndexer<T>(property);
-        size = getIndexReader()->maxDoc()+1;
+        size = getIndexReader()->maxDoc();
+        if(!size)
+        {
+            data = NULL;
+            return;
+        }
         T low = NumericUtil<T>::Low();
         T high = NumericUtil<T>::High();
         data = new T[size]();
-        if (pBTreeIndexer->getValueBetween(low,high,size, data) == 0)
+        if (pBTreeIndexer->getValueBetween(low,high,size,data) == 0)
         {
             delete[] data;
             data = NULL;
