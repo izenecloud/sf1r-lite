@@ -13,7 +13,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-using namespace zookeeper;
+using namespace izenelib::zookeeper;
 
 namespace sf1r
 {

@@ -16,7 +16,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
-using namespace zookeeper;
 
 namespace sf1r
 {

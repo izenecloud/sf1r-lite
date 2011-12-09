@@ -8,7 +8,6 @@
 #include <sstream>
 
 using namespace sf1r;
-using namespace zookeeper;
 
 
 SynchroConsumer::SynchroConsumer(

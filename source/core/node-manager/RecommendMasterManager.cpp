@@ -13,6 +13,7 @@ RecommendMasterManager::RecommendMasterManager()
 bool RecommendMasterManager::init()
 {
     // TODO
+    return false;
 }
 
 }

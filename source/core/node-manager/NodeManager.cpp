@@ -6,7 +6,7 @@
 #include <sstream>
 
 using namespace sf1r;
-using namespace zookeeper;
+
 
 NodeManager::NodeManager()
 : isInitBeforeStartDone_(false)

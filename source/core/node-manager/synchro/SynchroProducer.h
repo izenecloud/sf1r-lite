@@ -19,7 +19,6 @@
 
 #include <map>
 
-using namespace zookeeper;
 
 namespace sf1r{
 
