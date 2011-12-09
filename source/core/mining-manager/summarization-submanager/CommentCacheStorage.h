@@ -8,15 +8,13 @@
 #include <3rdparty/am/stx/btree_map.h>
 #include <util/izene_serialization.h>
 
-#include <boost/unordered_map.hpp>
-
 namespace izenelib
 {
 namespace util
 {
 
 template <>
-struct IsFebirdSerial<boost::unordered_map<uint32_t, UString> >
+struct IsFebirdSerial<std::pair<izenelib::am::EWAHBoolArray<uint32_t>, std::vector<izenelib::util::UString> > >
 {
     enum
     {
@@ -33,14 +31,12 @@ namespace sf1r
 
 using izenelib::util::UString;
 
-class Summarization;
-
 class CommentCacheStorage
 {
-    typedef boost::unordered_map<uint32_t, UString> CommentCacheItemType;
+    typedef std::pair<izenelib::am::EWAHBoolArray<uint32_t>, std::vector<UString> > CommentCacheItemType;
     typedef izenelib::am::leveldb::Table<UString, CommentCacheItemType> CommentCacheDbType;
     typedef izenelib::am::AMIterator<CommentCacheDbType> CommentCacheIteratorType;
-    typedef stx::btree_map<UString, CommentCacheItemType> BufferType;
+    typedef stx::btree_map<UString, std::vector<std::pair<uint32_t, UString> > > BufferType;
 
 public:
     CommentCacheStorage(

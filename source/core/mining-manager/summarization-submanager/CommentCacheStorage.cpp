@@ -1,5 +1,4 @@
 #include "CommentCacheStorage.h"
-#include "Summarization.h"
 
 namespace sf1r
 {
@@ -23,7 +22,7 @@ CommentCacheStorage::~CommentCacheStorage()
 
 void CommentCacheStorage::Insert(const UString& key, uint32_t docid, const UString& content)
 {
-    buffer_db_[key].insert(std::make_pair(docid, content));
+    buffer_db_[key].push_back(std::make_pair(docid, content));
 
     ++buffer_size_;
     if (IsBufferFull_())
@@ -48,15 +47,16 @@ void CommentCacheStorage::Flush()
     for (; it != buffer_db_.end(); ++it)
     {
         CommentCacheItemType value;
-        if (comment_cache_db_.get(it->first, value))
+        comment_cache_db_.get(it->first, value);
+        value.second.reserve(value.second.size() + it->second.size());
+        for (BufferType::data_type::iterator vit = it->second.begin();
+                vit != it->second.end(); ++vit)
         {
-            value.insert(it->second.begin(), it->second.end());
-            comment_cache_db_.update(it->first, value);
+            value.first.set(vit->first);
+            value.second.push_back(UString());
+            value.second.back().swap(vit->second);
         }
-        else
-        {
-            comment_cache_db_.update(it->first, it->second);
-        }
+        comment_cache_db_.update(it->first, value);
     }
 
     comment_cache_db_.flush();

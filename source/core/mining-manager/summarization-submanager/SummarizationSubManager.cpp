@@ -135,34 +135,29 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     for (; commentCacheIt != commentCacheEnd; ++commentCacheIt)
     {
         const UString& key = commentCacheIt->first;
-        const CommentCacheItemType& cache_item = commentCacheIt->second;
-        DoEvaluateSummarization_(key, cache_item);
+        Summarization summarization(commentCacheIt->second.first);
+        DoEvaluateSummarization_(summarization, key, commentCacheIt->second.second);
     }
     summarization_storage_->Flush();
 }
 
 void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
+        Summarization& summarization,
         const UString& key,
-        const CommentCacheItemType& comment_cache_item)
+        const std::vector<UString>& content_list)
 {
-    Summarization summarization;
-    for (CommentCacheItemType::const_iterator it = comment_cache_item.begin();
-            it != comment_cache_item.end(); ++it)
-    {
-        summarization.insertDoc(it->first);
-    }
     if (!summarization_storage_->IsRebuildSummarizeRequired(key, summarization))
         return;
 
     ilplib::langid::Analyzer* langIdAnalyzer = document_manager_->getLangId();
 
     corpus_->start_new_coll(key);
-    for (CommentCacheItemType::const_iterator it = comment_cache_item.begin();
-            it != comment_cache_item.end(); ++it)
+    for (std::vector<UString>::const_iterator it = content_list.begin();
+            it != content_list.end(); ++it)
     {
         corpus_->start_new_doc();
 
-        const UString& content = it->second;
+        const UString& content = *it;
         UString sentence;
         std::size_t startPos = 0;
         while (std::size_t len = langIdAnalyzer->sentenceLength(content, startPos))
@@ -187,10 +182,13 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     corpus_->start_new_coll();
 
     std::vector<std::pair<UString, std::vector<UString> > > summary_list;
-//  std::string key_str;
-//  key.convertString(key_str, UString::UTF_8);
-//  std::cout << "Begin evaluating: " << key_str << std::endl;
-    if (comment_cache_item.size() < 2000 && corpus_->ntotal() < 100000)
+//#define DEBUG_SUMMARIZATION
+#ifdef DEBUG_SUMMARIZATION
+    std::string key_str;
+    key.convertString(key_str, UString::UTF_8);
+    std::cout << "Begin evaluating: " << key_str << std::endl;
+#endif
+    if (content_list.size() < 2000 && corpus_->ntotal() < 100000)
     {
         SPLM::generateSummary(summary_list, *corpus_, SPLM::SPLM_SVD);
     }
@@ -198,18 +196,22 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     {
         SPLM::generateSummary(summary_list, *corpus_, SPLM::SPLM_NONE);
     }
-//  std::cout << "End evaluating: " << key_str << std::endl;
+#ifdef DEBUG_SUMMARIZATION
+    std::cout << "End evaluating: " << key_str << std::endl;
+#endif
 
     //XXX store the generated summary list
     std::vector<UString>& summary = summary_list[0].second;
     if (!summary.empty())
     {
-//      for (uint32_t i = 0; i < summary.size(); i++)
-//      {
-//          std::string sent;
-//          summary[i].convertString(sent, UString::UTF_8);
-//          std::cout << "\t" << sent << std::endl;
-//      }
+#ifdef DEBUG_SUMMARIZATION
+        for (uint32_t i = 0; i < summary.size(); i++)
+        {
+            std::string sent;
+            summary[i].convertString(sent, UString::UTF_8);
+            std::cout << "\t" << sent << std::endl;
+        }
+#endif
         summarization.property("overview").swap(summary);
     }
     summarization_storage_->Update(key, summarization);
@@ -246,14 +248,14 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
             {
                 const std::string& paramValue = get<std::string>(filterParam[0]);
                 UString paramUStr(paramValue, UString::UTF_8);
-                std::set<UString> results;
+                std::vector<UString> results;
                 if (parent_key_storage_->GetChildren(paramUStr, results))
                 {
                     BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
                     QueryFiltering::FilteringType filterRule;
                     filterRule.first.first = QueryFiltering::INCLUDE;
                     filterRule.first.second = schema_.foreignKeyPropName;
-                    std::set<UString>::const_iterator rit = results.begin();
+                    std::vector<UString>::const_iterator rit = results.begin();
                     for (; rit != results.end(); ++rit)
                     {
                         if (pBTreeIndexer->seek(schema_.foreignKeyPropName, *rit))
