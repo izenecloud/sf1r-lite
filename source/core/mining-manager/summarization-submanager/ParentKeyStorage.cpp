@@ -35,8 +35,11 @@ ParentKeyStorage::~ParentKeyStorage()
 
 void ParentKeyStorage::Insert(const UString& parent, const UString& child)
 {
-    if (mode_ != INSERT) Flush();
-    mode_ = INSERT;
+    if (mode_ != INSERT)
+    {
+        Flush();
+        mode_ = INSERT;
+    }
     child_to_parent_db_.insert(child, parent);
     buffer_db_[parent].first.push_back(child);
 
@@ -47,8 +50,11 @@ void ParentKeyStorage::Insert(const UString& parent, const UString& child)
 
 void ParentKeyStorage::Update(const UString& parent, const UString& child)
 {
-    if (mode_ != UPDATE) Flush();
-    mode_ = UPDATE;
+    if (mode_ != UPDATE)
+    {
+        Flush();
+        mode_ = UPDATE;
+    }
     UString old_parent;
     child_to_parent_db_.get(child, old_parent);
     if (old_parent == parent) return;
@@ -63,8 +69,11 @@ void ParentKeyStorage::Update(const UString& parent, const UString& child)
 
 void ParentKeyStorage::Delete(const UString& parent, const UString& child)
 {
-    if (mode_ != DELETE) Flush();
-    mode_ = DELETE;
+    if (mode_ != DELETE)
+    {
+        Flush();
+        mode_ = DELETE;
+    }
     UString old_parent;
     child_to_parent_db_.get(child, old_parent);
     if (!parent.empty() && old_parent != parent) return;
@@ -85,6 +94,7 @@ void ParentKeyStorage::Flush()
     {
         std::vector<UString> v;
         parent_to_children_db_.get(it->first, v);
+
         for (std::vector<UString>::const_iterator cit = it->second.second.begin();
                 cit != it->second.second.end(); ++cit)
         {
@@ -98,6 +108,7 @@ void ParentKeyStorage::Flush()
                 }
             }
         }
+
         v.reserve(v.size() + it->second.first.size());
         for (std::vector<UString>::iterator vit = it->second.first.begin();
                 vit != it->second.first.end(); ++vit)
