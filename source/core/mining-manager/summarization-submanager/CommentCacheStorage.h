@@ -6,6 +6,27 @@
 #include <am/range/AmIterator.h>
 #include <am/bitmap/Ewah.h>
 #include <3rdparty/am/stx/btree_map.h>
+#include <util/izene_serialization.h>
+
+#include <boost/unordered_map.hpp>
+
+namespace izenelib
+{
+namespace util
+{
+
+template <>
+struct IsFebirdSerial<boost::unordered_map<uint32_t, UString> >
+{
+    enum
+    {
+        yes = 1,
+        no = !yes
+    };
+};
+
+}
+}
 
 namespace sf1r
 {
@@ -16,7 +37,7 @@ class Summarization;
 
 class CommentCacheStorage
 {
-    typedef std::vector<std::pair<uint32_t, UString> > CommentCacheItemType;
+    typedef boost::unordered_map<uint32_t, UString> CommentCacheItemType;
     typedef izenelib::am::leveldb::Table<UString, CommentCacheItemType> CommentCacheDbType;
     typedef izenelib::am::AMIterator<CommentCacheDbType> CommentCacheIteratorType;
     typedef stx::btree_map<UString, CommentCacheItemType> BufferType;
@@ -28,7 +49,11 @@ public:
 
     ~CommentCacheStorage();
 
-    void AppendUpdate(const UString& key, uint32_t first, const UString& second);
+    void Insert(const UString& key, uint32_t docid, const UString& content);
+
+    void Update(const UString& key, uint32_t docid, const UString& content);
+
+    void Delete(const UString& key, uint32_t docid);
 
     void Flush();
 

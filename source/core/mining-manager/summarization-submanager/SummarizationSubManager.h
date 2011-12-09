@@ -10,6 +10,7 @@
 #include <3rdparty/am/stx/btree_map.h>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/unordered_map.hpp>
 
 #include <string>
 
@@ -35,7 +36,7 @@ class Corpus;
 
 class MultiDocSummarizationSubManager
 {
-    typedef std::vector<std::pair<uint32_t, UString> > CommentCacheItemType;
+    typedef boost::unordered_map<uint32_t, UString> CommentCacheItemType;
 
 public:
     MultiDocSummarizationSubManager(
