@@ -13,7 +13,6 @@ ParentKeyStorage::ParentKeyStorage(
         unsigned bufferSize)
     : parent_to_children_db_(db_dir + p2c_path)
     , child_to_parent_db_(db_dir + c2p_path)
-    , mode_(ParentKeyStorage::NONE)
     , buffer_capacity_(bufferSize)
     , buffer_size_(0)
 {
@@ -35,11 +34,6 @@ ParentKeyStorage::~ParentKeyStorage()
 
 void ParentKeyStorage::Insert(const UString& parent, const UString& child)
 {
-    if (mode_ != INSERT)
-    {
-        Flush();
-        mode_ = INSERT;
-    }
     child_to_parent_db_.insert(child, parent);
     buffer_db_[parent].first.push_back(child);
 
@@ -50,11 +44,6 @@ void ParentKeyStorage::Insert(const UString& parent, const UString& child)
 
 void ParentKeyStorage::Update(const UString& parent, const UString& child)
 {
-    if (mode_ != UPDATE)
-    {
-        Flush();
-        mode_ = UPDATE;
-    }
     UString old_parent;
     child_to_parent_db_.get(child, old_parent);
     if (old_parent == parent) return;
@@ -69,13 +58,8 @@ void ParentKeyStorage::Update(const UString& parent, const UString& child)
 
 void ParentKeyStorage::Delete(const UString& parent, const UString& child)
 {
-    if (mode_ != DELETE)
-    {
-        Flush();
-        mode_ = DELETE;
-    }
     UString old_parent;
-    child_to_parent_db_.get(child, old_parent);
+    if (!child_to_parent_db_.get(child, old_parent)) return;
     if (!parent.empty() && old_parent != parent) return;
     child_to_parent_db_.del(child);
     buffer_db_[old_parent].second.push_back(child);
@@ -87,7 +71,7 @@ void ParentKeyStorage::Delete(const UString& parent, const UString& child)
 
 void ParentKeyStorage::Flush()
 {
-    if (mode_ == NONE || buffer_db_.empty()) return;
+    if (buffer_db_.empty()) return;
 
     for (BufferType::iterator it = buffer_db_.begin();
             it != buffer_db_.end(); ++it)
@@ -123,7 +107,6 @@ void ParentKeyStorage::Flush()
     parent_to_children_db_.flush();
     buffer_db_.clear();
     buffer_size_ = 0;
-    mode_ = NONE;
 }
 
 bool ParentKeyStorage::GetChildren(const UString& parent, std::vector<UString>& children)
