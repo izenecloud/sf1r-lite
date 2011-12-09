@@ -32,17 +32,14 @@ public:
         fingerPrint_ = fingerPrint;
     }
 
-    explicit Summarization(const std::vector<uint32_t>& docid_list)
+    template<typename ContainerType>
+    explicit Summarization(const ContainerType& docid_list)
     {
-        for (uint32_t i = 0; i < docid_list.size(); i++)
+        for (typename ContainerType::const_iterator it = docid_list.begin();
+                it != docid_list.end(); ++it)
         {
-            fingerPrint_.set(docid_list[i]);
+            fingerPrint_.set(*it);
         }
-    }
-
-    void insertDoc(uint32_t docid)
-    {
-        fingerPrint_.set(docid);
     }
 
     std::vector<UString>& property(const std::string& propertyName)

@@ -102,14 +102,14 @@ public:
     private:
         SCDDoc* getDoc();
 
+        bool isValid() const;
+
         /// @brief
         /// It's recommended to handle this processing in application by which SCD is created
         void preProcessDoc(string& strDoc);
 
     private:
         std::ifstream* pfs_;
-
-        std::size_t readLength_;
 
         long prevOffset_;
 
