@@ -102,11 +102,11 @@ void SynchroConsumer::onDataChanged(const std::string& path)
 /*virtual*/
 void SynchroConsumer::onChildrenChanged(const std::string& path)
 {
-    if (path == syncNodePath_)
-    {
-        if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
-            doWatchProducer();
-    }
+//    if (path == syncNodePath_)
+//    {
+//        if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
+//            doWatchProducer();
+//    }
 }
 
 /// private
@@ -127,6 +127,11 @@ void SynchroConsumer::doWatchProducer()
 //
 //    if (childrenList.size() > 0)
 //    {
+        if (consumerStatus_ == CONSUMER_STATUS_CONSUMING)
+        {
+            return;
+        }
+
         consumerStatus_ = CONSUMER_STATUS_CONSUMING;
 
         // Get producer info
@@ -172,11 +177,11 @@ void SynchroConsumer::resetWatch()
 {
     zookeeper_->isZNodeExists(syncNodePath_, ZooKeeper::WATCH);
 
-    std::vector<std::string> childrenList;
-    zookeeper_->getZNodeChildren(syncNodePath_, childrenList, ZooKeeper::WATCH);
+    //std::vector<std::string> childrenList;
+    //zookeeper_->getZNodeChildren(syncNodePath_, childrenList, ZooKeeper::WATCH);
 
     //std::string dataPath;
-    //zookeeper_->getZNodeData(producerRealNodePath_, dataPath, ZooKeeper::WATCH);
+    //zookeeper_->getZNodeData(syncNodePath_, dataPath, ZooKeeper::WATCH);
 }
 
 
