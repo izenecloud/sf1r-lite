@@ -859,6 +859,19 @@ propertyid_t SearchManager::getPropertyIdByName_(const std::string& name) const
 void SearchManager::prepareDocIterWithOnlyOrderby_(
     boost::shared_ptr<EWAHBoolArray<uint32_t> >& pFilterIdSet)
 {
+    boost::shared_ptr<BitVector> pDelFilter(indexManagerPtr_->getBTreeIndexer()->getFilter());
+
+    if(pDelFilter)
+    {
+        BitVector bitVector(*pDelFilter);
+        bitVector.toggle();
+        bitVector.clear(0);
+        pFilterIdSet.reset(new EWAHBoolArray<uint32_t>());
+        bitVector.compressed(*pFilterIdSet);
+        return;
+    }
+
+
     unsigned int bitsNum = documentManagerPtr_->getMaxDocId() + 1;
     unsigned int wordsNum = bitsNum/(sizeof(uint32_t) * 8);
 
