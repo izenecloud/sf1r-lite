@@ -4,11 +4,10 @@
 #include <util/ustring/UString.h>
 #include <am/leveldb/Table.h>
 #include <am/range/AmIterator.h>
-#include <am/bitmap/Ewah.h>
 #include <3rdparty/am/stx/btree_map.h>
 #include <util/izene_serialization.h>
 
-MAKE_FEBIRD_SERIALIZATION(std::pair<izenelib::am::EWAHBoolArray<uint32_t>, std::vector<izenelib::util::UString> >)
+MAKE_FEBIRD_SERIALIZATION(std::pair<std::set<uint32_t>, std::vector<izenelib::util::UString> >)
 
 namespace sf1r
 {
@@ -17,10 +16,10 @@ using izenelib::util::UString;
 
 class CommentCacheStorage
 {
-    typedef std::pair<izenelib::am::EWAHBoolArray<uint32_t>, std::vector<UString> > CommentCacheItemType;
+    typedef std::pair<std::set<uint32_t>, std::vector<UString> > CommentCacheItemType;
     typedef izenelib::am::leveldb::Table<UString, CommentCacheItemType> CommentCacheDbType;
     typedef izenelib::am::AMIterator<CommentCacheDbType> CommentCacheIteratorType;
-    typedef stx::btree_map<UString, std::vector<std::pair<uint32_t, UString> > > BufferType;
+    typedef stx::btree_map<UString, std::pair<bool, std::vector<std::pair<uint32_t, UString> > > > BufferType;
 
 public:
     CommentCacheStorage(
@@ -29,11 +28,9 @@ public:
 
     ~CommentCacheStorage();
 
-    void Insert(const UString& key, uint32_t docid, const UString& content);
+    void AppendUpdate(const UString& key, uint32_t docid, const UString& content);
 
-    void Update(const UString& key, uint32_t docid, const UString& content);
-
-    void Delete(const UString& key, uint32_t docid);
+    void Delete(const UString& key);
 
     void Flush();
 

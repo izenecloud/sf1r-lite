@@ -1,4 +1,5 @@
 #include "ParentKeyStorage.h"
+#include "CommentCacheStorage.h"
 
 #include <iostream>
 
@@ -10,9 +11,11 @@ const std::string ParentKeyStorage::c2p_path("/child_to_parent");
 
 ParentKeyStorage::ParentKeyStorage(
         const std::string& db_dir,
+        CommentCacheStorage* comment_cache_storage,
         unsigned bufferSize)
     : parent_to_children_db_(db_dir + p2c_path)
     , child_to_parent_db_(db_dir + c2p_path)
+    , comment_cache_storage_(comment_cache_storage)
     , buffer_capacity_(bufferSize)
     , buffer_size_(0)
 {
@@ -73,22 +76,28 @@ void ParentKeyStorage::Flush()
 {
     if (buffer_db_.empty()) return;
 
+    bool dirty = false;
     for (BufferType::iterator it = buffer_db_.begin();
             it != buffer_db_.end(); ++it)
     {
         std::vector<UString> v;
         parent_to_children_db_.get(it->first, v);
 
-        for (std::vector<UString>::const_iterator cit = it->second.second.begin();
-                cit != it->second.second.end(); ++cit)
+        if (!it->second.second.empty())
         {
-            for (std::vector<UString>::iterator vit = v.begin();
-                    vit != v.end(); ++vit)
+            dirty = true;
+            comment_cache_storage_->Delete(it->first);
+            for (std::vector<UString>::const_iterator cit = it->second.second.begin();
+                    cit != it->second.second.end(); ++cit)
             {
-                if (*vit == *cit)
+                for (std::vector<UString>::iterator vit = v.begin();
+                        vit != v.end(); ++vit)
                 {
-                    v.erase(vit);
-                    break;
+                    if (*vit == *cit)
+                    {
+                        v.erase(vit);
+                        break;
+                    }
                 }
             }
         }
@@ -100,9 +109,14 @@ void ParentKeyStorage::Flush()
             v.push_back(UString());
             v.back().swap(*vit);
         }
-        parent_to_children_db_.update(it->first, v);
+
+        if (v.empty())
+            parent_to_children_db_.del(it->first);
+        else
+            parent_to_children_db_.update(it->first, v);
     }
 
+    if (dirty) comment_cache_storage_->Flush();
     child_to_parent_db_.flush();
     parent_to_children_db_.flush();
     buffer_db_.clear();

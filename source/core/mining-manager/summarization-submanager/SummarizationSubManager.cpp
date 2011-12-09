@@ -66,9 +66,9 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     , document_manager_(document_manager)
     , index_manager_(index_manager)
     , analyzer_(analyzer)
-    , parent_key_storage_(new ParentKeyStorage(homePath))
-    , summarization_storage_(new SummarizationStorage(homePath + "/summarization"))
     , comment_cache_storage_(new CommentCacheStorage(homePath + "/comment_cache"))
+    , parent_key_storage_(new ParentKeyStorage(homePath, comment_cache_storage_))
+    , summarization_storage_(new SummarizationStorage(homePath + "/summarization"))
     , corpus_(new Corpus())
 {
     if (!schema_.parentKeyLogPath.empty())
@@ -86,6 +86,7 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 void MultiDocSummarizationSubManager::EvaluateSummarization()
 {
     BuildIndexOfParentKey_();
+
     if (schema_.parentKeyLogPath.empty())
     {
         for (uint32_t i = 1; i <= document_manager_->getMaxDocId(); i++)
@@ -102,7 +103,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
             const UString key = kit->second.get<UString>();
             const UString& content = cit->second.get<UString>();
-            comment_cache_storage_->Insert(key, i, content);
+            comment_cache_storage_->AppendUpdate(key, i, content);
         }
     }
     else
@@ -125,7 +126,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
                 continue;
 
             const UString& content = cit->second.get<UString>();
-            comment_cache_storage_->Insert(parent_key, i, content);
+            comment_cache_storage_->AppendUpdate(parent_key, i, content);
         }
     }
     comment_cache_storage_->Flush();
