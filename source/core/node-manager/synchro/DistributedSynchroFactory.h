@@ -11,6 +11,7 @@
 #include "SynchroConsumer.h"
 
 #include <node-manager/NodeDef.h>
+#include <node-manager/ZooKeeperManager.h>
 #include <node-manager/SearchNodeManager.h>
 
 namespace sf1r{
@@ -31,11 +32,11 @@ public:
     {
         if (syncProducer_.find(id) == syncProducer_.end())
         {
-            std::string zkHosts = SearchNodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkHosts_;
-            int zkTimeout = SearchNodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkRecvTimeout_;
+            std::string zkHosts = SearchNodeManager::get()->getDSUtilConfig().zkConfig_.zkHosts_;
+            int zkTimeout = SearchNodeManager::get()->getDSUtilConfig().zkConfig_.zkRecvTimeout_;
             std::string syncNodePath = NodeDef::getSynchroPath() + synchroType2ZNode_[stype];
-            replicaid_t replicaId = SearchNodeManagerSingleton::get()->getDSTopologyConfig().curSF1Node_.replicaId_;
-            nodeid_t nodeId = SearchNodeManagerSingleton::get()->getDSTopologyConfig().curSF1Node_.nodeId_;
+            replicaid_t replicaId = SearchNodeManager::get()->getDSTopologyConfig().curSF1Node_.replicaId_;
+            nodeid_t nodeId = SearchNodeManager::get()->getDSTopologyConfig().curSF1Node_.nodeId_;
 
            syncProducer_[id].reset(new SynchroProducer(zkHosts, zkTimeout, syncNodePath, replicaId, nodeId));
         }
@@ -47,11 +48,11 @@ public:
     {
         if (syncConsumer_.find(id) == syncConsumer_.end())
         {
-            std::string zkHosts = SearchNodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkHosts_;
-            int zkTimeout = SearchNodeManagerSingleton::get()->getDSUtilConfig().zkConfig_.zkRecvTimeout_;
+            std::string zkHosts = SearchNodeManager::get()->getDSUtilConfig().zkConfig_.zkHosts_;
+            int zkTimeout = SearchNodeManager::get()->getDSUtilConfig().zkConfig_.zkRecvTimeout_;
             std::string syncNodePath = NodeDef::getSynchroPath() + synchroType2ZNode_[stype];
-            replicaid_t replicaId = SearchNodeManagerSingleton::get()->getDSTopologyConfig().curSF1Node_.replicaId_;
-            nodeid_t nodeId = SearchNodeManagerSingleton::get()->getDSTopologyConfig().curSF1Node_.nodeId_;
+            replicaid_t replicaId = SearchNodeManager::get()->getDSTopologyConfig().curSF1Node_.replicaId_;
+            nodeid_t nodeId = SearchNodeManager::get()->getDSTopologyConfig().curSF1Node_.nodeId_;
 
             syncConsumer_[id].reset(new SynchroConsumer(zkHosts, zkTimeout, syncNodePath, replicaId, nodeId));
         }
@@ -59,7 +60,7 @@ public:
         return syncConsumer_[id];
     }
 
-    static void initZKNodes(boost::shared_ptr<ZooKeeper>& zookeeper)
+    static void initZKNodes(ZooKeeperClientPtr& zookeeper)
     {
         zookeeper->createZNode(NodeDef::getSynchroPath());
 

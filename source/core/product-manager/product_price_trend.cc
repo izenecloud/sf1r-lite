@@ -89,11 +89,11 @@ bool ProductPriceTrend::Insert(
 {
     string key;
     ParseDocid_(key, docid);
-    price_history_cache_.push_back(PriceHistory());
-    price_history_cache_.back().resetKey(key);
-    price_history_cache_.back().insert(timestamp, price);
+    price_history_buffer_.push_back(PriceHistory());
+    price_history_buffer_.back().resetKey(key);
+    price_history_buffer_.back().insert(timestamp, price);
 
-    if (price_history_cache_.size() == 10000)
+    if (IsBufferFull_())
     {
         return Flush();
     }
@@ -109,18 +109,18 @@ bool ProductPriceTrend::Update(
 {
     string key;
     ParseDocid_(key, docid);
-    price_history_cache_.push_back(PriceHistory());
-    price_history_cache_.back().resetKey(key);
-    price_history_cache_.back().insert(timestamp, price);
+    price_history_buffer_.push_back(PriceHistory());
+    price_history_buffer_.back().resetKey(key);
+    price_history_buffer_.back().insert(timestamp, price);
 
     if (enable_tpc_ && !group_prop_map.empty() && price.value.first > 0)
     {
-        PropCacheItem& cache_item = prop_cache_[key];
-        cache_item.first = price.value.first;
-        cache_item.second.swap(group_prop_map);
+        PropItemType& prop_item = prop_map_[key];
+        prop_item.first = price.value.first;
+        prop_item.second.swap(group_prop_map);
     }
 
-    if (price_history_cache_.size() == 10000)
+    if (IsBufferFull_())
     {
         return Flush();
     }
@@ -128,12 +128,17 @@ bool ProductPriceTrend::Update(
     return true;
 }
 
+bool ProductPriceTrend::IsBufferFull_()
+{
+    return price_history_buffer_.size() >= 10000;
+}
+
 bool ProductPriceTrend::Flush()
 {
     bool ret = true;
     time_t now = Utilities::createTimeStamp();
 
-    if (!prop_cache_.empty())
+    if (!prop_map_.empty())
     {
         for (uint32_t i = 0; i < time_int_vec_.size(); i++)
         {
@@ -141,13 +146,13 @@ bool ProductPriceTrend::Flush()
                 ret = false;
         }
 
-        prop_cache_.clear();
+        prop_map_.clear();
     }
 
-    if (!PriceHistory::updateMultiRow(price_history_cache_))
+    if (!PriceHistory::updateMultiRow(price_history_buffer_))
         ret = false;
 
-    price_history_cache_.clear();
+    price_history_buffer_.clear();
 
     return ret;
 }
@@ -161,7 +166,7 @@ bool ProductPriceTrend::CronJob()
 bool ProductPriceTrend::UpdateTPC_(uint32_t time_int, time_t timestamp)
 {
     vector<string> key_list;
-    Utilities::getKeyList(key_list, prop_cache_);
+    Utilities::getKeyList(key_list, prop_map_);
     if (timestamp == -1)
         timestamp = Utilities::createTimeStamp();
     timestamp -= 86400000000L * time_int_vec_[time_int];
@@ -173,13 +178,13 @@ bool ProductPriceTrend::UpdateTPC_(uint32_t time_int, time_t timestamp)
     map<string, map<string, TPCQueue> > tpc_cache;
     for (uint32_t i = 0; i < row_list.size(); i++)
     {
-        const PropCacheItem& cache_item = prop_cache_.find(row_list[i].getDocId())->second;
+        const PropItemType& prop_item = prop_map_.find(row_list[i].getDocId())->second;
         const pair<time_t, ProductPrice>& price_record = *(row_list[i].getPriceHistory().begin());
         const ProductPriceType& old_price = price_record.second.value.first;
-        float price_cut = old_price == 0 ? 0 : 1 - cache_item.first / old_price;
+        float price_cut = old_price == 0 ? 0 : 1 - prop_item.first / old_price;
 
-        for (map<string, string>::const_iterator it = cache_item.second.begin();
-                it != cache_item.second.end(); ++it)
+        for (map<string, string>::const_iterator it = prop_item.second.begin();
+                it != prop_item.second.end(); ++it)
         {
             TPCQueue& tpc_queue = tpc_cache[it->first][it->second];
             if (tpc_queue.empty())

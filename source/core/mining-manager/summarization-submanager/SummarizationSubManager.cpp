@@ -86,31 +86,46 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 void MultiDocSummarizationSubManager::EvaluateSummarization()
 {
     BuildIndexOfParentKey_();
-    for (uint32_t i = 1; i <= document_manager_->getMaxDocId(); i++)
+    if (schema_.parentKeyLogPath.empty())
     {
-        Document doc;
-        document_manager_->getDocument(i, doc);
-        Document::property_const_iterator kit = doc.findProperty(schema_.foreignKeyPropName);
-        if (kit == doc.propertyEnd())
-            continue;
-
-        Document::property_const_iterator cit = doc.findProperty(schema_.contentPropName);
-        if (cit == doc.propertyEnd())
-            continue;
-
-        const UString& content = cit->second.get<UString>();
-        const UString key = kit->second.get<UString>();
-        if (schema_.parentKeyLogPath.empty())
+        for (uint32_t i = 1; i <= document_manager_->getMaxDocId(); i++)
         {
-            comment_cache_storage_->AppendUpdate(key, i, content);
+            Document doc;
+            document_manager_->getDocument(i, doc);
+            Document::property_const_iterator kit = doc.findProperty(schema_.foreignKeyPropName);
+            if (kit == doc.propertyEnd())
+                continue;
+
+            Document::property_const_iterator cit = doc.findProperty(schema_.contentPropName);
+            if (cit == doc.propertyEnd())
+                continue;
+
+            const UString key = kit->second.get<UString>();
+            const UString& content = cit->second.get<UString>();
+            comment_cache_storage_->Insert(key, i, content);
         }
-        else
+    }
+    else
+    {
+        for (uint32_t i = 1; i <= document_manager_->getMaxDocId(); i++)
         {
+            Document doc;
+            document_manager_->getDocument(i, doc);
+            Document::property_const_iterator kit = doc.findProperty(schema_.foreignKeyPropName);
+            if (kit == doc.propertyEnd())
+                continue;
+
+            Document::property_const_iterator cit = doc.findProperty(schema_.contentPropName);
+            if (cit == doc.propertyEnd())
+                continue;
+
+            const UString key = kit->second.get<UString>();
             UString parent_key;
             if (!parent_key_storage_->GetParent(key, parent_key))
                 continue;
 
-            comment_cache_storage_->AppendUpdate(parent_key, i, content);
+            const UString& content = cit->second.get<UString>();
+            comment_cache_storage_->Insert(parent_key, i, content);
         }
     }
     comment_cache_storage_->Flush();
@@ -120,33 +135,29 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     for (; commentCacheIt != commentCacheEnd; ++commentCacheIt)
     {
         const UString& key = commentCacheIt->first;
-        const CommentCacheItemType& cache_item = commentCacheIt->second;
-        DoEvaluateSummarization_(key, cache_item);
+        Summarization summarization(commentCacheIt->second.first);
+        DoEvaluateSummarization_(summarization, key, commentCacheIt->second.second);
     }
     summarization_storage_->Flush();
 }
 
 void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
+        Summarization& summarization,
         const UString& key,
-        const CommentCacheItemType& comment_cache_item)
+        const std::vector<UString>& content_list)
 {
-    Summarization summarization;
-    for (uint32_t i = 0; i < comment_cache_item.size(); i++)
-    {
-        summarization.insertDoc(comment_cache_item[i].first);
-    }
     if (!summarization_storage_->IsRebuildSummarizeRequired(key, summarization))
         return;
 
     ilplib::langid::Analyzer* langIdAnalyzer = document_manager_->getLangId();
 
     corpus_->start_new_coll(key);
-    for (CommentCacheItemType::const_iterator it = comment_cache_item.begin();
-            it != comment_cache_item.end(); ++it)
+    for (std::vector<UString>::const_iterator it = content_list.begin();
+            it != content_list.end(); ++it)
     {
         corpus_->start_new_doc();
 
-        const UString& content = it->second;
+        const UString& content = *it;
         UString sentence;
         std::size_t startPos = 0;
         while (std::size_t len = langIdAnalyzer->sentenceLength(content, startPos))
@@ -171,33 +182,36 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     corpus_->start_new_coll();
 
     std::vector<std::pair<UString, std::vector<UString> > > summary_list;
-//  std::string key_str;
-//  key.convertString(key_str, UString::UTF_8);
-//  std::cout << "Begin evaluating: " << key_str << std::endl;
-    if (comment_cache_item.size() < 400 && corpus_->ntotal() < 5000)
+//#define DEBUG_SUMMARIZATION
+#ifdef DEBUG_SUMMARIZATION
+    std::string key_str;
+    key.convertString(key_str, UString::UTF_8);
+    std::cout << "Begin evaluating: " << key_str << std::endl;
+#endif
+    if (content_list.size() < 2000 && corpus_->ntotal() < 100000)
     {
         SPLM::generateSummary(summary_list, *corpus_, SPLM::SPLM_SVD);
-    }
-    else if (comment_cache_item.size() < 800 && corpus_->ntotal() < 10000)
-    {
-        SPLM::generateSummary(summary_list, *corpus_, SPLM::SPLM_RI);
     }
     else
     {
         SPLM::generateSummary(summary_list, *corpus_, SPLM::SPLM_NONE);
     }
-//  std::cout << "End evaluating: " << key_str << std::endl;
+#ifdef DEBUG_SUMMARIZATION
+    std::cout << "End evaluating: " << key_str << std::endl;
+#endif
 
     //XXX store the generated summary list
     std::vector<UString>& summary = summary_list[0].second;
     if (!summary.empty())
     {
-//      for (uint32_t i = 0; i < summary.size(); i++)
-//      {
-//          std::string sent;
-//          summary[i].convertString(sent, UString::UTF_8);
-//          std::cout << "\t" << sent << std::endl;
-//      }
+#ifdef DEBUG_SUMMARIZATION
+        for (uint32_t i = 0; i < summary.size(); i++)
+        {
+            std::string sent;
+            summary[i].convertString(sent, UString::UTF_8);
+            std::cout << "\t" << sent << std::endl;
+        }
+#endif
         summarization.property("overview").swap(summary);
     }
     summarization_storage_->Update(key, summarization);
@@ -244,7 +258,7 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
                     std::vector<UString>::const_iterator rit = results.begin();
                     for (; rit != results.end(); ++rit)
                     {
-                        if(pBTreeIndexer->seek(schema_.foreignKeyPropName, *rit))
+                        if (pBTreeIndexer->seek(schema_.foreignKeyPropName, *rit))
                         {
                             ///Protection
                             ///Or else, too many unexisted keys are added
@@ -350,18 +364,57 @@ void MultiDocSummarizationSubManager::DoInsertBuildIndexOfParentKey_(
         SCDDocPtr doc = (*doc_iter);
         if (!CheckParentKeyLogFormat(doc, parent_key_ustr_name_))
             continue;
-        parent_key_storage_->AppendUpdate((*doc)[1].second, (*doc)[0].second);
+        parent_key_storage_->Insert((*doc)[1].second, (*doc)[0].second);
     }
 }
 
 void MultiDocSummarizationSubManager::DoUpdateIndexOfParentKey_(
         const std::string& fileName)
 {
+    ScdParser parser(UString::UTF_8);
+    if (!parser.load(fileName)) return;
+    for (ScdParser::iterator doc_iter = parser.begin();
+            doc_iter != parser.end(); ++doc_iter)
+    {
+        if (*doc_iter == NULL)
+        {
+            LOG(WARNING) << "SCD File not valid.";
+            return;
+        }
+        SCDDocPtr doc = (*doc_iter);
+        if (!CheckParentKeyLogFormat(doc, parent_key_ustr_name_))
+            continue;
+        parent_key_storage_->Update((*doc)[1].second, (*doc)[0].second);
+    }
 }
 
 void MultiDocSummarizationSubManager::DoDelBuildIndexOfParentKey_(
         const std::string& fileName)
 {
+    ScdParser parser(UString::UTF_8);
+    if (!parser.load(fileName)) return;
+    static const UString no_parent;
+    for (ScdParser::iterator doc_iter = parser.begin();
+            doc_iter != parser.end(); ++doc_iter)
+    {
+        if (*doc_iter == NULL)
+        {
+            LOG(WARNING) << "SCD File not valid.";
+            return;
+        }
+        SCDDocPtr doc = (*doc_iter);
+        switch (doc->size())
+        {
+        case 1:
+            parent_key_storage_->Delete(no_parent, (*doc)[0].second);
+            break;
+        case 2:
+            parent_key_storage_->Delete((*doc)[1].second, (*doc)[0].second);
+            break;
+        default:
+            break;
+        }
+    }
 }
 
 }

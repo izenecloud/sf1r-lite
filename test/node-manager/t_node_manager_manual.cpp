@@ -56,7 +56,7 @@ int main(int argc, char** argv)
     dsUtilConfig.zkConfig_.zkHosts_ = "172.16.0.161:2181,172.16.0.162:2181,172.16.0.163:2181";
     dsUtilConfig.zkConfig_.zkRecvTimeout_ = 2000;
 
-    SearchNodeManagerSingleton::get()->init(dsTopologyConfig, dsUtilConfig);
+    SearchNodeManager::get()->init(dsTopologyConfig, dsUtilConfig);
 
     // Consumer
     boost::thread consumer_thread(thread_consumer_run);

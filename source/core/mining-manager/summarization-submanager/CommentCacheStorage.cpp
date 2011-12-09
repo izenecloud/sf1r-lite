@@ -1,5 +1,4 @@
 #include "CommentCacheStorage.h"
-#include "Summarization.h"
 
 namespace sf1r
 {
@@ -21,13 +20,23 @@ CommentCacheStorage::~CommentCacheStorage()
 {
 }
 
-void CommentCacheStorage::AppendUpdate(const UString& key, uint32_t first, const UString& second)
+void CommentCacheStorage::Insert(const UString& key, uint32_t docid, const UString& content)
 {
-    buffer_db_[key].push_back(std::make_pair(first, second));
+    buffer_db_[key].push_back(std::make_pair(docid, content));
 
     ++buffer_size_;
     if (IsBufferFull_())
         Flush();
+}
+
+void CommentCacheStorage::Update(const UString& key, uint32_t docid, const UString& content)
+{
+    //TODO
+}
+
+void CommentCacheStorage::Delete(const UString& key, uint32_t docid)
+{
+    //TODO
 }
 
 void CommentCacheStorage::Flush()
@@ -37,21 +46,17 @@ void CommentCacheStorage::Flush()
     BufferType::iterator it = buffer_db_.begin();
     for (; it != buffer_db_.end(); ++it)
     {
-//      CommentCacheItemType value;
-//      if (comment_cache_db_.get(it->first, value))
-//      {
-//          for (CommentCacheItemType::iterator vit = it->second.begin();
-//                  vit != it->second.end(); ++vit)
-//          {
-//              value.push_back(std::make_pair(vit->first, UString()));
-//              value.back().second.swap(vit->second);
-//          }
-//          comment_cache_db_.update(it->first, value);
-//      }
-//      else
+        CommentCacheItemType value;
+        comment_cache_db_.get(it->first, value);
+        value.second.reserve(value.second.size() + it->second.size());
+        for (BufferType::data_type::iterator vit = it->second.begin();
+                vit != it->second.end(); ++vit)
         {
-            comment_cache_db_.update(it->first, it->second);
+            value.first.set(vit->first);
+            value.second.push_back(UString());
+            value.second.back().swap(vit->second);
         }
+        comment_cache_db_.update(it->first, value);
     }
 
     comment_cache_db_.flush();

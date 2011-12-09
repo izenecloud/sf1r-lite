@@ -27,6 +27,11 @@ public:
     {
     }
 
+    explicit Summarization(const fingerprint_type& fingerPrint)
+    {
+        fingerPrint_ = fingerPrint;
+    }
+
     explicit Summarization(const std::vector<uint32_t>& docid_list)
     {
         for (uint32_t i = 0; i < docid_list.size(); i++)

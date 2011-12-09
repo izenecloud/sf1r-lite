@@ -223,7 +223,7 @@ bool BatchScdDispatcher::finish()
     {
         std::string host;
         unsigned int recvPort;
-        if (SearchMasterManagerSingleton::get()->getShardReceiver(shardid, host, recvPort))
+        if (SearchMasterManager::get()->getShardReceiver(shardid, host, recvPort))
         {
             LOG(INFO) << "Transfer scd from "<<shardScdfileMap_[shardid]
                       <<"/ to shard "<<shardid<<" ["<<host<<":"<<recvPort<<"]";

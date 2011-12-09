@@ -32,10 +32,37 @@ ParentKeyStorage::~ParentKeyStorage()
 {
 }
 
-void ParentKeyStorage::AppendUpdate(const UString& parent, const UString& child)
+void ParentKeyStorage::Insert(const UString& parent, const UString& child)
 {
+    child_to_parent_db_.insert(child, parent);
+    buffer_db_[parent].first.push_back(child);
+
+    ++buffer_size_;
+    if (IsBufferFull_())
+        Flush();
+}
+
+void ParentKeyStorage::Update(const UString& parent, const UString& child)
+{
+    UString old_parent;
+    child_to_parent_db_.get(child, old_parent);
+    if (old_parent == parent) return;
     child_to_parent_db_.update(child, parent);
-    buffer_db_[parent].push_back(child);
+    buffer_db_[parent].first.push_back(child);
+    buffer_db_[old_parent].second.push_back(child);
+
+    buffer_size_ += 2;
+    if (IsBufferFull_())
+        Flush();
+}
+
+void ParentKeyStorage::Delete(const UString& parent, const UString& child)
+{
+    UString old_parent;
+    if (!child_to_parent_db_.get(child, old_parent)) return;
+    if (!parent.empty() && old_parent != parent) return;
+    child_to_parent_db_.del(child);
+    buffer_db_[old_parent].second.push_back(child);
 
     ++buffer_size_;
     if (IsBufferFull_())
@@ -44,18 +71,39 @@ void ParentKeyStorage::AppendUpdate(const UString& parent, const UString& child)
 
 void ParentKeyStorage::Flush()
 {
-    child_to_parent_db_.flush();
     if (buffer_db_.empty()) return;
 
-    BufferType::iterator it = buffer_db_.begin();
-    for (; it != buffer_db_.end(); ++it)
+    for (BufferType::iterator it = buffer_db_.begin();
+            it != buffer_db_.end(); ++it)
     {
         std::vector<UString> v;
         parent_to_children_db_.get(it->first, v);
-        v.insert(v.end(), it->second.begin(), it->second.end());
+
+        for (std::vector<UString>::const_iterator cit = it->second.second.begin();
+                cit != it->second.second.end(); ++cit)
+        {
+            for (std::vector<UString>::iterator vit = v.begin();
+                    vit != v.end(); ++vit)
+            {
+                if (*vit == *cit)
+                {
+                    v.erase(vit);
+                    break;
+                }
+            }
+        }
+
+        v.reserve(v.size() + it->second.first.size());
+        for (std::vector<UString>::iterator vit = it->second.first.begin();
+                vit != it->second.first.end(); ++vit)
+        {
+            v.push_back(UString());
+            v.back().swap(*vit);
+        }
         parent_to_children_db_.update(it->first, v);
     }
 
+    child_to_parent_db_.flush();
     parent_to_children_db_.flush();
     buffer_db_.clear();
     buffer_size_ = 0;

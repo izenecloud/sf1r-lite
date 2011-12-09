@@ -35,8 +35,6 @@ class Corpus;
 
 class MultiDocSummarizationSubManager
 {
-    typedef std::vector<std::pair<uint32_t, UString> > CommentCacheItemType;
-
 public:
     MultiDocSummarizationSubManager(
             const std::string& homePath,
@@ -58,8 +56,9 @@ public:
 
 private:
     void DoEvaluateSummarization_(
+            Summarization& summarization,
             const UString& key,
-            const CommentCacheItemType& comment_cache_item);
+            const std::vector<UString>& content_list);
 
     void BuildIndexOfParentKey_();
 

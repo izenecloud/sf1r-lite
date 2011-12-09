@@ -42,20 +42,20 @@ public:
         return *(reinterpret_cast<const T *>(str.c_str()));
     }
 
-    template <typename Key, typename T>
-    static void getKeyList(std::vector<Key>& key_list, const std::map<Key, T>& src_map)
+    template <typename AssocType, typename SeqType>
+    static void getKeyList(SeqType& key_list, const AssocType& src_map)
     {
-        for (typename std::map<Key, T>::const_iterator it = src_map.begin();
+        for (typename AssocType::const_iterator it = src_map.begin();
                 it != src_map.end(); ++it)
         {
             key_list.push_back(it->first);
         }
     }
 
-    template <typename Key, typename T>
-    static void getValueList(std::vector<T>& value_list, const std::map<Key, T>& src_map)
+    template <typename AssocType, typename SeqType>
+    static void getValueList(SeqType& value_list, const AssocType& src_map)
     {
-        for (typename std::map<Key, T>::const_iterator it = src_map.begin();
+        for (typename AssocType::const_iterator it = src_map.begin();
                 it != src_map.end(); ++it)
         {
             value_list.push_back(it->second);
@@ -97,7 +97,7 @@ public:
     {
         return t1.get<Index>() != t2.get<Index>();
     }
-    
+
     static bool convertPropertyDataType(const std::string& property_name, const PropertyDataType& sf1r_type, izenelib::ir::indexmanager::PropertyType& type);
 
 };

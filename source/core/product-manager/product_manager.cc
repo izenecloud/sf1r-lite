@@ -39,8 +39,7 @@ ProductManager::ProductManager(
         else
             std::cerr << "Error: Price trend has not been properly initialized" << std::endl;
     }
-    
-    
+
     if (!config_.backup_path.empty())
     {
         backup_ = new ProductBackup(config_.backup_path);
@@ -104,7 +103,10 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
                 std::string docid_str;
                 docid.convertString(docid_str, UString::UTF_8);
                 if (timestamp == -1) GetTimestamp_(doc, timestamp);
-                price_trend_->Insert(docid_str, price, timestamp);
+                std::map<std::string, std::string> group_prop_map;
+                GetGroupProperties_(doc, group_prop_map);
+                price_trend_->Update(docid_str, price, timestamp, group_prop_map);
+//              price_trend_->Insert(docid_str, price, timestamp);
             }
         }
     }
@@ -222,14 +224,13 @@ bool ProductManager::HookDelete(uint32_t docid, time_t timestamp)
     return true;
 }
 
-
 bool ProductManager::FinishHook()
 {
     if (has_price_trend_)
     {
         price_trend_->Flush();
     }
-    
+
     if(clustering_!=NULL)
     {
         uint32_t max_in_group = 100;
@@ -243,7 +244,7 @@ bool ProductManager::FinishHook()
         typedef izenelib::util::UString UuidType;
 //         boost::unordered_map<GroupTableType::GroupIdType, UuidType> g2u_map;
         boost::unordered_map<GroupTableType::GroupIdType, PMDocumentType> g2doc_map;
-        
+
         //output DOCID -> uuid map SCD
         ScdWriter* uuid_map_writer = NULL;
         if(!config_.uuid_map_path.empty() )
@@ -263,7 +264,7 @@ bool ProductManager::FinishHook()
             izenelib::util::UString docname(in_group[0], izenelib::util::UString::UTF_8);
             UuidType uuid;
             generateUUID(docname, uuid);
-            
+
             PMDocumentType doc;
             doc.property(config_.docid_property_name) = docname;
             doc.property(config_.price_property_name) = izenelib::util::UString("", izenelib::util::UString::UTF_8);
@@ -328,10 +329,19 @@ bool ProductManager::FinishHook()
             GetPrice_(doc, price);
             udocid.convertString(sdocid, izenelib::util::UString::UTF_8);
             GroupTableType::GroupIdType group_id;
+            bool in_group = false;
+            if(group_table->GetGroupId(sdocid, group_id))
+            {
+                if(g2doc_map.find(group_id)!=g2doc_map.end())
+                {
+                    in_group = true;
+                }
+            }
+
 //             uint32_t itemcount = 1;
 //             std::vector<std::string> docid_list_in_group;
 //             bool append = true;
-            if(group_table->GetGroupId(sdocid, group_id) )
+            if(in_group )
             {
 //                 boost::unordered_map<GroupTableType::GroupIdType, UuidType>::iterator g2u_it = g2u_map.find(group_id);
                 boost::unordered_map<GroupTableType::GroupIdType, PMDocumentType>::iterator g2doc_it = g2doc_map.find(group_id);
@@ -379,7 +389,7 @@ bool ProductManager::FinishHook()
             ++append_count;
             ++g2doc_it;
         }
-        
+
         //process update_list
         LOG(INFO)<<"Total update list count : "<<uuid_update_list.size()<<std::endl;
         for(uint32_t i=0;i<uuid_update_list.size();i++)
@@ -399,10 +409,9 @@ bool ProductManager::FinishHook()
         delete clustering_;
         clustering_ = NULL;
     }
-            
+
     return GenOperations_();
 }
-
 
 bool ProductManager::UpdateADoc(const Document& doc, bool backup)
 {
@@ -479,8 +488,7 @@ bool ProductManager::CheckAddGroupWithInfo(const std::vector<izenelib::util::USt
         error_ = suuid+" already exists";
         return false;
     }
-    
-    
+
     std::vector<PMDocumentType> doc_list(docid_list.size());
     for (uint32_t i = 0; i < docid_list.size(); i++)
     {
