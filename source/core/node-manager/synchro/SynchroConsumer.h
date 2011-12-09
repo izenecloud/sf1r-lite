@@ -38,21 +38,20 @@ public:
     SynchroConsumer(
             const std::string& zkHosts,
             int zkTimeout,
-            const std::string zkSyncNodePath,
-            replicaid_t replicaId,
-            nodeid_t nodeId
-            );
+            const std::string syncZkNode);
+
+    ~SynchroConsumer();
 
     void watchProducer(
-            const std::string& producerID,
             callback_on_produced_t callback_on_produced,
             bool replyProducer = true);
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
 
+    virtual void onNodeCreated(const std::string& path);
+
     virtual void onDataChanged(const std::string& path);
-    virtual void onChildrenChanged(const std::string& path);
 
     virtual void onMonitor();
 
@@ -62,19 +61,14 @@ private:
     void resetWatch();
 
 private:
-    replicaid_t replicaId_;
-    nodeid_t nodeId_;
-
     ZooKeeperClientPtr zookeeper_;
 
-    std::string syncNodePath_;
-    std::string producerNodePath_;
+    std::string syncZkNode_;
 
     ConsumerStatusType consumerStatus_;
 
     boost::mutex mutex_;
-    std::string producerRealNodePath_;
-    std::string consumerRealNodePath_;
+    std::string consumerNodePath_;
 
     callback_on_produced_t callback_on_produced_;
     bool replyProducer_;

@@ -10,25 +10,18 @@ using namespace sf1r;
 SynchroProducer::SynchroProducer(
         const std::string& zkHosts,
         int zkTimeout,
-        const std::string zkSyncNodePath,
-        replicaid_t replicaId,
-        nodeid_t nodeId)
-: syncNodePath_(zkSyncNodePath), isSynchronizing_(false)
+        const std::string& syncZkNode)
+: syncZkNode_(syncZkNode)
+, isSynchronizing_(false)
 {
+    zookeeper_ = ZooKeeperManager::get()->createClient(zkHosts, zkTimeout, this, true);
+
     init();
-
-    zookeeper_.reset(new ZooKeeper(zkHosts, zkTimeout, true));
-    zookeeper_->registerEventHandler(this);
-
-    // "/SF1R-xxxx/Synchro/ProductManager/ProducerRXNX"
-    std::stringstream ss;
-    ss<<syncNodePath_<<"/ProducerR"<<replicaId<<"N"<<nodeId;
-    prodNodePath_ = ss.str();
 }
 
 SynchroProducer::~SynchroProducer()
 {
-    zookeeper_->deleteZNode(prodColNodePath_, true);
+    zookeeper_->deleteZNode(syncZkNode_, true);
 }
 
 bool SynchroProducer::produce(SynchroData& syncData, callback_on_consumed_t callback_on_consumed)
@@ -42,13 +35,6 @@ bool SynchroProducer::produce(SynchroData& syncData, callback_on_consumed_t call
     else
     {
         isSynchronizing_ = true;
-        prodColNodePath_ = prodNodePath_;
-        std::string producerID = syncData.getStrValue(SynchroData::KEY_COLLECTION);
-        if (!producerID.empty())
-        {
-            prodColNodePath_.append("/");
-            prodColNodePath_.append(producerID);
-        }
 
         init();
     }
@@ -127,7 +113,7 @@ void SynchroProducer::onDataChanged(const std::string& path)
 }
 void SynchroProducer::onChildrenChanged(const std::string& path)
 {
-    if (path == prodColNodePath_)
+    if (path == syncZkNode_)
     {
         // whether new consumer comes, or consumer break down.
         watchConsumers();
@@ -143,23 +129,23 @@ bool SynchroProducer::doProcude(SynchroData& syncData)
     {
         ensureParentNodes();
 
-        if (!zookeeper_->createZNode(prodColNodePath_, syncData.serialize()))
+        if (!zookeeper_->createZNode(syncZkNode_, syncData.serialize()))
         {
             if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
             {
-                zookeeper_->setZNodeData(prodColNodePath_, syncData.serialize());
-                std::cout<<"[SynchroProducer] overwrote "<<prodColNodePath_<<std::endl;
+                zookeeper_->setZNodeData(syncZkNode_, syncData.serialize());
+                std::cout<<"[SynchroProducer] overwrote "<<syncZkNode_<<std::endl;
                 //std::cout<<"with data: "<<syncDataStr<<std::endl;
                 return true;
             }
 
             std::cout<<"[SynchroProducer] failed to create "<<
-                    prodColNodePath_<<" ("<<zookeeper_->getErrorString()<<")"<<std::endl;
+                    syncZkNode_<<" ("<<zookeeper_->getErrorString()<<")"<<std::endl;
             return false;
         }
         else
         {
-            //std::cout<<"[SynchroProducer] created "<<prodColNodePath_<<std::endl;
+            std::cout<<"[SynchroProducer] created "<<syncZkNode_<<std::endl;
             //std::cout<<"with data: "<<syncDataStr<<std::endl;
             return true;
         }
@@ -199,7 +185,7 @@ void SynchroProducer::watchConsumers()
         return;
 
     std::vector<std::string> childrenList;
-    zookeeper_->getZNodeChildren(prodColNodePath_, childrenList, ZooKeeper::WATCH);
+    zookeeper_->getZNodeChildren(syncZkNode_, childrenList, ZooKeeper::WATCH);
 
     // todo, consumers
     if (childrenList.size() > 0)
@@ -268,7 +254,7 @@ void SynchroProducer::checkConsumers()
                 it->second.second = false;
                 consumedCount_ ++;
 
-                std::cout<<"--  disconnected!!"<<std::endl;
+                std::cout<<"[SynchroProducer]!! lost connection to "<<consumer<<std::endl;
             }
         }
     }
@@ -308,11 +294,9 @@ void SynchroProducer::checkConsumers()
 
 void SynchroProducer::ensureParentNodes()
 {
-    // todo
+    //xxx ensure by factory?
     zookeeper_->createZNode(NodeDef::getSF1RootPath());
     zookeeper_->createZNode(NodeDef::getSynchroPath());
-    zookeeper_->createZNode(syncNodePath_);
-    zookeeper_->createZNode(prodNodePath_);
 }
 
 void SynchroProducer::init()
@@ -328,7 +312,7 @@ void SynchroProducer::init()
 void SynchroProducer::endSynchroning(const std::string& info)
 {
     // Synchronizing finished
-    zookeeper_->deleteZNode(prodColNodePath_);
+    zookeeper_->deleteZNode(syncZkNode_);
     isSynchronizing_ = false;
     std::cout<<"Synchronizing finished - "<<info<<std::endl;
 }

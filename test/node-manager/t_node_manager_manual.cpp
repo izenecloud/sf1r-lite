@@ -5,7 +5,7 @@
 #include <iostream>
 #include "string.h"
 
-#include <node-manager/synchro/DistributedSynchroFactory.h>
+#include <node-manager/synchro/SynchroFactory.h>
 #include <node-manager/synchro/SynchroData.h>
 
 using namespace sf1r;
@@ -27,10 +27,8 @@ bool callback_on_produced(const std::string& datapath)
 
 void thread_consumer_run()
 {
-    SynchroConsumerPtr scp =
-            DistributedSynchroFactory::makeConsumer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER, "test");
-
-    scp->watchProducer("test", callback_on_produced, true);
+    SynchroConsumerPtr scp = SynchroFactory::getConsumer("test");
+    scp->watchProducer(callback_on_produced, true);
 }
 
 int main(int argc, char** argv)
@@ -63,20 +61,17 @@ int main(int argc, char** argv)
 
     // Producer
     {
-        SynchroProducerPtr spd =
-            DistributedSynchroFactory::makeProducer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER, "test");
-
         SynchroData sdata;
         sdata.setValue(SynchroData::KEY_COLLECTION, "test");
         sdata.setValue(SynchroData::KEY_DATA_PATH, "/data/scd");
 
+        SynchroProducerPtr spd = SynchroFactory::getProducer("test");
         spd->produce(sdata, callback_on_consumed);
         bool ret;
         spd->waitConsumers(ret);
         cout << "Producer: wait consumers ended " <<ret<<endl;
 
-        //spd->produce("/data/scd2", callback_on_consumed);
-        //sleep(3);
+        sleep(3);
     }
 
     consumer_thread.join();

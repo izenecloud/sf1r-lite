@@ -75,7 +75,7 @@ public:
 private:
     /**
      * ZooKeeper service is stable, but in cases, such as network was interrupted,
-     * clients will loss connection to service and Watchers will lose efficacy.
+     * clients will lose connection to service and Watchers will lose efficacy.
      * Auto monitoring is used to check connection status and recover.
      */
     void monitorLoop();

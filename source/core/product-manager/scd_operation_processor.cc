@@ -2,7 +2,7 @@
 #include <sstream>
 #include <common/ScdWriter.h>
 #include <boost/filesystem.hpp>
-#include <node-manager/synchro/DistributedSynchroFactory.h>
+#include <node-manager/synchro/SynchroFactory.h>
 
 using namespace sf1r;
 
@@ -56,13 +56,10 @@ bool ScdOperationProcessor::Finish()
     }
     std::cout<<"ScdOperationProcessor::Finish "<<dir_<<std::endl;
 
-    SynchroProducerPtr syncProducer =
-            DistributedSynchroFactory::makeProducer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER, collectionName_);
-
     SynchroData syncData;
     syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
     syncData.setValue(SynchroData::KEY_DATA_PATH, dir_);
-
+    SynchroProducerPtr syncProducer = SynchroFactory::getProducer(collectionName_);
     if (syncProducer->produce(syncData, boost::bind(&ScdOperationProcessor::AfterProcess_, this,_1)))
     {
         bool isConsumed = false;

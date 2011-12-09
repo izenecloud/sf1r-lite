@@ -11,6 +11,8 @@
 #include <product-manager/pm_def.h>
 #include <product-manager/pm_types.h>
 
+#include <node-manager/synchro/SynchroFactory.h>
+
 namespace sf1r
 {
 class IndexTaskService;
@@ -18,7 +20,7 @@ class ProductScdReceiver
 {
 public:
 
-    ProductScdReceiver(const std::string& collectionName);
+    ProductScdReceiver(const std::string& syncID);
 
     void Set(IndexTaskService* index_service)
     {
@@ -36,7 +38,8 @@ private:
 private:
     IndexTaskService* index_service_;
 
-    std::string collectionName_;
+    std::string syncID_;
+    SynchroConsumerPtr syncConsumer_;
 };
 
 }

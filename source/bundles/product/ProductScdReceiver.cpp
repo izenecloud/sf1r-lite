@@ -2,17 +2,15 @@
 #include <bundles/index/IndexTaskService.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
-#include <node-manager/synchro/DistributedSynchroFactory.h>
+
 using namespace sf1r;
 namespace bfs = boost::filesystem;
-ProductScdReceiver::ProductScdReceiver(const std::string& collectionName)
+ProductScdReceiver::ProductScdReceiver(const std::string& syncID)
 :index_service_(NULL)
-,collectionName_(collectionName)
+,syncID_(syncID)
 {
-    SynchroConsumerPtr syncConsumer =
-        DistributedSynchroFactory::makeConsumer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER, collectionName);
-
-    syncConsumer->watchProducer(collectionName_, boost::bind(&ProductScdReceiver::Run, this, _1), true);
+    syncConsumer_ = SynchroFactory::getConsumer(syncID);
+    syncConsumer_->watchProducer(boost::bind(&ProductScdReceiver::Run, this, _1), true);
 }
 
 bool ProductScdReceiver::Run(const std::string& scd_source_dir)

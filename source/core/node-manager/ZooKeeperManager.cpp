@@ -85,7 +85,10 @@ void ZooKeeperManager::postMonitorEvent()
     std::vector<ZooKeeperEventHandler*>::iterator it;
     for (it = clientKeeperList_.begin(); it != clientKeeperList_.end(); it++)
     {
-        (*it)->onMonitor();
+        if (*it)
+        {
+            (*it)->onMonitor();
+        }
     }
 }
 

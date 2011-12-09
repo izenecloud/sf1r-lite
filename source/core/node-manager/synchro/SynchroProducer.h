@@ -31,9 +31,7 @@ public:
     SynchroProducer(
             const std::string& zkHosts,
             int zkTimeout,
-            const std::string zkSyncNodePath,
-            replicaid_t replicaId,
-            nodeid_t nodeId
+            const std::string& syncZkNode
             );
 
     ~SynchroProducer();
@@ -80,9 +78,7 @@ private:
 private:
     ZooKeeperClientPtr zookeeper_;
 
-    std::string syncNodePath_;
-    std::string prodNodePath_;
-    std::string prodColNodePath_;
+    std::string syncZkNode_;
 
     bool isSynchronizing_; // perform one synchronization work at a time, xxx
 

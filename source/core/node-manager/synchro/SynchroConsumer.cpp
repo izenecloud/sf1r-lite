@@ -11,35 +11,23 @@ using namespace sf1r;
 SynchroConsumer::SynchroConsumer(
         const std::string& zkHosts,
         int zkTimeout,
-        const std::string zkSyncNodePath,
-        replicaid_t replicaId,
-        nodeid_t nodeId)
-: replicaId_(replicaId)
-, nodeId_(nodeId)
-, syncNodePath_(zkSyncNodePath)
+        const std::string syncZkNode)
+: syncZkNode_(syncZkNode)
 , consumerStatus_(CONSUMER_STATUS_INIT)
 , replyProducer_(true)
 {
     zookeeper_ = ZooKeeperManager::get()->createClient(zkHosts, zkTimeout, this, true);
+}
 
-    // "/SF1R-xxxx/Synchro/ProductManager/ProducerRXNX/",
-    // xxx which node to watch in distributed se?
-    std::stringstream ss;
-    ss<<syncNodePath_<<"/ProducerR"<<replicaId<<"N"<<nodeId;
-    syncNodePath_ = ss.str();
+SynchroConsumer::~SynchroConsumer()
+{
 }
 
 void SynchroConsumer::watchProducer(
-        const std::string& producerID,
         callback_on_produced_t callback_on_produced,
         bool replyProducer)
 {
     consumerStatus_ = CONSUMER_STATUS_WATCHING;
-
-    std::string producer = producerID;
-    izenelib::util::Trim(producer);
-    if (!producer.empty())
-        syncNodePath_ += "/" + producer;
 
     replyProducer_ = replyProducer;
     callback_on_produced_ = callback_on_produced;
@@ -54,27 +42,21 @@ void SynchroConsumer::watchProducer(
 void SynchroConsumer::process(ZooKeeperEvent& zkEvent)
 {
     //std::cout<<"[SynchroConsumer] "<< zkEvent.toString();
-
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {
         if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
             doWatchProducer();
     }
 
-    if (zkEvent.path_ == syncNodePath_)
+    if (zkEvent.path_ == syncZkNode_)
     {
         resetWatch();
-
-        if (zkEvent.type_ == ZOO_CREATED_EVENT
-                && consumerStatus_ == CONSUMER_STATUS_WATCHING)
-            doWatchProducer();
     }
 }
 
-/*virtual*/
-void SynchroConsumer::onDataChanged(const std::string& path)
+void SynchroConsumer::onNodeCreated(const std::string& path)
 {
-    if (path == producerRealNodePath_)
+    if (path == syncZkNode_)
     {
         // new data may produced
         doWatchProducer();
@@ -82,13 +64,13 @@ void SynchroConsumer::onDataChanged(const std::string& path)
 }
 
 /*virtual*/
-void SynchroConsumer::onChildrenChanged(const std::string& path)
+void SynchroConsumer::onDataChanged(const std::string& path)
 {
-//    if (path == syncNodePath_)
-//    {
-//        if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
-//            doWatchProducer();
-//    }
+    if (path == syncZkNode_)
+    {
+        // new data may produced
+        doWatchProducer();
+    }
 }
 
 void SynchroConsumer::onMonitor()
@@ -110,75 +92,60 @@ void SynchroConsumer::onMonitor()
 
 void SynchroConsumer::doWatchProducer()
 {
-    //std::cout<<"[SynchroConsumer] watch "<<syncNodePath_<<std::endl;
+    //std::cout<<"[SynchroConsumer] watch "<<syncZkNode_<<std::endl;
     boost::unique_lock<boost::mutex> lock(mutex_);
 
-    // todo watch M node
-    if (!zookeeper_->isZNodeExists(syncNodePath_, ZooKeeper::WATCH))
+    // watch Procuder
+    if (!zookeeper_->isZNodeExists(syncZkNode_, ZooKeeper::WATCH))
         return;
 
-//    std::vector<std::string> childrenList;
-//    zookeeper_->getZNodeChildren(syncNodePath_, childrenList, ZooKeeper::WATCH);
-//
-//    std::cout<<"[SynchroConsumer] watching producers: "<<syncNodePath_<<", "<<childrenList.size()<<std::endl;
-//
-//    if (childrenList.size() > 0)
-//    {
-        if (consumerStatus_ == CONSUMER_STATUS_CONSUMING)
-        {
-            return;
-        }
+    if (consumerStatus_ == CONSUMER_STATUS_CONSUMING)
+        return;
 
-        consumerStatus_ = CONSUMER_STATUS_CONSUMING;
+    consumerStatus_ = CONSUMER_STATUS_CONSUMING;
 
-        // Get producer info
-        producerRealNodePath_ = syncNodePath_; //childrenList[0]; // xxx, 1 producer
-        std::cout<<"[SynchroConsumer] watched producer: "<<producerRealNodePath_<<std::endl;
-        std::string dataStr;
+    // Get producer info
+    std::cout<<"[SynchroConsumer] watched producer: "<<syncZkNode_<<std::endl;
+    std::string dataStr;
+    SynchroData syncData;
+    zookeeper_->getZNodeData(syncZkNode_, dataStr, ZooKeeper::WATCH);
+    syncData.loadKvString(dataStr);
+
+    // Register consumer
+    if (!zookeeper_->createZNode(syncZkNode_+"/Consumer", "running",
+            ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
+    {
+        // is consuming, or last consuming not finished
+        return;
+    }
+    consumerNodePath_ = zookeeper_->getLastCreatedNodePath();
+    //std::cout<<"[SynchroConsumer] register consumer:"<<consumerNodePath_<<std::endl;
+
+    // Consuming
+    std::cout<<"[SynchroConsumer] consuming ..."<<std::endl;
+
+    bool ret = true;
+    if (callback_on_produced_)
+    {
+        ret = callback_on_produced_(syncData.getStrValue(SynchroData::KEY_DATA_PATH));
+    }
+    if (replyProducer_)
+    {
         SynchroData syncData;
-        zookeeper_->getZNodeData(producerRealNodePath_, dataStr, ZooKeeper::WATCH);
-        syncData.loadKvString(dataStr);
+        std::string sret = ret ? "success" : "failure";
+        syncData.setValue(SynchroData::KEY_RETURN, sret);
+        zookeeper_->setZNodeData(consumerNodePath_, syncData.serialize());
+    }
 
-        // Register consumer
-        std::stringstream ss;
-        ss<<producerRealNodePath_<<"/ConsumerR"<<replicaId_<<"N"<<nodeId_;
-        consumerRealNodePath_ = ss.str();
-        //std::cout<<"register consumer:"<<consumerRealNodePath_<<std::endl;
-        if (!zookeeper_->createZNode(consumerRealNodePath_, "running", ZooKeeper::ZNODE_EPHEMERAL))
-        {
-            // is consuming, or last consuming not finished
-            return;
-        }
-
-        // Consuming
-        std::cout<<"[SynchroConsumer] consuming ..."<<std::endl;
-
-        bool ret = true;
-        if (callback_on_produced_)
-        {
-            ret = callback_on_produced_(syncData.getStrValue(SynchroData::KEY_DATA_PATH));
-        }
-        if (replyProducer_)
-        {
-            SynchroData syncData;
-            std::string sret = ret ? "success" : "failure";
-            syncData.setValue(SynchroData::KEY_RETURN, sret);
-            zookeeper_->setZNodeData(consumerRealNodePath_, syncData.serialize());
-        }
-
-        consumerStatus_ = CONSUMER_STATUS_WATCHING;
-//    }
+    consumerStatus_ = CONSUMER_STATUS_WATCHING;
 }
 
 void SynchroConsumer::resetWatch()
 {
-    zookeeper_->isZNodeExists(syncNodePath_, ZooKeeper::WATCH);
+    zookeeper_->isZNodeExists(syncZkNode_, ZooKeeper::WATCH);
 
-    //std::vector<std::string> childrenList;
-    //zookeeper_->getZNodeChildren(syncNodePath_, childrenList, ZooKeeper::WATCH);
-
-    //std::string dataPath;
-    //zookeeper_->getZNodeData(syncNodePath_, dataPath, ZooKeeper::WATCH);
+    std::string dataPath;
+    zookeeper_->getZNodeData(syncZkNode_, dataPath, ZooKeeper::WATCH);
 }
 
 

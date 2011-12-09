@@ -1,6 +1,6 @@
 #include "NodeManager.h"
 
-#include <node-manager/synchro/DistributedSynchroFactory.h>
+#include <node-manager/synchro/SynchroFactory.h>
 
 #include <sstream>
 
@@ -17,6 +17,7 @@ NodeManager::NodeManager()
 
 NodeManager::~NodeManager()
 {
+    stop();
 }
 
 void NodeManager::init(
@@ -111,7 +112,7 @@ void NodeManager::initBeforeStart()
     if (zookeeper_->isConnected())
     {
         // xxx synchro
-        DistributedSynchroFactory::initZKNodes(zookeeper_);
+        SynchroFactory::initSynchroNode(zookeeper_);
 
         isInitBeforeStartDone_ = true;
     }
