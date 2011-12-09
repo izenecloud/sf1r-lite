@@ -563,6 +563,7 @@ bool SearchManager::doSearch_(
         {
             ///SELECT * ORDER BY
             prepareDocIterWithOnlyOrderby_(pFilterIdSet);
+            if(!pFilterIdSet) return false;
             BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
             FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
             pDocIterator->add((DocumentIterator*)pFilterIterator);
@@ -572,7 +573,6 @@ bool SearchManager::doSearch_(
             return false;
         }
     }
-
 
     START_PROFILER ( preparerank )
 
@@ -856,7 +856,7 @@ propertyid_t SearchManager::getPropertyIdByName_(const std::string& name) const
     }
 }
 
-void SearchManager::prepareDocIterWithOnlyOrderby_(
+bool SearchManager::prepareDocIterWithOnlyOrderby_(
     boost::shared_ptr<EWAHBoolArray<uint32_t> >& pFilterIdSet)
 {
     boost::shared_ptr<BitVector> pDelFilter(indexManagerPtr_->getBTreeIndexer()->getFilter());
@@ -868,19 +868,20 @@ void SearchManager::prepareDocIterWithOnlyOrderby_(
         bitVector.clear(0);
         pFilterIdSet.reset(new EWAHBoolArray<uint32_t>());
         bitVector.compressed(*pFilterIdSet);
-        return;
+        return true;
     }
 
+    if(documentManagerPtr_->getMaxDocId() == 0)
+            return false;
 
     unsigned int bitsNum = documentManagerPtr_->getMaxDocId() + 1;
-    unsigned int wordsNum = bitsNum/(sizeof(uint32_t) * 8);
-
     pFilterIdSet.reset(new EWAHBoolArray<uint32_t>());
-    for (unsigned num = 1; num < sizeof(uint32_t) * 8; num++)
-        pFilterIdSet->set(num);
-    pFilterIdSet->addStreamOfEmptyWords(true, wordsNum - 1);
-    for (unsigned int num = wordsNum * (sizeof(uint32_t) * 8); num <= bitsNum - 1; num++)
-        pFilterIdSet->set(num);
+    BitVector* pFilter = new BitVector(bitsNum);
+    pFilter->setAll();
+    pFilter->clear(0);
+    pFilter->compressed(*pFilterIdSet);
+    delete pFilter;
+    return true;
 }
 
 bool SearchManager::getPropertyTypeByName_(

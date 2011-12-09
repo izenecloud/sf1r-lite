@@ -388,7 +388,6 @@ ScdParser::iterator ScdParser::begin(const std::vector<string>& propertyNameList
 
 ScdParser::iterator ScdParser::end()
 {
-    //return iterator(size_);
     return iterator(-1);
 }
 
@@ -414,25 +413,27 @@ bool ScdParser::getDoc(const izenelib::util::UString & docId, SCDDoc& doc)
 
 ScdParser::iterator::iterator(long offset)
     : pfs_(NULL)
-    , readLength_(0)
+    , prevOffset_(0)
+    , offset_(offset)
+    , codingType_(izenelib::util::UString::UTF_8)
     , docDelimiter_(DEFAULT_DOC_DELIMITER)
 {
-    offset_ = offset;
 }
 
 ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc)
-    : docDelimiter_(pScdParser->docDelimiter_)
+    : pfs_(&pScdParser->fs_)
+    , prevOffset_(0)
+    , offset_(0)
+    , codingType_(pScdParser->getEncodingType())
+    , buffer_(new izenelib::util::izene_streambuf)
+    , docDelimiter_(pScdParser->docDelimiter_)
 {
-    pfs_ = &(pScdParser->fs_);
     pfs_->clear();
-    readLength_ = 0;
-    codingType_ = pScdParser->getEncodingType();
-    offset_ = 0;
-    buffer_.reset(new izenelib::util::izene_streambuf);
-    readLength_ = izenelib::util::izene_read_until(*pfs_,*buffer_,docDelimiter_);
-    if (readLength_ > 0)
+    std::size_t readLen = izenelib::util::izene_read_until(*pfs_,*buffer_,docDelimiter_);
+    if (readLen)
     {
-        buffer_->consume(readLength_);
+        buffer_->consume(readLen);
+        prevOffset_ += readLen;
         doc_.reset(getDoc());
         operator+=(start_doc);
     }
@@ -444,19 +445,21 @@ ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc)
 }
 
 ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc, const std::vector<string>& propertyNameList)
-    : docDelimiter_(pScdParser->docDelimiter_)
+    : pfs_(&pScdParser->fs_)
+    , prevOffset_(0)
+    , offset_(0)
+    , codingType_(pScdParser->getEncodingType())
+    , buffer_(new izenelib::util::izene_streambuf)
+    , docDelimiter_(pScdParser->docDelimiter_)
     , propertyNameList_(propertyNameList)
 {
     pfs_ = &(pScdParser->fs_);
     pfs_->clear();
-    readLength_ = 0;
-    codingType_ = pScdParser->getEncodingType();
-    offset_ = 0;
-    buffer_.reset(new izenelib::util::izene_streambuf);
-    readLength_ = izenelib::util::izene_read_until(*pfs_, *buffer_, docDelimiter_);
-    if(readLength_ > 0)
+    std::size_t readLen = izenelib::util::izene_read_until(*pfs_, *buffer_, docDelimiter_);
+    if(readLen)
     {
-        buffer_->consume(readLength_);
+        buffer_->consume(readLen);
+        prevOffset_ += readLen;
         doc_.reset(getDoc());
         operator+=(start_doc);
     }
@@ -468,7 +471,6 @@ ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc, con
 
 ScdParser::iterator::iterator(const iterator& other)
     : pfs_(other.pfs_)
-    , readLength_(0)
     , prevOffset_(other.prevOffset_)
     , offset_(other.offset_)
     , doc_(other.doc_)
@@ -485,7 +487,6 @@ ScdParser::iterator::~iterator()
 const ScdParser::iterator& ScdParser::iterator::operator=(const iterator& other)
 {
     pfs_ = other.pfs_;
-    readLength_ = 0;
     prevOffset_ = other.prevOffset_;
     offset_ = other.offset_;
     doc_ = other.doc_;
@@ -507,11 +508,7 @@ bool ScdParser::iterator::operator!=(const iterator& other)const
 
 const ScdParser::iterator& ScdParser::iterator::operator++()
 {
-    if ( pfs_->eof() )
-    {
-        offset_ = -1;
-    }
-    else
+    if (isValid())
     {
         offset_ = prevOffset_;
         doc_.reset(getDoc());
@@ -521,11 +518,7 @@ const ScdParser::iterator& ScdParser::iterator::operator++()
 
 const ScdParser::iterator& ScdParser::iterator::operator++(int)
 {
-    if ( pfs_->eof() )
-    {
-        offset_ = -1;
-    }
-    else
+    if (isValid())
     {
         offset_ = prevOffset_;
         doc_.reset(getDoc());
@@ -535,18 +528,11 @@ const ScdParser::iterator& ScdParser::iterator::operator++(int)
 
 const ScdParser::iterator& ScdParser::iterator::operator+=(unsigned int offset)
 {
-    while (offset)
+    while (offset && isValid())
     {
-        if ( pfs_->eof() )
-        {
-            offset_ = -1;
-            break;
-        }
-        else
-        {
-            offset_ = prevOffset_;
-            doc_.reset(getDoc());
-        }
+        offset_ = prevOffset_;
+        doc_.reset(getDoc());
+
         --offset;
     }
     return *this;
@@ -567,20 +553,20 @@ SCDDoc* ScdParser::iterator::getDoc()
     CREATE_PROFILER ( proScdParsing, "Index:SIAProcess", "Scd Parsing : parse SCD file");
 
     START_PROFILER ( proScdParsing );
-    readLength_ = izenelib::util::izene_read_until(*pfs_, *buffer_, docDelimiter_);
+    std::size_t readLen = izenelib::util::izene_read_until(*pfs_, *buffer_, docDelimiter_);
     string str(docDelimiter_);
-    if (readLength_ > 0)
+    if (readLen)
     {
-        str.append(buffer_->gptr(), readLength_ - docDelimiter_.size());
-        buffer_->consume(readLength_);
-        prevOffset_ = pfs_->tellg();
+        str.append(buffer_->gptr(), readLen - docDelimiter_.size());
+        buffer_->consume(readLen);
+        prevOffset_ += readLen;
     }
     else
     {
-        while ((readLength_ = izenelib::util::izene_read_until(*pfs_, *buffer_, PATTERN_EOL)) != 0)
+        while ((readLen = izenelib::util::izene_read_until(*pfs_, *buffer_, PATTERN_EOL)))
         {
-            str.append(buffer_->gptr(), readLength_);
-            buffer_->consume(readLength_);
+            str.append(buffer_->gptr(), readLen);
+            buffer_->consume(readLen);
         }
         prevOffset_ = -1;
     }
@@ -596,6 +582,11 @@ SCDDoc* ScdParser::iterator::getDoc()
     STOP_PROFILER ( proScdParsing );
 
     return doc;
+}
+
+bool ScdParser::iterator::isValid() const
+{
+    return offset_ != -1;
 }
 
 void ScdParser::iterator::preProcessDoc(string& strDoc)

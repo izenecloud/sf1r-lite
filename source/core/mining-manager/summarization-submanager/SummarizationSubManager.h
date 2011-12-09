@@ -77,9 +77,9 @@ private:
 
     idmlib::util::IDMAnalyzer* analyzer_;
 
+    CommentCacheStorage* comment_cache_storage_;
     ParentKeyStorage* parent_key_storage_;
     SummarizationStorage* summarization_storage_;
-    CommentCacheStorage* comment_cache_storage_;
 
     Corpus* corpus_;
 };

@@ -233,7 +233,7 @@ BOOST_AUTO_TEST_CASE(testGetDocIdList)
 
     std::vector<izenelib::util::UString> idList;
     BOOST_CHECK(parser.getDocIdList(idList));
-    BOOST_CHECK(idList.size() == 10);
+    BOOST_CHECK_EQUAL(10, idList.size());
 
     izenelib::util::UString one("1", izenelib::util::UString::UTF_8);
     izenelib::util::UString ten("10", izenelib::util::UString::UTF_8);

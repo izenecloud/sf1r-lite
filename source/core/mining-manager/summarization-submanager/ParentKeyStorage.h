@@ -15,6 +15,8 @@ namespace sf1r
 
 using izenelib::util::UString;
 
+class CommentCacheStorage;
+
 class ParentKeyStorage
 {
     typedef izenelib::am::leveldb::Table<UString, std::vector<UString> > P2CDbType;
@@ -28,6 +30,7 @@ class ParentKeyStorage
 public:
     ParentKeyStorage(
             const std::string& db_dir,
+            CommentCacheStorage* comment_cache_storage,
             unsigned bufferSize = 20000);
 
     ~ParentKeyStorage();
@@ -58,6 +61,8 @@ private:
 
     P2CDbType parent_to_children_db_;
     C2PDbType child_to_parent_db_;
+
+    CommentCacheStorage* comment_cache_storage_;
 
     BufferType buffer_db_;
 
