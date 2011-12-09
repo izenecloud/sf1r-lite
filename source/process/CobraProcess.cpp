@@ -19,7 +19,6 @@
 #include <util/driver/IPRestrictor.h>
 #include <util/driver/DriverConnectionFirewall.h>
 #include <util/singleton.h>
-#include <3rdparty/zookeeper/ZooKeeper.hpp>
 
 #include <question-answering/QuestionAnalysis.h>
 
@@ -41,7 +40,6 @@ using namespace sf1r;
 using namespace boost::filesystem;
 using namespace izenelib::util;
 using namespace izenelib::driver;
-using namespace zookeeper;
 
 namespace bfs = boost::filesystem;
 

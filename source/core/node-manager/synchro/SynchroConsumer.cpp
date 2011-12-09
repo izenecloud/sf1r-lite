@@ -17,13 +17,16 @@ SynchroConsumer::SynchroConsumer(
         const std::string zkSyncNodePath,
         replicaid_t replicaId,
         nodeid_t nodeId)
-:replicaId_(replicaId), nodeId_(nodeId), syncNodePath_(zkSyncNodePath), consumerStatus_(CONSUMER_STATUS_INIT), replyProducer_(true)
+: replicaId_(replicaId)
+, nodeId_(nodeId)
+, syncNodePath_(zkSyncNodePath)
+, consumerStatus_(CONSUMER_STATUS_INIT)
+, replyProducer_(true)
 {
-    zookeeper_.reset(new ZooKeeper(zkHosts, zkTimeout, true));
-    zookeeper_->registerEventHandler(this);
+    zookeeper_ = ZooKeeperManager::get()->createClient(zkHosts, zkTimeout, this, true);
 
     ZkMonitor::get()->addMonitorHandler(
-            boost::bind(&SynchroConsumer::monitor, this) );
+            boost::bind(&SynchroConsumer::onMonitor, this) );
 
     // "/SF1R-xxxx/Synchro/ProductManager/ProducerRXNX/",
     // xxx which node to watch in distributed se?
@@ -53,7 +56,7 @@ void SynchroConsumer::watchProducer(
     }
 }
 
-void SynchroConsumer::monitor()
+void SynchroConsumer::onMonitor()
 {
     if (zookeeper_ && !zookeeper_->isConnected())
     {

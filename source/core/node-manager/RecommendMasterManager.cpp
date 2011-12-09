@@ -10,7 +10,7 @@ RecommendMasterManager::RecommendMasterManager()
     CLASSNAME = "[SearchMasterManager]";
 }
 
-void RecommendMasterManager::init()
+bool RecommendMasterManager::init()
 {
     // TODO
 }

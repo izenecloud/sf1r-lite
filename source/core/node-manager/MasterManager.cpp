@@ -17,7 +17,11 @@ void MasterManager::start()
     {
         masterState_ = MASTER_STATE_STARTING;
 
-        init();
+        if (!init())
+        {
+            std::cerr<<CLASSNAME<<" Initialize failed!"<<std::endl;
+            return;
+        }
 
         // Ensure connected to zookeeper
         if (!zookeeper_->isConnected())
@@ -127,12 +131,6 @@ void MasterManager::showWorkers()
 }
 
 /// protected ////////////////////////////////////////////////////////////////////
-
-void MasterManager::initZooKeeper(const std::string& zkHosts, const int recvTimeout)
-{
-    zookeeper_.reset(new ZooKeeper(zkHosts, recvTimeout));
-    zookeeper_->registerEventHandler(this);
-}
 
 std::string MasterManager::state2string(MasterStateType e)
 {

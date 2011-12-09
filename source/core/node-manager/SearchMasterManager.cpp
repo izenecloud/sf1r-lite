@@ -1,6 +1,6 @@
 #include "SearchMasterManager.h"
 #include "SearchNodeManager.h"
-
+#include "ZooKeeperManager.h"
 
 namespace sf1r
 {
@@ -10,12 +10,16 @@ SearchMasterManager::SearchMasterManager()
     CLASSNAME = "[SearchMasterManager]";
 }
 
-void SearchMasterManager::init()
+bool SearchMasterManager::init()
 {
-    // initialize zookeeper
-    initZooKeeper(
+    // initialize zookeeper client
+    zookeeper_ = ZooKeeperManager::get()->createClient(
             SearchNodeManager::get()->getDSUtilConfig().zkConfig_.zkHosts_,
-            SearchNodeManager::get()->getDSUtilConfig().zkConfig_.zkRecvTimeout_);
+            SearchNodeManager::get()->getDSUtilConfig().zkConfig_.zkRecvTimeout_,
+            this);
+
+    if (!zookeeper_)
+        return false;
 
     // initialize topology info
     topology_.clusterId_ = SearchNodeManager::get()->getDSTopologyConfig().clusterId_;
@@ -23,6 +27,8 @@ void SearchMasterManager::init()
     topology_.shardNum_ =  SearchNodeManager::get()->getDSTopologyConfig().shardNum_;
 
     curNodeInfo_ = SearchNodeManager::get()->getNodeInfo();
+
+    return true;
 }
 
 

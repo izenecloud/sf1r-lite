@@ -10,10 +10,8 @@
 
 #include "SynchroData.h"
 
-#include <3rdparty/zookeeper/ZooKeeper.hpp>
-#include <3rdparty/zookeeper/ZooKeeperEvent.hpp>
-
 #include <node-manager/NodeDef.h>
+#include <node-manager/ZooKeeperManager.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
@@ -80,7 +78,7 @@ private:
 
 
 private:
-    boost::shared_ptr<ZooKeeper> zookeeper_;
+    ZooKeeperClientPtr zookeeper_;
 
     std::string syncNodePath_;
     std::string prodNodePath_;

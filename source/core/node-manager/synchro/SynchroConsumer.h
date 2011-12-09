@@ -8,10 +8,8 @@
 #ifndef SYNCHRO_CONSUMER_H_
 #define SYNCHRO_CONSUMER_H_
 
-#include <3rdparty/zookeeper/ZooKeeper.hpp>
-#include <3rdparty/zookeeper/ZooKeeperEvent.hpp>
-
 #include <node-manager/NodeDef.h>
+#include <node-manager/ZooKeeperManager.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
@@ -51,7 +49,7 @@ public:
             callback_on_produced_t callback_on_produced,
             bool replyProducer = true);
 
-    void monitor();
+    void onMonitor();
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
@@ -64,16 +62,11 @@ private:
 
     void resetWatch();
 
-    /**
-     * In case network broken, zookeeper may be disconnected to service.
-     */
-    void runMonitor();
-
 private:
     replicaid_t replicaId_;
     nodeid_t nodeId_;
 
-    boost::shared_ptr<ZooKeeper> zookeeper_;
+    ZooKeeperClientPtr zookeeper_;
 
     std::string syncNodePath_;
     std::string producerNodePath_;
