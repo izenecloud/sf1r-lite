@@ -8,23 +8,7 @@
 #include <3rdparty/am/stx/btree_map.h>
 #include <util/izene_serialization.h>
 
-namespace izenelib
-{
-namespace util
-{
-
-template <>
-struct IsFebirdSerial<std::pair<izenelib::am::EWAHBoolArray<uint32_t>, std::vector<izenelib::util::UString> > >
-{
-    enum
-    {
-        yes = 1,
-        no = !yes
-    };
-};
-
-}
-}
+MAKE_FEBIRD_SERIALIZATION(std::pair<izenelib::am::EWAHBoolArray<uint32_t>, std::vector<izenelib::util::UString> >)
 
 namespace sf1r
 {
