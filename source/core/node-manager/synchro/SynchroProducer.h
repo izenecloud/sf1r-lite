@@ -10,10 +10,8 @@
 
 #include "SynchroData.h"
 
-#include <3rdparty/zookeeper/ZooKeeper.hpp>
-#include <3rdparty/zookeeper/ZooKeeperEvent.hpp>
-
 #include <node-manager/NodeDef.h>
+#include <node-manager/ZooKeeperManager.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
@@ -21,7 +19,6 @@
 
 #include <map>
 
-using namespace zookeeper;
 
 namespace sf1r{
 
@@ -53,10 +50,11 @@ public:
     /**
      *
      * @param isSuccess
-     * @param findConsumerTimeout  timeout (seconds) for saw any consumer.
+     * @param findConsumerTimeout  timeout (seconds) for waiting consumer(s),
+     *                             should larger then monitor interval.
      * @return
      */
-    bool waitConsumers(bool& isConsumed, int findConsumerTimeout = 120);
+    bool waitConsumers(bool& isConsumed, int findConsumerTimeout = 150);
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
@@ -80,7 +78,7 @@ private:
 
 
 private:
-    boost::shared_ptr<ZooKeeper> zookeeper_;
+    ZooKeeperClientPtr zookeeper_;
 
     std::string syncNodePath_;
     std::string prodNodePath_;

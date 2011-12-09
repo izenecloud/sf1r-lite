@@ -24,7 +24,7 @@ public:
         return izenelib::util::Singleton<SearchMasterManager>::get();
     }
 
-    virtual void init();
+    virtual bool init();
 };
 
 

@@ -11,6 +11,7 @@
 #include "SynchroConsumer.h"
 
 #include <node-manager/NodeDef.h>
+#include <node-manager/ZooKeeperManager.h>
 #include <node-manager/SearchNodeManager.h>
 
 namespace sf1r{
@@ -59,7 +60,7 @@ public:
         return syncConsumer_[id];
     }
 
-    static void initZKNodes(boost::shared_ptr<ZooKeeper>& zookeeper)
+    static void initZKNodes(ZooKeeperClientPtr& zookeeper)
     {
         zookeeper->createZNode(NodeDef::getSynchroPath());
 

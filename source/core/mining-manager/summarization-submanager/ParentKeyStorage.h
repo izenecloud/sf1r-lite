@@ -4,12 +4,11 @@
 #include <am/leveldb/Table.h>
 #include <am/range/AmIterator.h>
 #include <util/ustring/UString.h>
+#include <util/izene_serialization.h>
 
 #include <3rdparty/am/stx/btree_map.h>
 
 #include <boost/thread.hpp>
-
-#include <vector>
 
 namespace sf1r
 {
@@ -24,7 +23,7 @@ class ParentKeyStorage
     typedef izenelib::am::leveldb::Table<UString, UString> C2PDbType;
     typedef izenelib::am::AMIterator<C2PDbType> C2PIteratorType;
 
-    typedef stx::btree_map<UString, std::vector<UString> > BufferType;
+    typedef stx::btree_map<UString, std::pair<std::vector<UString>, std::vector<UString> > > BufferType;
 
 public:
     ParentKeyStorage(
@@ -33,7 +32,11 @@ public:
 
     ~ParentKeyStorage();
 
-    void AppendUpdate(const UString& parent, const UString& child);
+    void Insert(const UString& parent, const UString& child);
+
+    void Update(const UString& parent, const UString& child);
+
+    void Delete(const UString& parent, const UString& child);
 
     void Flush();
 

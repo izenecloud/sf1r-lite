@@ -8,7 +8,7 @@
 #define NODE_DEF_H_
 
 #include "TypeDef.h"
-#include <3rdparty/zookeeper/ZkDataPack.hpp>
+#include <util/kv2string.h>
 #include <sstream>
 
 namespace sf1r {
@@ -102,7 +102,7 @@ public:
     }
 };
 
-class NodeData : public zookeeper::ZkDataPack
+class NodeData : public izenelib::util::kv2string
 {
 public:
     // topology

@@ -8,20 +8,18 @@
 #define MASTER_NODE_MANAGER_H_
 
 #include "NodeDef.h"
+#include "ZooKeeperManager.h"
 
 #include <map>
 #include <vector>
 #include <sstream>
 
-#include <3rdparty/zookeeper/ZooKeeper.hpp>
-#include <3rdparty/zookeeper/ZooKeeperEvent.hpp>
 #include <net/aggregator/AggregatorConfig.h>
 #include <net/aggregator/Aggregator.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
-using namespace zookeeper;
 
 namespace sf1r
 {
@@ -47,7 +45,7 @@ public:
 
     virtual ~MasterManager() {};
 
-    virtual void init() = 0;
+    virtual bool init() = 0;
 
     void start();
 
@@ -87,8 +85,6 @@ public:
     void showWorkers();
 
 protected:
-    void initZooKeeper(const std::string& zkHosts, const int recvTimeout);
-
     std::string state2string(MasterStateType e);
 
     void watchAll();
@@ -126,7 +122,7 @@ protected:
     void resetAggregatorConfig();
 
 protected:
-    boost::shared_ptr<ZooKeeper> zookeeper_;
+    ZooKeeperClientPtr zookeeper_;
 
     Topology topology_;
     SF1NodeInfo curNodeInfo_;

@@ -1,12 +1,11 @@
 #include "NodeManager.h"
-#include "ZkMonitor.h"
 
 #include <node-manager/synchro/DistributedSynchroFactory.h>
 
 #include <sstream>
 
 using namespace sf1r;
-using namespace zookeeper;
+
 
 NodeManager::NodeManager()
 : isInitBeforeStartDone_(false)
@@ -18,7 +17,6 @@ NodeManager::NodeManager()
 
 NodeManager::~NodeManager()
 {
-    ZkMonitor::get()->stop();
 }
 
 void NodeManager::init(
@@ -34,7 +32,10 @@ void NodeManager::init(
     // initialization
     NodeDef::setClusterIdNodeName(dsTopologyConfig_.clusterId_);
 
-    initZooKeeper(dsUtilConfig_.zkConfig_.zkHosts_, dsUtilConfig_.zkConfig_.zkRecvTimeout_);
+    zookeeper_ = ZooKeeperManager::get()->createClient(
+            dsUtilConfig_.zkConfig_.zkHosts_,
+            dsUtilConfig_.zkConfig_.zkRecvTimeout_,
+            this);
 
     nodeInfo_.replicaId_ = dsTopologyConfig_.curSF1Node_.replicaId_;
     nodeInfo_.nodeId_ = dsTopologyConfig_.curSF1Node_.nodeId_;
@@ -42,9 +43,6 @@ void NodeManager::init(
     nodeInfo_.baPort_ = dsTopologyConfig_.curSF1Node_.baPort_;
 
     nodePath_ = NodeDef::getNodePath(nodeInfo_.replicaId_, nodeInfo_.nodeId_);
-
-    // ZooKeeper monitor, xxx move to new manager
-    ZkMonitor::get()->start();
 
     // !! Initializations needed to be done before start collections (run)
     initBeforeStart();
@@ -72,8 +70,6 @@ void NodeManager::start()
 
 void NodeManager::stop()
 {
-    ZkMonitor::get()->stop();
-
     if (masterStarted_)
     {
         stopMasterManager();
@@ -109,12 +105,6 @@ void NodeManager::process(ZooKeeperEvent& zkEvent)
 }
 
 /// protected ////////////////////////////////////////////////////////////////////
-
-void NodeManager::initZooKeeper(const std::string& zkHosts, const int recvTimeout)
-{
-    zookeeper_.reset(new ZooKeeper(zkHosts, recvTimeout));
-    zookeeper_->registerEventHandler(this);
-}
 
 void NodeManager::initBeforeStart()
 {

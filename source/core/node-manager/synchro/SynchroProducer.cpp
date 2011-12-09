@@ -5,7 +5,7 @@
 #include <sstream>
 
 using namespace sf1r;
-using namespace zookeeper;
+
 
 SynchroProducer::SynchroProducer(
         const std::string& zkHosts,
