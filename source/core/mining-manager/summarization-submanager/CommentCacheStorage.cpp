@@ -21,13 +21,23 @@ CommentCacheStorage::~CommentCacheStorage()
 {
 }
 
-void CommentCacheStorage::AppendUpdate(const UString& key, uint32_t first, const UString& second)
+void CommentCacheStorage::Insert(const UString& key, uint32_t docid, const UString& content)
 {
-    buffer_db_[key].push_back(std::make_pair(first, second));
+    buffer_db_[key].insert(std::make_pair(docid, content));
 
     ++buffer_size_;
     if (IsBufferFull_())
         Flush();
+}
+
+void CommentCacheStorage::Update(const UString& key, uint32_t docid, const UString& content)
+{
+    //TODO
+}
+
+void CommentCacheStorage::Delete(const UString& key, uint32_t docid)
+{
+    //TODO
 }
 
 void CommentCacheStorage::Flush()
@@ -40,13 +50,7 @@ void CommentCacheStorage::Flush()
         CommentCacheItemType value;
         if (comment_cache_db_.get(it->first, value))
         {
-//          for (CommentCacheItemType::iterator vit = it->second.begin();
-//                  vit != it->second.end(); ++vit)
-//          {
-//              value.push_back(std::make_pair(vit->first, UString()));
-//              value.back().second.swap(vit->second);
-//          }
-            value.insert(value.end(), it->second.begin(), it->second.end());
+            value.insert(it->second.begin(), it->second.end());
             comment_cache_db_.update(it->first, value);
         }
         else

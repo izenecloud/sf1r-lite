@@ -18,7 +18,7 @@ class RecommendMasterManager : public MasterManager
 public:
     RecommendMasterManager();
 
-    virtual void init();
+    virtual bool init();
 };
 
 }

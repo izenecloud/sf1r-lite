@@ -8,9 +8,7 @@
 #define NODE_MANAGER_H_
 
 #include "NodeDef.h"
-
-#include <3rdparty/zookeeper/ZooKeeper.hpp>
-#include <3rdparty/zookeeper/ZooKeeperEvent.hpp>
+#include "ZooKeeperManager.h"
 
 #include <configuration-manager/DistributedTopologyConfig.h>
 #include <configuration-manager/DistributedUtilConfig.h>
@@ -18,7 +16,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
-using namespace zookeeper;
 
 namespace sf1r
 {
@@ -85,8 +82,6 @@ protected:
     virtual void stopMasterManager() {}
 
 protected:
-    void initZooKeeper(const std::string& zkHosts, const int recvTimeout);
-
     /**
      * Initializations needed to be done before start collections (run)
      */
@@ -108,7 +103,7 @@ protected:
     DistributedTopologyConfig dsTopologyConfig_;
     DistributedUtilConfig dsUtilConfig_;
 
-    boost::shared_ptr<ZooKeeper> zookeeper_;
+    ZooKeeperClientPtr zookeeper_;
     bool isInitBeforeStartDone_;
 
     // node state
