@@ -299,6 +299,7 @@ bool ProductManager::FinishHook()
 //         std::cout<<"start buffer size : "<<common_compressed_.bufferCapacity()<<std::endl;
         izenelib::util::ClockTimer timer;
 #endif
+        uuid_update_list.reserve(data_source_->GetMaxDocId());
         for(uint32_t docid=1; docid <= data_source_->GetMaxDocId(); ++docid )
         {
             if(docid%100000==0)
@@ -451,6 +452,7 @@ bool ProductManager::AddGroupWithInfo(const std::vector<UString>& docid_list, co
 void ProductManager::BackupPCItem_(const UString& uuid, const std::vector<uint32_t>& docid_list, int type)
 {
     std::vector<UString> docname_list;
+    docname_list.reserve(docid_list.size());
     for (uint32_t i = 0; i < docid_list.size(); i++)
     {
         PMDocumentType doc;
@@ -830,13 +832,7 @@ bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint
         }
         contains.erase(docid_list[i]);
     }
-    std::vector<uint32_t> remain;
-    boost::unordered_set<uint32_t>::iterator it = contains.begin();
-    while (it!=contains.end())
-    {
-        remain.push_back(*it);
-        ++it;
-    }
+    std::vector<uint32_t> remain(contains.begin(), contains.end());
     std::vector<PMDocumentType> doc_list(docid_list.size());
     for (uint32_t i = 0; i < docid_list.size(); i++)
     {
@@ -1027,12 +1023,11 @@ bool ProductManager::GetGroupProperties_(const PMDocumentType& doc, std::map<std
         Document::property_const_iterator it = doc.findProperty(config_.group_property_names[i]);
         if (it == doc.propertyEnd()) continue;
         UString prop_ustr = it->second.get<UString>();
-        std::string prop_str;
+        std::string& prop_str = group_prop_map[config_.group_property_names[i]];
         prop_ustr.convertString(prop_str, UString::UTF_8);
         size_t pos;
         if ((pos = prop_str.find('>')) != std::string::npos)
             prop_str.resize(pos);
-        prop_str.swap(group_prop_map[config_.group_property_names[i]]);
     }
     return group_prop_map.empty();
 }

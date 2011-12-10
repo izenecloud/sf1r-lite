@@ -5,7 +5,7 @@ using namespace sf1r;
 SimpleOperationProcessor::SimpleOperationProcessor()
 {
 }
-    
+
 SimpleOperationProcessor::~SimpleOperationProcessor()
 {
 }

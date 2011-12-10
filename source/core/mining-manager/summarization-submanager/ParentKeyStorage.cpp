@@ -77,43 +77,72 @@ void ParentKeyStorage::Flush()
     if (buffer_db_.empty()) return;
 
     bool dirty = false;
-    for (BufferType::iterator it = buffer_db_.begin();
+    for (BufferType::const_iterator it = buffer_db_.begin();
             it != buffer_db_.end(); ++it)
     {
-        std::vector<UString> v;
-        parent_to_children_db_.get(it->first, v);
+        std::vector<UString> value;
+        parent_to_children_db_.get(it->first, value);
 
         if (!it->second.second.empty())
         {
             dirty = true;
             comment_cache_storage_->Delete(it->first);
-            for (std::vector<UString>::const_iterator cit = it->second.second.begin();
-                    cit != it->second.second.end(); ++cit)
+            std::sort(it->second.second.begin(), it->second.second.end());
+
+            std::vector<UString> new_value;
+            new_value.reserve(value.size() - it->second.second.size());
+
+            std::vector<UString>::const_iterator vit0 = value.begin();
+            std::vector<UString>::const_iterator vit1 = it->second.second.begin();
+            while (vit1 != it->second.second.end())
             {
-                for (std::vector<UString>::iterator vit = v.begin();
-                        vit != v.end(); ++vit)
+                if (*vit0 < *vit1)
                 {
-                    if (*vit == *cit)
-                    {
-                        v.erase(vit);
-                        break;
-                    }
+                    new_value.push_back(*vit0);
+                }
+                else
+                {
+                    ++vit1;
+                }
+                ++vit0;
+            }
+            new_value.insert(new_value.end(), vit0, value.end());
+
+            value.swap(new_value);
+        }
+
+        if (!it->second.first.empty())
+        {
+            std::sort(it->second.first.begin(), it->second.first.end());
+
+            std::vector<UString> new_value;
+            new_value.reserve(value.size() + it->second.first.size());
+
+            std::vector<UString>::const_iterator vit0 = value.begin();
+            std::vector<UString>::const_iterator vit1 = it->second.first.begin();
+            while (vit0 != value.end() && vit1 != it->second.first.end())
+            {
+                if (*vit0 < *vit1)
+                {
+                    new_value.push_back(*vit0);
+                    ++vit0;
+                }
+                else
+                {
+                    new_value.push_back(*vit1);
+                    ++vit1;
                 }
             }
+            new_value.insert(new_value.end(), vit0, value.end());
+            new_value.insert(new_value.end(), vit1, it->second.first.end());
+
+            value.swap(new_value);
         }
 
-        v.reserve(v.size() + it->second.first.size());
-        for (std::vector<UString>::iterator vit = it->second.first.begin();
-                vit != it->second.first.end(); ++vit)
-        {
-            v.push_back(UString());
-            v.back().swap(*vit);
-        }
-
-        if (v.empty())
+        if (value.empty())
             parent_to_children_db_.del(it->first);
         else
-            parent_to_children_db_.update(it->first, v);
+            parent_to_children_db_.update(it->first, value);
     }
 
     if (dirty) comment_cache_storage_->Flush();
