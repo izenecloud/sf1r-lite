@@ -20,15 +20,12 @@ NodeManager::~NodeManager()
     stop();
 }
 
-void NodeManager::init(
-        const DistributedTopologyConfig& dsTopologyConfig,
-        const DistributedUtilConfig& dsUtilConfig)
+void NodeManager::init(const DistributedTopologyConfig& dsTopologyConfig)
 {
     // Initializations which should be done before collections started.
 
     // set distributed configurations
     dsTopologyConfig_ = dsTopologyConfig;
-    dsUtilConfig_ = dsUtilConfig;
 
     // initialization
     NodeDef::setClusterIdNodeName(dsTopologyConfig_.clusterId_);

@@ -219,9 +219,7 @@ bool CobraProcess::initNodeManager()
     ZooKeeperManager::get()->init(SF1Config::get()->distributedUtilConfig_.zkConfig_);
 
     // Initialization for distributed SF1, todo SE/RE
-    SearchNodeManager::get()->init(
-            SF1Config::get()->searchTopologyConfig_,
-            SF1Config::get()->distributedUtilConfig_);
+    SearchNodeManager::get()->init(SF1Config::get()->searchTopologyConfig_);
 
     return true;
 }
