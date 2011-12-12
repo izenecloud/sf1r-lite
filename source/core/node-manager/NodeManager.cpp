@@ -1,15 +1,12 @@
 #include "NodeManager.h"
 
-#include <node-manager/synchro/SynchroFactory.h>
-
 #include <sstream>
 
 using namespace sf1r;
 
 
 NodeManager::NodeManager()
-: isInitBeforeStartDone_(false)
-, nodeState_(NODE_STATE_INIT)
+: nodeState_(NODE_STATE_INIT)
 , masterStarted_(false)
 , CLASSNAME("[NodeManager]")
 {
@@ -38,9 +35,6 @@ void NodeManager::init(const DistributedTopologyConfig& dsTopologyConfig)
     nodeInfo_.baPort_ = dsTopologyConfig_.curSF1Node_.baPort_;
 
     nodePath_ = NodeDef::getNodePath(nodeInfo_.replicaId_, nodeInfo_.nodeId_);
-
-    // !! Initializations needed to be done before start collections (run)
-    initBeforeStart();
 }
 
 void NodeManager::start()
@@ -77,11 +71,6 @@ void NodeManager::process(ZooKeeperEvent& zkEvent)
 {
     std::cout<<CLASSNAME<< zkEvent.toString();
 
-    if (!isInitBeforeStartDone_)
-    {
-        initBeforeStart();
-    }
-
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {
         if (nodeState_ == NODE_STATE_INIT)
@@ -101,21 +90,9 @@ void NodeManager::process(ZooKeeperEvent& zkEvent)
 
 /// protected ////////////////////////////////////////////////////////////////////
 
-void NodeManager::initBeforeStart()
-{
-    if (zookeeper_->isConnected())
-    {
-        // xxx synchro
-        SynchroFactory::initSynchroNode(zookeeper_);
-
-        isInitBeforeStartDone_ = true;
-    }
-}
-
 void NodeManager::initZkNameSpace()
 {
     // Make sure zookeeper namaspace (znodes) is initialized properly
-
     zookeeper_->createZNode(NodeDef::getSF1RootPath());
     // topology
     zookeeper_->createZNode(NodeDef::getSF1TopologyPath());
@@ -176,7 +153,7 @@ void NodeManager::enterCluster()
         else
         {
             nodeState_ = NODE_STATE_STARTING_WAIT_RETRY;
-            std::cout<<CLASSNAME<<" failed to start (err:"<<zookeeper_->getErrorCode()
+            std::cout<<CLASSNAME<<" Failed to start ("<<zookeeper_->getErrorString()
                      <<"), waiting retry ..."<<std::endl;
             return;
         }

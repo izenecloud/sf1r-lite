@@ -445,6 +445,23 @@ public:
         return searchTopologyConfig_.enabled_;
     }
 
+    std::string getClusterId()
+    {
+        if (searchTopologyConfig_.enabled_)
+            return searchTopologyConfig_.clusterId_;
+
+        if (recommendTopologyConfig_.enabled_)
+            return recommendTopologyConfig_.clusterId_;
+
+        if (!searchTopologyConfig_.clusterId_.empty())
+            return searchTopologyConfig_.clusterId_;
+
+        if (!recommendTopologyConfig_.clusterId_.empty());
+            return recommendTopologyConfig_.clusterId_;
+
+        return "unknow"; //xxx
+    }
+
     bool isSearchMaster()
     {
         if (searchTopologyConfig_.enabled_

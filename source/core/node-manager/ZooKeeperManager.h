@@ -47,7 +47,7 @@ public:
         return izenelib::util::Singleton<ZooKeeperManager>::get();
     }
 
-    void init(const ZooKeeperConfig& zkConfig);
+    void init(const ZooKeeperConfig& zkConfig, const std::string& clusterId);
 
     void start();
 
@@ -72,6 +72,14 @@ public:
         clientKeeperList_.push_back(evtHandler);
     }
 
+    /**
+     * Initialize zookeeper znode namespace for coordination tasks
+     * This should be done before start collections.
+     */
+    bool initZooKeeperNameSpace();
+
+    bool isInitDone() { return isInitDone_; };
+
 private:
     /**
      * ZooKeeper service is stable, but in cases, such as network was interrupted,
@@ -84,6 +92,8 @@ private:
 
 private:
     ZooKeeperConfig zkConfig_;
+    std::string clusterId_;
+    bool isInitDone_;
 
     std::vector<ZooKeeperEventHandler*> clientKeeperList_;
 

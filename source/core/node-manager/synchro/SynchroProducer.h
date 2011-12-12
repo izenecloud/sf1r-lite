@@ -58,11 +58,9 @@ public:
     virtual void onChildrenChanged(const std::string& path);
 
 private:
-    void ensureParentNodes();
-
     void init();
 
-    bool doProcude(SynchroData& syncData);
+    bool doProduce(SynchroData& syncData);
 
     void watchConsumers();
 

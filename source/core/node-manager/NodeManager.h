@@ -75,11 +75,6 @@ protected:
 
 protected:
     /**
-     * Initializations needed to be done before start collections (run)
-     */
-    void initBeforeStart();
-
-    /**
      * Make sure zookeeper namaspace (znodes) is initialized properly
      */
     void initZkNameSpace();
@@ -95,7 +90,6 @@ protected:
     DistributedTopologyConfig dsTopologyConfig_;
 
     ZooKeeperClientPtr zookeeper_;
-    bool isInitBeforeStartDone_;
 
     // node state
     NodeStateType nodeState_;

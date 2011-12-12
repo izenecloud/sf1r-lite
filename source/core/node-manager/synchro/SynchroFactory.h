@@ -55,12 +55,6 @@ public:
         return ret;
     }
 
-    static void initSynchroNode(ZooKeeperClientPtr& zookeeper)
-    {
-        zookeeper->deleteZNode(NodeDef::getSynchroPath(), true);
-        zookeeper->createZNode(NodeDef::getSynchroPath());
-    }
-
 private:
     static std::map<std::string, SynchroProducerPtr> syncProducerMap_;
 };
