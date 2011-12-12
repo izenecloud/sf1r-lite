@@ -837,7 +837,7 @@ namespace sf1r
             unsigned int lastModifiedTime = static_cast<unsigned int>(
                 la::getFileLastModifiedTime( restrictDictPath.c_str() ) );
             urd.reset( new UpdatableRestrictDict( lastModifiedTime ) );
-            la::UpdateDictThread::staticUDT.addRelatedDict( restrictDictPath.c_str(), urd );
+            la::UpdateDictThread::staticUDT.addRelatedDict( restrictDictPath, urd );
 
             if( laConfigUnitIter->second.getMode() == "all" )
             {
