@@ -77,7 +77,7 @@ void ParentKeyStorage::Flush()
     if (buffer_db_.empty()) return;
 
     bool dirty = false;
-    for (BufferType::const_iterator it = buffer_db_.begin();
+    for (BufferType::iterator it = buffer_db_.begin();
             it != buffer_db_.end(); ++it)
     {
         std::vector<UString> value;
@@ -92,8 +92,8 @@ void ParentKeyStorage::Flush()
             std::vector<UString> new_value;
             new_value.reserve(value.size() - it->second.second.size());
 
-            std::vector<UString>::const_iterator vit0 = value.begin();
-            std::vector<UString>::const_iterator vit1 = it->second.second.begin();
+            std::vector<UString>::iterator vit0 = value.begin();
+            std::vector<UString>::iterator vit1 = it->second.second.begin();
             while (vit1 != it->second.second.end())
             {
                 if (*vit0 < *vit1)
@@ -118,8 +118,8 @@ void ParentKeyStorage::Flush()
             std::vector<UString> new_value;
             new_value.reserve(value.size() + it->second.first.size());
 
-            std::vector<UString>::const_iterator vit0 = value.begin();
-            std::vector<UString>::const_iterator vit1 = it->second.first.begin();
+            std::vector<UString>::iterator vit0 = value.begin();
+            std::vector<UString>::iterator vit1 = it->second.first.begin();
             while (vit0 != value.end() && vit1 != it->second.first.end())
             {
                 if (*vit0 < *vit1)
