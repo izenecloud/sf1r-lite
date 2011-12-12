@@ -35,10 +35,7 @@ public:
     };
 
 public:
-    SynchroConsumer(
-            const std::string& zkHosts,
-            int zkTimeout,
-            const std::string syncZkNode);
+    SynchroConsumer(boost::shared_ptr<ZooKeeper>& zookeeper, const std::string& syncZkNode);
 
     ~SynchroConsumer();
 
@@ -61,7 +58,7 @@ private:
     void resetWatch();
 
 private:
-    ZooKeeperClientPtr zookeeper_;
+    boost::shared_ptr<ZooKeeper> zookeeper_;
 
     std::string syncZkNode_;
 

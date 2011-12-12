@@ -33,10 +33,7 @@ void NodeManager::init(
     // initialization
     NodeDef::setClusterIdNodeName(dsTopologyConfig_.clusterId_);
 
-    zookeeper_ = ZooKeeperManager::get()->createClient(
-            dsUtilConfig_.zkConfig_.zkHosts_,
-            dsUtilConfig_.zkConfig_.zkRecvTimeout_,
-            this);
+    zookeeper_ = ZooKeeperManager::get()->createClient(this);
 
     nodeInfo_.replicaId_ = dsTopologyConfig_.curSF1Node_.replicaId_;
     nodeInfo_.nodeId_ = dsTopologyConfig_.curSF1Node_.nodeId_;

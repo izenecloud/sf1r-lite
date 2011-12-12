@@ -8,13 +8,14 @@ using namespace sf1r;
 
 
 SynchroProducer::SynchroProducer(
-        const std::string& zkHosts,
-        int zkTimeout,
+        boost::shared_ptr<ZooKeeper>& zookeeper,
         const std::string& syncZkNode)
-: syncZkNode_(syncZkNode)
+: zookeeper_(zookeeper)
+, syncZkNode_(syncZkNode)
 , isSynchronizing_(false)
 {
-    zookeeper_ = ZooKeeperManager::get()->createClient(zkHosts, zkTimeout, this, true);
+    if (zookeeper_)
+        zookeeper_->registerEventHandler(this);
 
     init();
 }

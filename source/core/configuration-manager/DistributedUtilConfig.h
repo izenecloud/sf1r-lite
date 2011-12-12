@@ -20,7 +20,7 @@ struct ZooKeeperConfig
     std::string toString()
     {
         std::stringstream ss;
-        ss << "[ZooKeeper Config] hosts: "<<zkHosts_<<" timeout: "<<zkRecvTimeout_<<endl;
+        ss << "[ZooKeeper Config] hosts: "<<zkHosts_<<" timeout: "<<zkRecvTimeout_<<std::endl;
         return ss.str();
     }
 };
@@ -42,12 +42,12 @@ struct DFSConfig
     std::string toString()
     {
         std::stringstream ss;
-        ss << "========= DistributedUtilConfig ========"<<endl;
+        ss << "========= DistributedUtilConfig ========"<<std::endl;
         ss << "[DFS Config] "<<type_
                 << (isSupportFuse_?", support fuse" : ", not support fuse")
                 << ", mount on "<<mountDir_
-                << ", server="<<server_<<":"<<port_<<endl;
-        ss << "========================================"<<endl;
+                << ", server="<<server_<<":"<<port_<<std::endl;
+        ss << "========================================"<<std::endl;
         return ss.str();
     }
 };

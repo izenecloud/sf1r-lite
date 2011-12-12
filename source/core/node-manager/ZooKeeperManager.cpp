@@ -30,9 +30,14 @@ ZooKeeperManager::~ZooKeeperManager()
     stop();
 }
 
+void ZooKeeperManager::init(const ZooKeeperConfig& zkConfig)
+{
+    zkConfig_ = zkConfig;
+}
+
 void ZooKeeperManager::start()
 {
-
+    ;
 }
 
 void ZooKeeperManager::stop()
@@ -43,15 +48,16 @@ void ZooKeeperManager::stop()
 
 ZooKeeperClientPtr
 ZooKeeperManager::createClient(
-        const std::string& hosts,
-        const int recvTimeout,
         ZooKeeperEventHandler* eventHandler,
         bool tryReconnect)
 {
     ZooKeeperClientPtr ret;
-    ret = ZooKeeperClientFactory::createZkClient(hosts, recvTimeout, tryReconnect);
+    ret = ZooKeeperClientFactory::createZkClient(
+                    zkConfig_.zkHosts_,
+                    zkConfig_.zkRecvTimeout_,
+                    tryReconnect);
 
-    if (NULL != eventHandler)
+    if (ret && NULL != eventHandler)
     {
         ret->registerEventHandler(eventHandler);
         registerMonitorEventHandler(eventHandler);

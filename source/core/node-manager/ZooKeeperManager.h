@@ -7,6 +7,8 @@
 #ifndef ZOO_KEEPER_MANAGER_H_
 #define ZOO_KEEPER_MANAGER_H_
 
+#include <configuration-manager/DistributedUtilConfig.h>
+
 #include <3rdparty/zookeeper/ZooKeeper.hpp>
 #include <3rdparty/zookeeper/ZooKeeperEvent.hpp>
 #include <util/singleton.h>
@@ -45,21 +47,19 @@ public:
         return izenelib::util::Singleton<ZooKeeperManager>::get();
     }
 
+    void init(const ZooKeeperConfig& zkConfig);
+
     void start();
 
     void stop();
 
     /**
      * Create a zookeeper client, all ZooKeeper Client should be created using this interface.
-     * @param hosts
-     * @param recvTimeout
      * @param eventHandler Set an event handler for created client if not NULL,
      *                     if needed, more handlers can be set to client directly by user.
      * @return
      */
     ZooKeeperClientPtr createClient(
-            const std::string& hosts,
-            const int recvTimeout,
             ZooKeeperEventHandler* eventHandler = NULL,
             bool tryReconnect = false);
 
@@ -83,6 +83,8 @@ private:
     void postMonitorEvent();
 
 private:
+    ZooKeeperConfig zkConfig_;
+
     std::vector<ZooKeeperEventHandler*> clientKeeperList_;
 
     long monitorInterval_;

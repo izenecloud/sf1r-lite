@@ -28,11 +28,7 @@ public:
     typedef boost::function< void( bool ) > callback_on_consumed_t;
 
 public:
-    SynchroProducer(
-            const std::string& zkHosts,
-            int zkTimeout,
-            const std::string& syncZkNode
-            );
+    SynchroProducer(boost::shared_ptr<ZooKeeper>& zookeeper, const std::string& syncZkNode);
 
     ~SynchroProducer();
 
@@ -76,7 +72,7 @@ private:
 
 
 private:
-    ZooKeeperClientPtr zookeeper_;
+    boost::shared_ptr<ZooKeeper> zookeeper_;
 
     std::string syncZkNode_;
 

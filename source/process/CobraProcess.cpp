@@ -215,6 +215,10 @@ bool CobraProcess::initDriverServer()
 
 bool CobraProcess::initNodeManager()
 {
+    // Initialize ZooKeeper for coordination tasks (whether distributed or not)
+    ZooKeeperManager::get()->init(SF1Config::get()->distributedUtilConfig_.zkConfig_);
+
+    // Initialization for distributed SF1, todo SE/RE
     SearchNodeManager::get()->init(
             SF1Config::get()->searchTopologyConfig_,
             SF1Config::get()->distributedUtilConfig_);
@@ -232,7 +236,7 @@ void CobraProcess::stopDriver()
 
 bool CobraProcess::startDistributedServer()
 {
-    // Start for distributed coordination tasks
+    // For distributed coordination tasks
     ZooKeeperManager::get()->start();
 
     // Start distributed topology managers
