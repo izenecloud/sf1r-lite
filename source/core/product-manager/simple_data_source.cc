@@ -27,7 +27,7 @@ bool SimpleDataSource::AddDocument(uint32_t docid, const PMDocumentType& doc)
     RebuildIndex_();
     return true;
 }
-    
+
 bool SimpleDataSource::UpdateDocument(uint32_t docid, const PMDocumentType& doc)
 {
     if(docid>document_list_->size()) return false;
@@ -77,6 +77,7 @@ void SimpleDataSource::GetDocIdList(const izenelib::util::UString& uuid, std::ve
     else
     {
         std::vector<uint32_t>& value = it->second;
+        docid_list.reserve(value.size());
         for(uint32_t i=0;i<value.size();i++)
         {
             if(value[i]!=exceptid)
@@ -123,7 +124,7 @@ bool SimpleDataSource::GetUuid_(uint32_t docid, izenelib::util::UString& uuid)
     uuid = it->second.get<izenelib::util::UString>();
     return true;
 }
-    
+
 bool SimpleDataSource::GetUuid_(uint32_t docid, std::string& suuid)
 {
     izenelib::util::UString uuid;
@@ -131,4 +132,3 @@ bool SimpleDataSource::GetUuid_(uint32_t docid, std::string& suuid)
     uuid.convertString(suuid, izenelib::util::UString::UTF_8);
     return true;
 }
-

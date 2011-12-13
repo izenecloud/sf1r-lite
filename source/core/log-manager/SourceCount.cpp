@@ -150,6 +150,7 @@ bool SourceCount::getMultiSlice(
                 col_parent,
                 pred);
 
+        row_list.reserve(row_list.size() + raw_column_map.size());
         for (map<string, vector<ColumnOrSuperColumn> >::const_iterator mit = raw_column_map.begin();
                 mit != raw_column_map.end(); ++mit)
         {

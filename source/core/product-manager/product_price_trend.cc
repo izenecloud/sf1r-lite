@@ -56,31 +56,12 @@ bool ProductPriceTrend::Init()
                 boost::filesystem::remove_all(db_path);
                 prop_tpc.back()->open();
             }
-//            else TraverseTPCBtree(*prop_tpc.back());
         }
     }
+    price_history_buffer_.reserve(10000);
 
     return true;
 }
-
-//void ProductPriceTrend::TraverseTPCBtree(TPCBTree& tpc_btree)
-//{
-//    typedef izenelib::am::AMIterator<TPCBTree> AMIteratorType;
-//    AMIteratorType iter(tpc_btree);
-//    AMIteratorType end;
-//    for(; iter != end; ++iter)
-//    {
-//        cout << "====== Key: " << iter->first << endl;
-//        const TPCQueue& v = iter->second;
-//
-//        cout << "====== Value: length = " << v.size() << endl;
-//        for (TPCQueue::const_iterator vit = v.begin();
-//                vit != v.end(); ++vit)
-//        {
-//            cout << "\t" << vit->first << "\t" << vit->second << endl;
-//        }
-//    }
-//}
 
 bool ProductPriceTrend::Insert(
         const string& docid,
@@ -153,13 +134,17 @@ bool ProductPriceTrend::Flush()
         ret = false;
 
     price_history_buffer_.clear();
+    price_history_buffer_.reserve(10000);
 
     return ret;
 }
 
 bool ProductPriceTrend::CronJob()
 {
-    //TODO
+    if (enable_tpc_)
+    {
+        //TODO
+    }
     return true;
 }
 
@@ -188,7 +173,10 @@ bool ProductPriceTrend::UpdateTPC_(uint32_t time_int, time_t timestamp)
         {
             TPCQueue& tpc_queue = tpc_cache[it->first][it->second];
             if (tpc_queue.empty())
+            {
+                tpc_queue.reserve(1001);
                 tpc_storage_[it->first][time_int]->get(it->second, tpc_queue);
+            }
 
             tpc_queue.push_back(make_pair(price_cut, string()));
             StripDocid_(tpc_queue.back().second, row_list[i].getDocId());
@@ -237,18 +225,20 @@ bool ProductPriceTrend::GetMultiPriceHistory(
         return false;
     }
 
+    history_list.reserve(history_list.size() + row_list.size());
     for (vector<PriceHistory>::const_iterator it = row_list.begin();
             it != row_list.end(); ++it)
     {
-        if (it->getPriceHistory().empty()) continue;
+        const PriceHistory::PriceHistoryType& price_history = it->getPriceHistory();
         PriceHistoryItem history_item;
-        for (PriceHistory::PriceHistoryType::const_iterator hit = it->getPriceHistory().begin();
-                hit != it->getPriceHistory().end(); ++hit)
+        history_item.reserve(price_history.size());
+        for (PriceHistory::PriceHistoryType::const_iterator hit = price_history.begin();
+                hit != price_history.end(); ++hit)
         {
             history_item.push_back(make_pair(string(), hit->second.value));
-            history_item.back().first.assign(boost::posix_time::to_iso_string(
-                        boost::posix_time::from_time_t(hit->first / 1000000 - timezone)
-                        + boost::posix_time::microseconds(hit->first % 1000000)));
+            history_item.back().first = boost::posix_time::to_iso_string(
+                    boost::posix_time::from_time_t(hit->first / 1000000 - timezone)
+                    + boost::posix_time::microseconds(hit->first % 1000000));
         }
         history_list.push_back(make_pair(string(), PriceHistoryItem()));
         StripDocid_(history_list.back().first, it->getDocId());
@@ -284,13 +274,14 @@ bool ProductPriceTrend::GetMultiPriceRange(
         return false;
     }
 
+    range_list.reserve(range_list.size() + row_list.size());
     for (vector<PriceHistory>::const_iterator it = row_list.begin();
             it != row_list.end(); ++it)
     {
-        if (it->getPriceHistory().empty()) continue;
+        const PriceHistory::PriceHistoryType& price_history = it->getPriceHistory();
         ProductPrice range_item;
-        for (PriceHistory::PriceHistoryType::const_iterator hit = it->getPriceHistory().begin();
-                hit != it->getPriceHistory().end(); ++hit)
+        for (PriceHistory::PriceHistoryType::const_iterator hit = price_history.begin();
+                hit != price_history.end(); ++hit)
         {
             range_item += hit->second;
         }
@@ -333,6 +324,7 @@ void ProductPriceTrend::StripDocid_(string& dest, const string& src) const
 
 void ProductPriceTrend::ParseDocidList_(vector<string>& dest, const vector<string>& src) const
 {
+    dest.reserve(dest.size() + src.size());
     for (uint32_t i = 0; i < src.size(); i++)
     {
         if (src[i].empty()) continue;
@@ -343,6 +335,7 @@ void ProductPriceTrend::ParseDocidList_(vector<string>& dest, const vector<strin
 
 void ProductPriceTrend::StripDocidList_(vector<string>& dest, const vector<string>& src) const
 {
+    dest.reserve(dest.size() + src.size());
     for (uint32_t i = 0; i < src.size(); i++)
     {
         if (src[i].empty()) continue;

@@ -55,15 +55,14 @@ void CommentCacheStorage::Flush()
         comment_cache_db_.get(it->first, value);
         value.second.reserve(value.second.size() + it->second.second.size());
         bool dirty = false;
-        std::vector<std::pair<uint32_t, UString> >::iterator vit
+        std::vector<std::pair<uint32_t, UString> >::const_iterator vit
             = it->second.second.begin();
         for (; vit != it->second.second.end(); ++vit)
         {
             if (value.first.insert(vit->first).second)
             {
                 dirty = true;
-                value.second.push_back(UString());
-                value.second.back().swap(vit->second);
+                value.second.push_back(vit->second);
             }
         }
         if (dirty)

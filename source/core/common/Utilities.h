@@ -39,12 +39,16 @@ public:
     template <typename T>
     static T fromBytes(const std::string& str)
     {
+        if (str.length() < sizeof(T))
+            return T();
+
         return *(reinterpret_cast<const T *>(str.c_str()));
     }
 
     template <typename AssocType, typename SeqType>
     static void getKeyList(SeqType& key_list, const AssocType& src_map)
     {
+        key_list.reserve(key_list.size() + src_map.size());
         for (typename AssocType::const_iterator it = src_map.begin();
                 it != src_map.end(); ++it)
         {
@@ -55,6 +59,7 @@ public:
     template <typename AssocType, typename SeqType>
     static void getValueList(SeqType& value_list, const AssocType& src_map)
     {
+        value_list.reserve(value_list.size() + src_map.size());
         for (typename AssocType::const_iterator it = src_map.begin();
                 it != src_map.end(); ++it)
         {

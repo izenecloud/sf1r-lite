@@ -70,8 +70,6 @@ public:
 
     bool CronJob();
 
-//    void TraverseTPCBtree(TPCBTree& tpc_btree);
-
     inline const std::string& getCollectionName() const
     {
         return collection_name_;
