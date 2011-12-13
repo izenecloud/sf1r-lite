@@ -12,6 +12,7 @@ headers:
   - controllers/RecommendController.h
   - controllers/ServiceController.h
   - controllers/ProductController.h
+  - controllers/SynonymController.h
 
 controllers:
   AutoFillController:
@@ -23,7 +24,7 @@ controllers:
     actions:
       - index
       - optimize_index
-      - index_query_log
+      - index_query_log     
 
   KeywordsController:
     actions:
@@ -115,3 +116,9 @@ controllers:
       - update_a_doc
       - get_multi_price_history
       - get_top_price_cut_list
+      
+  SynonymController:
+    actions:
+      - add_synonym
+      - update_synonym
+      - delete_synonym
