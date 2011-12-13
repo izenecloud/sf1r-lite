@@ -27,7 +27,7 @@ struct SF1Node
     {
         std::stringstream ss;
         ss << "--[Current SF1 Node] nodeId: "<<nodeId_<<" replicaId: "<<replicaId_
-           <<endl;
+           <<std::endl;
 
         ss << masterAgent_.toString();
         ss << workerAgent_.toString();
@@ -47,12 +47,12 @@ public:
     std::string toString()
     {
         std::stringstream ss;
-        ss << "==== [DistributedTopology] ===="<<endl;
+        ss << "==== [DistributedTopology] ===="<<std::endl;
         ss << "enabled ? "<<enabled_
-           <<" nodeNum: "<<nodeNum_<<" workerNum: "<<shardNum_<<endl;
+           <<" nodeNum: "<<nodeNum_<<" workerNum: "<<shardNum_<<std::endl;
 
         ss << curSF1Node_.toString();
-        ss << "==============================="<<endl;
+        ss << "==============================="<<std::endl;
         return ss.str();
     }
 

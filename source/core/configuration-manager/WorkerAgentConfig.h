@@ -39,12 +39,12 @@ public:
     std::string toString()
     {
         std::stringstream ss;
-        ss<<"[WorkerAgentConfig] enabled? "<<enabled_<<", shardid: "<<shardId_<<endl;
+        ss<<"[WorkerAgentConfig] enabled? "<<enabled_<<", shardid: "<<shardId_<<std::endl;
 
         std::map<std::string, ServiceUnit>::iterator it;
         for (it = serviceMap_.begin(); it != serviceMap_.end(); it++)
         {
-            ss<<"Service="<<it->first<<endl;
+            ss<<"Service="<<it->first<<std::endl;
         }
 
         return ss.str();
@@ -55,10 +55,6 @@ public:
     unsigned int shardId_;
 
     std::map<std::string, ServiceUnit> serviceMap_;
-
-    // xxx remove
-    std::string masterHost_;
-    unsigned int masterPort_;
 };
 
 }
