@@ -117,7 +117,7 @@ bool ZooKeeperManager::initZooKeeperNameSpace()
     {
         // base znode (must be created firstly)
         NodeDef::setClusterIdNodeName(clusterId_);
-        zookeeper->createZNode(NodeDef::getSF1RootPath());
+        zookeeper->createZNode(NodeDef::getSF1RootPath()); //xxx, if existed?
 
         // znode for synchro
         zookeeper->deleteZNode(NodeDef::getSynchroPath(), true); // clean

@@ -38,7 +38,7 @@ public:
     std::string toString()
     {
         std::stringstream ss;
-        ss<<"[MasterAgentConfig] enabled ? "<<enabled_<<" port : "<<port_<<endl;
+        ss<<"[MasterAgentConfig] enabled ? "<<enabled_<<endl;
 
         std::map<std::string, AggregatorUnit>::iterator it;
         for (it = aggregatorSupportMap_.begin(); it != aggregatorSupportMap_.end(); it++)
@@ -53,10 +53,9 @@ public:
 
 public:
     bool enabled_;
-    unsigned int port_;
     std::map<std::string, AggregatorUnit> aggregatorSupportMap_;
 
-    net::aggregator::AggregatorConfig aggregatorConfig_; //xxx
+    net::aggregator::AggregatorConfig aggregatorConfig_; //xxx remove
 };
 
 #endif /* MASTERAGENTCONFIG_H_ */

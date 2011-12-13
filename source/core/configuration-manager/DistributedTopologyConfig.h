@@ -17,10 +17,6 @@ namespace sf1r
 
 struct SF1Node
 {
-    std::string host_;
-    unsigned int baPort_;
-    unsigned int dataPort_;
-
     unsigned int nodeId_;
     unsigned int replicaId_;
 
@@ -31,7 +27,7 @@ struct SF1Node
     {
         std::stringstream ss;
         ss << "--[Current SF1 Node] nodeId: "<<nodeId_<<" replicaId: "<<replicaId_
-           <<" host: "<<host_<<"baPort: "<<baPort_<<" dataPort:"<<dataPort_<<endl;
+           <<endl;
 
         ss << masterAgent_.toString();
         ss << workerAgent_.toString();
@@ -39,7 +35,6 @@ struct SF1Node
         return ss.str();
     }
 };
-
 
 class DistributedTopologyConfig
 {
@@ -53,7 +48,7 @@ public:
     {
         std::stringstream ss;
         ss << "==== [DistributedTopology] ===="<<endl;
-        ss << "enabled ? "<<enabled_<<", clusterId "<<clusterId_
+        ss << "enabled ? "<<enabled_
            <<" nodeNum: "<<nodeNum_<<" workerNum: "<<shardNum_<<endl;
 
         ss << curSF1Node_.toString();
@@ -64,12 +59,32 @@ public:
 public:
     // golable topology configuration
     bool enabled_;
-    std::string clusterId_;
     unsigned int nodeNum_;
     unsigned int shardNum_;
 
     // current SF1 node configuration
     SF1Node curSF1Node_;
+};
+
+class DistributedCommonConfig
+{
+public:
+
+    std::string toString()
+    {
+        std::stringstream ss;
+        ss <<"[DistributedCommonConfig] Cluster Id: "<<clusterId_<<", Local Host: "<<localHost_
+           <<", BA Port: "<<baPort_<<", Worker Port:"<<workerPort_
+           <<", Notify Receiver Port:"<<notifyRecvPort_<<", Data Receiver Port:"<<dataRecvPort_;
+        return ss.str();
+    }
+
+    std::string clusterId_;
+    std::string localHost_;
+    unsigned int baPort_;
+    unsigned int workerPort_;
+    unsigned int notifyRecvPort_;
+    unsigned int dataRecvPort_;
 };
 
 }
