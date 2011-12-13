@@ -8,13 +8,14 @@ using namespace sf1r;
 
 
 SynchroProducer::SynchroProducer(
-        const std::string& zkHosts,
-        int zkTimeout,
+        boost::shared_ptr<ZooKeeper>& zookeeper,
         const std::string& syncZkNode)
-: syncZkNode_(syncZkNode)
+: zookeeper_(zookeeper)
+, syncZkNode_(syncZkNode)
 , isSynchronizing_(false)
 {
-    zookeeper_ = ZooKeeperManager::get()->createClient(zkHosts, zkTimeout, this, true);
+    if (zookeeper_)
+        zookeeper_->registerEventHandler(this);
 
     init();
 }
@@ -39,7 +40,7 @@ bool SynchroProducer::produce(SynchroData& syncData, callback_on_consumed_t call
         init();
     }
 
-    if (doProcude(syncData))
+    if (doProduce(syncData))
     {
         if (callback_on_consumed != NULL)
         {
@@ -123,12 +124,12 @@ void SynchroProducer::onChildrenChanged(const std::string& path)
 
 /// private
 
-bool SynchroProducer::doProcude(SynchroData& syncData)
+bool SynchroProducer::doProduce(SynchroData& syncData)
 {
+    bool produced = false;
+
     if (zookeeper_->isConnected())
     {
-        ensureParentNodes();
-
         if (!zookeeper_->createZNode(syncZkNode_, syncData.serialize()))
         {
             if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
@@ -136,44 +137,45 @@ bool SynchroProducer::doProcude(SynchroData& syncData)
                 zookeeper_->setZNodeData(syncZkNode_, syncData.serialize());
                 std::cout<<"[SynchroProducer] overwrote "<<syncZkNode_<<std::endl;
                 //std::cout<<"with data: "<<syncDataStr<<std::endl;
-                return true;
+                produced = true;
             }
 
-            std::cout<<"[SynchroProducer] failed to create "<<
-                    syncZkNode_<<" ("<<zookeeper_->getErrorString()<<")"<<std::endl;
-            return false;
+            std::cout<<"[SynchroProducer] Failed to create "<<syncZkNode_
+                     <<" ("<<zookeeper_->getErrorString()<<")"<<std::endl;
+
+            // wait ZooKeeperManager to init
+            std::cout<<"[SynchroProducer] waiting for znode initialization"<<std::endl;
+            sleep(10);
         }
         else
         {
             std::cout<<"[SynchroProducer] created "<<syncZkNode_<<std::endl;
-            //std::cout<<"with data: "<<syncDataStr<<std::endl;
-            return true;
+            produced = true;
         }
     }
-    else
-    {
-        std::cout<<"[SynchroProducer::produce] waiting for ZooKeeper Service ("
-                <<zookeeper_->getHosts()<<")"<<std::endl;
 
+    if (!produced)
+    {
         int retryCnt = 0;
         while (!zookeeper_->isConnected())
         {
+            std::cout<<"[SynchroProducer] connecting to ZooKeeper ("<<zookeeper_->getHosts()<<")"<<std::endl;
             zookeeper_->connect(true);
-
             if ((retryCnt++) > 10)
                 break;
         }
 
         if (!zookeeper_->isConnected())
         {
-            std::cout<< "Timeout waiting for ZooKeeper !!"<<std::endl;
-            return false;
+            std::cout<< "[SynchroProducer] connecting to ZooKeeper Timeout!"<<std::endl;
         }
         else
         {
-            return doProcude(syncData);
+            produced = doProduce(syncData);
         }
     }
+
+    return produced;
 }
 
 void SynchroProducer::watchConsumers()
@@ -290,13 +292,6 @@ void SynchroProducer::checkConsumers()
         // Synchronizing finished
         endSynchroning(info);
     }
-}
-
-void SynchroProducer::ensureParentNodes()
-{
-    //xxx ensure by factory?
-    zookeeper_->createZNode(NodeDef::getSF1RootPath());
-    zookeeper_->createZNode(NodeDef::getSynchroPath());
 }
 
 void SynchroProducer::init()

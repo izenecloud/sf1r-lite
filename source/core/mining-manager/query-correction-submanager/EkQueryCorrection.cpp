@@ -223,7 +223,7 @@ bool EkQueryCorrection::initialize()
     uint32_t interval = 30;
     update_thread_.setCheckInterval(interval);
     boost::shared_ptr<la::UpdatableDict> updater(new EnUpdatableDict(this) );
-    update_thread_.addRelatedDict(dictEN_.c_str(), updater);
+    update_thread_.addRelatedDict(dictEN_, updater);
     update_thread_.start();
     std::cout<<"[EkQueryCorrection] start checking English dictionary by interval of " << interval << " second(s)." << std::endl;
 

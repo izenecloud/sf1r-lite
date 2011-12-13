@@ -247,7 +247,8 @@ time_t Utilities::createTimeStamp(const string& text)
 
 bool Utilities::convertPropertyDataType(const std::string& property_name, const PropertyDataType& sf1r_type, izenelib::ir::indexmanager::PropertyType& type)
 {
-    if(property_name == "DATE" )
+    std::string p = boost::algorithm::to_lower_copy(property_name);
+    if(p == "date" )
     {
         type = int64_t(0);
         return true;
@@ -271,6 +272,7 @@ bool Utilities::convertPropertyDataType(const std::string& property_name, const 
     {
         return false;
     }
+    
 }
 
 }

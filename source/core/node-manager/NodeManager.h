@@ -37,11 +37,8 @@ public:
 
     /**
      * @param dsTopologyConfig
-     * @param dsUtilConfig
      */
-    void init(
-            const DistributedTopologyConfig& dsTopologyConfig,
-            const DistributedUtilConfig& dsUtilConfig);
+    void init(const DistributedTopologyConfig& dsTopologyConfig);
 
     /**
      * Start node manager
@@ -56,11 +53,6 @@ public:
     const DistributedTopologyConfig& getDSTopologyConfig() const
     {
         return dsTopologyConfig_;
-    }
-
-    const DistributedUtilConfig& getDSUtilConfig() const
-    {
-        return dsUtilConfig_;
     }
 
     const SF1NodeInfo& getNodeInfo() const
@@ -83,11 +75,6 @@ protected:
 
 protected:
     /**
-     * Initializations needed to be done before start collections (run)
-     */
-    void initBeforeStart();
-
-    /**
      * Make sure zookeeper namaspace (znodes) is initialized properly
      */
     void initZkNameSpace();
@@ -101,10 +88,8 @@ protected:
 
 protected:
     DistributedTopologyConfig dsTopologyConfig_;
-    DistributedUtilConfig dsUtilConfig_;
 
     ZooKeeperClientPtr zookeeper_;
-    bool isInitBeforeStartDone_;
 
     // node state
     NodeStateType nodeState_;

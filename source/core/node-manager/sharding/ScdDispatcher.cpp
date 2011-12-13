@@ -4,6 +4,7 @@
 
 #include <net/distribute/DataTransfer.h>
 
+#include <boost/thread.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/assert.hpp>
 
@@ -58,6 +59,9 @@ bool ScdDispatcher::dispatch(const std::string& dir, unsigned int docNum)
 
             if (docProcessed >= docNum && docNum > 0)
                 break;
+
+            // for interruption
+            boost::this_thread::interruption_point();
         }
         std::cout<<"\rProcessed documents: "<<docProcessed<<std::flush;
         std::cout<<std::endl;

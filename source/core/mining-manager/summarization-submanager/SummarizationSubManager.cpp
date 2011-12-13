@@ -151,8 +151,8 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
         return;
 
     ilplib::langid::Analyzer* langIdAnalyzer = document_manager_->getLangId();
-
     corpus_->start_new_coll(key);
+
     for (std::vector<UString>::const_iterator it = content_list.begin();
             it != content_list.end(); ++it)
     {
