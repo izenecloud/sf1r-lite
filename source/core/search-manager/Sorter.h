@@ -100,7 +100,7 @@ public:
     boost::shared_ptr<PropertyData> getCTRPropertyData(const std::string& propertyName, PropertyDataType propertyType);
 
 private:
-    bool loadSortData(const std::string& property, PropertyDataType type);
+    void loadSortData(const std::string& property, PropertyDataType type);
 
     bool split_int(const izenelib::util::UString& szText, int64_t& out, izenelib::util::UString::EncodingType encoding, char Separator = ' ');
 
