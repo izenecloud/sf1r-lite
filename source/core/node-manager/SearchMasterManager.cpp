@@ -13,10 +13,7 @@ SearchMasterManager::SearchMasterManager()
 bool SearchMasterManager::init()
 {
     // initialize zookeeper client
-    zookeeper_ = ZooKeeperManager::get()->createClient(
-            SearchNodeManager::get()->getDSUtilConfig().zkConfig_.zkHosts_,
-            SearchNodeManager::get()->getDSUtilConfig().zkConfig_.zkRecvTimeout_,
-            this);
+    zookeeper_ = ZooKeeperManager::get()->createClient(this);
 
     if (!zookeeper_)
         return false;

@@ -56,32 +56,12 @@ bool ProductPriceTrend::Init()
                 boost::filesystem::remove_all(db_path);
                 prop_tpc.back()->open();
             }
-//            else TraverseTPCBtree(*prop_tpc.back());
         }
     }
     price_history_buffer_.reserve(10000);
 
     return true;
 }
-
-//void ProductPriceTrend::TraverseTPCBtree(TPCBTree& tpc_btree)
-//{
-//    typedef izenelib::am::AMIterator<TPCBTree> AMIteratorType;
-//    AMIteratorType iter(tpc_btree);
-//    AMIteratorType end;
-//    for(; iter != end; ++iter)
-//    {
-//        cout << "====== Key: " << iter->first << endl;
-//        const TPCQueue& v = iter->second;
-//
-//        cout << "====== Value: length = " << v.size() << endl;
-//        for (TPCQueue::const_iterator vit = v.begin();
-//                vit != v.end(); ++vit)
-//        {
-//            cout << "\t" << vit->first << "\t" << vit->second << endl;
-//        }
-//    }
-//}
 
 bool ProductPriceTrend::Insert(
         const string& docid,
@@ -161,7 +141,10 @@ bool ProductPriceTrend::Flush()
 
 bool ProductPriceTrend::CronJob()
 {
-    //TODO
+    if (enable_tpc_)
+    {
+        //TODO
+    }
     return true;
 }
 
@@ -189,9 +172,11 @@ bool ProductPriceTrend::UpdateTPC_(uint32_t time_int, time_t timestamp)
                 it != prop_item.second.end(); ++it)
         {
             TPCQueue& tpc_queue = tpc_cache[it->first][it->second];
-            tpc_queue.reserve(1001);
             if (tpc_queue.empty())
+            {
+                tpc_queue.reserve(1001);
                 tpc_storage_[it->first][time_int]->get(it->second, tpc_queue);
+            }
 
             tpc_queue.push_back(make_pair(price_cut, string()));
             StripDocid_(tpc_queue.back().second, row_list[i].getDocId());

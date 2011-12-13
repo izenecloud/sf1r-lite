@@ -163,7 +163,6 @@ private:
     std::string identity_;
 };
 
-typedef izenelib::util::Singleton<WorkerServer> WorkerServerSingle;
 
 }
 

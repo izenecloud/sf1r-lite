@@ -440,62 +440,108 @@ public:
         return false;
     }
 
-    bool isDistributedSearchNode()
+    /**
+     * Distributed utility
+     * @{
+     */
+
+    std::string getClusterId()
     {
-        return searchTopologyConfig_.enabled_;
+        if (searchTopologyConfig_.enabled_)
+            return searchTopologyConfig_.clusterId_;
+
+        if (recommendTopologyConfig_.enabled_)
+            return recommendTopologyConfig_.clusterId_;
+
+        if (!searchTopologyConfig_.clusterId_.empty())
+            return searchTopologyConfig_.clusterId_;
+
+        if (!recommendTopologyConfig_.clusterId_.empty());
+            return recommendTopologyConfig_.clusterId_;
+
+        return "unknow"; //xxx
     }
 
-    bool isSearchMaster()
+    /// Dsitributed search config
+    bool isDistributedSearchNode() { return isDistributedNode(searchTopologyConfig_); }
+    bool isSearchMaster() { return isMaster(searchTopologyConfig_); }
+    bool checkSearchMasterAggregator(const std::string& aggregatorName)
+    { return checkMasterAggregator(searchTopologyConfig_, aggregatorName); }
+    bool isSearchWorker() { return isWorker(searchTopologyConfig_); }
+    bool checkSearchWorker(const std::string& workerName)
+    { return checkWorker(searchTopologyConfig_, workerName); }
+
+    /// Dsitributed recommend config
+    bool isDistributedRecommendNode() { return isDistributedNode(recommendTopologyConfig_); }
+    bool isRecommendMaster() { return isMaster(recommendTopologyConfig_); }
+    bool checkRecommendMasterAggregator(const std::string& aggregatorName)
+    { return checkMasterAggregator(recommendTopologyConfig_, aggregatorName); }
+    bool isRecommendWorker() { return isWorker(recommendTopologyConfig_); }
+    bool checkRecommendWorker(const std::string& workerName)
+    { return checkWorker(recommendTopologyConfig_, workerName); }
+
+    bool isDistributedNode(DistributedTopologyConfig& rTopologyConfig)
     {
-        if (searchTopologyConfig_.enabled_
-                && searchTopologyConfig_.curSF1Node_.masterAgent_.enabled_
-                && searchTopologyConfig_.curSF1Node_.masterAgent_.aggregatorSupportMap_.size() > 0)
+        if (rTopologyConfig.enabled_)
         {
             return true;
         }
-
         return false;
     }
 
-    bool checkSearchMasterAggregator(const std::string& aggregatorName)
+    bool isMaster(DistributedTopologyConfig& rTopologyConfig)
+    {
+        if (rTopologyConfig.enabled_
+            && rTopologyConfig.curSF1Node_.masterAgent_.enabled_
+            && rTopologyConfig.curSF1Node_.masterAgent_.aggregatorSupportMap_.size() > 0)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    bool checkMasterAggregator(DistributedTopologyConfig& rTopologyConfig, const std::string& aggregatorName)
     {
         std::string downcaseName = aggregatorName;
         downCase(downcaseName);
-        if (searchTopologyConfig_.enabled_
-                && searchTopologyConfig_.curSF1Node_.masterAgent_.enabled_
-                && searchTopologyConfig_.curSF1Node_.masterAgent_.checkAggregatorByName(downcaseName))
+
+        if (rTopologyConfig.enabled_
+            && rTopologyConfig.curSF1Node_.masterAgent_.enabled_
+            && rTopologyConfig.curSF1Node_.masterAgent_.checkAggregatorByName(downcaseName))
         {
             return true;
         }
-
         return false;
     }
 
-    bool isSearchWorker()
+    bool isWorker(DistributedTopologyConfig& rTopologyConfig)
     {
-        if (searchTopologyConfig_.enabled_
-                && searchTopologyConfig_.curSF1Node_.workerAgent_.enabled_
-                && searchTopologyConfig_.curSF1Node_.workerAgent_.serviceMap_.size() > 0)
+        if (rTopologyConfig.enabled_
+            && rTopologyConfig.curSF1Node_.workerAgent_.enabled_
+            && rTopologyConfig.curSF1Node_.workerAgent_.serviceMap_.size() > 0)
         {
             return true;
         }
-
         return false;
     }
 
-    bool checkSearchWorker(const std::string& workerName)
+    bool checkWorker(DistributedTopologyConfig& rTopologyConfig, const std::string& workerName)
     {
         std::string downcaseName = workerName;
         downCase(downcaseName);
-        if (searchTopologyConfig_.enabled_
-                && searchTopologyConfig_.curSF1Node_.workerAgent_.enabled_
-                && searchTopologyConfig_.curSF1Node_.workerAgent_.checkServiceByName(downcaseName))
+
+        if (rTopologyConfig.enabled_
+            && rTopologyConfig.curSF1Node_.workerAgent_.enabled_
+            && rTopologyConfig.curSF1Node_.workerAgent_.checkServiceByName(downcaseName))
         {
             return true;
         }
-
         return false;
     }
+
+    /**
+     * @}
+     */
 
     bool checkCollectionExist(const std::string& collectionName)
     {
