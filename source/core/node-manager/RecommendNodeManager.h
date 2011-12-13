@@ -23,6 +23,11 @@ public:
         CLASSNAME = "[RecommendNodeManager]";
     }
 
+    static RecommendNodeManager* get()
+    {
+        return izenelib::util::Singleton<RecommendNodeManager>::get();
+    }
+
 protected:
     virtual void startMasterManager()
     {
