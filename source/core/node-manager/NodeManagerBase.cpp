@@ -1,4 +1,4 @@
-#include "NodeManager.h"
+#include "NodeManagerBase.h"
 #include "SuperNodeManager.h"
 
 #include <sstream>
@@ -6,19 +6,19 @@
 using namespace sf1r;
 
 
-NodeManager::NodeManager()
+NodeManagerBase::NodeManagerBase()
 : nodeState_(NODE_STATE_INIT)
 , masterStarted_(false)
-, CLASSNAME("[NodeManager]")
+, CLASSNAME("[NodeManagerBase]")
 {
 }
 
-NodeManager::~NodeManager()
+NodeManagerBase::~NodeManagerBase()
 {
     stop();
 }
 
-void NodeManager::init(const DistributedTopologyConfig& dsTopologyConfig)
+void NodeManagerBase::init(const DistributedTopologyConfig& dsTopologyConfig)
 {
     // Initializations which should be done before collections started.
 
@@ -38,7 +38,7 @@ void NodeManager::init(const DistributedTopologyConfig& dsTopologyConfig)
     nodePath_ = NodeDef::getNodePath(nodeInfo_.replicaId_, nodeInfo_.nodeId_);
 }
 
-void NodeManager::start()
+void NodeManagerBase::start()
 {
     if (!dsTopologyConfig_.enabled_)
     {
@@ -58,7 +58,7 @@ void NodeManager::start()
     }
 }
 
-void NodeManager::stop()
+void NodeManagerBase::stop()
 {
     if (masterStarted_)
     {
@@ -68,7 +68,7 @@ void NodeManager::stop()
     leaveCluster();
 }
 
-void NodeManager::process(ZooKeeperEvent& zkEvent)
+void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
 {
     std::cout<<CLASSNAME<< zkEvent.toString();
 
@@ -91,7 +91,7 @@ void NodeManager::process(ZooKeeperEvent& zkEvent)
 
 /// protected ////////////////////////////////////////////////////////////////////
 
-void NodeManager::initZkNameSpace()
+void NodeManagerBase::initZkNameSpace()
 {
     // Make sure zookeeper namaspace (znodes) is initialized properly
     zookeeper_->createZNode(NodeDef::getSF1RootPath());
@@ -102,7 +102,7 @@ void NodeManager::initZkNameSpace()
     zookeeper_->createZNode(NodeDef::getReplicaPath(dsTopologyConfig_.curSF1Node_.replicaId_), ss.str());
 }
 
-void NodeManager::enterCluster()
+void NodeManagerBase::enterCluster()
 {
     boost::unique_lock<boost::mutex> lock(mutex_);
 
@@ -169,7 +169,7 @@ void NodeManager::enterCluster()
     }
 }
 
-void NodeManager::leaveCluster()
+void NodeManagerBase::leaveCluster()
 {
     zookeeper_->deleteZNode(nodePath_, true);
 

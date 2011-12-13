@@ -1,16 +1,16 @@
-#include "MasterManager.h"
+#include "MasterManagerBase.h"
 
 #include <boost/lexical_cast.hpp>
 
 using namespace sf1r;
 
-MasterManager::MasterManager()
+MasterManagerBase::MasterManagerBase()
 : masterState_(MASTER_STATE_INIT)
-, CLASSNAME("[MasterManager]")
+, CLASSNAME("[MasterManagerBase]")
 {
 }
 
-void MasterManager::start()
+void MasterManagerBase::start()
 {
     // call once
     if (masterState_ == MASTER_STATE_INIT)
@@ -40,13 +40,13 @@ void MasterManager::start()
     }
 }
 
-void MasterManager::stop()
+void MasterManagerBase::stop()
 {
     // stop events on exit
     zookeeper_->disconnect();
 }
 
-bool MasterManager::getShardReceiver(
+bool MasterManagerBase::getShardReceiver(
         unsigned int shardid,
         std::string& host,
         unsigned int& recvPort)
@@ -66,7 +66,7 @@ bool MasterManager::getShardReceiver(
     }
 }
 
-void MasterManager::process(ZooKeeperEvent& zkEvent)
+void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
 {
     std::cout <<CLASSNAME<<state2string(masterState_)<<" "<<zkEvent.toString();
     // xxx, handle all events here?
@@ -81,7 +81,7 @@ void MasterManager::process(ZooKeeperEvent& zkEvent)
     }
 }
 
-void MasterManager::onNodeCreated(const std::string& path)
+void MasterManagerBase::onNodeCreated(const std::string& path)
 {
     if (masterState_ == MASTER_STATE_STARTING_WAIT_WORKERS)
     {
@@ -103,7 +103,7 @@ void MasterManager::onNodeCreated(const std::string& path)
     }
 }
 
-void MasterManager::onNodeDeleted(const std::string& path)
+void MasterManagerBase::onNodeDeleted(const std::string& path)
 {
     if (masterState_ == MASTER_STATE_STARTED)
     {
@@ -112,7 +112,7 @@ void MasterManager::onNodeDeleted(const std::string& path)
     }
 }
 
-void MasterManager::onChildrenChanged(const std::string& path)
+void MasterManagerBase::onChildrenChanged(const std::string& path)
 {
     if (masterState_ > MASTER_STATE_STARTING_WAIT_ZOOKEEPER)
     {
@@ -121,7 +121,7 @@ void MasterManager::onChildrenChanged(const std::string& path)
 }
 
 
-void MasterManager::showWorkers()
+void MasterManagerBase::showWorkers()
 {
     WorkerMapT::iterator it;
     for (it = workerMap_.begin(); it != workerMap_.end(); it++)
@@ -132,7 +132,7 @@ void MasterManager::showWorkers()
 
 /// protected ////////////////////////////////////////////////////////////////////
 
-std::string MasterManager::state2string(MasterStateType e)
+std::string MasterManagerBase::state2string(MasterStateType e)
 {
     std::stringstream ss;
     switch (e)
@@ -163,7 +163,7 @@ std::string MasterManager::state2string(MasterStateType e)
     return "UNKNOWN";
 }
 
-void MasterManager::watchAll()
+void MasterManagerBase::watchAll()
 {
     // for replica change
     std::vector<std::string> childrenList;
@@ -182,7 +182,7 @@ void MasterManager::watchAll()
     }
 }
 
-void MasterManager::doStart()
+void MasterManagerBase::doStart()
 {
     detectReplicaSet();
 
@@ -194,7 +194,7 @@ void MasterManager::doStart()
     registerSearchServer();
 }
 
-int MasterManager::detectWorkers()
+int MasterManagerBase::detectWorkers()
 {
     boost::lock_guard<boost::mutex> lock(mutex_);
     //std::cout<<CLASSNAME<<" detecting Workers ..."<<std::endl;
@@ -308,7 +308,7 @@ int MasterManager::detectWorkers()
     return good;
 }
 
-void MasterManager::detectReplicaSet(const std::string& zpath)
+void MasterManagerBase::detectReplicaSet(const std::string& zpath)
 {
     //std::cout<<CLASSNAME<<" detecting replicas ..."<<std::endl;
 
@@ -353,7 +353,7 @@ void MasterManager::detectReplicaSet(const std::string& zpath)
     }
 }
 
-void MasterManager::failover(const std::string& zpath)
+void MasterManagerBase::failover(const std::string& zpath)
 {
     masterState_ = MASTER_STATE_FAILOVERING; //xxx, use lock
 
@@ -380,7 +380,7 @@ void MasterManager::failover(const std::string& zpath)
     masterState_ = MASTER_STATE_STARTED;
 }
 
-bool MasterManager::failover(boost::shared_ptr<WorkerNode>& pworkerNode)
+bool MasterManagerBase::failover(boost::shared_ptr<WorkerNode>& pworkerNode)
 {
     pworkerNode->isGood_ = false;
     for (size_t i = 0; i < replicaIdList_.size(); i++)
@@ -447,7 +447,7 @@ bool MasterManager::failover(boost::shared_ptr<WorkerNode>& pworkerNode)
 }
 
 
-void MasterManager::recover(const std::string& zpath)
+void MasterManagerBase::recover(const std::string& zpath)
 {
     masterState_ = MASTER_STATE_RECOVERING; // lock?
 
@@ -493,7 +493,7 @@ void MasterManager::recover(const std::string& zpath)
     masterState_ = MASTER_STATE_STARTED;
 }
 
-void MasterManager::registerSearchServer()
+void MasterManagerBase::registerSearchServer()
 {
     // This Master is ready to serve
     std::string path = NodeDef::getSF1ServicePath();
@@ -513,14 +513,14 @@ void MasterManager::registerSearchServer()
     }
 }
 
-void MasterManager::deregisterSearchServer()
+void MasterManagerBase::deregisterSearchServer()
 {
     zookeeper_->deleteZNode(serverRealPath_);
 
     std::cout<<CLASSNAME<<" Master is boken down... " <<std::endl;
 }
 
-void MasterManager::resetAggregatorConfig()
+void MasterManagerBase::resetAggregatorConfig()
 {
     //std::cout<<CLASSNAME<<" set config for "<<aggregatorList_.size()<<" aggregators"<<std::endl;
 

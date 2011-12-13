@@ -7,14 +7,14 @@
 #ifndef SEARCH_MASTER_MANAGER_H_
 #define SEARCH_MASTER_MANAGER_H_
 
-#include "MasterManager.h"
+#include "MasterManagerBase.h"
 
 #include <util/singleton.h>
 
 namespace sf1r
 {
 
-class SearchMasterManager : public MasterManager
+class SearchMasterManager : public MasterManagerBase
 {
 public:
     SearchMasterManager();
