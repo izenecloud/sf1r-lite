@@ -50,7 +50,7 @@ public:
         bfs::create_directories(work_dir_);
     }
     
-    void Merge(const std::string& scdPath)
+    void Merge(const std::string& scdPath, const std::string& output_dir)
     {
         std::cout<<"Start merging, properties list : "<<std::endl;
         for(uint32_t i=0;i<propertyNameList_.size();i++)
@@ -145,7 +145,19 @@ public:
         izenelib::am::ssf::Sorter<uint32_t, uint64_t>::Sort(working_file);
         izenelib::am::ssf::Joiner<uint32_t, uint64_t, ValueType> joiner(working_file);
         joiner.Open();
-        ScdWriter scd_writer("./", INSERT_SCD);
+        if(!boost::filesystem::exists(output_dir))
+        {
+            boost::filesystem::create_directories(output_dir);
+        }
+        else
+        {
+            if(boost::filesystem::is_regular_file(output_dir))
+            {
+                std::cerr<<output_dir<<" is a file"<<std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+        ScdWriter scd_writer(output_dir, INSERT_SCD);
         uint64_t key;
         std::vector<ValueType> value_list;
         
@@ -207,10 +219,12 @@ int main(int argc, char** argv)
 {
     std::string scdPath = argv[1];
     std::string properties = argv[2];
+    std::string output_dir = argv[3];
     std::vector<std::string> p_vector;
     boost::algorithm::split( p_vector, properties, boost::algorithm::is_any_of(",") );
     ScdMerger merger("./scd_merger_workdir", p_vector);
-    merger.Merge(scdPath);
+    merger.Merge(scdPath, output_dir);
+    bfs::remove_all("./scd_merger_workdir");
 }
 
 

@@ -1,9 +1,10 @@
 require 'scd_parser'
 require 'scd_writer'
 require 'tuan_category'
+require 'fileutils'
 
 scd_file = ARGV[0]
-
+output_dir = ARGV[1]
 
 classifer = Classifier.new
 classifer.load "./tuan.owl"
@@ -26,8 +27,17 @@ parser = ScdParser.new(scd_file)
 #   p docid
 #   p doc_list[docid]['TimeEnd']
 # end
+if File.exist? output_dir
+  if File.file? output_dir
+    $stderr.puts "#{output_dir} is a file".
+    abort
+  end
+else
+  Dir.mkdir output_dir
+end
 
-writer = ScdWriter.new("./")
+
+writer = ScdWriter.new(output_dir)
 count = 0
 all_count = 0
 parser.each do |doc|
