@@ -36,6 +36,7 @@ void gregorianISO8601Parser(const std::string& dataStr, struct tm& atm)
 
         if(dataStr.find("/") != string::npos)
         {
+            try{
             std::vector<std::string> ps = split(dataStr,"/");
             size_t len = ps.size();
             if(len == 3)
@@ -50,6 +51,11 @@ void gregorianISO8601Parser(const std::string& dataStr, struct tm& atm)
                     atm.tm_mon = month >= 0 ? month:0;                          // tm_mon is 0 based
                     atm.tm_mday = day >0 ? day:1;
                 }
+            }
+            }catch(std::exception& e)
+            {
+                ptime now = second_clock::local_time();
+                atm = to_tm(now);
             }
         }
     }
@@ -103,6 +109,7 @@ void convert(const std::string& dataStr, struct tm& atm)
     else if((dataStr.size() == 14)&&(isAllDigit(dataStr)))
     {
         /// format 20091009163011
+        try{
         int offsets[] = {4,2,2,2,2,2};
 
         boost::offset_separator f(offsets, offsets+5);
@@ -124,6 +131,11 @@ void convert(const std::string& dataStr, struct tm& atm)
         atm.tm_hour = datetime[3] > 0?datetime[3]:0;
         atm.tm_min = datetime[4] > 0?datetime[4]:0;
         atm.tm_sec = datetime[5] > 0?datetime[5]:0;
+        }catch(std::exception& e)
+        {
+            ptime now = second_clock::local_time();
+            atm = to_tm(now);
+        }
     }
     else
     {

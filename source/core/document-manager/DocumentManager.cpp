@@ -24,6 +24,8 @@
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/archive/archive_exception.hpp>
+#include <boost/algorithm/string.hpp>
+
 #include <protect/RestrictMacro.h>
 
 
@@ -33,6 +35,8 @@ namespace sf1r
 const std::string DocumentManager::ACL_FILE = "ACLTable";
 const std::string DocumentManager::PROPERTY_LENGTH_FILE = "PropertyLengthDb.xml";
 const std::string DocumentManager::PROPERTY_BLOCK_SUFFIX = ".blocks";
+const std::string DOCID("DOCID");
+const std::string DATE("DATE");
 
 ilplib::langid::Factory* DocumentManager::langIdFactory = ilplib::langid::Factory::instance();
 
@@ -183,7 +187,7 @@ bool DocumentManager::updatePartialDocument(const Document& document)
             continue;
         }
 
-        if (it->first != "DOCID" && it->first != "DATE")
+        if(! boost::iequals(it->first,DOCID) && ! boost::iequals(it->first,DATE))
         {
             oldDoc.updateProperty(it->first, it->second);
         }

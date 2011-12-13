@@ -24,6 +24,7 @@
 #include <glog/logging.h>
 
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
 namespace bfs = boost::filesystem;
 
 using izenelib::util::UString;
@@ -37,6 +38,8 @@ namespace
 {
 /** the directory for scd file backup */
 const char* SCD_BACKUP_DIR = "backup";
+const std::string DOCID("DOCID");
+const std::string DATE("DATE");
 }
 
 IndexWorker::IndexWorker(
@@ -1296,7 +1299,7 @@ bool IndexWorker::preparePartialDocument_(
     typedef Document::property_const_iterator iterator;
     for (iterator it = document.propertyBegin(), itEnd = document.propertyEnd(); it
                  != itEnd; ++it) {
-        if (it->first != "DOCID" && it->first != "DATE")
+        if(! boost::iequals(it->first,DOCID) && ! boost::iequals(it->first,DATE))
         {
             std::set<PropertyConfig, PropertyComp>::iterator iter;
             PropertyConfig temp;
@@ -1310,7 +1313,7 @@ bool IndexWorker::preparePartialDocument_(
                 continue;
             }
 
-            if (iter->isIndex() && iter->getIsFilter())
+            if (iter->isIndex() && iter->getIsFilter() && !iter->isAnalyzed())
             {
                 indexerPropertyConfig.setPropertyId(iter->getPropertyId());
                 indexerPropertyConfig.setName(iter->getName());
@@ -1328,6 +1331,7 @@ bool IndexWorker::preparePartialDocument_(
                 stringValue->convertString(str, encoding);
                 if (iter->getType() == INT_PROPERTY_TYPE)
                 {
+                    std::cout<<"property "<<it->first<<" "<<*stringValue<<std::endl;
                     if (iter->getIsMultiValue())
                     {
                         MultiValuePropertyType props;
