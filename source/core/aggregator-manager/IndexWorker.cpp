@@ -24,7 +24,6 @@
 #include <glog/logging.h>
 
 #include <boost/filesystem.hpp>
-#include <boost/algorithm/string/case_conv.hpp>
 namespace bfs = boost::filesystem;
 
 using izenelib::util::UString;
@@ -1331,7 +1330,6 @@ bool IndexWorker::preparePartialDocument_(
                 stringValue->convertString(str, encoding);
                 if (iter->getType() == INT_PROPERTY_TYPE)
                 {
-                    std::cout<<"property "<<it->first<<" "<<*stringValue<<std::endl;
                     if (iter->getIsMultiValue())
                     {
                         MultiValuePropertyType props;
