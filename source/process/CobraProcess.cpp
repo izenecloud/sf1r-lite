@@ -247,7 +247,7 @@ bool CobraProcess::startDistributedServer()
     if (SF1Config::get()->isSearchWorker() || SF1Config::get()->isRecommendWorker())
     {
         //std::string localHost = SF1Config::get()->distributedCommonConfig_.localHost_;
-        std::string localHost = "172.0.0.1";
+        std::string localHost = "127.0.0.1";
         uint16_t workerPort = SF1Config::get()->distributedCommonConfig_.workerPort_;
         std::size_t threadNum = SF1Config::get()->brokerAgentConfig_.threadNum_;
 

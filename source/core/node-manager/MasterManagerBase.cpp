@@ -68,7 +68,7 @@ bool MasterManagerBase::getShardReceiver(
 
 void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
 {
-    std::cout <<CLASSNAME<<state2string(masterState_)<<" "<<zkEvent.toString();
+    //std::cout <<CLASSNAME<<state2string(masterState_)<<" "<<zkEvent.toString();
     // xxx, handle all events here?
 
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)

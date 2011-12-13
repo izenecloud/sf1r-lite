@@ -109,7 +109,7 @@ void ZooKeeperManager::postMonitorEvent()
 
 bool ZooKeeperManager::initZooKeeperNameSpace()
 {
-    std::cout<<"ZooKeeperManager::initZooKeeperNameSpace"<<std::endl;
+    //std::cout<<"ZooKeeperManager::initZooKeeperNameSpace"<<std::endl;
 
     ZooKeeperClientPtr zookeeper = createClient(NULL, true);
 
