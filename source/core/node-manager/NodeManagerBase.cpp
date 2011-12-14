@@ -20,22 +20,17 @@ NodeManagerBase::~NodeManagerBase()
 
 void NodeManagerBase::init(const DistributedTopologyConfig& dsTopologyConfig)
 {
-    // Initializations which should be done before collections started.
-
-    // set distributed configurations
+    // set distributed topology configuration
     dsTopologyConfig_ = dsTopologyConfig;
-
-    // initialization
-    NodeDef::setClusterIdNodeName(SuperNodeManager::get()->getClusterId());
-
-    zookeeper_ = ZooKeeperManager::get()->createClient(this);
 
     nodeInfo_.replicaId_ = dsTopologyConfig_.curSF1Node_.replicaId_;
     nodeInfo_.nodeId_ = dsTopologyConfig_.curSF1Node_.nodeId_;
     nodeInfo_.host_ = SuperNodeManager::get()->getLocalHostIP();
     nodeInfo_.baPort_ = SuperNodeManager::get()->getBaPort();
 
-    nodePath_ = NodeDef::getNodePath(nodeInfo_.replicaId_, nodeInfo_.nodeId_);
+    zookeeper_ = ZooKeeperManager::get()->createClient(this);
+
+    setZNodePaths(); // virtual
 }
 
 void NodeManagerBase::start()
@@ -94,12 +89,12 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
 void NodeManagerBase::initZkNameSpace()
 {
     // Make sure zookeeper namaspace (znodes) is initialized properly
-    zookeeper_->createZNode(NodeDef::getSF1RootPath());
+    zookeeper_->createZNode(clusterPath_);
     // topology
-    zookeeper_->createZNode(NodeDef::getSF1TopologyPath());
+    zookeeper_->createZNode(topologyPath_);
     std::stringstream ss;
-    ss << dsTopologyConfig_.curSF1Node_.replicaId_;
-    zookeeper_->createZNode(NodeDef::getReplicaPath(dsTopologyConfig_.curSF1Node_.replicaId_), ss.str());
+    ss << nodeInfo_.replicaId_;
+    zookeeper_->createZNode(replicaPath_, ss.str());
 }
 
 void NodeManagerBase::enterCluster()
@@ -124,28 +119,28 @@ void NodeManagerBase::enterCluster()
         }
     }
 
-    // Initialize zookeeper namespace for SF1 !!
+    // xxx Initialize zookeeper namespace for SF1
     initZkNameSpace();
 
-    // Set node info
-    NodeData ndata;
-    ndata.setValue(NodeData::NDATA_KEY_HOST, SuperNodeManager::get()->getLocalHostIP());
-    ndata.setValue(NodeData::NDATA_KEY_BA_PORT, SuperNodeManager::get()->getBaPort());
-    ndata.setValue(NodeData::NDATA_KEY_DATA_PORT, SuperNodeManager::get()->getDataReceiverPort());
-    ndata.setValue(NodeData::NDATA_KEY_NOTIFY_PORT, SuperNodeManager::get()->getNoticeReceiverPort());
+    // Set zookeeper node data
+    ZNode znode;
+    znode.setValue(ZNode::KEY_HOST, SuperNodeManager::get()->getLocalHostIP());
+    znode.setValue(ZNode::KEY_BA_PORT, SuperNodeManager::get()->getBaPort());
+    znode.setValue(ZNode::KEY_DATA_PORT, SuperNodeManager::get()->getDataReceiverPort());
+    znode.setValue(ZNode::KEY_NOTIFY_PORT, SuperNodeManager::get()->getNoticeReceiverPort());
     if (dsTopologyConfig_.curSF1Node_.workerAgent_.enabled_)
     {
-        ndata.setValue(NodeData::NDATA_KEY_WORKER_PORT, SuperNodeManager::get()->getWorkerPort());
-        ndata.setValue(NodeData::NDATA_KEY_SHARD_ID, dsTopologyConfig_.curSF1Node_.workerAgent_.shardId_);
+        znode.setValue(ZNode::KEY_WORKER_PORT, SuperNodeManager::get()->getWorkerPort());
+        znode.setValue(ZNode::KEY_SHARD_ID, dsTopologyConfig_.curSF1Node_.workerAgent_.shardId_);
     }
 
     // Register node to zookeeper
-    std::string sndata = ndata.serialize();
-    if (!zookeeper_->createZNode(nodePath_, sndata, ZooKeeper::ZNODE_EPHEMERAL))
+    std::string sznode = znode.serialize();
+    if (!zookeeper_->createZNode(nodePath_, sznode, ZooKeeper::ZNODE_EPHEMERAL))
     {
         if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
         {
-            zookeeper_->setZNodeData(nodePath_, sndata);
+            zookeeper_->setZNodeData(nodePath_, sznode);
             std::cout<<CLASSNAME<<" Conflict!! overwrote exsited node \""<<nodePath_<<"\"!"<<std::endl;
         }
         else
@@ -173,7 +168,7 @@ void NodeManagerBase::leaveCluster()
 {
     zookeeper_->deleteZNode(nodePath_, true);
 
-    std::string replicaPath = NodeDef::getReplicaPath(nodeInfo_.replicaId_);
+    std::string replicaPath = replicaPath_;
     std::vector<std::string> childrenList;
     zookeeper_->getZNodeChildren(replicaPath, childrenList, ZooKeeper::NOT_WATCH, false);
     if (childrenList.size() <= 0)
@@ -182,16 +177,16 @@ void NodeManagerBase::leaveCluster()
     }
 
     childrenList.clear();
-    zookeeper_->getZNodeChildren(NodeDef::getSF1TopologyPath(), childrenList, ZooKeeper::NOT_WATCH, false);
+    zookeeper_->getZNodeChildren(topologyPath_, childrenList, ZooKeeper::NOT_WATCH, false);
     if (childrenList.size() <= 0)
     {
-        zookeeper_->deleteZNode(NodeDef::getSF1TopologyPath());
+        zookeeper_->deleteZNode(topologyPath_);
     }
 
     childrenList.clear();
-    zookeeper_->getZNodeChildren(NodeDef::getSF1RootPath(), childrenList, ZooKeeper::NOT_WATCH, false);
+    zookeeper_->getZNodeChildren(clusterPath_, childrenList, ZooKeeper::NOT_WATCH, false);
     if (childrenList.size() <= 0)
     {
-        zookeeper_->deleteZNode(NodeDef::getSF1RootPath());
+        zookeeper_->deleteZNode(clusterPath_);
     }
 }

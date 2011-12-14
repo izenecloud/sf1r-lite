@@ -92,7 +92,7 @@ private:
 
 private:
     ZooKeeperConfig zkConfig_;
-    std::string clusterId_;
+
     bool isInitDone_;
 
     std::vector<ZooKeeperEventHandler*> clientKeeperList_;

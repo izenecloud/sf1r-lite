@@ -1,7 +1,5 @@
 #include "SynchroProducer.h"
 
-#include <node-manager/NodeDef.h>
-
 #include <sstream>
 
 using namespace sf1r;

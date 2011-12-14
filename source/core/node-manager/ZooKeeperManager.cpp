@@ -35,8 +35,8 @@ ZooKeeperManager::~ZooKeeperManager()
 void ZooKeeperManager::init(const ZooKeeperConfig& zkConfig, const std::string& clusterId)
 {
     zkConfig_ = zkConfig;
-    clusterId_ = clusterId;
 
+    ZooKeeperNamespace::setClusterId(clusterId);
     initZooKeeperNameSpace();
 }
 
@@ -116,15 +116,14 @@ bool ZooKeeperManager::initZooKeeperNameSpace()
     if (zookeeper->isConnected())
     {
         // base znode (must be created firstly)
-        NodeDef::setClusterIdNodeName(clusterId_);
-        zookeeper->createZNode(NodeDef::getSF1RootPath()); //xxx, if existed?
+        zookeeper->createZNode(ZooKeeperNamespace::getSF1RClusterPath()); //xxx, if existed?
 
         // znode for synchro
-        zookeeper->deleteZNode(NodeDef::getSynchroPath(), true); // clean
-        zookeeper->createZNode(NodeDef::getSynchroPath());
+        zookeeper->deleteZNode(ZooKeeperNamespace::getSynchroPath(), true); // clean
+        zookeeper->createZNode(ZooKeeperNamespace::getSynchroPath());
 
-        if (zookeeper->isZNodeExists(NodeDef::getSF1RootPath())
-                && zookeeper->isZNodeExists(NodeDef::getSynchroPath()))
+        if (zookeeper->isZNodeExists(ZooKeeperNamespace::getSF1RClusterPath())
+                && zookeeper->isZNodeExists(ZooKeeperNamespace::getSynchroPath()))
         {
             isInitDone_ = true;
         }

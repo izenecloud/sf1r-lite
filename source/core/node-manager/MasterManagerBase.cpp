@@ -167,7 +167,7 @@ void MasterManagerBase::watchAll()
 {
     // for replica change
     std::vector<std::string> childrenList;
-    zookeeper_->getZNodeChildren(NodeDef::getSF1TopologyPath(), childrenList, ZooKeeper::WATCH);
+    zookeeper_->getZNodeChildren(topologyPath_, childrenList, ZooKeeper::WATCH);
     for (size_t i = 0; i < childrenList.size(); i++)
     {
         std::vector<std::string> chchList;
@@ -177,7 +177,7 @@ void MasterManagerBase::watchAll()
     // for nodes change
     for (uint32_t nodeid = 1; nodeid <= topology_.nodeNum_; nodeid++)
     {
-        std::string nodePath = NodeDef::getNodePath(curNodeInfo_.replicaId_, nodeid);
+        std::string nodePath = getNodePath(curNodeInfo_.replicaId_, nodeid);
         zookeeper_->isZNodeExists(nodePath, ZooKeeper::WATCH);
     }
 }
@@ -203,16 +203,16 @@ int MasterManagerBase::detectWorkers()
     size_t detected = 0, good = 0;
     for (uint32_t nodeid = 1; nodeid <= topology_.nodeNum_; nodeid++)
     {
-        NodeData ndata;
+        ZNode znode;
         std::string sdata;
-        std::string nodePath = NodeDef::getNodePath(curNodeInfo_.replicaId_, nodeid);
+        std::string nodePath = getNodePath(curNodeInfo_.replicaId_, nodeid);
         // get node data
         if (zookeeper_->getZNodeData(nodePath, sdata, ZooKeeper::WATCH))
         {
-            ndata.loadKvString(sdata);
-            if (ndata.hasKey(NodeData::NDATA_KEY_WORKER_PORT))
+            znode.loadKvString(sdata);
+            if (znode.hasKey(ZNode::KEY_WORKER_PORT))
             {
-                shardid_t shardid = ndata.getUInt32Value(NodeData::NDATA_KEY_SHARD_ID);
+                shardid_t shardid = znode.getUInt32Value(ZNode::KEY_SHARD_ID);
                 if (shardid > 0 && shardid <= topology_.shardNum_)
                 {
                     if (workerMap_.find(shardid) != workerMap_.end())
@@ -241,27 +241,27 @@ int MasterManagerBase::detectWorkers()
                     workerMap_[shardid]->shardId_ = shardid; // worker id
                     workerMap_[shardid]->nodeId_ = nodeid;
                     workerMap_[shardid]->replicaId_ = curNodeInfo_.replicaId_;
-                    workerMap_[shardid]->host_ = ndata.getStrValue(NodeData::NDATA_KEY_HOST); //check validity xxx
-                    //workerMap_[shardid]->workerPort_ = ndata.getUInt32Value(NodeData::NDATA_KEY_WORKER_PORT);
+                    workerMap_[shardid]->host_ = znode.getStrValue(ZNode::KEY_HOST); //check validity xxx
+                    //workerMap_[shardid]->workerPort_ = znode.getUInt32Value(ZNode::KEY_WORKER_PORT);
                     try {
                         workerMap_[shardid]->workerPort_ =
-                                boost::lexical_cast<shardid_t>(ndata.getStrValue(NodeData::NDATA_KEY_WORKER_PORT));
+                                boost::lexical_cast<shardid_t>(znode.getStrValue(ZNode::KEY_WORKER_PORT));
                     }
                     catch (std::exception& e)
                     {
                         workerMap_[shardid]->isGood_ = false;
-                        std::cout <<"Error workerPort "<<ndata.getStrValue(NodeData::NDATA_KEY_WORKER_PORT)
-                                  <<" from "<<ndata.getStrValue(NodeData::NDATA_KEY_HOST)<<std::endl;
+                        std::cout <<"Error workerPort "<<znode.getStrValue(ZNode::KEY_WORKER_PORT)
+                                  <<" from "<<znode.getStrValue(ZNode::KEY_HOST)<<std::endl;
                     }
                     try {
                         workerMap_[shardid]->dataPort_ =
-                                boost::lexical_cast<shardid_t>(ndata.getStrValue(NodeData::NDATA_KEY_DATA_PORT));
+                                boost::lexical_cast<shardid_t>(znode.getStrValue(ZNode::KEY_DATA_PORT));
                     }
                     catch (std::exception& e)
                     {
                         workerMap_[shardid]->isGood_ = false;
-                        std::cout <<"Error dataPort "<<ndata.getStrValue(NodeData::NDATA_KEY_DATA_PORT)
-                                  <<" from "<<ndata.getStrValue(NodeData::NDATA_KEY_HOST)<<std::endl;
+                        std::cout <<"Error dataPort "<<znode.getStrValue(ZNode::KEY_DATA_PORT)
+                                  <<" from "<<znode.getStrValue(ZNode::KEY_HOST)<<std::endl;
                     }
 
                     // xxx check more info?
@@ -272,7 +272,7 @@ int MasterManagerBase::detectWorkers()
                 }
                 else
                 {
-                    std::cout <<"Error shardid "<<shardid<<" from "<<ndata.getStrValue(NodeData::NDATA_KEY_HOST)<<std::endl;
+                    std::cout <<"Error shardid "<<shardid<<" from "<<znode.getStrValue(ZNode::KEY_HOST)<<std::endl;
                     continue;
                 }
             }
@@ -314,7 +314,7 @@ void MasterManagerBase::detectReplicaSet(const std::string& zpath)
 
     // xxx synchronize
     std::vector<std::string> childrenList;
-    zookeeper_->getZNodeChildren(NodeDef::getSF1TopologyPath(), childrenList, ZooKeeper::WATCH);
+    zookeeper_->getZNodeChildren(topologyPath_, childrenList, ZooKeeper::WATCH);
 
     replicaIdList_.clear();
     for (size_t i = 0; i < childrenList.size(); i++)
@@ -362,7 +362,7 @@ void MasterManagerBase::failover(const std::string& zpath)
     for (it = workerMap_.begin(); it != workerMap_.end(); it++)
     {
         boost::shared_ptr<WorkerNode>& pworkerNode = it->second;
-        std::string nodePath = NodeDef::getNodePath(pworkerNode->replicaId_, pworkerNode->nodeId_);
+        std::string nodePath = getNodePath(pworkerNode->replicaId_, pworkerNode->nodeId_);
         if (zpath == nodePath)
         {
             std::cout <<"failover, node broken "<<nodePath<<std::endl;
@@ -388,14 +388,14 @@ bool MasterManagerBase::failover(boost::shared_ptr<WorkerNode>& pworkerNode)
         if (replicaIdList_[i] != pworkerNode->replicaId_)
         {
             // try switch to replicaIdList_[i]
-            NodeData ndata;
+            ZNode znode;
             std::string sdata;
-            std::string nodePath = NodeDef::getNodePath(replicaIdList_[i], pworkerNode->nodeId_);
+            std::string nodePath = getNodePath(replicaIdList_[i], pworkerNode->nodeId_);
             // get node data
             if (zookeeper_->getZNodeData(nodePath, sdata, ZooKeeper::WATCH))
             {
-                ndata.loadKvString(sdata);
-                shardid_t shardid = ndata.getUInt32Value(NodeData::NDATA_KEY_SHARD_ID);
+                znode.loadKvString(sdata);
+                shardid_t shardid = znode.getUInt32Value(ZNode::KEY_SHARD_ID);
                 if (shardid == pworkerNode->shardId_)
                 {
                     std::cout<<"switching node "<<pworkerNode->nodeId_<<" from replica "<<pworkerNode->replicaId_
@@ -404,16 +404,16 @@ bool MasterManagerBase::failover(boost::shared_ptr<WorkerNode>& pworkerNode)
                     //pworkerNode->shardId_ = shardid;
                     //pworkerNode->nodeId_ = nodeid;
                     pworkerNode->replicaId_ = replicaIdList_[i]; // new replica
-                    pworkerNode->host_ = ndata.getStrValue(NodeData::NDATA_KEY_HOST); //check validity xxx
-                    pworkerNode->workerPort_ = ndata.getUInt32Value(NodeData::NDATA_KEY_WORKER_PORT);
+                    pworkerNode->host_ = znode.getStrValue(ZNode::KEY_HOST); //check validity xxx
+                    pworkerNode->workerPort_ = znode.getUInt32Value(ZNode::KEY_WORKER_PORT);
                     try {
                         pworkerNode->workerPort_ =
-                                boost::lexical_cast<shardid_t>(ndata.getStrValue(NodeData::NDATA_KEY_WORKER_PORT));
+                                boost::lexical_cast<shardid_t>(znode.getStrValue(ZNode::KEY_WORKER_PORT));
                     }
                     catch (std::exception& e)
                     {
-                        std::cout <<"Error workerPort "<<ndata.getStrValue(NodeData::NDATA_KEY_WORKER_PORT)
-                                  <<" from "<<ndata.getStrValue(NodeData::NDATA_KEY_HOST)<<std::endl;
+                        std::cout <<"Error workerPort "<<znode.getStrValue(ZNode::KEY_WORKER_PORT)
+                                  <<" from "<<znode.getStrValue(ZNode::KEY_HOST)<<std::endl;
                         continue;
                     }
 
@@ -440,7 +440,7 @@ bool MasterManagerBase::failover(boost::shared_ptr<WorkerNode>& pworkerNode)
     // Watch, waiting for node recover from current replica,
     // xxx, watch all replicas, if failed and current not recovered, but another replica may recover
     zookeeper_->isZNodeExists(
-            NodeDef::getNodePath(curNodeInfo_.replicaId_, pworkerNode->nodeId_),
+            getNodePath(curNodeInfo_.replicaId_, pworkerNode->nodeId_),
             ZooKeeper::WATCH);
 
     return pworkerNode->isGood_;
@@ -455,30 +455,30 @@ void MasterManagerBase::recover(const std::string& zpath)
     for (it = workerMap_.begin(); it != workerMap_.end(); it++)
     {
         boost::shared_ptr<WorkerNode>& pworkerNode = it->second;
-        if (zpath == NodeDef::getNodePath(curNodeInfo_.replicaId_, pworkerNode->nodeId_))
+        if (zpath == getNodePath(curNodeInfo_.replicaId_, pworkerNode->nodeId_))
         {
             std::cout<<"Rcovering, node "<<pworkerNode->nodeId_<<" recovered in current replica "
                      <<curNodeInfo_.replicaId_<<std::endl;
 
-            NodeData ndata;
+            ZNode znode;
             std::string sdata;
             if (zookeeper_->getZNodeData(zpath, sdata, ZooKeeper::WATCH))
             {
                 // xxx recover
 
-                ndata.loadKvString(sdata);
+                znode.loadKvString(sdata);
                 //pworkerNode->shardId_ = shardid;
                 //pworkerNode->nodeId_ = nodeid;
                 pworkerNode->replicaId_ = curNodeInfo_.replicaId_; // new replica
-                pworkerNode->host_ = ndata.getStrValue(NodeData::NDATA_KEY_HOST); //check validity xxx
+                pworkerNode->host_ = znode.getStrValue(ZNode::KEY_HOST); //check validity xxx
                 try {
                     pworkerNode->workerPort_ =
-                            boost::lexical_cast<shardid_t>(ndata.getStrValue(NodeData::NDATA_KEY_WORKER_PORT));
+                            boost::lexical_cast<shardid_t>(znode.getStrValue(ZNode::KEY_WORKER_PORT));
                 }
                 catch (std::exception& e)
                 {
-                    std::cout <<"Error workerPort "<<ndata.getStrValue(NodeData::NDATA_KEY_WORKER_PORT)
-                              <<" from "<<ndata.getStrValue(NodeData::NDATA_KEY_HOST)<<std::endl;
+                    std::cout <<"Error workerPort "<<znode.getStrValue(ZNode::KEY_WORKER_PORT)
+                              <<" from "<<znode.getStrValue(ZNode::KEY_HOST)<<std::endl;
                     break;
                 }
 
@@ -495,20 +495,18 @@ void MasterManagerBase::recover(const std::string& zpath)
 
 void MasterManagerBase::registerSearchServer()
 {
-    // This Master is ready to serve
-    std::string path = NodeDef::getSF1ServicePath();
+    // Current SF1 serve as Master
 
-    if (!zookeeper_->isZNodeExists(path))
+    if (!zookeeper_->isZNodeExists(serverParentPath_))
     {
-        zookeeper_->createZNode(path);
+        zookeeper_->createZNode(serverParentPath_);
     }
 
     std::stringstream serverAddress;
     serverAddress<<curNodeInfo_.host_<<":"<<curNodeInfo_.baPort_;
-    if (zookeeper_->createZNode(path+"/Server", serverAddress.str(), ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
+    if (zookeeper_->createZNode(serverPath_, serverAddress.str(), ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
     {
         serverRealPath_ = zookeeper_->getLastCreatedNodePath();
-
         // std::cout << CLASSNAME<<" Master ready to serve -- "<<serverRealPath_<<std::endl;//
     }
 }
