@@ -2,7 +2,7 @@
 # Usage: ./compile_all [JOB_NUM]
 # the default value of JOB_NUM is 2, it specifies the number of jobs to run simultaneously
 
-JOB_NUM=4
+JOB_NUM=2
 [ $# -gt 0 ] && JOB_NUM=$1
 
 cd ..
