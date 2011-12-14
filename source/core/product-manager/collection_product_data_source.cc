@@ -31,15 +31,8 @@ void CollectionProductDataSource::GetDocIdList(const izenelib::util::UString& uu
 {
     PropertyType value(uuid);
     index_manager_->getDocsByPropertyValue(1, config_.uuid_property_name, value, docid_list);
-
-//     EWAHBoolArray<uword32> docid_set;
-//     bit_vector.compressed(docid_set);
-//     EWAHBoolArrayBitIterator<uword32> it = docid_set.bit_iterator();
-//     while(it.next())
-//     {
-//         docid_list.push_back(it.doc());
-//     }
-//     docid_list.erase( std::remove(docid_list.begin(), docid_list.end(), exceptid),docid_list.end());
+    docid_list.erase( std::remove(docid_list.begin(), docid_list.end(), exceptid),docid_list.end());
+    
 }
 
 bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_list, const izenelib::util::UString& uuid)

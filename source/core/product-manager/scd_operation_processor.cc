@@ -1,5 +1,6 @@
 #include "scd_operation_processor.h"
 #include <sstream>
+#include <glog/logging.h>
 #include <common/ScdWriter.h>
 #include <boost/filesystem.hpp>
 #include <node-manager/synchro/SynchroFactory.h>
@@ -54,12 +55,15 @@ bool ScdOperationProcessor::Finish()
         last_op_ = 0;
         //notify zookeeper on dir_
     }
-    std::cout<<"ScdOperationProcessor::Finish "<<dir_<<std::endl;
+    LOG(INFO)<<"ScdOperationProcessor::Finish "<<dir_<<std::endl;
+
+    SynchroProducerPtr syncProducer =
+            DistributedSynchroFactory::makeProducer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER, collectionName_);
 
     SynchroData syncData;
     syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
     syncData.setValue(SynchroData::KEY_DATA_PATH, dir_);
-    SynchroProducerPtr syncProducer = SynchroFactory::getProducer(collectionName_);
+
     if (syncProducer->produce(syncData, boost::bind(&ScdOperationProcessor::AfterProcess_, this,_1)))
     {
         bool isConsumed = false;
@@ -72,6 +76,7 @@ bool ScdOperationProcessor::Finish()
 
 void ScdOperationProcessor::ClearScds_()
 {
+    LOG(INFO)<<"Clearing Scds"<<std::endl;
     namespace bfs = boost::filesystem;
     static const bfs::directory_iterator kItrEnd;
 
@@ -86,11 +91,11 @@ void ScdOperationProcessor::AfterProcess_(bool is_succ)
 {
     if(is_succ)
     {
-        std::cout<<"Scd transmission and processed successfully!"<<std::endl;
-        ClearScds_();
+        LOG(INFO)<<"Scd transmission and processed successfully!"<<std::endl;
+//         ClearScds_();
     }
     else
     {
-        std::cout<<"ERROR: Scd transmission and processed failed!"<<std::endl;
+        LOG(ERROR)<<"ERROR: Scd transmission and processed failed!"<<std::endl;
     }
 }

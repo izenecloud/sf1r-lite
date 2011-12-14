@@ -16,6 +16,18 @@ typedef std::vector<std::pair<std::string, std::pair<ProductPriceType, ProductPr
 
 typedef std::vector<std::pair<float, std::string> > TPCQueue;
 
+struct ProductEditOption
+{
+//     bool backup;
+    bool force;
+//     bool ignore_loss;
+    
+    ProductEditOption()
+    :force(false)
+    {
+    }
+};
+
 }
 
 #endif

@@ -177,7 +177,9 @@ private:
     void C_(const std::vector<uint32_t>& docid_list, bool succ)
     {
         izenelib::util::UString gen_uuid;
-        bool bsucc = pm_->AddGroup(docid_list, gen_uuid);
+        PMDocumentType doc;
+        ProductEditOption option;
+        bool bsucc = pm_->AddGroup(docid_list, doc, option);
         if(!bsucc)
         {
             std::cout<<pm_->GetLastError()<<std::endl;
@@ -198,7 +200,8 @@ private:
     {
         izenelib::util::UString uuid;
         GetUuid_(uuid_docid, uuid);
-        bool bsucc = pm_->AppendToGroup(uuid, docid_list);
+        ProductEditOption option;
+        bool bsucc = pm_->AppendToGroup(uuid, docid_list, option);
         if(!bsucc)
         {
             std::cout<<pm_->GetLastError()<<std::endl;
@@ -210,7 +213,8 @@ private:
     {
         izenelib::util::UString uuid;
         GetUuid_(uuid_docid, uuid);
-        bool bsucc = pm_->RemoveFromGroup(uuid, docid_list);
+        ProductEditOption option;
+        bool bsucc = pm_->RemoveFromGroup(uuid, docid_list, option);
         if(!bsucc)
         {
             std::cout<<pm_->GetLastError()<<std::endl;

@@ -6,6 +6,7 @@
  */
 #include "Sf1Controller.h"
 #include "CollectionHandler.h"
+#include <product-manager/pm_types.h>
 namespace sf1r
 {
 
@@ -41,12 +42,15 @@ private:
     bool require_docid_list_();
     bool require_str_docid_list_();
     bool require_uuid_();
-    bool require_doc_();
+    bool require_option_();
+    bool maybe_doc_(bool must);
     bool require_date_range_();
 
 private:
     boost::shared_ptr<ProductManager> product_manager_;
     std::vector<uint32_t> docid_list_;
+    Document doc_;
+    ProductEditOption option_;
     std::vector<std::string> str_docid_list_;
     izenelib::util::UString uuid_;
     izenelib::util::UString from_date_;
@@ -57,7 +61,7 @@ private:
     uint32_t count_;
     time_t from_tt_;
     time_t to_tt_;
-    Document doc_;
+    
 };
 
 /// @}
