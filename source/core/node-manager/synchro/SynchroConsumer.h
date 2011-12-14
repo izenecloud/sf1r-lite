@@ -8,7 +8,6 @@
 #ifndef SYNCHRO_CONSUMER_H_
 #define SYNCHRO_CONSUMER_H_
 
-#include <node-manager/NodeDef.h>
 #include <node-manager/ZooKeeperManager.h>
 
 #include <boost/shared_ptr.hpp>

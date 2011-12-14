@@ -10,7 +10,6 @@
 
 #include "SynchroData.h"
 
-#include <node-manager/NodeDef.h>
 #include <node-manager/ZooKeeperManager.h>
 
 #include <boost/shared_ptr.hpp>

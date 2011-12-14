@@ -7,7 +7,7 @@
 #ifndef MASTER_MANAGER_BASE_H_
 #define MASTER_MANAGER_BASE_H_
 
-#include "NodeDef.h"
+#include "ZooKeeperNamespace.h"
 #include "ZooKeeperManager.h"
 
 #include <map>
