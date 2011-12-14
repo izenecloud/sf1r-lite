@@ -167,7 +167,7 @@ void MasterManagerBase::watchAll()
 {
     // for replica change
     std::vector<std::string> childrenList;
-    zookeeper_->getZNodeChildren(ZooKeeperNamespace::getSF1TopologyPath(), childrenList, ZooKeeper::WATCH);
+    zookeeper_->getZNodeChildren(topologyPath_, childrenList, ZooKeeper::WATCH);
     for (size_t i = 0; i < childrenList.size(); i++)
     {
         std::vector<std::string> chchList;
@@ -177,7 +177,7 @@ void MasterManagerBase::watchAll()
     // for nodes change
     for (uint32_t nodeid = 1; nodeid <= topology_.nodeNum_; nodeid++)
     {
-        std::string nodePath = ZooKeeperNamespace::getNodePath(curNodeInfo_.replicaId_, nodeid);
+        std::string nodePath = getNodePath(curNodeInfo_.replicaId_, nodeid);
         zookeeper_->isZNodeExists(nodePath, ZooKeeper::WATCH);
     }
 }
@@ -205,7 +205,7 @@ int MasterManagerBase::detectWorkers()
     {
         ZNode znode;
         std::string sdata;
-        std::string nodePath = ZooKeeperNamespace::getNodePath(curNodeInfo_.replicaId_, nodeid);
+        std::string nodePath = getNodePath(curNodeInfo_.replicaId_, nodeid);
         // get node data
         if (zookeeper_->getZNodeData(nodePath, sdata, ZooKeeper::WATCH))
         {
@@ -314,7 +314,7 @@ void MasterManagerBase::detectReplicaSet(const std::string& zpath)
 
     // xxx synchronize
     std::vector<std::string> childrenList;
-    zookeeper_->getZNodeChildren(ZooKeeperNamespace::getSF1TopologyPath(), childrenList, ZooKeeper::WATCH);
+    zookeeper_->getZNodeChildren(topologyPath_, childrenList, ZooKeeper::WATCH);
 
     replicaIdList_.clear();
     for (size_t i = 0; i < childrenList.size(); i++)
@@ -362,7 +362,7 @@ void MasterManagerBase::failover(const std::string& zpath)
     for (it = workerMap_.begin(); it != workerMap_.end(); it++)
     {
         boost::shared_ptr<WorkerNode>& pworkerNode = it->second;
-        std::string nodePath = ZooKeeperNamespace::getNodePath(pworkerNode->replicaId_, pworkerNode->nodeId_);
+        std::string nodePath = getNodePath(pworkerNode->replicaId_, pworkerNode->nodeId_);
         if (zpath == nodePath)
         {
             std::cout <<"failover, node broken "<<nodePath<<std::endl;
@@ -390,7 +390,7 @@ bool MasterManagerBase::failover(boost::shared_ptr<WorkerNode>& pworkerNode)
             // try switch to replicaIdList_[i]
             ZNode znode;
             std::string sdata;
-            std::string nodePath = ZooKeeperNamespace::getNodePath(replicaIdList_[i], pworkerNode->nodeId_);
+            std::string nodePath = getNodePath(replicaIdList_[i], pworkerNode->nodeId_);
             // get node data
             if (zookeeper_->getZNodeData(nodePath, sdata, ZooKeeper::WATCH))
             {
@@ -440,7 +440,7 @@ bool MasterManagerBase::failover(boost::shared_ptr<WorkerNode>& pworkerNode)
     // Watch, waiting for node recover from current replica,
     // xxx, watch all replicas, if failed and current not recovered, but another replica may recover
     zookeeper_->isZNodeExists(
-            ZooKeeperNamespace::getNodePath(curNodeInfo_.replicaId_, pworkerNode->nodeId_),
+            getNodePath(curNodeInfo_.replicaId_, pworkerNode->nodeId_),
             ZooKeeper::WATCH);
 
     return pworkerNode->isGood_;
@@ -455,7 +455,7 @@ void MasterManagerBase::recover(const std::string& zpath)
     for (it = workerMap_.begin(); it != workerMap_.end(); it++)
     {
         boost::shared_ptr<WorkerNode>& pworkerNode = it->second;
-        if (zpath == ZooKeeperNamespace::getNodePath(curNodeInfo_.replicaId_, pworkerNode->nodeId_))
+        if (zpath == getNodePath(curNodeInfo_.replicaId_, pworkerNode->nodeId_))
         {
             std::cout<<"Rcovering, node "<<pworkerNode->nodeId_<<" recovered in current replica "
                      <<curNodeInfo_.replicaId_<<std::endl;
@@ -495,20 +495,18 @@ void MasterManagerBase::recover(const std::string& zpath)
 
 void MasterManagerBase::registerSearchServer()
 {
-    // This Master is ready to serve
-    std::string path = ZooKeeperNamespace::getSF1ServicePath();
+    // Current SF1 serve as Master
 
-    if (!zookeeper_->isZNodeExists(path))
+    if (!zookeeper_->isZNodeExists(serverParentPath_))
     {
-        zookeeper_->createZNode(path);
+        zookeeper_->createZNode(serverParentPath_);
     }
 
     std::stringstream serverAddress;
     serverAddress<<curNodeInfo_.host_<<":"<<curNodeInfo_.baPort_;
-    if (zookeeper_->createZNode(path+"/Server", serverAddress.str(), ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
+    if (zookeeper_->createZNode(serverPath_, serverAddress.str(), ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
     {
         serverRealPath_ = zookeeper_->getLastCreatedNodePath();
-
         // std::cout << CLASSNAME<<" Master ready to serve -- "<<serverRealPath_<<std::endl;//
     }
 }

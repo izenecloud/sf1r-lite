@@ -29,6 +29,15 @@ public:
     }
 
 protected:
+    virtual void setZNodePaths()
+    {
+        clusterPath_ = ZooKeeperNamespace::getSF1RClusterPath();
+
+        topologyPath_ = ZooKeeperNamespace::getSearchTopologyPath();
+        replicaPath_ = ZooKeeperNamespace::getSearchReplicaPath(nodeInfo_.replicaId_);
+        nodePath_ = ZooKeeperNamespace::getSearchNodePath(nodeInfo_.replicaId_, nodeInfo_.nodeId_);
+    }
+
     virtual void startMasterManager()
     {
         SearchMasterManager::get()->start();

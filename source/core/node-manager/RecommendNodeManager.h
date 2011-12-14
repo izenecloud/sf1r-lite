@@ -29,14 +29,23 @@ public:
     }
 
 protected:
+    virtual void setZNodePaths()
+    {
+        clusterPath_ = ZooKeeperNamespace::getSF1RClusterPath();
+
+        topologyPath_ = ZooKeeperNamespace::getRecommendTopologyPath();
+        replicaPath_ = ZooKeeperNamespace::getRecommendReplicaPath(nodeInfo_.replicaId_);
+        nodePath_ = ZooKeeperNamespace::getRecommendNodePath(nodeInfo_.replicaId_, nodeInfo_.nodeId_);
+    }
+
     virtual void startMasterManager()
     {
-        //RecommendMasterManagerSingleton::get()->start();
+        RecommendMasterManager::get()->start();
     }
 
     virtual void stopMasterManager()
     {
-        //RecommendMasterManagerSingleton::get()->stop();
+        RecommendMasterManager::get()->stop();
     }
 };
 

@@ -69,6 +69,8 @@ public:
     virtual void process(ZooKeeperEvent& zkEvent);
 
 protected:
+    virtual void setZNodePaths() = 0;
+
     virtual void startMasterManager() {}
 
     virtual void stopMasterManager() {}
@@ -88,15 +90,17 @@ protected:
 
 protected:
     DistributedTopologyConfig dsTopologyConfig_;
+    SF1NodeInfo nodeInfo_;
+
+    NodeStateType nodeState_;
+    bool masterStarted_;
 
     ZooKeeperClientPtr zookeeper_;
-
-    // node state
-    NodeStateType nodeState_;
-    SF1NodeInfo nodeInfo_;
+    // znode paths (from root) corresponding current sf1 node
+    std::string clusterPath_;
+    std::string topologyPath_;
+    std::string replicaPath_;
     std::string nodePath_;
-
-    bool masterStarted_;
 
     boost::mutex mutex_;
 

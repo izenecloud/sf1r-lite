@@ -85,6 +85,11 @@ public:
     void showWorkers();
 
 protected:
+    virtual std::string getReplicaPath(replicaid_t replicaId) = 0;
+
+    virtual std::string getNodePath(replicaid_t replicaId, nodeid_t nodeId) = 0;
+
+protected:
     std::string state2string(MasterStateType e);
 
     void watchAll();
@@ -123,16 +128,20 @@ protected:
 
 protected:
     ZooKeeperClientPtr zookeeper_;
+    // znode paths
+    std::string topologyPath_;
+    std::string serverParentPath_;
+    std::string serverPath_;
+    std::string serverRealPath_;
 
     Topology topology_;
     SF1NodeInfo curNodeInfo_;
 
+    MasterStateType masterState_;
+
     WorkerMapT workerMap_;
     std::vector<replicaid_t> replicaIdList_;
 
-    MasterStateType masterState_;
-
-    std::string serverRealPath_;
     net::aggregator::AggregatorConfig aggregatorConfig_;
     std::vector<net::aggregator::AggregatorBase*> aggregatorList_;
 

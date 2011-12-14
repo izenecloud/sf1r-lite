@@ -7,7 +7,7 @@
 #ifndef ZOOKEEPER_NAMESPACE_H_
 #define ZOOKEEPER_NAMESPACE_H_
 
-#include "TypeDef.h"
+#include "NodeTypeDef.h"
 #include <util/kv2string.h>
 #include <sstream>
 
@@ -57,52 +57,99 @@ namespace sf1r {
  */
 class ZooKeeperNamespace
 {
-    // ZooKeeper node names' definitions
-    static std::string sf1rCluster_;         // identify SF1R application, configured
-    static const std::string sf1rTopology_;
-    static const std::string sf1rService_;
+    // Define znode names for zookeeper namespace of SF1
+    static std::string sf1rCluster_;
+
+    static const std::string searchTopology_;
+    static const std::string searchServers_;
+    static const std::string recommendTopology_;
+    static const std::string recommendServers_;
+    static const std::string replica_;
+    static const std::string node_;
+    static const std::string server_;
+
+    static const std::string Synchro_;
 
 public:
 
-    static void setClusterIdNodeName(const std::string& clusterId)
+    static void setClusterId(const std::string& clusterId)
     {
         sf1rCluster_ = "/SF1R-" + clusterId;
     }
 
-    static std::string getSF1RootPath()
+    static std::string getSF1RClusterPath()
     {
         return sf1rCluster_;
     }
 
-    static std::string getSF1TopologyPath()
+    /// Search
+    static std::string getSearchTopologyPath()
     {
-        return sf1rCluster_ + sf1rTopology_;
+        return sf1rCluster_ + searchTopology_;
     }
 
-    static std::string getSF1ServicePath()
+    static std::string getSearchServerParentPath()
     {
-        return sf1rCluster_ + sf1rService_;
+        return sf1rCluster_ + searchServers_;
     }
 
-    static std::string getReplicaPath(replicaid_t replicaId)
+    static std::string getSearchServerPath()
+    {
+        return sf1rCluster_ + searchServers_ + server_;
+    }
+
+    static std::string getSearchReplicaPath(replicaid_t replicaId)
     {
         std::stringstream ss;
-        ss <<sf1rCluster_<<sf1rTopology_<<"/Replica"<<replicaId;
+        ss <<sf1rCluster_<<searchTopology_<<replica_<<replicaId;
 
         return ss.str();
     }
 
-    static std::string getNodePath(replicaid_t replicaId, nodeid_t nodeId)
+    static std::string getSearchNodePath(replicaid_t replicaId, nodeid_t nodeId)
     {
         std::stringstream ss;
-        ss <<sf1rCluster_<<sf1rTopology_<<"/Replica"<<replicaId<<"/Node"<<nodeId;
+        ss <<sf1rCluster_<<searchTopology_<<replica_<<replicaId<<node_<<nodeId;
 
         return ss.str();
     }
 
+    /// Recommend
+    static std::string getRecommendTopologyPath()
+    {
+        return sf1rCluster_ + recommendTopology_;
+    }
+
+    static std::string getRecommendServerParentPath()
+    {
+        return sf1rCluster_ + recommendServers_;
+    }
+
+    static std::string getRecommendServerPath()
+    {
+        return sf1rCluster_ + recommendServers_ + server_;
+    }
+
+    static std::string getRecommendReplicaPath(replicaid_t replicaId)
+    {
+        std::stringstream ss;
+        ss <<sf1rCluster_<<recommendTopology_<<replica_<<replicaId;
+
+        return ss.str();
+    }
+
+    static std::string getRecommendNodePath(replicaid_t replicaId, nodeid_t nodeId)
+    {
+        std::stringstream ss;
+        ss <<sf1rCluster_<<recommendTopology_<<replica_<<replicaId<<node_<<nodeId;
+
+        return ss.str();
+    }
+
+    /// Synchro
     static std::string getSynchroPath()
     {
-        return sf1rCluster_+"/Synchro"; // todo
+        return sf1rCluster_ + Synchro_;
     }
 };
 

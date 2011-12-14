@@ -1,11 +1,11 @@
 /**
- * @file TypeDef.h
+ * @file NodeTypeDef.h
  * @author Zhongxia Li
  * @date Oct 20, 2011
  * @brief 
  */
-#ifndef NONE_M_TYPE_DEF_H_
-#define NONE_M_TYPE_DEF_H_
+#ifndef NONE_TYPE_DEF_H_
+#define NONE_TYPE_DEF_H_
 
 #include <stdint.h>
 #include <string>
@@ -14,7 +14,7 @@
 
 namespace sf1r {
 
-/// types
+/// type def
 typedef uint32_t nodeid_t;
 typedef uint32_t replicaid_t;
 typedef uint32_t shardid_t;
@@ -95,4 +95,4 @@ struct WorkerNode : public SF1NodeInfo
 
 }
 
-#endif /* NONE_M_TYPE_DEF_H_ */
+#endif /* NONE_TYPE_DEF_H_ */

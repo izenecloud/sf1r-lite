@@ -3,10 +3,18 @@
 
 namespace sf1r {
 
-/// ZooKeeperNamespace
-std::string ZooKeeperNamespace::sf1rCluster_ = "/SF1R-unknown";    // identify SF1R cluster, configured
-const std::string ZooKeeperNamespace::sf1rTopology_ = "/Topology";
-const std::string ZooKeeperNamespace::sf1rService_ = "/Service";
+/// ZooKeeper Namespace
+std::string ZooKeeperNamespace::sf1rCluster_ = "/SF1R-unknown";  // specify by configuration
+
+const std::string ZooKeeperNamespace::searchTopology_ = "/SearchTopology";
+const std::string ZooKeeperNamespace::searchServers_ = "/SearchServers";
+const std::string ZooKeeperNamespace::recommendTopology_ = "/RecommendTopology";
+const std::string ZooKeeperNamespace::recommendServers_ = "/RecommendServers";
+const std::string ZooKeeperNamespace::replica_ = "/Replica";
+const std::string ZooKeeperNamespace::node_ = "/Node";
+const std::string ZooKeeperNamespace::server_ = "/Server";
+
+const std::string ZooKeeperNamespace::Synchro_ = "/Synchro";
 
 /// ZooKeeper Node data key
 const char* ZNode::KEY_HOST = "host";
