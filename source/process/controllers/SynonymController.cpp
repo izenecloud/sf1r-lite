@@ -100,39 +100,23 @@ void SynonymController::add_synonym()
  *   ]
  * }
  *
- * or
- * {
- *   "new_synonym_list": [
- *     "电话",
- *     "手机",
- *     "移动电话"
- *   ],
- *
- *   "old_synonym_list_id": 5
- * }
  * @endcode
  *
  */
 void SynonymController::update_synonym()
 {
     std::string old_synonym_list("");
-    int row = 0;
     std::string new_synonym_list("");
-
-    if( nullValue(request()[Keys::old_synonym_list]) && nullValue(request()[Keys::old_synonym_list_id]) )
-    {
-        response().addError("Require a old synonym list or the updated synonym list id in request.");
-        return;
-    }
 
     if (!nullValue(request()[Keys::old_synonym_list]))
     {
         const Value::ArrayType* array = request()[Keys::old_synonym_list].getPtr<Value::ArrayType>();
         old_synonym_list = str_join( array, "," );
     }
-    else if(!nullValue(request()[Keys::old_synonym_list_id]))
+    else
     {
-        row = asUintOr(request()[Keys::old_synonym_list_id], 0);
+        response().addError("Require a old synonym list in request.");
+        return;
     }
 
     if (!nullValue(request()[Keys::new_synonym_list]))
@@ -152,32 +136,14 @@ void SynonymController::update_synonym()
     ifstream infile(dictionaryPath.c_str());
     std::string line;
     std::vector<std::string> synonym_dictionary;
-    if(!old_synonym_list.empty())
+    while(getline(infile, line))
     {
-        while(getline(infile, line))
+        if(!line.empty())
         {
-            if(!line.empty())
-            {
-                if(line != old_synonym_list)
-                    synonym_dictionary.push_back(line);
-                else
-                    synonym_dictionary.push_back(new_synonym_list);
-            }
-        }
-    }
-    else if(row != 0)
-    {
-        int tmp = 0;
-        while(getline(infile, line))
-        {
-            if(!line.empty())
-            {
-                tmp++;
-                if(tmp != row)
-                    synonym_dictionary.push_back(line);
-                else
-                    synonym_dictionary.push_back(new_synonym_list);
-            }
+            if(line != old_synonym_list)
+                synonym_dictionary.push_back(line);
+            else
+                synonym_dictionary.push_back(new_synonym_list);
         }
     }
     infile.close();
@@ -197,8 +163,6 @@ void SynonymController::update_synonym()
  * @section request
  *
  * - @b old_synonym_list* (@c Array): Old synonym tokens list that need to be deleted in synonym dictionary.
- * - @b old_synonym_list_id* (@c Array): Old synonym list id that need to be deleted in synonym dictionary.
- *      (old_synonym_list or old_synonym_list_id must be provided)
  *
  * @section response
  *
@@ -216,31 +180,22 @@ void SynonymController::update_synonym()
  *   ]
  * }
  *
- * or
- * {
- *   "old_synonym_list_id": 5
- * }
  * @endcode
  *
  */
 void SynonymController::delete_synonym()
 {
     std::string synonym_list("");
-    int row = 0;
 
-    if( nullValue(request()[Keys::synonym_list]) && nullValue(request()[Keys::synonym_list_id]) )
-    {
-        response().addError("Require a old synonym list or the deleted synonym list id in request.");
-        return;
-    }
     if (!nullValue(request()[Keys::synonym_list]))
     {
         const Value::ArrayType* array = request()[Keys::synonym_list].getPtr<Value::ArrayType>();
         synonym_list = str_join( array, "," );
     }
-    else if(!nullValue(request()[Keys::synonym_list_id]))
+    else
     {
-        row = asUintOr(request()[Keys::synonym_list_id], 0);
+        response().addError("Require a old synonym list in request.");
+        return;
     }
 
     char* icma = getenv("IZENECMA");
@@ -249,28 +204,12 @@ void SynonymController::delete_synonym()
     std::ifstream infile(dictionaryPath.c_str());
     std::string line;
     std::vector<std::string> synonym_dictionary;
-    if(!synonym_list.empty())
+    while(getline(infile, line))
     {
-        while(getline(infile, line))
+        if(!line.empty())
         {
-            if(!line.empty())
-            {
-                if(line != synonym_list)
-                    synonym_dictionary.push_back(line);
-            }
-        }
-    }
-    else if(row != 0)
-    {
-        int tmp = 0;
-        while(getline(infile, line))
-        {
-            if(!line.empty())
-            {
-                tmp++;
-                if(tmp != row)
-                    synonym_dictionary.push_back(line);
-            }
+            if(line != synonym_list)
+                synonym_dictionary.push_back(line);
         }
     }
     infile.close();
