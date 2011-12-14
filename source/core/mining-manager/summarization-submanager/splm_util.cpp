@@ -168,19 +168,19 @@ void SPLMUtil::getCollectionWordMapping(map<int, int>& wordmapping, const int *c
 }
 
 void SPLMUtil::selectSentences(
-        vector<UString>& summary_list,
+        vector<pair<double, UString> >& summary_list,
         const Corpus& corpus,
         const int *sentOffs, const int *W,
         const set<pair<double, int> >& result)
 {
     set<int> selected_word_set;
-    int word_count = 0;
     for (set<pair<double, int> >::const_reverse_iterator it = result.rbegin();
             it != result.rend(); ++it)
     {
         if (summary_list.size() >= SENTENCE_LIMIT)
             break;
 
+        double score = it->first;
         int s = it->second;
 
         set<int> cur_word_set;
@@ -190,9 +190,7 @@ void SPLMUtil::selectSentences(
         if (olp >= THR) continue;
 
         selected_word_set.insert(cur_word_set.begin(), cur_word_set.end());
-        summary_list.push_back(corpus.get_sent(s));
-
-        word_count += summary_list.back().size();
+        summary_list.push_back(make_pair(score, corpus.get_sent(s)));
     }
 }
 

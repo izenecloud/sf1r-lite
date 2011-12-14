@@ -182,7 +182,7 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     corpus_->start_new_doc();
     corpus_->start_new_coll();
 
-    std::vector<std::pair<UString, std::vector<UString> > > summary_list;
+    std::map<UString, std::vector<std::pair<double, UString> > > summaries;
 //#define DEBUG_SUMMARIZATION
 #ifdef DEBUG_SUMMARIZATION
     std::string key_str;
@@ -191,29 +191,29 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 #endif
     if (content_list.size() < 2000 && corpus_->ntotal() < 100000)
     {
-        SPLM::generateSummary(summary_list, *corpus_, SPLM::SPLM_SVD);
+        SPLM::generateSummary(summaries, *corpus_, SPLM::SPLM_SVD);
     }
     else
     {
-        SPLM::generateSummary(summary_list, *corpus_, SPLM::SPLM_NONE);
+        SPLM::generateSummary(summaries, *corpus_, SPLM::SPLM_NONE);
     }
 #ifdef DEBUG_SUMMARIZATION
     std::cout << "End evaluating: " << key_str << std::endl;
 #endif
 
     //XXX store the generated summary list
-    std::vector<UString>& summary = summary_list[0].second;
-    if (!summary.empty())
+    std::vector<std::pair<double, UString> >& summary_list = summaries[key];
+    if (!summary_list.empty())
     {
 #ifdef DEBUG_SUMMARIZATION
-        for (uint32_t i = 0; i < summary.size(); i++)
+        for (uint32_t i = 0; i < summary_list.size(); i++)
         {
             std::string sent;
-            summary[i].convertString(sent, UString::UTF_8);
+            summary_list[i].second.convertString(sent, UString::UTF_8);
             std::cout << "\t" << sent << std::endl;
         }
 #endif
-        summarization.property("overview").swap(summary);
+        summarization.insertProperty("overview", summary_list);
     }
     summarization_storage_->Update(key, summarization);
 

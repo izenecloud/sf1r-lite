@@ -74,7 +74,7 @@ public:
     /// @param corpus Corpus to be summarized
     ///
     static void generateSummary(
-            std::vector<std::pair<UString, std::vector<UString> > >& summary_list,
+            std::map<UString, std::vector<std::pair<double, UString> > >& summaries,
             const Corpus& corpus,
             SPLM_Alg algorithm = SPLM_SVD,
             int lengthLimit = 5,

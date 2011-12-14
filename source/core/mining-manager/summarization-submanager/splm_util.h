@@ -97,7 +97,7 @@ public:
     ///
     /// @brief Selects sentences for the summary set
     ///
-    static void selectSentences(std::vector<UString>& summary_list,
+    static void selectSentences(std::vector<std::pair<double, UString> >& summary_list,
             const Corpus& corpus, const int *sentOffs, const int *W,
             const std::set<std::pair<double, int> >& result);
 
