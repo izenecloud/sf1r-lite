@@ -109,7 +109,7 @@ void ZooKeeperManager::postMonitorEvent()
 
 bool ZooKeeperManager::initZooKeeperNameSpace()
 {
-    std::cout<<"ZooKeeperManager::initZooKeeperNameSpace"<<std::endl;
+    //std::cout<<"ZooKeeperManager::initZooKeeperNameSpace"<<std::endl;
 
     ZooKeeperClientPtr zookeeper = createClient(NULL, true);
 
@@ -117,7 +117,7 @@ bool ZooKeeperManager::initZooKeeperNameSpace()
     {
         // base znode (must be created firstly)
         NodeDef::setClusterIdNodeName(clusterId_);
-        zookeeper->createZNode(NodeDef::getSF1RootPath());
+        zookeeper->createZNode(NodeDef::getSF1RootPath()); //xxx, if existed?
 
         // znode for synchro
         zookeeper->deleteZNode(NodeDef::getSynchroPath(), true); // clean

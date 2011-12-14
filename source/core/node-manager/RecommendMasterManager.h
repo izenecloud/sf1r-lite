@@ -7,13 +7,13 @@
 #ifndef RECOMMEND_MASTER_MANAGER_H_
 #define RECOMMEND_MASTER_MANAGER_H_
 
-#include "MasterManager.h"
+#include "MasterManagerBase.h"
 
 
 namespace sf1r
 {
 
-class RecommendMasterManager : public MasterManager
+class RecommendMasterManager : public MasterManagerBase
 {
 public:
     RecommendMasterManager();

@@ -7,7 +7,7 @@
 #ifndef MASTER_AGENT_CONFIG_H_
 #define MASTER_AGENT_CONFIG_H_
 
-#include <net/aggregator/AggregatorConfig.h>
+
 #include <sstream>
 
 struct AggregatorUnit
@@ -38,25 +38,20 @@ public:
     std::string toString()
     {
         std::stringstream ss;
-        ss<<"[MasterAgentConfig] enabled ? "<<enabled_<<" port : "<<port_<<endl;
+        ss<<"[MasterAgentConfig] enabled ? "<<enabled_<<std::endl;
 
         std::map<std::string, AggregatorUnit>::iterator it;
         for (it = aggregatorSupportMap_.begin(); it != aggregatorSupportMap_.end(); it++)
         {
-            ss<<"Aggregator="<<it->first<<endl;
+            ss<<"Aggregator="<<it->first<<std::endl;
         }
-
-        ss << aggregatorConfig_.toString();
 
         return ss.str();
     }
 
 public:
     bool enabled_;
-    unsigned int port_;
     std::map<std::string, AggregatorUnit> aggregatorSupportMap_;
-
-    net::aggregator::AggregatorConfig aggregatorConfig_; //xxx
 };
 
 #endif /* MASTERAGENTCONFIG_H_ */

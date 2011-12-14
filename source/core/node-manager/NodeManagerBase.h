@@ -1,11 +1,11 @@
 /**
- * @file NodeManager.h
+ * @file NodeManagerBase.h
  * @author Zhongxia Li
  * @date Sep 20, 2011
  * @brief Management of SF1 node using ZooKeeper.
  */
-#ifndef NODE_MANAGER_H_
-#define NODE_MANAGER_H_
+#ifndef NODE_MANAGER_BASE_H_
+#define NODE_MANAGER_BASE_H_
 
 #include "NodeDef.h"
 #include "ZooKeeperManager.h"
@@ -20,7 +20,7 @@
 namespace sf1r
 {
 
-class NodeManager : public ZooKeeperEventHandler
+class NodeManagerBase : public ZooKeeperEventHandler
 {
 public:
     enum NodeStateType
@@ -31,9 +31,9 @@ public:
         NODE_STATE_STARTED
     };
 
-    NodeManager();
+    NodeManagerBase();
 
-    virtual ~NodeManager();
+    virtual ~NodeManagerBase();
 
     /**
      * @param dsTopologyConfig
@@ -105,4 +105,4 @@ protected:
 
 }
 
-#endif /* NODE_MANAGER_H_ */
+#endif /* NODE_MANAGER_BASE_H_ */

@@ -45,16 +45,22 @@ parser.each do |doc|
   all_count += 1
   endtime_str = doc['TimeEnd'].strip
 #   puts "endtime_str : #{endtime_str}"
-  if endtime_str.length==0
-    next
-  end
+  next if endtime_str.length==0
   time = DateTime::parse(endtime_str, "%Y%m%d%H%M%S")
   now = DateTime::now
-  if time<now
-    next
-  end
+  next if time<now
   
-  str = doc['Title']
+  title = doc['Title']
+  old_category = doc['Category']
+  sub_category = doc['SubCategory']
+  next if title.nil?
+  str = title+"."
+  if !old_category.nil?
+    str += old_category+"."
+  end
+  if !sub_category.nil?
+    str += sub_category+"."
+  end
   category = classifer.get_class(str)
   doc['Category'] = category
   writer.append doc

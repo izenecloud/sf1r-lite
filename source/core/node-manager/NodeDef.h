@@ -109,7 +109,7 @@ public:
     const static char* NDATA_KEY_HOST;
     const static char* NDATA_KEY_BA_PORT;
     const static char* NDATA_KEY_DATA_PORT;
-    const static char* NDATA_KEY_MASTER_PORT;
+    const static char* NDATA_KEY_NOTIFY_PORT;
     const static char* NDATA_KEY_WORKER_PORT;
     const static char* NDATA_KEY_SHARD_ID;
 

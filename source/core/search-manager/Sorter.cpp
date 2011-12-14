@@ -68,7 +68,7 @@ void SortPropertyCache::setCtrManager(faceted::CTRManager* pCTRManager)
     pCTRManager_ = pCTRManager;
 }
 
-bool SortPropertyCache::loadSortData(const std::string& property, PropertyDataType type)
+void SortPropertyCache::loadSortData(const std::string& property, PropertyDataType type)
 {
     void* data = NULL;
     size_t size = 0;
@@ -95,18 +95,14 @@ bool SortPropertyCache::loadSortData(const std::string& property, PropertyDataTy
     }
 
     if (data)
-    {
         sortDataCache_[property].reset(new PropertyData(type, data, size));
-        return true;
-    }
     else
-        return false;
+        sortDataCache_[property].reset();
 }
 
 boost::shared_ptr<PropertyData> SortPropertyCache::getSortPropertyData(const std::string& propertyName, PropertyDataType propertyType)
 {
     boost::mutex::scoped_lock lock(this->mutex_);
-    bool ret = false;
     if (dirty_)
     {
         for (SortDataCache::iterator iter = sortDataCache_.begin();
@@ -122,11 +118,10 @@ boost::shared_ptr<PropertyData> SortPropertyCache::getSortPropertyData(const std
     if (iter == sortDataCache_.end())
     {
         LOG(INFO) << "first load sort data cache on property: " << propertyName;
-        ret = loadSortData(propertyName, propertyType);
+        loadSortData(propertyName, propertyType);
     }
 
-    if(ret) return sortDataCache_[propertyName];
-    else return boost::shared_ptr<PropertyData>();
+    return sortDataCache_[propertyName];
 }
 
 boost::shared_ptr<PropertyData> SortPropertyCache::getCTRPropertyData(const std::string& propertyName, PropertyDataType propertyType)
