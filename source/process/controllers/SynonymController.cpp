@@ -75,8 +75,6 @@ void SynonymController::add_synonym()
  *
  * - @b new_synonym_list* (@c Array): New synonym tokens list that need to be added in synonym dictionary.
  * - @b old_synonym_list* (@c Array): Old synonym tokens list that need to be deleted from synonym dictionary.
- * - @b old_synonym_list_id* (@c Array): Old synonym list id that need to be deleted from synonym dictionary.
- *      (old_synonym_list or old_synonym_list_id must be provided)
  *
  * @section response
  *
