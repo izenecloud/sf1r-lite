@@ -79,7 +79,7 @@ public:
 
 private:
     
-    double GetWeight_(const izenelib::util::UString& term, char tag);
+    double GetWeight_(const izenelib::util::UString& all, const izenelib::util::UString& term, char tag);
     
 private:
     std::string work_dir_;

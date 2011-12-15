@@ -130,7 +130,7 @@ void ProductClustering::Insert(const PMDocumentType& doc)
     {
         const std::string& str = term_list[i].TextString();
         char tag = term_list[i].tag;
-        double weight = GetWeight_(term_list[i].text, tag);
+        double weight = GetWeight_(title, term_list[i].text, tag);
         if( weight<=0.0 ) continue;
 #ifdef PM_CLUST_TEXT_DEBUG
         std::cout<<"["<<str<<","<<tag<<","<<weight<<"],";
@@ -159,7 +159,7 @@ bool ProductClustering::Run()
     return run_dd;
 }
 
-double ProductClustering::GetWeight_(const izenelib::util::UString& term, char tag)
+double ProductClustering::GetWeight_(const izenelib::util::UString& all, const izenelib::util::UString& term, char tag)
 {
     double weight = 1.0;
     if(tag=='F')
@@ -175,7 +175,7 @@ double ProductClustering::GetWeight_(const izenelib::util::UString& term, char t
     }
     else if(tag=='M')
     {
-        weight = 2.0;
+        weight = 0.6;
     }
     return weight;
 }
