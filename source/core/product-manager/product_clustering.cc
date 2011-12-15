@@ -132,6 +132,11 @@ void ProductClustering::Insert(const PMDocumentType& doc)
 #ifdef PM_CLUST_TEXT_DEBUG
     std::cout<<std::endl;
 #endif
+    if( v.empty() )
+    {
+        error_ = "Title analyzer result is empty.";
+        return;
+    }
     std::string docid;
     udocid.convertString(docid, izenelib::util::UString::UTF_8);
     dd_->InsertDoc(docid, v, attach);
