@@ -1,13 +1,13 @@
 /**
- * @file MasterManager.h
+ * @file MasterManagerBase.h
  * @author Zhongxia Li
  * @date Sep 20, 2011S
  * @brief Management (Coordination) for Master node using ZooKeeper.
  */
-#ifndef MASTER_NODE_MANAGER_H_
-#define MASTER_NODE_MANAGER_H_
+#ifndef MASTER_MANAGER_BASE_H_
+#define MASTER_MANAGER_BASE_H_
 
-#include "NodeDef.h"
+#include "ZooKeeperNamespace.h"
 #include "ZooKeeperManager.h"
 
 #include <map>
@@ -24,7 +24,7 @@
 namespace sf1r
 {
 
-class MasterManager : public ZooKeeperEventHandler
+class MasterManagerBase : public ZooKeeperEventHandler
 {
 public:
     enum MasterStateType
@@ -41,9 +41,9 @@ public:
     typedef std::map<shardid_t, boost::shared_ptr<WorkerNode> > WorkerMapT;
 
 public:
-    MasterManager();
+    MasterManagerBase();
 
-    virtual ~MasterManager() {};
+    virtual ~MasterManagerBase() {};
 
     virtual bool init() = 0;
 
@@ -85,6 +85,11 @@ public:
     void showWorkers();
 
 protected:
+    virtual std::string getReplicaPath(replicaid_t replicaId) = 0;
+
+    virtual std::string getNodePath(replicaid_t replicaId, nodeid_t nodeId) = 0;
+
+protected:
     std::string state2string(MasterStateType e);
 
     void watchAll();
@@ -123,16 +128,20 @@ protected:
 
 protected:
     ZooKeeperClientPtr zookeeper_;
+    // znode paths
+    std::string topologyPath_;
+    std::string serverParentPath_;
+    std::string serverPath_;
+    std::string serverRealPath_;
 
     Topology topology_;
     SF1NodeInfo curNodeInfo_;
 
+    MasterStateType masterState_;
+
     WorkerMapT workerMap_;
     std::vector<replicaid_t> replicaIdList_;
 
-    MasterStateType masterState_;
-
-    std::string serverRealPath_;
     net::aggregator::AggregatorConfig aggregatorConfig_;
     std::vector<net::aggregator::AggregatorBase*> aggregatorList_;
 
@@ -145,4 +154,4 @@ protected:
 
 }
 
-#endif /* MASTER_NODE_MANAGER_H_ */
+#endif /* MASTER_MANAGER_BASE_H_ */

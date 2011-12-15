@@ -41,7 +41,7 @@ do
   git pull
 
   if [ -f CMakeCache.txt ];then
-    touch CMakeCache.txt
+    rm CMakeCache.txt
   else
     if [ -f $CODEBASE_DIR/${dependencie[$index]}/CMakeLists.txt ];then
       cmake -DEXTRA_CMAKE_MODULES_DIRS=$PROJECT_CMAKE_PATH ..

@@ -70,8 +70,7 @@ bool ProductPriceTrend::Insert(
 {
     string key;
     ParseDocid_(key, docid);
-    price_history_buffer_.push_back(PriceHistory());
-    price_history_buffer_.back().resetKey(key);
+    price_history_buffer_.push_back(PriceHistory(key));
     price_history_buffer_.back().insert(timestamp, price);
 
     if (IsBufferFull_())
@@ -134,7 +133,6 @@ bool ProductPriceTrend::Flush()
         ret = false;
 
     price_history_buffer_.clear();
-    price_history_buffer_.reserve(10000);
 
     return ret;
 }
@@ -154,7 +152,7 @@ bool ProductPriceTrend::UpdateTPC_(uint32_t time_int, time_t timestamp)
     Utilities::getKeyList(key_list, prop_map_);
     if (timestamp == -1)
         timestamp = Utilities::createTimeStamp();
-    timestamp -= 86400000000L * time_int_vec_[time_int];
+    timestamp -= 86400000000LL * time_int_vec_[time_int];
 
     vector<PriceHistory> row_list;
     if (!PriceHistory::getMultiSlice(row_list, key_list, serializeLong(timestamp), "", 1))

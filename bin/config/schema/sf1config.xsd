@@ -187,6 +187,7 @@
         <xs:complexType>
             <xs:sequence>
                 <xs:element ref="BrokerAgent"/>
+                <xs:element ref="DistributedCommon" minOccurs="1" maxOccurs="1"/>
                 <xs:element ref="DistributedTopology" minOccurs="0" maxOccurs="2"/>
                 <xs:element ref="DistributedUtil" minOccurs="1" maxOccurs="1"/>
             </xs:sequence>
@@ -207,6 +208,15 @@
             <xs:attribute name="port" type="PortType" use="required"/>
         </xs:complexType>
     </xs:element>
+    <xs:element name="DistributedCommon">
+        <xs:complexType>
+            <xs:attribute name="clusterid" type="xs:string" use="required"/>
+            <xs:attribute name="localhost" type="xs:string" use="required"/>
+            <xs:attribute name="workerport" type="PortType" use="required"/>
+            <xs:attribute name="notifyrecvport" type="PortType" use="required"/>
+            <xs:attribute name="datarecvport" type="PortType" use="required"/>
+        </xs:complexType>
+    </xs:element>
     <xs:element name="DistributedTopology">
         <xs:complexType>
             <xs:sequence>
@@ -221,7 +231,6 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
-            <xs:attribute name="clusterid" type="xs:string" use="required"/>
             <xs:attribute name="nodenum" use="required">
                 <xs:simpleType>
                     <xs:restriction base="xs:integer">
@@ -262,8 +271,6 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
-            <xs:attribute name="host" type="xs:string" use="required"/>
-            <xs:attribute name="dataport" type="PortType" use="required"/>
         </xs:complexType>
     </xs:element>
     <xs:element name="WorkerAgent">
@@ -272,7 +279,6 @@
                 <xs:element ref="Service" minOccurs="1" maxOccurs="unbounded"/>
             </xs:sequence>
             <xs:attribute name="enable" type="YesNoType" use="required"/>
-            <xs:attribute name="port" type="PortType" use="required"/>
             <xs:attribute name="shardid" use="required">
                 <xs:simpleType>
                     <xs:restriction base="xs:integer">
@@ -294,7 +300,6 @@
                 <xs:element ref="Aggregator" minOccurs="1" maxOccurs="unbounded"/>
             </xs:sequence>
             <xs:attribute name="enable" type="YesNoType" use="required"/>
-            <xs:attribute name="port" type="PortType" use="required"/>
         </xs:complexType>
     </xs:element>
     <xs:element name="Aggregator">

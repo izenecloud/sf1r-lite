@@ -7,18 +7,35 @@
 #ifndef RECOMMEND_MASTER_MANAGER_H_
 #define RECOMMEND_MASTER_MANAGER_H_
 
-#include "MasterManager.h"
+#include "MasterManagerBase.h"
 
+#include <util/singleton.h>
 
 namespace sf1r
 {
 
-class RecommendMasterManager : public MasterManager
+class RecommendMasterManager : public MasterManagerBase
 {
 public:
     RecommendMasterManager();
 
+    static RecommendMasterManager* get()
+    {
+        return izenelib::util::Singleton<RecommendMasterManager>::get();
+    }
+
     virtual bool init();
+
+protected:
+    virtual std::string getReplicaPath(replicaid_t replicaId)
+    {
+        return ZooKeeperNamespace::getRecommendReplicaPath(replicaId);
+    }
+
+    virtual std::string getNodePath(replicaid_t replicaId, nodeid_t nodeId)
+    {
+        return ZooKeeperNamespace::getRecommendNodePath(replicaId, nodeId);
+    }
 };
 
 }

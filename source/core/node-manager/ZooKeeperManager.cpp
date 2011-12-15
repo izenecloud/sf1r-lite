@@ -1,5 +1,6 @@
 #include "ZooKeeperManager.h"
 
+#include <node-manager/synchro/SynchroFactory.h>
 
 namespace sf1r
 {
@@ -19,7 +20,8 @@ ZooKeeperClientFactory::createZkClient(
 const static long MONOTOR_INTERVAL_SECONDS = 120;
 
 ZooKeeperManager::ZooKeeperManager()
-: monitorInterval_(MONOTOR_INTERVAL_SECONDS)
+: isInitDone_(false)
+, monitorInterval_(MONOTOR_INTERVAL_SECONDS)
 {
     // start monitor thread
     monitorThread_ = boost::thread(&ZooKeeperManager::monitorLoop, this);
@@ -30,9 +32,17 @@ ZooKeeperManager::~ZooKeeperManager()
     stop();
 }
 
+void ZooKeeperManager::init(const ZooKeeperConfig& zkConfig, const std::string& clusterId)
+{
+    zkConfig_ = zkConfig;
+
+    ZooKeeperNamespace::setClusterId(clusterId);
+    initZooKeeperNameSpace();
+}
+
 void ZooKeeperManager::start()
 {
-
+    ;
 }
 
 void ZooKeeperManager::stop()
@@ -43,15 +53,16 @@ void ZooKeeperManager::stop()
 
 ZooKeeperClientPtr
 ZooKeeperManager::createClient(
-        const std::string& hosts,
-        const int recvTimeout,
         ZooKeeperEventHandler* eventHandler,
         bool tryReconnect)
 {
     ZooKeeperClientPtr ret;
-    ret = ZooKeeperClientFactory::createZkClient(hosts, recvTimeout, tryReconnect);
+    ret = ZooKeeperClientFactory::createZkClient(
+                    zkConfig_.zkHosts_,
+                    zkConfig_.zkRecvTimeout_,
+                    tryReconnect);
 
-    if (NULL != eventHandler)
+    if (ret && NULL != eventHandler)
     {
         ret->registerEventHandler(eventHandler);
         registerMonitorEventHandler(eventHandler);
@@ -70,6 +81,10 @@ void ZooKeeperManager::monitorLoop()
         try
         {
             boost::this_thread::sleep(boost::posix_time::seconds(monitorInterval_));
+
+            // ensure init
+            if (!isInitDone_)
+                initZooKeeperNameSpace();
 
             postMonitorEvent();
         }
@@ -92,4 +107,32 @@ void ZooKeeperManager::postMonitorEvent()
     }
 }
 
+bool ZooKeeperManager::initZooKeeperNameSpace()
+{
+    //std::cout<<"ZooKeeperManager::initZooKeeperNameSpace"<<std::endl;
+
+    ZooKeeperClientPtr zookeeper = createClient(NULL, true);
+
+    if (zookeeper->isConnected())
+    {
+        // base znode (must be created firstly)
+        zookeeper->createZNode(ZooKeeperNamespace::getSF1RClusterPath()); //xxx, if existed?
+
+        // znode for synchro
+        zookeeper->deleteZNode(ZooKeeperNamespace::getSynchroPath(), true); // clean
+        zookeeper->createZNode(ZooKeeperNamespace::getSynchroPath());
+
+        if (zookeeper->isZNodeExists(ZooKeeperNamespace::getSF1RClusterPath())
+                && zookeeper->isZNodeExists(ZooKeeperNamespace::getSynchroPath()))
+        {
+            isInitDone_ = true;
+        }
+    }
+
+    return isInitDone_;
 }
+
+}
+
+
+

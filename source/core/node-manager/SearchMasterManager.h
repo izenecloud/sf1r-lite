@@ -7,14 +7,14 @@
 #ifndef SEARCH_MASTER_MANAGER_H_
 #define SEARCH_MASTER_MANAGER_H_
 
-#include "MasterManager.h"
+#include "MasterManagerBase.h"
 
 #include <util/singleton.h>
 
 namespace sf1r
 {
 
-class SearchMasterManager : public MasterManager
+class SearchMasterManager : public MasterManagerBase
 {
 public:
     SearchMasterManager();
@@ -25,6 +25,17 @@ public:
     }
 
     virtual bool init();
+
+protected:
+    virtual std::string getReplicaPath(replicaid_t replicaId)
+    {
+        return ZooKeeperNamespace::getSearchReplicaPath(replicaId);
+    }
+
+    virtual std::string getNodePath(replicaid_t replicaId, nodeid_t nodeId)
+    {
+        return ZooKeeperNamespace::getSearchNodePath(replicaId, nodeId);
+    }
 };
 
 

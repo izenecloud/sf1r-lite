@@ -10,7 +10,7 @@
 #include "SynchroProducer.h"
 #include "SynchroConsumer.h"
 
-#include <node-manager/NodeDef.h>
+#include <node-manager/ZooKeeperNamespace.h>
 #include <node-manager/ZooKeeperManager.h>
 #include <node-manager/SearchNodeManager.h>
 
@@ -32,11 +32,10 @@ public:
     {
         if (syncProducerMap_.find(syncID) == syncProducerMap_.end())
         {
-            std::string zkHosts = SearchNodeManager::get()->getDSUtilConfig().zkConfig_.zkHosts_;
-            int zkTimeout = SearchNodeManager::get()->getDSUtilConfig().zkConfig_.zkRecvTimeout_;
-            std::string syncZkNode = NodeDef::getSynchroPath() + "/" + syncID;
+            ZooKeeperClientPtr zkClient = ZooKeeperManager::get()->createClient(NULL, true);
+            std::string syncZkNode = ZooKeeperNamespace::getSynchroPath() + "/" + syncID;
 
-            syncProducerMap_[syncID].reset(new SynchroProducer(zkHosts, zkTimeout, syncZkNode));
+            syncProducerMap_[syncID].reset(new SynchroProducer(zkClient, syncZkNode));
         }
 
         return syncProducerMap_[syncID];
@@ -49,18 +48,11 @@ public:
      */
     static SynchroConsumerPtr getConsumer(const std::string& syncID)
     {
-        std::string zkHosts = SearchNodeManager::get()->getDSUtilConfig().zkConfig_.zkHosts_;
-        int zkTimeout = SearchNodeManager::get()->getDSUtilConfig().zkConfig_.zkRecvTimeout_;
-        std::string syncZkNode = NodeDef::getSynchroPath() + "/" + syncID;
+        ZooKeeperClientPtr zkClient = ZooKeeperManager::get()->createClient(NULL, true);
+        std::string syncZkNode = ZooKeeperNamespace::getSynchroPath() + "/" + syncID;
 
-        SynchroConsumerPtr ret(new SynchroConsumer(zkHosts, zkTimeout, syncZkNode));
+        SynchroConsumerPtr ret(new SynchroConsumer(zkClient, syncZkNode));
         return ret;
-    }
-
-    static void initSynchroNode(ZooKeeperClientPtr& zookeeper)
-    {
-        zookeeper->deleteZNode(NodeDef::getSynchroPath(), true);
-        zookeeper->createZNode(NodeDef::getSynchroPath());
     }
 
 private:

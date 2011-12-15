@@ -27,8 +27,8 @@ bool callback_on_produced(const std::string& datapath)
 
 void thread_consumer_run()
 {
-    SynchroConsumerPtr scp = SynchroFactory::getConsumer("test");
-    scp->watchProducer(callback_on_produced, true);
+    //SynchroConsumerPtr scp = SynchroFactory::getConsumer("test");
+    //scp->watchProducer(callback_on_produced, true);
 }
 
 int main(int argc, char** argv)
@@ -42,7 +42,7 @@ int main(int argc, char** argv)
                 exit(0);
         }
     }
-
+#if 0
     // set default config
     DistributedTopologyConfig dsTopologyConfig;
     dsTopologyConfig.clusterId_ = "zhongxia";
@@ -75,6 +75,6 @@ int main(int argc, char** argv)
     }
 
     consumer_thread.join();
-
+#endif
     exit(0);
 }

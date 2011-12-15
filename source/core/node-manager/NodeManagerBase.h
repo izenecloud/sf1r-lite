@@ -1,13 +1,13 @@
 /**
- * @file NodeManager.h
+ * @file NodeManagerBase.h
  * @author Zhongxia Li
  * @date Sep 20, 2011
  * @brief Management of SF1 node using ZooKeeper.
  */
-#ifndef NODE_MANAGER_H_
-#define NODE_MANAGER_H_
+#ifndef NODE_MANAGER_BASE_H_
+#define NODE_MANAGER_BASE_H_
 
-#include "NodeDef.h"
+#include "ZooKeeperNamespace.h"
 #include "ZooKeeperManager.h"
 
 #include <configuration-manager/DistributedTopologyConfig.h>
@@ -20,7 +20,7 @@
 namespace sf1r
 {
 
-class NodeManager : public ZooKeeperEventHandler
+class NodeManagerBase : public ZooKeeperEventHandler
 {
 public:
     enum NodeStateType
@@ -31,17 +31,14 @@ public:
         NODE_STATE_STARTED
     };
 
-    NodeManager();
+    NodeManagerBase();
 
-    virtual ~NodeManager();
+    virtual ~NodeManagerBase();
 
     /**
      * @param dsTopologyConfig
-     * @param dsUtilConfig
      */
-    void init(
-            const DistributedTopologyConfig& dsTopologyConfig,
-            const DistributedUtilConfig& dsUtilConfig);
+    void init(const DistributedTopologyConfig& dsTopologyConfig);
 
     /**
      * Start node manager
@@ -58,11 +55,6 @@ public:
         return dsTopologyConfig_;
     }
 
-    const DistributedUtilConfig& getDSUtilConfig() const
-    {
-        return dsUtilConfig_;
-    }
-
     const SF1NodeInfo& getNodeInfo() const
     {
         return nodeInfo_;
@@ -77,16 +69,13 @@ public:
     virtual void process(ZooKeeperEvent& zkEvent);
 
 protected:
+    virtual void setZNodePaths() = 0;
+
     virtual void startMasterManager() {}
 
     virtual void stopMasterManager() {}
 
 protected:
-    /**
-     * Initializations needed to be done before start collections (run)
-     */
-    void initBeforeStart();
-
     /**
      * Make sure zookeeper namaspace (znodes) is initialized properly
      */
@@ -101,17 +90,17 @@ protected:
 
 protected:
     DistributedTopologyConfig dsTopologyConfig_;
-    DistributedUtilConfig dsUtilConfig_;
+    SF1NodeInfo nodeInfo_;
+
+    NodeStateType nodeState_;
+    bool masterStarted_;
 
     ZooKeeperClientPtr zookeeper_;
-    bool isInitBeforeStartDone_;
-
-    // node state
-    NodeStateType nodeState_;
-    SF1NodeInfo nodeInfo_;
+    // znode paths (from root) corresponding current sf1 node
+    std::string clusterPath_;
+    std::string topologyPath_;
+    std::string replicaPath_;
     std::string nodePath_;
-
-    bool masterStarted_;
 
     boost::mutex mutex_;
 
@@ -120,4 +109,4 @@ protected:
 
 }
 
-#endif /* NODE_MANAGER_H_ */
+#endif /* NODE_MANAGER_BASE_H_ */

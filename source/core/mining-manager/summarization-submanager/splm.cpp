@@ -71,7 +71,7 @@ void SPLM::getSmoothedTfSentence(
 }
 
 void SPLM::generateSummary(
-        vector<pair<UString, vector<UString> > >& summary_list,
+        map<UString, vector<pair<double, UString> > >& summaries,
         const Corpus& corpus,
         SPLM::SPLM_Alg algorithm,
         int lengthLimit,
@@ -261,9 +261,7 @@ void SPLM::generateSummary(
                 result.insert(make_pair(sentenceScore, s));
         }
 
-        summary_list.push_back(make_pair(UString(), vector<UString>()));
-        summary_list.back().first.assign(corpus.get_coll_name(c));
-        SPLMUtil::selectSentences(summary_list.back().second, corpus, sentOffs, W, result);
+        SPLMUtil::selectSentences(summaries[corpus.get_coll_name(c)], corpus, sentOffs, W, result);
 
         s_start = s_end;
         d_start = d_end;

@@ -9,14 +9,15 @@ using namespace sf1r;
 
 
 SynchroConsumer::SynchroConsumer(
-        const std::string& zkHosts,
-        int zkTimeout,
-        const std::string syncZkNode)
-: syncZkNode_(syncZkNode)
+        boost::shared_ptr<ZooKeeper>& zookeeper,
+        const std::string& syncZkNode)
+: zookeeper_(zookeeper)
+, syncZkNode_(syncZkNode)
 , consumerStatus_(CONSUMER_STATUS_INIT)
 , replyProducer_(true)
 {
-    zookeeper_ = ZooKeeperManager::get()->createClient(zkHosts, zkTimeout, this, true);
+    if (zookeeper_)
+        zookeeper_->registerEventHandler(this);
 }
 
 SynchroConsumer::~SynchroConsumer()
