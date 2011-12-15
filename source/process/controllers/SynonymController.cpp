@@ -51,6 +51,11 @@ void SynonymController::add_synonym()
     if (!nullValue(request()[Keys::synonym_list]))
     {
         const Value::ArrayType* array = request()[Keys::synonym_list].getPtr<Value::ArrayType>();
+        if(!array || array->size() <= 1)
+        {
+            response().addError("the synonym list size must be bigger than 1.");
+            return;
+        }
         synonym_list = str_join( array, "," );
     }
     else
@@ -109,6 +114,11 @@ void SynonymController::update_synonym()
     if (!nullValue(request()[Keys::old_synonym_list]))
     {
         const Value::ArrayType* array = request()[Keys::old_synonym_list].getPtr<Value::ArrayType>();
+        if(!array || array->size() <= 1)
+        {
+            response().addError("the input old synonym list size must be bigger than 1.");
+            return;
+        }
         old_synonym_list = str_join( array, "," );
     }
     else
@@ -120,6 +130,11 @@ void SynonymController::update_synonym()
     if (!nullValue(request()[Keys::new_synonym_list]))
     {
         const Value::ArrayType* array = request()[Keys::new_synonym_list].getPtr<Value::ArrayType>();
+        if(!array || array->size() <= 1)
+        {
+            response().addError("the input new synonym list size must be bigger than 1.");
+            return;
+        }
         new_synonym_list = str_join( array, "," );
     }
     else
@@ -188,6 +203,11 @@ void SynonymController::delete_synonym()
     if (!nullValue(request()[Keys::synonym_list]))
     {
         const Value::ArrayType* array = request()[Keys::synonym_list].getPtr<Value::ArrayType>();
+        if(!array || array->size() <= 1)
+        {
+            response().addError("the synonym list size must be bigger than 1.");
+            return;
+        }
         synonym_list = str_join( array, "," );
     }
     else
@@ -223,9 +243,6 @@ void SynonymController::delete_synonym()
 
 std::string SynonymController::str_join( const Value::ArrayType* array, const std::string & separator )
 {
-    if(!array)
-        return "";
-
     std::stringstream ret;
     for( size_t i = 0; i < array->size()-1; i++)
         ret<<asString((*array)[i])<<separator;
