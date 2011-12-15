@@ -26,8 +26,6 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/thread/locks.hpp>
-#include <boost/thread/thread.hpp>
 
 #include <glog/logging.h>
 
@@ -484,34 +482,9 @@ bool RecommendTaskService::rateItem(const RateParam& param)
     return result;
 }
 
-bool RecommendTaskService::buildCollection()
+void RecommendTaskService::buildCollection()
 {
-    LOG(INFO) << "Start building recommend collection...";
-    izenelib::util::ClockTimer timer;
-
-    if(!backupDataFiles(directoryRotator_))
-    {
-        LOG(ERROR) << "Failed in backup data files, exit recommend collection build";
-        return false;
-    }
-
-    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
-    if (!dirGuard)
-    {
-        LOG(ERROR) << "Dirty recommend collection data, exit recommend collection build";
-        return false;
-    }
-
-    boost::mutex::scoped_lock lock(buildCollectionMutex_);
-
-    if (loadUserSCD_() && loadOrderSCD_())
-    {
-        LOG(INFO) << "End recommend collection build, elapsed time: " << timer.elapsed() << " seconds";
-        return true;
-    }
-
-    LOG(ERROR) << "Failed recommend collection build";
-    return false;
+    jobScheduler_.addTask(boost::bind(&RecommendTaskService::buildCollectionImpl_, this));
 }
 
 bool RecommendTaskService::loadUserSCD_()
@@ -855,13 +828,6 @@ void RecommendTaskService::buildFreqItemSet_()
 
     LOG(INFO) << "start building frequent item set for collection " << bundleConfig_.collectionName_;
 
-    boost::mutex::scoped_try_lock lock(buildFreqItemMutex_);
-    if (lock.owns_lock() == false)
-    {
-        LOG(INFO) << "exit frequent item set building as it has already been started for collection " << bundleConfig_.collectionName_;
-        return;
-    }
-
     orderManager_.buildFreqItemsets();
 
     LOG(INFO) << "finish building frequent item set for collection " << bundleConfig_.collectionName_;
@@ -871,22 +837,14 @@ void RecommendTaskService::cronJob_()
 {
     if (cronExpression_.matches_now())
     {
-        flush_();
-
-        buildFreqItemSet_();
+        jobScheduler_.addTask(boost::bind(&RecommendTaskService::flush_, this));
+        jobScheduler_.addTask(boost::bind(&RecommendTaskService::buildFreqItemSet_, this));
     }
 }
 
 void RecommendTaskService::flush_()
 {
     LOG(INFO) << "start flushing recommend data for collection " << bundleConfig_.collectionName_;
-
-    boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
-    if (lock.owns_lock() == false)
-    {
-        LOG(INFO) << "exit flushing recommend data as in building collection " << bundleConfig_.collectionName_;
-        return;
-    }
 
     userIdGenerator_.flush();
     userManager_.flush();
@@ -897,6 +855,34 @@ void RecommendTaskService::flush_()
     purchaseManager_.flush();
 
     LOG(INFO) << "finish flushing recommend data for collection " << bundleConfig_.collectionName_;
+}
+
+bool RecommendTaskService::buildCollectionImpl_()
+{
+    LOG(INFO) << "Start building recommend collection...";
+    izenelib::util::ClockTimer timer;
+
+    if(!backupDataFiles(directoryRotator_))
+    {
+        LOG(ERROR) << "Failed in backup data files, exit recommend collection build";
+        return false;
+    }
+
+    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
+    if (!dirGuard)
+    {
+        LOG(ERROR) << "Dirty recommend collection data, exit recommend collection build";
+        return false;
+    }
+
+    if (loadUserSCD_() && loadOrderSCD_())
+    {
+        LOG(INFO) << "End recommend collection build, elapsed time: " << timer.elapsed() << " seconds";
+        return true;
+    }
+
+    LOG(ERROR) << "Failed recommend collection build";
+    return false;
 }
 
 } // namespace sf1r

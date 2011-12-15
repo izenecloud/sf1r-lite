@@ -16,8 +16,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/thread/mutex.hpp>
-
 namespace sf1r
 {
 class User;
@@ -61,7 +59,7 @@ public:
     /**
      * Build collection from 3 types of SCD files: user, item, purchase record.
      */
-    bool buildCollection();
+    void buildCollection();
 
     /**
      * @p user.idStr_ must not be empty.
@@ -251,6 +249,7 @@ private:
     void buildFreqItemSet_();
     void cronJob_();
     void flush_();
+    bool buildCollectionImpl_();
 
 private:
     RecommendBundleConfiguration& bundleConfig_;
@@ -275,9 +274,6 @@ private:
 
     izenelib::util::CronExpression cronExpression_;
     const std::string cronJobName_;
-
-    boost::mutex buildFreqItemMutex_;
-    boost::mutex buildCollectionMutex_;
 };
 
 } // namespace sf1r
