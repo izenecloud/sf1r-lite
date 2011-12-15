@@ -27,6 +27,8 @@ public:
         index_service_ = index_service;
     }
 
+    bool onReceived();
+
     bool Run(const std::string& scd_source_dir);
 
 private:

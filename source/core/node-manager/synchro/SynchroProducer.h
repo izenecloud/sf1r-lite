@@ -2,7 +2,7 @@
  * @file SynchroProducer.h
  * @author Zhongxia Li
  * @date Oct 23, 2011
- * @brief Distributed data synchronizer component
+ * @brief Distributed synchronizer works as Producer-Consumer, Producer produces data to be synchronized.
  */
 
 #ifndef SYNCHROPRODUCER_H_
@@ -21,6 +21,16 @@
 
 namespace sf1r{
 
+/**
+ * ZooKeeper namespace for Synchro Producer and Consumer(s).
+ *
+ * SynchroNode
+ *  |--- Producer
+ *  |--- Consumers
+ *       |--- Consumer00000000
+ *       |--- Consumer00000001
+ *       |--- ...
+ */
 class SynchroProducer : public ZooKeeperEventHandler
 {
 public:
@@ -73,6 +83,7 @@ private:
     boost::shared_ptr<ZooKeeper> zookeeper_;
 
     std::string syncZkNode_;
+    std::string producerZkNode_;
 
     bool isSynchronizing_; // perform one synchronization work at a time, xxx
 

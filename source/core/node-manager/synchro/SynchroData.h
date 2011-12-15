@@ -14,12 +14,29 @@ namespace sf1r{
 class SynchroData : public izenelib::util::kv2string
 {
 public:
-    const static char* KEY_HOST;
-    const static char* KEY_DATA_TYPE;
-    const static char* KEY_DATA_PATH;
-    const static char* KEY_COLLECTION;
-    const static char* KEY_RETURN;
-    const static char* KEY_ERROR;
+    static const char* KEY_HOST;
+    static const char* KEY_DATA_TYPE;
+    static const char* KEY_DATA_PATH;
+    static const char* KEY_COLLECTION;
+    static const char* KEY_RETURN;
+    static const char* KEY_ERROR;
+};
+
+
+/**
+ * ZooKeeper namespace for Synchro Producer and Consumer(s).
+ *
+ * SynchroNode
+ *  |--- Producer
+ *  |--- Consumer00000000
+ *  |--- Consumer00000001
+ *  |--- ...
+ */
+class SynchroZkNode
+{
+public:
+    static const char* PRODUCER;
+    static const char* CONSUMER;
 };
 
 }

@@ -8,5 +8,8 @@ const char* SynchroData::KEY_COLLECTION = "colletion";
 const char* SynchroData::KEY_ERROR = "error";
 const char* SynchroData::KEY_RETURN = "return";
 
+const char* SynchroZkNode::PRODUCER = "/Producer";
+const char* SynchroZkNode::CONSUMER = "/Consumer";
+
 }
 

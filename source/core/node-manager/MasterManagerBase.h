@@ -43,7 +43,7 @@ public:
 public:
     MasterManagerBase();
 
-    virtual ~MasterManagerBase() {};
+    virtual ~MasterManagerBase() { stop(); };
 
     virtual bool init() = 0;
 
