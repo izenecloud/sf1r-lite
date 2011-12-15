@@ -1,5 +1,6 @@
 #include "scd_operation_processor.h"
 #include <sstream>
+#include <glog/logging.h>
 #include <common/ScdWriter.h>
 #include <boost/filesystem.hpp>
 #include <node-manager/synchro/SynchroFactory.h>
@@ -54,7 +55,8 @@ bool ScdOperationProcessor::Finish()
         last_op_ = 0;
         //notify zookeeper on dir_
     }
-    std::cout<<"ScdOperationProcessor::Finish "<<dir_<<std::endl;
+    LOG(INFO)<<"ScdOperationProcessor::Finish "<<dir_<<std::endl;
+
 
     SynchroData syncData;
     syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
@@ -72,6 +74,7 @@ bool ScdOperationProcessor::Finish()
 
 void ScdOperationProcessor::ClearScds_()
 {
+    LOG(INFO)<<"Clearing Scds"<<std::endl;
     namespace bfs = boost::filesystem;
     static const bfs::directory_iterator kItrEnd;
 
@@ -86,11 +89,11 @@ void ScdOperationProcessor::AfterProcess_(bool is_succ)
 {
     if(is_succ)
     {
-        std::cout<<"Scd transmission and processed successfully!"<<std::endl;
+        LOG(INFO)<<"Scd transmission and processed successfully!"<<std::endl;
         ClearScds_();
     }
     else
     {
-        std::cout<<"ERROR: Scd transmission and processed failed!"<<std::endl;
+        LOG(ERROR)<<"ERROR: Scd transmission and processed failed!"<<std::endl;
     }
 }
