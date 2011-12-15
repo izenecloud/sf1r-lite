@@ -1,5 +1,7 @@
 #include "SynchroProducer.h"
 
+#include <node-manager/SuperNodeManager.h>
+
 #include <sstream>
 
 using namespace sf1r;
@@ -25,30 +27,26 @@ SynchroProducer::~SynchroProducer()
 
 bool SynchroProducer::produce(SynchroData& syncData, callback_on_consumed_t callback_on_consumed)
 {
-    // xxx lock
+    boost::lock_guard<boost::mutex> lock(produce_mutex_);
+
     if (isSynchronizing_)
     {
-        std::cout<<"[SynchroProducer] Re-entry error: synchronizer is working !"<<std::endl;
+        std::cout<<"[SynchroProducer] error: is synchroning!"<<std::endl;
         return false;
     }
     else
     {
         isSynchronizing_ = true;
-
         init();
     }
 
     if (doProduce(syncData))
     {
         if (callback_on_consumed != NULL)
-        {
             callback_on_consumed_ = callback_on_consumed;
-        }
 
-        // watching consumers
-        watchConsumers();
-        checkConsumers();
-
+        watchConsumers(); // wait consumer(s)
+        checkConsumers(); // check consuming status
         return true;
     }
 
@@ -56,36 +54,35 @@ bool SynchroProducer::produce(SynchroData& syncData, callback_on_consumed_t call
     return false;
 }
 
-bool SynchroProducer::waitConsumers(bool& isConsumed, int findConsumerTimeout)
+bool SynchroProducer::wait(int timeout)
 {
-    //std::cout<<"SynchroProducer::waitConsumers"<<std::endl;
-
     if (!isSynchronizing_)
     {
-        std::cout<<"[SynchroProducer::waitConsumers] no synchronizing working.."<<std::endl;
+        std::cout<<"[SynchroProducer::wait] not synchronizing ..."<<std::endl;
         return false;
     }
 
+    // wait consumer(s) to consume produced data
     int step = 1;
     int waited = 0;
     while (!watchedConsumer_)
     {
         sleep(step);
         waited += step;
-        if (waited >= findConsumerTimeout)
+        if (waited >= timeout)
         {
-            endSynchroning("timeout!");
+            endSynchroning("timeout: no consumer!");
             return false;
         }
     }
 
+    // wait synchronizing to finish
     while (isSynchronizing_)
     {
         sleep(1);
     }
 
-    isConsumed = result_on_consumed_;
-    return true;
+    return result_on_consumed_;
 }
 
 /* virtual */
@@ -133,8 +130,7 @@ bool SynchroProducer::doProduce(SynchroData& syncData)
             if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
             {
                 zookeeper_->setZNodeData(syncZkNode_, syncData.serialize());
-                std::cout<<"[SynchroProducer] overwrote "<<syncZkNode_<<std::endl;
-                //std::cout<<"with data: "<<syncDataStr<<std::endl;
+                std::cout<<"[SynchroProducer] warning: overwrote "<<syncZkNode_<<std::endl;
                 produced = true;
             }
 
@@ -191,7 +187,10 @@ void SynchroProducer::watchConsumers()
     if (childrenList.size() > 0)
     {
         if (!watchedConsumer_)
-            watchedConsumer_ = true; // watched consumer at the first time
+        {
+            // watched consumer at the first time
+            watchedConsumer_ = true;
+        }
 
         for (size_t i = 0; i < childrenList.size(); i++)
         {

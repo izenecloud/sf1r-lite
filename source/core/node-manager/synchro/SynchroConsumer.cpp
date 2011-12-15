@@ -76,12 +76,15 @@ void SynchroConsumer::onDataChanged(const std::string& path)
 
 void SynchroConsumer::onMonitor()
 {
+    // ensure connection
     if (zookeeper_ && !zookeeper_->isConnected())
     {
         zookeeper_->connect(true);
 
         if (zookeeper_->isConnected())
+        {
             resetWatch();
+        }
     }
     else if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
     {

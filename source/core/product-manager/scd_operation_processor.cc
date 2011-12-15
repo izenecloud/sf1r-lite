@@ -59,14 +59,12 @@ bool ScdOperationProcessor::Finish()
     SynchroData syncData;
     syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
     syncData.setValue(SynchroData::KEY_DATA_PATH, dir_);
+
     SynchroProducerPtr syncProducer = SynchroFactory::getProducer(collectionName_);
     if (syncProducer->produce(syncData, boost::bind(&ScdOperationProcessor::AfterProcess_, this,_1)))
     {
-        bool isConsumed = false;
-        syncProducer->waitConsumers(isConsumed);
-        return isConsumed;
+        return syncProducer->wait();
     }
-
     return false;
 }
 
