@@ -78,7 +78,7 @@ public:
 private:
     bool IsBufferFull_();
 
-    bool UpdateTPC_(uint32_t time_int, time_t timestamp = -1);
+    bool UpdateTPC_(uint32_t time_int, time_t timestamp);
 
     void ParseDocid_(std::string& dest, const std::string& src) const;
 

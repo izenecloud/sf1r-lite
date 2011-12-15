@@ -25,6 +25,17 @@ public:
     }
 
     virtual bool init();
+
+protected:
+    virtual std::string getReplicaPath(replicaid_t replicaId)
+    {
+        return ZooKeeperNamespace::getSearchReplicaPath(replicaId);
+    }
+
+    virtual std::string getNodePath(replicaid_t replicaId, nodeid_t nodeId)
+    {
+        return ZooKeeperNamespace::getSearchNodePath(replicaId, nodeId);
+    }
 };
 
 

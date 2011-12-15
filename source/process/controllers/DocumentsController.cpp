@@ -873,7 +873,7 @@ void DocumentsController::get_summarization()
     Value& resources = response()[Keys::resources];
     resources.reset<Value::ArrayType>();
     Summarization::property_const_iterator sIt = result.propertyBegin();
-    for(;sIt != result.propertyEnd();++sIt)
+    for (; sIt != result.propertyEnd(); ++sIt)
     {
         Value& new_resource = resources();
         new_resource[Keys::aspect] = sIt->first;
@@ -881,8 +881,10 @@ void DocumentsController::get_summarization()
         Value& summary = new_resource[Keys::summary];
         for (uint32_t i = 0; i < sIt->second.size(); i++)
         {
-            sIt->second[i].convertString(str, izenelib::util::UString::UTF_8);
-            summary() = str;
+            Value& summary_item = summary();
+            sIt->second[i].second.convertString(str, izenelib::util::UString::UTF_8);
+            summary_item[Keys::sentence] = str;
+            summary_item[Keys::score] = sIt->second[i].first;
         }
     }
 }

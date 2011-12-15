@@ -10,7 +10,7 @@
 #include "SynchroProducer.h"
 #include "SynchroConsumer.h"
 
-#include <node-manager/NodeDef.h>
+#include <node-manager/ZooKeeperNamespace.h>
 #include <node-manager/ZooKeeperManager.h>
 #include <node-manager/SearchNodeManager.h>
 
@@ -33,7 +33,7 @@ public:
         if (syncProducerMap_.find(syncID) == syncProducerMap_.end())
         {
             ZooKeeperClientPtr zkClient = ZooKeeperManager::get()->createClient(NULL, true);
-            std::string syncZkNode = NodeDef::getSynchroPath() + "/" + syncID;
+            std::string syncZkNode = ZooKeeperNamespace::getSynchroPath() + "/" + syncID;
 
             syncProducerMap_[syncID].reset(new SynchroProducer(zkClient, syncZkNode));
         }
@@ -49,7 +49,7 @@ public:
     static SynchroConsumerPtr getConsumer(const std::string& syncID)
     {
         ZooKeeperClientPtr zkClient = ZooKeeperManager::get()->createClient(NULL, true);
-        std::string syncZkNode = NodeDef::getSynchroPath() + "/" + syncID;
+        std::string syncZkNode = ZooKeeperNamespace::getSynchroPath() + "/" + syncID;
 
         SynchroConsumerPtr ret(new SynchroConsumer(zkClient, syncZkNode));
         return ret;

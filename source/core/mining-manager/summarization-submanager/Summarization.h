@@ -15,8 +15,7 @@ namespace sf1r
 /// a list of summarization properties.
 class Summarization
 {
-    typedef std::map<std::string, std::vector<UString> > property_named_map;
-    typedef property_named_map::iterator property_mutable_iterator;
+    typedef std::map<std::string, std::vector<std::pair<double, UString> > > property_named_map;
     typedef izenelib::am::EWAHBoolArray<uint32_t> fingerprint_type;
 
 public:
@@ -42,14 +41,14 @@ public:
         }
     }
 
-    std::vector<UString>& property(const std::string& propertyName)
+    std::vector<std::pair<double, UString> >& property(const std::string& propertyName)
     {
         return propertyList_[propertyName];
     }
 
-    const std::vector<UString>& property(const std::string& propertyName) const
+    const std::vector<std::pair<double, UString> >& property(const std::string& propertyName) const
     {
-        static std::vector<UString> empty_property;
+        static std::vector<std::pair<double, UString> > empty_property;
 
         property_const_iterator found = findProperty(propertyName);
         if (found != propertyEnd())
@@ -63,7 +62,7 @@ public:
     /// Insert a new property into the document.
     /// @return \c true if successful, \c false if already existed
     bool insertProperty(const std::string& propertyName,
-                        const std::vector<UString>& propertyValue)
+                        const std::vector<std::pair<double, UString> >& propertyValue)
     {
         return propertyList_.insert(
                    std::make_pair(propertyName, propertyValue)
@@ -72,7 +71,7 @@ public:
 
     /// Set a new value to a property of the document.
     void updateProperty(const std::string& propertyName,
-                        std::vector<UString> propertyValue)
+                        std::vector<std::pair<double, UString> > propertyValue)
     {
         propertyList_[propertyName].swap(propertyValue);
     }
