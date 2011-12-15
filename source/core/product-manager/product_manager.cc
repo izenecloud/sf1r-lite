@@ -151,7 +151,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
     ProductPrice to_price;
     util_.GetPrice(fromid, from_price);
     util_.GetPrice(to, to_price);
-    
+
     if (has_price_trend_ && to_price.Valid() && from_price != to_price)
     {
         UString docid;
@@ -268,7 +268,7 @@ bool ProductManager::FinishHook()
             izenelib::util::UString docname(in_group[0], izenelib::util::UString::UTF_8);
             UuidType uuid;
             UuidGenerator::Gen(uuid);
-            
+
             PMDocumentType doc;
             doc.property(config_.docid_property_name) = docname;
             doc.property(config_.price_property_name) = izenelib::util::UString("", izenelib::util::UString::UTF_8);
@@ -468,7 +468,6 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, PMDocumen
         return false;
     }
     return true;
-    
 }
 
 
@@ -597,4 +596,3 @@ bool ProductManager::GetGroupProperties_(const PMDocumentType& doc, std::map<std
     }
     return group_prop_map.empty();
 }
-

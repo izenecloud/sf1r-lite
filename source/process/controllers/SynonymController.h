@@ -38,9 +38,6 @@ public:
 
 private:
     std::string str_join( const Value::ArrayType* array, const std::string & separator );
-
-public:
-    static const std::string DICTIONARY_FILE;
 };
 
 /// @}

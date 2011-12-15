@@ -491,6 +491,7 @@ void SF1Config::parseTokenizer(const ticpp::Element * tokenizing)
 void SF1Config::parseLanguageAnalyzer(const ticpp::Element * languageAnalyzer)
 {
     // 1. <LanguageAnalyzer>
+    laDictionaryPath_ = "";
     string dictionaryPath;
 
     getAttribute(languageAnalyzer, "dictionarypath", dictionaryPath);
@@ -629,6 +630,11 @@ void SF1Config::parseLanguageAnalyzer(const ticpp::Element * languageAnalyzer)
                 getAttribute(settings, "option", option, false);
                 getAttribute(settings, "specialchar", specialChar, false);
                 getAttribute(settings, "dictionarypath", dictionaryPath_inner, false);
+
+                if(!dictionaryPath_inner.empty())
+                {
+                    laDictionaryPath_ = dictionaryPath_inner;
+                }
 
                 downCase(mode);
                 downCase(option);
