@@ -25,7 +25,9 @@ bool ProductScdReceiver::onReceived()
 
 bool ProductScdReceiver::Run(const std::string& scd_source_dir)
 {
-    std::cout<<"ProductScdReceiver::Run "<<scd_source_dir<<std::endl;
+//     LOG(INFO)<<"ProductScdReceiver in test"<<std::endl;
+//     return true;
+    LOG(INFO)<<"ProductScdReceiver::Run "<<scd_source_dir<<std::endl;
     if(index_service_==NULL)
     {
         return false;
@@ -43,14 +45,15 @@ bool ProductScdReceiver::Run(const std::string& scd_source_dir)
             std::string fileName = itr->path().filename();
             if (parser.checkSCDFormat(fileName) )
             {
-                std::cout<<"[ProductScdReceiver] find SCD "<<fileName<<std::endl;
+                LOG(INFO)<<"[ProductScdReceiver] find SCD "<<fileName<<std::endl;
                 scd_list.push_back(itr->path());
             }
         }
     }
     if(scd_list.empty())
     {
-        return false;
+        LOG(INFO)<<"[ProductScdReceiver] No SCD file found."<<std::endl;
+        return true;
     }
     bfs::path to_dir(index_scd_dir);
     if(!CopyFileListToDir_(scd_list, to_dir))

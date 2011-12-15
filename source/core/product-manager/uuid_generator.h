@@ -13,28 +13,45 @@
 namespace sf1r
 {
 
-void generateUUID(std::string& uuid_str, const PMDocumentType& doc)
+class UuidGenerator
+{
+public:
+static void Gen(std::string& uuid_str)
 {
     static boost::uuids::random_generator random_gen;
     uuid_str = boost::uuids::to_string(random_gen());
 }
 
-void generateUUID(izenelib::util::UString& uuid_ustr, const PMDocumentType& doc)
+static void Gen(izenelib::util::UString& uuid_ustr)
 {
     std::string uuid_str;
-    generateUUID(uuid_str, doc);
-    uuid_ustr.assign(uuid_str, izenelib::util::UString::UTF_8);
+    Gen(uuid_str);
+    uuid_ustr = izenelib::util::UString(uuid_str, izenelib::util::UString::UTF_8);
 }
 
-void generateUUID(const izenelib::util::UString& docname, izenelib::util::UString& uuid_ustr)
-{
-    static izenelib::util::UString appender("_uuid", izenelib::util::UString::UTF_8);
-    if(uuid_ustr.length()==0)
-    {
-        uuid_ustr = docname;
-    }
-    uuid_ustr.append(appender);
-}
+// void generateUUID(std::string& uuid_str, const PMDocumentType& doc)
+// {
+//     static boost::uuids::random_generator random_gen;
+//     uuid_str = boost::uuids::to_string(random_gen());
+// }
+// 
+// void generateUUID(izenelib::util::UString& uuid_ustr, const PMDocumentType& doc)
+// {
+//     std::string uuid_str;
+//     generateUUID(uuid_str, doc);
+//     uuid_ustr.assign(uuid_str, izenelib::util::UString::UTF_8);
+// }
+// 
+// void generateUUID(const izenelib::util::UString& docname, izenelib::util::UString& uuid_ustr)
+// {
+//     static izenelib::util::UString appender("_uuid", izenelib::util::UString::UTF_8);
+//     if(uuid_ustr.length()==0)
+//     {
+//         uuid_ustr = docname;
+//     }
+//     uuid_ustr.append(appender);
+// }
+};
 
 }
 

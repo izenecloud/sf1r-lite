@@ -9,6 +9,7 @@
 #include "pm_def.h"
 #include "pm_types.h"
 #include "pm_config.h"
+#include "pm_util.h"
 #include "product_price.h"
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
@@ -18,7 +19,7 @@ namespace sf1r
 
 class ProductDataSource;
 class OperationProcessor;
-class ProductBackup;
+class ProductEditor;
 class ProductPriceTrend;
 class ProductClustering;
 class ProductClusteringPostItem;
@@ -26,6 +27,8 @@ class ProductClusteringPostItem;
 class ProductManager
 {
 public:
+    
+   
     ProductManager(
             const std::string& work_dir,
             ProductDataSource* data_source,
@@ -46,20 +49,15 @@ public:
     bool FinishHook();
 
     //update documents in A, so need transfer
-    bool UpdateADoc(const Document& doc, bool backup = true);
+    bool UpdateADoc(const Document& doc);
 
     //all intervention functions.
-    bool AddGroup(const std::vector<uint32_t>& docid_list, izenelib::util::UString& gen_uuid, bool backup = true);
+    bool AddGroup(const std::vector<uint32_t>& docid_list, PMDocumentType& info, const ProductEditOption& option);
 
-    bool AppendToGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, bool backup = true);
+    bool AppendToGroup(const UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option);
 
-    bool RemoveFromGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, bool backup = true);
+    bool RemoveFromGroup(const UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option);
 
-    bool AddGroupWithInfo(const std::vector<uint32_t>& docid_list, const Document& doc, bool backup = true);
-
-    bool AddGroupWithInfo(const std::vector<izenelib::util::UString>& docid_list, const Document& doc, bool backup = true);
-
-    bool CheckAddGroupWithInfo(const std::vector<izenelib::util::UString>& docid_list, const Document& doc);
 
     bool GetMultiPriceHistory(
             PriceHistoryList& history_list,
@@ -92,41 +90,27 @@ public:
 
 private:
     ProductClustering* GetClustering_();
-
+    
+        
     bool GenOperations_();
 
-    void BackupPCItem_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, int type);
-
-    bool UpdateADoc_(const Document& doc);
-
-    bool AppendToGroup_(const izenelib::util::UString& uuid, const std::vector<uint32_t>& uuid_docid_list, const std::vector<uint32_t>& docid_list, const PMDocumentType& uuid_doc);
-
-    void SetItemCount_(PMDocumentType& doc, uint32_t item_count);
-
-    bool GetPrice_(uint32_t docid, ProductPrice& price) const;
-
-    bool GetPrice_(const PMDocumentType& doc, ProductPrice& price) const;
-
-    void GetPrice_(const std::vector<uint32_t>& docid_list, ProductPrice& price) const;
-
-    bool GetUuid_(const PMDocumentType& doc, izenelib::util::UString& uuid) const;
-
-    bool GetDOCID_(const PMDocumentType& doc, izenelib::util::UString& docid) const;
-
+    
     bool GetTimestamp_(const PMDocumentType& doc, time_t& timestamp) const;
 
     bool GetGroupProperties_(const PMDocumentType& doc, std::map<std::string, std::string>& group_prop_map) const;
-
+    
     bool GetCategory_(const PMDocumentType& doc, izenelib::util::UString& category);
+    
 
 private:
     std::string work_dir_;
+    PMConfig config_;
     ProductDataSource* data_source_;
     OperationProcessor* op_processor_;
     ProductPriceTrend* price_trend_;
     ProductClustering* clustering_;
-    ProductBackup* backup_;
-    PMConfig config_;
+    ProductEditor* editor_;
+    PMUtil util_;
     std::string error_;
     bool has_price_trend_;
     bool inhook_;

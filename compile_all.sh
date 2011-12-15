@@ -8,6 +8,18 @@ JOB_NUM=2
 cd ..
 CODEBASE_DIR="$(pwd)"
 
+export IZENELIB=$CODEBASE_DIR/izenelib
+export ILPLIB=$CODEBASE_DIR/ilplib
+export IMLLIB=$CODEBASE_DIR/imllib
+export IDMLIB=$CODEBASE_DIR/idmlib
+export WISEKMA=$CODEBASE_DIR/wisekma
+export IZENECMA=$CODEBASE_DIR/icma
+export IZENEJMA=$CODEBASE_DIR/ijma
+
+if [ ! -d $WISEKMA ];then
+    export WISEKMA=$CODEBASE_DIR/kma
+fi
+
 PROJECT_CMAKE_PATH=$CODEBASE_DIR/cmake
 if [ -d $PROJECT_CMAKE_PATH ];then
   export EXTRA_CMAKE_MODULES_DIRS=$PROJECT_CMAKE_PATH
