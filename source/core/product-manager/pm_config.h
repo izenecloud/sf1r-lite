@@ -14,6 +14,7 @@ struct PMConfig
 {
     bool enable_price_trend;
     bool enable_clustering_algo;
+    uint32_t algo_fixk;
     std::string price_property_name;
     std::string date_property_name;
     std::string docid_property_name;
@@ -30,6 +31,7 @@ struct PMConfig
     PMConfig()
         : enable_price_trend(false)
         , enable_clustering_algo(false)
+        , algo_fixk(0)
         , price_property_name("Price")
         , date_property_name("DATE")
         , docid_property_name("DOCID")
