@@ -24,12 +24,13 @@ ProductManager::ProductManager(
         ProductPriceTrend* price_trend,
         const PMConfig& config)
     : work_dir_(work_dir)
+    , config_(config)
     , data_source_(data_source)
     , op_processor_(op_processor)
     , price_trend_(price_trend)
     , clustering_(NULL)
     , editor_(new ProductEditor(data_source, op_processor, config))
-    , config_(config)
+    , util_(config, data_source)
     , has_price_trend_(false)
     , inhook_(false)
 {
@@ -98,10 +99,10 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
     if (has_price_trend_)
     {
         ProductPrice price;
-        if (GetPrice_(doc, price))
+        if (util_.GetPrice(doc, price))
         {
             UString docid;
-            if (GetDOCID_(doc, docid))
+            if( doc.getProperty(config_.docid_property_name, docid))
             {
                 std::string docid_str;
                 docid.convertString(docid_str, UString::UTF_8);
@@ -122,7 +123,7 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
         PMDocumentType new_doc(doc);
         doc.property(config_.uuid_property_name) = uuid;
         new_doc.property(config_.docid_property_name) = uuid;
-        SetItemCount_(new_doc, 1);
+        util_.SetItemCount(new_doc, 1);
         op_processor_->Append(1, new_doc);
     }
     else
@@ -145,16 +146,16 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
     PMDocumentType from;
     if (!data_source_->GetDocument(fromid, from)) return false;
     UString from_uuid;
-    if (!GetUuid_(from, from_uuid)) return false;
+    if (!from.getProperty(config_.uuid_property_name, from_uuid) ) return false;
     ProductPrice from_price;
     ProductPrice to_price;
-    GetPrice_(fromid, from_price);
-    GetPrice_(to, to_price);
-
+    util_.GetPrice(fromid, from_price);
+    util_.GetPrice(to, to_price);
+    
     if (has_price_trend_ && to_price.Valid() && from_price != to_price)
     {
         UString docid;
-        if (GetDOCID_(to, docid))
+        if (to.getProperty(config_.docid_property_name, docid ) )
         {
             std::string docid_str;
             docid.convertString(docid_str, UString::UTF_8);
@@ -173,7 +174,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
         PMDocumentType new_doc(to);
         to.property(config_.uuid_property_name) = from_uuid;
         new_doc.property(config_.docid_property_name) = from_uuid;
-        SetItemCount_(new_doc, 1);
+        util_.SetItemCount(new_doc, 1);
         op_processor_->Append(2, new_doc);// if r_type, only numeric properties in 'to'
     }
     else
@@ -186,7 +187,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
         {
             PMDocumentType diff_properties;
             ProductPrice price(to_price);
-            GetPrice_(docid_list, price);
+            util_.GetPrice(docid_list, price);
             diff_properties.property(config_.price_property_name) = price.ToUString();
             diff_properties.property(config_.docid_property_name) = from_uuid;
             //auto r_type? itemcount no need?
@@ -205,7 +206,7 @@ bool ProductManager::HookDelete(uint32_t docid, time_t timestamp)
     PMDocumentType from;
     if (!data_source_->GetDocument(docid, from)) return false;
     UString from_uuid;
-    if (!GetUuid_(from, from_uuid)) return false;
+    if (!from.getProperty(config_.uuid_property_name, from_uuid) ) return false;
     std::vector<uint32_t> docid_list;
     data_source_->GetDocIdList(from_uuid, docid_list, docid); // except from.docid
     if (docid_list.empty()) // the from doc is unique, so delete it in A
@@ -218,10 +219,10 @@ bool ProductManager::HookDelete(uint32_t docid, time_t timestamp)
     {
         PMDocumentType diff_properties;
         ProductPrice price;
-        GetPrice_(docid_list, price);
+        util_.GetPrice(docid_list, price);
         diff_properties.property(config_.price_property_name) = price.ToUString();
         diff_properties.property(config_.docid_property_name) = from_uuid;
-        SetItemCount_(diff_properties, docid_list.size());
+        util_.SetItemCount(diff_properties, docid_list.size());
         op_processor_->Append(2, diff_properties);
     }
     return true;
@@ -236,7 +237,7 @@ bool ProductManager::FinishHook()
 
     if(clustering_!=NULL)
     {
-        uint32_t max_in_group = 100;
+        uint32_t max_in_group = 20;
         if(!clustering_->Run())
         {
             std::cout<<"ProductClustering Run failed"<<std::endl;
@@ -272,7 +273,7 @@ bool ProductManager::FinishHook()
             doc.property(config_.docid_property_name) = docname;
             doc.property(config_.price_property_name) = izenelib::util::UString("", izenelib::util::UString::UTF_8);
             doc.property(config_.uuid_property_name) = uuid;
-            SetItemCount_(doc, in_group.size());
+            util_.SetItemCount(doc, in_group.size());
             g2doc_map.insert(std::make_pair(gid, doc));
             if(uuid_map_writer!=NULL)
             {
@@ -328,9 +329,9 @@ bool ProductManager::FinishHook()
 #endif
             UString udocid;
             std::string sdocid;
-            GetDOCID_(doc, udocid);
+            doc.getProperty(config_.docid_property_name, udocid);
             ProductPrice price;
-            GetPrice_(doc, price);
+            util_.GetPrice(doc, price);
             udocid.convertString(sdocid, izenelib::util::UString::UTF_8);
             GroupTableType::GroupIdType group_id;
             bool in_group = false;
@@ -351,7 +352,7 @@ bool ProductManager::FinishHook()
                 boost::unordered_map<GroupTableType::GroupIdType, PMDocumentType>::iterator g2doc_it = g2doc_map.find(group_id);
                 PMDocumentType& combine_doc = g2doc_it->second;
                 ProductPrice combine_price;
-                GetPrice_(combine_doc, combine_price);
+                util_.GetPrice(combine_doc, combine_price);
                 combine_price += price;
                 izenelib::util::UString base_udocid = doc.property(config_.docid_property_name).get<izenelib::util::UString>();
                 UString uuid = combine_doc.property(config_.uuid_property_name).get<izenelib::util::UString>();
@@ -376,7 +377,7 @@ bool ProductManager::FinishHook()
                 PMDocumentType new_doc(doc);
                 new_doc.property(config_.docid_property_name) = uuid;
                 new_doc.eraseProperty(config_.uuid_property_name);
-                SetItemCount_(new_doc, 1);
+                util_.SetItemCount(new_doc, 1);
                 op_processor_->Append(1, new_doc);
                 ++append_count;
             }
@@ -559,62 +560,6 @@ bool ProductManager::GetTopPriceCutList(
     return price_trend_->GetTopPriceCutList(tpc_queue, prop_name, prop_value, days, count, error_);
 }
 
-bool ProductManager::GetPrice_(uint32_t docid, ProductPrice& price) const
-{
-    PMDocumentType doc;
-    if (!data_source_->GetDocument(docid, doc)) return false;
-    return GetPrice_(doc, price);
-}
-
-bool ProductManager::GetPrice_(const PMDocumentType& doc, ProductPrice& price) const
-{
-    Document::property_const_iterator it = doc.findProperty(config_.price_property_name);
-    if (it == doc.propertyEnd())
-    {
-        return false;
-    }
-    const UString& price_str = it->second.get<UString>();
-    return price.Parse(price_str);
-}
-
-void ProductManager::GetPrice_(const std::vector<uint32_t>& docid_list, ProductPrice& price) const
-{
-    for (uint32_t i = 0; i < docid_list.size(); i++)
-    {
-        ProductPrice p;
-        if (GetPrice_(docid_list[i], p))
-        {
-            price += p;
-        }
-    }
-}
-
-bool ProductManager::GetUuid_(const PMDocumentType& doc, UString& uuid) const
-{
-    PMDocumentType::property_const_iterator it = doc.findProperty(config_.uuid_property_name);
-    if (it == doc.propertyEnd())
-    {
-        return false;
-    }
-    uuid = it->second.get<UString>();
-    return true;
-}
-
-bool ProductManager::GetDOCID_(const PMDocumentType& doc, UString& docid) const
-{
-    PMDocumentType::property_const_iterator it = doc.findProperty(config_.docid_property_name);
-    if (it == doc.propertyEnd())
-    {
-        return false;
-    }
-    docid = it->second.get<UString>();
-    return true;
-}
-
-bool ProductManager::GetCategory_(const PMDocumentType& doc, izenelib::util::UString& category)
-{
-    return doc.getProperty(config_.category_property_name, category);
-}
 
 bool ProductManager::GetTimestamp_(const PMDocumentType& doc, time_t& timestamp) const
 {
@@ -653,7 +598,3 @@ bool ProductManager::GetGroupProperties_(const PMDocumentType& doc, std::map<std
     return group_prop_map.empty();
 }
 
-void ProductManager::SetItemCount_(PMDocumentType& doc, uint32_t item_count)
-{
-    doc.property(config_.itemcount_property_name) = UString(boost::lexical_cast<std::string>(item_count), UString::UTF_8);
-}

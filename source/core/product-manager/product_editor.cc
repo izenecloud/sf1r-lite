@@ -19,6 +19,31 @@ ProductEditor::~ProductEditor()
 //update documents in A, so need transfer
 bool ProductEditor::UpdateADoc(const PMDocumentType& doc)
 {
+    UString uuid;
+    if( !doc.getProperty(config_.docid_property_name, uuid) )
+    {
+        error_ = "Input doc does not have DOCID property";
+        return false;
+    }
+    if (doc.hasProperty(config_.price_property_name))
+    {
+        error_ = "Can not update Price property manually.";
+        return false;
+    }
+    if (doc.hasProperty(config_.itemcount_property_name))
+    {
+        error_ = "Can not update itemcount property manually.";
+        return false;
+    }
+    std::vector<uint32_t> same_docid_list;
+    data_source_->GetDocIdList(uuid, same_docid_list, 0);
+    if(same_docid_list.empty())
+    {
+        std::string suuid;
+        uuid.convertString(suuid, izenelib::util::UString::UTF_8);
+        error_ = "UUID "+suuid+" not exist";
+        return false;
+    }
     std::vector<PMDocumentType> doc_list;
     return AppendToGroup_(doc_list, doc);
 }
@@ -182,6 +207,13 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
     UString uuid;
     info.getProperty(config_.docid_property_name, uuid);
     PMDocumentType new_doc(info);
+    if(doc_list.size()>0)
+    {
+        //use the first document info as the group info by default
+        new_doc.copyPropertiesFromDocument(doc_list[0], false);
+    }
+    new_doc.eraseProperty(config_.price_property_name);
+    new_doc.eraseProperty(config_.uuid_property_name);
     std::vector<uint32_t> uuid_docid_list;
     int type = 1; //insert
     {
@@ -194,6 +226,7 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
     for(uint32_t i=0;i<doc_list.size();i++)
     {
         const PMDocumentType& doc = doc_list[i];
+        
         uint32_t docid = doc.getId();
         UString doc_uuid;
         doc.getProperty(config_.uuid_property_name, doc_uuid);
@@ -219,8 +252,10 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
             util_.GetPrice(same_docid_list, update_price);
             PMDocumentType update_doc;
             update_doc.property(config_.docid_property_name) = doc_uuid;
+            uint32_t itemcount = same_docid_list.size();
+            util_.SetItemCount(update_doc, itemcount);
 #ifdef PM_EDIT_INFO
-            LOG(INFO)<<"Output : "<<2<<" , "<<doc_uuid<<std::endl;
+            LOG(INFO)<<"Output : "<<2<<" , "<<doc_uuid<<" , itemcount: "<<itemcount<<std::endl;
 #endif
             op_processor_->Append(2, update_doc);
             util_.AddPrice(new_doc, doc);
@@ -238,8 +273,10 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
         }
     }
     data_source_->Flush();
+    uint32_t itemcount = util_.GetUuidDf(uuid);
+    util_.SetItemCount(new_doc, itemcount);
 #ifdef PM_EDIT_INFO
-    LOG(INFO)<<"Output : "<<type<<" , "<<uuid<<std::endl;
+    LOG(INFO)<<"Output : "<<type<<" , "<<uuid<<" , itemcount: "<<itemcount<<std::endl;
 #endif
     op_processor_->Append(type, new_doc);
     return true;

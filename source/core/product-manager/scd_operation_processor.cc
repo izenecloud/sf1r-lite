@@ -57,13 +57,11 @@ bool ScdOperationProcessor::Finish()
     }
     LOG(INFO)<<"ScdOperationProcessor::Finish "<<dir_<<std::endl;
 
-    SynchroProducerPtr syncProducer =
-            DistributedSynchroFactory::makeProducer(DistributedSynchroFactory::SYNCHRO_TYPE_PRODUCT_MANAGER, collectionName_);
 
     SynchroData syncData;
     syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
     syncData.setValue(SynchroData::KEY_DATA_PATH, dir_);
-
+    SynchroProducerPtr syncProducer = SynchroFactory::getProducer(collectionName_);
     if (syncProducer->produce(syncData, boost::bind(&ScdOperationProcessor::AfterProcess_, this,_1)))
     {
         bool isConsumed = false;
@@ -92,7 +90,7 @@ void ScdOperationProcessor::AfterProcess_(bool is_succ)
     if(is_succ)
     {
         LOG(INFO)<<"Scd transmission and processed successfully!"<<std::endl;
-//         ClearScds_();
+        ClearScds_();
     }
     else
     {

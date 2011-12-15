@@ -15,8 +15,8 @@ ProductScdReceiver::ProductScdReceiver(const std::string& syncID)
 
 bool ProductScdReceiver::Run(const std::string& scd_source_dir)
 {
-    LOG(INFO)<<"ProductScdReceiver in test"<<std::endl;
-    return true;
+//     LOG(INFO)<<"ProductScdReceiver in test"<<std::endl;
+//     return true;
     LOG(INFO)<<"ProductScdReceiver::Run "<<scd_source_dir<<std::endl;
     if(index_service_==NULL)
     {

@@ -185,10 +185,16 @@ bool ProductController::require_date_range_()
  *
  * - @b collection* (@c String): Collection name.
  * - @b docid_list* (@c Array): document id list
+ * - @b resource (@c Object): The corresponding information for the grouped documents, you can specify title, content.. etc, for it.
+ *   Property key name is used as
+ *   key. The corresponding value is the content of the property. Property @b
+ *   DOCID is optional, you can specify a particular DOCID which will be used as uuid.
+ * - @b option*  (@c Object): Edit options
+ *   - @b force* (@c Bool = @c false): if true, ignore the conflict while editing.
  *
  * @section response
  *
- * - @b uuid (@c String): Generated uuid.
+ * - @b uuid (@c String): Generated or specified uuid.
  *
  *
  * @section Example
@@ -221,8 +227,9 @@ void ProductController::add_new_group()
         response().addError(product_manager_->GetLastError());
         return;
     }
+    const PMConfig& config = product_manager_->GetConfig();
     izenelib::util::UString uuid;
-    doc_.getProperty("uuid", uuid);
+    doc_.getProperty(config.docid_property_name, uuid);
     std::string suuid;
     uuid.convertString(suuid, izenelib::util::UString::UTF_8);
     response()[Keys::uuid] = suuid;
@@ -236,6 +243,8 @@ void ProductController::add_new_group()
  * - @b collection* (@c String): Collection name.
  * - @b uuid*       (@c String): uuid
  * - @b docid_list* (@c Array): document id list
+ * - @b option*  (@c Object): Edit options
+ *   - @b force* (@c Bool = @c false): if true, ignore the conflict while editing.
  *
  * @section response
  *
@@ -280,6 +289,8 @@ void ProductController::append_to_group()
  * - @b collection* (@c String): Collection name.
  * - @b uuid*       (@c String): uuid
  * - @b docid_list* (@c Array): document id list
+ * - @b option*  (@c Object): Edit options
+ *   - @b force* (@c Bool = @c false): if true, ignore the conflict while editing.
  *
  * @section response
  *

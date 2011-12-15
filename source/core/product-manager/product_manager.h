@@ -9,6 +9,7 @@
 #include "pm_def.h"
 #include "pm_types.h"
 #include "pm_config.h"
+#include "pm_util.h"
 #include "product_price.h"
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
@@ -94,18 +95,6 @@ private:
     bool GenOperations_();
 
     
-    void SetItemCount_(PMDocumentType& doc, uint32_t item_count);
-
-    bool GetPrice_(uint32_t docid, ProductPrice& price) const;
-
-    bool GetPrice_(const PMDocumentType& doc, ProductPrice& price) const;
-
-    void GetPrice_(const std::vector<uint32_t>& docid_list, ProductPrice& price) const;
-
-    bool GetUuid_(const PMDocumentType& doc, izenelib::util::UString& uuid) const;
-
-    bool GetDOCID_(const PMDocumentType& doc, izenelib::util::UString& docid) const;
-
     bool GetTimestamp_(const PMDocumentType& doc, time_t& timestamp) const;
 
     bool GetGroupProperties_(const PMDocumentType& doc, std::map<std::string, std::string>& group_prop_map) const;
@@ -115,12 +104,13 @@ private:
 
 private:
     std::string work_dir_;
+    PMConfig config_;
     ProductDataSource* data_source_;
     OperationProcessor* op_processor_;
     ProductPriceTrend* price_trend_;
     ProductClustering* clustering_;
     ProductEditor* editor_;
-    PMConfig config_;
+    PMUtil util_;
     std::string error_;
     bool has_price_trend_;
     bool inhook_;
