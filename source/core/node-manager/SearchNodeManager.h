@@ -7,7 +7,7 @@
 #ifndef SEARCH_NODE_MANAGER_H_
 #define SEARCH_NODE_MANAGER_H_
 
-#include "NodeManager.h"
+#include "NodeManagerBase.h"
 #include "SearchMasterManager.h"
 
 #include <util/singleton.h>
@@ -15,7 +15,7 @@
 namespace sf1r
 {
 
-class SearchNodeManager : public NodeManager
+class SearchNodeManager : public NodeManagerBase
 {
 public:
     SearchNodeManager()

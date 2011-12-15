@@ -7,7 +7,7 @@
 #ifndef RECOMMEND_NODE_MANAGER_H_
 #define RECOMMEND_NODE_MANAGER_H_
 
-#include "NodeManager.h"
+#include "NodeManagerBase.h"
 #include "RecommendMasterManager.h"
 
 #include <util/singleton.h>
@@ -15,7 +15,7 @@
 namespace sf1r
 {
 
-class RecommendNodeManager : public NodeManager
+class RecommendNodeManager : public NodeManagerBase
 {
 public:
     RecommendNodeManager()

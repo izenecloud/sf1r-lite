@@ -37,6 +37,8 @@ namespace
 {
 /** the directory for scd file backup */
 const char* SCD_BACKUP_DIR = "backup";
+const std::string DOCID("DOCID");
+const std::string DATE("DATE");
 }
 
 IndexWorker::IndexWorker(
@@ -1296,7 +1298,7 @@ bool IndexWorker::preparePartialDocument_(
     typedef Document::property_const_iterator iterator;
     for (iterator it = document.propertyBegin(), itEnd = document.propertyEnd(); it
                  != itEnd; ++it) {
-        if (it->first != "DOCID" && it->first != "DATE")
+        if(! boost::iequals(it->first,DOCID) && ! boost::iequals(it->first,DATE))
         {
             std::set<PropertyConfig, PropertyComp>::iterator iter;
             PropertyConfig temp;
@@ -1310,7 +1312,7 @@ bool IndexWorker::preparePartialDocument_(
                 continue;
             }
 
-            if (iter->isIndex() && iter->getIsFilter())
+            if (iter->isIndex() && iter->getIsFilter() && !iter->isAnalyzed())
             {
                 indexerPropertyConfig.setPropertyId(iter->getPropertyId());
                 indexerPropertyConfig.setName(iter->getName());

@@ -99,7 +99,6 @@
 (new_synonym_list)\
 (offset)\
 (old_synonym_list)\
-(old_synonym_list_id)\
 (operator_)\
 (option)\
 (order)\
@@ -156,7 +155,6 @@
 (summary_property_alias)\
 (summary_sentence_count)\
 (synonym_list)\
-(synonym_list_id)\
 (system_events)\
 (taxonomy)\
 (taxonomy_label)\
@@ -312,6 +310,8 @@ collection
   process/controllers/LogAnalysisController.cpp:291
   process/controllers/LogAnalysisController.cpp:664
   process/controllers/CommandsController.cpp:28
+  process/controllers/StatusController.cpp:45
+  process/controllers/DocumentsSearchHandler.cpp:84
 
 condition
   process/controllers/RecommendController.cpp:191
@@ -604,22 +604,16 @@ name_entity_type
   process/parsers/SearchParser.cpp:131
 
 new_synonym_list
-  process/controllers/SynonymController.cpp:138
-  process/controllers/SynonymController.cpp:140
+  process/controllers/SynonymController.cpp:122
+  process/controllers/SynonymController.cpp:124
 
 offset
   core/common/parsers/PageInfoParser.cpp:15
   core/common/parsers/PageInfoParser.cpp:17
 
 old_synonym_list
-  process/controllers/SynonymController.cpp:122
-  process/controllers/SynonymController.cpp:128
-  process/controllers/SynonymController.cpp:130
-
-old_synonym_list_id
-  process/controllers/SynonymController.cpp:122
-  process/controllers/SynonymController.cpp:133
-  process/controllers/SynonymController.cpp:135
+  process/controllers/SynonymController.cpp:111
+  process/controllers/SynonymController.cpp:113
 
 operator_
   core/common/parsers/ConditionParser.cpp:68
@@ -892,14 +886,8 @@ summary_sentence_count
 synonym_list
   process/controllers/SynonymController.cpp:51
   process/controllers/SynonymController.cpp:53
-  process/controllers/SynonymController.cpp:231
-  process/controllers/SynonymController.cpp:236
-  process/controllers/SynonymController.cpp:238
-
-synonym_list_id
-  process/controllers/SynonymController.cpp:231
-  process/controllers/SynonymController.cpp:241
-  process/controllers/SynonymController.cpp:243
+  process/controllers/SynonymController.cpp:190
+  process/controllers/SynonymController.cpp:192
 
 system_events
   process/controllers/LogAnalysisController.cpp:178

@@ -7,10 +7,9 @@
 #include <aggregator-manager/CollectionDataReceiver.h>
 #include <aggregator-manager/NotifyReceiver.h>
 #include <node-manager/ZooKeeperManager.h>
+#include <node-manager/SuperNodeManager.h>
 #include <node-manager/SearchNodeManager.h>
-#include <node-manager/SearchMasterManager.h>
 #include <node-manager/RecommendNodeManager.h>
-#include <node-manager/RecommendMasterManager.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 
 #include <OnSignal.h>
@@ -217,14 +216,17 @@ bool CobraProcess::initDriverServer()
 
 bool CobraProcess::initNodeManager()
 {
-    // Initialize ZooKeeper for coordination tasks (whether distributed or not)
+    // Common initializations for coordination tasks (whether distributed or not)
     ZooKeeperManager::get()->init(
             SF1Config::get()->distributedUtilConfig_.zkConfig_,
-            SF1Config::get()->getClusterId());
+            SF1Config::get()->distributedCommonConfig_.clusterId_);
 
-    // Initialization for distributed SF1
+    SuperNodeManager::get()->init(SF1Config::get()->distributedCommonConfig_);
+
+    // Initializations for distributed SF1
     if (SF1Config::get()->isDistributedSearchNode())
         SearchNodeManager::get()->init(SF1Config::get()->searchTopologyConfig_);
+
     if (SF1Config::get()->isDistributedRecommendNode())
         RecommendNodeManager::get()->init(SF1Config::get()->recommendTopologyConfig_);
 
@@ -244,25 +246,19 @@ bool CobraProcess::startDistributedServer()
     // Start worker server
     if (SF1Config::get()->isSearchWorker() || SF1Config::get()->isRecommendWorker())
     {
-        try
-        {
-            std::string localHost = SF1Config::get()->searchTopologyConfig_.curSF1Node_.host_;
-            uint16_t workerPort = SF1Config::get()->searchTopologyConfig_.curSF1Node_.workerAgent_.port_;
-            std::size_t threadNum = SF1Config::get()->brokerAgentConfig_.threadNum_;
-            WorkerServer::get()->init(localHost, workerPort, threadNum, true);
-            WorkerServer::get()->start();
-            cout << "[WorkerServer] started, listening at "<<localHost<<":"<<workerPort<<" ..."<<endl;
+        //std::string localHost = SF1Config::get()->distributedCommonConfig_.localHost_;
+        std::string localHost = "127.0.0.1";
+        uint16_t workerPort = SF1Config::get()->distributedCommonConfig_.workerPort_;
+        std::size_t threadNum = SF1Config::get()->brokerAgentConfig_.threadNum_;
 
-            // init notifier, xxx
-            //std::string masterHost = SF1Config::get()->searchTopologyConfig_.curSF1Node_.workerAgent_.masterHost_;
-            //uint16_t masterPort = SF1Config::get()->searchTopologyConfig_.curSF1Node_.workerAgent_.masterPort_;
-            //NotifyReceiver::get()->setReceiverAddress(masterHost, masterPort);
-        }
-        catch (std::exception& e)
-        {
-            cout << e.what() << endl;
-            return false;
-        }
+        cout << "[WorkerServer] listen at "<<localHost<<":"<<workerPort<<endl;
+        WorkerServer::get()->init(localHost, workerPort, threadNum, true);
+        WorkerServer::get()->start();
+
+        // init notifier, xxx
+        //std::string masterHost = //detect master;
+        //uint16_t masterPort = SF1Config::get()->distributedCommonConfig_.notifyRecvPort_;
+        //NotifyReceiver::get()->setReceiverAddress(masterHost, masterPort);
     }
 
     // Start notification receiver for master
@@ -279,7 +275,7 @@ bool CobraProcess::startDistributedServer()
         RecommendNodeManager::get()->start();
 
     // Start data receiver
-    unsigned int dataPort = SF1Config::get()->searchTopologyConfig_.curSF1Node_.dataPort_;
+    unsigned int dataPort = SF1Config::get()->distributedCommonConfig_.dataRecvPort_;
     CollectionDataReceiver::get()->init(dataPort, "./collection"); //xxx
     CollectionDataReceiver::get()->start();
 

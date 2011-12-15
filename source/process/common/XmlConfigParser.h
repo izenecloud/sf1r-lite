@@ -440,27 +440,8 @@ public:
         return false;
     }
 
-    /**
-     * Distributed utility
-     * @{
-     */
-
-    std::string getClusterId()
-    {
-        if (searchTopologyConfig_.enabled_)
-            return searchTopologyConfig_.clusterId_;
-
-        if (recommendTopologyConfig_.enabled_)
-            return recommendTopologyConfig_.clusterId_;
-
-        if (!searchTopologyConfig_.clusterId_.empty())
-            return searchTopologyConfig_.clusterId_;
-
-        if (!recommendTopologyConfig_.clusterId_.empty());
-            return recommendTopologyConfig_.clusterId_;
-
-        return "unknow"; //xxx
-    }
+    /// Distributed utility
+    /// @{
 
     /// Dsitributed search config
     bool isDistributedSearchNode() { return isDistributedNode(searchTopologyConfig_); }
@@ -539,9 +520,7 @@ public:
         return false;
     }
 
-    /**
-     * @}
-     */
+    /// @}
 
     bool checkCollectionExist(const std::string& collectionName)
     {
@@ -621,12 +600,13 @@ private:
     /// @brief                  Parse <BrokerAgnet> settings
     /// @param system           Pointer to the Element
     void parseBrokerAgent( const ticpp::Element * brokerAgent );
-    /// @brief                  Parse <Broker> settings
+    /// @brief                  Parse <DistributedCommon> settings
+    /// @param system           Pointer to the Element
+    void parseDistributedCommon(const ticpp::Element * distributedCommon);
+    /// @brief                  Parse <DistributedTopology> settings
     /// @param system           Pointer to the Element
     void parseDistributedTopologies(const ticpp::Element * deploy);
-    void parseDistributedTopology(
-            const ticpp::Element * topology,
-            DistributedTopologyConfig& topologyConfig);
+    void parseDistributedTopology(const ticpp::Element * topology, DistributedTopologyConfig& topologyConfig);
     /// @brief                  Parse <Broker> settings
     /// @param system           Pointer to the Element
     void parseDistributedUtil(const ticpp::Element * distributedUtil);
@@ -665,6 +645,7 @@ public:
     BrokerAgentConfig brokerAgentConfig_;
 
     /// @brief Configurations for distributed topologies
+    DistributedCommonConfig distributedCommonConfig_;
     DistributedTopologyConfig searchTopologyConfig_;
     DistributedTopologyConfig recommendTopologyConfig_;
 
