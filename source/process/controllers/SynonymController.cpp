@@ -6,6 +6,7 @@
  */
 
 #include "SynonymController.h"
+#include <common/XmlConfigParser.h>
 
 #include <vector>
 #include <sstream>
@@ -15,8 +16,6 @@ using namespace std;
 
 namespace sf1r
 {
-
-const std::string SynonymController::DICTIONARY_FILE = "/db/icwb/utf8/synonym.txt";
 
 /**
  * @brief Action @b add_synonym. Add a synonym list to synonym dictionary.
@@ -64,11 +63,17 @@ void SynonymController::add_synonym()
         return;
     }
 
-    char* icma = getenv("IZENECMA");
-    std::string dictionaryPath = icma;
-    dictionaryPath += DICTIONARY_FILE;
+    std::string dictionaryFile = SF1Config::get()->laDictionaryPath_;
+    if(dictionaryFile.rfind("/") != dictionaryFile.length()-1)
+    {
+        dictionaryFile += "/synonym.txt";
+    }
+    else
+    {
+        dictionaryFile += "synonym.txt";
+    }
 
-    ofstream outfile(dictionaryPath.c_str(), ios::app);
+    ofstream outfile(dictionaryFile.c_str(), ios::app);
     outfile<<synonym_list<<std::endl;
     outfile.close();
 }
@@ -143,10 +148,17 @@ void SynonymController::update_synonym()
         return;
     }
 
-    char* icma = getenv("IZENECMA");
-    std::string dictionaryPath = icma;
-    dictionaryPath += DICTIONARY_FILE;
-    ifstream infile(dictionaryPath.c_str());
+    std::string dictionaryFile = SF1Config::get()->laDictionaryPath_;
+    if(dictionaryFile.rfind("/") != dictionaryFile.length()-1)
+    {
+        dictionaryFile += "/synonym.txt";
+    }
+    else
+    {
+        dictionaryFile += "synonym.txt";
+    }
+
+    ifstream infile(dictionaryFile.c_str());
     std::string line;
     std::vector<std::string> synonym_dictionary;
     while(getline(infile, line))
@@ -162,7 +174,7 @@ void SynonymController::update_synonym()
     infile.close();
 
     //output new synonym dictionary
-    ofstream outfile(dictionaryPath.c_str());
+    ofstream outfile(dictionaryFile.c_str());
     for(size_t i = 0; i < synonym_dictionary.size(); i++)
     {
         outfile<<synonym_dictionary[i]<<endl;
@@ -216,10 +228,17 @@ void SynonymController::delete_synonym()
         return;
     }
 
-    char* icma = getenv("IZENECMA");
-    std::string dictionaryPath = icma;
-    dictionaryPath += DICTIONARY_FILE;
-    std::ifstream infile(dictionaryPath.c_str());
+    std::string dictionaryFile = SF1Config::get()->laDictionaryPath_;
+    if(dictionaryFile.rfind("/") != dictionaryFile.length()-1)
+    {
+        dictionaryFile += "/synonym.txt";
+    }
+    else
+    {
+        dictionaryFile += "synonym.txt";
+    }
+
+    std::ifstream infile(dictionaryFile.c_str());
     std::string line;
     std::vector<std::string> synonym_dictionary;
     while(getline(infile, line))
@@ -233,7 +252,7 @@ void SynonymController::delete_synonym()
     infile.close();
 
     //output new synonym dictionary
-    ofstream outfile(dictionaryPath.c_str());
+    ofstream outfile(dictionaryFile.c_str());
     for(size_t i = 0; i < synonym_dictionary.size(); i++)
     {
         outfile<<synonym_dictionary[i]<<endl;
