@@ -136,7 +136,7 @@ boost::shared_ptr<PropertyData> SortPropertyCache::getCTRPropertyData(const std:
         LOG(INFO) << "first load sort data cache on property: " << propertyName;
         updateCache = true;
     }
-    else if (iter->second->elapsedFromLastLoad() > updateInterval_)
+    else if (!(iter->second) ||(iter->second->elapsedFromLastLoad() > updateInterval_))
     {
         //LOG(INFO) << "Refresh sort data cache for property: " << propertyName
         //          << " after "<<iter->second->elapsedFromLastLoad()<<" seconds";
