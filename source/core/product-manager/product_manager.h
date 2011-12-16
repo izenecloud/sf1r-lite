@@ -11,6 +11,9 @@
 #include "pm_config.h"
 #include "pm_util.h"
 #include "product_price.h"
+
+#include <common/JobScheduler.h>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
@@ -27,8 +30,8 @@ class ProductClusteringPostItem;
 class ProductManager
 {
 public:
-    
-   
+
+
     ProductManager(
             const std::string& work_dir,
             ProductDataSource* data_source,
@@ -90,17 +93,17 @@ public:
 
 private:
     ProductClustering* GetClustering_();
-    
-        
+
+
     bool GenOperations_();
 
-    
+
     bool GetTimestamp_(const PMDocumentType& doc, time_t& timestamp) const;
 
     bool GetGroupProperties_(const PMDocumentType& doc, std::map<std::string, std::string>& group_prop_map) const;
-    
+
     bool GetCategory_(const PMDocumentType& doc, izenelib::util::UString& category);
-    
+
 
 private:
     std::string work_dir_;
@@ -112,7 +115,10 @@ private:
     ProductEditor* editor_;
     PMUtil util_;
     std::string error_;
+
     bool has_price_trend_;
+    JobScheduler jobScheduler_;
+
     bool inhook_;
     boost::mutex human_mutex_;
 };
