@@ -10,7 +10,17 @@ ProductScdReceiver::ProductScdReceiver(const std::string& syncID)
 ,syncID_(syncID)
 {
     syncConsumer_ = SynchroFactory::getConsumer(syncID);
-    syncConsumer_->watchProducer(boost::bind(&ProductScdReceiver::Run, this, _1), true);
+    syncConsumer_->watchProducer(boost::bind(&ProductScdReceiver::Run, this, _1));
+}
+
+bool ProductScdReceiver::onReceived()
+{
+    if(!index_service_->index(0))
+    {
+        return false;
+    }
+
+    return true;
 }
 
 bool ProductScdReceiver::Run(const std::string& scd_source_dir)

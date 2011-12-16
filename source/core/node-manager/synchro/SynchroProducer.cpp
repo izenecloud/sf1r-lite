@@ -1,6 +1,10 @@
 #include "SynchroProducer.h"
 
+#include <node-manager/SuperNodeManager.h>
+
 #include <sstream>
+
+#include <boost/thread.hpp>
 
 using namespace sf1r;
 
@@ -15,6 +19,8 @@ SynchroProducer::SynchroProducer(
     if (zookeeper_)
         zookeeper_->registerEventHandler(this);
 
+    producerZkNode_ = syncZkNode_ + SynchroZkNode::PRODUCER;
+
     init();
 }
 
@@ -23,32 +29,39 @@ SynchroProducer::~SynchroProducer()
     zookeeper_->deleteZNode(syncZkNode_, true);
 }
 
+/**
+ * Synchronizing steps for Producer:
+ * (1) doProduce()
+ *     Producer ---notify--> ZooKeeper -----> Consumer(s)
+ * (2) watchConsumers():
+ *     Producer <--watch--- ZooKeeper <----- Consumer
+ *     Producer -----transfer data----> Consumer
+ *     Producer ---notify--> ZooKeeper -----> Consumer
+ * (3) checkConsumers()
+ *     Producer <--watch--- ZooKeeper <----- Consumer
+ */
 bool SynchroProducer::produce(SynchroData& syncData, callback_on_consumed_t callback_on_consumed)
 {
-    // xxx lock
+    boost::lock_guard<boost::mutex> lock(produce_mutex_);
+
     if (isSynchronizing_)
     {
-        std::cout<<"[SynchroProducer] Re-entry error: synchronizer is working !"<<std::endl;
+        std::cout<<"[SynchroProducer] error: is synchroning!"<<std::endl;
         return false;
     }
     else
     {
         isSynchronizing_ = true;
-
         init();
     }
 
     if (doProduce(syncData))
     {
         if (callback_on_consumed != NULL)
-        {
             callback_on_consumed_ = callback_on_consumed;
-        }
 
-        // watching consumers
-        watchConsumers();
-        checkConsumers();
-
+        watchConsumers(); // wait consumer(s)
+        checkConsumers(); // check consuming status
         return true;
     }
 
@@ -56,36 +69,35 @@ bool SynchroProducer::produce(SynchroData& syncData, callback_on_consumed_t call
     return false;
 }
 
-bool SynchroProducer::waitConsumers(bool& isConsumed, int findConsumerTimeout)
+bool SynchroProducer::wait(int timeout)
 {
-    //std::cout<<"SynchroProducer::waitConsumers"<<std::endl;
-
     if (!isSynchronizing_)
     {
-        std::cout<<"[SynchroProducer::waitConsumers] no synchronizing working.."<<std::endl;
+        std::cout<<"[SynchroProducer::wait] not synchronizing, call produce() first."<<std::endl;
         return false;
     }
 
+    // wait consumer(s) to consume produced data
     int step = 1;
     int waited = 0;
     while (!watchedConsumer_)
     {
-        sleep(step);
+        boost::this_thread::sleep(boost::posix_time::seconds(step));
         waited += step;
-        if (waited >= findConsumerTimeout)
+        if (waited >= timeout)
         {
-            endSynchroning("timeout!");
+            endSynchroning("timeout: no consumer!");
             return false;
         }
     }
 
+    // wait synchronizing to finish
     while (isSynchronizing_)
     {
-        sleep(1);
+        boost::this_thread::sleep(boost::posix_time::seconds(1));
     }
 
-    isConsumed = result_on_consumed_;
-    return true;
+    return result_on_consumed_;
 }
 
 /* virtual */
@@ -128,17 +140,20 @@ bool SynchroProducer::doProduce(SynchroData& syncData)
 
     if (zookeeper_->isConnected())
     {
-        if (!zookeeper_->createZNode(syncZkNode_, syncData.serialize()))
+        // ensure synchro node
+        zookeeper_->createZNode(syncZkNode_);
+
+        // create producer node (ephemeral)
+        if (!zookeeper_->createZNode(producerZkNode_, syncData.serialize(), ZooKeeper::ZNODE_EPHEMERAL))
         {
             if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
             {
-                zookeeper_->setZNodeData(syncZkNode_, syncData.serialize());
-                std::cout<<"[SynchroProducer] overwrote "<<syncZkNode_<<std::endl;
-                //std::cout<<"with data: "<<syncDataStr<<std::endl;
+                zookeeper_->setZNodeData(producerZkNode_, syncData.serialize());
+                std::cout<<"[SynchroProducer] warning: overwrote "<<producerZkNode_<<std::endl;
                 produced = true;
             }
 
-            std::cout<<"[SynchroProducer] Failed to create "<<syncZkNode_
+            std::cout<<"[SynchroProducer] Failed to create "<<producerZkNode_
                      <<" ("<<zookeeper_->getErrorString()<<")"<<std::endl;
 
             // wait ZooKeeperManager to init
@@ -147,7 +162,7 @@ bool SynchroProducer::doProduce(SynchroData& syncData)
         }
         else
         {
-            std::cout<<"[SynchroProducer] created "<<syncZkNode_<<std::endl;
+            std::cout<<"[SynchroProducer] created "<<producerZkNode_<<std::endl;
             produced = true;
         }
     }
@@ -178,30 +193,38 @@ bool SynchroProducer::doProduce(SynchroData& syncData)
 
 void SynchroProducer::watchConsumers()
 {
-    //std::cout<<"SynchroProducer::watchConsumers"<<std::endl;
     boost::unique_lock<boost::mutex> lock(consumers_mutex_);
 
     if (!isSynchronizing_)
         return;
 
+    // [Synchro Node]
+    //  |--- Producer
+    //  |--- Consumer00000000
+    //  |--- Consumer0000000x
+    //
     std::vector<std::string> childrenList;
     zookeeper_->getZNodeChildren(syncZkNode_, childrenList, ZooKeeper::WATCH);
 
-    // todo, consumers
-    if (childrenList.size() > 0)
+    // If watched any consumer
+    if (childrenList.size() > 1)
     {
         if (!watchedConsumer_)
-            watchedConsumer_ = true; // watched consumer at the first time
+            watchedConsumer_ = true;
 
         for (size_t i = 0; i < childrenList.size(); i++)
         {
-            if (consumersMap_.find(childrenList[i]) == consumersMap_.end())
+            // Produer is also a child and shoud be excluded.
+            if (producerZkNode_ != childrenList[i] &&
+                consumersMap_.find(childrenList[i]) == consumersMap_.end())
             {
                 consumersMap_[childrenList[i]] = std::make_pair(false, false);
                 std::cout<<"[SynchroProducer] watched a consumer "<<childrenList[i]<<std::endl;
             }
         }
     }
+
+    // xxx transfer data
 }
 
 void SynchroProducer::checkConsumers()
@@ -305,8 +328,8 @@ void SynchroProducer::init()
 void SynchroProducer::endSynchroning(const std::string& info)
 {
     // Synchronizing finished
-    zookeeper_->deleteZNode(syncZkNode_);
     isSynchronizing_ = false;
+    zookeeper_->deleteZNode(syncZkNode_);
     std::cout<<"Synchronizing finished - "<<info<<std::endl;
 }
 

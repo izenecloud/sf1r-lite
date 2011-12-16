@@ -2,7 +2,7 @@
  * @file SynchroProducer.h
  * @author Zhongxia Li
  * @date Oct 23, 2011
- * @brief Distributed data synchronizer component
+ * @brief Distributed synchronizer works as Producer-Consumer, Producer produces data to be synchronized.
  */
 
 #ifndef SYNCHROPRODUCER_H_
@@ -21,6 +21,16 @@
 
 namespace sf1r{
 
+/**
+ * ZooKeeper namespace for Synchro Producer and Consumer(s).
+ *
+ * SynchroNode
+ *  |--- Producer
+ *  |--- Consumers
+ *       |--- Consumer00000000
+ *       |--- Consumer00000001
+ *       |--- ...
+ */
 class SynchroProducer : public ZooKeeperEventHandler
 {
 public:
@@ -32,22 +42,23 @@ public:
     ~SynchroProducer();
 
     /**
-     * Produce data
-     * @param dataPath
-     * @param callback_on_consumed callback on data consumed by consumers,
-     *        Note: if callback is set,
-     * @return true if success, else false;
+     * Produce synchro data (asynchronously)
+     * @brief After produced synchro data, there is no assurance that synchronizing will be finished
+     *        (consumed by consumer) or succeed. Call wait() to wait for synchronizing to finish and get status.
+     *
+     * @param syncData  synchro data
+     * @param callback_on_consumed  callback on data consumed by consumers
+     * @return true if successfully published synchro data, else false;
      */
     bool produce(SynchroData& syncData, callback_on_consumed_t callback_on_consumed = NULL);
 
     /**
-     *
-     * @param isSuccess
-     * @param findConsumerTimeout  timeout (seconds) for waiting consumer(s),
-     *                             should larger then monitor interval.
-     * @return
+     * Wait for synchronizing to finish
+     * @param timeout  timeout for waiting until watched at least one consumer,
+     *                 once watched any consumer there will be no timeout.
+     * @return true on successfully synchronized, false on failed.
      */
-    bool waitConsumers(bool& isConsumed, int findConsumerTimeout = 150);
+    bool wait(int timeout = 150);
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
@@ -72,6 +83,7 @@ private:
     boost::shared_ptr<ZooKeeper> zookeeper_;
 
     std::string syncZkNode_;
+    std::string producerZkNode_;
 
     bool isSynchronizing_; // perform one synchronization work at a time, xxx
 
@@ -82,6 +94,7 @@ private:
     callback_on_consumed_t callback_on_consumed_;
     bool result_on_consumed_;
 
+    boost::mutex produce_mutex_;
     boost::mutex consumers_mutex_;
 };
 
