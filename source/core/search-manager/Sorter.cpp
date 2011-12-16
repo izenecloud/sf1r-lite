@@ -155,7 +155,7 @@ boost::shared_ptr<PropertyData> SortPropertyCache::getCTRPropertyData(const std:
         }
         else
         {
-            return boost::shared_ptr<PropertyData>();
+            sortDataCache_[propertyName].reset();
         }
     }
 
