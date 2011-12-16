@@ -101,7 +101,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             if (cit == doc.propertyEnd())
                 continue;
 
-            const UString key = kit->second.get<UString>();
+            const UString& key = kit->second.get<UString>();
             const UString& content = cit->second.get<UString>();
             comment_cache_storage_->AppendUpdate(key, i, content);
         }
@@ -120,7 +120,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             if (cit == doc.propertyEnd())
                 continue;
 
-            const UString key = kit->second.get<UString>();
+            const UString& key = kit->second.get<UString>();
             UString parent_key;
             if (!parent_key_storage_->GetParent(key, parent_key))
                 continue;
@@ -191,7 +191,7 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 #endif
     if (content_list.size() < 2000 && corpus_->ntotal() < 100000)
     {
-        SPLM::generateSummary(summaries, *corpus_, SPLM::SPLM_SVD);
+        SPLM::generateSummary(summaries, *corpus_, SPLM::SPLM_RI);
     }
     else
     {
