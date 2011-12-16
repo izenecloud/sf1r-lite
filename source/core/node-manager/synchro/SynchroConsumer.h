@@ -47,7 +47,9 @@ public:
 
     ~SynchroConsumer();
 
-    void watchProducer(callback_on_produced_t callback_on_produced);
+    void watchProducer(
+            callback_on_produced_t callback_on_produced,
+            const std::string& collectionName);
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
@@ -80,7 +82,7 @@ private:
 
     callback_on_produced_t callback_on_produced_;
 
-    boost::thread thread_;
+    std::string collectionName_;
 };
 
 typedef boost::shared_ptr<SynchroConsumer> SynchroConsumerPtr;

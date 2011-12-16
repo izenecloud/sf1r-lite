@@ -2,8 +2,9 @@
 
 #include <node-manager/SuperNodeManager.h>
 
-#include <sstream>
+#include <net/distribute/DataTransfer.h>
 
+#include <sstream>
 #include <boost/thread.hpp>
 
 using namespace sf1r;
@@ -11,8 +12,10 @@ using namespace sf1r;
 
 SynchroProducer::SynchroProducer(
         boost::shared_ptr<ZooKeeper>& zookeeper,
-        const std::string& syncZkNode)
-: zookeeper_(zookeeper)
+        const std::string& syncZkNode,
+        DataTransferPolicy transferPolicy)
+: transferPolicy_(transferPolicy)
+, zookeeper_(zookeeper)
 , syncZkNode_(syncZkNode)
 , isSynchronizing_(false)
 {
@@ -44,6 +47,7 @@ bool SynchroProducer::produce(SynchroData& syncData, callback_on_consumed_t call
 {
     boost::lock_guard<boost::mutex> lock(produce_mutex_);
 
+    // start synchronizing
     if (isSynchronizing_)
     {
         std::cout<<"[SynchroProducer] error: is synchroning!"<<std::endl;
@@ -52,9 +56,11 @@ bool SynchroProducer::produce(SynchroData& syncData, callback_on_consumed_t call
     else
     {
         isSynchronizing_ = true;
+        syncData_ = syncData;
         init();
     }
 
+    // produce
     if (doProduce(syncData))
     {
         if (callback_on_consumed != NULL)
@@ -64,9 +70,11 @@ bool SynchroProducer::produce(SynchroData& syncData, callback_on_consumed_t call
         checkConsumers(); // check consuming status
         return true;
     }
-
-    endSynchroning("synchronize error or timeout!");
-    return false;
+    else
+    {
+        endSynchroning("synchronize error or timeout!");
+        return false;
+    }
 }
 
 bool SynchroProducer::wait(int timeout)
@@ -80,6 +88,7 @@ bool SynchroProducer::wait(int timeout)
     // wait consumer(s) to consume produced data
     int step = 1;
     int waited = 0;
+    std::cout<<"[SynchroProducer] waiting for consumer"<<std::endl;
     while (!watchedConsumer_)
     {
         boost::this_thread::sleep(boost::posix_time::seconds(step));
@@ -224,7 +233,81 @@ void SynchroProducer::watchConsumers()
         }
     }
 
-    // xxx transfer data
+    // transfer data
+    consumermap_t::iterator it;
+    for (it = consumersMap_.begin(); it != consumersMap_.end(); it++)
+    {
+        if (!transferData(it->first))
+        {
+            // xxx set failed status
+        }
+    }
+}
+
+bool SynchroProducer::transferData(const std::string& consumerZnodePath)
+{
+    std::string data;
+    if (!zookeeper_->getZNodeData(consumerZnodePath, data))
+    {
+        return false;
+    }
+
+    // consumer info
+    SynchroData consumerInfo;
+    consumerInfo.loadKvString(data);
+    std::string consumerHost = consumerInfo.getStrValue(SynchroData::KEY_HOST);
+    std::string consumerCollection = consumerInfo.getStrValue(SynchroData::KEY_COLLECTION);
+
+    // produced info
+    std::string dataPath = syncData_.getStrValue(SynchroData::KEY_DATA_PATH);
+    std::string dataType = syncData_.getStrValue(SynchroData::KEY_DATA_TYPE);
+
+    bool ret = true;
+    // to local host
+    if (consumerHost == SuperNodeManager::get()->getLocalHostIP())
+    {
+        // xxx
+        ret = true;
+    }
+    // to remote host
+    else
+    {
+        if (transferPolicy_ == DATA_TRANSFER_POLICY_DFS)
+        {
+            // xxx
+            ret = true;
+        }
+        else if (transferPolicy_ == DATA_TRANSFER_POLICY_SOCKET)
+        {
+            uint32_t consumerPort = consumerInfo.getUInt32Value(SynchroData::KEY_DATA_PORT);
+            std::string recvDir;
+            if (dataType == SynchroData::DATA_TYPE_SCD_INDEX)
+            {
+                recvDir = consumerCollection+"/scd/index";
+            }
+            else
+            {
+                //xxx extend
+            }
+
+            std::cout<<"[SynchroProducer] transfer data to "<<consumerHost<<":"<<consumerPort<<std::endl;
+            std::cout<<dataPath<<std::endl;
+            net::distribute::DataTransfer transfer(consumerHost, consumerPort);
+            if (transfer.syncSend(dataPath, recvDir, false) != 0)
+            {
+                ret = false;
+            }
+        }
+    }
+
+    // notify consumer after transferred
+    if (ret)
+        consumerInfo.setValue(SynchroData::KEY_CONSUMER_STATUS, SynchroData::CONSUMER_STATUS_RECEIVE_SUCCESS);
+    else
+        consumerInfo.setValue(SynchroData::KEY_CONSUMER_STATUS, SynchroData::CONSUMER_STATUS_RECEIVE_FAILURE);
+
+    zookeeper_->setZNodeData(consumerZnodePath, consumerInfo.serialize());
+    return ret;
 }
 
 void SynchroProducer::checkConsumers()
@@ -329,7 +412,7 @@ void SynchroProducer::endSynchroning(const std::string& info)
 {
     // Synchronizing finished
     isSynchronizing_ = false;
-    zookeeper_->deleteZNode(syncZkNode_);
+    zookeeper_->deleteZNode(syncZkNode_, true);
     std::cout<<"Synchronizing finished - "<<info<<std::endl;
 }
 

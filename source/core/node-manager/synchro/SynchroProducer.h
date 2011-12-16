@@ -36,10 +36,24 @@ class SynchroProducer : public ZooKeeperEventHandler
 public:
     typedef boost::function< void( bool ) > callback_on_consumed_t;
 
+    enum DataTransferPolicy
+    {
+        DATA_TRANSFER_POLICY_DFS,     // transfer data via DFS (Distributed File System)
+        DATA_TRANSFER_POLICY_SOCKET   // transfer data via socket
+    };
+
 public:
-    SynchroProducer(boost::shared_ptr<ZooKeeper>& zookeeper, const std::string& syncZkNode);
+    SynchroProducer(
+            boost::shared_ptr<ZooKeeper>& zookeeper,
+            const std::string& syncZkNode,
+            DataTransferPolicy transferPolicy = DATA_TRANSFER_POLICY_SOCKET);
 
     ~SynchroProducer();
+
+    void setDataTransferPolicy(DataTransferPolicy transferPolicy)
+    {
+        transferPolicy_ = transferPolicy;
+    }
 
     /**
      * Produce synchro data (asynchronously)
@@ -73,6 +87,7 @@ private:
     bool doProduce(SynchroData& syncData);
 
     void watchConsumers();
+    bool transferData(const std::string& consumerZNodePath);
 
     void checkConsumers();
 
@@ -80,12 +95,21 @@ private:
 
 
 private:
+    struct ConsumerStatus
+    {
+        std::string znodePath_;
+
+    };
+
+    DataTransferPolicy transferPolicy_;
+
     boost::shared_ptr<ZooKeeper> zookeeper_;
 
     std::string syncZkNode_;
     std::string producerZkNode_;
 
-    bool isSynchronizing_; // perform one synchronization work at a time, xxx
+    bool isSynchronizing_;
+    SynchroData syncData_;
 
     bool watchedConsumer_;
     typedef std::map<std::string, std::pair<bool,bool> > consumermap_t;
