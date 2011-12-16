@@ -87,7 +87,7 @@ void ProductClustering::Insert(const PMDocumentType& doc)
         error_ = "Category is empty.";
         return;
     }
-    
+
     if(title.length()==0 || category.length()==0 )
     {
         error_ = "Title or Category length equals zero.";
@@ -106,7 +106,7 @@ void ProductClustering::Insert(const PMDocumentType& doc)
         error_ = "Price is invalid.";
         return;
     }
-    
+
     izenelib::util::UString city;
     doc.getProperty(config_.city_property_name, city);
     ProductClusteringAttach attach;
@@ -120,7 +120,7 @@ void ProductClustering::Insert(const PMDocumentType& doc)
     std::vector<double> weights;
     v.reserve(term_list.size());
     weights.reserve(term_list.size());
-    
+
 #ifdef PM_CLUST_TEXT_DEBUG
     std::string stitle;
     title.convertString(stitle, izenelib::util::UString::UTF_8);
@@ -130,7 +130,7 @@ void ProductClustering::Insert(const PMDocumentType& doc)
     {
         const std::string& str = term_list[i].TextString();
         char tag = term_list[i].tag;
-        double weight = GetWeight_(term_list[i].text, tag);
+        double weight = GetWeight_(title, term_list[i].text, tag);
         if( weight<=0.0 ) continue;
 #ifdef PM_CLUST_TEXT_DEBUG
         std::cout<<"["<<str<<","<<tag<<","<<weight<<"],";
@@ -150,7 +150,6 @@ void ProductClustering::Insert(const PMDocumentType& doc)
     std::string docid;
     udocid.convertString(docid, izenelib::util::UString::UTF_8);
     dd_->InsertDoc(docid, v, weights, attach);
-    
 }
 
 bool ProductClustering::Run()
@@ -159,12 +158,12 @@ bool ProductClustering::Run()
     return run_dd;
 }
 
-double ProductClustering::GetWeight_(const izenelib::util::UString& term, char tag)
+double ProductClustering::GetWeight_(const izenelib::util::UString& all, const izenelib::util::UString& term, char tag)
 {
     double weight = 1.0;
     if(tag=='F')
     {
-        if(term.length()<2) 
+        if(term.length()<2)
         {
             weight = 0.0;
         }
@@ -175,9 +174,7 @@ double ProductClustering::GetWeight_(const izenelib::util::UString& term, char t
     }
     else if(tag=='M')
     {
-        weight = 2.0;
+        weight = 0.6;
     }
     return weight;
 }
-
-
