@@ -34,7 +34,8 @@
              - To fully disable use of Cassandra, be free to set it to "__disabled__"
                or any value that can not satisfy the parser :)
     -->
-    <CassandraConnection str="cassandra://211.152.36.219/B5MM"/>
+    <!-- <CassandraConnection str="cassandra://211.152.36.219/B5MM"/> -->
+    <CassandraConnection str="__disabled__"/>
 
     <BundlesDefault>
       <!-- Index Bundle Default -->
