@@ -174,7 +174,7 @@ double ProductClustering::GetWeight_(const izenelib::util::UString& all, const i
     }
     else if(tag=='M')
     {
-        weight = 0.6;
+        weight = 0.3*term.length();
     }
     return weight;
 }
