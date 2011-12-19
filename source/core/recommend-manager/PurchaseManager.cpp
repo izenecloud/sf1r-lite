@@ -125,4 +125,15 @@ PurchaseManager::SDBIterator PurchaseManager::end()
     return SDBIterator();
 }
 
+void PurchaseManager::print(std::ostream& ostream) const
+{
+    ostream << "[Purchase] " << itemCFManager_;
+}
+
+std::ostream& operator<<(std::ostream& out, const PurchaseManager& purchaseManager)
+{
+    purchaseManager.print(out);
+    return out;
+}
+
 } // namespace sf1r

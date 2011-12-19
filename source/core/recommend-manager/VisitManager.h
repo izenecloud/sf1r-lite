@@ -12,6 +12,7 @@
 #include <sdb/SDBCursorIterator.h>
 
 #include <string>
+#include <iostream>
 
 #include <boost/serialization/set.hpp> // serialize ItemIdSet
 #include <boost/serialization/access.hpp>
@@ -94,6 +95,8 @@ public:
     VisitIterator begin();
     VisitIterator end();
 
+    void print(std::ostream& ostream) const;
+
 private:
     bool updateVisitDB_(
         VisitDBType& db,
@@ -122,6 +125,8 @@ private:
 
     CoVisitManager& coVisitManager_;
 };
+
+std::ostream& operator<<(std::ostream& out, const VisitManager& visitManager);
 
 } // namespace sf1r
 

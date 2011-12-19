@@ -640,7 +640,8 @@ bool RecommendTaskService::parseOrderSCD_(const std::string& scdPath)
     {
         if (++orderNum % 10000 == 0)
         {
-            std::cout << "\rloading order num: " << orderNum << "\t" << std::flush;
+            std::cout << "\rloading order[" << orderNum << "], "
+                      << purchaseManager_ << std::flush;
         }
 
         SCDDocPtr docPtr = (*docIter);
@@ -663,7 +664,8 @@ bool RecommendTaskService::parseOrderSCD_(const std::string& scdPath)
     }
 
     saveOrderMap_(orderMap);
-    std::cout << "\rloading order num: " << orderNum << "\t" << std::endl;
+    std::cout << "\rloading order[" << orderNum << "], "
+              << purchaseManager_ << std::endl;
 
     return true;
 }
@@ -848,11 +850,15 @@ void RecommendTaskService::flush_()
 
     userIdGenerator_.flush();
     userManager_.flush();
-    visitManager_.flush();
     cartManager_.flush();
     eventManager_.flush();
     orderManager_.flush();
+
+    visitManager_.flush();
+    LOG(INFO) << "flushed " << visitManager_;
+
     purchaseManager_.flush();
+    LOG(INFO) << "flushed " << purchaseManager_;
 
     LOG(INFO) << "finish flushing recommend data for collection " << bundleConfig_.collectionName_;
 }
