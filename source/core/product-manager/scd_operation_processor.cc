@@ -7,8 +7,15 @@
 
 using namespace sf1r;
 
-ScdOperationProcessor::ScdOperationProcessor(const std::string& collectionName, const std::string& dir)
-:collectionName_(collectionName), dir_(dir), writer_(NULL), last_op_(0)
+ScdOperationProcessor::ScdOperationProcessor(
+        const std::string& syncId,
+        const std::string& collectionName,
+        const std::string& dir)
+: collectionName_(collectionName)
+, syncId_(syncId)
+, dir_(dir)
+, writer_(NULL)
+, last_op_(0)
 {
 }
 
@@ -60,15 +67,14 @@ bool ScdOperationProcessor::Finish()
 
     SynchroData syncData;
     syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
+    syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
     syncData.setValue(SynchroData::KEY_DATA_PATH, dir_);
-    SynchroProducerPtr syncProducer = SynchroFactory::getProducer(collectionName_);
+
+    SynchroProducerPtr syncProducer = SynchroFactory::getProducer(syncId_);
     if (syncProducer->produce(syncData, boost::bind(&ScdOperationProcessor::AfterProcess_, this,_1)))
     {
-        bool isConsumed = false;
-        syncProducer->waitConsumers(isConsumed);
-        return isConsumed;
+        return syncProducer->wait();
     }
-
     return false;
 }
 

@@ -17,7 +17,9 @@ ProductClustering::ProductClustering(const std::string& work_dir, const PMConfig
     LAPool::getInstance()->get_cma_path(cma_path );
     std::string jma_path;
     LAPool::getInstance()->get_jma_path(jma_path );
-    idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig(kma_path,cma_path,jma_path);
+//     idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig(kma_path,cma_path,jma_path);
+    //use cma only
+    idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("",cma_path,"");
     analyzer_ = new idmlib::util::IDMAnalyzer(aconfig);
 }
 
@@ -32,7 +34,11 @@ bool ProductClustering::Open()
         group_table_ = new GroupTableType(group_table_file);
         group_table_->Load();
         dd_ = new DDType(dd_container, group_table_);
-//         dd_->SetFixK(3);
+        if(config_.algo_fixk>0)
+        {
+            LOG(INFO)<<"Set algorithm fixk="<<config_.algo_fixk<<std::endl;
+            dd_->SetFixK(config_.algo_fixk);
+        }
 //         dd_->SetMaxProcessTable(40);
         if(!dd_->Open())
         {
@@ -81,7 +87,7 @@ void ProductClustering::Insert(const PMDocumentType& doc)
         error_ = "Category is empty.";
         return;
     }
-    
+
     if(title.length()==0 || category.length()==0 )
     {
         error_ = "Title or Category length equals zero.";
@@ -100,7 +106,7 @@ void ProductClustering::Insert(const PMDocumentType& doc)
         error_ = "Price is invalid.";
         return;
     }
-    
+
     izenelib::util::UString city;
     doc.getProperty(config_.city_property_name, city);
     ProductClusteringAttach attach;
@@ -108,34 +114,42 @@ void ProductClustering::Insert(const PMDocumentType& doc)
     attach.category = category;
     attach.city = city;
     attach.price = price;
-    
-    std::vector<izenelib::util::UString> termStrList;
-    analyzer_->GetFilteredStringList( title, termStrList );
+    std::vector<idmlib::util::IDMTerm> term_list;
+    analyzer_->GetTermList(title, term_list);
     std::vector<std::string> v;
-    
-    v.resize(termStrList.size() );
-    
+    std::vector<double> weights;
+    v.reserve(term_list.size());
+    weights.reserve(term_list.size());
+
 #ifdef PM_CLUST_TEXT_DEBUG
     std::string stitle;
     title.convertString(stitle, izenelib::util::UString::UTF_8);
     std::cout<<"[Title] "<<stitle<<std::endl<<"[Tokens] ";
 #endif
-    for (uint32_t u=0;u<termStrList.size();u++)
+    for (uint32_t i=0;i<term_list.size();i++)
     {
-        std::string display;
-        termStrList[u].convertString(display, izenelib::util::UString::UTF_8);
+        const std::string& str = term_list[i].TextString();
+        char tag = term_list[i].tag;
+        double weight = GetWeight_(title, term_list[i].text, tag);
+        if( weight<=0.0 ) continue;
 #ifdef PM_CLUST_TEXT_DEBUG
-        std::cout<<display<<",";
+        std::cout<<"["<<str<<","<<tag<<","<<weight<<"],";
 #endif
-        v[u] = display;
+        v.push_back(str);
+        //TODO the weights
+        weights.push_back(weight);
     }
 #ifdef PM_CLUST_TEXT_DEBUG
     std::cout<<std::endl;
 #endif
+    if( v.empty() )
+    {
+        error_ = "Title analyzer result is empty.";
+        return;
+    }
     std::string docid;
     udocid.convertString(docid, izenelib::util::UString::UTF_8);
-    dd_->InsertDoc(docid, v, attach);
-    
+    dd_->InsertDoc(docid, v, weights, attach);
 }
 
 bool ProductClustering::Run()
@@ -144,3 +158,23 @@ bool ProductClustering::Run()
     return run_dd;
 }
 
+double ProductClustering::GetWeight_(const izenelib::util::UString& all, const izenelib::util::UString& term, char tag)
+{
+    double weight = 1.0;
+    if(tag=='F')
+    {
+        if(term.length()<2)
+        {
+            weight = 0.0;
+        }
+        else
+        {
+            weight = 1.5;
+        }
+    }
+    else if(tag=='M')
+    {
+        weight = 0.3*term.length();
+    }
+    return weight;
+}

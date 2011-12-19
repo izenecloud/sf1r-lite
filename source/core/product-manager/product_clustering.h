@@ -14,7 +14,7 @@
 
 namespace sf1r
 {
-    
+
 class ProductClusteringAttach
 {
 public:
@@ -22,13 +22,13 @@ public:
     izenelib::util::UString category;
     izenelib::util::UString city;
     ProductPrice price;
-    
-    template<class Archive> 
-    void serialize(Archive& ar, const unsigned int version) 
+
+    template<class Archive>
+    void serialize(Archive& ar, const unsigned int version)
     {
         ar & category & city & price;
     }
-        
+
     bool dd(const ProductClusteringAttach& other) const
     {
         if(category!=other.category) return false;
@@ -56,17 +56,17 @@ public:
     ~ProductClustering();
 
     bool Open();
-    
+
     void Insert(const PMDocumentType& doc);
 
     bool Run();
-    
+
     GroupTableType* GetGroupTable() const
     {
         return group_table_;
     }
 
-    
+
     inline const std::string& GetLastError() const
     {
         return error_;
@@ -78,6 +78,8 @@ public:
     }
 
 private:
+    
+    double GetWeight_(const izenelib::util::UString& all, const izenelib::util::UString& term, char tag);
     
 private:
     std::string work_dir_;

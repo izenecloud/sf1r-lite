@@ -42,7 +42,7 @@ private:
     bool require_docid_list_();
     bool require_str_docid_list_();
     bool require_uuid_();
-    bool require_option_();
+    bool maybe_option_();
     bool maybe_doc_(bool must);
     bool require_date_range_();
 

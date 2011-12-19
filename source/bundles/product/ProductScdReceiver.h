@@ -20,12 +20,14 @@ class ProductScdReceiver
 {
 public:
 
-    ProductScdReceiver(const std::string& syncID);
+    ProductScdReceiver(const std::string& syncID, const std::string& collectionName);
 
     void Set(IndexTaskService* index_service)
     {
         index_service_ = index_service;
     }
+
+    bool onReceived(const std::string& scd_source_dir);
 
     bool Run(const std::string& scd_source_dir);
 
@@ -39,6 +41,7 @@ private:
     IndexTaskService* index_service_;
 
     std::string syncID_;
+    std::string collectionName_;
     SynchroConsumerPtr syncConsumer_;
 };
 

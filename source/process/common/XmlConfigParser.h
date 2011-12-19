@@ -573,6 +573,7 @@ public:
     {
         return homeDir_;
     }
+
 private:
     /// @brief                  Parse <System> settings
     /// @param system           Pointer to the Element
@@ -669,6 +670,8 @@ public:
 
     /// @brief  Configuraitons for LAManager
     LAManagerConfig laManagerConfig_;
+
+    std::string laDictionaryPath_;
 
      // MAPPING TABLES  ----------------------
 

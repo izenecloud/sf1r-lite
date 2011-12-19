@@ -78,13 +78,13 @@ bool ProductController::require_uuid_()
     return true;
 }
 
-bool ProductController::require_option_()
+bool ProductController::maybe_option_()
 {
     Value& option = request()[Keys::option];
     if( izenelib::driver::nullValue(option) )
     {
-        response().addError("Require option in request.");
-        return false;
+        option_.force = false;
+        return true;
     }
     Value& force = option[Keys::force];
     if( izenelib::driver::nullValue(force) )
@@ -220,7 +220,7 @@ void ProductController::add_new_group()
     IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_docid_list_());
     IZENELIB_DRIVER_BEFORE_HOOK(maybe_doc_(false));
-    IZENELIB_DRIVER_BEFORE_HOOK(require_option_());
+    IZENELIB_DRIVER_BEFORE_HOOK(maybe_option_());
     
     if (!product_manager_->AddGroup(docid_list_, doc_, option_))
     {
@@ -273,7 +273,7 @@ void ProductController::append_to_group()
     IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_uuid_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_docid_list_());
-    IZENELIB_DRIVER_BEFORE_HOOK(require_option_());
+    IZENELIB_DRIVER_BEFORE_HOOK(maybe_option_());
     if (!product_manager_->AppendToGroup(uuid_, docid_list_, option_))
     {
         response().addError(product_manager_->GetLastError());
@@ -319,7 +319,7 @@ void ProductController::remove_from_group()
     IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_uuid_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_docid_list_());
-    IZENELIB_DRIVER_BEFORE_HOOK(require_option_());
+    IZENELIB_DRIVER_BEFORE_HOOK(maybe_option_());
     if (!product_manager_->RemoveFromGroup(uuid_, docid_list_, option_))
     {
         response().addError(product_manager_->GetLastError());

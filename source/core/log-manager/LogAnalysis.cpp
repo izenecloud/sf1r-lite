@@ -13,7 +13,7 @@ void LogAnalysis::getRecentKeywordList(const std::string& collectionName, uint32
     std::vector<UserQuery> query_records;
     UserQuery::find(
         "DISTINCT query",
-        "collection = '" + collectionName + "'",
+        "collection = '" + collectionName + "'" + " and " + "hit_docs_num > 0",
         "",
         "TimeStamp desc",
         boost::lexical_cast<std::string>(limit),
