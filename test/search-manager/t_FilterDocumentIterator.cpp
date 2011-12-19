@@ -16,6 +16,30 @@ using namespace izenelib::ir::indexmanager;
 
 BOOST_AUTO_TEST_SUITE( FilterDocumentIterator_Suite )
 
+static uint32_t *int_data;
+static uint32_t * copy_data;
+void init_data(int data_size, int& copy_length)
+{
+    std::cout<<"generating data... "<<std::endl;
+    int MAXID = 1000;// 20000  100000000
+
+    int_data = new unsigned[data_size];
+    srand( (unsigned)time(NULL) );
+
+    for (int i = 0; i < data_size; ++i) {
+        int_data[i] = rand() % MAXID;
+    }
+    std::sort(int_data, int_data+ data_size);
+    uint32_t* it = std::unique(int_data, int_data+ data_size);
+
+    copy_length = it - int_data;
+    cout<<"real_size = "<<copy_length<<endl;
+    copy_data = new unsigned[copy_length];
+    std::memcpy(copy_data, int_data, copy_length * sizeof(uint32_t));
+
+    std::cout<<"done!\n";
+}
+
 static std::vector<uint32_t> make_query(const std::string& query)
 {
     std::vector<uint32_t> tl;
@@ -28,6 +52,7 @@ static std::vector<uint32_t> make_query(const std::string& query)
     }
     return tl;
 }
+
 
 ///DocumentIterator for one term in one property
 class MockTermDocumentIterator: public DocumentIterator
@@ -206,20 +231,51 @@ BOOST_AUTO_TEST_CASE(filter_test)
     {
         ANDDocumentIterator iter;
         boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet(new EWAHBoolArray<uint32_t>());
-        pFilterIdSet->set(0);
-        pFilterIdSet->set(2);
-        pFilterIdSet->set(3);
+
+        int data_size = 100;
+        int real_size = 0;
+        init_data(data_size, real_size);
+
+        int i = 0;
+
+        for(; i < real_size; ++i)
+        {
+            pFilterIdSet->set(copy_data[i]);
+        }
+       // pFilterIdSet->set(0);
+        //pFilterIdSet->set(2);
+       // pFilterIdSet->set(3);
+        EWAHBoolArrayBitIterator<uint32_t> bitIter = pFilterIdSet->bit_iterator();
         BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
         FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
         iter.add(pFilterIterator);
 
-        BOOST_CHECK_EQUAL(iter.next(), true );
-        BOOST_CHECK_EQUAL(iter.doc(), 0U);
-        BOOST_CHECK_EQUAL(iter.next(), true );
-        BOOST_CHECK_EQUAL(iter.doc(), 2U);
-        BOOST_CHECK_EQUAL(iter.next(), true );
-        BOOST_CHECK_EQUAL(iter.doc(), 3U);
-        BOOST_CHECK_EQUAL(iter.next(), false );
+        clock_t start,finish;
+        double totaltime;
+        start = clock();
+
+        //i = 0;
+        while(bitIter.next())
+        {
+            bitIter.getCurr();
+           // BOOST_CHECK_EQUAL(iter.doc(), copy_data[i] );
+            //i++;
+        }
+
+        finish = clock();
+        totaltime=(double)(finish-start)/CLOCKS_PER_SEC;
+        cout<<"\ntime = "<<totaltime<<"seconds！"<<endl;
+
+        delete[] int_data;
+        delete[] copy_data;
+
+       // BOOST_CHECK_EQUAL(iter.next(), true );
+       // BOOST_CHECK_EQUAL(iter.doc(), 0U);
+       // BOOST_CHECK_EQUAL(iter.next(), true );
+       // BOOST_CHECK_EQUAL(iter.doc(), 2U);
+       // BOOST_CHECK_EQUAL(iter.next(), true );
+       // BOOST_CHECK_EQUAL(iter.doc(), 3U);
+       // BOOST_CHECK_EQUAL(iter.next(), false );
     }
 
 }
