@@ -40,8 +40,7 @@ bool IndexSearchService::getSearchResult(
     KeywordSearchResult& resultItem
 )
 {
-    CREATE_PROFILER (query, "IndexSearchService", "processGetSearchResults all: total query time");
-    START_PROFILER ( query );
+    CREATE_SCOPED_PROFILER (query, "IndexSearchService", "processGetSearchResults all: total query time");
 
     if (!bundleConfig_->isSupportByAggregator())
     {
@@ -49,7 +48,6 @@ bool IndexSearchService::getSearchResult(
         std::vector<std::pair<workerid_t, KeywordSearchResult> > resultList;
         resultList.push_back(std::make_pair(0,resultItem));
         searchAggregator_->aggregateMiningResult(resultItem, resultList);
-        STOP_PROFILER ( query );
         return ret;
     }
 
@@ -128,7 +126,6 @@ bool IndexSearchService::getSearchResult(
     searchAggregator_->distributeRequest(
             actionItem.collectionName_, "getSummaryMiningResult", requestGroup, resultItem);
 
-    STOP_PROFILER ( query );
     REPORT_PROFILE_TO_FILE( "PerformanceQueryResult.SIAProcess" );
 
     return true;

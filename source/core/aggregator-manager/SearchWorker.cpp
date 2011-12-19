@@ -205,7 +205,7 @@ bool SearchWorker::getSearchResult_(
         ResultItemType& resultItem,
         bool isDistributedSearch)
 {
-    CREATE_PROFILER ( searchIndex, "IndexSearchService", "processGetSearchResults: search index");
+    CREATE_SCOPED_PROFILER ( searchIndex, "IndexSearchService", "processGetSearchResults: search index");
 
     // Set basic info for response
     resultItem.collectionName_ = actionItem.collectionName_;
@@ -251,7 +251,6 @@ bool SearchWorker::getSearchResult_(
         return true;
     }
 
-    START_PROFILER ( searchIndex );
     int startOffset;
     int TOP_K_NUM = bundleConfig_->topKNum_;
     if (isDistributedSearch)
@@ -333,8 +332,6 @@ bool SearchWorker::getSearchResult_(
     //set query term and Id List
     resultItem.rawQueryString_ = actionItem.env_.queryString_;
     actionOperation.getRawQueryTermIdList(resultItem.queryTermIdList_);
-
-    STOP_PROFILER ( searchIndex );
 
     DLOG(INFO) << "Total count: " << resultItem.totalCount_ << endl;
     DLOG(INFO) << "Top K count: " << resultItem.topKDocs_.size() << endl;
