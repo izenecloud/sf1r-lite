@@ -10,20 +10,21 @@ StringGroupLabel::StringGroupLabel(
     const PropValueTable& pvTable
 )
     : propValueTable_(pvTable)
+    , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
 {
     getTargetValueIds_(labelPaths);
 }
 
 bool StringGroupLabel::test(docid_t doc) const
 {
-    std::set<PropValueTable::pvid_t> parentSet;
-    propValueTable_.parentIdSet(doc, parentSet);
-    std::set<PropValueTable::pvid_t>::const_iterator parentEndIt = parentSet.end();
+    parentSet_.clear();
+    propValueTable_.parentIdSet(doc, parentSet_);
+    PropValueTable::ParentSetType::const_iterator parentEndIt = parentSet_.end();
 
     for (std::vector<PropValueTable::pvid_t>::const_iterator it = targetValueIds_.begin();
         it != targetValueIds_.end(); ++it)
     {
-        if (parentSet.find(*it) != parentEndIt)
+        if (parentSet_.find(*it) != parentEndIt)
             return true;
     }
 

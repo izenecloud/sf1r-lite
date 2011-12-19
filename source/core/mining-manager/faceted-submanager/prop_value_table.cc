@@ -171,24 +171,6 @@ bool PropValueTable::testDoc(docid_t docId, pvid_t labelId) const
     return parentSet.find(labelId) != parentSet.end();
 }
 
-void PropValueTable::parentIdSet(docid_t docId, std::set<pvid_t>& parentSet) const
-{
-    if (docId >= valueIdTable_.size())
-        return;
-
-    const ValueIdList& valueIdList = valueIdTable_[docId];
-    for (ValueIdList::const_iterator it = valueIdList.begin();
-        it != valueIdList.end(); ++it)
-    {
-        for (pvid_t pvId = *it; pvId; pvId = parentIdVec_[pvId])
-        {
-            // stop finding parent if already inserted
-            if (parentSet.insert(pvId).second == false)
-                break;
-        }
-    }
-}
-
 void PropValueTable::propValuePath(pvid_t pvId, std::vector<izenelib::util::UString>& path) const
 {
     // from leaf to root

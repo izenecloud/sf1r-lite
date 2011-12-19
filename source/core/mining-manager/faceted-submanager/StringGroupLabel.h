@@ -33,6 +33,8 @@ private:
 private:
     const PropValueTable& propValueTable_;
     std::vector<PropValueTable::pvid_t> targetValueIds_;
+    boost::scoped_alloc alloc_;
+    mutable PropValueTable::ParentSetType parentSet_;
 };
 
 NS_FACETED_END

@@ -14,6 +14,9 @@
 #include <util/ustring/UString.h>
 #include "faceted_types.h"
 
+
+#include <boost/memory.hpp>
+
 #include <vector>
 #include <string>
 #include <map>
@@ -21,6 +24,7 @@
 
 NS_FACETED_BEGIN
 
+using boost::stl_allocator;
 class PropValueTable
 {
 public:
@@ -41,6 +45,9 @@ public:
     typedef std::map<izenelib::util::UString, pvid_t> PropStrMap;
     /** mapping from value id to the map of child values */
     typedef std::vector<PropStrMap> ChildMapTable;
+
+    typedef std::set<pvid_t, std::less<pvid_t>, stl_allocator<pvid_t> > ParentSetType;
+    //typedef std::set<pvid_t> ParentSetType;
 
     PropValueTable(
         const std::string& dirPath,
@@ -121,8 +128,27 @@ public:
      * Get value ids of @p docId, including all its parent ids.
      * @param docId the doc id
      * @param parentSet the set of value ids
+     * TODO When boost::memory has a TLS allocator, the tempte could be removed by 
+     * assigning a ParentSetType as a member variable of class PropValueTable
      */
-    void parentIdSet(docid_t docId, std::set<pvid_t>& parentSet) const;
+    template<typename ParentSetType>
+    void parentIdSet(docid_t docId, ParentSetType& parentSet) const
+    {
+        if (docId >= valueIdTable_.size())
+            return;
+
+        const ValueIdList& valueIdList = valueIdTable_[docId];
+        for (ValueIdList::const_iterator it = valueIdList.begin();
+            it != valueIdList.end(); ++it)
+        {
+            for (pvid_t pvId = *it; pvId; pvId = parentIdVec_[pvId])
+            {
+                // stop finding parent if already inserted
+                if (parentSet.insert(pvId).second == false)
+                    break;
+            }
+        }
+    }
 
     /**
      * Given value id @p pvId, get its path from root node to leaf node.

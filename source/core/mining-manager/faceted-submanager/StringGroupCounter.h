@@ -48,6 +48,9 @@ private:
 
     /** map from value id to doc count */
     std::vector<int> countTable_;
+
+    boost::scoped_alloc alloc_;
+    mutable PropValueTable::ParentSetType parentSet_;
 };
 
 NS_FACETED_END
