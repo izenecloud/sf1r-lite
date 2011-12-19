@@ -13,6 +13,7 @@
 
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include <boost/serialization/set.hpp> // serialize ItemIdSet
 
@@ -69,10 +70,14 @@ public:
     SDBIterator begin();
     SDBIterator end();
 
+    void print(std::ostream& ostream) const;
+
 private:
     SDBType container_;
     ItemCFManager& itemCFManager_;
 };
+
+std::ostream& operator<<(std::ostream& out, const PurchaseManager& purchaseManager);
 
 } // namespace sf1r
 

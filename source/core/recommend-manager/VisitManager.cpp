@@ -217,4 +217,15 @@ bool VisitManager::updateSessionDB_(
     return true;
 }
 
+void VisitManager::print(std::ostream& ostream) const
+{
+    ostream << "[Visit] " << coVisitManager_;
+}
+
+std::ostream& operator<<(std::ostream& out, const VisitManager& visitManager)
+{
+    visitManager.print(out);
+    return out;
+}
+
 } // namespace sf1r
