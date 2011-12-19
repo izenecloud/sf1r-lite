@@ -55,17 +55,17 @@ void SortPropertyComparator::initComparator()
     }
 }
 
-int SortPropertyComparator::compare(ScoreDoc doc1, ScoreDoc doc2)
+int SortPropertyComparator::compare(const ScoreDoc& doc1, const ScoreDoc& doc2) const
 {
     return (this->*comparator_)(doc1, doc2);
 }
 
-int SortPropertyComparator::compareImplDefault(ScoreDoc doc1, ScoreDoc doc2)
+int SortPropertyComparator::compareImplDefault(const ScoreDoc& doc1, const ScoreDoc& doc2) const
 {
     return 0;
 }
 
-int SortPropertyComparator::compareImplInt(ScoreDoc doc1, ScoreDoc doc2)
+int SortPropertyComparator::compareImplInt(const ScoreDoc& doc1, const ScoreDoc& doc2) const
 {
     if((doc1.docId >= size_)||(doc2.docId >= size_)) return 0;
     int64_t f1 = ((int64_t*)data_)[doc1.docId];
@@ -75,7 +75,7 @@ int SortPropertyComparator::compareImplInt(ScoreDoc doc1, ScoreDoc doc2)
     return 0;
 }
 
-int SortPropertyComparator::compareImplUnsigned(ScoreDoc doc1, ScoreDoc doc2)
+int SortPropertyComparator::compareImplUnsigned(const ScoreDoc& doc1, const ScoreDoc& doc2) const
 {
     if((doc1.docId >= size_)||(doc2.docId >= size_)) return 0;
     uint64_t f1 = ((uint64_t*)data_)[doc1.docId];
@@ -85,7 +85,7 @@ int SortPropertyComparator::compareImplUnsigned(ScoreDoc doc1, ScoreDoc doc2)
     return 0;
 }
 
-int SortPropertyComparator::compareImplFloat(ScoreDoc doc1, ScoreDoc doc2)
+int SortPropertyComparator::compareImplFloat(const ScoreDoc& doc1, const ScoreDoc& doc2) const
 {
     if((doc1.docId >= size_)||(doc2.docId >= size_)) return 0;
     float f1 = ((float*)data_)[doc1.docId];
@@ -95,7 +95,7 @@ int SortPropertyComparator::compareImplFloat(ScoreDoc doc1, ScoreDoc doc2)
     return 0;
 }
 
-int SortPropertyComparator::compareImplDouble(ScoreDoc doc1, ScoreDoc doc2)
+int SortPropertyComparator::compareImplDouble(const ScoreDoc& doc1, const ScoreDoc& doc2) const
 {
     if((doc1.docId >= size_)||(doc2.docId >= size_)) return 0;
     double f1 = ((double*)data_)[doc1.docId];
@@ -105,14 +105,14 @@ int SortPropertyComparator::compareImplDouble(ScoreDoc doc1, ScoreDoc doc2)
     return 0;
 }
 
-int SortPropertyComparator::compareImplUnknown(ScoreDoc doc1, ScoreDoc doc2)
+int SortPropertyComparator::compareImplUnknown(const ScoreDoc& doc1, const ScoreDoc& doc2) const
 {
     if (doc1.score < doc2.score) return -1;
     if (doc1.score > doc2.score) return 1;
     return 0;
 }
 
-int SortPropertyComparator::compareImplCustomRanking(ScoreDoc doc1, ScoreDoc doc2)
+int SortPropertyComparator::compareImplCustomRanking(const ScoreDoc& doc1, const ScoreDoc& doc2) const
 {
     if (doc1.custom_score < doc2.custom_score) return -1;
     if (doc1.custom_score > doc2.custom_score) return 1;

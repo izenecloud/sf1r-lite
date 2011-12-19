@@ -23,14 +23,14 @@ class CustomRanker;
 class SortPropertyComparator
 {
 public:
-    int compare(ScoreDoc doc1, ScoreDoc doc2);
+    int compare(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
 
 private:
     boost::shared_ptr<PropertyData> propertyData_;
     PropertyDataType type_;
     void* data_;
     size_t size_;
-    int (SortPropertyComparator::*comparator_)(ScoreDoc, ScoreDoc);
+    int (SortPropertyComparator::*comparator_)(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
 
 public:
     SortPropertyComparator();
@@ -39,13 +39,13 @@ public:
 
 private:
     void initComparator();
-    int compareImplDefault(ScoreDoc doc1, ScoreDoc doc2);
-    int compareImplInt(ScoreDoc doc1, ScoreDoc doc2);
-    int compareImplUnsigned(ScoreDoc doc1, ScoreDoc doc2);
-    int compareImplFloat(ScoreDoc doc1, ScoreDoc doc2);
-    int compareImplDouble(ScoreDoc doc1, ScoreDoc doc2);
-    int compareImplUnknown(ScoreDoc doc1, ScoreDoc doc2);
-    int compareImplCustomRanking(ScoreDoc doc1, ScoreDoc doc2);
+    int compareImplDefault(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
+    int compareImplInt(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
+    int compareImplUnsigned(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
+    int compareImplFloat(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
+    int compareImplDouble(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
+    int compareImplUnknown(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
+    int compareImplCustomRanking(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
 };
 
 }
