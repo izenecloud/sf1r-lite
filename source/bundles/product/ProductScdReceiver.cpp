@@ -5,12 +5,25 @@
 
 using namespace sf1r;
 namespace bfs = boost::filesystem;
-ProductScdReceiver::ProductScdReceiver(const std::string& syncID)
+ProductScdReceiver::ProductScdReceiver(const std::string& syncID, const std::string& collectionName)
 :index_service_(NULL)
 ,syncID_(syncID)
+,collectionName_(collectionName)
 {
     syncConsumer_ = SynchroFactory::getConsumer(syncID);
-    syncConsumer_->watchProducer(boost::bind(&ProductScdReceiver::Run, this, _1), true);
+    syncConsumer_->watchProducer(
+            boost::bind(&ProductScdReceiver::Run, this, _1),
+            collectionName);
+}
+
+bool ProductScdReceiver::onReceived(const std::string& scd_source_dir)
+{
+    if(!index_service_->index(0))
+    {
+        return false;
+    }
+
+    return true;
 }
 
 bool ProductScdReceiver::Run(const std::string& scd_source_dir)

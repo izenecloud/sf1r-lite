@@ -33,6 +33,8 @@
              - IPv6 ip address has not been properly parsed now (lacking demand)
              - To fully disable use of Cassandra, be free to set it to "__disabled__"
                or any value that can not satisfy the parser :)
+             - The keyspace field should not include any hyphen (-). Use underline
+               instead please.
     -->
     <CassandraConnection str="cassandra://211.152.36.219/B5MM"/>
 

@@ -164,7 +164,7 @@ bool ProductBundleActivator::addingService( const ServiceReference& ref )
             else//in a
             {
                 LOG(INFO)<<"Scd Reciever init with id : "<<config_->productId_<<std::endl;
-                scd_receiver_ = new ProductScdReceiver(config_->productId_);
+                scd_receiver_ = new ProductScdReceiver(config_->productId_, config_->collectionName_);
                 scd_receiver_->Set(refIndexTaskService_);
             }
 
@@ -193,7 +193,7 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
     boost::filesystem::create_directories(scd_dir);
     data_source_ = new CollectionProductDataSource(indexService->searchWorker_->documentManager_, indexService->searchWorker_->indexManager_, indexService->searchWorker_->idManager_, indexService->searchWorker_->searchManager_, config_->pm_config_, config_->schema_);
     LOG(INFO)<<"Scd Processor init with id : "<<config_->productId_<<std::endl;
-    op_processor_ = new ScdOperationProcessor(config_->productId_, scd_dir);
+    op_processor_ = new ScdOperationProcessor(config_->productId_, config_->collectionName_, scd_dir);
     if (config_->pm_config_.enable_price_trend)
     {
         price_trend_ = new ProductPriceTrend(config_->collectionName_, dir, config_->pm_config_.group_property_names, config_->pm_config_.time_interval_days);

@@ -12,6 +12,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/dynamic_bitset.hpp>
 #include <glog/logging.h>
+
 using namespace sf1r;
 using izenelib::util::UString;
 
@@ -108,9 +109,10 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
                 docid.convertString(docid_str, UString::UTF_8);
                 if (timestamp == -1) GetTimestamp_(doc, timestamp);
                 std::map<std::string, std::string> group_prop_map;
+//              task_type task = boost::bind(&ProductPriceTrend::Insert, price_trend_, docid_str, price, timestamp);
                 GetGroupProperties_(doc, group_prop_map);
-                price_trend_->Update(docid_str, price, timestamp, group_prop_map);
-//              price_trend_->Insert(docid_str, price, timestamp);
+                task_type task = boost::bind(&ProductPriceTrend::Update, price_trend_, docid_str, price, timestamp, group_prop_map);
+                jobScheduler_.addTask(task);
             }
         }
     }
@@ -162,7 +164,8 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
             if (timestamp == -1) GetTimestamp_(to, timestamp);
             std::map<std::string, std::string> group_prop_map;
             GetGroupProperties_(to, group_prop_map);
-            price_trend_->Update(docid_str, to_price, timestamp, group_prop_map);
+            task_type task = boost::bind(&ProductPriceTrend::Update, price_trend_, docid_str, to_price, timestamp, group_prop_map);
+            jobScheduler_.addTask(task);
         }
     }
 
@@ -232,7 +235,8 @@ bool ProductManager::FinishHook()
 {
     if (has_price_trend_)
     {
-        price_trend_->Flush();
+        task_type task = boost::bind(&ProductPriceTrend::Flush, price_trend_);
+        jobScheduler_.addTask(task);
     }
 
     if(clustering_!=NULL)
