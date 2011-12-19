@@ -12,9 +12,13 @@
 #include "DocumentIterator.h"
 #include "NOTDocumentIterator.h"
 
+#include <boost/memory.hpp>
+
 #include <list>
 
 namespace sf1r{
+
+using boost::stl_allocator;
 
 class ANDDocumentIterator:public DocumentIterator
 {
@@ -63,7 +67,9 @@ protected:
 
     NOTDocumentIterator* pNOTDocIterator_;
 
-    std::list<DocumentIterator*> docIterList_;
+    boost::scoped_alloc alloc_;
+
+    std::list<DocumentIterator*, stl_allocator<int> > docIterList_;
 };
 
 inline bool ANDDocumentIterator::move_together_with_not()
@@ -89,6 +95,11 @@ inline bool ANDDocumentIterator::do_next()
 
     if (docIterList_.empty()||(docIterList_.front()->next()==false))
         return false;
+    if (nIteratorNum == 1)
+    {
+        currDoc_ = docIterList_.front()->doc();
+        return true;
+    }
     target = docIterList_.front()->doc();
     docIterList_.push_back(docIterList_.front());
     docIterList_.pop_front();
