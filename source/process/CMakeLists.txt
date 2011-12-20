@@ -24,9 +24,29 @@ SET(POSCharExtractor_SRC tools/POSCharExtractor.cpp)
 SET(TGTrainerBridge_SRC tools/TGTrainerBridge.cpp)
 SET(TGTrainer_SRC tools/TGTrainer.cpp)
 
-FILE(GLOB_RECURSE cobra_SRC "*.cpp")
+FILE(GLOB_RECURSE common_SRC "common/*.cpp")
+FILE(GLOB_RECURSE controller_SRC "controllers/*.cpp")
+FILE(GLOB_RECURSE parsers_SRC "parsers/*.cpp")
+FILE(GLOB_RECURSE renderers_SRC "renderers/*.cpp")
+FILE(GLOB_RECURSE log_server_SRC "log-server/*.cpp")
+
+FILE(GLOB cobra_process_SRC 
+  "Cobra*.cpp" 
+  ${common_SRC} 
+  ${controller_SRC}
+  ${parsers_SRC}
+  ${renderers_SRC}
+  )
+  
+FILE(GLOB log_server_process_SRC
+  "LogServer*.cpp"
+  "common/ProcessOptions.cpp"
+  ${log_server_SRC}
+  )
+
 ADD_DEFINITIONS("-fno-strict-aliasing")
-ADD_EXECUTABLE(CobraProcess ${cobra_SRC})
+ADD_EXECUTABLE(CobraProcess ${cobra_process_SRC})
+ADD_EXECUTABLE(LogServerProcess ${log_server_process_SRC})
 
 TARGET_LINK_LIBRARIES(CobraProcess
   sf1r_mining_manager
@@ -71,8 +91,16 @@ TARGET_LINK_LIBRARIES(CobraProcess
   ${Thrift_LIBS}
 )
 
+TARGET_LINK_LIBRARIES(LogServerProcess
+  ${izenelib_LIBRARIES}
+
+  #external
+  ${Boost_LIBRARIES}
+  ${Glog_LIBRARIES}
+)
 
 INSTALL(TARGETS
-    CobraProcess
+    CobraProcess 
+    LogServerProcess    
     RUNTIME DESTINATION bin
     COMPONENT sf1r_apps)
