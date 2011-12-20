@@ -104,11 +104,6 @@ public:
         return logKeywords_;
     }
 
-    bool logGroupLabels() const
-    {
-        return logGroupLabels_;
-    }
-
     std::vector<std::string>& mutableProperties()
     {
         return properties_;
@@ -143,7 +138,6 @@ private:
     faceted::GroupParam::GroupLabelMap groupLabels_;
     faceted::GroupParam::AttrLabelVec attrLabels_;
     bool logKeywords_;
-    bool logGroupLabels_;
     std::vector<std::string> properties_;
     RankingType::TextRankingType rankingModel_;
     LanguageAnalyzerInfo analyzerInfo_;

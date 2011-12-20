@@ -45,6 +45,7 @@ controllers:
       - similar_to_image
       - get_topic
       - get_topic_with_sim
+      - log_group_label
       - get_freq_group_labels
       - set_top_group_label
       - visit

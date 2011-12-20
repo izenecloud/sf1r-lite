@@ -1299,18 +1299,17 @@ bool MiningManager::clickGroupLabel(
 )
 {
     GroupLabelLogger* logger = groupLabelLoggerMap_[propName];
-    if (logger)
+    if (! logger)
     {
-        faceted::PropValueTable::pvid_t pvId = propValueId_(propName, groupPath);
-        if (pvId)
-        {
-            return logger->logLabel(query, pvId);
-        }
-
+        LOG(ERROR) << "GroupLabelLogger is not initialized for group property: " << propName;
         return false;
     }
 
-    return true;
+    faceted::PropValueTable::pvid_t pvId = propValueId_(propName, groupPath);
+    if (pvId == 0)
+        return false;
+
+    return logger->logLabel(query, pvId);
 }
 
 bool MiningManager::getFreqGroupLabel(
@@ -1322,51 +1321,51 @@ bool MiningManager::getFreqGroupLabel(
 )
 {
     GroupLabelLogger* logger = groupLabelLoggerMap_[propName];
-    if (logger)
+    if (! logger)
     {
-        std::vector<faceted::PropValueTable::pvid_t> pvIdVec;
-        if (logger->getFreqLabel(query, limit, pvIdVec, freqVec))
+        LOG(ERROR) << "GroupLabelLogger is not initialized for group property: " << propName;
+        return false;
+    }
+
+    std::vector<faceted::PropValueTable::pvid_t> pvIdVec;
+    if (! logger->getFreqLabel(query, limit, pvIdVec, freqVec))
+    {
+        LOG(ERROR) << "error in GroupLabelLogger::getFreqLabel(), query: " << query;
+        return false;
+    }
+
+    if (! groupManager_)
+    {
+        LOG(ERROR) << "the GroupManager is not initialized";
+        return false;
+    }
+
+    const faceted::PropValueTable* propValueTable = groupManager_->getPropValueTable(propName);
+    if (! propValueTable)
+    {
+        LOG(ERROR) << "the PropValueTable is not initialized for group property: " << propName;
+        return false;
+    }
+
+    for (std::vector<faceted::PropValueTable::pvid_t>::const_iterator idIt = pvIdVec.begin();
+            idIt != pvIdVec.end(); ++idIt)
+    {
+        std::vector<izenelib::util::UString> ustrPath;
+        propValueTable->propValuePath(*idIt, ustrPath);
+
+        std::vector<std::string> path;
+        for (std::vector<izenelib::util::UString>::const_iterator ustrIt = ustrPath.begin();
+             ustrIt != ustrPath.end(); ++ustrIt)
         {
-            if (!groupManager_)
-            {
-                LOG(ERROR) << "the GroupManager is not initialized";
-                return false;
-            }
-
-            const faceted::PropValueTable* propValueTable = groupManager_->getPropValueTable(propName);
-            if (!propValueTable)
-            {
-                LOG(ERROR) << "the PropValueTable is not initialized for group property: " << propName;
-                return false;
-            }
-
-            for (std::vector<faceted::PropValueTable::pvid_t>::const_iterator idIt = pvIdVec.begin();
-                    idIt != pvIdVec.end(); ++idIt)
-            {
-                std::vector<izenelib::util::UString> ustrPath;
-                propValueTable->propValuePath(*idIt, ustrPath);
-
-                std::vector<std::string> path;
-                for (std::vector<izenelib::util::UString>::const_iterator ustrIt = ustrPath.begin();
-                        ustrIt != ustrPath.end(); ++ustrIt)
-                {
-                    std::string str;
-                    ustrIt->convertString(str, UString::UTF_8);
-                    path.push_back(str);
-                }
-
-                pathVec.push_back(path);
-            }
-
-            return true;
+            std::string str;
+            ustrIt->convertString(str, UString::UTF_8);
+            path.push_back(str);
         }
-    }
-    else
-    {
-        LOG(ERROR) << "the logger is not initialized for group property: " << propName;
+
+        pathVec.push_back(path);
     }
 
-    return false;
+    return true;
 }
 
 faceted::PropValueTable::pvid_t MiningManager::propValueId_(
@@ -1415,25 +1414,21 @@ bool MiningManager::setTopGroupLabel(
 )
 {
     GroupLabelLogger* logger = groupLabelLoggerMap_[propName];
-    if (logger)
-    {
-        faceted::PropValueTable::pvid_t pvId = 0;
-        if (!groupPath.empty())
-        {
-            pvId = propValueId_(propName, groupPath);
-            if (pvId == 0)
-            {
-                return false;
-            }
-        }
-
-        return logger->setTopLabel(query, pvId);
-    }
-    else
+    if (! logger)
     {
         LOG(ERROR) << "GroupLabelLogger is not initialized for group property: " << propName;
         return false;
     }
+
+    faceted::PropValueTable::pvid_t pvId = 0;
+    if (! groupPath.empty())
+    {
+        pvId = propValueId_(propName, groupPath);
+        if (pvId == 0)
+            return false;
+    }
+
+    return logger->setTopLabel(query, pvId);
 }
 
 bool MiningManager::GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list)
