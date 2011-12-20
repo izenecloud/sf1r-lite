@@ -10,14 +10,16 @@ int main(int argc, char* argv[])
     {
         ProcessOptions po;
         std::vector<std::string> args(argv + 1, argv + argc);
-
-
-        LogServer logServer;
-        logServer.start();
+        if (po.setLogServerProcessArgs(argv[0], args))
+        {
+            LogServer logServer;
+            logServer.start();
+        }
     }
     catch(std::exception& e)
     {
         std::cerr << e.what() << std::endl;
-        return 1;
     }
+
+    exit(1);
 }

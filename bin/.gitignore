@@ -3,6 +3,7 @@
 !/*.rb
 !/*.sh
 !/config
+!/config/logserver.cfg
 !/config/schema
 !/config/schema/*.xsd
 !/config/sf1config.xml.in

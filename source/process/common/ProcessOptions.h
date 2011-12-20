@@ -50,6 +50,8 @@ public:
 
     bool setCobraProcessArgs(const std::vector<std::string>& args);
 
+    bool setLogServerProcessArgs(const std::string& processName, const std::vector<std::string>& args);
+
     unsigned int getNumberOfOptions() const
     {
         return variableMap_.size();
@@ -91,6 +93,11 @@ private:
      * @brief   Description of MIAProcess options
      */
     boost::program_options::options_description cobraProcessDescription_;
+
+    /**
+     * @brief  Description of LogServerProcess options
+     */
+    boost::program_options::options_description logServerProcessDescription_;
 
     /// @brief  The file name (path) of the configuration file
     std::string configFileDir_;

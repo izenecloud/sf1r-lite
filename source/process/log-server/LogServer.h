@@ -10,6 +10,8 @@ class LogServer
 public:
     LogServer();
 
+    void init();
+
     void start();
 
     void stop();
