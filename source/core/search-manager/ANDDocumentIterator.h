@@ -30,11 +30,43 @@ public:
 public:
     void add(DocumentIterator* pDocIterator);
 
-    bool next();
+    bool next()
+    {
+        if (!hasNot_)
+            return do_next();
+        else
+        {
+            if (docIterList_.empty())
+                return false;
+            if (! initNOTIterator_)
+            {
+                initNOTIterator_ = true;
+                if (pNOTDocIterator_->next())
+                    currDocOfNOTIter_ = pNOTDocIterator_->doc();
+                else
+                    currDocOfNOTIter_ = MAX_DOC_ID;
+            }
+
+            bool ret = do_next();
+            if (currDoc_ == currDocOfNOTIter_) {
+                return move_together_with_not();
+            }
+            else if (currDoc_ < currDocOfNOTIter_)
+                return ret;
+            else
+            {
+                currDocOfNOTIter_ = pNOTDocIterator_->skipTo(currDoc_);
+                if (currDoc_ == currDocOfNOTIter_)
+                    return move_together_with_not();
+                else
+                    return ret;
+            }
+    }
+}
 
     docid_t doc() { return currDoc_; }
 
-    void doc_item(RankDocumentProperty& rankDocumentProperty);
+    inline void doc_item(RankDocumentProperty& rankDocumentProperty);
 
     void df_ctf(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties& ctfmap);
 
@@ -47,7 +79,7 @@ public:
     void print(int level = 0);
 
 #if SKIP_ENABLED
-    docid_t skipTo(docid_t target);
+    inline docid_t skipTo(docid_t target);
 private:
     inline docid_t do_skipTo(docid_t target);
 #endif
@@ -70,7 +102,11 @@ protected:
     boost::scoped_alloc alloc_;
 
     std::list<DocumentIterator*, stl_allocator<int> > docIterList_;
+
+    ///Use a member to record size of docIterList, becaus std::list::size() has O(n) overheads
+    size_t nIteratorNum_;
 };
+
 
 inline bool ANDDocumentIterator::move_together_with_not()
 {
@@ -90,23 +126,22 @@ inline bool ANDDocumentIterator::move_together_with_not()
 
 inline bool ANDDocumentIterator::do_next()
 {
-    docid_t target,nearTarget;
-    size_t nIteratorNum = docIterList_.size();
-
-    if (docIterList_.empty()||(docIterList_.front()->next()==false))
+    if (!nIteratorNum_ ||(docIterList_.front()->next()==false))
         return false;
-    if (nIteratorNum == 1)
+    if (nIteratorNum_ == 1)
     {
         currDoc_ = docIterList_.front()->doc();
         return true;
     }
+    docid_t target,nearTarget;
+
     target = docIterList_.front()->doc();
     docIterList_.push_back(docIterList_.front());
     docIterList_.pop_front();
 
     size_t nMatch = 1;
 
-    while ( nMatch < nIteratorNum )
+    while ( nMatch < nIteratorNum_ )
     {
         nearTarget = docIterList_.front()->skipTo(target);
         if (nearTarget == target)
@@ -126,13 +161,74 @@ inline bool ANDDocumentIterator::do_next()
         docIterList_.push_back(docIterList_.front());
         docIterList_.pop_front();
     }
-    if (nMatch == nIteratorNum)
+    if (nMatch == nIteratorNum_)
     {
         currDoc_ = target;
         return true;
     }
     return false;
 
+}
+
+#if SKIP_ENABLED
+inline docid_t ANDDocumentIterator::skipTo(docid_t target)
+{
+    if (!hasNot_)
+        return do_skipTo(target);
+    else
+    {
+        docid_t nFoundId, currentDoc = target;
+        do
+        {
+            nFoundId = do_skipTo(currentDoc);
+            currDocOfNOTIter_ = pNOTDocIterator_->skipTo(currentDoc);
+        }
+        while ((nFoundId != MAX_DOC_ID)&&(nFoundId == currDocOfNOTIter_));
+        return nFoundId;
+    }
+}
+
+inline docid_t ANDDocumentIterator::do_skipTo(docid_t target)
+{
+    docid_t nFoundId = MAX_DOC_ID;
+    size_t nMatch = 0;
+    size_t nIteratorNum = docIterList_.size();
+    while ( nMatch < nIteratorNum)
+    {
+        nFoundId = docIterList_.front()->skipTo(target);
+        if(MAX_DOC_ID == nFoundId)
+            break;
+        else if(nFoundId == target)
+            nMatch++;
+        else if(nFoundId > target)
+        {
+            target = nFoundId;
+            nMatch = 1;
+        }
+        else break;
+
+        docIterList_.push_back(docIterList_.front());
+        docIterList_.pop_front();
+    }
+    if(nMatch == nIteratorNum)
+    {
+        currDoc_ = target;
+        return nFoundId;
+    }
+    return MAX_DOC_ID;
+}
+#endif
+
+inline void ANDDocumentIterator::doc_item(
+    RankDocumentProperty& rankDocumentProperty)
+{
+    DocumentIterator* pEntry;
+    std::list<DocumentIterator*>::iterator iter = docIterList_.begin();
+    for (; iter != docIterList_.end(); ++iter)
+    {
+        pEntry = (*iter);
+        pEntry->doc_item(rankDocumentProperty);
+    }
 }
 
 }

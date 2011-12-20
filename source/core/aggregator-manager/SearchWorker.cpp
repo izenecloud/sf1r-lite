@@ -375,27 +375,6 @@ bool SearchWorker::getSummaryMiningResult_(
     if( miningManager_ )
     {
         miningManager_->getMiningResult(resultItem);
-
-        if (actionItem.env_.isLogGroupLabels_)
-        {
-            const faceted::GroupParam::GroupLabelMap& groupLabels = actionItem.groupParam_.groupLabels_;
-            for (faceted::GroupParam::GroupLabelMap::const_iterator labelIt = groupLabels.begin();
-                labelIt != groupLabels.end(); ++labelIt)
-            {
-                const std::string& propName = labelIt->first;
-                const faceted::GroupParam::GroupPathVec& pathVec = labelIt->second;
-
-                for (faceted::GroupParam::GroupPathVec::const_iterator pathIt = pathVec.begin();
-                    pathIt != pathVec.end(); ++pathIt)
-                {
-                    if (! miningManager_->clickGroupLabel(actionItem.env_.queryString_, propName, *pathIt))
-                    {
-                        LOG(ERROR) << "error in log group label click, query: " << actionItem.env_.queryString_
-                                << ", property name: " << propName << ", path size: " << pathIt->size();
-                    }
-                }
-            }
-        }
     }
 
     return true;

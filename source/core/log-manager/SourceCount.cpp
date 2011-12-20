@@ -114,11 +114,8 @@ bool SourceCount::updateMultiRow(const vector<SourceCount>& row_list)
 
         CassandraConnection::instance().getCassandraClient()->batchMutate(mutation_map);
     }
-    catch (const InvalidRequestException &ire)
-    {
-        cout << ire.why << endl;
-        return false;
-    }
+    CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
+
     return true;
 }
 
@@ -164,11 +161,8 @@ bool SourceCount::getMultiSlice(
             }
         }
     }
-    catch (const InvalidRequestException &ire)
-    {
-        cerr << ire.why << endl;
-        return false;
-    }
+    CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
+
     return true;
 }
 
@@ -196,11 +190,8 @@ bool SourceCount::getMultiCount(
                 col_parent,
                 pred);
     }
-    catch (const InvalidRequestException &ire)
-    {
-        cerr << ire.why << endl;
-        return false;
-    }
+    CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
+
     return true;
 }
 
@@ -220,11 +211,8 @@ bool SourceCount::updateRow() const
                     it->first);
         }
     }
-    catch (const InvalidRequestException& ire)
-    {
-        cerr << ire.why << endl;
-        return false;
-    }
+    CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
+
     return true;
 }
 

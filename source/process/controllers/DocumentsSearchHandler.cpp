@@ -430,7 +430,6 @@ bool DocumentsSearchHandler::parse()
     actionItem_.languageAnalyzerInfo_ = searchParser.analyzerInfo();
     actionItem_.rankingType_ = searchParser.rankingModel();
     actionItem_.env_.isLogging_ = searchParser.logKeywords();
-    actionItem_.env_.isLogGroupLabels_ = searchParser.logGroupLabels();
 
     // filteringParser
     swap(
