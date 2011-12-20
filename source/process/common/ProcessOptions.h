@@ -66,6 +66,11 @@ public:
         return configFileDir_;
     }
 
+    const std::string& getConfigFile() const
+    {
+        return configFile_;
+    }
+
     bool isVerboseOn() const
     {
         return isVerboseOn_;
@@ -101,6 +106,8 @@ private:
 
     /// @brief  The file name (path) of the configuration file
     std::string configFileDir_;
+
+    std::string configFile_;
 
     ///@brief used to recognize the additional unused parameters/words
     boost::program_options::positional_options_description additional_;

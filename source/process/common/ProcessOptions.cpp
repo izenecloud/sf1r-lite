@@ -112,6 +112,11 @@ void ProcessOptions::setProcessOptions()
         configFileDir_ = variableMap_["config-directory"].as<String>().str;
     }
 
+    if ( variableMap_.count("config-file") )
+    {
+        configFile_ = variableMap_["config-file"].as<String>().str;
+    }
+
     if ( variableMap_.count("verbose")  )
     {
         isVerboseOn_ = true;

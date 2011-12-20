@@ -9,9 +9,15 @@ LogServer::LogServer()
 {
 }
 
+bool LogServer::init(const std::string& cfgFile)
+{
+    return logServerCfg_.parse(cfgFile);
+}
+
 void LogServer::start()
 {
-    std::cout<<"LogServer started"<<std::endl;
+    std::cout <<"Start LogServer "
+              <<logServerCfg_.getLocalHost()<<":"<<logServerCfg_.getServerPort()<<std::endl;
 }
 
 void LogServer::stop()
