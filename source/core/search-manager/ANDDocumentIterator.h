@@ -99,6 +99,8 @@ protected:
 
     NOTDocumentIterator* pNOTDocIterator_;
 
+    NS_BOOST_MEMORY::block_pool recycle_;
+
     boost::scoped_alloc alloc_;
 
     std::list<DocumentIterator*, stl_allocator<int> > docIterList_;
