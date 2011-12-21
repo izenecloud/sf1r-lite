@@ -14,7 +14,7 @@ end
 HOST = "172.16.0.162"
 PORT = "8888"
 URL_PREFIX = "http://#{HOST}:#{PORT}/apps/sf1r/instances/_/api"
-FILTER = Set["documents/",
+FILTER = Set["documents/log_group_label",
              "documents/visit",
              "recommend/add_user",
              "recommend/update_user",
