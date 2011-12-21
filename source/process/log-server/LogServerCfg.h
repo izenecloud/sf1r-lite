@@ -29,6 +29,10 @@ public:
         return port_;
     }
 
+    unsigned int getThreadNum() const
+    {
+        return threadNum_;
+    }
 
 private:
     bool parseCfgFile_(const std::string& cfgFile);
@@ -38,6 +42,7 @@ private:
 
     std::string host_;
     unsigned int port_;
+    unsigned int threadNum_;
 };
 
 }

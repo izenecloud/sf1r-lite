@@ -6,10 +6,13 @@
 #include <iostream>
 #include <fstream>
 
-
-using namespace sf1r;
+namespace sf1r
+{
 
 typedef izenelib::util::kv2string properties;
+
+static const unsigned int DEFAULT_THREAD_NUM = 30;
+
 
 LogServerCfg::LogServerCfg()
 {
@@ -39,11 +42,10 @@ bool LogServerCfg::parseCfgFile_(const std::string& cfgFile)
 
         while(getline(cfgInput, line))
         {
-            //std::cout<<line<<std::endl;
-            // ignore empty line and comment line
             izenelib::util::Trim(line);
             if (line.empty() || line.at(0) == '#')
             {
+                // ignore empty line and comment line
                 continue;
             }
 
@@ -52,7 +54,7 @@ bool LogServerCfg::parseCfgFile_(const std::string& cfgFile)
                 cfgString += '\n';
             }
             cfgString += line;
-            //std::cout<<"->"<<cfgString<<"<-"<<std::endl;
+
         }
 
         // check configuration properties
@@ -61,11 +63,17 @@ bool LogServerCfg::parseCfgFile_(const std::string& cfgFile)
 
         if (!props.getValue("logServer.host", host_))
         {
-            throw std::runtime_error("Log Server Configuration missing proptery: logServer.host");
+            //throw std::runtime_error("Log Server Configuration missing proptery: logServer.host");
+            host_ = "localhost";
         }
         if (!props.getValue("logServer.port", port_))
         {
             throw std::runtime_error("Log Server Configuration missing proptery: logServer.port");
+        }
+        if (!props.getValue("logServer.threadNum", threadNum_))
+        {
+            //throw std::runtime_error("Log Server Configuration missing proptery: logServer.threadNum");
+            threadNum_ = DEFAULT_THREAD_NUM;
         }
     }
     catch (std::exception& e)
@@ -75,4 +83,6 @@ bool LogServerCfg::parseCfgFile_(const std::string& cfgFile)
     }
 
     return true;
+}
+
 }

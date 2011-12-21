@@ -1,8 +1,11 @@
 #include <ProcessOptions.h>
-#include <log-server/LogServer.h>
+#include <log-server/LogServerProcess.h>
 
+#include <unistd.h>
 
 using namespace sf1r;
+
+__pid_t getPid();
 
 int main(int argc, char* argv[])
 {
@@ -13,11 +16,15 @@ int main(int argc, char* argv[])
 
         if (po.setLogServerProcessArgs(argv[0], args))
         {
-            LogServer logServer;
+            __pid_t pid = getPid();
+            LOG(INFO) << "\tLog Server Process : pid=" << pid;
 
-            if (logServer.init(po.getConfigFile()))
+            LogServerProcess logServerProcess;
+
+            if (logServerProcess.init(po.getConfigFile()))
             {
-                logServer.start();
+                logServerProcess.start();
+                logServerProcess.join();
             }
         }
     }
@@ -27,4 +34,9 @@ int main(int argc, char* argv[])
     }
 
     exit(1);
+}
+
+__pid_t getPid()
+{
+    return ::getpid();
 }
