@@ -22,6 +22,7 @@ public:
         , propertyData_(propData)
         , type_(propData->type_)
         , data_(propData->data_)
+        , size_(propData->size_)
     {}
 
     const std::string &getPropertyName() const
@@ -37,6 +38,9 @@ public:
     template <typename T>
     inline bool convertPropertyValue(const docid_t did, T &value) const
     {
+        if (did >= size_)
+            return false;
+
         switch(type_)
         {
         case INT_PROPERTY_TYPE:
@@ -68,8 +72,8 @@ private:
     boost::shared_ptr<PropertyData> propertyData_;
 
     PropertyDataType type_;
-
     void *data_;
+    std::size_t size_;
 };
 
 }
