@@ -10,6 +10,7 @@ StringGroupLabel::StringGroupLabel(
     const PropValueTable& pvTable
 )
     : propValueTable_(pvTable)
+    , alloc_(recycle_)
     , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
 {
     getTargetValueIds_(labelPaths);

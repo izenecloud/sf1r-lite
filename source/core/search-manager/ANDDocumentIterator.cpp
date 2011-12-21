@@ -8,6 +8,7 @@ ANDDocumentIterator::ANDDocumentIterator()
         ,currDocOfNOTIter_(MAX_DOC_ID)
         ,initNOTIterator_(false)
         ,pNOTDocIterator_(0)
+        ,alloc_(recycle_)
         ,docIterList_(alloc_)
         ,nIteratorNum_(0)
 {

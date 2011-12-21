@@ -119,11 +119,8 @@ bool PriceHistory::updateMultiRow(const vector<PriceHistory>& row_list)
 
         CassandraConnection::instance().getCassandraClient()->batchMutate(mutation_map);
     }
-    catch (const InvalidRequestException &ire)
-    {
-        cout << ire.why << endl;
-        return false;
-    }
+    CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
+
     return true;
 }
 
@@ -169,11 +166,8 @@ bool PriceHistory::getMultiSlice(
             }
         }
     }
-    catch (const InvalidRequestException &ire)
-    {
-        cout << ire.why << endl;
-        return false;
-    }
+    CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
+
     return true;
 }
 
@@ -201,11 +195,8 @@ bool PriceHistory::getMultiCount(
                 col_parent,
                 pred);
     }
-    catch (const InvalidRequestException &ire)
-    {
-        cout << ire.why << endl;
-        return false;
-    }
+    CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
+
     return true;
 }
 
@@ -227,11 +218,8 @@ bool PriceHistory::updateRow() const
                     63072000); // Keep the price history for two years at most
         }
     }
-    catch (const InvalidRequestException &ire)
-    {
-        cout << ire.why << endl;
-        return false;
-    }
+    CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
+
     return true;
 }
 
