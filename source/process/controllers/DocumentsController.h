@@ -8,6 +8,7 @@
 #include "Sf1Controller.h"
 
 #include <string>
+#include <vector>
 
 namespace sf1r
 {
@@ -42,16 +43,24 @@ public:
     void destroy();
     void get_topic();
     void get_topic_with_sim();
+
+    void log_group_label();
     void get_freq_group_labels();
     void set_top_group_label();
+
     void visit();
     void get_summarization();
     void get_doc_count();
     void get_key_count();
+
 private:
     bool requireDOCID();
     bool setLimit();
     bool parseCollection();
+
+    bool requireKeywords(std::string& keywords);
+    bool requireGroupProperty(std::string& groupProperty);
+    bool requireGroupLabel(std::vector<std::string>& groupPath);
 
     std::string collection_;
 };

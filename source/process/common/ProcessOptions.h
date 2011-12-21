@@ -50,6 +50,8 @@ public:
 
     bool setCobraProcessArgs(const std::vector<std::string>& args);
 
+    bool setLogServerProcessArgs(const std::string& processName, const std::vector<std::string>& args);
+
     unsigned int getNumberOfOptions() const
     {
         return variableMap_.size();
@@ -62,6 +64,11 @@ public:
     const std::string& getConfigFileDirectory() const
     {
         return configFileDir_;
+    }
+
+    const std::string& getConfigFile() const
+    {
+        return configFile_;
     }
 
     bool isVerboseOn() const
@@ -92,8 +99,15 @@ private:
      */
     boost::program_options::options_description cobraProcessDescription_;
 
+    /**
+     * @brief  Description of LogServerProcess options
+     */
+    boost::program_options::options_description logServerProcessDescription_;
+
     /// @brief  The file name (path) of the configuration file
     std::string configFileDir_;
+
+    std::string configFile_;
 
     ///@brief used to recognize the additional unused parameters/words
     boost::program_options::positional_options_description additional_;

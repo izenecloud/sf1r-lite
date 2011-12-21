@@ -57,12 +57,14 @@ void validate(boost::any& v,
 }
 
 ProcessOptions::ProcessOptions()
-        :   cobraProcessDescription_("Cobra Process Options"),
-        isVerboseOn_(false),
-        logPrefix_("")
+        : cobraProcessDescription_("Cobra Process Options")
+        , logServerProcessDescription_("Log Server Process Options")
+        , isVerboseOn_(false)
+        , logPrefix_("")
 {
     additional_.add("additional_", 0);
     po::options_description base;
+    po::options_description configDir;
     po::options_description configFile;
     po::options_description scdParsing;
     po::options_description verbose;
@@ -89,12 +91,17 @@ ProcessOptions::ProcessOptions()
     ("verbose,v","verbosely display log information");
 
     base.add_options()
-    ("help", "Display help message");
+    ("help,H", "Display help message");
 
-    configFile.add_options()
+    configDir.add_options()
     ("config-directory,F", po::value<String>(), "Path to the directory contained configuration files");
 
-    cobraProcessDescription_.add(base).add(verbose).add(logPrefix).add( configFile ).add(pidFile);
+    configFile.add_options()
+    ("config-file,F", po::value<String>(), "Path to the configuration file");
+
+    cobraProcessDescription_.add(base).add(verbose).add(logPrefix).add(configDir).add(pidFile);
+
+    logServerProcessDescription_.add(base).add(verbose).add(configFile).add(pidFile);
 }
 
 
@@ -105,7 +112,12 @@ void ProcessOptions::setProcessOptions()
         configFileDir_ = variableMap_["config-directory"].as<String>().str;
     }
 
-    if ( variableMap_.count("log-prefix")  )
+    if ( variableMap_.count("config-file") )
+    {
+        configFile_ = variableMap_["config-file"].as<String>().str;
+    }
+
+    if ( variableMap_.count("verbose")  )
     {
         isVerboseOn_ = true;
     }
@@ -157,5 +169,31 @@ bool ProcessOptions::setCobraProcessArgs(const std::vector<std::string>& args)
         return false;
     }
     return true;
+}
+
+bool ProcessOptions::setLogServerProcessArgs(const std::string& processName, const std::vector<std::string>& args)
+{
+    try
+    {
+        po::store(po::command_line_parser(args).options(logServerProcessDescription_).positional(additional_).run(), variableMap_);
+        po::notify(variableMap_);
+
+        if (!variableMap_.count("help") && variableMap_.count("config-file"))
+        {
+            setProcessOptions();
+            return true;
+        }
+    }
+    catch (std::exception& e)
+    {
+        cerr << "Caught exception: " << e.what() << endl;
+    }
+
+    // Print usage
+    cout << "Usage:   " << processName << " <settings (-F )[, -H, ...]>" << endl;
+    cout << "Exapmle: " << processName << " -F ./config/logserver.cfg" << endl;
+    cout << logServerProcessDescription_ << endl;
+
+    return false;
 }
 
