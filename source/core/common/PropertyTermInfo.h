@@ -39,6 +39,8 @@ namespace sf1r {
             PropertyTermInfo(void);
             ~PropertyTermInfo(void);
 
+            PropertyTermInfo& operator=(const PropertyTermInfo& obj);
+
             ///
             /// @brief Sets target search property name.
             /// @param[searchProperty] search property name

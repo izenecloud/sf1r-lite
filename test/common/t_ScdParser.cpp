@@ -202,7 +202,7 @@ BOOST_AUTO_TEST_CASE(testGetFileSize)
         expected = scd.written() + 1; // count last new line
     }
 
-    parser.load(scdPath.file_string());
+    parser.load(scdPath.string());
     BOOST_CHECK_EQUAL(expected, parser.getFileSize());
 }
 
@@ -211,7 +211,7 @@ BOOST_AUTO_TEST_CASE(testCannotLoadNonExistFile)
     fs::path tmpdir = createCleanTempDir("testCannotLoadNonExistFile");
     fs::path scdPath = tmpdir / fileName;
 
-    BOOST_CHECK(!parser.load(scdPath.file_string()));
+    BOOST_CHECK(!parser.load(scdPath.string()));
 }
 
 BOOST_AUTO_TEST_CASE(testGetDocIdList)
@@ -229,7 +229,7 @@ BOOST_AUTO_TEST_CASE(testGetDocIdList)
         }
     }
 
-    BOOST_CHECK(parser.load(scdPath.file_string()));
+    BOOST_CHECK(parser.load(scdPath.string()));
 
     std::vector<izenelib::util::UString> idList;
     BOOST_CHECK(parser.getDocIdList(idList));
@@ -258,7 +258,7 @@ BOOST_AUTO_TEST_CASE(testIterator)
         }
     }
 
-    BOOST_CHECK(parser.load(scdPath.file_string()));
+    BOOST_CHECK(parser.load(scdPath.string()));
 
     izenelib::util::UString docid("DOCID", izenelib::util::UString::UTF_8);
     izenelib::util::UString title("Title", izenelib::util::UString::UTF_8);
@@ -303,7 +303,7 @@ BOOST_AUTO_TEST_CASE(testEmptySCD)
         ScdBuilder scd(scdPath);
     }
 
-    BOOST_CHECK(parser.load(scdPath.file_string()));
+    BOOST_CHECK(parser.load(scdPath.string()));
 
     std::vector<izenelib::util::UString> idList;
     BOOST_CHECK(parser.getDocIdList(idList));
@@ -330,7 +330,7 @@ BOOST_AUTO_TEST_CASE(testOnlyOneDOCID)
         scd("DOCID") << 1;
     }
 
-    BOOST_CHECK(parser.load(scdPath.file_string()));
+    BOOST_CHECK(parser.load(scdPath.string()));
 
     std::vector<izenelib::util::UString> idList;
     BOOST_CHECK(parser.getDocIdList(idList));
@@ -370,7 +370,7 @@ BOOST_AUTO_TEST_CASE(testOnlyOneDoc)
         scd("Content") << "Content " << 1;
     }
 
-    BOOST_CHECK(parser.load(scdPath.file_string()));
+    BOOST_CHECK(parser.load(scdPath.string()));
 
     std::vector<izenelib::util::UString> idList;
     BOOST_CHECK(parser.getDocIdList(idList));
@@ -423,7 +423,7 @@ BOOST_AUTO_TEST_CASE(testNoTrailingNewLine)
         scd("Content") << "Content " << 1;
     }
 
-    BOOST_CHECK(parser.load(scdPath.file_string()));
+    BOOST_CHECK(parser.load(scdPath.string()));
 
 
     izenelib::util::UString docid("DOCID", izenelib::util::UString::UTF_8);
@@ -471,7 +471,7 @@ BOOST_AUTO_TEST_CASE(testCarriageReturn)
         }
     }
 
-    BOOST_CHECK(parser.load(scdPath.file_string()));
+    BOOST_CHECK(parser.load(scdPath.string()));
 
     izenelib::util::UString docid("DOCID", izenelib::util::UString::UTF_8);
     izenelib::util::UString title("Title", izenelib::util::UString::UTF_8);
@@ -525,7 +525,7 @@ BOOST_AUTO_TEST_CASE(testUserId)
     }
 
     ScdParser userParser(izenelib::util::UString::UTF_8, "<USERID>");
-    BOOST_CHECK(userParser.load(scdPath.file_string()));
+    BOOST_CHECK(userParser.load(scdPath.string()));
 
     izenelib::util::UString userid("USERID", izenelib::util::UString::UTF_8);
     izenelib::util::UString gender("gender", izenelib::util::UString::UTF_8);
@@ -586,7 +586,7 @@ BOOST_AUTO_TEST_CASE(testItemId)
     }
 
     ScdParser itemParser(izenelib::util::UString::UTF_8, "<ITEMID>");
-    BOOST_CHECK(itemParser.load(scdPath.file_string()));
+    BOOST_CHECK(itemParser.load(scdPath.string()));
 
     izenelib::util::UString userid("ITEMID", izenelib::util::UString::UTF_8);
     izenelib::util::UString name("name", izenelib::util::UString::UTF_8);
@@ -652,7 +652,7 @@ BOOST_AUTO_TEST_CASE(testBracketInPropertyValue)
     }
 
     ScdParser userParser(izenelib::util::UString::UTF_8, "<USERID>");
-    BOOST_CHECK(userParser.load(scdPath.file_string()));
+    BOOST_CHECK(userParser.load(scdPath.string()));
 
     izenelib::util::UString userid("USERID", izenelib::util::UString::UTF_8);
     izenelib::util::UString gender("gender", izenelib::util::UString::UTF_8);

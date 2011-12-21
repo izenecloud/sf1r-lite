@@ -32,7 +32,7 @@ bool ScdDispatcher::dispatch(const std::string& dir, unsigned int docNum)
     for (size_t i = 1; i <= scdFileList.size(); i++)
     {
         bfs::path scd_path(scdFileList[i-1]);
-        curScdFileName_ = scd_path.filename();
+        curScdFileName_ = scd_path.filename().string();
         switchFile();
 
         ScdParser scdParser(scdEncoding_);
@@ -90,7 +90,7 @@ bool ScdDispatcher::getScdFileList(const std::string& dir, std::vector<std::stri
         bfs::directory_iterator iterEnd;
         for (bfs::directory_iterator iter(dir); iter != iterEnd; iter ++)
         {
-            std::string file_name = iter->path().filename();
+            std::string file_name = iter->path().filename().string();
 
             if (ScdParser::checkSCDFormat(file_name) )
             {

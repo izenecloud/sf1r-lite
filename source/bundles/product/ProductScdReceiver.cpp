@@ -45,7 +45,7 @@ bool ProductScdReceiver::Run(const std::string& scd_source_dir)
     {
         if (bfs::is_regular_file(itr->status()))
         {
-            std::string fileName = itr->path().filename();
+            std::string fileName = itr->path().filename().string();
             if (parser.checkSCDFormat(fileName) )
             {
                 LOG(INFO)<<"[ProductScdReceiver] find SCD "<<fileName<<std::endl;
@@ -78,7 +78,7 @@ bool ProductScdReceiver::CopyFileListToDir_(const std::vector<boost::filesystem:
     std::vector<bfs::path> copied_file;
     for(uint32_t i=0;i<file_list.size();i++)
     {
-        std::string to_filename = file_list[i].filename();
+        std::string to_filename = file_list[i].filename().string();
         bool failed = true;
         while(true)
         {

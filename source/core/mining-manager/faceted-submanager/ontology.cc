@@ -88,7 +88,7 @@ bool Ontology::Copy(const std::string& from_dir, const std::string& to_dir)
     {
         if (boost::filesystem::exists(from_dir) && !boost::filesystem::exists(to_dir))
         {
-            izenelib::util::recursive_copy_directory(from_dir, to_dir);
+            izenelib::util::recursive_copy_directory(boost::filesystem::path(from_dir), boost::filesystem::path(to_dir));
         }
         else
         {

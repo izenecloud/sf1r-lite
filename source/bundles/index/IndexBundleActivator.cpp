@@ -339,7 +339,7 @@ bool IndexBundleActivator::openDataDirectories_()
         bfs::path dataDir = bfs::path( getCollectionDataPath_() ) / *it;
         if (!directoryRotator_.appendDirectory(dataDir))
         {
-            std::string msg = dataDir.file_string() + " corrupted, delete it!";
+            std::string msg = dataDir.string() + " corrupted, delete it!";
             LOG(ERROR) <<msg <<endl;
             //clean the corrupt dir
             boost::filesystem::remove_all( dataDir );
@@ -352,7 +352,7 @@ bool IndexBundleActivator::openDataDirectories_()
     if (newest)
     {
         bfs::path p = newest->path();
-        currentCollectionDataName_ = p.filename();
+        currentCollectionDataName_ = p.filename().string();
         config_->collPath_.setCurrCollectionDir(currentCollectionDataName_);
         std::vector<bfs::path>::iterator it = dirtyDirectories.begin();
         for( ; it != dirtyDirectories.end(); ++it)
@@ -369,7 +369,7 @@ bool IndexBundleActivator::openDataDirectories_()
         boost::shared_ptr<Directory> dir = directoryRotator_.currentDirectory();
         if(dir)
         {
-            currentCollectionDataName_ = dir->path().filename();
+            currentCollectionDataName_ = dir->path().filename().string();
             config_->collPath_.setCurrCollectionDir(currentCollectionDataName_);
             return true;
         }

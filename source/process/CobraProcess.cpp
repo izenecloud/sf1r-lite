@@ -311,11 +311,11 @@ int CobraProcess::run()
         {
             if(bfs::is_regular_file(*iter))
             {
-                if(iter->filename().rfind(".xml") == (iter->filename().length() - std::string(".xml").length()))
-                    if(iter->filename() != "sf1config.xml")
+                if(bfs::path(*iter).string().rfind(".xml") == (bfs::path(*iter).string().length() - std::string(".xml").length()))
+                    if(bfs::path(*iter).string() != "sf1config.xml")
                     {
-                        std::string collectionName = iter->filename().substr(0,iter->filename().rfind(".xml"));
-                        CollectionManager::get()->startCollection(collectionName, iter->string());
+                        std::string collectionName = bfs::path(*iter).string().substr(0,bfs::path(*iter).string().rfind(".xml"));
+                        CollectionManager::get()->startCollection(collectionName, bfs::path(*iter).string());
                     }
             }
         }

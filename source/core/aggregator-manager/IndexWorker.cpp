@@ -156,7 +156,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
     {
         if (bfs::is_regular_file(itr->status()))
         {
-            std::string fileName = itr->path().filename();
+            std::string fileName = itr->path().filename().string();
             if (parser.checkSCDFormat(fileName))
             {
                 scdList.push_back(itr->path().string());
@@ -307,7 +307,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         try
         {
             bfs::rename(*scd_it, bkDir / bfs::path(*scd_it).filename());
-            currentDir->appendSCD(bfs::path(*scd_it).filename());
+            currentDir->appendSCD(bfs::path(*scd_it).filename().string());
         }
         catch (bfs::filesystem_error& e)
         {
@@ -1568,7 +1568,7 @@ size_t IndexWorker::getTotalScdSize_()
     {
         if (bfs::is_regular_file(itr->status()))
         {
-            std::string fileName = itr->path().filename();
+            std::string fileName = itr->path().filename().string();
             if (parser.checkSCDFormat(fileName))
             {
                 parser.load(scdPath+fileName);
@@ -1675,7 +1675,7 @@ bool IndexWorker::recoverSCD_()
     {
         if (bfs::is_regular_file(itr->status()))
         {
-            std::string fileName = itr->path().filename();
+            std::string fileName = itr->path().filename().string();
             if(existingSCDs.find(fileName) == existingSCDs.end())
             {
                 try

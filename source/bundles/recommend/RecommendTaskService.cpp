@@ -75,7 +75,7 @@ bool scanSCDFiles(const std::string& scdDir, std::vector<string>& scdList)
     {
         if (bfs::is_regular_file(itr->status()))
         {
-            std::string fileName = itr->path().filename();
+            std::string fileName = itr->path().filename().string();
 
             if (ScdParser::checkSCDFormat(fileName) )
             {

@@ -21,7 +21,7 @@ const std::string Directory::kSCDLogFileName("scdlogs");
 namespace { // {anonymous}
 bool notCookieFile(const bfs::path& path)
 {
-    return path.filename() != Directory::kCookieFileName;
+    return path.filename().string() != Directory::kCookieFileName;
 }
 } // namespace {anonymous}
 
@@ -116,7 +116,7 @@ bool Directory::valid() const
 
 const std::string Directory::name() const
 {
-    return path_.filename();
+    return path_.filename().string();
 }
 
 const std::string Directory::parentName() const
@@ -145,7 +145,7 @@ const bfs::path& Directory::path() const
 
 const std::string Directory::pathString() const
 {
-    return path_.file_string() + "/";
+    return path_.string() + "/";
 }
 
 void Directory::appendSCD(const std::string& scdName)
@@ -159,7 +159,7 @@ void Directory::appendSCD(const std::string& scdName)
 
 const std::string Directory::scdLogString() const
 {
-    return (path_ / kSCDLogFileName).file_string();
+    return (path_ / kSCDLogFileName).string();
 }
 
 bool Directory::copyFrom(const Directory& d)

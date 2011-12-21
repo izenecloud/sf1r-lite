@@ -160,7 +160,7 @@ bool RecommendBundleActivator::openDataDirectory_(std::string& dataDir)
         bfs::path dir = dataPath / *it;
         if (!directoryRotator_.appendDirectory(dir))
         {
-            std::string msg = dir.file_string() + " corrupted, delete it!";
+            std::string msg = dir.string() + " corrupted, delete it!";
             LOG(ERROR) <<msg <<endl;
             //clean the corrupt dir
             bfs::remove_all(dir);

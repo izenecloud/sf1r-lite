@@ -20,6 +20,21 @@ namespace sf1r {
     {
     } // end - ~PropertyTermInfo()
 
+    PropertyTermInfo& PropertyTermInfo::operator=(const PropertyTermInfo& other)
+    {
+        searchProperty_ = other.searchProperty_;
+
+        termIdPositionMap_ = other.termIdPositionMap_ ;
+
+        termIdFrequencyMap_ = other.termIdFrequencyMap_;
+
+        termIdKeywordMap_ = other.termIdKeywordMap_;
+
+        isWildCardQuery_ = other.isWildCardQuery_;
+
+        return *this;
+    }
+
     void PropertyTermInfo::setSearchProperty(const string& searchProperty)
     {
         searchProperty_ = searchProperty;

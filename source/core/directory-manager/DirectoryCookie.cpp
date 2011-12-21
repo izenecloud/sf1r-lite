@@ -22,7 +22,7 @@ const unsigned kNumLines = 4; // magic, update, parent, valid
 } // namespace {anonymous}
 
 DirectoryCookie::DirectoryCookie(const bfs::path& filePath)
-    : path_(filePath.file_string())
+    : path_(filePath.string())
     , updateTime_(0)
     , parentName_(DirectoryTraits::kNotName)
     , valid_(true)

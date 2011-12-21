@@ -234,7 +234,7 @@ bool ProductBundleActivator::openDataDirectories_()
         bfs::path dataDir = bfs::path( getCollectionDataPath_() ) / *it;
         if (!directoryRotator_.appendDirectory(dataDir))
         {
-            std::string msg = dataDir.file_string() + " corrupted, delete it!";
+            std::string msg = dataDir.string() + " corrupted, delete it!";
             sflog->error( SFL_SYS, msg.c_str() );
             std::cout<<msg<<std::endl;
             //clean the corrupt dir
@@ -248,7 +248,7 @@ bool ProductBundleActivator::openDataDirectories_()
     if (newest)
     {
         bfs::path p = newest->path();
-        currentCollectionDataName_ = p.filename();
+        currentCollectionDataName_ = p.filename().string();
         //std::cout << "Current Index Directory: " << indexPath_() << std::endl;
         return true;
     }

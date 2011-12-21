@@ -290,7 +290,7 @@ void MultiDocSummarizationSubManager::BuildIndexOfParentKey_()
     {
         if (bfs::is_regular_file(itr->status()))
         {
-            std::string fileName = itr->path().filename();
+            std::string fileName = itr->path().filename().string();
             if (parser.checkSCDFormat(fileName))
             {
                 scdList.push_back(itr->path().string());

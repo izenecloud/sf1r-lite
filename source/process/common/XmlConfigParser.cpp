@@ -191,7 +191,7 @@ bool SF1Config::parseConfigFile(const string & fileName) throw(XmlConfigParserEx
         bf::path config_file(fileName);
         bf::path config_dir = config_file.parent_path();
         bf::path schema_file = config_dir/"schema"/"sf1config.xsd";
-        std::string schema_file_string = schema_file.file_string();
+        std::string schema_file_string = schema_file.string();
         std::cout<<"XML Schema File: "<<schema_file_string<<std::endl;
         if (!boost::filesystem::exists(schema_file_string))
         {
@@ -780,7 +780,7 @@ bool CollectionConfig::parseConfigFile(const string& collectionName ,const strin
         bf::path config_file(fileName);
         bf::path config_dir = config_file.parent_path();
         bf::path schema_file = config_dir/"schema"/"collection.xsd";
-        std::string schema_file_string = schema_file.file_string();
+        std::string schema_file_string = schema_file.string();
         std::cout<<"XML Schema File: "<<schema_file_string<<std::endl;
         if (!boost::filesystem::exists(schema_file_string))
         {

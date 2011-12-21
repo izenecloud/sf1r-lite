@@ -431,7 +431,7 @@ namespace license_tool {
                 if ( is_directory(*dirIter) )
                 {
                     if ( recursive )
-                        tmpSize += dirSize(dirIter->string(), true);
+                        tmpSize += dirSize(path(*dirIter).string(), true);
                     continue;
                 }
                 tmpSize += file_size(*dirIter);

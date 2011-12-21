@@ -9,18 +9,18 @@
 #ifndef TGTYPES_H_
 #define TGTYPES_H_
 
-
-#include <boost/shared_ptr.hpp>
 #include <string>
 #include <vector>
-#include <boost/serialization/access.hpp>
-#include <boost/serialization/serialization.hpp>
 #include <util/ustring/UString.h>
 #include <boost/dynamic_bitset.hpp>
 #include <common/type_defs.h>
-#include <util/izene_serialization.h>
 #include <idmlib/concept-clustering/cc_types.h>
 #include <3rdparty/msgpack/msgpack.hpp>
+
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/serialization.hpp>
+#include <boost/shared_ptr.hpp>
+
 namespace sf1r
 {
 
