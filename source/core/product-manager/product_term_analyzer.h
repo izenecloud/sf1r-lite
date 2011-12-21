@@ -1,6 +1,7 @@
 #ifndef SF1R_PRODUCTMANAGER_PRODUCTTERMANALYZER_H
 #define SF1R_PRODUCTMANAGER_PRODUCTTERMANALYZER_H
 
+#include <boost/unordered_set.hpp>
 #include <common/type_defs.h>
 
 #include <idmlib/util/idm_analyzer.h>
@@ -30,10 +31,11 @@ public:
     
 private:
     
-    double GetWeight_(const izenelib::util::UString& all, const izenelib::util::UString& term, char tag);
+    double GetWeight_(uint32_t title_length, const izenelib::util::UString& term, char tag);
     
 private:
     idmlib::util::IDMAnalyzer* analyzer_;
+    boost::unordered_set<std::string> stop_set_;
 };
 
 }

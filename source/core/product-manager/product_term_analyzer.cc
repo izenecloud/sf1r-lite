@@ -18,6 +18,12 @@ ProductTermAnalyzer::ProductTermAnalyzer()
     aconfig.symbol = true;
     aconfig.cma_config.merge_alpha_digit = true;
     analyzer_ = new idmlib::util::IDMAnalyzer(aconfig);
+    
+    //make stop words manually here
+    stop_set_.insert("的");
+    stop_set_.insert("在");
+    stop_set_.insert("是");
+    stop_set_.insert("和");
 }
 
 ProductTermAnalyzer::~ProductTermAnalyzer()
@@ -44,14 +50,19 @@ void ProductTermAnalyzer::Analyze(const izenelib::util::UString& title, std::vec
     }
     std::cout<<std::endl;
 #endif
+    if(term_list.empty()) return;
+//     TERM_STATUS status = NORMAL;
     
-    TERM_STATUS status = NORMAL;
+    boost::unordered_set<std::string> app;
     
     for (uint32_t i=0;i<term_list.size();i++)
     {
         const std::string& str = term_list[i].TextString();
+        if( stop_set_.find(str)!=stop_set_.end()) continue;
+        if( app.find(str)!=app.end()) continue;
+        app.insert(str);
         char tag = term_list[i].tag;
-        double weight = GetWeight_(title, term_list[i].text, tag);
+        double weight = GetWeight_(term_list.size(), term_list[i].text, tag);
         if( weight<=0.0 ) continue;
         terms.push_back(str);
         weights.push_back(weight);
@@ -68,29 +79,13 @@ void ProductTermAnalyzer::Analyze(const izenelib::util::UString& title, std::vec
 
 }
 
-double ProductTermAnalyzer::GetWeight_(const izenelib::util::UString& all, const izenelib::util::UString& term, char tag)
+double ProductTermAnalyzer::GetWeight_(uint32_t title_length, const izenelib::util::UString& term, char tag)
 {
     if(tag=='.') return 0.0;
     double weight = 1.0;
     uint32_t term_length = term.length();
     bool is_model = false;
-    bool has_alpha = false;
-    bool has_digit = false;
-    if(tag=='F')
-    {
-        for(uint32_t i=0;i<term_length;i++)
-        {
-            if(term.isAlphaChar(i))
-            {
-                has_alpha = true;
-            }
-            else if(term.isDigitChar(i))
-            {
-                has_digit = true;
-            }
-        }
-    }
-    if(has_alpha && has_digit)
+    if(tag=='X')
     {
         is_model = true;
     }
@@ -102,12 +97,14 @@ double ProductTermAnalyzer::GetWeight_(const izenelib::util::UString& all, const
         }
     }
     
-    double length_factor = std::log( (double)all.length());
-    if(length_factor<1.0) length_factor = 1.0;
     if(is_model)
     {
+        double length_factor = std::log( (double)title_length*3);
         weight = 0.5*length_factor;
+        if( weight<1.0) weight = 1.0;
+//         else if(weight>2.0) weight = 2.0;
     }
+    
     else if(tag=='F')
     {
         if(term.length()<2)
