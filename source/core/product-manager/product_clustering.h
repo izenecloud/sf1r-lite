@@ -9,6 +9,7 @@
 #include "pm_types.h"
 #include "pm_config.h"
 #include "product_price.h"
+#include "product_term_analyzer.h"
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
@@ -41,7 +42,7 @@ public:
         ProductPriceType min = std::min(mid1, mid2);
         if(min<=0.0) return false;
         double ratio = max/min;
-        if(ratio>1.8) return false;
+        if(ratio>1.5) return false;
         return true;
     }
 };
@@ -77,15 +78,13 @@ public:
         return config_;
     }
 
-private:
-    
-    double GetWeight_(const izenelib::util::UString& all, const izenelib::util::UString& term, char tag);
+  
     
 private:
     std::string work_dir_;
     PMConfig config_;
     std::string error_;
-    idmlib::util::IDMAnalyzer* analyzer_;
+    ProductTermAnalyzer analyzer_;
     DDType* dd_;
     GroupTableType* group_table_;
 };
