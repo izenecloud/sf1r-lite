@@ -15,8 +15,12 @@ static const unsigned int DEFAULT_THREAD_NUM = 30;
 
 
 LogServerCfg::LogServerCfg()
+    : port_(0)
 {
+}
 
+LogServerCfg::~LogServerCfg()
+{
 }
 
 bool LogServerCfg::parse(const std::string& cfgFile)
@@ -36,14 +40,14 @@ bool LogServerCfg::parseCfgFile_(const std::string& cfgFile)
 
         if (!cfgInput.is_open())
         {
-            std::cerr<<"Could not open file: "<<cfgFile<<std::endl;
+            std::cerr << "Could not open file: " << cfgFile << std::endl;
             return false;
         }
 
-        while(getline(cfgInput, line))
+        while (getline(cfgInput, line))
         {
             izenelib::util::Trim(line);
-            if (line.empty() || line.at(0) == '#')
+            if (line.empty() || line[0] == '#')
             {
                 // ignore empty line and comment line
                 continue;
@@ -51,10 +55,9 @@ bool LogServerCfg::parseCfgFile_(const std::string& cfgFile)
 
             if (!cfgString.empty())
             {
-                cfgString += '\n';
+                cfgString.push_back('\n');
             }
-            cfgString += line;
-
+            cfgString.append(line);
         }
 
         // check configuration properties
@@ -75,10 +78,14 @@ bool LogServerCfg::parseCfgFile_(const std::string& cfgFile)
             //throw std::runtime_error("Log Server Configuration missing proptery: logServer.threadNum");
             threadNum_ = DEFAULT_THREAD_NUM;
         }
+        if (!props.getValue("drum.name", drum_name_))
+        {
+            throw std::runtime_error("Log Server Configuration missing proptery: drum.name");
+        }
     }
-    catch (std::exception& e)
+    catch (const std::exception& e)
     {
-        std::cerr<<e.what()<<std::endl;
+        std::cerr << e.what() << std::endl;
         return false;
     }
 

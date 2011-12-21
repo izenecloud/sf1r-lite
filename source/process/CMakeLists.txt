@@ -30,14 +30,14 @@ FILE(GLOB_RECURSE parsers_SRC "parsers/*.cpp")
 FILE(GLOB_RECURSE renderers_SRC "renderers/*.cpp")
 FILE(GLOB_RECURSE log_server_SRC "log-server/*.cpp")
 
-FILE(GLOB cobra_process_SRC 
-  "Cobra*.cpp" 
-  ${common_SRC} 
+FILE(GLOB cobra_process_SRC
+  "Cobra*.cpp"
+  ${common_SRC}
   ${controller_SRC}
   ${parsers_SRC}
   ${renderers_SRC}
   )
-  
+
 FILE(GLOB log_server_process_SRC
   "LogServer*.cpp"
   "common/ProcessOptions.cpp"  
@@ -101,7 +101,7 @@ TARGET_LINK_LIBRARIES(LogServerProcess
 )
 
 INSTALL(TARGETS
-    CobraProcess 
-    LogServerProcess    
+    CobraProcess
+    LogServerProcess
     RUNTIME DESTINATION bin
     COMPONENT sf1r_apps)
