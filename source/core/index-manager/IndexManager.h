@@ -108,6 +108,7 @@ public:
             data = NULL;
             return;
         }
+        size += 1;
         T low = NumericUtil<T>::Low();
         T high = NumericUtil<T>::High();
         data = new T[size]();
