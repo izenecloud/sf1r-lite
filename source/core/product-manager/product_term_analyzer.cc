@@ -15,7 +15,7 @@ ProductTermAnalyzer::ProductTermAnalyzer()
 //     idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig(kma_path,cma_path,jma_path);
     //use cma only
     idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("",cma_path,"");
-    aconfig.symbol = true;
+//     aconfig.symbol = true;
     aconfig.cma_config.merge_alpha_digit = true;
     analyzer_ = new idmlib::util::IDMAnalyzer(aconfig);
     
