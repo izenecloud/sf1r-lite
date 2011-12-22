@@ -17,14 +17,21 @@ public:
     {
     }
 
+    ~LogServerConnection()
+    {
+    }
+
     void init(const std::string& host, uint16_t port)
     {
         host_ = host;
         port_ = port;
     }
 
-    template <typename Request>
-    void asynRequest(LogServerRequest::method_t method, Request req);
+    template <typename RequestDataT>
+    void asynRequest(LogServerRequest::method_t method, RequestDataT& reqData);
+
+    template <typename RequestT>
+    void asynRequest(RequestT& req);
 
 private:
     bool bInited_;
@@ -32,11 +39,20 @@ private:
     uint16_t port_;
 };
 
-template <typename Request>
-void LogServerConnection::asynRequest(LogServerRequest::method_t method, Request req)
+template <typename RequestDataT>
+void LogServerConnection::asynRequest(LogServerRequest::method_t method, RequestDataT& reqData)
 {
     msgpack::rpc::client cli(host_, port_);
-    cli.call(method, req);
+
+    //cli.call(method, reqData);
+    cli.notify(method, reqData);
+    cli.get_loop()->flush();
+}
+
+template <typename RequestT>
+void LogServerConnection::asynRequest(RequestT& req)
+{
+    asynRequest(req.method_, req.param_);
 }
 
 }

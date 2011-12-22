@@ -1,10 +1,7 @@
 #ifndef _LOG_SERVER_REQUEST_H_
 #define _LOG_SERVER_REQUEST_H_
 
-#include <string>
-#include <vector>
-
-#include <3rdparty/msgpack/msgpack.hpp>
+#include "LogServerRequestData.h"
 
 namespace sf1r
 {
@@ -12,21 +9,37 @@ namespace sf1r
 class LogServerRequest
 {
 public:
-    LogServerRequest() {}
-
-public:
     typedef std::string method_t;
 
+    /// add method here
     static const char* METHOD_UPDATE_UUID;
+
+    method_t method_;
+
+public:
+    LogServerRequest(method_t method) : method_(method) {}
+    virtual ~LogServerRequest() {}
 };
 
-class UUID2DocIdList : public LogServerRequest
+template <typename RequestDataT>
+class LogRequestRequestT : public LogServerRequest
 {
 public:
-    std::string uuid_; // xxx
-    std::vector<uint32_t> docIdList_;
+    LogRequestRequestT(method_t method)
+    :LogServerRequest(method)
+    {
+    }
 
-    MSGPACK_DEFINE(uuid_, docIdList_)
+    RequestDataT param_;
+};
+
+class UpdateUUIDRequest : public LogRequestRequestT<UUID2DocIdList>
+{
+public:
+    UpdateUUIDRequest()
+    : LogRequestRequestT<UUID2DocIdList>(METHOD_UPDATE_UUID)
+    {
+    }
 };
 
 }

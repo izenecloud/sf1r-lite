@@ -1,6 +1,6 @@
 INCLUDE_DIRECTORIES(
-  ${CMAKE_SOURCE_DIR}/core/include
-  ${CMAKE_SOURCE_DIR}/process/new-trinity/common
+  ${CMAKE_SOURCE_DIR}/core
+  ${CMAKE_SOURCE_DIR}/process/common
   ${idmlib_INCLUDE_DIRS}
   ${imllib_INCLUDE_DIRS}
   ${ilplib_INCLUDE_DIRS}
@@ -86,3 +86,12 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   ADD_TEST(log_manager "${SF1RENGINE_ROOT}/testbin/t_ItemLogger")
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
+
+  ADD_EXECUTABLE(t_LogServerConnection
+    t_LogServerConnection.cpp
+    )
+  TARGET_LINK_LIBRARIES(t_LogServerConnection ${libs})
+  SET_TARGET_PROPERTIES(t_LogServerConnection PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+
