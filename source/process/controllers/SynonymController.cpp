@@ -8,6 +8,7 @@
 #include "SynonymController.h"
 #include <common/XmlConfigParser.h>
 
+#include <algorithm>
 #include <vector>
 #include <sstream>
 #include <fstream>
@@ -72,6 +73,24 @@ void SynonymController::add_synonym()
     {
         dictionaryFile += "synonym.txt";
     }
+
+    ifstream infile(dictionaryFile.c_str());
+    std::string line;
+    std::vector<std::string> synonym_dictionary;
+    while(getline(infile, line))
+    {
+        if(!line.empty())
+        {
+            synonym_dictionary.push_back(line);
+        }
+    }
+    infile.close();
+
+    std::vector<std::string>::iterator it;
+    // iterator to vector element:
+    it = find (synonym_dictionary.begin(), synonym_dictionary.end(), synonym_list);
+    if(it != synonym_dictionary.end())
+        return;
 
     ofstream outfile(dictionaryFile.c_str(), ios::app);
     outfile<<synonym_list<<std::endl;
@@ -165,13 +184,18 @@ void SynonymController::update_synonym()
     {
         if(!line.empty())
         {
-            if(line != old_synonym_list)
-                synonym_dictionary.push_back(line);
-            else
-                synonym_dictionary.push_back(new_synonym_list);
+            synonym_dictionary.push_back(line);
         }
     }
     infile.close();
+
+    std::vector<std::string>::iterator it;
+    // iterator to vector element:
+    it = find (synonym_dictionary.begin(), synonym_dictionary.end(), old_synonym_list);
+    if(it == synonym_dictionary.end())
+        return;
+
+    *it = new_synonym_list;
 
     //output new synonym dictionary
     ofstream outfile(dictionaryFile.c_str());
@@ -187,7 +211,7 @@ void SynonymController::update_synonym()
  *
  * @section request
  *
- * - @b old_synonym_list* (@c Array): Old synonym tokens list that need to be deleted in synonym dictionary.
+ * - @b synonym_list* (@c Array): Old synonym tokens list that need to be deleted in synonym dictionary.
  *
  * @section response
  *
@@ -199,7 +223,7 @@ void SynonymController::update_synonym()
  *
  * @code
  * {
- *   "old_synonym_list": [
+ *   "synonym_list": [
  *     "座机",
  *     "固定电话"
  *   ]
@@ -245,11 +269,18 @@ void SynonymController::delete_synonym()
     {
         if(!line.empty())
         {
-            if(line != synonym_list)
-                synonym_dictionary.push_back(line);
+            synonym_dictionary.push_back(line);
         }
     }
     infile.close();
+
+    std::vector<std::string>::iterator it;
+    // iterator to vector element:
+    it = find (synonym_dictionary.begin(), synonym_dictionary.end(), synonym_list);
+    if(it == synonym_dictionary.end())
+        return;
+
+    synonym_dictionary.erase(it);
 
     //output new synonym dictionary
     ofstream outfile(dictionaryFile.c_str());
