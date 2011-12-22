@@ -99,6 +99,7 @@ TARGET_LINK_LIBRARIES(LogServerProcess
   #external
   ${Boost_LIBRARIES}
   ${Glog_LIBRARIES}
+  ${CMAKE_THREAD_LIBS_INIT}
 )
 
 INSTALL(TARGETS
