@@ -80,6 +80,28 @@ private:
     boost::shared_ptr<libcassandra::Cassandra> cassandra_client_;
 };
 
+#define CATCH_CASSANDRA_EXCEPTION(prompt) \
+    catch (const org::apache::cassandra::InvalidRequestException& ire) \
+    { \
+        std::cerr << prompt << ire.why << std::endl; \
+        return false; \
+    } \
+    catch (const ::apache::thrift::TException& tex) \
+    { \
+        std::cerr << prompt << tex.what() << std::endl; \
+        return false; \
+    } \
+    catch (const std::exception& ex) \
+    { \
+        std::cerr << prompt << ex.what() << std::endl; \
+        return false; \
+    } \
+    catch (...) \
+    { \
+        std::cerr << prompt << "Unknown error" << std::endl; \
+    } \
+
+
 }
 
 #endif

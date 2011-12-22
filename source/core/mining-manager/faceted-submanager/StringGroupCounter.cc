@@ -9,22 +9,24 @@ StringGroupCounter::StringGroupCounter(const PropValueTable& pvTable)
     : propValueTable_(pvTable)
     , childMapTable_(pvTable.childMapTable())
     , countTable_(pvTable.propValueNum())
+    , alloc_(recycle_)
+    , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
 {
 }
 
 void StringGroupCounter::addDoc(docid_t doc)
 {
-    std::set<PropValueTable::pvid_t> parentSet;
-    propValueTable_.parentIdSet(doc, parentSet);
+    parentSet_.clear();
+    propValueTable_.parentIdSet(doc, parentSet_);
 
-    for (std::set<PropValueTable::pvid_t>::const_iterator it = parentSet.begin();
-        it != parentSet.end(); ++it)
+    for (PropValueTable::ParentSetType::const_iterator it = parentSet_.begin();
+        it != parentSet_.end(); ++it)
     {
         ++countTable_[*it];
     }
 
     // total doc count for this property
-    if (!parentSet.empty())
+    if (!parentSet_.empty())
     {
         ++countTable_[0];
     }

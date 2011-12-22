@@ -327,6 +327,8 @@ SortPropertyComparator* SortPropertyCache::getComparator(SortProperty* pSortProp
 Sorter::Sorter(SortPropertyCache* pCache)
         :pCache_(pCache)
         ,ppSortProperties_(0)
+        ,reverseMul_(0)
+
 {
 }
 
@@ -335,11 +337,8 @@ Sorter::~Sorter()
     for (std::list<SortProperty*>::iterator iter = sortProperties_.begin();
             iter != sortProperties_.end(); ++iter)
         delete *iter;
-    if (ppSortProperties_)
-    {
-        delete[] ppSortProperties_;
-        ppSortProperties_ = NULL;
-    }
+    if (ppSortProperties_) delete[] ppSortProperties_;
+    if (reverseMul_) delete[] reverseMul_;
 }
 
 void Sorter::addSortProperty(const string& property, PropertyDataType propertyType, bool reverse)
@@ -421,6 +420,10 @@ void Sorter::getComparators()
         delete [] ppSortProperties_;
         ppSortProperties_ = ppSortProperties;
     }
-
+    reverseMul_ = new int[nNumProperties_];
+    for(i = 0; i < nNumProperties_; ++i)
+    {
+        reverseMul_[i] = ppSortProperties_[i]->isReverse() ? -1 : 1;
+    }
 }
 

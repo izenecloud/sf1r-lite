@@ -1,26 +1,16 @@
 #include "product_clustering.h"
 #include <document-manager/Document.h>
-#include <la-manager/LAPool.h>
+
 #include <ir/index_manager/index/IndexerDocument.h>
 
-// #define PM_CLUST_TEXT_DEBUG
 
 using namespace sf1r;
 namespace bfs = boost::filesystem;
 ProductClustering::ProductClustering(const std::string& work_dir, const PMConfig& config)
 : work_dir_(work_dir), config_(config)
-, analyzer_(NULL), dd_(NULL), group_table_(NULL)
+, dd_(NULL), group_table_(NULL)
 {
-    std::string kma_path;
-    LAPool::getInstance()->get_kma_path(kma_path );
-    std::string cma_path;
-    LAPool::getInstance()->get_cma_path(cma_path );
-    std::string jma_path;
-    LAPool::getInstance()->get_jma_path(jma_path );
-//     idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig(kma_path,cma_path,jma_path);
-    //use cma only
-    idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("",cma_path,"");
-    analyzer_ = new idmlib::util::IDMAnalyzer(aconfig);
+    
 }
 
 bool ProductClustering::Open()
@@ -56,7 +46,6 @@ bool ProductClustering::Open()
 
 ProductClustering::~ProductClustering()
 {
-    delete analyzer_;
     if(group_table_!=NULL)
     {
         delete group_table_;
@@ -114,42 +103,19 @@ void ProductClustering::Insert(const PMDocumentType& doc)
     attach.category = category;
     attach.city = city;
     attach.price = price;
-    std::vector<idmlib::util::IDMTerm> term_list;
-    analyzer_->GetTermList(title, term_list);
-    std::vector<std::string> v;
+    
+    std::vector<std::string> terms;
     std::vector<double> weights;
-    v.reserve(term_list.size());
-    weights.reserve(term_list.size());
-
-#ifdef PM_CLUST_TEXT_DEBUG
-    std::string stitle;
-    title.convertString(stitle, izenelib::util::UString::UTF_8);
-    std::cout<<"[Title] "<<stitle<<std::endl<<"[Tokens] ";
-#endif
-    for (uint32_t i=0;i<term_list.size();i++)
-    {
-        const std::string& str = term_list[i].TextString();
-        char tag = term_list[i].tag;
-        double weight = GetWeight_(title, term_list[i].text, tag);
-        if( weight<=0.0 ) continue;
-#ifdef PM_CLUST_TEXT_DEBUG
-        std::cout<<"["<<str<<","<<tag<<","<<weight<<"],";
-#endif
-        v.push_back(str);
-        //TODO the weights
-        weights.push_back(weight);
-    }
-#ifdef PM_CLUST_TEXT_DEBUG
-    std::cout<<std::endl;
-#endif
-    if( v.empty() )
+    analyzer_.Analyze(title, terms, weights);
+    
+    if( terms.empty() )
     {
         error_ = "Title analyzer result is empty.";
         return;
     }
     std::string docid;
     udocid.convertString(docid, izenelib::util::UString::UTF_8);
-    dd_->InsertDoc(docid, v, weights, attach);
+    dd_->InsertDoc(docid, terms, weights, attach);
 }
 
 bool ProductClustering::Run()
@@ -158,23 +124,3 @@ bool ProductClustering::Run()
     return run_dd;
 }
 
-double ProductClustering::GetWeight_(const izenelib::util::UString& all, const izenelib::util::UString& term, char tag)
-{
-    double weight = 1.0;
-    if(tag=='F')
-    {
-        if(term.length()<2)
-        {
-            weight = 0.0;
-        }
-        else
-        {
-            weight = 1.5;
-        }
-    }
-    else if(tag=='M')
-    {
-        weight = 0.3*term.length();
-    }
-    return weight;
-}

@@ -23,11 +23,8 @@ bool ColumnFamilyBase::truncateColumnFamily() const
     {
         CassandraConnection::instance().getCassandraClient()->truncateColumnFamily(getName());
     }
-    catch (const InvalidRequestException& ire)
-    {
-        cerr << ire.why << endl;
-        return false;
-    }
+    CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
+
     return true;
 }
 
@@ -38,11 +35,8 @@ bool ColumnFamilyBase::dropColumnFamily() const
     {
         CassandraConnection::instance().getCassandraClient()->dropColumnFamily(getName());
     }
-    catch (const InvalidRequestException& ire)
-    {
-        cerr << ire.why << endl;
-        return false;
-    }
+    CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
+
     return true;
 }
 
@@ -90,11 +84,8 @@ bool ColumnFamilyBase::getSlice(const string& start, const string& finish, int32
             break;
         }
     }
-    catch (const InvalidRequestException &ire)
-    {
-        cerr << ire.why << endl;
-        return false;
-    }
+    CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
+
     return true;
 }
 
@@ -109,11 +100,8 @@ bool ColumnFamilyBase::deleteRow()
                 getKey(),
                 col_path);
     }
-    catch (const InvalidRequestException &ire)
-    {
-        cerr << ire.why << endl;
-        return false;
-    }
+    CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
+
     return true;
 }
 
@@ -136,11 +124,8 @@ bool ColumnFamilyBase::getCount(int32_t& count, const string& start, const strin
                 col_parent,
                 pred);
     }
-    catch (const InvalidRequestException &ire)
-    {
-        cerr << ire.why << endl;
-        return false;
-    }
+    CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
+
     return true;
 }
 

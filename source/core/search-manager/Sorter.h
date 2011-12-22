@@ -61,6 +61,11 @@ public:
 
     SortPropertyComparator* getComparator() { return pComparator_; }
 
+    int compare(const ScoreDoc& doc1,const ScoreDoc& doc2) const
+    {
+        return pComparator_->compare(doc1, doc2);
+    }
+
 private:
     ///name of property to be sorted
     string property_;
@@ -149,7 +154,26 @@ public:
 
     void addSortProperty(SortProperty* pSortProperty);
 
-    inline bool lessThan(ScoreDoc doc1,ScoreDoc doc2);
+    bool lessThan(const ScoreDoc& doc1,const ScoreDoc& doc2)
+    {
+        size_t i=0;
+        for(; i < nNumProperties_; ++i)
+        {
+            //int c = (reverseMul_[i]) * ppSortProperties_[i]->compare(doc1, doc2);
+            int c = ppSortProperties_[i]->compare(doc1, doc2);
+            if(c != 0)
+            {
+                //return c < 0;
+                ///Tricky optmization, while difficult to maintain
+                return c ^ (reverseMul_[i]); 
+            }
+        //c = (pSortProperty->isReverse()) ? pSortProperty->pComparator_->compare(doc2, doc1)
+        //       : pSortProperty->pComparator_->compare(doc1, doc2);
+        }
+
+        return doc1.docId > doc2.docId;
+//    return c < 0;
+    }
 
     ///This interface would be called after an instance of Sorter is established, it will generate SortPropertyComparator
     /// for internal usage
@@ -162,26 +186,12 @@ private:
 
     SortProperty** ppSortProperties_;
 
+    int* reverseMul_;
+
     size_t nNumProperties_;
 
     friend class SearchManager;
 };
-
-inline bool Sorter::lessThan(ScoreDoc doc1,ScoreDoc doc2)
-{
-    int c = 0;
-    size_t i=0;
-    SortProperty* pSortProperty;
-    while((i<nNumProperties_) &&(c==0))
-    {
-        pSortProperty = ppSortProperties_[i];
-        c = (pSortProperty->isReverse()) ? pSortProperty->pComparator_->compare(doc2, doc1)
-               : pSortProperty->pComparator_->compare(doc1, doc2);
-        i++;
-    }
-
-    return c < 0;
-}
 
 }
 

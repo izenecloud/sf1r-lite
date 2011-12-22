@@ -5,7 +5,7 @@
  * @date    2008-12-02
  *
  * @details
- * Currently the options are only differenciated by the display message. However the arguments are parsed for all the cases.
+ * Currently the options are only distinguished by the output message. However the arguments are parsed for all the cases.
  * I assume that a process will not use other process' options.
  * TODO: describe the available options of each process
  */
@@ -15,7 +15,6 @@
 
 #include <boost/program_options.hpp>
 
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -29,18 +28,21 @@ public:
     class Port
     {
     public:
-        unsigned port;
-        Port(unsigned p)
-                : port(p)
-        {}
+        unsigned int port;
+        Port(unsigned int p)
+            : port(p)
+        {
+        }
     };
+
     class String
     {
     public:
         std::string str;
         String(const std::string& s)
-                : str(s)
-        {}
+            : str(s)
+        {
+        }
     };
 
     /**
@@ -50,7 +52,9 @@ public:
 
     bool setCobraProcessArgs(const std::vector<std::string>& args);
 
-    unsigned int getNumberOfOptions() const
+    bool setLogServerProcessArgs(const std::string& processName, const std::vector<std::string>& args);
+
+    inline unsigned int getNumberOfOptions() const
     {
         return variableMap_.size();
     }
@@ -59,22 +63,27 @@ public:
      * @brief   Gets the location of the configuration file
      * @return  The configuration file path
      */
-    const std::string& getConfigFileDirectory() const
+    inline const std::string& getConfigFileDirectory() const
     {
         return configFileDir_;
     }
 
-    bool isVerboseOn() const
+    inline const std::string& getConfigFile() const
+    {
+        return configFile_;
+    }
+
+    inline bool isVerboseOn() const
     {
         return isVerboseOn_;
     }
 
-    const std::string& getLogPrefix() const
+    inline const std::string& getLogPrefix() const
     {
         return logPrefix_;
     }
 
-    const std::string& getPidFile() const
+    inline const std::string& getPidFile() const
     {
         return pidFile_;
     }
@@ -84,6 +93,7 @@ private:
     //Process all the options possible for the processes in sf1v5
     void setProcessOptions();
 
+private:
     /// @brief  Stores the option values
     boost::program_options::variables_map variableMap_;
 
@@ -92,8 +102,15 @@ private:
      */
     boost::program_options::options_description cobraProcessDescription_;
 
+    /**
+     * @brief  Description of LogServerProcess options
+     */
+    boost::program_options::options_description logServerProcessDescription_;
+
     /// @brief  The file name (path) of the configuration file
     std::string configFileDir_;
+
+    std::string configFile_;
 
     ///@brief used to recognize the additional unused parameters/words
     boost::program_options::positional_options_description additional_;

@@ -13,8 +13,8 @@ void validate(boost::any& v,
               const std::vector<std::string>& values,
               ProcessOptions::Port*, int)
 {
-    static const unsigned kPortLowerLimit = 1024;
-    static const std::string kPortLowerLimitStr = "1024";
+    static const unsigned kPortLowerBound = 1024;
+    static const std::string kPortLowerBoundStr = "1024";
 
     using namespace boost::program_options;
     validators::check_first_occurrence(v);
@@ -30,9 +30,9 @@ void validate(boost::any& v,
         throw invalid_option_value("Port requires an unsigned integer.");
     }
 
-    if (port <= kPortLowerLimit)
+    if (port <= kPortLowerBound)
     {
-        throw invalid_option_value("Port must higher than " + kPortLowerLimitStr);
+        throw invalid_option_value("Port must be higher than " + kPortLowerBoundStr);
     }
 
     v = boost::any(ProcessOptions::Port(port));
@@ -57,12 +57,14 @@ void validate(boost::any& v,
 }
 
 ProcessOptions::ProcessOptions()
-        :   cobraProcessDescription_("Cobra Process Options"),
-        isVerboseOn_(false),
-        logPrefix_("")
+    : cobraProcessDescription_("Cobra Process Options")
+    , logServerProcessDescription_("Log Server Process Options")
+    , isVerboseOn_(false)
+    , logPrefix_("")
 {
     additional_.add("additional_", 0);
     po::options_description base;
+    po::options_description configDir;
     po::options_description configFile;
     po::options_description scdParsing;
     po::options_description verbose;
@@ -86,30 +88,40 @@ ProcessOptions::ProcessOptions()
      "Specify the file to store pid");
 
     verbose.add_options()
-    ("verbose,v","verbosely display log information");
+    ("verbose,v", "verbosely display log information");
 
     base.add_options()
-    ("help", "Display help message");
+    ("help,H", "Display help message");
 
-    configFile.add_options()
+    configDir.add_options()
     ("config-directory,F", po::value<String>(), "Path to the directory contained configuration files");
 
-    cobraProcessDescription_.add(base).add(verbose).add(logPrefix).add( configFile ).add(pidFile);
+    configFile.add_options()
+    ("config-file,F", po::value<String>(), "Path to the configuration file");
+
+    cobraProcessDescription_.add(base).add(verbose).add(logPrefix).add(configDir).add(pidFile);
+
+    logServerProcessDescription_.add(base).add(verbose).add(configFile).add(pidFile);
 }
 
 
 void ProcessOptions::setProcessOptions()
 {
-    if ( variableMap_.count("config-directory") ) //-F in BA
+    if (variableMap_.count("config-directory")) //-F in BA
     {
         configFileDir_ = variableMap_["config-directory"].as<String>().str;
     }
 
-    if ( variableMap_.count("log-prefix")  )
+    if (variableMap_.count("config-file"))
+    {
+        configFile_ = variableMap_["config-file"].as<String>().str;
+    }
+
+    if (variableMap_.count("verbose"))
     {
         isVerboseOn_ = true;
     }
-    if ( variableMap_.count("log-prefix")  )
+    if (variableMap_.count("log-prefix"))
     {
         logPrefix_ = variableMap_["log-prefix"].as<String>().str;
     }
@@ -129,18 +141,18 @@ bool ProcessOptions::setCobraProcessArgs(const std::vector<std::string>& args)
         po::store(po::command_line_parser(args).options(cobraProcessDescription_).positional(additional_).run(), variableMap_);
         po::notify(variableMap_);
 
-        bool flag=variableMap_.count("verbose");
-        unsigned int size=variableMap_.size();
-        if ( variableMap_.count("help") || variableMap_.empty())
+        bool flag = variableMap_.count("verbose");
+        unsigned int size = variableMap_.size();
+        if (variableMap_.count("help") || variableMap_.empty())
         {
             cout << "Usage:  CobraProcess <settings (-F)[, -V]>" << endl;
             cout << cobraProcessSample<<endl;
             cout << cobraProcessDescription_;
             return false;
         }
-        if ( (flag&&(size < 2) )||(!flag&&(size<1)) )
+        if (size < 1 || (flag && size < 2))
         {
-            cout << "Warning: Missing Mandatory Parameter"<<endl;
+            cerr << "Warning: Missing Mandatory Parameter" << endl;
             cout << "Usage:  CobraProcess <settings (-F)[, -V]>" << endl;
             cout << cobraProcessSample<<endl;
             cout << cobraProcessDescription_;
@@ -150,12 +162,37 @@ bool ProcessOptions::setCobraProcessArgs(const std::vector<std::string>& args)
     }
     catch (std::exception &e)
     {
-        cerr<<"Warning: "<<e.what()<<std::endl;
+        cerr << "Warning: " << e.what() << std::endl;
         cout << "Usage:  CobraProcess <settings (-F )[, -V]>" << endl;
-        cout<<cobraProcessSample<<endl;
+        cout << cobraProcessSample << endl;
         cout << cobraProcessDescription_;
         return false;
     }
     return true;
 }
 
+bool ProcessOptions::setLogServerProcessArgs(const std::string& processName, const std::vector<std::string>& args)
+{
+    try
+    {
+        po::store(po::command_line_parser(args).options(logServerProcessDescription_).positional(additional_).run(), variableMap_);
+        po::notify(variableMap_);
+
+        if (!variableMap_.count("help") && variableMap_.count("config-file"))
+        {
+            setProcessOptions();
+            return true;
+        }
+    }
+    catch (std::exception& e)
+    {
+        cerr << "Caught exception: " << e.what() << endl;
+    }
+
+    // Print usage
+    cout << "Usage:   " << processName << " <settings (-F )[, -H, ...]>" << endl;
+    cout << "Exapmle: " << processName << " -F ./config/logserver.cfg" << endl;
+    cout << logServerProcessDescription_ << endl;
+
+    return false;
+}

@@ -121,11 +121,8 @@ bool CassandraConnection::init(const string& str)
             cassandra_client_->createKeyspace(ks_def);
             cassandra_client_->setKeyspace(ks_name);
         }
-        catch (const ::apache::thrift::TException &ex)
-        {
-            cerr << "[CassandraConnection::init] " << str << " " << ex.what() << endl;
-            return false;
-        }
+        CATCH_CASSANDRA_EXCEPTION("[CassandraConnection::init] " + str);
+
         cout << "[CassandraConnection::init] " << "successfully connected to " << str << endl;
         isEnabled_ = true;
     }
@@ -199,11 +196,8 @@ bool CassandraConnection::createColumnFamily(
     {
         cassandra_client_->createColumnFamily(definition);
     }
-    catch (const InvalidRequestException& ire)
-    {
-        cerr << "[CassandraConnection::init] error: " << ire.why << endl;
-        return false;
-    }
+    CATCH_CASSANDRA_EXCEPTION("[CassandraConnection::init] error: ");
+
     return true;
 }
 

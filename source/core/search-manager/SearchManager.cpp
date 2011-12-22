@@ -20,6 +20,7 @@
 #include "Sorter.h"
 #include "HitQueue.h"
 #include "FilterDocumentIterator.h"
+#include "CombinedDocumentIterator.h"
 
 #include <util/swap.h>
 #include <util/get.h>
@@ -299,11 +300,11 @@ bool SearchManager::doSearch_(
     int topK,
     int start)
 {
-    CREATE_PROFILER ( dociterating, "SearchManager", "doSearch_: doc iterating");
     CREATE_PROFILER ( preparedociter, "SearchManager", "doSearch_: SearchManager_search : build doc iterator");
     CREATE_PROFILER ( preparerank, "SearchManager", "doSearch_: prepare ranker");
     CREATE_PROFILER ( preparesort, "SearchManager", "doSearch_: prepare sort");
     CREATE_PROFILER ( computerankscore, "SearchManager", "doSearch_: overall time for scoring a doc");
+    CREATE_PROFILER ( inserttoqueue, "SearchManager", "doSearch_: overall time for inserting to result queue");	
     CREATE_PROFILER ( computecustomrankscore, "SearchManager", "doSearch_: overall time for scoring customized score for a doc");
 
     unsigned int collectionId = 1;
@@ -361,7 +362,7 @@ bool SearchManager::doSearch_(
     rankingManagerPtr_->createPropertyRankers(pTextRankingType, indexPropertySize, propertyRankers);
     bool readTermPosition = propertyRankers[0]->requireTermPosition();
 
-    boost::scoped_ptr<ANDDocumentIterator> pDocIterator(new ANDDocumentIterator());
+    boost::scoped_ptr<CombinedDocumentIterator> pDocIterator(new CombinedDocumentIterator());
     MultiPropertyScorer* pMultiPropertyIterator = NULL;
     std::vector<QueryFiltering::FilteringType>& filtingList
     = actionOperation.actionItem_.filteringList_;
@@ -670,7 +671,6 @@ bool SearchManager::doSearch_(
             groupFilterBuilder_->createFilter(actionOperation.actionItem_.groupParam_));
     }
 
-    START_PROFILER ( dociterating )
     try
     {
         totalCount = 0;
@@ -707,7 +707,6 @@ bool SearchManager::doSearch_(
                 }
             }
 
-            STOP_PROFILER ( dociterating )
             ScoreDoc scoreItem(pDocIterator->doc());
             START_PROFILER ( computerankscore )
             ++totalCount;
@@ -724,10 +723,11 @@ bool SearchManager::doSearch_(
             }
             STOP_PROFILER ( computecustomrankscore )
 
+            START_PROFILER ( inserttoqueue )
             scoreItemQueue->insert(scoreItem);
-            START_PROFILER ( dociterating )
+            STOP_PROFILER ( inserttoqueue )
+
         }
-        STOP_PROFILER ( dociterating )
 
         if (groupFilter)
             groupFilter->getGroupRep(groupRep, attrRep);

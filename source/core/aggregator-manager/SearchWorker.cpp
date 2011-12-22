@@ -205,7 +205,7 @@ bool SearchWorker::getSearchResult_(
         ResultItemType& resultItem,
         bool isDistributedSearch)
 {
-    CREATE_PROFILER ( searchIndex, "IndexSearchService", "processGetSearchResults: search index");
+    CREATE_SCOPED_PROFILER ( searchIndex, "IndexSearchService", "processGetSearchResults: search index");
 
     // Set basic info for response
     resultItem.collectionName_ = actionItem.collectionName_;
@@ -251,7 +251,6 @@ bool SearchWorker::getSearchResult_(
         return true;
     }
 
-    START_PROFILER ( searchIndex );
     int startOffset;
     int TOP_K_NUM = bundleConfig_->topKNum_;
     if (isDistributedSearch)
@@ -334,8 +333,6 @@ bool SearchWorker::getSearchResult_(
     resultItem.rawQueryString_ = actionItem.env_.queryString_;
     actionOperation.getRawQueryTermIdList(resultItem.queryTermIdList_);
 
-    STOP_PROFILER ( searchIndex );
-
     DLOG(INFO) << "Total count: " << resultItem.totalCount_ << endl;
     DLOG(INFO) << "Top K count: " << resultItem.topKDocs_.size() << endl;
     DLOG(INFO) << "Page Count: " << resultItem.count_ << endl;
@@ -378,27 +375,6 @@ bool SearchWorker::getSummaryMiningResult_(
     if( miningManager_ )
     {
         miningManager_->getMiningResult(resultItem);
-
-        if (actionItem.env_.isLogGroupLabels_)
-        {
-            const faceted::GroupParam::GroupLabelMap& groupLabels = actionItem.groupParam_.groupLabels_;
-            for (faceted::GroupParam::GroupLabelMap::const_iterator labelIt = groupLabels.begin();
-                labelIt != groupLabels.end(); ++labelIt)
-            {
-                const std::string& propName = labelIt->first;
-                const faceted::GroupParam::GroupPathVec& pathVec = labelIt->second;
-
-                for (faceted::GroupParam::GroupPathVec::const_iterator pathIt = pathVec.begin();
-                    pathIt != pathVec.end(); ++pathIt)
-                {
-                    if (! miningManager_->clickGroupLabel(actionItem.env_.queryString_, propName, *pathIt))
-                    {
-                        LOG(ERROR) << "error in log group label click, query: " << actionItem.env_.queryString_
-                                << ", property name: " << propName << ", path size: " << pathIt->size();
-                    }
-                }
-            }
-        }
     }
 
     return true;
