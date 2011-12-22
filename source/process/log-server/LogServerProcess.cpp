@@ -24,6 +24,7 @@ bool LogServerProcess::init(const std::string& cfgFile)
 void LogServerProcess::start()
 {
     LOG(INFO) << "\tRPC Server : port=" << rpcLogServer_->getPort();
+    drum_.reset(new DrumType(logServerCfg_.getDrumName()));
     rpcLogServer_->start();
 }
 
@@ -35,6 +36,7 @@ void LogServerProcess::join()
 void LogServerProcess::stop()
 {
     rpcLogServer_->stop();
+    drum_.reset();
 }
 
 bool LogServerProcess::initRpcLogServer()
@@ -50,4 +52,3 @@ bool LogServerProcess::initRpcLogServer()
 }
 
 }
-

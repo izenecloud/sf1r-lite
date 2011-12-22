@@ -1,6 +1,7 @@
-#include <ProcessOptions.h>
-#include <log-server/LogServerProcess.h>
+#include "ProcessOptions.h"
+#include "log-server/LogServerProcess.h"
 
+#include <iostream>
 #include <unistd.h>
 
 using namespace sf1r;
@@ -28,7 +29,7 @@ int main(int argc, char* argv[])
             }
         }
     }
-    catch(std::exception& e)
+    catch (const std::exception& e)
     {
         std::cerr << e.what() << std::endl;
     }
