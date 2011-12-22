@@ -315,7 +315,7 @@ int CobraProcess::run()
                 if(bfs::path(*iter).filename().string().rfind(".xml") == (bfs::path(*iter).filename().string().length() - std::string(".xml").length()))
                     if(!boost::iequals(bfs::path(*iter).filename().string(),"sf1config.xml"))
                     {
-                        std::string collectionName = bfs::path(*iter).filename().string().substr(0,bfs::path(*iter).string().rfind(".xml"));
+                        std::string collectionName = bfs::path(*iter).filename().string().substr(0,bfs::path(*iter).filename().string().rfind(".xml"));
                         CollectionManager::get()->startCollection(collectionName, bfs::path(*iter).string());
                     }
             }

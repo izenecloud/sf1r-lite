@@ -70,7 +70,7 @@ public:
 
     static void copy(const std::string& from, const std::string& to)
     {
-        izenelib::util::copy_directory(boost::filesystem::path(from), boost::filesystem::path(to));
+        izenelib::util::recursive_copy_directory(boost::filesystem::path(from), boost::filesystem::path(to));
     }
 
     static bool exists(const std::string& path)
