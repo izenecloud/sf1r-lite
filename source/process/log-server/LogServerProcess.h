@@ -3,6 +3,7 @@
 
 #include "LogServerCfg.h"
 #include "RpcLogServer.h"
+#include "DriverLogServer.h"
 #include "DocidDispatcher.h"
 
 #include <am/leveldb/Table.h>
@@ -32,6 +33,8 @@ class LogServerProcess
 public:
     LogServerProcess();
 
+    ~LogServerProcess();
+
     bool init(const std::string& cfgFile);
 
     /// @brief start all
@@ -46,10 +49,15 @@ public:
 private:
     bool initRpcLogServer();
 
+    bool initDriverLogServer();
+
+    bool initDrum();
+
 private:
     LogServerCfg logServerCfg_;
 
     boost::scoped_ptr<RpcLogServer> rpcLogServer_;
+    boost::scoped_ptr<DriverLogServer> driverLogServer_;
 
     boost::scoped_ptr<DrumType> drum_;
 };

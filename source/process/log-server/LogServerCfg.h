@@ -26,9 +26,14 @@ public:
         return host_;
     }
 
-    inline unsigned int getServerPort() const
+    inline unsigned int getRpcServerPort() const
     {
-        return port_;
+        return rpcPort_;
+    }
+
+    inline unsigned int getDriverServerPort() const
+    {
+        return driverPort_;
     }
 
     inline unsigned int getThreadNum() const
@@ -48,7 +53,8 @@ private:
     std::string cfgFile_;
 
     std::string host_;
-    unsigned int port_;
+    unsigned int rpcPort_;
+    unsigned int driverPort_;
     unsigned int threadNum_;
 
     std::string drum_name_;

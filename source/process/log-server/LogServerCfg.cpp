@@ -15,7 +15,8 @@ static const unsigned int DEFAULT_THREAD_NUM = 30;
 
 
 LogServerCfg::LogServerCfg()
-    : port_(0)
+    : rpcPort_(0)
+    , driverPort_(0)
 {
 }
 
@@ -69,9 +70,13 @@ bool LogServerCfg::parseCfgFile_(const std::string& cfgFile)
             //throw std::runtime_error("Log Server Configuration missing proptery: logServer.host");
             host_ = "localhost";
         }
-        if (!props.getValue("logServer.port", port_))
+        if (!props.getValue("logServer.rpcPort", rpcPort_))
         {
-            throw std::runtime_error("Log Server Configuration missing proptery: logServer.port");
+            throw std::runtime_error("Log Server Configuration missing proptery: logServer.rpcPort");
+        }
+        if (!props.getValue("logServer.driverPort", driverPort_))
+        {
+            throw std::runtime_error("Log Server Configuration missing proptery: logServer.driverPort");
         }
         if (!props.getValue("logServer.threadNum", threadNum_))
         {
