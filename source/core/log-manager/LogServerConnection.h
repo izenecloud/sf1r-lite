@@ -13,7 +13,7 @@ class LogServerConnection : public LogManagerSingleton<LogServerConnection>
 {
 public:
     LogServerConnection()
-    : bInited_(false)
+        : bInited_(false)
     {
     }
 

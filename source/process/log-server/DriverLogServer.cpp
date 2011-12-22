@@ -9,9 +9,9 @@ namespace sf1r
 {
 
 DriverLogServer::DriverLogServer(uint16_t port, uint32_t threadNum)
-: port_(port)
-, threadNum_(threadNum)
-, bStarted_(false)
+    : port_(port)
+    , threadNum_(threadNum)
+    , bStarted_(false)
 {
 }
 

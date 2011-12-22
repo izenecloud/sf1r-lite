@@ -31,4 +31,3 @@ void DriverLogServerController::update_uuid()
 }
 
 }
-

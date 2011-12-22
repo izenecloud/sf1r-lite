@@ -46,6 +46,21 @@ public:
         return drum_name_;
     }
 
+    inline unsigned int getDrumNumBuckets() const
+    {
+        return drum_num_buckets_;
+    }
+
+    inline unsigned int getDrumBucketBuffElemSize() const
+    {
+        return drum_bucket_byte_size_;
+    }
+
+    inline unsigned int getDrumBucketByteSize() const
+    {
+        return drum_bucket_byte_size_;
+    }
+
 private:
     bool parseCfgFile_(const std::string& cfgFile);
 
@@ -58,6 +73,9 @@ private:
     unsigned int threadNum_;
 
     std::string drum_name_;
+    unsigned int drum_num_buckets_;
+    unsigned int drum_bucket_buff_elem_size_;
+    unsigned int drum_bucket_byte_size_;
 };
 
 }

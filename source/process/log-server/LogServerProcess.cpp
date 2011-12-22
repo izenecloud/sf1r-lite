@@ -89,9 +89,14 @@ bool LogServerProcess::initDriverLogServer()
 
 bool LogServerProcess::initDrum()
 {
-    drum_.reset(new DrumType(logServerCfg_.getDrumName()));
+    drum_.reset(new DrumType(
+                logServerCfg_.getDrumName(),
+                logServerCfg_.getDrumNumBuckets(),
+                logServerCfg_.getDrumBucketBuffElemSize(),
+                logServerCfg_.getDrumBucketByteSize()
+                ));
 
-    return (drum_ != 0);
+    return drum_;
 }
 
 }

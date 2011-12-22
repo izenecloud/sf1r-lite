@@ -12,7 +12,9 @@ namespace sf1r
 typedef izenelib::util::kv2string properties;
 
 static const unsigned int DEFAULT_THREAD_NUM = 30;
-
+static const std::size_t DEFAULT_DRUM_NUM_BUCKETS = 64;
+static const std::size_t DEFAULT_DRUM_BUCKET_BUFF_ELEM_SIZE = 8192;
+static const std::size_t DEFAULT_DRUM_BUCKET_BYTE_SIZE = 1048576;
 
 LogServerCfg::LogServerCfg()
     : rpcPort_(0)
@@ -67,7 +69,6 @@ bool LogServerCfg::parseCfgFile_(const std::string& cfgFile)
 
         if (!props.getValue("logServer.host", host_))
         {
-            //throw std::runtime_error("Log Server Configuration missing proptery: logServer.host");
             host_ = "localhost";
         }
         if (!props.getValue("logServer.rpcPort", rpcPort_))
@@ -80,12 +81,23 @@ bool LogServerCfg::parseCfgFile_(const std::string& cfgFile)
         }
         if (!props.getValue("logServer.threadNum", threadNum_))
         {
-            //throw std::runtime_error("Log Server Configuration missing proptery: logServer.threadNum");
             threadNum_ = DEFAULT_THREAD_NUM;
         }
         if (!props.getValue("drum.name", drum_name_))
         {
             throw std::runtime_error("Log Server Configuration missing proptery: drum.name");
+        }
+        if (!props.getValue("drum.num_buckets", drum_num_buckets_))
+        {
+            drum_num_buckets_ = DEFAULT_DRUM_NUM_BUCKETS;
+        }
+        if (!props.getValue("drum.bucket_buff_elem_size", drum_bucket_buff_elem_size_))
+        {
+            drum_bucket_buff_elem_size_ = DEFAULT_DRUM_BUCKET_BUFF_ELEM_SIZE;
+        }
+        if (!props.getValue("drum.bucket_byte_size", drum_bucket_byte_size_))
+        {
+            drum_bucket_byte_size_ = DEFAULT_DRUM_BUCKET_BYTE_SIZE;
         }
     }
     catch (const std::exception& e)

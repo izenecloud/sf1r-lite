@@ -22,9 +22,6 @@ class LogServerProcess
         uint64_t,
         std::string,
         std::string,
-        64,
-        4096,
-        65536,
         izenelib::am::leveldb::TwoPartComparator,
         izenelib::am::leveldb::Table,
         DocidDispatcher
