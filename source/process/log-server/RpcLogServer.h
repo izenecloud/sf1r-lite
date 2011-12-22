@@ -11,6 +11,8 @@ class RpcLogServer : public msgpack::rpc::server::base
 public:
     RpcLogServer(const std::string& host, uint16_t port, uint32_t threadNum);
 
+    ~RpcLogServer();
+
     uint16_t getPort() const
     {
         return port_;

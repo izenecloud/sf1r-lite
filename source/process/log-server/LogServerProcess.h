@@ -3,6 +3,7 @@
 
 #include "LogServerCfg.h"
 #include "RpcLogServer.h"
+#include "DriverLogServer.h"
 #include "DocidDispatcher.h"
 
 #include <am/leveldb/Table.h>
@@ -21,9 +22,6 @@ class LogServerProcess
         uint64_t,
         std::string,
         std::string,
-        64,
-        4096,
-        65536,
         izenelib::am::leveldb::TwoPartComparator,
         izenelib::am::leveldb::Table,
         DocidDispatcher
@@ -31,6 +29,8 @@ class LogServerProcess
 
 public:
     LogServerProcess();
+
+    ~LogServerProcess();
 
     bool init(const std::string& cfgFile);
 
@@ -46,10 +46,15 @@ public:
 private:
     bool initRpcLogServer();
 
+    bool initDriverLogServer();
+
+    bool initDrum();
+
 private:
     LogServerCfg logServerCfg_;
 
     boost::scoped_ptr<RpcLogServer> rpcLogServer_;
+    boost::scoped_ptr<DriverLogServer> driverLogServer_;
 
     boost::scoped_ptr<DrumType> drum_;
 };
