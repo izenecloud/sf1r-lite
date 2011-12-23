@@ -25,7 +25,6 @@ class SCDScanner
             docCount += 1
 
             if docCount % 1000 == 0
-              break
               print "\rscanning #{fileCount} SCD, #{docCount} docs"
             end
 
