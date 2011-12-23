@@ -10,12 +10,13 @@ class BackupHistroyImporter
   def initialize(api)
     @api = api
     @importer_map = {}
-#     @importer_map['documents'] = DirectImporter.new(@api)
-#     @importer_map['documents/search'] = DirectImporter.new(@api)
-#     @importer_map['recommend/add_user'] = DirectImporter.new(@api)
-#     @importer_map['recommend/update_user'] = DirectImporter.new(@api)
-#     @importer_map['recommend/remove_user'] = DirectImporter.new(@api)
-#     @importer_map['documents/visit'] = VisitImporter.new("b5ma", @api)
+    #@importer_map['documents'] = DirectImporter.new(@api)
+    #@importer_map['documents/search'] = DirectImporter.new(@api)
+    @importer_map['documents/log_group_label'] = DirectImporter.new(@api)
+    @importer_map['recommend/add_user'] = DirectImporter.new(@api)
+    @importer_map['recommend/update_user'] = DirectImporter.new(@api)
+    @importer_map['recommend/remove_user'] = DirectImporter.new(@api)
+    @importer_map['documents/visit'] = VisitImporter.new("b5ma", @api)
     @importer_map['recommend/visit_item'] = VisitItemImporter.new("b5ma", @api)
     @importer_map['recommend/purchase_item'] = PurchaseItemImporter.new("b5ma", @api)
 #     @importer_map['recommend/track_event'] = VisitConverter.new

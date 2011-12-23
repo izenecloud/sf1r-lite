@@ -15,6 +15,10 @@ in_file.each_with_index do |line, i|
   line.strip!
   next if line.empty?
   request = JSON.parse(line)
+  collection = request['collection']
+  next if collection.nil?
+  next if collection!='b5ma'
+  #$stderr.puts request['collection']
   crequest = exporter.convert(request)
   next if crequest==nil
   if crequest.class == [].class
