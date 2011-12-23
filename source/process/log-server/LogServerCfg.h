@@ -26,9 +26,14 @@ public:
         return host_;
     }
 
-    inline unsigned int getServerPort() const
+    inline unsigned int getRpcServerPort() const
     {
-        return port_;
+        return rpcPort_;
+    }
+
+    inline unsigned int getDriverServerPort() const
+    {
+        return driverPort_;
     }
 
     inline unsigned int getThreadNum() const
@@ -41,6 +46,21 @@ public:
         return drum_name_;
     }
 
+    inline unsigned int getDrumNumBuckets() const
+    {
+        return drum_num_buckets_;
+    }
+
+    inline unsigned int getDrumBucketBuffElemSize() const
+    {
+        return drum_bucket_byte_size_;
+    }
+
+    inline unsigned int getDrumBucketByteSize() const
+    {
+        return drum_bucket_byte_size_;
+    }
+
 private:
     bool parseCfgFile_(const std::string& cfgFile);
 
@@ -48,10 +68,14 @@ private:
     std::string cfgFile_;
 
     std::string host_;
-    unsigned int port_;
+    unsigned int rpcPort_;
+    unsigned int driverPort_;
     unsigned int threadNum_;
 
     std::string drum_name_;
+    unsigned int drum_num_buckets_;
+    unsigned int drum_bucket_buff_elem_size_;
+    unsigned int drum_bucket_byte_size_;
 };
 
 }

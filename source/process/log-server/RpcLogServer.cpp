@@ -12,6 +12,11 @@ RpcLogServer::RpcLogServer(const std::string& host, uint16_t port, uint32_t thre
 {
 }
 
+RpcLogServer::~RpcLogServer()
+{
+    stop();
+}
+
 void RpcLogServer::start()
 {
     instance.listen(host_, port_);
