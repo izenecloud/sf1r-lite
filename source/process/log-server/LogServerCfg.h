@@ -53,7 +53,7 @@ public:
 
     inline unsigned int getDrumBucketBuffElemSize() const
     {
-        return drum_bucket_byte_size_;
+        return drum_bucket_buff_elem_size_;
     }
 
     inline unsigned int getDrumBucketByteSize() const
