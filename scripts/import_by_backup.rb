@@ -4,7 +4,7 @@ require 'detail/backup_histroy_importer'
 
 backup_file = ARGV[0]
 
-api = Sf1rApi.new("172.16.0.165")
+api = Sf1rApi.new("172.16.0.167")
 in_file = File.open(backup_file, "r")
 
 importer = BackupHistroyImporter.new(api)
