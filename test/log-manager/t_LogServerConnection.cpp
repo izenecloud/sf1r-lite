@@ -25,10 +25,10 @@ void t_RpcLogServer()
     conn.init("localhost", 18811);
 
     UUID2DocIdList uuidReqData;
-    uuidReqData.uuid_ = "qazwsxedcrfvt001";
+    uuidReqData.uuid_ = "123456789abcdef0";
     conn.asynRequest(LogServerRequest::METHOD_UPDATE_UUID, uuidReqData);
 
     UpdateUUIDRequest uuidReq;
-    uuidReq.param_.uuid_ = "qazwsxedcrfvt002";
+    uuidReq.param_.uuid_ = "123456789abcdef1";
     conn.asynRequest(uuidReq);
 }

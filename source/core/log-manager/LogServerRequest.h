@@ -17,7 +17,7 @@ public:
     method_t method_;
 
 public:
-    LogServerRequest(method_t method) : method_(method) {}
+    LogServerRequest(const method_t& method) : method_(method) {}
     virtual ~LogServerRequest() {}
 };
 
@@ -26,7 +26,7 @@ class LogRequestRequestT : public LogServerRequest
 {
 public:
     LogRequestRequestT(method_t method)
-    :LogServerRequest(method)
+        :LogServerRequest(method)
     {
     }
 
@@ -37,7 +37,7 @@ class UpdateUUIDRequest : public LogRequestRequestT<UUID2DocIdList>
 {
 public:
     UpdateUUIDRequest()
-    : LogRequestRequestT<UUID2DocIdList>(METHOD_UPDATE_UUID)
+        : LogRequestRequestT<UUID2DocIdList>(METHOD_UPDATE_UUID)
     {
     }
 };
