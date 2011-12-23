@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include <util/driver/Controller.h>
+#include <util/driver/writers/JsonWriter.h>
 
 #include <common/Keys.h>
 
@@ -12,12 +13,15 @@ namespace sf1r
 
 /**
  * @brief Controller \b log_server
- * Log server services
+ * Log server for updating cclog
  */
 class DriverLogServerController : public izenelib::driver::Controller
 {
 public:
     void update_cclog();
+
+private:
+    izenelib::driver::JsonWriter jsonWriter_;
 };
 
 }
