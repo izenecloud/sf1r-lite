@@ -8,26 +8,27 @@ using namespace izenelib::driver;
 using driver::Keys;
 
 /**
- * @brief sample, to be modified
+ * @brief Action \b update_cclog
+ * The request data of \b update_cclog in json format is expected supported by any action of SF1R controllers,
+ * and the \b header field is presented.
  *
  * @example
  * {
- *   "uuid":"0123456789abcdef",
- *   "docid_list":
- *   [
- *     "111",
- *     "222",
- *     "333"
- *   ]
+ *   "header" : {
+ *     "action" : "documents",
+ *     "controller" : "visit"
+ *   },
+ *
+ *   # Following by other fields (this is comment)
  * }
  *
  */
-void DriverLogServerController::update_uuid()
+void DriverLogServerController::update_cclog()
 {
     // TODO
-    Value& input = request()[Keys::uuid];
-
-    std::cout<<"update_uuid : "<<asString(input)<<std::endl;
+    std::cout<<"got cclog request : "
+             <<request().controller()<<" "
+             <<request().action()<<std::endl;
 }
 
 }

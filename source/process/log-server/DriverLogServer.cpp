@@ -55,14 +55,14 @@ void DriverLogServer::stop()
 
 bool DriverLogServer::initRouter()
 {
-    DriverLogServerController logServerCtrl;
-    const std::string controllerName("log_server");
-
     typedef ::izenelib::driver::ActionHandler<DriverLogServerController> handler_t;
 
-    // xxx
-    handler_t* uuidHandler = new handler_t(logServerCtrl, &DriverLogServerController::update_uuid);
-    router_->map("log_server", "update_uuid", uuidHandler);
+    DriverLogServerController logServerCtrl;
+
+    // cclogHandler is set as super handler which handles all requests.
+    handler_t* cclogHandler = new handler_t(logServerCtrl, &DriverLogServerController::update_cclog);
+    //router_->map("log_server", "update_cclog", cclogHandler);
+    router_->setSuperHandler(cclogHandler);
 
     return true;
 }

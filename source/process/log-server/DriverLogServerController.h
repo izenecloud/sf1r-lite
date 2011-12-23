@@ -10,11 +10,14 @@
 namespace sf1r
 {
 
+/**
+ * @brief Controller \b log_server
+ * Log server services
+ */
 class DriverLogServerController : public izenelib::driver::Controller
 {
 public:
-    // TODO
-    void update_uuid();
+    void update_cclog();
 };
 
 }
