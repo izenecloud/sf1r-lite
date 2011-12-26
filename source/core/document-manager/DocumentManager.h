@@ -169,6 +169,11 @@ public:
         boost::detail::atomic_count* finishedJobs
     );
 
+    bool getDocumentByCache(
+        docid_t docId,
+        Document& document
+    );
+
     /**
      * @brief gets total \c propertyLength_[i] in \c propertyDb_[i]
      * @param property property name
@@ -392,6 +397,11 @@ private:
 
     bool getDocumentsParallel(
         const std::vector<unsigned int>& ids, 
+        vector<Document>& docs
+    );
+
+    bool getDocumentsSequential(
+        const std::vector<unsigned int>& ids,
         vector<Document>& docs
     );
 

@@ -289,6 +289,23 @@ bool DocumentManager::getDocumentAsync(docid_t docId)
     return true;
 }
 
+bool DocumentManager::getDocumentByCache(
+    docid_t docId,
+    Document& document
+)
+{
+    if (documentCache_.getValue(docId, document) )
+    {
+        return true;
+    }
+    if ( propertyValueTable_->get(docId, document) )
+    {
+        documentCache_.insertValue(docId, document);
+        return true;
+    }
+    return false;
+}
+
 bool DocumentManager::getDocument_impl(
     docid_t docId,
     Document& document,
@@ -541,6 +558,19 @@ bool DocumentManager::getDocumentsParallel(
     return true;
 }
 
+bool DocumentManager::getDocumentsSequential(
+    const std::vector<unsigned int>& ids,
+    vector<Document>& docs
+)
+{
+    docs.resize(ids.size() );
+    for (size_t i=0; i<ids.size(); i++)
+    {
+        getDocumentByCache(ids[i], docs[i]);
+    }
+    return true;
+}
+
 bool DocumentManager::getRawTextOfDocuments(
     const std::vector<docid_t>& docIdList,
     const string& propertyName,
@@ -560,6 +590,7 @@ bool DocumentManager::getRawTextOfDocuments(
 
     vector<Document> docs;
     vector<unsigned int> ids;
+    ids.reserve(doc_idx_map.size());
     map<docid_t, int>::iterator it = doc_idx_map.begin();
     for (; it != doc_idx_map.end(); it++)
     {
