@@ -689,7 +689,6 @@ bool SearchManager::doSearch_(
         }
         bool requireScorer = false;
         if(pMultiPropertyIterator&&pSorter) requireScorer = pSorter->requireScorer();
-        requireScorer = true;
         while (pDocIterator->next())
         {
             if (groupFilter && !groupFilter->test(pDocIterator->doc()))
