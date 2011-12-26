@@ -2,6 +2,7 @@
 #include "RouterInitializer.h"
 
 #include <common/SFLogger.h>
+#include <log-manager/LogServerConnection.h>
 #include <la-manager/LAPool.h>
 #include <license-manager/LicenseManager.h>
 #include <aggregator-manager/CollectionDataReceiver.h>
@@ -92,6 +93,14 @@ bool CobraProcess::initLogManager()
     if (!sflog->initCassandra(cassandra_conn))
     {
         std::cerr << "Init CassandraConnection with " << cassandra_conn << " failed!" << std::endl;
+        return false;
+    }
+    std::string log_server_host;
+    uint16_t rpc_port, driver_port;
+    SF1Config::get()->getLogServerConfig(log_server_host, rpc_port, driver_port);
+    if (!LogServerConnection::instance().init(log_server_host, rpc_port))
+    {
+        std::cerr << "Init LogServerConnection with \"" << log_server_host<<":"<<rpc_port << "\" failed!" << std::endl;
         return false;
     }
     return true;
