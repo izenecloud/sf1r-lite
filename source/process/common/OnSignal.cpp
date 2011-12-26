@@ -31,14 +31,6 @@ void setupDefaultSignalHandlers()
     registerExitSignal(SIGQUIT);
     registerExitSignal(SIGTERM);
     registerExitSignal(SIGHUP);
-
-    // workaground for sdb SegFault
-    registerExitSignal(SIGSEGV);
-#  if !defined(SF1_IGNORE_SIGNAL) && !defined(DEBUG)
-    // do not ignore signals in debug mode
-    registerExceptionSignal(SIGBUS);
-    registerExceptionSignal(SIGABRT);
-# endif
 #endif // HAVE_SIGNAL_H
 }
 
@@ -61,18 +53,6 @@ void gForceExit(int)
 
 void gRunHooksOnExitWithSignal(int signal)
 {
-#ifdef HAVE_SIGNAL_H
-    // unregister SIGBUS, SIGABRT, SIGSEGV
-    struct ::sigaction action;
-    action.sa_handler = gForceExit;
-    ::sigemptyset(&action.sa_mask);
-    action.sa_flags = 0;
-
-    sigaction(SIGBUS, &action, 0);
-    sigaction(SIGABRT, &action, 0);
-    sigaction(SIGSEGV, &action, 0);
-#endif
-
     try
     {
         std::for_each(
