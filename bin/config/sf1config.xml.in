@@ -42,7 +42,7 @@
              - The keyspace field should not include any hyphen (-). Use underline
                instead please.
     -->
-    <CassandraConnection str="cassandra://180.153.140.105:/B5MM"/>
+    <CassandraConnection str="cassandra://180.153.140.105/B5MM"/>
 
     <BundlesDefault>
       <!-- Index Bundle Default -->
