@@ -606,7 +606,7 @@ bool SearchManager::doSearch_(
         const std::string& currentProperty = indexPropertyList[i];
 
         rankQueryProperties[i].setNumDocs(
-            indexManagerPtr_->getIndexReader()->numDocs()
+            indexManagerPtr_->numDocs()
         );
 
         rankQueryProperties[i].setTotalPropertyLength(
