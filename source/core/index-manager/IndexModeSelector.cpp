@@ -10,7 +10,7 @@ IndexModeSelector::IndexModeSelector(const boost::shared_ptr<IndexManager>& inde
 
 void IndexModeSelector::TrySetIndexMode(long scd_file_size)
 {
-    uint32_t exist_docs = index_manager_->getIndexReader()->numDocs();
+    uint32_t exist_docs = index_manager_->numDocs();
     if(exist_docs==0)
     {
         index_manager_->setIndexMode("default");

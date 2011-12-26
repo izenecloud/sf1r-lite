@@ -75,7 +75,7 @@ IndexWorker::IndexWorker(
     if (!hasDateInConfig)
         throw std::runtime_error("Date Property Doesn't exist in config");
 
-    indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
+    indexStatus_.numDocs_ = indexManager_->numDocs();
 
     config_tool::buildPropertyAliasMap(bundleConfig_->schema_, propertyAliasMap_);
 
@@ -416,7 +416,7 @@ bool IndexWorker::getIndexStatus(Status& status)
 
 uint32_t IndexWorker::getDocNum()
 {
-    return indexManager_->getIndexReader()->numDocs();
+    return indexManager_->numDocs();
 }
 
 uint32_t IndexWorker::getKeyCount(const std::string& property_name)
@@ -757,7 +757,7 @@ bool IndexWorker::insertDoc_(Document& document, IndexerDocument& indexDocument,
         START_PROFILER(proIndexing);
         indexManager_->insertDocument(indexDocument);
         STOP_PROFILER(proIndexing);
-        indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
+        indexStatus_.numDocs_ = indexManager_->numDocs();
         return true;
     }
     else return false;
@@ -822,7 +822,7 @@ bool IndexWorker::deleteDoc_(docid_t docid, time_t timestamp)
     {
         indexManager_->removeDocument(collectionId_, docid);
         ++numDeletedDocs_;
-        indexStatus_.numDocs_ = indexManager_->getIndexReader()->numDocs();
+        indexStatus_.numDocs_ = indexManager_->numDocs();
         return true;
     }
     else return false;
