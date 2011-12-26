@@ -599,6 +599,7 @@ bool IndexWorker::insertOrUpdateSCD_(
         boost::this_thread::interruption_point();
     } // end of for loop for all documents
 
+    searchManager_->reset_all_property_cache();
     return true;
 }
 
