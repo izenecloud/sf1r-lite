@@ -21,10 +21,22 @@ public:
     {
     }
 
-    void init(const std::string& host, uint16_t port)
+    bool init(const std::string& host, uint16_t port)
     {
         host_ = host;
         port_ = port;
+
+        try
+        {
+            msgpack::rpc::client cli(host_, port_);
+        }
+        catch(std::exception& e)
+        {
+            std::cerr<<e.what()<<std::endl;
+            return false;
+        }
+
+        return true;
     }
 
     template <typename RequestDataT>
