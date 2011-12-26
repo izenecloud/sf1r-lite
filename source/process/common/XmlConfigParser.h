@@ -374,6 +374,13 @@ public:
         return cassandra_conn_str_;
     }
 
+    void getLogServerConfig(std::string& host, uint16_t& rpc_port, uint16_t& driver_port)
+    {
+        host = log_server_host_;
+        rpc_port = rpc_port_;
+        driver_port = driver_port_;
+    }
+
     /// @brief Gets the configuration related to LAManager
     /// @return The settings for LAManager
     ///
@@ -641,6 +648,11 @@ public:
     std::string log_conn_str_;
 
     std::string cassandra_conn_str_;
+
+    /// @brief Log server network address
+    std::string  log_server_host_;
+    unsigned int rpc_port_;
+    unsigned int driver_port_;
 
     /// @brief  Configurations for BrokerAgent
     BrokerAgentConfig brokerAgentConfig_;

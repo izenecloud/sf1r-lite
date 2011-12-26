@@ -43,6 +43,7 @@
                 <xs:element ref="Resource"/>
                 <xs:element ref="WorkingDir"/>
                 <xs:element ref="LogConnection"/>
+                <xs:element ref="LogServerConnection"/>
                 <xs:element ref="CassandraConnection"/>
                 <xs:element ref="BundlesDefault"/>
                 <xs:element ref="Firewall"/>
@@ -67,6 +68,14 @@
     <xs:element name="LogConnection">
         <xs:complexType>
             <xs:attribute name="str" use="required"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="LogServerConnection">
+        <xs:complexType>
+            <xs:attribute name="host" use="required"/>
+            <xs:attribute name="rpcport" type="PortType" use="required"/>
+            <xs:attribute name="driverport" type="PortType" use="optional"/>
         </xs:complexType>
     </xs:element>
 

@@ -18,6 +18,12 @@
     -->
     <LogConnection str="sqlite3://./log/COBRA"/>
 
+    <!-- Network addresses of LogServerProcess:
+         set the "host" to where the LogServer is deployed;
+         "rpcport" is required and "driverport" is optional for SF1R currently.
+    -->
+    <LogServerConnection host="localhost" rpcport="18811" driverport="18812"/>
+
     <!-- Format of value of str:
 
              "cassandra://[username:password@]host:port[/keyspace]"
