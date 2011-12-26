@@ -154,6 +154,16 @@ public:
 
     void addSortProperty(SortProperty* pSortProperty);
 
+    bool requireScorer()
+    {
+        for(size_t i = 0; i < nNumProperties_; ++i)
+        {
+            if(ppSortProperties_[i]->getProperty()== "RANK")
+                return true;
+        }
+        return false;
+    }
+
     bool lessThan(const ScoreDoc& doc1,const ScoreDoc& doc2)
     {
         size_t i=0;

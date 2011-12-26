@@ -124,13 +124,16 @@ void SearchManager::reset_cache(
     docid_t id,
     const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue)
 {
+    //this method is only used for r-type filed right now
     if ( !rType )
     {
-        pSorterCache_->setDirty(true);
+        //pSorterCache_->setDirty(true);
+        return;
     }
     else
     {
         pSorterCache_->updateSortData(id, rTypeFieldValue);
+        return;
     }
 
     cache_->clear();
@@ -684,7 +687,9 @@ bool SearchManager::doSearch_(
             typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
             rangePropertyTable.reset(createPropertyTable(rangePropertyName));
         }
-
+        bool requireScorer = false;
+        if(pMultiPropertyIterator&&pSorter) requireScorer = pSorter->requireScorer();
+        requireScorer = true;
         while (pDocIterator->next())
         {
             if (groupFilter && !groupFilter->test(pDocIterator->doc()))
@@ -710,10 +715,10 @@ bool SearchManager::doSearch_(
             ScoreDoc scoreItem(pDocIterator->doc());
             START_PROFILER ( computerankscore )
             ++totalCount;
-            scoreItem.score = pMultiPropertyIterator ?
-                                        pMultiPropertyIterator->score(
-                                            rankQueryProperties,
-                                            propertyRankers) : 1.0;
+            scoreItem.score = requireScorer?
+                              pMultiPropertyIterator->score(
+                                  rankQueryProperties,
+                                  propertyRankers) : 1.0;
             STOP_PROFILER ( computerankscore )
 
             START_PROFILER ( computecustomrankscore )
