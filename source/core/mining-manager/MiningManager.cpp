@@ -157,9 +157,9 @@ bool MiningManager::open()
         {
             if (!cookie.valid())
             {
-                sflog->info(SFL_MINE, "Mining data is broken.");
+                LOG(INFO) << "Mining data is broken.";
                 boost::filesystem::remove_all(basicPath_);
-                sflog->info(SFL_MINE, "Mining data deleted.");
+                LOG(INFO) << "Mining data deleted.";				
             }
         }
 
@@ -446,43 +446,42 @@ bool MiningManager::open()
     }
     catch (NotEnoughMemoryException& ex)
     {
-        sflog->crit(SFL_MINE, ex.toString());
+        LOG(ERROR) << ex.toString();  		
         return false;
     }
     catch (MiningConfigException& ex)
     {
-        sflog->crit(SFL_MINE, ex.toString());
+        LOG(ERROR) << ex.toString();  		
         return false;
     }
     catch (FileOperationException& ex)
     {
-        sflog->crit(SFL_MINE, ex.toString());
+        LOG(ERROR) << ex.toString();  		
         return false;
     }
     catch (ResourceNotFoundException& ex)
     {
-        sflog->crit(SFL_MINE, ex.toString());
+        LOG(ERROR) << ex.toString();  		
         return false;
     }
     catch (FileCorruptedException& ex)
     {
-        sflog->crit(SFL_MINE, ex.toString());
+        LOG(ERROR) << ex.toString();  		
         return false;
     }
-    catch (boost::filesystem::filesystem_error& e)
+    catch (boost::filesystem::filesystem_error& ex)
     {
-        sflog->crit(SFL_MINE,  e.what());
+        LOG(ERROR) << ex.what();
         return false;
     }
     catch (izenelib::ir::indexmanager::IndexManagerException& ex)
     {
-        sflog->crit(SFL_MINE, ex.what());
+        LOG(ERROR) << ex.what();  		
         return false;
     }
     catch (std::exception& ex)
     {
-        sflog->crit(SFL_MINE, ex.what());
-        std::cerr << "std::exception: " << ex.what() << std::endl;
+        LOG(ERROR) << ex.what();
         return false;
     }
     return true;
@@ -718,42 +717,42 @@ bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
     }
     catch (NotEnoughMemoryException& ex)
     {
-        sflog->error(SFL_MINE, ex.toString());
+        LOG(ERROR) << ex.toString();  		
         bResult = false;
     }
     catch (MiningConfigException& ex)
     {
-        sflog->error(SFL_MINE, ex.toString());
+        LOG(ERROR) << ex.toString();  		
         bResult = false;
     }
     catch (FileOperationException& ex)
     {
-        sflog->error(SFL_MINE, ex.toString());
+        LOG(ERROR) << ex.toString();  		
         bResult = false;
     }
     catch (ResourceNotFoundException& ex)
     {
-        sflog->error(SFL_MINE, ex.toString());
+        LOG(ERROR) << ex.toString();  		
         bResult = false;
     }
     catch (FileCorruptedException& ex)
     {
-        sflog->error(SFL_MINE, ex.toString());
+        LOG(ERROR) << ex.toString();  		
         bResult = false;
     }
-    catch (boost::filesystem::filesystem_error& e)
+    catch (boost::filesystem::filesystem_error& ex)
     {
-        sflog->error(SFL_MINE, e.what());
+        LOG(ERROR) << ex.what();
         bResult = false;
     }
     catch (izenelib::ir::indexmanager::IndexManagerException& ex)
     {
-        sflog->error(SFL_MINE, ex.what());
+        LOG(ERROR) << ex.what();  		
         bResult = false;
     }
     catch (std::exception& ex)
     {
-        sflog->error(SFL_MINE, ex.what());
+        LOG(ERROR) << ex.what();
         bResult = false;
     }
     //get query recommend result
@@ -778,42 +777,42 @@ bool MiningManager::getSimilarImageDocIdList(
         }
         catch (NotEnoughMemoryException& ex)
         {
-            sflog->error(SFL_MINE, ex.toString());
+            LOG(ERROR) << ex.toString();
             bResult = false;
         }
         catch (MiningConfigException& ex)
         {
-            sflog->error(SFL_MINE, ex.toString());
+            LOG(ERROR) << ex.toString(); 
             bResult = false;
         }
         catch (FileOperationException& ex)
         {
-            sflog->error(SFL_MINE, ex.toString());
+            LOG(ERROR) << ex.toString();
             bResult = false;
         }
         catch (ResourceNotFoundException& ex)
         {
-            sflog->error(SFL_MINE, ex.toString());
+            LOG(ERROR) << ex.toString();
             bResult = false;
         }
         catch (FileCorruptedException& ex)
         {
-            sflog->error(SFL_MINE, ex.toString());
+            LOG(ERROR) << ex.toString();
             bResult = false;
         }
-        catch (boost::filesystem::filesystem_error& e)
+        catch (boost::filesystem::filesystem_error& ex)
         {
-            sflog->error(SFL_MINE, e.what());
+            LOG(ERROR) << ex.what();
             bResult = false;
         }
         catch (izenelib::ir::indexmanager::IndexManagerException& ex)
         {
-            sflog->error(SFL_MINE, ex.what());
+            LOG(ERROR) << ex.what();
             bResult = false;
         }
         catch (std::exception& ex)
         {
-            sflog->error(SFL_MINE, ex.what());
+            LOG(ERROR) << ex.what();
             bResult = false;
         }
         std::cout << "[getSimilarImageDocIdList finished]" << std::endl;
@@ -1206,7 +1205,7 @@ bool MiningManager::addTgResult_(KeywordSearchResult& miaInput)
 //             msg = taxonomyRep.error_;
 //         }
 //         miaInput.error_ += "[TG: "+msg+"]";
-//         sflog->error(SFL_MINE, msg.c_str());
+//         LOG(ERROR) << ex.toString();
 //     }
 //     else
 //     {

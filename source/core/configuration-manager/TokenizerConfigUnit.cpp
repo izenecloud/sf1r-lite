@@ -50,8 +50,7 @@ izenelib::util::UString TokenizerConfigUnit::getChars() const
 
         if ( range == 0 || range == (sub.length() -1) )
         {
-            sflog->warn( SFL_LA, "SF-070101: invalid code value \"%s\" in tokenizer \"%s\".",
-                         code_.c_str(), id_.c_str() );
+            LOG(WARNING) << "Invalid code value "<<code_<<" in tokenizer "<<id_;
             return ret;
         }
 
@@ -60,8 +59,7 @@ izenelib::util::UString TokenizerConfigUnit::getChars() const
             UCS2Char uchar = 0;
             if ( readTokenizerUCS2Char( sub.c_str(), &uchar ) == 0)
             {
-                sflog->warn( SFL_LA, "SF-070101: invalid code value \"%s\" among \"%s\" in tokenizer \"%s\".",
-                             sub.c_str(), code_.c_str(), id_.c_str() );
+                LOG(WARNING) << "Invalid code value "<<sub<<" among "<<code_<<" in tokenizer "<<id_;
                 return ret;
             }
             ret += uchar;
@@ -71,15 +69,14 @@ izenelib::util::UString TokenizerConfigUnit::getChars() const
             UCS2Char start = 0, end = 0;
             if ( readTokenizerUCS2Char( sub.substr(0, range).c_str(), &start ) == 0 )
             {
-                sflog->warn( SFL_LA, "SF-070101: invalid code value \"%s\" among \"%s\" in tokenizer \"%s\".",
-                             sub.substr(0, range).c_str(), code_.c_str(), id_.c_str() );
+                LOG(WARNING) << "Invalid code value "<<sub.substr(0, range)<<" among "<<code_<<" in tokenizer "<<id_;
                 return ret;
             }
 
             if ( readTokenizerUCS2Char( sub.substr(range+1, sub.length()-range).c_str(), &end ) == 0 )
             {
-                sflog->warn( SFL_LA, "SF-070101: invalid code value \"%s\" among \"%s\" in tokenizer \"%s\".",
-                             sub.substr(range+1, sub.length()-range).c_str(), code_.c_str(), id_.c_str() );
+                LOG(WARNING) << "Invalid code value "<< sub.substr(range+1, sub.length()-range)
+                    <<" among "<<code_<<" in tokenizer "<<id_;
                 return ret;
             }
 

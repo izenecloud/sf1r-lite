@@ -1213,7 +1213,6 @@ bool IndexWorker::prepareIndexDocument_(
                             }
                             indexerPropertyConfig.setIsMultiValue(true);
                             indexDocument.insertProperty(indexerPropertyConfig, multiProps);
-                            //sflog->error(SFL_IDX,10140, docId);
                         }
                     }
                 }

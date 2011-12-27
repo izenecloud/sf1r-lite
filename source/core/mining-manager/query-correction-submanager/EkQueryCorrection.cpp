@@ -192,8 +192,7 @@ bool EkQueryCorrection::initialize()
         std::string
         msg =
             "Cogram load failed. Please ensure that you set the path SpellerSupport correctly in the configuration file.";
-        sflog->error(SFL_MINE, msg.c_str());
-        DLOG(WARNING) << msg << std::endl;
+        LOG(ERROR) << msg;
         activate_ = false;
         return false;
     }

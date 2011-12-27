@@ -105,7 +105,8 @@ bool QueryManager::checkDisplayProperty(
             && displayProperty.isSummaryOn_ == true
             && configDisplayProperty.summarySentenceNum_ < displayProperty.summarySentenceNum_ )
     {
-        sflog->warn(SFL_SRCH, 110135, displayProperty.propertyString_.c_str(), configDisplayProperty.summarySentenceNum_);
+        LOG(WARNING) << "Summary Sentence Num of Property "<<displayProperty.propertyString_
+            <<" is too big. It will use default num "<< configDisplayProperty.summarySentenceNum_;
         displayProperty.summarySentenceNum_ = configDisplayProperty.summarySentenceNum_;
     }
 
