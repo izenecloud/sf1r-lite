@@ -224,7 +224,7 @@ bool ProductBundleActivator::openDataDirectories_()
     std::vector<std::string>& directories = config_->collectionDataDirectories_;
     if( directories.size() == 0 )
     {
-        std::cout<<"no data dir config"<<std::endl;
+        LOG(ERROR)<<"no data dir config";
         return false;
     }
     directoryRotator_.setCapacity(directories.size());
@@ -235,8 +235,7 @@ bool ProductBundleActivator::openDataDirectories_()
         if (!directoryRotator_.appendDirectory(dataDir))
         {
             std::string msg = dataDir.string() + " corrupted, delete it!";
-            sflog->error( SFL_SYS, msg.c_str() );
-            std::cout<<msg<<std::endl;
+            LOG(ERROR) <<msg; 			
             //clean the corrupt dir
             boost::filesystem::remove_all( dataDir );
             directoryRotator_.appendDirectory(dataDir);

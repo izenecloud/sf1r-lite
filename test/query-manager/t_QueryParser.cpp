@@ -40,9 +40,6 @@ struct QueryParserTestFixture
         LAPool::getInstance()->init(config);
         QueryParser::initOnlyOnce();
 
-        // Initialize SFLogger
-        sflog->init("sqlite3://" + TEST_DIR_STR + "/COBRA");
-
         // Build restrict term dictionary
         std::string restrictDicPath(TEST_DIR_STR + "/restrict.txt");
         ofstream fpout(restrictDicPath.c_str());
@@ -73,7 +70,9 @@ void keywordTreeCheck(const QueryTreePtr& queryTree, const std::string& queryStr
 
 BOOST_FIXTURE_TEST_SUITE(QueryParser_test, QueryParserTestFixture)
 
-BOOST_AUTO_TEST_CASE(normalizeQuery_test)
+BOOST_AUTO_TEST_CASE(QueryParser_testcases)
+{
+//BOOST_AUTO_TEST_CASE(normalizeQuery_test)
 {
 
 #define USTRING(str) UString(str, UString::UTF_8)
@@ -109,7 +108,7 @@ BOOST_AUTO_TEST_CASE(normalizeQuery_test)
     BOOST_CHECK_EQUAL( out , normResults[1] );
 }
 
-BOOST_AUTO_TEST_CASE(parseQuery_basic_test)
+//BOOST_AUTO_TEST_CASE(parseQuery_basic_test)
 {
     std::string queryStr;
     izenelib::util::UString queryUStr;
@@ -304,7 +303,7 @@ BOOST_AUTO_TEST_CASE(parseQuery_basic_test)
     } // end - Restrict Term Test
 }
 
-BOOST_AUTO_TEST_CASE(parseQuery_extreme_test1)
+//BOOST_AUTO_TEST_CASE(parseQuery_extreme_test1)
 {
     QueryParser queryParser(laManager, idManager);
 
@@ -315,7 +314,7 @@ BOOST_AUTO_TEST_CASE(parseQuery_extreme_test1)
     BOOST_CHECK( queryParser.parseQuery(queryUStr, queryTree, false, true) );
 }
 
-BOOST_AUTO_TEST_CASE(getAnalyzedQueryTree_basic_test)
+//BOOST_AUTO_TEST_CASE(getAnalyzedQueryTree_basic_test)
 {
     /*
     QueryParser queryParser(laManager, idManager);
@@ -373,7 +372,7 @@ BOOST_AUTO_TEST_CASE(getAnalyzedQueryTree_basic_test)
     */
 }
 
-BOOST_AUTO_TEST_CASE(getAnalyzedQueryTree_phrase_test)
+//BOOST_AUTO_TEST_CASE(getAnalyzedQueryTree_phrase_test)
 {
     QueryParser queryParser(laManager, idManager);
 
@@ -433,6 +432,8 @@ BOOST_AUTO_TEST_CASE(getAnalyzedQueryTree_phrase_test)
         keywordTreeCheck(*childIter++, "민국");
         keywordTreeCheck(*childIter++, "명바");
     }
+}
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()

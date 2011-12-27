@@ -13,8 +13,6 @@
 #include <sys/time.h>
 
 #include "LogManagerSingleton.h"
-#include "SFLoggerCode.h"
-
 
 namespace sf1r
 {
@@ -47,62 +45,6 @@ public:
 
     /// delete whole database file
     bool del_database();
-
-#define LOG_info  LOG_INFO
-#define LOG_error LOG_ERR
-#define LOG_warn  LOG_WARN
-#define LOG_crit  LOG_CRIT
-
-#define DECLARE_INTERFACE(NAME) \
-    void NAME (int nStatus, int nErrCode, ...) \
-    { \
-        va_list arglist; \
-        va_start( arglist, nErrCode ); \
-        writeEventLog( LOG_ ## NAME, nStatus, nErrCode, arglist ); \
-        va_end(arglist); \
-    }\
-    \
-    void NAME (int nStatus, const char* msg, ...) \
-    { \
-        va_list arglist; \
-        va_start( arglist, msg ); \
-        writeEventLog( LOG_ ## NAME, nStatus, msg, arglist ); \
-        va_end(arglist); \
-    }\
- 
-    /**
-     * void info (int nStatus, int nErrCode, ...);
-     * void info (int nStatus, const char* msg, ...);
-     */
-    DECLARE_INTERFACE(info)
-
-    /**
-     * void error (int nStatus, int nErrCode, ...);
-     * void error (int nStatus, const char* msg, ...);
-     */
-    DECLARE_INTERFACE(error)
-
-    /**
-     * void warn (int nStatus, int nErrCode, ...);
-     * void warn (int nStatus, const char* msg, ...);
-     */
-    DECLARE_INTERFACE(warn)
-
-    /**
-     * void crit (int nStatus, int nErrCode, ...);
-     * void crit (int nStatus, const char* msg, ...);
-     */
-    DECLARE_INTERFACE(crit)
-
-private:
-
-    void writeEventLog( LOG_TYPE type, int nStatus, int nErrCode, va_list & vlist );
-
-    void writeEventLog( LOG_TYPE type, int nStatus, const char* msg, va_list & vlist);
-
-private:
-    //string logPath;
-
 };
 
 } //end - namespace sf1r

@@ -1,5 +1,4 @@
 #include "LogManager.h"
-#include "SFLogMessages.h"
 
 #include "RDbConnection.h"
 #include "SystemEvent.h"
@@ -38,19 +37,10 @@ using namespace boost::posix_time;
 
 namespace sf1r
 {
-
-const char SS_STATUS_NAME[][SFL_STAT_EOS] =
-{
-    "SYS", "SCD", "LA", "IDX", "MINE", "INIT", "SRCH"
-};
-const char* LOG_TYPE_NAME[LOG_EOS] = { "info", "warn", "err", "crit"};
-
 LogManager::LogManager() {}
 
 bool LogManager::init(const std::string& pathParam, const std::string& language)
 {
-    SFLogMessage::initLogMsg(language);
-
     if (!RDbConnection::instance().init(pathParam))
         return false;
 
@@ -91,34 +81,5 @@ bool LogManager::del_database()
 
     return true;
 }
-
-void LogManager::writeEventLog( LOG_TYPE type, int nStatus, int nErrCode, va_list & vlist)
-{
-    writeEventLog(type, nStatus, SFLogMessage::getLogMsg(nErrCode).c_str(), vlist);
-}
-
-void LogManager::writeEventLog( LOG_TYPE type, int nStatus, const char* msg, va_list & vlist)
-{
-#define LOGGER_LOG_LEN 1024
-    char logMsg[LOGGER_LOG_LEN+1];
-    memset( logMsg, 0, LOGGER_LOG_LEN );
-#ifdef WIN32
-    _vsnprintf(logMsg, LOGGER_LOG_LEN, msg, vlist);
-#else
-    vsnprintf(logMsg, LOGGER_LOG_LEN, msg, vlist);
-#endif
-    logMsg[LOGGER_LOG_LEN] = 0;
-
-    va_end(vlist);
-
-    SystemEvent event;
-    event.setLevel(LOG_TYPE_NAME[type]);
-    event.setSource(SS_STATUS_NAME[nStatus]);
-    event.setContent(logMsg);
-    event.setTimeStamp(second_clock::local_time());
-    event.save();
-}
-
-//        execSql("create table user_click(query TEXT, collection TEXT, title TEXT, docid TEXT, session_id integer, timestamp TEXT);");
 
 }//end -namespace sf1r

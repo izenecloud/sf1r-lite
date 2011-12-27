@@ -437,7 +437,7 @@ uint32_t RecommendManager::getRelatedOnes_(
         }
         catch (std::exception& e)
         {
-            sflog->error(SFL_MINE, e.what());
+            LOG(ERROR) <<e.what();			
             return 0;
         }
         if (!b) continue;

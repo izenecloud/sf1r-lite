@@ -1,0 +1,26 @@
+<instance template="cobra">
+  <name>_</name>
+  <apiPluginName>com.izenesoft.agent.plugin.sf1.Sf1Api</apiPluginName>
+  <processName>CobraProcess</processName>
+
+  <startCommand>
+    <exec executable="bin/${processName}">
+    <arg>-F</arg> <arg>${path}/bin/sf1r-config.xml</arg>
+    <arg>--pid-file</arg> <arg>${pidFile}</arg>
+    </exec>
+  </startCommand>
+
+  <properties>
+    <property name="apiPort">18181</property>
+  </properties>
+
+  <environment>
+    <variable name="SF1_ROOT">${path}</variable>
+  </environment>
+
+  <config>
+    <file name="config_sample.txt">
+    Content of file will be stored in ${configDir}/config_sample.txt
+    </file>
+  </config>
+</instance>

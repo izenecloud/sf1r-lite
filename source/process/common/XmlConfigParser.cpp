@@ -1548,7 +1548,6 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         mining_schema.property_rerank_enable = false;
         if (task_node)
         {
-            int propNum = 0;
             Iterator<Element> it("Property");
             for (it = it.begin(task_node); it != it.end(); it++)
             {
@@ -1570,7 +1569,6 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 mining_schema.prop_rerank_property.propName = property_name;
                 mining_schema.property_rerank_enable = true;
             }
-            propNum = 0;
             Iterator<Element> bit("Boosting");
             for (bit = bit.begin(task_node); bit != bit.end(); bit++)
             {

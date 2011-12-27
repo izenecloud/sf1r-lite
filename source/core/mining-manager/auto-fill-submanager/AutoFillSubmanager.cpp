@@ -55,7 +55,7 @@ bool AutoFillSubManager::Init(
     }
     catch (boost::filesystem::filesystem_error& e)
     {
-        sflog->error(SFL_SRCH, 110602, fillSupportPath_.c_str());
+        LOG(ERROR)<<"Path does not exist. Path "<<fillSupportPath_;
         return false;
     } // end - try-catch
     dir_switcher_ = new idmlib::util::DirectorySwitcher(fillSupportPath_);
@@ -78,7 +78,7 @@ bool AutoFillSubManager::Init(
     {
         std::string errorMsg("Fail to load Autofill data file. Removing "
                              + triePath_);
-        sflog->error(SFL_INIT, 110603, triePath_.c_str());
+        LOG(ERROR) << "Fail to load autofill data file. SF1 removes "<<triePath_;
         boost::filesystem::remove_all(triePath_);
         autoFillTrie_ = new Trie_(triePath_, top_);
     }
@@ -123,7 +123,7 @@ bool AutoFillSubManager::buildIndex(const std::list<ItemValueType>& queryList, c
     }
     catch (...)
     {
-        sflog->crit(SFL_MINE, "Building collection trie in autofill fails");
+        LOG(ERROR) << "Building collection trie in autofill fails";
         try
         {
             if ( tempTrie )
@@ -148,8 +148,7 @@ bool AutoFillSubManager::buildIndex(const std::list<ItemValueType>& queryList, c
     }
     catch (const std::exception& e)
     {
-        std::cout<<e.what()<<std::endl;
-        sflog->error(SFL_MINE, e.what());
+        LOG(ERROR) <<"Autofile buidindex error: "<<e.what();
         return false;
     }
     return true;

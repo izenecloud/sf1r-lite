@@ -114,7 +114,7 @@ void LicenseManager::bgCheckIndexFileSize(const std::vector<std::string>& indexP
         // std::cerr << ss.str() << std::endl;
         if ( totalSize > LICENSE_MAX_SIZE * GB )
         {
-            sflog->error(SFL_INIT, 150001, totalSize, getMaxIndexFileSize());
+            LOG(ERROR) << "Total Index Size reached to the MAXIMUM size of license : "<<totalSize<<" -"<<getMaxIndexFileSize();
             continueIndex_ = false;
             //kill(getpid(), SIGTERM);
         }
