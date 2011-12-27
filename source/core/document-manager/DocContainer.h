@@ -36,6 +36,7 @@ public:
     {
         containerPtr_ = new containerType(Lux::IO::NONCLUSTER);
         containerPtr_->set_noncluster_params(Lux::IO::Linked);
+        containerPtr_->set_lock_type(Lux::IO::LOCK_THREAD);
         restoreMaxDocDb_();
     }
     ~DocContainer()
