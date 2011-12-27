@@ -40,9 +40,6 @@ struct QueryParserTestFixture
         LAPool::getInstance()->init(config);
         QueryParser::initOnlyOnce();
 
-        // Initialize SFLogger
-        sflog->init("sqlite3://" + TEST_DIR_STR + "/COBRA");
-
         // Build restrict term dictionary
         std::string restrictDicPath(TEST_DIR_STR + "/restrict.txt");
         ofstream fpout(restrictDicPath.c_str());
