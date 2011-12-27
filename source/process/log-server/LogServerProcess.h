@@ -19,8 +19,8 @@ namespace sf1r
 class LogServerProcess
 {
     typedef izenelib::drum::Drum<
-        uint64_t,
         std::string,
+        std::vector<std::string>,
         std::string,
         izenelib::am::leveldb::TwoPartComparator,
         izenelib::am::leveldb::Table,
