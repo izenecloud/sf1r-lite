@@ -125,6 +125,7 @@ void SearchManager::reset_cache(
     const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue)
 {
     //this method is only used for r-type filed right now
+    cache_->clear();
     if ( !rType )
     {
         //pSorterCache_->setDirty(true);
@@ -136,7 +137,6 @@ void SearchManager::reset_cache(
         return;
     }
 
-    cache_->clear();
 
     // notify master
     NotifyMSG msg;
