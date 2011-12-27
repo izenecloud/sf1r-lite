@@ -955,6 +955,7 @@ void SearchManager::getSortPropertyData_(
             continue;
 
         void* data = propData->data_;
+        size_t size = propData->size_;
         switch (propData->type_)
         {
         case INT_PROPERTY_TYPE:
@@ -962,7 +963,8 @@ void SearchManager::getSortPropertyData_(
             std::vector<int64_t> dataList(docNum);
             for (size_t i = 0; i < docNum; i++)
             {
-                dataList[i] = ((int64_t*)data)[docIdList[i]];
+                if(docIdList[i] >= size) dataList[i] = 0;
+                else dataList[i] = ((int64_t*)data)[docIdList[i]];
             }
             distSearchInfo.sortPropertyIntDataList_.push_back(
                 std::make_pair(SortPropertyName, dataList));
@@ -973,7 +975,8 @@ void SearchManager::getSortPropertyData_(
             std::vector<uint64_t> dataList(docNum);
             for (size_t i = 0; i < docNum; i++)
             {
-                dataList[i] = ((uint64_t*)data)[docIdList[i]];
+                if(docIdList[i] >= size) dataList[i] = 0;
+                else dataList[i] = ((uint64_t*)data)[docIdList[i]];
             }
             distSearchInfo.sortPropertyUIntDataList_.push_back(std::make_pair(SortPropertyName, dataList));
         }
@@ -983,7 +986,8 @@ void SearchManager::getSortPropertyData_(
             std::vector<float> dataList(docNum);
             for (size_t i = 0; i < docNum; i++)
             {
-                dataList[i] = ((float*)data)[docIdList[i]];
+                if(docIdList[i] >= size) dataList[i] = 0.0;
+                else dataList[i] = ((float*)data)[docIdList[i]];
             }
             distSearchInfo.sortPropertyFloatDataList_.push_back(std::make_pair(SortPropertyName, dataList));
         }
@@ -993,7 +997,8 @@ void SearchManager::getSortPropertyData_(
             std::vector<float> dataList(docNum);
             for (size_t i = 0; i < docNum; i++)
             {
-                dataList[i] = (float)((double*)data)[docIdList[i]];
+                if(docIdList[i] >= size) dataList[i] = 0.0;
+                else dataList[i] = (float)((double*)data)[docIdList[i]];
             }
             distSearchInfo.sortPropertyFloatDataList_.push_back(std::make_pair(SortPropertyName, dataList));
         }
