@@ -6,6 +6,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <boost/tokenizer.hpp>
+
 namespace sf1r
 {
 
@@ -83,6 +85,11 @@ bool LogServerCfg::parseCfgFile_(const std::string& cfgFile)
         {
             threadNum_ = DEFAULT_THREAD_NUM;
         }
+        std::string collectins;
+        if (props.getValue("driver.collections", collectins))
+        {
+            parseDriverCollections(collectins);
+        }
         if (!props.getValue("drum.name", drum_name_))
         {
             throw std::runtime_error("Log Server Configuration missing proptery: drum.name");
@@ -107,6 +114,19 @@ bool LogServerCfg::parseCfgFile_(const std::string& cfgFile)
     }
 
     return true;
+}
+
+void LogServerCfg::parseDriverCollections(const std::string& collections)
+{
+    boost::char_separator<char> sep(", ");
+    boost::tokenizer<char_separator<char> > tokens(collections, sep);
+
+    boost::tokenizer<char_separator<char> >::iterator it;
+    for(it = tokens.begin(); it != tokens.end(); ++it)
+    {
+        driverCollections_.insert(*it);
+    }
+
 }
 
 }

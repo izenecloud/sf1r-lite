@@ -22,17 +22,32 @@ namespace sf1r
  */
 void DriverLogServerController::update_cclog()
 {
-    std::cout<<"got cclog request : "
-             <<request().controller()<<" "
-             <<request().action()<<std::endl;
+    std::cout<<request().controller()<<"/"<<request().action()<<std::endl;
 
-    // TODO: update uuid(docid)
+    // process
+    std::string collection = asString(request()["collection"]);
+    if (!skipProcess(collection))
+    {
+        ProcessorPtr processor = ProcessorFactory::get()->getProcessor(
+                request().controller(), request().action());
 
+        if (processor)
+            processor->process(request());
+    }
+
+    // output TODO
     std::string raw;
     jsonWriter_.write(request().get(), raw);
-
     std::cout<<raw<<std::endl;
 }
 
+bool DriverLogServerController::skipProcess(const std::string& collection)
+{
+    // TODO
+    if (collection != "b5ma")
+        return true;
+
+    return false;
+}
 
 }
