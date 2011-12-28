@@ -10,6 +10,7 @@
 #include <recommend-manager/RateManager.h>
 #include <recommend-manager/RecommenderFactory.h>
 #include <recommend-manager/ItemIdGenerator.h>
+#include <recommend-manager/UserIdGenerator.h>
 #include <bundles/index/IndexSearchService.h>
 
 #include <aggregator-manager/SearchWorker.h>

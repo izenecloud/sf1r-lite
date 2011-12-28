@@ -38,6 +38,7 @@ class EventManager;
 class RateManager;
 class RecommenderFactory;
 class ItemIdGenerator;
+class UserIdGenerator;
 
 class RecommendBundleActivator : public IBundleActivator, public IServiceTrackerCustomizer
 {

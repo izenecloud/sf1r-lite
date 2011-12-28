@@ -8,6 +8,7 @@
 #include <recommend-manager/TIBParam.h>
 #include <recommend-manager/ItemBundle.h>
 #include <recommend-manager/ItemIdGenerator.h>
+#include <recommend-manager/UserIdGenerator.h>
 
 #include <glog/logging.h>
 
@@ -33,11 +34,8 @@ bool RecommendSearchService::getUser(const std::string& userIdStr, User& user)
 {
     userid_t userId = 0;
 
-    if (! userIdGenerator_.conv(userIdStr, userId, false))
-    {
-        LOG(ERROR) << "error in getUser(), user id " << userIdStr << " not yet added before";
+    if (! userIdGenerator_.get(userIdStr, userId))
         return false;
-    }
 
     return userManager_.getUser(userId, user);
 }
@@ -59,16 +57,15 @@ bool RecommendSearchService::recommend(
 
 bool RecommendSearchService::convertIds_(RecommendParam& param)
 {
-    if (!param.userIdStr.empty()
-        && !userIdGenerator_.conv(param.userIdStr, param.userId, false))
+    if (!param.userIdStr.empty() &&
+        !userIdGenerator_.get(param.userIdStr, param.userId))
     {
-        LOG(ERROR) << "error in convertIds_(), user id " << param.userIdStr << " not yet added before";
         return false;
     }
 
-    if (!convertItemId_(param.inputItems, param.inputItemIds)
-        || !convertItemId_(param.includeItems, param.includeItemIds)
-        || !convertItemId_(param.excludeItems, param.excludeItemIds))
+    if (!convertItemId_(param.inputItems, param.inputItemIds) ||
+        !convertItemId_(param.includeItems, param.includeItemIds) ||
+        !convertItemId_(param.excludeItems, param.excludeItemIds))
     {
         return false;
     }
@@ -88,10 +85,6 @@ bool RecommendSearchService::convertItemId_(
         if (itemIdGenerator_.getItemIdByStrId(inputItemVec[i], itemId))
         {
             outputItemVec.push_back(itemId);
-        }
-        else
-        {
-            LOG(WARNING) << "in convertItemId_(), item id " << inputItemVec[i] << " not yet added before";
         }
     }
 

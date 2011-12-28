@@ -14,7 +14,11 @@ bool ItemIdGenerator::getItemIdByStrId(const std::string& strId, itemid_t& itemI
 {
     izenelib::util::UString ustr(strId, UString::UTF_8);
 
-    return idManager_->getDocIdByDocName(ustr, itemId, false);
+    if (idManager_->getDocIdByDocName(ustr, itemId, false))
+        return true;
+
+    LOG(WARNING) << "in getItemIdByStrId(), item id " << strId << " not yet added before";
+    return false;
 }
 
 }
