@@ -9,8 +9,8 @@ StringGroupCounter::StringGroupCounter(const PropValueTable& pvTable)
     : propValueTable_(pvTable)
     , childMapTable_(pvTable.childMapTable())
     , countTable_(pvTable.propValueNum())
-    //, alloc_(recycle_)
-    , parentSet_(std::less<PropValueTable::pvid_t>())
+    , alloc_(recycle_)
+    , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
 {
 }
 

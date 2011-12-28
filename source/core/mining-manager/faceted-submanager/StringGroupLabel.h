@@ -33,8 +33,8 @@ private:
 private:
     const PropValueTable& propValueTable_;
     std::vector<PropValueTable::pvid_t> targetValueIds_;
-    //NS_BOOST_MEMORY::block_pool recycle_;
-    //boost::scoped_alloc alloc_;
+    NS_BOOST_MEMORY::block_pool recycle_;
+    boost::scoped_alloc alloc_;
     mutable PropValueTable::ParentSetType parentSet_;
 };
 

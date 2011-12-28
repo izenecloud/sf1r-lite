@@ -14,7 +14,8 @@
 #include <util/ustring/UString.h>
 #include "faceted_types.h"
 
-//#include <boost/memory.hpp>
+
+#include <boost/memory.hpp>
 
 #include <vector>
 #include <string>
@@ -23,7 +24,7 @@
 
 NS_FACETED_BEGIN
 
-//using boost::stl_allocator;
+using boost::stl_allocator;
 class PropValueTable
 {
 public:
@@ -45,8 +46,8 @@ public:
     /** mapping from value id to the map of child values */
     typedef std::vector<PropStrMap> ChildMapTable;
 
-    //typedef std::set<pvid_t, std::less<pvid_t>, stl_allocator<pvid_t> > ParentSetType;
-    typedef std::set<pvid_t> ParentSetType;
+    typedef std::set<pvid_t, std::less<pvid_t>, stl_allocator<pvid_t> > ParentSetType;
+    //typedef std::set<pvid_t> ParentSetType;
 
     PropValueTable(
         const std::string& dirPath,
