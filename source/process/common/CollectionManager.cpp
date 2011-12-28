@@ -91,10 +91,37 @@ void CollectionManager::stopCollection(const std::string& collectionName)
     //boost::shared_ptr<BundleConfiguration> bundleConfigPtr =
     //    osgiLauncher_->getBundleInfo(bundleName)->getBundleContext()->getBundleConfig();
     //config_ = dynamic_cast<IndexBundleConfiguration*>(bundleConfigPtr.get());
+    BundleInfoBase* bundleInfo = osgiLauncher_.getRegistry().getBundleInfo(bundleName);
+    if(bundleInfo)
+    {
+        osgiLauncher_.stopBundle(bundleName);
+    }
 
-    osgiLauncher_.stopBundle(bundleName);
     bundleName = "MiningBundle-" + collectionName;
-    osgiLauncher_.stopBundle(bundleName);
+    bundleInfo = osgiLauncher_.getRegistry().getBundleInfo(bundleName);
+    if(bundleInfo)
+    {
+        osgiLauncher_.stopBundle(bundleName);
+    }
+
+    bundleName = "ProductBundle-" + collectionName;
+    bundleInfo = osgiLauncher_.getRegistry().getBundleInfo(bundleName);
+    if(bundleInfo)
+    {
+        osgiLauncher_.stopBundle(bundleName);
+    }
+
+    bundleName = "RecommendBundle-" + collectionName;
+    bundleInfo = osgiLauncher_.getRegistry().getBundleInfo(bundleName);
+    if(bundleInfo)
+    {
+        osgiLauncher_.stopBundle(bundleName);
+    }
+
+    if(collectionHandlers_.find(collectionName) != collectionHandlers_.end())
+        collectionHandlers_.erase(collectionName);
+    if(SF1Config::get()->mutableCollectionMetaMap().find(collectionName) != SF1Config::get()->mutableCollectionMetaMap().end())
+        SF1Config::get()->mutableCollectionMetaMap().erase(collectionName);
 }
 
 void CollectionManager::deleteCollection(const std::string& collectionName)

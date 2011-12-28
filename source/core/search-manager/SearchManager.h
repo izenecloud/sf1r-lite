@@ -15,6 +15,7 @@
 #include <util/ustring/UString.h>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/function.hpp>
@@ -169,7 +170,7 @@ private:
     boost::shared_ptr<IndexManager> indexManagerPtr_;
     boost::shared_ptr<DocumentManager> documentManagerPtr_;
     boost::shared_ptr<RankingManager> rankingManagerPtr_;
-    boost::shared_ptr<MiningManager> miningManagerPtr_;
+    boost::weak_ptr<MiningManager> miningManagerPtr_;
     boost::shared_ptr<QueryBuilder> queryBuilder_;
     std::map<propertyid_t, float> propertyWeightMap_;
 

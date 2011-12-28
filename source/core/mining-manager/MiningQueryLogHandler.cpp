@@ -40,6 +40,16 @@ void MiningQueryLogHandler::addCollection(
     collectionSet_.insert(name);
 }
 
+void MiningQueryLogHandler::deleteCollection(const std::string& name)
+{
+    boost::mutex::scoped_lock lock(mtx_);
+    if(recommendManagerList_.find(name) != recommendManagerList_.end())
+        recommendManagerList_.erase(name);
+    if(collectionSet_.find(name) != collectionSet_.end())
+        collectionSet_.erase(name);
+}
+
+
 void MiningQueryLogHandler::runEvents()
 {
     boost::unique_lock<boost::mutex> lock(mtx_, boost::try_to_lock);

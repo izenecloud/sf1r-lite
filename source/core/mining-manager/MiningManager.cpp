@@ -133,6 +133,8 @@ void MiningManager::close()
         delete it->second;
     }
     groupLabelLoggerMap_.clear();
+    MiningQueryLogHandler* handler = MiningQueryLogHandler::getInstance();
+    handler->deleteCollection(collectionName_);
 }
 
 bool MiningManager::open()
