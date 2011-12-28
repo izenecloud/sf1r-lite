@@ -48,6 +48,8 @@ public:
         const std::string& name, 
         const boost::shared_ptr<RecommendManager>& recommendManager);
 
+    void deleteCollection(const std::string& name);
+
     bool cronStart(const std::string& cron_job);
 
     void runEvents();
