@@ -40,38 +40,24 @@ void init_data(int data_size, int& copy_length)
     std::cout<<"done!\n";
 }
 
-static std::vector<uint32_t> make_query(const std::string& query)
-{
-    std::vector<uint32_t> tl;
-    uint32_t t;
-
-    std::stringstream ss(query);
-    while(!ss.eof()) {
-        ss >> t;
-        tl.push_back(t);
-    }
-    return tl;
-}
-
-
 ///DocumentIterator for one term in one property
 class MockTermDocumentIterator: public DocumentIterator
 {
 public:
     MockTermDocumentIterator(
-        unsigned int termid,
-        unsigned int colID,
-        izenelib::ir::indexmanager::MockIndexReaderWriter* pIndexReader,
-        const std::string& property,
-        unsigned int propertyId
+            unsigned int termid,
+            unsigned int colID,
+            izenelib::ir::indexmanager::MockIndexReaderWriter* pIndexReader,
+            const std::string& property,
+            unsigned int propertyId
     )
-    :termId_(termid)
-    ,colID_(colID)
-    ,property_(property)
-    ,propertyId_(propertyId)
-    ,pIndexReader_(pIndexReader)
-    ,pTermReader_(0)
-    ,pTermDocReader_(0)
+        : termId_(termid)
+        , colID_(colID)
+        , property_(property)
+        , propertyId_(propertyId)
+        , pIndexReader_(pIndexReader)
+        , pTermReader_(0)
+        , pTermDocReader_(0)
     {
         accept();
     }
@@ -100,7 +86,7 @@ public:
     {
         if (pTermDocReader_)
             return pTermDocReader_->next();
-    return false;
+        return false;
     }
 
     unsigned int doc()
@@ -242,9 +228,9 @@ BOOST_AUTO_TEST_CASE(filter_test)
         {
             pFilterIdSet->set(copy_data[i]);
         }
-       // pFilterIdSet->set(0);
-        //pFilterIdSet->set(2);
-       // pFilterIdSet->set(3);
+        // pFilterIdSet->set(0);
+        // pFilterIdSet->set(2);
+        // pFilterIdSet->set(3);
         EWAHBoolArrayBitIterator<uint32_t> bitIter = pFilterIdSet->bit_iterator();
         BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
         FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
@@ -258,8 +244,8 @@ BOOST_AUTO_TEST_CASE(filter_test)
         while(bitIter.next())
         {
             bitIter.getCurr();
-           // BOOST_CHECK_EQUAL(iter.doc(), copy_data[i] );
-            //i++;
+            // BOOST_CHECK_EQUAL(iter.doc(), copy_data[i] );
+            // i++;
         }
 
         finish = clock();
@@ -269,13 +255,13 @@ BOOST_AUTO_TEST_CASE(filter_test)
         delete[] int_data;
         delete[] copy_data;
 
-       // BOOST_CHECK_EQUAL(iter.next(), true );
-       // BOOST_CHECK_EQUAL(iter.doc(), 0U);
-       // BOOST_CHECK_EQUAL(iter.next(), true );
-       // BOOST_CHECK_EQUAL(iter.doc(), 2U);
-       // BOOST_CHECK_EQUAL(iter.next(), true );
-       // BOOST_CHECK_EQUAL(iter.doc(), 3U);
-       // BOOST_CHECK_EQUAL(iter.next(), false );
+        // BOOST_CHECK_EQUAL(iter.next(), true );
+        // BOOST_CHECK_EQUAL(iter.doc(), 0U);
+        // BOOST_CHECK_EQUAL(iter.next(), true );
+        // BOOST_CHECK_EQUAL(iter.doc(), 2U);
+        // BOOST_CHECK_EQUAL(iter.next(), true );
+        // BOOST_CHECK_EQUAL(iter.doc(), 3U);
+        // BOOST_CHECK_EQUAL(iter.next(), false );
     }
 
 }

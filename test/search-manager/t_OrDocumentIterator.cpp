@@ -13,37 +13,24 @@ using namespace izenelib::ir::indexmanager;
 
 BOOST_AUTO_TEST_SUITE( ORDocumentIterator_Suite )
 
-static std::vector<uint32_t> make_query(const std::string& query)
-{
-    std::vector<uint32_t> tl;
-    uint32_t t;
-
-    std::stringstream ss(query);
-    while(!ss.eof()) {
-        ss >> t;
-        tl.push_back(t);
-    }
-    return tl;
-}
-
 ///DocumentIterator for one term in one property
 class MockTermDocumentIterator: public DocumentIterator
 {
 public:
     MockTermDocumentIterator(
-		unsigned int termid,
-		unsigned int colID,
-		izenelib::ir::indexmanager::MockIndexReaderWriter* pIndexReader,
-		const std::string& property,
-		unsigned int propertyId
+            unsigned int termid,
+            unsigned int colID,
+            izenelib::ir::indexmanager::MockIndexReaderWriter* pIndexReader,
+            const std::string& property,
+            unsigned int propertyId
     )
-	:termId_(termid)
-	,colID_(colID)
-	,property_(property)
-	,propertyId_(propertyId)
-	,pIndexReader_(pIndexReader)
-	,pTermReader_(0)
-	,pTermDocReader_(0)
+        : termId_(termid)
+        , colID_(colID)
+        , property_(property)
+        , propertyId_(propertyId)
+        , pIndexReader_(pIndexReader)
+        , pTermReader_(0)
+        , pTermDocReader_(0)
     {
         accept();
     }
@@ -62,7 +49,7 @@ public:
     void accept()
     {
         Term term(property_.c_str(),termId_);
-	
+
         pTermReader_ = (MockTermReader*)pIndexReader_->getTermReader(colID_);
         pTermReader_->seek(&term);
         pTermDocReader_ = (MockTermDocFreqs*)pTermReader_->termPositions();
@@ -72,7 +59,7 @@ public:
     {
         if (pTermDocReader_)
             return pTermDocReader_->next();
-	return false;
+        return false;
     }
 
     unsigned int doc()
@@ -90,7 +77,7 @@ public:
 
     void df_ctf(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties& ctfmap){}
 
-    izenelib::ir::indexmanager::count_t tf() {}
+    izenelib::ir::indexmanager::count_t tf() { return MAX_COUNT; }
 
 private:
     unsigned int termId_;
