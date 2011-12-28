@@ -3,6 +3,9 @@
 
 #include <3rdparty/am/drum/null_dispatcher.hpp>
 
+namespace sf1r
+{
+
 template <class key_t,
           class value_t,
           class aux_t>
@@ -55,6 +58,8 @@ template <class key_t,
 void DocidDispatcher<key_t, value_t, aux_t>::
 Update(key_t const& key, value_t const& value, aux_t const& aux) const
 {
+}
+
 }
 
 #endif  //SF1R_DOCID_DISPATCHER_H

@@ -238,7 +238,7 @@
     </DistributedTopology>
 
     <DistributedUtil>
-      <ZooKeeper servers="172.16.0.161:2181,172.16.0.162:2181,172.16.0.163:2181" sessiontimeout="2000"/>
+      <ZooKeeper servers="180.153.140.110:2181,180.153.140.111:2181,180.153.140.112:2181" sessiontimeout="2000"/>
       <DFS type="hdfs" supportfuse="y" mountdir="/mnt/hdfs" server="localhost" port="9000"/>
     </DistributedUtil>
   </Deployment>

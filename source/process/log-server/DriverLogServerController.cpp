@@ -43,9 +43,11 @@ void DriverLogServerController::update_cclog()
 
 bool DriverLogServerController::skipProcess(const std::string& collection)
 {
-    // TODO
-    if (collection != "b5ma")
+    if (driverCollections_.find(collection) == driverCollections_.end())
+    {
+        std::cout<<"skip "<<collection<<std::endl;
         return true;
+    }
 
     return false;
 }

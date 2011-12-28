@@ -28,7 +28,7 @@ LogServerProcess::~LogServerProcess()
 bool LogServerProcess::init(const std::string& cfgFile)
 {
     // Parse config first
-    RETURN_ON_FAILURE(logServerCfg_.parse(cfgFile));
+    RETURN_ON_FAILURE(LogServerCfg::get()->parse(cfgFile));
 
     RETURN_ON_FAILURE(initRpcLogServer());
     RETURN_ON_FAILURE(initDriverLogServer());
@@ -39,7 +39,7 @@ bool LogServerProcess::init(const std::string& cfgFile)
 
 void LogServerProcess::start()
 {
-    LOG(INFO) << "\tRPC Server : port=" << rpcLogServer_->getPort();
+    LOG(INFO) << "\tRPC Server    : port=" << rpcLogServer_->getPort();
     rpcLogServer_->start();
 
     LOG(INFO) << "\tDriver Server : port=" << driverLogServer_->getPort();
@@ -63,22 +63,22 @@ void LogServerProcess::stop()
 bool LogServerProcess::initRpcLogServer()
 {
     rpcLogServer_.reset(
-        new RpcLogServer(
-            logServerCfg_.getLocalHost(),
-            logServerCfg_.getRpcServerPort(),
-            logServerCfg_.getThreadNum()
-        ));
+            new RpcLogServer(
+                LogServerCfg::get()->getLocalHost(),
+                LogServerCfg::get()->getRpcServerPort(),
+                LogServerCfg::get()->getThreadNum()
+            ));
 
-    return (rpcLogServer_ != 0);
+    return rpcLogServer_;
 }
 
 bool LogServerProcess::initDriverLogServer()
 {
     driverLogServer_.reset(
-        new DriverLogServer(
-            logServerCfg_.getDriverServerPort(),
-            logServerCfg_.getThreadNum()
-        ));
+            new DriverLogServer(
+                LogServerCfg::get()->getDriverServerPort(),
+                LogServerCfg::get()->getThreadNum()
+            ));
 
     if (driverLogServer_)
     {
@@ -89,12 +89,13 @@ bool LogServerProcess::initDriverLogServer()
 
 bool LogServerProcess::initDrum()
 {
-    drum_.reset(new DrumType(
-                logServerCfg_.getDrumName(),
-                logServerCfg_.getDrumNumBuckets(),
-                logServerCfg_.getDrumBucketBuffElemSize(),
-                logServerCfg_.getDrumBucketByteSize()
-                ));
+    drum_.reset(
+            new DrumType(
+                LogServerCfg::get()->getDrumName(),
+                LogServerCfg::get()->getDrumNumBuckets(),
+                LogServerCfg::get()->getDrumBucketBuffElemSize(),
+                LogServerCfg::get()->getDrumBucketByteSize()
+            ));
 
     return drum_;
 }

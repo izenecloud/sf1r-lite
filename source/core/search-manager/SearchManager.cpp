@@ -233,7 +233,7 @@ bool SearchManager::search(
     }
 
     QueryIdentity identity;
-    makeQueryIdentity(identity, actionOperation.actionItem_, distSearchInfo.actionType_, start);
+    makeQueryIdentity(identity, actionOperation.actionItem_, distSearchInfo.option_, start);
 
     if (cache_->get(
                 identity,
@@ -584,18 +584,20 @@ bool SearchManager::doSearch_(
     DocumentFrequencyInProperties dfmap;
     CollectionTermFrequencyInProperties ctfmap;
 
-    if (distSearchInfo.actionType_ == DistKeywordSearchInfo::ACTION_FETCH)
+    if (distSearchInfo.effective_)
     {
-        pDocIterator->df_ctf(dfmap, ctfmap);
-
-        distSearchInfo.dfmap_ = dfmap;
-        distSearchInfo.ctfmap_ = ctfmap;
-        return true;
-    }
-    else if (distSearchInfo.actionType_ == DistKeywordSearchInfo::ACTION_SEND)
-    {
-        dfmap = distSearchInfo.dfmap_;
-        ctfmap = distSearchInfo.ctfmap_;
+        if (distSearchInfo.option_ == DistKeywordSearchInfo::OPTION_GATHER_INFO)
+        {
+            pDocIterator->df_ctf(dfmap, ctfmap);
+            distSearchInfo.dfmap_ = dfmap;
+            distSearchInfo.ctfmap_ = ctfmap;
+            return true;
+        }
+        else if (distSearchInfo.option_ == DistKeywordSearchInfo::OPTION_CARRIED_INFO)
+        {
+            dfmap = distSearchInfo.dfmap_;
+            ctfmap = distSearchInfo.ctfmap_;
+        }
     }
     else
     {
@@ -832,7 +834,7 @@ bool SearchManager::doSearch_(
             reranker_(docIdList,rankScoreList,actionOperation.actionItem_.env_.queryString_);
         }
 
-        if (pSorter)
+        if (distSearchInfo.effective_ && pSorter)
         {
             getSortPropertyData_(pSorter.get(), docIdList, distSearchInfo);
         }

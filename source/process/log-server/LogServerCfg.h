@@ -10,6 +10,8 @@
 #include <string>
 #include <set>
 
+#include <util/singleton.h>
+
 namespace sf1r
 {
 
@@ -19,6 +21,11 @@ public:
     LogServerCfg();
 
     ~LogServerCfg();
+
+    static LogServerCfg* get()
+    {
+        return izenelib::util::Singleton<LogServerCfg>::get();
+    }
 
     bool parse(const std::string& cfgFile);
 

@@ -2,7 +2,7 @@
  * @file DistributeResultType.h
  * @author Zhongxia Li
  * @date Aug 12, 2011
- * @brief Divide Reuslt Types to different parts by distributed search functionality.
+ * @brief Distributed search result
  */
 
 class DistKeywordSearchInfo
@@ -10,20 +10,24 @@ class DistKeywordSearchInfo
 public:
 
     DistKeywordSearchInfo()
-        : actionType_(ACTION_NONE)
+        : effective_(false)
+        , option_(OPTION_NONE)
         , nodeType_(NODE_MASTER)
     {
     }
 
-    static const int8_t ACTION_NONE = 0x0;
-    static const int8_t ACTION_FETCH = 0x1;
-    static const int8_t ACTION_SEND = 0x2;
+    static const int8_t OPTION_NONE = 0x0;
+    static const int8_t OPTION_GATHER_INFO  = 0x1;
+    static const int8_t OPTION_CARRIED_INFO = 0x2;
 
     static const int8_t NODE_MASTER = 0x0;
     static const int8_t NODE_WORKER = 0x1;
 
+    /// @brief whether distributed search is effective
+    bool effective_;
+
     /// @brief indicate .
-    int8_t actionType_;
+    int8_t option_;
     int8_t nodeType_;
 
     /// @brief document frequency info of terms for each property
@@ -38,7 +42,7 @@ public:
     std::vector<std::pair<std::string, std::vector<uint64_t> > > sortPropertyUIntDataList_;
     std::vector<std::pair<std::string, std::vector<float> > > sortPropertyFloatDataList_;
 
-    MSGPACK_DEFINE(actionType_, nodeType_, dfmap_, ctfmap_, sortPropertyList_,
+    MSGPACK_DEFINE(effective_, option_, nodeType_, dfmap_, ctfmap_, sortPropertyList_,
         sortPropertyIntDataList_, sortPropertyUIntDataList_, sortPropertyFloatDataList_);
 };
 
