@@ -22,6 +22,7 @@ class UserManager;
 class ItemManager;
 class RecommenderFactory;
 class ItemIdGenerator;
+class UserIdGenerator;
 struct RecommendParam;
 struct TIBParam;
 struct ItemBundle;

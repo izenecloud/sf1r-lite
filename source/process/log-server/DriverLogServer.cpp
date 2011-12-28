@@ -1,5 +1,6 @@
 #include "DriverLogServer.h"
 #include "DriverLogServerController.h"
+#include "LogServerCfg.h"
 
 #include <util/driver/DriverConnectionFirewall.h>
 
@@ -58,6 +59,7 @@ bool DriverLogServer::initRouter()
     typedef ::izenelib::driver::ActionHandler<DriverLogServerController> handler_t;
 
     DriverLogServerController logServerCtrl;
+    logServerCtrl.setDriverCollections(LogServerCfg::get()->getDriverCollections());
 
     // cclogHandler is set as super handler which handles all requests.
     handler_t* cclogHandler = new handler_t(logServerCtrl, &DriverLogServerController::update_cclog);

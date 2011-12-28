@@ -11,6 +11,7 @@
 #include <recommend-manager/RateManager.h>
 #include <recommend-manager/RateParam.h>
 #include <recommend-manager/ItemIdGenerator.h>
+#include <recommend-manager/UserIdGenerator.h>
 #include <log-manager/OrderLogger.h>
 #include <log-manager/ItemLogger.h>
 #include <common/ScdParser.h>
@@ -319,29 +320,19 @@ void RecommendTaskService::initProps_()
 bool RecommendTaskService::addUser(const User& user)
 {
     if (user.idStr_.empty())
-    {
         return false;
-    }
 
-    userid_t userId = 0;
-    if (userIdGenerator_.conv(user.idStr_, userId))
-    {
-        LOG(WARNING) << "in addUser(), user id " << user.idStr_ << " already exists";
-        // not return false here, if the user id was once removed in userManager_,
-        // it would still exists in userIdGenerator_
-    }
+    userid_t userId = userIdGenerator_.insert(user.idStr_);
 
     return userManager_.addUser(userId, user);
 }
 
 bool RecommendTaskService::updateUser(const User& user)
 {
-    userid_t userId = 0;
-    if (! userIdGenerator_.conv(user.idStr_, userId, false))
-    {
-        LOG(ERROR) << "error in updateUser(), user id " << user.idStr_ << " not yet added before";
+    if (user.idStr_.empty())
         return false;
-    }
+
+    userid_t userId = userIdGenerator_.insert(user.idStr_);
 
     return userManager_.updateUser(userId, user);
 }
@@ -349,11 +340,9 @@ bool RecommendTaskService::updateUser(const User& user)
 bool RecommendTaskService::removeUser(const std::string& userIdStr)
 {
     userid_t userId = 0;
-    if (! userIdGenerator_.conv(userIdStr, userId, false))
-    {
-        LOG(ERROR) << "error in removeUser(), user id " << userIdStr << " not yet added before";
+
+    if (! userIdGenerator_.get(userIdStr, userId))
         return false;
-    }
 
     return userManager_.removeUser(userId);
 }
@@ -371,19 +360,11 @@ bool RecommendTaskService::visitItem(
         return false;
     }
 
-    userid_t userId = 0;
-    if (! userIdGenerator_.conv(userIdStr, userId, false))
-    {
-        LOG(ERROR) << "error in visitItem(), user id " << userIdStr << " not yet added before";
-        return false;
-    }
-
+    userid_t userId = userIdGenerator_.insert(userIdStr);
     itemid_t itemId = 0;
+
     if (! itemIdGenerator_.getItemIdByStrId(itemIdStr, itemId))
-    {
-        LOG(ERROR) << "error in visitItem(), item id " << itemIdStr << " not yet added before";
         return false;
-    }
 
     jobScheduler_.addTask(boost::bind(&VisitManager::addVisitItem, &visitManager_,
                                       sessionIdStr, userId, itemId, isRecItem));
@@ -408,13 +389,11 @@ bool RecommendTaskService::updateShoppingCart(
     const OrderItemVec& cartItemVec
 )
 {
-    userid_t userId = 0;
+    userid_t userId = userIdGenerator_.insert(userIdStr);
     std::vector<itemid_t> itemIdVec;
 
-    if (convertUserItemId_(userIdStr, cartItemVec, userId, itemIdVec) == false)
-    {
+    if (! convertOrderItemVec_(cartItemVec, itemIdVec))
         return false;
-    }
 
     return cartManager_.updateCart(userId, itemIdVec);
 }
@@ -426,60 +405,26 @@ bool RecommendTaskService::trackEvent(
     const std::string& itemIdStr
 )
 {
-    userid_t userId = 0;
-    if (! userIdGenerator_.conv(userIdStr, userId, false))
-    {
-        LOG(ERROR) << "error in trackEvent(), user id " << userIdStr << " not yet added before";
-        return false;
-    }
-
+    userid_t userId = userIdGenerator_.insert(userIdStr);
     itemid_t itemId = 0;
+
     if (! itemIdGenerator_.getItemIdByStrId(itemIdStr, itemId))
-    {
-        LOG(ERROR) << "error in trackEvent(), item id " << itemIdStr << " not yet added before";
         return false;
-    }
 
-    bool result = false;
-    if (isAdd)
-    {
-        result = eventManager_.addEvent(eventStr, userId, itemId);
-    }
-    else
-    {
-        result = eventManager_.removeEvent(eventStr, userId, itemId);
-    }
-
-    return result;
+    return isAdd ? eventManager_.addEvent(eventStr, userId, itemId) :
+                   eventManager_.removeEvent(eventStr, userId, itemId);
 }
 
 bool RecommendTaskService::rateItem(const RateParam& param)
 {
-    userid_t userId = 0;
-    if (! userIdGenerator_.conv(param.userIdStr, userId, false))
-    {
-        LOG(ERROR) << "error in rateItem(), user id " << param.userIdStr << " not yet added before";
-        return false;
-    }
-
+    userid_t userId = userIdGenerator_.insert(param.userIdStr);
     itemid_t itemId = 0;
+
     if (! itemIdGenerator_.getItemIdByStrId(param.itemIdStr, itemId))
-    {
-        LOG(ERROR) << "error in rateItem(), item id " << param.itemIdStr << " not yet added before";
         return false;
-    }
 
-    bool result = false;
-    if (param.isAdd)
-    {
-        result = rateManager_.addRate(userId, itemId, param.rate);
-    }
-    else
-    {
-        result = rateManager_.removeRate(userId, itemId);
-    }
-
-    return result;
+    return param.isAdd ? rateManager_.addRate(userId, itemId, param.rate) :
+                         rateManager_.removeRate(userId, itemId);
 }
 
 void RecommendTaskService::buildCollection()
@@ -727,14 +672,11 @@ bool RecommendTaskService::saveOrder_(
         return false;
     }
 
-    userid_t userId = 0;
+    userid_t userId = userIdGenerator_.insert(userIdStr);
     std::vector<itemid_t> itemIdVec;
 
-    if (convertUserItemId_(userIdStr, orderItemVec, userId, itemIdVec) == false)
-    {
+    if (! convertOrderItemVec_(orderItemVec, itemIdVec))
         return false;
-    }
-    assert(orderItemVec.size() == itemIdVec.size());
 
     orderManager_.addOrder(itemIdVec);
 
@@ -794,31 +736,22 @@ bool RecommendTaskService::insertOrderDB_(
     return result;
 }
 
-bool RecommendTaskService::convertUserItemId_(
-    const std::string& userIdStr,
+bool RecommendTaskService::convertOrderItemVec_(
     const OrderItemVec& orderItemVec,
-    userid_t& userId,
     std::vector<itemid_t>& itemIdVec
 )
 {
-    if (! userIdGenerator_.conv(userIdStr, userId, false))
-    {
-        LOG(ERROR) << "error in convertUserItemId(), user id " << userIdStr << " not yet added before";
-        return false;
-    }
-
     for (OrderItemVec::const_iterator it = orderItemVec.begin();
         it != orderItemVec.end(); ++it)
     {
         itemid_t itemId = 0;
         if (! itemIdGenerator_.getItemIdByStrId(it->itemIdStr_, itemId))
-        {
-            LOG(ERROR) << "error in convertUserItemId(), item id " << it->itemIdStr_ << " not yet added before";
             return false;
-        }
 
         itemIdVec.push_back(itemId);
     }
+
+    assert(orderItemVec.size() == itemIdVec.size());
 
     return true;
 }

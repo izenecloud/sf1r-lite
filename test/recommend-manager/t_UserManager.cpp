@@ -147,7 +147,9 @@ BOOST_AUTO_TEST_CASE(checkUser)
         iterateUserManager(idVec, userVec, userManager);
 
         BOOST_TEST_MESSAGE("remove user...");
-        BOOST_CHECK(userManager.removeUser(idVec.front()));
+        userid_t removeId = idVec.front();
+        BOOST_CHECK(userManager.removeUser(removeId));
+        BOOST_CHECK(userManager.getUser(removeId, user2) == false);
         userVec.erase(userVec.begin());
         idVec.erase(idVec.begin());
         checkUserManager(idVec, userVec, userManager);

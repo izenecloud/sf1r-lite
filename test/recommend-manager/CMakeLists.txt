@@ -131,15 +131,15 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   ADD_TEST(recommend-manager "${SF1RENGINE_ROOT}/testbin/t_OrderManager")
 
-  ADD_EXECUTABLE(t_IDGenerator
+  ADD_EXECUTABLE(t_UserIdGenerator
     Runner.cpp
-    t_IDGenerator.cpp
+    t_UserIdGenerator.cpp
   )
-  TARGET_LINK_LIBRARIES(t_IDGenerator ${libs})
-  SET_TARGET_PROPERTIES(t_IDGenerator PROPERTIES
+  TARGET_LINK_LIBRARIES(t_UserIdGenerator ${libs})
+  SET_TARGET_PROPERTIES(t_UserIdGenerator PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
-  ADD_TEST(recommend-manager "${SF1RENGINE_ROOT}/testbin/t_IDGenerator")
+  ADD_TEST(recommend-manager "${SF1RENGINE_ROOT}/testbin/t_UserIdGenerator")
 
   ADD_EXECUTABLE(t_RateManager
     Runner.cpp
