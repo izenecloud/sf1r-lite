@@ -22,6 +22,9 @@ void initConfig( std::vector<AnalysisInfo>& analysisList, sf1r::LAManagerConfig 
 {
     //======= 1. Declaring the analyzer & tokenizer instances
     
+    // --------- Update interval
+    config.updateDictInterval_ = 600;
+
     // --------- Analyers
     
     LAConfigUnit laConfig;
