@@ -63,22 +63,22 @@ void LogServerProcess::stop()
 bool LogServerProcess::initRpcLogServer()
 {
     rpcLogServer_.reset(
-        new RpcLogServer(
-            logServerCfg_.getLocalHost(),
-            logServerCfg_.getRpcServerPort(),
-            logServerCfg_.getThreadNum()
-        ));
+            new RpcLogServer(
+                logServerCfg_.getLocalHost(),
+                logServerCfg_.getRpcServerPort(),
+                logServerCfg_.getThreadNum()
+            ));
 
-    return (rpcLogServer_ != 0);
+    return rpcLogServer_;
 }
 
 bool LogServerProcess::initDriverLogServer()
 {
     driverLogServer_.reset(
-        new DriverLogServer(
-            logServerCfg_.getDriverServerPort(),
-            logServerCfg_.getThreadNum()
-        ));
+            new DriverLogServer(
+                logServerCfg_.getDriverServerPort(),
+                logServerCfg_.getThreadNum()
+            ));
 
     if (driverLogServer_)
     {
@@ -89,12 +89,13 @@ bool LogServerProcess::initDriverLogServer()
 
 bool LogServerProcess::initDrum()
 {
-    drum_.reset(new DrumType(
+    drum_.reset(
+            new DrumType(
                 logServerCfg_.getDrumName(),
                 logServerCfg_.getDrumNumBuckets(),
                 logServerCfg_.getDrumBucketBuffElemSize(),
                 logServerCfg_.getDrumBucketByteSize()
-                ));
+            ));
 
     return drum_;
 }
