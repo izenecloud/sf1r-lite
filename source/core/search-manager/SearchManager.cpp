@@ -485,13 +485,14 @@ bool SearchManager::doSearch_(
                 // sort by ctr (click through rate)
                 if (fieldNameL == CTR_PROPERTY)
                 {
-                    if (!miningManagerPtr_) {
+                    if (miningManagerPtr_.expired()) {
                         DLOG(ERROR)<<"Skipped CTR sort property: Mining Manager was not initialized";
                         continue;
                     }
 
+                    boost::shared_ptr<MiningManager> resourceMiningManagerPtr = miningManagerPtr_.lock();
                     boost::shared_ptr<faceted::CTRManager> ctrManangerPtr
-                    = miningManagerPtr_->GetCtrManager();
+                    = resourceMiningManagerPtr->GetCtrManager();
                     if (!ctrManangerPtr) {
                         DLOG(ERROR)<<"Skipped CTR sort property: CTR Manager was not initialized";
                         continue;
