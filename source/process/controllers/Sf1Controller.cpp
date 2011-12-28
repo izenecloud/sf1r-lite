@@ -45,6 +45,12 @@ bool Sf1Controller::checkCollectionAcl()
     }
 
     collectionHandler_ = CollectionManager::get()->findHandler(collection);
+    if(!collectionHandler_)
+    {
+        this->response().addError("Collection handler not find");
+        return false;
+    }
+
     return true;
 }
 
