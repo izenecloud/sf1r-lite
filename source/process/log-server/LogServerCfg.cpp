@@ -98,10 +98,10 @@ bool LogServerCfg::parseCfgFile_(const std::string& cfgFile)
             threadNum_ = std::min(MAX_THREAD_NUM, threadNum_);
         }
 
-        std::string collectins;
-        if (props.getValue("driver.collections", collectins))
+        std::string collections;
+        if (props.getValue("driver.collections", collections))
         {
-            parseDriverCollections(collectins);
+            parseDriverCollections(collections);
         }
 
         if (!props.getValue("drum.name", drum_name_))
