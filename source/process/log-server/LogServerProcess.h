@@ -51,8 +51,6 @@ private:
     bool initDrum();
 
 private:
-    LogServerCfg logServerCfg_;
-
     boost::scoped_ptr<RpcLogServer> rpcLogServer_;
     boost::scoped_ptr<DriverLogServer> driverLogServer_;
 

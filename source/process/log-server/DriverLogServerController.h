@@ -31,7 +31,6 @@ private:
 
 private:
     izenelib::driver::JsonWriter jsonWriter_;
-
     std::set<std::string> driverCollections_;
 };
 
