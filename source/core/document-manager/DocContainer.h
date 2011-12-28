@@ -118,7 +118,11 @@ public:
         //int re = bmz_unpack(val_p->data, val_p->size, p, &tmpTarLen, NULL);
 
         if (re != LZO_E_OK || tmpTarLen != allocSize)
+        {
+            delete[] p;
+            containerPtr_->clean_data(val_p);
             return false;
+        }
 
         nsz = tmpTarLen; //
         //char *p =(char*)_tc_bzdecompress((const char*)val_p->data, val_p->size, &nsz);
