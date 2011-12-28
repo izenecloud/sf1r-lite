@@ -15,6 +15,28 @@
 namespace sf1r
 {
 
+/**
+ * @brief Action @b start_collection.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ *
+ * @section response
+ *
+ * - No extra fields.
+ *
+ * @section example
+ *
+ * Request
+ *
+ * @code
+ * {
+ *   "collection": "chwiki"
+ * }
+ * @endcode
+ *
+ */
 void CollectionController::start_collection()
 {
     std::string collection = asString(request()[Keys::collection]);
@@ -23,15 +45,39 @@ void CollectionController::start_collection()
         response().addError("Require field collection in request.");
         return;
     }
-    std::string configFile = asString(request()[Keys::config_file]);
-    if (configFile.empty())
-    {
-        response().addError("Require collection config file in request.");
-        return;
-    }
+    std::string configFile = SF1Config::get()->getHomeDirectory();
+    std::string slash("");
+#ifdef WIN32
+        slash = "\\";
+#else
+        slash = "/";
+#endif
+    configFile += slash + collection + ".xml";
     CollectionManager::get()->startCollection(collection, configFile);
 }
 
+/**
+ * @brief Action @b stop_collection.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ *
+ * @section response
+ *
+ * - No extra fields.
+ *
+ * @section example
+ *
+ * Request
+ *
+ * @code
+ * {
+ *   "collection": "chwiki"
+ * }
+ * @endcode
+ *
+ */
 void CollectionController::stop_collection()
 {
     std::string collection = asString(request()[Keys::collection]);
