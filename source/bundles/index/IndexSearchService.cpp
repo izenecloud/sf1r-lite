@@ -53,18 +53,19 @@ bool IndexSearchService::getSearchResult(
 
     /// Perform distributed search by aggregator
     DistKeywordSearchResult distResultItem;
+    distResultItem.distSearchInfo_.effective_ = true;
     distResultItem.distSearchInfo_.nodeType_ = DistKeywordSearchInfo::NODE_WORKER;
 
-#ifdef PREFETCH_INFO
-    distResultItem.distSearchInfo_.actionType_ = DistKeywordSearchInfo::ACTION_FETCH;
+#ifdef GATHER_DISTRIBUTED_SEARCH_INFO
+    distResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_GATHER_INFO;
     searchAggregator_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchInfo>(
             actionItem.collectionName_, "getDistSearchInfo", actionItem, distResultItem.distSearchInfo_);
 
-    distResultItem.distSearchInfo_.actionType_ = DistKeywordSearchInfo::ACTION_SEND;
+    distResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_CARRIED_INFO;
 #endif
 
     QueryIdentity identity;
-    makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.actionType_, actionItem.pageInfo_.start_);
+    makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.option_, actionItem.pageInfo_.start_);
 
     if (!cache_->get(
             identity,

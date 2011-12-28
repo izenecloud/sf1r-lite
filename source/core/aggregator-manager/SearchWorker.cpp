@@ -34,7 +34,7 @@ SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
 bool SearchWorker::getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem)
 {
     DistKeywordSearchResult fakeResultItem;
-    fakeResultItem.distSearchInfo_.actionType_ = DistKeywordSearchInfo::ACTION_FETCH;
+    fakeResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_GATHER_INFO;
 
     getSearchResult_(actionItem, fakeResultItem);
 
