@@ -13,6 +13,7 @@ headers:
   - controllers/ServiceController.h
   - controllers/ProductController.h
   - controllers/SynonymController.h
+  - controllers/CollectionController.h
 
 controllers:
   AutoFillController:
@@ -122,3 +123,8 @@ controllers:
       - add_synonym
       - update_synonym
       - delete_synonym
+      
+  CollectionController:
+    actions:
+      - start_collection
+      - stop_collection
