@@ -219,7 +219,7 @@ bool VisitManager::updateSessionDB_(
 
 void VisitManager::print(std::ostream& ostream) const
 {
-    ostream << "[Visit] " << coVisitManager_;
+    ostream << "[Visit] " << coVisitManager_.matrix();
 }
 
 std::ostream& operator<<(std::ostream& out, const VisitManager& visitManager)
