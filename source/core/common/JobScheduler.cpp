@@ -35,6 +35,9 @@ void JobScheduler::runAsynchronousTasks_()
         {
             asynchronousTasks_.pop(task);
             task();
+
+            // terminate execution if interrupted
+            boost::this_thread::interruption_point();
         }
     }
     catch (boost::thread_interrupted&)
