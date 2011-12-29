@@ -36,8 +36,9 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
             req.params().convert(&params);
             UUID2DocIdList uuid2DocIdList = params.get<0>();
 
-            // todo insert to DRUM?
+            // TODO
             std::cout<<uuid2DocIdList.uuid_<<std::endl;
+            //drum_->CheckUpdate(uuid2DocIdList.uuid_, uuid2DocIdList.docIdList_);
         }
         else
         {

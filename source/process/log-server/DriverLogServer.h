@@ -1,6 +1,8 @@
 #ifndef DRIVER_LOG_SERVER_H_
 #define DRIVER_LOG_SERVER_H_
 
+#include "LogServerStorage.h"
+
 #include <util/driver/DriverServer.h>
 
 #include <boost/thread.hpp>

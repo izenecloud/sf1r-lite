@@ -1,4 +1,5 @@
 #include "LogServerProcess.h"
+#include "LogServerStorage.h"
 
 #include <iostream>
 
@@ -30,9 +31,9 @@ bool LogServerProcess::init(const std::string& cfgFile)
     // Parse config first
     RETURN_ON_FAILURE(LogServerCfg::get()->parse(cfgFile));
 
+    RETURN_ON_FAILURE(LogServerStorage::get()->init())
     RETURN_ON_FAILURE(initRpcLogServer());
     RETURN_ON_FAILURE(initDriverLogServer());
-    RETURN_ON_FAILURE(initDrum());
 
     return true;
 }
@@ -69,7 +70,13 @@ bool LogServerProcess::initRpcLogServer()
                 LogServerCfg::get()->getThreadNum()
             ));
 
-    return rpcLogServer_;
+    if (rpcLogServer_)
+    {
+        rpcLogServer_->setDrum(LogServerStorage::get()->getDrum());
+        return true;
+    }
+
+    return false;
 }
 
 bool LogServerProcess::initDriverLogServer()
@@ -80,24 +87,13 @@ bool LogServerProcess::initDriverLogServer()
                 LogServerCfg::get()->getThreadNum()
             ));
 
-    if (driverLogServer_)
+    if (driverLogServer_ && driverLogServer_->init())
     {
-        return driverLogServer_->init();
+        //driverLogServer_->setDrum(LogServerStorage::get()->getDrum());
+        return true;
     }
+
     return false;
-}
-
-bool LogServerProcess::initDrum()
-{
-    drum_.reset(
-            new DrumType(
-                LogServerCfg::get()->getDrumName(),
-                LogServerCfg::get()->getDrumNumBuckets(),
-                LogServerCfg::get()->getDrumBucketBuffElemSize(),
-                LogServerCfg::get()->getDrumBucketByteSize()
-            ));
-
-    return drum_;
 }
 
 }
