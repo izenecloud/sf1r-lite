@@ -41,6 +41,7 @@ FILE(GLOB cobra_process_SRC
 FILE(GLOB log_server_process_SRC
   "LogServer*.cpp"
   "common/ProcessOptions.cpp"  
+  "common/OnSignal.cpp"
   ${log_server_SRC}
   ${CMAKE_SOURCE_DIR}/core/log-manager/LogServerRequest.cpp
   ${CMAKE_SOURCE_DIR}/core/common/Keys.cpp
@@ -99,6 +100,7 @@ TARGET_LINK_LIBRARIES(LogServerProcess
   #external
   ${Boost_LIBRARIES}
   ${Glog_LIBRARIES}
+  ${TokyoCabinet_LIBRARIES}
   ${CMAKE_THREAD_LIBS_INIT}
 )
 

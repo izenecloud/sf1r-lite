@@ -5,6 +5,8 @@
 #include "RpcLogServer.h"
 #include "DriverLogServer.h"
 
+#include <OnSignal.h>
+
 #include <glog/logging.h>
 
 #include <boost/scoped_ptr.hpp>

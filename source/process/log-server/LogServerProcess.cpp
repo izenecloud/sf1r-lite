@@ -5,6 +5,9 @@
 
 #include <log-manager/LogServerRequest.h>
 
+#include <boost/bind.hpp>
+#include <boost/bind/apply.hpp>
+
 namespace sf1r
 {
 
@@ -29,7 +32,6 @@ LogServerProcess::LogServerProcess()
 
 LogServerProcess::~LogServerProcess()
 {
-    stop();
 }
 
 bool LogServerProcess::init(const std::string& cfgFile)
@@ -40,6 +42,8 @@ bool LogServerProcess::init(const std::string& cfgFile)
     RETURN_ON_FAILURE(LogServerStorage::get()->init());
     RETURN_ON_FAILURE(initRpcLogServer());
     RETURN_ON_FAILURE(initDriverLogServer());
+
+    addExitHook(boost::bind(&LogServerProcess::stop, this));
 
     return true;
 }
@@ -55,16 +59,23 @@ void LogServerProcess::start()
 
 void LogServerProcess::join()
 {
-    rpcLogServer_->join();
     driverLogServer_->join();
 }
 
 void LogServerProcess::stop()
 {
     if (rpcLogServer_)
+    {
         rpcLogServer_->stop();
+    }
+
     if (driverLogServer_)
+    {
         driverLogServer_->stop();
+    }
+
+    LogServerStorage::get()->close();
+    std::cout << "LogServerProcess::stop()" << std::endl;
 }
 
 bool LogServerProcess::initRpcLogServer()

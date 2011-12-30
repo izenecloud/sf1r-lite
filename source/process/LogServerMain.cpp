@@ -1,5 +1,6 @@
 #include "ProcessOptions.h"
 #include "log-server/LogServerProcess.h"
+#include "log-server/LogServerStorage.h"
 
 #include <iostream>
 #include <unistd.h>
@@ -10,6 +11,9 @@ __pid_t getPid();
 
 int main(int argc, char* argv[])
 {
+    setupDefaultSignalHandlers();
+    bool caughtException = false;
+
     try
     {
         ProcessOptions po;
@@ -27,14 +31,19 @@ int main(int argc, char* argv[])
                 logServerProcess.start();
                 logServerProcess.join();
             }
+            else
+            {
+                logServerProcess.stop();
+            }
         }
     }
     catch (const std::exception& e)
     {
+        caughtException = true;
         std::cerr << e.what() << std::endl;
     }
 
-    exit(1);
+    return caughtException ? 1 : 0;
 }
 
 __pid_t getPid()
