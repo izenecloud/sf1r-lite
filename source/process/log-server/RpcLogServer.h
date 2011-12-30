@@ -1,6 +1,8 @@
 #ifndef RPC_LOG_SERVER_H_
 #define RPC_LOG_SERVER_H_
 
+#include "LogServerStorage.h"
+
 #include <3rdparty/msgpack/rpc/server.h>
 
 namespace sf1r
@@ -13,29 +15,23 @@ public:
 
     ~RpcLogServer();
 
-    uint16_t getPort() const
+    void setDrum(const LogServerStorage::DrumPtr& drum)
+    {
+        drum_ = drum;
+    }
+
+    inline uint16_t getPort() const
     {
         return port_;
     }
 
     void start();
 
-    void join()
-    {
-        instance.join();
-    }
+    void join();
 
-    void run()
-    {
-        start();
-        join();
-    }
+    void run();
 
-    void stop()
-    {
-        instance.end();
-        instance.join();
-    }
+    void stop();
 
 public:
     virtual void dispatch(msgpack::rpc::request req);
@@ -44,6 +40,8 @@ private:
     std::string host_;
     uint16_t port_;
     uint32_t threadNum_;
+
+    LogServerStorage::DrumPtr drum_;
 };
 
 }

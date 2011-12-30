@@ -12,10 +12,9 @@ namespace sf1r
 
 CollectionHandler* CollectionManager::kEmptyHandler_ = 0;
 
-std::auto_ptr<CollectionHandler>
-CollectionManager::startCollection(const string& collectionName, const std::string& configFileName)
+void CollectionManager::startCollection(const string& collectionName, const std::string& configFileName)
 {
-    std::auto_ptr<CollectionHandler> collectionHandler(new CollectionHandler(collectionName));
+    CollectionHandler* collectionHandler = new CollectionHandler(collectionName);
 
     boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig(new IndexBundleConfiguration(collectionName));
     boost::shared_ptr<ProductBundleConfiguration> productBundleConfig(new ProductBundleConfiguration(collectionName));
@@ -80,9 +79,7 @@ CollectionManager::startCollection(const string& collectionName, const std::stri
     // insert first, then assign to ensure exception safe
     std::pair<handler_map_type::iterator, bool> insertResult =
         collectionHandlers_.insert(std::make_pair(collectionName, kEmptyHandler_));
-    insertResult.first->second = collectionHandler.release();
-
-    return collectionHandler;
+    insertResult.first->second = collectionHandler;
 }
 
 void CollectionManager::stopCollection(const std::string& collectionName)
