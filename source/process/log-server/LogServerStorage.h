@@ -7,7 +7,6 @@
 #include <util/singleton.h>
 #include <am/leveldb/Table.h>
 #include <am/tokyo_cabinet/tc_hash.h>
-#include <sdb/SequentialDB.h>
 #include <3rdparty/am/drum/drum.hpp>
 
 #include <boost/shared_ptr.hpp>
