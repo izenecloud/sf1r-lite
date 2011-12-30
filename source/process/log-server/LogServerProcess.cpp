@@ -11,7 +11,13 @@ namespace sf1r
 #define RETURN_ON_FAILURE(condition)                                        \
 if (! (condition))                                                          \
 {                                                                           \
-    std::cerr << "Log Server initialization assertion failed: " #condition  \
+    return false;                                                           \
+}
+
+#define LOG_SERVER_ASSERT(condition)                                        \
+if (! (condition))                                                          \
+{                                                                           \
+    std::cerr << "Assertion failed: " #condition                            \
               << std::endl;                                                 \
     return false;                                                           \
 }
@@ -31,7 +37,7 @@ bool LogServerProcess::init(const std::string& cfgFile)
     // Parse config first
     RETURN_ON_FAILURE(LogServerCfg::get()->parse(cfgFile));
 
-    RETURN_ON_FAILURE(LogServerStorage::get()->init())
+    RETURN_ON_FAILURE(LogServerStorage::get()->init());
     RETURN_ON_FAILURE(initRpcLogServer());
     RETURN_ON_FAILURE(initDriverLogServer());
 
@@ -67,7 +73,7 @@ bool LogServerProcess::initRpcLogServer()
             new RpcLogServer(
                 LogServerCfg::get()->getLocalHost(),
                 LogServerCfg::get()->getRpcServerPort(),
-                LogServerCfg::get()->getThreadNum()
+                LogServerCfg::get()->getRpcThreadNum()
             ));
 
     if (rpcLogServer_)
@@ -84,7 +90,7 @@ bool LogServerProcess::initDriverLogServer()
     driverLogServer_.reset(
             new DriverLogServer(
                 LogServerCfg::get()->getDriverServerPort(),
-                LogServerCfg::get()->getThreadNum()
+                LogServerCfg::get()->getDriverThreadNum()
             ));
 
     if (driverLogServer_ && driverLogServer_->init())

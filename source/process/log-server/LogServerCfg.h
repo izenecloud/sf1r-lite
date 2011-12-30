@@ -11,9 +11,12 @@
 #include <set>
 
 #include <util/singleton.h>
+#include <util/kv2string.h>
 
 namespace sf1r
 {
+
+typedef izenelib::util::kv2string properties;
 
 class LogServerCfg
 {
@@ -39,19 +42,29 @@ public:
         return rpcPort_;
     }
 
+    inline unsigned int getRpcThreadNum() const
+    {
+        return rpcThreadNum_;
+    }
+
     inline unsigned int getDriverServerPort() const
     {
         return driverPort_;
     }
 
-    inline unsigned int getThreadNum() const
+    inline unsigned int getDriverThreadNum() const
     {
-        return threadNum_;
+        return driverThreadNum_;
     }
 
     const std::set<std::string>& getDriverCollections() const
     {
         return driverCollections_;
+    }
+
+    inline const std::string& getStorageBaseDir() const
+    {
+        return base_dir_;
     }
 
     inline const std::string& getDrumName() const
@@ -74,8 +87,19 @@ public:
         return drum_bucket_byte_size_;
     }
 
+    inline const std::string& getDocidDBName() const
+    {
+        return docid_db_name_;
+    }
+
 private:
     bool parseCfgFile_(const std::string& cfgFile);
+
+    void parseCfg(properties& props);
+
+    void parseServerCfg(properties& props);
+
+    void parseStorageCfg(properties& props);
 
     void parseDriverCollections(const std::string& collections);
 
@@ -84,15 +108,19 @@ private:
 
     std::string host_;
     unsigned int rpcPort_;
+    unsigned int rpcThreadNum_;
     unsigned int driverPort_;
-    unsigned int threadNum_;
-
+    unsigned int driverThreadNum_;
     std::set<std::string> driverCollections_;
+
+    std::string base_dir_;
 
     std::string drum_name_;
     unsigned int drum_num_buckets_;
     unsigned int drum_bucket_buff_elem_size_;
     unsigned int drum_bucket_byte_size_;
+
+    std::string docid_db_name_;
 };
 
 }
