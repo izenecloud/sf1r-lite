@@ -37,8 +37,7 @@ public:
         return this->osgiLauncher_;
     }
 
-    std::auto_ptr<CollectionHandler> 
-    startCollection(const std::string& collectionName, const std::string & configFileName);
+    void startCollection(const std::string& collectionName, const std::string & configFileName);
 
     void stopCollection(const std::string& collectionName);
 
