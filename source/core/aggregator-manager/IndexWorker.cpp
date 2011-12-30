@@ -1193,27 +1193,32 @@ bool IndexWorker::prepareIndexDocument_(
                             if (checkSeparatorType_(propertyValueU, encoding, '-'))
                             {
                                 split_int(propertyValueU, multiProps, encoding,'-');
+                                indexerPropertyConfig.setIsMultiValue(true);
+                                indexDocument.insertProperty(indexerPropertyConfig, multiProps);
                             }
                             else if (checkSeparatorType_(propertyValueU, encoding, '~'))
                             {
                                 split_int(propertyValueU, multiProps, encoding,'~');
+                                indexerPropertyConfig.setIsMultiValue(true);
+                                indexDocument.insertProperty(indexerPropertyConfig, multiProps);
                             }
                             else if (checkSeparatorType_(propertyValueU, encoding, ','))
                             {
                                 split_int(propertyValueU, multiProps, encoding,',');
+                                indexerPropertyConfig.setIsMultiValue(true);
+                                indexDocument.insertProperty(indexerPropertyConfig, multiProps);
                             }
                             else
                             {
                                 try
                                 {
                                     value = (int64_t)(boost::lexical_cast< float >(str));
+                                    indexDocument.insertProperty(indexerPropertyConfig, value);
                                 }catch (const boost::bad_lexical_cast &)
                                 {
                                     //LOG(ERROR) << "Wrong format of number value. DocId " << docId <<" Property "<<fieldStr<< " Value" << str;
                                 }
                             }
-                            indexerPropertyConfig.setIsMultiValue(true);
-                            indexDocument.insertProperty(indexerPropertyConfig, multiProps);
                         }
                     }
                 }
