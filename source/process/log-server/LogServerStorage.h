@@ -18,8 +18,8 @@ class LogServerStorage
 {
 public:
     typedef izenelib::drum::Drum<
-        std::string,
-        std::vector<std::string>,
+        uint128_t,
+        std::vector<uint128_t>,
         std::string,
         izenelib::am::leveldb::TwoPartComparator,
         izenelib::am::leveldb::Table,
