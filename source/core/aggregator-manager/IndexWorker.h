@@ -141,7 +141,8 @@ private:
 
     bool checkRtype_(
             SCDDoc& doc,
-            std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue
+            std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
+            bool& isUpdate
     );
 
     bool makeSentenceBlocks_(
