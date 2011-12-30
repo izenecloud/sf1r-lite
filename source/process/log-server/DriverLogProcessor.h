@@ -19,10 +19,10 @@ struct ProcessorKey
     std::string action_;
 
     ProcessorKey(
-        const std::string& controller,
-        const std::string& action)
-    : controller_(controller)
-    , action_(action)
+            const std::string& controller,
+            const std::string& action)
+        : controller_(controller)
+        , action_(action)
     {}
 };
 /// for boost

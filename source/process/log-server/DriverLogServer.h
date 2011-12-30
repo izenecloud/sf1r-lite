@@ -19,7 +19,7 @@ public:
     {
     }
 
-    uint16_t getPort() const
+    inline uint16_t getPort() const
     {
         return port_;
     }

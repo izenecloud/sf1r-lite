@@ -124,8 +124,8 @@ ProcessorFactory::~ProcessorFactory()
 }
 
 ProcessorPtr ProcessorFactory::getProcessor(
-            const std::string& controller,
-            const std::string& action) const
+        const std::string& controller,
+        const std::string& action) const
 {
     ProcessorKey key(controller, action);
 

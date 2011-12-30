@@ -20,29 +20,18 @@ public:
         drum_ = drum;
     }
 
-    uint16_t getPort() const
+    inline uint16_t getPort() const
     {
         return port_;
     }
 
     void start();
 
-    void join()
-    {
-        instance.join();
-    }
+    void join();
 
-    void run()
-    {
-        start();
-        join();
-    }
+    void run();
 
-    void stop()
-    {
-        instance.end();
-        instance.join();
-    }
+    void stop();
 
 public:
     virtual void dispatch(msgpack::rpc::request req);

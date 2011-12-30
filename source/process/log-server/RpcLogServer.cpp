@@ -6,9 +6,9 @@ namespace sf1r
 {
 
 RpcLogServer::RpcLogServer(const std::string& host, uint16_t port, uint32_t threadNum)
-: host_(host)
-, port_(port)
-, threadNum_(threadNum)
+    : host_(host)
+    , port_(port)
+    , threadNum_(threadNum)
 {
 }
 
@@ -21,6 +21,23 @@ void RpcLogServer::start()
 {
     instance.listen(host_, port_);
     instance.start(threadNum_);
+}
+
+void RpcLogServer::join()
+{
+    instance.join();
+}
+
+void RpcLogServer::run()
+{
+    start();
+    join();
+}
+
+void RpcLogServer::stop()
+{
+    instance.end();
+    instance.join();
 }
 
 void RpcLogServer::dispatch(msgpack::rpc::request req)
@@ -37,7 +54,7 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
             UUID2DocIdList uuid2DocIdList = params.get<0>();
 
             // TODO
-            std::cout<<uuid2DocIdList.uuid_<<std::endl;
+            std::cout << uuid2DocIdList.uuid_ << std::endl;
             //drum_->CheckUpdate(uuid2DocIdList.uuid_, uuid2DocIdList.docIdList_);
         }
         else
@@ -45,15 +62,14 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
             req.error(msgpack::rpc::NO_METHOD_ERROR);
         }
     }
-    catch (msgpack::type_error& e)
+    catch (const msgpack::type_error& e)
     {
         req.error(msgpack::rpc::ARGUMENT_ERROR);
     }
-    catch (std::exception& e)
+    catch (const std::exception& e)
     {
         req.error(std::string(e.what()));
     }
 }
 
 }
-
