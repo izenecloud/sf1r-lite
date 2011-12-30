@@ -90,6 +90,7 @@ bool LogServerProcess::initRpcLogServer()
     if (rpcLogServer_)
     {
         rpcLogServer_->setDrum(LogServerStorage::get()->getDrum());
+        rpcLogServer_->setDocidDB(LogServerStorage::get()->getDocidDB());
         return true;
     }
 
@@ -106,7 +107,6 @@ bool LogServerProcess::initDriverLogServer()
 
     if (driverLogServer_ && driverLogServer_->init())
     {
-        //driverLogServer_->setDrum(LogServerStorage::get()->getDrum());
         return true;
     }
 

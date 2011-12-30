@@ -18,8 +18,8 @@ class LogServerStorage
 {
 public:
     typedef izenelib::drum::Drum<
-        uint128_t,
-        std::vector<uint128_t>,
+        std::string,
+        std::vector<uint32_t>,
         std::string,
         izenelib::am::leveldb::TwoPartComparator,
         izenelib::am::leveldb::Table,
@@ -28,7 +28,6 @@ public:
     typedef boost::shared_ptr<DrumType> DrumPtr;
 
     typedef izenelib::am::tc_hash<uint32_t, std::string> KVDBType;
-    //typedef izenelib::am::sdb_fixedhash<uint32_t, count_t, izenelib::util::ReadWriteLock> KVDBType;
     typedef boost::shared_ptr<KVDBType> KVDBPtr;
 
 public:
@@ -39,6 +38,7 @@ public:
 
     bool init()
     {
+        // initialize drum
         drum_.reset(
                 new DrumType(
                     LogServerCfg::get()->getDrumName(),
@@ -47,9 +47,35 @@ public:
                     LogServerCfg::get()->getDrumBucketByteSize()
                 ));
 
-        // TODO: initialize KVDB
+        if (!drum_)
+        {
+            std::cerr << "Failed to initialzie drum: " << LogServerCfg::get()->getDrumName() << std::endl;
+            return false;
+        }
 
-        return drum_;
+        // initialize <docid, uuid> DB
+        docidDB_.reset(new KVDBType(LogServerCfg::get()->getDocidDBName()));
+        if (!docidDB_ || !docidDB_->open())
+        {
+            std::cerr << "Failed to initialzie docid DB: " << LogServerCfg::get()->getDocidDBName() << std::endl;
+            return false;
+        }
+
+        return true;
+    }
+
+    void close()
+    {
+        if (drum_)
+        {
+            //drum_->Synchronize();
+            drum_->Dispose();
+        }
+
+        if (docidDB_)
+        {
+            docidDB_->close();
+        }
     }
 
     DrumPtr getDrum() const
@@ -57,15 +83,14 @@ public:
         return drum_;
     }
 
-    KVDBPtr getKVDB() const
+    KVDBPtr getDocidDB() const
     {
-        return kvDB_;
+        return docidDB_;
     }
 
 private:
     DrumPtr drum_;
-
-    KVDBPtr kvDB_;
+    KVDBPtr docidDB_;
 };
 
 }

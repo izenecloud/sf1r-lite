@@ -95,22 +95,40 @@ void RecPurchaseItemProcessor::process(izenelib::driver::Request& request)
 
 ProcessorFactory::ProcessorFactory()
 {
+}
+
+ProcessorFactory::~ProcessorFactory()
+{
+    destroy();
+}
+
+void ProcessorFactory::init(
+        LogServerStorage::DrumPtr drum,
+        LogServerStorage::KVDBPtr docidDB)
+{
     //defaultProcessor_ = new Processor();
     defaultProcessor_ = NULL; // nothing to do
+    if (defaultProcessor_)
+    {
+        defaultProcessor_->setStorage(drum, docidDB);
+    }
 
     // Add special processors here
     Processor* processor;
     processor = new DocVisitProcessor();
+    processor->setStorage(drum, docidDB);
     specialProcessors_.insert(std::make_pair(ProcessorKey("documents", "visit"), processor));
 
     processor = new RecVisitItemProcessor();
+    processor->setStorage(drum, docidDB);
     specialProcessors_.insert(std::make_pair(ProcessorKey("recommend", "visit_item"), processor));
 
     processor = new RecPurchaseItemProcessor();
+    processor->setStorage(drum, docidDB);
     specialProcessors_.insert(std::make_pair(ProcessorKey("recommend", "purchase_item"), processor));
 }
 
-ProcessorFactory::~ProcessorFactory()
+void ProcessorFactory::destroy()
 {
     if (defaultProcessor_)
         delete defaultProcessor_;

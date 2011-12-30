@@ -1,6 +1,8 @@
 #include "DriverLogServer.h"
 #include "DriverLogServerController.h"
+#include "DriverLogProcessor.h"
 #include "LogServerCfg.h"
+#include "LogServerStorage.h"
 
 #include <util/driver/DriverConnectionFirewall.h>
 
@@ -27,7 +29,8 @@ bool DriverLogServer::init()
         factory->setFirewall(DriverConnectionFirewall());
 
         driverServer_.reset(new DriverServer(endpoint, factory, threadNum_));
-        return (driverServer_ != 0);
+
+        return driverServer_;
     }
 
     return false;
@@ -50,8 +53,9 @@ void DriverLogServer::join()
 void DriverLogServer::stop()
 {
     driverServer_->stop();
-    driverThread_.reset(); // whether started or not
+    driverThread_.reset();
     bStarted_ = false;
+    ProcessorFactory::get()->destroy();
 }
 
 bool DriverLogServer::initRouter()
@@ -60,11 +64,17 @@ bool DriverLogServer::initRouter()
 
     DriverLogServerController logServerCtrl;
     logServerCtrl.setDriverCollections(LogServerCfg::get()->getDriverCollections());
+    logServerCtrl.setDrum(LogServerStorage::get()->getDrum());
+    logServerCtrl.setDocidDB(LogServerStorage::get()->getDocidDB());
 
-    // cclogHandler is set as super handler which handles all requests.
     handler_t* cclogHandler = new handler_t(logServerCtrl, &DriverLogServerController::update_cclog);
     //router_->map("log_server", "update_cclog", cclogHandler);
-    router_->setSuperHandler(cclogHandler);
+    router_->setSuperHandler(cclogHandler); // handle all requests
+
+    // processors for controller
+    ProcessorFactory::get()->init(
+            LogServerStorage::get()->getDrum(),
+            LogServerStorage::get()->getDocidDB());
 
     return true;
 }

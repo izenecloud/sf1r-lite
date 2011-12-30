@@ -2,6 +2,7 @@
 #define DRIVER_LOG_SERVER_CONTROLLER_H_
 
 #include "DriverLogProcessor.h"
+#include "LogServerStorage.h"
 
 #include <iostream>
 #include <set>
@@ -26,12 +27,26 @@ public:
         driverCollections_ = collections;
     }
 
+    void setDrum(LogServerStorage::DrumPtr drum)
+    {
+        drum_ = drum;
+    }
+
+    void setDocidDB(LogServerStorage::KVDBPtr docidDB)
+    {
+        docidDB_ = docidDB;
+    }
+
 private:
     bool skipProcess(const std::string& collection);
 
 private:
     izenelib::driver::JsonWriter jsonWriter_;
+
     std::set<std::string> driverCollections_;
+
+    LogServerStorage::DrumPtr drum_;
+    LogServerStorage::KVDBPtr docidDB_;
 };
 
 }

@@ -1,7 +1,5 @@
 #include "RpcLogServer.h"
 
-#include <log-manager/LogServerRequest.h>
-
 namespace sf1r
 {
 
@@ -49,13 +47,11 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
 
         if (method == LogServerRequest::METHOD_UPDATE_UUID)
         {
-            msgpack::type::tuple<UUID2DocIdList> params;
+            msgpack::type::tuple<UUID2DocidList> params;
             req.params().convert(&params);
-            UUID2DocIdList uuid2DocIdList = params.get<0>();
+            UUID2DocidList uuid2DocidList = params.get<0>();
 
-            // TODO
-            std::cout << uuid2DocIdList.uuid_ << std::endl;
-            //drum_->CheckUpdate(uuid2DocIdList.uuid_, uuid2DocIdList.docIdList_);
+            onUpdateUUID(uuid2DocidList);
         }
         else
         {
@@ -69,6 +65,20 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
     catch (const std::exception& e)
     {
         req.error(std::string(e.what()));
+    }
+}
+
+void RpcLogServer::onUpdateUUID(const UUID2DocidList& uuid2DocidList)
+{
+    // xxx, drum is not thread safe
+    std::cout << uuid2DocidList.toString() << std::endl;
+    drum_->Update(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
+
+    UUID2DocidList::DocidListType::const_iterator it;
+    for (it = uuid2DocidList.docidList_.begin(); it != uuid2DocidList.docidList_.end(); it++)
+    {
+        std::cout<<*it<<" -> "<<uuid2DocidList.uuid_<<std::endl;
+        docidDB_->update(*it, uuid2DocidList.uuid_);
     }
 }
 

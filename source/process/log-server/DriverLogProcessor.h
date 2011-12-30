@@ -1,6 +1,8 @@
 #ifndef DRIVER_LOG_PROCESSOR_H_
 #define DRIVER_LOG_PROCESSOR_H_
 
+#include "LogServerStorage.h"
+
 #include <string>
 #include <iostream>
 
@@ -49,8 +51,21 @@ class Processor
 public:
     virtual ~Processor() {}
 
+    void setStorage(
+            LogServerStorage::DrumPtr drum,
+            LogServerStorage::KVDBPtr docidDB)
+    {
+        drum_ = drum;
+        docidDB_ = docidDB;
+    }
+
      /// @param request [IN][OUT]
     virtual void process(izenelib::driver::Request& request) {}
+
+protected:
+    LogServerStorage::DrumPtr drum_;
+    LogServerStorage::KVDBPtr docidDB_;
+
 };
 typedef Processor* ProcessorPtr;
 
@@ -86,6 +101,13 @@ public:
     {
         return izenelib::util::Singleton<ProcessorFactory>::get();
     }
+
+    void init(
+            LogServerStorage::DrumPtr drum,
+            LogServerStorage::KVDBPtr docidDB);
+
+    void destroy();
+
 
     ProcessorPtr getProcessor(
             const std::string& controller,
