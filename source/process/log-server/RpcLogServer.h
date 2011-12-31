@@ -3,6 +3,7 @@
 
 #include "LogServerStorage.h"
 
+#include <common/JobScheduler.h>
 #include <log-manager/LogServerRequest.h>
 
 #include <3rdparty/msgpack/rpc/server.h>
@@ -56,6 +57,7 @@ private:
     LogServerStorage::DrumPtr drum_;
     LogServerStorage::KVDBPtr docidDB_;
 
+    JobScheduler jobScheduler_;
     boost::mutex mutex_;
 };
 

@@ -76,7 +76,9 @@ void RpcLogServer::onUpdateUUID(const UUID2DocidList& uuid2DocidList)
 #ifdef LOG_SERVER_DEBUG
     std::cout << uuid2DocidList.toString() << std::endl;
 #endif
-    drum_->CheckUpdate(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
+    task_type task = boost::bind(&LogServerStorage::DrumType::CheckUpdate, drum_, uuid2DocidList.uuid_, uuid2DocidList.docidList_);
+    jobScheduler_.addTask(task);
+//  drum_->CheckUpdate(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
 
     UUID2DocidList::DocidListType::const_iterator it;
     for (it = uuid2DocidList.docidList_.begin(); it != uuid2DocidList.docidList_.end(); it++)

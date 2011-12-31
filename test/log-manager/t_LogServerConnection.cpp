@@ -39,12 +39,15 @@ void t_RpcLogServer()
     uuidReq.param_.docidList_.push_back(2222);
     uuidReq.param_.docidList_.push_back(3333);
 
-    for (int i = 0; i < 16; i++)
+    for (int i = 0; i < 4; i++)
     {
-        std::stringstream ss;
-        ss << "123456789abcdef" << hex << i;
-        uuidReq.param_.uuid_ = ss.str();
+        for (int j = 0; j < 10000; j++)
+        {
+            std::stringstream ss;
+            ss << "123456789abcdef" << hex << j;
+            uuidReq.param_.uuid_ = ss.str();
 
-        conn.asynRequest(uuidReq);
+            conn.asynRequest(uuidReq);
+        }
     }
 }
