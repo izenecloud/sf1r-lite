@@ -16,6 +16,7 @@
          for sqlite3 db: "sqlite3://./log/COBRA"
          for mysql db: "mysql://root:123456@127.0.0.1:3306/SF1R"
     -->
+    <!--LogConnection str="mysql://b5m:123456@10.10.1.105:3306/SF1R"/-->
     <LogConnection str="sqlite3://./log/COBRA"/>
 
     <!-- Network addresses of LogServerProcess:
@@ -42,6 +43,7 @@
              - The keyspace field should not include any hyphen (-). Use underline
                instead please.
     -->
+    <!--CassandraConnection str="cassandra://10.10.1.105/B5MM"/-->
     <CassandraConnection str="cassandra://180.153.140.105/B5MM"/>
 
     <BundlesDefault>

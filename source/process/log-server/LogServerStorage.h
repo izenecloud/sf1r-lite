@@ -78,12 +78,12 @@ public:
         }
     }
 
-    DrumPtr getDrum() const
+    DrumPtr& getDrum()
     {
         return drum_;
     }
 
-    KVDBPtr getDocidDB() const
+    KVDBPtr& getDocidDB()
     {
         return docidDB_;
     }
