@@ -1,5 +1,7 @@
 #include "RpcLogServer.h"
 
+#define LOG_SERVER_DEBUG 1
+
 namespace sf1r
 {
 
@@ -71,13 +73,17 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
 void RpcLogServer::onUpdateUUID(const UUID2DocidList& uuid2DocidList)
 {
     // xxx, drum is not thread safe
+#ifdef LOG_SERVER_DEBUG
     std::cout << uuid2DocidList.toString() << std::endl;
-    drum_->Update(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
+#endif
+    drum_->CheckUpdate(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
 
     UUID2DocidList::DocidListType::const_iterator it;
     for (it = uuid2DocidList.docidList_.begin(); it != uuid2DocidList.docidList_.end(); it++)
     {
-        std::cout<<*it<<" -> "<<uuid2DocidList.uuid_<<std::endl;
+#ifdef LOG_SERVER_DEBUG
+        std::cout << *it << " -> " << uuid2DocidList.uuid_ << std::endl;
+#endif
         docidDB_->update(*it, uuid2DocidList.uuid_);
     }
 }

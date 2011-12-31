@@ -30,7 +30,7 @@ SET(libs
   sf1r_search_manager
   sf1r_mining_manager
   sf1r_ranking_manager
-  
+
   ${idmlib_LIBRARIES}
   ${imllib_LIBRARIES}
   ${ilplib_LIBRARIES}
@@ -94,4 +94,3 @@ ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   SET_TARGET_PROPERTIES(t_LogServerConnection PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
-

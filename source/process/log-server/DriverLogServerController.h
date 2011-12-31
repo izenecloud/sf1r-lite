@@ -27,12 +27,12 @@ public:
         driverCollections_ = collections;
     }
 
-    void setDrum(LogServerStorage::DrumPtr drum)
+    void setDrum(LogServerStorage::DrumPtr& drum)
     {
         drum_ = drum;
     }
 
-    void setDocidDB(LogServerStorage::KVDBPtr docidDB)
+    void setDocidDB(LogServerStorage::KVDBPtr& docidDB)
     {
         docidDB_ = docidDB;
     }
