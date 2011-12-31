@@ -45,3 +45,4 @@ TAGS
 /instances/*.xml
 /log
 scripts/ScdMerger
+scripts/tmp
