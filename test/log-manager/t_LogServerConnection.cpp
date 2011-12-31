@@ -41,7 +41,7 @@ void t_RpcLogServer()
 
     for (int i = 0; i < 4; i++)
     {
-        for (int j = 0; j < 10000; j++)
+        for (int j = 0; j < 1000000; j++)
         {
             std::stringstream ss;
             ss << "123456789abcdef" << hex << j;
@@ -50,4 +50,5 @@ void t_RpcLogServer()
             conn.asynRequest(uuidReq);
         }
     }
+    conn.flushRequests();
 }

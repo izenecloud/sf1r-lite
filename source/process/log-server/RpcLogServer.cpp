@@ -2,6 +2,8 @@
 
 #include <boost/bind.hpp>
 
+//#define LOG_SERVER_DEBUG 1
+
 namespace sf1r
 {
 
@@ -88,7 +90,9 @@ void RpcLogServer::updateUUID(const UUID2DocidList& uuid2DocidList)
     // drum is not thread safe
     boost::lock_guard<boost::mutex> lock(mutex_);
 
+#ifdef LOG_SERVER_DEBUG
     std::cout << uuid2DocidList.toString() << std::endl; //xxx
+#endif
     drum_->Update(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
 
     // TODO synchronize at a proper time
@@ -100,12 +104,16 @@ void RpcLogServer::onUpdate(
         const std::vector<uint32_t>& docidList,
         const std::string& aux)
 {
+#ifdef LOG_SERVER_DEBUG
     std::cout<<"RpcLogServer::onUpDate "<<std::endl; //xxx
+#endif
 
     std::vector<uint32_t>::const_iterator it;
     for (it = docidList.begin(); it != docidList.end(); it++)
     {
+#ifdef LOG_SERVER_DEBUG
         std::cout << *it << " -> " << uuid << std::endl;
+#endif
         docidDB_->update(*it, uuid);
     }
 }

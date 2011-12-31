@@ -19,7 +19,7 @@ bool LogServerConnection::init(const std::string& host, uint16_t port)
 
     try
     {
-        msgpack::rpc::client cli(host_, port_);
+        client_.reset(new msgpack::rpc::client(host_, port_));
     }
     catch (const std::exception& e)
     {
@@ -28,6 +28,11 @@ bool LogServerConnection::init(const std::string& host, uint16_t port)
     }
 
     return true;
+}
+
+void LogServerConnection::flushRequests()
+{
+    client_->get_loop()->flush();
 }
 
 }

@@ -19,11 +19,12 @@ class DrumDispatcher
 public:
     enum OpType
     {
-        UNIQUE_KEY_CHECK,
+        UNIQUE_KEY_CHECK = 0,
         DUPLICATE_KEY_CHECK,
         UNIQUE_KEY_UPDATE,
         DUPLICATE_KEY_UPDATE,
-        UPDATE
+        UPDATE,
+        EOC
     };
 
     typedef boost::function3<
@@ -33,20 +34,10 @@ public:
             aux_t const&
     > func_t;
 
-    struct Op
-    {
-        Op(OpType type, func_t& func)
-            : type_(type)
-            , func_(func)
-        {}
-
-        OpType type_;
-        func_t func_;
-    };
-
 public:
     DrumDispatcher()
-        : defaultValue_()
+        : opList_(EOC)
+        , defaultValue_()
     {
     }
 
@@ -58,24 +49,21 @@ public:
 
     void registerOp(OpType type, func_t func)
     {
-        Op op(type, func);
-        opList_.push_back(op);
+        opList_[type].push_back(func);
     }
 
 protected:
     void dispatch(OpType type, key_t const& key, value_t const& value, aux_t const& aux) const
     {
-        for (std::size_t i = 0; i < opList_.size(); i++)
+        const std::vector<func_t>& funcList = opList_[type];
+        for (std::size_t i = 0; i < funcList.size(); i++)
         {
-            if (opList_[i].type_ == type)
-            {
-                opList_[i].func_(key, value, aux);
-            }
+            funcList[i](key, value, aux);
         }
     }
 
 protected:
-    std::vector<Op> opList_;
+    std::vector<std::vector<func_t> > opList_;
 
     value_t defaultValue_;
 };
