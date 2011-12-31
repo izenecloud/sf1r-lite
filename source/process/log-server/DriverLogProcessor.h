@@ -52,8 +52,8 @@ public:
     virtual ~Processor() {}
 
     void setStorage(
-            LogServerStorage::DrumPtr drum,
-            LogServerStorage::KVDBPtr docidDB)
+            const LogServerStorage::DrumPtr& drum,
+            const LogServerStorage::KVDBPtr& docidDB)
     {
         drum_ = drum;
         docidDB_ = docidDB;

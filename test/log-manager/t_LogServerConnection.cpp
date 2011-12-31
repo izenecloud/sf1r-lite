@@ -46,5 +46,6 @@ void t_RpcLogServer()
         uuidReq.param_.uuid_ = ss.str();
 
         conn.asynRequest(uuidReq);
+        conn.asynRequest(uuidReq);
     }
 }

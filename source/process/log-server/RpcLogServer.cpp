@@ -1,6 +1,6 @@
 #include "RpcLogServer.h"
 
-#define LOG_SERVER_DEBUG 1
+#include <boost/bind.hpp>
 
 namespace sf1r
 {
@@ -15,6 +15,19 @@ RpcLogServer::RpcLogServer(const std::string& host, uint16_t port, uint32_t thre
 RpcLogServer::~RpcLogServer()
 {
     stop();
+}
+
+bool RpcLogServer::init()
+{
+    drum_ = LogServerStorage::get()->getDrum();
+
+    LogServerStorage::get()->getDrumDispatcher().registerOp(
+            LogServerStorage::DrumDispatcherImpl::UPDATE,
+            boost::bind(&RpcLogServer::onUpdate, this, _1, _2, _3));
+
+    docidDB_ = LogServerStorage::get()->getDocidDB();
+
+    return true;
 }
 
 void RpcLogServer::start()
@@ -53,7 +66,7 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
             req.params().convert(&params);
             UUID2DocidList uuid2DocidList = params.get<0>();
 
-            onUpdateUUID(uuid2DocidList);
+            updateUUID(uuid2DocidList);
         }
         else
         {
@@ -70,21 +83,30 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
     }
 }
 
-void RpcLogServer::onUpdateUUID(const UUID2DocidList& uuid2DocidList)
+void RpcLogServer::updateUUID(const UUID2DocidList& uuid2DocidList)
 {
-    // xxx, drum is not thread safe
-#ifdef LOG_SERVER_DEBUG
-    std::cout << uuid2DocidList.toString() << std::endl;
-#endif
-    drum_->CheckUpdate(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
+    // drum is not thread safe
+    boost::lock_guard<boost::mutex> lock(mutex_);
 
-    UUID2DocidList::DocidListType::const_iterator it;
-    for (it = uuid2DocidList.docidList_.begin(); it != uuid2DocidList.docidList_.end(); it++)
+    //std::cout << uuid2DocidList.toString() << std::endl; //xxx
+    drum_->Update(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
+
+    // TODO synchronize at a proper time
+    drum_->Synchronize();
+}
+
+void RpcLogServer::onUpdate(
+        const std::string& uuid,
+        const std::vector<uint32_t>& docidList,
+        const std::string& aux)
+{
+    //std::cout<<"RpcLogServer::onUpDate "<<std::endl; //xxx
+
+    std::vector<uint32_t>::const_iterator it;
+    for (it = docidList.begin(); it != docidList.end(); it++)
     {
-#ifdef LOG_SERVER_DEBUG
-        std::cout << *it << " -> " << uuid2DocidList.uuid_ << std::endl;
-#endif
-        docidDB_->update(*it, uuid2DocidList.uuid_);
+        //std::cout << *it << " -> " << uuid << std::endl;
+        docidDB_->update(*it, uuid);
     }
 }
 

@@ -19,15 +19,7 @@ public:
 
     ~RpcLogServer();
 
-    void setDrum(const LogServerStorage::DrumPtr& drum)
-    {
-        drum_ = drum;
-    }
-
-    void setDocidDB(const LogServerStorage::KVDBPtr& docidDB)
-    {
-        docidDB_ = docidDB;
-    }
+    bool init();
 
     inline uint16_t getPort() const
     {
@@ -46,7 +38,14 @@ public:
 public:
     virtual void dispatch(msgpack::rpc::request req);
 
-    void onUpdateUUID(const UUID2DocidList& uuid2DocidList);
+    /// Asynchronous update
+    void updateUUID(const UUID2DocidList& uuid2DocidList);
+
+    /// Will be called when update is actually performed
+    void onUpdate(
+            const std::string& uuid,
+            const std::vector<uint32_t>& docidList,
+            const std::string& aux);
 
 private:
     std::string host_;

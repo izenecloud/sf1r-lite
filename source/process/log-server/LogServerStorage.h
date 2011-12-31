@@ -2,7 +2,7 @@
 #define LOG_SERVER_STORAGE_H_
 
 #include "LogServerCfg.h"
-#include "DocidDispatcher.h"
+#include "DrumDispatcher.h"
 
 #include <util/singleton.h>
 #include <am/leveldb/Table.h>
@@ -17,16 +17,28 @@ namespace sf1r
 class LogServerStorage
 {
 public:
+    // DRUM <uuid, docids>
+    typedef std::string drum_key_t;
+    typedef std::vector<uint32_t> drum_value_t;
+    typedef std::string drum_aux_t;
+
+    typedef DrumDispatcher<
+                drum_key_t,
+                drum_value_t,
+                drum_aux_t
+    > DrumDispatcherImpl;
+
     typedef izenelib::drum::Drum<
-        std::string,
-        std::vector<uint32_t>,
-        std::string,
+        drum_key_t,
+        drum_value_t,
+        drum_aux_t,
         izenelib::am::leveldb::TwoPartComparator,
         izenelib::am::leveldb::Table,
-        DocidDispatcher
+        DrumDispatcher
     > DrumType;
     typedef boost::shared_ptr<DrumType> DrumPtr;
 
+    // DB <docid, uuid>
     typedef izenelib::am::tc_hash<uint32_t, std::string> KVDBType;
     typedef boost::shared_ptr<KVDBType> KVDBPtr;
 
@@ -38,13 +50,14 @@ public:
 
     bool init()
     {
-        // initialize drum
+        // Initialize drum
         drum_.reset(
                 new DrumType(
                     LogServerCfg::get()->getDrumName(),
                     LogServerCfg::get()->getDrumNumBuckets(),
                     LogServerCfg::get()->getDrumBucketBuffElemSize(),
-                    LogServerCfg::get()->getDrumBucketByteSize()
+                    LogServerCfg::get()->getDrumBucketByteSize(),
+                    drumDispathcerImpl_
                 ));
 
         if (!drum_)
@@ -53,7 +66,7 @@ public:
             return false;
         }
 
-        // initialize <docid, uuid> DB
+        // Initialize <docid, uuid> DB
         docidDB_.reset(new KVDBType(LogServerCfg::get()->getDocidDBName()));
         if (!docidDB_ || !docidDB_->open())
         {
@@ -66,30 +79,44 @@ public:
 
     void close()
     {
-        if (drum_)
+        try
         {
-            //drum_->Synchronize();
-            drum_->Dispose();
-        }
+            if (drum_)
+            {
+                drum_->Synchronize();
+                drum_->Dispose();
+            }
 
-        if (docidDB_)
+            if (docidDB_)
+            {
+                docidDB_->close();
+            }
+        }
+        catch (const std::exception& e)
         {
-            docidDB_->close();
+            std::cout << "LogServerStorage close: " <<e.what()<< std::endl;
         }
     }
 
-    DrumPtr& getDrum()
+    DrumDispatcherImpl& getDrumDispatcher()
+    {
+        return drumDispathcerImpl_;
+    }
+
+    const DrumPtr& getDrum()
     {
         return drum_;
     }
 
-    KVDBPtr& getDocidDB()
+    const KVDBPtr& getDocidDB()
     {
         return docidDB_;
     }
 
 private:
+    DrumDispatcherImpl drumDispathcerImpl_;
     DrumPtr drum_;
+
     KVDBPtr docidDB_;
 };
 

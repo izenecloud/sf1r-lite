@@ -87,10 +87,8 @@ bool LogServerProcess::initRpcLogServer()
                 LogServerCfg::get()->getRpcThreadNum()
             ));
 
-    if (rpcLogServer_)
+    if (rpcLogServer_ && rpcLogServer_->init())
     {
-        rpcLogServer_->setDrum(LogServerStorage::get()->getDrum());
-        rpcLogServer_->setDocidDB(LogServerStorage::get()->getDocidDB());
         return true;
     }
 
