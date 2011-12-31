@@ -1,11 +1,12 @@
 #ifndef DRIVER_LOG_SERVER_CONTROLLER_H_
 #define DRIVER_LOG_SERVER_CONTROLLER_H_
 
-#include "DriverLogProcessor.h"
 #include "LogServerStorage.h"
 
 #include <iostream>
 #include <set>
+
+#include <common/Keys.h>
 
 #include <util/driver/Controller.h>
 #include <util/driver/writers/JsonWriter.h>
@@ -20,6 +21,8 @@ namespace sf1r
 class DriverLogServerController : public izenelib::driver::Controller
 {
 public:
+    void init();
+
     void update_cclog();
 
     void setDriverCollections(const std::set<std::string>& collections)
@@ -27,18 +30,25 @@ public:
         driverCollections_ = collections;
     }
 
-    void setDrum(const LogServerStorage::DrumPtr& drum)
-    {
-        drum_ = drum;
-    }
-
-    void setDocidDB(const LogServerStorage::KVDBPtr& docidDB)
-    {
-        docidDB_ = docidDB;
-    }
-
 private:
     bool skipProcess(const std::string& collection);
+
+    void processDocVisit(izenelib::driver::Request& request, const std::string& raw);
+
+    void processRecVisitItem(izenelib::driver::Request& request, const std::string& raw);
+
+    void processRecPurchaseItem(izenelib::driver::Request& request, const std::string& raw);
+
+    void onUniqueKeyCheck(
+            const std::string& uuid,
+            const std::vector<uint32_t>& docidList,
+            const std::string& aux);
+
+    void onDuplicateKeyCheck(
+            const std::string& uuid,
+            const std::vector<uint32_t>& docidList,
+            const std::string& aux);
+
 
 private:
     izenelib::driver::JsonWriter jsonWriter_;

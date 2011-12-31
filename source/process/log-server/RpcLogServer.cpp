@@ -88,11 +88,11 @@ void RpcLogServer::updateUUID(const UUID2DocidList& uuid2DocidList)
     // drum is not thread safe
     boost::lock_guard<boost::mutex> lock(mutex_);
 
-    //std::cout << uuid2DocidList.toString() << std::endl; //xxx
+    std::cout << uuid2DocidList.toString() << std::endl; //xxx
     drum_->Update(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
 
     // TODO synchronize at a proper time
-    drum_->Synchronize();
+    //drum_->Synchronize();
 }
 
 void RpcLogServer::onUpdate(
@@ -100,12 +100,12 @@ void RpcLogServer::onUpdate(
         const std::vector<uint32_t>& docidList,
         const std::string& aux)
 {
-    //std::cout<<"RpcLogServer::onUpDate "<<std::endl; //xxx
+    std::cout<<"RpcLogServer::onUpDate "<<std::endl; //xxx
 
     std::vector<uint32_t>::const_iterator it;
     for (it = docidList.begin(); it != docidList.end(); it++)
     {
-        //std::cout << *it << " -> " << uuid << std::endl;
+        std::cout << *it << " -> " << uuid << std::endl;
         docidDB_->update(*it, uuid);
     }
 }
