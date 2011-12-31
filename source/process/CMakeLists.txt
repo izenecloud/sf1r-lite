@@ -94,6 +94,19 @@ TARGET_LINK_LIBRARIES(CobraProcess
   ${Thrift_LIBS}
 )
 
+FIND_PACKAGE(izenelib REQUIRED COMPONENTS
+  febird
+  izene_util
+  luxio
+  leveldb
+  json
+  am
+  lzo
+  msgpack
+  zookeeper
+  )
+
+
 TARGET_LINK_LIBRARIES(LogServerProcess
   sf1r_common
   ${izenelib_LIBRARIES}
