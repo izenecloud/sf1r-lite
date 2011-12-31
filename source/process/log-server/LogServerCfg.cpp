@@ -161,7 +161,7 @@ void LogServerCfg::parseStorageCfg(properties& props)
         throw std::runtime_error("Log Server Configuration missing proptery: storage.drum.name");
     }
 
-    drum_name_ = base_dir_ + "/" + drum_name_; // drum_base_dir
+    drum_name_ = base_dir_ + "/" + drum_name_;
     if (!bfs::exists(drum_name_))
     {
         bfs::create_directories(drum_name_);

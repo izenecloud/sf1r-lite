@@ -40,7 +40,7 @@ FILE(GLOB cobra_process_SRC
 
 FILE(GLOB log_server_process_SRC
   "LogServer*.cpp"
-  "common/ProcessOptions.cpp"  
+  "common/ProcessOptions.cpp"
   "common/OnSignal.cpp"
   ${log_server_SRC}
   ${CMAKE_SOURCE_DIR}/core/log-manager/LogServerRequest.cpp
@@ -94,7 +94,21 @@ TARGET_LINK_LIBRARIES(CobraProcess
   ${Thrift_LIBS}
 )
 
+FIND_PACKAGE(izenelib REQUIRED COMPONENTS
+  febird
+  izene_util
+  luxio
+  leveldb
+  json
+  am
+  lzo
+  msgpack
+  zookeeper
+  )
+
+
 TARGET_LINK_LIBRARIES(LogServerProcess
+  sf1r_common
   ${izenelib_LIBRARIES}
 
   #external
