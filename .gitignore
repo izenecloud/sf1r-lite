@@ -9,6 +9,7 @@
 *.jar
 *.class
 *.vim
+*.kate-swp
 tags
 /build
 /source/cmake

@@ -6,7 +6,7 @@
 
 #include <util/singleton.h>
 #include <am/leveldb/Table.h>
-#include <am/tokyo_cabinet/tc_hash.h>
+#include <am/tokyo_cabinet/tc_fixdb.h>
 #include <3rdparty/am/drum/drum.hpp>
 
 #include <boost/shared_ptr.hpp>
@@ -39,7 +39,7 @@ public:
     typedef boost::shared_ptr<DrumType> DrumPtr;
 
     // DB <docid, uuid>
-    typedef izenelib::am::tc_hash<uint32_t, std::string> KVDBType;
+    typedef izenelib::am::tc_fixdb<std::string> KVDBType;
     typedef boost::shared_ptr<KVDBType> KVDBPtr;
 
 public:
