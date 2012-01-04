@@ -9,6 +9,7 @@
 *.jar
 *.class
 *.vim
+*.kate-swp
 tags
 /build
 /source/cmake
@@ -45,3 +46,4 @@ TAGS
 /instances/*.xml
 /log
 scripts/ScdMerger
+scripts/tmp

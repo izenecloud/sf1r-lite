@@ -23,6 +23,7 @@ struct PMConfig
     std::string title_property_name;
     std::string category_property_name;
     std::string city_property_name;
+    std::string manmade_property_name;
     std::string backup_path;
     std::string uuid_map_path;
     std::vector<std::string> group_property_names;
@@ -40,6 +41,7 @@ struct PMConfig
         , title_property_name("Title")
         , category_property_name("Category")
         , city_property_name("City")
+        , manmade_property_name("manmade")
     {
     }
 };
