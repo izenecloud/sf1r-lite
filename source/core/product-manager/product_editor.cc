@@ -275,6 +275,7 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
     data_source_->Flush();
     uint32_t itemcount = util_.GetUuidDf(uuid);
     util_.SetItemCount(new_doc, itemcount);
+    util_.SetManmade(new_doc); 
 #ifdef PM_EDIT_INFO
     LOG(INFO)<<"Output : "<<type<<" , "<<uuid<<" , itemcount: "<<itemcount<<std::endl;
 #endif
@@ -389,6 +390,7 @@ bool ProductEditor::RemoveFromGroup(const izenelib::util::UString& uuid, const s
         origin_doc.property(config_.price_property_name) = price.ToUString();
         uint32_t itemcount = same_docid_list.size();
         util_.SetItemCount(origin_doc, itemcount);
+        util_.SetManmade(origin_doc); 
 #ifdef PM_EDIT_INFO
         LOG(INFO)<<"Output : "<<2<<" , "<<uuid<<" , itemcount: "<<itemcount<<std::endl;
 #endif

@@ -87,6 +87,12 @@ public:
     {
         doc.property(config_.itemcount_property_name) = izenelib::util::UString(boost::lexical_cast<std::string>(count), izenelib::util::UString::UTF_8);
     }
+
+    void SetManmade(PMDocumentType& doc)
+    {
+        doc.property(config_.manmade_property_name) = izenelib::util::UString("1", izenelib::util::UString::UTF_8);
+
+    }
     
     uint32_t GetUuidDf(const izenelib::util::UString& uuid)
     {
