@@ -1,6 +1,6 @@
 #include "property_diversity_reranker.h"
-#include "group_manager.h"
 
+#include <search-manager/SearchManager.h>
 #include <mining-manager/group-label-logger/GroupLabelLogger.h>
 #include <util/ustring/UString.h>
 #include <util/ClockTimer.h>
@@ -43,13 +43,29 @@ void PropertyDiversityReranker::rerank(
     PropValueTable::pvid_t labelId = 0;
     izenelib::util::ClockTimer timer;
 
-    if(groupManager_ && groupLabelLogger_ && !boostingProperty_.empty())
+    if(groupManager_ && !boostingProperty_.empty())
     {
-        std::vector<PropValueTable::pvid_t> pvIdVec;
-        std::vector<int> freqVec;
-        groupLabelLogger_->getFreqLabel(query, 1, pvIdVec, freqVec);
+        if (groupLabelLogger_)
+        {
+            std::vector<PropValueTable::pvid_t> pvIdVec;
+            std::vector<int> freqVec;
+            groupLabelLogger_->getFreqLabel(query, 1, pvIdVec, freqVec);
 
-        if(!pvIdVec.empty() && (labelId = pvIdVec[0]))
+            if(!pvIdVec.empty())
+            {
+                labelId = pvIdVec[0];
+            }
+        }
+
+        if (!labelId && !boostingPolicyProperty_.empty())
+        {
+            if (initLabelValueCounters_())
+            {
+                labelId = getBoostLabelIdByPolicy_(docIdList);
+            }
+        }
+
+        if(labelId)
         {
             pvTable = groupManager_->getPropValueTable(boostingProperty_);
             if (pvTable)
@@ -125,6 +141,90 @@ void PropertyDiversityReranker::rerank(
     }
 
     LOG(INFO) << "PropertyDiversityReranker::rerank() costs " << timer.elapsed() << " seconds";
+}
+
+bool PropertyDiversityReranker::initLabelValueCounters_()
+{
+    if (!labelValueCounters_.empty())
+        return true;
+
+    if (groupManager_ && !boostingProperty_.empty())
+    {
+        const PropValueTable* pvTable = NULL;
+        pvTable = groupManager_->getPropValueTable(boostingProperty_);
+        if (pvTable)
+        {
+            const PropValueTable::ValueIdList& parentIdList = pvTable->parentIdList();
+            for (PropValueTable::pvid_t pvid = 0; pvid < parentIdList.size(); pvid++)
+            {
+                // get first level labels
+                if (parentIdList[pvid] == 0)
+                {
+                    LabelValueCounter counter(pvid);
+                    labelValueCounters_.push_back(counter);
+                }
+            }
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+PropValueTable::pvid_t
+PropertyDiversityReranker::getBoostLabelIdByPolicy_(
+        std::vector<unsigned int>& docIdList)
+{
+    // labelId with maximum average value
+    PropValueTable::pvid_t maxLabelId = 0;
+
+    if (groupManager_ && !searchManager_.expired())
+    {
+        const PropValueTable* pvTable = NULL;
+        pvTable = groupManager_->getPropValueTable(boostingProperty_);
+
+        boost::shared_ptr<SearchManager> srcSearchManager = searchManager_.lock();
+        shared_ptr<NumericPropertyTable>
+        propertyData(srcSearchManager->createPropertyTable(boostingPolicyProperty_));
+
+        if (pvTable && propertyData)
+        {
+            // count label value
+            std::size_t numDoc = docIdList.size();
+            std::size_t numLabel = labelValueCounters_.size();
+            double value = 0;
+            for(std::size_t i = 0; i < numDoc; ++i)
+            {
+                for (std::size_t j = 0; j < numLabel; ++j)
+                {
+                    if (pvTable->testDoc(docIdList[i], labelValueCounters_[j].labelId_))
+                    {
+                        if (propertyData->convertPropertyValue(docIdList[i], value))
+                        {
+                            labelValueCounters_[j].totalvalue_ += value;
+                            labelValueCounters_[j].cnt_ ++;
+                        }
+                    }
+                }
+            }
+
+            // get maximum average value
+            double maxAvgValue = 0;
+            for (std::size_t j = 0; j < numLabel; ++j)
+            {
+                LabelValueCounter& counter = labelValueCounters_[j];
+                counter.compute();
+                if (counter.avgValue_ > maxAvgValue)
+                {
+                    maxLabelId = counter.labelId_;
+                    maxAvgValue = counter.avgValue_;
+                }
+            }
+        }
+    }
+
+    return maxLabelId;
 }
 
 void PropertyDiversityReranker::rerankImpl_(

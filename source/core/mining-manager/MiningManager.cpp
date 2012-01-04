@@ -395,6 +395,7 @@ bool MiningManager::open()
             groupReranker_->setBoostingPolicyProperty(boostingPolicyProperty);
             groupReranker_->setGroupLabelLogger(groupLabelLoggerMap_[boostingProperty]);
             groupReranker_->setCTRManager(ctrManager_);
+            groupReranker_->setSearchManager(searchManager_);
             searchManager_->set_reranker(boost::bind(&faceted::PropertyDiversityReranker::rerank, groupReranker_, _1, _2, _3));
         }
 

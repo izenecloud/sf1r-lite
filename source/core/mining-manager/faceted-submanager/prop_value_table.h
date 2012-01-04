@@ -70,6 +70,10 @@ public:
         return valueIdTable_;
     }
 
+    const ValueIdList& parentIdList() const {
+        return parentIdVec_;
+    }
+
     const izenelib::util::UString& propValueStr(pvid_t pvId) const {
         return propStrVec_[pvId];
     }

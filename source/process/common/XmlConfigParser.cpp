@@ -1598,10 +1598,11 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 const std::set<PropertyConfig, PropertyComp>& indexSchema = collectionMeta.indexBundleConfig_->schema_;
                 std::set<PropertyConfig, PropertyComp>::const_iterator propIt = indexSchema.find(p);
                 if (propIt == indexSchema.end()
-                        || !propIt->isIndex() || !propIt->getIsFilter())
+                        || !propIt->isIndex() || !propIt->getIsFilter()
+                        || !propIt->isNumericType())
                 {
                     throw XmlConfigParserException("<BoostingExtraPolicy> ["+property_name+"] in <Rerank> "
-                            "is not a indexed or filterable property.");
+                            "is not a indexed or filterable numeric property.");
                 }
                 mining_schema.prop_rerank_property.boostingPolicyPropName = property_name;
             }

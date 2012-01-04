@@ -196,6 +196,14 @@ public:
         return propertyType_;
     }
 
+    bool isNumericType() const
+    {
+        return (propertyType_ == INT_PROPERTY_TYPE
+                || propertyType_ == UNSIGNED_INT_PROPERTY_TYPE
+                || propertyType_ == FLOAT_PROPERTY_TYPE
+                || propertyType_ == DOUBLE_PROPERTY_TYPE);
+    }
+
     /**
      * @brief Sets a boolean value of whether ths property is  indexed or not
      *
