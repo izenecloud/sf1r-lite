@@ -98,7 +98,7 @@ ENDMACRO(INSTALL_RELATED_LIBRARIES)
 ####
 SET(ENV_ONLY_PACKAGE_SF1 $ENV{ONLY_PACKAGE_SF1})
 IF(NOT ENV_ONLY_PACKAGE_SF1)
-  INSTALL_RELATED_LIBRARIES(${Boost_LIBRARIES})
+#  INSTALL_RELATED_LIBRARIES(${Boost_LIBRARIES})
   INSTALL_RELATED_LIBRARIES(${izenelib_LIBRARIES})
   INSTALL_RELATED_LIBRARIES(${ilplib_LIBRARIES})
   INSTALL_RELATED_LIBRARIES(${imllib_LIBRARIES})
@@ -120,6 +120,22 @@ IF(NOT ENV_ONLY_PACKAGE_SF1)
 
   INSTALL_RELATED_LIBRARIES(${TokyoCabinet_LIBRARIES})
   INSTALL_RELATED_LIBRARIES(${Glog_LIBRARIES})
+  INSTALL_RELATED_LIBRARIES(${MYSQL_LIBRARIES})
+  INSTALL_RELATED_LIBRARIES("/usr/lib/libboost_date_time.so.1.47.0")
+  INSTALL_RELATED_LIBRARIES("/usr/lib/libboost_filesystem.so.1.47.0")
+  INSTALL_RELATED_LIBRARIES("/usr/lib/libboost_iostreams.so.1.47.0")
+  INSTALL_RELATED_LIBRARIES("/usr/lib/libboost_program_options.so.1.47.0")
+  INSTALL_RELATED_LIBRARIES("/usr/lib/libboost_regex.so.1.47.0")
+  INSTALL_RELATED_LIBRARIES("/usr/lib/libboost_serialization.so.1.47.0")
+  INSTALL_RELATED_LIBRARIES("/usr/lib/libboost_system.so.1.47.0")
+  INSTALL_RELATED_LIBRARIES("/usr/lib/libboost_thread.so.1.47.0")
+  INSTALL_RELATED_LIBRARIES("/usr/lib/libboost_unit_test_framework.so.1.47.0")
+  INSTALL_RELATED_LIBRARIES("/usr/local/lib/libthrift.so")
+  INSTALL_RELATED_LIBRARIES("/usr/lib/libmysqlclient_r.so.16")
+  INSTALL_RELATED_LIBRARIES("/usr/lib/libmysqlclient.so.16")
+  INSTALL_RELATED_LIBRARIES("/usr/lib/libicuuc.so")
+  INSTALL_RELATED_LIBRARIES("/usr/lib/libicui18n.so")
+  INSTALL_RELATED_LIBRARIES("/usr/lib/libicudata.so")
 
   IF( USE_WISEKMA )
     INSTALL( DIRECTORY ${wisekma_KNOWLEDGE}
@@ -151,6 +167,7 @@ IF(NOT ENV_ONLY_PACKAGE_SF1)
     DESTINATION "."
     COMPONENT sf1r_packings
     REGEX ".xml.in" EXCLUDE
+    PATTERN "example.xml" EXCLUDE
     )
   INSTALL( PROGRAMS
     ${CMAKE_SOURCE_DIR}/../bin/sf1r-engine

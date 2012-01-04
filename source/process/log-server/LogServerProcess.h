@@ -4,10 +4,9 @@
 #include "LogServerCfg.h"
 #include "RpcLogServer.h"
 #include "DriverLogServer.h"
-#include "DocidDispatcher.h"
 
-#include <am/leveldb/Table.h>
-#include <3rdparty/am/drum/drum.hpp>
+#include <OnSignal.h>
+
 #include <glog/logging.h>
 
 #include <boost/scoped_ptr.hpp>
@@ -18,15 +17,6 @@ namespace sf1r
 
 class LogServerProcess
 {
-    typedef izenelib::drum::Drum<
-        std::string,
-        std::vector<std::string>,
-        std::string,
-        izenelib::am::leveldb::TwoPartComparator,
-        izenelib::am::leveldb::Table,
-        DocidDispatcher
-    > DrumType;
-
 public:
     LogServerProcess();
 
@@ -53,8 +43,6 @@ private:
 private:
     boost::scoped_ptr<RpcLogServer> rpcLogServer_;
     boost::scoped_ptr<DriverLogServer> driverLogServer_;
-
-    boost::scoped_ptr<DrumType> drum_;
 };
 
 }

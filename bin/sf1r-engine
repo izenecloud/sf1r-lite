@@ -28,7 +28,7 @@ if [ -e '../config/sf1config.xml' ]; then
         echo -n "Starting $NAME"
         ./$PNAME -F ../config --pid-file ../run/_.pid > $LOGFILE.$TIMENOW.log 2>&1 &
         S=1
-        while [ $S -le 90 ]
+        while [ $S -le 900 ]
         do
           echo -n "."; sleep 1;
           let S=S+1
@@ -50,7 +50,7 @@ if [ -e '../config/sf1config.xml' ]; then
     echo -n "Stopping $NAME"
     ps -ef|grep $PNAME|grep -v grep|awk '{print $2}'|xargs kill -2 2>/dev/null
     S=1
-    while [ $S -le 60 ]
+    while [ $S -le 90 ]
     do
       echo -n "."; sleep 1;
       let S=S+1
@@ -66,7 +66,7 @@ if [ -e '../config/sf1config.xml' ]; then
     echo -n "Stopping $NAME"
     ps -ef|grep $PNAME|grep -v grep|awk '{print $2}'|xargs kill -2 2>/dev/null
     S=1
-    while [ $S -le 60 ]
+    while [ $S -le 90 ]
     do
       echo -n "."; sleep 1;
       let S=S+1
@@ -89,7 +89,7 @@ if [ -e '../config/sf1config.xml' ]; then
     echo -n "Starting $NAME"
     ./$PNAME -F ../config --pid-file ../run/_.pid > $LOGFILE.$TIMENOW.log 2>&1 &
     S=1
-    while [ $S -le 90 ]
+    while [ $S -le 900 ]
     do
       echo -n "."; sleep 1
       let S=S+1

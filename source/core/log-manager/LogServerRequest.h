@@ -33,11 +33,11 @@ public:
     RequestDataT param_;
 };
 
-class UpdateUUIDRequest : public LogRequestRequestT<UUID2DocIdList>
+class UpdateUUIDRequest : public LogRequestRequestT<UUID2DocidList>
 {
 public:
     UpdateUUIDRequest()
-        : LogRequestRequestT<UUID2DocIdList>(METHOD_UPDATE_UUID)
+        : LogRequestRequestT<UUID2DocidList>(METHOD_UPDATE_UUID)
     {
     }
 };

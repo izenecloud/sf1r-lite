@@ -1,6 +1,8 @@
 #include <log-manager/LogServerRequest.h>
 #include <log-manager/LogServerConnection.h>
 
+#include <sstream>
+
 using namespace sf1r;
 
 void t_RpcLogServer();
@@ -24,11 +26,29 @@ void t_RpcLogServer()
     LogServerConnection& conn = LogServerConnection::instance();
     conn.init("localhost", 18811);
 
-    UUID2DocIdList uuidReqData;
-    uuidReqData.uuid_ = "123456789abcdef0";
-    conn.asynRequest(LogServerRequest::METHOD_UPDATE_UUID, uuidReqData);
+//    UUID2DocIdList uuidReqData;
+//    uuidReqData.uuid_ = "123456789abcdef0";
+//    conn.asynRequest(LogServerRequest::METHOD_UPDATE_UUID, uuidReqData);
+//
+//    UpdateUUIDRequest uuidReq;
+//    uuidReq.param_.uuid_ = "123456789abcdef1";
+//    conn.asynRequest(uuidReq);
 
     UpdateUUIDRequest uuidReq;
-    uuidReq.param_.uuid_ = "123456789abcdef1";
-    conn.asynRequest(uuidReq);
+    uuidReq.param_.docidList_.push_back(1111);
+    uuidReq.param_.docidList_.push_back(2222);
+    uuidReq.param_.docidList_.push_back(3333);
+
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 1000000; j++)
+        {
+            std::stringstream ss;
+            ss << "123456789abcdef" << hex << j;
+            uuidReq.param_.uuid_ = ss.str();
+
+            conn.asynRequest(uuidReq);
+        }
+    }
+    conn.flushRequests();
 }

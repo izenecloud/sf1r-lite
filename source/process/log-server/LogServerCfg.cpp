@@ -1,22 +1,24 @@
 #include "LogServerCfg.h"
 
-#include <util/kv2string.h>
 #include <util/string/StringUtils.h>
 
 #include <iostream>
 #include <fstream>
 
 #include <boost/tokenizer.hpp>
+#include <boost/filesystem.hpp>
+
+namespace bfs = boost::filesystem;
 
 namespace sf1r
 {
-
-typedef izenelib::util::kv2string properties;
 
 static const unsigned int DEFAULT_THREAD_NUM = 30;
 static const unsigned int DEFAULT_DRUM_NUM_BUCKETS = 64;
 static const unsigned int DEFAULT_DRUM_BUCKET_BUFF_ELEM_SIZE = 8192;
 static const unsigned int DEFAULT_DRUM_BUCKET_BYTE_SIZE = 1048576;
+
+static const char* DEFAULT_STORAGE_BASE_DIR = "log_server_storage";
 
 static const unsigned int MAX_THREAD_NUM = 1024;
 static const unsigned int MAX_DRUM_NUM_BUCKETS = 65536;
@@ -43,6 +45,12 @@ bool LogServerCfg::parseCfgFile_(const std::string& cfgFile)
 {
     try
     {
+        if (!bfs::exists(cfgFile) || !bfs::is_regular_file(cfgFile))
+        {
+            std::cerr <<"\""<<cfgFile<< "\" is not existed or not a regular file." << std::endl;
+            return false;
+        }
+
         // load configuration file
         std::ifstream cfgInput(cfgFile.c_str());
         std::string cfgString;
@@ -74,67 +82,7 @@ bool LogServerCfg::parseCfgFile_(const std::string& cfgFile)
         properties props('\n', '=');
         props.loadKvString(cfgString);
 
-        if (!props.getValue("logServer.host", host_))
-        {
-            host_ = "localhost";
-        }
-
-        if (!props.getValue("logServer.rpcPort", rpcPort_))
-        {
-            throw std::runtime_error("Log Server Configuration missing proptery: logServer.rpcPort");
-        }
-
-        if (!props.getValue("logServer.driverPort", driverPort_))
-        {
-            throw std::runtime_error("Log Server Configuration missing proptery: logServer.driverPort");
-        }
-
-        if (!props.getValue("logServer.threadNum", threadNum_))
-        {
-            threadNum_ = DEFAULT_THREAD_NUM;
-        }
-        else
-        {
-            threadNum_ = std::min(MAX_THREAD_NUM, threadNum_);
-        }
-
-        std::string collections;
-        if (props.getValue("driver.collections", collections))
-        {
-            parseDriverCollections(collections);
-        }
-
-        if (!props.getValue("drum.name", drum_name_))
-        {
-            throw std::runtime_error("Log Server Configuration missing proptery: drum.name");
-        }
-
-        if (!props.getValue("drum.num_buckets", drum_num_buckets_))
-        {
-            drum_num_buckets_ = DEFAULT_DRUM_NUM_BUCKETS;
-        }
-        else
-        {
-            drum_num_buckets_ = std::min(MAX_DRUM_NUM_BUCKETS, drum_num_buckets_);
-        }
-
-        if (!props.getValue("drum.bucket_buff_elem_size", drum_bucket_buff_elem_size_))
-        {
-            drum_bucket_buff_elem_size_ = DEFAULT_DRUM_BUCKET_BUFF_ELEM_SIZE;
-        }
-        else
-        {
-            drum_bucket_buff_elem_size_ = std::min(MAX_DRUM_BUCKET_BUFF_ELEM_SIZE, drum_bucket_buff_elem_size_);
-        }
-
-        if (!props.getValue("drum.bucket_byte_size", drum_bucket_byte_size_))
-        {
-            drum_bucket_byte_size_ = DEFAULT_DRUM_BUCKET_BYTE_SIZE;
-        }
-        else
-        {
-            drum_bucket_byte_size_ = std::min(MAX_DRUM_BUCKET_BYTE_SIZE, drum_bucket_byte_size_);
-        }
+        parseCfg(props);
     }
     catch (const std::exception& e)
     {
@@ -144,6 +92,116 @@ bool LogServerCfg::parseCfgFile_(const std::string& cfgFile)
 
     return true;
 }
+
+void LogServerCfg::parseCfg(properties& props)
+{
+    parseServerCfg(props);
+    parseStorageCfg(props);
+}
+
+void LogServerCfg::parseServerCfg(properties& props)
+{
+    if (!props.getValue("host", host_))
+    {
+        host_ = "localhost";
+    }
+
+    // rpc server
+    if (!props.getValue("rpc.port", rpcPort_))
+    {
+        throw std::runtime_error("Log Server Configuration missing proptery: rpc.port");
+    }
+
+    if (!props.getValue("rpc.thread_num", rpcThreadNum_))
+    {
+        rpcThreadNum_ = DEFAULT_THREAD_NUM;
+    }
+    else
+    {
+        rpcThreadNum_ = std::min(MAX_THREAD_NUM, rpcThreadNum_);
+    }
+
+    // driver server
+    if (!props.getValue("driver.port", driverPort_))
+    {
+        throw std::runtime_error("Log Server Configuration missing proptery: driver.port");
+    }
+
+    if (!props.getValue("driver.thread_num", driverThreadNum_))
+    {
+        driverThreadNum_ = DEFAULT_THREAD_NUM;
+    }
+    else
+    {
+        driverThreadNum_ = std::min(MAX_THREAD_NUM, driverThreadNum_);
+    }
+
+    std::string collections;
+    if (props.getValue("driver.collections", collections))
+    {
+        parseDriverCollections(collections);
+    }
+}
+
+void LogServerCfg::parseStorageCfg(properties& props)
+{
+    // base
+    if (!props.getValue("storage.base_dir", base_dir_))
+    {
+        base_dir_ = DEFAULT_STORAGE_BASE_DIR;
+    }
+    if (!bfs::exists(base_dir_))
+    {
+        bfs::create_directories(base_dir_);
+    }
+
+    // drum
+    if (!props.getValue("storage.drum.name", drum_name_))
+    {
+        throw std::runtime_error("Log Server Configuration missing proptery: storage.drum.name");
+    }
+
+    drum_name_ = base_dir_ + "/" + drum_name_;
+    if (!bfs::exists(drum_name_))
+    {
+        bfs::create_directories(drum_name_);
+    }
+
+    if (!props.getValue("storage.drum.num_buckets", drum_num_buckets_))
+    {
+        drum_num_buckets_ = DEFAULT_DRUM_NUM_BUCKETS;
+    }
+    else
+    {
+        drum_num_buckets_ = std::min(MAX_DRUM_NUM_BUCKETS, drum_num_buckets_);
+    }
+
+    if (!props.getValue("storage.drum.bucket_buff_elem_size", drum_bucket_buff_elem_size_))
+    {
+        drum_bucket_buff_elem_size_ = DEFAULT_DRUM_BUCKET_BUFF_ELEM_SIZE;
+    }
+    else
+    {
+        drum_bucket_buff_elem_size_ = std::min(MAX_DRUM_BUCKET_BUFF_ELEM_SIZE, drum_bucket_buff_elem_size_);
+    }
+
+    if (!props.getValue("storage.drum.bucket_byte_size", drum_bucket_byte_size_))
+    {
+        drum_bucket_byte_size_ = DEFAULT_DRUM_BUCKET_BYTE_SIZE;
+    }
+    else
+    {
+        drum_bucket_byte_size_ = std::min(MAX_DRUM_BUCKET_BYTE_SIZE, drum_bucket_byte_size_);
+    }
+
+    // kv DB for docid to uuid
+    if (!props.getValue("storage.docid_db.name", docid_db_name_))
+    {
+        throw std::runtime_error("Log Server Configuration missing proptery: storage.docid_db.name");
+    }
+    docid_db_name_ = base_dir_ + "/" + docid_db_name_;
+}
+
 
 void LogServerCfg::parseDriverCollections(const std::string& collections)
 {
@@ -155,7 +213,6 @@ void LogServerCfg::parseDriverCollections(const std::string& collections)
     {
         driverCollections_.insert(*it);
     }
-
 }
 
 }

@@ -920,8 +920,9 @@ bool IndexWorker::prepareDocument_(
             // update
             if (!insert)
             {
-                rType = checkRtype_(doc, rTypeFieldValue);
-                if (rType && rTypeFieldValue.empty())
+                bool isUpdate = false;
+                rType = checkRtype_(doc, rTypeFieldValue, isUpdate);
+                if (rType && !isUpdate)
                 {
                     //LOG(WARNING) << "skip updating SCD DOC " << fieldValue << ", as none of its property values is changed";
                     return false;
@@ -1192,27 +1193,32 @@ bool IndexWorker::prepareIndexDocument_(
                             if (checkSeparatorType_(propertyValueU, encoding, '-'))
                             {
                                 split_int(propertyValueU, multiProps, encoding,'-');
+                                indexerPropertyConfig.setIsMultiValue(true);
+                                indexDocument.insertProperty(indexerPropertyConfig, multiProps);
                             }
                             else if (checkSeparatorType_(propertyValueU, encoding, '~'))
                             {
                                 split_int(propertyValueU, multiProps, encoding,'~');
+                                indexerPropertyConfig.setIsMultiValue(true);
+                                indexDocument.insertProperty(indexerPropertyConfig, multiProps);
                             }
                             else if (checkSeparatorType_(propertyValueU, encoding, ','))
                             {
                                 split_int(propertyValueU, multiProps, encoding,',');
+                                indexerPropertyConfig.setIsMultiValue(true);
+                                indexDocument.insertProperty(indexerPropertyConfig, multiProps);
                             }
                             else
                             {
                                 try
                                 {
                                     value = (int64_t)(boost::lexical_cast< float >(str));
+                                    indexDocument.insertProperty(indexerPropertyConfig, value);
                                 }catch (const boost::bad_lexical_cast &)
                                 {
                                     //LOG(ERROR) << "Wrong format of number value. DocId " << docId <<" Property "<<fieldStr<< " Value" << str;
                                 }
                             }
-                            indexerPropertyConfig.setIsMultiValue(true);
-                            indexDocument.insertProperty(indexerPropertyConfig, multiProps);
                         }
                     }
                 }
@@ -1421,7 +1427,8 @@ bool IndexWorker::preparePartialDocument_(
 
 bool IndexWorker::checkRtype_(
     SCDDoc& doc,
-    std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue
+    std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
+    bool& isUpdate
 )
 {
     //R-type check
@@ -1483,6 +1490,12 @@ bool IndexWorker::checkRtype_(
                 if (iter->isIndex() && iter->getIsFilter() && !iter->isAnalyzed())
                 {
                     rTypeFieldValue[iter->getName()] = std::make_pair(iter->getType(),newPropertyValue);
+                    isUpdate = true;
+                }
+                else if(!iter->isIndex())
+                {
+                    isUpdate = true;
+                    continue;
                 }
                 else
                 {
