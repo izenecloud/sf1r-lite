@@ -40,12 +40,12 @@ private:
     void processRecPurchaseItem(izenelib::driver::Request& request, const std::string& raw);
 
     void onUniqueKeyCheck(
-            const std::string& uuid,
+            const uint128_t& uuid,
             const std::vector<uint32_t>& docidList,
             const std::string& aux);
 
     void onDuplicateKeyCheck(
-            const std::string& uuid,
+            const uint128_t& uuid,
             const std::vector<uint32_t>& docidList,
             const std::string& aux);
 

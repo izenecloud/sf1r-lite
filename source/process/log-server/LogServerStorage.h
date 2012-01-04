@@ -18,7 +18,7 @@ class LogServerStorage
 {
 public:
     // DRUM <uuid, docids>
-    typedef std::string drum_key_t;
+    typedef uint128_t drum_key_t;
     typedef std::vector<uint32_t> drum_value_t;
     typedef std::string drum_aux_t;
 
@@ -39,7 +39,7 @@ public:
     typedef boost::shared_ptr<DrumType> DrumPtr;
 
     // DB <docid, uuid>
-    typedef izenelib::am::tc_fixdb<std::string> KVDBType;
+    typedef izenelib::am::tc_fixdb<drum_key_t> KVDBType;
     typedef boost::shared_ptr<KVDBType> KVDBPtr;
 
 public:

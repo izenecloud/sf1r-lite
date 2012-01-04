@@ -284,7 +284,22 @@ bool Utilities::convertPropertyDataType(const std::string& property_name, const 
     {
         return false;
     }
-    
+}
+
+std::string Utilities::uint128ToHexString(const uint128_t& val)
+{
+    std::ostringstream oss;
+
+    oss << hex << (uint64_t) (val >> 64) << (uint64_t) val;
+    return oss.str();
+}
+
+uint128_t Utilities::hexStringToUint128(const std::string& str)
+{
+    unsigned long long high, low;
+
+    sscanf(str.c_str(), "%016llX%016llX", &high, &low);
+    return (uint128_t) high << 64 | (uint128_t) low;
 }
 
 }

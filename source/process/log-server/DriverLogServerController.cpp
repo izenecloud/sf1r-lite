@@ -1,5 +1,7 @@
 #include "DriverLogServerController.h"
 
+#include <common/Utilities.h>
+
 
 namespace sf1r
 {
@@ -79,7 +81,7 @@ bool DriverLogServerController::skipProcess(const std::string& collection)
 {
     if (driverCollections_.find(collection) == driverCollections_.end())
     {
-        std::cout<<"skip "<<collection<<std::endl;
+        std::cout << "skip " << collection << std::endl;
         return true;
     }
 
@@ -103,7 +105,7 @@ bool DriverLogServerController::skipProcess(const std::string& collection)
 void DriverLogServerController::processDocVisit(izenelib::driver::Request& request, const std::string& raw)
 {
     //std::cout<<"DocVisitProcessor "<<asString(request[Keys::resource][Keys::DOCID])<<std::endl;
-    drum_->Check(asString(request[Keys::resource][Keys::DOCID]), raw);
+    drum_->Check(Utilities::hexStringToUint128(asString(request[Keys::resource][Keys::DOCID])), raw);
 }
 
 /**
@@ -127,7 +129,7 @@ void DriverLogServerController::processDocVisit(izenelib::driver::Request& reque
 void DriverLogServerController::processRecVisitItem(izenelib::driver::Request& request, const std::string& raw)
 {
     //std::cout<<"RecVisitItemProcessor "<<asString(request[Keys::resource][Keys::ITEMID])<<std::endl;
-    drum_->Check(asString(request[Keys::resource][Keys::ITEMID]), raw);
+    drum_->Check(Utilities::hexStringToUint128(asString(request[Keys::resource][Keys::ITEMID])), raw);
 }
 
 /**
@@ -166,27 +168,26 @@ void DriverLogServerController::processRecPurchaseItem(izenelib::driver::Request
 
         std::string itemIdStr = asString(itemValue[Keys::ITEMID]);
         //std::cout<<itemIdStr<<"  ";
-        drum_->Check(itemIdStr, raw);
+        drum_->Check(Utilities::hexStringToUint128(itemIdStr), raw);
     }
 
     //std::cout<<std::endl;
 }
 
 void DriverLogServerController::onUniqueKeyCheck(
-        const std::string& uuid,
+        const uint128_t& uuid,
         const std::vector<uint32_t>& docidList,
         const std::string& aux)
 {
-    std::cout << "onUniqueKeyCheck" << uuid << " --- " << aux << std::endl;
+    std::cout << "onUniqueKeyCheck" << Utilities::uint128ToHexString(uuid) << " --- " << aux << std::endl;
 }
 
 void DriverLogServerController::onDuplicateKeyCheck(
-        const std::string& uuid,
+        const uint128_t& uuid,
         const std::vector<uint32_t>& docidList,
         const std::string& aux)
 {
-    std::cout << "onDuplicateKeyCheck" << uuid << " --- " << aux << std::endl;
+    std::cout << "onDuplicateKeyCheck" << Utilities::uint128ToHexString(uuid) << " --- " << aux << std::endl;
 }
-
 
 }
