@@ -1589,6 +1589,22 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 }
                 mining_schema.prop_rerank_property.boostingPropName = property_name;
             }
+            Iterator<Element> bpit("BoostingExtraPolicy");
+            for (bpit = bpit.begin(task_node); bpit != bpit.end(); bpit++)
+            {
+                getAttribute(bpit.Get(), "name", property_name);
+                PropertyConfig p;
+                p.setName(property_name);
+                const std::set<PropertyConfig, PropertyComp>& indexSchema = collectionMeta.indexBundleConfig_->schema_;
+                std::set<PropertyConfig, PropertyComp>::const_iterator propIt = indexSchema.find(p);
+                if (propIt == indexSchema.end()
+                        || !propIt->isIndex() || !propIt->getIsFilter())
+                {
+                    throw XmlConfigParserException("<BoostingExtraPolicy> ["+property_name+"] in <Rerank> "
+                            "is not a indexed or filterable property.");
+                }
+                mining_schema.prop_rerank_property.boostingPolicyPropName = property_name;
+            }
         }
 
         task_node = getUniqChildElement(mining_schema_node, "TDT", false);

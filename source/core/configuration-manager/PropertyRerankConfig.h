@@ -17,6 +17,8 @@ public:
     std::string propName;
     /// boosting property name
     std::string boostingPropName;
+    /// property name for extra policy of boosting
+    std::string boostingPolicyPropName;
 private:
     friend class boost::serialization::access;
 

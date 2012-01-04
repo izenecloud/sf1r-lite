@@ -37,6 +37,11 @@ public:
 
     ~PropertyDiversityReranker();
 
+    void setBoostingPolicyProperty(const std::string& property)
+    {
+        boostingPolicyProperty_ = property;
+    }
+
     void setGroupLabelLogger(GroupLabelLogger* logger)
     {
         groupLabelLogger_ = logger;
@@ -89,6 +94,7 @@ private:
     const GroupManager* groupManager_;
     std::string diversityProperty_;
     std::string boostingProperty_;
+    std::string boostingPolicyProperty_;
 
     GroupLabelLogger* groupLabelLogger_;
 
