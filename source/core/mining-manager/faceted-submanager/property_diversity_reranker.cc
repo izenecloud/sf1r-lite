@@ -146,7 +146,14 @@ void PropertyDiversityReranker::rerank(
 bool PropertyDiversityReranker::initLabelValueCounters_()
 {
     if (!labelValueCounters_.empty())
+    {
+        std::vector<LabelValueCounter>::iterator it;
+        for (it = labelValueCounters_.begin(); it != labelValueCounters_.end(); it++)
+        {
+            it->init();
+        }
         return true;
+    }
 
     if (groupManager_ && !boostingProperty_.empty())
     {
