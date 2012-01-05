@@ -10,6 +10,6 @@ scdsSF1Dir=/opt/sf1/apps/sf1r/bin/collection/tuanm/scd/index/
 #调用ruby脚本进行合并SCD
 rm -f ${scdsMergeDir}*
 rm -f ${scdsIndexDir}*
-exec "$home/tuan_scd_merger.sh" ${scdsFinalDir} ${scdsMergeDir}
+bash "$home/tuan_scd_merger.sh" ${scdsFinalDir} ${scdsMergeDir}
 #调用ruby脚本处理分类
 ruby "$home/tuan_processor.rb" ${scdsMergeDir}B*.SCD ${scdsIndexDir}
