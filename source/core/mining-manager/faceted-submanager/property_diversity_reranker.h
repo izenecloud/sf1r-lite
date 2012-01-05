@@ -12,7 +12,9 @@
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/weak_ptr.hpp>
 
+#include "group_manager.h"
 #include "ctr_manager.h"
 
 #include <common/inttypes.h>
@@ -20,9 +22,40 @@
 namespace sf1r
 {
 class GroupLabelLogger;
+class SearchManager;
 }
 
 NS_FACETED_BEGIN
+
+struct LabelValueCounter
+{
+    LabelValueCounter(const PropValueTable::pvid_t& pvid)
+    : labelId_(pvid)
+    , totalvalue_(0)
+    , avgValue_(0)
+    , cnt_(0)
+    {}
+
+    void compute()
+    {
+        if (cnt_ > 0)
+        {
+            avgValue_ = totalvalue_ / cnt_;
+        }
+    }
+
+    void init()
+    {
+        totalvalue_ = 0;
+        avgValue_ = 0;
+        cnt_ = 0;
+    }
+
+    PropValueTable::pvid_t labelId_;
+    double totalvalue_;
+    double avgValue_;
+    std::size_t cnt_;
+};
 
 class GroupManager;
 
@@ -37,6 +70,11 @@ public:
 
     ~PropertyDiversityReranker();
 
+    void setBoostingPolicyProperty(const std::string& property)
+    {
+        boostingPolicyProperty_ = property;
+    }
+
     void setGroupLabelLogger(GroupLabelLogger* logger)
     {
         groupLabelLogger_ = logger;
@@ -45,6 +83,11 @@ public:
     void setCTRManager(boost::shared_ptr<CTRManager> ctrManager)
     {
         ctrManager_ = ctrManager;
+    }
+
+    void setSearchManager(boost::shared_ptr<SearchManager> searchManager)
+    {
+        searchManager_ = searchManager;
     }
 
     /**
@@ -59,6 +102,18 @@ public:
     );
 
 private:
+    /**
+     * get label value counters for first level labels
+     */
+    bool initLabelValueCounters_();
+
+    /**
+     * Get boosting label id by policy
+     * @return label id
+     */
+    PropValueTable::pvid_t getBoostLabelIdByPolicy_(
+            std::vector<unsigned int>& docIdList);
+
     /**
      * implementation for @c rerank() using below rerank methods:
      * - rerank with "property diversity"
@@ -89,9 +144,12 @@ private:
     const GroupManager* groupManager_;
     std::string diversityProperty_;
     std::string boostingProperty_;
+    std::string boostingPolicyProperty_;
+
+    std::vector<LabelValueCounter> labelValueCounters_;
 
     GroupLabelLogger* groupLabelLogger_;
-
+    boost::weak_ptr<SearchManager> searchManager_;
     boost::shared_ptr<CTRManager> ctrManager_;
 };
 

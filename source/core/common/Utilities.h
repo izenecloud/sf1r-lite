@@ -31,81 +31,58 @@ public:
     static time_t createTimeStamp(const std::string& text);
 
     template <typename T>
-    static std::string toBytes(const T& val)
-    {
-        return std::string(reinterpret_cast<const char *>(&val), sizeof(T));
-    }
-
+    static std::string toBytes(const T& val);
     template <typename T>
-    static T fromBytes(const std::string& str)
-    {
-        if (str.length() < sizeof(T))
-            return T();
+    static T fromBytes(const std::string& str);
 
-        return *(reinterpret_cast<const T *>(str.c_str()));
-    }
+    static std::string uint128ToUuid(const uint128_t& val);
+    static uint128_t uuidToUint128(const std::string& str);
 
     template <typename AssocType, typename SeqType>
-    static void getKeyList(SeqType& key_list, const AssocType& src_map)
-    {
-        key_list.reserve(key_list.size() + src_map.size());
-        for (typename AssocType::const_iterator it = src_map.begin();
-                it != src_map.end(); ++it)
-        {
-            key_list.push_back(it->first);
-        }
-    }
-
+    static void getKeyList(SeqType& key_list, const AssocType& src_map);
     template <typename AssocType, typename SeqType>
-    static void getValueList(SeqType& value_list, const AssocType& src_map)
-    {
-        value_list.reserve(value_list.size() + src_map.size());
-        for (typename AssocType::const_iterator it = src_map.begin();
-                it != src_map.end(); ++it)
-        {
-            value_list.push_back(it->second);
-        }
-    }
-
-    template <std::size_t Index, typename TupleType>
-    static bool tupleLess(const TupleType& t1, const TupleType& t2)
-    {
-        return t1.get<Index>() < t2.get<Index>();
-    }
-
-    template <std::size_t Index, typename TupleType>
-    static bool tupleGreater(const TupleType& t1, const TupleType& t2)
-    {
-        return t1.get<Index>() > t2.get<Index>();
-    }
-
-    template <std::size_t Index, typename TupleType>
-    static bool tupleLessEqual(const TupleType& t1, const TupleType& t2)
-    {
-        return t1.get<Index>() <= t2.get<Index>();
-    }
-
-    template <std::size_t Index, typename TupleType>
-    static bool tupleGreaterEqual(const TupleType& t1, const TupleType& t2)
-    {
-        return t1.get<Index>() >= t2.get<Index>();
-    }
-
-    template <std::size_t Index, typename TupleType>
-    static bool tupleEqual(const TupleType& t1, const TupleType& t2)
-    {
-        return t1.get<Index>() == t2.get<Index>();
-    }
-
-    template <std::size_t Index, typename TupleType>
-    static bool tupleNotEqual(const TupleType& t1, const TupleType& t2)
-    {
-        return t1.get<Index>() != t2.get<Index>();
-    }
+    static void getValueList(SeqType& value_list, const AssocType& src_map);
 
     static bool convertPropertyDataType(const std::string& property_name, const PropertyDataType& sf1r_type, izenelib::ir::indexmanager::PropertyType& type);
 
 };
+
+template <typename T>
+std::string Utilities::toBytes(const T& val)
+{
+    return std::string(reinterpret_cast<const char *>(&val), sizeof(T));
+}
+
+template <typename T>
+T Utilities::fromBytes(const std::string& str)
+{
+    if (str.length() < sizeof(T))
+        return T();
+
+    return *(reinterpret_cast<const T *>(str.c_str()));
+}
+
+template <typename AssocType, typename SeqType>
+void Utilities::getKeyList(SeqType& key_list, const AssocType& src_map)
+{
+    key_list.reserve(key_list.size() + src_map.size());
+    for (typename AssocType::const_iterator it = src_map.begin();
+            it != src_map.end(); ++it)
+    {
+        key_list.push_back(it->first);
+    }
+}
+
+template <typename AssocType, typename SeqType>
+void Utilities::getValueList(SeqType& value_list, const AssocType& src_map)
+{
+    value_list.reserve(value_list.size() + src_map.size());
+    for (typename AssocType::const_iterator it = src_map.begin();
+            it != src_map.end(); ++it)
+    {
+        value_list.push_back(it->second);
+    }
+}
 
 }
 

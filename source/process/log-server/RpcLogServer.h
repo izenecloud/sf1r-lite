@@ -43,7 +43,7 @@ public:
 
     /// Will be called when update is actually performed
     void onUpdate(
-            const std::string& uuid,
+            const uint128_t& uuid,
             const std::vector<uint32_t>& docidList,
             const std::string& aux);
 

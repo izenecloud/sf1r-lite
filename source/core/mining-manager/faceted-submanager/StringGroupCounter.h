@@ -35,12 +35,14 @@ public:
 private:
     /**
      * append all descendent nodes of @p pvId to @p itemList.
+     * @param childMapTable mapping from value id to child ids
      * @param itemList the nodes are appended to this list
      * @param pvId the value id of the root node to append
      * @param level the level of the root node to append
      * @param valueStr the string value of the root node
      */
     void appendGroupRep(
+        const PropValueTable::ChildMapTable& childMapTable,
         std::list<OntologyRepItem>& itemList,
         PropValueTable::pvid_t pvId,
         int level,
@@ -49,7 +51,6 @@ private:
 
 private:
     const PropValueTable& propValueTable_;
-    const std::vector<PropValueTable::PropStrMap>& childMapTable_;
 
     /** map from value id to doc count */
     std::vector<CounterType> countTable_;
@@ -61,7 +62,6 @@ private:
 template<typename CounterType>
 StringGroupCounter<CounterType>::StringGroupCounter(const PropValueTable& pvTable)
     : propValueTable_(pvTable)
-    , childMapTable_(pvTable.childMapTable())
     , countTable_(pvTable.propValueNum())
     , alloc_(recycle_)
     , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
@@ -71,7 +71,6 @@ StringGroupCounter<CounterType>::StringGroupCounter(const PropValueTable& pvTabl
 template<typename CounterType>
 StringGroupCounter<CounterType>::StringGroupCounter(const PropValueTable& pvTable, const CounterType& defaultCounter)
     : propValueTable_(pvTable)
-    , childMapTable_(pvTable.childMapTable())
     , countTable_(pvTable.propValueNum(), defaultCounter)
     , alloc_(recycle_)
     , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
@@ -81,7 +80,6 @@ StringGroupCounter<CounterType>::StringGroupCounter(const PropValueTable& pvTabl
 template<typename CounterType>
 StringGroupCounter<CounterType>::StringGroupCounter(const StringGroupCounter& groupCounter)
     : propValueTable_(groupCounter.propValueTable_)
-    , childMapTable_(groupCounter.childMapTable_)
     , countTable_(groupCounter.countTable_)
     , alloc_(recycle_)
     , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
@@ -136,6 +134,7 @@ void StringGroupCounter<SubGroupCounter>::addDoc(docid_t doc)
 
 template<typename CounterType>
 void StringGroupCounter<CounterType>::appendGroupRep(
+    const PropValueTable::ChildMapTable& childMapTable,
     std::list<OntologyRepItem>& itemList,
     PropValueTable::pvid_t pvId,
     int level,
@@ -144,20 +143,21 @@ void StringGroupCounter<CounterType>::appendGroupRep(
 {
     itemList.push_back(faceted::OntologyRepItem(level, valueStr, 0, countTable_[pvId]));
 
-    const PropValueTable::PropStrMap& propStrMap = childMapTable_[pvId];
+    const PropValueTable::PropStrMap& propStrMap = childMapTable[pvId];
     for (PropValueTable::PropStrMap::const_iterator it = propStrMap.begin();
         it != propStrMap.end(); ++it)
     {
         PropValueTable::pvid_t childId = it->second;
         if (countTable_[childId])
         {
-            appendGroupRep(itemList, childId, level+1, it->first);
+            appendGroupRep(childMapTable, itemList, childId, level+1, it->first);
         }
     }
 }
 
 template<>
 void StringGroupCounter<SubGroupCounter>::appendGroupRep(
+    const PropValueTable::ChildMapTable& childMapTable,
     std::list<OntologyRepItem>& itemList,
     PropValueTable::pvid_t pvId,
     int level,
@@ -172,14 +172,14 @@ void StringGroupCounter<SubGroupCounter>::appendGroupRep(
         subCounter.groupCounter_->getStringRep(itemList, level+1);
     }
 
-    const PropValueTable::PropStrMap& propStrMap = childMapTable_[pvId];
+    const PropValueTable::PropStrMap& propStrMap = childMapTable[pvId];
     for (PropValueTable::PropStrMap::const_iterator it = propStrMap.begin();
         it != propStrMap.end(); ++it)
     {
         PropValueTable::pvid_t childId = it->second;
         if (countTable_[childId].count_)
         {
-            appendGroupRep(itemList, childId, level+1, it->first);
+            appendGroupRep(childMapTable, itemList, childId, level+1, it->first);
         }
     }
 }
@@ -188,23 +188,29 @@ template<typename CounterType>
 void StringGroupCounter<CounterType>::getGroupRep(GroupRep& groupRep)
 {
     GroupRep::StringGroupRep& itemList = groupRep.stringGroupRep_;
-
     izenelib::util::UString propName(propValueTable_.propName(), UString::UTF_8);
+
+    PropValueTable::ScopedReadLock lock(propValueTable_.getLock());
+    const PropValueTable::ChildMapTable& childMapTable = propValueTable_.childMapTable();
+
     // start from id 0 at level 0
-    appendGroupRep(itemList, 0, 0, propName);
+    appendGroupRep(childMapTable, itemList, 0, 0, propName);
 }
 
 template<typename CounterType>
 void StringGroupCounter<CounterType>::getStringRep(GroupRep::StringGroupRep& strRep, int level) const
 {
-    const PropValueTable::PropStrMap& propStrMap = childMapTable_[0];
+    PropValueTable::ScopedReadLock lock(propValueTable_.getLock());
+    const PropValueTable::ChildMapTable& childMapTable = propValueTable_.childMapTable();
+    const PropValueTable::PropStrMap& propStrMap = childMapTable[0];
+
     for (PropValueTable::PropStrMap::const_iterator it = propStrMap.begin();
         it != propStrMap.end(); ++it)
     {
         PropValueTable::pvid_t childId = it->second;
         if (countTable_[childId])
         {
-            appendGroupRep(strRep, childId, level, it->first);
+            appendGroupRep(childMapTable, strRep, childId, level, it->first);
         }
     }
 }
@@ -212,14 +218,17 @@ void StringGroupCounter<CounterType>::getStringRep(GroupRep::StringGroupRep& str
 template<>
 void StringGroupCounter<SubGroupCounter>::getStringRep(GroupRep::StringGroupRep& strRep, int level) const
 {
-    const PropValueTable::PropStrMap& propStrMap = childMapTable_[0];
+    PropValueTable::ScopedReadLock lock(propValueTable_.getLock());
+    const PropValueTable::ChildMapTable& childMapTable = propValueTable_.childMapTable();
+    const PropValueTable::PropStrMap& propStrMap = childMapTable[0];
+
     for (PropValueTable::PropStrMap::const_iterator it = propStrMap.begin();
         it != propStrMap.end(); ++it)
     {
         PropValueTable::pvid_t childId = it->second;
         if (countTable_[childId].count_)
         {
-            appendGroupRep(strRep, childId, level, it->first);
+            appendGroupRep(childMapTable, strRep, childId, level, it->first);
         }
     }
 }

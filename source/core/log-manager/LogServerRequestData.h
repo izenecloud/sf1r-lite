@@ -1,11 +1,10 @@
 #ifndef LOG_SERVER_REQUEST_DATA_H_
 #define LOG_SERVER_REQUEST_DATA_H_
 
+#include <3rdparty/msgpack/msgpack.hpp>
+
 #include <string>
 #include <vector>
-#include <sstream>
-
-#include <3rdparty/msgpack/msgpack.hpp>
 
 namespace sf1r
 {
@@ -19,21 +18,10 @@ struct UUID2DocidList : public LogServerRequestData
 {
     typedef std::vector<uint32_t> DocidListType;
 
-    std::string uuid_;
+    uint128_t uuid_;
     DocidListType docidList_;
 
-    std::string toString() const
-    {
-        std::ostringstream oss;
-        oss << uuid_ << " ->";
-
-        for (size_t i = 0; i < docidList_.size(); i++)
-        {
-            oss << " " << docidList_[i];
-        }
-
-        return oss.str();
-    }
+    std::string toString() const;
 
     MSGPACK_DEFINE(uuid_, docidList_)
 };

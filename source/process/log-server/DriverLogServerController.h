@@ -3,13 +3,13 @@
 
 #include "LogServerStorage.h"
 
-#include <iostream>
-#include <set>
-
 #include <common/Keys.h>
 
 #include <util/driver/Controller.h>
 #include <util/driver/writers/JsonWriter.h>
+
+#include <iostream>
+#include <set>
 
 namespace sf1r
 {
@@ -40,12 +40,12 @@ private:
     void processRecPurchaseItem(izenelib::driver::Request& request, const std::string& raw);
 
     void onUniqueKeyCheck(
-            const std::string& uuid,
+            const uint128_t& uuid,
             const std::vector<uint32_t>& docidList,
             const std::string& aux);
 
     void onDuplicateKeyCheck(
-            const std::string& uuid,
+            const uint128_t& uuid,
             const std::vector<uint32_t>& docidList,
             const std::string& aux);
 

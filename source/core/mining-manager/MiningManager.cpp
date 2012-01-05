@@ -389,10 +389,13 @@ bool MiningManager::open()
         {
             const std::string& diversityProperty = mining_schema_.prop_rerank_property.propName;
             const std::string& boostingProperty = mining_schema_.prop_rerank_property.boostingPropName;
+            const std::string& boostingPolicyProperty = mining_schema_.prop_rerank_property.boostingPolicyPropName;
 
             groupReranker_ = new faceted::PropertyDiversityReranker(groupManager_, diversityProperty, boostingProperty);
+            groupReranker_->setBoostingPolicyProperty(boostingPolicyProperty);
             groupReranker_->setGroupLabelLogger(groupLabelLoggerMap_[boostingProperty]);
             groupReranker_->setCTRManager(ctrManager_);
+            groupReranker_->setSearchManager(searchManager_);
             searchManager_->set_reranker(boost::bind(&faceted::PropertyDiversityReranker::rerank, groupReranker_, _1, _2, _3));
         }
 
