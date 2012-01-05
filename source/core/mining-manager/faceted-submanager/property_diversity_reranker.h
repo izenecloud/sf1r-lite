@@ -39,7 +39,16 @@ struct LabelValueCounter
     void compute()
     {
         if (cnt_ > 0)
+        {
             avgValue_ = totalvalue_ / cnt_;
+        }
+    }
+
+    void init()
+    {
+        totalvalue_ = 0;
+        avgValue_ = 0;
+        cnt_ = 0;
     }
 
     PropValueTable::pvid_t labelId_;

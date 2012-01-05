@@ -11,16 +11,18 @@
 #define SF1R_PROP_VALUE_TABLE_H_
 
 #include <common/inttypes.h>
-#include <util/ustring/UString.h>
 #include "faceted_types.h"
 
+#include <util/ustring/UString.h>
 
 #include <boost/memory.hpp>
+#include <boost/thread.hpp>
 
 #include <vector>
 #include <string>
 #include <map>
 #include <set>
+#include <utility>
 
 NS_FACETED_BEGIN
 
@@ -49,76 +51,50 @@ public:
     typedef std::set<pvid_t, std::less<pvid_t>, stl_allocator<pvid_t> > ParentSetType;
     //typedef std::set<pvid_t> ParentSetType;
 
-    PropValueTable(
-        const std::string& dirPath,
-        const std::string& propName
-    );
+    typedef boost::shared_mutex LockType;
+    typedef boost::shared_lock<LockType> ScopedReadLock;
+    typedef boost::unique_lock<LockType> ScopedWriteLock;
+
+    PropValueTable(const std::string& dirPath, const std::string& propName);
+    PropValueTable(const PropValueTable& table);
 
     bool open();
-
     bool flush();
 
-    const string &propName() const {
-        return propName_;
-    }
+    const string &propName() const { return propName_; }
+    std::size_t docIdNum() const { return valueIdTable_.size(); }
 
-    ValueIdTable& valueIdTable() {
-        return valueIdTable_;
-    }
+    void reserveDocIdNum(std::size_t num);
+    void insertValueIdList(ValueIdList& valueIdList);
 
-    const ValueIdTable& valueIdTable() const {
-        return valueIdTable_;
-    }
-
-    const ValueIdList& parentIdList() const {
-        return parentIdVec_;
-    }
-
-    const izenelib::util::UString& propValueStr(pvid_t pvId) const {
-        return propStrVec_[pvId];
-    }
-
-    std::size_t propValueNum() const {
-        return propStrVec_.size();
-    }
-
-    const ChildMapTable& childMapTable() const {
-        return childMapTable_;
-    }
+    LockType& getLock() const { return lock_; }
 
     /**
-     * Get property value id.
+     * @attention before calling @c valueIdTable(), @c parentIdList(), or @c childMapTable(),
+     * you must call below statement for concurrent access:
+     * PropValueTable::ScopedReadLock lock(PropValueTable::getLock());
+     */
+    const ValueIdTable& valueIdTable() const { return valueIdTable_; }
+    const ValueIdList& parentIdList() const { return parentIdVec_; }
+    const ChildMapTable& childMapTable() const { return childMapTable_; }
+
+    std::size_t propValueNum() const { return propStrVec_.size(); }
+    void propValueStr(pvid_t pvId, izenelib::util::UString& ustr) const;
+
+    /**
+     * Insert property value id.
      * @param path the path of property value, from root node to leaf node
      * @exception MiningException when the new id created is overflow
      * @return value id, if @p path is not inserted before, its new id is created and returned
      */
-    pvid_t propValueId(const std::vector<izenelib::util::UString>& path);
+    pvid_t insertPropValueId(const std::vector<izenelib::util::UString>& path);
 
     /**
      * Get property value id.
      * @param path the path of property value, from root node to leaf node
      * @return value id, if @p path is not inserted before, 0 is returned
      */
-    pvid_t propValueId(const std::vector<izenelib::util::UString>& path) const {
-        pvid_t pvId = 0;
-
-        for (std::vector<izenelib::util::UString>::const_iterator pathIt = path.begin();
-            pathIt != path.end(); ++pathIt)
-        {
-            const PropStrMap& propStrMap = childMapTable_[pvId];
-            PropStrMap::const_iterator it = propStrMap.find(*pathIt);
-            if (it != propStrMap.end())
-            {
-                pvId = it->second;
-            }
-            else
-            {
-                return 0;
-            }
-        }
-
-        return pvId;
-    }
+    pvid_t propValueId(const std::vector<izenelib::util::UString>& path) const;
 
     /**
      * Whether @p docId belongs to group label of @p labelId.
@@ -135,24 +111,8 @@ public:
      * TODO When boost::memory has a TLS allocator, the tempte could be removed by 
      * assigning a ParentSetType as a member variable of class PropValueTable
      */
-    template<typename ParentSetType>
-    void parentIdSet(docid_t docId, ParentSetType& parentSet) const
-    {
-        if (docId >= valueIdTable_.size())
-            return;
-
-        const ValueIdList& valueIdList = valueIdTable_[docId];
-        for (ValueIdList::const_iterator it = valueIdList.begin();
-            it != valueIdList.end(); ++it)
-        {
-            for (pvid_t pvId = *it; pvId; pvId = parentIdVec_[pvId])
-            {
-                // stop finding parent if already inserted
-                if (parentSet.insert(pvId).second == false)
-                    break;
-            }
-        }
-    }
+    template<typename SetType>
+    void parentIdSet(docid_t docId, SetType& parentSet) const;
 
     /**
      * Given value id @p pvId, get its path from root node to leaf node.
@@ -169,10 +129,7 @@ private:
      * @param fileName file name
      * @return true for success, false for failure
      */
-    bool saveParentId_(
-        const std::string& dirPath,
-        const std::string& fileName
-    ) const;
+    bool saveParentId_(const std::string& dirPath, const std::string& fileName) const;
 
 private:
     /** directory path */
@@ -198,7 +155,30 @@ private:
     ValueIdTable valueIdTable_;
     /** the number of elements in @c valueIdTable_ saved in file */
     unsigned int saveDocIdNum_;
+
+    mutable LockType lock_;
 };
+
+template<typename SetType>
+void PropValueTable::parentIdSet(docid_t docId, SetType& parentSet) const
+{
+    if (docId >= valueIdTable_.size())
+        return;
+
+    ScopedReadLock lock(lock_);
+
+    const ValueIdList& valueIdList = valueIdTable_[docId];
+    for (ValueIdList::const_iterator it = valueIdList.begin();
+        it != valueIdList.end(); ++it)
+    {
+        for (pvid_t pvId = *it; pvId; pvId = parentIdVec_[pvId])
+        {
+            // stop finding parent if already inserted
+            if (parentSet.insert(pvId).second == false)
+                break;
+        }
+    }
+}
 
 NS_FACETED_END
 

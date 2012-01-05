@@ -77,12 +77,12 @@ bool GroupManager::processCollection()
     {
         const std::string& propName = it->first;
         PropValueTable& pvTable = it->second;
-        PropValueTable::ValueIdTable& idTable = pvTable.valueIdTable();
-        assert(! idTable.empty() && "id 0 should have been reserved in PropValueTable constructor");
 
-        const docid_t startDocId = idTable.size();
+        const docid_t startDocId = pvTable.docIdNum();
+        assert(startDocId && "docid 0 should have been reserved in PropValueTable constructor");
+
         const docid_t endDocId = documentManager_->getMaxDocId();
-        idTable.reserve(endDocId + 1);
+        pvTable.reserveDocIdNum(endDocId + 1);
 
         LOG(INFO) << "start building property: " << propName
                   << ", start doc id: " << startDocId
@@ -90,8 +90,7 @@ bool GroupManager::processCollection()
 
         for (docid_t docId = startDocId; docId <= endDocId; ++docId)
         {
-            idTable.push_back(PropValueTable::ValueIdList());
-            PropValueTable::ValueIdList& valueIdList = idTable.back();
+            PropValueTable::ValueIdList valueIdList;
 
             Document doc;
             if (documentManager_->getDocument(docId, doc))
@@ -108,7 +107,7 @@ bool GroupManager::processCollection()
                         for (std::vector<vector<izenelib::util::UString> >::const_iterator pathIt = groupPaths.begin();
                             pathIt != groupPaths.end(); ++pathIt)
                         {
-                            PropValueTable::pvid_t pvId = pvTable.propValueId(*pathIt);
+                            PropValueTable::pvid_t pvId = pvTable.insertPropValueId(*pathIt);
                             valueIdList.push_back(pvId);
                         }
                     }
@@ -119,6 +118,7 @@ bool GroupManager::processCollection()
                     }
                 }
             }
+            pvTable.insertValueIdList(valueIdList);
 
             if (docId % 100000 == 0)
             {
