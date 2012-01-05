@@ -39,7 +39,7 @@ void StringGroupCounter::getGroupRep(GroupRep& groupRep)
     PropValueTable::ReadChildMapTable readTable = propValueTable_.childMapTable();
 
     // start from id 0 at level 0
-    appendGroupRep(readTable.second, itemList, 0, 0, propName);
+    appendGroupRep(*readTable.second, itemList, 0, 0, propName);
 }
 
 void StringGroupCounter::appendGroupRep(

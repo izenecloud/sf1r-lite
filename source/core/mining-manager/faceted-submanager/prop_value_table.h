@@ -22,6 +22,7 @@
 #include <string>
 #include <map>
 #include <set>
+#include <utility>
 
 NS_FACETED_BEGIN
 
@@ -66,17 +67,17 @@ public:
     void reserveDocIdNum(std::size_t num);
     void insertValueIdList(ValueIdList& valueIdList);
 
-    typedef std::pair<ScopedReadLock, const ValueIdTable&> ReadValueIdTable;
-    ReadValueIdTable valueIdTable() const { return ReadValueIdTable(ScopedReadLock(lock_), valueIdTable_); }
+    typedef std::pair<ScopedReadLock, const ValueIdTable*> ReadValueIdTable;
+    ReadValueIdTable valueIdTable() const { return ReadValueIdTable(ScopedReadLock(lock_), &valueIdTable_); }
 
-    typedef std::pair<ScopedReadLock, const ValueIdList&> ReadParentIdList;
-    ReadParentIdList parentIdList() const { return ReadParentIdList(ScopedReadLock(lock_), parentIdVec_); }
+    typedef std::pair<ScopedReadLock, const ValueIdList*> ReadParentIdList;
+    ReadParentIdList parentIdList() const { return ReadParentIdList(ScopedReadLock(lock_), &parentIdVec_); }
+
+    typedef std::pair<ScopedReadLock, const ChildMapTable*> ReadChildMapTable;
+    ReadChildMapTable childMapTable() const { return ReadChildMapTable(ScopedReadLock(lock_), &childMapTable_); }
 
     std::size_t propValueNum() const { return propStrVec_.size(); }
     void propValueStr(pvid_t pvId, izenelib::util::UString& ustr) const;
-
-    typedef std::pair<ScopedReadLock, const ChildMapTable&> ReadChildMapTable;
-    ReadChildMapTable childMapTable() const { return ReadChildMapTable(ScopedReadLock(lock_), childMapTable_); }
 
     /**
      * Insert property value id.
