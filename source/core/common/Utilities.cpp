@@ -1,10 +1,10 @@
-#include <boost/token_iterator.hpp>
-#include <boost/lexical_cast.hpp>
-
 #include "Utilities.h"
 
 #include <ir/index_manager/utility/StringUtils.h>
 #include <util/mkgmtime.h>
+
+#include <boost/token_iterator.hpp>
+#include <3rdparty/boost/uuid/uuid_io.hpp>
 
 #include <vector>
 
@@ -286,20 +286,16 @@ bool Utilities::convertPropertyDataType(const std::string& property_name, const 
     }
 }
 
-std::string Utilities::uint128ToHexString(const uint128_t& val)
+std::string Utilities::uint128ToUuid(const uint128_t& val)
 {
-    static char str[33];
-
-    sprintf(str, "%016llx%016llx", (unsigned long long) (val >> 64), (unsigned long long) val);
-    return std::string(static_cast<const char *>(str), 32);
+    const boost::uuids::uuid* uuid = reinterpret_cast<const boost::uuids::uuid *>(&val);
+    return boost::uuids::to_string(*uuid);
 }
 
-uint128_t Utilities::hexStringToUint128(const std::string& str)
+uint128_t Utilities::uuidToUint128(const std::string& str)
 {
-    unsigned long long high, low;
-
-    sscanf(str.c_str(), "%016llx%016llx", &high, &low);
-    return (uint128_t) high << 64 | (uint128_t) low;
+    boost::uuids::uuid uuid = boost::lexical_cast<boost::uuids::uuid>(str);
+    return *reinterpret_cast<uint128_t *>(&uuid);
 }
 
 }

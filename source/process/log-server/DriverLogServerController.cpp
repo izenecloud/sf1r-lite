@@ -42,7 +42,7 @@ void DriverLogServerController::init()
  */
 void DriverLogServerController::update_cclog()
 {
-    std::cout<<request().controller()<<"/"<<request().action()<<std::endl;
+    std::cout << request().controller() << "/" << request().action() << std::endl;
 
 
     std::string collection = asString(request()["collection"]);
@@ -74,7 +74,7 @@ void DriverLogServerController::update_cclog()
     }
 
     // output TODO
-    std::cout<<raw<<std::endl;
+    std::cout << raw << std::endl;
 }
 
 bool DriverLogServerController::skipProcess(const std::string& collection)
@@ -104,8 +104,9 @@ bool DriverLogServerController::skipProcess(const std::string& collection)
  */
 void DriverLogServerController::processDocVisit(izenelib::driver::Request& request, const std::string& raw)
 {
-    //std::cout<<"DocVisitProcessor "<<asString(request[Keys::resource][Keys::DOCID])<<std::endl;
-    drum_->Check(Utilities::hexStringToUint128(asString(request[Keys::resource][Keys::DOCID])), raw);
+    std::string docIdStr = asString(request[Keys::resource][Keys::DOCID]);
+    //std::cout << "DocVisitProcessor " << docIdStr << std::endl;
+    drum_->Check(Utilities::uuidToUint128(docIdStr), raw);
 }
 
 /**
@@ -128,8 +129,9 @@ void DriverLogServerController::processDocVisit(izenelib::driver::Request& reque
  */
 void DriverLogServerController::processRecVisitItem(izenelib::driver::Request& request, const std::string& raw)
 {
-    //std::cout<<"RecVisitItemProcessor "<<asString(request[Keys::resource][Keys::ITEMID])<<std::endl;
-    drum_->Check(Utilities::hexStringToUint128(asString(request[Keys::resource][Keys::ITEMID])), raw);
+    std::string itemIdStr = asString(request[Keys::resource][Keys::ITEMID]);
+    //std::cout << "RecVisitItemProcessor " << itemIdStr << std::endl;
+    drum_->Check(Utilities::uuidToUint128(itemIdStr), raw);
 }
 
 /**
@@ -153,7 +155,7 @@ void DriverLogServerController::processRecVisitItem(izenelib::driver::Request& r
  */
 void DriverLogServerController::processRecPurchaseItem(izenelib::driver::Request& request, const std::string& raw)
 {
-    //std::cout<<"RecPurchaseItemProcessor ";
+    //std::cout << "RecPurchaseItemProcessor ";
 
     const Value& itemsValue = request[Keys::resource][Keys::items];
     if (nullValue(itemsValue) || itemsValue.type() != izenelib::driver::Value::kArrayType)
@@ -167,11 +169,11 @@ void DriverLogServerController::processRecPurchaseItem(izenelib::driver::Request
         const Value& itemValue = itemsValue(i);
 
         std::string itemIdStr = asString(itemValue[Keys::ITEMID]);
-        //std::cout<<itemIdStr<<"  ";
-        drum_->Check(Utilities::hexStringToUint128(itemIdStr), raw);
+        //std::cout << itemIdStr << "  ";
+        drum_->Check(Utilities::uuidToUint128(itemIdStr), raw);
     }
 
-    //std::cout<<std::endl;
+    //std::cout << std::endl;
 }
 
 void DriverLogServerController::onUniqueKeyCheck(
@@ -179,7 +181,7 @@ void DriverLogServerController::onUniqueKeyCheck(
         const std::vector<uint32_t>& docidList,
         const std::string& aux)
 {
-    std::cout << "onUniqueKeyCheck" << Utilities::uint128ToHexString(uuid) << " --- " << aux << std::endl;
+    std::cout << "onUniqueKeyCheck" << Utilities::uint128ToUuid(uuid) << " --- " << aux << std::endl;
 }
 
 void DriverLogServerController::onDuplicateKeyCheck(
@@ -187,7 +189,7 @@ void DriverLogServerController::onDuplicateKeyCheck(
         const std::vector<uint32_t>& docidList,
         const std::string& aux)
 {
-    std::cout << "onDuplicateKeyCheck" << Utilities::uint128ToHexString(uuid) << " --- " << aux << std::endl;
+    std::cout << "onDuplicateKeyCheck" << Utilities::uint128ToUuid(uuid) << " --- " << aux << std::endl;
 }
 
 }

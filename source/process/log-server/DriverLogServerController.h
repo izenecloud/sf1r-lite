@@ -3,13 +3,13 @@
 
 #include "LogServerStorage.h"
 
-#include <iostream>
-#include <set>
-
 #include <common/Keys.h>
 
 #include <util/driver/Controller.h>
 #include <util/driver/writers/JsonWriter.h>
+
+#include <iostream>
+#include <set>
 
 namespace sf1r
 {

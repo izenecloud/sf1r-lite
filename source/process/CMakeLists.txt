@@ -44,6 +44,7 @@ FILE(GLOB log_server_process_SRC
   "common/OnSignal.cpp"
   ${log_server_SRC}
   ${CMAKE_SOURCE_DIR}/core/log-manager/LogServerRequest.cpp
+  ${CMAKE_SOURCE_DIR}/core/log-manager/LogServerRequestData.cpp
   ${CMAKE_SOURCE_DIR}/core/common/Keys.cpp
   )
 
