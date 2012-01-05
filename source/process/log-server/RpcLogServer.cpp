@@ -1,5 +1,7 @@
 #include "RpcLogServer.h"
 
+#include <common/Utilities.h>
+
 #include <boost/bind.hpp>
 
 //#define LOG_SERVER_DEBUG 1
@@ -100,19 +102,19 @@ void RpcLogServer::updateUUID(const UUID2DocidList& uuid2DocidList)
 }
 
 void RpcLogServer::onUpdate(
-        const std::string& uuid,
+        const uint128_t& uuid,
         const std::vector<uint32_t>& docidList,
         const std::string& aux)
 {
 #ifdef LOG_SERVER_DEBUG
-    std::cout<<"RpcLogServer::onUpDate "<<std::endl; //xxx
+    std::cout << "RpcLogServer::onUpDate " << std::endl; //xxx
 #endif
 
     std::vector<uint32_t>::const_iterator it;
     for (it = docidList.begin(); it != docidList.end(); it++)
     {
 #ifdef LOG_SERVER_DEBUG
-        std::cout << *it << " -> " << uuid << std::endl;
+        std::cout << *it << " -> " << Utilities::uint128ToHexString(uuid) << std::endl;
 #endif
         docidDB_->update(*it, uuid);
     }

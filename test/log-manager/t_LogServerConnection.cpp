@@ -42,14 +42,11 @@ void t_RpcLogServer()
     uuidReq.param_.docidList_.push_back(3333);
 
     izenelib::util::ClockTimer t;
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 1; i++)
     {
-        for (int j = 0; j < 1000000; j++)
+        for (int j = 0; j < 0xffffff; j++)
         {
-            std::stringstream ss;
-            ss << "123456789abcdef" << hex << j;
-            uuidReq.param_.uuid_ = ss.str();
-
+            uuidReq.param_.uuid_ = (uint128_t) j << 104;
             conn.asynRequest(uuidReq);
         }
     }
