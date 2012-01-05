@@ -162,8 +162,8 @@ bool PropertyDiversityReranker::initLabelValueCounters_()
         pvTable = groupManager_->getPropValueTable(boostingProperty_);
         if (pvTable)
         {
-            PropValueTable::ReadParentIdList readList = pvTable->parentIdList();
-            const PropValueTable::ValueIdList& parentIdList = *readList.second;
+            PropValueTable::ScopedReadLock lock(pvTable->getLock());
+            const PropValueTable::ValueIdList& parentIdList = pvTable->parentIdList();
 
             for (PropValueTable::pvid_t pvid = 0; pvid < parentIdList.size(); pvid++)
             {
@@ -279,8 +279,8 @@ void PropertyDiversityReranker::rerankDiversity_(
     DocIdList missDocs;
 
     {
-        PropValueTable::ReadValueIdTable readTable = pvTable->valueIdTable();
-        const PropValueTable::ValueIdTable& idTable = *readTable.second;
+        PropValueTable::ScopedReadLock lock(pvTable->getLock());
+        const PropValueTable::ValueIdTable& idTable = pvTable->valueIdTable();
 
         for (std::size_t i = 0; i < numDoc; ++i)
         {

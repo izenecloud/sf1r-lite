@@ -14,9 +14,9 @@
 #include "faceted_types.h"
 
 #include <util/ustring/UString.h>
-#include <util/ThreadModel.h>
 
 #include <boost/memory.hpp>
+#include <boost/thread.hpp>
 
 #include <vector>
 #include <string>
@@ -51,9 +51,9 @@ public:
     typedef std::set<pvid_t, std::less<pvid_t>, stl_allocator<pvid_t> > ParentSetType;
     //typedef std::set<pvid_t> ParentSetType;
 
-    typedef izenelib::util::ReadWriteLock LockType;
-    typedef izenelib::util::ScopedReadLock<LockType> ScopedReadLock;
-    typedef izenelib::util::ScopedWriteLock<LockType> ScopedWriteLock;
+    typedef boost::shared_mutex LockType;
+    typedef boost::shared_lock<LockType> ScopedReadLock;
+    typedef boost::unique_lock<LockType> ScopedWriteLock;
 
     PropValueTable(const std::string& dirPath, const std::string& propName);
     PropValueTable(const PropValueTable& table);
@@ -67,14 +67,16 @@ public:
     void reserveDocIdNum(std::size_t num);
     void insertValueIdList(ValueIdList& valueIdList);
 
-    typedef std::pair<ScopedReadLock, const ValueIdTable*> ReadValueIdTable;
-    ReadValueIdTable valueIdTable() const { return ReadValueIdTable(ScopedReadLock(lock_), &valueIdTable_); }
+    LockType& getLock() const { return lock_; }
 
-    typedef std::pair<ScopedReadLock, const ValueIdList*> ReadParentIdList;
-    ReadParentIdList parentIdList() const { return ReadParentIdList(ScopedReadLock(lock_), &parentIdVec_); }
-
-    typedef std::pair<ScopedReadLock, const ChildMapTable*> ReadChildMapTable;
-    ReadChildMapTable childMapTable() const { return ReadChildMapTable(ScopedReadLock(lock_), &childMapTable_); }
+    /**
+     * @attention before calling @c valueIdTable(), @c parentIdList(), or @c childMapTable(),
+     * you must call below statement for concurrent access:
+     * PropValueTable::ScopedReadLock lock(PropValueTable::getLock());
+     */
+    const ValueIdTable& valueIdTable() const { return valueIdTable_; }
+    const ValueIdList& parentIdList() const { return parentIdVec_; }
+    const ChildMapTable& childMapTable() const { return childMapTable_; }
 
     std::size_t propValueNum() const { return propStrVec_.size(); }
     void propValueStr(pvid_t pvId, izenelib::util::UString& ustr) const;

@@ -36,10 +36,11 @@ void StringGroupCounter::getGroupRep(GroupRep& groupRep)
     GroupRep::StringGroupRep& itemList = groupRep.stringGroupRep_;
     izenelib::util::UString propName(propValueTable_.propName(), UString::UTF_8);
 
-    PropValueTable::ReadChildMapTable readTable = propValueTable_.childMapTable();
+    PropValueTable::ScopedReadLock lock(propValueTable_.getLock());
+    const PropValueTable::ChildMapTable& childMapTable = propValueTable_.childMapTable();
 
     // start from id 0 at level 0
-    appendGroupRep(*readTable.second, itemList, 0, 0, propName);
+    appendGroupRep(childMapTable, itemList, 0, 0, propName);
 }
 
 void StringGroupCounter::appendGroupRep(
