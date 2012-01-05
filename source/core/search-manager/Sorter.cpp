@@ -115,7 +115,7 @@ boost::shared_ptr<PropertyData> SortPropertyCache::getSortPropertyData(const std
     }
 
     SortDataCache::iterator iter = sortDataCache_.find(propertyName) ;
-    if (iter == sortDataCache_.end())
+    if (iter == sortDataCache_.end() || !iter->second)
     {
         LOG(INFO) << "first load sort data cache on property: " << propertyName;
         loadSortData(propertyName, propertyType);
