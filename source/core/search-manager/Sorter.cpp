@@ -253,7 +253,7 @@ void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, p
                 }
                 if ((it = sortDataCache_.find(propertyName)) != sortDataCache_.end())
                 {
-                    if(id >= it->second->size_)
+                    if(!it->second ||id >= it->second->size_)
                         continue;
 
                     int64_t* data = (int64_t*)(it->second->data_);
@@ -283,7 +283,7 @@ void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, p
                 }
                 if ((it = sortDataCache_.find(propertyName)) != sortDataCache_.end())
                 {
-                    if(id >= it->second->size_)
+                    if(!it->second ||id >= it->second->size_)
                         continue;
 
                     float* data = (float*)(it->second->data_);
