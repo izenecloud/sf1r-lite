@@ -72,7 +72,8 @@ void PropertyDiversityReranker::rerank(
             {
                 isBoostLabel = true;
 
-                const izenelib::util::UString& labelUStr = pvTable->propValueStr(labelId);
+                izenelib::util::UString labelUStr;
+                pvTable->propValueStr(labelId, labelUStr);
                 std::string boostLabel;
                 labelUStr.convertString(boostLabel, izenelib::util::UString::UTF_8);
 
@@ -154,7 +155,9 @@ bool PropertyDiversityReranker::initLabelValueCounters_()
         pvTable = groupManager_->getPropValueTable(boostingProperty_);
         if (pvTable)
         {
-            const PropValueTable::ValueIdList& parentIdList = pvTable->parentIdList();
+            PropValueTable::ReadParentIdList readList = pvTable->parentIdList();
+            const PropValueTable::ValueIdList& parentIdList = readList.second;
+
             for (PropValueTable::pvid_t pvid = 0; pvid < parentIdList.size(); pvid++)
             {
                 // get first level labels
@@ -259,7 +262,6 @@ void PropertyDiversityReranker::rerankDiversity_(
         return;
     }
 
-    const PropValueTable::ValueIdTable& idTable = pvTable->valueIdTable();
     std::size_t numDoc = docIdList.size();
     std::vector<unsigned int> newDocIdList;
     std::vector<float> newScoreList;
@@ -268,19 +270,25 @@ void PropertyDiversityReranker::rerankDiversity_(
 
     DocIdMap docIdMap;
     DocIdList missDocs;
-    for (std::size_t i = 0; i < numDoc; ++i)
-    {
-        docid_t docId = docIdList[i];
 
-        if (docId < idTable.size() && idTable[docId].empty() == false)
+    {
+        PropValueTable::ReadValueIdTable readTable = pvTable->valueIdTable();
+        const PropValueTable::ValueIdTable& idTable = readTable.second;
+
+        for (std::size_t i = 0; i < numDoc; ++i)
         {
-            // use 1st group value
-            PropValueTable::pvid_t pvId = idTable[docId][0];
-            docIdMap[pvId].push_back(std::make_pair(docId, rankScoreList[i]));
-        }
-        else
-        {
-            missDocs.push_back(std::make_pair(docId, rankScoreList[i]));
+            docid_t docId = docIdList[i];
+
+            if (docId < idTable.size() && idTable[docId].empty() == false)
+            {
+                // use 1st group value
+                PropValueTable::pvid_t pvId = idTable[docId][0];
+                docIdMap[pvId].push_back(std::make_pair(docId, rankScoreList[i]));
+            }
+            else
+            {
+                missDocs.push_back(std::make_pair(docId, rankScoreList[i]));
+            }
         }
     }
 
