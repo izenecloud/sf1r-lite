@@ -5,10 +5,12 @@ require 'require_all'
 require_rel '../lib/sf1r_api'
 require_rel '../lib/call_histroy_exporter'
 
-history_file = ARGV[0]
+#ip = "180.153.140.110"
+ip = ARGV[0]
+history_file = ARGV[1]
 # output_file = ARGV[1]
 
-api = Sf1rApi.new("180.153.140.110")
+api = Sf1rApi.new(ip)
 in_file = File.open(history_file, "r")
 # out_file = File.new(output_file, "w")
 exporter = CallHistroyExporter.new(api)

@@ -7,7 +7,6 @@ NS_FACETED_BEGIN
 
 StringGroupCounter::StringGroupCounter(const PropValueTable& pvTable)
     : propValueTable_(pvTable)
-    , childMapTable_(pvTable.childMapTable())
     , countTable_(pvTable.propValueNum())
     , alloc_(recycle_)
     , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
@@ -35,13 +34,17 @@ void StringGroupCounter::addDoc(docid_t doc)
 void StringGroupCounter::getGroupRep(GroupRep& groupRep)
 {
     GroupRep::StringGroupRep& itemList = groupRep.stringGroupRep_;
-
     izenelib::util::UString propName(propValueTable_.propName(), UString::UTF_8);
+
+    PropValueTable::ScopedReadLock lock(propValueTable_.getLock());
+    const PropValueTable::ChildMapTable& childMapTable = propValueTable_.childMapTable();
+
     // start from id 0 at level 0
-    appendGroupRep(itemList, 0, 0, propName);
+    appendGroupRep(childMapTable, itemList, 0, 0, propName);
 }
 
 void StringGroupCounter::appendGroupRep(
+    const PropValueTable::ChildMapTable& childMapTable,
     std::list<OntologyRepItem>& itemList,
     PropValueTable::pvid_t pvId,
     int level,
@@ -50,14 +53,14 @@ void StringGroupCounter::appendGroupRep(
 {
     itemList.push_back(faceted::OntologyRepItem(level, valueStr, 0, countTable_[pvId]));
 
-    const PropValueTable::PropStrMap& propStrMap = childMapTable_[pvId];
+    const PropValueTable::PropStrMap& propStrMap = childMapTable[pvId];
     for (PropValueTable::PropStrMap::const_iterator it = propStrMap.begin();
         it != propStrMap.end(); ++it)
     {
         PropValueTable::pvid_t childId = it->second;
         if (countTable_[childId])
         {
-            appendGroupRep(itemList, childId, level+1, it->first);
+            appendGroupRep(childMapTable, itemList, childId, level+1, it->first);
         }
     }
 }
