@@ -9,7 +9,8 @@ scd_file = ARGV[0]
 output_dir = ARGV[1]
 
 classifer = Classifier.new
-owl_file = File.expand_path("../../tuan.owl", __FILE__)
+owl_file = File.expand_path("../tuan.owl", __FILE__)
+p owl_file
 classifer.load(owl_file)
 parser = ScdParser.new(scd_file)
 
