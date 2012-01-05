@@ -109,7 +109,7 @@ boost::shared_ptr<PropertyData> SortPropertyCache::getSortPropertyData(const std
             iter != sortDataCache_.end(); ++iter)
         {
             LOG(INFO) << "dirty sort data cache on property: " << iter->first;
-            loadSortData(iter->first, iter->second->type_);
+            if(iter->second) loadSortData(iter->first, iter->second->type_);
         }
         dirty_ = false;
     }
