@@ -43,11 +43,11 @@ private:
     PropertyDataType getPropertyType_(const std::string& prop) const;
     const GroupConfig* getGroupConfig_(const std::string& prop) const;
 
-    GroupCounter* createValueCounter_(const std::string& prop) const;
+    GroupCounter* createValueCounter_(const std::string& prop, GroupCounter* subCounter = NULL) const;
     GroupCounter* createNumericRangeCounter_(const std::string& prop) const;
 
-    GroupCounter* createStringCounter_(const std::string& prop) const;
-    GroupCounter* createNumericCounter_(const std::string& prop) const;
+    GroupCounter* createStringCounter_(const std::string& prop, GroupCounter* subCounter) const;
+    GroupCounter* createNumericCounter_(const std::string& prop, GroupCounter* subCounter) const;
 
     GroupLabel* createStringLabel_(const GroupParam::GroupLabelParam& labelParam) const;
     GroupLabel* createNumericRangeLabel_(const GroupParam::GroupLabelParam& labelParam) const;

@@ -10,21 +10,27 @@
 
 #include "GroupCounter.h"
 #include "prop_value_table.h"
+#include "GroupRep.h"
+#include "SubGroupCounter.h"
+
+#include <util/ustring/UString.h>
 
 #include <vector>
 
 NS_FACETED_BEGIN
 
-class OntologyRepItem;
-
+template<typename CounterType = unsigned int>
 class StringGroupCounter : public GroupCounter
 {
 public:
     StringGroupCounter(const PropValueTable& pvTable);
+    StringGroupCounter(const PropValueTable& pvTable, const CounterType& defaultCounter);
+    StringGroupCounter(const StringGroupCounter& groupCounter);
 
-    void addDoc(docid_t doc);
-
-    void getGroupRep(GroupRep& groupRep);
+    virtual StringGroupCounter* clone() const;
+    virtual void addDoc(docid_t doc);
+    virtual void getGroupRep(GroupRep& groupRep);
+    virtual void getStringRep(GroupRep::StringGroupRep& strRep, int level) const;
 
 private:
     /**
@@ -43,15 +49,180 @@ private:
 
 private:
     const PropValueTable& propValueTable_;
-
     const std::vector<PropValueTable::PropStrMap>& childMapTable_;
 
     /** map from value id to doc count */
-    std::vector<int> countTable_;
+    std::vector<CounterType> countTable_;
     NS_BOOST_MEMORY::block_pool recycle_;
     boost::scoped_alloc alloc_;
     mutable PropValueTable::ParentSetType parentSet_;
 };
+
+template<typename CounterType>
+StringGroupCounter<CounterType>::StringGroupCounter(const PropValueTable& pvTable)
+    : propValueTable_(pvTable)
+    , childMapTable_(pvTable.childMapTable())
+    , countTable_(pvTable.propValueNum())
+    , alloc_(recycle_)
+    , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
+{
+}
+
+template<typename CounterType>
+StringGroupCounter<CounterType>::StringGroupCounter(const PropValueTable& pvTable, const CounterType& defaultCounter)
+    : propValueTable_(pvTable)
+    , childMapTable_(pvTable.childMapTable())
+    , countTable_(pvTable.propValueNum(), defaultCounter)
+    , alloc_(recycle_)
+    , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
+{
+}
+
+template<typename CounterType>
+StringGroupCounter<CounterType>::StringGroupCounter(const StringGroupCounter& groupCounter)
+    : propValueTable_(groupCounter.propValueTable_)
+    , childMapTable_(groupCounter.childMapTable_)
+    , countTable_(groupCounter.countTable_)
+    , alloc_(recycle_)
+    , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
+{
+}
+
+template<typename CounterType>
+StringGroupCounter<CounterType>* StringGroupCounter<CounterType>::clone() const
+{
+    return new StringGroupCounter(*this);
+}
+
+template<typename CounterType>
+void StringGroupCounter<CounterType>::addDoc(docid_t doc)
+{
+    parentSet_.clear();
+    propValueTable_.parentIdSet(doc, parentSet_);
+
+    for (PropValueTable::ParentSetType::const_iterator it = parentSet_.begin();
+        it != parentSet_.end(); ++it)
+    {
+        ++countTable_[*it];
+    }
+
+    // total doc count for this property
+    if (!parentSet_.empty())
+    {
+        ++countTable_[0];
+    }
+}
+
+template<>
+void StringGroupCounter<SubGroupCounter>::addDoc(docid_t doc)
+{
+    parentSet_.clear();
+    propValueTable_.parentIdSet(doc, parentSet_);
+
+    for (PropValueTable::ParentSetType::const_iterator it = parentSet_.begin();
+        it != parentSet_.end(); ++it)
+    {
+        SubGroupCounter& subCounter = countTable_[*it];
+        ++subCounter.count_;
+        subCounter.groupCounter_->addDoc(doc);
+    }
+
+    // total doc count for this property
+    if (!parentSet_.empty())
+    {
+        ++countTable_[0].count_;
+    }
+}
+
+template<typename CounterType>
+void StringGroupCounter<CounterType>::appendGroupRep(
+    std::list<OntologyRepItem>& itemList,
+    PropValueTable::pvid_t pvId,
+    int level,
+    const izenelib::util::UString& valueStr
+) const
+{
+    itemList.push_back(faceted::OntologyRepItem(level, valueStr, 0, countTable_[pvId]));
+
+    const PropValueTable::PropStrMap& propStrMap = childMapTable_[pvId];
+    for (PropValueTable::PropStrMap::const_iterator it = propStrMap.begin();
+        it != propStrMap.end(); ++it)
+    {
+        PropValueTable::pvid_t childId = it->second;
+        if (countTable_[childId])
+        {
+            appendGroupRep(itemList, childId, level+1, it->first);
+        }
+    }
+}
+
+template<>
+void StringGroupCounter<SubGroupCounter>::appendGroupRep(
+    std::list<OntologyRepItem>& itemList,
+    PropValueTable::pvid_t pvId,
+    int level,
+    const izenelib::util::UString& valueStr
+) const
+{
+    const SubGroupCounter& subCounter = countTable_[pvId];
+    itemList.push_back(faceted::OntologyRepItem(level, valueStr, 0, subCounter.count_));
+
+    if (pvId)
+    {
+        subCounter.groupCounter_->getStringRep(itemList, level+1);
+    }
+
+    const PropValueTable::PropStrMap& propStrMap = childMapTable_[pvId];
+    for (PropValueTable::PropStrMap::const_iterator it = propStrMap.begin();
+        it != propStrMap.end(); ++it)
+    {
+        PropValueTable::pvid_t childId = it->second;
+        if (countTable_[childId].count_)
+        {
+            appendGroupRep(itemList, childId, level+1, it->first);
+        }
+    }
+}
+
+template<typename CounterType>
+void StringGroupCounter<CounterType>::getGroupRep(GroupRep& groupRep)
+{
+    GroupRep::StringGroupRep& itemList = groupRep.stringGroupRep_;
+
+    izenelib::util::UString propName(propValueTable_.propName(), UString::UTF_8);
+    // start from id 0 at level 0
+    appendGroupRep(itemList, 0, 0, propName);
+}
+
+template<typename CounterType>
+void StringGroupCounter<CounterType>::getStringRep(GroupRep::StringGroupRep& strRep, int level) const
+{
+    const PropValueTable::PropStrMap& propStrMap = childMapTable_[0];
+    for (PropValueTable::PropStrMap::const_iterator it = propStrMap.begin();
+        it != propStrMap.end(); ++it)
+    {
+        PropValueTable::pvid_t childId = it->second;
+        if (countTable_[childId])
+        {
+            appendGroupRep(strRep, childId, level, it->first);
+        }
+    }
+}
+
+template<>
+void StringGroupCounter<SubGroupCounter>::getStringRep(GroupRep::StringGroupRep& strRep, int level) const
+{
+    const PropValueTable::PropStrMap& propStrMap = childMapTable_[0];
+    for (PropValueTable::PropStrMap::const_iterator it = propStrMap.begin();
+        it != propStrMap.end(); ++it)
+    {
+        PropValueTable::pvid_t childId = it->second;
+        if (countTable_[childId].count_)
+        {
+            appendGroupRep(strRep, childId, level, it->first);
+        }
+    }
+}
 
 NS_FACETED_END
 

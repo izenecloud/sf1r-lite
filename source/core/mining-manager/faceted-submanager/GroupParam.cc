@@ -4,6 +4,82 @@
 namespace
 {
 const char* NUMERIC_RANGE_DELIMITER = "-";
+
+typedef std::vector<sf1r::GroupConfig> GroupConfigVec;
+typedef GroupConfigVec::const_iterator GroupConfigIter;
+
+GroupConfigIter findGroupConfig(
+    const GroupConfigVec& groupConfigs,
+    const std::string& propName
+)
+{
+    GroupConfigIter it = groupConfigs.begin();
+
+    for (; it != groupConfigs.end(); ++it)
+    {
+        if (it->propName == propName)
+            break;
+    }
+
+    return it;
+}
+
+bool checkGroupPropParam(
+    const sf1r::faceted::GroupPropParam& param,
+    const GroupConfigVec& configs,
+    std::string& message
+)
+{
+    const std::string& propName = param.property_;
+    const std::string& subPropName = param.subProperty_;
+
+    if (propName.empty())
+    {
+        message = "request[group][property] should not be empty";
+        return false;
+    }
+
+    GroupConfigIter configIt = findGroupConfig(configs, propName);
+    if (configIt == configs.end())
+    {
+        message = "property " + propName + " should be configured in <MiningBundle>::<Schema>::<Group>.";
+        return false;
+    }
+
+    if (! subPropName.empty())
+    {
+        GroupConfigIter subConfigIt = findGroupConfig(configs, subPropName);
+        if (subConfigIt == configs.end())
+        {
+            message = "property " + subPropName + " should be configured in <MiningBundle>::<Schema>::<Group>.";
+            return false;
+        }
+
+        if (subPropName == propName)
+        {
+            message = "property " + subPropName + " in request[group][sub_property] should not be duplicated with request[group][property].";
+            return false;
+        }
+    }
+
+    if (param.isRange_)
+    {
+        if (! subPropName.empty())
+        {
+            message = "request[group][range] must be false when request[group][sub_property] is set.";
+            return false;
+        }
+
+        if (! configIt->isNumericType())
+        {
+            message = "property type of " + propName + " should be int or float when request[group][range] is true.";
+            return false;
+        }
+    }
+
+    return true;
+}
+
 }
 
 NS_FACETED_BEGIN
@@ -15,13 +91,15 @@ GroupPropParam::GroupPropParam()
 
 bool operator==(const GroupPropParam& a, const GroupPropParam& b)
 {
-    return a.property_ == b.property_
-        && a.isRange_ == b.isRange_;
+    return a.property_ == b.property_ &&
+           a.subProperty_ == b.subProperty_ &&
+           a.isRange_ == b.isRange_;
 }
 
 std::ostream& operator<<(std::ostream& out, const GroupPropParam& groupPropParam)
 {
     out << "property: " << groupPropParam.property_
+        << ", sub property: " << groupPropParam.subProperty_
         << ", is range: " << groupPropParam.isRange_
         << std::endl;
 
@@ -51,8 +129,8 @@ bool GroupParam::isAttrEmpty() const
 
 bool GroupParam::checkParam(const MiningSchema& miningSchema, std::string& message) const
 {
-    return checkGroupParam_(miningSchema, message)
-           && checkAttrParam_(miningSchema, message);
+    return checkGroupParam_(miningSchema, message) &&
+           checkAttrParam_(miningSchema, message);
 }
 
 bool GroupParam::checkGroupParam_(const MiningSchema& miningSchema, std::string& message) const
@@ -66,42 +144,23 @@ bool GroupParam::checkGroupParam_(const MiningSchema& miningSchema, std::string&
         return false;
     }
 
-    return checkGroupProps_(miningSchema.group_properties, message)
-           && checkGroupLabels_(miningSchema.group_properties, message);
+    return checkGroupProps_(miningSchema.group_properties, message) &&
+           checkGroupLabels_(miningSchema.group_properties, message);
 }
 
-bool GroupParam::checkGroupProps_(const std::vector<GroupConfig>& groupProps, std::string& message) const
+bool GroupParam::checkGroupProps_(const std::vector<GroupConfig>& groupConfigs, std::string& message) const
 {
     for (std::vector<GroupPropParam>::const_iterator paramIt = groupProps_.begin();
         paramIt != groupProps_.end(); ++paramIt)
     {
         const std::string& propName = paramIt->property_;
-        std::vector<GroupConfig>::const_iterator configIt;
 
-        for (configIt = groupProps.begin(); configIt != groupProps.end(); ++configIt)
-        {
-            if (configIt->propName == propName)
-                break;
-        }
-
-        if (configIt == groupProps.end())
-        {
-            message = "property " + propName + " should be configured in <MiningBundle>::<Schema>::<Group>.";
+        if (! checkGroupPropParam(*paramIt, groupConfigs, message))
             return false;
-        }
 
-        if (! paramIt->isRange_)
-            continue;
-
-        if (! configIt->isNumericType())
+        if (paramIt->isRange_ && isRangeLabel_(propName))
         {
-            message = "the property type of " + propName + " should be int or float for group range result.";
-            return false;
-        }
-
-        if (isRangeLabel_(propName))
-        {
-            message = "the property " + propName + " in request[search][group_label] could not be specified in request[group] at the same time";
+            message = "property " + propName + " in request[search][group_label] could not be specified in request[group] at the same time";
             return false;
         }
     }
@@ -109,21 +168,15 @@ bool GroupParam::checkGroupProps_(const std::vector<GroupConfig>& groupProps, st
     return true;
 }
 
-bool GroupParam::checkGroupLabels_(const std::vector<GroupConfig>& groupProps, std::string& message) const
+bool GroupParam::checkGroupLabels_(const std::vector<GroupConfig>& groupConfigs, std::string& message) const
 {
     for (GroupLabelMap::const_iterator labelIt = groupLabels_.begin();
         labelIt != groupLabels_.end(); ++labelIt)
     {
         const std::string& propName = labelIt->first;
-        std::vector<GroupConfig>::const_iterator configIt;
 
-        for (configIt = groupProps.begin(); configIt != groupProps.end(); ++configIt)
-        {
-            if (configIt->propName == propName)
-                break;
-        }
-
-        if (configIt == groupProps.end())
+        GroupConfigIter configIt = findGroupConfig(groupConfigs, propName);
+        if (configIt == groupConfigs.end())
         {
             message = "property " + propName + " should be configured in <MiningBundle>::<Schema>::<Group>.";
             return false;
@@ -157,8 +210,8 @@ bool GroupParam::isRangeLabel_(const std::string& propName) const
     for (GroupPathVec::const_iterator pathIt = paths.begin();
         pathIt != paths.end(); ++pathIt)
     {
-        if (!pathIt->empty()
-            && pathIt->front().find(NUMERIC_RANGE_DELIMITER) != std::string::npos)
+        if (!pathIt->empty() &&
+            pathIt->front().find(NUMERIC_RANGE_DELIMITER) != std::string::npos)
         {
             return true;
         }
@@ -169,11 +222,11 @@ bool GroupParam::isRangeLabel_(const std::string& propName) const
 
 bool operator==(const GroupParam& a, const GroupParam& b)
 {
-    return a.groupProps_ == b.groupProps_
-        && a.groupLabels_ == b.groupLabels_
-        && a.isAttrGroup_ == b.isAttrGroup_
-        && a.attrGroupNum_ == b.attrGroupNum_
-        && a.attrLabels_ == b.attrLabels_;
+    return a.groupProps_ == b.groupProps_ &&
+           a.groupLabels_ == b.groupLabels_ &&
+           a.isAttrGroup_ == b.isAttrGroup_ &&
+           a.attrGroupNum_ == b.attrGroupNum_ &&
+           a.attrLabels_ == b.attrLabels_;
 }
 
 std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam)

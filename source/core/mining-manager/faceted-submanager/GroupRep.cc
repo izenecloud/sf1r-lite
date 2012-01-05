@@ -1,5 +1,4 @@
 #include "GroupRep.h"
-
 #include "NumericRangeGroupCounter.h"
 
 NS_FACETED_BEGIN
@@ -293,19 +292,16 @@ void GroupRep::toOntologyRepItemList()
     for (GroupRep::NumericGroupRep::const_iterator it = numericGroupRep_.begin();
         it != numericGroupRep_.end(); ++it)
     {
-
         izenelib::util::UString propName(it->first, UString::UTF_8);
         stringGroupRep_.push_back(faceted::OntologyRepItem(0, propName, 0, 0));
         faceted::OntologyRepItem& topItem = stringGroupRep_.back();
         unsigned int count = 0;
+        izenelib::util::UString ustr;
 
         for (list<pair<double, unsigned int> >::const_iterator lit = it->second.begin();
             lit != it->second.end(); ++lit)
         {
-            stringstream ss;
-            ss << fixed << setprecision(2);
-            ss << lit->first;
-            izenelib::util::UString ustr(ss.str(), UString::UTF_8);
+            formatNumericToUStr(lit->first, ustr);
             stringGroupRep_.push_back(faceted::OntologyRepItem(1, ustr, 0, lit->second));
             count += lit->second;
         }
@@ -330,6 +326,13 @@ string GroupRep::ToString() const
     }
 
     return ss.str();
+}
+
+void GroupRep::formatNumericToUStr(double value, izenelib::util::UString& ustr)
+{
+    ostringstream ss;
+    ss << std::fixed << std::setprecision(2) << value;
+    ustr.assign(ss.str(), UString::UTF_8);
 }
 
 NS_FACETED_END

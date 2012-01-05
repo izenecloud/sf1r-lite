@@ -9,10 +9,9 @@
 #define SF1R_GROUP_COUNTER_H
 
 #include "faceted_types.h"
+#include "GroupRep.h"
 
 NS_FACETED_BEGIN
-
-class GroupRep;
 
 class GroupCounter
 {
@@ -21,9 +20,13 @@ public:
 
     virtual ~GroupCounter() {}
 
+    virtual GroupCounter* clone() const = 0;
+
     virtual void addDoc(docid_t doc) = 0;
 
-    virtual void getGroupRep(GroupRep &groupRep) = 0;
+    virtual void getGroupRep(GroupRep& groupRep) = 0;
+
+    virtual void getStringRep(GroupRep::StringGroupRep& strRep, int level) const {}
 };
 
 NS_FACETED_END

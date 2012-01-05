@@ -35,7 +35,7 @@ public:
     void merge(const GroupRep& other);
     string ToString() const;
 
-    friend class NumericGroupCounter;
+    template<typename CounterType> friend class NumericGroupCounter;
     friend class NumericRangeGroupCounter;
     void toOntologyRepItemList();
 
@@ -53,6 +53,8 @@ public:
         numericGroupRep_,
         numericRangeGroupRep_
     );
+
+    static void formatNumericToUStr(double value, izenelib::util::UString& ustr);
 
 private:
     void mergeStringGroup(const GroupRep& other);

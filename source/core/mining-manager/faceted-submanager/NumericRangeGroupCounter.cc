@@ -20,6 +20,11 @@ NumericRangeGroupCounter::~NumericRangeGroupCounter()
     delete propertyTable_;
 }
 
+NumericRangeGroupCounter* NumericRangeGroupCounter::clone() const
+{
+    return new NumericRangeGroupCounter(*this);
+}
+
 void NumericRangeGroupCounter::addDoc(docid_t doc)
 {
     int value;
