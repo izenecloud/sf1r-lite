@@ -44,20 +44,18 @@ void t_RpcLogServer()
     conn.init("localhost", 18811);
 
     UpdateUUIDRequest uuidReq;
-    uuidReq.param_.docidList_.push_back(1111);
-    uuidReq.param_.docidList_.push_back(2222);
-    uuidReq.param_.docidList_.push_back(3333);
+    uuidReq.param_.docidList_.push_back(1);
+    uuidReq.param_.docidList_.push_back(2);
+    uuidReq.param_.docidList_.push_back(3);
 
     izenelib::util::ClockTimer t;
     boost::uuids::random_generator random_gen;
-    for (int i = 0; i < 1; i++)
+    for (int i = 0; i < 0x1000000; i++)
     {
-        for (int j = 0; j < 0x1000000; j++)
-        {
-            boost::uuids::uuid uuid = random_gen();
-            uuidReq.param_.uuid_ = *reinterpret_cast<uint128_t *>(&uuid);
-            conn.asynRequest(uuidReq);
-        }
+        boost::uuids::uuid uuid = random_gen();
+        uuidReq.param_.uuid_ = *reinterpret_cast<uint128_t *>(&uuid);
+        conn.asynRequest(uuidReq);
+        uuidReq.param_.docidList_[i % 3] += 3;
     }
 
     // Force server to synchronize
@@ -67,8 +65,6 @@ void t_RpcLogServer()
     conn.flushRequests();
     std::cout << "time elapsed for inserting " << t.elapsed() << std::endl;
 }
-
-
 
 void t_RpcLogServerCreateTestData()
 {
@@ -104,6 +100,9 @@ void t_RpcLogServerCreateTestData()
     uuidReq.param_.uuid_ = Utilities::uuidToUint128("dcdce290-b73d-467b-aa44-755cce035c79");
     conn.asynRequest(uuidReq);
     std::cout << "sent rpc request: " << uuidReq.param_.toString() << std::endl;
+
+    SynchronizeRequest syncReq;
+    conn.asynRequest(syncReq);
 
     conn.flushRequests();
 
@@ -151,6 +150,9 @@ void t_RpcLogServerUpdateTestData()
     conn.asynRequest(uuidReq);
     std::cout << "sent rpc request: " << uuidReq.param_.toString() << std::endl;
 
+    SynchronizeRequest syncReq;
+    conn.asynRequest(syncReq);
+
     conn.flushRequests();
 
     // =====> update cclog (by driver log server) after uuid updated
@@ -162,6 +164,3 @@ void t_RpcLogServerUpdateTestData()
 
     // {"collection":"b5ma","resource":{"USERID":"","items":[{"ITEMID":"6d5f82db-0ef2-4d5f-8b54-cdc29e97e5b1","price":1088,"quantity":1},{"ITEMID":"4857bcda-22e4-4a87-964d-17ffcf024d16","price":65,"quantity":1}]},"header":{"controller":"recommend","action":"purchase_item"}}
 }
-
-
-

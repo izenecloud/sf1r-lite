@@ -12,13 +12,19 @@ public:
     typedef std::string method_t;
 
     /// add method here
-    static const char* METHOD_UPDATE_UUID;
-    static const char* METHOD_SYNCHRONIZE;
+    enum METHOD
+    {
+        METHOD_UPDATE_UUID = 0,
+        METHOD_SYNCHRONIZE,
+        COUNT_OF_METHODS
+    };
 
-    method_t method_;
+    static const method_t method_names[COUNT_OF_METHODS];
+
+    METHOD method_;
 
 public:
-    LogServerRequest(const method_t& method) : method_(method) {}
+    LogServerRequest(const METHOD& method) : method_(method) {}
     virtual ~LogServerRequest() {}
 };
 
@@ -26,7 +32,7 @@ template <typename RequestDataT>
 class LogRequestRequestT : public LogServerRequest
 {
 public:
-    LogRequestRequestT(method_t method)
+    LogRequestRequestT(METHOD method)
         :LogServerRequest(method)
     {
     }

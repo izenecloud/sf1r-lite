@@ -24,12 +24,11 @@ RpcLogServer::~RpcLogServer()
 bool RpcLogServer::init()
 {
     drum_ = LogServerStorage::get()->getDrum();
+    docidDB_ = LogServerStorage::get()->getDocidDB();
 
     LogServerStorage::get()->getDrumDispatcher().registerOp(
             LogServerStorage::DrumDispatcherImpl::UPDATE,
             boost::bind(&RpcLogServer::onUpdate, this, _1, _2, _3));
-
-    docidDB_ = LogServerStorage::get()->getDocidDB();
 
     return true;
 }
@@ -64,15 +63,15 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
         std::string method;
         req.method().convert(&method);
 
-        if (method == LogServerRequest::METHOD_UPDATE_UUID)
+        if (method == LogServerRequest::method_names[LogServerRequest::METHOD_UPDATE_UUID])
         {
             msgpack::type::tuple<UUID2DocidList> params;
             req.params().convert(&params);
-            UUID2DocidList uuid2DocidList = params.get<0>();
+            const UUID2DocidList& uuid2DocidList = params.get<0>();
 
             updateUUID(uuid2DocidList);
         }
-        else if (method == LogServerRequest::METHOD_SYNCHRONIZE)
+        else if (method == LogServerRequest::method_names[LogServerRequest::METHOD_SYNCHRONIZE])
         {
             synchronize();
         }
@@ -95,6 +94,7 @@ void RpcLogServer::synchronize()
 {
     boost::lock_guard<boost::mutex> lock(mutex_);
     drum_->Synchronize();
+    docidDB_->flush();
 }
 
 void RpcLogServer::updateUUID(const UUID2DocidList& uuid2DocidList)
@@ -117,8 +117,8 @@ void RpcLogServer::onUpdate(
     std::cout << "RpcLogServer::onUpDate " << std::endl; //xxx
 #endif
 
-    std::vector<uint32_t>::const_iterator it;
-    for (it = docidList.begin(); it != docidList.end(); it++)
+    for (std::vector<uint32_t>::const_iterator it = docidList.begin();
+            it != docidList.end(); ++it)
     {
 #ifdef LOG_SERVER_DEBUG
         std::cout << *it << " -> " << Utilities::uint128ToUuid(uuid) << std::endl;

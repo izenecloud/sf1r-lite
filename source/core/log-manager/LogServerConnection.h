@@ -19,10 +19,10 @@ public:
     bool init(const std::string& host, uint16_t port);
 
     template <typename RequestDataT>
-    void asynRequest(LogServerRequest::method_t method, RequestDataT& reqData);
+    void asynRequest(const LogServerRequest::method_t& method, const RequestDataT& reqData);
 
     template <typename RequestT>
-    void asynRequest(RequestT& req);
+    void asynRequest(const RequestT& req);
 
     void flushRequests();
 
@@ -34,7 +34,7 @@ private:
 };
 
 template <typename RequestDataT>
-void LogServerConnection::asynRequest(LogServerRequest::method_t method, RequestDataT& reqData)
+void LogServerConnection::asynRequest(const LogServerRequest::method_t& method, const RequestDataT& reqData)
 {
     static unsigned int count = 0;
     //client_->call(method, reqData);
@@ -47,9 +47,9 @@ void LogServerConnection::asynRequest(LogServerRequest::method_t method, Request
 }
 
 template <typename RequestT>
-void LogServerConnection::asynRequest(RequestT& req)
+void LogServerConnection::asynRequest(const RequestT& req)
 {
-    asynRequest(req.method_, req.param_);
+    asynRequest(req.method_names[req.method_], req.param_);
 }
 
 }
