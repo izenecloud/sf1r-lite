@@ -1081,7 +1081,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
         indexmanager_config.mergeStrategy_.requireIntermediateFileForMerging_ = true;
     indexmanager_config.mergeStrategy_.param_ = "dbt";
     params.GetString("IndexStrategy/cron", indexBundleConfig.cronIndexer_, "");
-
+    //indexmanager_config.indexStrategy_.optimizeSchedule_ = indexBundleConfig.cronIndexer_;
     std::set<std::string> directories;
     params.Get("CollectionDataDirectory", directories);
 
