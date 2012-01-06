@@ -60,9 +60,9 @@ bool DriverLogServer::initRouter()
 {
     typedef ::izenelib::driver::ActionHandler<DriverLogServerController> handler_t;
 
-    DriverLogServerController logServerCtrl;
-    logServerCtrl.setDriverCollections(LogServerCfg::get()->getDriverCollections());
-    logServerCtrl.init();
+    boost::shared_ptr<DriverLogServerHandler> logServerhandler(new DriverLogServerHandler);
+    logServerhandler->init();
+    DriverLogServerController logServerCtrl(logServerhandler);
 
     handler_t* cclogHandler = new handler_t(logServerCtrl, &DriverLogServerController::update_cclog);
     //router_->map("log_server", "update_cclog", cclogHandler);
