@@ -19,6 +19,7 @@ static const unsigned int DEFAULT_DRUM_BUCKET_BUFF_ELEM_SIZE = 8192;
 static const unsigned int DEFAULT_DRUM_BUCKET_BYTE_SIZE = 1048576;
 
 static const char* DEFAULT_STORAGE_BASE_DIR = "log_server_storage";
+static const char* DEFAULT_CCLOG_OUT_FILE   = "cclog.txt";
 
 static const unsigned int MAX_THREAD_NUM = 1024;
 static const unsigned int MAX_DRUM_NUM_BUCKETS = 65536;
@@ -200,6 +201,12 @@ void LogServerCfg::parseStorageCfg(properties& props)
         throw std::runtime_error("Log Server Configuration missing proptery: storage.docid_db.name");
     }
     docid_db_name_ = base_dir_ + "/" + docid_db_name_;
+
+    if (props.getValue("storage.cclog_out_file", cclogOutFile_))
+    {
+        cclogOutFile_ = DEFAULT_CCLOG_OUT_FILE;
+    }
+    cclogOutFile_ = base_dir_ + "/" + cclogOutFile_;
 }
 
 

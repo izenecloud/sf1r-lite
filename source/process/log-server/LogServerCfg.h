@@ -92,6 +92,11 @@ public:
         return docid_db_name_;
     }
 
+    inline const std::string& getCclogOutFile() const
+    {
+        return cclogOutFile_;
+    }
+
 private:
     bool parseCfgFile_(const std::string& cfgFile);
 
@@ -112,6 +117,7 @@ private:
     unsigned int driverPort_;
     unsigned int driverThreadNum_;
     std::set<std::string> driverCollections_;
+    std::string cclogOutFile_;
 
     std::string base_dir_;
 
