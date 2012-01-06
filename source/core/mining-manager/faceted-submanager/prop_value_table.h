@@ -161,10 +161,10 @@ private:
 template<typename SetType>
 void PropValueTable::parentIdSet(docid_t docId, SetType& parentSet) const
 {
+    ScopedReadLock lock(lock_);
+
     if (docId >= valueIdTable_.size())
         return;
-
-    ScopedReadLock lock(lock_);
 
     const ValueIdList& valueIdList = valueIdTable_[docId];
     for (ValueIdList::const_iterator it = valueIdList.begin();
