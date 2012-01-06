@@ -89,12 +89,13 @@ public:
 
             if (docidDB_)
             {
+                docidDB_->flush();
                 docidDB_->close();
             }
         }
         catch (const std::exception& e)
         {
-            std::cout << "LogServerStorage close: " <<e.what()<< std::endl;
+            std::cout << "LogServerStorage close: " << e.what() << std::endl;
         }
     }
 

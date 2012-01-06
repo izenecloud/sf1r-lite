@@ -3,7 +3,7 @@
 namespace sf1r
 {
 
-const char* LogServerRequest::METHOD_UPDATE_UUID = "update_uuid";
-const char* LogServerRequest::METHOD_SYNCHRONIZE = "synchronize";
+const LogServerRequest::method_t LogServerRequest::method_names[]
+    = {"update_uuid", "synchronize"};
 
 }

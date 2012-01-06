@@ -288,8 +288,8 @@ bool Utilities::convertPropertyDataType(const std::string& property_name, const 
 
 std::string Utilities::uint128ToUuid(const uint128_t& val)
 {
-    const boost::uuids::uuid* uuid = reinterpret_cast<const boost::uuids::uuid *>(&val);
-    return boost::uuids::to_string(*uuid);
+    const boost::uuids::uuid& uuid = *reinterpret_cast<const boost::uuids::uuid *>(&val);
+    return boost::uuids::to_string(uuid);
 }
 
 uint128_t Utilities::uuidToUint128(const std::string& str)
