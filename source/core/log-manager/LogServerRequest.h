@@ -13,6 +13,7 @@ public:
 
     /// add method here
     static const char* METHOD_UPDATE_UUID;
+    static const char* METHOD_SYNCHRONIZE;
 
     method_t method_;
 
@@ -38,6 +39,15 @@ class UpdateUUIDRequest : public LogRequestRequestT<UUID2DocidList>
 public:
     UpdateUUIDRequest()
         : LogRequestRequestT<UUID2DocidList>(METHOD_UPDATE_UUID)
+    {
+    }
+};
+
+class SynchronizeRequest : public LogRequestRequestT<SynchronizeData>
+{
+public:
+    SynchronizeRequest()
+        : LogRequestRequestT<SynchronizeData>(METHOD_SYNCHRONIZE)
     {
     }
 };

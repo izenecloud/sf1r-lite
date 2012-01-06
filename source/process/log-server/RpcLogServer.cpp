@@ -72,6 +72,10 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
 
             updateUUID(uuid2DocidList);
         }
+        else if (method == LogServerRequest::METHOD_SYNCHRONIZE)
+        {
+            synchronize();
+        }
         else
         {
             req.error(msgpack::rpc::NO_METHOD_ERROR);
@@ -87,6 +91,12 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
     }
 }
 
+void RpcLogServer::synchronize()
+{
+    boost::lock_guard<boost::mutex> lock(mutex_);
+    drum_->Synchronize();
+}
+
 void RpcLogServer::updateUUID(const UUID2DocidList& uuid2DocidList)
 {
     // drum is not thread safe
@@ -96,8 +106,6 @@ void RpcLogServer::updateUUID(const UUID2DocidList& uuid2DocidList)
     std::cout << uuid2DocidList.toString() << std::endl; //xxx
 #endif
     drum_->Update(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
-
-    // FIXME synchronize at a proper time
 }
 
 void RpcLogServer::onUpdate(

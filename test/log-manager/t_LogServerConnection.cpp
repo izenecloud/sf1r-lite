@@ -59,6 +59,11 @@ void t_RpcLogServer()
             conn.asynRequest(uuidReq);
         }
     }
+
+    // Force server to synchronize
+    SynchronizeRequest syncReq;
+    conn.asynRequest(syncReq);
+
     conn.flushRequests();
     std::cout << "time elapsed for inserting " << t.elapsed() << std::endl;
 }

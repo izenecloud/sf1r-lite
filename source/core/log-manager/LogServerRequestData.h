@@ -26,6 +26,14 @@ struct UUID2DocidList : public LogServerRequestData
     MSGPACK_DEFINE(uuid_, docidList_)
 };
 
+struct SynchronizeData : public LogServerRequestData
+{
+    // reserved
+    std::string msg_;
+
+    MSGPACK_DEFINE(msg_)
+};
+
 }
 
 #endif /* LOG_SERVER_REQUEST_DATA_H_ */

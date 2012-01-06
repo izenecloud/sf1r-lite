@@ -38,6 +38,8 @@ public:
 public:
     virtual void dispatch(msgpack::rpc::request req);
 
+    void synchronize();
+
     /// Asynchronous update
     void updateUUID(const UUID2DocidList& uuid2DocidList);
 
