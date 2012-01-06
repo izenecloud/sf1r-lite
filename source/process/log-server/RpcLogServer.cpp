@@ -97,8 +97,7 @@ void RpcLogServer::updateUUID(const UUID2DocidList& uuid2DocidList)
 #endif
     drum_->Update(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
 
-    // TODO synchronize at a proper time
-    //drum_->Synchronize();
+    // FIXME synchronize at a proper time
 }
 
 void RpcLogServer::onUpdate(
@@ -114,7 +113,7 @@ void RpcLogServer::onUpdate(
     for (it = docidList.begin(); it != docidList.end(); it++)
     {
 #ifdef LOG_SERVER_DEBUG
-        std::cout << *it << " -> " << Utilities::uint128ToHexString(uuid) << std::endl;
+        std::cout << *it << " -> " << Utilities::uint128ToUuid(uuid) << std::endl;
 #endif
         docidDB_->update(*it, uuid);
     }

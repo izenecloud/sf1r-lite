@@ -35,8 +35,8 @@ public:
     template <typename T>
     static T fromBytes(const std::string& str);
 
-    static std::string uint128ToHexString(const uint128_t& val);
-    static uint128_t hexStringToUint128(const std::string& str);
+    static std::string uint128ToUuid(const uint128_t& val);
+    static uint128_t uuidToUint128(const std::string& str);
 
     template <typename AssocType, typename SeqType>
     static void getKeyList(SeqType& key_list, const AssocType& src_map);

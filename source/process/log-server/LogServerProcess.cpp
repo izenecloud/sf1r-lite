@@ -1,12 +1,12 @@
 #include "LogServerProcess.h"
 #include "LogServerStorage.h"
 
-#include <iostream>
-
 #include <log-manager/LogServerRequest.h>
 
 #include <boost/bind.hpp>
 #include <boost/bind/apply.hpp>
+
+#include <iostream>
 
 namespace sf1r
 {

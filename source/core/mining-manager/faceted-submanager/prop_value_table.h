@@ -22,7 +22,6 @@
 #include <string>
 #include <map>
 #include <set>
-#include <utility>
 
 NS_FACETED_BEGIN
 

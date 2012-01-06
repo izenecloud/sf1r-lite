@@ -31,18 +31,20 @@ NS_FACETED_BEGIN
 struct GroupPropParam
 {
     std::string property_;
+    std::string subProperty_;
     bool isRange_;
 
     GroupPropParam();
 
-    DATA_IO_LOAD_SAVE(GroupPropParam, &property_&isRange_);
+    DATA_IO_LOAD_SAVE(GroupPropParam, &property_&subProperty_&isRange_);
 
-    MSGPACK_DEFINE(property_, isRange_);
+    MSGPACK_DEFINE(property_, subProperty_, isRange_);
 
     template<class Archive>
     void serialize(Archive& ar, const unsigned int version)
     {
         ar & property_;
+        ar & subProperty_;
         ar & isRange_;
     }
 };
@@ -103,8 +105,8 @@ struct GroupParam
 
 private:
     bool checkGroupParam_(const MiningSchema& miningSchema, std::string& message) const;
-    bool checkGroupProps_(const std::vector<GroupConfig>& groupProps, std::string& message) const;
-    bool checkGroupLabels_(const std::vector<GroupConfig>& groupProps, std::string& message) const;
+    bool checkGroupProps_(const std::vector<GroupConfig>& groupConfigs, std::string& message) const;
+    bool checkGroupLabels_(const std::vector<GroupConfig>& groupConfigs, std::string& message) const;
     bool checkAttrParam_(const MiningSchema& miningSchema, std::string& message) const;
     bool isRangeLabel_(const std::string& propName) const;
 };

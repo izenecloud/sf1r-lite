@@ -1,5 +1,6 @@
 #include "GroupCounterLabelBuilder.h"
 #include "group_manager.h"
+#include "SubGroupCounter.h"
 #include "StringGroupCounter.h"
 #include "StringGroupLabel.h"
 #include "NumericGroupCounter.h"
@@ -11,6 +12,7 @@
 
 #include <limits>
 #include <boost/lexical_cast.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <glog/logging.h>
 
 namespace
@@ -157,13 +159,22 @@ GroupCounter* GroupCounterLabelBuilder::createGroupCounter(const GroupPropParam&
     }
     else
     {
-        counter = createValueCounter_(propName);
+        const std::string& subPropName = groupPropParam.subProperty_;
+        if (subPropName.empty())
+        {
+            counter = createValueCounter_(propName);
+        }
+        else
+        {
+            boost::scoped_ptr<GroupCounter> subCounter(createValueCounter_(subPropName));
+            counter = createValueCounter_(propName, subCounter.get());
+        }
     }
 
     return counter;
 }
 
-GroupCounter* GroupCounterLabelBuilder::createValueCounter_(const std::string& prop) const
+GroupCounter* GroupCounterLabelBuilder::createValueCounter_(const std::string& prop, GroupCounter* subCounter) const
 {
     GroupCounter* counter = NULL;
 
@@ -171,14 +182,14 @@ GroupCounter* GroupCounterLabelBuilder::createValueCounter_(const std::string& p
     switch(type)
     {
     case STRING_PROPERTY_TYPE:
-        counter = createStringCounter_(prop);
+        counter = createStringCounter_(prop, subCounter);
         break;
 
     case INT_PROPERTY_TYPE:
     case UNSIGNED_INT_PROPERTY_TYPE:
     case FLOAT_PROPERTY_TYPE:
     case DOUBLE_PROPERTY_TYPE:
-         counter = createNumericCounter_(prop);
+         counter = createNumericCounter_(prop, subCounter);
          break;
 
     default:
@@ -190,14 +201,22 @@ GroupCounter* GroupCounterLabelBuilder::createValueCounter_(const std::string& p
     return counter;
 }
 
-GroupCounter* GroupCounterLabelBuilder::createStringCounter_(const std::string& prop) const
+GroupCounter* GroupCounterLabelBuilder::createStringCounter_(const std::string& prop, GroupCounter* subCounter) const
 {
     GroupCounter* counter = NULL;
-
     const PropValueTable* pvTable = groupManager_->getPropValueTable(prop);
+
     if (pvTable)
     {
-        counter = new StringGroupCounter(*pvTable);
+        if (subCounter)
+        {
+            SubGroupCounter subGroupCounter(subCounter);
+            counter = new StringGroupCounter<SubGroupCounter>(*pvTable, subGroupCounter);
+        }
+        else
+        {
+            counter = new StringGroupCounter<>(*pvTable);
+        }
     }
     else
     {
@@ -207,16 +226,29 @@ GroupCounter* GroupCounterLabelBuilder::createStringCounter_(const std::string& 
     return counter;
 }
 
-GroupCounter* GroupCounterLabelBuilder::createNumericCounter_(const std::string& prop) const
+GroupCounter* GroupCounterLabelBuilder::createNumericCounter_(const std::string& prop, GroupCounter* subCounter) const
 {
+    GroupCounter* counter = NULL;
     NumericPropertyTable *propertyTable = numericTableBuilder_->createPropertyTable(prop);
 
     if (propertyTable)
     {
-        return new NumericGroupCounter(propertyTable);
+        if (subCounter)
+        {
+            SubGroupCounter subGroupCounter(subCounter);
+            counter = new NumericGroupCounter<SubGroupCounter>(propertyTable, subGroupCounter);
+        }
+        else
+        {
+            counter = new NumericGroupCounter<>(propertyTable);
+        }
+    }
+    else
+    {
+        LOG(ERROR) << "failed to create NumericPropertyTable for property " << prop;
     }
 
-    return NULL;
+    return counter;
 }
 
 GroupCounter* GroupCounterLabelBuilder::createNumericRangeCounter_(const std::string& prop) const

@@ -18,7 +18,7 @@ class MiningSchema
 {
 public:
     MiningSchema()
-            :tg_enable(false), tg_kpe_only(false), tg_properties()
+            : tg_enable(false), tg_kpe_only(false), tg_properties()
             , dupd_enable(false), dupd_properties()
             , sim_enable(false), sim_properties()
             , dc_enable(false), dc_properties()

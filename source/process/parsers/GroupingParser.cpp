@@ -25,6 +25,9 @@ using driver::Keys;
  *   could also set this parameter to true,@n
  *   then the group results would be in range form such as "101-200",
  *   meaning the values contained in this range, including both boundary values.
+ * - @b sub_property (@c String): Property name, it gives 2nd level group results
+ *   in response["group"]["labels"]["sub_labels"].@n
+ *   The property type must be string, int or float. If this parameter is set, @b range must be false.
  */
 
 bool GroupingParser::parse(const Value& grouping)
@@ -49,6 +52,7 @@ bool GroupingParser::parse(const Value& grouping)
         if (groupingRule.type() == Value::kObjectType)
         {
             propParam.property_ = asString(groupingRule[Keys::property]);
+            propParam.subProperty_ = asString(groupingRule[Keys::sub_property]);
             if (groupingRule.hasKey(Keys::range))
             {
                 propParam.isRange_ = asBool(groupingRule[Keys::range]);

@@ -26,6 +26,8 @@ public:
 
     ~NumericRangeGroupCounter();
 
+    virtual NumericRangeGroupCounter* clone() const;
+
     virtual void addDoc(docid_t doc);
 
     virtual void getGroupRep(GroupRep &groupRep);

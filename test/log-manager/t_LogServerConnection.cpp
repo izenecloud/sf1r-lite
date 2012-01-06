@@ -4,7 +4,7 @@
 #include <util/ClockTimer.h>
 #include <common/Utilities.h>
 
-#include <sstream>
+#include <boost/uuid/random_generator.hpp>
 
 using namespace sf1r;
 
@@ -45,16 +45,18 @@ void t_RpcLogServer()
     uuidReq.param_.docidList_.push_back(3333);
 
     izenelib::util::ClockTimer t;
+    boost::uuids::random_generator random_gen;
     for (int i = 0; i < 1; i++)
     {
-        for (int j = 0; j < 0xffffff; j++)
+        for (int j = 0; j < 0x1000000; j++)
         {
-            uuidReq.param_.uuid_ = (uint128_t) j << 104;
+            boost::uuids::uuid uuid = random_gen();
+            uuidReq.param_.uuid_ = *reinterpret_cast<uint128_t *>(&uuid);
             conn.asynRequest(uuidReq);
         }
     }
     conn.flushRequests();
-    std::cout<<"time elapsed for inserting "<<t.elapsed()<<std::endl;
+    std::cout << "time elapsed for inserting " << t.elapsed() << std::endl;
 }
 
 void t_RpcLogServerTestData()
