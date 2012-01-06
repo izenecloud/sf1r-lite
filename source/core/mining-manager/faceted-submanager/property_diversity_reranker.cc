@@ -59,10 +59,7 @@ void PropertyDiversityReranker::rerank(
 
         if (!labelId && !boostingPolicyProperty_.empty())
         {
-            if (initLabelValueCounters_())
-            {
-                labelId = getBoostLabelIdByPolicy_(docIdList);
-            }
+            labelId = getBoostLabelIdByPolicy_(docIdList);
         }
 
         if(labelId)
@@ -144,48 +141,33 @@ void PropertyDiversityReranker::rerank(
     LOG(INFO) << "PropertyDiversityReranker::rerank() costs " << timer.elapsed() << " seconds";
 }
 
-bool PropertyDiversityReranker::initLabelValueCounters_()
+PropValueTable::pvid_t
+PropertyDiversityReranker::getFirstLevelLabel(
+        const PropValueTable::ValueIdList& parentIdList,
+        PropValueTable::pvid_t pvId)
 {
-    if (!labelValueCounters_.empty())
+    PropValueTable::pvid_t ret = pvId;
+    std::size_t pvIdNum = parentIdList.size();
+
+    while (ret < pvIdNum)
     {
-        std::vector<LabelValueCounter>::iterator it;
-        for (it = labelValueCounters_.begin(); it != labelValueCounters_.end(); it++)
+        if (parentIdList[ret] == 0)
         {
-            it->init();
+            return ret;
         }
-        return true;
+
+        ret = parentIdList[ret];
     }
 
-    if (groupManager_ && !boostingProperty_.empty())
-    {
-        const PropValueTable* pvTable = NULL;
-        pvTable = groupManager_->getPropValueTable(boostingProperty_);
-        if (pvTable)
-        {
-            PropValueTable::ScopedReadLock lock(pvTable->getLock());
-            const PropValueTable::ValueIdList& parentIdList = pvTable->parentIdList();
-
-            for (PropValueTable::pvid_t pvid = 0; pvid < parentIdList.size(); pvid++)
-            {
-                // get first level labels
-                if (parentIdList[pvid] == 0)
-                {
-                    LabelValueCounter counter(pvid);
-                    labelValueCounters_.push_back(counter);
-                }
-            }
-
-            return true;
-        }
-    }
-
-    return false;
+    return 0;
 }
 
 PropValueTable::pvid_t
 PropertyDiversityReranker::getBoostLabelIdByPolicy_(
         std::vector<unsigned int>& docIdList)
 {
+    typedef std::map<PropValueTable::pvid_t, LabelValueCounter> LabelCounterMap;
+
     // labelId with maximum average value
     PropValueTable::pvid_t maxLabelId = 0;
 
@@ -200,34 +182,56 @@ PropertyDiversityReranker::getBoostLabelIdByPolicy_(
 
         if (pvTable && propertyData)
         {
+            PropValueTable::ScopedReadLock lock(pvTable->getLock());
+            const PropValueTable::ValueIdTable& idTable = pvTable->valueIdTable();
+            const PropValueTable::ValueIdList& parentIdList = pvTable->parentIdList();
+
+            LabelCounterMap firstLvLabelCounterMap;
+
             // count label value
-            std::size_t numDoc = docIdList.size();
-            std::size_t numLabel = labelValueCounters_.size();
             double value = 0;
+            std::size_t numDoc = docIdList.size();
             for(std::size_t i = 0; i < numDoc; ++i)
             {
-                for (std::size_t j = 0; j < numLabel; ++j)
+                docid_t docId = docIdList[i];
+
+                if (!propertyData->convertPropertyValue(docId, value))
                 {
-                    if (pvTable->testDoc(docIdList[i], labelValueCounters_[j].labelId_))
+                     continue;
+                }
+
+                if (docId < idTable.size() && idTable[docId].empty() == false)
+                {
+                    // use 1st group value
+                    PropValueTable::pvid_t pvId = idTable[docId][0];
+                    // use 1st level label
+                    PropValueTable::pvid_t firstLevelPvId = getFirstLevelLabel(parentIdList, pvId);
+                    if (firstLevelPvId == 0)
                     {
-                        if (propertyData->convertPropertyValue(docIdList[i], value))
-                        {
-                            labelValueCounters_[j].totalvalue_ += value;
-                            labelValueCounters_[j].cnt_ ++;
-                        }
+                        continue;
                     }
+
+                    if (firstLvLabelCounterMap.find(firstLevelPvId) == firstLvLabelCounterMap.end())
+                    {
+                        LabelValueCounter counter;
+                        firstLvLabelCounterMap.insert(std::make_pair(firstLevelPvId, counter));
+                    }
+
+                    firstLvLabelCounterMap[firstLevelPvId].totalvalue_ += value;
+                    firstLvLabelCounterMap[firstLevelPvId].cnt_ ++;
                 }
             }
 
             // get maximum average value
             double maxAvgValue = 0;
-            for (std::size_t j = 0; j < numLabel; ++j)
+            LabelCounterMap::iterator it;
+            for (it = firstLvLabelCounterMap.begin(); it != firstLvLabelCounterMap.end(); it++)
             {
-                LabelValueCounter& counter = labelValueCounters_[j];
+                LabelValueCounter& counter = it->second;
                 counter.compute();
                 if (counter.avgValue_ > maxAvgValue)
                 {
-                    maxLabelId = counter.labelId_;
+                    maxLabelId = it->first;
                     maxAvgValue = counter.avgValue_;
                 }
             }

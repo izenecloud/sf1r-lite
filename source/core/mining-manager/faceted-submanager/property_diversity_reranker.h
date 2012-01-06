@@ -29,9 +29,8 @@ NS_FACETED_BEGIN
 
 struct LabelValueCounter
 {
-    LabelValueCounter(const PropValueTable::pvid_t& pvid)
-    : labelId_(pvid)
-    , totalvalue_(0)
+    LabelValueCounter()
+    : totalvalue_(0)
     , avgValue_(0)
     , cnt_(0)
     {}
@@ -44,14 +43,6 @@ struct LabelValueCounter
         }
     }
 
-    void init()
-    {
-        totalvalue_ = 0;
-        avgValue_ = 0;
-        cnt_ = 0;
-    }
-
-    PropValueTable::pvid_t labelId_;
     double totalvalue_;
     double avgValue_;
     std::size_t cnt_;
@@ -103,9 +94,13 @@ public:
 
 private:
     /**
-     * get label value counters for first level labels
+     * get first level label for specified pvid
+     * @param parentIdList
+     * @param pvId
      */
-    bool initLabelValueCounters_();
+    PropValueTable::pvid_t getFirstLevelLabel(
+            const PropValueTable::ValueIdList& parentIdList,
+            PropValueTable::pvid_t pvId);
 
     /**
      * Get boosting label id by policy
@@ -145,8 +140,6 @@ private:
     std::string diversityProperty_;
     std::string boostingProperty_;
     std::string boostingPolicyProperty_;
-
-    std::vector<LabelValueCounter> labelValueCounters_;
 
     GroupLabelLogger* groupLabelLogger_;
     boost::weak_ptr<SearchManager> searchManager_;
