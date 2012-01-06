@@ -105,6 +105,7 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   lzo
   msgpack
   zookeeper
+  snappy
   )
 
 
