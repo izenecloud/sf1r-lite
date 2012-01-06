@@ -42,6 +42,7 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   zookeeper
   distribute
   udt
+  snappy
   cassandra
   )
 
