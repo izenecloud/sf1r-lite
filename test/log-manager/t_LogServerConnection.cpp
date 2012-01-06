@@ -105,6 +105,9 @@ void t_RpcLogServerCreateTestData()
     conn.asynRequest(uuidReq);
     std::cout << "sent rpc request: " << uuidReq.param_.toString() << std::endl;
 
+    SynchronizeRequest syncReq;
+    conn.asynRequest(syncReq);
+
     conn.flushRequests();
 
     // =====> cclog after uuid generated
@@ -150,6 +153,9 @@ void t_RpcLogServerUpdateTestData()
     uuidReq.param_.uuid_ = Utilities::uuidToUint128("4857bcda-22e4-4a87-964d-17ffcf024d16");
     conn.asynRequest(uuidReq);
     std::cout << "sent rpc request: " << uuidReq.param_.toString() << std::endl;
+
+    SynchronizeRequest syncReq;
+    conn.asynRequest(syncReq);
 
     conn.flushRequests();
 
