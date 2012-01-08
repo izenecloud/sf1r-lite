@@ -253,7 +253,7 @@ void DriverLogServerHandler::onDuplicateKeyCheck(
         if (docidDB_->get(docidList[i], newUuid))
         {
             newUuidSet.insert(newUuid);
-            std::cout << docidList[i] << " -> " << Utilities::uint128ToUuid(newUuid) << std::endl;
+            //std::cout << docidList[i] << " -> " << Utilities::uint128ToUuid(newUuid) << std::endl;
         }
     }
 
@@ -266,7 +266,7 @@ void DriverLogServerHandler::onDuplicateKeyCheck(
     {
         boost::shared_ptr<CCLogMerge>& cclogMergeUnit = it->second;
         cclogMergeUnit->uuidUpdateVec_.push_back(std::make_pair(uuid, newUuidSet));
-        mergeCClog(); // Fixme
+        mergeCClog(); // xxx
     }
     else
     {
@@ -299,13 +299,19 @@ void DriverLogServerHandler::ouputCclog(const std::string& log)
 void DriverLogServerHandler::mergeCClog()
 {
     std::map<uint128_t, boost::shared_ptr<CCLogMerge> >::iterator it;
-    for (it = cclogMergeQueue_.begin(); it != cclogMergeQueue_.end(); )
+    for (it = cclogMergeQueue_.begin(); it != cclogMergeQueue_.end(); it++)
     {
         boost::shared_ptr<CCLogMerge>& cclogMergeUnit = it->second;
+        if (cclogMergeUnit->merged_ == true)
+        {
+            continue;
+        }
+
         if (cclogMergeUnit->uuidCnt_ == cclogMergeUnit->uuidUpdateVec_.size())
         {
             // join all uuids' update
             std::string log = cclogMergeUnit->request_;
+            //std::cout<<"merge log: "<<log <<std::endl;
 
             std::vector<std::pair<uint128_t, std::set<uint128_t> > >::iterator itv;
             for (itv = cclogMergeUnit->uuidUpdateVec_.begin(); itv != cclogMergeUnit->uuidUpdateVec_.end(); itv++)
@@ -326,12 +332,20 @@ void DriverLogServerHandler::mergeCClog()
                 boost::replace_all(log, oldUuidStr, newUuidStr);
             }
 
+            std::cout<<"merged log: "<<log <<std::endl;
+            cclogMergeUnit->merged_ = true;
             ouputCclog(log);
+        }
+    }
 
-            std::cout<<"merge log: "<<log <<std::endl;
-
-            //cclogMergeQueue_.erase(it);
-            //it--;
+    // remove merged
+    for (it = cclogMergeQueue_.begin(); it != cclogMergeQueue_.end(); )
+    {
+        boost::shared_ptr<CCLogMerge>& cclogMergeUnit = it->second;
+        if (cclogMergeUnit->merged_ == true)
+        {
+            cclogMergeQueue_.erase(it++);
+            continue;
         }
         else
         {
