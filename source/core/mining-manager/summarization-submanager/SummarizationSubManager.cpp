@@ -50,7 +50,7 @@ struct IsParentKeyFilterProperty
 
     bool operator()(const QueryFiltering::FilteringType& filterType)
     {
-        return boost::iequals(parent_key_property, filterType.first.second);
+        return boost::iequals(parent_key_property, filterType.property_);
     }
 };
 
@@ -242,7 +242,7 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
             filtingList.end(), IsParentKeyFilterProperty(schema_.parentKey));
     if (it != filtingList.end())
     {
-        const std::vector<PropertyValue>& filterParam = it->second;
+        const std::vector<PropertyValue>& filterParam = it->values_;
         if (!filterParam.empty())
         {
             try
@@ -254,8 +254,8 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
                 {
                     BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
                     QueryFiltering::FilteringType filterRule;
-                    filterRule.first.first = QueryFiltering::INCLUDE;
-                    filterRule.first.second = schema_.foreignKeyPropName;
+                    filterRule.operation_ = QueryFiltering::INCLUDE;
+                    filterRule.property_ = schema_.foreignKeyPropName;
                     std::vector<UString>::const_iterator rit = results.begin();
                     for (; rit != results.end(); ++rit)
                     {
@@ -264,7 +264,7 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
                             ///Protection
                             ///Or else, too many unexisted keys are added
                             PropertyValue v(*rit);
-                            filterRule.second.push_back(v);
+                            filterRule.values_.push_back(v);
                         }
                     }
                     filtingList.erase(it);

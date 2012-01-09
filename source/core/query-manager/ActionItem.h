@@ -20,6 +20,8 @@
 #define _ACTIONITEM_H_
 
 #include <common/type_defs.h>
+#include <common/sf1_msgpack_serialization_types.h>
+#include <3rdparty/msgpack/msgpack.hpp>
 
 #include "QueryTypeDef.h"
 #include "ConditionInfo.h"
@@ -28,8 +30,6 @@
 #include <search-manager/CustomRanker.h>
 #include <mining-manager/faceted-submanager/GroupParam.h>
 
-#include <common/sf1_msgpack_serialization_types.h>
-#include <3rdparty/msgpack/msgpack.hpp>
 #include <util/izene_serialization.h>
 #include <net/aggregator/Util.h>
 
@@ -427,10 +427,10 @@ class KeywordSearchActionItem
             ss << "Filtering Option : " << endl;
             for(size_t i = 0; i < filteringList_.size(); i++)
             {
-                ss << "FilteringType :  " << filteringList_[i].first.first << " , property : " << filteringList_[i].first.second << endl;
+                ss << "FilteringType :  " << filteringList_[i].operation_ << " , property : " << filteringList_[i].property_ << endl;
                 ss << "------------------------------------------------" << endl;
-                for( std::vector<PropertyValue>::const_iterator iter = filteringList_[i].second.begin();
-                        iter != filteringList_[i].second.end(); iter++ )
+                for( std::vector<PropertyValue>::const_iterator iter = filteringList_[i].values_.begin();
+                        iter != filteringList_[i].values_.end(); iter++ )
                     ss << *iter << endl;
                 ss << "------------------------------------------------" << endl;
             }

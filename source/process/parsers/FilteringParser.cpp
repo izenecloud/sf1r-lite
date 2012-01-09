@@ -58,16 +58,16 @@ bool FilteringParser::parse(const Value& conditions)
                 return false;
             }
         }
-        filteringRule.first.second = condition.property();
-        filteringRule.first.first = toFilteringOperation(condition.op());
+        filteringRule.operation_ = toFilteringOperation(condition.op());
+        filteringRule.property_ = condition.property();
 
-        filteringRule.second.resize(condition.size());
+        filteringRule.values_.resize(condition.size());
         for (std::size_t v = 0; v < condition.size(); ++v)
         {
             ValueConverter::driverValue2PropertyValue(
-                dataType,
-                condition(v),
-                filteringRule.second[v]
+                    dataType,
+                    condition(v),
+                    filteringRule.values_[v]
             );
         }
     }
