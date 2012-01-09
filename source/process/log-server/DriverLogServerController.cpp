@@ -231,18 +231,18 @@ void DriverLogServerHandler::processRecPurchaseItem(izenelib::driver::Request& r
 }
 
 void DriverLogServerHandler::onUniqueKeyCheck(
-        const uint128_t& uuid,
-        const std::vector<uint32_t>& docidList,
-        const std::string& aux)
+        const LogServerStorage::drum_key_t& uuid,
+        const LogServerStorage::drum_value_t& docidList,
+        const LogServerStorage::drum_aux_t& aux)
 {
     //std::cout << "onUniqueKeyCheck " << Utilities::uint128ToUuid(uuid) << std::endl;
     ouputCclog(aux);
 }
 
 void DriverLogServerHandler::onDuplicateKeyCheck(
-        const uint128_t& uuid,
-        const std::vector<uint32_t>& docidList,
-        const std::string& aux)
+        const LogServerStorage::drum_key_t& uuid,
+        const LogServerStorage::drum_value_t& docidList,
+        const LogServerStorage::drum_aux_t& aux)
 {
     std::cout << "onDuplicateKeyCheck " << Utilities::uint128ToUuid(uuid) << std::endl;
 

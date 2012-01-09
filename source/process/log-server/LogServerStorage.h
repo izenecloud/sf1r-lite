@@ -19,7 +19,8 @@ class LogServerStorage
 public:
     // DRUM <uuid, docids>
     typedef uint128_t drum_key_t;
-    typedef std::vector<uint32_t> drum_value_t;
+    typedef uint32_t raw_docid_t;
+    typedef std::vector<raw_docid_t> drum_value_t;
     typedef std::string drum_aux_t;
 
     typedef DrumDispatcher<
