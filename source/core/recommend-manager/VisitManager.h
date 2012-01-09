@@ -55,7 +55,7 @@ public:
      */
     bool addVisitItem(
         const std::string& sessionId,
-        userid_t userId,
+        const std::string& userId,
         itemid_t itemId,
         bool isRecItem
     );
@@ -67,7 +67,7 @@ public:
      *                  has not visited any item.
      * @return true for success, false for error happened.
      */
-    bool getVisitItemSet(userid_t userId, ItemIdSet& itemIdSet);
+    bool getVisitItemSet(const std::string& userId, ItemIdSet& itemIdSet);
 
     /**
      * Get @p itemIdSet recommended to @p userId.
@@ -75,7 +75,7 @@ public:
      * @param itemidSet item id set recommended to @p userId before.
      * @return true for success, false for error happened.
      */
-    bool getRecommendItemSet(userid_t userId, ItemIdSet& itemIdSet);
+    bool getRecommendItemSet(const std::string& userId, ItemIdSet& itemIdSet);
 
     /**
      * Get the current visit session by @p userId.
@@ -83,14 +83,14 @@ public:
      * @param visitSession store the current visit session
      * @return true for success, false for error happened.
      */
-    bool getVisitSession(userid_t userId, VisitSession& visitSession);
+    bool getVisitSession(const std::string& userId, VisitSession& visitSession);
 
     /**
      * The number of users who have visited items.
      */
     unsigned int visitUserNum();
 
-    typedef izenelib::sdb::unordered_sdb_tc<userid_t, ItemIdSet, ReadWriteLock> VisitDBType;
+    typedef izenelib::sdb::unordered_sdb_tc<std::string, ItemIdSet, ReadWriteLock> VisitDBType;
     typedef izenelib::sdb::SDBCursorIterator<VisitDBType> VisitIterator;
     VisitIterator begin();
     VisitIterator end();
@@ -100,19 +100,19 @@ public:
 private:
     bool updateVisitDB_(
         VisitDBType& db,
-        userid_t userId,
+        const std::string& userId,
         itemid_t itemId
     );
 
     bool getVisitDB_(
         VisitDBType& db,
-        userid_t userId,
+        const std::string& userId,
         ItemIdSet& itemIdSet
     );
 
     bool updateSessionDB_(
         const std::string& sessionId,
-        userid_t userId,
+        const std::string& userId,
         itemid_t itemId
     );
 
@@ -120,7 +120,7 @@ private:
     VisitDBType visitDB_; // the items visited
     VisitDBType recommendDB_; // the items recommended
 
-    typedef izenelib::sdb::unordered_sdb_tc<userid_t, VisitSession, ReadWriteLock> SessionDBType;
+    typedef izenelib::sdb::unordered_sdb_tc<std::string, VisitSession, ReadWriteLock> SessionDBType;
     SessionDBType sessionDB_; // the items in current session
 
     CoVisitManager& coVisitManager_;

@@ -31,9 +31,10 @@ bool BORRecommender::recommendImpl_(
     const std::vector<itemid_t>& inputItemIds = param.inputItemIds;
     filter.insert(inputItemIds.begin(), inputItemIds.end());
 
-    if (param.userId && !userEventFilter_.filter(param.userId, param.inputItemIds, filter))
+    if (!param.userIdStr.empty() &&
+        !userEventFilter_.filter(param.userIdStr, param.inputItemIds, filter))
     {
-        LOG(ERROR) << "failed to filter user event for user id " << param.userId;
+        LOG(ERROR) << "failed to filter user event for user id " << param.userIdStr;
         return false;
     }
 

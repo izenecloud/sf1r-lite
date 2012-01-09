@@ -27,14 +27,14 @@ const char* EVENT_DB_STR = "event.db";
 }
 
 typedef map<string, set<itemid_t> > EventItemMap;
-typedef map<userid_t, EventItemMap > UserEventMap;
+typedef map<string, EventItemMap> UserEventMap;
 
 void updateEvent(
     bool isAdd,
     EventManager& eventManager,
     UserEventMap& userEventMap,
     const string& eventStr,
-    userid_t userId,
+    const string& userId,
     itemid_t itemId
 )
 {
@@ -86,9 +86,9 @@ BOOST_AUTO_TEST_CASE(checkEvent)
         BOOST_TEST_MESSAGE("check empty event...");
         EventManager eventManager(eventPath.string());
 
-        BOOST_CHECK(userEventMap[1].empty());
-        BOOST_CHECK(userEventMap[10].empty());
-        BOOST_CHECK(userEventMap[100].empty());
+        BOOST_CHECK(userEventMap["1"].empty());
+        BOOST_CHECK(userEventMap["10"].empty());
+        BOOST_CHECK(userEventMap["100"].empty());
 
         checkEventManager(userEventMap, eventManager);
     }
@@ -97,15 +97,15 @@ BOOST_AUTO_TEST_CASE(checkEvent)
         BOOST_TEST_MESSAGE("update event...");
         EventManager eventManager(eventPath.string());
 
-        updateEvent(true, eventManager, userEventMap, "wish_list", 1, 1);
-        updateEvent(true, eventManager, userEventMap, "own", 1, 2);
-        updateEvent(true, eventManager, userEventMap, "like", 1, 3);
-        updateEvent(true, eventManager, userEventMap, "favorite", 1, 4);
-        updateEvent(false, eventManager, userEventMap, "not_rec_result", 1, 5);
-        updateEvent(false, eventManager, userEventMap, "not_rec_input", 1, 6);
+        updateEvent(true, eventManager, userEventMap, "wish_list", "1", 1);
+        updateEvent(true, eventManager, userEventMap, "own", "1", 2);
+        updateEvent(true, eventManager, userEventMap, "like", "1", 3);
+        updateEvent(true, eventManager, userEventMap, "favorite", "1", 4);
+        updateEvent(false, eventManager, userEventMap, "not_rec_result", "1", 5);
+        updateEvent(false, eventManager, userEventMap, "not_rec_input", "1", 6);
 
-        updateEvent(true, eventManager, userEventMap, "not_rec_result", 2, 1);
-        updateEvent(true, eventManager, userEventMap, "not_rec_input", 2, 2);
+        updateEvent(true, eventManager, userEventMap, "not_rec_result", "2", 1);
+        updateEvent(true, eventManager, userEventMap, "not_rec_input", "2", 2);
 
         checkEventManager(userEventMap, eventManager);
     }
@@ -116,19 +116,19 @@ BOOST_AUTO_TEST_CASE(checkEvent)
 
         checkEventManager(userEventMap, eventManager);
 
-        updateEvent(false, eventManager, userEventMap, "wish_list", 1, 1);
-        updateEvent(false, eventManager, userEventMap, "own", 1, 2);
-        updateEvent(true, eventManager, userEventMap, "like", 1, 3);
-        updateEvent(true, eventManager, userEventMap, "favorite", 1, 4);
-        updateEvent(true, eventManager, userEventMap, "not_rec_result", 1, 5);
-        updateEvent(true, eventManager, userEventMap, "not_rec_input", 1, 6);
+        updateEvent(false, eventManager, userEventMap, "wish_list", "1", 1);
+        updateEvent(false, eventManager, userEventMap, "own", "1", 2);
+        updateEvent(true, eventManager, userEventMap, "like", "1", 3);
+        updateEvent(true, eventManager, userEventMap, "favorite", "1", 4);
+        updateEvent(true, eventManager, userEventMap, "not_rec_result", "1", 5);
+        updateEvent(true, eventManager, userEventMap, "not_rec_input", "1", 6);
 
-        updateEvent(false, eventManager, userEventMap, "wish_list", 2, 1);
-        updateEvent(false, eventManager, userEventMap, "own", 2, 2);
-        updateEvent(true, eventManager, userEventMap, "like", 2, 3);
-        updateEvent(true, eventManager, userEventMap, "favorite", 2, 4);
-        updateEvent(false, eventManager, userEventMap, "not_rec_result", 2, 1);
-        updateEvent(false, eventManager, userEventMap, "not_rec_input", 2, 2);
+        updateEvent(false, eventManager, userEventMap, "wish_list", "2", 1);
+        updateEvent(false, eventManager, userEventMap, "own", "2", 2);
+        updateEvent(true, eventManager, userEventMap, "like", "2", 3);
+        updateEvent(true, eventManager, userEventMap, "favorite", "2", 4);
+        updateEvent(false, eventManager, userEventMap, "not_rec_result", "2", 1);
+        updateEvent(false, eventManager, userEventMap, "not_rec_input", "2", 2);
 
         checkEventManager(userEventMap, eventManager);
     }

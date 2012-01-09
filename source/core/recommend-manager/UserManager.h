@@ -7,7 +7,6 @@
 #ifndef USER_MANAGER_H
 #define USER_MANAGER_H
 
-#include "RecTypes.h"
 #include "User.h"
 #include <sdb/SequentialDB.h>
 #include <sdb/SDBCursorIterator.h>
@@ -24,14 +23,14 @@ public:
 
     void flush();
 
-    bool addUser(userid_t userId, const User& user);
-    bool updateUser(userid_t userId, const User& user);
-    bool removeUser(userid_t userId);
+    bool addUser(const User& user);
+    bool updateUser(const User& user);
+    bool removeUser(const std::string& userId);
 
-    bool getUser(userid_t userId, User& user);
+    bool getUser(const std::string& userId, User& user);
     unsigned int userNum();
 
-    typedef izenelib::sdb::unordered_sdb_tc<userid_t, User, ReadWriteLock> SDBType;
+    typedef izenelib::sdb::unordered_sdb_tc<std::string, User, ReadWriteLock> SDBType;
     typedef izenelib::sdb::SDBCursorIterator<SDBType> SDBIterator;
     SDBIterator begin();
     SDBIterator end();

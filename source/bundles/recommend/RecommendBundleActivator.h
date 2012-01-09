@@ -38,7 +38,6 @@ class EventManager;
 class RateManager;
 class RecommenderFactory;
 class ItemIdGenerator;
-class UserIdGenerator;
 
 class RecommendBundleActivator : public IBundleActivator, public IServiceTrackerCustomizer
 {
@@ -84,7 +83,6 @@ private:
     boost::scoped_ptr<EventManager> eventManager_;
     boost::scoped_ptr<RateManager> rateManager_;
     boost::scoped_ptr<RecommenderFactory> recommenderFactory_;
-    boost::scoped_ptr<UserIdGenerator> userIdGenerator_;
     boost::scoped_ptr<ItemIdGenerator> itemIdGenerator_;
 
     boost::scoped_ptr<CoVisitManager> coVisitManager_;

@@ -29,7 +29,7 @@ void RateManager::flush()
 }
 
 bool RateManager::addRate(
-    userid_t userId,
+    const std::string& userId,
     itemid_t itemId,
     rate_t rate
 )
@@ -53,7 +53,7 @@ bool RateManager::addRate(
 }
 
 bool RateManager::removeRate(
-    userid_t userId,
+    const std::string& userId,
     itemid_t itemId
 )
 {
@@ -81,7 +81,7 @@ bool RateManager::removeRate(
 }
 
 bool RateManager::getItemRateMap(
-    userid_t userId,
+    const std::string& userId,
     ItemRateMap& itemRateMap
 )
 {

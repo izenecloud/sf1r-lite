@@ -43,22 +43,21 @@ void checkUser(const User& user1, const User& user2)
     BOOST_CHECK(it2 == user2.propValueMap_.end());
 }
 
-void checkUserManager(const vector<userid_t>& idVec, const vector<User>& userVec, UserManager& userManager)
+void checkUserManager(const vector<User>& userVec, UserManager& userManager)
 {
-    BOOST_CHECK_EQUAL(idVec.size(), userVec.size());
     BOOST_CHECK_EQUAL(userManager.userNum(), userVec.size());
 
     User user2;
-    for (size_t i = 0; i < idVec.size(); ++i)
+    for (vector<User>::const_iterator it = userVec.begin();
+        it != userVec.end(); ++it)
     {
-        BOOST_CHECK(userManager.getUser(idVec[i], user2));
-        checkUser(userVec[i], user2);
+        BOOST_CHECK(userManager.getUser(it->idStr_, user2));
+        checkUser(user2, *it);
     }
 }
 
-void iterateUserManager(const vector<userid_t>& idVec, const vector<User>& userVec, UserManager& userManager)
+void iterateUserManager(const vector<User>& userVec, UserManager& userManager)
 {
-    BOOST_CHECK_EQUAL(idVec.size(), userVec.size());
     BOOST_CHECK_EQUAL(userManager.userNum(), userVec.size());
 
     unsigned int iterNum = 0;
@@ -66,11 +65,12 @@ void iterateUserManager(const vector<userid_t>& idVec, const vector<User>& userV
         userIt != userManager.end(); ++userIt)
     {
         bool isFind = false;
-        for (size_t i = 0; i < idVec.size(); ++i)
+        for (vector<User>::const_iterator it = userVec.begin();
+            it != userVec.end(); ++it)
         {
-            if (idVec[i] == userIt->first)
+            if (it->idStr_ == userIt->first)
             {
-                checkUser(userIt->second, userVec[i]);
+                checkUser(userIt->second, *it);
                 isFind = true;
                 break;
             }
@@ -92,10 +92,8 @@ BOOST_AUTO_TEST_CASE(checkUser)
 
     bfs::path userPath(bfs::path(TEST_DIR_STR) / USER_DB_STR);
 
-    vector<userid_t> idVec;
     vector<User> userVec;
 
-    idVec.push_back(1);
     userVec.push_back(User());
     User& user1 = userVec.back();
     user1.idStr_ = "aaa_1";
@@ -104,7 +102,6 @@ BOOST_AUTO_TEST_CASE(checkUser)
     user1.propValueMap_["job"].assign("student", ENCODING_TYPE);
     user1.propValueMap_["interest"].assign("reading", ENCODING_TYPE);
 
-    idVec.push_back(51);
     userVec.push_back(User());
     User& user2 = userVec.back();
     user2.idStr_ = "aaa_51";
@@ -118,13 +115,13 @@ BOOST_AUTO_TEST_CASE(checkUser)
         UserManager userManager(userPath.string());
         for (size_t i = 0; i < userVec.size(); ++i)
         {
-            BOOST_CHECK(userManager.addUser(idVec[i], userVec[i]));
+            BOOST_CHECK(userManager.addUser(userVec[i]));
         }
         // duplicate add should fail
-        BOOST_CHECK(userManager.addUser(idVec[0], userVec[0]) == false);
+        BOOST_CHECK(userManager.addUser(userVec[0]) == false);
 
-        checkUserManager(idVec, userVec, userManager);
-        iterateUserManager(idVec, userVec, userManager);
+        checkUserManager(userVec, userManager);
+        iterateUserManager(userVec, userManager);
 
         userManager.flush();
     }
@@ -133,7 +130,7 @@ BOOST_AUTO_TEST_CASE(checkUser)
         BOOST_TEST_MESSAGE("update user...");
         UserManager userManager(userPath.string());
 
-        checkUserManager(idVec, userVec, userManager);
+        checkUserManager(userVec, userManager);
 
         User& user2 = userVec.back();
         user2.propValueMap_["gender"].assign("femal", ENCODING_TYPE);
@@ -142,18 +139,18 @@ BOOST_AUTO_TEST_CASE(checkUser)
         user2.propValueMap_["interest"].assign("shopping", ENCODING_TYPE);
         user2.propValueMap_["born"].assign("上海", ENCODING_TYPE);
 
-        BOOST_CHECK(userManager.updateUser(idVec.back(), user2));
-        checkUserManager(idVec, userVec, userManager);
-        iterateUserManager(idVec, userVec, userManager);
+        BOOST_CHECK(userManager.updateUser(user2));
+        checkUserManager(userVec, userManager);
+        iterateUserManager(userVec, userManager);
 
         BOOST_TEST_MESSAGE("remove user...");
-        userid_t removeId = idVec.front();
+        vector<User>::iterator userIt = userVec.begin();
+        const string& removeId = userIt->idStr_;
         BOOST_CHECK(userManager.removeUser(removeId));
         BOOST_CHECK(userManager.getUser(removeId, user2) == false);
-        userVec.erase(userVec.begin());
-        idVec.erase(idVec.begin());
-        checkUserManager(idVec, userVec, userManager);
-        iterateUserManager(idVec, userVec, userManager);
+        userVec.erase(userIt);
+        checkUserManager(userVec, userManager);
+        iterateUserManager(userVec, userManager);
 
         userManager.flush();
     }
@@ -162,14 +159,15 @@ BOOST_AUTO_TEST_CASE(checkUser)
         BOOST_TEST_MESSAGE("empty user...");
         UserManager userManager(userPath.string());
 
-        checkUserManager(idVec, userVec, userManager);
-        iterateUserManager(idVec, userVec, userManager);
+        checkUserManager(userVec, userManager);
+        iterateUserManager(userVec, userManager);
 
-        BOOST_CHECK(userManager.removeUser(idVec.front()));
-        userVec.erase(userVec.begin());
-        idVec.erase(idVec.begin());
-        checkUserManager(idVec, userVec, userManager);
-        iterateUserManager(idVec, userVec, userManager);
+        vector<User>::iterator userIt = userVec.begin();
+        const string& removeId = userIt->idStr_;
+        BOOST_CHECK(userManager.removeUser(removeId));
+        userVec.erase(userIt);
+        checkUserManager(userVec, userManager);
+        iterateUserManager(userVec, userManager);
 
         userManager.flush();
     }

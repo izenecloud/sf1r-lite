@@ -32,12 +32,12 @@ const char* ITEM_DB_STR = "item.db";
 const char* MAX_ID_STR = "max_itemid.txt";
 }
 
-typedef map<userid_t, set<itemid_t> > PurchaseMap;
+typedef map<string, set<itemid_t> > PurchaseMap;
 
 void addPurchaseItem(
     PurchaseManager& purchaseManager,
     PurchaseMap& purchaseMap,
-    userid_t userId,
+    const std::string& userId,
     const std::vector<itemid_t>& orderItemVec
 )
 {
@@ -72,7 +72,7 @@ void iteratePurchaseManager(const PurchaseMap& purchaseMap, PurchaseManager& pur
     for (PurchaseManager::SDBIterator purchaseIt = purchaseManager.begin();
         purchaseIt != purchaseManager.end(); ++purchaseIt)
     {
-        userid_t userId = purchaseIt->first;
+        const string& userId = purchaseIt->first;
         const ItemIdSet& itemIdSet = purchaseIt->second;
 
         PurchaseMap::const_iterator it = purchaseMap.find(userId);
@@ -116,37 +116,37 @@ BOOST_AUTO_TEST_CASE(checkPurchase)
         orderItemVec.push_back(20);
         orderItemVec.push_back(10);
         orderItemVec.push_back(40);
-        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec);
+        addPurchaseItem(purchaseManager, purchaseMap, "1", orderItemVec);
 
         orderItemVec.clear();
         orderItemVec.push_back(10);
-        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec);
+        addPurchaseItem(purchaseManager, purchaseMap, "1", orderItemVec);
 
         orderItemVec.clear();
         orderItemVec.push_back(20);
         orderItemVec.push_back(30);
-        addPurchaseItem(purchaseManager, purchaseMap, 2, orderItemVec);
+        addPurchaseItem(purchaseManager, purchaseMap, "2", orderItemVec);
 
         orderItemVec.clear();
         orderItemVec.push_back(30);
-        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec);
+        addPurchaseItem(purchaseManager, purchaseMap, "1", orderItemVec);
 
         orderItemVec.clear();
         orderItemVec.push_back(30);
         orderItemVec.push_back(20);
-        addPurchaseItem(purchaseManager, purchaseMap, 3, orderItemVec);
+        addPurchaseItem(purchaseManager, purchaseMap, "3", orderItemVec);
 
         orderItemVec.clear();
         orderItemVec.push_back(10);
-        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec);
+        addPurchaseItem(purchaseManager, purchaseMap, "1", orderItemVec);
 
         orderItemVec.clear();
         orderItemVec.push_back(20);
-        addPurchaseItem(purchaseManager, purchaseMap, 2, orderItemVec);
+        addPurchaseItem(purchaseManager, purchaseMap, "2", orderItemVec);
 
         orderItemVec.clear();
         orderItemVec.push_back(30);
-        addPurchaseItem(purchaseManager, purchaseMap, 3, orderItemVec);
+        addPurchaseItem(purchaseManager, purchaseMap, "3", orderItemVec);
 
         checkPurchaseManager(purchaseMap, purchaseManager);
         iteratePurchaseManager(purchaseMap, purchaseManager);
@@ -164,19 +164,19 @@ BOOST_AUTO_TEST_CASE(checkPurchase)
         std::vector<itemid_t> orderItemVec;
 
         orderItemVec.push_back(40);
-        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec);
+        addPurchaseItem(purchaseManager, purchaseMap, "1", orderItemVec);
 
         orderItemVec.clear();
         orderItemVec.push_back(40);
-        addPurchaseItem(purchaseManager, purchaseMap, 2, orderItemVec);
+        addPurchaseItem(purchaseManager, purchaseMap, "2", orderItemVec);
 
         orderItemVec.clear();
         orderItemVec.push_back(40);
-        addPurchaseItem(purchaseManager, purchaseMap, 3, orderItemVec);
+        addPurchaseItem(purchaseManager, purchaseMap, "3", orderItemVec);
 
         orderItemVec.clear();
         orderItemVec.push_back(40);
-        addPurchaseItem(purchaseManager, purchaseMap, 4, orderItemVec);
+        addPurchaseItem(purchaseManager, purchaseMap, "4", orderItemVec);
 
         checkPurchaseManager(purchaseMap, purchaseManager);
         iteratePurchaseManager(purchaseMap, purchaseManager);

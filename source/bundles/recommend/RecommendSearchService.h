@@ -22,7 +22,6 @@ class UserManager;
 class ItemManager;
 class RecommenderFactory;
 class ItemIdGenerator;
-class UserIdGenerator;
 struct RecommendParam;
 struct TIBParam;
 struct ItemBundle;
@@ -34,11 +33,10 @@ public:
         UserManager& userManager,
         ItemManager& itemManager,
         RecommenderFactory& recommenderFactory,
-        UserIdGenerator& userIdGenerator,
         ItemIdGenerator& itemIdGenerator
     );
 
-    bool getUser(const std::string& userIdStr, User& user);
+    bool getUser(const std::string& userId, User& user);
 
     bool recommend(
         RecommendParam& param,
@@ -63,7 +61,6 @@ private:
     UserManager& userManager_;
     ItemManager& itemManager_;
     RecommenderFactory& recommenderFactory_;
-    UserIdGenerator& userIdGenerator_;
     ItemIdGenerator& itemIdGenerator_;
 };
 

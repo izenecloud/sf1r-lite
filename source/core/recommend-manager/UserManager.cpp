@@ -23,12 +23,15 @@ void UserManager::flush()
     }
 }
 
-bool UserManager::addUser(userid_t userId, const User& user)
+bool UserManager::addUser(const User& user)
 {
+    if (user.idStr_.empty())
+        return false;
+
     bool result = false;
     try
     {
-        result = container_.insertValue(userId, user);
+        result = container_.insertValue(user.idStr_, user);
     }
     catch(izenelib::util::IZENELIBException& e)
     {
@@ -38,12 +41,15 @@ bool UserManager::addUser(userid_t userId, const User& user)
     return result;
 }
 
-bool UserManager::updateUser(userid_t userId, const User& user)
+bool UserManager::updateUser(const User& user)
 {
+    if (user.idStr_.empty())
+        return false;
+
     bool result = false;
     try
     {
-        result = container_.update(userId, user);
+        result = container_.update(user.idStr_, user);
     }
     catch(izenelib::util::IZENELIBException& e)
     {
@@ -53,7 +59,7 @@ bool UserManager::updateUser(userid_t userId, const User& user)
     return result;
 }
 
-bool UserManager::removeUser(userid_t userId)
+bool UserManager::removeUser(const std::string& userId)
 {
     bool result = false;
     try
@@ -68,7 +74,7 @@ bool UserManager::removeUser(userid_t userId)
     return result;
 }
 
-bool UserManager::getUser(userid_t userId, User& user)
+bool UserManager::getUser(const std::string& userId, User& user)
 {
     bool result = false;
     try

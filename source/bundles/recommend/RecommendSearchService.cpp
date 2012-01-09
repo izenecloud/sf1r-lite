@@ -8,7 +8,6 @@
 #include <recommend-manager/TIBParam.h>
 #include <recommend-manager/ItemBundle.h>
 #include <recommend-manager/ItemIdGenerator.h>
-#include <recommend-manager/UserIdGenerator.h>
 
 #include <glog/logging.h>
 
@@ -19,24 +18,17 @@ RecommendSearchService::RecommendSearchService(
     UserManager& userManager,
     ItemManager& itemManager,
     RecommenderFactory& recommenderFactory,
-    UserIdGenerator& userIdGenerator,
     ItemIdGenerator& itemIdGenerator
 )
     :userManager_(userManager)
     ,itemManager_(itemManager)
     ,recommenderFactory_(recommenderFactory)
-    ,userIdGenerator_(userIdGenerator)
     ,itemIdGenerator_(itemIdGenerator)
 {
 }
 
-bool RecommendSearchService::getUser(const std::string& userIdStr, User& user)
+bool RecommendSearchService::getUser(const std::string& userId, User& user)
 {
-    userid_t userId = 0;
-
-    if (! userIdGenerator_.get(userIdStr, userId))
-        return false;
-
     return userManager_.getUser(userId, user);
 }
 
@@ -57,12 +49,6 @@ bool RecommendSearchService::recommend(
 
 bool RecommendSearchService::convertIds_(RecommendParam& param)
 {
-    if (!param.userIdStr.empty() &&
-        !userIdGenerator_.get(param.userIdStr, param.userId))
-    {
-        return false;
-    }
-
     if (!convertItemId_(param.inputItems, param.inputItemIds) ||
         !convertItemId_(param.includeItems, param.includeItemIds) ||
         !convertItemId_(param.excludeItems, param.excludeItemIds))

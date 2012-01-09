@@ -29,7 +29,7 @@ void CartManager::flush()
 }
 
 bool CartManager::updateCart(
-    userid_t userId,
+    const std::string& userId,
     const std::vector<itemid_t>& itemVec
 )
 {
@@ -48,7 +48,10 @@ bool CartManager::updateCart(
     return true;
 }
 
-bool CartManager::getCart(userid_t userId, std::vector<itemid_t>& itemVec)
+bool CartManager::getCart(
+    const std::string& userId,
+    std::vector<itemid_t>& itemVec
+)
 {
     bool result = false;
     try
