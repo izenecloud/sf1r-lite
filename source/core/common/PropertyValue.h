@@ -233,7 +233,7 @@ struct DataIO_propertyValueLoader
     {
         if (which == 0) {
             typedef typename boost::mpl::front<Types>::type head_type;
-            head_type value;
+            head_type value(0);
             ar & value;
             p = value;
             return;
@@ -256,7 +256,7 @@ struct DataIO_propertyValueLoader<
 
 template<class DataIO>
 void DataIO_loadObject(DataIO& ar, PropertyValue& p) {
-    int which;
+    int which(0);
     ar & which;
 
     if (which >= boost::mpl::size<PropertyValue::type_list>::value)
