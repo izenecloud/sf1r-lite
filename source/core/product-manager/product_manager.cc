@@ -290,11 +290,6 @@ bool ProductManager::FinishHook()
                 }
             }
         }
-        if(uuid_map_writer!=NULL)
-        {
-            uuid_map_writer->Close();
-            delete uuid_map_writer;
-        }
         LOG(INFO)<<"Finished building group info."<<std::endl;
         std::vector<std::pair<uint32_t, izenelib::util::UString> > uuid_update_list;
         uint32_t append_count = 0;
@@ -383,8 +378,20 @@ bool ProductManager::FinishHook()
                 new_doc.eraseProperty(config_.uuid_property_name);
                 util_.SetItemCount(new_doc, 1);
                 op_processor_->Append(1, new_doc);
+                if(uuid_map_writer!=NULL)
+                {
+                    PMDocumentType map_doc;
+                    map_doc.property(config_.docid_property_name) = udocid; 
+                    map_doc.property(config_.uuid_property_name) = uuid;
+                    uuid_map_writer->Append(map_doc);
+                }
                 ++append_count;
             }
+        }
+        if(uuid_map_writer!=NULL)
+        {
+            uuid_map_writer->Close();
+            delete uuid_map_writer;
         }
         //process the comparison items.
         boost::unordered_map<GroupTableType::GroupIdType, PMDocumentType>::iterator g2doc_it = g2doc_map.begin();
