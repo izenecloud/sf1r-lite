@@ -45,9 +45,9 @@ public:
 
     /// Will be called when update is actually performed
     void onUpdate(
-            const uint128_t& uuid,
-            const std::vector<uint32_t>& docidList,
-            const std::string& aux);
+            const LogServerStorage::drum_key_t& uuid,
+            const LogServerStorage::drum_value_t& docidList,
+            const LogServerStorage::drum_aux_t& aux);
 
 private:
     std::string host_;

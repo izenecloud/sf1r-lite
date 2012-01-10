@@ -109,15 +109,15 @@ void RpcLogServer::updateUUID(const UUID2DocidList& uuid2DocidList)
 }
 
 void RpcLogServer::onUpdate(
-        const uint128_t& uuid,
-        const std::vector<uint32_t>& docidList,
-        const std::string& aux)
+        const LogServerStorage::drum_key_t& uuid,
+        const LogServerStorage::drum_value_t& docidList,
+        const LogServerStorage::drum_aux_t& aux)
 {
 #ifdef LOG_SERVER_DEBUG
     std::cout << "RpcLogServer::onUpDate " << std::endl; //xxx
 #endif
 
-    for (std::vector<uint32_t>::const_iterator it = docidList.begin();
+    for (LogServerStorage::drum_value_t::const_iterator it = docidList.begin();
             it != docidList.end(); ++it)
     {
 #ifdef LOG_SERVER_DEBUG

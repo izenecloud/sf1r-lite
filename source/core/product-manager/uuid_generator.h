@@ -28,6 +28,12 @@ public:
         uuid_ustr.assign(uuid_str, izenelib::util::UString::UTF_8);
     }
 
+    static void Gen(std::string& uuid_str, izenelib::util::UString& uuid_ustr)
+    {
+        Gen(uuid_str);
+        uuid_ustr.assign(uuid_str, izenelib::util::UString::UTF_8);
+    }
+
 };
 
 }

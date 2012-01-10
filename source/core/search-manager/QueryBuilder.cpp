@@ -71,9 +71,9 @@ void QueryBuilder::prepare_filter(const std::vector<QueryFiltering::FilteringTyp
     if (filtingList.size() == 1)
     {
         const QueryFiltering::FilteringType& filteringItem= filtingList[0];
-        QueryFiltering::FilteringOperation filterOperation = filteringItem.first.first;
-        const std::string& property = filteringItem.first.second;
-        const std::vector<PropertyValue>& filterParam = filteringItem.second;
+        QueryFiltering::FilteringOperation filterOperation = filteringItem.operation_;
+        const std::string& property = filteringItem.property_;
+        const std::vector<PropertyValue>& filterParam = filteringItem.values_;
         if (!filterCache_->get(filteringItem, pDocIdSet))
         {
             pDocIdSet.reset(new EWAHBoolArray<uint32_t>());
@@ -95,9 +95,9 @@ void QueryBuilder::prepare_filter(const std::vector<QueryFiltering::FilteringTyp
             std::vector<QueryFiltering::FilteringType>::const_iterator iter = filtingList.begin();
             for (; iter != filtingList.end(); ++iter)
             {
-                QueryFiltering::FilteringOperation filterOperation = iter->first.first;
-                const std::string& property = iter->first.second;
-                const std::vector<PropertyValue>& filterParam = iter->second;
+                QueryFiltering::FilteringOperation filterOperation = iter->operation_;
+                const std::string& property = iter->property_;
+                const std::vector<PropertyValue>& filterParam = iter->values_;
                 if (!filterCache_->get(*iter, pDocIdSet2))
                 {
                     pDocIdSet2.reset(new EWAHBoolArray<uint32_t>());
@@ -107,7 +107,14 @@ void QueryBuilder::prepare_filter(const std::vector<QueryFiltering::FilteringTyp
                     filterCache_->set(*iter, pDocIdSet2);
                 }
                 pDocIdSet3.reset(new EWAHBoolArray<uint32_t>());
-                (*pDocIdSet).rawlogicaland(*pDocIdSet2, *pDocIdSet3);
+                if (iter->logic_ == QueryFiltering::OR)
+                {
+                    (*pDocIdSet).rawlogicalor(*pDocIdSet2, *pDocIdSet3);
+                }
+                else // if (iter->logic_ == QueryFiltering::AND)
+                {
+                    (*pDocIdSet).rawlogicaland(*pDocIdSet2, *pDocIdSet3);
+                }
                 (*pDocIdSet).swap(*pDocIdSet3);
             }
         }
@@ -239,11 +246,11 @@ void QueryBuilder::prepare_for_property_(
             if (find)
             {
                 QueryFiltering::FilteringType filteringRule;
-                filteringRule.first.first = QueryFiltering::EQUAL;
-                filteringRule.first.second = property;
+                filteringRule.operation_ = QueryFiltering::EQUAL;
+                filteringRule.property_ = property;
                 std::vector<PropertyValue> filterParam;
                 filterParam.push_back(TermTypeDetector::propertyValue_);
-                filteringRule.second = filterParam;
+                filteringRule.values_ = filterParam;
                 if(!filterCache_->get(filteringRule, pDocIdSet))
                 {
                     pDocIdSet.reset(new EWAHBoolArray<uint32_t>());
