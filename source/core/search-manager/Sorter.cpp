@@ -57,10 +57,11 @@ SortProperty::~SortProperty()
 SortPropertyCache::SortPropertyCache(IndexManager* pIndexer, IndexBundleConfiguration* config)
         :pIndexer_(pIndexer)
         ,pCTRManager_(NULL)
-        ,updateInterval_(30*60)
+        ,updateInterval_(config->sortCacheUpdateInterval_)
         ,dirty_(true)
         ,config_(config)
 {
+    std::cout << "SortPropertyCache::updateInterval_ = " << updateInterval_ << std::endl;
 }
 
 void SortPropertyCache::setCtrManager(faceted::CTRManager* pCTRManager)

@@ -110,6 +110,9 @@ public:
     /// @brief top results number
     size_t topKNum_;
 
+    /// @brief sort cache update interval
+    size_t sortCacheUpdateInterval_;
+
     /// @brief whether supported for distributed search
     bool isSupportByAggregator_;
 
