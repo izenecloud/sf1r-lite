@@ -240,7 +240,7 @@ struct DataIO_propertyValueLoader
     {
         if (which == 0) {
             typedef typename boost::mpl::front<Types>::type head_type;
-            head_type value(0);
+            head_type value;
             ar & value;
             p = value;
             return;
