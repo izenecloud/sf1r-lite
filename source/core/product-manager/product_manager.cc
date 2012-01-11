@@ -8,6 +8,8 @@
 
 #include <common/ScdWriter.h>
 #include <common/Utilities.h>
+#include <log-manager/LogServerRequest.h>
+#include <log-manager/LogServerConnection.h>
 #include <boost/unordered_set.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/dynamic_bitset.hpp>
@@ -17,6 +19,7 @@ using namespace sf1r;
 using izenelib::util::UString;
 
 // #define PM_PROFILER
+// #define USE_LOG_SERVER
 
 ProductManager::ProductManager(
         const std::string& work_dir,
@@ -47,6 +50,11 @@ ProductManager::ProductManager(
 //     {
 //         backup_ = new ProductBackup(config_.backup_path);
 //     }
+
+#ifdef USE_LOG_SERVER
+    LogServerConnection& conn = LogServerConnection::instance();
+    conn.init("localhost", 18811); // TODO: make address configurable
+#endif
 }
 
 ProductManager::~ProductManager()
@@ -262,6 +270,9 @@ bool ProductManager::FinishHook()
         }
         const std::vector<std::vector<GroupTableType::DocIdType> >& group_info = group_table->GetGroupInfo();
         LOG(INFO)<<"Start building group info."<<std::endl;
+#ifdef USE_LOG_SERVER
+        LogServerConnection& conn = LogServerConnection::instance();
+#endif
         for(uint32_t gid = 0;gid<group_info.size();gid++)
         {
             std::vector<GroupTableType::DocIdType> in_group = group_info[gid];
@@ -271,8 +282,12 @@ bool ProductManager::FinishHook()
             //use the smallest docid as uuid
             izenelib::util::UString docname(in_group[0], izenelib::util::UString::UTF_8);
             UuidType uuid;
+#ifdef USE_LOG_SERVER
+            std::string uuidstr;
+            UuidGenerator::Gen(uuidstr, uuid);
+#else
             UuidGenerator::Gen(uuid);
-
+#endif
             PMDocumentType doc;
             doc.property(config_.docid_property_name) = docname;
             doc.property(config_.price_property_name) = izenelib::util::UString("", izenelib::util::UString::UTF_8);
@@ -281,15 +296,29 @@ bool ProductManager::FinishHook()
             g2doc_map.insert(std::make_pair(gid, doc));
             if(uuid_map_writer!=NULL)
             {
+#ifdef USE_LOG_SERVER
+                UpdateUUIDRequest uuidReq;
+                uuidReq.param_.uuid_ = Utilities::uuidToUint128(uuidstr);
+#endif
                 for(uint32_t i=0;i<in_group.size();i++)
                 {
                     PMDocumentType map_doc;
                     map_doc.property(config_.docid_property_name) = izenelib::util::UString(in_group[i], izenelib::util::UString::UTF_8);
                     map_doc.property(config_.uuid_property_name) = uuid;
                     uuid_map_writer->Append(map_doc);
+#ifdef USE_LOG_SERVER
+                    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128(in_group[i]));
+#endif
                 }
+#ifdef USE_LOG_SERVER
+                conn.asynRequest(uuidReq);
+#endif
             }
         }
+#ifdef USE_LOG_SERVER
+        SynchronizeRequest syncReq;
+        conn.asynRequest(syncReq);
+#endif
         LOG(INFO)<<"Finished building group info."<<std::endl;
         std::vector<std::pair<uint32_t, izenelib::util::UString> > uuid_update_list;
         uint32_t append_count = 0;
