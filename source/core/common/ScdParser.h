@@ -89,11 +89,11 @@ public:
 
         bool operator!=(const iterator& other) const;
 
-        const iterator& operator++();
+        iterator& operator++();
 
-        const iterator& operator++(int);
+        iterator operator++(int);
 
-        const iterator& operator+=(unsigned int offset);
+        iterator& operator+=(unsigned int offset);
 
         SCDDocPtr operator*();
 

@@ -506,7 +506,7 @@ bool ScdParser::iterator::operator!=(const iterator& other)const
     return (offset_ != other.offset_);
 }
 
-const ScdParser::iterator& ScdParser::iterator::operator++()
+ScdParser::iterator& ScdParser::iterator::operator++()
 {
     if (isValid())
     {
@@ -516,17 +516,18 @@ const ScdParser::iterator& ScdParser::iterator::operator++()
     return *this;
 }
 
-const ScdParser::iterator& ScdParser::iterator::operator++(int)
+ScdParser::iterator ScdParser::iterator::operator++(int)
 {
+    ScdParser::iterator tmp = *this;
     if (isValid())
     {
         offset_ = prevOffset_;
         doc_.reset(getDoc());
     }
-    return *this;
+    return tmp;
 }
 
-const ScdParser::iterator& ScdParser::iterator::operator+=(unsigned int offset)
+ScdParser::iterator& ScdParser::iterator::operator+=(unsigned int offset)
 {
     while (offset && isValid())
     {
