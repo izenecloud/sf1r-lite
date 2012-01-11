@@ -25,41 +25,52 @@ void LogServerWorkThread::stop()
 
 void LogServerWorkThread::putUuidRequestData(const UUID2DocidList& uuid2DocidList)
 {
-    uuidRequestQueue_.push(uuid2DocidList);
+    DrumRequestData drumReqData;
+    drumReqData.uuid2DocidList.reset(new UUID2DocidList(uuid2DocidList));
+
+    drumRequestQueue_.push(drumReqData);
 }
 
 void LogServerWorkThread::putSyncRequestData(const SynchronizeData& syncReqData)
 {
-    syncRequestQueue_.push(syncReqData);
+    DrumRequestData drumReqData;
+    drumReqData.syncReqData.reset(new SynchronizeData(syncReqData));
+    drumRequestQueue_.push(drumReqData);
 }
 
 void LogServerWorkThread::run()
 {
     try
     {
-        UUID2DocidList uuid2DocidList;
-        SynchronizeData syncReqData;
+        DrumRequestData drumReqData;
         while (true)
         {
-            // tasks
-            uuidRequestQueue_.pop(uuid2DocidList);
-            process(uuid2DocidList);
+            // process requests
+            drumRequestQueue_.pop(drumReqData);
+            process(drumReqData);
 
-            if (!syncRequestQueue_.empty()) // do not wait here
-            {
-                syncRequestQueue_.pop(syncReqData);
-                process(syncReqData);
-            }
+            //boost::this_thread::sleep(boost::posix_time::seconds(1));
 
             // terminate execution if interrupted
             boost::this_thread::interruption_point();
-
-            boost::this_thread::sleep(boost::posix_time::seconds(1));
         }
     }
     catch (const std::exception& e)
     {
         // nothing
+    }
+}
+
+void LogServerWorkThread::process(const DrumRequestData& drumReqData)
+{
+    if (drumReqData.uuid2DocidList)
+    {
+        process(*drumReqData.uuid2DocidList);
+    }
+
+    if (drumReqData.syncReqData)
+    {
+        process(*drumReqData.syncReqData);
     }
 }
 

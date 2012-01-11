@@ -57,6 +57,7 @@ void RpcLogServer::stop()
 {
     instance.end();
     instance.join();
+    workerThread_->stop();
 }
 
 void RpcLogServer::dispatch(msgpack::rpc::request req)
@@ -135,7 +136,7 @@ void RpcLogServer::onUpdate(
 #endif
 
 #ifdef DOCID_DB_DEBUG
-        if ((++cnt % 1000) == 0)
+        if ((++cnt % 10000) == 0)
         {
             std::cout << "updated to docid DB: " << cnt << std::endl;
         }

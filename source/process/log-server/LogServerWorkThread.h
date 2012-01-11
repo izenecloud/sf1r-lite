@@ -21,6 +21,12 @@ namespace sf1r
 
 class LogServerWorkThread
 {
+    struct DrumRequestData
+    {
+        boost::shared_ptr<UUID2DocidList> uuid2DocidList;
+        boost::shared_ptr<SynchronizeData> syncReqData;
+    };
+
 public:
     LogServerWorkThread(
             const LogServerStorage::DrumPtr& drum,
@@ -37,6 +43,8 @@ public:
 private:
     void run();
 
+    void process(const DrumRequestData& drumReqData);
+
     void process(const UUID2DocidList& uuid2DocidList);
 
     void process(const SynchronizeData& syncReqData);
@@ -47,8 +55,7 @@ private:
     LogServerStorage::DrumPtr drum_;
     LogServerStorage::KVDBPtr docidDB_;
 
-    izenelib::util::concurrent_queue<UUID2DocidList> uuidRequestQueue_;
-    izenelib::util::concurrent_queue<SynchronizeData> syncRequestQueue_;
+    izenelib::util::concurrent_queue<DrumRequestData> drumRequestQueue_;
 };
 
 }
