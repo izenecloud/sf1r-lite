@@ -118,11 +118,24 @@ public:
         return docidDB_;
     }
 
+    boost::mutex& drumMutex()
+    {
+        return drum_mutex_;
+    }
+
+    boost::mutex& docidDBMutex()
+    {
+        return docid_db_mutex_;
+    }
+
 private:
     DrumDispatcherImpl drumDispathcerImpl_;
     DrumPtr drum_;
 
     KVDBPtr docidDB_;
+
+    boost::mutex drum_mutex_;
+    boost::mutex docid_db_mutex_;
 };
 
 }

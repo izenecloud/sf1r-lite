@@ -31,6 +31,8 @@ bool RpcLogServer::init()
             LogServerStorage::DrumDispatcherImpl::UPDATE,
             boost::bind(&RpcLogServer::onUpdate, this, _1, _2, _3));
 
+    workerThread_.reset(new LogServerWorkThread(drum_, docidDB_));
+
     return true;
 }
 
@@ -74,7 +76,11 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
         }
         else if (method == LogServerRequest::method_names[LogServerRequest::METHOD_SYNCHRONIZE])
         {
-            synchronize();
+            msgpack::type::tuple<SynchronizeData> params;
+            req.params().convert(&params);
+            const SynchronizeData& syncReqData = params.get<0>();
+
+            synchronize(syncReqData);
         }
         else
         {
@@ -91,23 +97,18 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
     }
 }
 
-void RpcLogServer::synchronize()
-{
-    boost::lock_guard<boost::mutex> lock(mutex_);
-    std::cout << "Received request for synchronizing." << std::endl;
-    drum_->Synchronize();
-    docidDB_->flush();
-}
-
 void RpcLogServer::updateUUID(const UUID2DocidList& uuid2DocidList)
 {
-    // drum is not thread safe
-    boost::lock_guard<boost::mutex> lock(mutex_);
-
 #ifdef LOG_SERVER_DEBUG
     std::cout << "updateUUID: " << uuid2DocidList.toString() << std::endl;
 #endif
-    drum_->Update(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
+    workerThread_->putUuidRequestData(uuid2DocidList);
+}
+
+void RpcLogServer::synchronize(const SynchronizeData& syncReqData)
+{
+    std::cout << "Received request for synchronizing." << std::endl;
+    workerThread_->putSyncRequestData(syncReqData);
 }
 
 void RpcLogServer::onUpdate(
@@ -123,6 +124,7 @@ void RpcLogServer::onUpdate(
     static int cnt;
 #endif
 
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDBMutex());
     for (LogServerStorage::drum_value_t::const_iterator it = docidList.begin();
             it != docidList.end(); ++it)
     {

@@ -2,6 +2,7 @@
 #define RPC_LOG_SERVER_H_
 
 #include "LogServerStorage.h"
+#include "LogServerWorkThread.h"
 
 #include <log-manager/LogServerRequest.h>
 
@@ -38,10 +39,10 @@ public:
 public:
     virtual void dispatch(msgpack::rpc::request req);
 
-    void synchronize();
-
     /// Asynchronous update
     void updateUUID(const UUID2DocidList& uuid2DocidList);
+
+    void synchronize(const SynchronizeData& syncReqData);
 
     /// Will be called when update is actually performed
     void onUpdate(
@@ -57,7 +58,7 @@ private:
     LogServerStorage::DrumPtr drum_;
     LogServerStorage::KVDBPtr docidDB_;
 
-    boost::mutex mutex_;
+    boost::shared_ptr<LogServerWorkThread> workerThread_;
 };
 
 }
