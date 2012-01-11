@@ -150,12 +150,16 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     if (!summarization_storage_->IsRebuildSummarizeRequired(key, summarization))
         return;
 
+#define MAXDOC 100
+
     ilplib::langid::Analyzer* langIdAnalyzer = document_manager_->getLangId();
     corpus_->start_new_coll(key);
 
+    std::size_t num = 0;
     for (std::vector<UString>::const_iterator it = content_list.begin();
-            it != content_list.end(); ++it)
+            it != content_list.end(); ++it, ++num)
     {
+        if(num > MAXDOC) break;
         corpus_->start_new_doc();
 
         const UString& content = *it;
@@ -267,7 +271,9 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
                             filterRule.values_.push_back(v);
                         }
                     }
+                    //filterRule.logic_ = QueryFiltering::OR;
                     filtingList.erase(it);
+                    //it->logic_ = QueryFiltering::OR;
                     filtingList.push_back(filterRule);
                 }
             }

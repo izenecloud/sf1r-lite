@@ -204,25 +204,24 @@ void SPLM::generateSummary(
             RankQueryProperty rqp;
             SPLMUtil::getRankQueryProperty(rqp, sentOffs, s, W, collOffs[c+1] - collOffs[c]);
 
-            vector<double> query_tf;
-            vector<double> query_tf_doc;
+            //vector<double> query_tf;
+            vector<double> query_tf_doc; ///NOT USED
 
-            if (!activated)
-            {
-                while (sentOffs[s_end_doc] < docOffs[docI + 1]) ++s_end_doc;
+            //if (!activated)
+            //{
+                //while (sentOffs[s_end_doc] < docOffs[docI + 1]) ++s_end_doc;
 
-                double **TF_doc = SPLMUtil::getTF(collWordMap, s_start_doc, s_end_doc, sentOffs, W);
-                s_end_doc = s_start;
+                //double **TF_doc = SPLMUtil::getTF(collWordMap, s_start_doc, s_end_doc, sentOffs, W);
+                //s_end_doc = s_start;
+                //query_tf_doc.reserve(s_end - s_start);
+                //for (int i = 0; i < s_end - s_start; i++)
+                //{
+                    //query_tf_doc.push_back(.01);
+                //}
+                //activated = true;
 
-                for (int i = 0; i < s_end - s_start; i++)
-                {
-                    query_tf_doc.push_back(.01);
-                }
-                activated = true;
-
-                mat_free(TF_doc);
-            }
-
+                //mat_free(TF_doc);
+            //}
             // Used to only compare occurrences of words that occur in a sentence
             set<int> uniqueWords;
             uniqueWords.insert(&W[sentOffs[s]], &W[sentOffs[s + 1]]);
@@ -244,15 +243,14 @@ void SPLM::generateSummary(
                 RankDocumentProperty rdp;
                 SPLMUtil::getRankDocumentProperty(rdp, nWords, docOffs, docIndex, W, sentenceWordMapping);
 
-                vector<double> temp;
-                vector<double> smoothedDocument = smoothedDocuments[docIndex - d_start];
-
                 if (algorithm == SPLM_NONE)
                 {
                     sentenceScore += plm.getScore(rqp, rdp);
                 }
                 else
                 {
+                    vector<double> temp;
+                    vector<double> smoothedDocument = smoothedDocuments[docIndex - d_start];
                     sentenceScore += plm.getScoreSVD(rqp, rdp, query_tf_doc, temp, smoothedDocument);
                 }
             }
