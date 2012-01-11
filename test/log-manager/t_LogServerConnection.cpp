@@ -50,7 +50,7 @@ void t_RpcLogServer()
 
     izenelib::util::ClockTimer t;
     boost::uuids::random_generator random_gen;
-    std::size_t REQUESTS_NUM = 0x100000;
+    std::size_t REQUESTS_NUM = 0x1000000;
 
     std::cout << "sending requests:" << std::endl;
     for (std::size_t  i = 0; i < REQUESTS_NUM; i++)
@@ -62,10 +62,10 @@ void t_RpcLogServer()
 
         if (i%10000 == 0)
         {
-            std::cout<<"\r"<<i<<" \t"<<int(i*100.0/REQUESTS_NUM)<<"%"<<std::flush;
+            std::cout<<"\r"<<std::left<<setw(16)<<i<<"\t"<<int(i*100.0/REQUESTS_NUM)<<"%"<<std::flush;
         }
     }
-    std::cout<<"\r"<<REQUESTS_NUM<<" \t100%"<<std::endl;
+    std::cout<<"\r"<<std::left<<setw(16)<<REQUESTS_NUM<<"\t100%"<<std::endl;
 
     std::cout << "flushing requests" << std::endl;
     conn.flushRequests();

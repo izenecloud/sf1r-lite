@@ -4,7 +4,8 @@
 
 #include <boost/bind.hpp>
 
-//#define LOG_SERVER_DEBUG 1
+//#define LOG_SERVER_DEBUG
+//#define DOCID_DB_DEBUG
 
 namespace sf1r
 {
@@ -118,13 +119,25 @@ void RpcLogServer::onUpdate(
     std::cout << "RpcLogServer::onUpDate " << std::endl;
 #endif
 
+#ifdef DOCID_DB_DEBUG
+    static int cnt;
+#endif
+
     for (LogServerStorage::drum_value_t::const_iterator it = docidList.begin();
             it != docidList.end(); ++it)
     {
+        docidDB_->update(*it, uuid);
+
 #ifdef LOG_SERVER_DEBUG
         std::cout << *it << " -> " << Utilities::uint128ToUuid(uuid) << std::endl;
 #endif
-        docidDB_->update(*it, uuid);
+
+#ifdef DOCID_DB_DEBUG
+        if ((++cnt % 1000) == 0)
+        {
+            std::cout << "updated to docid DB: " << cnt << std::endl;
+        }
+#endif
     }
 }
 
