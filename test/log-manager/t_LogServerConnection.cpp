@@ -44,26 +44,38 @@ void t_RpcLogServer()
     conn.init("localhost", 18811);
 
     UpdateUUIDRequest uuidReq;
-    uuidReq.param_.docidList_.push_back(1);
-    uuidReq.param_.docidList_.push_back(2);
-    uuidReq.param_.docidList_.push_back(3);
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("14b45106d3ccd8d86fd9a4cd091565ea"));
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("19ef916e597db5016d666a134afee2b6"));
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("aa2a122b7e51a38ec1c57c7cb6cdc672"));
 
     izenelib::util::ClockTimer t;
     boost::uuids::random_generator random_gen;
-    for (int i = 0; i < 0x1000000; i++)
+    std::size_t REQUESTS_NUM = 0x100000;
+
+    std::cout << "sending requests:" << std::endl;
+    for (std::size_t  i = 0; i < REQUESTS_NUM; i++)
     {
         boost::uuids::uuid uuid = random_gen();
         uuidReq.param_.uuid_ = *reinterpret_cast<uint128_t *>(&uuid);
         conn.asynRequest(uuidReq);
         uuidReq.param_.docidList_[i % 3] += 3;
+
+        if (i%10000 == 0)
+        {
+            std::cout<<"\r"<<i<<" \t"<<int(i*100.0/REQUESTS_NUM)<<"%"<<std::flush;
+        }
     }
+    std::cout<<"\r"<<REQUESTS_NUM<<" \t100%"<<std::endl;
+
+    std::cout << "flushing requests" << std::endl;
+    conn.flushRequests();
+
+    std::cout << "time elapsed for inserting " << t.elapsed() << std::endl;
 
     // Force server to synchronize
+    std::cout << "forcing server to synchronize" << std::endl;
     SynchronizeRequest syncReq;
     conn.asynRequest(syncReq);
-
-    conn.flushRequests();
-    std::cout << "time elapsed for inserting " << t.elapsed() << std::endl;
 }
 
 void t_RpcLogServerCreateTestData()
@@ -73,30 +85,30 @@ void t_RpcLogServerCreateTestData()
 
     UpdateUUIDRequest uuidReq;
 
-    uuidReq.param_.docidList_.push_back(11110);
-    uuidReq.param_.docidList_.push_back(22220);
-    uuidReq.param_.docidList_.push_back(33330);
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a1"));
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a2"));
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a3"));
     uuidReq.param_.uuid_ = Utilities::uuidToUint128("143c7d31-702e-4fac-b57b-84d35205ae60");
     conn.asynRequest(uuidReq);
     std::cout << "sent rpc request: " << uuidReq.param_.toString() << std::endl;
 
     uuidReq.param_.docidList_.clear();
-    uuidReq.param_.docidList_.push_back(44440);
-    uuidReq.param_.docidList_.push_back(55550);
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a4"));
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a5"));
     uuidReq.param_.uuid_ = Utilities::uuidToUint128("cda5545a-b3f4-4e81-9b85-2d25b0416997");
     conn.asynRequest(uuidReq);
     std::cout << "sent rpc request: " << uuidReq.param_.toString() << std::endl;
 
     uuidReq.param_.docidList_.clear();
-    uuidReq.param_.docidList_.push_back(66660);
-    uuidReq.param_.docidList_.push_back(77770);
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a6"));
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a7"));
     uuidReq.param_.uuid_ = Utilities::uuidToUint128("eb1ba5f4-a558-4a66-806d-74cb6a321932");
     conn.asynRequest(uuidReq);
     std::cout << "sent rpc request: " << uuidReq.param_.toString() << std::endl;
 
     uuidReq.param_.docidList_.clear();
-    uuidReq.param_.docidList_.push_back(88880);
-    uuidReq.param_.docidList_.push_back(99990);
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a8"));
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a9"));
     uuidReq.param_.uuid_ = Utilities::uuidToUint128("dcdce290-b73d-467b-aa44-755cce035c79");
     conn.asynRequest(uuidReq);
     std::cout << "sent rpc request: " << uuidReq.param_.toString() << std::endl;
@@ -122,30 +134,30 @@ void t_RpcLogServerUpdateTestData()
 
     UpdateUUIDRequest uuidReq;
 
-    uuidReq.param_.docidList_.push_back(11110);
-    uuidReq.param_.docidList_.push_back(22220);
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a1"));
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a2"));
     uuidReq.param_.uuid_ = Utilities::uuidToUint128("cc1e948d-ebf2-4a25-bf58-cb0c25ee65c1");
     conn.asynRequest(uuidReq);
     std::cout << "sent rpc request: " << uuidReq.param_.toString() << std::endl;
 
     uuidReq.param_.docidList_.clear();
-    uuidReq.param_.docidList_.push_back(33330); //
-    uuidReq.param_.docidList_.push_back(44440);
-    uuidReq.param_.docidList_.push_back(55550);
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a3")); //
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a4"));
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a5"));
     uuidReq.param_.uuid_ = Utilities::uuidToUint128("366f5977-aa73-412f-83f3-66fbe06a6b40");
     conn.asynRequest(uuidReq);
     std::cout << "sent rpc request: " << uuidReq.param_.toString() << std::endl;
 
     uuidReq.param_.docidList_.clear();
-    uuidReq.param_.docidList_.push_back(66660);
-    uuidReq.param_.docidList_.push_back(77770);
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a6"));
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a7"));
     uuidReq.param_.uuid_ = Utilities::uuidToUint128("6d5f82db-0ef2-4d5f-8b54-cdc29e97e5b1");
     conn.asynRequest(uuidReq);
     std::cout << "sent rpc request: " << uuidReq.param_.toString() << std::endl;
 
     uuidReq.param_.docidList_.clear();
-    uuidReq.param_.docidList_.push_back(88880);
-    uuidReq.param_.docidList_.push_back(99990);
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a8"));
+    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a9"));
     uuidReq.param_.uuid_ = Utilities::uuidToUint128("4857bcda-22e4-4a87-964d-17ffcf024d16");
     conn.asynRequest(uuidReq);
     std::cout << "sent rpc request: " << uuidReq.param_.toString() << std::endl;

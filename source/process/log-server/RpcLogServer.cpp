@@ -93,6 +93,7 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
 void RpcLogServer::synchronize()
 {
     boost::lock_guard<boost::mutex> lock(mutex_);
+    std::cout << "Received request for synchronizing." << std::endl;
     drum_->Synchronize();
     docidDB_->flush();
 }
@@ -103,7 +104,7 @@ void RpcLogServer::updateUUID(const UUID2DocidList& uuid2DocidList)
     boost::lock_guard<boost::mutex> lock(mutex_);
 
 #ifdef LOG_SERVER_DEBUG
-    std::cout << uuid2DocidList.toString() << std::endl; //xxx
+    std::cout << "updateUUID: " << uuid2DocidList.toString() << std::endl;
 #endif
     drum_->Update(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
 }
@@ -114,7 +115,7 @@ void RpcLogServer::onUpdate(
         const LogServerStorage::drum_aux_t& aux)
 {
 #ifdef LOG_SERVER_DEBUG
-    std::cout << "RpcLogServer::onUpDate " << std::endl; //xxx
+    std::cout << "RpcLogServer::onUpDate " << std::endl;
 #endif
 
     for (LogServerStorage::drum_value_t::const_iterator it = docidList.begin();

@@ -9,19 +9,25 @@
 namespace sf1r
 {
 
+inline std::ostream& operator<<(std::ostream& os, uint128_t uint128)
+{
+    os << hex << uint64_t(uint128>>64) << uint64_t(uint128) << dec;
+    return os;
+}
+
 struct LogServerRequestData
 {
 };
 
-/// xxx modify on practical use
 struct UUID2DocidList : public LogServerRequestData
 {
-    typedef std::vector<uint32_t> DocidListType;
+    typedef std::vector<uint128_t> DocidListType;
 
     uint128_t uuid_;
     DocidListType docidList_;
 
     std::string toString() const;
+    friend ostream& operator<<(ostream& os, uint128_t uint128);
 
     MSGPACK_DEFINE(uuid_, docidList_)
 };
