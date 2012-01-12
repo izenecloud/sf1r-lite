@@ -105,9 +105,6 @@ private:
 
     std::set<std::string> driverCollections_;
 
-    LogServerStorage::DrumPtr drum_;
-    LogServerStorage::KVDBPtr docidDB_;
-
     std::string cclogFileName_;
     boost::shared_ptr<std::ofstream> cclogFile_;
     boost::mutex mutex_;

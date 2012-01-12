@@ -19,6 +19,7 @@ DriverLogServer::DriverLogServer(uint16_t port, uint32_t threadNum)
 
 DriverLogServer::~DriverLogServer()
 {
+    std::cout << "~DriverLogServer()" << std::endl;
     stop();
 }
 

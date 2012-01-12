@@ -19,19 +19,17 @@ RpcLogServer::RpcLogServer(const std::string& host, uint16_t port, uint32_t thre
 
 RpcLogServer::~RpcLogServer()
 {
+    std::cout << "~RpcLogServer()" << std::endl;
     stop();
 }
 
 bool RpcLogServer::init()
 {
-    drum_ = LogServerStorage::get()->getDrum();
-    docidDB_ = LogServerStorage::get()->getDocidDB();
-
-    LogServerStorage::get()->getDrumDispatcher().registerOp(
+    LogServerStorage::get()->drumDispatcher().registerOp(
             LogServerStorage::DrumDispatcherImpl::UPDATE,
             boost::bind(&RpcLogServer::onUpdate, this, _1, _2, _3));
 
-    workerThread_.reset(new LogServerWorkThread(drum_, docidDB_));
+    workerThread_.reset(new LogServerWorkThread());
 
     return true;
 }
@@ -108,7 +106,7 @@ void RpcLogServer::updateUUID(const UUID2DocidList& uuid2DocidList)
 
 void RpcLogServer::synchronize(const SynchronizeData& syncReqData)
 {
-    std::cout << "Received request for synchronizing." << std::endl;
+    std::cout << "Received rpc request for synchronizing." << std::endl;
     workerThread_->putSyncRequestData(syncReqData);
 }
 
@@ -129,7 +127,7 @@ void RpcLogServer::onUpdate(
     for (LogServerStorage::drum_value_t::const_iterator it = docidList.begin();
             it != docidList.end(); ++it)
     {
-        docidDB_->update(*it, uuid);
+        LogServerStorage::get()->docidDB()->update(*it, uuid);
 
 #ifdef LOG_SERVER_DEBUG
         std::cout << *it << " -> " << Utilities::uint128ToUuid(uuid) << std::endl;

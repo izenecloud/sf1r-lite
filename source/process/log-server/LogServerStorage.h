@@ -39,12 +39,12 @@ public:
         izenelib::am::leveldb::Table,
         DrumDispatcher
     > DrumType;
-    typedef boost::shared_ptr<DrumType> DrumPtr;
+    typedef boost::scoped_ptr<DrumType> DrumPtr;
 
     // DB <raw_docid, uuid_docid>
     //typedef izenelib::am::tc_fixdb<raw_docid_t> KVDBType;
     typedef izenelib::am::tc_hash<raw_docid_t, drum_key_t> KVDBType;
-    typedef boost::shared_ptr<KVDBType> KVDBPtr;
+    typedef boost::scoped_ptr<KVDBType> KVDBPtr;
 
 public:
     static LogServerStorage* get()
@@ -85,16 +85,35 @@ public:
     {
         try
         {
+            std::cout << "~LogServerStorage" << std::endl;
             if (drum_)
             {
-                drum_->Synchronize();
-                drum_->Dispose();
+                boost::unique_lock<boost::mutex> lock(drum_mutex_, boost::defer_lock);
+                if (lock.try_lock())
+                {
+                    drum_.reset();
+                }
+                else
+                {
+                    std::cout << "Drum is still working... " << std::endl;
+                    return;
+                }
             }
 
             if (docidDB_)
             {
-                docidDB_->flush();
-                docidDB_->close();
+                boost::unique_lock<boost::mutex> lock(docid_db_mutex_, boost::defer_lock);
+                if (lock.try_lock())
+                {
+                    docidDB_->flush();
+                    docidDB_->close();
+                    docidDB_.reset();
+                }
+                else
+                {
+                    std::cout << "DocidDB is still working... " << std::endl;
+                    return;
+                }
             }
         }
         catch (const std::exception& e)
@@ -103,17 +122,19 @@ public:
         }
     }
 
-    DrumDispatcherImpl& getDrumDispatcher()
+    DrumDispatcherImpl& drumDispatcher()
     {
         return drumDispathcerImpl_;
     }
 
-    const DrumPtr& getDrum()
+    /// @brief lock drumMutex before operation on Drum
+    DrumPtr& drum()
     {
         return drum_;
     }
 
-    const KVDBPtr& getDocidDB()
+    /// @brief lock docidDBMutex before operation on DocidDB
+    KVDBPtr& docidDB()
     {
         return docidDB_;
     }

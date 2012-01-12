@@ -5,11 +5,7 @@
 namespace sf1r
 {
 
-LogServerWorkThread::LogServerWorkThread(
-        const LogServerStorage::DrumPtr& drum,
-        const LogServerStorage::KVDBPtr& docidDB)
-    : drum_(drum)
-    , docidDB_(docidDB)
+LogServerWorkThread::LogServerWorkThread()
 {
     workThread_ = boost::thread(&LogServerWorkThread::run, this);
 }
@@ -76,7 +72,7 @@ void LogServerWorkThread::process(const DrumRequestData& drumReqData)
 void LogServerWorkThread::process(const UUID2DocidList& uuid2DocidList)
 {
     boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
-    drum_->Update(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
+    LogServerStorage::get()->drum()->Update(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
 }
 
 void LogServerWorkThread::process(const SynchronizeData& syncReqData)
@@ -84,14 +80,14 @@ void LogServerWorkThread::process(const SynchronizeData& syncReqData)
     {
         boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
         std::cout << "[LogServerWorkThread] synchronizing drum (locked) " << std::endl;
-        drum_->Synchronize();
+        LogServerStorage::get()->drum()->Synchronize();
         std::cout << "[LogServerWorkThread] finished synchronizing drum " << std::endl;
     }
 
     {
         boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDBMutex());
         std::cout << "[LogServerWorkThread] flushing docid DB (locked) " << std::endl;
-        docidDB_->flush();
+        LogServerStorage::get()->docidDB()->flush();
         std::cout << "[LogServerWorkThread] finished flushing docid DB " << std::endl;
     }
 }

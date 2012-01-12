@@ -40,19 +40,14 @@ void DriverLogServerController::update_cclog()
 
 void DriverLogServerHandler::init()
 {
-    // drum <uuid, docids>
-    drum_ = LogServerStorage::get()->getDrum();
-
-    LogServerStorage::get()->getDrumDispatcher().registerOp(
+    // call back for drum dispatcher
+    LogServerStorage::get()->drumDispatcher().registerOp(
             LogServerStorage::DrumDispatcherImpl::UNIQUE_KEY_CHECK,
             boost::bind(&DriverLogServerHandler::onUniqueKeyCheck, this, _1, _2, _3));
 
-    LogServerStorage::get()->getDrumDispatcher().registerOp(
+    LogServerStorage::get()->drumDispatcher().registerOp(
             LogServerStorage::DrumDispatcherImpl::DUPLICATE_KEY_CHECK,
             boost::bind(&DriverLogServerHandler::onDuplicateKeyCheck, this, _1, _2, _3));
-
-    // DB <docid, uuid>
-    docidDB_ = LogServerStorage::get()->getDocidDB();
 
     // collections of which log need to be updated
     driverCollections_ = LogServerCfg::get()->getDriverCollections();
@@ -109,7 +104,7 @@ void DriverLogServerHandler::process()
 
         // xxx will be processed later asynchronously
         // flush drum properly
-        drum_->Synchronize();
+        LogServerStorage::get()->drum()->Synchronize();
         return;
     }
 
@@ -146,7 +141,8 @@ bool DriverLogServerHandler::skipProcess(const std::string& collection)
 void DriverLogServerHandler::processDocVisit(izenelib::driver::Request& request, const std::string& raw)
 {
     std::string docIdStr = asString(request[Keys::resource][Keys::DOCID]);
-    drum_->Check(Utilities::uuidToUint128(docIdStr), raw);
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
+    LogServerStorage::get()->drum()->Check(Utilities::uuidToUint128(docIdStr), raw);
 }
 
 /**
@@ -170,7 +166,8 @@ void DriverLogServerHandler::processDocVisit(izenelib::driver::Request& request,
 void DriverLogServerHandler::processRecVisitItem(izenelib::driver::Request& request, const std::string& raw)
 {
     std::string itemIdStr = asString(request[Keys::resource][Keys::ITEMID]);
-    drum_->Check(Utilities::uuidToUint128(itemIdStr), raw);
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
+    LogServerStorage::get()->drum()->Check(Utilities::uuidToUint128(itemIdStr), raw);
 }
 
 /**
@@ -222,7 +219,8 @@ void DriverLogServerHandler::processRecPurchaseItem(izenelib::driver::Request& r
             cclogMergeQueue_.insert(std::make_pair(uuid, cclogMergeUnit));
         }
 
-        drum_->Check(uuid, raw);
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
+        LogServerStorage::get()->drum()->Check(uuid, raw);
     }
 
     //std::cout << std::endl;
@@ -248,7 +246,8 @@ void DriverLogServerHandler::onDuplicateKeyCheck(
     uint128_t newUuid;
     for (std::size_t i = 0; i < docidList.size(); i++)
     {
-        if (docidDB_->get(docidList[i], newUuid))
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDBMutex());
+        if (LogServerStorage::get()->docidDB()->get(docidList[i], newUuid))
         {
             newUuidSet.insert(newUuid);
             //std::cout << docidList[i] << " -> " << Utilities::uint128ToUuid(newUuid) << std::endl;

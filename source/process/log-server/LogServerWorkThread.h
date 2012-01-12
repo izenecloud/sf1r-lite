@@ -28,9 +28,7 @@ class LogServerWorkThread
     };
 
 public:
-    LogServerWorkThread(
-            const LogServerStorage::DrumPtr& drum,
-            const LogServerStorage::KVDBPtr& docidDB);
+    LogServerWorkThread();
 
     ~LogServerWorkThread();
 
@@ -51,9 +49,6 @@ private:
 
 private:
     boost::thread workThread_;
-
-    LogServerStorage::DrumPtr drum_;
-    LogServerStorage::KVDBPtr docidDB_;
 
     izenelib::util::concurrent_queue<DrumRequestData> drumRequestQueue_;
 };
