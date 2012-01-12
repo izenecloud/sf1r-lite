@@ -154,13 +154,13 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 
     ilplib::langid::Analyzer* langIdAnalyzer = document_manager_->getLangId();
     corpus_->start_new_coll(key);
+    corpus_->start_new_doc(); // XXX
 
-    std::size_t num = 0;
     for (std::vector<UString>::const_iterator it = content_list.begin();
-            it != content_list.end(); ++it, ++num)
+            it != content_list.end(); ++it)
     {
-        if(num > MAXDOC) break;
-        corpus_->start_new_doc();
+        // XXX
+        // corpus_->start_new_doc();
 
         const UString& content = *it;
         UString sentence;
