@@ -50,11 +50,11 @@ public:
     }
 private:
     typedef izenelib::cache::IzeneCache<
-    key_type,
-    value_type,
-    izenelib::util::ReadWriteLock,
-    izenelib::cache::RDE_HASH,
-    izenelib::cache::LFU
+        key_type,
+        value_type,
+        izenelib::util::ReadWriteLock,
+        izenelib::cache::RDE_HASH,
+        izenelib::cache::LRLFU
     > cache_type;
 
     cache_type cache_;
@@ -63,4 +63,3 @@ private:
 } // namespace sf1r
 
 #endif // CORE_SEARCH_MANAGER_FILTER_CACHE_H
-

@@ -158,11 +158,11 @@ private:
 
 private:
     typedef izenelib::cache::IzeneCache<
-    key_type,
-    value_type,
-    izenelib::util::ReadWriteLock,
-    izenelib::cache::RDE_HASH,
-    izenelib::cache::LFU
+        key_type,
+        value_type,
+        izenelib::util::ReadWriteLock,
+        izenelib::cache::RDE_HASH,
+        izenelib::cache::LRLFU
     > cache_type;
 
     cache_type cache_;
