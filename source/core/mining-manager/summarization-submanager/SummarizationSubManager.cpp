@@ -154,13 +154,13 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 
     ilplib::langid::Analyzer* langIdAnalyzer = document_manager_->getLangId();
     corpus_->start_new_coll(key);
+    corpus_->start_new_doc(); // XXX
 
-    std::size_t num = 0;
     for (std::vector<UString>::const_iterator it = content_list.begin();
-            it != content_list.end(); ++it, ++num)
+            it != content_list.end(); ++it)
     {
-        if(num > MAXDOC) break;
-        corpus_->start_new_doc();
+        // XXX
+        // corpus_->start_new_doc();
 
         const UString& content = *it;
         UString sentence;
@@ -193,11 +193,11 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     key.convertString(key_str, UString::UTF_8);
     std::cout << "Begin evaluating: " << key_str << std::endl;
 #endif
-    if (content_list.size() < 2000 && corpus_->ntotal() < 100000)
+    //if (content_list.size() < 2000 && corpus_->ntotal() < 100000)
     {
-        SPLM::generateSummary(summaries, *corpus_, SPLM::SPLM_RI);
+        //SPLM::generateSummary(summaries, *corpus_, SPLM::SPLM_RI);
     }
-    else
+    //else
     {
         SPLM::generateSummary(summaries, *corpus_, SPLM::SPLM_NONE);
     }
