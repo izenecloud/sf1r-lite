@@ -13,8 +13,6 @@ using driver::Keys;
 bool DriverLogServerController::preprocess()
 {
     dirverLogServerHandler_->setRequestContext(request(), response());
-    BOOST_ASSERT(request_);
-    BOOST_ASSERT(response_);
     return true;
 }
 
