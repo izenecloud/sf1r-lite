@@ -4,11 +4,11 @@
 
 #include <boost/algorithm/string/replace.hpp>
 
+
 namespace sf1r
 {
 using namespace izenelib::driver;
 using driver::Keys;
-
 
 bool DriverLogServerController::preprocess()
 {
@@ -102,7 +102,7 @@ void DriverLogServerHandler::process()
             processRecPurchaseItem(request(), raw);
         }
 
-        // xxx will be processed later asynchronously
+        // XXX will be processed later asynchronously
         // flush drum properly
         LogServerStorage::get()->drum()->Synchronize();
         return;
@@ -199,8 +199,7 @@ void DriverLogServerHandler::processRecPurchaseItem(izenelib::driver::Request& r
         return;
     }
 
-    boost::shared_ptr<CCLogMerge> cclogMergeUnit(new CCLogMerge);
-    cclogMergeUnit->request_ = raw;
+    boost::shared_ptr<CCLogMerge> cclogMergeUnit(new CCLogMerge(itemsValue.size(), raw));
     for (std::size_t i = 0; i < itemsValue.size(); ++i)
     {
         const Value& itemValue = itemsValue(i);
@@ -208,13 +207,8 @@ void DriverLogServerHandler::processRecPurchaseItem(izenelib::driver::Request& r
         //std::cout << itemIdStr << "  ";
         uint128_t uuid = Utilities::uuidToUint128(itemIdStr);
 
-        if (itemsValue.size() > 1)
+        if (itemsValue.size() > 1) // XXX
         {
-            // In case a request contain more than one uuid,
-            // we have to update all these uuids together for this same request.
-            // cclogMergeUnit is used to join all uuids' update.
-            cclogMergeUnit->uuidCnt_ ++;
-
             boost::lock_guard<boost::mutex> lock(cclog_merge_mutex_);
             cclogMergeQueue_.insert(std::make_pair(uuid, cclogMergeUnit));
         }
@@ -250,31 +244,29 @@ void DriverLogServerHandler::onDuplicateKeyCheck(
         if (LogServerStorage::get()->docidDB()->get(docidList[i], newUuid))
         {
             newUuidSet.insert(newUuid);
-            //std::cout << docidList[i] << " -> " << Utilities::uint128ToUuid(newUuid) << std::endl;
         }
     }
 
-    // Check if uuid is one of uuids for the raw request (need to join uuids' update later),
-    // or else the request contain only one uuid (just output to log).
-    boost::lock_guard<boost::mutex> lock(cclog_merge_mutex_);
-    std::map<uint128_t, boost::shared_ptr<CCLogMerge> >::iterator it;
-    it = cclogMergeQueue_.find(uuid);
+    std::map<uint128_t, boost::shared_ptr<CCLogMerge> >::iterator it = cclogMergeQueue_.find(uuid);
     if (it != cclogMergeQueue_.end())
     {
         boost::shared_ptr<CCLogMerge>& cclogMergeUnit = it->second;
+
+        boost::lock_guard<boost::mutex> lock(cclog_merge_mutex_);
         cclogMergeUnit->uuidUpdateVec_.push_back(std::make_pair(uuid, newUuidSet));
-        mergeCClog(); // xxx
+        if (cclogMergeUnit->uuidCnt_ == cclogMergeUnit->uuidUpdateVec_.size())
+            mergeCClog(cclogMergeUnit);
     }
     else
     {
         std::string oldUuidStr = Utilities::uint128ToUuid(uuid);
         std::string newUuidStr;
-        std::set<uint128_t>::iterator it;
-        for (it = newUuidSet.begin(); it != newUuidSet.end(); it++)
+        for (std::set<uint128_t>::iterator sit = newUuidSet.begin();
+                sit != newUuidSet.end(); ++sit)
         {
-            newUuidStr = Utilities::uint128ToUuid(*it);
+            newUuidStr = Utilities::uint128ToUuid(*sit);
             std::string log = aux;
-            std::cout << oldUuidStr << " -> " <<newUuidStr << std::endl;
+            std::cout << oldUuidStr << " -> " << newUuidStr << std::endl;
             std::cout << log;
             boost::replace_all(log, oldUuidStr, newUuidStr);
             std::cout << " -> " << std::endl;
@@ -290,64 +282,32 @@ void DriverLogServerHandler::ouputCclog(const std::string& log)
     boost::lock_guard<boost::mutex> lock(mutex_);
 
     (*cclogFile_) << log;
-    cclogFile_->flush(); // xxx
+    cclogFile_->flush(); // XXX
 }
 
-void DriverLogServerHandler::mergeCClog()
+void DriverLogServerHandler::mergeCClog(boost::shared_ptr<CCLogMerge>& cclogMergeUnit)
 {
-    std::map<uint128_t, boost::shared_ptr<CCLogMerge> >::iterator it;
-    for (it = cclogMergeQueue_.begin(); it != cclogMergeQueue_.end(); it++)
+    // join all uuids' update
+    std::string& log = cclogMergeUnit->request_;
+
+    std::vector<std::pair<uint128_t, std::set<uint128_t> > >::iterator it
+        = cclogMergeUnit->uuidUpdateVec_.begin();
+    for (; it != cclogMergeUnit->uuidUpdateVec_.end(); ++it)
     {
-        boost::shared_ptr<CCLogMerge>& cclogMergeUnit = it->second;
-        if (cclogMergeUnit->merged_ == true)
-        {
-            continue;
-        }
+        std::string oldUuidStr = Utilities::uint128ToUuid(it->first);
+        std::string newUuidStr = Utilities::uint128ToUuid(*(it->second.begin()));
 
-        if (cclogMergeUnit->uuidCnt_ == cclogMergeUnit->uuidUpdateVec_.size())
-        {
-            // join all uuids' update
-            std::string log = cclogMergeUnit->request_;
-            //std::cout<<"merge log: "<<log <<std::endl;
-
-            std::vector<std::pair<uint128_t, std::set<uint128_t> > >::iterator itv;
-            for (itv = cclogMergeUnit->uuidUpdateVec_.begin(); itv != cclogMergeUnit->uuidUpdateVec_.end(); itv++)
-            {
-                std::string oldUuidStr = Utilities::uint128ToUuid(itv->first);
-
-                std::string newUuidStr;
-                std::set<uint128_t>& newUuidSet = itv->second;
-                std::set<uint128_t>::iterator its;
-                for (its = newUuidSet.begin(); its != newUuidSet.end(); its++)
-                {
-                    // use 1st uuid
-                    newUuidStr = Utilities::uint128ToUuid(uint128_t(*its));
-                    break;
-                }
-
-                std::cout << oldUuidStr << " -> " <<newUuidStr << std::endl;
-                boost::replace_all(log, oldUuidStr, newUuidStr);
-            }
-
-            std::cout<<"merged log: "<<log <<std::endl;
-            cclogMergeUnit->merged_ = true;
-            ouputCclog(log);
-        }
+        std::cout << oldUuidStr << " -> " << newUuidStr << std::endl;
+        boost::replace_all(log, oldUuidStr, newUuidStr);
     }
 
+    std::cout << "merged log: " << log << std::endl;
+    ouputCclog(log);
+
     // remove merged
-    for (it = cclogMergeQueue_.begin(); it != cclogMergeQueue_.end(); )
+    for (it = cclogMergeUnit->uuidUpdateVec_.begin(); it != cclogMergeUnit->uuidUpdateVec_.end(); ++it)
     {
-        boost::shared_ptr<CCLogMerge>& cclogMergeUnit = it->second;
-        if (cclogMergeUnit->merged_ == true)
-        {
-            cclogMergeQueue_.erase(it++);
-            continue;
-        }
-        else
-        {
-            it++;
-        }
+        cclogMergeQueue_.erase(it->first);
     }
 }
 

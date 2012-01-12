@@ -96,7 +96,19 @@ private:
 
     void ouputCclog(const std::string& log);
 
-    void mergeCClog();
+    struct CCLogMerge
+    {
+        std::size_t uuidCnt_;
+        std::string request_;
+        std::vector<std::pair<uint128_t, std::set<uint128_t> > > uuidUpdateVec_;
+
+        CCLogMerge(std::size_t uuidCnt = 0, const std::string& request = "")
+            : uuidCnt_(uuidCnt)
+            , request_(request)
+        {}
+    };
+
+    void mergeCClog(boost::shared_ptr<CCLogMerge>& cclogMergeUnit);
 
 private:
     Request* request_;
@@ -109,18 +121,6 @@ private:
     boost::shared_ptr<std::ofstream> cclogFile_;
     boost::mutex mutex_;
 
-    struct CCLogMerge
-    {
-        bool merged_;
-        std::string request_;
-        std::size_t uuidCnt_;
-        std::vector<std::pair<uint128_t, std::set<uint128_t> > > uuidUpdateVec_;
-
-        CCLogMerge()
-        : merged_(false)
-        , uuidCnt_(0)
-        {}
-    };
     std::map<uint128_t, boost::shared_ptr<CCLogMerge> > cclogMergeQueue_;
     boost::mutex cclog_merge_mutex_;
 };
