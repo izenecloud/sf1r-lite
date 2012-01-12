@@ -193,11 +193,11 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     key.convertString(key_str, UString::UTF_8);
     std::cout << "Begin evaluating: " << key_str << std::endl;
 #endif
-    if (content_list.size() < 2000 && corpus_->ntotal() < 100000)
+    //if (content_list.size() < 2000 && corpus_->ntotal() < 100000)
     {
-        SPLM::generateSummary(summaries, *corpus_, SPLM::SPLM_RI);
+        //SPLM::generateSummary(summaries, *corpus_, SPLM::SPLM_RI);
     }
-    else
+    //else
     {
         SPLM::generateSummary(summaries, *corpus_, SPLM::SPLM_NONE);
     }
