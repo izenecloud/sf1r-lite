@@ -1,5 +1,7 @@
 #include "LogServerWorkThread.h"
 
+#include <glog/logging.h>
+
 namespace sf1r
 {
 
@@ -14,7 +16,6 @@ LogServerWorkThread::LogServerWorkThread(
 
 LogServerWorkThread::~LogServerWorkThread()
 {
-    stop();
 }
 
 void LogServerWorkThread::stop()
@@ -49,8 +50,6 @@ void LogServerWorkThread::run()
             drumRequestQueue_.pop(drumReqData);
             process(drumReqData);
 
-            //boost::this_thread::sleep(boost::posix_time::seconds(1));
-
             // terminate execution if interrupted
             boost::this_thread::interruption_point();
         }
@@ -82,16 +81,18 @@ void LogServerWorkThread::process(const UUID2DocidList& uuid2DocidList)
 
 void LogServerWorkThread::process(const SynchronizeData& syncReqData)
 {
-    std::cout << "LogServerWorkThread::processSyncRequest" << std::endl;
-
     {
         boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
+        std::cout << "[LogServerWorkThread] synchronizing drum (locked) " << std::endl;
         drum_->Synchronize();
+        std::cout << "[LogServerWorkThread] finished synchronizing drum " << std::endl;
     }
 
     {
         boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDBMutex());
+        std::cout << "[LogServerWorkThread] flushing docid DB (locked) " << std::endl;
         docidDB_->flush();
+        std::cout << "[LogServerWorkThread] finished flushing docid DB " << std::endl;
     }
 }
 

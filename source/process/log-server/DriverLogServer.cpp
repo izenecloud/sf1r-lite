@@ -17,6 +17,11 @@ DriverLogServer::DriverLogServer(uint16_t port, uint32_t threadNum)
 {
 }
 
+DriverLogServer::~DriverLogServer()
+{
+    stop();
+}
+
 bool DriverLogServer::init()
 {
     boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), port_);

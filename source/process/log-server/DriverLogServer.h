@@ -13,9 +13,7 @@ class DriverLogServer
 public:
     DriverLogServer(uint16_t port, uint32_t threadNum);
 
-    ~DriverLogServer()
-    {
-    }
+    ~DriverLogServer();
 
     inline uint16_t getPort() const
     {
