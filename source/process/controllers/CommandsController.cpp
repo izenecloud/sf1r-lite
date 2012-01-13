@@ -97,7 +97,7 @@ void CommandsController::indexRecommend_()
     if (taskService)
     {
         task_type task = boost::bind(&RecommendTaskService::buildCollection, taskService);
-        JobScheduler::get()->addTask(task);
+        JobScheduler::get()->addTask(task, collection_);
     }
 }
 
@@ -155,7 +155,7 @@ void CommandsController::optimize_index()
         return;
     }
     task_type task = boost::bind(&IndexTaskService::optimizeIndex, indexService);
-    JobScheduler::get()->addTask(task);
+    JobScheduler::get()->addTask(task, collection_);
 }
 
 } // namespace sf1r

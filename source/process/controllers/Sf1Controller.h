@@ -6,6 +6,9 @@
  * @date Created <2011-01-25 17:30:12>
  */
 #include <util/driver/Controller.h>
+#include <common/CollectionManager.h>
+#include <boost/thread/shared_mutex.hpp>
+
 
 namespace sf1r
 {
@@ -47,6 +50,7 @@ protected:
 protected:
 
     CollectionHandler* collectionHandler_;
+    CollectionManager::MutexType* mutex_;
 };
 
 } // namespace sf1r

@@ -8,7 +8,6 @@
 
 #include <common/Keys.h>
 #include <common/XmlConfigParser.h>
-#include <common/CollectionManager.h>
 
 namespace sf1r
 {
@@ -17,13 +16,15 @@ using driver::Keys;
 using namespace izenelib::driver;
 
 Sf1Controller::Sf1Controller()
-    : collectionHandler_(0)
+    : collectionHandler_(0),
+      mutex_(0)
 {
 }
 
-
 Sf1Controller::~Sf1Controller()
 {
+    if(mutex_)
+        mutex_->unlock_shared();
 }
 
 /**
@@ -44,13 +45,14 @@ bool Sf1Controller::checkCollectionAcl()
         return false;
     }
 
+    mutex_ = CollectionManager::get()->getCollectionMutex(collection);
+    mutex_->lock_shared();
     collectionHandler_ = CollectionManager::get()->findHandler(collection);
     if(!collectionHandler_)
     {
         this->response().addError("Collection handler not find");
         return false;
     }
-
     return true;
 }
 

@@ -30,6 +30,16 @@
 
 //using namespace std;
 
+namespace ilplib
+{
+namespace langid
+{
+class Analyzer;
+class Knowledge;
+class Factory;
+}
+}
+
 namespace sf1r
 {
 
@@ -76,6 +86,24 @@ namespace sf1r
                 return ::izenelib::util::Singleton<LAPool>::get();
             }
 
+            void setLangId();
+
+            ilplib::langid::Analyzer* getLangId()
+            {
+                return langIdAnalyzer_;
+            }
+
+            void setLangIdDbPath(const std::string& langIdDbPath)
+            {
+                langIdDbPath_ = langIdDbPath;
+            }
+
+            std::string& getLangIdDbPath()
+            {
+                return langIdDbPath_;
+            }
+
+            void initLangAnalyzer();
             ///
             /// initialize dictionary.
             ///
@@ -163,6 +191,14 @@ namespace sf1r
             std::string cma_path_;
 
             std::string jma_path_;
+
+            ilplib::langid::Analyzer* langIdAnalyzer_;
+
+            ilplib::langid::Knowledge* langIdKnowledge_;
+
+            ilplib::langid::Factory* langIdFactory_;
+
+            std::string langIdDbPath_;
     };
 
 } // namespace sf1r

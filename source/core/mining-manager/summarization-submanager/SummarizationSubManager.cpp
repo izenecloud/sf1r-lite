@@ -6,6 +6,7 @@
 
 #include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
+#include <la-manager/LAPool.h>
 
 #include <common/ScdParser.h>
 #include <idmlib/util/idm_analyzer.h>
@@ -152,7 +153,7 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 
 #define MAXDOC 100
 
-    ilplib::langid::Analyzer* langIdAnalyzer = document_manager_->getLangId();
+    ilplib::langid::Analyzer* langIdAnalyzer = LAPool::getInstance()->getLangId();
     corpus_->start_new_coll(key);
 
     std::size_t num = 0;

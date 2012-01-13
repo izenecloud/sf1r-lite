@@ -76,6 +76,9 @@ void KeywordsController::index()
         response().addError("Collection access denied");
         return;
     }
+
+    CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(collection);
+    CollectionManager::ScopedReadLock lock(*mutex);
     CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
 
     bool getAllLists = true;
@@ -262,6 +265,8 @@ void KeywordsController::inject_query_correction()
                 response().addError("Collection access denied");
                 return;
             }
+            CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(collection);
+            CollectionManager::ScopedReadLock lock(*mutex);
             CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
             MiningSearchService* service = collectionHandler->miningSearchService_;
             for(uint32_t i=0;i<input.size();i++)
@@ -345,6 +350,8 @@ void KeywordsController::inject_query_recommend()
     }
     if(!input.empty())
     {
+        CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(collection);
+        CollectionManager::ScopedReadLock lock(*mutex);
         CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
         MiningSearchService* service = collectionHandler->miningSearchService_;
         for(uint32_t i=0;i<input.size();i++)

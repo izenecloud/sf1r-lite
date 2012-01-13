@@ -102,7 +102,7 @@ IndexWorker::~IndexWorker()
 bool IndexWorker::index(const unsigned int& numdoc, bool& ret)
 {
     task_type task = boost::bind(&IndexWorker::buildCollection, this, numdoc);
-    JobScheduler::get()->addTask(task);
+    JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
 
     ret = true;
     return ret;

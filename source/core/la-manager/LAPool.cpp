@@ -588,6 +588,28 @@ namespace sf1r
         {
             delete it2->second;
         }
+
+        if (langIdKnowledge_)  delete langIdKnowledge_;
+        if (langIdAnalyzer_) delete langIdAnalyzer_;
+    }
+
+    void LAPool::setLangId()
+    {
+
+        string encodingPath = langIdDbPath_ + "/model/encoding.bin";
+        langIdKnowledge_->loadEncodingModel(encodingPath.c_str());
+        // load language model for language identification or sentence tokenization
+        string langPath = langIdDbPath_ + "/model/language.bin";
+        langIdKnowledge_->loadLanguageModel(langPath.c_str());
+        // set knowledge
+        langIdAnalyzer_->setKnowledge(langIdKnowledge_);
+    }
+
+    void LAPool::initLangAnalyzer()
+    {
+        langIdFactory_ = ilplib::langid::Factory::instance();
+        langIdKnowledge_ = langIdFactory_->createKnowledge();
+        langIdAnalyzer_ = langIdFactory_->createAnalyzer();
     }
 
     bool LAPool::init(const sf1r::LAManagerConfig & laManagerConfig)
@@ -596,6 +618,8 @@ namespace sf1r
 #ifdef USE_MF_LIGHT
          ScopedWriteLock<ReadWriteLock> lock (lock_ );
 #endif
+         la::MultiLanguageAnalyzer::langIdAnalyzer_ = langIdAnalyzer_;
+         setLangId();
 
         // Get LAConfigMap
         laManagerConfig.getLAConfigMap( laConfigUnitMap_ );

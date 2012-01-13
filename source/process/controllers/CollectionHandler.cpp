@@ -88,7 +88,7 @@ bool CollectionHandler::create(const std::string& collectionName, const ::izenel
         return false;
     }
     task_type task = boost::bind(&IndexTaskService::createDocument, indexService, document);
-    JobScheduler::get()->addTask(task);
+    JobScheduler::get()->addTask(task, collection_);
     return true;
 }
 
@@ -103,7 +103,7 @@ bool CollectionHandler::update(const std::string& collectionName, const ::izenel
         return false;
     }
     task_type task = boost::bind(&IndexTaskService::updateDocument, indexService, document);
-    JobScheduler::get()->addTask(task);
+    JobScheduler::get()->addTask(task, collection_);
     return true;
 }
 
@@ -118,7 +118,7 @@ bool CollectionHandler::destroy(const std::string& collectionName, const ::izene
         return false;
     }
     task_type task = boost::bind(&IndexTaskService::destroyDocument, indexService, document);
-    JobScheduler::get()->addTask(task);
+    JobScheduler::get()->addTask(task, collection_);
     return true;
 }
 

@@ -21,20 +21,30 @@ void JobScheduler::close()
     asynchronousWorker_.join();
 }
 
-void JobScheduler::addTask(task_type task)
+void JobScheduler::removeTask(const std::string& collection)
 {
-    asynchronousTasks_.push(task);
+    close();
+    asynchronousTasks_.remove_if(RemoveTaskPred(collection));
+    asynchronousWorker_ = boost::thread(
+            &JobScheduler::runAsynchronousTasks_, this
+    );
+}
+
+void JobScheduler::addTask(task_type task, const std::string& collection)
+{
+    task_collection_name_type taskCollectionPair(task, collection);
+    asynchronousTasks_.push(taskCollectionPair);
 }
 
 void JobScheduler::runAsynchronousTasks_()
 {
     try
     {
-        task_type task;
+        task_collection_name_type taskCollectionPair;
         while (true)
         {
-            asynchronousTasks_.pop(task);
-            task();
+            asynchronousTasks_.pop(taskCollectionPair);
+            (taskCollectionPair.first)();
 
             // terminate execution if interrupted
             boost::this_thread::interruption_point();

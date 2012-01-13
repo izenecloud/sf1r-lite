@@ -12,8 +12,23 @@ namespace sf1r
 
 CollectionHandler* CollectionManager::kEmptyHandler_ = 0;
 
+CollectionManager::~CollectionManager()
+{
+    for(handler_const_iterator iter = handlerBegin(); iter != handlerEnd(); iter++)
+    {
+         delete iter->second;
+    }
+
+    std::map<std::string, MutexType*>::const_iterator mutexIter;
+    for(mutexIter = mutexMap_.begin(); mutexIter != mutexMap_.end(); mutexIter++)
+    {
+        delete mutexIter->second;
+    }
+}
 void CollectionManager::startCollection(const string& collectionName, const std::string& configFileName)
 {
+    ScopedWriteLock lock(*getCollectionMutex(collectionName));
+
     CollectionHandler* collectionHandler = new CollectionHandler(collectionName);
 
     boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig(new IndexBundleConfiguration(collectionName));
@@ -84,6 +99,17 @@ void CollectionManager::startCollection(const string& collectionName, const std:
 
 void CollectionManager::stopCollection(const std::string& collectionName)
 {
+    ScopedWriteLock lock(*getCollectionMutex(collectionName));
+
+    JobScheduler::get()->removeTask(collectionName);
+
+    handler_const_iterator iter;
+    if((iter = collectionHandlers_.find(collectionName)) != collectionHandlers_.end())
+    {
+        delete iter->second;
+        collectionHandlers_.erase(collectionName);
+    }
+
     std::string bundleName = "IndexBundle-" + collectionName;
     //boost::shared_ptr<BundleConfiguration> bundleConfigPtr =
     //    osgiLauncher_->getBundleInfo(bundleName)->getBundleContext()->getBundleConfig();
@@ -115,8 +141,6 @@ void CollectionManager::stopCollection(const std::string& collectionName)
         osgiLauncher_.stopBundle(bundleName);
     }
 
-    if(collectionHandlers_.find(collectionName) != collectionHandlers_.end())
-        collectionHandlers_.erase(collectionName);
     if(SF1Config::get()->mutableCollectionMetaMap().find(collectionName) != SF1Config::get()->mutableCollectionMetaMap().end())
         SF1Config::get()->mutableCollectionMetaMap().erase(collectionName);
 }

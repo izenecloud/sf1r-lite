@@ -69,6 +69,8 @@ protected:
     {
         if (msg.method == "clear_search_cache")
         {
+            CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(msg.identity);
+            CollectionManager::ScopedReadLock lock(*mutex);
             CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(msg.identity);
             if (collectionHandler)
             {

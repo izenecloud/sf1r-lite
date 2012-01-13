@@ -316,6 +316,7 @@ int CobraProcess::run()
 
     try
     {
+        LAPool::getInstance()->initLangAnalyzer();
         bfs::directory_iterator iter(configDir_), end_iter;
         for(; iter!= end_iter; ++iter)
         {
