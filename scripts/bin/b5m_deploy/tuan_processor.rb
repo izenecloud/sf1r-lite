@@ -50,9 +50,10 @@ parser.each do |doc|
   endtime_str = doc['TimeEnd'].strip
 #   puts "endtime_str : #{endtime_str}"
   next if endtime_str.length==0
-  time = DateTime::parse(endtime_str, "%Y%m%d%H%M%S")
-  now = DateTime::now
-  next if time<now
+  end_datetime = DateTime::parse(endtime_str, "%Y%m%d%H%M%S")
+  end_time = Time.local(end_datetime.year, end_datetime.month, end_datetime.day, end_datetime.hour, end_datetime.min, end_datetime.sec)
+  now = Time.now
+  next if end_time<now
   
   title = doc['Title']
   old_category = doc['Category']

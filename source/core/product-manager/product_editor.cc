@@ -51,6 +51,7 @@ bool ProductEditor::UpdateADoc(const PMDocumentType& doc)
 //all intervention functions.
 bool ProductEditor::AddGroup(const std::vector<uint32_t>& docid_list, PMDocumentType& info, const ProductEditOption& option)
 {
+    LOG(INFO)<<"call AddGroup"<<std::endl;
     if (docid_list.size()<2)
     {
         error_ = "Docid list size must larger than 1";
