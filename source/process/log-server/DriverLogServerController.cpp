@@ -4,6 +4,7 @@
 
 #include <boost/algorithm/string/replace.hpp>
 
+
 namespace sf1r
 {
 using namespace izenelib::driver;
@@ -18,103 +19,167 @@ bool DriverLogServerController::preprocess()
 
 /**
  * @brief Action \b update_cclog
- * The request data of \b update_cclog in json format is expected supported by any action of SF1R controllers,
- * and the \b header field is presented.
+ *
+ * - @b line (@c Object): a wrapped json request (as cclog) which is supported by SF1R
  *
  * @example
  * {
  *   "header" : {
- *     "action" : "documents",
- *     "controller" : "visit"
+ *     "controller" : "log_server"
+ *     "action" : "update_cclog",
  *   },
- *
- *   # Following by other fields (this is comment)
+ *   "filename" : "cclog20120113.txt",
+ *   "line" : {
+ *     # a wrapped json request (as cclog) which is supported by SF1R
+ *   }
  * }
  *
  */
 void DriverLogServerController::update_cclog()
 {
-    dirverLogServerHandler_->process();
+    std::cout << request().controller() << "/" << request().action() << std::endl;
+    dirverLogServerHandler_->processCclog();
 }
 
+/**
+ * @brief Action \b update_cclog
+ *
+ * - @b line (@c String): the text of a record in SCD file
+ *
+ * @example
+ * {
+ *   "header" : {
+ *     "controller" : "log_server"
+ *     "action" : "update_scd",
+ *   },
+ *   "filename" : "B-00-201112011437-38743-I-C.SCD",
+ *   "line" : "#{the text of a record in SCD file}"
+ *   }
+ * }
+ *
+ */
+void DriverLogServerController::update_scd()
+{
+    std::cout << request().controller() << "/" << request().action() << std::endl;
+    // TODO
+}
+
+/**
+ * @brief Action \b flush
+ *
+ * Client should send this request after all update requests for a file has been finished,
+ * so that Server can perform flush properly.
+ *
+ * @example
+ * {
+ *   "header" : {
+ *     "controller" : "log_server"
+ *     "action" : "flush",
+ *   },
+ *   "filename" : "cclog20120113.txt"
+ *   }
+ * }
+ *
+ */
+void DriverLogServerController::flush()
+{
+    std::cout << request().controller() << "/" << request().action() << std::endl;
+    dirverLogServerHandler_->flush();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// DriverLogServerHandler
 
 void DriverLogServerHandler::init()
 {
-    // drum <uuid, docids>
-    drum_ = LogServerStorage::get()->getDrum();
-
-    LogServerStorage::get()->getDrumDispatcher().registerOp(
+    // call back for drum dispatcher
+    LogServerStorage::get()->drumDispatcher().registerOp(
             LogServerStorage::DrumDispatcherImpl::UNIQUE_KEY_CHECK,
             boost::bind(&DriverLogServerHandler::onUniqueKeyCheck, this, _1, _2, _3));
 
-    LogServerStorage::get()->getDrumDispatcher().registerOp(
+    LogServerStorage::get()->drumDispatcher().registerOp(
             LogServerStorage::DrumDispatcherImpl::DUPLICATE_KEY_CHECK,
             boost::bind(&DriverLogServerHandler::onDuplicateKeyCheck, this, _1, _2, _3));
 
-    // DB <docid, uuid>
-    docidDB_ = LogServerStorage::get()->getDocidDB();
-
     // collections of which log need to be updated
     driverCollections_ = LogServerCfg::get()->getDriverCollections();
-
-    // cclog file for output
-    cclogFileName_ = LogServerCfg::get()->getCclogOutFile();
-    {
-        std::ifstream inf;
-        inf.open(cclogFileName_.c_str());
-        if (!inf.good())
-        {
-            // create if not existed
-            std::ifstream out;
-            out.open(cclogFileName_.c_str());
-            out.close();
-        }
-        inf.close();
-    }
-    cclogFile_.reset(new std::ofstream);
-    cclogFile_->open(cclogFileName_.c_str(), fstream::out/* | fstream::app*/); //FIXME
-    if (!cclogFile_->good())
-    {
-        std::string msg = "Failed to open cclog file for output: " + cclogFileName_;
-        throw std::runtime_error(msg.c_str());
-    }
+    storageBaseDir_ = LogServerCfg::get()->getStorageBaseDir();
 }
 
-void DriverLogServerHandler::process()
+void DriverLogServerHandler::processCclog()
 {
-    std::cout << request().controller() << "/" << request().action() << std::endl;
+    // Get raw request which was originally stored in cclog
+    izenelib::driver::Value raw_request = request()[Keys::line];
+    std::string fileName = storageBaseDir_ + "/" + asString(request()[Keys::filename]);
 
-    std::string collection = asString(request()["collection"]);
-
-    std::string raw;
-    jsonWriter_.write(request().get(), raw);
-
-    if (!skipProcess(collection))
+    if (!openFile(fileName))
     {
-        const std::string& controller = request().controller();
-        const std::string& action = request().action();
-
-        if (controller == "documents" && action == "visit")
-        {
-            processDocVisit(request(), raw);
-        }
-        else if (controller == "recommend" && action == "visit_item")
-        {
-            processRecVisitItem(request(), raw);
-        }
-        else if (controller == "recommend" && action == "purchase_item")
-        {
-            processRecPurchaseItem(request(), raw);
-        }
-
-        // xxx will be processed later asynchronously
-        // flush drum properly
-        drum_->Synchronize();
+        std::string msg = "Server Error: Failed to create file " + fileName;
+        response().setSuccess(false);
+        response().addError(msg);
         return;
     }
 
-    // output
-    ouputCclog(raw);
+    std::string json;
+    jsonWriter_.write(raw_request, json);
+    std::cout << fileName << " --> " << json << std::endl;
+
+    std::string collection = asString(raw_request[Keys::collection]);
+    if (!skipProcess(collection))
+    {
+        const std::string& controller = asString(raw_request[Keys::header][Keys::controller]);
+        const std::string& action = asString(raw_request[Keys::header][Keys::action]);
+
+        if (controller == "documents" && action == "visit")
+        {
+            encodeFileName(json, fileName);
+            processDocVisit(raw_request, json);
+        }
+        else if (controller == "recommend" && action == "visit_item")
+        {
+            encodeFileName(json, fileName);
+            processRecVisitItem(raw_request, json);
+        }
+        else if (controller == "recommend" && action == "purchase_item")
+        {
+            encodeFileName(json, fileName);
+            processRecPurchaseItem(raw_request, json);
+        }
+        else
+        {
+            // output directly if there is no need to update
+            writeFile(fileName, json);
+        }
+    }
+    else
+    {
+        // output directly if there is no need to update
+        writeFile(fileName, json);
+    }
+}
+
+void DriverLogServerHandler::processScd()
+{
+
+}
+
+void DriverLogServerHandler::flush()
+{
+    {
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
+        LogServerStorage::get()->drum()->Synchronize();
+    }
+
+    {
+        for (FileMapT::iterator it = fileMap_.begin(); it != fileMap_.end(); it++)
+        {
+            if (it->second)
+            {
+                boost::lock_guard<boost::mutex> lock(it->second->mutex_);
+                it->second->of_->flush();
+            }
+        }
+    }
 }
 
 
@@ -122,7 +187,7 @@ bool DriverLogServerHandler::skipProcess(const std::string& collection)
 {
     if (driverCollections_.find(collection) == driverCollections_.end())
     {
-        std::cout << "skip " << collection << std::endl;
+        //std::cout << "skip " << collection << std::endl;
         return true;
     }
 
@@ -143,10 +208,11 @@ bool DriverLogServerHandler::skipProcess(const std::string& collection)
     }
  *
  */
-void DriverLogServerHandler::processDocVisit(izenelib::driver::Request& request, const std::string& raw)
+void DriverLogServerHandler::processDocVisit(izenelib::driver::Value& request, const std::string& raw)
 {
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
     std::string docIdStr = asString(request[Keys::resource][Keys::DOCID]);
-    drum_->Check(Utilities::uuidToUint128(docIdStr), raw);
+    LogServerStorage::get()->drum()->Check(Utilities::uuidToUint128(docIdStr), raw);
 }
 
 /**
@@ -167,10 +233,11 @@ void DriverLogServerHandler::processDocVisit(izenelib::driver::Request& request,
     }
  *
  */
-void DriverLogServerHandler::processRecVisitItem(izenelib::driver::Request& request, const std::string& raw)
+void DriverLogServerHandler::processRecVisitItem(izenelib::driver::Value& request, const std::string& raw)
 {
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
     std::string itemIdStr = asString(request[Keys::resource][Keys::ITEMID]);
-    drum_->Check(Utilities::uuidToUint128(itemIdStr), raw);
+    LogServerStorage::get()->drum()->Check(Utilities::uuidToUint128(itemIdStr), raw);
 }
 
 /**
@@ -192,7 +259,7 @@ void DriverLogServerHandler::processRecVisitItem(izenelib::driver::Request& requ
     }
  *
  */
-void DriverLogServerHandler::processRecPurchaseItem(izenelib::driver::Request& request, const std::string& raw)
+void DriverLogServerHandler::processRecPurchaseItem(izenelib::driver::Value& request, const std::string& raw)
 {
     //std::cout << "RecPurchaseItemProcessor ";
 
@@ -202,8 +269,7 @@ void DriverLogServerHandler::processRecPurchaseItem(izenelib::driver::Request& r
         return;
     }
 
-    boost::shared_ptr<CCLogMerge> cclogMergeUnit(new CCLogMerge);
-    cclogMergeUnit->request_ = raw;
+    boost::shared_ptr<CCLogMerge> cclogMergeUnit(new CCLogMerge(itemsValue.size(), raw));
     for (std::size_t i = 0; i < itemsValue.size(); ++i)
     {
         const Value& itemValue = itemsValue(i);
@@ -211,18 +277,14 @@ void DriverLogServerHandler::processRecPurchaseItem(izenelib::driver::Request& r
         //std::cout << itemIdStr << "  ";
         uint128_t uuid = Utilities::uuidToUint128(itemIdStr);
 
-        if (itemsValue.size() > 1)
+        if (itemsValue.size() > 1) // XXX
         {
-            // In case a request contain more than one uuid,
-            // we have to update all these uuids together for this same request.
-            // cclogMergeUnit is used to join all uuids' update.
-            cclogMergeUnit->uuidCnt_ ++;
-
             boost::lock_guard<boost::mutex> lock(cclog_merge_mutex_);
             cclogMergeQueue_.insert(std::make_pair(uuid, cclogMergeUnit));
         }
 
-        drum_->Check(uuid, raw);
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
+        LogServerStorage::get()->drum()->Check(uuid, raw);
     }
 
     //std::cout << std::endl;
@@ -234,7 +296,10 @@ void DriverLogServerHandler::onUniqueKeyCheck(
         const LogServerStorage::drum_aux_t& aux)
 {
     //std::cout << "onUniqueKeyCheck " << Utilities::uint128ToUuid(uuid) << std::endl;
-    ouputCclog(aux);
+    std::string json = aux;
+    std::string fileName;
+    decodeFileName(json, fileName);
+    writeFile(fileName, json);
 }
 
 void DriverLogServerHandler::onDuplicateKeyCheck(
@@ -242,113 +307,134 @@ void DriverLogServerHandler::onDuplicateKeyCheck(
         const LogServerStorage::drum_value_t& docidList,
         const LogServerStorage::drum_aux_t& aux)
 {
-    std::cout << "onDuplicateKeyCheck " << Utilities::uint128ToUuid(uuid) << std::endl;
-
+    //std::cout << "onDuplicateKeyCheck " << Utilities::uint128ToUuid(uuid) << std::endl;
     std::set<uint128_t> newUuidSet;
     uint128_t newUuid;
     for (std::size_t i = 0; i < docidList.size(); i++)
     {
-        if (docidDB_->get(docidList[i], newUuid))
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDBMutex());
+        if (LogServerStorage::get()->docidDB()->get(docidList[i], newUuid))
         {
             newUuidSet.insert(newUuid);
-            //std::cout << docidList[i] << " -> " << Utilities::uint128ToUuid(newUuid) << std::endl;
         }
     }
 
-    // Check if uuid is one of uuids for the raw request (need to join uuids' update later),
-    // or else the request contain only one uuid (just output to log).
-    boost::lock_guard<boost::mutex> lock(cclog_merge_mutex_);
-    std::map<uint128_t, boost::shared_ptr<CCLogMerge> >::iterator it;
-    it = cclogMergeQueue_.find(uuid);
+    std::map<uint128_t, boost::shared_ptr<CCLogMerge> >::iterator it = cclogMergeQueue_.find(uuid);
     if (it != cclogMergeQueue_.end())
     {
         boost::shared_ptr<CCLogMerge>& cclogMergeUnit = it->second;
+
+        boost::lock_guard<boost::mutex> lock(cclog_merge_mutex_);
         cclogMergeUnit->uuidUpdateVec_.push_back(std::make_pair(uuid, newUuidSet));
-        mergeCClog(); // xxx
+        if (cclogMergeUnit->uuidCnt_ == cclogMergeUnit->uuidUpdateVec_.size())
+            mergeCClog(cclogMergeUnit);
     }
     else
     {
         std::string oldUuidStr = Utilities::uint128ToUuid(uuid);
         std::string newUuidStr;
-        std::set<uint128_t>::iterator it;
-        for (it = newUuidSet.begin(); it != newUuidSet.end(); it++)
+        for (std::set<uint128_t>::iterator sit = newUuidSet.begin();
+                sit != newUuidSet.end(); ++sit)
         {
-            newUuidStr = Utilities::uint128ToUuid(*it);
+            newUuidStr = Utilities::uint128ToUuid(*sit);
             std::string log = aux;
-            std::cout << oldUuidStr << " -> " <<newUuidStr << std::endl;
-            std::cout << log;
+            std::cout << oldUuidStr << " -> " << newUuidStr << std::endl;
+            //std::cout << log;
             boost::replace_all(log, oldUuidStr, newUuidStr);
-            std::cout << " -> " << std::endl;
-            std::cout << log << std::endl;
+            //std::cout << " -> " << std::endl;
+            std::cout << "updated log: " << log << std::endl;
 
-            ouputCclog(log);
+            std::string fileName;
+            decodeFileName(log, fileName);
+            writeFile(fileName, log);
         }
     }
 }
 
-void DriverLogServerHandler::ouputCclog(const std::string& log)
+void DriverLogServerHandler::mergeCClog(boost::shared_ptr<CCLogMerge>& cclogMergeUnit)
 {
-    boost::lock_guard<boost::mutex> lock(mutex_);
+    // join all uuids' update
+    std::string& log = cclogMergeUnit->request_;
 
-    (*cclogFile_) << log;
-    cclogFile_->flush(); // xxx
-}
-
-void DriverLogServerHandler::mergeCClog()
-{
-    std::map<uint128_t, boost::shared_ptr<CCLogMerge> >::iterator it;
-    for (it = cclogMergeQueue_.begin(); it != cclogMergeQueue_.end(); it++)
+    std::vector<std::pair<uint128_t, std::set<uint128_t> > >::iterator it
+        = cclogMergeUnit->uuidUpdateVec_.begin();
+    for (; it != cclogMergeUnit->uuidUpdateVec_.end(); ++it)
     {
-        boost::shared_ptr<CCLogMerge>& cclogMergeUnit = it->second;
-        if (cclogMergeUnit->merged_ == true)
-        {
-            continue;
-        }
+        std::string oldUuidStr = Utilities::uint128ToUuid(it->first);
+        std::string newUuidStr = Utilities::uint128ToUuid(*(it->second.begin()));
 
-        if (cclogMergeUnit->uuidCnt_ == cclogMergeUnit->uuidUpdateVec_.size())
-        {
-            // join all uuids' update
-            std::string log = cclogMergeUnit->request_;
-            //std::cout<<"merge log: "<<log <<std::endl;
-
-            std::vector<std::pair<uint128_t, std::set<uint128_t> > >::iterator itv;
-            for (itv = cclogMergeUnit->uuidUpdateVec_.begin(); itv != cclogMergeUnit->uuidUpdateVec_.end(); itv++)
-            {
-                std::string oldUuidStr = Utilities::uint128ToUuid(itv->first);
-
-                std::string newUuidStr;
-                std::set<uint128_t>& newUuidSet = itv->second;
-                std::set<uint128_t>::iterator its;
-                for (its = newUuidSet.begin(); its != newUuidSet.end(); its++)
-                {
-                    // use 1st uuid
-                    newUuidStr = Utilities::uint128ToUuid(uint128_t(*its));
-                    break;
-                }
-
-                std::cout << oldUuidStr << " -> " <<newUuidStr << std::endl;
-                boost::replace_all(log, oldUuidStr, newUuidStr);
-            }
-
-            std::cout<<"merged log: "<<log <<std::endl;
-            cclogMergeUnit->merged_ = true;
-            ouputCclog(log);
-        }
+        std::cout << oldUuidStr << " -> " << newUuidStr << std::endl;
+        boost::replace_all(log, oldUuidStr, newUuidStr);
     }
+
+    std::cout << "updated log: " << log << std::endl;
+    std::string fileName;
+    decodeFileName(log, fileName);
+    writeFile(fileName, log);
 
     // remove merged
-    for (it = cclogMergeQueue_.begin(); it != cclogMergeQueue_.end(); )
+    for (it = cclogMergeUnit->uuidUpdateVec_.begin(); it != cclogMergeUnit->uuidUpdateVec_.end(); ++it)
     {
-        boost::shared_ptr<CCLogMerge>& cclogMergeUnit = it->second;
-        if (cclogMergeUnit->merged_ == true)
+        cclogMergeQueue_.erase(it->first);
+    }
+}
+
+boost::shared_ptr<DriverLogServerHandler::OutFile>& DriverLogServerHandler::openFile(const std::string& fileName)
+{
+    FileMapT::iterator it = fileMap_.find(fileName);
+
+    if (it == fileMap_.end() || !it->second)
+    {
+        // create file if not existed
+        std::ifstream inf;
+        inf.open(fileName.c_str());
+        if (!inf.good())
         {
-            cclogMergeQueue_.erase(it++);
-            continue;
+            std::ifstream out;
+            out.open(fileName.c_str());
+            out.close();
+        }
+        inf.close();
+
+        // open file for output
+        boost::shared_ptr<OutFile> outFile(new OutFile);
+        outFile->of_.reset(new std::ofstream);
+        outFile->of_->open(fileName.c_str(), fstream::out|fstream::app);
+        if (outFile->of_->good())
+        {
+            fileMap_[fileName] = outFile;
         }
         else
         {
-            it++;
+            fileMap_[fileName].reset();
         }
+    }
+
+    return fileMap_[fileName];
+}
+
+void DriverLogServerHandler::encodeFileName(std::string& json, const std::string& fileName)
+{
+    json = fileName + json;
+}
+
+void DriverLogServerHandler::decodeFileName(std::string& json, std::string& fileName)
+{
+    std::size_t pos = json.find_first_of('{');
+    if (pos != std::string::npos)
+    {
+        fileName = json.substr(0, pos);
+        json = json.substr(pos);
+    }
+}
+
+void DriverLogServerHandler::writeFile(const std::string& fileName, const std::string& line)
+{
+    boost::shared_ptr<OutFile>& outFile = openFile(fileName);
+    if (outFile)
+    {
+        boost::lock_guard<boost::mutex> lock(outFile->mutex_);
+        (*outFile->of_) << line;
     }
 }
 

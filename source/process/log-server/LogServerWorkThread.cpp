@@ -1,20 +1,17 @@
 #include "LogServerWorkThread.h"
 
+#include <glog/logging.h>
+
 namespace sf1r
 {
 
-LogServerWorkThread::LogServerWorkThread(
-        const LogServerStorage::DrumPtr& drum,
-        const LogServerStorage::KVDBPtr& docidDB)
-    : drum_(drum)
-    , docidDB_(docidDB)
+LogServerWorkThread::LogServerWorkThread()
 {
     workThread_ = boost::thread(&LogServerWorkThread::run, this);
 }
 
 LogServerWorkThread::~LogServerWorkThread()
 {
-    stop();
 }
 
 void LogServerWorkThread::stop()
@@ -49,8 +46,6 @@ void LogServerWorkThread::run()
             drumRequestQueue_.pop(drumReqData);
             process(drumReqData);
 
-            //boost::this_thread::sleep(boost::posix_time::seconds(1));
-
             // terminate execution if interrupted
             boost::this_thread::interruption_point();
         }
@@ -77,21 +72,23 @@ void LogServerWorkThread::process(const DrumRequestData& drumReqData)
 void LogServerWorkThread::process(const UUID2DocidList& uuid2DocidList)
 {
     boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
-    drum_->Update(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
+    LogServerStorage::get()->drum()->Update(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
 }
 
 void LogServerWorkThread::process(const SynchronizeData& syncReqData)
 {
-    std::cout << "LogServerWorkThread::processSyncRequest" << std::endl;
-
     {
         boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
-        drum_->Synchronize();
+        std::cout << "[LogServerWorkThread] synchronizing drum (locked) " << std::endl;
+        LogServerStorage::get()->drum()->Synchronize();
+        std::cout << "[LogServerWorkThread] finished synchronizing drum " << std::endl;
     }
 
     {
         boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDBMutex());
-        docidDB_->flush();
+        std::cout << "[LogServerWorkThread] flushing docid DB (locked) " << std::endl;
+        LogServerStorage::get()->docidDB()->flush();
+        std::cout << "[LogServerWorkThread] finished flushing docid DB " << std::endl;
     }
 }
 

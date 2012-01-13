@@ -64,18 +64,10 @@ void LogServerProcess::join()
 
 void LogServerProcess::stop()
 {
-    if (rpcLogServer_)
-    {
-        rpcLogServer_->stop();
-    }
-
-    if (driverLogServer_)
-    {
-        driverLogServer_->stop();
-    }
-
+    std::cout << "stop LogServerProcess" << std::endl;
+    rpcLogServer_.reset();
+    driverLogServer_.reset();
     LogServerStorage::get()->close();
-    std::cout << "LogServerProcess::stop()" << std::endl;
 }
 
 bool LogServerProcess::initRpcLogServer()

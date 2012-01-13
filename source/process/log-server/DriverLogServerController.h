@@ -35,9 +35,14 @@ public:
 
     void update_cclog();
 
+    void update_scd();
+
+    void flush();
+
 private:
     boost::shared_ptr<DriverLogServerHandler> dirverLogServerHandler_;
 };
+
 
 class DriverLogServerHandler
 {
@@ -73,16 +78,20 @@ public:
 public:
     void init();
 
-    void process();
+    void processCclog();
+
+    void processScd();
+
+    void flush();
 
 private:
     bool skipProcess(const std::string& collection);
 
-    void processDocVisit(izenelib::driver::Request& request, const std::string& raw);
+    void processDocVisit(izenelib::driver::Value& request, const std::string& raw);
 
-    void processRecVisitItem(izenelib::driver::Request& request, const std::string& raw);
+    void processRecVisitItem(izenelib::driver::Value& request, const std::string& raw);
 
-    void processRecPurchaseItem(izenelib::driver::Request& request, const std::string& raw);
+    void processRecPurchaseItem(izenelib::driver::Value& request, const std::string& raw);
 
     void onUniqueKeyCheck(
             const LogServerStorage::drum_key_t& uuid,
@@ -94,9 +103,33 @@ private:
             const LogServerStorage::drum_value_t& docidList,
             const LogServerStorage::drum_aux_t& aux);
 
-    void ouputCclog(const std::string& log);
+    struct CCLogMerge
+    {
+        std::size_t uuidCnt_;
+        std::string request_;
+        std::vector<std::pair<uint128_t, std::set<uint128_t> > > uuidUpdateVec_;
 
-    void mergeCClog();
+        CCLogMerge(std::size_t uuidCnt = 0, const std::string& request = "")
+            : uuidCnt_(uuidCnt)
+            , request_(request)
+        {}
+    };
+
+    void mergeCClog(boost::shared_ptr<CCLogMerge>& cclogMergeUnit);
+
+    struct OutFile
+    {
+        boost::shared_ptr<std::ofstream> of_;
+        boost::mutex mutex_;
+    };
+
+    boost::shared_ptr<OutFile>& openFile(const std::string& fileName);
+
+    void encodeFileName(std::string& json, const std::string& fileName);
+
+    void decodeFileName(std::string& json, std::string& fileName);
+
+    void writeFile(const std::string& fileName, const std::string& line);
 
 private:
     Request* request_;
@@ -104,26 +137,11 @@ private:
     izenelib::driver::JsonWriter jsonWriter_;
 
     std::set<std::string> driverCollections_;
+    std::string storageBaseDir_;
 
-    LogServerStorage::DrumPtr drum_;
-    LogServerStorage::KVDBPtr docidDB_;
+    typedef std::map<std::string, boost::shared_ptr<OutFile> > FileMapT;
+    FileMapT fileMap_;
 
-    std::string cclogFileName_;
-    boost::shared_ptr<std::ofstream> cclogFile_;
-    boost::mutex mutex_;
-
-    struct CCLogMerge
-    {
-        bool merged_;
-        std::string request_;
-        std::size_t uuidCnt_;
-        std::vector<std::pair<uint128_t, std::set<uint128_t> > > uuidUpdateVec_;
-
-        CCLogMerge()
-        : merged_(false)
-        , uuidCnt_(0)
-        {}
-    };
     std::map<uint128_t, boost::shared_ptr<CCLogMerge> > cclogMergeQueue_;
     boost::mutex cclog_merge_mutex_;
 };

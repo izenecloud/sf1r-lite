@@ -55,9 +55,6 @@ private:
     uint16_t port_;
     uint32_t threadNum_;
 
-    LogServerStorage::DrumPtr drum_;
-    LogServerStorage::KVDBPtr docidDB_;
-
     boost::shared_ptr<LogServerWorkThread> workerThread_;
 };
 

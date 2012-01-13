@@ -17,6 +17,12 @@ DriverLogServer::DriverLogServer(uint16_t port, uint32_t threadNum)
 {
 }
 
+DriverLogServer::~DriverLogServer()
+{
+    std::cout << "~DriverLogServer()" << std::endl;
+    stop();
+}
+
 bool DriverLogServer::init()
 {
     boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), port_);
@@ -65,8 +71,13 @@ bool DriverLogServer::initRouter()
     DriverLogServerController logServerCtrl(logServerhandler);
 
     handler_t* cclogHandler = new handler_t(logServerCtrl, &DriverLogServerController::update_cclog);
-    //router_->map("log_server", "update_cclog", cclogHandler);
-    router_->setSuperHandler(cclogHandler); // handle all requests
+    router_->map("log_server", "update_cclog", cclogHandler);
+
+    handler_t* scdHandler = new handler_t(logServerCtrl, &DriverLogServerController::update_scd);
+    router_->map("log_server", "update_scd", scdHandler);
+
+    handler_t* flushHandler = new handler_t(logServerCtrl, &DriverLogServerController::flush);
+    router_->map("log_server", "flush", flushHandler);
 
     return true;
 }
