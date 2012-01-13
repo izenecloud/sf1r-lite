@@ -42,7 +42,7 @@ void DriverLogServerController::update_cclog()
 }
 
 /**
- * @brief Action \b update_cclog
+ * @brief Action \b update_scd
  *
  * - @b line (@c String): the text of a record in SCD file
  *

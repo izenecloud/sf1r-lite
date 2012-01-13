@@ -6,8 +6,9 @@ namespace sf1r
 {
 
 LogServerWorkThread::LogServerWorkThread()
+    : workThread_(&LogServerWorkThread::run, this)
+    , drumRequestQueue_(32768)
 {
-    workThread_ = boost::thread(&LogServerWorkThread::run, this);
 }
 
 LogServerWorkThread::~LogServerWorkThread()
@@ -23,14 +24,15 @@ void LogServerWorkThread::stop()
 void LogServerWorkThread::putUuidRequestData(const UUID2DocidList& uuid2DocidList)
 {
     DrumRequestData drumReqData;
-    drumReqData.uuid2DocidList.reset(new UUID2DocidList(uuid2DocidList));
 
+    drumReqData.uuid2DocidList.reset(new UUID2DocidList(uuid2DocidList));
     drumRequestQueue_.push(drumReqData);
 }
 
 void LogServerWorkThread::putSyncRequestData(const SynchronizeData& syncReqData)
 {
     DrumRequestData drumReqData;
+
     drumReqData.syncReqData.reset(new SynchronizeData(syncReqData));
     drumRequestQueue_.push(drumReqData);
 }
