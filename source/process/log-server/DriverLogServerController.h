@@ -35,9 +35,14 @@ public:
 
     void update_cclog();
 
+    void update_scd();
+
+    void flush();
+
 private:
     boost::shared_ptr<DriverLogServerHandler> dirverLogServerHandler_;
 };
+
 
 class DriverLogServerHandler
 {
@@ -73,16 +78,20 @@ public:
 public:
     void init();
 
-    void process();
+    void processCclog();
+
+    void processScd();
+
+    void flush();
 
 private:
     bool skipProcess(const std::string& collection);
 
-    void processDocVisit(izenelib::driver::Request& request, const std::string& raw);
+    void processDocVisit(izenelib::driver::Value& request, const std::string& raw);
 
-    void processRecVisitItem(izenelib::driver::Request& request, const std::string& raw);
+    void processRecVisitItem(izenelib::driver::Value& request, const std::string& raw);
 
-    void processRecPurchaseItem(izenelib::driver::Request& request, const std::string& raw);
+    void processRecPurchaseItem(izenelib::driver::Value& request, const std::string& raw);
 
     void onUniqueKeyCheck(
             const LogServerStorage::drum_key_t& uuid,
@@ -119,7 +128,7 @@ private:
 
     std::string cclogFileName_;
     boost::shared_ptr<std::ofstream> cclogFile_;
-    boost::mutex mutex_;
+    boost::mutex cclog_file_mutex_;
 
     std::map<uint128_t, boost::shared_ptr<CCLogMerge> > cclogMergeQueue_;
     boost::mutex cclog_merge_mutex_;
