@@ -103,8 +103,6 @@ private:
             const LogServerStorage::drum_value_t& docidList,
             const LogServerStorage::drum_aux_t& aux);
 
-    void ouputCclog(const std::string& log);
-
     struct CCLogMerge
     {
         std::size_t uuidCnt_;
@@ -119,16 +117,30 @@ private:
 
     void mergeCClog(boost::shared_ptr<CCLogMerge>& cclogMergeUnit);
 
+    struct OutFile
+    {
+        boost::shared_ptr<std::ofstream> of_;
+        boost::mutex mutex_;
+    };
+
+    boost::shared_ptr<OutFile>& openFile(const std::string& fileName);
+
+    void encodeFileName(std::string& json, const std::string& fileName);
+
+    void decodeFileName(std::string& json, std::string& fileName);
+
+    void writeFile(const std::string& fileName, const std::string& line);
+
 private:
     Request* request_;
     Response* response_;
     izenelib::driver::JsonWriter jsonWriter_;
 
     std::set<std::string> driverCollections_;
+    std::string storageBaseDir_;
 
-    std::string cclogFileName_;
-    boost::shared_ptr<std::ofstream> cclogFile_;
-    boost::mutex cclog_file_mutex_;
+    typedef std::map<std::string, boost::shared_ptr<OutFile> > FileMapT;
+    FileMapT fileMap_;
 
     std::map<uint128_t, boost::shared_ptr<CCLogMerge> > cclogMergeQueue_;
     boost::mutex cclog_merge_mutex_;

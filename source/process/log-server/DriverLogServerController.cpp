@@ -76,7 +76,7 @@ void DriverLogServerController::update_scd()
  *     "controller" : "log_server"
  *     "action" : "flush",
  *   },
- *   "filename" : "B-00-201112011437-38743-I-C.SCD"
+ *   "filename" : "cclog20120113.txt"
  *   }
  * }
  *
@@ -103,39 +103,26 @@ void DriverLogServerHandler::init()
 
     // collections of which log need to be updated
     driverCollections_ = LogServerCfg::get()->getDriverCollections();
-
-    // cclog file for output
-    cclogFileName_ = LogServerCfg::get()->getCclogOutFile();
-    {
-        std::ifstream inf;
-        inf.open(cclogFileName_.c_str());
-        if (!inf.good())
-        {
-            // create if not existed
-            std::ifstream out;
-            out.open(cclogFileName_.c_str());
-            out.close();
-        }
-        inf.close();
-    }
-    cclogFile_.reset(new std::ofstream);
-    cclogFile_->open(cclogFileName_.c_str(), fstream::out/* | fstream::app*/); //FIXME
-    if (!cclogFile_->good())
-    {
-        std::string msg = "Failed to open cclog file for output: " + cclogFileName_;
-        throw std::runtime_error(msg.c_str());
-    }
+    storageBaseDir_ = LogServerCfg::get()->getStorageBaseDir();
 }
 
 void DriverLogServerHandler::processCclog()
 {
     // Get raw request which was originally stored in cclog
     izenelib::driver::Value raw_request = request()[Keys::line];
-    std::string fileName = asString(request()[Keys::filename]);
+    std::string fileName = storageBaseDir_ + "/" + asString(request()[Keys::filename]);
 
-    std::string raw;
-    jsonWriter_.write(raw_request, raw);
-    std::cout << raw << std::endl;
+    if (!openFile(fileName))
+    {
+        std::string msg = "Server Error: Failed to create file " + fileName;
+        response().setSuccess(false);
+        response().addError(msg);
+        return;
+    }
+
+    std::string json;
+    jsonWriter_.write(raw_request, json);
+    std::cout << fileName << " --> " << json << std::endl;
 
     std::string collection = asString(raw_request[Keys::collection]);
     if (!skipProcess(collection))
@@ -145,26 +132,29 @@ void DriverLogServerHandler::processCclog()
 
         if (controller == "documents" && action == "visit")
         {
-            processDocVisit(raw_request, raw);
+            encodeFileName(json, fileName);
+            processDocVisit(raw_request, json);
         }
         else if (controller == "recommend" && action == "visit_item")
         {
-            processRecVisitItem(raw_request, raw);
+            encodeFileName(json, fileName);
+            processRecVisitItem(raw_request, json);
         }
         else if (controller == "recommend" && action == "purchase_item")
         {
-            processRecPurchaseItem(raw_request, raw);
+            encodeFileName(json, fileName);
+            processRecPurchaseItem(raw_request, json);
         }
         else
         {
             // output directly if there is no need to update
-            ouputCclog(raw);
+            writeFile(fileName, json);
         }
     }
     else
     {
         // output directly if there is no need to update
-        ouputCclog(raw);
+        writeFile(fileName, json);
     }
 }
 
@@ -181,8 +171,14 @@ void DriverLogServerHandler::flush()
     }
 
     {
-        boost::lock_guard<boost::mutex> lock(cclog_file_mutex_);
-        cclogFile_->flush();
+        for (FileMapT::iterator it = fileMap_.begin(); it != fileMap_.end(); it++)
+        {
+            if (it->second)
+            {
+                boost::lock_guard<boost::mutex> lock(it->second->mutex_);
+                it->second->of_->flush();
+            }
+        }
     }
 }
 
@@ -300,7 +296,10 @@ void DriverLogServerHandler::onUniqueKeyCheck(
         const LogServerStorage::drum_aux_t& aux)
 {
     //std::cout << "onUniqueKeyCheck " << Utilities::uint128ToUuid(uuid) << std::endl;
-    ouputCclog(aux);
+    std::string json = aux;
+    std::string fileName;
+    decodeFileName(json, fileName);
+    writeFile(fileName, json);
 }
 
 void DriverLogServerHandler::onDuplicateKeyCheck(
@@ -340,20 +339,16 @@ void DriverLogServerHandler::onDuplicateKeyCheck(
             newUuidStr = Utilities::uint128ToUuid(*sit);
             std::string log = aux;
             std::cout << oldUuidStr << " -> " << newUuidStr << std::endl;
-            std::cout << log;
+            //std::cout << log;
             boost::replace_all(log, oldUuidStr, newUuidStr);
-            std::cout << " -> " << std::endl;
-            std::cout << log << std::endl;
+            //std::cout << " -> " << std::endl;
+            std::cout << "updated log: " << log << std::endl;
 
-            ouputCclog(log);
+            std::string fileName;
+            decodeFileName(log, fileName);
+            writeFile(fileName, log);
         }
     }
-}
-
-void DriverLogServerHandler::ouputCclog(const std::string& log)
-{
-    boost::lock_guard<boost::mutex> lock(cclog_file_mutex_);
-    (*cclogFile_) << log;
 }
 
 void DriverLogServerHandler::mergeCClog(boost::shared_ptr<CCLogMerge>& cclogMergeUnit)
@@ -372,13 +367,74 @@ void DriverLogServerHandler::mergeCClog(boost::shared_ptr<CCLogMerge>& cclogMerg
         boost::replace_all(log, oldUuidStr, newUuidStr);
     }
 
-    std::cout << "merged log: " << log << std::endl;
-    ouputCclog(log);
+    std::cout << "updated log: " << log << std::endl;
+    std::string fileName;
+    decodeFileName(log, fileName);
+    writeFile(fileName, log);
 
     // remove merged
     for (it = cclogMergeUnit->uuidUpdateVec_.begin(); it != cclogMergeUnit->uuidUpdateVec_.end(); ++it)
     {
         cclogMergeQueue_.erase(it->first);
+    }
+}
+
+boost::shared_ptr<DriverLogServerHandler::OutFile>& DriverLogServerHandler::openFile(const std::string& fileName)
+{
+    FileMapT::iterator it = fileMap_.find(fileName);
+
+    if (it == fileMap_.end() || !it->second)
+    {
+        // create file if not existed
+        std::ifstream inf;
+        inf.open(fileName.c_str());
+        if (!inf.good())
+        {
+            std::ifstream out;
+            out.open(fileName.c_str());
+            out.close();
+        }
+        inf.close();
+
+        // open file for output
+        boost::shared_ptr<OutFile> outFile(new OutFile);
+        outFile->of_.reset(new std::ofstream);
+        outFile->of_->open(fileName.c_str(), fstream::out|fstream::app);
+        if (outFile->of_->good())
+        {
+            fileMap_[fileName] = outFile;
+        }
+        else
+        {
+            fileMap_[fileName].reset();
+        }
+    }
+
+    return fileMap_[fileName];
+}
+
+void DriverLogServerHandler::encodeFileName(std::string& json, const std::string& fileName)
+{
+    json = fileName + json;
+}
+
+void DriverLogServerHandler::decodeFileName(std::string& json, std::string& fileName)
+{
+    std::size_t pos = json.find_first_of('{');
+    if (pos != std::string::npos)
+    {
+        fileName = json.substr(0, pos);
+        json = json.substr(pos);
+    }
+}
+
+void DriverLogServerHandler::writeFile(const std::string& fileName, const std::string& line)
+{
+    boost::shared_ptr<OutFile>& outFile = openFile(fileName);
+    if (outFile)
+    {
+        boost::lock_guard<boost::mutex> lock(outFile->mutex_);
+        (*outFile->of_) << line;
     }
 }
 
