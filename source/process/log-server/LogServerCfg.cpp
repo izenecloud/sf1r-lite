@@ -13,13 +13,14 @@ namespace bfs = boost::filesystem;
 namespace sf1r
 {
 
+static const char* DEFAULT_STORAGE_BASE_DIR = "log_server_storage";
+
+static const unsigned int DEFAULT_RPC_REQUEST_QUEUE_SIZE = 32768;
+
 static const unsigned int DEFAULT_THREAD_NUM = 30;
 static const unsigned int DEFAULT_DRUM_NUM_BUCKETS = 64;
 static const unsigned int DEFAULT_DRUM_BUCKET_BUFF_ELEM_SIZE = 8192;
 static const unsigned int DEFAULT_DRUM_BUCKET_BYTE_SIZE = 1048576;
-
-static const char* DEFAULT_STORAGE_BASE_DIR = "log_server_storage";
-static const char* DEFAULT_CCLOG_OUT_FILE   = "cclog.txt";
 
 static const unsigned int MAX_THREAD_NUM = 1024;
 static const unsigned int MAX_DRUM_NUM_BUCKETS = 65536;
@@ -122,6 +123,11 @@ void LogServerCfg::parseServerCfg(properties& props)
         rpcThreadNum_ = std::min(MAX_THREAD_NUM, rpcThreadNum_);
     }
 
+    if (!props.getValue("rpc.request_queue_size", rpcRequestQueueSize_))
+    {
+        rpcRequestQueueSize_ = DEFAULT_THREAD_NUM;
+    }
+
     // driver server
     if (!props.getValue("driver.port", driverPort_))
     {
@@ -130,7 +136,7 @@ void LogServerCfg::parseServerCfg(properties& props)
 
     if (!props.getValue("driver.thread_num", driverThreadNum_))
     {
-        driverThreadNum_ = DEFAULT_THREAD_NUM;
+        driverThreadNum_ = DEFAULT_RPC_REQUEST_QUEUE_SIZE;
     }
     else
     {
@@ -154,45 +160,86 @@ void LogServerCfg::parseStorageCfg(properties& props)
     if (!bfs::exists(base_dir_))
     {
         bfs::create_directories(base_dir_);
+        bfs::create_directories(base_dir_+"/scd");
+        bfs::create_directories(base_dir_+"/cclog");
     }
 
-    // drum
-    if (!props.getValue("storage.drum.name", drum_name_))
+    // uuid drum
+    if (!props.getValue("storage.uuid_drum.name", uuid_drum_name_))
     {
-        throw std::runtime_error("Log Server Configuration missing proptery: storage.drum.name");
+        throw std::runtime_error("Log Server Configuration missing proptery: storage.uuid_drum.name");
     }
 
-    drum_name_ = base_dir_ + "/" + drum_name_;
-    if (!bfs::exists(drum_name_))
+    uuid_drum_name_ = base_dir_ + "/" + uuid_drum_name_;
+    if (!bfs::exists(uuid_drum_name_))
     {
-        bfs::create_directories(drum_name_);
+        bfs::create_directories(uuid_drum_name_);
     }
 
-    if (!props.getValue("storage.drum.num_buckets", drum_num_buckets_))
+    if (!props.getValue("storage.uuid_drum.num_buckets", uuid_drum_num_buckets_))
     {
-        drum_num_buckets_ = DEFAULT_DRUM_NUM_BUCKETS;
+        uuid_drum_num_buckets_ = DEFAULT_DRUM_NUM_BUCKETS;
     }
     else
     {
-        drum_num_buckets_ = std::min(MAX_DRUM_NUM_BUCKETS, drum_num_buckets_);
+        uuid_drum_num_buckets_ = std::min(MAX_DRUM_NUM_BUCKETS, uuid_drum_num_buckets_);
     }
 
-    if (!props.getValue("storage.drum.bucket_buff_elem_size", drum_bucket_buff_elem_size_))
+    if (!props.getValue("storage.uuid_drum.bucket_buff_elem_size", uuid_drum_bucket_buff_elem_size_))
     {
-        drum_bucket_buff_elem_size_ = DEFAULT_DRUM_BUCKET_BUFF_ELEM_SIZE;
+        uuid_drum_bucket_buff_elem_size_ = DEFAULT_DRUM_BUCKET_BUFF_ELEM_SIZE;
     }
     else
     {
-        drum_bucket_buff_elem_size_ = std::min(MAX_DRUM_BUCKET_BUFF_ELEM_SIZE, drum_bucket_buff_elem_size_);
+        uuid_drum_bucket_buff_elem_size_ = std::min(MAX_DRUM_BUCKET_BUFF_ELEM_SIZE, uuid_drum_bucket_buff_elem_size_);
     }
 
-    if (!props.getValue("storage.drum.bucket_byte_size", drum_bucket_byte_size_))
+    if (!props.getValue("storage.uuid_drum.bucket_byte_size", uuid_drum_bucket_byte_size_))
     {
-        drum_bucket_byte_size_ = DEFAULT_DRUM_BUCKET_BYTE_SIZE;
+        uuid_drum_bucket_byte_size_ = DEFAULT_DRUM_BUCKET_BYTE_SIZE;
     }
     else
     {
-        drum_bucket_byte_size_ = std::min(MAX_DRUM_BUCKET_BYTE_SIZE, drum_bucket_byte_size_);
+        uuid_drum_bucket_byte_size_ = std::min(MAX_DRUM_BUCKET_BYTE_SIZE, uuid_drum_bucket_byte_size_);
+    }
+
+    // docid drum
+    if (!props.getValue("storage.docid_drum.name", docid_drum_name_))
+    {
+        throw std::runtime_error("Log Server Configuration missing proptery: storage.docid_drum.name");
+    }
+
+    docid_drum_name_ = base_dir_ + "/" + docid_drum_name_;
+    if (!bfs::exists(docid_drum_name_))
+    {
+        bfs::create_directories(docid_drum_name_);
+    }
+
+    if (!props.getValue("storage.docid_drum.num_buckets", docid_drum_num_buckets_))
+    {
+        docid_drum_num_buckets_ = DEFAULT_DRUM_NUM_BUCKETS;
+    }
+    else
+    {
+        docid_drum_num_buckets_ = std::min(MAX_DRUM_NUM_BUCKETS, docid_drum_num_buckets_);
+    }
+
+    if (!props.getValue("storage.docid_drum.bucket_buff_elem_size", docid_drum_bucket_buff_elem_size_))
+    {
+        docid_drum_bucket_buff_elem_size_ = DEFAULT_DRUM_BUCKET_BUFF_ELEM_SIZE;
+    }
+    else
+    {
+        docid_drum_bucket_buff_elem_size_ = std::min(MAX_DRUM_BUCKET_BUFF_ELEM_SIZE, docid_drum_bucket_buff_elem_size_);
+    }
+
+    if (!props.getValue("storage.docid_drum.bucket_byte_size", docid_drum_bucket_byte_size_))
+    {
+        docid_drum_bucket_byte_size_ = DEFAULT_DRUM_BUCKET_BYTE_SIZE;
+    }
+    else
+    {
+        docid_drum_bucket_byte_size_ = std::min(MAX_DRUM_BUCKET_BYTE_SIZE, docid_drum_bucket_byte_size_);
     }
 
     // kv DB for docid to uuid
@@ -201,12 +248,6 @@ void LogServerCfg::parseStorageCfg(properties& props)
         throw std::runtime_error("Log Server Configuration missing proptery: storage.docid_db.name");
     }
     docid_db_name_ = base_dir_ + "/" + docid_db_name_;
-
-    if (props.getValue("storage.cclog_out_file", cclogOutFile_))
-    {
-        cclogOutFile_ = DEFAULT_CCLOG_OUT_FILE;
-    }
-    cclogOutFile_ = base_dir_ + "/" + cclogOutFile_;
 }
 
 

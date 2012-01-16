@@ -7,7 +7,7 @@ namespace sf1r
 
 LogServerWorkThread::LogServerWorkThread()
     : workThread_(&LogServerWorkThread::run, this)
-    , drumRequestQueue_(32768)
+    , drumRequestQueue_(LogServerCfg::get()->getRpcRequestQueueSize())
 {
 }
 

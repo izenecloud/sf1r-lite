@@ -54,6 +54,7 @@ public:
         izenelib::am::leveldb::Table,
         DrumDispatcher
     > DocidDrumType;
+    typedef boost::scoped_ptr<DocidDrumType> DocidDrumPtr;
 
     typedef DrumDispatcher<
         raw_docid_t,
@@ -69,19 +70,37 @@ public:
 
     bool init()
     {
-        // Initialize drum
+        // Initialize DRUM <uuid, raw_docids>
         uuidDrum_.reset(
                 new UuidDrumType(
-                    LogServerCfg::get()->getDrumName(),
-                    LogServerCfg::get()->getDrumNumBuckets(),
-                    LogServerCfg::get()->getDrumBucketBuffElemSize(),
-                    LogServerCfg::get()->getDrumBucketByteSize(),
+                    LogServerCfg::get()->getDrumName(LogServerCfg::UUID),
+                    LogServerCfg::get()->getDrumNumBuckets(LogServerCfg::UUID),
+                    LogServerCfg::get()->getDrumBucketBuffElemSize(LogServerCfg::UUID),
+                    LogServerCfg::get()->getDrumBucketByteSize(LogServerCfg::UUID),
                     uuidDrumDispathcer_
                 ));
 
         if (!uuidDrum_)
         {
-            std::cerr << "Failed to initialzie drum: " << LogServerCfg::get()->getDrumName() << std::endl;
+            std::cerr << "Failed to initialzie drum: "
+                      << LogServerCfg::get()->getDrumName(LogServerCfg::UUID) << std::endl;
+            return false;
+        }
+
+        // Initialize DRUM <raw_docid, uuid>
+        docidDrum_.reset(
+                new DocidDrumType(
+                    LogServerCfg::get()->getDrumName(LogServerCfg::DOCID),
+                    LogServerCfg::get()->getDrumNumBuckets(LogServerCfg::DOCID),
+                    LogServerCfg::get()->getDrumBucketBuffElemSize(LogServerCfg::DOCID),
+                    LogServerCfg::get()->getDrumBucketByteSize(LogServerCfg::DOCID),
+                    docidDrumDispathcer_
+                ));
+
+        if (!docidDrum_)
+        {
+            std::cerr << "Failed to initialzie drum: "
+                      << LogServerCfg::get()->getDrumName(LogServerCfg::DOCID) << std::endl;
             return false;
         }
 
@@ -137,11 +156,6 @@ public:
         }
     }
 
-    UuidDrumDispatcherType& uuidDrumDispatcher()
-    {
-        return uuidDrumDispathcer_;
-    }
-
     /// @brief lock uuidDrumMutex before operation on Drum
     UuidDrumPtr& uuidDrum()
     {
@@ -151,6 +165,27 @@ public:
     boost::mutex& uuidDrumMutex()
     {
         return uuidDrumMutex_;
+    }
+
+    UuidDrumDispatcherType& uuidDrumDispatcher()
+    {
+        return uuidDrumDispathcer_;
+    }
+
+    /// @brief lock docidDrumMutex before operation on Drum
+    DocidDrumPtr& docidDrum()
+    {
+        return docidDrum_;
+    }
+
+    boost::mutex& docidDrumMutex()
+    {
+        return docidDrumMutex_;
+    }
+
+    DocidDrumDispatcherType& docidDrumDispatcher()
+    {
+        return docidDrumDispathcer_;
     }
 
     /// @brief lock docidDBMutex before operation on DocidDB
@@ -168,6 +203,10 @@ private:
     UuidDrumDispatcherType uuidDrumDispathcer_;
     UuidDrumPtr uuidDrum_;
     boost::mutex uuidDrumMutex_;
+
+    DocidDrumDispatcherType docidDrumDispathcer_;
+    DocidDrumPtr docidDrum_;
+    boost::mutex docidDrumMutex_;
 
     KVDBPtr docidDB_;
     boost::mutex docid_db_mutex_;

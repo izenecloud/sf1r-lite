@@ -112,7 +112,7 @@ void DriverLogServerHandler::processCclog()
 {
     // Get raw request which was originally stored in cclog
     izenelib::driver::Value raw_request = request()[Keys::record];
-    std::string fileName = storageBaseDir_ + "/" + asString(request()[Keys::filename]);
+    std::string fileName = storageBaseDir_ + "/cclog/" + asString(request()[Keys::filename]);
 
     if (!openFile(fileName))
     {
@@ -164,7 +164,7 @@ void DriverLogServerHandler::processScd()
 {
     std::string docid = asString(request()[Keys::DOCID]);
     std::string doc = asString(request()[Keys::record]);
-    std::string fileName = storageBaseDir_ + "/" + asString(request()[Keys::filename]);
+    std::string fileName = storageBaseDir_ + "/scd/" + asString(request()[Keys::filename]);
 
     std::cout << fileName << " --> " << docid << std::endl;
     //std::cout << doc << std::endl;
