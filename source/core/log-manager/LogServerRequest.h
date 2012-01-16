@@ -40,6 +40,8 @@ public:
     }
 
     RequestDataT param_;
+
+    MSGPACK_DEFINE(param_)
 };
 
 class UpdateUUIDRequest : public LogRequestRequestT<UUID2DocidList>
