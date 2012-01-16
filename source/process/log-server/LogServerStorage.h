@@ -104,13 +104,13 @@ public:
             return false;
         }
 
-        // Initialize <docid, uuid> DB
-        docidDB_.reset(new KVDBType(LogServerCfg::get()->getDocidDBName()));
-        if (!docidDB_ || !docidDB_->open())
-        {
-            std::cerr << "Failed to initialzie docid DB: " << LogServerCfg::get()->getDocidDBName() << std::endl;
-            return false;
-        }
+//        // Initialize <docid, uuid> DB
+//        docidDB_.reset(new KVDBType(LogServerCfg::get()->getDocidDBName()));
+//        if (!docidDB_ || !docidDB_->open())
+//        {
+//            std::cerr << "Failed to initialzie docid DB: " << LogServerCfg::get()->getDocidDBName() << std::endl;
+//            return false;
+//        }
 
         return true;
     }
@@ -148,21 +148,21 @@ public:
                 }
             }
 
-            if (docidDB_)
-            {
-                boost::unique_lock<boost::mutex> lock(docid_db_mutex_, boost::defer_lock);
-                if (lock.try_lock())
-                {
-                    docidDB_->flush();
-                    docidDB_->close();
-                    docidDB_.reset();
-                }
-                else
-                {
-                    std::cout << "DocidDB is still working... " << std::endl;
-                    return;
-                }
-            }
+//            if (docidDB_)
+//            {
+//                boost::unique_lock<boost::mutex> lock(docid_db_mutex_, boost::defer_lock);
+//                if (lock.try_lock())
+//                {
+//                    docidDB_->flush();
+//                    docidDB_->close();
+//                    docidDB_.reset();
+//                }
+//                else
+//                {
+//                    std::cout << "DocidDB is still working... " << std::endl;
+//                    return;
+//                }
+//            }
         }
         catch (const std::exception& e)
         {
@@ -202,16 +202,16 @@ public:
         return docidDrumDispathcer_;
     }
 
-    /// @brief lock docidDBMutex before operation on DocidDB
-    KVDBPtr& docidDB()
-    {
-        return docidDB_;
-    }
-
-    boost::mutex& docidDBMutex()
-    {
-        return docid_db_mutex_;
-    }
+//    /// @brief lock docidDBMutex before operation on DocidDB
+//    KVDBPtr& docidDB()
+//    {
+//        return docidDB_;
+//    }
+//
+//    boost::mutex& docidDBMutex()
+//    {
+//        return docid_db_mutex_;
+//    }
 
 private:
     UuidDrumDispatcherType uuidDrumDispathcer_;
@@ -222,9 +222,8 @@ private:
     DocidDrumPtr docidDrum_;
     boost::mutex docidDrumMutex_;
 
-    // TODO remove docidDB
-    KVDBPtr docidDB_;
-    boost::mutex docid_db_mutex_;
+//    KVDBPtr docidDB_;
+//    boost::mutex docid_db_mutex_;
 };
 
 }
