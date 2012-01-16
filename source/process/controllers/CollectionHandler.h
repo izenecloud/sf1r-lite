@@ -45,9 +45,9 @@ public:
     void similar_to(::izenelib::driver::Request& request, ::izenelib::driver::Response& response);
     void duplicate_with(::izenelib::driver::Request& request, ::izenelib::driver::Response& response);
     void similar_to_image(::izenelib::driver::Request& request, ::izenelib::driver::Response& response);
-    bool create(const std::string& collectionName, const ::izenelib::driver::Value& document);
-    bool update(const std::string& collectionName, const ::izenelib::driver::Value& document);
-    bool destroy(const std::string& collectionName, const ::izenelib::driver::Value& document);
+    bool create(const ::izenelib::driver::Value& document);
+    bool update(const ::izenelib::driver::Value& document);
+    bool destroy(const ::izenelib::driver::Value& document);
 
     //////////////////////////////////////////
     //    Helpers

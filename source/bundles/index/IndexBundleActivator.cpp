@@ -323,6 +323,7 @@ std::string IndexBundleActivator::getQueryDataPath_() const
 bool IndexBundleActivator::openDataDirectories_()
 {
     bfs::create_directories(config_->indexSCDPath());
+    bfs::create_directories(config_->logSCDPath());
 
     std::vector<std::string>& directories = config_->collectionDataDirectories_;
     if( directories.size() == 0 )
