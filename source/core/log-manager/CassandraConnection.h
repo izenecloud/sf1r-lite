@@ -99,6 +99,7 @@ private:
     catch (...) \
     { \
         std::cerr << prompt << "Unknown error" << std::endl; \
+        return false; \
     } \
 
 

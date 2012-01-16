@@ -44,6 +44,9 @@ void CassandraConnection::setKeyspaceName(const string& keyspace_name)
 
 bool CassandraConnection::init(const string& str)
 {
+    cassandra_client_.reset();
+    isEnabled_ = false;
+
     if (str == "__disabled__") return false;
     string cassandra_prefix = "cassandra://";
     if (boost::algorithm::starts_with(str, cassandra_prefix))
