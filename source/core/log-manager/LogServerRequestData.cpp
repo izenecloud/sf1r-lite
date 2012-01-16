@@ -18,4 +18,12 @@ std::string UUID2DocidList::toString() const
     return oss.str();
 }
 
+std::string Docid2UUID::toString() const
+{
+    std::ostringstream oss;
+    oss << docid_ << " ->" << Utilities::uint128ToUuid(uuid_);
+
+    return oss.str();
+}
+
 }

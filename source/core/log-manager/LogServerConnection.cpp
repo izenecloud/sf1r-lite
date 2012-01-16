@@ -4,7 +4,7 @@ namespace sf1r
 {
 
 LogServerConnection::LogServerConnection()
-    : bInited_(false)
+    : need_flush_(false)
 {
 }
 
@@ -32,7 +32,11 @@ bool LogServerConnection::init(const std::string& host, uint16_t port)
 
 void LogServerConnection::flushRequests()
 {
-    client_->get_loop()->flush();
+    if (need_flush_)
+    {
+        client_->get_loop()->flush();
+        need_flush_ = false;
+    }
 }
 
 }
