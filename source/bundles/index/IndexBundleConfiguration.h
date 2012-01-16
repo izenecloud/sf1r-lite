@@ -51,6 +51,11 @@ public:
         return collPath_.getScdPath() + "index/";
     }
 
+    std::string logSCDPath() const
+    {
+        return collPath_.getScdPath() + "log/";
+    }
+
 private:
 
     bool eraseProperty(const std::string& name)

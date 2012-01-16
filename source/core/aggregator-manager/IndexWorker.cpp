@@ -50,7 +50,7 @@ IndexWorker::IndexWorker(
     , recommendTaskService_(NULL)
     , indexManager_(indexManager)
     , directoryRotator_(directoryRotator)
-    , scd_writer_(new ScdWriterController(bundleConfig_->indexSCDPath()))
+    , scd_writer_(new ScdWriterController(bundleConfig_->logSCDPath()))
     , collectionId_(1)
     , indexProgress_()
     , checkInsert_(false)
@@ -365,7 +365,6 @@ bool IndexWorker::optimizeIndex()
 
 bool IndexWorker::createDocument(const Value& documentValue)
 {
-
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
     {
@@ -374,12 +373,35 @@ bool IndexWorker::createDocument(const Value& documentValue)
     }
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
-    return scd_writer_->Write(scddoc, INSERT_SCD);
+    scd_writer_->Write(scddoc, INSERT_SCD);
+
+    time_t timestamp = Utilities::createTimeStamp();
+
+    Document document;
+    IndexerDocument indexDocument;
+    docid_t oldId = 0;
+    bool rType = false;
+    std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
+    docid_t id = 0;
+    std::string source = "";
+
+    if (!prepareDocument_(scddoc, document, oldId, rType, rTypeFieldValue, source, timestamp, true))
+        return false;
+
+    prepareIndexDocument_(oldId, document, indexDocument);
+
+    if (rType)
+    {
+        id = document.getId();
+    }
+
+    bool ret =  insertDoc_(document, indexDocument, timestamp);
+    searchManager_->reset_cache(rType, id, rTypeFieldValue);
+    return ret;
 }
 
 bool IndexWorker::updateDocument(const Value& documentValue)
 {
-
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
     {
@@ -388,13 +410,36 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     }
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
+    scd_writer_->Write(scddoc, UPDATE_SCD);
 
-    return scd_writer_->Write(scddoc, UPDATE_SCD);
+    time_t timestamp = Utilities::createTimeStamp();
+
+    Document document;
+    IndexerDocument indexDocument;
+    docid_t oldId = 0;
+    bool rType = false;
+    std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
+    docid_t id = 0;
+    std::string source = "";
+
+    if (!prepareDocument_(scddoc, document, oldId, rType, rTypeFieldValue, source, timestamp, true))
+        return false;
+
+    prepareIndexDocument_(oldId, document, indexDocument);
+
+    if (rType)
+    {
+        id = document.getId();
+    }
+
+    bool ret = updateDoc_(document, indexDocument, timestamp, rType);
+    searchManager_->reset_cache(rType, id, rTypeFieldValue);
+    return ret;
+	
 }
 
 bool IndexWorker::destroyDocument(const Value& documentValue)
 {
-
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
     {
@@ -404,7 +449,18 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
 
-    return scd_writer_->Write(scddoc, DELETE_SCD);
+    docid_t docid;
+    izenelib::util::UString docName(asString(documentValue["DOCID"]),
+                             izenelib::util::UString::UTF_8);
+    bool ret = idManager_->getDocIdByDocName(docName, docid, false);
+
+    if(ret)	
+    {
+        scd_writer_->Write(scddoc, DELETE_SCD);
+        time_t timestamp = Utilities::createTimeStamp();
+        return deleteDoc_(docid, timestamp);
+    }
+    else return false;
 }
 
 bool IndexWorker::getIndexStatus(Status& status)

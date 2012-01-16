@@ -362,7 +362,7 @@ void DocumentsController::create()
     IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
     bool requestSent = collectionHandler_->create(
-            collection_, request()[Keys::resource]
+            request()[Keys::resource]
     );
 
     if (!requestSent)
@@ -406,7 +406,7 @@ void DocumentsController::update()
     IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
     bool requestSent = collectionHandler_->update(
-        collection_, request()[Keys::resource]
+        request()[Keys::resource]
     );
 
     if (!requestSent)
@@ -447,7 +447,7 @@ void DocumentsController::destroy()
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
 
     bool requestSent = collectionHandler_->destroy(
-        collection_, request()[Keys::resource]
+        request()[Keys::resource]
     );
 
     if (!requestSent)
