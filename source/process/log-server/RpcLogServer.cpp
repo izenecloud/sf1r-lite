@@ -81,6 +81,24 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
 
             synchronize(syncReqData);
         }
+        else if (method == LogServerRequest::method_names[LogServerRequest::METHOD_GET_UUID])
+        {
+            msgpack::type::tuple<Docid2UUID> params;
+            req.params().convert(&params);
+            Docid2UUID docid2UUID = params.get<0>();
+
+            LogServerStorage::get()->docidDrum()->GetValue(docid2UUID.docid_, docid2UUID.uuid_);
+            req.result(docid2UUID);
+        }
+        else if (method == LogServerRequest::method_names[LogServerRequest::METHOD_GET_DOCID_LIST])
+        {
+            msgpack::type::tuple<UUID2DocidList> params;
+            req.params().convert(&params);
+            UUID2DocidList uuid2DocidList = params.get<0>();
+
+            LogServerStorage::get()->uuidDrum()->GetValue(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
+            req.result(uuid2DocidList);
+        }
         else
         {
             req.error(msgpack::rpc::NO_METHOD_ERROR);
