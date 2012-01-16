@@ -111,12 +111,6 @@ public:
             return docid_drum_bucket_byte_size_;
     }
 
-    inline const std::string& getDocidDBName() const
-    {
-        return docid_db_name_;
-    }
-
-
 
 private:
     bool parseCfgFile_(const std::string& cfgFile);
@@ -153,8 +147,6 @@ private:
     unsigned int docid_drum_num_buckets_;
     unsigned int docid_drum_bucket_buff_elem_size_;
     unsigned int docid_drum_bucket_byte_size_;
-
-    std::string docid_db_name_;
 };
 
 }

@@ -241,13 +241,6 @@ void LogServerCfg::parseStorageCfg(properties& props)
     {
         docid_drum_bucket_byte_size_ = std::min(MAX_DRUM_BUCKET_BYTE_SIZE, docid_drum_bucket_byte_size_);
     }
-
-    // kv DB for docid to uuid
-    if (!props.getValue("storage.docid_db.name", docid_db_name_))
-    {
-        throw std::runtime_error("Log Server Configuration missing proptery: storage.docid_db.name");
-    }
-    docid_db_name_ = base_dir_ + "/" + docid_db_name_;
 }
 
 
