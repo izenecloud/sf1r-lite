@@ -111,7 +111,7 @@ void LogServerCfg::parseServerCfg(properties& props)
     // rpc server
     if (!props.getValue("rpc.port", rpcPort_))
     {
-        throw std::runtime_error("Log Server Configuration missing proptery: rpc.port");
+        throw std::runtime_error("Log Server Configuration missing property: rpc.port");
     }
 
     if (!props.getValue("rpc.thread_num", rpcThreadNum_))
@@ -131,7 +131,7 @@ void LogServerCfg::parseServerCfg(properties& props)
     // driver server
     if (!props.getValue("driver.port", driverPort_))
     {
-        throw std::runtime_error("Log Server Configuration missing proptery: driver.port");
+        throw std::runtime_error("Log Server Configuration missing property: driver.port");
     }
 
     if (!props.getValue("driver.thread_num", driverThreadNum_))
@@ -167,7 +167,7 @@ void LogServerCfg::parseStorageCfg(properties& props)
     // uuid drum
     if (!props.getValue("storage.uuid_drum.name", uuid_drum_name_))
     {
-        throw std::runtime_error("Log Server Configuration missing proptery: storage.uuid_drum.name");
+        throw std::runtime_error("Log Server Configuration missing property: storage.uuid_drum.name");
     }
 
     uuid_drum_name_ = base_dir_ + "/" + uuid_drum_name_;
@@ -206,7 +206,7 @@ void LogServerCfg::parseStorageCfg(properties& props)
     // docid drum
     if (!props.getValue("storage.docid_drum.name", docid_drum_name_))
     {
-        throw std::runtime_error("Log Server Configuration missing proptery: storage.docid_drum.name");
+        throw std::runtime_error("Log Server Configuration missing property: storage.docid_drum.name");
     }
 
     docid_drum_name_ = base_dir_ + "/" + docid_drum_name_;

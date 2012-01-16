@@ -44,9 +44,7 @@ void t_RpcLogServer()
     conn.init("localhost", 18811);
 
     UpdateUUIDRequest uuidReq;
-    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("14b45106d3ccd8d86fd9a4cd091565ea"));
-    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("19ef916e597db5016d666a134afee2b6"));
-    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("aa2a122b7e51a38ec1c57c7cb6cdc672"));
+    uuidReq.param_.docidList_.resize(3);
 
     izenelib::util::ClockTimer t;
     boost::uuids::random_generator random_gen;
@@ -57,8 +55,13 @@ void t_RpcLogServer()
     {
         boost::uuids::uuid uuid = random_gen();
         uuidReq.param_.uuid_ = *reinterpret_cast<uint128_t *>(&uuid);
+        uuid = random_gen();
+        uuidReq.param_.docidList_[0] = *reinterpret_cast<uint128_t *>(&uuid);
+        uuid = random_gen();
+        uuidReq.param_.docidList_[1] = *reinterpret_cast<uint128_t *>(&uuid);
+        uuid = random_gen();
+        uuidReq.param_.docidList_[2] = *reinterpret_cast<uint128_t *>(&uuid);
         conn.asynRequest(uuidReq);
-        uuidReq.param_.docidList_[i % 3] += 3;
 
         if (i%10000 == 0)
         {
