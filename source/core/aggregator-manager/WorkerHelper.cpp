@@ -49,7 +49,7 @@ bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bu
     if ( !action.queryParser_.parseQuery( queryUStr, action.rawQueryTree_, action.unigramFlag_, action.hasUnigramProperty_ ) )
         return false;
 
-    queryUStr.convertString(action.actionItem_.env_.queryString_, encodingType);
+    //queryUStr.convertString(action.actionItem_.env_.queryString_, encodingType);
     action.rawQueryTree_->print();
 
     // Build property query map
