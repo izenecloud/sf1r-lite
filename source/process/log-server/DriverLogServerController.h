@@ -94,14 +94,14 @@ private:
     void processRecPurchaseItem(izenelib::driver::Value& request, const std::string& raw);
 
     void onUniqueKeyCheck(
-            const LogServerStorage::drum_key_t& uuid,
-            const LogServerStorage::drum_value_t& docidList,
-            const LogServerStorage::drum_aux_t& aux);
+            const LogServerStorage::uuid_t& uuid,
+            const LogServerStorage::raw_docid_list_t& docidList,
+            const std::string& aux);
 
     void onDuplicateKeyCheck(
-            const LogServerStorage::drum_key_t& uuid,
-            const LogServerStorage::drum_value_t& docidList,
-            const LogServerStorage::drum_aux_t& aux);
+            const LogServerStorage::uuid_t& uuid,
+            const LogServerStorage::raw_docid_list_t& docidList,
+            const std::string& aux);
 
     struct CCLogMerge
     {

@@ -73,16 +73,16 @@ void LogServerWorkThread::process(const DrumRequestData& drumReqData)
 
 void LogServerWorkThread::process(const UUID2DocidList& uuid2DocidList)
 {
-    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
-    LogServerStorage::get()->drum()->Update(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());
+    LogServerStorage::get()->uuidDrum()->Update(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
 }
 
 void LogServerWorkThread::process(const SynchronizeData& syncReqData)
 {
     {
-        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());
         std::cout << "[LogServerWorkThread] synchronizing drum (locked) " << std::endl;
-        LogServerStorage::get()->drum()->Synchronize();
+        LogServerStorage::get()->uuidDrum()->Synchronize();
         std::cout << "[LogServerWorkThread] finished synchronizing drum " << std::endl;
     }
 
