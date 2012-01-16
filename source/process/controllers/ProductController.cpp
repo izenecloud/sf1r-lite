@@ -99,15 +99,18 @@ bool ProductController::maybe_option_()
 bool ProductController::maybe_doc_(bool must)
 {
     doc_.clear();
-    Value& resource = request()[Keys::resource];
-    const Value::ObjectType& objectValue = resource.getObject();
-
-    for (Value::ObjectType::const_iterator it = objectValue.begin();
-         it != objectValue.end(); ++it)
+    if (!izenelib::driver::nullValue(request()[Keys::resource]))
     {
-        std::string pname = it->first;
-        izenelib::util::UString pvalue(asString(it->second), izenelib::util::UString::UTF_8);
-        doc_.property(pname) = pvalue;
+        Value& resource = request()[Keys::resource];
+        const Value::ObjectType& objectValue = resource.getObject();
+
+        for (Value::ObjectType::const_iterator it = objectValue.begin();
+             it != objectValue.end(); ++it)
+        {
+            std::string pname = it->first;
+            izenelib::util::UString pvalue(asString(it->second), izenelib::util::UString::UTF_8);
+            doc_.property(pname) = pvalue;
+        }
     }
     if( doc_.getPropertySize()==0 ) //empty resource doc
     {
