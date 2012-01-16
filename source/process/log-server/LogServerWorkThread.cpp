@@ -81,11 +81,19 @@ void LogServerWorkThread::process(const SynchronizeData& syncReqData)
 {
     {
         boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());
-        std::cout << "[LogServerWorkThread] synchronizing drum (locked) " << std::endl;
+        std::cout << "[LogServerWorkThread] synchronizing drum for uuids (locked) " << std::endl;
         LogServerStorage::get()->uuidDrum()->Synchronize();
-        std::cout << "[LogServerWorkThread] finished synchronizing drum " << std::endl;
+        std::cout << "[LogServerWorkThread] finished synchronizing drum for uuids" << std::endl;
     }
 
+    {
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDrumMutex());
+        std::cout << "[LogServerWorkThread] synchronizing drum for docids (locked) " << std::endl;
+        LogServerStorage::get()->docidDrum()->Synchronize();
+        std::cout << "[LogServerWorkThread] finished synchronizing drum for docids" << std::endl;
+    }
+
+    // Fixme remove docid DB
     {
         boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDBMutex());
         std::cout << "[LogServerWorkThread] flushing docid DB (locked) " << std::endl;

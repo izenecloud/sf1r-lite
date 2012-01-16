@@ -348,6 +348,7 @@ void DriverLogServerHandler::onDuplicateKeyCheck(
     uint128_t newUuid;
     for (std::size_t i = 0; i < docidList.size(); i++)
     {
+        // Fixme remove docidDB, and use synchronous interface to get uuids from docidDrum()?
         boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDBMutex());
         if (LogServerStorage::get()->docidDB()->get(docidList[i], newUuid))
         {

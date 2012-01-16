@@ -45,7 +45,7 @@ public:
     typedef izenelib::am::tc_hash<raw_docid_t, uuid_t> KVDBType;
     typedef boost::scoped_ptr<KVDBType> KVDBPtr;
 
-    // DRUM <raw_docid, uuid>, TODO: replace DB
+    // DRUM <raw_docid, uuid>
     typedef izenelib::drum::Drum<
         raw_docid_t,
         uuid_t,
@@ -134,6 +134,20 @@ public:
                 }
             }
 
+            if (docidDrum_)
+            {
+                boost::unique_lock<boost::mutex> lock(docidDrumMutex_, boost::defer_lock);
+                if (lock.try_lock())
+                {
+                    docidDrum_.reset();
+                }
+                else
+                {
+                    std::cout << "Drum is still working... " << std::endl;
+                    return;
+                }
+            }
+
             if (docidDB_)
             {
                 boost::unique_lock<boost::mutex> lock(docid_db_mutex_, boost::defer_lock);
@@ -208,6 +222,7 @@ private:
     DocidDrumPtr docidDrum_;
     boost::mutex docidDrumMutex_;
 
+    // TODO remove docidDB
     KVDBPtr docidDB_;
     boost::mutex docid_db_mutex_;
 };

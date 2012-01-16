@@ -123,11 +123,13 @@ void RpcLogServer::onUpdate(
     static int cnt;
 #endif
 
-    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDBMutex());
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDrumMutex());
+    boost::lock_guard<boost::mutex> lock2(LogServerStorage::get()->docidDBMutex());
     for (LogServerStorage::raw_docid_list_t::const_iterator it = docidList.begin();
             it != docidList.end(); ++it)
     {
-        LogServerStorage::get()->docidDB()->update(*it, uuid);
+        LogServerStorage::get()->docidDrum()->Update(*it, uuid);
+        LogServerStorage::get()->docidDB()->update(*it, uuid); // Fixme remove docid DB
 
 #ifdef LOG_SERVER_DEBUG
         std::cout << *it << " -> " << Utilities::uint128ToUuid(uuid) << std::endl;
