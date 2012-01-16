@@ -50,7 +50,7 @@ void DocumentsGetHandler::get()
 {
     if (parseSelect() && parseSearchSession() && getIdListFromConditions())
     {
-        doGet();
+        if(!doGet()) return;
         response_[Keys::total_count] = response_[Keys::resources].size();
 
         aclFilter();
@@ -390,7 +390,7 @@ bool DocumentsGetHandler::getIdListFromConditions()
     return true;
 }
 
-void DocumentsGetHandler::doGet()
+bool DocumentsGetHandler::doGet()
 {
     // TODO: cache
 
@@ -399,13 +399,13 @@ void DocumentsGetHandler::doGet()
     if (!indexSearchService_->getDocumentsByIds(actionItem_, result))
     {
         response_.addError("Internal communication error.");
-        return;
+        return false;
     }
 
     if (!result.error_.empty())
     {
         response_.addError(result.error_);
-        return;
+        return false;
     }
 
     DocumentsRenderer renderer;
@@ -414,6 +414,7 @@ void DocumentsGetHandler::doGet()
         result,
         response_[Keys::resources]
     );
+    return true;
 }
 
 /**

@@ -56,7 +56,7 @@ public:
     bool parseDocumentId(const Value& inputId);
     bool getIdListFromConditions();
 
-    void doGet();
+    bool doGet();
 
     void aclFilter();
 
