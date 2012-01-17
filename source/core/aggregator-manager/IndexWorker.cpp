@@ -422,8 +422,10 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     docid_t id = 0;
     std::string source = "";
 
-    if (!prepareDocument_(scddoc, document, oldId, rType, rTypeFieldValue, source, timestamp, true))
+    if (!prepareDocument_(scddoc, document, oldId, rType, rTypeFieldValue, source, timestamp, false))
+    {
         return false;
+    }
 
     prepareIndexDocument_(oldId, document, indexDocument);
 
