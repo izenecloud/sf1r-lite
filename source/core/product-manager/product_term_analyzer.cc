@@ -2,7 +2,7 @@
 #include <la-manager/LAPool.h>
 using namespace sf1r;
 
-// #define PM_CLUST_TEXT_DEBUG
+//#define PM_CLUST_TEXT_DEBUG
 
 ProductTermAnalyzer::ProductTermAnalyzer()
 {
@@ -109,11 +109,21 @@ double ProductTermAnalyzer::GetWeight_(uint32_t title_length, const izenelib::ut
     {
         if(term.length()<2)
         {
-            weight = 0.0;
+            izenelib::util::UString lower(term);
+            lower.toLowerString();
+            if(term==lower)
+            {
+                weight = 0.0;
+            }
+            else
+            {
+                //single capital character
+                weight = 1.0;
+            }
         }
         else
         {
-            weight = 1;
+            weight = 1.0;
         }
     }
     else if(tag=='M')
