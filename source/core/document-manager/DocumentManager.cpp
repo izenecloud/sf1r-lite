@@ -484,7 +484,6 @@ bool DocumentManager::getRawTextOfDocuments(
             result.clear();
             if (!getPropertyValue(*docIt, propertyName, rawText))
                 return false;
-
             fullTextList.push_back(rawText);
 
             std::string sentenceProperty = propertyName + PROPERTY_BLOCK_SUFFIX;
@@ -606,7 +605,7 @@ bool DocumentManager::getRawTextOfOneDocument_(
 
     if (!getPropertyValue(docId, propertyName, rawText))
     {
-        //    return false;
+        return false;
     }
     if (rawText.empty())
     {

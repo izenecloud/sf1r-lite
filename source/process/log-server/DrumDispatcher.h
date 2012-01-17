@@ -21,9 +21,12 @@ public:
     {
         UNIQUE_KEY_CHECK = 0,
         DUPLICATE_KEY_CHECK,
+        UPDATE,
         UNIQUE_KEY_UPDATE,
         DUPLICATE_KEY_UPDATE,
-        UPDATE,
+        DELETE,
+        UNIQUE_KEY_DELETE,
+        DUPLICATE_KEY_DELETE,
         EOC
     };
 
@@ -43,9 +46,14 @@ public:
 
     virtual void UniqueKeyCheck(key_t const&, aux_t const&) const;
     virtual void DuplicateKeyCheck(key_t const&, value_t const&, aux_t const&) const;
+
+    virtual void Update(key_t const&, value_t const&, aux_t const&) const;
     virtual void UniqueKeyUpdate(key_t const&, value_t const&, aux_t const&) const;
     virtual void DuplicateKeyUpdate(key_t const&, value_t const&, aux_t const&) const;
-    virtual void Update(key_t const&, value_t const&, aux_t const&) const;
+
+    virtual void Delete(key_t const&, aux_t const&) const;
+    virtual void UniqueKeyDelete(key_t const&, aux_t const&) const;
+    virtual void DuplicateKeyDelete(key_t const&, value_t const&, aux_t const&) const;
 
     void registerOp(OpType type, func_t func)
     {
@@ -92,6 +100,16 @@ template <class key_t,
           class value_t,
           class aux_t>
 void DrumDispatcher<key_t, value_t, aux_t>::
+Update(key_t const& key, value_t const& value, aux_t const& aux) const
+{
+    //std::cout << "Update" << std::endl;
+    dispatch(UPDATE, key, value, aux);
+}
+
+template <class key_t,
+          class value_t,
+          class aux_t>
+void DrumDispatcher<key_t, value_t, aux_t>::
 UniqueKeyUpdate(key_t const& key, value_t const& value, aux_t const& aux) const
 {
     //std::cout << "UniqueKeyUpdate" << std::endl;
@@ -112,10 +130,30 @@ template <class key_t,
           class value_t,
           class aux_t>
 void DrumDispatcher<key_t, value_t, aux_t>::
-Update(key_t const& key, value_t const& value, aux_t const& aux) const
+Delete(key_t const& key, aux_t const& aux) const
 {
-    //std::cout << "Update" << std::endl;
-    dispatch(UPDATE, key, value, aux);
+    //std::cout << "Delete" << std::endl;
+    dispatch(DELETE, key, defaultValue_, aux);
+}
+
+template <class key_t,
+          class value_t,
+          class aux_t>
+void DrumDispatcher<key_t, value_t, aux_t>::
+UniqueKeyDelete(key_t const& key, aux_t const& aux) const
+{
+    //std::cout << "UniqueKeyDelete" << std::endl;
+    dispatch(UNIQUE_KEY_DELETE, key, defaultValue_, aux);
+}
+
+template <class key_t,
+          class value_t,
+          class aux_t>
+void DrumDispatcher<key_t, value_t, aux_t>::
+DuplicateKeyDelete(key_t const& key, value_t const& value, aux_t const& aux) const
+{
+    //std::cout << "DuplicateKeyDelete" << std::endl;
+    dispatch(DUPLICATE_KEY_DELETE, key, value, aux);
 }
 
 }

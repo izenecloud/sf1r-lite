@@ -21,6 +21,13 @@ typedef izenelib::util::kv2string properties;
 class LogServerCfg
 {
 public:
+    enum DrumType
+    {
+        UUID,
+        DOCID
+    };
+
+public:
     LogServerCfg();
 
     ~LogServerCfg();
@@ -47,6 +54,11 @@ public:
         return rpcThreadNum_;
     }
 
+    inline unsigned int getRpcRequestQueueSize() const
+    {
+        return rpcRequestQueueSize_;
+    }
+
     inline unsigned int getDriverServerPort() const
     {
         return driverPort_;
@@ -67,35 +79,38 @@ public:
         return base_dir_;
     }
 
-    inline const std::string& getDrumName() const
+    inline const std::string& getDrumName(DrumType type) const
     {
-        return drum_name_;
+        if (type == UUID)
+            return uuid_drum_name_;
+        else //if (type == DOCID)
+            return docid_drum_name_;
     }
 
-    inline unsigned int getDrumNumBuckets() const
+    inline unsigned int getDrumNumBuckets(DrumType type) const
     {
-        return drum_num_buckets_;
+        if (type == UUID)
+            return uuid_drum_num_buckets_;
+        else //if (type == DOCID)
+            return docid_drum_num_buckets_;
     }
 
-    inline unsigned int getDrumBucketBuffElemSize() const
+    inline unsigned int getDrumBucketBuffElemSize(DrumType type) const
     {
-        return drum_bucket_buff_elem_size_;
+        if (type == UUID)
+            return uuid_drum_bucket_buff_elem_size_;
+        else //if (type == DOCID)
+            return docid_drum_bucket_buff_elem_size_;
     }
 
-    inline unsigned int getDrumBucketByteSize() const
+    inline unsigned int getDrumBucketByteSize(DrumType type) const
     {
-        return drum_bucket_byte_size_;
+        if (type == UUID)
+            return uuid_drum_bucket_byte_size_;
+        else //if (type == DOCID)
+            return docid_drum_bucket_byte_size_;
     }
 
-    inline const std::string& getDocidDBName() const
-    {
-        return docid_db_name_;
-    }
-
-    inline const std::string& getCclogOutFile() const
-    {
-        return cclogOutFile_;
-    }
 
 private:
     bool parseCfgFile_(const std::string& cfgFile);
@@ -112,21 +127,26 @@ private:
     std::string cfgFile_;
 
     std::string host_;
+
     unsigned int rpcPort_;
     unsigned int rpcThreadNum_;
+    unsigned int rpcRequestQueueSize_;
+
     unsigned int driverPort_;
     unsigned int driverThreadNum_;
     std::set<std::string> driverCollections_;
-    std::string cclogOutFile_;
 
     std::string base_dir_;
 
-    std::string drum_name_;
-    unsigned int drum_num_buckets_;
-    unsigned int drum_bucket_buff_elem_size_;
-    unsigned int drum_bucket_byte_size_;
+    std::string  uuid_drum_name_;
+    unsigned int uuid_drum_num_buckets_;
+    unsigned int uuid_drum_bucket_buff_elem_size_;
+    unsigned int uuid_drum_bucket_byte_size_;
 
-    std::string docid_db_name_;
+    std::string  docid_drum_name_;
+    unsigned int docid_drum_num_buckets_;
+    unsigned int docid_drum_bucket_buff_elem_size_;
+    unsigned int docid_drum_bucket_byte_size_;
 };
 
 }

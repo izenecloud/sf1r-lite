@@ -95,12 +95,12 @@ void DriverLogServerController::flush()
 void DriverLogServerHandler::init()
 {
     // call back for drum dispatcher
-    LogServerStorage::get()->drumDispatcher().registerOp(
-            LogServerStorage::DrumDispatcherImpl::UNIQUE_KEY_CHECK,
+    LogServerStorage::get()->uuidDrumDispatcher().registerOp(
+            LogServerStorage::UuidDrumDispatcherType::UNIQUE_KEY_CHECK,
             boost::bind(&DriverLogServerHandler::onUniqueKeyCheck, this, _1, _2, _3));
 
-    LogServerStorage::get()->drumDispatcher().registerOp(
-            LogServerStorage::DrumDispatcherImpl::DUPLICATE_KEY_CHECK,
+    LogServerStorage::get()->uuidDrumDispatcher().registerOp(
+            LogServerStorage::UuidDrumDispatcherType::DUPLICATE_KEY_CHECK,
             boost::bind(&DriverLogServerHandler::onDuplicateKeyCheck, this, _1, _2, _3));
 
     // collections of which log need to be updated
@@ -112,7 +112,7 @@ void DriverLogServerHandler::processCclog()
 {
     // Get raw request which was originally stored in cclog
     izenelib::driver::Value raw_request = request()[Keys::record];
-    std::string fileName = storageBaseDir_ + "/" + asString(request()[Keys::filename]);
+    std::string fileName = storageBaseDir_ + "/cclog/" + asString(request()[Keys::filename]);
 
     if (!openFile(fileName))
     {
@@ -164,7 +164,7 @@ void DriverLogServerHandler::processScd()
 {
     std::string docid = asString(request()[Keys::DOCID]);
     std::string doc = asString(request()[Keys::record]);
-    std::string fileName = storageBaseDir_ + "/" + asString(request()[Keys::filename]);
+    std::string fileName = storageBaseDir_ + "/scd/" + asString(request()[Keys::filename]);
 
     std::cout << fileName << " --> " << docid << std::endl;
     //std::cout << doc << std::endl;
@@ -186,9 +186,9 @@ void DriverLogServerHandler::processScd()
 
     try
     {
-        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());
         encodeFileName(doc, fileName);
-        LogServerStorage::get()->drum()->Check(Utilities::uuidToUint128(docid), doc);
+        LogServerStorage::get()->uuidDrum()->Check(Utilities::uuidToUint128(docid), doc);
     }
     catch (const std::exception& e)
     {
@@ -202,8 +202,8 @@ void DriverLogServerHandler::processScd()
 void DriverLogServerHandler::flush()
 {
     {
-        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
-        LogServerStorage::get()->drum()->Synchronize();
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());
+        LogServerStorage::get()->uuidDrum()->Synchronize();
     }
 
     {
@@ -246,9 +246,9 @@ bool DriverLogServerHandler::skipProcess(const std::string& collection)
  */
 void DriverLogServerHandler::processDocVisit(izenelib::driver::Value& request, const std::string& raw)
 {
-    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());
     std::string docIdStr = asString(request[Keys::resource][Keys::DOCID]);
-    LogServerStorage::get()->drum()->Check(Utilities::uuidToUint128(docIdStr), raw);
+    LogServerStorage::get()->uuidDrum()->Check(Utilities::uuidToUint128(docIdStr), raw);
 }
 
 /**
@@ -271,9 +271,9 @@ void DriverLogServerHandler::processDocVisit(izenelib::driver::Value& request, c
  */
 void DriverLogServerHandler::processRecVisitItem(izenelib::driver::Value& request, const std::string& raw)
 {
-    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());
     std::string itemIdStr = asString(request[Keys::resource][Keys::ITEMID]);
-    LogServerStorage::get()->drum()->Check(Utilities::uuidToUint128(itemIdStr), raw);
+    LogServerStorage::get()->uuidDrum()->Check(Utilities::uuidToUint128(itemIdStr), raw);
 }
 
 /**
@@ -319,17 +319,17 @@ void DriverLogServerHandler::processRecPurchaseItem(izenelib::driver::Value& req
             cclogMergeQueue_.insert(std::make_pair(uuid, cclogMergeUnit));
         }
 
-        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
-        LogServerStorage::get()->drum()->Check(uuid, raw);
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());
+        LogServerStorage::get()->uuidDrum()->Check(uuid, raw);
     }
 
     //std::cout << std::endl;
 }
 
 void DriverLogServerHandler::onUniqueKeyCheck(
-        const LogServerStorage::drum_key_t& uuid,
-        const LogServerStorage::drum_value_t& docidList,
-        const LogServerStorage::drum_aux_t& aux)
+        const LogServerStorage::uuid_t& uuid,
+        const LogServerStorage::raw_docid_list_t& docidList,
+        const std::string& aux)
 {
     //std::cout << "onUniqueKeyCheck " << Utilities::uint128ToUuid(uuid) << std::endl;
     std::string json = aux;
@@ -339,17 +339,17 @@ void DriverLogServerHandler::onUniqueKeyCheck(
 }
 
 void DriverLogServerHandler::onDuplicateKeyCheck(
-        const LogServerStorage::drum_key_t& uuid,
-        const LogServerStorage::drum_value_t& docidList,
-        const LogServerStorage::drum_aux_t& aux)
+        const LogServerStorage::uuid_t& uuid,
+        const LogServerStorage::raw_docid_list_t& docidList,
+        const std::string& aux)
 {
     //std::cout << "onDuplicateKeyCheck " << Utilities::uint128ToUuid(uuid) << std::endl;
     std::set<uint128_t> newUuidSet;
     uint128_t newUuid;
     for (std::size_t i = 0; i < docidList.size(); i++)
     {
-        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDBMutex());
-        if (LogServerStorage::get()->docidDB()->get(docidList[i], newUuid))
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDrumMutex());
+        if (LogServerStorage::get()->docidDrum()->GetValue(docidList[i], newUuid))
         {
             newUuidSet.insert(newUuid);
         }
