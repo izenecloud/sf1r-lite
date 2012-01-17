@@ -1,4 +1,7 @@
 #!/bin/bash
-wget -N http://172.16.0.107/public/Dev/B5M/config/b5mm.xml
-wget -N http://172.16.0.107/public/Dev/B5M/config/b5ma.xml
-wget -N http://172.16.0.107/public/Dev/B5M/config/b5mc.xml
+HOM=`dirname $0`
+scp dev@izenesoft.cn:/data/B5M/config/b5mm.xml $HOM/
+scp dev@izenesoft.cn:/data/B5M/config/b5ma.xml $HOM/
+scp dev@izenesoft.cn:/data/B5M/config/b5mc.xml $HOM/
+scp dev@izenesoft.cn:/data/B5M/config/tuanm.xml $HOM/
+scp dev@izenesoft.cn:/data/B5M/config/tuana.xml $HOM/
