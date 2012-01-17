@@ -197,6 +197,7 @@ bool DocumentManager::removeDocument(docid_t docId)
         delfilter_.resize(docId);
     }
     delfilter_.set(docId-1);
+    documentCache_.del(docId);
     return true;
 }
 
