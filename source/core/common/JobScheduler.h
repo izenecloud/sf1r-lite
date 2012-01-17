@@ -15,6 +15,8 @@ namespace sf1r
 class JobScheduler
 {
 public:
+    typedef std::pair<task_type, std::string> task_collection_name_type;
+
     JobScheduler();
 
     ~JobScheduler();
@@ -24,15 +26,31 @@ public:
         return ::izenelib::util::Singleton<JobScheduler>::get();
     }
 
-    void addTask(task_type task);
+    struct RemoveTaskPred
+    {
+        std::string collection_;
+
+        RemoveTaskPred(const std::string collection)
+            :collection_(collection)
+        {
+        }
+
+        bool operator()(const task_collection_name_type& task_collection) const
+        {
+            return collection_ == task_collection.second;
+        }
+    };
+    void addTask(task_type task, const std::string& collection = "");
 
     void close();
+
+    void removeTask(const std::string& collection);
 
 private:
     void runAsynchronousTasks_();
 
 private:
-    ::izenelib::util::concurrent_queue<task_type> asynchronousTasks_;
+    ::izenelib::util::concurrent_queue<task_collection_name_type> asynchronousTasks_;
 
     boost::thread asynchronousWorker_;
 

@@ -68,6 +68,8 @@ void QueryCorrectionController::index()
             response().addError("Collection access denied");
             return;
         }
+        CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(collection);
+        CollectionManager::ScopedReadLock lock(*mutex);
         CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
         MiningSearchService* service = collectionHandler->miningSearchService_;
         service->GetRefinedQuery(queryUString, refinedQueryUString);

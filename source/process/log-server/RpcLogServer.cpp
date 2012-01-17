@@ -25,8 +25,8 @@ RpcLogServer::~RpcLogServer()
 
 bool RpcLogServer::init()
 {
-    LogServerStorage::get()->drumDispatcher().registerOp(
-            LogServerStorage::DrumDispatcherImpl::UPDATE,
+    LogServerStorage::get()->uuidDrumDispatcher().registerOp(
+            LogServerStorage::UuidDrumDispatcherType::UPDATE,
             boost::bind(&RpcLogServer::onUpdate, this, _1, _2, _3));
 
     workerThread_.reset(new LogServerWorkThread());
@@ -81,6 +81,24 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
 
             synchronize(syncReqData);
         }
+        else if (method == LogServerRequest::method_names[LogServerRequest::METHOD_GET_UUID])
+        {
+            msgpack::type::tuple<Docid2UUID> params;
+            req.params().convert(&params);
+            Docid2UUID docid2UUID = params.get<0>();
+
+            LogServerStorage::get()->docidDrum()->GetValue(docid2UUID.docid_, docid2UUID.uuid_);
+            req.result(docid2UUID);
+        }
+        else if (method == LogServerRequest::method_names[LogServerRequest::METHOD_GET_DOCID_LIST])
+        {
+            msgpack::type::tuple<UUID2DocidList> params;
+            req.params().convert(&params);
+            UUID2DocidList uuid2DocidList = params.get<0>();
+
+            LogServerStorage::get()->uuidDrum()->GetValue(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
+            req.result(uuid2DocidList);
+        }
         else
         {
             req.error(msgpack::rpc::NO_METHOD_ERROR);
@@ -111,9 +129,9 @@ void RpcLogServer::synchronize(const SynchronizeData& syncReqData)
 }
 
 void RpcLogServer::onUpdate(
-        const LogServerStorage::drum_key_t& uuid,
-        const LogServerStorage::drum_value_t& docidList,
-        const LogServerStorage::drum_aux_t& aux)
+        const LogServerStorage::uuid_t& uuid,
+        const LogServerStorage::raw_docid_list_t& docidList,
+        const std::string& aux)
 {
 #ifdef LOG_SERVER_DEBUG
     std::cout << "RpcLogServer::onUpDate " << std::endl;
@@ -123,11 +141,11 @@ void RpcLogServer::onUpdate(
     static int cnt;
 #endif
 
-    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDBMutex());
-    for (LogServerStorage::drum_value_t::const_iterator it = docidList.begin();
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDrumMutex());
+    for (LogServerStorage::raw_docid_list_t::const_iterator it = docidList.begin();
             it != docidList.end(); ++it)
     {
-        LogServerStorage::get()->docidDB()->update(*it, uuid);
+        LogServerStorage::get()->docidDrum()->Update(*it, uuid);
 
 #ifdef LOG_SERVER_DEBUG
         std::cout << *it << " -> " << Utilities::uint128ToUuid(uuid) << std::endl;

@@ -38,8 +38,6 @@ const std::string DocumentManager::PROPERTY_BLOCK_SUFFIX = ".blocks";
 const std::string DOCID("DOCID");
 const std::string DATE("DATE");
 
-ilplib::langid::Factory* DocumentManager::langIdFactory = ilplib::langid::Factory::instance();
-
 DocumentManager::DocumentManager(
     const std::string& path,
     const std::set<PropertyConfig, PropertyComp>& schema,
@@ -65,10 +63,6 @@ DocumentManager::DocumentManager(
     //aclTable_.open();
     snippetGenerator_ = new SnippetGeneratorSubManager;
     highlighter_ = new Highlighter;
-
-    langIdAnalyzer_ = langIdFactory->createAnalyzer();
-    langIdKnowledge_ = langIdFactory->createKnowledge();
-    la::MultiLanguageAnalyzer::langIdAnalyzer_ = langIdAnalyzer_;
 }
 
 DocumentManager::~DocumentManager()
@@ -78,8 +72,6 @@ DocumentManager::~DocumentManager()
     if(propertyValueTable_) delete propertyValueTable_;
     if(snippetGenerator_) delete snippetGenerator_;
     if(highlighter_) delete highlighter_;
-    if (langIdKnowledge_)  delete langIdKnowledge_;
-    if (langIdAnalyzer_) delete langIdAnalyzer_;
 }
 
 bool DocumentManager::flush()
@@ -87,17 +79,6 @@ bool DocumentManager::flush()
     propertyValueTable_->flush();
     saveDelFilter_();
     return savePropertyLengthDb_();
-}
-
-void DocumentManager::setLangId(std::string& langIdDbPath)
-{
-    string encodingPath = langIdDbPath + "/model/encoding.bin";
-    langIdKnowledge_->loadEncodingModel(encodingPath.c_str());
-    // load language model for language identification or sentence tokenization
-    string langPath = langIdDbPath + "/model/language.bin";
-    langIdKnowledge_->loadLanguageModel(langPath.c_str());
-    // set knowledge
-    langIdAnalyzer_->setKnowledge(langIdKnowledge_);
 }
 
 bool DocumentManager::insertDocument(const Document& document)

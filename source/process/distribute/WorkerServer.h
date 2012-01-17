@@ -59,6 +59,8 @@ public:
         std::string identityLow = sf1r::Utilities::toLowerCopy(identity);
         if (sf1r::SF1Config::get()->checkSearchWorker(identity))
         {
+            CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(identity);
+            CollectionManager::ScopedReadLock lock(*mutex);
             collectionHandler_ = CollectionManager::get()->findHandler(identity);
 
             if (!collectionHandler_)

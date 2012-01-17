@@ -6,8 +6,9 @@ namespace sf1r
 {
 
 LogServerWorkThread::LogServerWorkThread()
+    : workThread_(&LogServerWorkThread::run, this)
+    , drumRequestQueue_(LogServerCfg::get()->getRpcRequestQueueSize())
 {
-    workThread_ = boost::thread(&LogServerWorkThread::run, this);
 }
 
 LogServerWorkThread::~LogServerWorkThread()
@@ -23,14 +24,15 @@ void LogServerWorkThread::stop()
 void LogServerWorkThread::putUuidRequestData(const UUID2DocidList& uuid2DocidList)
 {
     DrumRequestData drumReqData;
-    drumReqData.uuid2DocidList.reset(new UUID2DocidList(uuid2DocidList));
 
+    drumReqData.uuid2DocidList.reset(new UUID2DocidList(uuid2DocidList));
     drumRequestQueue_.push(drumReqData);
 }
 
 void LogServerWorkThread::putSyncRequestData(const SynchronizeData& syncReqData)
 {
     DrumRequestData drumReqData;
+
     drumReqData.syncReqData.reset(new SynchronizeData(syncReqData));
     drumRequestQueue_.push(drumReqData);
 }
@@ -71,24 +73,24 @@ void LogServerWorkThread::process(const DrumRequestData& drumReqData)
 
 void LogServerWorkThread::process(const UUID2DocidList& uuid2DocidList)
 {
-    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
-    LogServerStorage::get()->drum()->Update(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());
+    LogServerStorage::get()->uuidDrum()->Update(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
 }
 
 void LogServerWorkThread::process(const SynchronizeData& syncReqData)
 {
     {
-        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
-        std::cout << "[LogServerWorkThread] synchronizing drum (locked) " << std::endl;
-        LogServerStorage::get()->drum()->Synchronize();
-        std::cout << "[LogServerWorkThread] finished synchronizing drum " << std::endl;
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());
+        std::cout << "[LogServerWorkThread] synchronizing drum for uuids (locked) " << std::endl;
+        LogServerStorage::get()->uuidDrum()->Synchronize();
+        std::cout << "[LogServerWorkThread] finished synchronizing drum for uuids" << std::endl;
     }
 
     {
-        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDBMutex());
-        std::cout << "[LogServerWorkThread] flushing docid DB (locked) " << std::endl;
-        LogServerStorage::get()->docidDB()->flush();
-        std::cout << "[LogServerWorkThread] finished flushing docid DB " << std::endl;
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDrumMutex());
+        std::cout << "[LogServerWorkThread] synchronizing drum for docids (locked) " << std::endl;
+        LogServerStorage::get()->docidDrum()->Synchronize();
+        std::cout << "[LogServerWorkThread] finished synchronizing drum for docids" << std::endl;
     }
 }
 

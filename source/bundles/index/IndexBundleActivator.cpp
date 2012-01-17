@@ -264,7 +264,6 @@ bool IndexBundleActivator::init_()
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open document manager.."<<std::endl;
     documentManager_ = createDocumentManager_();
     SF1R_ENSURE_INIT(documentManager_);
-    documentManager_->setLangId(config_->languageIdentifierDbPath_);
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open ranking manager.."<<std::endl;
     rankingManager_ = createRankingManager_();
     SF1R_ENSURE_INIT(rankingManager_);
@@ -301,7 +300,7 @@ bool IndexBundleActivator::init_()
     taskService_->indexWorker_->laManager_ = laManager_;
     taskService_->indexWorker_->documentManager_ = documentManager_;
     taskService_->indexWorker_->searchManager_ = searchManager_;
-    taskService_->indexWorker_->summarizer_.init(documentManager_->getLangId(), idManager_);
+    taskService_->indexWorker_->summarizer_.init(LAPool::getInstance()->getLangId(), idManager_);
 
     return true;
 }
@@ -324,6 +323,7 @@ std::string IndexBundleActivator::getQueryDataPath_() const
 bool IndexBundleActivator::openDataDirectories_()
 {
     bfs::create_directories(config_->indexSCDPath());
+    bfs::create_directories(config_->logSCDPath());
 
     std::vector<std::string>& directories = config_->collectionDataDirectories_;
     if( directories.size() == 0 )

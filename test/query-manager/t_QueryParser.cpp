@@ -36,7 +36,7 @@ struct QueryParserTestFixture
 
         bfs::create_directories(TEST_DIR_STR);
         idManager.reset(new IDManager(TEST_DIR_STR + "/idm_qmt"));
-
+        LAPool::getInstance()->initLangAnalyzer();
         LAPool::getInstance()->init(config);
         QueryParser::initOnlyOnce();
 

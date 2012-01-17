@@ -76,49 +76,24 @@ void CollectionHandler::similar_to_image(::izenelib::driver::Request& request, :
     handler.similar_to_image();
 }
 
-bool CollectionHandler::create(const std::string& collectionName, const ::izenelib::driver::Value& document)
+bool CollectionHandler::create(const ::izenelib::driver::Value& document)
 {
-    collection_ = collectionName;
-
-    std::string bundleName = "IndexBundle-" + collection_;
-    IndexTaskService* indexService = static_cast<IndexTaskService*>(
-                                         CollectionManager::get()->getOSGILauncher().getService(bundleName, "IndexTaskService"));
-    if (!indexService)
-    {
-        return false;
-    }
-    task_type task = boost::bind(&IndexTaskService::createDocument, indexService, document);
-    JobScheduler::get()->addTask(task);
+    task_type task = boost::bind(&IndexTaskService::createDocument, indexTaskService_, document);
+    JobScheduler::get()->addTask(task, collection_);
     return true;
 }
 
-bool CollectionHandler::update(const std::string& collectionName, const ::izenelib::driver::Value& document)
+bool CollectionHandler::update(const ::izenelib::driver::Value& document)
 {
-    collection_ = collectionName;
-    std::string bundleName = "IndexBundle-" + collection_;
-    IndexTaskService* indexService = static_cast<IndexTaskService*>(
-                                         CollectionManager::get()->getOSGILauncher().getService(bundleName, "IndexTaskService"));
-    if (!indexService)
-    {
-        return false;
-    }
-    task_type task = boost::bind(&IndexTaskService::updateDocument, indexService, document);
-    JobScheduler::get()->addTask(task);
+    task_type task = boost::bind(&IndexTaskService::updateDocument, indexTaskService_, document);
+    JobScheduler::get()->addTask(task, collection_);
     return true;
 }
 
-bool CollectionHandler::destroy(const std::string& collectionName, const ::izenelib::driver::Value& document)
+bool CollectionHandler::destroy(const ::izenelib::driver::Value& document)
 {
-    collection_ = collectionName;
-    std::string bundleName = "IndexBundle-" + collection_;
-    IndexTaskService* indexService = static_cast<IndexTaskService*>(
-                                         CollectionManager::get()->getOSGILauncher().getService(bundleName, "IndexTaskService"));
-    if (!indexService)
-    {
-        return false;
-    }
-    task_type task = boost::bind(&IndexTaskService::destroyDocument, indexService, document);
-    JobScheduler::get()->addTask(task);
+    task_type task = boost::bind(&IndexTaskService::destroyDocument, indexTaskService_, document);
+    JobScheduler::get()->addTask(task, collection_);
     return true;
 }
 

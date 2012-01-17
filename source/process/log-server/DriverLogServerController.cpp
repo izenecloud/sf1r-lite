@@ -20,7 +20,7 @@ bool DriverLogServerController::preprocess()
 /**
  * @brief Action \b update_cclog
  *
- * - @b line (@c Object): a wrapped json request (as cclog) which is supported by SF1R
+ * - @b record (@c Object): a wrapped json request (as cclog) which is supported by SF1R
  *
  * @example
  * {
@@ -29,7 +29,7 @@ bool DriverLogServerController::preprocess()
  *     "action" : "update_cclog",
  *   },
  *   "filename" : "cclog20120113.txt",
- *   "line" : {
+ *   "record" : {
  *     # a wrapped json request (as cclog) which is supported by SF1R
  *   }
  * }
@@ -42,9 +42,10 @@ void DriverLogServerController::update_cclog()
 }
 
 /**
- * @brief Action \b update_cclog
+ * @brief Action \b update_scd
  *
- * - @b line (@c String): the text of a record in SCD file
+ * - @b record (@c String): a doc record in SCD
+ * - @b DOCID (@c String): the docid of the doc record
  *
  * @example
  * {
@@ -53,7 +54,8 @@ void DriverLogServerController::update_cclog()
  *     "action" : "update_scd",
  *   },
  *   "filename" : "B-00-201112011437-38743-I-C.SCD",
- *   "line" : "#{the text of a record in SCD file}"
+ *   "DOCID" : "#{uuid_docid}"
+ *   "record" : "#{the text of a record in SCD file}"
  *   }
  * }
  *
@@ -61,7 +63,7 @@ void DriverLogServerController::update_cclog()
 void DriverLogServerController::update_scd()
 {
     std::cout << request().controller() << "/" << request().action() << std::endl;
-    // TODO
+    dirverLogServerHandler_->processScd();
 }
 
 /**
@@ -76,7 +78,7 @@ void DriverLogServerController::update_scd()
  *     "controller" : "log_server"
  *     "action" : "flush",
  *   },
- *   "filename" : "B-00-201112011437-38743-I-C.SCD"
+ *   "filename" : "cclog20120113.txt"
  *   }
  * }
  *
@@ -93,49 +95,36 @@ void DriverLogServerController::flush()
 void DriverLogServerHandler::init()
 {
     // call back for drum dispatcher
-    LogServerStorage::get()->drumDispatcher().registerOp(
-            LogServerStorage::DrumDispatcherImpl::UNIQUE_KEY_CHECK,
+    LogServerStorage::get()->uuidDrumDispatcher().registerOp(
+            LogServerStorage::UuidDrumDispatcherType::UNIQUE_KEY_CHECK,
             boost::bind(&DriverLogServerHandler::onUniqueKeyCheck, this, _1, _2, _3));
 
-    LogServerStorage::get()->drumDispatcher().registerOp(
-            LogServerStorage::DrumDispatcherImpl::DUPLICATE_KEY_CHECK,
+    LogServerStorage::get()->uuidDrumDispatcher().registerOp(
+            LogServerStorage::UuidDrumDispatcherType::DUPLICATE_KEY_CHECK,
             boost::bind(&DriverLogServerHandler::onDuplicateKeyCheck, this, _1, _2, _3));
 
     // collections of which log need to be updated
     driverCollections_ = LogServerCfg::get()->getDriverCollections();
-
-    // cclog file for output
-    cclogFileName_ = LogServerCfg::get()->getCclogOutFile();
-    {
-        std::ifstream inf;
-        inf.open(cclogFileName_.c_str());
-        if (!inf.good())
-        {
-            // create if not existed
-            std::ifstream out;
-            out.open(cclogFileName_.c_str());
-            out.close();
-        }
-        inf.close();
-    }
-    cclogFile_.reset(new std::ofstream);
-    cclogFile_->open(cclogFileName_.c_str(), fstream::out/* | fstream::app*/); //FIXME
-    if (!cclogFile_->good())
-    {
-        std::string msg = "Failed to open cclog file for output: " + cclogFileName_;
-        throw std::runtime_error(msg.c_str());
-    }
+    storageBaseDir_ = LogServerCfg::get()->getStorageBaseDir();
 }
 
 void DriverLogServerHandler::processCclog()
 {
     // Get raw request which was originally stored in cclog
-    izenelib::driver::Value raw_request = request()[Keys::line];
-    std::string fileName = asString(request()[Keys::filename]);
+    izenelib::driver::Value raw_request = request()[Keys::record];
+    std::string fileName = storageBaseDir_ + "/cclog/" + asString(request()[Keys::filename]);
 
-    std::string raw;
-    jsonWriter_.write(raw_request, raw);
-    std::cout << raw << std::endl;
+    if (!openFile(fileName))
+    {
+        std::string msg = "Server Error: Failed to create file " + fileName;
+        response().setSuccess(false);
+        response().addError(msg);
+        return;
+    }
+
+    std::string json;
+    jsonWriter_.write(raw_request, json);
+    std::cout << fileName << " --> " << json << std::endl;
 
     std::string collection = asString(raw_request[Keys::collection]);
     if (!skipProcess(collection))
@@ -145,44 +134,87 @@ void DriverLogServerHandler::processCclog()
 
         if (controller == "documents" && action == "visit")
         {
-            processDocVisit(raw_request, raw);
+            encodeFileName(json, fileName);
+            processDocVisit(raw_request, json);
         }
         else if (controller == "recommend" && action == "visit_item")
         {
-            processRecVisitItem(raw_request, raw);
+            encodeFileName(json, fileName);
+            processRecVisitItem(raw_request, json);
         }
         else if (controller == "recommend" && action == "purchase_item")
         {
-            processRecPurchaseItem(raw_request, raw);
+            encodeFileName(json, fileName);
+            processRecPurchaseItem(raw_request, json);
         }
         else
         {
             // output directly if there is no need to update
-            ouputCclog(raw);
+            writeFile(fileName, json);
         }
     }
     else
     {
         // output directly if there is no need to update
-        ouputCclog(raw);
+        writeFile(fileName, json);
     }
 }
 
 void DriverLogServerHandler::processScd()
 {
+    std::string docid = asString(request()[Keys::DOCID]);
+    std::string doc = asString(request()[Keys::record]);
+    std::string fileName = storageBaseDir_ + "/scd/" + asString(request()[Keys::filename]);
 
+    std::cout << fileName << " --> " << docid << std::endl;
+    //std::cout << doc << std::endl;
+
+    if (docid.empty())
+    {
+        response().setSuccess(false);
+        response().addError("<DOCID> field is required!");
+        return;
+    }
+
+    if (!openFile(fileName))
+    {
+        std::string msg = "Server Error: Failed to create file " + fileName;
+        response().setSuccess(false);
+        response().addError(msg);
+        return;
+    }
+
+    try
+    {
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());
+        encodeFileName(doc, fileName);
+        LogServerStorage::get()->uuidDrum()->Check(Utilities::uuidToUint128(docid), doc);
+    }
+    catch (const std::exception& e)
+    {
+        std::string msg = e.what();
+        msg += " (DOCID is excepted to be uuid generated by SF1R)";
+        response().setSuccess(false);
+        response().addError(msg);
+    }
 }
 
 void DriverLogServerHandler::flush()
 {
     {
-        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
-        LogServerStorage::get()->drum()->Synchronize();
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());
+        LogServerStorage::get()->uuidDrum()->Synchronize();
     }
 
     {
-        boost::lock_guard<boost::mutex> lock(cclog_file_mutex_);
-        cclogFile_->flush();
+        for (FileMapT::iterator it = fileMap_.begin(); it != fileMap_.end(); it++)
+        {
+            if (it->second)
+            {
+                boost::lock_guard<boost::mutex> lock(it->second->mutex_);
+                it->second->of_->flush();
+            }
+        }
     }
 }
 
@@ -214,9 +246,9 @@ bool DriverLogServerHandler::skipProcess(const std::string& collection)
  */
 void DriverLogServerHandler::processDocVisit(izenelib::driver::Value& request, const std::string& raw)
 {
-    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());
     std::string docIdStr = asString(request[Keys::resource][Keys::DOCID]);
-    LogServerStorage::get()->drum()->Check(Utilities::uuidToUint128(docIdStr), raw);
+    LogServerStorage::get()->uuidDrum()->Check(Utilities::uuidToUint128(docIdStr), raw);
 }
 
 /**
@@ -239,9 +271,9 @@ void DriverLogServerHandler::processDocVisit(izenelib::driver::Value& request, c
  */
 void DriverLogServerHandler::processRecVisitItem(izenelib::driver::Value& request, const std::string& raw)
 {
-    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());
     std::string itemIdStr = asString(request[Keys::resource][Keys::ITEMID]);
-    LogServerStorage::get()->drum()->Check(Utilities::uuidToUint128(itemIdStr), raw);
+    LogServerStorage::get()->uuidDrum()->Check(Utilities::uuidToUint128(itemIdStr), raw);
 }
 
 /**
@@ -287,34 +319,37 @@ void DriverLogServerHandler::processRecPurchaseItem(izenelib::driver::Value& req
             cclogMergeQueue_.insert(std::make_pair(uuid, cclogMergeUnit));
         }
 
-        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->drumMutex());
-        LogServerStorage::get()->drum()->Check(uuid, raw);
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());
+        LogServerStorage::get()->uuidDrum()->Check(uuid, raw);
     }
 
     //std::cout << std::endl;
 }
 
 void DriverLogServerHandler::onUniqueKeyCheck(
-        const LogServerStorage::drum_key_t& uuid,
-        const LogServerStorage::drum_value_t& docidList,
-        const LogServerStorage::drum_aux_t& aux)
+        const LogServerStorage::uuid_t& uuid,
+        const LogServerStorage::raw_docid_list_t& docidList,
+        const std::string& aux)
 {
     //std::cout << "onUniqueKeyCheck " << Utilities::uint128ToUuid(uuid) << std::endl;
-    ouputCclog(aux);
+    std::string json = aux;
+    std::string fileName;
+    decodeFileName(json, fileName);
+    writeFile(fileName, json);
 }
 
 void DriverLogServerHandler::onDuplicateKeyCheck(
-        const LogServerStorage::drum_key_t& uuid,
-        const LogServerStorage::drum_value_t& docidList,
-        const LogServerStorage::drum_aux_t& aux)
+        const LogServerStorage::uuid_t& uuid,
+        const LogServerStorage::raw_docid_list_t& docidList,
+        const std::string& aux)
 {
     //std::cout << "onDuplicateKeyCheck " << Utilities::uint128ToUuid(uuid) << std::endl;
     std::set<uint128_t> newUuidSet;
     uint128_t newUuid;
     for (std::size_t i = 0; i < docidList.size(); i++)
     {
-        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDBMutex());
-        if (LogServerStorage::get()->docidDB()->get(docidList[i], newUuid))
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDrumMutex());
+        if (LogServerStorage::get()->docidDrum()->GetValue(docidList[i], newUuid))
         {
             newUuidSet.insert(newUuid);
         }
@@ -340,20 +375,16 @@ void DriverLogServerHandler::onDuplicateKeyCheck(
             newUuidStr = Utilities::uint128ToUuid(*sit);
             std::string log = aux;
             std::cout << oldUuidStr << " -> " << newUuidStr << std::endl;
-            std::cout << log;
+            //std::cout << log;
             boost::replace_all(log, oldUuidStr, newUuidStr);
-            std::cout << " -> " << std::endl;
-            std::cout << log << std::endl;
+            //std::cout << " -> " << std::endl;
+            //std::cout << "updated log: " << log << std::endl;
 
-            ouputCclog(log);
+            std::string fileName;
+            decodeFileName(log, fileName);
+            writeFile(fileName, log);
         }
     }
-}
-
-void DriverLogServerHandler::ouputCclog(const std::string& log)
-{
-    boost::lock_guard<boost::mutex> lock(cclog_file_mutex_);
-    (*cclogFile_) << log;
 }
 
 void DriverLogServerHandler::mergeCClog(boost::shared_ptr<CCLogMerge>& cclogMergeUnit)
@@ -372,13 +403,79 @@ void DriverLogServerHandler::mergeCClog(boost::shared_ptr<CCLogMerge>& cclogMerg
         boost::replace_all(log, oldUuidStr, newUuidStr);
     }
 
-    std::cout << "merged log: " << log << std::endl;
-    ouputCclog(log);
+    //std::cout << "updated log: " << log << std::endl;
+    std::string fileName;
+    decodeFileName(log, fileName);
+    writeFile(fileName, log);
 
     // remove merged
     for (it = cclogMergeUnit->uuidUpdateVec_.begin(); it != cclogMergeUnit->uuidUpdateVec_.end(); ++it)
     {
         cclogMergeQueue_.erase(it->first);
+    }
+}
+
+boost::shared_ptr<DriverLogServerHandler::OutFile>& DriverLogServerHandler::openFile(const std::string& fileName)
+{
+    FileMapT::iterator it = fileMap_.find(fileName);
+
+    if (it == fileMap_.end() || !it->second)
+    {
+        // create file if not existed
+        std::ifstream inf;
+        inf.open(fileName.c_str());
+        if (!inf.good())
+        {
+            std::ifstream out;
+            out.open(fileName.c_str());
+            out.close();
+        }
+        inf.close();
+
+        // open file for output
+        boost::shared_ptr<OutFile> outFile(new OutFile);
+        outFile->of_.reset(new std::ofstream);
+        outFile->of_->open(fileName.c_str(), fstream::out|fstream::app);
+        if (outFile->of_->good())
+        {
+            fileMap_[fileName] = outFile;
+        }
+        else
+        {
+            fileMap_[fileName].reset();
+        }
+    }
+
+    return fileMap_[fileName];
+}
+
+void DriverLogServerHandler::encodeFileName(std::string& record, const std::string& fileName)
+{
+    record.append("}");
+    record.append(fileName);
+}
+
+void DriverLogServerHandler::decodeFileName(std::string& record, std::string& fileName)
+{
+    std::size_t pos = record.find_last_of('}');
+    if (pos != std::string::npos)
+    {
+        fileName = record.substr(pos+1);
+        record.erase(pos);
+    }
+}
+
+void DriverLogServerHandler::writeFile(const std::string& fileName, const std::string& record)
+{
+    boost::shared_ptr<OutFile>& outFile = openFile(fileName);
+    if (outFile)
+    {
+        boost::lock_guard<boost::mutex> lock(outFile->mutex_);
+        (*outFile->of_) << record;
+    }
+    else
+    {
+        std::cerr << "Failed to write file: " << fileName << std::endl;
     }
 }
 

@@ -8,8 +8,13 @@
 
 #include <common/ScdWriter.h>
 #include <common/Utilities.h>
+
+//#define USE_LOG_SERVER
+#ifdef USE_LOG_SERVER
 #include <log-manager/LogServerRequest.h>
 #include <log-manager/LogServerConnection.h>
+#endif
+
 #include <boost/unordered_set.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/dynamic_bitset.hpp>
@@ -18,8 +23,7 @@
 using namespace sf1r;
 using izenelib::util::UString;
 
-// #define PM_PROFILER
-// #define USE_LOG_SERVER
+//#define PM_PROFILER
 
 ProductManager::ProductManager(
         const std::string& work_dir,
@@ -84,12 +88,12 @@ bool ProductManager::Recover()
 
 ProductClustering* ProductManager::GetClustering_()
 {
-    if(clustering_==NULL)
+    if (!clustering_)
     {
-        if(config_.enable_clustering_algo)
+        if (config_.enable_clustering_algo)
         {
             clustering_ = new ProductClustering(work_dir_+"/clustering", config_);
-            if(!clustering_->Open())
+            if (!clustering_->Open())
             {
                 std::cout<<"ProductClustering open failed"<<std::endl;
                 delete clustering_;
@@ -111,7 +115,7 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
         if (util_.GetPrice(doc, price))
         {
             UString docid;
-            if( doc.getProperty(config_.docid_property_name, docid))
+            if (doc.getProperty(config_.docid_property_name, docid))
             {
                 std::string docid_str;
                 docid.convertString(docid_str, UString::UTF_8);
@@ -125,7 +129,7 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
         }
     }
     ProductClustering* clustering = GetClustering_();
-    if( clustering == NULL )
+    if (!clustering)
     {
         UString uuid;
         UuidGenerator::Gen(uuid);
@@ -247,10 +251,10 @@ bool ProductManager::FinishHook()
         jobScheduler_.addTask(task);
     }
 
-    if(clustering_!=NULL)
+    if (clustering_)
     {
         uint32_t max_in_group = 20;
-        if(!clustering_->Run())
+        if (!clustering_->Run())
         {
             std::cout<<"ProductClustering Run failed"<<std::endl;
             return false;
@@ -263,7 +267,7 @@ bool ProductManager::FinishHook()
 
         //output DOCID -> uuid map SCD
         ScdWriter* uuid_map_writer = NULL;
-        if(!config_.uuid_map_path.empty() )
+        if (!config_.uuid_map_path.empty())
         {
             boost::filesystem::create_directories(config_.uuid_map_path);
             uuid_map_writer = new ScdWriter(config_.uuid_map_path, INSERT_SCD);
@@ -273,11 +277,11 @@ bool ProductManager::FinishHook()
 #ifdef USE_LOG_SERVER
         LogServerConnection& conn = LogServerConnection::instance();
 #endif
-        for(uint32_t gid = 0;gid<group_info.size();gid++)
+        for (uint32_t gid = 0; gid < group_info.size(); gid++)
         {
             std::vector<GroupTableType::DocIdType> in_group = group_info[gid];
-            if(in_group.size()<2) continue;
-            if(max_in_group >0 && in_group.size()>max_in_group) continue;
+            if (in_group.size() < 2) continue;
+            if (max_in_group > 0 && in_group.size() > max_in_group) continue;
             std::sort(in_group.begin(), in_group.end());
             //use the smallest docid as uuid
             izenelib::util::UString docname(in_group[0], izenelib::util::UString::UTF_8);
@@ -294,13 +298,13 @@ bool ProductManager::FinishHook()
             doc.property(config_.uuid_property_name) = uuid;
             util_.SetItemCount(doc, in_group.size());
             g2doc_map.insert(std::make_pair(gid, doc));
-            if(uuid_map_writer!=NULL)
+            if (uuid_map_writer)
             {
 #ifdef USE_LOG_SERVER
                 UpdateUUIDRequest uuidReq;
                 uuidReq.param_.uuid_ = Utilities::uuidToUint128(uuidstr);
 #endif
-                for(uint32_t i=0;i<in_group.size();i++)
+                for (uint32_t i = 0; i < in_group.size(); i++)
                 {
                     PMDocumentType map_doc;
                     map_doc.property(config_.docid_property_name) = izenelib::util::UString(in_group[i], izenelib::util::UString::UTF_8);
@@ -332,14 +336,14 @@ bool ProductManager::FinishHook()
         izenelib::util::ClockTimer timer;
 #endif
         uuid_update_list.reserve(data_source_->GetMaxDocId());
-        for(uint32_t docid=1; docid <= data_source_->GetMaxDocId(); ++docid )
+        for (uint32_t docid = 1; docid <= data_source_->GetMaxDocId(); ++docid)
         {
-            if(docid%100000==0)
+            if (docid % 100000 == 0)
             {
                 LOG(INFO)<<"Process "<<docid<<" docs"<<std::endl;
             }
 #ifdef PM_PROFILER
-            if(docid%10 == 0)
+            if (docid % 10 == 0)
             {
                 LOG(INFO)<<"PM_PROFILER : ["<<has_comparison_count<<"] "<<t1<<","<<t2<<","<<t3<<","<<t4<<std::endl;
             }
@@ -348,7 +352,7 @@ bool ProductManager::FinishHook()
 #ifdef PM_PROFILER
             timer.restart();
 #endif
-            if(!data_source_->GetDocument(docid, doc) )
+            if (!data_source_->GetDocument(docid, doc))
             {
                 continue;
             }
@@ -363,9 +367,9 @@ bool ProductManager::FinishHook()
             udocid.convertString(sdocid, izenelib::util::UString::UTF_8);
             GroupTableType::GroupIdType group_id;
             bool in_group = false;
-            if(group_table->GetGroupId(sdocid, group_id))
+            if (group_table->GetGroupId(sdocid, group_id))
             {
-                if(g2doc_map.find(group_id)!=g2doc_map.end())
+                if (g2doc_map.find(group_id)!=g2doc_map.end())
                 {
                     in_group = true;
                 }
@@ -374,7 +378,7 @@ bool ProductManager::FinishHook()
 //             uint32_t itemcount = 1;
 //             std::vector<std::string> docid_list_in_group;
 //             bool append = true;
-            if(in_group )
+            if (in_group)
             {
 //                 boost::unordered_map<GroupTableType::GroupIdType, UuidType>::iterator g2u_it = g2u_map.find(group_id);
                 boost::unordered_map<GroupTableType::GroupIdType, PMDocumentType>::iterator g2doc_it = g2doc_map.find(group_id);
@@ -384,7 +388,7 @@ bool ProductManager::FinishHook()
                 combine_price += price;
                 izenelib::util::UString base_udocid = doc.property(config_.docid_property_name).get<izenelib::util::UString>();
                 UString uuid = combine_doc.property(config_.uuid_property_name).get<izenelib::util::UString>();
-                if(udocid == base_udocid )
+                if (udocid == base_udocid)
                 {
                     combine_doc.copyPropertiesFromDocument(doc, false);
                     combine_doc.property(config_.price_property_name) = combine_price.ToUString();
@@ -407,24 +411,24 @@ bool ProductManager::FinishHook()
                 new_doc.eraseProperty(config_.uuid_property_name);
                 util_.SetItemCount(new_doc, 1);
                 op_processor_->Append(1, new_doc);
-                if(uuid_map_writer!=NULL)
+                if (uuid_map_writer)
                 {
                     PMDocumentType map_doc;
-                    map_doc.property(config_.docid_property_name) = udocid; 
+                    map_doc.property(config_.docid_property_name) = udocid;
                     map_doc.property(config_.uuid_property_name) = uuid;
                     uuid_map_writer->Append(map_doc);
                 }
                 ++append_count;
             }
         }
-        if(uuid_map_writer!=NULL)
+        if (uuid_map_writer)
         {
             uuid_map_writer->Close();
             delete uuid_map_writer;
         }
         //process the comparison items.
         boost::unordered_map<GroupTableType::GroupIdType, PMDocumentType>::iterator g2doc_it = g2doc_map.begin();
-        while( g2doc_it!= g2doc_map.end())
+        while (g2doc_it != g2doc_map.end())
         {
             PMDocumentType& doc = g2doc_it->second;
             PMDocumentType new_doc(doc);
@@ -437,14 +441,14 @@ bool ProductManager::FinishHook()
 
         //process update_list
         LOG(INFO)<<"Total update list count : "<<uuid_update_list.size()<<std::endl;
-        for(uint32_t i=0;i<uuid_update_list.size();i++)
+        for (uint32_t i = 0; i < uuid_update_list.size(); i++)
         {
-            if(i%100000==0)
+            if (i % 100000 == 0)
             {
                 LOG(INFO)<<"Updated "<<i<<std::endl;
             }
             std::vector<uint32_t> update_docid_list(1, uuid_update_list[i].first);
-            if(!data_source_->UpdateUuid(update_docid_list, uuid_update_list[i].second) )
+            if (!data_source_->UpdateUuid(update_docid_list, uuid_update_list[i].second))
             {
                 LOG(INFO)<<"UpdateUuid fail for docid : "<<uuid_update_list[i].first<<" | "<<uuid_update_list[i].second<<std::endl;
             }
@@ -479,7 +483,7 @@ bool ProductManager::UpdateADoc(const Document& doc)
         return false;
     }
     boost::mutex::scoped_lock lock(human_mutex_);
-    if(!editor_->UpdateADoc(doc))
+    if (!editor_->UpdateADoc(doc))
     {
         error_ = editor_->GetLastError();
         return false;
@@ -498,7 +502,7 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, PMDocumen
         return false;
     }
     boost::mutex::scoped_lock lock(human_mutex_);
-    if(!editor_->AddGroup(docid_list, info, option))
+    if (!editor_->AddGroup(docid_list, info, option))
     {
         error_ = editor_->GetLastError();
         return false;
@@ -521,7 +525,7 @@ bool ProductManager::AppendToGroup(const UString& uuid, const std::vector<uint32
         return false;
     }
     boost::mutex::scoped_lock lock(human_mutex_);
-    if(!editor_->AppendToGroup(uuid, docid_list, option))
+    if (!editor_->AppendToGroup(uuid, docid_list, option))
     {
         error_ = editor_->GetLastError();
         return false;
@@ -541,7 +545,7 @@ bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint
         return false;
     }
     boost::mutex::scoped_lock lock(human_mutex_);
-    if(!editor_->RemoveFromGroup(uuid, docid_list, option))
+    if (!editor_->RemoveFromGroup(uuid, docid_list, option))
     {
         error_ = editor_->GetLastError();
         return false;

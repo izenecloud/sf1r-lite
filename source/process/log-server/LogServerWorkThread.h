@@ -2,7 +2,7 @@
  * @file LogServerWorkThread.h
  * @author Zhongxia Li
  * @date Jan 11, 2012
- * @brief 
+ * @brief
  */
 #ifndef LOG_SERVER_WORK_THREAD_H_
 #define LOG_SERVER_WORK_THREAD_H_

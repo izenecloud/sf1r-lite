@@ -91,17 +91,6 @@ public:
      */
     bool flush();
 
-    /*
-    * @brief create language identifier instance for TextSummarizationSubManager
-    */
-    void setLangId(std::string& langIdDbPath);
-
-
-    ilplib::langid::Analyzer* getLangId()
-    {
-        return langIdAnalyzer_;
-    }
-
     /**
      * @brief inserts a new document. Has no effect if a document with the same
      * id exists
@@ -454,18 +443,12 @@ private:
 
     boost::threadpool::pool threadPool_;
 
-    ilplib::langid::Analyzer* langIdAnalyzer_;
-
-    ilplib::langid::Knowledge* langIdKnowledge_;
-
 private:
     static const std::string INDEX_FILE;
     static const std::string ACL_FILE;
     static const std::string PROPERTY_LENGTH_FILE;
     static const std::string PROPERTY_BLOCK_SUFFIX;
     static unsigned int CACHE_SIZE;
-    static ilplib::langid::Factory* langIdFactory;
-
 };
 
 } // end - namespace sf1r

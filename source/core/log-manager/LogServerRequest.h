@@ -16,6 +16,8 @@ public:
     {
         METHOD_UPDATE_UUID = 0,
         METHOD_SYNCHRONIZE,
+        METHOD_GET_UUID,
+        METHOD_GET_DOCID_LIST,
         COUNT_OF_METHODS
     };
 
@@ -33,11 +35,13 @@ class LogRequestRequestT : public LogServerRequest
 {
 public:
     LogRequestRequestT(METHOD method)
-        :LogServerRequest(method)
+        : LogServerRequest(method)
     {
     }
 
     RequestDataT param_;
+
+    MSGPACK_DEFINE(param_)
 };
 
 class UpdateUUIDRequest : public LogRequestRequestT<UUID2DocidList>
@@ -54,6 +58,24 @@ class SynchronizeRequest : public LogRequestRequestT<SynchronizeData>
 public:
     SynchronizeRequest()
         : LogRequestRequestT<SynchronizeData>(METHOD_SYNCHRONIZE)
+    {
+    }
+};
+
+class GetUUIDRequest : public LogRequestRequestT<Docid2UUID>
+{
+public:
+    GetUUIDRequest()
+        : LogRequestRequestT<Docid2UUID>(METHOD_GET_UUID)
+    {
+    }
+};
+
+class GetDocidListRequest : public LogRequestRequestT<UUID2DocidList>
+{
+public:
+    GetDocidListRequest()
+        : LogRequestRequestT<UUID2DocidList>(METHOD_GET_DOCID_LIST)
     {
     }
 };
