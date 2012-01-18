@@ -192,7 +192,7 @@ time_t Utilities::createTimeStamp()
     return tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
-time_t Utilities::createTimeStamp(ptime pt)
+time_t Utilities::createTimeStamp(const ptime& pt)
 {
     if (pt.is_not_a_date_time())
         return -1;

@@ -27,7 +27,7 @@ public:
     static int64_t convertDate(const std::string& dataStr);
 
     static time_t createTimeStamp();
-    static time_t createTimeStamp(boost::posix_time::ptime pt);
+    static time_t createTimeStamp(const boost::posix_time::ptime& pt);
     static time_t createTimeStamp(const izenelib::util::UString& text);
     static time_t createTimeStamp(const std::string& text);
 

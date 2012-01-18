@@ -85,7 +85,7 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
         {
             msgpack::type::tuple<Docid2UUID> params;
             req.params().convert(&params);
-            Docid2UUID docid2UUID = params.get<0>();
+            Docid2UUID& docid2UUID = params.get<0>();
 
             LogServerStorage::get()->docidDrum()->GetValue(docid2UUID.docid_, docid2UUID.uuid_);
             req.result(docid2UUID);
@@ -94,7 +94,7 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
         {
             msgpack::type::tuple<UUID2DocidList> params;
             req.params().convert(&params);
-            UUID2DocidList uuid2DocidList = params.get<0>();
+            UUID2DocidList& uuid2DocidList = params.get<0>();
 
             LogServerStorage::get()->uuidDrum()->GetValue(uuid2DocidList.uuid_, uuid2DocidList.docidList_);
             req.result(uuid2DocidList);
