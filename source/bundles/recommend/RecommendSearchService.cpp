@@ -1,7 +1,7 @@
 #include "RecommendSearchService.h"
 #include <recommend-manager/User.h>
 #include <recommend-manager/ItemCondition.h>
-#include <recommend-manager/UserManager.h>
+#include <recommend-manager/storage/UserManager.h>
 #include <recommend-manager/ItemManager.h>
 #include <recommend-manager/RecommenderFactory.h>
 #include <recommend-manager/RecommendParam.h>

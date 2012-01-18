@@ -1,6 +1,6 @@
 #include "RecommendBundleActivator.h"
 #include "RecommendBundleConfiguration.h"
-#include <recommend-manager/UserManager.h>
+#include <recommend-manager/storage/UserManager.h>
 #include <recommend-manager/ItemManager.h>
 #include <recommend-manager/VisitManager.h>
 #include <recommend-manager/PurchaseManager.h>
@@ -10,6 +10,7 @@
 #include <recommend-manager/RateManager.h>
 #include <recommend-manager/RecommenderFactory.h>
 #include <recommend-manager/ItemIdGenerator.h>
+#include <recommend-manager/storage/RecommendStorageFactory.h>
 #include <bundles/index/IndexSearchService.h>
 
 #include <aggregator-manager/SearchWorker.h>
@@ -69,6 +70,7 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
         searchService_.reset();
     }
 
+    storageFactory_.reset();
     userManager_.reset();
     itemManager_.reset();
     visitManager_.reset();
@@ -115,7 +117,7 @@ bool RecommendBundleActivator::init_(IndexSearchService* indexSearchService)
     if (! createDataDir_())
         return false;
 
-    createUser_();
+    createStorage_();
     createItem_(indexSearchService);
     createMining_();
     createEvent_();
@@ -201,11 +203,13 @@ void RecommendBundleActivator::createSCDDir_()
     bfs::create_directories(config_->orderSCDPath());
 }
 
-void RecommendBundleActivator::createUser_()
+void RecommendBundleActivator::createStorage_()
 {
-    bfs::path userDir = dataDir_ / "user";
-    bfs::create_directory(userDir);
-    userManager_.reset(new UserManager((userDir / "user.db").string()));
+    storageFactory_.reset(new RecommendStorageFactory(config_->collectionName_,
+                                                      dataDir_.string(),
+                                                      config_->cassandraConfig_));
+
+    userManager_.reset(storageFactory_->createUserManager());
 }
 
 void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchService)

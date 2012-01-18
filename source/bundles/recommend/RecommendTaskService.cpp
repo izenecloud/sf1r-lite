@@ -1,7 +1,7 @@
 #include "RecommendTaskService.h"
 #include "RecommendBundleConfiguration.h"
 #include <recommend-manager/User.h>
-#include <recommend-manager/UserManager.h>
+#include <recommend-manager/storage/UserManager.h>
 #include <recommend-manager/ItemManager.h>
 #include <recommend-manager/VisitManager.h>
 #include <recommend-manager/PurchaseManager.h>

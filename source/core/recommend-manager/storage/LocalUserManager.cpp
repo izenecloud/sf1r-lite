@@ -1,17 +1,18 @@
-#include "UserManager.h"
+#include "LocalUserManager.h"
+#include <recommend-manager/User.h>
 
 #include <glog/logging.h>
 
 namespace sf1r
 {
 
-UserManager::UserManager(const std::string& path)
+LocalUserManager::LocalUserManager(const std::string& path)
     : container_(path)
 {
     container_.open();
 }
 
-void UserManager::flush()
+void LocalUserManager::flush()
 {
     try
     {
@@ -23,7 +24,7 @@ void UserManager::flush()
     }
 }
 
-bool UserManager::addUser(const User& user)
+bool LocalUserManager::addUser(const User& user)
 {
     if (user.idStr_.empty())
         return false;
@@ -41,7 +42,7 @@ bool UserManager::addUser(const User& user)
     return result;
 }
 
-bool UserManager::updateUser(const User& user)
+bool LocalUserManager::updateUser(const User& user)
 {
     if (user.idStr_.empty())
         return false;
@@ -59,7 +60,7 @@ bool UserManager::updateUser(const User& user)
     return result;
 }
 
-bool UserManager::removeUser(const std::string& userId)
+bool LocalUserManager::removeUser(const std::string& userId)
 {
     bool result = false;
     try
@@ -74,7 +75,7 @@ bool UserManager::removeUser(const std::string& userId)
     return result;
 }
 
-bool UserManager::getUser(const std::string& userId, User& user)
+bool LocalUserManager::getUser(const std::string& userId, User& user)
 {
     bool result = false;
     try
@@ -87,21 +88,6 @@ bool UserManager::getUser(const std::string& userId, User& user)
     }
 
     return result;
-}
-
-unsigned int UserManager::userNum()
-{
-    return container_.numItems();
-}
-
-UserManager::SDBIterator UserManager::begin()
-{
-    return SDBIterator(container_);
-}
-
-UserManager::SDBIterator UserManager::end()
-{
-    return SDBIterator();
 }
 
 } // namespace sf1r
