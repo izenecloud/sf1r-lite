@@ -34,6 +34,7 @@
                             <xs:sequence>
                                 <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="1" maxOccurs="2"/>
                                 <xs:element ref="CronPara" minOccurs="0"/>
+                                <xs:element name="CassandraStorage" type="CassandraStorage" minOccurs="0" maxOccurs="1"/>
                             </xs:sequence>
                         </xs:complexType>
                     </xs:element>

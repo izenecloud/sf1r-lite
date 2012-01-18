@@ -40,4 +40,10 @@
     <xs:complexType name="PathType">
         <xs:attribute name="name" type="xs:string" use="required"/>
     </xs:complexType>
+
+    <xs:complexType name="CassandraStorage">
+        <xs:attribute name="enable" type="YesNoType"/>
+        <xs:attribute name="keyspace" type="xs:string"/>
+    </xs:complexType>
+
 </xs:schema>

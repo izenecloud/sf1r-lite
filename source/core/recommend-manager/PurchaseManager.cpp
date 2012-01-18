@@ -35,7 +35,7 @@ void PurchaseManager::flush()
 }
 
 bool PurchaseManager::addPurchaseItem(
-    userid_t userId,
+    const std::string& userId,
     const std::vector<itemid_t>& itemVec,
     bool isUpdateSimMatrix
 )
@@ -93,7 +93,7 @@ void PurchaseManager::buildSimMatrix()
     itemCFManager_.buildSimMatrix();
 }
 
-bool PurchaseManager::getPurchaseItemSet(userid_t userId, ItemIdSet& itemIdSet)
+bool PurchaseManager::getPurchaseItemSet(const std::string& userId, ItemIdSet& itemIdSet)
 {
     bool result = false;
     try

@@ -30,9 +30,10 @@ bool BOBRecommender::recommendImpl_(
     if (! getBrowseItems_(param))
         return false;
 
-    if (param.userId && !userEventFilter_.filter(param.userId, param.inputItemIds, filter))
+    if (!param.userIdStr.empty() &&
+        !userEventFilter_.filter(param.userIdStr, param.inputItemIds, filter))
     {
-        LOG(ERROR) << "failed to filter user event for user id " << param.userId;
+        LOG(ERROR) << "failed to filter user event for user id " << param.userIdStr;
         return false;
     }
 
@@ -49,16 +50,17 @@ bool BOBRecommender::getBrowseItems_(RecommendParam& param) const
     if (! param.inputItemIds.empty())
         return true;
 
-    if (param.userId == 0 || param.sessionIdStr.empty())
+    if (param.userIdStr.empty() ||
+        param.sessionIdStr.empty())
     {
         LOG(ERROR) << "failed to recommend with empty user/session id and empty input items";
         return false;
     }
 
     VisitSession visitSession;
-    if (! visitManager_.getVisitSession(param.userId, visitSession))
+    if (! visitManager_.getVisitSession(param.userIdStr, visitSession))
     {
-        LOG(ERROR) << "failed to get visit session items for user id " << param.userId;
+        LOG(ERROR) << "failed to get visit session items for user id " << param.userIdStr;
         return false;
     }
 

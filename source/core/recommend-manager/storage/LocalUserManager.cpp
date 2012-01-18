@@ -1,17 +1,18 @@
-#include "UserManager.h"
+#include "LocalUserManager.h"
+#include <recommend-manager/User.h>
 
 #include <glog/logging.h>
 
 namespace sf1r
 {
 
-UserManager::UserManager(const std::string& path)
+LocalUserManager::LocalUserManager(const std::string& path)
     : container_(path)
 {
     container_.open();
 }
 
-void UserManager::flush()
+void LocalUserManager::flush()
 {
     try
     {
@@ -23,12 +24,15 @@ void UserManager::flush()
     }
 }
 
-bool UserManager::addUser(userid_t userId, const User& user)
+bool LocalUserManager::addUser(const User& user)
 {
+    if (user.idStr_.empty())
+        return false;
+
     bool result = false;
     try
     {
-        result = container_.insertValue(userId, user);
+        result = container_.insertValue(user.idStr_, user);
     }
     catch(izenelib::util::IZENELIBException& e)
     {
@@ -38,12 +42,15 @@ bool UserManager::addUser(userid_t userId, const User& user)
     return result;
 }
 
-bool UserManager::updateUser(userid_t userId, const User& user)
+bool LocalUserManager::updateUser(const User& user)
 {
+    if (user.idStr_.empty())
+        return false;
+
     bool result = false;
     try
     {
-        result = container_.update(userId, user);
+        result = container_.update(user.idStr_, user);
     }
     catch(izenelib::util::IZENELIBException& e)
     {
@@ -53,7 +60,7 @@ bool UserManager::updateUser(userid_t userId, const User& user)
     return result;
 }
 
-bool UserManager::removeUser(userid_t userId)
+bool LocalUserManager::removeUser(const std::string& userId)
 {
     bool result = false;
     try
@@ -68,7 +75,7 @@ bool UserManager::removeUser(userid_t userId)
     return result;
 }
 
-bool UserManager::getUser(userid_t userId, User& user)
+bool LocalUserManager::getUser(const std::string& userId, User& user)
 {
     bool result = false;
     try
@@ -81,21 +88,6 @@ bool UserManager::getUser(userid_t userId, User& user)
     }
 
     return result;
-}
-
-unsigned int UserManager::userNum()
-{
-    return container_.numItems();
-}
-
-UserManager::SDBIterator UserManager::begin()
-{
-    return SDBIterator(container_);
-}
-
-UserManager::SDBIterator UserManager::end()
-{
-    return SDBIterator();
 }
 
 } // namespace sf1r

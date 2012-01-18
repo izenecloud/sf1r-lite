@@ -29,7 +29,6 @@ class EventManager;
 class RateManager;
 class RecommendBundleConfiguration;
 class ItemIdGenerator;
-class UserIdGenerator;
 struct RateParam;
 
 namespace directory
@@ -51,7 +50,6 @@ public:
         OrderManager& orderManager,
         EventManager& eventManager,
         RateManager& rateManager,
-        UserIdGenerator& userIdGenerator,
         ItemIdGenerator& itemIdGenerator
     );
 
@@ -62,19 +60,8 @@ public:
      */
     void buildCollection();
 
-    /**
-     * @p user.idStr_ must not be empty.
-     */
     bool addUser(const User& user);
-
-    /**
-     * @p user.idStr_ must not be empty.
-     */
     bool updateUser(const User& user);
-
-    /**
-     * @p userIdStr must not be empty.
-     */
     bool removeUser(const std::string& userIdStr);
 
     /**
@@ -240,7 +227,6 @@ private:
         const std::string& userIdStr,
         const std::string& orderIdStr,
         const OrderItemVec& orderItemVec,
-        userid_t userId,
         const std::vector<itemid_t>& itemIdVec
     );
 
@@ -265,7 +251,6 @@ private:
     OrderManager& orderManager_;
     EventManager& eventManager_;
     RateManager& rateManager_;
-    UserIdGenerator& userIdGenerator_;
     ItemIdGenerator& itemIdGenerator_;
 
     JobScheduler jobScheduler_;

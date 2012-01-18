@@ -21,7 +21,7 @@ bool ColumnFamilyBase::truncateColumnFamily() const
     if (!isEnabled()) return false;
     try
     {
-        CassandraConnection::instance().getCassandraClient()->truncateColumnFamily(getName());
+        CassandraConnection::instance().getCassandraClient(getKeyspaceName())->truncateColumnFamily(getName());
     }
     CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
 
@@ -33,7 +33,7 @@ bool ColumnFamilyBase::dropColumnFamily() const
     if (!isEnabled()) return false;
     try
     {
-        CassandraConnection::instance().getCassandraClient()->dropColumnFamily(getName());
+        CassandraConnection::instance().getCassandraClient(getKeyspaceName())->dropColumnFamily(getName());
     }
     CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
 
@@ -56,7 +56,7 @@ bool ColumnFamilyBase::getSlice(const string& start, const string& finish, int32
         pred.slice_range.__set_reversed(reversed);
 
         vector<ColumnOrSuperColumn> raw_column_list;
-        CassandraConnection::instance().getCassandraClient()->getRawSlice(
+        CassandraConnection::instance().getCassandraClient(getKeyspaceName())->getRawSlice(
                 raw_column_list,
                 getKey(),
                 col_parent,
@@ -96,7 +96,7 @@ bool ColumnFamilyBase::deleteRow()
     {
         ColumnPath col_path;
         col_path.__set_column_family(getName());
-        CassandraConnection::instance().getCassandraClient()->remove(
+        CassandraConnection::instance().getCassandraClient(getKeyspaceName())->remove(
                 getKey(),
                 col_path);
     }
@@ -119,7 +119,7 @@ bool ColumnFamilyBase::getCount(int32_t& count, const string& start, const strin
         pred.slice_range.__set_finish(finish);
         //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
 
-        count = CassandraConnection::instance().getCassandraClient()->getCount(
+        count = CassandraConnection::instance().getCassandraClient(getKeyspaceName())->getCount(
                 getKey(),
                 col_parent,
                 pred);

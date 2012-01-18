@@ -17,6 +17,7 @@
 #include <configuration-manager/DistributedUtilConfig.h>
 #include <configuration-manager/FirewallConfig.h>
 #include <configuration-manager/CollectionParameterConfig.h>
+#include <configuration-manager/CassandraStorageConfig.h>
 #include <mining-manager/faceted-submanager/ontology_rep_item.h>
 #include <core/common/TermTypeDetector.h>
 
@@ -749,6 +750,10 @@ private:
     /// @brief                  Parse <ProductBundle> <Parameter>
     /// @param product          Pointer to the Element
     void parseProductBundleParam(const ticpp::Element * product, CollectionMeta & collectionMeta);
+
+    /// @brief                  Parse <CassandraStorage>
+    /// @param params           Params containing <CassandraStorage>
+    void parseCassandraStorageParam(CollectionParameterConfig& params, CassandraStorageConfig& cassandraConfig);
 
     /// @brief                  Parse <ProductBundle> <Schema>
     /// @param product           Pointer to the Element

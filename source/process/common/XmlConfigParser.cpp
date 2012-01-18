@@ -1201,6 +1201,19 @@ void CollectionConfig::parseProductBundleParam(const ticpp::Element * product_pa
         collectionMeta.productBundleConfig_->collectionDataDirectories_.assign(directories.begin(), directories.end());
     }
     params.Get("CronPara/value", collectionMeta.productBundleConfig_->cron_);
+
+    CassandraStorageConfig& cassandraConfig = collectionMeta.productBundleConfig_->cassandraConfig_;
+    parseCassandraStorageParam(params, cassandraConfig);
+
+    LOG(INFO) << "ProductPundle [" << collectionMeta.productBundleConfig_->collectionName_
+              << "][CassandraStorage] enable: " << cassandraConfig.enable
+              << ", keyspace: " << cassandraConfig.keyspace;
+}
+
+void CollectionConfig::parseCassandraStorageParam(CollectionParameterConfig& params, CassandraStorageConfig& cassandraConfig)
+{
+    params.Get("CassandraStorage/enable", cassandraConfig.enable);
+    params.Get("CassandraStorage/keyspace", cassandraConfig.keyspace);
 }
 
 void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_schema, CollectionMeta & collectionMeta)
@@ -1691,12 +1704,10 @@ void CollectionConfig::parseRecommendBundleParam(const ticpp::Element * recParam
     params.Get("FreqItemSet/enable", recBundleConfig->freqItemSetEnable_);
     params.Get("FreqItemSet/minfreq", recBundleConfig->itemSetMinFreq_);
 
-    LOG(INFO) << "RecommendBundle [CronPara] value: " << recBundleConfig->cronStr_;
-    LOG(INFO) << "RecommendBundle [CacheSize] purchase: " << recBundleConfig->purchaseCacheSize_;
-    LOG(INFO) << "RecommendBundle [CacheSize] visit: " << recBundleConfig->visitCacheSize_;
-    LOG(INFO) << "RecommendBundle [CacheSize] index: " << recBundleConfig->indexCacheSize_;
-    LOG(INFO) << "RecommendBundle [FreqItemSet] enable: " << recBundleConfig->freqItemSetEnable_;
-    LOG(INFO) << "RecommendBundle [FreqItemSet] min freq: " << recBundleConfig->itemSetMinFreq_;
+    CassandraStorageConfig& cassandraConfig = recBundleConfig->cassandraConfig_;
+    parseCassandraStorageParam(params, cassandraConfig);
+
+    LOG(INFO) << "RecommendBundle " << *recBundleConfig;
 }
 
 void CollectionConfig::parseRecommendBundleSchema(const ticpp::Element * recSchemaNode, CollectionMeta & collectionMeta)

@@ -92,8 +92,7 @@ bool CobraProcess::initLogManager()
     }
     if (!sflog->initCassandra(cassandra_conn))
     {
-        std::cerr << "Init CassandraConnection with " << cassandra_conn << " failed!" << std::endl;
-        return false;
+        std::cerr << "warning: Init CassandraConnection with " << cassandra_conn << " failed!" << std::endl;
     }
     std::string log_server_host;
     uint16_t rpc_port, driver_port;

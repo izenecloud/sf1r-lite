@@ -41,7 +41,7 @@ public:
      * @return true for succcess, false for failure
      */
     bool addPurchaseItem(
-        userid_t userId,
+        const std::string& userId,
         const std::vector<itemid_t>& itemVec,
         bool isUpdateSimMatrix = true
     );
@@ -58,14 +58,14 @@ public:
      *                  has not purchased any item.
      * @return true for success, false for error happened.
      */
-    bool getPurchaseItemSet(userid_t userId, ItemIdSet& itemIdSet);
+    bool getPurchaseItemSet(const std::string& userId, ItemIdSet& itemIdSet);
 
     /**
      * The number of users who have purchased items.
      */
     unsigned int purchaseUserNum();
 
-    typedef izenelib::sdb::unordered_sdb_tc<userid_t, ItemIdSet, ReadWriteLock> SDBType;
+    typedef izenelib::sdb::unordered_sdb_tc<std::string, ItemIdSet, ReadWriteLock> SDBType;
     typedef izenelib::sdb::SDBCursorIterator<SDBType> SDBIterator;
     SDBIterator begin();
     SDBIterator end();

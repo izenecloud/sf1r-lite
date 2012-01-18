@@ -10,10 +10,12 @@
 #include "RecommendSchema.h"
 #include <configuration-manager/PropertyConfig.h>
 #include <configuration-manager/CollectionPath.h>
+#include <configuration-manager/CassandraStorageConfig.h>
 
 #include <util/osgi/BundleConfiguration.h>
 
 #include <string>
+#include <iostream>
 
 namespace sf1r
 {
@@ -44,6 +46,9 @@ public:
     bool freqItemSetEnable_;
     std::size_t itemSetMinFreq_;
 
+    // <RecommendBundle><Parameter><CassandraStorage>
+    CassandraStorageConfig cassandraConfig_;
+
     // <Collection><RecommendBundle><Schema>
     RecommendSchema recommendSchema_;
 
@@ -58,6 +63,8 @@ public:
     }
 
 };
+
+std::ostream& operator<<(std::ostream& out, const RecommendBundleConfiguration& config);
 
 } // namespace sf1r
 

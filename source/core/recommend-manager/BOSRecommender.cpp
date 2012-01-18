@@ -30,9 +30,10 @@ bool BOSRecommender::recommendImpl_(
     if (! getCartItems_(param))
         return false;
 
-    if (param.userId && !userEventFilter_.filter(param.userId, param.inputItemIds, filter))
+    if (!param.userIdStr.empty() &&
+        !userEventFilter_.filter(param.userIdStr, param.inputItemIds, filter))
     {
-        LOG(ERROR) << "failed to filter user event for user id " << param.userId;
+        LOG(ERROR) << "failed to filter user event for user id " << param.userIdStr;
         return false;
     }
 
@@ -46,18 +47,18 @@ bool BOSRecommender::recommendImpl_(
 
 bool BOSRecommender::getCartItems_(RecommendParam& param) const
 {
-    if (!param.inputItemIds.empty())
+    if (! param.inputItemIds.empty())
         return true;
 
-    if (param.userId == 0)
+    if (param.userIdStr.empty())
     {
         LOG(ERROR) << "failed to recommend with empty user id and empty input items";
         return false;
     }
 
-    if (!cartManager_.getCart(param.userId, param.inputItemIds))
+    if (!cartManager_.getCart(param.userIdStr, param.inputItemIds))
     {
-        LOG(ERROR) << "failed to get shopping cart items for user id " << param.userId;
+        LOG(ERROR) << "failed to get shopping cart items for user id " << param.userIdStr;
         return false;
     }
 

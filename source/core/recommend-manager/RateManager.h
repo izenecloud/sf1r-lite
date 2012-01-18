@@ -28,23 +28,23 @@ public:
     void flush();
 
     bool addRate(
-        userid_t userId,
+        const std::string& userId,
         itemid_t itemId,
         rate_t rate
     );
 
     bool removeRate(
-        userid_t userId,
+        const std::string& userId,
         itemid_t itemId
     );
 
     bool getItemRateMap(
-        userid_t userId,
+        const std::string& userId,
         ItemRateMap& itemRateMap
     );
 
 private:
-    typedef izenelib::sdb::unordered_sdb_tc<userid_t, ItemRateMap, ReadWriteLock> SDBType;
+    typedef izenelib::sdb::unordered_sdb_tc<std::string, ItemRateMap, ReadWriteLock> SDBType;
     SDBType container_;
 };
 

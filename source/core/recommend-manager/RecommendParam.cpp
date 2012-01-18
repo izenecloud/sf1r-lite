@@ -6,7 +6,6 @@ namespace sf1r
 RecommendParam::RecommendParam()
     : type(RECOMMEND_TYPE_NUM)
     , limit(0)
-    , userId(0)
 {
 }
 

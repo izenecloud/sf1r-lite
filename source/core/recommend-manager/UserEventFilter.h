@@ -32,14 +32,14 @@ public:
     );
 
     bool filter(
-        userid_t userId,
+        const std::string& userId,
         std::vector<itemid_t>& inputItemVec,
         ItemFilter& filter
     ) const;
 
     typedef std::map<itemid_t, std::string> ItemEventMap;
     bool addUserEvent(
-        userid_t userId,
+        const std::string& userId,
         std::vector<itemid_t>& inputItemVec,
         ItemRateMap& itemRateMap,
         ItemEventMap& itemEventMap,
@@ -48,46 +48,46 @@ public:
 
 private:
     bool filterRateItem_(
-        userid_t userId,
+        const std::string& userId,
         ItemFilter& filter
     ) const;
 
     bool filterPurchaseItem_(
-        userid_t userId,
+        const std::string& userId,
         ItemFilter& filter
     ) const;
 
     bool filterCartItem_(
-        userid_t userId,
+        const std::string& userId,
         ItemFilter& filter
     ) const;
 
     bool filterPreferenceItem_(
-        userid_t userId,
+        const std::string& userId,
         std::vector<itemid_t>& inputItemVec,
         ItemFilter& filter
     ) const;
 
     bool addRateItem_(
-        userid_t userId,
+        const std::string& userId,
         ItemRateMap& itemRateMap,
         ItemEventMap& itemEventMap
     ) const;
 
     bool addPurchaseItem_(
-        userid_t userId,
+        const std::string& userId,
         std::vector<itemid_t>& inputItemVec,
         ItemEventMap& itemEventMap
     ) const;
 
     bool addCartItem_(
-        userid_t userId,
+        const std::string& userId,
         std::vector<itemid_t>& inputItemVec,
         ItemEventMap& itemEventMap
     ) const;
 
     bool addPreferenceItem_(
-        userid_t userId,
+        const std::string& userId,
         std::vector<itemid_t>& inputItemVec,
         ItemRateMap& itemRateMap,
         ItemEventMap& itemEventMap,

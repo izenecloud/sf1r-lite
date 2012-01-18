@@ -66,7 +66,7 @@ bool BOERecommender::recommendImpl_(
     std::vector<RecommendItem>& recItemVec
 )
 {
-    if (param.userId == 0)
+    if (param.userIdStr.empty())
     {
         LOG(ERROR) << "BOE type recommend requires non-empty userId";
         return false;
@@ -74,10 +74,10 @@ bool BOERecommender::recommendImpl_(
 
     UserEventFilter::ItemEventMap itemEventMap;
     ItemRateMap itemRateMap;
-    if (! userEventFilter_.addUserEvent(param.userId, param.inputItemIds,
+    if (! userEventFilter_.addUserEvent(param.userIdStr, param.inputItemIds,
                                         itemRateMap, itemEventMap, filter))
     {
-        LOG(ERROR) << "failed to add user event for user id " << param.userId;
+        LOG(ERROR) << "failed to add user event for user id " << param.userIdStr;
         return false;
     }
 

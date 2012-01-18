@@ -10,7 +10,6 @@
 
 #include "CassandraConnection.h"
 #include "PriceHistory.h"
-#include "SourceCount.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
@@ -56,13 +55,7 @@ bool LogManager::init(const std::string& pathParam, const std::string& language)
 
 bool LogManager::initCassandra(const std::string& logPath)
 {
-    if (CassandraConnection::instance().init(logPath))
-    {
-        PriceHistory::createColumnFamily();
-//          SourceCount::createColumnFamily();
-    }
-
-    return true;
+    return CassandraConnection::instance().init(logPath);
 }
 
 LogManager::~LogManager()

@@ -33,7 +33,6 @@ struct RecommendParam
     std::vector<std::string> includeItems;
     std::vector<std::string> excludeItems;
 
-    userid_t userId;
     std::vector<itemid_t> inputItemIds;
     std::vector<itemid_t> includeItemIds;
     std::vector<itemid_t> excludeItemIds;

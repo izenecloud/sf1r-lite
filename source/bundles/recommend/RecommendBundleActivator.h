@@ -38,7 +38,7 @@ class EventManager;
 class RateManager;
 class RecommenderFactory;
 class ItemIdGenerator;
-class UserIdGenerator;
+class RecommendStorageFactory;
 
 class RecommendBundleActivator : public IBundleActivator, public IServiceTrackerCustomizer
 {
@@ -55,7 +55,7 @@ private:
     bool createDataDir_();
     bool openDataDirectory_(std::string& dataPath);
     void createSCDDir_();
-    void createUser_();
+    void createStorage_();
     void createItem_(IndexSearchService* indexSearchService);
     void createMining_();
     void createEvent_();
@@ -75,6 +75,7 @@ private:
     DirectoryRotator directoryRotator_;
     boost::filesystem::path dataDir_;
 
+    boost::scoped_ptr<RecommendStorageFactory> storageFactory_;
     boost::scoped_ptr<UserManager> userManager_;
     boost::scoped_ptr<ItemManager> itemManager_;
     boost::scoped_ptr<VisitManager> visitManager_;
@@ -84,7 +85,6 @@ private:
     boost::scoped_ptr<EventManager> eventManager_;
     boost::scoped_ptr<RateManager> rateManager_;
     boost::scoped_ptr<RecommenderFactory> recommenderFactory_;
-    boost::scoped_ptr<UserIdGenerator> userIdGenerator_;
     boost::scoped_ptr<ItemIdGenerator> itemIdGenerator_;
 
     boost::scoped_ptr<CoVisitManager> coVisitManager_;

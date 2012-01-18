@@ -17,11 +17,13 @@ namespace sf1r
 {
 
 ProductPriceTrend::ProductPriceTrend(
+        const CassandraStorageConfig& cassandraConfig,
         const string& collection_name,
         const string& data_dir,
         const vector<string>& group_prop_vec,
         const vector<uint32_t>& time_int_vec)
-    : collection_name_(collection_name)
+    : cassandraConfig_(cassandraConfig)
+    , collection_name_(collection_name)
     , data_dir_(data_dir)
     , group_prop_vec_(group_prop_vec)
     , time_int_vec_(time_int_vec)
@@ -41,7 +43,14 @@ ProductPriceTrend::~ProductPriceTrend()
 
 bool ProductPriceTrend::Init()
 {
-    if (!PriceHistory::is_enabled) return false;
+    if (!cassandraConfig_.enable)
+        return false;
+
+    PriceHistory::keyspace_name = cassandraConfig_.keyspace;
+    PriceHistory::createColumnFamily();
+
+    if (!PriceHistory::is_enabled)
+        return false;
 
     for (vector<string>::const_iterator it = group_prop_vec_.begin();
             it != group_prop_vec_.end(); ++it)

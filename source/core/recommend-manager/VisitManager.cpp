@@ -40,7 +40,7 @@ void VisitManager::flush()
 
 bool VisitManager::addVisitItem(
     const std::string& sessionId,
-    userid_t userId,
+    const std::string& userId,
     itemid_t itemId,
     bool isRecItem
 )
@@ -60,17 +60,17 @@ bool VisitManager::addVisitItem(
     return false;
 }
 
-bool VisitManager::getVisitItemSet(userid_t userId, ItemIdSet& itemIdSet)
+bool VisitManager::getVisitItemSet(const std::string& userId, ItemIdSet& itemIdSet)
 {
     return getVisitDB_(visitDB_, userId, itemIdSet);
 }
 
-bool VisitManager::getRecommendItemSet(userid_t userId, ItemIdSet& itemIdSet)
+bool VisitManager::getRecommendItemSet(const std::string& userId, ItemIdSet& itemIdSet)
 {
     return getVisitDB_(recommendDB_, userId, itemIdSet);
 }
 
-bool VisitManager::getVisitSession(userid_t userId, VisitSession& visitSession)
+bool VisitManager::getVisitSession(const std::string& userId, VisitSession& visitSession)
 {
     bool result = false;
     try
@@ -103,7 +103,7 @@ VisitManager::VisitIterator VisitManager::end()
 
 bool VisitManager::updateVisitDB_(
     VisitDBType& db,
-    userid_t userId,
+    const std::string& userId,
     itemid_t itemId
 )
 {
@@ -133,7 +133,7 @@ bool VisitManager::updateVisitDB_(
 
 bool VisitManager::getVisitDB_(
     VisitDBType& db,
-    userid_t userId,
+    const std::string& userId,
     ItemIdSet& itemIdSet
 )
 {
@@ -154,7 +154,7 @@ bool VisitManager::getVisitDB_(
 
 bool VisitManager::updateSessionDB_(
     const std::string& sessionId,
-    userid_t userId,
+    const std::string& userId,
     itemid_t itemId
 )
 {

@@ -10,6 +10,7 @@ INCLUDE_DIRECTORIES(
   ${Boost_INCLUDE_DIRS}
   ${TokyoCabinet_INCLUDE_DIRS}
   ${Glog_INCLUDE_DIRS}
+  ${Thrift_INCLUDE_DIR}
   )
 
 # sequences is important for some linker
@@ -49,6 +50,7 @@ SET(libs
   ${xml2_LIBRARIES}
   ${sqlite3_LIBRARIES}
   ${MYSQL_LIBRARIES}
+  ${Thrift_LIBS}
   )
 SET(Boost_USE_STATIC_LIBS OFF)
 FIND_PACKAGE(Boost ${Boost_FIND_VERSION}
@@ -62,6 +64,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   ADD_EXECUTABLE(t_UserManager
     Runner.cpp
     t_UserManager.cpp
+    UserManagerTestFixture.cpp
   )
   TARGET_LINK_LIBRARIES(t_UserManager ${libs})
   SET_TARGET_PROPERTIES(t_UserManager PROPERTIES
@@ -130,16 +133,6 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
   ADD_TEST(recommend-manager "${SF1RENGINE_ROOT}/testbin/t_OrderManager")
-
-  ADD_EXECUTABLE(t_UserIdGenerator
-    Runner.cpp
-    t_UserIdGenerator.cpp
-  )
-  TARGET_LINK_LIBRARIES(t_UserIdGenerator ${libs})
-  SET_TARGET_PROPERTIES(t_UserIdGenerator PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
-    )
-  ADD_TEST(recommend-manager "${SF1RENGINE_ROOT}/testbin/t_UserIdGenerator")
 
   ADD_EXECUTABLE(t_RateManager
     Runner.cpp
