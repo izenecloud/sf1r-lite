@@ -5,7 +5,7 @@
 #include <am/range/AmIterator.h>
 #include <libcassandra/util_functions.h>
 
-#include <boost/lexical_cast.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
 #include <algorithm>
 

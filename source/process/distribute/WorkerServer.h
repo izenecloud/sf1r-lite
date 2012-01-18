@@ -14,7 +14,6 @@
 #include <util/singleton.h>
 
 #include <common/CollectionManager.h>
-#include <common/Utilities.h>
 #include <common/JobScheduler.h>
 #include <controllers/CollectionHandler.h>
 #include <bundles/index/IndexSearchService.h>
@@ -56,7 +55,7 @@ public:
 
         identity_ = identity;
 
-        std::string identityLow = sf1r::Utilities::toLowerCopy(identity);
+        std::string identityLow = boost::to_lower_copy(identity);
         if (sf1r::SF1Config::get()->checkSearchWorker(identity))
         {
             CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(identity);

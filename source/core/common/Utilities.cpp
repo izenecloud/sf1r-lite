@@ -4,7 +4,8 @@
 #include <util/mkgmtime.h>
 
 #include <boost/token_iterator.hpp>
-#include <3rdparty/boost/uuid/uuid_io.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <vector>
 
@@ -19,7 +20,7 @@ void gregorianISO8601Parser(const std::string& dataStr, struct tm& atm)
 {
     try
     {
-        if(dataStr.find(" ") != string::npos)
+        if(dataStr.find(" ") != std::string::npos)
         {
             ptime t(time_from_string(dataStr));
             atm = to_tm(t);
@@ -29,30 +30,33 @@ void gregorianISO8601Parser(const std::string& dataStr, struct tm& atm)
             date d(from_simple_string(dataStr));
             atm = to_tm(d);
         }
-    }catch(std::exception& e)
+    }
+    catch (const std::exception& e)
     {
         ptime now = second_clock::local_time();
         atm = to_tm(now);
 
-        if(dataStr.find("/") != string::npos)
+        if (dataStr.find("/") != std::string::npos)
         {
-            try{
-            std::vector<std::string> ps = split(dataStr,"/");
-            size_t len = ps.size();
-            if(len == 3)
+            try
             {
-                size_t year = boost::lexical_cast<size_t>(ps[len-1]);
-                size_t month = boost::lexical_cast<size_t>(ps[len-2]);
-                size_t day = boost::lexical_cast<size_t>(ps[len-3]);
-                if (year > 1900 && month <= 12 && month > 0 && day <=31 && day >0)
+                std::vector<std::string> ps = split(dataStr, "/");
+                size_t len = ps.size();
+                if (len == 3)
                 {
-                    /// format 10/02/2009
-                    atm.tm_year = year > 1900 ? (year-1900):(year+2000-1900);   // tm_year is 1900 based
-                    atm.tm_mon = month >= 0 ? month:0;                          // tm_mon is 0 based
-                    atm.tm_mday = day >0 ? day:1;
+                    size_t year = boost::lexical_cast<size_t>(ps[len - 1]);
+                    size_t month = boost::lexical_cast<size_t>(ps[len - 2]);
+                    size_t day = boost::lexical_cast<size_t>(ps[len - 3]);
+                    if (year > 1900 && month <= 12 && month > 0 && day <= 31 && day > 0)
+                    {
+                        /// format 10/02/2009
+                        atm.tm_year = year > 1900 ? (year - 1900) : (year + 2000 - 1900);   // tm_year is 1900 based
+                        atm.tm_mon = month >= 0 ? month : 0;                                // tm_mon is 0 based
+                        atm.tm_mday = day >0 ? day : 1;
+                    }
                 }
             }
-            }catch(std::exception& e)
+            catch (const std::exception& e)
             {
                 ptime now = second_clock::local_time();
                 atm = to_tm(now);
@@ -71,11 +75,12 @@ void gregorianISOParser(const std::string& dataStr, struct tm& atm)
         size_t month = ymd.month;
         size_t day = ymd.day;
 
-        atm.tm_year = year > 1900 ? (year-1900):(year+2000-1900);   // tm_year is 1900 based
-        atm.tm_mon = month >= 0 ? month:0;                          // tm_mon is 0 based
-        atm.tm_mday = day >0 ? day:1;
+        atm.tm_year = year > 1900 ? (year - 1900) : (year + 2000 - 1900);   // tm_year is 1900 based
+        atm.tm_mon = month >= 0 ? month : 0;                                // tm_mon is 0 based
+        atm.tm_mday = day > 0 ? day : 1;
 
-    }catch(std::exception& e)
+    }
+    catch(std::exception& e)
     {
         ptime now = second_clock::local_time();
         atm = to_tm(now);
@@ -85,9 +90,9 @@ void gregorianISOParser(const std::string& dataStr, struct tm& atm)
 bool isAllDigit(const string& str)
 {
     size_t i ;
-    for(i = 0; i != str.length(); i++)
+    for (i = 0; i != str.length(); i++)
     {
-        if(!isdigit(str[i]))
+        if (!isdigit(str[i]))
         {
             return false;
         }
@@ -97,41 +102,43 @@ bool isAllDigit(const string& str)
 
 void convert(const std::string& dataStr, struct tm& atm)
 {
-    if((dataStr.find("/") != string::npos)||(dataStr.find("-") != string::npos))
+    if (dataStr.find_first_of("/-") != std::string::npos)
     {
         /// format 2009-10-02
         /// format 2009-10-02 23:12:21
         /// format 2009/10/02
         /// format 2009/10/02 23:12:21
         /// format 10/02/2009
-        gregorianISO8601Parser(dataStr,atm);
+        gregorianISO8601Parser(dataStr, atm);
     }
-    else if((dataStr.size() == 14)&&(isAllDigit(dataStr)))
+    else if (dataStr.size() == 14 && isAllDigit(dataStr))
     {
         /// format 20091009163011
-        try{
-        int offsets[] = {4,2,2,2,2,2};
-
-        boost::offset_separator f(offsets, offsets+5);
-        typedef boost::token_iterator_generator<boost::offset_separator>::type Iter;
-        Iter beg = boost::make_token_iterator<string>(dataStr.begin(),dataStr.end(),f);
-        Iter end = boost::make_token_iterator<string>(dataStr.end(),dataStr.end(),f);
-        int datetime[6];
-        memset(datetime,0,6*sizeof(int));
-        for(int i = 0;beg!=end;++beg,++i)
+        try
         {
-            datetime[i] = boost::lexical_cast<int>(*beg);
-            if(datetime[i] < 0)
-                datetime[i] = 0;
-        }
+            int offsets[] = {4, 2, 2, 2, 2, 2};
 
-        atm.tm_year = datetime[0] > 1900? (datetime[0]-1900):(datetime[0]+2000-1900);   // tm_year is 1900 based
-        atm.tm_mon = datetime[1] > 0? (datetime[1]-1):0;                                // tm_mon is 0 based
-        atm.tm_mday = datetime[2] > 0?datetime[2]:1;
-        atm.tm_hour = datetime[3] > 0?datetime[3]:0;
-        atm.tm_min = datetime[4] > 0?datetime[4]:0;
-        atm.tm_sec = datetime[5] > 0?datetime[5]:0;
-        }catch(std::exception& e)
+            boost::offset_separator f(offsets, offsets+5);
+            typedef boost::token_iterator_generator<boost::offset_separator>::type Iter;
+            Iter beg = boost::make_token_iterator<string>(dataStr.begin(), dataStr.end(), f);
+            Iter end = boost::make_token_iterator<string>(dataStr.end(), dataStr.end(), f);
+            int datetime[6];
+            memset(datetime, 0, 6 * sizeof(int));
+            for (int i = 0; beg != end; ++beg, ++i)
+            {
+                datetime[i] = boost::lexical_cast<int>(*beg);
+                if (datetime[i] < 0)
+                    datetime[i] = 0;
+            }
+
+            atm.tm_year = datetime[0] > 1900 ? (datetime[0] - 1900) : (datetime[0] + 2000 - 1900);  // tm_year is 1900 based
+            atm.tm_mon = datetime[1] > 0 ? (datetime[1] - 1) : 0;                                   // tm_mon is 0 based
+            atm.tm_mday = datetime[2] > 0 ? datetime[2] : 1;
+            atm.tm_hour = datetime[3] > 0 ? datetime[3] : 0;
+            atm.tm_min = datetime[4] > 0 ? datetime[4] : 0;
+            atm.tm_sec = datetime[5] > 0 ? datetime[5] : 0;
+        }
+        catch (const std::exception& e)
         {
             ptime now = second_clock::local_time();
             atm = to_tm(now);
@@ -141,7 +148,7 @@ void convert(const std::string& dataStr, struct tm& atm)
     {
         ptime now = second_clock::local_time();
         atm = to_tm(now);
-        gregorianISOParser(dataStr,atm);
+        gregorianISOParser(dataStr, atm);
     }
 }
 
@@ -152,11 +159,11 @@ int64_t Utilities::convertDate(const izenelib::util::UString& dateStr,const izen
     struct tm atm;
     convert(datestr, atm);
     char str[15];
-    memset(str,0,15);
+    memset(str, 0, 15);
 
     strftime(str, 14, "%Y%m%d%H%M%S", &atm);
 
-    outDateStr.assign(str,encoding);
+    outDateStr.assign(str, encoding);
 #ifdef WIN32
     return _mktime64(&atm);
 #else
@@ -168,7 +175,7 @@ int64_t Utilities::convertDate(const izenelib::util::UString& dateStr,const izen
 int64_t Utilities::convertDate(const std::string& dataStr)
 {
     struct tm atm;
-    convert(dataStr,atm);
+    convert(dataStr, atm);
 #ifdef WIN32
     return _mktime64(&atm);
 #else
@@ -176,30 +183,6 @@ int64_t Utilities::convertDate(const std::string& dataStr)
     return fastmktime(&atm);
 #endif
 
-}
-
-std::string Utilities::toLowerCopy(const std::string& str)
-{
-    std::string szResp(str);
-    std::transform(szResp.begin(), szResp.end(), szResp.begin(), (int(*)(int))std::tolower);
-    return szResp;
-}
-
-std::string Utilities::toUpperCopy(const std::string& str)
-{
-    std::string szResp(str);
-    std::transform(szResp.begin(), szResp.end(), szResp.begin(), (int(*)(int))std::toupper);
-    return szResp;
-}
-
-void Utilities::toLower(std::string& str)
-{
-    std::transform(str.begin(), str.end(), str.begin(), (int(*)(int))std::tolower);
-}
-
-void Utilities::toUpper(std::string& str)
-{
-    std::transform(str.begin(), str.end(), str.begin(), (int(*)(int))std::toupper);
 }
 
 time_t Utilities::createTimeStamp()
@@ -214,7 +197,7 @@ time_t Utilities::createTimeStamp(ptime pt)
     if (pt.is_not_a_date_time())
         return -1;
 
-    ptime epoch(date(1970, 1, 1));
+    static const ptime epoch(date(1970, 1, 1));
     return (pt - epoch).total_microseconds() + timezone * 1000000;
 }
 
@@ -260,22 +243,22 @@ time_t Utilities::createTimeStamp(const string& text)
 bool Utilities::convertPropertyDataType(const std::string& property_name, const PropertyDataType& sf1r_type, izenelib::ir::indexmanager::PropertyType& type)
 {
     std::string p = boost::algorithm::to_lower_copy(property_name);
-    if(p == "date" )
+    if (p == "date")
     {
         type = int64_t(0);
         return true;
     }
-    if(sf1r_type==STRING_PROPERTY_TYPE)
+    if (sf1r_type == STRING_PROPERTY_TYPE)
     {
         type = izenelib::util::UString("", izenelib::util::UString::UTF_8);
         return true;
     }
-    else if(sf1r_type==INT_PROPERTY_TYPE)
+    else if (sf1r_type == INT_PROPERTY_TYPE)
     {
         type = int64_t(0);
         return true;
     }
-    else if(sf1r_type==FLOAT_PROPERTY_TYPE)
+    else if (sf1r_type == FLOAT_PROPERTY_TYPE)
     {
         type = float(0.0);
         return true;

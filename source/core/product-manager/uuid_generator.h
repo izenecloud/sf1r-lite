@@ -5,8 +5,9 @@
 #include "pm_types.h"
 
 #include <common/type_defs.h>
-#include <3rdparty/boost/uuid/random_generator.hpp>
-#include <3rdparty/boost/uuid/uuid_io.hpp>
+
+#include <boost/uuid/random_generator.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 
 namespace sf1r
