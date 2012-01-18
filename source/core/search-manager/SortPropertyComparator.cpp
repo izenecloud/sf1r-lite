@@ -29,7 +29,7 @@ SortPropertyComparator::SortPropertyComparator(PropertyDataType dataType)
 
 void SortPropertyComparator::initComparator()
 {
-    switch(type_)
+    switch (type_)
     {
     case INT_PROPERTY_TYPE:
         comparator_ = &SortPropertyComparator::compareImplInt;
@@ -67,9 +67,9 @@ int SortPropertyComparator::compareImplDefault(const ScoreDoc& doc1, const Score
 
 int SortPropertyComparator::compareImplInt(const ScoreDoc& doc1, const ScoreDoc& doc2) const
 {
-    if((doc1.docId >= size_)||(doc2.docId >= size_)) return 0;
-    int64_t f1 = ((int64_t*)data_)[doc1.docId];
-    int64_t f2 = ((int64_t*)data_)[doc2.docId];
+    if (doc1.docId >= size_ || doc2.docId >= size_) return 0;
+    int64_t f1 = ((int64_t*) data_)[doc1.docId];
+    int64_t f2 = ((int64_t*) data_)[doc2.docId];
     if (f1 < f2) return -1;
     if (f1 > f2) return 1;
     return 0;
@@ -77,9 +77,9 @@ int SortPropertyComparator::compareImplInt(const ScoreDoc& doc1, const ScoreDoc&
 
 int SortPropertyComparator::compareImplUnsigned(const ScoreDoc& doc1, const ScoreDoc& doc2) const
 {
-    if((doc1.docId >= size_)||(doc2.docId >= size_)) return 0;
-    uint64_t f1 = ((uint64_t*)data_)[doc1.docId];
-    uint64_t f2 = ((uint64_t*)data_)[doc2.docId];
+    if (doc1.docId >= size_ || doc2.docId >= size_) return 0;
+    uint64_t f1 = ((uint64_t*) data_)[doc1.docId];
+    uint64_t f2 = ((uint64_t*) data_)[doc2.docId];
     if (f1 < f2) return -1;
     if (f1 > f2) return 1;
     return 0;
@@ -87,9 +87,9 @@ int SortPropertyComparator::compareImplUnsigned(const ScoreDoc& doc1, const Scor
 
 int SortPropertyComparator::compareImplFloat(const ScoreDoc& doc1, const ScoreDoc& doc2) const
 {
-    if((doc1.docId >= size_)||(doc2.docId >= size_)) return 0;
-    float f1 = ((float*)data_)[doc1.docId];
-    float f2 = ((float*)data_)[doc2.docId];
+    if (doc1.docId >= size_ || doc2.docId >= size_) return 0;
+    float f1 = ((float*) data_)[doc1.docId];
+    float f2 = ((float*) data_)[doc2.docId];
     if (f1 < f2) return -1;
     if (f1 > f2) return 1;
     return 0;
@@ -97,9 +97,9 @@ int SortPropertyComparator::compareImplFloat(const ScoreDoc& doc1, const ScoreDo
 
 int SortPropertyComparator::compareImplDouble(const ScoreDoc& doc1, const ScoreDoc& doc2) const
 {
-    if((doc1.docId >= size_)||(doc2.docId >= size_)) return 0;
-    double f1 = ((double*)data_)[doc1.docId];
-    double f2 = ((double*)data_)[doc2.docId];
+    if (doc1.docId >= size_ || doc2.docId >= size_) return 0;
+    double f1 = ((double*) data_)[doc1.docId];
+    double f2 = ((double*) data_)[doc2.docId];
     if (f1 < f2) return -1;
     if (f1 > f2) return 1;
     return 0;

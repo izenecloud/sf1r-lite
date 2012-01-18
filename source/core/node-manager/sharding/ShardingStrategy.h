@@ -7,12 +7,13 @@
 #ifndef SHARDING_STRATEGY_H_
 #define SHARDING_STRATEGY_H_
 
-#include <stdint.h>
+#include <util/ustring/UString.h>
+
+#include <boost/uuid/sha1.hpp>
 
 #include <vector>
 
-#include <util/ustring/UString.h>
-#include <3rdparty/boost/uuid/sha1.hpp>
+#include <stdint.h>
 
 namespace sf1r{
 

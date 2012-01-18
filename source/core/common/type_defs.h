@@ -65,15 +65,14 @@ typedef std::pair<uint32_t,izenelib::util::UString> id2name_t;
 typedef izenelib::am::rde_hash<termid_t,izenelib::util::UString> WCMAP_T; // wild card map type
 typedef boost::unordered_map<std::string , std::set<termid_t> > QTISM_T; // query term id set map type
 
-#define SF1R_ENSURE_INIT(condition)                        \
-if (! (condition))                                                            \
-{                                                                                     \
-    std::cerr << "Initialization assertion failed: " #condition   \
-              << std::endl;                                                     \
-    return false;                                                               \
+#define SF1R_ENSURE_INIT(condition)                             \
+if (! (condition))                                              \
+{                                                               \
+    std::cerr << "Initialization assertion failed: " #condition \
+              << std::endl;                                     \
+    return false;                                               \
 }
 
 } // end - namespace
 
 #endif  //_SF1R_TYPE_DEFINITIONS_H_
-

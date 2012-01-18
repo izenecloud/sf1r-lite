@@ -34,8 +34,8 @@ private:
 
 public:
     SortPropertyComparator();
-    SortPropertyComparator(boost::shared_ptr<PropertyData> propData);
-    SortPropertyComparator(PropertyDataType dataType);
+    explicit SortPropertyComparator(boost::shared_ptr<PropertyData> propData);
+    explicit SortPropertyComparator(PropertyDataType dataType);
 
 private:
     void initComparator();

@@ -5,11 +5,16 @@
 #include <ir/index_manager/index/IndexerPropertyConfig.h>
 #include <util/ustring/UString.h>
 
-#include <boost/date_time/posix_time/posix_time.hpp>
+namespace boost
+{
+namespace posix_time
+{
+class ptime;
+}
+}
 
-using namespace std;
-
-namespace sf1r{
+namespace sf1r
+{
 
 class Utilities
 {
@@ -20,20 +25,25 @@ public:
 public:
     static int64_t convertDate(const izenelib::util::UString& dataStr, const izenelib::util::UString::EncodingType& encoding, izenelib::util::UString& outDateStr);
     static int64_t convertDate(const std::string& dataStr);
-    static std::string toLowerCopy(const std::string& str);
-    static std::string toUpperCopy(const std::string& str);
-    static void toLower(std::string& str);
-    static void toUpper(std::string& str);
 
     static time_t createTimeStamp();
-    static time_t createTimeStamp(boost::posix_time::ptime pt);
+    static time_t createTimeStamp(const boost::posix_time::ptime& pt);
     static time_t createTimeStamp(const izenelib::util::UString& text);
     static time_t createTimeStamp(const std::string& text);
 
     template <typename T>
-    static std::string toBytes(const T& val);
+    static inline std::string toBytes(const T& val)
+    {
+        return std::string(reinterpret_cast<const char *>(&val), sizeof(T));
+    }
     template <typename T>
-    static T fromBytes(const std::string& str);
+    static inline T fromBytes(const std::string& str)
+    {
+        if (str.length() < sizeof(T))
+            return T();
+
+        return *(reinterpret_cast<const T *>(str.c_str()));
+    }
 
     static std::string uint128ToUuid(const uint128_t& val);
     static uint128_t uuidToUint128(const std::string& str);
@@ -49,21 +59,6 @@ public:
     static bool convertPropertyDataType(const std::string& property_name, const PropertyDataType& sf1r_type, izenelib::ir::indexmanager::PropertyType& type);
 
 };
-
-template <typename T>
-std::string Utilities::toBytes(const T& val)
-{
-    return std::string(reinterpret_cast<const char *>(&val), sizeof(T));
-}
-
-template <typename T>
-T Utilities::fromBytes(const std::string& str)
-{
-    if (str.length() < sizeof(T))
-        return T();
-
-    return *(reinterpret_cast<const T *>(str.c_str()));
-}
 
 template <typename AssocType, typename SeqType>
 void Utilities::getKeyList(SeqType& key_list, const AssocType& src_map)

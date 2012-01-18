@@ -19,7 +19,6 @@
 
 #include <common/BundleSchemaHelpers.h>
 #include <common/Keys.h>
-#include <common/Utilities.h> // Utilities::toUpperCopy()
 
 namespace
 {
@@ -962,7 +961,7 @@ bool RecommendController::parseRecommendParam(RecommendParam& param)
     param.userIdStr = asString(resourceValue[Keys::USERID]);
     param.sessionIdStr = asString(resourceValue[Keys::session_id]);
 
-    std::map<std::string, int>::const_iterator mapIt = recTypeMap_.find(Utilities::toUpperCopy(recTypeStr));
+    std::map<std::string, int>::const_iterator mapIt = recTypeMap_.find(boost::to_upper_copy(recTypeStr));
     if (mapIt == recTypeMap_.end())
     {
         response().addError("Unknown recommendation type \"" + recTypeStr + "\" in request[resource][rec_type].");

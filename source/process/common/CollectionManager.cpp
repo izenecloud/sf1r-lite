@@ -29,6 +29,8 @@ void CollectionManager::startCollection(const string& collectionName, const std:
 {
     ScopedWriteLock lock(*getCollectionMutex(collectionName));
 
+    if(findHandler(collectionName) != NULL)
+        return;
     CollectionHandler* collectionHandler = new CollectionHandler(collectionName);
 
     boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig(new IndexBundleConfiguration(collectionName));
