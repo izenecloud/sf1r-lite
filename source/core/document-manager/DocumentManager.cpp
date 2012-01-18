@@ -605,7 +605,7 @@ bool DocumentManager::getRawTextOfOneDocument_(
 
     if (!getPropertyValue(docId, propertyName, rawText))
     {
-        return false;
+        //return false;
     }
     if (rawText.empty())
     {
