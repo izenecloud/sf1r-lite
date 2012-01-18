@@ -113,6 +113,13 @@
           <CacheSize purchase="1073741824" visit="536870912" index="104857600"/>
           <!-- Speicfy "enable" to "yes" if recommend API top_item_bundle() is called -->
           <FreqItemSet enable="no" minfreq="10"/>
+          <!-- Specify the keyspace name for recommendation data stored in cassandra.
+            Example: <CassandraStorage enable="yes" keyspace="recommend_001"/>
+            Notes:
+            - the default value of "enable" is "no", in which case the recommendation data would be stored in local files
+            - the default value of "keyspace" is "SF1R"
+          -->
+          <CassandraStorage enable="no" keyspace="recommend_001"/>
         </Parameter>
       </RecommendBundle>
     </BundlesDefault>

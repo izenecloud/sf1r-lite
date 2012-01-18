@@ -15,4 +15,19 @@ RecommendBundleConfiguration::RecommendBundleConfiguration(const std::string& co
 {
 }
 
+std::ostream& operator<<(std::ostream& out, const RecommendBundleConfiguration& config)
+{
+    out << "[" << config.collectionName_
+        << "] CronPara: " << config.cronStr_
+        << "\n[CacheSize] purchase: " << config.purchaseCacheSize_
+        << ", visit: " << config.visitCacheSize_
+        << ", index: " << config.indexCacheSize_
+        << "\n[FreqItemSet] enable: " << config.freqItemSetEnable_
+        << ", min freq: " << config.itemSetMinFreq_
+        << "\n[CassandraStorage] enable: " << config.cassandraConfig_.enable
+        << ", keyspace: " << config.cassandraConfig_.keyspace;
+
+    return out;
+}
+
 } // namespace sf1r
