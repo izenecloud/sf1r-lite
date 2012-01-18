@@ -17,6 +17,8 @@ bool PriceHistory::is_enabled(false);
 
 const ColumnFamilyBase::ColumnType PriceHistory::column_type = ColumnFamilyBase::NORMAL;
 
+string PriceHistory::keyspace_name("SF1R");
+
 const string PriceHistory::cf_name("PriceHistory");
 
 const string PriceHistory::cf_column_type;
@@ -117,7 +119,7 @@ bool PriceHistory::updateMultiRow(const vector<PriceHistory>& row_list)
             }
         }
 
-        CassandraConnection::instance().getCassandraClient()->batchMutate(mutation_map);
+        CassandraConnection::instance().getCassandraClient(keyspace_name)->batchMutate(mutation_map);
     }
     CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
 
@@ -146,7 +148,7 @@ bool PriceHistory::getMultiSlice(
         pred.slice_range.__set_reversed(reversed);
 
         map<string, vector<ColumnOrSuperColumn> > raw_column_map;
-        CassandraConnection::instance().getCassandraClient()->getMultiSlice(
+        CassandraConnection::instance().getCassandraClient(keyspace_name)->getMultiSlice(
                 raw_column_map,
                 key_list,
                 col_parent,
@@ -189,7 +191,7 @@ bool PriceHistory::getMultiCount(
         pred.slice_range.__set_finish(finish);
         //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
 
-        CassandraConnection::instance().getCassandraClient()->getMultiCount(
+        CassandraConnection::instance().getCassandraClient(keyspace_name)->getMultiCount(
                 count_map,
                 key_list,
                 col_parent,
@@ -209,7 +211,7 @@ bool PriceHistory::updateRow() const
         for (PriceHistoryType::const_iterator it = priceHistory_.begin();
                 it != priceHistory_.end(); ++it)
         {
-            CassandraConnection::instance().getCassandraClient()->insertColumn(
+            CassandraConnection::instance().getCassandraClient(keyspace_name)->insertColumn(
                     Utilities::toBytes(it->second),
                     docId_,
                     cf_name,

@@ -4,6 +4,7 @@
 #include "pm_def.h"
 #include "pm_types.h"
 #include "product_price.h"
+#include <configuration-manager/CassandraStorageConfig.h>
 
 #include <am/tc/BTree.h>
 
@@ -24,6 +25,7 @@ class ProductPriceTrend
 
 public:
     ProductPriceTrend(
+            const CassandraStorageConfig& cassandraConfig,
             const std::string& collection_name,
             const std::string& data_dir,
             const std::vector<std::string>& group_prop_vec,
@@ -89,6 +91,7 @@ private:
     void StripDocidList_(std::vector<std::string>& dest, const std::vector<std::string>& src) const;
 
 private:
+    const CassandraStorageConfig cassandraConfig_;
     std::string collection_name_;
     std::string data_dir_;
 

@@ -1199,6 +1199,18 @@ void CollectionConfig::parseProductBundleParam(const ticpp::Element * product_pa
         collectionMeta.productBundleConfig_->collectionDataDirectories_.assign(directories.begin(), directories.end());
     }
     params.Get("CronPara/value", collectionMeta.productBundleConfig_->cron_);
+
+    CassandraStorageConfig& cassandraConfig = collectionMeta.productBundleConfig_->cassandraConfig_;
+    parseCassandraStorageParam(params, cassandraConfig);
+
+    LOG(INFO) << "ProductPundle [CassandraStorage] enable: " << cassandraConfig.enable;
+    LOG(INFO) << "ProductPundle [CassandraStorage] keyspace: " << cassandraConfig.keyspace;
+}
+
+void CollectionConfig::parseCassandraStorageParam(CollectionParameterConfig& params, CassandraStorageConfig& cassandraConfig)
+{
+    params.Get("CassandraStorage/enable", cassandraConfig.enable);
+    params.Get("CassandraStorage/keyspace", cassandraConfig.keyspace);
 }
 
 void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_schema, CollectionMeta & collectionMeta)

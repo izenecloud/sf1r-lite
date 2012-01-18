@@ -26,6 +26,8 @@ public:
 
     virtual bool dropColumnFamily() const;
 
+    virtual const std::string& getKeyspaceName() const = 0;
+
     virtual const std::string& getKey() const = 0;
 
     virtual const std::string& getName() const = 0;
@@ -53,6 +55,7 @@ template <typename ColumnFamilyType>
 bool createColumnFamily()
 {
     return CassandraConnection::instance().createColumnFamily(
+            ColumnFamilyType::keyspace_name,
             ColumnFamilyType::cf_name,
             ColumnFamilyType::cf_column_type,
             ColumnFamilyType::cf_comparator_type,
@@ -103,6 +106,7 @@ public: \
      * changed if the column family has already been created (and not yet
      * dropped) at server. So be cautious enough to determine them!
      */ \
+    static std::string keyspace_name; \
     static const std::string cf_name; /* XXX unchangeable */ \
     static const std::string cf_column_type; /* XXX unchangeable */ \
     static const std::string cf_comparator_type; /* XXX unchangeable */ \
@@ -132,6 +136,10 @@ public: \
     virtual const ColumnType getColumnType() const \
     { \
         return column_type; \
+    } \
+    virtual const std::string& getKeyspaceName() const \
+    { \
+        return keyspace_name; \
     } \
     \
     virtual const std::string& getName() const \
