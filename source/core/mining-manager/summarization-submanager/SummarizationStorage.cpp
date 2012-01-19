@@ -2,16 +2,21 @@
 
 #include <iostream>
 
+namespace
+{
+static const std::string summ_path("/summarization");
+}
+
 namespace sf1r
 {
 
 SummarizationStorage::SummarizationStorage(
         const std::string& dbPath)
-    : summarization_db_(dbPath)
+    : summarization_db_(dbPath + summ_path)
 {
     if (!summarization_db_.open())
     {
-        boost::filesystem::remove_all(dbPath);
+        boost::filesystem::remove_all(dbPath + summ_path);
         summarization_db_.open();
     }
 }
@@ -20,7 +25,7 @@ SummarizationStorage::~SummarizationStorage()
 {
 }
 
-void SummarizationStorage::Update(const UString& key, const Summarization& value)
+void SummarizationStorage::Update(const KeyType& key, const Summarization& value)
 {
     summarization_db_.update(key, value);
 }
@@ -30,13 +35,13 @@ void SummarizationStorage::Flush()
     summarization_db_.flush();
 }
 
-bool SummarizationStorage::Get(const UString& key, Summarization& result)
+bool SummarizationStorage::Get(const KeyType& key, Summarization& result)
 {
     return summarization_db_.get(key, result);
 }
 
 bool SummarizationStorage::IsRebuildSummarizeRequired(
-        const UString& key,
+        const KeyType& key,
         const Summarization& value)
 {
     Summarization summarization;

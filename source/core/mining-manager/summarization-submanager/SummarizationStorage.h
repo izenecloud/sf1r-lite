@@ -9,14 +9,19 @@
 
 #include <vector>
 
+//#define USE_LOG_SERVER
+
 namespace sf1r
 {
 
-using izenelib::util::UString;
-
 class SummarizationStorage
 {
-    typedef izenelib::am::leveldb::Table<UString, Summarization> SummarizationDBType;
+#ifdef USE_LOG_SERVER
+    typedef uint128_t KeyType;
+#else
+    typedef izenelib::util::UString KeyType;
+#endif
+    typedef izenelib::am::leveldb::Table<KeyType, Summarization> SummarizationDBType;
 
 public:
     SummarizationStorage(
@@ -24,14 +29,14 @@ public:
 
     ~SummarizationStorage();
 
-    void Update(const UString& key, const Summarization& value);
+    void Update(const KeyType& key, const Summarization& value);
 
     void Flush();
 
-    bool Get(const UString& key, Summarization& result);
+    bool Get(const KeyType& key, Summarization& result);
 
     bool IsRebuildSummarizeRequired(
-            const UString& key,
+            const KeyType& key,
             const Summarization& value);
 
 private:
