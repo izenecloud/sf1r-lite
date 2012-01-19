@@ -181,6 +181,7 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     UString key_ustr(key_str, UString::UTF_8);
     corpus_->start_new_coll(key_ustr);
 #else
+    key.convertString(key_str, UString::UTF_8);
     corpus_->start_new_coll(key);
 #endif
     corpus_->start_new_doc(); // XXX
@@ -218,9 +219,6 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     std::map<UString, std::vector<std::pair<double, UString> > > summaries;
 //#define DEBUG_SUMMARIZATION
 #ifdef DEBUG_SUMMARIZATION
-#ifndef USE_LOG_SERVER
-    key.convertString(key_str, UString::UTF_8);
-#endif
     std::cout << "Begin evaluating: " << key_str << std::endl;
 #endif
     //if (content_list.size() < 2000 && corpus_->ntotal() < 100000)
