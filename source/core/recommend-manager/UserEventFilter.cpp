@@ -79,7 +79,7 @@ bool UserEventFilter::filter(
     ItemFilter& filter
 ) const
 {
-    assert(userId);
+    assert(!userId.empty());
 
     return (filterRateItem_(userId, filter)
             && filterPurchaseItem_(userId, filter)
@@ -173,7 +173,7 @@ bool UserEventFilter::addUserEvent(
     ItemFilter& filter
 ) const
 {
-    assert(userId);
+    assert(!userId.empty());
 
     inputItemVec.clear();
 
