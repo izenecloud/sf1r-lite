@@ -9,7 +9,9 @@
 #include <la-manager/LAPool.h>
 
 #include <common/ScdParser.h>
+#ifdef USE_LOG_SERVER
 #include <common/Utilities.h>
+#endif
 #include <idmlib/util/idm_analyzer.h>
 
 #include <boost/filesystem.hpp>
