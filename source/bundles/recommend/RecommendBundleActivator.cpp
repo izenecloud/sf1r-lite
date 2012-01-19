@@ -243,8 +243,7 @@ void RecommendBundleActivator::createEvent_()
 
     visitManager_.reset(new VisitManager((eventDir / "visit_item.db").string(),
                                          (eventDir / "visit_recommend.db").string(),
-                                         (eventDir / "visit_session.db").string(),
-                                         *coVisitManager_));
+                                         (eventDir / "visit_session.db").string()));
 
     purchaseManager_.reset(new PurchaseManager((eventDir / "purchase.db").string()));
     cartManager_.reset(new CartManager((eventDir / "cart.db").string()));

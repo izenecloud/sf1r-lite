@@ -354,7 +354,7 @@ bool RecommendTaskService::visitItem(
         return false;
 
     jobScheduler_.addTask(boost::bind(&VisitManager::addVisitItem, &visitManager_,
-                                      sessionIdStr, userIdStr, itemId, isRecItem));
+                                      sessionIdStr, userIdStr, itemId, isRecItem, &visitMatrix_));
 
     return true;
 }
@@ -765,11 +765,13 @@ void RecommendTaskService::flush_()
     orderManager_.flush();
 
     visitManager_.flush();
-    LOG(INFO) << "flushed " << visitManager_;
-
     purchaseManager_.flush();
+
+    coVisitManager_.flush();
     itemCFManager_.flush();
-    LOG(INFO) << "flushed " << itemCFManager_;
+
+    LOG(INFO) << "flushed [Visit] " << coVisitManager_.matrix();
+    LOG(INFO) << "flushed [Purchase] " << itemCFManager_;
 
     LOG(INFO) << "finish flushing recommend data for collection " << bundleConfig_.collectionName_;
 }

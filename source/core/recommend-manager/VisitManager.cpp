@@ -1,4 +1,5 @@
 #include "VisitManager.h"
+#include "RecommendMatrix.h"
 
 #include <glog/logging.h>
 
@@ -10,13 +11,11 @@ namespace sf1r
 VisitManager::VisitManager(
     const std::string& visitDBPath,
     const std::string& recommendDBPath,
-    const std::string& sessionDBPath,
-    CoVisitManager& coVisitManager
+    const std::string& sessionDBPath
 )
     : visitDB_(visitDBPath)
     , recommendDB_(recommendDBPath)
     , sessionDB_(sessionDBPath)
-    , coVisitManager_(coVisitManager)
 {
     visitDB_.open();
     recommendDB_.open();
@@ -30,7 +29,6 @@ void VisitManager::flush()
         visitDB_.flush();
         recommendDB_.flush();
         sessionDB_.flush();
-        coVisitManager_.flush();
     }
     catch(izenelib::util::IZENELIBException& e)
     {
@@ -42,11 +40,12 @@ bool VisitManager::addVisitItem(
     const std::string& sessionId,
     const std::string& userId,
     itemid_t itemId,
-    bool isRecItem
+    bool isRecItem,
+    RecommendMatrix* matrix
 )
 {
     if (updateVisitDB_(visitDB_, userId, itemId)
-        && updateSessionDB_(sessionId, userId, itemId))
+        && updateSessionDB_(sessionId, userId, itemId, matrix))
     {
         if (isRecItem
             && updateVisitDB_(recommendDB_, userId, itemId) == false)
@@ -155,7 +154,8 @@ bool VisitManager::getVisitDB_(
 bool VisitManager::updateSessionDB_(
     const std::string& sessionId,
     const std::string& userId,
-    itemid_t itemId
+    itemid_t itemId,
+    RecommendMatrix* matrix
 )
 {
     if (sessionId.empty())
@@ -207,7 +207,10 @@ bool VisitManager::updateSessionDB_(
                 }
             }
 
-            coVisitManager_.visit(oldItems, newItems);
+            if (matrix)
+            {
+                matrix->update(oldItems, newItems);
+            }
         }
 
         return result;
@@ -215,17 +218,6 @@ bool VisitManager::updateSessionDB_(
 
     // already visited in current session
     return true;
-}
-
-void VisitManager::print(std::ostream& ostream) const
-{
-    ostream << "[Visit] " << coVisitManager_.matrix();
-}
-
-std::ostream& operator<<(std::ostream& out, const VisitManager& visitManager)
-{
-    visitManager.print(out);
-    return out;
 }
 
 } // namespace sf1r

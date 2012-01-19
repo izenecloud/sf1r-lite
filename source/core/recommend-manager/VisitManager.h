@@ -12,7 +12,6 @@
 #include <sdb/SDBCursorIterator.h>
 
 #include <string>
-#include <iostream>
 
 #include <boost/serialization/set.hpp> // serialize ItemIdSet
 #include <boost/serialization/access.hpp>
@@ -36,14 +35,15 @@ struct VisitSession
     }
 };
 
+class RecommendMatrix;
+
 class VisitManager
 {
 public:
     VisitManager(
         const std::string& visitDBPath,
         const std::string& recommendDBPath,
-        const std::string& sessionDBPath,
-        CoVisitManager& coVisitManager
+        const std::string& sessionDBPath
     );
 
     void flush();
@@ -57,7 +57,8 @@ public:
         const std::string& sessionId,
         const std::string& userId,
         itemid_t itemId,
-        bool isRecItem
+        bool isRecItem,
+        RecommendMatrix* matrix
     );
 
     /**
@@ -95,8 +96,6 @@ public:
     VisitIterator begin();
     VisitIterator end();
 
-    void print(std::ostream& ostream) const;
-
 private:
     bool updateVisitDB_(
         VisitDBType& db,
@@ -113,7 +112,8 @@ private:
     bool updateSessionDB_(
         const std::string& sessionId,
         const std::string& userId,
-        itemid_t itemId
+        itemid_t itemId,
+        RecommendMatrix* matrix
     );
 
 private:
@@ -122,11 +122,7 @@ private:
 
     typedef izenelib::sdb::unordered_sdb_tc<std::string, VisitSession, ReadWriteLock> SessionDBType;
     SessionDBType sessionDB_; // the items in current session
-
-    CoVisitManager& coVisitManager_;
 };
-
-std::ostream& operator<<(std::ostream& out, const VisitManager& visitManager);
 
 } // namespace sf1r
 

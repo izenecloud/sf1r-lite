@@ -7,6 +7,7 @@
 
 #include <util/ustring/UString.h>
 #include <recommend-manager/VisitManager.h>
+#include <recommend-manager/VisitMatrix.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
@@ -59,7 +60,8 @@ void addVisitInput(
     VisitManager& visitManager,
     VisitMap& visitMap,
     SessionMap& sessionMap,
-    RecommendMap& recommendMap
+    RecommendMap& recommendMap,
+    RecommendMatrix* matrix
 )
 {
     set<string> userSet;
@@ -80,7 +82,8 @@ void addVisitInput(
             recommendMap[it->userId_].insert(it->itemId_);
         }
 
-        BOOST_CHECK(visitManager.addVisitItem(sessionId, it->userId_, it->itemId_, it->isRec_));
+        BOOST_CHECK(visitManager.addVisitItem(sessionId, it->userId_, it->itemId_,
+                                              it->isRec_, matrix));
     }
 }
 
@@ -181,13 +184,15 @@ BOOST_AUTO_TEST_CASE(checkVisit)
     bfs::path covisitPath(bfs::path(TEST_DIR_STR) / COVISIT_DIR_STR);
 
     CoVisitManager coVisitManager(covisitPath.string());
+    VisitMatrix visitMatrix(coVisitManager);
+
     VisitMap visitMap;
     SessionMap sessionMap;
     RecommendMap recommendMap;
 
     {
         BOOST_TEST_MESSAGE("add visit...");
-        VisitManager visitManager(visitDBPath.string(), recommendDBPath.string(), sessionDBPath.string(), coVisitManager);
+        VisitManager visitManager(visitDBPath.string(), recommendDBPath.string(), sessionDBPath.string());
 
         // construct input
         VisitInputVec visitInputVec;
@@ -203,7 +208,7 @@ BOOST_AUTO_TEST_CASE(checkVisit)
         visitInputVec.push_back(VisitInput("3", 30, true));
 
         addVisitInput("session_001", visitInputVec, visitManager,
-                      visitMap, sessionMap, recommendMap);
+                      visitMap, sessionMap, recommendMap, &visitMatrix);
 
         checkVisitSet(visitMap, visitManager);
         checkSessionSet(sessionMap, visitManager);
@@ -220,7 +225,7 @@ BOOST_AUTO_TEST_CASE(checkVisit)
     {
         BOOST_TEST_MESSAGE("continue add visit...");
 
-        VisitManager visitManager(visitDBPath.string(), recommendDBPath.string(), sessionDBPath.string(), coVisitManager);
+        VisitManager visitManager(visitDBPath.string(), recommendDBPath.string(), sessionDBPath.string());
         checkVisitSet(visitMap, visitManager);
         checkSessionSet(sessionMap, visitManager);
         checkRecommendSet(recommendMap, visitManager);
@@ -235,7 +240,7 @@ BOOST_AUTO_TEST_CASE(checkVisit)
         visitInputVec.push_back(VisitInput("4", 40, false));
 
         addVisitInput("session_002", visitInputVec, visitManager,
-                      visitMap, sessionMap, recommendMap);
+                      visitMap, sessionMap, recommendMap, &visitMatrix);
 
         checkVisitSet(visitMap, visitManager);
         checkSessionSet(sessionMap, visitManager);
