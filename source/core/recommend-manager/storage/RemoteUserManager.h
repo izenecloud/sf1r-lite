@@ -23,13 +23,13 @@ class RemoteUserManager : public UserManager
 public:
     RemoteUserManager(const std::string& keyspace, const std::string& collection);
 
-    bool addUser(const User& user);
+    virtual bool addUser(const User& user);
 
-    bool updateUser(const User& user);
+    virtual bool updateUser(const User& user);
 
-    bool removeUser(const std::string& userId);
+    virtual bool removeUser(const std::string& userId);
 
-    bool getUser(const std::string& userId, User& user);
+    virtual bool getUser(const std::string& userId, User& user);
 
 private:
     void createCFDef_(org::apache::cassandra::CfDef& def) const;

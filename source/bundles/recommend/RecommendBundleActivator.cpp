@@ -70,7 +70,6 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
         searchService_.reset();
     }
 
-    storageFactory_.reset();
     userManager_.reset();
     itemManager_.reset();
     visitManager_.reset();
@@ -205,11 +204,11 @@ void RecommendBundleActivator::createSCDDir_()
 
 void RecommendBundleActivator::createStorage_()
 {
-    storageFactory_.reset(new RecommendStorageFactory(config_->collectionName_,
-                                                      dataDir_.string(),
-                                                      config_->cassandraConfig_));
+    RecommendStorageFactory storageFactory(config_->collectionName_,
+                                           dataDir_.string(),
+                                           config_->cassandraConfig_);
 
-    userManager_.reset(storageFactory_->createUserManager());
+    userManager_.reset(storageFactory.createUserManager());
 }
 
 void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchService)

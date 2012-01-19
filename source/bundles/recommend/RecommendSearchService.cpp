@@ -49,14 +49,9 @@ bool RecommendSearchService::recommend(
 
 bool RecommendSearchService::convertIds_(RecommendParam& param)
 {
-    if (!convertItemId_(param.inputItems, param.inputItemIds) ||
-        !convertItemId_(param.includeItems, param.includeItemIds) ||
-        !convertItemId_(param.excludeItems, param.excludeItemIds))
-    {
-        return false;
-    }
-
-    return true;
+    return convertItemId_(param.inputItems, param.inputItemIds) &&
+           convertItemId_(param.includeItems, param.includeItemIds) &&
+           convertItemId_(param.excludeItems, param.excludeItemIds);
 }
 
 bool RecommendSearchService::convertItemId_(

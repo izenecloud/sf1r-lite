@@ -38,7 +38,6 @@ class EventManager;
 class RateManager;
 class RecommenderFactory;
 class ItemIdGenerator;
-class RecommendStorageFactory;
 
 class RecommendBundleActivator : public IBundleActivator, public IServiceTrackerCustomizer
 {
@@ -75,7 +74,6 @@ private:
     DirectoryRotator directoryRotator_;
     boost::filesystem::path dataDir_;
 
-    boost::scoped_ptr<RecommendStorageFactory> storageFactory_;
     boost::scoped_ptr<UserManager> userManager_;
     boost::scoped_ptr<ItemManager> itemManager_;
     boost::scoped_ptr<VisitManager> visitManager_;
