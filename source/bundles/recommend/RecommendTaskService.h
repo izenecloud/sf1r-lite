@@ -8,6 +8,9 @@
 #define RECOMMEND_TASK_SERVICE_H
 
 #include <recommend-manager/RecTypes.h>
+#include <recommend-manager/PurchaseMatrix.h>
+#include <recommend-manager/PurchaseCoVisitMatrix.h>
+#include <recommend-manager/VisitMatrix.h>
 
 #include <util/osgi/IService.h>
 #include <util/cronexpression.h>
@@ -50,7 +53,9 @@ public:
         OrderManager& orderManager,
         EventManager& eventManager,
         RateManager& rateManager,
-        ItemIdGenerator& itemIdGenerator
+        ItemIdGenerator& itemIdGenerator,
+        CoVisitManager& coVisitManager,
+        ItemCFManager& itemCFManager
     );
 
     ~RecommendTaskService();
@@ -211,13 +216,13 @@ private:
      * @param userIdStr the string of user id
      * @param orderIdStr the string of order id
      * @param orderItemVec the array of item id string
-     * @param isUpdateSimMatrix this param is passed to @c PurchaseManager::addPurchaseItem().
+     * @param matrix @c RecommendMatrix::update() would be called
      */
     bool saveOrder_(
         const std::string& userIdStr,
         const std::string& orderIdStr,
         const OrderItemVec& orderItemVec,
-        bool isUpdateSimMatrix
+        RecommendMatrix* matrix
     );
 
     /**
@@ -252,6 +257,13 @@ private:
     EventManager& eventManager_;
     RateManager& rateManager_;
     ItemIdGenerator& itemIdGenerator_;
+
+    CoVisitManager& coVisitManager_;
+    ItemCFManager& itemCFManager_;
+
+    VisitMatrix visitMatrix_;
+    PurchaseMatrix purchaseMatrix_;
+    PurchaseCoVisitMatrix purchaseCoVisitMatrix_;
 
     JobScheduler jobScheduler_;
 

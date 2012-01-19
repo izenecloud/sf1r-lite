@@ -27,9 +27,6 @@ namespace
 const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
 const char* TEST_DIR_STR = "recommend_test/t_PurchaseManager";
 const char* PURCHASE_DB_STR = "purchase.db";
-const char* CF_DIR_STR = "cf";
-const char* ITEM_DB_STR = "item.db";
-const char* MAX_ID_STR = "max_itemid.txt";
 }
 
 typedef map<string, set<itemid_t> > PurchaseMap;
@@ -41,7 +38,7 @@ void addPurchaseItem(
     const std::vector<itemid_t>& orderItemVec
 )
 {
-    BOOST_CHECK(purchaseManager.addPurchaseItem(userId, orderItemVec));
+    BOOST_CHECK(purchaseManager.addPurchaseItem(userId, orderItemVec, NULL));
 
     set<itemid_t>& itemIdSet = purchaseMap[userId];
     for (unsigned int i = 0; i < orderItemVec.size(); ++i)
@@ -94,23 +91,12 @@ BOOST_AUTO_TEST_CASE(checkPurchase)
     bfs::create_directories(TEST_DIR_STR);
 
     bfs::path purchasePath(bfs::path(TEST_DIR_STR) / PURCHASE_DB_STR);
-    bfs::path itemPath(bfs::path(TEST_DIR_STR) / ITEM_DB_STR);
-    bfs::path maxIdPath(bfs::path(TEST_DIR_STR) / MAX_ID_STR);
-
-    bfs::create_directories(TEST_DIR_STR);
-
     PurchaseMap purchaseMap;
 
-    bfs::path cfPath(bfs::path(TEST_DIR_STR) / CF_DIR_STR);
-    string cfPathStr = cfPath.string();
-    bfs::create_directories(cfPath);
-    ItemCFManager itemCFManager(cfPathStr + "/covisit", 1000,
-                                cfPathStr + "/sim", 1000,
-                                cfPathStr + "/nb", 30);
     {
         BOOST_TEST_MESSAGE("add purchase...");
 
-        PurchaseManager purchaseManager(purchasePath.string(), itemCFManager);
+        PurchaseManager purchaseManager(purchasePath.string());
         std::vector<itemid_t> orderItemVec;
 
         orderItemVec.push_back(20);
@@ -157,7 +143,7 @@ BOOST_AUTO_TEST_CASE(checkPurchase)
     {
         BOOST_TEST_MESSAGE("continue add purchase...");
 
-        PurchaseManager purchaseManager(purchasePath.string(), itemCFManager);
+        PurchaseManager purchaseManager(purchasePath.string());
         checkPurchaseManager(purchaseMap, purchaseManager);
         iteratePurchaseManager(purchaseMap, purchaseManager);
 

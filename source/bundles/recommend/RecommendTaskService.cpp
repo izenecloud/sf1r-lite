@@ -261,7 +261,9 @@ RecommendTaskService::RecommendTaskService(
     OrderManager& orderManager,
     EventManager& eventManager,
     RateManager& rateManager,
-    ItemIdGenerator& itemIdGenerator
+    ItemIdGenerator& itemIdGenerator,
+    CoVisitManager& coVisitManager,
+    ItemCFManager& itemCFManager
 )
     :bundleConfig_(bundleConfig)
     ,directoryRotator_(directoryRotator)
@@ -274,6 +276,11 @@ RecommendTaskService::RecommendTaskService(
     ,eventManager_(eventManager)
     ,rateManager_(rateManager)
     ,itemIdGenerator_(itemIdGenerator)
+    ,coVisitManager_(coVisitManager)
+    ,itemCFManager_(itemCFManager)
+    ,visitMatrix_(coVisitManager_)
+    ,purchaseMatrix_(itemCFManager_)
+    ,purchaseCoVisitMatrix_(itemCFManager_)
     ,cronJobName_("RecommendTaskService-" + bundleConfig.collectionName_)
 {
     if (cronExpression_.setExpression(bundleConfig_.cronStr_))
@@ -359,7 +366,7 @@ bool RecommendTaskService::purchaseItem(
 )
 {
     jobScheduler_.addTask(boost::bind(&RecommendTaskService::saveOrder_, this,
-                                       userIdStr, orderIdStr, orderItemVec, true));
+                                       userIdStr, orderIdStr, orderItemVec, &purchaseMatrix_));
 
     return true;
 }
@@ -522,9 +529,10 @@ bool RecommendTaskService::loadOrderSCD_()
     }
 
     orderManager_.flush();
-
-    purchaseManager_.buildSimMatrix();
     purchaseManager_.flush();
+
+    itemCFManager_.buildSimMatrix();
+    itemCFManager_.flush();
 
     buildFreqItemSet_();
 
@@ -559,7 +567,7 @@ bool RecommendTaskService::parseOrderSCD_(const std::string& scdPath)
         if (++orderNum % 10000 == 0)
         {
             std::cout << "\rloading order[" << orderNum << "], "
-                      << purchaseManager_ << std::flush;
+                      << itemCFManager_ << std::flush;
         }
 
         SCDDocPtr docPtr = (*docIter);
@@ -583,7 +591,7 @@ bool RecommendTaskService::parseOrderSCD_(const std::string& scdPath)
 
     saveOrderMap_(orderMap);
     std::cout << "\rloading order[" << orderNum << "], "
-              << purchaseManager_ << std::endl;
+              << itemCFManager_ << std::endl;
 
     return true;
 }
@@ -601,7 +609,7 @@ void RecommendTaskService::loadOrderItem_(
     {
         OrderItemVec orderItemVec;
         orderItemVec.push_back(orderItem);
-        saveOrder_(userIdStr, orderIdStr, orderItemVec, false);
+        saveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseCoVisitMatrix_);
     }
     else
     {
@@ -628,7 +636,7 @@ void RecommendTaskService::saveOrderMap_(const OrderMap& orderMap)
 {
     for (OrderMap::const_iterator it = orderMap.begin(); it != orderMap.end(); ++it)
     {
-        saveOrder_(it->first.first, it->first.second, it->second, false);
+        saveOrder_(it->first.first, it->first.second, it->second, &purchaseCoVisitMatrix_);
     }
 }
 
@@ -636,7 +644,7 @@ bool RecommendTaskService::saveOrder_(
     const std::string& userIdStr,
     const std::string& orderIdStr,
     const OrderItemVec& orderItemVec,
-    bool isUpdateSimMatrix
+    RecommendMatrix* matrix
 )
 {
     if (orderItemVec.empty())
@@ -651,7 +659,7 @@ bool RecommendTaskService::saveOrder_(
 
     orderManager_.addOrder(itemIdVec);
 
-    if (purchaseManager_.addPurchaseItem(userIdStr, itemIdVec, isUpdateSimMatrix) &&
+    if (purchaseManager_.addPurchaseItem(userIdStr, itemIdVec, matrix) &&
         insertOrderDB_(userIdStr, orderIdStr, orderItemVec, itemIdVec))
     {
         return true;
@@ -760,7 +768,8 @@ void RecommendTaskService::flush_()
     LOG(INFO) << "flushed " << visitManager_;
 
     purchaseManager_.flush();
-    LOG(INFO) << "flushed " << purchaseManager_;
+    itemCFManager_.flush();
+    LOG(INFO) << "flushed " << itemCFManager_;
 
     LOG(INFO) << "finish flushing recommend data for collection " << bundleConfig_.collectionName_;
 }

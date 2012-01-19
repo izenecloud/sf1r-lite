@@ -1,17 +1,13 @@
 #include "PurchaseManager.h"
+#include "RecommendMatrix.h"
 
-#include <boost/filesystem.hpp>
 #include <glog/logging.h>
 
 namespace sf1r
 {
 
-PurchaseManager::PurchaseManager(
-    const std::string& path,
-    ItemCFManager& itemCFManager
-)
+PurchaseManager::PurchaseManager(const std::string& path)
     : container_(path)
-    , itemCFManager_(itemCFManager)
 {
     container_.open();
 }
@@ -26,7 +22,6 @@ void PurchaseManager::flush()
     try
     {
         container_.flush();
-        itemCFManager_.flush();
     }
     catch(izenelib::util::IZENELIBException& e)
     {
@@ -37,7 +32,7 @@ void PurchaseManager::flush()
 bool PurchaseManager::addPurchaseItem(
     const std::string& userId,
     const std::vector<itemid_t>& itemVec,
-    bool isUpdateSimMatrix
+    RecommendMatrix* matrix
 )
 {
     ItemIdSet itemIdSet;
@@ -75,22 +70,13 @@ bool PurchaseManager::addPurchaseItem(
             return false;
         }
 
-        if (isUpdateSimMatrix)
+        if (matrix)
         {
-            itemCFManager_.updateMatrix(oldItems, newItems);
-        }
-        else
-        {
-            itemCFManager_.updateVisitMatrix(oldItems, newItems);
+            matrix->update(oldItems, newItems);
         }
     }
 
     return true;
-}
-
-void PurchaseManager::buildSimMatrix()
-{
-    itemCFManager_.buildSimMatrix();
 }
 
 bool PurchaseManager::getPurchaseItemSet(const std::string& userId, ItemIdSet& itemIdSet)
@@ -123,17 +109,6 @@ PurchaseManager::SDBIterator PurchaseManager::begin()
 PurchaseManager::SDBIterator PurchaseManager::end()
 {
     return SDBIterator();
-}
-
-void PurchaseManager::print(std::ostream& ostream) const
-{
-    ostream << "[Purchase] " << itemCFManager_;
-}
-
-std::ostream& operator<<(std::ostream& out, const PurchaseManager& purchaseManager)
-{
-    purchaseManager.print(out);
-    return out;
 }
 
 } // namespace sf1r

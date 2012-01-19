@@ -13,20 +13,17 @@
 
 #include <string>
 #include <vector>
-#include <iostream>
 
 #include <boost/serialization/set.hpp> // serialize ItemIdSet
 
 namespace sf1r
 {
+class RecommendMatrix;
 
 class PurchaseManager
 {
 public:
-    PurchaseManager(
-        const std::string& path,
-        ItemCFManager& itemCFManager
-    );
+    PurchaseManager(const std::string& path);
 
     ~PurchaseManager();
 
@@ -36,20 +33,14 @@ public:
      * Add a purchase event.
      * @param userId the user id
      * @param itemVec the items in the order
-     * @param isUpdateSimMatrix true for call @p ItemCFManager::updateMatrix() to also update similarity matrix,
-     *                          false for call @p ItemCFManager::updateVisitMatrix() to only update visit matrix.
+     * @param matrix if not NULL, @c RecommendMatrix::update() would be called
      * @return true for succcess, false for failure
      */
     bool addPurchaseItem(
         const std::string& userId,
         const std::vector<itemid_t>& itemVec,
-        bool isUpdateSimMatrix = true
+        RecommendMatrix* matrix
     );
-
-    /**
-     * Rebuild the whole similarity matrix in batch mode.
-     */
-    void buildSimMatrix();
 
     /**
      * Get @p itemIdSet purchased by @p userId.
@@ -70,14 +61,9 @@ public:
     SDBIterator begin();
     SDBIterator end();
 
-    void print(std::ostream& ostream) const;
-
 private:
     SDBType container_;
-    ItemCFManager& itemCFManager_;
 };
-
-std::ostream& operator<<(std::ostream& out, const PurchaseManager& purchaseManager);
 
 } // namespace sf1r
 

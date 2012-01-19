@@ -246,9 +246,7 @@ void RecommendBundleActivator::createEvent_()
                                          (eventDir / "visit_session.db").string(),
                                          *coVisitManager_));
 
-    purchaseManager_.reset(new PurchaseManager((eventDir / "purchase.db").string(),
-                                               *itemCFManager_));
-
+    purchaseManager_.reset(new PurchaseManager((eventDir / "purchase.db").string()));
     cartManager_.reset(new CartManager((eventDir / "cart.db").string()));
     eventManager_.reset(new EventManager((eventDir / "event.db").string()));
     rateManager_.reset(new RateManager((eventDir / "rate.db").string()));
@@ -279,7 +277,8 @@ void RecommendBundleActivator::createService_()
 {
     taskService_.reset(new RecommendTaskService(*config_, directoryRotator_, *userManager_, *itemManager_,
                                                 *visitManager_, *purchaseManager_, *cartManager_, *orderManager_,
-                                                *eventManager_, *rateManager_, *itemIdGenerator_));
+                                                *eventManager_, *rateManager_, *itemIdGenerator_,
+                                                *coVisitManager_, *itemCFManager_));
 
     searchService_.reset(new RecommendSearchService(*userManager_, *itemManager_,
                                                     *recommenderFactory_, *itemIdGenerator_));
