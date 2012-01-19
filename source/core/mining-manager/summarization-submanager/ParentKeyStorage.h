@@ -10,22 +10,30 @@
 
 #include <boost/thread.hpp>
 
+//#define USE_LOG_SERVER
+
 namespace sf1r
 {
-
-using izenelib::util::UString;
 
 class CommentCacheStorage;
 
 class ParentKeyStorage
 {
-    typedef izenelib::am::leveldb::Table<UString, std::vector<UString> > P2CDbType;
+#ifdef USE_LOG_SERVER
+    typedef uint128_t ParentKeyType;
+    typedef uint128_t ChildKeyType;
+#else
+    typedef izenelib::util::UString ParentKeyType;
+    typedef izenelib::util::UString ChildKeyType;
+#endif
+
+    typedef izenelib::am::leveldb::Table<ParentKeyType, std::vector<ChildKeyType> > P2CDbType;
     typedef izenelib::am::AMIterator<P2CDbType> P2CIteratorType;
 
-    typedef izenelib::am::leveldb::Table<UString, UString> C2PDbType;
+    typedef izenelib::am::leveldb::Table<ChildKeyType, ParentKeyType> C2PDbType;
     typedef izenelib::am::AMIterator<C2PDbType> C2PIteratorType;
 
-    typedef stx::btree_map<UString, std::pair<std::vector<UString>, std::vector<UString> > > BufferType;
+    typedef stx::btree_map<ParentKeyType, std::pair<std::vector<ChildKeyType>, std::vector<ChildKeyType> > > BufferType;
 
 public:
     ParentKeyStorage(
@@ -35,17 +43,17 @@ public:
 
     ~ParentKeyStorage();
 
-    void Insert(const UString& parent, const UString& child);
-
-    void Update(const UString& parent, const UString& child);
-
-    void Delete(const UString& parent, const UString& child);
-
     void Flush();
 
-    bool GetChildren(const UString& parent, std::vector<UString>& children);
+    void Insert(const ParentKeyType& parent, const ChildKeyType& child);
 
-    bool GetParent(const UString& child, UString& parent);
+    void Update(const ParentKeyType& parent, const ChildKeyType& child);
+
+    void Delete(const ParentKeyType& parent, const ChildKeyType& child);
+
+    bool GetChildren(const ParentKeyType& parent, std::vector<ChildKeyType>& children);
+
+    bool GetParent(const ChildKeyType& child, ParentKeyType& parent);
 
 private:
     inline bool IsBufferFull_()
@@ -55,9 +63,6 @@ private:
 
 private:
     friend class MultiDocSummarizationSubManager;
-
-    static const std::string p2c_path;
-    static const std::string c2p_path;
 
     P2CDbType parent_to_children_db_;
     C2PDbType child_to_parent_db_;

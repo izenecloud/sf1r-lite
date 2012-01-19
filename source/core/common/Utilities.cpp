@@ -283,10 +283,10 @@ uint128_t Utilities::uuidToUint128(const std::string& str)
 
 std::string Utilities::uint128ToMD5(const uint128_t& val)
 {
-    static char str[33];
+    static char tmpstr[33];
 
-    sprintf(str, "%016llx%016llx", (unsigned long long) (val >> 64), (unsigned long long) val);
-    return std::string(reinterpret_cast<const char *>(str), 32);
+    sprintf(tmpstr, "%016llx%016llx", (unsigned long long) (val >> 64), (unsigned long long) val);
+    return std::string(reinterpret_cast<const char *>(tmpstr), 32);
 
 }
 
@@ -296,6 +296,35 @@ uint128_t Utilities::md5ToUint128(const std::string& str)
 
     sscanf(str.c_str(), "%016llx%016llx", &high, &low);
     return (uint128_t) high << 64 | (uint128_t) low;
+}
+
+void Utilities::uint128ToUuid(const uint128_t& val, std::string& str)
+{
+    const boost::uuids::uuid& uuid = *reinterpret_cast<const boost::uuids::uuid *>(&val);
+    str = boost::uuids::to_string(uuid);
+}
+
+void Utilities::uuidToUint128(const std::string& str, uint128_t& val)
+{
+    boost::uuids::uuid uuid = boost::lexical_cast<boost::uuids::uuid>(str);
+    val = *reinterpret_cast<uint128_t *>(&uuid);
+}
+
+void Utilities::uint128ToMD5(const uint128_t& val, std::string& str)
+{
+    static char tmpstr[33];
+
+    sprintf(tmpstr, "%016llx%016llx", (unsigned long long) (val >> 64), (unsigned long long) val);
+    str.assign(reinterpret_cast<const char *>(tmpstr), 32);
+
+}
+
+void Utilities::md5ToUint128(const std::string& str, uint128_t& val)
+{
+    unsigned long long high, low;
+
+    sscanf(str.c_str(), "%016llx%016llx", &high, &low);
+    val = (uint128_t) high << 64 | (uint128_t) low;
 }
 
 }

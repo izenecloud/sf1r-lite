@@ -9,6 +9,9 @@
 #include <la-manager/LAPool.h>
 
 #include <common/ScdParser.h>
+#ifdef USE_LOG_SERVER
+#include <common/Utilities.h>
+#endif
 #include <idmlib/util/idm_analyzer.h>
 
 #include <boost/filesystem.hpp>
@@ -21,6 +24,7 @@
 #include <vector>
 #include <algorithm>
 
+using izenelib::util::UString;
 using namespace izenelib::ir::indexmanager;
 namespace bfs = boost::filesystem;
 
@@ -67,9 +71,9 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     , document_manager_(document_manager)
     , index_manager_(index_manager)
     , analyzer_(analyzer)
-    , comment_cache_storage_(new CommentCacheStorage(homePath + "/comment_cache"))
+    , comment_cache_storage_(new CommentCacheStorage(homePath))
     , parent_key_storage_(new ParentKeyStorage(homePath, comment_cache_storage_))
-    , summarization_storage_(new SummarizationStorage(homePath + "/summarization"))
+    , summarization_storage_(new SummarizationStorage(homePath))
     , corpus_(new Corpus())
 {
     if (!schema_.parentKeyLogPath.empty())
@@ -104,7 +108,13 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
             const UString& key = kit->second.get<UString>();
             const UString& content = cit->second.get<UString>();
+#ifdef USE_LOG_SERVER
+            std::string key_str;
+            key.convertString(key_str, UString::UTF_8);
+            comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key_str), i, content);
+#else
             comment_cache_storage_->AppendUpdate(key, i, content);
+#endif
         }
     }
     else
@@ -122,9 +132,17 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
                 continue;
 
             const UString& key = kit->second.get<UString>();
+#ifdef USE_LOG_SERVER
+            std::string key_str;
+            key.convertString(key_str, UString::UTF_8);
+            KeyType parent_key;
+            if (!parent_key_storage_->GetParent(Utilities::md5ToUint128(key_str), parent_key))
+                continue;
+#else
             UString parent_key;
             if (!parent_key_storage_->GetParent(key, parent_key))
                 continue;
+#endif
 
             const UString& content = cit->second.get<UString>();
             comment_cache_storage_->AppendUpdate(parent_key, i, content);
@@ -132,20 +150,24 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     }
     comment_cache_storage_->Flush();
 
-    CommentCacheStorage::CommentCacheIteratorType commentCacheIt(comment_cache_storage_->comment_cache_db_);
-    CommentCacheStorage::CommentCacheIteratorType commentCacheEnd;
-    for (; commentCacheIt != commentCacheEnd; ++commentCacheIt)
+    for (int32_t i = 1; i <= comment_cache_storage_->getDirtyKeyCount(); i++)
     {
-        const UString& key = commentCacheIt->first;
-        Summarization summarization(commentCacheIt->second.first);
-        DoEvaluateSummarization_(summarization, key, commentCacheIt->second.second);
+        KeyType key;
+        comment_cache_storage_->GetDirtyKey(i, key);
+
+        CommentCacheStorage::CommentCacheItemType commentCacheItem;
+        comment_cache_storage_->GetCommentCache(key, commentCacheItem);
+
+        Summarization summarization(commentCacheItem.first);
+        DoEvaluateSummarization_(summarization, key, commentCacheItem.second);
     }
+    comment_cache_storage_->ClearDirtyKey();
     summarization_storage_->Flush();
 }
 
 void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
         Summarization& summarization,
-        const UString& key,
+        const KeyType& key,
         const std::vector<UString>& content_list)
 {
     if (!summarization_storage_->IsRebuildSummarizeRequired(key, summarization))
@@ -154,7 +176,16 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 #define MAXDOC 100
 
     ilplib::langid::Analyzer* langIdAnalyzer = LAPool::getInstance()->getLangId();
+
+    std::string key_str;
+#ifdef USE_LOG_SERVER
+    Utilities::uint128ToUuid(key, key_str);
+    UString key_ustr(key_str, UString::UTF_8);
+    corpus_->start_new_coll(key_ustr);
+#else
+    key.convertString(key_str, UString::UTF_8);
     corpus_->start_new_coll(key);
+#endif
     corpus_->start_new_doc(); // XXX
 
     for (std::vector<UString>::const_iterator it = content_list.begin();
@@ -190,8 +221,6 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     std::map<UString, std::vector<std::pair<double, UString> > > summaries;
 //#define DEBUG_SUMMARIZATION
 #ifdef DEBUG_SUMMARIZATION
-    std::string key_str;
-    key.convertString(key_str, UString::UTF_8);
     std::cout << "Begin evaluating: " << key_str << std::endl;
 #endif
     //if (content_list.size() < 2000 && corpus_->ntotal() < 100000)
@@ -207,7 +236,11 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 #endif
 
     //XXX store the generated summary list
+#ifdef USE_LOG_SERVER
+    std::vector<std::pair<double, UString> >& summary_list = summaries[key_ustr];
+#else
     std::vector<std::pair<double, UString> >& summary_list = summaries[key];
+#endif
     if (!summary_list.empty())
     {
 #ifdef DEBUG_SUMMARIZATION
@@ -229,7 +262,13 @@ bool MultiDocSummarizationSubManager::GetSummarizationByRawKey(
         const UString& rawKey,
         Summarization& result)
 {
+#ifdef USE_LOG_SERVER
+    std::string key_str;
+    rawKey.convertString(key_str, UString::UTF_8);
+    return summarization_storage_->Get(Utilities::uuidToUint128(key_str), result);
+#else
     return summarization_storage_->Get(rawKey, result);
+#endif
 }
 
 void MultiDocSummarizationSubManager::AppendSearchFilter(
@@ -253,22 +292,31 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
             try
             {
                 const std::string& paramValue = get<std::string>(filterParam[0]);
-                UString paramUStr(paramValue, UString::UTF_8);
-                std::vector<UString> results;
-                if (parent_key_storage_->GetChildren(paramUStr, results))
+#ifdef USE_LOG_SERVER
+                KeyType param = Utilities::uuidToUint128(paramValue);
+#else
+                KeyType param(paramValue, UString::UTF_8);
+#endif
+                std::vector<KeyType> results;
+                if (parent_key_storage_->GetChildren(param, results))
                 {
                     BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
                     QueryFiltering::FilteringType filterRule;
                     filterRule.operation_ = QueryFiltering::INCLUDE;
                     filterRule.property_ = schema_.foreignKeyPropName;
-                    std::vector<UString>::const_iterator rit = results.begin();
+                    std::vector<KeyType>::const_iterator rit = results.begin();
                     for (; rit != results.end(); ++rit)
                     {
-                        if (pBTreeIndexer->seek(schema_.foreignKeyPropName, *rit))
+#ifdef USE_LOG_SERVER
+                        UString result(Utilities::uint128ToMD5(*rit), UString::UTF_8);
+#else
+                        const KeyType& result = *rit;
+#endif
+                        if (pBTreeIndexer->seek(schema_.foreignKeyPropName, result))
                         {
                             ///Protection
                             ///Or else, too many unexisted keys are added
-                            PropertyValue v(*rit);
+                            PropertyValue v(result);
                             filterRule.values_.push_back(v);
                         }
                     }
@@ -372,7 +420,14 @@ void MultiDocSummarizationSubManager::DoInsertBuildIndexOfParentKey_(
         SCDDocPtr doc = (*doc_iter);
         if (!CheckParentKeyLogFormat(doc, parent_key_ustr_name_))
             continue;
+#ifdef USE_LOG_SERVER
+        std::string parent, child;
+        (*doc)[1].second.convertString(parent, UString::UTF_8);
+        (*doc)[0].second.convertString(child, UString::UTF_8);
+        parent_key_storage_->Insert(Utilities::uuidToUint128(parent), Utilities::md5ToUint128(child));
+#else
         parent_key_storage_->Insert((*doc)[1].second, (*doc)[0].second);
+#endif
     }
 }
 
@@ -392,7 +447,14 @@ void MultiDocSummarizationSubManager::DoUpdateIndexOfParentKey_(
         SCDDocPtr doc = (*doc_iter);
         if (!CheckParentKeyLogFormat(doc, parent_key_ustr_name_))
             continue;
+#ifdef USE_LOG_SERVER
+        std::string parent, child;
+        (*doc)[1].second.convertString(parent, UString::UTF_8);
+        (*doc)[0].second.convertString(child, UString::UTF_8);
+        parent_key_storage_->Update(Utilities::uuidToUint128(parent), Utilities::md5ToUint128(child));
+#else
         parent_key_storage_->Update((*doc)[1].second, (*doc)[0].second);
+#endif
     }
 }
 
@@ -401,7 +463,11 @@ void MultiDocSummarizationSubManager::DoDelBuildIndexOfParentKey_(
 {
     ScdParser parser(UString::UTF_8);
     if (!parser.load(fileName)) return;
-    static const UString no_parent;
+#ifdef USE_LOG_SERVER
+    static const KeyType no_parent = 0;
+#else
+    static const KeyType no_parent;
+#endif
     for (ScdParser::iterator doc_iter = parser.begin();
             doc_iter != parser.end(); ++doc_iter)
     {
@@ -414,10 +480,27 @@ void MultiDocSummarizationSubManager::DoDelBuildIndexOfParentKey_(
         switch (doc->size())
         {
         case 1:
+#ifdef USE_LOG_SERVER
+            {
+                std::string child;
+                (*doc)[0].second.convertString(child, UString::UTF_8);
+                parent_key_storage_->Delete(no_parent, Utilities::md5ToUint128(child));
+            }
+#else
             parent_key_storage_->Delete(no_parent, (*doc)[0].second);
+#endif
             break;
         case 2:
+#ifdef USE_LOG_SERVER
+            {
+                std::string parent, child;
+                (*doc)[1].second.convertString(parent, UString::UTF_8);
+                (*doc)[0].second.convertString(child, UString::UTF_8);
+                parent_key_storage_->Delete(Utilities::uuidToUint128(parent), Utilities::md5ToUint128(child));
+            }
+#else
             parent_key_storage_->Delete((*doc)[1].second, (*doc)[0].second);
+#endif
             break;
         default:
             break;

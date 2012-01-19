@@ -319,10 +319,6 @@ bool ProductManager::FinishHook()
 #endif
             }
         }
-#ifdef USE_LOG_SERVER
-        SynchronizeRequest syncReq;
-        conn.asynRequest(syncReq);
-#endif
         LOG(INFO)<<"Finished building group info."<<std::endl;
         std::vector<std::pair<uint32_t, izenelib::util::UString> > uuid_update_list;
         uint32_t append_count = 0;
@@ -403,7 +399,12 @@ bool ProductManager::FinishHook()
             {
                 UString uuid;
                 //not in any group
+#ifdef USE_LOG_SERVER
+                std::string uuidstr;
+                UuidGenerator::Gen(uuidstr, uuid);
+#else
                 UuidGenerator::Gen(uuid);
+#endif
                 doc.property(config_.uuid_property_name) = uuid;
                 uuid_update_list.push_back(std::make_pair(docid, uuid));
                 PMDocumentType new_doc(doc);
@@ -413,10 +414,18 @@ bool ProductManager::FinishHook()
                 op_processor_->Append(1, new_doc);
                 if (uuid_map_writer)
                 {
+#ifdef USE_LOG_SERVER
+                    UpdateUUIDRequest uuidReq;
+                    uuidReq.param_.uuid_ = Utilities::uuidToUint128(uuidstr);
+#endif
                     PMDocumentType map_doc;
                     map_doc.property(config_.docid_property_name) = udocid;
                     map_doc.property(config_.uuid_property_name) = uuid;
                     uuid_map_writer->Append(map_doc);
+#ifdef USE_LOG_SERVER
+                    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128(sdocid));
+                    conn.asynRequest(uuidReq);
+#endif
                 }
                 ++append_count;
             }
@@ -425,6 +434,10 @@ bool ProductManager::FinishHook()
         {
             uuid_map_writer->Close();
             delete uuid_map_writer;
+#ifdef USE_LOG_SERVER
+        SynchronizeRequest syncReq;
+        conn.asynRequest(syncReq);
+#endif
         }
         //process the comparison items.
         boost::unordered_map<GroupTableType::GroupIdType, PMDocumentType>::iterator g2doc_it = g2doc_map.begin();
