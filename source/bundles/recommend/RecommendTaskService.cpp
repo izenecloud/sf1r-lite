@@ -760,19 +760,18 @@ void RecommendTaskService::flush_()
     LOG(INFO) << "start flushing recommend data for collection " << bundleConfig_.collectionName_;
 
     userManager_.flush();
-    cartManager_.flush();
-    eventManager_.flush();
-    orderManager_.flush();
-
     visitManager_.flush();
     purchaseManager_.flush();
+    cartManager_.flush();
+    orderManager_.flush();
+    eventManager_.flush();
+    rateManager_.flush();
 
     coVisitManager_.flush();
     itemCFManager_.flush();
 
     LOG(INFO) << "flushed [Visit] " << coVisitManager_.matrix();
     LOG(INFO) << "flushed [Purchase] " << itemCFManager_;
-
     LOG(INFO) << "finish flushing recommend data for collection " << bundleConfig_.collectionName_;
 }
 
