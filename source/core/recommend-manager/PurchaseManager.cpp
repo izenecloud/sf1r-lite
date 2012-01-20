@@ -96,19 +96,4 @@ bool PurchaseManager::getPurchaseItemSet(const std::string& userId, ItemIdSet& i
     return result;
 }
 
-unsigned int PurchaseManager::purchaseUserNum()
-{
-    return container_.numItems();
-}
-
-PurchaseManager::SDBIterator PurchaseManager::begin()
-{
-    return SDBIterator(container_);
-}
-
-PurchaseManager::SDBIterator PurchaseManager::end()
-{
-    return SDBIterator();
-}
-
 } // namespace sf1r

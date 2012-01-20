@@ -9,7 +9,6 @@
 
 #include "RecTypes.h"
 #include <sdb/SequentialDB.h>
-#include <sdb/SDBCursorIterator.h>
 
 #include <string>
 #include <vector>
@@ -51,17 +50,8 @@ public:
      */
     bool getPurchaseItemSet(const std::string& userId, ItemIdSet& itemIdSet);
 
-    /**
-     * The number of users who have purchased items.
-     */
-    unsigned int purchaseUserNum();
-
-    typedef izenelib::sdb::unordered_sdb_tc<std::string, ItemIdSet, ReadWriteLock> SDBType;
-    typedef izenelib::sdb::SDBCursorIterator<SDBType> SDBIterator;
-    SDBIterator begin();
-    SDBIterator end();
-
 private:
+    typedef izenelib::sdb::unordered_sdb_tc<std::string, ItemIdSet, ReadWriteLock> SDBType;
     SDBType container_;
 };
 

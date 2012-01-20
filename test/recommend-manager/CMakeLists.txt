@@ -96,6 +96,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   ADD_EXECUTABLE(t_PurchaseManager
     Runner.cpp
     t_PurchaseManager.cpp
+    PurchaseManagerTestFixture.cpp
   )
   TARGET_LINK_LIBRARIES(t_PurchaseManager ${libs})
   SET_TARGET_PROPERTIES(t_PurchaseManager PROPERTIES
