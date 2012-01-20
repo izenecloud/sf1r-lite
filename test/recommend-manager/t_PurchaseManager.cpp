@@ -47,8 +47,6 @@ BOOST_FIXTURE_TEST_CASE(checkPurchase, PurchaseManagerTestFixture)
         addPurchaseItem("3", "30");
 
         checkPurchaseManager();
-
-        purchaseManager.flush();
     }
 
     {

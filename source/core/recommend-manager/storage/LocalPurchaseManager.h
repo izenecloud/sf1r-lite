@@ -22,8 +22,6 @@ class LocalPurchaseManager : public PurchaseManager
 public:
     LocalPurchaseManager(const std::string& path);
 
-    ~LocalPurchaseManager();
-
     virtual void flush();
 
     virtual bool getPurchaseItemSet(

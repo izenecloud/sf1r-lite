@@ -11,11 +11,6 @@ LocalPurchaseManager::LocalPurchaseManager(const std::string& path)
     container_.open();
 }
 
-LocalPurchaseManager::~LocalPurchaseManager()
-{
-    flush();
-}
-
 void LocalPurchaseManager::flush()
 {
     try
