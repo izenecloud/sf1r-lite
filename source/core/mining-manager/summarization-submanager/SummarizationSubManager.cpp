@@ -66,7 +66,8 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         boost::shared_ptr<DocumentManager> document_manager,
         boost::shared_ptr<IndexManager> index_manager,
         idmlib::util::IDMAnalyzer* analyzer)
-    : schema_(schema)
+    : last_docid_path_(homePath + "/last_docid.txt")
+    , schema_(schema)
     , parent_key_ustr_name_(schema_.parentKey, UString::UTF_8)
     , document_manager_(document_manager)
     , index_manager_(index_manager)
@@ -94,7 +95,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
     if (schema_.parentKeyLogPath.empty())
     {
-        for (uint32_t i = 1; i <= document_manager_->getMaxDocId(); i++)
+        for (uint32_t i = GetLastDocid_() + 1; i <= document_manager_->getMaxDocId(); i++)
         {
             Document doc;
             document_manager_->getDocument(i, doc);
@@ -119,7 +120,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     }
     else
     {
-        for (uint32_t i = 1; i <= document_manager_->getMaxDocId(); i++)
+        for (uint32_t i = GetLastDocid_() + 1; i <= document_manager_->getMaxDocId(); i++)
         {
             Document doc;
             document_manager_->getDocument(i, doc);
@@ -148,6 +149,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             comment_cache_storage_->AppendUpdate(parent_key, i, content);
         }
     }
+    SetLastDocid_(document_manager_->getMaxDocId());
     comment_cache_storage_->Flush();
 
     for (int32_t i = 1; i <= comment_cache_storage_->getDirtyKeyCount(); i++)
@@ -506,6 +508,24 @@ void MultiDocSummarizationSubManager::DoDelBuildIndexOfParentKey_(
             break;
         }
     }
+}
+
+uint32_t MultiDocSummarizationSubManager::GetLastDocid_() const
+{
+    std::ifstream ifs(last_docid_path_.c_str());
+
+    if (!ifs) return 0;
+
+    uint32_t docid;
+    ifs >> docid;
+    return docid;
+}
+
+void MultiDocSummarizationSubManager::SetLastDocid_(uint32_t docid) const
+{
+    std::ofstream ofs(last_docid_path_.c_str());
+
+    if (ofs) ofs << docid;
 }
 
 }

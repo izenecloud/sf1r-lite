@@ -74,7 +74,13 @@ private:
 
     void DoUpdateIndexOfParentKey_(const std::string& fileName);
 
+    uint32_t GetLastDocid_() const;
+
+    void SetLastDocid_(uint32_t docid) const;
+
 private:
+    std::string last_docid_path_;
+
     SummarizeConfig schema_;
     izenelib::util::UString parent_key_ustr_name_;
 
