@@ -4,7 +4,7 @@
 #include <recommend-manager/storage/UserManager.h>
 #include <recommend-manager/ItemManager.h>
 #include <recommend-manager/VisitManager.h>
-#include <recommend-manager/PurchaseManager.h>
+#include <recommend-manager/storage/PurchaseManager.h>
 #include <recommend-manager/CartManager.h>
 #include <recommend-manager/OrderManager.h>
 #include <recommend-manager/EventManager.h>

@@ -5,7 +5,7 @@
 ///
 
 #include "PurchaseManagerTestFixture.h"
-#include <recommend-manager/PurchaseManager.h>
+#include <recommend-manager/storage/LocalPurchaseManager.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
@@ -32,7 +32,7 @@ BOOST_FIXTURE_TEST_CASE(checkPurchase, PurchaseManagerTestFixture)
     {
         BOOST_TEST_MESSAGE("1st add purchase...");
 
-        PurchaseManager purchaseManager(purchasePath.string());
+        LocalPurchaseManager purchaseManager(purchasePath.string());
         setPurchaseManager(&purchaseManager);
 
         addPurchaseItem("1", "20 10 40");
@@ -54,7 +54,7 @@ BOOST_FIXTURE_TEST_CASE(checkPurchase, PurchaseManagerTestFixture)
     {
         BOOST_TEST_MESSAGE("2nd add purchase...");
 
-        PurchaseManager purchaseManager(purchasePath.string());
+        LocalPurchaseManager purchaseManager(purchasePath.string());
         setPurchaseManager(&purchaseManager);
 
         checkPurchaseManager();

@@ -3,7 +3,7 @@
 #include <recommend-manager/storage/UserManager.h>
 #include <recommend-manager/ItemManager.h>
 #include <recommend-manager/VisitManager.h>
-#include <recommend-manager/PurchaseManager.h>
+#include <recommend-manager/storage/LocalPurchaseManager.h>
 #include <recommend-manager/CartManager.h>
 #include <recommend-manager/OrderManager.h>
 #include <recommend-manager/EventManager.h>
@@ -245,7 +245,7 @@ void RecommendBundleActivator::createEvent_()
                                          (eventDir / "visit_recommend.db").string(),
                                          (eventDir / "visit_session.db").string()));
 
-    purchaseManager_.reset(new PurchaseManager((eventDir / "purchase.db").string()));
+    purchaseManager_.reset(new LocalPurchaseManager((eventDir / "purchase.db").string()));
     cartManager_.reset(new CartManager((eventDir / "cart.db").string()));
     eventManager_.reset(new EventManager((eventDir / "event.db").string()));
     rateManager_.reset(new RateManager((eventDir / "rate.db").string()));

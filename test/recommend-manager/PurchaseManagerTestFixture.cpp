@@ -1,5 +1,5 @@
 #include "PurchaseManagerTestFixture.h"
-#include <recommend-manager/PurchaseManager.h>
+#include <recommend-manager/storage/PurchaseManager.h>
 
 #include <boost/test/unit_test.hpp>
 #include <sstream>
