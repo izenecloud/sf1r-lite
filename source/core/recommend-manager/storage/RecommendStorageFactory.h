@@ -13,8 +13,9 @@
 
 namespace sf1r
 {
-class UserManager;
 struct CassandraStorageConfig;
+class UserManager;
+class PurchaseManager;
 
 class RecommendStorageFactory
 {
@@ -26,10 +27,12 @@ public:
     );
 
     UserManager* createUserManager() const;
+    PurchaseManager* createPurchaseManager() const;
 
 private:
     const std::string collection_;
     const boost::filesystem::path userDir_;
+    const boost::filesystem::path eventDir_;
     const CassandraStorageConfig& cassandraConfig_;
 };
 

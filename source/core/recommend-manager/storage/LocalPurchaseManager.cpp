@@ -29,7 +29,6 @@ bool LocalPurchaseManager::getPurchaseItemSet(const std::string& userId, ItemIdS
 
     try
     {
-        itemIdSet.clear();
         container_.getValue(userId, itemIdSet);
         result = true;
     }
@@ -44,7 +43,7 @@ bool LocalPurchaseManager::getPurchaseItemSet(const std::string& userId, ItemIdS
 bool LocalPurchaseManager::savePurchaseItem_(
     const std::string& userId,
     const ItemIdSet& totalItems,
-    const std::list<sf1r::itemid_t>& newItems
+    const std::list<itemid_t>& newItems
 )
 {
     bool result = false;

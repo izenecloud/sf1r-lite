@@ -1,7 +1,9 @@
 #include "CassandraAdaptor.h"
 #include <log-manager/CassandraConnection.h>
 
-#include <glog/logging.h>
+#include <cassert>
+
+using namespace org::apache::cassandra;
 
 namespace sf1r
 {
@@ -65,7 +67,7 @@ bool CassandraAdaptor::remove(const std::string& key)
     if (! client_)
         return false;
 
-    org::apache::cassandra::ColumnPath colPath;
+    ColumnPath colPath;
     colPath.__set_column_family(columnFamily_);
 
     try
@@ -82,11 +84,11 @@ bool CassandraAdaptor::getColumns(const std::string& key, std::vector<org::apach
     if (! client_)
         return false;
 
-    org::apache::cassandra::ColumnParent colParent;
+    ColumnParent colParent;
     colParent.__set_column_family(columnFamily_);
 
-    org::apache::cassandra::SlicePredicate pred;
-    org::apache::cassandra::SliceRange sliceRange;
+    SlicePredicate pred;
+    SliceRange sliceRange;
     pred.__set_slice_range(sliceRange);
 
     try
@@ -94,6 +96,50 @@ bool CassandraAdaptor::getColumns(const std::string& key, std::vector<org::apach
         client_->getSlice(columns, key, colParent, pred);
     }
     CATCH_CASSANDRA_EXCEPTION("[Cassandra::getSlice] error: ")
+
+    return true;
+}
+
+bool CassandraAdaptor::getAllColumns(const std::string& key, std::vector<org::apache::cassandra::Column>& columns)
+{
+    if (! client_)
+        return false;
+
+    ColumnParent colParent;
+    colParent.__set_column_family(columnFamily_);
+
+    SlicePredicate pred;
+    SliceRange sliceRange;
+    pred.__set_slice_range(sliceRange);
+
+    std::string lastColumn;
+    std::vector<Column> slice;
+    while (true)
+    {
+        pred.slice_range.__set_start(lastColumn);
+        slice.clear();
+
+        try
+        {
+            client_->getSlice(slice, key, colParent, pred);
+        }
+        CATCH_CASSANDRA_EXCEPTION("[Cassandra::getSlice] error: ")
+
+        std::vector<Column>::const_iterator beginIt = slice.begin();
+        std::vector<Column>::const_iterator endIt = slice.end();
+
+        if (! lastColumn.empty())
+        {
+            assert(beginIt != endIt);
+            ++beginIt;
+        }
+
+        if (beginIt == endIt)
+            break;
+
+        columns.insert(columns.end(), beginIt, endIt);
+        lastColumn = slice.back().name;
+    }
 
     return true;
 }

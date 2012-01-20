@@ -27,6 +27,8 @@ public:
 
     void addPurchaseItem(const std::string& userId, const std::string& items);
 
+    void addRandItem(const std::string& userId, int itemCount);
+
     void checkPurchaseManager();
 
 private:

@@ -11,7 +11,6 @@
 #include <sdb/SequentialDB.h>
 
 #include <string>
-#include <vector>
 #include <boost/serialization/set.hpp> // serialize ItemIdSet
 
 namespace sf1r
@@ -33,7 +32,7 @@ protected:
     virtual bool savePurchaseItem_(
         const std::string& userId,
         const ItemIdSet& totalItems,
-        const std::list<sf1r::itemid_t>& newItems
+        const std::list<itemid_t>& newItems
     );
 
 private:

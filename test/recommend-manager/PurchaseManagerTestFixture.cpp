@@ -3,6 +3,7 @@
 
 #include <boost/test/unit_test.hpp>
 #include <sstream>
+#include <cstdlib>
 
 namespace sf1r
 {
@@ -20,9 +21,9 @@ void PurchaseManagerTestFixture::setPurchaseManager(PurchaseManager* purchaseMan
 void PurchaseManagerTestFixture::addPurchaseItem(const std::string& userId, const std::string& items)
 {
     std::vector<itemid_t> orderItemVec;
-    std::istringstream ss(items);
+    std::istringstream iss(items);
     itemid_t itemId;
-    while (ss >> itemId)
+    while (iss >> itemId)
     {
         orderItemVec.push_back(itemId);
     }
@@ -34,6 +35,17 @@ void PurchaseManagerTestFixture::addPurchaseItem(const std::string& userId, cons
     {
         itemIdSet.insert(orderItemVec[i]);
     }
+}
+
+void PurchaseManagerTestFixture::addRandItem(const std::string& userId, int itemCount)
+{
+    std::ostringstream oss;
+    for (int i = 0; i < itemCount; ++i)
+    {
+        oss << std::rand() << " ";
+    }
+
+    addPurchaseItem(userId, oss.str());
 }
 
 void PurchaseManagerTestFixture::checkPurchaseManager()

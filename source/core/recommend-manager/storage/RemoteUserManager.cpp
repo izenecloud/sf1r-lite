@@ -1,8 +1,5 @@
 #include "RemoteUserManager.h"
 #include <recommend-manager/User.h>
-#include <log-manager/CassandraConnection.h>
-
-#include <3rdparty/libcassandra/cassandra.h>
 
 #include <glog/logging.h>
 #include <vector>
@@ -10,30 +7,11 @@
 namespace
 {
 const char* PROP_USERID = "USERID";
-const char* COLUMN_FAMILY_NAME_SUFFIX = "_users";
-}
+const char* COLUMN_FAMILY_NAME_SUFFIX = "users";
 
-namespace sf1r
-{
-
-RemoteUserManager::RemoteUserManager(const std::string& keyspace, const std::string& collection)
-    : keyspace_(keyspace)
-    , columnFamily_(collection + COLUMN_FAMILY_NAME_SUFFIX)
-    , cassandra_(keyspace_, columnFamily_)
+org::apache::cassandra::CfDef createCFDef()
 {
     org::apache::cassandra::CfDef def;
-    createCFDef_(def);
-
-    if (! cassandra_.createColumnFamily(def))
-    {
-        LOG(ERROR) << "failed to create column family " << columnFamily_;
-    }
-}
-
-void RemoteUserManager::createCFDef_(org::apache::cassandra::CfDef& def) const
-{
-    def.__set_keyspace(keyspace_);
-    def.__set_name(columnFamily_);
 
     def.__set_key_validation_class("UTF8Type");
     def.__set_comparator_type("UTF8Type");
@@ -52,6 +30,18 @@ void RemoteUserManager::createCFDef_(org::apache::cassandra::CfDef& def) const
     columns.push_back(age);
 
     def.__set_column_metadata(columns);
+
+    return def;
+}
+
+}
+
+namespace sf1r
+{
+
+RemoteUserManager::RemoteUserManager(const std::string& keyspace, const std::string& collection)
+    : RemoteStorage(keyspace, collection, COLUMN_FAMILY_NAME_SUFFIX, createCFDef())
+{
 }
 
 bool RemoteUserManager::addUser(const User& user)

@@ -11,7 +11,6 @@
 #include <recommend-manager/User.h>
 #include <recommend-manager/storage/CassandraAdaptor.h>
 #include <log-manager/CassandraConnection.h>
-#include <util/ustring/UString.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
@@ -53,12 +52,13 @@ BOOST_FIXTURE_TEST_CASE(checkLocalUserManager, UserManagerTestFixture)
         checkAddUser();
     }
 
-    // load LocalUserManager from files
-    LocalUserManager userManager(userPath.string());
-    setUserManager(&userManager);
+    {
+        LocalUserManager userManager(userPath.string());
+        setUserManager(&userManager);
 
-    checkUpdateUser();
-    checkRemoveUser();
+        checkUpdateUser();
+        checkRemoveUser();
+    }
 }
 
 BOOST_FIXTURE_TEST_CASE(checkRemoteUserManager, UserManagerTestFixture)
@@ -75,12 +75,20 @@ BOOST_FIXTURE_TEST_CASE(checkRemoteUserManager, UserManagerTestFixture)
         client.dropColumnFamily(COLUMN_FAMILY_NAME);
     }
 
-    RemoteUserManager userManager(KEYSPACE_NAME, COLLECTION_NAME);
-    setUserManager(&userManager);
+    {
+        RemoteUserManager userManager(KEYSPACE_NAME, COLLECTION_NAME);
+        setUserManager(&userManager);
 
-    checkAddUser();
-    checkUpdateUser();
-    checkRemoveUser();
+        checkAddUser();
+    }
+
+    {
+        RemoteUserManager userManager(KEYSPACE_NAME, COLLECTION_NAME);
+        setUserManager(&userManager);
+
+        checkUpdateUser();
+        checkRemoveUser();
+    }
 }
 
 BOOST_AUTO_TEST_CASE(checkCassandraNotConnect)
@@ -92,7 +100,7 @@ BOOST_AUTO_TEST_CASE(checkCassandraNotConnect)
     RemoteUserManager userManager(KEYSPACE_NAME, COLLECTION_NAME);
 
     User user;
-    user.idStr_ = "aaa_1";
+    user.idStr_ = "aaa";
 
     BOOST_TEST_MESSAGE("add user...");
     BOOST_CHECK(userManager.addUser(user) == false);

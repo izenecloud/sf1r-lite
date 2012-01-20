@@ -62,7 +62,7 @@ protected:
     virtual bool savePurchaseItem_(
         const std::string& userId,
         const ItemIdSet& totalItems,
-        const std::list<sf1r::itemid_t>& newItems
+        const std::list<itemid_t>& newItems
     ) = 0;
 };
 

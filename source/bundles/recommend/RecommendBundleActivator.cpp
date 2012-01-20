@@ -209,6 +209,7 @@ void RecommendBundleActivator::createStorage_()
                                            config_->cassandraConfig_);
 
     userManager_.reset(storageFactory.createUserManager());
+    purchaseManager_.reset(storageFactory.createPurchaseManager());
 }
 
 void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchService)
@@ -245,7 +246,6 @@ void RecommendBundleActivator::createEvent_()
                                          (eventDir / "visit_recommend.db").string(),
                                          (eventDir / "visit_session.db").string()));
 
-    purchaseManager_.reset(new LocalPurchaseManager((eventDir / "purchase.db").string()));
     cartManager_.reset(new CartManager((eventDir / "cart.db").string()));
     eventManager_.reset(new EventManager((eventDir / "event.db").string()));
     rateManager_.reset(new RateManager((eventDir / "rate.db").string()));

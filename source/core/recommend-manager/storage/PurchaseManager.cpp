@@ -14,8 +14,8 @@ bool PurchaseManager::addPurchaseItem(
     if (! getPurchaseItemSet(userId, itemIdSet))
         return false;
 
-    std::list<sf1r::itemid_t> oldItems(itemIdSet.begin(), itemIdSet.end());
-    std::list<sf1r::itemid_t> newItems;
+    std::list<itemid_t> oldItems(itemIdSet.begin(), itemIdSet.end());
+    std::list<itemid_t> newItems;
 
     for (std::vector<itemid_t>::const_iterator it = itemVec.begin();
         it != itemVec.end(); ++it)
