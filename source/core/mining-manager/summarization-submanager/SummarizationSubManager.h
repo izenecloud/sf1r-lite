@@ -61,7 +61,7 @@ public:
             Summarization& result);
 
 private:
-    void DoEvaluateSummarization_(
+    bool DoEvaluateSummarization_(
             Summarization& summarization,
             const KeyType& key,
             const std::vector<izenelib::util::UString>& content_list);

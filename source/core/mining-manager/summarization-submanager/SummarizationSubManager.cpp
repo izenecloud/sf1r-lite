@@ -163,33 +163,35 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     SetLastDocid_(document_manager_->getMaxDocId());
     comment_cache_storage_->Flush();
 
-    for (int32_t i = 1; i <= comment_cache_storage_->getDirtyKeyCount(); i++)
+    CommentCacheStorage::DirtyKeyIteratorType dirtyKeyIt(comment_cache_storage_->dirty_key_db_);
+    CommentCacheStorage::DirtyKeyIteratorType dirtyKeyEnd;
+    for (uint32_t count = 0; dirtyKeyIt != dirtyKeyEnd; ++dirtyKeyIt)
     {
-        KeyType key;
-        comment_cache_storage_->GetDirtyKey(i, key);
+        const KeyType& key = dirtyKeyIt->first;
 
         CommentCacheStorage::CommentCacheItemType commentCacheItem;
-        comment_cache_storage_->GetCommentCache(key, commentCacheItem);
-
+        comment_cache_storage_->Get(key, commentCacheItem);
         Summarization summarization(commentCacheItem.first);
-        DoEvaluateSummarization_(summarization, key, commentCacheItem.second);
 
-        if (i % 10000 == 0)
+        if (DoEvaluateSummarization_(summarization, key, commentCacheItem.second))
         {
-            LOG(INFO) << "Evaluating summarization: " << i;
+            if (++count % 10000 == 0)
+            {
+                LOG(INFO) << "Evaluating summarization: " << count;
+            }
         }
     }
     comment_cache_storage_->ClearDirtyKey();
     summarization_storage_->Flush();
 }
 
-void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
+bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
         Summarization& summarization,
         const KeyType& key,
         const std::vector<UString>& content_list)
 {
     if (!summarization_storage_->IsRebuildSummarizeRequired(key, summarization))
-        return;
+        return false;
 
 #define MAXDOC 100
 
@@ -259,7 +261,9 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 #else
     std::vector<std::pair<double, UString> >& summary_list = summaries[key];
 #endif
-    if (!summary_list.empty())
+    bool ret = !summary_list.empty();
+
+    if (ret)
     {
 #ifdef DEBUG_SUMMARIZATION
         for (uint32_t i = 0; i < summary_list.size(); i++)
@@ -270,10 +274,11 @@ void MultiDocSummarizationSubManager::DoEvaluateSummarization_(
         }
 #endif
         summarization.insertProperty("overview", summary_list);
+        summarization_storage_->Update(key, summarization);
     }
-    summarization_storage_->Update(key, summarization);
-
     corpus_->reset();
+
+    return ret;
 }
 
 bool MultiDocSummarizationSubManager::GetSummarizationByRawKey(

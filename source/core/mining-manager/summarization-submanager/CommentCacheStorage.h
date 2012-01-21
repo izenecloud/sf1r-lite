@@ -3,7 +3,6 @@
 
 #include <util/ustring/UString.h>
 #include <am/leveldb/Table.h>
-#include <am/tokyo_cabinet/tc_fixdb.h>
 #include <am/range/AmIterator.h>
 #include <3rdparty/am/stx/btree_map.h>
 #include <util/izene_serialization.h>
@@ -27,7 +26,7 @@ public:
     typedef izenelib::am::leveldb::Table<KeyType, CommentCacheItemType> CommentCacheDbType;
     typedef izenelib::am::AMIterator<CommentCacheDbType> CommentCacheIteratorType;
 
-    typedef izenelib::am::tc_fixdb<KeyType> DirtyKeyDbType;
+    typedef izenelib::am::leveldb::Table<KeyType, char> DirtyKeyDbType;
     typedef izenelib::am::AMIterator<DirtyKeyDbType> DirtyKeyIteratorType;
 
     typedef stx::btree_map<KeyType, std::pair<bool, std::vector<std::pair<uint32_t, ContentType> > > > BufferType;
@@ -44,16 +43,9 @@ public:
 
     void Flush();
 
-    bool GetCommentCache(const KeyType& key, CommentCacheItemType& value);
-
-    bool GetDirtyKey(int32_t index, KeyType& dirty_key);
+    bool Get(const KeyType& key, CommentCacheItemType& value);
 
     bool ClearDirtyKey();
-
-    inline int32_t getDirtyKeyCount() const
-    {
-        return dirty_key_count_;
-    }
 
 private:
     inline bool IsBufferFull_()
@@ -71,7 +63,6 @@ private:
 
     uint32_t buffer_capacity_;
     uint32_t buffer_size_;
-    int32_t dirty_key_count_;
 };
 
 }

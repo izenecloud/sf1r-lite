@@ -16,7 +16,6 @@ CommentCacheStorage::CommentCacheStorage(
     , dirty_key_db_(dbPath + dirty_key_path)
     , buffer_capacity_(buffer_capacity)
     , buffer_size_(0)
-    , dirty_key_count_(0)
 {
     if (!comment_cache_db_.open())
     {
@@ -82,33 +81,23 @@ void CommentCacheStorage::Flush()
         if (dirty)
         {
             comment_cache_db_.update(it->first, value);
-            dirty_key_db_.update(++dirty_key_count_, it->first);
+            dirty_key_db_.update(it->first, 0);
         }
     }
 
     comment_cache_db_.flush();
+    dirty_key_db_.flush();
     buffer_db_.clear();
     buffer_size_ = 0;
-
-    if (dirty_key_count_ > 0)
-    {
-        dirty_key_db_.flush();
-    }
 }
 
-bool CommentCacheStorage::GetCommentCache(const KeyType& key, CommentCacheItemType& result)
+bool CommentCacheStorage::Get(const KeyType& key, CommentCacheItemType& result)
 {
     return comment_cache_db_.get(key, result);
 }
 
-bool CommentCacheStorage::GetDirtyKey(int32_t index, KeyType& dirty_key)
-{
-    return dirty_key_db_.get(index, dirty_key);
-}
-
 bool CommentCacheStorage::ClearDirtyKey()
 {
-    dirty_key_count_ = 0;
     return dirty_key_db_.clear();
 }
 
