@@ -48,6 +48,8 @@ public:
         std::vector<ItemBundle>& bundleVec
     );
 
+    RecommendType getRecommendType(const std::string& typeStr) const;
+
 private:
     bool convertIds_(RecommendParam& param);
     bool convertItemId_(

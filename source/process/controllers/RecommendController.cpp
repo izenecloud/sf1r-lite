@@ -20,6 +20,8 @@
 #include <common/BundleSchemaHelpers.h>
 #include <common/Keys.h>
 
+#include <cassert>
+
 namespace
 {
 /// @brief default count of recommended items in each request.
@@ -66,17 +68,6 @@ namespace sf1r
 
 using namespace izenelib::driver;
 using driver::Keys;
-
-RecommendController::RecommendController()
-{
-    recTypeMap_["FBT"] = FREQUENT_BUY_TOGETHER;
-    recTypeMap_["BAB"] = BUY_ALSO_BUY;
-    recTypeMap_["VAV"] = VIEW_ALSO_VIEW;
-    recTypeMap_["BOE"] = BASED_ON_EVENT;
-    recTypeMap_["BOB"] = BASED_ON_BROWSE_HISTORY;
-    recTypeMap_["BOS"] = BASED_ON_SHOP_CART;
-    recTypeMap_["BOR"] = BASED_ON_RANDOM;
-}
 
 bool RecommendController::requireProperty(
     const std::string& propName,
@@ -946,6 +937,15 @@ bool RecommendController::parseRecommendParam(RecommendParam& param)
     if (! requireProperty(Keys::rec_type, recTypeStr))
         return false;
 
+    RecommendSearchService* service = collectionHandler_->recommendSearchService_;
+    assert(service);
+    param.type = service->getRecommendType(recTypeStr);
+    if (param.type == RECOMMEND_TYPE_NUM)
+    {
+        response().addError("Unknown recommendation type \"" + recTypeStr + "\" in request[resource][rec_type].");
+        return false;
+    }
+
     izenelib::driver::Value& resourceValue = request()[Keys::resource];
     param.limit = asUintOr(resourceValue[Keys::max_count],
                            kDefaultRecommendCount);
@@ -960,14 +960,6 @@ bool RecommendController::parseRecommendParam(RecommendParam& param)
 
     param.userIdStr = asString(resourceValue[Keys::USERID]);
     param.sessionIdStr = asString(resourceValue[Keys::session_id]);
-
-    std::map<std::string, int>::const_iterator mapIt = recTypeMap_.find(boost::to_upper_copy(recTypeStr));
-    if (mapIt == recTypeMap_.end())
-    {
-        response().addError("Unknown recommendation type \"" + recTypeStr + "\" in request[resource][rec_type].");
-        return false;
-    }
-    param.type = static_cast<RecommendType>(mapIt->second);
 
     std::string errorMsg;
     if (! param.check(errorMsg))

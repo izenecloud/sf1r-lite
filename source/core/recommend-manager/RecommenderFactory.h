@@ -8,16 +8,12 @@
 #ifndef RECOMMENDER_FACTORY_H
 #define RECOMMENDER_FACTORY_H
 
-#include "Recommender.h"
+#include "RecTypes.h"
 #include "UserEventFilter.h"
-#include "FBTRecommender.h"
-#include "VAVRecommender.h"
-#include "BABRecommender.h"
-#include "BOBRecommender.h"
-#include "BOSRecommender.h"
-#include "BOERecommender.h"
-#include "BORRecommender.h"
 #include "TIBRecommender.h"
+
+#include <map>
+#include <string>
 
 namespace sf1r
 {
@@ -28,6 +24,7 @@ class CartManager;
 class OrderManager;
 class EventManager;
 class RateManager;
+class Recommender;
 
 class RecommenderFactory
 {
@@ -44,20 +41,27 @@ public:
         ItemCFManager& itemCFManager
     );
 
+    ~RecommenderFactory();
+
+    /**
+     * @return type id, if no type id is found, @c RECOMMEND_TYPE_NUM is returned
+     */
+    RecommendType getRecommendType(const std::string& typeStr) const;
+
     Recommender* getRecommender(RecommendType type);
 
     TIBRecommender* getTIBRecommender();
 
 private:
     UserEventFilter userEventFilter_;
-    FBTRecommender fbtRecommender_;
-    VAVRecommender vavRecommender_;
-    BABRecommender babRecommender_;
-    BOBRecommender bobRecommender_;
-    BOSRecommender bosRecommender_;
-    BOERecommender boeRecommender_;
-    BORRecommender borRecommender_;
     TIBRecommender tibRecommender_;
+
+    /** key: recommendation type string */
+    typedef std::map<std::string, RecommendType> RecTypeMap;
+    RecTypeMap recTypeMap_;
+
+    /** key: RecommendType */
+    std::vector<Recommender*> recommenders_;
 };
 
 } // namespace sf1r

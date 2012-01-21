@@ -8,6 +8,7 @@
 #include <recommend-manager/TIBParam.h>
 #include <recommend-manager/ItemBundle.h>
 #include <recommend-manager/ItemIdGenerator.h>
+#include <recommend-manager/Recommender.h>
 
 #include <glog/logging.h>
 
@@ -129,6 +130,11 @@ bool RecommendSearchService::getBundleItems_(std::vector<ItemBundle>& bundleVec)
     }
 
     return true;
+}
+
+RecommendType RecommendSearchService::getRecommendType(const std::string& typeStr) const
+{
+    return recommenderFactory_.getRecommendType(typeStr);
 }
 
 } // namespace sf1r
