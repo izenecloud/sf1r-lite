@@ -66,6 +66,7 @@ private:
             const KeyType& key,
             const std::vector<izenelib::util::UString>& content_list);
 
+#ifndef USE_LOG_SERVER
     void BuildIndexOfParentKey_();
 
     void DoInsertBuildIndexOfParentKey_(const std::string& fileName);
@@ -73,6 +74,7 @@ private:
     void DoDelBuildIndexOfParentKey_(const std::string& fileName);
 
     void DoUpdateIndexOfParentKey_(const std::string& fileName);
+#endif
 
     uint32_t GetLastDocid_() const;
 

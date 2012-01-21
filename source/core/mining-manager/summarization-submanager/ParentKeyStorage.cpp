@@ -171,15 +171,16 @@ bool ParentKeyStorage::GetChildren(const ParentKeyType& parent, std::vector<Chil
 {
 #ifdef USE_LOG_SERVER
     LogServerConnection& conn = LogServerConnection::instance();
-    GetDocidListRequest docidListReq, docidListResp;
+    GetDocidListRequest docidListReq;
+    UUID2DocidList docidListResp;
 
     docidListReq.param_.uuid_ = parent;
 
     conn.syncRequest(docidListReq, docidListResp);
-    if (docidListReq.param_.uuid_ != docidListResp.param_.uuid_)
+    if (docidListReq.param_.uuid_ != docidListResp.uuid_)
         return false;
 
-    children.swap(docidListReq.param_.docidList_);
+    children.swap(docidListResp.docidList_);
     return true;
 #else
     boost::shared_lock<boost::shared_mutex> lock(mutex_);
@@ -191,15 +192,16 @@ bool ParentKeyStorage::GetParent(const ChildKeyType& child, ParentKeyType& paren
 {
 #ifdef USE_LOG_SERVER
     LogServerConnection& conn = LogServerConnection::instance();
-    GetUUIDRequest uuidReq, uuidResp;
+    GetUUIDRequest uuidReq;
+    Docid2UUID uuidResp;
 
     uuidReq.param_.docid_ = child;
 
     conn.syncRequest(uuidReq, uuidResp);
-    if (uuidReq.param_.docid_ != uuidResp.param_.docid_)
+    if (uuidReq.param_.docid_ != uuidResp.docid_)
         return false;
 
-    parent = uuidResp.param_.uuid_;
+    parent = uuidResp.uuid_;
     return true;
 #else
     boost::shared_lock<boost::shared_mutex> lock(mutex_);
