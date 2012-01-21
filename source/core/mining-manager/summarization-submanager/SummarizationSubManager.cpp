@@ -91,7 +91,9 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 
 void MultiDocSummarizationSubManager::EvaluateSummarization()
 {
+#ifndef USE_LOG_SERVER
     BuildIndexOfParentKey_();
+#endif
 
     if (schema_.parentKeyLogPath.empty())
     {
@@ -337,6 +339,7 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
     }
 }
 
+#ifndef USE_LOG_SERVER
 void MultiDocSummarizationSubManager::BuildIndexOfParentKey_()
 {
     if (schema_.parentKeyLogPath.empty()) return;
@@ -422,14 +425,7 @@ void MultiDocSummarizationSubManager::DoInsertBuildIndexOfParentKey_(
         SCDDocPtr doc = (*doc_iter);
         if (!CheckParentKeyLogFormat(doc, parent_key_ustr_name_))
             continue;
-#ifdef USE_LOG_SERVER
-        std::string parent, child;
-        (*doc)[1].second.convertString(parent, UString::UTF_8);
-        (*doc)[0].second.convertString(child, UString::UTF_8);
-        parent_key_storage_->Insert(Utilities::uuidToUint128(parent), Utilities::md5ToUint128(child));
-#else
         parent_key_storage_->Insert((*doc)[1].second, (*doc)[0].second);
-#endif
     }
 }
 
@@ -449,14 +445,7 @@ void MultiDocSummarizationSubManager::DoUpdateIndexOfParentKey_(
         SCDDocPtr doc = (*doc_iter);
         if (!CheckParentKeyLogFormat(doc, parent_key_ustr_name_))
             continue;
-#ifdef USE_LOG_SERVER
-        std::string parent, child;
-        (*doc)[1].second.convertString(parent, UString::UTF_8);
-        (*doc)[0].second.convertString(child, UString::UTF_8);
-        parent_key_storage_->Update(Utilities::uuidToUint128(parent), Utilities::md5ToUint128(child));
-#else
         parent_key_storage_->Update((*doc)[1].second, (*doc)[0].second);
-#endif
     }
 }
 
@@ -465,11 +454,7 @@ void MultiDocSummarizationSubManager::DoDelBuildIndexOfParentKey_(
 {
     ScdParser parser(UString::UTF_8);
     if (!parser.load(fileName)) return;
-#ifdef USE_LOG_SERVER
-    static const KeyType no_parent = 0;
-#else
     static const KeyType no_parent;
-#endif
     for (ScdParser::iterator doc_iter = parser.begin();
             doc_iter != parser.end(); ++doc_iter)
     {
@@ -482,33 +467,17 @@ void MultiDocSummarizationSubManager::DoDelBuildIndexOfParentKey_(
         switch (doc->size())
         {
         case 1:
-#ifdef USE_LOG_SERVER
-            {
-                std::string child;
-                (*doc)[0].second.convertString(child, UString::UTF_8);
-                parent_key_storage_->Delete(no_parent, Utilities::md5ToUint128(child));
-            }
-#else
             parent_key_storage_->Delete(no_parent, (*doc)[0].second);
-#endif
             break;
         case 2:
-#ifdef USE_LOG_SERVER
-            {
-                std::string parent, child;
-                (*doc)[1].second.convertString(parent, UString::UTF_8);
-                (*doc)[0].second.convertString(child, UString::UTF_8);
-                parent_key_storage_->Delete(Utilities::uuidToUint128(parent), Utilities::md5ToUint128(child));
-            }
-#else
             parent_key_storage_->Delete((*doc)[1].second, (*doc)[0].second);
-#endif
             break;
         default:
             break;
         }
     }
 }
+#endif
 
 uint32_t MultiDocSummarizationSubManager::GetLastDocid_() const
 {
