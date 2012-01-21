@@ -97,7 +97,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
     if (schema_.parentKeyLogPath.empty())
     {
-        for (uint32_t i = GetLastDocid_() + 1; i <= document_manager_->getMaxDocId(); i++)
+        for (uint32_t i = GetLastDocid_() + 1, count = 0; i <= document_manager_->getMaxDocId(); i++)
         {
             Document doc;
             document_manager_->getDocument(i, doc);
@@ -118,11 +118,16 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 #else
             comment_cache_storage_->AppendUpdate(key, i, content);
 #endif
+
+            if (++count % 100000 == 0)
+            {
+                LOG(INFO) << "Caching comments: " << count;
+            }
         }
     }
     else
     {
-        for (uint32_t i = GetLastDocid_() + 1; i <= document_manager_->getMaxDocId(); i++)
+        for (uint32_t i = GetLastDocid_() + 1, count = 0; i <= document_manager_->getMaxDocId(); i++)
         {
             Document doc;
             document_manager_->getDocument(i, doc);
@@ -140,15 +145,19 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             key.convertString(key_str, UString::UTF_8);
             KeyType parent_key;
             if (!parent_key_storage_->GetParent(Utilities::md5ToUint128(key_str), parent_key))
-                continue;
 #else
             UString parent_key;
             if (!parent_key_storage_->GetParent(key, parent_key))
-                continue;
 #endif
+                continue;
 
             const UString& content = cit->second.get<UString>();
             comment_cache_storage_->AppendUpdate(parent_key, i, content);
+
+            if (++count % 100000 == 0)
+            {
+                LOG(INFO) << "Caching comments: " << count;
+            }
         }
     }
     SetLastDocid_(document_manager_->getMaxDocId());
@@ -164,6 +173,11 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
         Summarization summarization(commentCacheItem.first);
         DoEvaluateSummarization_(summarization, key, commentCacheItem.second);
+
+        if (i % 10000 == 0)
+        {
+            LOG(INFO) << "Evaluating summarization: " << i;
+        }
     }
     comment_cache_storage_->ClearDirtyKey();
     summarization_storage_->Flush();
