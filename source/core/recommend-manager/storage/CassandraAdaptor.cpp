@@ -8,19 +8,20 @@ using namespace org::apache::cassandra;
 namespace sf1r
 {
 
-CassandraAdaptor::CassandraAdaptor(const std::string& keyspace, const std::string& columnFamily)
-    : keyspace_(keyspace)
-    , columnFamily_(columnFamily)
-    , client_(CassandraConnection::instance().getCassandraClient(keyspace_))
+CassandraAdaptor::CassandraAdaptor(const std::string& columnFamily, libcassandra::Cassandra* client)
+    : columnFamily_(columnFamily)
+    , client_(client)
 {
-    if (! client_)
-    {
-        LOG(ERROR) << "failed to connect cassandra server, keyspace: " << keyspace_
-                   << ", column family: " << columnFamily_;
-    }
 }
 
-bool CassandraAdaptor::createColumnFamily(const org::apache::cassandra::CfDef& cfDef)
+CassandraAdaptor::CassandraAdaptor(const org::apache::cassandra::CfDef& cfDef, libcassandra::Cassandra* client)
+    : columnFamily_(cfDef.name)
+    , client_(client)
+{
+    createColumnFamily_(cfDef);
+}
+
+bool CassandraAdaptor::createColumnFamily_(const org::apache::cassandra::CfDef& cfDef)
 {
     if (! client_)
         return false;
@@ -34,14 +35,14 @@ bool CassandraAdaptor::createColumnFamily(const org::apache::cassandra::CfDef& c
     return true;
 }
 
-bool CassandraAdaptor::dropColumnFamily(const std::string& columnFamily)
+bool CassandraAdaptor::dropColumnFamily()
 {
     if (! client_)
         return false;
 
     try
     {
-        client_->dropColumnFamily(columnFamily);
+        client_->dropColumnFamily(columnFamily_);
     }
     CATCH_CASSANDRA_EXCEPTION("[Cassandra::dropColumnFamily] error: ")
 

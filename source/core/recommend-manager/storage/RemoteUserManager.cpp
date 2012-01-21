@@ -7,11 +7,16 @@
 namespace
 {
 const char* PROP_USERID = "USERID";
-const char* COLUMN_FAMILY_NAME_SUFFIX = "users";
 
-org::apache::cassandra::CfDef createCFDef()
+org::apache::cassandra::CfDef createCFDef(
+    const std::string& keyspace,
+    const std::string& columnFamily
+)
 {
     org::apache::cassandra::CfDef def;
+
+    def.__set_keyspace(keyspace);
+    def.__set_name(columnFamily);
 
     def.__set_key_validation_class("UTF8Type");
     def.__set_comparator_type("UTF8Type");
@@ -39,8 +44,12 @@ org::apache::cassandra::CfDef createCFDef()
 namespace sf1r
 {
 
-RemoteUserManager::RemoteUserManager(const std::string& keyspace, const std::string& collection)
-    : RemoteStorage(keyspace, collection, COLUMN_FAMILY_NAME_SUFFIX, createCFDef())
+RemoteUserManager::RemoteUserManager(
+    const std::string& keyspace,
+    const std::string& columnFamily,
+    libcassandra::Cassandra* client
+)
+    : cassandra_(createCFDef(keyspace, columnFamily), client)
 {
 }
 

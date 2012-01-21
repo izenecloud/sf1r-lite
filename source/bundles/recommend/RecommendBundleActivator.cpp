@@ -204,9 +204,9 @@ void RecommendBundleActivator::createSCDDir_()
 
 void RecommendBundleActivator::createStorage_()
 {
-    RecommendStorageFactory storageFactory(config_->collectionName_,
-                                           dataDir_.string(),
-                                           config_->cassandraConfig_);
+    RecommendStorageFactory storageFactory(config_->cassandraConfig_,
+                                           config_->collectionName_,
+                                           dataDir_.string());
 
     userManager_.reset(storageFactory.createUserManager());
     purchaseManager_.reset(storageFactory.createPurchaseManager());

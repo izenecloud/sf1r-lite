@@ -8,17 +8,21 @@
 #define REMOTE_PURCHASE_MANAGER_H
 
 #include "PurchaseManager.h"
-#include "RemoteStorage.h"
+#include "CassandraAdaptor.h"
 
 #include <string>
 
 namespace sf1r
 {
 
-class RemotePurchaseManager : public PurchaseManager, protected RemoteStorage
+class RemotePurchaseManager : public PurchaseManager
 {
 public:
-    RemotePurchaseManager(const std::string& keyspace, const std::string& collection);
+    RemotePurchaseManager(
+        const std::string& keyspace,
+        const std::string& columnFamily,
+        libcassandra::Cassandra* client
+    );
 
     virtual bool getPurchaseItemSet(
         const std::string& userId,
@@ -31,6 +35,9 @@ protected:
         const ItemIdSet& totalItems,
         const std::list<itemid_t>& newItems
     );
+
+private:
+    CassandraAdaptor cassandra_;
 };
 
 } // namespace sf1r

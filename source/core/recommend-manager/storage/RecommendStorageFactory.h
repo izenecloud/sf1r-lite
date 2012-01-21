@@ -9,7 +9,11 @@
 #define RECOMMEND_STORAGE_FACTORY_H
 
 #include <string>
-#include <boost/filesystem.hpp>
+
+namespace libcassandra
+{
+class Cassandra;
+}
 
 namespace sf1r
 {
@@ -21,19 +25,30 @@ class RecommendStorageFactory
 {
 public:
     RecommendStorageFactory(
+        const CassandraStorageConfig& cassandraConfig,
         const std::string& collection,
-        const std::string& dataDir,
-        const CassandraStorageConfig& cassandraConfig
+        const std::string& dataDir
     );
 
     UserManager* createUserManager() const;
     PurchaseManager* createPurchaseManager() const;
 
+    const std::string& getUserColumnFamily() const;
+    const std::string& getPurchaseColumnFamily() const;
+
 private:
-    const std::string collection_;
-    const boost::filesystem::path userDir_;
-    const boost::filesystem::path eventDir_;
+    void initRemoteStorage_(const std::string& collection);
+    void initLocalStorage_(const std::string& dataDir);
+
+private:
     const CassandraStorageConfig& cassandraConfig_;
+    libcassandra::Cassandra* cassandraClient_;
+
+    std::string userPath_;
+    std::string purchasePath_;
+
+    std::string userColumnFamily_;
+    std::string purchaseColumnFamily_;
 };
 
 } // namespace sf1r

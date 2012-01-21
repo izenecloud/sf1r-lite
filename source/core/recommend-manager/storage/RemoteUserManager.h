@@ -8,7 +8,7 @@
 #define REMOTE_USER_MANAGER_H
 
 #include "UserManager.h"
-#include "RemoteStorage.h"
+#include "CassandraAdaptor.h"
 
 #include <string>
 
@@ -16,10 +16,14 @@ namespace sf1r
 {
 struct User;
 
-class RemoteUserManager : public UserManager, protected RemoteStorage
+class RemoteUserManager : public UserManager
 {
 public:
-    RemoteUserManager(const std::string& keyspace, const std::string& collection);
+    RemoteUserManager(
+        const std::string& keyspace,
+        const std::string& columnFamily,
+        libcassandra::Cassandra* client
+    );
 
     virtual bool addUser(const User& user);
 
@@ -28,6 +32,9 @@ public:
     virtual bool removeUser(const std::string& userId);
 
     virtual bool getUser(const std::string& userId, User& user);
+
+private:
+    CassandraAdaptor cassandra_;
 };
 
 } // namespace sf1r

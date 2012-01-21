@@ -22,10 +22,20 @@ namespace sf1r
 class CassandraAdaptor
 {
 public:
-    CassandraAdaptor(const std::string& keyspace, const std::string& columnFamily);
+    /**
+     * @param columnFamily column family name
+     * @param client cassandra client instance
+     * @attention if @p client is NULL, meaning the connection with cassandra server failed,
+     *            then all member functions in @c CassandraAdaptor would return @c false.
+     */
+    CassandraAdaptor(const std::string& columnFamily, libcassandra::Cassandra* client);
 
-    bool createColumnFamily(const org::apache::cassandra::CfDef& cfDef);
-    bool dropColumnFamily(const std::string& columnFamily);
+    /**
+     * Create column family from @p cfDef.
+     */
+    CassandraAdaptor(const org::apache::cassandra::CfDef& cfDef, libcassandra::Cassandra* client);
+
+    bool dropColumnFamily();
 
     bool insertColumn(const std::string& key, const std::string& name, const std::string& value);
     bool remove(const std::string& key);
@@ -40,9 +50,10 @@ public:
     bool getIntegerColumnNames(const std::string& key, std::set<IntegerType>& nameSet);
 
 private:
-    const std::string keyspace_;
-    const std::string columnFamily_;
+    bool createColumnFamily_(const org::apache::cassandra::CfDef& cfDef);
 
+private:
+    const std::string columnFamily_;
     libcassandra::Cassandra* client_;
 };
 
