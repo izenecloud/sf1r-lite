@@ -22,20 +22,6 @@ org::apache::cassandra::CfDef createCFDef(
     def.__set_comparator_type("UTF8Type");
     def.__set_default_validation_class("UTF8Type");
 
-    std::vector<org::apache::cassandra::ColumnDef> columns;
-
-    org::apache::cassandra::ColumnDef gender;
-    gender.__set_name("gender");
-    gender.__set_validation_class("UTF8Type");
-    columns.push_back(gender);
-
-    org::apache::cassandra::ColumnDef age;
-    age.__set_name("age");
-    age.__set_validation_class("UTF8Type");
-    columns.push_back(age);
-
-    def.__set_column_metadata(columns);
-
     return def;
 }
 
