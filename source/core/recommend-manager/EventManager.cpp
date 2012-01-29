@@ -30,7 +30,7 @@ void EventManager::flush()
 
 bool EventManager::addEvent(
     const std::string& eventStr,
-    userid_t userId,
+    const std::string& userId,
     itemid_t itemId
 )
 {
@@ -60,7 +60,7 @@ bool EventManager::addEvent(
 
 bool EventManager::removeEvent(
     const std::string& eventStr,
-    userid_t userId,
+    const std::string& userId,
     itemid_t itemId
 )
 {
@@ -89,7 +89,7 @@ bool EventManager::removeEvent(
 }
 
 bool EventManager::getEvent(
-    userid_t userId,
+    const std::string& userId,
     EventItemMap& eventItemMap
 )
 {

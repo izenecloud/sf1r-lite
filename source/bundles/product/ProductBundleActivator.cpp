@@ -196,7 +196,11 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
     op_processor_ = new ScdOperationProcessor(config_->productId_, config_->collectionName_, scd_dir);
     if (config_->pm_config_.enable_price_trend)
     {
-        price_trend_ = new ProductPriceTrend(config_->collectionName_, dir, config_->pm_config_.group_property_names, config_->pm_config_.time_interval_days);
+        price_trend_ = new ProductPriceTrend(config_->cassandraConfig_,
+                                             config_->collectionName_,
+                                             dir,
+                                             config_->pm_config_.group_property_names,
+                                             config_->pm_config_.time_interval_days);
         ProductCronJobHandler* handler = ProductCronJobHandler::getInstance();
         if (!handler->cronStart(config_->cron_))
         {

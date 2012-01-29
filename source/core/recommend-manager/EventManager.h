@@ -40,7 +40,7 @@ public:
      */
     bool addEvent(
         const std::string& eventStr,
-        userid_t userId,
+        const std::string& userId,
         itemid_t itemId
     );
 
@@ -53,7 +53,7 @@ public:
      */
     bool removeEvent(
         const std::string& eventStr,
-        userid_t userId,
+        const std::string& userId,
         itemid_t itemId
     );
 
@@ -64,12 +64,12 @@ public:
      * @return true for success, false for error happened.
      */
     bool getEvent(
-        userid_t userId,
+        const std::string& userId,
         EventItemMap& eventItemMap
     );
 
 private:
-    typedef izenelib::sdb::unordered_sdb_tc<userid_t, EventItemMap, ReadWriteLock> SDBType;
+    typedef izenelib::sdb::unordered_sdb_tc<std::string, EventItemMap, ReadWriteLock> SDBType;
     SDBType container_;
 };
 

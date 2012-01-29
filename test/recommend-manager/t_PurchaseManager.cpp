@@ -1,188 +1,162 @@
 /// @file t_PurchaseManager.cpp
-/// @brief test PurchaseManager in visit operations
+/// @brief test PurchaseManager in purchase operations
 /// @author Jun Jiang
 /// @date Created 2011-04-19
 ///
 
-#include <util/ustring/UString.h>
-#include <recommend-manager/PurchaseManager.h>
+#include "PurchaseManagerTestFixture.h"
+#include <recommend-manager/storage/RecommendStorageFactory.h>
+#include <configuration-manager/CassandraStorageConfig.h>
+#include <recommend-manager/storage/LocalPurchaseManager.h>
+#include <recommend-manager/storage/RemotePurchaseManager.h>
+#include <recommend-manager/storage/CassandraAdaptor.h>
+#include <log-manager/CassandraConnection.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/filesystem/path.hpp>
 
 #include <string>
-#include <vector>
-#include <map>
-#include <set>
 
 using namespace std;
-using namespace boost;
 using namespace sf1r;
 
 namespace bfs = boost::filesystem;
 
 namespace
 {
-const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
-const char* TEST_DIR_STR = "recommend_test/t_PurchaseManager";
-const char* PURCHASE_DB_STR = "purchase.db";
-const char* CF_DIR_STR = "cf";
-const char* ITEM_DB_STR = "item.db";
-const char* MAX_ID_STR = "max_itemid.txt";
-}
-
-typedef map<userid_t, set<itemid_t> > PurchaseMap;
-
-void addPurchaseItem(
-    PurchaseManager& purchaseManager,
-    PurchaseMap& purchaseMap,
-    userid_t userId,
-    const std::vector<itemid_t>& orderItemVec
-)
-{
-    BOOST_CHECK(purchaseManager.addPurchaseItem(userId, orderItemVec));
-
-    set<itemid_t>& itemIdSet = purchaseMap[userId];
-    for (unsigned int i = 0; i < orderItemVec.size(); ++i)
-    {
-        itemIdSet.insert(orderItemVec[i]);
-    }
-}
-
-void checkPurchaseManager(const PurchaseMap& purchaseMap, PurchaseManager& purchaseManager)
-{
-    BOOST_CHECK_EQUAL(purchaseManager.purchaseUserNum(), purchaseMap.size());
-
-    for (PurchaseMap::const_iterator it = purchaseMap.begin();
-        it != purchaseMap.end(); ++it)
-    {
-        ItemIdSet itemIdSet;
-        BOOST_CHECK(purchaseManager.getPurchaseItemSet(it->first, itemIdSet));
-        BOOST_CHECK_EQUAL_COLLECTIONS(itemIdSet.begin(), itemIdSet.end(),
-                                      it->second.begin(), it->second.end());
-    }
-}
-
-void iteratePurchaseManager(const PurchaseMap& purchaseMap, PurchaseManager& purchaseManager)
-{
-    BOOST_CHECK_EQUAL(purchaseManager.purchaseUserNum(), purchaseMap.size());
-
-    unsigned int iterNum = 0;
-    for (PurchaseManager::SDBIterator purchaseIt = purchaseManager.begin();
-        purchaseIt != purchaseManager.end(); ++purchaseIt)
-    {
-        userid_t userId = purchaseIt->first;
-        const ItemIdSet& itemIdSet = purchaseIt->second;
-
-        PurchaseMap::const_iterator it = purchaseMap.find(userId);
-        BOOST_CHECK(it != purchaseMap.end());
-        BOOST_CHECK_EQUAL_COLLECTIONS(itemIdSet.begin(), itemIdSet.end(),
-                                      it->second.begin(), it->second.end());
-        ++iterNum;
-    }
-
-    BOOST_TEST_MESSAGE("iterNum: " << iterNum);
-    BOOST_CHECK_EQUAL(iterNum, purchaseManager.purchaseUserNum());
+const string TEST_DIR_STR = "recommend_test/t_PurchaseManager";
+const string TEST_CASSANDRA_URL = "cassandra://localhost";
+const string KEYSPACE_NAME = "test_recommend";
+const string COLLECTION_NAME = "example";
 }
 
 BOOST_AUTO_TEST_SUITE(PurchaseManagerTest)
 
-BOOST_AUTO_TEST_CASE(checkPurchase)
+BOOST_FIXTURE_TEST_CASE(checkLocalPurchaseManager, PurchaseManagerTestFixture)
 {
     bfs::remove_all(TEST_DIR_STR);
     bfs::create_directories(TEST_DIR_STR);
 
-    bfs::path purchasePath(bfs::path(TEST_DIR_STR) / PURCHASE_DB_STR);
-    bfs::path itemPath(bfs::path(TEST_DIR_STR) / ITEM_DB_STR);
-    bfs::path maxIdPath(bfs::path(TEST_DIR_STR) / MAX_ID_STR);
+    CassandraStorageConfig config;
+    RecommendStorageFactory factory(config, COLLECTION_NAME, TEST_DIR_STR);
 
-    bfs::create_directories(TEST_DIR_STR);
-
-    PurchaseMap purchaseMap;
-
-    bfs::path cfPath(bfs::path(TEST_DIR_STR) / CF_DIR_STR);
-    string cfPathStr = cfPath.string();
-    bfs::create_directories(cfPath);
-    ItemCFManager itemCFManager(cfPathStr + "/covisit", 1000,
-                                cfPathStr + "/sim", 1000,
-                                cfPathStr + "/nb", 30);
     {
-        BOOST_TEST_MESSAGE("add purchase...");
+        BOOST_TEST_MESSAGE("1st add purchase...");
 
-        PurchaseManager purchaseManager(purchasePath.string(), itemCFManager);
-        std::vector<itemid_t> orderItemVec;
+        boost::scoped_ptr<PurchaseManager> purchaseManager(factory.createPurchaseManager());
+        BOOST_CHECK(dynamic_cast<LocalPurchaseManager*>(purchaseManager.get()) != NULL);
+        setPurchaseManager(purchaseManager.get());
 
-        orderItemVec.push_back(20);
-        orderItemVec.push_back(10);
-        orderItemVec.push_back(40);
-        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec);
+        addPurchaseItem("1", "20 10 40");
+        addPurchaseItem("1", "10");
+        addPurchaseItem("2", "20 30");
+        addPurchaseItem("3", "20 30 20");
 
-        orderItemVec.clear();
-        orderItemVec.push_back(10);
-        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec);
+        addRandItem("1", 99);
+        addRandItem("2", 100);
+        addRandItem("3", 101);
+        addRandItem("4", 1234);
 
-        orderItemVec.clear();
-        orderItemVec.push_back(20);
-        orderItemVec.push_back(30);
-        addPurchaseItem(purchaseManager, purchaseMap, 2, orderItemVec);
-
-        orderItemVec.clear();
-        orderItemVec.push_back(30);
-        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec);
-
-        orderItemVec.clear();
-        orderItemVec.push_back(30);
-        orderItemVec.push_back(20);
-        addPurchaseItem(purchaseManager, purchaseMap, 3, orderItemVec);
-
-        orderItemVec.clear();
-        orderItemVec.push_back(10);
-        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec);
-
-        orderItemVec.clear();
-        orderItemVec.push_back(20);
-        addPurchaseItem(purchaseManager, purchaseMap, 2, orderItemVec);
-
-        orderItemVec.clear();
-        orderItemVec.push_back(30);
-        addPurchaseItem(purchaseManager, purchaseMap, 3, orderItemVec);
-
-        checkPurchaseManager(purchaseMap, purchaseManager);
-        iteratePurchaseManager(purchaseMap, purchaseManager);
-
-        purchaseManager.flush();
+        checkPurchaseManager();
     }
 
     {
-        BOOST_TEST_MESSAGE("continue add purchase...");
+        BOOST_TEST_MESSAGE("2nd add purchase...");
 
-        PurchaseManager purchaseManager(purchasePath.string(), itemCFManager);
-        checkPurchaseManager(purchaseMap, purchaseManager);
-        iteratePurchaseManager(purchaseMap, purchaseManager);
+        boost::scoped_ptr<PurchaseManager> purchaseManager(factory.createPurchaseManager());
+        setPurchaseManager(purchaseManager.get());
 
-        std::vector<itemid_t> orderItemVec;
+        checkPurchaseManager();
 
-        orderItemVec.push_back(40);
-        addPurchaseItem(purchaseManager, purchaseMap, 1, orderItemVec);
+        addPurchaseItem("1", "40 50 60");
+        addPurchaseItem("2", "40");
+        addPurchaseItem("3", "30 40 50");
+        addPurchaseItem("4", "20 30");
 
-        orderItemVec.clear();
-        orderItemVec.push_back(40);
-        addPurchaseItem(purchaseManager, purchaseMap, 2, orderItemVec);
-
-        orderItemVec.clear();
-        orderItemVec.push_back(40);
-        addPurchaseItem(purchaseManager, purchaseMap, 3, orderItemVec);
-
-        orderItemVec.clear();
-        orderItemVec.push_back(40);
-        addPurchaseItem(purchaseManager, purchaseMap, 4, orderItemVec);
-
-        checkPurchaseManager(purchaseMap, purchaseManager);
-        iteratePurchaseManager(purchaseMap, purchaseManager);
-
-        purchaseManager.flush();
+        checkPurchaseManager();
     }
+}
+
+BOOST_FIXTURE_TEST_CASE(checkRemotePurchaseManager, PurchaseManagerTestFixture)
+{
+    CassandraConnection& connection = CassandraConnection::instance();
+    if (! connection.init(TEST_CASSANDRA_URL))
+    {
+        cerr << "warning: exit test case as failed to connect " << TEST_CASSANDRA_URL << endl;
+        return;
+    }
+
+    CassandraStorageConfig config;
+    config.enable = true;
+    config.keyspace = KEYSPACE_NAME;
+    RecommendStorageFactory factory(config, COLLECTION_NAME, TEST_DIR_STR);
+
+    {
+        libcassandra::Cassandra* client = connection.getCassandraClient(KEYSPACE_NAME);
+        CassandraAdaptor adaptor(factory.getPurchaseColumnFamily(), client);
+        adaptor.dropColumnFamily();
+    }
+
+    {
+        BOOST_TEST_MESSAGE("1st add purchase...");
+
+        boost::scoped_ptr<PurchaseManager> purchaseManager(factory.createPurchaseManager());
+        BOOST_CHECK(dynamic_cast<RemotePurchaseManager*>(purchaseManager.get()) != NULL);
+        setPurchaseManager(purchaseManager.get());
+
+
+        addPurchaseItem("1", "20 10 40");
+        addPurchaseItem("1", "10");
+        addPurchaseItem("2", "20 30");
+        addPurchaseItem("3", "20 30 20");
+
+        addRandItem("1", 99);
+        addRandItem("2", 100);
+        addRandItem("3", 101);
+        addRandItem("4", 1234);
+
+        checkPurchaseManager();
+    }
+
+    {
+        BOOST_TEST_MESSAGE("2nd add purchase...");
+
+        boost::scoped_ptr<PurchaseManager> purchaseManager(factory.createPurchaseManager());
+        setPurchaseManager(purchaseManager.get());
+
+        checkPurchaseManager();
+
+        addPurchaseItem("1", "40 50 60");
+        addPurchaseItem("2", "40");
+        addPurchaseItem("3", "30 40 50");
+        addPurchaseItem("4", "20 30");
+
+        checkPurchaseManager();
+    }
+}
+
+BOOST_AUTO_TEST_CASE(checkCassandraNotConnect)
+{
+    CassandraConnection& connection = CassandraConnection::instance();
+    const char* TEST_CASSANDRA_NOT_CONNECT_URL = "cassandra://localhost:9161";
+    BOOST_CHECK(connection.init(TEST_CASSANDRA_NOT_CONNECT_URL) == false);
+
+    CassandraStorageConfig config;
+    config.enable = true;
+    config.keyspace = KEYSPACE_NAME;
+    RecommendStorageFactory factory(config, COLLECTION_NAME, TEST_DIR_STR);
+
+    boost::scoped_ptr<PurchaseManager> purchaseManager(factory.createPurchaseManager());
+
+    string userId = "aaa";
+    std::vector<itemid_t> orderItemVec;
+    orderItemVec.push_back(1);
+    orderItemVec.push_back(2);
+
+    BOOST_CHECK(purchaseManager->addPurchaseItem(userId, orderItemVec, NULL) == false);
+
+    ItemIdSet itemIdSet;
+    BOOST_CHECK(purchaseManager->getPurchaseItemSet(userId, itemIdSet) == false);
 }
 
 BOOST_AUTO_TEST_SUITE_END() 

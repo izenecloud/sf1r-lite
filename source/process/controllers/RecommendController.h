@@ -9,7 +9,6 @@
 #include <util/osgi/IService.h>
 
 #include <string>
-#include <map>
 
 namespace sf1r
 {
@@ -35,8 +34,6 @@ struct RateParam;
 class RecommendController : public Sf1Controller
 {
 public:
-    RecommendController();
-
     void add_user();
     void update_user();
     void remove_user();
@@ -66,9 +63,6 @@ private:
     bool parseTIBParam(TIBParam& param);
     void renderBundleResult(const std::vector<ItemBundle>& bundleVec);
     bool parseRateParam(RateParam& param);
-
-private:
-    std::map<std::string, int> recTypeMap_; /// mapping from recommendation type string to type id
 };
 
 /// @}

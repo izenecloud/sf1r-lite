@@ -2,10 +2,13 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/thread/locks.hpp>
 
 #include <libcassandra/cassandra.h>
 #include <libcassandra/connection_manager.h>
 #include <libcassandra/util_functions.h>
+
+#include <memory> // auto_ptr
 
 using namespace std;
 using namespace libcassandra;
@@ -20,6 +23,21 @@ CassandraConnection::CassandraConnection()
 
 CassandraConnection::~CassandraConnection()
 {
+    clear_();
+}
+
+void CassandraConnection::clear_()
+{
+    isEnabled_ = false;
+    user_name_.clear();
+    password_.clear();
+
+    for (KeyspaceClientMap::iterator it = client_map_.begin();
+        it != client_map_.end(); ++it)
+    {
+        delete it->second;
+    }
+    client_map_.clear();
 }
 
 bool CassandraConnection::isEnabled()
@@ -27,23 +45,10 @@ bool CassandraConnection::isEnabled()
     return isEnabled_;
 }
 
-boost::shared_ptr<libcassandra::Cassandra>& CassandraConnection::getCassandraClient()
-{
-    return cassandra_client_;
-}
-
-const string& CassandraConnection::getKeyspaceName() const
-{
-    return keyspace_name_;
-}
-
-void CassandraConnection::setKeyspaceName(const string& keyspace_name)
-{
-    keyspace_name_ = keyspace_name;
-}
-
 bool CassandraConnection::init(const string& str)
 {
+    clear_();
+
     if (str == "__disabled__") return false;
     string cassandra_prefix = "cassandra://";
     if (boost::algorithm::starts_with(str, cassandra_prefix))
@@ -51,11 +56,9 @@ bool CassandraConnection::init(const string& str)
         string path = str.substr(cassandra_prefix.length());
         string host;
         string portStr;
-        string ks_name;
         uint16_t port = 9160;
         string username;
         string password;
-        bool hasAuth = false;
         static const size_t pool_size = 16;
 
         // Parse authentication information
@@ -63,28 +66,15 @@ bool CassandraConnection::init(const string& str)
         if (pos == 0) goto UNRECOGNIZED;
         if (pos != string::npos)
         {
-            hasAuth = true;
             string auth = path.substr(0, pos);
             path = path.substr(pos + 1);
             pos = auth.find(':');
             if (pos == 0)
                 goto UNRECOGNIZED;
-            username = auth.substr(0, pos);
+            user_name_ = auth.substr(0, pos);
             if (pos != string::npos)
-                password = auth.substr(pos + 1);
+                password_ = auth.substr(pos + 1);
         }
-
-        // Parse keyspace name
-        pos = path.find('/');
-        if (pos == 0) goto UNRECOGNIZED;
-        if (pos == string::npos)
-            ks_name= "SF1R";
-        else
-        {
-            ks_name= path.substr(pos + 1);
-            path = path.substr(0, pos);
-        }
-        keyspace_name_ = ks_name;
 
         // Parse host and port
         pos = path.find(':');
@@ -104,22 +94,10 @@ bool CassandraConnection::init(const string& str)
             }
         }
 
-        // Try to connect to and create keyspace on server
+        // Try to connect to server
         try
         {
             CassandraConnectionManager::instance()->init(host, port, pool_size);
-            cassandra_client_.reset(new Cassandra());
-            if (hasAuth)
-                cassandra_client_->login(username, password);
-            KsDef ks_def;
-            ks_def.__set_name(ks_name);
-            ks_def.__set_strategy_class("SimpleStrategy");
-            map<string, string> strategy_options;
-            strategy_options["replication_factor"] = "1";
-            ks_def.__set_strategy_options(strategy_options);
-            // TODO: more tricks for keyspace
-            cassandra_client_->createKeyspace(ks_def);
-            cassandra_client_->setKeyspace(ks_name);
         }
         CATCH_CASSANDRA_EXCEPTION("[CassandraConnection::init] " + str);
 
@@ -135,7 +113,72 @@ bool CassandraConnection::init(const string& str)
     return true;
 }
 
+libcassandra::Cassandra* CassandraConnection::getCassandraClient(const std::string& keyspace_name)
+{
+    libcassandra::Cassandra* client = getClient_(keyspace_name);
+
+    if (! client)
+    {
+        client = createClient_(keyspace_name);
+    }
+
+    return client;
+}
+
+libcassandra::Cassandra* CassandraConnection::getClient_(const std::string& keyspace_name)
+{
+    boost::shared_lock<boost::shared_mutex> lock(keyspace_mutex_);
+
+    KeyspaceClientMap::const_iterator it = client_map_.find(keyspace_name);
+    if (it != client_map_.end())
+        return it->second;
+
+    return NULL;
+}
+
+libcassandra::Cassandra* CassandraConnection::createClient_(const std::string& keyspace_name)
+{
+    if (! isEnabled_)
+        return NULL;
+
+    std::auto_ptr<Cassandra> clientPtr(new Cassandra);
+    if (! initClient_(clientPtr.get(), keyspace_name))
+        return NULL;
+
+    boost::unique_lock<boost::shared_mutex> lock(keyspace_mutex_);
+    libcassandra::Cassandra*& client = client_map_[keyspace_name];
+    if (! client)
+    {
+        client = clientPtr.release();
+    }
+
+    return client;
+}
+
+bool CassandraConnection::initClient_(libcassandra::Cassandra* client, const std::string& keyspace_name)
+{
+    try
+    {
+        if (! user_name_.empty())
+            client->login(user_name_, password_);
+
+        KsDef ks_def;
+        ks_def.__set_name(keyspace_name);
+        ks_def.__set_strategy_class("SimpleStrategy");
+        map<string, string> strategy_options;
+        strategy_options["replication_factor"] = "1";
+        ks_def.__set_strategy_options(strategy_options);
+
+        client->createKeyspace(ks_def);
+        client->setKeyspace(keyspace_name);
+    }
+    CATCH_CASSANDRA_EXCEPTION("[CassandraConnection::initClient_] error: ");
+
+    return true;
+}
+
 bool CassandraConnection::createColumnFamily(
+        const std::string& in_keyspace_name,
         const string& in_name,
         const string& in_column_type,
         const string& in_comparator_type,
@@ -162,11 +205,17 @@ bool CassandraConnection::createColumnFamily(
         const int32_t in_row_cache_keys_to_save,
         const map<string, string>& in_compression_options)
 {
-    if (!isEnabled_) return false;
+    if (! isEnabled_)
+        return false;
+
+    Cassandra* client = getCassandraClient(in_keyspace_name);
+    if (! client)
+        return false;
+
     CfDef definition;
     createCfDefObject(
             definition,
-            keyspace_name_,
+            in_keyspace_name,
             in_name,
             in_column_type,
             in_comparator_type,
@@ -194,7 +243,7 @@ bool CassandraConnection::createColumnFamily(
             in_compression_options);
     try
     {
-        cassandra_client_->createColumnFamily(definition);
+        client->createColumnFamily(definition);
     }
     CATCH_CASSANDRA_EXCEPTION("[CassandraConnection::init] error: ");
 

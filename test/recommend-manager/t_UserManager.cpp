@@ -5,174 +5,126 @@
 /// @date Created 2011-04-18
 ///
 
-#include <util/ustring/UString.h>
-#include <recommend-manager/UserManager.h>
+#include "UserManagerTestFixture.h"
+#include <recommend-manager/storage/RecommendStorageFactory.h>
+#include <configuration-manager/CassandraStorageConfig.h>
+#include <recommend-manager/storage/LocalUserManager.h>
+#include <recommend-manager/storage/RemoteUserManager.h>
+#include <recommend-manager/User.h>
+#include <recommend-manager/storage/CassandraAdaptor.h>
+#include <log-manager/CassandraConnection.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/filesystem/path.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include <string>
 #include <vector>
 
 using namespace std;
-using namespace boost;
 using namespace sf1r;
 
 namespace bfs = boost::filesystem;
 
 namespace
 {
-const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
-const char* TEST_DIR_STR = "recommend_test/t_UserManager";
-const char* USER_DB_STR = "user.db";
-}
-
-void checkUser(const User& user1, const User& user2)
-{
-    BOOST_CHECK_EQUAL(user1.idStr_, user2.idStr_);
-
-    User::PropValueMap::const_iterator it1 = user1.propValueMap_.begin();
-    User::PropValueMap::const_iterator it2 = user2.propValueMap_.begin();
-    for (; it1 != user1.propValueMap_.end() && it2 != user2.propValueMap_.end(); ++it1, ++it2)
-    {
-        BOOST_CHECK_EQUAL(it1->second, it2->second);
-    }
-
-    BOOST_CHECK(it1 == user1.propValueMap_.end());
-    BOOST_CHECK(it2 == user2.propValueMap_.end());
-}
-
-void checkUserManager(const vector<userid_t>& idVec, const vector<User>& userVec, UserManager& userManager)
-{
-    BOOST_CHECK_EQUAL(idVec.size(), userVec.size());
-    BOOST_CHECK_EQUAL(userManager.userNum(), userVec.size());
-
-    User user2;
-    for (size_t i = 0; i < idVec.size(); ++i)
-    {
-        BOOST_CHECK(userManager.getUser(idVec[i], user2));
-        checkUser(userVec[i], user2);
-    }
-}
-
-void iterateUserManager(const vector<userid_t>& idVec, const vector<User>& userVec, UserManager& userManager)
-{
-    BOOST_CHECK_EQUAL(idVec.size(), userVec.size());
-    BOOST_CHECK_EQUAL(userManager.userNum(), userVec.size());
-
-    unsigned int iterNum = 0;
-    for (UserManager::SDBIterator userIt = userManager.begin();
-        userIt != userManager.end(); ++userIt)
-    {
-        bool isFind = false;
-        for (size_t i = 0; i < idVec.size(); ++i)
-        {
-            if (idVec[i] == userIt->first)
-            {
-                checkUser(userIt->second, userVec[i]);
-                isFind = true;
-                break;
-            }
-        }
-        BOOST_CHECK(isFind);
-        ++iterNum;
-    }
-
-    BOOST_TEST_MESSAGE("iterNum: " << iterNum);
-    BOOST_CHECK_EQUAL(iterNum, userManager.userNum());
+const string TEST_DIR_STR = "recommend_test/t_UserManager";
+const string TEST_CASSANDRA_URL = "cassandra://localhost";
+const string KEYSPACE_NAME = "test_recommend";
+const string COLLECTION_NAME = "example";
 }
 
 BOOST_AUTO_TEST_SUITE(UserManagerTest)
 
-BOOST_AUTO_TEST_CASE(checkUser)
+BOOST_FIXTURE_TEST_CASE(checkLocalUserManager, UserManagerTestFixture)
 {
     bfs::remove_all(TEST_DIR_STR);
     bfs::create_directories(TEST_DIR_STR);
 
-    bfs::path userPath(bfs::path(TEST_DIR_STR) / USER_DB_STR);
-
-    vector<userid_t> idVec;
-    vector<User> userVec;
-
-    idVec.push_back(1);
-    userVec.push_back(User());
-    User& user1 = userVec.back();
-    user1.idStr_ = "aaa_1";
-    user1.propValueMap_["gender"].assign("男", ENCODING_TYPE);
-    user1.propValueMap_["age"].assign("20", ENCODING_TYPE);
-    user1.propValueMap_["job"].assign("student", ENCODING_TYPE);
-    user1.propValueMap_["interest"].assign("reading", ENCODING_TYPE);
-
-    idVec.push_back(51);
-    userVec.push_back(User());
-    User& user2 = userVec.back();
-    user2.idStr_ = "aaa_51";
-    user2.propValueMap_["gender"].assign("女", ENCODING_TYPE);
-    user2.propValueMap_["age"].assign("30", ENCODING_TYPE);
-    user2.propValueMap_["job"].assign("finance", ENCODING_TYPE);
-    user2.propValueMap_["interest"].assign("movie", ENCODING_TYPE);
+    CassandraStorageConfig config;
+    RecommendStorageFactory factory(config, COLLECTION_NAME, TEST_DIR_STR);
 
     {
-        BOOST_TEST_MESSAGE("add user...");
-        UserManager userManager(userPath.string());
-        for (size_t i = 0; i < userVec.size(); ++i)
-        {
-            BOOST_CHECK(userManager.addUser(idVec[i], userVec[i]));
-        }
-        // duplicate add should fail
-        BOOST_CHECK(userManager.addUser(idVec[0], userVec[0]) == false);
+        boost::scoped_ptr<UserManager> userManager(factory.createUserManager());
+        BOOST_CHECK(dynamic_cast<LocalUserManager*>(userManager.get()) != NULL);
+        setUserManager(userManager.get());
 
-        checkUserManager(idVec, userVec, userManager);
-        iterateUserManager(idVec, userVec, userManager);
-
-        userManager.flush();
+        checkAddUser();
     }
 
     {
-        BOOST_TEST_MESSAGE("update user...");
-        UserManager userManager(userPath.string());
+        boost::scoped_ptr<UserManager> userManager(factory.createUserManager());
+        setUserManager(userManager.get());
 
-        checkUserManager(idVec, userVec, userManager);
+        checkUpdateUser();
+        checkRemoveUser();
+    }
+}
 
-        User& user2 = userVec.back();
-        user2.propValueMap_["gender"].assign("femal", ENCODING_TYPE);
-        user2.propValueMap_["age"].assign("33", ENCODING_TYPE);
-        user2.propValueMap_["job"].assign("lawyer", ENCODING_TYPE);
-        user2.propValueMap_["interest"].assign("shopping", ENCODING_TYPE);
-        user2.propValueMap_["born"].assign("上海", ENCODING_TYPE);
+BOOST_FIXTURE_TEST_CASE(checkRemoteUserManager, UserManagerTestFixture)
+{
+    CassandraConnection& connection = CassandraConnection::instance();
+    if (! connection.init(TEST_CASSANDRA_URL))
+    {
+        cerr << "warning: exit test case as failed to connect " << TEST_CASSANDRA_URL << endl;
+        return;
+    }
 
-        BOOST_CHECK(userManager.updateUser(idVec.back(), user2));
-        checkUserManager(idVec, userVec, userManager);
-        iterateUserManager(idVec, userVec, userManager);
+    CassandraStorageConfig config;
+    config.enable = true;
+    config.keyspace = KEYSPACE_NAME;
+    RecommendStorageFactory factory(config, COLLECTION_NAME, TEST_DIR_STR);
 
-        BOOST_TEST_MESSAGE("remove user...");
-        userid_t removeId = idVec.front();
-        BOOST_CHECK(userManager.removeUser(removeId));
-        BOOST_CHECK(userManager.getUser(removeId, user2) == false);
-        userVec.erase(userVec.begin());
-        idVec.erase(idVec.begin());
-        checkUserManager(idVec, userVec, userManager);
-        iterateUserManager(idVec, userVec, userManager);
-
-        userManager.flush();
+    {
+        libcassandra::Cassandra* client = connection.getCassandraClient(KEYSPACE_NAME);
+        CassandraAdaptor adaptor(factory.getUserColumnFamily(), client);
+        adaptor.dropColumnFamily();
     }
 
     {
-        BOOST_TEST_MESSAGE("empty user...");
-        UserManager userManager(userPath.string());
+        boost::scoped_ptr<UserManager> userManager(factory.createUserManager());
+        BOOST_CHECK(dynamic_cast<RemoteUserManager*>(userManager.get()) != NULL);
+        setUserManager(userManager.get());
 
-        checkUserManager(idVec, userVec, userManager);
-        iterateUserManager(idVec, userVec, userManager);
-
-        BOOST_CHECK(userManager.removeUser(idVec.front()));
-        userVec.erase(userVec.begin());
-        idVec.erase(idVec.begin());
-        checkUserManager(idVec, userVec, userManager);
-        iterateUserManager(idVec, userVec, userManager);
-
-        userManager.flush();
+        checkAddUser();
     }
+
+    {
+        boost::scoped_ptr<UserManager> userManager(factory.createUserManager());
+        setUserManager(userManager.get());
+
+        checkUpdateUser();
+        checkRemoveUser();
+    }
+}
+
+BOOST_AUTO_TEST_CASE(checkCassandraNotConnect)
+{
+    CassandraConnection& connection = CassandraConnection::instance();
+    const char* TEST_CASSANDRA_NOT_CONNECT_URL = "cassandra://localhost:9161";
+    BOOST_CHECK(connection.init(TEST_CASSANDRA_NOT_CONNECT_URL) == false);
+
+    CassandraStorageConfig config;
+    config.enable = true;
+    config.keyspace = KEYSPACE_NAME;
+    RecommendStorageFactory factory(config, COLLECTION_NAME, TEST_DIR_STR);
+
+    boost::scoped_ptr<UserManager> userManager(factory.createUserManager());
+
+    User user;
+    user.idStr_ = "aaa";
+
+    BOOST_TEST_MESSAGE("add user...");
+    BOOST_CHECK(userManager->addUser(user) == false);
+    BOOST_CHECK(userManager->getUser(user.idStr_, user) == false);
+
+    BOOST_TEST_MESSAGE("update user...");
+    BOOST_CHECK(userManager->updateUser(user) == false);
+    BOOST_CHECK(userManager->getUser(user.idStr_, user) == false);
+
+    BOOST_TEST_MESSAGE("remove user...");
+    BOOST_CHECK(userManager->removeUser(user.idStr_) == false);
+    BOOST_CHECK(userManager->getUser(user.idStr_, user) == false);
 }
 
 BOOST_AUTO_TEST_SUITE_END() 

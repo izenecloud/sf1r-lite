@@ -21,10 +21,10 @@ class IDMAnalyzer;
 }
 }
 
+//#define USE_LOG_SERVER
+
 namespace sf1r
 {
-using izenelib::util::UString;
-
 class DocumentManager;
 class IndexManager;
 
@@ -35,6 +35,12 @@ class Corpus;
 
 class MultiDocSummarizationSubManager
 {
+#ifdef USE_LOG_SERVER
+    typedef uint128_t KeyType;
+#else
+    typedef izenelib::util::UString KeyType;
+#endif
+
 public:
     MultiDocSummarizationSubManager(
             const std::string& homePath,
@@ -51,15 +57,16 @@ public:
             std::vector<QueryFiltering::FilteringType>& filtingList);
 
     bool GetSummarizationByRawKey(
-            const UString& rawKey,
+            const izenelib::util::UString& rawKey,
             Summarization& result);
 
 private:
-    void DoEvaluateSummarization_(
+    bool DoEvaluateSummarization_(
             Summarization& summarization,
-            const UString& key,
-            const std::vector<UString>& content_list);
+            const KeyType& key,
+            const std::vector<izenelib::util::UString>& content_list);
 
+#ifndef USE_LOG_SERVER
     void BuildIndexOfParentKey_();
 
     void DoInsertBuildIndexOfParentKey_(const std::string& fileName);
@@ -67,10 +74,17 @@ private:
     void DoDelBuildIndexOfParentKey_(const std::string& fileName);
 
     void DoUpdateIndexOfParentKey_(const std::string& fileName);
+#endif
+
+    uint32_t GetLastDocid_() const;
+
+    void SetLastDocid_(uint32_t docid) const;
 
 private:
+    std::string last_docid_path_;
+
     SummarizeConfig schema_;
-    UString parent_key_ustr_name_;
+    izenelib::util::UString parent_key_ustr_name_;
 
     boost::shared_ptr<DocumentManager> document_manager_;
     boost::shared_ptr<IndexManager> index_manager_;

@@ -8,6 +8,9 @@
 #define RECOMMEND_TASK_SERVICE_H
 
 #include <recommend-manager/RecTypes.h>
+#include <recommend-manager/PurchaseMatrix.h>
+#include <recommend-manager/PurchaseCoVisitMatrix.h>
+#include <recommend-manager/VisitMatrix.h>
 
 #include <util/osgi/IService.h>
 #include <util/cronexpression.h>
@@ -29,7 +32,6 @@ class EventManager;
 class RateManager;
 class RecommendBundleConfiguration;
 class ItemIdGenerator;
-class UserIdGenerator;
 struct RateParam;
 
 namespace directory
@@ -51,8 +53,9 @@ public:
         OrderManager& orderManager,
         EventManager& eventManager,
         RateManager& rateManager,
-        UserIdGenerator& userIdGenerator,
-        ItemIdGenerator& itemIdGenerator
+        ItemIdGenerator& itemIdGenerator,
+        CoVisitManager& coVisitManager,
+        ItemCFManager& itemCFManager
     );
 
     ~RecommendTaskService();
@@ -62,19 +65,8 @@ public:
      */
     void buildCollection();
 
-    /**
-     * @p user.idStr_ must not be empty.
-     */
     bool addUser(const User& user);
-
-    /**
-     * @p user.idStr_ must not be empty.
-     */
     bool updateUser(const User& user);
-
-    /**
-     * @p userIdStr must not be empty.
-     */
     bool removeUser(const std::string& userIdStr);
 
     /**
@@ -224,13 +216,13 @@ private:
      * @param userIdStr the string of user id
      * @param orderIdStr the string of order id
      * @param orderItemVec the array of item id string
-     * @param isUpdateSimMatrix this param is passed to @c PurchaseManager::addPurchaseItem().
+     * @param matrix @c RecommendMatrix::update() would be called
      */
     bool saveOrder_(
         const std::string& userIdStr,
         const std::string& orderIdStr,
         const OrderItemVec& orderItemVec,
-        bool isUpdateSimMatrix
+        RecommendMatrix* matrix
     );
 
     /**
@@ -240,7 +232,6 @@ private:
         const std::string& userIdStr,
         const std::string& orderIdStr,
         const OrderItemVec& orderItemVec,
-        userid_t userId,
         const std::vector<itemid_t>& itemIdVec
     );
 
@@ -265,8 +256,14 @@ private:
     OrderManager& orderManager_;
     EventManager& eventManager_;
     RateManager& rateManager_;
-    UserIdGenerator& userIdGenerator_;
     ItemIdGenerator& itemIdGenerator_;
+
+    CoVisitManager& coVisitManager_;
+    ItemCFManager& itemCFManager_;
+
+    VisitMatrix visitMatrix_;
+    PurchaseMatrix purchaseMatrix_;
+    PurchaseCoVisitMatrix purchaseCoVisitMatrix_;
 
     JobScheduler jobScheduler_;
 

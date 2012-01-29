@@ -3,6 +3,7 @@
 
 #include <configuration-manager/PropertyConfig.h>
 #include <configuration-manager/CollectionPath.h>
+#include <configuration-manager/CassandraStorageConfig.h>
 #include <product-manager/pm_config.h>
 #include <util/osgi/BundleConfiguration.h>
 #include <util/ustring/UString.h>
@@ -34,6 +35,7 @@ public:
 
     PMConfig pm_config_;
 
+    CassandraStorageConfig cassandraConfig_;
 };
 }
 

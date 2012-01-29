@@ -7,6 +7,7 @@
 
 #include <util/ustring/UString.h>
 #include <recommend-manager/VisitManager.h>
+#include <recommend-manager/VisitMatrix.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
@@ -37,11 +38,11 @@ const char* COVISIT_DIR_STR = "covisit";
 
 struct VisitInput
 {
-    userid_t userId_;
+    string userId_;
     itemid_t itemId_;
     bool isRec_;
 
-    VisitInput(userid_t userId, itemid_t itemId, bool isRec)
+    VisitInput(const string& userId, itemid_t itemId, bool isRec)
         : userId_(userId)
         , itemId_(itemId)
         , isRec_(isRec)
@@ -49,9 +50,9 @@ struct VisitInput
 };
 
 typedef vector<VisitInput> VisitInputVec;
-typedef map<userid_t, set<itemid_t> > VisitMap;
-typedef map<userid_t, set<itemid_t> > SessionMap;
-typedef map<userid_t, set<itemid_t> > RecommendMap;
+typedef map<string, set<itemid_t> > VisitMap;
+typedef map<string, set<itemid_t> > SessionMap;
+typedef map<string, set<itemid_t> > RecommendMap;
 
 void addVisitInput(
     const string& sessionId,
@@ -59,10 +60,11 @@ void addVisitInput(
     VisitManager& visitManager,
     VisitMap& visitMap,
     SessionMap& sessionMap,
-    RecommendMap& recommendMap
+    RecommendMap& recommendMap,
+    RecommendMatrix* matrix
 )
 {
-    set<userid_t> userSet;
+    set<string> userSet;
     for (VisitInputVec::const_iterator it = visitInputVec.begin();
         it != visitInputVec.end(); ++it)
     {
@@ -80,7 +82,8 @@ void addVisitInput(
             recommendMap[it->userId_].insert(it->itemId_);
         }
 
-        BOOST_CHECK(visitManager.addVisitItem(sessionId, it->userId_, it->itemId_, it->isRec_));
+        BOOST_CHECK(visitManager.addVisitItem(sessionId, it->userId_, it->itemId_,
+                                              it->isRec_, matrix));
     }
 }
 
@@ -130,7 +133,7 @@ void iterateVisitManager(const VisitMap& visitMap, VisitManager& visitManager)
     for (VisitManager::VisitIterator visitIt = visitManager.begin();
         visitIt != visitManager.end(); ++visitIt)
     {
-        userid_t userId = visitIt->first;
+        const string& userId = visitIt->first;
         const ItemIdSet& itemIdSet = visitIt->second;
 
         VisitMap::const_iterator it = visitMap.find(userId);
@@ -181,29 +184,31 @@ BOOST_AUTO_TEST_CASE(checkVisit)
     bfs::path covisitPath(bfs::path(TEST_DIR_STR) / COVISIT_DIR_STR);
 
     CoVisitManager coVisitManager(covisitPath.string());
+    VisitMatrix visitMatrix(coVisitManager);
+
     VisitMap visitMap;
     SessionMap sessionMap;
     RecommendMap recommendMap;
 
     {
         BOOST_TEST_MESSAGE("add visit...");
-        VisitManager visitManager(visitDBPath.string(), recommendDBPath.string(), sessionDBPath.string(), coVisitManager);
+        VisitManager visitManager(visitDBPath.string(), recommendDBPath.string(), sessionDBPath.string());
 
         // construct input
         VisitInputVec visitInputVec;
-        visitInputVec.push_back(VisitInput(1, 10, false));
-        visitInputVec.push_back(VisitInput(2, 20, false));
-        visitInputVec.push_back(VisitInput(1, 20, true));
-        visitInputVec.push_back(VisitInput(2, 30, false));
-        visitInputVec.push_back(VisitInput(3, 30, true));
-        visitInputVec.push_back(VisitInput(1, 30, false));
+        visitInputVec.push_back(VisitInput("1", 10, false));
+        visitInputVec.push_back(VisitInput("2", 20, false));
+        visitInputVec.push_back(VisitInput("1", 20, true));
+        visitInputVec.push_back(VisitInput("2", 30, false));
+        visitInputVec.push_back(VisitInput("3", 30, true));
+        visitInputVec.push_back(VisitInput("1", 30, false));
         // visit duplicate item
-        visitInputVec.push_back(VisitInput(1, 10, true));
-        visitInputVec.push_back(VisitInput(2, 30, false));
-        visitInputVec.push_back(VisitInput(3, 30, true));
+        visitInputVec.push_back(VisitInput("1", 10, true));
+        visitInputVec.push_back(VisitInput("2", 30, false));
+        visitInputVec.push_back(VisitInput("3", 30, true));
 
         addVisitInput("session_001", visitInputVec, visitManager,
-                      visitMap, sessionMap, recommendMap);
+                      visitMap, sessionMap, recommendMap, &visitMatrix);
 
         checkVisitSet(visitMap, visitManager);
         checkSessionSet(sessionMap, visitManager);
@@ -220,7 +225,7 @@ BOOST_AUTO_TEST_CASE(checkVisit)
     {
         BOOST_TEST_MESSAGE("continue add visit...");
 
-        VisitManager visitManager(visitDBPath.string(), recommendDBPath.string(), sessionDBPath.string(), coVisitManager);
+        VisitManager visitManager(visitDBPath.string(), recommendDBPath.string(), sessionDBPath.string());
         checkVisitSet(visitMap, visitManager);
         checkSessionSet(sessionMap, visitManager);
         checkRecommendSet(recommendMap, visitManager);
@@ -228,14 +233,14 @@ BOOST_AUTO_TEST_CASE(checkVisit)
 
         // construct input
         VisitInputVec visitInputVec;
-        visitInputVec.push_back(VisitInput(3, 10, true));
-        visitInputVec.push_back(VisitInput(2, 10, false));
-        visitInputVec.push_back(VisitInput(3, 20, false));
-        visitInputVec.push_back(VisitInput(4, 20, true));
-        visitInputVec.push_back(VisitInput(4, 40, false));
+        visitInputVec.push_back(VisitInput("3", 10, true));
+        visitInputVec.push_back(VisitInput("2", 10, false));
+        visitInputVec.push_back(VisitInput("3", 20, false));
+        visitInputVec.push_back(VisitInput("4", 20, true));
+        visitInputVec.push_back(VisitInput("4", 40, false));
 
         addVisitInput("session_002", visitInputVec, visitManager,
-                      visitMap, sessionMap, recommendMap);
+                      visitMap, sessionMap, recommendMap, &visitMatrix);
 
         checkVisitSet(visitMap, visitManager);
         checkSessionSet(sessionMap, visitManager);

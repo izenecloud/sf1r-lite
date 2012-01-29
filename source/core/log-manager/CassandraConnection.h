@@ -5,6 +5,7 @@
 #include <list>
 #include <vector>
 #include <iostream>
+#include <boost/thread/shared_mutex.hpp>
 
 #include <util/ThreadModel.h>
 
@@ -35,17 +36,14 @@ public:
 
     ~CassandraConnection();
 
-    const std::string& getKeyspaceName() const;
-
-    void setKeyspaceName(const std::string& keyspace_name);
-
     bool init(const std::string& str);
 
     bool isEnabled();
 
-    boost::shared_ptr<libcassandra::Cassandra>& getCassandraClient();
+    libcassandra::Cassandra* getCassandraClient(const std::string& keyspace_name);
 
     bool createColumnFamily(
+            const std::string& in_keyspace_name,
             const std::string& in_name,
             const std::string& in_column_type,
             const std::string& in_comparator_type,
@@ -73,32 +71,45 @@ public:
             const std::map<std::string, std::string>& in_compression_options);
 
 private:
+    void clear_();
+
+    libcassandra::Cassandra* getClient_(const std::string& keyspace_name);
+    libcassandra::Cassandra* createClient_(const std::string& keyspace_name);
+    bool initClient_(libcassandra::Cassandra* client, const std::string& keyspace_name);
+
+private:
     bool isEnabled_;
 
-    std::string keyspace_name_;
+    std::string user_name_;
+    std::string password_;
 
-    boost::shared_ptr<libcassandra::Cassandra> cassandra_client_;
+    /** keyspace name => client instance */
+    typedef std::map<std::string, libcassandra::Cassandra*> KeyspaceClientMap;
+    KeyspaceClientMap client_map_;
+
+    boost::shared_mutex keyspace_mutex_;
 };
 
 #define CATCH_CASSANDRA_EXCEPTION(prompt) \
     catch (const org::apache::cassandra::InvalidRequestException& ire) \
     { \
-        std::cerr << prompt << ire.why << std::endl; \
+        std::cerr << prompt << " [" << ire.why << "]" << std::endl; \
         return false; \
     } \
     catch (const ::apache::thrift::TException& tex) \
     { \
-        std::cerr << prompt << tex.what() << std::endl; \
+        std::cerr << prompt << " [" << tex.what() << "]" << std::endl; \
         return false; \
     } \
     catch (const std::exception& ex) \
     { \
-        std::cerr << prompt << ex.what() << std::endl; \
+        std::cerr << prompt << " [" << ex.what() << "]" << std::endl; \
         return false; \
     } \
     catch (...) \
     { \
-        std::cerr << prompt << "Unknown error" << std::endl; \
+        std::cerr << prompt << " [Unknown error]" << std::endl; \
+        return false; \
     } \
 
 

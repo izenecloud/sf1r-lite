@@ -16,6 +16,12 @@ int main(int argc, char* argv[])
 {
     try
     {
+        if (argc > 1 && strcmp(argv[1], "--build_info") == 0)
+        {
+            // avoid auto testing by Jenkins
+            return 0;
+        }
+
         if (argc > 1 && strcmp(argv[1], "-ct") == 0)
         {
             t_RpcLogServerCreateTestData();

@@ -34,7 +34,7 @@ public:
      * @return true for succcess, false for failure
      */
     bool updateCart(
-        userid_t userId,
+        const std::string& userId,
         const std::vector<itemid_t>& itemVec
     );
 
@@ -44,10 +44,13 @@ public:
      * @param itemVec store the item ids in shopping cart
      * @return true for success, false for error happened.
      */
-    bool getCart(userid_t userId, std::vector<itemid_t>& itemVec);
+    bool getCart(
+        const std::string& userId,
+        std::vector<itemid_t>& itemVec
+    );
 
 private:
-    typedef izenelib::sdb::unordered_sdb_tc<userid_t, std::vector<itemid_t>, ReadWriteLock> SDBType;
+    typedef izenelib::sdb::unordered_sdb_tc<std::string, std::vector<itemid_t>, ReadWriteLock> SDBType;
     SDBType container_;
 };
 

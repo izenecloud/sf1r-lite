@@ -1,6 +1,6 @@
 #include "UserEventFilter.h"
 #include "ItemFilter.h"
-#include "PurchaseManager.h"
+#include "storage/PurchaseManager.h"
 #include "CartManager.h"
 #include "EventManager.h"
 #include "RateManager.h"
@@ -74,12 +74,12 @@ UserEventFilter::UserEventFilter(
 }
 
 bool UserEventFilter::filter(
-    userid_t userId,
+    const std::string& userId,
     std::vector<itemid_t>& inputItemVec,
     ItemFilter& filter
 ) const
 {
-    assert(userId);
+    assert(!userId.empty());
 
     return (filterRateItem_(userId, filter)
             && filterPurchaseItem_(userId, filter)
@@ -88,7 +88,7 @@ bool UserEventFilter::filter(
 }
 
 bool UserEventFilter::filterRateItem_(
-    userid_t userId,
+    const std::string& userId,
     ItemFilter& filter
 ) const
 {
@@ -109,7 +109,7 @@ bool UserEventFilter::filterRateItem_(
 }
 
 bool UserEventFilter::filterPurchaseItem_(
-    userid_t userId,
+    const std::string& userId,
     ItemFilter& filter
 ) const
 {
@@ -125,7 +125,7 @@ bool UserEventFilter::filterPurchaseItem_(
 }
 
 bool UserEventFilter::filterCartItem_(
-    userid_t userId,
+    const std::string& userId,
     ItemFilter& filter
 ) const
 {
@@ -141,7 +141,7 @@ bool UserEventFilter::filterCartItem_(
 }
 
 bool UserEventFilter::filterPreferenceItem_(
-    userid_t userId,
+    const std::string& userId,
     std::vector<itemid_t>& inputItemVec,
     ItemFilter& filter
 ) const
@@ -166,14 +166,14 @@ bool UserEventFilter::filterPreferenceItem_(
 }
 
 bool UserEventFilter::addUserEvent(
-    userid_t userId,
+    const std::string& userId,
     std::vector<itemid_t>& inputItemVec,
     ItemRateMap& itemRateMap,
     ItemEventMap& itemEventMap,
     ItemFilter& filter
 ) const
 {
-    assert(userId);
+    assert(!userId.empty());
 
     inputItemVec.clear();
 
@@ -184,7 +184,7 @@ bool UserEventFilter::addUserEvent(
 }
 
 bool UserEventFilter::addRateItem_(
-    userid_t userId,
+    const std::string& userId,
     ItemRateMap& itemRateMap,
     ItemEventMap& itemEventMap
 ) const
@@ -213,7 +213,7 @@ bool UserEventFilter::addRateItem_(
 }
 
 bool UserEventFilter::addPurchaseItem_(
-    userid_t userId,
+    const std::string& userId,
     std::vector<itemid_t>& inputItemVec,
     ItemEventMap& itemEventMap
 ) const
@@ -239,7 +239,7 @@ bool UserEventFilter::addPurchaseItem_(
 }
 
 bool UserEventFilter::addCartItem_(
-    userid_t userId,
+    const std::string& userId,
     std::vector<itemid_t>& inputItemVec,
     ItemEventMap& itemEventMap
 ) const
@@ -265,7 +265,7 @@ bool UserEventFilter::addCartItem_(
 }
 
 bool UserEventFilter::addPreferenceItem_(
-    userid_t userId,
+    const std::string& userId,
     std::vector<itemid_t>& inputItemVec,
     ItemRateMap& itemRateMap,
     ItemEventMap& itemEventMap,

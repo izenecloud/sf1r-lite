@@ -1,16 +1,16 @@
 #include "RecommendBundleActivator.h"
 #include "RecommendBundleConfiguration.h"
-#include <recommend-manager/UserManager.h>
+#include <recommend-manager/storage/UserManager.h>
 #include <recommend-manager/ItemManager.h>
 #include <recommend-manager/VisitManager.h>
-#include <recommend-manager/PurchaseManager.h>
+#include <recommend-manager/storage/LocalPurchaseManager.h>
 #include <recommend-manager/CartManager.h>
 #include <recommend-manager/OrderManager.h>
 #include <recommend-manager/EventManager.h>
 #include <recommend-manager/RateManager.h>
 #include <recommend-manager/RecommenderFactory.h>
 #include <recommend-manager/ItemIdGenerator.h>
-#include <recommend-manager/UserIdGenerator.h>
+#include <recommend-manager/storage/RecommendStorageFactory.h>
 #include <bundles/index/IndexSearchService.h>
 
 #include <aggregator-manager/SearchWorker.h>
@@ -79,7 +79,6 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
     eventManager_.reset();
     rateManager_.reset();
     recommenderFactory_.reset();
-    userIdGenerator_.reset();
     itemIdGenerator_.reset();
     coVisitManager_.reset();
     itemCFManager_.reset();
@@ -117,7 +116,7 @@ bool RecommendBundleActivator::init_(IndexSearchService* indexSearchService)
     if (! createDataDir_())
         return false;
 
-    createUser_();
+    createStorage_();
     createItem_(indexSearchService);
     createMining_();
     createEvent_();
@@ -203,15 +202,14 @@ void RecommendBundleActivator::createSCDDir_()
     bfs::create_directories(config_->orderSCDPath());
 }
 
-void RecommendBundleActivator::createUser_()
+void RecommendBundleActivator::createStorage_()
 {
-    bfs::path userDir = dataDir_ / "user";
-    bfs::create_directory(userDir);
-    userManager_.reset(new UserManager((userDir / "user.db").string()));
+    RecommendStorageFactory storageFactory(config_->cassandraConfig_,
+                                           config_->collectionName_,
+                                           dataDir_.string());
 
-    bfs::path idDir = dataDir_ / "id";
-    bfs::create_directory(idDir);
-    userIdGenerator_.reset(new UserIdGenerator((idDir / "userid").string()));
+    userManager_.reset(storageFactory.createUserManager());
+    purchaseManager_.reset(storageFactory.createPurchaseManager());
 }
 
 void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchService)
@@ -246,11 +244,7 @@ void RecommendBundleActivator::createEvent_()
 
     visitManager_.reset(new VisitManager((eventDir / "visit_item.db").string(),
                                          (eventDir / "visit_recommend.db").string(),
-                                         (eventDir / "visit_session.db").string(),
-                                         *coVisitManager_));
-
-    purchaseManager_.reset(new PurchaseManager((eventDir / "purchase.db").string(),
-                                               *itemCFManager_));
+                                         (eventDir / "visit_session.db").string()));
 
     cartManager_.reset(new CartManager((eventDir / "cart.db").string()));
     eventManager_.reset(new EventManager((eventDir / "event.db").string()));
@@ -282,10 +276,11 @@ void RecommendBundleActivator::createService_()
 {
     taskService_.reset(new RecommendTaskService(*config_, directoryRotator_, *userManager_, *itemManager_,
                                                 *visitManager_, *purchaseManager_, *cartManager_, *orderManager_,
-                                                *eventManager_, *rateManager_, *userIdGenerator_, *itemIdGenerator_));
+                                                *eventManager_, *rateManager_, *itemIdGenerator_,
+                                                *coVisitManager_, *itemCFManager_));
 
-    searchService_.reset(new RecommendSearchService(*userManager_, *itemManager_, *recommenderFactory_,
-                                                    *userIdGenerator_, *itemIdGenerator_));
+    searchService_.reset(new RecommendSearchService(*userManager_, *itemManager_,
+                                                    *recommenderFactory_, *itemIdGenerator_));
 
     Properties props;
     props.put("collection", config_->collectionName_);

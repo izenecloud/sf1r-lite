@@ -1,7 +1,6 @@
 #include "ParentKeyStorage.h"
 #include "CommentCacheStorage.h"
 
-//#define USE_LOG_SERVER
 #ifdef USE_LOG_SERVER
 #include <common/Utilities.h>
 #include <log-manager/LogServerRequest.h>
@@ -10,11 +9,14 @@
 
 #include <iostream>
 
+namespace
+{
+static const std::string p2c_path("/parent_to_children");
+static const std::string c2p_path("/child_to_parent");
+}
+
 namespace sf1r
 {
-
-const std::string ParentKeyStorage::p2c_path("/parent_to_children");
-const std::string ParentKeyStorage::c2p_path("/child_to_parent");
 
 ParentKeyStorage::ParentKeyStorage(
         const std::string& db_dir,
@@ -42,7 +44,7 @@ ParentKeyStorage::~ParentKeyStorage()
 {
 }
 
-void ParentKeyStorage::Insert(const UString& parent, const UString& child)
+void ParentKeyStorage::Insert(const ParentKeyType& parent, const ChildKeyType& child)
 {
     child_to_parent_db_.insert(child, parent);
     buffer_db_[parent].first.push_back(child);
@@ -52,9 +54,9 @@ void ParentKeyStorage::Insert(const UString& parent, const UString& child)
         Flush();
 }
 
-void ParentKeyStorage::Update(const UString& parent, const UString& child)
+void ParentKeyStorage::Update(const ParentKeyType& parent, const ChildKeyType& child)
 {
-    UString old_parent;
+    ParentKeyType old_parent;
     child_to_parent_db_.get(child, old_parent);
     if (old_parent == parent) return;
     child_to_parent_db_.update(child, parent);
@@ -66,11 +68,17 @@ void ParentKeyStorage::Update(const UString& parent, const UString& child)
         Flush();
 }
 
-void ParentKeyStorage::Delete(const UString& parent, const UString& child)
+void ParentKeyStorage::Delete(const ParentKeyType& parent, const ChildKeyType& child)
 {
-    UString old_parent;
+    ParentKeyType old_parent;
     if (!child_to_parent_db_.get(child, old_parent)) return;
-    if (!parent.empty() && old_parent != parent) return;
+    if (
+#ifdef USE_LOG_SERVER
+            parent
+#else
+            !parent.empty()
+#endif
+            && old_parent != parent) return;
     child_to_parent_db_.del(child);
     buffer_db_[old_parent].second.push_back(child);
 
@@ -87,7 +95,7 @@ void ParentKeyStorage::Flush()
     for (BufferType::iterator it = buffer_db_.begin();
             it != buffer_db_.end(); ++it)
     {
-        std::vector<UString> value;
+        std::vector<ChildKeyType> value;
         parent_to_children_db_.get(it->first, value);
 
         if (!it->second.second.empty())
@@ -96,11 +104,11 @@ void ParentKeyStorage::Flush()
             comment_cache_storage_->Delete(it->first);
             std::sort(it->second.second.begin(), it->second.second.end());
 
-            std::vector<UString> new_value;
+            std::vector<ChildKeyType> new_value;
             new_value.reserve(value.size() - it->second.second.size());
 
-            std::vector<UString>::iterator vit0 = value.begin();
-            std::vector<UString>::iterator vit1 = it->second.second.begin();
+            std::vector<ChildKeyType>::iterator vit0 = value.begin();
+            std::vector<ChildKeyType>::iterator vit1 = it->second.second.begin();
             while (vit1 != it->second.second.end())
             {
                 if (*vit0 < *vit1)
@@ -122,11 +130,11 @@ void ParentKeyStorage::Flush()
         {
             std::sort(it->second.first.begin(), it->second.first.end());
 
-            std::vector<UString> new_value;
+            std::vector<ChildKeyType> new_value;
             new_value.reserve(value.size() + it->second.first.size());
 
-            std::vector<UString>::iterator vit0 = value.begin();
-            std::vector<UString>::iterator vit1 = it->second.first.begin();
+            std::vector<ChildKeyType>::iterator vit0 = value.begin();
+            std::vector<ChildKeyType>::iterator vit1 = it->second.first.begin();
             while (vit0 != value.end() && vit1 != it->second.first.end())
             {
                 if (*vit0 < *vit1)
@@ -159,26 +167,20 @@ void ParentKeyStorage::Flush()
     buffer_size_ = 0;
 }
 
-bool ParentKeyStorage::GetChildren(const UString& parent, std::vector<UString>& children)
+bool ParentKeyStorage::GetChildren(const ParentKeyType& parent, std::vector<ChildKeyType>& children)
 {
 #ifdef USE_LOG_SERVER
     LogServerConnection& conn = LogServerConnection::instance();
-    GetDocidListRequest docidListReq, docidListResp;
+    GetDocidListRequest docidListReq;
+    UUID2DocidList docidListResp;
 
-    std::string uuid;
-    parent.convertString(uuid, UString::UTF_8);
-    docidListReq.param_.uuid_ = Utilities::uuidToUint128(uuid);
+    docidListReq.param_.uuid_ = parent;
 
     conn.syncRequest(docidListReq, docidListResp);
-    if (docidListReq.param_.uuid_ != docidListResp.param_.uuid_)
+    if (docidListReq.param_.uuid_ != docidListResp.uuid_)
         return false;
 
-    for (std::vector<uint128_t>::const_iterator it = docidListResp.param_.docidList_.begin();
-            it != docidListResp.param_.docidList_.end(); ++it)
-    {
-        children.push_back(UString(Utilities::uint128ToMD5(*it), UString::UTF_8));
-    }
-
+    children.swap(docidListResp.docidList_);
     return true;
 #else
     boost::shared_lock<boost::shared_mutex> lock(mutex_);
@@ -186,21 +188,20 @@ bool ParentKeyStorage::GetChildren(const UString& parent, std::vector<UString>& 
 #endif
 }
 
-bool ParentKeyStorage::GetParent(const UString& child, UString& parent)
+bool ParentKeyStorage::GetParent(const ChildKeyType& child, ParentKeyType& parent)
 {
 #ifdef USE_LOG_SERVER
     LogServerConnection& conn = LogServerConnection::instance();
-    GetUUIDRequest uuidReq, uuidResp;
+    GetUUIDRequest uuidReq;
+    Docid2UUID uuidResp;
 
-    std::string docid;
-    child.convertString(docid, UString::UTF_8);
-    uuidReq.param_.docid_ = Utilities::md5ToUint128(docid);
+    uuidReq.param_.docid_ = child;
 
     conn.syncRequest(uuidReq, uuidResp);
-    if (uuidReq.param_.docid_ != uuidResp.param_.docid_)
+    if (uuidReq.param_.docid_ != uuidResp.docid_)
         return false;
 
-    parent.assign(Utilities::uint128ToUuid(uuidResp.param_.uuid_), UString::UTF_8);
+    parent = uuidResp.uuid_;
     return true;
 #else
     boost::shared_lock<boost::shared_mutex> lock(mutex_);

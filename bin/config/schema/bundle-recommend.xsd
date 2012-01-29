@@ -23,6 +23,7 @@
                         <xs:element ref="CronPara" minOccurs="0"/>
                         <xs:element ref="CacheSize" minOccurs="0"/>
                         <xs:element ref="FreqItemSet" minOccurs="0"/>
+                        <xs:element name="CassandraStorage" type="CassandraStorage" minOccurs="0" maxOccurs="1"/>
                     </xs:sequence>
                 </xs:complexType>
             </xs:element>
@@ -67,7 +68,7 @@
 
     <xs:element name="FreqItemSet">
         <xs:complexType>
-            <xs:attribute name="enable" use="required"/>
+            <xs:attribute name="enable" type="YesNoType" use="required"/>
             <xs:attribute name="minfreq" use="required"/>
         </xs:complexType>
     </xs:element>

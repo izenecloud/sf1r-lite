@@ -26,12 +26,12 @@ const char* TEST_DIR_STR = "recommend_test/t_CartManager";
 const char* CART_DB_STR = "cart.db";
 }
 
-typedef map<userid_t, vector<itemid_t> > CartMap;
+typedef map<string, vector<itemid_t> > CartMap;
 
 void updateCart(
     CartManager& cartManager,
     CartMap& cartMap,
-    userid_t userId,
+    const string& userId,
     const vector<itemid_t>& cartItemVec
 )
 {
@@ -68,9 +68,9 @@ BOOST_AUTO_TEST_CASE(checkCart)
         BOOST_TEST_MESSAGE("check empty cart...");
         CartManager cartManager(cartPath.string());
 
-        BOOST_CHECK(cartMap[1].empty());
-        BOOST_CHECK(cartMap[10].empty());
-        BOOST_CHECK(cartMap[100].empty());
+        BOOST_CHECK(cartMap["1"].empty());
+        BOOST_CHECK(cartMap["10"].empty());
+        BOOST_CHECK(cartMap["100"].empty());
 
         checkCartManager(cartMap, cartManager);
     }
@@ -84,16 +84,16 @@ BOOST_AUTO_TEST_CASE(checkCart)
         cartItemVec.push_back(2);
         cartItemVec.push_back(4);
         cartItemVec.push_back(6);
-        updateCart(cartManager, cartMap, 1, cartItemVec);
+        updateCart(cartManager, cartMap, "1", cartItemVec);
 
         cartItemVec.clear();
         cartItemVec.push_back(11);
-        updateCart(cartManager, cartMap, 10, cartItemVec);
+        updateCart(cartManager, cartMap, "10", cartItemVec);
 
         cartItemVec.clear();
         cartItemVec.push_back(102);
         cartItemVec.push_back(103);
-        updateCart(cartManager, cartMap, 100, cartItemVec);
+        updateCart(cartManager, cartMap, "100", cartItemVec);
 
         checkCartManager(cartMap, cartManager);
     }
@@ -111,26 +111,26 @@ BOOST_AUTO_TEST_CASE(checkCart)
         cartItemVec.push_back(5);
         cartItemVec.push_back(7);
         cartItemVec.push_back(9);
-        updateCart(cartManager, cartMap, 1, cartItemVec);
+        updateCart(cartManager, cartMap, "1", cartItemVec);
 
         cartItemVec.clear();
-        updateCart(cartManager, cartMap, 10, cartItemVec);
+        updateCart(cartManager, cartMap, "10", cartItemVec);
 
         cartItemVec.clear();
-        updateCart(cartManager, cartMap, 100, cartItemVec);
+        updateCart(cartManager, cartMap, "100", cartItemVec);
 
         cartItemVec.clear();
         cartItemVec.push_back(1001);
         cartItemVec.push_back(1010);
         cartItemVec.push_back(1100);
-        updateCart(cartManager, cartMap, 1000, cartItemVec);
+        updateCart(cartManager, cartMap, "1000", cartItemVec);
 
         cartItemVec.clear();
         cartItemVec.push_back(10003);
         cartItemVec.push_back(10004);
         cartItemVec.push_back(10005);
         cartItemVec.push_back(10006);
-        updateCart(cartManager, cartMap, 10000, cartItemVec);
+        updateCart(cartManager, cartMap, "10000", cartItemVec);
 
         checkCartManager(cartMap, cartManager);
     }

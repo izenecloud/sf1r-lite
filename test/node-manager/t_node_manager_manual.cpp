@@ -27,8 +27,8 @@ bool callback_on_produced(const std::string& datapath)
 
 void thread_consumer_run()
 {
-    //SynchroConsumerPtr scp = SynchroFactory::getConsumer("test");
-    //scp->watchProducer(callback_on_produced, true);
+    SynchroConsumerPtr scp = SynchroFactory::getConsumer("synchro_id");
+    scp->watchProducer(callback_on_produced, "test");
 }
 
 int main(int argc, char** argv)
@@ -43,18 +43,11 @@ int main(int argc, char** argv)
         }
     }
 #if 0
-    // set default config
-    DistributedTopologyConfig dsTopologyConfig;
-    dsTopologyConfig.clusterId_ = "zhongxia";
-    dsTopologyConfig.nodeNum_ = 2;
-    dsTopologyConfig.curSF1Node_.host_ = "172.16.0.36";
-    dsTopologyConfig.curSF1Node_.nodeId_ = 1;
-    dsTopologyConfig.curSF1Node_.replicaId_ = 1;
-    DistributedUtilConfig dsUtilConfig;
-    dsUtilConfig.zkConfig_.zkHosts_ = "172.16.0.161:2181,172.16.0.162:2181,172.16.0.163:2181";
-    dsUtilConfig.zkConfig_.zkRecvTimeout_ = 2000;
 
-    SearchNodeManager::get()->init(dsTopologyConfig, dsUtilConfig);
+    ZooKeeperConfig zkConfig;
+    zkConfig.zkHosts_ = "172.16.0.36:2181";
+    zkConfig.zkRecvTimeout_ = 2000;
+    ZooKeeperManager::get()->init(zkConfig, "test");
 
     // Consumer
     boost::thread consumer_thread(thread_consumer_run);
@@ -65,10 +58,9 @@ int main(int argc, char** argv)
         sdata.setValue(SynchroData::KEY_COLLECTION, "test");
         sdata.setValue(SynchroData::KEY_DATA_PATH, "/data/scd");
 
-        SynchroProducerPtr spd = SynchroFactory::getProducer("test");
+        SynchroProducerPtr spd = SynchroFactory::getProducer("synchro_id");
         spd->produce(sdata, callback_on_consumed);
-        bool ret;
-        spd->waitConsumers(ret);
+        bool ret = spd->wait();
         cout << "Producer: wait consumers ended " <<ret<<endl;
 
         sleep(3);

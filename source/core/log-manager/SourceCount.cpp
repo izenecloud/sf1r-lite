@@ -15,6 +15,8 @@ bool SourceCount::is_enabled(false);
 
 const ColumnFamilyBase::ColumnType SourceCount::column_type = ColumnFamilyBase::COUNTER;
 
+string SourceCount::keyspace_name("SF1R");
+
 const string SourceCount::cf_name("SourceCount");
 
 const string SourceCount::cf_column_type;
@@ -112,7 +114,7 @@ bool SourceCount::updateMultiRow(const vector<SourceCount>& row_list)
             }
         }
 
-        CassandraConnection::instance().getCassandraClient()->batchMutate(mutation_map);
+        CassandraConnection::instance().getCassandraClient(keyspace_name)->batchMutate(mutation_map);
     }
     CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
 
@@ -141,7 +143,7 @@ bool SourceCount::getMultiSlice(
         pred.slice_range.__set_reversed(reversed);
 
         map<string, vector<ColumnOrSuperColumn> > raw_column_map;
-        CassandraConnection::instance().getCassandraClient()->getMultiSlice(
+        CassandraConnection::instance().getCassandraClient(keyspace_name)->getMultiSlice(
                 raw_column_map,
                 key_list,
                 col_parent,
@@ -184,7 +186,7 @@ bool SourceCount::getMultiCount(
         pred.slice_range.__set_finish(finish);
         //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
 
-        CassandraConnection::instance().getCassandraClient()->getMultiCount(
+        CassandraConnection::instance().getCassandraClient(keyspace_name)->getMultiCount(
                 count_map,
                 key_list,
                 col_parent,
@@ -204,7 +206,7 @@ bool SourceCount::updateRow() const
         for (SourceCountType::const_iterator it = sourceCount_.begin();
                 it != sourceCount_.end(); ++it)
         {
-            CassandraConnection::instance().getCassandraClient()->incCounter(
+            CassandraConnection::instance().getCassandraClient(keyspace_name)->incCounter(
                     it->second,
                     collection_,
                     cf_name,

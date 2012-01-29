@@ -1,4 +1,5 @@
 #include "VisitManager.h"
+#include "RecommendMatrix.h"
 
 #include <glog/logging.h>
 
@@ -10,13 +11,11 @@ namespace sf1r
 VisitManager::VisitManager(
     const std::string& visitDBPath,
     const std::string& recommendDBPath,
-    const std::string& sessionDBPath,
-    CoVisitManager& coVisitManager
+    const std::string& sessionDBPath
 )
     : visitDB_(visitDBPath)
     , recommendDB_(recommendDBPath)
     , sessionDB_(sessionDBPath)
-    , coVisitManager_(coVisitManager)
 {
     visitDB_.open();
     recommendDB_.open();
@@ -30,7 +29,6 @@ void VisitManager::flush()
         visitDB_.flush();
         recommendDB_.flush();
         sessionDB_.flush();
-        coVisitManager_.flush();
     }
     catch(izenelib::util::IZENELIBException& e)
     {
@@ -40,13 +38,14 @@ void VisitManager::flush()
 
 bool VisitManager::addVisitItem(
     const std::string& sessionId,
-    userid_t userId,
+    const std::string& userId,
     itemid_t itemId,
-    bool isRecItem
+    bool isRecItem,
+    RecommendMatrix* matrix
 )
 {
     if (updateVisitDB_(visitDB_, userId, itemId)
-        && updateSessionDB_(sessionId, userId, itemId))
+        && updateSessionDB_(sessionId, userId, itemId, matrix))
     {
         if (isRecItem
             && updateVisitDB_(recommendDB_, userId, itemId) == false)
@@ -60,17 +59,17 @@ bool VisitManager::addVisitItem(
     return false;
 }
 
-bool VisitManager::getVisitItemSet(userid_t userId, ItemIdSet& itemIdSet)
+bool VisitManager::getVisitItemSet(const std::string& userId, ItemIdSet& itemIdSet)
 {
     return getVisitDB_(visitDB_, userId, itemIdSet);
 }
 
-bool VisitManager::getRecommendItemSet(userid_t userId, ItemIdSet& itemIdSet)
+bool VisitManager::getRecommendItemSet(const std::string& userId, ItemIdSet& itemIdSet)
 {
     return getVisitDB_(recommendDB_, userId, itemIdSet);
 }
 
-bool VisitManager::getVisitSession(userid_t userId, VisitSession& visitSession)
+bool VisitManager::getVisitSession(const std::string& userId, VisitSession& visitSession)
 {
     bool result = false;
     try
@@ -103,7 +102,7 @@ VisitManager::VisitIterator VisitManager::end()
 
 bool VisitManager::updateVisitDB_(
     VisitDBType& db,
-    userid_t userId,
+    const std::string& userId,
     itemid_t itemId
 )
 {
@@ -133,7 +132,7 @@ bool VisitManager::updateVisitDB_(
 
 bool VisitManager::getVisitDB_(
     VisitDBType& db,
-    userid_t userId,
+    const std::string& userId,
     ItemIdSet& itemIdSet
 )
 {
@@ -154,8 +153,9 @@ bool VisitManager::getVisitDB_(
 
 bool VisitManager::updateSessionDB_(
     const std::string& sessionId,
-    userid_t userId,
-    itemid_t itemId
+    const std::string& userId,
+    itemid_t itemId,
+    RecommendMatrix* matrix
 )
 {
     if (sessionId.empty())
@@ -207,7 +207,10 @@ bool VisitManager::updateSessionDB_(
                 }
             }
 
-            coVisitManager_.visit(oldItems, newItems);
+            if (matrix)
+            {
+                matrix->update(oldItems, newItems);
+            }
         }
 
         return result;
@@ -215,17 +218,6 @@ bool VisitManager::updateSessionDB_(
 
     // already visited in current session
     return true;
-}
-
-void VisitManager::print(std::ostream& ostream) const
-{
-    ostream << "[Visit] " << coVisitManager_.matrix();
-}
-
-std::ostream& operator<<(std::ostream& out, const VisitManager& visitManager)
-{
-    visitManager.print(out);
-    return out;
 }
 
 } // namespace sf1r

@@ -7,34 +7,45 @@
 #include <3rdparty/am/stx/btree_map.h>
 #include <util/izene_serialization.h>
 
-MAKE_FEBIRD_SERIALIZATION(std::pair<std::set<uint32_t>, std::vector<izenelib::util::UString> >)
+//#define USE_LOG_SERVER
 
 namespace sf1r
 {
 
-using izenelib::util::UString;
-
 class CommentCacheStorage
 {
-    typedef std::pair<std::set<uint32_t>, std::vector<UString> > CommentCacheItemType;
-    typedef izenelib::am::leveldb::Table<UString, CommentCacheItemType> CommentCacheDbType;
-    typedef izenelib::am::AMIterator<CommentCacheDbType> CommentCacheIteratorType;
-    typedef stx::btree_map<UString, std::pair<bool, std::vector<std::pair<uint32_t, UString> > > > BufferType;
-
 public:
+#ifdef USE_LOG_SERVER
+    typedef uint128_t KeyType;
+#else
+    typedef izenelib::util::UString KeyType;
+#endif
+    typedef izenelib::util::UString ContentType;
+
+    typedef std::pair<std::set<uint32_t>, std::vector<ContentType> > CommentCacheItemType;
+    typedef izenelib::am::leveldb::Table<KeyType, CommentCacheItemType> CommentCacheDbType;
+    typedef izenelib::am::AMIterator<CommentCacheDbType> CommentCacheIteratorType;
+
+    typedef izenelib::am::leveldb::Table<KeyType, char> DirtyKeyDbType;
+    typedef izenelib::am::AMIterator<DirtyKeyDbType> DirtyKeyIteratorType;
+
+    typedef stx::btree_map<KeyType, std::pair<bool, std::vector<std::pair<uint32_t, ContentType> > > > BufferType;
+
     CommentCacheStorage(
             const std::string& dbPath,
             uint32_t buffer_capacity = 5000);
 
     ~CommentCacheStorage();
 
-    void AppendUpdate(const UString& key, uint32_t docid, const UString& content);
+    void AppendUpdate(const KeyType& key, uint32_t docid, const ContentType& content);
 
-    void Delete(const UString& key);
+    void Delete(const KeyType& key);
 
     void Flush();
 
-    bool Get(const UString& key, CommentCacheItemType& value);
+    bool Get(const KeyType& key, CommentCacheItemType& value);
+
+    bool ClearDirtyKey();
 
 private:
     inline bool IsBufferFull_()
@@ -46,13 +57,16 @@ private:
     friend class MultiDocSummarizationSubManager;
 
     CommentCacheDbType comment_cache_db_;
+    DirtyKeyDbType dirty_key_db_;
 
     BufferType buffer_db_;
 
-    unsigned int buffer_capacity_;
-    unsigned int buffer_size_;
+    uint32_t buffer_capacity_;
+    uint32_t buffer_size_;
 };
 
 }
+
+MAKE_FEBIRD_SERIALIZATION(sf1r::CommentCacheStorage::CommentCacheItemType)
 
 #endif

@@ -26,12 +26,12 @@ const char* TEST_DIR_STR = "recommend_test/t_RateManager";
 const char* RATE_DB_STR = "rate.db";
 }
 
-typedef map<userid_t, ItemRateMap> UserRateMap;
+typedef map<string, ItemRateMap> UserRateMap;
 
 void addRate(
     RateManager& rateManager,
     UserRateMap& userRateMap,
-    userid_t userId,
+    const string& userId,
     itemid_t itemId,
     rate_t rate
 )
@@ -43,7 +43,7 @@ void addRate(
 void removeRate(
     RateManager& rateManager,
     UserRateMap& userRateMap,
-    userid_t userId,
+    const string& userId,
     itemid_t itemId
 )
 {
@@ -86,9 +86,9 @@ BOOST_AUTO_TEST_CASE(checkRate)
         BOOST_TEST_MESSAGE("check empty rate...");
         RateManager rateManager(ratePath.string());
 
-        BOOST_CHECK(userRateMap[1].empty());
-        BOOST_CHECK(userRateMap[10].empty());
-        BOOST_CHECK(userRateMap[100].empty());
+        BOOST_CHECK(userRateMap["1"].empty());
+        BOOST_CHECK(userRateMap["10"].empty());
+        BOOST_CHECK(userRateMap["100"].empty());
 
         checkRateManager(userRateMap, rateManager);
     }
@@ -97,16 +97,16 @@ BOOST_AUTO_TEST_CASE(checkRate)
         BOOST_TEST_MESSAGE("update rate...");
         RateManager rateManager(ratePath.string());
 
-        addRate(rateManager, userRateMap, 1, 1, 1);
-        addRate(rateManager, userRateMap, 1, 2, 2);
-        addRate(rateManager, userRateMap, 1, 3, 3);
-        removeRate(rateManager, userRateMap, 1, 3);
-        removeRate(rateManager, userRateMap, 1, 5);
-        addRate(rateManager, userRateMap, 1, 4, 4);
-        addRate(rateManager, userRateMap, 1, 5, 5);
+        addRate(rateManager, userRateMap, "1", 1, 1);
+        addRate(rateManager, userRateMap, "1", 2, 2);
+        addRate(rateManager, userRateMap, "1", 3, 3);
+        removeRate(rateManager, userRateMap, "1", 3);
+        removeRate(rateManager, userRateMap, "1", 5);
+        addRate(rateManager, userRateMap, "1", 4, 4);
+        addRate(rateManager, userRateMap, "1", 5, 5);
 
-        addRate(rateManager, userRateMap, 2, 5, 3);
-        addRate(rateManager, userRateMap, 2, 1, 5);
+        addRate(rateManager, userRateMap, "2", 5, 3);
+        addRate(rateManager, userRateMap, "2", 1, 5);
 
         checkRateManager(userRateMap, rateManager);
     }
@@ -117,20 +117,20 @@ BOOST_AUTO_TEST_CASE(checkRate)
 
         checkRateManager(userRateMap, rateManager);
 
-        removeRate(rateManager, userRateMap, 1, 2);
-        removeRate(rateManager, userRateMap, 1, 1);
-        addRate(rateManager, userRateMap, 1, 10, 5);
-        addRate(rateManager, userRateMap, 1, 8, 4);
-        addRate(rateManager, userRateMap, 1, 20, 3);
-        addRate(rateManager, userRateMap, 1, 1000, 2);
+        removeRate(rateManager, userRateMap, "1", 2);
+        removeRate(rateManager, userRateMap, "1", 1);
+        addRate(rateManager, userRateMap, "1", 10, 5);
+        addRate(rateManager, userRateMap, "1", 8, 4);
+        addRate(rateManager, userRateMap, "1", 20, 3);
+        addRate(rateManager, userRateMap, "1", 1000, 2);
 
-        addRate(rateManager, userRateMap, 2, 1000, 3);
-        addRate(rateManager, userRateMap, 2, 100, 1);
-        removeRate(rateManager, userRateMap, 2, 1);
-        removeRate(rateManager, userRateMap, 2, 10);
-        removeRate(rateManager, userRateMap, 2, 1000);
-        addRate(rateManager, userRateMap, 2, 100, 4);
-        addRate(rateManager, userRateMap, 2, 1000, 4);
+        addRate(rateManager, userRateMap, "2", 1000, 3);
+        addRate(rateManager, userRateMap, "2", 100, 1);
+        removeRate(rateManager, userRateMap, "2", 1);
+        removeRate(rateManager, userRateMap, "2", 10);
+        removeRate(rateManager, userRateMap, "2", 1000);
+        addRate(rateManager, userRateMap, "2", 100, 4);
+        addRate(rateManager, userRateMap, "2", 1000, 4);
 
         checkRateManager(userRateMap, rateManager);
     }
