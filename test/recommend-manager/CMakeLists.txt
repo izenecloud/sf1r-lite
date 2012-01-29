@@ -86,6 +86,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   ADD_EXECUTABLE(t_VisitManager
     Runner.cpp
     t_VisitManager.cpp
+    VisitManagerTestFixture.cpp
   )
   TARGET_LINK_LIBRARIES(t_VisitManager ${libs})
   SET_TARGET_PROPERTIES(t_VisitManager PROPERTIES

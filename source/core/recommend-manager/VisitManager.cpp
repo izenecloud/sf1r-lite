@@ -85,21 +85,6 @@ bool VisitManager::getVisitSession(const std::string& userId, VisitSession& visi
     return result;
 }
 
-unsigned int VisitManager::visitUserNum()
-{
-    return visitDB_.numItems();
-}
-
-VisitManager::VisitIterator VisitManager::begin()
-{
-    return VisitIterator(visitDB_);
-}
-
-VisitManager::VisitIterator VisitManager::end()
-{
-    return VisitIterator();
-}
-
 bool VisitManager::updateVisitDB_(
     VisitDBType& db,
     const std::string& userId,

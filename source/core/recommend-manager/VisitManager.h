@@ -9,7 +9,6 @@
 
 #include "RecTypes.h"
 #include <sdb/SequentialDB.h>
-#include <sdb/SDBCursorIterator.h>
 
 #include <string>
 
@@ -86,17 +85,9 @@ public:
      */
     bool getVisitSession(const std::string& userId, VisitSession& visitSession);
 
-    /**
-     * The number of users who have visited items.
-     */
-    unsigned int visitUserNum();
-
-    typedef izenelib::sdb::unordered_sdb_tc<std::string, ItemIdSet, ReadWriteLock> VisitDBType;
-    typedef izenelib::sdb::SDBCursorIterator<VisitDBType> VisitIterator;
-    VisitIterator begin();
-    VisitIterator end();
-
 private:
+    typedef izenelib::sdb::unordered_sdb_tc<std::string, ItemIdSet, ReadWriteLock> VisitDBType;
+
     bool updateVisitDB_(
         VisitDBType& db,
         const std::string& userId,

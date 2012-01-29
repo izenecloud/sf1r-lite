@@ -3,7 +3,7 @@
 
 #include <boost/test/unit_test.hpp>
 #include <sstream>
-#include <cstdlib>
+#include <cstdlib> // rand()
 
 namespace sf1r
 {
@@ -48,7 +48,7 @@ void PurchaseManagerTestFixture::addRandItem(const std::string& userId, int item
     addPurchaseItem(userId, oss.str());
 }
 
-void PurchaseManagerTestFixture::checkPurchaseManager()
+void PurchaseManagerTestFixture::checkPurchaseManager() const
 {
     for (PurchaseMap::const_iterator it = purchaseMap_.begin();
         it != purchaseMap_.end(); ++it)

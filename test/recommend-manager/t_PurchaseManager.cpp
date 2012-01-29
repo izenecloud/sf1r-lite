@@ -28,7 +28,6 @@ const string TEST_DIR_STR = "recommend_test/t_PurchaseManager";
 const string TEST_CASSANDRA_URL = "cassandra://localhost";
 const string KEYSPACE_NAME = "test_recommend";
 const string COLLECTION_NAME = "example";
-}
 
 template<class PurchaseManagerType>
 void testPurchase1(
@@ -75,6 +74,8 @@ void testPurchase2(
     fixture.addPurchaseItem("4", "20 30");
 
     fixture.checkPurchaseManager();
+}
+
 }
 
 BOOST_AUTO_TEST_SUITE(PurchaseManagerTest)

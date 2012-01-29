@@ -29,7 +29,7 @@ public:
 
     void addRandItem(const std::string& userId, int itemCount);
 
-    void checkPurchaseManager();
+    void checkPurchaseManager() const;
 
 private:
     PurchaseManager* purchaseManager_;
