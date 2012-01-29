@@ -30,6 +30,53 @@ const string KEYSPACE_NAME = "test_recommend";
 const string COLLECTION_NAME = "example";
 }
 
+template<class PurchaseManagerType>
+void testPurchase1(
+    RecommendStorageFactory& factory,
+    PurchaseManagerTestFixture& fixture
+)
+{
+    BOOST_TEST_MESSAGE("1st add purchase...");
+
+    boost::scoped_ptr<PurchaseManager> purchaseManager(factory.createPurchaseManager());
+    BOOST_CHECK(dynamic_cast<PurchaseManagerType*>(purchaseManager.get()) != NULL);
+    fixture.setPurchaseManager(purchaseManager.get());
+
+    fixture.addPurchaseItem("1", "20 10 40");
+    fixture.addPurchaseItem("1", "10");
+    fixture.addPurchaseItem("2", "20 30");
+    fixture.addPurchaseItem("3", "20 30 20");
+
+    fixture.addRandItem("1", 99);
+    fixture.addRandItem("2", 100);
+    fixture.addRandItem("3", 101);
+    fixture.addRandItem("4", 1234);
+
+    fixture.checkPurchaseManager();
+}
+
+template<class PurchaseManagerType>
+void testPurchase2(
+    RecommendStorageFactory& factory,
+    PurchaseManagerTestFixture& fixture
+)
+{
+    BOOST_TEST_MESSAGE("2nd add purchase...");
+
+    boost::scoped_ptr<PurchaseManager> purchaseManager(factory.createPurchaseManager());
+    BOOST_CHECK(dynamic_cast<PurchaseManagerType*>(purchaseManager.get()) != NULL);
+    fixture.setPurchaseManager(purchaseManager.get());
+
+    fixture.checkPurchaseManager();
+
+    fixture.addPurchaseItem("1", "40 50 60");
+    fixture.addPurchaseItem("2", "40");
+    fixture.addPurchaseItem("3", "30 40 50");
+    fixture.addPurchaseItem("4", "20 30");
+
+    fixture.checkPurchaseManager();
+}
+
 BOOST_AUTO_TEST_SUITE(PurchaseManagerTest)
 
 BOOST_FIXTURE_TEST_CASE(checkLocalPurchaseManager, PurchaseManagerTestFixture)
@@ -40,41 +87,8 @@ BOOST_FIXTURE_TEST_CASE(checkLocalPurchaseManager, PurchaseManagerTestFixture)
     CassandraStorageConfig config;
     RecommendStorageFactory factory(config, COLLECTION_NAME, TEST_DIR_STR);
 
-    {
-        BOOST_TEST_MESSAGE("1st add purchase...");
-
-        boost::scoped_ptr<PurchaseManager> purchaseManager(factory.createPurchaseManager());
-        BOOST_CHECK(dynamic_cast<LocalPurchaseManager*>(purchaseManager.get()) != NULL);
-        setPurchaseManager(purchaseManager.get());
-
-        addPurchaseItem("1", "20 10 40");
-        addPurchaseItem("1", "10");
-        addPurchaseItem("2", "20 30");
-        addPurchaseItem("3", "20 30 20");
-
-        addRandItem("1", 99);
-        addRandItem("2", 100);
-        addRandItem("3", 101);
-        addRandItem("4", 1234);
-
-        checkPurchaseManager();
-    }
-
-    {
-        BOOST_TEST_MESSAGE("2nd add purchase...");
-
-        boost::scoped_ptr<PurchaseManager> purchaseManager(factory.createPurchaseManager());
-        setPurchaseManager(purchaseManager.get());
-
-        checkPurchaseManager();
-
-        addPurchaseItem("1", "40 50 60");
-        addPurchaseItem("2", "40");
-        addPurchaseItem("3", "30 40 50");
-        addPurchaseItem("4", "20 30");
-
-        checkPurchaseManager();
-    }
+    testPurchase1<LocalPurchaseManager>(factory, *this);
+    testPurchase2<LocalPurchaseManager>(factory, *this);
 }
 
 BOOST_FIXTURE_TEST_CASE(checkRemotePurchaseManager, PurchaseManagerTestFixture)
@@ -97,42 +111,8 @@ BOOST_FIXTURE_TEST_CASE(checkRemotePurchaseManager, PurchaseManagerTestFixture)
         adaptor.dropColumnFamily();
     }
 
-    {
-        BOOST_TEST_MESSAGE("1st add purchase...");
-
-        boost::scoped_ptr<PurchaseManager> purchaseManager(factory.createPurchaseManager());
-        BOOST_CHECK(dynamic_cast<RemotePurchaseManager*>(purchaseManager.get()) != NULL);
-        setPurchaseManager(purchaseManager.get());
-
-
-        addPurchaseItem("1", "20 10 40");
-        addPurchaseItem("1", "10");
-        addPurchaseItem("2", "20 30");
-        addPurchaseItem("3", "20 30 20");
-
-        addRandItem("1", 99);
-        addRandItem("2", 100);
-        addRandItem("3", 101);
-        addRandItem("4", 1234);
-
-        checkPurchaseManager();
-    }
-
-    {
-        BOOST_TEST_MESSAGE("2nd add purchase...");
-
-        boost::scoped_ptr<PurchaseManager> purchaseManager(factory.createPurchaseManager());
-        setPurchaseManager(purchaseManager.get());
-
-        checkPurchaseManager();
-
-        addPurchaseItem("1", "40 50 60");
-        addPurchaseItem("2", "40");
-        addPurchaseItem("3", "30 40 50");
-        addPurchaseItem("4", "20 30");
-
-        checkPurchaseManager();
-    }
+    testPurchase1<RemotePurchaseManager>(factory, *this);
+    testPurchase2<RemotePurchaseManager>(factory, *this);
 }
 
 BOOST_AUTO_TEST_CASE(checkCassandraNotConnect)
