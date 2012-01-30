@@ -95,6 +95,9 @@ BOOST_FIXTURE_TEST_CASE(checkLocalPurchaseManager, PurchaseManagerTestFixture)
 
 BOOST_FIXTURE_TEST_CASE(checkRemotePurchaseManager, PurchaseManagerTestFixture)
 {
+    bfs::remove_all(TEST_DIR_STR);
+    bfs::create_directories(TEST_DIR_STR);
+
     CassandraConnection& connection = CassandraConnection::instance();
     if (! connection.init(TEST_CASSANDRA_URL))
     {
@@ -119,6 +122,9 @@ BOOST_FIXTURE_TEST_CASE(checkRemotePurchaseManager, PurchaseManagerTestFixture)
 
 BOOST_AUTO_TEST_CASE(checkCassandraNotConnect)
 {
+    bfs::remove_all(TEST_DIR_STR);
+    bfs::create_directories(TEST_DIR_STR);
+
     CassandraConnection& connection = CassandraConnection::instance();
     const char* TEST_CASSANDRA_NOT_CONNECT_URL = "cassandra://localhost:9161";
     BOOST_CHECK(connection.init(TEST_CASSANDRA_NOT_CONNECT_URL) == false);

@@ -49,20 +49,6 @@ bool CassandraAdaptor::dropColumnFamily()
     return true;
 }
 
-bool CassandraAdaptor::insertColumn(const std::string& key, const std::string& name, const std::string& value)
-{
-    if (! client_)
-        return false;
-
-    try
-    {
-        client_->insertColumn(value, key, columnFamily_, name);
-    }
-    CATCH_CASSANDRA_EXCEPTION("[Cassandra::insertColumn] error: ")
-
-    return true;
-}
-
 bool CassandraAdaptor::remove(const std::string& key)
 {
     if (! client_)
@@ -141,6 +127,60 @@ bool CassandraAdaptor::getAllColumns(const std::string& key, std::vector<org::ap
         columns.insert(columns.end(), beginIt, endIt);
         lastColumn = slice.back().name;
     }
+
+    return true;
+}
+
+bool CassandraAdaptor::getSuperColumns(const std::string& key, std::vector<org::apache::cassandra::SuperColumn>& superColumns)
+{
+    if (! client_)
+        return false;
+
+    ColumnParent colParent;
+    colParent.__set_column_family(columnFamily_);
+
+    SlicePredicate pred;
+    SliceRange sliceRange;
+    pred.__set_slice_range(sliceRange);
+
+    try
+    {
+        client_->getSuperSlice(superColumns, key, colParent, pred);
+    }
+    CATCH_CASSANDRA_EXCEPTION("[Cassandra::getSuperSlice] error: ")
+
+    return true;
+}
+
+bool CassandraAdaptor::insertColumn(const std::string& key, const std::string& name, const std::string& value)
+{
+    if (! client_)
+        return false;
+
+    try
+    {
+        client_->insertColumn(value, key, columnFamily_, name);
+    }
+    CATCH_CASSANDRA_EXCEPTION("[Cassandra::insertColumn] error: ")
+
+    return true;
+}
+
+bool CassandraAdaptor::insertSuperColumn(
+    const std::string& key,
+    const std::string& superColumnName,
+    const std::string& subColumnName,
+    const std::string& value
+)
+{
+    if (! client_)
+        return false;
+
+    try
+    {
+        client_->insertColumn(value, key, columnFamily_, superColumnName, subColumnName);
+    }
+    CATCH_CASSANDRA_EXCEPTION("[Cassandra::insertColumn] (super column) error: ")
 
     return true;
 }

@@ -9,7 +9,10 @@
 #include <recommend-manager/storage/RecommendStorageFactory.h>
 #include <configuration-manager/CassandraStorageConfig.h>
 #include <recommend-manager/storage/LocalVisitManager.h>
+#include <recommend-manager/storage/RemoteVisitManager.h>
 #include <recommend-manager/VisitMatrix.h>
+#include <recommend-manager/storage/CassandraAdaptor.h>
+#include <log-manager/CassandraConnection.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
@@ -28,6 +31,8 @@ namespace bfs = boost::filesystem;
 namespace
 {
 const string TEST_DIR_STR = "recommend_test/t_VisitManager";
+const string TEST_CASSANDRA_URL = "cassandra://localhost";
+const string KEYSPACE_NAME = "test_recommend";
 const string COLLECTION_NAME = "example";
 const string COVISIT_DIR_STR = "covisit";
 
@@ -150,6 +155,72 @@ BOOST_FIXTURE_TEST_CASE(checkLocalVisitManager, VisitManagerTestFixture)
 
     testVisit1<LocalVisitManager>(factory, coVisitManager, *this);
     testVisit2<LocalVisitManager>(factory, coVisitManager, *this);
+}
+
+BOOST_FIXTURE_TEST_CASE(checkRemoteVisitManager, VisitManagerTestFixture)
+{
+    bfs::remove_all(TEST_DIR_STR);
+    bfs::create_directories(TEST_DIR_STR);
+
+    CassandraConnection& connection = CassandraConnection::instance();
+    if (! connection.init(TEST_CASSANDRA_URL))
+    {
+        cerr << "warning: exit test case as failed to connect " << TEST_CASSANDRA_URL << endl;
+        return;
+    }
+
+    CassandraStorageConfig config;
+    config.enable = true;
+    config.keyspace = KEYSPACE_NAME;
+    RecommendStorageFactory factory(config, COLLECTION_NAME, TEST_DIR_STR);
+
+    {
+        libcassandra::Cassandra* client = connection.getCassandraClient(KEYSPACE_NAME);
+        CassandraAdaptor(factory.getVisitItemColumnFamily(), client).dropColumnFamily();
+        CassandraAdaptor(factory.getVisitRecommendColumnFamily(), client).dropColumnFamily();
+        CassandraAdaptor(factory.getVisitSessionColumnFamily(), client).dropColumnFamily();
+    }
+
+    bfs::path covisitPath(bfs::path(TEST_DIR_STR) / COVISIT_DIR_STR);
+    CoVisitManager coVisitManager(covisitPath.string());
+
+    testVisit1<RemoteVisitManager>(factory, coVisitManager, *this);
+    testVisit2<RemoteVisitManager>(factory, coVisitManager, *this);
+}
+
+BOOST_AUTO_TEST_CASE(checkCassandraNotConnect)
+{
+    bfs::remove_all(TEST_DIR_STR);
+    bfs::create_directories(TEST_DIR_STR);
+
+    CassandraConnection& connection = CassandraConnection::instance();
+    const char* TEST_CASSANDRA_NOT_CONNECT_URL = "cassandra://localhost:9161";
+    BOOST_CHECK(connection.init(TEST_CASSANDRA_NOT_CONNECT_URL) == false);
+
+    CassandraStorageConfig config;
+    config.enable = true;
+    config.keyspace = KEYSPACE_NAME;
+    RecommendStorageFactory factory(config, COLLECTION_NAME, TEST_DIR_STR);
+
+    bfs::path covisitPath(bfs::path(TEST_DIR_STR) / COVISIT_DIR_STR);
+    CoVisitManager coVisitManager(covisitPath.string());
+    VisitMatrix visitMatrix(coVisitManager);
+
+    boost::scoped_ptr<VisitManager> visitManager(factory.createVisitManager());
+
+    string sessionId = "session_001";
+    string userId = "aaa";
+    itemid_t itemId = 1;
+
+    BOOST_CHECK(visitManager->addVisitItem(sessionId, userId, itemId, &visitMatrix) == false);
+    BOOST_CHECK(visitManager->visitRecommendItem(userId, itemId) == false);
+
+    ItemIdSet itemIdSet;
+    BOOST_CHECK(visitManager->getVisitItemSet(userId, itemIdSet) == false);
+    BOOST_CHECK(visitManager->getRecommendItemSet(userId, itemIdSet) == false);
+
+    VisitSession visitSession;
+    BOOST_CHECK(visitManager->getVisitSession(userId, visitSession) == false);
 }
 
 BOOST_AUTO_TEST_SUITE_END() 

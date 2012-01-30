@@ -6,7 +6,7 @@
 
 namespace
 {
-const char* PROP_USERID = "USERID";
+const std::string PROP_USERID = "USERID";
 
 org::apache::cassandra::CfDef createCFDef(
     const std::string& keyspace,

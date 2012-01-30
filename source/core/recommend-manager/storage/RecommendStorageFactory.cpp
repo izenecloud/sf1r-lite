@@ -4,6 +4,7 @@
 #include "LocalPurchaseManager.h"
 #include "RemotePurchaseManager.h"
 #include "LocalVisitManager.h"
+#include "RemoteVisitManager.h"
 #include <configuration-manager/CassandraStorageConfig.h>
 #include <log-manager/CassandraConnection.h>
 
@@ -36,6 +37,9 @@ void RecommendStorageFactory::initRemoteStorage_(const std::string& collection)
 {
     userColumnFamily_ = collection + "_users";
     purchaseColumnFamily_ = collection + "_purchase";
+    visitItemColumnFamily_ = collection + "_visit_item";
+    visitRecommendColumnFamily_ = collection + "_visit_recommend";
+    visitSessionColumnFamily_ = collection + "_visit_session";
 
     const std::string& keyspace = cassandraConfig_.keyspace;
     cassandraClient_ = CassandraConnection::instance().getCassandraClient(keyspace);
@@ -91,7 +95,9 @@ VisitManager* RecommendStorageFactory::createVisitManager() const
 {
     if (cassandraConfig_.enable)
     {
-        return NULL;
+        return new RemoteVisitManager(cassandraConfig_.keyspace,
+                                      visitItemColumnFamily_, visitRecommendColumnFamily_, visitSessionColumnFamily_,
+                                      cassandraClient_);
     }
     else
     {
@@ -107,6 +113,21 @@ const std::string& RecommendStorageFactory::getUserColumnFamily() const
 const std::string& RecommendStorageFactory::getPurchaseColumnFamily() const
 {
     return purchaseColumnFamily_;
+}
+
+const std::string& RecommendStorageFactory::getVisitItemColumnFamily() const
+{
+    return visitItemColumnFamily_;
+}
+
+const std::string& RecommendStorageFactory::getVisitRecommendColumnFamily() const
+{
+    return visitRecommendColumnFamily_;
+}
+
+const std::string& RecommendStorageFactory::getVisitSessionColumnFamily() const
+{
+    return visitSessionColumnFamily_;
 }
 
 } // namespace sf1r

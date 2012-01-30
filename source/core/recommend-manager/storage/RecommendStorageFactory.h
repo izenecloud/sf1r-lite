@@ -37,6 +37,9 @@ public:
 
     const std::string& getUserColumnFamily() const;
     const std::string& getPurchaseColumnFamily() const;
+    const std::string& getVisitItemColumnFamily() const;
+    const std::string& getVisitRecommendColumnFamily() const;
+    const std::string& getVisitSessionColumnFamily() const;
 
 private:
     void initRemoteStorage_(const std::string& collection);
@@ -54,6 +57,9 @@ private:
 
     std::string userColumnFamily_;
     std::string purchaseColumnFamily_;
+    std::string visitItemColumnFamily_;
+    std::string visitRecommendColumnFamily_;
+    std::string visitSessionColumnFamily_;
 };
 
 } // namespace sf1r
