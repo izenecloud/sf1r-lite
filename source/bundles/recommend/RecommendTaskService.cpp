@@ -3,7 +3,7 @@
 #include <recommend-manager/User.h>
 #include <recommend-manager/storage/UserManager.h>
 #include <recommend-manager/ItemManager.h>
-#include <recommend-manager/VisitManager.h>
+#include <recommend-manager/storage/VisitManager.h>
 #include <recommend-manager/storage/PurchaseManager.h>
 #include <recommend-manager/CartManager.h>
 #include <recommend-manager/OrderManager.h>
@@ -354,7 +354,14 @@ bool RecommendTaskService::visitItem(
         return false;
 
     jobScheduler_.addTask(boost::bind(&VisitManager::addVisitItem, &visitManager_,
-                                      sessionIdStr, userIdStr, itemId, isRecItem, &visitMatrix_));
+                                      sessionIdStr, userIdStr, itemId, &visitMatrix_));
+
+    if (isRecItem && !visitManager_.visitRecommendItem(userIdStr, itemId))
+    {
+        LOG(ERROR) << "error in VisitManager::visitRecommendItem(), userId: " << userIdStr
+                   << ", itemId: " << itemId;
+        return false;
+    }
 
     return true;
 }

@@ -20,6 +20,7 @@ namespace sf1r
 struct CassandraStorageConfig;
 class UserManager;
 class PurchaseManager;
+class VisitManager;
 
 class RecommendStorageFactory
 {
@@ -32,6 +33,7 @@ public:
 
     UserManager* createUserManager() const;
     PurchaseManager* createPurchaseManager() const;
+    VisitManager* createVisitManager() const;
 
     const std::string& getUserColumnFamily() const;
     const std::string& getPurchaseColumnFamily() const;
@@ -46,6 +48,9 @@ private:
 
     std::string userPath_;
     std::string purchasePath_;
+    std::string visitItemPath_;
+    std::string visitRecommendPath_;
+    std::string visitSessionPath_;
 
     std::string userColumnFamily_;
     std::string purchaseColumnFamily_;

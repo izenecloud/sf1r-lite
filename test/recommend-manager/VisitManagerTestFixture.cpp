@@ -1,5 +1,5 @@
 #include "VisitManagerTestFixture.h"
-#include <recommend-manager/VisitManager.h>
+#include <recommend-manager/storage/VisitManager.h>
 #include <recommend-manager/RecommendMatrix.h>
 
 #include <boost/test/unit_test.hpp>
@@ -34,17 +34,11 @@ void VisitManagerTestFixture::addVisitItem(
     const std::string& sessionId,
     const std::string& userId,
     itemid_t itemId,
-    bool isRecItem,
     RecommendMatrix* matrix
 )
 {
     UserRecord& record = visitMap_[userId];
     record.visitItems.insert(itemId);
-
-    if (isRecItem)
-    {
-        record.recommendItems.insert(itemId);
-    }
 
     if (record.sessionId != sessionId)
     {
@@ -53,7 +47,18 @@ void VisitManagerTestFixture::addVisitItem(
     }
     record.sessionItems.insert(itemId);
 
-    BOOST_CHECK(visitManager_->addVisitItem(sessionId, userId, itemId, isRecItem, matrix));
+    BOOST_CHECK(visitManager_->addVisitItem(sessionId, userId, itemId, matrix));
+}
+
+void VisitManagerTestFixture::visitRecommendItem(
+    const std::string& userId,
+    itemid_t itemId
+)
+{
+    UserRecord& record = visitMap_[userId];
+    record.recommendItems.insert(itemId);
+
+    BOOST_CHECK(visitManager_->visitRecommendItem(userId, itemId));
 }
 
 void VisitManagerTestFixture::addRandItem(
@@ -65,8 +70,13 @@ void VisitManagerTestFixture::addRandItem(
     for (int i = 0; i < itemCount; ++i)
     {
         itemid_t itemId = std::rand();
-        bool isRecItem = std::rand() & 1; // odd to recommend, even not to recommend
-        addVisitItem(sessionId, userId, itemId, isRecItem, NULL);
+        addVisitItem(sessionId, userId, itemId, NULL);
+
+        // odd to recommend, even not to recommend
+        if (std::rand() % 2)
+        {
+            visitRecommendItem(userId, itemId);
+        }
     }
 }
 

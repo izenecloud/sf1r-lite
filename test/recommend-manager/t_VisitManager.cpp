@@ -6,28 +6,30 @@
 ///
 
 #include "VisitManagerTestFixture.h"
-#include <recommend-manager/VisitManager.h>
+#include <recommend-manager/storage/RecommendStorageFactory.h>
+#include <configuration-manager/CassandraStorageConfig.h>
+#include <recommend-manager/storage/LocalVisitManager.h>
 #include <recommend-manager/VisitMatrix.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include <string>
 #include <vector>
 #include <sstream>
 #include <algorithm> // sort
 
+using namespace std;
 using namespace sf1r;
 
 namespace bfs = boost::filesystem;
 
 namespace
 {
-const char* TEST_DIR_STR = "recommend_test/t_VisitManager";
-const char* VISIT_DB_STR = "visit.db";
-const char* RECOMMEND_DB_STR = "recommend.db";
-const char* SESSION_DB_STR = "session.db";
-const char* COVISIT_DIR_STR = "covisit";
+const string TEST_DIR_STR = "recommend_test/t_VisitManager";
+const string COLLECTION_NAME = "example";
+const string COVISIT_DIR_STR = "covisit";
 
 void checkCoVisitManager(
     CoVisitManager& coVisitManager,
@@ -53,30 +55,37 @@ void checkCoVisitManager(
                                   goldRecItems.begin(), goldRecItems.end());
 }
 
+template<class VisitManagerType>
 void testVisit1(
-    VisitManager& visitManager,
+    RecommendStorageFactory& factory,
     CoVisitManager& coVisitManager,
     VisitManagerTestFixture& fixture
 )
 {
     BOOST_TEST_MESSAGE("1st add visit...");
 
-    fixture.setVisitManager(&visitManager);
+    boost::scoped_ptr<VisitManager> visitManager(factory.createVisitManager());
+    BOOST_CHECK(dynamic_cast<VisitManagerType*>(visitManager.get()) != NULL);
+    fixture.setVisitManager(visitManager.get());
 
     VisitMatrix visitMatrix(coVisitManager);
     std::string sessionId = "session_001";
 
-    fixture.addVisitItem(sessionId, "1", 10, false, &visitMatrix);
-    fixture.addVisitItem(sessionId, "2", 20, false, &visitMatrix);
-    fixture.addVisitItem(sessionId, "1", 20, true, &visitMatrix);
-    fixture.addVisitItem(sessionId, "2", 30, false, &visitMatrix);
-    fixture.addVisitItem(sessionId, "3", 30, true, &visitMatrix);
-    fixture.addVisitItem(sessionId, "1", 30, false, &visitMatrix);
+    fixture.addVisitItem(sessionId, "1", 10, &visitMatrix);
+    fixture.addVisitItem(sessionId, "2", 20, &visitMatrix);
+    fixture.addVisitItem(sessionId, "1", 20, &visitMatrix);
+    fixture.addVisitItem(sessionId, "2", 30, &visitMatrix);
+    fixture.addVisitItem(sessionId, "3", 30, &visitMatrix);
+    fixture.addVisitItem(sessionId, "1", 30, &visitMatrix);
 
     // visit duplicate item
-    fixture.addVisitItem(sessionId, "1", 10, true, &visitMatrix);
-    fixture.addVisitItem(sessionId, "2", 30, false, &visitMatrix);
-    fixture.addVisitItem(sessionId, "3", 30, true, &visitMatrix);
+    fixture.addVisitItem(sessionId, "1", 10, &visitMatrix);
+    fixture.addVisitItem(sessionId, "2", 30, &visitMatrix);
+    fixture.addVisitItem(sessionId, "3", 30, &visitMatrix);
+
+    fixture.visitRecommendItem("1", 10);
+    fixture.visitRecommendItem("1", 20);
+    fixture.visitRecommendItem("3", 30);
 
     fixture.addRandItem(sessionId, "1", 99);
     fixture.addRandItem(sessionId, "2", 100);
@@ -91,25 +100,30 @@ void testVisit1(
     checkCoVisitManager(coVisitManager, 40, "");
 }
 
+template<class VisitManagerType>
 void testVisit2(
-    VisitManager& visitManager,
+    RecommendStorageFactory& factory,
     CoVisitManager& coVisitManager,
     VisitManagerTestFixture& fixture
 )
 {
     BOOST_TEST_MESSAGE("2nd add visit...");
 
-    fixture.setVisitManager(&visitManager);
-    fixture.checkVisitManager();
+    boost::scoped_ptr<VisitManager> visitManager(factory.createVisitManager());
+    BOOST_CHECK(dynamic_cast<VisitManagerType*>(visitManager.get()) != NULL);
+    fixture.setVisitManager(visitManager.get());
 
     VisitMatrix visitMatrix(coVisitManager);
     std::string sessionId = "session_002";
 
-    fixture.addVisitItem(sessionId, "3", 10, true, &visitMatrix);
-    fixture.addVisitItem(sessionId, "2", 10, false, &visitMatrix);
-    fixture.addVisitItem(sessionId, "3", 20, false, &visitMatrix);
-    fixture.addVisitItem(sessionId, "4", 20, true, &visitMatrix);
-    fixture.addVisitItem(sessionId, "4", 40, false, &visitMatrix);
+    fixture.addVisitItem(sessionId, "3", 10, &visitMatrix);
+    fixture.addVisitItem(sessionId, "2", 10, &visitMatrix);
+    fixture.addVisitItem(sessionId, "3", 20, &visitMatrix);
+    fixture.addVisitItem(sessionId, "4", 20, &visitMatrix);
+    fixture.addVisitItem(sessionId, "4", 40, &visitMatrix);
+
+    fixture.visitRecommendItem("3", 10);
+    fixture.visitRecommendItem("4", 20);
 
     fixture.checkVisitManager();
 
@@ -128,22 +142,14 @@ BOOST_FIXTURE_TEST_CASE(checkLocalVisitManager, VisitManagerTestFixture)
     bfs::remove_all(TEST_DIR_STR);
     bfs::create_directories(TEST_DIR_STR);
 
-    bfs::path visitDBPath(bfs::path(TEST_DIR_STR) / VISIT_DB_STR);
-    bfs::path recommendDBPath(bfs::path(TEST_DIR_STR) / RECOMMEND_DB_STR);
-    bfs::path sessionDBPath(bfs::path(TEST_DIR_STR) / SESSION_DB_STR);
-    bfs::path covisitPath(bfs::path(TEST_DIR_STR) / COVISIT_DIR_STR);
+    CassandraStorageConfig config;
+    RecommendStorageFactory factory(config, COLLECTION_NAME, TEST_DIR_STR);
 
+    bfs::path covisitPath(bfs::path(TEST_DIR_STR) / COVISIT_DIR_STR);
     CoVisitManager coVisitManager(covisitPath.string());
 
-    {
-        VisitManager visitManager(visitDBPath.string(), recommendDBPath.string(), sessionDBPath.string());
-        testVisit1(visitManager, coVisitManager, *this);
-    }
-
-    {
-        VisitManager visitManager(visitDBPath.string(), recommendDBPath.string(), sessionDBPath.string());
-        testVisit2(visitManager, coVisitManager, *this);
-    }
+    testVisit1<LocalVisitManager>(factory, coVisitManager, *this);
+    testVisit2<LocalVisitManager>(factory, coVisitManager, *this);
 }
 
 BOOST_AUTO_TEST_SUITE_END() 

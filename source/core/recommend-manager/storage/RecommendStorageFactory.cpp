@@ -3,6 +3,7 @@
 #include "RemoteUserManager.h"
 #include "LocalPurchaseManager.h"
 #include "RemotePurchaseManager.h"
+#include "LocalVisitManager.h"
 #include <configuration-manager/CassandraStorageConfig.h>
 #include <log-manager/CassandraConnection.h>
 
@@ -50,11 +51,16 @@ void RecommendStorageFactory::initLocalStorage_(const std::string& dataDir)
 
     bfs::path userDir = dataPath / "user";
     bfs::create_directory(userDir);
+
     userPath_ = (userDir / "user.db").string();
 
     bfs::path eventDir = dataPath / "event";
     bfs::create_directory(eventDir);
+
     purchasePath_ = (eventDir / "purchase.db").string();
+    visitItemPath_ = (eventDir / "visit_item.db").string();
+    visitRecommendPath_ = (eventDir / "visit_recommend.db").string();
+    visitSessionPath_ = (eventDir / "visit_session.db").string();
 }
 
 UserManager* RecommendStorageFactory::createUserManager() const
@@ -78,6 +84,18 @@ PurchaseManager* RecommendStorageFactory::createPurchaseManager() const
     else
     {
         return new LocalPurchaseManager(purchasePath_);
+    }
+}
+
+VisitManager* RecommendStorageFactory::createVisitManager() const
+{
+    if (cassandraConfig_.enable)
+    {
+        return NULL;
+    }
+    else
+    {
+        return new LocalVisitManager(visitItemPath_, visitRecommendPath_, visitSessionPath_);
     }
 }
 

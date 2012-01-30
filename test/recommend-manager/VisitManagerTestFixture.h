@@ -29,8 +29,12 @@ public:
         const std::string& sessionId,
         const std::string& userId,
         itemid_t itemId,
-        bool isRecItem,
         RecommendMatrix* matrix
+    );
+
+    void visitRecommendItem(
+        const std::string& userId,
+        itemid_t itemId
     );
 
     /**

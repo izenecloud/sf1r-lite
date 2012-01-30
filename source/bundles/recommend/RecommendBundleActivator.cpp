@@ -1,16 +1,16 @@
 #include "RecommendBundleActivator.h"
 #include "RecommendBundleConfiguration.h"
-#include <recommend-manager/storage/UserManager.h>
 #include <recommend-manager/ItemManager.h>
-#include <recommend-manager/VisitManager.h>
-#include <recommend-manager/storage/LocalPurchaseManager.h>
+#include <recommend-manager/storage/RecommendStorageFactory.h>
+#include <recommend-manager/storage/UserManager.h>
+#include <recommend-manager/storage/VisitManager.h>
+#include <recommend-manager/storage/PurchaseManager.h>
 #include <recommend-manager/CartManager.h>
 #include <recommend-manager/OrderManager.h>
 #include <recommend-manager/EventManager.h>
 #include <recommend-manager/RateManager.h>
 #include <recommend-manager/RecommenderFactory.h>
 #include <recommend-manager/ItemIdGenerator.h>
-#include <recommend-manager/storage/RecommendStorageFactory.h>
 #include <bundles/index/IndexSearchService.h>
 
 #include <aggregator-manager/SearchWorker.h>
@@ -210,6 +210,7 @@ void RecommendBundleActivator::createStorage_()
 
     userManager_.reset(storageFactory.createUserManager());
     purchaseManager_.reset(storageFactory.createPurchaseManager());
+    visitManager_.reset(storageFactory.createVisitManager());
 }
 
 void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchService)
@@ -241,10 +242,6 @@ void RecommendBundleActivator::createEvent_()
 {
     bfs::path eventDir = dataDir_ / "event";
     bfs::create_directory(eventDir);
-
-    visitManager_.reset(new VisitManager((eventDir / "visit_item.db").string(),
-                                         (eventDir / "visit_recommend.db").string(),
-                                         (eventDir / "visit_session.db").string()));
 
     cartManager_.reset(new CartManager((eventDir / "cart.db").string()));
     eventManager_.reset(new EventManager((eventDir / "event.db").string()));
