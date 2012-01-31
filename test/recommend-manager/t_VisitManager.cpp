@@ -95,7 +95,7 @@ void testVisit1(
     fixture.addRandItem(sessionId, "1", 99);
     fixture.addRandItem(sessionId, "2", 100);
     fixture.addRandItem(sessionId, "3", 101);
-    fixture.addRandItem(sessionId, "4", 2468);
+    fixture.addRandItem(sessionId, "4", 1234);
 
     fixture.checkVisitManager();
 
