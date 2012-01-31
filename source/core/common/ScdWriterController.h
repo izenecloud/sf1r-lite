@@ -33,7 +33,8 @@ private:
     std::string dir_;
     ScdWriter* writer_;
     int last_op_;
-    
+    int document_limit_;
+    static const int M = 500;
 };
 
 

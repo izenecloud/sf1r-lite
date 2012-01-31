@@ -283,7 +283,6 @@ bool ProductManager::FinishHook()
             if (in_group.size() < 2) continue;
             if (max_in_group > 0 && in_group.size() > max_in_group) continue;
             std::sort(in_group.begin(), in_group.end());
-            //use the smallest docid as uuid
             izenelib::util::UString docname(in_group[0], izenelib::util::UString::UTF_8);
             UuidType uuid;
 #ifdef USE_LOG_SERVER
@@ -295,6 +294,7 @@ bool ProductManager::FinishHook()
             PMDocumentType doc;
             doc.property(config_.docid_property_name) = docname;
             doc.property(config_.price_property_name) = izenelib::util::UString("", izenelib::util::UString::UTF_8);
+            doc.property(config_.source_property_name) = izenelib::util::UString("", izenelib::util::UString::UTF_8);
             doc.property(config_.uuid_property_name) = uuid;
             util_.SetItemCount(doc, in_group.size());
             g2doc_map.insert(std::make_pair(gid, doc));
@@ -384,15 +384,17 @@ bool ProductManager::FinishHook()
                 combine_price += price;
                 izenelib::util::UString base_udocid = doc.property(config_.docid_property_name).get<izenelib::util::UString>();
                 UString uuid = combine_doc.property(config_.uuid_property_name).get<izenelib::util::UString>();
+                UString source;
+                UString combine_source;
+                doc.getProperty(config_.source_property_name, source);
+                combine_doc.getProperty(config_.source_property_name, combine_source);
+                util_.AddSource(combine_source, source);
                 if (udocid == base_udocid)
                 {
                     combine_doc.copyPropertiesFromDocument(doc, false);
-                    combine_doc.property(config_.price_property_name) = combine_price.ToUString();
                 }
-                else
-                {
-                    combine_doc.property(config_.price_property_name) = combine_price.ToUString();
-                }
+                combine_doc.property(config_.price_property_name) = combine_price.ToUString();
+                combine_doc.property(config_.source_property_name) = combine_source;
                 uuid_update_list.push_back(std::make_pair(docid, uuid));
             }
             else

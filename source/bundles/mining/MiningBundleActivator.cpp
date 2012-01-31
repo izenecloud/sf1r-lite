@@ -92,7 +92,7 @@ bool MiningBundleActivator::addingService( const ServiceReference& ref )
             searchService_->searchAggregator_ = service->searchAggregator_;
             searchService_->searchWorker_ = service->searchWorker_;
 
-            taskService_ = new MiningTaskService;
+            taskService_ = new MiningTaskService(config_);
             taskService_->miningManager_ = miningManager_;
 
             Properties props;

@@ -82,6 +82,42 @@ public:
             doc.property(config_.price_property_name) = doc_price.ToUString();
         }
     }
+
+    void AddSource(izenelib::util::UString& combine_source, const izenelib::util::UString& source)
+    {
+        if(source.length()>0)
+        {
+            std::string s_combine;
+            combine_source.convertString(s_combine, izenelib::util::UString::UTF_8);
+            std::string s_source;
+            source.convertString(s_source, izenelib::util::UString::UTF_8);
+            std::size_t start = 0, end = 0;
+            //bool dd = false; //if source is in combine_source already
+            while(true)
+            {
+                end = s_combine.find(",", start);
+                std::size_t param2 = std::string::npos;
+                if(end!=std::string::npos)
+                {
+                    param2 = end - start;
+                }
+                std::string s = s_combine.substr(start, param2);
+                if(s_source==s)
+                {
+                    return;
+                }
+                if(end==std::string::npos) break;
+                start = end+1;
+            }
+            
+            if(combine_source.length()>0)
+            {
+                combine_source.append( UString(",", UString::UTF_8) );
+            }
+            combine_source.append(source);
+        }
+
+    }
     
     void SetItemCount( PMDocumentType& doc, uint32_t count)
     {
