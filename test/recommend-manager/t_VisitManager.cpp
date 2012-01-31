@@ -6,6 +6,7 @@
 ///
 
 #include "VisitManagerTestFixture.h"
+#include "test_util.h"
 #include <recommend-manager/storage/RecommendStorageFactory.h>
 #include <configuration-manager/CassandraStorageConfig.h>
 #include <recommend-manager/storage/LocalVisitManager.h>
@@ -20,7 +21,6 @@
 
 #include <string>
 #include <vector>
-#include <sstream>
 #include <algorithm> // sort
 
 using namespace std;
@@ -43,12 +43,7 @@ void checkCoVisitManager(
 )
 {
     std::vector<itemid_t> goldRecItems;
-    std::istringstream iss(recItemStr);
-    itemid_t itemId;
-    while (iss >> itemId)
-    {
-        goldRecItems.push_back(itemId);
-    }
+    split_str_to_items(recItemStr, goldRecItems);
     std::sort(goldRecItems.begin(), goldRecItems.end());
 
     std::vector<itemid_t> results;
@@ -92,9 +87,9 @@ void testVisit1(
     fixture.visitRecommendItem("1", 20);
     fixture.visitRecommendItem("3", 30);
 
-    fixture.addRandItem(sessionId, "1", 99);
-    fixture.addRandItem(sessionId, "2", 100);
-    fixture.addRandItem(sessionId, "3", 101);
+    fixture.addRandItem(sessionId, "7", 99);
+    fixture.addRandItem(sessionId, "6", 100);
+    fixture.addRandItem(sessionId, "5", 101);
     fixture.addRandItem(sessionId, "4", 1234);
 
     fixture.checkVisitManager();

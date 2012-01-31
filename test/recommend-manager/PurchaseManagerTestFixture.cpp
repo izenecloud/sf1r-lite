@@ -1,9 +1,8 @@
 #include "PurchaseManagerTestFixture.h"
+#include "test_util.h"
 #include <recommend-manager/storage/PurchaseManager.h>
 
 #include <boost/test/unit_test.hpp>
-#include <sstream>
-#include <cstdlib> // rand()
 
 namespace sf1r
 {
@@ -21,12 +20,7 @@ void PurchaseManagerTestFixture::setPurchaseManager(PurchaseManager* purchaseMan
 void PurchaseManagerTestFixture::addPurchaseItem(const std::string& userId, const std::string& items)
 {
     std::vector<itemid_t> orderItemVec;
-    std::istringstream iss(items);
-    itemid_t itemId;
-    while (iss >> itemId)
-    {
-        orderItemVec.push_back(itemId);
-    }
+    split_str_to_items(items, orderItemVec);
 
     BOOST_CHECK(purchaseManager_->addPurchaseItem(userId, orderItemVec, NULL));
 
@@ -39,13 +33,7 @@ void PurchaseManagerTestFixture::addPurchaseItem(const std::string& userId, cons
 
 void PurchaseManagerTestFixture::addRandItem(const std::string& userId, int itemCount)
 {
-    std::ostringstream oss;
-    for (int i = 0; i < itemCount; ++i)
-    {
-        oss << std::rand() << " ";
-    }
-
-    addPurchaseItem(userId, oss.str());
+    addPurchaseItem(userId, generate_rand_items_str(itemCount));
 }
 
 void PurchaseManagerTestFixture::checkPurchaseManager() const

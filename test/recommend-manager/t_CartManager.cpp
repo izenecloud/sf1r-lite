@@ -4,135 +4,80 @@
 /// @date Created 2011-08-07
 ///
 
+#include "CartManagerTestFixture.h"
 #include <recommend-manager/CartManager.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/filesystem/path.hpp>
 
 #include <string>
-#include <vector>
-#include <map>
 
 using namespace std;
-using namespace boost;
 using namespace sf1r;
 
 namespace bfs = boost::filesystem;
 
 namespace
 {
-const char* TEST_DIR_STR = "recommend_test/t_CartManager";
-const char* CART_DB_STR = "cart.db";
+const string TEST_DIR_STR = "recommend_test/t_CartManager";
+const string CART_DB_STR = "cart.db";
 }
 
-typedef map<string, vector<itemid_t> > CartMap;
-
-void updateCart(
+void testCart1(
     CartManager& cartManager,
-    CartMap& cartMap,
-    const string& userId,
-    const vector<itemid_t>& cartItemVec
+    CartManagerTestFixture& fixture
 )
 {
-    BOOST_CHECK(cartManager.updateCart(userId, cartItemVec));
+    BOOST_TEST_MESSAGE("1st update cart...");
 
-    cartMap[userId] = cartItemVec;
+    fixture.setCartManager(&cartManager);
+
+    fixture.updateCart("1", "2 4 6");
+    fixture.updateCart("10", "11");
+    fixture.updateCart("100", "102 103");
+
+    fixture.updateRandItem("7", 99);
+    fixture.updateRandItem("6", 100);
+    fixture.updateRandItem("5", 101);
+    fixture.updateRandItem("4", 1234);
+
+    fixture.checkCartManager();
 }
 
-void checkCartManager(const CartMap& cartMap, CartManager& cartManager)
+void testCart2(
+    CartManager& cartManager,
+    CartManagerTestFixture& fixture
+)
 {
-    for (CartMap::const_iterator it = cartMap.begin();
-        it != cartMap.end(); ++it)
-    {
-        vector<itemid_t> cartItemVec;
-        BOOST_CHECK(cartManager.getCart(it->first, cartItemVec));
-        BOOST_CHECK_EQUAL_COLLECTIONS(cartItemVec.begin(), cartItemVec.end(),
-                                      it->second.begin(), it->second.end());
-    }
+    BOOST_TEST_MESSAGE("2nd update cart...");
+
+    fixture.setCartManager(&cartManager);
+
+    fixture.updateCart("1", "1 3 5 7 9");
+    fixture.updateCart("10", "");
+    fixture.updateCart("1000", "1001 1010 1100");
+    fixture.updateCart("10000", "10003 10004 10005 10006");
+
+    fixture.checkCartManager();
 }
 
 BOOST_AUTO_TEST_SUITE(CartManagerTest)
 
-BOOST_AUTO_TEST_CASE(checkCart)
+BOOST_FIXTURE_TEST_CASE(checkLocalCartManager, CartManagerTestFixture)
 {
     bfs::remove_all(TEST_DIR_STR);
     bfs::create_directories(TEST_DIR_STR);
 
     bfs::path cartPath(bfs::path(TEST_DIR_STR) / CART_DB_STR);
-    bfs::create_directories(TEST_DIR_STR);
-
-    CartMap cartMap;
 
     {
-        BOOST_TEST_MESSAGE("check empty cart...");
         CartManager cartManager(cartPath.string());
-
-        BOOST_CHECK(cartMap["1"].empty());
-        BOOST_CHECK(cartMap["10"].empty());
-        BOOST_CHECK(cartMap["100"].empty());
-
-        checkCartManager(cartMap, cartManager);
+        testCart1(cartManager, *this);
     }
 
     {
-        BOOST_TEST_MESSAGE("update cart...");
         CartManager cartManager(cartPath.string());
-
-        vector<itemid_t> cartItemVec;
-
-        cartItemVec.push_back(2);
-        cartItemVec.push_back(4);
-        cartItemVec.push_back(6);
-        updateCart(cartManager, cartMap, "1", cartItemVec);
-
-        cartItemVec.clear();
-        cartItemVec.push_back(11);
-        updateCart(cartManager, cartMap, "10", cartItemVec);
-
-        cartItemVec.clear();
-        cartItemVec.push_back(102);
-        cartItemVec.push_back(103);
-        updateCart(cartManager, cartMap, "100", cartItemVec);
-
-        checkCartManager(cartMap, cartManager);
-    }
-
-    {
-        BOOST_TEST_MESSAGE("continue update cart...");
-        CartManager cartManager(cartPath.string());
-
-        checkCartManager(cartMap, cartManager);
-
-        vector<itemid_t> cartItemVec;
-
-        cartItemVec.push_back(1);
-        cartItemVec.push_back(3);
-        cartItemVec.push_back(5);
-        cartItemVec.push_back(7);
-        cartItemVec.push_back(9);
-        updateCart(cartManager, cartMap, "1", cartItemVec);
-
-        cartItemVec.clear();
-        updateCart(cartManager, cartMap, "10", cartItemVec);
-
-        cartItemVec.clear();
-        updateCart(cartManager, cartMap, "100", cartItemVec);
-
-        cartItemVec.clear();
-        cartItemVec.push_back(1001);
-        cartItemVec.push_back(1010);
-        cartItemVec.push_back(1100);
-        updateCart(cartManager, cartMap, "1000", cartItemVec);
-
-        cartItemVec.clear();
-        cartItemVec.push_back(10003);
-        cartItemVec.push_back(10004);
-        cartItemVec.push_back(10005);
-        cartItemVec.push_back(10006);
-        updateCart(cartManager, cartMap, "10000", cartItemVec);
-
-        checkCartManager(cartMap, cartManager);
+        testCart2(cartManager, *this);
     }
 }
 

@@ -47,9 +47,9 @@ void testPurchase1(
     fixture.addPurchaseItem("2", "20 30");
     fixture.addPurchaseItem("3", "20 30 20");
 
-    fixture.addRandItem("1", 99);
-    fixture.addRandItem("2", 100);
-    fixture.addRandItem("3", 101);
+    fixture.addRandItem("7", 99);
+    fixture.addRandItem("6", 100);
+    fixture.addRandItem("5", 101);
     fixture.addRandItem("4", 1234);
 
     fixture.checkPurchaseManager();

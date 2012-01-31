@@ -108,6 +108,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   ADD_EXECUTABLE(t_CartManager
     Runner.cpp
     t_CartManager.cpp
+    CartManagerTestFixture.cpp
   )
   TARGET_LINK_LIBRARIES(t_CartManager ${libs})
   SET_TARGET_PROPERTIES(t_CartManager PROPERTIES
