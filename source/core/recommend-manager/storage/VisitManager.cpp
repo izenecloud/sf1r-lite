@@ -44,8 +44,16 @@ bool VisitManager::addVisitItem(
     RecommendMatrix* matrix
 )
 {
-    return saveVisitItem_(userId, itemId) &&
-           addSessionItemImpl_(sessionId, userId, itemId, matrix);
+    if (saveVisitItem_(userId, itemId) &&
+        addSessionItemImpl_(sessionId, userId, itemId, matrix))
+    {
+        return true;
+    }
+
+    LOG(ERROR) << "error in addVisitItem(), userId: " << userId
+               << ", itemId: " << itemId
+               << ", sessionId: " << sessionId;
+    return false;
 }
 
 bool VisitManager::addSessionItemImpl_(
