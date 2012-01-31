@@ -8,8 +8,6 @@
 #ifndef RECOMMEND_TEST_UTIL_H
 #define RECOMMEND_TEST_UTIL_H
 
-#include <recommend-manager/RecTypes.h>
-
 #include <string>
 #include <vector>
 #include <sstream>
@@ -23,10 +21,12 @@ namespace sf1r
  * @param str source string, such as "1 2 3"
  * @param items stores each item id, such as [1, 2, 3]
  */
-inline void split_str_to_items(const std::string& str, std::vector<itemid_t>& items)
+template<typename ContainerType>
+void split_str_to_items(const std::string& str, ContainerType& items)
 {
     std::istringstream iss(str);
-    itemid_t itemId;
+    typename ContainerType::value_type itemId;
+
     while (iss >> itemId)
     {
         items.push_back(itemId);
