@@ -63,6 +63,30 @@ public:
 };
 
 /**
+  * @brief   the parameters for document mining
+  */
+class DocumentMiningPara
+{
+
+private:
+    friend class boost::serialization::access;
+
+    template <typename Archive>
+    void serialize( Archive & ar, const unsigned int version )
+    {
+        ar & docnum_limit & cron ;
+    }
+public:
+    /**
+      * @brief  the limit number of documents to do mining
+      */
+    uint32_t docnum_limit;
+
+    std::string cron;
+};
+
+
+/**
   * @brief   the parameters for query recommend
   */
 class RecommendPara
@@ -208,7 +232,7 @@ private:
 public:
 
     TaxonomyPara taxonomy_param;
-
+    DocumentMiningPara dcmin_param;
     RecommendPara recommend_param;
     SimilarityPara similarity_param;
 

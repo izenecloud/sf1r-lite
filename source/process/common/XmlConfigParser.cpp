@@ -1295,6 +1295,9 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     if (mining) params.LoadXML(mining, true);
     // PARSING MINING CONFIG
     MiningConfig& mining_config = collectionMeta.miningBundleConfig_->mining_config_;
+    //for mining
+    params.Get<uint32_t>("DocumentMiningPara/docnumlimit", mining_config.dcmin_param.docnum_limit);
+    params.GetString("DocumentMiningPara/cron", mining_config.dcmin_param.cron);
     //for TG
     params.Get<uint32_t>("TaxonomyPara/topdocnum", mining_config.taxonomy_param.top_docnum);
     params.Get<uint32_t>("TaxonomyPara/levels", mining_config.taxonomy_param.levels);

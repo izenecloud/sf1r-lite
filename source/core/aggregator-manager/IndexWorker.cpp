@@ -363,6 +363,22 @@ bool IndexWorker::optimizeIndex()
     return true;
 }
 
+void IndexWorker::doMining_()
+{
+    if(miningTaskService_)
+    {
+        std::string cronStr = miningTaskService_->getMiningBundleConfig()->mining_config_.dcmin_param.cron;
+        if(cronStr.empty())
+        {
+            int docLimit = miningTaskService_->getMiningBundleConfig()->mining_config_.dcmin_param.docnum_limit;
+            if(docLimit != 0 && (indexManager_->numDocs()) % docLimit == 0)
+            {
+                miningTaskService_->DoMiningCollection();
+            }
+        }
+    }
+}
+
 bool IndexWorker::createDocument(const Value& documentValue)
 {
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
@@ -396,6 +412,10 @@ bool IndexWorker::createDocument(const Value& documentValue)
     }
 
     bool ret =  insertDoc_(document, indexDocument, timestamp);
+    if(ret)
+    {
+        doMining_();
+    }
     searchManager_->reset_cache(rType, id, rTypeFieldValue);
     return ret;
 }
@@ -435,6 +455,10 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     }
 
     bool ret = updateDoc_(document, indexDocument, timestamp, rType);
+    if(ret)
+    {
+        doMining_();
+    }
     searchManager_->reset_cache(rType, id, rTypeFieldValue);
     return ret;
 	
@@ -454,15 +478,17 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
     docid_t docid;
     izenelib::util::UString docName(asString(documentValue["DOCID"]),
                              izenelib::util::UString::UTF_8);
-    bool ret = idManager_->getDocIdByDocName(docName, docid, false);
+    if( idManager_->getDocIdByDocName(docName, docid, false) == false )
+        return false;
 
-    if(ret)	
+    scd_writer_->Write(scddoc, DELETE_SCD);
+    time_t timestamp = Utilities::createTimeStamp();
+    bool ret = deleteDoc_(docid, timestamp);
+    if(ret)
     {
-        scd_writer_->Write(scddoc, DELETE_SCD);
-        time_t timestamp = Utilities::createTimeStamp();
-        return deleteDoc_(docid, timestamp);
+        doMining_();
     }
-    else return false;
+    return ret;
 }
 
 bool IndexWorker::getIndexStatus(Status& status)

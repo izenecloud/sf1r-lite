@@ -10,6 +10,7 @@ ScdWriterController::ScdWriterController(const std::string& dir)
 
 ScdWriterController::~ScdWriterController()
 {
+    Flush();
 }
 
 ScdWriter* ScdWriterController::GetWriter_(int op)
