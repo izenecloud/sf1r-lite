@@ -33,6 +33,42 @@ void LocalVisitManager::flush()
     }
 }
 
+bool LocalVisitManager::visitRecommendItem(const std::string& userId, itemid_t itemId)
+{
+    ItemIdSet itemIdSet;
+    if (! getRecommendItemSet(userId, itemIdSet))
+        return false;
+
+    std::pair<ItemIdSet::iterator, bool> res = itemIdSet.insert(itemId);
+
+    // not visited yet
+    if (res.second)
+        return saveItemDB_(recommendDB_, userId, itemIdSet);
+
+    // already visited
+    return true;
+}
+
+bool LocalVisitManager::saveItemDB_(
+    ItemDBType& db,
+    const std::string& userId,
+    const ItemIdSet& itemIdSet
+)
+{
+    bool result = false;
+
+    try
+    {
+        result = db.update(userId, itemIdSet);
+    }
+    catch(izenelib::util::IZENELIBException& e)
+    {
+        LOG(ERROR) << "exception in SDB::update(): " << e.what();
+    }
+
+    return result;
+}
+
 bool LocalVisitManager::getVisitItemSet(const std::string& userId, ItemIdSet& itemIdSet)
 {
     return getItemDB_(visitDB_, userId, itemIdSet);
@@ -82,42 +118,20 @@ bool LocalVisitManager::getVisitSession(const std::string& userId, VisitSession&
     return result;
 }
 
-bool LocalVisitManager::saveVisitItem_(
-    const std::string& userId,
-    const ItemIdSet& totalItems,
-    itemid_t newItem
-)
+bool LocalVisitManager::saveVisitItem_(const std::string& userId, itemid_t itemId)
 {
-    return saveItemDB_(visitDB_, userId, totalItems);
-}
+    ItemIdSet itemIdSet;
+    if (! getVisitItemSet(userId, itemIdSet))
+        return false;
 
-bool LocalVisitManager::saveRecommendItem_(
-    const std::string& userId,
-    const ItemIdSet& totalItems,
-    itemid_t newItem
-)
-{
-    return saveItemDB_(recommendDB_, userId, totalItems);
-}
+    std::pair<ItemIdSet::iterator, bool> res = itemIdSet.insert(itemId);
 
-bool LocalVisitManager::saveItemDB_(
-    ItemDBType& db,
-    const std::string& userId,
-    const ItemIdSet& itemIdSet
-)
-{
-    bool result = false;
+    // not visited yet
+    if (res.second)
+        return saveItemDB_(visitDB_, userId, itemIdSet);
 
-    try
-    {
-        result = db.update(userId, itemIdSet);
-    }
-    catch(izenelib::util::IZENELIBException& e)
-    {
-        LOG(ERROR) << "exception in SDB::update(): " << e.what();
-    }
-
-    return result;
+    // already visited
+    return true;
 }
 
 bool LocalVisitManager::saveVisitSession_(

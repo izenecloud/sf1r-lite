@@ -44,40 +44,8 @@ bool VisitManager::addVisitItem(
     RecommendMatrix* matrix
 )
 {
-    return addVisitItemImpl_(userId, itemId) &&
+    return saveVisitItem_(userId, itemId) &&
            addSessionItemImpl_(sessionId, userId, itemId, matrix);
-}
-
-bool VisitManager::visitRecommendItem(const std::string& userId, itemid_t itemId)
-{
-    ItemIdSet itemIdSet;
-    if (! getRecommendItemSet(userId, itemIdSet))
-        return false;
-
-    std::pair<ItemIdSet::iterator, bool> res = itemIdSet.insert(itemId);
-
-    // not visited yet
-    if (res.second)
-        return saveRecommendItem_(userId, itemIdSet, itemId);
-
-    // already visited
-    return true;
-}
-
-bool VisitManager::addVisitItemImpl_(const std::string& userId, itemid_t itemId)
-{
-    ItemIdSet itemIdSet;
-    if (! getVisitItemSet(userId, itemIdSet))
-        return false;
-
-    std::pair<ItemIdSet::iterator, bool> res = itemIdSet.insert(itemId);
-
-    // not visited yet
-    if (res.second)
-        return saveVisitItem_(userId, itemIdSet, itemId);
-
-    // already visited
-    return true;
 }
 
 bool VisitManager::addSessionItemImpl_(

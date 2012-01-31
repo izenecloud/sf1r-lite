@@ -120,6 +120,11 @@ RemoteVisitManager::RemoteVisitManager(
 {
 }
 
+bool RemoteVisitManager::visitRecommendItem(const std::string& userId, itemid_t itemId)
+{
+    return recommendCassandra_.insertColumn(userId, itemId);
+}
+
 bool RemoteVisitManager::getVisitItemSet(const std::string& userId, ItemIdSet& itemIdSet)
 {
     return visitCassandra_.getColumnNames(userId, itemIdSet);
@@ -138,22 +143,9 @@ bool RemoteVisitManager::getVisitSession(const std::string& userId, VisitSession
            convertSuperColumns(superColumns, visitSession);
 }
 
-bool RemoteVisitManager::saveVisitItem_(
-    const std::string& userId,
-    const ItemIdSet& totalItems,
-    itemid_t newItem
-)
+bool RemoteVisitManager::saveVisitItem_(const std::string& userId, itemid_t itemId)
 {
-    return visitCassandra_.insertColumn(userId, newItem);
-}
-
-bool RemoteVisitManager::saveRecommendItem_(
-    const std::string& userId,
-    const ItemIdSet& totalItems,
-    itemid_t newItem
-)
-{
-    return recommendCassandra_.insertColumn(userId, newItem);
+    return visitCassandra_.insertColumn(userId, itemId);
 }
 
 bool RemoteVisitManager::saveVisitSession_(

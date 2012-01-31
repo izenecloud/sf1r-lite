@@ -29,6 +29,8 @@ public:
 
     virtual void flush();
 
+    virtual bool visitRecommendItem(const std::string& userId, itemid_t itemId);
+
     virtual bool getVisitItemSet(const std::string& userId, ItemIdSet& itemIdSet);
 
     virtual bool getRecommendItemSet(const std::string& userId, ItemIdSet& itemIdSet);
@@ -36,17 +38,7 @@ public:
     virtual bool getVisitSession(const std::string& userId, VisitSession& visitSession);
 
 protected:
-    virtual bool saveVisitItem_(
-        const std::string& userId,
-        const ItemIdSet& totalItems,
-        itemid_t newItem
-    );
-
-    virtual bool saveRecommendItem_(
-        const std::string& userId,
-        const ItemIdSet& totalItems,
-        itemid_t newItem
-    );
+    virtual bool saveVisitItem_(const std::string& userId, itemid_t itemId);
 
     virtual bool saveVisitSession_(
         const std::string& userId,

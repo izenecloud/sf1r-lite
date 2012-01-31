@@ -50,7 +50,7 @@ public:
      * @param itemId item id recommended to and visited by @p userId
      * @return true for success, false for error happened.
      */
-    bool visitRecommendItem(const std::string& userId, itemid_t itemId);
+    virtual bool visitRecommendItem(const std::string& userId, itemid_t itemId) = 0;
 
     /**
      * Get @p itemIdSet visited by @p userId.
@@ -79,34 +79,10 @@ public:
 
 protected:
     /**
-     * Save the visit items by @p userId.
-     * @param userId user id
-     * @param totalItems all items visited by @p userId, including @p newItem
-     * @param newItem the new item not visited by @p userId before
+     * Save @p itemId visited by @p userId.
      * @return true for success, false for error happened.
-     * @note the implementation could choose to save either @p totalItems
-     *       or @p newItem according to its storage policy
      */
-    virtual bool saveVisitItem_(
-        const std::string& userId,
-        const ItemIdSet& totalItems,
-        itemid_t newItem
-    ) = 0;
-
-    /**
-     * Save the recommend items to @p userId.
-     * @param userId user id
-     * @param totalItems all items recommended to @p userId, including @p newItem
-     * @param newItem the new item not recommended to @p userId before
-     * @return true for success, false for error happened.
-     * @note the implementation could choose to save either @p totalItems
-     *       or @p newItem according to its storage policy
-     */
-    virtual bool saveRecommendItem_(
-        const std::string& userId,
-        const ItemIdSet& totalItems,
-        itemid_t newItem
-    ) = 0;
+    virtual bool saveVisitItem_(const std::string& userId, itemid_t itemId) = 0;
 
     /**
      * Save the session items of @p userId.
@@ -126,8 +102,6 @@ protected:
     ) = 0;
 
 private:
-    bool addVisitItemImpl_(const std::string& userId, itemid_t itemId);
-
     bool addSessionItemImpl_(
         const std::string& sessionId,
         const std::string& userId,
