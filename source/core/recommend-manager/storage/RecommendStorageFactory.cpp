@@ -22,6 +22,7 @@ RecommendStorageFactory::RecommendStorageFactory(
 )
     : cassandraConfig_(cassandraConfig)
     , cassandraClient_(NULL)
+    , storagePaths_(STORAGE_PATH_ID_NUM)
 {
     if (cassandraConfig_.enable)
     {
@@ -35,11 +36,11 @@ RecommendStorageFactory::RecommendStorageFactory(
 
 void RecommendStorageFactory::initRemoteStorage_(const std::string& collection)
 {
-    userColumnFamily_ = collection + "_users";
-    purchaseColumnFamily_ = collection + "_purchase";
-    visitItemColumnFamily_ = collection + "_visit_item";
-    visitRecommendColumnFamily_ = collection + "_visit_recommend";
-    visitSessionColumnFamily_ = collection + "_visit_session";
+    storagePaths_[STORAGE_PATH_ID_USER] = collection + "_users";
+    storagePaths_[STORAGE_PATH_ID_PURCHASE] = collection + "_purchase";
+    storagePaths_[STORAGE_PATH_ID_VISIT_ITEM] = collection + "_visit_item";
+    storagePaths_[STORAGE_PATH_ID_VISIT_RECOMMEND] = collection + "_visit_recommend";
+    storagePaths_[STORAGE_PATH_ID_VISIT_SESSION] = collection + "_visit_session";
 
     const std::string& keyspace = cassandraConfig_.keyspace;
     cassandraClient_ = CassandraConnection::instance().getCassandraClient(keyspace);
@@ -52,82 +53,53 @@ void RecommendStorageFactory::initRemoteStorage_(const std::string& collection)
 void RecommendStorageFactory::initLocalStorage_(const std::string& dataDir)
 {
     bfs::path dataPath(dataDir);
-
     bfs::path userDir = dataPath / "user";
-    bfs::create_directory(userDir);
-
-    userPath_ = (userDir / "user.db").string();
-
     bfs::path eventDir = dataPath / "event";
+
+    bfs::create_directory(userDir);
     bfs::create_directory(eventDir);
 
-    purchasePath_ = (eventDir / "purchase.db").string();
-    visitItemPath_ = (eventDir / "visit_item.db").string();
-    visitRecommendPath_ = (eventDir / "visit_recommend.db").string();
-    visitSessionPath_ = (eventDir / "visit_session.db").string();
+    storagePaths_[STORAGE_PATH_ID_USER] = (userDir / "user.db").string();
+    storagePaths_[STORAGE_PATH_ID_PURCHASE] = (eventDir / "purchase.db").string();
+    storagePaths_[STORAGE_PATH_ID_VISIT_ITEM] = (eventDir / "visit_item.db").string();
+    storagePaths_[STORAGE_PATH_ID_VISIT_RECOMMEND] = (eventDir / "visit_recommend.db").string();
+    storagePaths_[STORAGE_PATH_ID_VISIT_SESSION] = (eventDir / "visit_session.db").string();
 }
 
 UserManager* RecommendStorageFactory::createUserManager() const
 {
+    const std::string& path = storagePaths_[STORAGE_PATH_ID_USER];
+
     if (cassandraConfig_.enable)
-    {
-        return new RemoteUserManager(cassandraConfig_.keyspace, userColumnFamily_, cassandraClient_);
-    }
-    else
-    {
-        return new LocalUserManager(userPath_);
-    }
+        return new RemoteUserManager(cassandraConfig_.keyspace, path, cassandraClient_);
+
+    return new LocalUserManager(path);
 }
 
 PurchaseManager* RecommendStorageFactory::createPurchaseManager() const
 {
+    const std::string& path = storagePaths_[STORAGE_PATH_ID_PURCHASE];
+
     if (cassandraConfig_.enable)
-    {
-        return new RemotePurchaseManager(cassandraConfig_.keyspace, purchaseColumnFamily_, cassandraClient_);
-    }
-    else
-    {
-        return new LocalPurchaseManager(purchasePath_);
-    }
+        return new RemotePurchaseManager(cassandraConfig_.keyspace, path, cassandraClient_);
+
+    return new LocalPurchaseManager(path);
 }
 
 VisitManager* RecommendStorageFactory::createVisitManager() const
 {
+    const std::string& itemPath = storagePaths_[STORAGE_PATH_ID_VISIT_ITEM];
+    const std::string& recommendPath = storagePaths_[STORAGE_PATH_ID_VISIT_RECOMMEND];
+    const std::string& sessionPath = storagePaths_[STORAGE_PATH_ID_VISIT_SESSION];
+
     if (cassandraConfig_.enable)
     {
         return new RemoteVisitManager(cassandraConfig_.keyspace,
-                                      visitItemColumnFamily_, visitRecommendColumnFamily_, visitSessionColumnFamily_,
+                                      itemPath, recommendPath, sessionPath,
                                       cassandraClient_);
     }
-    else
-    {
-        return new LocalVisitManager(visitItemPath_, visitRecommendPath_, visitSessionPath_);
-    }
-}
 
-const std::string& RecommendStorageFactory::getUserColumnFamily() const
-{
-    return userColumnFamily_;
-}
-
-const std::string& RecommendStorageFactory::getPurchaseColumnFamily() const
-{
-    return purchaseColumnFamily_;
-}
-
-const std::string& RecommendStorageFactory::getVisitItemColumnFamily() const
-{
-    return visitItemColumnFamily_;
-}
-
-const std::string& RecommendStorageFactory::getVisitRecommendColumnFamily() const
-{
-    return visitRecommendColumnFamily_;
-}
-
-const std::string& RecommendStorageFactory::getVisitSessionColumnFamily() const
-{
-    return visitSessionColumnFamily_;
+    return new LocalVisitManager(itemPath, recommendPath, sessionPath);
 }
 
 } // namespace sf1r
