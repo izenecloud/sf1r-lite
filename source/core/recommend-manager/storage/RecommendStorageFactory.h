@@ -9,6 +9,7 @@
 #define RECOMMEND_STORAGE_FACTORY_H
 
 #include <string>
+#include <vector>
 
 namespace libcassandra
 {
@@ -35,12 +36,6 @@ public:
     PurchaseManager* createPurchaseManager() const;
     VisitManager* createVisitManager() const;
 
-    const std::string& getUserColumnFamily() const;
-    const std::string& getPurchaseColumnFamily() const;
-    const std::string& getVisitItemColumnFamily() const;
-    const std::string& getVisitRecommendColumnFamily() const;
-    const std::string& getVisitSessionColumnFamily() const;
-
 private:
     void initRemoteStorage_(const std::string& collection);
     void initLocalStorage_(const std::string& dataDir);
@@ -49,17 +44,23 @@ private:
     const CassandraStorageConfig& cassandraConfig_;
     libcassandra::Cassandra* cassandraClient_;
 
-    std::string userPath_;
-    std::string purchasePath_;
-    std::string visitItemPath_;
-    std::string visitRecommendPath_;
-    std::string visitSessionPath_;
+    /**
+     * storage path.
+     * for local storage, it means local file path;
+     * for remote storage, it means column family name in cassandra.
+     */
+    enum StoragePathID
+    {
+        STORAGE_PATH_ID_USER = 0,
+        STORAGE_PATH_ID_PURCHASE,
+        STORAGE_PATH_ID_VISIT_ITEM,
+        STORAGE_PATH_ID_VISIT_RECOMMEND,
+        STORAGE_PATH_ID_VISIT_SESSION,
+        STORAGE_PATH_ID_NUM
+    };
 
-    std::string userColumnFamily_;
-    std::string purchaseColumnFamily_;
-    std::string visitItemColumnFamily_;
-    std::string visitRecommendColumnFamily_;
-    std::string visitSessionColumnFamily_;
+    /** key: StoragePathID */
+    std::vector<std::string> storagePaths_;
 };
 
 } // namespace sf1r

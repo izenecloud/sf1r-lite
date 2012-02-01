@@ -56,7 +56,7 @@ bool BOSRecommender::getCartItems_(RecommendParam& param) const
         return false;
     }
 
-    if (!cartManager_.getCart(param.userIdStr, param.inputItemIds))
+    if (! cartManager_.getCart(param.userIdStr, param.inputItemIds))
     {
         LOG(ERROR) << "failed to get shopping cart items for user id " << param.userIdStr;
         return false;
