@@ -1,6 +1,6 @@
 #include "BOSRecommender.h"
 #include "UserEventFilter.h"
-#include "CartManager.h"
+#include "storage/CartManager.h"
 #include "RecommendParam.h"
 #include <bundles/recommend/RecommendSchema.h>
 

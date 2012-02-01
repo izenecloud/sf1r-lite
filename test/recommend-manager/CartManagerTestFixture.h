@@ -8,6 +8,7 @@
 #ifndef CART_MANAGER_TEST_FIXTURE
 #define CART_MANAGER_TEST_FIXTURE
 
+#include "RecommendStorageTestFixture.h"
 #include <recommend-manager/RecTypes.h>
 
 #include <map>
@@ -18,10 +19,10 @@ namespace sf1r
 {
 class CartManager;
 
-class CartManagerTestFixture
+class CartManagerTestFixture : public RecommendStorageTestFixture
 {
 public:
-    CartManagerTestFixture();
+    virtual void resetInstance();
 
     void setCartManager(CartManager* cartManager);
 
@@ -31,8 +32,8 @@ public:
 
     void checkCartManager() const;
 
-private:
-    CartManager* cartManager_;
+protected:
+    boost::scoped_ptr<CartManager> cartManager_;
 
     typedef std::map<std::string, std::vector<itemid_t> > CartMap;
     CartMap cartMap_;

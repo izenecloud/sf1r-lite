@@ -1,20 +1,17 @@
 #include "CartManagerTestFixture.h"
 #include "test_util.h"
-#include <recommend-manager/CartManager.h>
+#include <recommend-manager/storage/CartManager.h>
 
 #include <boost/test/unit_test.hpp>
 
 namespace sf1r
 {
 
-CartManagerTestFixture::CartManagerTestFixture()
-    : cartManager_(NULL)
+void CartManagerTestFixture::resetInstance()
 {
-}
-
-void CartManagerTestFixture::setCartManager(CartManager* cartManager)
-{
-    cartManager_ = cartManager;
+    // flush first
+    cartManager_.reset();
+    cartManager_.reset(factory_->createCartManager());
 }
 
 void CartManagerTestFixture::updateCart(const std::string& userId, const std::string& items)
