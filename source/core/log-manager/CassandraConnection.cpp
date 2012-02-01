@@ -177,6 +177,27 @@ bool CassandraConnection::initClient_(libcassandra::Cassandra* client, const std
     return true;
 }
 
+bool CassandraConnection::dropKeyspace(const std::string& keyspace_name)
+{
+    try
+    {
+        Cassandra client;
+        client.dropKeyspace(keyspace_name);
+    }
+    CATCH_CASSANDRA_EXCEPTION("[CassandraConnection::dropKeyspace] error: ");
+
+    boost::unique_lock<boost::shared_mutex> lock(keyspace_mutex_);
+
+    KeyspaceClientMap::iterator it = client_map_.find(keyspace_name);
+    if (it != client_map_.end())
+    {
+        delete it->second;
+        client_map_.erase(it);
+    }
+
+    return true;
+}
+
 bool CassandraConnection::createColumnFamily(
         const std::string& in_keyspace_name,
         const string& in_name,
