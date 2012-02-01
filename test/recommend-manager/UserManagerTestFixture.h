@@ -8,6 +8,8 @@
 #ifndef ITEM_MANAGER_TEST_FIXTURE
 #define ITEM_MANAGER_TEST_FIXTURE
 
+#include "RecommendStorageTestFixture.h"
+
 #include <vector>
 
 namespace sf1r
@@ -15,12 +17,10 @@ namespace sf1r
 class UserManager;
 struct User;
 
-class UserManagerTestFixture
+class UserManagerTestFixture : public RecommendStorageTestFixture
 {
 public:
-    UserManagerTestFixture();
-
-    void setUserManager(UserManager* userManager);
+    virtual void resetInstance();
 
     void checkAddUser();
 
@@ -31,8 +31,8 @@ public:
 private:
     void checkUserManager_();
 
-private:
-    UserManager* userManager_;
+protected:
+    boost::scoped_ptr<UserManager> userManager_;
 
     std::vector<User> userVec_;
 };

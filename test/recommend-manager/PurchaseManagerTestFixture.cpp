@@ -7,14 +7,11 @@
 namespace sf1r
 {
 
-PurchaseManagerTestFixture::PurchaseManagerTestFixture()
-    : purchaseManager_(NULL)
+void PurchaseManagerTestFixture::resetInstance()
 {
-}
-
-void PurchaseManagerTestFixture::setPurchaseManager(PurchaseManager* purchaseManager)
-{
-    purchaseManager_ = purchaseManager;
+    // flush first
+    purchaseManager_.reset();
+    purchaseManager_.reset(factory_->createPurchaseManager());
 }
 
 void PurchaseManagerTestFixture::addPurchaseItem(const std::string& userId, const std::string& items)

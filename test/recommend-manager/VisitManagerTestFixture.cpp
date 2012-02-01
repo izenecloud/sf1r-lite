@@ -20,14 +20,11 @@ void checkCollection(const CollectionType& collection1, const CollectionType& co
 namespace sf1r
 {
 
-VisitManagerTestFixture::VisitManagerTestFixture()
-    : visitManager_(NULL)
+void VisitManagerTestFixture::resetInstance()
 {
-}
-
-void VisitManagerTestFixture::setVisitManager(VisitManager* visitManager)
-{
-    visitManager_ = visitManager;
+    // flush first
+    visitManager_.reset();
+    visitManager_.reset(factory_->createVisitManager());
 }
 
 void VisitManagerTestFixture::addVisitItem(

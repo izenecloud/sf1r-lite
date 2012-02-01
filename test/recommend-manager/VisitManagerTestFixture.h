@@ -8,6 +8,7 @@
 #ifndef VISIT_MANAGER_TEST_FIXTURE
 #define VISIT_MANAGER_TEST_FIXTURE
 
+#include "RecommendStorageTestFixture.h"
 #include <recommend-manager/RecTypes.h>
 
 #include <map>
@@ -18,12 +19,10 @@ namespace sf1r
 class VisitManager;
 class RecommendMatrix;
 
-class VisitManagerTestFixture
+class VisitManagerTestFixture : public RecommendStorageTestFixture
 {
 public:
-    VisitManagerTestFixture();
-
-    void setVisitManager(VisitManager* visitManager);
+    virtual void resetInstance();
 
     void addVisitItem(
         const std::string& sessionId,
@@ -50,8 +49,8 @@ public:
 
     void checkVisitManager() const;
 
-private:
-    VisitManager* visitManager_;
+protected:
+    boost::scoped_ptr<VisitManager> visitManager_;
 
     struct UserRecord
     {

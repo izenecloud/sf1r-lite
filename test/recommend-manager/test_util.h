@@ -38,7 +38,7 @@ void split_str_to_items(const std::string& str, ContainerType& items)
  * @param itemCount how many item ids to generate
  * @return the string containing each item ids, such as "12 5 7"
  */
-std::string generate_rand_items_str(int itemCount)
+inline std::string generate_rand_items_str(int itemCount)
 {
     std::ostringstream oss;
     for (int i = 0; i < itemCount; ++i)

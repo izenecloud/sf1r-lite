@@ -65,6 +65,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     Runner.cpp
     t_UserManager.cpp
     UserManagerTestFixture.cpp
+    RecommendStorageTestFixture.cpp
   )
   TARGET_LINK_LIBRARIES(t_UserManager ${libs})
   SET_TARGET_PROPERTIES(t_UserManager PROPERTIES
@@ -87,6 +88,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     Runner.cpp
     t_VisitManager.cpp
     VisitManagerTestFixture.cpp
+    RecommendStorageTestFixture.cpp
   )
   TARGET_LINK_LIBRARIES(t_VisitManager ${libs})
   SET_TARGET_PROPERTIES(t_VisitManager PROPERTIES
@@ -98,6 +100,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     Runner.cpp
     t_PurchaseManager.cpp
     PurchaseManagerTestFixture.cpp
+    RecommendStorageTestFixture.cpp
   )
   TARGET_LINK_LIBRARIES(t_PurchaseManager ${libs})
   SET_TARGET_PROPERTIES(t_PurchaseManager PROPERTIES
