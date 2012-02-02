@@ -14,6 +14,7 @@
 #include <3rdparty/msgpack/msgpack/type/UString.hpp>
 
 #include <ranking-manager/RankingEnumerator.h>
+#include <query-manager/SearchingEnumerator.h>
 #include <query-manager/QueryTypeDef.h>
 #include <common/PropertyValue.h>
 #include <util/ustring/UString.h>
@@ -37,7 +38,31 @@ inline void operator<< (object& o, sf1r::RankingType::TextRankingType v)
 inline void operator<< (object::with_zone& o, sf1r::RankingType::TextRankingType v)
     { static_cast<object&>(o) << static_cast<int>(v); }
 
+/// SearchingModeType
+inline sf1r::SearchingMode::SearchingModeType& operator>>(object o, sf1r::SearchingMode::SearchingModeType& v)
+{
+    signed int iv = type::detail::convert_integer<signed int>(o);
+    v = static_cast<sf1r::SearchingMode::SearchingModeType>(iv);
+    return v;
+}
 
+template <typename Stream>
+inline packer<Stream>& operator<< (packer<Stream>& o, const sf1r::SearchingMode::SearchingModeType& v)
+{
+    o.pack_int(static_cast<int>(v));
+    return o;
+}
+
+inline void operator<< (object& o, sf1r::SearchingMode::SearchingModeType v)
+{
+    o.type = type::POSITIVE_INTEGER,
+    o.via.u64 = static_cast<int>(v);
+}
+
+inline void operator<< (object::with_zone& o, sf1r::SearchingMode::SearchingModeType v)
+{
+    static_cast<object&>(o) << static_cast<int>(v);
+}
 ///// QueryFiltering::FilteringOperation
 //inline sf1r::QueryFiltering::FilteringOperation& operator>>(object o, sf1r::QueryFiltering::FilteringOperation& v)
 //{

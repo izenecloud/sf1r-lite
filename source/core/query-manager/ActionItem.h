@@ -29,6 +29,7 @@
 #include <ranking-manager/RankingEnumerator.h>
 #include <search-manager/CustomRanker.h>
 #include <mining-manager/faceted-submanager/GroupParam.h>
+#include <query-manager/SearchingEnumerator.h>
 
 #include <util/izene_serialization.h>
 #include <net/aggregator/Util.h>
@@ -339,6 +340,7 @@ class KeywordSearchActionItem
             refinedQueryString_(obj.refinedQueryString_),
             collectionName_(obj.collectionName_),
             rankingType_(obj.rankingType_),
+            searchingMode_(obj.searchingMode_),
             pageInfo_(obj.pageInfo_),
             languageAnalyzerInfo_(obj.languageAnalyzerInfo_),
             searchPropertyList_(obj.searchPropertyList_),
@@ -360,6 +362,7 @@ class KeywordSearchActionItem
             refinedQueryString_ = obj.refinedQueryString_;
             collectionName_ = obj.collectionName_;
             rankingType_ = obj.rankingType_;
+            searchingMode_ = obj.searchingMode_;
             pageInfo_ = obj.pageInfo_;
             languageAnalyzerInfo_ = obj.languageAnalyzerInfo_;
             searchPropertyList_ = obj.searchPropertyList_;
@@ -383,6 +386,7 @@ class KeywordSearchActionItem
                 && collectionName_ == obj.collectionName_
                 && refinedQueryString_ == obj.refinedQueryString_
                 && rankingType_ == obj.rankingType_
+                && searchingMode_ == obj.searchingMode_
                 && pageInfo_ == obj.pageInfo_
                 && languageAnalyzerInfo_ == obj.languageAnalyzerInfo_
                 && searchPropertyList_ == obj.searchPropertyList_
@@ -407,6 +411,7 @@ class KeywordSearchActionItem
             ss << "Collection Name  : " << collectionName_ << endl;
             ss << "Refined Query    : " << refinedQueryString_ << endl;
             ss << "RankingType      : " << rankingType_ << endl;
+            ss << "SearchingMode    : " << searchingMode_ <<endl;
             ss << "PageInfo         : " << pageInfo_.start_ << " , " << pageInfo_.count_ << endl;
             ss << "LanguageAnalyzer : " << languageAnalyzerInfo_.applyLA_ << " , "
                                         << languageAnalyzerInfo_.useOriginalKeyword_ << " , "
@@ -478,6 +483,11 @@ class KeywordSearchActionItem
         RankingType::TextRankingType    rankingType_;
 
         ///
+        /// @brief searching mode of the query. AND, OR, VERBOSe and KNN can be used.
+        ///
+        SearchingMode::SearchingModeType  searchingMode_;
+
+        ///
         /// @brief page information of current result page.
         /// @see PageInfo
         ///
@@ -541,12 +551,12 @@ class KeywordSearchActionItem
         boost::shared_ptr<CustomRanker> customRanker_;
 
         DATA_IO_LOAD_SAVE(KeywordSearchActionItem, &env_&refinedQueryString_&collectionName_
-                &rankingType_&pageInfo_&languageAnalyzerInfo_&searchPropertyList_&removeDuplicatedDocs_
+                &rankingType_&searchingMode_&pageInfo_&languageAnalyzerInfo_&searchPropertyList_&removeDuplicatedDocs_
                 &displayPropertyList_&sortPriorityList_&filteringList_&rangePropertyName_&groupParam_
                 &strExp_&paramConstValueMap_&paramPropertyValueMap_);
 
         /// msgpack serializtion
-        MSGPACK_DEFINE(env_,refinedQueryString_,collectionName_,rankingType_,pageInfo_,languageAnalyzerInfo_,
+        MSGPACK_DEFINE(env_,refinedQueryString_,collectionName_,rankingType_,searchingMode_,pageInfo_,languageAnalyzerInfo_,
                 searchPropertyList_,removeDuplicatedDocs_,displayPropertyList_,sortPriorityList_,filteringList_,
                 rangePropertyName_,groupParam_,strExp_,paramConstValueMap_,paramPropertyValueMap_);
 
@@ -562,6 +572,7 @@ class KeywordSearchActionItem
             ar & refinedQueryString_;
             ar & collectionName_;
             ar & rankingType_;
+            ar & searchingMode_;
             ar & pageInfo_;
             ar & languageAnalyzerInfo_;
             ar & searchPropertyList_;
