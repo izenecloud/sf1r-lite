@@ -38,7 +38,7 @@ bool RemotePurchaseManager::getPurchaseItemSet(
     ItemIdSet& itemIdSet
 )
 {
-    return cassandra_.getIntegerColumnNames(userId, itemIdSet);
+    return cassandra_.getColumnNames(userId, itemIdSet);
 }
 
 bool RemotePurchaseManager::savePurchaseItem_(
@@ -47,7 +47,14 @@ bool RemotePurchaseManager::savePurchaseItem_(
     const std::list<itemid_t>& newItems
 )
 {
-    return cassandra_.insertIntegerColumnNames(userId, newItems.begin(), newItems.end());
+    for (std::list<itemid_t>::const_iterator it = newItems.begin();
+        it != newItems.end(); ++it)
+    {
+        if (! cassandra_.insertColumn(userId, *it))
+            return false;
+    }
+
+    return true;
 }
 
 } // namespace sf1r

@@ -1,6 +1,6 @@
 #include "BOBRecommender.h"
 #include "UserEventFilter.h"
-#include "VisitManager.h"
+#include "storage/VisitManager.h"
 #include "RecommendParam.h"
 #include <bundles/recommend/RecommendSchema.h>
 

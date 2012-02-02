@@ -11,6 +11,7 @@
 #include <query-manager/ConditionInfo.h>
 #include <ranking-manager/RankingEnumerator.h>
 #include <mining-manager/faceted-submanager/GroupParam.h>
+#include <query-manager/SearchingEnumerator.h>
 
 #include <bundles/index/IndexBundleConfiguration.h>
 
@@ -123,6 +124,11 @@ public:
         return analyzerInfo_;
     }
 
+    SearchingMode::SearchingModeType searchingMode() const
+    {
+        return searchingMode_;
+    }
+
 private:
     bool parseGroupLabel_(const Value& search);
     bool parseAttrLabel_(const Value& search);
@@ -135,6 +141,7 @@ private:
     std::string taxonomyLabel_;
     std::string nameEntityType_;
     std::string nameEntityItem_;
+    SearchingMode::SearchingModeType searchingMode_;
     faceted::GroupParam::GroupLabelMap groupLabels_;
     faceted::GroupParam::AttrLabelVec attrLabels_;
     bool logKeywords_;

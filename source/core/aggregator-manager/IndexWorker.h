@@ -74,6 +74,8 @@ public:
 private:
     void createPropertyList_();
 
+    void doMining_();
+
     bool completePartialDocument_(docid_t oldId, Document& doc);
 
     bool getPropertyValue_( const PropertyValue& value, std::string& valueStr );

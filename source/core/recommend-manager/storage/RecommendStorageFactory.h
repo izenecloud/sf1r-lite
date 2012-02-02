@@ -9,6 +9,7 @@
 #define RECOMMEND_STORAGE_FACTORY_H
 
 #include <string>
+#include <vector>
 
 namespace libcassandra
 {
@@ -20,6 +21,7 @@ namespace sf1r
 struct CassandraStorageConfig;
 class UserManager;
 class PurchaseManager;
+class VisitManager;
 
 class RecommendStorageFactory
 {
@@ -32,9 +34,7 @@ public:
 
     UserManager* createUserManager() const;
     PurchaseManager* createPurchaseManager() const;
-
-    const std::string& getUserColumnFamily() const;
-    const std::string& getPurchaseColumnFamily() const;
+    VisitManager* createVisitManager() const;
 
 private:
     void initRemoteStorage_(const std::string& collection);
@@ -44,11 +44,23 @@ private:
     const CassandraStorageConfig& cassandraConfig_;
     libcassandra::Cassandra* cassandraClient_;
 
-    std::string userPath_;
-    std::string purchasePath_;
+    /**
+     * storage path.
+     * for local storage, it means local file path;
+     * for remote storage, it means column family name in cassandra.
+     */
+    enum StoragePathID
+    {
+        STORAGE_PATH_ID_USER = 0,
+        STORAGE_PATH_ID_PURCHASE,
+        STORAGE_PATH_ID_VISIT_ITEM,
+        STORAGE_PATH_ID_VISIT_RECOMMEND,
+        STORAGE_PATH_ID_VISIT_SESSION,
+        STORAGE_PATH_ID_NUM
+    };
 
-    std::string userColumnFamily_;
-    std::string purchaseColumnFamily_;
+    /** key: StoragePathID */
+    std::vector<std::string> storagePaths_;
 };
 
 } // namespace sf1r

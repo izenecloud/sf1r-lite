@@ -117,7 +117,7 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
 void RpcLogServer::updateUUID(const UUID2DocidList& uuid2DocidList)
 {
 #ifdef LOG_SERVER_DEBUG
-    std::cout << "updateUUID: " << uuid2DocidList.toString() << std::endl;
+    std::cout << "UUID -> DOCIDs: " << uuid2DocidList.toString() << std::endl;
 #endif
     workerThread_->putUuidRequestData(uuid2DocidList);
 }
@@ -133,10 +133,6 @@ void RpcLogServer::onUpdate(
         const LogServerStorage::raw_docid_list_t& docidList,
         const std::string& aux)
 {
-#ifdef LOG_SERVER_DEBUG
-    std::cout << "RpcLogServer::onUpDate " << std::endl;
-#endif
-
 #ifdef DOCID_DB_DEBUG
     static int cnt;
 #endif
@@ -148,7 +144,7 @@ void RpcLogServer::onUpdate(
         LogServerStorage::get()->docidDrum()->Update(*it, uuid);
 
 #ifdef LOG_SERVER_DEBUG
-        std::cout << *it << " -> " << Utilities::uint128ToUuid(uuid) << std::endl;
+        std::cout << "DOCID -> UUID: "<< *it << " -> " << Utilities::uint128ToUuid(uuid) << std::endl;
 #endif
 
 #ifdef DOCID_DB_DEBUG

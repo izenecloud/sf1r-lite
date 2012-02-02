@@ -42,6 +42,16 @@ public:
 
     libcassandra::Cassandra* getCassandraClient(const std::string& keyspace_name);
 
+    /**
+     * drop a keyspace.
+     * @return true for success, false for error or no keyspace found
+     * @attention after this function is called, the @c libcassandra::Cassandra* returned by
+     *            @c getCassandraClient() previously with the same keyspace name is invalid,
+     *            if you need to create the keyspace again, you have to call @c getCassandraClient()
+     *            again to fetch a new @c libcassandra::Cassandra*.
+     */
+    bool dropKeyspace(const std::string& keyspace_name);
+
     bool createColumnFamily(
             const std::string& in_keyspace_name,
             const std::string& in_name,

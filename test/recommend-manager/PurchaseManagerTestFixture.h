@@ -8,6 +8,7 @@
 #ifndef PURCHASE_MANAGER_TEST_FIXTURE
 #define PURCHASE_MANAGER_TEST_FIXTURE
 
+#include "RecommendStorageTestFixture.h"
 #include <recommend-manager/RecTypes.h>
 
 #include <map>
@@ -18,21 +19,19 @@ namespace sf1r
 {
 class PurchaseManager;
 
-class PurchaseManagerTestFixture
+class PurchaseManagerTestFixture : public RecommendStorageTestFixture
 {
 public:
-    PurchaseManagerTestFixture();
-
-    void setPurchaseManager(PurchaseManager* purchaseManager);
+    virtual void resetInstance();
 
     void addPurchaseItem(const std::string& userId, const std::string& items);
 
     void addRandItem(const std::string& userId, int itemCount);
 
-    void checkPurchaseManager();
+    void checkPurchaseManager() const;
 
-private:
-    PurchaseManager* purchaseManager_;
+protected:
+    boost::scoped_ptr<PurchaseManager> purchaseManager_;
 
     typedef std::map<std::string, std::set<itemid_t> > PurchaseMap;
     PurchaseMap purchaseMap_;

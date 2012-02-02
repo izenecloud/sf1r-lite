@@ -1,4 +1,5 @@
 #include "OrderManagerTestFixture.h"
+#include "test_util.h"
 #include <recommend-manager/OrderManager.h>
 
 #include <boost/test/unit_test.hpp>
@@ -7,8 +8,6 @@
 #include <vector>
 #include <list>
 #include <algorithm>
-#include <iterator>
-#include <sstream>
 
 using namespace std;
 
@@ -18,18 +17,6 @@ using namespace sf1r;
 
 const int64_t INDEX_MEMORY_SIZE = 10000000;
 ostream_iterator<itemid_t> COUT_ITER(cout, ",");
-
-template <class OutputIterator>
-void splitItems(const char* inputStr, OutputIterator result)
-{
-    uint32_t itemId;
-    stringstream ss(inputStr);
-    while (ss >> itemId)
-    {
-        *result++ = itemId;
-    }
-}
-
 }
 
 namespace sf1r
@@ -53,16 +40,18 @@ void OrderManagerTestFixture::resetInstance()
 void OrderManagerTestFixture::addOrder(const char* inputStr)
 {
     vector<itemid_t> items;
-    splitItems(inputStr, back_insert_iterator< vector<itemid_t> >(items));
+    split_str_to_items(inputStr, items);
+
     orderManager_->addOrder(items);
 }
 
 void OrderManagerTestFixture::checkFreqItems(const char* inputItemStr, const char* goldItemStr)
 {
     std::list<itemid_t> inputItems;
+    split_str_to_items(inputItemStr, inputItems);
+
     vector<itemid_t> goldResult;
-    splitItems(inputItemStr, back_insert_iterator< list<itemid_t> >(inputItems));
-    splitItems(goldItemStr, back_insert_iterator< vector<itemid_t> >(goldResult));
+    split_str_to_items(goldItemStr, goldResult);
 
     std::list<itemid_t> resultList;
     orderManager_->getFreqItemSets(goldResult.size(), inputItems, resultList);

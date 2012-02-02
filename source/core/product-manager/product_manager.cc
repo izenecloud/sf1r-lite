@@ -54,11 +54,6 @@ ProductManager::ProductManager(
 //     {
 //         backup_ = new ProductBackup(config_.backup_path);
 //     }
-
-#ifdef USE_LOG_SERVER
-    LogServerConnection& conn = LogServerConnection::instance();
-    conn.init("localhost", 18811); // TODO: make address configurable
-#endif
 }
 
 ProductManager::~ProductManager()

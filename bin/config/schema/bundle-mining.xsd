@@ -3,6 +3,17 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.izenesoft.com" xmlns:t="http://www.izenesoft.com" targetNamespace="http://www.izenesoft.com" elementFormDefault="qualified">
     <xs:include schemaLocation="common.xsd"/>
 
+    <xs:complexType name="DocumentMiningParaType">
+        <xs:attribute name="cron" type="xs:string" use="optional" />
+        <xs:attribute name="docnumlimit" use="optional">
+            <xs:simpleType>
+                <xs:restriction base="xs:integer">
+                    <xs:minInclusive value="1"/>
+                    <xs:maxInclusive value="10000"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+    </xs:complexType>
     <xs:complexType name="TaxonomyParaType">
         <xs:attribute name="candlabelnum" use="required">
             <xs:simpleType>
@@ -146,6 +157,7 @@
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="1" maxOccurs="2"/>
+                            <xs:element name="DocumentMiningPara" type="DocumentMiningParaType" minOccurs="1"/>
                             <xs:element name="TaxonomyPara" type="TaxonomyParaType" minOccurs="1"/>
                             <xs:element name="RecommendPara" type="RecommendParaType" minOccurs="1"/>
                             <xs:element name="SimilarityPara" type="SimilarityParaType" minOccurs="1"/>

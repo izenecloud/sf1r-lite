@@ -32,14 +32,11 @@ void checkUser(const User& user1, const User& user2)
 namespace sf1r
 {
 
-UserManagerTestFixture::UserManagerTestFixture()
-    : userManager_(NULL)
+void UserManagerTestFixture::resetInstance()
 {
-}
-
-void UserManagerTestFixture::setUserManager(UserManager* userManager)
-{
-    userManager_ = userManager;
+    // flush first
+    userManager_.reset();
+    userManager_.reset(factory_->createUserManager());
 }
 
 void UserManagerTestFixture::checkUserManager_()
