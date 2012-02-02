@@ -222,6 +222,34 @@ bool SearchParser::parse(const Value& search)
         }
     }
 
+    //search mode
+    searchingMode_ = SearchingMode::DefaultSearchingMode;
+    if(search.hasKey(Keys::searching_mode))
+    {
+        Value::StringType mode = asString(search[Keys::searching_mode]);
+        boost::to_lower(mode);
+        if (mode == "and")
+        {
+            searchingMode_ = SearchingMode::DefaultSearchingMode;
+        }
+        else if (mode == "or")
+        {
+            searchingMode_ = SearchingMode::OR;
+        }
+        else if (mode == "verbose")
+        {
+            searchingMode_ = SearchingMode::VERBOSE;
+        }
+        else if (mode == "knn")
+        {
+            searchingMode_ = SearchingMode::KNN;
+        }
+        else
+        {
+            warning() = "Unknown searchingMode. Default searhing mode is used.";
+        }
+    }
+
     return true;
 }
 

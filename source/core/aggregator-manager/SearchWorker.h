@@ -82,7 +82,7 @@ private:
             KeywordSearchResult& resultItem,
             bool isDistributedSearch = true);
 
-    void analyze_(const std::string& qstr, std::vector<izenelib::util::UString>& results);
+    void analyze_(const std::string& qstr, std::vector<izenelib::util::UString>& results, bool isQA);
 
     template <typename ResultItemT>
     bool buildQuery(
