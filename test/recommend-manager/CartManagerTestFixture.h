@@ -13,7 +13,7 @@
 
 #include <map>
 #include <string>
-#include <vector>
+#include <set>
 
 namespace sf1r
 {
@@ -35,7 +35,7 @@ public:
 protected:
     boost::scoped_ptr<CartManager> cartManager_;
 
-    typedef std::map<std::string, std::vector<itemid_t> > CartMap;
+    typedef std::map<std::string, std::set<itemid_t> > CartMap;
     CartMap cartMap_;
 };
 

@@ -7,24 +7,6 @@
 namespace
 {
 const std::string PROP_USERID = "USERID";
-
-org::apache::cassandra::CfDef createCFDef(
-    const std::string& keyspace,
-    const std::string& columnFamily
-)
-{
-    org::apache::cassandra::CfDef def;
-
-    def.__set_keyspace(keyspace);
-    def.__set_name(columnFamily);
-
-    def.__set_key_validation_class("UTF8Type");
-    def.__set_comparator_type("UTF8Type");
-    def.__set_default_validation_class("UTF8Type");
-
-    return def;
-}
-
 }
 
 namespace sf1r
@@ -35,7 +17,8 @@ RemoteUserManager::RemoteUserManager(
     const std::string& columnFamily,
     libcassandra::Cassandra* client
 )
-    : cassandra_(createCFDef(keyspace, columnFamily), client)
+    : cassandra_(CassandraAdaptor::createColumnFamilyDef(keyspace, columnFamily,
+                 "UTF8Type", "UTF8Type"), client)
 {
 }
 

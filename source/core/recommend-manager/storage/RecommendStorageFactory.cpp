@@ -6,6 +6,7 @@
 #include "LocalVisitManager.h"
 #include "RemoteVisitManager.h"
 #include "LocalCartManager.h"
+#include "RemoteCartManager.h"
 
 #include <configuration-manager/CassandraStorageConfig.h>
 #include <log-manager/CassandraConnection.h>
@@ -111,8 +112,7 @@ CartManager* RecommendStorageFactory::createCartManager() const
     const std::string& path = storagePaths_[STORAGE_PATH_ID_CART];
 
     if (cassandraConfig_.enable)
-        //return new RemoteCartManager(cassandraConfig_.keyspace, path, cassandraClient_);
-        return NULL;
+        return new RemoteCartManager(cassandraConfig_.keyspace, path, cassandraClient_);
 
     return new LocalCartManager(path);
 }
