@@ -220,15 +220,25 @@ bool SearchWorker::getSearchResult_(
 
     std::vector<izenelib::util::UString> keywords;
     std::string newQuery;
-    if(bundleConfig_->bTriggerQA_)
+    if(actionOperation.actionItem_.searchingMode_ == SearchingMode::VERBOSE)
     {
         if(pQA_->isQuestion(actionOperation.actionItem_.env_.queryString_))
         {
-            analyze_(actionOperation.actionItem_.env_.queryString_, keywords);
+            analyze_(actionOperation.actionItem_.env_.queryString_, keywords, true);
             assembleConjunction(keywords, newQuery);
             //cout<<"new Query "<<newQuery<<endl;
             actionOperation.actionItem_.env_.queryString_ = newQuery;
         }
+    }
+    else if (actionOperation.actionItem_.searchingMode_ == SearchingMode::OR)
+    {
+        analyze_(actionOperation.actionItem_.env_.queryString_, keywords, false);
+        assembleDisjunction(keywords, newQuery);
+        actionOperation.actionItem_.env_.queryString_ = newQuery;
+    }
+    else if (actionOperation.actionItem_.searchingMode_ == SearchingMode::KNN)
+    {
+        //TODO
     }
 
     // Get Personalized Search information (user profile)
@@ -250,6 +260,7 @@ bool SearchWorker::getSearchResult_(
     {
         return true;
     }
+
 
     int startOffset;
     int TOP_K_NUM = bundleConfig_->topKNum_;
@@ -380,7 +391,7 @@ bool SearchWorker::getSummaryMiningResult_(
     return true;
 }
 
-void SearchWorker::analyze_(const std::string& qstr, std::vector<izenelib::util::UString>& results)
+void SearchWorker::analyze_(const std::string& qstr, std::vector<izenelib::util::UString>& results, bool isQA)
 {
     results.clear();
     izenelib::util::UString question(qstr, izenelib::util::UString::UTF_8);
@@ -396,14 +407,20 @@ void SearchWorker::analyze_(const std::string& qstr, std::vector<izenelib::util:
     for(la::TermList::iterator iter = termList.begin(); iter != termList.end(); ++iter)
     {
         iter->text_.convertString(str, izenelib::util::UString::UTF_8);
-
-        if(! pQA_->isQuestionTerm(iter->text_))
+        if(isQA)
         {
-            if(pQA_->isCandidateTerm(iter->pos_))
+            if(! pQA_->isQuestionTerm(iter->text_))
             {
-                results.push_back(iter->text_);
-                cout<<" la-> "<<str<<endl;
+                if(pQA_->isCandidateTerm(iter->pos_))
+                {
+                    results.push_back(iter->text_);
+                    cout<<" la-> "<<str<<endl;
+                }
             }
+        }
+        else
+        {
+            results.push_back(iter->text_);
         }
     }
 }
