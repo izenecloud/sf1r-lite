@@ -1,9 +1,9 @@
-#include "RemotePurchaseManager.h"
+#include "RemoteCartManager.h"
 
 namespace sf1r
 {
 
-RemotePurchaseManager::RemotePurchaseManager(
+RemoteCartManager::RemoteCartManager(
     const std::string& keyspace,
     const std::string& columnFamily,
     libcassandra::Cassandra* client
@@ -13,22 +13,26 @@ RemotePurchaseManager::RemotePurchaseManager(
 {
 }
 
-bool RemotePurchaseManager::getPurchaseItemSet(
+bool RemoteCartManager::getCart(
     const std::string& userId,
-    ItemIdSet& itemIdSet
+    std::vector<itemid_t>& itemVec
 )
 {
-    return cassandra_.getColumnNames(userId, itemIdSet);
+    return cassandra_.getColumnNames(userId, itemVec);
 }
 
-bool RemotePurchaseManager::savePurchaseItem_(
+bool RemoteCartManager::updateCart(
     const std::string& userId,
-    const ItemIdSet& totalItems,
-    const std::list<itemid_t>& newItems
+    const std::vector<itemid_t>& itemVec
 )
 {
-    for (std::list<itemid_t>::const_iterator it = newItems.begin();
-        it != newItems.end(); ++it)
+    const std::string& key = userId;
+
+    if (! cassandra_.remove(key))
+        return false;
+
+    for (std::vector<itemid_t>::const_iterator it = itemVec.begin();
+        it != itemVec.end(); ++it)
     {
         if (! cassandra_.insertColumn(userId, *it))
             return false;

@@ -5,7 +5,7 @@
 #include <recommend-manager/storage/UserManager.h>
 #include <recommend-manager/storage/VisitManager.h>
 #include <recommend-manager/storage/PurchaseManager.h>
-#include <recommend-manager/CartManager.h>
+#include <recommend-manager/storage/CartManager.h>
 #include <recommend-manager/OrderManager.h>
 #include <recommend-manager/EventManager.h>
 #include <recommend-manager/RateManager.h>
@@ -14,13 +14,10 @@
 #include <bundles/index/IndexSearchService.h>
 
 #include <aggregator-manager/SearchWorker.h>
-
 #include <ir/id_manager/IDManager.h>
-
 #include <common/SFLogger.h>
 
 #include <memory> // auto_ptr
-
 #include <glog/logging.h>
 
 namespace bfs = boost::filesystem;
@@ -211,6 +208,7 @@ void RecommendBundleActivator::createStorage_()
     userManager_.reset(storageFactory.createUserManager());
     purchaseManager_.reset(storageFactory.createPurchaseManager());
     visitManager_.reset(storageFactory.createVisitManager());
+    cartManager_.reset(storageFactory.createCartManager());
 }
 
 void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchService)
@@ -243,7 +241,6 @@ void RecommendBundleActivator::createEvent_()
     bfs::path eventDir = dataDir_ / "event";
     bfs::create_directory(eventDir);
 
-    cartManager_.reset(new CartManager((eventDir / "cart.db").string()));
     eventManager_.reset(new EventManager((eventDir / "event.db").string()));
     rateManager_.reset(new RateManager((eventDir / "rate.db").string()));
 }

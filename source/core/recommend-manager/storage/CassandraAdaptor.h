@@ -7,6 +7,7 @@
 #ifndef CASSANDRA_ADAPTOR_H
 #define CASSANDRA_ADAPTOR_H
 
+#include "CassandraAdaptorTraits.h"
 #include <3rdparty/libcassandra/cassandra.h>
 
 #include <string>
@@ -44,18 +45,10 @@ public:
     bool getSuperColumns(const std::string& key, std::vector<org::apache::cassandra::SuperColumn>& superColumns);
 
     template <typename ColumnNameType>
-    bool getColumnNames(const std::string& key, std::set<ColumnNameType>& nameSet);
-
-    bool insertColumn(const std::string& key, const std::string& name, const std::string& value);
-
-    template <typename ColumnNameType>
-    bool insertColumn(const std::string& key, const ColumnNameType& name, const std::string& value = "");
-
-    bool insertSuperColumn(
+    bool insertColumn(
         const std::string& key,
-        const std::string& superColumnName,
-        const std::string& subColumnName,
-        const std::string& value
+        const ColumnNameType& name,
+        const std::string& value = ""
     );
 
     template <typename SubColumnNameType>
@@ -66,11 +59,48 @@ public:
         const std::string& value = ""
     );
 
-    template <typename ColumnNameType>
-    static bool convertColumnNames(const std::vector<org::apache::cassandra::Column>& columns, std::set<ColumnNameType>& nameSet);
+    template <typename ColumnNameContainer>
+    bool getColumnNames(
+        const std::string& key,
+        ColumnNameContainer& nameContainer
+    );
+
+    template <typename ColumnNameContainer>
+    static bool convertColumnNames(
+        const std::vector<org::apache::cassandra::Column>& columns,
+        ColumnNameContainer& nameContainer
+    );
+
+    /**
+     * Create column family definition.
+     * @param subcomparator_type sub comparator type, its default value is empty.
+     * if empty, it would create a standard column family definition,
+     * otherwise, it would create a super column family definition with the sub comparator type.
+     * @return column family definition
+     */
+    static org::apache::cassandra::CfDef createColumnFamilyDef(
+        const std::string& keyspace,
+        const std::string& column_family_name,
+        const std::string& key_validation_class,
+        const std::string& comparator_type,
+        const std::string& subcomparator_type = ""
+    );
 
 private:
     bool createColumnFamily_(const org::apache::cassandra::CfDef& cfDef);
+
+    bool insertColumnImpl_(
+        const std::string& key,
+        const std::string& name,
+        const std::string& value
+    );
+
+    bool insertSuperColumnImpl_(
+        const std::string& key,
+        const std::string& superColumnName,
+        const std::string& subColumnName,
+        const std::string& value
+    );
 
 private:
     const std::string columnFamily_;
@@ -78,25 +108,57 @@ private:
 };
 
 template <typename ColumnNameType>
-bool CassandraAdaptor::getColumnNames(const std::string& key, std::set<ColumnNameType>& nameSet)
+inline bool CassandraAdaptor::insertColumn(
+    const std::string& key,
+    const ColumnNameType& name,
+    const std::string& value
+)
+{
+    const std::string& nameStr = CassandraAdaptorTraits::convertToString(name);
+    return insertColumnImpl_(key, nameStr, value);
+}
+
+template <typename SubColumnNameType>
+inline bool CassandraAdaptor::insertSuperColumn(
+    const std::string& key,
+    const std::string& superColumnName,
+    const SubColumnNameType& subColumnName,
+    const std::string& value
+)
+{
+    const std::string& subNameStr = CassandraAdaptorTraits::convertToString(subColumnName);
+    return insertSuperColumnImpl_(key, superColumnName, subNameStr, value);
+}
+
+template <typename ColumnNameContainer>
+inline bool CassandraAdaptor::getColumnNames(
+    const std::string& key,
+    ColumnNameContainer& nameContainer
+)
 {
     std::vector<org::apache::cassandra::Column> columns;
+
     if (! getAllColumns(key, columns))
         return false;
 
-    return convertColumnNames(columns, nameSet);
+    return convertColumnNames(columns, nameContainer);
 }
 
-template <typename ColumnNameType>
-bool CassandraAdaptor::convertColumnNames(const std::vector<org::apache::cassandra::Column>& columns, std::set<ColumnNameType>& nameSet)
+template <typename ColumnNameContainer>
+inline bool CassandraAdaptor::convertColumnNames(
+    const std::vector<org::apache::cassandra::Column>& columns,
+    ColumnNameContainer& nameContainer
+)
 {
+    typedef typename ColumnNameContainer::value_type ColumnNameType;
+
     try
     {
         for (std::vector<org::apache::cassandra::Column>::const_iterator it = columns.begin();
             it != columns.end(); ++it)
         {
             ColumnNameType name = boost::lexical_cast<ColumnNameType>(it->name);
-            nameSet.insert(name);
+            CassandraAdaptorTraits::insertContainer(nameContainer, name);
         }
     }
     catch(const boost::bad_lexical_cast& e)
@@ -106,25 +168,6 @@ bool CassandraAdaptor::convertColumnNames(const std::vector<org::apache::cassand
     }
 
     return true;
-}
-
-template <typename ColumnNameType>
-bool CassandraAdaptor::insertColumn(const std::string& key, const ColumnNameType& name, const std::string& value)
-{
-    std::string nameStr = boost::lexical_cast<std::string>(name);
-    return insertColumn(key, nameStr, value);
-}
-
-template <typename SubColumnNameType>
-bool CassandraAdaptor::insertSuperColumn(
-    const std::string& key,
-    const std::string& superColumnName,
-    const SubColumnNameType& subColumnName,
-    const std::string& value
-)
-{
-    std::string subNameStr = boost::lexical_cast<std::string>(subColumnName);
-    return insertSuperColumn(key, superColumnName, subNameStr, value);
 }
 
 } // namespace sf1r

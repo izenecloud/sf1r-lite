@@ -15,6 +15,8 @@
 namespace sf1r
 {
 
+#define USE_TC_HASH
+
 class LogServerStorage
 {
 public:
@@ -40,11 +42,6 @@ public:
         std::string
     > UuidDrumDispatcherType;
 
-    // DB <raw_docid, uuid>
-    //typedef izenelib::am::tc_fixdb<raw_docid_t> KVDBType;
-    typedef izenelib::am::tc_hash<raw_docid_t, uuid_t> KVDBType;
-    typedef boost::scoped_ptr<KVDBType> KVDBPtr;
-
     // DRUM <raw_docid, uuid>
     typedef izenelib::drum::Drum<
         raw_docid_t,
@@ -61,6 +58,14 @@ public:
         uuid_t,
         std::string
     > DocidDrumDispatcherType;
+
+    // KV DB
+#ifdef USE_TC_HASH
+    typedef izenelib::am::tc_hash<uuid_t, std::string> ScdDbType;
+#else
+    typedef izenelib::am::leveldb::Table<uuid_t, std::string> ScdDbType;
+#endif
+    typedef boost::scoped_ptr<ScdDbType> ScdDbPtr;
 
 public:
     static LogServerStorage* get()
@@ -104,13 +109,14 @@ public:
             return false;
         }
 
-//        // Initialize <docid, uuid> DB
-//        docidDB_.reset(new KVDBType(LogServerCfg::get()->getDocidDBName()));
-//        if (!docidDB_ || !docidDB_->open())
-//        {
-//            std::cerr << "Failed to initialzie docid DB: " << LogServerCfg::get()->getDocidDBName() << std::endl;
-//            return false;
-//        }
+        // Initialize SCD DB
+        std::string scdDbName = LogServerCfg::get()->getStorageBaseDir() + "/scd_db";
+        scdDb_.reset(new ScdDbType(scdDbName));
+        if (!scdDb_ || !scdDb_->open())
+        {
+            std::cerr << "Failed to initialzie scd DB (check DbType?) : " << scdDbName << std::endl;
+            return false;
+        }
 
         return true;
     }
@@ -148,21 +154,21 @@ public:
                 }
             }
 
-//            if (docidDB_)
-//            {
-//                boost::unique_lock<boost::mutex> lock(docid_db_mutex_, boost::defer_lock);
-//                if (lock.try_lock())
-//                {
-//                    docidDB_->flush();
-//                    docidDB_->close();
-//                    docidDB_.reset();
-//                }
-//                else
-//                {
-//                    std::cout << "DocidDB is still working... " << std::endl;
-//                    return;
-//                }
-//            }
+            if (scdDb_)
+            {
+                boost::unique_lock<boost::mutex> lock(scdDbMutex_, boost::defer_lock);
+                if (lock.try_lock())
+                {
+                    scdDb_->flush();
+                    scdDb_->close();
+                    scdDb_.reset();
+                }
+                else
+                {
+                    std::cout << "scdDb_ is still working... " << std::endl;
+                    return;
+                }
+            }
         }
         catch (const std::exception& e)
         {
@@ -202,16 +208,16 @@ public:
         return docidDrumDispathcer_;
     }
 
-//    /// @brief lock docidDBMutex before operation on DocidDB
-//    KVDBPtr& docidDB()
-//    {
-//        return docidDB_;
-//    }
-//
-//    boost::mutex& docidDBMutex()
-//    {
-//        return docid_db_mutex_;
-//    }
+    /// @brief lock scdDbMutex before operation on scdDB
+    ScdDbPtr& scdDb()
+    {
+        return scdDb_;
+    }
+
+    boost::mutex& scdDbMutex()
+    {
+        return scdDbMutex_;
+    }
 
 private:
     UuidDrumDispatcherType uuidDrumDispathcer_;
@@ -222,8 +228,9 @@ private:
     DocidDrumPtr docidDrum_;
     boost::mutex docidDrumMutex_;
 
-//    KVDBPtr docidDB_;
-//    boost::mutex docid_db_mutex_;
+    // Used to store SCD of user submitted comments currently.
+    ScdDbPtr scdDb_;
+    boost::mutex scdDbMutex_;
 };
 
 }

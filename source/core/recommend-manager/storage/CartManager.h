@@ -1,19 +1,16 @@
 /**
  * @file CartManager.h
  * @author Jun Jiang
- * @date 2011-08-05
+ * @date 2012-02-01
  */
 
 #ifndef CART_MANAGER_H
 #define CART_MANAGER_H
 
-#include "RecTypes.h"
-#include <sdb/SequentialDB.h>
+#include <recommend-manager/RecTypes.h>
 
 #include <string>
 #include <vector>
-
-#include <boost/serialization/vector.hpp> // serialize std::vector
 
 namespace sf1r
 {
@@ -21,11 +18,9 @@ namespace sf1r
 class CartManager
 {
 public:
-    CartManager(const std::string& path);
+    virtual ~CartManager() {}
 
-    ~CartManager();
-
-    void flush();
+    virtual void flush() {}
 
     /**
      * Add a shopping cart update event.
@@ -33,10 +28,10 @@ public:
      * @param itemVec the items in the shopping cart
      * @return true for succcess, false for failure
      */
-    bool updateCart(
+    virtual bool updateCart(
         const std::string& userId,
         const std::vector<itemid_t>& itemVec
-    );
+    ) = 0;
 
     /**
      * Get the shopping cart items of @p userId into @p itemVec.
@@ -44,14 +39,10 @@ public:
      * @param itemVec store the item ids in shopping cart
      * @return true for success, false for error happened.
      */
-    bool getCart(
+    virtual bool getCart(
         const std::string& userId,
         std::vector<itemid_t>& itemVec
-    );
-
-private:
-    typedef izenelib::sdb::unordered_sdb_tc<std::string, std::vector<itemid_t>, ReadWriteLock> SDBType;
-    SDBType container_;
+    ) = 0;
 };
 
 } // namespace sf1r

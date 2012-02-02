@@ -22,6 +22,7 @@ struct CassandraStorageConfig;
 class UserManager;
 class PurchaseManager;
 class VisitManager;
+class CartManager;
 
 class RecommendStorageFactory
 {
@@ -35,6 +36,7 @@ public:
     UserManager* createUserManager() const;
     PurchaseManager* createPurchaseManager() const;
     VisitManager* createVisitManager() const;
+    CartManager* createCartManager() const;
 
 private:
     void initRemoteStorage_(const std::string& collection);
@@ -56,6 +58,7 @@ private:
         STORAGE_PATH_ID_VISIT_ITEM,
         STORAGE_PATH_ID_VISIT_RECOMMEND,
         STORAGE_PATH_ID_VISIT_SESSION,
+        STORAGE_PATH_ID_CART,
         STORAGE_PATH_ID_NUM
     };
 

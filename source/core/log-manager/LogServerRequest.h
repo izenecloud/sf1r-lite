@@ -18,6 +18,8 @@ public:
         METHOD_SYNCHRONIZE,
         METHOD_GET_UUID,
         METHOD_GET_DOCID_LIST,
+        METHOD_CREATE_SCD_DOC,
+        METHOD_GET_SCD_FILE,
         COUNT_OF_METHODS
     };
 
@@ -76,6 +78,24 @@ class GetDocidListRequest : public LogRequestRequestT<UUID2DocidList>
 public:
     GetDocidListRequest()
         : LogRequestRequestT<UUID2DocidList>(METHOD_GET_DOCID_LIST)
+    {
+    }
+};
+
+class CreateScdDocRequest : public LogRequestRequestT<CreateScdDocRequestData>
+{
+public:
+    CreateScdDocRequest()
+        : LogRequestRequestT<CreateScdDocRequestData>(METHOD_CREATE_SCD_DOC)
+    {
+    }
+};
+
+class GetScdFileRequest : public LogRequestRequestT<GetScdFileRequestData>
+{
+public:
+    GetScdFileRequest()
+        : LogRequestRequestT<GetScdFileRequestData>(METHOD_GET_SCD_FILE)
     {
     }
 };
