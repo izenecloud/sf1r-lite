@@ -148,10 +148,9 @@ bool ProductPriceTrend::Flush()
 
 bool ProductPriceTrend::CronJob()
 {
-    if (enable_tpc_)
-    {
-        //TODO
-    }
+    if (!enable_tpc_) return true;
+
+    //TODO
     return true;
 }
 

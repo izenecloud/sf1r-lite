@@ -220,9 +220,9 @@ bool SearchWorker::getSearchResult_(
 
     std::vector<izenelib::util::UString> keywords;
     std::string newQuery;
-    if(actionOperation.actionItem_.searchingMode_ == SearchingMode::VERBOSE)
+    if (actionOperation.actionItem_.searchingMode_ == SearchingMode::VERBOSE)
     {
-        if(pQA_->isQuestion(actionOperation.actionItem_.env_.queryString_))
+        if (pQA_->isQuestion(actionOperation.actionItem_.env_.queryString_))
         {
             analyze_(actionOperation.actionItem_.env_.queryString_, keywords, true);
             assembleConjunction(keywords, newQuery);
@@ -246,7 +246,7 @@ bool SearchWorker::getSearchResult_(
     personalSearchInfo.enabled = false;
     User& user = personalSearchInfo.user;
     user.idStr_ = actionItem.env_.userID_;
-    if( recommendSearchService_  && (!user.idStr_.empty()))
+    if (recommendSearchService_  && (!user.idStr_.empty()))
     {
         personalSearchInfo.enabled = recommendSearchService_->getUser(user.idStr_, user);
     }
@@ -256,11 +256,10 @@ bool SearchWorker::getSearchResult_(
     }
 
     resultItem.propertyQueryTermList_.clear();
-    if(!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
+    if (!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
     {
         return true;
     }
-
 
     int startOffset;
     int TOP_K_NUM = bundleConfig_->topKNum_;
@@ -276,7 +275,7 @@ bool SearchWorker::getSearchResult_(
         startOffset = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
     }
 
-    if(! searchManager_->search(
+    if (!searchManager_->search(
                 actionOperation,
                 resultItem.topKDocs_,
                 resultItem.topKRankScoreList_,
@@ -292,30 +291,30 @@ bool SearchWorker::getSearchResult_(
     {
         std::string newQuery;
 
-        if(!bundleConfig_->bTriggerQA_)
+        if (!bundleConfig_->bTriggerQA_)
             return true;
         assembleDisjunction(keywords, newQuery);
 
         actionOperation.actionItem_.env_.queryString_ = newQuery;
         resultItem.propertyQueryTermList_.clear();
-        if(!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
+        if (!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
         {
             return true;
         }
 
-        if(! searchManager_->search(
-                                    actionOperation,
-                                    resultItem.topKDocs_,
-                                    resultItem.topKRankScoreList_,
-                                    resultItem.topKCustomRankScoreList_,
-                                    resultItem.totalCount_,
-                                    resultItem.groupRep_,
-                                    resultItem.attrRep_,
-                                    resultItem.propertyRange_,
-                                    resultItem.distSearchInfo_,
-                                    TOP_K_NUM,
-                                    startOffset
-                                    ))
+        if (!searchManager_->search(
+                    actionOperation,
+                    resultItem.topKDocs_,
+                    resultItem.topKRankScoreList_,
+                    resultItem.topKCustomRankScoreList_,
+                    resultItem.totalCount_,
+                    resultItem.groupRep_,
+                    resultItem.attrRep_,
+                    resultItem.propertyRange_,
+                    resultItem.distSearchInfo_,
+                    TOP_K_NUM,
+                    startOffset
+                    ))
         {
             return true;
         }
@@ -331,11 +330,11 @@ bool SearchWorker::getSearchResult_(
 
     std::size_t overallSearchResultSize = startOffset + resultItem.topKDocs_.size();
 
-    if(resultItem.start_ > overallSearchResultSize)
+    if (resultItem.start_ > overallSearchResultSize)
     {
         resultItem.start_ = overallSearchResultSize;
     }
-    if(resultItem.start_ + resultItem.count_ > overallSearchResultSize)
+    if (resultItem.start_ + resultItem.count_ > overallSearchResultSize)
     {
         resultItem.count_ = overallSearchResultSize - resultItem.start_;
     }
@@ -370,7 +369,7 @@ bool SearchWorker::getSummaryMiningResult_(
         // id of documents in current page
         std::vector<sf1r::docid_t> docsInPage;
         std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin() + resultItem.start_%bundleConfig_->topKNum_;
-        for(size_t i=0 ; it != resultItem.topKDocs_.end() && i<resultItem.count_; i++, it++)
+        for (size_t i = 0 ; it != resultItem.topKDocs_.end() && i < resultItem.count_; i++, it++)
         {
           docsInPage.push_back(*it);
         }
@@ -383,7 +382,7 @@ bool SearchWorker::getSummaryMiningResult_(
 
     cout << "[IndexSearchService] keywordSearch process Done" << endl; // XXX
 
-    if( miningManager_ )
+    if (miningManager_)
     {
         miningManager_->getMiningResult(resultItem);
     }
@@ -399,19 +398,19 @@ void SearchWorker::analyze_(const std::string& qstr, std::vector<izenelib::util:
 
     la::LA* pLA = LAPool::getInstance()->popSearchLA( analysisInfo_);
 //    pLA->process_search(question, termList);
-    if(!pLA) return;
+    if (!pLA) return;
     pLA->process(question, termList);
     LAPool::getInstance()->pushSearchLA( analysisInfo_, pLA );
 
     std::string str;
-    for(la::TermList::iterator iter = termList.begin(); iter != termList.end(); ++iter)
+    for (la::TermList::iterator iter = termList.begin(); iter != termList.end(); ++iter)
     {
         iter->text_.convertString(str, izenelib::util::UString::UTF_8);
-        if(isQA)
+        if (isQA)
         {
-            if(! pQA_->isQuestionTerm(iter->text_))
+            if (!pQA_->isQuestionTerm(iter->text_))
             {
-                if(pQA_->isCandidateTerm(iter->pos_))
+                if (pQA_->isCandidateTerm(iter->pos_))
                 {
                     results.push_back(iter->text_);
                     cout<<" la-> "<<str<<endl;
@@ -552,10 +551,10 @@ bool  SearchWorker::getResultItem(ActionItemT& actionItem, const std::vector<sf1
 
         // propertyOption
 
-        if( actionItem.env_.taxonomyLabel_ != "" )
+        if (!actionItem.env_.taxonomyLabel_.empty())
            queryTerms.insert(queryTerms.begin(), UString(actionItem.env_.taxonomyLabel_, encodingType ) );
 
-        if( actionItem.env_.nameEntityItem_ != "" )
+        if (!actionItem.env_.nameEntityItem_.empty())
            queryTerms.insert(queryTerms.begin(),UString( actionItem.env_.nameEntityItem_, encodingType ) );
 
         unsigned propertyOption = 0;
@@ -600,7 +599,7 @@ bool  SearchWorker::getResultItem(ActionItemT& actionItem, const std::vector<sf1
 
     // indexSummary now is the real size of the array
     resultItem.rawTextOfSummaryInPage_.resize(indexSummary);
-    if(!ret)
+    if (!ret)
         resultItem.error_="Error : Cannot get document data";
 
     return ret;
@@ -613,7 +612,7 @@ bool SearchWorker::removeDuplicateDocs(
 )
 {
     // Remove duplicated docs from the result if the option is on.
-    if( miningManager_ )
+    if (miningManager_)
     {
       if ( actionItem.removeDuplicatedDocs_ && (resultItem.topKDocs_.size() != 0) )
       {

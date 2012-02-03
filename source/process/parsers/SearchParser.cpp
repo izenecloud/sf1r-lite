@@ -232,7 +232,7 @@ bool SearchParser::parse(const Value& search)
 
     //search mode
     searchingMode_ = SearchingMode::DefaultSearchingMode;
-    if(search.hasKey(Keys::searching_mode))
+    if (search.hasKey(Keys::searching_mode))
     {
         Value::StringType mode = asString(search[Keys::searching_mode]);
         boost::to_lower(mode);
@@ -254,7 +254,7 @@ bool SearchParser::parse(const Value& search)
         }
         else
         {
-            warning() = "Unknown searchingMode. Default searhing mode is used.";
+            warning() = "Unknown searchingMode. Default searching mode is used.";
         }
     }
 
