@@ -7,8 +7,8 @@
 #include <recommend-manager/storage/PurchaseManager.h>
 #include <recommend-manager/storage/CartManager.h>
 #include <recommend-manager/storage/RateManager.h>
+#include <recommend-manager/storage/EventManager.h>
 #include <recommend-manager/OrderManager.h>
-#include <recommend-manager/EventManager.h>
 #include <recommend-manager/RecommenderFactory.h>
 #include <recommend-manager/ItemIdGenerator.h>
 #include <bundles/index/IndexSearchService.h>
@@ -116,7 +116,6 @@ bool RecommendBundleActivator::init_(IndexSearchService* indexSearchService)
     createStorage_();
     createItem_(indexSearchService);
     createMining_();
-    createEvent_();
     createOrder_();
     createRecommender_();
     createService_();
@@ -210,6 +209,7 @@ void RecommendBundleActivator::createStorage_()
     visitManager_.reset(storageFactory.createVisitManager());
     cartManager_.reset(storageFactory.createCartManager());
     rateManager_.reset(storageFactory.createRateManager());
+    eventManager_.reset(storageFactory.createEventManager());
 }
 
 void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchService)
@@ -235,14 +235,6 @@ void RecommendBundleActivator::createMining_()
 
     coVisitManager_.reset(new CoVisitManager((miningDir / "covisit").string(),
                                              config_->visitCacheSize_));
-}
-
-void RecommendBundleActivator::createEvent_()
-{
-    bfs::path eventDir = dataDir_ / "event";
-    bfs::create_directory(eventDir);
-
-    eventManager_.reset(new EventManager((eventDir / "event.db").string()));
 }
 
 void RecommendBundleActivator::createOrder_()
