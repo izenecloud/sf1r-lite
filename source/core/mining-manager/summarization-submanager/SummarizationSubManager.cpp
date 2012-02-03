@@ -163,6 +163,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     SetLastDocid_(document_manager_->getMaxDocId());
     comment_cache_storage_->Flush();
 
+    {
     CommentCacheStorage::DirtyKeyIteratorType dirtyKeyIt(comment_cache_storage_->dirty_key_db_);
     CommentCacheStorage::DirtyKeyIteratorType dirtyKeyEnd;
     for (uint32_t count = 0; dirtyKeyIt != dirtyKeyEnd; ++dirtyKeyIt)
@@ -180,6 +181,8 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
                 LOG(INFO) << "Evaluating summarization: " << count;
             }
         }
+    }
+    //Destroy dirtyKeyIterator before clearing dirtyKeyDB
     }
     comment_cache_storage_->ClearDirtyKey();
     summarization_storage_->Flush();
