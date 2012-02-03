@@ -8,6 +8,7 @@
 #include "LocalCartManager.h"
 #include "RemoteCartManager.h"
 #include "LocalRateManager.h"
+#include "RemoteRateManager.h"
 
 #include <configuration-manager/CassandraStorageConfig.h>
 #include <log-manager/CassandraConnection.h>
@@ -125,8 +126,7 @@ RateManager* RecommendStorageFactory::createRateManager() const
     const std::string& path = storagePaths_[STORAGE_PATH_ID_RATE];
 
     if (cassandraConfig_.enable)
-        //return new RemoteRateManager(cassandraConfig_.keyspace, path, cassandraClient_);
-        return NULL;
+        return new RemoteRateManager(cassandraConfig_.keyspace, path, cassandraClient_);
 
     return new LocalRateManager(path);
 }

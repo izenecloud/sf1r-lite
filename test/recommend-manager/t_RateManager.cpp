@@ -85,4 +85,35 @@ BOOST_FIXTURE_TEST_CASE(checkLocalRateManager, RateManagerTestFixture)
     testRate2(*this);
 }
 
+BOOST_FIXTURE_TEST_CASE(checkRemoteRateManager, RateManagerTestFixture)
+{
+    if (! initRemoteStorage(COLLECTION_NAME, TEST_DIR_STR,
+                            KEYSPACE_NAME, REMOTE_STORAGE_URL))
+    {
+        cerr << "warning: exit test case as failed to connect " << REMOTE_STORAGE_URL << endl;
+        return;
+    }
+
+    testRate1(*this);
+    testRate2(*this);
+}
+
+BOOST_FIXTURE_TEST_CASE(checkCassandraNotConnect, RateManagerTestFixture)
+{
+    BOOST_REQUIRE(! initRemoteStorage(COLLECTION_NAME, TEST_DIR_STR,
+                                      KEYSPACE_NAME, REMOTE_STORAGE_URL_NOT_CONNECT));
+
+    resetInstance();
+
+    string userId = "aaa";
+    itemid_t itemId = 1;
+    rate_t rate = 5;
+
+    BOOST_CHECK(rateManager_->addRate(userId, itemId, rate) == false);
+    BOOST_CHECK(rateManager_->removeRate(userId, itemId) == false);
+
+    ItemRateMap itemRateMap;
+    BOOST_CHECK(rateManager_->getItemRateMap(userId, itemRateMap) == false);
+}
+
 BOOST_AUTO_TEST_SUITE_END() 

@@ -44,11 +44,31 @@ public:
     bool getAllColumns(const std::string& key, std::vector<org::apache::cassandra::Column>& columns);
     bool getSuperColumns(const std::string& key, std::vector<org::apache::cassandra::SuperColumn>& superColumns);
 
+    /**
+     * Insert a column.
+     * @param key the row key
+     * @param name the column name
+     * @return true for success, false for failure
+     * @note the column value would be empty string
+     */
     template <typename ColumnNameType>
     bool insertColumn(
         const std::string& key,
+        const ColumnNameType& name
+    );
+
+    /**
+     * Insert a column.
+     * @param key the row key
+     * @param name the column name
+     * @param value the column value
+     * @return true for success, false for failure
+     */
+    template <typename ColumnNameType, typename ColumnValueType>
+    bool insertColumn(
+        const std::string& key,
         const ColumnNameType& name,
-        const std::string& value = ""
+        const ColumnValueType& value
     );
 
     template <typename SubColumnNameType>
@@ -57,6 +77,19 @@ public:
         const std::string& superColumnName,
         const SubColumnNameType& subColumnName,
         const std::string& value = ""
+    );
+
+    template <typename ColumnNameType>
+    bool removeColumn(
+        const std::string& key,
+        const ColumnNameType& name
+    );
+
+    template <typename ColumnNameType, typename ColumnValueType>
+    bool getColumnValue(
+        const std::string& key,
+        const ColumnNameType& name,
+        ColumnValueType& value
     );
 
     template <typename ColumnNameContainer>
@@ -102,6 +135,17 @@ private:
         const std::string& value
     );
 
+    bool removeColumnImpl_(
+        const std::string& key,
+        const std::string& name
+    );
+
+    bool getColumnValueImpl_(
+        const std::string& key,
+        const std::string& name,
+        std::string& value
+    );
+
 private:
     const std::string columnFamily_;
     libcassandra::Cassandra* client_;
@@ -110,12 +154,25 @@ private:
 template <typename ColumnNameType>
 inline bool CassandraAdaptor::insertColumn(
     const std::string& key,
-    const ColumnNameType& name,
-    const std::string& value
+    const ColumnNameType& name
 )
 {
     const std::string& nameStr = CassandraAdaptorTraits::convertToString(name);
-    return insertColumnImpl_(key, nameStr, value);
+
+    return insertColumnImpl_(key, nameStr, "");
+}
+
+template <typename ColumnNameType, typename ColumnValueType>
+inline bool CassandraAdaptor::insertColumn(
+    const std::string& key,
+    const ColumnNameType& name,
+    const ColumnValueType& value
+)
+{
+    const std::string& nameStr = CassandraAdaptorTraits::convertToString(name);
+    const std::string& valueStr = CassandraAdaptorTraits::convertToString(value);
+
+    return insertColumnImpl_(key, nameStr, valueStr);
 }
 
 template <typename SubColumnNameType>
@@ -127,7 +184,45 @@ inline bool CassandraAdaptor::insertSuperColumn(
 )
 {
     const std::string& subNameStr = CassandraAdaptorTraits::convertToString(subColumnName);
+
     return insertSuperColumnImpl_(key, superColumnName, subNameStr, value);
+}
+
+template <typename ColumnNameType>
+inline bool CassandraAdaptor::removeColumn(
+    const std::string& key,
+    const ColumnNameType& name
+)
+{
+    const std::string& nameStr = CassandraAdaptorTraits::convertToString(name);
+
+    return removeColumnImpl_(key, nameStr);
+}
+
+template <typename ColumnNameType, typename ColumnValueType>
+inline bool CassandraAdaptor::getColumnValue(
+    const std::string& key,
+    const ColumnNameType& name,
+    ColumnValueType& value
+)
+{
+    const std::string& nameStr = CassandraAdaptorTraits::convertToString(name);
+    std::string valueStr;
+
+    if (! getColumnValueImpl_(key, nameStr, valueStr))
+        return false;
+
+    try
+    {
+        value = boost::lexical_cast<ColumnValueType>(valueStr);
+    }
+    catch(const boost::bad_lexical_cast& e)
+    {
+        LOG(ERROR) << "failed in casting column value, exception: " << e.what();
+        return false;
+    }
+
+    return true;
 }
 
 template <typename ColumnNameContainer>
