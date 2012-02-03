@@ -41,10 +41,10 @@
                 <xs:element name="Parameter" minOccurs="0">
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="1" maxOccurs="2"/>
-                            <xs:element ref="IndexStrategy"/>
-                            <xs:element ref="Sia"/>
-                            <xs:element ref="LanguageIdentifier"/>
+                            <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="0" maxOccurs="2"/>
+                            <xs:element ref="IndexStrategy" minOccurs="0" />
+                            <xs:element ref="Sia" minOccurs="0"/>
+                            <xs:element ref="LanguageIdentifier" minOccurs="0"/>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
@@ -68,10 +68,11 @@
 
     <xs:element name="IndexStrategy">
         <xs:complexType>
-            <xs:attribute name="indexlevel" type="xs:string" use="required"/>
-            <xs:attribute name="indexpolicy" type="xs:string" use="required"/>
-            <xs:attribute name="mergepolicy" type="xs:string" use="required"/>
-            <xs:attribute name="memorypoolsize" use="required">
+            <xs:attribute name="logcreateddoc" type="YesNoType" use="optional"/>
+            <xs:attribute name="indexlevel" type="xs:string" use="optional"/>
+            <xs:attribute name="indexpolicy" type="xs:string" use="optional"/>
+            <xs:attribute name="mergepolicy" type="xs:string" use="optional"/>
+            <xs:attribute name="memorypoolsize" use="optional">
                 <xs:simpleType>
                     <xs:restriction base="xs:integer">
                         <xs:minInclusive value="5000000"/>
