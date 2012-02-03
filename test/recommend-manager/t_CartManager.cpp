@@ -97,5 +97,4 @@ BOOST_FIXTURE_TEST_CASE(checkCassandraNotConnect, CartManagerTestFixture)
     BOOST_CHECK(cartManager_->getCart(userId, getItems) == false);
 }
 
-
 BOOST_AUTO_TEST_SUITE_END() 

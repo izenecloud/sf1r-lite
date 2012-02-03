@@ -24,8 +24,6 @@ class CartManagerTestFixture : public RecommendStorageTestFixture
 public:
     virtual void resetInstance();
 
-    void setCartManager(CartManager* cartManager);
-
     void updateCart(const std::string& userId, const std::string& items);
 
     void updateRandItem(const std::string& userId, int itemCount);

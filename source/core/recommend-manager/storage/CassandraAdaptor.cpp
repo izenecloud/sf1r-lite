@@ -189,6 +189,41 @@ bool CassandraAdaptor::insertSuperColumnImpl_(
     return true;
 }
 
+bool CassandraAdaptor::removeColumnImpl_(
+    const std::string& key,
+    const std::string& name
+)
+{
+    if (! client_)
+        return false;
+
+    try
+    {
+        client_->removeColumn(key, columnFamily_, name);
+    }
+    CATCH_CASSANDRA_EXCEPTION("[Cassandra::removeColumn] error: ")
+
+    return true;
+}
+
+bool CassandraAdaptor::getColumnValueImpl_(
+    const std::string& key,
+    const std::string& name,
+    std::string& value
+)
+{
+    if (! client_)
+        return false;
+
+    try
+    {
+        client_->getColumnValue(value, key, columnFamily_, name);
+    }
+    CATCH_CASSANDRA_EXCEPTION("[Cassandra::getColumnValue] error: ")
+
+    return true;
+}
+
 org::apache::cassandra::CfDef CassandraAdaptor::createColumnFamilyDef(
     const std::string& keyspace,
     const std::string& column_family_name,
