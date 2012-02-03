@@ -216,8 +216,21 @@ void t_ScdStorage()
 
     // get scd file
     GetScdFileRequest scdFileReq;
-    // todo
-    conn.asynRequest(scdFileReq);
+    scdFileReq.param_.username_ = "zhongxia";
+    scdFileReq.param_.host_ = "localhost";
+    scdFileReq.param_.path_ = "/home/zhongxia/scd/";
+
+    GetScdFileResponseData ret;
+    conn.syncRequest(scdFileReq, ret);
+    if (ret.success_)
+    {
+        std::cout << "Successfully Fetched SCD." << std::endl;
+    }
+    else
+    {
+        std::cout << "Failed to fetch SCD." << std::endl;
+        std::cout << ret.error_ << std::endl;
+    }
 
     conn.flushRequests();
 }

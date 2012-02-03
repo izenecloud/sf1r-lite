@@ -5,6 +5,7 @@
 #include <common/ScdWriter.h>
 
 #include <boost/bind.hpp>
+#include <boost/filesystem.hpp>
 
 //#define LOG_SERVER_DEBUG
 //#define DOCID_DB_DEBUG
@@ -115,8 +116,9 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
             req.params().convert(&params);
             const GetScdFileRequestData& scdFileRequestData = params.get<0>();
 
-            dispatchScdFile(scdFileRequestData);
-            //req.result();
+            GetScdFileResponseData response;
+            dispatchScdFile(scdFileRequestData, response);
+            req.result(response);
         }
         else
         {
@@ -186,7 +188,7 @@ void RpcLogServer::createScdDoc(const CreateScdDocRequestData& scdDoc)
 #endif
 }
 
-bool RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestData)
+void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestData, GetScdFileResponseData& response)
 {
     boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->scdDbMutex());
     LogServerStorage::ScdDbPtr& scdDb = LogServerStorage::get()->scdDb();
@@ -196,14 +198,16 @@ bool RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
 
     // create new scd file
     std::string filename = LogServerCfg::get()->getStorageBaseDir() + "/" + ScdWriter::GenSCDFileName(INSERT_SCD);
-    std::cout << filename << std::endl << std::endl;
+    //std::cout << filename << std::endl << std::endl;
 
     std::ofstream of;
     of.open(filename.c_str());
     if (!of.good())
     {
         std::cerr << "Failed to create SCD file: " << filename << std::endl;
-        return false;
+        response.success_ = false;
+        response.error_ = "LogServer: failed to create SCD file.";
+        return;
     }
 
     // get all scd docs from DB
@@ -228,20 +232,40 @@ bool RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
     else
     {
         of.close();
-        return false;
+
+        response.success_ = false;
+        response.error_ = "LogServer error";
+        return;
     }
 #endif
 
     of.close();
 
-    // transmit SCD file to required server
+    // transmit SCD file to required server, use rsync
     std::stringstream command;
-    command << "rsync " << "-vaz " << filename << " localhost::home/zhongxia/"; // Fixme
+    command << "rsync -vaz "
+            << filename
+            << " "
+            << scdFileRequestData.username_
+            << "@"
+            << scdFileRequestData.host_
+            << ":"
+            << scdFileRequestData.path_
+            << "/"; // ensure is dir
+
     std::cout << command.str() << std::endl;
     if (std::system(command.str().c_str()) == 0)
-        return true;
+    {
+        response.success_ = true;
+    }
     else
-        return false;
+    {
+        response.success_ = false;
+        response.error_ = "LogServer: rsync failed to synchronize SCD file.";
+    }
+
+    // remove local SCD file
+    boost::filesystem::remove(filename);
 }
 
 void RpcLogServer::writeScdDoc(std::ofstream& of, const std::string& doc, const uint128_t& uuid)

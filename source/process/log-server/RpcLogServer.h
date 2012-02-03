@@ -54,7 +54,7 @@ public:
     void createScdDoc(const CreateScdDocRequestData& scdDoc);
 
     /// Dispatch scd file to required server
-    bool dispatchScdFile(const GetScdFileRequestData& scdFileRequestData);
+    void dispatchScdFile(const GetScdFileRequestData& scdFileRequestData, GetScdFileResponseData& response);
     void writeScdDoc(std::ofstream& of, const std::string& doc, const uint128_t& uuid);
 
 private:

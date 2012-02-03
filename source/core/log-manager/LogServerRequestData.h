@@ -59,9 +59,19 @@ struct CreateScdDocRequestData : public LogServerRequestData
 
 struct GetScdFileRequestData : public LogServerRequestData
 {
-    std::string address_;
+    std::string username_;
+    std::string host_;
+    std::string path_;
 
-    MSGPACK_DEFINE(address_)
+    MSGPACK_DEFINE(username_, host_, path_)
+};
+
+struct GetScdFileResponseData
+{
+    bool success_;
+    std::string error_;
+
+    MSGPACK_DEFINE(success_, error_)
 };
 
 }
