@@ -213,6 +213,7 @@ void t_ScdStorage()
             "<DOCID>eb1ba5f4-a558-4a66-806d-74cb6a321932\n"
             "<ProdName>百诺 旅游天使 A2681TB1 镁合金 三脚架\n";
     conn.asynRequest(scdDocReq);
+    conn.flushRequests();
 
     // get scd file
     GetScdFileRequest scdFileReq;
@@ -231,8 +232,6 @@ void t_ScdStorage()
         std::cout << "Failed to fetch SCD." << std::endl;
         std::cout << ret.error_ << std::endl;
     }
-
-    conn.flushRequests();
 }
 
 

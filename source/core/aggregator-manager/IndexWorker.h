@@ -105,6 +105,10 @@ private:
             docid_t& newId
     );
 
+    void logCreatedDocToLogServer(const SCDDoc& scdDoc);
+
+    bool fetchSCDFromLogServer(const std::string& scdPath);
+
     bool deleteSCD_(ScdParser& parser, time_t timestamp);
 
     bool insertDoc_(Document& document, IndexerDocument& indexDocument, time_t timestamp);
