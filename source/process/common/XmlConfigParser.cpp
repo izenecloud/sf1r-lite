@@ -8,6 +8,7 @@
 #include "XmlConfigParser.h"
 #include "XmlSchema.h"
 #include <util/ustring/UString.h>
+#include <net/distribute/Util.h>
 
 #include <common/type_defs.h>
 #include <common/SFLogger.h>
@@ -301,11 +302,18 @@ void SF1Config::parseBrokerAgent(const ticpp::Element * brokerAgent)
 void SF1Config::parseDistributedCommon(const ticpp::Element * distributedCommon)
 {
     getAttribute(distributedCommon, "clusterid", distributedCommonConfig_.clusterId_, false);
-    getAttribute(distributedCommon, "localhost", distributedCommonConfig_.localHost_); // get by api?
     getAttribute(distributedCommon, "workerport", distributedCommonConfig_.workerPort_);
     getAttribute(distributedCommon, "notifyrecvport", distributedCommonConfig_.notifyRecvPort_);
     getAttribute(distributedCommon, "datarecvport", distributedCommonConfig_.dataRecvPort_);
     distributedCommonConfig_.baPort_ = brokerAgentConfig_.port_;
+
+    if (!net::distribute::Util::getLoalHostIp(distributedCommonConfig_.localHost_))
+    {
+        getAttribute(distributedCommon, "localhost", distributedCommonConfig_.localHost_);
+        std::cout << "failed to detect local host ip, get from config: " << distributedCommonConfig_.localHost_ << std::endl;
+    }
+    else
+        std::cout << "local host ip : " << distributedCommonConfig_.localHost_ << std::endl;
 
     if (distributedCommonConfig_.clusterId_.empty())
     {
@@ -1084,6 +1092,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     //indexmanager_config.indexStrategy_.optimizeSchedule_ = indexBundleConfig.cronIndexer_;
     std::set<std::string> directories;
     params.Get("CollectionDataDirectory", directories);
+    params.Get("IndexStrategy/logcreateddoc", indexBundleConfig.logCreatedDoc_);
 
     if (!directories.empty())
     {
@@ -1102,6 +1111,9 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
 
     LAPool::getInstance()->setLangIdDbPath(indexBundleConfig.languageIdentifierDbPath_);
     indexBundleConfig.isSupportByAggregator_ = SF1Config::get()->checkSearchMasterAggregator(collectionMeta.getName());
+
+    indexBundleConfig.localHostUsername_ = SF1Config::get()->distributedCommonConfig_.clusterId_;
+    indexBundleConfig.localHostIp_ = SF1Config::get()->distributedCommonConfig_.localHost_;
 }
 
 void CollectionConfig::parseIndexEcSchema(const ticpp::Element * indexEcSchema, CollectionMeta & collectionMeta)
