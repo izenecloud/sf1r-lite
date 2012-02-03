@@ -1,22 +1,17 @@
-#include "RateManager.h"
+#include "LocalRateManager.h"
 
 #include <glog/logging.h>
 
 namespace sf1r
 {
 
-RateManager::RateManager(const std::string& path)
+LocalRateManager::LocalRateManager(const std::string& path)
     : container_(path)
 {
     container_.open();
 }
 
-RateManager::~RateManager()
-{
-    flush();
-}
-
-void RateManager::flush()
+void LocalRateManager::flush()
 {
     try
     {
@@ -28,37 +23,29 @@ void RateManager::flush()
     }
 }
 
-bool RateManager::addRate(
+bool LocalRateManager::addRate(
     const std::string& userId,
     itemid_t itemId,
     rate_t rate
 )
 {
     ItemRateMap itemRateMap;
-    container_.getValue(userId, itemRateMap);
+    if (! getItemRateMap(userId, itemRateMap))
+        return false;
 
     itemRateMap[itemId] = rate;
 
-    bool result = false;
-    try
-    {
-        result = container_.update(userId, itemRateMap);
-    }
-    catch(izenelib::util::IZENELIBException& e)
-    {
-        LOG(ERROR) << "exception in SDB::update(): " << e.what();
-    }
-
-    return result;
+    return saveItemRateMap_(userId, itemRateMap);
 }
 
-bool RateManager::removeRate(
+bool LocalRateManager::removeRate(
     const std::string& userId,
     itemid_t itemId
 )
 {
     ItemRateMap itemRateMap;
-    container_.getValue(userId, itemRateMap);
+    if (! getItemRateMap(userId, itemRateMap))
+        return false;
 
     if (itemRateMap.erase(itemId) == 0)
     {
@@ -67,25 +54,16 @@ bool RateManager::removeRate(
         return false;
     }
 
-    bool result = false;
-    try
-    {
-        result = container_.update(userId, itemRateMap);
-    }
-    catch(izenelib::util::IZENELIBException& e)
-    {
-        LOG(ERROR) << "exception in SDB::update(): " << e.what();
-    }
-
-    return result;
+    return saveItemRateMap_(userId, itemRateMap);
 }
 
-bool RateManager::getItemRateMap(
+bool LocalRateManager::getItemRateMap(
     const std::string& userId,
     ItemRateMap& itemRateMap
 )
 {
     bool result = false;
+
     try
     {
         itemRateMap.clear();
@@ -95,6 +73,25 @@ bool RateManager::getItemRateMap(
     catch(izenelib::util::IZENELIBException& e)
     {
         LOG(ERROR) << "exception in SDB::getValue(): " << e.what();
+    }
+
+    return result;
+}
+
+bool LocalRateManager::saveItemRateMap_(
+    const std::string& userId,
+    const ItemRateMap& itemRateMap
+)
+{
+    bool result = false;
+
+    try
+    {
+        result = container_.update(userId, itemRateMap);
+    }
+    catch(izenelib::util::IZENELIBException& e)
+    {
+        LOG(ERROR) << "exception in SDB::update(): " << e.what();
     }
 
     return result;

@@ -6,9 +6,9 @@
 #include <recommend-manager/storage/VisitManager.h>
 #include <recommend-manager/storage/PurchaseManager.h>
 #include <recommend-manager/storage/CartManager.h>
+#include <recommend-manager/storage/RateManager.h>
 #include <recommend-manager/OrderManager.h>
 #include <recommend-manager/EventManager.h>
-#include <recommend-manager/RateManager.h>
 #include <recommend-manager/RecommenderFactory.h>
 #include <recommend-manager/ItemIdGenerator.h>
 #include <bundles/index/IndexSearchService.h>
@@ -209,6 +209,7 @@ void RecommendBundleActivator::createStorage_()
     purchaseManager_.reset(storageFactory.createPurchaseManager());
     visitManager_.reset(storageFactory.createVisitManager());
     cartManager_.reset(storageFactory.createCartManager());
+    rateManager_.reset(storageFactory.createRateManager());
 }
 
 void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchService)
@@ -242,7 +243,6 @@ void RecommendBundleActivator::createEvent_()
     bfs::create_directory(eventDir);
 
     eventManager_.reset(new EventManager((eventDir / "event.db").string()));
-    rateManager_.reset(new RateManager((eventDir / "rate.db").string()));
 }
 
 void RecommendBundleActivator::createOrder_()

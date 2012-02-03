@@ -144,6 +144,8 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   ADD_EXECUTABLE(t_RateManager
     Runner.cpp
     t_RateManager.cpp
+    RateManagerTestFixture.cpp
+    RecommendStorageTestFixture.cpp
   )
   TARGET_LINK_LIBRARIES(t_RateManager ${libs})
   SET_TARGET_PROPERTIES(t_RateManager PROPERTIES

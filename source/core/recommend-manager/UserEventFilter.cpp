@@ -2,8 +2,8 @@
 #include "ItemFilter.h"
 #include "storage/PurchaseManager.h"
 #include "storage/CartManager.h"
+#include "storage/RateManager.h"
 #include "EventManager.h"
-#include "RateManager.h"
 #include <bundles/recommend/RecommendSchema.h>
 
 #include <glog/logging.h>

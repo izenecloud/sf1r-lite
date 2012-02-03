@@ -7,6 +7,7 @@
 #include "RemoteVisitManager.h"
 #include "LocalCartManager.h"
 #include "RemoteCartManager.h"
+#include "LocalRateManager.h"
 
 #include <configuration-manager/CassandraStorageConfig.h>
 #include <log-manager/CassandraConnection.h>
@@ -45,6 +46,7 @@ void RecommendStorageFactory::initRemoteStorage_(const std::string& collection)
     storagePaths_[STORAGE_PATH_ID_VISIT_RECOMMEND] = collection + "_visit_recommend";
     storagePaths_[STORAGE_PATH_ID_VISIT_SESSION] = collection + "_visit_session";
     storagePaths_[STORAGE_PATH_ID_CART] = collection + "_cart";
+    storagePaths_[STORAGE_PATH_ID_RATE] = collection + "_rate";
 
     const std::string& keyspace = cassandraConfig_.keyspace;
     cassandraClient_ = CassandraConnection::instance().getCassandraClient(keyspace);
@@ -69,6 +71,7 @@ void RecommendStorageFactory::initLocalStorage_(const std::string& dataDir)
     storagePaths_[STORAGE_PATH_ID_VISIT_RECOMMEND] = (eventDir / "visit_recommend.db").string();
     storagePaths_[STORAGE_PATH_ID_VISIT_SESSION] = (eventDir / "visit_session.db").string();
     storagePaths_[STORAGE_PATH_ID_CART] = (eventDir / "cart.db").string();
+    storagePaths_[STORAGE_PATH_ID_RATE] = (eventDir / "rate.db").string();
 }
 
 UserManager* RecommendStorageFactory::createUserManager() const
@@ -115,6 +118,17 @@ CartManager* RecommendStorageFactory::createCartManager() const
         return new RemoteCartManager(cassandraConfig_.keyspace, path, cassandraClient_);
 
     return new LocalCartManager(path);
+}
+
+RateManager* RecommendStorageFactory::createRateManager() const
+{
+    const std::string& path = storagePaths_[STORAGE_PATH_ID_RATE];
+
+    if (cassandraConfig_.enable)
+        //return new RemoteRateManager(cassandraConfig_.keyspace, path, cassandraClient_);
+        return NULL;
+
+    return new LocalRateManager(path);
 }
 
 } // namespace sf1r

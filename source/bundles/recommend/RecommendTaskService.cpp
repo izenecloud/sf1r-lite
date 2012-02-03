@@ -6,9 +6,9 @@
 #include <recommend-manager/storage/VisitManager.h>
 #include <recommend-manager/storage/PurchaseManager.h>
 #include <recommend-manager/storage/CartManager.h>
+#include <recommend-manager/storage/RateManager.h>
 #include <recommend-manager/OrderManager.h>
 #include <recommend-manager/EventManager.h>
-#include <recommend-manager/RateManager.h>
 #include <recommend-manager/RateParam.h>
 #include <recommend-manager/ItemIdGenerator.h>
 #include <log-manager/OrderLogger.h>
