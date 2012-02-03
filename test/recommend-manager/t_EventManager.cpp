@@ -86,4 +86,35 @@ BOOST_FIXTURE_TEST_CASE(checkLocalEventManager, EventManagerTestFixture)
     testEvent2(*this);
 }
 
+BOOST_FIXTURE_TEST_CASE(checkRemoteEventManager, EventManagerTestFixture)
+{
+    if (! initRemoteStorage(COLLECTION_NAME, TEST_DIR_STR,
+                            KEYSPACE_NAME, REMOTE_STORAGE_URL))
+    {
+        cerr << "warning: exit test case as failed to connect " << REMOTE_STORAGE_URL << endl;
+        return;
+    }
+
+    testEvent1(*this);
+    testEvent2(*this);
+}
+
+BOOST_FIXTURE_TEST_CASE(checkCassandraNotConnect, EventManagerTestFixture)
+{
+    BOOST_REQUIRE(! initRemoteStorage(COLLECTION_NAME, TEST_DIR_STR,
+                                      KEYSPACE_NAME, REMOTE_STORAGE_URL_NOT_CONNECT));
+
+    resetInstance();
+
+    string eventStr = "wish_list";
+    string userId = "aaa";
+    itemid_t itemId = 1;
+
+    BOOST_CHECK(eventManager_->addEvent(eventStr, userId, itemId) == false);
+    BOOST_CHECK(eventManager_->removeEvent(eventStr, userId, itemId) == false);
+
+    EventManager::EventItemMap eventItemMap;
+    BOOST_CHECK(eventManager_->getEvent(userId, eventItemMap) == false);
+}
+
 BOOST_AUTO_TEST_SUITE_END() 

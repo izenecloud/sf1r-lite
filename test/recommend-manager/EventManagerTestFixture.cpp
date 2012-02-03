@@ -68,7 +68,8 @@ void EventManagerTestFixture::checkEventManager() const
         EventManager::EventItemMap eventMap;
         BOOST_CHECK(eventManager_->getEvent(userId, eventMap));
 
-        BOOST_CHECK_EQUAL(eventMap.size(), goldEventMap.size());
+        // it might cause test result of "less" by removeEvent()
+        BOOST_CHECK_LE(eventMap.size(), goldEventMap.size());
 
         for (EventItemMap::const_iterator eventIt = goldEventMap.begin();
             eventIt != goldEventMap.end(); ++eventIt)

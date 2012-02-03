@@ -191,7 +191,8 @@ bool CassandraAdaptor::insertSuperColumnImpl_(
 
 bool CassandraAdaptor::removeColumnImpl_(
     const std::string& key,
-    const std::string& name
+    const std::string& superColumnName,
+    const std::string& subColumnName
 )
 {
     if (! client_)
@@ -199,7 +200,7 @@ bool CassandraAdaptor::removeColumnImpl_(
 
     try
     {
-        client_->removeColumn(key, columnFamily_, name);
+        client_->removeColumn(key, columnFamily_, superColumnName, subColumnName);
     }
     CATCH_CASSANDRA_EXCEPTION("[Cassandra::removeColumn] error: ")
 
@@ -208,7 +209,8 @@ bool CassandraAdaptor::removeColumnImpl_(
 
 bool CassandraAdaptor::getColumnValueImpl_(
     const std::string& key,
-    const std::string& name,
+    const std::string& superColumnName,
+    const std::string& subColumnName,
     std::string& value
 )
 {
@@ -217,7 +219,8 @@ bool CassandraAdaptor::getColumnValueImpl_(
 
     try
     {
-        client_->getColumnValue(value, key, columnFamily_, name);
+        client_->getColumnValue(value, key, columnFamily_,
+                                superColumnName, subColumnName);
     }
     CATCH_CASSANDRA_EXCEPTION("[Cassandra::getColumnValue] error: ")
 

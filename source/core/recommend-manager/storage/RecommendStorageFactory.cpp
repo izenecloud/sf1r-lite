@@ -10,6 +10,7 @@
 #include "LocalRateManager.h"
 #include "RemoteRateManager.h"
 #include "LocalEventManager.h"
+#include "RemoteEventManager.h"
 
 #include <configuration-manager/CassandraStorageConfig.h>
 #include <log-manager/CassandraConnection.h>
@@ -139,8 +140,7 @@ EventManager* RecommendStorageFactory::createEventManager() const
     const std::string& path = storagePaths_[STORAGE_PATH_ID_EVENT];
 
     if (cassandraConfig_.enable)
-        //return new RemoteEventManager(cassandraConfig_.keyspace, path, cassandraClient_);
-        return NULL;
+        return new RemoteEventManager(cassandraConfig_.keyspace, path, cassandraClient_);
 
     return new LocalEventManager(path);
 }
