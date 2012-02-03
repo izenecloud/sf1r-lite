@@ -11,8 +11,8 @@
  * Evaluation of Algorithms"
  * Given a document, represented as a sequence of token strings,
  * a document signature is nBit vector where all of the sum
- * of random projections of document tokens are later cast to etiher
- * 1 (when positive) and 0 (when negative).
+ * of random projections of document tokens are later cast to either
+ * 1 (when positive) or 0 (when negative).
  * Given the two document signature objects, the number of
  * agreed-on bits represents the cosine similarity between the two
  * vectors and any number of bit matches higher than a threshold
@@ -37,15 +37,15 @@ namespace sf1r
  */
 class CharikarAlgo
 {
-
 private:
-
     RandProjGen rpEngine;//!< random projection engine     */
     int nDimensions; //!< dimensions number
     double threshold;//!< similarity threshold
+
 public:
     static const double DEFAULT_THRESHOLD_VALUE = 0.97;//!< default dimensions number
     static const int DEFAULT_NUM_DIMENSIONS = 384;//!< default threshold value
+
 public:
     /**
      * @brief constructor of CharikarAlgo, initial members
@@ -53,17 +53,25 @@ public:
      * @param nDim dimensions number
      * @param tvalue threshold value
      */
-    inline CharikarAlgo(const char* filenm,
-                        int nDim=CharikarAlgo::DEFAULT_NUM_DIMENSIONS,
-                        double tvalue=CharikarAlgo::DEFAULT_THRESHOLD_VALUE)
-            :rpEngine(filenm, nDim), nDimensions(nDim), threshold(tvalue) { }
+    explicit inline CharikarAlgo(
+            const char* filenm,
+            int nDim = CharikarAlgo::DEFAULT_NUM_DIMENSIONS,
+            double tvalue = CharikarAlgo::DEFAULT_THRESHOLD_VALUE)
+        : rpEngine(filenm, nDim)
+        , nDimensions(nDim)
+        , threshold(tvalue)
+    {}
 
-    inline CharikarAlgo(const char* filenm, double tvalue):
-            rpEngine(filenm, DEFAULT_NUM_DIMENSIONS), nDimensions(DEFAULT_NUM_DIMENSIONS), threshold(tvalue) { }
+    inline CharikarAlgo(const char* filenm, double tvalue)
+        : rpEngine(filenm, DEFAULT_NUM_DIMENSIONS)
+        , nDimensions(DEFAULT_NUM_DIMENSIONS)
+        , threshold(tvalue)
+    {}
     /**
      * @brief disconstructor
      */
     inline virtual ~CharikarAlgo() {}
+
 public:
     /**
      * @brief get dimensions number
@@ -143,11 +151,12 @@ public:
      *
      * @param th target threshold to set
      */
-    void set_threshold(float th= DEFAULT_THRESHOLD_VALUE)
+    void set_threshold(float th = DEFAULT_THRESHOLD_VALUE)
     {
         threshold = th;
     }
 };
+
 }
 
 #endif

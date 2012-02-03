@@ -28,10 +28,9 @@ History    : Kevin Hu                                       1/12/07
 
 
 // these are static to be shared by all RandomProjectEngine objects.
-boost::minstd_rand RandProjGen::rangen(47u); // random number generator
-boost::uniform_real<> RandProjGen::uni_real(-1., 1.); // uniform distribution in [-1,1]
-boost::variate_generator<boost::minstd_rand&, boost::uniform_real<> > RandProjGen::U(rangen, uni_real);
-
+//boost::minstd_rand RandProjGen::rangen; // random number generator
+//boost::uniform_real<> RandProjGen::uni_real(-1., 1.); // uniform distribution in [-1,1]
+//boost::variate_generator<boost::minstd_rand&, boost::uniform_real<> > RandProjGen::U(rangen, uni_real);
 
 RandProj* RandProjGen::map_find_(uint32_t token)
 {
@@ -153,7 +152,7 @@ RandProj RandProjGen::get_random_projection(uint32_t token)
     while (n >= 0)
     {
         uint32_t tkey = key;
-        for (int i = 0; i <32 && n >= 0; ++i)
+        for (int i = 0; i < 32 && n >= 0; ++i)
         {
             proj[n] = fva[tkey & 0x01];
             tkey >>= 1;
@@ -199,9 +198,33 @@ RandProj RandProjGen::get_random_projection(uint32_t token)
 }
 
 
+RandProj RandProjGen::get_random_projection(uint64_t token)
+{
+    RandProj proj(nDimensions_);
+    uint64_t key = token;
+    int n = nDimensions_ - 1;
+    float fva[] = {-0.1f, 0.1f};
+    while (n >= 0)
+    {
+        uint64_t tkey = key;
+        for (int i = 0; i < 64 && n >= 0; ++i)
+        {
+            proj[n] = fva[tkey & 0x01];
+            tkey >>= 1;
+            --n;
+        }
+        if (n >= 0)
+        {
+            //boost::mutex::scoped_lock lock(table_mutex_);
+            key = int_hash::hash64shift(key);
+        }
+    }
+    return proj;
+}
+
 RandProj RandProjGen::get_random_projection(const std::string& token)
 {
-    uint32_t convkey= izenelib::util::HashFunction<std::string>::generateHash32(token);
+    uint64_t convkey= izenelib::util::HashFunction<std::string>::generateHash64(token);
     //TokenGen::mfgenerate_token(token.c_str(),token.size());
     return get_random_projection(convkey);
 }
@@ -213,5 +236,3 @@ void RandProjGen::commit()
 }
 
 }
-
-

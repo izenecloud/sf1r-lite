@@ -15,7 +15,7 @@ using namespace sf1r;
 
 namespace
 {
-const char* TEST_DIR_STR = "recommend_test/t_RateManager";
+const string TEST_DIR_STR = "recommend_test/t_RateManager";
 const string KEYSPACE_NAME = "test_recommend";
 const string COLLECTION_NAME = "example";
 

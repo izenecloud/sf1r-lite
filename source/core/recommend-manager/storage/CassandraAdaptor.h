@@ -82,14 +82,24 @@ public:
     template <typename ColumnNameType>
     bool removeColumn(
         const std::string& key,
-        const ColumnNameType& name
+        const ColumnNameType& columnName,
+        const std::string& superColumnName = ""
     );
 
     template <typename ColumnNameType, typename ColumnValueType>
     bool getColumnValue(
         const std::string& key,
-        const ColumnNameType& name,
-        ColumnValueType& value
+        const ColumnNameType& columnName,
+        ColumnValueType& value,
+        const std::string& superColumnName = ""
+    );
+
+    template <typename ColumnNameType>
+    bool getColumnValue(
+        const std::string& key,
+        const ColumnNameType& columnName,
+        std::string& value,
+        const std::string& superColumnName = ""
     );
 
     template <typename ColumnNameContainer>
@@ -137,12 +147,14 @@ private:
 
     bool removeColumnImpl_(
         const std::string& key,
-        const std::string& name
+        const std::string& superColumnName,
+        const std::string& subColumnName
     );
 
     bool getColumnValueImpl_(
         const std::string& key,
-        const std::string& name,
+        const std::string& superColumnName,
+        const std::string& subColumnName,
         std::string& value
     );
 
@@ -191,25 +203,27 @@ inline bool CassandraAdaptor::insertSuperColumn(
 template <typename ColumnNameType>
 inline bool CassandraAdaptor::removeColumn(
     const std::string& key,
-    const ColumnNameType& name
+    const ColumnNameType& columnName,
+    const std::string& superColumnName
 )
 {
-    const std::string& nameStr = CassandraAdaptorTraits::convertToString(name);
+    const std::string& nameStr = CassandraAdaptorTraits::convertToString(columnName);
 
-    return removeColumnImpl_(key, nameStr);
+    return removeColumnImpl_(key, superColumnName, nameStr);
 }
 
 template <typename ColumnNameType, typename ColumnValueType>
 inline bool CassandraAdaptor::getColumnValue(
     const std::string& key,
-    const ColumnNameType& name,
-    ColumnValueType& value
+    const ColumnNameType& columnName,
+    ColumnValueType& value,
+    const std::string& superColumnName
 )
 {
-    const std::string& nameStr = CassandraAdaptorTraits::convertToString(name);
+    const std::string& nameStr = CassandraAdaptorTraits::convertToString(columnName);
     std::string valueStr;
 
-    if (! getColumnValueImpl_(key, nameStr, valueStr))
+    if (! getColumnValueImpl_(key, superColumnName, nameStr, valueStr))
         return false;
 
     try
@@ -223,6 +237,19 @@ inline bool CassandraAdaptor::getColumnValue(
     }
 
     return true;
+}
+
+template <typename ColumnNameType>
+inline bool CassandraAdaptor::getColumnValue(
+    const std::string& key,
+    const ColumnNameType& columnName,
+    std::string& value,
+    const std::string& superColumnName
+)
+{
+    const std::string& nameStr = CassandraAdaptorTraits::convertToString(columnName);
+
+    return getColumnValueImpl_(key, superColumnName, nameStr, value);
 }
 
 template <typename ColumnNameContainer>

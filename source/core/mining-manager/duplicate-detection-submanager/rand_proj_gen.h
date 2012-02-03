@@ -9,9 +9,9 @@
 
 #include "rand_proj.h"
 
-#include "boost/random/linear_congruential.hpp"
-#include "boost/random/uniform_real.hpp"
-#include "boost/random/variate_generator.hpp"
+//#include "boost/random/linear_congruential.hpp"
+//#include "boost/random/uniform_real.hpp"
+//#include "boost/random/variate_generator.hpp"
 #include <am/graph_index/dyn_array.hpp>
 #include <string>
 
@@ -28,40 +28,28 @@ struct UNIT_STRUCT
 
     uint32_t& TOKEN_()
     {
-        return *(uint32_t*)token;
+        return *(uint32_t*) token;
     }
 
     uint64_t& PROJ_()
     {
-        return *(uint64_t*)proj;
+        return *(uint64_t*) proj;
     }
 
-    uint32_t TOKEN()const
+    uint32_t TOKEN() const
     {
-        return *(uint32_t*)token;
+        return *(uint32_t*) token;
     }
 
-    uint64_t PROJ()const
+    uint64_t PROJ() const
     {
-        return *(uint64_t*)proj;
+        return *(uint64_t*) proj;
     }
 
-    inline UNIT_STRUCT(uint32_t i, uint64_t j)
+    inline UNIT_STRUCT(uint32_t i = 0, uint64_t j = -1)
     {
         TOKEN_() = i;
         PROJ_() = j;
-    }
-
-    inline UNIT_STRUCT(uint32_t i)
-    {
-        TOKEN_() = i;
-        PROJ_() = -1;
-    }
-
-    inline UNIT_STRUCT()
-    {
-        TOKEN_() = 0;
-        PROJ_() = -1;
     }
 
     inline UNIT_STRUCT(const UNIT_STRUCT& other)
@@ -70,58 +58,54 @@ struct UNIT_STRUCT
         PROJ_() = other.PROJ();
     }
 
-    inline UNIT_STRUCT& operator = (const UNIT_STRUCT& other)
+    inline UNIT_STRUCT& operator=(const UNIT_STRUCT& other)
     {
         TOKEN_() = other.TOKEN();
         PROJ_() = other.PROJ();
         return *this;
     }
 
-    inline bool operator == (const UNIT_STRUCT& other)const
+    inline bool operator==(const UNIT_STRUCT& other) const
     {
         return (TOKEN() == other.TOKEN());
     }
 
-    inline bool operator != (const UNIT_STRUCT& other)const
+    inline bool operator!=(const UNIT_STRUCT& other) const
     {
         return (TOKEN() != other.TOKEN());
     }
 
-    inline bool operator < (const UNIT_STRUCT& other)const
+    inline bool operator<(const UNIT_STRUCT& other) const
     {
         return (TOKEN() < other.TOKEN());
     }
 
-    inline bool operator > (const UNIT_STRUCT& other)const
+    inline bool operator>(const UNIT_STRUCT& other) const
     {
         return (TOKEN() > other.TOKEN());
     }
 
-    inline bool operator <= (const UNIT_STRUCT& other)const
+    inline bool operator<=(const UNIT_STRUCT& other) const
     {
         return (TOKEN() <= other.TOKEN());
     }
 
-    inline bool operator >= (const UNIT_STRUCT& other)const
+    inline bool operator>=(const UNIT_STRUCT& other) const
     {
         return (TOKEN() >= other.TOKEN());
     }
 
-    inline uint32_t operator % (uint32_t e)const
+    inline uint32_t operator%(uint32_t e) const
     {
         return (TOKEN() % e);
     }
 
-    friend std::ostream& operator << (std::ostream& os, const UNIT_STRUCT& v)
+    friend std::ostream& operator<<(std::ostream& os, const UNIT_STRUCT& v)
     {
-        os<<"<"<<v.TOKEN()<<","<<v.PROJ()<<">";
+        os << "<" << v.TOKEN() << "," << v.PROJ() << ">";
         return os;
     }
-
-
-
-}
-;
+};
 
 /**
    @class RandProjGen
@@ -130,9 +114,9 @@ struct UNIT_STRUCT
 class RandProjGen
 {
 private:
-    static boost::minstd_rand rangen;//!< it's useless now
-    static boost::uniform_real<> uni_real;//!< it's useless now
-    static boost::variate_generator<boost::minstd_rand&, boost::uniform_real<> > U;//!< it's useless now
+//  static boost::minstd_rand rangen;//!< it's useless now
+//  static boost::uniform_real<> uni_real;//!< it's useless now
+//  static boost::variate_generator<boost::minstd_rand&, boost::uniform_real<> > U;//!< it's useless now
 
     typedef izenelib::am::DynArray<struct UNIT_STRUCT> slot_t;
     typedef izenelib::am::DynArray<slot_t*>  entry_t;
@@ -168,8 +152,8 @@ public:
        @param filenm file name to store map.
        @param n dimension size.
      */
-    explicit inline RandProjGen(const char* filenm, int n)
-            : ENTRY_SIZE_(1000000), nDimensions_(n), nm_(filenm)
+    inline RandProjGen(const char* filenm, int n)
+        : ENTRY_SIZE_(1000000), nDimensions_(n), nm_(filenm)
     {
         map_load_();
     }
@@ -200,6 +184,11 @@ public:
       @brief method to get a random projection.
     */
     RandProj get_random_projection(uint32_t token);
+
+    /**
+      @brief method to get a random projection.
+    */
+    RandProj get_random_projection(uint64_t token);
 
     /**
       @brief method to get a random projection.

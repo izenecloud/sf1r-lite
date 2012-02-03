@@ -4,134 +4,117 @@
 /// @date Created 2011-08-09
 ///
 
-#include <recommend-manager/EventManager.h>
+#include "EventManagerTestFixture.h"
+#include <recommend-manager/storage/EventManager.h>
 
 #include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/path.hpp>
-
 #include <string>
-#include <vector>
-#include <map>
 
 using namespace std;
-using namespace boost;
 using namespace sf1r;
-
-namespace bfs = boost::filesystem;
 
 namespace
 {
-const char* TEST_DIR_STR = "recommend_test/t_EventManager";
-const char* EVENT_DB_STR = "event.db";
+const string TEST_DIR_STR = "recommend_test/t_EventManager";
+const string KEYSPACE_NAME = "test_recommend";
+const string COLLECTION_NAME = "example";
+
+void testEvent1(EventManagerTestFixture& fixture)
+{
+    BOOST_TEST_MESSAGE("1st update event...");
+
+    fixture.resetInstance();
+
+    fixture.addEvent("wish_list", "1", 1);
+    fixture.addEvent("own", "1", 2);
+    fixture.addEvent("like", "1", 3);
+    fixture.addEvent("favorite", "1", 4);
+
+    fixture.removeEvent("not_rec_result", "1", 5);
+    fixture.removeEvent("not_rec_input", "1", 6);
+
+    fixture.addEvent("not_rec_result", "2", 1);
+    fixture.addEvent("not_rec_input", "2", 2);
+
+    fixture.addRandEvent("wish_list", "7", 99);
+    fixture.addRandEvent("own", "6", 100);
+    fixture.addRandEvent("like", "5", 101);
+    fixture.addRandEvent("not_rec_result", "4", 1234);
+
+    fixture.checkEventManager();
 }
 
-typedef map<string, set<itemid_t> > EventItemMap;
-typedef map<string, EventItemMap> UserEventMap;
-
-void updateEvent(
-    bool isAdd,
-    EventManager& eventManager,
-    UserEventMap& userEventMap,
-    const string& eventStr,
-    const string& userId,
-    itemid_t itemId
-)
+void testEvent2(EventManagerTestFixture& fixture)
 {
-    if (isAdd)
-    {
-        BOOST_CHECK(eventManager.addEvent(eventStr, userId, itemId));
-        userEventMap[userId][eventStr].insert(itemId);
-    }
-    else
-    {
-        bool result = userEventMap[userId][eventStr].erase(itemId);
-        BOOST_CHECK_EQUAL(eventManager.removeEvent(eventStr, userId, itemId), result);
-    }
+    BOOST_TEST_MESSAGE("2nd update event...");
+
+    fixture.resetInstance();
+
+    fixture.removeEvent("wish_list", "1", 1);
+    fixture.removeEvent("own", "1", 2);
+
+    fixture.addEvent("like", "1", 3);
+    fixture.addEvent("favorite", "1", 4);
+    fixture.addEvent("not_rec_result", "1", 5);
+    fixture.addEvent("not_rec_input", "1", 6);
+
+    fixture.addEvent("wish_list", "2", 1);
+    fixture.addEvent("own", "2", 2);
+    fixture.addEvent("like", "2", 3);
+    fixture.addEvent("favorite", "2", 4);
+
+    fixture.removeEvent("not_rec_result", "2", 1);
+    fixture.removeEvent("not_rec_input", "2", 2);
+
+    fixture.removeEvent("wish_list", "7", 1);
+    fixture.removeEvent("own", "6", 10);
+    fixture.removeEvent("like", "5", 100);
+    fixture.removeEvent("not_rec_input", "4", 1000);
+
+    fixture.checkEventManager();
 }
 
-void checkEventManager(const UserEventMap& userEventMap, EventManager& eventManager)
-{
-    for (UserEventMap::const_iterator it = userEventMap.begin();
-        it != userEventMap.end(); ++it)
-    {
-        EventManager::EventItemMap eventMap;
-        BOOST_CHECK(eventManager.getEvent(it->first, eventMap));
-
-        // it might cause "less" relation by "erase" in updateEvent
-        BOOST_CHECK_LE(eventMap.size(), it->second.size());
-
-        for (EventItemMap::const_iterator eventIt = it->second.begin();
-            eventIt != it->second.end(); ++eventIt)
-        {
-            BOOST_CHECK_EQUAL_COLLECTIONS(eventMap[eventIt->first].begin(), eventMap[eventIt->first].end(),
-                                          eventIt->second.begin(), eventIt->second.end());
-        }
-    }
 }
 
 BOOST_AUTO_TEST_SUITE(EventManagerTest)
 
-BOOST_AUTO_TEST_CASE(checkEvent)
+BOOST_FIXTURE_TEST_CASE(checkLocalEventManager, EventManagerTestFixture)
 {
-    bfs::remove_all(TEST_DIR_STR);
-    bfs::create_directories(TEST_DIR_STR);
+    BOOST_REQUIRE(initLocalStorage(COLLECTION_NAME, TEST_DIR_STR));
 
-    bfs::path eventPath(bfs::path(TEST_DIR_STR) / EVENT_DB_STR);
-    bfs::create_directories(TEST_DIR_STR);
+    testEvent1(*this);
+    testEvent2(*this);
+}
 
-    UserEventMap userEventMap;
-
+BOOST_FIXTURE_TEST_CASE(checkRemoteEventManager, EventManagerTestFixture)
+{
+    if (! initRemoteStorage(COLLECTION_NAME, TEST_DIR_STR,
+                            KEYSPACE_NAME, REMOTE_STORAGE_URL))
     {
-        BOOST_TEST_MESSAGE("check empty event...");
-        EventManager eventManager(eventPath.string());
-
-        BOOST_CHECK(userEventMap["1"].empty());
-        BOOST_CHECK(userEventMap["10"].empty());
-        BOOST_CHECK(userEventMap["100"].empty());
-
-        checkEventManager(userEventMap, eventManager);
+        cerr << "warning: exit test case as failed to connect " << REMOTE_STORAGE_URL << endl;
+        return;
     }
 
-    {
-        BOOST_TEST_MESSAGE("update event...");
-        EventManager eventManager(eventPath.string());
+    testEvent1(*this);
+    testEvent2(*this);
+}
 
-        updateEvent(true, eventManager, userEventMap, "wish_list", "1", 1);
-        updateEvent(true, eventManager, userEventMap, "own", "1", 2);
-        updateEvent(true, eventManager, userEventMap, "like", "1", 3);
-        updateEvent(true, eventManager, userEventMap, "favorite", "1", 4);
-        updateEvent(false, eventManager, userEventMap, "not_rec_result", "1", 5);
-        updateEvent(false, eventManager, userEventMap, "not_rec_input", "1", 6);
+BOOST_FIXTURE_TEST_CASE(checkCassandraNotConnect, EventManagerTestFixture)
+{
+    BOOST_REQUIRE(! initRemoteStorage(COLLECTION_NAME, TEST_DIR_STR,
+                                      KEYSPACE_NAME, REMOTE_STORAGE_URL_NOT_CONNECT));
 
-        updateEvent(true, eventManager, userEventMap, "not_rec_result", "2", 1);
-        updateEvent(true, eventManager, userEventMap, "not_rec_input", "2", 2);
+    resetInstance();
 
-        checkEventManager(userEventMap, eventManager);
-    }
+    string eventStr = "wish_list";
+    string userId = "aaa";
+    itemid_t itemId = 1;
 
-    {
-        BOOST_TEST_MESSAGE("continue update event...");
-        EventManager eventManager(eventPath.string());
+    BOOST_CHECK(eventManager_->addEvent(eventStr, userId, itemId) == false);
+    BOOST_CHECK(eventManager_->removeEvent(eventStr, userId, itemId) == false);
 
-        checkEventManager(userEventMap, eventManager);
-
-        updateEvent(false, eventManager, userEventMap, "wish_list", "1", 1);
-        updateEvent(false, eventManager, userEventMap, "own", "1", 2);
-        updateEvent(true, eventManager, userEventMap, "like", "1", 3);
-        updateEvent(true, eventManager, userEventMap, "favorite", "1", 4);
-        updateEvent(true, eventManager, userEventMap, "not_rec_result", "1", 5);
-        updateEvent(true, eventManager, userEventMap, "not_rec_input", "1", 6);
-
-        updateEvent(false, eventManager, userEventMap, "wish_list", "2", 1);
-        updateEvent(false, eventManager, userEventMap, "own", "2", 2);
-        updateEvent(true, eventManager, userEventMap, "like", "2", 3);
-        updateEvent(true, eventManager, userEventMap, "favorite", "2", 4);
-        updateEvent(false, eventManager, userEventMap, "not_rec_result", "2", 1);
-        updateEvent(false, eventManager, userEventMap, "not_rec_input", "2", 2);
-
-        checkEventManager(userEventMap, eventManager);
-    }
+    EventManager::EventItemMap eventItemMap;
+    BOOST_CHECK(eventManager_->getEvent(userId, eventItemMap) == false);
 }
 
 BOOST_AUTO_TEST_SUITE_END() 

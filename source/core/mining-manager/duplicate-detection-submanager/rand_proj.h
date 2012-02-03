@@ -26,15 +26,14 @@ private:
     izenelib::am::DynArray<float> proj_;//!< random projection is composed of -1. and 1.
 
 public:
-
     /**
        @brief a constructor
        @param nDimension dimension of projection
      */
     explicit inline RandProj(int nDimensions)
-            : proj_(nDimensions)
+        : proj_(nDimensions)
     {
-        for (uint32_t i=0; i<(uint32_t)nDimensions;++i)
+        for (uint32_t i = 0; i < (uint32_t) nDimensions; ++i)
             proj_.push_back(0.);
     }
 
@@ -49,7 +48,7 @@ public:
     /**
        @brief copy function
      */
-    RandProj& operator = (const RandProj& other)
+    RandProj& operator=(const RandProj& other)
     {
         proj_ = other.proj_;
         return *this;
@@ -60,6 +59,7 @@ public:
        @brief a destruction
      */
     inline ~RandProj() {}
+
 public:
     /**
      * @brief read/write access to projection in d
@@ -78,14 +78,13 @@ public:
     }
     void operator+=(const RandProj& rp);
 
-    inline bool operator  == (const RandProj& rp)const
+    inline bool operator==(const RandProj& rp) const
     {
-        for (uint32_t i=0; i<proj_.length(); ++i)
-            if (proj_.at(i)!= rp.at(i))
+        for (uint32_t i = 0; i < proj_.length(); ++i)
+            if (proj_.at(i) != rp.at(i))
                 return false;
         return true;
     }
-
 
     inline void save(FILE* f)
     {
@@ -115,9 +114,9 @@ public:
      */
     void generate_bitarray(izenelib::util::CBitArray& bitArray);
 
-    friend std::ostream& operator << (std::ostream& os, const RandProj& rj)
+    friend std::ostream& operator<<(std::ostream& os, const RandProj& rj)
     {
-        os<<rj.proj_;
+        os << rj.proj_;
         return os;
     }
 };
