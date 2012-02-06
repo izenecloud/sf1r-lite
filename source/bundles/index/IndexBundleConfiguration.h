@@ -77,6 +77,13 @@ public:
 
     std::vector<std::string> indexShardKeys_;
 
+    /// @brief whether log new created doc to LogServer
+    bool logCreatedDoc_;
+
+    /// @brief local host information
+    std::string localHostUsername_;
+    std::string localHostIp_;
+
     /// @brief whether add unigram properties
     bool bIndexUnigramProperty_;
 

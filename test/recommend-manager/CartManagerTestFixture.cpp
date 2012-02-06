@@ -1,20 +1,17 @@
 #include "CartManagerTestFixture.h"
 #include "test_util.h"
-#include <recommend-manager/CartManager.h>
+#include <recommend-manager/storage/CartManager.h>
 
 #include <boost/test/unit_test.hpp>
 
 namespace sf1r
 {
 
-CartManagerTestFixture::CartManagerTestFixture()
-    : cartManager_(NULL)
+void CartManagerTestFixture::resetInstance()
 {
-}
-
-void CartManagerTestFixture::setCartManager(CartManager* cartManager)
-{
-    cartManager_ = cartManager;
+    // flush first
+    cartManager_.reset();
+    cartManager_.reset(factory_->createCartManager());
 }
 
 void CartManagerTestFixture::updateCart(const std::string& userId, const std::string& items)
@@ -24,7 +21,9 @@ void CartManagerTestFixture::updateCart(const std::string& userId, const std::st
 
     BOOST_CHECK(cartManager_->updateCart(userId, cartItems));
 
-    cartMap_[userId].swap(cartItems);
+    std::set<itemid_t>& itemSet = cartMap_[userId];
+    itemSet.clear();
+    itemSet.insert(cartItems.begin(), cartItems.end());
 }
 
 void CartManagerTestFixture::updateRandItem(const std::string& userId, int itemCount)
@@ -39,7 +38,10 @@ void CartManagerTestFixture::checkCartManager() const
     {
         vector<itemid_t> cartItems;
         BOOST_CHECK(cartManager_->getCart(it->first, cartItems));
-        BOOST_CHECK_EQUAL_COLLECTIONS(cartItems.begin(), cartItems.end(),
+
+        std::set<itemid_t> itemSet(cartItems.begin(), cartItems.end());
+
+        BOOST_CHECK_EQUAL_COLLECTIONS(itemSet.begin(), itemSet.end(),
                                       it->second.begin(), it->second.end());
     }
 }

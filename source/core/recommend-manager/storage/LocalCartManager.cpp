@@ -1,22 +1,17 @@
-#include "CartManager.h"
+#include "LocalCartManager.h"
 
 #include <glog/logging.h>
 
 namespace sf1r
 {
 
-CartManager::CartManager(const std::string& path)
+LocalCartManager::LocalCartManager(const std::string& path)
     : container_(path)
 {
     container_.open();
 }
 
-CartManager::~CartManager()
-{
-    flush();
-}
-
-void CartManager::flush()
+void LocalCartManager::flush()
 {
     try
     {
@@ -28,32 +23,37 @@ void CartManager::flush()
     }
 }
 
-bool CartManager::updateCart(
+bool LocalCartManager::updateCart(
     const std::string& userId,
     const std::vector<itemid_t>& itemVec
 )
 {
+    bool result = false;
+
     try
     {
-        if (container_.update(userId, itemVec) == false)
-        {
-            return false;
-        }
+        result = container_.update(userId, itemVec);
     }
     catch(izenelib::util::IZENELIBException& e)
     {
         LOG(ERROR) << "exception in SDB::update(): " << e.what();
     }
 
-    return true;
+    if (! result)
+    {
+        LOG(ERROR) << "error in updateCart(), user id: " << userId
+                   << ", cart item num: " << itemVec.size();
+    }
+    return result;
 }
 
-bool CartManager::getCart(
+bool LocalCartManager::getCart(
     const std::string& userId,
     std::vector<itemid_t>& itemVec
 )
 {
     bool result = false;
+
     try
     {
         container_.getValue(userId, itemVec);

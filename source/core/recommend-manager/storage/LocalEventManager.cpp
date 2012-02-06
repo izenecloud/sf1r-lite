@@ -1,22 +1,17 @@
-#include "EventManager.h"
+#include "LocalEventManager.h"
 
 #include <glog/logging.h>
 
 namespace sf1r
 {
 
-EventManager::EventManager(const std::string& path)
+LocalEventManager::LocalEventManager(const std::string& path)
     : container_(path)
 {
     container_.open();
 }
 
-EventManager::~EventManager()
-{
-    flush();
-}
-
-void EventManager::flush()
+void LocalEventManager::flush()
 {
     try
     {
@@ -28,16 +23,17 @@ void EventManager::flush()
     }
 }
 
-bool EventManager::addEvent(
+bool LocalEventManager::addEvent(
     const std::string& eventStr,
     const std::string& userId,
     itemid_t itemId
 )
 {
     EventItemMap eventItemMap;
-    container_.getValue(userId, eventItemMap);
+    if (! getEvent(userId, eventItemMap))
+        return false;
 
-    if (eventItemMap[eventStr].insert(itemId).second == false)
+    if (! eventItemMap[eventStr].insert(itemId).second)
     {
         LOG(WARNING) << "event already exists, eventStr: " << eventStr
                      << ", userId: " << userId
@@ -45,27 +41,18 @@ bool EventManager::addEvent(
         return true;
     }
 
-    bool result = false;
-    try
-    {
-        result = container_.update(userId, eventItemMap);
-    }
-    catch(izenelib::util::IZENELIBException& e)
-    {
-        LOG(ERROR) << "exception in SDB::update(): " << e.what();
-    }
-
-    return result;
+    return saveEventItemMap_(userId, eventItemMap);
 }
 
-bool EventManager::removeEvent(
+bool LocalEventManager::removeEvent(
     const std::string& eventStr,
     const std::string& userId,
     itemid_t itemId
 )
 {
     EventItemMap eventItemMap;
-    container_.getValue(userId, eventItemMap);
+    if (! getEvent(userId, eventItemMap))
+        return false;
 
     if (eventItemMap[eventStr].erase(itemId) == 0)
     {
@@ -75,25 +62,16 @@ bool EventManager::removeEvent(
         return false;
     }
 
-    bool result = false;
-    try
-    {
-        result = container_.update(userId, eventItemMap);
-    }
-    catch(izenelib::util::IZENELIBException& e)
-    {
-        LOG(ERROR) << "exception in SDB::update(): " << e.what();
-    }
-
-    return result;
+    return saveEventItemMap_(userId, eventItemMap);
 }
 
-bool EventManager::getEvent(
+bool LocalEventManager::getEvent(
     const std::string& userId,
     EventItemMap& eventItemMap
 )
 {
     bool result = false;
+
     try
     {
         eventItemMap.clear();
@@ -103,6 +81,25 @@ bool EventManager::getEvent(
     catch(izenelib::util::IZENELIBException& e)
     {
         LOG(ERROR) << "exception in SDB::getValue(): " << e.what();
+    }
+
+    return result;
+}
+
+bool LocalEventManager::saveEventItemMap_(
+    const std::string& userId,
+    const EventItemMap& eventItemMap
+)
+{
+    bool result = false;
+
+    try
+    {
+        result = container_.update(userId, eventItemMap);
+    }
+    catch(izenelib::util::IZENELIBException& e)
+    {
+        LOG(ERROR) << "exception in SDB::update(): " << e.what();
     }
 
     return result;

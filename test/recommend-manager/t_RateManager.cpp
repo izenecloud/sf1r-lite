@@ -4,136 +4,116 @@
 /// @date Created 2011-10-17
 ///
 
-#include <recommend-manager/RateManager.h>
+#include "RateManagerTestFixture.h"
+#include <recommend-manager/storage/RateManager.h>
 
 #include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/path.hpp>
-
 #include <string>
-#include <vector>
-#include <map>
 
 using namespace std;
-using namespace boost;
 using namespace sf1r;
-
-namespace bfs = boost::filesystem;
 
 namespace
 {
-const char* TEST_DIR_STR = "recommend_test/t_RateManager";
-const char* RATE_DB_STR = "rate.db";
+const string TEST_DIR_STR = "recommend_test/t_RateManager";
+const string KEYSPACE_NAME = "test_recommend";
+const string COLLECTION_NAME = "example";
+
+void testRate1(RateManagerTestFixture& fixture)
+{
+    BOOST_TEST_MESSAGE("1st update rate...");
+
+    fixture.resetInstance();
+
+    fixture.addRate("1", 1, 1);
+    fixture.addRate("1", 2, 2);
+    fixture.addRate("1", 3, 3);
+    fixture.removeRate("1", 3);
+    fixture.removeRate("1", 5);
+    fixture.addRate("1", 4, 4);
+    fixture.addRate("1", 5, 5);
+
+    fixture.addRate("2", 5, 3);
+    fixture.addRate("2", 1, 5);
+
+    fixture.addRandRate("7", 99);
+    fixture.addRandRate("6", 100);
+    fixture.addRandRate("5", 101);
+    fixture.addRandRate("4", 1234);
+
+    fixture.checkRateManager();
 }
 
-typedef map<string, ItemRateMap> UserRateMap;
-
-void addRate(
-    RateManager& rateManager,
-    UserRateMap& userRateMap,
-    const string& userId,
-    itemid_t itemId,
-    rate_t rate
-)
+void testRate2(RateManagerTestFixture& fixture)
 {
-    BOOST_CHECK(rateManager.addRate(userId, itemId, rate));
-    userRateMap[userId][itemId] = rate;
+    BOOST_TEST_MESSAGE("2nd update rate...");
+
+    fixture.resetInstance();
+
+    fixture.removeRate("1", 2);
+    fixture.removeRate("1", 1);
+    fixture.addRate("1", 10, 5);
+    fixture.addRate("1", 8, 4);
+    fixture.addRate("1", 20, 3);
+    fixture.addRate("1", 1000, 2);
+
+    fixture.addRate("2", 1000, 3);
+    fixture.addRate("2", 100, 1);
+    fixture.removeRate("2", 1);
+    fixture.removeRate("2", 10);
+    fixture.removeRate("2", 1000);
+    fixture.addRate("2", 100, 4);
+    fixture.addRate("2", 1000, 4);
+
+    fixture.removeRate("7", 1);
+    fixture.removeRate("6", 10);
+    fixture.removeRate("5", 100);
+    fixture.removeRate("4", 1000);
+
+    fixture.checkRateManager();
 }
 
-void removeRate(
-    RateManager& rateManager,
-    UserRateMap& userRateMap,
-    const string& userId,
-    itemid_t itemId
-)
-{
-    bool result = userRateMap[userId].erase(itemId);
-    BOOST_CHECK_EQUAL(rateManager.removeRate(userId, itemId), result);
-}
-
-void checkRateManager(const UserRateMap& userRateMap, RateManager& rateManager)
-{
-    for (UserRateMap::const_iterator it = userRateMap.begin();
-        it != userRateMap.end(); ++it)
-    {
-        ItemRateMap itemRateMap;
-        BOOST_CHECK(rateManager.getItemRateMap(it->first, itemRateMap));
-
-        const ItemRateMap& goldItemRateMap = it->second;
-        BOOST_CHECK_EQUAL(itemRateMap.size(), goldItemRateMap.size());
-
-        for (ItemRateMap::const_iterator rateIt = goldItemRateMap.begin();
-            rateIt != goldItemRateMap.end(); ++rateIt)
-        {
-            BOOST_CHECK_EQUAL(itemRateMap[rateIt->first], rateIt->second);
-        }
-    }
 }
 
 BOOST_AUTO_TEST_SUITE(RateManagerTest)
 
-BOOST_AUTO_TEST_CASE(checkRate)
+BOOST_FIXTURE_TEST_CASE(checkLocalRateManager, RateManagerTestFixture)
 {
-    bfs::remove_all(TEST_DIR_STR);
-    bfs::create_directories(TEST_DIR_STR);
+    BOOST_REQUIRE(initLocalStorage(COLLECTION_NAME, TEST_DIR_STR));
 
-    bfs::path ratePath(bfs::path(TEST_DIR_STR) / RATE_DB_STR);
-    bfs::create_directories(TEST_DIR_STR);
+    testRate1(*this);
+    testRate2(*this);
+}
 
-    UserRateMap userRateMap;
-
+BOOST_FIXTURE_TEST_CASE(checkRemoteRateManager, RateManagerTestFixture)
+{
+    if (! initRemoteStorage(COLLECTION_NAME, TEST_DIR_STR,
+                            KEYSPACE_NAME, REMOTE_STORAGE_URL))
     {
-        BOOST_TEST_MESSAGE("check empty rate...");
-        RateManager rateManager(ratePath.string());
-
-        BOOST_CHECK(userRateMap["1"].empty());
-        BOOST_CHECK(userRateMap["10"].empty());
-        BOOST_CHECK(userRateMap["100"].empty());
-
-        checkRateManager(userRateMap, rateManager);
+        cerr << "warning: exit test case as failed to connect " << REMOTE_STORAGE_URL << endl;
+        return;
     }
 
-    {
-        BOOST_TEST_MESSAGE("update rate...");
-        RateManager rateManager(ratePath.string());
+    testRate1(*this);
+    testRate2(*this);
+}
 
-        addRate(rateManager, userRateMap, "1", 1, 1);
-        addRate(rateManager, userRateMap, "1", 2, 2);
-        addRate(rateManager, userRateMap, "1", 3, 3);
-        removeRate(rateManager, userRateMap, "1", 3);
-        removeRate(rateManager, userRateMap, "1", 5);
-        addRate(rateManager, userRateMap, "1", 4, 4);
-        addRate(rateManager, userRateMap, "1", 5, 5);
+BOOST_FIXTURE_TEST_CASE(checkCassandraNotConnect, RateManagerTestFixture)
+{
+    BOOST_REQUIRE(! initRemoteStorage(COLLECTION_NAME, TEST_DIR_STR,
+                                      KEYSPACE_NAME, REMOTE_STORAGE_URL_NOT_CONNECT));
 
-        addRate(rateManager, userRateMap, "2", 5, 3);
-        addRate(rateManager, userRateMap, "2", 1, 5);
+    resetInstance();
 
-        checkRateManager(userRateMap, rateManager);
-    }
+    string userId = "aaa";
+    itemid_t itemId = 1;
+    rate_t rate = 5;
 
-    {
-        BOOST_TEST_MESSAGE("continue update rate...");
-        RateManager rateManager(ratePath.string());
+    BOOST_CHECK(rateManager_->addRate(userId, itemId, rate) == false);
+    BOOST_CHECK(rateManager_->removeRate(userId, itemId) == false);
 
-        checkRateManager(userRateMap, rateManager);
-
-        removeRate(rateManager, userRateMap, "1", 2);
-        removeRate(rateManager, userRateMap, "1", 1);
-        addRate(rateManager, userRateMap, "1", 10, 5);
-        addRate(rateManager, userRateMap, "1", 8, 4);
-        addRate(rateManager, userRateMap, "1", 20, 3);
-        addRate(rateManager, userRateMap, "1", 1000, 2);
-
-        addRate(rateManager, userRateMap, "2", 1000, 3);
-        addRate(rateManager, userRateMap, "2", 100, 1);
-        removeRate(rateManager, userRateMap, "2", 1);
-        removeRate(rateManager, userRateMap, "2", 10);
-        removeRate(rateManager, userRateMap, "2", 1000);
-        addRate(rateManager, userRateMap, "2", 100, 4);
-        addRate(rateManager, userRateMap, "2", 1000, 4);
-
-        checkRateManager(userRateMap, rateManager);
-    }
+    ItemRateMap itemRateMap;
+    BOOST_CHECK(rateManager_->getItemRateMap(userId, itemRateMap) == false);
 }
 
 BOOST_AUTO_TEST_SUITE_END() 

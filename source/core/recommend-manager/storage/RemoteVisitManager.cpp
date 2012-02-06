@@ -8,40 +8,6 @@ const char* SUPER_COLUMN_NAME_SESSION = "Session";
 const char* SUPER_COLUMN_NAME_ITEMS = "Items";
 const char* SUB_COLUMN_NAME_SESSION_ID = "session_id";
 
-CfDef createItemCFDef(
-    const std::string& keyspace,
-    const std::string& columnFamily
-)
-{
-    CfDef def;
-
-    def.__set_keyspace(keyspace);
-    def.__set_name(columnFamily);
-
-    def.__set_key_validation_class("UTF8Type");
-    def.__set_comparator_type("IntegerType");
-
-    return def;
-}
-
-CfDef createSessionCFDef(
-    const std::string& keyspace,
-    const std::string& columnFamily
-)
-{
-    CfDef def;
-
-    def.__set_keyspace(keyspace);
-    def.__set_name(columnFamily);
-
-    def.__set_key_validation_class("UTF8Type");
-    def.__set_column_type("Super");
-    def.__set_comparator_type("UTF8Type");
-    def.__set_subcomparator_type("IntegerType");
-
-    return def;
-}
-
 bool convertSessionId(
     const std::vector<Column> subColumns,
     std::string& sessionId
@@ -114,9 +80,12 @@ RemoteVisitManager::RemoteVisitManager(
     const std::string& sessionColumnFamily,
     libcassandra::Cassandra* client
 )
-    : visitCassandra_(createItemCFDef(keyspace, visitColumnFamily), client)
-    , recommendCassandra_(createItemCFDef(keyspace, recommendColumnFamily), client)
-    , sessionCassandra_(createSessionCFDef(keyspace, sessionColumnFamily), client)
+    : visitCassandra_(CassandraAdaptor::createColumnFamilyDef(keyspace, visitColumnFamily,
+                      "UTF8Type", "IntegerType"), client)
+    , recommendCassandra_(CassandraAdaptor::createColumnFamilyDef(keyspace, recommendColumnFamily,
+                          "UTF8Type", "IntegerType"), client)
+    , sessionCassandra_(CassandraAdaptor::createColumnFamilyDef(keyspace, sessionColumnFamily,
+                        "UTF8Type", "UTF8Type", "IntegerType"), client)
 {
 }
 

@@ -9,6 +9,8 @@
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
 #include <log-manager/ProductCount.h>
+#include <log-manager/LogServerRequest.h>
+#include <log-manager/LogServerConnection.h>
 #include <common/JobScheduler.h>
 #include <common/Utilities.h>
 
@@ -131,6 +133,18 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
     scd_writer_->Flush();
 
     indexProgress_.reset();
+
+    // fetch scd from log server if necessary
+    if (bundleConfig_->logCreatedDoc_)
+    {
+        LOG(INFO) << "fetching SCD from LogServer...";
+        try
+        {
+            fetchSCDFromLogServer(scdPath);
+        }
+        catch (const std::exception& e)
+        {}
+    }
 
     ScdParser parser(bundleConfig_->encoding_);
 
@@ -417,7 +431,84 @@ bool IndexWorker::createDocument(const Value& documentValue)
         doMining_();
     }
     searchManager_->reset_cache(rType, id, rTypeFieldValue);
+
+    // to log server
+    if (bundleConfig_->logCreatedDoc_)
+    {
+        try
+        {
+            logCreatedDocToLogServer(scddoc);
+        }
+        catch (const std::exception& e)
+        {}
+    }
+
     return ret;
+}
+
+void IndexWorker::logCreatedDocToLogServer(const SCDDoc& scdDoc)
+{
+    // prepare request data
+    std::string docidStr;
+    std::string content;
+
+    std::string propertyName;
+    std::string propertyValue;
+    for (SCDDoc::const_iterator it = scdDoc.begin(); it != scdDoc.end(); it++)
+    {
+        it->first.convertString(propertyName, bundleConfig_->encoding_);
+        it->second.convertString(propertyValue, bundleConfig_->encoding_);
+
+        izenelib::util::UString propertyNameL = it->first;
+        propertyNameL.toLowerString();
+        if (propertyNameL == izenelib::util::UString("docid", bundleConfig_->encoding_))
+        {
+            docidStr = propertyValue;
+        }
+        else
+        {
+            content += "<" + propertyName + ">" + propertyValue + "\n";
+        }
+    }
+
+    CreateScdDocRequest scdDocReq;
+    try
+    {
+        scdDocReq.param_.uuid_ = Utilities::uuidToUint128(docidStr);
+    }
+    catch (const std::exception)
+    {
+        return;
+    }
+    scdDocReq.param_.content_ = "<DOCID>" + docidStr + "\n" + content;
+    //std::cout << scdDocReq.param_.content_ << std::endl;
+
+    // request to log server
+    LogServerConnection::instance().asynRequest(scdDocReq);
+    LogServerConnection::instance().flushRequests();
+}
+
+bool IndexWorker::fetchSCDFromLogServer(const std::string& scdPath)
+{
+    GetScdFileRequest scdFileReq;
+    scdFileReq.param_.username_ = bundleConfig_->localHostUsername_;
+    scdFileReq.param_.host_ = bundleConfig_->localHostIp_;
+    scdFileReq.param_.path_ = scdPath;
+
+    GetScdFileResponseData response;
+    LogServerConnection::instance().syncRequest(scdFileReq, response); // timeout?
+
+    if (response.success_)
+    {
+        std::cout << "Successfully fetched SCD." << std::endl;
+        return true;
+    }
+    else
+    {
+        std::cout << "Failed to fetch SCD." << std::endl;
+        std::cout << response.error_ << std::endl;
+        return false;
+    }
 }
 
 bool IndexWorker::updateDocument(const Value& documentValue)

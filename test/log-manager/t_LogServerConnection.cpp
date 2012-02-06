@@ -11,6 +11,7 @@ using namespace sf1r;
 void t_RpcLogServer();
 void t_RpcLogServerCreateTestData();
 void t_RpcLogServerUpdateTestData();
+void t_ScdStorage();
 
 int main(int argc, char* argv[])
 {
@@ -29,6 +30,10 @@ int main(int argc, char* argv[])
         else if (argc > 1 && strcmp(argv[1], "-ut") == 0)
         {
             t_RpcLogServerUpdateTestData();
+        }
+        else if (argc > 1 && strcmp(argv[1], "-s") == 0)
+        {
+            t_ScdStorage();
         }
         else
         {
@@ -185,3 +190,48 @@ void t_RpcLogServerUpdateTestData()
 
     // {"collection":"b5ma","resource":{"USERID":"","items":[{"ITEMID":"6d5f82db-0ef2-4d5f-8b54-cdc29e97e5b1","price":1088,"quantity":1},{"ITEMID":"4857bcda-22e4-4a87-964d-17ffcf024d16","price":65,"quantity":1}]},"header":{"controller":"recommend","action":"purchase_item"}}
 }
+
+void t_ScdStorage()
+{
+    LogServerConnection& conn = LogServerConnection::instance();
+    conn.init("localhost", 18811);
+
+    // create scd doc
+    CreateScdDocRequest scdDocReq;
+    scdDocReq.param_.uuid_ = Utilities::uuidToUint128("143c7d31-702e-4fac-b57b-84d35205ae60");
+    scdDocReq.param_.content_ = //"This is doc1!!";
+            "<DOCID>143c7d31-702e-4fac-b57b-84d35205ae60\n"
+            "<ProdName>儿童创意美工.巧手贴画\n";
+    conn.asynRequest(scdDocReq);
+    scdDocReq.param_.uuid_ = Utilities::uuidToUint128("cda5545a-b3f4-4e81-9b85-2d25b0416997");
+    scdDocReq.param_.content_ = //"This is doc2!!";
+            "<DOCID>cda5545a-b3f4-4e81-9b85-2d25b0416997\n"
+            "<ProdName>全脑智能数学A5――幼儿智能全面开发应用操作课本\n";
+    conn.asynRequest(scdDocReq);
+    scdDocReq.param_.uuid_ = Utilities::uuidToUint128("eb1ba5f4-a558-4a66-806d-74cb6a321932");
+    scdDocReq.param_.content_ = //"This is doc3!!";
+            "<DOCID>eb1ba5f4-a558-4a66-806d-74cb6a321932\n"
+            "<ProdName>百诺 旅游天使 A2681TB1 镁合金 三脚架\n";
+    conn.asynRequest(scdDocReq);
+    conn.flushRequests();
+
+    // get scd file
+    GetScdFileRequest scdFileReq;
+    scdFileReq.param_.username_ = "zhongxia";
+    scdFileReq.param_.host_ = "localhost";
+    scdFileReq.param_.path_ = "/home/zhongxia/scd/";
+
+    GetScdFileResponseData ret;
+    conn.syncRequest(scdFileReq, ret);
+    if (ret.success_)
+    {
+        std::cout << "Successfully Fetched SCD." << std::endl;
+    }
+    else
+    {
+        std::cout << "Failed to fetch SCD." << std::endl;
+        std::cout << ret.error_ << std::endl;
+    }
+}
+
+

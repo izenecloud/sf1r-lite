@@ -5,22 +5,19 @@
 #include <recommend-manager/storage/UserManager.h>
 #include <recommend-manager/storage/VisitManager.h>
 #include <recommend-manager/storage/PurchaseManager.h>
-#include <recommend-manager/CartManager.h>
+#include <recommend-manager/storage/CartManager.h>
+#include <recommend-manager/storage/RateManager.h>
+#include <recommend-manager/storage/EventManager.h>
 #include <recommend-manager/OrderManager.h>
-#include <recommend-manager/EventManager.h>
-#include <recommend-manager/RateManager.h>
 #include <recommend-manager/RecommenderFactory.h>
 #include <recommend-manager/ItemIdGenerator.h>
 #include <bundles/index/IndexSearchService.h>
 
 #include <aggregator-manager/SearchWorker.h>
-
 #include <ir/id_manager/IDManager.h>
-
 #include <common/SFLogger.h>
 
 #include <memory> // auto_ptr
-
 #include <glog/logging.h>
 
 namespace bfs = boost::filesystem;
@@ -119,7 +116,6 @@ bool RecommendBundleActivator::init_(IndexSearchService* indexSearchService)
     createStorage_();
     createItem_(indexSearchService);
     createMining_();
-    createEvent_();
     createOrder_();
     createRecommender_();
     createService_();
@@ -211,6 +207,9 @@ void RecommendBundleActivator::createStorage_()
     userManager_.reset(storageFactory.createUserManager());
     purchaseManager_.reset(storageFactory.createPurchaseManager());
     visitManager_.reset(storageFactory.createVisitManager());
+    cartManager_.reset(storageFactory.createCartManager());
+    rateManager_.reset(storageFactory.createRateManager());
+    eventManager_.reset(storageFactory.createEventManager());
 }
 
 void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchService)
@@ -236,16 +235,6 @@ void RecommendBundleActivator::createMining_()
 
     coVisitManager_.reset(new CoVisitManager((miningDir / "covisit").string(),
                                              config_->visitCacheSize_));
-}
-
-void RecommendBundleActivator::createEvent_()
-{
-    bfs::path eventDir = dataDir_ / "event";
-    bfs::create_directory(eventDir);
-
-    cartManager_.reset(new CartManager((eventDir / "cart.db").string()));
-    eventManager_.reset(new EventManager((eventDir / "event.db").string()));
-    rateManager_.reset(new RateManager((eventDir / "rate.db").string()));
 }
 
 void RecommendBundleActivator::createOrder_()

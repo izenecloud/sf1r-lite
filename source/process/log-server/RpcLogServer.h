@@ -50,6 +50,13 @@ public:
             const LogServerStorage::raw_docid_list_t& docidList,
             const std::string& aux);
 
+    /// Add new scd doc
+    void createScdDoc(const CreateScdDocRequestData& scdDoc);
+
+    /// Dispatch scd file to required server
+    void dispatchScdFile(const GetScdFileRequestData& scdFileRequestData, GetScdFileResponseData& response);
+    void writeScdDoc(std::ofstream& of, const std::string& doc, const uint128_t& uuid);
+
 private:
     std::string host_;
     uint16_t port_;

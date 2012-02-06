@@ -57,7 +57,6 @@ private:
     void createStorage_();
     void createItem_(IndexSearchService* indexSearchService);
     void createMining_();
-    void createEvent_();
     void createOrder_();
     void createRecommender_();
     void createService_();

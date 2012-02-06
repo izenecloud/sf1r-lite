@@ -68,9 +68,17 @@ using driver::Keys;
  *   following ranking models.
  *   - @b plm
  *   - @b bm25
- *   - @b kl
+ *   - @b kl.@n
  *   If this is omitted, A default ranking model specified in configuration file
  *   is used (In Collection node attribute).
+ * - @b searching_mode (@c String): We can choose the searching mode to combine our
+ *   query parsed term for supporting different search in different applications.
+ *   following searching modes.
+ *   - @b and
+ *   - @b or
+ *   - @b verbose
+ *   - @b knn: TODO@n
+ *   If this is omitted, @b and searching mode is used as the default value.
  * - @b log_keywords (@c Bool = @c true): Whether the keywords should be
  *   logged.
  * - @b analyzer (@c Object): Keywords analyzer options
@@ -224,7 +232,7 @@ bool SearchParser::parse(const Value& search)
 
     //search mode
     searchingMode_ = SearchingMode::DefaultSearchingMode;
-    if(search.hasKey(Keys::searching_mode))
+    if (search.hasKey(Keys::searching_mode))
     {
         Value::StringType mode = asString(search[Keys::searching_mode]);
         boost::to_lower(mode);
@@ -246,7 +254,7 @@ bool SearchParser::parse(const Value& search)
         }
         else
         {
-            warning() = "Unknown searchingMode. Default searhing mode is used.";
+            warning() = "Unknown searchingMode. Default searching mode is used.";
         }
     }
 

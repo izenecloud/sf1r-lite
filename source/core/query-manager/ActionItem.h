@@ -483,7 +483,7 @@ class KeywordSearchActionItem
         RankingType::TextRankingType    rankingType_;
 
         ///
-        /// @brief searching mode of the query. AND, OR, VERBOSe and KNN can be used.
+        /// @brief searching mode of the query. AND, OR, VERBOSE and KNN can be used.
         ///
         SearchingMode::SearchingModeType  searchingMode_;
 

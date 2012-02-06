@@ -112,6 +112,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     Runner.cpp
     t_CartManager.cpp
     CartManagerTestFixture.cpp
+    RecommendStorageTestFixture.cpp
   )
   TARGET_LINK_LIBRARIES(t_CartManager ${libs})
   SET_TARGET_PROPERTIES(t_CartManager PROPERTIES
@@ -122,6 +123,8 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   ADD_EXECUTABLE(t_EventManager
     Runner.cpp
     t_EventManager.cpp
+    EventManagerTestFixture.cpp
+    RecommendStorageTestFixture.cpp
   )
   TARGET_LINK_LIBRARIES(t_EventManager ${libs})
   SET_TARGET_PROPERTIES(t_EventManager PROPERTIES
@@ -143,6 +146,8 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   ADD_EXECUTABLE(t_RateManager
     Runner.cpp
     t_RateManager.cpp
+    RateManagerTestFixture.cpp
+    RecommendStorageTestFixture.cpp
   )
   TARGET_LINK_LIBRARIES(t_RateManager ${libs})
   SET_TARGET_PROPERTIES(t_RateManager PROPERTIES

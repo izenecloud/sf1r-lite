@@ -152,7 +152,11 @@ bool CassandraAdaptor::getSuperColumns(const std::string& key, std::vector<org::
     return true;
 }
 
-bool CassandraAdaptor::insertColumn(const std::string& key, const std::string& name, const std::string& value)
+bool CassandraAdaptor::insertColumnImpl_(
+    const std::string& key,
+    const std::string& name,
+    const std::string& value
+)
 {
     if (! client_)
         return false;
@@ -166,7 +170,7 @@ bool CassandraAdaptor::insertColumn(const std::string& key, const std::string& n
     return true;
 }
 
-bool CassandraAdaptor::insertSuperColumn(
+bool CassandraAdaptor::insertSuperColumnImpl_(
     const std::string& key,
     const std::string& superColumnName,
     const std::string& subColumnName,
@@ -183,6 +187,68 @@ bool CassandraAdaptor::insertSuperColumn(
     CATCH_CASSANDRA_EXCEPTION("[Cassandra::insertColumn] (super column) error: ")
 
     return true;
+}
+
+bool CassandraAdaptor::removeColumnImpl_(
+    const std::string& key,
+    const std::string& superColumnName,
+    const std::string& subColumnName
+)
+{
+    if (! client_)
+        return false;
+
+    try
+    {
+        client_->removeColumn(key, columnFamily_, superColumnName, subColumnName);
+    }
+    CATCH_CASSANDRA_EXCEPTION("[Cassandra::removeColumn] error: ")
+
+    return true;
+}
+
+bool CassandraAdaptor::getColumnValueImpl_(
+    const std::string& key,
+    const std::string& superColumnName,
+    const std::string& subColumnName,
+    std::string& value
+)
+{
+    if (! client_)
+        return false;
+
+    try
+    {
+        client_->getColumnValue(value, key, columnFamily_,
+                                superColumnName, subColumnName);
+    }
+    CATCH_CASSANDRA_EXCEPTION("[Cassandra::getColumnValue] error: ")
+
+    return true;
+}
+
+org::apache::cassandra::CfDef CassandraAdaptor::createColumnFamilyDef(
+    const std::string& keyspace,
+    const std::string& column_family_name,
+    const std::string& key_validation_class,
+    const std::string& comparator_type,
+    const std::string& subcomparator_type
+)
+{
+    CfDef def;
+
+    def.__set_keyspace(keyspace);
+    def.__set_name(column_family_name);
+    def.__set_key_validation_class(key_validation_class);
+    def.__set_comparator_type(comparator_type);
+
+    if (! subcomparator_type.empty())
+    {
+        def.__set_column_type("Super");
+        def.__set_subcomparator_type(subcomparator_type);
+    }
+
+    return def;
 }
 
 } // namespace sf1r
