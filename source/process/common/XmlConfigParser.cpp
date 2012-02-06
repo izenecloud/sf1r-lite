@@ -301,7 +301,8 @@ void SF1Config::parseBrokerAgent(const ticpp::Element * brokerAgent)
 
 void SF1Config::parseDistributedCommon(const ticpp::Element * distributedCommon)
 {
-    getAttribute(distributedCommon, "clusterid", distributedCommonConfig_.clusterId_, false);
+    getAttribute(distributedCommon, "clusterid", distributedCommonConfig_.clusterId_);
+    getAttribute(distributedCommon, "username", distributedCommonConfig_.userName_);
     getAttribute(distributedCommon, "workerport", distributedCommonConfig_.workerPort_);
     getAttribute(distributedCommon, "notifyrecvport", distributedCommonConfig_.notifyRecvPort_);
     getAttribute(distributedCommon, "datarecvport", distributedCommonConfig_.dataRecvPort_);
@@ -310,16 +311,31 @@ void SF1Config::parseDistributedCommon(const ticpp::Element * distributedCommon)
     if (!net::distribute::Util::getLoalHostIp(distributedCommonConfig_.localHost_))
     {
         getAttribute(distributedCommon, "localhost", distributedCommonConfig_.localHost_);
-        std::cout << "failed to detect local host ip, get from config: " << distributedCommonConfig_.localHost_ << std::endl;
+        std::cout << "failed to detect local host ip, got from config: " << distributedCommonConfig_.localHost_ << std::endl;
     }
     else
         std::cout << "local host ip : " << distributedCommonConfig_.localHost_ << std::endl;
 
+    if (distributedCommonConfig_.userName_.empty())
+    {
+        // hostname may be not logname
+        distributedCommonConfig_.userName_ = boost::asio::ip::host_name();
+    }
+
     if (distributedCommonConfig_.clusterId_.empty())
     {
-        distributedCommonConfig_.clusterId_ = boost::asio::ip::host_name();
-        std::cout<<"Warning: cluster Id is empty, set to "<<distributedCommonConfig_.clusterId_<<std::endl;
+        distributedCommonConfig_.clusterId_ = distributedCommonConfig_.userName_;
+        std::cout<<"Warning: cluster Id is empty, set as "<<distributedCommonConfig_.clusterId_<<std::endl;
     }
+
+    // For a real cluster of distributed nodes, we can use username(logname) as the default clusterId.
+    // But currently, we make each clusterId unique for each machine. TODO remove this process
+    size_t pos = distributedCommonConfig_.localHost_.find_last_of(".");
+    if (pos != std::string::npos)
+    {
+        distributedCommonConfig_.clusterId_.append(distributedCommonConfig_.localHost_.substr(pos+1));
+    }
+    std::cout << "cluster id : " << distributedCommonConfig_.clusterId_ << std::endl;
 }
 
 void SF1Config::parseDistributedTopologies(const ticpp::Element * deploy)
@@ -1112,7 +1128,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     LAPool::getInstance()->setLangIdDbPath(indexBundleConfig.languageIdentifierDbPath_);
     indexBundleConfig.isSupportByAggregator_ = SF1Config::get()->checkSearchMasterAggregator(collectionMeta.getName());
 
-    indexBundleConfig.localHostUsername_ = SF1Config::get()->distributedCommonConfig_.clusterId_;
+    indexBundleConfig.localHostUsername_ = SF1Config::get()->distributedCommonConfig_.userName_;
     indexBundleConfig.localHostIp_ = SF1Config::get()->distributedCommonConfig_.localHost_;
 }
 

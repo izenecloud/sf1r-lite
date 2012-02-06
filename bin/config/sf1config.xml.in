@@ -221,7 +221,7 @@
          * shardids (workerids) range from 1 to 'shardnum', without break.
          * it's recommended to keep the shardid consistent with nodeid.
     -->
-    <DistributedCommon clusterid="@DEFAULT_CLUSTER_ID@" localhost="172.16.0.36"
+    <DistributedCommon clusterid="@LOCAL_HOST_USER_NAME@" username="@LOCAL_HOST_USER_NAME@" localhost="172.16.0.36"
                        workerport="18151" notifyrecvport="18131" datarecvport="18121" />
 
     <DistributedTopology enable="n" type="search" nodenum="2" shardnum="2">
