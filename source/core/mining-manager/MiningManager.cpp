@@ -431,23 +431,6 @@ bool MiningManager::open()
                searchManager_->set_filter_hook(boost::bind(&MultiDocSummarizationSubManager::AppendSearchFilter, summarizationManager_, _1));
            }
         }
-
-
-        //do mining continue;
-        try
-        {
-            std::string continue_file = collectionDataPath_+"/continue";
-            if (boost::filesystem::exists(continue_file))
-            {
-                boost::filesystem::remove_all(continue_file);
-                DoMiningCollection();
-            }
-        }
-        catch (std::exception& ex)
-        {
-            std::cerr<<ex.what()<<std::endl;
-        }
-
     }
     catch (NotEnoughMemoryException& ex)
     {
@@ -490,6 +473,24 @@ bool MiningManager::open()
         return false;
     }
     return true;
+}
+
+void MiningManager::DoContinue()
+{
+    //do mining continue;
+    try
+    {
+        std::string continue_file = collectionDataPath_+"/continue";
+        if (boost::filesystem::exists(continue_file))
+        {
+            boost::filesystem::remove_all(continue_file);
+            DoMiningCollection();
+        }
+    }
+    catch (std::exception& ex)
+    {
+        std::cerr<<ex.what()<<std::endl;
+    }
 }
 
 bool MiningManager::DoMiningCollection()

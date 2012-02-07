@@ -18,6 +18,8 @@ public:
 
     void DoMiningCollection();
 
+    void DoContinue();
+
     MiningBundleConfiguration* getMiningBundleConfig(){ return bundleConfig_; }
 
 private:
