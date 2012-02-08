@@ -164,28 +164,29 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     comment_cache_storage_->Flush();
 
     {
-    CommentCacheStorage::DirtyKeyIteratorType dirtyKeyIt(comment_cache_storage_->dirty_key_db_);
-    CommentCacheStorage::DirtyKeyIteratorType dirtyKeyEnd;
-    for (uint32_t count = 0; dirtyKeyIt != dirtyKeyEnd; ++dirtyKeyIt)
-    {
-        const KeyType& key = dirtyKeyIt->first;
-
-        CommentCacheStorage::CommentCacheItemType commentCacheItem;
-        comment_cache_storage_->Get(key, commentCacheItem);
-        Summarization summarization(commentCacheItem.first);
-
-        if (DoEvaluateSummarization_(summarization, key, commentCacheItem.second))
+        CommentCacheStorage::DirtyKeyIteratorType dirtyKeyIt(comment_cache_storage_->dirty_key_db_);
+        CommentCacheStorage::DirtyKeyIteratorType dirtyKeyEnd;
+        for (uint32_t count = 0; dirtyKeyIt != dirtyKeyEnd; ++dirtyKeyIt)
         {
-            if (++count % 10000 == 0)
+            const KeyType& key = dirtyKeyIt->first;
+
+            CommentCacheStorage::CommentCacheItemType commentCacheItem;
+            comment_cache_storage_->Get(key, commentCacheItem);
+            Summarization summarization(commentCacheItem.first);
+
+            if (DoEvaluateSummarization_(summarization, key, commentCacheItem.second))
             {
-                LOG(INFO) << "Evaluating summarization: " << count;
+                if (++count % 10000 == 0)
+                {
+                    LOG(INFO) << "Evaluating summarization: " << count;
+                }
             }
         }
-    }
-    //Destroy dirtyKeyIterator before clearing dirtyKeyDB
-    }
+        summarization_storage_->Flush();
+    } //Destroy dirtyKeyIterator before clearing dirtyKeyDB
+
     comment_cache_storage_->ClearDirtyKey();
-    summarization_storage_->Flush();
+    LOG(INFO) << "Finish evaluating summarization.";
 }
 
 bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(

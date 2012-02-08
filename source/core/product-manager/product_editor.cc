@@ -3,6 +3,11 @@
 #include "operation_processor.h"
 #include "uuid_generator.h"
 #include <glog/logging.h>
+#include <common/Utilities.h>
+#ifdef USE_LOG_SERVER
+#include <log-manager/LogServerRequest.h>
+#include <log-manager/LogServerConnection.h>
+#endif
 using namespace sf1r;
 
 #define PM_EDIT_INFO
@@ -204,6 +209,9 @@ bool ProductEditor::AppendToGroup(const izenelib::util::UString& uuid, const std
 
 bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list,  const PMDocumentType& info)
 {
+#ifdef USE_LOG_SERVER
+    LogServerConnection& conn = LogServerConnection::instance();
+#endif
     //do not make any check in this function
     UString uuid;
     info.getProperty(config_.docid_property_name, uuid);
@@ -262,6 +270,7 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
             op_processor_->Append(2, update_doc);
             util_.AddPrice(new_doc, doc);
         }
+
         
         //update managers.
         std::vector<uint32_t> update_docid_list(1, docid);
@@ -273,6 +282,19 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
             error_ = "Update uuid failed";
             return false;
         }
+#ifdef USE_LOG_SERVER
+        UpdateUUIDRequest uuidReq;
+        uuidReq.param_.uuid_ = Utilities::uuidToUint128(doc_uuid);
+        for(uint32_t s=0;s<same_docid_list.size();s++)
+        {
+            PMDocumentType sdoc;
+            if(!data_source_->GetDocument(same_docid_list[s], sdoc)) continue;
+            izenelib::util::UString sdocid;
+            sdoc.getProperty(config_.docid_property_name, sdocid);
+            uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128(sdocid));
+        }
+        conn.asynRequest(uuidReq);
+#endif
     }
     data_source_->Flush();
     uint32_t itemcount = util_.GetUuidDf(uuid);
@@ -282,11 +304,25 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
     LOG(INFO)<<"Output : "<<type<<" , "<<uuid<<" , itemcount: "<<itemcount<<std::endl;
 #endif
     op_processor_->Append(type, new_doc);
+#ifdef USE_LOG_SERVER
+    UpdateUUIDRequest uuidReq;
+    uuidReq.param_.uuid_ = Utilities::uuidToUint128(uuid);
+    for(uint32_t s=0;s<doc_list.size();s++)
+    {
+        izenelib::util::UString sdocid;
+        doc_list[s].getProperty(config_.docid_property_name, sdocid);
+        uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128(sdocid));
+    }
+    conn.asynRequest(uuidReq);
+#endif
     return true;
 }
 
 bool ProductEditor::RemoveFromGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option)
 {
+#ifdef USE_LOG_SERVER
+    LogServerConnection& conn = LogServerConnection::instance();
+#endif
     {
         std::vector<uint32_t> same_docid_list;
         data_source_->GetDocIdList(uuid, same_docid_list, 0);
@@ -371,6 +407,14 @@ bool ProductEditor::RemoveFromGroup(const izenelib::util::UString& uuid, const s
             error_ = "Update uuid failed";
             return false;
         }
+#ifdef USE_LOG_SERVER
+        UpdateUUIDRequest uuidReq;
+        uuidReq.param_.uuid_ = Utilities::uuidToUint128(doc_uuid);
+        izenelib::util::UString docname;
+        doc_list[i].getProperty(config_.docid_property_name, docname);
+        uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128(docname));
+        conn.asynRequest(uuidReq);
+#endif
     }
     data_source_->Flush();
     PMDocumentType origin_doc;
@@ -398,5 +442,19 @@ bool ProductEditor::RemoveFromGroup(const izenelib::util::UString& uuid, const s
 #endif
         op_processor_->Append(2, origin_doc);
     }
+#ifdef USE_LOG_SERVER
+    UpdateUUIDRequest uuidReq;
+    uuidReq.param_.uuid_ = Utilities::uuidToUint128(uuid);
+    for(uint32_t s=0;s<same_docid_list.size();s++)
+    {
+        PMDocumentType sdoc;
+        if(!data_source_->GetDocument(same_docid_list[s], sdoc)) continue;
+        izenelib::util::UString sdocid;
+        sdoc.getProperty(config_.docid_property_name, sdocid);
+        uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128(sdocid));
+    }
+    conn.asynRequest(uuidReq);
+#endif
     return true;
 }
+

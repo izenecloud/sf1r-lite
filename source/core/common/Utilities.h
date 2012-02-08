@@ -47,15 +47,18 @@ public:
 
     static void uint128ToUuid(const uint128_t& val, std::string& str);
     static void uuidToUint128(const std::string& str, uint128_t& val);
+    static void uuidToUint128(const izenelib::util::UString& ustr, uint128_t& val);
 
     static void uint128ToMD5(const uint128_t& val, std::string& str);
     static void md5ToUint128(const std::string& str, uint128_t& val);
 
     static std::string uint128ToUuid(const uint128_t& val);
     static uint128_t uuidToUint128(const std::string& str);
+    static uint128_t uuidToUint128(const izenelib::util::UString& ustr);
 
     static std::string uint128ToMD5(const uint128_t& val);
     static uint128_t md5ToUint128(const std::string& str);
+    static uint128_t md5ToUint128(const izenelib::util::UString& ustr);
 
     template <typename AssocType, typename SeqType>
     static void getKeyList(SeqType& key_list, const AssocType& src_map);
