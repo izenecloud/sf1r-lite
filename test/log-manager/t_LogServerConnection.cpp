@@ -196,23 +196,34 @@ void t_ScdStorage()
     LogServerConnection& conn = LogServerConnection::instance();
     conn.init("localhost", 18811);
 
+    std::string collection = "test";
+
     // create scd doc
     CreateScdDocRequest scdDocReq;
-    scdDocReq.param_.uuid_ = Utilities::uuidToUint128("143c7d31-702e-4fac-b57b-84d35205ae60");
-    scdDocReq.param_.content_ = //"This is doc1!!";
-            "<DOCID>143c7d31-702e-4fac-b57b-84d35205ae60\n"
+    scdDocReq.param_.docid_ = Utilities::md5ToUint128("1111");
+    scdDocReq.param_.content_ =
+            "<DOCID>1111\n"
+            "<UUID>143c7d31-702e-4fac-b57b-84d35205ae60\n"
             "<ProdName>儿童创意美工.巧手贴画\n";
+    scdDocReq.param_.collection_ = collection;
     conn.asynRequest(scdDocReq);
-    scdDocReq.param_.uuid_ = Utilities::uuidToUint128("cda5545a-b3f4-4e81-9b85-2d25b0416997");
-    scdDocReq.param_.content_ = //"This is doc2!!";
-            "<DOCID>cda5545a-b3f4-4e81-9b85-2d25b0416997\n"
+
+    scdDocReq.param_.docid_ = Utilities::md5ToUint128("1112");
+    scdDocReq.param_.content_ =
+            "<DOCID>1112\n"
+            "<UUID>cda5545a-b3f4-4e81-9b85-2d25b0416997\n"
             "<ProdName>全脑智能数学A5――幼儿智能全面开发应用操作课本\n";
+    scdDocReq.param_.collection_ = collection;
     conn.asynRequest(scdDocReq);
-    scdDocReq.param_.uuid_ = Utilities::uuidToUint128("eb1ba5f4-a558-4a66-806d-74cb6a321932");
-    scdDocReq.param_.content_ = //"This is doc3!!";
-            "<DOCID>eb1ba5f4-a558-4a66-806d-74cb6a321932\n"
+
+    scdDocReq.param_.docid_ = Utilities::md5ToUint128("1113");
+    scdDocReq.param_.content_ =
+            "<DOCID>1113\n"
+            "<UUID>eb1ba5f4-a558-4a66-806d-74cb6a321932\n"
             "<ProdName>百诺 旅游天使 A2681TB1 镁合金 三脚架\n";
+    scdDocReq.param_.collection_ = collection;
     conn.asynRequest(scdDocReq);
+
     conn.flushRequests();
 
     // get scd file
@@ -220,17 +231,17 @@ void t_ScdStorage()
     scdFileReq.param_.username_ = "zhongxia";
     scdFileReq.param_.host_ = "localhost";
     scdFileReq.param_.path_ = "/home/zhongxia/scd/";
+    scdFileReq.param_.collection_ = collection;
 
     GetScdFileResponseData ret;
     conn.syncRequest(scdFileReq, ret);
     if (ret.success_)
     {
-        std::cout << "Successfully Fetched SCD." << std::endl;
+        std::cout << "Successfully Fetched SCD [" << ret.scdFileName_ << "]" << std::endl;
     }
     else
     {
-        std::cout << "Failed to fetch SCD." << std::endl;
-        std::cout << ret.error_ << std::endl;
+        std::cout << "Failed to fetch SCD [" << ret.error_ << "]" << std::endl;
     }
 }
 

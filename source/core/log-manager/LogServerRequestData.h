@@ -51,11 +51,11 @@ struct Docid2UUID : public LogServerRequestData
 
 struct CreateScdDocRequestData : public LogServerRequestData
 {
-    uint128_t uuid_;
+    uint128_t docid_;
     std::string content_;
     std::string collection_;
 
-    MSGPACK_DEFINE(uuid_, content_, collection_)
+    MSGPACK_DEFINE(docid_, content_, collection_)
 };
 
 struct GetScdFileRequestData : public LogServerRequestData

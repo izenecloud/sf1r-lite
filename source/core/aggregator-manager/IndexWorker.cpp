@@ -478,7 +478,7 @@ void IndexWorker::logCreatedDocToLogServer(const SCDDoc& scdDoc)
     CreateScdDocRequest scdDocReq;
     try
     {
-        scdDocReq.param_.uuid_ = Utilities::uuidToUint128(docidStr);
+        scdDocReq.param_.docid_ = Utilities::md5ToUint128(docidStr);
     }
     catch (const std::exception)
     {
