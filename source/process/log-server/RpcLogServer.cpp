@@ -179,8 +179,17 @@ void RpcLogServer::onUpdate(
 
 void RpcLogServer::createScdDoc(const CreateScdDocRequestData& scdDoc)
 {
-    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->scdDbMutex());
-    LogServerStorage::get()->scdDb()->update(scdDoc.uuid_, scdDoc.content_);
+    const std::string& collection = scdDoc.collection_;
+    if (LogServerStorage::get()->checkScdDb(collection))
+    {
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->scdDbMutex(collection));
+        LogServerStorage::get()->scdDb(collection)->update(scdDoc.uuid_, scdDoc.content_);
+    }
+    else
+    {
+        std::cerr << "Failed to createScdDoc for collection: " << collection << "" << std::endl;
+        return;
+    }
 
 #ifdef LOG_SERVER_DEBUG
     std::cout << "--> Create SCD Doc: " << Utilities::uint128ToUuid(scdDoc.uuid_) << std::endl;
@@ -190,14 +199,23 @@ void RpcLogServer::createScdDoc(const CreateScdDocRequestData& scdDoc)
 
 void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestData, GetScdFileResponseData& response)
 {
-    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->scdDbMutex());
-    LogServerStorage::ScdDbPtr& scdDb = LogServerStorage::get()->scdDb();
+    const std::string& collection = scdFileRequestData.collection_;
+    if (!LogServerStorage::get()->checkScdDb(collection))
+    {
+        response.success_ = false;
+        response.error_ = "LogServer: no SCD DB for " + collection;
+        return;
+    }
+
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->scdDbMutex(collection));
+    LogServerStorage::ScdDbPtr& scdDb = LogServerStorage::get()->scdDb(collection);
 
     boost::lock_guard<boost::mutex> lockUuidDrum(LogServerStorage::get()->uuidDrumMutex());
     boost::lock_guard<boost::mutex> lockDocidDrum(LogServerStorage::get()->docidDrumMutex());
 
     // create new scd file
-    std::string filename = LogServerCfg::get()->getStorageBaseDir() + "/" + ScdWriter::GenSCDFileName(INSERT_SCD);
+    std::string scdFileName = ScdWriter::GenSCDFileName(INSERT_SCD);
+    std::string filename = LogServerCfg::get()->getStorageBaseDir() + "/" + scdFileName;
     //std::cout << filename << std::endl << std::endl;
 
     std::ofstream of;
@@ -238,6 +256,7 @@ void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
 
         response.success_ = false;
         response.error_ = "LogServer error";
+        boost::filesystem::remove(filename);
         return;
     }
 #endif
@@ -263,6 +282,7 @@ void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
         if (std::system(command.str().c_str()) == 0)
         {
             response.success_ = true;
+            response.scdFileName_ = scdFileName;
         }
         else
         {
@@ -274,6 +294,7 @@ void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
     {
         response.success_ = false;
         response.error_ = "LogServer: SCD is empty.";
+        boost::filesystem::remove(filename);
         return;
     }
 

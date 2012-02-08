@@ -480,6 +480,8 @@ void IndexWorker::logCreatedDocToLogServer(const SCDDoc& scdDoc)
     {
         return;
     }
+
+    scdDocReq.param_.collection_ = bundleConfig_->collectionName_;
     scdDocReq.param_.content_ = "<DOCID>" + docidStr + "\n" + content;
     //std::cout << scdDocReq.param_.content_ << std::endl;
 
@@ -494,13 +496,14 @@ bool IndexWorker::fetchSCDFromLogServer(const std::string& scdPath)
     scdFileReq.param_.username_ = bundleConfig_->localHostUsername_;
     scdFileReq.param_.host_ = bundleConfig_->localHostIp_;
     scdFileReq.param_.path_ = scdPath;
+    scdFileReq.param_.collection_ = bundleConfig_->collectionName_;
 
     GetScdFileResponseData response;
     LogServerConnection::instance().syncRequest(scdFileReq, response); // timeout?
 
     if (response.success_)
     {
-        std::cout << "Successfully fetched SCD." << std::endl;
+        std::cout << "Successfully fetched SCD: " << response.scdFileName_ << std::endl;
         return true;
     }
     else
