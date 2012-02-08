@@ -37,6 +37,8 @@ public:
 
     void update_scd();
 
+    void update_documents();
+
     void flush();
 
 private:
@@ -82,6 +84,8 @@ public:
 
     void processScd();
 
+    void processUpdateDocuments();
+
     void flush();
 
 private:
@@ -92,6 +96,11 @@ private:
     void processRecVisitItem(izenelib::driver::Value& request, const std::string& raw);
 
     void processRecPurchaseItem(izenelib::driver::Value& request, const std::string& raw);
+
+    void updateDocuement()
+    {
+        ;
+    }
 
     void onUniqueKeyCheck(
             const LogServerStorage::uuid_t& uuid,

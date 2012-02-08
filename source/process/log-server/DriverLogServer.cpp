@@ -76,6 +76,9 @@ bool DriverLogServer::initRouter()
     handler_t* scdHandler = new handler_t(logServerCtrl, &DriverLogServerController::update_scd);
     router_->map("log_server", "update_scd", scdHandler);
 
+    handler_t* docsHandler = new handler_t(logServerCtrl, &DriverLogServerController::update_documents);
+    router_->map("log_server", "update_documents", docsHandler);
+
     handler_t* flushHandler = new handler_t(logServerCtrl, &DriverLogServerController::flush);
     router_->map("log_server", "flush", flushHandler);
 
