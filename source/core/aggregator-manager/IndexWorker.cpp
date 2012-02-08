@@ -189,6 +189,10 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
     if (indexProgress_.totalFileNum == 0)
     {
         LOG(WARNING) << "SCD Files do not exist. Path " << scdPath;
+        if (miningTaskService_)
+        {
+            miningTaskService_->DoContinue();
+        }
         return false;
     }
 
