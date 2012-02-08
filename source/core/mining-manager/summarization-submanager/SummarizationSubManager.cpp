@@ -197,7 +197,7 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     if (!summarization_storage_->IsRebuildSummarizeRequired(key, summarization))
         return false;
 
-#define MAXDOC 100
+#define MAX_SENT_COUNT 1000
 
     ilplib::langid::Analyzer* langIdAnalyzer = LAPool::getInstance()->getLangId();
 
@@ -237,6 +237,10 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 
             startPos += len;
         }
+
+        // Limit the max count of sentences to be summarized
+        if (corpus_->nsents() >= MAX_SENT_COUNT)
+            break;
     }
     corpus_->start_new_sent();
     corpus_->start_new_doc();
