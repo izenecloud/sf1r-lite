@@ -281,6 +281,14 @@ uint128_t Utilities::uuidToUint128(const std::string& str)
     return *reinterpret_cast<uint128_t *>(&uuid);
 }
 
+uint128_t Utilities::uuidToUint128(const izenelib::util::UString& ustr)
+{
+    std::string str;
+    ustr.convertString(str, izenelib::util::UString::UTF_8);
+    boost::uuids::uuid uuid = boost::lexical_cast<boost::uuids::uuid>(str);
+    return *reinterpret_cast<uint128_t *>(&uuid);
+}
+
 std::string Utilities::uint128ToMD5(const uint128_t& val)
 {
     static char tmpstr[33];
@@ -298,6 +306,13 @@ uint128_t Utilities::md5ToUint128(const std::string& str)
     return (uint128_t) high << 64 | (uint128_t) low;
 }
 
+uint128_t Utilities::md5ToUint128(const izenelib::util::UString& ustr)
+{
+    std::string str;
+    ustr.convertString(str, izenelib::util::UString::UTF_8);
+    return md5ToUint128(str);
+}
+
 void Utilities::uint128ToUuid(const uint128_t& val, std::string& str)
 {
     const boost::uuids::uuid& uuid = *reinterpret_cast<const boost::uuids::uuid *>(&val);
@@ -306,6 +321,14 @@ void Utilities::uint128ToUuid(const uint128_t& val, std::string& str)
 
 void Utilities::uuidToUint128(const std::string& str, uint128_t& val)
 {
+    boost::uuids::uuid uuid = boost::lexical_cast<boost::uuids::uuid>(str);
+    val = *reinterpret_cast<uint128_t *>(&uuid);
+}
+
+void Utilities::uuidToUint128(const izenelib::util::UString& ustr, uint128_t& val)
+{
+    std::string str;
+    ustr.convertString(str, izenelib::util::UString::UTF_8);
     boost::uuids::uuid uuid = boost::lexical_cast<boost::uuids::uuid>(str);
     val = *reinterpret_cast<uint128_t *>(&uuid);
 }

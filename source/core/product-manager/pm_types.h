@@ -3,7 +3,7 @@
 
 #include <common/type_defs.h>
 #include <document-manager/Document.h>
-
+//#define USE_LOG_SERVER 
 namespace sf1r
 {
 
