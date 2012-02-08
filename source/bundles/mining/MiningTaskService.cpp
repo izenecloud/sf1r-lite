@@ -33,6 +33,11 @@ void MiningTaskService::DoMiningCollection()
     miningManager_->DoMiningCollection();
 }
 
+void MiningTaskService::DoContinue()
+{
+    miningManager_->DoContinue();
+}
+
 void MiningTaskService::cronJob_()
 {
     if (cronExpression_.matches_now())

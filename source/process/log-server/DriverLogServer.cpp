@@ -58,7 +58,7 @@ void DriverLogServer::join()
 void DriverLogServer::stop()
 {
     driverServer_->stop();
-    driverThread_.reset();
+    driverThread_->interrupt();
     bStarted_ = false;
 }
 

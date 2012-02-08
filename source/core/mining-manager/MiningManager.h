@@ -137,7 +137,7 @@ public:
 
     bool DoMiningCollection();
 
-
+    void DoContinue();
     /**
      * @brief The online querying interface.
      */

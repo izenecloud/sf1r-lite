@@ -189,6 +189,10 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
     if (indexProgress_.totalFileNum == 0)
     {
         LOG(WARNING) << "SCD Files do not exist. Path " << scdPath;
+        if (miningTaskService_)
+        {
+            miningTaskService_->DoContinue();
+        }
         return false;
     }
 
@@ -505,8 +509,7 @@ bool IndexWorker::fetchSCDFromLogServer(const std::string& scdPath)
     }
     else
     {
-        std::cout << "Failed to fetch SCD." << std::endl;
-        std::cout << response.error_ << std::endl;
+        std::cout << "Failed to fetch SCD  :  " << response.error_ << std::endl;
         return false;
     }
 }

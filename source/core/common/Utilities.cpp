@@ -327,4 +327,13 @@ void Utilities::md5ToUint128(const std::string& str, uint128_t& val)
     val = (uint128_t) high << 64 | (uint128_t) low;
 }
 
+uint32_t Utilities::calcHammDist(uint64_t v1, uint64_t v2)
+{
+    uint64_t v = v1 ^ v2;
+    v -= (v >> 1) & 0x5555555555555555ULL;
+    v = (v & 0x3333333333333333ULL) + ((v >> 2) & 0x3333333333333333ULL);
+    v = (v + (v >> 4)) & 0xf0f0f0f0f0f0f0fULL;
+    return (v * 0x101010101010101ULL) >> 56;
+}
+
 }

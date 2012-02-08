@@ -213,11 +213,13 @@ void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
     // get all scd docs from DB
     uint128_t uuid;
     std::string content;
+    size_t docNum = 0;
 
 #ifdef USE_TC_HASH
     LogServerStorage::ScdDbType::SDBCursor locn = scdDb->get_first_locn();
     while ( scdDb->get(locn, uuid, content) )
     {
+        docNum++;
         writeScdDoc(of, content, uuid);
         scdDb->seq(locn);
     }
@@ -226,6 +228,7 @@ void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
     {
         while (scdDb->iterNext(uuid, content))
         {
+            docNum++;
             writeScdDoc(of, content, uuid);
         }
     }
@@ -241,27 +244,37 @@ void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
 
     of.close();
 
-    // transmit SCD file to required server, use rsync
-    std::stringstream command;
-    command << "rsync -vaz "
-            << filename
-            << " "
-            << scdFileRequestData.username_
-            << "@"
-            << scdFileRequestData.host_
-            << ":"
-            << scdFileRequestData.path_
-            << "/"; // ensure is dir
-
-    std::cout << command.str() << std::endl;
-    if (std::system(command.str().c_str()) == 0)
+    // no doc
+    if (docNum > 0)
     {
-        response.success_ = true;
+        // transmit SCD file to required server, use rsync
+        std::stringstream command;
+        command << "rsync -vaz "
+                << filename
+                << " "
+                << scdFileRequestData.username_
+                << "@"
+                << scdFileRequestData.host_
+                << ":"
+                << scdFileRequestData.path_
+                << "/"; // ensure is dir
+
+        std::cout << command.str() << std::endl;
+        if (std::system(command.str().c_str()) == 0)
+        {
+            response.success_ = true;
+        }
+        else
+        {
+            response.success_ = false;
+            response.error_ = "LogServer: rsync failed to synchronize SCD file.";
+        }
     }
     else
     {
         response.success_ = false;
-        response.error_ = "LogServer: rsync failed to synchronize SCD file.";
+        response.error_ = "LogServer: SCD is empty.";
+        return;
     }
 
     // remove local SCD file
@@ -312,7 +325,7 @@ void RpcLogServer::writeScdDoc(std::ofstream& of, const std::string& doc, const 
             }
 
             // write scd file
-            of << doc;
+            of << newDoc;
 
 #ifdef LOG_SERVER_DEBUG
             std::cout << "--> writeScdDoc : " << oldUuidStr << " -> " << newUuidStr << std::endl;
