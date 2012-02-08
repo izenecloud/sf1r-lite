@@ -69,6 +69,15 @@ public:
 #endif
     typedef boost::shared_ptr<ScdDbType> ScdDbPtr;
 
+    struct ScdStorage
+    {
+        ScdDbPtr scdDb_;
+        boost::mutex mutex_;
+        bool isReIndexed_;      // whether scd in db has been requested for reindexing
+        std::ofstream scdFile_; // for scd which come after reindex
+        std::string scdFileName_;
+    };
+
 public:
     static LogServerStorage* get()
     {
@@ -162,9 +171,9 @@ public:
             CollectionScdDbMapType::iterator it;
             for (it = collectionScdDbMap_.begin(); it != collectionScdDbMap_.end(); it++)
             {
-                ScdDbPtr& scdDb = it->second.first;
-                scdDb->flush();
-                scdDb->close();
+                it->second->scdDb_->flush();
+                it->second->scdDb_->close();
+                it->second->scdFile_.close();
             }
 
 //            if (scdDb_)
@@ -242,25 +251,25 @@ public:
         return true;
     }
 
-    ScdDbPtr& scdDb(const std::string& collection)
+    boost::shared_ptr<ScdStorage>& scdStorage(const std::string& collection)
     {
         if (collectionScdDbMap_.find(collection) == collectionScdDbMap_.end())
         {
             initScdDb(collection);
         }
 
-        return collectionScdDbMap_[collection].first;
+        return collectionScdDbMap_[collection];
     }
 
-    boost::mutex& scdDbMutex(const std::string& collection)
-    {
-        if (collectionScdDbMap_.find(collection) == collectionScdDbMap_.end())
-        {
-            initScdDb(collection);
-        }
-
-        return *collectionScdDbMap_[collection].second;
-    }
+//    boost::mutex& scdDbMutex(const std::string& collection)
+//    {
+//        if (collectionScdDbMap_.find(collection) == collectionScdDbMap_.end())
+//        {
+//            initScdDb(collection);
+//        }
+//
+//        return collectionScdDbMap_[collection]->mutex_;
+//    }
 
 private:
     /// init DB for SCD
@@ -269,16 +278,20 @@ private:
         std::string scdDbName = LogServerCfg::get()->getStorageBaseDir() + "/scd_db/" + collection;
         std::cout << "initScdDb " << scdDbName << std::endl;
 
-        ScdDbPtr scdDb(new ScdDbType(scdDbName));
-        boost::shared_ptr<boost::mutex> scdDbMutex(new boost::mutex);
+        boost::shared_ptr<ScdStorage> store(new ScdStorage);
+        store->scdDb_.reset(new ScdDbType(scdDbName));
+        store->isReIndexed_ = false;
 
-        if (!scdDb || !scdDb->open())
+        if (!store->scdDb_ || !store->scdDb_->open())
         {
             std::cerr << "Failed to initialzie scd DB (check DbType?) : " << scdDbName << std::endl;
             return false;
         }
 
-        collectionScdDbMap_[collection] = std::make_pair<ScdDbPtr, boost::shared_ptr<boost::mutex> >(scdDb, scdDbMutex);
+        store->scdFileName_ = LogServerCfg::get()->getStorageBaseDir() + "/scd_db/" + collection + ".scd";
+        store->scdFile_.open(store->scdFileName_.c_str()); // overwrited
+
+        collectionScdDbMap_[collection] = store;
         return true;
     }
 
@@ -295,9 +308,7 @@ private:
 //    ScdDbPtr scdDb_;
 //    boost::mutex scdDbMutex_;
 
-    typedef boost::unordered_map<
-        std::string,
-        std::pair<ScdDbPtr, boost::shared_ptr<boost::mutex> > > CollectionScdDbMapType;
+    typedef boost::unordered_map<std::string, boost::shared_ptr<ScdStorage> > CollectionScdDbMapType;
     CollectionScdDbMapType collectionScdDbMap_;
 };
 

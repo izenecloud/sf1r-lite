@@ -190,8 +190,17 @@ void RpcLogServer::createScdDoc(const CreateScdDocRequestData& scdDoc)
 
     if (LogServerStorage::get()->checkScdDb(collection))
     {
-        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->scdDbMutex(collection));
-        LogServerStorage::get()->scdDb(collection)->update(scdDoc.docid_, scdDoc.content_);
+        boost::shared_ptr<LogServerStorage::ScdStorage>& scdStorage = LogServerStorage::get()->scdStorage(collection);
+
+        boost::lock_guard<boost::mutex> lock(scdStorage->mutex_);
+        if (scdStorage->isReIndexed_)
+        {
+            scdStorage->scdFile_ << scdDoc.content_;
+        }
+        else
+        {
+            scdStorage->scdDb_->update(scdDoc.docid_, scdDoc.content_);
+        }
     }
     else
     {
@@ -222,8 +231,9 @@ void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
         return;
     }
 
-    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->scdDbMutex(collection));
-    LogServerStorage::ScdDbPtr& scdDb = LogServerStorage::get()->scdDb(collection);
+    boost::shared_ptr<LogServerStorage::ScdStorage>& scdStorage = LogServerStorage::get()->scdStorage(collection);
+    boost::lock_guard<boost::mutex> lock(scdStorage->mutex_);
+    LogServerStorage::ScdDbPtr& scdDb = scdStorage->scdDb_;
 
     boost::lock_guard<boost::mutex> lockUuidDrum(LogServerStorage::get()->uuidDrumMutex());
     boost::lock_guard<boost::mutex> lockDocidDrum(LogServerStorage::get()->docidDrumMutex());
@@ -276,6 +286,7 @@ void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
     }
 #endif
 
+    scdStorage->isReIndexed_ = true;
     of.close();
 
     std::cout << "doc number: " << docNum << std::endl;
