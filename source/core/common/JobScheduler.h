@@ -54,6 +54,7 @@ private:
 
     boost::thread asynchronousWorker_;
 
+    std::string runCollectionName_;
 };
 
 }
