@@ -97,10 +97,7 @@ private:
 
     void processRecPurchaseItem(izenelib::driver::Value& request, const std::string& raw);
 
-    void updateDocuement()
-    {
-        ;
-    }
+    std::string updateUuidStr(const std::string& uuidStr);
 
     void onUniqueKeyCheck(
             const LogServerStorage::uuid_t& uuid,

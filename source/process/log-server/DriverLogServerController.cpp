@@ -228,10 +228,13 @@ void DriverLogServerHandler::processUpdateDocuments()
     uint32_t port = asInt(request()[Keys::port]);
     std::string collection = asString(request()[Keys::collection]);
 
+    std::cout << "[Update documents of " << collection << " to " << host << ":" << port << "]" << std::endl;
+
     if (collection.empty())
     {
         response().setSuccess(false);
         response().addError("collection field is required!");
+        std::cerr << "collection field is required!" << std::endl;
         return;
     }
 
@@ -250,22 +253,58 @@ void DriverLogServerHandler::processUpdateDocuments()
     {
         response().setSuccess(false);
         response().addError("Could not Load Scd File.");
+        std::cerr << "Could not Load Scd File." << std::endl;
         return;
     }
 
     std::string fieldStr;
+    std::string fieldVal;
     for (ScdParser::iterator doc_iter = parser.begin();
         doc_iter != parser.end(); ++doc_iter)
     {
+        izenelib::driver::Value requestValue;
+        requestValue[Keys::collection] = collection;
+
+        std::string docidStr;
+        std::string docStr;
+
         vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
         for (p = (*doc_iter)->begin(); p != (*doc_iter)->end(); p++)
         {
             p->first.convertString(fieldStr, izenelib::util::UString::UTF_8);
-            std::cout << "field: " << fieldStr << std::endl;
+            p->second.convertString(fieldVal, izenelib::util::UString::UTF_8);
 
-            // TODO send request to SF1R?
+            if (fieldStr == "DOCID")
+            {
+                docidStr = fieldVal;
+            }
+            else if (fieldStr == "UUID")
+            {
+                //std::cout << fieldVal << " -> ";
+                fieldVal = updateUuidStr(fieldVal);
+                //std::cout << fieldVal << std::endl;
+            }
+
+            requestValue[Keys::resource][fieldStr] = fieldVal;
+            docStr += "<" + fieldStr + ">" + fieldVal + "\n";
         }
+
+        // save doc to scd db
+        //std::cout << docidStr << std::endl;
+        //std::cout << docStr << std::endl;
+        scdStorage->scdDb_->update(Utilities::md5ToUint128(docidStr), docStr);
+
+        // update doc to required sf1r server
+        std::string requestString;
+        jsonWriter_.write(requestValue, requestString);
+        std::cout << requestString << std::endl;
+        // TODO send request to SF1R driver server
     }
+
+    // remove scd
+    scdStorage->isReIndexed_ = false;
+    scdStorage->scdDb_->flush();
+    ///boost::filesystem::remove(scdStorage->scdFileName_); xxx
 }
 
 void DriverLogServerHandler::flush()
@@ -393,6 +432,31 @@ void DriverLogServerHandler::processRecPurchaseItem(izenelib::driver::Value& req
     }
 
     //std::cout << std::endl;
+}
+
+std::string DriverLogServerHandler::updateUuidStr(const std::string& uuidStr)
+{
+    boost::lock_guard<boost::mutex> lockUuidDrum(LogServerStorage::get()->uuidDrumMutex());
+    boost::lock_guard<boost::mutex> lockDocidDrum(LogServerStorage::get()->docidDrumMutex());
+
+    // check old uuid
+    uint128_t oldUuid = Utilities::uuidToUint128(uuidStr);
+    std::vector<uint128_t> docidList;
+    LogServerStorage::get()->uuidDrum()->GetValue(oldUuid, docidList);
+
+    // get new uuid
+    uint128_t newUuid;
+    std::vector<uint128_t>::iterator it;
+    for (it = docidList.begin(); it != docidList.end(); ++it)
+    {
+        if (LogServerStorage::get()->docidDrum()->GetValue(*it, newUuid))
+        {
+            // update uuid
+            return Utilities::uint128ToUuid(newUuid);
+        }
+    }
+
+    return uuidStr;
 }
 
 void DriverLogServerHandler::onUniqueKeyCheck(

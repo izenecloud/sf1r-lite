@@ -173,7 +173,7 @@ public:
             {
                 it->second->scdDb_->flush();
                 it->second->scdDb_->close();
-                it->second->scdFile_.close();
+                //it->second->scdFile_.close();
             }
 
 //            if (scdDb_)
@@ -289,7 +289,17 @@ private:
         }
 
         store->scdFileName_ = LogServerCfg::get()->getStorageBaseDir() + "/scd_db/" + collection + ".scd";
-        store->scdFile_.open(store->scdFileName_.c_str()); // overwrited
+        std::ifstream testfile(store->scdFileName_.c_str());
+        if (!testfile.good())
+        {
+            testfile.close();
+            store->scdFile_.open(store->scdFileName_.c_str()); // create
+        }
+        else
+        {
+            testfile.close();
+            store->scdFile_.open(store->scdFileName_.c_str(), fstream::out|fstream::app);
+        }
 
         collectionScdDbMap_[collection] = store;
         return true;

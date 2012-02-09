@@ -188,6 +188,11 @@ void RpcLogServer::createScdDoc(const CreateScdDocRequestData& scdDoc)
         return;
     }
 
+#ifdef LOG_SERVER_DEBUG
+    std::cout << "\n[Received doc for collection: " << scdDoc.collection_ << "]" << std::endl;
+    std::cout << scdDoc.content_;
+#endif
+
     if (LogServerStorage::get()->checkScdDb(collection))
     {
         boost::shared_ptr<LogServerStorage::ScdStorage>& scdStorage = LogServerStorage::get()->scdStorage(collection);
@@ -195,11 +200,16 @@ void RpcLogServer::createScdDoc(const CreateScdDocRequestData& scdDoc)
         boost::lock_guard<boost::mutex> lock(scdStorage->mutex_);
         if (scdStorage->isReIndexed_)
         {
+#ifdef LOG_SERVER_DEBUG
+            std::cout << "[It comes after re-index]" << std::endl;
+#endif
             scdStorage->scdFile_ << scdDoc.content_;
+            scdStorage->scdFile_.flush();
         }
         else
         {
             scdStorage->scdDb_->update(scdDoc.docid_, scdDoc.content_);
+            scdStorage->scdDb_->flush();
         }
     }
     else
@@ -207,20 +217,23 @@ void RpcLogServer::createScdDoc(const CreateScdDocRequestData& scdDoc)
         std::cerr << "Failed to createScdDoc for collection: " << collection << "" << std::endl;
         return;
     }
-
-#ifdef LOG_SERVER_DEBUG
-    std::cout << "--> Create SCD Doc: " << Utilities::uint128ToMD5(scdDoc.docid_) << std::endl;
-    std::cout << scdDoc.content_ << std:: endl;
-#endif
 }
 
 void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestData, GetScdFileResponseData& response)
 {
+    std::cout << "\n[Fetching SCD for \""<< scdFileRequestData.collection_
+              << "\" by "
+              << scdFileRequestData.username_
+              << "@"
+              << scdFileRequestData.host_
+              << "]" << std::endl;
+
     const std::string& collection = scdFileRequestData.collection_;
     if (collection.empty())
     {
         response.success_ = false;
         response.error_ = "LogServer: GetScdFileRequest missing collection parameter.";
+        std::cerr << response.error_ << std::endl;
         return;
     }
 
@@ -228,6 +241,7 @@ void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
     {
         response.success_ = false;
         response.error_ = "LogServer: no SCD DB for " + collection;
+        std::cerr << response.error_ << std::endl;
         return;
     }
 
@@ -289,7 +303,7 @@ void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
     scdStorage->isReIndexed_ = true;
     of.close();
 
-    std::cout << "doc number: " << docNum << std::endl;
+    std::cout << "[Fetched doc number: " << docNum << "]" << std::endl;
 
     // no doc
     if (docNum > 0)
@@ -364,7 +378,7 @@ void RpcLogServer::writeScdDoc(std::ofstream& of, const std::string& doc, const 
         of << doc;
 
 #ifdef LOG_SERVER_DEBUG
-        std::cout << "--> writeScdDoc : " << Utilities::uint128ToMD5(docid) << std::endl;
+        std::cout << "[Fetch doc]" << std::endl;
         std::cout << doc << std:: endl;
 #endif
     }
@@ -398,11 +412,10 @@ void RpcLogServer::writeScdDoc(std::ofstream& of, const std::string& doc, const 
             of << newDoc;
 
 #ifdef LOG_SERVER_DEBUG
-            std::cout << "--> writeScdDoc: " << Utilities::uint128ToMD5(docid) << std::endl;
-            std::cout << "    update uuid: " << oldUuidStr << " -> " << newUuidStr << std::endl;
+            std::cout << "[Fetch doc]" << std::endl;
+            std::cout << "[updated uuid: " << oldUuidStr << " -> " << newUuidStr << "]" << std::endl;
             std::cout << newDoc << std:: endl;
 #endif
-
             // update once
             break;
         }
