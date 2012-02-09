@@ -8,6 +8,9 @@ require 'set'
 require_rel '../libdriver/common'
 require_rel '../lib/scd_parser'
         
+Sf1rHost = "172.16.0.36"
+Sf1rPort = 18181
+
 class LogServerJsonSender
   def initialize(host, port)
     @host = host
@@ -166,16 +169,16 @@ class LogServerJsonSender
     end
   end
 
-  def updateDocuments()
+  def updateDocuments(collection)
     # TODO
     request = {
       "header" => {
         "controller" => "log_server",
         "action" => "update_documents"
       },
-      "collection" => "example",
-      "host" => "172.16.0.36",
-      "port" => "18181"
+      "collection" => "#{collection}",
+      "host" => "#{Sf1rHost}",
+      "port" => "#{Sf1rPort}"
     }
 
     response = @conn.call("log_server/update_documents", request)
@@ -193,7 +196,8 @@ class LogServerJsonSender
     elsif cmd == "flush"
       sendFlushRequest(filename)
     elsif cmd == "documents"
-      updateDocuments()
+      collection = filename
+      updateDocuments(collection)
     else
       puts "Unrecognized command: #{cmd}"
       exit(1)
@@ -203,7 +207,7 @@ end
 
 if __FILE__ == $0  
   if ARGV.size < 2 || (ARGV[0] == "-h" || ARGV[0] == "--help")
-    puts "Usage: #{$0} {cclog|scd|documents} {filename|host}"
+    puts "Usage: #{$0} {cclog|scd|documents} {filename|collection}"
     exit(1)
   end
   

@@ -245,9 +245,16 @@ void DriverLogServerHandler::processUpdateDocuments()
         return;
     }
 
+    // sf1 driver client
+    izenelib::net::sf1r::Sf1Config sf1Conf(1, false);
+    izenelib::net::sf1r::Sf1Driver sf1DriverClient(host, port, sf1Conf);
+    std::string uri = "documents/create";
+    std::string tokens = "";
+
     boost::shared_ptr<LogServerStorage::ScdStorage>& scdStorage = LogServerStorage::get()->scdStorage(collection);
     boost::lock_guard<boost::mutex> lock(scdStorage->mutex_);
 
+    // locad docs that comes after re-index
     ScdParser parser(izenelib::util::UString::UTF_8);
     if (!parser.load(scdStorage->scdFileName_))
     {
@@ -297,14 +304,19 @@ void DriverLogServerHandler::processUpdateDocuments()
         // update doc to required sf1r server
         std::string requestString;
         jsonWriter_.write(requestValue, requestString);
-        std::cout << requestString << std::endl;
-        // TODO send request to SF1R driver server
+        //std::cout << requestString << std::endl;
+
+        string response = sf1DriverClient.call(uri, tokens, requestString);
+        //std::cout << response << std::endl;
     }
 
-    // remove scd
+    // reset flag
     scdStorage->isReIndexed_ = false;
     scdStorage->scdDb_->flush();
-    ///boost::filesystem::remove(scdStorage->scdFileName_); xxx
+
+    // clear but not remove scd file
+    scdStorage->scdFile_.close();
+    scdStorage->scdFile_.open(scdStorage->scdFileName_.c_str());
 }
 
 void DriverLogServerHandler::flush()

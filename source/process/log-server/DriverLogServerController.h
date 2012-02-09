@@ -8,6 +8,8 @@
 #include <util/driver/Controller.h>
 #include <util/driver/writers/JsonWriter.h>
 
+#include <net/sf1r/Sf1Driver.hpp>
+
 #include <iostream>
 #include <set>
 
