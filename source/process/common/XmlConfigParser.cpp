@@ -1254,7 +1254,7 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
     std::string mode_str;
     getAttribute(product_schema, "mode", mode_str);
     getAttribute(product_schema, "id", productBundleConfig.productId_);
-    
+
     //m or a, m as default
     if (mode_str=="a") productBundleConfig.mode_ = 2;
     else productBundleConfig.mode_ = 1;
@@ -1303,13 +1303,13 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
     {
         getAttribute(backup_node, "path", pm_config.backup_path);
     }
-    
+
     ticpp::Element* uuidmap_node = getUniqChildElement(product_schema, "UuidMap", false);
     if (uuidmap_node)
     {
         getAttribute(uuidmap_node, "path", pm_config.uuid_map_path);
     }
-    
+
     ticpp::Element* algo_node = getUniqChildElement(product_schema, "ComparisonAlgorithm", false);
     if (algo_node)
     {
@@ -1409,8 +1409,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         }
         task_node = getUniqChildElement(mining_schema_node, "DuplicateDetection", false);
         mining_schema.dupd_enable = false;
+        mining_schema.dupd_fp_only = false;
         if (task_node)
         {
+            bool fp_only = false;
+            if (getAttribute(task_node, "fp_only", fp_only, false))
+            {
+                mining_schema.dupd_fp_only = fp_only;
+            }
             Iterator<Element> it("Property");
             for (it = it.begin(task_node); it != it.end(); it++)
             {

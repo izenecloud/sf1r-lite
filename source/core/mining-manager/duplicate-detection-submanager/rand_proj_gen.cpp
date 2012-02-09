@@ -224,7 +224,7 @@ RandProj RandProjGen::get_random_projection(uint64_t token)
 
 RandProj RandProjGen::get_random_projection(const std::string& token)
 {
-    uint64_t convkey= izenelib::util::HashFunction<std::string>::generateHash64(token);
+    uint64_t convkey = izenelib::util::HashFunction<std::string>::generateHash64(token);
     //TokenGen::mfgenerate_token(token.c_str(),token.size());
     return get_random_projection(convkey);
 }
