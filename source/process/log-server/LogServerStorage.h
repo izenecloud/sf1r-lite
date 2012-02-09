@@ -11,6 +11,8 @@
 #include <3rdparty/am/drum/drum.hpp>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/unordered_map.hpp>
 
 namespace sf1r
 {
@@ -65,7 +67,16 @@ public:
 #else
     typedef izenelib::am::leveldb::Table<uuid_t, std::string> ScdDbType;
 #endif
-    typedef boost::scoped_ptr<ScdDbType> ScdDbPtr;
+    typedef boost::shared_ptr<ScdDbType> ScdDbPtr;
+
+    struct ScdStorage
+    {
+        ScdDbPtr scdDb_;
+        boost::mutex mutex_;
+        bool isReIndexed_;      // whether scd in db has been requested for reindexing
+        std::ofstream scdFile_; // for scd which come after reindex
+        std::string scdFileName_;
+    };
 
 public:
     static LogServerStorage* get()
@@ -111,12 +122,14 @@ public:
 
         // Initialize SCD DB
         std::string scdDbName = LogServerCfg::get()->getStorageBaseDir() + "/scd_db";
-        scdDb_.reset(new ScdDbType(scdDbName));
-        if (!scdDb_ || !scdDb_->open())
-        {
-            std::cerr << "Failed to initialzie scd DB (check DbType?) : " << scdDbName << std::endl;
-            return false;
-        }
+        boost::filesystem::create_directories(scdDbName);
+
+//        scdDb_.reset(new ScdDbType(scdDbName));
+//        if (!scdDb_ || !scdDb_->open())
+//        {
+//            std::cerr << "Failed to initialzie scd DB (check DbType?) : " << scdDbName << std::endl;
+//            return false;
+//        }
 
         return true;
     }
@@ -154,21 +167,30 @@ public:
                 }
             }
 
-            if (scdDb_)
+            // close scd dbs
+            CollectionScdDbMapType::iterator it;
+            for (it = collectionScdDbMap_.begin(); it != collectionScdDbMap_.end(); it++)
             {
-                boost::unique_lock<boost::mutex> lock(scdDbMutex_, boost::defer_lock);
-                if (lock.try_lock())
-                {
-                    scdDb_->flush();
-                    scdDb_->close();
-                    scdDb_.reset();
-                }
-                else
-                {
-                    std::cout << "scdDb_ is still working... " << std::endl;
-                    return;
-                }
+                it->second->scdDb_->flush();
+                it->second->scdDb_->close();
+                it->second->scdFile_.close();
             }
+
+//            if (scdDb_)
+//            {
+//                boost::unique_lock<boost::mutex> lock(scdDbMutex_, boost::defer_lock);
+//                if (lock.try_lock())
+//                {
+//                    scdDb_->flush();
+//                    scdDb_->close();
+//                    scdDb_.reset();
+//                }
+//                else
+//                {
+//                    std::cout << "scdDb_ is still working... " << std::endl;
+//                    return;
+//                }
+//            }
         }
         catch (const std::exception& e)
         {
@@ -209,14 +231,68 @@ public:
     }
 
     /// @brief lock scdDbMutex before operation on scdDB
-    ScdDbPtr& scdDb()
+//    ScdDbPtr& scdDb()
+//    {
+//        return scdDb_;
+//    }
+//
+//    boost::mutex& scdDbMutex()
+//    {
+//        return scdDbMutex_;
+//    }
+
+    bool checkScdDb(const std::string& collection)
     {
-        return scdDb_;
+        if (collectionScdDbMap_.find(collection) == collectionScdDbMap_.end())
+        {
+            return initScdDb(collection);
+        }
+
+        return true;
     }
 
-    boost::mutex& scdDbMutex()
+    boost::shared_ptr<ScdStorage>& scdStorage(const std::string& collection)
     {
-        return scdDbMutex_;
+        if (collectionScdDbMap_.find(collection) == collectionScdDbMap_.end())
+        {
+            initScdDb(collection);
+        }
+
+        return collectionScdDbMap_[collection];
+    }
+
+//    boost::mutex& scdDbMutex(const std::string& collection)
+//    {
+//        if (collectionScdDbMap_.find(collection) == collectionScdDbMap_.end())
+//        {
+//            initScdDb(collection);
+//        }
+//
+//        return collectionScdDbMap_[collection]->mutex_;
+//    }
+
+private:
+    /// init DB for SCD
+    bool initScdDb(const std::string& collection)
+    {
+        std::string scdDbName = LogServerCfg::get()->getStorageBaseDir() + "/scd_db/" + collection;
+        std::cout << "initScdDb " << scdDbName << std::endl;
+
+        boost::shared_ptr<ScdStorage> store(new ScdStorage);
+        store->scdDb_.reset(new ScdDbType(scdDbName));
+        store->isReIndexed_ = false;
+
+        if (!store->scdDb_ || !store->scdDb_->open())
+        {
+            std::cerr << "Failed to initialzie scd DB (check DbType?) : " << scdDbName << std::endl;
+            return false;
+        }
+
+        store->scdFileName_ = LogServerCfg::get()->getStorageBaseDir() + "/scd_db/" + collection + ".scd";
+        store->scdFile_.open(store->scdFileName_.c_str()); // overwrited
+
+        collectionScdDbMap_[collection] = store;
+        return true;
     }
 
 private:
@@ -229,8 +305,11 @@ private:
     boost::mutex docidDrumMutex_;
 
     // Used to store SCD of user submitted comments currently.
-    ScdDbPtr scdDb_;
-    boost::mutex scdDbMutex_;
+//    ScdDbPtr scdDb_;
+//    boost::mutex scdDbMutex_;
+
+    typedef boost::unordered_map<std::string, boost::shared_ptr<ScdStorage> > CollectionScdDbMapType;
+    CollectionScdDbMapType collectionScdDbMap_;
 };
 
 }

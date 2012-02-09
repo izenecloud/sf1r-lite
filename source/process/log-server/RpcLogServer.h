@@ -55,7 +55,7 @@ public:
 
     /// Dispatch scd file to required server
     void dispatchScdFile(const GetScdFileRequestData& scdFileRequestData, GetScdFileResponseData& response);
-    void writeScdDoc(std::ofstream& of, const std::string& doc, const uint128_t& uuid);
+    void writeScdDoc(std::ofstream& of, const std::string& doc, const uint128_t& docid);
 
 private:
     std::string host_;

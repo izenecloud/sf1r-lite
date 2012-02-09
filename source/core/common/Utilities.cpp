@@ -300,7 +300,7 @@ std::string Utilities::uint128ToMD5(const uint128_t& val)
 
 uint128_t Utilities::md5ToUint128(const std::string& str)
 {
-    unsigned long long high, low;
+    unsigned long long high = 0, low = 0;
 
     sscanf(str.c_str(), "%016llx%016llx", &high, &low);
     return (uint128_t) high << 64 | (uint128_t) low;
@@ -339,12 +339,11 @@ void Utilities::uint128ToMD5(const uint128_t& val, std::string& str)
 
     sprintf(tmpstr, "%016llx%016llx", (unsigned long long) (val >> 64), (unsigned long long) val);
     str.assign(reinterpret_cast<const char *>(tmpstr), 32);
-
 }
 
 void Utilities::md5ToUint128(const std::string& str, uint128_t& val)
 {
-    unsigned long long high, low;
+    unsigned long long high = 0, low = 0;
 
     sscanf(str.c_str(), "%016llx%016llx", &high, &low);
     val = (uint128_t) high << 64 | (uint128_t) low;

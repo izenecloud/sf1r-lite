@@ -165,7 +165,25 @@ class LogServerJsonSender
       $stderr.puts "--> flush error: #{response["errors"]}"
     end
   end
-  
+
+  def updateDocuments()
+    # TODO
+    request = {
+      "header" => {
+        "controller" => "log_server",
+        "action" => "update_documents"
+      },
+      "collection" => "example",
+      "host" => "172.16.0.36",
+      "port" => "18181"
+    }
+
+    response = @conn.call("log_server/update_documents", request)
+    if response["error"]
+       $stderr.puts "update_documents error: #{response["error"]}"
+    end
+  end  
+
   def send(cmd, filename)
     #cmds = ["cclog", "scd", "flush"]
     if cmd == "cclog"
@@ -174,6 +192,8 @@ class LogServerJsonSender
       sendScdFile(filename)
     elsif cmd == "flush"
       sendFlushRequest(filename)
+    elsif cmd == "documents"
+      updateDocuments()
     else
       puts "Unrecognized command: #{cmd}"
       exit(1)
@@ -183,7 +203,7 @@ end
 
 if __FILE__ == $0  
   if ARGV.size < 2 || (ARGV[0] == "-h" || ARGV[0] == "--help")
-    puts "Usage: #{$0} {cclog|scd} {filename}"
+    puts "Usage: #{$0} {cclog|scd|documents} {filename|host}"
     exit(1)
   end
   

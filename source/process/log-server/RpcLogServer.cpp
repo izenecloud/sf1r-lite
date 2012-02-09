@@ -13,6 +13,8 @@
 namespace sf1r
 {
 
+const static std::string UUID_PROPERTY = "<UUID>";
+
 RpcLogServer::RpcLogServer(const std::string& host, uint16_t port, uint32_t threadNum)
     : host_(host)
     , port_(port)
@@ -179,25 +181,66 @@ void RpcLogServer::onUpdate(
 
 void RpcLogServer::createScdDoc(const CreateScdDocRequestData& scdDoc)
 {
-    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->scdDbMutex());
-    LogServerStorage::get()->scdDb()->update(scdDoc.uuid_, scdDoc.content_);
+    const std::string& collection = scdDoc.collection_;
+    if (collection.empty())
+    {
+        std::cerr << "CreateScdDocRequest error: missing collection parameter." << std::endl;
+        return;
+    }
+
+    if (LogServerStorage::get()->checkScdDb(collection))
+    {
+        boost::shared_ptr<LogServerStorage::ScdStorage>& scdStorage = LogServerStorage::get()->scdStorage(collection);
+
+        boost::lock_guard<boost::mutex> lock(scdStorage->mutex_);
+        if (scdStorage->isReIndexed_)
+        {
+            scdStorage->scdFile_ << scdDoc.content_;
+        }
+        else
+        {
+            scdStorage->scdDb_->update(scdDoc.docid_, scdDoc.content_);
+        }
+    }
+    else
+    {
+        std::cerr << "Failed to createScdDoc for collection: " << collection << "" << std::endl;
+        return;
+    }
 
 #ifdef LOG_SERVER_DEBUG
-    std::cout << "--> Create SCD Doc: " << Utilities::uint128ToUuid(scdDoc.uuid_) << std::endl;
+    std::cout << "--> Create SCD Doc: " << Utilities::uint128ToMD5(scdDoc.docid_) << std::endl;
     std::cout << scdDoc.content_ << std:: endl;
 #endif
 }
 
 void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestData, GetScdFileResponseData& response)
 {
-    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->scdDbMutex());
-    LogServerStorage::ScdDbPtr& scdDb = LogServerStorage::get()->scdDb();
+    const std::string& collection = scdFileRequestData.collection_;
+    if (collection.empty())
+    {
+        response.success_ = false;
+        response.error_ = "LogServer: GetScdFileRequest missing collection parameter.";
+        return;
+    }
+
+    if (!LogServerStorage::get()->checkScdDb(collection))
+    {
+        response.success_ = false;
+        response.error_ = "LogServer: no SCD DB for " + collection;
+        return;
+    }
+
+    boost::shared_ptr<LogServerStorage::ScdStorage>& scdStorage = LogServerStorage::get()->scdStorage(collection);
+    boost::lock_guard<boost::mutex> lock(scdStorage->mutex_);
+    LogServerStorage::ScdDbPtr& scdDb = scdStorage->scdDb_;
 
     boost::lock_guard<boost::mutex> lockUuidDrum(LogServerStorage::get()->uuidDrumMutex());
     boost::lock_guard<boost::mutex> lockDocidDrum(LogServerStorage::get()->docidDrumMutex());
 
     // create new scd file
-    std::string filename = LogServerCfg::get()->getStorageBaseDir() + "/" + ScdWriter::GenSCDFileName(INSERT_SCD);
+    std::string scdFileName = ScdWriter::GenSCDFileName(INSERT_SCD);
+    std::string filename = LogServerCfg::get()->getStorageBaseDir() + "/" + scdFileName;
     //std::cout << filename << std::endl << std::endl;
 
     std::ofstream of;
@@ -211,25 +254,25 @@ void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
     }
 
     // get all scd docs from DB
-    uint128_t uuid;
+    uint128_t docid;
     std::string content;
     size_t docNum = 0;
 
 #ifdef USE_TC_HASH
     LogServerStorage::ScdDbType::SDBCursor locn = scdDb->get_first_locn();
-    while ( scdDb->get(locn, uuid, content) )
+    while ( scdDb->get(locn, docid, content) )
     {
         docNum++;
-        writeScdDoc(of, content, uuid);
+        writeScdDoc(of, content, docid);
         scdDb->seq(locn);
     }
 #else
     if (scdDb->iterInit())
     {
-        while (scdDb->iterNext(uuid, content))
+        while (scdDb->iterNext(docid, content))
         {
             docNum++;
-            writeScdDoc(of, content, uuid);
+            writeScdDoc(of, content, docid);
         }
     }
     else
@@ -238,11 +281,15 @@ void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
 
         response.success_ = false;
         response.error_ = "LogServer error";
+        boost::filesystem::remove(filename);
         return;
     }
 #endif
 
+    scdStorage->isReIndexed_ = true;
     of.close();
+
+    std::cout << "doc number: " << docNum << std::endl;
 
     // no doc
     if (docNum > 0)
@@ -263,6 +310,7 @@ void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
         if (std::system(command.str().c_str()) == 0)
         {
             response.success_ = true;
+            response.scdFileName_ = scdFileName;
         }
         else
         {
@@ -274,6 +322,7 @@ void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
     {
         response.success_ = false;
         response.error_ = "LogServer: SCD is empty.";
+        boost::filesystem::remove(filename);
         return;
     }
 
@@ -281,12 +330,33 @@ void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
     boost::filesystem::remove(filename);
 }
 
-void RpcLogServer::writeScdDoc(std::ofstream& of, const std::string& doc, const uint128_t& uuid)
+void RpcLogServer::writeScdDoc(std::ofstream& of, const std::string& doc, const uint128_t& docid)
 {
-    std::string oldUuidStr = Utilities::uint128ToUuid(uuid);
+    std::string oldUuidStr;
+    size_t startPos = doc.find(UUID_PROPERTY);
+    if (startPos != std::string::npos)
+    {
+        startPos += UUID_PROPERTY.length();
+        size_t endPos = doc.find_first_of("<\r\n", startPos);
+        if (endPos != std::string::npos)
+        {
+            oldUuidStr = doc.substr(startPos, endPos-startPos);
+        }
+    }
 
     UUID2DocidList::DocidListType docidList;
-    LogServerStorage::get()->uuidDrum()->GetValue(uuid, docidList);
+    if (!oldUuidStr.empty())
+    {
+        try
+        {
+            uint128_t uuid = Utilities::uuidToUint128(oldUuidStr);
+            LogServerStorage::get()->uuidDrum()->GetValue(uuid, docidList);
+        }
+        catch(const std::exception& e)
+        {
+            std::cout << "Uuid extraction error: " << e.what() << std::endl;
+        }
+    }
 
     if (docidList.empty())
     {
@@ -294,7 +364,7 @@ void RpcLogServer::writeScdDoc(std::ofstream& of, const std::string& doc, const 
         of << doc;
 
 #ifdef LOG_SERVER_DEBUG
-        std::cout << "--> writeScdDoc : " << oldUuidStr << std::endl;
+        std::cout << "--> writeScdDoc : " << Utilities::uint128ToMD5(docid) << std::endl;
         std::cout << doc << std:: endl;
 #endif
     }
@@ -328,9 +398,13 @@ void RpcLogServer::writeScdDoc(std::ofstream& of, const std::string& doc, const 
             of << newDoc;
 
 #ifdef LOG_SERVER_DEBUG
-            std::cout << "--> writeScdDoc : " << oldUuidStr << " -> " << newUuidStr << std::endl;
+            std::cout << "--> writeScdDoc: " << Utilities::uint128ToMD5(docid) << std::endl;
+            std::cout << "    update uuid: " << oldUuidStr << " -> " << newUuidStr << std::endl;
             std::cout << newDoc << std:: endl;
 #endif
+
+            // update once
+            break;
         }
     }
 }
