@@ -19,6 +19,7 @@
 #include <query-manager/QMCommonFunc.h>
 
 #include <idmlib/util/idm_analyzer.h>
+#include <glog/logging.h>
 
 #include <cmath>
 
@@ -80,11 +81,19 @@ bool RecommendManager::open()
     {
         return false;
     }
-    std::cout<<"open recommend manager on "<<current_recommend_path<<std::endl;
-    recommend_db_ = new MIRDatabase(current_recommend_path);
-    recommend_db_->setCacheSize<0>(100000000);
-    recommend_db_->setCacheSize<1>(0);
-    recommend_db_->open();
+    //try {
+        std::cout<<"open ir manager on "<<current_recommend_path<<std::endl;
+        recommend_db_ = new MIRDatabase(current_recommend_path);
+        recommend_db_->setCacheSize<0>(100000000);
+        recommend_db_->setCacheSize<1>(0);
+        recommend_db_->open();
+    //}
+    //catch(std::exception& ex)
+    //{
+        //LOG(ERROR)<<ex.what()<<std::endl;
+        //return false;
+    //}
+    std::cout<<"open ir manager finished"<<std::endl;
     std::string path_tocreate = current_recommend_path+"/concept-id";
     boost::filesystem::create_directories(path_tocreate);
     concept_id_manager_ = new ConceptIDManager(path_tocreate);
