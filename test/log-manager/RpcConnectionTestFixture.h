@@ -37,6 +37,7 @@ public:
     int add_int(const AddIntParam& param) const;
 
     void runAddInt(int runTimes);
+    void runIncreaseCount(int runTimes);
 
 protected:
     void reg_func_remote_error(msgpack::rpc::request req);

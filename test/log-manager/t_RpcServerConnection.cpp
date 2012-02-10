@@ -108,26 +108,18 @@ BOOST_AUTO_TEST_CASE(checkSyncRequest)
 
 BOOST_AUTO_TEST_CASE(checkAsynRequest)
 {
-    std::string method(METHOD_NAMES[INCREASE_COUNT]);
-    std::string param("void");
-
-    const int count = 1500;
-    for (int i=0; i<count; ++i)
-    {
-        connection_.asynRequest(method, param);
-    }
-    // flush asynchronous calls
-    connection_.flushRequests();
+    int runTimes = 1500;
+    runIncreaseCount(runTimes);
 
     // waiting for a while before checking the effect by asynchronous calls
     sleep(1);
-    BOOST_CHECK_EQUAL(increaseCount_, count);
+    BOOST_CHECK_EQUAL(increaseCount_, runTimes);
 }
 
-BOOST_AUTO_TEST_CASE(checkMultiThreadRequest)
+BOOST_AUTO_TEST_CASE(checkMultiThreadSyncRequest)
 {
     int threadNum = 5;
-    int runTimes = 1000;
+    int runTimes = 1500;
     boost::thread_group threads;
 
     for (int i=0; i<threadNum; ++i)
@@ -137,6 +129,26 @@ BOOST_AUTO_TEST_CASE(checkMultiThreadRequest)
     }
 
     threads.join_all();
+}
+
+BOOST_AUTO_TEST_CASE(checkMultiThreadAsynRequest)
+{
+    int threadNum = 5;
+    int runTimes = 1500;
+    boost::thread_group threads;
+
+    for (int i=0; i<threadNum; ++i)
+    {
+        threads.create_thread(boost::bind(&RpcConnectionTestFixture::runIncreaseCount,
+                                          this, runTimes));
+    }
+
+    threads.join_all();
+
+    // waiting for a while before checking the effect by asynchronous calls
+    sleep(1);
+    int totalCount = threadNum * runTimes;
+    BOOST_CHECK_EQUAL(increaseCount_, totalCount);
 }
 
 BOOST_AUTO_TEST_SUITE_END() 

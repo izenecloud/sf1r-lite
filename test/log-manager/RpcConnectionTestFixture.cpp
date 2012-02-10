@@ -54,16 +54,32 @@ int RpcConnectionTestFixture::add_int(const AddIntParam& param) const
 
 void RpcConnectionTestFixture::runAddInt(int runTimes)
 {
+    std::string method(METHOD_NAMES[ADD_INT]);
+
     for (int i=0; i<runTimes; ++i)
     {
         // generate rand int
         AddIntParam addParam(rand(), rand());
         int addResult = 0;
 
-        connection_.syncRequest(METHOD_NAMES[ADD_INT], addParam, addResult);
+        connection_.syncRequest(method, addParam, addResult);
 
         BOOST_CHECK_EQUAL_TS(addResult, add_int(addParam));
     }
+}
+
+void RpcConnectionTestFixture::runIncreaseCount(int runTimes)
+{
+    std::string method(METHOD_NAMES[INCREASE_COUNT]);
+    std::string param("void");
+
+    for (int i=0; i<runTimes; ++i)
+    {
+        connection_.asynRequest(method, param);
+    }
+
+    // flush asynchronous calls
+    connection_.flushRequests();
 }
 
 void RpcConnectionTestFixture::reg_func_echo_str(msgpack::rpc::request req)
