@@ -23,6 +23,7 @@ const char* ZNode::KEY_DATA_PORT = "dataport";
 const char* ZNode::KEY_NOTIFY_PORT = "notifyport";
 const char* ZNode::KEY_WORKER_PORT = "workerport";
 const char* ZNode::KEY_SHARD_ID = "shardid";
+const char* ZNode::KEY_COLLECTION = "collection";
 
 const char* ZNode::KEY_FILE = "file";
 const char* ZNode::KEY_DIR = "dir";

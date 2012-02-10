@@ -10,6 +10,7 @@ const LogServerRequest::method_t LogServerRequest::method_names[] =
             "get_uuid",
             "get_docid_list",
             "create_scd_doc",
+            "delete_scd_doc",
             "get_scd_file"
         };
 

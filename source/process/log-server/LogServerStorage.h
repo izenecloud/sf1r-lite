@@ -67,7 +67,7 @@ public:
 #else
     typedef izenelib::am::leveldb::Table<uuid_t, std::string> ScdDbType;
 #endif
-    typedef boost::shared_ptr<ScdDbType> ScdDbPtr;
+    typedef boost::scoped_ptr<ScdDbType> ScdDbPtr;
 
     struct ScdStorage
     {

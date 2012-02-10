@@ -19,6 +19,7 @@ public:
         METHOD_GET_UUID,
         METHOD_GET_DOCID_LIST,
         METHOD_CREATE_SCD_DOC,
+        METHOD_DELETE_SCD_DOC,
         METHOD_GET_SCD_FILE,
         COUNT_OF_METHODS
     };
@@ -87,6 +88,15 @@ class CreateScdDocRequest : public LogRequestRequestT<CreateScdDocRequestData>
 public:
     CreateScdDocRequest()
         : LogRequestRequestT<CreateScdDocRequestData>(METHOD_CREATE_SCD_DOC)
+    {
+    }
+};
+
+class DeleteScdDocRequest : public LogRequestRequestT<DeleteScdDocRequestData>
+{
+public:
+    DeleteScdDocRequest()
+        : LogRequestRequestT<DeleteScdDocRequestData>(METHOD_DELETE_SCD_DOC)
     {
     }
 };

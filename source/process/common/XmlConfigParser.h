@@ -622,6 +622,7 @@ private:
     /// @param system           Pointer to the Element
     void parseMasterAgent(const ticpp::Element * master, DistributedTopologyConfig& topologyConfig);
     void parseWorkerAgent(const ticpp::Element * worker, DistributedTopologyConfig& topologyConfig);
+    void parseCorpus(const ticpp::Element * corpus, DistributedTopologyConfig& topologyConfig);
 
 public:
     //----------------------------  PRIVATE MEMBER VARIABLES  ----------------------------

@@ -164,6 +164,7 @@ public:
     const static char* KEY_NOTIFY_PORT;
     const static char* KEY_WORKER_PORT;
     const static char* KEY_SHARD_ID;
+    const static char* KEY_COLLECTION;
 
     const static char* KEY_FILE;
     const static char* KEY_DIR;

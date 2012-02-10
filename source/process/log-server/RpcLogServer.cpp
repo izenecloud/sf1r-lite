@@ -112,6 +112,14 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
 
             createScdDoc(scdDoc);
         }
+        else if (method == LogServerRequest::method_names[LogServerRequest::METHOD_DELETE_SCD_DOC])
+        {
+            msgpack::type::tuple<DeleteScdDocRequestData> params;
+            req.params().convert(&params);
+            const DeleteScdDocRequestData& delReq = params.get<0>();
+
+            deleteScdDoc(delReq);
+        }
         else if (method == LogServerRequest::method_names[LogServerRequest::METHOD_GET_SCD_FILE])
         {
             msgpack::type::tuple<GetScdFileRequestData> params;
@@ -219,6 +227,25 @@ void RpcLogServer::createScdDoc(const CreateScdDocRequestData& scdDoc)
     }
 }
 
+void RpcLogServer::deleteScdDoc(const DeleteScdDocRequestData& delReq)
+{
+    const std::string& collection = delReq.collection_;
+    if (collection.empty())
+    {
+        std::cerr << "DeleteScdDocRequestData error: missing collection parameter." << std::endl;
+        return;
+    }
+
+    if (LogServerStorage::get()->checkScdDb(collection))
+    {
+        boost::shared_ptr<LogServerStorage::ScdStorage>& scdStorage =
+                LogServerStorage::get()->scdStorage(collection);
+
+        boost::lock_guard<boost::mutex> lock(scdStorage->mutex_);
+        scdStorage->scdDb_->del(delReq.docid_);
+    }
+}
+
 void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestData, GetScdFileResponseData& response)
 {
     std::cout << "\n[Fetching SCD for \""<< scdFileRequestData.collection_
@@ -281,22 +308,31 @@ void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
         scdDb->seq(locn);
     }
 #else
-    if (scdDb->iterInit())
-    {
-        while (scdDb->iterNext(docid, content))
-        {
-            docNum++;
-            writeScdDoc(of, content, docid);
-        }
-    }
-    else
-    {
-        of.close();
+//    if (scdDb->iterInit())
+//    {
+//        while (scdDb->iterNext(docid, content))
+//        {
+//            docNum++;
+//            writeScdDoc(of, content, docid);
+//        }
+//    }
+//    else
+//    {
+//        of.close();
+//
+//        response.success_ = false;
+//        response.error_ = "LogServer error";
+//        boost::filesystem::remove(filename);
+//        return;
+//    }
 
-        response.success_ = false;
-        response.error_ = "LogServer error";
-        boost::filesystem::remove(filename);
-        return;
+    LogServerStorage::ScdDbType::cursor_type cursor = scdDb->begin();
+    while (scdDb->fetch(cursor, docid, content))
+    {
+        docNum++;
+        writeScdDoc(of, content, docid);
+
+        scdDb->iterNext(cursor);
     }
 #endif
 

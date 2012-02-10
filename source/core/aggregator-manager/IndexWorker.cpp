@@ -557,6 +557,18 @@ bool IndexWorker::updateDocument(const Value& documentValue)
         doMining_();
     }
     searchManager_->reset_cache(rType, id, rTypeFieldValue);
+
+    // to log server
+    if (bundleConfig_->logCreatedDoc_)
+    {
+        try
+        {
+            logCreatedDocToLogServer(scddoc);
+        }
+        catch (const std::exception& e)
+        {}
+    }
+
     return ret;
 	
 }
@@ -585,6 +597,24 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
     {
         doMining_();
     }
+
+    // delete from log server
+    if (bundleConfig_->logCreatedDoc_)
+    {
+        DeleteScdDocRequest deleteReq;
+        try
+        {
+            deleteReq.param_.docid_ = Utilities::md5ToUint128(asString(documentValue["DOCID"]));
+            deleteReq.param_.collection_ = bundleConfig_->collectionName_;
+        }
+        catch (const std::exception)
+        {
+        }
+
+        LogServerConnection::instance().asynRequest(deleteReq);
+        LogServerConnection::instance().flushRequests();
+    }
+
     return ret;
 }
 
