@@ -94,12 +94,11 @@ bool CobraProcess::initLogManager()
     {
         std::cerr << "warning: Init CassandraConnection with " << cassandra_conn << " failed!" << std::endl;
     }
-    std::string log_server_host;
-    uint16_t rpc_port, driver_port;
-    SF1Config::get()->getLogServerConfig(log_server_host, rpc_port, driver_port);
-    if (!LogServerConnection::instance().init(log_server_host, rpc_port))
+    const LogServerConnectionConfig& logServerConfig = SF1Config::get()->getLogServerConfig();
+    if (!LogServerConnection::instance().init(logServerConfig))
     {
-        std::cerr << "Init LogServerConnection with \"" << log_server_host<<":"<<rpc_port << "\" failed!" << std::endl;
+        std::cerr << "Init LogServerConnection with \"" << logServerConfig.host
+                  << ":" << logServerConfig.rpcPort << "\" failed!" << std::endl;
         return false;
     }
     return true;

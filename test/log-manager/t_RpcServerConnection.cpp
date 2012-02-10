@@ -41,8 +41,9 @@ BOOST_FIXTURE_TEST_SUITE(LogServerConnectionTest, RpcConnectionTestFixture)
 
 BOOST_AUTO_TEST_CASE(expectConnectError)
 {
-    int notConnectPort = port_ + 1;
-    connection_.init(host_, notConnectPort);
+    LogServerConnectionConfig newConfig = config_;
+    ++newConfig.rpcPort;
+    connection_.init(newConfig);
 
     std::string method(METHOD_NAMES[ECHO_STR]);
     std::string param("hello");

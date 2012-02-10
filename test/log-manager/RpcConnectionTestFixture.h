@@ -10,6 +10,7 @@
 
 #include "RpcTestServer.h"
 #include <log-manager/LogServerConnection.h>
+#include <configuration-manager/LogServerConnectionConfig.h>
 
 #include <string>
 
@@ -49,10 +50,7 @@ protected:
     typedef void (RpcConnectionTestFixture::*RegisterFunc)(msgpack::rpc::request);
     static RegisterFunc REGISTER_FUNCS[METHOD_NUM];
 
-    const std::string host_;
-    const int port_;
-    const int threadNum_;
-
+    LogServerConnectionConfig config_;
     RpcTestServer server_;
     LogServerConnection& connection_;
 

@@ -24,16 +24,14 @@ RpcConnectionTestFixture::RegisterFunc RpcConnectionTestFixture::REGISTER_FUNCS[
 };
 
 RpcConnectionTestFixture::RpcConnectionTestFixture()
-    : host_("localhost")
-    , port_(19000)
-    , threadNum_(4)
+    : config_("localhost", 19000)
     , connection_(LogServerConnection::instance())
     , increaseCount_(0)
 {
-    server_.instance.listen(host_, port_);
-    server_.instance.start(threadNum_);
+    server_.instance.listen(config_.host, config_.rpcPort);
+    server_.instance.start(4);
 
-    connection_.init(host_, port_);
+    connection_.init(config_);
 
     for (int i=0; i<METHOD_NUM; ++i)
     {

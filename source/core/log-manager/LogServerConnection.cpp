@@ -12,15 +12,14 @@ LogServerConnection::~LogServerConnection()
 {
 }
 
-bool LogServerConnection::init(const std::string& host, uint16_t port)
+bool LogServerConnection::init(const LogServerConnectionConfig& config)
 {
-    host_ = host;
-    port_ = port;
+    config_ = config;
 
     try
     {
         session_pool_.reset(new msgpack::rpc::session_pool);
-        session_pool_->start(10);
+        session_pool_->start(config_.rpcThreadNum);
     }
     catch (const std::exception& e)
     {
@@ -35,7 +34,7 @@ void LogServerConnection::flushRequests()
 {
     if (need_flush_)
     {
-        msgpack::rpc::session session = session_pool_->get_session(host_, port_);
+        msgpack::rpc::session session = session_pool_->get_session(config_.host, config_.rpcPort);
         session.get_loop()->flush();
         need_flush_ = false;
     }

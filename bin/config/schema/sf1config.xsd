@@ -75,6 +75,7 @@
         <xs:complexType>
             <xs:attribute name="host" use="required"/>
             <xs:attribute name="rpcport" type="PortType" use="required"/>
+            <xs:attribute name="rpc_thread_num" type="xs:integer" use="optional"/>
             <xs:attribute name="driverport" type="PortType" use="optional"/>
         </xs:complexType>
     </xs:element>

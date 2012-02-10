@@ -169,7 +169,6 @@ izenelib::util::UString::EncodingType XmlConfigParser::parseEncodingType(const s
 // ------------------------- SF1Config-------------------------
 
 SF1Config::SF1Config()
-: driver_port_(0)
 {
 }
 
@@ -276,9 +275,10 @@ void SF1Config::parseSystemSettings(const ticpp::Element * system)
 
     getAttribute(getUniqChildElement(system, "LogConnection"), "str", log_conn_str_);
 
-    getAttribute(getUniqChildElement(system, "LogServerConnection"), "host", log_server_host_);
-    getAttribute(getUniqChildElement(system, "LogServerConnection"), "rpcport", rpc_port_);
-    getAttribute(getUniqChildElement(system, "LogServerConnection"), "driverport", driver_port_, false);
+    getAttribute(getUniqChildElement(system, "LogServerConnection"), "host", logServerConnectionConfig_.host);
+    getAttribute(getUniqChildElement(system, "LogServerConnection"), "rpcport", logServerConnectionConfig_.rpcPort);
+    getAttribute(getUniqChildElement(system, "LogServerConnection"), "rpc_thread_num", logServerConnectionConfig_.rpcThreadNum, false);
+    getAttribute(getUniqChildElement(system, "LogServerConnection"), "driverport", logServerConnectionConfig_.driverPort, false);
 
     getAttribute(getUniqChildElement(system, "CassandraConnection"), "str", cassandra_conn_str_);
 
