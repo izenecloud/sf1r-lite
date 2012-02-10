@@ -375,6 +375,7 @@ void SF1Config::parseDistributedTopology(
 
         parseMasterAgent(getUniqChildElement(cursf1node, "MasterAgent", false), topologyConfig);
         parseWorkerAgent(getUniqChildElement(cursf1node, "WorkerAgent", false), topologyConfig);
+        parseCorpus(getUniqChildElement(cursf1node, "Corpus", false), topologyConfig);
     }
 }
 
@@ -429,6 +430,20 @@ void SF1Config::parseWorkerAgent(const ticpp::Element * worker, DistributedTopol
             getAttribute(aggregator_it.Get(), "name", serviceUnit.name_);
             downCase(serviceUnit.name_);
             workerAgent.addServiceUnit(serviceUnit);
+        }
+    }
+}
+
+void SF1Config::parseCorpus(const ticpp::Element * corpus, DistributedTopologyConfig& topologyConfig)
+{
+    if (corpus)
+    {
+        Iterator<Element> collection_it("Collection");
+        for (collection_it = collection_it.begin(corpus); collection_it != collection_it.end(); collection_it++)
+        {
+            string collection;
+            getAttribute(collection_it.Get(), "name", collection, true);
+            topologyConfig.curSF1Node_.collectionList_.push_back(collection);
         }
     }
 }
