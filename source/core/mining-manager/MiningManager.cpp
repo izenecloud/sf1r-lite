@@ -142,14 +142,14 @@ bool MiningManager::open()
 {
     close();
 
-    std::cout<<"DO_TG : "<<(int)mining_schema_.tg_enable<<" - "<<(int)mining_schema_.tg_kpe_only<<std::endl;
-    std::cout<<"DO_DUPD : "<<(int)mining_schema_.dupd_enable<<std::endl;
-    std::cout<<"DO_SIM : "<<(int)mining_schema_.sim_enable<<std::endl;
-    std::cout<<"DO_FACETED : "<<(int)mining_schema_.faceted_enable<<std::endl;
-    std::cout<<"DO_GROUP : "<<(int)mining_schema_.group_enable<<std::endl;
-    std::cout<<"DO_ATTR : "<<(int)mining_schema_.attr_enable<<std::endl;
-    std::cout<<"DO_TDT : "<<(int)mining_schema_.tdt_enable<<std::endl;
-    std::cout<<"DO_IISE : "<<(int)mining_schema_.ise_enable<<std::endl;
+    std::cout << "DO_TG : " << (int) mining_schema_.tg_enable << " - " << (int) mining_schema_.tg_kpe_only << std::endl;
+    std::cout << "DO_DUPD : " << (int) mining_schema_.dupd_enable << " - " << (int) mining_schema_.dupd_fp_only << std::endl;
+    std::cout << "DO_SIM : " << (int) mining_schema_.sim_enable << std::endl;
+    std::cout << "DO_FACETED : " << (int) mining_schema_.faceted_enable << std::endl;
+    std::cout << "DO_GROUP : " << (int) mining_schema_.group_enable << std::endl;
+    std::cout << "DO_ATTR : " << (int) mining_schema_.attr_enable << std::endl;
+    std::cout << "DO_TDT : " << (int) mining_schema_.tdt_enable << std::endl;
+    std::cout << "DO_IISE : " << (int) mining_schema_.ise_enable << std::endl;
 
     /** Global variables **/
     try
@@ -251,7 +251,7 @@ bool MiningManager::open()
         {
             dupd_path_ = prefix_path + "/dupd/";
             FSUtil::createDir(dupd_path_);
-            dupManager_.reset(new DupDType(dupd_path_, document_manager_, mining_schema_.dupd_properties, c_analyzer_));
+            dupManager_.reset(new DupDType(dupd_path_, document_manager_, mining_schema_.dupd_properties, c_analyzer_, mining_schema_.dupd_fp_only));
             dupManager_->SetIDManager(idManager_);
             if (!dupManager_->Open())
             {
@@ -698,7 +698,7 @@ bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
 
         START_PROFILER(dupd);
         //get dupd result
-        if (mining_schema_.dupd_enable)
+        if (mining_schema_.dupd_enable && !mining_schema_.dupd_fp_only)
         {
             addDupResult_(miaInput);
         }

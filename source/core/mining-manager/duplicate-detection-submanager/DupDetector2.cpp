@@ -25,6 +25,7 @@ namespace sf1r
 DupDetector2::DupDetector2(const std::string& container)
     : container_(container), document_manager_(), analyzer_(NULL)
     , file_info_(new FileObjectType(container + "/file_obj"))
+    , fp_only_(false)
     , maxk_(0), partition_num_(0)
     , algo_(NULL)
     , fp_storage_(container + "/fp")
@@ -39,9 +40,11 @@ DupDetector2::DupDetector2(
         const std::string& container,
         const boost::shared_ptr<DocumentManager>& document_manager,
         const std::vector<std::string>& properties,
-        idmlib::util::IDMAnalyzer* analyzer)
+        idmlib::util::IDMAnalyzer* analyzer,
+        bool fp_only)
     : container_(container), document_manager_(document_manager), analyzer_(analyzer)
     , file_info_(new FileObjectType(container + "/file_obj"))
+    , fp_only_(fp_only)
     , maxk_(0), partition_num_(0)
     , algo_(NULL)
     , fp_storage_(container + "/fp")
@@ -609,7 +612,6 @@ bool DupDetector2::ProcessCollectionBySimhash_()
         std::cout << "No document need to processed: from " << processed_max_docid_ + 1 << " to " << processing_max_docid_ << std::endl;
         return true;
     }
-    uint32_t total_count = processing_max_docid_ - processed_max_docid_;
     std::cout << "Will processing from " << processed_max_docid_ + 1 << " to " << processing_max_docid_ << std::endl;
 
     fp_vec_.resize(processing_max_docid_);
@@ -632,24 +634,24 @@ bool DupDetector2::ProcessCollectionBySimhash_()
         std::cout << "[" << docid << "] ";
 #endif
         FpItem& fp_item = fp_vec_[docid - 1];
-        uint32_t length = 0;
+        std::vector<izenelib::util::UString> content_list;
         while (property_it != doc.propertyEnd())
         {
             if (dd_properties_.find(property_it->first))
             {
                 const izenelib::util::UString& content = property_it->second.get<izenelib::util::UString>();
-                std::vector<uint64_t> p_signature;
-                uint32_t text_len = getSignatureForText(content, p_signature);
-                if (text_len)
-                {
-                    fp_item ^= p_signature;
-                    length += text_len;
-                }
+                content_list.push_back(content);
             }
             property_it++;
         }
-        fp_item.docid = docid;
-        fp_item.length = length;
+        std::vector<uint64_t> signature;
+        uint32_t text_len = getSignatureForMultiText(content_list, signature);
+        if (text_len)
+        {
+            fp_item.docid = docid;
+            fp_item.length = text_len;
+            fp_item.fp.swap(signature);
+        }
 #ifdef DUPD_TEXT_DEBUG
         std::cout << std::endl;
 #endif
@@ -755,6 +757,13 @@ bool DupDetector2::runDuplicateDetectionAnalysis(bool force)
     }
 #endif
     std::cout << "Now all doc count : " << fp_vec_.size() << std::endl;
+    if (fp_only_)
+    {
+        processed_max_docid_ = processing_max_docid_;
+        processing_max_docid_ = 0;
+        return true;
+    }
+
     std::cout << "Table count : " << table_count << std::endl;
 
     for (uint32_t tid = 0; tid < table_count; tid++)
@@ -819,6 +828,34 @@ uint32_t DupDetector2::getSignatureForText(
 {
     std::vector<izenelib::util::UString> termList;
     analyzer_->GetFilteredStringList(text, termList);
+
+    std::vector<std::string> strTermList(termList.size());
+    for (uint32_t u = 0; u < termList.size(); u++)
+    {
+        termList[u].convertString(strTermList[u], izenelib::util::UString::UTF_8);
+#ifdef DUPD_TEXT_DEBUG
+        std::cout << strTermList[u] << ",";
+#endif
+    }
+    if (!strTermList.empty())
+    {
+        //  CharikarAlgorithm algo;
+        algo_->generate_document_signature(strTermList, signature);
+    }
+    return strTermList.size();
+}
+
+uint32_t DupDetector2::getSignatureForMultiText(
+        const std::vector<izenelib::util::UString>& texts,
+        std::vector<uint64_t>& signature)
+{
+    std::vector<izenelib::util::UString> termList;
+    for (uint32_t u = 0; u < texts.size(); u++)
+    {
+        std::vector<izenelib::util::UString> tmpTermList;
+        analyzer_->GetFilteredStringList(texts[u], tmpTermList);
+        termList.insert(termList.begin(), tmpTermList.begin(), tmpTermList.end());
+    }
 
     std::vector<std::string> strTermList(termList.size());
     for (uint32_t u = 0; u < termList.size(); u++)

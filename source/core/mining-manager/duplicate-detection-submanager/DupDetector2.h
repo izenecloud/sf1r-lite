@@ -48,13 +48,14 @@ class DupDetector2
 //   typedef FingerprintsCompare<64,3,6> FPCompareType;
     typedef idmlib::util::FileObject<uint32_t> FileObjectType;
 public:
+    DupDetector2(const std::string& container);
+
     DupDetector2(
-        const std::string& container);
-    DupDetector2(
-        const std::string& container,
-        const boost::shared_ptr<DocumentManager>& document_manager,
-        const std::vector<std::string>& properties,
-        idmlib::util::IDMAnalyzer* analyzer);
+            const std::string& container,
+            const boost::shared_ptr<DocumentManager>& document_manager,
+            const std::vector<std::string>& properties,
+            idmlib::util::IDMAnalyzer* analyzer,
+            bool fp_only);
     ~DupDetector2();
 
     bool Open();
@@ -93,6 +94,10 @@ public:
 
     uint32_t getSignatureForText(
             const izenelib::util::UString& text,
+            std::vector<uint64_t>& signature);
+
+    uint32_t getSignatureForMultiText(
+            const std::vector<izenelib::util::UString>& texts,
             std::vector<uint64_t>& signature);
 
     void getKNNListBySignature(
@@ -144,14 +149,15 @@ private:
 
 
 private:
-
     std::string container_;
     boost::shared_ptr<DocumentManager> document_manager_;
     boost::shared_ptr<izenelib::ir::idmanager::IDManager> id_manager_;
     izenelib::am::rde_hash<std::string, bool> dd_properties_;
     idmlib::util::IDMAnalyzer* analyzer_;
     FileObjectType* file_info_;
+
     //parameters
+    bool fp_only_;
     uint8_t maxk_;
     uint8_t partition_num_;
     double trash_threshold_;
