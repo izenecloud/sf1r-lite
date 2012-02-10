@@ -133,7 +133,7 @@ bool DupDetector2::Open()
         while (getline(ifs,line))
         {
             boost::algorithm::trim(line);
-            if (line.empty() && in_group.size() > 0)
+            if (line.empty() && !in_group.empty())
             {
                 //process in_group
                 for (uint32_t i = 1; i < in_group.size(); i++)
@@ -166,7 +166,7 @@ bool DupDetector2::Open()
         }
         ifs.close();
         //process in_group
-        if (in_group.size()>0)
+        if (!in_group.empty())
         {
             for (uint32_t i = 1; i < in_group.size(); i++)
             {
@@ -263,7 +263,7 @@ void DupDetector2::FindDD_(const std::vector<FpItem>& data, uint32_t table_id)
 
 void DupDetector2::PairWiseCompare_(const std::vector<FpItem>& for_compare, uint32_t& dd_count)
 {
-    if (for_compare.size()==0) return;
+    if (for_compare.empty()) return;
 #ifdef DUPD_GROUP_DEBUG
     std::cout << "[in-group] " << for_compare.size() << std::endl;
 #endif
@@ -278,9 +278,7 @@ void DupDetector2::PairWiseCompare_(const std::vector<FpItem>& for_compare, uint
                 ++dd_count;
                 boost::lock_guard<boost::shared_mutex> lock(read_write_mutex_);
                 group_->AddDoc(for_compare[i].docid, for_compare[j].docid);
-
             }
-
         }
     }
 }
@@ -612,9 +610,9 @@ bool DupDetector2::ProcessCollectionBySimhash_()
         return true;
     }
     uint32_t total_count = processing_max_docid_ - processed_max_docid_;
-    std::cout << "Will processing from " << processed_max_docid_ << " to " << processing_max_docid_ << std::endl;
+    std::cout << "Will processing from " << processed_max_docid_ + 1 << " to " << processing_max_docid_ << std::endl;
 
-    fp_vec_.resize(fp_vec_.size() + total_count);
+    fp_vec_.resize(processing_max_docid_);
     uint32_t process_count = 0;
     Document doc;
 
@@ -625,8 +623,9 @@ bool DupDetector2::ProcessCollectionBySimhash_()
         {
             MEMLOG("[DUPD] inserted %d. docid: %d", process_count, docid);
         }
-        bool b = document_manager_->getDocument(docid, doc);
-        if (!b) continue;
+        if (!document_manager_->getDocument(docid, doc))
+            continue;
+
         Document::property_iterator property_it = doc.propertyBegin();
 
 #ifdef DUPD_TEXT_DEBUG

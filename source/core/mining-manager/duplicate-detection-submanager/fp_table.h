@@ -33,7 +33,10 @@ public:
 
     bool operator() (const FpItem& left, const FpItem& right) const
     {
-        for (uint32_t i = 0; i < bit_mask_.size(); i++)
+        if (right.fp.empty()) return false;
+        if (left.fp.empty()) return true;
+
+        for (uint32_t i = bit_mask_.size() - 1; i < bit_mask_.size(); i--)
         {
             if ((left.fp[i] & bit_mask_[i]) < (right.fp[i] & bit_mask_[i]))
                 return true;
