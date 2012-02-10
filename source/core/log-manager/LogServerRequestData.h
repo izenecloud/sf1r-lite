@@ -58,6 +58,14 @@ struct CreateScdDocRequestData : public LogServerRequestData
     MSGPACK_DEFINE(docid_, content_, collection_)
 };
 
+struct DeleteScdDocRequestData : public LogServerRequestData
+{
+    uint128_t docid_;
+    std::string collection_;
+
+    MSGPACK_DEFINE(docid_, collection_)
+};
+
 struct GetScdFileRequestData : public LogServerRequestData
 {
     std::string username_;

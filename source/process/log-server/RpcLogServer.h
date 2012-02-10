@@ -52,6 +52,8 @@ public:
 
     /// Add new scd doc
     void createScdDoc(const CreateScdDocRequestData& scdDoc);
+    /// Delete scd doc
+    void deleteScdDoc(const DeleteScdDocRequestData& delReq);
 
     /// Dispatch scd file to required server
     void dispatchScdFile(const GetScdFileRequestData& scdFileRequestData, GetScdFileResponseData& response);
