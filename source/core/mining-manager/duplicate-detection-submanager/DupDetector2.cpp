@@ -215,11 +215,11 @@ bool DupDetector2::SkipTrash_(uint32_t total_count, uint32_t pairwise_count, uin
 //   return false;
 }
 
-void DupDetector2::FindDD_(const std::vector<FpItem>& data, uint32_t table_id)
+void DupDetector2::FindDD_(const std::vector<FpItem>& data, const FpTable& table, uint32_t table_id)
 {
     std::vector<FpItem> for_compare;
     bool is_first = true;
-    std::vector<uint64_t> last_compare_value;
+    std::vector<uint64_t> compare_value, last_compare_value;
     uint32_t this_max_docid = 0;
     uint32_t total_count = data.size();
     uint32_t dd_count = 0;
@@ -228,7 +228,7 @@ void DupDetector2::FindDD_(const std::vector<FpItem>& data, uint32_t table_id)
         uint32_t docid = data[i].docid;
         if (docid == 0) continue;
 //     if (i%10000==0) std::cout << "[dup-id] " << i << std::endl;
-        const std::vector<uint64_t>& compare_value = data[i].fp;
+        table.GetMaskedBits(data[i].fp, compare_value);
         if (is_first)
         {
         }
@@ -766,12 +766,13 @@ bool DupDetector2::runDuplicateDetectionAnalysis(bool force)
 
     std::cout << "Table count : " << table_count << std::endl;
 
+    std::vector<FpItem> temp_fp_vec = fp_vec_;
     for (uint32_t tid = 0; tid < table_count; tid++)
     {
         MEMLOG("Processing table id : %d", tid);
         const FpTable& table = table_list_[tid];
-        std::sort(fp_vec_.begin(), fp_vec_.end(), table);
-        FindDD_(fp_vec_, tid);
+        std::sort(temp_fp_vec.begin(), temp_fp_vec.end(), table);
+        FindDD_(temp_fp_vec, table, tid);
     }
 
     uint32_t max = processing_max_docid_;

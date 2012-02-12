@@ -46,6 +46,21 @@ public:
         return false;
     }
 
+    void GetMaskedBits(const std::vector<uint64_t>& raw_bits, std::vector<uint64_t>& masked_bits) const
+    {
+        if (raw_bits.empty())
+        {
+            masked_bits.clear();
+            return;
+        }
+
+        masked_bits.resize(raw_bits.size());
+        for (uint32_t i = 0; i < raw_bits.size(); i++)
+        {
+            masked_bits[i] = raw_bits[i] & bit_mask_[i];
+        }
+    }
+
 private:
     friend class FpTables;
 

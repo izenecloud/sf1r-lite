@@ -126,7 +126,7 @@ private:
 
     uint32_t GetProcessedMaxId_();
 
-    void FindDD_(const std::vector<FpItem>& object, uint32_t table_id);
+    void FindDD_(const std::vector<FpItem>& object, const FpTable& table, uint32_t table_id);
 
     bool SkipTrash_(uint32_t total_count, uint32_t pairwise_count, uint32_t table_id);
 
