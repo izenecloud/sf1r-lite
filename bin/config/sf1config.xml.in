@@ -23,7 +23,7 @@
          set the "host" to where the LogServer is deployed;
          "rpcport" is required and "driverport" is optional for SF1R currently.
     -->
-    <LogServerConnection host="localhost" rpcport="18811" driverport="18812"/>
+    <LogServerConnection host="localhost" rpcport="18811" rpc_thread_num="30" driverport="18812"/>
 
     <!-- Format of value of str:
 
@@ -223,16 +223,20 @@
     <DistributedCommon clusterid="@LOCAL_HOST_USER_NAME@" username="@LOCAL_HOST_USER_NAME@" localhost="172.16.0.36"
                        workerport="18151" notifyrecvport="18131" datarecvport="18121" />
 
-    <DistributedTopology enable="n" type="search" nodenum="2" shardnum="2">
+    <DistributedTopology enable="y" type="search" nodenum="2" shardnum="2">	
       <CurrentNode replicaid="1" nodeid="1">
-        <MasterAgent enable="y">
+        <MasterAgent enable="n">
           <Aggregator name="b5mm"/>
           <Aggregator name="intel"/>
         </MasterAgent>
-        <WorkerAgent enable="y" shardid="1">
+        <WorkerAgent enable="n" shardid="1">
           <Service name="b5mm"/>
           <Service name="intel"/>
         </WorkerAgent>
+        <Corpus>
+          <Collection name="b5mm"/>
+          <Collection name="b5ma"/>
+        </Corpus>
       </CurrentNode>
     </DistributedTopology>
 

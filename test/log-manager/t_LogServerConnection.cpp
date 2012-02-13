@@ -8,6 +8,11 @@
 
 using namespace sf1r;
 
+namespace
+{
+LogServerConnectionConfig LOG_SERVER_CONFIG("localhost", 18811);
+}
+
 void t_RpcLogServer();
 void t_RpcLogServerCreateTestData();
 void t_RpcLogServerUpdateTestData();
@@ -52,7 +57,7 @@ int main(int argc, char* argv[])
 void t_RpcLogServer()
 {
     LogServerConnection& conn = LogServerConnection::instance();
-    conn.init("localhost", 18811);
+    conn.init(LOG_SERVER_CONFIG);
 
     UpdateUUIDRequest uuidReq;
     uuidReq.param_.docidList_.resize(3);
@@ -95,7 +100,7 @@ void t_RpcLogServer()
 void t_RpcLogServerCreateTestData()
 {
     LogServerConnection& conn = LogServerConnection::instance();
-    conn.init("localhost", 18811);
+    conn.init(LOG_SERVER_CONFIG);
 
     UpdateUUIDRequest uuidReq;
 
@@ -144,7 +149,7 @@ void t_RpcLogServerCreateTestData()
 void t_RpcLogServerUpdateTestData()
 {
     LogServerConnection& conn = LogServerConnection::instance();
-    conn.init("localhost", 18811);
+    conn.init(LOG_SERVER_CONFIG);
 
     UpdateUUIDRequest uuidReq;
 
@@ -194,7 +199,7 @@ void t_RpcLogServerUpdateTestData()
 void t_ScdStorage()
 {
     LogServerConnection& conn = LogServerConnection::instance();
-    conn.init("localhost", 18811);
+    conn.init(LOG_SERVER_CONFIG);
 
     std::string collection = "test";
 

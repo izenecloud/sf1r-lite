@@ -75,6 +75,7 @@
         <xs:complexType>
             <xs:attribute name="host" use="required"/>
             <xs:attribute name="rpcport" type="PortType" use="required"/>
+            <xs:attribute name="rpc_thread_num" type="xs:integer" use="optional"/>
             <xs:attribute name="driverport" type="PortType" use="optional"/>
         </xs:complexType>
     </xs:element>
@@ -264,6 +265,7 @@
             <xs:sequence>
                 <xs:element ref="MasterAgent" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="WorkerAgent" minOccurs="0" maxOccurs="1"/>
+                <xs:element ref="Corpus" minOccurs="0" maxOccurs="1"/>
             </xs:sequence>
             <xs:attribute name="nodeid" use="required">
                 <xs:simpleType>
@@ -313,6 +315,18 @@
         </xs:complexType>
     </xs:element>
     <xs:element name="Aggregator">
+        <xs:complexType>
+            <xs:attribute name="name" type="xs:NCName" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Corpus">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="Collection" minOccurs="1" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Collection">
         <xs:complexType>
             <xs:attribute name="name" type="xs:NCName" use="required"/>
         </xs:complexType>

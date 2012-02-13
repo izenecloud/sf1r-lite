@@ -18,6 +18,7 @@
 #include <configuration-manager/FirewallConfig.h>
 #include <configuration-manager/CollectionParameterConfig.h>
 #include <configuration-manager/CassandraStorageConfig.h>
+#include <configuration-manager/LogServerConnectionConfig.h>
 #include <mining-manager/faceted-submanager/ontology_rep_item.h>
 #include <core/common/TermTypeDetector.h>
 
@@ -375,11 +376,9 @@ public:
         return cassandra_conn_str_;
     }
 
-    void getLogServerConfig(std::string& host, uint16_t& rpc_port, uint16_t& driver_port)
+    const LogServerConnectionConfig& getLogServerConfig() const
     {
-        host = log_server_host_;
-        rpc_port = rpc_port_;
-        driver_port = driver_port_;
+        return logServerConnectionConfig_;
     }
 
     /// @brief Gets the configuration related to LAManager
@@ -623,6 +622,7 @@ private:
     /// @param system           Pointer to the Element
     void parseMasterAgent(const ticpp::Element * master, DistributedTopologyConfig& topologyConfig);
     void parseWorkerAgent(const ticpp::Element * worker, DistributedTopologyConfig& topologyConfig);
+    void parseCorpus(const ticpp::Element * corpus, DistributedTopologyConfig& topologyConfig);
 
 public:
     //----------------------------  PRIVATE MEMBER VARIABLES  ----------------------------
@@ -651,9 +651,7 @@ public:
     std::string cassandra_conn_str_;
 
     /// @brief Log server network address
-    std::string  log_server_host_;
-    unsigned int rpc_port_;
-    unsigned int driver_port_;
+    LogServerConnectionConfig logServerConnectionConfig_;
 
     /// @brief  Configurations for BrokerAgent
     BrokerAgentConfig brokerAgentConfig_;

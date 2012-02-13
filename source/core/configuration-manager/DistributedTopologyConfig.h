@@ -23,14 +23,22 @@ struct SF1Node
     MasterAgentConfig masterAgent_;
     WorkerAgentConfig workerAgent_;
 
+    std::vector<std::string> collectionList_;
+
     std::string toString()
     {
         std::stringstream ss;
-        ss << "--[Current SF1 Node] nodeId: "<<nodeId_<<" replicaId: "<<replicaId_
-           <<std::endl;
+        ss << "[Current SF1 Node] nodeId: "<<nodeId_<<" replicaId: "<<replicaId_<<std::endl;
 
         ss << masterAgent_.toString();
         ss << workerAgent_.toString();
+
+        ss << "[Corpus]";
+        std::vector<std::string>::iterator it;
+        for (it = collectionList_.begin(); it != collectionList_.end(); it++)
+        {
+            ss << " " << *it;
+        }
 
         return ss.str();
     }
@@ -51,7 +59,7 @@ public:
         ss << "enabled ? "<<enabled_
            <<" nodeNum: "<<nodeNum_<<" workerNum: "<<shardNum_<<std::endl;
 
-        ss << curSF1Node_.toString();
+        ss << curSF1Node_.toString() << std::endl;
         ss << "==============================="<<std::endl;
         return ss.str();
     }

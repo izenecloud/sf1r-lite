@@ -85,6 +85,18 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
   ADD_TEST(log_manager "${SF1RENGINE_ROOT}/testbin/t_ItemLogger")
+
+  ADD_EXECUTABLE(t_RpcServerConnection
+    Runner.cpp
+    t_RpcServerConnection.cpp
+    RpcConnectionTestFixture.cpp
+    RpcTestServer.cpp
+    )
+  TARGET_LINK_LIBRARIES(t_RpcServerConnection ${libs})
+  SET_TARGET_PROPERTIES(t_RpcServerConnection PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(log_manager "${SF1RENGINE_ROOT}/testbin/t_RpcServerConnection")
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
 
   ADD_EXECUTABLE(t_LogServerConnection

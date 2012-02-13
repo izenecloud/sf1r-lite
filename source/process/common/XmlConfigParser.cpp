@@ -169,7 +169,6 @@ izenelib::util::UString::EncodingType XmlConfigParser::parseEncodingType(const s
 // ------------------------- SF1Config-------------------------
 
 SF1Config::SF1Config()
-: driver_port_(0)
 {
 }
 
@@ -276,9 +275,10 @@ void SF1Config::parseSystemSettings(const ticpp::Element * system)
 
     getAttribute(getUniqChildElement(system, "LogConnection"), "str", log_conn_str_);
 
-    getAttribute(getUniqChildElement(system, "LogServerConnection"), "host", log_server_host_);
-    getAttribute(getUniqChildElement(system, "LogServerConnection"), "rpcport", rpc_port_);
-    getAttribute(getUniqChildElement(system, "LogServerConnection"), "driverport", driver_port_, false);
+    getAttribute(getUniqChildElement(system, "LogServerConnection"), "host", logServerConnectionConfig_.host);
+    getAttribute(getUniqChildElement(system, "LogServerConnection"), "rpcport", logServerConnectionConfig_.rpcPort);
+    getAttribute(getUniqChildElement(system, "LogServerConnection"), "rpc_thread_num", logServerConnectionConfig_.rpcThreadNum, false);
+    getAttribute(getUniqChildElement(system, "LogServerConnection"), "driverport", logServerConnectionConfig_.driverPort, false);
 
     getAttribute(getUniqChildElement(system, "CassandraConnection"), "str", cassandra_conn_str_);
 
@@ -375,6 +375,7 @@ void SF1Config::parseDistributedTopology(
 
         parseMasterAgent(getUniqChildElement(cursf1node, "MasterAgent", false), topologyConfig);
         parseWorkerAgent(getUniqChildElement(cursf1node, "WorkerAgent", false), topologyConfig);
+        parseCorpus(getUniqChildElement(cursf1node, "Corpus", false), topologyConfig);
     }
 }
 
@@ -429,6 +430,20 @@ void SF1Config::parseWorkerAgent(const ticpp::Element * worker, DistributedTopol
             getAttribute(aggregator_it.Get(), "name", serviceUnit.name_);
             downCase(serviceUnit.name_);
             workerAgent.addServiceUnit(serviceUnit);
+        }
+    }
+}
+
+void SF1Config::parseCorpus(const ticpp::Element * corpus, DistributedTopologyConfig& topologyConfig)
+{
+    if (corpus)
+    {
+        Iterator<Element> collection_it("Collection");
+        for (collection_it = collection_it.begin(corpus); collection_it != collection_it.end(); collection_it++)
+        {
+            string collection;
+            getAttribute(collection_it.Get(), "name", collection, true);
+            topologyConfig.curSF1Node_.collectionList_.push_back(collection);
         }
     }
 }
