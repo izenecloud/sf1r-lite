@@ -5,6 +5,9 @@
 
 #include <util/ustring/UString.h>
 #include <util/profiler/ProfilerGroup.h>
+#include <util/fileno.hpp>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include <boost/filesystem/path.hpp>
 #define BOOST_SPIRIT_THREADSAFE
@@ -133,7 +136,11 @@ ScdParser::ScdParser(const izenelib::util::UString::EncodingType & encodingType,
 ScdParser::~ScdParser()
 {
     if (fs_.is_open())
+    {
+        int fd = izenelib::util::fileno(fs_);
+        posix_fadvise(fd, 0,0,POSIX_FADV_DONTNEED);
         fs_.close();
+    }
 }
 
 bool ScdParser::checkSCDFormat(const string & file)
