@@ -36,7 +36,7 @@ public:
         if (right.fp.empty()) return false;
         if (left.fp.empty()) return true;
 
-        for (uint32_t i = bit_mask_.size() - 1; i < bit_mask_.size(); i--)
+        for (int i = bit_mask_.size() - 1; i >= 0; i--)
         {
             if ((left.fp[i] & bit_mask_[i]) < (right.fp[i] & bit_mask_[i]))
                 return true;

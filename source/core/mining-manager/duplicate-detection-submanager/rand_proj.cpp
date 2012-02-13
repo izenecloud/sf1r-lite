@@ -35,8 +35,7 @@ void RandProj::generate_signature(std::vector<uint64_t>& signature)
     for (uint32_t i = 0; i < proj_.length(); i++)
     {
         uint32_t j = i >> 6;
-        signature[j] <<= 1;
-        if (proj_.at(i) >= 0) ++signature[j];
+        if (proj_.at(i) >= 0) signature[j] |= uint64_t(1) << (i & 0x3f);
     }
 }
 

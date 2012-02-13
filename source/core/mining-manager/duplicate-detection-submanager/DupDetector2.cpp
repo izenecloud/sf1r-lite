@@ -884,6 +884,7 @@ void DupDetector2::getKNNListBySignature(
 
     for (uint32_t i = 0; i < fp_vec_.size(); i++)
     {
+        if (fp_vec_[i].docid == 0) continue;
         uint32_t hamming_dist = Utilities::calcHammingDist(signature, fp_vec_[i].fp);
         knn_list.push_back(std::make_pair(hamming_dist, fp_vec_[i]));
         std::push_heap(knn_list.begin(), knn_list.end());
