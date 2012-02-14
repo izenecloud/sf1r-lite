@@ -305,47 +305,105 @@ void AttributeIndexer::GetAttribIdList(const izenelib::util::UString& value, std
     GetAttribIdList(category, value, id_list);
 }
 
+void AttributeIndexer::GetNgramAttribIdList_(const izenelib::util::UString& ngram, std::vector<AttribId>& aid_list)
+{
+    std::vector<izenelib::util::UString> ngram_list;
+    ngram_list.push_back(ngram);
+    ngram_synonym_.Get(ngram, ngram_list);
+    for(std::size_t s=0;s<ngram_list.size();s++)
+    {
+        std::vector<AttribId> aid_list_value;
+        //{
+            //std::string sn;
+            //ngram.convertString(sn, izenelib::util::UString::UTF_8);
+            //std::cout<<"[NGRAM] "<<sn<<std::endl;
+        //}
+        index_->get(ngram_list[s], aid_list_value);
+        for(std::size_t a=0;a<aid_list_value.size();++a)
+        {
+            AttribId aid = aid_list_value[a];
+            AttribNameId anid;
+            name_index_->get(aid, anid);
+            if(filter_anid_.find(anid)==filter_anid_.end())
+            {
+                aid_list.push_back(aid);
+            }
+        }
+    }
+}
+
 void AttributeIndexer::GetAttribIdList(const izenelib::util::UString& category, const izenelib::util::UString& value, std::vector<AttribId>& id_list)
 {
     static const uint32_t n = 10;
     static const uint32_t max_ngram_len = 20;
     std::vector<izenelib::util::UString> termstr_list;
     AnalyzeChar_(value, termstr_list);
-    for(std::size_t i=0;i<termstr_list.size();i++)
+    std::size_t index = 0;
+    while(index<termstr_list.size())
     {
+        std::vector<AttribId> ngram_aid_list;
+        izenelib::util::UString attrib_ngram;
         izenelib::util::UString ngram;
-        for(std::size_t j=0;j<n;j++)
+        for(std::size_t len = 0;len<n;len++)
         {
-            std::size_t index = i+j;
-            if(index>=termstr_list.size()) break;
-            ngram.append(termstr_list[index]);
+            std::size_t pos = index+len;
+            if(pos>=termstr_list.size()) break;
+            ngram.append(termstr_list[pos]);
             if(ngram.length()<2) continue;
             if(ngram.length()>max_ngram_len) break;
-            std::vector<izenelib::util::UString> ngram_list;
-            ngram_list.push_back(ngram);
-            ngram_synonym_.Get(ngram, ngram_list);
-            for(std::size_t s=0;s<ngram_list.size();s++)
+            std::vector<AttribId> aid_list;
+            GetNgramAttribIdList_(ngram, aid_list);
+            if(!aid_list.empty())
             {
-                std::vector<AttribId> aid_list_value;
-                //{
-                    //std::string sn;
-                    //ngram.convertString(sn, izenelib::util::UString::UTF_8);
-                    //std::cout<<"[NGRAM] "<<sn<<std::endl;
-                //}
-                index_->get(ngram_list[s], aid_list_value);
-                for(std::size_t a=0;a<aid_list_value.size();++a)
-                {
-                    AttribId aid = aid_list_value[a];
-                    AttribNameId anid;
-                    name_index_->get(aid, anid);
-                    if(filter_anid_.find(anid)==filter_anid_.end())
-                    {
-                        id_list.push_back(aid);
-                    }
-                }
+                attrib_ngram = ngram;
+                ngram_aid_list.swap(aid_list);
             }
         }
+        id_list.insert(id_list.end(), ngram_aid_list.begin(), ngram_aid_list.end());
+        if(attrib_ngram.length()>0)
+        {
+            index += attrib_ngram.length();
+        }
+        else
+        {
+            ++index;
+        }
     }
+    //for(std::size_t i=0;i<termstr_list.size();i++)
+    //{
+        //izenelib::util::UString ngram;
+        //for(std::size_t j=0;j<n;j++)
+        //{
+            //std::size_t index = i+j;
+            //if(index>=termstr_list.size()) break;
+            //ngram.append(termstr_list[index]);
+            //if(ngram.length()<2) continue;
+            //if(ngram.length()>max_ngram_len) break;
+            //std::vector<izenelib::util::UString> ngram_list;
+            //ngram_list.push_back(ngram);
+            //ngram_synonym_.Get(ngram, ngram_list);
+            //for(std::size_t s=0;s<ngram_list.size();s++)
+            //{
+                //std::vector<AttribId> aid_list_value;
+                ////{
+                    ////std::string sn;
+                    ////ngram.convertString(sn, izenelib::util::UString::UTF_8);
+                    ////std::cout<<"[NGRAM] "<<sn<<std::endl;
+                ////}
+                //index_->get(ngram_list[s], aid_list_value);
+                //for(std::size_t a=0;a<aid_list_value.size();++a)
+                //{
+                    //AttribId aid = aid_list_value[a];
+                    //AttribNameId anid;
+                    //name_index_->get(aid, anid);
+                    //if(filter_anid_.find(anid)==filter_anid_.end())
+                    //{
+                        //id_list.push_back(aid);
+                    //}
+                //}
+            //}
+        //}
+    //}
     std::sort(id_list.begin(), id_list.end());
     id_list.erase(std::unique(id_list.begin(), id_list.end()), id_list.end());
     //filter by category
@@ -1133,6 +1191,31 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_file)
         GetAttribIdList(category, title, doc.aid_list);
         std::sort(doc.tag_aid_list.begin(), doc.tag_aid_list.end()); 
         std::sort(doc.aid_list.begin(), doc.aid_list.end()); 
+        {
+            std::string stitle;
+            title.convertString(stitle, izenelib::util::UString::UTF_8);
+            logger_<<"[PD] ["<<stitle<<"] [";
+            for(uint32_t a=0;a<doc.tag_aid_list.size();a++)
+            {
+                AttribId aid = doc.tag_aid_list[a];
+                izenelib::util::UString text;
+                id_manager_->getTermStringByTermId(aid, text);
+                std::string str;
+                text.convertString(str, izenelib::util::UString::UTF_8);
+                logger_<<"("<<aid<<","<<str<<")";
+            }
+            logger_<<"] [";
+            for(uint32_t a=0;a<doc.aid_list.size();a++)
+            {
+                AttribId aid = doc.aid_list[a];
+                izenelib::util::UString text;
+                id_manager_->getTermStringByTermId(aid, text);
+                std::string str;
+                text.convertString(str, izenelib::util::UString::UTF_8);
+                logger_<<"("<<aid<<","<<str<<")";
+            }
+            logger_<<"]"<<std::endl;
+        }
     }
 
 }

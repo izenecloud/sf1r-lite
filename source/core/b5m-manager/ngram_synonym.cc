@@ -13,7 +13,7 @@ bool NgramSynonym::Get(const izenelib::util::UString& ngram, std::vector<izeneli
     ngram.convertString(str, izenelib::util::UString::UTF_8);
     if(boost::regex_match(str, gb_regex_))
     {
-        if(str!="3g")
+        if(str!="3g" && str!="2g" && str !="1g")
         {
             std::string syn = str+"b";
             synonym.push_back(izenelib::util::UString(syn, izenelib::util::UString::UTF_8));

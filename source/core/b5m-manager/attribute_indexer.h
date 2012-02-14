@@ -109,6 +109,7 @@ namespace sf1r {
 
         //av means 'attribute value'
         void NormalizeAV_(const izenelib::util::UString& av, izenelib::util::UString& nav);
+        void GetNgramAttribIdList_(const izenelib::util::UString& ngram, std::vector<AttribId>& aid_list);
 
         bool IsBoolAttribValue_(const izenelib::util::UString& av, bool& b);
         void GetAttribNameMap_(const std::vector<AttribId>& aid_list, boost::unordered_map<AttribNameId, std::vector<AttribId> >& map);
