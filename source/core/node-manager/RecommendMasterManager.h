@@ -26,6 +26,8 @@ public:
 
     virtual bool init();
 
+    bool getSearchMasterAddress(std::string& host, uint32_t& port);
+
 protected:
     virtual std::string getReplicaPath(replicaid_t replicaId)
     {
