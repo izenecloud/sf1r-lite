@@ -72,7 +72,7 @@ class IDMAnalyzer;
 namespace sf1r
 {
 
-class DupDetector2;
+class DupDetectorWrapper;
 class GroupLabelLogger;
 class QueryRecommendSubmanager;
 class QueryRecommendRep;
@@ -109,7 +109,7 @@ class CTRManager;
  */
 class MiningManager : public boost::noncopyable
 {
-typedef DupDetector2 DupDType;
+typedef DupDetectorWrapper DupDType;
 typedef idmlib::util::ContainerSwitch<idmlib::tdt::Storage> TdtStorageType;
 typedef idmlib::sim::TermSimilarityTable<uint32_t> SimTableType;
 typedef idmlib::sim::SimOutputCollector<SimTableType> SimCollectorType;
@@ -260,7 +260,7 @@ public:
     bool GetSummarizationByRawKey(const izenelib::util::UString& rawKey, Summarization& result);
 
     bool GetKNNSearchResult(
-            SearchKeywordOperation& actionOperation,
+            const SearchKeywordOperation& actionOperation,
             std::vector<unsigned int>& docIdList,
             std::vector<float>& rankScoreList,
             std::size_t& totalCount,

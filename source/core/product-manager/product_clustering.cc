@@ -6,11 +6,12 @@
 
 using namespace sf1r;
 namespace bfs = boost::filesystem;
+
 ProductClustering::ProductClustering(const std::string& work_dir, const PMConfig& config)
-: work_dir_(work_dir), config_(config)
-, dd_(NULL), group_table_(NULL)
+    : work_dir_(work_dir), config_(config)
+    , dd_(NULL), group_table_(NULL)
 {
-    
+
 }
 
 bool ProductClustering::Open()
@@ -103,11 +104,11 @@ void ProductClustering::Insert(const PMDocumentType& doc)
     attach.category = category;
     attach.city = city;
     attach.price = price;
-    
+
     std::vector<std::string> terms;
     std::vector<double> weights;
     analyzer_.Analyze(title, terms, weights);
-    
+
     if( terms.empty() )
     {
         error_ = "Title analyzer result is empty.";
@@ -123,4 +124,3 @@ bool ProductClustering::Run()
     bool run_dd = dd_->RunDdAnalysis();
     return run_dd;
 }
-

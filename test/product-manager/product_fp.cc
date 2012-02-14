@@ -11,12 +11,14 @@ int main(int argc, char** argv)
     izenelib::am::ssf::Reader<> reader(path);
     reader.Open();
     FpItemType fp;
-    while( reader.Next(fp) )
+    while (reader.Next(fp))
     {
-        std::cout<<"["<<fp.docid<<"]{";
-        fp.fp.display(std::cout);
-        std::cout<<","<<fp.length<<"}"<<std::endl;
+        std::cout << "[" << fp.docid << "]{";
+        std::ostringstream oss;
+        oss << hex << setfill('0');
+        for (uint32_t j = fp.fp.size() - 1; j >= 0; j--)
+            oss << setw(16) << fp.fp[j];
+        std::cout << oss.str() << "," << fp.length << "}" << std::endl;
     }
     reader.Close();
 }
-

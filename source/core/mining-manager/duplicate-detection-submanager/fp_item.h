@@ -26,36 +26,6 @@ public:
         return docid < other.docid;
     }
 
-    FpItem& operator^=(const std::vector<uint64_t>& other)
-    {
-        if (fp.empty())
-            fp = other;
-        else
-            for (uint32_t i = 0; i < fp.size(); i++)
-                fp[i] ^= other[i];
-        return *this;
-    }
-
-    FpItem& operator|=(const std::vector<uint64_t>& other)
-    {
-        if (fp.empty())
-            fp = other;
-        else
-            for (uint32_t i = 0; i < fp.size(); i++)
-                fp[i] |= other[i];
-        return *this;
-    }
-
-    FpItem& operator&=(const std::vector<uint64_t>& other)
-    {
-        if (fp.empty())
-            fp.assign(other.size(), 0);
-        else
-            for (uint32_t i = 0; i < fp.size(); i++)
-                fp[i] &= other[i];
-        return *this;
-    }
-
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)

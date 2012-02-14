@@ -17,22 +17,19 @@ namespace sf1r
 
 class ProductTermAnalyzer
 {
-    
+
     enum TERM_STATUS {NORMAL, IN_BRACKET, IN_MODEL};
-    
+
 public:
-    
     ProductTermAnalyzer();
 
     ~ProductTermAnalyzer();
 
     void Analyze(const izenelib::util::UString& title, std::vector<std::string>& terms, std::vector<double>& weights);
 
-    
 private:
-    
     double GetWeight_(uint32_t title_length, const izenelib::util::UString& term, char tag);
-    
+
 private:
     idmlib::util::IDMAnalyzer* analyzer_;
     boost::unordered_set<std::string> stop_set_;
