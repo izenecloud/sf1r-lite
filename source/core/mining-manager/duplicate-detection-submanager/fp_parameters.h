@@ -1,4 +1,3 @@
-
 #ifndef SF1R_DD_FPPARAMETERS_H_
 #define SF1R_DD_FPPARAMETERS_H_
 
@@ -31,7 +30,7 @@ public:
 
     ~FpParameters()
     {
-//     if( !invalid_)
+//     if (!invalid_)
 //       free(nStartCount_);
     }
 
@@ -59,7 +58,7 @@ public:
     {
         uint32_t a = 1;
         uint32_t b = 1;
-        for (uint8_t i=1;i<=K;++i)
+        for (uint8_t i = 1; i <= K; ++i)
         {
             a *= (GROUP_COUNT-i+1);
             b *= i;
@@ -79,15 +78,15 @@ public:
 
     bool operator() (const std::pair<uint32_t, izenelib::util::CBitArray>& left, const std::pair<uint32_t, izenelib::util::CBitArray>& right)
     {
-        if ( invalid_ ) return 1;
-        uint64_t int_left = GetBitsValue( left.second);
-        uint64_t int_right = GetBitsValue( right.second);
+        if (invalid_) return 1;
+        uint64_t int_left = GetBitsValue(left.second);
+        uint64_t int_right = GetBitsValue(right.second);
         return int_left < int_right;
     }
 
     inline uint64_t GetBitsValue(const izenelib::util::CBitArray& bitArray)
     {
-        if ( invalid_ ) return 0;
+        if (invalid_) return 0;
         const uint8_t* p = bitArray.GetBuffer();
 //     std::cout<<"[WWWW]"<<","<<nStartCount_[0]<<","<<nStartCount_[1]<<std::endl;
         return izenelib::util::CBitArray::GetBitsValue<uint64_t>(p, nStartCount_);
@@ -98,14 +97,14 @@ private:
     {
         std::vector<uint8_t> blocks(GROUP_COUNT, FP_SIZE/GROUP_COUNT);
         uint8_t remain = FP_SIZE % GROUP_COUNT;
-        for (uint8_t i=0;i<remain;i++)
+        for (uint8_t i = 0; i < remain; i++)
         {
             blocks[i] += 1;
         }
-        std::vector<std::pair<int, int> > blocks_pos(blocks.size() );
+        std::vector<std::pair<int, int> > blocks_pos(blocks.size());
         blocks_pos[0].first = 0;
         blocks_pos[0].second = (int)blocks[0];
-        for (uint8_t i=1;i<blocks_pos.size();++i)
+        for (uint8_t i = 1; i < blocks_pos.size(); ++i)
         {
             blocks_pos[i].first = blocks_pos[i-1].first + blocks_pos[i-1].second;
             blocks_pos[i].second = (int)blocks[i];
@@ -116,34 +115,34 @@ private:
         //init
 
         std::vector<uint8_t > vec(size_);
-        for ( uint8_t i=0;i<size_;i++)
+        for (uint8_t i = 0; i < size_; i++)
         {
             vec[i] = i;
         }
 
         uint8_t index = 0;
-        while ( true )
+        while (true)
         {
-            if ( index == num ) break;
+            if (index == num) break;
             //set the value
-            transform_( vec, size_-1, blocks_pos.size() );
+            transform_(vec, size_-1, blocks_pos.size());
             ++index;
         }
 
 //     std::cout<<"[DUPD-GROUP] ("<<(int)num<<") ";
-//     for( uint8_t i=0;i<size_;i++)
+//     for (uint8_t i = 0; i < size_; i++)
 //     {
 //       std::cout<<(int)vec[i]<<",";
 //     }
 //     std::cout<<std::endl;
 
-        for ( uint8_t i=0;i<size_;i++)
+        for (uint8_t i = 0; i < size_; i++)
         {
 //       nStartCount_[i*2] = blocks_pos[vec[i] ].first;
 //       nStartCount_[i*2+1] = blocks_pos[vec[i] ].second;
 //       std::cout<<"nStartCount_ "<<(int)i<<","<<nStartCount_[i*2]<<","<<nStartCount_[i*2+1]<<std::endl;
 
-            nStartCount_.push_back( blocks_pos[vec[i]] );
+            nStartCount_.push_back(blocks_pos[vec[i]]);
         }
         invalid_ = false;
     }
@@ -151,13 +150,13 @@ private:
     void transform_(std::vector<uint8_t >& vec, uint32_t index, uint32_t size)
     {
         uint8_t pos = vec.size()-index;
-        if ( vec[index] == size-pos )
+        if (vec[index] == size-pos)
         {
             transform_(vec, index-1, size);
             return;
         }
         vec[index]++;
-        for (uint32_t i=index+1; i<vec.size();i++ )
+        for (uint32_t i = index+1; i < vec.size(); i++)
         {
             vec[i] = vec[index] + i-index;
         }

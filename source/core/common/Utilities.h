@@ -67,7 +67,8 @@ public:
 
     static bool convertPropertyDataType(const std::string& property_name, const PropertyDataType& sf1r_type, izenelib::ir::indexmanager::PropertyType& type);
 
-    static uint32_t calcHammDist(uint64_t v1, uint64_t v2);
+    static uint32_t calcHammingDist(uint64_t array1, uint64_t array2);
+    static uint32_t calcHammingDist(const std::vector<uint64_t>& vec1, const std::vector<uint64_t>& vec2);
 };
 
 template <typename AssocType, typename SeqType>

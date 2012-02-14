@@ -1,4 +1,3 @@
-
 #ifndef SF1R_DD_FPSPLITER_H_
 #define SF1R_DD_FPSPLITER_H_
 

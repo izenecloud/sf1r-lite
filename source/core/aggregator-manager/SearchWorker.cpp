@@ -38,7 +38,7 @@ bool SearchWorker::getDistSearchInfo(const KeywordSearchActionItem& actionItem, 
 
     getSearchResult_(actionItem, fakeResultItem);
 
-    resultItem = fakeResultItem.distSearchInfo_;
+    resultItem.swap(fakeResultItem.distSearchInfo_);
     return true;
 }
 
@@ -46,24 +46,14 @@ bool SearchWorker::getDistSearchResult(const KeywordSearchActionItem& actionItem
 {
     cout << "[SearchWorker::processGetSearchResult] " << actionItem.collectionName_ << endl;
 
-    if (! getSearchResult_(actionItem, resultItem))
-    {
-        return false;
-    }
-
-    return true;
+    return getSearchResult_(actionItem, resultItem);
 }
 
 bool SearchWorker::getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
     cout << "[SearchWorker::processGetSummaryResult] " << actionItem.collectionName_ << endl;
 
-    if (!getSummaryMiningResult_(actionItem, resultItem))
-    {
-        return false;
-    }
-
-    return true;
+    return getSummaryMiningResult_(actionItem, resultItem);
 }
 
 bool SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem)
@@ -214,7 +204,7 @@ bool SearchWorker::getSearchResult_(
             actionItem.env_.encodingType_.c_str()
         );
     SearchKeywordOperation actionOperation(actionItem, bundleConfig_->isUnigramWildcard(),
-                    laManager_, idManager_);
+            laManager_, idManager_);
     actionOperation.hasUnigramProperty_ = bundleConfig_->hasUnigramProperty();
     actionOperation.isUnigramSearchMode_ = bundleConfig_->isUnigramSearchMode();
 
@@ -275,33 +265,21 @@ bool SearchWorker::getSearchResult_(
         startOffset = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
     }
 
-    if (!searchManager_->search(
+    if (actionOperation.actionItem_.searchingMode_ == SearchingMode::KNN)
+    {
+        miningManager_->GetKNNSearchResult(
                 actionOperation,
                 resultItem.topKDocs_,
                 resultItem.topKRankScoreList_,
-                resultItem.topKCustomRankScoreList_,
                 resultItem.totalCount_,
-                resultItem.groupRep_,
-                resultItem.attrRep_,
                 resultItem.propertyRange_,
                 resultItem.distSearchInfo_,
                 TOP_K_NUM,
                 startOffset
-                ))
+                );
+    }
+    else
     {
-        std::string newQuery;
-
-        if (!bundleConfig_->bTriggerQA_)
-            return true;
-        assembleDisjunction(keywords, newQuery);
-
-        actionOperation.actionItem_.env_.queryString_ = newQuery;
-        resultItem.propertyQueryTermList_.clear();
-        if (!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
-        {
-            return true;
-        }
-
         if (!searchManager_->search(
                     actionOperation,
                     resultItem.topKDocs_,
@@ -316,13 +294,42 @@ bool SearchWorker::getSearchResult_(
                     startOffset
                     ))
         {
-            return true;
+            std::string newQuery;
+
+            if (!bundleConfig_->bTriggerQA_)
+                return true;
+            assembleDisjunction(keywords, newQuery);
+
+            actionOperation.actionItem_.env_.queryString_ = newQuery;
+            resultItem.propertyQueryTermList_.clear();
+            if (!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
+            {
+                return true;
+            }
+
+            if (!searchManager_->search(
+                        actionOperation,
+                        resultItem.topKDocs_,
+                        resultItem.topKRankScoreList_,
+                        resultItem.topKCustomRankScoreList_,
+                        resultItem.totalCount_,
+                        resultItem.groupRep_,
+                        resultItem.attrRep_,
+                        resultItem.propertyRange_,
+                        resultItem.distSearchInfo_,
+                        TOP_K_NUM,
+                        startOffset
+                        ))
+            {
+                return true;
+            }
         }
     }
 
     // todo, remove duplication globally over all nodes?
     // Remove duplicated docs from the result if the option is on.
-    removeDuplicateDocs(actionItem, resultItem);
+    if (actionOperation.actionItem_.searchingMode_ != SearchingMode::KNN)
+        removeDuplicateDocs(actionItem, resultItem);
 
     //set page info in resultItem t
     resultItem.start_ = actionItem.pageInfo_.start_;
@@ -607,8 +614,8 @@ bool  SearchWorker::getResultItem(ActionItemT& actionItem, const std::vector<sf1
 
 template <typename ResultItemType>
 bool SearchWorker::removeDuplicateDocs(
-    const KeywordSearchActionItem& actionItem,
-    ResultItemType& resultItem
+        const KeywordSearchActionItem& actionItem,
+        ResultItemType& resultItem
 )
 {
     // Remove duplicated docs from the result if the option is on.
