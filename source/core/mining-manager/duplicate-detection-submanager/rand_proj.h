@@ -114,6 +114,8 @@ public:
      */
     void generate_bitarray(izenelib::util::CBitArray& bitArray);
 
+    void generate_signature(std::vector<uint64_t>& signature);
+
     friend std::ostream& operator<<(std::ostream& os, const RandProj& rj)
     {
         os << rj.proj_;

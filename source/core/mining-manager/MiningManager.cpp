@@ -3,6 +3,7 @@
 #include "MiningManager.h"
 #include "MiningQueryLogHandler.h"
 #include "duplicate-detection-submanager/DupDetector2.h"
+#include "duplicate-detection-submanager/dd_constants.h"
 #include "auto-fill-submanager/AutoFillSubManager.h"
 #include "query-correction-submanager/QueryCorrectionSubmanager.h"
 #include "query-recommend-submanager/QueryRecommendSubmanager.h"
@@ -141,14 +142,14 @@ bool MiningManager::open()
 {
     close();
 
-    std::cout<<"DO_TG : "<<(int)mining_schema_.tg_enable<<" - "<<(int)mining_schema_.tg_kpe_only<<std::endl;
-    std::cout<<"DO_DUPD : "<<(int)mining_schema_.dupd_enable<<std::endl;
-    std::cout<<"DO_SIM : "<<(int)mining_schema_.sim_enable<<std::endl;
-    std::cout<<"DO_FACETED : "<<(int)mining_schema_.faceted_enable<<std::endl;
-    std::cout<<"DO_GROUP : "<<(int)mining_schema_.group_enable<<std::endl;
-    std::cout<<"DO_ATTR : "<<(int)mining_schema_.attr_enable<<std::endl;
-    std::cout<<"DO_TDT : "<<(int)mining_schema_.tdt_enable<<std::endl;
-    std::cout<<"DO_IISE : "<<(int)mining_schema_.ise_enable<<std::endl;
+    std::cout << "DO_TG : " << (int) mining_schema_.tg_enable << " - " << (int) mining_schema_.tg_kpe_only << std::endl;
+    std::cout << "DO_DUPD : " << (int) mining_schema_.dupd_enable << " - " << (int) mining_schema_.dupd_fp_only << std::endl;
+    std::cout << "DO_SIM : " << (int) mining_schema_.sim_enable << std::endl;
+    std::cout << "DO_FACETED : " << (int) mining_schema_.faceted_enable << std::endl;
+    std::cout << "DO_GROUP : " << (int) mining_schema_.group_enable << std::endl;
+    std::cout << "DO_ATTR : " << (int) mining_schema_.attr_enable << std::endl;
+    std::cout << "DO_TDT : " << (int) mining_schema_.tdt_enable << std::endl;
+    std::cout << "DO_IISE : " << (int) mining_schema_.ise_enable << std::endl;
 
     /** Global variables **/
     try
@@ -161,7 +162,7 @@ bool MiningManager::open()
             {
                 LOG(INFO) << "Mining data is broken.";
                 boost::filesystem::remove_all(basicPath_);
-                LOG(INFO) << "Mining data deleted.";				
+                LOG(INFO) << "Mining data deleted.";
             }
         }
 
@@ -250,7 +251,7 @@ bool MiningManager::open()
         {
             dupd_path_ = prefix_path + "/dupd/";
             FSUtil::createDir(dupd_path_);
-            dupManager_.reset(new DupDType(dupd_path_, document_manager_, mining_schema_.dupd_properties, c_analyzer_));
+            dupManager_.reset(new DupDType(dupd_path_, document_manager_, mining_schema_.dupd_properties, c_analyzer_, mining_schema_.dupd_fp_only));
             dupManager_->SetIDManager(idManager_);
             if (!dupManager_->Open())
             {
@@ -434,27 +435,27 @@ bool MiningManager::open()
     }
     catch (NotEnoughMemoryException& ex)
     {
-        LOG(ERROR) << ex.toString();  		
+        LOG(ERROR) << ex.toString();
         return false;
     }
     catch (MiningConfigException& ex)
     {
-        LOG(ERROR) << ex.toString();  		
+        LOG(ERROR) << ex.toString();
         return false;
     }
     catch (FileOperationException& ex)
     {
-        LOG(ERROR) << ex.toString();  		
+        LOG(ERROR) << ex.toString();
         return false;
     }
     catch (ResourceNotFoundException& ex)
     {
-        LOG(ERROR) << ex.toString();  		
+        LOG(ERROR) << ex.toString();
         return false;
     }
     catch (FileCorruptedException& ex)
     {
-        LOG(ERROR) << ex.toString();  		
+        LOG(ERROR) << ex.toString();
         return false;
     }
     catch (boost::filesystem::filesystem_error& ex)
@@ -464,7 +465,7 @@ bool MiningManager::open()
     }
     catch (izenelib::ir::indexmanager::IndexManagerException& ex)
     {
-        LOG(ERROR) << ex.what();  		
+        LOG(ERROR) << ex.what();
         return false;
     }
     catch (std::exception& ex)
@@ -697,7 +698,7 @@ bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
 
         START_PROFILER(dupd);
         //get dupd result
-        if (mining_schema_.dupd_enable)
+        if (mining_schema_.dupd_enable && !mining_schema_.dupd_fp_only)
         {
             addDupResult_(miaInput);
         }
@@ -723,27 +724,27 @@ bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
     }
     catch (NotEnoughMemoryException& ex)
     {
-        LOG(ERROR) << ex.toString();  		
+        LOG(ERROR) << ex.toString();
         bResult = false;
     }
     catch (MiningConfigException& ex)
     {
-        LOG(ERROR) << ex.toString();  		
+        LOG(ERROR) << ex.toString();
         bResult = false;
     }
     catch (FileOperationException& ex)
     {
-        LOG(ERROR) << ex.toString();  		
+        LOG(ERROR) << ex.toString();
         bResult = false;
     }
     catch (ResourceNotFoundException& ex)
     {
-        LOG(ERROR) << ex.toString();  		
+        LOG(ERROR) << ex.toString();
         bResult = false;
     }
     catch (FileCorruptedException& ex)
     {
-        LOG(ERROR) << ex.toString();  		
+        LOG(ERROR) << ex.toString();
         bResult = false;
     }
     catch (boost::filesystem::filesystem_error& ex)
@@ -753,7 +754,7 @@ bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
     }
     catch (izenelib::ir::indexmanager::IndexManagerException& ex)
     {
-        LOG(ERROR) << ex.what();  		
+        LOG(ERROR) << ex.what();
         bResult = false;
     }
     catch (std::exception& ex)
@@ -788,7 +789,7 @@ bool MiningManager::getSimilarImageDocIdList(
         }
         catch (MiningConfigException& ex)
         {
-            LOG(ERROR) << ex.toString(); 
+            LOG(ERROR) << ex.toString();
             bResult = false;
         }
         catch (FileOperationException& ex)
@@ -1512,11 +1513,38 @@ void MiningManager::FinishQueryRecommendInject()
 }
 
 bool MiningManager::GetSummarizationByRawKey(
-    const izenelib::util::UString& rawKey,
-    Summarization& result)
+        const izenelib::util::UString& rawKey,
+        Summarization& result)
 {
     if(!summarizationManager_) return false;
     return summarizationManager_->GetSummarizationByRawKey(rawKey,result);
+}
+
+bool MiningManager::GetKNNSearchResult(
+        SearchKeywordOperation& actionOperation,
+        std::vector<unsigned int>& docIdList,
+        std::vector<float>& rankScoreList,
+        std::size_t& totalCount,
+        sf1r::PropertyRange& propertyRange,
+        DistKeywordSearchInfo& distSearchInfo,
+        int topK,
+        int start)
+{
+    std::vector<uint64_t> signature;
+    std::vector<std::pair<uint32_t, FpItem> > knn_list;
+
+    izenelib::util::UString text(actionOperation.actionItem_.env_.queryString_, izenelib::util::UString::UTF_8);
+    if (dupManager_->getSignatureAndKNNList(text, start + topK, signature, knn_list) == 0
+            || (int) knn_list.size() <= start) return true;
+
+    std::vector<std::pair<uint32_t, FpItem> >::const_iterator it;
+    for (it = knn_list.begin() + start; it != knn_list.end(); ++it)
+    {
+        docIdList.push_back(it->second.docid);
+        rankScoreList.push_back(1.0f - float(it->first) / float(DdConstants::f));
+    }
+    totalCount = knn_list.size() - start;
+    return true;
 }
 
 bool MiningManager::doTgInfoInit_()

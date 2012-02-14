@@ -19,7 +19,7 @@ class MiningSchema
 public:
     MiningSchema()
             : tg_enable(false), tg_kpe_only(false), tg_properties()
-            , dupd_enable(false), dupd_properties()
+            , dupd_enable(false), dupd_fp_only(false), dupd_properties()
             , sim_enable(false), sim_properties()
             , dc_enable(false), dc_properties()
             , faceted_enable(false), faceted_properties()
@@ -41,7 +41,7 @@ private:
     void serialize( Archive & ar, const unsigned int version )
     {
         ar & tg_enable & tg_kpe_only & tg_properties;
-        ar & dupd_enable & dupd_properties;
+        ar & dupd_enable & dupd_fp_only & dupd_properties;
         ar & sim_enable & sim_properties;
         ar & dc_enable & dc_properties & faceted_enable & faceted_properties;
         ar & group_enable & group_properties;
@@ -58,6 +58,7 @@ public:
     bool tg_kpe_only;
     std::vector<std::string> tg_properties;
     bool dupd_enable;
+    bool dupd_fp_only;
     std::vector<std::string> dupd_properties;
     bool sim_enable;
     std::vector<std::string> sim_properties;

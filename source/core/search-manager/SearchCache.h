@@ -38,8 +38,8 @@ public:
     typedef QueryIdentity key_type;
 
     explicit SearchCache(unsigned cacheSize)
-            : cache_(cacheSize)
-            , refreshInterval_(60*60)
+        : cache_(cacheSize)
+        , refreshInterval_(60 * 60)
     {}
 
     /**
@@ -58,6 +58,9 @@ public:
              std::vector<std::vector<izenelib::util::UString> >* propertyQueryTermList = NULL,
              std::vector<uint32_t>* workerIdList = NULL)
     {
+        if (distSearchInfo.nodeType_ == DistKeywordSearchInfo::NODE_WORKER)
+            return false;
+
         value_type value;
         if (cache_.getValueNoInsert(key, value))
         {
@@ -72,12 +75,12 @@ public:
             if (pageCount)
                 *pageCount = value.pageCount;
             if (propertyQueryTermList)
-                (*propertyQueryTermList).swap(value.propertyQueryTermList);
+                propertyQueryTermList->swap(value.propertyQueryTermList);
             if (workerIdList)
-                (*workerIdList).swap(value.workerIdList);
+                workerIdList->swap(value.workerIdList);
 
             std::time_t timestamp = value.timestamp;
-            if (isNeedRefresh(key, timestamp))
+            if (needRefresh(key, timestamp))
                 return false;
             else
                 return true;
@@ -133,7 +136,7 @@ private:
      * but for those with volatile values, we need to refresh cache periodically.
      * @return true if need refresh, or false;
      */
-    bool isNeedRefresh(const key_type& key, std::time_t timestamp)
+    bool needRefresh(const key_type& key, const std::time_t& timestamp)
     {
         bool check = false;
 

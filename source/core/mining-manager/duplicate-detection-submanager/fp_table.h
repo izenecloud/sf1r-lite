@@ -1,4 +1,3 @@
-
 #ifndef SF1R_DD_FPTABLE_H_
 #define SF1R_DD_FPTABLE_H_
 
@@ -13,30 +12,59 @@ namespace sf1r
 class FpTable
 {
 public:
-
-    typedef std::vector<std::pair<int, int> > PermuteType;
-    FpTable(const PermuteType& permute):permute_(permute)
+    FpTable()
     {
     }
 
-    bool operator() (const FpItem& left, const FpItem& right)
+    explicit FpTable(const std::vector<uint64_t>& bit_mask)
+        : bit_mask_(bit_mask)
     {
-        uint64_t int_left = GetBitsValue( left.fp);
-        uint64_t int_right = GetBitsValue( right.fp);
-        return int_left < int_right;
     }
 
-    inline uint64_t GetBitsValue(const izenelib::util::CBitArray& bitArray) const
+    void resetBitMask(const std::vector<uint64_t>& bit_mask)
     {
-        if (bitArray.GetLength()==0) return 0;
-        const uint8_t* p = bitArray.GetBuffer();
-//     std::cout<<"[WWWW]"<<","<<nStartCount_[0]<<","<<nStartCount_[1]<<std::endl;
-        return izenelib::util::CBitArray::GetBitsValue<uint64_t>(p, permute_);
+        bit_mask_ = bit_mask;
+    }
+
+    const std::vector<uint64_t>& getBitMask() const
+    {
+        return bit_mask_;
+    }
+
+    bool operator() (const FpItem& left, const FpItem& right) const
+    {
+        if (right.fp.empty()) return false;
+        if (left.fp.empty()) return true;
+
+        for (int i = bit_mask_.size() - 1; i >= 0; i--)
+        {
+            if ((left.fp[i] & bit_mask_[i]) < (right.fp[i] & bit_mask_[i]))
+                return true;
+            if ((left.fp[i] & bit_mask_[i]) > (right.fp[i] & bit_mask_[i]))
+                return false;
+        }
+        return false;
+    }
+
+    void GetMaskedBits(const std::vector<uint64_t>& raw_bits, std::vector<uint64_t>& masked_bits) const
+    {
+        if (raw_bits.empty())
+        {
+            masked_bits.clear();
+            return;
+        }
+
+        masked_bits.resize(raw_bits.size());
+        for (uint32_t i = 0; i < raw_bits.size(); i++)
+        {
+            masked_bits[i] = raw_bits[i] & bit_mask_[i];
+        }
     }
 
 private:
-    std::vector<std::pair<int, int> > permute_;
+    friend class FpTables;
 
+    std::vector<uint64_t> bit_mask_;
 };
 
 }
