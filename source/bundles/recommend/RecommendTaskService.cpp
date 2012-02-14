@@ -350,7 +350,7 @@ bool RecommendTaskService::visitItem(
     }
 
     itemid_t itemId = 0;
-    if (! itemIdGenerator_.getItemIdByStrId(itemIdStr, itemId))
+    if (! itemIdGenerator_.strIdToItemId(itemIdStr, itemId))
         return false;
 
     jobScheduler_.addTask(boost::bind(&VisitManager::addVisitItem, &visitManager_,
@@ -398,7 +398,7 @@ bool RecommendTaskService::trackEvent(
 )
 {
     itemid_t itemId = 0;
-    if (! itemIdGenerator_.getItemIdByStrId(itemIdStr, itemId))
+    if (! itemIdGenerator_.strIdToItemId(itemIdStr, itemId))
         return false;
 
     return isAdd ? eventManager_.addEvent(eventStr, userIdStr, itemId) :
@@ -408,7 +408,7 @@ bool RecommendTaskService::trackEvent(
 bool RecommendTaskService::rateItem(const RateParam& param)
 {
     itemid_t itemId = 0;
-    if (! itemIdGenerator_.getItemIdByStrId(param.itemIdStr, itemId))
+    if (! itemIdGenerator_.strIdToItemId(param.itemIdStr, itemId))
         return false;
 
     return param.isAdd ? rateManager_.addRate(param.userIdStr, itemId, param.rate) :
@@ -730,7 +730,7 @@ bool RecommendTaskService::convertOrderItemVec_(
         it != orderItemVec.end(); ++it)
     {
         itemid_t itemId = 0;
-        if (! itemIdGenerator_.getItemIdByStrId(it->itemIdStr_, itemId))
+        if (! itemIdGenerator_.strIdToItemId(it->itemIdStr_, itemId))
             return false;
 
         itemIdVec.push_back(itemId);

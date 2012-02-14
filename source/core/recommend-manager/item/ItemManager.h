@@ -1,7 +1,7 @@
 /**
  * @file ItemManager.h
  * @author Jun Jiang
- * @date 2011-04-19
+ * @date 2012-02-14
  */
 
 #ifndef ITEM_MANAGER_H
@@ -11,23 +11,16 @@
 
 namespace sf1r
 {
-
-class DocumentManager;
 class Document;
 
 class ItemManager
 {
 public:
-    ItemManager(DocumentManager* docManager);
+    virtual ~ItemManager() {}
 
-    bool getItem(itemid_t itemId, Document& doc);
+    virtual bool getItem(itemid_t itemId, Document& doc) = 0;
 
-    bool hasItem(itemid_t itemId) const;
-
-    itemid_t maxItemId() const;
-
-private:
-    DocumentManager* docManager_;
+    virtual bool hasItem(itemid_t itemId) const = 0;
 };
 
 } // namespace sf1r

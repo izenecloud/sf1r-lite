@@ -14,15 +14,16 @@
 
 namespace sf1r
 {
-
 class UserEventFilter;
+class ItemIdGenerator;
 
 class BORRecommender : public Recommender
 {
 public:
     BORRecommender(
         ItemManager& itemManager,
-        const UserEventFilter& userEventFilter
+        const UserEventFilter& userEventFilter,
+        const ItemIdGenerator& itemIdGenerator
     );
 
 protected:
@@ -35,6 +36,7 @@ protected:
 private:
     RandGenerator<itemid_t> rand_;
     const UserEventFilter& userEventFilter_;
+    const ItemIdGenerator& itemIdGenerator_;
 };
 
 } // namespace sf1r

@@ -1,7 +1,7 @@
 #include "BORRecommender.h"
 #include "ItemFilter.h"
 #include "UserEventFilter.h"
-#include "../item/ItemManager.h"
+#include "../item/ItemIdGenerator.h"
 #include "../common/RecommendParam.h"
 #include "../common/RecommendItem.h"
 
@@ -14,10 +14,12 @@ namespace sf1r
 
 BORRecommender::BORRecommender(
     ItemManager& itemManager,
-    const UserEventFilter& userEventFilter
+    const UserEventFilter& userEventFilter,
+    const ItemIdGenerator& itemIdGenerator
 )
     : Recommender(itemManager)
     , userEventFilter_(userEventFilter)
+    , itemIdGenerator_(itemIdGenerator)
 {
     rand_.seed(std::time(NULL));
 }
@@ -39,7 +41,7 @@ bool BORRecommender::recommendImpl_(
     }
 
     const itemid_t minItemId = 1;
-    const itemid_t maxItemId = itemManager_.maxItemId();
+    const itemid_t maxItemId = itemIdGenerator_.maxItemId();
     if (minItemId > maxItemId)
         return true;
 

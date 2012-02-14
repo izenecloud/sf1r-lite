@@ -73,16 +73,18 @@ private:
     DirectoryRotator directoryRotator_;
     boost::filesystem::path dataDir_;
 
-    boost::scoped_ptr<UserManager> userManager_;
     boost::scoped_ptr<ItemManager> itemManager_;
+    boost::scoped_ptr<ItemIdGenerator> itemIdGenerator_;
+
+    boost::scoped_ptr<UserManager> userManager_;
     boost::scoped_ptr<VisitManager> visitManager_;
     boost::scoped_ptr<PurchaseManager> purchaseManager_;
     boost::scoped_ptr<CartManager> cartManager_;
     boost::scoped_ptr<OrderManager> orderManager_;
     boost::scoped_ptr<EventManager> eventManager_;
     boost::scoped_ptr<RateManager> rateManager_;
+
     boost::scoped_ptr<RecommenderFactory> recommenderFactory_;
-    boost::scoped_ptr<ItemIdGenerator> itemIdGenerator_;
 
     boost::scoped_ptr<CoVisitManager> coVisitManager_;
     boost::scoped_ptr<ItemCFManager> itemCFManager_;

@@ -64,7 +64,7 @@ bool RecommendSearchService::convertItemId_(
 
     for (std::size_t i = 0; i < inputItemVec.size(); ++i)
     {
-        if (itemIdGenerator_.getItemIdByStrId(inputItemVec[i], itemId))
+        if (itemIdGenerator_.strIdToItemId(inputItemVec[i], itemId))
         {
             outputItemVec.push_back(itemId);
         }

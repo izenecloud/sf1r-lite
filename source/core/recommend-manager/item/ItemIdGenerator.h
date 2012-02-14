@@ -1,14 +1,13 @@
 /**
  * @file ItemIdGenerator.h
  * @author Jun Jiang
- * @date 2011-04-19
+ * @date 2012-02-14
  */
 
 #ifndef ITEM_ID_GENERATOR_H
 #define ITEM_ID_GENERATOR_H
 
 #include "../common/RecTypes.h"
-#include <ir/id_manager/IDManager.h>
 
 namespace sf1r
 {
@@ -16,21 +15,28 @@ namespace sf1r
 class ItemIdGenerator
 {
 public:
-    typedef izenelib::ir::idmanager::IDManager IDManager;
-
-    ItemIdGenerator(IDManager* idManager);
+    virtual ~ItemIdGenerator() {}
 
     /**
      * Convert from @p strId to @p itemId.
-     * @param strId item string id supplied by user 
-     * @param itemId conversion result
-     * @return true for success, that is, @p strId was inserted before,
-     *         false for failure, that is, @p strId does not exist
+     * @param strId external string id supplied by user 
+     * @param itemId internal item id as conversion result
+     * @return true for success, false for failure
      */
-    bool getItemIdByStrId(const std::string& strId, itemid_t& itemId);
+    virtual bool strIdToItemId(const std::string& strId, itemid_t& itemId) = 0;
 
-private:
-    IDManager* idManager_;
+    /**
+     * Convert from @p itemId to @p strId.
+     * @param itemId internal item id
+     * @param strId external string id as conversion result
+     * @return true for success, false for failure
+     */
+    virtual bool itemIdToStrId(itemid_t itemId, std::string& strId) = 0;
+
+    /**
+     * @return current max item id, 0 for no item id exists
+     */
+    virtual itemid_t maxItemId() const = 0;
 };
 
 } // namespace sf1r

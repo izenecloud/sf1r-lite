@@ -14,6 +14,7 @@ namespace sf1r
 
 RecommenderFactory::RecommenderFactory(
     ItemManager& itemManager,
+    ItemIdGenerator& itemIdGenerator,
     VisitManager& visitManager,
     PurchaseManager& purchaseManager,
     CartManager& cartManager,
@@ -41,7 +42,7 @@ RecommenderFactory::RecommenderFactory(
     recommenders_[BASED_ON_EVENT] = new BOERecommender(itemManager, itemCFManager, userEventFilter_);
     recommenders_[BASED_ON_BROWSE_HISTORY] = new BOBRecommender(itemManager, itemCFManager, userEventFilter_, visitManager);
     recommenders_[BASED_ON_SHOP_CART] = new BOSRecommender(itemManager, itemCFManager, userEventFilter_, cartManager);
-    recommenders_[BASED_ON_RANDOM] = new BORRecommender(itemManager, userEventFilter_);
+    recommenders_[BASED_ON_RANDOM] = new BORRecommender(itemManager, userEventFilter_, itemIdGenerator);
 }
 
 RecommenderFactory::~RecommenderFactory()

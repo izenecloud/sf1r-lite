@@ -1,5 +1,6 @@
 #include "ItemManagerTestFixture.h"
 #include <recommend-manager/item/ItemManager.h>
+#include <recommend-manager/item/LocalItemManager.h>
 #include <document-manager/DocumentManager.h>
 #include <document-manager/Document.h>
 
@@ -55,7 +56,7 @@ void ItemManagerTestFixture::resetInstance()
     itemManager_.reset();
 
     documentManager_.reset(new DocumentManager(dmPath_, schema_, ENCODING_TYPE, 2000));
-    itemManager_.reset(new ItemManager(documentManager_.get()));
+    itemManager_.reset(new LocalItemManager(*documentManager_.get()));
 }
 
 void ItemManagerTestFixture::checkItemManager()
