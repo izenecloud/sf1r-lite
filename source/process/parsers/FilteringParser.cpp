@@ -128,8 +128,7 @@ QueryFiltering::FilteringOperation FilteringParser::toFilteringOperation(
         return QueryFiltering::EXCLUDE;
     }
 
-    static const bool kNeverGoesHere = false;
-    BOOST_ASSERT(kNeverGoesHere);
+    BOOST_ASSERT_MSG(false, "it should never go here");
 
     return QueryFiltering::NULL_OPERATOR;
 }

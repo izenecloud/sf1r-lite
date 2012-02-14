@@ -1,6 +1,6 @@
 #include "VisitManagerTestFixture.h"
 #include <recommend-manager/storage/VisitManager.h>
-#include <recommend-manager/RecommendMatrix.h>
+#include <recommend-manager/storage/RecommendMatrix.h>
 
 #include <boost/test/unit_test.hpp>
 #include <cstdlib> // rand()

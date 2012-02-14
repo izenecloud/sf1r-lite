@@ -1,4 +1,3 @@
-
 #ifndef SF1R_DD_FPTABLES_H_
 #define SF1R_DD_FPTABLES_H_
 
@@ -21,7 +20,7 @@ public:
     void GenTables(uint32_t f, uint8_t k, uint8_t partition, std::vector<FpTable>& table_list);
 
 private:
-    void transform_(std::vector<uint8_t >& vec, uint32_t index, uint32_t size);
+    bool permutate_(std::vector<uint8_t >& vec, uint32_t index, uint32_t size);
 };
 
 }

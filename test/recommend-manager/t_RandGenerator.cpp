@@ -5,8 +5,8 @@
 /// @date Created 2011-11-30
 ///
 
-#include <recommend-manager/RandGenerator.h>
-#include <recommend-manager/RecTypes.h>
+#include <recommend-manager/recommender/RandGenerator.h>
+#include <recommend-manager/common/RecTypes.h>
 
 #include <boost/test/unit_test.hpp>
 #include <ctime>

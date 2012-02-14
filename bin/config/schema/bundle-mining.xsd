@@ -186,6 +186,7 @@
             <xs:sequence>
                 <xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="unbounded"/>
             </xs:sequence>
+            <xs:attribute name="fp_only" type="YesNoType"/>
         </xs:complexType>
     </xs:element>
     <xs:element name="QueryRecommend">
@@ -231,7 +232,7 @@
         <xs:attribute name="path" type="xs:string" use="required" />
         </xs:complexType>
     </xs:element>
-    
+
     <xs:element name="DocumentClassification">
         <xs:complexType>
             <xs:sequence>

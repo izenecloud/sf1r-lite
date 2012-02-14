@@ -8,14 +8,14 @@
 
 #include <bundles/recommend/RecommendTaskService.h>
 #include <bundles/recommend/RecommendSearchService.h>
-#include <recommend-manager/User.h>
-#include <recommend-manager/RecommendItem.h>
-#include <recommend-manager/ItemCondition.h>
-#include <recommend-manager/RecTypes.h>
-#include <recommend-manager/RecommendParam.h>
-#include <recommend-manager/TIBParam.h>
-#include <recommend-manager/ItemBundle.h>
-#include <recommend-manager/RateParam.h>
+#include <recommend-manager/common/User.h>
+#include <recommend-manager/common/RecommendItem.h>
+#include <recommend-manager/common/ItemCondition.h>
+#include <recommend-manager/common/RecTypes.h>
+#include <recommend-manager/common/RecommendParam.h>
+#include <recommend-manager/common/TIBParam.h>
+#include <recommend-manager/common/ItemBundle.h>
+#include <recommend-manager/common/RateParam.h>
 
 #include <common/BundleSchemaHelpers.h>
 #include <common/Keys.h>

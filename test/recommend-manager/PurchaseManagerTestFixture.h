@@ -9,7 +9,7 @@
 #define PURCHASE_MANAGER_TEST_FIXTURE
 
 #include "RecommendStorageTestFixture.h"
-#include <recommend-manager/RecTypes.h>
+#include <recommend-manager/common/RecTypes.h>
 
 #include <map>
 #include <string>

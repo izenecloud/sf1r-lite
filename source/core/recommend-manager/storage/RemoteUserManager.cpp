@@ -1,5 +1,5 @@
 #include "RemoteUserManager.h"
-#include <recommend-manager/User.h>
+#include "../common/User.h"
 
 #include <glog/logging.h>
 #include <vector>

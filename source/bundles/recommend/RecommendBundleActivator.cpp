@@ -1,6 +1,8 @@
 #include "RecommendBundleActivator.h"
 #include "RecommendBundleConfiguration.h"
-#include <recommend-manager/ItemManager.h>
+#include <recommend-manager/item/ItemFactory.h>
+#include <recommend-manager/item/ItemManager.h>
+#include <recommend-manager/item/ItemIdGenerator.h>
 #include <recommend-manager/storage/RecommendStorageFactory.h>
 #include <recommend-manager/storage/UserManager.h>
 #include <recommend-manager/storage/VisitManager.h>
@@ -8,9 +10,8 @@
 #include <recommend-manager/storage/CartManager.h>
 #include <recommend-manager/storage/RateManager.h>
 #include <recommend-manager/storage/EventManager.h>
-#include <recommend-manager/OrderManager.h>
-#include <recommend-manager/RecommenderFactory.h>
-#include <recommend-manager/ItemIdGenerator.h>
+#include <recommend-manager/storage/OrderManager.h>
+#include <recommend-manager/recommender/RecommenderFactory.h>
 #include <bundles/index/IndexSearchService.h>
 
 #include <aggregator-manager/SearchWorker.h>
@@ -67,16 +68,19 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
         searchService_.reset();
     }
 
-    userManager_.reset();
     itemManager_.reset();
+    itemIdGenerator_.reset();
+
+    userManager_.reset();
     visitManager_.reset();
     purchaseManager_.reset();
     cartManager_.reset();
     orderManager_.reset();
     eventManager_.reset();
     rateManager_.reset();
+
     recommenderFactory_.reset();
-    itemIdGenerator_.reset();
+
     coVisitManager_.reset();
     itemCFManager_.reset();
 }
@@ -215,10 +219,12 @@ void RecommendBundleActivator::createStorage_()
 void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchService)
 {
     DocumentManager* docManager = indexSearchService->searchWorker_->documentManager_.get();
-    itemManager_.reset(new ItemManager(docManager));
-
     IDManager* idManager = indexSearchService->searchWorker_->idManager_.get();
-    itemIdGenerator_.reset(new ItemIdGenerator(idManager));
+
+    ItemFactory factory(idManager, docManager);
+
+    itemIdGenerator_.reset(factory.createItemIdGenerator());
+    itemManager_.reset(factory.createItemManager());
 }
 
 void RecommendBundleActivator::createMining_()
@@ -251,7 +257,7 @@ void RecommendBundleActivator::createOrder_()
 
 void RecommendBundleActivator::createRecommender_()
 {
-    recommenderFactory_.reset(new RecommenderFactory(*itemManager_,
+    recommenderFactory_.reset(new RecommenderFactory(*itemManager_, *itemIdGenerator_,
                                                      *visitManager_, *purchaseManager_,
                                                      *cartManager_, *orderManager_,
                                                      *eventManager_, *rateManager_,

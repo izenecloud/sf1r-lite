@@ -7,7 +7,7 @@
 #ifndef RATE_MANAGER_H
 #define RATE_MANAGER_H
 
-#include <recommend-manager/RecTypes.h>
+#include "../common/RecTypes.h"
 
 #include <string>
 

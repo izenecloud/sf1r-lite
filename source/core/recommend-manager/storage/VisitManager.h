@@ -7,7 +7,7 @@
 #ifndef VISIT_MANAGER_H
 #define VISIT_MANAGER_H
 
-#include <recommend-manager/RecTypes.h>
+#include "../common/RecTypes.h"
 
 #include <string>
 

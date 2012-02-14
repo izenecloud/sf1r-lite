@@ -7,7 +7,7 @@
 #ifndef EVENT_MANAGER_H
 #define EVENT_MANAGER_H
 
-#include <recommend-manager/RecTypes.h>
+#include "../common/RecTypes.h"
 
 #include <string>
 #include <map>

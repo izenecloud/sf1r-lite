@@ -46,6 +46,21 @@ void CharikarAlgo::generate_document_signature(
     rpSum.generate_bitarray(bitArray);
 }
 
+void CharikarAlgo::generate_document_signature(
+        const std::vector<std::string>& docTokens,
+        std::vector<uint64_t>& signature)
+{
+    RandProj rpSum(nDimensions);
+    for (unsigned int j = 0; j < docTokens.size(); j++)
+    {
+        //boost::mutex::scoped_lock lock(mutex_);
+        const RandProj& rp = rpEngine.get_random_projection(docTokens[j]);
+        rpSum += rp;
+    }
+
+    rpSum.generate_signature(signature);
+}
+
 // int CharikarAlgo::neardup_score(NearDuplicateSignature& sig1,
 //                                   NearDuplicateSignature& sig2)
 //   {

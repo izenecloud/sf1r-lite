@@ -5,7 +5,7 @@
 /// @date Created 2011-04-19
 ///
 
-#include <recommend-manager/ItemManager.h>
+#include <recommend-manager/item/ItemManager.h>
 #include "ItemManagerTestFixture.h"
 
 #include <boost/test/unit_test.hpp>

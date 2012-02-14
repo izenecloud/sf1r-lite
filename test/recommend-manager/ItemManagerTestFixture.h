@@ -8,7 +8,7 @@
 #ifndef ITEM_MANAGER_TEST_FIXTURE
 #define ITEM_MANAGER_TEST_FIXTURE
 
-#include <recommend-manager/RecTypes.h>
+#include <recommend-manager/common/RecTypes.h>
 #include <configuration-manager/PropertyConfig.h>
 #include <util/ustring/UString.h>
 
