@@ -1,0 +1,11 @@
+
+matcher:
+    path_of:
+        synonym: synonym
+        cma: /home/jarvis/codebase/icma/db/icwb/utf8
+        category: category.config
+        work_dir: working
+        result: match_result
+        train_scd: test2merged/B-00-201202081108-08747-I-C.SCD
+        scd: ../bin/collection/b5mm/scd/index/backup/B-00-201201120143-17454-I-C.SCD
+        filter_attrib_name: filter_attrib_name.config
