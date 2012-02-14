@@ -30,14 +30,7 @@ FILE(GLOB_RECURSE recommend_SRC "recommend-manager/*.cpp")
 FILE(GLOB_RECURSE aggregator_SRC "aggregator-manager/*.cpp")
 FILE(GLOB_RECURSE node_SRC "node-manager/*.cpp")
 FILE(GLOB_RECURSE product_SRC "product-manager/*.cc")
-# FILE(GLOB product_SRC
-#   "product-manager/collection_product_data_source.cc"
-#   "product-manager/collection_product_data_source.cc"
-#   "product-manager/collection_product_data_source.cc"
-#   "product-manager/collection_product_data_source.cc"
-#   "product-manager/collection_product_data_source.cc"
-#   "product-manager/collection_product_data_source.cc"
-#   )
+FILE(GLOB_RECURSE b5m_SRC "b5m-manager/*.cc")
 
 
 FILE(GLOB document_SRC
@@ -87,6 +80,7 @@ ADD_LIBRARY(sf1r_recommend_manager ${recommend_SRC})
 ADD_LIBRARY(sf1r_aggregator_manager ${aggregator_SRC})
 ADD_LIBRARY(sf1r_node_manager ${node_SRC})
 ADD_LIBRARY(sf1r_product_manager ${product_SRC})
+ADD_LIBRARY(sf1r_b5m_manager ${b5m_SRC})
 
 INSTALL(TARGETS
     sf1r_configuration_manager
@@ -105,6 +99,7 @@ INSTALL(TARGETS
     sf1r_aggregator_manager
     sf1r_node_manager
     sf1r_product_manager
+    sf1r_b5m_manager
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
     COMPONENT sf1r_libraries)
