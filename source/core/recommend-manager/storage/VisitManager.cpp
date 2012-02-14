@@ -1,5 +1,5 @@
 #include "VisitManager.h"
-#include <recommend-manager/RecommendMatrix.h>
+#include "RecommendMatrix.h"
 
 #include <glog/logging.h>
 

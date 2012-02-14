@@ -8,7 +8,7 @@
 #ifndef USER_EVENT_FILTER_H
 #define USER_EVENT_FILTER_H
 
-#include "RecTypes.h"
+#include "../common/RecTypes.h"
 
 #include <vector>
 #include <map>

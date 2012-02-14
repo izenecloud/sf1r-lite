@@ -1,5 +1,5 @@
 #include "PurchaseManager.h"
-#include <recommend-manager/RecommendMatrix.h>
+#include "RecommendMatrix.h"
 
 namespace sf1r
 {

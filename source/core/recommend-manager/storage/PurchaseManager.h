@@ -7,7 +7,7 @@
 #ifndef PURCHASE_MANAGER_H
 #define PURCHASE_MANAGER_H
 
-#include <recommend-manager/RecTypes.h>
+#include "../common/RecTypes.h"
 
 #include <string>
 #include <vector>

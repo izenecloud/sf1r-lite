@@ -10,7 +10,7 @@
 
 #include "Recommender.h"
 #include "RandGenerator.h"
-#include "RecTypes.h"
+#include "../common/RecTypes.h"
 
 namespace sf1r
 {

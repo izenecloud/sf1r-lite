@@ -1,14 +1,14 @@
 #include "RecommendSearchService.h"
-#include <recommend-manager/User.h>
-#include <recommend-manager/ItemCondition.h>
+#include <recommend-manager/common/User.h>
+#include <recommend-manager/common/ItemCondition.h>
+#include <recommend-manager/common/RecommendParam.h>
+#include <recommend-manager/common/TIBParam.h>
+#include <recommend-manager/common/ItemBundle.h>
+#include <recommend-manager/item/ItemManager.h>
+#include <recommend-manager/item/ItemIdGenerator.h>
 #include <recommend-manager/storage/UserManager.h>
-#include <recommend-manager/ItemManager.h>
-#include <recommend-manager/RecommenderFactory.h>
-#include <recommend-manager/RecommendParam.h>
-#include <recommend-manager/TIBParam.h>
-#include <recommend-manager/ItemBundle.h>
-#include <recommend-manager/ItemIdGenerator.h>
-#include <recommend-manager/Recommender.h>
+#include <recommend-manager/recommender/RecommenderFactory.h>
+#include <recommend-manager/recommender/Recommender.h>
 
 #include <glog/logging.h>
 

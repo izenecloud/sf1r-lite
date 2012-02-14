@@ -1,7 +1,7 @@
 #include "ItemCFRecommender.h"
 #include "ItemFilter.h"
-#include "RecommendParam.h"
-#include "RecommendItem.h"
+#include "../common/RecommendParam.h"
+#include "../common/RecommendItem.h"
 
 #include <glog/logging.h>
 

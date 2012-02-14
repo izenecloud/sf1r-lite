@@ -1,8 +1,8 @@
 #include "FBTRecommender.h"
-#include "OrderManager.h"
 #include "ItemFilter.h"
-#include "RecommendParam.h"
-#include "RecommendItem.h"
+#include "../common/RecommendParam.h"
+#include "../common/RecommendItem.h"
+#include "../storage/OrderManager.h"
 
 #include <glog/logging.h>
 

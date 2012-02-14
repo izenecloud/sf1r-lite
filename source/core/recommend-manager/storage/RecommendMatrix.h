@@ -8,7 +8,7 @@
 #ifndef RECOMMEND_MATRIX_H
 #define RECOMMEND_MATRIX_H
 
-#include "RecTypes.h"
+#include "../common/RecTypes.h"
 
 #include <list>
 

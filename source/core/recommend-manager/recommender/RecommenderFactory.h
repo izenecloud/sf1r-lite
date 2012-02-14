@@ -8,7 +8,7 @@
 #ifndef RECOMMENDER_FACTORY_H
 #define RECOMMENDER_FACTORY_H
 
-#include "RecTypes.h"
+#include "../common/RecTypes.h"
 #include "UserEventFilter.h"
 #include "TIBRecommender.h"
 

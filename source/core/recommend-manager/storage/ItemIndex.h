@@ -7,7 +7,7 @@
 #ifndef ITEM_INDEX_H
 #define ITEM_INDEX_H
 
-#include "RecTypes.h"
+#include "../common/RecTypes.h"
 #include <ir/index_manager/index/IndexReader.h>
 #include <ir/index_manager/index/Indexer.h>
 #include <ir/index_manager/index/TermIterator.h>

@@ -10,7 +10,7 @@
 #include "RecommendTaskService.h"
 #include "RecommendSearchService.h"
 
-#include <recommend-manager/RecTypes.h>
+#include <recommend-manager/common/RecTypes.h>
 #include <directory-manager/DirectoryRotator.h>
 #include <util/osgi/IBundleActivator.h>
 #include <util/osgi/IBundleContext.h>

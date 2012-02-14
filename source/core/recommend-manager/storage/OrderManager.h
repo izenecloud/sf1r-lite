@@ -7,7 +7,7 @@
 #ifndef ORDER_MANAGER_H
 #define ORDER_MANAGER_H
 
-#include "RecTypes.h"
+#include "../common/RecTypes.h"
 #include "ItemIndex.h"
 
 #include <util/ThreadModel.h>

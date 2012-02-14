@@ -1,5 +1,5 @@
 #include "ItemManagerTestFixture.h"
-#include <recommend-manager/ItemManager.h>
+#include <recommend-manager/item/ItemManager.h>
 #include <document-manager/DocumentManager.h>
 #include <document-manager/Document.h>
 

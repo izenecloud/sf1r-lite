@@ -1,7 +1,7 @@
 #include "ItemFilter.h"
-#include "ItemManager.h"
-#include "ItemCondition.h"
-#include "RecommendParam.h"
+#include "../item/ItemManager.h"
+#include "../common/ItemCondition.h"
+#include "../common/RecommendParam.h"
 #include <document-manager/Document.h>
 
 namespace sf1r

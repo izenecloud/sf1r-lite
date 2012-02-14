@@ -7,7 +7,7 @@
 #ifndef ITEM_MANAGER_H
 #define ITEM_MANAGER_H
 
-#include "RecTypes.h"
+#include "../common/RecTypes.h"
 
 namespace sf1r
 {

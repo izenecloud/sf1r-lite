@@ -8,7 +8,7 @@
 #define ITEM_FILTER_H
 
 #include <idmlib/resys/ItemRescorer.h>
-#include "RecTypes.h"
+#include "../common/RecTypes.h"
 
 #include <set>
 

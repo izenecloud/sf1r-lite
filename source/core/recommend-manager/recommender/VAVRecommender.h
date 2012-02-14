@@ -9,7 +9,7 @@
 #define VAV_RECOMMENDER_H
 
 #include "Recommender.h"
-#include "RecTypes.h"
+#include "../common/RecTypes.h"
 
 namespace sf1r
 {

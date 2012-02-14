@@ -7,8 +7,8 @@
 #ifndef RECOMMEND_SEARCH_SERVICE_H
 #define RECOMMEND_SEARCH_SERVICE_H
 
-#include <recommend-manager/RecTypes.h>
-#include <recommend-manager/RecommendItem.h>
+#include <recommend-manager/common/RecTypes.h>
+#include <recommend-manager/common/RecommendItem.h>
 
 #include <util/osgi/IService.h>
 

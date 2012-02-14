@@ -9,7 +9,7 @@
 #define ITEM_CF_RECOMMENDER_H
 
 #include "Recommender.h"
-#include "RecTypes.h"
+#include "../common/RecTypes.h"
 
 #include <vector>
 #include <map>

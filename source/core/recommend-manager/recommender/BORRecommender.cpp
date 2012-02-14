@@ -1,9 +1,9 @@
 #include "BORRecommender.h"
-#include "ItemManager.h"
 #include "ItemFilter.h"
-#include "RecommendParam.h"
-#include "RecommendItem.h"
 #include "UserEventFilter.h"
+#include "../item/ItemManager.h"
+#include "../common/RecommendParam.h"
+#include "../common/RecommendItem.h"
 
 #include <glog/logging.h>
 

@@ -1,6 +1,7 @@
 #include "RecommendBundleActivator.h"
 #include "RecommendBundleConfiguration.h"
-#include <recommend-manager/ItemManager.h>
+#include <recommend-manager/item/ItemManager.h>
+#include <recommend-manager/item/ItemIdGenerator.h>
 #include <recommend-manager/storage/RecommendStorageFactory.h>
 #include <recommend-manager/storage/UserManager.h>
 #include <recommend-manager/storage/VisitManager.h>
@@ -8,9 +9,8 @@
 #include <recommend-manager/storage/CartManager.h>
 #include <recommend-manager/storage/RateManager.h>
 #include <recommend-manager/storage/EventManager.h>
-#include <recommend-manager/OrderManager.h>
-#include <recommend-manager/RecommenderFactory.h>
-#include <recommend-manager/ItemIdGenerator.h>
+#include <recommend-manager/storage/OrderManager.h>
+#include <recommend-manager/recommender/RecommenderFactory.h>
 #include <bundles/index/IndexSearchService.h>
 
 #include <aggregator-manager/SearchWorker.h>

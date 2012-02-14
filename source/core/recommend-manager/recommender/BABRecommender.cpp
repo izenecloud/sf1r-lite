@@ -1,5 +1,5 @@
 #include "BABRecommender.h"
-#include "RecommendParam.h"
+#include "../common/RecommendParam.h"
 
 #include <glog/logging.h>
 

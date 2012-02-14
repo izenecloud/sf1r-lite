@@ -7,7 +7,7 @@
 #ifndef ITEM_ID_GENERATOR_H
 #define ITEM_ID_GENERATOR_H
 
-#include "RecTypes.h"
+#include "../common/RecTypes.h"
 #include <ir/id_manager/IDManager.h>
 
 namespace sf1r

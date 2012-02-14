@@ -1,7 +1,7 @@
 #include "TIBRecommender.h"
-#include "OrderManager.h"
-#include "TIBParam.h"
-#include "ItemBundle.h"
+#include "../storage/OrderManager.h"
+#include "../common/TIBParam.h"
+#include "../common/ItemBundle.h"
 
 namespace sf1r
 {
