@@ -46,7 +46,7 @@ bool IndexSearchService::getSearchResult(
     {
         bool ret = searchWorker_->doLocalSearch(actionItem, resultItem);
         std::vector<std::pair<workerid_t, KeywordSearchResult> > resultList;
-        resultList.push_back(std::make_pair(0,resultItem));
+        resultList.push_back(std::make_pair(0, resultItem));
         searchAggregator_->aggregateMiningResult(resultItem, resultList);
         return ret;
     }

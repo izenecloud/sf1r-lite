@@ -1,4 +1,3 @@
-
 #ifndef SF1R_DD_FPSTORAGE_H_
 #define SF1R_DD_FPSTORAGE_H_
 

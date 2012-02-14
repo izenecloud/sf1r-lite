@@ -55,49 +55,49 @@ public:
     typedef boost::function< void( std::vector<QueryFiltering::FilteringType>& ) > filter_hook_t;
 
     SearchManager(
-        std::set<PropertyConfig, PropertyComp> schema,
-        const boost::shared_ptr<IDManager>& idManager,
-        const boost::shared_ptr<DocumentManager>& documentManager,
-        const boost::shared_ptr<IndexManager>& indexManager,
-        const boost::shared_ptr<RankingManager>& rankingManager,
-        IndexBundleConfiguration* config
-    );
+            std::set<PropertyConfig, PropertyComp> schema,
+            const boost::shared_ptr<IDManager>& idManager,
+            const boost::shared_ptr<DocumentManager>& documentManager,
+            const boost::shared_ptr<IndexManager>& indexManager,
+            const boost::shared_ptr<RankingManager>& rankingManager,
+            IndexBundleConfiguration* config);
 
     ~SearchManager();
 
     bool search(
-        SearchKeywordOperation& actionOperation,
-        std::vector<unsigned int>& docIdList,
-        std::vector<float>& rankScoreList,
-        std::vector<float>& customRankScoreList,
-        std::size_t& totalCount,
-        faceted::GroupRep& groupRep,
-        faceted::OntologyRep& attrRep,
-        sf1r::PropertyRange& propertyRange,
-        DistKeywordSearchInfo& distSearchInfo,
-        int topK = 200,
-        int start = 0);
-
+            SearchKeywordOperation& actionOperation,
+            std::vector<unsigned int>& docIdList,
+            std::vector<float>& rankScoreList,
+            std::vector<float>& customRankScoreList,
+            std::size_t& totalCount,
+            faceted::GroupRep& groupRep,
+            faceted::OntologyRep& attrRep,
+            sf1r::PropertyRange& propertyRange,
+            DistKeywordSearchInfo& distSearchInfo,
+            int topK = 200,
+            int start = 0);
 
     void reset_cache(
-        bool rType,
-        docid_t id,
-        const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
+            bool rType,
+            docid_t id,
+            const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
 
     void reset_all_property_cache();
 
     /// @brief change working dir by setting new underlying componenets
     void chdir(
-        const boost::shared_ptr<IDManager>& idManager,
-        const boost::shared_ptr<DocumentManager>& documentManager,
-        const boost::shared_ptr<IndexManager>& indexManager,
-        IndexBundleConfiguration* config);
+            const boost::shared_ptr<IDManager>& idManager,
+            const boost::shared_ptr<DocumentManager>& documentManager,
+            const boost::shared_ptr<IndexManager>& indexManager,
+            IndexBundleConfiguration* config);
 
-    void set_reranker(reranker_t reranker){
+    void set_reranker(reranker_t reranker)
+    {
         reranker_ = reranker;
     }
 
-    void set_filter_hook(filter_hook_t filter_hook){
+    void set_filter_hook(filter_hook_t filter_hook)
+    {
         filter_hook_ = filter_hook;
     }
 
@@ -109,20 +109,20 @@ public:
 
 private:
     bool doSearch_(
-        SearchKeywordOperation& actionOperation,
-        std::vector<unsigned int>& docIdList,
-        std::vector<float>& rankScoreList,
-        std::vector<float>& customRankScoreList,
-        std::size_t& totalCount,
-        faceted::GroupRep& groupRep,
-        faceted::OntologyRep& attrRep,
-        sf1r::PropertyRange& propertyRange,
-        DistKeywordSearchInfo& distSearchInfo,
-        int topK,
-        int start);
+            SearchKeywordOperation& actionOperation,
+            std::vector<unsigned int>& docIdList,
+            std::vector<float>& rankScoreList,
+            std::vector<float>& customRankScoreList,
+            std::size_t& totalCount,
+            faceted::GroupRep& groupRep,
+            faceted::OntologyRep& attrRep,
+            sf1r::PropertyRange& propertyRange,
+            DistKeywordSearchInfo& distSearchInfo,
+            int topK,
+            int start);
 
     bool prepareDocIterWithOnlyOrderby_(
-        boost::shared_ptr<EWAHBoolArray<uint32_t> >& pFilterIdSet);
+            boost::shared_ptr<EWAHBoolArray<uint32_t> >& pFilterIdSet);
 
     /**
      * @brief get corresponding id of the property, returns 0 if the property
@@ -132,8 +132,8 @@ private:
     propertyid_t getPropertyIdByName_(const std::string& name) const;
 
     bool getPropertyTypeByName_(
-        const std::string& name,
-        PropertyDataType& type) const;
+            const std::string& name,
+            PropertyDataType& type) const;
 
     boost::shared_ptr<PropertyData> getPropertyData_(const std::string& name);
 
@@ -152,17 +152,17 @@ private:
      * @param distSearchInfo [OUT]
      */
     void getSortPropertyData_(
-        Sorter* pSorter,
-        std::vector<unsigned int>& docIdList,
-        DistKeywordSearchInfo& distSearchInfo);
+            Sorter* pSorter,
+            std::vector<unsigned int>& docIdList,
+            DistKeywordSearchInfo& distSearchInfo);
 
 private:
     /**
      * @brief for testing
      */
     void printDFCTF_(
-        DocumentFrequencyInProperties& dfmap,
-        CollectionTermFrequencyInProperties ctfmap);
+            DocumentFrequencyInProperties& dfmap,
+            CollectionTermFrequencyInProperties ctfmap);
 
 private:
     std::string collectionName_;

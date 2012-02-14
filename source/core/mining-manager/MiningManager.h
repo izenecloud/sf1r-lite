@@ -20,7 +20,7 @@
 
 #include <common/ResultType.h>
 #include <configuration-manager/PropertyConfig.h>
-#include <query-manager/ActionItem.h>
+#include <query-manager/SearchKeywordOperation.h>
 #include <configuration-manager/MiningConfig.h>
 #include <configuration-manager/MiningSchema.h>
 #include <ir/id_manager/IDManager.h>
@@ -258,6 +258,16 @@ public:
     void FinishQueryRecommendInject();
 
     bool GetSummarizationByRawKey(const izenelib::util::UString& rawKey, Summarization& result);
+
+    bool GetKNNSearchResult(
+            SearchKeywordOperation& actionOperation,
+            std::vector<unsigned int>& docIdList,
+            std::vector<float>& rankScoreList,
+            std::size_t& totalCount,
+            sf1r::PropertyRange& propertyRange,
+            DistKeywordSearchInfo& distSearchInfo,
+            int topK = 200,
+            int start = 0);
 
     void close();
 

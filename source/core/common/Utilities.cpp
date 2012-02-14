@@ -349,13 +349,23 @@ void Utilities::md5ToUint128(const std::string& str, uint128_t& val)
     val = (uint128_t) high << 64 | (uint128_t) low;
 }
 
-uint32_t Utilities::calcHammDist(uint64_t v1, uint64_t v2)
+uint32_t Utilities::calcHammingDist(uint64_t array1, uint64_t array2)
 {
-    uint64_t v = v1 ^ v2;
-    v -= (v >> 1) & 0x5555555555555555ULL;
-    v = (v & 0x3333333333333333ULL) + ((v >> 2) & 0x3333333333333333ULL);
-    v = (v + (v >> 4)) & 0xf0f0f0f0f0f0f0fULL;
-    return (v * 0x101010101010101ULL) >> 56;
+    uint64_t diff = array1 ^ array2;
+    diff -= (diff >> 1) & 0x5555555555555555ULL;
+    diff = (diff & 0x3333333333333333ULL) + ((diff >> 2) & 0x3333333333333333ULL);
+    diff = (diff + (diff >> 4)) & 0xf0f0f0f0f0f0f0fULL;
+    return (diff * 0x101010101010101ULL) >> 56;
+}
+
+uint32_t Utilities::calcHammingDist(const std::vector<uint64_t>& vec1, const std::vector<uint64_t>& vec2)
+{
+    uint32_t hamming_dist = 0;
+    for (uint32_t i = 0; i < vec1.size(); i++)
+    {
+        hamming_dist += calcHammingDist(vec1[i], vec2[i]);
+    }
+    return hamming_dist;
 }
 
 }

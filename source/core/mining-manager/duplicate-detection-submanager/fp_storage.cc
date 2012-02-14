@@ -4,30 +4,30 @@
 #include <boost/filesystem.hpp>
 #include <iostream>
 #include <fstream>
+
 using namespace sf1r;
 
 FpStorage::FpStorage(const std::string& dir)
-        :dir_(dir)
+    : dir_(dir)
 {
-
 }
 
 bool FpStorage::GetFpByTableId(uint32_t id, std::vector<FpItem>& fp)
 {
-    fp.resize(0);
-    std::string file = dir_+"/"+boost::lexical_cast<std::string>(id);
+    fp.clear();
+    std::string file = dir_ + "/" + boost::lexical_cast<std::string>(id);
     try
     {
-        if ( boost::filesystem::exists(file) )
+        if (boost::filesystem::exists(file))
         {
             std::ifstream ifs(file.c_str(), std::ios::binary);
-            if ( ifs.fail()) return false;
+            if (ifs.fail()) return false;
             {
-                boost::archive::text_iarchive ia(ifs);
+                boost::archive::binary_iarchive ia(ifs);
                 ia >> fp ;
             }
             ifs.close();
-            if ( ifs.fail() )
+            if (ifs.fail())
             {
                 return false;
             }
@@ -42,18 +42,17 @@ bool FpStorage::GetFpByTableId(uint32_t id, std::vector<FpItem>& fp)
 
 bool FpStorage::SetFpByTableId(uint32_t id, const std::vector<FpItem>& fp)
 {
-    std::string file = dir_+"/"+boost::lexical_cast<std::string>(id);
+    std::string file = dir_ + "/" + boost::lexical_cast<std::string>(id);
     std::ofstream ofs(file.c_str());
     if ( ofs.fail()) return false;
     {
-        boost::archive::text_oarchive oa(ofs);
+        boost::archive::binary_oarchive oa(ofs);
         oa << fp ;
     }
     ofs.close();
-    if ( ofs.fail() )
+    if (ofs.fail())
     {
         return false;
     }
     return true;
 }
-

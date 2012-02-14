@@ -41,33 +41,24 @@ class DocumentManager;
 class CharikarAlgo;
 class DupDetector2
 {
-    typedef izenelib::am::SimpleSequenceFileWriter<uint32_t, izenelib::util::CBitArray, uint8_t> WriterType;
-    typedef izenelib::am::SimpleSequenceFileReader<uint32_t, izenelib::util::CBitArray, uint8_t> ReaderType;
-    typedef izenelib::am::SimpleSequenceFileSorter<uint32_t, izenelib::util::CBitArray, uint8_t> SorterType;
+//  typedef izenelib::am::SimpleSequenceFileWriter<uint32_t, izenelib::util::CBitArray, uint8_t> WriterType;
+//  typedef izenelib::am::SimpleSequenceFileReader<uint32_t, izenelib::util::CBitArray, uint8_t> ReaderType;
+//  typedef izenelib::am::SimpleSequenceFileSorter<uint32_t, izenelib::util::CBitArray, uint8_t> SorterType;
     typedef sf1r::GroupTable GroupType;
 //   typedef FingerprintsCompare<64,3,6> FPCompareType;
-    typedef idmlib::util::FileObject<uint32_t > FileObjectType;
+    typedef idmlib::util::FileObject<uint32_t> FileObjectType;
 public:
+    DupDetector2(const std::string& container);
+
     DupDetector2(
-        const std::string& container);
-    DupDetector2(
-        const std::string& container,
-        const boost::shared_ptr<DocumentManager>& document_manager,
-        const std::vector<std::string>& properties,
-        idmlib::util::IDMAnalyzer* analyzer);
+            const std::string& container,
+            const boost::shared_ptr<DocumentManager>& document_manager,
+            const std::vector<std::string>& properties,
+            idmlib::util::IDMAnalyzer* analyzer,
+            bool fp_only);
     ~DupDetector2();
 
-//   void SetDocAvgLength(uint32_t avg)
-//   {
-//     avg_ = avg;
-//   }
-
     bool Open();
-
-//   uint32_t GetMaxDocId()
-//   {
-//     return max_docid_;
-//   }
 
     /**
      * @brief Get a unique document id list with duplicated ones excluded.
@@ -86,12 +77,9 @@ public:
 
     bool ProcessCollection();
 
-
-    void insertDocument(uint32_t docid, const std::vector<std::string>& v);
+//  void insertDocument(uint32_t docid, const std::vector<std::string>& v);
 
     bool runDuplicateDetectionAnalysis(bool force=false);
-
-    void Resize(uint32_t size);
 
     /**
      * @brief Insert new documents to a collection
@@ -99,17 +87,42 @@ public:
 //  bool insertDocuments(const std::vector<unsigned int>& docIdList,
 //          const std::vector<std::vector<unsigned int> >& documentList);
 
-
     void SetIDManager(const boost::shared_ptr<izenelib::ir::idmanager::IDManager>& id_manager)
     {
         id_manager_ = id_manager;
     }
 
+    uint32_t getSignatureForText(
+            const izenelib::util::UString& text,
+            std::vector<uint64_t>& signature);
+
+    uint32_t getSignatureForMultiText(
+            const std::vector<izenelib::util::UString>& texts,
+            std::vector<uint64_t>& signature);
+
+    void getKNNListBySignature(
+            const std::vector<uint64_t>& signature,
+            uint32_t count,
+            std::vector<std::pair<uint32_t, FpItem> >& knn_list);
+
+    inline uint32_t getSignatureAndKNNList(
+            const izenelib::util::UString& text,
+            uint32_t count,
+            std::vector<uint64_t>& signature,
+            std::vector<std::pair<uint32_t, FpItem> >& knn_list)
+    {
+        uint32_t text_len = getSignatureForText(text, signature);
+        if (text_len)
+            getKNNListBySignature(signature, count, knn_list);
+
+        return text_len;
+    }
 
 private:
 
     bool ProcessCollectionBySimhash_();
-    bool ProcessCollectionBySim_();
+
+//  bool ProcessCollectionBySim_();
 
     uint32_t GetProcessedMaxId_();
 
@@ -136,15 +149,15 @@ private:
 
 
 private:
-
     std::string container_;
     boost::shared_ptr<DocumentManager> document_manager_;
     boost::shared_ptr<izenelib::ir::idmanager::IDManager> id_manager_;
     izenelib::am::rde_hash<std::string, bool> dd_properties_;
     idmlib::util::IDMAnalyzer* analyzer_;
     FileObjectType* file_info_;
+
     //parameters
-//     uint32_t avg_;
+    bool fp_only_;
     uint8_t maxk_;
     uint8_t partition_num_;
     double trash_threshold_;
@@ -157,14 +170,12 @@ private:
 
     std::vector<FpTable> table_list_;
     FpStorage fp_storage_;
-    std::vector<FpItem> vec_;
+    std::vector<FpItem> fp_vec_;
 
     GroupType* group_;
 
-    uint32_t process_start_docid_;
-    uint32_t process_max_docid_;
-
-    uint32_t max_docid_;
+    uint32_t processed_max_docid_;
+    uint32_t processing_max_docid_;
 
     boost::shared_mutex read_write_mutex_;
 

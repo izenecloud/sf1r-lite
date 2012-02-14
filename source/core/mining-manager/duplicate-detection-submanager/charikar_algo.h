@@ -43,8 +43,8 @@ private:
     double threshold;//!< similarity threshold
 
 public:
-    static const double DEFAULT_THRESHOLD_VALUE = 0.97;//!< default dimensions number
-    static const int DEFAULT_NUM_DIMENSIONS = 384;//!< default threshold value
+    static const double DEFAULT_THRESHOLD_VALUE = 0.97;//!< default threshold value
+    static const int DEFAULT_NUM_DIMENSIONS = 384;//!< default dimensions number
 
 public:
     /**
@@ -135,6 +135,8 @@ public:
         * @param[out] bitArray signature
         */
     void generate_document_signature(const std::vector<std::string>& docTokens, izenelib::util::CBitArray& bitArray);
+
+    void generate_document_signature(const std::vector<std::string>& docTokens, std::vector<uint64_t>& signature);
     /**
      * @brief check if is near duplicate
      *
