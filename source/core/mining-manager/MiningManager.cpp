@@ -2,13 +2,16 @@
 #include <document-manager/DocumentManager.h>
 #include "MiningManager.h"
 #include "MiningQueryLogHandler.h"
-#include "duplicate-detection-submanager/DupDetector2.h"
-#include "duplicate-detection-submanager/dd_constants.h"
+
+#include "duplicate-detection-submanager/dup_detector_wrapper.h"
+
 #include "auto-fill-submanager/AutoFillSubManager.h"
+
 #include "query-correction-submanager/QueryCorrectionSubmanager.h"
 #include "query-recommend-submanager/QueryRecommendSubmanager.h"
 #include "query-recommend-submanager/RecommendManager.h"
 #include "query-recommend-submanager/QueryRecommendRep.h"
+
 #include "taxonomy-generation-submanager/TaxonomyGenerationSubManager.h"
 #include "taxonomy-generation-submanager/label_similarity.h"
 //#include "taxonomy-generation-submanager/TaxonomyRep.h"
@@ -251,14 +254,12 @@ bool MiningManager::open()
         {
             dupd_path_ = prefix_path + "/dupd/";
             FSUtil::createDir(dupd_path_);
-            dupManager_.reset(new DupDType(dupd_path_, document_manager_, mining_schema_.dupd_properties, c_analyzer_, mining_schema_.dupd_fp_only));
-            dupManager_->SetIDManager(idManager_);
+            dupManager_.reset(new DupDType(dupd_path_, document_manager_, idManager_, mining_schema_.dupd_properties, c_analyzer_, mining_schema_.dupd_fp_only));
             if (!dupManager_->Open())
             {
                 std::cerr<<"open DD failed"<<std::endl;
                 return false;
             }
-//             dupManager_.reset(new DupDType((dupd_path_).c_str()));
         }
 
         /** SIM */
@@ -893,9 +894,8 @@ bool MiningManager::getUniqueDocIdList(const std::vector<uint32_t>& docIdList,
                                        std::vector<uint32_t>& cleanDocs)
 {
     if (!mining_schema_.dupd_enable || !dupManager_)
-    {
         return false;
-    }
+
     return dupManager_->getUniqueDocIdList(docIdList, cleanDocs);
 
 }
@@ -903,11 +903,10 @@ bool MiningManager::getUniqueDocIdList(const std::vector<uint32_t>& docIdList,
 bool MiningManager::getDuplicateDocIdList(uint32_t docId, std::vector<
         uint32_t>& docIdList)
 {
-    if (dupManager_)
-    {
-        return dupManager_->getDuplicatedDocIdList(docId, docIdList);
-    }
-    return false;
+    if (!mining_schema_.dupd_enable || !dupManager_)
+        return false;
+
+    return dupManager_->getDuplicatedDocIdList(docId, docIdList);
 }
 
 bool MiningManager::computeSimilarity_(izenelib::ir::indexmanager::IndexReader* pIndexReader, const std::vector<std::string>& property_names)
@@ -1521,29 +1520,26 @@ bool MiningManager::GetSummarizationByRawKey(
 }
 
 bool MiningManager::GetKNNSearchResult(
-        SearchKeywordOperation& actionOperation,
+        const SearchKeywordOperation& actionOperation,
         std::vector<unsigned int>& docIdList,
         std::vector<float>& rankScoreList,
         std::size_t& totalCount,
         sf1r::PropertyRange& propertyRange,
         DistKeywordSearchInfo& distSearchInfo,
-        int topK,
-        int start)
+        uint32_t knnTopK,
+        uint32_t start,
+        uint32_t knnDist)
 {
+    if (!mining_schema_.dupd_enable || !dupManager_)
+        return false;
+
     std::vector<uint64_t> signature;
-    std::vector<std::pair<uint32_t, FpItem> > knn_list;
-
     izenelib::util::UString text(actionOperation.actionItem_.env_.queryString_, izenelib::util::UString::UTF_8);
-    if (dupManager_->getSignatureAndKNNList(text, start + topK, signature, knn_list) == 0
-            || (int) knn_list.size() <= start) return true;
 
-    std::vector<std::pair<uint32_t, FpItem> >::const_iterator it;
-    for (it = knn_list.begin() + start; it != knn_list.end(); ++it)
+    if (dupManager_->getSignatureForText(text, signature))
     {
-        docIdList.push_back(it->second.docid);
-        rankScoreList.push_back(1.0f - float(it->first) / float(DdConstants::f));
+        dupManager_->getKNNListBySignature(signature, knnTopK, start, knnDist, docIdList, rankScoreList, totalCount);
     }
-    totalCount = knn_list.size() - start;
     return true;
 }
 

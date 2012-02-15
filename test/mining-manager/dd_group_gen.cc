@@ -1,15 +1,15 @@
-#include <mining-manager/duplicate-detection-submanager/group_table.h>
+#include <idmlib/duplicate-detection/group_table.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/filesystem.hpp>
-using namespace sf1r;
+
 int main(int ac, char** av)
 {
     std::string input(av[1]);
     std::string output(av[2]);
     boost::filesystem::remove_all(output);
-    GroupTable group(output);
+    idmlib::dd::GroupTable<uint32_t, uint32_t> group(output);
     group.Load();
     std::ifstream ifs(input.c_str());
     std::string line;
@@ -27,7 +27,7 @@ int main(int ac, char** av)
             {
                 group.AddDoc(in_group[0], in_group[i]);
             }
-            
+
             in_group.resize(0);
             continue;
         }
@@ -43,7 +43,7 @@ int main(int ac, char** av)
             apps.insert(docid, line);
             in_group.push_back(docid);
         }
-        
+
     }
     ifs.close();
     //process in_group
@@ -55,7 +55,7 @@ int main(int ac, char** av)
         }
     }
     group.Flush();
-    
+
 //     apps.clear();
     const std::vector<std::vector<uint32_t> >& group_info = group.GetGroupInfo();
     std::cout<<"[TOTAL GROUP SIZE] : "<<group_info.size()<<std::endl;
@@ -69,14 +69,14 @@ int main(int ac, char** av)
             if( line!=NULL )
             {
                 std::cout<<*line<<std::endl;
-                
+
             }
             else
             {
                 std::cout<<"???? docid "<<docid<<" error."<<std::endl;
             }
-            
-            
+
+
         }
         std::cout<<std::endl<<std::endl;
     }

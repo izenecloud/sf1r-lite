@@ -219,8 +219,8 @@ bool SearchManager::search(
         faceted::OntologyRep& attrRep,
         sf1r::PropertyRange& propertyRange,
         DistKeywordSearchInfo& distSearchInfo,
-        int topK,
-        int start)
+        uint32_t topK,
+        uint32_t start)
 {
     CREATE_PROFILER( cacheoverhead, "SearchManager", "cache overhead: overhead for caching in searchmanager");
 
@@ -298,8 +298,8 @@ bool SearchManager::doSearch_(
         faceted::OntologyRep& attrRep,
         sf1r::PropertyRange& propertyRange,
         DistKeywordSearchInfo& distSearchInfo,
-        int topK,
-        int start)
+        uint32_t topK,
+        uint32_t start)
 {
     CREATE_PROFILER( preparedociter, "SearchManager", "doSearch_: SearchManager_search : build doc iterator");
     CREATE_PROFILER( preparerank, "SearchManager", "doSearch_: prepare ranker");

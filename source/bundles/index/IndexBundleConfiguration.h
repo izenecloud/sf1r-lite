@@ -122,6 +122,12 @@ public:
     /// @brief top results number
     size_t topKNum_;
 
+    /// @brief top results number for KNN search
+    size_t kNNTopKNum_;
+
+    /// @brief Hamming Distance threshold for KNN search
+    size_t kNNDist_;
+
     /// @brief sort cache update interval
     size_t sortCacheUpdateInterval_;
 
