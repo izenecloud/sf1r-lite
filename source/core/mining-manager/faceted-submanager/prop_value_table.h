@@ -18,8 +18,7 @@
 #include <boost/memory.hpp>
 #include <boost/thread.hpp>
 
-//#include <vector>
-#include <am/concurrent/slfvector.h>
+#include <vector>
 #include <string>
 #include <map>
 #include <set>
@@ -27,7 +26,6 @@
 NS_FACETED_BEGIN
 
 using boost::stl_allocator;
-using izenelib::am::concurrent::slfvector;
 class PropValueTable
 {
 public:
@@ -47,7 +45,7 @@ public:
     /** mapping from value string to value id */
     typedef std::map<izenelib::util::UString, pvid_t> PropStrMap;
     /** mapping from value id to the map of child values */
-    typedef slfvector<PropStrMap> ChildMapTable;
+    typedef std::vector<PropStrMap> ChildMapTable;
 
     typedef std::set<pvid_t, std::less<pvid_t>, stl_allocator<pvid_t> > ParentSetType;
     //typedef std::set<pvid_t> ParentSetType;
@@ -109,7 +107,7 @@ public:
      * Get value ids of @p docId, including all its parent ids.
      * @param docId the doc id
      * @param parentSet the set of value ids
-     * TODO When boost::memory has a TLS allocator, the tempte could be removed by
+     * TODO When boost::memory has a TLS allocator, the tempte could be removed by 
      * assigning a ParentSetType as a member variable of class PropValueTable
      */
     template<typename SetType>
