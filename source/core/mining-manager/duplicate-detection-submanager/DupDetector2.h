@@ -103,17 +103,19 @@ public:
     void getKNNListBySignature(
             const std::vector<uint64_t>& signature,
             uint32_t count,
-            std::vector<std::pair<uint32_t, FpItem> >& knn_list);
+            std::vector<std::pair<uint32_t, FpItem> >& knn_list,
+            unsigned knnDist);
 
     inline uint32_t getSignatureAndKNNList(
             const izenelib::util::UString& text,
             uint32_t count,
             std::vector<uint64_t>& signature,
-            std::vector<std::pair<uint32_t, FpItem> >& knn_list)
+            std::vector<std::pair<uint32_t, FpItem> >& knn_list,
+            unsigned knnDist)
     {
         uint32_t text_len = getSignatureForText(text, signature);
         if (text_len)
-            getKNNListBySignature(signature, count, knn_list);
+            getKNNListBySignature(signature, count, knn_list, knnDist);
 
         return text_len;
     }

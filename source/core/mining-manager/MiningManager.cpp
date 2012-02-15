@@ -1528,13 +1528,14 @@ bool MiningManager::GetKNNSearchResult(
         sf1r::PropertyRange& propertyRange,
         DistKeywordSearchInfo& distSearchInfo,
         int topK,
-        int start)
+        int start,
+        unsigned knnDist)
 {
     std::vector<uint64_t> signature;
     std::vector<std::pair<uint32_t, FpItem> > knn_list;
 
     izenelib::util::UString text(actionOperation.actionItem_.env_.queryString_, izenelib::util::UString::UTF_8);
-    if (dupManager_->getSignatureAndKNNList(text, start + topK, signature, knn_list) == 0
+    if (dupManager_->getSignatureAndKNNList(text, start + topK, signature, knn_list, knnDist) == 0
             || (int) knn_list.size() <= start) return true;
 
     std::vector<std::pair<uint32_t, FpItem> >::const_iterator it;

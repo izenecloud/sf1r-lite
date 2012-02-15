@@ -877,7 +877,8 @@ uint32_t DupDetector2::getSignatureForMultiText(
 void DupDetector2::getKNNListBySignature(
         const std::vector<uint64_t>& signature,
         uint32_t count,
-        std::vector<std::pair<uint32_t, FpItem> >& knn_list)
+        std::vector<std::pair<uint32_t, FpItem> >& knn_list,
+        unsigned knnDist)
 {
     knn_list.clear();
     knn_list.reserve(count + 1);
@@ -886,6 +887,7 @@ void DupDetector2::getKNNListBySignature(
     {
         if (fp_vec_[i].docid == 0) continue;
         uint32_t hamming_dist = Utilities::calcHammingDist(signature, fp_vec_[i].fp);
+        if(hamming_dist > knnDist) continue;
         knn_list.push_back(std::make_pair(hamming_dist, fp_vec_[i]));
         std::push_heap(knn_list.begin(), knn_list.end());
         if (knn_list.size() > count)
