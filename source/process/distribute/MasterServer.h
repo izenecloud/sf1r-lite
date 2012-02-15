@@ -4,6 +4,10 @@
 #include <util/singleton.h>
 #include <3rdparty/msgpack/rpc/server.h>
 
+#include <common/ResultType.h>
+#include <query-manager/ActionItem.h>
+#include <aggregator-manager/MasterServerConnector.h>
+
 namespace sf1r
 {
 
@@ -24,25 +28,6 @@ public:
         instance.start(threadnum);
     }
 
-    bool preprocess(const std::string& collection, std::string& error)
-    {
-        std::cout << "#[WorkerServer::preHandle] collection : " << collection << endl;
-
-        //std::string collectionLow = boost::to_lower_copy(collection);
-        CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(collection);
-        CollectionManager::ScopedReadLock lock(*mutex);
-        collectionHandler_ = CollectionManager::get()->findHandler(collection);
-
-        if (!collectionHandler_)
-        {
-            error = "No collectionHandler found for " + collection;
-            std::cout << error << std::endl;
-            return false;
-        }
-
-        return true;
-    }
-
     void dispatch(msgpack::rpc::request req)
     {
         try
@@ -50,7 +35,10 @@ public:
             std::string method;
             req.method().convert(&method);
 
-            ;
+            if (method == MasterServerConnector::Methods_[MasterServerConnector::Method_getDocumentsByIds_])
+            {
+                getDocumentsByIds(req);
+            }
         }
         catch (msgpack::type_error& e)
         {
@@ -64,6 +52,41 @@ public:
             req.error(std::string(e.what()));
             return;
         }
+    }
+
+private:
+    /**
+     * @example rpc call
+     *   GetDocumentsByIdsActionItem action;
+     *   RawTextResultFromSIA resultItem;
+     *   MasterServerConnector::get()->syncCall(MasterServerConnector::Method_getDocumentsByIds_, action, resultItem);
+     */
+    void getDocumentsByIds(msgpack::rpc::request& req)
+    {
+        msgpack::type::tuple<GetDocumentsByIdsActionItem> params;
+        req.params().convert(&params);
+        GetDocumentsByIdsActionItem action = params.get<0>();
+
+        CollectionHandler* collectionHandler = getCollectionHandler(action.collectionName_);
+        if (!collectionHandler)
+        {
+            std::string error = "No collectionHandler found for " + action.collectionName_;
+            req.error(error);
+            return;
+        }
+
+        RawTextResultFromSIA resultItem;
+        collectionHandler_->indexSearchService_->getDocumentsByIds(action, resultItem);
+        req.result(resultItem);
+    }
+
+private:
+    CollectionHandler* getCollectionHandler(const std::string& collection)
+    {
+        //std::string collectionLow = boost::to_lower_copy(collection);
+        CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(collection);
+        CollectionManager::ScopedReadLock lock(*mutex);
+        return CollectionManager::get()->findHandler(collection);
     }
 
 private:

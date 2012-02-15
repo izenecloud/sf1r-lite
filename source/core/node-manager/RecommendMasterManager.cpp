@@ -33,7 +33,7 @@ bool RecommendMasterManager::init()
 
 bool RecommendMasterManager::getSearchMasterAddress(std::string& host, uint32_t& port)
 {
-    if (!zookeeper_ || zookeeper_->isConnected())
+    if (!zookeeper_ || !zookeeper_->isConnected())
         return false;
 
     std::string searchMastersPath = ZooKeeperNamespace::getSearchServerParentPath();
