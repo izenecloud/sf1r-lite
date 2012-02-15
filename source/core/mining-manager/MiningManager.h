@@ -266,9 +266,9 @@ public:
             std::size_t& totalCount,
             sf1r::PropertyRange& propertyRange,
             DistKeywordSearchInfo& distSearchInfo,
-            int topK = 200,
-            int start = 0,
-            unsigned knnDist = 15);
+            uint32_t knnTopK = 200,
+            uint32_t start = 0,
+            uint32_t knnDist = 15);
 
     void close();
 

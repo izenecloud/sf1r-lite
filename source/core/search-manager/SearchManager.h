@@ -74,8 +74,8 @@ public:
             faceted::OntologyRep& attrRep,
             sf1r::PropertyRange& propertyRange,
             DistKeywordSearchInfo& distSearchInfo,
-            int topK = 200,
-            int start = 0);
+            uint32_t topK = 200,
+            uint32_t start = 0);
 
     void reset_cache(
             bool rType,
@@ -118,8 +118,8 @@ private:
             faceted::OntologyRep& attrRep,
             sf1r::PropertyRange& propertyRange,
             DistKeywordSearchInfo& distSearchInfo,
-            int topK,
-            int start);
+            uint32_t topK,
+            uint32_t start);
 
     bool prepareDocIterWithOnlyOrderby_(
             boost::shared_ptr<EWAHBoolArray<uint32_t> >& pFilterIdSet);

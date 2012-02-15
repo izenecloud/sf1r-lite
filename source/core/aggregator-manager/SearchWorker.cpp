@@ -251,9 +251,10 @@ bool SearchWorker::getSearchResult_(
         return true;
     }
 
-    int startOffset;
-    int TOP_K_NUM = bundleConfig_->topKNum_;
-    unsigned KNN_DIST = bundleConfig_->kNNDist_;
+    uint32_t startOffset;
+    uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
+    uint32_t KNN_TOP_K_NUM = bundleConfig_->kNNTopKNum_;
+    uint32_t KNN_DIST = bundleConfig_->kNNDist_;
     if (isDistributedSearch)
     {
         // XXX, For distributed search, the page start(offset) should be measured in results over all nodes,
@@ -275,7 +276,7 @@ bool SearchWorker::getSearchResult_(
                 resultItem.totalCount_,
                 resultItem.propertyRange_,
                 resultItem.distSearchInfo_,
-                TOP_K_NUM,
+                KNN_TOP_K_NUM,
                 startOffset,
                 KNN_DIST
                 );

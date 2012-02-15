@@ -1526,9 +1526,9 @@ bool MiningManager::GetKNNSearchResult(
         std::size_t& totalCount,
         sf1r::PropertyRange& propertyRange,
         DistKeywordSearchInfo& distSearchInfo,
-        int topK,
-        int start,
-        unsigned knnDist)
+        uint32_t knnTopK,
+        uint32_t start,
+        uint32_t knnDist)
 {
     if (!mining_schema_.dupd_enable || !dupManager_)
         return false;
@@ -1538,7 +1538,7 @@ bool MiningManager::GetKNNSearchResult(
 
     if (dupManager_->getSignatureForText(text, signature))
     {
-        dupManager_->getKNNListBySignature(signature, topK, start, knnDist, docIdList, rankScoreList, totalCount);
+        dupManager_->getKNNListBySignature(signature, knnTopK, start, knnDist, docIdList, rankScoreList, totalCount);
     }
     return true;
 }
