@@ -7,18 +7,8 @@
 #ifndef DUPDETECTOR2_H_
 #define DUPDETECTOR2_H_
 
-#include "DupTypes.h"
-#include "group_table.h"
-#include "fp_storage.h"
-#include "fp_tables.h"
-#include <string>
-#include <vector>
-
+#include <ir/id_manager/IDManager.h>
 #include <idmlib/duplicate-detection/dup_detector.h>
-
-#include <boost/thread/thread.hpp>
-#include <boost/thread/mutex.hpp>
-
 
 namespace idmlib
 {
@@ -37,6 +27,7 @@ namespace sf1r
  * search result.
   */
 class DocumentManager;
+
 class DupDetectorWrapper
 {
     typedef idmlib::dd::DupDetector<uint32_t, uint32_t> DDType;
@@ -76,12 +67,10 @@ public:
             const std::vector<uint64_t>& signature,
             uint32_t count,
             uint32_t start,
+            uint32_t max_hamming_dist,
             std::vector<uint32_t>& docIdList,
             std::vector<float>& rankScoreList,
             std::size_t& totalCount);
-
-private:
-    bool GetPropertyString_(uint32_t docid, const std::string& property, std::string& value);
 
 private:
     std::string container_;

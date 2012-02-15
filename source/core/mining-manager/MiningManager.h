@@ -267,7 +267,8 @@ public:
             sf1r::PropertyRange& propertyRange,
             DistKeywordSearchInfo& distSearchInfo,
             int topK = 200,
-            int start = 0);
+            int start = 0,
+            unsigned knnDist = 15);
 
     void close();
 

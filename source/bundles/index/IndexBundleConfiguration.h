@@ -122,6 +122,9 @@ public:
     /// @brief top results number
     size_t topKNum_;
 
+    /// @brief knn distance threshold
+    size_t kNNDist_;
+
     /// @brief sort cache update interval
     size_t sortCacheUpdateInterval_;
 

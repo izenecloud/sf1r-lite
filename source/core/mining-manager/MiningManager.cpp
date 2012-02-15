@@ -894,9 +894,8 @@ bool MiningManager::getUniqueDocIdList(const std::vector<uint32_t>& docIdList,
                                        std::vector<uint32_t>& cleanDocs)
 {
     if (!mining_schema_.dupd_enable || !dupManager_)
-    {
         return false;
-    }
+
     return dupManager_->getUniqueDocIdList(docIdList, cleanDocs);
 
 }
@@ -904,11 +903,10 @@ bool MiningManager::getUniqueDocIdList(const std::vector<uint32_t>& docIdList,
 bool MiningManager::getDuplicateDocIdList(uint32_t docId, std::vector<
         uint32_t>& docIdList)
 {
-    if (dupManager_)
-    {
-        return dupManager_->getDuplicatedDocIdList(docId, docIdList);
-    }
-    return false;
+    if (!mining_schema_.dupd_enable || !dupManager_)
+        return false;
+
+    return dupManager_->getDuplicatedDocIdList(docId, docIdList);
 }
 
 bool MiningManager::computeSimilarity_(izenelib::ir::indexmanager::IndexReader* pIndexReader, const std::vector<std::string>& property_names)
@@ -1529,16 +1527,18 @@ bool MiningManager::GetKNNSearchResult(
         sf1r::PropertyRange& propertyRange,
         DistKeywordSearchInfo& distSearchInfo,
         int topK,
-        int start)
+        int start,
+        unsigned knnDist)
 {
-    if (!dupManager_) return false;
+    if (!mining_schema_.dupd_enable || !dupManager_)
+        return false;
 
     std::vector<uint64_t> signature;
     izenelib::util::UString text(actionOperation.actionItem_.env_.queryString_, izenelib::util::UString::UTF_8);
 
     if (dupManager_->getSignatureForText(text, signature))
     {
-        dupManager_->getKNNListBySignature(signature, topK, start, docIdList, rankScoreList, totalCount);
+        dupManager_->getKNNListBySignature(signature, topK, start, knnDist, docIdList, rankScoreList, totalCount);
     }
     return true;
 }

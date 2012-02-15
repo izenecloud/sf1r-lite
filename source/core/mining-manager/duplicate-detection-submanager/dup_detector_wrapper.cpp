@@ -1,8 +1,7 @@
 #include "dup_detector_wrapper.h"
 
 #include <document-manager/DocumentManager.h>
-
-#include <util/ClockTimer.h>
+#include <idmlib/util/idm_analyzer.h>
 
 // #define DUPD_GROUP_DEBUG;
 // #define DUPD_TEXT_DEBUG;
@@ -18,6 +17,8 @@ DupDetectorWrapper::DupDetectorWrapper(const std::string& container)
     , document_manager_()
     , analyzer_(NULL)
     , fp_only_(false)
+    , group_table_(NULL)
+    , dd_(NULL)
 {
 }
 
@@ -33,6 +34,8 @@ DupDetectorWrapper::DupDetectorWrapper(
     , id_manager_(id_manager)
     , analyzer_(analyzer)
     , fp_only_(fp_only)
+    , group_table_(NULL)
+    , dd_(NULL)
 {
     for (uint32_t i = 0; i < properties.size(); i++)
     {
@@ -137,17 +140,6 @@ bool DupDetectorWrapper::Open()
 
 }
 
-bool DupDetectorWrapper::GetPropertyString_(uint32_t docid, const std::string& property, std::string& value)
-{
-    Document doc;
-    if (!document_manager_->getDocument(docid, doc)) return false;
-    Document::property_iterator property_it = doc.findProperty(property);
-    if (property_it == doc.propertyEnd()) return false;
-    const izenelib::util::UString& ustr = property_it->second.get<izenelib::util::UString>();
-    ustr.convertString(value, izenelib::util::UString::UTF_8);
-    return true;
-}
-
 bool DupDetectorWrapper::ProcessCollection()
 {
     if (!dd_) return false;
@@ -164,6 +156,7 @@ bool DupDetectorWrapper::ProcessCollection()
     uint32_t process_count = 0;
     Document doc;
 
+    dd_->IncreaseCacheCapacity(processing_max_docid - processed_max_docid);
     for (uint32_t docid = processed_max_docid + 1; docid <= processing_max_docid; docid++)
     {
         ++process_count;
@@ -252,13 +245,14 @@ void DupDetectorWrapper::getKNNListBySignature(
         const std::vector<uint64_t>& signature,
         uint32_t count,
         uint32_t start,
+        uint32_t max_hamming_dist,
         std::vector<uint32_t>& docIdList,
         std::vector<float>& rankScoreList,
         std::size_t& totalCount)
 {
     std::vector<std::pair<uint32_t, uint32_t> > knn_list;
 
-    dd_->GetKNNListBySignature(signature, count + start, knn_list);
+    dd_->GetKNNListBySignature(signature, count + start, max_hamming_dist, knn_list);
     for (uint32_t i = start; i < knn_list.size(); i++)
     {
         docIdList.push_back(knn_list[i].second);
