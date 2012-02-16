@@ -221,7 +221,7 @@
          * it's recommended to keep the shardid consistent with nodeid.
     -->
     <DistributedCommon clusterid="@LOCAL_HOST_USER_NAME@" username="@LOCAL_HOST_USER_NAME@" localhost="172.16.0.36"
-                       workerport="18151" notifyrecvport="18131" datarecvport="18121" />
+                       workerport="18151" masterport="18131" datarecvport="18121" />
 
     <DistributedTopology enable="y" type="search" nodenum="2" shardnum="2">
       <CurrentNode replicaid="1" nodeid="1">
