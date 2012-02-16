@@ -7,6 +7,7 @@
  * @date Updated <2009-09-30 10:02:07>
  * @brief identity for a query
  */
+
 #include "ActionItem.h"
 
 namespace sf1r {
@@ -45,18 +46,20 @@ struct QueryIdentity
     std::map<std::string, double> paramConstValueMap;
     std::map<std::string, std::string> paramPropertyValueMap;
 
+    std::vector<uint64_t> simHash;
+
     /// search results offset after topK
-    int start;
+    uint32_t start;
 
     /// action type of distributed search
-    int distActionType;
+    int8_t distActionType;
 
-    int searchingMode;
+    int8_t searchingMode;
 
     DATA_IO_LOAD_SAVE(QueryIdentity, & query & userId & rankingType & laInfo
             & properties & sortInfo & filterInfo & groupParam & rangeProperty
-            & strExp & paramConstValueMap & paramPropertyValueMap & start
-            & distActionType);
+            & strExp & paramConstValueMap & paramPropertyValueMap & simHash
+            & start & distActionType & searchingMode);
 
     template<class Archive>
     void serialize(Archive& ar, const unsigned version)
@@ -73,26 +76,21 @@ struct QueryIdentity
         ar & strExp;
         ar & paramConstValueMap;
         ar & paramPropertyValueMap;
+        ar & simHash;
         ar & start;
         ar & distActionType;
         ar & searchingMode;
     }
 };
 
-void makeQueryIdentity(
-        QueryIdentity& identity,
-        const KeywordSearchActionItem& item,
-        int distActionType = 0,
-        int start = 0
-);
-
 inline bool operator==(const QueryIdentity& a,
                        const QueryIdentity& b)
 {
     return a.rankingType == b.rankingType
+        && a.searchingMode == b.searchingMode
+        && a.simHash == b.simHash
         && a.query == b.query
         && a.userId == b.userId
-        && a.searchingMode == b.searchingMode
         && a.laInfo == b.laInfo
         && a.properties == b.properties
         && a.sortInfo == b.sortInfo

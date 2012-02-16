@@ -79,7 +79,7 @@ bool DupDetectorWrapper::Open()
                     group_table_->AddDoc(in_group[0], in_group[i]);
                 }
 
-                in_group.resize(0);
+                in_group.clear();
                 continue;
             }
             if (!line.empty())
