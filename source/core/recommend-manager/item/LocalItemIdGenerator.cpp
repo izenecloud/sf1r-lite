@@ -1,27 +1,29 @@
 #include "LocalItemIdGenerator.h"
-
-#include <document-manager/DocumentManager.h>
 #include <util/ustring/UString.h>
 
 #include <glog/logging.h>
 
+namespace
+{
+const izenelib::util::UString::EncodingType ENCODING_UTF8 = izenelib::util::UString::UTF_8;
+}
+
 namespace sf1r
 {
 
-LocalItemIdGenerator::LocalItemIdGenerator(IDManager& idManager, DocumentManager& docManager)
+LocalItemIdGenerator::LocalItemIdGenerator(IDManagerType& idManager)
     : idManager_(idManager)
-    , docManager_(docManager)
 {
 }
 
 bool LocalItemIdGenerator::strIdToItemId(const std::string& strId, itemid_t& itemId)
 {
-    izenelib::util::UString ustr(strId, UString::UTF_8);
+    izenelib::util::UString ustr(strId, ENCODING_UTF8);
 
     if (idManager_.getDocIdByDocName(ustr, itemId, false))
         return true;
 
-    LOG(WARNING) << "in LocalItemIdGenerator::strIdToItemId(), str id " << strId << " has not been inserted before";
+    LOG(WARNING) << "in strIdToItemId(), str id " << strId << " has not been inserted before";
     return false;
 }
 
@@ -31,17 +33,17 @@ bool LocalItemIdGenerator::itemIdToStrId(itemid_t itemId, std::string& strId)
 
     if (idManager_.getDocNameByDocId(itemId, ustr))
     {
-        ustr.convertString(strId, UString::UTF_8);
+        ustr.convertString(strId, ENCODING_UTF8);
         return true;
     }
 
-    LOG(WARNING) << "in LocalItemIdGenerator::itemIdToStrId(), item id " << itemId << " does not exist";
+    LOG(WARNING) << "in itemIdToStrId(), failed to convert from item id " << itemId << " to string id";
     return false;
 }
 
 itemid_t LocalItemIdGenerator::maxItemId() const
 {
-    return docManager_.getMaxDocId();
+    return idManager_.getMaxDocId();
 }
 
 } // namespace sf1r

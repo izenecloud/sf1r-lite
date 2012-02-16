@@ -1519,27 +1519,32 @@ bool MiningManager::GetSummarizationByRawKey(
     return summarizationManager_->GetSummarizationByRawKey(rawKey,result);
 }
 
-bool MiningManager::GetKNNSearchResult(
-        const SearchKeywordOperation& actionOperation,
+uint32_t MiningManager::GetSignatureForQuery(
+        const KeywordSearchActionItem& item,
+        std::vector<uint64_t>& signature)
+{
+    if (!mining_schema_.dupd_enable || !dupManager_)
+        return 0;
+
+    izenelib::util::UString text(item.env_.queryString_, izenelib::util::UString::UTF_8);
+    return dupManager_->getSignatureForText(text, signature);
+}
+
+bool MiningManager::GetKNNListBySignature(
+        const std::vector<uint64_t>& signature,
         std::vector<unsigned int>& docIdList,
         std::vector<float>& rankScoreList,
         std::size_t& totalCount,
-        sf1r::PropertyRange& propertyRange,
-        DistKeywordSearchInfo& distSearchInfo,
         uint32_t knnTopK,
-        uint32_t start,
-        uint32_t knnDist)
+        uint32_t knnDist,
+        uint32_t start)
 {
     if (!mining_schema_.dupd_enable || !dupManager_)
         return false;
 
-    std::vector<uint64_t> signature;
-    izenelib::util::UString text(actionOperation.actionItem_.env_.queryString_, izenelib::util::UString::UTF_8);
+    if (signature.empty()) return false;
 
-    if (dupManager_->getSignatureForText(text, signature))
-    {
-        dupManager_->getKNNListBySignature(signature, knnTopK, start, knnDist, docIdList, rankScoreList, totalCount);
-    }
+    dupManager_->getKNNListBySignature(signature, knnTopK, start, knnDist, docIdList, rankScoreList, totalCount);
     return true;
 }
 

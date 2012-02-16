@@ -65,7 +65,7 @@ bool IndexSearchService::getSearchResult(
 #endif
 
     QueryIdentity identity;
-    makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.option_, actionItem.pageInfo_.start_);
+    searchWorker_->makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.option_, actionItem.pageInfo_.start_);
 
     if (!cache_->get(
             identity,

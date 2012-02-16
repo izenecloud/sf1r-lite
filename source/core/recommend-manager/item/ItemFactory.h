@@ -29,9 +29,6 @@ public:
 private:
     IDManager* idManager_;
     DocumentManager* docManager_;
-
-    ItemIdGenerator* itemIdGenerator_;
-    ItemManager* itemManager_;
 };
 
 } // namespace sf1r
