@@ -259,42 +259,49 @@ public:
 
     bool GetSummarizationByRawKey(const izenelib::util::UString& rawKey, Summarization& result);
 
-    bool GetKNNSearchResult(
-            const SearchKeywordOperation& actionOperation,
+    uint32_t GetSignatureForQuery(
+            const KeywordSearchActionItem& item,
+            std::vector<uint64_t>& signature);
+
+    bool GetKNNListBySignature(
+            const std::vector<uint64_t>& signature,
             std::vector<unsigned int>& docIdList,
             std::vector<float>& rankScoreList,
             std::size_t& totalCount,
-            sf1r::PropertyRange& propertyRange,
-            DistKeywordSearchInfo& distSearchInfo,
-            uint32_t knnTopK = 200,
-            uint32_t start = 0,
-            uint32_t knnDist = 15);
+            uint32_t knnTopK,
+            uint32_t knnDist,
+            uint32_t start);
 
     void close();
 
-    boost::shared_ptr<faceted::OntologyManager> GetFaceted()
+    boost::shared_ptr<faceted::OntologyManager>& GetFaceted()
     {
         return faceted_;
     }
 
-    boost::shared_ptr<TaxonomyGenerationSubManager> GetTgManager()
+    boost::shared_ptr<TaxonomyGenerationSubManager>& GetTgManager()
     {
         return tgManager_;
     }
 
-    boost::shared_ptr<DocumentManager> GetDocumentManager()
+    boost::shared_ptr<DocumentManager>& GetDocumentManager()
     {
         return  document_manager_;
     }
 
-    boost::shared_ptr<RecommendManager> GetRecommendManager()
+    boost::shared_ptr<RecommendManager>& GetRecommendManager()
     {
         return rmDb_;
     }
 
-    boost::shared_ptr<faceted::CTRManager> GetCtrManager()
+    boost::shared_ptr<faceted::CTRManager>& GetCtrManager()
     {
         return ctrManager_;
+    }
+
+    boost::shared_ptr<DupDType>& GetDupManager()
+    {
+        return dupManager_;
     }
 
     void onIndexUpdated(size_t docNum);

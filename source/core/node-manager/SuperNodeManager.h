@@ -55,9 +55,9 @@ public:
         return distributedCommon_.workerPort_;
     }
 
-    unsigned int getNoticeReceiverPort() const
+    unsigned int getMasterPort() const
     {
-        return distributedCommon_.notifyRecvPort_;
+        return distributedCommon_.masterPort_;
     }
 
     unsigned int getDataReceiverPort() const

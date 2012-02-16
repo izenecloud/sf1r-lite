@@ -76,7 +76,7 @@ private:
         }
 
         RawTextResultFromSIA resultItem;
-        collectionHandler_->indexSearchService_->getDocumentsByIds(action, resultItem);
+        collectionHandler->indexSearchService_->getDocumentsByIds(action, resultItem);
         req.result(resultItem);
     }
 
@@ -88,9 +88,6 @@ private:
         CollectionManager::ScopedReadLock lock(*mutex);
         return CollectionManager::get()->findHandler(collection);
     }
-
-private:
-    CollectionHandler* collectionHandler_;
 };
 
 }

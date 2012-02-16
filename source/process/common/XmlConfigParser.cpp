@@ -304,7 +304,7 @@ void SF1Config::parseDistributedCommon(const ticpp::Element * distributedCommon)
     getAttribute(distributedCommon, "clusterid", distributedCommonConfig_.clusterId_);
     getAttribute(distributedCommon, "username", distributedCommonConfig_.userName_);
     getAttribute(distributedCommon, "workerport", distributedCommonConfig_.workerPort_);
-    getAttribute(distributedCommon, "notifyrecvport", distributedCommonConfig_.notifyRecvPort_);
+    getAttribute(distributedCommon, "masterport", distributedCommonConfig_.masterPort_);
     getAttribute(distributedCommon, "datarecvport", distributedCommonConfig_.dataRecvPort_);
     distributedCommonConfig_.baPort_ = brokerAgentConfig_.port_;
 

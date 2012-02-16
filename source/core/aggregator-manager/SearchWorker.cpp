@@ -72,7 +72,7 @@ bool SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
     izenelib::util::UString unicodeDocId;
     sf1r::docid_t internalId;
     for (docid_iterator it = actionItem.docIdList_.begin();
-         it != actionItem.docIdList_.end(); ++it)
+            it != actionItem.docIdList_.end(); ++it)
     {
         unicodeDocId.assign(*it, kEncodingType);
         if (idManager_->getDocIdByDocName(unicodeDocId, internalId, false))
@@ -187,6 +187,15 @@ bool SearchWorker::visitDoc(const uint32_t& docId, bool& ret)
     return ret;
 }
 
+void SearchWorker::makeQueryIdentity(
+        QueryIdentity& identity,
+        const KeywordSearchActionItem& item,
+        int8_t distActionType,
+        uint32_t start)
+{
+    searchManager_->makeQueryIdentity(identity, item, distActionType, start);
+}
+
 /// private methods ////////////////////////////////////////////////////////////
 
 template <typename ResultItemType>
@@ -267,22 +276,35 @@ bool SearchWorker::getSearchResult_(
         startOffset = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
     }
 
-    if (actionOperation.actionItem_.searchingMode_ == SearchingMode::KNN)
-    {
-        miningManager_->GetKNNSearchResult(
+    if (!searchManager_->search(
                 actionOperation,
                 resultItem.topKDocs_,
                 resultItem.topKRankScoreList_,
+                resultItem.topKCustomRankScoreList_,
                 resultItem.totalCount_,
+                resultItem.groupRep_,
+                resultItem.attrRep_,
                 resultItem.propertyRange_,
                 resultItem.distSearchInfo_,
+                TOP_K_NUM,
                 KNN_TOP_K_NUM,
-                startOffset,
-                KNN_DIST
-                );
-    }
-    else
+                KNN_DIST,
+                startOffset
+                ))
     {
+        std::string newQuery;
+
+        if (!bundleConfig_->bTriggerQA_)
+            return true;
+        assembleDisjunction(keywords, newQuery);
+
+        actionOperation.actionItem_.env_.queryString_ = newQuery;
+        resultItem.propertyQueryTermList_.clear();
+        if (!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
+        {
+            return true;
+        }
+
         if (!searchManager_->search(
                     actionOperation,
                     resultItem.topKDocs_,
@@ -294,45 +316,18 @@ bool SearchWorker::getSearchResult_(
                     resultItem.propertyRange_,
                     resultItem.distSearchInfo_,
                     TOP_K_NUM,
+                    KNN_TOP_K_NUM,
+                    KNN_DIST,
                     startOffset
                     ))
         {
-            std::string newQuery;
-
-            if (!bundleConfig_->bTriggerQA_)
-                return true;
-            assembleDisjunction(keywords, newQuery);
-
-            actionOperation.actionItem_.env_.queryString_ = newQuery;
-            resultItem.propertyQueryTermList_.clear();
-            if (!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
-            {
-                return true;
-            }
-
-            if (!searchManager_->search(
-                        actionOperation,
-                        resultItem.topKDocs_,
-                        resultItem.topKRankScoreList_,
-                        resultItem.topKCustomRankScoreList_,
-                        resultItem.totalCount_,
-                        resultItem.groupRep_,
-                        resultItem.attrRep_,
-                        resultItem.propertyRange_,
-                        resultItem.distSearchInfo_,
-                        TOP_K_NUM,
-                        startOffset
-                        ))
-            {
-                return true;
-            }
+            return true;
         }
     }
 
     // todo, remove duplication globally over all nodes?
     // Remove duplicated docs from the result if the option is on.
-    if (actionOperation.actionItem_.searchingMode_ != SearchingMode::KNN)
-        removeDuplicateDocs(actionItem, resultItem);
+    removeDuplicateDocs(actionItem, resultItem);
 
     //set page info in resultItem t
     resultItem.start_ = actionItem.pageInfo_.start_;
@@ -621,6 +616,9 @@ bool SearchWorker::removeDuplicateDocs(
         ResultItemType& resultItem
 )
 {
+    if (actionItem.searchingMode_ == SearchingMode::KNN)
+        return true;
+
     // Remove duplicated docs from the result if the option is on.
     if (miningManager_)
     {
