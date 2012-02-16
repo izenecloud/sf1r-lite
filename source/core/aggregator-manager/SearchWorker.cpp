@@ -437,16 +437,19 @@ bool SearchWorker::buildQuery(
     PersonalSearchInfo& personalSearchInfo
 )
 {
-    CREATE_PROFILER ( buildQuery, "IndexSearchService", "processGetSearchResults: build query tree");
+    if (actionOperation.actionItem_.searchingMode_ == SearchingMode::KNN)
+        return true;
+
+    CREATE_PROFILER ( constructQueryTree, "IndexSearchService", "processGetSearchResults: build query tree");
     CREATE_PROFILER ( analyzeQuery, "IndexSearchService", "processGetSearchResults: analyze query");
 
     propertyQueryTermList.resize(0);
     resultItem.analyzedQuery_.resize(0);
 
-    START_PROFILER ( buildQuery );
+    START_PROFILER ( constructQueryTree );
     std::string errorMessage;
     bool buildSuccess = buildQueryTree(actionOperation, *bundleConfig_, resultItem.error_, personalSearchInfo);
-    STOP_PROFILER ( buildQuery );
+    STOP_PROFILER ( constructQueryTree );
 
     if (!buildSuccess)
     {

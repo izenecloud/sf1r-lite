@@ -56,6 +56,31 @@ struct QueryIdentity
 
     int8_t searchingMode;
 
+    inline bool operator==(const QueryIdentity& other) const
+    {
+        return rankingType == other.rankingType
+            && searchingMode == other.searchingMode
+            && simHash == other.simHash
+            && query == other.query
+            && userId == other.userId
+            && laInfo == other.laInfo
+            && properties == other.properties
+            && sortInfo == other.sortInfo
+            && filterInfo == other.filterInfo
+            && groupParam == other.groupParam
+            && rangeProperty == other.rangeProperty
+            && strExp == other.strExp
+            && paramConstValueMap == other.paramConstValueMap
+            && paramPropertyValueMap == other.paramPropertyValueMap
+            && start == other.start
+            && distActionType == other.distActionType;
+    }
+
+    inline bool operator!=(const QueryIdentity& other) const
+    {
+        return !operator==(other);
+    }
+
     DATA_IO_LOAD_SAVE(QueryIdentity, & query & userId & rankingType & laInfo
             & properties & sortInfo & filterInfo & groupParam & rangeProperty
             & strExp & paramConstValueMap & paramPropertyValueMap & simHash
@@ -82,33 +107,6 @@ struct QueryIdentity
         ar & searchingMode;
     }
 };
-
-inline bool operator==(const QueryIdentity& a,
-                       const QueryIdentity& b)
-{
-    return a.rankingType == b.rankingType
-        && a.searchingMode == b.searchingMode
-        && a.simHash == b.simHash
-        && a.query == b.query
-        && a.userId == b.userId
-        && a.laInfo == b.laInfo
-        && a.properties == b.properties
-        && a.sortInfo == b.sortInfo
-        && a.filterInfo == b.filterInfo
-        && a.groupParam == b.groupParam
-        && a.rangeProperty == b.rangeProperty
-        && a.strExp == b.strExp
-        && a.paramConstValueMap == b.paramConstValueMap
-        && a.paramPropertyValueMap == b.paramPropertyValueMap
-        && a.start == b.start
-        && a.distActionType == b.distActionType;
-}
-
-inline bool operator!=(const QueryIdentity& a,
-                       const QueryIdentity& b)
-{
-    return !(a == b);
-}
 
 } // namespace sf1r
 #endif // SF1R_QUERY_MANAGER_QUERY_IDENTITY_H
