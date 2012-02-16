@@ -508,7 +508,7 @@ void MasterManagerBase::registerSearchServer()
     ZNode znode;
     znode.setValue(ZNode::KEY_HOST, curNodeInfo_.host_);
     znode.setValue(ZNode::KEY_BA_PORT, curNodeInfo_.baPort_);
-    znode.setValue(ZNode::KEY_MASTER_PORT, SuperNodeManager::get()->getNoticeReceiverPort());
+    znode.setValue(ZNode::KEY_MASTER_PORT, SuperNodeManager::get()->getMasterPort());
     if (zookeeper_->createZNode(serverPath_, znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
     {
         serverRealPath_ = zookeeper_->getLastCreatedNodePath();
