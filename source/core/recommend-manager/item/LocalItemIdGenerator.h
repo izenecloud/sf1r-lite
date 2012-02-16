@@ -12,14 +12,13 @@
 
 namespace sf1r
 {
-class DocumentManager;
 
 class LocalItemIdGenerator : public ItemIdGenerator
 {
 public:
-    typedef izenelib::ir::idmanager::IDManager IDManager;
+    typedef izenelib::ir::idmanager::IDManager IDManagerType;
 
-    LocalItemIdGenerator(IDManager& idManager, DocumentManager& docManager);
+    LocalItemIdGenerator(IDManagerType& idManager);
 
     virtual bool strIdToItemId(const std::string& strId, itemid_t& itemId);
 
@@ -28,8 +27,7 @@ public:
     virtual itemid_t maxItemId() const;
 
 private:
-    IDManager& idManager_;
-    DocumentManager& docManager_;
+    IDManagerType& idManager_;
 };
 
 } // namespace sf1r
