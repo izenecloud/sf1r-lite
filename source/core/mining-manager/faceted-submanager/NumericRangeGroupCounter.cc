@@ -30,6 +30,7 @@ void NumericRangeGroupCounter::addDoc(docid_t doc)
     int value;
     if (propertyTable_->convertPropertyValue(doc, value))
     {
+        value = std::min(value, bound_[LEVEL_1_OF_SEGMENT_TREE] - 1);
         int exponent;
         for (exponent = 1; value >= bound_[exponent]; ++exponent);
         value /= bound_[exponent--] / 100;
