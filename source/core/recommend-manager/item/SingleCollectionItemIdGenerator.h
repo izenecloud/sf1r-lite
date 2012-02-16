@@ -33,7 +33,7 @@ private:
             izenelib::ir::idmanager::EmptyIDGenerator<std::string, itemid_t>,
             izenelib::ir::idmanager::EmptyIDStorage<std::string, itemid_t>,
             izenelib::ir::idmanager::UniqueIDGenerator<std::string, itemid_t, izenelib::util::ReadWriteLock>,
-            izenelib::ir::idmanager::HDBIDStorage<std::string, itemid_t, izenelib::util::ReadWriteLock> > IDManagerType;
+            izenelib::ir::idmanager::SDBIDStorage<std::string, itemid_t, izenelib::util::ReadWriteLock> > IDManagerType;
 
     IDManagerType idManager_;
 };
