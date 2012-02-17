@@ -147,11 +147,11 @@ void RecommendManager::RebuildForAll()
     for (std::vector<UserQuery>::const_iterator it = query_records.begin();
             it != query_records.end(); ++it)
     {
+        if (it->getQuery().length() > 16)
+            continue;
         izenelib::util::UString uquery(it->getQuery(), izenelib::util::UString::UTF_8);
         if (QueryUtility::isRestrictWord(uquery))
-        {
             continue;
-        }
         queryList.push_back(QueryLogType(it->getPageCount(), it->getHitDocsNum(), uquery));
     }
 
@@ -168,11 +168,11 @@ void RecommendManager::RebuildForAll()
     for (std::vector<PropertyLabel>::const_iterator it = label_records.begin();
             it != label_records.end(); ++it)
     {
+        if (it->getLabelName().length() > 16)
+            continue;
         izenelib::util::UString plabel(it->getLabelName(), izenelib::util::UString::UTF_8);
         if (QueryUtility::isRestrictWord(plabel))
-        {
             continue;
-        }
         labelList.push_back(PropertyLabelType(it->getHitDocsNum(), plabel));
     }
 
@@ -446,7 +446,7 @@ uint32_t RecommendManager::getRelatedOnes_(
         }
         catch (std::exception& e)
         {
-            LOG(ERROR) <<e.what();			
+            LOG(ERROR) << e.what();
             return 0;
         }
         if (!b) continue;

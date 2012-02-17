@@ -99,8 +99,11 @@ private:
             PersonalSearchInfo& personalSearchInfo);
 
     template<typename ActionItemT, typename ResultItemT>
-    bool  getResultItem(ActionItemT& actionItem, const std::vector<sf1r::docid_t>& docsInPage,
-        const vector<vector<izenelib::util::UString> >& propertyQueryTermList, ResultItemT& resultItem);
+    bool  getResultItem(
+            ActionItemT& actionItem,
+            const std::vector<sf1r::docid_t>& docsInPage,
+            const vector<vector<izenelib::util::UString> >& propertyQueryTermList,
+            ResultItemT& resultItem);
 
     template <typename ResultItemType>
     bool removeDuplicateDocs(

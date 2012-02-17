@@ -32,7 +32,7 @@ void MiningQueryLogHandler::SetParam(uint32_t wait_sec, uint32_t days)
 }
 
 void MiningQueryLogHandler::addCollection(
-        const std::string& name, 
+        const std::string& name,
         const boost::shared_ptr<RecommendManager>& recommendManager)
 {
     boost::mutex::scoped_lock lock(mtx_);
