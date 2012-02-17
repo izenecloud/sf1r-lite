@@ -503,8 +503,11 @@ bool SearchWorker::buildQuery(
 }
 
 template<typename ActionItemT, typename ResultItemT>
-bool  SearchWorker::getResultItem(ActionItemT& actionItem, const std::vector<sf1r::docid_t>& docsInPage,
-        const vector<vector<izenelib::util::UString> >& propertyQueryTermList, ResultItemT&  resultItem)
+bool  SearchWorker::getResultItem(
+        ActionItemT& actionItem,
+        const std::vector<sf1r::docid_t>& docsInPage,
+        const vector<vector<izenelib::util::UString> >& propertyQueryTermList,
+        ResultItemT& resultItem)
 {
     using izenelib::util::UString;
 
