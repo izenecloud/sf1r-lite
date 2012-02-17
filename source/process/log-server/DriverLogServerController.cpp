@@ -4,11 +4,14 @@
 #include <common/ScdParser.h>
 
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/filesystem.hpp>
 
+namespace bfs = boost::filesystem;
 
 namespace sf1r
 {
 using namespace izenelib::driver;
+using namespace izenelib::net::sf1r;
 using driver::Keys;
 
 
@@ -29,9 +32,11 @@ bool DriverLogServerController::preprocess()
  *     "controller" : "log_server"
  *     "action" : "update_cclog",
  *   },
+ *   "host" : "172.16.0.161",
+ *   "port" : "18181",
  *   "filename" : "cclog20120113.txt",
  *   "record" : {
- *     # a wrapped json request (as cclog) which is supported by SF1R
+ *       # a wrapped json request (as cclog) which is supported by SF1R
  *   }
  * }
  *
@@ -129,12 +134,41 @@ void DriverLogServerHandler::init()
     // collections of which log need to be updated
     driverCollections_ = LogServerCfg::get()->getDriverCollections();
     storageBaseDir_ = LogServerCfg::get()->getStorageBaseDir();
+    bfs::create_directories(storageBaseDir_+"/scd");
+    bfs::create_directories(storageBaseDir_+"/cclog");
+
+    // cclogged requests which need to transmit back to SF1
+    cclogRequestMap_.insert(std::make_pair("documents/log_group_label", true));
+    cclogRequestMap_.insert(std::make_pair("recommend/add_user", true));
+    cclogRequestMap_.insert(std::make_pair("recommend/update_user", true));
+    cclogRequestMap_.insert(std::make_pair("recommend/remove_user", true));
 }
 
 void DriverLogServerHandler::processCclog()
 {
+    std::string host = asString(request()[Keys::host]);
+    uint32_t port = asInt(request()[Keys::port]);
+
+    if (host.empty())
+    {
+        response().setSuccess(false);
+        response().addError("Sf1 host info is required!");
+        std::cerr << "Sf1 host info is required!" << std::endl;
+        return;
+    }
+    else
+    {
+        setCclogSf1DriverClient(host, port);
+    }
+
     // Get raw request which was originally stored in cclog
     izenelib::driver::Value raw_request = request()[Keys::record];
+
+    std::string json;
+    jsonWriter_.write(raw_request, json);
+    //std::cout << json << std::endl;
+
+#ifdef OUTPUT_TO_FILE
     std::string fileName = storageBaseDir_ + "/cclog/" + asString(request()[Keys::filename]);
 
     if (!openFile(fileName))
@@ -142,44 +176,50 @@ void DriverLogServerHandler::processCclog()
         std::string msg = "Server Error: Failed to create file " + fileName;
         response().setSuccess(false);
         response().addError(msg);
+        std::cout << msg << std::endl;
         return;
     }
+#endif
 
-    std::string json;
-    jsonWriter_.write(raw_request, json);
-    std::cout << fileName << " --> " << json << std::endl;
+    const std::string& controller = asString(raw_request[Keys::header][Keys::controller]);
+    const std::string& action = asString(raw_request[Keys::header][Keys::action]);
+    std::string uri = controller + "/" + action;
+
+#ifdef OUTPUT_TO_FILE
+    uri = fileName;
+#endif
 
     std::string collection = asString(raw_request[Keys::collection]);
     if (!skipProcess(collection))
     {
-        const std::string& controller = asString(raw_request[Keys::header][Keys::controller]);
-        const std::string& action = asString(raw_request[Keys::header][Keys::action]);
-
         if (controller == "documents" && action == "visit")
         {
-            encodeFileName(json, fileName);
+            encodeFileName(json, uri);
             processDocVisit(raw_request, json);
         }
         else if (controller == "recommend" && action == "visit_item")
         {
-            encodeFileName(json, fileName);
+            encodeFileName(json, uri);
             processRecVisitItem(raw_request, json);
         }
         else if (controller == "recommend" && action == "purchase_item")
         {
-            encodeFileName(json, fileName);
+            encodeFileName(json, uri);
             processRecPurchaseItem(raw_request, json);
         }
         else
         {
-            // output directly if there is no need to update
-            writeFile(fileName, json);
+            // output directly
+            if (cclogRequestMap_.find(uri) != cclogRequestMap_.end())
+            {
+                outputCclog(uri, json);
+            }
         }
     }
     else
     {
-        // output directly if there is no need to update
-        writeFile(fileName, json);
+        // nothing to do
+        //outputCclog(uri, json);
     }
 }
 
@@ -480,7 +520,7 @@ void DriverLogServerHandler::onUniqueKeyCheck(
     std::string json = aux;
     std::string fileName;
     decodeFileName(json, fileName);
-    writeFile(fileName, json);
+    outputCclog(fileName, json);
 }
 
 void DriverLogServerHandler::onDuplicateKeyCheck(
@@ -527,7 +567,7 @@ void DriverLogServerHandler::onDuplicateKeyCheck(
 
             std::string fileName;
             decodeFileName(log, fileName);
-            writeFile(fileName, log);
+            outputCclog(fileName, log);
         }
     }
 }
@@ -551,7 +591,7 @@ void DriverLogServerHandler::mergeCClog(boost::shared_ptr<CCLogMerge>& cclogMerg
     //std::cout << "updated log: " << log << std::endl;
     std::string fileName;
     decodeFileName(log, fileName);
-    writeFile(fileName, log);
+    outputCclog(fileName, log);
 
     // remove merged
     for (it = cclogMergeUnit->uuidUpdateVec_.begin(); it != cclogMergeUnit->uuidUpdateVec_.end(); ++it)
@@ -608,6 +648,44 @@ void DriverLogServerHandler::decodeFileName(std::string& record, std::string& fi
         fileName = record.substr(pos+1);
         record.erase(pos);
     }
+}
+
+void DriverLogServerHandler::setCclogSf1DriverClient(const std::string& host, uint32_t port)
+{
+    if (!cclogSf1DriverClient_ || (cclogSf1Host_ != host || cclogSf1Port_ != port))
+    {
+        cclogSf1Host_ = host;
+        cclogSf1Port_ = port;
+        izenelib::net::sf1r::Sf1Config sf1Conf(1, false);
+        cclogSf1DriverClient_.reset(new Sf1Driver(cclogSf1Host_, cclogSf1Port_, sf1Conf));
+    }
+}
+
+boost::shared_ptr<Sf1Driver>& DriverLogServerHandler::getCclogSf1DriverClient()
+{
+    return cclogSf1DriverClient_;
+}
+
+void DriverLogServerHandler::outputCclog(const std::string& fileName, const std::string& request)
+{
+    static std::string tokens = "";
+    std::string uri = fileName;
+
+    //std::cout << "---> outputCclog : " << uri << " --- " << request << std::endl;
+
+    boost::shared_ptr<Sf1Driver>& sf1DriverClient = getCclogSf1DriverClient();
+
+    if (sf1DriverClient)
+    {
+        string requestString = request;
+        string response = sf1DriverClient->call(uri, tokens, requestString);
+    }
+
+#ifdef OUTPUT_TO_FILE
+    writeFile(fileName, request);
+#else
+
+#endif
 }
 
 void DriverLogServerHandler::writeFile(const std::string& fileName, const std::string& record)
