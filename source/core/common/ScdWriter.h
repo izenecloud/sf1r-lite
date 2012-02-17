@@ -40,6 +40,11 @@ public:
 
     ~ScdWriter();
 
+    void SetFileName(const std::string& fn)
+    {
+        filename_ = fn;
+    }
+
     static std::string GenSCDFileName( int op);
 
     void Append(const Document& doc);

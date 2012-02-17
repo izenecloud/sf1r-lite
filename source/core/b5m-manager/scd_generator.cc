@@ -146,13 +146,30 @@ bool ScdGenerator::Generate(const std::string& scd_file, const std::string& outp
         b5mp_doc.property("DOCID") = b5mp_doc.property("uuid");
         b5mp_doc.eraseProperty("uuid");
         ProductPrice price;
+        std::set<std::string> source_set;
         for(uint32_t i=0;i<docs.size();i++)
         {
             ProductPrice p;
             p.Parse(docs[i].property("Price").get<UString>());
             price += p;
+            UString usource = docs[i].property("Source").get<UString>();
+            std::string source;
+            usource.convertString(source, UString::UTF_8);
+            source_set.insert(source);
+        }
+        UString usource;
+        std::set<std::string>::iterator it = source_set.begin();
+        while(it!=source_set.end())
+        {
+            if(usource.length()>0)
+            {
+                usource.append(UString(",", UString::UTF_8));
+            }
+            usource.append(UString(*it, UString::UTF_8));
+            ++it;
         }
         b5mp_doc.property("Price") = price.ToUString();
+        b5mp_doc.property("Source") = usource;
         uint32_t itemcount = docs.size();
         b5mp_doc.property("itemcount") = UString(boost::lexical_cast<std::string>(itemcount), UString::UTF_8);
         b5mp_writer.Append(b5mp_doc);
