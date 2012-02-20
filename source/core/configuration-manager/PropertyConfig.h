@@ -414,9 +414,13 @@ public:
 
     //if the property type is 'string', and there is an analysis method for the property,
     //then inverted index would be created for the property.
-    bool isAnalyzed() const ;
+    bool isAnalyzed() const;
 
-    //
+    /**
+     * @return true for alias property, otherwise, false is returned
+     */
+    bool isAliasProperty() const;
+
     std::string toString() const;
 
     void swap(PropertyConfig& rhs)
