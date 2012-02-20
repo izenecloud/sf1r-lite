@@ -14,6 +14,7 @@
 #include <set>
 
 using namespace izenelib::driver;
+using namespace izenelib::net::sf1r;
 
 namespace sf1r
 {
@@ -137,6 +138,11 @@ private:
 
     void decodeFileName(std::string& json, std::string& fileName);
 
+    void setCclogSf1DriverClient(const std::string& host, uint32_t port);
+    boost::shared_ptr<Sf1Driver>& getCclogSf1DriverClient();
+
+    void outputCclog(const std::string& fileName, const std::string& request);
+
     void writeFile(const std::string& fileName, const std::string& line);
 
 private:
@@ -152,6 +158,12 @@ private:
 
     std::map<uint128_t, boost::shared_ptr<CCLogMerge> > cclogMergeQueue_;
     boost::mutex cclog_merge_mutex_;
+
+    std::map<std::string, bool> cclogRequestMap_;
+
+    boost::shared_ptr<Sf1Driver> cclogSf1DriverClient_;
+    std::string cclogSf1Host_;
+    uint32_t cclogSf1Port_;
 };
 
 }

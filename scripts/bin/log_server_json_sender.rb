@@ -35,6 +35,8 @@ class LogServerJsonSender
         "controller" => "log_server",
         "action" => "#{action}"
       },
+      "host" => "#{Sf1rHost}",
+      "port" => "#{Sf1rPort}",
       "filename" => "#{filename}",
       "record" => request
     }
