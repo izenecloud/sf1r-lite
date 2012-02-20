@@ -65,6 +65,17 @@ namespace sf1r {
             return true;
         }
     };
+
+    struct FeatureStatus
+    {
+        FeatureStatus():pnum(0), nnum(0), znum(0)
+        {
+        }
+        uint16_t pnum;//positive number
+        uint16_t nnum;//negative number
+        uint16_t znum;//zero number
+    };
+
     typedef uint32_t AttribId;
     typedef uint32_t AttribNameId;
     struct ProductAttrib
@@ -90,6 +101,24 @@ namespace sf1r {
 
     typedef izenelib::util::UString AttribRep;
     typedef uint64_t AttribValueId;
+    typedef std::vector<std::pair<AttribNameId, double> > FeatureType;
+
+    struct B5MToken
+    {
+        enum TokenType {TOKEN_A, TOKEN_C, TOKEN_S};
+        izenelib::util::UString text;
+        TokenType type;
+
+        B5MToken()
+        :text(), type(TOKEN_C)
+        {
+        }
+
+        B5MToken(const izenelib::util::UString& tex, TokenType typ)
+        :text(tex), type(typ)
+        {
+        }
+    };
 }
 
 #endif

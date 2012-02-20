@@ -179,10 +179,11 @@ public:
                 else
                 {
                     //document already exists, and type==I or U
-                    if(value.type==2)
-                    {
-                        document.copyPropertiesFromDocument(value.doc, true);
-                    }
+                    document.copyPropertiesFromDocument(value.doc, true);
+                    //if(value.type==2)
+                    //{
+                        //document.copyPropertiesFromDocument(value.doc, true);
+                    //}
                 }
             }
             if(document.hasProperty("DOCID"))

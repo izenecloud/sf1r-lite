@@ -22,6 +22,7 @@ int main(int ac, char** av)
         ("cma-path,C", po::value<std::string>(), "manually specify cma path")
         ("scd-generate,G", po::value<std::string>(), "generate b5mo b5mp scd files")
         ("exclude,E", "do not generate non matched categories")
+        ("scd-split,P", "split scd files for each categories.")
         ("work-dir,W", po::value<std::string>(), "specify temp working directory")
         ("match-test,T", "b5m matching test")
     ;
@@ -97,7 +98,7 @@ int main(int ac, char** av)
     } 
     else if(vm.count("b5m-match"))
     {
-        if( scd_path.empty() || knowledge_dir.empty() || output_match.empty() )
+        if( scd_path.empty() || knowledge_dir.empty() )
         {
             return EXIT_FAILURE;
         }
@@ -115,7 +116,23 @@ int main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
-        indexer.ProductMatchingSVM(scd_path, output_match);
+        indexer.ProductMatchingSVM(scd_path);
+    }
+    else if(vm.count("scd-split"))
+    {
+        if( scd_path.empty() || knowledge_dir.empty() )
+        {
+            return EXIT_FAILURE;
+        }
+        AttributeIndexer indexer;
+        if(!indexer.Open(knowledge_dir))
+        {
+            return EXIT_FAILURE;
+        }
+        if(!indexer.SplitScd(scd_path))
+        {
+            return EXIT_FAILURE;
+        }
     }
     else if(vm.count("scd-generate"))
     {
