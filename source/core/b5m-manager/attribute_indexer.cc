@@ -219,21 +219,45 @@ void AttributeIndexer::NormalizeText_(const izenelib::util::UString& text, izene
 
 void AttributeIndexer::Analyze_(const izenelib::util::UString& btext, std::vector<izenelib::util::UString>& result)
 {
+    AnalyzeImpl_(analyzer_, btext, result);
+}
+
+void AttributeIndexer::AnalyzeChar_(const izenelib::util::UString& btext, std::vector<izenelib::util::UString>& result)
+{
+    AnalyzeImpl_(char_analyzer_, btext, result);
+}
+
+void AttributeIndexer::AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const izenelib::util::UString& btext, std::vector<izenelib::util::UString>& result)
+{
     izenelib::util::UString text;
     NormalizeText_(btext, text);
     std::vector<idmlib::util::IDMTerm> term_list;
-    analyzer_->GetTermList(text, term_list);
+    analyzer->GetTermList(text, term_list);
     result.reserve(term_list.size());
     for(std::size_t i=0;i<term_list.size();i++)
     {
         std::string str;
         term_list[i].text.convertString(str, izenelib::util::UString::UTF_8);
+        //std::cout<<"[A]"<<str<<","<<term_list[i].tag<<std::endl;
         char tag = term_list[i].tag;
         if(tag == idmlib::util::IDMTermTag::SYMBOL)
         {
-            if(str!="+" && str!=".") continue;
+            if(str=="-")
+            {
+                bool valid = false;
+                if(i>0 && i<term_list.size()-1)
+                {
+                    if(term_list[i-1].tag==idmlib::util::IDMTermTag::NUM 
+                      || term_list[i+1].tag==idmlib::util::IDMTermTag::NUM)
+                    {
+                        valid = true;
+                    }
+                }
+                if(!valid) continue;
+            }
+            else if(str!="+" && str!=".") continue;
         }
-        if(str=="-") continue;
+        //if(str=="-") continue;
         boost::to_lower(str);
         //boost::unordered_map<std::string, std::string>::iterator it = synonym_map_.find(str);
         //if(it!=synonym_map_.end())
@@ -256,39 +280,7 @@ void AttributeIndexer::Analyze_(const izenelib::util::UString& btext, std::vecto
         //}
         //logger_<<std::endl;
     //}
-
 }
-
-void AttributeIndexer::AnalyzeChar_(const izenelib::util::UString& btext, std::vector<izenelib::util::UString>& result)
-{
-    izenelib::util::UString text;
-    NormalizeText_(btext, text);
-    std::vector<idmlib::util::IDMTerm> term_list;
-    char_analyzer_->GetTermList(text, term_list);
-    result.reserve(term_list.size());
-    for(std::size_t i=0;i<term_list.size();i++)
-    {
-        std::string str;
-        term_list[i].text.convertString(str, izenelib::util::UString::UTF_8);
-        char tag = term_list[i].tag;
-        //logger_<<"[AC] "<<str<<" tag:"<<tag<<std::endl;
-        if(tag == idmlib::util::IDMTermTag::SYMBOL)
-        {
-            if(str!="+" && str!=".") continue;
-        }
-        if(str=="-") continue;
-        boost::to_lower(str);
-        //boost::unordered_map<std::string, std::string>::iterator it = synonym_map_.find(str);
-        //if(it!=synonym_map_.end())
-        //{
-            //str = it->second;
-        //}
-        result.push_back( izenelib::util::UString(str, izenelib::util::UString::UTF_8) );
-
-    }
-
-}
-
 //void AttributeIndexer::AnalyzeSynonym_(const izenelib::util::UString& text, std::vector<B5MToken>& tokens)
 //{
     //std::vector<izenelib::util::UString> str_list;

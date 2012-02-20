@@ -59,7 +59,6 @@ bool ScdGenerator::Generate(const std::string& scd_file, const std::string& outp
     boost::filesystem::remove_all(working_dir);
     boost::filesystem::create_directories(working_dir);
     if(!boost::filesystem::exists(scd_file)) return false;
-    boost::filesystem::remove_all(output_dir);
     std::string b5mo_dir = output_dir+"/b5mo";
     std::string b5mp_dir = output_dir+"/b5mp";
     boost::filesystem::create_directories(b5mo_dir);

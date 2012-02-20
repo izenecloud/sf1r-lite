@@ -9,3 +9,6 @@ matcher:
         train_scd: T.SCD
         scd: A.SCD
         filter_attrib_name: filter_attrib_name.config
+        b5m_scd: b5m_scd
+        b5mo: ../bin/collection/b5mo
+        b5mp: ../bin/collection/b5mp

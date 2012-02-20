@@ -30,7 +30,10 @@ result_file = match_path['result']
 train_scd = match_path['train_scd']
 scd = match_path['scd']
 cma = match_path['cma']
+b5mo_scd = File.join(match_path['b5mo'], "scd", "index")
+b5mp_scd = File.join(match_path['b5mp'], "scd", "index")
 matcher_program = File.join(top_dir, "b5m_matcher")
+FileUtils.rm_rf("#{match_path['b5m_scd']}")
 Dir.mkdir(work_dir) unless File.exist?(work_dir)
 IO.readlines(category_file).each do |c_line|
   c_line.strip!
@@ -48,11 +51,23 @@ IO.readlines(category_file).each do |c_line|
   fan_file = File.join(category_dir, "filter_attrib_name")
   FileUtils.cp(filter_attrib_name,fan_file)
   #run c++ matcher program
+  category_a_scd = File.join(category_dir, "A.SCD")
+  unless File.exist?(category_a_scd)
+    system("#{matcher_program} -P -S #{scd} -K #{category_dir}")
+  end
+
   puts "start building attribute index for #{cid}"
   system("#{matcher_program} -A -Y #{synonym} -C #{cma} -S #{train_scd} -K #{category_dir}")
-  puts "start matching for #{cid}"
-  output = File.join(category_dir, "match")
-  system("#{matcher_program} -B -Y #{synonym} -C #{cma} -S #{scd} -K #{category_dir}")
-  #system("cat #{output} >> #{result_file}")
+  match_done = File.join(category_dir, "match.done")
+  unless File.exist?(match_done)
+    puts "start matching for #{cid}"
+    output = File.join(category_dir, "match")
+    system("#{matcher_program} -B -Y #{synonym} -C #{cma} -S #{scd} -K #{category_dir}")
+  end
+  system("#{matcher_program} -G #{match_path['b5m_scd']} -S #{category_a_scd} -K #{category_dir} -E")
 end
+system("rm -rf #{b5mo_scd}/*")
+system("cp #{match_path['b5m_scd']}/b5mo/* #{b5mo_scd}/")
+system("rm -rf #{b5mp_scd}/*")
+system("cp #{match_path['b5m_scd']}/b5mp/* #{b5mp_scd}/")
 

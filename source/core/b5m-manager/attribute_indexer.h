@@ -111,6 +111,8 @@ namespace sf1r {
         void Analyze_(const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
         void AnalyzeChar_(const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
 
+        void AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
+
         //av means 'attribute value'
         void NormalizeAV_(const izenelib::util::UString& av, izenelib::util::UString& nav);
         void GetNgramAttribIdList_(const izenelib::util::UString& ngram, std::vector<AttribId>& aid_list);
