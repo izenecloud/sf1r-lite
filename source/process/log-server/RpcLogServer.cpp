@@ -36,6 +36,10 @@ bool RpcLogServer::init()
 
     workerThread_.reset(new LogServerWorkThread());
 
+    boost::filesystem::path dir(LogServerCfg::get()->getStorageBaseDir());
+    dir /= "itemid";
+    itemIdGenerator_.init(dir.string());
+
     return true;
 }
 
@@ -129,6 +133,18 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
             GetScdFileResponseData response;
             dispatchScdFile(scdFileRequestData, response);
             req.result(response);
+        }
+        else if (method == LogServerRequest::method_names[LogServerRequest::METHOD_STRID_TO_ITEMID])
+        {
+            strIdToItemId_(req);
+        }
+        else if (method == LogServerRequest::method_names[LogServerRequest::METHOD_ITEMID_TO_STRID])
+        {
+            itemIdToStrId_(req);
+        }
+        else if (method == LogServerRequest::method_names[LogServerRequest::METHOD_GET_MAX_ITEMID])
+        {
+            getMaxItemId_(req);
         }
         else
         {
@@ -456,6 +472,54 @@ void RpcLogServer::writeScdDoc(std::ofstream& of, const std::string& doc, const 
             break;
         }
     }
+}
+
+void RpcLogServer::strIdToItemId_(msgpack::rpc::request& req)
+{
+    msgpack::type::tuple<StrIdToItemIdRequestData> params;
+    req.params().convert(&params);
+    const StrIdToItemIdRequestData& strIdToItemIdRequestData = params.get<0>();
+
+    itemid_t itemId = 0;
+    if (itemIdGenerator_.strIdToItemId(strIdToItemIdRequestData.collection_,
+                                       strIdToItemIdRequestData.strId_,
+                                       itemId))
+    {
+        req.result(itemId);
+    }
+    else
+    {
+        req.error(std::string("failed to convert from string id to item id"));
+    }
+}
+
+void RpcLogServer::itemIdToStrId_(msgpack::rpc::request& req)
+{
+    msgpack::type::tuple<ItemIdToStrIdRequestData> params;
+    req.params().convert(&params);
+    const ItemIdToStrIdRequestData& itemIdToStrIdRequestData = params.get<0>();
+
+    std::string strId;
+    if (itemIdGenerator_.itemIdToStrId(itemIdToStrIdRequestData.collection_,
+                                       itemIdToStrIdRequestData.itemId_,
+                                       strId))
+    {
+        req.result(strId);
+    }
+    else
+    {
+        req.error(std::string("failed to convert from item id to string id"));
+    }
+}
+
+void RpcLogServer::getMaxItemId_(msgpack::rpc::request& req)
+{
+    msgpack::type::tuple<std::string> params;
+    req.params().convert(&params);
+    const std::string& collection = params.get<0>();
+
+    itemid_t itemId = itemIdGenerator_.maxItemId(collection);
+    req.result(itemId);
 }
 
 }

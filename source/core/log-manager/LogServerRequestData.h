@@ -2,6 +2,7 @@
 #define LOG_SERVER_REQUEST_DATA_H_
 
 #include <3rdparty/msgpack/msgpack.hpp>
+#include <recommend-manager/common/RecTypes.h>
 
 #include <string>
 #include <vector>
@@ -83,6 +84,34 @@ struct GetScdFileResponseData
     std::string scdFileName_;
 
     MSGPACK_DEFINE(success_, error_, scdFileName_)
+};
+
+struct StrIdToItemIdRequestData
+{
+    std::string collection_;
+    std::string strId_;
+
+    StrIdToItemIdRequestData() {}
+
+    StrIdToItemIdRequestData(const std::string& collection, const std::string strId)
+        : collection_(collection), strId_(strId)
+    {}
+
+    MSGPACK_DEFINE(collection_, strId_)
+};
+
+struct ItemIdToStrIdRequestData
+{
+    std::string collection_;
+    itemid_t itemId_;
+
+    ItemIdToStrIdRequestData() : itemId_(0) {}
+
+    ItemIdToStrIdRequestData(const std::string& collection, itemid_t itemId)
+        : collection_(collection), itemId_(itemId)
+    {}
+
+    MSGPACK_DEFINE(collection_, itemId_)
 };
 
 }
