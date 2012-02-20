@@ -5,7 +5,13 @@ gsm.?wcdma,wcdmagsm
 android\s?(os\s)?v?\d(\.\d)?(\.\d?)?,android
 #android\sos\sv?\d(\.\d)?,android
 \dgb\s?rom.?(\dgb)\s?ram,\1
-约(\d+万像素),\1
+eos\s*(\d+d),\1
+eos\s*(d\d+),\1
+约(\d+万)像素,\1
+约(\d+万)总像素,\1
+最高约(\d+万)像素,\1
+(\d+万)像素,\1
+约(\d+万),\1
 lock\slock,locklock
 new\sbalance,newbalance
 sony\sericsson,sonyericsson

@@ -183,6 +183,7 @@ bool AttributeIndexer::Open(const std::string& knowledge_dir)
             cifs.close();
         }
 
+        uint32_t num_filter_attrib = 0;
         std::string filter_attrib_name_file = knowledge_dir+"/filter_attrib_name";
         if(boost::filesystem::exists(filter_attrib_name_file ))
         {
@@ -193,11 +194,13 @@ bool AttributeIndexer::Open(const std::string& knowledge_dir)
                 boost::algorithm::trim(line);
                 if(line.length()==0) continue;
                 if(line[0]=='#') continue;
-                LOG(INFO)<<"find filter attrib name : "<<line<<std::endl;
+                //LOG(INFO)<<"find filter attrib name : "<<line<<std::endl;
                 filter_attrib_name_.insert(line);
+                num_filter_attrib++;
             }
             fifs.close();
         }
+        LOG(INFO)<<"find "<<num_filter_attrib<<" filter attrib name"<<std::endl;
         is_open_ = true;
     }
     return true;
@@ -866,7 +869,7 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
         counting = 200;
         std::cout<<"USE A.SCD FOR MATCHING"<<std::endl;
     }
-    static const double price_ratio = 1.8;
+    static const double price_ratio = 2.2;
     static const double invert_price_ratio = 1.0/price_ratio;
     ScdParser parser(izenelib::util::UString::UTF_8);
     parser.load(scd_file);
@@ -950,7 +953,7 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
             FeatureStatus fs;
             //GetFeatureVector_(aid_list, product_doc.tag_aid_list, feature_vec, nzfc);
             GetFeatureVector_(aid_list, product_doc.tag_aid_list, feature_vec, fs);
-            if(fs.pnum+fs.nnum<2) continue;
+            //if(fs.pnum+fs.nnum<2) continue;
             struct svm_node *x = (struct svm_node *) malloc((feature_vec.size()+1)*sizeof(struct svm_node));
             for(uint32_t i=0;i<feature_vec.size();i++)
             {
@@ -978,15 +981,18 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
                     logger_<<product_doc.tag_aid_list[i]<<",";
                 }
                 logger_<<std::endl;
+                logger_<<"feature size: "<<feature_vec.size()<<std::endl;
                 for(uint32_t i=0;i<feature_vec.size();i++)
                 {
-                    logger_<<feature_vec[i].first<<":"<<feature_vec[i].second<<std::endl;
+                    logger_<<feature_vec[i].first<<":"<<feature_vec[i].second<<",";
                 }
+                logger_<<std::endl;
                 logger_<<(int)predict_label<<std::endl;
             }
 #endif
             if(predict_label>0)
             {
+                if(fs.pnum+fs.nnum<2) continue;
                 double om, pm;
                 if(!price.GetMid(om) || !pprice.GetMid(pm)) continue;
                 if(om<=0.0 || pm<=0.0) continue;
