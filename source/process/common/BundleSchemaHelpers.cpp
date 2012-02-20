@@ -75,7 +75,7 @@ void getDefaultSelectPropertyNames(
          it != schema.end(); ++it)
     {
         // ignore alias
-        if (it->propertyName_ == it->originalName_)
+        if (!it->isAliasProperty())
         {
             result.push_back(it->propertyName_);
         }
