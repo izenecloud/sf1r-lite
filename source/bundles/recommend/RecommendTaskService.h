@@ -7,10 +7,10 @@
 #ifndef RECOMMEND_TASK_SERVICE_H
 #define RECOMMEND_TASK_SERVICE_H
 
-#include <recommend-manager/RecTypes.h>
-#include <recommend-manager/PurchaseMatrix.h>
-#include <recommend-manager/PurchaseCoVisitMatrix.h>
-#include <recommend-manager/VisitMatrix.h>
+#include <recommend-manager/common/RecTypes.h>
+#include <recommend-manager/storage/PurchaseMatrix.h>
+#include <recommend-manager/storage/PurchaseCoVisitMatrix.h>
+#include <recommend-manager/storage/VisitMatrix.h>
 
 #include <util/osgi/IService.h>
 #include <util/cronexpression.h>

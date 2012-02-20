@@ -83,7 +83,7 @@ public:
         std::stringstream ss;
         ss <<"[DistributedCommonConfig] Cluster Id: "<<clusterId_<<", Username: "<<userName_<<", Local Host: "<<localHost_
            <<", BA Port: "<<baPort_<<", Worker Port:"<<workerPort_
-           <<", Notify Receiver Port:"<<notifyRecvPort_<<", Data Receiver Port:"<<dataRecvPort_;
+           <<", Master Port:"<<masterPort_<<", Data Receiver Port:"<<dataRecvPort_;
         return ss.str();
     }
 
@@ -92,7 +92,7 @@ public:
     std::string localHost_;
     unsigned int baPort_;
     unsigned int workerPort_;
-    unsigned int notifyRecvPort_;
+    unsigned int masterPort_;
     unsigned int dataRecvPort_;
 };
 

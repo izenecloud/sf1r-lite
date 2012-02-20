@@ -1,6 +1,6 @@
 #include "OrderManagerTestFixture.h"
 #include "test_util.h"
-#include <recommend-manager/OrderManager.h>
+#include <recommend-manager/storage/OrderManager.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>

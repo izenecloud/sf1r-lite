@@ -33,6 +33,7 @@ class DocumentManager;
 class LAManager;
 class SearchManager;
 class MiningManager;
+class QueryIdentity;
 
 class SearchWorker
 {
@@ -68,6 +69,12 @@ public:
 
     /** @} */
 
+    void makeQueryIdentity(
+            QueryIdentity& identity,
+            const KeywordSearchActionItem& item,
+            int8_t distActionType = 0,
+            uint32_t start = 0);
+
     bool doLocalSearch(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
 private:
@@ -92,8 +99,11 @@ private:
             PersonalSearchInfo& personalSearchInfo);
 
     template<typename ActionItemT, typename ResultItemT>
-    bool  getResultItem(ActionItemT& actionItem, const std::vector<sf1r::docid_t>& docsInPage,
-        const vector<vector<izenelib::util::UString> >& propertyQueryTermList, ResultItemT& resultItem);
+    bool  getResultItem(
+            ActionItemT& actionItem,
+            const std::vector<sf1r::docid_t>& docsInPage,
+            const vector<vector<izenelib::util::UString> >& propertyQueryTermList,
+            ResultItemT& resultItem);
 
     template <typename ResultItemType>
     bool removeDuplicateDocs(

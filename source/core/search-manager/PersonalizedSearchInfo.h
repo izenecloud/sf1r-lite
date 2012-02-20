@@ -7,7 +7,7 @@
 #ifndef PERSONALIZED_SEARCH_INFO_H
 #define PERSONALIZED_SEARCH_INFO_H
 
-#include <recommend-manager/User.h>
+#include <recommend-manager/common/User.h>
 
 namespace sf1r
 {

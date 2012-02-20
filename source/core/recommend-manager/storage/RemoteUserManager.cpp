@@ -1,11 +1,12 @@
 #include "RemoteUserManager.h"
-#include <recommend-manager/User.h>
+#include "../common/User.h"
 
 #include <glog/logging.h>
 #include <vector>
 
 namespace
 {
+const izenelib::util::UString::EncodingType ENCODING_UTF8 = izenelib::util::UString::UTF_8;
 const std::string PROP_USERID = "USERID";
 }
 
@@ -47,7 +48,7 @@ bool RemoteUserManager::updateUser(const User& user)
     {
         const std::string& propName = it->first;
         std::string propValue;
-        it->second.convertString(propValue, UString::UTF_8);
+        it->second.convertString(propValue, ENCODING_UTF8);
 
         if (! cassandra_.insertColumn(key, propName, propValue))
             return false;
@@ -91,7 +92,7 @@ bool RemoteUserManager::getUser(const std::string& userId, User& user)
         }
         else
         {
-            user.propValueMap_[name].assign(value, UString::UTF_8);
+            user.propValueMap_[name].assign(value, ENCODING_UTF8);
         }
     }
 

@@ -5,7 +5,6 @@
 
 #include <document-manager/Document.h>
 #include <ir/index_manager/index/IndexerDocument.h>
-#include <idmlib/duplicate-detection/dup_detector.h>
 #include "pm_def.h"
 #include "pm_types.h"
 #include "pm_config.h"

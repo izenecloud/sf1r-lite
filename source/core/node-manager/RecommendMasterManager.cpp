@@ -31,6 +31,34 @@ bool RecommendMasterManager::init()
     return true;
 }
 
+bool RecommendMasterManager::getSearchMasterAddress(std::string& host, uint32_t& port)
+{
+    if (!zookeeper_ || !zookeeper_->isConnected())
+        return false;
+
+    std::string searchMastersPath = ZooKeeperNamespace::getSearchServerParentPath();
+    std::vector<std::string> children;
+    zookeeper_->getZNodeChildren(searchMastersPath, children);
+
+    if (children.size() > 0)
+    {
+        std::string searchMasterPath = children[0];
+
+        std::string data;
+        if (zookeeper_->getZNodeData(searchMasterPath, data))
+        {
+            ZNode znode;
+            znode.loadKvString(data);
+
+            host = znode.getStrValue(ZNode::KEY_HOST);
+            port = znode.getUInt32Value(ZNode::KEY_MASTER_PORT);
+            return true;
+        }
+    }
+
+    return false;
+}
+
 }
 
 

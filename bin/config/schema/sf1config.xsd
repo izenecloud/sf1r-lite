@@ -224,7 +224,7 @@
             <xs:attribute name="username" type="xs:string" use="required"/>
             <xs:attribute name="localhost" type="xs:string" use="required"/>
             <xs:attribute name="workerport" type="PortType" use="required"/>
-            <xs:attribute name="notifyrecvport" type="PortType" use="required"/>
+            <xs:attribute name="masterport" type="PortType" use="required"/>
             <xs:attribute name="datarecvport" type="PortType" use="required"/>
         </xs:complexType>
     </xs:element>

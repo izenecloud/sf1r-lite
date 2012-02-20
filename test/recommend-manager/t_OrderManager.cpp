@@ -2,7 +2,7 @@
 /// @brief test OrderManager
 
 #include "OrderManagerTestFixture.h"
-#include <recommend-manager/OrderManager.h>
+#include <recommend-manager/storage/OrderManager.h>
 
 #include <boost/test/unit_test.hpp>
 

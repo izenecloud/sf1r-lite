@@ -72,7 +72,7 @@ class IDMAnalyzer;
 namespace sf1r
 {
 
-class DupDetector2;
+class DupDetectorWrapper;
 class GroupLabelLogger;
 class QueryRecommendSubmanager;
 class QueryRecommendRep;
@@ -109,7 +109,7 @@ class CTRManager;
  */
 class MiningManager : public boost::noncopyable
 {
-typedef DupDetector2 DupDType;
+typedef DupDetectorWrapper DupDType;
 typedef idmlib::util::ContainerSwitch<idmlib::tdt::Storage> TdtStorageType;
 typedef idmlib::sim::TermSimilarityTable<uint32_t> SimTableType;
 typedef idmlib::sim::SimOutputCollector<SimTableType> SimCollectorType;
@@ -259,41 +259,49 @@ public:
 
     bool GetSummarizationByRawKey(const izenelib::util::UString& rawKey, Summarization& result);
 
-    bool GetKNNSearchResult(
-            SearchKeywordOperation& actionOperation,
+    uint32_t GetSignatureForQuery(
+            const KeywordSearchActionItem& item,
+            std::vector<uint64_t>& signature);
+
+    bool GetKNNListBySignature(
+            const std::vector<uint64_t>& signature,
             std::vector<unsigned int>& docIdList,
             std::vector<float>& rankScoreList,
             std::size_t& totalCount,
-            sf1r::PropertyRange& propertyRange,
-            DistKeywordSearchInfo& distSearchInfo,
-            int topK = 200,
-            int start = 0);
+            uint32_t knnTopK,
+            uint32_t knnDist,
+            uint32_t start);
 
     void close();
 
-    boost::shared_ptr<faceted::OntologyManager> GetFaceted()
+    boost::shared_ptr<faceted::OntologyManager>& GetFaceted()
     {
         return faceted_;
     }
 
-    boost::shared_ptr<TaxonomyGenerationSubManager> GetTgManager()
+    boost::shared_ptr<TaxonomyGenerationSubManager>& GetTgManager()
     {
         return tgManager_;
     }
 
-    boost::shared_ptr<DocumentManager> GetDocumentManager()
+    boost::shared_ptr<DocumentManager>& GetDocumentManager()
     {
         return  document_manager_;
     }
 
-    boost::shared_ptr<RecommendManager> GetRecommendManager()
+    boost::shared_ptr<RecommendManager>& GetRecommendManager()
     {
         return rmDb_;
     }
 
-    boost::shared_ptr<faceted::CTRManager> GetCtrManager()
+    boost::shared_ptr<faceted::CTRManager>& GetCtrManager()
     {
         return ctrManager_;
+    }
+
+    boost::shared_ptr<DupDType>& GetDupManager()
+    {
+        return dupManager_;
     }
 
     void onIndexUpdated(size_t docNum);

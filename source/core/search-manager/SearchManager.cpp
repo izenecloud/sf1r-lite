@@ -49,6 +49,9 @@ bool hasRelevenceSort(const std::pair<std::string , bool>& element)
 
 bool action_rerankable(SearchKeywordOperation& actionOperation)
 {
+    if (actionOperation.actionItem_.searchingMode_ == SearchingMode::KNN)
+        return false;
+
     bool rerank = false;
     if (actionOperation.actionItem_.env_.taxonomyLabel_.empty() &&
             actionOperation.actionItem_.env_.nameEntityItem_.empty() &&
@@ -85,13 +88,13 @@ SearchManager::SearchManager(
         const boost::shared_ptr<RankingManager>& rankingManager,
         IndexBundleConfiguration* config
 )
-        : schemaMap_()
-        , indexManagerPtr_(indexManager)
-        , documentManagerPtr_(documentManager)
-        , rankingManagerPtr_(rankingManager)
-        , queryBuilder_()
-        , filter_hook_(0)
-        , reranker_(0)
+    : schemaMap_()
+    , indexManagerPtr_(indexManager)
+    , documentManagerPtr_(documentManager)
+    , rankingManagerPtr_(rankingManager)
+    , queryBuilder_()
+    , filter_hook_(0)
+    , reranker_(0)
 {
     collectionName_ = config->collectionName_;
     std::set<PropertyConfig, PropertyComp>::iterator iter = schema.begin();
@@ -192,7 +195,7 @@ void SearchManager::setGroupFilterBuilder(
 }
 
 void SearchManager::setMiningManager(
-    boost::shared_ptr<MiningManager> miningManagerPtr)
+        boost::shared_ptr<MiningManager> miningManagerPtr)
 {
     miningManagerPtr_ = miningManagerPtr;
 }
@@ -209,6 +212,44 @@ SearchManager::createPropertyTable(const std::string& propertyName)
     return NULL;
 }
 
+void SearchManager::makeQueryIdentity(
+        QueryIdentity& identity,
+        const KeywordSearchActionItem& item,
+        int8_t distActionType,
+        uint32_t start)
+{
+    identity.userId = item.env_.userID_;
+    identity.start = start;
+    identity.searchingMode = item.searchingMode_;
+
+    switch (item.searchingMode_)
+    {
+    case SearchingMode::KNN:
+        {
+            boost::shared_ptr<MiningManager> miningManager = miningManagerPtr_.lock();
+            miningManager->GetSignatureForQuery(item, identity.simHash);
+        }
+        break;
+    default:
+        identity.query = item.env_.queryString_;
+        identity.expandedQueryString = item.env_.expandedQueryString_;
+        identity.rankingType = item.rankingType_;
+        identity.laInfo = item.languageAnalyzerInfo_;
+        identity.properties = item.searchPropertyList_;
+        identity.sortInfo = item.sortPriorityList_;
+        identity.filterInfo = item.filteringList_;
+        identity.groupParam = item.groupParam_;
+        identity.rangeProperty = item.rangePropertyName_;
+        identity.strExp = item.strExp_;
+        identity.paramConstValueMap = item.paramConstValueMap_;
+        identity.paramPropertyValueMap = item.paramPropertyValueMap_;
+        identity.distActionType = distActionType;
+        std::sort(identity.properties.begin(),
+                identity.properties.end());
+        break;
+    }
+}
+
 bool SearchManager::search(
         SearchKeywordOperation& actionOperation,
         std::vector<unsigned int>& docIdList,
@@ -219,8 +260,10 @@ bool SearchManager::search(
         faceted::OntologyRep& attrRep,
         sf1r::PropertyRange& propertyRange,
         DistKeywordSearchInfo& distSearchInfo,
-        int topK,
-        int start)
+        uint32_t topK,
+        uint32_t knnTopK,
+        uint32_t knnDist,
+        uint32_t start)
 {
     CREATE_PROFILER( cacheoverhead, "SearchManager", "cache overhead: overhead for caching in searchmanager");
 
@@ -257,6 +300,19 @@ bool SearchManager::search(
     STOP_PROFILER( cacheoverhead )
 
     // cache miss
+    if (actionOperation.actionItem_.searchingMode_ == SearchingMode::KNN)
+    {
+        boost::shared_ptr<MiningManager> miningManager = miningManagerPtr_.lock();
+        return miningManager->GetKNNListBySignature(
+                identity.simHash,
+                docIdList,
+                rankScoreList,
+                totalCount,
+                knnTopK,
+                knnDist,
+                start);
+    }
+
     if (doSearch_(
                 actionOperation,
                 docIdList,
@@ -272,15 +328,15 @@ bool SearchManager::search(
     {
         START_PROFILER( cacheoverhead )
         cache_->set(
-            identity,
-            rankScoreList,
-            customRankScoreList,
-            docIdList,
-            totalCount,
-            groupRep,
-            attrRep,
-            propertyRange,
-            distSearchInfo);
+                identity,
+                rankScoreList,
+                customRankScoreList,
+                docIdList,
+                totalCount,
+                groupRep,
+                attrRep,
+                propertyRange,
+                distSearchInfo);
         STOP_PROFILER( cacheoverhead )
         return true;
     }
@@ -298,8 +354,8 @@ bool SearchManager::doSearch_(
         faceted::OntologyRep& attrRep,
         sf1r::PropertyRange& propertyRange,
         DistKeywordSearchInfo& distSearchInfo,
-        int topK,
-        int start)
+        uint32_t topK,
+        uint32_t start)
 {
     CREATE_PROFILER( preparedociter, "SearchManager", "doSearch_: SearchManager_search : build doc iterator");
     CREATE_PROFILER( preparerank, "SearchManager", "doSearch_: prepare ranker");

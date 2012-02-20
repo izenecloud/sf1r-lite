@@ -1,4 +1,5 @@
 #include "MasterManagerBase.h"
+#include "SuperNodeManager.h"
 
 #include <boost/lexical_cast.hpp>
 
@@ -502,9 +503,13 @@ void MasterManagerBase::registerSearchServer()
         zookeeper_->createZNode(serverParentPath_);
     }
 
-    std::stringstream serverAddress;
-    serverAddress<<curNodeInfo_.host_<<":"<<curNodeInfo_.baPort_;
-    if (zookeeper_->createZNode(serverPath_, serverAddress.str(), ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
+    //std::stringstream serverAddress;
+    //serverAddress<<curNodeInfo_.host_<<":"<<curNodeInfo_.baPort_;
+    ZNode znode;
+    znode.setValue(ZNode::KEY_HOST, curNodeInfo_.host_);
+    znode.setValue(ZNode::KEY_BA_PORT, curNodeInfo_.baPort_);
+    znode.setValue(ZNode::KEY_MASTER_PORT, SuperNodeManager::get()->getMasterPort());
+    if (zookeeper_->createZNode(serverPath_, znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
     {
         serverRealPath_ = zookeeper_->getLastCreatedNodePath();
         // std::cout << CLASSNAME<<" Master ready to serve -- "<<serverRealPath_<<std::endl;//

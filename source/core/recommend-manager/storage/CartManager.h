@@ -7,7 +7,7 @@
 #ifndef CART_MANAGER_H
 #define CART_MANAGER_H
 
-#include <recommend-manager/RecTypes.h>
+#include "../common/RecTypes.h"
 
 #include <string>
 #include <vector>

@@ -143,7 +143,9 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
             fetchSCDFromLogServer(scdPath);
         }
         catch (const std::exception& e)
-        {}
+        {
+            LOG(ERROR) << "LogServer " << e.what();
+        }
     }
 
     ScdParser parser(bundleConfig_->encoding_);
@@ -499,7 +501,7 @@ bool IndexWorker::fetchSCDFromLogServer(const std::string& scdPath)
     GetScdFileRequest scdFileReq;
     scdFileReq.param_.username_ = bundleConfig_->localHostUsername_;
     scdFileReq.param_.host_ = bundleConfig_->localHostIp_;
-    scdFileReq.param_.path_ = scdPath;
+    scdFileReq.param_.path_ = boost::filesystem::absolute(scdPath).string();
     scdFileReq.param_.collection_ = bundleConfig_->collectionName_;
 
     GetScdFileResponseData response;

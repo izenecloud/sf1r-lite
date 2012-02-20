@@ -127,7 +127,7 @@ void NodeManagerBase::enterCluster()
     znode.setValue(ZNode::KEY_HOST, SuperNodeManager::get()->getLocalHostIP());
     znode.setValue(ZNode::KEY_BA_PORT, SuperNodeManager::get()->getBaPort());
     znode.setValue(ZNode::KEY_DATA_PORT, SuperNodeManager::get()->getDataReceiverPort());
-    znode.setValue(ZNode::KEY_NOTIFY_PORT, SuperNodeManager::get()->getNoticeReceiverPort());
+    znode.setValue(ZNode::KEY_MASTER_PORT, SuperNodeManager::get()->getMasterPort());
     if (dsTopologyConfig_.curSF1Node_.workerAgent_.enabled_)
     {
         znode.setValue(ZNode::KEY_WORKER_PORT, SuperNodeManager::get()->getWorkerPort());

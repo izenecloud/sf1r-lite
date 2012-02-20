@@ -34,6 +34,7 @@ class IndexManager;
 class MiningManager;
 class Sorter;
 class IndexBundleConfiguration;
+class QueryIdentity;
 
 namespace faceted
 {
@@ -64,6 +65,12 @@ public:
 
     ~SearchManager();
 
+    void makeQueryIdentity(
+            QueryIdentity& identity,
+            const KeywordSearchActionItem& item,
+            int8_t distActionType = 0,
+            uint32_t start = 0);
+
     bool search(
             SearchKeywordOperation& actionOperation,
             std::vector<unsigned int>& docIdList,
@@ -74,8 +81,10 @@ public:
             faceted::OntologyRep& attrRep,
             sf1r::PropertyRange& propertyRange,
             DistKeywordSearchInfo& distSearchInfo,
-            int topK = 200,
-            int start = 0);
+            uint32_t topK = 200,
+            uint32_t knnTopK = 200,
+            uint32_t knnDist = 15,
+            uint32_t start = 0);
 
     void reset_cache(
             bool rType,
@@ -118,8 +127,8 @@ private:
             faceted::OntologyRep& attrRep,
             sf1r::PropertyRange& propertyRange,
             DistKeywordSearchInfo& distSearchInfo,
-            int topK,
-            int start);
+            uint32_t topK,
+            uint32_t start);
 
     bool prepareDocIterWithOnlyOrderby_(
             boost::shared_ptr<EWAHBoolArray<uint32_t> >& pFilterIdSet);

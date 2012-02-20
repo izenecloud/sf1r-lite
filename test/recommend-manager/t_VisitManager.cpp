@@ -8,7 +8,7 @@
 #include "VisitManagerTestFixture.h"
 #include "test_util.h"
 #include <recommend-manager/storage/VisitManager.h>
-#include <recommend-manager/VisitMatrix.h>
+#include <recommend-manager/storage/VisitMatrix.h>
 
 #include <boost/test/unit_test.hpp>
 

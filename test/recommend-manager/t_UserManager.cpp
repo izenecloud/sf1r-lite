@@ -7,7 +7,7 @@
 
 #include "UserManagerTestFixture.h"
 #include <recommend-manager/storage/UserManager.h>
-#include <recommend-manager/User.h>
+#include <recommend-manager/common/User.h>
 
 #include <boost/test/unit_test.hpp>
 

@@ -165,4 +165,15 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   ADD_TEST(recommend-manager "${SF1RENGINE_ROOT}/testbin/t_RandGenerator")
 
+  ADD_EXECUTABLE(t_ItemIdGenerator
+    Runner.cpp
+    t_ItemIdGenerator.cpp
+    ItemIdGeneratorTestFixture.cpp
+  )
+  TARGET_LINK_LIBRARIES(t_ItemIdGenerator ${libs})
+  SET_TARGET_PROPERTIES(t_ItemIdGenerator PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(recommend-manager "${SF1RENGINE_ROOT}/testbin/t_ItemIdGenerator")
+
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)

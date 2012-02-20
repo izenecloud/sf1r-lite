@@ -17,6 +17,7 @@
 #include <common/XmlConfigParser.h>
 #include <common/CollectionManager.h>
 #include <distribute/WorkerServer.h>
+#include <distribute/MasterServer.h>
 
 #include <util/ustring/UString.h>
 #include <util/driver/IPRestrictor.h>
@@ -254,8 +255,7 @@ bool CobraProcess::startDistributedServer()
     // Start worker server
     if (SF1Config::get()->isSearchWorker() || SF1Config::get()->isRecommendWorker())
     {
-        //std::string localHost = SF1Config::get()->distributedCommonConfig_.localHost_;
-        std::string localHost = "127.0.0.1";
+        std::string localHost = SF1Config::get()->distributedCommonConfig_.localHost_;
         uint16_t workerPort = SF1Config::get()->distributedCommonConfig_.workerPort_;
         std::size_t threadNum = SF1Config::get()->brokerAgentConfig_.threadNum_;
 
@@ -272,8 +272,9 @@ bool CobraProcess::startDistributedServer()
     // Start notification receiver for master
     if (SF1Config::get()->isSearchMaster() || SF1Config::get()->isRecommendMaster())
     {
-        // xxx
-        //NotifyReceiver::get()->start(curNodeInfo.localHost_, masterPort);
+        std::string localHost = SF1Config::get()->distributedCommonConfig_.localHost_;
+        uint16_t masterPort = SF1Config::get()->distributedCommonConfig_.masterPort_;
+        MasterServer::get()->start(localHost, masterPort);
     }
 
     // Start distributed topology node manager(s)

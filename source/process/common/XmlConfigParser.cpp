@@ -304,7 +304,7 @@ void SF1Config::parseDistributedCommon(const ticpp::Element * distributedCommon)
     getAttribute(distributedCommon, "clusterid", distributedCommonConfig_.clusterId_);
     getAttribute(distributedCommon, "username", distributedCommonConfig_.userName_);
     getAttribute(distributedCommon, "workerport", distributedCommonConfig_.workerPort_);
-    getAttribute(distributedCommon, "notifyrecvport", distributedCommonConfig_.notifyRecvPort_);
+    getAttribute(distributedCommon, "masterport", distributedCommonConfig_.masterPort_);
     getAttribute(distributedCommon, "datarecvport", distributedCommonConfig_.dataRecvPort_);
     distributedCommonConfig_.baPort_ = brokerAgentConfig_.port_;
 
@@ -1137,6 +1137,8 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     params.Get<std::size_t>("Sia/filtercachenum", indexBundleConfig.filterCacheNum_);
     params.Get<std::size_t>("Sia/mastersearchcachenum", indexBundleConfig.masterSearchCacheNum_);
     params.Get<std::size_t>("Sia/topknum", indexBundleConfig.topKNum_);
+    params.Get<std::size_t>("Sia/knntopknum", indexBundleConfig.kNNTopKNum_);
+    params.Get<std::size_t>("Sia/knndist", indexBundleConfig.kNNDist_);
     params.Get<std::size_t>("Sia/sortcacheupdateinterval", indexBundleConfig.sortCacheUpdateInterval_);
     params.GetString("LanguageIdentifier/dbpath", indexBundleConfig.languageIdentifierDbPath_, "");
 
