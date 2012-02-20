@@ -1,5 +1,6 @@
 INCLUDE_DIRECTORIES(
   ${CMAKE_SOURCE_DIR}/core
+  ${CMAKE_SOURCE_DIR}/process
   ${izenelib_INCLUDE_DIRS}
   ${ilplib_INCLUDE_DIRS}
   ${idmlib_INCLUDE_DIRS}
@@ -169,6 +170,9 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     Runner.cpp
     t_ItemIdGenerator.cpp
     ItemIdGeneratorTestFixture.cpp
+    ${CMAKE_SOURCE_DIR}/process/log-server/LogServerCfg.cpp
+    ${CMAKE_SOURCE_DIR}/process/log-server/RpcLogServer.cpp
+    ${CMAKE_SOURCE_DIR}/process/log-server/LogServerWorkThread.cpp
   )
   TARGET_LINK_LIBRARIES(t_ItemIdGenerator ${libs})
   SET_TARGET_PROPERTIES(t_ItemIdGenerator PROPERTIES

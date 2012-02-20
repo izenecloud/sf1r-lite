@@ -37,7 +37,7 @@ bool RemoteItemIdGenerator::strIdToItemId(const std::string& strId, itemid_t& it
     catch(const msgpack::rpc::rpc_error& e)
     {
         LOG(ERROR) << "failed in strIdToItemId(), str id: " << strId
-                   << " , exception: " << e.what();
+                   << ", exception: " << e.what();
         return false;
     }
 
@@ -55,7 +55,7 @@ bool RemoteItemIdGenerator::itemIdToStrId(itemid_t itemId, std::string& strId)
     catch(const msgpack::rpc::rpc_error& e)
     {
         LOG(ERROR) << "failed in itemIdToStrId(), item id: " << itemId
-                   << " , exception: " << e.what();
+                   << ", exception: " << e.what();
         return false;
     }
 

@@ -13,6 +13,8 @@
 #include <sstream>
 #include <cstdlib> // rand()
 
+#include <boost/filesystem.hpp>
+
 namespace sf1r
 {
 
@@ -47,6 +49,16 @@ inline std::string generate_rand_items_str(int itemCount)
     }
 
     return oss.str();
+}
+
+/**
+ * Create an empty directory.
+ * @param dir the directory path
+ */
+inline void create_empty_directory(const std::string& dir)
+{
+    boost::filesystem::remove_all(dir);
+    boost::filesystem::create_directories(dir);
 }
 
 } // namespace sf1r
