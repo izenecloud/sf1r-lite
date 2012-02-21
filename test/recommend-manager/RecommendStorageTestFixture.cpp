@@ -1,9 +1,6 @@
 #include "RecommendStorageTestFixture.h"
+#include "test_util.h"
 #include <log-manager/CassandraConnection.h>
-
-#include <boost/filesystem.hpp>
-
-namespace bfs = boost::filesystem;
 
 namespace sf1r
 {
@@ -16,8 +13,7 @@ bool RecommendStorageTestFixture::initLocalStorage(
     const std::string& testDir
 )
 {
-    bfs::remove_all(testDir);
-    bfs::create_directories(testDir);
+    create_empty_directory(testDir);
 
     cassandraConfig_.enable = false;
     cassandraConfig_.keyspace.clear();
@@ -38,8 +34,7 @@ bool RecommendStorageTestFixture::initRemoteStorage(
     bool connectResult = connection.init(testUrl);
 
     connection.dropKeyspace(keyspace);
-    bfs::remove_all(testDir);
-    bfs::create_directories(testDir);
+    create_empty_directory(testDir);
 
     cassandraConfig_.enable = true;
     cassandraConfig_.keyspace = keyspace;

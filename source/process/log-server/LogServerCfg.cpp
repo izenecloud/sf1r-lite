@@ -125,7 +125,7 @@ void LogServerCfg::parseServerCfg(properties& props)
 
     if (!props.getValue("rpc.request_queue_size", rpcRequestQueueSize_))
     {
-        rpcRequestQueueSize_ = DEFAULT_THREAD_NUM;
+        rpcRequestQueueSize_ = DEFAULT_RPC_REQUEST_QUEUE_SIZE;
     }
 
     // driver server
@@ -136,7 +136,7 @@ void LogServerCfg::parseServerCfg(properties& props)
 
     if (!props.getValue("driver.thread_num", driverThreadNum_))
     {
-        driverThreadNum_ = DEFAULT_RPC_REQUEST_QUEUE_SIZE;
+        driverThreadNum_ = DEFAULT_THREAD_NUM;
     }
     else
     {

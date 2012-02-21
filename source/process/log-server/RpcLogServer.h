@@ -5,6 +5,7 @@
 #include "LogServerWorkThread.h"
 
 #include <log-manager/LogServerRequest.h>
+#include <recommend-manager/item/MultiCollectionItemIdGenerator.h>
 
 #include <3rdparty/msgpack/rpc/server.h>
 
@@ -60,11 +61,18 @@ public:
     void writeScdDoc(std::ofstream& of, const std::string& doc, const uint128_t& docid);
 
 private:
+    void strIdToItemId_(msgpack::rpc::request& req);
+    void itemIdToStrId_(msgpack::rpc::request& req);
+    void getMaxItemId_(msgpack::rpc::request& req);
+
+private:
     std::string host_;
     uint16_t port_;
     uint32_t threadNum_;
 
     boost::shared_ptr<LogServerWorkThread> workerThread_;
+
+    MultiCollectionItemIdGenerator itemIdGenerator_;
 };
 
 }

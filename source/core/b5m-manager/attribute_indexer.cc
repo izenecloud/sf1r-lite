@@ -1,7 +1,10 @@
 #include "attribute_indexer.h"
 #include "b5m_helper.h"
 #include <common/ScdParser.h>
+#include <common/ScdWriter.h>
+#include <document-manager/Document.h>
 #include <mining-manager/util/split_ustr.h>
+#include <product-manager/product_price.h>
 #include <boost/unordered_set.hpp>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int.hpp>
@@ -62,17 +65,21 @@ bool AttributeIndexer::LoadSynonym(const std::string& file)
     std::string line;
     while( getline(ifs, line) )
     {
+        boost::algorithm::trim(line);
         if(line.empty()) continue;
         if(line[0]=='#') continue;
         boost::to_lower(line);
         std::vector<std::string> words;
         boost::algorithm::split( words, line, boost::algorithm::is_any_of(",") );
         if(words.size()<2) continue;
-        std::string base = words[0];
-        for(std::size_t i=1;i<words.size();i++)
-        {
-            synonym_map_.insert(std::make_pair(words[i], base));
-        }
+        boost::regex r(words[0]);
+        std::string formatter = " "+words[1]+" ";
+        normalize_pattern_.push_back(std::make_pair(r, formatter));
+        //std::string base = words[0];
+        //for(std::size_t i=1;i<words.size();i++)
+        //{
+            //synonym_map_.insert(std::make_pair(words[i], base));
+        //}
     }
     ifs.close();
     return true;
@@ -80,6 +87,12 @@ bool AttributeIndexer::LoadSynonym(const std::string& file)
 
 bool AttributeIndexer::Index(const std::string& scd_file, const std::string& knowledge_dir)
 {
+    std::string done_file = knowledge_dir+"/index.done";
+    if(boost::filesystem::exists(done_file))
+    {
+        std::cout<<knowledge_dir<<" index done, ignore."<<std::endl;
+        return true;
+    }
     ClearKnowledge_(knowledge_dir);
     Open(knowledge_dir);
     BuildProductDocuments_(scd_file);
@@ -96,6 +109,9 @@ bool AttributeIndexer::Index(const std::string& scd_file, const std::string& kno
     }
     izenelib::am::ssf::Util<>::Save(fanid_path, filter_anid_list);
     GenClassiferInstance();
+    std::ofstream ofs(done_file.c_str());
+    ofs<<"done"<<std::endl;
+    ofs.close();
     return true;
 }
 
@@ -167,6 +183,7 @@ bool AttributeIndexer::Open(const std::string& knowledge_dir)
             cifs.close();
         }
 
+        uint32_t num_filter_attrib = 0;
         std::string filter_attrib_name_file = knowledge_dir+"/filter_attrib_name";
         if(boost::filesystem::exists(filter_attrib_name_file ))
         {
@@ -175,38 +192,81 @@ bool AttributeIndexer::Open(const std::string& knowledge_dir)
             while(getline(fifs, line))
             {
                 boost::algorithm::trim(line);
-                LOG(INFO)<<"find filter attrib name : "<<line<<std::endl;
+                if(line.length()==0) continue;
+                if(line[0]=='#') continue;
+                //LOG(INFO)<<"find filter attrib name : "<<line<<std::endl;
                 filter_attrib_name_.insert(line);
+                num_filter_attrib++;
             }
             fifs.close();
         }
-        filter_attrib_name_.insert("数码>手机通讯>手机|可用空间");
+        LOG(INFO)<<"find "<<num_filter_attrib<<" filter attrib name"<<std::endl;
         is_open_ = true;
     }
     return true;
 }
 
-void AttributeIndexer::Analyze_(const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result)
+void AttributeIndexer::NormalizeText_(const izenelib::util::UString& text, izenelib::util::UString& ntext)
 {
+    std::string str;
+    text.convertString(str, izenelib::util::UString::UTF_8);
+    //logger_<<"[BNO]"<<str<<std::endl;
+    boost::to_lower(str);
+    for(uint32_t i=0;i<normalize_pattern_.size();i++)
+    {
+        str = boost::regex_replace(str, normalize_pattern_[i].first, normalize_pattern_[i].second);
+    }
+    //logger_<<"[ANO]"<<str<<std::endl;
+    ntext = izenelib::util::UString(str, izenelib::util::UString::UTF_8);
+}
+
+void AttributeIndexer::Analyze_(const izenelib::util::UString& btext, std::vector<izenelib::util::UString>& result)
+{
+    AnalyzeImpl_(analyzer_, btext, result);
+}
+
+void AttributeIndexer::AnalyzeChar_(const izenelib::util::UString& btext, std::vector<izenelib::util::UString>& result)
+{
+    AnalyzeImpl_(char_analyzer_, btext, result);
+}
+
+void AttributeIndexer::AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const izenelib::util::UString& btext, std::vector<izenelib::util::UString>& result)
+{
+    izenelib::util::UString text;
+    NormalizeText_(btext, text);
     std::vector<idmlib::util::IDMTerm> term_list;
-    analyzer_->GetTermList(text, term_list);
+    analyzer->GetTermList(text, term_list);
     result.reserve(term_list.size());
     for(std::size_t i=0;i<term_list.size();i++)
     {
         std::string str;
         term_list[i].text.convertString(str, izenelib::util::UString::UTF_8);
+        //std::cout<<"[A]"<<str<<","<<term_list[i].tag<<std::endl;
         char tag = term_list[i].tag;
         if(tag == idmlib::util::IDMTermTag::SYMBOL)
         {
-            if(str!="+") continue;
+            if(str=="-")
+            {
+                bool valid = false;
+                if(i>0 && i<term_list.size()-1)
+                {
+                    if(term_list[i-1].tag==idmlib::util::IDMTermTag::NUM 
+                      || term_list[i+1].tag==idmlib::util::IDMTermTag::NUM)
+                    {
+                        valid = true;
+                    }
+                }
+                if(!valid) continue;
+            }
+            else if(str!="+" && str!=".") continue;
         }
-        if(str=="-") continue;
+        //if(str=="-") continue;
         boost::to_lower(str);
-        boost::unordered_map<std::string, std::string>::iterator it = synonym_map_.find(str);
-        if(it!=synonym_map_.end())
-        {
-            str = it->second;
-        }
+        //boost::unordered_map<std::string, std::string>::iterator it = synonym_map_.find(str);
+        //if(it!=synonym_map_.end())
+        //{
+            //str = it->second;
+        //}
         result.push_back( izenelib::util::UString(str, izenelib::util::UString::UTF_8) );
 
     }
@@ -223,36 +283,53 @@ void AttributeIndexer::Analyze_(const izenelib::util::UString& text, std::vector
         //}
         //logger_<<std::endl;
     //}
-
 }
-
-void AttributeIndexer::AnalyzeChar_(const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result)
-{
-    std::vector<idmlib::util::IDMTerm> term_list;
-    char_analyzer_->GetTermList(text, term_list);
-    result.reserve(term_list.size());
-    for(std::size_t i=0;i<term_list.size();i++)
-    {
-        std::string str;
-        term_list[i].text.convertString(str, izenelib::util::UString::UTF_8);
-        char tag = term_list[i].tag;
-        if(tag == idmlib::util::IDMTermTag::SYMBOL)
-        {
-            if(str!="+") continue;
-        }
-        //std::cout<<"[AC] "<<str<<std::endl;
-        if(str=="-") continue;
-        boost::to_lower(str);
-        boost::unordered_map<std::string, std::string>::iterator it = synonym_map_.find(str);
-        if(it!=synonym_map_.end())
-        {
-            str = it->second;
-        }
-        result.push_back( izenelib::util::UString(str, izenelib::util::UString::UTF_8) );
-
-    }
-
-}
+//void AttributeIndexer::AnalyzeSynonym_(const izenelib::util::UString& text, std::vector<B5MToken>& tokens)
+//{
+    //std::vector<izenelib::util::UString> str_list;
+    //AnalyzeChar_(text, str_list);
+    //typedef SynonymHandler::Flag Flag;
+    //Flag pflag = SynonymHandler::RootFlag();
+    //Flag flag;
+    //std::size_t index = 0;
+    //SynonymHandler::SYN_STATUS syn_status;
+    //std::vector<B5MToken> cache_tokens;
+    //while(index<str_list.size())
+    //{
+        //syn_status = synonym_handler_.Search(pflag, str_list[index], flag);
+        //if(syn_status == SynonymHandler::SYN_NO)
+        //{
+            //if(!cache_tokens.empty())
+            //{
+                //for(uint32_t i=0;i<cache_tokens.size();i++)
+                //{
+                    //tokens.push_back(cache_tokens[i]);
+                //}
+                //cache_tokens.resize(0);
+            //}
+            //B5MToken t(str_list[index], B5MToken::TOKEN_C);
+            //tokens.push_back(t);
+            //pflag = SynonymHandler::RootFlag();
+        //}
+        //else if(syn_status == SynonymHandler::SYN_INTER)
+        //{
+            //B5MToken t(str_list[index], B5MToken::TOKEN_C);
+            //cache_tokens.push_back(t);
+            //pflag = flag;
+        //}
+        //else //SYN_YES
+        //{
+            ////the  ABC=>XX, ABCD=>YY is not supported.
+            //izenelib::util::UString standard;
+            //synonym_handler_.Get(flag, standard);
+            //B5MToken t(standard, B5MToken::TOKEN_S);
+            //tokens.push_back(t);
+            //cache_tokens.resize(0);
+            //pflag = SynonymHandler::RootFlag();
+        //}
+        //++index;
+    //}
+//}
 
 void AttributeIndexer::NormalizeAV_(const izenelib::util::UString& av, izenelib::util::UString& nav)
 {
@@ -322,9 +399,7 @@ void AttributeIndexer::GetNgramAttribIdList_(const izenelib::util::UString& ngra
         for(std::size_t a=0;a<aid_list_value.size();++a)
         {
             AttribId aid = aid_list_value[a];
-            AttribNameId anid;
-            name_index_->get(aid, anid);
-            if(filter_anid_.find(anid)==filter_anid_.end())
+            if(ValidAid_(aid))
             {
                 aid_list.push_back(aid);
             }
@@ -336,6 +411,7 @@ void AttributeIndexer::GetAttribIdList(const izenelib::util::UString& category, 
 {
     static const uint32_t n = 10;
     static const uint32_t max_ngram_len = 20;
+    static const uint32_t max_unmatch_count = 1;
     std::vector<izenelib::util::UString> termstr_list;
     AnalyzeChar_(value, termstr_list);
     std::size_t index = 0;
@@ -344,6 +420,8 @@ void AttributeIndexer::GetAttribIdList(const izenelib::util::UString& category, 
         std::vector<AttribId> ngram_aid_list;
         izenelib::util::UString attrib_ngram;
         izenelib::util::UString ngram;
+        std::size_t inc_len = 0;
+        uint32_t unmatch_count = 0;
         for(std::size_t len = 0;len<n;len++)
         {
             std::size_t pos = index+len;
@@ -353,16 +431,40 @@ void AttributeIndexer::GetAttribIdList(const izenelib::util::UString& category, 
             if(ngram.length()>max_ngram_len) break;
             std::vector<AttribId> aid_list;
             GetNgramAttribIdList_(ngram, aid_list);
+            //{
+                //std::string sngram;
+                //ngram.convertString(sngram, izenelib::util::UString::UTF_8);
+                //logger_<<"[FN]"<<sngram<<" [";
+                //for(uint32_t i=0;i<aid_list.size();i++)
+                //{
+                    //logger_<<aid_list[i]<<",";
+                //}
+                //logger_<<std::endl;
+            //}
             if(!aid_list.empty())
             {
+                inc_len = len+1;
                 attrib_ngram = ngram;
                 ngram_aid_list.swap(aid_list);
+                unmatch_count = 0;
+            }
+            else
+            {
+                unmatch_count++;
+                if(attrib_ngram.length()>0)//find one
+                {
+                    if(unmatch_count==max_unmatch_count)
+                    {
+                        break;
+                    }
+                }
             }
         }
         id_list.insert(id_list.end(), ngram_aid_list.begin(), ngram_aid_list.end());
         if(attrib_ngram.length()>0)
         {
-            index += attrib_ngram.length();
+            index += inc_len;
+            //index++;
         }
         else
         {
@@ -463,23 +565,15 @@ void AttributeIndexer::GenNegativeIdMap_(std::map<std::size_t, std::vector<std::
                 continue;
             }
             std::vector<std::pair<AttribNameId, double> > n_feature_vec;
-            GetFeatureVector_(doc.aid_list, cdoc.tag_aid_list, n_feature_vec, fc); 
-            //bool all_positive = true;
-            //for(uint32_t f=0;f<n_feature_vec.size();f++)
-            //{
-                //if(n_feature_vec[f].second<=0.0)
-                //{
-                    //all_positive = false;
-                    //break;
-                //}
-            //}
-            //if(all_positive) continue;
-            uint32_t weight = 0;
-            for(std::size_t q=0;q<n_feature_vec.size();++q)
+            FeatureStatus fs;
+            GetFeatureVector_(doc.aid_list, cdoc.tag_aid_list, n_feature_vec, fs); 
+            uint32_t nznum = fs.pnum+fs.nnum;
+            if(nznum==0)
             {
-                if(n_feature_vec[q].second!=0.0) weight++;
+                continue;
             }
-            feature_num_vec.push_back(std::make_pair(index, weight));
+            //if(fs.nnum==0) continue;
+            feature_num_vec.push_back(std::make_pair(index, nznum));
         }
         typedef izenelib::util::second_greater<std::pair<std::size_t, uint32_t> > greater_than;
         std::sort(feature_num_vec.begin(), feature_num_vec.end(), greater_than());
@@ -517,14 +611,24 @@ void AttributeIndexer::GenClassiferInstance()
     std::map<std::size_t, std::vector<std::size_t> > negative_map;
     GenNegativeIdMap_(negative_map);
     PositiveFC pfc;
+    NonNegativeFC nnfc;
     NonZeroFC nzfc;
     for(std::size_t p=0;p<product_list_.size();++p)
     {
+        if(p%100==0)
+        {
+            LOG(INFO)<<"generating instance "<<p<<std::endl;
+        }
         ProductDocument& product_doc = product_list_[p];
         std::vector<AttribId>& aid_list = product_doc.aid_list;
         std::vector<AttribId>& tag_aid_list = product_doc.tag_aid_list;
         std::vector<std::pair<AttribNameId, double> > feature_vec;
-        GetFeatureVector_(aid_list, tag_aid_list, feature_vec, pfc);
+        FeatureStatus fs;
+        GetFeatureVector_(aid_list, tag_aid_list, feature_vec, fs);
+        if(fs.nnum>0)
+        {
+            RemoveNegative_(feature_vec);
+        }
 #ifdef B5M_DEBUG
         {
             std::string stitle;
@@ -555,7 +659,7 @@ void AttributeIndexer::GenClassiferInstance()
             }
         }
 #endif
-        if(feature_vec.size()>1)
+        if(fs.pnum>1)
         {
             ofs<<"+1";
             for(std::size_t i=0;i<feature_vec.size();i++)
@@ -572,8 +676,29 @@ void AttributeIndexer::GenClassiferInstance()
             negative_doc.property["Title"].convertString(stitle, izenelib::util::UString::UTF_8);
             std::vector<AttribId>& n_tag_aid_list = negative_doc.tag_aid_list;
             std::vector<std::pair<AttribNameId, double> > n_feature_vec;
-            GetFeatureVector_(aid_list, n_tag_aid_list, n_feature_vec, nzfc);
-            if(n_feature_vec.size()>1)
+            FeatureStatus fs;
+            GetFeatureVector_(aid_list, n_tag_aid_list, n_feature_vec, fs);
+            //GetFeatureVector_(aid_list, n_tag_aid_list, n_feature_vec, nzfc);
+            //reset n_feature_vec if all positive
+            //if(n_feature_vec.size()>1)
+            //{
+                //bool all_positive = true;
+                //for(uint32_t f=0;f<n_feature_vec.size();f++)
+                //{
+                    //if(n_feature_vec[f].second<=0.0)
+                    //{
+                        //all_positive = false;
+                        //break;
+                    //}
+                //}
+                //if(all_positive)
+                //{
+                    //n_feature_vec.resize(0);
+                    //GetFeatureVector_(tag_aid_list, n_tag_aid_list, n_feature_vec, nzfc);
+                //}
+
+            //}
+            if(fs.pnum+fs.nnum>1)
             {
                 ofs<<"-1";
                 for(std::size_t i=0;i<n_feature_vec.size();i++)
@@ -607,6 +732,7 @@ void AttributeIndexer::GenClassiferInstance()
 
 bool AttributeIndexer::TrainSVM()
 {
+    LOG(INFO)<<"start to train svm"<<std::endl;
     struct svm_parameter param;
     struct svm_problem problem;
     struct svm_model* model;
@@ -703,11 +829,18 @@ bool AttributeIndexer::TrainSVM()
     free(problem.y);
     free(problem.x);
     free(x_space);
+    LOG(INFO)<<"finish training svm"<<std::endl;
     return true;
 }
 
-void AttributeIndexer::ProductMatchingSVM(const std::string& scd_file, const std::string& match_file)
+void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
 {
+    std::string done_file = knowledge_dir_+"/match.done";
+    if(boost::filesystem::exists(done_file))
+    {
+        return;
+    }
+    std::string match_file = knowledge_dir_+"/match";
     struct svm_model* model;
     std::string model_file = knowledge_dir_+"/model";
     if( (model=svm_load_model(model_file.c_str()))==0 )
@@ -716,7 +849,7 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_file, const std
         return;
     }
     std::cout<<model_file<<" loaded!"<<std::endl;
-    std::ofstream match_ofs(match_file.c_str(), std::ios::out | std::ios::app);
+    std::ofstream match_ofs(match_file.c_str());
     boost::unordered_map<std::string, std::vector<std::size_t> > category_indexlist;
     boost::unordered_map<std::string, std::vector<std::size_t> >::iterator ci_it;
     BuildCategoryMap_(category_indexlist);
@@ -725,6 +858,19 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_file, const std
     //{
         //ss_list[i] = new StringSimilarity(product_list_[i].property["Title"]);
     //}
+    std::string scd_file = scd_path;
+    bool inner_scd = false;
+    std::string a_scd = knowledge_dir_+"/A.SCD";
+    uint32_t counting = 100000;
+    if(boost::filesystem::exists(a_scd))
+    {
+        scd_file = a_scd;
+        inner_scd = true;
+        counting = 200;
+        std::cout<<"USE A.SCD FOR MATCHING"<<std::endl;
+    }
+    static const double price_ratio = 2.2;
+    static const double invert_price_ratio = 1.0/price_ratio;
     ScdParser parser(izenelib::util::UString::UTF_8);
     parser.load(scd_file);
     NonZeroFC nzfc;
@@ -733,11 +879,11 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_file, const std
     for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
       doc_iter!= parser.end(); ++doc_iter, ++n)
     {
-        if(n%100000==0)
+        if(n%counting==0)
         {
             LOG(INFO)<<"Processing "<<n<<" docs"<<std::endl;
         }
-        ProductDocument product_doc;
+        ProductDocument odoc;
         izenelib::util::UString oid;
         izenelib::util::UString title;
         izenelib::util::UString category;
@@ -749,7 +895,7 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_file, const std
         {
             std::string property_name;
             p->first.convertString(property_name, izenelib::util::UString::UTF_8);
-            product_doc.property[property_name] = p->second;
+            odoc.property[property_name] = p->second;
             if(property_name=="DOCID")
             {
                 oid = p->second;
@@ -780,12 +926,19 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_file, const std
         category.convertString(scategory, izenelib::util::UString::UTF_8);
         std::string surl;
         url.convertString(surl, izenelib::util::UString::UTF_8);
-        if( !match_param_.MatchCategory(scategory) )
+        if(!inner_scd)
         {
-            continue;
+            if( !match_param_.MatchCategory(scategory) )
+            {
+                continue;
+            }
         }
         ci_it = category_indexlist.find(scategory);
         if( ci_it==category_indexlist.end()) continue;
+        ProductPrice price;
+        price.Parse(odoc.property["Price"]);
+        if(!price.Valid()) continue;
+        
         std::vector<std::size_t>& pindexlist = ci_it->second;
         std::vector<AttribId> aid_list;
         GetAttribIdList(category, title, aid_list);
@@ -794,9 +947,13 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_file, const std
         {
             std::size_t pindex = pindexlist[p];
             ProductDocument& product_doc = product_list_[pindex];
+            ProductPrice pprice;
+            pprice.Parse(product_doc.property["Price"]);
             std::vector<std::pair<AttribNameId, double> > feature_vec;
-            GetFeatureVector_(aid_list, product_doc.tag_aid_list, feature_vec, nzfc);
-            if(feature_vec.size()<2) continue;
+            FeatureStatus fs;
+            //GetFeatureVector_(aid_list, product_doc.tag_aid_list, feature_vec, nzfc);
+            GetFeatureVector_(aid_list, product_doc.tag_aid_list, feature_vec, fs);
+            //if(fs.pnum+fs.nnum<2) continue;
             struct svm_node *x = (struct svm_node *) malloc((feature_vec.size()+1)*sizeof(struct svm_node));
             for(uint32_t i=0;i<feature_vec.size();i++)
             {
@@ -824,15 +981,23 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_file, const std
                     logger_<<product_doc.tag_aid_list[i]<<",";
                 }
                 logger_<<std::endl;
+                logger_<<"feature size: "<<feature_vec.size()<<std::endl;
                 for(uint32_t i=0;i<feature_vec.size();i++)
                 {
-                    logger_<<feature_vec[i].first<<":"<<feature_vec[i].second<<std::endl;
+                    logger_<<feature_vec[i].first<<":"<<feature_vec[i].second<<",";
                 }
+                logger_<<std::endl;
                 logger_<<(int)predict_label<<std::endl;
             }
 #endif
             if(predict_label>0)
             {
+                if(fs.pnum+fs.nnum<2) continue;
+                double om, pm;
+                if(!price.GetMid(om) || !pprice.GetMid(pm)) continue;
+                if(om<=0.0 || pm<=0.0) continue;
+                double ratio = om/pm;
+                if(ratio<invert_price_ratio || ratio>price_ratio) continue;
                 double str_sim = StringSimilarity::Sim(title, product_doc.property["Title"]);
                 //double str_sim = ss_list[pindex]->Sim(title);
                 match_list.push_back(std::make_pair(pindex, str_sim));
@@ -865,6 +1030,9 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_file, const std
         //delete ss_list[i];
     //}
     match_ofs.close();
+    std::ofstream ofs(done_file.c_str());
+    ofs<<"done"<<std::endl;
+    ofs.close();
 }
 
 void AttributeIndexer::ProductMatchingLR(const std::string& scd_file)
@@ -952,7 +1120,8 @@ void AttributeIndexer::ProductMatchingLR(const std::string& scd_file)
         {
             ProductDocument& product_doc = product_list_[pindexlist[p]];
             std::vector<std::pair<AttribNameId, double> > feature_vec;
-            GetFeatureVector_(aid_list, product_doc.tag_aid_list, feature_vec, nzfc);
+            FeatureStatus fs;
+            GetFeatureVector_(aid_list, product_doc.tag_aid_list, feature_vec, fs);
             if(feature_vec.size()<2) continue;
             {
                 std::cout<<"[PR]"<<std::endl;
@@ -989,6 +1158,48 @@ void AttributeIndexer::ProductMatchingLR(const std::string& scd_file)
         }
     } 
 }
+
+bool AttributeIndexer::SplitScd(const std::string& scd_file)
+{
+    std::string a_scd = knowledge_dir_+"/A.SCD";
+    if(boost::filesystem::exists(a_scd))
+    {
+        std::cout<<a_scd<<" exists, ignore"<<std::endl;
+        return true;
+    }
+    ScdParser parser(izenelib::util::UString::UTF_8);
+    parser.load(scd_file);
+    uint32_t n=0;
+    ScdWriter writer(knowledge_dir_, INSERT_SCD);
+    writer.SetFileName("A.SCD");
+    for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
+      doc_iter!= parser.end(); ++doc_iter, ++n)
+    {
+        if(n%10000==0)
+        {
+            LOG(INFO)<<"Find Documents "<<n<<std::endl;
+        }
+        Document doc;
+        SCDDoc& scddoc = *(*doc_iter);
+        std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
+        for(p=scddoc.begin(); p!=scddoc.end(); ++p)
+        {
+            std::string property_name;
+            p->first.convertString(property_name, izenelib::util::UString::UTF_8);
+            doc.property(property_name) = p->second;
+        }
+        std::string scategory;
+        doc.property("Category").get<UString>().convertString(scategory, UString::UTF_8);
+        if( !match_param_.MatchCategory(scategory) )
+        {
+            continue;
+        }
+        writer.Append(doc);
+    }
+    writer.Close();
+    return true;
+}
+
 void AttributeIndexer::GetAttribNameMap_(const std::vector<AttribId>& aid_list, boost::unordered_map<AttribNameId, std::vector<AttribId> >& map)
 {
     boost::unordered_map<AttribNameId, std::vector<AttribId> >::iterator map_it;
@@ -1009,7 +1220,7 @@ void AttributeIndexer::GetAttribNameMap_(const std::vector<AttribId>& aid_list, 
 
 }
 
-void AttributeIndexer::GetFeatureVector_(const std::vector<AttribId>& o, const std::vector<AttribId>& p, std::vector<std::pair<AttribNameId, double> >& feature_vec, const FeatureCondition& fc)
+void AttributeIndexer::GetFeatureVector_(const std::vector<AttribId>& o, const std::vector<AttribId>& p, FeatureType& feature_vec, FeatureStatus& fs)
 {
     boost::unordered_map<AttribNameId, std::vector<AttribId> > oname_aid_map;
     boost::unordered_map<AttribNameId, std::vector<AttribId> > pname_aid_map;
@@ -1023,10 +1234,8 @@ void AttributeIndexer::GetFeatureVector_(const std::vector<AttribId>& o, const s
         boost::unordered_map<AttribNameId, std::vector<AttribId> >::iterator oit = oname_aid_map.find(nameid);
         if(oit==oname_aid_map.end())
         {
-            if( fc(0.0) )
-            {
-                feature_vec.push_back(std::make_pair(nameid, 0.0));
-            }
+            feature_vec.push_back(std::make_pair(nameid, 0.0));
+            fs.znum++;
             continue;
         }
         std::vector<AttribId>& o_aid_list = oit->second;
@@ -1041,11 +1250,16 @@ void AttributeIndexer::GetFeatureVector_(const std::vector<AttribId>& o, const s
             }
         }
         double v = -1.0;
-        if(find) v = 1.0;
-        if( fc(v) )
+        if(find)
         {
-            feature_vec.push_back(std::make_pair(nameid, v));
+            v = 1.0;
+            fs.pnum++;
         }
+        else
+        {
+            fs.nnum++;
+        }
+        feature_vec.push_back(std::make_pair(nameid, v));
 
     }
     std::sort(feature_vec.begin(), feature_vec.end());
@@ -1153,7 +1367,10 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_file)
             {
                 filter_anid_.insert(name_aid);
             }
-            product_doc.tag_aid_list.push_back(aid);
+            if(ValidAnid_(name_aid))
+            {
+                product_doc.tag_aid_list.push_back(aid);
+            }
             std::vector<AttribId> aid_list;
             index_->get(nav, aid_list);
             bool aid_dd = false;
@@ -1182,9 +1399,40 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_file)
         product_list_.push_back(product_doc);
     }
     LOG(INFO)<<"Generated "<<product_list_.size()<<" docs"<<std::endl;
+    //do de-duplicate
+    std::vector<ProductDocument> product_list;
+    for(std::size_t i=0;i<product_list_.size();i++)
+    {
+        std::sort(product_list_[i].tag_aid_list.begin(), product_list_[i].tag_aid_list.end()); 
+        bool dd = false;
+        for(std::size_t j=0;j<product_list.size();j++)
+        {
+            if(product_list_[i].tag_aid_list == product_list[j].tag_aid_list)
+            {
+                dd = true;
+                UString ititle = product_list_[i].property["Title"];
+                UString jtitle = product_list[j].property["Title"];
+                if(ititle.length()>0 && ititle.length()<jtitle.length())
+                {
+                    product_list[j].property["Title"] = ititle;
+                }
+                break;
+            }
+        }
+        if(!dd)
+        {
+            product_list.push_back(product_list_[i]);
+        }
+    }
+    product_list_.swap(product_list);
+    LOG(INFO)<<"After DD "<<product_list_.size()<<" docs"<<std::endl;
     //already got tag_aid_list, now build others
     for(std::size_t i=0;i<product_list_.size();i++)
     {
+        if(i%100==0)
+        {
+            LOG(INFO)<<"Building aid_list for "<<i<<std::endl;
+        }
         ProductDocument& doc = product_list_[i];
         izenelib::util::UString& category = doc.property["Category"];
         izenelib::util::UString& title = doc.property["Title"];
@@ -1276,5 +1524,26 @@ void AttributeIndexer::WriteIdInfo_()
         }
         ofs.close();
     }
+}
+
+bool AttributeIndexer::ValidAid_(const AttribId& aid)
+{
+    AttribNameId anid;
+    if(!name_index_->get(aid, anid)) return false;
+    if(filter_anid_.find(anid)==filter_anid_.end())
+    {
+        return true;
+    }
+    return false;
+}
+
+
+bool AttributeIndexer::ValidAnid_(const AttribNameId& anid)
+{
+    if(filter_anid_.find(anid)==filter_anid_.end())
+    {
+        return true;
+    }
+    return false;
 }
 

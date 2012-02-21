@@ -18,6 +18,14 @@ bool PropertyConfig::isAnalyzed() const
     }
 }
 
+bool PropertyConfig::isAliasProperty() const
+{
+    if (originalName_.empty() || originalName_ == propertyName_)
+        return false;
+
+    return true;
+}
+
 std::string PropertyConfig::toString() const
 {
     stringstream ss;

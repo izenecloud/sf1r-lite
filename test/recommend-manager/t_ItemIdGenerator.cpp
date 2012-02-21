@@ -5,48 +5,58 @@
 ///
 
 #include "ItemIdGeneratorTestFixture.h"
+#include "test_util.h"
 #include <recommend-manager/item/ItemIdGenerator.h>
 #include <recommend-manager/item/LocalItemIdGenerator.h>
 #include <recommend-manager/item/SingleCollectionItemIdGenerator.h>
+#include <recommend-manager/item/RemoteItemIdGenerator.h>
 #include <util/ustring/UString.h>
 
 #include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <string>
 
 using namespace std;
 using namespace sf1r;
 
-namespace bfs = boost::filesystem;
-
 namespace
 {
 const izenelib::util::UString::EncodingType ENCODING_UTF8 = izenelib::util::UString::UTF_8;
 
-const string TEST_DIR = "recommend_test/t_ItemIdGenerator/";
-const string LOCAL_DIR = TEST_DIR + "local";
-const string SINGLE_COLLECTION_DIR = TEST_DIR + "single";
+const string TEST_DIR = "recommend_test/t_ItemIdGenerator";
+
+const string LOCAL_DIR = TEST_DIR + "/local";
+const string LOCAL_ID_MANAGER_PREFIX = LOCAL_DIR + "/item";
+
+const string SINGLE_COLLECTION_DIR = TEST_DIR + "/single";
+const string LOG_SERVER_DIR = TEST_DIR + "/log_server";
+
+const string REMOTE_COLLECTION_1 = "example_1";
+const string REMOTE_COLLECTION_2 = "example_2";
+
+void checkItemId(ItemIdGeneratorTestFixture& fixture, itemid_t maxItemId)
+{
+    fixture.checkNonExistId();
+
+    fixture.checkStrToItemId(maxItemId);
+    fixture.checkItemIdToStr(maxItemId);
+
+    fixture.checkNonExistId();
+}
+
 }
 
 BOOST_AUTO_TEST_SUITE(ItemIdGeneratorTest)
 
 BOOST_FIXTURE_TEST_CASE(checkLocal, ItemIdGeneratorTestFixture)
 {
-    string dir = LOCAL_DIR;
-    bfs::remove_all(dir);
-    bfs::create_directories(dir);
+    create_empty_directory(LOCAL_DIR);
 
-    string pathPrefix = (bfs::path(dir) / "item").string();
-    LocalItemIdGenerator::IDManagerType idManager(pathPrefix);
+    LocalItemIdGenerator::IDManagerType idManager(LOCAL_ID_MANAGER_PREFIX);
     itemIdGenerator_.reset(new LocalItemIdGenerator(idManager));
 
     BOOST_TEST_MESSAGE("check empty...");
-    itemid_t itemId = 1;
-    string strId = boost::lexical_cast<std::string>(itemId);
-    BOOST_CHECK(itemIdGenerator_->strIdToItemId(strId, itemId) == false);
-    BOOST_CHECK(itemIdGenerator_->itemIdToStrId(itemId, strId) == false);
-    BOOST_CHECK_EQUAL(itemIdGenerator_->maxItemId(), 0U);
+    checkNonExistId();
 
     BOOST_TEST_MESSAGE("insert into IDManager...");
     itemid_t maxItemId = 10;
@@ -62,45 +72,40 @@ BOOST_FIXTURE_TEST_CASE(checkLocal, ItemIdGeneratorTestFixture)
 
     BOOST_TEST_MESSAGE("check inserted id...");
     checkStrToItemId(maxItemId);
+
     // convert from id to string is not supported
+    itemid_t itemId = 1;
+    string strId;
     BOOST_CHECK(itemIdGenerator_->itemIdToStrId(itemId, strId) == false);
 
-    BOOST_TEST_MESSAGE("check non-existing id...");
-    itemId = maxItemId + 1;
-    strId = boost::lexical_cast<std::string>(itemId);
-    BOOST_CHECK(itemIdGenerator_->strIdToItemId(strId, itemId) == false);
-    BOOST_CHECK(itemIdGenerator_->itemIdToStrId(itemId, strId) == false);
-    BOOST_CHECK_EQUAL(itemIdGenerator_->maxItemId(), maxItemId);
+    checkNonExistId();
 }
 
 BOOST_FIXTURE_TEST_CASE(checkSingleCollection, ItemIdGeneratorTestFixture)
 {
     string dir = SINGLE_COLLECTION_DIR;
-    bfs::remove_all(dir);
-    bfs::create_directories(dir);
+    create_empty_directory(dir);
 
     itemIdGenerator_.reset(new SingleCollectionItemIdGenerator(dir));
 
-    BOOST_TEST_MESSAGE("insert id 1st time...");
     itemid_t maxItemId = 10;
-    checkStrToItemId(maxItemId);
-    checkItemIdToStr(maxItemId);
+
+    BOOST_TEST_MESSAGE("insert id 1st time...");
+    checkItemId(*this, maxItemId);
 
     // flush first
     itemIdGenerator_.reset();
     itemIdGenerator_.reset(new SingleCollectionItemIdGenerator(SINGLE_COLLECTION_DIR));
 
+    maxItemId *= 2;
     BOOST_TEST_MESSAGE("insert id 2nd time...");
-    maxItemId *= 2; 
-    checkStrToItemId(maxItemId);
-    checkItemIdToStr(maxItemId);
+    checkItemId(*this, maxItemId);
 }
 
 BOOST_FIXTURE_TEST_CASE(checkSingleCollectionMultiThread, ItemIdGeneratorTestFixture)
 {
     string dir = SINGLE_COLLECTION_DIR;
-    bfs::remove_all(dir);
-    bfs::create_directories(dir);
+    create_empty_directory(dir);
 
     itemIdGenerator_.reset(new SingleCollectionItemIdGenerator(dir));
 
@@ -110,4 +115,57 @@ BOOST_FIXTURE_TEST_CASE(checkSingleCollectionMultiThread, ItemIdGeneratorTestFix
     checkMultiThread(threadNum, maxItemId);
 }
 
-BOOST_AUTO_TEST_SUITE_END() 
+BOOST_FIXTURE_TEST_CASE(checkRemote, ItemIdGeneratorTestFixture)
+{
+    string dir = LOG_SERVER_DIR;
+    create_empty_directory(dir);
+
+    BOOST_REQUIRE(startRpcLogServer(dir));
+
+    itemid_t maxItemId = 10;
+
+    BOOST_TEST_MESSAGE("check " << REMOTE_COLLECTION_1 << "...");
+    itemIdGenerator_.reset(new RemoteItemIdGenerator(REMOTE_COLLECTION_1));
+    checkItemId(*this, maxItemId);
+
+    maxItemId *= 2;
+    maxItemId_ = 0; // reset maxItemId_ for new collection
+    BOOST_TEST_MESSAGE("check " << REMOTE_COLLECTION_2 << "...");
+    itemIdGenerator_.reset(new RemoteItemIdGenerator(REMOTE_COLLECTION_2));
+    checkItemId(*this, maxItemId);
+}
+
+BOOST_FIXTURE_TEST_CASE(checkRemoteMultiThread, ItemIdGeneratorTestFixture)
+{
+    string dir = LOG_SERVER_DIR;
+    create_empty_directory(dir);
+
+    BOOST_REQUIRE(startRpcLogServer(dir));
+
+    itemIdGenerator_.reset(new RemoteItemIdGenerator(REMOTE_COLLECTION_1));
+
+    int threadNum = 5;
+    itemid_t maxItemId = 1000;
+
+    checkMultiThread(threadNum, maxItemId);
+}
+
+BOOST_FIXTURE_TEST_CASE(checkRemoteNotConnect, ItemIdGeneratorTestFixture)
+{
+    string dir = LOG_SERVER_DIR;
+    create_empty_directory(dir);
+
+    // to test connection failed, below line is commented out intentionally
+    //BOOST_REQUIRE(startRpcLogServer(dir));
+
+    itemIdGenerator_.reset(new RemoteItemIdGenerator(REMOTE_COLLECTION_1));
+
+    itemid_t itemId = 1;
+    std::string str = boost::lexical_cast<std::string>(itemId);
+
+    BOOST_CHECK(itemIdGenerator_->strIdToItemId(str, itemId) == false);
+    BOOST_CHECK(itemIdGenerator_->itemIdToStrId(itemId, str) == false);
+    BOOST_CHECK_EQUAL(itemIdGenerator_->maxItemId(), 0U);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
