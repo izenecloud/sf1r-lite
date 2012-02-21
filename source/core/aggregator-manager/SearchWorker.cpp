@@ -6,6 +6,7 @@
 
 #include <index-manager/IndexManager.h>
 #include <search-manager/SearchManager.h>
+#include <search-manager/SearchCache.h>
 #include <search-manager/PersonalizedSearchInfo.h>
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningManager.h>
@@ -27,6 +28,9 @@ SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
     analysisInfo_.analyzerId_ = "la_sia";
     analysisInfo_.tokenizerNameList_.insert("tok_divide");
     analysisInfo_.tokenizerNameList_.insert("tok_unite");
+
+    if (!bundleConfig_->isSupportByAggregator())
+        searchCache_.reset(new SearchCache(bundleConfig_->searchCacheNum_));
 }
 
 /// Index Search
@@ -134,7 +138,27 @@ bool SearchWorker::getInternalDocumentId(const izenelib::util::UString& scdDocum
 // local interface
 bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
-    if (! getSearchResult_(actionItem, resultItem, false))
+    CREATE_PROFILER( cacheoverhead, "IndexSearchService", "cache overhead: overhead for caching in searchworker");
+
+    START_PROFILER( cacheoverhead )
+    QueryIdentity identity;
+    if (searchCache_)
+    {
+        uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
+        uint32_t start = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
+        makeQueryIdentity(identity, actionItem, resultItem.distSearchInfo_.option_, start);
+
+        if (searchCache_->get(identity, resultItem))
+        {
+            STOP_PROFILER( cacheoverhead )
+                // the cached search results require to be reranked
+                searchManager_->rerank(actionItem, resultItem);
+
+            return true;
+        }
+    }
+
+    if (! getSearchResult_(actionItem, resultItem, identity, false))
     {
         return false;
     }
@@ -143,6 +167,11 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
     {
         return false;
     }
+
+    START_PROFILER( cacheoverhead )
+    if (searchCache_)
+        searchCache_->set(identity, resultItem);
+    STOP_PROFILER( cacheoverhead )
 
     return true;
 }
@@ -193,7 +222,39 @@ void SearchWorker::makeQueryIdentity(
         int8_t distActionType,
         uint32_t start)
 {
-    searchManager_->makeQueryIdentity(identity, item, distActionType, start);
+    identity.userId = item.env_.userID_;
+    identity.start = start;
+    identity.searchingMode = item.searchingMode_;
+
+    switch (item.searchingMode_)
+    {
+    case SearchingMode::KNN:
+        miningManager_->GetSignatureForQuery(item, identity.simHash);
+        break;
+    default:
+        identity.query = item.env_.queryString_;
+        identity.expandedQueryString = item.env_.expandedQueryString_;
+        if (indexManager_->getIndexManagerConfig()->indexStrategy_.indexLevel_
+                == izenelib::ir::indexmanager::DOCLEVEL
+                && item.rankingType_ == RankingType::PLM)
+        {
+            const_cast<KeywordSearchActionItem &>(item).rankingType_ = RankingType::BM25;
+        }
+        identity.rankingType = item.rankingType_;
+        identity.laInfo = item.languageAnalyzerInfo_;
+        identity.properties = item.searchPropertyList_;
+        identity.sortInfo = item.sortPriorityList_;
+        identity.filterInfo = item.filteringList_;
+        identity.groupParam = item.groupParam_;
+        identity.rangeProperty = item.rangePropertyName_;
+        identity.strExp = item.strExp_;
+        identity.paramConstValueMap = item.paramConstValueMap_;
+        identity.paramPropertyValueMap = item.paramPropertyValueMap_;
+        identity.distActionType = distActionType;
+        std::sort(identity.properties.begin(),
+                identity.properties.end());
+        break;
+    }
 }
 
 /// private methods ////////////////////////////////////////////////////////////
@@ -202,6 +263,17 @@ template <typename ResultItemType>
 bool SearchWorker::getSearchResult_(
         const KeywordSearchActionItem& actionItem,
         ResultItemType& resultItem,
+        bool isDistributedSearch)
+{
+    QueryIdentity identity;
+    return getSearchResult_(actionItem, resultItem, identity, isDistributedSearch);
+}
+
+template <typename ResultItemType>
+bool SearchWorker::getSearchResult_(
+        const KeywordSearchActionItem& actionItem,
+        ResultItemType& resultItem,
+        QueryIdentity& identity,
         bool isDistributedSearch)
 {
     CREATE_SCOPED_PROFILER ( searchIndex, "IndexSearchService", "processGetSearchResults: search index");
@@ -276,7 +348,20 @@ bool SearchWorker::getSearchResult_(
         startOffset = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
     }
 
-    if (!searchManager_->search(
+    if (actionOperation.actionItem_.searchingMode_ == SearchingMode::KNN)
+    {
+        if (identity.simHash.empty())
+            miningManager_->GetSignatureForQuery(actionOperation.actionItem_, identity.simHash);
+        miningManager_->GetKNNListBySignature(
+                identity.simHash,
+                resultItem.topKDocs_,
+                resultItem.topKRankScoreList_,
+                resultItem.totalCount_,
+                KNN_TOP_K_NUM,
+                KNN_DIST,
+                startOffset);
+    }
+    else if (!searchManager_->search(
                 actionOperation,
                 resultItem.topKDocs_,
                 resultItem.topKRankScoreList_,
@@ -639,6 +724,22 @@ bool SearchWorker::removeDuplicateDocs(
       }
     }
     return true;
+}
+
+void SearchWorker::reset_cache(
+        bool rType,
+        docid_t id,
+        const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue)
+{
+    //this method is only used for r-type filed right now
+    searchCache_->clear();
+    searchManager_->reset_cache(rType, id, rTypeFieldValue);
+}
+
+void SearchWorker::reset_all_property_cache()
+{
+    searchCache_->clear();
+    searchManager_->reset_all_property_cache();
 }
 
 

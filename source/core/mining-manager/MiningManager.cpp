@@ -1200,33 +1200,6 @@ bool MiningManager::addTgResult_(KeywordSearchResult& miaInput)
     if (miaInput.topKDocs_.empty()) return true;
 
     izenelib::util::UString query(miaInput.rawQueryString_, miaInput.encodingType_);
-//     TaxonomyRep taxonomyRep;
-//
-//     bool ret = tgManager_->GetResult(miaInput.topKDocs_, query, miaInput.totalCount_, taxonomyRep, miaInput.neList_);
-//     if (!ret)
-//     {
-//         std::string msg = "error at getting taxonomy";
-//         if (taxonomyRep.error_.length() > 0)
-//         {
-//             msg = taxonomyRep.error_;
-//         }
-//         miaInput.error_ += "[TG: "+msg+"]";
-//         LOG(ERROR) << ex.toString();
-//     }
-//     else
-//     {
-//         taxonomyRep.fill(miaInput);
-// //       {
-// //         //debug output
-// //         for(uint32_t i=0;i<taxonomyRep.result_.size();i++)
-// //         {
-// //             std::string str;
-// //             taxonomyRep.result_[i]->name_.convertString(str, izenelib::util::UString::UTF_8);
-// //             std::cout<<"Top Cluster: "<<str<<std::endl;
-// //         }
-// //       }
-//
-//     }
 
     bool ret = tgManager_->GetConceptsByDocidList(miaInput.topKDocs_, query, miaInput.totalCount_, miaInput.tg_input);
     return ret;
@@ -1242,12 +1215,12 @@ bool MiningManager::addDupResult_(KeywordSearchResult& miaInput)
         miaInput.numberOfDuplicatedDocs_.begin();
 
     std::vector<docid_t> tmpDupDocs;
-    typedef std::vector<docid_t>::const_iterator iterator;
-    for (iterator i = miaInput.topKDocs_.begin(); i != miaInput.topKDocs_.end(); ++i)
+    for (std::vector<docid_t>::const_iterator it = miaInput.topKDocs_.begin();
+            it != miaInput.topKDocs_.end(); ++it)
     {
         tmpDupDocs.clear(); // use resize to reserve the memory
-        dupManager_->getDuplicatedDocIdList(*i, tmpDupDocs);
-        *result++ = tmpDupDocs.size();
+        dupManager_->getDuplicatedDocIdList(*it, tmpDupDocs);
+        *(result++) = tmpDupDocs.size();
     }
 
     return true;
@@ -1260,7 +1233,7 @@ bool MiningManager::addSimilarityResult_(KeywordSearchResult& miaInput)
     if (!similarityIndex_ && !similarityIndexEsa_) return true;
     miaInput.numberOfSimilarDocs_.resize(miaInput.topKDocs_.size());
 
-    for (uint32_t i=0;i<miaInput.topKDocs_.size();i++)
+    for (uint32_t i = 0; i < miaInput.topKDocs_.size(); i++)
     {
         uint32_t docid = miaInput.topKDocs_[i];
         uint32_t count = 0;

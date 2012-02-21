@@ -11,9 +11,9 @@ namespace sf1r
 {
 
 IndexSearchService::IndexSearchService(IndexBundleConfiguration* config)
+    : bundleConfig_(config)
+    , searchCache_(new SearchCache(bundleConfig_->masterSearchCacheNum_))
 {
-    bundleConfig_ = config;
-    cache_.reset(new SearchCache(bundleConfig_->masterSearchCacheNum_));
 }
 
 IndexSearchService::~IndexSearchService()
@@ -32,7 +32,7 @@ const IndexBundleConfiguration* IndexSearchService::getBundleConfig()
 
 void IndexSearchService::OnUpdateSearchCache()
 {
-    cache_->clear();
+    searchCache_->clear();
 }
 
 bool IndexSearchService::getSearchResult(
@@ -67,19 +67,7 @@ bool IndexSearchService::getSearchResult(
     QueryIdentity identity;
     searchWorker_->makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.option_, actionItem.pageInfo_.start_);
 
-    if (!cache_->get(
-            identity,
-            resultItem.topKRankScoreList_,
-            resultItem.topKCustomRankScoreList_,
-            resultItem.topKDocs_,
-            resultItem.totalCount_,
-            resultItem.groupRep_,
-            resultItem.attrRep_,
-            resultItem.propertyRange_,
-            resultItem.distSearchInfo_,
-            &resultItem.count_,
-            &resultItem.propertyQueryTermList_,
-            &resultItem.topKWorkerIds_))
+    if (!searchCache_->get(identity, resultItem))
     {
         // Get and aggregate keyword search results from mutliple nodes
         distResultItem.start_ = actionItem.pageInfo_.start_;
@@ -91,41 +79,29 @@ bool IndexSearchService::getSearchResult(
         resultItem.swap(distResultItem);
         resultItem.distSearchInfo_.nodeType_ = DistKeywordSearchInfo::NODE_MASTER;
 
-        cache_->set(
-                identity,
-                resultItem.topKRankScoreList_,
-                resultItem.topKCustomRankScoreList_,
-                resultItem.topKDocs_,
-                resultItem.totalCount_,
-                resultItem.groupRep_,
-                resultItem.attrRep_,
-                resultItem.propertyRange_,
-                resultItem.distSearchInfo_,
-                resultItem.count_,
-                &resultItem.propertyQueryTermList_,
-                &resultItem.topKWorkerIds_);
+        // Get and aggregate Summary, Mining results from multiple nodes.
+        typedef std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> > ResultMapT;
+        typedef std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >::iterator ResultMapIterT;
+
+        ResultMapT resultMap;
+        searchAggregator_->splitSearchResultByWorkerid(resultItem, resultMap);
+        RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
+        for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
+        {
+            workerid_t workerid = it->first;
+            boost::shared_ptr<KeywordSearchResult>& subResultItem = it->second;
+            requestGroup.addRequest(workerid, &actionItem, subResultItem.get());
+        }
+
+        searchAggregator_->distributeRequest(
+                actionItem.collectionName_, "getSummaryMiningResult", requestGroup, resultItem);
+
+        searchCache_->set(identity, resultItem);
     }
 
     cout << "Total count: " << resultItem.totalCount_ << endl;
     cout << "Top K count: " << resultItem.topKDocs_.size() << endl;
     cout << "Page Count: " << resultItem.count_ << endl;
-
-    // Get and aggregate Summary, Mining results from multiple nodes.
-    typedef std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> > ResultMapT;
-    typedef std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >::iterator ResultMapIterT;
-
-    ResultMapT resultMap;
-    searchAggregator_->splitSearchResultByWorkerid(resultItem, resultMap);
-    RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
-    for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
-    {
-        workerid_t workerid = it->first;
-        boost::shared_ptr<KeywordSearchResult>& subResultItem = it->second;
-        requestGroup.addRequest(workerid, &actionItem, subResultItem.get());
-    }
-
-    searchAggregator_->distributeRequest(
-            actionItem.collectionName_, "getSummaryMiningResult", requestGroup, resultItem);
 
     REPORT_PROFILE_TO_FILE( "PerformanceQueryResult.SIAProcess" );
 

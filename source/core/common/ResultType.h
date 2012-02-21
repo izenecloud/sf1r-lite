@@ -91,6 +91,7 @@ public:
         : encodingType_(izenelib::util::UString::UTF_8)
         , totalCount_(0), topKDocs_(0), topKRankScoreList_(0), topKCustomRankScoreList_(0)
         , start_(0), count_(0)
+        , timeStamp_(0)
     {
     }
 
@@ -257,6 +258,8 @@ public:
         ss << "attrRep_ : " <<endl;
         ss << attrRep_.ToString();
 
+        ss << "Finish time : " << std::ctime(&timeStamp_) << endl;
+
         ss << "===================================" << endl;
         out << ss.str();
     }
@@ -350,9 +353,9 @@ public:
 
     std::vector<count_t> numberOfSimilarDocs_;
 
-    std::vector< std::vector<izenelib::util::UString> > docCategories_;
+    std::vector<std::vector<izenelib::util::UString> > docCategories_;
 
-    std::vector< uint32_t> imgs_;
+    std::vector<uint32_t> imgs_;
 
     // --------------------------------[ Taxonomy List ]
 
@@ -397,6 +400,8 @@ public:
     /// A list of related query rank score.
     std::vector<float> rqScore_;
 
+    /// Finish time of searching
+    std::time_t timeStamp_;
 
     void getTopKWDocs(std::vector<sf1r::wdocid_t>& topKWDocs) const
     {
@@ -457,6 +462,44 @@ public:
         attrRep_.swap(result.attrRep_);
     }
 
+    void swap(KeywordSearchResult& other)
+    {
+        using std::swap;
+        rawQueryString_.swap(other.rawQueryString_);
+        swap(encodingType_, other.encodingType_);
+        collectionName_.swap(other.collectionName_);
+        analyzedQuery_.swap(other.analyzedQuery_);
+        queryTermIdList_.swap(other.queryTermIdList_);
+        swap(totalCount_, other.totalCount_);
+        topKDocs_.swap(other.topKDocs_);
+        topKWorkerIds_.swap(other.topKWorkerIds_);
+        topKtids_.swap(other.topKtids_);
+        topKRankScoreList_.swap(other.topKRankScoreList_);
+        topKCustomRankScoreList_.swap(other.topKCustomRankScoreList_);
+        propertyRange_.swap(other.propertyRange_);
+        swap(start_, other.start_);
+        swap(count_, other.count_);
+        topKPostionList_.swap(other.topKPostionList_);
+        propertyQueryTermList_.swap(other.propertyQueryTermList_);
+        fullTextOfDocumentInPage_.swap(other.fullTextOfDocumentInPage_);
+        snippetTextOfDocumentInPage_.swap(other.snippetTextOfDocumentInPage_);
+        rawTextOfSummaryInPage_.swap(other.rawTextOfSummaryInPage_);
+        numberOfDuplicatedDocs_.swap(other.numberOfDuplicatedDocs_);
+        numberOfSimilarDocs_.swap(other.numberOfSimilarDocs_);
+        docCategories_.swap(other.docCategories_);
+        tg_input.swap(other.tg_input);
+        taxonomyString_.swap(other.taxonomyString_);
+        numOfTGDocs_.swap(other.numOfTGDocs_);
+        taxonomyLevel_.swap(other.taxonomyLevel_);
+        tgDocIdList_.swap(other.tgDocIdList_);
+        neList_.swap(other.neList_);
+        onto_rep_.swap(other.onto_rep_);
+        groupRep_.swap(other.groupRep_);
+        attrRep_.swap(other.attrRep_);
+        relatedQueryList_.swap(other.relatedQueryList_);
+        rqScore_.swap(other.rqScore_);
+        swap(timeStamp_, other.timeStamp_);
+    }
 
 //  DATA_IO_LOAD_SAVE(KeywordSearchResult,
 //          &rawQueryString_&encodingType_&collectionName_&analyzedQuery_
@@ -474,7 +517,7 @@ public:
             snippetTextOfDocumentInPage_, rawTextOfSummaryInPage_,
             numberOfDuplicatedDocs_, numberOfSimilarDocs_, docCategories_,
             tg_input, taxonomyString_, numOfTGDocs_, taxonomyLevel_, tgDocIdList_,
-            neList_, onto_rep_, groupRep_, attrRep_, relatedQueryList_, rqScore_);
+            neList_, onto_rep_, groupRep_, attrRep_, relatedQueryList_, rqScore_, timeStamp_);
 };
 
 

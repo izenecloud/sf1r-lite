@@ -82,7 +82,7 @@ private:
 
     boost::shared_ptr<IndexManager>
     createIndexManager_() const;
-    
+
     boost::shared_ptr<RankingManager>
     createRankingManager_() const;
 
@@ -101,9 +101,9 @@ private:
     bool initializeQueryManager_() const;
 
     std::string getCollectionDataPath_() const;
-    
+
     std::string getCurrentCollectionDataPath_() const;
-    
+
     std::string getQueryDataPath_() const;
 
 public:
@@ -117,4 +117,3 @@ public:
 
 }
 #endif
-

@@ -34,6 +34,7 @@ class LAManager;
 class SearchManager;
 class MiningManager;
 class QueryIdentity;
+class SearchCache;
 
 class SearchWorker
 {
@@ -77,11 +78,25 @@ public:
 
     bool doLocalSearch(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
+    void reset_cache(
+            bool rType,
+            docid_t id,
+            const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
+
+    void reset_all_property_cache();
+
 private:
     template <typename ResultItemType>
     bool getSearchResult_(
             const KeywordSearchActionItem& actionItem,
             ResultItemType& resultItem,
+            bool isDistributedSearch = true);
+
+    template <typename ResultItemType>
+    bool getSearchResult_(
+            const KeywordSearchActionItem& actionItem,
+            ResultItemType& resultItem,
+            QueryIdentity& identity,
             bool isDistributedSearch = true);
 
     bool getSummaryMiningResult_(
@@ -120,6 +135,7 @@ private:
     boost::shared_ptr<IndexManager> indexManager_;
     boost::shared_ptr<SearchManager> searchManager_;
     boost::shared_ptr<MiningManager> miningManager_;
+    boost::shared_ptr<SearchCache> searchCache_;
     ilplib::qa::QuestionAnalysis* pQA_;
 
     AnalysisInfo analysisInfo_;

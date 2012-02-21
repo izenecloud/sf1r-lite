@@ -5,46 +5,46 @@ using namespace sf1r;
 const char SortPropertyCache::Separator[] = {'-', '~', ','};
 
 SortProperty::SortProperty(const SortProperty& src)
-        :property_(src.property_)
-        ,propertyDataType_(src.propertyDataType_)
-        ,type_(src.type_)
-        ,reverse_(src.reverse_)
-        ,pComparator_(src.pComparator_)
+    : property_(src.property_)
+    , propertyDataType_(src.propertyDataType_)
+    , type_(src.type_)
+    , reverse_(src.reverse_)
+    , pComparator_(src.pComparator_)
 {
 }
 
 SortProperty::SortProperty(const string& property, PropertyDataType propertyType, bool reverse)
-        :property_(property)
-        ,propertyDataType_(propertyType)
-        ,type_(AUTO)
-        ,reverse_(reverse)
-        ,pComparator_(NULL)
+    : property_(property)
+    , propertyDataType_(propertyType)
+    , type_(AUTO)
+    , reverse_(reverse)
+    , pComparator_(NULL)
 {
 }
 
 SortProperty::SortProperty(const string& property, PropertyDataType propertyType, SortPropertyType type, bool reverse)
-        :property_(property)
-        ,propertyDataType_(propertyType)
-        ,type_(type)
-        ,reverse_(reverse)
-        ,pComparator_(NULL)
+    : property_(property)
+    , propertyDataType_(propertyType)
+    , type_(type)
+    , reverse_(reverse)
+    , pComparator_(NULL)
 {
 }
 SortProperty::SortProperty(const string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, bool reverse)
-        :property_(property)
-        ,propertyDataType_(propertyType)
-        ,type_(CUSTOM)
-        ,reverse_(reverse)
-        ,pComparator_(pComparator)
+    : property_(property)
+    , propertyDataType_(propertyType)
+    , type_(CUSTOM)
+    , reverse_(reverse)
+    , pComparator_(pComparator)
 {
 }
 
 SortProperty::SortProperty(const string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, SortPropertyType type, bool reverse)
-        :property_(property)
-        ,propertyDataType_(propertyType)
-        ,type_(type)
-        ,reverse_(reverse)
-        ,pComparator_(pComparator)
+    : property_(property)
+    , propertyDataType_(propertyType)
+    , type_(type)
+    , reverse_(reverse)
+    , pComparator_(pComparator)
 {
 }
 
@@ -55,11 +55,11 @@ SortProperty::~SortProperty()
 }
 
 SortPropertyCache::SortPropertyCache(IndexManager* pIndexer, IndexBundleConfiguration* config)
-        :pIndexer_(pIndexer)
-        ,pCTRManager_(NULL)
-        ,updateInterval_(config->sortCacheUpdateInterval_)
-        ,dirty_(true)
-        ,config_(config)
+    : pIndexer_(pIndexer)
+    , pCTRManager_(NULL)
+    , updateInterval_(config->sortCacheUpdateInterval_)
+    , dirty_(true)
+    , config_(config)
 {
     std::cout << "SortPropertyCache::updateInterval_ = " << updateInterval_ << std::endl;
 }
@@ -110,7 +110,7 @@ boost::shared_ptr<PropertyData> SortPropertyCache::getSortPropertyData(const std
             iter != sortDataCache_.end(); ++iter)
         {
             LOG(INFO) << "dirty sort data cache on property: " << iter->first;
-            if(iter->second) loadSortData(iter->first, iter->second->type_);
+            if (iter->second) loadSortData(iter->first, iter->second->type_);
         }
         dirty_ = false;
     }
@@ -163,14 +163,14 @@ boost::shared_ptr<PropertyData> SortPropertyCache::getCTRPropertyData(const std:
     return sortDataCache_[propertyName];
 }
 
-bool SortPropertyCache::split_int(const izenelib::util::UString& szText, int64_t& out, izenelib::util::UString::EncodingType encoding, char Separator )
+bool SortPropertyCache::split_int(const izenelib::util::UString& szText, int64_t& out, izenelib::util::UString::EncodingType encoding, char Separator)
 {
     izenelib::util::UString str(szText);
     izenelib::util::UString sep(" ",encoding);
     sep[0] = Separator;
     size_t n = 0;
 
-    n = str.find(sep,0);
+    n = str.find(sep, 0);
     if (n != izenelib::util::UString::npos)
     {
         if (n != 0)
@@ -191,14 +191,14 @@ bool SortPropertyCache::split_int(const izenelib::util::UString& szText, int64_t
     return false;
 }
 
-bool SortPropertyCache::split_float(const izenelib::util::UString& szText, float& out, izenelib::util::UString::EncodingType encoding, char Separator )
+bool SortPropertyCache::split_float(const izenelib::util::UString& szText, float& out, izenelib::util::UString::EncodingType encoding, char Separator)
 {
     izenelib::util::UString str(szText);
     izenelib::util::UString sep(" ",encoding);
     sep[0] = Separator;
     size_t n = 0;
 
-    n = str.find(sep,0);
+    n = str.find(sep, 0);
     if (n != izenelib::util::UString::npos)
     {
         if (n != 0)
@@ -226,7 +226,7 @@ void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, p
     izenelib::util::UString::EncodingType encoding = config_->encoding_;
     std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >::const_iterator iter;
     SortDataCache::const_iterator it;
-    for(iter = rTypeFieldValue.begin(); iter != rTypeFieldValue.end(); iter++)
+    for (iter = rTypeFieldValue.begin(); iter != rTypeFieldValue.end(); iter++)
     {
         string propertyName = iter->first;
         PropertyDataType dataType = iter->second.first;
@@ -243,10 +243,10 @@ void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, p
                 }
                 catch( const boost::bad_lexical_cast & )
                 {
-                    for(int i = 0; i < EoC; i++)
+                    for (int i = 0; i < EoC; i++)
                         if (split_int(iter->second.second, value, encoding, Separator[i]))
                             break;
-                    if(value == 0)
+                    if (value == 0)
                     {
                         LOG(ERROR) << "Wrong format of number value. value:"<<str;
                         break;
@@ -254,7 +254,7 @@ void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, p
                 }
                 if ((it = sortDataCache_.find(propertyName)) != sortDataCache_.end())
                 {
-                    if(!it->second ||id >= it->second->size_)
+                    if (!it->second ||id >= it->second->size_)
                         continue;
 
                     int64_t* data = (int64_t*)(it->second->data_);
@@ -273,10 +273,10 @@ void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, p
                 }
                 catch( const boost::bad_lexical_cast & )
                 {
-                    for(int i = 0; i < EoC; i++)
+                    for (int i = 0; i < EoC; i++)
                         if (split_float(iter->second.second, value, encoding, Separator[i]))
                             break;
-                    if(value == 0.0)
+                    if (value == 0.0)
                     {
                         LOG(ERROR) << "Wrong format of number value. value:"<<str;
                         break;
@@ -284,7 +284,7 @@ void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, p
                 }
                 if ((it = sortDataCache_.find(propertyName)) != sortDataCache_.end())
                 {
-                    if(!it->second ||id >= it->second->size_)
+                    if (!it->second ||id >= it->second->size_)
                         continue;
 
                     float* data = (float*)(it->second->data_);
@@ -293,7 +293,7 @@ void SortPropertyCache::updateSortData(docid_t id, const std::map<std::string, p
             }
             break;
         default:
-              break;
+            break;
         }
     }
 }
@@ -319,17 +319,16 @@ SortPropertyComparator* SortPropertyCache::getComparator(SortProperty* pSortProp
         // to extend
     }
 
-    if(propData)
+    if (propData)
         return new SortPropertyComparator(propData);
     else
         return NULL;
 }
 
 Sorter::Sorter(SortPropertyCache* pCache)
-        :pCache_(pCache)
-        ,ppSortProperties_(0)
-        ,reverseMul_(0)
-
+    : pCache_(pCache)
+    , ppSortProperties_(0)
+    , reverseMul_(0)
 {
 }
 
@@ -374,10 +373,10 @@ void Sorter::getComparators()
                 break;
             case SortProperty::AUTO:
                 {
-                    if(!pSortProperty->pComparator_)
+                    if (!pSortProperty->pComparator_)
                         pSortProperty->pComparator_ = pCache_->getComparator(pSortProperty);
 
-                    if(!pSortProperty->pComparator_)
+                    if (!pSortProperty->pComparator_)
                         ++numOfInValidComparators;
                 }
                 break;
@@ -392,10 +391,10 @@ void Sorter::getComparators()
             }
         }
     }
-    if(numOfInValidComparators > 0)
+    if (numOfInValidComparators > 0)
     {
         SortProperty** ppSortProperties = NULL;
-        if(numOfInValidComparators == nNumProperties_)
+        if (numOfInValidComparators == nNumProperties_)
         {
             nNumProperties_ = 1;
             ppSortProperties = new SortProperty*[nNumProperties_];
@@ -408,10 +407,10 @@ void Sorter::getComparators()
         {
             ppSortProperties = new SortProperty*[nNumProperties_];
             size_t j = 0;
-            for(i = 0; i < nNumProperties_; ++i)
+            for (i = 0; i < nNumProperties_; ++i)
             {
                 SortProperty* pSortProperty = ppSortProperties_[i];
-                if(pSortProperty->pComparator_)
+                if (pSortProperty->pComparator_)
                 {
                     ppSortProperties[j++] = pSortProperty;
                 }
@@ -422,9 +421,8 @@ void Sorter::getComparators()
         ppSortProperties_ = ppSortProperties;
     }
     reverseMul_ = new int[nNumProperties_];
-    for(i = 0; i < nNumProperties_; ++i)
+    for (i = 0; i < nNumProperties_; ++i)
     {
         reverseMul_[i] = ppSortProperties_[i]->isReverse() ? -1 : 1;
     }
 }
-

@@ -51,7 +51,7 @@ class TaxonomyGenerationSubManager : public boost::noncopyable
         boost::dynamic_bitset<uint32_t> doc_invert;
         double score;
         double score2rank;
-        
+
         bool operator<(const ScoreItem& another) const
         {
             return score2rank > another.score2rank;
@@ -67,16 +67,14 @@ public:
     ~TaxonomyGenerationSubManager();
 
 public:
-    
-    bool GetConceptsByDocidList(const std::vector<docid_t>& docIdList, const izenelib::util::UString& queryStr,
-        uint32_t totalCount, idmlib::cc::CCInput32& input);
-        
+
+    bool GetConceptsByDocidList(const std::vector<docid_t>& docIdList, const izenelib::util::UString& queryStr, uint32_t totalCount, idmlib::cc::CCInput32& input);
+
     bool GetResult(const idmlib::cc::CCInput64& input, TaxonomyRep& taxonomyRep ,NEResultList& neList);
-    
-    
+
     void AggregateInput(const std::vector<wdocid_t>& top_wdoclist, const std::vector<std::pair<uint32_t, idmlib::cc::CCInput32> >& input_list, idmlib::cc::CCInput64& result);
-    
-    
+
+
     /// @brief Given a query, get the query specific taxonomy information to display.
     ///
     /// @param docIdList The top doc id list to be taxonomy.
@@ -96,9 +94,9 @@ public:
 
 
 private:
-    
+
     void CombineConceptItem_(const idmlib::cc::ConceptItem& from, idmlib::cc::ConceptItem& to);
-    
+
     void GetNEResult_(const idmlib::cc::CCInput64& input, const std::vector<wdocid_t>& doc_list, std::vector<NEItem>& item_list);
 
 //     void getNEList_(std::vector<std::pair<labelid_t, docid_t> >& inputPairList

@@ -19,13 +19,13 @@ namespace sf1r
 using namespace izenelib::osgi;
 
 MiningBundleActivator::MiningBundleActivator()
-    :tracker_(0)
-    ,context_(0)
-    ,searchService_(0)
-    ,searchServiceReg_(0)
-    ,taskService_(0)
-    ,taskServiceReg_(0)
-    ,config_(0)
+    : tracker_(0)
+    , context_(0)
+    , searchService_(0)
+    , searchServiceReg_(0)
+    , taskService_(0)
+    , taskServiceReg_(0)
+    , config_(0)
 {
 }
 

@@ -1,4 +1,5 @@
 #include "IndexWorker.h"
+#include "SearchWorker.h"
 #include "WorkerHelper.h"
 
 #include <index-manager/IndexManager.h>
@@ -436,7 +437,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
     {
         doMining_();
     }
-    searchManager_->reset_cache(rType, id, rTypeFieldValue);
+    searchWorker_->reset_cache(rType, id, rTypeFieldValue);
 
     // to log server
     if (bundleConfig_->logCreatedDoc_)
@@ -558,7 +559,7 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     {
         doMining_();
     }
-    searchManager_->reset_cache(rType, id, rTypeFieldValue);
+    searchWorker_->reset_cache(rType, id, rTypeFieldValue);
 
     // to log server
     if (bundleConfig_->logCreatedDoc_)
@@ -572,7 +573,6 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     }
 
     return ret;
-	
 }
 
 bool IndexWorker::destroyDocument(const Value& documentValue)
@@ -806,13 +806,13 @@ bool IndexWorker::insertOrUpdateSCD_(
 
             ++numUpdatedDocs_;
         }
-        searchManager_->reset_cache(rType, id, rTypeFieldValue);
+        searchWorker_->reset_cache(rType, id, rTypeFieldValue);
 
         // interrupt when closing the process
         boost::this_thread::interruption_point();
     } // end of for loop for all documents
 
-    searchManager_->reset_all_property_cache();
+    searchWorker_->reset_all_property_cache();
     return true;
 }
 
@@ -946,7 +946,7 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
     }
 
     std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
-    searchManager_->reset_cache(false, 0, rTypeFieldValue);
+    searchWorker_->reset_cache(false, 0, rTypeFieldValue);
 
     // interrupt when closing the process
     boost::this_thread::interruption_point();
