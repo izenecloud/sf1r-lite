@@ -345,7 +345,7 @@ public:
         , searchPropertyList_(obj.searchPropertyList_)
         , removeDuplicatedDocs_(obj.removeDuplicatedDocs_)
         , displayPropertyList_(obj.displayPropertyList_)
-        , sortPriorityList_   (obj.sortPriorityList_)
+        , sortPriorityList_(obj.sortPriorityList_)
         , filteringList_(obj.filteringList_)
         , rangePropertyName_(obj.rangePropertyName_)
         , groupParam_(obj.groupParam_)

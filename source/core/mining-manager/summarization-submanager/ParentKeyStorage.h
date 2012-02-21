@@ -10,7 +10,7 @@
 
 #include <boost/thread.hpp>
 
-//#define USE_LOG_SERVER
+#define USE_LOG_SERVER
 
 namespace sf1r
 {

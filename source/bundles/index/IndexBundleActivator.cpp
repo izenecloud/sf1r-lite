@@ -33,18 +33,18 @@ namespace sf1r
 
 using namespace izenelib::osgi;
 IndexBundleActivator::IndexBundleActivator()
-    :miningSearchTracker_(0)
-    ,miningTaskTracker_(0)
-    ,recommendSearchTracker_(0)
-    ,recommendTaskTracker_(0)
-    ,productSearchTracker_(0)
-    ,productTaskTracker_(0)
-    ,context_(0)
-    ,searchService_(0)
-    ,searchServiceReg_(0)
-    ,taskService_(0)
-    ,taskServiceReg_(0)
-    ,config_(0)
+    : miningSearchTracker_(0)
+    , miningTaskTracker_(0)
+    , recommendSearchTracker_(0)
+    , recommendTaskTracker_(0)
+    , productSearchTracker_(0)
+    , productTaskTracker_(0)
+    , context_(0)
+    , searchService_(0)
+    , searchServiceReg_(0)
+    , taskService_(0)
+    , taskServiceReg_(0)
+    , config_(0)
 {
 }
 
@@ -299,7 +299,7 @@ bool IndexBundleActivator::init_()
     taskService_->indexWorker_->idManager_ = idManager_;
     taskService_->indexWorker_->laManager_ = laManager_;
     taskService_->indexWorker_->documentManager_ = documentManager_;
-    taskService_->indexWorker_->searchManager_ = searchManager_;
+    taskService_->indexWorker_->searchWorker_= searchWorker_;
     taskService_->indexWorker_->summarizer_.init(LAPool::getInstance()->getLangId(), idManager_);
 
     return true;

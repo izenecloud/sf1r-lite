@@ -27,7 +27,7 @@ class SearchAggregator : public Aggregator<SearchAggregator, SearchWorkerCaller>
 {
 public:
     SearchAggregator(SearchWorker* searchWorker)
-    : TOP_K_NUM(4000)
+        : TOP_K_NUM(4000)
     {
         localWorkerCaller_.reset(new SearchWorkerCaller(searchWorker));
 

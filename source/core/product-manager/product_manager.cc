@@ -9,7 +9,7 @@
 #include <common/ScdWriter.h>
 #include <common/Utilities.h>
 
-//#define USE_LOG_SERVER
+#define USE_LOG_SERVER
 #ifdef USE_LOG_SERVER
 #include <log-manager/LogServerRequest.h>
 #include <log-manager/LogServerConnection.h>

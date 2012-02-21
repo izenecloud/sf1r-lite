@@ -38,6 +38,7 @@ class SearchManager;
 class MiningManager;
 class ScdWriterController;
 class IndexHooker;
+class SearchWorker;
 
 class IndexWorker
 {
@@ -68,7 +69,7 @@ public:
     bool getIndexStatus(Status& status);
 
     uint32_t getDocNum();
-    
+
     uint32_t getKeyCount(const std::string& property_name);
 
 private:
@@ -187,8 +188,7 @@ private:
     boost::shared_ptr<IDManager> idManager_;
     boost::shared_ptr<DocumentManager> documentManager_;
     boost::shared_ptr<IndexManager> indexManager_;
-    boost::shared_ptr<SearchManager> searchManager_;
-    boost::shared_ptr<MiningManager> miningManager_;
+    boost::shared_ptr<SearchWorker> searchWorker_;
 
     DirectoryRotator& directoryRotator_;
     PropertyConfig dateProperty_;

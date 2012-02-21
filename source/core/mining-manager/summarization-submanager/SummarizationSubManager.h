@@ -21,7 +21,7 @@ class IDMAnalyzer;
 }
 }
 
-//#define USE_LOG_SERVER
+#define USE_LOG_SERVER
 
 namespace sf1r
 {
