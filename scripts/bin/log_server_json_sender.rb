@@ -45,7 +45,7 @@ class LogServerJsonSender
   def sendCclogFile(filename, action="update_cclog")
     file = File.new(filename, "r")
     errorFileName = "#{filename}.errors.log"
-    errorFile = File.open(errorFileName, "a")
+    errorFile = File.open(errorFileName, "w")
     
     totalCount = 0
     successCount = 0
@@ -95,7 +95,7 @@ class LogServerJsonSender
   def sendScdFile(filename, action="update_scd")
     parser = ScdParser.new(filename)
     errorFileName = "#{filename}.errors.log"
-    errorFile = File.open(errorFileName, "a")
+    errorFile = File.open(errorFileName, "w")
     
     totalCount = 0
     successCount = 0
@@ -171,7 +171,7 @@ class LogServerJsonSender
     end
   end
 
-  def updateDocuments(collection)
+  def updateComments(collection)
     # TODO
     request = {
       "header" => {
@@ -197,9 +197,9 @@ class LogServerJsonSender
       sendScdFile(filename)
     elsif cmd == "flush"
       sendFlushRequest(filename)
-    elsif cmd == "documents"
+    elsif cmd == "comments"
       collection = filename
-      updateDocuments(collection)
+      updateComments(collection)
     else
       puts "Unrecognized command: #{cmd}"
       exit(1)
@@ -209,7 +209,7 @@ end
 
 if __FILE__ == $0  
   if ARGV.size < 2 || (ARGV[0] == "-h" || ARGV[0] == "--help")
-    puts "Usage: #{$0} {cclog|scd|documents} {filename|collection}"
+    puts "Usage: #{$0} {cclog|scd|comments} {filename|collection}"
     exit(1)
   end
   

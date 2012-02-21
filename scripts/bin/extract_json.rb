@@ -2,7 +2,7 @@
 # parse the cluster-agent log file such as "cc.log",
 # extract and output json request
 
-if ARGV.size > 0 && (ARGV[0] == "-h" || ARGV[0] == "--help")
+if ARGV.size < 1 || (ARGV[0] == "-h" || ARGV[0] == "--help")
   puts "usage: #{$0} cc.log >json.txt"
   exit 1
 end
