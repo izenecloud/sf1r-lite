@@ -1,7 +1,6 @@
 #include <bundles/index/IndexBundleConfiguration.h>
 #include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
-#include <query-manager/QueryIdentity.h>
 #include <query-manager/ActionItem.h>
 #include <ranking-manager/RankingManager.h>
 #include <ranking-manager/RankQueryProperty.h>
@@ -15,7 +14,6 @@
 
 #include "SearchManager.h"
 #include "CustomRanker.h"
-#include "SearchCache.h"
 #include "QueryBuilder.h"
 #include "Sorter.h"
 #include "HitQueue.h"
@@ -47,19 +45,19 @@ bool hasRelevenceSort(const std::pair<std::string , bool>& element)
     return false;
 }
 
-bool action_rerankable(SearchKeywordOperation& actionOperation)
+bool action_rerankable(const KeywordSearchActionItem& actionItem)
 {
-    if (actionOperation.actionItem_.searchingMode_ == SearchingMode::KNN)
+    if (actionItem.searchingMode_ == SearchingMode::KNN)
         return false;
 
     bool rerank = false;
-    if (actionOperation.actionItem_.env_.taxonomyLabel_.empty() &&
-            actionOperation.actionItem_.env_.nameEntityItem_.empty() &&
-            actionOperation.actionItem_.groupParam_.groupLabels_.empty() &&
-            actionOperation.actionItem_.groupParam_.attrLabels_.empty())
+    if (actionItem.env_.taxonomyLabel_.empty() &&
+            actionItem.env_.nameEntityItem_.empty() &&
+            actionItem.groupParam_.groupLabels_.empty() &&
+            actionItem.groupParam_.attrLabels_.empty())
     {
-        std::vector<std::pair<std::string , bool> >& sortPropertyList =
-            actionOperation.actionItem_.sortPriorityList_;
+        const std::vector<std::pair<std::string , bool> >& sortPropertyList
+            = actionItem.sortPriorityList_;
         if (sortPropertyList.empty())
             rerank = true;
         else if (sortPropertyList.size() == 1)
@@ -71,8 +69,8 @@ bool action_rerankable(SearchKeywordOperation& actionOperation)
         }
         else
         {
-            std::vector<std::pair<std::string , bool> >::iterator it =
-                std::find_if(sortPropertyList.begin(),sortPropertyList.end(),hasRelevenceSort);
+            std::vector<std::pair<std::string , bool> >::const_iterator it
+                = std::find_if(sortPropertyList.begin(), sortPropertyList.end(), hasRelevenceSort);
             if (it != sortPropertyList.end())
                 rerank = true;
         }
@@ -108,11 +106,7 @@ SearchManager::SearchManager(
                             idManager,
                             schemaMap_,
                             config->filterCacheNum_));
-    cache_.reset(new SearchCache(config->searchCacheNum_));
     rankingManagerPtr_->getPropertyWeightMap(propertyWeightMap_);
-
-    indexLevel_ = indexManagerPtr_->getIndexManagerConfig()->indexStrategy_.indexLevel_
-                  ==  izenelib::ir::indexmanager::DOCLEVEL ? DOCLEVEL : WORDLEVEL;
 }
 
 SearchManager::~SearchManager()
@@ -121,14 +115,12 @@ SearchManager::~SearchManager()
         delete pSorterCache_;
 }
 
-
 void SearchManager::reset_cache(
         bool rType,
         docid_t id,
         const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue)
 {
     //this method is only used for r-type filed right now
-    cache_->clear();
     if (!rType)
     {
         //pSorterCache_->setDirty(true);
@@ -153,7 +145,6 @@ void SearchManager::reset_cache(
 void SearchManager::reset_all_property_cache()
 {
     pSorterCache_->setDirty(true);
-    cache_->clear();
 
     // notify master
     NotifyMSG msg;
@@ -162,30 +153,6 @@ void SearchManager::reset_all_property_cache()
     Notifier::get()->notify(msg);
 
     queryBuilder_->reset_cache();
-}
-
-/// @brief change working dir by setting new underlying componenets
-void SearchManager::chdir(
-        const boost::shared_ptr<IDManager>& idManager,
-        const boost::shared_ptr<DocumentManager>& documentManager,
-        const boost::shared_ptr<IndexManager>& indexManager,
-        IndexBundleConfiguration* config)
-{
-    indexManagerPtr_ = indexManager;
-    documentManagerPtr_ = documentManager;
-
-    // init query builder
-    queryBuilder_.reset(new QueryBuilder(
-                            indexManager,
-                            documentManager,
-                            idManager,
-                            schemaMap_,
-                            config->filterCacheNum_));
-
-    // clear cache
-    delete pSorterCache_;
-    pSorterCache_ = new SortPropertyCache(indexManagerPtr_.get(), config);
-    cache_.reset(new SearchCache(config->searchCacheNum_));
 }
 
 void SearchManager::setGroupFilterBuilder(
@@ -212,42 +179,14 @@ SearchManager::createPropertyTable(const std::string& propertyName)
     return NULL;
 }
 
-void SearchManager::makeQueryIdentity(
-        QueryIdentity& identity,
-        const KeywordSearchActionItem& item,
-        int8_t distActionType,
-        uint32_t start)
+bool SearchManager::rerank(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
-    identity.userId = item.env_.userID_;
-    identity.start = start;
-    identity.searchingMode = item.searchingMode_;
-
-    switch (item.searchingMode_)
+    if (reranker_ && resultItem.topKCustomRankScoreList_.empty() && action_rerankable(actionItem))
     {
-    case SearchingMode::KNN:
-        {
-            boost::shared_ptr<MiningManager> miningManager = miningManagerPtr_.lock();
-            miningManager->GetSignatureForQuery(item, identity.simHash);
-        }
-        break;
-    default:
-        identity.query = item.env_.queryString_;
-        identity.expandedQueryString = item.env_.expandedQueryString_;
-        identity.rankingType = item.rankingType_;
-        identity.laInfo = item.languageAnalyzerInfo_;
-        identity.properties = item.searchPropertyList_;
-        identity.sortInfo = item.sortPriorityList_;
-        identity.filterInfo = item.filteringList_;
-        identity.groupParam = item.groupParam_;
-        identity.rangeProperty = item.rangePropertyName_;
-        identity.strExp = item.strExp_;
-        identity.paramConstValueMap = item.paramConstValueMap_;
-        identity.paramPropertyValueMap = item.paramPropertyValueMap_;
-        identity.distActionType = distActionType;
-        std::sort(identity.properties.begin(),
-                identity.properties.end());
-        break;
+        reranker_(resultItem.topKDocs_, resultItem.topKRankScoreList_, actionItem.env_.queryString_);
+        return true;
     }
+    return false;
 }
 
 bool SearchManager::search(
@@ -265,83 +204,9 @@ bool SearchManager::search(
         uint32_t knnDist,
         uint32_t start)
 {
-    CREATE_PROFILER( cacheoverhead, "SearchManager", "cache overhead: overhead for caching in searchmanager");
-
-    START_PROFILER( cacheoverhead )
-
-    if ( indexLevel_ == DOCLEVEL &&
-            actionOperation.actionItem_.rankingType_ == RankingType::PLM )
-    {
-        actionOperation.actionItem_.rankingType_ = RankingType::BM25;
-    }
-
-    QueryIdentity identity;
-    makeQueryIdentity(identity, actionOperation.actionItem_, distSearchInfo.option_, start);
-
-    if (cache_->get(
-                identity,
-                rankScoreList,
-                customRankScoreList,
-                docIdList,
-                totalCount,
-                groupRep,
-                attrRep,
-                propertyRange,
-                distSearchInfo))
-    {
-        STOP_PROFILER( cacheoverhead )
-        // the cached search results require to be reranked
-        if (reranker_ && customRankScoreList.empty() && action_rerankable(actionOperation))
-            reranker_(docIdList, rankScoreList, actionOperation.actionItem_.env_.queryString_);
-
-        return true;
-    }
-
-    STOP_PROFILER( cacheoverhead )
-
-    // cache miss
-    if (actionOperation.actionItem_.searchingMode_ == SearchingMode::KNN)
-    {
-        boost::shared_ptr<MiningManager> miningManager = miningManagerPtr_.lock();
-        return miningManager->GetKNNListBySignature(
-                identity.simHash,
-                docIdList,
-                rankScoreList,
-                totalCount,
-                knnTopK,
-                knnDist,
-                start);
-    }
-
-    if (doSearch_(
-                actionOperation,
-                docIdList,
-                rankScoreList,
-                customRankScoreList,
-                totalCount,
-                groupRep,
-                attrRep,
-                propertyRange,
-                distSearchInfo,
-                topK,
-                start))
-    {
-        START_PROFILER( cacheoverhead )
-        cache_->set(
-                identity,
-                rankScoreList,
-                customRankScoreList,
-                docIdList,
-                totalCount,
-                groupRep,
-                attrRep,
-                propertyRange,
-                distSearchInfo);
-        STOP_PROFILER( cacheoverhead )
-        return true;
-    }
-
-    return false;
+    return doSearch_(actionOperation, docIdList, rankScoreList, customRankScoreList,
+                     totalCount, groupRep, attrRep, propertyRange, distSearchInfo,
+                     topK, start);
 }
 
 bool SearchManager::doSearch_(
@@ -395,8 +260,7 @@ bool SearchManager::doSearch_(
     // build term index maps
     std::vector<std::map<termid_t, unsigned> > termIndexMaps(indexPropertySize);
     typedef std::vector<std::string>::const_iterator property_list_iterator;
-    for (std::vector<std::string>::size_type i = 0;
-            i != indexPropertyList.size(); ++i)
+    for (uint32_t i = 0; i < indexPropertyList.size(); ++i)
     {
         const PropertyTermInfo::id_uint_list_map_t& termPositionsMap =
             izenelib::util::getOr(

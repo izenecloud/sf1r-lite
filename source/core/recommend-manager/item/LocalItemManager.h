@@ -18,9 +18,13 @@ class LocalItemManager : public ItemManager
 public:
     LocalItemManager(DocumentManager& docManager);
 
-    bool getItem(itemid_t itemId, Document& doc);
+    virtual bool getItem(
+        itemid_t itemId,
+        const std::vector<std::string>& propList,
+        Document& doc
+    );
 
-    bool hasItem(itemid_t itemId) const;
+    virtual bool hasItem(itemid_t itemId) const;
 
 private:
     DocumentManager& docManager_;

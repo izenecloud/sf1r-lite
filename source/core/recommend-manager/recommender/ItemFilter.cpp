@@ -24,13 +24,18 @@ bool ItemFilter::isFiltered(itemid_t itemId)
     if (filterSet_.find(itemId) != filterSet_.end())
         return true;
 
+    const std::string& condPropName = condition_.propName_;
+
     // no condition
-    if (condition_.propName_.empty())
+    if (condPropName.empty())
         return itemManager_.hasItem(itemId) == false;
 
-    // not exist
     Document item;
-    if (itemManager_.getItem(itemId, item) == false)
+    std::vector<std::string> propList;
+    propList.push_back(condPropName);
+
+    // not exist
+    if (itemManager_.getItem(itemId, propList, item) == false)
         return true;
 
     return condition_.checkItem(item) == false;

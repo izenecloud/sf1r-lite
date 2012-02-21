@@ -1,5 +1,10 @@
 #include "RecommendParam.h"
 
+namespace
+{
+const std::string DOCID("DOCID");
+}
+
 namespace sf1r
 {
 
@@ -7,6 +12,7 @@ RecommendParam::RecommendParam()
     : type(RECOMMEND_TYPE_NUM)
     , limit(0)
 {
+    selectReasonProps.push_back(DOCID);
 }
 
 bool RecommendParam::check(std::string& errorMsg) const

@@ -43,7 +43,7 @@ bool RecommendSearchService::recommend(
 
     Recommender* recommender = recommenderFactory_.getRecommender(param.type);
     if (recommender && recommender->recommend(param, recItemVec))
-        return getRecommendItems_(recItemVec);
+        return getRecommendItems_(param, recItemVec);
 
     return false;
 }
@@ -73,12 +73,15 @@ bool RecommendSearchService::convertItemId_(
     return true;
 }
 
-bool RecommendSearchService::getRecommendItems_(std::vector<RecommendItem>& recItemVec) const
+bool RecommendSearchService::getRecommendItems_(
+    const RecommendParam& param,
+    std::vector<RecommendItem>& recItemVec
+) const
 {
     for (std::vector<RecommendItem>::iterator it = recItemVec.begin();
         it != recItemVec.end(); ++it)
     {
-        if (! itemManager_.getItem(it->item_.getId(), it->item_))
+        if (! itemManager_.getItem(it->item_.getId(), param.selectRecommendProps, it->item_))
         {
             LOG(ERROR) << "error in ItemManager::getItem(), item id: " << it->item_.getId();
             return false;
@@ -88,7 +91,7 @@ bool RecommendSearchService::getRecommendItems_(std::vector<RecommendItem>& recI
         for (std::vector<ReasonItem>::iterator reasonIt = reasonItems.begin();
             reasonIt != reasonItems.end(); ++reasonIt)
         {
-            if (! itemManager_.getItem(reasonIt->item_.getId(), reasonIt->item_))
+            if (! itemManager_.getItem(reasonIt->item_.getId(), param.selectReasonProps, reasonIt->item_))
             {
                 LOG(ERROR) << "error in ItemManager::getItem(), item id: " << reasonIt->item_.getId();
                 return false;
@@ -106,12 +109,15 @@ bool RecommendSearchService::topItemBundle(
 {
     TIBRecommender* recommender = recommenderFactory_.getTIBRecommender();
     if (recommender && recommender->recommend(param, bundleVec))
-        return getBundleItems_(bundleVec);
+        return getBundleItems_(param.selectRecommendProps, bundleVec);
 
     return false;
 }
 
-bool RecommendSearchService::getBundleItems_(std::vector<ItemBundle>& bundleVec) const
+bool RecommendSearchService::getBundleItems_(
+    const std::vector<std::string>& selectProps,
+    std::vector<ItemBundle>& bundleVec
+) const
 {
     for (std::vector<ItemBundle>::iterator bundleIt = bundleVec.begin();
         bundleIt != bundleVec.end(); ++bundleIt)
@@ -121,7 +127,7 @@ bool RecommendSearchService::getBundleItems_(std::vector<ItemBundle>& bundleVec)
         for (std::vector<Document>::iterator it = items.begin();
             it != items.end(); ++it)
         {
-            if (! itemManager_.getItem(it->getId(), *it))
+            if (! itemManager_.getItem(it->getId(), selectProps, *it))
             {
                 LOG(ERROR) << "error in ItemManager::getItem(), item id: " << it->getId();
                 return false;

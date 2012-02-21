@@ -17,6 +17,8 @@
 #include <recommend-manager/common/ItemBundle.h>
 #include <recommend-manager/common/RateParam.h>
 
+#include <parsers/SelectParser.h>
+#include <query-manager/ActionItem.h>
 #include <common/BundleSchemaHelpers.h>
 #include <common/Keys.h>
 
@@ -31,18 +33,6 @@ const std::size_t kDefaultRecommendCount = 10;
 const std::size_t kDefaultMinFreq = 1;
 
 const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
-
-void renderPropertyValue(
-    const sf1r::PropertyValue& propValue,
-    izenelib::driver::Value& renderValue
-)
-{
-    const izenelib::util::UString& ustr = propValue.get<izenelib::util::UString>();
-    std::string utf8;
-    ustr.convertString(utf8, ENCODING_TYPE);
-
-    renderValue = utf8;
-}
 
 const std::string DOCID("DOCID");
 const std::string ITEMID("ITEMID");
@@ -59,6 +49,31 @@ void itemIdToDocId(std::string& propName)
 {
     if (propName == ITEMID)
         propName = DOCID;
+}
+
+void renderItem(
+    const sf1r::Document& item,
+    const std::vector<std::string>& selectProps,
+    izenelib::driver::Value& itemValue
+)
+{
+    std::string utf8;
+    sf1r::Document::property_const_iterator endIt = item.propertyEnd();
+
+    for (std::vector<std::string>::const_iterator propIt = selectProps.begin();
+        propIt != selectProps.end(); ++propIt)
+    {
+        const std::string& propName = *propIt;
+        sf1r::Document::property_const_iterator findIt = item.findProperty(propName);
+
+        if (findIt == endIt)
+            continue;
+
+        const izenelib::util::UString& ustr = findIt->second.get<izenelib::util::UString>();
+        ustr.convertString(utf8, ENCODING_TYPE);
+
+        itemValue[docIdToItemId(propName)] = utf8;
+    }
 }
 
 }
@@ -232,6 +247,38 @@ bool RecommendController::value2ItemCondition(ItemCondition& itemCondition)
         response().addError("No property values in request[resource][condition][value].");
         return false;
     }
+
+    return true;
+}
+
+bool RecommendController::value2SelectProps(std::vector<std::string>& propNames)
+{
+    SelectParser parser(collectionHandler_->indexSchema_);
+    const izenelib::driver::Value& selectValue = request()[Keys::resource][Keys::select];
+
+    if (! parser.parse(selectValue))
+    {
+        response().addError(parser.errorMessage());
+        return false;
+    }
+    response().addWarning(parser.warningMessage());
+
+    typedef std::vector<DisplayProperty> DisplayPropList;
+    const DisplayPropList& displayProps = parser.properties();
+    bool hasDocId = false;
+
+    for (DisplayPropList::const_iterator it = displayProps.begin();
+        it != displayProps.end(); ++it)
+    {
+        propNames.push_back(it->propertyString_);
+
+        if (it->propertyString_ == DOCID)
+            hasDocId = true;
+    }
+
+    // DOCID property is a must in recommendation result
+    if (! hasDocId)
+        propNames.push_back(DOCID);
 
     return true;
 }
@@ -866,6 +913,8 @@ bool RecommendController::parseRateParam(RateParam& param)
  *     - @b ITEMID* (@c String): a unique item identifier.
  *   - @b exclude_items (@c Array): the items must be excluded in recommendation result.
  *     - @b ITEMID* (@c String): a unique item identifier.
+ *   - @b select (@c Array): select properties in recommendation result. See SelectParser.@n
+ *     For each object in @b select, only the parameter @b property is used, other parameters are ignored in this API.
  *   - @b condition (@c Object): specify the condition that recommendation results must meet.
  *     - @b property* (@c String): item property name, such as @b ITEMID, @b category, etc
  *     - @b value* (@c Array): the property values, each recommendation result must match one of the property value in this array.
@@ -873,7 +922,8 @@ bool RecommendController::parseRateParam(RateParam& param)
  * @section response
  *
  * - @b header (@c Object): Property @b success gives the result, true or false.
- * - @b resources (@c Array): each is an item in recommendation result.
+ * - @b resources (@c Array): each is an item object, in which property name from @b select is the key, and property value is the value.@n
+ *   There might be some special properties in the item object:
  *   - @b ITEMID (@c String): a unique item identifier.
  *   - @b weight (@c Double): the recommendation weight, if this value is available, the items would be sorted by this value decreasingly.
  *   - @b reasons (@c Array): the reasons why this item is recommended. Each is an event which has major influence on recommendation.@n
@@ -881,8 +931,6 @@ bool RecommendController::parseRateParam(RateParam& param)
  *     - @b event (@c String): the event type, it could be @b purchase, @b shopping_cart, @b browse, @b rate, or the event values in @c track_event().
  *     - @b ITEMID (@c String): a unique item identifier, which item appears in the above event.
  *     - @b value (@c String): if @b event is @b rate, the @b value would be returned as rating star, such as "5".
- *   - The item properties would also be returned here, such as "name", "link", etc.@n
- *     Property key name is used as key. The corresponding value is the content of that property.
  *
  * @section example
  *
@@ -953,6 +1001,7 @@ bool RecommendController::parseRecommendParam(RecommendParam& param)
     if (! (value2ItemIdVec(Keys::input_items, param.inputItems)
            && value2ItemIdVec(Keys::include_items, param.includeItems)
            && value2ItemIdVec(Keys::exclude_items, param.excludeItems)
+           && value2SelectProps(param.selectRecommendProps)
            && value2ItemCondition(param.condition)))
     {
         return false;
@@ -981,36 +1030,24 @@ void RecommendController::renderRecommendResult(const RecommendParam& param, con
         Value& itemValue = resources();
         itemValue[Keys::weight] = recIt->weight_;
 
-        const Document& item = recIt->item_;
-        Document::property_const_iterator endIt = item.propertyEnd();
-        for (Document::property_const_iterator it = item.propertyBegin();
-            it != endIt; ++it)
-        {
-            const std::string& propName = docIdToItemId(it->first);
-            renderPropertyValue(it->second, itemValue[propName]);
-        }
+        renderItem(recIt->item_, param.selectRecommendProps, itemValue);
 
         const std::vector<ReasonItem>& reasonItems = recIt->reasonItems_;
         // BAB need not reason results
         if (param.type != BUY_ALSO_BUY && reasonItems.empty() == false)
         {
             Value& reasonsValue = itemValue[Keys::reasons];
-            for (std::vector<ReasonItem>::const_iterator it = reasonItems.begin();
-                it != reasonItems.end(); ++it)
+            for (std::vector<ReasonItem>::const_iterator reasonIt = reasonItems.begin();
+                reasonIt != reasonItems.end(); ++reasonIt)
             {
                 Value& value = reasonsValue();
-                value[Keys::event] = it->event_;
+                value[Keys::event] = reasonIt->event_;
 
-                const Document& reasonItem = it->item_;
-                Document::property_const_iterator findIt = reasonItem.findProperty(DOCID);
-                if (findIt != reasonItem.propertyEnd())
-                {
-                    renderPropertyValue(findIt->second, value[ITEMID]);
-                }
+                renderItem(reasonIt->item_, param.selectReasonProps, value);
 
-                if(! it->value_.empty())
+                if(! reasonIt->value_.empty())
                 {
-                    value[Keys::value] = it->value_;
+                    value[Keys::value] = reasonIt->value_;
                 }
             }
         }
@@ -1027,16 +1064,17 @@ void RecommendController::renderRecommendResult(const RecommendParam& param, con
  * - @b resource* (@c Object): A resource of the request for recommendation result.
  *   - @b max_count (@c Uint = 10): at most how many bundles allowed in result.
  *   - @b min_freq (@c Uint = 1): the min frequency for each bundle in result.
+ *   - @b select (@c Array): select properties in recommendation result. See SelectParser.@n
+ *     For each object in @b select, only the parameter @b property is used, other parameters are ignored in this API.
  *
  * @section response
  *
  * - @b header (@c Object): Property @b success gives the result, true or false.
  * - @b resources (@c Array): each is a bundle, sorted by @b freq decreasingly.
  *   - @b freq (@c Uint): the frequency of the bundle, that is, how many times this bundle is contained in all orders.
- *   - @b items (@c Array): each is an item in the bundle.
+ *   - @b items (@c Array): each is an item object in the bundle, in which property name from @b select is the key, and property value is the value.@n
+ *   There might be some special properties in the item object:
  *     - @b ITEMID (@c String): a unique item identifier.
- *     - each item properties would also be included here, such as "name", "link", etc.@n
- *       Property key name is used as key. The corresponding value is the content of the property.
  *
  * @section example
  *
@@ -1085,7 +1123,7 @@ void RecommendController::top_item_bundle()
     std::vector<ItemBundle> bundleVec;
     if (service->topItemBundle(tibParam, bundleVec))
     {
-        renderBundleResult(bundleVec);
+        renderBundleResult(tibParam, bundleVec);
     }
     else
     {
@@ -1102,6 +1140,9 @@ bool RecommendController::parseTIBParam(TIBParam& param)
     param.minFreq = asUintOr(resourceValue[Keys::min_freq],
                              kDefaultMinFreq);
 
+    if (! value2SelectProps(param.selectRecommendProps))
+        return false;
+
     std::string errorMsg;
     if (! param.check(errorMsg))
     {
@@ -1112,7 +1153,7 @@ bool RecommendController::parseTIBParam(TIBParam& param)
     return true;
 }
 
-void RecommendController::renderBundleResult(const std::vector<ItemBundle>& bundleVec)
+void RecommendController::renderBundleResult(const TIBParam& param, const std::vector<ItemBundle>& bundleVec)
 {
     Value& resources = response()[Keys::resources];
 
@@ -1124,18 +1165,11 @@ void RecommendController::renderBundleResult(const std::vector<ItemBundle>& bund
 
         Value& itemsValue = bundleValue[Keys::items];
         const std::vector<Document>& items = bundleIt->items;
+
         for (std::vector<Document>::const_iterator itemIt = items.begin();
             itemIt != items.end(); ++itemIt)
         {
-            Value& itemValue = itemsValue();
-            const Document& item = *itemIt;
-            Document::property_const_iterator endIt = item.propertyEnd();
-            for (Document::property_const_iterator it = item.propertyBegin();
-                it != endIt; ++it)
-            {
-                const std::string& propName = docIdToItemId(it->first);
-                renderPropertyValue(it->second, itemValue[propName]);
-            }
+            renderItem(*itemIt, param.selectRecommendProps, itemsValue());
         }
     }
 }
