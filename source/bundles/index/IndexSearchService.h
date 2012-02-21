@@ -46,7 +46,7 @@ private:
     boost::shared_ptr<SearchAggregator> searchAggregator_;
     boost::shared_ptr<SearchWorker> searchWorker_;
 
-    boost::scoped_ptr<SearchCache> cache_; // for Master Node
+    boost::scoped_ptr<SearchCache> searchCache_; // for Master Node
 
     friend class WorkerServer;
     friend class IndexBundleActivator;

@@ -7,7 +7,7 @@
 #include <3rdparty/am/stx/btree_map.h>
 #include <util/izene_serialization.h>
 
-//#define USE_LOG_SERVER
+#define USE_LOG_SERVER
 
 namespace sf1r
 {

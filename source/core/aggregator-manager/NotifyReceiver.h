@@ -2,7 +2,7 @@
  * @file NotifyReceiver.h
  * @author Zhongxia Li
  * @date Sep 1, 2011
- * @brief 
+ * @brief
  */
 #ifndef AGGREGATOR_NOTIFY_RECEIVER_H_
 #define AGGREGATOR_NOTIFY_RECEIVER_H_
@@ -27,7 +27,7 @@ public:
         return izenelib::util::Singleton<NotifyRecevier>::get();
     }
 
-    void start(const std::string& host, uint16_t port, unsigned int threadnum=4)
+    void start(const std::string& host, uint16_t port, unsigned int threadnum = 4)
     {
         instance.listen(host, port);
         instance.start(threadnum);
@@ -50,15 +50,15 @@ public:
                 req.error(msg.error);
             }
         }
-        catch (msgpack::type_error& e)
+        catch (const msgpack::type_error& e)
         {
             req.error(msgpack::rpc::ARGUMENT_ERROR);
-            cout << "#[Master] notified, Argument error!"<<endl;
+            cout << "#[Master] notified, Argument error!" << endl;
             return;
         }
-        catch (std::exception& e)
+        catch (const std::exception& e)
         {
-            cout << "#[Master] notified, "<<e.what()<<endl;
+            cout << "#[Master] notified, " << e.what() << endl;
             req.error(std::string(e.what()));
             return;
         }

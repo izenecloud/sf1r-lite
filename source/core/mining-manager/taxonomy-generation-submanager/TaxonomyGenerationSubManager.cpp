@@ -97,7 +97,7 @@ uint32_t totalDocCount, idmlib::cc::CCInput32& input)
             inputPairList[p].first = labelId;
             inputPairList[p].second = i;
             ++p;
-            
+
         }
     }
     std::sort(inputPairList.begin(), inputPairList.end() );
@@ -113,9 +113,9 @@ uint32_t totalDocCount, idmlib::cc::CCInput32& input)
         }
 
     }
-    
+
     std::vector<ScoreItem> score_items(distinctCount, ScoreItem(docIdList.size()));
-    
+
     lastConceptId = 0;
     p=0;
     for ( std::size_t i=0;i<inputPairList.size();i++ )
@@ -124,7 +124,7 @@ uint32_t totalDocCount, idmlib::cc::CCInput32& input)
         {
             score_items[p].concept_id = inputPairList[i].first;
             ++p;
-            
+
         }
 
         score_items[p-1].doc_invert.set(inputPairList[i].second);
@@ -141,7 +141,7 @@ uint32_t totalDocCount, idmlib::cc::CCInput32& input)
         clocker.restart();
         std::cout<<"TG: original "<<score_items.size() <<" concepts."<<std::endl;
     }
-    
+
 
     for ( std::size_t i=0;i<score_items.size();i++ )
     {
@@ -152,7 +152,7 @@ uint32_t totalDocCount, idmlib::cc::CCInput32& input)
             continue;
         }
         //compute score
-        
+
         uint32_t globalDF =1;
         float inc = totalDocCount;
         inc = inc/10000;
@@ -197,14 +197,14 @@ uint32_t totalDocCount, idmlib::cc::CCInput32& input)
         concept_list[i].doc_invert = score_items[i].doc_invert;
         labelManager_->getConceptStringByConceptId( score_items[i].concept_id, concept_list[i].text );
         labelManager_->getLabelType(score_items[i].concept_id, concept_list[i].type);
-        
+
         if( concept_list[i].text.length()>0 && concept_list[i].text.isKoreanChar(0) && concept_list[i].text.length()<4)
         {
              concept_list[i].score *= 0.33;
         }
         analyzer_->GetTermList(concept_list[i].text, concept_list[i].term_list, concept_list[i].termid_list);
         concept_list[i].score = score_items[i].score;
-        
+
     }
     return true;
 }
@@ -237,17 +237,17 @@ bool TaxonomyGenerationSubManager::GetResult(const idmlib::cc::CCInput64& input,
                 org_input.concept_list.push_back(input.concept_list[i]);
             }
         }
-        
+
         if(!peop_input.concept_list.empty())
         {
             GetNEResult_(peop_input, input.doc_list, neList[0].item_list);
         }
-        
+
         if(!loc_input.concept_list.empty())
         {
             GetNEResult_(loc_input, input.doc_list, neList[1].item_list);
         }
-        
+
         if(!org_input.concept_list.empty())
         {
             GetNEResult_(org_input, input.doc_list, neList[2].item_list);
@@ -264,8 +264,8 @@ void TaxonomyGenerationSubManager::AggregateInput(const std::vector<wdocid_t>& t
     result.query = input_list[0].second.query;
     result.query_term_list = input_list[0].second.query_term_list;
     result.query_termid_list = input_list[0].second.query_termid_list;
-    
-    
+
+
     izenelib::am::rde_hash<wdocid_t, bool> wdoc_valid;
     for(uint32_t i=0;i<input_list.size();i++)
     {
@@ -311,7 +311,7 @@ void TaxonomyGenerationSubManager::AggregateInput(const std::vector<wdocid_t>& t
                     }
                 }
             }
-            
+
             uint32_t* same_one = app_concept.find(concept_list[j].text);
             if(same_one!=NULL)
             {
@@ -324,20 +324,20 @@ void TaxonomyGenerationSubManager::AggregateInput(const std::vector<wdocid_t>& t
             }
         }
     }
-    
-    std::sort( r_concept_list.begin(), r_concept_list.end(), 
+
+    std::sort( r_concept_list.begin(), r_concept_list.end(),
     boost::bind(&idmlib::cc::ConceptItem::score, _1) > boost::bind(&idmlib::cc::ConceptItem::score, _2) );
-    
+
     if( r_concept_list.size()>tgParams_.canConceptNum_)
     {
         r_concept_list.resize(tgParams_.canConceptNum_);
     }
-    
-   
-    
+
+
+
 //     std::vector<idmlib::cc::ConceptItem>& r_concept_list = result.concept_list;
 //     std::vector<uint64_t>& r_doc_list = result.doc_list;
-//     
+//
 //     for(uint32_t i=0;i<input_list.size();i++)
 //     {
 //         uint32_t worker_id = input_list[i].first;
@@ -350,7 +350,7 @@ void TaxonomyGenerationSubManager::AggregateInput(const std::vector<wdocid_t>& t
 //         {
 //             r_doc_list[current_doc_size+j] = net::aggregator::Util::GetWDocId(worker_id, doc_list[j]);
 //         }
-//         
+//
 //         const std::vector<idmlib::cc::ConceptItem>& concept_list = input.concept_list;
 //         for(uint32_t j=0;j<concept_list.size();j++)
 //         {
@@ -367,12 +367,12 @@ void TaxonomyGenerationSubManager::AggregateInput(const std::vector<wdocid_t>& t
 //                 r_concept_list.push_back(new_concept_item);
 //                 app_concept.insert( concept_list[j].text, r_concept_list.size()-1 );
 //             }
-// 
+//
 //         }
 //     }
-    
-    
-    
+
+
+
 }
 
 void TaxonomyGenerationSubManager::CombineConceptItem_(const idmlib::cc::ConceptItem& from, idmlib::cc::ConceptItem& to)
@@ -427,7 +427,7 @@ void TaxonomyGenerationSubManager::GetNEResult_(const idmlib::cc::CCInput64& inp
 //             taxonomyRep.error_ = "Can not get any labels, label list is empty.";
 //             return false;
 //         }
-// 
+//
 //         uint32_t tsiz = 0;
 //         for ( uint32_t i=0;i<all_label_list.size();i++)
 //         {
@@ -469,18 +469,18 @@ void TaxonomyGenerationSubManager::GetNEResult_(const idmlib::cc::CCInput64& inp
 //                 }
 //             }
 //         }
-//         
+//
 //         idmlib::cc::ConceptClusteringInput input;
 //         GetClusteringInput_(inputPairList, queryStr, docIdList, totalCount, input);
-//         
+//
 //         algorithm_.DoClustering(input, tgParams_, taxonomyRep.result_ );
 // //         std::vector<boost::shared_ptr<TgClusterRep> > nerResult;
-// 
+//
 //         neList.resize(3);
 //         neList[0].type_ = izenelib::util::UString("PEOPLE", izenelib::util::UString::UTF_8);
 //         neList[1].type_ = izenelib::util::UString("LOCATION", izenelib::util::UString::UTF_8);
 //         neList[2].type_ = izenelib::util::UString("ORGANIZATION", izenelib::util::UString::UTF_8);
-// 
+//
 // //         {
 // //             algorithm_.doClustering(peopInputPairList, docIdList, totalCount, peopParams_, nerResult );
 // //             for(uint32_t i=0;i<nerResult.size();i++)
@@ -507,16 +507,16 @@ void TaxonomyGenerationSubManager::GetNEResult_(const idmlib::cc::CCInput64& inp
 // //             }
 // //             nerResult.clear();
 // //         }
-// 
+//
 //         if ( taxonomy_param_.enable_nec )
 //         {
 //             getNEList_(peopInputPairList, docIdList, totalCount, taxonomy_param_.max_peopnum, neList[0].itemList_);
 //             getNEList_(locInputPairList, docIdList, totalCount, taxonomy_param_.max_locnum, neList[1].itemList_);
 //             getNEList_(orgInputPairList, docIdList, totalCount, taxonomy_param_.max_orgnum, neList[2].itemList_);
-// 
+//
 //         }
-// 
-// 
+//
+//
 //     }
 //     catch ( std::exception& ex)
 //     {
@@ -524,7 +524,7 @@ void TaxonomyGenerationSubManager::GetNEResult_(const idmlib::cc::CCInput64& inp
 //         return false;
 //     }
 //     return true;
-// 
+//
 // }
 
 
@@ -534,7 +534,7 @@ void TaxonomyGenerationSubManager::GetNEResult_(const idmlib::cc::CCInput64& inp
 //     std::sort(inputPairList.begin(), inputPairList.end() );
 //     uint32_t distinctCount = 0;
 //     uint32_t lastConceptId = 0;
-// 
+//
 //     for ( std::size_t i=0;i<inputPairList.size();i++ )
 //     {
 //         if (inputPairList[i].first!=lastConceptId)
@@ -542,7 +542,7 @@ void TaxonomyGenerationSubManager::GetNEResult_(const idmlib::cc::CCInput64& inp
 //             ++distinctCount;
 //             lastConceptId = inputPairList[i].first;
 //         }
-// 
+//
 //     }
 //     //label str, partialDF, global DF
 //     typedef boost::tuple<izenelib::util::UString, boost::dynamic_bitset<>, uint32_t> NEInfo;
@@ -555,13 +555,13 @@ void TaxonomyGenerationSubManager::GetNEResult_(const idmlib::cc::CCInput64& inp
 //         if ( inputPairList[i].first != lastConceptId )
 //         {
 //             labelManager_->getLabelStringByLabelId(inputPairList[i].first, neList[p].second.get<0>() );
-// 
+//
 //             uint32_t globalDF = 0;
 //             labelManager_->getLabelDF( inputPairList[i].first, globalDF );
 //             neList[p].second.get<2>() = globalDF;
 //             ++p;
 //         }
-// 
+//
 //         neList[p-1].second.get<1>().set(inputPairList[i].second);
 //         lastConceptId = inputPairList[i].first;
 //     }
@@ -595,4 +595,3 @@ void TaxonomyGenerationSubManager::GetNEResult_(const idmlib::cc::CCInput64& inp
 //         }
 //     }
 // }
-

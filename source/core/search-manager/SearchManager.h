@@ -1,7 +1,6 @@
 #ifndef _SEARCH_MANAGER_
 #define _SEARCH_MANAGER_
 
-
 #include <configuration-manager/PropertyConfig.h>
 #include <query-manager/SearchKeywordOperation.h>
 #include <query-manager/ActionItem.h>
@@ -24,9 +23,10 @@
 #include <deque>
 #include <set>
 
-namespace sf1r {
 
-class SearchCache;
+namespace sf1r
+{
+
 class QueryBuilder;
 class DocumentManager;
 class RankingManager;
@@ -34,7 +34,6 @@ class IndexManager;
 class MiningManager;
 class Sorter;
 class IndexBundleConfiguration;
-class QueryIdentity;
 
 namespace faceted
 {
@@ -65,12 +64,6 @@ public:
 
     ~SearchManager();
 
-    void makeQueryIdentity(
-            QueryIdentity& identity,
-            const KeywordSearchActionItem& item,
-            int8_t distActionType = 0,
-            uint32_t start = 0);
-
     bool search(
             SearchKeywordOperation& actionOperation,
             std::vector<unsigned int>& docIdList,
@@ -86,19 +79,14 @@ public:
             uint32_t knnDist = 15,
             uint32_t start = 0);
 
+    bool rerank(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
+
     void reset_cache(
             bool rType,
             docid_t id,
             const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
 
     void reset_all_property_cache();
-
-    /// @brief change working dir by setting new underlying componenets
-    void chdir(
-            const boost::shared_ptr<IDManager>& idManager,
-            const boost::shared_ptr<DocumentManager>& documentManager,
-            const boost::shared_ptr<IndexManager>& indexManager,
-            IndexBundleConfiguration* config);
 
     void set_reranker(reranker_t reranker)
     {
@@ -183,7 +171,6 @@ private:
     boost::shared_ptr<QueryBuilder> queryBuilder_;
     std::map<propertyid_t, float> propertyWeightMap_;
 
-    boost::scoped_ptr<SearchCache> cache_;
     SortPropertyCache* pSorterCache_;
 
     filter_hook_t filter_hook_;
@@ -191,8 +178,6 @@ private:
     reranker_t reranker_;
 
     boost::scoped_ptr<faceted::GroupFilterBuilder> groupFilterBuilder_;
-
-    IndexLevel indexLevel_;
 };
 
 } // end - namespace sf1r
