@@ -136,7 +136,7 @@ void RecommendManager::RebuildForAll()
 
     std::vector<UserQuery> query_records;
     UserQuery::find(
-            "query, hit_docs_num, count(*) AS page_count",
+            "query, max(hit_docs_num) as hit_docs_num, count(*) AS page_count",
             "collection = '" + collection_name_ + "' AND hit_docs_num > 0 AND TimeStamp >= '" + time_string + "'",
             "query",
             "",
