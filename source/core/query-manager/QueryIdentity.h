@@ -14,6 +14,14 @@ namespace sf1r {
 
 struct QueryIdentity
 {
+    QueryIdentity()
+        : rankingType(RankingType::DefaultTextRanker)
+        , start(0)
+        , distActionType(0)
+        , searchingMode(0)
+    {
+    }
+
     /// @brief original query string
     std::string query;
 

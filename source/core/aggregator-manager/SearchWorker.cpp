@@ -151,8 +151,8 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
         if (searchCache_->get(identity, resultItem))
         {
             STOP_PROFILER( cacheoverhead )
-                // the cached search results require to be reranked
-                searchManager_->rerank(actionItem, resultItem);
+            // the cached search results require to be reranked
+            searchManager_->rerank(actionItem, resultItem);
 
             return true;
         }
