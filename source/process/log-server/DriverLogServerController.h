@@ -38,6 +38,8 @@ public:
 
     void update_cclog();
 
+    void update_cclog_rawid();
+
     void update_scd();
 
     void update_documents();
@@ -85,6 +87,8 @@ public:
 
     void processCclog();
 
+    void processCclogRawid();
+
     void processScd();
 
     void processUpdateDocuments();
@@ -99,6 +103,12 @@ private:
     void processRecVisitItem(izenelib::driver::Value& request, const std::string& raw);
 
     void processRecPurchaseItem(izenelib::driver::Value& request, const std::string& raw);
+
+    bool processDocVisitRawid(izenelib::driver::Value& request);
+
+    bool processRecVisitItemRawid(izenelib::driver::Value& request);
+
+    bool processRecPurchaseItemRawid(izenelib::driver::Value& request);
 
     std::string updateUuidStr(const std::string& uuidStr);
 
@@ -145,6 +155,9 @@ private:
 
     void writeFile(const std::string& fileName, const std::string& line);
 
+    bool setConvertedCclogFile(const std::string& fileName);
+    void ouputConvertedCclog(const std::string& request);
+
 private:
     Request* request_;
     Response* response_;
@@ -164,6 +177,9 @@ private:
     boost::shared_ptr<Sf1Driver> cclogSf1DriverClient_;
     std::string cclogSf1Host_;
     uint32_t cclogSf1Port_;
+
+    std::string convertedCclogFileName_;
+    boost::shared_ptr<std::ofstream> convertedCclogFile_;
 };
 
 }

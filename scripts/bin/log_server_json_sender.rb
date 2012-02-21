@@ -12,14 +12,14 @@ Sf1rHost = "172.16.0.36"
 Sf1rPort = 18181
 
 class LogServerJsonSender
-  def initialize(host, port)
+  def initialize(host=nil, port=nil)
     @host = host
     @port = port        
     @conn = create_connection
   end
   
   def wrapLogServerRequest(action, filename, record)
-    if action == "update_cclog" 
+    if action == "update_cclog" or action == "update_cclog_rawid"
       request = JSON.parse(record)
     elsif action == "update_scd"
       request = record
@@ -193,6 +193,8 @@ class LogServerJsonSender
     #cmds = ["cclog", "scd", "flush"]
     if cmd == "cclog"
       sendCclogFile(filename)
+    elsif cmd == "cclog_rawid"
+      sendCclogFile(filename, "update_cclog_rawid")
     elsif cmd == "scd"
       sendScdFile(filename)
     elsif cmd == "flush"
@@ -209,11 +211,15 @@ end
 
 if __FILE__ == $0  
   if ARGV.size < 2 || (ARGV[0] == "-h" || ARGV[0] == "--help")
-    puts "Usage: #{$0} {cclog|scd|comments} {filename|collection}"
+    puts "Usage: #{$0} {cclog(cclog_rawid)|scd|comments} {filename|collection}"
     exit(1)
   end
   
-  # The IP address is not effective here, set it at "../libdriver/config.yml.default"
-  sender = LogServerJsonSender.new("172.16.0.36", 18812)
+  # Set IP address of Log Server Driver at "../libdriver/config.yml.default"
+  # example:
+  # ba:
+  #   ip: 172.16.0.161
+  #   port: 18812
+  sender = LogServerJsonSender.new()
   sender.send(ARGV[0], ARGV[1])
 end

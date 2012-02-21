@@ -81,16 +81,16 @@ void LogServerWorkThread::process(const SynchronizeData& syncReqData)
 {
     {
         boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());
-        std::cout << "[LogServerWorkThread] synchronizing drum for uuids (locked) " << std::endl;
+        LOG(INFO) << "synchronizing drum for uuids (locked)";
         LogServerStorage::get()->uuidDrum()->Synchronize();
-        std::cout << "[LogServerWorkThread] finished synchronizing drum for uuids" << std::endl;
+        LOG(INFO) << "finished synchronizing drum for uuids";
     }
 
     {
         boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->docidDrumMutex());
-        std::cout << "[LogServerWorkThread] synchronizing drum for docids (locked) " << std::endl;
+        LOG(INFO) << "synchronizing drum for docids (locked)";
         LogServerStorage::get()->docidDrum()->Synchronize();
-        std::cout << "[LogServerWorkThread] finished synchronizing drum for docids" << std::endl;
+        LOG(INFO) << "finished synchronizing drum for docids";
     }
 }
 
