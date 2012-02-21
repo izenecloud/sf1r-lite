@@ -20,10 +20,9 @@
     <LogConnection str="sqlite3://./log/COBRA"/>
 
     <!-- Network addresses of LogServerProcess:
-         set the "host" to where the LogServer is deployed;
-         "rpcport" is required and "driverport" is optional for SF1R currently.
+         host=10.10.1.105 is the LAN address of (180.153.140.105)
     -->
-    <LogServerConnection host="localhost" rpcport="18811" rpc_thread_num="30" driverport="18812"/>
+    <LogServerConnection host="10.10.1.105" rpcport="18811" rpc_thread_num="30" driverport="18812"/>
 
     <!-- Format of value of str:
 
