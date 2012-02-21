@@ -50,18 +50,22 @@ public:
     void top_item_bundle();
 
 private:
+    bool requireService(::izenelib::osgi::IService* service);
     bool requireProperty(
         const std::string& propName,
         std::string& propValue
     );
-    bool requireService(::izenelib::osgi::IService* service);
     bool value2User(User& user);
     bool value2ItemIdVec(const std::string& propName, std::vector<std::string>& itemIdVec);
     bool value2ItemCondition(ItemCondition& itemCondition);
+    bool value2SelectProps(std::vector<std::string>& propNames);
+
     bool parseRecommendParam(RecommendParam& param);
     void renderRecommendResult(const RecommendParam& param, const std::vector<RecommendItem>& recItemVec);
+
     bool parseTIBParam(TIBParam& param);
-    void renderBundleResult(const std::vector<ItemBundle>& bundleVec);
+    void renderBundleResult(const TIBParam& param, const std::vector<ItemBundle>& bundleVec);
+
     bool parseRateParam(RateParam& param);
 };
 

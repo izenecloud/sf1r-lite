@@ -10,7 +10,11 @@ LocalItemManager::LocalItemManager(DocumentManager& docManager)
 {
 }
 
-bool LocalItemManager::getItem(itemid_t itemId, Document& doc)
+bool LocalItemManager::getItem(
+    itemid_t itemId,
+    const std::vector<std::string>& propList,
+    Document& doc
+)
 {
     return docManager_.getDocument(itemId, doc);
 }

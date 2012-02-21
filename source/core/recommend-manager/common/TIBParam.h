@@ -9,6 +9,7 @@
 #define TIB_PARAM_H
 
 #include <string>
+#include <vector>
 
 namespace sf1r
 {
@@ -21,6 +22,7 @@ struct TIBParam
 
     int limit;
     int minFreq;
+    std::vector<std::string> selectRecommendProps;
 };
 
 } // namespace sf1r

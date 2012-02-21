@@ -65,19 +65,21 @@ void ItemManagerTestFixture::checkItemManager()
 
     Document doc;
     itemid_t maxId = maxItemId_();
+    std::vector<std::string> emptyPropList;
+
     for (itemid_t i=1; i <= maxId; ++i)
     {
         ItemMap::const_iterator findIt = itemMap_.find(i);
         if (findIt != itemMap_.end())
         {
-            BOOST_CHECK(itemManager_->getItem(i, doc));
+            BOOST_CHECK(itemManager_->getItem(i, emptyPropList, doc));
             checkItem_(doc, findIt->second);
 
             BOOST_CHECK_MESSAGE(itemManager_->hasItem(i), "item id: " << i);
         }
         else
         {
-            BOOST_CHECK(itemManager_->getItem(i, doc) == false);
+            BOOST_CHECK(itemManager_->getItem(i, emptyPropList, doc) == false);
             BOOST_CHECK(itemManager_->hasItem(i) == false);
         }
     }

@@ -33,6 +33,9 @@ struct RecommendParam
     std::vector<std::string> includeItems;
     std::vector<std::string> excludeItems;
 
+    std::vector<std::string> selectRecommendProps;
+    std::vector<std::string> selectReasonProps;
+
     std::vector<itemid_t> inputItemIds;
     std::vector<itemid_t> includeItemIds;
     std::vector<itemid_t> excludeItemIds;

@@ -56,8 +56,16 @@ private:
         const std::vector<std::string>& inputItemVec,
         std::vector<itemid_t>& outputItemVec
     );
-    bool getRecommendItems_(std::vector<RecommendItem>& recItemVec) const;
-    bool getBundleItems_(std::vector<ItemBundle>& bundleVec) const;
+
+    bool getRecommendItems_(
+        const RecommendParam& param,
+        std::vector<RecommendItem>& recItemVec
+    ) const;
+
+    bool getBundleItems_(
+        const std::vector<std::string>& selectProps,
+        std::vector<ItemBundle>& bundleVec
+    ) const;
 
 private:
     UserManager& userManager_;
