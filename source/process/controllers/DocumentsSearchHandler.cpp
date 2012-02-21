@@ -799,13 +799,13 @@ void DocumentsSearchKeywordsLogger::log(
         return;
     }
     // only log untruncated queries
-    if (!actionItem.groupParam_.groupLabels_.empty() ||
-        !actionItem.groupParam_.attrLabels_.empty() ||
-        !actionItem.env_.taxonomyLabel_.empty() ||
-        !actionItem.filteringList_.empty())
-    {
-        return;
-    }
+    //if (!actionItem.groupParam_.groupLabels_.empty() ||
+        //!actionItem.groupParam_.attrLabels_.empty() ||
+        //!actionItem.env_.taxonomyLabel_.empty() ||
+        //!actionItem.filteringList_.empty())
+    //{
+        //return;
+    //}
 
     static const std::string session = "SESSION NOT USED";
 
