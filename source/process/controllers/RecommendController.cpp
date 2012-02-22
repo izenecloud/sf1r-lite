@@ -265,20 +265,16 @@ bool RecommendController::value2SelectProps(std::vector<std::string>& propNames)
 
     typedef std::vector<DisplayProperty> DisplayPropList;
     const DisplayPropList& displayProps = parser.properties();
-    bool hasDocId = false;
 
     for (DisplayPropList::const_iterator it = displayProps.begin();
         it != displayProps.end(); ++it)
     {
-        propNames.push_back(it->propertyString_);
-
-        if (it->propertyString_ == DOCID)
-            hasDocId = true;
+        // DOCID property should be already added
+        if (it->propertyString_ != DOCID)
+        {
+            propNames.push_back(it->propertyString_);
+        }
     }
-
-    // DOCID property is a must in recommendation result
-    if (! hasDocId)
-        propNames.push_back(DOCID);
 
     return true;
 }

@@ -12,6 +12,8 @@ RecommendParam::RecommendParam()
     : type(RECOMMEND_TYPE_NUM)
     , limit(0)
 {
+    // DOCID property is a must in recommendation result
+    selectRecommendProps.push_back(DOCID);
     selectReasonProps.push_back(DOCID);
 }
 
