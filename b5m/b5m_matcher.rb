@@ -49,22 +49,41 @@ IO.readlines(category_file).each do |c_line|
   ofs.puts(category_regex)
   ofs.close
   fan_file = File.join(category_dir, "filter_attrib_name")
-  FileUtils.cp(filter_attrib_name,fan_file)
+
+  #FileUtils.cp(filter_attrib_name,fan_file)
   #run c++ matcher program
   category_a_scd = File.join(category_dir, "A.SCD")
   unless File.exist?(category_a_scd)
     system("#{matcher_program} -P -S #{scd} -K #{category_dir}")
   end
 
-  puts "start building attribute index for #{cid}"
-  system("#{matcher_program} -A -Y #{synonym} -C #{cma} -S #{train_scd} -K #{category_dir}")
-  match_done = File.join(category_dir, "match.done")
-  unless File.exist?(match_done)
-    puts "start matching for #{cid}"
-    output = File.join(category_dir, "match")
-    system("#{matcher_program} -B -Y #{synonym} -C #{cma} -S #{scd} -K #{category_dir}")
+  if a.size>=4 and a[2]=="COMPLETE"
+    puts "start complete matching #{cid}"
+    attrib_file = File.join(category_dir,"attrib_name")
+    ofs = File.open(attrib_file, 'w')
+    ofs.puts(a[3])
+    ofs.close
+    system("#{matcher_program} -M -S #{scd} -K #{category_dir}")
+  elsif a.size>=3 and a[2]=="SIMILARITY"
+    #do similarity matching
+    puts "start similarity matching #{cid}"
+    system("#{matcher_program} -I -C #{cma} -S #{scd} -K #{category_dir}")
+  else
+    puts "start building attribute index for #{cid}"
+    system("#{matcher_program} -A -Y #{synonym} -C #{cma} -S #{train_scd} -K #{category_dir}")
+    match_done = File.join(category_dir, "match.done")
+    unless File.exist?(match_done)
+      puts "start matching for #{cid}"
+      output = File.join(category_dir, "match")
+      system("#{matcher_program} -B -Y #{synonym} -C #{cma} -S #{scd} -K #{category_dir}")
+    end
+
   end
-  system("#{matcher_program} -G #{match_path['b5m_scd']} -S #{category_a_scd} -K #{category_dir} -E")
+
+  source_scd = scd
+  source_scd = category_a_scd if File.exist?(category_a_scd)
+  puts "start generate b5mo and b5mp SCDs from #{source_scd}"
+  system("#{matcher_program} -G #{match_path['b5m_scd']} -S #{source_scd} -K #{category_dir} -E")
 end
 system("rm -rf #{b5mo_scd}/*")
 system("cp #{match_path['b5m_scd']}/b5mo/* #{b5mo_scd}/")

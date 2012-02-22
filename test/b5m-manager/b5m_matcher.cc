@@ -1,5 +1,7 @@
 #include <b5m-manager/attribute_indexer.h>
 #include <b5m-manager/scd_generator.h>
+#include <b5m-manager/complete_matcher.h>
+#include <b5m-manager/similarity_matcher.h>
 #include "../TestResources.h"
 #include <boost/program_options.hpp>
 
@@ -14,6 +16,8 @@ int main(int ac, char** av)
         ("help", "produce help message")
         ("attribute-index,A", "build attribute index")
         ("b5m-match,B", "make b5m matching")
+        ("complete-match,M", "attribute complete matching")
+        ("similarity-match,I", "title based similarity matching")
         ("knowledge-dir,K", po::value<std::string>(), "specify knowledge dir")
         ("synonym,Y", po::value<std::string>(), "specify synonym file")
         ("scd-path,S", po::value<std::string>(), "specify scd path")
@@ -117,6 +121,25 @@ int main(int ac, char** av)
             return EXIT_FAILURE;
         }
         indexer.ProductMatchingSVM(scd_path);
+    }
+    else if(vm.count("complete-match"))
+    {
+        if( scd_path.empty() || knowledge_dir.empty() )
+        {
+            return EXIT_FAILURE;
+        }
+        CompleteMatcher matcher;
+        matcher.Index(scd_path, knowledge_dir);
+    }
+    else if(vm.count("similarity-match"))
+    {
+        if( scd_path.empty() || knowledge_dir.empty() )
+        {
+            return EXIT_FAILURE;
+        }
+        SimilarityMatcher matcher;
+        matcher.SetCmaPath(cma_path);
+        matcher.Index(scd_path, knowledge_dir);
     }
     else if(vm.count("scd-split"))
     {

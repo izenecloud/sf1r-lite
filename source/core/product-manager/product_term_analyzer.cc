@@ -6,18 +6,15 @@ using namespace sf1r;
 
 //#define PM_CLUST_TEXT_DEBUG
 
-ProductTermAnalyzer::ProductTermAnalyzer()
+ProductTermAnalyzer::ProductTermAnalyzer(const std::string& pcma_path)
 {
-    std::string kma_path;
-    LAPool::getInstance()->get_kma_path(kma_path );
-    std::string cma_path;
-    LAPool::getInstance()->get_cma_path(cma_path );
-    std::string jma_path;
-    LAPool::getInstance()->get_jma_path(jma_path );
-//     idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig(kma_path,cma_path,jma_path);
+    std::string cma_path = pcma_path;
+    if(cma_path.empty())
+    {
+        LAPool::getInstance()->get_cma_path(cma_path );
+    }
     //use cma only
     idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("",cma_path,"");
-//     aconfig.symbol = true;
     aconfig.cma_config.merge_alpha_digit = true;
     analyzer_ = new idmlib::util::IDMAnalyzer(aconfig);
 

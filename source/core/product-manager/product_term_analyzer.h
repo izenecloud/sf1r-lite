@@ -21,7 +21,7 @@ class ProductTermAnalyzer
     enum TERM_STATUS {NORMAL, IN_BRACKET, IN_MODEL};
 
 public:
-    ProductTermAnalyzer();
+    ProductTermAnalyzer(const std::string& cma_path="");
 
     ~ProductTermAnalyzer();
 
