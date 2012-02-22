@@ -146,10 +146,12 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
     CREATE_PROFILER( cacheoverhead, "IndexSearchService", "cache overhead: overhead for caching in searchworker");
 
     START_PROFILER( cacheoverhead )
-    QueryIdentity identity;
+
     uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
-    uint32_t start = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
-    makeQueryIdentity(identity, actionItem, resultItem.distSearchInfo_.option_, start);
+    uint32_t startOffset = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
+
+    QueryIdentity identity;
+    makeQueryIdentity(identity, actionItem, resultItem.distSearchInfo_.option_, startOffset);
 
     if (!searchCache_->get(identity, resultItem))
     {
@@ -169,6 +171,22 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
     else
     {
         STOP_PROFILER( cacheoverhead )
+
+        //set page info in resultItem t
+        resultItem.start_ = actionItem.pageInfo_.start_;
+        resultItem.count_ = actionItem.pageInfo_.count_;
+
+        std::size_t overallSearchResultSize = startOffset + resultItem.topKDocs_.size();
+
+        if (resultItem.start_ > overallSearchResultSize)
+        {
+            resultItem.start_ = overallSearchResultSize;
+        }
+        if (resultItem.start_ + resultItem.count_ > overallSearchResultSize)
+        {
+            resultItem.count_ = overallSearchResultSize - resultItem.start_;
+        }
+
         // the cached search results require to be reranked
         searchManager_->rerank(actionItem, resultItem);
 
@@ -335,18 +353,15 @@ bool SearchWorker::getSearchResult_(
         return true;
     }
 
-    uint32_t startOffset;
+    uint32_t startOffset = 0;
     uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
     uint32_t KNN_TOP_K_NUM = bundleConfig_->kNNTopKNum_;
     uint32_t KNN_DIST = bundleConfig_->kNNDist_;
-    if (isDistributedSearch)
-    {
-        // XXX, For distributed search, the page start(offset) should be measured in results over all nodes,
-        // we don't know which part of results should be retrieved in one node. Currently, the limitation of documents
-        // to be retrieved in one node is set to TOP_K_NUM.
-        startOffset = 0;
-    }
-    else
+
+    // XXX, For distributed search, the page start(offset) should be measured in results over all nodes,
+    // we don't know which part of results should be retrieved in one node. Currently, the limitation of documents
+    // to be retrieved in one node is set to TOP_K_NUM.
+    if (!isDistributedSearch)
     {
         startOffset = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
     }
