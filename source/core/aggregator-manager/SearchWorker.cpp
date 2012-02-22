@@ -172,6 +172,9 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
     {
         STOP_PROFILER( cacheoverhead )
 
+        // the cached search results require to be reranked
+        searchManager_->rerank(actionItem, resultItem);
+
         //set page info in resultItem t
         resultItem.start_ = actionItem.pageInfo_.start_;
         resultItem.count_ = actionItem.pageInfo_.count_;
@@ -186,9 +189,6 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
         {
             resultItem.count_ = overallSearchResultSize - resultItem.start_;
         }
-
-        // the cached search results require to be reranked
-        searchManager_->rerank(actionItem, resultItem);
 
         if (! getSummaryResult_(actionItem, resultItem, false))
             return false;
