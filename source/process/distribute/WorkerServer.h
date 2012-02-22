@@ -90,6 +90,7 @@ public:
 
         ADD_WORKER_HANDLER( getDistSearchInfo )
         ADD_WORKER_HANDLER( getDistSearchResult )
+        ADD_WORKER_HANDLER( getSummaryResult )
         ADD_WORKER_HANDLER( getSummaryMiningResult )
         ADD_WORKER_HANDLER( getDocumentsByIds )
         ADD_WORKER_HANDLER( getInternalDocumentId )
@@ -115,6 +116,11 @@ public:
     void getDistSearchResult(request_t& req)
     {
         WORKER_HANDLE_1_1(req, KeywordSearchActionItem, searchWorker_->getDistSearchResult, DistKeywordSearchResult)
+    }
+
+    void getSummaryResult(request_t& req)
+    {
+        WORKER_HANDLE_1_1(req, KeywordSearchActionItem, searchWorker_->getSummaryResult, KeywordSearchResult)
     }
 
     void getSummaryMiningResult(request_t& req)

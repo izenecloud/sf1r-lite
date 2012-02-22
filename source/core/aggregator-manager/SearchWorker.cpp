@@ -19,6 +19,7 @@ namespace sf1r
 SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
     : bundleConfig_(bundleConfig)
     , recommendSearchService_(NULL)
+    , searchCache_(new SearchCache(bundleConfig_->searchCacheNum_))
     , pQA_(NULL)
 {
     ///LA can only be got from a pool because it is not thread safe
@@ -28,9 +29,6 @@ SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
     analysisInfo_.analyzerId_ = "la_sia";
     analysisInfo_.tokenizerNameList_.insert("tok_divide");
     analysisInfo_.tokenizerNameList_.insert("tok_unite");
-
-    if (!bundleConfig_->isSupportByAggregator())
-        searchCache_.reset(new SearchCache(bundleConfig_->searchCacheNum_));
 }
 
 /// Index Search
@@ -53,9 +51,16 @@ bool SearchWorker::getDistSearchResult(const KeywordSearchActionItem& actionItem
     return getSearchResult_(actionItem, resultItem);
 }
 
-bool SearchWorker::getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+bool SearchWorker::getSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
     cout << "[SearchWorker::processGetSummaryResult] " << actionItem.collectionName_ << endl;
+
+    return getSummaryResult_(actionItem, resultItem);
+}
+
+bool SearchWorker::getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+{
+    cout << "[SearchWorker::processGetSummaryMiningResult] " << actionItem.collectionName_ << endl;
 
     return getSummaryMiningResult_(actionItem, resultItem);
 }
@@ -142,36 +147,34 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
 
     START_PROFILER( cacheoverhead )
     QueryIdentity identity;
-    if (searchCache_)
+    uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
+    uint32_t start = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
+    makeQueryIdentity(identity, actionItem, resultItem.distSearchInfo_.option_, start);
+
+    if (!searchCache_->get(identity, resultItem))
     {
-        uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
-        uint32_t start = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
-        makeQueryIdentity(identity, actionItem, resultItem.distSearchInfo_.option_, start);
+        STOP_PROFILER( cacheoverhead )
 
-        if (searchCache_->get(identity, resultItem))
-        {
-            STOP_PROFILER( cacheoverhead )
-            // the cached search results require to be reranked
-            searchManager_->rerank(actionItem, resultItem);
+        if (! getSearchResult_(actionItem, resultItem, identity, false))
+            return false;
 
-            return true;
-        }
+        if (! getSummaryMiningResult_(actionItem, resultItem, false))
+            return false;
+
+        START_PROFILER( cacheoverhead )
+        if (searchCache_)
+            searchCache_->set(identity, resultItem);
+        STOP_PROFILER( cacheoverhead )
     }
-
-    if (! getSearchResult_(actionItem, resultItem, identity, false))
+    else
     {
-        return false;
-    }
+        STOP_PROFILER( cacheoverhead )
+        // the cached search results require to be reranked
+        searchManager_->rerank(actionItem, resultItem);
 
-    if (! getSummaryMiningResult_(actionItem, resultItem, false))
-    {
-        return false;
+        if (! getSummaryResult_(actionItem, resultItem, false))
+            return false;
     }
-
-    START_PROFILER( cacheoverhead )
-    if (searchCache_)
-        searchCache_->set(identity, resultItem);
-    STOP_PROFILER( cacheoverhead )
 
     return true;
 }
@@ -412,7 +415,8 @@ bool SearchWorker::getSearchResult_(
 
     // todo, remove duplication globally over all nodes?
     // Remove duplicated docs from the result if the option is on.
-    removeDuplicateDocs(actionItem, resultItem);
+    if (actionItem.searchingMode_ != SearchingMode::KNN)
+        removeDuplicateDocs(actionItem, resultItem);
 
     //set page info in resultItem t
     resultItem.start_ = actionItem.pageInfo_.start_;
@@ -444,7 +448,7 @@ bool SearchWorker::getSearchResult_(
     return true;
 }
 
-bool SearchWorker::getSummaryMiningResult_(
+bool SearchWorker::getSummaryResult_(
         const KeywordSearchActionItem& actionItem,
         KeywordSearchResult& resultItem,
         bool isDistributedSearch)
@@ -465,12 +469,22 @@ bool SearchWorker::getSummaryMiningResult_(
         }
         resultItem.count_ = docsInPage.size();
 
-        getResultItem( actionItem, docsInPage, resultItem.propertyQueryTermList_, resultItem);
+        getResultItem(actionItem, docsInPage, resultItem.propertyQueryTermList_, resultItem);
     }
 
     STOP_PROFILER ( getSummary );
 
     cout << "[IndexSearchService] keywordSearch process Done" << endl; // XXX
+
+    return true;
+}
+
+bool SearchWorker::getSummaryMiningResult_(
+        const KeywordSearchActionItem& actionItem,
+        KeywordSearchResult& resultItem,
+        bool isDistributedSearch)
+{
+    getSummaryResult_(actionItem, resultItem, isDistributedSearch);
 
     if (miningManager_)
     {
@@ -611,11 +625,11 @@ bool  SearchWorker::getResultItem(
             );
 
 
-    UString::EncodingType encodingType( UString::convertEncodingTypeFromStringToEnum( (actionItem.env_.encodingType_).c_str() ));
-    UString rawQueryUStr(actionItem.env_.queryString_, encodingType );
+    UString::EncodingType encodingType(UString::convertEncodingTypeFromStringToEnum(actionItem.env_.encodingType_.c_str()));
+    UString rawQueryUStr(actionItem.env_.queryString_, encodingType);
 
     bool containsOriginalTermsOnly = false;
-    if ( propertyQueryTermList.size() != actionItem.displayPropertyList_.size() )
+    if (propertyQueryTermList.size() != actionItem.displayPropertyList_.size())
         containsOriginalTermsOnly = true;
 
     typedef std::vector<DisplayProperty>::size_type vec_size_type;
@@ -627,7 +641,7 @@ bool  SearchWorker::getResultItem(
         //add raw + analyzed + tokenized query terms for snippet and highlight algorithms
         std::vector<izenelib::util::UString> queryTerms;
 
-        if ( containsOriginalTermsOnly )
+        if (containsOriginalTermsOnly)
             QueryUtility::getMergedUniqueTokens(
                     rawQueryUStr,
                     laManager_,
@@ -648,10 +662,10 @@ bool  SearchWorker::getResultItem(
         // propertyOption
 
         if (!actionItem.env_.taxonomyLabel_.empty())
-           queryTerms.insert(queryTerms.begin(), UString(actionItem.env_.taxonomyLabel_, encodingType ) );
+           queryTerms.insert(queryTerms.begin(), UString(actionItem.env_.taxonomyLabel_, encodingType));
 
         if (!actionItem.env_.nameEntityItem_.empty())
-           queryTerms.insert(queryTerms.begin(),UString( actionItem.env_.nameEntityItem_, encodingType ) );
+           queryTerms.insert(queryTerms.begin(), UString(actionItem.env_.nameEntityItem_, encodingType));
 
         unsigned propertyOption = 0;
         if (actionItem.displayPropertyList_[i].isHighlightOn_)
@@ -675,7 +689,6 @@ bool  SearchWorker::getResultItem(
                     resultItem.snippetTextOfDocumentInPage_[i],
                     resultItem.rawTextOfSummaryInPage_[indexSummary],
                     resultItem.fullTextOfDocumentInPage_[i]
-
                     );
             indexSummary++;
         }
@@ -707,13 +720,10 @@ bool SearchWorker::removeDuplicateDocs(
         ResultItemType& resultItem
 )
 {
-    if (actionItem.searchingMode_ == SearchingMode::KNN)
-        return true;
-
     // Remove duplicated docs from the result if the option is on.
     if (miningManager_)
     {
-      if ( actionItem.removeDuplicatedDocs_ && (resultItem.topKDocs_.size() != 0) )
+      if (actionItem.removeDuplicatedDocs_ && resultItem.topKDocs_.size() != 0)
       {
           std::vector<sf1r::docid_t> dupRemovedDocs;
           bool ret = miningManager_->getUniqueDocIdList(resultItem.topKDocs_, dupRemovedDocs);
