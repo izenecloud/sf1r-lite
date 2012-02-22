@@ -189,7 +189,8 @@ void DriverLogServerHandler::processCclog()
         setCclogSf1DriverClient(host, port);
     }
 
-    std::string fileName = storageBaseDir_ + "/cclog/history/" + asString(request()[Keys::filename]);
+    bfs::path rawPath(asString(request()[Keys::filename]));
+    std::string fileName = storageBaseDir_ + "/cclog/history/" + rawPath.filename().string();
     if (!openFile(fileName))
     {
         std::cerr << "WARN: failed to create backup file: " << fileName << std::endl;
@@ -234,7 +235,8 @@ void DriverLogServerHandler::processCclog()
 
 void DriverLogServerHandler::processCclogRawid()
 {
-    std::string fileName = storageBaseDir_ + "/cclog/converted/" + asString(request()[Keys::filename]);
+    bfs::path rawPath(asString(request()[Keys::filename]));
+    std::string fileName = storageBaseDir_ + "/cclog/converted/" + rawPath.filename().string();
     if (!setConvertedCclogFile(fileName))
     {
         std::string msg = "Server Error: Failed to create file " + fileName;
@@ -292,7 +294,8 @@ void DriverLogServerHandler::processScd()
 {
     std::string docid = asString(request()[Keys::DOCID]);
     std::string doc = asString(request()[Keys::record]);
-    std::string fileName = storageBaseDir_ + "/scd/" + asString(request()[Keys::filename]);
+    bfs::path rawPath(asString(request()[Keys::filename]));
+    std::string fileName = storageBaseDir_ + "/scd/" + rawPath.filename().string();
 
     std::cout << fileName << " --> " << docid << std::endl;
     //std::cout << doc << std::endl;

@@ -11,6 +11,8 @@ require_rel '../lib/scd_parser'
 Sf1rHost = "172.16.0.162" # to be specified
 Sf1rPort = 18181
 
+PREFIX = "INFO  com.izenesoft.agent.plugin.sf1.Sf1Client  - Send JSON request: "
+
 class LogServerJsonSender
   def initialize(host=nil, port=nil)
     @host = host
@@ -82,8 +84,17 @@ class LogServerJsonSender
         line = line.chomp!
         next if line.empty?
         
+        # extract logged request from cclog
+        if line =~ /#{PREFIX}(.+) At: /
+          line = $~[1]
+        else
+          next
+        end
+        
+        # warp request
         request = wrapLogServerRequest(action, filename, line)
         
+        # filter unnecessary requests
         next if filterCclogRequest(request["record"])        
         
         header = request["header"]
