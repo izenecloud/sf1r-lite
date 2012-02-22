@@ -70,9 +70,9 @@ class LogServerJsonSender
     }
   end
  
-  def sendCclogFile(filename, action="update_cclog")
+  def sendCclogFile(filename, action="update_cclog", extract=true)
     file = File.new(filename, "r")
-    errorFileName = "#{filename}.errors.log"
+    errorFileName = "#{filename}.errors"
     errorFile = File.open(errorFileName, "w")
     
     totalCount = 0
@@ -85,10 +85,12 @@ class LogServerJsonSender
         next if line.empty?
         
         # extract logged request from cclog
-        if line =~ /#{PREFIX}(.+) At: /
-          line = $~[1]
-        else
-          next
+        if extract == true
+          if line =~ /#{PREFIX}(.+) At: /
+            line = $~[1]
+          else
+            next
+          end
         end
         
         # warp request
@@ -134,7 +136,7 @@ class LogServerJsonSender
   
   def sendScdFile(filename, action="update_scd")
     parser = ScdParser.new(filename)
-    errorFileName = "#{filename}.errors.log"
+    errorFileName = "#{filename}.errors"
     errorFile = File.open(errorFileName, "w")
     
     totalCount = 0
@@ -232,6 +234,15 @@ class LogServerJsonSender
   def send(cmd, filename)
     if cmd == "update_cclog"
       sendCclogFile(filename, "update_cclog")
+    elsif cmd == "update_cclog_history"
+      Dir.foreach(filename) do |file|        
+        puts file
+        if file =~ /.*log/
+          log_file = "#{filename}/#{file}"
+          puts log_file 
+          sendCclogFile(log_file, "update_cclog", false)
+        end
+      end
     elsif cmd == "convert_raw_cclog"
       sendCclogFile(filename, "convert_raw_cclog")
     elsif cmd == "scd"
@@ -256,7 +267,8 @@ if __FILE__ == $0
     puts "Usage: #{$0} <command> <parameter>"
     puts ""
     puts "commands:  (configure SF1R address at the header of this script)"
-    puts "  update_cclog <cclog_file>          : update cclog (with uuids) and histories to configured SF1R."
+    puts "  update_cclog <cclog_file>          : update cclog (with uuids) to configured SF1R."
+    puts "  update_cclog_history <cclog_dir>   : update cclog histories."
     puts "  convert_raw_cclog <raw_cclog_file> : convert cclog with raw docids to cclog with latest uuids."
     puts "  comments <collection>              : update newly logged comments(docuemts) to configured SF1R."
     puts ""

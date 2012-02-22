@@ -117,7 +117,6 @@ void DriverLogServerController::update_scd()
  */
 void DriverLogServerController::update_documents()
 {
-    std::cout << request().controller() << "/" << request().action() << std::endl;
     dirverLogServerHandler_->processUpdateDocuments();
 }
 
@@ -381,7 +380,7 @@ void DriverLogServerHandler::processUpdateDocuments()
         requestValue[Keys::collection] = collection;
 
         std::string docidStr;
-        std::string docStr;
+        //std::string docStr;
 
         vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
         for (p = (*doc_iter)->begin(); p != (*doc_iter)->end(); p++)
@@ -395,32 +394,26 @@ void DriverLogServerHandler::processUpdateDocuments()
             }
             else if (fieldStr == "UUID")
             {
-                //std::cout << fieldVal << " -> ";
                 fieldVal = updateUuidStr(fieldVal);
-                //std::cout << fieldVal << std::endl;
             }
 
             requestValue[Keys::resource][fieldStr] = fieldVal;
-            docStr += "<" + fieldStr + ">" + fieldVal + "\n";
+            //docStr += "<" + fieldStr + ">" + fieldVal + "\n";
         }
 
         // save doc to scd db
-        //std::cout << docidStr << std::endl;
-        //std::cout << docStr << std::endl;
-        scdStorage->scdDb_->update(Utilities::md5ToUint128(docidStr), docStr);
+        //scdStorage->scdDb_->update(Utilities::md5ToUint128(docidStr), docStr);
 
         // update doc to required sf1r server
         std::string requestString;
         jsonWriter_.write(requestValue, requestString);
-        //std::cout << requestString << std::endl;
 
         string response = sf1DriverClient.call(uri, tokens, requestString);
-        //std::cout << response << std::endl;
     }
 
     // reset flag
     scdStorage->isReIndexed_ = false;
-    scdStorage->scdDb_->flush();
+    //scdStorage->scdDb_->flush();
 
     // clear but not remove scd file
     scdStorage->scdFile_.close();
