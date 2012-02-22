@@ -8,7 +8,7 @@ require 'set'
 require_rel '../libdriver/common'
 require_rel '../lib/scd_parser'
         
-Sf1rHost = "172.16.0.36"
+Sf1rHost = "localhost" # to be specified
 Sf1rPort = 18181
 
 class LogServerJsonSender
@@ -19,7 +19,7 @@ class LogServerJsonSender
   end
   
   def wrapLogServerRequest(action, filename, record)
-    if action == "update_cclog" or action == "update_cclog_rawid"
+    if action == "update_cclog" or action == "convert_raw_cclog"
       request = JSON.parse(record)
     elsif action == "update_scd"
       request = record
@@ -77,6 +77,7 @@ class LogServerJsonSender
             failCount += 1
             errorFile.puts "request: #{line}"
             errorFile.puts "errors: #{response["errors"]}"
+            $stderr.print  "errors: #{response["errors"]}"
           end
         else
           failCount += 1
@@ -190,11 +191,10 @@ class LogServerJsonSender
   end  
 
   def send(cmd, filename)
-    #cmds = ["cclog", "scd", "flush"]
-    if cmd == "cclog"
-      sendCclogFile(filename)
-    elsif cmd == "cclog_rawid"
-      sendCclogFile(filename, "update_cclog_rawid")
+    if cmd == "update_cclog"
+      sendCclogFile(filename, "update_cclog")
+    elsif cmd == "convert_raw_cclog"
+      sendCclogFile(filename, "convert_raw_cclog")
     elsif cmd == "scd"
       sendScdFile(filename)
     elsif cmd == "flush"
@@ -211,15 +211,26 @@ end
 
 if __FILE__ == $0  
   if ARGV.size < 2 || (ARGV[0] == "-h" || ARGV[0] == "--help")
-    puts "Usage: #{$0} {cclog(cclog_rawid)|scd|comments} {filename|collection}"
+    puts "Log Server Client:"
+    puts "  Set log server address at \"../libdriver/config.yml.default\" "
+    puts ""
+    puts "Usage: #{$0} <command> <parameter>"
+    puts ""
+    puts "commands:  (configure SF1R address at the header of this script)"
+    puts "  update_cclog <cclog_file>          : update cclog (with uuids) and histories to configured SF1R."
+    puts "  convert_raw_cclog <raw_cclog_file> : convert cclog with raw docids to cclog with latest uuids."
+    puts "  comments <collection>              : update newly logged comments(docuemts) to configured SF1R."
+    puts ""
     exit(1)
   end
   
   # Set IP address of Log Server Driver at "../libdriver/config.yml.default"
   # example:
+  # ------------------
   # ba:
   #   ip: 172.16.0.161
   #   port: 18812
+  # ------------------
   sender = LogServerJsonSender.new()
   sender.send(ARGV[0], ARGV[1])
 end

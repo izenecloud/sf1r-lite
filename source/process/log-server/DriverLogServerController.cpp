@@ -68,7 +68,7 @@ void DriverLogServerController::update_cclog()
  * }
  *
  */
-void DriverLogServerController::update_cclog_rawid()
+void DriverLogServerController::convert_raw_cclog()
 {
     //std::cout << request().controller() << "/" << request().action() << std::endl;
     dirverLogServerHandler_->processCclogRawid();

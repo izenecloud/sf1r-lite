@@ -38,7 +38,7 @@ public:
 
     void update_cclog();
 
-    void update_cclog_rawid();
+    void convert_raw_cclog();
 
     void update_scd();
 
