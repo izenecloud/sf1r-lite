@@ -54,6 +54,8 @@ public:
 
     bool getDistSearchResult(const KeywordSearchActionItem& actionItem, DistKeywordSearchResult& resultItem);
 
+    bool getSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
+
     bool getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
     /// documents
@@ -100,6 +102,11 @@ private:
             bool isDistributedSearch = true);
 
     bool getSummaryMiningResult_(
+            const KeywordSearchActionItem& actionItem,
+            KeywordSearchResult& resultItem,
+            bool isDistributedSearch = true);
+
+    bool getSummaryResult_(
             const KeywordSearchActionItem& actionItem,
             KeywordSearchResult& resultItem,
             bool isDistributedSearch = true);

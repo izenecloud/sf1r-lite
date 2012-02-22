@@ -230,11 +230,9 @@ void RpcLogServer::createScdDoc(const CreateScdDocRequestData& scdDoc)
             scdStorage->scdFile_ << scdDoc.content_;
             scdStorage->scdFile_.flush();
         }
-        else
-        {
-            scdStorage->scdDb_->update(scdDoc.docid_, scdDoc.content_);
-            scdStorage->scdDb_->flush();
-        }
+
+        scdStorage->scdDb_->update(scdDoc.docid_, scdDoc.content_);
+        scdStorage->scdDb_->flush();
     }
     else
     {

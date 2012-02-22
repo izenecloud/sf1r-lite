@@ -180,18 +180,22 @@ bool ProductPriceTrend::UpdateTPC_(uint32_t time_int, time_t timestamp)
             TPCQueue& tpc_queue = tpc_cache[it->first][it->second];
             if (tpc_queue.empty())
             {
-                tpc_queue.reserve(1001);
+                tpc_queue.reserve(1000);
                 tpc_storage_[it->first][time_int]->get(it->second, tpc_queue);
             }
 
-            tpc_queue.push_back(make_pair(price_cut, string()));
-            StripDocid_(tpc_queue.back().second, row_list[i].getDocId());
-            push_heap(tpc_queue.begin(), tpc_queue.end(), rel_ops::operator> <TPCQueue::value_type>);
-
-            if (tpc_queue.size() > 1000)
+            if (tpc_queue.size() < 1000)
+            {
+                tpc_queue.push_back(make_pair(price_cut, string()));
+                StripDocid_(tpc_queue.back().second, row_list[i].getDocId());
+                push_heap(tpc_queue.begin(), tpc_queue.end(), rel_ops::operator> <TPCQueue::value_type>);
+            }
+            else if (price_cut > tpc_queue[0].first)
             {
                 pop_heap(tpc_queue.begin(), tpc_queue.end(), rel_ops::operator> <TPCQueue::value_type>);
-                tpc_queue.pop_back();
+                tpc_queue.back().first = price_cut;
+                StripDocid_(tpc_queue.back().second, row_list[i].getDocId());
+                push_heap(tpc_queue.begin(), tpc_queue.end(), rel_ops::operator> <TPCQueue::value_type>);
             }
         }
     }

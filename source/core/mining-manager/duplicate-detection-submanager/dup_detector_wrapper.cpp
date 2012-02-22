@@ -56,74 +56,77 @@ bool DupDetectorWrapper::Open()
     std::string inject_file = container_ + "/inject.txt";
     std::string group_table_file = container_ + "/group_table";
 
-    if (id_manager_ && boost::filesystem::exists(inject_file))
+    if (!fp_only_)
     {
-        std::cout << "start inject data to DD result" << std::endl;
-        boost::filesystem::remove_all(group_table_file);
-        group_table_ = new GroupTableType(group_table_file);
-        if (!group_table_->Load())
+        if (id_manager_ && boost::filesystem::exists(inject_file))
         {
-            std::cerr << "Load group info failed" << std::endl;
-        }
-        std::ifstream ifs(inject_file.c_str());
-        std::string line;
-        std::vector<uint32_t> in_group;
-        while (getline(ifs,line))
-        {
-            boost::algorithm::trim(line);
-            if (line.empty() && !in_group.empty())
+            std::cout << "start inject data to DD result" << std::endl;
+            boost::filesystem::remove_all(group_table_file);
+            group_table_ = new GroupTableType(group_table_file);
+            if (!group_table_->Load())
             {
-                //process in_group
+                std::cerr << "Load group info failed" << std::endl;
+            }
+            std::ifstream ifs(inject_file.c_str());
+            std::string line;
+            std::vector<uint32_t> in_group;
+            while (getline(ifs,line))
+            {
+                boost::algorithm::trim(line);
+                if (line.empty() && !in_group.empty())
+                {
+                    //process in_group
+                    for (uint32_t i = 1; i < in_group.size(); i++)
+                    {
+                        group_table_->AddDoc(in_group[0], in_group[i]);
+                    }
+
+                    in_group.clear();
+                    continue;
+                }
+                if (!line.empty())
+                {
+                    std::vector<std::string> vec;
+                    boost::algorithm::split(vec, line, boost::algorithm::is_any_of("\t"));
+                    //                 std::cout << "XXX " << vec[0] << std::endl;
+                    izenelib::util::UString str_docid(vec[0], izenelib::util::UString::UTF_8);
+
+                    uint32_t docid = 0;
+                    if (id_manager_->getDocIdByDocName(str_docid, docid, false))
+                    {
+                        in_group.push_back(docid);
+                    }
+                    else
+                    {
+                        std::cout << "docid " << vec[0] << " does not exists." << std::endl;
+                    }
+
+                }
+
+            }
+            ifs.close();
+            //process in_group
+            if (!in_group.empty())
+            {
                 for (uint32_t i = 1; i < in_group.size(); i++)
                 {
                     group_table_->AddDoc(in_group[0], in_group[i]);
                 }
-
-                in_group.clear();
-                continue;
             }
-            if (!line.empty())
-            {
-                std::vector<std::string> vec;
-                boost::algorithm::split(vec, line, boost::algorithm::is_any_of("\t"));
-                //                 std::cout << "XXX " << vec[0] << std::endl;
-                izenelib::util::UString str_docid(vec[0], izenelib::util::UString::UTF_8);
-
-                uint32_t docid = 0;
-                if (id_manager_->getDocIdByDocName(str_docid, docid, false))
-                {
-                    in_group.push_back(docid);
-                }
-                else
-                {
-                    std::cout << "docid " << vec[0] << " does not exists." << std::endl;
-                }
-
-            }
-
+            group_table_->Flush();
+            boost::filesystem::remove_all(inject_file);
+            std::cout << "updated dd by " << inject_file << std::endl;
+            //         boost::filesystem::remove_all(output_group_file);
+            //         std::string reoutput_file = container_ + "/re_output_group.txt";
+            //         OutputResult_(reoutput_file);
         }
-        ifs.close();
-        //process in_group
-        if (!in_group.empty())
+        else
         {
-            for (uint32_t i = 1; i < in_group.size(); i++)
+            group_table_ = new GroupTableType(group_table_file);
+            if (!group_table_->Load())
             {
-                group_table_->AddDoc(in_group[0], in_group[i]);
+                std::cerr << "Load group info failed" << std::endl;
             }
-        }
-        group_table_->Flush();
-        boost::filesystem::remove_all(inject_file);
-        std::cout << "updated dd by " << inject_file << std::endl;
-        //         boost::filesystem::remove_all(output_group_file);
-        //         std::string reoutput_file = container_ + "/re_output_group.txt";
-        //         OutputResult_(reoutput_file);
-    }
-    else
-    {
-        group_table_ = new GroupTableType(group_table_file);
-        if (!group_table_->Load())
-        {
-            std::cerr << "Load group info failed" << std::endl;
         }
     }
 
