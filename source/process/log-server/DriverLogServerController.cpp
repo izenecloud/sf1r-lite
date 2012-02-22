@@ -163,6 +163,7 @@ void DriverLogServerHandler::init()
     storageBaseDir_ = LogServerCfg::get()->getStorageBaseDir();
     bfs::create_directories(storageBaseDir_+"/scd");
     bfs::create_directories(storageBaseDir_+"/cclog");
+    bfs::create_directories(storageBaseDir_+"/cclog/history");
     bfs::create_directories(storageBaseDir_+"/cclog/converted");
 
     // cclogged requests which need to transmit back to SF1
@@ -176,7 +177,6 @@ void DriverLogServerHandler::processCclog()
 {
     std::string host = asString(request()[Keys::host]);
     uint32_t port = asInt(request()[Keys::port]);
-
     if (host.empty())
     {
         response().setSuccess(false);
@@ -189,65 +189,46 @@ void DriverLogServerHandler::processCclog()
         setCclogSf1DriverClient(host, port);
     }
 
-    // Get raw request which was originally stored in cclog
-    izenelib::driver::Value raw_request = request()[Keys::record];
-
-    std::string json;
-    jsonWriter_.write(raw_request, json);
-    //std::cout << json << std::endl;
-
-#ifdef OUTPUT_TO_FILE
-    std::string fileName = storageBaseDir_ + "/cclog/" + asString(request()[Keys::filename]);
-
+    std::string fileName = storageBaseDir_ + "/cclog/history/" + asString(request()[Keys::filename]);
     if (!openFile(fileName))
     {
-        std::string msg = "Server Error: Failed to create file " + fileName;
-        response().setSuccess(false);
-        response().addError(msg);
-        std::cout << msg << std::endl;
-        return;
+        std::cerr << "WARN: failed to create backup file: " << fileName << std::endl;
     }
-#endif
 
+    izenelib::driver::Value raw_request = request()[Keys::record]; // request logged by cclog
     const std::string& controller = asString(raw_request[Keys::header][Keys::controller]);
     const std::string& action = asString(raw_request[Keys::header][Keys::action]);
     std::string uri = controller + "/" + action;
-
-#ifdef OUTPUT_TO_FILE
-    uri = fileName;
-#endif
 
     std::string collection = asString(raw_request[Keys::collection]);
     if (!skipProcess(collection))
     {
         if (controller == "documents" && action == "visit")
         {
-            encodeFileName(json, uri);
-            processDocVisit(raw_request, json);
+            processDocVisit(raw_request);
         }
         else if (controller == "recommend" && action == "visit_item")
         {
-            encodeFileName(json, uri);
-            processRecVisitItem(raw_request, json);
+            processRecVisitItem(raw_request);
         }
         else if (controller == "recommend" && action == "purchase_item")
         {
-            encodeFileName(json, uri);
-            processRecPurchaseItem(raw_request, json);
+            processRecPurchaseItem(raw_request);
+        }
+        else if (cclogRequestMap_.find(uri) != cclogRequestMap_.end())
+        {
+            // go ahead
         }
         else
         {
-            // output directly
-            if (cclogRequestMap_.find(uri) != cclogRequestMap_.end())
-            {
-                outputCclog(uri, json);
-            }
+            // skip
+            return;
         }
-    }
-    else
-    {
-        // nothing to do
-        //outputCclog(uri, json);
+
+        std::string json;
+        jsonWriter_.write(raw_request, json);
+        //std::cout << json << std::endl;
+        outputCclog(fileName, uri, json);
     }
 }
 
@@ -279,36 +260,31 @@ void DriverLogServerHandler::processCclogRawid()
 
     if (!skipProcess(collection))
     {
-        std::string raw_json;
-        jsonWriter_.write(raw_request, raw_json);
-
-        if (cclogRequestMap_.find(uri) != cclogRequestMap_.end())
+        if (controller == "documents" && action == "visit")
         {
-            ouputConvertedCclog(raw_json);
+            processDocVisitRawid(raw_request);
+        }
+        else if (controller == "recommend" && action == "visit_item")
+        {
+            processRecVisitItemRawid(raw_request);
+        }
+        else if (controller == "recommend" && action == "purchase_item")
+        {
+            processRecPurchaseItemRawid(raw_request);
+        }
+        else if (cclogRequestMap_.find(uri) != cclogRequestMap_.end())
+        {
+            // go ahead
         }
         else
         {
-            if (controller == "documents" && action == "visit")
-            {
-                processDocVisitRawid(raw_request);
-            }
-            else if (controller == "recommend" && action == "visit_item")
-            {
-                processRecVisitItemRawid(raw_request);
-            }
-            else if (controller == "recommend" && action == "purchase_item")
-            {
-                processRecPurchaseItemRawid(raw_request);
-            }
-            else
-            {
-                return; // skip other requests
-            }
-
-            std::string converted_json;
-            jsonWriter_.write(raw_request, converted_json);
-            ouputConvertedCclog(converted_json);
+            // skip
+            return;
         }
+
+        std::string request_json;
+        jsonWriter_.write(raw_request, request_json);
+        ouputConvertedCclog(request_json);
     }
 }
 
@@ -496,11 +472,21 @@ bool DriverLogServerHandler::skipProcess(const std::string& collection)
     }
  *
  */
-void DriverLogServerHandler::processDocVisit(izenelib::driver::Value& request, const std::string& raw)
+void DriverLogServerHandler::processDocVisit(izenelib::driver::Value& request)
 {
+    std::string oldUuidStr = asString(request[Keys::resource][Keys::DOCID]);
+    std::vector<uint128_t> docidList;
+
     boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());
-    std::string docIdStr = asString(request[Keys::resource][Keys::DOCID]);
-    LogServerStorage::get()->uuidDrum()->Check(Utilities::uuidToUint128(docIdStr), raw);
+    if (LogServerStorage::get()->uuidDrum()->GetValue(Utilities::uuidToUint128(oldUuidStr), docidList))
+    {
+        std::vector<uint128_t> newUuids;
+        if (getUuidByDocidList(docidList, newUuids))
+        {
+            std::cout << oldUuidStr << "  -->  " << Utilities::uint128ToUuid(newUuids[0]) << std::endl;
+            request[Keys::resource][Keys::DOCID] = Utilities::uint128ToUuid(newUuids[0]);
+        }
+    }
 }
 
 /**
@@ -521,11 +507,21 @@ void DriverLogServerHandler::processDocVisit(izenelib::driver::Value& request, c
     }
  *
  */
-void DriverLogServerHandler::processRecVisitItem(izenelib::driver::Value& request, const std::string& raw)
+void DriverLogServerHandler::processRecVisitItem(izenelib::driver::Value& request)
 {
+    std::string oldUuidStr = asString(request[Keys::resource][Keys::ITEMID]);
+    std::vector<uint128_t> docidList;
+
     boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());
-    std::string itemIdStr = asString(request[Keys::resource][Keys::ITEMID]);
-    LogServerStorage::get()->uuidDrum()->Check(Utilities::uuidToUint128(itemIdStr), raw);
+    if (LogServerStorage::get()->uuidDrum()->GetValue(Utilities::uuidToUint128(oldUuidStr), docidList))
+    {
+        std::vector<uint128_t> newUuids;
+        if (getUuidByDocidList(docidList, newUuids))
+        {
+            std::cout << oldUuidStr << "  -->  " << Utilities::uint128ToUuid(newUuids[0]) << std::endl;
+            request[Keys::resource][Keys::ITEMID] = Utilities::uint128ToUuid(newUuids[0]);
+        }
+    }
 }
 
 /**
@@ -547,6 +543,33 @@ void DriverLogServerHandler::processRecVisitItem(izenelib::driver::Value& reques
     }
  *
  */
+void DriverLogServerHandler::processRecPurchaseItem(izenelib::driver::Value& request)
+{
+    Value& itemsValue = request[Keys::resource][Keys::items];
+    if (nullValue(itemsValue) || itemsValue.type() != izenelib::driver::Value::kArrayType)
+    {
+        return;
+    }
+
+    for (std::size_t i = 0; i < itemsValue.size(); ++i)
+    {
+        Value& itemValue = itemsValue(i);
+        std::string oldUuidStr = asString(itemValue[Keys::ITEMID]);
+        std::vector<uint128_t> docidList;
+
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());
+        if (LogServerStorage::get()->uuidDrum()->GetValue(Utilities::uuidToUint128(oldUuidStr), docidList))
+        {
+            std::vector<uint128_t> newUuids;
+            if (getUuidByDocidList(docidList, newUuids))
+            {
+                std::cout << oldUuidStr << "  -->  " << Utilities::uint128ToUuid(newUuids[0]) << std::endl;
+                itemValue[Keys::ITEMID] = Utilities::uint128ToUuid(newUuids[0]);
+            }
+        }
+    }
+}
+
 void DriverLogServerHandler::processRecPurchaseItem(izenelib::driver::Value& request, const std::string& raw)
 {
     const Value& itemsValue = request[Keys::resource][Keys::items];
@@ -662,6 +685,30 @@ std::string DriverLogServerHandler::updateUuidStr(const std::string& uuidStr)
     return uuidStr;
 }
 
+bool DriverLogServerHandler::getUuidByDocidList(const std::vector<uint128_t>& docidList, std::vector<uint128_t>& uuids)
+{
+    boost::lock_guard<boost::mutex> lockDocidDrum(LogServerStorage::get()->docidDrumMutex());
+
+    bool ret = false;
+    std::set<uint128_t> uuidUniqueSet;
+
+    std::vector<uint128_t>::const_iterator it;
+    for (it = docidList.begin(); it != docidList.end(); ++it)
+    {
+        uint128_t uuid;
+        if (LogServerStorage::get()->docidDrum()->GetValue(*it, uuid))
+        {
+            ret = true;
+            if (uuidUniqueSet.insert(uuid).second == true)
+            {
+                uuids.push_back(uuid);
+            }
+        }
+    }
+
+    return ret;
+}
+
 void DriverLogServerHandler::onUniqueKeyCheck(
         const LogServerStorage::uuid_t& uuid,
         const LogServerStorage::raw_docid_list_t& docidList,
@@ -671,7 +718,7 @@ void DriverLogServerHandler::onUniqueKeyCheck(
     std::string json = aux;
     std::string fileName;
     decodeFileName(json, fileName);
-    outputCclog(fileName, json);
+    ///outputCclog(fileName, json);
 }
 
 void DriverLogServerHandler::onDuplicateKeyCheck(
@@ -718,7 +765,7 @@ void DriverLogServerHandler::onDuplicateKeyCheck(
 
             std::string fileName;
             decodeFileName(log, fileName);
-            outputCclog(fileName, log);
+            ///outputCclog(fileName, log);
         }
     }
 }
@@ -742,7 +789,7 @@ void DriverLogServerHandler::mergeCClog(boost::shared_ptr<CCLogMerge>& cclogMerg
     //std::cout << "updated log: " << log << std::endl;
     std::string fileName;
     decodeFileName(log, fileName);
-    outputCclog(fileName, log);
+    ///outputCclog(fileName, log);
 
     // remove merged
     for (it = cclogMergeUnit->uuidUpdateVec_.begin(); it != cclogMergeUnit->uuidUpdateVec_.end(); ++it)
@@ -758,7 +805,7 @@ boost::shared_ptr<DriverLogServerHandler::OutFile>& DriverLogServerHandler::open
     if (it == fileMap_.end() || !it->second)
     {
         // create file if not existed
-        std::ifstream inf;
+        /*std::ifstream inf;
         inf.open(fileName.c_str());
         if (!inf.good())
         {
@@ -766,12 +813,12 @@ boost::shared_ptr<DriverLogServerHandler::OutFile>& DriverLogServerHandler::open
             out.open(fileName.c_str());
             out.close();
         }
-        inf.close();
+        inf.close();*/
 
         // open file for output
         boost::shared_ptr<OutFile> outFile(new OutFile);
         outFile->of_.reset(new std::ofstream);
-        outFile->of_->open(fileName.c_str(), fstream::out|fstream::app);
+        outFile->of_->open(fileName.c_str());
         if (outFile->of_->good())
         {
             fileMap_[fileName] = outFile;
@@ -817,26 +864,18 @@ boost::shared_ptr<Sf1Driver>& DriverLogServerHandler::getCclogSf1DriverClient()
     return cclogSf1DriverClient_;
 }
 
-void DriverLogServerHandler::outputCclog(const std::string& fileName, const std::string& request)
+void DriverLogServerHandler::outputCclog(const std::string& fileName, const std::string& uri, const std::string& request)
 {
     static std::string tokens = "";
-    std::string uri = fileName;
-
-    //std::cout << "---> outputCclog : " << uri << " --- " << request << std::endl;
 
     boost::shared_ptr<Sf1Driver>& sf1DriverClient = getCclogSf1DriverClient();
-
     if (sf1DriverClient)
     {
         string requestString = request;
         string response = sf1DriverClient->call(uri, tokens, requestString);
     }
 
-#ifdef OUTPUT_TO_FILE
-    writeFile(fileName, request);
-#else
-
-#endif
+    writeFile(fileName, request); //xxx
 }
 
 void DriverLogServerHandler::writeFile(const std::string& fileName, const std::string& record)

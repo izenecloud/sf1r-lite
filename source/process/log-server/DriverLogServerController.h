@@ -98,9 +98,11 @@ public:
 private:
     bool skipProcess(const std::string& collection);
 
-    void processDocVisit(izenelib::driver::Value& request, const std::string& raw);
+    void processDocVisit(izenelib::driver::Value& request);
 
-    void processRecVisitItem(izenelib::driver::Value& request, const std::string& raw);
+    void processRecVisitItem(izenelib::driver::Value& request);
+
+    void processRecPurchaseItem(izenelib::driver::Value& request);
 
     void processRecPurchaseItem(izenelib::driver::Value& request, const std::string& raw);
 
@@ -111,6 +113,8 @@ private:
     bool processRecPurchaseItemRawid(izenelib::driver::Value& request);
 
     std::string updateUuidStr(const std::string& uuidStr);
+
+    bool getUuidByDocidList(const std::vector<uint128_t>& docidList, std::vector<uint128_t>& uuids);
 
     void onUniqueKeyCheck(
             const LogServerStorage::uuid_t& uuid,
@@ -151,7 +155,7 @@ private:
     void setCclogSf1DriverClient(const std::string& host, uint32_t port);
     boost::shared_ptr<Sf1Driver>& getCclogSf1DriverClient();
 
-    void outputCclog(const std::string& fileName, const std::string& request);
+    void outputCclog(const std::string& fileName, const std::string& uri, const std::string& request);
 
     void writeFile(const std::string& fileName, const std::string& line);
 

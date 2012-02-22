@@ -8,14 +8,40 @@ require 'set'
 require_rel '../libdriver/common'
 require_rel '../lib/scd_parser'
         
-Sf1rHost = "localhost" # to be specified
+Sf1rHost = "172.16.0.162" # to be specified
 Sf1rPort = 18181
 
 class LogServerJsonSender
   def initialize(host=nil, port=nil)
     @host = host
     @port = port        
+    @filter_map = {}
+    @filter_map['documents/log_group_label'] = true
+    @filter_map['recommend/add_user'] = true
+    @filter_map['recommend/update_user'] = true
+    @filter_map['recommend/remove_user'] = true
+    @filter_map['documents/visit'] = true
+    @filter_map['recommend/visit_item'] = true
+    @filter_map['recommend/purchase_item'] = true
     @conn = create_connection
+  end
+  
+  def filterCclogRequest(request)
+    return true if request.nil?
+      
+    header = request["header"]
+    return true if header.nil?
+      
+    controller = header["controller"]
+    action = header["action"]
+    return true if controller.nil?
+    return true if action.nil?
+    
+    uri = "#{controller}/#{action}"
+    filter = @filter_map[uri]    
+    return true if filter.nil?
+      
+    return false
   end
   
   def wrapLogServerRequest(action, filename, record)
@@ -57,6 +83,8 @@ class LogServerJsonSender
         next if line.empty?
         
         request = wrapLogServerRequest(action, filename, line)
+        
+        next if filterCclogRequest(request["record"])        
         
         header = request["header"]
         next if header.nil?
