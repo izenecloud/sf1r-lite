@@ -19,6 +19,10 @@ namespace sf1r {
         }
 
         bool Generate(const std::string& scd_file, const std::string& output_dir, const std::string& working_dir = "");
+
+    private:
+        bool Load_(const std::string& dir);
+
     private:
         bool exclude_;
         std::vector<boost::regex> category_regex_;

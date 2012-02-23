@@ -26,17 +26,17 @@ bool SimilarityMatcher::Index(const std::string& scd_file, const std::string& kn
         return true;
     }
     ProductTermAnalyzer analyzer(cma_path_);
-    MatchParameter match_param;
+    CategoryStringMatcher category_matcher;
     std::string category_file = knowledge_dir+"/category";
     if(boost::filesystem::exists(category_file))
     {
         std::ifstream cifs(category_file.c_str());
         std::string line;
-        if(getline(cifs, line))
+        while(getline(cifs, line))
         {
             boost::algorithm::trim(line);
             LOG(INFO)<<"find category regex : "<<line<<std::endl;
-            match_param.SetCategoryRegex(line);
+            category_matcher.AddCategoryRegex(line);
         }
         cifs.close();
     }
@@ -89,7 +89,7 @@ bool SimilarityMatcher::Index(const std::string& scd_file, const std::string& kn
         }
         std::string scategory;
         doc["Category"].convertString(scategory, izenelib::util::UString::UTF_8);
-        if( !match_param.MatchCategory(scategory) )
+        if( category_matcher.Match(scategory) )
         {
             std::cout<<"ignore category "<<scategory<<std::endl;
             continue;

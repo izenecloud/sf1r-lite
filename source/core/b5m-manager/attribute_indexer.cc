@@ -257,22 +257,22 @@ void AttributeIndexer::AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const i
     {
         std::string str;
         term_list[i].text.convertString(str, izenelib::util::UString::UTF_8);
-        //std::cout<<"[A]"<<str<<","<<term_list[i].tag<<std::endl;
+        //logger_<<"[A]"<<str<<","<<term_list[i].tag<<std::endl;
         char tag = term_list[i].tag;
         if(tag == idmlib::util::IDMTermTag::SYMBOL)
         {
             if(str=="-")
             {
-                bool valid = false;
-                if(i>0 && i<term_list.size()-1)
-                {
-                    if(term_list[i-1].tag==idmlib::util::IDMTermTag::NUM 
-                      || term_list[i+1].tag==idmlib::util::IDMTermTag::NUM)
-                    {
-                        valid = true;
-                    }
-                }
-                if(!valid) continue;
+                //bool valid = false;
+                //if(i>0 && i<term_list.size()-1)
+                //{
+                    //if(term_list[i-1].tag==idmlib::util::IDMTermTag::NUM 
+                      //|| term_list[i+1].tag==idmlib::util::IDMTermTag::NUM)
+                    //{
+                        //valid = true;
+                    //}
+                //}
+                //if(!valid) continue;
             }
             else if(str!="+" && str!=".") continue;
         }
@@ -896,6 +896,7 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
     parser.load(scd_file);
     NonZeroFC nzfc;
     uint32_t n=0;
+    uint32_t num_for_match = 0;
     boost::unordered_map<std::string, std::vector<std::string> > p2o_map;
     for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
       doc_iter!= parser.end(); ++doc_iter, ++n)
@@ -1044,6 +1045,7 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
             match_pdoc.property["Title"].convertString(sptitle, izenelib::util::UString::UTF_8);
             match_ofs<<soid<<","<<spid<<","<<stitle<<"\t["<<sptitle<<"]"<<std::endl;
         }
+        num_for_match++;
     } 
     delete model;
     //for(std::size_t i=0;i<ss_list.size();i++)
@@ -1052,7 +1054,7 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
     //}
     match_ofs.close();
     std::ofstream ofs(done_file.c_str());
-    ofs<<"done"<<std::endl;
+    ofs<<product_list_.size()<<","<<num_for_match<<std::endl;
     ofs.close();
 }
 
@@ -1443,31 +1445,6 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_file)
             anid_weight[anid] += value;
         }
 
-        {
-            std::string stitle;
-            title.convertString(stitle, izenelib::util::UString::UTF_8);
-            logger_<<"[PD] ["<<stitle<<"] [";
-            for(uint32_t a=0;a<doc.tag_aid_list.size();a++)
-            {
-                AttribId aid = doc.tag_aid_list[a];
-                izenelib::util::UString text;
-                id_manager_->getDocNameByDocId(aid, text);
-                std::string str;
-                text.convertString(str, izenelib::util::UString::UTF_8);
-                logger_<<"("<<aid<<","<<str<<")";
-            }
-            logger_<<"] [";
-            for(uint32_t a=0;a<doc.aid_list.size();a++)
-            {
-                AttribId aid = doc.aid_list[a];
-                izenelib::util::UString text;
-                id_manager_->getDocNameByDocId(aid, text);
-                std::string str;
-                text.convertString(str, izenelib::util::UString::UTF_8);
-                logger_<<"("<<aid<<","<<str<<")";
-            }
-            logger_<<"]"<<std::endl;
-        }
     }
 
     double weight_threshold = 0.05*product_list_.size();
@@ -1540,6 +1517,38 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_file)
     }
     product_list_.swap(product_list);
     LOG(INFO)<<"After DD "<<product_list_.size()<<" docs"<<std::endl;
+
+    for(std::size_t i=0;i<product_list_.size();i++)
+    {
+        ProductDocument& doc = product_list_[i];
+        {
+            std::string stitle;
+            doc.property["Title"].convertString(stitle, izenelib::util::UString::UTF_8);
+            logger_<<"[PD]"<<stitle<<std::endl;
+            logger_<<"[PDT]";
+            for(uint32_t a=0;a<doc.tag_aid_list.size();a++)
+            {
+                AttribId aid = doc.tag_aid_list[a];
+                izenelib::util::UString text;
+                id_manager_->getDocNameByDocId(aid, text);
+                std::string str;
+                text.convertString(str, izenelib::util::UString::UTF_8);
+                logger_<<"("<<aid<<","<<str<<")";
+            }
+            logger_<<std::endl;
+            logger_<<"[PDA]";
+            for(uint32_t a=0;a<doc.aid_list.size();a++)
+            {
+                AttribId aid = doc.aid_list[a];
+                izenelib::util::UString text;
+                id_manager_->getDocNameByDocId(aid, text);
+                std::string str;
+                text.convertString(str, izenelib::util::UString::UTF_8);
+                logger_<<"("<<aid<<","<<str<<")";
+            }
+            logger_<<std::endl;
+        }
+    }
 }
 
 

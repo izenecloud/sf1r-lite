@@ -4,6 +4,13 @@ require 'rubygems'
 require 'yaml'
 require 'fileutils'
 
+
+force = false;
+if ARGV.size>0 and ARGV[0]=="-F"
+  force = true
+  puts "FORCE mode"
+end
+
 top_dir = File.dirname(File.expand_path(__FILE__))
 config_file = File.join(top_dir, "config.yml")
 default_config_file = File.join(top_dir, "config.yml.default")
@@ -35,18 +42,59 @@ b5mp_scd = File.join(match_path['b5mp'], "scd", "index")
 matcher_program = File.join(top_dir, "b5m_matcher")
 FileUtils.rm_rf("#{match_path['b5m_scd']}")
 Dir.mkdir(work_dir) unless File.exist?(work_dir)
+valid_categories = []
+all_categories = []
 IO.readlines(category_file).each do |c_line|
   c_line.strip!
   next if c_line.empty?
-  next if c_line.start_with?("#")
+  commentted = false
   a = c_line.split(',')
   category_regex = a[0]
   cid = a[1]
+  if category_regex.start_with?("#")
+    category_regex = category_regex[1..-1]
+    commentted = true;
+  end
+  category_regex_str = category_regex
+  opposite_list = nil
+  if category_regex=="OPPOSITE"
+    opposite_list = valid_categories
+  elsif category_regex=="OPPOSITEALL"
+    opposite_list = all_categories
+  else
+    if !commentted
+      valid_categories << category_regex
+    end
+    all_categories << category_regex
+  end
+
+  next if commentted
+
+  unless opposite_list.nil?
+    category_regex_str = ""
+    bfirst = true
+    opposite_list.each do |oc|
+      category_regex_str += "\n" unless bfirst
+      category_regex_str += oc
+      bfirst = false
+    end
+    category_regex_str += "\n"
+  end
+
   category_dir = File.join(work_dir, cid)
   Dir.mkdir(category_dir) unless File.exist?(category_dir)
+
+  index_done = File.join(category_dir, "index.done")
+  match_done = File.join(category_dir, "match.done")
+  if force
+    FileUtils.rm_rf(index_done) if File.exist?(index_done)
+    FileUtils.rm_rf(match_done) if File.exist?(match_done)
+  end
+
+  puts "#{category_regex_str}"
   regex_file = File.join(category_dir, "category")
   ofs = File.open(regex_file, 'w')
-  ofs.puts(category_regex)
+  ofs.puts(category_regex_str)
   ofs.close
   fan_file = File.join(category_dir, "filter_attrib_name")
 
@@ -71,7 +119,6 @@ IO.readlines(category_file).each do |c_line|
   else
     puts "start building attribute index for #{cid}"
     system("#{matcher_program} -A -Y #{synonym} -C #{cma} -S #{train_scd} -K #{category_dir}")
-    match_done = File.join(category_dir, "match.done")
     unless File.exist?(match_done)
       puts "start matching for #{cid}"
       output = File.join(category_dir, "match")

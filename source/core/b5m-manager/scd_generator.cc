@@ -8,6 +8,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
+#include <glog/logging.h>
 
 using namespace sf1r;
 
@@ -16,8 +17,9 @@ ScdGenerator::ScdGenerator()
 {
 }
 
-bool ScdGenerator::Load(const std::string& category_dir)
+bool ScdGenerator::Load_(const std::string& category_dir)
 {
+    LOG(INFO)<<"Loading "<<category_dir<<std::endl;
     if(!boost::filesystem::exists(category_dir)) return false;
     {
         std::string regex_file = category_dir+"/category";
@@ -44,6 +46,30 @@ bool ScdGenerator::Load(const std::string& category_dir)
             o2p_map_.insert(std::make_pair(vec[0], vec[1]));
         }
         ifs.close();
+    }
+    return true;
+}
+
+bool ScdGenerator::Load(const std::string& dir)
+{
+    namespace bfs = boost::filesystem;
+    if(!bfs::exists(dir)) return false;
+    std::string match_file = dir+"/match";
+    if(bfs::exists(match_file))
+    {
+        Load_(dir);
+    }
+    else
+    {
+        bfs::path p(dir);
+        bfs::directory_iterator end;
+        for(bfs::directory_iterator it(p);it!=end;it++)
+        {
+            if(bfs::is_directory(it->path()))
+            {
+                Load_(it->path().string());
+            }
+        }
     }
     return true;
 }
