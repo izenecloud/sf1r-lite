@@ -27,6 +27,8 @@ public:
         DELETE,
         UNIQUE_KEY_DELETE,
         DUPLICATE_KEY_DELETE,
+        UNIQUE_KEY_APPEND,
+        DUPLICATE_KEY_APPEND,
         EOC
     };
 
@@ -54,6 +56,9 @@ public:
     virtual void Delete(key_t const&, aux_t const&) const;
     virtual void UniqueKeyDelete(key_t const&, aux_t const&) const;
     virtual void DuplicateKeyDelete(key_t const&, value_t const&, aux_t const&) const;
+
+    virtual void UniqueKeyAppend(key_t const&, value_t const&, aux_t const&) const;
+    virtual void DuplicateKeyAppend(key_t const&, value_t const&, aux_t const&) const;
 
     void registerOp(OpType type, func_t func)
     {
@@ -154,6 +159,26 @@ DuplicateKeyDelete(key_t const& key, value_t const& value, aux_t const& aux) con
 {
     //std::cout << "DuplicateKeyDelete" << std::endl;
     dispatch(DUPLICATE_KEY_DELETE, key, value, aux);
+}
+
+template <class key_t,
+          class value_t,
+          class aux_t>
+void DrumDispatcher<key_t, value_t, aux_t>::
+UniqueKeyAppend(key_t const& key, value_t const& value, aux_t const& aux) const
+{
+    //std::cout << "UniqueKeyUpdate" << std::endl;
+    dispatch(UNIQUE_KEY_APPEND, key, value, aux);
+}
+
+template <class key_t,
+          class value_t,
+          class aux_t>
+void DrumDispatcher<key_t, value_t, aux_t>::
+DuplicateKeyAppend(key_t const& key, value_t const& value, aux_t const& aux) const
+{
+    //std::cout << "DuplicateKeyUpdate" << std::endl;
+    dispatch(DUPLICATE_KEY_APPEND, key, value, aux);
 }
 
 }
