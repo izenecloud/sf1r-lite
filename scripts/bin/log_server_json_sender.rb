@@ -7,9 +7,11 @@ require 'json'
 require 'set'
 require_rel '../libdriver/common'
 require_rel '../lib/scd_parser'
-        
-Sf1rHost = "172.16.0.162" # to be specified
-Sf1rPort = 18181
+
+# Sf1r to be updated, pass as command parameter
+# beta: 10.10.1.112, stage: 10.10.1.111
+$Sf1rHost = "172.16.0.162" 
+$Sf1rPort = 18181
 
 PREFIX = "INFO  com.izenesoft.agent.plugin.sf1.Sf1Client  - Send JSON request: "
 
@@ -63,8 +65,8 @@ class LogServerJsonSender
         "controller" => "log_server",
         "action" => "#{action}"
       },
-      "host" => "#{Sf1rHost}",
-      "port" => "#{Sf1rPort}",
+      "host" => "#{$Sf1rHost}",
+      "port" => "#{$Sf1rPort}",
       "filename" => "#{filename}",
       "record" => request
     }
@@ -221,25 +223,25 @@ class LogServerJsonSender
         "action" => "update_documents"
       },
       "collection" => "#{collection}",
-      "host" => "#{Sf1rHost}",
-      "port" => "#{Sf1rPort}"
+      "host" => "#{$Sf1rHost}",
+      "port" => "#{$Sf1rPort}"
     }
 
     response = @conn.call("log_server/update_documents", request)
     if response["error"]
        $stderr.puts "update_documents error: #{response["error"]}"
     end
+    puts "result: #{response.to_json}"
   end  
 
   def send(cmd, filename)
     if cmd == "update_cclog"
       sendCclogFile(filename, "update_cclog")
     elsif cmd == "update_cclog_history"
-      Dir.foreach(filename) do |file|        
-        puts file
-        if file =~ /.*log/
-          log_file = "#{filename}/#{file}"
-          puts log_file 
+      Dir.foreach(filename) do |file|                
+        if file =~ /.*log$/
+          log_file = "#{filename}/#{file}"   
+          puts "--> send file: #{log_file}"       
           sendCclogFile(log_file, "update_cclog", false)
         end
       end
@@ -249,7 +251,7 @@ class LogServerJsonSender
       sendScdFile(filename)
     elsif cmd == "flush"
       sendFlushRequest(filename)
-    elsif cmd == "comments"
+    elsif cmd == "update_comments"
       collection = filename
       updateComments(collection)
     else
@@ -264,24 +266,43 @@ if __FILE__ == $0
     puts "Log Server Client:"
     puts "  Set log server address at \"../libdriver/config.yml.default\" "
     puts ""
-    puts "Usage: #{$0} <command> <parameter>"
+    puts "Usage: #{$0} <command> <parameter> [destSf1Host] [destSf1Port]"
     puts ""
     puts "commands:  (configure SF1R address at the header of this script)"
     puts "  update_cclog <cclog_file>          : update cclog (with uuids) to configured SF1R."
     puts "  update_cclog_history <cclog_dir>   : update cclog histories."
+    puts "                                       for cclog, destSf1 supposed to be Stage(10.10.1.111)"
     puts "  convert_raw_cclog <raw_cclog_file> : convert cclog with raw docids to cclog with latest uuids."
-    puts "  comments <collection>              : update newly logged comments(docuemts) to configured SF1R."
+    puts "  update_comments <collection>       : update newly logged comments(docuemts) to configured SF1R,"
+    puts "                                       for comments, destSf1 supposed to be WWW(10.10.1.110)"
     puts ""
     exit(1)
   end
   
-  # Set IP address of Log Server Driver at "../libdriver/config.yml.default"
+  # Log Server setting: set server network address at "../libdriver/config.yml.default"
   # example:
   # ------------------
   # ba:
   #   ip: 172.16.0.161
   #   port: 18812
   # ------------------
+
+  cmd = ARGV[0]
+  param = ARGV[1]
+
+  if cmd == "update_cclog" or cmd == "update_cclog_history" or cmd == "update_comments"
+    if ARGV.size < 3
+      puts "[destSf1Host] required!"
+      puts "Usage: #{$0} <command> <parameter> [destSf1Host] [destSf1Port]"
+      exit(1)
+    end
+    $Sf1rHost = ARGV[2]
+
+    if ARGV.size >= 4
+      $Sf1rPort = ARGV[3]
+    end
+  end  
+
   sender = LogServerJsonSender.new()
-  sender.send(ARGV[0], ARGV[1])
+  sender.send(cmd, param)
 end

@@ -171,9 +171,12 @@ public:
             CollectionScdDbMapType::iterator it;
             for (it = collectionScdDbMap_.begin(); it != collectionScdDbMap_.end(); it++)
             {
-                it->second->scdDb_->flush();
-                it->second->scdDb_->close();
-                //it->second->scdFile_.close();
+                if (it->second)
+                {
+                    boost::unique_lock<boost::mutex> lock(it->second->mutex_);
+                    it->second->scdDb_->flush();
+                    it->second->scdDb_->close();
+                }
             }
 
 //            if (scdDb_)

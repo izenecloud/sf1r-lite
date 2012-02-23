@@ -4,6 +4,7 @@
 #include <common/ScdParser.h>
 
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
 #include <boost/filesystem.hpp>
 
 namespace bfs = boost::filesystem;
@@ -189,7 +190,7 @@ void DriverLogServerHandler::processCclog()
     }
 
     bfs::path rawPath(asString(request()[Keys::filename]));
-    std::string fileName = storageBaseDir_ + "/cclog/history/" + rawPath.filename().string();
+    std::string fileName = storageBaseDir_ + "/cclog/history/" + rawPath.filename().string() + ".his";
     if (!openFile(fileName))
     {
         std::cerr << "WARN: failed to create backup file: " << fileName << std::endl;
@@ -235,7 +236,7 @@ void DriverLogServerHandler::processCclog()
 void DriverLogServerHandler::processCclogRawid()
 {
     bfs::path rawPath(asString(request()[Keys::filename]));
-    std::string fileName = storageBaseDir_ + "/cclog/converted/" + rawPath.filename().string();
+    std::string fileName = storageBaseDir_ + "/cclog/converted/" + rawPath.filename().string() + ".his";
     if (!setConvertedCclogFile(fileName))
     {
         std::string msg = "Server Error: Failed to create file " + fileName;
@@ -335,7 +336,7 @@ void DriverLogServerHandler::processUpdateDocuments()
     uint32_t port = asInt(request()[Keys::port]);
     std::string collection = asString(request()[Keys::collection]);
 
-    std::cout << "[Update documents of " << collection << " to " << host << ":" << port << "]" << std::endl;
+    LOG(INFO) << "Update documents of " << collection << " to SF1R[" << host << ":" << port << "]" << std::endl;
 
     if (collection.empty())
     {
@@ -371,7 +372,7 @@ void DriverLogServerHandler::processUpdateDocuments()
         return;
     }
 
-    std::string fieldStr;
+    std::string fieldName;
     std::string fieldVal;
     for (ScdParser::iterator doc_iter = parser.begin();
         doc_iter != parser.end(); ++doc_iter)
@@ -385,20 +386,22 @@ void DriverLogServerHandler::processUpdateDocuments()
         vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
         for (p = (*doc_iter)->begin(); p != (*doc_iter)->end(); p++)
         {
-            p->first.convertString(fieldStr, izenelib::util::UString::UTF_8);
+            p->first.convertString(fieldName, izenelib::util::UString::UTF_8);
+            std::string fieldNameLow = boost::algorithm::to_lower_copy(fieldName);
             p->second.convertString(fieldVal, izenelib::util::UString::UTF_8);
 
-            if (fieldStr == "DOCID")
+            if (fieldNameLow == "docid")
             {
                 docidStr = fieldVal;
             }
-            else if (fieldStr == "UUID")
+            else if (fieldNameLow == "uuid")
             {
+                LOG(INFO) << "old uuid" << fieldVal;
                 fieldVal = updateUuidStr(fieldVal);
             }
 
-            requestValue[Keys::resource][fieldStr] = fieldVal;
-            //docStr += "<" + fieldStr + ">" + fieldVal + "\n";
+            requestValue[Keys::resource][fieldName] = fieldVal;
+            //docStr += "<" + fieldName + ">" + fieldVal + "\n";
         }
 
         // save doc to scd db
@@ -409,15 +412,12 @@ void DriverLogServerHandler::processUpdateDocuments()
         jsonWriter_.write(requestValue, requestString);
 
         string response = sf1DriverClient.call(uri, tokens, requestString);
+        LOG(INFO) << response;
     }
 
     // reset flag
     scdStorage->isReIndexed_ = false;
     //scdStorage->scdDb_->flush();
-
-    // clear but not remove scd file
-    scdStorage->scdFile_.close();
-    scdStorage->scdFile_.open(scdStorage->scdFileName_.c_str());
 }
 
 void DriverLogServerHandler::flush()
@@ -869,6 +869,7 @@ void DriverLogServerHandler::outputCclog(const std::string& fileName, const std:
     {
         string requestString = request;
         string response = sf1DriverClient->call(uri, tokens, requestString);
+        LOG(INFO) << response;
     }
 
     writeFile(fileName, request); //xxx
