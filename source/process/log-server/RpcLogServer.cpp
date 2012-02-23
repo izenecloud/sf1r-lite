@@ -1,5 +1,7 @@
 #include "RpcLogServer.h"
 
+#include "errno.h"
+
 #include <common/Utilities.h>
 #include <common/ScdParser.h>
 #include <common/ScdWriter.h>
@@ -212,10 +214,7 @@ void RpcLogServer::createScdDoc(const CreateScdDocRequestData& scdDoc)
         return;
     }
 
-#ifdef LOG_SERVER_DEBUG
-    std::cout << "\n[Received doc for collection: " << scdDoc.collection_ << "]" << std::endl;
-    std::cout << scdDoc.content_;
-#endif
+    LOG(INFO) << "" << scdDoc.collection_  << std::endl << scdDoc.content_ ;
 
     if (LogServerStorage::get()->checkScdDb(collection))
     {
@@ -224,9 +223,7 @@ void RpcLogServer::createScdDoc(const CreateScdDocRequestData& scdDoc)
         boost::lock_guard<boost::mutex> lock(scdStorage->mutex_);
         if (scdStorage->isReIndexed_)
         {
-#ifdef LOG_SERVER_DEBUG
-            std::cout << "[It comes after re-index]" << std::endl;
-#endif
+            LOG(INFO) << "comes after re-index" ;
             scdStorage->scdFile_ << scdDoc.content_;
             scdStorage->scdFile_.flush();
         }
@@ -379,7 +376,8 @@ void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
         else
         {
             response.success_ = false;
-            response.error_ = "LogServer: rsync failed to synchronize SCD file.";
+            response.error_ = std::string("LogServer: rsync SCD failed - ") + strerror(errno);
+            std::cerr << response.error_ << std::endl;
         }
     }
     else
@@ -392,6 +390,9 @@ void RpcLogServer::dispatchScdFile(const GetScdFileRequestData& scdFileRequestDa
 
     // remove local SCD file
     boost::filesystem::remove(filename);
+    // clear (not remove) SCDs which came after last index
+    scdStorage->scdFile_.close();
+    scdStorage->scdFile_.open(scdStorage->scdFileName_.c_str());
 }
 
 void RpcLogServer::writeScdDoc(std::ofstream& of, const std::string& doc, const uint128_t& docid)
