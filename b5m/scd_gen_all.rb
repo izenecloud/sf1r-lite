@@ -4,6 +4,14 @@ require 'rubygems'
 require 'yaml'
 require 'fileutils'
 
+use_log_server = false
+
+ARGV.each do |a|
+  if a=="-L"
+    use_log_server = true
+  end
+end
+
 top_dir = File.dirname(File.expand_path(__FILE__))
 config_file = File.join(top_dir, "config.yml")
 default_config_file = File.join(top_dir, "config.yml.default")
@@ -16,6 +24,7 @@ else
   exit(false)
 end
 match_config = config["matcher"]
+log_server = match_config["log_server"]
 Dir.chdir(File.dirname(config_file)) do
   match_config['path_of'].each_pair do |k,v|
     match_config['path_of'][k] = File.expand_path(v)
@@ -29,7 +38,11 @@ b5mp_scd = File.join(match_path['b5mp'], "scd", "index")
 matcher_program = File.join(top_dir, "b5m_matcher")
 FileUtils.rm_rf("#{match_path['b5m_scd']}")
 puts "start generate b5mo and b5mp SCDs from #{scd}"
-system("#{matcher_program} -G #{match_path['b5m_scd']} -S #{scd} -K #{work_dir}")
+cmd = "#{matcher_program} -G #{match_path['b5m_scd']} -S #{scd} -K #{work_dir}"
+if use_log_server
+  cmd += " -L #{log_server}"
+end
+system(cmd)
 system("rm -rf #{b5mo_scd}/*")
 system("cp #{match_path['b5m_scd']}/b5mo/* #{b5mo_scd}/")
 system("rm -rf #{b5mp_scd}/*")

@@ -97,5 +97,5 @@
 ^家用电器>健康电器>艾条$,C1052
 ^家用电器>健康电器>电子体温计$,C1053
 ^家用电器>健康电器>血压计$,C1054
-^图书.*$,C9000,COMPLETE,ISBN
+#^图书.*$,C9000,COMPLETE,ISBN
 #OPPOSITEALL,C9001,SIMILARITY

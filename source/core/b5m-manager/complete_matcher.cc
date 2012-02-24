@@ -71,7 +71,7 @@ bool CompleteMatcher::Index(const std::string& scd_file, const std::string& know
     for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
       doc_iter!= parser.end(); ++doc_iter, ++n)
     {
-        if(n%10000==0)
+        if(n%100000==0)
         {
             LOG(INFO)<<"Find Product Documents "<<n<<std::endl;
         }
@@ -135,11 +135,19 @@ bool CompleteMatcher::Index(const std::string& scd_file, const std::string& know
                 break;
             }
         }
+        {
+            if(attrib_for_match.length()==0) continue;
+            std::string sam;
+            attrib_for_match.convertString(sam, izenelib::util::UString::UTF_8);
+            //std::cout<<"find attrib value : "<<sam<<std::endl;
+            boost::algorithm::replace_all(sam, "-", "");
+            attrib_for_match = izenelib::util::UString(sam, izenelib::util::UString::UTF_8);
+        }
         if(attrib_for_match.length()==0) continue;
         {
             std::string sam;
             attrib_for_match.convertString(sam, izenelib::util::UString::UTF_8);
-            std::cout<<"find attrib value : "<<sam<<std::endl;
+            //std::cout<<"find attrib value : "<<sam<<std::endl;
         }
         uint64_t hav = izenelib::util::HashFunction<izenelib::util::UString>::generateHash64(attrib_for_match);
         ValueType value;

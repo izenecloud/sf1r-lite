@@ -96,6 +96,11 @@ bool AttributeIndexer::Index(const std::string& scd_file, const std::string& kno
     ClearKnowledge_(knowledge_dir);
     Open(knowledge_dir);
     BuildProductDocuments_(scd_file);
+    if(product_list_.empty())
+    {
+        LOG(INFO)<<"product_list_ empty, ignore training."<<std::endl;
+        return true;
+    }
     WriteIdInfo_();
     std::string pa_path = knowledge_dir+"/product_list";
     izenelib::am::ssf::Util<>::Save(pa_path, product_list_);
@@ -858,7 +863,7 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
     }
     if(product_list_.empty())
     {
-        std::cout<<"product_list_ empty, return"<<std::endl;
+        std::cout<<"product_list_ empty, ignore matching"<<std::endl;
         return;
     }
     std::string match_file = knowledge_dir_+"/match";
@@ -1289,15 +1294,31 @@ void AttributeIndexer::GetFeatureVector_(const std::vector<AttribId>& o, const s
 
 }
 
-void AttributeIndexer::BuildProductDocuments_(const std::string& scd_file)
+void AttributeIndexer::BuildProductDocuments_(const std::string& scd_path)
 {
+    std::string scd_file = scd_path;
+    bool inner_scd = false;
+    std::string t_scd = knowledge_dir_+"/T.SCD";
+    uint32_t counting = 10000;
+    if(boost::filesystem::exists(t_scd))
+    {
+        scd_file = t_scd;
+        inner_scd = true;
+        counting = 200;
+        std::cout<<"USE T.SCD FOR TRAINING"<<std::endl;
+    }
+    else
+    {
+        //force use T.SCD
+        return;
+    }
     ScdParser parser(izenelib::util::UString::UTF_8);
     parser.load(scd_file);
     uint32_t n=0;
     for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
       doc_iter!= parser.end(); ++doc_iter, ++n)
     {
-        if(n%10000==0)
+        if(n%counting==0)
         {
             LOG(INFO)<<"Find Product Documents "<<n<<std::endl;
         }
@@ -1342,9 +1363,12 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_file)
         }
         std::string scategory;
         category.convertString(scategory, izenelib::util::UString::UTF_8);
-        if( !match_param_.MatchCategory(scategory) )
+        if(!inner_scd)
         {
-            continue;
+            if( !match_param_.MatchCategory(scategory) )
+            {
+                continue;
+            }
         }
         std::string stitle;
         title.convertString(stitle, izenelib::util::UString::UTF_8);

@@ -91,10 +91,10 @@ bool SimilarityMatcher::Index(const std::string& scd_file, const std::string& kn
         doc["Category"].convertString(scategory, izenelib::util::UString::UTF_8);
         if( category_matcher.Match(scategory) )
         {
-            std::cout<<"ignore category "<<scategory<<std::endl;
+            //std::cout<<"ignore category "<<scategory<<std::endl;
             continue;
         }
-        std::cout<<"valid category "<<scategory<<std::endl;
+        //std::cout<<"valid category "<<scategory<<std::endl;
         std::string stitle;
         title.convertString(stitle, izenelib::util::UString::UTF_8);
         ProductPrice price;

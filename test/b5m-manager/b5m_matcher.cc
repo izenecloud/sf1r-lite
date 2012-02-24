@@ -1,4 +1,5 @@
 #include <b5m-manager/attribute_indexer.h>
+#include <b5m-manager/category_scd_spliter.h>
 #include <b5m-manager/scd_generator.h>
 #include <b5m-manager/complete_matcher.h>
 #include <b5m-manager/similarity_matcher.h>
@@ -25,8 +26,10 @@ int main(int ac, char** av)
         ("output-match,O", po::value<std::string>(), "specify output match path")
         ("cma-path,C", po::value<std::string>(), "manually specify cma path")
         ("scd-generate,G", po::value<std::string>(), "generate b5mo b5mp scd files")
+        ("log-server,L", po::value<std::string>(), "use log server in scd generation")
         ("exclude,E", "do not generate non matched categories")
         ("scd-split,P", "split scd files for each categories.")
+        ("name,N", po::value<std::string>(), "specify the name")
         ("work-dir,W", po::value<std::string>(), "specify temp working directory")
         ("match-test,T", "b5m matching test")
     ;
@@ -44,6 +47,8 @@ int main(int ac, char** av)
     std::string category_regex_str;
     std::string cma_path = IZENECMA_KNOWLEDGE ;
     std::string work_dir;
+    std::string name;
+    std::string log_server;
     if (vm.count("scd-path")) {
         scd_path = vm["scd-path"].as<std::string>();
         std::cout << "scd-path: " << scd_path <<std::endl;
@@ -74,6 +79,16 @@ int main(int ac, char** av)
     {
         work_dir = vm["work-dir"].as<std::string>();
         std::cout<< "work-dir set to "<<work_dir<<std::endl;
+    }
+    if(vm.count("name"))
+    {
+        name = vm["name"].as<std::string>();
+        std::cout<< "name set to "<<name<<std::endl;
+    }
+    if(vm.count("log-server"))
+    {
+        log_server = vm["log-server"].as<std::string>();
+        std::cout<< "log-server set to "<<log_server<<std::endl;
     }
     std::cout<<"cma-path is "<<cma_path<<std::endl;
     if (vm.count("attribute-index")) {
@@ -143,16 +158,13 @@ int main(int ac, char** av)
     }
     else if(vm.count("scd-split"))
     {
-        if( scd_path.empty() || knowledge_dir.empty() )
+        if( scd_path.empty() || knowledge_dir.empty() || name.empty())
         {
             return EXIT_FAILURE;
         }
-        AttributeIndexer indexer;
-        if(!indexer.Open(knowledge_dir))
-        {
-            return EXIT_FAILURE;
-        }
-        if(!indexer.SplitScd(scd_path))
+        CategoryScdSpliter spliter;
+        spliter.Load(knowledge_dir,name);
+        if(!spliter.Split(scd_path))
         {
             return EXIT_FAILURE;
         }
@@ -169,6 +181,22 @@ int main(int ac, char** av)
         {
             std::cout<<"scd generate exclude"<<std::endl;
             gen.SetExclude();
+        }
+        if(!log_server.empty())
+        {
+            std::vector<std::string> vec;
+            boost::algorithm::split( vec, log_server, boost::algorithm::is_any_of("|") );
+            if(vec.size()==4)
+            {
+                std::string host = vec[0];
+                uint32_t rpc_port = boost::lexical_cast<uint32_t>(vec[1]);
+                uint32_t rpc_thread_num = boost::lexical_cast<uint32_t>(vec[2]);
+                uint32_t driver_port = boost::lexical_cast<uint32_t>(vec[3]);
+                LogServerConnectionConfig config(host, rpc_port, rpc_thread_num, driver_port);
+                
+                gen.SetUseUuid(config);
+                std::cout<<"Set Log Server To : "<<log_server<<std::endl;
+            }
         }
         if(!gen.Load(knowledge_dir))
         {

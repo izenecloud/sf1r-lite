@@ -3,7 +3,7 @@ matcher:
     path_of:
         synonym: synonym
         cma: ../../icma/db/icwb/utf8
-        category: category.conf
+        category: category.rb
         work_dir: working
         result: match_result
         train_scd: T.SCD
@@ -12,3 +12,4 @@ matcher:
         b5m_scd: b5m_scd
         b5mo: ../bin/collection/b5mo
         b5mp: ../bin/collection/b5mp
+    log_server: 10.10.1.105|18811|30|18812
