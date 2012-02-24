@@ -123,6 +123,7 @@ void QueryUtility::getMergedUniqueTokens(
     if ( useOriginalQuery )
         queryTermSet.insert(rawString);
 
+    if (laManager)
     {
         // get tokenized query terms form LAManager
         la::TermList termList;
