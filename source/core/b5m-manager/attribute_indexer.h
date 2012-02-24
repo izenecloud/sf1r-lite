@@ -19,18 +19,19 @@ namespace sf1r {
 
     public:
 
-        typedef izenelib::ir::idmanager::_IDManager<AttribRep, AttribId,
-                           izenelib::util::NullLock,
-                           izenelib::ir::idmanager::EmptyWildcardQueryHandler<AttribRep, AttribId>,
-                           izenelib::ir::idmanager::UniqueIDGenerator<AttribRep, AttribId>,
-                           izenelib::ir::idmanager::HDBIDStorage<AttribRep, AttribId> >  AttribIDManager;
-        typedef izenelib::ir::idmanager::_IDManager<AttribRep, AttribNameId,
-                           izenelib::util::NullLock,
-                           izenelib::ir::idmanager::EmptyWildcardQueryHandler<AttribRep, AttribNameId>,
-                           izenelib::ir::idmanager::UniqueIDGenerator<AttribRep, AttribNameId>,
-                           izenelib::ir::idmanager::HDBIDStorage<AttribRep, AttribNameId> >  AttribNameIDManager;
-        //typedef izenelib::ir::idmanager::_IDManager<AttribRep, AttribId> AttribIDManager;
-        //typedef izenelib::am::leveldb::Table<AttribValueId, std::vector<AttribId> > AttribIndex;
+        typedef izenelib::ir::idmanager::DocIdManager<AttribRep, AttribId> AttribIDManager;
+        typedef izenelib::ir::idmanager::DocIdManager<AttribRep, AttribNameId> AttribNameIDManager;
+
+        //typedef izenelib::ir::idmanager::_IDManager<AttribRep, AttribId,
+                           //izenelib::util::NullLock,
+                           //izenelib::ir::idmanager::EmptyWildcardQueryHandler<AttribRep, AttribId>,
+                           //izenelib::ir::idmanager::UniqueIDGenerator<AttribRep, AttribId>,
+                           //izenelib::ir::idmanager::HDBIDStorage<AttribRep, AttribId> >  AttribIDManager;
+        //typedef izenelib::ir::idmanager::_IDManager<AttribRep, AttribNameId,
+                           //izenelib::util::NullLock,
+                           //izenelib::ir::idmanager::EmptyWildcardQueryHandler<AttribRep, AttribNameId>,
+                           //izenelib::ir::idmanager::UniqueIDGenerator<AttribRep, AttribNameId>,
+                           //izenelib::ir::idmanager::HDBIDStorage<AttribRep, AttribNameId> >  AttribNameIDManager;
         typedef izenelib::am::leveldb::Table<izenelib::util::UString, std::vector<AttribId> > AttribIndex;
         typedef izenelib::am::leveldb::Table<AttribId, AttribNameId > AttribNameIndex;
         AttributeIndexer();

@@ -96,18 +96,39 @@ bool AttributeIndexer::Index(const std::string& scd_file, const std::string& kno
     ClearKnowledge_(knowledge_dir);
     Open(knowledge_dir);
     BuildProductDocuments_(scd_file);
+    if(product_list_.empty())
+    {
+        LOG(INFO)<<"product_list_ empty, ignore training."<<std::endl;
+        return true;
+    }
     WriteIdInfo_();
     std::string pa_path = knowledge_dir+"/product_list";
     izenelib::am::ssf::Util<>::Save(pa_path, product_list_);
-    std::string fanid_path = knowledge_dir+"/filter_anid";
-    std::vector<AttribNameId> filter_anid_list;
+    std::string filter_attrib_name_file = knowledge_dir+"/filter_attrib_name";
+    std::ofstream fofs(filter_attrib_name_file.c_str());
     boost::unordered_set<AttribNameId>::iterator it = filter_anid_.begin();
     while(it!=filter_anid_.end())
     {
-        filter_anid_list.push_back(*it);
+        AttribRep name_rep;
+        AttribNameId anid = *it;
+        name_id_manager_->getDocNameByDocId(anid, name_rep);
+        std::string str;
+        name_rep.convertString(str, izenelib::util::UString::UTF_8);
+        fofs<<str<<std::endl;
         ++it;
     }
-    izenelib::am::ssf::Util<>::Save(fanid_path, filter_anid_list);
+    fofs.close();
+
+
+    //std::string fanid_path = knowledge_dir+"/filter_anid";
+    //std::vector<AttribNameId> filter_anid_list;
+    //boost::unordered_set<AttribNameId>::iterator it = filter_anid_.begin();
+    //while(it!=filter_anid_.end())
+    //{
+        //filter_anid_list.push_back(*it);
+        //++it;
+    //}
+    //izenelib::am::ssf::Util<>::Save(fanid_path, filter_anid_list);
     GenClassiferInstance();
     std::ofstream ofs(done_file.c_str());
     ofs<<"done"<<std::endl;
@@ -125,7 +146,7 @@ void AttributeIndexer::ClearKnowledge_(const std::string& knowledge_dir)
     runtime_path.push_back("attrib_name_id");
     runtime_path.push_back("attrib_name_index");
     runtime_path.push_back("product_list");
-    runtime_path.push_back("filter_anid");
+    runtime_path.push_back("filter_attrib_name");
 
     for(uint32_t i=0;i<runtime_path.size();i++)
     {
@@ -160,13 +181,6 @@ bool AttributeIndexer::Open(const std::string& knowledge_dir)
         std::string pa_path = knowledge_dir+"/product_list";
         izenelib::am::ssf::Util<>::Load(pa_path, product_list_);
 
-        std::vector<AttribNameId> filter_anid_list;
-        std::string fanid_path = knowledge_dir+"/filter_anid";
-        izenelib::am::ssf::Util<>::Load(fanid_path, filter_anid_list );
-        for(uint32_t i=0;i<filter_anid_list.size();i++)
-        {
-            filter_anid_.insert(filter_anid_list[i]);
-        }
 
         //predefined knowledges
         std::string category_file = knowledge_dir+"/category";
@@ -196,11 +210,18 @@ bool AttributeIndexer::Open(const std::string& knowledge_dir)
                 if(line[0]=='#') continue;
                 //LOG(INFO)<<"find filter attrib name : "<<line<<std::endl;
                 filter_attrib_name_.insert(line);
+                AttribRep name_rep(line, izenelib::util::UString::UTF_8);
+                AttribNameId name_aid;
+                if(name_id_manager_->getDocIdByDocName(name_rep, name_aid, false))
+                {
+                    filter_anid_.insert(name_aid);
+                }
                 num_filter_attrib++;
             }
             fifs.close();
         }
         LOG(INFO)<<"find "<<num_filter_attrib<<" filter attrib name"<<std::endl;
+
         is_open_ = true;
     }
     return true;
@@ -241,22 +262,22 @@ void AttributeIndexer::AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const i
     {
         std::string str;
         term_list[i].text.convertString(str, izenelib::util::UString::UTF_8);
-        //std::cout<<"[A]"<<str<<","<<term_list[i].tag<<std::endl;
+        //logger_<<"[A]"<<str<<","<<term_list[i].tag<<std::endl;
         char tag = term_list[i].tag;
         if(tag == idmlib::util::IDMTermTag::SYMBOL)
         {
             if(str=="-")
             {
-                bool valid = false;
-                if(i>0 && i<term_list.size()-1)
-                {
-                    if(term_list[i-1].tag==idmlib::util::IDMTermTag::NUM 
-                      || term_list[i+1].tag==idmlib::util::IDMTermTag::NUM)
-                    {
-                        valid = true;
-                    }
-                }
-                if(!valid) continue;
+                //bool valid = false;
+                //if(i>0 && i<term_list.size()-1)
+                //{
+                    //if(term_list[i-1].tag==idmlib::util::IDMTermTag::NUM 
+                      //|| term_list[i+1].tag==idmlib::util::IDMTermTag::NUM)
+                    //{
+                        //valid = true;
+                    //}
+                //}
+                //if(!valid) continue;
             }
             else if(str!="+" && str!=".") continue;
         }
@@ -525,7 +546,7 @@ void AttributeIndexer::GetAttribIdList(const izenelib::util::UString& category, 
 
 bool AttributeIndexer::GetAttribRep(const AttribId& aid, AttribRep& rep)
 {
-    return id_manager_->getTermStringByTermId(aid, rep);
+    return id_manager_->getDocNameByDocId(aid, rep);
 }
 
 bool AttributeIndexer::GetAttribNameId(const AttribId& aid, AttribNameId& name_id)
@@ -840,6 +861,11 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
     {
         return;
     }
+    if(product_list_.empty())
+    {
+        std::cout<<"product_list_ empty, ignore matching"<<std::endl;
+        return;
+    }
     std::string match_file = knowledge_dir_+"/match";
     struct svm_model* model;
     std::string model_file = knowledge_dir_+"/model";
@@ -875,6 +901,7 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
     parser.load(scd_file);
     NonZeroFC nzfc;
     uint32_t n=0;
+    uint32_t num_for_match = 0;
     boost::unordered_map<std::string, std::vector<std::string> > p2o_map;
     for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
       doc_iter!= parser.end(); ++doc_iter, ++n)
@@ -967,15 +994,15 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
                 logger_<<"[MATCH]"<<std::endl;
                 std::string sptitle;
                 product_doc.property["Title"].convertString(sptitle, izenelib::util::UString::UTF_8);
-                logger_<<scategory<<std::endl;
-                logger_<<stitle<<std::endl;
+                //logger_<<scategory<<std::endl;
+                logger_<<"[MO]"<<stitle<<std::endl;
                 logger_<<surl<<std::endl;
                 for(uint32_t i=0;i<aid_list.size();++i)
                 {
                     logger_<<aid_list[i]<<",";
                 }
                 logger_<<std::endl;
-                logger_<<sptitle<<std::endl;
+                logger_<<"[MP]"<<sptitle<<std::endl;
                 for(uint32_t i=0;i<product_doc.tag_aid_list.size();++i)
                 {
                     logger_<<product_doc.tag_aid_list[i]<<",";
@@ -1023,6 +1050,7 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
             match_pdoc.property["Title"].convertString(sptitle, izenelib::util::UString::UTF_8);
             match_ofs<<soid<<","<<spid<<","<<stitle<<"\t["<<sptitle<<"]"<<std::endl;
         }
+        num_for_match++;
     } 
     delete model;
     //for(std::size_t i=0;i<ss_list.size();i++)
@@ -1031,7 +1059,7 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
     //}
     match_ofs.close();
     std::ofstream ofs(done_file.c_str());
-    ofs<<"done"<<std::endl;
+    ofs<<product_list_.size()<<","<<num_for_match<<std::endl;
     ofs.close();
 }
 
@@ -1266,15 +1294,31 @@ void AttributeIndexer::GetFeatureVector_(const std::vector<AttribId>& o, const s
 
 }
 
-void AttributeIndexer::BuildProductDocuments_(const std::string& scd_file)
+void AttributeIndexer::BuildProductDocuments_(const std::string& scd_path)
 {
+    std::string scd_file = scd_path;
+    bool inner_scd = false;
+    std::string t_scd = knowledge_dir_+"/T.SCD";
+    uint32_t counting = 10000;
+    if(boost::filesystem::exists(t_scd))
+    {
+        scd_file = t_scd;
+        inner_scd = true;
+        counting = 200;
+        std::cout<<"USE T.SCD FOR TRAINING"<<std::endl;
+    }
+    else
+    {
+        //force use T.SCD
+        return;
+    }
     ScdParser parser(izenelib::util::UString::UTF_8);
     parser.load(scd_file);
     uint32_t n=0;
     for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
       doc_iter!= parser.end(); ++doc_iter, ++n)
     {
-        if(n%10000==0)
+        if(n%counting==0)
         {
             LOG(INFO)<<"Find Product Documents "<<n<<std::endl;
         }
@@ -1319,9 +1363,12 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_file)
         }
         std::string scategory;
         category.convertString(scategory, izenelib::util::UString::UTF_8);
-        if( !match_param_.MatchCategory(scategory) )
+        if(!inner_scd)
         {
-            continue;
+            if( !match_param_.MatchCategory(scategory) )
+            {
+                continue;
+            }
         }
         std::string stitle;
         title.convertString(stitle, izenelib::util::UString::UTF_8);
@@ -1354,12 +1401,11 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_file)
             }
             if(nav.length()==0) continue;
             AttribRep rep = GetAttribRep(category, attrib_name, nav); 
-            //AttribValueId avid = GetAttribValueId_(nav);
             AttribId aid;
-            id_manager_->getTermIdByTermString(rep, aid);
+            id_manager_->getDocIdByDocName(rep, aid);
             AttribRep name_rep = GetAttribRep(category, attrib_name);
             AttribNameId name_aid;
-            name_id_manager_->getTermIdByTermString(name_rep, name_aid);
+            name_id_manager_->getDocIdByDocName(name_rep, name_aid);
             name_index_->insert(aid, name_aid);
             std::string sname_rep;
             name_rep.convertString(sname_rep, izenelib::util::UString::UTF_8);
@@ -1396,14 +1442,83 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_file)
             //}
 
         }
+        std::sort(product_doc.tag_aid_list.begin(), product_doc.tag_aid_list.end()); 
         product_list_.push_back(product_doc);
     }
     LOG(INFO)<<"Generated "<<product_list_.size()<<" docs"<<std::endl;
+    //already got tag_aid_list, now build others
+    std::vector<double> anid_weight(name_id_manager_->getMaxDocId()+1, 0.0);
+    for(std::size_t i=0;i<product_list_.size();i++)
+    {
+        if(i%100==0)
+        {
+            LOG(INFO)<<"Building aid_list for "<<i<<std::endl;
+        }
+        ProductDocument& doc = product_list_[i];
+        izenelib::util::UString& category = doc.property["Category"];
+        izenelib::util::UString& title = doc.property["Title"];
+        GetAttribIdList(category, title, doc.aid_list);
+
+        FeatureType feature_vec;
+        FeatureStatus fs;
+        GetFeatureVector_(doc.aid_list, doc.tag_aid_list, feature_vec, fs);
+        for(uint32_t f=0;f<feature_vec.size();f++)
+        {
+            AttribNameId anid = feature_vec[f].first;
+            double value = feature_vec[f].second;
+            anid_weight[anid] += value;
+        }
+
+    }
+
+    double weight_threshold = 0.05*product_list_.size();
+
+    for(AttribNameId anid=1;anid<anid_weight.size();anid++)
+    {
+        double weight = anid_weight[anid];
+        if(weight<=weight_threshold)
+        {
+            filter_anid_.insert(anid);
+        }
+        izenelib::util::UString name;
+        name_id_manager_->getDocNameByDocId(anid, name);
+        std::string str;
+        name.convertString(str, izenelib::util::UString::UTF_8);
+        std::cout<<"[W]"<<str<<"\t"<<weight<<std::endl;
+    }
+
+    for(std::size_t i=0;i<product_list_.size();i++)
+    {
+        if(i%100==0)
+        {
+            LOG(INFO)<<"Do anid filtering for "<<i<<std::endl;
+        }
+        ProductDocument& doc = product_list_[i];
+        std::vector<AttribId> vaid_list;
+        for(std::size_t j=0;j<doc.aid_list.size();j++)
+        {
+            if(ValidAid_(doc.aid_list[j]))
+            {
+                vaid_list.push_back(doc.aid_list[j]);
+            }
+        }
+        doc.aid_list.swap(vaid_list);
+
+        std::vector<AttribId> vtaid_list;
+        for(std::size_t j=0;j<doc.tag_aid_list.size();j++)
+        {
+            if(ValidAid_(doc.tag_aid_list[j]))
+            {
+                vtaid_list.push_back(doc.tag_aid_list[j]);
+            }
+        }
+        doc.tag_aid_list.swap(vtaid_list);
+    }
+
     //do de-duplicate
     std::vector<ProductDocument> product_list;
     for(std::size_t i=0;i<product_list_.size();i++)
     {
-        std::sort(product_list_[i].tag_aid_list.begin(), product_list_[i].tag_aid_list.end()); 
         bool dd = false;
         for(std::size_t j=0;j<product_list.size();j++)
         {
@@ -1426,46 +1541,38 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_file)
     }
     product_list_.swap(product_list);
     LOG(INFO)<<"After DD "<<product_list_.size()<<" docs"<<std::endl;
-    //already got tag_aid_list, now build others
+
     for(std::size_t i=0;i<product_list_.size();i++)
     {
-        if(i%100==0)
-        {
-            LOG(INFO)<<"Building aid_list for "<<i<<std::endl;
-        }
         ProductDocument& doc = product_list_[i];
-        izenelib::util::UString& category = doc.property["Category"];
-        izenelib::util::UString& title = doc.property["Title"];
-        GetAttribIdList(category, title, doc.aid_list);
-        std::sort(doc.tag_aid_list.begin(), doc.tag_aid_list.end()); 
-        std::sort(doc.aid_list.begin(), doc.aid_list.end()); 
         {
             std::string stitle;
-            title.convertString(stitle, izenelib::util::UString::UTF_8);
-            logger_<<"[PD] ["<<stitle<<"] [";
+            doc.property["Title"].convertString(stitle, izenelib::util::UString::UTF_8);
+            logger_<<"[PD]"<<stitle<<std::endl;
+            logger_<<"[PDT]";
             for(uint32_t a=0;a<doc.tag_aid_list.size();a++)
             {
                 AttribId aid = doc.tag_aid_list[a];
                 izenelib::util::UString text;
-                id_manager_->getTermStringByTermId(aid, text);
+                id_manager_->getDocNameByDocId(aid, text);
                 std::string str;
                 text.convertString(str, izenelib::util::UString::UTF_8);
                 logger_<<"("<<aid<<","<<str<<")";
             }
-            logger_<<"] [";
+            logger_<<std::endl;
+            logger_<<"[PDA]";
             for(uint32_t a=0;a<doc.aid_list.size();a++)
             {
                 AttribId aid = doc.aid_list[a];
                 izenelib::util::UString text;
-                id_manager_->getTermStringByTermId(aid, text);
+                id_manager_->getDocNameByDocId(aid, text);
                 std::string str;
                 text.convertString(str, izenelib::util::UString::UTF_8);
                 logger_<<"("<<aid<<","<<str<<")";
             }
-            logger_<<"]"<<std::endl;
+            logger_<<std::endl;
         }
     }
-
 }
 
 
@@ -1499,7 +1606,7 @@ void AttributeIndexer::WriteIdInfo_()
         while(true)
         {
             izenelib::util::UString text;
-            if(!id_manager_->getTermStringByTermId(aid, text)) break;
+            if(!id_manager_->getDocNameByDocId(aid, text)) break;
             AttribId anid;
             name_index_->get(aid, anid);
             std::string str;
@@ -1516,7 +1623,7 @@ void AttributeIndexer::WriteIdInfo_()
         while(true)
         {
             izenelib::util::UString text;
-            if(!name_id_manager_->getTermStringByTermId(anid, text)) break;
+            if(!name_id_manager_->getDocNameByDocId(anid, text)) break;
             std::string str;
             text.convertString(str, izenelib::util::UString::UTF_8);
             ofs<<anid<<"\t"<<str<<std::endl;

@@ -73,8 +73,8 @@ bool DriverLogServer::initRouter()
     handler_t* cclogHandler = new handler_t(logServerCtrl, &DriverLogServerController::update_cclog);
     router_->map("log_server", "update_cclog", cclogHandler);
 
-    handler_t* cclogRawidHandler = new handler_t(logServerCtrl, &DriverLogServerController::update_cclog_rawid);
-    router_->map("log_server", "update_cclog_rawid", cclogRawidHandler);
+    handler_t* cclogRawidHandler = new handler_t(logServerCtrl, &DriverLogServerController::convert_raw_cclog);
+    router_->map("log_server", "convert_raw_cclog", cclogRawidHandler);
 
     handler_t* scdHandler = new handler_t(logServerCtrl, &DriverLogServerController::update_scd);
     router_->map("log_server", "update_scd", scdHandler);

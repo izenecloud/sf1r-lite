@@ -34,6 +34,7 @@ public:
         // xxx
         ADD_FUNC_TO_WORKER_CALLER(SearchWorkerCaller, localWorkerCaller_, SearchWorker, getDistSearchInfo);
         ADD_FUNC_TO_WORKER_CALLER(SearchWorkerCaller, localWorkerCaller_, SearchWorker, getDistSearchResult);
+        ADD_FUNC_TO_WORKER_CALLER(SearchWorkerCaller, localWorkerCaller_, SearchWorker, getSummaryResult);
         ADD_FUNC_TO_WORKER_CALLER(SearchWorkerCaller, localWorkerCaller_, SearchWorker, getSummaryMiningResult);
         ADD_FUNC_TO_WORKER_CALLER(SearchWorkerCaller, localWorkerCaller_, SearchWorker, getDocumentsByIds);
         ADD_FUNC_TO_WORKER_CALLER(SearchWorkerCaller, localWorkerCaller_, SearchWorker, getInternalDocumentId);
@@ -60,7 +61,7 @@ public:
     }
 
 
-    bool aggregate(const std::string& func,DistKeywordSearchResult& result, const std::vector<std::pair<workerid_t, DistKeywordSearchResult> >& resultList)
+    bool aggregate(const std::string& func, DistKeywordSearchResult& result, const std::vector<std::pair<workerid_t, DistKeywordSearchResult> >& resultList)
     {
         if (func == "getDistSearchResult")
         {
@@ -72,7 +73,12 @@ public:
 
     bool aggregate(const std::string& func, KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)
     {
-        if (func == "getSummaryMiningResult")
+        if (func == "getSummaryResult")
+        {
+            aggregateSummaryResult(result, resultList);
+            return true;
+        }
+        else if (func == "getSummaryMiningResult")
         {
             aggregateSummaryMiningResult(result, resultList);
             return true;

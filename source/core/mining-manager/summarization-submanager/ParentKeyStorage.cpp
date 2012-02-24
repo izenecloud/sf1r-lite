@@ -22,12 +22,15 @@ ParentKeyStorage::ParentKeyStorage(
         const std::string& db_dir,
         CommentCacheStorage* comment_cache_storage,
         unsigned bufferSize)
-    : parent_to_children_db_(db_dir + p2c_path)
+    : comment_cache_storage_(comment_cache_storage)
+#ifndef USE_LOG_SERVER
+    , parent_to_children_db_(db_dir + p2c_path)
     , child_to_parent_db_(db_dir + c2p_path)
-    , comment_cache_storage_(comment_cache_storage)
     , buffer_capacity_(bufferSize)
     , buffer_size_(0)
+#endif
 {
+#ifndef USE_LOG_SERVER
     if (!parent_to_children_db_.open())
     {
         boost::filesystem::remove_all(db_dir + p2c_path);
@@ -38,12 +41,14 @@ ParentKeyStorage::ParentKeyStorage(
         boost::filesystem::remove_all(db_dir + c2p_path);
         child_to_parent_db_.open();
     }
+#endif
 }
 
 ParentKeyStorage::~ParentKeyStorage()
 {
 }
 
+#ifndef USE_LOG_SERVER
 void ParentKeyStorage::Insert(const ParentKeyType& parent, const ChildKeyType& child)
 {
     child_to_parent_db_.insert(child, parent);
@@ -72,13 +77,7 @@ void ParentKeyStorage::Delete(const ParentKeyType& parent, const ChildKeyType& c
 {
     ParentKeyType old_parent;
     if (!child_to_parent_db_.get(child, old_parent)) return;
-    if (
-#ifdef USE_LOG_SERVER
-            parent
-#else
-            !parent.empty()
-#endif
-            && old_parent != parent) return;
+    if (!parent.empty() && old_parent != parent) return;
     child_to_parent_db_.del(child);
     buffer_db_[old_parent].second.push_back(child);
 
@@ -166,6 +165,7 @@ void ParentKeyStorage::Flush()
     buffer_db_.clear();
     buffer_size_ = 0;
 }
+#endif
 
 bool ParentKeyStorage::GetChildren(const ParentKeyType& parent, std::vector<ChildKeyType>& children)
 {

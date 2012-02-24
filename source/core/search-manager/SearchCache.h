@@ -58,7 +58,19 @@ public:
 
         result.timeStamp_ = std::time(NULL);
         result.groupRep_.toOntologyRepItemList();
+
+        // Temporarily store the summary results to keep them out of cache
+        std::vector<std::vector<izenelib::util::UString> > fullText, snippetText, rawText;
+
+        fullText.swap(result.fullTextOfDocumentInPage_);
+        snippetText.swap(result.snippetTextOfDocumentInPage_);
+        rawText.swap(result.rawTextOfSummaryInPage_);
+
         cache_.updateValue(key, result);
+
+        fullText.swap(result.fullTextOfDocumentInPage_);
+        snippetText.swap(result.snippetTextOfDocumentInPage_);
+        rawText.swap(result.rawTextOfSummaryInPage_);
     }
 
     void clear()

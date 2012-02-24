@@ -12,21 +12,19 @@ namespace sf1r
 CommentCacheStorage::CommentCacheStorage(
         const std::string& dbPath,
         uint32_t buffer_capacity)
-    : comment_cache_db_(dbPath + comment_cache_path)
-    , dirty_key_db_(dbPath + dirty_key_path)
+    : dirty_key_db_(dbPath + dirty_key_path)
+    , dispatcher_(dirty_key_db_)
     , buffer_capacity_(buffer_capacity)
     , buffer_size_(0)
+    , op_type_(CommentCacheStorage::NONE)
 {
-    if (!comment_cache_db_.open())
-    {
-        boost::filesystem::remove_all(dbPath + comment_cache_path);
-        comment_cache_db_.open();
-    }
     if (!dirty_key_db_.open())
     {
         boost::filesystem::remove_all(dbPath + dirty_key_path);
         dirty_key_db_.open();
     }
+    boost::filesystem::create_directories(dbPath + comment_cache_path);
+    comment_cache_drum_.reset(new CommentCacheDrumType(dbPath + comment_cache_path, 64, 32768, 4194304, dispatcher_));
 }
 
 CommentCacheStorage::~CommentCacheStorage()
@@ -35,7 +33,14 @@ CommentCacheStorage::~CommentCacheStorage()
 
 void CommentCacheStorage::AppendUpdate(const KeyType& key, uint32_t docid, const ContentType& content)
 {
-    buffer_db_[key].second.push_back(std::make_pair(docid, content));
+    if (op_type_ != APPEND_UPDATE)
+    {
+        Flush(true);
+        op_type_ = APPEND_UPDATE;
+    }
+
+    buffer_db_[key].first.insert(docid);
+    buffer_db_[key].second.push_back(content);
 
     ++buffer_size_;
     if (IsBufferFull_())
@@ -44,56 +49,59 @@ void CommentCacheStorage::AppendUpdate(const KeyType& key, uint32_t docid, const
 
 void CommentCacheStorage::Delete(const KeyType& key)
 {
-    buffer_db_[key].first = true;
+    if (op_type_ != DELETE)
+    {
+        Flush(true);
+        op_type_ = DELETE;
+    }
+
+    buffer_db_[key];
 
     ++buffer_size_;
     if (IsBufferFull_())
         Flush();
 }
 
-void CommentCacheStorage::Flush()
+void CommentCacheStorage::Flush(bool needSync)
 {
-    if (buffer_db_.empty()) return;
+    if (op_type_ == NONE) return;
+    if (!needSync && buffer_db_.empty()) return;
 
-    for (BufferType::iterator it = buffer_db_.begin();
-            it != buffer_db_.end(); ++it)
+    switch (op_type_)
     {
-        if (it->second.first)
+    case APPEND_UPDATE:
+        for (BufferType::iterator it = buffer_db_.begin();
+                it != buffer_db_.end(); ++it)
         {
-            comment_cache_db_.del(it->first);
-            continue;
+            comment_cache_drum_->Append(it->first, it->second);
         }
+        break;
 
-        CommentCacheItemType value;
-        comment_cache_db_.get(it->first, value);
-        value.second.reserve(value.second.size() + it->second.second.size());
-        bool dirty = false;
-        std::vector<std::pair<uint32_t, ContentType> >::const_iterator vit
-            = it->second.second.begin();
-        for (; vit != it->second.second.end(); ++vit)
+    case DELETE:
+        for (BufferType::iterator it = buffer_db_.begin();
+                it != buffer_db_.end(); ++it)
         {
-            if (value.first.insert(vit->first).second)
-            {
-                dirty = true;
-                value.second.push_back(vit->second);
-            }
+            comment_cache_drum_->Delete(it->first);
         }
-        if (dirty)
-        {
-            comment_cache_db_.update(it->first, value);
-            dirty_key_db_.update(it->first, 0);
-        }
+        break;
+
+    default:
+        break;
     }
 
-    comment_cache_db_.flush();
-    dirty_key_db_.flush();
+    if (needSync)
+    {
+        comment_cache_drum_->Synchronize();
+        dirty_key_db_.flush();
+        op_type_ = NONE;
+    }
     buffer_db_.clear();
     buffer_size_ = 0;
 }
 
 bool CommentCacheStorage::Get(const KeyType& key, CommentCacheItemType& result)
 {
-    return comment_cache_db_.get(key, result);
+    return comment_cache_drum_->GetValue(key, result);
 }
 
 bool CommentCacheStorage::ClearDirtyKey()

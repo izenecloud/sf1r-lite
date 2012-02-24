@@ -98,6 +98,24 @@ bool IndexSearchService::getSearchResult(
 
         searchCache_->set(identity, resultItem);
     }
+    else
+    {
+        typedef std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> > ResultMapT;
+        typedef std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >::iterator ResultMapIterT;
+
+        ResultMapT resultMap;
+        searchAggregator_->splitSearchResultByWorkerid(resultItem, resultMap);
+        RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
+        for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
+        {
+            workerid_t workerid = it->first;
+            boost::shared_ptr<KeywordSearchResult>& subResultItem = it->second;
+            requestGroup.addRequest(workerid, &actionItem, subResultItem.get());
+        }
+
+        searchAggregator_->distributeRequest(
+                actionItem.collectionName_, "getSummaryResult", requestGroup, resultItem);
+    }
 
     cout << "Total count: " << resultItem.totalCount_ << endl;
     cout << "Top K count: " << resultItem.topKDocs_.size() << endl;
