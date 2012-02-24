@@ -24,7 +24,7 @@ public:
         Document& doc
     );
 
-    virtual bool hasItem(itemid_t itemId) const;
+    virtual bool hasItem(itemid_t itemId);
 
 private:
     DocumentManager& docManager_;

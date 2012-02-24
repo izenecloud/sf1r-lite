@@ -221,7 +221,7 @@ void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchServic
     DocumentManager* docManager = indexSearchService->searchWorker_->documentManager_.get();
     IDManager* idManager = indexSearchService->searchWorker_->idManager_.get();
 
-    LocalItemFactory factory(idManager, docManager);
+    LocalItemFactory factory(*idManager, *docManager);
 
     itemIdGenerator_.reset(factory.createItemIdGenerator());
     itemManager_.reset(factory.createItemManager());

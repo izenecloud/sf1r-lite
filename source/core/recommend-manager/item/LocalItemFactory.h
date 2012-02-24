@@ -14,23 +14,21 @@
 namespace sf1r
 {
 class DocumentManager;
-class ItemIdGenerator;
-class ItemManager;
 
 class LocalItemFactory : public ItemFactory
 {
 public:
     typedef izenelib::ir::idmanager::IDManager IDManager;
 
-    LocalItemFactory(IDManager* idManager, DocumentManager* docManager);
+    LocalItemFactory(IDManager& idManager, DocumentManager& docManager);
 
     virtual ItemIdGenerator* createItemIdGenerator();
 
     virtual ItemManager* createItemManager();
 
 private:
-    IDManager* idManager_;
-    DocumentManager* docManager_;
+    IDManager& idManager_;
+    DocumentManager& docManager_;
 };
 
 } // namespace sf1r

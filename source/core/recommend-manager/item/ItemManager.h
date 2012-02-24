@@ -40,7 +40,7 @@ public:
     /**
      * @return true for the document of @p itemId exists, false for not exists
      */
-    virtual bool hasItem(itemid_t itemId) const = 0;
+    virtual bool hasItem(itemid_t itemId) = 0;
 };
 
 } // namespace sf1r

@@ -30,6 +30,7 @@ namespace sf1r
 {
 
 ItemManagerTestFixture::ItemManagerTestFixture()
+    : maxItemId_(0)
 {
     initDMSchema_();
 }
@@ -64,22 +65,20 @@ void ItemManagerTestFixture::checkItemManager()
     BOOST_TEST_MESSAGE("check " << itemMap_.size() << " items");
 
     Document doc;
-    itemid_t maxId = maxItemId_();
-    std::vector<std::string> emptyPropList;
+    itemid_t maxId = maxItemId_;
 
     for (itemid_t i=1; i <= maxId; ++i)
     {
         ItemMap::const_iterator findIt = itemMap_.find(i);
         if (findIt != itemMap_.end())
         {
-            BOOST_CHECK(itemManager_->getItem(i, emptyPropList, doc));
+            BOOST_CHECK(itemManager_->getItem(i, propList_, doc));
             checkItem_(doc, findIt->second);
-
             BOOST_CHECK_MESSAGE(itemManager_->hasItem(i), "item id: " << i);
         }
         else
         {
-            BOOST_CHECK(itemManager_->getItem(i, emptyPropList, doc) == false);
+            BOOST_CHECK(itemManager_->getItem(i, propList_, doc) == false);
             BOOST_CHECK(itemManager_->hasItem(i) == false);
         }
     }
@@ -89,11 +88,12 @@ void ItemManagerTestFixture::createItems(int num)
 {
     izenelib::util::UString ustr;
 
-    itemid_t id = maxItemId_() + 1;
-    for (int i=0; i<num; ++i, ++id)
+    for (int i=0; i<num; ++i)
     {
+        itemid_t id = ++maxItemId_;
         Document doc;
         ItemInput itemInput;
+
         prepareDoc_(id, doc, itemInput);
 
         BOOST_CHECK(documentManager_->insertDocument(doc));
@@ -157,39 +157,31 @@ void ItemManagerTestFixture::initDMSchema_()
     config1.propertyName_ = PROP_NAME_DOCID;
     config1.propertyType_ = STRING_PROPERTY_TYPE;
     schema_.insert(config1);
+    propList_.push_back(config1.propertyName_);
 
     PropertyConfigBase config2;
     config2.propertyName_ = PROP_NAME_TITLE;
     config2.propertyType_ = STRING_PROPERTY_TYPE;
     schema_.insert(config2);
+    propList_.push_back(config2.propertyName_);
 
     PropertyConfigBase config3;
     config3.propertyName_ = PROP_NAME_URL;
     config3.propertyType_ = STRING_PROPERTY_TYPE;
     schema_.insert(config3);
+    propList_.push_back(config3.propertyName_);
 
     PropertyConfigBase config4;
     config4.propertyName_ = PROP_NAME_PRICE;
     config4.propertyType_ = FLOAT_PROPERTY_TYPE;
     schema_.insert(config4);
+    propList_.push_back(config4.propertyName_);
 
     PropertyConfigBase config5;
     config5.propertyName_ = PROP_NAME_COUNT;
     config5.propertyType_ = INT_PROPERTY_TYPE;
     schema_.insert(config5);
-}
-
-itemid_t ItemManagerTestFixture::maxItemId_() const
-{
-    if (itemMap_.empty())
-    {
-        return 0;
-    }
-    else
-    {
-        ItemMap::const_reverse_iterator it = itemMap_.rbegin();
-        return it->first;
-    }
+    propList_.push_back(config5.propertyName_);
 }
 
 void ItemManagerTestFixture::checkItem_(const Document& doc, const ItemInput& itemInput)
@@ -197,7 +189,10 @@ void ItemManagerTestFixture::checkItem_(const Document& doc, const ItemInput& it
     for (ItemInput::const_iterator it = itemInput.begin();
         it != itemInput.end(); ++it)
     {
-        const PropertyValue propValue = doc.property(it->first);
+        const string& propName = it->first;
+        BOOST_REQUIRE(doc.hasProperty(propName));
+
+        const PropertyValue propValue = doc.property(propName);
         const izenelib::util::UString& ustr = propValue.get<izenelib::util::UString>();
         BOOST_CHECK_EQUAL(ustr, it->second);
     }
@@ -211,6 +206,8 @@ void ItemManagerTestFixture::prepareDoc_(
     doc.setId(id);
 
     const string idStr = lexical_cast<string>(id);
+    insertItemId_(idStr, id);
+
     izenelib::util::UString ustr;
 
     ustr.assign(PROP_VALUE_DOCID + idStr, ENCODING_TYPE);

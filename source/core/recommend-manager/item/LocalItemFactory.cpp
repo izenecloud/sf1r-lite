@@ -5,7 +5,7 @@
 namespace sf1r
 {
 
-LocalItemFactory::LocalItemFactory(IDManager* idManager, DocumentManager* docManager)
+LocalItemFactory::LocalItemFactory(IDManager& idManager, DocumentManager& docManager)
     : idManager_(idManager)
     , docManager_(docManager)
 {
@@ -13,12 +13,12 @@ LocalItemFactory::LocalItemFactory(IDManager* idManager, DocumentManager* docMan
 
 ItemIdGenerator* LocalItemFactory::createItemIdGenerator()
 {
-    return new LocalItemIdGenerator(*idManager_);
+    return new LocalItemIdGenerator(idManager_);
 }
 
 ItemManager* LocalItemFactory::createItemManager()
 {
-    return new LocalItemManager(*docManager_);
+    return new LocalItemManager(docManager_);
 }
 
 } // namespace sf1r
