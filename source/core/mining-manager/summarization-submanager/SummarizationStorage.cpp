@@ -30,6 +30,11 @@ void SummarizationStorage::Update(const KeyType& key, const Summarization& value
     summarization_db_.update(key, value);
 }
 
+void SummarizationStorage::Delete(const KeyType& key)
+{
+    summarization_db_.del(key);
+}
+
 void SummarizationStorage::Flush()
 {
     summarization_db_.flush();

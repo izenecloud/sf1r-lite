@@ -31,6 +31,8 @@ public:
 
     void Update(const KeyType& key, const Summarization& value);
 
+    void Delete(const KeyType& key);
+
     void Flush();
 
     bool Get(const KeyType& key, Summarization& result);
