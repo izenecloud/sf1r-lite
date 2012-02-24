@@ -25,7 +25,6 @@ class ParentKeyStorage
 #else
     typedef izenelib::util::UString ParentKeyType;
     typedef izenelib::util::UString ChildKeyType;
-#endif
 
     typedef izenelib::am::leveldb::Table<ParentKeyType, std::vector<ChildKeyType> > P2CDbType;
     typedef izenelib::am::AMIterator<P2CDbType> P2CIteratorType;
@@ -34,6 +33,7 @@ class ParentKeyStorage
     typedef izenelib::am::AMIterator<C2PDbType> C2PIteratorType;
 
     typedef stx::btree_map<ParentKeyType, std::pair<std::vector<ChildKeyType>, std::vector<ChildKeyType> > > BufferType;
+#endif
 
 public:
     ParentKeyStorage(
@@ -43,6 +43,11 @@ public:
 
     ~ParentKeyStorage();
 
+    bool GetChildren(const ParentKeyType& parent, std::vector<ChildKeyType>& children);
+
+    bool GetParent(const ChildKeyType& child, ParentKeyType& parent);
+
+#ifndef USE_LOG_SERVER
     void Flush();
 
     void Insert(const ParentKeyType& parent, const ChildKeyType& child);
@@ -51,28 +56,25 @@ public:
 
     void Delete(const ParentKeyType& parent, const ChildKeyType& child);
 
-    bool GetChildren(const ParentKeyType& parent, std::vector<ChildKeyType>& children);
-
-    bool GetParent(const ChildKeyType& child, ParentKeyType& parent);
-
 private:
     inline bool IsBufferFull_()
     {
         return buffer_size_ >= buffer_capacity_;
     }
+#endif
 
 private:
-    friend class MultiDocSummarizationSubManager;
+    CommentCacheStorage* comment_cache_storage_;
 
+#ifndef USE_LOG_SERVER
     P2CDbType parent_to_children_db_;
     C2PDbType child_to_parent_db_;
-
-    CommentCacheStorage* comment_cache_storage_;
 
     BufferType buffer_db_;
 
     unsigned int buffer_capacity_;
     unsigned int buffer_size_;
+#endif
 
     boost::shared_mutex mutex_;
 };

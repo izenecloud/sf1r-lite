@@ -161,7 +161,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         }
     }
     SetLastDocid_(document_manager_->getMaxDocId());
-    comment_cache_storage_->Flush();
+    comment_cache_storage_->Flush(true);
 
     {
         CommentCacheStorage::DirtyKeyIteratorType dirtyKeyIt(comment_cache_storage_->dirty_key_db_);
@@ -172,8 +172,13 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
             CommentCacheStorage::CommentCacheItemType commentCacheItem;
             comment_cache_storage_->Get(key, commentCacheItem);
-            Summarization summarization(commentCacheItem.first);
+            if (commentCacheItem.first.empty() && commentCacheItem.second.empty())
+            {
+                summarization_storage_->Delete(key);
+                continue;
+            }
 
+            Summarization summarization(commentCacheItem.first);
             if (DoEvaluateSummarization_(summarization, key, commentCacheItem.second))
             {
                 if (++count % 10000 == 0)
