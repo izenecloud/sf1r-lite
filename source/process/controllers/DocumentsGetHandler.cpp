@@ -398,7 +398,7 @@ bool DocumentsGetHandler::doGet()
 
     if (!indexSearchService_->getDocumentsByIds(actionItem_, result))
     {
-        response_.addError("Internal communication error.");
+        response_.addError("failed to get document");
         return false;
     }
 

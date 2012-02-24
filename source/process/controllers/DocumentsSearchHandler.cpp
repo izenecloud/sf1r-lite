@@ -299,7 +299,7 @@ bool DocumentsSearchHandler::doGet(
     bool requestSent = indexSearchService_->getDocumentsByIds(getActionItem, rawTextResult);
     if (!requestSent)
     {
-        response_.addError("Internal communication error.");
+        response_.addError("failed to get document");
         return false;
     }
     //add dd result
