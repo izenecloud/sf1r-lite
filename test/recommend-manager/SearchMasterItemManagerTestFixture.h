@@ -25,18 +25,19 @@ public:
     SearchMasterItemManagerTestFixture();
     virtual ~SearchMasterItemManagerTestFixture();
 
-    virtual void setTestDir(const std::string& dir);
     virtual void resetInstance();
 
 protected:
+    void createSearchService_();
+    void createIdManager_();
+
     virtual void insertItemId_(const std::string& strId, itemid_t goldId);
 
 protected:
-    std::string idPathPrefix_;
-
     typedef izenelib::ir::idmanager::IDManager IDManagerType;
     boost::shared_ptr<IDManagerType> idManager_;
 
+    const std::string collectionName_;
     IndexBundleConfiguration indexBundleConfig_;
     boost::scoped_ptr<IndexSearchService> indexSearchService_;
 };

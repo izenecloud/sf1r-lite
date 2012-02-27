@@ -44,6 +44,7 @@ public:
 
 protected:
     void initDMSchema_();
+    void createDocManager_();
 
     /** mapping from property name to UString value */
     typedef std::map<std::string, izenelib::util::UString> ItemInput;
@@ -62,7 +63,6 @@ protected:
     itemid_t maxItemId_;
 
     std::string testDir_;
-    std::string dmPath_;
 
     boost::shared_ptr<DocumentManager> documentManager_;
     boost::scoped_ptr<ItemManager> itemManager_;

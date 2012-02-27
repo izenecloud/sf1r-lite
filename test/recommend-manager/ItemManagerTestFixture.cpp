@@ -1,4 +1,5 @@
 #include "ItemManagerTestFixture.h"
+#include "test_util.h"
 #include <recommend-manager/item/ItemManager.h>
 #include <recommend-manager/item/LocalItemManager.h>
 #include <document-manager/DocumentManager.h>
@@ -42,22 +43,30 @@ ItemManagerTestFixture::~ItemManagerTestFixture()
 void ItemManagerTestFixture::setTestDir(const std::string& dir)
 {
     testDir_ = dir;
-    bfs::remove_all(testDir_);
-
-    dmPath_ = (bfs::path(testDir_) / "dm/").string();
-    bfs::create_directories(dmPath_);
+    create_empty_directory(testDir_);
 }
 
 void ItemManagerTestFixture::resetInstance()
 {
     BOOST_TEST_MESSAGE("create ItemManager");
 
+    createDocManager_();
+
+    // flush first
+    itemManager_.reset();
+    itemManager_.reset(new LocalItemManager(*documentManager_.get()));
+}
+
+void ItemManagerTestFixture::createDocManager_()
+{
     // flush first
     documentManager_.reset();
-    itemManager_.reset();
 
-    documentManager_.reset(new DocumentManager(dmPath_, schema_, ENCODING_TYPE, 2000));
-    itemManager_.reset(new LocalItemManager(*documentManager_.get()));
+    bfs::path dmDir(testDir_);
+    dmDir /= "dm/";
+    bfs::create_directory(dmDir);
+
+    documentManager_.reset(new DocumentManager(dmDir.string(), schema_, ENCODING_TYPE, 2000));
 }
 
 void ItemManagerTestFixture::checkItemManager()
