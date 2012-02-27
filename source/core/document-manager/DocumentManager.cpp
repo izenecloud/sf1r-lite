@@ -602,11 +602,14 @@ bool DocumentManager::getRawTextOfOneDocument_(
     izenelib::util::UString& rawText
 )
 {
+    PropertyValue propValue;
+    if (!getPropertyValue(docId, propertyName, propValue))
+        return false; // docId does not exist
 
-    if (!getPropertyValue(docId, propertyName, rawText))
-    {
-        //return false;
-    }
+    rawText.clear();
+    if (izenelib::util::UString* pCast = get<izenelib::util::UString>(&propValue))
+        std::swap(rawText, *pCast);
+
     if (rawText.empty())
     {
         DLOG(ERROR)<<"No RawText For This Property. Property Name "<<propertyName<<endl;

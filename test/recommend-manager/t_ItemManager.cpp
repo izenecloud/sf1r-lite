@@ -5,8 +5,10 @@
 /// @date Created 2011-04-19
 ///
 
-#include <recommend-manager/item/ItemManager.h>
 #include "ItemManagerTestFixture.h"
+#include "SearchMasterItemManagerTestFixture.h"
+#include "test_util.h"
+#include <recommend-manager/item/ItemManager.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -33,6 +35,34 @@ BOOST_FIXTURE_TEST_CASE(checkItem, ItemManagerTestFixture)
     checkItemManager();
 
     resetInstance();
+    checkItemManager();
+
+    createItems(1000);
+    checkItemManager();
+
+    removeItems();
+    checkItemManager();
+
+    updateItems();
+    checkItemManager();
+}
+
+BOOST_FIXTURE_TEST_CASE(checkSearchMasterItemManager, SearchMasterItemManagerTestFixture)
+{
+    string baseDir = TEST_DIR_STR;
+    setTestDir(baseDir);
+
+    string logServerDir = baseDir + "/log_server";
+    create_empty_directory(logServerDir);
+    BOOST_REQUIRE(startRpcLogServer(logServerDir));
+
+    resetInstance();
+    checkItemManager();
+
+    createItems(10);
+    checkItemManager();
+
+    updateItems();
     checkItemManager();
 
     createItems(1000);

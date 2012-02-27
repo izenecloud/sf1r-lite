@@ -9,8 +9,6 @@
 #define ITEM_ID_GENERATOR_TEST_FIXTURE
 
 #include <recommend-manager/common/RecTypes.h>
-#include <configuration-manager/LogServerConnectionConfig.h>
-#include <log-server/RpcLogServer.h>
 
 #include <string>
 #include <boost/scoped_ptr.hpp>
@@ -18,12 +16,12 @@
 namespace sf1r
 {
 class ItemIdGenerator;
-class LogServerConnection;
 
 class ItemIdGeneratorTestFixture
 {
 public:
     ItemIdGeneratorTestFixture();
+    virtual ~ItemIdGeneratorTestFixture();
 
     /**
      * it should fail to convert from a non-exist id to string.
@@ -48,15 +46,9 @@ public:
      */
     void checkMultiThread(int threadNum, itemid_t maxItemId);
 
-    bool startRpcLogServer(const std::string& baseDir);
-
 protected:
     itemid_t maxItemId_;
     boost::scoped_ptr<ItemIdGenerator> itemIdGenerator_;
-
-    LogServerConnectionConfig connectionConfig_;
-    LogServerConnection& connection_;
-    boost::scoped_ptr<RpcLogServer> rpcLogServer_;
 };
 
 } // namespace sf1r

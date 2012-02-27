@@ -8,27 +8,19 @@
 #ifndef ITEM_FACTORY_H
 #define ITEM_FACTORY_H
 
-#include <ir/id_manager/IDManager.h>
-
 namespace sf1r
 {
-class DocumentManager;
 class ItemIdGenerator;
 class ItemManager;
 
 class ItemFactory
 {
 public:
-    typedef izenelib::ir::idmanager::IDManager IDManager;
+    virtual ~ItemFactory() {}
 
-    ItemFactory(IDManager* idManager, DocumentManager* docManager);
+    virtual ItemIdGenerator* createItemIdGenerator() = 0;
 
-    ItemIdGenerator* createItemIdGenerator();
-    ItemManager* createItemManager();
-
-private:
-    IDManager* idManager_;
-    DocumentManager* docManager_;
+    virtual ItemManager* createItemManager() = 0;
 };
 
 } // namespace sf1r

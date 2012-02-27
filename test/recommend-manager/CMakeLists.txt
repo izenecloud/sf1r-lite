@@ -1,6 +1,7 @@
 INCLUDE_DIRECTORIES(
   ${CMAKE_SOURCE_DIR}/core
   ${CMAKE_SOURCE_DIR}/process
+  ${CMAKE_SOURCE_DIR}/bundles
   ${izenelib_INCLUDE_DIRS}
   ${ilplib_INCLUDE_DIRS}
   ${idmlib_INCLUDE_DIRS}
@@ -34,6 +35,9 @@ SET(libs
   sf1r_product_manager
   sf1r_node_manager
   sf1r_bundle_recommend
+  sf1r_bundle_index
+  sf1r_bundle_mining
+  sf1r_aggregator_manager
 
   ${ilplib_LIBRARIES}
   ${idmlib_LIBRARIES}
@@ -78,6 +82,12 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     Runner.cpp
     t_ItemManager.cpp
     ItemManagerTestFixture.cpp
+    SearchMasterItemManagerTestFixture.cpp
+    ItemIdGeneratorTestFixture.cpp
+    RemoteItemIdGeneratorTestFixture.cpp
+    ${CMAKE_SOURCE_DIR}/process/log-server/LogServerCfg.cpp
+    ${CMAKE_SOURCE_DIR}/process/log-server/RpcLogServer.cpp
+    ${CMAKE_SOURCE_DIR}/process/log-server/LogServerWorkThread.cpp
   )
   TARGET_LINK_LIBRARIES(t_ItemManager ${libs})
   SET_TARGET_PROPERTIES(t_ItemManager PROPERTIES
@@ -170,6 +180,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     Runner.cpp
     t_ItemIdGenerator.cpp
     ItemIdGeneratorTestFixture.cpp
+    RemoteItemIdGeneratorTestFixture.cpp
     ${CMAKE_SOURCE_DIR}/process/log-server/LogServerCfg.cpp
     ${CMAKE_SOURCE_DIR}/process/log-server/RpcLogServer.cpp
     ${CMAKE_SOURCE_DIR}/process/log-server/LogServerWorkThread.cpp

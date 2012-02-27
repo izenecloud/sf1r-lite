@@ -5,6 +5,7 @@
 ///
 
 #include "ItemIdGeneratorTestFixture.h"
+#include "RemoteItemIdGeneratorTestFixture.h"
 #include "test_util.h"
 #include <recommend-manager/item/ItemIdGenerator.h>
 #include <recommend-manager/item/LocalItemIdGenerator.h>
@@ -115,7 +116,7 @@ BOOST_FIXTURE_TEST_CASE(checkSingleCollectionMultiThread, ItemIdGeneratorTestFix
     checkMultiThread(threadNum, maxItemId);
 }
 
-BOOST_FIXTURE_TEST_CASE(checkRemote, ItemIdGeneratorTestFixture)
+BOOST_FIXTURE_TEST_CASE(checkRemote, RemoteItemIdGeneratorTestFixture)
 {
     string dir = LOG_SERVER_DIR;
     create_empty_directory(dir);
@@ -135,7 +136,7 @@ BOOST_FIXTURE_TEST_CASE(checkRemote, ItemIdGeneratorTestFixture)
     checkItemId(*this, maxItemId);
 }
 
-BOOST_FIXTURE_TEST_CASE(checkRemoteMultiThread, ItemIdGeneratorTestFixture)
+BOOST_FIXTURE_TEST_CASE(checkRemoteMultiThread, RemoteItemIdGeneratorTestFixture)
 {
     string dir = LOG_SERVER_DIR;
     create_empty_directory(dir);
@@ -150,7 +151,7 @@ BOOST_FIXTURE_TEST_CASE(checkRemoteMultiThread, ItemIdGeneratorTestFixture)
     checkMultiThread(threadNum, maxItemId);
 }
 
-BOOST_FIXTURE_TEST_CASE(checkRemoteNotConnect, ItemIdGeneratorTestFixture)
+BOOST_FIXTURE_TEST_CASE(checkRemoteNotConnect, RemoteItemIdGeneratorTestFixture)
 {
     string dir = LOG_SERVER_DIR;
     create_empty_directory(dir);

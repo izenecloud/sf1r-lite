@@ -64,7 +64,7 @@ private:
     bool DoEvaluateSummarization_(
             Summarization& summarization,
             const KeyType& key,
-            const std::vector<izenelib::util::UString>& content_list);
+            const std::map<uint32_t, izenelib::util::UString>& content_map);
 
 #ifndef USE_LOG_SERVER
     void BuildIndexOfParentKey_();

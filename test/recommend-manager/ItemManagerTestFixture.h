@@ -12,6 +12,7 @@
 #include <configuration-manager/PropertyConfig.h>
 #include <util/ustring/UString.h>
 
+#include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <set>
 #include <map>
@@ -29,7 +30,7 @@ public:
     ItemManagerTestFixture();
     virtual ~ItemManagerTestFixture();
 
-    void setTestDir(const std::string& dir);
+    virtual void setTestDir(const std::string& dir);
 
     virtual void resetInstance();
 
@@ -41,10 +42,8 @@ public:
 
     void removeItems();
 
-private:
+protected:
     void initDMSchema_();
-
-    itemid_t maxItemId_() const;
 
     /** mapping from property name to UString value */
     typedef std::map<std::string, izenelib::util::UString> ItemInput;
@@ -55,12 +54,17 @@ private:
         Document& doc,
         ItemInput& itemInput);
 
-private:
+    virtual void insertItemId_(const std::string& strId, itemid_t goldId) {}
+
+protected:
     std::set<PropertyConfig, PropertyComp> schema_;
+    std::vector<std::string> propList_;
+    itemid_t maxItemId_;
+
     std::string testDir_;
     std::string dmPath_;
 
-    boost::scoped_ptr<DocumentManager> documentManager_;
+    boost::shared_ptr<DocumentManager> documentManager_;
     boost::scoped_ptr<ItemManager> itemManager_;
 
     typedef std::map<itemid_t, ItemInput> ItemMap;

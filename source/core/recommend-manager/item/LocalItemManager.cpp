@@ -19,7 +19,7 @@ bool LocalItemManager::getItem(
     return docManager_.getDocument(itemId, doc);
 }
 
-bool LocalItemManager::hasItem(itemid_t itemId) const
+bool LocalItemManager::hasItem(itemid_t itemId)
 {
     return docManager_.isDeleted(itemId) == false;
 }

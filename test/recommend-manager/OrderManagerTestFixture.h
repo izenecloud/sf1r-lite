@@ -1,6 +1,6 @@
 ///
-/// @file ItemManagerTestFixture.h
-/// @brief fixture class to test ItemManager
+/// @file OrderManagerTestFixture.h
+/// @brief fixture class to test OrderManager
 /// @author Jun Jiang
 /// @date Created 2011-11-08
 ///

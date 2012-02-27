@@ -1,12 +1,20 @@
 #include "TIBParam.h"
 
+namespace
+{
+const std::string DOCID("DOCID");
+}
+
 namespace sf1r
 {
 
 TIBParam::TIBParam()
     : limit(0)
     , minFreq(0)
-{}
+{
+    // DOCID property is a must in recommendation result
+    selectRecommendProps.push_back(DOCID);
+}
 
 bool TIBParam::check(std::string& errorMsg) const
 {
