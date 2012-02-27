@@ -1,4 +1,5 @@
 INCLUDE_DIRECTORIES(
+  ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/core
   ${CMAKE_SOURCE_DIR}/process
   ${CMAKE_SOURCE_DIR}/bundles
@@ -13,6 +14,7 @@ INCLUDE_DIRECTORIES(
   ${TokyoCabinet_INCLUDE_DIRS}
   ${Glog_INCLUDE_DIRS}
   ${Thrift_INCLUDE_DIR}
+  ${xml2_INCLUDE_DIRS}
   )
 
 # sequences is important for some linker
@@ -37,6 +39,7 @@ SET(libs
   sf1r_bundle_recommend
   sf1r_bundle_index
   sf1r_bundle_mining
+  sf1r_bundle_product
   sf1r_aggregator_manager
 
   ${ilplib_LIBRARIES}
@@ -57,6 +60,13 @@ SET(libs
   ${MYSQL_LIBRARIES}
   ${Thrift_LIBS}
   )
+
+FILE(GLOB_RECURSE common_SRC "${CMAKE_SOURCE_DIR}/process/common/*.cpp")
+FILE(GLOB_RECURSE controller_SRC "${CMAKE_SOURCE_DIR}/process/controllers/*.cpp")
+FILE(GLOB_RECURSE parsers_SRC "${CMAKE_SOURCE_DIR}/process/parsers/*.cpp")
+FILE(GLOB_RECURSE renderers_SRC "${CMAKE_SOURCE_DIR}/process/renderers/*.cpp")
+FILE(GLOB_RECURSE log_server_SRC "${CMAKE_SOURCE_DIR}/process/log-server/*.cpp")
+
 SET(Boost_USE_STATIC_LIBS OFF)
 FIND_PACKAGE(Boost ${Boost_FIND_VERSION}
   COMPONENTS unit_test_framework)
@@ -85,9 +95,11 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     SearchMasterItemManagerTestFixture.cpp
     ItemIdGeneratorTestFixture.cpp
     RemoteItemIdGeneratorTestFixture.cpp
-    ${CMAKE_SOURCE_DIR}/process/log-server/LogServerCfg.cpp
-    ${CMAKE_SOURCE_DIR}/process/log-server/RpcLogServer.cpp
-    ${CMAKE_SOURCE_DIR}/process/log-server/LogServerWorkThread.cpp
+    ${common_SRC}
+    ${controller_SRC}
+    ${parsers_SRC}
+    ${renderers_SRC}
+    ${log_server_SRC}
   )
   TARGET_LINK_LIBRARIES(t_ItemManager ${libs})
   SET_TARGET_PROPERTIES(t_ItemManager PROPERTIES

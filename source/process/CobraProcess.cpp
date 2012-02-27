@@ -1,7 +1,7 @@
 #include "CobraProcess.h"
-#include "RouterInitializer.h"
-
+#include <common/RouterInitializer.h>
 #include <common/SFLogger.h>
+
 #include <log-manager/LogServerConnection.h>
 #include <la-manager/LAPool.h>
 #include <license-manager/LicenseManager.h>
@@ -13,7 +13,7 @@
 #include <node-manager/RecommendNodeManager.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 
-#include <OnSignal.h>
+#include <common/OnSignal.h>
 #include <common/XmlConfigParser.h>
 #include <common/CollectionManager.h>
 #include <distribute/WorkerServer.h>

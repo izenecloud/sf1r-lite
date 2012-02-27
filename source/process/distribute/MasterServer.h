@@ -7,6 +7,9 @@
 #include <common/ResultType.h>
 #include <query-manager/ActionItem.h>
 #include <aggregator-manager/MasterServerConnector.h>
+#include <common/CollectionManager.h>
+#include <controllers/CollectionHandler.h>
+#include <index/IndexSearchService.h>
 
 namespace sf1r
 {
