@@ -989,6 +989,7 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
             }
             x[feature_vec.size()].index = -1;
             double predict_label = svm_predict(model,x);
+            free(x);
 #ifdef B5M_DEBUG
             {
                 logger_<<"[MATCH]"<<std::endl;
