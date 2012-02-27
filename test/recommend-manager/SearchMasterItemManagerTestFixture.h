@@ -9,7 +9,7 @@
 #define SEARCH_MASTER_ITEM_MANAGER_TEST_FIXTURE
 
 #include "ItemManagerTestFixture.h"
-#include "ItemIdGeneratorTestFixture.h"
+#include "RemoteItemIdGeneratorTestFixture.h"
 #include <index/IndexBundleConfiguration.h>
 
 #include <ir/id_manager/IDManager.h>
@@ -19,7 +19,7 @@ namespace sf1r
 class IndexSearchService;
 
 class SearchMasterItemManagerTestFixture : public ItemManagerTestFixture,
-                                           public ItemIdGeneratorTestFixture
+                                           public RemoteItemIdGeneratorTestFixture
 {
 public:
     SearchMasterItemManagerTestFixture();

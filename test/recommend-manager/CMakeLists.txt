@@ -84,6 +84,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     ItemManagerTestFixture.cpp
     SearchMasterItemManagerTestFixture.cpp
     ItemIdGeneratorTestFixture.cpp
+    RemoteItemIdGeneratorTestFixture.cpp
     ${CMAKE_SOURCE_DIR}/process/log-server/LogServerCfg.cpp
     ${CMAKE_SOURCE_DIR}/process/log-server/RpcLogServer.cpp
     ${CMAKE_SOURCE_DIR}/process/log-server/LogServerWorkThread.cpp
@@ -179,6 +180,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     Runner.cpp
     t_ItemIdGenerator.cpp
     ItemIdGeneratorTestFixture.cpp
+    RemoteItemIdGeneratorTestFixture.cpp
     ${CMAKE_SOURCE_DIR}/process/log-server/LogServerCfg.cpp
     ${CMAKE_SOURCE_DIR}/process/log-server/RpcLogServer.cpp
     ${CMAKE_SOURCE_DIR}/process/log-server/LogServerWorkThread.cpp
