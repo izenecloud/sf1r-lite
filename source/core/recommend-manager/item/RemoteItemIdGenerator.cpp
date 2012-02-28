@@ -55,8 +55,7 @@ bool RemoteItemIdGenerator::itemIdToStrId(itemid_t itemId, std::string& strId)
     }
     catch(const std::exception& e)
     {
-        LOG(ERROR) << "failed in itemIdToStrId(), item id: " << itemId
-                   << ", exception: " << e.what();
+        LOG(ERROR) << e.what();
         return false;
     }
 

@@ -31,7 +31,7 @@ bool RecommendMasterManager::init()
     return true;
 }
 
-bool RecommendMasterManager::getSearchMasterAddress(std::string& host, uint32_t& port)
+bool RecommendMasterManager::findSearchMasterAddress(std::string& host, uint32_t& port)
 {
     if (!zookeeper_ || !zookeeper_->isConnected())
         return false;

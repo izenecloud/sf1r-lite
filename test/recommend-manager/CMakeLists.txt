@@ -93,6 +93,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     t_ItemManager.cpp
     ItemManagerTestFixture.cpp
     SearchMasterItemManagerTestFixture.cpp
+    RemoteItemManagerTestFixture.cpp
     ItemIdGeneratorTestFixture.cpp
     RemoteItemIdGeneratorTestFixture.cpp
     ${common_SRC}

@@ -21,7 +21,8 @@ bool LocalItemManager::getItem(
 
 bool LocalItemManager::hasItem(itemid_t itemId)
 {
-    return docManager_.isDeleted(itemId) == false;
+    return itemId <= docManager_.getMaxDocId() &&
+           !docManager_.isDeleted(itemId);
 }
 
 } // namespace sf1r

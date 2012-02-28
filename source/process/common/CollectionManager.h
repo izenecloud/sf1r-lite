@@ -77,6 +77,8 @@ private:
     std::map<std::string, MutexType*> mutexMap_;
 
     static CollectionHandler* kEmptyHandler_;
+
+    friend class RemoteItemManagerTestFixture;
 };
 
 }

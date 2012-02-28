@@ -5,6 +5,7 @@
 #include <aggregator-manager/MasterServerConnector.h>
 
 #include <glog/logging.h>
+#include <stdexcept>
 
 namespace sf1r
 {
@@ -28,10 +29,8 @@ bool RemoteItemManager::sendRequest_(
         masterServerConnector_->syncCall(MasterServerConnector::Method_getDocumentsByIds_,
                                          request, response);
     }
-    catch(const msgpack::rpc::rpc_error& e)
+    catch(const std::exception& e)
     {
-        LOG(ERROR) << "failed in MasterServerConnector::Method_getDocumentsByIds_()"
-                   << ", exception: " << e.what();
         return false;
     }
 

@@ -45,6 +45,9 @@ void SearchMasterItemManagerTestFixture::resetInstance()
 
 void SearchMasterItemManagerTestFixture::createSearchService_()
 {
+    // flush first
+    indexSearchService_.reset();
+
     createIdManager_();
     createDocManager_();
 

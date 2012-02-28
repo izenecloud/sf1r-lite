@@ -74,9 +74,7 @@ void ItemManagerTestFixture::checkItemManager()
     BOOST_TEST_MESSAGE("check " << itemMap_.size() << " items");
 
     Document doc;
-    itemid_t maxId = maxItemId_;
-
-    for (itemid_t i=1; i <= maxId; ++i)
+    for (itemid_t i=1; i <= maxItemId_; ++i)
     {
         ItemMap::const_iterator findIt = itemMap_.find(i);
         if (findIt != itemMap_.end())
@@ -91,6 +89,10 @@ void ItemManagerTestFixture::checkItemManager()
             BOOST_CHECK(itemManager_->hasItem(i) == false);
         }
     }
+
+    itemid_t nonExistId = maxItemId_ + 1;
+    BOOST_CHECK(itemManager_->getItem(nonExistId, propList_, doc) == false);
+    BOOST_CHECK(itemManager_->hasItem(nonExistId) == false);
 }
 
 void ItemManagerTestFixture::createItems(int num)

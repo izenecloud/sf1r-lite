@@ -1,7 +1,6 @@
 #ifndef PROCESS_DISTRIBUTE_MASTER_SERVER_H_
 #define PROCESS_DISTRIBUTE_MASTER_SERVER_H_
 
-#include <util/singleton.h>
 #include <3rdparty/msgpack/rpc/server.h>
 
 #include <common/ResultType.h>
@@ -20,15 +19,24 @@ namespace sf1r
 class MasterServer : public msgpack::rpc::server::base
 {
 public:
-    static MasterServer* get()
+    ~MasterServer()
     {
-        return izenelib::util::Singleton<MasterServer>::get();
+        stop();
     }
 
     void start(const std::string& host, uint16_t port, unsigned int threadnum=4)
     {
         instance.listen(host, port);
         instance.start(threadnum);
+    }
+
+    void stop()
+    {
+        if (instance.is_running())
+        {
+            instance.end();
+            instance.join();
+        }
     }
 
     void dispatch(msgpack::rpc::request req)
@@ -79,7 +87,12 @@ private:
         }
 
         RawTextResultFromSIA resultItem;
-        collectionHandler->indexSearchService_->getDocumentsByIds(action, resultItem);
+        if (!collectionHandler->indexSearchService_->getDocumentsByIds(action, resultItem))
+        {
+            req.error(resultItem.error_);
+            return;
+        }
+
         req.result(resultItem);
     }
 
