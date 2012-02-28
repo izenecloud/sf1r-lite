@@ -3,6 +3,7 @@
 #include <log-manager/LogServerRequest.h>
 
 #include <glog/logging.h>
+#include <stdexcept>
 
 namespace
 {
@@ -34,7 +35,7 @@ bool RemoteItemIdGenerator::strIdToItemId(const std::string& strId, itemid_t& it
     {
         connection_.syncRequest(strIdToItemIdMethodName_, request, itemId);
     }
-    catch(const msgpack::rpc::rpc_error& e)
+    catch(const std::exception& e)
     {
         LOG(ERROR) << "failed in strIdToItemId(), str id: " << strId
                    << ", exception: " << e.what();
@@ -52,7 +53,7 @@ bool RemoteItemIdGenerator::itemIdToStrId(itemid_t itemId, std::string& strId)
     {
         connection_.syncRequest(itemIdToStrIdMethodName_, request, strId);
     }
-    catch(const msgpack::rpc::rpc_error& e)
+    catch(const std::exception& e)
     {
         LOG(ERROR) << "failed in itemIdToStrId(), item id: " << itemId
                    << ", exception: " << e.what();
@@ -70,7 +71,7 @@ itemid_t RemoteItemIdGenerator::maxItemId() const
     {
         connection_.syncRequest(maxItemIdMethodName_, collection_, itemId);
     }
-    catch(const msgpack::rpc::rpc_error& e)
+    catch(const std::exception& e)
     {
         LOG(ERROR) << "failed in maxItemId(), exception: " << e.what();
     }
