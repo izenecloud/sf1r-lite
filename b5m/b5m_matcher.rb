@@ -3,42 +3,8 @@
 require 'rubygems'
 require 'yaml'
 require 'fileutils'
+require_relative 'b5m_helper'
 
-class CategoryTask
-  ATT = 1 #attribute indexing approach
-  COM = 2 #complete match approach
-  SIM = 3 #similarity based approach
-
-  attr_reader :type, :category, :cid, :info, :valid, :regex
-
-  def initialize(line)
-    str = line
-    @type = ATT
-    @category = ""
-    @cid = ""
-    @info = {}
-    @valid = true
-    @regex = true
-    if str.start_with?("#")
-      str = str[1..-1]
-      @valid = false
-    end
-    a = str.split(',')
-    @category = a[0]
-    @cid = a[1]
-    if a.size>=4 and a[2]=="COMPLETE"
-      @type = COM
-      @info['name'] = a[3]
-    elsif a.size>=3 and a[2]=="SIMILARITY"
-      @type = SIM
-    end
-
-    if @category=="OPPOSITE" or @category=="OPPOSITEALL"
-      @regex = false
-    end
-  end
-
-end
 
 force = false;
 forcet = false;
@@ -108,6 +74,7 @@ task_list.each do |task|
   if !task.regex
     category_str = ""
     task_list.each do |t|
+      next unless t.info['disable'].nil?
       if t.regex and (t.valid or ball)
         category_str += t.category
         category_str += "\n"
@@ -183,6 +150,7 @@ task_list.each do |task|
     puts "start similarity matching #{task.cid}"
     system("#{matcher_program} -I -C #{cma} -S #{scd} -K #{category_dir}")
   else
+    next unless task.info['disable'].nil?
     puts "start building attribute index for #{task.cid}"
     system("#{matcher_program} -A -Y #{synonym} -C #{cma} -S #{train_scd} -K #{category_dir}")
     puts "start matching for #{task.cid}"
