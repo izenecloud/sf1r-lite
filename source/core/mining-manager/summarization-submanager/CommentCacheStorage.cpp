@@ -14,6 +14,8 @@ CommentCacheStorage::CommentCacheStorage(
         uint32_t buffer_capacity)
     : dirty_key_db_(dbPath + dirty_key_path)
     , dispatcher_(dirty_key_db_)
+    , buffer_capacity_(buffer_capacity)
+    , buffer_size_(0)
     , op_type_(CommentCacheStorage::NONE)
 {
     if (!dirty_key_db_.open())
@@ -33,33 +35,68 @@ void CommentCacheStorage::AppendUpdate(const KeyType& key, uint32_t docid, const
 {
     if (op_type_ != APPEND_UPDATE)
     {
-        Flush();
+        Flush(true);
         op_type_ = APPEND_UPDATE;
     }
 
-    CommentCacheItemType cache_item;
-    cache_item[docid] = content;
-    comment_cache_drum_->Append(key, cache_item);
+    buffer_db_[key][docid] = content;
+
+    ++buffer_size_;
+    if (IsBufferFull_())
+        Flush();
 }
 
 void CommentCacheStorage::Delete(const KeyType& key)
 {
     if (op_type_ != DELETE)
     {
-        Flush();
+        Flush(true);
         op_type_ = DELETE;
     }
 
-    comment_cache_drum_->Delete(key);
+    buffer_db_[key];
+
+    ++buffer_size_;
+    if (IsBufferFull_())
+        Flush();
 }
 
-void CommentCacheStorage::Flush()
+void CommentCacheStorage::Flush(bool needSync)
 {
     if (op_type_ == NONE) return;
+    if (!needSync && buffer_db_.empty()) return;
 
-    comment_cache_drum_->Synchronize();
-    dirty_key_db_.flush();
-    op_type_ = NONE;
+    switch (op_type_)
+    {
+    case APPEND_UPDATE:
+        for (BufferType::iterator it = buffer_db_.begin();
+                it != buffer_db_.end(); ++it)
+        {
+            comment_cache_drum_->Append(it->first, it->second);
+        }
+        break;
+
+    case DELETE:
+        for (BufferType::iterator it = buffer_db_.begin();
+                it != buffer_db_.end(); ++it)
+        {
+            comment_cache_drum_->Delete(it->first);
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    if (needSync)
+    {
+        comment_cache_drum_->Synchronize();
+        dirty_key_db_.flush();
+        op_type_ = NONE;
+    }
+
+    buffer_db_.clear();
+    buffer_size_ = 0;
 }
 
 bool CommentCacheStorage::Get(const KeyType& key, CommentCacheItemType& result)

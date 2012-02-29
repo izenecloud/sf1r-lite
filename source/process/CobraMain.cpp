@@ -1,6 +1,6 @@
 #include "CobraProcess.h"
+#include "common/ProcessOptions.h"
 
-#include <ProcessOptions.h>
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>

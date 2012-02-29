@@ -1,8 +1,8 @@
 #include "SearchMasterItemManagerTestFixture.h"
 #include <recommend-manager/item/ItemIdGenerator.h>
 #include <recommend-manager/item/ItemManager.h>
-#include <index/IndexSearchService.h>
 #include <recommend-manager/item/SearchMasterItemFactory.h>
+#include <index/IndexSearchService.h>
 #include <aggregator-manager/SearchWorker.h>
 
 #include <boost/filesystem.hpp>
@@ -20,7 +20,8 @@ namespace sf1r
 {
 
 SearchMasterItemManagerTestFixture::SearchMasterItemManagerTestFixture()
-    : indexBundleConfig_(COLLECTION_NAME)
+    : collectionName_(COLLECTION_NAME)
+    , indexBundleConfig_(collectionName_)
 {
     indexBundleConfig_.isSupportByAggregator_ = false;
     indexBundleConfig_.masterSearchCacheNum_ = 1000;
@@ -31,23 +32,24 @@ SearchMasterItemManagerTestFixture::~SearchMasterItemManagerTestFixture()
 {
 }
 
-void SearchMasterItemManagerTestFixture::setTestDir(const std::string& dir)
-{
-    ItemManagerTestFixture::setTestDir(dir);
-
-    bfs::path idDir(testDir_);
-    idDir /= "id_manager";
-    bfs::create_directory(idDir);
-
-    idPathPrefix_  = (idDir / "item").string();
-}
-
 void SearchMasterItemManagerTestFixture::resetInstance()
 {
     BOOST_TEST_MESSAGE("create ItemManager");
 
-    idManager_.reset(new IDManagerType(idPathPrefix_));
-    documentManager_.reset(new DocumentManager(dmPath_, schema_, ENCODING_TYPE, 2000));
+    createSearchService_();
+
+    SearchMasterItemFactory itemFactory(collectionName_, *indexSearchService_);
+    itemManager_.reset(itemFactory.createItemManager());
+    itemIdGenerator_.reset(itemFactory.createItemIdGenerator());
+}
+
+void SearchMasterItemManagerTestFixture::createSearchService_()
+{
+    // flush first
+    indexSearchService_.reset();
+
+    createIdManager_();
+    createDocManager_();
 
     SearchWorker* searchWorker = new SearchWorker(&indexBundleConfig_);
     searchWorker->idManager_ = idManager_;
@@ -55,10 +57,18 @@ void SearchMasterItemManagerTestFixture::resetInstance()
 
     indexSearchService_.reset(new IndexSearchService(&indexBundleConfig_));
     indexSearchService_->searchWorker_.reset(searchWorker);
+}
 
-    SearchMasterItemFactory itemFactory(COLLECTION_NAME, *indexSearchService_);
-    itemManager_.reset(itemFactory.createItemManager());
-    itemIdGenerator_.reset(itemFactory.createItemIdGenerator());
+void SearchMasterItemManagerTestFixture::createIdManager_()
+{
+    // flush first
+    idManager_.reset();
+
+    bfs::path idDir(testDir_);
+    idDir /= "id_manager";
+    bfs::create_directory(idDir);
+
+    idManager_.reset(new IDManagerType((idDir / "item").string()));
 }
 
 void SearchMasterItemManagerTestFixture::insertItemId_(const std::string& strId, itemid_t goldId)

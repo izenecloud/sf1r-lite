@@ -9,6 +9,7 @@
 
 #include "NodeManagerBase.h"
 #include "RecommendMasterManager.h"
+#include <aggregator-manager/MasterServerConnector.h>
 
 #include <util/singleton.h>
 
@@ -40,7 +41,10 @@ protected:
 
     virtual void startMasterManager()
     {
-        RecommendMasterManager::get()->start();
+        RecommendMasterManager* recMasterManager = RecommendMasterManager::get();
+        recMasterManager->start();
+
+        MasterServerConnector::get()->init(recMasterManager);
     }
 
     virtual void stopMasterManager()

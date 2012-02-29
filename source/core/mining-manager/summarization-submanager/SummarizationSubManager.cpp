@@ -161,7 +161,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         }
     }
     SetLastDocid_(document_manager_->getMaxDocId());
-    comment_cache_storage_->Flush();
+    comment_cache_storage_->Flush(true);
 
     {
         CommentCacheStorage::DirtyKeyIteratorType dirtyKeyIt(comment_cache_storage_->dirty_key_db_);

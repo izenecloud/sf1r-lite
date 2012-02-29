@@ -1,7 +1,7 @@
 #include "CobraProcess.h"
-#include "RouterInitializer.h"
-
+#include <common/RouterInitializer.h>
 #include <common/SFLogger.h>
+
 #include <log-manager/LogServerConnection.h>
 #include <la-manager/LAPool.h>
 #include <license-manager/LicenseManager.h>
@@ -13,11 +13,10 @@
 #include <node-manager/RecommendNodeManager.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 
-#include <OnSignal.h>
+#include <common/OnSignal.h>
 #include <common/XmlConfigParser.h>
 #include <common/CollectionManager.h>
 #include <distribute/WorkerServer.h>
-#include <distribute/MasterServer.h>
 
 #include <util/ustring/UString.h>
 #include <util/driver/IPRestrictor.h>
@@ -274,7 +273,8 @@ bool CobraProcess::startDistributedServer()
     {
         std::string localHost = SF1Config::get()->distributedCommonConfig_.localHost_;
         uint16_t masterPort = SF1Config::get()->distributedCommonConfig_.masterPort_;
-        MasterServer::get()->start(localHost, masterPort);
+        masterServer_.reset(new MasterServer);
+        masterServer_->start(localHost, masterPort);
     }
 
     // Start distributed topology node manager(s)

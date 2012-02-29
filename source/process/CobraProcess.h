@@ -1,6 +1,7 @@
 #ifndef COBRAPROCESS_H_
 #define COBRAPROCESS_H_
 
+#include <distribute/MasterServer.h>
 #include <util/driver/DriverServer.h>
 
 #include <boost/scoped_ptr.hpp>
@@ -42,6 +43,7 @@ private:
     std::string configDir_;
 
     boost::scoped_ptr<izenelib::driver::DriverServer> driverServer_;
+    boost::scoped_ptr<sf1r::MasterServer> masterServer_;
 
     boost::shared_ptr<izenelib::driver::Router> router_;
 };
