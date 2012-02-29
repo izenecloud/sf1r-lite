@@ -6,8 +6,6 @@
 #include <common/Utilities.h>
 #include <product-manager/product_price.h>
 #include <product-manager/uuid_generator.h>
-#include <log-manager/LogServerRequest.h>
-#include <log-manager/LogServerConnection.h>
 #include <am/sequence_file/ssfr.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
@@ -17,7 +15,7 @@
 using namespace sf1r;
 
 ScdGenerator::ScdGenerator()
-:exclude_(false), buuid_(false)
+:exclude_(false)
 {
 }
 
@@ -151,26 +149,27 @@ bool ScdGenerator::Generate(const std::string& scd_file, const std::string& outp
     }
     writer.Close();
     izenelib::am::ssf::Sorter<uint32_t, uint64_t>::Sort(writer_file);
-    if(buuid_)
-    {
-        if(!LogServerConnection::instance().init(logserver_config_))
-        {
-            std::cout<<"log server init failed"<<std::endl;
-            return false;
-        }
-    }
     izenelib::am::ssf::Joiner<uint32_t, uint64_t, Document> joiner(writer_file);
     joiner.Open();
     uint64_t key;
     std::vector<Document> docs;
     ScdWriter b5mo_writer(b5mo_dir, INSERT_SCD);
     ScdWriter b5mp_writer(b5mp_dir, INSERT_SCD);
+    n = 0;
     while(joiner.Next(key, docs))
     {
+        ++n;
+        if(n%100000==0)
+        {
+            LOG(INFO)<<"Process "<<n<<" docs"<<std::endl;
+        }
+        izenelib::util::UString uuid;
+        std::string uuidstr;
+        UuidGenerator::Gen(uuidstr, uuid);
         for(uint32_t i=0;i<docs.size();i++)
         {
             Document doc(docs[i]);
-            doc.eraseProperty("uuid");
+            doc.property("uuid") = uuid;
             b5mo_writer.Append(doc);
         }
         Document b5mp_doc;
@@ -188,39 +187,28 @@ bool ScdGenerator::Generate(const std::string& scd_file, const std::string& outp
         {
             b5mp_doc.copyPropertiesFromDocument(docs[0]);
         }
-        b5mp_doc.property("DOCID") = b5mp_doc.property("uuid");
+        b5mp_doc.property("DOCID") = uuid;
         b5mp_doc.eraseProperty("uuid");
 
         //generate boost::uuid, and push it to log-server
-        if(buuid_)
-        {
-            LogServerConnection& conn = LogServerConnection::instance();
-            izenelib::util::UString uuid;
-            std::string uuidstr;
-            UuidGenerator::Gen(uuidstr, uuid);
-            UpdateUUIDRequest uuidReq;
-            uuidReq.param_.uuid_ = Utilities::uuidToUint128(uuidstr);
-            for (uint32_t i = 0; i < docs.size(); i++)
-            {
-                std::string docname;
-                docs[i].property("DOCID").get<izenelib::util::UString>().convertString(docname, izenelib::util::UString::UTF_8);
-                uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128(docname));
-            }
-            conn.asynRequest(uuidReq);
-            b5mp_doc.property("DOCID") = uuid;
-        }
-
         ProductPrice price;
         std::set<std::string> source_set;
         for(uint32_t i=0;i<docs.size();i++)
         {
             ProductPrice p;
-            p.Parse(docs[i].property("Price").get<UString>());
+            UString uprice;
+            docs[i].getProperty("Price", uprice);
+            p.Parse(uprice);
             price += p;
-            UString usource = docs[i].property("Source").get<UString>();
-            std::string source;
-            usource.convertString(source, UString::UTF_8);
-            source_set.insert(source);
+            UString usource;
+            docs[i].getProperty("Source", usource);
+
+            if(usource.length()>0)
+            {
+                std::string source;
+                usource.convertString(source, UString::UTF_8);
+                source_set.insert(source);
+            }
         }
         UString usource;
         std::set<std::string>::iterator it = source_set.begin();
@@ -238,12 +226,6 @@ bool ScdGenerator::Generate(const std::string& scd_file, const std::string& outp
         uint32_t itemcount = docs.size();
         b5mp_doc.property("itemcount") = UString(boost::lexical_cast<std::string>(itemcount), UString::UTF_8);
         b5mp_writer.Append(b5mp_doc);
-    }
-    if(buuid_)
-    {
-        LogServerConnection& conn = LogServerConnection::instance();
-        SynchronizeRequest syncReq;
-        conn.asynRequest(syncReq);
     }
     b5mo_writer.Close();
     b5mp_writer.Close();

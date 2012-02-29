@@ -3,6 +3,7 @@
 require 'rubygems'
 require 'yaml'
 require 'fileutils'
+require_relative 'b5m_helper'
 
 top_dir = File.dirname(File.expand_path(__FILE__))
 config_file = File.join(top_dir, "config.yml")
@@ -16,7 +17,6 @@ else
   exit(false)
 end
 match_config = config["matcher"]
-log_server = match_config["log_server"]
 Dir.chdir(File.dirname(config_file)) do
   match_config['path_of'].each_pair do |k,v|
     match_config['path_of'][k] = File.expand_path(v)
@@ -24,16 +24,38 @@ Dir.chdir(File.dirname(config_file)) do
 end
 match_path = match_config['path_of']
 work_dir = match_path['work_dir']
-scd = match_path['scd']
-b5mo_scd = File.join(match_path['b5mo'], "scd", "index")
-b5mp_scd = File.join(match_path['b5mp'], "scd", "index")
-matcher_program = File.join(top_dir, "b5m_matcher")
-FileUtils.rm_rf("#{match_path['b5m_scd']}")
-puts "start generate b5mo and b5mp SCDs from #{scd}"
-cmd = "#{matcher_program} -G #{match_path['b5m_scd']} -S #{scd} -K #{work_dir}"
-system(cmd)
-system("rm -rf #{b5mo_scd}/*")
-system("mv #{match_path['b5m_scd']}/b5mo/* #{b5mo_scd}/")
-system("rm -rf #{b5mp_scd}/*")
-system("mv #{match_path['b5m_scd']}/b5mp/* #{b5mp_scd}/")
+category_file = match_path['category']
+
+name_list = []
+Dir.foreach(work_dir) do |w|
+  next unless w.start_with?("C")
+  name_list << w
+end
+
+name_list.sort!
+
+disable_set = {}
+
+name_list.each do |w|
+  category_dir = File.join(work_dir, w)
+  match_file = File.join(category_dir, "match")
+  if File.exist?(match_file)
+    #STDOUT.puts("#{w} HAS_MATCH")
+  else
+    #STDOUT.puts("#{w} NO_MATCH")
+    disable_set[w] = true
+  end
+end
+
+task_list = []
+IO.readlines(category_file).each do |c_line|
+  c_line.strip!
+  task = CategoryTask.new(c_line)
+  task.info['disable'] = true unless disable_set[task.cid].nil?
+  task_list << task
+end
+
+task_list.each do |t|
+  STDOUT.puts t
+end
 
