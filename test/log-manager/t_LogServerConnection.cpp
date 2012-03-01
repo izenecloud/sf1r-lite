@@ -59,6 +59,9 @@ void t_RpcLogServer()
     LogServerConnection& conn = LogServerConnection::instance();
     conn.init(LOG_SERVER_CONFIG);
 
+    if (!conn.testServer())
+        return;
+
     UpdateUUIDRequest uuidReq;
     uuidReq.param_.docidList_.resize(3);
 
