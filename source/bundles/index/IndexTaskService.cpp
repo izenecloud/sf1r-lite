@@ -23,7 +23,7 @@ IndexTaskService::~IndexTaskService()
 bool IndexTaskService::index(unsigned int numdoc)
 {
     // distributed index
-    if (bundleConfig_->isSupportByAggregator())
+    if (bundleConfig_->isMasterAggregator())
     {
         task_type task = boost::bind(&IndexTaskService::indexMaster_, this, numdoc);
         JobScheduler::get()->addTask(task);

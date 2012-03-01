@@ -23,7 +23,7 @@ SearchMasterItemManagerTestFixture::SearchMasterItemManagerTestFixture()
     : collectionName_(COLLECTION_NAME)
     , indexBundleConfig_(collectionName_)
 {
-    indexBundleConfig_.isSupportByAggregator_ = false;
+    indexBundleConfig_.isMasterAggregator_ = false;
     indexBundleConfig_.masterSearchCacheNum_ = 1000;
     indexBundleConfig_.searchCacheNum_ = 1000;
 }
