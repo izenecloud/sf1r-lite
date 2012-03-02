@@ -876,7 +876,7 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
         return;
     }
     std::cout<<model_file<<" loaded!"<<std::endl;
-    std::ofstream match_ofs(match_file.c_str());
+    std::ofstream match_ofs(match_file.c_str(), std::ios::out | std::ios::app);
     boost::unordered_map<std::string, std::vector<std::size_t> > category_indexlist;
     boost::unordered_map<std::string, std::vector<std::size_t> >::iterator ci_it;
     BuildCategoryMap_(category_indexlist);

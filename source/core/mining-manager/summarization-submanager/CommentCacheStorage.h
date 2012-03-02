@@ -78,6 +78,8 @@ public:
     typedef izenelib::am::leveldb::Table<KeyType, char> DirtyKeyDbType;
     typedef izenelib::am::AMIterator<DirtyKeyDbType> DirtyKeyIteratorType;
 
+    typedef stx::btree_map<KeyType, CommentCacheItemType> BufferType;
+
     enum OpType
     {
         NONE,
@@ -87,7 +89,7 @@ public:
 
     CommentCacheStorage(
             const std::string& dbPath,
-            uint32_t buffer_capacity = 5000);
+            uint32_t buffer_capacity = 20000);
 
     ~CommentCacheStorage();
 
@@ -95,11 +97,17 @@ public:
 
     void Delete(const KeyType& key);
 
-    void Flush();
+    void Flush(bool needSync = false);
 
     bool Get(const KeyType& key, CommentCacheItemType& value);
 
     bool ClearDirtyKey();
+
+private:
+    inline bool IsBufferFull_()
+    {
+        return buffer_size_ >= buffer_capacity_;
+    }
 
 private:
     friend class MultiDocSummarizationSubManager;
@@ -107,6 +115,11 @@ private:
     DirtyKeyDbType dirty_key_db_;
     CommentCacheDispatcher<KeyType, CommentCacheItemType, char> dispatcher_;
     boost::shared_ptr<CommentCacheDrumType> comment_cache_drum_;
+
+    BufferType buffer_db_;
+
+    uint32_t buffer_capacity_;
+    uint32_t buffer_size_;
 
     OpType op_type_;
 };
