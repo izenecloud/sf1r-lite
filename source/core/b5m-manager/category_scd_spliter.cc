@@ -87,38 +87,66 @@ bool CategoryScdSpliter::Load(const std::string& dir, const std::string& name)
     return true;
 }
 
-bool CategoryScdSpliter::Split(const std::string& scd_file)
+bool CategoryScdSpliter::Split(const std::string& scd_path)
 {
     typedef izenelib::util::UString UString;
-    if(!boost::filesystem::exists(scd_file)) return false;
-
-    ScdParser parser(izenelib::util::UString::UTF_8);
-    parser.load(scd_file);
-    uint32_t n=0;
-    for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
-      doc_iter!= parser.end(); ++doc_iter, ++n)
+    namespace bfs = boost::filesystem;
+    if(!bfs::exists(scd_path)) return false;
+    std::vector<std::string> scd_list;
+    if( bfs::is_regular_file(scd_path) && boost::algorithm::ends_with(scd_path, ".SCD"))
     {
-        if(n%10000==0)
+        scd_list.push_back(scd_path);
+    }
+    else if(bfs::is_directory(scd_path))
+    {
+        bfs::path p(scd_path);
+        bfs::directory_iterator end;
+        for(bfs::directory_iterator it(p);it!=end;it++)
         {
-            LOG(INFO)<<"Find Documents "<<n<<std::endl;
-        }
-        Document doc;
-        SCDDoc& scddoc = *(*doc_iter);
-        std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
-        for(p=scddoc.begin(); p!=scddoc.end(); ++p)
-        {
-            std::string property_name;
-            p->first.convertString(property_name, izenelib::util::UString::UTF_8);
-            doc.property(property_name) = p->second;
-        }
-        std::string scategory;
-        doc.property("Category").get<UString>().convertString(scategory, UString::UTF_8);
-        for(uint32_t i=0;i<values_.size();i++)
-        {
-            if(boost::regex_match(scategory, values_[i].regex))
+            if(bfs::is_regular_file(it->path()))
             {
-                values_[i].writer->Append(doc);
-                break;
+                std::string file = it->path().string();
+                if(boost::algorithm::ends_with(file, ".SCD"))
+                {
+                    scd_list.push_back(file);
+                }
+            }
+        }
+    }
+    if(scd_list.empty()) return false;
+
+    for(uint32_t i=0;i<scd_list.size();i++)
+    {
+        std::string scd_file = scd_list[i];
+        LOG(INFO)<<"Spliting "<<scd_file<<std::endl;
+        ScdParser parser(izenelib::util::UString::UTF_8);
+        parser.load(scd_file);
+        uint32_t n=0;
+        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
+          doc_iter!= parser.end(); ++doc_iter, ++n)
+        {
+            if(n%10000==0)
+            {
+                LOG(INFO)<<"Find Documents "<<n<<std::endl;
+            }
+            Document doc;
+            SCDDoc& scddoc = *(*doc_iter);
+            std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
+            for(p=scddoc.begin(); p!=scddoc.end(); ++p)
+            {
+                std::string property_name;
+                p->first.convertString(property_name, izenelib::util::UString::UTF_8);
+                doc.property(property_name) = p->second;
+            }
+            std::string scategory;
+            doc.property("Category").get<UString>().convertString(scategory, UString::UTF_8);
+            for(uint32_t i=0;i<values_.size();i++)
+            {
+                if(boost::regex_match(scategory, values_[i].regex))
+                {
+                    values_[i].writer->Append(doc);
+                    break;
+                }
             }
         }
     }
