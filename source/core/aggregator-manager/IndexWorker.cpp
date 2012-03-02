@@ -106,9 +106,15 @@ bool IndexWorker::index(const unsigned int& numdoc, bool& ret)
 {
     task_type task = boost::bind(&IndexWorker::buildCollection, this, numdoc);
     JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
-
     ret = true;
     return ret;
+}
+
+bool IndexWorker::optimizeIndexIdSpace()
+{
+    task_type task = boost::bind(&IndexWorker::rebuildCollection, this, 0);
+    JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
+    return true;
 }
 
 bool IndexWorker::buildCollection(unsigned int numdoc)
@@ -367,6 +373,11 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
     }
 
     return true;
+}
+
+bool IndexWorker::rebuildCollection(unsigned int numdoc)
+{
+    return false;
 }
 
 bool IndexWorker::optimizeIndex()
