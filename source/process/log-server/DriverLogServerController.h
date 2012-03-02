@@ -38,9 +38,11 @@ public:
 
     void update_cclog();
 
+    void backup_raw_cclog();
+
     void convert_raw_cclog();
 
-    void update_scd();
+    void update_scd(); // reserved
 
     void update_documents();
 
@@ -87,7 +89,9 @@ public:
 
     void processCclog();
 
-    void processCclogRawid();
+    void processBackupRawCclog();
+
+    void processConvertRawCclog();
 
     void processScd();
 
@@ -106,21 +110,31 @@ private:
 
     void processRecPurchaseItem(izenelib::driver::Value& request, const std::string& raw);
 
-    bool processDocVisitRawid(izenelib::driver::Value& request);
+    /// backup uuid to raw docid
+    void processDocVisitBackupRawid(izenelib::driver::Value& request);
 
-    bool processRecVisitItemRawid(izenelib::driver::Value& request);
+    void processRecVisitItemBackupRawid(izenelib::driver::Value& request);
 
-    bool processRecPurchaseItemRawid(izenelib::driver::Value& request);
+    void processRecPurchaseItemBackupRawid(izenelib::driver::Value& request);
+
+    /// convert raw docid to latest uuid
+    bool processDocVisitConvertRawid(izenelib::driver::Value& request);
+
+    bool processRecVisitItemConvertRawid(izenelib::driver::Value& request);
+
+    bool processRecPurchaseItemConvertRawid(izenelib::driver::Value& request);
 
     std::string updateUuidStr(const std::string& uuidStr);
 
     bool getUuidByDocidList(const std::vector<uint128_t>& docidList, std::vector<uint128_t>& uuids);
 
+    /// reserved
     void onUniqueKeyCheck(
             const LogServerStorage::uuid_t& uuid,
             const LogServerStorage::raw_docid_list_t& docidList,
             const std::string& aux);
 
+    /// reserved
     void onDuplicateKeyCheck(
             const LogServerStorage::uuid_t& uuid,
             const LogServerStorage::raw_docid_list_t& docidList,
@@ -138,6 +152,7 @@ private:
         {}
     };
 
+    /// reserved
     void mergeCClog(boost::shared_ptr<CCLogMerge>& cclogMergeUnit);
 
     struct OutFile
@@ -148,8 +163,10 @@ private:
 
     boost::shared_ptr<OutFile>& openFile(const std::string& fileName);
 
+    /// reserved
     void encodeFileName(std::string& json, const std::string& fileName);
 
+    /// reserved
     void decodeFileName(std::string& json, std::string& fileName);
 
     void setCclogSf1DriverClient(const std::string& host, uint32_t port);
@@ -158,9 +175,6 @@ private:
     void outputCclog(const std::string& fileName, const std::string& uri, const std::string& request);
 
     void writeFile(const std::string& fileName, const std::string& line);
-
-    bool setConvertedCclogFile(const std::string& fileName);
-    void ouputConvertedCclog(const std::string& request);
 
 private:
     Request* request_;
@@ -176,14 +190,12 @@ private:
     std::map<uint128_t, boost::shared_ptr<CCLogMerge> > cclogMergeQueue_;
     boost::mutex cclog_merge_mutex_;
 
+    // for filtering requests
     std::map<std::string, bool> cclogRequestMap_;
 
     boost::shared_ptr<Sf1Driver> cclogSf1DriverClient_;
     std::string cclogSf1Host_;
     uint32_t cclogSf1Port_;
-
-    std::string convertedCclogFileName_;
-    boost::shared_ptr<std::ofstream> convertedCclogFile_;
 };
 
 }

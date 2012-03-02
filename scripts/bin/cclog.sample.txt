@@ -1,8 +1,0 @@
-{"collection":"b5ma","resource":{"session_id":"","USERID":"","ITEMID":"143c7d31-702e-4fac-b57b-84d35205ae60","is_recommend_item":"false"},"header":{"controller":"recommend","action":"visit_item"}}
-{"collection":"b5ma","resource":{"session_id":"","USERID":"","ITEMID":"e2ecc300-0e27-4204-9eba-2a73ebda8013","is_recommend_item":"false"},"header":{"controller":"recommend","action":"visit_item"}}
-{"resource":{"DOCID":"cda5545a-b3f4-4e81-9b85-2d25b0416997"},"collection":"b5ma","header":{"controller":"documents","action":"visit"}}
-{"resource":{"DOCID":"027b6fed-167c-46fe-a83c-73c6f6e209a2"},"collection":"b5ma","header":{"controller":"documents","action":"visit"}}
-{"collection":"b5ma","resource":{"USERID":"","items":[{"ITEMID":"6bf634c5-1b4f-4772-bb52-224b94c17af9","price":19,"quantity":1}]},"header":{"controller":"recommend","action":"purchase_item"}}
-{"collection":"b5ma","resource":{"USERID":"","items":[{"ITEMID":"623999b6-23b2-4be5-b125-31fda9e1439f","price":11880,"quantity":1}]},"header":{"controller":"recommend","action":"purchase_item"}}
-{"collection":"b5ma","resource":{"USERID":"","items":[{"ITEMID":"eb1ba5f4-a558-4a66-806d-74cb6a321932","price":1088,"quantity":1},{"ITEMID":"dcdce290-b73d-467b-aa44-755cce035c79","price":65,"quantity":1}]},"header":{"controller":"recommend","action":"purchase_item"}}
-
