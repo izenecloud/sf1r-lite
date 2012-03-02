@@ -1,6 +1,7 @@
 #include "RecommendBundleActivator.h"
 #include "RecommendBundleConfiguration.h"
 #include <recommend-manager/item/LocalItemFactory.h>
+#include <recommend-manager/item/ItemFactory.h>
 #include <recommend-manager/item/ItemManager.h>
 #include <recommend-manager/item/ItemIdGenerator.h>
 #include <recommend-manager/storage/RecommendStorageFactory.h>
@@ -12,10 +13,8 @@
 #include <recommend-manager/storage/EventManager.h>
 #include <recommend-manager/storage/OrderManager.h>
 #include <recommend-manager/recommender/RecommenderFactory.h>
-#include <bundles/index/IndexSearchService.h>
+#include <process/common/XmlConfigParser.h>
 
-#include <aggregator-manager/SearchWorker.h>
-#include <ir/id_manager/IDManager.h>
 #include <common/SFLogger.h>
 
 #include <memory> // auto_ptr
@@ -23,7 +22,6 @@
 
 namespace bfs = boost::filesystem;
 
-using izenelib::ir::idmanager::IDManager;
 
 namespace sf1r
 {
@@ -218,10 +216,7 @@ void RecommendBundleActivator::createStorage_()
 
 void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchService)
 {
-    DocumentManager* docManager = indexSearchService->searchWorker_->documentManager_.get();
-    IDManager* idManager = indexSearchService->searchWorker_->idManager_.get();
-
-    LocalItemFactory factory(*idManager, *docManager);
+    LocalItemFactory factory(*indexSearchService);
 
     itemIdGenerator_.reset(factory.createItemIdGenerator());
     itemManager_.reset(factory.createItemManager());

@@ -18,7 +18,6 @@
 namespace sf1r
 {
 
-
 class MasterServerConnector
 {
 public:
