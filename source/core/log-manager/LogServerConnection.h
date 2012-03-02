@@ -22,6 +22,8 @@ public:
 
     bool init(const LogServerConnectionConfig& config);
 
+    bool testServer();
+
     template <class RequestDataT>
     void asynRequest(const LogServerRequest::method_t& method, const RequestDataT& reqData);
 

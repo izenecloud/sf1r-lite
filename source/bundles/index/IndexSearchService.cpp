@@ -42,7 +42,7 @@ bool IndexSearchService::getSearchResult(
 {
     CREATE_SCOPED_PROFILER (query, "IndexSearchService", "processGetSearchResults all: total query time");
 
-    if (!bundleConfig_->isSupportByAggregator())
+    if (!bundleConfig_->isMasterAggregator())
     {
         bool ret = searchWorker_->doLocalSearch(actionItem, resultItem);
         std::vector<std::pair<workerid_t, KeywordSearchResult> > resultList;
@@ -131,7 +131,7 @@ bool IndexSearchService::getDocumentsByIds(
     RawTextResultFromSIA& resultItem
 )
 {
-    if (!bundleConfig_->isSupportByAggregator())
+    if (!bundleConfig_->isMasterAggregator())
     {
         return searchWorker_->getDocumentsByIds(actionItem, resultItem);
     }
@@ -167,7 +167,7 @@ bool IndexSearchService::getInternalDocumentId(
     uint64_t& internalId
 )
 {
-    if (!bundleConfig_->isSupportByAggregator())
+    if (!bundleConfig_->isMasterAggregator())
     {
         return searchWorker_->getInternalDocumentId(scdDocumentId, internalId);
     }

@@ -23,11 +23,31 @@ bool LogServerConnection::init(const LogServerConnectionConfig& config)
     }
     catch (const std::exception& e)
     {
-        std::cerr << e.what() << std::endl;
+        std::cerr << "LogServerConnection: " << e.what() << std::endl;
         return false;
     }
 
     return true;
+}
+
+bool LogServerConnection::testServer()
+{
+    try
+    {
+        msgpack::rpc::session session = session_pool_->get_session(config_.host, config_.rpcPort);
+
+        bool ret = session.call(
+                        LogServerRequest::method_names[LogServerRequest::METHOD_TEST],
+                        true
+                        ).get<bool>();
+        return ret;
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Log Server (" << config_.host << ":" << config_.rpcPort << "): "
+                  << e.what() << std::endl;
+        return false;
+    }
 }
 
 void LogServerConnection::flushRequests()
