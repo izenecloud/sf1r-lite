@@ -9,6 +9,8 @@ namespace sf1r {
     class B5MHelper {
     public:
         static const std::vector<std::string> B5M_PROPERTY_LIST;
+        static const std::vector<std::string> B5MO_PROPERTY_LIST;
+        static const std::vector<std::string> B5MP_PROPERTY_LIST;
     };
 
 }

@@ -5,6 +5,7 @@ matcher:
         cma: ../../icma/db/icwb/utf8
         category: category.rb
         work_dir: working
+        tmp_dir: tmp
         result: match_result
         train_scd: T.SCD
         scd: A.SCD
