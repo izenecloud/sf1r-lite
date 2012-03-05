@@ -939,7 +939,7 @@ void CollectionConfig::parseCollectionSettings(const ticpp::Element * collection
     Element* miningBundle = getUniqChildElement(collection, "MiningBundle" , false);
     if (miningBundle)
     {
-        collectionMeta.miningBundleConfig_->isSupportByAggregator_ = collectionMeta.indexBundleConfig_->isSupportByAggregator_;
+        collectionMeta.miningBundleConfig_->isMasterAggregator_ = collectionMeta.indexBundleConfig_->isMasterAggregator_;
         Element* miningSchema = getUniqChildElement(miningBundle, "Schema", false);
         if (miningSchema) parseMiningBundleSchema(miningSchema, collectionMeta);
         Element* miningParam = getUniqChildElement(miningBundle, "Parameter", false);
@@ -1143,7 +1143,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     params.GetString("LanguageIdentifier/dbpath", indexBundleConfig.languageIdentifierDbPath_, "");
 
     LAPool::getInstance()->setLangIdDbPath(indexBundleConfig.languageIdentifierDbPath_);
-    indexBundleConfig.isSupportByAggregator_ = SF1Config::get()->checkSearchMasterAggregator(collectionMeta.getName());
+    indexBundleConfig.isMasterAggregator_ = SF1Config::get()->checkSearchMasterAggregator(collectionMeta.getName());
 
     indexBundleConfig.localHostUsername_ = SF1Config::get()->distributedCommonConfig_.userName_;
     indexBundleConfig.localHostIp_ = SF1Config::get()->distributedCommonConfig_.localHost_;

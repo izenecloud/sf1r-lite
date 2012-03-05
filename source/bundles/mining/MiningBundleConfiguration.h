@@ -17,7 +17,7 @@ public:
 
     std::string collectionName_;
 
-    bool isSupportByAggregator_;
+    bool isMasterAggregator_;
 
     CollectionPath collPath_;
 

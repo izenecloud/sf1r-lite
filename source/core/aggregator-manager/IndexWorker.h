@@ -55,8 +55,11 @@ public:
 public:
     bool index(const unsigned int& numdoc, bool& ret);
 
-    // xxx
+    bool optimizeIndexIdSpace();
+
     bool buildCollection(unsigned int numdoc);
+
+    bool rebuildCollection(unsigned int numdoc);
 
     bool optimizeIndex();
 

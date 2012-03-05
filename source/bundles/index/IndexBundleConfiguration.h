@@ -33,7 +33,7 @@ public:
 
     const bool isUnigramSearchMode() { return bUnigramSearchMode_; }
 
-    bool isSupportByAggregator() { return isSupportByAggregator_; }
+    bool isMasterAggregator() { return isMasterAggregator_; }
 
     void setIndexMultiLangGranularity(const std::string& granularity);
 
@@ -131,8 +131,9 @@ public:
     /// @brief sort cache update interval
     size_t sortCacheUpdateInterval_;
 
-    /// @brief whether supported for distributed search
-    bool isSupportByAggregator_;
+    /// @brief Whether current SF1R is a Master node and Aggregator is available for current collection.
+    ///        (configured as distributed search)
+    bool isMasterAggregator_;
 
     /// @brief The encoding type of the Collection
     izenelib::util::UString::EncodingType encoding_;

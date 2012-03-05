@@ -76,7 +76,14 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
         std::string method;
         req.method().convert(&method);
 
-        if (method == LogServerRequest::method_names[LogServerRequest::METHOD_UPDATE_UUID])
+        if (method == LogServerRequest::method_names[LogServerRequest::METHOD_TEST])
+        {
+            msgpack::type::tuple<bool> params;
+            req.params().convert(&params);
+
+            req.result(true);
+        }
+        else if (method == LogServerRequest::method_names[LogServerRequest::METHOD_UPDATE_UUID])
         {
             msgpack::type::tuple<UUID2DocidList> params;
             req.params().convert(&params);
