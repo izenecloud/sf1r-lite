@@ -99,6 +99,11 @@ bool LogServerHandler::Send(const std::string& scd_path, const std::string& work
         std::cout<<"log server init failed"<<std::endl;
         return false;
     }
+    if(!conn.testServer())
+    {
+        std::cout<<"log server test connection failed"<<std::endl;
+        return false;
+    }
     izenelib::am::ssf::Joiner<uint32_t, uint64_t, ValueType> joiner(writer_file);
     joiner.Open();
     uint64_t key;
@@ -165,6 +170,11 @@ bool LogServerHandler::QuickSend(const std::string& scd_path)
     if(!conn.init(logserver_config_))
     {
         std::cout<<"log server init failed"<<std::endl;
+        return false;
+    }
+    if(!conn.testServer())
+    {
+        std::cout<<"log server test connection failed"<<std::endl;
         return false;
     }
     for(uint32_t i=0;i<scd_list.size();i++)

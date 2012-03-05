@@ -10,6 +10,7 @@ LogServerConnection::LogServerConnection()
 
 LogServerConnection::~LogServerConnection()
 {
+    session_pool_.reset();
 }
 
 bool LogServerConnection::init(const LogServerConnectionConfig& config)
