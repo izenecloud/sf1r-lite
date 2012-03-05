@@ -43,7 +43,7 @@ if use_config_scd
 end
 
 matcher_program = File.join(top_dir, "b5m_matcher")
-cmd = "#{matcher_program} -L '#{log_server}' -S #{scd_path} -K #{work_dir}"
+cmd = "#{matcher_program} -L '#{log_server}' -S #{scd_path}"
 puts cmd
 system(cmd)
 
