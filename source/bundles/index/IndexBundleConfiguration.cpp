@@ -11,6 +11,7 @@ IndexBundleConfiguration::IndexBundleConfiguration(const std::string& collection
     , bIndexUnigramProperty_(true)
     , bUnigramSearchMode_(false)
     , indexMultilangGranularity_(la::FIELD_LEVEL)
+    , isAutoRebuild_(false)
     , encoding_(izenelib::util::UString::UNKNOWN)
     , wildcardType_("unigram")
 {}

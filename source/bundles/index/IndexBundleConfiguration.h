@@ -104,6 +104,9 @@ public:
     /// @brief cron indexing expression
     std::string cronIndexer_;
 
+    /// @brief whether perform rebuild collection automatically
+    bool isAutoRebuild_;
+
     /// @brief whether trigger Question Answering mode
     bool bTriggerQA_;
 

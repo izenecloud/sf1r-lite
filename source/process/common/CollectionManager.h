@@ -56,7 +56,7 @@ public:
         return mutexMap_[collection];
     }
 
-    void startCollection(const std::string& collectionName, const std::string & configFileName);
+    CollectionHandler* startCollection(const std::string& collectionName, const std::string & configFileName);
 
     void stopCollection(const std::string& collectionName);
 

@@ -1124,6 +1124,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     std::set<std::string> directories;
     params.Get("CollectionDataDirectory", directories);
     params.Get("IndexStrategy/logcreateddoc", indexBundleConfig.logCreatedDoc_);
+    params.Get("IndexStrategy/autorebuild", indexBundleConfig.isAutoRebuild_);
 
     if (!directories.empty())
     {

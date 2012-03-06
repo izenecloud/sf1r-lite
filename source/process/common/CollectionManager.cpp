@@ -25,13 +25,16 @@ CollectionManager::~CollectionManager()
         delete mutexIter->second;
     }
 }
-void CollectionManager::startCollection(const string& collectionName, const std::string& configFileName)
+
+CollectionHandler* CollectionManager::startCollection(const string& collectionName, const std::string& configFileName)
 {
     ScopedWriteLock lock(*getCollectionMutex(collectionName));
 
-    if(findHandler(collectionName) != NULL)
-        return;
-    CollectionHandler* collectionHandler = new CollectionHandler(collectionName);
+    CollectionHandler* collectionHandler = findHandler(collectionName);
+    if(collectionHandler != NULL)
+        return collectionHandler;
+    else
+        collectionHandler = new CollectionHandler(collectionName);
 
     boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig(new IndexBundleConfiguration(collectionName));
     boost::shared_ptr<ProductBundleConfiguration> productBundleConfig(new ProductBundleConfiguration(collectionName));
@@ -97,6 +100,8 @@ void CollectionManager::startCollection(const string& collectionName, const std:
     std::pair<handler_map_type::iterator, bool> insertResult =
         collectionHandlers_.insert(std::make_pair(collectionName, kEmptyHandler_));
     insertResult.first->second = collectionHandler;
+
+    return collectionHandler;
 }
 
 void CollectionManager::stopCollection(const std::string& collectionName)

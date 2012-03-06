@@ -9,7 +9,6 @@
 
 #include <util/driver/Value.h>
 #include <util/osgi/IService.h>
-#include <util/cronexpression.h>
 
 #include <boost/shared_ptr.hpp>
 
@@ -41,6 +40,8 @@ public:
 
     bool getIndexStatus(Status& status);
 
+    bool isAutoRebuild();
+
     uint32_t getDocNum();
     
     uint32_t getKeyCount(const std::string& property_name);
@@ -50,18 +51,14 @@ public:
 private:
     bool indexMaster_(unsigned int numdoc);
 
-    void cronJob_();
-
 private:
     IndexBundleConfiguration* bundleConfig_;
 
     boost::shared_ptr<IndexAggregator> indexAggregator_;
     boost::shared_ptr<IndexWorker> indexWorker_;
 
-    izenelib::util::CronExpression cronExpression_;
-    const std::string cronJobName_;
-
     friend class WorkerServer;
+    friend class CollectionTaskScheduler;
     friend class IndexBundleActivator;
     friend class ProductBundleActivator;
 };
