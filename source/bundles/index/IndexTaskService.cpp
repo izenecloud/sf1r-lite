@@ -40,6 +40,11 @@ bool IndexTaskService::optimizeIndex()
     return indexWorker_->optimizeIndex();
 }
 
+bool IndexTaskService::optimizeIndexIdSpace()
+{
+    return indexWorker_->optimizeIndexIdSpace();
+}
+
 bool IndexTaskService::createDocument(const Value& documentValue)
 {
 

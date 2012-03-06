@@ -7,6 +7,9 @@
 #include <bundles/mining/MiningBundleActivator.h>
 #include <bundles/recommend/RecommendBundleActivator.h>
 
+#include <boost/filesystem.hpp>
+namespace bfs = boost::filesystem;
+
 namespace sf1r
 {
 
@@ -26,7 +29,7 @@ CollectionManager::~CollectionManager()
     }
 }
 
-CollectionHandler* CollectionManager::startCollection(const string& collectionName, const std::string& configFileName)
+CollectionHandler* CollectionManager::startCollection(const string& collectionName, const std::string& configFileName, bool fixBasePath)
 {
     ScopedWriteLock lock(*getCollectionMutex(collectionName));
 
@@ -50,6 +53,15 @@ CollectionHandler* CollectionManager::startCollection(const string& collectionNa
     if (!CollectionConfig::get()->parseConfigFile(collectionName, configFileName, collectionMeta))
     {
         throw XmlConfigParserException("error in parsing " + configFileName);
+    }
+
+    if (fixBasePath)
+    {
+        bfs::path basePath(indexBundleConfig->collPath_.getBasePath());
+        indexBundleConfig->collPath_.resetBasePath((basePath.parent_path()/collectionName).string());
+        productBundleConfig->collPath_ =  indexBundleConfig->collPath_;
+        miningBundleConfig->collPath_ =  indexBundleConfig->collPath_;
+        recommendBundleConfig->collPath_ =  indexBundleConfig->collPath_;
     }
 
     collectionHandler->setBundleSchema(indexBundleConfig->schema_);

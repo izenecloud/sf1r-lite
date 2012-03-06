@@ -30,7 +30,7 @@ public:
 
     bool optimizeIndex();
 
-    bool optimizeIndexIds();
+    bool optimizeIndexIdSpace();
 
     bool createDocument(const ::izenelib::driver::Value& documentValue);
 
