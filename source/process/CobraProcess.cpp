@@ -16,6 +16,7 @@
 #include <common/OnSignal.h>
 #include <common/XmlConfigParser.h>
 #include <common/CollectionManager.h>
+#include <common/CollectionTaskScheduler.h>
 #include <distribute/WorkerServer.h>
 
 #include <util/ustring/UString.h>
@@ -325,7 +326,12 @@ int CobraProcess::run()
                     if(!boost::iequals(bfs::path(*iter).filename().string(),"sf1config.xml"))
                     {
                         std::string collectionName = bfs::path(*iter).filename().string().substr(0,bfs::path(*iter).filename().string().rfind(".xml"));
-                        CollectionManager::get()->startCollection(collectionName, bfs::path(*iter).string());
+                        CollectionHandler* collectionHandler = CollectionManager::get()->startCollection(collectionName, bfs::path(*iter).string());
+
+                        if (!CollectionTaskScheduler::get()->schedule(collectionHandler))
+                        {
+                            throw std::runtime_error(std::string("Failed to schedule collection task: ") + collectionName);
+                        }
                     }
             }
         }
