@@ -138,8 +138,13 @@ bool CategoryScdSpliter::Split(const std::string& scd_path)
                 p->first.convertString(property_name, izenelib::util::UString::UTF_8);
                 doc.property(property_name) = p->second;
             }
+            UString title;
+            UString category;
+            doc.getProperty("Title", title);
+            doc.getProperty("Category", category);
+            if( title.length()==0 || category.length()==0) continue;
             std::string scategory;
-            doc.property("Category").get<UString>().convertString(scategory, UString::UTF_8);
+            category.convertString(scategory, UString::UTF_8);
             for(uint32_t i=0;i<values_.size();i++)
             {
                 if(boost::regex_match(scategory, values_[i].regex))
