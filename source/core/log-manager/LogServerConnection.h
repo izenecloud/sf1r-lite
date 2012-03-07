@@ -51,7 +51,7 @@ void LogServerConnection::asynRequest(const LogServerRequest::method_t& method, 
     msgpack::rpc::session session = session_pool_->get_session(config_.host, config_.rpcPort);
     session.notify(method, reqData);
     need_flush_ = true;
-    if (++count == 1000)
+    if (++count == 10000)
     {
         flushRequests();
         count = 0;

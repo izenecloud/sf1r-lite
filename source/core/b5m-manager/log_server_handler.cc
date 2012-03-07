@@ -121,6 +121,7 @@ bool LogServerHandler::Send(const std::string& scd_path, const std::string& work
         values[0].first.convertString(uuidstr, izenelib::util::UString::UTF_8);
         UpdateUUIDRequest uuidReq;
         uuidReq.param_.uuid_ = Utilities::uuidToUint128(uuidstr);
+        uuidReq.param_.docidList_.reserve(values.size());
         for (uint32_t i = 0; i < values.size(); i++)
         {
             std::string docname;
@@ -131,6 +132,7 @@ bool LogServerHandler::Send(const std::string& scd_path, const std::string& work
     }
     SynchronizeRequest syncReq;
     conn.asynRequest(syncReq);
+    conn.flushRequests();
     boost::filesystem::remove_all(working_dir);
     return true;
 }
@@ -224,6 +226,7 @@ bool LogServerHandler::QuickSend(const std::string& scd_path)
     }
     SynchronizeRequest syncReq;
     conn.asynRequest(syncReq);
+    conn.flushRequests();
     return true;
 }
 
@@ -231,10 +234,10 @@ void LogServerHandler::Post_(LogServerConnection& conn, const std::string& suuid
 {
     UpdateUUIDRequest uuidReq;
     uuidReq.param_.uuid_ = Utilities::uuidToUint128(suuid);
+    uuidReq.param_.docidList_.resize(sdocname_list.size());
     for (uint32_t i = 0; i < sdocname_list.size(); i++)
     {
         uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128(sdocname_list[i]));
     }
     conn.asynRequest(uuidReq);
 }
-
