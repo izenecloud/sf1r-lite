@@ -16,10 +16,9 @@ headers:
   - controllers/CollectionController.h
 
 controllers:
-  AutoFillController:
+  AutoFillController: ~
 
-  QueryCorrectionController:
-    service: true
+  QueryCorrectionController: ~
 
   CommandsController:
     actions:

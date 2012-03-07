@@ -5,6 +5,7 @@
 
 namespace sf1r
 {
+class MiningSearchService;
 
 /// @addtogroup controllers
 /// @{
@@ -14,10 +15,18 @@ namespace sf1r
  *
  * Gets list of popular keywords starting with specified prefix.
  */
-class QueryCorrectionController : public ::izenelib::driver::Controller
+class QueryCorrectionController : public Sf1Controller
 {
 public:
+    QueryCorrectionController();
+
     void index();
+
+protected:
+    virtual bool checkCollectionService(std::string& error);
+
+private:
+    MiningSearchService* miningSearchService_;
 };
 
 /// @}

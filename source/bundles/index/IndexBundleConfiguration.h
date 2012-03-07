@@ -68,6 +68,9 @@ private:
 public:
     std::string collectionName_;
 
+    // <IndexBundle><Schema>
+    bool isSchemaEnable_;
+
     CollectionPath collPath_;
 
     /// Schema

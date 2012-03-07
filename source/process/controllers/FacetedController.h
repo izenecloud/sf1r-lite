@@ -11,6 +11,7 @@
 
 namespace sf1r
 {
+class MiningSearchService;
 
 /// @addtogroup controllers
 /// @{
@@ -22,8 +23,9 @@ namespace sf1r
  */
 class FacetedController : public Sf1Controller
 {
-
 public:
+    FacetedController();
+
     /// @brief alias for set_ontology
     void index()
     {
@@ -38,11 +40,16 @@ public:
     void click();
     void manmade();
 
+protected:
+    virtual bool checkCollectionService(std::string& error);
+
 private:
     bool requireCID_();
     bool requireSearchResult_();
+
     uint32_t cid_;
     std::vector<uint32_t> search_result_;
+    MiningSearchService* miningSearchService_;
 };
 
 /// @}

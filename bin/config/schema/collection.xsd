@@ -44,7 +44,7 @@
                 <xs:element ref="Path"/>
                 <xs:element name="DocumentSchema" type="DocumentSchemaType" minOccurs="0" maxOccurs="1" />
                 <xs:element ref="ACL" minOccurs="0"/>
-                <xs:element ref="IndexBundle"/>
+                <xs:element ref="IndexBundle" minOccurs="0"/>
                 <xs:element ref="ProductBundle" minOccurs="0"/>
                 <xs:element ref="MiningBundle" minOccurs="0"/>
                 <xs:element ref="RecommendBundle" minOccurs="0"/>

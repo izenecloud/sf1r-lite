@@ -5,7 +5,7 @@
  * @author Ian Yang
  * @date Created <2010-05-31 14:11:35>
  */
-#include "CollectionMiningController.h"
+#include "Sf1Controller.h"
 
 namespace sf1r
 {
@@ -18,7 +18,7 @@ class RecommendManager;
  *
  * Gets list of popular keywords starting with specified prefix.
  */
-class AutoFillController : public CollectionMiningController
+class AutoFillController : public Sf1Controller
 {
 public:
     enum
@@ -27,10 +27,10 @@ public:
         kMaxCount = 100         /**< Max count of result */
     };
     void index();
-    
-private:
-    bool check_recommend_manager_();
-    
+
+protected:
+    virtual bool checkCollectionService(std::string& error);
+
 private:
     boost::shared_ptr<RecommendManager> recommend_manager_;
 };
