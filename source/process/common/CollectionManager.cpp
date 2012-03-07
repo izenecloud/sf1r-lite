@@ -58,7 +58,11 @@ CollectionHandler* CollectionManager::startCollection(const string& collectionNa
     if (fixBasePath)
     {
         bfs::path basePath(indexBundleConfig->collPath_.getBasePath());
-        indexBundleConfig->collPath_.resetBasePath((basePath.parent_path()/collectionName).string());
+        if (basePath.filename().string() == ".")
+            basePath = basePath.parent_path().parent_path();
+        else
+            basePath = basePath.parent_path();
+        indexBundleConfig->collPath_.resetBasePath((basePath/collectionName).string());
         productBundleConfig->collPath_ =  indexBundleConfig->collPath_;
         miningBundleConfig->collPath_ =  indexBundleConfig->collPath_;
         recommendBundleConfig->collPath_ =  indexBundleConfig->collPath_;

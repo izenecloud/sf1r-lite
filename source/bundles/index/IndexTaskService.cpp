@@ -35,14 +35,14 @@ bool IndexTaskService::index(unsigned int numdoc)
     }
 }
 
+bool IndexTaskService::index(boost::shared_ptr<DocumentManager>& documentManager)
+{
+    return indexWorker_->reindex(documentManager);
+}
+
 bool IndexTaskService::optimizeIndex()
 {
     return indexWorker_->optimizeIndex();
-}
-
-bool IndexTaskService::optimizeIndexIdSpace()
-{
-    return indexWorker_->optimizeIndexIdSpace();
 }
 
 bool IndexTaskService::createDocument(const Value& documentValue)
@@ -84,6 +84,16 @@ uint32_t IndexTaskService::getKeyCount(const std::string& property_name)
 std::string IndexTaskService::getScdDir() const
 {
     return bundleConfig_->indexSCDPath();
+}
+
+CollectionPath& IndexTaskService::getCollectionPath() const
+{
+    return bundleConfig_->collPath_;
+}
+
+boost::shared_ptr<DocumentManager> IndexTaskService::getDocumentManager() const
+{
+    return indexWorker_->getDocumentManager();
 }
 
 

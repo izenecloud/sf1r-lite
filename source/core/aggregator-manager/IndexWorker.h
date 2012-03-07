@@ -55,7 +55,7 @@ public:
 public:
     bool index(const unsigned int& numdoc, bool& ret);
 
-    bool optimizeIndexIdSpace();
+    bool reindex(boost::shared_ptr<DocumentManager>& documentManager);
 
     bool buildCollection(unsigned int numdoc);
 
@@ -74,6 +74,8 @@ public:
     uint32_t getDocNum();
 
     uint32_t getKeyCount(const std::string& property_name);
+
+    boost::shared_ptr<DocumentManager> getDocumentManager() const;
 
 private:
     void createPropertyList_();

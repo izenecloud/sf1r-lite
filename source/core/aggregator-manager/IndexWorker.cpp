@@ -110,10 +110,11 @@ bool IndexWorker::index(const unsigned int& numdoc, bool& ret)
     return ret;
 }
 
-bool IndexWorker::optimizeIndexIdSpace()
+bool IndexWorker::reindex(boost::shared_ptr<DocumentManager>& documentManager)
 {
-    //task_type task = boost::bind(&IndexWorker::rebuildCollection, this, 0);
+    //task_type task = boost::bind(&IndexWorker::rebuildCollection, this, documentManager);
     //JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
+    rebuildCollection(documentManager);
     return true;
 }
 
@@ -392,10 +393,14 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
     docid_t oldId = 0;
     docid_t minDocId = 1;
     docid_t maxDocId = documentManager->getMaxDocId();
-    for (docid_t curDocId = minDocId; curDocId <= maxDocId; curDocId++)
+    docid_t curDocId = 0;
+    for (curDocId = minDocId; curDocId <= maxDocId; curDocId++)
     {
         if (documentManager->isDeleted(curDocId))
+        {
+            LOG(INFO) << "skip deleted docid: " << curDocId;
             continue;
+        }
 
         Document document;
         documentManager->getDocument(curDocId, document);
@@ -407,13 +412,20 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         if (!insertDoc_(document, indexDocument, timestamp))
             continue;
 
+        if (curDocId % 1000 == 0)
+        {
+            LOG(INFO) << "inserted doc number: " << curDocId;
+        }
+
         // interrupt when closing the process
         boost::this_thread::interruption_point();
     }
+    LOG(INFO) << "inserted doc number: " << curDocId << ", total: " << maxDocId;
     LOG(INFO) << "Indexing Finished";
 
     documentManager_->flush();
     idManager_->flush();
+    indexManager_->flush();
 
 #ifdef __x86_64
     if (bundleConfig_->isTrieWildcard())
@@ -702,6 +714,11 @@ uint32_t IndexWorker::getDocNum()
 uint32_t IndexWorker::getKeyCount(const std::string& property_name)
 {
     return indexManager_->getBTreeIndexer()->count(property_name);
+}
+
+boost::shared_ptr<DocumentManager> IndexWorker::getDocumentManager() const
+{
+    return documentManager_;
 }
 
 /// private ////////////////////////////////////////////////////////////////////

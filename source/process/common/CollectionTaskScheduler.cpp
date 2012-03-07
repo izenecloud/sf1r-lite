@@ -1,5 +1,5 @@
 #include "CollectionTaskScheduler.h"
-#include "CollectionTaskType.h"
+#include "CollectionTask.h"
 
 #include <controllers/CollectionHandler.h>
 
@@ -14,8 +14,8 @@ CollectionTaskScheduler::CollectionTaskScheduler()
 {
     if (!izenelib::util::Scheduler::addJob(
             collectionCronJobName,
-            5*1000, // 5*60*1000
-            20*1000, // 5*60*1000
+            60*1000, // notify in every minute
+            0, // start with no delay
             boost::bind(&CollectionTaskScheduler::cronTask_, this)))
     {
         LOG(ERROR) << "Failed to add cron job: " << collectionCronJobName;
@@ -66,9 +66,11 @@ void CollectionTaskScheduler::cronTask_()
         boost::shared_ptr<CollectionTaskType>& task = *it;
         if (task->isCronTask())
         {
+            // cron expression will always match during the specified minute,
+            // so the check interval should be 1 minute
             if (task->getCronExpression().matches_now())
             {
-                task->doTask();
+                task->startTask();
             }
         }
     }

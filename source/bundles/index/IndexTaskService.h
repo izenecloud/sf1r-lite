@@ -18,6 +18,7 @@ using izenelib::ir::idmanager::IDManager;
 
 class IndexAggregator;
 class IndexWorker;
+class DocumentManager;
 
 class IndexTaskService : public ::izenelib::osgi::IService
 {
@@ -28,9 +29,9 @@ public:
 
     bool index(unsigned int numdoc);
 
-    bool optimizeIndex();
+    bool index(boost::shared_ptr<DocumentManager>& documentManager);
 
-    bool optimizeIndexIdSpace();
+    bool optimizeIndex();
 
     bool createDocument(const ::izenelib::driver::Value& documentValue);
 
@@ -47,6 +48,10 @@ public:
     uint32_t getKeyCount(const std::string& property_name);
 
     std::string getScdDir() const;
+
+    CollectionPath&  getCollectionPath() const;
+
+    boost::shared_ptr<DocumentManager> getDocumentManager() const;
 
 private:
     bool indexMaster_(unsigned int numdoc);

@@ -41,6 +41,7 @@ public:
     void resetBasePath(const std::string & path)
     {
         basePath_ = path;
+        ensureTrailingSlash(basePath_);
 
         updateBasePath(scdPath_);
         updateBasePath(collectionDataPath_);
@@ -164,8 +165,14 @@ private:
     void updateBasePath(std::string& path)
     {
         bfs::path basepath(basePath_);
-        bfs::path path2(path);
-        path = (basepath/path2.filename()).string();
+        bfs::path dirpath(path);
+
+        std::string dirname = dirpath.filename().string();
+        if (dirname == ".")
+            dirname = dirpath.parent_path().filename().string();
+
+        path = (basepath/dirname).string();
+        ensureTrailingSlash(path);
     }
 
 
