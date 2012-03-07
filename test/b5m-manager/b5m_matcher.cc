@@ -206,7 +206,8 @@ int main(int ac, char** av)
             LogServerHandler log_server_handler;
             log_server_handler.SetLogServerConfig(config);
             std::cout<<"Set Log Server To : "<<log_server<<std::endl;
-            if(!log_server_handler.Send(scd_path, work_dir)) return EXIT_FAILURE;
+            //if(!log_server_handler.Send(scd_path, work_dir)) return EXIT_FAILURE;
+            if(!log_server_handler.QuickSend(scd_path)) return EXIT_FAILURE;
         }
         else
         {

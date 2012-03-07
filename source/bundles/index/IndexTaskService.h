@@ -9,7 +9,6 @@
 
 #include <util/driver/Value.h>
 #include <util/osgi/IService.h>
-#include <util/cronexpression.h>
 
 #include <boost/shared_ptr.hpp>
 
@@ -31,7 +30,7 @@ public:
 
     bool optimizeIndex();
 
-    bool optimizeIndexIds();
+    bool optimizeIndexIdSpace();
 
     bool createDocument(const ::izenelib::driver::Value& documentValue);
 
@@ -40,6 +39,8 @@ public:
     bool destroyDocument(const ::izenelib::driver::Value& documentValue);
 
     bool getIndexStatus(Status& status);
+
+    bool isAutoRebuild();
 
     uint32_t getDocNum();
     
@@ -50,18 +51,14 @@ public:
 private:
     bool indexMaster_(unsigned int numdoc);
 
-    void cronJob_();
-
 private:
     IndexBundleConfiguration* bundleConfig_;
 
     boost::shared_ptr<IndexAggregator> indexAggregator_;
     boost::shared_ptr<IndexWorker> indexWorker_;
 
-    izenelib::util::CronExpression cronExpression_;
-    const std::string cronJobName_;
-
     friend class WorkerServer;
+    friend class CollectionTaskScheduler;
     friend class IndexBundleActivator;
     friend class ProductBundleActivator;
 };

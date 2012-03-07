@@ -81,6 +81,7 @@
                 </xs:simpleType>
             </xs:attribute>
             <xs:attribute name="cron" type="xs:string"/>
+            <xs:attribute name="autorebuild" type="YesNoType" use="optional"/>
         </xs:complexType>
     </xs:element>
 

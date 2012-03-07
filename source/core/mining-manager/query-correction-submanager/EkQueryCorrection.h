@@ -233,7 +233,7 @@ private:
 
     izenelib::am::rde_hash<izenelib::util::UString, bool> dictKRHash_;
 
-    la::UpdateDictThread update_thread_;
+    //la::UpdateDictThread update_thread_;
 
     boost::shared_mutex mutex_;
 

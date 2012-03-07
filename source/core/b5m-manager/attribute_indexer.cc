@@ -560,7 +560,6 @@ void AttributeIndexer::GenNegativeIdMap_(std::map<std::size_t, std::vector<std::
     boost::unordered_map<std::string, std::vector<std::size_t> > category_indexlist;
     boost::unordered_map<std::string, std::vector<std::size_t> >::iterator ci_it;
     BuildCategoryMap_(category_indexlist);
-    NonZeroFC fc;
     //boost::mt19937 random_gen;
     for(std::size_t i=0;i<product_list_.size();i++)
     {
@@ -631,9 +630,6 @@ void AttributeIndexer::GenClassiferInstance()
     std::ofstream ofs(output.c_str());
     std::map<std::size_t, std::vector<std::size_t> > negative_map;
     GenNegativeIdMap_(negative_map);
-    PositiveFC pfc;
-    NonNegativeFC nnfc;
-    NonZeroFC nzfc;
     for(std::size_t p=0;p<product_list_.size();++p)
     {
         if(p%100==0)
@@ -900,7 +896,6 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
     static const double invert_price_ratio = 1.0/price_ratio;
     ScdParser parser(izenelib::util::UString::UTF_8);
     parser.load(scd_file);
-    NonZeroFC nzfc;
     uint32_t n=0;
     uint32_t num_for_match = 0;
     boost::unordered_map<std::string, std::vector<std::string> > p2o_map;
@@ -1098,7 +1093,6 @@ void AttributeIndexer::ProductMatchingLR(const std::string& scd_file)
     BuildCategoryMap_(category_indexlist);
     ScdParser parser(izenelib::util::UString::UTF_8);
     parser.load(scd_file);
-    NonZeroFC nzfc;
     uint32_t n=0;
     for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
       doc_iter!= parser.end(); ++doc_iter, ++n)

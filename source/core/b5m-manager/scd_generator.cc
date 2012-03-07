@@ -77,7 +77,7 @@ bool ScdGenerator::Load(const std::string& dir)
     return true;
 }
 
-bool ScdGenerator::Generate(const std::string& scd_file, const std::string& output_dir, const std::string& work_dir)
+bool ScdGenerator::Generate(const std::string& scd_path, const std::string& output_dir, const std::string& work_dir)
 {
     if(o2p_map_.empty())
     {
@@ -90,62 +90,92 @@ bool ScdGenerator::Generate(const std::string& scd_file, const std::string& outp
     {
         working_dir = "./b5m_scd_generator_working";
     }
-    boost::filesystem::remove_all(working_dir);
-    boost::filesystem::create_directories(working_dir);
-    if(!boost::filesystem::exists(scd_file)) return false;
+    namespace bfs = boost::filesystem;
+    bfs::remove_all(working_dir);
+    bfs::create_directories(working_dir);
+    if(!bfs::exists(scd_path)) return false;
     std::string b5mo_dir = output_dir+"/b5mo";
     std::string b5mp_dir = output_dir+"/b5mp";
-    boost::filesystem::create_directories(b5mo_dir);
-    boost::filesystem::create_directories(b5mp_dir);
+    bfs::create_directories(b5mo_dir);
+    bfs::create_directories(b5mp_dir);
 
-    ScdParser parser(izenelib::util::UString::UTF_8);
-    parser.load(scd_file);
-    uint32_t n=0;
+    std::vector<std::string> scd_list;
+    if( bfs::is_regular_file(scd_path) && boost::algorithm::ends_with(scd_path, ".SCD"))
+    {
+        scd_list.push_back(scd_path);
+    }
+    else if(bfs::is_directory(scd_path))
+    {
+        bfs::path p(scd_path);
+        bfs::directory_iterator end;
+        for(bfs::directory_iterator it(p);it!=end;it++)
+        {
+            if(bfs::is_regular_file(it->path()))
+            {
+                std::string file = it->path().string();
+                if(boost::algorithm::ends_with(file, ".SCD"))
+                {
+                    scd_list.push_back(file);
+                }
+            }
+        }
+    }
+    if(scd_list.empty()) return false;
+
     std::string writer_file = working_dir+"/docs";
     izenelib::am::ssf::Writer<> writer(writer_file);
     writer.Open();
-    for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
-      doc_iter!= parser.end(); ++doc_iter, ++n)
+
+    for(uint32_t i=0;i<scd_list.size();i++)
     {
-        if(n%10000==0)
+        std::string scd_file = scd_list[i];
+        LOG(INFO)<<"Processing "<<scd_file<<std::endl;
+        ScdParser parser(izenelib::util::UString::UTF_8);
+        parser.load(scd_file);
+        uint32_t n=0;
+        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
+          doc_iter!= parser.end(); ++doc_iter, ++n)
         {
-            LOG(INFO)<<"Find Documents "<<n<<std::endl;
-        }
-        Document doc;
-        SCDDoc& scddoc = *(*doc_iter);
-        std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
-        for(p=scddoc.begin(); p!=scddoc.end(); ++p)
-        {
-            std::string property_name;
-            p->first.convertString(property_name, izenelib::util::UString::UTF_8);
-            doc.property(property_name) = p->second;
-        }
-        if(exclude_)
-        {
-            std::string scategory;
-            doc.property("Category").get<UString>().convertString(scategory, UString::UTF_8);
-            bool find_match = false;
-            for(uint32_t i=0;i<category_regex_.size();i++)
+            if(n%10000==0)
             {
-                if(boost::regex_match(scategory, category_regex_[i]))
-                {
-                    find_match = true;
-                    break;
-                }
+                LOG(INFO)<<"Find Documents "<<n<<std::endl;
             }
-            if(!find_match) continue;
+            Document doc;
+            SCDDoc& scddoc = *(*doc_iter);
+            std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
+            for(p=scddoc.begin(); p!=scddoc.end(); ++p)
+            {
+                std::string property_name;
+                p->first.convertString(property_name, izenelib::util::UString::UTF_8);
+                doc.property(property_name) = p->second;
+            }
+            if(exclude_)
+            {
+                std::string scategory;
+                doc.property("Category").get<UString>().convertString(scategory, UString::UTF_8);
+                bool find_match = false;
+                for(uint32_t i=0;i<category_regex_.size();i++)
+                {
+                    if(boost::regex_match(scategory, category_regex_[i]))
+                    {
+                        find_match = true;
+                        break;
+                    }
+                }
+                if(!find_match) continue;
+            }
+            std::string sdocid;
+            doc.property("DOCID").get<UString>().convertString(sdocid, UString::UTF_8);
+            std::string spid = sdocid;
+            boost::unordered_map<std::string, std::string>::iterator it = o2p_map_.find(sdocid);
+            if(it!=o2p_map_.end())
+            {
+                spid = it->second;
+            }
+            doc.property("uuid") = UString(spid, UString::UTF_8);
+            uint64_t hash_id = izenelib::util::HashFunction<std::string>::generateHash64(spid);
+            writer.Append(hash_id, doc);
         }
-        std::string sdocid;
-        doc.property("DOCID").get<UString>().convertString(sdocid, UString::UTF_8);
-        std::string spid = sdocid;
-        boost::unordered_map<std::string, std::string>::iterator it = o2p_map_.find(sdocid);
-        if(it!=o2p_map_.end())
-        {
-            spid = it->second;
-        }
-        doc.property("uuid") = UString(spid, UString::UTF_8);
-        uint64_t hash_id = izenelib::util::HashFunction<std::string>::generateHash64(spid);
-        writer.Append(hash_id, doc);
     }
     writer.Close();
     izenelib::am::ssf::Sorter<uint32_t, uint64_t>::Sort(writer_file);
@@ -155,7 +185,7 @@ bool ScdGenerator::Generate(const std::string& scd_file, const std::string& outp
     std::vector<Document> docs;
     ScdWriter b5mo_writer(b5mo_dir, INSERT_SCD);
     ScdWriter b5mp_writer(b5mp_dir, INSERT_SCD);
-    n = 0;
+    uint64_t n = 0;
     while(joiner.Next(key, docs))
     {
         ++n;

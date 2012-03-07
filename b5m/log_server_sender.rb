@@ -34,6 +34,7 @@ Dir.chdir(File.dirname(config_file)) do
 end
 match_path = match_config['path_of']
 work_dir = match_path['work_dir']
+tmp_dir = match_path['tmp']
 scd = match_path['scd']
 b5mo_scd = File.join(match_path['b5mo'], "scd", "index")
 b5mp_scd = File.join(match_path['b5mp'], "scd", "index")
@@ -42,6 +43,7 @@ if use_config_scd
 end
 
 matcher_program = File.join(top_dir, "b5m_matcher")
-cmd = "#{matcher_program} -L #{log_server} -S #{scd_path} -K #{work_dir}"
+cmd = "#{matcher_program} -L '#{log_server}' -S #{scd_path}"
+puts cmd
 system(cmd)
 

@@ -5,8 +5,6 @@
 #include <aggregator-manager/IndexAggregator.h>
 #include <aggregator-manager/IndexWorker.h>
 
-#include <util/scheduler.h>
-
 #include <glog/logging.h>
 
 using namespace izenelib::driver;
@@ -15,25 +13,11 @@ namespace sf1r
 {
 IndexTaskService::IndexTaskService(IndexBundleConfiguration* bundleConfig)
 : bundleConfig_(bundleConfig)
-, cronJobName_("IndexTaskService-" + bundleConfig_->collectionName_)
 {
-    if (cronExpression_.setExpression(bundleConfig_->cronIndexer_))
-    {
-        bool result = izenelib::util::Scheduler::addJob(
-                                        cronJobName_,
-                                        5*60*1000,
-                                        5*60*1000,
-                                        boost::bind(&IndexTaskService::cronJob_, this));
-        if (!result)
-        {
-            LOG(ERROR) << "Failed in izenelib::util::Scheduler::addJob(), cron job name: " << cronJobName_;
-        }
-    }
 }
 
 IndexTaskService::~IndexTaskService()
 {
-    izenelib::util::Scheduler::removeJob(cronJobName_);
 }
 
 bool IndexTaskService::index(unsigned int numdoc)
@@ -56,6 +40,11 @@ bool IndexTaskService::optimizeIndex()
     return indexWorker_->optimizeIndex();
 }
 
+bool IndexTaskService::optimizeIndexIdSpace()
+{
+    return indexWorker_->optimizeIndexIdSpace();
+}
+
 bool IndexTaskService::createDocument(const Value& documentValue)
 {
 
@@ -75,6 +64,11 @@ bool IndexTaskService::destroyDocument(const Value& documentValue)
 bool IndexTaskService::getIndexStatus(Status& status)
 {
     return indexWorker_->getIndexStatus(status);
+}
+
+bool IndexTaskService::isAutoRebuild()
+{
+    return bundleConfig_->isAutoRebuild_;
 }
 
 uint32_t IndexTaskService::getDocNum()
@@ -114,14 +108,6 @@ bool IndexTaskService::indexMaster_(unsigned int numdoc)
     indexAggregator_->setDebug(true);//xxx
     indexAggregator_->distributeRequest(bundleConfig_->collectionName_, "index", numdoc, ret);
     return true;
-}
-
-void IndexTaskService::cronJob_()
-{
-    if (cronExpression_.matches_now())
-    {
-        indexWorker_->optimizeIndexIdSpace();
-    }
 }
 
 }

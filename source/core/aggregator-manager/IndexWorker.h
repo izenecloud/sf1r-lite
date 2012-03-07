@@ -59,7 +59,7 @@ public:
 
     bool buildCollection(unsigned int numdoc);
 
-    bool rebuildCollection(unsigned int numdoc);
+    bool rebuildCollection(boost::shared_ptr<DocumentManager>& documentManager);
 
     bool optimizeIndex();
 
