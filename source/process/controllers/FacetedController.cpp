@@ -13,6 +13,23 @@ namespace sf1r
 using driver::Keys;
 using namespace izenelib::driver;
 
+FacetedController::FacetedController()
+    : cid_(0)
+    , miningSearchService_(NULL)
+{
+}
+
+bool FacetedController::checkCollectionService(std::string& error)
+{
+    miningSearchService_ = collectionHandler_->miningSearchService_;
+
+    if (miningSearchService_)
+        return true;
+
+    error = "Request failed, no mining search service found.";
+    return false;
+}
+
 /**
  * @brief Action \b set_ontology. Sets ontology by xml format owl
  *
@@ -44,11 +61,8 @@ using namespace izenelib::driver;
  */
 void FacetedController::set_ontology()
 {
-    MiningSearchService* service = collectionHandler_->miningSearchService_;
-
-    bool requestSent = service->SetOntology(
-                                    asString(request()[Keys::content])
-                                   );
+    bool requestSent = miningSearchService_->SetOntology(
+                            asString(request()[Keys::content]));
 
     if (!requestSent)
     {
@@ -91,8 +105,7 @@ void FacetedController::set_ontology()
 void FacetedController::get_ontology()
 {
     std::string xml;
-    MiningSearchService* service = collectionHandler_->miningSearchService_;
-    bool requestSent = service->GetOntology(xml);
+    bool requestSent = miningSearchService_->GetOntology(xml);
 
     if (!requestSent)
     {
@@ -135,8 +148,7 @@ void FacetedController::get_ontology()
 void FacetedController::get_static_rep()
 {
     faceted::OntologyRep rep;
-    MiningSearchService* service = collectionHandler_->miningSearchService_;
-    bool requestSent =service->GetStaticOntologyRepresentation(rep);
+    bool requestSent = miningSearchService_->GetStaticOntologyRepresentation(rep);
 
     if (!requestSent)
     {
@@ -198,8 +210,7 @@ void FacetedController::static_click()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireCID_());
     std::list<uint32_t> docid_list;
-    MiningSearchService* service = collectionHandler_->miningSearchService_;
-    bool requestSent = service->OntologyStaticClick(cid_, docid_list);
+    bool requestSent = miningSearchService_->OntologyStaticClick(cid_, docid_list);
 
     if (!requestSent)
     {
@@ -252,8 +263,7 @@ void FacetedController::get_rep()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireSearchResult_());
     faceted::OntologyRep rep;
-    MiningSearchService* service = collectionHandler_->miningSearchService_;
-    bool requestSent = service->GetOntologyRepresentation(search_result_, rep);
+    bool requestSent = miningSearchService_->GetOntologyRepresentation(search_result_, rep);
 
     if (!requestSent)
     {
@@ -316,8 +326,7 @@ void FacetedController::click()
     IZENELIB_DRIVER_BEFORE_HOOK(requireCID_());
     IZENELIB_DRIVER_BEFORE_HOOK(requireSearchResult_());
     std::list<uint32_t> docid_list;
-    MiningSearchService* service = collectionHandler_->miningSearchService_;
-    bool requestSent = service->OntologyClick(search_result_, cid_, docid_list);
+    bool requestSent = miningSearchService_->OntologyClick(search_result_, cid_, docid_list);
     if (!requestSent)
     {
         response().addError(
@@ -397,8 +406,7 @@ void FacetedController::manmade()
         item.cname = asString(manmades()[Keys::cname]);
         items.push_back(item);
     }
-    MiningSearchService* service = collectionHandler_->miningSearchService_;
-    bool requestSent = service->DefineDocCategory(items);
+    bool requestSent = miningSearchService_->DefineDocCategory(items);
 
     if (!requestSent)
     {

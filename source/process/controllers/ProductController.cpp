@@ -14,20 +14,22 @@ namespace sf1r
 using driver::Keys;
 using namespace izenelib::driver;
 
-bool ProductController::check_product_manager_()
+bool ProductController::checkCollectionService(std::string& error)
 {
-    if (!collectionHandler_->productSearchService_)
+    ProductSearchService* service = collectionHandler_->productSearchService_;
+    if (!service)
     {
-        response().addError("ProductManager not enabled.");
+        error = "Request failed, no product search service found.";
         return false;
     }
-    product_manager_ = collectionHandler_->productSearchService_->GetProductManager();
 
+    product_manager_ = service->GetProductManager();
     if (!product_manager_)
     {
-        response().addError("ProductManager not enabled.");
+        error = "Request failed, ProductManager not enabled.";
         return false;
     }
+
     return true;
 }
 
@@ -220,7 +222,6 @@ bool ProductController::require_date_range_()
  */
 void ProductController::add_new_group()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_docid_list_());
     IZENELIB_DRIVER_BEFORE_HOOK(maybe_doc_(false));
     IZENELIB_DRIVER_BEFORE_HOOK(maybe_option_());
@@ -273,7 +274,6 @@ void ProductController::add_new_group()
  */
 void ProductController::append_to_group()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_uuid_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_docid_list_());
     IZENELIB_DRIVER_BEFORE_HOOK(maybe_option_());
@@ -319,7 +319,6 @@ void ProductController::append_to_group()
  */
 void ProductController::remove_from_group()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_uuid_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_docid_list_());
     IZENELIB_DRIVER_BEFORE_HOOK(maybe_option_());
@@ -359,7 +358,6 @@ void ProductController::remove_from_group()
  */
 // void ProductController::recover()
 // {
-//     IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
 //     if (!product_manager_->Recover())
 //     {
 //         response().addError(product_manager_->GetLastError());
@@ -396,7 +394,6 @@ void ProductController::remove_from_group()
  */
 void ProductController::update_a_doc()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
     IZENELIB_DRIVER_BEFORE_HOOK(maybe_doc_(true));
     if (!product_manager_->UpdateADoc(doc_))
     {
@@ -499,7 +496,6 @@ void ProductController::update_a_doc()
  */
 void ProductController::get_multi_price_history()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_str_docid_list_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_date_range_());
 
@@ -605,8 +601,6 @@ void ProductController::get_multi_price_history()
  */
 void ProductController::get_top_price_cut_list()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
-
     prop_name_ = asString(request()[Keys::property]);
     prop_value_ = asString(request()[Keys::value]);
     days_ = asUint(request()[Keys::days]);

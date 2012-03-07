@@ -10,6 +10,22 @@ namespace sf1r
 using driver::Keys;
 using namespace izenelib::driver;
 
+TopicController::TopicController()
+    : miningSearchService_(NULL)
+{
+}
+
+bool TopicController::checkCollectionService(std::string& error)
+{
+    miningSearchService_ = collectionHandler_->miningSearchService_;
+
+    if (miningSearchService_)
+        return true;
+
+    error = "Request failed, no mining search service found.";
+    return false;
+}
+
 /**
  * @brief Action @b get_similar. Get similar topics from one topic id
  *
@@ -41,8 +57,7 @@ void TopicController::get_similar()
 //   std::cout<<"TopicController::get_similar"<<std::endl;
     IZENELIB_DRIVER_BEFORE_HOOK(requireTID_());
     std::vector<izenelib::util::UString> label_list;
-    MiningSearchService* service = collectionHandler_->miningSearchService_;
-    bool requestSent = service->getSimilarLabelStringList(tid_, label_list);
+    bool requestSent = miningSearchService_->getSimilarLabelStringList(tid_, label_list);
 
     if (!requestSent)
     {
@@ -96,9 +111,8 @@ void TopicController::get_in_date_range()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireDateRange_());
     std::vector<izenelib::util::UString> topic_list;
-    MiningSearchService* service = collectionHandler_->miningSearchService_;
 
-    bool requestSent = service->GetTdtInTimeRange(start_date_, end_date_, topic_list);
+    bool requestSent = miningSearchService_->GetTdtInTimeRange(start_date_, end_date_, topic_list);
 
     if (!requestSent)
     {
@@ -160,8 +174,7 @@ void TopicController::get_temporal_similar()
     IZENELIB_DRIVER_BEFORE_HOOK(requireDateRange_());
     IZENELIB_DRIVER_BEFORE_HOOK(requireTopicText_());
     idmlib::tdt::TopicInfoType topic_info;
-    MiningSearchService* service = collectionHandler_->miningSearchService_;
-    bool requestSent = service->GetTdtTopicInfo(topic_text_, topic_info);
+    bool requestSent = miningSearchService_->GetTdtTopicInfo(topic_text_, topic_info);
 
     if (!requestSent)
     {

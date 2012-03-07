@@ -23,6 +23,8 @@ namespace sf1r
 class CommandsController : public Sf1Controller
 {
 public:
+    CommandsController();
+
     void index();
 
     void index_query_log();
@@ -30,14 +32,9 @@ public:
     void optimize_index();
 
 private:
-    bool parseCollection_();
-
-    bool indexSearch_();
+    void indexSearch_();
 
     void indexRecommend_();
-
-private:
-    std::string collection_;
 };
 
 /// @}
