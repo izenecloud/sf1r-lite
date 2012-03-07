@@ -76,6 +76,8 @@ const map<string, string> SourceCount::cf_compression_options = map_list_of
     ("sstable_compression", "SnappyCompressor")
     ("chunk_length_kb", "64");
 
+const double SourceCount::cf_bloom_filter_fp_chance(0);
+
 SourceCount::SourceCount(const string& collection)
     : ColumnFamilyBase()
     , collection_(collection)
