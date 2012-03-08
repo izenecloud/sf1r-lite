@@ -29,13 +29,13 @@ CollectionManager::~CollectionManager()
     }
 }
 
-CollectionHandler* CollectionManager::startCollection(const string& collectionName, const std::string& configFileName, bool fixBasePath)
+bool CollectionManager::startCollection(const string& collectionName, const std::string& configFileName, bool fixBasePath)
 {
     ScopedWriteLock lock(*getCollectionMutex(collectionName));
 
     CollectionHandler* collectionHandler = findHandler(collectionName);
     if(collectionHandler != NULL)
-        return collectionHandler;
+        return false;
     else
         collectionHandler = new CollectionHandler(collectionName);
 
@@ -122,7 +122,7 @@ CollectionHandler* CollectionManager::startCollection(const string& collectionNa
         collectionHandlers_.insert(std::make_pair(collectionName, kEmptyHandler_));
     insertResult.first->second = collectionHandler;
 
-    return collectionHandler;
+    return true;
 }
 
 void CollectionManager::stopCollection(const std::string& collectionName)

@@ -32,50 +32,45 @@ void RebuildTask::doTask()
     LOG(INFO) << "## start RebuildTask : " << collectionName_;
     isRunning_ = true;
 
+    std::string collDir;
+    std::string rebuildCollDir;
+    std::string configFile = SF1Config::get()->getCollectionConfigFile(collectionName_);
+
+    {
     // check collection resource
+    CollectionManager::MutexType* collMutex = CollectionManager::get()->getCollectionMutex(collectionName_);
+    CollectionManager::ScopedReadLock collLock(*collMutex);
     CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collectionName_);
     if (!collectionHandler || !collectionHandler->indexTaskService_)
     {
         LOG(ERROR) << "Not found collection: " << collectionName_;
+        isRunning_ = false;
         return;
     }
-
     boost::shared_ptr<DocumentManager> documentManager = collectionHandler->indexTaskService_->getDocumentManager();
-    if (!documentManager)
-    {
-        LOG(ERROR) << "Failed to get documentManager for collection: " << collectionName_;
-        return;
-    }
-
-    std::string configFile = SF1Config::get()->getCollectionConfigFile(collectionName_);
     CollectionPath& collPath = collectionHandler->indexTaskService_->getCollectionPath();
+    collDir = collPath.getCollectionDataPath() + collPath.getCurrCollectionDir();
 
     // start collection for rebuilding
-    if (CollectionManager::get()->findHandler(rebuildCollectionName_))
+    if (!CollectionManager::get()->startCollection(rebuildCollectionName_, configFile, true))
     {
         LOG(ERROR) << "Collection for rebuilding already started: " << rebuildCollectionName_;
+        isRunning_ = false;
         return;
     }
-
-    CollectionHandler* rebuildCollHandler =
-            CollectionManager::get()->startCollection(rebuildCollectionName_, configFile, true);
-    if (!rebuildCollHandler || !rebuildCollHandler->indexTaskService_)
-    {
-        LOG(ERROR) << "Failed to start collection for rebuilding: " << rebuildCollectionName_;
-        return;
-    }
-
+    CollectionManager::MutexType* recollMutex = CollectionManager::get()->getCollectionMutex(rebuildCollectionName_);
+    CollectionManager::ScopedReadLock recollLock(*recollMutex);
+    CollectionHandler* rebuildCollHandler = CollectionManager::get()->findHandler(rebuildCollectionName_);
     rebuildCollHandler->indexTaskService_->index(documentManager);
     CollectionPath& rebuildCollPath = rebuildCollHandler->indexTaskService_->getCollectionPath();
+    rebuildCollDir = rebuildCollPath.getCollectionDataPath() + rebuildCollPath.getCurrCollectionDir();
+    } // lock scope
 
     // replace collection data with rebuilded data
     LOG(INFO) << "## stopCollection: " << collectionName_;
     CollectionManager::get()->stopCollection(collectionName_);
-    LOG(INFO) << "## stopCollection: " << rebuildCollectionName_;
+    ///LOG(INFO) << "## stopCollection: " << rebuildCollectionName_;
     ///CollectionManager::get()->stopCollection(rebuildCollectionName_);
-
-    std::string collDir = collPath.getCollectionDataPath() + collPath.getCurrCollectionDir();
-    std::string rebuildCollDir = rebuildCollPath.getCollectionDataPath() + rebuildCollPath.getCurrCollectionDir();
 
     bfs::remove_all(collDir+"-backup");
     bfs::rename(collDir, collDir+"-backup");
