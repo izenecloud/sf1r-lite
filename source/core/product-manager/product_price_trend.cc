@@ -6,6 +6,7 @@
 
 #include <am/range/AmIterator.h>
 #include <libcassandra/util_functions.h>
+#include <glog/logging.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
