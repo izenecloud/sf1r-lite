@@ -1277,6 +1277,7 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
 
     ProductBundleConfiguration& productBundleConfig = *(collectionMeta.productBundleConfig_);
     productBundleConfig.collPath_ = collectionMeta.collPath_;
+    productBundleConfig.mode_ = "";
     productBundleConfig.setSchema(collectionMeta.indexBundleConfig_->schema_);
 
     getAttribute(product_schema, "mode", productBundleConfig.mode_);

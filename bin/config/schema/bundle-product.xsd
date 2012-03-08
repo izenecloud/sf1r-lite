@@ -22,7 +22,7 @@
                             <xs:attribute name="mode" use="required">
                                 <xs:simpleType>
                                     <xs:restriction base="xs:string">
-                                        <xs:pattern value="m|a"/>
+                                        <xs:pattern value="m|a|o"/>
                                     </xs:restriction>
                                 </xs:simpleType>
                             </xs:attribute>
