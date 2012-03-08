@@ -399,12 +399,33 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
     {
         if (documentManager->isDeleted(curDocId))
         {
-            LOG(INFO) << "skip deleted docid: " << curDocId;
+            //LOG(INFO) << "skip deleted docid: " << curDocId;
             continue;
         }
 
         Document document;
         documentManager->getDocument(curDocId, document);
+
+        // update docid
+        std::string docidName("DOCID");
+        izenelib::util::UString docidValueU;
+        if (!document.getProperty(docidName, docidValueU))
+        {
+            //LOG(WARNING) << "skip doc which has no DOCID property: " << curDocId;
+            continue;
+        }
+
+        docid_t newDocId;
+        if (createInsertDocId_(docidValueU, newDocId))
+        {
+            //LOG(INFO) << document.getId() << " -> " << newDocId;
+            document.setId(newDocId);
+        }
+        else
+        {
+            //LOG(WARNING) << "Failed to create new docid for: " << curDocId;
+            continue;
+        }
 
         IndexerDocument indexDocument;
         prepareIndexDocument_(oldId, document, indexDocument);
