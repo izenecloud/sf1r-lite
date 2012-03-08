@@ -226,11 +226,7 @@ void DriverLogServerHandler::processCclog()
     std::string uri = controller + "/" + action;
 
     std::string collection = asString(raw_request[Keys::collection]);
-    //if (collection == "b5ma")
-    //{
-    //    raw_request[Keys::collection] = "b5mp";
-    //}
-    //also update config
+
     if (!skipProcess(collection))
     {
         if (controller == "documents" && action == "visit")
@@ -335,11 +331,6 @@ void DriverLogServerHandler::processConvertRawCclog()
     std::string uri = controller + "/" + action;
 
     std::string collection = asString(raw_request[Keys::collection]);
-    if (collection == "b5mm")
-    {
-        collection = "b5ma";
-        raw_request[Keys::collection] = "b5ma";
-    }
 
     if (!skipProcess(collection))
     {
@@ -575,7 +566,7 @@ bool DriverLogServerHandler::skipProcess(const std::string& collection)
  * Process request of documents/visit
  * @param request
  * sample:
-    { "collection" : "b5ma",
+    { "collection" : "b5mp",
       "header" : { "acl_tokens" : "",
           "action" : "visit",
           "controller" : "documents",
@@ -606,7 +597,7 @@ void DriverLogServerHandler::processDocVisit(izenelib::driver::Value& request)
  * Process request of recommend/visit_item
  * @param request
  * sample:
-    { "collection" : "b5ma",
+    { "collection" : "b5mp",
       "header" : { "acl_tokens" : "",
           "action" : "visit_item",
           "controller" : "recommend",
@@ -641,7 +632,7 @@ void DriverLogServerHandler::processRecVisitItem(izenelib::driver::Value& reques
  * Process request of recommend/purchase_item
  * @param request
  * sample:
-    { "collection" : "b5ma",
+    { "collection" : "b5mp",
       "header" : { "acl_tokens" : "",
           "action" : "purchase_item",
           "controller" : "recommend",
