@@ -59,7 +59,7 @@ public:
         std::string& facetedPath,
         std::string& tgLabelPath,
         std::string& collectionName,
-        const schema_type& schema,
+        const DocumentSchema& documentSchema,
         const MiningSchema& mining_schema_,
         boost::shared_ptr<DocumentManager>& document_manager,
         idmlib::util::IDMAnalyzer* analyzer,
@@ -122,7 +122,7 @@ private:
     std::string container_;
     collectionid_t collectionId_;
     std::string collectionName_;
-    schema_type schema_;
+    DocumentSchema documentSchema_;
     MiningSchema mining_schema_;
     boost::shared_ptr<DocumentManager> document_manager_;
     idmlib::util::IDMAnalyzer* analyzer_;

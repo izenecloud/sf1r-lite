@@ -14,14 +14,13 @@
 
 namespace sf1r
 {
-typedef std::set<PropertyConfig, PropertyComp> IndexBundleSchema;
 
 class IndexBundleConfiguration : public ::izenelib::osgi::BundleConfiguration
 {
 public:
     IndexBundleConfiguration(const std::string& collectionName);
 
-    void setSchema(const std::set<PropertyConfigBase, PropertyBaseComp>& schema);
+    void setSchema(const DocumentSchema& documentSchema);
 
     void numberProperty();
 
@@ -62,7 +61,7 @@ private:
     {
         PropertyConfig config;
         config.propertyName_ = name;
-        return schema_.erase(config);
+        return indexSchema_.erase(config);
     }
 
 public:
@@ -73,10 +72,9 @@ public:
 
     CollectionPath collPath_;
 
-    /// Schema
-    IndexBundleSchema schema_;
+    IndexBundleSchema indexSchema_;
 
-    std::set<PropertyConfigBase, PropertyBaseComp> rawSchema_;
+    DocumentSchema documentSchema_;
 
     std::vector<std::string> indexShardKeys_;
 

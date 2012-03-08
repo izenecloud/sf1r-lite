@@ -58,7 +58,7 @@ OntologyManager::OntologyManager(
     std::string& tgLabelPath,
     // collectionid_t collectionId,
     std::string& collectionName,
-    const schema_type& schema,
+    const DocumentSchema& documentSchema,
     const MiningSchema& mining_schema,
     boost::shared_ptr<DocumentManager>& document_manager,
     // std::vector<std::string>& properties,
@@ -71,7 +71,7 @@ OntologyManager::OntologyManager(
 )
         : container_(facetedPath)
         , collectionName_(collectionName)
-        , schema_(schema)
+        , documentSchema_(documentSchema)
         , mining_schema_(mining_schema)
         , document_manager_(document_manager)
         , analyzer_(analyzer), service_(NULL), searcher_(new OntologySearcher())
@@ -94,8 +94,8 @@ OntologyManager::OntologyManager(
         faceted_properties_.insert( properties[i], 0);
         PropertyConfigBase byName;
         byName.propertyName_ = properties[i];
-        schema_type::const_iterator it(schema_.find(byName));
-        if (it != schema_.end())
+        DocumentSchema::const_iterator it(documentSchema_.find(byName));
+        if (it != documentSchema_.end())
         {
             property_ids_.push_back (it->propertyId_);
             property_names_.push_back(properties[i]);

@@ -127,7 +127,7 @@ public:
                   const boost::shared_ptr<SearchManager>& searchManager,
                   const boost::shared_ptr<izenelib::ir::idmanager::IDManager>& idManager,
                   const std::string& collectionName,
-                  const schema_type& schema,
+                  const DocumentSchema& documentSchema,
                   const MiningConfig& miningConfig,
                   const MiningSchema& miningSchema);
 
@@ -380,7 +380,7 @@ private:
     std::string collectionDataPath_;
     std::string queryDataPath_;
     std::string collectionName_;
-    const schema_type& schema_;
+    const DocumentSchema& documentSchema_;
 
     MiningConfig miningConfig_;
     MiningSchema mining_schema_;

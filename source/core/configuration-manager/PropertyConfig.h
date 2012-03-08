@@ -529,7 +529,9 @@ inline void swap(PropertyConfig& a, PropertyConfig& b)
     a.swap(b);
 }
 
-typedef std::set<PropertyConfigBase, PropertyBaseComp> schema_type;
+typedef std::set<PropertyConfigBase, PropertyBaseComp> DocumentSchema;
+
+typedef std::set<PropertyConfig, PropertyComp> IndexBundleSchema;
 
 } // namespace
 

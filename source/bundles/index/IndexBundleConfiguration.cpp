@@ -17,16 +17,15 @@ IndexBundleConfiguration::IndexBundleConfiguration(const std::string& collection
     , wildcardType_("unigram")
 {}
 
-void IndexBundleConfiguration::setSchema(
-    const std::set<PropertyConfigBase, PropertyBaseComp>& schema
-)
+void IndexBundleConfiguration::setSchema(const DocumentSchema& documentSchema)
 {
-    rawSchema_ = schema;
-    std::set<PropertyConfigBase, PropertyBaseComp>::const_iterator iter = schema.begin();
-    for(; iter != schema.end(); ++iter)
+    documentSchema_ = documentSchema;
+    
+    for(DocumentSchema::const_iterator iter = documentSchema_.begin();
+        iter != documentSchema_.end(); ++iter)
     {
         PropertyConfig property(*iter);
-        schema_.insert(property);
+        indexSchema_.insert(property);
         string pName = iter->propertyName_;
         boost::to_lower(pName);
         if(pName == "date" )
@@ -36,7 +35,7 @@ void IndexBundleConfiguration::setSchema(
             updatedDatePropertyConfig.setIsIndex(true);
             updatedDatePropertyConfig.setIsFilter(true);
             eraseProperty(iter->propertyName_);
-            schema_.insert(updatedDatePropertyConfig);
+            indexSchema_.insert(updatedDatePropertyConfig);
         }
     }
 }
@@ -52,10 +51,9 @@ void IndexBundleConfiguration::setIndexMultiLangGranularity(
 
 void IndexBundleConfiguration::numberProperty()
 {
-    typedef std::set<PropertyConfig, PropertyComp>::iterator iterator;
-
     propertyid_t id = 1;
-    for (iterator it = schema_.begin(), itEnd = schema_.end(); it != itEnd; ++it)
+    for (IndexBundleSchema::iterator it = indexSchema_.begin(), itEnd = indexSchema_.end();
+        it != itEnd; ++it)
     {
         PropertyConfig& config = const_cast<PropertyConfig&>(*it);
         config.setPropertyId(id++);
@@ -70,8 +68,8 @@ bool IndexBundleConfiguration::getPropertyConfig(
     PropertyConfig byName;
     byName.setName(name);
 
-    IndexBundleSchema::const_iterator it(schema_.find(byName));
-    if (it != schema_.end())
+    IndexBundleSchema::const_iterator it(indexSchema_.find(byName));
+    if (it != indexSchema_.end())
     {
         config = *it;
         return true;
@@ -89,9 +87,9 @@ bool IndexBundleConfiguration::getAnalysisInfo(
     PropertyConfig config;
     config.setName(propertyName);
 
-    IndexBundleSchema::iterator iter = schema_.find(config);
+    IndexBundleSchema::const_iterator iter = indexSchema_.find(config);
 
-    if (iter != schema_.end() )
+    if (iter != indexSchema_.end() )
     {
         analysisInfo = iter->analysisInfo_;
         analysis = analysisInfo.analyzerId_;

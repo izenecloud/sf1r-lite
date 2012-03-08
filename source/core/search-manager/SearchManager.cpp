@@ -79,7 +79,7 @@ bool action_rerankable(const KeywordSearchActionItem& actionItem)
 }
 
 SearchManager::SearchManager(
-        std::set<PropertyConfig, PropertyComp> schema,
+        const IndexBundleSchema& indexSchema,
         const boost::shared_ptr<IDManager>& idManager,
         const boost::shared_ptr<DocumentManager>& documentManager,
         const boost::shared_ptr<IndexManager>& indexManager,
@@ -95,9 +95,11 @@ SearchManager::SearchManager(
     , reranker_(0)
 {
     collectionName_ = config->collectionName_;
-    std::set<PropertyConfig, PropertyComp>::iterator iter = schema.begin();
-    for (; iter != schema.end(); ++iter)
+    for (IndexBundleSchema::const_iterator iter = indexSchema.begin();
+        iter != indexSchema.end(); ++iter)
+    {
         schemaMap_[iter->getName()] = *iter;
+    }
 
     pSorterCache_ = new SortPropertyCache(indexManagerPtr_.get(), config);
     queryBuilder_.reset(new QueryBuilder(

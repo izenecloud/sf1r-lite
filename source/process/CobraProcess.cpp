@@ -361,10 +361,8 @@ int CobraProcess::run()
                     LicenseManager::extract_token_from(filePath, token);
 
                     ///Insert the extracted token into the deny control lists for all collections
-                    std::map<std::string, CollectionMeta>&
-                        collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
-                    std::map<std::string, CollectionMeta>::iterator
-                        collectionIter = collectionMetaMap.begin();
+                    SF1Config::CollectionMetaMap& collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
+                    SF1Config::CollectionMetaMap::iterator collectionIter = collectionMetaMap.begin();
 
                     for(; collectionIter != collectionMetaMap.end(); collectionIter++)
                     {

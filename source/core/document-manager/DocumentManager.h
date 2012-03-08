@@ -75,7 +75,7 @@ public:
      */
     DocumentManager(
         const std::string& path,
-        const std::set<PropertyConfig, PropertyComp>& schema,
+        const IndexBundleSchema& indexSchema,
         izenelib::util::UString::EncodingType encondingType,
         size_t documentCacheNum = 20000
     );
@@ -412,7 +412,7 @@ private:
     izenelib::cache::IzeneCache<docid_t, Document, izenelib::util::ReadWriteLock> documentCache_;
 
     /// @brief property specification from the configuration file
-    std::set<PropertyConfig, PropertyComp> schema_;
+    IndexBundleSchema indexSchema_;
 
     /// @brief encoding type used in system
     izenelib::util::UString::EncodingType encodingType_;
