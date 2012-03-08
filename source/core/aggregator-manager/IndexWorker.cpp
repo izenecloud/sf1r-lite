@@ -392,16 +392,38 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
     docid_t minDocId = 1;
     docid_t maxDocId = documentManager->getMaxDocId();
     docid_t curDocId = 0;
+    docid_t insertedCount = 0;
     for (curDocId = minDocId; curDocId <= maxDocId; curDocId++)
     {
         if (documentManager->isDeleted(curDocId))
         {
-            LOG(INFO) << "skip deleted docid: " << curDocId;
+            //LOG(INFO) << "skip deleted docid: " << curDocId;
             continue;
         }
 
         Document document;
         documentManager->getDocument(curDocId, document);
+
+        // update docid
+        std::string docidName("DOCID");
+        izenelib::util::UString docidValueU;
+        if (!document.getProperty(docidName, docidValueU))
+        {
+            //LOG(WARNING) << "skip doc which has no DOCID property: " << curDocId;
+            continue;
+        }
+
+        docid_t newDocId;
+        if (createInsertDocId_(docidValueU, newDocId))
+        {
+            //LOG(INFO) << document.getId() << " -> " << newDocId;
+            document.setId(newDocId);
+        }
+        else
+        {
+            //LOG(WARNING) << "Failed to create new docid for: " << curDocId;
+            continue;
+        }
 
         IndexerDocument indexDocument;
         prepareIndexDocument_(oldId, document, indexDocument);
@@ -410,15 +432,16 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         if (!insertDoc_(document, indexDocument, timestamp))
             continue;
 
-        if (curDocId % 1000 == 0)
+        insertedCount++;
+        if (insertedCount % 10000 == 0)
         {
-            LOG(INFO) << "inserted doc number: " << curDocId;
+            LOG(INFO) << "inserted doc number: " << insertedCount;
         }
 
         // interrupt when closing the process
         boost::this_thread::interruption_point();
     }
-    LOG(INFO) << "inserted doc number: " << curDocId << ", total: " << maxDocId;
+    LOG(INFO) << "inserted doc number: " << insertedCount << ", total: " << maxDocId;
     LOG(INFO) << "Indexing Finished";
 
     documentManager_->flush();
@@ -666,6 +689,7 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
     docid_t docid;
     izenelib::util::UString docName(asString(documentValue["DOCID"]),
                              izenelib::util::UString::UTF_8);
+
     if( idManager_->getDocIdByDocName(docName, docid, false) == false )
         return false;
 

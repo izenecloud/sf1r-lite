@@ -308,6 +308,18 @@ void CobraProcess::stopDistributedServer()
     CollectionDataReceiver::get()->stop();
 }
 
+void CobraProcess::scheduleTask(const std::string& collection)
+{
+    CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(collection);
+    CollectionManager::ScopedReadLock rlock(*mutex);
+
+    CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
+    if (!CollectionTaskScheduler::get()->schedule(collectionHandler))
+    {
+        throw std::runtime_error(std::string("Failed to schedule collection task: ") + collection);
+    }
+}
+
 int CobraProcess::run()
 {
     setupDefaultSignalHandlers();
@@ -326,12 +338,8 @@ int CobraProcess::run()
                     if(!boost::iequals(bfs::path(*iter).filename().string(),"sf1config.xml"))
                     {
                         std::string collectionName = bfs::path(*iter).filename().string().substr(0,bfs::path(*iter).filename().string().rfind(".xml"));
-                        CollectionHandler* collectionHandler = CollectionManager::get()->startCollection(collectionName, bfs::path(*iter).string());
-
-                        if (!CollectionTaskScheduler::get()->schedule(collectionHandler))
-                        {
-                            throw std::runtime_error(std::string("Failed to schedule collection task: ") + collectionName);
-                        }
+                        CollectionManager::get()->startCollection(collectionName, bfs::path(*iter).string());
+                        scheduleTask(collectionName);
                     }
             }
         }

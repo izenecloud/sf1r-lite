@@ -19,7 +19,7 @@ public:
     void setSchema(const IndexBundleSchema& indexSchema);
 
 public:
-    int mode_;
+    std::string mode_;
 
     std::string collectionName_;
 

@@ -226,11 +226,7 @@ void DriverLogServerHandler::processCclog()
     std::string uri = controller + "/" + action;
 
     std::string collection = asString(raw_request[Keys::collection]);
-    //if (collection == "b5ma")
-    //{
-    //    raw_request[Keys::collection] = "b5mp";
-    //}
-    //also update config
+
     if (!skipProcess(collection))
     {
         if (controller == "documents" && action == "visit")
@@ -335,11 +331,6 @@ void DriverLogServerHandler::processConvertRawCclog()
     std::string uri = controller + "/" + action;
 
     std::string collection = asString(raw_request[Keys::collection]);
-    if (collection == "b5mm")
-    {
-        collection = "b5ma";
-        raw_request[Keys::collection] = "b5ma";
-    }
 
     if (!skipProcess(collection))
     {
@@ -435,8 +426,8 @@ void DriverLogServerHandler::processUpdateDocuments()
     }
 
     // sf1 driver client
-    izenelib::net::sf1r::Sf1Config sf1Conf(1, false);
-    izenelib::net::sf1r::Sf1Driver sf1DriverClient(host, port, sf1Conf);
+    izenelib::net::sf1r::Sf1Config sf1Conf;
+    izenelib::net::sf1r::Sf1Driver sf1DriverClient(host, sf1Conf);
     std::string uri = "documents/create";
     std::string tokens = "";
 
@@ -575,7 +566,7 @@ bool DriverLogServerHandler::skipProcess(const std::string& collection)
  * Process request of documents/visit
  * @param request
  * sample:
-    { "collection" : "b5ma",
+    { "collection" : "b5mp",
       "header" : { "acl_tokens" : "",
           "action" : "visit",
           "controller" : "documents",
@@ -606,7 +597,7 @@ void DriverLogServerHandler::processDocVisit(izenelib::driver::Value& request)
  * Process request of recommend/visit_item
  * @param request
  * sample:
-    { "collection" : "b5ma",
+    { "collection" : "b5mp",
       "header" : { "acl_tokens" : "",
           "action" : "visit_item",
           "controller" : "recommend",
@@ -641,7 +632,7 @@ void DriverLogServerHandler::processRecVisitItem(izenelib::driver::Value& reques
  * Process request of recommend/purchase_item
  * @param request
  * sample:
-    { "collection" : "b5ma",
+    { "collection" : "b5mp",
       "header" : { "acl_tokens" : "",
           "action" : "purchase_item",
           "controller" : "recommend",
@@ -1017,8 +1008,8 @@ void DriverLogServerHandler::setCclogSf1DriverClient(const std::string& host, ui
     {
         cclogSf1Host_ = host;
         cclogSf1Port_ = port;
-        izenelib::net::sf1r::Sf1Config sf1Conf(1, false);
-        cclogSf1DriverClient_.reset(new Sf1Driver(cclogSf1Host_, cclogSf1Port_, sf1Conf));
+        izenelib::net::sf1r::Sf1Config sf1Conf;
+        cclogSf1DriverClient_.reset(new Sf1Driver(cclogSf1Host_, sf1Conf));
     }
 }
 
