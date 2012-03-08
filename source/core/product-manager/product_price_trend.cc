@@ -348,6 +348,7 @@ bool ProductPriceTrend::MigratePriceHistory(
     boost::shared_ptr<PriceHistory> new_price_history(new PriceHistory(new_keyspace));
     new_price_history->createColumnFamily();
 
+    uint32_t count = 0;
     for (uint32_t i = 1; i <= document_manager_->getMaxDocId(); i++)
     {
         Document doc;
@@ -401,12 +402,18 @@ bool ProductPriceTrend::MigratePriceHistory(
                     it->setDocId(new_prefix + "_" + it->getDocId());
                 }
             }
+
             if (!new_price_history->updateMultiRow(row_list))
             {
                 error_msg = "Can't update price history to Cassandra.";
                 return false;
             }
             docid_list.clear();
+        }
+
+        if (++count % 100000 == 0)
+        {
+            LOG(INFO) << "Migrating price history: " << count;
         }
     }
 
