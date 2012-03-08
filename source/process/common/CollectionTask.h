@@ -6,6 +6,8 @@
 
 #include <util/cronexpression.h>
 
+#include <common/JobScheduler.h>
+
 namespace sf1r
 {
 
@@ -57,6 +59,8 @@ protected:
     izenelib::util::CronExpression cronExpression_;
 
     bool isRunning_;
+
+    JobScheduler asyncJodScheduler_;
 };
 
 class DocumentManager;
