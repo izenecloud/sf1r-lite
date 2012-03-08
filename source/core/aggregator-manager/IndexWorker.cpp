@@ -110,10 +110,11 @@ bool IndexWorker::index(const unsigned int& numdoc, bool& ret)
     return ret;
 }
 
-bool IndexWorker::optimizeIndexIdSpace()
+bool IndexWorker::reindex(boost::shared_ptr<DocumentManager>& documentManager)
 {
-    task_type task = boost::bind(&IndexWorker::rebuildCollection, this, 0);
-    JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
+    //task_type task = boost::bind(&IndexWorker::rebuildCollection, this, documentManager);
+    //JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
+    rebuildCollection(documentManager);
     return true;
 }
 
@@ -375,9 +376,76 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
     return true;
 }
 
-bool IndexWorker::rebuildCollection(unsigned int numdoc)
+bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& documentManager)
 {
-    return false;
+    LOG(INFO) << "start BuildCollection";
+
+    if (!documentManager)
+    {
+        LOG(ERROR) << "documentManager is not initialized!";
+        return false;
+    }
+
+    izenelib::util::ClockTimer timer;
+
+    indexProgress_.reset();
+
+    docid_t oldId = 0;
+    docid_t minDocId = 1;
+    docid_t maxDocId = documentManager->getMaxDocId();
+    docid_t curDocId = 0;
+    for (curDocId = minDocId; curDocId <= maxDocId; curDocId++)
+    {
+        if (documentManager->isDeleted(curDocId))
+        {
+            LOG(INFO) << "skip deleted docid: " << curDocId;
+            continue;
+        }
+
+        Document document;
+        documentManager->getDocument(curDocId, document);
+
+        IndexerDocument indexDocument;
+        prepareIndexDocument_(oldId, document, indexDocument);
+
+        time_t timestamp = Utilities::createTimeStamp();
+        if (!insertDoc_(document, indexDocument, timestamp))
+            continue;
+
+        if (curDocId % 1000 == 0)
+        {
+            LOG(INFO) << "inserted doc number: " << curDocId;
+        }
+
+        // interrupt when closing the process
+        boost::this_thread::interruption_point();
+    }
+    LOG(INFO) << "inserted doc number: " << curDocId << ", total: " << maxDocId;
+    LOG(INFO) << "Indexing Finished";
+
+    documentManager_->flush();
+    idManager_->flush();
+    indexManager_->flush();
+
+#ifdef __x86_64
+    if (bundleConfig_->isTrieWildcard())
+    {
+        idManager_->startWildcardProcess();
+        idManager_->joinWildcardProcess();
+    }
+#endif
+
+    if (miningTaskService_)
+    {
+        indexManager_->pauseMerge();
+        miningTaskService_->DoMiningCollection();
+        indexManager_->resumeMerge();
+    }
+
+    LOG(INFO) << "End BuildCollection: ";
+    LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
+
+    return true;
 }
 
 bool IndexWorker::optimizeIndex()
@@ -646,6 +714,11 @@ uint32_t IndexWorker::getDocNum()
 uint32_t IndexWorker::getKeyCount(const std::string& property_name)
 {
     return indexManager_->getBTreeIndexer()->count(property_name);
+}
+
+boost::shared_ptr<DocumentManager> IndexWorker::getDocumentManager() const
+{
+    return documentManager_;
 }
 
 /// private ////////////////////////////////////////////////////////////////////

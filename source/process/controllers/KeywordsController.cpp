@@ -19,6 +19,24 @@ namespace sf1r
 
 using driver::Keys;
 using namespace izenelib::driver;
+
+KeywordsController::KeywordsController()
+    : Sf1Controller(false)
+    , miningSearchService_(NULL)
+{
+}
+
+bool KeywordsController::checkCollectionService(std::string& error)
+{
+    miningSearchService_ = collectionHandler_->miningSearchService_;
+
+    if (miningSearchService_)
+        return true;
+
+    error = "Request failed, no mining search service found.";
+    return false;
+}
+
 /**
  * @brief Action \b index. Gets various keywords list.
  *
@@ -63,24 +81,9 @@ using namespace izenelib::driver;
  */
 void KeywordsController::index()
 {
-    std::string collection = asString(request()[Keys::collection]);
+    IZENELIB_DRIVER_BEFORE_HOOK(checkCollectionName());
+
     Value::UintType limit = asUintOr(request()[Keys::limit], kDefaultCount);
-
-    if (collection.empty())
-    {
-        response().addError("Require field collection in request.");
-        return;
-    }
-    if (!SF1Config::get()->checkCollectionAndACL(collection, request().aclTokens()))
-    {
-        response().addError("Collection access denied");
-        return;
-    }
-
-    CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(collection);
-    CollectionManager::ScopedReadLock lock(*mutex);
-    CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
-
     bool getAllLists = true;
     std::set<std::string> selectedTypes;
     if (!nullValue(request()[Keys::select]))
@@ -110,7 +113,7 @@ void KeywordsController::index()
         Value& recentField = response()[Keys::recent];
         recentField.reset<Value::ArrayType>();
         std::vector<izenelib::util::UString> recentKeywords;
-        LogAnalysis::getRecentKeywordList(collection, limit, recentKeywords);
+        LogAnalysis::getRecentKeywordList(collectionName_, limit, recentKeywords);
 
         // set resource
         for (iterator it = recentKeywords.begin(); it != recentKeywords.end(); ++it)
@@ -122,15 +125,13 @@ void KeywordsController::index()
 
     // realtime and popular
     if (getAllLists ||
-            selectedTypes.count(Keys::popular) ||
-            selectedTypes.count(Keys::realtime))
+        selectedTypes.count(Keys::popular) ||
+        selectedTypes.count(Keys::realtime))
     {
         std::vector<izenelib::util::UString> popularKeywords;
         std::vector<izenelib::util::UString> realtimeKeywords;
 
-        MiningSearchService* service = collectionHandler->miningSearchService_;
-
-        bool success = service->getReminderQuery(popularKeywords, realtimeKeywords);
+        bool success = miningSearchService_->getReminderQuery(popularKeywords, realtimeKeywords);
 
         if (getAllLists || selectedTypes.count(Keys::popular))
         {
@@ -225,7 +226,6 @@ void KeywordsController::index()
  */
 void KeywordsController::inject_query_correction()
 {
-    std::string collection = asString(request()[Keys::collection]);
     Value& resources = request()[Keys::resource];
     std::vector<std::pair<izenelib::util::UString,izenelib::util::UString> > input;
     for(uint32_t i=0;i<resources.size();i++)
@@ -250,7 +250,7 @@ void KeywordsController::inject_query_correction()
     }
     if(!input.empty())
     {
-        if (collection.empty())
+        if (collectionName_.empty())
         {
             for(uint32_t i=0;i<input.size();i++)
             {
@@ -260,20 +260,11 @@ void KeywordsController::inject_query_correction()
         }
         else
         {
-            if (!SF1Config::get()->checkCollectionAndACL(collection, request().aclTokens()))
-            {
-                response().addError("Collection access denied");
-                return;
-            }
-            CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(collection);
-            CollectionManager::ScopedReadLock lock(*mutex);
-            CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
-            MiningSearchService* service = collectionHandler->miningSearchService_;
             for(uint32_t i=0;i<input.size();i++)
             {
-                service->InjectQueryCorrection(input[i].first, input[i].second);
+                miningSearchService_->InjectQueryCorrection(input[i].first, input[i].second);
             }
-            service->FinishQueryCorrectionInject();
+            miningSearchService_->FinishQueryCorrectionInject();
        }
     }
 }
@@ -315,17 +306,8 @@ void KeywordsController::inject_query_correction()
  */
 void KeywordsController::inject_query_recommend()
 {
-    std::string collection = asString(request()[Keys::collection]);
-    if (collection.empty())
-    {
-        response().addError("Require field collection in request.");
-        return;
-    }
-    if (!SF1Config::get()->checkCollectionAndACL(collection, request().aclTokens()))
-    {
-        response().addError("Collection access denied");
-        return;
-    }
+    IZENELIB_DRIVER_BEFORE_HOOK(checkCollectionName());
+
     Value& resources = request()[Keys::resource];
     std::vector<std::pair<izenelib::util::UString,izenelib::util::UString> > input;
     for(uint32_t i=0;i<resources.size();i++)
@@ -348,17 +330,14 @@ void KeywordsController::inject_query_recommend()
         input.push_back(std::make_pair(query, result) );
 
     }
+
     if(!input.empty())
     {
-        CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(collection);
-        CollectionManager::ScopedReadLock lock(*mutex);
-        CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
-        MiningSearchService* service = collectionHandler->miningSearchService_;
         for(uint32_t i=0;i<input.size();i++)
         {
-            service->InjectQueryRecommend(input[i].first, input[i].second);
+            miningSearchService_->InjectQueryRecommend(input[i].first, input[i].second);
         }
-        service->FinishQueryRecommendInject();
+        miningSearchService_->FinishQueryRecommendInject();
     }
 
 }

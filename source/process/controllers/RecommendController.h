@@ -20,6 +20,8 @@ struct RecommendItem;
 struct TIBParam;
 struct ItemBundle;
 struct RateParam;
+class RecommendTaskService;
+class RecommendSearchService;
 
 /// @addtogroup controllers
 /// @{
@@ -34,6 +36,8 @@ struct RateParam;
 class RecommendController : public Sf1Controller
 {
 public:
+    RecommendController();
+
     void add_user();
     void update_user();
     void remove_user();
@@ -49,8 +53,10 @@ public:
 
     void top_item_bundle();
 
+protected:
+    virtual bool checkCollectionService(std::string& error);
+
 private:
-    bool requireService(::izenelib::osgi::IService* service);
     bool requireProperty(
         const std::string& propName,
         std::string& propValue
@@ -67,6 +73,10 @@ private:
     void renderBundleResult(const TIBParam& param, const std::vector<ItemBundle>& bundleVec);
 
     bool parseRateParam(RateParam& param);
+
+private:
+    RecommendTaskService* recommendTaskService_;
+    RecommendSearchService* recommendSearchService_;
 };
 
 /// @}

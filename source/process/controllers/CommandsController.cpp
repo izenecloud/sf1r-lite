@@ -23,16 +23,9 @@ using driver::Keys;
 using namespace izenelib::driver;
 using namespace izenelib::osgi;
 
-bool CommandsController::parseCollection_()
+CommandsController::CommandsController()
+    : Sf1Controller(false)
 {
-    collection_ = asString(request()[Keys::collection]);
-    if (collection_.empty())
-    {
-        response().addError("Require field collection in request.");
-        return false;
-    }
-
-    return true;
 }
 
 /**
@@ -61,43 +54,31 @@ bool CommandsController::parseCollection_()
  */
 void CommandsController::index()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection_());
+    IZENELIB_DRIVER_BEFORE_HOOK(checkCollectionName());
 
-    if (!SF1Config::get()->checkCollectionExist(collection_))
-    {
-        response().addError("Request failed, collection not found.");
-        return;
-    }
-
-    if (!indexSearch_())
-        return;
-
+    indexSearch_();
     indexRecommend_();
 }
 
-bool CommandsController::indexSearch_()
+void CommandsController::indexSearch_()
 {
-    // 0 indicates no limit
-    Value::UintType documentCount = asUint(request()[Keys::document_count]);
-
-    if (!collectionHandler_->indexTaskService_)
+    IndexTaskService* taskService = collectionHandler_->indexTaskService_;
+    if (taskService)
     {
-        response().addError("Request failed, index service not found");
-        return false;
-    }
+        // 0 indicates no limit
+        Value::UintType documentCount = asUint(request()[Keys::document_count]);
 
-    return collectionHandler_->indexTaskService_->index(documentCount);
+        taskService->index(documentCount);
+    }
 }
 
 void CommandsController::indexRecommend_()
 {
-    std::string bundleName = "RecommendBundle-" + collection_;
-    RecommendTaskService* taskService = static_cast<RecommendTaskService*>(
-                                        CollectionManager::get()->getOSGILauncher().getService(bundleName, "RecommendTaskService"));
+    RecommendTaskService* taskService = collectionHandler_->recommendTaskService_;
     if (taskService)
     {
         task_type task = boost::bind(&RecommendTaskService::buildCollection, taskService);
-        JobScheduler::get()->addTask(task, collection_);
+        JobScheduler::get()->addTask(task, collectionName_);
     }
 }
 
@@ -139,23 +120,17 @@ void CommandsController::index_query_log()
  */
 void CommandsController::optimize_index()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection_());
+    IZENELIB_DRIVER_BEFORE_HOOK(checkCollectionName());
 
-    if (!SF1Config::get()->checkCollectionExist(collection_))
+    IndexTaskService* taskService = collectionHandler_->indexTaskService_;
+    if (!taskService)
     {
-        response().addError("Request failed, collection not found.");
+        response().addError("Request failed, index task service not found");
         return;
     }
-    std::string bundleName = "IndexBundle-" + collection_;
-    IndexTaskService* indexService = static_cast<IndexTaskService*>(
-                                         CollectionManager::get()->getOSGILauncher().getService(bundleName, "IndexTaskService"));
-    if (!indexService)
-    {
-        response().addError("Request failed, index service not found");
-        return;
-    }
-    task_type task = boost::bind(&IndexTaskService::optimizeIndex, indexService);
-    JobScheduler::get()->addTask(task, collection_);
+
+    task_type task = boost::bind(&IndexTaskService::optimizeIndex, taskService);
+    JobScheduler::get()->addTask(task, collectionName_);
 }
 
 } // namespace sf1r

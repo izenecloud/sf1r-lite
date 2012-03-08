@@ -30,6 +30,7 @@
 
 #include <boost/unordered_set.hpp>
 #include <boost/utility.hpp>
+#include <boost/filesystem.hpp>
 
 #include <string>
 #include <sstream>
@@ -579,6 +580,13 @@ public:
     const std::string& getHomeDirectory() const
     {
         return homeDir_;
+    }
+
+    std::string getCollectionConfigFile(const std::string& collection)
+    {
+        boost::filesystem::path configFile(homeDir_);
+        configFile /= (collection + ".xml");
+        return configFile.string();
     }
 
 private:

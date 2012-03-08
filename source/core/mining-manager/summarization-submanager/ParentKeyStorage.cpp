@@ -1,10 +1,11 @@
 #include "ParentKeyStorage.h"
-#include "CommentCacheStorage.h"
 
 #ifdef USE_LOG_SERVER
 #include <common/Utilities.h>
 #include <log-manager/LogServerRequest.h>
 #include <log-manager/LogServerConnection.h>
+#else
+#include "CommentCacheStorage.h"
 #endif
 
 #include <iostream>

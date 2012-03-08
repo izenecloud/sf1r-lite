@@ -39,6 +39,8 @@ private:
 
     void stopDistributedServer();
 
+    void scheduleTask(const std::string& collection);
+
 private:
     std::string configDir_;
 

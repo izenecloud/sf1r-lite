@@ -15,6 +15,23 @@ namespace sf1r
 {
 using driver::Keys;
 using namespace izenelib::driver;
+
+StatusController::StatusController()
+    : indexTaskService_(NULL)
+{
+}
+
+bool StatusController::checkCollectionService(std::string& error)
+{
+    indexTaskService_ = collectionHandler_->indexTaskService_;
+
+    if (indexTaskService_)
+        return true;
+
+    error = "Request failed, no index task service found.";
+    return false;
+}
+
 /**
  * @brief Action \b index. Get index and mining status of specified collection.
  *
@@ -42,13 +59,6 @@ using namespace izenelib::driver;
  */
 void StatusController::index()
 {
-    std::string collection = asString(request()[Keys::collection]);
-    if (collection.empty())
-    {
-        response().addError("Require field collection");
-        return;
-    }
-
     // index
     Value& indexStatusResponse = response()[Keys::index];
     indexStatusResponse[Keys::status] = "stopped";
@@ -56,9 +66,8 @@ void StatusController::index()
     indexStatusResponse[Keys::document_count] = 0;
 
     Status indexStatus;
-    IndexTaskService* service = collectionHandler_->indexTaskService_;
 
-    if (service->getIndexStatus(indexStatus))
+    if (indexTaskService_->getIndexStatus(indexStatus))
     {
         indexStatusResponse[Keys::status] =
             indexStatus.running() ? "running" : "idle";
@@ -80,7 +89,7 @@ void StatusController::index()
 //     miningStatusResponse[Keys::last_modified] = 0;
 //
 //     Status miningStatus;
-//     if (BrokerAgentClient::instance().getMiningStatus(collection, miningStatus))
+//     if (BrokerAgentClient::instance().getMiningStatus(collectionName_, miningStatus))
 //     {
 //         miningStatusResponse[Keys::status] =
 //             miningStatus.running() ? "running" : "idle";

@@ -78,6 +78,8 @@ const map<string, string> PriceHistory::cf_compression_options = map_list_of
     ("sstable_compression", "SnappyCompressor")
     ("chunk_length_kb", "64");
 
+const double PriceHistory::cf_bloom_filter_fp_chance(0);
+
 PriceHistory::PriceHistory(const string& docId)
     : ColumnFamilyBase()
     , docId_(docId)

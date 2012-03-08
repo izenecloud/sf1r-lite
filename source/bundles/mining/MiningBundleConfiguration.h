@@ -17,6 +17,9 @@ public:
 
     std::string collectionName_;
 
+    // <MiningBundle><Schema>
+    bool isSchemaEnable_;
+
     bool isMasterAggregator_;
 
     CollectionPath collPath_;

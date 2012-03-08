@@ -9,6 +9,7 @@
 
 namespace sf1r
 {
+class IndexTaskService;
 
 /// @addtogroup controllers
 /// @{
@@ -21,7 +22,14 @@ namespace sf1r
 class StatusController : public Sf1Controller
 {
 public:
+    StatusController();
     void index();
+
+protected:
+    virtual bool checkCollectionService(std::string& error);
+
+private:
+    IndexTaskService* indexTaskService_;
 };
 
 /// @}

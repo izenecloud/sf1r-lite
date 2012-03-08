@@ -4,7 +4,9 @@
  * @date Created <2010-05-31 14:13:29>
  */
 #include "AutoFillController.h"
+#include "CollectionHandler.h"
 
+#include <bundles/mining/MiningSearchService.h>
 #include <mining-manager/query-recommend-submanager/RecommendManager.h>
 #include <mining-manager/MiningManager.h>
 
@@ -21,16 +23,23 @@ namespace sf1r
 using driver::Keys;
 using namespace izenelib::driver;
 
-bool AutoFillController::check_recommend_manager_()
+bool AutoFillController::checkCollectionService(std::string& error)
 {
-    boost::shared_ptr<MiningManager> mining_manager = GetMiningManager();
-
-    recommend_manager_ = mining_manager->GetRecommendManager();
-    if(!recommend_manager_)
+    MiningSearchService* service = collectionHandler_->miningSearchService_;
+    if (!service)
     {
-        response().addError("RecommendManager not enabled.");
+        error = "Request failed, no mining search service found.";
         return false;
     }
+
+    boost::shared_ptr<MiningManager> mining_manager = service->GetMiningManager();
+    recommend_manager_ = mining_manager->GetRecommendManager();
+    if (!recommend_manager_)
+    {
+        error = "Request failed, RecommendManager not enabled.";
+        return false;
+    }
+
     return true;
 }
 
@@ -80,7 +89,6 @@ bool AutoFillController::check_recommend_manager_()
  */
 void AutoFillController::index()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(check_recommend_manager_());
     Value::StringType prefix = asString(request()[Keys::prefix]);
     Value::UintType limit = asUintOr(request()[Keys::limit], kDefaultCount);
     if (limit > kMaxCount)

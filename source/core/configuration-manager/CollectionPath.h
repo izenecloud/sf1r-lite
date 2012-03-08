@@ -11,9 +11,12 @@
 
 #include <boost/serialization/access.hpp>
 
+#include <iostream>
 #include <string>
 #include <stdexcept>
 
+#include <boost/filesystem.hpp>
+namespace bfs = boost::filesystem;
 
 namespace sf1r
 {
@@ -33,13 +36,24 @@ public:
         ensureTrailingSlash(basePath_);
     }
 
+    /// @brief Reset basepath of the collection, and update all related paths.
+    /// @param path     The new basepath
+    void resetBasePath(const std::string & path)
+    {
+        basePath_ = path;
+        ensureTrailingSlash(basePath_);
+
+        updateBasePath(scdPath_);
+        updateBasePath(collectionDataPath_);
+        updateBasePath(queryDataPath_);
+    }
+
     /// @brief  Gets the basepath
     /// @return The basepath
     std::string getBasePath() const
     {
         return basePath_;
     }
-
 
     /// @brief  Sets the "SCD path" of the Collection. The basepath should be set for the default
     ///         path to be applied
@@ -146,6 +160,19 @@ private:
         {
             str.push_back(kSlash);
         }
+    }
+
+    void updateBasePath(std::string& path)
+    {
+        bfs::path basepath(basePath_);
+        bfs::path dirpath(path);
+
+        std::string dirname = dirpath.filename().string();
+        if (dirname == ".")
+            dirname = dirpath.parent_path().filename().string();
+
+        path = (basepath/dirname).string();
+        ensureTrailingSlash(path);
     }
 
 

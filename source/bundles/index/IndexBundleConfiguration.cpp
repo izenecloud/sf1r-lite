@@ -7,10 +7,12 @@ namespace sf1r
 IndexBundleConfiguration::IndexBundleConfiguration(const std::string& collectionName)
     : ::izenelib::osgi::BundleConfiguration("IndexBundle-"+collectionName, "IndexBundleActivator" )
     , collectionName_(collectionName)
+    , isSchemaEnable_(false)
     , logCreatedDoc_(false)
     , bIndexUnigramProperty_(true)
     , bUnigramSearchMode_(false)
     , indexMultilangGranularity_(la::FIELD_LEVEL)
+    , isAutoRebuild_(false)
     , encoding_(izenelib::util::UString::UNKNOWN)
     , wildcardType_("unigram")
 {}

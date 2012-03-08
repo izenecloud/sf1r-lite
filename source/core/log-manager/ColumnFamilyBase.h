@@ -80,7 +80,8 @@ bool createColumnFamily()
             ColumnFamilyType::cf_compaction_strategy,
             ColumnFamilyType::cf_compaction_strategy_options,
             ColumnFamilyType::cf_row_cache_keys_to_save,
-            ColumnFamilyType::cf_compression_options);
+            ColumnFamilyType::cf_compression_options,
+            ColumnFamilyType::cf_bloom_filter_fp_chance);
 }
 
 template <typename ColumnFamilyType>
@@ -132,6 +133,7 @@ public: \
     static const std::map<std::string, std::string> cf_compaction_strategy_options; \
     static const int32_t cf_row_cache_keys_to_save; \
     static const std::map<std::string, std::string> cf_compression_options; \
+    static const double cf_bloom_filter_fp_chance; \
     \
     virtual const ColumnType getColumnType() const \
     { \

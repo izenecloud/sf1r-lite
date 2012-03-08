@@ -16,6 +16,7 @@
 #include <common/OnSignal.h>
 #include <common/XmlConfigParser.h>
 #include <common/CollectionManager.h>
+#include <common/CollectionTaskScheduler.h>
 #include <distribute/WorkerServer.h>
 
 #include <util/ustring/UString.h>
@@ -307,6 +308,18 @@ void CobraProcess::stopDistributedServer()
     CollectionDataReceiver::get()->stop();
 }
 
+void CobraProcess::scheduleTask(const std::string& collection)
+{
+    CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(collection);
+    CollectionManager::ScopedReadLock rlock(*mutex);
+
+    CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
+    if (!CollectionTaskScheduler::get()->schedule(collectionHandler))
+    {
+        throw std::runtime_error(std::string("Failed to schedule collection task: ") + collection);
+    }
+}
+
 int CobraProcess::run()
 {
     setupDefaultSignalHandlers();
@@ -326,6 +339,7 @@ int CobraProcess::run()
                     {
                         std::string collectionName = bfs::path(*iter).filename().string().substr(0,bfs::path(*iter).filename().string().rfind(".xml"));
                         CollectionManager::get()->startCollection(collectionName, bfs::path(*iter).string());
+                        scheduleTask(collectionName);
                     }
             }
         }

@@ -37,8 +37,10 @@ public:
 
     void get_top_price_cut_list();
 
+protected:
+    virtual bool checkCollectionService(std::string& error);
+
 private:
-    bool check_product_manager_();
     bool require_docid_list_();
     bool require_str_docid_list_();
     bool require_uuid_();

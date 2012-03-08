@@ -4,14 +4,12 @@
  * @date Created <2010-06-02 10:54:39>
  */
 
+#include "DocumentsController.h"
+#include "CollectionHandler.h"
+
 #include <bundles/index/IndexSearchService.h>
 #include <bundles/index/IndexTaskService.h>
 #include <bundles/mining/MiningSearchService.h>
-
-#include "DocumentsController.h"
-#include "DocumentsGetHandler.h"
-#include "DocumentsSearchHandler.h"
-
 #include <common/Keys.h>
 
 namespace sf1r
@@ -21,6 +19,39 @@ using namespace izenelib::driver;
 using driver::Keys;
 
 const std::size_t DocumentsController::kDefaultPageCount = 20;
+
+DocumentsController::DocumentsController()
+    : indexSearchService_(NULL)
+    , indexTaskService_(NULL)
+    , miningSearchService_(NULL)
+{
+}
+
+bool DocumentsController::checkCollectionService(std::string& error)
+{
+    indexSearchService_ = collectionHandler_->indexSearchService_;
+    if (! indexSearchService_)
+    {
+        error = "Request failed, no index search service found.";
+        return false;
+    }
+
+    indexTaskService_ = collectionHandler_->indexTaskService_;
+    if (! indexTaskService_)
+    {
+        error = "Request failed, no index task service found.";
+        return false;
+    }
+
+    miningSearchService_ = collectionHandler_->miningSearchService_;
+    if (! miningSearchService_)
+    {
+        error = "Request failed, no mining search service found.";
+        return false;
+    }
+
+    return true;
+}
 
 /**
  * @brief Action @b search. Gets documents from SF1 using full text search.
@@ -359,7 +390,6 @@ void DocumentsController::duplicate_with()
  */
 void DocumentsController::create()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
     bool requestSent = collectionHandler_->create(
             request()[Keys::resource]
@@ -403,7 +433,6 @@ void DocumentsController::create()
  */
 void DocumentsController::update()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
     bool requestSent = collectionHandler_->update(
         request()[Keys::resource]
@@ -443,7 +472,6 @@ void DocumentsController::update()
  */
 void DocumentsController::destroy()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
 
     bool requestSent = collectionHandler_->destroy(
@@ -494,9 +522,8 @@ void DocumentsController::get_topic()
     Value& docid_value = input[Keys::DOCID];
     std::string sdocid = asString(docid_value);
     izenelib::util::UString udocid(sdocid, izenelib::util::UString::UTF_8);
-    std::string collectionName =  asString(request()[Keys::collection]);
 
-    bool success = collectionHandler_->indexSearchService_->getInternalDocumentId(collectionName, udocid, internal_id);
+    bool success = indexSearchService_->getInternalDocumentId(collectionName_, udocid, internal_id);
     if (!success || internal_id==0)
     {
         response().addError("Cannot convert DOCID to internal ID");
@@ -504,7 +531,7 @@ void DocumentsController::get_topic()
     }
 
     std::vector<std::pair<uint32_t, izenelib::util::UString> > label_list;
-    bool requestSent = collectionHandler_->miningSearchService_->getDocLabelList(
+    bool requestSent = miningSearchService_->getDocLabelList(
         internal_id, label_list
     );
 
@@ -563,9 +590,8 @@ void DocumentsController::get_topic_with_sim()
     Value& docid_value = input[Keys::DOCID];
     std::string sdocid = asString(docid_value);
     izenelib::util::UString udocid(sdocid, izenelib::util::UString::UTF_8);
-    std::string collectionName =  asString(request()[Keys::collection]);
-    bool success = collectionHandler_->indexSearchService_->getInternalDocumentId(
-          collectionName, udocid, internal_id
+    bool success = indexSearchService_->getInternalDocumentId(
+          collectionName_, udocid, internal_id
       );
     if (!success || internal_id==0)
     {
@@ -574,7 +600,7 @@ void DocumentsController::get_topic_with_sim()
     }
 
     std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > > label_list;
-    bool requestSent = collectionHandler_->miningSearchService_->getLabelListWithSimByDocId(
+    bool requestSent = miningSearchService_->getLabelListWithSimByDocId(
         internal_id, label_list
     );
 
@@ -646,7 +672,7 @@ void DocumentsController::log_group_label()
         requireGroupProperty(propName) &&
         requireGroupLabel(groupPath))
     {
-        if (! collectionHandler_->miningSearchService_->clickGroupLabel(
+        if (! miningSearchService_->clickGroupLabel(
             query, propName, groupPath))
         {
             response().addError("Request Failed.");
@@ -719,7 +745,7 @@ void DocumentsController::get_freq_group_labels()
 
     std::vector<std::vector<std::string> > pathVec;
     std::vector<int> freqVec;
-    if (! collectionHandler_->miningSearchService_->getFreqGroupLabel(
+    if (! miningSearchService_->getFreqGroupLabel(
         query, propName, limit, pathVec, freqVec))
     {
         response().addError("Request Failed.");
@@ -785,7 +811,7 @@ void DocumentsController::set_top_group_label()
         requireGroupProperty(propName) &&
         requireGroupLabel(groupPath))
     {
-        if (! collectionHandler_->miningSearchService_->setTopGroupLabel(
+        if (! miningSearchService_->setTopGroupLabel(
             query, propName, groupPath))
         {
             response().addError("Request Failed.");
@@ -819,19 +845,17 @@ void DocumentsController::set_top_group_label()
  */
 void DocumentsController::visit()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
 
     uint64_t internalId = 0;
     Value& docidValue = request()[Keys::resource][Keys::DOCID];
     std::string docidStr = asString(docidValue);
     izenelib::util::UString docidUStr(docidStr, izenelib::util::UString::UTF_8);
-    std::string collectionName =  asString(request()[Keys::collection]);
 
-    if (collectionHandler_->indexSearchService_->getInternalDocumentId(collectionName, docidUStr, internalId)
+    if (indexSearchService_->getInternalDocumentId(collectionName_, docidUStr, internalId)
             && internalId != 0)
     {
-        if (!collectionHandler_->miningSearchService_->visitDoc(collectionName, internalId))
+        if (!miningSearchService_->visitDoc(collectionName_, internalId))
         {
             response().addError("Failed to visit document");
         }
@@ -875,10 +899,9 @@ void DocumentsController::get_summarization()
     Value& docid_value = input[Keys::DOCID];
     std::string sdocid = asString(docid_value);
     izenelib::util::UString udocid(sdocid, izenelib::util::UString::UTF_8);
-    std::string collectionName = asString(request()[Keys::collection]);
 
     Summarization result;
-    bool success = collectionHandler_->miningSearchService_->GetSummarizationByRawKey(collectionName, udocid, result);
+    bool success = miningSearchService_->GetSummarizationByRawKey(collectionName_, udocid, result);
     if (!success)
     {
         response().addError("Cannot get results for " + sdocid);
@@ -926,8 +949,7 @@ void DocumentsController::get_summarization()
  */
 void DocumentsController::get_doc_count()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
-    uint32_t doc_count = collectionHandler_->indexTaskService_->getDocNum();
+    uint32_t doc_count = indexTaskService_->getDocNum();
     response()[Keys::count] = doc_count;
 }
 
@@ -955,7 +977,6 @@ void DocumentsController::get_doc_count()
  */
 void DocumentsController::get_key_count()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(parseCollection());
     Value& pname = request()[Keys::property];
     std::string property_name = asString(pname);
     if(property_name.empty())
@@ -963,7 +984,7 @@ void DocumentsController::get_key_count()
         response().addError("Expect property name!");
         return;
     }
-    uint32_t doc_count = collectionHandler_->indexTaskService_->getKeyCount(property_name);
+    uint32_t doc_count = indexTaskService_->getKeyCount(property_name);
     response()[Keys::count] = doc_count;
 }
 
@@ -983,18 +1004,6 @@ bool DocumentsController::setLimit()
     if (nullValue(request()[Keys::limit]))
     {
         request()[Keys::limit] = kDefaultPageCount;
-    }
-
-    return true;
-}
-
-bool DocumentsController::parseCollection()
-{
-    collection_ = asString(request()[Keys::collection]);
-    if (collection_.empty())
-    {
-        response().addError("Require field collection in request.");
-        return false;
     }
 
     return true;

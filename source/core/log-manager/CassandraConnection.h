@@ -78,7 +78,8 @@ public:
             const std::string& in_compaction_strategy,
             const std::map<std::string, std::string>& in_compaction_strategy_options,
             const int32_t in_row_cache_keys_to_save,
-            const std::map<std::string, std::string>& in_compression_options);
+            const std::map<std::string, std::string>& in_compression_options,
+            const double in_bloom_filter_fp_chance);
 
 private:
     void clear_();
