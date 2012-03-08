@@ -435,8 +435,8 @@ void DriverLogServerHandler::processUpdateDocuments()
     }
 
     // sf1 driver client
-    izenelib::net::sf1r::Sf1Config sf1Conf(1, false);
-    izenelib::net::sf1r::Sf1Driver sf1DriverClient(host, port, sf1Conf);
+    izenelib::net::sf1r::Sf1Config sf1Conf;
+    izenelib::net::sf1r::Sf1Driver sf1DriverClient(host, sf1Conf);
     std::string uri = "documents/create";
     std::string tokens = "";
 
@@ -1017,8 +1017,8 @@ void DriverLogServerHandler::setCclogSf1DriverClient(const std::string& host, ui
     {
         cclogSf1Host_ = host;
         cclogSf1Port_ = port;
-        izenelib::net::sf1r::Sf1Config sf1Conf(1, false);
-        cclogSf1DriverClient_.reset(new Sf1Driver(cclogSf1Host_, cclogSf1Port_, sf1Conf));
+        izenelib::net::sf1r::Sf1Config sf1Conf;
+        cclogSf1DriverClient_.reset(new Sf1Driver(cclogSf1Host_, sf1Conf));
     }
 }
 
