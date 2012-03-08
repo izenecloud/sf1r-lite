@@ -873,8 +873,6 @@ bool CollectionConfig::parseConfigFile(const string& collectionName ,const strin
 
         collectionMeta.setName(collectionName);
         parseCollectionSettings(collection, collectionMeta);
-
-        SF1Config::get()->collectionMetaMap_.insert(std::make_pair(collectionMeta.getName(), collectionMeta));
     }
     catch (ticpp::Exception err)
     {

@@ -340,7 +340,7 @@ protected:
 class SF1Config : boost::noncopyable, XmlConfigParser
 {
 public:
-    //----------------------------  PUBLIC FUNCTIONS  ----------------------------
+    typedef std::map<std::string, CollectionMeta> CollectionMetaMap;
 
     SF1Config();
     ~SF1Config();
@@ -436,8 +436,7 @@ public:
         CollectionMeta& collectionMeta
     ) const
     {
-        std::map<std::string, CollectionMeta>::const_iterator it =
-            collectionMetaMap_.find(collectionName);
+        CollectionMetaMap::const_iterator it = collectionMetaMap_.find(collectionName);
 
         if(it != collectionMetaMap_.end())
         {
@@ -532,8 +531,7 @@ public:
 
     bool checkCollectionExist(const std::string& collectionName)
     {
-        std::map<std::string, CollectionMeta>::const_iterator it =
-            collectionMetaMap_.find(collectionName);
+        CollectionMetaMap::const_iterator it = collectionMetaMap_.find(collectionName);
 
         if(it != collectionMetaMap_.end())
             return true;
@@ -544,8 +542,7 @@ public:
         const std::string& collectionName,
         const std::string& aclTokens)
     {
-        std::map<std::string, CollectionMeta>::const_iterator it =
-            collectionMetaMap_.find(collectionName);
+        CollectionMetaMap::const_iterator it = collectionMetaMap_.find(collectionName);
 
         if(it != collectionMetaMap_.end())
         {
@@ -562,12 +559,12 @@ public:
         return false;
     }
 
-    const std::map<std::string, CollectionMeta>& getCollectionMetaMap()
+    const CollectionMetaMap& getCollectionMetaMap()
     {
         return collectionMetaMap_;
     }
 
-    std::map<std::string, CollectionMeta>& mutableCollectionMetaMap()
+    CollectionMetaMap& mutableCollectionMetaMap()
     {
         return collectionMetaMap_;
     }
@@ -706,7 +703,7 @@ public:
 
     // LISTS ----------------------------
 
-    std::map<std::string, CollectionMeta> collectionMetaMap_;
+    CollectionMetaMap collectionMetaMap_;
 
     /// @brief  Stores all the analyzer-tokenizer pairs that are applied to Properties in
     /// the configuration.

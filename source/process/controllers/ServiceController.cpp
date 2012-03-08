@@ -29,10 +29,8 @@ void ServiceController::process_overdue()
     LicenseManager::write_token_to(path, tokenCodeStr);
 
     ///Insert the "@@ALL@@" token into the deny control lists for all collections
-    std::map<std::string, CollectionMeta>&
-        collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
-    std::map<std::string, CollectionMeta>::iterator
-        collectionIter = collectionMetaMap.begin();
+    SF1Config::CollectionMetaMap& collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
+    SF1Config::CollectionMetaMap::iterator collectionIter = collectionMetaMap.begin();
 
     for(; collectionIter != collectionMetaMap.end(); collectionIter++)
     {
@@ -59,10 +57,8 @@ void ServiceController::renew()
     LicenseManager::write_token_to(path, tokenCodeStr);
 
     /// Insert the "@@NONE@@"token into the deny control lists of all collections
-    std::map<std::string, CollectionMeta>&
-        collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
-    std::map<std::string, CollectionMeta>::iterator
-        collectionIter = collectionMetaMap.begin();
+    SF1Config::CollectionMetaMap& collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
+    SF1Config::CollectionMetaMap::iterator collectionIter = collectionMetaMap.begin();
 
     for(; collectionIter != collectionMetaMap.end(); collectionIter++)
     {

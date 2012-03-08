@@ -55,6 +55,13 @@ CollectionHandler* CollectionManager::startCollection(const string& collectionNa
         throw XmlConfigParserException("error in parsing " + configFileName);
     }
 
+    SF1Config::CollectionMetaMap& collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
+    SF1Config::CollectionMetaMap::value_type mapValue(collectionMeta.getName(), collectionMeta);
+    if (!collectionMetaMap.insert(mapValue).second)
+    {
+        throw XmlConfigParserException("duplicated CollectionMeta name " + collectionMeta.getName());
+    }
+
     if (fixBasePath)
     {
         bfs::path basePath(indexBundleConfig->collPath_.getBasePath());
@@ -169,8 +176,12 @@ void CollectionManager::stopCollection(const std::string& collectionName)
         osgiLauncher_.stopBundle(bundleName);
     }
 
-    if(SF1Config::get()->mutableCollectionMetaMap().find(collectionName) != SF1Config::get()->mutableCollectionMetaMap().end())
-        SF1Config::get()->mutableCollectionMetaMap().erase(collectionName);
+    SF1Config::CollectionMetaMap& collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
+    SF1Config::CollectionMetaMap::iterator findIt = collectionMetaMap.find(collectionName);
+    if (findIt != collectionMetaMap.end())
+    {
+        collectionMetaMap.erase(findIt);
+    }
 }
 
 void CollectionManager::deleteCollection(const std::string& collectionName)
