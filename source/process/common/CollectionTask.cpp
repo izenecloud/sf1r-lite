@@ -3,7 +3,6 @@
 #include <controllers/CollectionHandler.h>
 #include <common/CollectionManager.h>
 #include <common/XmlConfigParser.h>
-#include <common/JobScheduler.h>
 
 #include <bundles/index/IndexTaskService.h>
 
@@ -18,7 +17,7 @@ namespace sf1r
 void RebuildTask::startTask()
 {
     task_type task = boost::bind(&RebuildTask::doTask, this);
-    JobScheduler::get()->addTask(task, rebuildCollectionName_);
+    asyncJodScheduler_.addTask(task);
 }
 
 void RebuildTask::doTask()
@@ -29,7 +28,7 @@ void RebuildTask::doTask()
         return;
     }
 
-    LOG(INFO) << "## start RebuildTask : " << collectionName_;
+    LOG(INFO) << "## start RebuildTask for " << collectionName_;
     isRunning_ = true;
 
     std::string collDir;
@@ -69,13 +68,14 @@ void RebuildTask::doTask()
     // replace collection data with rebuilded data
     LOG(INFO) << "## stopCollection: " << collectionName_;
     CollectionManager::get()->stopCollection(collectionName_);
-    ///LOG(INFO) << "## stopCollection: " << rebuildCollectionName_;
-    ///CollectionManager::get()->stopCollection(rebuildCollectionName_);
+    LOG(INFO) << "## stopCollection: " << rebuildCollectionName_;
+    CollectionManager::get()->stopCollection(rebuildCollectionName_);
 
     bfs::remove_all(collDir+"-backup");
     bfs::rename(collDir, collDir+"-backup");
     try {
-        bfs3::copy_directory(rebuildCollDir, collDir);
+        //bfs3::copy_directory(rebuildCollDir, collDir);
+        bfs::rename(rebuildCollDir, collDir);
     }
     catch (const std::exception& e) {
         // rollbak
@@ -83,10 +83,10 @@ void RebuildTask::doTask()
     }
     ///bfs::remove_all(rebuildCollPath.getBasePath());
 
-    LOG(INFO) << "## startCollection: " << collectionName_;
+    LOG(INFO) << "## re-startCollection: " << collectionName_;
     CollectionManager::get()->startCollection(collectionName_, configFile);
 
-    LOG(INFO) << "## end RebuildTask : " << collectionName_;
+    LOG(INFO) << "## end RebuildTask for " << collectionName_;
     isRunning_ = false;
 }
 
