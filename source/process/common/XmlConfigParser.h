@@ -748,7 +748,7 @@ private:
 
     /// @brief                 Parse <IndexBundle> <Schema>
     /// @param index           Pointer to the Element
-    void parseIndexBundleSchema(const ticpp::Element * index, CollectionMeta & collectionMeta);
+    void parseIndexBundleSchema(const ticpp::Element * indexSchemaNode, CollectionMeta & collectionMeta);
 
     /// @brief                  Parse <ProductBundle> <Parameter>
     /// @param product          Pointer to the Element

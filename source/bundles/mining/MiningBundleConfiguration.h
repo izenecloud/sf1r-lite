@@ -30,7 +30,7 @@ public:
 
     std::vector<std::string> collectionDataDirectories_;
 
-    schema_type schema_;
+    DocumentSchema documentSchema_;
 
     MiningConfig mining_config_;
 

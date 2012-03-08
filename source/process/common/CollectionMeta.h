@@ -30,9 +30,6 @@ namespace sf1r
 class CollectionMeta
 {
 public:
-    typedef schema_type::const_iterator property_config_const_iterator;
-    typedef property_config_const_iterator property_config_iterator;
-
     CollectionMeta();
 
     ~CollectionMeta() {}
@@ -83,7 +80,7 @@ public:
      */
     bool insertProperty(const PropertyConfigBase& property)
     {
-        return schema_.insert(property).second;
+        return documentSchema_.insert(property).second;
     }
 
     /**
@@ -94,7 +91,7 @@ public:
     {
         PropertyConfigBase config;
         config.propertyName_ = name;
-        return schema_.erase(config);
+        return documentSchema_.erase(config);
     }
 
     bool getProperty(PropertyConfigBase& config) const;
@@ -103,18 +100,9 @@ public:
 
     bool getPropertyType(const std::string& name, PropertyDataType& type) const;
 
-    const schema_type& getDocumentSchema() const
+    const DocumentSchema& getDocumentSchema() const
     {
-        return schema_;
-    }
-
-    property_config_const_iterator propertyConfigBegin() const
-    {
-        return schema_.begin();
-    }
-    property_config_const_iterator propertyConfigEnd() const
-    {
-        return schema_.end();
+        return documentSchema_;
     }
 
     std::string toString() const;
@@ -163,7 +151,7 @@ public:
     CollectionPath collPath_;
 
     /// @brief The DocumentSchema of this Collection
-    std::set<PropertyConfigBase, PropertyBaseComp> schema_;
+    DocumentSchema documentSchema_;
 
     boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig_;
 

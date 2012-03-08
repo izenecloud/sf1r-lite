@@ -58,7 +58,7 @@ protected:
     virtual void insertItemId_(const std::string& strId, itemid_t goldId) {}
 
 protected:
-    std::set<PropertyConfig, PropertyComp> schema_;
+    IndexBundleSchema indexSchema_;
     std::vector<std::string> propList_;
     itemid_t maxItemId_;
 

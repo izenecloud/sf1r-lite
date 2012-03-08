@@ -33,7 +33,7 @@ std::vector<PropertyConfig>
 /// @return true    Success to build property alias map.
 /// @return false   Fail to build property alias map.
 ///
-bool buildPropertyAliasMap( const std::set<PropertyConfig , PropertyComp>& propertyList,
+bool buildPropertyAliasMap( const IndexBundleSchema& propertyList,
                             PROPERTY_ALIAS_MAP_T&  propertyAliasMap );
 
 } // end - namespace config_tool

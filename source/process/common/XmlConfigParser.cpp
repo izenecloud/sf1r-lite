@@ -1195,27 +1195,27 @@ void CollectionConfig::parseIndexShardSchema(const ticpp::Element * shardSchema,
     }
 }
 
-void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema, CollectionMeta & collectionMeta)
+void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchemaNode, CollectionMeta & collectionMeta)
 {
-    if (!indexSchema)
+    if (!indexSchemaNode)
         return;
 
     IndexBundleConfiguration& indexBundleConfig = *(collectionMeta.indexBundleConfig_);
     indexBundleConfig.isSchemaEnable_ = true;
-    indexBundleConfig.setSchema(collectionMeta.schema_);
+    indexBundleConfig.setSchema(collectionMeta.documentSchema_);
 
     Iterator<Element> property("Property");
 
-    for (property = property.begin(indexSchema); property != property.end(); property++)
+    for (property = property.begin(indexSchemaNode); property != property.end(); property++)
     {
-    try
-    {
-        parseIndexSchemaProperty(property.Get(), collectionMeta);
-    }
-    catch (XmlConfigParserException & e)
-    {
-        throw e;
-    }
+        try
+        {
+            parseIndexSchemaProperty(property.Get(), collectionMeta);
+        }
+        catch (XmlConfigParserException & e)
+        {
+            throw e;
+        }
     }
 
     ///we update property Id here
@@ -1226,10 +1226,10 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
 
     // map<property name, weight>
     std::map<string, float>& propertyWeightMap = collectionMeta.indexBundleConfig_->rankingManagerConfig_.propertyWeightMapByProperty_;
-    std::set<PropertyConfig, PropertyComp>& schema = collectionMeta.indexBundleConfig_->schema_;
-    std::set<PropertyConfig, PropertyComp>::iterator it = schema.begin();
+    const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
 
-    for (; it != schema.end(); it++)
+    for (IndexBundleSchema::const_iterator it = indexSchema.begin();
+        it != indexSchema.end(); ++it)
     {
         if (it->getRankWeight() >= 0.0f)
         {
@@ -1276,7 +1276,7 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
     ProductBundleConfiguration& productBundleConfig = *(collectionMeta.productBundleConfig_);
     productBundleConfig.mode_ = 0;
     productBundleConfig.collPath_ = collectionMeta.collPath_;
-    productBundleConfig.setSchema(collectionMeta.indexBundleConfig_->schema_);
+    productBundleConfig.setSchema(collectionMeta.indexBundleConfig_->indexSchema_);
 
     std::string mode_str;
     getAttribute(product_schema, "mode", mode_str);
@@ -1407,7 +1407,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
 
     //** PARSE MINING SCHEMA BEGIN
     MiningBundleConfiguration& miningBundleConfig = *(collectionMeta.miningBundleConfig_);
-    miningBundleConfig.schema_ = collectionMeta.schema_;
+    miningBundleConfig.documentSchema_ = collectionMeta.documentSchema_;
     miningBundleConfig.isSchemaEnable_ = true;
 
     MiningSchema& mining_schema = miningBundleConfig.mining_schema_;
@@ -1579,10 +1579,10 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
 
             if (groupConfig.isNumericType())
             {
-                const std::set<PropertyConfig, PropertyComp>& indexSchema = collectionMeta.indexBundleConfig_->schema_;
+                const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
                 PropertyConfig p;
                 p.setName(property_name);
-                std::set<PropertyConfig, PropertyComp>::const_iterator propIt = indexSchema.find(p);
+                IndexBundleSchema::const_iterator propIt = indexSchema.find(p);
                 if (propIt == indexSchema.end()
                         || !propIt->isIndex() || !propIt->getIsFilter())
                 {
@@ -1679,8 +1679,8 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             getAttribute(bpit.Get(), "name", property_name);
             PropertyConfig p;
             p.setName(property_name);
-            const std::set<PropertyConfig, PropertyComp>& indexSchema = collectionMeta.indexBundleConfig_->schema_;
-            std::set<PropertyConfig, PropertyComp>::const_iterator propIt = indexSchema.find(p);
+            const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
+            IndexBundleSchema::const_iterator propIt = indexSchema.find(p);
             if (propIt == indexSchema.end()
                     || !propIt->isIndex() || !propIt->getIsFilter()
                     || !propIt->isNumericType())
@@ -1841,7 +1841,7 @@ void CollectionConfig::parseIndexSchemaProperty(
         const ticpp::Element * property,
         CollectionMeta & collectionMeta)
 {
-    std::set<PropertyConfig, PropertyComp>& indexSchema = collectionMeta.indexBundleConfig_->schema_;
+    IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
 
     //holds all the configuration data of this property
 
@@ -1861,7 +1861,7 @@ void CollectionConfig::parseIndexSchemaProperty(
     PropertyConfig p;
     p.setName(propertyName);
 
-    std::set<PropertyConfig, PropertyComp>::iterator sp = indexSchema.find(p);
+    IndexBundleSchema::iterator sp = indexSchema.find(p);
     PropertyConfig propertyConfig(*sp);
     indexSchema.erase(*sp);
 

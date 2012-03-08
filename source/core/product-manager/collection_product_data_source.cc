@@ -8,8 +8,20 @@ using namespace sf1r;
 using namespace izenelib::ir::indexmanager;
 using namespace izenelib::ir::idmanager;
 
-CollectionProductDataSource::CollectionProductDataSource(const boost::shared_ptr<DocumentManager>& document_manager, const boost::shared_ptr<IndexManager>& index_manager, const boost::shared_ptr<IDManager>& id_manager, const boost::shared_ptr<SearchManager>& search_manager, const PMConfig& config, const std::set<PropertyConfig, PropertyComp>& schema)
-: document_manager_(document_manager), index_manager_(index_manager), id_manager_(id_manager), search_manager_(search_manager), config_(config), schema_(schema)
+CollectionProductDataSource::CollectionProductDataSource(
+    const boost::shared_ptr<DocumentManager>& document_manager,
+    const boost::shared_ptr<IndexManager>& index_manager,
+    const boost::shared_ptr<izenelib::ir::idmanager::IDManager>& id_manager,
+    const boost::shared_ptr<SearchManager>& search_manager,
+    const PMConfig& config,
+    const IndexBundleSchema& indexSchema
+)
+    : document_manager_(document_manager)
+    , index_manager_(index_manager)
+    , id_manager_(id_manager)
+    , search_manager_(search_manager)
+    , config_(config)
+    , indexSchema_(indexSchema)
 {
 }
 
@@ -41,8 +53,8 @@ bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_
     if(uuid.length()==0) return false;
     PropertyConfig property_config;
     property_config.propertyName_ = config_.uuid_property_name;
-    std::set<PropertyConfig, PropertyComp>::iterator iter = schema_.find(property_config);
-    if(iter==schema_.end()) return false;
+    IndexBundleSchema::const_iterator iter = indexSchema_.find(property_config);
+    if(iter==indexSchema_.end()) return false;
     IndexerPropertyConfig indexerPropertyConfig;
     indexerPropertyConfig.setPropertyId(iter->getPropertyId());
     indexerPropertyConfig.setName(iter->getName());
@@ -124,8 +136,8 @@ bool CollectionProductDataSource::SetUuid(izenelib::ir::indexmanager::IndexerDoc
 {
     PropertyConfig property_config;
     property_config.propertyName_ = config_.uuid_property_name;
-    std::set<PropertyConfig, PropertyComp>::iterator iter = schema_.find(property_config);
-    if(iter==schema_.end()) return false;
+    IndexBundleSchema::const_iterator iter = indexSchema_.find(property_config);
+    if(iter==indexSchema_.end()) return false;
     IndexerPropertyConfig indexerPropertyConfig;
     indexerPropertyConfig.setPropertyId(iter->getPropertyId());
     indexerPropertyConfig.setName(iter->getName());

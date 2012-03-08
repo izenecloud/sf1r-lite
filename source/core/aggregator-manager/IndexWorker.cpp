@@ -61,10 +61,9 @@ IndexWorker::IndexWorker(
     , numUpdatedDocs_(0)
     , totalSCDSizeSinceLastBackup_(0)
 {
-    std::set<PropertyConfig, PropertyComp>::iterator piter;
     bool hasDateInConfig = false;
-    for (piter = bundleConfig_->schema_.begin();
-            piter != bundleConfig_->schema_.end(); ++piter)
+    for (IndexBundleSchema::iterator piter = bundleConfig_->indexSchema_.begin();
+        piter != bundleConfig_->indexSchema_.end(); ++piter)
     {
         std::string propertyName = piter->getName();
         boost::to_lower(propertyName);
@@ -80,15 +79,14 @@ IndexWorker::IndexWorker(
 
     indexStatus_.numDocs_ = indexManager_->numDocs();
 
-    config_tool::buildPropertyAliasMap(bundleConfig_->schema_, propertyAliasMap_);
+    config_tool::buildPropertyAliasMap(bundleConfig_->indexSchema_, propertyAliasMap_);
 
     ///propertyId starts from 1
-    laInputs_.resize(bundleConfig_->schema_.size() + 1);
+    laInputs_.resize(bundleConfig_->indexSchema_.size() + 1);
 
-    typedef IndexBundleSchema::iterator prop_iterator;
-    for (prop_iterator iter = bundleConfig_->schema_.begin(),
-                    iterEnd = bundleConfig_->schema_.end();
-         iter != iterEnd; ++iter)
+    const IndexBundleSchema& indexSchema = bundleConfig_->indexSchema_;
+    for (IndexBundleSchema::const_iterator iter = indexSchema.begin(), iterEnd = indexSchema.end();
+        iter != iterEnd; ++iter)
     {
         boost::shared_ptr<LAInput> laInput(new LAInput);
         laInputs_[iter->getPropertyId()] = laInput;
@@ -725,11 +723,10 @@ boost::shared_ptr<DocumentManager> IndexWorker::getDocumentManager() const
 
 void IndexWorker::createPropertyList_()
 {
-    std::set<PropertyConfigBase, PropertyBaseComp>::const_iterator propertyIter
-        = bundleConfig_->rawSchema_.begin();
-    for (; propertyIter != bundleConfig_->rawSchema_.end(); propertyIter++)
+    for (DocumentSchema::const_iterator iter = bundleConfig_->documentSchema_.begin();
+         iter != bundleConfig_->documentSchema_.end(); ++iter)
     {
-        string propertyName = propertyIter->propertyName_;
+        string propertyName = iter->propertyName_;
         boost::to_lower(propertyName);
         propertyList_.push_back(propertyName);
     }
@@ -1185,17 +1182,12 @@ bool IndexWorker::prepareDocument_(
 
     for (p = doc.begin(); p != doc.end(); p++)
     {
-        bool extraProperty = false;
-        std::set<PropertyConfig, PropertyComp>::iterator iter;
         p->first.convertString(fieldStr, bundleConfig_->encoding_);
-
         PropertyConfig temp;
         temp.propertyName_ = fieldStr;
-        iter = bundleConfig_->schema_.find(temp);
 
-        IndexerPropertyConfig indexerPropertyConfig;
-        if (iter == bundleConfig_->schema_.end())
-            extraProperty = true;
+        IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(temp);
+        bool isIndexSchema = (iter != bundleConfig_->indexSchema_.end());
 
         izenelib::util::UString propertyNameL = p->first;
         propertyNameL.toLowerString();
@@ -1212,7 +1204,7 @@ bool IndexWorker::prepareDocument_(
         }
 
         if (propertyNameL == izenelib::util::UString("docid", encoding)
-                && !extraProperty)
+                && isIndexSchema)
         {
             // update
             if (!insert)
@@ -1246,7 +1238,7 @@ bool IndexWorker::prepareDocument_(
             Utilities::convertDate(propertyValueU, encoding, dateStr);
             document.property(dateProperty_.getName()) = dateStr;
         }
-        else if (!extraProperty)
+        else if (isIndexSchema)
         {
             if (iter->getType() == STRING_PROPERTY_TYPE)
             {
@@ -1319,14 +1311,13 @@ bool IndexWorker::prepareIndexDocument_(
     // due to the maxlen setting
     for (p = document.propertyBegin(); p != document.propertyEnd(); ++p)
     {
-        std::set<PropertyConfig, PropertyComp>::iterator iter;
         fieldStr = p->first;
 
         PropertyConfig temp;
         temp.propertyName_ = fieldStr;
-        iter = bundleConfig_->schema_.find(temp);
+        IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(temp);
 
-        if(iter == bundleConfig_->schema_.end())
+        if(iter == bundleConfig_->indexSchema_.end())
             continue;
 
         IndexerPropertyConfig indexerPropertyConfig;
@@ -1603,18 +1594,15 @@ bool IndexWorker::preparePartialDocument_(
                  != itEnd; ++it) {
         if(! boost::iequals(it->first,DOCID) && ! boost::iequals(it->first,DATE))
         {
-            std::set<PropertyConfig, PropertyComp>::iterator iter;
             PropertyConfig temp;
             temp.propertyName_ = it->first;
-            iter = bundleConfig_->schema_.find(temp);
+            IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(temp);
+
+            if (iter == bundleConfig_->indexSchema_.end())
+                continue;
 
             //set indexerPropertyConfig
             IndexerPropertyConfig indexerPropertyConfig;
-            if (iter == bundleConfig_->schema_.end())
-            {
-                continue;
-            }
-
             if (iter->isIndex() && iter->getIsFilter() && !iter->isAnalyzed())
             {
                 indexerPropertyConfig.setPropertyId(iter->getPropertyId());
@@ -1730,81 +1718,69 @@ bool IndexWorker::checkRtype_(
 {
     //R-type check
     bool rType = false;
-    docid_t docId;
+    docid_t docId = 0;
     izenelib::util::UString newPropertyValue, oldPropertyValue;
     vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
-    for (p = doc.begin(); p != doc.end(); p++)
+
+    for (p = doc.begin(); p != doc.end(); ++p)
     {
         izenelib::util::UString propertyNameL = p->first;
         propertyNameL.toLowerString();
         const izenelib::util::UString & propertyValueU = p->second;
-        std::set<PropertyConfig, PropertyComp>::iterator iter;
         string fieldName;
         p->first.convertString(fieldName, bundleConfig_->encoding_);
 
         PropertyConfig tempPropertyConfig;
         tempPropertyConfig.propertyName_ = fieldName;
-        iter = bundleConfig_->schema_.find(tempPropertyConfig);
+        IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
 
-        if (iter != bundleConfig_->schema_.end())
+        if (iter == bundleConfig_->indexSchema_.end())
+            break;
+
+        if (propertyNameL == izenelib::util::UString("docid", bundleConfig_->encoding_))
         {
-            if (propertyNameL == izenelib::util::UString("docid", bundleConfig_->encoding_))
-            {
-                if (!idManager_->getDocIdByDocName(propertyValueU, docId, false))
-                    break;
-            }
-            else
-            {
-                newPropertyValue = propertyValueU;
-                if (propertyNameL == izenelib::util::UString("date", bundleConfig_->encoding_))
-                {
-                    izenelib::util::UString dateStr;
-                    Utilities::convertDate(propertyValueU, bundleConfig_->encoding_, dateStr);
-                    newPropertyValue = dateStr;
-                }
+            if (!idManager_->getDocIdByDocName(propertyValueU, docId, false))
+                break;
 
-                string newValueStr(""), oldValueStr("");
-                newPropertyValue.convertString(newValueStr, izenelib::util::UString::UTF_8);
+            continue;
+        }
 
-                PropertyValue value;
-                if (documentManager_->getPropertyValue(docId, iter->getName(), value))
-                {
-                    if (getPropertyValue_(value, oldValueStr))
-                    {
-                        if (newValueStr == oldValueStr)
-                            continue;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    break;
-                }
+        newPropertyValue = propertyValueU;
+        if (propertyNameL == izenelib::util::UString("date", bundleConfig_->encoding_))
+        {
+            izenelib::util::UString dateStr;
+            Utilities::convertDate(propertyValueU, bundleConfig_->encoding_, dateStr);
+            newPropertyValue = dateStr;
+        }
 
-                if (iter->isIndex() && iter->getIsFilter() && !iter->isAnalyzed())
-                {
-                    rTypeFieldValue[iter->getName()] = std::make_pair(iter->getType(),newPropertyValue);
-                    isUpdate = true;
-                }
-                else if(!iter->isIndex())
-                {
-                    isUpdate = true;
-                    continue;
-                }
-                else
-                {
-                    break;
-                }
-            }
+        string newValueStr(""), oldValueStr("");
+        newPropertyValue.convertString(newValueStr, izenelib::util::UString::UTF_8);
+
+        PropertyValue value;
+        if (!documentManager_->getPropertyValue(docId, iter->getName(), value))
+            break;
+
+        if (!getPropertyValue_(value, oldValueStr))
+            return false;
+
+        if (newValueStr == oldValueStr)
+            continue;
+
+        if (iter->isIndex() && iter->getIsFilter() && !iter->isAnalyzed())
+        {
+            rTypeFieldValue[iter->getName()] = std::make_pair(iter->getType(),newPropertyValue);
+            isUpdate = true;
+        }
+        else if(!iter->isIndex())
+        {
+            isUpdate = true;
         }
         else
         {
             break;
         }
     }
+
     if (p == doc.end())
     {
         rType = true;
@@ -1814,6 +1790,7 @@ bool IndexWorker::checkRtype_(
         rType = false;
         rTypeFieldValue.clear();
     }
+
     return rType;
 }
 

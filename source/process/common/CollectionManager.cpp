@@ -85,7 +85,7 @@ CollectionHandler* CollectionManager::startCollection(const string& collectionNa
         collectionHandler->registerService(indexSearchService);
         IndexTaskService* indexTaskService = static_cast<IndexTaskService*>(osgiLauncher_.getService(bundleName, "IndexTaskService"));
         collectionHandler->registerService(indexTaskService);
-        collectionHandler->setBundleSchema(indexBundleConfig->schema_);
+        collectionHandler->setBundleSchema(indexBundleConfig->indexSchema_);
     }
 
     ///createProductBundle

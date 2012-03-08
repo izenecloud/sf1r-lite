@@ -11,13 +11,13 @@ namespace sf1r
 namespace config_tool
 {
 
-bool buildPropertyAliasMap( const std::set<PropertyConfig , PropertyComp>& propertyList,
+bool buildPropertyAliasMap( const IndexBundleSchema& propertyList,
                             PROPERTY_ALIAS_MAP_T&  propertyAliasMap )
 {
     propertyAliasMap.clear();
 
-    std::set<PropertyConfig, PropertyComp>::const_iterator propertyIter;
-    for (propertyIter = propertyList.begin(); propertyIter != propertyList.end(); propertyIter++)
+    for (IndexBundleSchema::const_iterator propertyIter = propertyList.begin();
+        propertyIter != propertyList.end(); ++propertyIter)
     {
         if (!propertyIter->isAliasProperty())
             continue;
