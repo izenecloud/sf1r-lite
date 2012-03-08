@@ -122,7 +122,7 @@ bool ProductBundleActivator::addingService( const ServiceReference& ref )
             IndexSearchService* service = reinterpret_cast<IndexSearchService*> ( const_cast<IService*>(ref.getService()) );
             std::cout << "[ProductBundleActivator#addingService] Calling IndexSearchService..." << std::endl;
 
-            if(config_->mode_==1)//in m
+            if(config_->mode_=="m" || config_->mode_=="o")//in m
             {
                 productManager_ = createProductManager_(service);
 
@@ -133,9 +133,6 @@ bool ProductBundleActivator::addingService( const ServiceReference& ref )
                 {
                     addIndexHook_(refIndexTaskService_);
                 }
-            }
-            else//in a
-            {
             }
 
             taskService_ = new ProductTaskService(config_);
@@ -154,14 +151,14 @@ bool ProductBundleActivator::addingService( const ServiceReference& ref )
         if ( props.get( "collection" ) == config_->collectionName_)
         {
             refIndexTaskService_ = reinterpret_cast<IndexTaskService*> ( const_cast<IService*>(ref.getService()) );
-            if(config_->mode_==1)//in m
+            if(config_->mode_=="m" || config_->mode_=="o")//in m
             {
                 if(productManager_)
                 {
                     addIndexHook_(refIndexTaskService_);
                 }
             }
-            else//in a
+            else if(config_->mode_=="a")//in a
             {
                 LOG(INFO)<<"Scd Reciever init with id : "<<config_->productId_<<std::endl;
                 scd_receiver_ = new ProductScdReceiver(config_->productId_, config_->collectionName_);
@@ -209,7 +206,14 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
         handler->addCollection(price_trend_);
     }
     std::string work_dir = dir+"/work_dir";
-    config_->pm_config_.enable_clustering_algo = true;
+    if(config_->mode_ == "m")
+    {
+        config_->pm_config_.enable_clustering_algo = true;
+    }
+    else if(config_->mode_ == "o")
+    {
+        config_->pm_config_.enable_clustering_algo = false;
+    }
     boost::shared_ptr<ProductManager> product_manager(new ProductManager(work_dir, data_source_, op_processor_, price_trend_, config_->pm_config_));
     return product_manager;
 }

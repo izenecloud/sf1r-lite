@@ -6,7 +6,7 @@ namespace sf1r
 {
 ProductBundleConfiguration::ProductBundleConfiguration(const std::string& collectionName)
     : ::izenelib::osgi::BundleConfiguration("ProductBundle-"+collectionName, "ProductBundleActivator" )
-    , mode_(0)
+    , mode_("")
     , collectionName_(collectionName)
     , pm_config_()
 {}

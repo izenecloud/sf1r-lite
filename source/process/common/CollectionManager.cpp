@@ -82,7 +82,7 @@ bool CollectionManager::startCollection(const string& collectionName, const std:
     }
 
     ///createProductBundle
-    if (productBundleConfig->mode_>0)
+    if (!productBundleConfig->mode_.empty())
     {
         std::string bundleName = "ProductBundle-" + collectionName;
         DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, ProductBundleActivator);

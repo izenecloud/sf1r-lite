@@ -124,25 +124,13 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
         }
     }
     ProductClustering* clustering = GetClustering_();
-    if (!clustering)
-    {
-        UString uuid;
-        UuidGenerator::Gen(uuid);
-        if (!data_source_->SetUuid(index_document, uuid)) return false;
-        PMDocumentType new_doc(doc);
-        doc.property(config_.uuid_property_name) = uuid;
-        new_doc.property(config_.docid_property_name) = uuid;
-        util_.SetItemCount(new_doc, 1);
-        op_processor_->Append(1, new_doc);
-    }
-    else
+    if (clustering)
     {
         UString uuid;
         doc.property(config_.uuid_property_name) = uuid;
         if (!data_source_->SetUuid(index_document, uuid)) return false; // set a empty uuid for rtype update later
         clustering->Insert(doc);
     }
-
     return true;
 }
 
@@ -176,34 +164,37 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
         }
     }
 
-    std::vector<uint32_t> docid_list;
-    data_source_->GetDocIdList(from_uuid, docid_list, fromid); // except from.docid
-    if (docid_list.empty()) // the from doc is unique, so delete it and insert 'to'
+    if (config_.enable_clustering_algo)
     {
-        if (!data_source_->SetUuid(index_document, from_uuid)) return false;
-        PMDocumentType new_doc(to);
-        to.property(config_.uuid_property_name) = from_uuid;
-        new_doc.property(config_.docid_property_name) = from_uuid;
-        util_.SetItemCount(new_doc, 1);
-        op_processor_->Append(2, new_doc);// if r_type, only numeric properties in 'to'
-    }
-    else
-    {
-        //need not to update(insert) to.uuid,
-        if (!data_source_->SetUuid(index_document, from_uuid)) return false;
-        to.property(config_.uuid_property_name) = from_uuid;
-        //update price only
-        if (from_price != to_price)
+        std::vector<uint32_t> docid_list;
+        data_source_->GetDocIdList(from_uuid, docid_list, fromid); // except from.docid
+        if (docid_list.empty()) // the from doc is unique, so delete it and insert 'to'
         {
-            PMDocumentType diff_properties;
-            ProductPrice price(to_price);
-            util_.GetPrice(docid_list, price);
-            diff_properties.property(config_.price_property_name) = price.ToUString();
-            diff_properties.property(config_.docid_property_name) = from_uuid;
-            //auto r_type? itemcount no need?
-//                 diff_properties.property(config_.itemcount_property_name) = UString(boost::lexical_cast<std::string>(docid_list.size()+1), UString::UTF_8);
+            if (!data_source_->SetUuid(index_document, from_uuid)) return false;
+            PMDocumentType new_doc(to);
+            to.property(config_.uuid_property_name) = from_uuid;
+            new_doc.property(config_.docid_property_name) = from_uuid;
+            util_.SetItemCount(new_doc, 1);
+            op_processor_->Append(2, new_doc);// if r_type, only numeric properties in 'to'
+        }
+        else
+        {
+            //need not to update(insert) to.uuid,
+            if (!data_source_->SetUuid(index_document, from_uuid)) return false;
+            to.property(config_.uuid_property_name) = from_uuid;
+            //update price only
+            if (from_price != to_price)
+            {
+                PMDocumentType diff_properties;
+                ProductPrice price(to_price);
+                util_.GetPrice(docid_list, price);
+                diff_properties.property(config_.price_property_name) = price.ToUString();
+                diff_properties.property(config_.docid_property_name) = from_uuid;
+                //auto r_type? itemcount no need?
+    //                 diff_properties.property(config_.itemcount_property_name) = UString(boost::lexical_cast<std::string>(docid_list.size()+1), UString::UTF_8);
 
-            op_processor_->Append(2, diff_properties);
+                op_processor_->Append(2, diff_properties);
+            }
         }
     }
     return true;
@@ -213,27 +204,30 @@ bool ProductManager::HookDelete(uint32_t docid, time_t timestamp)
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
-    PMDocumentType from;
-    if (!data_source_->GetDocument(docid, from)) return false;
-    UString from_uuid;
-    if (!from.getProperty(config_.uuid_property_name, from_uuid) ) return false;
-    std::vector<uint32_t> docid_list;
-    data_source_->GetDocIdList(from_uuid, docid_list, docid); // except from.docid
-    if (docid_list.empty()) // the from doc is unique, so delete it in A
+    if (config_.enable_clustering_algo)
     {
-        PMDocumentType del_doc;
-        del_doc.property(config_.docid_property_name) = from_uuid;
-        op_processor_->Append(3, del_doc);
-    }
-    else
-    {
-        PMDocumentType diff_properties;
-        ProductPrice price;
-        util_.GetPrice(docid_list, price);
-        diff_properties.property(config_.price_property_name) = price.ToUString();
-        diff_properties.property(config_.docid_property_name) = from_uuid;
-        util_.SetItemCount(diff_properties, docid_list.size());
-        op_processor_->Append(2, diff_properties);
+        PMDocumentType from;
+        if (!data_source_->GetDocument(docid, from)) return false;
+        UString from_uuid;
+        if (!from.getProperty(config_.uuid_property_name, from_uuid) ) return false;
+        std::vector<uint32_t> docid_list;
+        data_source_->GetDocIdList(from_uuid, docid_list, docid); // except from.docid
+        if (docid_list.empty()) // the from doc is unique, so delete it in A
+        {
+            PMDocumentType del_doc;
+            del_doc.property(config_.docid_property_name) = from_uuid;
+            op_processor_->Append(3, del_doc);
+        }
+        else
+        {
+            PMDocumentType diff_properties;
+            ProductPrice price;
+            util_.GetPrice(docid_list, price);
+            diff_properties.property(config_.price_property_name) = price.ToUString();
+            diff_properties.property(config_.docid_property_name) = from_uuid;
+            util_.SetItemCount(diff_properties, docid_list.size());
+            op_processor_->Append(2, diff_properties);
+        }
     }
     return true;
 }
@@ -469,7 +463,13 @@ bool ProductManager::FinishHook()
         clustering_ = NULL;
     }
 
-    return GenOperations_();
+    bool rvalue = true;
+    if (config_.enable_clustering_algo)
+    {
+        rvalue = GenOperations_();
+    }
+    if (inhook_) inhook_ = false;
+    return rvalue;
 }
 
 bool ProductManager::GenOperations_()
@@ -480,46 +480,51 @@ bool ProductManager::GenOperations_()
         error_ = op_processor_->GetLastError();
         result = false;
     }
-    if (inhook_) inhook_ = false;
     return result;
 
 }
 
 bool ProductManager::UpdateADoc(const Document& doc)
 {
-    if (inhook_)
+    if (config_.enable_clustering_algo)
     {
-        error_ = "In Hook locks, collection was indexing, plz wait.";
-        return false;
-    }
-    boost::mutex::scoped_lock lock(human_mutex_);
-    if (!editor_->UpdateADoc(doc))
-    {
-        error_ = editor_->GetLastError();
-        return false;
-    }
-    if (!GenOperations_())
-    {
-        return false;
+        if (inhook_)
+        {
+            error_ = "In Hook locks, collection was indexing, plz wait.";
+            return false;
+        }
+        boost::mutex::scoped_lock lock(human_mutex_);
+        if (!editor_->UpdateADoc(doc))
+        {
+            error_ = editor_->GetLastError();
+            return false;
+        }
+        if (!GenOperations_())
+        {
+            return false;
+        }
     }
     return true;
 }
 bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, PMDocumentType& info, const ProductEditOption& option)
 {
-    if (inhook_)
+    if (config_.enable_clustering_algo)
     {
-        error_ = "In Hook locks, collection was indexing, plz wait.";
-        return false;
-    }
-    boost::mutex::scoped_lock lock(human_mutex_);
-    if (!editor_->AddGroup(docid_list, info, option))
-    {
-        error_ = editor_->GetLastError();
-        return false;
-    }
-    if (!GenOperations_())
-    {
-        return false;
+        if (inhook_)
+        {
+            error_ = "In Hook locks, collection was indexing, plz wait.";
+            return false;
+        }
+        boost::mutex::scoped_lock lock(human_mutex_);
+        if (!editor_->AddGroup(docid_list, info, option))
+        {
+            error_ = editor_->GetLastError();
+            return false;
+        }
+        if (!GenOperations_())
+        {
+            return false;
+        }
     }
     return true;
 }
@@ -529,40 +534,46 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, PMDocumen
 
 bool ProductManager::AppendToGroup(const UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option)
 {
-    if (inhook_)
+    if (config_.enable_clustering_algo)
     {
-        error_ = "In Hook locks, collection was indexing, plz wait.";
-        return false;
-    }
-    boost::mutex::scoped_lock lock(human_mutex_);
-    if (!editor_->AppendToGroup(uuid, docid_list, option))
-    {
-        error_ = editor_->GetLastError();
-        return false;
-    }
-    if (!GenOperations_())
-    {
-        return false;
+        if (inhook_)
+        {
+            error_ = "In Hook locks, collection was indexing, plz wait.";
+            return false;
+        }
+        boost::mutex::scoped_lock lock(human_mutex_);
+        if (!editor_->AppendToGroup(uuid, docid_list, option))
+        {
+            error_ = editor_->GetLastError();
+            return false;
+        }
+        if (!GenOperations_())
+        {
+            return false;
+        }
     }
     return true;
 }
 
 bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option)
 {
-    if (inhook_)
+    if (config_.enable_clustering_algo)
     {
-        error_ = "In Hook locks, collection was indexing, plz wait.";
-        return false;
-    }
-    boost::mutex::scoped_lock lock(human_mutex_);
-    if (!editor_->RemoveFromGroup(uuid, docid_list, option))
-    {
-        error_ = editor_->GetLastError();
-        return false;
-    }
-    if (!GenOperations_())
-    {
-        return false;
+        if (inhook_)
+        {
+            error_ = "In Hook locks, collection was indexing, plz wait.";
+            return false;
+        }
+        boost::mutex::scoped_lock lock(human_mutex_);
+        if (!editor_->RemoveFromGroup(uuid, docid_list, option))
+        {
+            error_ = editor_->GetLastError();
+            return false;
+        }
+        if (!GenOperations_())
+        {
+            return false;
+        }
     }
     return true;
 }

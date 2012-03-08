@@ -19,7 +19,7 @@ public:
     void setSchema(const std::set<PropertyConfig, PropertyComp>& schema);
 
 public:
-    int mode_;
+    std::string mode_;
 
     std::string collectionName_;
 
