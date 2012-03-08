@@ -80,6 +80,11 @@ public:
             uint32_t days,
             uint32_t count);
 
+    bool MigratePriceHistory(
+            const std::string& new_keyspace,
+            const std::string& old_prefix,
+            const std::string& new_prefix);
+
     inline const std::string& GetLastError() const
     {
         return error_;

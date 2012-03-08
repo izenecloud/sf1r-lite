@@ -14,6 +14,8 @@ namespace sf1r
 {
 
 class PriceHistory;
+class PriceHistoryRow;
+class DocumentManager;
 
 class ProductPriceTrend
 {
@@ -25,6 +27,7 @@ class ProductPriceTrend
 
 public:
     ProductPriceTrend(
+            const boost::shared_ptr<DocumentManager>& document_manager,
             const CassandraStorageConfig& cassandraConfig,
             const std::string& collection_name,
             const std::string& data_dir,
@@ -70,6 +73,12 @@ public:
             uint32_t count,
             std::string& error_msg);
 
+    bool MigratePriceHistory(
+            const std::string& new_keyspace,
+            const std::string& old_prefix,
+            const std::string& new_prefix,
+            std::string& error_msg);
+
     bool CronJob();
 
     inline const std::string& getCollectionName() const
@@ -82,15 +91,10 @@ private:
 
     bool UpdateTPC_(uint32_t time_int, time_t timestamp);
 
-    void ParseDocid_(std::string& dest, const std::string& src) const;
-
-    void StripDocid_(std::string& dest, const std::string& src) const;
-
-    void ParseDocidList_(std::vector<std::string>& dest, const std::vector<std::string>& src) const;
-
-    void StripDocidList_(std::vector<std::string>& dest, const std::vector<std::string>& src) const;
-
 private:
+    boost::shared_ptr<DocumentManager> document_manager_;
+    boost::shared_ptr<PriceHistory> price_history_;
+
     const CassandraStorageConfig cassandraConfig_;
     std::string collection_name_;
     std::string data_dir_;
@@ -98,7 +102,7 @@ private:
     std::vector<std::string> group_prop_vec_;
     std::vector<uint32_t> time_int_vec_;
 
-    std::vector<PriceHistory> price_history_buffer_;
+    std::vector<PriceHistoryRow> price_history_buffer_;
 
     bool enable_tpc_;
     PropMapType prop_map_;
