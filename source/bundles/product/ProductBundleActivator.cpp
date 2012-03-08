@@ -200,7 +200,6 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
     {
         price_trend_ = new ProductPriceTrend(indexService->searchWorker_->documentManager_,
                                              config_->cassandraConfig_,
-                                             config_->collectionName_,
                                              dir,
                                              config_->pm_config_.group_property_names,
                                              config_->pm_config_.time_interval_days);

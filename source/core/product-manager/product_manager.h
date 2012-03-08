@@ -83,7 +83,8 @@ public:
     bool MigratePriceHistory(
             const std::string& new_keyspace,
             const std::string& old_prefix,
-            const std::string& new_prefix);
+            const std::string& new_prefix,
+            uint32_t start);
 
     inline const std::string& GetLastError() const
     {

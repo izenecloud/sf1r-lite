@@ -22,13 +22,11 @@ namespace sf1r
 ProductPriceTrend::ProductPriceTrend(
         const boost::shared_ptr<DocumentManager>& document_manager,
         const CassandraStorageConfig& cassandraConfig,
-        const string& collection_name,
         const string& data_dir,
         const vector<string>& group_prop_vec,
         const vector<uint32_t>& time_int_vec)
     : document_manager_(document_manager)
     , cassandraConfig_(cassandraConfig)
-    , collection_name_(collection_name)
     , data_dir_(data_dir)
     , group_prop_vec_(group_prop_vec)
     , time_int_vec_(time_int_vec)
@@ -339,18 +337,19 @@ bool ProductPriceTrend::MigratePriceHistory(
         const string& new_keyspace,
         const string& old_prefix,
         const string& new_prefix,
+        uint32_t start,
         string& error_msg)
 {
     if (new_keyspace == cassandraConfig_.keyspace)
         return true;
 
     vector<string> docid_list;
-    docid_list.reserve(4000);
+    docid_list.reserve(1000);
     boost::shared_ptr<PriceHistory> new_price_history(new PriceHistory(new_keyspace));
     new_price_history->createColumnFamily();
 
     uint32_t count = 0;
-    for (uint32_t i = 1; i <= document_manager_->getMaxDocId(); i++)
+    for (uint32_t i = start; i <= document_manager_->getMaxDocId(); i++)
     {
         Document doc;
         document_manager_->getDocument(i, doc);
@@ -366,7 +365,7 @@ bool ProductPriceTrend::MigratePriceHistory(
             docid_list.back() = old_prefix + "_" + docid_list.back();
         }
 
-        if (docid_list.size() == 4000)
+        if (docid_list.size() == 1000)
         {
             vector<PriceHistoryRow> row_list;
             if (!price_history_->getMultiSlice(row_list, docid_list))
@@ -461,6 +460,7 @@ bool ProductPriceTrend::MigratePriceHistory(
             return false;
         }
     }
+    LOG(INFO) << "Successfully migrated price history for " << count << " products.";
 
     return true;
 }

@@ -627,7 +627,8 @@ bool ProductManager::GetTopPriceCutList(
 bool ProductManager::MigratePriceHistory(
         const std::string& new_keyspace,
         const std::string& old_prefix,
-        const std::string& new_prefix)
+        const std::string& new_prefix,
+        uint32_t start)
 {
     if (!has_price_trend_)
     {
@@ -635,7 +636,7 @@ bool ProductManager::MigratePriceHistory(
         return false;
     }
 
-    return price_trend_->MigratePriceHistory(new_keyspace, old_prefix, new_prefix, error_);
+    return price_trend_->MigratePriceHistory(new_keyspace, old_prefix, new_prefix, start, error_);
 }
 
 bool ProductManager::GetTimestamp_(const PMDocumentType& doc, time_t& timestamp) const

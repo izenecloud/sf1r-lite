@@ -65,6 +65,7 @@ private:
     std::string new_prefix_;
     uint32_t days_;
     uint32_t count_;
+    uint32_t start_;
     time_t from_tt_;
     time_t to_tt_;
 };

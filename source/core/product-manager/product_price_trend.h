@@ -29,7 +29,6 @@ public:
     ProductPriceTrend(
             const boost::shared_ptr<DocumentManager>& document_manager,
             const CassandraStorageConfig& cassandraConfig,
-            const std::string& collection_name,
             const std::string& data_dir,
             const std::vector<std::string>& group_prop_vec,
             const std::vector<uint32_t>& time_int_vec);
@@ -77,14 +76,10 @@ public:
             const std::string& new_keyspace,
             const std::string& old_prefix,
             const std::string& new_prefix,
+            uint32_t start,
             std::string& error_msg);
 
     bool CronJob();
-
-    inline const std::string& getCollectionName() const
-    {
-        return collection_name_;
-    }
 
 private:
     bool IsBufferFull_();
@@ -96,7 +91,6 @@ private:
     boost::shared_ptr<PriceHistory> price_history_;
 
     const CassandraStorageConfig cassandraConfig_;
-    std::string collection_name_;
     std::string data_dir_;
 
     std::vector<std::string> group_prop_vec_;
