@@ -53,11 +53,10 @@ std::string CollectionMeta::toString() const
     << " @documentSchema count=" << documentSchema_.size()
     << " @documentSchema " << std::endl;
 
-    for (DocumentSchema::iterator it = documentSchema_.begin(), itEnd = documentSchema_.end();
-         it != itEnd; ++it)
+    for (DocumentSchema::const_iterator it = documentSchema_.begin(), itEnd = documentSchema_.end();
+        it != itEnd; ++it)
     {
-        PropertyConfigBase& config = const_cast<PropertyConfigBase&>(*it);
-        sStream << config.propertyName_<< std::endl;
+        sStream << it->propertyName_<< std::endl;
     }
 
     return sStream.str();

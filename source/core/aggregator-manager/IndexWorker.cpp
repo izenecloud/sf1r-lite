@@ -62,15 +62,16 @@ IndexWorker::IndexWorker(
     , totalSCDSizeSinceLastBackup_(0)
 {
     bool hasDateInConfig = false;
-    for (IndexBundleSchema::iterator piter = bundleConfig_->indexSchema_.begin();
-        piter != bundleConfig_->indexSchema_.end(); ++piter)
+    const IndexBundleSchema& indexSchema = bundleConfig_->indexSchema_;
+    for (IndexBundleSchema::const_iterator iter = indexSchema.begin(), iterEnd = indexSchema.end();
+        iter != iterEnd; ++iter)
     {
-        std::string propertyName = piter->getName();
+        std::string propertyName = iter->getName();
         boost::to_lower(propertyName);
         if (propertyName=="date")
         {
             hasDateInConfig = true;
-            dateProperty_ = *piter;
+            dateProperty_ = *iter;
             break;
         }
     }
@@ -84,7 +85,6 @@ IndexWorker::IndexWorker(
     ///propertyId starts from 1
     laInputs_.resize(bundleConfig_->indexSchema_.size() + 1);
 
-    const IndexBundleSchema& indexSchema = bundleConfig_->indexSchema_;
     for (IndexBundleSchema::const_iterator iter = indexSchema.begin(), iterEnd = indexSchema.end();
         iter != iterEnd; ++iter)
     {
