@@ -7,8 +7,8 @@
  * @brief Helper functions for IndexBundleSchema
  */
 
-#include <bundles/index/IndexBundleConfiguration.h>
-#include <bundles/mining/MiningBundleConfiguration.h>
+#include <configuration-manager/PropertyConfig.h>
+#include <configuration-manager/MiningSchema.h>
 
 #include <vector>
 #include <string>
@@ -57,6 +57,16 @@ sf1r::PropertyDataType getPropertyDataType(
 bool isPropertyForeignKey(
     const MiningSchema& schema,
     const std::string& property
+);
+
+bool isDocumentProperty(
+    const DocumentSchema& schema,
+    const std::string& property
+);
+
+void getDocumentPropertyNames(
+    const DocumentSchema& schema,
+    std::vector<std::string>& names
 );
 
 } // namespace sf1r

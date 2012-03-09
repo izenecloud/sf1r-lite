@@ -101,6 +101,12 @@ public:
     {
         recommendSchema_ = schema;
     }
+
+    void setDocumentSchema(const DocumentSchema& schema)
+    {
+        documentSchema_ = schema;
+    }
+
 public:
     std::string collection_;
 
@@ -117,6 +123,8 @@ public:
     RecommendTaskService* recommendTaskService_;
 
     RecommendSearchService* recommendSearchService_;
+
+    DocumentSchema documentSchema_;
 
     IndexBundleSchema indexSchema_;
 

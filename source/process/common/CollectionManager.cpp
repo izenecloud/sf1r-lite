@@ -66,6 +66,7 @@ bool CollectionManager::startCollection(const string& collectionName, const std:
     {
         throw XmlConfigParserException("error in parsing " + configFileName);
     }
+    collectionHandler->setDocumentSchema(collectionMeta.getDocumentSchema());
 
     SF1Config::CollectionMetaMap& collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
     SF1Config::CollectionMetaMap::value_type mapValue(collectionMeta.getName(), collectionMeta);
