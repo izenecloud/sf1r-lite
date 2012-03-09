@@ -6,6 +6,7 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace bfs = boost::filesystem;
 
@@ -427,7 +428,8 @@ void DriverLogServerHandler::processUpdateDocuments()
 
     // sf1 driver client
     izenelib::net::sf1r::Sf1Config sf1Conf;
-    izenelib::net::sf1r::Sf1Driver sf1DriverClient(host, sf1Conf);
+    std::string sf1Address = host + ":" + boost::lexical_cast<std::string>(port);
+    izenelib::net::sf1r::Sf1Driver sf1DriverClient(sf1Address, sf1Conf);
     std::string uri = "documents/create";
     std::string tokens = "";
 
@@ -1009,7 +1011,8 @@ void DriverLogServerHandler::setCclogSf1DriverClient(const std::string& host, ui
         cclogSf1Host_ = host;
         cclogSf1Port_ = port;
         izenelib::net::sf1r::Sf1Config sf1Conf;
-        cclogSf1DriverClient_.reset(new Sf1Driver(cclogSf1Host_, sf1Conf));
+        std::string sf1Address = host + ":" + boost::lexical_cast<std::string>(port);
+        cclogSf1DriverClient_.reset(new Sf1Driver(sf1Address, sf1Conf));
     }
 }
 
