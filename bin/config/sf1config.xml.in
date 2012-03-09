@@ -76,12 +76,12 @@
           <CollectionDataDirectory>default-collection-dir</CollectionDataDirectory>
           <CronPara value="0 1 * * *"/>
           <!-- Specify the keyspace name for price trend feature.
-            Example: <CassandraStorage enable="yes" keyspace="B5MM"/>
+            Example: <CassandraStorage enable="yes" keyspace="B5M"/>
             Notes:
             - if "enable" is "no", the price trend feature would be disabled, that is, <ProductBundle><Schema><PriceTrend> would be ignored
             - the default value of "keyspace" is "SF1R"
           -->
-          <CassandraStorage enable="yes" keyspace="B5MM"/>
+          <CassandraStorage enable="yes" keyspace="B5M"/>
         </Parameter>
       </ProductBundle>
 
