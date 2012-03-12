@@ -17,12 +17,8 @@
 #include <recommend-manager/common/ItemBundle.h>
 #include <recommend-manager/common/RateParam.h>
 
-#include <parsers/SelectParser.h>
-#include <query-manager/ActionItem.h>
 #include <common/BundleSchemaHelpers.h>
 #include <common/Keys.h>
-
-#include <cassert>
 
 namespace
 {
@@ -228,8 +224,7 @@ bool RecommendController::value2ItemCondition(ItemCondition& itemCondition)
     }
     itemIdToDocId(propName);
 
-    PropertyConfig propType;
-    if (! getPropertyConfig(collectionHandler_->indexSchema_, propName, propType))
+    if (! isDocumentProperty(collectionHandler_->documentSchema_, propName))
     {
         response().addError("Unknown item property \"" + propName + "\" in request[resource][condition].");
         return false;
@@ -267,26 +262,36 @@ bool RecommendController::value2ItemCondition(ItemCondition& itemCondition)
 
 bool RecommendController::value2SelectProps(std::vector<std::string>& propNames)
 {
-    SelectParser parser(collectionHandler_->indexSchema_);
     const izenelib::driver::Value& selectValue = request()[Keys::resource][Keys::select];
+    const DocumentSchema& documentSchema = collectionHandler_->documentSchema_;
 
-    if (! parser.parse(selectValue))
+    if (nullValue(selectValue))
     {
-        response().addError(parser.errorMessage());
+        getDocumentPropertyNames(documentSchema, propNames);
+        return true;
+    }
+
+    if (selectValue.type() != izenelib::driver::Value::kArrayType)
+    {
+        response().addError("Require an array of property names in request[resource][select].");
         return false;
     }
-    response().addWarning(parser.warningMessage());
 
-    typedef std::vector<DisplayProperty> DisplayPropList;
-    const DisplayPropList& displayProps = parser.properties();
-
-    for (DisplayPropList::const_iterator it = displayProps.begin();
-        it != displayProps.end(); ++it)
+    for (std::size_t i = 0; i < selectValue.size(); ++i)
     {
-        // DOCID property should be already added
-        if (it->propertyString_ != DOCID)
+        std::string propName = asString(selectValue(i));
+        itemIdToDocId(propName);
+
+        if (! isDocumentProperty(documentSchema, propName))
         {
-            propNames.push_back(it->propertyString_);
+            response().addError("Unknown item property \"" + propName + "\" in request[resource][select].");
+            return false;
+        }
+
+        // DOCID property should be already added
+        if (propName != DOCID)
+        {
+            propNames.push_back(propName);
         }
     }
 
@@ -902,8 +907,9 @@ bool RecommendController::parseRateParam(RateParam& param)
  *     - @b ITEMID* (@c String): a unique item identifier.
  *   - @b exclude_items (@c Array): the items must be excluded in recommendation result.
  *     - @b ITEMID* (@c String): a unique item identifier.
- *   - @b select (@c Array): select properties in recommendation result. See SelectParser.@n
- *     For each object in @b select, only the parameter @b property is used, other parameters are ignored in this API.
+ *   - @b select (@c Array): each is a property name String, which property would be returned in response @b resources.@n
+ *     For example, you could specify @b select as ["ITEMID", "name", "link"].@n
+ *     The default value would be all property names configured in <DocumentSchema>.
  *   - @b condition (@c Object): specify the condition that recommendation results must meet.
  *     - @b property* (@c String): item property name, such as @b ITEMID, @b category, etc
  *     - @b value* (@c Array): the property values, each recommendation result must match one of the property value in this array.
@@ -1048,8 +1054,9 @@ void RecommendController::renderRecommendResult(const RecommendParam& param, con
  * - @b resource* (@c Object): A resource of the request for recommendation result.
  *   - @b max_count (@c Uint = 10): at most how many bundles allowed in result.
  *   - @b min_freq (@c Uint = 1): the min frequency for each bundle in result.
- *   - @b select (@c Array): select properties in recommendation result. See SelectParser.@n
- *     For each object in @b select, only the parameter @b property is used, other parameters are ignored in this API.
+ *   - @b select (@c Array): each is a property name String, which property would be returned in response @b items.@n
+ *     For example, you could specify @b select as ["ITEMID", "name", "link"].@n
+ *     The default value would be all property names configured in <DocumentSchema>.
  *
  * @section response
  *

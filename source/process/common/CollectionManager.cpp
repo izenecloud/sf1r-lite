@@ -8,12 +8,12 @@
 #include <bundles/recommend/RecommendBundleActivator.h>
 
 #include <boost/filesystem.hpp>
+#include <memory> // for std::auto_ptr
+
 namespace bfs = boost::filesystem;
 
 namespace sf1r
 {
-
-CollectionHandler* CollectionManager::kEmptyHandler_ = 0;
 
 CollectionManager::~CollectionManager()
 {
@@ -22,22 +22,34 @@ CollectionManager::~CollectionManager()
          delete iter->second;
     }
 
-    std::map<std::string, MutexType*>::const_iterator mutexIter;
-    for(mutexIter = mutexMap_.begin(); mutexIter != mutexMap_.end(); mutexIter++)
+    for(CollectionMutexes::iterator iter = collectionMutexes_.begin();
+        iter != collectionMutexes_.end(); ++iter)
     {
-        delete mutexIter->second;
+        delete iter->second;
     }
+}
+
+CollectionManager::MutexType* CollectionManager::getCollectionMutex(const std::string& collection)
+{
+    boost::mutex::scoped_lock lock(mapMutex_);
+
+    MutexType*& mutex = collectionMutexes_[collection];
+    if (mutex == NULL)
+    {
+        mutex = new MutexType;
+    }
+
+    return mutex;
 }
 
 bool CollectionManager::startCollection(const string& collectionName, const std::string& configFileName, bool fixBasePath)
 {
     ScopedWriteLock lock(*getCollectionMutex(collectionName));
 
-    CollectionHandler* collectionHandler = findHandler(collectionName);
-    if(collectionHandler != NULL)
+    if(findHandler(collectionName) != NULL)
         return false;
-    else
-        collectionHandler = new CollectionHandler(collectionName);
+
+    std::auto_ptr<CollectionHandler> collectionHandler(new CollectionHandler(collectionName));
 
     boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig(new IndexBundleConfiguration(collectionName));
     boost::shared_ptr<ProductBundleConfiguration> productBundleConfig(new ProductBundleConfiguration(collectionName));
@@ -54,6 +66,7 @@ bool CollectionManager::startCollection(const string& collectionName, const std:
     {
         throw XmlConfigParserException("error in parsing " + configFileName);
     }
+    collectionHandler->setDocumentSchema(collectionMeta.getDocumentSchema());
 
     SF1Config::CollectionMetaMap& collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
     SF1Config::CollectionMetaMap::value_type mapValue(collectionMeta.getName(), collectionMeta);
@@ -124,10 +137,7 @@ bool CollectionManager::startCollection(const string& collectionName, const std:
         collectionHandler->setBundleSchema(recommendBundleConfig->recommendSchema_);
     }
 
-    // insert first, then assign to ensure exception safe
-    std::pair<handler_map_type::iterator, bool> insertResult =
-        collectionHandlers_.insert(std::make_pair(collectionName, kEmptyHandler_));
-    insertResult.first->second = collectionHandler;
+    collectionHandlers_[collectionName] = collectionHandler.release();
 
     return true;
 }
@@ -138,8 +148,8 @@ void CollectionManager::stopCollection(const std::string& collectionName)
 
     JobScheduler::get()->removeTask(collectionName);
 
-    handler_const_iterator iter;
-    if((iter = collectionHandlers_.find(collectionName)) != collectionHandlers_.end())
+    handler_const_iterator iter = collectionHandlers_.find(collectionName);
+    if(iter != collectionHandlers_.end())
     {
         delete iter->second;
         collectionHandlers_.erase(collectionName);
@@ -191,17 +201,12 @@ void CollectionManager::deleteCollection(const std::string& collectionName)
 
 CollectionHandler* CollectionManager::findHandler(const std::string& key) const
 {
-    typedef handler_map_type::const_iterator iterator;
+    handler_const_iterator iter = collectionHandlers_.find(key);
 
-    iterator findResult = collectionHandlers_.find(key);
-    if (findResult != collectionHandlers_.end())
-    {
-        return findResult->second;
-    }
-    else
-    {
-        return kEmptyHandler_;
-    }
+    if (iter != collectionHandlers_.end())
+        return iter->second;
+
+    return NULL;
 }
 
 CollectionManager::handler_const_iterator CollectionManager::handlerBegin() const
