@@ -16,18 +16,18 @@ namespace sf1r
 
 void RebuildTask::startTask()
 {
-    task_type task = boost::bind(&RebuildTask::doTask, this);
-    asyncJodScheduler_.addTask(task);
-}
-
-void RebuildTask::doTask()
-{
     if (isRunning_)
     {
         LOG(ERROR) << "RebuildTask is running!" ;
         return;
     }
 
+    task_type task = boost::bind(&RebuildTask::doTask, this);
+    asyncJodScheduler_.addTask(task);
+}
+
+void RebuildTask::doTask()
+{
     LOG(INFO) << "## start RebuildTask for " << collectionName_;
     isRunning_ = true;
 

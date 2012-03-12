@@ -11,16 +11,16 @@
 namespace sf1r
 {
 
-class CollectionTaskType
+class CollectionTask
 {
 public:
-    CollectionTaskType(const std::string& collectionName)
+    CollectionTask(const std::string& collectionName)
         : collectionName_(collectionName)
         , isCronTask_(false)
         , isRunning_(false)
     {}
 
-    virtual ~CollectionTaskType() {}
+    virtual ~CollectionTask() {}
 
     void setIsCronTask(bool isCronTask)
     {
@@ -64,11 +64,11 @@ protected:
 };
 
 class DocumentManager;
-class RebuildTask : public CollectionTaskType
+class RebuildTask : public CollectionTask
 {
 public:
     RebuildTask(const std::string& collectionName)
-        : CollectionTaskType(collectionName)
+        : CollectionTask(collectionName)
     {
         rebuildCollectionName_ = collectionName + "-rebuild";
     }

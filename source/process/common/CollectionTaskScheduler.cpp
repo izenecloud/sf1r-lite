@@ -63,7 +63,7 @@ void CollectionTaskScheduler::cronTask_()
     TaskListType::iterator it;
     for (it = taskList_.begin(); it != taskList_.end(); it++)
     {
-        boost::shared_ptr<CollectionTaskType>& task = *it;
+        boost::shared_ptr<CollectionTask>& task = *it;
         if (task->isCronTask())
         {
             // cron expression will always match during the specified minute,
