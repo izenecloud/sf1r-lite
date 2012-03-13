@@ -58,8 +58,11 @@ public:
         std::string identityLow = boost::to_lower_copy(identity);
         if (sf1r::SF1Config::get()->checkSearchWorker(identity))
         {
-            CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(identity);
-            CollectionManager::ScopedReadLock lock(*mutex);
+            // A collection may be stopped with all resources released,
+            // so we should lock current the current collection during operations on it,
+            // and release lock when each operation finished.
+            curCollectionMutex_ = CollectionManager::get()->getCollectionMutex(identity);
+            curCollectionMutex_->lock_shared();
             collectionHandler_ = CollectionManager::get()->findHandler(identity);
 
             if (!collectionHandler_)
@@ -111,52 +114,62 @@ public:
     void getDistSearchInfo(request_t& req)
     {
         WORKER_HANDLE_1_1(req, KeywordSearchActionItem, searchWorker_->getDistSearchInfo, DistKeywordSearchInfo)
+        curCollectionMutex_->unlock_shared();
     }
 
     void getDistSearchResult(request_t& req)
     {
         WORKER_HANDLE_1_1(req, KeywordSearchActionItem, searchWorker_->getDistSearchResult, DistKeywordSearchResult)
+        curCollectionMutex_->unlock_shared();
     }
 
     void getSummaryResult(request_t& req)
     {
         WORKER_HANDLE_1_1(req, KeywordSearchActionItem, searchWorker_->getSummaryResult, KeywordSearchResult)
+        curCollectionMutex_->unlock_shared();
     }
 
     void getSummaryMiningResult(request_t& req)
     {
         WORKER_HANDLE_1_1(req, KeywordSearchActionItem, searchWorker_->getSummaryMiningResult, KeywordSearchResult)
+        curCollectionMutex_->unlock_shared();
     }
 
     void getDocumentsByIds(request_t& req)
     {
         WORKER_HANDLE_1_1(req, GetDocumentsByIdsActionItem, searchWorker_->getDocumentsByIds, RawTextResultFromSIA)
+        curCollectionMutex_->unlock_shared();
     }
 
     void getInternalDocumentId(request_t& req)
     {
         WORKER_HANDLE_1_1(req, izenelib::util::UString, searchWorker_->getInternalDocumentId, uint64_t)
+        curCollectionMutex_->unlock_shared();
     }
 
     void getSimilarDocIdList(request_t& req)
     {
         WORKER_HANDLE_2_1(req, uint64_t, uint32_t, searchWorker_->getSimilarDocIdList, SimilarDocIdListType)
+        curCollectionMutex_->unlock_shared();
     }
 
     void clickGroupLabel(request_t& req)
     {
         WORKER_HANDLE_1_1(req, ClickGroupLabelActionItem, searchWorker_->clickGroupLabel, bool)
+        curCollectionMutex_->unlock_shared();
     }
 
     void visitDoc(request_t& req)
     {
         WORKER_HANDLE_1_1(req, uint32_t, searchWorker_->visitDoc, bool)
+        curCollectionMutex_->unlock_shared();
     }
 
     void index(request_t& req)
     {
         boost::shared_ptr<IndexWorker> indexWorker = collectionHandler_->indexTaskService_->indexWorker_;
         WORKER_HANDLE_1_1(req, unsigned int, indexWorker->index, bool)
+        curCollectionMutex_->unlock_shared();
     }
 
     /** @} */
@@ -164,6 +177,7 @@ public:
 private:
     // A coming request is targeted at a specified collection or a bundle,
     // so find corresponding collectionHandler before handling the request.
+    CollectionManager::MutexType* curCollectionMutex_;
     CollectionHandler* collectionHandler_;
     boost::shared_ptr<SearchWorker> searchWorker_;
 
