@@ -60,7 +60,7 @@ public:
         {
             // A collection may be stopped with all resources released,
             // so we should lock current the current collection during operations on it,
-            // and release lock when each operation finished.
+            // and release lock when each operation finished (post-process).
             curCollectionMutex_ = CollectionManager::get()->getCollectionMutex(identity);
             curCollectionMutex_->lock_shared();
             collectionHandler_ = CollectionManager::get()->findHandler(identity);
@@ -69,6 +69,7 @@ public:
             {
                 error = "No collectionHandler found for " + identity;
                 std::cout << error << std::endl;
+                curCollectionMutex_->unlock_shared();
                 return false;
             }
 
@@ -82,6 +83,12 @@ public:
         }
 
         return true;
+    }
+
+    virtual void postprocess()
+    {
+        if (curCollectionMutex_)
+            curCollectionMutex_->unlock_shared();
     }
 
     /**
@@ -114,62 +121,53 @@ public:
     void getDistSearchInfo(request_t& req)
     {
         WORKER_HANDLE_1_1(req, KeywordSearchActionItem, searchWorker_->getDistSearchInfo, DistKeywordSearchInfo)
-        curCollectionMutex_->unlock_shared();
+
     }
 
     void getDistSearchResult(request_t& req)
     {
         WORKER_HANDLE_1_1(req, KeywordSearchActionItem, searchWorker_->getDistSearchResult, DistKeywordSearchResult)
-        curCollectionMutex_->unlock_shared();
     }
 
     void getSummaryResult(request_t& req)
     {
         WORKER_HANDLE_1_1(req, KeywordSearchActionItem, searchWorker_->getSummaryResult, KeywordSearchResult)
-        curCollectionMutex_->unlock_shared();
     }
 
     void getSummaryMiningResult(request_t& req)
     {
         WORKER_HANDLE_1_1(req, KeywordSearchActionItem, searchWorker_->getSummaryMiningResult, KeywordSearchResult)
-        curCollectionMutex_->unlock_shared();
     }
 
     void getDocumentsByIds(request_t& req)
     {
         WORKER_HANDLE_1_1(req, GetDocumentsByIdsActionItem, searchWorker_->getDocumentsByIds, RawTextResultFromSIA)
-        curCollectionMutex_->unlock_shared();
     }
 
     void getInternalDocumentId(request_t& req)
     {
         WORKER_HANDLE_1_1(req, izenelib::util::UString, searchWorker_->getInternalDocumentId, uint64_t)
-        curCollectionMutex_->unlock_shared();
     }
 
     void getSimilarDocIdList(request_t& req)
     {
         WORKER_HANDLE_2_1(req, uint64_t, uint32_t, searchWorker_->getSimilarDocIdList, SimilarDocIdListType)
-        curCollectionMutex_->unlock_shared();
     }
 
     void clickGroupLabel(request_t& req)
     {
         WORKER_HANDLE_1_1(req, ClickGroupLabelActionItem, searchWorker_->clickGroupLabel, bool)
-        curCollectionMutex_->unlock_shared();
     }
 
     void visitDoc(request_t& req)
     {
         WORKER_HANDLE_1_1(req, uint32_t, searchWorker_->visitDoc, bool)
-        curCollectionMutex_->unlock_shared();
     }
 
     void index(request_t& req)
     {
         boost::shared_ptr<IndexWorker> indexWorker = collectionHandler_->indexTaskService_->indexWorker_;
         WORKER_HANDLE_1_1(req, unsigned int, indexWorker->index, bool)
-        curCollectionMutex_->unlock_shared();
     }
 
     /** @} */

@@ -55,14 +55,16 @@ public:
         {
             req.error(msgpack::rpc::ARGUMENT_ERROR);
             cout << "#[Master] notified, Argument error!"<<endl;
-            return;
         }
         catch (std::exception& e)
         {
             cout << "#[Master] notified, "<<e.what()<<endl;
             req.error(std::string(e.what()));
-            return;
         }
+
+        // release collection lock
+        if (curCollectionMutex_)
+            curCollectionMutex_->unlock_shared();
     }
 
 private:
@@ -100,10 +102,13 @@ private:
     CollectionHandler* getCollectionHandler(const std::string& collection)
     {
         //std::string collectionLow = boost::to_lower_copy(collection);
-        CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(collection);
-        CollectionManager::ScopedReadLock lock(*mutex);
+        curCollectionMutex_ = CollectionManager::get()->getCollectionMutex(collection);
+        curCollectionMutex_->lock_shared();
         return CollectionManager::get()->findHandler(collection);
     }
+
+private:
+    CollectionManager::MutexType* curCollectionMutex_;
 };
 
 }
