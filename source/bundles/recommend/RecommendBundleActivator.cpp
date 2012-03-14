@@ -36,7 +36,8 @@ void RecommendBundleActivator::start(IBundleContext::ConstPtr context)
     context_ = context;
     config_ = static_pointer_cast<RecommendBundleConfiguration>(context_->getBundleConfig());
 
-    if (isTrackSearchService_())
+    if (config_->recommendNodeConfig_.isServiceNode() &&
+        config_->searchNodeConfig_.isServiceNode())
     {
         indexSearchTracker_.reset(new ServiceTracker(context, "IndexSearchService", this));
         indexSearchTracker_->startTracking();
@@ -96,7 +97,7 @@ bool RecommendBundleActivator::addingService(const ServiceReference& ref)
             IndexSearchService* service = reinterpret_cast<IndexSearchService*>(const_cast<IService*>(ref.getService()));
             if (! init_(service))
             {
-                LOG(ERROR) << "failed in RecommendBundleActivator::init_(), collection:  " << config_->collectionName_;
+                LOG(ERROR) << "failed in RecommendBundleActivator::init_(), collection: " << config_->collectionName_;
                 return false;
             }
 
@@ -118,7 +119,7 @@ bool RecommendBundleActivator::init_(IndexSearchService* indexSearchService)
 
     createMining_();
 
-    if (isCreateRecommendService_())
+    if (config_->recommendNodeConfig_.isServiceNode())
     {
         createSCDDir_();
         createStorage_();
@@ -293,26 +294,6 @@ void RecommendBundleActivator::createService_()
     props.put("collection", config_->collectionName_);
     taskServiceReg_.reset(context_->registerService("RecommendTaskService", taskService_.get(), props));
     searchServiceReg_.reset(context_->registerService("RecommendSearchService", searchService_.get(), props));
-}
-
-bool RecommendBundleActivator::isTrackSearchService_()
-{
-    const DistributedNodeConfig& recommendNode = config_->recommendNodeConfig_;
-    const DistributedNodeConfig& searchNode = config_->searchNodeConfig_;
-
-    if (recommendNode.isSingleNode_)
-        return true;
-
-    return recommendNode.isMasterNode_ &&
-           searchNode.isMasterNode_;
-}
-
-bool RecommendBundleActivator::isCreateRecommendService_()
-{
-    const DistributedNodeConfig& recommendNode = config_->recommendNodeConfig_;
-
-    return recommendNode.isSingleNode_ ||
-           recommendNode.isMasterNode_;
 }
 
 } // namespace sf1r

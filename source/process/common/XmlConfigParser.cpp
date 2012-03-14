@@ -1840,21 +1840,31 @@ void CollectionConfig::parseRecommendDistribConfig(CollectionMeta& collectionMet
     const std::string& collectionName = recommendBundleConfig.collectionName_;
     SF1Config* sf1Config = SF1Config::get();
 
+    DistributedNodeConfig& recommendNode = recommendBundleConfig.recommendNodeConfig_;
     if (recommendBundleConfig.isSchemaEnable_)
     {
-        DistributedNodeConfig& recommendNode = recommendBundleConfig.recommendNodeConfig_;
         recommendNode.isMasterNode_ = sf1Config->checkRecommendMasterAggregator(collectionName);
         recommendNode.isWorkerNode_ = sf1Config->checkRecommendWorker(collectionName);
         recommendNode.isSingleNode_ = !(recommendNode.isMasterNode_ || recommendNode.isWorkerNode_);
     }
 
     IndexBundleConfiguration& indexBundleConfig = *collectionMeta.indexBundleConfig_;
+    DistributedNodeConfig& searchNode = recommendBundleConfig.searchNodeConfig_;
     if (indexBundleConfig.isSchemaEnable_)
     {
-        DistributedNodeConfig& searchNode = recommendBundleConfig.searchNodeConfig_;
         searchNode.isMasterNode_ = sf1Config->checkSearchMasterAggregator(collectionName);
         searchNode.isWorkerNode_ = sf1Config->checkSearchWorker(collectionName);
         searchNode.isSingleNode_ = !(searchNode.isMasterNode_ || searchNode.isWorkerNode_);
+    }
+
+    if (recommendNode.isSingleNode_ && !searchNode.isServiceNode())
+    {
+        ostringstream message;
+        message << "the recommendation bundle for collection \"" << collectionName << "\" is configured as single node without search service," << endl
+                << "you should either configure it as distributed recommendation node in <SF1Config><Deployment><DistributedTopology>," << endl
+                << "or configure it as single or master node for search service.";
+
+        throw XmlConfigParserException(message.str());
     }
 }
 

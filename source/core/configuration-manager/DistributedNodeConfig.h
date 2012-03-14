@@ -20,6 +20,17 @@ struct DistributedNodeConfig
     {}
 
     /**
+     * check whether is a service node.
+     * @return true if only it meets all of the conditions below:
+     * 1. the bundle is activated
+     * 2. it's a single or master node
+     */
+    bool isServiceNode() const
+    {
+        return isSingleNode_ || isMasterNode_;
+    }
+
+    /**
      * if the bundle is not activated,
      * all below members should be false.
      */
