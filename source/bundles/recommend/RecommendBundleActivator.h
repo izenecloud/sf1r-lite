@@ -61,6 +61,9 @@ private:
     void createRecommender_();
     void createService_();
 
+    bool isTrackSearchService_();
+    bool isCreateRecommendService_();
+
 private:
     IBundleContext* context_;
     boost::scoped_ptr<ServiceTracker> indexSearchTracker_;

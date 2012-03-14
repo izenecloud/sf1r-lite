@@ -778,6 +778,9 @@ private:
     /// @param recSchemaNode           Pointer to the Element
     void parseRecommendBundleSchema(const ticpp::Element * recSchemaNode, CollectionMeta & collectionMeta);
 
+    /// @brief                  Parse <SF1Config><Deployment><DistributedTopology> for recommend bundle
+    void parseRecommendDistribConfig(CollectionMeta& collectionMeta);
+
     /// @brief                  Parse <Collection> settings
     /// @param system           Pointer to the Element
     void parseCollectionSettings( const ticpp::Element * collection, CollectionMeta & collectionMeta );

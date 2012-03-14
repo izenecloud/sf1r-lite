@@ -11,6 +11,7 @@
 #include <configuration-manager/PropertyConfig.h>
 #include <configuration-manager/CollectionPath.h>
 #include <configuration-manager/CassandraStorageConfig.h>
+#include <configuration-manager/DistributedNodeConfig.h>
 
 #include <util/osgi/BundleConfiguration.h>
 
@@ -51,6 +52,10 @@ public:
 
     // <Collection><RecommendBundle><Schema>
     RecommendSchema recommendSchema_;
+
+    // <SF1Config><Deployment><DistributedTopology>
+    DistributedNodeConfig recommendNodeConfig_;
+    DistributedNodeConfig searchNodeConfig_;
 
     std::string userSCDPath() const
     {

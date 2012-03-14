@@ -959,6 +959,8 @@ void CollectionConfig::parseCollectionSettings(const ticpp::Element * collection
 
         Element* recommendParam = getUniqChildElement(recommendBundle, "Parameter", false);
         parseRecommendBundleParam(recommendParam, collectionMeta);
+
+        parseRecommendDistribConfig(collectionMeta);
     }
 }
 
@@ -1778,7 +1780,7 @@ void CollectionConfig::parseRecommendBundleSchema(const ticpp::Element * recSche
         return;
 
     //** PARSE RECOMMEND SCHEMA BEGIN
-    RecommendBundleConfiguration& recommendBundleConfig = *(collectionMeta.recommendBundleConfig_);
+    RecommendBundleConfiguration& recommendBundleConfig = *collectionMeta.recommendBundleConfig_;
     recommendBundleConfig.isSchemaEnable_ = true;
     RecommendSchema& recommendSchema = recommendBundleConfig.recommendSchema_;
 
@@ -1829,6 +1831,30 @@ void CollectionConfig::parseRecommendBundleSchema(const ticpp::Element * recSche
                 throw e;
             }
         } //event iteration
+    }
+}
+
+void CollectionConfig::parseRecommendDistribConfig(CollectionMeta& collectionMeta)
+{
+    RecommendBundleConfiguration& recommendBundleConfig = *collectionMeta.recommendBundleConfig_;
+    const std::string& collectionName = recommendBundleConfig.collectionName_;
+    SF1Config* sf1Config = SF1Config::get();
+
+    if (recommendBundleConfig.isSchemaEnable_)
+    {
+        DistributedNodeConfig& recommendNode = recommendBundleConfig.recommendNodeConfig_;
+        recommendNode.isMasterNode_ = sf1Config->checkRecommendMasterAggregator(collectionName);
+        recommendNode.isWorkerNode_ = sf1Config->checkRecommendWorker(collectionName);
+        recommendNode.isSingleNode_ = !(recommendNode.isMasterNode_ || recommendNode.isWorkerNode_);
+    }
+
+    IndexBundleConfiguration& indexBundleConfig = *collectionMeta.indexBundleConfig_;
+    if (indexBundleConfig.isSchemaEnable_)
+    {
+        DistributedNodeConfig& searchNode = recommendBundleConfig.searchNodeConfig_;
+        searchNode.isMasterNode_ = sf1Config->checkSearchMasterAggregator(collectionName);
+        searchNode.isWorkerNode_ = sf1Config->checkSearchWorker(collectionName);
+        searchNode.isSingleNode_ = !(searchNode.isMasterNode_ || searchNode.isWorkerNode_);
     }
 }
 
