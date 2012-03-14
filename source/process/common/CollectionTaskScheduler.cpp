@@ -35,11 +35,18 @@ bool CollectionTaskScheduler::schedule(const CollectionHandler* collectionHandle
         return false;
     }
 
-    // check rebuild task
-    if (collectionHandler->indexTaskService_->isAutoRebuild())
+    IndexTaskService* indexTaskService = collectionHandler->indexTaskService_;
+    if (!indexTaskService)
     {
-        std::string collectionName = collectionHandler->indexTaskService_->bundleConfig_->collectionName_;
-        std::string cronStr = collectionHandler->indexTaskService_->bundleConfig_->cronIndexer_;
+        LOG(ERROR) << "Failed to schedule collection task as IndexTaskService not found.";
+        return false;
+    }
+
+    // check rebuild task
+    if (indexTaskService->isAutoRebuild())
+    {
+        std::string collectionName = indexTaskService->bundleConfig_->collectionName_;
+        std::string cronStr = indexTaskService->bundleConfig_->cronIndexer_;
         //std::string cronStr = "0  3   *   *   5"; // start task at 3 am on Fridays.
 
         boost::shared_ptr<RebuildTask> task(new RebuildTask(collectionName));
