@@ -1,7 +1,8 @@
 #include "RecommendBundleActivator.h"
 #include "RecommendBundleConfiguration.h"
 #include <recommend-manager/item/LocalItemFactory.h>
-#include <recommend-manager/item/ItemFactory.h>
+#include <recommend-manager/item/SearchMasterItemFactory.h>
+#include <recommend-manager/item/RemoteItemFactory.h>
 #include <recommend-manager/item/ItemManager.h>
 #include <recommend-manager/item/ItemIdGenerator.h>
 #include <recommend-manager/storage/RecommendStorageFactory.h>
@@ -13,15 +14,10 @@
 #include <recommend-manager/storage/EventManager.h>
 #include <recommend-manager/storage/OrderManager.h>
 #include <recommend-manager/recommender/RecommenderFactory.h>
-#include <process/common/XmlConfigParser.h>
 
-#include <common/SFLogger.h>
-
-#include <memory> // auto_ptr
 #include <glog/logging.h>
 
 namespace bfs = boost::filesystem;
-
 
 namespace sf1r
 {
@@ -40,8 +36,16 @@ void RecommendBundleActivator::start(IBundleContext::ConstPtr context)
     context_ = context;
     config_ = static_pointer_cast<RecommendBundleConfiguration>(context_->getBundleConfig());
 
-    indexSearchTracker_.reset(new ServiceTracker(context, "IndexSearchService", this));
-    indexSearchTracker_->startTracking();
+    if (config_->recommendNodeConfig_.isServiceNode() &&
+        config_->searchNodeConfig_.isServiceNode())
+    {
+        indexSearchTracker_.reset(new ServiceTracker(context, "IndexSearchService", this));
+        indexSearchTracker_->startTracking();
+    }
+    else
+    {
+        init_(NULL);
+    }
 }
 
 void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
@@ -93,7 +97,7 @@ bool RecommendBundleActivator::addingService(const ServiceReference& ref)
             IndexSearchService* service = reinterpret_cast<IndexSearchService*>(const_cast<IService*>(ref.getService()));
             if (! init_(service))
             {
-                LOG(ERROR) << "failed in RecommendBundleActivator::init_(), collection:  " << config_->collectionName_;
+                LOG(ERROR) << "failed in RecommendBundleActivator::init_(), collection: " << config_->collectionName_;
                 return false;
             }
 
@@ -110,17 +114,20 @@ void RecommendBundleActivator::removedService(const ServiceReference& ref)
 
 bool RecommendBundleActivator::init_(IndexSearchService* indexSearchService)
 {
-    createSCDDir_();
-
     if (! createDataDir_())
         return false;
 
-    createStorage_();
-    createItem_(indexSearchService);
     createMining_();
-    createOrder_();
-    createRecommender_();
-    createService_();
+
+    if (config_->recommendNodeConfig_.isServiceNode())
+    {
+        createSCDDir_();
+        createStorage_();
+        createItem_(indexSearchService);
+        createOrder_();
+        createRecommender_();
+        createService_();
+    }
 
     return true;
 }
@@ -216,10 +223,24 @@ void RecommendBundleActivator::createStorage_()
 
 void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchService)
 {
-    LocalItemFactory factory(*indexSearchService);
+    boost::scoped_ptr<ItemFactory> factory;
+    const DistributedNodeConfig& searchNode = config_->searchNodeConfig_;
 
-    itemIdGenerator_.reset(factory.createItemIdGenerator());
-    itemManager_.reset(factory.createItemManager());
+    if (searchNode.isSingleNode_)
+    {
+        factory.reset(new LocalItemFactory(*indexSearchService));
+    }
+    else if (searchNode.isMasterNode_)
+    {
+        factory.reset(new SearchMasterItemFactory(config_->collectionName_, *indexSearchService));
+    }
+    else
+    {
+        factory.reset(new RemoteItemFactory(config_->collectionName_));
+    }
+
+    itemIdGenerator_.reset(factory->createItemIdGenerator());
+    itemManager_.reset(factory->createItemManager());
 }
 
 void RecommendBundleActivator::createMining_()

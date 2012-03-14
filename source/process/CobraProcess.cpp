@@ -314,10 +314,7 @@ void CobraProcess::scheduleTask(const std::string& collection)
     CollectionManager::ScopedReadLock rlock(*mutex);
 
     CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
-    if (!CollectionTaskScheduler::get()->schedule(collectionHandler))
-    {
-        throw std::runtime_error(std::string("Failed to schedule collection task: ") + collection);
-    }
+    CollectionTaskScheduler::get()->schedule(collectionHandler);
 }
 
 int CobraProcess::run()
