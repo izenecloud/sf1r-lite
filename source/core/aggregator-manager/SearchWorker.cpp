@@ -160,6 +160,9 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
         if (! getSearchResult_(actionItem, resultItem, identity, false))
             return false;
 
+        if (resultItem.topKDocs_.empty())
+            return true;
+
         if (! getSummaryMiningResult_(actionItem, resultItem, false))
             return false;
 
@@ -370,14 +373,17 @@ bool SearchWorker::getSearchResult_(
     {
         if (identity.simHash.empty())
             miningManager_->GetSignatureForQuery(actionOperation.actionItem_, identity.simHash);
-        miningManager_->GetKNNListBySignature(
-                identity.simHash,
-                resultItem.topKDocs_,
-                resultItem.topKRankScoreList_,
-                resultItem.totalCount_,
-                KNN_TOP_K_NUM,
-                KNN_DIST,
-                startOffset);
+        if (!miningManager_->GetKNNListBySignature(
+                    identity.simHash,
+                    resultItem.topKDocs_,
+                    resultItem.topKRankScoreList_,
+                    resultItem.totalCount_,
+                    KNN_TOP_K_NUM,
+                    KNN_DIST,
+                    startOffset))
+        {
+            return true;
+        }
     }
     else if (!searchManager_->search(
                 actionOperation,

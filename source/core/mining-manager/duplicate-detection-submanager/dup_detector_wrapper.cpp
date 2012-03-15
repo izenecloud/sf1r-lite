@@ -261,7 +261,7 @@ uint32_t DupDetectorWrapper::getSignatureForText(
     return strTermList.size();
 }
 
-void DupDetectorWrapper::getKNNListBySignature(
+bool DupDetectorWrapper::getKNNListBySignature(
         const std::vector<uint64_t>& signature,
         uint32_t count,
         uint32_t start,
@@ -273,12 +273,14 @@ void DupDetectorWrapper::getKNNListBySignature(
     std::vector<std::pair<uint32_t, uint32_t> > knn_list;
 
     dd_->GetKNNListBySignature(signature, count + start, max_hamming_dist, knn_list);
+    if (knn_list.empty()) return false;
     for (uint32_t i = start; i < knn_list.size(); i++)
     {
         docIdList.push_back(knn_list[i].second);
         rankScoreList.push_back(float(1) - float(knn_list[i].first) / float(idmlib::dd::DdConstants::f));
     }
     totalCount = knn_list.size() - start;
+    return true;
 }
 
 }

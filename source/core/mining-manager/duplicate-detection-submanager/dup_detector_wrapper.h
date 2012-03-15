@@ -65,7 +65,7 @@ public:
             const izenelib::util::UString& text,
             std::vector<uint64_t>& signature);
 
-    void getKNNListBySignature(
+    bool getKNNListBySignature(
             const std::vector<uint64_t>& signature,
             uint32_t count,
             uint32_t start,
