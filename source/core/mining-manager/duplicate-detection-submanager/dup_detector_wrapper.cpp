@@ -166,12 +166,17 @@ bool DupDetectorWrapper::ProcessCollection()
     uint32_t process_count = 0;
     Document doc;
 
-    for (uint32_t docid = 1; docid <= processed_max_docid; docid++)
+    std::vector<uint32_t> removed_docs;
+    document_manager_->getDeletedDocIdList(removed_docs);
+    if (!removed_docs.empty())
     {
-        if (!document_manager_->existDocument(docid))
-            dd_->RemoveDoc(docid);
+        for (std::vector<uint32_t>::const_iterator it = removed_docs.begin();
+                it != removed_docs.end(); ++it)
+        {
+            dd_->RemoveDoc(*it);
+        }
+        dd_->FinishRemoveDocs();
     }
-    dd_->FinishRemoveDocs();
 
     dd_->IncreaseCacheCapacity(processing_max_docid - processed_max_docid);
     for (uint32_t docid = processed_max_docid + 1; docid <= processing_max_docid; docid++)
