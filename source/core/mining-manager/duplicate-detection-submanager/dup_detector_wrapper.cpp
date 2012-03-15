@@ -168,7 +168,7 @@ bool DupDetectorWrapper::ProcessCollection()
 
     for (uint32_t docid = 1; docid <= processed_max_docid; docid++)
     {
-        if (!document_manager_->getDocument(docid, doc))
+        if (!document_manager_->existDocument(docid))
             dd_->RemoveDoc(docid);
     }
     dd_->FinishRemoveDocs();

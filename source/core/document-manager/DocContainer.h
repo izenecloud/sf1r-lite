@@ -39,6 +39,7 @@ public:
         containerPtr_->set_lock_type(Lux::IO::LOCK_THREAD);
         restoreMaxDocDb_();
     }
+
     ~DocContainer()
     {
         if (containerPtr_)
@@ -47,6 +48,7 @@ public:
             delete containerPtr_;
         }
     }
+
     bool open()
     {
         try
@@ -67,6 +69,7 @@ public:
         return true;
 
     }
+
     bool insert(const unsigned int docId, const Document& doc)
     {
         CREATE_SCOPED_PROFILER(insert_document, "Index:SIAProcess", "Indexer : insert_document")
@@ -95,6 +98,7 @@ public:
         }
         return ret;
     }
+
     bool get(const unsigned int docId, Document& doc)
     {
         //CREATE_SCOPED_PROFILER(get_document, "Index:SIAProcess", "Indexer : get_document")
@@ -102,7 +106,7 @@ public:
         if (docId > maxDocID_ )
             return false;
         Lux::IO::data_t *val_p = NULL;
-        if (false == containerPtr_->get(docId, &val_p, Lux::IO::SYSTEM))
+        if (!containerPtr_->get(docId, &val_p, Lux::IO::SYSTEM))
         {
             containerPtr_->clean_data(val_p);
             return false;
@@ -135,12 +139,23 @@ public:
         return true;
     }
 
+    bool exist(const unsigned int docId)
+    {
+        if (docId > maxDocID_ )
+            return false;
+        Lux::IO::data_t *val_p = NULL;
+        bool ret = containerPtr_->get(docId, &val_p, Lux::IO::SYSTEM);
+        containerPtr_->clean_data(val_p);
+        return ret;
+    }
+
     bool del(const unsigned int docId)
     {
         if (docId > maxDocID_ )
             return false;
         return containerPtr_->del(docId);
     }
+
     bool update(const unsigned int docId, const Document& doc)
     {
         if (docId > maxDocID_)

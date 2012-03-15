@@ -146,15 +146,17 @@ public:
      *         correct value, \c false otherwise.
      */
     bool getDocument(
-        docid_t docId, 
+        docid_t docId,
         Document& document
     );
+
+    bool existDocument(docid_t docId);
 
     bool getDocumentAsync(docid_t docId);
 
     bool getDocument_impl(
-        docid_t docId, 
-        Document& document, 
+        docid_t docId,
+        Document& document,
         boost::detail::atomic_count* finishedJobs
     );
 
@@ -179,7 +181,7 @@ public:
      * @return \c true if property has been found
      */
     bool getPropertyValue(
-        docid_t docId, 
+        docid_t docId,
         const std::string& propertyName,
         PropertyValue& result
     );
@@ -283,16 +285,16 @@ public:
      * @return  returns maximum docId value managed by document manager
      */
     docid_t getMaxDocId() const;
-    
+
     bool getDeletedDocIdList(std::vector<docid_t>& docid_list);
-    
-    
+
+
 
 private:
     bool loadDelFilter_();
-    
+
     bool saveDelFilter_();
-    
+
     /**
      * @brief builds property-id pair map for properties from configuration. Different
      *               map for alias is constructed in the same interface.
@@ -385,7 +387,7 @@ private:
     unsigned int getDisplayLength_(const string& propertyName);
 
     bool getDocumentsParallel(
-        const std::vector<unsigned int>& ids, 
+        const std::vector<unsigned int>& ids,
         vector<Document>& docs
     );
 
@@ -402,10 +404,10 @@ private:
 
     /// @brief SDB file that holds all corresponding property and files
     DocContainer* propertyValueTable_;
-    
+
     /// @brief The delete flag filter
     DelFilterType delfilter_;
-    
+
     boost::mutex delfilter_mutex_;
 
     /// @brief document cache holds the retrieved property values of document

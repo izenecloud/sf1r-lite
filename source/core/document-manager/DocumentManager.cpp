@@ -261,6 +261,10 @@ bool DocumentManager::getDocument(
     CREATE_SCOPED_PROFILER ( getDocument, "DocumentManager", "DocumentManager::getDocument");
     return propertyValueTable_->get(docId, document);
 }
+bool DocumentManager::existDocument(docid_t docId)
+{
+    return propertyValueTable_->exist(docId);
+}
 
 bool DocumentManager::getDocumentAsync(docid_t docId)
 {
