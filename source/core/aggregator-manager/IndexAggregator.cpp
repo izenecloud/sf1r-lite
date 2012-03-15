@@ -11,10 +11,33 @@
 
 namespace sf1r{
 
+
+bool IndexAggregator::distributedIndex(
+        unsigned int numdoc,
+        const std::string& collectionName,
+        const std::string& masterScdPath,
+        const std::vector<std::string>& shardKeyList)
+{
+    // scd sharding & dispatching
+    if (!this->ScdDispatch(numdoc, collectionName, masterScdPath, shardKeyList))
+    {
+       return false;
+    }
+
+   // backup master
+
+   // distributed indexing request
+   LOG(INFO) << "start distributed indexing";
+   bool ret = true;
+   this->setDebug(true);
+   this->distributeRequest(collectionName, "index", numdoc, ret);
+   return true;
+}
+
 bool IndexAggregator::ScdDispatch(
         unsigned int numdoc,
         const std::string& collectionName,
-        const std::string& scdPath,
+        const std::string& masterScdPath,
         const std::vector<std::string>& shardKeyList)
 {
     bool ret = false;
@@ -25,7 +48,7 @@ bool IndexAggregator::ScdDispatch(
     for ( ; i < shardKeyList.size(); i++)
     {
         cfg.addShardKey(shardKeyList[i]);
-        std::cout << "Shard Key: " << shardKeyList[i] << std::endl;
+        LOG(INFO) << "Shard Key: " << shardKeyList[i];
     }
     if (i == 0)
     {
@@ -43,7 +66,7 @@ bool IndexAggregator::ScdDispatch(
             collectionName);
 
     // do dispatch
-    ret = scdDispatcher->dispatch(scdPath, numdoc);
+    ret = scdDispatcher->dispatch(masterScdPath, numdoc);
 
     delete shardingStrategy;
     delete scdDispatcher;

@@ -41,6 +41,12 @@ public:
     }
 
 public:
+    bool distributedIndex(
+            unsigned int numdoc,
+            const std::string& collectionName,
+            const std::string& masterScdPath,
+            const std::vector<std::string>& shardKeyList);
+
     /**
      * Dispatch SCDs from Master node to Worker nodes
      * with specified sharding strategy.
@@ -53,7 +59,7 @@ public:
     bool ScdDispatch(
             unsigned int numdoc,
             const std::string& collectionName,
-            const std::string& scdPath,
+            const std::string& masterScdPath,
             const std::vector<std::string>& shardKeyList);
 };
 

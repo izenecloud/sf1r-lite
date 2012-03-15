@@ -24,8 +24,8 @@ bool IndexTaskService::index(unsigned int numdoc)
 {
     if (bundleConfig_->isMasterAggregator())
     {
-        task_type task = boost::bind(&IndexTaskService::indexMaster_, this, numdoc);
-        JobScheduler::get()->addTask(task);
+        task_type task = boost::bind(&IndexTaskService::distributedIndex_, this, numdoc);
+        JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
         return true;
     }
     else
@@ -96,28 +96,13 @@ boost::shared_ptr<DocumentManager> IndexTaskService::getDocumentManager() const
     return indexWorker_->getDocumentManager();
 }
 
-
-bool IndexTaskService::indexMaster_(unsigned int numdoc)
+bool IndexTaskService::distributedIndex_(unsigned int numdoc)
 {
-    // scd sharding & dispatching
-    string scdPath = bundleConfig_->collPath_.getScdPath() + "index/master";
-    if (!indexAggregator_->ScdDispatch(
-            numdoc,
-            bundleConfig_->collectionName_,
-            scdPath,
-            bundleConfig_->indexShardKeys_))
-    {
-        return false;
-    }
-
-    // backup master
-
-    // distributed indexing request
-    LOG(INFO) << "start distributed indexing";
-    bool ret = true;
-    indexAggregator_->setDebug(true);//xxx
-    indexAggregator_->distributeRequest(bundleConfig_->collectionName_, "index", numdoc, ret);
-    return true;
+    return indexAggregator_->distributedIndex(
+                numdoc,
+                bundleConfig_->collectionName_,
+                bundleConfig_->masterIndexSCDPath(),
+                bundleConfig_->indexShardKeys_);
 }
 
 }

@@ -72,7 +72,7 @@ bool ScdDispatcher::dispatch(const std::string& dir, unsigned int docNum)
 
     LOG(INFO) << "end SCD sharding";
 
-    // post process of dispatching
+    // post process (dispatching)
     return finish();
 }
 
@@ -218,7 +218,7 @@ bool BatchScdDispatcher::dispatch_impl(shardid_t shardid, SCDDoc& scdDoc)
 
 bool BatchScdDispatcher::finish()
 {
-    bool ret = false;
+    bool ret = true;
     LOG(INFO) << "start SCD dispatching" ;
 
     // Send splitted scd files in sub dirs to each shard server
@@ -231,19 +231,22 @@ bool BatchScdDispatcher::finish()
         {
             LOG(INFO) << "Transfer scd from "<<shardScdfileMap_[shardid]
                       <<"/ to shard "<<shardid<<" ["<<host<<":"<<recvPort<<"]";
-            // thread?
+
             DataTransfer transfer(host, recvPort);
-            if (transfer.syncSend(shardScdfileMap_[shardid], collectionName_+"/scd/index") == 0)
+            if (transfer.syncSend(shardScdfileMap_[shardid], collectionName_+"/scd/index") != 0)
             {
-                ret = true; // xxx
-                bfs::remove_all(shardScdfileMap_[shardid]);
+                ret = false;
+                LOG(ERROR) << "Failed to transfer scd"<<shardid;
             }
         }
         else
         {
-            //ret = false;
+            ret = false;
             LOG(ERROR) << "Not found server info for shard "<<shardid;
         }
+
+        if (!ret)
+            break;
     }
 
     LOG(INFO) << "end SCD dispatching" ;
