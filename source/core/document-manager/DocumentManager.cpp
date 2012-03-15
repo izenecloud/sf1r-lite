@@ -320,7 +320,9 @@ docid_t DocumentManager::getMaxDocId() const
 
 bool DocumentManager::getDeletedDocIdList(std::vector<docid_t>& docid_list)
 {
+    docid_list.clear();
     DelFilterType::size_type find = delfilter_.find_first();
+    docid_list.reserve(	delfilter_.count());
     while(find!=DelFilterType::npos)
     {
         docid_t docid = (docid_t)find+1;
