@@ -166,6 +166,13 @@ bool DupDetectorWrapper::ProcessCollection()
     uint32_t process_count = 0;
     Document doc;
 
+    for (uint32_t docid = 1; docid <= processed_max_docid; docid++)
+    {
+        if (!document_manager_->getDocument(docid, doc))
+            dd_->RemoveDoc(docid);
+    }
+    dd_->FinishRemoveDocs();
+
     dd_->IncreaseCacheCapacity(processing_max_docid - processed_max_docid);
     for (uint32_t docid = processed_max_docid + 1; docid <= processing_max_docid; docid++)
     {
@@ -209,6 +216,7 @@ bool DupDetectorWrapper::ProcessCollection()
         std::cout << std::endl;
 #endif
     }
+
     file_info_->SetValue(processing_max_docid);
     file_info_->Save();
 
