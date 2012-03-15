@@ -16,6 +16,7 @@ DupDetectorWrapper::DupDetectorWrapper(const std::string& container)
     : container_(container)
     , document_manager_()
     , analyzer_(NULL)
+    , file_info_(new FileObjectType(container + "/last_docid"))
     , fp_only_(false)
     , group_table_(NULL)
     , dd_(NULL)
@@ -33,6 +34,7 @@ DupDetectorWrapper::DupDetectorWrapper(
     , document_manager_(document_manager)
     , id_manager_(id_manager)
     , analyzer_(analyzer)
+    , file_info_(new FileObjectType(container + "/last_docid"))
     , fp_only_(fp_only)
     , group_table_(NULL)
     , dd_(NULL)
@@ -45,6 +47,7 @@ DupDetectorWrapper::DupDetectorWrapper(
 
 DupDetectorWrapper::~DupDetectorWrapper()
 {
+    delete file_info_;
     if (group_table_)
         delete group_table_;
     if (dd_)
@@ -147,7 +150,11 @@ bool DupDetectorWrapper::ProcessCollection()
 {
     if (!dd_) return false;
 
-    uint32_t processed_max_docid = dd_->GetInsertedDocCount();
+    uint32_t processed_max_docid = 0;
+    if (file_info_->Load())
+    {
+        processed_max_docid = file_info_->GetValue();
+    }
     uint32_t processing_max_docid = document_manager_->getMaxDocId();
     if (processing_max_docid <= processed_max_docid)
     {
@@ -202,6 +209,8 @@ bool DupDetectorWrapper::ProcessCollection()
         std::cout << std::endl;
 #endif
     }
+    file_info_->SetValue(processing_max_docid);
+    file_info_->Save();
 
     return dd_->RunDdAnalysis();
 }
