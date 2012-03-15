@@ -22,7 +22,6 @@ class ProductManager;
 class ProductController : public Sf1Controller
 {
 public:
-
     void add_new_group();
 
     void append_to_group();
@@ -37,8 +36,12 @@ public:
 
     void get_top_price_cut_list();
 
+    void migrate_price_history();
+
+protected:
+    virtual bool checkCollectionService(std::string& error);
+
 private:
-    bool check_product_manager_();
     bool require_docid_list_();
     bool require_str_docid_list_();
     bool require_uuid_();
@@ -57,11 +60,14 @@ private:
     izenelib::util::UString to_date_;
     std::string prop_name_;
     std::string prop_value_;
+    std::string new_keyspace_;
+    std::string old_prefix_;
+    std::string new_prefix_;
     uint32_t days_;
     uint32_t count_;
+    uint32_t start_;
     time_t from_tt_;
     time_t to_tt_;
-    
 };
 
 /// @}

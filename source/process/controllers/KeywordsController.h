@@ -9,6 +9,7 @@
 
 namespace sf1r
 {
+class MiningSearchService;
 
 /// @addtogroup controllers
 /// @{
@@ -18,9 +19,11 @@ namespace sf1r
  *
  * Gets list of keywords.
  */
-class KeywordsController : public ::izenelib::driver::Controller
+class KeywordsController : public Sf1Controller
 {
 public:
+    KeywordsController();
+
     enum
     {
         kDefaultCount = 8       /**< Default count of result */
@@ -31,6 +34,12 @@ public:
     void inject_query_correction();
 
     void inject_query_recommend();
+
+protected:
+    virtual bool checkCollectionService(std::string& error);
+
+private:
+    MiningSearchService* miningSearchService_;
 };
 
 /// @}

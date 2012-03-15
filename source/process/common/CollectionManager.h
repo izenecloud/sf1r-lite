@@ -14,11 +14,8 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/thread/shared_mutex.hpp>
-#include <boost/thread/locks.hpp>
-#include <boost/thread/mutex.hpp>
+#include <boost/thread.hpp>
 
-#include <memory> // for std::auto_ptr
 #include <string>
 
 namespace sf1r
@@ -45,18 +42,12 @@ public:
         return this->osgiLauncher_;
     }
 
-    MutexType* getCollectionMutex(const std::string& collection)
-    {
-        boost::mutex::scoped_lock lock(mu_);
-        if(mutexMap_.find(collection) == mutexMap_.end())
-        {
-            MutexType* p = new MutexType();
-            mutexMap_[collection] = p;
-        }
-        return mutexMap_[collection];
-    }
+    MutexType* getCollectionMutex(const std::string& collection);
 
-    void startCollection(const std::string& collectionName, const std::string & configFileName);
+    bool startCollection(
+            const std::string& collectionName,
+            const std::string& configFileName,
+            bool fixBasePath = false);
 
     void stopCollection(const std::string& collectionName);
 
@@ -72,11 +63,12 @@ private:
 
     handler_map_type collectionHandlers_;
 
-    boost::mutex mu_;
+    boost::mutex mapMutex_;
 
-    std::map<std::string, MutexType*> mutexMap_;
+    typedef std::map<std::string, MutexType*> CollectionMutexes;
+    CollectionMutexes collectionMutexes_;
 
-    static CollectionHandler* kEmptyHandler_;
+    friend class RemoteItemManagerTestFixture;
 };
 
 }

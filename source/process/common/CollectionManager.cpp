@@ -7,10 +7,13 @@
 #include <bundles/mining/MiningBundleActivator.h>
 #include <bundles/recommend/RecommendBundleActivator.h>
 
+#include <boost/filesystem.hpp>
+#include <memory> // for std::auto_ptr
+
+namespace bfs = boost::filesystem;
+
 namespace sf1r
 {
-
-CollectionHandler* CollectionManager::kEmptyHandler_ = 0;
 
 CollectionManager::~CollectionManager()
 {
@@ -19,19 +22,34 @@ CollectionManager::~CollectionManager()
          delete iter->second;
     }
 
-    std::map<std::string, MutexType*>::const_iterator mutexIter;
-    for(mutexIter = mutexMap_.begin(); mutexIter != mutexMap_.end(); mutexIter++)
+    for(CollectionMutexes::iterator iter = collectionMutexes_.begin();
+        iter != collectionMutexes_.end(); ++iter)
     {
-        delete mutexIter->second;
+        delete iter->second;
     }
 }
-void CollectionManager::startCollection(const string& collectionName, const std::string& configFileName)
+
+CollectionManager::MutexType* CollectionManager::getCollectionMutex(const std::string& collection)
+{
+    boost::mutex::scoped_lock lock(mapMutex_);
+
+    MutexType*& mutex = collectionMutexes_[collection];
+    if (mutex == NULL)
+    {
+        mutex = new MutexType;
+    }
+
+    return mutex;
+}
+
+bool CollectionManager::startCollection(const string& collectionName, const std::string& configFileName, bool fixBasePath)
 {
     ScopedWriteLock lock(*getCollectionMutex(collectionName));
 
     if(findHandler(collectionName) != NULL)
-        return;
-    CollectionHandler* collectionHandler = new CollectionHandler(collectionName);
+        return false;
+
+    std::auto_ptr<CollectionHandler> collectionHandler(new CollectionHandler(collectionName));
 
     boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig(new IndexBundleConfiguration(collectionName));
     boost::shared_ptr<ProductBundleConfiguration> productBundleConfig(new ProductBundleConfiguration(collectionName));
@@ -48,22 +66,45 @@ void CollectionManager::startCollection(const string& collectionName, const std:
     {
         throw XmlConfigParserException("error in parsing " + configFileName);
     }
+    collectionHandler->setDocumentSchema(collectionMeta.getDocumentSchema());
 
-    collectionHandler->setBundleSchema(indexBundleConfig->schema_);
+    SF1Config::CollectionMetaMap& collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
+    SF1Config::CollectionMetaMap::value_type mapValue(collectionMeta.getName(), collectionMeta);
+    if (!collectionMetaMap.insert(mapValue).second)
+    {
+        throw XmlConfigParserException("duplicated CollectionMeta name " + collectionMeta.getName());
+    }
+
+    if (fixBasePath)
+    {
+        bfs::path basePath(indexBundleConfig->collPath_.getBasePath());
+        if (basePath.filename().string() == ".")
+            basePath = basePath.parent_path().parent_path();
+        else
+            basePath = basePath.parent_path();
+        indexBundleConfig->collPath_.resetBasePath((basePath/collectionName).string());
+        productBundleConfig->collPath_ =  indexBundleConfig->collPath_;
+        miningBundleConfig->collPath_ =  indexBundleConfig->collPath_;
+        recommendBundleConfig->collPath_ =  indexBundleConfig->collPath_;
+    }
 
     ///createIndexBundle
-    std::string bundleName = "IndexBundle-" + collectionName;
-    DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, IndexBundleActivator);
-    osgiLauncher_.start(indexBundleConfig);
-    IndexSearchService* indexSearchService = static_cast<IndexSearchService*>(osgiLauncher_.getService(bundleName, "IndexSearchService"));
-    collectionHandler->registerService(indexSearchService);
-    IndexTaskService* indexTaskService = static_cast<IndexTaskService*>(osgiLauncher_.getService(bundleName, "IndexTaskService"));
-    collectionHandler->registerService(indexTaskService);
-
-    if(productBundleConfig->mode_>0)
+    if (indexBundleConfig->isSchemaEnable_)
     {
-        ///createProductBundle
-        bundleName = "ProductBundle-" + collectionName;
+        std::string bundleName = "IndexBundle-" + collectionName;
+        DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, IndexBundleActivator);
+        osgiLauncher_.start(indexBundleConfig);
+        IndexSearchService* indexSearchService = static_cast<IndexSearchService*>(osgiLauncher_.getService(bundleName, "IndexSearchService"));
+        collectionHandler->registerService(indexSearchService);
+        IndexTaskService* indexTaskService = static_cast<IndexTaskService*>(osgiLauncher_.getService(bundleName, "IndexTaskService"));
+        collectionHandler->registerService(indexTaskService);
+        collectionHandler->setBundleSchema(indexBundleConfig->indexSchema_);
+    }
+
+    ///createProductBundle
+    if (!productBundleConfig->mode_.empty())
+    {
+        std::string bundleName = "ProductBundle-" + collectionName;
         DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, ProductBundleActivator);
         osgiLauncher_.start(productBundleConfig);
         ProductSearchService* productSearchService = static_cast<ProductSearchService*>(osgiLauncher_.getService(bundleName, "ProductSearchService"));
@@ -73,17 +114,20 @@ void CollectionManager::startCollection(const string& collectionName, const std:
     }
 
     ///createMiningBundle
-    bundleName = "MiningBundle-" + collectionName;
-    DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, MiningBundleActivator);
-    osgiLauncher_.start(miningBundleConfig);
-    MiningSearchService* miningSearchService = static_cast<MiningSearchService*>(osgiLauncher_.getService(bundleName, "MiningSearchService"));
-    collectionHandler->registerService(miningSearchService);
-    collectionHandler->setBundleSchema(miningBundleConfig->mining_schema_);
+    if (miningBundleConfig->isSchemaEnable_)
+    {
+        std::string bundleName = "MiningBundle-" + collectionName;
+        DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, MiningBundleActivator);
+        osgiLauncher_.start(miningBundleConfig);
+        MiningSearchService* miningSearchService = static_cast<MiningSearchService*>(osgiLauncher_.getService(bundleName, "MiningSearchService"));
+        collectionHandler->registerService(miningSearchService);
+        collectionHandler->setBundleSchema(miningBundleConfig->mining_schema_);
+    }
 
+    ///createRecommendBundle
     if (recommendBundleConfig->isSchemaEnable_)
     {
-        ///createRecommendBundle
-        bundleName = "RecommendBundle-" + collectionName;
+        std::string bundleName = "RecommendBundle-" + collectionName;
         DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, RecommendBundleActivator);
         osgiLauncher_.start(recommendBundleConfig);
         RecommendTaskService* recommendTaskService = static_cast<RecommendTaskService*>(osgiLauncher_.getService(bundleName, "RecommendTaskService"));
@@ -93,10 +137,9 @@ void CollectionManager::startCollection(const string& collectionName, const std:
         collectionHandler->setBundleSchema(recommendBundleConfig->recommendSchema_);
     }
 
-    // insert first, then assign to ensure exception safe
-    std::pair<handler_map_type::iterator, bool> insertResult =
-        collectionHandlers_.insert(std::make_pair(collectionName, kEmptyHandler_));
-    insertResult.first->second = collectionHandler;
+    collectionHandlers_[collectionName] = collectionHandler.release();
+
+    return true;
 }
 
 void CollectionManager::stopCollection(const std::string& collectionName)
@@ -105,8 +148,8 @@ void CollectionManager::stopCollection(const std::string& collectionName)
 
     JobScheduler::get()->removeTask(collectionName);
 
-    handler_const_iterator iter;
-    if((iter = collectionHandlers_.find(collectionName)) != collectionHandlers_.end())
+    handler_const_iterator iter = collectionHandlers_.find(collectionName);
+    if(iter != collectionHandlers_.end())
     {
         delete iter->second;
         collectionHandlers_.erase(collectionName);
@@ -143,8 +186,12 @@ void CollectionManager::stopCollection(const std::string& collectionName)
         osgiLauncher_.stopBundle(bundleName);
     }
 
-    if(SF1Config::get()->mutableCollectionMetaMap().find(collectionName) != SF1Config::get()->mutableCollectionMetaMap().end())
-        SF1Config::get()->mutableCollectionMetaMap().erase(collectionName);
+    SF1Config::CollectionMetaMap& collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
+    SF1Config::CollectionMetaMap::iterator findIt = collectionMetaMap.find(collectionName);
+    if (findIt != collectionMetaMap.end())
+    {
+        collectionMetaMap.erase(findIt);
+    }
 }
 
 void CollectionManager::deleteCollection(const std::string& collectionName)
@@ -154,17 +201,12 @@ void CollectionManager::deleteCollection(const std::string& collectionName)
 
 CollectionHandler* CollectionManager::findHandler(const std::string& key) const
 {
-    typedef handler_map_type::const_iterator iterator;
+    handler_const_iterator iter = collectionHandlers_.find(key);
 
-    iterator findResult = collectionHandlers_.find(key);
-    if (findResult != collectionHandlers_.end())
-    {
-        return findResult->second;
-    }
-    else
-    {
-        return kEmptyHandler_;
-    }
+    if (iter != collectionHandlers_.end())
+        return iter->second;
+
+    return NULL;
 }
 
 CollectionManager::handler_const_iterator CollectionManager::handlerBegin() const

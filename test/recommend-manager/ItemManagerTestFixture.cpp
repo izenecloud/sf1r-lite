@@ -1,4 +1,5 @@
 #include "ItemManagerTestFixture.h"
+#include "test_util.h"
 #include <recommend-manager/item/ItemManager.h>
 #include <recommend-manager/item/LocalItemManager.h>
 #include <document-manager/DocumentManager.h>
@@ -42,22 +43,30 @@ ItemManagerTestFixture::~ItemManagerTestFixture()
 void ItemManagerTestFixture::setTestDir(const std::string& dir)
 {
     testDir_ = dir;
-    bfs::remove_all(testDir_);
-
-    dmPath_ = (bfs::path(testDir_) / "dm/").string();
-    bfs::create_directories(dmPath_);
+    create_empty_directory(testDir_);
 }
 
 void ItemManagerTestFixture::resetInstance()
 {
     BOOST_TEST_MESSAGE("create ItemManager");
 
+    createDocManager_();
+
+    // flush first
+    itemManager_.reset();
+    itemManager_.reset(new LocalItemManager(*documentManager_.get()));
+}
+
+void ItemManagerTestFixture::createDocManager_()
+{
     // flush first
     documentManager_.reset();
-    itemManager_.reset();
 
-    documentManager_.reset(new DocumentManager(dmPath_, schema_, ENCODING_TYPE, 2000));
-    itemManager_.reset(new LocalItemManager(*documentManager_.get()));
+    bfs::path dmDir(testDir_);
+    dmDir /= "dm/";
+    bfs::create_directory(dmDir);
+
+    documentManager_.reset(new DocumentManager(dmDir.string(), indexSchema_, ENCODING_TYPE, 2000));
 }
 
 void ItemManagerTestFixture::checkItemManager()
@@ -65,9 +74,7 @@ void ItemManagerTestFixture::checkItemManager()
     BOOST_TEST_MESSAGE("check " << itemMap_.size() << " items");
 
     Document doc;
-    itemid_t maxId = maxItemId_;
-
-    for (itemid_t i=1; i <= maxId; ++i)
+    for (itemid_t i=1; i <= maxItemId_; ++i)
     {
         ItemMap::const_iterator findIt = itemMap_.find(i);
         if (findIt != itemMap_.end())
@@ -82,6 +89,10 @@ void ItemManagerTestFixture::checkItemManager()
             BOOST_CHECK(itemManager_->hasItem(i) == false);
         }
     }
+
+    itemid_t nonExistId = maxItemId_ + 1;
+    BOOST_CHECK(itemManager_->getItem(nonExistId, propList_, doc) == false);
+    BOOST_CHECK(itemManager_->hasItem(nonExistId) == false);
 }
 
 void ItemManagerTestFixture::createItems(int num)
@@ -156,31 +167,31 @@ void ItemManagerTestFixture::initDMSchema_()
     PropertyConfigBase config1;
     config1.propertyName_ = PROP_NAME_DOCID;
     config1.propertyType_ = STRING_PROPERTY_TYPE;
-    schema_.insert(config1);
+    indexSchema_.insert(config1);
     propList_.push_back(config1.propertyName_);
 
     PropertyConfigBase config2;
     config2.propertyName_ = PROP_NAME_TITLE;
     config2.propertyType_ = STRING_PROPERTY_TYPE;
-    schema_.insert(config2);
+    indexSchema_.insert(config2);
     propList_.push_back(config2.propertyName_);
 
     PropertyConfigBase config3;
     config3.propertyName_ = PROP_NAME_URL;
     config3.propertyType_ = STRING_PROPERTY_TYPE;
-    schema_.insert(config3);
+    indexSchema_.insert(config3);
     propList_.push_back(config3.propertyName_);
 
     PropertyConfigBase config4;
     config4.propertyName_ = PROP_NAME_PRICE;
     config4.propertyType_ = FLOAT_PROPERTY_TYPE;
-    schema_.insert(config4);
+    indexSchema_.insert(config4);
     propList_.push_back(config4.propertyName_);
 
     PropertyConfigBase config5;
     config5.propertyName_ = PROP_NAME_COUNT;
     config5.propertyType_ = INT_PROPERTY_TYPE;
-    schema_.insert(config5);
+    indexSchema_.insert(config5);
     propList_.push_back(config5.propertyName_);
 }
 

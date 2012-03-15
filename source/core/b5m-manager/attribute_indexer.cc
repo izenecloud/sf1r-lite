@@ -560,7 +560,6 @@ void AttributeIndexer::GenNegativeIdMap_(std::map<std::size_t, std::vector<std::
     boost::unordered_map<std::string, std::vector<std::size_t> > category_indexlist;
     boost::unordered_map<std::string, std::vector<std::size_t> >::iterator ci_it;
     BuildCategoryMap_(category_indexlist);
-    NonZeroFC fc;
     //boost::mt19937 random_gen;
     for(std::size_t i=0;i<product_list_.size();i++)
     {
@@ -631,9 +630,6 @@ void AttributeIndexer::GenClassiferInstance()
     std::ofstream ofs(output.c_str());
     std::map<std::size_t, std::vector<std::size_t> > negative_map;
     GenNegativeIdMap_(negative_map);
-    PositiveFC pfc;
-    NonNegativeFC nnfc;
-    NonZeroFC nzfc;
     for(std::size_t p=0;p<product_list_.size();++p)
     {
         if(p%100==0)
@@ -673,11 +669,12 @@ void AttributeIndexer::GenClassiferInstance()
                 //rep.convertString(srep, izenelib::util::UString::UTF_8);
                 //logger_<<tag_aid_list[i]<<","<<srep<<std::endl;
             //}
-            logger_<<"[F]"<<std::endl;
+            logger_<<"[PF]+1";
             for(std::size_t i=0;i<feature_vec.size();i++)
             {
-                logger_<<feature_vec[i].first<<":"<<feature_vec[i].second<<std::endl;
+                logger_<<" "<<feature_vec[i].first<<":"<<feature_vec[i].second;
             }
+            logger_<<std::endl;
         }
 #endif
         if(fs.pnum>1)
@@ -733,7 +730,7 @@ void AttributeIndexer::GenClassiferInstance()
                 logger_<<"[NT]"<<stitle<<std::endl;
                 if(n_feature_vec.size()>1)
                 {
-                    logger_<<"-1";
+                    logger_<<"[NF]-1";
                     for(std::size_t i=0;i<n_feature_vec.size();i++)
                     {
                         logger_<<" "<<n_feature_vec[i].first<<":"<<n_feature_vec[i].second;
@@ -875,7 +872,7 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
         return;
     }
     std::cout<<model_file<<" loaded!"<<std::endl;
-    std::ofstream match_ofs(match_file.c_str());
+    std::ofstream match_ofs(match_file.c_str(), std::ios::out | std::ios::app);
     boost::unordered_map<std::string, std::vector<std::size_t> > category_indexlist;
     boost::unordered_map<std::string, std::vector<std::size_t> >::iterator ci_it;
     BuildCategoryMap_(category_indexlist);
@@ -899,7 +896,6 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
     static const double invert_price_ratio = 1.0/price_ratio;
     ScdParser parser(izenelib::util::UString::UTF_8);
     parser.load(scd_file);
-    NonZeroFC nzfc;
     uint32_t n=0;
     uint32_t num_for_match = 0;
     boost::unordered_map<std::string, std::vector<std::string> > p2o_map;
@@ -989,6 +985,7 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
             }
             x[feature_vec.size()].index = -1;
             double predict_label = svm_predict(model,x);
+            free(x);
 #ifdef B5M_DEBUG
             {
                 logger_<<"[MATCH]"<<std::endl;
@@ -1096,7 +1093,6 @@ void AttributeIndexer::ProductMatchingLR(const std::string& scd_file)
     BuildCategoryMap_(category_indexlist);
     ScdParser parser(izenelib::util::UString::UTF_8);
     parser.load(scd_file);
-    NonZeroFC nzfc;
     uint32_t n=0;
     for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
       doc_iter!= parser.end(); ++doc_iter, ++n)
@@ -1471,8 +1467,10 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_path)
 
     }
 
-    double weight_threshold = 0.05*product_list_.size();
+    double weight_threshold = 0.1*product_list_.size();
+    double important_threshold = 0.85*product_list_.size();
 
+    std::set<AttribNameId> important_anid;
     for(AttribNameId anid=1;anid<anid_weight.size();anid++)
     {
         double weight = anid_weight[anid];
@@ -1485,8 +1483,13 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_path)
         std::string str;
         name.convertString(str, izenelib::util::UString::UTF_8);
         std::cout<<"[W]"<<str<<"\t"<<weight<<std::endl;
+        if(weight>=important_threshold)
+        {
+            important_anid.insert(anid);
+        }
     }
 
+    //do anid filter
     for(std::size_t i=0;i<product_list_.size();i++)
     {
         if(i%100==0)
@@ -1515,32 +1518,87 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_path)
         doc.tag_aid_list.swap(vtaid_list);
     }
 
-    //do de-duplicate
-    std::vector<ProductDocument> product_list;
-    for(std::size_t i=0;i<product_list_.size();i++)
+    //bad products filter
     {
-        bool dd = false;
-        for(std::size_t j=0;j<product_list.size();j++)
+        std::vector<ProductDocument> product_list;
+        for(std::size_t i=0;i<product_list_.size();i++)
         {
-            if(product_list_[i].tag_aid_list == product_list[j].tag_aid_list)
+            bool valid = true;
             {
-                dd = true;
-                UString ititle = product_list_[i].property["Title"];
-                UString jtitle = product_list[j].property["Title"];
-                if(ititle.length()>0 && ititle.length()<jtitle.length())
+                std::set<AttribNameId> anid_set;
+                for(std::size_t j=0;j<product_list_[i].aid_list.size();j++)
                 {
-                    product_list[j].property["Title"] = ititle;
+                    AttribNameId anid;
+                    name_index_->get(product_list_[i].aid_list[j], anid);
+                    anid_set.insert(anid);
                 }
-                break;
+                std::set<AttribNameId>::iterator it = important_anid.begin();
+                while(it!=important_anid.end())
+                {
+                    if(anid_set.find(*it)==anid_set.end())
+                    {
+                        valid = false;
+                        break;
+                    }
+                    ++it;
+                }
+            }
+            {
+                std::set<AttribNameId> anid_set;
+                for(std::size_t j=0;j<product_list_[i].tag_aid_list.size();j++)
+                {
+                    AttribNameId anid;
+                    name_index_->get(product_list_[i].tag_aid_list[j], anid);
+                    anid_set.insert(anid);
+                }
+                std::set<AttribNameId>::iterator it = important_anid.begin();
+                while(it!=important_anid.end())
+                {
+                    if(anid_set.find(*it)==anid_set.end())
+                    {
+                        valid = false;
+                        break;
+                    }
+                    ++it;
+                }
+            }
+            if(valid)
+            {
+                product_list.push_back(product_list_[i]);
             }
         }
-        if(!dd)
-        {
-            product_list.push_back(product_list_[i]);
-        }
+        product_list_.swap(product_list);
+        LOG(INFO)<<"After bad filter "<<product_list_.size()<<" docs"<<std::endl;
     }
-    product_list_.swap(product_list);
-    LOG(INFO)<<"After DD "<<product_list_.size()<<" docs"<<std::endl;
+
+    //do de-duplicate
+    {
+        std::vector<ProductDocument> product_list;
+        for(std::size_t i=0;i<product_list_.size();i++)
+        {
+            bool dd = false;
+            for(std::size_t j=0;j<product_list.size();j++)
+            {
+                if(product_list_[i].tag_aid_list == product_list[j].tag_aid_list)
+                {
+                    dd = true;
+                    UString ititle = product_list_[i].property["Title"];
+                    UString jtitle = product_list[j].property["Title"];
+                    if(ititle.length()>0 && ititle.length()<jtitle.length())
+                    {
+                        product_list[j].property["Title"] = ititle;
+                    }
+                    break;
+                }
+            }
+            if(!dd)
+            {
+                product_list.push_back(product_list_[i]);
+            }
+        }
+        product_list_.swap(product_list);
+        LOG(INFO)<<"After DD "<<product_list_.size()<<" docs"<<std::endl;
+    }
 
     for(std::size_t i=0;i<product_list_.size();i++)
     {

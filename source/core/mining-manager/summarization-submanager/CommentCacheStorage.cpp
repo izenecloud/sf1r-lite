@@ -39,8 +39,7 @@ void CommentCacheStorage::AppendUpdate(const KeyType& key, uint32_t docid, const
         op_type_ = APPEND_UPDATE;
     }
 
-    buffer_db_[key].first.insert(docid);
-    buffer_db_[key].second.push_back(content);
+    buffer_db_[key][docid] = content;
 
     ++buffer_size_;
     if (IsBufferFull_())
@@ -95,6 +94,7 @@ void CommentCacheStorage::Flush(bool needSync)
         dirty_key_db_.flush();
         op_type_ = NONE;
     }
+
     buffer_db_.clear();
     buffer_size_ = 0;
 }

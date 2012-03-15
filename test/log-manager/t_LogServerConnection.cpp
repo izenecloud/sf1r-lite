@@ -59,6 +59,9 @@ void t_RpcLogServer()
     LogServerConnection& conn = LogServerConnection::instance();
     conn.init(LOG_SERVER_CONFIG);
 
+    if (!conn.testServer())
+        return;
+
     UpdateUUIDRequest uuidReq;
     uuidReq.param_.docidList_.resize(3);
 
@@ -86,15 +89,15 @@ void t_RpcLogServer()
     }
     std::cout<<"\r"<<std::left<<setw(16)<<REQUESTS_NUM<<"\t100%"<<std::endl;
 
-    std::cout << "flushing requests" << std::endl;
-    conn.flushRequests();
-
     std::cout << "time elapsed for inserting " << t.elapsed() << std::endl;
 
     // Force server to synchronize
     std::cout << "forcing server to synchronize" << std::endl;
     SynchronizeRequest syncReq;
     conn.asynRequest(syncReq);
+
+    std::cout << "flushing requests" << std::endl;
+    conn.flushRequests();
 }
 
 void t_RpcLogServerCreateTestData()
@@ -249,5 +252,3 @@ void t_ScdStorage()
         std::cout << "Failed to fetch SCD [" << ret.error_ << "]" << std::endl;
     }
 }
-
-

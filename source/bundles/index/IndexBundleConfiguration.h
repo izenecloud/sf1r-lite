@@ -14,14 +14,13 @@
 
 namespace sf1r
 {
-typedef std::set<PropertyConfig, PropertyComp> IndexBundleSchema;
 
 class IndexBundleConfiguration : public ::izenelib::osgi::BundleConfiguration
 {
 public:
     IndexBundleConfiguration(const std::string& collectionName);
 
-    void setSchema(const std::set<PropertyConfigBase, PropertyBaseComp>& schema);
+    void setSchema(const DocumentSchema& documentSchema);
 
     void numberProperty();
 
@@ -33,7 +32,7 @@ public:
 
     const bool isUnigramSearchMode() { return bUnigramSearchMode_; }
 
-    bool isSupportByAggregator() { return isSupportByAggregator_; }
+    bool isMasterAggregator() { return isMasterAggregator_; }
 
     void setIndexMultiLangGranularity(const std::string& granularity);
 
@@ -62,18 +61,20 @@ private:
     {
         PropertyConfig config;
         config.propertyName_ = name;
-        return schema_.erase(config);
+        return indexSchema_.erase(config);
     }
 
 public:
     std::string collectionName_;
 
+    // <IndexBundle><Schema>
+    bool isSchemaEnable_;
+
     CollectionPath collPath_;
 
-    /// Schema
-    IndexBundleSchema schema_;
+    IndexBundleSchema indexSchema_;
 
-    std::set<PropertyConfigBase, PropertyBaseComp> rawSchema_;
+    DocumentSchema documentSchema_;
 
     std::vector<std::string> indexShardKeys_;
 
@@ -104,6 +105,9 @@ public:
     /// @brief cron indexing expression
     std::string cronIndexer_;
 
+    /// @brief whether perform rebuild collection automatically
+    bool isAutoRebuild_;
+
     /// @brief whether trigger Question Answering mode
     bool bTriggerQA_;
 
@@ -131,8 +135,9 @@ public:
     /// @brief sort cache update interval
     size_t sortCacheUpdateInterval_;
 
-    /// @brief whether supported for distributed search
-    bool isSupportByAggregator_;
+    /// @brief Whether current SF1R is a Master node and Aggregator is available for current collection.
+    ///        (configured as distributed search)
+    bool isMasterAggregator_;
 
     /// @brief The encoding type of the Collection
     izenelib::util::UString::EncodingType encoding_;

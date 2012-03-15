@@ -16,10 +16,10 @@ class ProductBundleConfiguration : public ::izenelib::osgi::BundleConfiguration
 public:
     ProductBundleConfiguration(const std::string& collectionName);
 
-    void setSchema(const std::set<PropertyConfig, PropertyComp>& schema);
+    void setSchema(const IndexBundleSchema& indexSchema);
 
 public:
-    int mode_;
+    std::string mode_;
 
     std::string collectionName_;
 
@@ -29,7 +29,7 @@ public:
 
     CollectionPath collPath_;
 
-    std::set<PropertyConfig, PropertyComp> schema_;
+    IndexBundleSchema indexSchema_;
 
     std::vector<std::string> collectionDataDirectories_;
 

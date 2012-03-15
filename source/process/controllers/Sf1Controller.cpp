@@ -9,22 +9,82 @@
 #include <common/Keys.h>
 #include <common/XmlConfigParser.h>
 
+namespace
+{
+const char* REQUIRE_COLLECTION_NAME = "Require field collection in request.";
+}
+
 namespace sf1r
 {
 
 using driver::Keys;
 using namespace izenelib::driver;
 
-Sf1Controller::Sf1Controller()
-    : collectionHandler_(0),
-      mutex_(0)
+Sf1Controller::Sf1Controller(bool requireCollectionName)
+    : collectionHandler_(0)
+    , mutex_(0)
+    , requireCollectionName_(requireCollectionName)
 {
 }
 
 Sf1Controller::~Sf1Controller()
 {
     if(mutex_)
+    {
         mutex_->unlock_shared();
+    }
+}
+
+bool Sf1Controller::preprocess()
+{
+    std::string error;
+
+    if (doCollectionCheck(error))
+        return true;
+
+    if (!requireCollectionName_ && collectionName_.empty())
+        return true;
+
+    response().addError(error);
+    return false;
+}
+
+bool Sf1Controller::checkCollectionName()
+{
+    if (!collectionName_.empty())
+        return true;
+
+    response().addError(REQUIRE_COLLECTION_NAME);
+    return false;
+}
+
+bool Sf1Controller::doCollectionCheck(std::string& error)
+{
+    return parseCollectionName(error) &&
+           checkCollectionExist(error) &&
+           checkCollectionAcl(error) &&
+           checkCollectionHandler(error) &&
+           checkCollectionService(error);
+}
+
+bool Sf1Controller::parseCollectionName(std::string& error)
+{
+    collectionName_ = asString(request()[Keys::collection]);
+
+    if (!collectionName_.empty())
+        return true;
+
+    error = REQUIRE_COLLECTION_NAME;
+    return false;
+}
+
+bool Sf1Controller::checkCollectionExist(std::string& error)
+{
+    if (SF1Config::get()->checkCollectionExist(collectionName_))
+        return true;
+
+    error = "Request failed, collection not found.";
+    return false;
 }
 
 /**
@@ -34,26 +94,26 @@ Sf1Controller::~Sf1Controller()
  * If the request has set the collection but the collection is not allowed to
  * the user according to the access tokens, an error is returned.
  */
-bool Sf1Controller::checkCollectionAcl()
+bool Sf1Controller::checkCollectionAcl(std::string& error)
 {
-    Value::StringType collection = asString(
-                                       this->request()[Keys::collection]
-                                   );
-    if (!SF1Config::get()->checkCollectionAndACL(collection, this->request().aclTokens()))
-    {
-        this->response().addError("Collection access denied");
-        return false;
-    }
+    if (SF1Config::get()->checkCollectionAndACL(collectionName_, request().aclTokens()))
+        return true;
 
-    mutex_ = CollectionManager::get()->getCollectionMutex(collection);
+    error = "Collection access denied";
+    return false;
+}
+
+bool Sf1Controller::checkCollectionHandler(std::string& error)
+{
+    mutex_ = CollectionManager::get()->getCollectionMutex(collectionName_);
     mutex_->lock_shared();
-    collectionHandler_ = CollectionManager::get()->findHandler(collection);
-    if(!collectionHandler_)
-    {
-        this->response().addError("Collection handler not find");
-        return false;
-    }
-    return true;
+
+    collectionHandler_ = CollectionManager::get()->findHandler(collectionName_);
+    if (collectionHandler_)
+        return true;
+
+    error = "Collection handler not found";
+    return false;
 }
 
 } // namespace sf1r

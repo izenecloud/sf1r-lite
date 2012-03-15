@@ -1,12 +1,14 @@
 #ifndef PROCESS_DISTRIBUTE_MASTER_SERVER_H_
 #define PROCESS_DISTRIBUTE_MASTER_SERVER_H_
 
-#include <util/singleton.h>
 #include <3rdparty/msgpack/rpc/server.h>
 
 #include <common/ResultType.h>
 #include <query-manager/ActionItem.h>
 #include <aggregator-manager/MasterServerConnector.h>
+#include <common/CollectionManager.h>
+#include <controllers/CollectionHandler.h>
+#include <index/IndexSearchService.h>
 
 namespace sf1r
 {
@@ -17,15 +19,24 @@ namespace sf1r
 class MasterServer : public msgpack::rpc::server::base
 {
 public:
-    static MasterServer* get()
+    ~MasterServer()
     {
-        return izenelib::util::Singleton<MasterServer>::get();
+        stop();
     }
 
     void start(const std::string& host, uint16_t port, unsigned int threadnum=4)
     {
         instance.listen(host, port);
         instance.start(threadnum);
+    }
+
+    void stop()
+    {
+        if (instance.is_running())
+        {
+            instance.end();
+            instance.join();
+        }
     }
 
     void dispatch(msgpack::rpc::request req)
@@ -44,14 +55,16 @@ public:
         {
             req.error(msgpack::rpc::ARGUMENT_ERROR);
             cout << "#[Master] notified, Argument error!"<<endl;
-            return;
         }
         catch (std::exception& e)
         {
             cout << "#[Master] notified, "<<e.what()<<endl;
             req.error(std::string(e.what()));
-            return;
         }
+
+        // release collection lock
+        if (curCollectionMutex_)
+            curCollectionMutex_->unlock_shared();
     }
 
 private:
@@ -76,7 +89,12 @@ private:
         }
 
         RawTextResultFromSIA resultItem;
-        collectionHandler->indexSearchService_->getDocumentsByIds(action, resultItem);
+        if (!collectionHandler->indexSearchService_->getDocumentsByIds(action, resultItem))
+        {
+            req.error(resultItem.error_);
+            return;
+        }
+
         req.result(resultItem);
     }
 
@@ -84,10 +102,13 @@ private:
     CollectionHandler* getCollectionHandler(const std::string& collection)
     {
         //std::string collectionLow = boost::to_lower_copy(collection);
-        CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(collection);
-        CollectionManager::ScopedReadLock lock(*mutex);
+        curCollectionMutex_ = CollectionManager::get()->getCollectionMutex(collection);
+        curCollectionMutex_->lock_shared();
         return CollectionManager::get()->findHandler(collection);
     }
+
+private:
+    CollectionManager::MutexType* curCollectionMutex_;
 };
 
 }

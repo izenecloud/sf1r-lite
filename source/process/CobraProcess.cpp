@@ -1,7 +1,7 @@
 #include "CobraProcess.h"
-#include "RouterInitializer.h"
-
+#include <common/RouterInitializer.h>
 #include <common/SFLogger.h>
+
 #include <log-manager/LogServerConnection.h>
 #include <la-manager/LAPool.h>
 #include <license-manager/LicenseManager.h>
@@ -13,11 +13,11 @@
 #include <node-manager/RecommendNodeManager.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 
-#include <OnSignal.h>
+#include <common/OnSignal.h>
 #include <common/XmlConfigParser.h>
 #include <common/CollectionManager.h>
+#include <common/CollectionTaskScheduler.h>
 #include <distribute/WorkerServer.h>
-#include <distribute/MasterServer.h>
 
 #include <util/ustring/UString.h>
 #include <util/driver/IPRestrictor.h>
@@ -274,7 +274,8 @@ bool CobraProcess::startDistributedServer()
     {
         std::string localHost = SF1Config::get()->distributedCommonConfig_.localHost_;
         uint16_t masterPort = SF1Config::get()->distributedCommonConfig_.masterPort_;
-        MasterServer::get()->start(localHost, masterPort);
+        masterServer_.reset(new MasterServer);
+        masterServer_->start(localHost, masterPort);
     }
 
     // Start distributed topology node manager(s)
@@ -307,6 +308,15 @@ void CobraProcess::stopDistributedServer()
     CollectionDataReceiver::get()->stop();
 }
 
+void CobraProcess::scheduleTask(const std::string& collection)
+{
+    CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(collection);
+    CollectionManager::ScopedReadLock rlock(*mutex);
+
+    CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
+    CollectionTaskScheduler::get()->schedule(collectionHandler);
+}
+
 int CobraProcess::run()
 {
     setupDefaultSignalHandlers();
@@ -326,6 +336,7 @@ int CobraProcess::run()
                     {
                         std::string collectionName = bfs::path(*iter).filename().string().substr(0,bfs::path(*iter).filename().string().rfind(".xml"));
                         CollectionManager::get()->startCollection(collectionName, bfs::path(*iter).string());
+                        scheduleTask(collectionName);
                     }
             }
         }
@@ -347,10 +358,8 @@ int CobraProcess::run()
                     LicenseManager::extract_token_from(filePath, token);
 
                     ///Insert the extracted token into the deny control lists for all collections
-                    std::map<std::string, CollectionMeta>&
-                        collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
-                    std::map<std::string, CollectionMeta>::iterator
-                        collectionIter = collectionMetaMap.begin();
+                    SF1Config::CollectionMetaMap& collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
+                    SF1Config::CollectionMetaMap::iterator collectionIter = collectionMetaMap.begin();
 
                     for(; collectionIter != collectionMetaMap.end(); collectionIter++)
                     {

@@ -9,26 +9,22 @@
 #define LOCAL_ITEM_FACTORY_H
 
 #include "ItemFactory.h"
-#include <ir/id_manager/IDManager.h>
 
 namespace sf1r
 {
-class DocumentManager;
+class IndexSearchService;
 
 class LocalItemFactory : public ItemFactory
 {
 public:
-    typedef izenelib::ir::idmanager::IDManager IDManager;
-
-    LocalItemFactory(IDManager& idManager, DocumentManager& docManager);
+    LocalItemFactory(IndexSearchService& indexSearchService);
 
     virtual ItemIdGenerator* createItemIdGenerator();
 
     virtual ItemManager* createItemManager();
 
 private:
-    IDManager& idManager_;
-    DocumentManager& docManager_;
+    IndexSearchService& indexSearchService_;
 };
 
 } // namespace sf1r

@@ -224,7 +224,8 @@ bool CassandraConnection::createColumnFamily(
         const string& in_compaction_strategy,
         const map<string, string>& in_compaction_strategy_options,
         const int32_t in_row_cache_keys_to_save,
-        const map<string, string>& in_compression_options)
+        const map<string, string>& in_compression_options,
+        const double in_bloom_filter_fp_chance)
 {
     if (! isEnabled_)
         return false;
@@ -261,7 +262,8 @@ bool CassandraConnection::createColumnFamily(
             in_compaction_strategy,
             in_compaction_strategy_options,
             in_row_cache_keys_to_save,
-            in_compression_options);
+            in_compression_options,
+            in_bloom_filter_fp_chance);
     try
     {
         client->createColumnFamily(definition);

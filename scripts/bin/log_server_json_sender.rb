@@ -49,7 +49,7 @@ class LogServerJsonSender
   end
   
   def wrapLogServerRequest(action, filename, record)
-    if action == "update_cclog" or action == "convert_raw_cclog"
+    if action == "update_cclog" or action == "convert_raw_cclog" or action == "backup_raw_cclog"
       request = JSON.parse(record)
     elsif action == "update_scd"
       request = record
@@ -72,7 +72,7 @@ class LogServerJsonSender
     }
   end
  
-  def sendCclogFile(filename, action="update_cclog", extract=true)
+  def sendCclogFile(filename, action="update_cclog", extract=false)
     file = File.new(filename, "r")
     errorFileName = "#{filename}.errors"
     errorFile = File.open(errorFileName, "w")
@@ -133,7 +133,7 @@ class LogServerJsonSender
     errorFile.close
     $stderr.puts "\r#{successCount} success, #{failCount} fail in #{errorFileName}"
     
-    sendFlushRequest(filename)
+    sendFlushRequest(filename, action)
   end
   
   def sendScdFile(filename, action="update_scd")
@@ -195,17 +195,18 @@ class LogServerJsonSender
     errorFile.close
     $stderr.puts "\r#{successCount} success, #{failCount} fail in #{errorFileName}"
     
-    sendFlushRequest(filename)
+    sendFlushRequest(filename, action)
   end
   
-  def sendFlushRequest(filename, action="flush")    
+  def sendFlushRequest(filename, action)    
     #flush_request = wrapLogServerRequest(action, filename, nil)
     flush_request = {
       "header" => {
         "controller" => "log_server",
-        "action" => "#{action}"
+        "action" => "flush"
       },
       "filename" => "#{filename}",
+      "action" => "#{action}"
     }
     
     $stderr.puts "\n--> flush:"
@@ -236,21 +237,26 @@ class LogServerJsonSender
 
   def send(cmd, filename)
     if cmd == "update_cclog"
-      sendCclogFile(filename, "update_cclog")
+      sendCclogFile(filename, "update_cclog", true)
     elsif cmd == "update_cclog_history"
+      countFile = 0
       Dir.foreach(filename) do |file|                
         if file =~ /.*log$/
+          countFile += 1
           log_file = "#{filename}/#{file}"   
           puts "--> send file: #{log_file}"       
-          sendCclogFile(log_file, "update_cclog", false)
+          sendCclogFile(log_file, "update_cclog")
         end
       end
+      puts "\nSent #{countFile} history cclog files (in form of *.log)."
+    elsif cmd == "backup_raw_cclog"
+      sendCclogFile(filename, "backup_raw_cclog")
     elsif cmd == "convert_raw_cclog"
       sendCclogFile(filename, "convert_raw_cclog")
     elsif cmd == "scd"
       sendScdFile(filename)
     elsif cmd == "flush"
-      sendFlushRequest(filename)
+      sendFlushRequest(filename, "all")
     elsif cmd == "update_comments"
       collection = filename
       updateComments(collection)
@@ -272,6 +278,7 @@ if __FILE__ == $0
     puts "  update_cclog <cclog_file>          : update cclog (with uuids) to configured SF1R."
     puts "  update_cclog_history <cclog_dir>   : update cclog histories."
     puts "                                       for cclog, destSf1 supposed to be Stage(10.10.1.111)"
+    puts "  backup_raw_cclog  <cclog_file>     : backup cclog with uuids to cclog with raw docids." 
     puts "  convert_raw_cclog <raw_cclog_file> : convert cclog with raw docids to cclog with latest uuids."
     puts "  update_comments <collection>       : update newly logged comments(docuemts) to configured SF1R,"
     puts "                                       for comments, destSf1 supposed to be WWW(10.10.1.110)"
@@ -279,7 +286,7 @@ if __FILE__ == $0
     exit(1)
   end
   
-  # Log Server setting: set server network address at "../libdriver/config.yml.default"
+  # Log Server ip address is set at "../libdriver/config.yml.default"
   # example:
   # ------------------
   # ba:

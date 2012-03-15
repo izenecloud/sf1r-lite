@@ -31,7 +31,7 @@ public:
         fingerPrint_ = fingerPrint;
     }
 
-    template<typename ContainerType>
+    template <class ContainerType>
     explicit Summarization(const ContainerType& docid_list)
     {
         for (typename ContainerType::const_iterator it = docid_list.begin();
@@ -39,6 +39,20 @@ public:
         {
             fingerPrint_.set(*it);
         }
+    }
+    template <class T1, class T2>
+    explicit Summarization(const std::map<T1, T2>& docid_map)
+    {
+        for (typename std::map<T1, T2>::const_iterator it = docid_map.begin();
+                it != docid_map.end(); ++it)
+        {
+            fingerPrint_.set(it->first);
+        }
+    }
+
+    void setBit(uint32_t pos)
+    {
+        fingerPrint_.set(pos);
     }
 
     std::vector<std::pair<double, UString> >& property(const std::string& propertyName)

@@ -399,7 +399,7 @@ IndexBundleActivator::createDocumentManager_() const
     boost::shared_ptr<DocumentManager> ret(
         new DocumentManager(
             dir,
-            config_->schema_,
+            config_->indexSchema_,
             config_->encoding_,
             config_->documentCacheNum_
         )
@@ -424,10 +424,10 @@ IndexBundleActivator::createIndexManager_() const
 
         IndexerCollectionMeta indexCollectionMeta;
         indexCollectionMeta.setName(config_->collectionName_);
-        typedef IndexBundleSchema::iterator prop_iterator;
-        for (prop_iterator iter = config_->schema_.begin(),
-                                   iterEnd = config_->schema_.end();
-               iter != iterEnd; ++iter)
+
+        const IndexBundleSchema& indexSchema = config_->indexSchema_;
+        for (IndexBundleSchema::const_iterator iter = indexSchema.begin(), iterEnd = indexSchema.end();
+            iter != iterEnd; ++iter)
         {
             IndexerPropertyConfig indexerPropertyConfig(
                 iter->getPropertyId(),
@@ -490,7 +490,7 @@ IndexBundleActivator::createSearchManager_() const
     {
         ret.reset(
             new SearchManager(
-                config_->schema_,
+                config_->indexSchema_,
                 idManager_,
                 documentManager_,
                 indexManager_,
@@ -555,23 +555,24 @@ bool IndexBundleActivator::initializeQueryManager_() const
     std::string restrictDictPath = kma_path + "/restrict.txt";
     QueryUtility::buildRestrictTermDictionary( restrictDictPath, idManager_);
 
-    IndexBundleSchema::const_iterator docSchemaIter = config_->schema_.begin();
-    for(; docSchemaIter != config_->schema_.end(); docSchemaIter++)
+    const IndexBundleSchema& indexSchema = config_->indexSchema_;
+    for (IndexBundleSchema::const_iterator it = indexSchema.begin();
+        it != indexSchema.end(); ++it)
     {
-        QueryManager::CollPropertyKey_T key( make_pair(config_->collectionName_, docSchemaIter->getName() ) );
+        QueryManager::CollPropertyKey_T key( make_pair(config_->collectionName_, it->getName() ) );
 
         // Set Search Property
-        if ( docSchemaIter->isIndex() )
+        if (it->isIndex())
             QueryManager::addCollectionSearchProperty(key);
 
         // Set Display Property
-        QueryManager::addCollectionPropertyInfo(key, docSchemaIter->getType() );
+        QueryManager::addCollectionPropertyInfo(key, it->getType() );
 
-        DisplayProperty displayProperty(docSchemaIter->getName());
-        displayProperty.isSnippetOn_ = docSchemaIter->bSnippet_;
-        displayProperty.isSummaryOn_ = docSchemaIter->bSummary_;
-        displayProperty.summarySentenceNum_ = docSchemaIter->summaryNum_;
-        displayProperty.isHighlightOn_ = docSchemaIter->bHighlight_;
+        DisplayProperty displayProperty(it->getName());
+        displayProperty.isSnippetOn_ = it->bSnippet_;
+        displayProperty.isSummaryOn_ = it->bSummary_;
+        displayProperty.summarySentenceNum_ = it->summaryNum_;
+        displayProperty.isHighlightOn_ = it->bHighlight_;
 
         QueryManager::addCollectionDisplayProperty(key, displayProperty);
     }

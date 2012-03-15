@@ -1,24 +1,30 @@
 #include "LocalItemFactory.h"
 #include "LocalItemIdGenerator.h"
 #include "LocalItemManager.h"
+#include <bundles/index/IndexSearchService.h>
+#include <aggregator-manager/SearchWorker.h>
+#include <ir/id_manager/IDManager.h>
 
 namespace sf1r
 {
 
-LocalItemFactory::LocalItemFactory(IDManager& idManager, DocumentManager& docManager)
-    : idManager_(idManager)
-    , docManager_(docManager)
+LocalItemFactory::LocalItemFactory(IndexSearchService& indexSearchService)
+    : indexSearchService_(indexSearchService)
 {
 }
 
 ItemIdGenerator* LocalItemFactory::createItemIdGenerator()
 {
-    return new LocalItemIdGenerator(idManager_);
+    izenelib::ir::idmanager::IDManager* idManager = indexSearchService_.searchWorker_->idManager_.get();
+
+    return new LocalItemIdGenerator(*idManager);
 }
 
 ItemManager* LocalItemFactory::createItemManager()
 {
-    return new LocalItemManager(docManager_);
+    DocumentManager* docManager = indexSearchService_.searchWorker_->documentManager_.get();
+
+    return new LocalItemManager(*docManager);
 }
 
 } // namespace sf1r

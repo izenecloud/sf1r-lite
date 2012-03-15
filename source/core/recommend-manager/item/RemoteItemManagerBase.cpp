@@ -88,7 +88,9 @@ bool RemoteItemManagerBase::getDocFromResponse_(
 
     if (propDocTable.size() != propList.size())
     {
-        LOG(ERROR) << "invalid property count in RawTextResultFromSIA::fullTextOfDocumentInPage_";
+        LOG(ERROR) << "invalid property count in RawTextResultFromSIA::fullTextOfDocumentInPage_"
+                   << ", request count: " << propList.size()
+                   << ", returned count: " << propDocTable.size();
         return false;
     }
 

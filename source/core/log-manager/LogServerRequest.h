@@ -14,7 +14,8 @@ public:
     /// add method here
     enum METHOD
     {
-        METHOD_UPDATE_UUID = 0,
+        METHOD_TEST = 0,
+        METHOD_UPDATE_UUID,
         METHOD_SYNCHRONIZE,
         METHOD_GET_UUID,
         METHOD_GET_DOCID_LIST,

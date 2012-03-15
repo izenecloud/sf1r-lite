@@ -6,8 +6,6 @@
 #include <common/Utilities.h>
 #include <product-manager/product_price.h>
 #include <product-manager/uuid_generator.h>
-#include <log-manager/LogServerRequest.h>
-#include <log-manager/LogServerConnection.h>
 #include <am/sequence_file/ssfr.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
@@ -17,7 +15,7 @@
 using namespace sf1r;
 
 ScdGenerator::ScdGenerator()
-:exclude_(false), buuid_(false)
+:exclude_(false)
 {
 }
 
@@ -79,7 +77,7 @@ bool ScdGenerator::Load(const std::string& dir)
     return true;
 }
 
-bool ScdGenerator::Generate(const std::string& scd_file, const std::string& output_dir, const std::string& work_dir)
+bool ScdGenerator::Generate(const std::string& scd_path, const std::string& output_dir, const std::string& work_dir)
 {
     if(o2p_map_.empty())
     {
@@ -92,85 +90,116 @@ bool ScdGenerator::Generate(const std::string& scd_file, const std::string& outp
     {
         working_dir = "./b5m_scd_generator_working";
     }
-    boost::filesystem::remove_all(working_dir);
-    boost::filesystem::create_directories(working_dir);
-    if(!boost::filesystem::exists(scd_file)) return false;
+    namespace bfs = boost::filesystem;
+    bfs::remove_all(working_dir);
+    bfs::create_directories(working_dir);
+    if(!bfs::exists(scd_path)) return false;
     std::string b5mo_dir = output_dir+"/b5mo";
     std::string b5mp_dir = output_dir+"/b5mp";
-    boost::filesystem::create_directories(b5mo_dir);
-    boost::filesystem::create_directories(b5mp_dir);
+    bfs::create_directories(b5mo_dir);
+    bfs::create_directories(b5mp_dir);
 
-    ScdParser parser(izenelib::util::UString::UTF_8);
-    parser.load(scd_file);
-    uint32_t n=0;
+    std::vector<std::string> scd_list;
+    if( bfs::is_regular_file(scd_path) && boost::algorithm::ends_with(scd_path, ".SCD"))
+    {
+        scd_list.push_back(scd_path);
+    }
+    else if(bfs::is_directory(scd_path))
+    {
+        bfs::path p(scd_path);
+        bfs::directory_iterator end;
+        for(bfs::directory_iterator it(p);it!=end;it++)
+        {
+            if(bfs::is_regular_file(it->path()))
+            {
+                std::string file = it->path().string();
+                if(boost::algorithm::ends_with(file, ".SCD"))
+                {
+                    scd_list.push_back(file);
+                }
+            }
+        }
+    }
+    if(scd_list.empty()) return false;
+
     std::string writer_file = working_dir+"/docs";
     izenelib::am::ssf::Writer<> writer(writer_file);
     writer.Open();
-    for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
-      doc_iter!= parser.end(); ++doc_iter, ++n)
+
+    for(uint32_t i=0;i<scd_list.size();i++)
     {
-        if(n%10000==0)
+        std::string scd_file = scd_list[i];
+        LOG(INFO)<<"Processing "<<scd_file<<std::endl;
+        ScdParser parser(izenelib::util::UString::UTF_8);
+        parser.load(scd_file);
+        uint32_t n=0;
+        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
+          doc_iter!= parser.end(); ++doc_iter, ++n)
         {
-            LOG(INFO)<<"Find Documents "<<n<<std::endl;
-        }
-        Document doc;
-        SCDDoc& scddoc = *(*doc_iter);
-        std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
-        for(p=scddoc.begin(); p!=scddoc.end(); ++p)
-        {
-            std::string property_name;
-            p->first.convertString(property_name, izenelib::util::UString::UTF_8);
-            doc.property(property_name) = p->second;
-        }
-        if(exclude_)
-        {
-            std::string scategory;
-            doc.property("Category").get<UString>().convertString(scategory, UString::UTF_8);
-            bool find_match = false;
-            for(uint32_t i=0;i<category_regex_.size();i++)
+            if(n%10000==0)
             {
-                if(boost::regex_match(scategory, category_regex_[i]))
-                {
-                    find_match = true;
-                    break;
-                }
+                LOG(INFO)<<"Find Documents "<<n<<std::endl;
             }
-            if(!find_match) continue;
+            Document doc;
+            SCDDoc& scddoc = *(*doc_iter);
+            std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
+            for(p=scddoc.begin(); p!=scddoc.end(); ++p)
+            {
+                std::string property_name;
+                p->first.convertString(property_name, izenelib::util::UString::UTF_8);
+                doc.property(property_name) = p->second;
+            }
+            if(exclude_)
+            {
+                std::string scategory;
+                doc.property("Category").get<UString>().convertString(scategory, UString::UTF_8);
+                bool find_match = false;
+                for(uint32_t i=0;i<category_regex_.size();i++)
+                {
+                    if(boost::regex_match(scategory, category_regex_[i]))
+                    {
+                        find_match = true;
+                        break;
+                    }
+                }
+                if(!find_match) continue;
+            }
+            std::string sdocid;
+            doc.property("DOCID").get<UString>().convertString(sdocid, UString::UTF_8);
+            std::string spid = sdocid;
+            boost::unordered_map<std::string, std::string>::iterator it = o2p_map_.find(sdocid);
+            if(it!=o2p_map_.end())
+            {
+                spid = it->second;
+            }
+            doc.property("uuid") = UString(spid, UString::UTF_8);
+            uint64_t hash_id = izenelib::util::HashFunction<std::string>::generateHash64(spid);
+            writer.Append(hash_id, doc);
         }
-        std::string sdocid;
-        doc.property("DOCID").get<UString>().convertString(sdocid, UString::UTF_8);
-        std::string spid = sdocid;
-        boost::unordered_map<std::string, std::string>::iterator it = o2p_map_.find(sdocid);
-        if(it!=o2p_map_.end())
-        {
-            spid = it->second;
-        }
-        doc.property("uuid") = UString(spid, UString::UTF_8);
-        uint64_t hash_id = izenelib::util::HashFunction<std::string>::generateHash64(spid);
-        writer.Append(hash_id, doc);
     }
     writer.Close();
     izenelib::am::ssf::Sorter<uint32_t, uint64_t>::Sort(writer_file);
-    if(buuid_)
-    {
-        if(!LogServerConnection::instance().init(logserver_config_))
-        {
-            std::cout<<"log server init failed"<<std::endl;
-            return false;
-        }
-    }
     izenelib::am::ssf::Joiner<uint32_t, uint64_t, Document> joiner(writer_file);
     joiner.Open();
     uint64_t key;
     std::vector<Document> docs;
     ScdWriter b5mo_writer(b5mo_dir, INSERT_SCD);
     ScdWriter b5mp_writer(b5mp_dir, INSERT_SCD);
+    uint64_t n = 0;
     while(joiner.Next(key, docs))
     {
+        ++n;
+        if(n%100000==0)
+        {
+            LOG(INFO)<<"Process "<<n<<" docs"<<std::endl;
+        }
+        izenelib::util::UString uuid;
+        std::string uuidstr;
+        UuidGenerator::Gen(uuidstr, uuid);
         for(uint32_t i=0;i<docs.size();i++)
         {
             Document doc(docs[i]);
-            doc.eraseProperty("uuid");
+            doc.property("uuid") = uuid;
             b5mo_writer.Append(doc);
         }
         Document b5mp_doc;
@@ -188,39 +217,28 @@ bool ScdGenerator::Generate(const std::string& scd_file, const std::string& outp
         {
             b5mp_doc.copyPropertiesFromDocument(docs[0]);
         }
-        b5mp_doc.property("DOCID") = b5mp_doc.property("uuid");
+        b5mp_doc.property("DOCID") = uuid;
         b5mp_doc.eraseProperty("uuid");
 
         //generate boost::uuid, and push it to log-server
-        if(buuid_)
-        {
-            LogServerConnection& conn = LogServerConnection::instance();
-            izenelib::util::UString uuid;
-            std::string uuidstr;
-            UuidGenerator::Gen(uuidstr, uuid);
-            UpdateUUIDRequest uuidReq;
-            uuidReq.param_.uuid_ = Utilities::uuidToUint128(uuidstr);
-            for (uint32_t i = 0; i < docs.size(); i++)
-            {
-                std::string docname;
-                docs[i].property("DOCID").get<izenelib::util::UString>().convertString(docname, izenelib::util::UString::UTF_8);
-                uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128(docname));
-            }
-            conn.asynRequest(uuidReq);
-            b5mp_doc.property("DOCID") = uuid;
-        }
-
         ProductPrice price;
         std::set<std::string> source_set;
         for(uint32_t i=0;i<docs.size();i++)
         {
             ProductPrice p;
-            p.Parse(docs[i].property("Price").get<UString>());
+            UString uprice;
+            docs[i].getProperty("Price", uprice);
+            p.Parse(uprice);
             price += p;
-            UString usource = docs[i].property("Source").get<UString>();
-            std::string source;
-            usource.convertString(source, UString::UTF_8);
-            source_set.insert(source);
+            UString usource;
+            docs[i].getProperty("Source", usource);
+
+            if(usource.length()>0)
+            {
+                std::string source;
+                usource.convertString(source, UString::UTF_8);
+                source_set.insert(source);
+            }
         }
         UString usource;
         std::set<std::string>::iterator it = source_set.begin();
@@ -238,12 +256,6 @@ bool ScdGenerator::Generate(const std::string& scd_file, const std::string& outp
         uint32_t itemcount = docs.size();
         b5mp_doc.property("itemcount") = UString(boost::lexical_cast<std::string>(itemcount), UString::UTF_8);
         b5mp_writer.Append(b5mp_doc);
-    }
-    if(buuid_)
-    {
-        LogServerConnection& conn = LogServerConnection::instance();
-        SynchronizeRequest syncReq;
-        conn.asynRequest(syncReq);
     }
     b5mo_writer.Close();
     b5mp_writer.Close();

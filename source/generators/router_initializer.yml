@@ -16,16 +16,15 @@ headers:
   - controllers/CollectionController.h
 
 controllers:
-  AutoFillController:
+  AutoFillController: ~
 
-  QueryCorrectionController:
-    service: true
+  QueryCorrectionController: ~
 
   CommandsController:
     actions:
       - index
       - optimize_index
-      - index_query_log     
+      - index_query_log
 
   KeywordsController:
     actions:
@@ -117,13 +116,14 @@ controllers:
       - update_a_doc
       - get_multi_price_history
       - get_top_price_cut_list
-      
+      - migrate_price_history
+
   SynonymController:
     actions:
       - add_synonym
       - update_synonym
       - delete_synonym
-      
+
   CollectionController:
     actions:
       - start_collection

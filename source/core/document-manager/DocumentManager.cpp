@@ -40,13 +40,13 @@ const std::string DATE("DATE");
 
 DocumentManager::DocumentManager(
     const std::string& path,
-    const std::set<PropertyConfig, PropertyComp>& schema,
+    const IndexBundleSchema& indexSchema,
     const izenelib::util::UString::EncodingType encodingType,
     size_t documentCacheNum
 )
     :path_(path)
     ,documentCache_(100)
-    ,schema_(schema)
+    ,indexSchema_(indexSchema)
     ,encodingType_(encodingType)
     ,propertyLengthDb_()
     ,propertyIdMapper_()
@@ -360,11 +360,10 @@ bool DocumentManager::saveDelFilter_()
 void DocumentManager::buildPropertyIdMapper_()
 {
     config_tool::PROPERTY_ALIAS_MAP_T propertyAliasMap;
-    config_tool::buildPropertyAliasMap(schema_, propertyAliasMap);
+    config_tool::buildPropertyAliasMap(indexSchema_, propertyAliasMap);
 
-    typedef std::set<PropertyConfig, PropertyComp>::iterator prop_iterator;
-
-    for (prop_iterator it = schema_.begin(), itEnd = schema_.end(); it != itEnd; ++it)
+    for (IndexBundleSchema::const_iterator it = indexSchema_.begin(), itEnd = indexSchema_.end();
+        it != itEnd; ++it)
     {
         propertyid_t originalPropertyId(0), originalBlockId(0);
 

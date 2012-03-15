@@ -58,14 +58,18 @@ public:
         std::string identityLow = boost::to_lower_copy(identity);
         if (sf1r::SF1Config::get()->checkSearchWorker(identity))
         {
-            CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(identity);
-            CollectionManager::ScopedReadLock lock(*mutex);
+            // A collection may be stopped with all resources released,
+            // so we should lock current the current collection during operations on it,
+            // and release lock when each operation finished (post-process).
+            curCollectionMutex_ = CollectionManager::get()->getCollectionMutex(identity);
+            curCollectionMutex_->lock_shared();
             collectionHandler_ = CollectionManager::get()->findHandler(identity);
 
             if (!collectionHandler_)
             {
                 error = "No collectionHandler found for " + identity;
                 std::cout << error << std::endl;
+                curCollectionMutex_->unlock_shared();
                 return false;
             }
 
@@ -79,6 +83,12 @@ public:
         }
 
         return true;
+    }
+
+    virtual void postprocess()
+    {
+        if (curCollectionMutex_)
+            curCollectionMutex_->unlock_shared();
     }
 
     /**
@@ -111,6 +121,7 @@ public:
     void getDistSearchInfo(request_t& req)
     {
         WORKER_HANDLE_1_1(req, KeywordSearchActionItem, searchWorker_->getDistSearchInfo, DistKeywordSearchInfo)
+
     }
 
     void getDistSearchResult(request_t& req)
@@ -164,6 +175,7 @@ public:
 private:
     // A coming request is targeted at a specified collection or a bundle,
     // so find corresponding collectionHandler before handling the request.
+    CollectionManager::MutexType* curCollectionMutex_;
     CollectionHandler* collectionHandler_;
     boost::shared_ptr<SearchWorker> searchWorker_;
 

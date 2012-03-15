@@ -8,13 +8,14 @@
 #define RECOMMEND_MASTER_MANAGER_H_
 
 #include "MasterManagerBase.h"
+#include "SearchMasterAddressFinder.h"
 
 #include <util/singleton.h>
 
 namespace sf1r
 {
 
-class RecommendMasterManager : public MasterManagerBase
+class RecommendMasterManager : public MasterManagerBase, public SearchMasterAddressFinder
 {
 public:
     RecommendMasterManager();
@@ -26,7 +27,7 @@ public:
 
     virtual bool init();
 
-    bool getSearchMasterAddress(std::string& host, uint32_t& port);
+    virtual bool findSearchMasterAddress(std::string& host, uint32_t& port);
 
 protected:
     virtual std::string getReplicaPath(replicaid_t replicaId)

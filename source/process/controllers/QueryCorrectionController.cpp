@@ -16,6 +16,23 @@ namespace sf1r
 
 using driver::Keys;
 
+QueryCorrectionController::QueryCorrectionController()
+    : Sf1Controller(false)
+    , miningSearchService_(NULL)
+{
+}
+
+bool QueryCorrectionController::checkCollectionService(std::string& error)
+{
+    miningSearchService_ = collectionHandler_->miningSearchService_;
+
+    if (miningSearchService_)
+        return true;
+
+    error = "Request failed, no mining search service found.";
+    return false;
+}
+
 /**
  * @brief Action \b index. Refines a user query which can be a set of tokens.
  *
@@ -49,13 +66,12 @@ using driver::Keys;
  */
 void QueryCorrectionController::index()
 {
-    std::string collection = asString(request()[Keys::collection]);
     std::string queryString = asString(request()[Keys::keywords]);
 
     UString queryUString(queryString, UString::UTF_8);
     UString refinedQueryUString;
 
-    if (collection.empty())
+    if (collectionName_.empty())
     {
         QueryCorrectionSubmanager::getInstance().getRefinedQuery(
                 queryUString,
@@ -63,16 +79,7 @@ void QueryCorrectionController::index()
     }
     else
     {
-        if (!SF1Config::get()->checkCollectionAndACL(collection, request().aclTokens()))
-        {
-            response().addError("Collection access denied");
-            return;
-        }
-        CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(collection);
-        CollectionManager::ScopedReadLock lock(*mutex);
-        CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
-        MiningSearchService* service = collectionHandler->miningSearchService_;
-        service->GetRefinedQuery(queryUString, refinedQueryUString);
+        miningSearchService_->GetRefinedQuery(queryUString, refinedQueryUString);
     }
 
     std::string refinedQueryString;

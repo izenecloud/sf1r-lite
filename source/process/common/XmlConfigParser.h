@@ -30,6 +30,7 @@
 
 #include <boost/unordered_set.hpp>
 #include <boost/utility.hpp>
+#include <boost/filesystem.hpp>
 
 #include <string>
 #include <sstream>
@@ -339,7 +340,7 @@ protected:
 class SF1Config : boost::noncopyable, XmlConfigParser
 {
 public:
-    //----------------------------  PUBLIC FUNCTIONS  ----------------------------
+    typedef std::map<std::string, CollectionMeta> CollectionMetaMap;
 
     SF1Config();
     ~SF1Config();
@@ -435,8 +436,7 @@ public:
         CollectionMeta& collectionMeta
     ) const
     {
-        std::map<std::string, CollectionMeta>::const_iterator it =
-            collectionMetaMap_.find(collectionName);
+        CollectionMetaMap::const_iterator it = collectionMetaMap_.find(collectionName);
 
         if(it != collectionMetaMap_.end())
         {
@@ -531,8 +531,7 @@ public:
 
     bool checkCollectionExist(const std::string& collectionName)
     {
-        std::map<std::string, CollectionMeta>::const_iterator it =
-            collectionMetaMap_.find(collectionName);
+        CollectionMetaMap::const_iterator it = collectionMetaMap_.find(collectionName);
 
         if(it != collectionMetaMap_.end())
             return true;
@@ -543,8 +542,7 @@ public:
         const std::string& collectionName,
         const std::string& aclTokens)
     {
-        std::map<std::string, CollectionMeta>::const_iterator it =
-            collectionMetaMap_.find(collectionName);
+        CollectionMetaMap::const_iterator it = collectionMetaMap_.find(collectionName);
 
         if(it != collectionMetaMap_.end())
         {
@@ -561,12 +559,12 @@ public:
         return false;
     }
 
-    const std::map<std::string, CollectionMeta>& getCollectionMetaMap()
+    const CollectionMetaMap& getCollectionMetaMap()
     {
         return collectionMetaMap_;
     }
 
-    std::map<std::string, CollectionMeta>& mutableCollectionMetaMap()
+    CollectionMetaMap& mutableCollectionMetaMap()
     {
         return collectionMetaMap_;
     }
@@ -579,6 +577,13 @@ public:
     const std::string& getHomeDirectory() const
     {
         return homeDir_;
+    }
+
+    std::string getCollectionConfigFile(const std::string& collection)
+    {
+        boost::filesystem::path configFile(homeDir_);
+        configFile /= (collection + ".xml");
+        return configFile.string();
     }
 
 private:
@@ -698,7 +703,7 @@ public:
 
     // LISTS ----------------------------
 
-    std::map<std::string, CollectionMeta> collectionMetaMap_;
+    CollectionMetaMap collectionMetaMap_;
 
     /// @brief  Stores all the analyzer-tokenizer pairs that are applied to Properties in
     /// the configuration.
@@ -743,7 +748,7 @@ private:
 
     /// @brief                 Parse <IndexBundle> <Schema>
     /// @param index           Pointer to the Element
-    void parseIndexBundleSchema(const ticpp::Element * index, CollectionMeta & collectionMeta);
+    void parseIndexBundleSchema(const ticpp::Element * indexSchemaNode, CollectionMeta & collectionMeta);
 
     /// @brief                  Parse <ProductBundle> <Parameter>
     /// @param product          Pointer to the Element
@@ -772,6 +777,9 @@ private:
     /// @brief                  Parse <RecommendBundle> <Schema>
     /// @param recSchemaNode           Pointer to the Element
     void parseRecommendBundleSchema(const ticpp::Element * recSchemaNode, CollectionMeta & collectionMeta);
+
+    /// @brief                  Parse <SF1Config><Deployment><DistributedTopology> for recommend bundle
+    void parseRecommendDistribConfig(CollectionMeta& collectionMeta);
 
     /// @brief                  Parse <Collection> settings
     /// @param system           Pointer to the Element

@@ -13,6 +13,7 @@
 
 namespace sf1r
 {
+class MiningSearchService;
 
 /// @addtogroup controllers
 /// @{
@@ -24,8 +25,9 @@ namespace sf1r
  */
 class TopicController : public Sf1Controller
 {
-
 public:
+    TopicController();
+
     /// @brief alias for set_ontology
     void index()
     {
@@ -37,6 +39,9 @@ public:
     void get_in_date_range();
 
     void get_temporal_similar();
+
+protected:
+    virtual bool checkCollectionService(std::string& error);
 
 private:
     bool requireTID_();
@@ -50,6 +55,7 @@ private:
     boost::gregorian::date start_;
     boost::gregorian::date end_;
     izenelib::util::UString topic_text_;
+    MiningSearchService* miningSearchService_;
 };
 
 /// @}

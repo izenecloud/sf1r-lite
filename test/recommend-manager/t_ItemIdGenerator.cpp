@@ -11,6 +11,7 @@
 #include <recommend-manager/item/LocalItemIdGenerator.h>
 #include <recommend-manager/item/SingleCollectionItemIdGenerator.h>
 #include <recommend-manager/item/RemoteItemIdGenerator.h>
+#include <log-manager/LogServerConnection.h>
 #include <util/ustring/UString.h>
 
 #include <boost/test/unit_test.hpp>
@@ -43,6 +44,16 @@ void checkItemId(ItemIdGeneratorTestFixture& fixture, itemid_t maxItemId)
     fixture.checkItemIdToStr(maxItemId);
 
     fixture.checkNonExistId();
+}
+
+void checkGeneratorError(ItemIdGenerator& generator)
+{
+    itemid_t itemId = 1;
+    std::string str = boost::lexical_cast<std::string>(itemId);
+
+    BOOST_CHECK(generator.strIdToItemId(str, itemId) == false);
+    BOOST_CHECK(generator.itemIdToStrId(itemId, str) == false);
+    BOOST_CHECK_EQUAL(generator.maxItemId(), 0U);
 }
 
 }
@@ -161,12 +172,23 @@ BOOST_FIXTURE_TEST_CASE(checkRemoteNotConnect, RemoteItemIdGeneratorTestFixture)
 
     itemIdGenerator_.reset(new RemoteItemIdGenerator(REMOTE_COLLECTION_1));
 
-    itemid_t itemId = 1;
-    std::string str = boost::lexical_cast<std::string>(itemId);
+    checkGeneratorError(*itemIdGenerator_);
+}
 
-    BOOST_CHECK(itemIdGenerator_->strIdToItemId(str, itemId) == false);
-    BOOST_CHECK(itemIdGenerator_->itemIdToStrId(itemId, str) == false);
-    BOOST_CHECK_EQUAL(itemIdGenerator_->maxItemId(), 0U);
+BOOST_FIXTURE_TEST_CASE(checkRemoteHostNotResolve, RemoteItemIdGeneratorTestFixture)
+{
+    string dir = LOG_SERVER_DIR;
+    create_empty_directory(dir);
+
+    LogServerConnectionConfig newConfig;
+    newConfig.host.clear();
+    connection_.init(newConfig);
+
+    BOOST_REQUIRE(startRpcLogServer(dir));
+
+    itemIdGenerator_.reset(new RemoteItemIdGenerator(REMOTE_COLLECTION_1));
+
+    checkGeneratorError(*itemIdGenerator_);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

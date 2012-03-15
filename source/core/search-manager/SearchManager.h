@@ -55,7 +55,7 @@ public:
     typedef boost::function< void( std::vector<QueryFiltering::FilteringType>& ) > filter_hook_t;
 
     SearchManager(
-            std::set<PropertyConfig, PropertyComp> schema,
+            const IndexBundleSchema& indexSchema,
             const boost::shared_ptr<IDManager>& idManager,
             const boost::shared_ptr<DocumentManager>& documentManager,
             const boost::shared_ptr<IndexManager>& indexManager,

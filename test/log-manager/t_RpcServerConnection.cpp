@@ -52,6 +52,21 @@ BOOST_AUTO_TEST_CASE(expectConnectError)
     checkRequestException<msgpack::rpc::connect_error>(connection_, method, param, result);
 }
 
+BOOST_AUTO_TEST_CASE(expectHostResolveError)
+{
+    LogServerConnectionConfig newConfig;
+    newConfig.host.clear();
+    connection_.init(newConfig);
+
+    std::string method(METHOD_NAMES[ECHO_STR]);
+    std::string param("hello");
+    std::string result;
+
+    typedef std::runtime_error ExceptionType;
+    BOOST_CHECK_THROW(connection_.syncRequest(method, param, result), ExceptionType);
+    BOOST_CHECK_THROW(connection_.asynRequest(method, param), ExceptionType);
+}
+
 BOOST_AUTO_TEST_CASE(expectTimeOutError)
 {
     std::string method(METHOD_NAMES[ECHO_STR]);

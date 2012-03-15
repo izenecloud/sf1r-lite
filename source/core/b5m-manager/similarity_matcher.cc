@@ -17,7 +17,7 @@ SimilarityMatcher::SimilarityMatcher()
 {
 }
 
-bool SimilarityMatcher::Index(const std::string& scd_file, const std::string& knowledge_dir)
+bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& knowledge_dir)
 {
     std::string done_file = knowledge_dir+"/match.done";
     if(boost::filesystem::exists(done_file))
@@ -41,6 +41,31 @@ bool SimilarityMatcher::Index(const std::string& scd_file, const std::string& kn
         cifs.close();
     }
 
+    namespace bfs = boost::filesystem;
+    if(!bfs::exists(scd_path)) return false;
+    std::vector<std::string> scd_list;
+    if( bfs::is_regular_file(scd_path) && boost::algorithm::ends_with(scd_path, ".SCD"))
+    {
+        scd_list.push_back(scd_path);
+    }
+    else if(bfs::is_directory(scd_path))
+    {
+        bfs::path p(scd_path);
+        bfs::directory_iterator end;
+        for(bfs::directory_iterator it(p);it!=end;it++)
+        {
+            if(bfs::is_regular_file(it->path()))
+            {
+                std::string file = it->path().string();
+                if(boost::algorithm::ends_with(file, ".SCD"))
+                {
+                    scd_list.push_back(file);
+                }
+            }
+        }
+    }
+    if(scd_list.empty()) return false;
+
     std::string work_dir = knowledge_dir+"/work_dir";
 
     boost::filesystem::remove_all(work_dir);
@@ -57,71 +82,76 @@ bool SimilarityMatcher::Index(const std::string& scd_file, const std::string& kn
         std::cout<<"DD open failed"<<std::endl;
         return false;
     }
-
-    ScdParser parser(izenelib::util::UString::UTF_8);
-    parser.load(scd_file);
-    uint32_t n=0;
     uint32_t docid = 1;
     std::vector<ValueType> values(1);
-    for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
-      doc_iter!= parser.end(); ++doc_iter, ++n)
+
+    for(uint32_t i=0;i<scd_list.size();i++)
     {
-        if(n%10000==0)
+        std::string scd_file = scd_list[i];
+        LOG(INFO)<<"Processing "<<scd_file<<std::endl;
+        ScdParser parser(izenelib::util::UString::UTF_8);
+        parser.load(scd_file);
+        uint32_t n=0;
+        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
+          doc_iter!= parser.end(); ++doc_iter, ++n)
         {
-            LOG(INFO)<<"Find Product Documents "<<n<<std::endl;
-        }
-        izenelib::util::UString oid;
-        izenelib::util::UString title;
-        izenelib::util::UString category;
-        izenelib::util::UString attrib_ustr;
-        std::map<std::string, UString> doc;
-        SCDDoc& scddoc = *(*doc_iter);
-        std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
-        for(p=scddoc.begin(); p!=scddoc.end(); ++p)
-        {
-            std::string property_name;
-            p->first.convertString(property_name, izenelib::util::UString::UTF_8);
-            doc[property_name] = p->second;
-        }
-        if(doc["Category"].length()==0 || doc["Title"].length()==0)
-        {
-            continue;
-        }
-        std::string scategory;
-        doc["Category"].convertString(scategory, izenelib::util::UString::UTF_8);
-        if( category_matcher.Match(scategory) )
-        {
-            //std::cout<<"ignore category "<<scategory<<std::endl;
-            continue;
-        }
-        //std::cout<<"valid category "<<scategory<<std::endl;
-        std::string stitle;
-        title.convertString(stitle, izenelib::util::UString::UTF_8);
-        ProductPrice price;
-        price.Parse(doc["Price"]);
-        if(!price.Valid() || price.value.first<=0.0 )
-        {
-            continue;
-        }
+            if(n%10000==0)
+            {
+                LOG(INFO)<<"Find Product Documents "<<n<<std::endl;
+            }
+            izenelib::util::UString oid;
+            izenelib::util::UString title;
+            izenelib::util::UString category;
+            izenelib::util::UString attrib_ustr;
+            std::map<std::string, UString> doc;
+            SCDDoc& scddoc = *(*doc_iter);
+            std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
+            for(p=scddoc.begin(); p!=scddoc.end(); ++p)
+            {
+                std::string property_name;
+                p->first.convertString(property_name, izenelib::util::UString::UTF_8);
+                doc[property_name] = p->second;
+            }
+            if(doc["Category"].length()==0 || doc["Title"].length()==0)
+            {
+                continue;
+            }
+            std::string scategory;
+            doc["Category"].convertString(scategory, izenelib::util::UString::UTF_8);
+            if( category_matcher.Match(scategory) )
+            {
+                //std::cout<<"ignore category "<<scategory<<std::endl;
+                continue;
+            }
+            //std::cout<<"valid category "<<scategory<<std::endl;
+            std::string stitle;
+            title.convertString(stitle, izenelib::util::UString::UTF_8);
+            ProductPrice price;
+            price.Parse(doc["Price"]);
+            if(!price.Valid() || price.value.first<=0.0 )
+            {
+                continue;
+            }
 
-        SimilarityMatcherAttach attach;
-        attach.category = doc["Category"];
-        attach.price = price;
+            SimilarityMatcherAttach attach;
+            attach.category = doc["Category"];
+            attach.price = price;
 
-        std::vector<std::string> terms;
-        std::vector<double> weights;
-        analyzer.Analyze(doc["Title"], terms, weights);
+            std::vector<std::string> terms;
+            std::vector<double> weights;
+            analyzer.Analyze(doc["Title"], terms, weights);
 
-        if( terms.empty() )
-        {
-            continue;
+            if( terms.empty() )
+            {
+                continue;
+            }
+            dd.InsertDoc(docid, terms, weights, attach);
+            ValueType value;
+            doc["DOCID"].convertString(value.soid, UString::UTF_8);
+            value.title = doc["Title"];
+            values.push_back(value);
+            ++docid;
         }
-        dd.InsertDoc(docid, terms, weights, attach);
-        ValueType value;
-        doc["DOCID"].convertString(value.soid, UString::UTF_8);
-        value.title = doc["Title"];
-        values.push_back(value);
-        ++docid;
     }
     dd.RunDdAnalysis();
     std::string match_file = knowledge_dir+"/match";

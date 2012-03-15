@@ -51,40 +51,40 @@ namespace sf1r {
         }
     };
 
-    struct FeatureCondition
-    {
-        virtual bool operator()(double v) const
-        {
-            return true;
-        }
-    };
+    //struct FeatureCondition
+    //{
+        //virtual bool operator()(double v) const
+        //{
+            //return true;
+        //}
+    //};
 
-    struct PositiveFC : public FeatureCondition
-    {
-        bool operator()(double v) const
-        {
-            if(v>0.0) return true;
-            return false;
-        }
-    };
+    //struct PositiveFC : public FeatureCondition
+    //{
+        //bool operator()(double v) const
+        //{
+            //if(v>0.0) return true;
+            //return false;
+        //}
+    //};
 
-    struct NonNegativeFC : public FeatureCondition
-    {
-        bool operator()(double v) const
-        {
-            if(v<0.0) return false;
-            return true;
-        }
-    };
+    //struct NonNegativeFC : public FeatureCondition
+    //{
+        //bool operator()(double v) const
+        //{
+            //if(v<0.0) return false;
+            //return true;
+        //}
+    //};
 
-    struct NonZeroFC : public FeatureCondition
-    {
-        bool operator()(double v) const
-        {
-            if(v==0.0) return false;
-            return true;
-        }
-    };
+    //struct NonZeroFC : public FeatureCondition
+    //{
+        //bool operator()(double v) const
+        //{
+            //if(v==0.0) return false;
+            //return true;
+        //}
+    //};
 
     struct FeatureStatus
     {

@@ -24,6 +24,8 @@ class CommentCacheDispatcher
 public:
     explicit CommentCacheDispatcher(DirtyKeyDbType& db)
         : db_(db)
+        , prev_key_()
+        , first_time_(true)
     {
     }
 
@@ -34,33 +36,23 @@ public:
 
     virtual void UniqueKeyAppend(key_t const& key, value_t const& value, aux_t const& aux) const
     {
-        db_.update(key, 0);
-    }
-
-    virtual void DuplicateKeyAppend(key_t const& key, value_t const& value, aux_t const& aux) const
-    {
-        db_.update(key, 0);
+        if (first_time_)
+        {
+            db_.update(key, 0);
+            prev_key_ = key;
+            first_time_ = false;
+        }
+        else if (key != prev_key_)
+        {
+            db_.update(key, 0);
+            prev_key_ = key;
+        }
     }
 
 private:
     DirtyKeyDbType& db_;
-};
-
-class CommentCacheAppender
-{
-public:
-    template <class T1, class T2>
-    bool operator() (std::pair<std::set<T1>, std::vector<T2> >& left, const std::pair<std::set<T1>, std::vector<T2> >& right) const
-    {
-        std::size_t old_size = left.first.size();
-        left.first.insert(right.first.begin(), right.first.end());
-
-        if (left.first.size() == old_size)
-            return false;
-
-        left.second.insert(left.second.end(), right.second.begin(), right.second.end());
-        return true;
-    }
+    mutable key_t prev_key_;
+    mutable bool first_time_;
 };
 
 class CommentCacheStorage
@@ -73,15 +65,14 @@ public:
 #endif
     typedef izenelib::util::UString ContentType;
 
-    typedef std::pair<std::set<uint32_t>, std::vector<ContentType> > CommentCacheItemType;
+    typedef std::map<uint32_t, ContentType> CommentCacheItemType;
     typedef izenelib::drum::Drum<
         KeyType,
         CommentCacheItemType,
         char,
         izenelib::am::leveldb::TwoPartComparator,
         izenelib::am::leveldb::Table,
-        CommentCacheDispatcher,
-        CommentCacheAppender
+        CommentCacheDispatcher
     > CommentCacheDrumType;
 
     typedef izenelib::am::leveldb::Table<KeyType, char> DirtyKeyDbType;
@@ -98,7 +89,7 @@ public:
 
     CommentCacheStorage(
             const std::string& dbPath,
-            uint32_t buffer_capacity = 5000);
+            uint32_t buffer_capacity = 20000);
 
     ~CommentCacheStorage();
 

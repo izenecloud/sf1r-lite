@@ -172,14 +172,14 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
             CommentCacheStorage::CommentCacheItemType commentCacheItem;
             comment_cache_storage_->Get(key, commentCacheItem);
-            if (commentCacheItem.first.empty() && commentCacheItem.second.empty())
+            if (commentCacheItem.empty())
             {
                 summarization_storage_->Delete(key);
                 continue;
             }
 
-            Summarization summarization(commentCacheItem.first);
-            if (DoEvaluateSummarization_(summarization, key, commentCacheItem.second))
+            Summarization summarization(commentCacheItem);
+            if (DoEvaluateSummarization_(summarization, key, commentCacheItem))
             {
                 if (++count % 10000 == 0)
                 {
@@ -197,7 +197,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
         Summarization& summarization,
         const KeyType& key,
-        const std::vector<UString>& content_list)
+        const std::map<uint32_t, UString>& content_map)
 {
     if (!summarization_storage_->IsRebuildSummarizeRequired(key, summarization))
         return false;
@@ -217,13 +217,13 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 #endif
     corpus_->start_new_doc(); // XXX
 
-    for (std::vector<UString>::const_iterator it = content_list.begin();
-            it != content_list.end(); ++it)
+    for (std::map<uint32_t, UString>::const_iterator it = content_map.begin();
+            it != content_map.end(); ++it)
     {
         // XXX
         // corpus_->start_new_doc();
 
-        const UString& content = *it;
+        const UString& content = it->second;
         UString sentence;
         std::size_t startPos = 0;
         while (std::size_t len = langIdAnalyzer->sentenceLength(content, startPos))

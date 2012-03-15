@@ -5,6 +5,7 @@ namespace sf1r
 
 const LogServerRequest::method_t LogServerRequest::method_names[] =
         {
+            "test",
             "update_uuid",
             "synchronize",
             "get_uuid",

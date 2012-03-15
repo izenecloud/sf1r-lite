@@ -16,7 +16,7 @@ CompleteMatcher::CompleteMatcher()
 {
 }
 
-bool CompleteMatcher::Index(const std::string& scd_file, const std::string& knowledge_dir)
+bool CompleteMatcher::Index(const std::string& scd_path, const std::string& knowledge_dir)
 {
     std::string done_file = knowledge_dir+"/match.done";
     if(boost::filesystem::exists(done_file))
@@ -61,102 +61,131 @@ bool CompleteMatcher::Index(const std::string& scd_file, const std::string& know
     std::string nattrib_name = attrib_name;
     boost::to_lower(nattrib_name);
 
+    namespace bfs = boost::filesystem;
+    if(!bfs::exists(scd_path)) return false;
+    std::vector<std::string> scd_list;
+    if( bfs::is_regular_file(scd_path) && boost::algorithm::ends_with(scd_path, ".SCD"))
+    {
+        scd_list.push_back(scd_path);
+    }
+    else if(bfs::is_directory(scd_path))
+    {
+        bfs::path p(scd_path);
+        bfs::directory_iterator end;
+        for(bfs::directory_iterator it(p);it!=end;it++)
+        {
+            if(bfs::is_regular_file(it->path()))
+            {
+                std::string file = it->path().string();
+                if(boost::algorithm::ends_with(file, ".SCD"))
+                {
+                    scd_list.push_back(file);
+                }
+            }
+        }
+    }
+    if(scd_list.empty()) return false;
     std::string writer_file = knowledge_dir+"/writer";
     boost::filesystem::remove_all(writer_file);
     izenelib::am::ssf::Writer<> writer(writer_file);
     writer.Open();
-    ScdParser parser(izenelib::util::UString::UTF_8);
-    parser.load(scd_file);
-    uint32_t n=0;
-    for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
-      doc_iter!= parser.end(); ++doc_iter, ++n)
+    for(uint32_t i=0;i<scd_list.size();i++)
     {
-        if(n%100000==0)
+        std::string scd_file = scd_list[i];
+        LOG(INFO)<<"Processing "<<scd_file<<std::endl;
+        ScdParser parser(izenelib::util::UString::UTF_8);
+        parser.load(scd_file);
+        uint32_t n=0;
+        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
+          doc_iter!= parser.end(); ++doc_iter, ++n)
         {
-            LOG(INFO)<<"Find Product Documents "<<n<<std::endl;
-        }
-        ProductDocument product_doc;
-        izenelib::util::UString oid;
-        izenelib::util::UString title;
-        izenelib::util::UString category;
-        izenelib::util::UString attrib_ustr;
-        SCDDoc& doc = *(*doc_iter);
-        std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
-        for(p=doc.begin(); p!=doc.end(); ++p)
-        {
-            std::string property_name;
-            p->first.convertString(property_name, izenelib::util::UString::UTF_8);
-            product_doc.property[property_name] = p->second;
-            if(property_name=="DOCID")
+            if(n%100000==0)
             {
-                oid = p->second;
+                LOG(INFO)<<"Find Product Documents "<<n<<std::endl;
             }
-            else if(property_name=="Title")
+            ProductDocument product_doc;
+            izenelib::util::UString oid;
+            izenelib::util::UString title;
+            izenelib::util::UString category;
+            izenelib::util::UString attrib_ustr;
+            SCDDoc& doc = *(*doc_iter);
+            std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
+            for(p=doc.begin(); p!=doc.end(); ++p)
             {
-                title = p->second;
+                std::string property_name;
+                p->first.convertString(property_name, izenelib::util::UString::UTF_8);
+                product_doc.property[property_name] = p->second;
+                if(property_name=="DOCID")
+                {
+                    oid = p->second;
+                }
+                else if(property_name=="Title")
+                {
+                    title = p->second;
+                }
+                else if(property_name=="Category")
+                {
+                    category = p->second;
+                }
+                else if(property_name=="Attribute")
+                {
+                    attrib_ustr = p->second;
+                }
             }
-            else if(property_name=="Category")
+            if(category.length()==0 || attrib_ustr.length()==0 || title.length()==0)
             {
-                category = p->second;
+                continue;
             }
-            else if(property_name=="Attribute")
+            std::string scategory;
+            category.convertString(scategory, izenelib::util::UString::UTF_8);
+            if( !match_param.MatchCategory(scategory) )
             {
-                attrib_ustr = p->second;
+                continue;
             }
-        }
-        if(category.length()==0 || attrib_ustr.length()==0 || title.length()==0)
-        {
-            continue;
-        }
-        std::string scategory;
-        category.convertString(scategory, izenelib::util::UString::UTF_8);
-        if( !match_param.MatchCategory(scategory) )
-        {
-            continue;
-        }
-        std::string stitle;
-        title.convertString(stitle, izenelib::util::UString::UTF_8);
-        //logger_<<"[BPD][Title]"<<stitle<<std::endl;
-        std::vector<AttrPair> attrib_list;
-        split_attr_pair(attrib_ustr, attrib_list);
-        UString attrib_for_match;
-        for(std::size_t i=0;i<attrib_list.size();i++)
-        {
-            const std::vector<izenelib::util::UString>& attrib_value_list = attrib_list[i].second;
-            if(attrib_value_list.empty()) continue; //ignore empty value attrib
-            const izenelib::util::UString& attrib_value = attrib_value_list[0];
-            std::string sattrib_name;
-            attrib_list[i].first.convertString(sattrib_name, izenelib::util::UString::UTF_8);
-            boost::to_lower(sattrib_name);
-            boost::algorithm::trim(sattrib_name);
-            if(sattrib_name==nattrib_name)
+            std::string stitle;
+            title.convertString(stitle, izenelib::util::UString::UTF_8);
+            //logger_<<"[BPD][Title]"<<stitle<<std::endl;
+            std::vector<AttrPair> attrib_list;
+            split_attr_pair(attrib_ustr, attrib_list);
+            UString attrib_for_match;
+            for(std::size_t i=0;i<attrib_list.size();i++)
             {
-                attrib_for_match = attrib_value;
-                break;
+                const std::vector<izenelib::util::UString>& attrib_value_list = attrib_list[i].second;
+                if(attrib_value_list.empty()) continue; //ignore empty value attrib
+                const izenelib::util::UString& attrib_value = attrib_value_list[0];
+                std::string sattrib_name;
+                attrib_list[i].first.convertString(sattrib_name, izenelib::util::UString::UTF_8);
+                boost::to_lower(sattrib_name);
+                boost::algorithm::trim(sattrib_name);
+                if(sattrib_name==nattrib_name)
+                {
+                    attrib_for_match = attrib_value;
+                    break;
+                }
             }
-        }
-        {
+            {
+                if(attrib_for_match.length()==0) continue;
+                std::string sam;
+                attrib_for_match.convertString(sam, izenelib::util::UString::UTF_8);
+                //std::cout<<"find attrib value : "<<sam<<std::endl;
+                boost::algorithm::replace_all(sam, "-", "");
+                attrib_for_match = izenelib::util::UString(sam, izenelib::util::UString::UTF_8);
+            }
             if(attrib_for_match.length()==0) continue;
-            std::string sam;
-            attrib_for_match.convertString(sam, izenelib::util::UString::UTF_8);
-            //std::cout<<"find attrib value : "<<sam<<std::endl;
-            boost::algorithm::replace_all(sam, "-", "");
-            attrib_for_match = izenelib::util::UString(sam, izenelib::util::UString::UTF_8);
+            {
+                std::string sam;
+                attrib_for_match.convertString(sam, izenelib::util::UString::UTF_8);
+                //std::cout<<"find attrib value : "<<sam<<std::endl;
+            }
+            uint64_t hav = izenelib::util::HashFunction<izenelib::util::UString>::generateHash64(attrib_for_match);
+            ValueType value;
+            std::string soid;
+            oid.convertString(soid, UString::UTF_8);
+            value.soid = soid;
+            value.title = title;
+            value.n = n;
+            writer.Append(hav, value);
         }
-        if(attrib_for_match.length()==0) continue;
-        {
-            std::string sam;
-            attrib_for_match.convertString(sam, izenelib::util::UString::UTF_8);
-            //std::cout<<"find attrib value : "<<sam<<std::endl;
-        }
-        uint64_t hav = izenelib::util::HashFunction<izenelib::util::UString>::generateHash64(attrib_for_match);
-        ValueType value;
-        std::string soid;
-        oid.convertString(soid, UString::UTF_8);
-        value.soid = soid;
-        value.title = title;
-        value.n = n;
-        writer.Append(hav, value);
     }
     writer.Close();
     izenelib::am::ssf::Sorter<uint32_t, uint64_t>::Sort(writer_file);

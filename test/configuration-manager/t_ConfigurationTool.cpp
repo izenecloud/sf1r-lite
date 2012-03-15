@@ -12,7 +12,7 @@ namespace { // {anonymous}
 class ConfigurationToolFixture
 {
 public:
-    std::set<PropertyConfig, PropertyComp> propertyList;
+    IndexBundleSchema propertyList;
     config_tool::PROPERTY_ALIAS_MAP_T aliasMap;
 };
 } // namespace {anonymous}

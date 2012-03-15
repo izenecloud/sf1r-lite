@@ -12,6 +12,9 @@
 
 namespace sf1r
 {
+class IndexTaskService;
+class IndexSearchService;
+class MiningSearchService;
 
 /// @addtogroup controllers
 /// @{
@@ -27,6 +30,8 @@ class DocumentsController : public Sf1Controller
     static const std::size_t kDefaultPageCount;
 
 public:
+    DocumentsController();
+
     /// @brief alias for search
     void index()
     {
@@ -53,16 +58,20 @@ public:
     void get_doc_count();
     void get_key_count();
 
+protected:
+    virtual bool checkCollectionService(std::string& error);
+
 private:
     bool requireDOCID();
     bool setLimit();
-    bool parseCollection();
 
     bool requireKeywords(std::string& keywords);
     bool requireGroupProperty(std::string& groupProperty);
     bool requireGroupLabel(std::vector<std::string>& groupPath);
 
-    std::string collection_;
+    IndexSearchService* indexSearchService_;
+    IndexTaskService* indexTaskService_;
+    MiningSearchService* miningSearchService_;
 };
 
 /// @}

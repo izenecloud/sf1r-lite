@@ -14,20 +14,22 @@ namespace sf1r
 using driver::Keys;
 using namespace izenelib::driver;
 
-bool ProductController::check_product_manager_()
+bool ProductController::checkCollectionService(std::string& error)
 {
-    if (!collectionHandler_->productSearchService_)
+    ProductSearchService* service = collectionHandler_->productSearchService_;
+    if (!service)
     {
-        response().addError("ProductManager not enabled.");
+        error = "Request failed, no product search service found.";
         return false;
     }
-    product_manager_ = collectionHandler_->productSearchService_->GetProductManager();
 
+    product_manager_ = service->GetProductManager();
     if (!product_manager_)
     {
-        response().addError("ProductManager not enabled.");
+        error = "Request failed, ProductManager not enabled.";
         return false;
     }
+
     return true;
 }
 
@@ -220,11 +222,10 @@ bool ProductController::require_date_range_()
  */
 void ProductController::add_new_group()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_docid_list_());
     IZENELIB_DRIVER_BEFORE_HOOK(maybe_doc_(false));
     IZENELIB_DRIVER_BEFORE_HOOK(maybe_option_());
-    
+
     if (!product_manager_->AddGroup(docid_list_, doc_, option_))
     {
         response().addError(product_manager_->GetLastError());
@@ -273,7 +274,6 @@ void ProductController::add_new_group()
  */
 void ProductController::append_to_group()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_uuid_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_docid_list_());
     IZENELIB_DRIVER_BEFORE_HOOK(maybe_option_());
@@ -319,7 +319,6 @@ void ProductController::append_to_group()
  */
 void ProductController::remove_from_group()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_uuid_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_docid_list_());
     IZENELIB_DRIVER_BEFORE_HOOK(maybe_option_());
@@ -359,7 +358,6 @@ void ProductController::remove_from_group()
  */
 // void ProductController::recover()
 // {
-//     IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
 //     if (!product_manager_->Recover())
 //     {
 //         response().addError(product_manager_->GetLastError());
@@ -396,7 +394,6 @@ void ProductController::remove_from_group()
  */
 void ProductController::update_a_doc()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
     IZENELIB_DRIVER_BEFORE_HOOK(maybe_doc_(true));
     if (!product_manager_->UpdateADoc(doc_))
     {
@@ -499,7 +496,6 @@ void ProductController::update_a_doc()
  */
 void ProductController::get_multi_price_history()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_str_docid_list_());
     IZENELIB_DRIVER_BEFORE_HOOK(require_date_range_());
 
@@ -605,8 +601,6 @@ void ProductController::get_multi_price_history()
  */
 void ProductController::get_top_price_cut_list()
 {
-    IZENELIB_DRIVER_BEFORE_HOOK(check_product_manager_());
-
     prop_name_ = asString(request()[Keys::property]);
     prop_value_ = asString(request()[Keys::value]);
     days_ = asUint(request()[Keys::days]);
@@ -629,6 +623,70 @@ void ProductController::get_top_price_cut_list()
         Value& tpc_item = tpc_list();
         tpc_item[Keys::price_cut] = tpc_queue[i].first;
         tpc_item[Keys::docid] = tpc_queue[i].second;
+    }
+}
+
+/**
+ * @brief Action \b migrate_price_history. Migrate price history to another Cassandra keyspace.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b new_keyspace* (@c String): New keyspace name.
+ * - @b old_prefix (@c String): Old prefix of Cassandra key.
+ * - @b new_prefix (@c String): New prefix of Cassandra key.
+ * - @b start (@c Uint): First docid to be processed
+ *
+ * @section response
+ *
+ *
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection" : "b5mm",
+ *   "new_keyspace" : "B5M",
+ *   "old_prefix" : "b5mm",
+ *   "new_prefix" : ""
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ * }
+ * @endcode
+ */
+void ProductController::migrate_price_history()
+{
+    new_keyspace_ = asString(request()[Keys::new_keyspace]);
+
+    if (!izenelib::driver::nullValue(request()[Keys::old_prefix]))
+    {
+        old_prefix_ = asString(request()[Keys::old_prefix]);
+    }
+
+    if (!izenelib::driver::nullValue(request()[Keys::new_prefix]))
+    {
+        new_prefix_ = asString(request()[Keys::new_prefix]);
+    }
+
+    if (!izenelib::driver::nullValue(request()[Keys::start]))
+    {
+        start_ = asUint(request()[Keys::start]);
+        if (start_ == 0) start_ = 1;
+    }
+    else
+    {
+        start_ = 1;
+    }
+
+    if (!product_manager_->MigratePriceHistory(new_keyspace_, old_prefix_, new_prefix_, start_))
+    {
+        response().addError(product_manager_->GetLastError());
     }
 }
 
