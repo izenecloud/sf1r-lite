@@ -262,6 +262,7 @@ RecommendTaskService::RecommendTaskService(
     EventManager& eventManager,
     RateManager& rateManager,
     ItemIdGenerator& itemIdGenerator,
+    QueryClickCounter& queryPurchaseCounter,
     CoVisitManager& coVisitManager,
     ItemCFManager& itemCFManager
 )
@@ -276,6 +277,7 @@ RecommendTaskService::RecommendTaskService(
     ,eventManager_(eventManager)
     ,rateManager_(rateManager)
     ,itemIdGenerator_(itemIdGenerator)
+    ,queryPurchaseCounter_(queryPurchaseCounter)
     ,coVisitManager_(coVisitManager)
     ,itemCFManager_(itemCFManager)
     ,visitMatrix_(coVisitManager_)
@@ -667,6 +669,7 @@ bool RecommendTaskService::saveOrder_(
     orderManager_.addOrder(itemIdVec);
 
     if (purchaseManager_.addPurchaseItem(userIdStr, itemIdVec, matrix) &&
+        insertClickCounterDB_(orderItemVec, itemIdVec) &&
         insertOrderDB_(userIdStr, orderIdStr, orderItemVec, itemIdVec))
     {
         return true;
@@ -713,6 +716,39 @@ bool RecommendTaskService::insertOrderDB_(
 
         if(!itemLogger.insertItem(orderId, orderItem.itemIdStr_,
                                   orderItem.price_, orderItem.quantity_, isRecItem))
+        {
+            result = false;
+        }
+    }
+
+    return result;
+}
+
+bool RecommendTaskService::insertClickCounterDB_(
+    const OrderItemVec& orderItemVec,
+    const std::vector<itemid_t>& itemIdVec
+)
+{
+    bool result = true;
+
+    const unsigned int itemNum = orderItemVec.size();
+    for (unsigned int i = 0; i < itemNum; ++i)
+    {
+        const std::string& query = orderItemVec[i].query_;
+
+        if (query.empty())
+            continue;
+
+        QueryClickCounter::click_counter_type clickCounter;
+        if (! queryPurchaseCounter_.get(query, clickCounter))
+        {
+            result = false;
+            continue;
+        }
+
+        clickCounter.click(itemIdVec[i]);
+
+        if (! queryPurchaseCounter_.update(query, clickCounter))
         {
             result = false;
         }
@@ -773,6 +809,8 @@ void RecommendTaskService::flush_()
     orderManager_.flush();
     eventManager_.flush();
     rateManager_.flush();
+
+    queryPurchaseCounter_.flush();
 
     coVisitManager_.flush();
     itemCFManager_.flush();

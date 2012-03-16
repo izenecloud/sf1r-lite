@@ -28,6 +28,9 @@ struct RecommendParam
     std::string sessionIdStr;
     ItemCondition condition;
 
+    std::string query;
+    int queryClickFreq;
+
     std::string userIdStr;
     std::vector<std::string> inputItems;
     std::vector<std::string> includeItems;

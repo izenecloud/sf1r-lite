@@ -78,6 +78,7 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
     purchaseManager_.reset();
     cartManager_.reset();
     orderManager_.reset();
+    queryPurchaseCounter_.reset();
     eventManager_.reset();
     rateManager_.reset();
 
@@ -125,6 +126,7 @@ bool RecommendBundleActivator::init_(IndexSearchService* indexSearchService)
         createStorage_();
         createItem_(indexSearchService);
         createOrder_();
+        createClickCounter_();
         createRecommender_();
         createService_();
     }
@@ -268,7 +270,15 @@ void RecommendBundleActivator::createOrder_()
                                          config_->indexCacheSize_));
 
     orderManager_->setMinThreshold(config_->itemSetMinFreq_);
+}
 
+void RecommendBundleActivator::createClickCounter_()
+{
+    bfs::path counterDir = dataDir_ / "click_counter";
+    bfs::path counterPath = counterDir / "query_purchase.db";
+    bfs::create_directory(counterDir);
+
+    queryPurchaseCounter_.reset(new QueryClickCounter(counterPath.string()));
 }
 
 void RecommendBundleActivator::createRecommender_()
@@ -277,6 +287,7 @@ void RecommendBundleActivator::createRecommender_()
                                                      *visitManager_, *purchaseManager_,
                                                      *cartManager_, *orderManager_,
                                                      *eventManager_, *rateManager_,
+                                                     *queryPurchaseCounter_,
                                                      *coVisitManager_, *itemCFManager_));
 }
 
@@ -284,7 +295,7 @@ void RecommendBundleActivator::createService_()
 {
     taskService_.reset(new RecommendTaskService(*config_, directoryRotator_, *userManager_, *itemManager_,
                                                 *visitManager_, *purchaseManager_, *cartManager_, *orderManager_,
-                                                *eventManager_, *rateManager_, *itemIdGenerator_,
+                                                *eventManager_, *rateManager_, *itemIdGenerator_, *queryPurchaseCounter_,
                                                 *coVisitManager_, *itemCFManager_));
 
     searchService_.reset(new RecommendSearchService(*userManager_, *itemManager_,

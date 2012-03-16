@@ -6,6 +6,7 @@
 #include "BOSRecommender.h"
 #include "BOERecommender.h"
 #include "BORRecommender.h"
+#include "BAQRecommender.h"
 
 #include <boost/algorithm/string/case_conv.hpp>
 
@@ -21,6 +22,7 @@ RecommenderFactory::RecommenderFactory(
     OrderManager& orderManager,
     EventManager& eventManager,
     RateManager& rateManager,
+    QueryClickCounter& queryPurchaseCounter,
     CoVisitManager& coVisitManager,
     ItemCFManager& itemCFManager
 )
@@ -35,6 +37,7 @@ RecommenderFactory::RecommenderFactory(
     recTypeMap_["BOB"] = BASED_ON_BROWSE_HISTORY;
     recTypeMap_["BOS"] = BASED_ON_SHOP_CART;
     recTypeMap_["BOR"] = BASED_ON_RANDOM;
+    recTypeMap_["BAQ"] = BUY_AFTER_QUERY;
 
     recommenders_[FREQUENT_BUY_TOGETHER] = new FBTRecommender(itemManager, orderManager);
     recommenders_[BUY_ALSO_BUY] = new BABRecommender(itemManager, itemCFManager);
@@ -43,6 +46,7 @@ RecommenderFactory::RecommenderFactory(
     recommenders_[BASED_ON_BROWSE_HISTORY] = new BOBRecommender(itemManager, itemCFManager, userEventFilter_, visitManager);
     recommenders_[BASED_ON_SHOP_CART] = new BOSRecommender(itemManager, itemCFManager, userEventFilter_, cartManager);
     recommenders_[BASED_ON_RANDOM] = new BORRecommender(itemManager, userEventFilter_, itemIdGenerator);
+    recommenders_[BUY_AFTER_QUERY] = new BAQRecommender(itemManager, queryPurchaseCounter);
 }
 
 RecommenderFactory::~RecommenderFactory()

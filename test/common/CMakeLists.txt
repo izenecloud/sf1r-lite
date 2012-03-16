@@ -10,6 +10,7 @@ SET(libs
   # #external
   ${Boost_LIBRARIES}
   ${Glog_LIBRARIES}
+  ${TokyoCabinet_LIBRARIES}
   )
 
 SET(Boost_USE_STATIC_LIBS OFF)
@@ -23,6 +24,13 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND AND Boost_SERIALIZATION_FOUND
     t_ScdParser.cpp
     )
   TARGET_LINK_LIBRARIES(t_ScdParser ${libs})
+
+  ADD_EXECUTABLE(t_ClickCounterDB
+    Runner.cpp
+    t_ClickCounterDB.cpp
+    ClickCounterDBTestFixture.cpp
+    )
+  TARGET_LINK_LIBRARIES(t_ClickCounterDB ${libs})
 
 ENDIF()
 

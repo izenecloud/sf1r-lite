@@ -508,7 +508,7 @@ void RecommendController::get_user()
  *   - @b session_id* (@c String): a session id.@n
  *     A session id is a unique identifier to identify the user's current interaction session.@n
  *     For each session between user logging in and logging out, the session id should be unique and not changed.@n
- *     In each session, the items visited by the user would be used to recommend items for the type @b VAV in @c do_recommend().
+ *     In each session, the items visited by the user would be used to recommend items for @b VAV type in @c do_recommend().
  *   - @b USERID* (@c String): a unique user identifier.
  *   - @b ITEMID* (@c String): a unique item identifier.
  *   - @b is_recommend_item (@c Bool = @c false): this is an important flag to give feedback on recommendation result.@n
@@ -568,6 +568,8 @@ void RecommendController::visit_item()
  *     - @b ITEMID* (@c String): a unique item identifier.
  *     - @b price (@c Double): the price of each item.
  *     - @b quantity (@c Uint): the number of items purchased.
+ *     - @b keywords (@c String): if non-empty, it means that @b USERID searched this keyword before purchasing @b ITEMID.@n
+ *       This parameter is used to recommend items for @b BAQ type in @c do_recommend().
  *   - @b order_id (@c String): the order id.
  *
  * @section response
@@ -628,7 +630,9 @@ void RecommendController::purchase_item()
 
         int quantity = asUint(itemValue[Keys::quantity]);
         double price = asDouble(itemValue[Keys::price]);
-        orderItemVec.push_back(RecommendTaskService::OrderItem(itemIdStr, quantity, price));
+        std::string query = asString(itemValue[Keys::keywords]);
+
+        orderItemVec.push_back(RecommendTaskService::OrderItem(itemIdStr, quantity, price, query));
     }
 
     if (! recommendTaskService_->purchaseItem(userIdStr, orderIdStr, orderItemVec))
@@ -893,6 +897,10 @@ bool RecommendController::parseRateParam(RateParam& param)
  *       Get randomly selected items as recommendation results.@n
  *       If @b input_items is specified, they would be excluded from recommendation results.@n
  *       If @b USERID is specified, the items from the user's events would also be excluded from recommendation results.@n@n
+ *     - @b BAQ (<b>Bought after Query</b>)@n
+ *       Get statistics on which items are frequently bought after user searched @b keywords.@n
+ *       In response data, @b weight in @b resources would be the bought frequency count for each item,@n
+ *       @b total_freq would be the frequency sum for all of the items bought after users searched @b keywords.@n@n
  *   - @b max_count (@c Uint = 10): max item number allowed in recommendation result.
  *   - @b USERID (@c String): a unique user identifier.@n
  *     This parameter is required for rec_type of @b BOE, and optional for @b BOB, @b BOS and @b BOR.
@@ -900,6 +908,7 @@ bool RecommendController::parseRateParam(RateParam& param)
  *     A session id is a unique identifier to identify the user's current interaction session.@n
  *     For each session between user logging in and logging out, the session id should be unique and not changed.@n
  *     In current version, this parameter is only used in @b BOB rec_type.
+ *   - @b keywords (@c String): the user keywords used in @b BAQ rec_type.
  *   - @b input_items (@c Array): the input items for recommendation.@n
  *     This parameter is required for rec_type of @b FBT, @b BAB, @b VAV, and optional for @b BOB, @b BOS and @b BOR.
  *     - @b ITEMID* (@c String): a unique item identifier.
@@ -917,6 +926,7 @@ bool RecommendController::parseRateParam(RateParam& param)
  * @section response
  *
  * - @b header (@c Object): Property @b success gives the result, true or false.
+ * - @b total_freq (@c Uint): used in @b BAQ rec_type, the frequency sum for all of the items bought after users searched @b keywords.
  * - @b resources (@c Array): each is an item object, in which property name from @b select is the key, and property value is the value.@n
  *   There might be some special properties in the item object:
  *   - @b ITEMID (@c String): a unique item identifier.
@@ -999,6 +1009,7 @@ bool RecommendController::parseRecommendParam(RecommendParam& param)
 
     param.userIdStr = asString(resourceValue[Keys::USERID]);
     param.sessionIdStr = asString(resourceValue[Keys::session_id]);
+    param.query = asString(resourceValue[Keys::keywords]);
 
     std::string errorMsg;
     if (! param.check(errorMsg))
@@ -1012,6 +1023,11 @@ bool RecommendController::parseRecommendParam(RecommendParam& param)
 
 void RecommendController::renderRecommendResult(const RecommendParam& param, const std::vector<RecommendItem>& recItemVec)
 {
+    if (param.type == BUY_AFTER_QUERY)
+    {
+        response()[Keys::total_freq] = param.queryClickFreq;
+    }
+
     Value& resources = response()[Keys::resources];
 
     for (std::vector<RecommendItem>::const_iterator recIt = recItemVec.begin();
