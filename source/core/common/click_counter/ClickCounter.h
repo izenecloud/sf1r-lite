@@ -119,7 +119,7 @@ void ClickCounter<ValueType, FreqType>::serialize(Archive& ar, const unsigned in
 
 template <typename ValueType, typename FreqType>
 class ClickCounter<ValueType, FreqType>::ValueFreqQueue
-    : public izenelib::util::PriorityQueue<ClickCounter::ValueFreq>
+    : public izenelib::util::PriorityQueue<typename ClickCounter::ValueFreq>
 {
 public:
     ValueFreqQueue(size_t size) { this->initialize(size); }
