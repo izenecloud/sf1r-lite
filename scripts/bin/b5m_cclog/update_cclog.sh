@@ -26,7 +26,7 @@ case $1 in
 	echo
 
     rm cclog/*.errors
-    mkdir archive
+    mkdir cclog/archive
 	for file in cclog/*
 	do
 	  if [ -f $file ]
@@ -41,7 +41,7 @@ case $1 in
 	echo "#### updating history cclogs ####"
 	echo
 	rm cclog/history/*.errors
-    mkdir history
+    mkdir cclog/history
     ruby $work_dir/log_server_client.rb update_cclog_history cclog/history $Sf1rHost
 
     # udpate history
