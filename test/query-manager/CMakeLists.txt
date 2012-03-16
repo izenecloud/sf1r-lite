@@ -56,6 +56,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
       ${Glog_LIBRARIES}
       ${sqlite3_LIBRARIES}
       ${MYSQL_LIBRARIES}
+      ${ImageMagick_LIBRARIES}
       )
 
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)

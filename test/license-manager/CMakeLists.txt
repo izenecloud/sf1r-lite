@@ -45,6 +45,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
         sqlite3
         ${MYSQL_LIBRARIES}
         ${TokyoCabinet_LIBRARIES}
+        ${ImageMagick_LIBRARIES}
         )
     SET_TARGET_PROPERTIES(t_license_manager
         PROPERTIES

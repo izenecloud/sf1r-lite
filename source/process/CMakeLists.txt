@@ -95,6 +95,7 @@ TARGET_LINK_LIBRARIES(CobraProcess
   ${sqlite3_LIBRARIES}
   ${MYSQL_LIBRARIES}
   ${Thrift_LIBS}
+  ${ImageMagick_LIBRARIES}
 )
 
 FIND_PACKAGE(izenelib REQUIRED COMPONENTS
