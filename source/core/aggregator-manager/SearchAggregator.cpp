@@ -204,10 +204,6 @@ void SearchAggregator::aggregateDistSearchResult(DistKeywordSearchResult& result
         delete docComparators[i];
     }
     delete docComparators;
-
-    // TODO, merge Ontology info
-    //result.onto_rep_;
-    //result.attrRep_;
 }
 
 void SearchAggregator::aggregateSummaryMiningResult(KeywordSearchResult& result, const std::vector<std::pair<workerid_t, KeywordSearchResult> >& resultList)

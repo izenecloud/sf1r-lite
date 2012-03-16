@@ -1,7 +1,7 @@
 /**
  * @file RecommendAggregator.h
  * @author Zhongxia Li
- * @date Dec 8, 2011 initial creatation
+ * @date Dec 8, 2011 initial creation
  * @brief 
  */
 #ifndef RECOMMEND_AGGREGATOR_H_

@@ -9,6 +9,7 @@
 
 #include <ir/id_manager/IDManager.h>
 #include <idmlib/duplicate-detection/dup_detector.h>
+#include <idmlib/util/file_object.h>
 
 namespace idmlib
 {
@@ -32,6 +33,7 @@ class DupDetectorWrapper
 {
     typedef idmlib::dd::DupDetector<uint32_t, uint32_t> DDType;
     typedef DDType::GroupTableType GroupTableType;
+    typedef idmlib::util::FileObject<uint32_t> FileObjectType;
 
 public:
     DupDetectorWrapper(const std::string& container);
@@ -63,7 +65,7 @@ public:
             const izenelib::util::UString& text,
             std::vector<uint64_t>& signature);
 
-    void getKNNListBySignature(
+    bool getKNNListBySignature(
             const std::vector<uint64_t>& signature,
             uint32_t count,
             uint32_t start,
@@ -78,6 +80,7 @@ private:
     boost::shared_ptr<izenelib::ir::idmanager::IDManager> id_manager_;
     izenelib::am::rde_hash<std::string, bool> dd_properties_;
     idmlib::util::IDMAnalyzer* analyzer_;
+    FileObjectType* file_info_;
 
     bool fp_only_;
     GroupTableType* group_table_;

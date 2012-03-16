@@ -261,6 +261,10 @@ bool DocumentManager::getDocument(
     CREATE_SCOPED_PROFILER ( getDocument, "DocumentManager", "DocumentManager::getDocument");
     return propertyValueTable_->get(docId, document);
 }
+bool DocumentManager::existDocument(docid_t docId)
+{
+    return propertyValueTable_->exist(docId);
+}
 
 bool DocumentManager::getDocumentAsync(docid_t docId)
 {
@@ -316,7 +320,9 @@ docid_t DocumentManager::getMaxDocId() const
 
 bool DocumentManager::getDeletedDocIdList(std::vector<docid_t>& docid_list)
 {
+    docid_list.clear();
     DelFilterType::size_type find = delfilter_.find_first();
+    docid_list.reserve(	delfilter_.count());
     while(find!=DelFilterType::npos)
     {
         docid_t docid = (docid_t)find+1;

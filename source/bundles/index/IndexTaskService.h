@@ -54,7 +54,7 @@ public:
     boost::shared_ptr<DocumentManager> getDocumentManager() const;
 
 private:
-    bool indexMaster_(unsigned int numdoc);
+    bool distributedIndex_(unsigned int numdoc);
 
 private:
     IndexBundleConfiguration* bundleConfig_;

@@ -5,8 +5,8 @@ require 'rubygems'
 require 'require_all'
 require 'json'
 require 'set'
-require_rel '../libdriver/common'
-require_rel '../lib/scd_parser'
+require_rel '../../libdriver/common'
+require_rel '../../lib/scd_parser'
 
 # Sf1r to be updated, pass as command parameter
 # beta: 10.10.1.112, stage: 10.10.1.111

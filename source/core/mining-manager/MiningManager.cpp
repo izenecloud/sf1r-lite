@@ -1517,8 +1517,7 @@ bool MiningManager::GetKNNListBySignature(
 
     if (signature.empty()) return false;
 
-    dupManager_->getKNNListBySignature(signature, knnTopK, start, knnDist, docIdList, rankScoreList, totalCount);
-    return true;
+    return dupManager_->getKNNListBySignature(signature, knnTopK, start, knnDist, docIdList, rankScoreList, totalCount);
 }
 
 bool MiningManager::doTgInfoInit_()
