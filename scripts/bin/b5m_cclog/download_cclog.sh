@@ -17,4 +17,5 @@ fi
 echo "downloading cclog from $1 $IP"
 
 mv cc.*.log archive_cclog
+mkdir cclog
 scp lscm@$IP:/opt/sf1r-engine/cc.*.log ./cclog/
