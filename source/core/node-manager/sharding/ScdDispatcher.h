@@ -7,7 +7,7 @@
 #ifndef SCD_DISPATCHER_H_
 #define SCD_DISPATCHER_H_
 
-#include "ScdSharding.h"
+#include "ScdSharder.h"
 
 #include <net/aggregator/AggregatorConfig.h>
 
@@ -24,7 +24,7 @@ namespace sf1r{
 class ScdDispatcher
 {
 public:
-    ScdDispatcher(ScdSharding* scdSharding);
+    ScdDispatcher(const boost::shared_ptr<ScdSharder>& scdSharder);
 
     virtual ~ScdDispatcher() {}
 
@@ -45,7 +45,7 @@ protected:
     virtual bool finish() { return true; }
 
 protected:
-    ScdSharding* scdSharding_;
+    boost::shared_ptr<ScdSharder> scdSharder_;
 
     izenelib::util::UString::EncodingType scdEncoding_;
     std::string curScdFileName_;
@@ -59,7 +59,7 @@ class BatchScdDispatcher : public ScdDispatcher
 {
 public:
     BatchScdDispatcher(
-            ScdSharding* scdSharding,
+            const boost::shared_ptr<ScdSharder>& scdSharder,
             const std::string& collectionName,
             const std::string& dispatchTempDir="./scd-dispatch-temp");
 

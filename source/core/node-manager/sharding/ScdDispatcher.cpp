@@ -14,10 +14,11 @@ using namespace sf1r;
 using namespace net::distribute;
 namespace bfs = boost::filesystem;
 
-ScdDispatcher::ScdDispatcher(ScdSharding* scdSharding)
-: scdSharding_(scdSharding), scdEncoding_(izenelib::util::UString::UTF_8)
+ScdDispatcher::ScdDispatcher(const boost::shared_ptr<ScdSharder>& scdSharder)
+    : scdSharder_(scdSharder)
+    , scdEncoding_(izenelib::util::UString::UTF_8)
 {
-    BOOST_ASSERT(scdSharding_);
+    BOOST_ASSERT(scdSharder_);
 }
 
 bool ScdDispatcher::dispatch(const std::string& dir, unsigned int docNum)
@@ -36,7 +37,7 @@ bool ScdDispatcher::dispatch(const std::string& dir, unsigned int docNum)
         switchFile();
 
         ScdParser scdParser(scdEncoding_);
-        if(!scdParser.load(scd_path.string()) )
+        if(!scdParser.load(scd_path.string()))
         {
             LOG(ERROR) << "Load scd file failed: " << scd_path.string();
             return false;
@@ -45,7 +46,7 @@ bool ScdDispatcher::dispatch(const std::string& dir, unsigned int docNum)
         for (ScdParser::iterator it = scdParser.begin(); it != scdParser.end(); it++)
         {
             SCDDocPtr pScdDoc = *it;
-            shardid_t shardId = scdSharding_->sharding(*pScdDoc);
+            shardid_t shardId = scdSharder_->sharding(*pScdDoc);
 
             // dispatching one doc
             dispatch_impl(shardId, *pScdDoc);
@@ -121,18 +122,18 @@ bool ScdDispatcher::getScdFileList(const std::string& dir, std::vector<std::stri
 /// Class BatchScdDispatcher //////////////////////////////////////////////////////////
 
 BatchScdDispatcher::BatchScdDispatcher(
-        ScdSharding* scdSharding,
+        const boost::shared_ptr<ScdSharder>& scdSharder,
         const std::string& collectionName,
         const std::string& dispatchTempDir)
-: ScdDispatcher(scdSharding)
+: ScdDispatcher(scdSharder)
 , collectionName_(collectionName)
 , dispatchTempDir_(dispatchTempDir)
 {
     bfs::create_directory(dispatchTempDir_);
 
-    ofList_.resize(scdSharding->getMaxShardID()+1, NULL);
-    for (unsigned int shardid = scdSharding->getMinShardID();
-            shardid <= scdSharding->getMaxShardID(); shardid++)
+    ofList_.resize(scdSharder->getMaxShardID()+1, NULL);
+    for (unsigned int shardid = scdSharder->getMinShardID();
+            shardid <= scdSharder->getMaxShardID(); shardid++)
     {
         std::ostringstream oss;
         oss << dispatchTempDir_<<"/"<<shardid;
@@ -161,8 +162,8 @@ bool BatchScdDispatcher::switchFile()
 {
     //std::cout<<"switchFile to "<<curScdFileName_<<std::endl;
 
-    for (unsigned int shardid = scdSharding_->getMinShardID();
-                shardid <= scdSharding_->getMaxShardID(); shardid++)
+    for (unsigned int shardid = scdSharder_->getMinShardID();
+                shardid <= scdSharder_->getMaxShardID(); shardid++)
     {
         std::ofstream*& rof = ofList_[shardid];
 
@@ -222,8 +223,8 @@ bool BatchScdDispatcher::finish()
     LOG(INFO) << "start SCD dispatching" ;
 
     // Send splitted scd files in sub dirs to each shard server
-    for (unsigned int shardid = scdSharding_->getMinShardID();
-            shardid <= scdSharding_->getMaxShardID(); shardid++)
+    for (unsigned int shardid = scdSharder_->getMinShardID();
+            shardid <= scdSharder_->getMaxShardID(); shardid++)
     {
         std::string host;
         unsigned int recvPort;
