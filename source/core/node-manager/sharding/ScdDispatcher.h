@@ -38,6 +38,8 @@ public:
 protected:
     bool getScdFileList(const std::string& dir, std::vector<std::string>& fileList);
 
+    virtual bool initialize() { return true; }
+
     virtual bool switchFile() { return true; }
 
     virtual bool dispatch_impl(shardid_t shardid, SCDDoc& scdDoc) = 0;
@@ -47,6 +49,7 @@ protected:
 protected:
     boost::shared_ptr<ScdSharder> scdSharder_;
 
+    std::string scdDir_;
     izenelib::util::UString::EncodingType scdEncoding_;
     std::string curScdFileName_;
 };
@@ -60,17 +63,21 @@ class BatchScdDispatcher : public ScdDispatcher
 public:
     BatchScdDispatcher(
             const boost::shared_ptr<ScdSharder>& scdSharder,
-            const std::string& collectionName,
-            const std::string& dispatchTempDir="./scd-dispatch-temp");
+            const std::string& collectionName);
 
     ~BatchScdDispatcher();
 
 protected:
+    virtual bool initialize();
+
     virtual bool switchFile();
 
     virtual bool dispatch_impl(shardid_t shardid, SCDDoc& scdDoc);
 
     virtual bool finish();
+
+private:
+    bool initTempDir(const std::string& tempDir);
 
 private:
     std::string collectionName_;

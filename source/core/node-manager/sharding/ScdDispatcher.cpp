@@ -14,6 +14,8 @@ using namespace sf1r;
 using namespace net::distribute;
 namespace bfs = boost::filesystem;
 
+const static std::string DISPATCH_TEMP_DIR = "dispatch-temp-dir/";
+
 ScdDispatcher::ScdDispatcher(const boost::shared_ptr<ScdSharder>& scdSharder)
     : scdSharder_(scdSharder)
     , scdEncoding_(izenelib::util::UString::UTF_8)
@@ -27,6 +29,11 @@ bool ScdDispatcher::dispatch(const std::string& dir, unsigned int docNum)
 
     std::vector<std::string> scdFileList;
     if (!getScdFileList(dir, scdFileList))
+        return false;
+
+    // set scd dir and initialize
+    scdDir_ = dir;
+    if (!initialize())
         return false;
 
     unsigned int docProcessed = 0;
@@ -123,27 +130,10 @@ bool ScdDispatcher::getScdFileList(const std::string& dir, std::vector<std::stri
 
 BatchScdDispatcher::BatchScdDispatcher(
         const boost::shared_ptr<ScdSharder>& scdSharder,
-        const std::string& collectionName,
-        const std::string& dispatchTempDir)
+        const std::string& collectionName)
 : ScdDispatcher(scdSharder)
 , collectionName_(collectionName)
-, dispatchTempDir_(dispatchTempDir)
 {
-    bfs::create_directory(dispatchTempDir_);
-
-    ofList_.resize(scdSharder->getMaxShardID()+1, NULL);
-    for (unsigned int shardid = scdSharder->getMinShardID();
-            shardid <= scdSharder->getMaxShardID(); shardid++)
-    {
-        std::ostringstream oss;
-        oss << dispatchTempDir_<<"/"<<shardid;
-
-        std::string shardScdDir = oss.str();
-        bfs::create_directory(shardScdDir);
-
-        shardScdfileMap_.insert(std::make_pair(shardid, shardScdDir));
-        ofList_[shardid] = new std::ofstream;
-    }
 }
 
 BatchScdDispatcher::~BatchScdDispatcher()
@@ -156,6 +146,11 @@ BatchScdDispatcher::~BatchScdDispatcher()
             delete ofList_[i];
         }
     }
+}
+
+bool BatchScdDispatcher::initialize()
+{
+    return initTempDir(scdDir_ + DISPATCH_TEMP_DIR);
 }
 
 bool BatchScdDispatcher::switchFile()
@@ -252,6 +247,28 @@ bool BatchScdDispatcher::finish()
 
     LOG(INFO) << "end SCD dispatching" ;
     return ret;
+}
+
+bool BatchScdDispatcher::initTempDir(const std::string& tempDir)
+{
+    bfs::remove_all(tempDir);
+    bfs::create_directory(tempDir);
+
+    ofList_.resize(scdSharder_->getMaxShardID()+1, NULL);
+    for (unsigned int shardid = scdSharder_->getMinShardID();
+            shardid <= scdSharder_->getMaxShardID(); shardid++)
+    {
+        std::ostringstream oss;
+        oss << tempDir << shardid; // shard dir path
+
+        std::string shardScdDir = oss.str();
+        bfs::create_directory(shardScdDir);
+
+        shardScdfileMap_.insert(std::make_pair(shardid, shardScdDir));
+        ofList_[shardid] = new std::ofstream;
+    }
+
+    return true;
 }
 
 /// Class BatchScdDispatcher //////////////////////////////////////////////////////////

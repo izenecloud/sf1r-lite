@@ -75,7 +75,7 @@ void ScdSharder::setShardKeyValues(SCDDoc& scdDoc)
 
     if (ShardFieldList_.empty())
     {
-        // set DOCID as default shard key if miss shard keys, xxx
+        // set DOCID as default shard key if missing shard keys, xxx
         ShardFieldList_.push_back(std::make_pair("DOCID", docidVal));
         LOG(WARNING) << "WARN: miss shard keys (properties) in doc: " << docidVal;
     }
