@@ -12,6 +12,7 @@
 #include <common/SFLogger.h>
 
 #include "SearchManager.h"
+#include "IndexSearchCache.h"
 #include "CustomRanker.h"
 #include "QueryBuilder.h"
 #include "Sorter.h"
@@ -99,7 +100,7 @@ SearchManager::SearchManager(
     {
         schemaMap_[iter->getName()] = *iter;
     }
-
+    cache_.reset(new IndexSearchCache(config->searchCacheNum_));
     pSorterCache_ = new SortPropertyCache(indexManagerPtr_.get(), config);
     queryBuilder_.reset(new QueryBuilder(
                             indexManager,
@@ -122,6 +123,7 @@ void SearchManager::reset_cache(
         const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue)
 {
     //this method is only used for r-type filed right now
+    cache_->clear();
     if (!rType)
     {
         //pSorterCache_->setDirty(true);
@@ -146,7 +148,7 @@ void SearchManager::reset_cache(
 void SearchManager::reset_all_property_cache()
 {
     pSorterCache_->setDirty(true);
-
+    cache_->clear();
     // notify master
     NotifyMSG msg;
     msg.identity = collectionName_;
@@ -154,6 +156,37 @@ void SearchManager::reset_all_property_cache()
     Notifier::get()->notify(msg);
 
     queryBuilder_->reset_cache();
+}
+
+void SearchManager::makeQueryIdentity(
+        PureQueryIdentity& identity,
+        const KeywordSearchActionItem& item,
+        uint32_t start)
+{
+    identity.userId = item.env_.userID_;
+    identity.start = start;
+    identity.searchingMode = item.searchingMode_;
+
+    identity.query = item.env_.queryString_;
+    identity.expandedQueryString = item.env_.expandedQueryString_;
+    if (indexManagerPtr_->getIndexManagerConfig()->indexStrategy_.indexLevel_
+            == izenelib::ir::indexmanager::DOCLEVEL
+            && item.rankingType_ == RankingType::PLM)
+    {
+        const_cast<KeywordSearchActionItem &>(item).rankingType_ = RankingType::BM25;
+    }
+    identity.rankingType = item.rankingType_;
+    identity.laInfo = item.languageAnalyzerInfo_;
+    identity.properties = item.searchPropertyList_;
+    identity.sortInfo = item.sortPriorityList_;
+    identity.filterInfo = item.filteringList_;
+    identity.rangeProperty = item.rangePropertyName_;
+    identity.strExp = item.strExp_;
+    identity.paramConstValueMap = item.paramConstValueMap_;
+    identity.paramPropertyValueMap = item.paramPropertyValueMap_;
+    //identity.distActionType = distActionType;
+    std::sort(identity.properties.begin(),
+            identity.properties.end());
 }
 
 void SearchManager::setGroupFilterBuilder(
@@ -490,6 +523,19 @@ bool SearchManager::doSearch_(
 CREATE_PROFILER( computerankscore, "SearchManager", "doSearch_: overall time for scoring a doc");
 CREATE_PROFILER( inserttoqueue, "SearchManager", "doSearch_: overall time for inserting to result queue");
 CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall time for scoring customized score for a doc");
+    PureQueryIdentity identity;
+    makeQueryIdentity(identity, actionOperation.actionItem_, start);
+    if (cache_->get(
+               identity,
+               rankScoreList,
+               customRankScoreList,
+               docIdList,
+               totalCount,
+               propertyRange))
+    {
+        return true;
+    }
+
     totalCount = 0;
     const std::string& rangePropertyName = actionOperation.actionItem_.rangePropertyName_;
     boost::scoped_ptr<NumericPropertyTable> rangePropertyTable;
@@ -616,6 +662,14 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
         std::fill(rankScoreList.begin(), rankScoreList.end(), 1.0F);
     }
 #endif
+    if(count)
+        cache_->set(
+                identity,
+                rankScoreList,
+                customRankScoreList,
+                docIdList,
+                totalCount,
+                propertyRange);
     return true;
 }
 
