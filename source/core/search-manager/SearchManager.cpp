@@ -426,6 +426,9 @@ bool SearchManager::search(
             groupFilter.get(),
             scoreItemQueue.get());
 
+        if (groupFilter)
+            groupFilter->getGroupRep(groupRep, attrRep);
+
         ///rerank is only used for pure ranking
         std::vector<std::pair<std::string, bool> >& sortPropertyList
         = actionOperation.actionItem_.sortPriorityList_;
