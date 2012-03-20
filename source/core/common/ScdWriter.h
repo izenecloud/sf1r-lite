@@ -47,7 +47,7 @@ public:
 
     static std::string GenSCDFileName( int op);
 
-    void Append(const Document& doc);
+    bool Append(const Document& doc);
 
     bool Append(const SCDDoc& doc);
 

@@ -51,13 +51,13 @@ std::string ScdWriter::GenSCDFileName( int op)
     return ss.str();
 }
 
-void ScdWriter::Append(const Document& doc)
+bool ScdWriter::Append(const Document& doc)
 {
     const static std::string DOCID = "DOCID";
     Document::property_const_iterator docid_it = doc.findProperty(DOCID);
     if(docid_it == doc.propertyEnd())
     {
-        return;
+        return false;
     }
     if(!ofs_.is_open())
     {
@@ -93,6 +93,7 @@ void ScdWriter::Append(const Document& doc)
         ofs_<<"<"<<it->first<<">"<<value<<std::endl;
         ++it;
     }
+    return true;
 }
 
 bool ScdWriter::Append(const SCDDoc& doc)

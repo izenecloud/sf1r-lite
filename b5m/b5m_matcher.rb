@@ -88,8 +88,8 @@ task_list.each do |task|
 
   index_done = File.join(category_dir, "index.done")
   match_done = File.join(category_dir, "match.done")
-  a_scd = File.join(category_dir, "A.SCD")
-  t_scd = File.join(category_dir, "T.SCD")
+  a_scd = File.join(category_dir, "A")
+  t_scd = File.join(category_dir, "T")
   if force
     FileUtils.rm_rf(index_done) if File.exist?(index_done)
     FileUtils.rm_rf(match_done) if File.exist?(match_done)

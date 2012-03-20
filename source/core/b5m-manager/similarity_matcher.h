@@ -53,7 +53,7 @@ namespace sf1r {
         };
     public:
         SimilarityMatcher();
-        bool Index(const std::string& scd_file, const std::string& knowledge_dir);
+        bool Index(const std::string& scd_path, const std::string& knowledge_dir);
 
         void SetCmaPath(const std::string& path)
         { cma_path_ = path; }

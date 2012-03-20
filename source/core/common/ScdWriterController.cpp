@@ -42,6 +42,14 @@ bool ScdWriterController::Write(const SCDDoc& doc, int op)
     return writer->Append(doc);
 }
 
+bool ScdWriterController::Write(const Document& doc, int op)
+{
+    ScdWriter* writer = GetWriter_(op);
+    if(writer==NULL) return false;
+    document_limit_++;
+    return writer->Append(doc);
+}
+
 void ScdWriterController::Flush()
 {
     if(writer_!=NULL)

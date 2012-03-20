@@ -18,6 +18,7 @@ public:
     ~ScdWriterController();
 
     bool Write(const SCDDoc& doc, int op);
+    bool Write(const Document& doc, int op);
     
     void Flush();
     

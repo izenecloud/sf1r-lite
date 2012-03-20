@@ -7,8 +7,8 @@ matcher:
         work_dir: working
         tmp_dir: tmp
         result: match_result
-        train_scd: T.SCD
-        scd: A.SCD
+        train_scd: ./T
+        scd: ./A
         filter_attrib_name: filter_attrib_name.conf
         b5m_scd: b5m_scd
         b5mo: ../bin/collection/b5mo
