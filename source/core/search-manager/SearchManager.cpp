@@ -3,7 +3,6 @@
 #include <document-manager/DocumentManager.h>
 #include <query-manager/ActionItem.h>
 #include <ranking-manager/RankingManager.h>
-#include <ranking-manager/RankQueryProperty.h>
 #include <mining-manager/MiningManager.h>
 #include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <mining-manager/faceted-submanager/GroupFilterBuilder.h>
@@ -206,38 +205,16 @@ bool SearchManager::search(
         uint32_t knnDist,
         uint32_t start)
 {
-    return doSearch_(actionOperation, docIdList, rankScoreList, customRankScoreList,
-                     totalCount, groupRep, attrRep, propertyRange, distSearchInfo,
-                     topK, start);
-}
-
-bool SearchManager::doSearch_(
-        SearchKeywordOperation& actionOperation,
-        std::vector<unsigned int>& docIdList,
-        std::vector<float>& rankScoreList,
-        std::vector<float>& customRankScoreList,
-        std::size_t& totalCount,
-        faceted::GroupRep& groupRep,
-        faceted::OntologyRep& attrRep,
-        sf1r::PropertyRange& propertyRange,
-        DistKeywordSearchInfo& distSearchInfo,
-        uint32_t topK,
-        uint32_t start)
-{
     CREATE_PROFILER( preparedociter, "SearchManager", "doSearch_: SearchManager_search : build doc iterator");
     CREATE_PROFILER( preparerank, "SearchManager", "doSearch_: prepare ranker");
     CREATE_PROFILER( preparesort, "SearchManager", "doSearch_: prepare sort");
-    CREATE_PROFILER( computerankscore, "SearchManager", "doSearch_: overall time for scoring a doc");
-    CREATE_PROFILER( inserttoqueue, "SearchManager", "doSearch_: overall time for inserting to result queue");
-    CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall time for scoring customized score for a doc");
 
     unsigned int collectionId = 1;
     std::vector<std::string> indexPropertyList( actionOperation.actionItem_.searchPropertyList_ );
 #if PREFETCH_TERMID
     std::stable_sort (indexPropertyList.begin(), indexPropertyList.end());
 #endif
-    typedef std::vector<std::string>::size_type property_size_type;
-    property_size_type indexPropertySize = indexPropertyList.size();
+    unsigned indexPropertySize = indexPropertyList.size();
     std::vector<propertyid_t> indexPropertyIdList(indexPropertySize);
     std::transform(
             indexPropertyList.begin(),
@@ -253,7 +230,6 @@ bool SearchManager::doSearch_(
     sf1r::TextRankingType& pTextRankingType = actionOperation.actionItem_.rankingType_;
 
     // references for property term info
-    typedef std::map<std::string, PropertyTermInfo> property_term_info_map;
     const property_term_info_map& propertyTermInfoMap =
         actionOperation.getPropertyTermInfoMap();
     // use empty object for not found property
@@ -343,131 +319,14 @@ bool SearchManager::doSearch_(
     START_PROFILER( preparesort )
     ///constructing sorter
     CustomRankerPtr customRanker;
-    boost::scoped_ptr<Sorter> pSorter;
+    Sorter* pSorter = NULL;
     try
     {
-        std::vector<std::pair<std::string, bool> >& sortPropertyList
-            = actionOperation.actionItem_.sortPriorityList_;
-        if (!sortPropertyList.empty())
-        {
-            std::vector<std::pair<std::string, bool> >::iterator iter = sortPropertyList.begin();
-            for (; iter != sortPropertyList.end(); ++iter)
-            {
-                std::string fieldNameL = iter->first;
-                boost::to_lower(fieldNameL);
-                // sort by custom ranking
-                if (fieldNameL == CUSTOM_RANK_PROPERTY)
-                {
-                    // prepare custom ranker data, custom score will be evaluated later as rank score
-                    customRanker = actionOperation.actionItem_.customRanker_;
-                    if (!customRanker)
-                        customRanker = buildCustomRanker_(actionOperation.actionItem_);
-                    if (!customRanker->setPropertyData(pSorterCache_))
-                    {
-                        LOG(ERROR) << customRanker->getErrorInfo() << endl;
-                        continue;
-                    }
-                    //customRanker->printESTree();
-
-                    if (!pSorter) pSorter.reset(new Sorter(pSorterCache_));
-                    SortProperty* pSortProperty = new SortProperty(
-                            "CUSTOM_RANK",
-                            CUSTOM_RANKING_PROPERTY_TYPE,
-                            SortProperty::CUSTOM,
-                            iter->second);
-                    pSorter->addSortProperty(pSortProperty);
-                    continue;
-                }
-                // sort by rank
-                if (fieldNameL == RANK_PROPERTY)
-                {
-                    if (!pSorter) pSorter.reset(new Sorter(pSorterCache_));
-                    SortProperty* pSortProperty = new SortProperty(
-                            "RANK",
-                            UNKNOWN_DATA_PROPERTY_TYPE,
-                            SortProperty::SCORE,
-                            iter->second);
-                    pSorter->addSortProperty(pSortProperty);
-                    continue;
-                }
-                // sort by date
-                if (fieldNameL == DATE_PROPERTY)
-                {
-                    if (!pSorter) pSorter.reset(new Sorter(pSorterCache_));
-
-                    SortProperty* pSortProperty = new SortProperty(
-                            iter->first,
-                            INT_PROPERTY_TYPE,
-                            iter->second);
-                    pSorter->addSortProperty(pSortProperty);
-                    continue;
-                }
-                // sort by ctr (click through rate)
-                if (fieldNameL == CTR_PROPERTY)
-                {
-                    if (miningManagerPtr_.expired())
-                    {
-                        DLOG(ERROR)<<"Skipped CTR sort property: Mining Manager was not initialized";
-                        continue;
-                    }
-
-                    boost::shared_ptr<MiningManager> resourceMiningManagerPtr = miningManagerPtr_.lock();
-                    boost::shared_ptr<faceted::CTRManager> ctrManangerPtr
-                    = resourceMiningManagerPtr->GetCtrManager();
-                    if (!ctrManangerPtr)
-                    {
-                        DLOG(ERROR)<<"Skipped CTR sort property: CTR Manager was not initialized";
-                        continue;
-                    }
-
-                    pSorterCache_->setCtrManager(ctrManangerPtr.get());
-                    if (!pSorter) pSorter.reset(new Sorter(pSorterCache_));
-
-                    SortProperty* pSortProperty = new SortProperty(
-                            iter->first,
-                            UNSIGNED_INT_PROPERTY_TYPE,
-                            SortProperty::CTR,
-                            iter->second);
-                    pSorter->addSortProperty(pSortProperty);
-                    continue;
-                }
-
-                // sort by arbitrary property
-                boost::unordered_map<std::string, PropertyConfig>::iterator it
-                    = schemaMap_.find(iter->first);
-                if (it == schemaMap_.end())
-                    continue;
-
-                PropertyConfig& propertyConfig = it->second;
-                if (!propertyConfig.isIndex() || propertyConfig.isAnalyzed())
-                    continue;
-
-                PropertyDataType propertyType = propertyConfig.getType();
-                switch (propertyType)
-                {
-                case INT_PROPERTY_TYPE:
-                case FLOAT_PROPERTY_TYPE:
-                case NOMINAL_PROPERTY_TYPE:
-                case UNSIGNED_INT_PROPERTY_TYPE:
-                case DOUBLE_PROPERTY_TYPE:
-                {
-                    if (!pSorter) pSorter.reset(new Sorter(pSorterCache_));
-                    SortProperty* pSortProperty = new SortProperty(
-                        iter->first,
-                        propertyType,
-                        iter->second);
-                    pSorter->addSortProperty(pSortProperty);
-                    break;
-                }
-                default:
-                    DLOG(ERROR) << "Sort by properties other than int, float, double type"; // TODO : Log
-                    break;
-                }
-            }
-        }
+        prepare_sorter_customranker_(actionOperation,customRanker,pSorter);
     }
     catch (std::exception& e)
     {
+        if(pSorter) delete pSorter;
         return false;
     }
 
@@ -478,7 +337,7 @@ bool SearchManager::doSearch_(
 
     ///sortby
     if (pSorter)
-        scoreItemQueue.reset(new PropertySortedHitQueue(pSorter.get(), heapSize));
+        scoreItemQueue.reset(new PropertySortedHitQueue(pSorter, heapSize));
     else
         scoreItemQueue.reset(new ScoreSortedHitQueue(heapSize));
 
@@ -529,7 +388,247 @@ bool SearchManager::doSearch_(
 
     std::vector<RankQueryProperty> rankQueryProperties(indexPropertySize);
 
-    for (property_size_type i = 0; i < indexPropertySize; ++i)
+    post_prepare_ranker_(
+            indexPropertyList,
+            indexPropertySize,
+            propertyTermInfoMap,
+            dfmap,
+            ctfmap,
+            readTermPosition,
+            rankQueryProperties,
+            propertyRankers);
+
+    STOP_PROFILER( preparerank )
+
+    boost::scoped_ptr<faceted::GroupFilter> groupFilter;
+    if (groupFilterBuilder_)
+    {
+        groupFilter.reset(
+                groupFilterBuilder_->createFilter(actionOperation.actionItem_.groupParam_));
+    }
+
+    try
+    {
+        doSearch_(
+            actionOperation,
+            docIdList,
+            rankScoreList,
+            customRankScoreList,
+            totalCount,
+            propertyRange,
+            start,
+            rankQueryProperties,
+            propertyRankers,
+            pSorter,
+            customRanker,
+            pMultiPropertyIterator,
+            pDocIterator.get(),
+            groupFilter.get(),
+            scoreItemQueue.get());
+
+        ///rerank is only used for pure ranking
+        std::vector<std::pair<std::string, bool> >& sortPropertyList
+        = actionOperation.actionItem_.sortPriorityList_;
+        bool rerank = false;
+        if (!pSorter) rerank = true;
+        else if (sortPropertyList.size() == 1)
+        {
+            std::string fieldNameL = sortPropertyList[0].first;
+            boost::to_lower(fieldNameL);
+            if (fieldNameL == RANK_PROPERTY)
+                rerank = true;
+        }
+        else
+        {
+            std::vector<std::pair<std::string, bool> >::iterator it =
+                std::find_if(sortPropertyList.begin(),sortPropertyList.end(),hasRelevenceSort);
+            if (it != sortPropertyList.end())
+                rerank = true;
+        }
+
+
+        if (rerank && reranker_)
+        {
+            reranker_(docIdList,rankScoreList,actionOperation.actionItem_.env_.queryString_);
+        }
+
+        if (distSearchInfo.effective_ && pSorter)
+        {
+            getSortPropertyData_(pSorter, docIdList, distSearchInfo);
+        }
+    }
+    catch (std::exception& e)
+    {
+        if(pSorter) delete pSorter;
+        return false;
+    }
+    if(pSorter) delete pSorter;
+    return true;
+}
+
+
+bool SearchManager::doSearch_(
+        SearchKeywordOperation& actionOperation,
+        std::vector<unsigned int>& docIdList,
+        std::vector<float>& rankScoreList,
+        std::vector<float>& customRankScoreList,
+        std::size_t& totalCount,
+        sf1r::PropertyRange& propertyRange,
+        uint32_t start,
+        std::vector<RankQueryProperty>& rankQueryProperties,
+        std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers,
+        Sorter* pSorter,
+        CustomRankerPtr customRanker,
+        MultiPropertyScorer* pMultiPropertyIterator,
+        CombinedDocumentIterator* pDocIterator,
+        faceted::GroupFilter* groupFilter,
+        HitQueue* scoreItemQueue)
+{
+CREATE_PROFILER( computerankscore, "SearchManager", "doSearch_: overall time for scoring a doc");
+CREATE_PROFILER( inserttoqueue, "SearchManager", "doSearch_: overall time for inserting to result queue");
+CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall time for scoring customized score for a doc");
+    totalCount = 0;
+    const std::string& rangePropertyName = actionOperation.actionItem_.rangePropertyName_;
+    boost::scoped_ptr<NumericPropertyTable> rangePropertyTable;
+    float lowValue = (std::numeric_limits<float>::max) ();
+    float highValue = - lowValue;
+
+    if (!rangePropertyName.empty())
+    {
+        typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
+        rangePropertyTable.reset(createPropertyTable(rangePropertyName));
+    }
+    bool requireScorer = false;
+    if (pMultiPropertyIterator&&pSorter) requireScorer = pSorter->requireScorer();
+    while (pDocIterator->next())
+    {
+        if (groupFilter && !groupFilter->test(pDocIterator->doc()))
+            continue;
+
+        if (rangePropertyTable)
+        {
+            float docPropertyValue = 0;
+            if (rangePropertyTable->convertPropertyValue(pDocIterator->doc(), docPropertyValue))
+            {
+                if (docPropertyValue < lowValue)
+                {
+                    lowValue = docPropertyValue;
+                }
+
+               if (docPropertyValue > highValue)
+               {
+                    highValue = docPropertyValue;
+               }
+            }
+        }
+
+        ScoreDoc scoreItem(pDocIterator->doc());
+        START_PROFILER( computerankscore )
+        ++totalCount;
+        scoreItem.score = requireScorer?
+                          pMultiPropertyIterator->score(
+                              rankQueryProperties,
+                              propertyRankers) : 1.0;
+        STOP_PROFILER( computerankscore )
+
+        START_PROFILER( computecustomrankscore )
+        if (customRanker.get())
+        {
+            scoreItem.custom_score = customRanker->evaluate(scoreItem.docId);
+        }
+        STOP_PROFILER( computecustomrankscore )
+
+        START_PROFILER( inserttoqueue )
+        scoreItemQueue->insert(scoreItem);
+        STOP_PROFILER( inserttoqueue )
+
+    }
+
+    if (rangePropertyTable && lowValue <= highValue)
+    {
+        propertyRange.highValue_ = highValue;
+        propertyRange.lowValue_ = lowValue;
+    }
+
+    size_t count = start > 0 ? (scoreItemQueue->size() - start) : scoreItemQueue->size();
+    docIdList.resize(count);
+    rankScoreList.resize(count);
+    if (customRanker.get())
+    {
+        customRankScoreList.resize(count);
+    }
+
+    ///Attention
+    ///Given default lessthan() for prorityqueue
+    //pop will get the elements of priorityqueue with lowest score
+    ///So we need to reverse the output sequence
+    float min = std::numeric_limits<float>::max();
+    float max = - min;
+    for (size_t i = 0; i < count; ++i)
+    {
+        ScoreDoc pScoreItem = scoreItemQueue->pop();
+        docIdList[count - i - 1] = pScoreItem.docId;
+        rankScoreList[count - i - 1] = pScoreItem.score;
+        if (customRanker.get())
+        {
+            // should not be normalized
+            customRankScoreList[count - i - 1] = pScoreItem.custom_score;
+        }
+
+        if (pScoreItem.score < min)
+        {
+            min = pScoreItem.score;
+        }
+        // cannot use "else if" because the first score is between min
+        // and max
+        if (pScoreItem.score > max)
+        {
+            max = pScoreItem.score;
+        }
+        /*
+        DocumentItem* item = pScoreItem->pItem;
+        //izenelib::util::swapBack(commonSet, *item);
+        commonSet.push_front(DocumentItem());
+        using std::swap;
+        swap(commonSet.front(), *item);
+        */
+        //delete pScoreItem;
+    }
+
+#if 0
+    // normalize rank score to [0, 1]
+    float range = max - min;
+    if (range != 0)
+    {
+        for (std::vector<float>::iterator it = rankScoreList.begin(),
+                itEnd = rankScoreList.end();
+                it != itEnd; ++it)
+        {
+            *it -= min;
+            *it /= range;
+        }
+    }
+    else
+    {
+        std::fill(rankScoreList.begin(), rankScoreList.end(), 1.0F);
+    }
+#endif
+    return true;
+}
+
+
+void SearchManager::post_prepare_ranker_(
+        const std::vector<std::string>& indexPropertyList,
+        unsigned indexPropertySize,
+        const property_term_info_map& propertyTermInfoMap,
+        DocumentFrequencyInProperties& dfmap,
+        CollectionTermFrequencyInProperties& ctfmap,
+        bool readTermPosition,
+        std::vector<RankQueryProperty>& rankQueryProperties,
+        std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers)
+{
+    static const PropertyTermInfo emptyPropertyTermInfo;
+    for (unsigned i = 0; i < indexPropertySize; ++i)
     {
         const std::string& currentProperty = indexPropertyList[i];
 
@@ -588,186 +687,130 @@ bool SearchManager::doSearch_(
     {
         propertyRankers[i]->setupStats(rankQueryProperties[i]);
     }
+}
 
-
-    STOP_PROFILER( preparerank )
-
-    boost::scoped_ptr<faceted::GroupFilter> groupFilter;
-    if (groupFilterBuilder_)
+void SearchManager::prepare_sorter_customranker_(
+    SearchKeywordOperation& actionOperation,	
+    CustomRankerPtr& customRanker, 
+    Sorter* &pSorter)
+{
+    std::vector<std::pair<std::string, bool> >& sortPropertyList
+        = actionOperation.actionItem_.sortPriorityList_;
+    if (!sortPropertyList.empty())
     {
-        groupFilter.reset(
-                groupFilterBuilder_->createFilter(actionOperation.actionItem_.groupParam_));
-    }
-
-    try
-    {
-        totalCount = 0;
-        const std::string& rangePropertyName = actionOperation.actionItem_.rangePropertyName_;
-        boost::scoped_ptr<NumericPropertyTable> rangePropertyTable;
-        float lowValue = (std::numeric_limits<float>::max) ();
-        float highValue = - lowValue;
-
-        if (!rangePropertyName.empty())
+        std::vector<std::pair<std::string, bool> >::iterator iter = sortPropertyList.begin();
+        for (; iter != sortPropertyList.end(); ++iter)
         {
-            typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
-            rangePropertyTable.reset(createPropertyTable(rangePropertyName));
-        }
-        bool requireScorer = false;
-        if (pMultiPropertyIterator&&pSorter) requireScorer = pSorter->requireScorer();
-        while (pDocIterator->next())
-        {
-            if (groupFilter && !groupFilter->test(pDocIterator->doc()))
+            std::string fieldNameL = iter->first;
+            boost::to_lower(fieldNameL);
+            // sort by custom ranking
+            if (fieldNameL == CUSTOM_RANK_PROPERTY)
+            {
+                // prepare custom ranker data, custom score will be evaluated later as rank score
+                customRanker = actionOperation.actionItem_.customRanker_;
+                if (!customRanker)
+                    customRanker = buildCustomRanker_(actionOperation.actionItem_);
+                if (!customRanker->setPropertyData(pSorterCache_))
+                {
+                    LOG(ERROR) << customRanker->getErrorInfo() ;
+                    continue;
+                }
+                //customRanker->printESTree();
+
+                if (!pSorter) pSorter = new Sorter(pSorterCache_);
+                SortProperty* pSortProperty = new SortProperty(
+                        "CUSTOM_RANK",
+                        CUSTOM_RANKING_PROPERTY_TYPE,
+                        SortProperty::CUSTOM,
+                        iter->second);
+                pSorter->addSortProperty(pSortProperty);
+                continue;
+            }
+            // sort by rank
+            if (fieldNameL == RANK_PROPERTY)
+            {
+                if (!pSorter) pSorter = new Sorter(pSorterCache_);
+                SortProperty* pSortProperty = new SortProperty(
+                        "RANK",
+                        UNKNOWN_DATA_PROPERTY_TYPE,
+                        SortProperty::SCORE,
+                        iter->second);
+                pSorter->addSortProperty(pSortProperty);
+                continue;
+            }
+            // sort by date
+            if (fieldNameL == DATE_PROPERTY)
+            {
+                if (!pSorter) pSorter = new Sorter(pSorterCache_);
+                SortProperty* pSortProperty = new SortProperty(
+                        iter->first,
+                        INT_PROPERTY_TYPE,
+                        iter->second);
+                pSorter->addSortProperty(pSortProperty);
+                continue;
+            }
+            // sort by ctr (click through rate)
+            if (fieldNameL == CTR_PROPERTY)
+            {
+                if (miningManagerPtr_.expired())
+                {
+                    DLOG(ERROR)<<"Skipped CTR sort property: Mining Manager was not initialized";
+                    continue;
+                }
+                boost::shared_ptr<MiningManager> resourceMiningManagerPtr = miningManagerPtr_.lock();
+                boost::shared_ptr<faceted::CTRManager> ctrManangerPtr
+                = resourceMiningManagerPtr->GetCtrManager();
+                if (!ctrManangerPtr)
+                {
+                    DLOG(ERROR)<<"Skipped CTR sort property: CTR Manager was not initialized";
+                    continue;
+                }
+
+                pSorterCache_->setCtrManager(ctrManangerPtr.get());
+                if (!pSorter) pSorter = new Sorter(pSorterCache_);
+
+                SortProperty* pSortProperty = new SortProperty(
+                        iter->first,
+                        UNSIGNED_INT_PROPERTY_TYPE,
+                        SortProperty::CTR,
+                        iter->second);
+                pSorter->addSortProperty(pSortProperty);
+                continue;
+            }
+
+            // sort by arbitrary property
+            boost::unordered_map<std::string, PropertyConfig>::iterator it
+                = schemaMap_.find(iter->first);
+            if (it == schemaMap_.end())
                 continue;
 
-            if (rangePropertyTable)
+            PropertyConfig& propertyConfig = it->second;
+            if (!propertyConfig.isIndex() || propertyConfig.isAnalyzed())
+                continue;
+
+            PropertyDataType propertyType = propertyConfig.getType();
+            switch (propertyType)
             {
-                float docPropertyValue = 0;
-                if (rangePropertyTable->convertPropertyValue(pDocIterator->doc(), docPropertyValue))
-                {
-                    if (docPropertyValue < lowValue)
-                    {
-                        lowValue = docPropertyValue;
-                    }
-
-                    if (docPropertyValue > highValue)
-                    {
-                        highValue = docPropertyValue;
-                    }
-                }
-            }
-
-            ScoreDoc scoreItem(pDocIterator->doc());
-            START_PROFILER( computerankscore )
-            ++totalCount;
-            scoreItem.score = requireScorer?
-                              pMultiPropertyIterator->score(
-                                  rankQueryProperties,
-                                  propertyRankers) : 1.0;
-            STOP_PROFILER( computerankscore )
-
-            START_PROFILER( computecustomrankscore )
-            if (customRanker.get())
+            case INT_PROPERTY_TYPE:
+            case FLOAT_PROPERTY_TYPE:
+            case NOMINAL_PROPERTY_TYPE:
+            case UNSIGNED_INT_PROPERTY_TYPE:
+            case DOUBLE_PROPERTY_TYPE:
             {
-                scoreItem.custom_score = customRanker->evaluate(scoreItem.docId);
+                if (!pSorter) pSorter = new Sorter(pSorterCache_);
+                SortProperty* pSortProperty = new SortProperty(
+                    iter->first,
+                    propertyType,
+                    iter->second);
+                pSorter->addSortProperty(pSortProperty);
+                break;
             }
-            STOP_PROFILER( computecustomrankscore )
-
-            START_PROFILER( inserttoqueue )
-            scoreItemQueue->insert(scoreItem);
-            STOP_PROFILER( inserttoqueue )
-
-        }
-
-        if (groupFilter)
-            groupFilter->getGroupRep(groupRep, attrRep);
-
-        if (rangePropertyTable && lowValue <= highValue)
-        {
-            propertyRange.highValue_ = highValue;
-            propertyRange.lowValue_ = lowValue;
-        }
-
-        size_t count = start > 0 ? (scoreItemQueue->size() - start) : scoreItemQueue->size();
-        docIdList.resize(count);
-        rankScoreList.resize(count);
-        if (customRanker.get())
-        {
-            customRankScoreList.resize(count);
-        }
-
-        ///Attention
-        ///Given default lessthan() for prorityqueue
-        ///pop will get the elements of priorityqueue with lowest score
-        ///So we need to reverse the output sequence
-        float min = std::numeric_limits<float>::max();
-        float max = - min;
-        for (size_t i = 0; i < count; ++i)
-        {
-            ScoreDoc pScoreItem = scoreItemQueue->pop();
-            docIdList[count - i - 1] = pScoreItem.docId;
-            rankScoreList[count - i - 1] = pScoreItem.score;
-            if (customRanker.get())
-            {
-                // should not be normalized
-                customRankScoreList[count - i - 1] = pScoreItem.custom_score;
+            default:
+                DLOG(ERROR) << "Sort by properties other than int, float, double type"; // TODO : Log
+                break;
             }
-
-            if (pScoreItem.score < min)
-            {
-                min = pScoreItem.score;
-            }
-            // cannot use "else if" because the first score is between min
-            // and max
-            if (pScoreItem.score > max)
-            {
-                max = pScoreItem.score;
-            }
-            /*
-            DocumentItem* item = pScoreItem->pItem;
-            //izenelib::util::swapBack(commonSet, *item);
-            commonSet.push_front(DocumentItem());
-            using std::swap;
-            swap(commonSet.front(), *item);
-            */
-            //delete pScoreItem;
-        }
-
-#if 0
-        // normalize rank score to [0, 1]
-        float range = max - min;
-        if (range != 0)
-        {
-            for (std::vector<float>::iterator it = rankScoreList.begin(),
-                    itEnd = rankScoreList.end();
-                    it != itEnd; ++it)
-            {
-                *it -= min;
-                *it /= range;
-            }
-        }
-        else
-        {
-            std::fill(rankScoreList.begin(), rankScoreList.end(), 1.0F);
-        }
-#endif
-
-        ///rerank is only used for pure ranking
-        std::vector<std::pair<std::string, bool> >& sortPropertyList
-        = actionOperation.actionItem_.sortPriorityList_;
-        bool rerank = false;
-        if (!pSorter) rerank = true;
-        else if (sortPropertyList.size() == 1)
-        {
-            std::string fieldNameL = sortPropertyList[0].first;
-            boost::to_lower(fieldNameL);
-            if (fieldNameL == RANK_PROPERTY)
-                rerank = true;
-        }
-        else
-        {
-            std::vector<std::pair<std::string, bool> >::iterator it =
-                std::find_if(sortPropertyList.begin(),sortPropertyList.end(),hasRelevenceSort);
-            if (it != sortPropertyList.end())
-                rerank = true;
-        }
-
-
-        if (rerank && reranker_)
-        {
-            reranker_(docIdList,rankScoreList,actionOperation.actionItem_.env_.queryString_);
-        }
-
-        if (distSearchInfo.effective_ && pSorter)
-        {
-            getSortPropertyData_(pSorter.get(), docIdList, distSearchInfo);
         }
     }
-    catch (std::exception& e)
-    {
-        return false;
-    }
-
-    return true;
 }
 
 propertyid_t SearchManager::getPropertyIdByName_(const std::string& name) const
@@ -952,29 +995,27 @@ void SearchManager::printDFCTF_(
     DocumentFrequencyInProperties& dfmap,
     CollectionTermFrequencyInProperties ctfmap)
 {
-    cout << "\n[Index terms info for Query]" << endl;
+    LOG(INFO)  << "\n[Index terms info for Query]";
     DocumentFrequencyInProperties::iterator dfiter;
     for (dfiter = dfmap.begin(); dfiter != dfmap.end(); dfiter++)
     {
-        cout << "property: " << dfiter->first << endl;
+        LOG(INFO) << "property: " << dfiter->first;
         ID_FREQ_UNORDERED_MAP_T::iterator iter_;
         for (iter_ = dfiter->second.begin(); iter_ != dfiter->second.end(); iter_++)
         {
-            cout << "termid: " << iter_->first << " DF: " << iter_->second << endl;
+            LOG(INFO)  << "termid: " << iter_->first << " DF: " << iter_->second;
         }
     }
-    cout << "-----------------------" << endl;
     CollectionTermFrequencyInProperties::iterator ctfiter;
     for (ctfiter = ctfmap.begin(); ctfiter != ctfmap.end(); ctfiter++)
     {
-        cout << "property: " << ctfiter->first << endl;
+        LOG(INFO) << "property: " << ctfiter->first;
         ID_FREQ_UNORDERED_MAP_T::iterator iter_;
         for (iter_ = ctfiter->second.begin(); iter_ != ctfiter->second.end(); iter_++)
         {
-            cout << "termid: " << iter_->first << " CTF: " << iter_->second << endl;
+            LOG(INFO) << "termid: " << iter_->first << " CTF: " << iter_->second;
         }
     }
-    cout << "-----------------------" << endl;
 }
 
 } // namespace sf1r

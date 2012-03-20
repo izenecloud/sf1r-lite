@@ -4,9 +4,9 @@
 #include <bundles/index/IndexBundleConfiguration.h>
 #include <bundles/recommend/RecommendSearchService.h>
 
+#include <common/SearchCache.h>
 #include <index-manager/IndexManager.h>
 #include <search-manager/SearchManager.h>
-#include <search-manager/SearchCache.h>
 #include <search-manager/PersonalizedSearchInfo.h>
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningManager.h>
