@@ -1,5 +1,5 @@
-#ifndef _SEARCH_MANAGER_
-#define _SEARCH_MANAGER_
+#ifndef CORE_SEARCH_MANAGER_SEARCH_MANAGER_H
+#define CORE_SEARCH_MANAGER_SEARCH_MANAGER_H
 
 #include <configuration-manager/PropertyConfig.h>
 #include <query-manager/SearchKeywordOperation.h>
@@ -113,22 +113,22 @@ public:
     NumericPropertyTable* createPropertyTable(const std::string& propertyName);
 
 private:
-bool doSearch_(
-        SearchKeywordOperation& actionOperation,
-        std::vector<unsigned int>& docIdList,
-        std::vector<float>& rankScoreList,
-        std::vector<float>& customRankScoreList,
-        std::size_t& totalCount,
-        sf1r::PropertyRange& propertyRange,
-        uint32_t start,
-        std::vector<RankQueryProperty>& rankQueryProperties,
-        std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers,
-        Sorter* pSorter,
-        CustomRankerPtr customRanker,
-        MultiPropertyScorer* pMultiPropertyIterator,
-        CombinedDocumentIterator* pDocIterator,
-        faceted::GroupFilter* groupFilter,
-        HitQueue* scoreItemQueue);
+    bool doSearch_(
+            SearchKeywordOperation& actionOperation,
+            std::vector<unsigned int>& docIdList,
+            std::vector<float>& rankScoreList,
+            std::vector<float>& customRankScoreList,
+            std::size_t& totalCount,
+            sf1r::PropertyRange& propertyRange,
+            uint32_t start,
+            std::vector<RankQueryProperty>& rankQueryProperties,
+            std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers,
+            Sorter* pSorter,
+            CustomRankerPtr customRanker,
+            MultiPropertyScorer* pMultiPropertyIterator,
+            CombinedDocumentIterator* pDocIterator,
+            faceted::GroupFilter* groupFilter,
+            HitQueue* scoreItemQueue);
 
     bool prepareDocIterWithOnlyOrderby_(
             boost::shared_ptr<EWAHBoolArray<uint32_t> >& pFilterIdSet);
@@ -210,4 +210,5 @@ private:
 
 } // end - namespace sf1r
 
-#endif // _SEARCH_MANAGER_
+#endif // CORE_SEARCH_MANAGER_SEARCH_MANAGER_H
+
