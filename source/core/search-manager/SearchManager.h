@@ -1,5 +1,5 @@
-#ifndef CORE_SEARCH_MANAGER_SEARCH_MANAGER_H
-#define CORE_SEARCH_MANAGER_SEARCH_MANAGER_H
+#ifndef _SEARCH_MANAGER_
+#define _SEARCH_MANAGER_
 
 #include <configuration-manager/PropertyConfig.h>
 #include <query-manager/SearchKeywordOperation.h>
@@ -28,8 +28,7 @@
 
 namespace sf1r
 {
-class IndexSearchCache;
-class PureQueryIdentity;
+
 class QueryBuilder;
 class DocumentManager;
 class RankingManager;
@@ -114,38 +113,22 @@ public:
     NumericPropertyTable* createPropertyTable(const std::string& propertyName);
 
 private:
-    bool doSearch_(
-            SearchKeywordOperation& actionOperation,
-            std::vector<unsigned int>& docIdList,
-            std::vector<float>& rankScoreList,
-            std::vector<float>& customRankScoreList,
-            std::size_t& totalCount,
-            sf1r::PropertyRange& propertyRange,
-            uint32_t start,
-            std::vector<RankQueryProperty>& rankQueryProperties,
-            std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers,
-            Sorter* pSorter,
-            CustomRankerPtr customRanker,
-            MultiPropertyScorer* pMultiPropertyIterator,
-            CombinedDocumentIterator* pDocIterator,
-            faceted::GroupFilter* groupFilter,
-            HitQueue* scoreItemQueue);
-
-    void post_prepare_ranker_(
-            const std::vector<std::string>& indexPropertyList,
-            unsigned indexPropertySize,
-            const property_term_info_map& propertyTermInfoMap,
-            DocumentFrequencyInProperties& dfmap,
-            CollectionTermFrequencyInProperties& ctfmap,
-            bool readTermPosition,
-            std::vector<RankQueryProperty>& rankQueryProperties,
-            std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers);
-
-
-    void prepare_sorter_customranker_(
-            SearchKeywordOperation& actionOperation,	
-            CustomRankerPtr& customRanker, 
-            Sorter* &pSorter);
+bool doSearch_(
+        SearchKeywordOperation& actionOperation,
+        std::vector<unsigned int>& docIdList,
+        std::vector<float>& rankScoreList,
+        std::vector<float>& customRankScoreList,
+        std::size_t& totalCount,
+        sf1r::PropertyRange& propertyRange,
+        uint32_t start,
+        std::vector<RankQueryProperty>& rankQueryProperties,
+        std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers,
+        Sorter* pSorter,
+        CustomRankerPtr customRanker,
+        MultiPropertyScorer* pMultiPropertyIterator,
+        CombinedDocumentIterator* pDocIterator,
+        faceted::GroupFilter* groupFilter,
+        HitQueue* scoreItemQueue);
 
     bool prepareDocIterWithOnlyOrderby_(
             boost::shared_ptr<EWAHBoolArray<uint32_t> >& pFilterIdSet);
@@ -162,6 +145,22 @@ private:
             PropertyDataType& type) const;
 
     boost::shared_ptr<PropertyData> getPropertyData_(const std::string& name);
+
+    void post_prepare_ranker_(
+            const std::vector<std::string>& indexPropertyList,
+            unsigned indexPropertySize,
+            const property_term_info_map& propertyTermInfoMap,
+            DocumentFrequencyInProperties& dfmap,
+            CollectionTermFrequencyInProperties& ctfmap,
+            bool readTermPosition,
+            std::vector<RankQueryProperty>& rankQueryProperties,
+            std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers);
+
+
+    void prepare_sorter_customranker_(
+            SearchKeywordOperation& actionOperation,	
+            CustomRankerPtr& customRanker, 
+            Sorter* &pSorter);
 
     /**
      * rebuild custom ranker.
@@ -182,12 +181,7 @@ private:
             std::vector<unsigned int>& docIdList,
             DistKeywordSearchInfo& distSearchInfo);
 
-    void makeQueryIdentity(
-            PureQueryIdentity& identity,
-            const KeywordSearchActionItem& item,
-            uint32_t start = 0);
-
-
+private:
     /**
      * @brief for testing
      */
@@ -204,7 +198,7 @@ private:
     boost::weak_ptr<MiningManager> miningManagerPtr_;
     boost::shared_ptr<QueryBuilder> queryBuilder_;
     std::map<propertyid_t, float> propertyWeightMap_;
-    boost::scoped_ptr<IndexSearchCache> cache_;
+
     SortPropertyCache* pSorterCache_;
 
     filter_hook_t filter_hook_;
@@ -216,5 +210,4 @@ private:
 
 } // end - namespace sf1r
 
-#endif // CORE_SEARCH_MANAGER_SEARCH_MANAGER_H
-
+#endif // _SEARCH_MANAGER_
