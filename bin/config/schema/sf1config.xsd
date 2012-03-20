@@ -242,7 +242,7 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
-            <xs:attribute name="nodenum" use="required">
+            <xs:attribute name="nodenum" use="optional">
                 <xs:simpleType>
                     <xs:restriction base="xs:integer">
                         <xs:minInclusive value="1"/>
@@ -263,9 +263,9 @@
     <xs:element name="CurrentNode">
         <xs:complexType>
             <xs:sequence>
+                <xs:element ref="B5mServer" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="MasterAgent" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="WorkerAgent" minOccurs="0" maxOccurs="1"/>
-                <xs:element ref="Corpus" minOccurs="0" maxOccurs="1"/>
             </xs:sequence>
             <xs:attribute name="nodeid" use="required">
                 <xs:simpleType>
@@ -283,6 +283,49 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="B5mServer">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="Collections" minOccurs="1" maxOccurs="1"/>
+            </xs:sequence>
+            <xs:attribute name="enable" type="YesNoType" use="required"/>
+            <xs:attribute name="id" use="required">
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="www"/>
+                        <xs:enumeration value="stage"/>
+                        <xs:enumeration value="beta"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Collections">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="Collection" minOccurs="1" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Collection">
+        <xs:complexType>
+            <xs:attribute name="name" type="xs:NCName" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="MasterAgent">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="Aggregator" minOccurs="1" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute name="enable" type="YesNoType" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Aggregator">
+        <xs:complexType>
+            <xs:attribute name="collection" type="xs:NCName" use="required"/>
+            <xs:attribute name="shardids" type="xs:string" use="optional"/>
         </xs:complexType>
     </xs:element>
     <xs:element name="WorkerAgent">
@@ -303,32 +346,7 @@
     </xs:element>
     <xs:element name="Service">
         <xs:complexType>
-            <xs:attribute name="name" type="xs:NCName" use="required"/>
-        </xs:complexType>
-    </xs:element>
-    <xs:element name="MasterAgent">
-        <xs:complexType>
-            <xs:sequence>
-                <xs:element ref="Aggregator" minOccurs="1" maxOccurs="unbounded"/>
-            </xs:sequence>
-            <xs:attribute name="enable" type="YesNoType" use="required"/>
-        </xs:complexType>
-    </xs:element>
-    <xs:element name="Aggregator">
-        <xs:complexType>
-            <xs:attribute name="name" type="xs:NCName" use="required"/>
-        </xs:complexType>
-    </xs:element>
-    <xs:element name="Corpus">
-        <xs:complexType>
-            <xs:sequence>
-                <xs:element ref="Collection" minOccurs="1" maxOccurs="unbounded"/>
-            </xs:sequence>
-        </xs:complexType>
-    </xs:element>
-    <xs:element name="Collection">
-        <xs:complexType>
-            <xs:attribute name="name" type="xs:NCName" use="required"/>
+            <xs:attribute name="collection" type="xs:NCName" use="required"/>
         </xs:complexType>
     </xs:element>
     <xs:element name="DistributedUtil">

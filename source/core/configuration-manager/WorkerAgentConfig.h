@@ -39,7 +39,7 @@ public:
     std::string toString()
     {
         std::stringstream ss;
-        ss<<"[WorkerAgentConfig] enabled? "<<enabled_<<", shardid: "<<shardId_<<std::endl;
+        ss << "[WorkerAgentConfig] " << (enabled_ ? "enabled":"disabled") << ", shardid: "<<shardId_<<std::endl;
 
         std::map<std::string, ServiceUnit>::iterator it;
         for (it = serviceMap_.begin(); it != serviceMap_.end(); it++)

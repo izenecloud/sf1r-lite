@@ -365,17 +365,23 @@ void SF1Config::parseDistributedTopology(
     if (topology)
     {
         getAttribute(topology, "enable", topologyConfig.enabled_);
-        getAttribute(topology, "nodenum", topologyConfig.nodeNum_);
         getAttribute(topology, "shardnum", topologyConfig.shardNum_);
+        if (!getAttribute(topology, "nodenum", topologyConfig.nodeNum_, false))
+        {
+            topologyConfig.nodeNum_ = topologyConfig.shardNum_;
+        }
+
 
         // Current SF1 node
         ticpp::Element * cursf1node = getUniqChildElement(topology, "CurrentNode");
         getAttribute(cursf1node, "replicaid", topologyConfig.curSF1Node_.replicaId_);
         getAttribute(cursf1node, "nodeid", topologyConfig.curSF1Node_.nodeId_);
 
+        parseB5mServer(getUniqChildElement(cursf1node, "B5mServer", false), topologyConfig);
         parseMasterAgent(getUniqChildElement(cursf1node, "MasterAgent", false), topologyConfig);
         parseWorkerAgent(getUniqChildElement(cursf1node, "WorkerAgent", false), topologyConfig);
-        parseCorpus(getUniqChildElement(cursf1node, "Corpus", false), topologyConfig);
+
+        //std::cout << topologyConfig.toString() << std::endl;
     }
 }
 
@@ -407,7 +413,7 @@ void SF1Config::parseMasterAgent(const ticpp::Element * master, DistributedTopol
         for (aggregator_it = aggregator_it.begin(master); aggregator_it != aggregator_it.end(); aggregator_it++)
         {
             AggregatorUnit aggregatorUnit;
-            getAttribute(aggregator_it.Get(), "name", aggregatorUnit.name_);
+            getAttribute(aggregator_it.Get(), "collection", aggregatorUnit.name_);
             downCase(aggregatorUnit.name_);
             masterAgent.addAggregatorConfig(aggregatorUnit);
         }
@@ -427,23 +433,29 @@ void SF1Config::parseWorkerAgent(const ticpp::Element * worker, DistributedTopol
         for (aggregator_it = aggregator_it.begin(worker); aggregator_it != aggregator_it.end(); aggregator_it++)
         {
             ServiceUnit serviceUnit;
-            getAttribute(aggregator_it.Get(), "name", serviceUnit.name_);
+            getAttribute(aggregator_it.Get(), "collection", serviceUnit.name_);
             downCase(serviceUnit.name_);
             workerAgent.addServiceUnit(serviceUnit);
         }
     }
 }
 
-void SF1Config::parseCorpus(const ticpp::Element * corpus, DistributedTopologyConfig& topologyConfig)
+void SF1Config::parseB5mServer(const ticpp::Element * b5mServer, DistributedTopologyConfig& topologyConfig)
 {
-    if (corpus)
+    if (b5mServer)
     {
+        B5mServerConfig& b5mServerCfg = topologyConfig.curSF1Node_.b5mServer_;
+
+        getAttribute(b5mServer, "enable", b5mServerCfg.enabled_);
+        getAttribute(b5mServer, "id", b5mServerCfg.serverId_);
+
+        ticpp::Element * collections = getUniqChildElement(b5mServer, "Collections");
         Iterator<Element> collection_it("Collection");
-        for (collection_it = collection_it.begin(corpus); collection_it != collection_it.end(); collection_it++)
+        for (collection_it = collection_it.begin(collections); collection_it != collection_it.end(); collection_it++)
         {
             string collection;
             getAttribute(collection_it.Get(), "name", collection, true);
-            topologyConfig.curSF1Node_.collectionList_.push_back(collection);
+            b5mServerCfg.collectionList_.push_back(collection);
         }
     }
 }

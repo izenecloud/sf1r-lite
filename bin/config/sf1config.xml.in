@@ -215,39 +215,47 @@
       clusterid : identity of the cluster
       nodeid    : id of current node (sf1) in the cluster.
       replicaid : id of current node (sf1) in the replication set.
-      shardid   : id of data shard (partition), also used as workerid.
-         * shardids (workerids) range from 1 to 'shardnum', without break.
-         * it's recommended to keep the shardid consistent with nodeid.
+      shardid   : id of data shard (partition), used as workerid.
     -->
     <DistributedCommon clusterid="@LOCAL_HOST_USER_NAME@" username="@LOCAL_HOST_USER_NAME@" localhost="172.16.0.36"
                        workerport="18151" masterport="18131" datarecvport="18121" />
 
-    <DistributedTopology enable="y" type="search" nodenum="2" shardnum="2">
+    <DistributedTopology enable="n" type="search" shardnum="2">
       <CurrentNode replicaid="1" nodeid="1">
+        <!-- B5M Servers: www|stage|beta -->
+        <B5mServer enable="y" id="beta">
+          <Collections>
+            <Collection name="web"/>
+            <Collection name="qa"/>
+            <Collection name="b5mo"/>
+            <Collection name="b5mc"/>
+            <Collection name="b5mp"/>
+          </Collections>
+        </B5mServer>
+
+        <!-- distributive -->
         <MasterAgent enable="n">
-          <Aggregator name="b5mm"/>
-          <Aggregator name="intel"/>
+          <Aggregator collection="b5mp" shardids="1,2"/>
+          <Aggregator collection="web"/> <!--set to all shardids as default-->
         </MasterAgent>
+
         <WorkerAgent enable="n" shardid="1">
-          <Service name="b5mm"/>
-          <Service name="intel"/>
+          <Service collection="b5mp"/>
+          <Service collection="web"/>
         </WorkerAgent>
-        <Corpus>
-          <Collection name="b5mm"/>
-          <Collection name="b5ma"/>
-        </Corpus>
       </CurrentNode>
     </DistributedTopology>
 
     <DistributedTopology enable="n" type="recommend" nodenum="2" shardnum="2">
       <CurrentNode replicaid="1" nodeid="1">
         <MasterAgent enable="y">
-          <Aggregator name="b5mm"/>
-          <Aggregator name="intel"/>
+          <Aggregator collection="b5mp"/>
+          <Aggregator collection="web"/>
         </MasterAgent>
+
         <WorkerAgent enable="y" shardid="1">
-          <Service name="b5mm"/>
-          <Service name="intel"/>
+          <Service collection="b5mp"/>
+          <Service collection="web"/>
         </WorkerAgent>
       </CurrentNode>
     </DistributedTopology>
