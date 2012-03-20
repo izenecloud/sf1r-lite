@@ -43,7 +43,7 @@ void clearFiles()
     boost::filesystem::remove_all(dmPath);
 }
 
-void makeSchema(std::set<PropertyConfig, PropertyComp>& propertyConfig)
+void makeSchema(IndexBundleSchema& indexSchema)
 {
     PropertyConfig pconfig1;
     pconfig1.setName("DOCID");
@@ -56,13 +56,13 @@ void makeSchema(std::set<PropertyConfig, PropertyComp>& propertyConfig)
     PropertyConfig pconfig5;
     pconfig5.setName("ImgURL");
 
-    propertyConfig.insert(pconfig1);
-    propertyConfig.insert(pconfig2);
-    propertyConfig.insert(pconfig3);
-    propertyConfig.insert(pconfig3);
-    propertyConfig.insert(pconfig5);
-    propertyConfig.insert(pconfig4);
-    propertyConfig.insert(pconfig5);
+    indexSchema.insert(pconfig1);
+    indexSchema.insert(pconfig2);
+    indexSchema.insert(pconfig3);
+    indexSchema.insert(pconfig3);
+    indexSchema.insert(pconfig5);
+    indexSchema.insert(pconfig4);
+    indexSchema.insert(pconfig5);
 }
 
 
@@ -71,13 +71,13 @@ createDocumentManager()
 {
     bfs::path dmPath(bfs::path(".") /"document/");
     bfs::create_directories(dmPath);
-    std::set<PropertyConfig, PropertyComp> propertyConfig;
-    makeSchema(propertyConfig);
+    IndexBundleSchema indexSchema;
+    makeSchema(indexSchema);
 
     boost::shared_ptr<DocumentManager> ret(
         new DocumentManager(
             dmPath.string(),
-            propertyConfig,
+            indexSchema,
             encoding,
             2000
         )

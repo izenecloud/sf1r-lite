@@ -27,6 +27,11 @@
     </DocumentSchema>
 
     <IndexBundle>
+<!--
+      <ShardSchema>
+        <ShardKey name="DOCID" />
+      </ShardSchema>
+-->
       <Schema>
         <Property name="Title">
           <Indexing filter="no" multivalue="no" doclen="yes" analyzer="la_sia" tokenizer="" rankweight="0.8"/>

@@ -91,13 +91,13 @@ MiningManager::MiningManager(
         const boost::shared_ptr<SearchManager>& searchManager,
         const boost::shared_ptr<IDManager>& idManager,
         const std::string& collectionName,
-        const schema_type& schema,
+        const DocumentSchema& documentSchema,
         const MiningConfig& miningConfig,
         const MiningSchema& miningSchema)
     : collectionDataPath_(collectionDataPath)
     , queryDataPath_(queryDataPath)
     , collectionName_(collectionName)
-    , schema_(schema)
+    , documentSchema_(documentSchema)
     , miningConfig_(miningConfig)
     , mining_schema_(miningSchema)
     , analyzer_(NULL)
@@ -922,8 +922,8 @@ bool MiningManager::computeSimilarity_(izenelib::ir::indexmanager::IndexReader* 
         {
             PropertyConfigBase byName;
             byName.propertyName_ = property_names[i];
-            schema_type::const_iterator it(schema_.find(byName));
-            if (it != schema_.end())
+            DocumentSchema::const_iterator it(documentSchema_.find(byName));
+            if (it != documentSchema_.end())
                 property_config = *it;
             else assert(false);
             property_ids[i] = property_config.propertyId_;
@@ -1517,8 +1517,7 @@ bool MiningManager::GetKNNListBySignature(
 
     if (signature.empty()) return false;
 
-    dupManager_->getKNNListBySignature(signature, knnTopK, start, knnDist, docIdList, rankScoreList, totalCount);
-    return true;
+    return dupManager_->getKNNListBySignature(signature, knnTopK, start, knnDist, docIdList, rankScoreList, totalCount);
 }
 
 bool MiningManager::doTgInfoInit_()

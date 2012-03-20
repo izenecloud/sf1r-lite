@@ -14,6 +14,8 @@
 #include <log-manager/LogManager.h>
 #include <log-manager/LogAnalysis.h>
 
+#include <cache/IzeneCache.h>
+
 namespace sf1r
 {
 
@@ -110,13 +112,33 @@ void KeywordsController::index()
     // recent
     if (getAllLists || selectedTypes.count(Keys::recent))
     {
+        typedef std::pair<std::vector<izenelib::util::UString>, time_t > keyword_cache_value_type;
+        typedef izenelib::cache::IzeneCache<
+            std::string,
+            keyword_cache_value_type,
+            izenelib::util::ReadWriteLock,
+            izenelib::cache::RDE_HASH,
+            izenelib::cache::LRLFU
+        > keyword_cache_type;
+        static keyword_cache_type recent_keyword_cache;
+        static const time_t refreshInterval = 30;
+
         Value& recentField = response()[Keys::recent];
         recentField.reset<Value::ArrayType>();
-        std::vector<izenelib::util::UString> recentKeywords;
-        LogAnalysis::getRecentKeywordList(collectionName_, limit, recentKeywords);
+        keyword_cache_value_type recentKeywords;
+        if (!recent_keyword_cache.getValueNoInsert(collectionName_, recentKeywords)
+                || ((std::time(NULL) - recentKeywords.second) > refreshInterval) )
+        {
+            LogAnalysis::getRecentKeywordList(collectionName_, limit, recentKeywords.first);
+            if(!recentKeywords.first.empty())
+            {
+                recentKeywords.second = std::time(NULL);
+                recent_keyword_cache.updateValue(collectionName_,recentKeywords);
+            }
+        }
 
         // set resource
-        for (iterator it = recentKeywords.begin(); it != recentKeywords.end(); ++it)
+        for (iterator it = recentKeywords.first.begin(); it != recentKeywords.first.end(); ++it)
         {
             it->convertString(convertBuffer, kEncoding);
             recentField() = convertBuffer;

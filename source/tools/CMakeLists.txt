@@ -54,4 +54,5 @@ TARGET_LINK_LIBRARIES(LicenseFileGenerator
   ${Glog_LIBRARIES}
   ${sqlite3_LIBRARIES}
   ${MYSQL_LIBRARIES}
+  ${ImageMagick_LIBRARIES}
 )

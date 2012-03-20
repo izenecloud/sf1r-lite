@@ -188,13 +188,18 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
     boost::filesystem::create_directories(dir);
     std::string scd_dir = dir+"/scd";
     boost::filesystem::create_directories(scd_dir);
-    data_source_ = new CollectionProductDataSource(indexService->searchWorker_->documentManager_, indexService->searchWorker_->indexManager_, indexService->searchWorker_->idManager_, indexService->searchWorker_->searchManager_, config_->pm_config_, config_->schema_);
+    data_source_ = new CollectionProductDataSource(indexService->searchWorker_->documentManager_,
+                                                   indexService->searchWorker_->indexManager_,
+                                                   indexService->searchWorker_->idManager_,
+                                                   indexService->searchWorker_->searchManager_,
+                                                   config_->pm_config_,
+                                                   config_->indexSchema_);
     LOG(INFO)<<"Scd Processor init with id : "<<config_->productId_<<std::endl;
     op_processor_ = new ScdOperationProcessor(config_->productId_, config_->collectionName_, scd_dir);
     if (config_->pm_config_.enable_price_trend)
     {
-        price_trend_ = new ProductPriceTrend(config_->cassandraConfig_,
-                                             config_->collectionName_,
+        price_trend_ = new ProductPriceTrend(indexService->searchWorker_->documentManager_,
+                                             config_->cassandraConfig_,
                                              dir,
                                              config_->pm_config_.group_property_names,
                                              config_->pm_config_.time_interval_days);
@@ -243,7 +248,7 @@ bool ProductBundleActivator::openDataDirectories_()
         if (!directoryRotator_.appendDirectory(dataDir))
         {
             std::string msg = dataDir.string() + " corrupted, delete it!";
-            LOG(ERROR) <<msg; 			
+            LOG(ERROR) << msg;
             //clean the corrupt dir
             boost::filesystem::remove_all( dataDir );
             directoryRotator_.appendDirectory(dataDir);

@@ -11,9 +11,9 @@ ProductBundleConfiguration::ProductBundleConfiguration(const std::string& collec
     , pm_config_()
 {}
 
-void ProductBundleConfiguration::setSchema(const std::set<PropertyConfig, PropertyComp>& schema)
+void ProductBundleConfiguration::setSchema(const IndexBundleSchema& indexSchema)
 {
-    schema_ = schema;
+    indexSchema_ = indexSchema;
 }
 
 

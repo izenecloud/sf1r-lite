@@ -54,6 +54,7 @@ public:
         EventManager& eventManager,
         RateManager& rateManager,
         ItemIdGenerator& itemIdGenerator,
+        QueryClickCounter& queryPurchaseCounter,
         CoVisitManager& coVisitManager,
         ItemCFManager& itemCFManager
     );
@@ -93,16 +94,18 @@ public:
             ,price_(0.0)
         {}
 
-        OrderItem(const std::string& itemIdStr, int quantity, double price)
+        OrderItem(const std::string& itemIdStr, int quantity, double price, const std::string& query)
             :itemIdStr_(itemIdStr)
             ,quantity_(quantity)
             ,price_(price)
+            ,query_(query)
         {}
 
         std::string itemIdStr_;
         int quantity_;
         double price_;
         std::string dateStr_;
+        std::string query_;
     };
     typedef std::vector<OrderItem> OrderItemVec;
 
@@ -235,6 +238,11 @@ private:
         const std::vector<itemid_t>& itemIdVec
     );
 
+    bool insertClickCounterDB_(
+        const OrderItemVec& orderItemVec,
+        const std::vector<itemid_t>& itemIdVec
+    );
+
     void buildFreqItemSet_();
     void cronJob_();
     void flush_();
@@ -257,6 +265,8 @@ private:
     EventManager& eventManager_;
     RateManager& rateManager_;
     ItemIdGenerator& itemIdGenerator_;
+
+    QueryClickCounter& queryPurchaseCounter_;
 
     CoVisitManager& coVisitManager_;
     ItemCFManager& itemCFManager_;

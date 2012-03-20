@@ -34,6 +34,7 @@ SET(libs
   ${xml2_LIBRARIES}
   ${MYSQL_LIBRARIES}
   ${TokyoCabinet_LIBRARIES}
+  ${ImageMagick_LIBRARIES}
   )
 
 SET(Boost_USE_STATIC_LIBS OFF)

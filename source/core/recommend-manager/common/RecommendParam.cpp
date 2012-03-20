@@ -11,6 +11,7 @@ namespace sf1r
 RecommendParam::RecommendParam()
     : type(RECOMMEND_TYPE_NUM)
     , limit(0)
+    , queryClickFreq(0)
 {
     // DOCID property is a must in recommendation result
     selectRecommendProps.push_back(DOCID);
@@ -74,6 +75,16 @@ bool RecommendParam::check(std::string& errorMsg) const
 
         case BASED_ON_RANDOM:
         {
+            break;
+        }
+
+        case BUY_AFTER_QUERY:
+        {
+            if (query.empty())
+            {
+                errorMsg = "This recommendation type requires keywords in request[resource].";
+                return false;
+            }
             break;
         }
 

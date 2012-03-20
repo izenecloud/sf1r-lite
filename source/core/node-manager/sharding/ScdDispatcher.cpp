@@ -14,10 +14,13 @@ using namespace sf1r;
 using namespace net::distribute;
 namespace bfs = boost::filesystem;
 
-ScdDispatcher::ScdDispatcher(ScdSharding* scdSharding)
-: scdSharding_(scdSharding), scdEncoding_(izenelib::util::UString::UTF_8)
+const static std::string DISPATCH_TEMP_DIR = "dispatch-temp-dir/";
+
+ScdDispatcher::ScdDispatcher(const boost::shared_ptr<ScdSharder>& scdSharder)
+    : scdSharder_(scdSharder)
+    , scdEncoding_(izenelib::util::UString::UTF_8)
 {
-    BOOST_ASSERT(scdSharding_);
+    BOOST_ASSERT(scdSharder_);
 }
 
 bool ScdDispatcher::dispatch(const std::string& dir, unsigned int docNum)
@@ -28,6 +31,11 @@ bool ScdDispatcher::dispatch(const std::string& dir, unsigned int docNum)
     if (!getScdFileList(dir, scdFileList))
         return false;
 
+    // set scd dir and initialize
+    scdDir_ = dir;
+    if (!initialize())
+        return false;
+
     unsigned int docProcessed = 0;
     for (size_t i = 1; i <= scdFileList.size(); i++)
     {
@@ -36,7 +44,7 @@ bool ScdDispatcher::dispatch(const std::string& dir, unsigned int docNum)
         switchFile();
 
         ScdParser scdParser(scdEncoding_);
-        if(!scdParser.load(scd_path.string()) )
+        if(!scdParser.load(scd_path.string()))
         {
             LOG(ERROR) << "Load scd file failed: " << scd_path.string();
             return false;
@@ -45,7 +53,7 @@ bool ScdDispatcher::dispatch(const std::string& dir, unsigned int docNum)
         for (ScdParser::iterator it = scdParser.begin(); it != scdParser.end(); it++)
         {
             SCDDocPtr pScdDoc = *it;
-            shardid_t shardId = scdSharding_->sharding(*pScdDoc);
+            shardid_t shardId = scdSharder_->sharding(*pScdDoc);
 
             // dispatching one doc
             dispatch_impl(shardId, *pScdDoc);
@@ -72,7 +80,7 @@ bool ScdDispatcher::dispatch(const std::string& dir, unsigned int docNum)
 
     LOG(INFO) << "end SCD sharding";
 
-    // post process of dispatching
+    // post process (dispatching)
     return finish();
 }
 
@@ -121,28 +129,11 @@ bool ScdDispatcher::getScdFileList(const std::string& dir, std::vector<std::stri
 /// Class BatchScdDispatcher //////////////////////////////////////////////////////////
 
 BatchScdDispatcher::BatchScdDispatcher(
-        ScdSharding* scdSharding,
-        const std::string& collectionName,
-        const std::string& dispatchTempDir)
-: ScdDispatcher(scdSharding)
+        const boost::shared_ptr<ScdSharder>& scdSharder,
+        const std::string& collectionName)
+: ScdDispatcher(scdSharder)
 , collectionName_(collectionName)
-, dispatchTempDir_(dispatchTempDir)
 {
-    bfs::create_directory(dispatchTempDir_);
-
-    ofList_.resize(scdSharding->getMaxShardID()+1, NULL);
-    for (unsigned int shardid = scdSharding->getMinShardID();
-            shardid <= scdSharding->getMaxShardID(); shardid++)
-    {
-        std::ostringstream oss;
-        oss << dispatchTempDir_<<"/"<<shardid;
-
-        std::string shardScdDir = oss.str();
-        bfs::create_directory(shardScdDir);
-
-        shardScdfileMap_.insert(std::make_pair(shardid, shardScdDir));
-        ofList_[shardid] = new std::ofstream;
-    }
 }
 
 BatchScdDispatcher::~BatchScdDispatcher()
@@ -157,12 +148,17 @@ BatchScdDispatcher::~BatchScdDispatcher()
     }
 }
 
+bool BatchScdDispatcher::initialize()
+{
+    return initTempDir(scdDir_ + DISPATCH_TEMP_DIR);
+}
+
 bool BatchScdDispatcher::switchFile()
 {
     //std::cout<<"switchFile to "<<curScdFileName_<<std::endl;
 
-    for (unsigned int shardid = scdSharding_->getMinShardID();
-                shardid <= scdSharding_->getMaxShardID(); shardid++)
+    for (unsigned int shardid = scdSharder_->getMinShardID();
+                shardid <= scdSharder_->getMaxShardID(); shardid++)
     {
         std::ofstream*& rof = ofList_[shardid];
 
@@ -218,12 +214,12 @@ bool BatchScdDispatcher::dispatch_impl(shardid_t shardid, SCDDoc& scdDoc)
 
 bool BatchScdDispatcher::finish()
 {
-    bool ret = false;
+    bool ret = true;
     LOG(INFO) << "start SCD dispatching" ;
 
     // Send splitted scd files in sub dirs to each shard server
-    for (unsigned int shardid = scdSharding_->getMinShardID();
-            shardid <= scdSharding_->getMaxShardID(); shardid++)
+    for (unsigned int shardid = scdSharder_->getMinShardID();
+            shardid <= scdSharder_->getMaxShardID(); shardid++)
     {
         std::string host;
         unsigned int recvPort;
@@ -231,23 +227,48 @@ bool BatchScdDispatcher::finish()
         {
             LOG(INFO) << "Transfer scd from "<<shardScdfileMap_[shardid]
                       <<"/ to shard "<<shardid<<" ["<<host<<":"<<recvPort<<"]";
-            // thread?
+
             DataTransfer transfer(host, recvPort);
-            if (transfer.syncSend(shardScdfileMap_[shardid], collectionName_+"/scd/index") == 0)
+            if (transfer.syncSend(shardScdfileMap_[shardid], collectionName_+"/scd/index") != 0)
             {
-                ret = true; // xxx
-                bfs::remove_all(shardScdfileMap_[shardid]);
+                ret = false;
+                LOG(ERROR) << "Failed to transfer scd"<<shardid;
             }
         }
         else
         {
-            //ret = false;
+            ret = false;
             LOG(ERROR) << "Not found server info for shard "<<shardid;
         }
+
+        if (!ret)
+            break;
     }
 
     LOG(INFO) << "end SCD dispatching" ;
     return ret;
+}
+
+bool BatchScdDispatcher::initTempDir(const std::string& tempDir)
+{
+    bfs::remove_all(tempDir);
+    bfs::create_directory(tempDir);
+
+    ofList_.resize(scdSharder_->getMaxShardID()+1, NULL);
+    for (unsigned int shardid = scdSharder_->getMinShardID();
+            shardid <= scdSharder_->getMaxShardID(); shardid++)
+    {
+        std::ostringstream oss;
+        oss << tempDir << shardid; // shard dir path
+
+        std::string shardScdDir = oss.str();
+        bfs::create_directory(shardScdDir);
+
+        shardScdfileMap_.insert(std::make_pair(shardid, shardScdDir));
+        ofList_[shardid] = new std::ofstream;
+    }
+
+    return true;
 }
 
 /// Class BatchScdDispatcher //////////////////////////////////////////////////////////

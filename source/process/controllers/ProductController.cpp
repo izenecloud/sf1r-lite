@@ -225,7 +225,7 @@ void ProductController::add_new_group()
     IZENELIB_DRIVER_BEFORE_HOOK(require_docid_list_());
     IZENELIB_DRIVER_BEFORE_HOOK(maybe_doc_(false));
     IZENELIB_DRIVER_BEFORE_HOOK(maybe_option_());
-    
+
     if (!product_manager_->AddGroup(docid_list_, doc_, option_))
     {
         response().addError(product_manager_->GetLastError());
@@ -623,6 +623,70 @@ void ProductController::get_top_price_cut_list()
         Value& tpc_item = tpc_list();
         tpc_item[Keys::price_cut] = tpc_queue[i].first;
         tpc_item[Keys::docid] = tpc_queue[i].second;
+    }
+}
+
+/**
+ * @brief Action \b migrate_price_history. Migrate price history to another Cassandra keyspace.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b new_keyspace* (@c String): New keyspace name.
+ * - @b old_prefix (@c String): Old prefix of Cassandra key.
+ * - @b new_prefix (@c String): New prefix of Cassandra key.
+ * - @b start (@c Uint): First docid to be processed
+ *
+ * @section response
+ *
+ *
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection" : "b5mm",
+ *   "new_keyspace" : "B5M",
+ *   "old_prefix" : "b5mm",
+ *   "new_prefix" : ""
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ * }
+ * @endcode
+ */
+void ProductController::migrate_price_history()
+{
+    new_keyspace_ = asString(request()[Keys::new_keyspace]);
+
+    if (!izenelib::driver::nullValue(request()[Keys::old_prefix]))
+    {
+        old_prefix_ = asString(request()[Keys::old_prefix]);
+    }
+
+    if (!izenelib::driver::nullValue(request()[Keys::new_prefix]))
+    {
+        new_prefix_ = asString(request()[Keys::new_prefix]);
+    }
+
+    if (!izenelib::driver::nullValue(request()[Keys::start]))
+    {
+        start_ = asUint(request()[Keys::start]);
+        if (start_ == 0) start_ = 1;
+    }
+    else
+    {
+        start_ = 1;
+    }
+
+    if (!product_manager_->MigratePriceHistory(new_keyspace_, old_prefix_, new_prefix_, start_))
+    {
+        response().addError(product_manager_->GetLastError());
     }
 }
 

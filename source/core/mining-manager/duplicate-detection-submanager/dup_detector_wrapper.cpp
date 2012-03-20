@@ -16,6 +16,7 @@ DupDetectorWrapper::DupDetectorWrapper(const std::string& container)
     : container_(container)
     , document_manager_()
     , analyzer_(NULL)
+    , file_info_(new FileObjectType(container + "/last_docid"))
     , fp_only_(false)
     , group_table_(NULL)
     , dd_(NULL)
@@ -33,6 +34,7 @@ DupDetectorWrapper::DupDetectorWrapper(
     , document_manager_(document_manager)
     , id_manager_(id_manager)
     , analyzer_(analyzer)
+    , file_info_(new FileObjectType(container + "/last_docid"))
     , fp_only_(fp_only)
     , group_table_(NULL)
     , dd_(NULL)
@@ -45,6 +47,7 @@ DupDetectorWrapper::DupDetectorWrapper(
 
 DupDetectorWrapper::~DupDetectorWrapper()
 {
+    delete file_info_;
     if (group_table_)
         delete group_table_;
     if (dd_)
@@ -147,7 +150,11 @@ bool DupDetectorWrapper::ProcessCollection()
 {
     if (!dd_) return false;
 
-    uint32_t processed_max_docid = dd_->GetInsertedDocCount();
+    uint32_t processed_max_docid = 0;
+    if (file_info_->Load())
+    {
+        processed_max_docid = file_info_->GetValue();
+    }
     uint32_t processing_max_docid = document_manager_->getMaxDocId();
     if (processing_max_docid <= processed_max_docid)
     {
@@ -158,6 +165,18 @@ bool DupDetectorWrapper::ProcessCollection()
 
     uint32_t process_count = 0;
     Document doc;
+
+    std::vector<uint32_t> removed_docs;
+    document_manager_->getDeletedDocIdList(removed_docs);
+    if (!removed_docs.empty())
+    {
+        for (std::vector<uint32_t>::const_iterator it = removed_docs.begin();
+                it != removed_docs.end(); ++it)
+        {
+            dd_->RemoveDoc(*it);
+        }
+        dd_->FinishRemoveDocs();
+    }
 
     dd_->IncreaseCacheCapacity(processing_max_docid - processed_max_docid);
     for (uint32_t docid = processed_max_docid + 1; docid <= processing_max_docid; docid++)
@@ -203,6 +222,9 @@ bool DupDetectorWrapper::ProcessCollection()
 #endif
     }
 
+    file_info_->SetValue(processing_max_docid);
+    file_info_->Save();
+
     return dd_->RunDdAnalysis();
 }
 
@@ -244,7 +266,7 @@ uint32_t DupDetectorWrapper::getSignatureForText(
     return strTermList.size();
 }
 
-void DupDetectorWrapper::getKNNListBySignature(
+bool DupDetectorWrapper::getKNNListBySignature(
         const std::vector<uint64_t>& signature,
         uint32_t count,
         uint32_t start,
@@ -256,12 +278,14 @@ void DupDetectorWrapper::getKNNListBySignature(
     std::vector<std::pair<uint32_t, uint32_t> > knn_list;
 
     dd_->GetKNNListBySignature(signature, count + start, max_hamming_dist, knn_list);
+    if (knn_list.empty()) return false;
     for (uint32_t i = start; i < knn_list.size(); i++)
     {
         docIdList.push_back(knn_list[i].second);
         rankScoreList.push_back(float(1) - float(knn_list[i].first) / float(idmlib::dd::DdConstants::f));
     }
     totalCount = knn_list.size() - start;
+    return true;
 }
 
 }

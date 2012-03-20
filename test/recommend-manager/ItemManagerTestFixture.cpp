@@ -66,7 +66,7 @@ void ItemManagerTestFixture::createDocManager_()
     dmDir /= "dm/";
     bfs::create_directory(dmDir);
 
-    documentManager_.reset(new DocumentManager(dmDir.string(), schema_, ENCODING_TYPE, 2000));
+    documentManager_.reset(new DocumentManager(dmDir.string(), indexSchema_, ENCODING_TYPE, 2000));
 }
 
 void ItemManagerTestFixture::checkItemManager()
@@ -167,31 +167,31 @@ void ItemManagerTestFixture::initDMSchema_()
     PropertyConfigBase config1;
     config1.propertyName_ = PROP_NAME_DOCID;
     config1.propertyType_ = STRING_PROPERTY_TYPE;
-    schema_.insert(config1);
+    indexSchema_.insert(config1);
     propList_.push_back(config1.propertyName_);
 
     PropertyConfigBase config2;
     config2.propertyName_ = PROP_NAME_TITLE;
     config2.propertyType_ = STRING_PROPERTY_TYPE;
-    schema_.insert(config2);
+    indexSchema_.insert(config2);
     propList_.push_back(config2.propertyName_);
 
     PropertyConfigBase config3;
     config3.propertyName_ = PROP_NAME_URL;
     config3.propertyType_ = STRING_PROPERTY_TYPE;
-    schema_.insert(config3);
+    indexSchema_.insert(config3);
     propList_.push_back(config3.propertyName_);
 
     PropertyConfigBase config4;
     config4.propertyName_ = PROP_NAME_PRICE;
     config4.propertyType_ = FLOAT_PROPERTY_TYPE;
-    schema_.insert(config4);
+    indexSchema_.insert(config4);
     propList_.push_back(config4.propertyName_);
 
     PropertyConfigBase config5;
     config5.propertyName_ = PROP_NAME_COUNT;
     config5.propertyType_ = INT_PROPERTY_TYPE;
-    schema_.insert(config5);
+    indexSchema_.insert(config5);
     propList_.push_back(config5.propertyName_);
 }
 

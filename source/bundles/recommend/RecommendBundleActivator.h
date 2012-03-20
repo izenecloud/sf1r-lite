@@ -58,6 +58,7 @@ private:
     void createItem_(IndexSearchService* indexSearchService);
     void createMining_();
     void createOrder_();
+    void createClickCounter_();
     void createRecommender_();
     void createService_();
 
@@ -88,6 +89,8 @@ private:
 
     boost::scoped_ptr<CoVisitManager> coVisitManager_;
     boost::scoped_ptr<ItemCFManager> itemCFManager_;
+
+    boost::scoped_ptr<QueryClickCounter> queryPurchaseCounter_;
 };
 
 } // namespace sf1r

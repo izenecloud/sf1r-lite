@@ -3,7 +3,7 @@
 #include <node-manager/SearchNodeManager.h>
 #include <node-manager/SearchMasterManager.h>
 
-#include <node-manager/sharding/ScdSharding.h>
+#include <node-manager/sharding/ScdSharder.h>
 #include <node-manager/sharding/ShardingStrategy.h>
 #include <node-manager/sharding/ScdDispatcher.h>
 
@@ -11,44 +11,65 @@
 
 namespace sf1r{
 
-bool IndexAggregator::ScdDispatch(
+
+bool IndexAggregator::distributedIndex(
         unsigned int numdoc,
         const std::string& collectionName,
-        const std::string& scdPath,
+        const std::string& masterScdPath,
         const std::vector<std::string>& shardKeyList)
 {
-    bool ret = false;
-
-    ShardingConfig cfg;
-    cfg.setShardNum(SearchNodeManager::get()->getShardNum());
-    size_t i = 0;
-    for ( ; i < shardKeyList.size(); i++)
+    // 1. dispatching scd to multiple nodes
+    boost::shared_ptr<ScdSharder> scdSharder;
+    if (!createScdSharder(scdSharder, shardKeyList))
     {
-        cfg.addShardKey(shardKeyList[i]);
-        std::cout << "Shard Key: " << shardKeyList[i] << std::endl;
+        return false;
     }
-    if (i == 0)
+
+    boost::shared_ptr<ScdDispatcher> scdDispatcher(new BatchScdDispatcher(scdSharder, collectionName));
+    if(scdDispatcher->dispatch(masterScdPath, numdoc))
+    {
+        return false;
+    }
+
+   // 2. send index request to multiple nodes
+   bool ret = true;
+   LOG(INFO) << "start distributed indexing";
+   this->distributeRequest(collectionName, "index", numdoc, ret);
+
+   if (ret)
+   {
+       // backup master
+   }
+
+   return ret;
+}
+
+bool IndexAggregator::createScdSharder(
+        boost::shared_ptr<ScdSharder>& scdSharder,
+        const std::vector<std::string>& shardKeyList)
+{
+    if (shardKeyList.empty())
     {
         LOG(ERROR) << "No shard key!";
-        return ret;
+        return false;
     }
 
-    // create scd sharding strategy
-    ShardingStrategy* shardingStrategy = new HashShardingStrategy;
-    ScdSharding scdSharding(cfg, shardingStrategy);
+    // sharding configuration
+    ShardingConfig cfg;
+    cfg.setShardNum(SearchNodeManager::get()->getShardNum());
+    for (size_t i = 0; i < shardKeyList.size(); i++)
+    {
+        cfg.addShardKey(shardKeyList[i]);
+        LOG(INFO) << "Shard Key: " << shardKeyList[i];
+    }
+    cfg.setShardStrategy(ShardingConfig::SHARDING_HASH); // use proper strategy
 
-    // create scd dispatcher
-    ScdDispatcher* scdDispatcher = new BatchScdDispatcher(
-            &scdSharding,
-            collectionName);
+    scdSharder.reset(new ScdSharder);
 
-    // do dispatch
-    ret = scdDispatcher->dispatch(scdPath, numdoc);
-
-    delete shardingStrategy;
-    delete scdDispatcher;
-
-    return ret;
+    if (scdSharder && scdSharder->init(cfg))
+        return true;
+    else
+        return false;
 }
 
 }

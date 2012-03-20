@@ -624,6 +624,20 @@ bool ProductManager::GetTopPriceCutList(
     return price_trend_->GetTopPriceCutList(tpc_queue, prop_name, prop_value, days, count, error_);
 }
 
+bool ProductManager::MigratePriceHistory(
+        const std::string& new_keyspace,
+        const std::string& old_prefix,
+        const std::string& new_prefix,
+        uint32_t start)
+{
+    if (!has_price_trend_)
+    {
+        error_ = "Price trend is not enabled for this collection";
+        return false;
+    }
+
+    return price_trend_->MigratePriceHistory(new_keyspace, old_prefix, new_prefix, start, error_);
+}
 
 bool ProductManager::GetTimestamp_(const PMDocumentType& doc, time_t& timestamp) const
 {

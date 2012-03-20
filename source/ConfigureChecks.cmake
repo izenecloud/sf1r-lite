@@ -104,7 +104,7 @@ FIND_PACKAGE(Glog REQUIRED)
 FIND_PACKAGE(sqlite3 REQUIRED)
 FIND_PACKAGE(MySQL REQUIRED)
 FIND_PACKAGE(Thrift REQUIRED)
-
+FIND_PACKAGE(ImageMagick COMPONENTS Magick++ REQUIRED) 
 ##################################################
 # Driver Docs
 #####

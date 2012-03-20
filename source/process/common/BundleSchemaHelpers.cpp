@@ -195,6 +195,29 @@ bool isPropertyForeignKey(
     return false;
 }
 
+bool isDocumentProperty(
+    const DocumentSchema& schema,
+    const std::string& property
+)
+{
+    PropertyConfigBase config;
+    config.propertyName_ = property;
+
+    return schema.find(config) != schema.end();
+}
+
+void getDocumentPropertyNames(
+    const DocumentSchema& schema,
+    std::vector<std::string>& names
+)
+{
+    for (DocumentSchema::const_iterator it = schema.begin();
+        it != schema.end(); ++it)
+    {
+        names.push_back(it->propertyName_);
+    }
+}
+
 } // NAMESPACE sf1r
 
 

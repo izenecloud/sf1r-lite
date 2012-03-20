@@ -15,7 +15,7 @@
 namespace sf1r
 {
 
-class CollectionTaskType;
+class CollectionTask;
 class CollectionHandler;
 
 class CollectionTaskScheduler
@@ -38,7 +38,7 @@ private:
     void onTimer_();
 
 private:
-    typedef std::vector<boost::shared_ptr<CollectionTaskType> > TaskListType;
+    typedef std::vector<boost::shared_ptr<CollectionTask> > TaskListType;
     TaskListType taskList_;
 };
 

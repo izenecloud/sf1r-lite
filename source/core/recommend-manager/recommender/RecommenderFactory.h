@@ -39,6 +39,7 @@ public:
         OrderManager& orderManager,
         EventManager& eventManager,
         RateManager& rateManager,
+        QueryClickCounter& queryPurchaseCounter,
         CoVisitManager& coVisitManager,
         ItemCFManager& itemCFManager
     );

@@ -1,17 +1,23 @@
-#include "ScdSharding.h"
+#include "ScdSharder.h"
 
 #include <boost/assert.hpp>
 
+#include <glog/logging.h>
+
 using namespace sf1r;
 
-ScdSharding::ScdSharding(ShardingConfig& shardingConfig, ShardingStrategy* shardingStrategy)
-:shardingConfig_(shardingConfig), shardingStrategy_(shardingStrategy)
+ScdSharder::ScdSharder()
 {
-    BOOST_ASSERT(shardingStrategy_);
 }
 
-shardid_t ScdSharding::sharding(SCDDoc& scdDoc)
+shardid_t ScdSharder::sharding(SCDDoc& scdDoc)
 {
+    if (!shardingStrategy_)
+    {
+        LOG(ERROR) << "shardingStrategy not initialized!";
+        return 0;
+    }
+
     // set sharding key values
     setShardKeyValues(scdDoc);
 
@@ -22,7 +28,29 @@ shardid_t ScdSharding::sharding(SCDDoc& scdDoc)
     return shardingStrategy_->sharding(ShardFieldList_, shardingParams);
 }
 
-void ScdSharding::setShardKeyValues(SCDDoc& scdDoc)
+bool ScdSharder::init(ShardingConfig& shardingConfig)
+{
+    shardingConfig_ = shardingConfig;
+
+    return initShardingStrategy();
+}
+
+bool ScdSharder::initShardingStrategy()
+{
+    if (shardingConfig_.getShardStrategy() == ShardingConfig::SHARDING_HASH)
+    {
+        shardingStrategy_.reset(new HashShardingStrategy);
+    }
+    else
+    {
+        LOG(ERROR) << "ShardingStrategy not specified!";
+        return false;
+    }
+
+    return true;
+}
+
+void ScdSharder::setShardKeyValues(SCDDoc& scdDoc)
 {
     ShardFieldList_.clear();
 
@@ -47,8 +75,8 @@ void ScdSharding::setShardKeyValues(SCDDoc& scdDoc)
 
     if (ShardFieldList_.empty())
     {
-        // set DOCID as default shard key if miss shard keys, xxx
+        // set DOCID as default shard key if missing shard keys, xxx
         ShardFieldList_.push_back(std::make_pair("DOCID", docidVal));
-        std::cerr<<"WARN: miss shard keys (properties) in doc: "<<docidVal<<std::endl;
+        LOG(WARNING) << "WARN: miss shard keys (properties) in doc: " << docidVal;
     }
 }

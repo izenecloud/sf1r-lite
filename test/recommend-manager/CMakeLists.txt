@@ -59,6 +59,7 @@ SET(libs
   ${sqlite3_LIBRARIES}
   ${MYSQL_LIBRARIES}
   ${Thrift_LIBS}
+  ${ImageMagick_LIBRARIES}
   )
 
 FILE(GLOB_RECURSE common_SRC "${CMAKE_SOURCE_DIR}/process/common/*.cpp")

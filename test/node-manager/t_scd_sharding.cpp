@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-#include <node-manager/sharding/ScdSharding.h>
+#include <node-manager/sharding/ScdSharder.h>
 #include <node-manager/sharding/ShardingStrategy.h>
 #include <node-manager/sharding/ScdDispatcher.h>
 
@@ -94,18 +94,18 @@ int main(int argc, char** argv)
     cout<<endl<<"----------------------"<<endl<<endl;
 
     // create scd sharding
-    ShardingStrategy* shardingStrategy = new HashShardingStrategy;
-    ScdSharding scdSharding(cfg, shardingStrategy);
+    boost::shared_ptr<ScdSharder> scdSharder(new ScdSharder);
+    if (!scdSharder->init(cfg))
+    {
+        return 0;
+    }
 
     // create scd dispatcher
-    ScdDispatcher* scdDispatcher = new BatchScdDispatcher(&scdSharding, "chinese-wiki");
+    boost::shared_ptr<ScdDispatcher> scdDispatcher(new BatchScdDispatcher(scdSharder, "chinese-wiki"));
 
     // In this test, there is no Worker and scd transmission will fail,
     // but it dosen't matter, because we only need to test sharding.
     scdDispatcher->dispatch(dir, maxDoc);
-
-    delete shardingStrategy;
-    delete scdDispatcher;
 
     return 0;
 }
