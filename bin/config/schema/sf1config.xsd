@@ -359,6 +359,7 @@
     </xs:element>
     <xs:element name="ZooKeeper">
         <xs:complexType>
+            <xs:attribute name="disable" type="YesNoType" use="required"/>
             <xs:attribute name="servers" type="xs:string" use="required"/>
             <xs:attribute name="sessiontimeout" type="xs:integer" use="required"/>
         </xs:complexType>

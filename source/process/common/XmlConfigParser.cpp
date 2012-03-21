@@ -371,7 +371,6 @@ void SF1Config::parseDistributedTopology(
             topologyConfig.nodeNum_ = topologyConfig.shardNum_;
         }
 
-
         // Current SF1 node
         ticpp::Element * cursf1node = getUniqChildElement(topology, "CurrentNode");
         getAttribute(cursf1node, "replicaid", topologyConfig.curSF1Node_.replicaId_);
@@ -389,6 +388,7 @@ void SF1Config::parseDistributedUtil(const ticpp::Element * distributedUtil)
 {
     // ZooKeeper configuration
     ticpp::Element* zk = getUniqChildElement(distributedUtil, "ZooKeeper");
+    getAttribute(zk, "disable", distributedUtilConfig_.zkConfig_.disabled_);
     getAttribute(zk, "servers", distributedUtilConfig_.zkConfig_.zkHosts_);
     getAttribute(zk, "sessiontimeout", distributedUtilConfig_.zkConfig_.zkRecvTimeout_);
 

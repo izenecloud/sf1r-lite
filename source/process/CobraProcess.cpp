@@ -225,17 +225,22 @@ bool CobraProcess::initDriverServer()
 
 bool CobraProcess::initNodeManager()
 {
-    // Common initializations for coordination tasks (whether distributed or not)
+    // Do not connect to zookeeper if disabled
+    if (SF1Config::get()->isDisableZooKeeper())
+    {
+        std::cout << "ZooKeeper is disabled!" << std::endl;
+        return true;
+    }
+
+    // Start node management
     ZooKeeperManager::get()->init(
-            SF1Config::get()->distributedUtilConfig_.zkConfig_,
-            SF1Config::get()->distributedCommonConfig_.clusterId_);
+        SF1Config::get()->distributedUtilConfig_.zkConfig_,
+        SF1Config::get()->distributedCommonConfig_.clusterId_);
 
     SuperNodeManager::get()->init(SF1Config::get()->distributedCommonConfig_);
 
-    // Initializations for distributed SF1
     if (SF1Config::get()->isDistributedSearchNode())
         SearchNodeManager::get()->init(SF1Config::get()->searchTopologyConfig_);
-
     if (SF1Config::get()->isDistributedRecommendNode())
         RecommendNodeManager::get()->init(SF1Config::get()->recommendTopologyConfig_);
 

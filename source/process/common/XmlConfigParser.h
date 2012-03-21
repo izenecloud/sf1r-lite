@@ -468,6 +468,16 @@ public:
     bool checkRecommendWorker(const std::string& workerName)
     { return checkWorker(recommendTopologyConfig_, workerName); }
 
+    bool isDisableZooKeeper()
+    {
+        if (isDistributedSearchNode() || isDistributedRecommendNode())
+        {
+            return false;
+        }
+
+        return distributedUtilConfig_.zkConfig_.disabled_;
+    }
+
     bool isDistributedNode(DistributedTopologyConfig& rTopologyConfig)
     {
         if (rTopologyConfig.enabled_)

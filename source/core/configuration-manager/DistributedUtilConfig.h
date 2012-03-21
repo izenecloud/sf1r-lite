@@ -14,13 +14,17 @@ namespace sf1r
 
 struct ZooKeeperConfig
 {
+    ZooKeeperConfig() : disabled_(false) {}
+
+    bool disabled_;
     std::string zkHosts_;
     unsigned int zkRecvTimeout_;
 
     std::string toString()
     {
         std::stringstream ss;
-        ss << "[ZooKeeper Config] hosts: "<<zkHosts_<<" timeout: "<<zkRecvTimeout_<<std::endl;
+        ss << "[ZooKeeper] " << (disabled_ ? "disabled " : "")
+           << "hosts: " << zkHosts_ << " timeout: " << zkRecvTimeout_ << std::endl;
         return ss.str();
     }
 };
