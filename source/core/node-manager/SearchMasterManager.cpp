@@ -25,7 +25,7 @@ bool SearchMasterManager::init()
     // initialize topology info
     topology_.clusterId_ = SuperNodeManager::get()->getCommonConfig().clusterId_;
     topology_.nodeNum_ =  SearchNodeManager::get()->getDSTopologyConfig().nodeNum_;
-    topology_.shardNum_ =  SearchNodeManager::get()->getDSTopologyConfig().shardNum_;
+    topology_.shardNum_ =  SearchNodeManager::get()->getDSTopologyConfig().curSF1Node_.masterAgent_.shardNum_;
     curNodeInfo_ = SearchNodeManager::get()->getNodeInfo();
 
     return true;

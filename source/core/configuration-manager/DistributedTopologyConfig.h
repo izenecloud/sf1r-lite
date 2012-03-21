@@ -16,31 +16,6 @@
 namespace sf1r
 {
 
-struct B5mServerConfig
-{
-    B5mServerConfig()
-        : enabled_(false)
-    {}
-
-    bool enabled_;
-    std::string serverId_;
-    std::vector<std::string> collectionList_;
-
-    std::string toString()
-    {
-        std::stringstream ss;
-        ss << "[B5M Server] " << serverId_ << ": " << (enabled_ ? "enabled":"disabled") << std::endl;
-        std::vector<std::string>::iterator it;
-        for (it = collectionList_.begin(); it != collectionList_.end(); it++)
-        {
-            ss << " " << *it;
-        }
-        ss << std::endl;
-
-        return ss.str();
-    }
-};
-
 struct SF1Node
 {
     SF1Node()
@@ -51,7 +26,6 @@ struct SF1Node
     unsigned int nodeId_;
     unsigned int replicaId_;
 
-    B5mServerConfig b5mServer_;
     MasterAgentConfig masterAgent_;
     WorkerAgentConfig workerAgent_;
 
@@ -59,7 +33,6 @@ struct SF1Node
     {
         std::stringstream ss;
         ss << "[Current SF1 Node] nodeId: "<<nodeId_<<", replicaId: "<<replicaId_<<std::endl;
-        ss << b5mServer_.toString();
         ss << masterAgent_.toString();
         ss << workerAgent_.toString();
 
@@ -71,7 +44,7 @@ class DistributedTopologyConfig
 {
 public:
     DistributedTopologyConfig()
-    : enabled_(false), nodeNum_(0), shardNum_(0)
+    : enabled_(false), nodeNum_(0)
     {
     }
 
@@ -80,7 +53,7 @@ public:
         std::stringstream ss;
         ss << "==== [DistributedTopology] ===="<<std::endl;
         ss << (enabled_ ? "enabled":"disabled")
-           <<" : nodeNum:" << nodeNum_ << ", workerNum:" << shardNum_ << std::endl;
+           <<" : nodeNum:" << nodeNum_ << std::endl;
 
         ss << curSF1Node_.toString() << std::endl;
         ss << "==============================="<<std::endl;
@@ -91,7 +64,6 @@ public:
     // golable topology configuration
     bool enabled_;
     unsigned int nodeNum_;
-    unsigned int shardNum_;
 
     // current SF1 node configuration
     SF1Node curSF1Node_;

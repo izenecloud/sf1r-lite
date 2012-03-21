@@ -211,58 +211,58 @@
   <Deployment>
     <BrokerAgent usecache="n" threadnum="50" enabletest="y" port="18181"/>
 
-    <!-- Distributed Topology (a SF1 node can work as Worker or Master or both).
-      clusterid : identity of the cluster
-      nodeid    : id of current node (sf1) in the cluster.
-      replicaid : id of current node (sf1) in the replication set.
-      shardid   : id of data shard (partition), used as workerid.
+    <!-- Distributed SF1R
+      Global settings (for all sf1r nodes in topology):
+        - clusterid: identity of the unique cluster of SF1R nodes for distributed sf1r.
+        - shardnum:  number of data shards (workers) in the cluster. (Master)
+
+      Local settings (for current sf1r node):
+        - username:  user name logged on local host
+        - localhost: id address
+
+        - nodeid:    id of current sf1 node
+        - replicaid: id of replication set for current sf1 node
+        - shardid:   id of data shard, if current sf1 is enabled as Worker. used as workerid. (Worker)
     -->
     <DistributedCommon clusterid="@LOCAL_HOST_USER_NAME@" username="@LOCAL_HOST_USER_NAME@" localhost="172.16.0.36"
                        workerport="18151" masterport="18131" datarecvport="18121" />
 
-    <DistributedTopology enable="n" type="search" shardnum="2">
-      <CurrentNode replicaid="1" nodeid="1">
-        <!-- B5M Servers: www|stage|beta -->
-        <B5mServer enable="y" id="beta">
-          <Collections>
-            <Collection name="web"/>
-            <Collection name="qa"/>
-            <Collection name="b5mo"/>
-            <Collection name="b5mc"/>
-            <Collection name="b5mp"/>
-          </Collections>
-        </B5mServer>
+    <DistributedTopology enable="n" type="search">
+      <CurrentSf1rNode nodeid="1" replicaid="1">
+        <!--master names for B5M are www|stage|beta-->
+        <MasterServer enable="n" name="undefined" shardnum="3">          
+          <!--for distributive collection, shardid is set to all as default-->
+          <Collection name="web" distributive="n" />
+          <Collection name="qa" distributive="n" />
+          <Collection name="b5mo" distributive="n" />
+          <Collection name="b5mc" distributive="n" />
+          <Collection name="b5mp" distributive="y" shardids="1,2" />
+        </MasterServer>
 
-        <!-- distributive -->
-        <MasterAgent enable="n">
-          <Aggregator collection="b5mp" shardids="1,2"/>
-          <Aggregator collection="web"/> <!--set to all shardids as default-->
-        </MasterAgent>
-
-        <WorkerAgent enable="n" shardid="1">
-          <Service collection="b5mp"/>
-          <Service collection="web"/>
-        </WorkerAgent>
-      </CurrentNode>
+        <WorkerServer enable="n" shardid="1">
+          <Collection name="web" />
+          <Collection name="b5mp" />
+        </WorkerServer>
+      </CurrentSf1rNode>
     </DistributedTopology>
 
-    <DistributedTopology enable="n" type="recommend" nodenum="2" shardnum="2">
-      <CurrentNode replicaid="1" nodeid="1">
-        <MasterAgent enable="y">
-          <Aggregator collection="b5mp"/>
-          <Aggregator collection="web"/>
-        </MasterAgent>
+    <DistributedTopology enable="n" type="recommend">
+      <CurrentSf1rNode nodeid="1" replicaid="1">
+        <MasterServer enable="y" name="undefined" shardnum="1">
+          <Collection name="b5mo" distributive="n" />
+          <Collection name="b5mc" distributive="n" />
+          <Collection name="b5mp" distributive="y" />
+        </MasterServer>
 
-        <WorkerAgent enable="y" shardid="1">
-          <Service collection="b5mp"/>
-          <Service collection="web"/>
-        </WorkerAgent>
-      </CurrentNode>
+        <WorkerServer enable="y" shardid="1">
+          <Collection name="b5mp" />
+        </WorkerServer>
+      </CurrentSf1rNode>
     </DistributedTopology>
 
     <DistributedUtil>
-      <ZooKeeper disable="n" servers="180.153.140.110:2181,180.153.140.111:2181,180.153.140.112:2181" sessiontimeout="2000"/>
-      <DFS type="hdfs" supportfuse="y" mountdir="/mnt/hdfs" server="localhost" port="9000"/>
+      <ZooKeeper disable="n" servers="180.153.140.110:2181,180.153.140.111:2181,180.153.140.112:2181" sessiontimeout="2000" />
+      <DFS type="hdfs" supportfuse="y" mountdir="/mnt/hdfs" server="localhost" port="9000" />
     </DistributedUtil>
   </Deployment>
 

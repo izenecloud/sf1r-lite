@@ -53,6 +53,12 @@ namespace sf1r {
 
       |--- Synchro                 # For synchronization task
 
+
+|--- B5M-[CLUSTERID]
+      |--- WWW
+      |--- Stage
+      |--- Beta
+
  *
  */
 class ZooKeeperNamespace

@@ -25,7 +25,7 @@ bool RecommendMasterManager::init()
     // initialize topology info
     topology_.clusterId_ = SuperNodeManager::get()->getCommonConfig().clusterId_;
     topology_.nodeNum_ =  RecommendNodeManager::get()->getDSTopologyConfig().nodeNum_;
-    topology_.shardNum_ =  RecommendNodeManager::get()->getDSTopologyConfig().shardNum_;
+    topology_.shardNum_ =  RecommendNodeManager::get()->getDSTopologyConfig().curSF1Node_.masterAgent_.shardNum_;
     curNodeInfo_ = RecommendNodeManager::get()->getNodeInfo();
 
     return true;

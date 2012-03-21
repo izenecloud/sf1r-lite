@@ -257,6 +257,12 @@ void CobraProcess::stopDriver()
 
 bool CobraProcess::startDistributedServer()
 {
+    if (SF1Config::get()->isDisableZooKeeper())
+    {
+        std::cout << "ZooKeeper is disabled!" << std::endl;
+        return true;
+    }
+
     // Start worker server
     if (SF1Config::get()->isSearchWorker() || SF1Config::get()->isRecommendWorker())
     {

@@ -62,7 +62,7 @@ public:
 
     unsigned int getShardNum() const
     {
-        return dsTopologyConfig_.shardNum_;
+        return dsTopologyConfig_.curSF1Node_.masterAgent_.shardNum_;
     }
 
 public:
