@@ -1,7 +1,7 @@
-#ifndef CORE_SEARCH_MANAGER_SEARCH_CACHE_H
-#define CORE_SEARCH_MANAGER_SEARCH_CACHE_H
+#ifndef CORE_COMMON_SEARCH_CACHE_H
+#define CORE_COMMON_SEARCH_CACHE_H
 /**
- * @file core/search-manager/SearchCache.h
+ * @file core/common/SearchCache.h
  * @author Ian Yang
  * @date Created <2009-09-30 09:31:29>
  * @date Updated <2010-03-24 15:43:04>

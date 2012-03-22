@@ -1,9 +1,10 @@
-#ifndef _SEARCH_MANAGER_
-#define _SEARCH_MANAGER_
+#ifndef CORE_SEARCH_MANAGER_SEARCH_MANAGER_H
+#define CORE_SEARCH_MANAGER_SEARCH_MANAGER_H
 
 #include <configuration-manager/PropertyConfig.h>
 #include <query-manager/SearchKeywordOperation.h>
 #include <query-manager/ActionItem.h>
+#include <ranking-manager/RankQueryProperty.h>
 #include <common/ResultType.h>
 #include "NumericPropertyTable.h"
 #include "NumericPropertyTableBuilder.h"
@@ -11,6 +12,7 @@
 #include "Sorter.h"
 
 #include <ir/id_manager/IDManager.h>
+
 #include <util/ustring/UString.h>
 
 #include <boost/shared_ptr.hpp>
@@ -34,11 +36,16 @@ class IndexManager;
 class MiningManager;
 class Sorter;
 class IndexBundleConfiguration;
+class PropertyRanker;
+class MultiPropertyScorer;
+class CombinedDocumentIterator;
+class HitQueue;
 
 namespace faceted
 {
 class GroupFilterBuilder;
 class OntologyRep;
+class GroupFilter;
 }
 
 class SearchManager : public NumericPropertyTableBuilder
@@ -49,6 +56,7 @@ class SearchManager : public NumericPropertyTableBuilder
         DOCLEVEL,  /// position posting does not create
         WORDLEVEL ///  position postings create
     };
+    typedef std::map<std::string, PropertyTermInfo> property_term_info_map;
 
 public:
     typedef boost::function< void( std::vector<unsigned int>&, std::vector<float>&, const std::string& ) > reranker_t;
@@ -111,12 +119,16 @@ private:
             std::vector<float>& rankScoreList,
             std::vector<float>& customRankScoreList,
             std::size_t& totalCount,
-            faceted::GroupRep& groupRep,
-            faceted::OntologyRep& attrRep,
             sf1r::PropertyRange& propertyRange,
-            DistKeywordSearchInfo& distSearchInfo,
-            uint32_t topK,
-            uint32_t start);
+            uint32_t start,
+            std::vector<RankQueryProperty>& rankQueryProperties,
+            std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers,
+            Sorter* pSorter,
+            CustomRankerPtr customRanker,
+            MultiPropertyScorer* pMultiPropertyIterator,
+            CombinedDocumentIterator* pDocIterator,
+            faceted::GroupFilter* groupFilter,
+            HitQueue* scoreItemQueue);
 
     bool prepareDocIterWithOnlyOrderby_(
             boost::shared_ptr<EWAHBoolArray<uint32_t> >& pFilterIdSet);
@@ -133,6 +145,22 @@ private:
             PropertyDataType& type) const;
 
     boost::shared_ptr<PropertyData> getPropertyData_(const std::string& name);
+
+    void post_prepare_ranker_(
+            const std::vector<std::string>& indexPropertyList,
+            unsigned indexPropertySize,
+            const property_term_info_map& propertyTermInfoMap,
+            DocumentFrequencyInProperties& dfmap,
+            CollectionTermFrequencyInProperties& ctfmap,
+            bool readTermPosition,
+            std::vector<RankQueryProperty>& rankQueryProperties,
+            std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers);
+
+
+    void prepare_sorter_customranker_(
+            SearchKeywordOperation& actionOperation,	
+            CustomRankerPtr& customRanker, 
+            Sorter* &pSorter);
 
     /**
      * rebuild custom ranker.
@@ -182,4 +210,5 @@ private:
 
 } // end - namespace sf1r
 
-#endif // _SEARCH_MANAGER_
+#endif // CORE_SEARCH_MANAGER_SEARCH_MANAGER_H
+

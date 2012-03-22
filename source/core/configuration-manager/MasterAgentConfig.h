@@ -38,7 +38,7 @@ public:
     std::string toString()
     {
         std::stringstream ss;
-        ss<<"[MasterAgentConfig] enabled ? "<<enabled_<<std::endl;
+        ss<<"[MasterAgentConfig] " << (enabled_ ? "enabled":"disabled") <<std::endl;
 
         std::map<std::string, AggregatorUnit>::iterator it;
         for (it = aggregatorSupportMap_.begin(); it != aggregatorSupportMap_.end(); it++)

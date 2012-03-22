@@ -7,7 +7,7 @@
 #ifndef SCD_DISPATCHER_H_
 #define SCD_DISPATCHER_H_
 
-#include "ScdSharding.h"
+#include "ScdSharder.h"
 
 #include <net/aggregator/AggregatorConfig.h>
 
@@ -24,19 +24,22 @@ namespace sf1r{
 class ScdDispatcher
 {
 public:
-    ScdDispatcher(ScdSharding* scdSharding);
+    ScdDispatcher(const boost::shared_ptr<ScdSharder>& scdSharder);
 
     virtual ~ScdDispatcher() {}
 
     /**
-     * Sharding & dispatching
-     * @param dir directory containing scd files
-     * @param docNum number of docs to be dispatched, 0 for all
+     * @param outScdFileList  [OUT] scd file list
+     * @param dir  scd directory
+     * @param docNum  number of docs to be dispatched, 0 for all
+     * @return
      */
-    bool dispatch(const std::string& dir, unsigned int docNum = 0);
+    bool dispatch(std::vector<std::string>& scdFileList, const std::string& dir, unsigned int docNum = 0);
 
 protected:
     bool getScdFileList(const std::string& dir, std::vector<std::string>& fileList);
+
+    virtual bool initialize() { return true; }
 
     virtual bool switchFile() { return true; }
 
@@ -45,8 +48,9 @@ protected:
     virtual bool finish() { return true; }
 
 protected:
-    ScdSharding* scdSharding_;
+    boost::shared_ptr<ScdSharder> scdSharder_;
 
+    std::string scdDir_;
     izenelib::util::UString::EncodingType scdEncoding_;
     std::string curScdFileName_;
 };
@@ -59,18 +63,22 @@ class BatchScdDispatcher : public ScdDispatcher
 {
 public:
     BatchScdDispatcher(
-            ScdSharding* scdSharding,
-            const std::string& collectionName,
-            const std::string& dispatchTempDir="./scd-dispatch-temp");
+            const boost::shared_ptr<ScdSharder>& scdSharder,
+            const std::string& collectionName);
 
     ~BatchScdDispatcher();
 
 protected:
+    virtual bool initialize();
+
     virtual bool switchFile();
 
     virtual bool dispatch_impl(shardid_t shardid, SCDDoc& scdDoc);
 
     virtual bool finish();
+
+private:
+    bool initTempDir(const std::string& tempDir);
 
 private:
     std::string collectionName_;

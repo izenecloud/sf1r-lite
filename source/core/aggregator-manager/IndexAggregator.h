@@ -20,6 +20,7 @@ namespace sf1r
 
 typedef WorkerCaller<IndexWorker> IndexWorkerCaller;
 
+class ScdSharder;
 class IndexAggregator : public Aggregator<IndexAggregator, IndexWorkerCaller>
 {
 public:
@@ -47,19 +48,15 @@ public:
             const std::string& masterScdPath,
             const std::vector<std::string>& shardKeyList);
 
+private:
     /**
-     * Dispatch SCDs from Master node to Worker nodes
-     * with specified sharding strategy.
-     * @param numdoc    max number of docs to be processed
-     * @param collectionName
-     * @param scdPath
-     * @param shardKeyList  shard keys
+     * Create scd sharder
+     * @param schSharder   [IN]
+     * @param shardKeyList [OUT]
      * @return
      */
-    bool ScdDispatch(
-            unsigned int numdoc,
-            const std::string& collectionName,
-            const std::string& masterScdPath,
+    bool createScdSharder(
+            boost::shared_ptr<ScdSharder>& scdSharder,
             const std::vector<std::string>& shardKeyList);
 };
 

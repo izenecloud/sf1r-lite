@@ -134,7 +134,7 @@ void NodeManagerBase::enterCluster()
         znode.setValue(ZNode::KEY_SHARD_ID, dsTopologyConfig_.curSF1Node_.workerAgent_.shardId_);
     }
 
-    std::vector<std::string>& collectionList = dsTopologyConfig_.curSF1Node_.collectionList_;
+    std::vector<std::string>& collectionList = dsTopologyConfig_.curSF1Node_.b5mServer_.collectionList_;
     std::string collections;
     for (std::vector<std::string>::iterator it = collectionList.begin();
             it != collectionList.end(); it++)
