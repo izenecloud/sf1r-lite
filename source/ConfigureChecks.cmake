@@ -38,9 +38,10 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   am
   lzo
   beansdb
+  aggregator
+  distribute
   msgpack
   zookeeper
-  distribute
   udt
   snappy
   cassandra
