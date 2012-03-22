@@ -53,7 +53,7 @@ public:
     ~IndexWorker();
 
 public:
-    bool index(const unsigned int& numdoc, bool& ret);
+    bool index(unsigned int numdoc);
 
     bool reindex(boost::shared_ptr<DocumentManager>& documentManager);
 
@@ -217,7 +217,6 @@ private:
 
     size_t totalSCDSizeSinceLastBackup_;
 
-    friend class WorkerServer;
     friend class IndexSearchService;
     friend class IndexBundleActivator;
     friend class ProductBundleActivator;

@@ -100,12 +100,11 @@ IndexWorker::~IndexWorker()
     delete scd_writer_;
 }
 
-bool IndexWorker::index(const unsigned int& numdoc, bool& ret)
+bool IndexWorker::index(unsigned int numdoc)
 {
     task_type task = boost::bind(&IndexWorker::buildCollection, this, numdoc);
     JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
-    ret = true;
-    return ret;
+    return true;
 }
 
 bool IndexWorker::reindex(boost::shared_ptr<DocumentManager>& documentManager)

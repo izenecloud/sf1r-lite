@@ -28,11 +28,8 @@ bool IndexTaskService::index(unsigned int numdoc)
         JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
         return true;
     }
-    else
-    {
-        bool ret;
-        return indexWorker_->index(numdoc, ret);
-    }
+
+    return indexWorker_->index(numdoc);
 }
 
 bool IndexTaskService::index(boost::shared_ptr<DocumentManager>& documentManager)

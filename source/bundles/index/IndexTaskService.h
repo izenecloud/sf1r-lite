@@ -62,7 +62,7 @@ private:
     boost::shared_ptr<IndexAggregator> indexAggregator_;
     boost::shared_ptr<IndexWorker> indexWorker_;
 
-    friend class WorkerServer;
+    friend class IndexWorkerController;
     friend class CollectionTaskScheduler;
     friend class IndexBundleActivator;
     friend class ProductBundleActivator;

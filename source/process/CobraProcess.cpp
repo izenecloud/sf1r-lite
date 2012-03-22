@@ -1,5 +1,6 @@
 #include "CobraProcess.h"
 #include <common/RouterInitializer.h>
+#include <common/WorkerRouterInitializer.h>
 #include <common/SFLogger.h>
 
 #include <log-manager/LogServerConnection.h>
@@ -17,7 +18,6 @@
 #include <common/XmlConfigParser.h>
 #include <common/CollectionManager.h>
 #include <common/CollectionTaskScheduler.h>
-#include <distribute/WorkerServer.h>
 
 #include <util/ustring/UString.h>
 #include <util/driver/IPRestrictor.h>
@@ -205,12 +205,12 @@ bool CobraProcess::initDriverServer()
     boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(),port);
 
     // init Router
-    router_.reset(new ::izenelib::driver::Router);
+    driverRouter_.reset(new ::izenelib::driver::Router);
     initQuery();
-    initializeDriverRouter(*router_, NULL, enableTest);
+    initializeDriverRouter(*driverRouter_, NULL, enableTest);
 
     boost::shared_ptr<DriverConnectionFactory> factory(
-        new DriverConnectionFactory(router_)
+        new DriverConnectionFactory(driverRouter_)
     );
     factory->setFirewall(DriverConnectionFirewall());
 
@@ -266,13 +266,20 @@ bool CobraProcess::startDistributedServer()
     // Start worker server
     if (SF1Config::get()->isSearchWorker() || SF1Config::get()->isRecommendWorker())
     {
+        workerRouter_.reset(new net::aggregator::WorkerRouter);
+        WorkerRouterInitializer routerInitializer;
+        if (!routerInitializer.initRouter(*workerRouter_))
+            return false;
+
         std::string localHost = SF1Config::get()->distributedCommonConfig_.localHost_;
         uint16_t workerPort = SF1Config::get()->distributedCommonConfig_.workerPort_;
         std::size_t threadNum = SF1Config::get()->brokerAgentConfig_.threadNum_;
 
         cout << "[WorkerServer] listen at "<<localHost<<":"<<workerPort<<endl;
-        WorkerServer::get()->init(localHost, workerPort, threadNum, true);
-        WorkerServer::get()->start();
+
+        workerServer_.reset(new net::aggregator::WorkerServer(
+            *workerRouter_, localHost, workerPort, threadNum));
+        workerServer_->start();
 
         // init notifier, xxx
         //std::string masterHost = //detect master;
@@ -308,8 +315,8 @@ void CobraProcess::stopDistributedServer()
 {
     ZooKeeperManager::get()->stop();
 
-    if (SF1Config::get()->isSearchWorker() || SF1Config::get()->isRecommendWorker())
-        WorkerServer::get()->stop();
+    if (workerServer_)
+        workerServer_->stop();
 
     if (SF1Config::get()->isDistributedSearchNode())
         SearchNodeManager::get()->stop();
@@ -381,7 +388,8 @@ int CobraProcess::run()
             }
 #endif
 
-        startDistributedServer();
+        if (!startDistributedServer())
+            throw std::runtime_error("failed in startDistributedServer()");
 
         driverServer_->run();
     }

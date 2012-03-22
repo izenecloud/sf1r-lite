@@ -64,11 +64,11 @@ public:
     bool getInternalDocumentId(const izenelib::util::UString& actionItem, uint64_t& resultItem);
 
     /// mining
-    bool getSimilarDocIdList(uint64_t& documentId, uint32_t& maxNum, SimilarDocIdListType& result);
+    bool getSimilarDocIdList(uint64_t documentId, uint32_t maxNum, SimilarDocIdListType& result);
 
-    bool clickGroupLabel(const ClickGroupLabelActionItem& actionItem, bool& ret);
+    bool clickGroupLabel(const ClickGroupLabelActionItem& actionItem);
 
-    bool visitDoc(const uint32_t& docId, bool& ret);
+    bool visitDoc(const uint32_t& docId);
 
     /** @} */
 
@@ -147,7 +147,6 @@ private:
 
     AnalysisInfo analysisInfo_;
 
-    friend class WorkerServer;
     friend class IndexBundleActivator;
     friend class MiningBundleActivator;
     friend class ProductBundleActivator;

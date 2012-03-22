@@ -202,7 +202,7 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
 
 /// Mining Search
 
-bool SearchWorker::getSimilarDocIdList(uint64_t& documentId, uint32_t& maxNum, SimilarDocIdListType& result)
+bool SearchWorker::getSimilarDocIdList(uint64_t documentId, uint32_t maxNum, SimilarDocIdListType& result)
 {
     // todo get all similar docs in global space?
     //return miningManager_->getSimilarDocIdList(documentId, maxNum, result);
@@ -224,20 +224,17 @@ bool SearchWorker::getSimilarDocIdList(uint64_t& documentId, uint32_t& maxNum, S
     return ret;
 }
 
-bool SearchWorker::clickGroupLabel(const ClickGroupLabelActionItem& actionItem, bool& ret)
+bool SearchWorker::clickGroupLabel(const ClickGroupLabelActionItem& actionItem)
 {
-    ret = miningManager_->clickGroupLabel(
+    return miningManager_->clickGroupLabel(
             actionItem.queryString_,
             actionItem.propName_,
             actionItem.groupPath_);
-
-    return ret;
 }
 
-bool SearchWorker::visitDoc(const uint32_t& docId, bool& ret)
+bool SearchWorker::visitDoc(const uint32_t& docId)
 {
-    ret = miningManager_->visitDoc(docId);
-    return ret;
+    return miningManager_->visitDoc(docId);
 }
 
 void SearchWorker::makeQueryIdentity(

@@ -67,6 +67,7 @@ FILE(GLOB_RECURSE controller_SRC "${CMAKE_SOURCE_DIR}/process/controllers/*.cpp"
 FILE(GLOB_RECURSE parsers_SRC "${CMAKE_SOURCE_DIR}/process/parsers/*.cpp")
 FILE(GLOB_RECURSE renderers_SRC "${CMAKE_SOURCE_DIR}/process/renderers/*.cpp")
 FILE(GLOB_RECURSE log_server_SRC "${CMAKE_SOURCE_DIR}/process/log-server/*.cpp")
+FILE(GLOB_RECURSE distribute_SRC "${CMAKE_SOURCE_DIR}/process/distribute/*.cpp")
 
 SET(Boost_USE_STATIC_LIBS OFF)
 FIND_PACKAGE(Boost ${Boost_FIND_VERSION}
@@ -102,6 +103,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     ${parsers_SRC}
     ${renderers_SRC}
     ${log_server_SRC}
+    ${distribute_SRC}
   )
   TARGET_LINK_LIBRARIES(t_ItemManager ${libs})
   SET_TARGET_PROPERTIES(t_ItemManager PROPERTIES
