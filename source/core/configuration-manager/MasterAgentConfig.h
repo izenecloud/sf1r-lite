@@ -18,7 +18,10 @@ struct AggregatorUnit
 class MasterAgentConfig
 {
 public:
-    MasterAgentConfig() : enabled_(false) {}
+    MasterAgentConfig()
+        : enabled_(false)
+        , shardNum_(0)
+    {}
 
     void addAggregatorConfig(const AggregatorUnit& unit)
     {
@@ -38,7 +41,15 @@ public:
     std::string toString()
     {
         std::stringstream ss;
-        ss<<"[MasterAgentConfig] " << (enabled_ ? "enabled":"disabled") <<std::endl;
+        ss<<"[MasterAgentConfig] " << (enabled_ ? "enabled":"disabled") << ", workerNum:" << shardNum_ <<std::endl;
+
+        ss << "collections: ";
+        std::vector<std::string>::iterator sit;
+        for (sit = collectionList_.begin(); sit != collectionList_.end(); sit++)
+        {
+            ss << " " << *sit;
+        }
+        ss << std::endl;
 
         std::map<std::string, AggregatorUnit>::iterator it;
         for (it = aggregatorSupportMap_.begin(); it != aggregatorSupportMap_.end(); it++)
@@ -51,6 +62,10 @@ public:
 
 public:
     bool enabled_;
+    std::string name_;
+    unsigned int shardNum_;
+    std::vector<unsigned int> shardIdList_;
+    std::vector<std::string> collectionList_;
     std::map<std::string, AggregatorUnit> aggregatorSupportMap_;
 };
 
