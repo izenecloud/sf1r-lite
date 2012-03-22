@@ -44,9 +44,13 @@ void LogServerWorkThread::run()
         DrumRequestData drumReqData;
         while (true)
         {
-            // process requests
             drumRequestQueue_.pop(drumReqData);
             process(drumReqData);
+
+            if (drumRequestQueue_.empty())
+            {
+                drumRequestQueue_.clear();
+            }
 
             // terminate execution if interrupted
             boost::this_thread::interruption_point();
