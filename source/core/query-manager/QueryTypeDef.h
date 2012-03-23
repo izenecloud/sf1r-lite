@@ -61,6 +61,7 @@ struct FilteringType
     }
 
     MSGPACK_DEFINE(operation_, property_, logic_, values_)
+    DATA_IO_LOAD_SAVE(FilteringType, & operation_ & property_ & logic_ & values_);
 
 private:
     friend class boost::serialization::access;
@@ -115,5 +116,7 @@ inline void operator<< (object& o, sf1r::QueryFiltering::InterFilteringLogic v)
 inline void operator<< (object::with_zone& o, sf1r::QueryFiltering::InterFilteringLogic v)
     { static_cast<object&>(o) << static_cast<int>(v); }
 }
+
+MAKE_FEBIRD_SERIALIZATION(sf1r::QueryFiltering::FilteringType)
 
 #endif // _QUERYTYPEDEF_H_

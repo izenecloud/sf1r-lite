@@ -122,5 +122,4 @@ inline bool operator==(const LanguageAnalyzerInfo& a,
 }
 
 } // end - namespace sf1r
-
 #endif // _CONDITION_INFO_
