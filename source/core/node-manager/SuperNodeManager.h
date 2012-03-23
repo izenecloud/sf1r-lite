@@ -26,8 +26,6 @@ public:
     void init(const DistributedCommonConfig& distributedCommon)
     {
         distributedCommon_ = distributedCommon;
-
-        //xxx check clustid, host
     }
 
     const DistributedCommonConfig& getCommonConfig()

@@ -16,6 +16,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
+#include <glog/logging.h>
 
 namespace sf1r
 {
@@ -38,7 +39,7 @@ public:
     /**
      * @param dsTopologyConfig
      */
-    void init(const DistributedTopologyConfig& dsTopologyConfig);
+    void init(const DistributedTopologyConfig& distributedTopologyConfig);
 
     /**
      * Start node manager
@@ -50,19 +51,19 @@ public:
      */
     void stop();
 
-    const DistributedTopologyConfig& getDSTopologyConfig() const
+    const Sf1rTopology& getSf1rTopology() const
     {
-        return dsTopologyConfig_;
+        return sf1rTopology_;
     }
 
-    const SF1NodeInfo& getNodeInfo() const
+    const Sf1rNode& getCurrentSf1rNode() const
     {
-        return nodeInfo_;
+        return sf1rTopology_.curNode_;
     }
 
     unsigned int getShardNum() const
     {
-        return dsTopologyConfig_.curSF1Node_.masterAgent_.shardNum_;
+        return sf1rTopology_.curNode_.master_.totalShardNum_;
     }
 
 public:
@@ -89,8 +90,8 @@ protected:
     void leaveCluster();
 
 protected:
-    DistributedTopologyConfig dsTopologyConfig_;
-    SF1NodeInfo nodeInfo_;
+    bool isDistributionEnabled_;
+    Sf1rTopology sf1rTopology_;
 
     NodeStateType nodeState_;
     bool masterStarted_;

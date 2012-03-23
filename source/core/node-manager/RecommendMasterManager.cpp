@@ -22,12 +22,7 @@ bool RecommendMasterManager::init()
     if (!zookeeper_)
         return false;
 
-    // initialize topology info
-    topology_.clusterId_ = SuperNodeManager::get()->getCommonConfig().clusterId_;
-    topology_.nodeNum_ =  RecommendNodeManager::get()->getDSTopologyConfig().nodeNum_;
-    topology_.shardNum_ =  RecommendNodeManager::get()->getDSTopologyConfig().curSF1Node_.masterAgent_.shardNum_;
-    curNodeInfo_ = RecommendNodeManager::get()->getNodeInfo();
-
+    sf1rTopology_ = RecommendNodeManager::get()->getSf1rTopology();
     return true;
 }
 

@@ -7,8 +7,9 @@
 #ifndef DISTRIBUTED_CONFIG_H_
 #define DISTRIBUTED_CONFIG_H_
 
-#include "MasterAgentConfig.h"
-#include "WorkerAgentConfig.h"
+#include <node-manager/Sf1rTopology.h>
+//#include "MasterAgentConfig.h"
+//#include "WorkerAgentConfig.h"
 
 
 #include <sstream>
@@ -16,72 +17,24 @@
 namespace sf1r
 {
 
-struct SF1Node
-{
-    SF1Node()
-        : nodeId_(0)
-        , replicaId_(0)
-    {}
-
-    unsigned int nodeId_;
-    unsigned int replicaId_;
-
-    MasterAgentConfig masterAgent_;
-    WorkerAgentConfig workerAgent_;
-
-    std::string toString()
-    {
-        std::stringstream ss;
-        ss << "[Current SF1 Node] nodeId: "<<nodeId_<<", replicaId: "<<replicaId_<<std::endl;
-        ss << masterAgent_.toString();
-        ss << workerAgent_.toString();
-
-        return ss.str();
-    }
-};
-
-class DistributedTopologyConfig
-{
-public:
-    DistributedTopologyConfig()
-    : enabled_(false), nodeNum_(0)
-    {
-    }
-
-    std::string toString()
-    {
-        std::stringstream ss;
-        ss << "==== [DistributedTopology] ===="<<std::endl;
-        ss << (enabled_ ? "enabled":"disabled")
-           <<" : nodeNum:" << nodeNum_ << std::endl;
-
-        ss << curSF1Node_.toString() << std::endl;
-        ss << "==============================="<<std::endl;
-        return ss.str();
-    }
-
-public:
-    // golable topology configuration
-    bool enabled_;
-    unsigned int nodeNum_;
-
-    // current SF1 node configuration
-    SF1Node curSF1Node_;
-};
-
 class DistributedCommonConfig
 {
 public:
-
     std::string toString()
     {
         std::stringstream ss;
-        ss <<"[DistributedCommonConfig] Cluster Id: "<<clusterId_<<", Username: "<<userName_<<", Local Host: "<<localHost_
-           <<", BA Port: "<<baPort_<<", Worker Port:"<<workerPort_
-           <<", Master Port:"<<masterPort_<<", Data Receiver Port:"<<dataRecvPort_;
+        ss << "[DistributedCommonConfig]" << std::endl
+           << "cluster id: " << clusterId_ << std::endl
+           << "username: " << userName_ << std::endl
+           << "localhost: " << localHost_ << std::endl
+           << "BA Port: " << baPort_ << std::endl
+           << "worker server port: " << workerPort_ << std::endl
+           << "master server port: " << masterPort_  << std::endl
+           << "data receiver port: " << dataRecvPort_ << std::endl;
         return ss.str();
     }
 
+public:
     std::string clusterId_;
     std::string userName_;
     std::string localHost_;
@@ -90,6 +43,33 @@ public:
     unsigned int masterPort_;
     unsigned int dataRecvPort_;
 };
+
+
+class DistributedTopologyConfig
+{
+public:
+    DistributedTopologyConfig()
+        : enabled_(false)
+    {
+    }
+
+    std::string toString()
+    {
+        std::stringstream ss;
+        ss << "==== [DistributedTopology] ===="<<std::endl;
+        ss << "**** " << type_ << " ****" << std::endl;
+        ss << (enabled_ ? "enabled":"disabled") << std::endl;
+        ss << sf1rTopology_.toString();
+        ss << "==============================="<<std::endl;
+        return ss.str();
+    }
+
+public:
+    bool enabled_;
+    std::string type_;
+    Sf1rTopology sf1rTopology_;
+};
+
 
 }
 

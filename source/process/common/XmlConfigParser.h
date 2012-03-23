@@ -453,20 +453,20 @@ public:
     /// Dsitributed search config
     bool isDistributedSearchNode() { return isDistributedNode(searchTopologyConfig_); }
     bool isSearchMaster() { return isMaster(searchTopologyConfig_); }
-    bool checkSearchMasterAggregator(const std::string& aggregatorName)
-    { return checkMasterAggregator(searchTopologyConfig_, aggregatorName); }
+    bool checkSearchMasterAggregator(const std::string& collectionName)
+    { return checkMasterAggregator(searchTopologyConfig_, collectionName); }
     bool isSearchWorker() { return isWorker(searchTopologyConfig_); }
-    bool checkSearchWorker(const std::string& workerName)
-    { return checkWorker(searchTopologyConfig_, workerName); }
+    bool checkSearchWorker(const std::string& collectionName)
+    { return checkWorker(searchTopologyConfig_, collectionName); }
 
     /// Dsitributed recommend config
     bool isDistributedRecommendNode() { return isDistributedNode(recommendTopologyConfig_); }
     bool isRecommendMaster() { return isMaster(recommendTopologyConfig_); }
-    bool checkRecommendMasterAggregator(const std::string& aggregatorName)
-    { return checkMasterAggregator(recommendTopologyConfig_, aggregatorName); }
+    bool checkRecommendMasterAggregator(const std::string& collectionName)
+    { return checkMasterAggregator(recommendTopologyConfig_, collectionName); }
     bool isRecommendWorker() { return isWorker(recommendTopologyConfig_); }
-    bool checkRecommendWorker(const std::string& workerName)
-    { return checkWorker(recommendTopologyConfig_, workerName); }
+    bool checkRecommendWorker(const std::string& collectionName)
+    { return checkWorker(recommendTopologyConfig_, collectionName); }
 
     bool isDisableZooKeeper()
     {
@@ -489,23 +489,21 @@ public:
 
     bool isMaster(DistributedTopologyConfig& rTopologyConfig)
     {
-        if (rTopologyConfig.enabled_
-            && rTopologyConfig.curSF1Node_.masterAgent_.enabled_
-            && rTopologyConfig.curSF1Node_.masterAgent_.aggregatorSupportMap_.size() > 0)
+        if (rTopologyConfig.enabled_ && rTopologyConfig.sf1rTopology_.curNode_.master_.isEnabled_)
         {
             return true;
         }
         return false;
     }
 
-    bool checkMasterAggregator(DistributedTopologyConfig& rTopologyConfig, const std::string& aggregatorName)
+    bool checkMasterAggregator(DistributedTopologyConfig& rTopologyConfig, const std::string& collectionName)
     {
-        std::string downcaseName = aggregatorName;
+        std::string downcaseName = collectionName;
         downCase(downcaseName);
 
         if (rTopologyConfig.enabled_
-            && rTopologyConfig.curSF1Node_.masterAgent_.enabled_
-            && rTopologyConfig.curSF1Node_.masterAgent_.checkAggregatorByName(downcaseName))
+            && rTopologyConfig.sf1rTopology_.curNode_.master_.isEnabled_
+            && rTopologyConfig.sf1rTopology_.curNode_.master_.checkCollection(downcaseName))
         {
             return true;
         }
@@ -515,22 +513,21 @@ public:
     bool isWorker(DistributedTopologyConfig& rTopologyConfig)
     {
         if (rTopologyConfig.enabled_
-            && rTopologyConfig.curSF1Node_.workerAgent_.enabled_
-            && rTopologyConfig.curSF1Node_.workerAgent_.serviceMap_.size() > 0)
+            && rTopologyConfig.sf1rTopology_.curNode_.worker_.isEnabled_)
         {
             return true;
         }
         return false;
     }
 
-    bool checkWorker(DistributedTopologyConfig& rTopologyConfig, const std::string& workerName)
+    bool checkWorker(DistributedTopologyConfig& rTopologyConfig, const std::string& collectionName)
     {
-        std::string downcaseName = workerName;
+        std::string downcaseName = collectionName;
         downCase(downcaseName);
 
         if (rTopologyConfig.enabled_
-            && rTopologyConfig.curSF1Node_.workerAgent_.enabled_
-            && rTopologyConfig.curSF1Node_.workerAgent_.checkServiceByName(downcaseName))
+            && rTopologyConfig.sf1rTopology_.curNode_.worker_.isEnabled_
+            && rTopologyConfig.sf1rTopology_.curNode_.worker_.checkCollection(downcaseName))
         {
             return true;
         }
@@ -630,13 +627,13 @@ private:
     /// @param system           Pointer to the Element
     void parseDistributedTopologies(const ticpp::Element * deploy);
     void parseDistributedTopology(const ticpp::Element * topology, DistributedTopologyConfig& topologyConfig);
+    /// @brief                  Parse <Sf1rNode> settings
+    /// @param system           Pointer to the Element
+    void parseNodeMaster(const ticpp::Element * master, Sf1rNodeMaster& sf1rNodeMaster);
+    void parseNodeWorker(const ticpp::Element * worker, Sf1rNodeWorker& sf1rNodeWorker);
     /// @brief                  Parse <Broker> settings
     /// @param system           Pointer to the Element
     void parseDistributedUtil(const ticpp::Element * distributedUtil);
-    /// @brief                  Parse <RemoteAgent> settings
-    /// @param system           Pointer to the Element
-    void parseMasterAgent(const ticpp::Element * master, DistributedTopologyConfig& topologyConfig);
-    void parseWorkerAgent(const ticpp::Element * worker, DistributedTopologyConfig& topologyConfig);
 
 public:
     //----------------------------  PRIVATE MEMBER VARIABLES  ----------------------------

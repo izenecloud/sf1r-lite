@@ -38,7 +38,7 @@ public:
         MASTER_STATE_RECOVERING
     };
 
-    typedef std::map<shardid_t, boost::shared_ptr<WorkerNode> > WorkerMapT;
+    typedef std::map<shardid_t, boost::shared_ptr<Sf1rNode> > WorkerMapT;
 
 public:
     MasterManagerBase();
@@ -106,7 +106,7 @@ protected:
      */
     void failover(const std::string& zpath);
 
-    bool failover(boost::shared_ptr<WorkerNode>& pworkerNode);
+    bool failover(boost::shared_ptr<Sf1rNode>& sf1rNode);
 
     /**
      * Recover after nodes in current cluster replica came back from failure.
@@ -134,8 +134,7 @@ protected:
     std::string serverPath_;
     std::string serverRealPath_;
 
-    Topology topology_;
-    SF1NodeInfo curNodeInfo_;
+    Sf1rTopology sf1rTopology_;
 
     MasterStateType masterState_;
 

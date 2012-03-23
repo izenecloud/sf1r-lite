@@ -7,9 +7,10 @@ using namespace sf1r;
 
 
 NodeManagerBase::NodeManagerBase()
-: nodeState_(NODE_STATE_INIT)
-, masterStarted_(false)
-, CLASSNAME("[NodeManagerBase]")
+    : isDistributionEnabled_(false)
+    , nodeState_(NODE_STATE_INIT)
+    , masterStarted_(false)
+    , CLASSNAME("[NodeManagerBase]")
 {
 }
 
@@ -18,26 +19,19 @@ NodeManagerBase::~NodeManagerBase()
     stop();
 }
 
-void NodeManagerBase::init(const DistributedTopologyConfig& dsTopologyConfig)
+void NodeManagerBase::init(const DistributedTopologyConfig& distributedTopologyConfig)
 {
-    // set distributed topology configuration
-    dsTopologyConfig_ = dsTopologyConfig;
-
-    nodeInfo_.replicaId_ = dsTopologyConfig_.curSF1Node_.replicaId_;
-    nodeInfo_.nodeId_ = dsTopologyConfig_.curSF1Node_.nodeId_;
-    nodeInfo_.host_ = SuperNodeManager::get()->getLocalHostIP();
-    nodeInfo_.baPort_ = SuperNodeManager::get()->getBaPort();
+    isDistributionEnabled_ = distributedTopologyConfig.enabled_;
+    sf1rTopology_ = distributedTopologyConfig.sf1rTopology_;
 
     zookeeper_ = ZooKeeperManager::get()->createClient(this);
-
-    setZNodePaths(); // virtual
+    setZNodePaths();
 }
 
 void NodeManagerBase::start()
 {
-    if (!dsTopologyConfig_.enabled_)
+    if (!isDistributionEnabled_)
     {
-        // not a distributed deployment
         return;
     }
 
@@ -93,7 +87,7 @@ void NodeManagerBase::initZkNameSpace()
     // topology
     zookeeper_->createZNode(topologyPath_);
     std::stringstream ss;
-    ss << nodeInfo_.replicaId_;
+    ss << sf1rTopology_.curNode_.replicaId_;
     zookeeper_->createZNode(replicaPath_, ss.str());
 }
 
@@ -114,7 +108,7 @@ void NodeManagerBase::enterCluster()
             // If still not connected, assume zookeeper service was stopped
             // and waiting for later connection after zookeeper recovered.
             nodeState_ = NODE_STATE_STARTING_WAIT_RETRY;
-            std::cout<<CLASSNAME<<" waiting for ZooKeeper Service..."<<std::endl;
+            LOG (WARNING) << CLASSNAME << " waiting for ZooKeeper Service...";
             return;
         }
     }
@@ -128,21 +122,21 @@ void NodeManagerBase::enterCluster()
     znode.setValue(ZNode::KEY_BA_PORT, SuperNodeManager::get()->getBaPort());
     znode.setValue(ZNode::KEY_DATA_PORT, SuperNodeManager::get()->getDataReceiverPort());
     znode.setValue(ZNode::KEY_MASTER_PORT, SuperNodeManager::get()->getMasterPort());
-    if (dsTopologyConfig_.curSF1Node_.workerAgent_.enabled_)
+    if (sf1rTopology_.curNode_.worker_.isEnabled_)
     {
         znode.setValue(ZNode::KEY_WORKER_PORT, SuperNodeManager::get()->getWorkerPort());
-        znode.setValue(ZNode::KEY_SHARD_ID, dsTopologyConfig_.curSF1Node_.workerAgent_.shardId_);
+        znode.setValue(ZNode::KEY_SHARD_ID, sf1rTopology_.curNode_.worker_.shardId_);
     }
 
-    std::vector<std::string>& collectionList = dsTopologyConfig_.curSF1Node_.masterAgent_.collectionList_;
     std::string collections;
-    for (std::vector<std::string>::iterator it = collectionList.begin();
+    std::vector<MasterCollection>& collectionList = sf1rTopology_.curNode_.master_.collectionList_;
+    for (std::vector<MasterCollection>::iterator it = collectionList.begin();
             it != collectionList.end(); it++)
     {
         if (collections.empty())
-            collections = *it;
+            collections = (*it).name_;
         else
-            collections += "," + *it;
+            collections += "," + (*it).name_;
     }
     znode.setValue(ZNode::KEY_COLLECTION, collections);
 
@@ -152,8 +146,19 @@ void NodeManagerBase::enterCluster()
     {
         if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
         {
-            zookeeper_->setZNodeData(nodePath_, sznode);
-            std::cout<<CLASSNAME<<" Conflict!! overwrote exsited node \""<<nodePath_<<"\"!"<<std::endl;
+            std::string data;
+            zookeeper_->getZNodeData(nodePath_, data);
+
+            ZNode znode;
+            znode.loadKvString(data);
+
+            std::stringstream ss;
+            ss << CLASSNAME << " Conflicted with existed node: "
+               << "[replica "<< sf1rTopology_.curNode_.replicaId_
+               << ", node " << sf1rTopology_.curNode_.nodeId_ << "]@"
+               << znode.getStrValue(ZNode::KEY_HOST);
+
+            throw std::runtime_error(ss.str());
         }
         else
         {
@@ -165,11 +170,11 @@ void NodeManagerBase::enterCluster()
     }
 
     nodeState_ = NODE_STATE_STARTED;
-    //std::cout<<CLASSNAME<<" node registered at \""<<nodePath_<<"\" "<<std::endl;
-    std::cout<<CLASSNAME<<" joined cluster ["<<SuperNodeManager::get()->getClusterId()<<"] - "<<nodeInfo_.toString()<<std::endl;
+    std::cout<<CLASSNAME<<" joined cluster ["<<SuperNodeManager::get()->getClusterId()<<"] - "
+             <<"[Replica "<<sf1rTopology_.curNode_.replicaId_<<", Node "<<sf1rTopology_.curNode_.nodeId_<<"] "<<std::endl;
 
     // Start Master manager
-    if (dsTopologyConfig_.curSF1Node_.masterAgent_.enabled_)
+    if (sf1rTopology_.curNode_.master_.isEnabled_)
     {
         startMasterManager(); // virtual
         masterStarted_ = true;
