@@ -234,7 +234,7 @@ void LogServerHandler::Post_(LogServerConnection& conn, const std::string& suuid
 {
     UpdateUUIDRequest uuidReq;
     uuidReq.param_.uuid_ = Utilities::uuidToUint128(suuid);
-    uuidReq.param_.docidList_.resize(sdocname_list.size());
+    uuidReq.param_.docidList_.reserve(sdocname_list.size());
     for (uint32_t i = 0; i < sdocname_list.size(); i++)
     {
         uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128(sdocname_list[i]));
