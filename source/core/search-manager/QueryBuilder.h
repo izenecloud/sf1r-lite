@@ -12,6 +12,7 @@
 #include <query-manager/QueryTree.h>
 #include "DocumentIterator.h"
 #include "MultiPropertyScorer.h"
+#include "WANDDocumentIterator.h"
 #include "Filter.h"
 #include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
@@ -61,6 +62,20 @@ public:
     );
 
     /*
+    *@brief Generate the WANDDocumentIterator
+    *@return if failed, NULL is returned
+    */
+    WANDDocumentIterator* prepare_wand_dociterator(
+        SearchKeywordOperation& actionOperation,
+        collectionid_t colID,
+        const property_weight_map& propertyWeightMap,
+        const std::vector<std::string>& properties,
+        const std::vector<unsigned int>& propertyIds,
+        bool readPositions,
+        const std::vector<std::map<termid_t, unsigned> >& termIndexMaps
+    );
+
+    /*
     *@brief Generate Filter, filter will be released by the user.
     */
     void prepare_filter(
@@ -73,6 +88,17 @@ public:
 private:
     void prepare_for_property_(
         MultiPropertyScorer* pScorer,
+        size_t & success_properties,
+        SearchKeywordOperation& actionOperation,
+        collectionid_t colID,
+        const std::string& property,
+        unsigned int propertyId,
+        bool readPositions,
+        const std::map<termid_t, unsigned>& termIndexMapInProperty
+    );
+
+    void prepare_for_wand_property_(
+        WANDDocumentIterator* pWandScorer,
         size_t & success_properties,
         SearchKeywordOperation& actionOperation,
         collectionid_t colID,

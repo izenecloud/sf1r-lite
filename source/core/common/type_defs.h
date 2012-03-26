@@ -52,6 +52,8 @@ typedef std::set<unsigned int> INT_SET_T;
 
 typedef std::map<std::string, ID_FREQ_MAP_T > DocumentFrequencyInProperties;
 typedef std::map<std::string, ID_FREQ_MAP_T > CollectionTermFrequencyInProperties;
+typedef std::map<std::string, ID_FREQ_MAP_T > MaxTermFrequencyInProperties;
+typedef std::map<std::string, ID_FREQ_MAP_T > UpperBoundInProperties;
 
 typedef std::deque<std::pair<unsigned, unsigned> > Positions;
 typedef boost::shared_ptr<const Positions> PositionPtr;

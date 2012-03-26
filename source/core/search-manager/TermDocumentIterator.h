@@ -92,9 +92,10 @@ public:
 
     void set_df(unsigned int df) {df_ = df;}
 
-    void df_ctf(
+    void df_cmtf(
         DocumentFrequencyInProperties& dfmap,
-        CollectionTermFrequencyInProperties& ctfmap);
+        CollectionTermFrequencyInProperties& ctfmap,
+        MaxTermFrequencyInProperties& maxtfmap);
 
     count_t tf()
     {
@@ -103,6 +104,8 @@ public:
     }
 
     termid_t termId() {return termId_;}
+
+    unsigned int termIndex() {return termIndex_;}
 
     void print(int level=0)
     {

@@ -43,6 +43,8 @@ public:
 
     void setupStats(const RankQueryProperty& queryProperty);
 
+    void calculateTermUBs(const RankQueryProperty& queryProperty, ID_FREQ_MAP_T& ub);
+
     float getScore(
         const RankQueryProperty& queryProperty,
         const RankDocumentProperty& documentProperty
@@ -55,6 +57,7 @@ private:
     const float k3_;
     const float minIdf_;
     std::vector<float> idfParts_;
+    std::vector<float> termUBs_;
 }; // end - class BM25Ranker
 
 } // end - namespace sf1r

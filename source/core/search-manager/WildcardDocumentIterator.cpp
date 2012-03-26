@@ -132,13 +132,15 @@ bool WildcardDocumentIterator::next()
     return do_next();
 }
 
-void WildcardDocumentIterator::df_ctf(DocumentFrequencyInProperties& dfmap,
-        CollectionTermFrequencyInProperties& ctfmap)
+void WildcardDocumentIterator::df_cmtf(
+        DocumentFrequencyInProperties& dfmap,
+        CollectionTermFrequencyInProperties& ctfmap,
+        MaxTermFrequencyInProperties& maxtfmap)
 {
     for (size_t i = 0; i < pWildcardDocIteratorQueue_->size(); ++i)
     {
         DocumentIterator* pDocIterator = pWildcardDocIteratorQueue_->getAt(i);
-        pDocIterator->df_ctf(dfmap, ctfmap);
+        pDocIterator->df_cmtf(dfmap, ctfmap, maxtfmap);
     }
 }
 

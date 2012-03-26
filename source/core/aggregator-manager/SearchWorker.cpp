@@ -247,7 +247,7 @@ void SearchWorker::makeQueryIdentity(
     identity.start = start;
     identity.searchingMode = item.searchingMode_;
 
-    switch (item.searchingMode_)
+    switch (item.searchingMode_.mode_)
     {
     case SearchingMode::KNN:
         miningManager_->GetSignatureForQuery(item, identity.simHash);
@@ -312,7 +312,7 @@ bool SearchWorker::getSearchResult_(
 
     std::vector<izenelib::util::UString> keywords;
     std::string newQuery;
-    if (actionOperation.actionItem_.searchingMode_ == SearchingMode::VERBOSE)
+    if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::VERBOSE)
     {
         if (pQA_->isQuestion(actionOperation.actionItem_.env_.queryString_))
         {
@@ -322,15 +322,11 @@ bool SearchWorker::getSearchResult_(
             actionOperation.actionItem_.env_.queryString_ = newQuery;
         }
     }
-    else if (actionOperation.actionItem_.searchingMode_ == SearchingMode::OR)
+    else if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::OR)
     {
         analyze_(actionOperation.actionItem_.env_.queryString_, keywords, false);
         assembleDisjunction(keywords, newQuery);
         actionOperation.actionItem_.env_.queryString_ = newQuery;
-    }
-    else if (actionOperation.actionItem_.searchingMode_ == SearchingMode::KNN)
-    {
-        //TODO
     }
 
     // Get Personalized Search information (user profile)
@@ -366,7 +362,7 @@ bool SearchWorker::getSearchResult_(
         startOffset = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
     }
 
-    if (actionOperation.actionItem_.searchingMode_ == SearchingMode::KNN)
+    if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::KNN)
     {
         if (identity.simHash.empty())
             miningManager_->GetSignatureForQuery(actionOperation.actionItem_, identity.simHash);
@@ -433,7 +429,7 @@ bool SearchWorker::getSearchResult_(
 
     // todo, remove duplication globally over all nodes?
     // Remove duplicated docs from the result if the option is on.
-    if (actionItem.searchingMode_ != SearchingMode::KNN)
+    if (actionItem.searchingMode_.mode_ != SearchingMode::KNN)
         removeDuplicateDocs(actionItem, resultItem);
 
     //set page info in resultItem t
@@ -554,7 +550,7 @@ bool SearchWorker::buildQuery(
     PersonalSearchInfo& personalSearchInfo
 )
 {
-    if (actionOperation.actionItem_.searchingMode_ == SearchingMode::KNN)
+    if (actionOperation.actionItem_.searchingMode_.mode_== SearchingMode::KNN)
         return true;
 
     CREATE_PROFILER ( constructQueryTree, "IndexSearchService", "processGetSearchResults: build query tree");

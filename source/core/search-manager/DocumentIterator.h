@@ -35,7 +35,9 @@ public:
 
     virtual void doc_item(RankDocumentProperty& rankDocumentProperty) = 0;
 
-    virtual void df_ctf(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties& ctfmap) = 0;
+    virtual void df_cmtf(DocumentFrequencyInProperties& dfmap,
+                             CollectionTermFrequencyInProperties& ctfmap,
+                             MaxTermFrequencyInProperties& maxtfmap) = 0;
 
     virtual count_t tf() = 0;
 
@@ -64,6 +66,7 @@ public:
     void setNot(bool isNot) { not_ = isNot; }
 
     bool isNot() { return not_; }
+
 protected:
     bool current_;
 

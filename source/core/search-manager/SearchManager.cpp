@@ -46,7 +46,7 @@ bool hasRelevenceSort(const std::pair<std::string , bool>& element)
 
 bool action_rerankable(const KeywordSearchActionItem& actionItem)
 {
-    if (actionItem.searchingMode_ == SearchingMode::KNN)
+    if (actionItem.searchingMode_.mode_ == SearchingMode::KNN)
         return false;
 
     bool rerank = false;
@@ -85,7 +85,8 @@ SearchManager::SearchManager(
         const boost::shared_ptr<RankingManager>& rankingManager,
         IndexBundleConfiguration* config
 )
-    : schemaMap_()
+    : config_(config)
+    , schemaMap_()
     , indexManagerPtr_(indexManager)
     , documentManagerPtr_(documentManager)
     , rankingManagerPtr_(rankingManager)
@@ -228,6 +229,11 @@ bool SearchManager::search(
 
     START_PROFILER( preparedociter )
     sf1r::TextRankingType& pTextRankingType = actionOperation.actionItem_.rankingType_;
+    bool isWandStrategy = (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::WAND);
+    bool isTFIDFModel = (pTextRankingType == RankingType::BM25
+                      ||config_->rankingManagerConfig_.rankingConfigUnit_.textRankingModel_ == RankingType::BM25);
+    bool isWandSearch = (isWandStrategy && isTFIDFModel);
+
 
     // references for property term info
     const property_term_info_map& propertyTermInfoMap =
@@ -263,6 +269,7 @@ bool SearchManager::search(
 
     boost::scoped_ptr<CombinedDocumentIterator> pDocIterator(new CombinedDocumentIterator());
     MultiPropertyScorer* pMultiPropertyIterator = NULL;
+    WANDDocumentIterator* pWandDocIterator = NULL;
     std::vector<QueryFiltering::FilteringType>& filtingList
     = actionOperation.actionItem_.filteringList_;
     boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet;
@@ -275,17 +282,32 @@ bool SearchManager::search(
 
         if (actionOperation.rawQueryTree_->type_ != QueryTree::FILTER_QUERY)
         {
-            pMultiPropertyIterator = queryBuilder_->prepare_dociterator(
-                                         actionOperation,
-                                         collectionId,
-                                         propertyWeightMap_,
-                                         indexPropertyList,
-                                         indexPropertyIdList,
-                                         readTermPosition,
-                                         termIndexMaps
-                                     );
+            if( isWandSearch )
+            {
+                pWandDocIterator = queryBuilder_->prepare_wand_dociterator(
+                                        actionOperation,
+                                        collectionId,
+                                        propertyWeightMap_,
+                                        indexPropertyList,
+                                        indexPropertyIdList,
+                                        readTermPosition,
+                                        termIndexMaps
+                                   );
+            }
+            else
+            {
+                pMultiPropertyIterator = queryBuilder_->prepare_dociterator(
+                                             actionOperation,
+                                             collectionId,
+                                             propertyWeightMap_,
+                                             indexPropertyList,
+                                             indexPropertyIdList,
+                                             readTermPosition,
+                                             termIndexMaps
+                                         );
+            }
 
-            if (!pMultiPropertyIterator)
+            if ( !pMultiPropertyIterator && !pWandDocIterator )
             {
                 return false;
             }
@@ -296,6 +318,8 @@ bool SearchManager::search(
     {
         if (pMultiPropertyIterator)
             delete pMultiPropertyIterator;
+        if(pWandDocIterator)
+            delete pWandDocIterator;
         return false;
     }
 
@@ -312,6 +336,10 @@ bool SearchManager::search(
     {
         ///Relevance query
         pDocIterator->add((DocumentIterator*) pMultiPropertyIterator);
+    }
+    else if (pWandDocIterator)
+    {
+        pDocIterator->add((DocumentIterator*) pWandDocIterator);
     }
 
     STOP_PROFILER( preparedociter )
@@ -343,7 +371,7 @@ bool SearchManager::search(
 
     STOP_PROFILER( preparesort )
 
-    if (!pMultiPropertyIterator && !pFilterIdSet)
+    if (!pMultiPropertyIterator &&  !pWandDocIterator && !pFilterIdSet)
     {//SELECT * , and filter is null
         if (pSorter)
         {
@@ -365,25 +393,28 @@ bool SearchManager::search(
     ///prepare data for rankingmanager;
     DocumentFrequencyInProperties dfmap;
     CollectionTermFrequencyInProperties ctfmap;
+    MaxTermFrequencyInProperties maxtfmap;
 
     if (distSearchInfo.effective_)
     {
         if (distSearchInfo.option_ == DistKeywordSearchInfo::OPTION_GATHER_INFO)
         {
-            pDocIterator->df_ctf(dfmap, ctfmap);
+            pDocIterator->df_cmtf(dfmap, ctfmap, maxtfmap);
             distSearchInfo.dfmap_ = dfmap;
             distSearchInfo.ctfmap_ = ctfmap;
+            distSearchInfo.maxtfmap_ = maxtfmap;
             return true;
         }
         else if (distSearchInfo.option_ == DistKeywordSearchInfo::OPTION_CARRIED_INFO)
         {
             dfmap = distSearchInfo.dfmap_;
             ctfmap = distSearchInfo.ctfmap_;
+            maxtfmap = distSearchInfo.maxtfmap_;
         }
     }
     else
     {
-        pDocIterator->df_ctf(dfmap, ctfmap);
+        pDocIterator->df_cmtf(dfmap, ctfmap, maxtfmap);
     }
 
     std::vector<RankQueryProperty> rankQueryProperties(indexPropertySize);
@@ -394,9 +425,23 @@ bool SearchManager::search(
             propertyTermInfoMap,
             dfmap,
             ctfmap,
+            maxtfmap,
             readTermPosition,
             rankQueryProperties,
             propertyRankers);
+
+    UpperBoundInProperties ubmap;
+    if( isWandSearch && pWandDocIterator)
+    {
+        for (size_t i = 0; i < indexPropertySize; ++i )
+        {
+            const std::string& currentProperty = indexPropertyList[i];
+            ID_FREQ_MAP_T& ub = ubmap[currentProperty];
+            propertyRankers[i]->calculateTermUBs(rankQueryProperties[i], ub);
+        }
+        pWandDocIterator->set_ub( ubmap );
+        pWandDocIterator->init_threshold(actionOperation.actionItem_.searchingMode_.threshold_);
+    }
 
     STOP_PROFILER( preparerank )
 
@@ -410,6 +455,7 @@ bool SearchManager::search(
     try
     {
         doSearch_(
+            isWandSearch,
             actionOperation,
             docIdList,
             rankScoreList,
@@ -422,9 +468,11 @@ bool SearchManager::search(
             pSorter,
             customRanker,
             pMultiPropertyIterator,
+            pWandDocIterator,
             pDocIterator.get(),
             groupFilter.get(),
-            scoreItemQueue.get());
+            scoreItemQueue.get(),
+            heapSize);
 
         if (groupFilter)
             groupFilter->getGroupRep(groupRep, attrRep);
@@ -471,6 +519,7 @@ bool SearchManager::search(
 
 
 bool SearchManager::doSearch_(
+        bool isWandSearch,
         SearchKeywordOperation& actionOperation,
         std::vector<unsigned int>& docIdList,
         std::vector<float>& rankScoreList,
@@ -483,9 +532,11 @@ bool SearchManager::doSearch_(
         Sorter* pSorter,
         CustomRankerPtr customRanker,
         MultiPropertyScorer* pMultiPropertyIterator,
+        WANDDocumentIterator* pWandDocIterator,
         CombinedDocumentIterator* pDocIterator,
         faceted::GroupFilter* groupFilter,
-        HitQueue* scoreItemQueue)
+        HitQueue* scoreItemQueue,
+        int heapSize)
 {
 CREATE_PROFILER( computerankscore, "SearchManager", "doSearch_: overall time for scoring a doc");
 CREATE_PROFILER( inserttoqueue, "SearchManager", "doSearch_: overall time for inserting to result queue");
@@ -502,7 +553,7 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
         rangePropertyTable.reset(createPropertyTable(rangePropertyName));
     }
     bool requireScorer = false;
-    if (pMultiPropertyIterator&&pSorter) requireScorer = pSorter->requireScorer();
+    if ( (pMultiPropertyIterator || pWandDocIterator) && pSorter ) requireScorer = pSorter->requireScorer();
     while (pDocIterator->next())
     {
         if (groupFilter && !groupFilter->test(pDocIterator->doc()))
@@ -528,10 +579,20 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
         ScoreDoc scoreItem(pDocIterator->doc());
         START_PROFILER( computerankscore )
         ++totalCount;
-        scoreItem.score = requireScorer?
-                          pMultiPropertyIterator->score(
-                              rankQueryProperties,
-                              propertyRankers) : 1.0;
+        if( !isWandSearch )
+        {
+            scoreItem.score = requireScorer?
+                              pMultiPropertyIterator->score(
+                                  rankQueryProperties,
+                                  propertyRankers) : 1.0;
+        }
+        else
+        {
+            scoreItem.score = requireScorer?
+                              pWandDocIterator->score(
+                                  rankQueryProperties,
+                                  propertyRankers) : 1.0;
+        }
         STOP_PROFILER( computerankscore )
 
         START_PROFILER( computecustomrankscore )
@@ -543,6 +604,8 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
 
         START_PROFILER( inserttoqueue )
         scoreItemQueue->insert(scoreItem);
+        if( isWandSearch && scoreItemQueue->size() == heapSize )
+            pWandDocIterator->set_threshold((scoreItemQueue->top()).score);
         STOP_PROFILER( inserttoqueue )
 
     }
@@ -626,6 +689,7 @@ void SearchManager::post_prepare_ranker_(
         const property_term_info_map& propertyTermInfoMap,
         DocumentFrequencyInProperties& dfmap,
         CollectionTermFrequencyInProperties& ctfmap,
+        MaxTermFrequencyInProperties& maxtfmap,
         bool readTermPosition,
         std::vector<RankQueryProperty>& rankQueryProperties,
         std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers)
@@ -663,6 +727,10 @@ void SearchManager::post_prepare_ranker_(
             );
             rankQueryProperties[i].setDocumentFreq(
                     dfmap[currentProperty][termIt->first]
+            );
+
+            rankQueryProperties[i].setMaxTermFreq(
+                    maxtfmap[currentProperty][termIt->first]
             );
 
             queryLength += termIt->second.size();

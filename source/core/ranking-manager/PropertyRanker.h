@@ -8,6 +8,7 @@
  */
 #include "RankQueryProperty.h"
 #include "RankDocumentProperty.h"
+#include "common/type_defs.h"
 
 namespace sf1r {
 class PropertyRanker
@@ -22,6 +23,13 @@ public:
         const RankQueryProperty& queryProperty,
         const RankDocumentProperty& documentProperty
     ) const = 0;
+
+    virtual void calculateTermUBs(const RankQueryProperty& queryProperty, ID_FREQ_MAP_T& ub) {}
+
+    virtual float getTermUB(unsigned int termIndex) const
+    {
+        return 0;
+    }
 
     /**
      * @brief tells whether this ranker requires term position information,

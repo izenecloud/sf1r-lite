@@ -78,9 +78,12 @@ public:
 
 public:
     /*virtual*/
-    void df_ctf(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties& ctfmap)
+    void df_cmtf(
+            DocumentFrequencyInProperties& dfmap,
+            CollectionTermFrequencyInProperties& ctfmap,
+            MaxTermFrequencyInProperties& maxtfmap)
     {
-        TermDocumentIterator::df_ctf(dfmap, ctfmap);
+        TermDocumentIterator::df_cmtf(dfmap, ctfmap, maxtfmap);
     }
 
     /*virtual*/
