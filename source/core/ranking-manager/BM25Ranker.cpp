@@ -15,6 +15,7 @@
  *     - Corrent the formula.
  */
 #include "BM25Ranker.h"
+#include <glog/logging.h>
 
 #include <util/get.h>
 #include <iostream>
@@ -38,6 +39,31 @@ void BM25Ranker::setupStats(const RankQueryProperty& queryProperty)
     }
 }
 
+void BM25Ranker::calculateTermUBs(const RankQueryProperty& queryProperty, ID_FREQ_MAP_T& ub)
+{
+    if (0 == queryProperty.getTotalPropertyLength())
+    {
+        return;
+    }
+
+    for (std::size_t i = 0; i != queryProperty.size(); ++i)
+    {
+        float maxtf = queryProperty.maxTermFreqAt(i);
+        float tfInQuery = queryProperty.termFreqAt(i);
+
+        // If the term exists
+        if(tfInQuery > 0.0F && maxtf > 0.0F)
+        {
+            float avgPropLength = queryProperty.getAveragePropertyLength();
+            float denominatorTF_LN = k1_ * (b_ * maxtf / avgPropLength + (1 - b_)) + maxtf;
+
+            float tf_LNPart = (k1_ + 1) * maxtf / denominatorTF_LN;
+            float qtfPart = (k3_ + 1) * tfInQuery / (k3_ + tfInQuery);
+            ub[i] = idfParts_[i] * qtfPart * tf_LNPart;
+        }
+    }
+}
+
 float BM25Ranker::getScore(
         const RankQueryProperty& queryProperty,
         const RankDocumentProperty& documentProperty
@@ -46,6 +72,7 @@ float BM25Ranker::getScore(
     float score = 0.0F;
     if (0 == queryProperty.getTotalPropertyLength())
     {
+        LOG(INFO) << "TotalPropertyLength is zero ";
         return score;
     }
 
@@ -64,6 +91,7 @@ float BM25Ranker::getScore(
             float tf_LNPart = (k1_ + 1) * tfInDoc / denominatorTF_LN;
             float qtfPart = (k3_ + 1) * tfInQuery / (k3_ + tfInQuery);
             score += idfParts_[i] * qtfPart * tf_LNPart;
+           // LOG(INFO) << "the "<<i<<"'th term's --->idfParts_, qtfPart, tf_LNPart:"<<idfParts_[i] <<", "<<qtfPart<<"," << tf_LNPart;
         }
     }
     return score;

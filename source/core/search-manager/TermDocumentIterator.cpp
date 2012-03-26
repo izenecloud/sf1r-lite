@@ -169,9 +169,10 @@ void TermDocumentIterator::doc_item(
 }
 
 
-void TermDocumentIterator::df_ctf(
+void TermDocumentIterator::df_cmtf(
     DocumentFrequencyInProperties& dfmap,
-    CollectionTermFrequencyInProperties& ctfmap)
+    CollectionTermFrequencyInProperties& ctfmap,
+    MaxTermFrequencyInProperties& maxtfmap)
 {
     if (pTermDocReader_ == 0)
     {
@@ -196,6 +197,9 @@ void TermDocumentIterator::df_ctf(
 
     ID_FREQ_MAP_T& ctf = ctfmap[property_];
     ctf[termId_] = ctf[termId_] + (float)pTermDocReader_->getCTF();
+
+    ID_FREQ_MAP_T& maxtf = maxtfmap[property_];
+    maxtf[termId_] = maxtf[termId_] + (float)pTermDocReader_->getMaxTF();
 }
 
 } // namespace sf1r

@@ -53,10 +53,13 @@ public:
         //cout << " [ PersonalSearchDocumentIterator::doc_item() ] " << endl;
     }
 
-    void df_ctf(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties& ctfmap)
+    void df_cmtf(
+            DocumentFrequencyInProperties& dfmap,
+            CollectionTermFrequencyInProperties& ctfmap,
+            MaxTermFrequencyInProperties& maxtfmap)
     {
         // ignore
-        //cout << " [ PersonalSearchDocumentIterator::df_ctf() ] " << endl;
+        //cout << " [ PersonalSearchDocumentIterator::df_cmtf() ] " << endl;
     }
 
 #if SKIP_ENABLED

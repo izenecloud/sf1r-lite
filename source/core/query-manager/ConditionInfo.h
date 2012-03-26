@@ -12,6 +12,9 @@
 #ifndef _CONDITION_INFO_
 #define _CONDITION_INFO_
 
+#include "SearchingEnumerator.h"
+#include <common/sf1_msgpack_serialization_types.h>
+
 #include <util/izene_serialization.h>
 #include <3rdparty/msgpack/msgpack.hpp>
 
@@ -119,6 +122,48 @@ inline bool operator==(const LanguageAnalyzerInfo& a,
     return a.applyLA_ == b.applyLA_
         && a.useOriginalKeyword_ == b.useOriginalKeyword_
         && a.synonymExtension_ == b.synonymExtension_;
+}
+
+///
+/// @brief structure SearchingModeInfo including search mode type and corresponding threshold
+///
+class SearchingModeInfo
+{
+    public:
+        ///
+        /// @brief search mode type.
+        ///
+        SearchingMode::SearchingModeType mode_;
+
+        float threshold_;
+
+        /// @brief a constructor
+        SearchingModeInfo(void);
+
+        /// @brief clear member variables
+        void clear(void);
+
+        DATA_IO_LOAD_SAVE(SearchingModeInfo, &mode_&threshold_)
+
+        MSGPACK_DEFINE(mode_,threshold_);
+
+    private:
+            // Log : 2009.09.08
+            // ---------------------------------------
+            friend class boost::serialization::access;
+            template<class Archive>
+                void serialize(Archive& ar, const unsigned int version)
+                {
+                    ar & mode_;
+                    ar & threshold_;
+                }
+};
+
+inline bool operator==(const SearchingModeInfo& a,
+                       const SearchingModeInfo& b)
+{
+    return a.mode_ == b.mode_
+        && a.threshold_ == b.threshold_;
 }
 
 } // end - namespace sf1r

@@ -38,6 +38,7 @@ class Sorter;
 class IndexBundleConfiguration;
 class PropertyRanker;
 class MultiPropertyScorer;
+class WANDDocumentIterator;
 class CombinedDocumentIterator;
 class HitQueue;
 
@@ -114,6 +115,7 @@ public:
 
 private:
     bool doSearch_(
+            bool isWandSearch,
             SearchKeywordOperation& actionOperation,
             std::vector<unsigned int>& docIdList,
             std::vector<float>& rankScoreList,
@@ -126,9 +128,11 @@ private:
             Sorter* pSorter,
             CustomRankerPtr customRanker,
             MultiPropertyScorer* pMultiPropertyIterator,
+            WANDDocumentIterator* pWandDocIterator,
             CombinedDocumentIterator* pDocIterator,
             faceted::GroupFilter* groupFilter,
-            HitQueue* scoreItemQueue);
+            HitQueue* scoreItemQueue,
+            int heapSize);
 
     /**
      * @brief get corresponding id of the property, returns 0 if the property
@@ -149,6 +153,7 @@ private:
             const property_term_info_map& propertyTermInfoMap,
             DocumentFrequencyInProperties& dfmap,
             CollectionTermFrequencyInProperties& ctfmap,
+            MaxTermFrequencyInProperties& maxtfmap,
             bool readTermPosition,
             std::vector<RankQueryProperty>& rankQueryProperties,
             std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers);
@@ -187,6 +192,7 @@ private:
             CollectionTermFrequencyInProperties ctfmap);
 
 private:
+    IndexBundleConfiguration* config_;
     std::string collectionName_;
     boost::unordered_map<std::string, PropertyConfig> schemaMap_;
     boost::shared_ptr<IndexManager> indexManagerPtr_;

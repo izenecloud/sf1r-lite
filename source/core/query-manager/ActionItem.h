@@ -29,7 +29,6 @@
 #include <ranking-manager/RankingEnumerator.h>
 #include <search-manager/CustomRanker.h>
 #include <mining-manager/faceted-submanager/GroupParam.h>
-#include <query-manager/SearchingEnumerator.h>
 
 #include <util/izene_serialization.h>
 #include <net/aggregator/Util.h>
@@ -412,7 +411,8 @@ public:
         ss << "Collection Name  : " << collectionName_ << endl;
         ss << "Refined Query    : " << refinedQueryString_ << endl;
         ss << "RankingType      : " << rankingType_ << endl;
-        ss << "SearchingMode    : " << searchingMode_ <<endl;
+        ss << "SearchingMode    : " << searchingMode_.mode_ << " , "
+                                    << searchingMode_.threshold_ <<endl;
         ss << "PageInfo         : " << pageInfo_.start_ << " , " << pageInfo_.count_ << endl;
         ss << "LanguageAnalyzer : " << languageAnalyzerInfo_.applyLA_ << " , "
                                     << languageAnalyzerInfo_.useOriginalKeyword_ << " , "
@@ -486,7 +486,7 @@ public:
     ///
     /// @brief searching mode of the query. AND, OR, VERBOSE and KNN can be used.
     ///
-    SearchingMode::SearchingModeType            searchingMode_;
+    SearchingModeInfo            searchingMode_;
 
     ///
     /// @brief page information of current result page.

@@ -15,6 +15,7 @@ namespace SearchingMode {
 enum SearchingModeType{
     DefaultSearchingMode = 0,
     OR,
+    WAND,
     VERBOSE,
     KNN,
     NotUseSearchingMode

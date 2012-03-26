@@ -124,6 +124,113 @@ void QueryBuilder::prepare_filter(const std::vector<QueryFiltering::FilteringTyp
     }
 }
 
+WANDDocumentIterator* QueryBuilder::prepare_wand_dociterator(
+    SearchKeywordOperation& actionOperation,
+    collectionid_t colID,
+    const property_weight_map& propertyWeightMap,
+    const std::vector<std::string>& properties,
+    const std::vector<unsigned int>& propertyIds,
+    bool readPositions,
+    const std::vector<std::map<termid_t, unsigned> >& termIndexMaps
+)
+{
+    size_t size_of_properties = propertyIds.size();
+
+    WANDDocumentIterator* pWandScorer = new WANDDocumentIterator(
+                                           propertyWeightMap,
+                                           propertyIds,
+                                           properties);
+    if (pIndexReader_->isDirty())
+    {
+        pIndexReader_ = indexManagerPtr_->getIndexReader();
+    }
+    try{
+    size_t success_properties = 0;
+    for (size_t i = 0; i < size_of_properties; i++)
+    {
+        prepare_for_wand_property_(
+            pWandScorer,
+            success_properties,
+            actionOperation,
+            colID,
+            properties[i],
+            propertyIds[i],
+            readPositions,
+            termIndexMaps[i]
+        );
+    }
+
+    if (success_properties)
+        return pWandScorer;
+    else
+        delete pWandScorer;
+
+    return NULL;
+    }catch(std::exception& e){
+        delete pWandScorer;
+        throw std::runtime_error("Failed to prepare wanddociterator");
+        return NULL;
+    }
+}
+
+void QueryBuilder::prepare_for_wand_property_(
+    WANDDocumentIterator* pWandScorer,
+    size_t & success_properties,
+    SearchKeywordOperation& actionOperation,
+    collectionid_t colID,
+    const std::string& property,
+    unsigned int propertyId,
+    bool readPositions,
+    const std::map<termid_t, unsigned>& termIndexMapInProperty
+)
+{
+    typedef std::map<termid_t, unsigned>::const_iterator const_iter;
+    typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
+    iterator found = schemaMap_.find(property);
+    if (found == schemaMap_.end())
+        return;
+
+    TermReader* pTermReader = NULL;
+    pTermReader = pIndexReader_->getTermReader(colID);
+    if (!pTermReader)
+            return;
+
+    const_iter iter = termIndexMapInProperty.begin();
+    for ( ; iter != termIndexMapInProperty.end(); ++iter)
+    {
+        termid_t termId = iter->first;
+        unsigned int termIndex = iter->second;
+        Term term(property.c_str(),termId);
+        bool find = pTermReader->seek(&term);
+
+        if (find)
+        {
+            TermDocFreqs* pTermDocReader = 0;
+            if (readPositions)
+                pTermDocReader = pTermReader->termPositions();
+            else
+                pTermDocReader = pTermReader->termDocFreqs();
+            if(pTermDocReader) ///NULL when exception
+            {
+                TermDocumentIterator* pIterator = NULL;
+                pIterator =
+                    new TermDocumentIterator(termId,
+                                             colID,
+                                             pIndexReader_,
+                                             property,
+                                             propertyId,
+                                             termIndex,
+                                             readPositions);
+                pIterator->set( pTermDocReader );
+                pWandScorer->add(propertyId, termIndex, (DocumentIterator*)pIterator);
+                ++success_properties;
+            }
+        }
+     }
+     if (pTermReader)
+        delete pTermReader;
+}
+
 MultiPropertyScorer* QueryBuilder::prepare_dociterator(
     SearchKeywordOperation& actionOperation,
     collectionid_t colID,
@@ -169,7 +276,6 @@ MultiPropertyScorer* QueryBuilder::prepare_dociterator(
         return NULL;
     }
 }
-
 
 void QueryBuilder::prepare_for_property_(
     MultiPropertyScorer* pScorer,
@@ -305,7 +411,6 @@ void QueryBuilder::prepare_for_property_(
         }
     }
 }
-
 
 bool QueryBuilder::do_prepare_for_property_(
     QueryTreePtr& queryTree,
