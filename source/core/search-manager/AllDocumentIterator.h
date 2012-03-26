@@ -72,7 +72,6 @@ public:
         if(!delDocIterator_) {
             return do_skipTo(target);
         }
-std::cout<<"skipto "<<target<<" currDelDoc_ "<<currDelDoc_<<std::endl;		
         if (currDelDoc_ <= target) {
             return skip_with_del(target);
         }
@@ -91,6 +90,10 @@ std::cout<<"skipto "<<target<<" currDelDoc_ "<<currDelDoc_<<std::endl;
 
     void df_ctf(DocumentFrequencyInProperties& dfmap, 
                      CollectionTermFrequencyInProperties& ctfmap){}
+
+    void df_cmtf(DocumentFrequencyInProperties& dfmap,
+                     CollectionTermFrequencyInProperties& ctfmap,
+                     MaxTermFrequencyInProperties& maxtfmap) {}
 
     count_t tf() {
         return 1;
@@ -120,7 +123,6 @@ protected:
         {
             currDoc_ = currDoc_ > target ? currDoc_ : ++target;
             currDelDoc_ = delDocIterator_->skipTo(currDoc_);
-std::cout<<"skip_with_del currDoc_ "<<currDoc_<<" currDelDoc_ "<<currDelDoc_<<std::endl;		
         }
         while ((currDoc_ == currDelDoc_)&&(currDoc_ <= maxDoc_));
         return currDoc_ > maxDoc_ ? MAX_DOC_ID : currDoc_;
