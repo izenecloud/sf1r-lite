@@ -130,9 +130,6 @@ private:
             faceted::GroupFilter* groupFilter,
             HitQueue* scoreItemQueue);
 
-    bool prepareDocIterWithOnlyOrderby_(
-            boost::shared_ptr<EWAHBoolArray<uint32_t> >& pFilterIdSet);
-
     /**
      * @brief get corresponding id of the property, returns 0 if the property
      * does not exist.

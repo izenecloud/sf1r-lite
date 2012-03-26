@@ -17,6 +17,7 @@
 #include "Sorter.h"
 #include "HitQueue.h"
 #include "FilterDocumentIterator.h"
+#include "AllDocumentIterator.h"
 #include "CombinedDocumentIterator.h"
 
 #include <util/swap.h>
@@ -348,10 +349,22 @@ bool SearchManager::search(
         if (pSorter)
         {
             ///SELECT * ORDER BY
-            prepareDocIterWithOnlyOrderby_(pFilterIdSet);
-            if (!pFilterIdSet) return false;
-            BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
-            FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
+            unsigned maxDoc = documentManagerPtr_->getMaxDocId();
+            if (maxDoc == 0)
+                return false;
+            boost::shared_ptr<BitVector> pDelFilter(indexManagerPtr_->getBTreeIndexer()->getFilter());
+            AllDocumentIterator* pFilterIterator = NULL;
+            if (pDelFilter)
+            {
+                pFilterIdSet.reset(new EWAHBoolArray<uint32_t>());
+                pDelFilter->compressed(*pFilterIdSet);
+                BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
+                pFilterIterator = new AllDocumentIterator( pBitmapIter,maxDoc );
+            }
+            else
+            {
+                pFilterIterator = new AllDocumentIterator( maxDoc);
+            }
             pDocIterator->add((DocumentIterator*) pFilterIterator);
         }
         else
@@ -829,34 +842,6 @@ propertyid_t SearchManager::getPropertyIdByName_(const std::string& name) const
     {
         return 0;
     }
-}
-
-bool SearchManager::prepareDocIterWithOnlyOrderby_(
-        boost::shared_ptr<EWAHBoolArray<uint32_t> >& pFilterIdSet)
-{
-    boost::shared_ptr<BitVector> pDelFilter(indexManagerPtr_->getBTreeIndexer()->getFilter());
-
-    if (pDelFilter)
-    {
-        BitVector bitVector(*pDelFilter);
-        bitVector.toggle();
-        bitVector.clear(0);
-        pFilterIdSet.reset(new EWAHBoolArray<uint32_t>());
-        bitVector.compressed(*pFilterIdSet);
-        return true;
-    }
-
-    if (documentManagerPtr_->getMaxDocId() == 0)
-        return false;
-
-    unsigned int bitsNum = documentManagerPtr_->getMaxDocId() + 1;
-    pFilterIdSet.reset(new EWAHBoolArray<uint32_t>());
-    BitVector* pFilter = new BitVector(bitsNum);
-    pFilter->setAll();
-    pFilter->clear(0);
-    pFilter->compressed(*pFilterIdSet);
-    delete pFilter;
-    return true;
 }
 
 bool SearchManager::getPropertyTypeByName_(
