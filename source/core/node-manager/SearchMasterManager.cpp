@@ -8,7 +8,7 @@ namespace sf1r
 
 SearchMasterManager::SearchMasterManager()
 {
-    CLASSNAME = "[SearchMasterManager]";
+    CLASSNAME = "SearchMasterManager";
 }
 
 bool SearchMasterManager::init()

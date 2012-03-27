@@ -16,8 +16,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include <glog/logging.h>
-
 namespace sf1r
 {
 

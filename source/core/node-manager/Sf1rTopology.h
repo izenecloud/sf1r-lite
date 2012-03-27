@@ -183,14 +183,19 @@ public:
     Sf1rNode curNode_;
 
 public:
-    Sf1rTopology():nodeNum_(0) {}
+    Sf1rTopology()
+        : nodeNum_(0)
+        , replicaNum_(1)
+    {}
 
     std::string toString()
     {
         std::stringstream ss;
 
         ss << "[Sf1rTopology]" << std::endl
-           << "clusterid: " << clusterId_ << std::endl;
+           << "cluster id: " << clusterId_ << std::endl
+           << "node number: " << nodeNum_ << std::endl
+           << "replica number: " << replicaNum_ << std::endl;
 
         ss << curNode_.toString();
 

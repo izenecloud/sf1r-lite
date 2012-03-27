@@ -8,8 +8,6 @@
 #define DISTRIBUTED_CONFIG_H_
 
 #include <node-manager/Sf1rTopology.h>
-//#include "MasterAgentConfig.h"
-//#include "WorkerAgentConfig.h"
 
 
 #include <sstream>
@@ -56,7 +54,7 @@ public:
     std::string toString()
     {
         std::stringstream ss;
-        ss << "==== [DistributedTopology] ===="<<std::endl;
+        ss << "==== [DistributedTopology] ====" << std::endl;
         ss << "**** " << type_ << " ****" << std::endl;
         ss << (enabled_ ? "enabled":"disabled") << std::endl;
         ss << sf1rTopology_.toString();
