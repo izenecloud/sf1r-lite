@@ -30,8 +30,8 @@ class WANDDocumentIterator : public DocumentIterator
     typedef UpperBoundInProperties::const_iterator property_name_term_index_iterator;
     typedef ID_FREQ_MAP_T::const_iterator term_index_ub_iterator;
 
-    typedef std::map<DocumentIterator*, pair<std::string, float> >::iterator dociter_iterator;
-    typedef std::map<DocumentIterator*, pair<std::string, float> >::const_iterator const_dociter_iterator;
+    typedef std::map<DocumentIterator*, std::pair<propertyid_t, float> >::iterator dociter_iterator;
+    typedef std::map<DocumentIterator*, std::pair<propertyid_t, float> >::const_iterator const_dociter_iterator;
 
 public:
     class DocumentIteratorQueue : public izenelib::ir::indexmanager::PriorityQueue<DocumentIterator*>
@@ -114,7 +114,7 @@ protected:
 
     bool do_next();
 
-    bool termUpperBound(DocumentIterator* pDocIter, std::pair<std::string, float>& prop_ub);
+    bool termUpperBound(DocumentIterator* pDocIter, std::pair<propertyid_t, float>& prop_ub);
 
     bool findPivot();
 
@@ -127,7 +127,7 @@ protected:
 
     std::vector<double> propertyWeightList_;
 
-    std::vector<std::map<unsigned int,DocumentIterator*> > docIteratorList_;
+    std::vector<std::map<propertyid_t,DocumentIterator*> > docIteratorList_;
 
     DocumentIteratorQueue* pDocIteratorQueue_;
 
@@ -139,7 +139,7 @@ protected:
 
     UpperBoundInProperties ubmap_;
 
-    std::map<DocumentIterator*, pair<std::string, float> > dociterUb_;
+    std::map<DocumentIterator*, pair<propertyid_t, float> > dociterUb_;
 
     boost::mutex mutex_;
 
