@@ -7,13 +7,22 @@ require_relative 'b5m_helper'
 
 
 top_dir = File.dirname(File.expand_path(__FILE__))
-config_file = File.join(top_dir, "config.yml")
-default_config_file = File.join(top_dir, "config.yml.default")
-if File.exist?(config_file)
-  config = YAML::load(File.open(config_file))
-elsif File.exist?(default_config_file)
-  config = YAML::load(File.open(default_config_file))
+config = nil
+if !ARGV.empty?
+  config_file = ARGV[0]
+  if File.exist?(config_file)
+    config = YAML::load( File.open(config_file) )
+  end
 else
+  config_file = File.join(top_dir, "config.yml")
+  default_config_file = File.join(top_dir, "config.yml.default")
+  if File.exist?(config_file)
+    config = YAML::load(File.open(config_file))
+  elsif File.exist?(default_config_file)
+    config = YAML::load(File.open(default_config_file))
+  end
+end
+if config.nil?
   puts 'config file not found'
   exit(false)
 end
