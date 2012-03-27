@@ -1,9 +1,16 @@
 #include <b5m-manager/attribute_indexer.h>
 #include <b5m-manager/category_scd_spliter.h>
-#include <b5m-manager/scd_generator.h>
-#include <b5m-manager/log_server_handler.h>
+#include <b5m-manager/b5mo_scd_generator.h>
+#include <b5m-manager/log_server_client.h>
+#include <b5m-manager/uue_generator.h>
 #include <b5m-manager/complete_matcher.h>
 #include <b5m-manager/similarity_matcher.h>
+#include <b5m-manager/uue_worker.h>
+#include <b5m-manager/b5mp_uue_processor.h>
+#include <b5m-manager/b5mc_scd_generator.h>
+#include <b5m-manager/log_server_handler.h>
+#include <b5m-manager/product_db.h>
+#include <b5m-manager/offer_db.h>
 #include "../TestResources.h"
 #include <boost/program_options.hpp>
 
@@ -20,14 +27,22 @@ int main(int ac, char** av)
         ("b5m-match,B", "make b5m matching")
         ("complete-match,M", "attribute complete matching")
         ("similarity-match,I", "title based similarity matching")
+        ("b5mo-generate", "generate b5mo scd")
+        ("uue-generate", "generate uue")
+        ("b5mp-generate", "generate b5mp scd")
+        ("logserver-update", "update logserver")
         ("knowledge-dir,K", po::value<std::string>(), "specify knowledge dir")
+        ("pdb", po::value<std::string>(), "specify product db path")
+        ("odb", po::value<std::string>(), "specify offer db path")
         ("synonym,Y", po::value<std::string>(), "specify synonym file")
         ("scd-path,S", po::value<std::string>(), "specify scd path")
+        ("b5mo", po::value<std::string>(), "specify b5mo scd path")
+        ("b5mp", po::value<std::string>(), "specify b5mp scd path")
+        ("uue", po::value<std::string>(), "uue path")
         ("category-regex,R", po::value<std::string>(), "specify category regex string")
         ("output-match,O", po::value<std::string>(), "specify output match path")
         ("cma-path,C", po::value<std::string>(), "manually specify cma path")
-        ("scd-generate,G", po::value<std::string>(), "generate b5mo b5mp scd files")
-        ("log-server,L", po::value<std::string>(), "send log server request")
+        ("logserver-config,L", po::value<std::string>(), "log server config string")
         ("exclude,E", "do not generate non matched categories")
         ("scd-split,P", "split scd files for each categories.")
         ("name,N", po::value<std::string>(), "specify the name")
@@ -42,8 +57,16 @@ int main(int ac, char** av)
         return 1;
     }
     std::string scd_path;
+    std::string b5mo;
+    std::string b5mp;
+    std::string b5mc;
+    std::string uue;
     std::string output_match;
     std::string knowledge_dir;
+    boost::shared_ptr<ProductDb> pdb;
+    boost::shared_ptr<OfferDb> odb;
+
+    boost::shared_ptr<LogServerConnectionConfig> logserver_config;
     std::string synonym_file;
     std::string category_regex_str;
     std::string cma_path = IZENECMA_KNOWLEDGE ;
@@ -53,6 +76,18 @@ int main(int ac, char** av)
         scd_path = vm["scd-path"].as<std::string>();
         std::cout << "scd-path: " << scd_path <<std::endl;
     } 
+    if (vm.count("b5mo")) {
+        b5mo = vm["b5mo"].as<std::string>();
+    } 
+    if (vm.count("b5mp")) {
+        b5mp = vm["b5mp"].as<std::string>();
+    } 
+    if (vm.count("b5mc")) {
+        b5mp = vm["b5mc"].as<std::string>();
+    } 
+    if (vm.count("uue")) {
+        uue = vm["uue"].as<std::string>();
+    } 
     if (vm.count("output-match")) {
         output_match = vm["output-match"].as<std::string>();
         std::cout << "output-match: " << output_match <<std::endl;
@@ -61,6 +96,36 @@ int main(int ac, char** av)
         knowledge_dir = vm["knowledge-dir"].as<std::string>();
         std::cout << "knowledge-dir: " << knowledge_dir <<std::endl;
     } 
+    if (vm.count("pdb")) {
+        std::string pdb_path = vm["pdb"].as<std::string>();
+        std::cout << "open pdb path: " << pdb_path <<std::endl;
+        pdb.reset(new ProductDb(pdb_path));
+        pdb->open();
+    } 
+    if (vm.count("odb")) {
+        std::string odb_path = vm["odb"].as<std::string>();
+        std::cout << "open odb path: " << odb_path <<std::endl;
+        odb.reset(new OfferDb(odb_path));
+    } 
+    if(vm.count("logserver-config"))
+    {
+        std::string config_string = vm["logserver-config"].as<std::string>();
+ 
+        std::vector<std::string> vec;
+        boost::algorithm::split( vec, config_string, boost::algorithm::is_any_of("|") );
+        if(vec.size()==4)
+        {
+            std::string host = vec[0];
+            uint32_t rpc_port = boost::lexical_cast<uint32_t>(vec[1]);
+            uint32_t rpc_thread_num = boost::lexical_cast<uint32_t>(vec[2]);
+            uint32_t driver_port = boost::lexical_cast<uint32_t>(vec[3]);
+            logserver_config.reset(new LogServerConnectionConfig(host, rpc_port, rpc_thread_num, driver_port));
+        }
+        else
+        {
+            return EXIT_FAILURE;
+        }
+    }
     if(vm.count("synonym"))
     {
         synonym_file = vm["synonym"].as<std::string>();
@@ -164,53 +229,81 @@ int main(int ac, char** av)
             return EXIT_FAILURE;
         }
     }
-    else if(vm.count("scd-generate"))
+    else if(vm.count("b5mo-generate"))
     {
-        std::string output_dir = vm["scd-generate"].as<std::string>();
-        if( scd_path.empty() || knowledge_dir.empty() || output_dir.empty() )
+        if( scd_path.empty() || knowledge_dir.empty() || b5mo.empty() )
         {
             return EXIT_FAILURE;
         }
-        ScdGenerator gen;
-        if(vm.count("exclude"))
-        {
-            std::cout<<"scd generate exclude"<<std::endl;
-            gen.SetExclude();
-        }
-        if(!gen.Load(knowledge_dir))
-        {
-            return EXIT_FAILURE;
-        }
-        if(!gen.Generate(scd_path, output_dir, work_dir))
+        B5MOScdGenerator generator;
+        generator.Load(knowledge_dir);
+        if(!generator.Generate(scd_path, b5mo))
         {
             return EXIT_FAILURE;
         }
     }
-    else if(vm.count("log-server"))
+    else if(vm.count("uue-generate"))
     {
-        std::string log_server = vm["log-server"].as<std::string>();
-        if( scd_path.empty() ||  log_server.empty() )
+        if( b5mo.empty() || uue.empty() || !odb)
         {
             return EXIT_FAILURE;
         }
-        std::vector<std::string> vec;
-        boost::algorithm::split( vec, log_server, boost::algorithm::is_any_of("|") );
-        if(vec.size()==4)
+        if(!odb->open()) return EXIT_FAILURE;
+        UueGenerator generator(odb.get());
+        if(!generator.Generate(b5mo, uue))
         {
-            std::string host = vec[0];
-            uint32_t rpc_port = boost::lexical_cast<uint32_t>(vec[1]);
-            uint32_t rpc_thread_num = boost::lexical_cast<uint32_t>(vec[2]);
-            uint32_t driver_port = boost::lexical_cast<uint32_t>(vec[3]);
-            LogServerConnectionConfig config(host, rpc_port, rpc_thread_num, driver_port);
-            
-            LogServerHandler log_server_handler;
-            log_server_handler.SetLogServerConfig(config);
-            std::cout<<"Set Log Server To : "<<log_server<<std::endl;
-            //if(!log_server_handler.Send(scd_path, work_dir)) return EXIT_FAILURE;
-            if(!log_server_handler.QuickSend(scd_path)) return EXIT_FAILURE;
+            return EXIT_FAILURE;
         }
-        else
+    }
+    else if(vm.count("b5mp-generate"))
+    {
+        if( b5mo.empty() || b5mp.empty() || uue.empty() || !pdb )
         {
+            return EXIT_FAILURE;
+        }
+        boost::shared_ptr<B5MPUueProcessor> processor(new B5MPUueProcessor(b5mo, b5mp, pdb.get(), work_dir));
+        UueWorker<B5MPUueProcessor> worker(processor.get());
+        worker.Load(uue);
+        if(!worker.Run())
+        {
+            std::cout<<"b5mp generator run failed."<<std::endl;
+            return EXIT_FAILURE;
+        }
+    }
+    else if(vm.count("b5mc-generate"))
+    {
+        if( !odb || scd_path.empty() || b5mc.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        if(!odb->open()) return EXIT_FAILURE;
+        B5MCScdGenerator generator(odb.get());
+        if(!generator.Generate(scd_path, b5mc))
+        {
+            return EXIT_FAILURE;
+        }
+    }
+    else if(vm.count("logserver-update"))
+    {
+        if( uue.empty() || !logserver_config || !odb )
+        {
+            return EXIT_FAILURE;
+        }
+        //bool reindex = false;
+        //if(pdb->size()==0)
+        //{
+            //reindex = true;
+        //}
+        boost::shared_ptr<LogServerHandler> processor(new LogServerHandler(*logserver_config, odb.get(), work_dir));
+        if(!processor->Open())
+        {
+            return EXIT_FAILURE;
+        }
+        UueWorker<LogServerHandler> worker(processor.get());
+        worker.Load(uue);
+        if(!worker.BatchRun())
+        {
+            std::cout<<"log server update run failed."<<std::endl;
             return EXIT_FAILURE;
         }
     }

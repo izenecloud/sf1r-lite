@@ -7,10 +7,12 @@ matcher:
         work_dir: working
         tmp_dir: tmp
         result: match_result
-        train_scd: T.SCD
-        scd: A.SCD
+        train_scd: ./T
+        scd: ./A
+        comment_scd: ./C
         filter_attrib_name: filter_attrib_name.conf
         b5m_scd: b5m_scd
         b5mo: ../bin/collection/b5mo
         b5mp: ../bin/collection/b5mp
+        b5mc: ../bin/collection/b5mc
     log_server: 10.10.1.105|18811|30|18812

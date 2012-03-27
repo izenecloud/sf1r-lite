@@ -208,7 +208,7 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 
     std::string key_str;
 #ifdef USE_LOG_SERVER
-    Utilities::uint128ToUuid(key, key_str);
+    key_str = Utilities::uint128ToUuid(key);
     UString key_ustr(key_str, UString::UTF_8);
     corpus_->start_new_coll(key_ustr);
 #else
