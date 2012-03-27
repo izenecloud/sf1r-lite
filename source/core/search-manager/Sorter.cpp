@@ -91,6 +91,10 @@ void SortPropertyCache::loadSortData(const std::string& property, PropertyDataTy
         pIndexer_->loadPropertyDataForSorting(property, (double*&)data, size);
         break;
 
+    case STRING_PROPERTY_TYPE:
+        pIndexer_->convertStringPropertyDataForSorting(property, (uint32_t*&)data, size);
+        break;
+
     default:
         break;
     }

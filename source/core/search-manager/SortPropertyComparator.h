@@ -42,6 +42,7 @@ private:
     int compareImplDefault(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
     int compareImplInt(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
     int compareImplUnsigned(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
+    int compareImplUInt32(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
     int compareImplFloat(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
     int compareImplDouble(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
     int compareImplUnknown(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
