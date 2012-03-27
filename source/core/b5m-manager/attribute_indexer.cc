@@ -8,6 +8,7 @@
 #include <boost/unordered_set.hpp>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <algorithm>
 #include <cmath>
 #include <idmlib/util/svm.h>
@@ -141,6 +142,7 @@ void AttributeIndexer::ClearKnowledge_(const std::string& knowledge_dir)
     if(!boost::filesystem::exists(knowledge_dir)) return;
     std::vector<std::string> runtime_path;
     runtime_path.push_back("logger");
+    runtime_path.push_back("match");
     runtime_path.push_back("attrib_id");
     runtime_path.push_back("attrib_index");
     runtime_path.push_back("attrib_name_id");
@@ -853,6 +855,7 @@ bool AttributeIndexer::TrainSVM()
 
 void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
 {
+    namespace bfs = boost::filesystem;
     std::string done_file = knowledge_dir_+"/match.done";
     if(boost::filesystem::exists(done_file))
     {
@@ -872,7 +875,8 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
         return;
     }
     std::cout<<model_file<<" loaded!"<<std::endl;
-    std::ofstream match_ofs(match_file.c_str(), std::ios::out | std::ios::app);
+    //std::ofstream match_ofs(match_file.c_str(), std::ios::out | std::ios::app);
+    std::ofstream match_ofs(match_file.c_str());
     boost::unordered_map<std::string, std::vector<std::size_t> > category_indexlist;
     boost::unordered_map<std::string, std::vector<std::size_t> >::iterator ci_it;
     BuildCategoryMap_(category_indexlist);
@@ -881,174 +885,204 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
     //{
         //ss_list[i] = new StringSimilarity(product_list_[i].property["Title"]);
     //}
-    std::string scd_file = scd_path;
+    std::vector<std::string> scd_list;
     bool inner_scd = false;
-    std::string a_scd = knowledge_dir_+"/A.SCD";
-    uint32_t counting = 100000;
-    if(boost::filesystem::exists(a_scd))
+    std::string a_scd_dir = knowledge_dir_+"/A";
+    std::string a_scd;
+    uint32_t counting = 10000;
+    if(bfs::is_directory(a_scd_dir))
     {
-        scd_file = a_scd;
+        bfs::path p(a_scd_dir);
+        bfs::directory_iterator end;
+        for(bfs::directory_iterator it(p);it!=end;it++)
+        {
+            if(bfs::is_regular_file(it->path()))
+            {
+                std::string file = it->path().string();
+                if(ScdParser::checkSCDFormat(file))
+                {
+                    scd_list.push_back(file);
+                }
+            }
+        }
         inner_scd = true;
         counting = 200;
-        std::cout<<"USE A.SCD FOR MATCHING"<<std::endl;
+        std::cout<<"USE inner A FOR MATCHING"<<std::endl;
+    }
+    else
+    {
+        if(ScdParser::checkSCDFormat(scd_path))
+        {
+            scd_list.push_back(scd_path);
+        }
+    }
+    if(scd_list.empty())
+    {
+        std::cout<<"No valid SCD for matching"<<std::endl;
+        return;
     }
     static const double price_ratio = 2.2;
     static const double invert_price_ratio = 1.0/price_ratio;
-    ScdParser parser(izenelib::util::UString::UTF_8);
-    parser.load(scd_file);
     uint32_t n=0;
     uint32_t num_for_match = 0;
     boost::unordered_map<std::string, std::vector<std::string> > p2o_map;
-    for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
-      doc_iter!= parser.end(); ++doc_iter, ++n)
+    for(uint32_t i=0;i<scd_list.size();i++)
     {
-        if(n%counting==0)
+        std::string scd_file = scd_list[i];
+        ScdParser parser(izenelib::util::UString::UTF_8);
+        parser.load(scd_file);
+        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
+          doc_iter!= parser.end(); ++doc_iter, ++n)
         {
-            LOG(INFO)<<"Processing "<<n<<" docs"<<std::endl;
-        }
-        ProductDocument odoc;
-        izenelib::util::UString oid;
-        izenelib::util::UString title;
-        izenelib::util::UString category;
-        izenelib::util::UString url;
-        izenelib::util::UString attrib_ustr;
-        SCDDoc& doc = *(*doc_iter);
-        std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
-        for(p=doc.begin(); p!=doc.end(); ++p)
-        {
-            std::string property_name;
-            p->first.convertString(property_name, izenelib::util::UString::UTF_8);
-            odoc.property[property_name] = p->second;
-            if(property_name=="DOCID")
+            if(n%counting==0)
             {
-                oid = p->second;
+                LOG(INFO)<<"Processing "<<n<<" docs"<<std::endl;
             }
-            else if(property_name=="Title")
+            ProductDocument odoc;
+            izenelib::util::UString oid;
+            izenelib::util::UString title;
+            izenelib::util::UString category;
+            izenelib::util::UString url;
+            izenelib::util::UString attrib_ustr;
+            SCDDoc& doc = *(*doc_iter);
+            std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
+            for(p=doc.begin(); p!=doc.end(); ++p)
             {
-                title = p->second;
-            }
-            else if(property_name=="Category")
-            {
-                category = p->second;
-            }
-            else if(property_name=="Attribute")
-            {
-                attrib_ustr = p->second;
-            }
-            else if(property_name=="Url")
-            {
-                url = p->second;
-            }
-        }
-        if( category.length()==0 || title.length()==0) continue;
-        std::string soid;
-        oid.convertString(soid, izenelib::util::UString::UTF_8);
-        std::string stitle;
-        title.convertString(stitle, izenelib::util::UString::UTF_8);
-        std::string scategory;
-        category.convertString(scategory, izenelib::util::UString::UTF_8);
-        std::string surl;
-        url.convertString(surl, izenelib::util::UString::UTF_8);
-        if(!inner_scd)
-        {
-            if( !match_param_.MatchCategory(scategory) )
-            {
-                continue;
-            }
-        }
-        ci_it = category_indexlist.find(scategory);
-        if( ci_it==category_indexlist.end()) continue;
-        ProductPrice price;
-        price.Parse(odoc.property["Price"]);
-        if(!price.Valid()) continue;
-        
-        std::vector<std::size_t>& pindexlist = ci_it->second;
-        std::vector<AttribId> aid_list;
-        GetAttribIdList(category, title, aid_list);
-        std::vector<std::pair<std::size_t, double> > match_list;
-        for(std::size_t p=0;p<pindexlist.size();++p)
-        {
-            std::size_t pindex = pindexlist[p];
-            ProductDocument& product_doc = product_list_[pindex];
-            ProductPrice pprice;
-            pprice.Parse(product_doc.property["Price"]);
-            std::vector<std::pair<AttribNameId, double> > feature_vec;
-            FeatureStatus fs;
-            //GetFeatureVector_(aid_list, product_doc.tag_aid_list, feature_vec, nzfc);
-            GetFeatureVector_(aid_list, product_doc.tag_aid_list, feature_vec, fs);
-            //if(fs.pnum+fs.nnum<2) continue;
-            struct svm_node *x = (struct svm_node *) malloc((feature_vec.size()+1)*sizeof(struct svm_node));
-            for(uint32_t i=0;i<feature_vec.size();i++)
-            {
-                x[i].index = (int)feature_vec[i].first;
-                x[i].value = feature_vec[i].second;
-            }
-            x[feature_vec.size()].index = -1;
-            double predict_label = svm_predict(model,x);
-            free(x);
-#ifdef B5M_DEBUG
-            {
-                logger_<<"[MATCH]"<<std::endl;
-                std::string sptitle;
-                product_doc.property["Title"].convertString(sptitle, izenelib::util::UString::UTF_8);
-                //logger_<<scategory<<std::endl;
-                logger_<<"[MO]"<<stitle<<std::endl;
-                logger_<<surl<<std::endl;
-                for(uint32_t i=0;i<aid_list.size();++i)
+                std::string property_name;
+                p->first.convertString(property_name, izenelib::util::UString::UTF_8);
+                odoc.property[property_name] = p->second;
+                if(property_name=="DOCID")
                 {
-                    logger_<<aid_list[i]<<",";
+                    oid = p->second;
                 }
-                logger_<<std::endl;
-                logger_<<"[MP]"<<sptitle<<std::endl;
-                for(uint32_t i=0;i<product_doc.tag_aid_list.size();++i)
+                else if(property_name=="Title")
                 {
-                    logger_<<product_doc.tag_aid_list[i]<<",";
+                    title = p->second;
                 }
-                logger_<<std::endl;
-                logger_<<"feature size: "<<feature_vec.size()<<std::endl;
+                else if(property_name=="Category")
+                {
+                    category = p->second;
+                }
+                else if(property_name=="Attribute")
+                {
+                    attrib_ustr = p->second;
+                }
+                else if(property_name=="Url")
+                {
+                    url = p->second;
+                }
+            }
+            if( category.length()==0 || title.length()==0) continue;
+            std::string soid;
+            oid.convertString(soid, izenelib::util::UString::UTF_8);
+            std::string stitle;
+            title.convertString(stitle, izenelib::util::UString::UTF_8);
+            std::string scategory;
+            category.convertString(scategory, izenelib::util::UString::UTF_8);
+            std::string surl;
+            url.convertString(surl, izenelib::util::UString::UTF_8);
+            if(!inner_scd)
+            {
+                if( !match_param_.MatchCategory(scategory) )
+                {
+                    continue;
+                }
+            }
+            ci_it = category_indexlist.find(scategory);
+            if( ci_it==category_indexlist.end()) continue;
+            ProductPrice price;
+            price.Parse(odoc.property["Price"]);
+            if(!price.Valid()) continue;
+            
+            std::vector<std::size_t>& pindexlist = ci_it->second;
+            std::vector<AttribId> aid_list;
+            GetAttribIdList(category, title, aid_list);
+            std::vector<std::pair<std::size_t, double> > match_list;
+            for(std::size_t p=0;p<pindexlist.size();++p)
+            {
+                std::size_t pindex = pindexlist[p];
+                ProductDocument& product_doc = product_list_[pindex];
+                ProductPrice pprice;
+                pprice.Parse(product_doc.property["Price"]);
+                std::vector<std::pair<AttribNameId, double> > feature_vec;
+                FeatureStatus fs;
+                //GetFeatureVector_(aid_list, product_doc.tag_aid_list, feature_vec, nzfc);
+                GetFeatureVector_(aid_list, product_doc.tag_aid_list, feature_vec, fs);
+                //if(fs.pnum+fs.nnum<2) continue;
+                struct svm_node *x = (struct svm_node *) malloc((feature_vec.size()+1)*sizeof(struct svm_node));
                 for(uint32_t i=0;i<feature_vec.size();i++)
                 {
-                    logger_<<feature_vec[i].first<<":"<<feature_vec[i].second<<",";
+                    x[i].index = (int)feature_vec[i].first;
+                    x[i].value = feature_vec[i].second;
                 }
-                logger_<<std::endl;
-                logger_<<(int)predict_label<<std::endl;
-            }
+                x[feature_vec.size()].index = -1;
+                double predict_label = svm_predict(model,x);
+                free(x);
+#ifdef B5M_DEBUG
+                {
+                    logger_<<"[MATCH]"<<std::endl;
+                    std::string sptitle;
+                    product_doc.property["Title"].convertString(sptitle, izenelib::util::UString::UTF_8);
+                    //logger_<<scategory<<std::endl;
+                    logger_<<"[MO]"<<stitle<<std::endl;
+                    logger_<<surl<<std::endl;
+                    for(uint32_t i=0;i<aid_list.size();++i)
+                    {
+                        logger_<<aid_list[i]<<",";
+                    }
+                    logger_<<std::endl;
+                    logger_<<"[MP]"<<sptitle<<std::endl;
+                    for(uint32_t i=0;i<product_doc.tag_aid_list.size();++i)
+                    {
+                        logger_<<product_doc.tag_aid_list[i]<<",";
+                    }
+                    logger_<<std::endl;
+                    logger_<<"feature size: "<<feature_vec.size()<<std::endl;
+                    for(uint32_t i=0;i<feature_vec.size();i++)
+                    {
+                        logger_<<feature_vec[i].first<<":"<<feature_vec[i].second<<",";
+                    }
+                    logger_<<std::endl;
+                    logger_<<(int)predict_label<<std::endl;
+                }
 #endif
-            if(predict_label>0)
-            {
-                if(fs.pnum+fs.nnum<2) continue;
-                double om, pm;
-                if(!price.GetMid(om) || !pprice.GetMid(pm)) continue;
-                if(om<=0.0 || pm<=0.0) continue;
-                double ratio = om/pm;
-                if(ratio<invert_price_ratio || ratio>price_ratio) continue;
-                double str_sim = StringSimilarity::Sim(title, product_doc.property["Title"]);
-                //double str_sim = ss_list[pindex]->Sim(title);
-                match_list.push_back(std::make_pair(pindex, str_sim));
+                if(predict_label>0)
+                {
+                    if(fs.pnum+fs.nnum<2) continue;
+                    double om, pm;
+                    if(!price.GetMid(om) || !pprice.GetMid(pm)) continue;
+                    if(om<=0.0 || pm<=0.0) continue;
+                    double ratio = om/pm;
+                    if(ratio<invert_price_ratio || ratio>price_ratio) continue;
+                    double str_sim = StringSimilarity::Sim(title, product_doc.property["Title"]);
+                    //double str_sim = ss_list[pindex]->Sim(title);
+                    match_list.push_back(std::make_pair(pindex, str_sim));
 
-                //{
-                    //izenelib::util::UString pid = product_doc.property["DOCID"];
-                    //std::string spid, sptitle;
-                    //pid.convertString(spid, izenelib::util::UString::UTF_8);
-                    //product_doc.property["Title"].convertString(sptitle, izenelib::util::UString::UTF_8);
-                    //std::cout<<"[STRSIM]["<<stitle<<"]\t["<<sptitle<<"] : "<<str_sim<<std::endl;
-                //}
+                    //{
+                        //izenelib::util::UString pid = product_doc.property["DOCID"];
+                        //std::string spid, sptitle;
+                        //pid.convertString(spid, izenelib::util::UString::UTF_8);
+                        //product_doc.property["Title"].convertString(sptitle, izenelib::util::UString::UTF_8);
+                        //std::cout<<"[STRSIM]["<<stitle<<"]\t["<<sptitle<<"] : "<<str_sim<<std::endl;
+                    //}
+                }
             }
+            if(!match_list.empty())
+            {
+                typedef izenelib::util::second_greater<std::pair<std::size_t, double> > greater_than;
+                std::stable_sort(match_list.begin(), match_list.end(), greater_than());
+                std::size_t match_pindex = match_list[0].first;
+                ProductDocument& match_pdoc = product_list_[match_pindex];
+                izenelib::util::UString pid = match_pdoc.property["DOCID"];
+                std::string spid, sptitle;
+                pid.convertString(spid, izenelib::util::UString::UTF_8);
+                match_pdoc.property["Title"].convertString(sptitle, izenelib::util::UString::UTF_8);
+                boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
+                match_ofs<<soid<<","<<spid<<","<<boost::posix_time::to_iso_string(now)<<","<<stitle<<"\t["<<sptitle<<"]"<<std::endl;
+            }
+            num_for_match++;
         }
-        if(!match_list.empty())
-        {
-            typedef izenelib::util::second_greater<std::pair<std::size_t, double> > greater_than;
-            std::stable_sort(match_list.begin(), match_list.end(), greater_than());
-            std::size_t match_pindex = match_list[0].first;
-            ProductDocument& match_pdoc = product_list_[match_pindex];
-            izenelib::util::UString pid = match_pdoc.property["DOCID"];
-            std::string spid, sptitle;
-            pid.convertString(spid, izenelib::util::UString::UTF_8);
-            match_pdoc.property["Title"].convertString(sptitle, izenelib::util::UString::UTF_8);
-            match_ofs<<soid<<","<<spid<<","<<stitle<<"\t["<<sptitle<<"]"<<std::endl;
-        }
-        num_for_match++;
-    } 
+    }
     delete model;
     //for(std::size_t i=0;i<ss_list.size();i++)
     //{
@@ -1292,20 +1326,38 @@ void AttributeIndexer::GetFeatureVector_(const std::vector<AttribId>& o, const s
 
 void AttributeIndexer::BuildProductDocuments_(const std::string& scd_path)
 {
+    namespace bfs = boost::filesystem;
     std::string scd_file = scd_path;
     bool inner_scd = false;
-    std::string t_scd = knowledge_dir_+"/T.SCD";
+    std::string t_scd_dir = knowledge_dir_+"/T";
+    std::string t_scd;
     uint32_t counting = 10000;
-    if(boost::filesystem::exists(t_scd))
+    if(bfs::is_directory(t_scd_dir))
+    {
+        bfs::path p(t_scd_dir);
+        bfs::directory_iterator end;
+        for(bfs::directory_iterator it(p);it!=end;it++)
+        {
+            if(bfs::is_regular_file(it->path()))
+            {
+                std::string file = it->path().string();
+                if(ScdParser::checkSCDType(file)==INSERT_SCD)
+                {
+                    t_scd = file;
+                }
+            }
+        }
+    }
+    if(!t_scd.empty())
     {
         scd_file = t_scd;
         inner_scd = true;
         counting = 200;
-        std::cout<<"USE T.SCD FOR TRAINING"<<std::endl;
+        std::cout<<"USE inner T FOR TRAINING"<<std::endl;
     }
     else
     {
-        //force use T.SCD
+        //force use T
         return;
     }
     ScdParser parser(izenelib::util::UString::UTF_8);

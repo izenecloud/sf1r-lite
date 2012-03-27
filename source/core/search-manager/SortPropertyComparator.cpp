@@ -43,6 +43,9 @@ void SortPropertyComparator::initComparator()
     case DOUBLE_PROPERTY_TYPE:
         comparator_ = &SortPropertyComparator::compareImplDouble;
         break;
+    case STRING_PROPERTY_TYPE:
+        comparator_ = &SortPropertyComparator::compareImplUInt32;
+        break;
     case UNKNOWN_DATA_PROPERTY_TYPE:
         comparator_ = &SortPropertyComparator::compareImplUnknown;
         break;
@@ -70,6 +73,16 @@ int SortPropertyComparator::compareImplInt(const ScoreDoc& doc1, const ScoreDoc&
     if (doc1.docId >= size_ || doc2.docId >= size_) return 0;
     int64_t f1 = ((int64_t*) data_)[doc1.docId];
     int64_t f2 = ((int64_t*) data_)[doc2.docId];
+    if (f1 < f2) return -1;
+    if (f1 > f2) return 1;
+    return 0;
+}
+
+int SortPropertyComparator::compareImplUInt32(const ScoreDoc& doc1, const ScoreDoc& doc2) const
+{
+    if (doc1.docId >= size_ || doc2.docId >= size_) return 0;
+    uint32_t f1 = ((uint32_t*) data_)[doc1.docId];
+    uint32_t f2 = ((uint32_t*) data_)[doc2.docId];
     if (f1 < f2) return -1;
     if (f1 > f2) return 1;
     return 0;

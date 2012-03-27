@@ -4,7 +4,7 @@ using namespace sf1r;
 
 
 ScdWriterController::ScdWriterController(const std::string& dir)
-:dir_(dir), writer_(NULL), last_op_(0), document_limit_(0)
+:dir_(dir), writer_(NULL), last_op_(0), document_limit_(0), m_(0)
 {
 }
 
@@ -22,7 +22,7 @@ ScdWriter* ScdWriterController::GetWriter_(int op)
     }
     else
     {
-        if(op!=last_op_ || document_limit_ == M)
+        if(op!=last_op_ || (m_>0 && document_limit_>=m_))
         {
             writer_->Close();
             delete writer_;
@@ -35,6 +35,14 @@ ScdWriter* ScdWriterController::GetWriter_(int op)
 }
 
 bool ScdWriterController::Write(const SCDDoc& doc, int op)
+{
+    ScdWriter* writer = GetWriter_(op);
+    if(writer==NULL) return false;
+    document_limit_++;
+    return writer->Append(doc);
+}
+
+bool ScdWriterController::Write(const Document& doc, int op)
 {
     ScdWriter* writer = GetWriter_(op);
     if(writer==NULL) return false;

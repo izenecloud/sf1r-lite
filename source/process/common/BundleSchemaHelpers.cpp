@@ -115,6 +115,7 @@ bool isPropertySortable(
         case NOMINAL_PROPERTY_TYPE:
         case UNSIGNED_INT_PROPERTY_TYPE:
         case DOUBLE_PROPERTY_TYPE:
+        case STRING_PROPERTY_TYPE:
             break;
         default:
             return false;
