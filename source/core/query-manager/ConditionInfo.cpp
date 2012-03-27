@@ -27,4 +27,16 @@ void LanguageAnalyzerInfo::clear(void)
     synonymExtension_ = false;
 }
 
+SearchingModeInfo::SearchingModeInfo(void):
+    mode_(SearchingMode::DefaultSearchingMode),
+    threshold_(0.0F)
+{
+}
+
+void SearchingModeInfo::clear(void)
+{
+    mode_ = SearchingMode::DefaultSearchingMode;
+    threshold_ = 0.0F;
+}
+
 } // end - namespace sf1r

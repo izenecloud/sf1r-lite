@@ -125,7 +125,10 @@ public:
         }
     }
 
-    void df_ctf(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties& ctfmap)
+    void df_cmtf(
+            DocumentFrequencyInProperties& dfmap,
+            CollectionTermFrequencyInProperties& ctfmap,
+            MaxTermFrequencyInProperties& maxtfmap)
     {
         if(!inited_) {
             hasNext_ = init();

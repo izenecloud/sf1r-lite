@@ -231,7 +231,7 @@
     <xs:element name="DistributedTopology">
         <xs:complexType>
             <xs:sequence>
-                <xs:element ref="CurrentNode" minOccurs="1" maxOccurs="1"/>
+                <xs:element ref="CurrentSf1rNode" minOccurs="1" maxOccurs="1"/>
             </xs:sequence>
             <xs:attribute name="enable" type="YesNoType" use="required"/>
             <xs:attribute name="type">
@@ -250,22 +250,13 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
-            <xs:attribute name="shardnum" use="required">
-                <xs:simpleType>
-                    <xs:restriction base="xs:integer">
-                        <xs:minInclusive value="1"/>
-                        <xs:maxInclusive value="100"/>
-                    </xs:restriction>
-                </xs:simpleType>
-            </xs:attribute>
         </xs:complexType>
     </xs:element>
-    <xs:element name="CurrentNode">
+    <xs:element name="CurrentSf1rNode">
         <xs:complexType>
             <xs:sequence>
-                <xs:element ref="MasterAgent" minOccurs="0" maxOccurs="1"/>
-                <xs:element ref="WorkerAgent" minOccurs="0" maxOccurs="1"/>
-                <xs:element ref="Corpus" minOccurs="0" maxOccurs="1"/>
+                <xs:element ref="MasterServer" minOccurs="0" maxOccurs="1"/>
+                <xs:element ref="WorkerServer" minOccurs="0" maxOccurs="1"/>
             </xs:sequence>
             <xs:attribute name="nodeid" use="required">
                 <xs:simpleType>
@@ -285,10 +276,43 @@
             </xs:attribute>
         </xs:complexType>
     </xs:element>
-    <xs:element name="WorkerAgent">
+    <xs:element name="MasterServer">
         <xs:complexType>
             <xs:sequence>
-                <xs:element ref="Service" minOccurs="1" maxOccurs="unbounded"/>
+                <xs:element ref="Collection" minOccurs="1" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute name="enable" type="YesNoType" use="required"/>
+            <xs:attribute name="name" use="required">
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="undefined"/>
+                        <xs:enumeration value="www"/>
+                        <xs:enumeration value="stage"/>
+                        <xs:enumeration value="beta"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="shardnum" use="required">
+                <xs:simpleType>
+                    <xs:restriction base="xs:integer">
+                        <xs:minInclusive value="1"/>
+                        <xs:maxInclusive value="100"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Collection">
+        <xs:complexType>
+            <xs:attribute name="name" type="xs:NCName" use="required"/>
+            <xs:attribute name="distributive" type="YesNoType" use="optional"/>
+            <xs:attribute name="shardids" type="xs:string" use="optional"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="WorkerServer">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="Collection" minOccurs="1" maxOccurs="unbounded"/>
             </xs:sequence>
             <xs:attribute name="enable" type="YesNoType" use="required"/>
             <xs:attribute name="shardid" use="required">
@@ -301,36 +325,6 @@
             </xs:attribute>
         </xs:complexType>
     </xs:element>
-    <xs:element name="Service">
-        <xs:complexType>
-            <xs:attribute name="name" type="xs:NCName" use="required"/>
-        </xs:complexType>
-    </xs:element>
-    <xs:element name="MasterAgent">
-        <xs:complexType>
-            <xs:sequence>
-                <xs:element ref="Aggregator" minOccurs="1" maxOccurs="unbounded"/>
-            </xs:sequence>
-            <xs:attribute name="enable" type="YesNoType" use="required"/>
-        </xs:complexType>
-    </xs:element>
-    <xs:element name="Aggregator">
-        <xs:complexType>
-            <xs:attribute name="name" type="xs:NCName" use="required"/>
-        </xs:complexType>
-    </xs:element>
-    <xs:element name="Corpus">
-        <xs:complexType>
-            <xs:sequence>
-                <xs:element ref="Collection" minOccurs="1" maxOccurs="unbounded"/>
-            </xs:sequence>
-        </xs:complexType>
-    </xs:element>
-    <xs:element name="Collection">
-        <xs:complexType>
-            <xs:attribute name="name" type="xs:NCName" use="required"/>
-        </xs:complexType>
-    </xs:element>
     <xs:element name="DistributedUtil">
         <xs:complexType>
             <xs:sequence>
@@ -341,6 +335,7 @@
     </xs:element>
     <xs:element name="ZooKeeper">
         <xs:complexType>
+            <xs:attribute name="disable" type="YesNoType" use="required"/>
             <xs:attribute name="servers" type="xs:string" use="required"/>
             <xs:attribute name="sessiontimeout" type="xs:integer" use="required"/>
         </xs:complexType>

@@ -29,11 +29,12 @@ public:
     virtual ~ScdDispatcher() {}
 
     /**
-     * Sharding & dispatching
-     * @param dir directory containing scd files
-     * @param docNum number of docs to be dispatched, 0 for all
+     * @param outScdFileList  [OUT] scd file list
+     * @param dir  scd directory
+     * @param docNum  number of docs to be dispatched, 0 for all
+     * @return
      */
-    bool dispatch(const std::string& dir, unsigned int docNum = 0);
+    bool dispatch(std::vector<std::string>& scdFileList, const std::string& dir, unsigned int docNum = 0);
 
 protected:
     bool getScdFileList(const std::string& dir, std::vector<std::string>& fileList);

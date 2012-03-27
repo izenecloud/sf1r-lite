@@ -48,7 +48,7 @@ private:
 
     boost::scoped_ptr<SearchCache> searchCache_; // for Master Node
 
-    friend class WorkerServer;
+    friend class SearchWorkerController;
     friend class IndexBundleActivator;
     friend class MiningBundleActivator;
     friend class ProductBundleActivator;

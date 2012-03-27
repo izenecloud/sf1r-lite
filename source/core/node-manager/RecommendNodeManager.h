@@ -35,8 +35,8 @@ protected:
         clusterPath_ = ZooKeeperNamespace::getSF1RClusterPath();
 
         topologyPath_ = ZooKeeperNamespace::getRecommendTopologyPath();
-        replicaPath_ = ZooKeeperNamespace::getRecommendReplicaPath(nodeInfo_.replicaId_);
-        nodePath_ = ZooKeeperNamespace::getRecommendNodePath(nodeInfo_.replicaId_, nodeInfo_.nodeId_);
+        replicaPath_ = ZooKeeperNamespace::getRecommendReplicaPath(sf1rTopology_.curNode_.replicaId_);
+        nodePath_ = ZooKeeperNamespace::getRecommendNodePath(sf1rTopology_.curNode_.replicaId_, sf1rTopology_.curNode_.nodeId_);
     }
 
     virtual void startMasterManager()

@@ -38,16 +38,17 @@ void ANDDocumentIterator::add(DocumentIterator* pDocIterator)
     }
 }
 
-void ANDDocumentIterator::df_ctf(
+void ANDDocumentIterator::df_cmtf(
     DocumentFrequencyInProperties& dfmap,
-    CollectionTermFrequencyInProperties& ctfmap)
+    CollectionTermFrequencyInProperties& ctfmap,
+    MaxTermFrequencyInProperties& maxtfmap)
 {
     DocumentIterator* pEntry;
     std::list<DocumentIterator*>::iterator iter = docIterList_.begin();
     for (; iter != docIterList_.end(); ++iter)
     {
         pEntry = (*iter);
-        pEntry->df_ctf(dfmap, ctfmap);
+        pEntry->df_cmtf(dfmap, ctfmap, maxtfmap);
     }
 }
 

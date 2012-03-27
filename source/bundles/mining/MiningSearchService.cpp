@@ -210,13 +210,13 @@ bool MiningSearchService::visitDoc(const std::string& collectionName, uint64_t w
     std::pair<sf1r::workerid_t, sf1r::docid_t> wd = net::aggregator::Util::GetWorkerAndDocId(wdocId);
     sf1r::workerid_t workerId = wd.first;
     sf1r::docid_t docId = wd.second;
-    bool ret = true;
 
     if (!bundleConfig_->isMasterAggregator_)
     {
-        return searchWorker_->visitDoc(docId, ret);
+        return searchWorker_->visitDoc(docId);
     }
 
+    bool ret = true;
     searchAggregator_->singleRequest(collectionName, "visitDoc", docId, ret, workerId);
     return ret;
 }

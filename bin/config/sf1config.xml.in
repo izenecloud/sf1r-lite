@@ -63,7 +63,7 @@
                Make sure unigram terms have been indexed for Property (LA for Indexing is "la_sia_with_unigram"), or search(retrieve) may fail.
           -->
           <Sia triggerqa="n" doccachenum="20000" searchcachenum="1000" filtercachenum="1000" mastersearchcachenum="1000" topknum="4000" knntopknum="30" knndist="32" sortcacheupdateinterval="1800"
-               encoding="UTF-8" wildcardtype="unigram" indexunigramproperty="n" unigramsearchmode="n" multilanggranularity="field"/>
+               encoding="UTF-8" wildcardtype="unigram" indexunigramproperty="n" unigramsearchmode="n" multilanggranularity="field" />
 
 
           <LanguageIdentifier dbpath="@ilplib_LANGUAGEIDENTIFIER_DB@"/>
@@ -183,13 +183,20 @@
         <settings mode="label" option="R+S+" specialchar="#" dictionarypath=""/>
       </Method>
 
+      <Method id="inner_la_cnall_sia_2" analysis="chinese" casesensitive="no" >
+        <!-- T2: maximum match (without overlapped segments) -->
+        <settings mode="label" option="R+S-V-T2" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
+      </Method>
       <Method id="inner_la_cnall_sia" analysis="chinese" casesensitive="no" >
+        <!-- T3: minimum match with overlapped segments -->
         <settings mode="label" option="R+S-V-T3" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
       <Method id="inner_la_cnall_ia" analysis="chinese" casesensitive="no" >
+        <!-- T4: minimum match integrated with unigrams -->
         <settings mode="label" option="R+S-V-T4" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
       <Method id="inner_la_cnall_sa" analysis="chinese" casesensitive="no" >
+        <!-- T5: minimum match without overlapped segments -->
         <settings mode="label" option="R+S-T5" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
 
@@ -211,50 +218,62 @@
   <Deployment>
     <BrokerAgent usecache="n" threadnum="50" enabletest="y" port="18181"/>
 
-    <!-- Distributed Topology (a SF1 node can work as Worker or Master or both).
-      clusterid : identity of the cluster
-      nodeid    : id of current node (sf1) in the cluster.
-      replicaid : id of current node (sf1) in the replication set.
-      shardid   : id of data shard (partition), also used as workerid.
-         * shardids (workerids) range from 1 to 'shardnum', without break.
-         * it's recommended to keep the shardid consistent with nodeid.
+    <!-- Distributed SF1R
+      Global settings (for all sf1r nodes in topology):
+        - clusterid: identity of the unique cluster of SF1R nodes for distributed sf1r.
+        - nodenum: total number of sf1r nodes in the cluster.
+        - shardnum: total number of data shard servers (workers) in the cluster. (known by Master)
+
+      Local settings (for current sf1r node):
+        - username:  user name logged on local host
+        - localhost: id address
+
+        - nodeid:    id of current sf1 node
+        - replicaid: id of replication set for current sf1 node
+        - shardid:   id of data shard, if current sf1 is enabled as Worker. used as workerid. (Worker)
+
+      notes: 
+        1) ids are started at 1
     -->
     <DistributedCommon clusterid="@LOCAL_HOST_USER_NAME@" username="@LOCAL_HOST_USER_NAME@" localhost="172.16.0.36"
                        workerport="18151" masterport="18131" datarecvport="18121" />
 
-    <DistributedTopology enable="y" type="search" nodenum="2" shardnum="2">
-      <CurrentNode replicaid="1" nodeid="1">
-        <MasterAgent enable="n">
-          <Aggregator name="b5mm"/>
-          <Aggregator name="intel"/>
-        </MasterAgent>
-        <WorkerAgent enable="n" shardid="1">
-          <Service name="b5mm"/>
-          <Service name="intel"/>
-        </WorkerAgent>
-        <Corpus>
-          <Collection name="b5mm"/>
-          <Collection name="b5ma"/>
-        </Corpus>
-      </CurrentNode>
+    <DistributedTopology enable="n" type="search" nodenum="2">
+      <CurrentSf1rNode nodeid="1" replicaid="1">
+        <!--master names for B5M are www|stage|beta-->
+        <MasterServer enable="y" name="undefined" shardnum="2">          
+          <!--for distributive collection, shardid is set to all as default-->
+          <Collection name="web" distributive="n" />
+          <Collection name="qa" distributive="n" />
+          <Collection name="b5mo" distributive="n" />
+          <Collection name="b5mc" distributive="n" />
+          <Collection name="b5mp" distributive="y" shardids="1,2" />
+        </MasterServer>
+
+        <WorkerServer enable="y" shardid="1">
+          <Collection name="web" />
+          <Collection name="b5mp" />
+        </WorkerServer>
+      </CurrentSf1rNode>
     </DistributedTopology>
 
-    <DistributedTopology enable="n" type="recommend" nodenum="2" shardnum="2">
-      <CurrentNode replicaid="1" nodeid="1">
-        <MasterAgent enable="y">
-          <Aggregator name="b5mm"/>
-          <Aggregator name="intel"/>
-        </MasterAgent>
-        <WorkerAgent enable="y" shardid="1">
-          <Service name="b5mm"/>
-          <Service name="intel"/>
-        </WorkerAgent>
-      </CurrentNode>
+    <DistributedTopology enable="n" type="recommend" nodenum="2">
+      <CurrentSf1rNode nodeid="1" replicaid="1">
+        <MasterServer enable="y" name="undefined" shardnum="1">
+          <Collection name="b5mo" distributive="n" />
+          <Collection name="b5mc" distributive="n" />
+          <Collection name="b5mp" distributive="y" />
+        </MasterServer>
+
+        <WorkerServer enable="y" shardid="1">
+          <Collection name="b5mp" />
+        </WorkerServer>
+      </CurrentSf1rNode>
     </DistributedTopology>
 
     <DistributedUtil>
-      <ZooKeeper servers="180.153.140.110:2181,180.153.140.111:2181,180.153.140.112:2181" sessiontimeout="2000"/>
-      <DFS type="hdfs" supportfuse="y" mountdir="/mnt/hdfs" server="localhost" port="9000"/>
+      <ZooKeeper disable="n" servers="180.153.140.110:2181,180.153.140.111:2181,180.153.140.112:2181" sessiontimeout="2000" />
+      <DFS type="hdfs" supportfuse="y" mountdir="/mnt/hdfs" server="localhost" port="9000" />
     </DistributedUtil>
   </Deployment>
 

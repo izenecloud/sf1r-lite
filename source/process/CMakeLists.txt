@@ -28,6 +28,7 @@ FILE(GLOB_RECURSE controller_SRC "controllers/*.cpp")
 FILE(GLOB_RECURSE parsers_SRC "parsers/*.cpp")
 FILE(GLOB_RECURSE renderers_SRC "renderers/*.cpp")
 FILE(GLOB_RECURSE log_server_SRC "log-server/*.cpp")
+FILE(GLOB_RECURSE distribute_SRC "distribute/*.cpp")
 
 FILE(GLOB cobra_process_SRC
   "Cobra*.cpp"
@@ -35,6 +36,7 @@ FILE(GLOB cobra_process_SRC
   ${controller_SRC}
   ${parsers_SRC}
   ${renderers_SRC}
+  ${distribute_SRC}
   )
 
 FILE(GLOB log_server_process_SRC
@@ -106,6 +108,7 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   json
   am
   lzo
+  aggregator
   msgpack
   zookeeper
   snappy

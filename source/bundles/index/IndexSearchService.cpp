@@ -1,9 +1,9 @@
 #include "IndexSearchService.h"
 
-#include <search-manager/SearchCache.h>
 #include <aggregator-manager/SearchWorker.h>
 #include <aggregator-manager/SearchAggregator.h>
 
+#include <common/SearchCache.h>
 #include <common/SFLogger.h>
 #include <common/type_defs.h>
 

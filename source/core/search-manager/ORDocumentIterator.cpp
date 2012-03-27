@@ -263,9 +263,10 @@ void ORDocumentIterator::doc_item(
     }
 }
 
-void ORDocumentIterator::df_ctf(
+void ORDocumentIterator::df_cmtf(
     DocumentFrequencyInProperties& dfmap,
-    CollectionTermFrequencyInProperties& ctfmap)
+    CollectionTermFrequencyInProperties& ctfmap,
+    MaxTermFrequencyInProperties& maxtfmap)
 {
     DocumentIterator* pEntry;
     std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();
@@ -273,7 +274,7 @@ void ORDocumentIterator::df_ctf(
     {
         pEntry = (*iter);
         if(pEntry)
-            pEntry->df_ctf(dfmap, ctfmap);
+            pEntry->df_cmtf(dfmap, ctfmap, maxtfmap);
     }
 }
 

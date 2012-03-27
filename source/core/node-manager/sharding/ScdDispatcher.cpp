@@ -23,11 +23,11 @@ ScdDispatcher::ScdDispatcher(const boost::shared_ptr<ScdSharder>& scdSharder)
     BOOST_ASSERT(scdSharder_);
 }
 
-bool ScdDispatcher::dispatch(const std::string& dir, unsigned int docNum)
+bool ScdDispatcher::dispatch(std::vector<std::string>& scdFileList, const std::string& dir, unsigned int docNum)
 {
     LOG(INFO) << "start SCD sharding";
 
-    std::vector<std::string> scdFileList;
+    scdFileList.clear();
     if (!getScdFileList(dir, scdFileList))
         return false;
 

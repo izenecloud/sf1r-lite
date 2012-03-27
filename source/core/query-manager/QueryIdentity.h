@@ -18,7 +18,6 @@ struct QueryIdentity
         : rankingType(RankingType::DefaultTextRanker)
         , start(0)
         , distActionType(0)
-        , searchingMode(0)
     {
     }
 
@@ -30,6 +29,9 @@ struct QueryIdentity
 
     /// @brief user id, todo, whole user info may be needed.
     std::string userId;
+
+    /// @brief searching mode information
+    SearchingModeInfo searchingMode;
 
     /// @brief ranking type, should be sorting mechanism in future
     RankingType::TextRankingType rankingType;
@@ -62,8 +64,6 @@ struct QueryIdentity
     /// action type of distributed search
     int8_t distActionType;
 
-    int8_t searchingMode;
-
     inline bool operator==(const QueryIdentity& other) const
     {
         return rankingType == other.rankingType
@@ -89,32 +89,14 @@ struct QueryIdentity
         return !operator==(other);
     }
 
-    DATA_IO_LOAD_SAVE(QueryIdentity, & query & userId & rankingType & laInfo
+    DATA_IO_LOAD_SAVE(QueryIdentity, & query & userId & searchingMode & rankingType & laInfo
             & properties & sortInfo & filterInfo & groupParam & rangeProperty
             & strExp & paramConstValueMap & paramPropertyValueMap & simHash
-            & start & distActionType & searchingMode);
-
-    template<class Archive>
-    void serialize(Archive& ar, const unsigned version)
-    {
-        ar & query;
-        ar & userId;
-        ar & rankingType;
-        ar & laInfo;
-        ar & properties;
-        ar & sortInfo;
-        ar & filterInfo;
-        ar & groupParam;
-        ar & rangeProperty;
-        ar & strExp;
-        ar & paramConstValueMap;
-        ar & paramPropertyValueMap;
-        ar & simHash;
-        ar & start;
-        ar & distActionType;
-        ar & searchingMode;
-    }
+            & start & distActionType);
 };
 
 } // namespace sf1r
+
+MAKE_FEBIRD_SERIALIZATION(sf1r::QueryIdentity)
+
 #endif // SF1R_QUERY_MANAGER_QUERY_IDENTITY_H

@@ -116,4 +116,5 @@ std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam);
 
 NS_FACETED_END
 
+MAKE_FEBIRD_SERIALIZATION(sf1r::faceted::GroupParam)
 #endif

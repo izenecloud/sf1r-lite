@@ -48,7 +48,10 @@ public:
 
     void doc_item(RankDocumentProperty& rankDocumentProperty);
 
-    void df_ctf(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties& ctfmap);
+    void df_cmtf(
+            DocumentFrequencyInProperties& dfmap,
+            CollectionTermFrequencyInProperties& ctfmap,
+            MaxTermFrequencyInProperties& maxtfmap);
 
     count_t tf();
 

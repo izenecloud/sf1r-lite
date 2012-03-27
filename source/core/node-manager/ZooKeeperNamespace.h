@@ -7,9 +7,13 @@
 #ifndef ZOOKEEPER_NAMESPACE_H_
 #define ZOOKEEPER_NAMESPACE_H_
 
-#include "NodeTypeDef.h"
+#include "Sf1rTopology.h"
+
 #include <util/kv2string.h>
+
 #include <sstream>
+
+#include <glog/logging.h>
 
 namespace sf1r {
 
@@ -52,6 +56,12 @@ namespace sf1r {
            |--- ...
 
       |--- Synchro                 # For synchronization task
+
+
+|--- B5M-[CLUSTERID]
+      |--- WWW
+      |--- Stage
+      |--- Beta
 
  *
  */

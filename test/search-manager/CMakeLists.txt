@@ -69,6 +69,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     t_NearbyPhraseDocumentIterator.cpp
     t_OrderedPhraseDocumentIterator.cpp
     t_FilterDocumentIterator.cpp
+    t_AllDocumentIterator.cpp
   )
   TARGET_LINK_LIBRARIES(t_search_manager 
     ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} 

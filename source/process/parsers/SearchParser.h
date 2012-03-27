@@ -124,9 +124,9 @@ public:
         return analyzerInfo_;
     }
 
-    SearchingMode::SearchingModeType searchingMode() const
+    SearchingModeInfo searchingModeInfo() const
     {
-        return searchingMode_;
+        return searchingModeInfo_;
     }
 
 private:
@@ -141,12 +141,12 @@ private:
     std::string taxonomyLabel_;
     std::string nameEntityType_;
     std::string nameEntityItem_;
-    SearchingMode::SearchingModeType searchingMode_;
     faceted::GroupParam::GroupLabelMap groupLabels_;
     faceted::GroupParam::AttrLabelVec attrLabels_;
     bool logKeywords_;
     std::vector<std::string> properties_;
     RankingType::TextRankingType rankingModel_;
+    SearchingModeInfo searchingModeInfo_;
     LanguageAnalyzerInfo analyzerInfo_;
 };
 

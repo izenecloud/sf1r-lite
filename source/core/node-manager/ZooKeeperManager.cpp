@@ -116,7 +116,7 @@ bool ZooKeeperManager::initZooKeeperNameSpace()
     if (zookeeper->isConnected())
     {
         // base znode (must be created firstly)
-        zookeeper->createZNode(ZooKeeperNamespace::getSF1RClusterPath()); //xxx, if existed?
+        zookeeper->createZNode(ZooKeeperNamespace::getSF1RClusterPath());
 
         // znode for synchro
         zookeeper->deleteZNode(ZooKeeperNamespace::getSynchroPath(), true); // clean

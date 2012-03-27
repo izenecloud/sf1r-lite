@@ -4,9 +4,9 @@
 #include <bundles/index/IndexBundleConfiguration.h>
 #include <bundles/recommend/RecommendSearchService.h>
 
+#include <common/SearchCache.h>
 #include <index-manager/IndexManager.h>
 #include <search-manager/SearchManager.h>
-#include <search-manager/SearchCache.h>
 #include <search-manager/PersonalizedSearchInfo.h>
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningManager.h>
@@ -202,7 +202,7 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
 
 /// Mining Search
 
-bool SearchWorker::getSimilarDocIdList(uint64_t& documentId, uint32_t& maxNum, SimilarDocIdListType& result)
+bool SearchWorker::getSimilarDocIdList(uint64_t documentId, uint32_t maxNum, SimilarDocIdListType& result)
 {
     // todo get all similar docs in global space?
     //return miningManager_->getSimilarDocIdList(documentId, maxNum, result);
@@ -224,20 +224,17 @@ bool SearchWorker::getSimilarDocIdList(uint64_t& documentId, uint32_t& maxNum, S
     return ret;
 }
 
-bool SearchWorker::clickGroupLabel(const ClickGroupLabelActionItem& actionItem, bool& ret)
+bool SearchWorker::clickGroupLabel(const ClickGroupLabelActionItem& actionItem)
 {
-    ret = miningManager_->clickGroupLabel(
+    return miningManager_->clickGroupLabel(
             actionItem.queryString_,
             actionItem.propName_,
             actionItem.groupPath_);
-
-    return ret;
 }
 
-bool SearchWorker::visitDoc(const uint32_t& docId, bool& ret)
+bool SearchWorker::visitDoc(const uint32_t& docId)
 {
-    ret = miningManager_->visitDoc(docId);
-    return ret;
+    return miningManager_->visitDoc(docId);
 }
 
 void SearchWorker::makeQueryIdentity(
@@ -250,7 +247,7 @@ void SearchWorker::makeQueryIdentity(
     identity.start = start;
     identity.searchingMode = item.searchingMode_;
 
-    switch (item.searchingMode_)
+    switch (item.searchingMode_.mode_)
     {
     case SearchingMode::KNN:
         miningManager_->GetSignatureForQuery(item, identity.simHash);
@@ -315,7 +312,7 @@ bool SearchWorker::getSearchResult_(
 
     std::vector<izenelib::util::UString> keywords;
     std::string newQuery;
-    if (actionOperation.actionItem_.searchingMode_ == SearchingMode::VERBOSE)
+    if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::VERBOSE)
     {
         if (pQA_->isQuestion(actionOperation.actionItem_.env_.queryString_))
         {
@@ -325,15 +322,11 @@ bool SearchWorker::getSearchResult_(
             actionOperation.actionItem_.env_.queryString_ = newQuery;
         }
     }
-    else if (actionOperation.actionItem_.searchingMode_ == SearchingMode::OR)
+    else if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::OR)
     {
         analyze_(actionOperation.actionItem_.env_.queryString_, keywords, false);
         assembleDisjunction(keywords, newQuery);
         actionOperation.actionItem_.env_.queryString_ = newQuery;
-    }
-    else if (actionOperation.actionItem_.searchingMode_ == SearchingMode::KNN)
-    {
-        //TODO
     }
 
     // Get Personalized Search information (user profile)
@@ -369,7 +362,7 @@ bool SearchWorker::getSearchResult_(
         startOffset = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
     }
 
-    if (actionOperation.actionItem_.searchingMode_ == SearchingMode::KNN)
+    if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::KNN)
     {
         if (identity.simHash.empty())
             miningManager_->GetSignatureForQuery(actionOperation.actionItem_, identity.simHash);
@@ -436,7 +429,7 @@ bool SearchWorker::getSearchResult_(
 
     // todo, remove duplication globally over all nodes?
     // Remove duplicated docs from the result if the option is on.
-    if (actionItem.searchingMode_ != SearchingMode::KNN)
+    if (actionItem.searchingMode_.mode_ != SearchingMode::KNN)
         removeDuplicateDocs(actionItem, resultItem);
 
     //set page info in resultItem t
@@ -557,7 +550,7 @@ bool SearchWorker::buildQuery(
     PersonalSearchInfo& personalSearchInfo
 )
 {
-    if (actionOperation.actionItem_.searchingMode_ == SearchingMode::KNN)
+    if (actionOperation.actionItem_.searchingMode_.mode_== SearchingMode::KNN)
         return true;
 
     CREATE_PROFILER ( constructQueryTree, "IndexSearchService", "processGetSearchResults: build query tree");

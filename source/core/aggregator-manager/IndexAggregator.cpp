@@ -9,8 +9,12 @@
 
 #include <glog/logging.h>
 
+#include <boost/filesystem.hpp>
+namespace bfs = boost::filesystem;
+
 namespace sf1r{
 
+static const char* SCD_BACKUP_DIR = "backup";
 
 bool IndexAggregator::distributedIndex(
         unsigned int numdoc,
@@ -26,19 +30,31 @@ bool IndexAggregator::distributedIndex(
     }
 
     boost::shared_ptr<ScdDispatcher> scdDispatcher(new BatchScdDispatcher(scdSharder, collectionName));
-    if(scdDispatcher->dispatch(masterScdPath, numdoc))
+    std::vector<std::string> outScdFileList;
+    if(!scdDispatcher->dispatch(outScdFileList, masterScdPath, numdoc))
     {
         return false;
     }
 
    // 2. send index request to multiple nodes
-   bool ret = true;
    LOG(INFO) << "start distributed indexing";
+   bool ret = true;
    this->distributeRequest(collectionName, "index", numdoc, ret);
 
    if (ret)
    {
-       // backup master
+       bfs::path bkDir = bfs::path(masterScdPath) / SCD_BACKUP_DIR;
+       bfs::create_directory(bkDir);
+       LOG(INFO) << "moving " << outScdFileList.size() << " SCD files to directory " << bkDir;
+       for (size_t i = 0; i < outScdFileList.size(); i++)
+       {
+           try {
+               bfs::rename(outScdFileList[i], bkDir / bfs::path(outScdFileList[i]).filename());
+           }
+           catch(const std::exception& e) {
+               LOG(WARNING) << "failed to move file: " << std::endl << outScdFileList[i] << std::endl << e.what();
+           }
+       }
    }
 
    return ret;
