@@ -56,7 +56,7 @@ void B5MPUueProcessor::Finish()
         working_dir = "./b5mp_generator_working";
     }
     boost::filesystem::remove_all(working_dir);
-    boost::filesystem::create_directires(working_dir);
+    boost::filesystem::create_directories(working_dir);
     std::string writer_file = working_dir+"/docs";
     izenelib::am::ssf::Writer<> writer(writer_file);
     writer.Open();
@@ -67,7 +67,7 @@ void B5MPUueProcessor::Finish()
     for(uint32_t i=0;i<scd_list.size();i++)
     {
         std::string scd_file = scd_list[i];
-        int scd_type = ScdParser::checkSCDType(scd_file);
+        //int scd_type = ScdParser::checkSCDType(scd_file);
         LOG(INFO)<<"Processing "<<scd_file<<std::endl;
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
@@ -110,10 +110,7 @@ void B5MPUueProcessor::Finish()
             if(it==o2p_map_.end())
             {
                 continue;
-                //if(scd_type==INSERT_SCD)
-                //{
-                    //from_to.to = sdocid;
-                //}
+                //this is a not valid doc
             }
             else
             {
@@ -157,25 +154,18 @@ void B5MPUueProcessor::Finish()
         ProductProperty new_product(product);
         for(uint32_t i=0;i<docs.size();i++)
         {
-            uint64_t flag;
+            uint64_t flag = 0;
             docs[i].getProperty("flag", flag);
+            ProductProperty pp(docs[i]);
             if(flag==FLAG_APPEND)
             {
-                ProductProperty pp(docs[i]);
                 new_product += pp;
             }
-        }
-        for(uint32_t i=0;i<docs.size();i++)
-        {
-            uint64_t flag;
-            docs[i].getProperty("flag", flag);
-            if(flag==FLAG_REMOVE)
+            else
             {
-                ProductProperty pp(docs[i]);
                 new_product -= pp;
             }
         }
-        product_db_->update(pid, new_product);
         int op_type = -1;
         if(product.itemcount==0 && new_product.itemcount>0)
         {
@@ -188,6 +178,11 @@ void B5MPUueProcessor::Finish()
         else if(product.itemcount>0 && new_product.itemcount==0)
         {
             op_type = DELETE_SCD;
+        }
+        else
+        {
+            //unexpected error
+            LOG(ERROR)<<"product value error , itemcount now "<<new_product.itemcount<<" , pid "<<pid<<std::endl;
         }
         if(op_type==INSERT_SCD)
         {
@@ -215,7 +210,9 @@ void B5MPUueProcessor::Finish()
             doc.property("Source") = new_usource;
             doc.property("itemcount") = (uint64_t)new_product.itemcount;
             doc.eraseProperty("flag");
+            doc.eraseProperty("uuid");
             b5mp_writer.Write(doc, INSERT_SCD);
+            product_db_->insert(pid, new_product);
             
         }
         else if(op_type==UPDATE_SCD)
@@ -245,6 +242,7 @@ void B5MPUueProcessor::Finish()
             if(need_update)
             {
                 b5mp_writer.Write(doc, UPDATE_SCD);
+                product_db_->update(pid, new_product);
             }
             
             
@@ -254,6 +252,7 @@ void B5MPUueProcessor::Finish()
             Document doc;
             doc.property("DOCID") = upid;
             b5mp_writer.Write(doc, DELETE_SCD);
+            product_db_->del(pid);
         }
     }
     b5mp_writer.Flush();

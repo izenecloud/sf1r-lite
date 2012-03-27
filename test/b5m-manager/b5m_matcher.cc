@@ -7,6 +7,7 @@
 #include <b5m-manager/similarity_matcher.h>
 #include <b5m-manager/uue_worker.h>
 #include <b5m-manager/b5mp_uue_processor.h>
+#include <b5m-manager/b5mc_scd_generator.h>
 #include <b5m-manager/log_server_handler.h>
 #include <b5m-manager/product_db.h>
 #include <b5m-manager/offer_db.h>
@@ -41,7 +42,6 @@ int main(int ac, char** av)
         ("category-regex,R", po::value<std::string>(), "specify category regex string")
         ("output-match,O", po::value<std::string>(), "specify output match path")
         ("cma-path,C", po::value<std::string>(), "manually specify cma path")
-        ("scd-generate,G", po::value<std::string>(), "generate b5mo b5mp scd files")
         ("logserver-config,L", po::value<std::string>(), "log server config string")
         ("exclude,E", "do not generate non matched categories")
         ("scd-split,P", "split scd files for each categories.")
@@ -59,6 +59,7 @@ int main(int ac, char** av)
     std::string scd_path;
     std::string b5mo;
     std::string b5mp;
+    std::string b5mc;
     std::string uue;
     std::string output_match;
     std::string knowledge_dir;
@@ -81,6 +82,9 @@ int main(int ac, char** av)
     if (vm.count("b5mp")) {
         b5mp = vm["b5mp"].as<std::string>();
     } 
+    if (vm.count("b5mc")) {
+        b5mp = vm["b5mc"].as<std::string>();
+    } 
     if (vm.count("uue")) {
         uue = vm["uue"].as<std::string>();
     } 
@@ -102,7 +106,6 @@ int main(int ac, char** av)
         std::string odb_path = vm["odb"].as<std::string>();
         std::cout << "open odb path: " << odb_path <<std::endl;
         odb.reset(new OfferDb(odb_path));
-        odb->open();
     } 
     if(vm.count("logserver-config"))
     {
@@ -241,12 +244,12 @@ int main(int ac, char** av)
     }
     else if(vm.count("uue-generate"))
     {
-        std::string output_dir = vm["scd-generate"].as<std::string>();
-        if( b5mo.empty() || uue.empty() || !logserver_config || !odb)
+        if( b5mo.empty() || uue.empty() || !odb)
         {
             return EXIT_FAILURE;
         }
-        UueGenerator generator(*logserver_config, odb.get());
+        if(!odb->open()) return EXIT_FAILURE;
+        UueGenerator generator(odb.get());
         if(!generator.Generate(b5mo, uue))
         {
             return EXIT_FAILURE;
@@ -267,40 +270,35 @@ int main(int ac, char** av)
             return EXIT_FAILURE;
         }
     }
-    //else if(vm.count("scd-generate"))
-    //{
-        //std::string output_dir = vm["scd-generate"].as<std::string>();
-        //if( scd_path.empty() || knowledge_dir.empty() || output_dir.empty() )
-        //{
-            //return EXIT_FAILURE;
-        //}
-        //ScdGenerator gen;
-        //if(vm.count("exclude"))
-        //{
-            //std::cout<<"scd generate exclude"<<std::endl;
-            //gen.SetExclude();
-        //}
-        //if(!gen.Load(knowledge_dir))
-        //{
-            //return EXIT_FAILURE;
-        //}
-        //if(!gen.Generate(scd_path, output_dir, work_dir))
-        //{
-            //return EXIT_FAILURE;
-        //}
-    //}
-    else if(vm.count("logserver-update"))
+    else if(vm.count("b5mc-generate"))
     {
-        if( uue.empty() || !logserver_config || !pdb )
+        if( !odb || scd_path.empty() || b5mc.empty())
         {
             return EXIT_FAILURE;
         }
-        bool reindex = false;
-        if(pdb->size()==0)
+        if(!odb->open()) return EXIT_FAILURE;
+        B5MCScdGenerator generator(odb.get());
+        if(!generator.Generate(scd_path, b5mc))
         {
-            reindex = true;
+            return EXIT_FAILURE;
         }
-        boost::shared_ptr<LogServerHandler> processor(new LogServerHandler(*logserver_config, reindex));
+    }
+    else if(vm.count("logserver-update"))
+    {
+        if( uue.empty() || !logserver_config || !odb )
+        {
+            return EXIT_FAILURE;
+        }
+        //bool reindex = false;
+        //if(pdb->size()==0)
+        //{
+            //reindex = true;
+        //}
+        boost::shared_ptr<LogServerHandler> processor(new LogServerHandler(*logserver_config, odb.get(), work_dir));
+        if(!processor->Open())
+        {
+            return EXIT_FAILURE;
+        }
         UueWorker<LogServerHandler> worker(processor.get());
         worker.Load(uue);
         if(!worker.BatchRun())

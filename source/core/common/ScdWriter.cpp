@@ -17,6 +17,7 @@ ScdWriter::~ScdWriter()
 void ScdWriter::Open_()
 {
     ofs_.open( (dir_+"/"+filename_).c_str() );
+    output_visitor_.SetOutStream(&ofs_);
 }
 
 std::string ScdWriter::GenSCDFileName( int op)
@@ -82,15 +83,9 @@ bool ScdWriter::Append(const Document& doc)
 //                 continue;
 //             }
 //         }
-        bool is_ustr = boost::apply_visitor( ustring_visitor_, it->second.getVariant());
-        if(!is_ustr)
-        {
-            ++it;
-            continue;
-        }
-        std::string value;
-        it->second.get<izenelib::util::UString>().convertString(value, izenelib::util::UString::UTF_8);
-        ofs_<<"<"<<it->first<<">"<<value<<std::endl;
+        ofs_<<"<"<<it->first<<">";
+        boost::apply_visitor( output_visitor_, it->second.getVariant());
+        ofs_<<std::endl;
         ++it;
     }
     return true;

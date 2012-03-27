@@ -87,30 +87,10 @@ bool B5MOScdGenerator::Generate(const std::string& scd_path, const std::string& 
     }
     typedef izenelib::util::UString UString;
     namespace bfs = boost::filesystem;
-    if(!bfs::exists(scd_path)) return false;
     bfs::create_directories(output_dir);
 
     std::vector<std::string> scd_list;
-    if( bfs::is_regular_file(scd_path) && boost::algorithm::ends_with(scd_path, ".SCD"))
-    {
-        scd_list.push_back(scd_path);
-    }
-    else if(bfs::is_directory(scd_path))
-    {
-        bfs::path p(scd_path);
-        bfs::directory_iterator end;
-        for(bfs::directory_iterator it(p);it!=end;it++)
-        {
-            if(bfs::is_regular_file(it->path()))
-            {
-                std::string file = it->path().string();
-                if(boost::algorithm::ends_with(file, ".SCD"))
-                {
-                    scd_list.push_back(file);
-                }
-            }
-        }
-    }
+    B5MHelper::GetScdList(scd_path, scd_list);
     if(scd_list.empty()) return false;
 
     ScdWriterController writer(output_dir);

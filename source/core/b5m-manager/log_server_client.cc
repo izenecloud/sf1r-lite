@@ -41,7 +41,7 @@ void LogServerClient::Update(const std::string& pid, const std::vector<std::stri
     uuidReq.param_.docidList_.resize(docid_list.size());
     for (uint32_t i = 0; i < docid_list.size(); i++)
     {
-        uuidReq.param_.docidList_.push_back(B5MHelper::StringToUint128(docid_list[i]));
+        uuidReq.param_.docidList_[i] = B5MHelper::StringToUint128(docid_list[i]);
     }
     conn.asynRequest(uuidReq);
 }

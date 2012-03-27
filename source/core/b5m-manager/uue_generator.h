@@ -16,7 +16,7 @@ namespace sf1r {
         UueGenerator(const LogServerConnectionConfig& config, OfferDb* odb);
         UueGenerator(OfferDb* odb);
 
-        bool Generator(const std::string& b5mo_scd, const std::string& result);
+        bool Generate(const std::string& b5mo_scd, const std::string& result);
 
     private:
         LogServerConnectionConfig logserver_config_;

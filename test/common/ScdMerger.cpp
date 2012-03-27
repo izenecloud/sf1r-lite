@@ -1,5 +1,6 @@
 #include <common/ScdParser.h>
 #include <common/ScdWriter.h>
+#include <common/ScdWriterController.h>
 #include <document-manager/Document.h>
 #include <iostream>
 #include <string>
@@ -50,7 +51,7 @@ public:
         bfs::create_directories(work_dir_);
     }
     
-    void Merge(const std::string& scdPath, const std::string& output_dir)
+    void Merge(const std::string& scdPath, const std::string& output_dir, bool i_only = true)
     {
         std::cout<<"Start merging, properties list : "<<std::endl;
         for(uint32_t i=0;i<propertyNameList_.size();i++)
@@ -68,56 +69,23 @@ public:
         {
             if (bfs::is_regular_file(itr->status()))
             {
-                std::string fileName = itr->path().filename().string();
-                if (parser.checkSCDFormat(fileName))
+                std::string file = itr->path().string();
+                if (parser.checkSCDFormat(file))
                 {
-                    scdList.push_back(itr->path().string());
-                    parser.load(scdPath+fileName);
-                }
-                else
-                {
-                    std::cout << "SCD File not valid " << fileName<<std::endl;
+                    scdList.push_back(file);
                 }
             }
         }
-        sort(scdList.begin(), scdList.end(), ScdParser::compareSCD);
-        vector<string>::iterator scd_it;
+        if(scdList.empty()) return;
+        std::sort(scdList.begin(), scdList.end(), ScdParser::compareSCD);
+        std::vector<std::string>::iterator scd_it;
         std::size_t n = 0;
-        std::size_t nscd = 0;
         std::cout<<"Total SCD count : "<<scdList.size()<<std::endl;
         for (scd_it = scdList.begin(); scd_it != scdList.end(); scd_it++)
         {
-            nscd++;
-            if(nscd%10==0)
-            {
-                std::cout<<"Process "<<nscd<<" Scds"<<std::endl;
-            }
-            size_t pos = scd_it ->rfind("/")+1;
-            string filename = scd_it ->substr(pos);
-            int type = 1;
-            std::cout << "Processing SCD file. " << bfs::path(*scd_it).stem() <<std::endl;
-
-            switch (parser.checkSCDType(*scd_it))
-            {
-            case INSERT_SCD:
-            {
-                type = 1;
-
-            }
-            break;
-            case DELETE_SCD:
-            {
-                type = 3;
-            }
-            break;
-            case UPDATE_SCD:
-            {
-                type = 2;
-            }
-            break;
-            default:
-                break;
-            }
+            std::cout<<"Processing "<<*scd_it<<std::endl;
+            int type = ScdParser::checkSCDType(*scd_it);
+            if(i_only && type!=INSERT_SCD) continue;
             parser.load(*scd_it);
             for (ScdParser::iterator doc_iter = parser.begin(propertyNameList_); doc_iter != parser.end(); ++doc_iter, ++n)
             {
@@ -157,7 +125,9 @@ public:
                 exit(EXIT_FAILURE);
             }
         }
-        ScdWriter scd_writer(output_dir, INSERT_SCD);
+        ScdWriter i_writer(output_dir, INSERT_SCD);
+        ScdWriter u_writer(output_dir, UPDATE_SCD);
+        ScdWriter d_writer(output_dir, DELETE_SCD);
         uint64_t key;
         std::vector<ValueType> value_list;
         
@@ -165,33 +135,41 @@ public:
         {
             std::sort(value_list.begin(), value_list.end());
             Document document;
+            int type = 0;
             for( uint32_t i=0;i<value_list.size();i++)
             {
                 ValueType& value = value_list[i];
-                if(value.type==3)
+                type = value.type;
+                if(value.type==DELETE_SCD)
                 {
                     document.clear();
+                    document.property("DOCID") = value.doc.property("DOCID");
                 }
-                else if(!document.hasProperty("DOCID"))
+                else if(value.type==UPDATE_SCD)
+                {
+                    document.copyPropertiesFromDocument(value.doc, true);
+                }
+                else if(value.type==INSERT_SCD)
                 {
                     document = value.doc;
                 }
-                else
-                {
-                    //document already exists, and type==I or U
-                    document.copyPropertiesFromDocument(value.doc, true);
-                    //if(value.type==2)
-                    //{
-                        //document.copyPropertiesFromDocument(value.doc, true);
-                    //}
-                }
             }
-            if(document.hasProperty("DOCID"))
+            if(type==INSERT_SCD)
             {
-                scd_writer.Append(document);
+                i_writer.Append(document);
+            }
+            else if(type==UPDATE_SCD)
+            {
+                u_writer.Append(document);
+            }
+            else if(type==DELETE_SCD)
+            {
+                d_writer.Append(document);
             }
         }
-        scd_writer.Close();
+        i_writer.Close();
+        u_writer.Close();
+        d_writer.Close();
         bfs::remove_all(working_file);
     }
     
@@ -221,10 +199,20 @@ int main(int argc, char** argv)
     std::string scdPath = argv[1];
     std::string properties = argv[2];
     std::string output_dir = argv[3];
+    bool i_only = true;
+    if(argc>=5)
+    {
+        std::string ionlyp = argv[4];
+        if(ionlyp == "--gen-all")
+        {
+            i_only = false;
+        }
+    }
+    std::cout<<"argc : "<<argc<<std::endl;
     std::vector<std::string> p_vector;
     boost::algorithm::split( p_vector, properties, boost::algorithm::is_any_of(",") );
     ScdMerger merger("./scd_merger_workdir", p_vector);
-    merger.Merge(scdPath, output_dir);
+    merger.Merge(scdPath, output_dir, i_only);
     bfs::remove_all("./scd_merger_workdir");
 }
 

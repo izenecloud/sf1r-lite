@@ -93,6 +93,7 @@ IndexWorker::IndexWorker(
     }
 
     createPropertyList_();
+    scd_writer_->SetFlushLimit(500);
 }
 
 IndexWorker::~IndexWorker()

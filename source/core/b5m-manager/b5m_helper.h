@@ -14,6 +14,7 @@ namespace sf1r {
         static const std::vector<std::string> B5M_PROPERTY_LIST;
         static const std::vector<std::string> B5MO_PROPERTY_LIST;
         static const std::vector<std::string> B5MP_PROPERTY_LIST;
+        static const std::vector<std::string> B5MC_PROPERTY_LIST;
 
         static uint128_t StringToUint128(const std::string& str)
         {

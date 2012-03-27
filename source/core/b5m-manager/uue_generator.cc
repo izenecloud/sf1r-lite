@@ -13,7 +13,7 @@ UueGenerator::UueGenerator(OfferDb* odb)
 {
 }
 
-bool UueGenerator::Generator(const std::string& b5mo_scd, const std::string& result)
+bool UueGenerator::Generate(const std::string& b5mo_scd, const std::string& result)
 {
     //if(!LogServerClient::Init(logserver_config_))
     //{
@@ -29,6 +29,17 @@ bool UueGenerator::Generator(const std::string& b5mo_scd, const std::string& res
     std::vector<std::string> scd_list;
     B5MHelper::GetScdList(b5mo_scd, scd_list);
     if(scd_list.empty()) return false;
+    //LOG(INFO)<<"loading odb to memory"<<std::endl;
+    //boost::unordered_map<std::string, std::string> mem_odb;
+    //OfferDb::cursor_type it = odb_->begin();
+    //std::string key;
+    //std::string value;
+    //while(true)
+    //{
+        //if(!odb_->fetch(it, key, value)) break;
+        //mem_odb.insert(std::make_pair(key, value));
+        //odb_->iterNext(it);
+    //}
 
     std::ofstream ofs(result.c_str());
     for(uint32_t i=0;i<scd_list.size();i++)
@@ -71,7 +82,7 @@ bool UueGenerator::Generator(const std::string& b5mo_scd, const std::string& res
             {
                 if(odb_->get(sdocid, old_spid)) continue;
                 uue.from_to.to = spid;
-                odb_->insert(sdocid, spid);
+                odb_->update(sdocid, spid);
             }
             else if(scd_type==UPDATE_SCD)
             {

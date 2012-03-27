@@ -15,3 +15,6 @@ const std::vector<std::string> B5MHelper::B5MP_PROPERTY_LIST = boost::assign::li
   ("Source")("Category")("Url")("Price")
   ("Attribute")("Title")("Content")("itemcount")("manmade");
 
+const std::vector<std::string> B5MHelper::B5MC_PROPERTY_LIST = boost::assign::list_of("DOCID")("DATE")("ComUrl")
+  ("ProdDocid")("ProdName")("Source")("UserName")
+  ("UsefulVoteTotal")("UsefulVote")("Content")("Integration")("Advantage")("Disadvantage")("Title")("City")("Score")("uuid");

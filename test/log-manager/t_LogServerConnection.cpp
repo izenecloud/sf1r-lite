@@ -110,28 +110,28 @@ void t_RpcLogServerCreateTestData()
     uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a1"));
     uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a2"));
     uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a3"));
-    uuidReq.param_.uuid_ = Utilities::uuidToUint128("143c7d31-702e-4fac-b57b-84d35205ae60");
+    uuidReq.param_.uuid_ = Utilities::uuidToUint128("143c7d31702e4facb57b84d35205ae60");
     conn.asynRequest(uuidReq);
     std::cout << "sent rpc request: " << uuidReq.param_.toString() << std::endl;
 
     uuidReq.param_.docidList_.clear();
     uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a4"));
     uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a5"));
-    uuidReq.param_.uuid_ = Utilities::uuidToUint128("cda5545a-b3f4-4e81-9b85-2d25b0416997");
+    uuidReq.param_.uuid_ = Utilities::uuidToUint128("cda5545ab3f44e819b852d25b0416997");
     conn.asynRequest(uuidReq);
     std::cout << "sent rpc request: " << uuidReq.param_.toString() << std::endl;
 
     uuidReq.param_.docidList_.clear();
     uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a6"));
     uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a7"));
-    uuidReq.param_.uuid_ = Utilities::uuidToUint128("eb1ba5f4-a558-4a66-806d-74cb6a321932");
+    uuidReq.param_.uuid_ = Utilities::uuidToUint128("eb1ba5f4a5584a66806d74cb6a321932");
     conn.asynRequest(uuidReq);
     std::cout << "sent rpc request: " << uuidReq.param_.toString() << std::endl;
 
     uuidReq.param_.docidList_.clear();
     uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a8"));
     uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a9"));
-    uuidReq.param_.uuid_ = Utilities::uuidToUint128("dcdce290-b73d-467b-aa44-755cce035c79");
+    uuidReq.param_.uuid_ = Utilities::uuidToUint128("dcdce290b73d467baa44755cce035c79");
     conn.asynRequest(uuidReq);
     std::cout << "sent rpc request: " << uuidReq.param_.toString() << std::endl;
 
@@ -166,21 +166,21 @@ void t_RpcLogServerUpdateTestData()
     uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a3")); //
     uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a4"));
     uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a5"));
-    uuidReq.param_.uuid_ = Utilities::uuidToUint128("366f5977-aa73-412f-83f3-66fbe06a6b40");
+    uuidReq.param_.uuid_ = Utilities::uuidToUint128("366f5977aa73412f83f366fbe06a6b40");
     conn.asynRequest(uuidReq);
     std::cout << "sent rpc request: " << uuidReq.param_.toString() << std::endl;
 
     uuidReq.param_.docidList_.clear();
     uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a6"));
     uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a7"));
-    uuidReq.param_.uuid_ = Utilities::uuidToUint128("6d5f82db-0ef2-4d5f-8b54-cdc29e97e5b1");
+    uuidReq.param_.uuid_ = Utilities::uuidToUint128("6d5f82db0ef24d5f8b54cdc29e97e5b1");
     conn.asynRequest(uuidReq);
     std::cout << "sent rpc request: " << uuidReq.param_.toString() << std::endl;
 
     uuidReq.param_.docidList_.clear();
     uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a8"));
     uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128("04e0f81ab8119642b93bbf339369a4a9"));
-    uuidReq.param_.uuid_ = Utilities::uuidToUint128("4857bcda-22e4-4a87-964d-17ffcf024d16");
+    uuidReq.param_.uuid_ = Utilities::uuidToUint128("4857bcda22e44a87964d17ffcf024d16");
     conn.asynRequest(uuidReq);
     std::cout << "sent rpc request: " << uuidReq.param_.toString() << std::endl;
 
@@ -211,7 +211,7 @@ void t_ScdStorage()
     scdDocReq.param_.docid_ = Utilities::md5ToUint128("1111");
     scdDocReq.param_.content_ =
             "<DOCID>1111\n"
-            "<UUID>143c7d31-702e-4fac-b57b-84d35205ae60\n"
+            "<UUID>143c7d31702e4facb57b84d35205ae60\n"
             "<ProdName>儿童创意美工.巧手贴画\n";
     scdDocReq.param_.collection_ = collection;
     conn.asynRequest(scdDocReq);
@@ -219,7 +219,7 @@ void t_ScdStorage()
     scdDocReq.param_.docid_ = Utilities::md5ToUint128("1112");
     scdDocReq.param_.content_ =
             "<DOCID>1112\n"
-            "<UUID>cda5545a-b3f4-4e81-9b85-2d25b0416997\n"
+            "<UUID>cda5545ab3f44e819b852d25b0416997\n"
             "<ProdName>全脑智能数学A5――幼儿智能全面开发应用操作课本\n";
     scdDocReq.param_.collection_ = collection;
     conn.asynRequest(scdDocReq);
@@ -227,7 +227,7 @@ void t_ScdStorage()
     scdDocReq.param_.docid_ = Utilities::md5ToUint128("1113");
     scdDocReq.param_.content_ =
             "<DOCID>1113\n"
-            "<UUID>eb1ba5f4-a558-4a66-806d-74cb6a321932\n"
+            "<UUID>eb1ba5f4a5584a66806d74cb6a321932\n"
             "<ProdName>百诺 旅游天使 A2681TB1 镁合金 三脚架\n";
     scdDocReq.param_.collection_ = collection;
     conn.asynRequest(scdDocReq);
