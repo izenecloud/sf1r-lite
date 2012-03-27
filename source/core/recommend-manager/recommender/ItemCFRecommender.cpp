@@ -1,44 +1,36 @@
 #include "ItemCFRecommender.h"
-#include "ItemFilter.h"
-#include "../common/RecommendParam.h"
-#include "../common/RecommendItem.h"
 
 #include <glog/logging.h>
 
 namespace sf1r
 {
 
-ItemCFRecommender::ItemCFRecommender(
-    ItemManager& itemManager,
-    ItemCFManager& itemCFManager
-)
-    : Recommender(itemManager)
-    , itemCFManager_(itemCFManager)
+ItemCFRecommender::ItemCFRecommender(ItemCFManager& itemCFManager)
+    : itemCFManager_(itemCFManager)
 {
 }
 
 bool ItemCFRecommender::recommendImpl_(
     RecommendParam& param,
-    ItemFilter& filter,
     std::vector<RecommendItem>& recItemVec
 )
 {
     idmlib::recommender::RecommendItemVec results;
-    itemCFManager_.recommend(param.limit, param.inputItemIds, results, &filter);
+    itemCFManager_.recommend(param.inputParam.limit, param.inputParam.inputItemIds,
+                             results, &param.inputParam.itemFilter);
     recItemVec.insert(recItemVec.end(), results.begin(), results.end());
 
     return true;
 }
 
 bool ItemCFRecommender::recommendFromItemWeight_(
-    int limit,
-    const ItemWeightMap& itemWeightMap,
-    ItemFilter& filter,
+    RecommendInputParam& inputParam,
     std::vector<RecommendItem>& recItemVec
 )
 {
     idmlib::recommender::RecommendItemVec results;
-    itemCFManager_.recommend(limit, itemWeightMap, results, &filter);
+    itemCFManager_.recommend(inputParam.limit, inputParam.itemWeightMap,
+                             results, &inputParam.itemFilter);
     recItemVec.insert(recItemVec.end(), results.begin(), results.end());
 
     return true;

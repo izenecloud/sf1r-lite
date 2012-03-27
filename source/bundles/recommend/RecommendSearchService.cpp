@@ -41,7 +41,9 @@ bool RecommendSearchService::recommend(
     if (!convertIds_(param))
         return false;
 
+    param.condition.itemManager_ = &itemManager_;
     Recommender* recommender = recommenderFactory_.getRecommender(param.type);
+
     if (recommender && recommender->recommend(param, recItemVec))
         return getRecommendItems_(param, recItemVec);
 
@@ -50,7 +52,7 @@ bool RecommendSearchService::recommend(
 
 bool RecommendSearchService::convertIds_(RecommendParam& param)
 {
-    return convertItemId_(param.inputItems, param.inputItemIds) &&
+    return convertItemId_(param.inputItems, param.inputParam.inputItemIds) &&
            convertItemId_(param.includeItems, param.includeItemIds) &&
            convertItemId_(param.excludeItems, param.excludeItemIds);
 }

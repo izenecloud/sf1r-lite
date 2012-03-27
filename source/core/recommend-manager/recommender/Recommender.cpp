@@ -1,8 +1,4 @@
 #include "Recommender.h"
-#include "ItemFilter.h"
-#include "../item/ItemManager.h"
-#include "../common/RecommendParam.h"
-#include "../common/RecommendItem.h"
 
 #include <algorithm> // std::min
 
@@ -11,24 +7,25 @@ namespace
 using namespace sf1r;
 
 void copyIncludeItems(
-    RecommendParam& param,
+    const std::vector<itemid_t>& includeItemIds,
+    int& limitNum,
     std::vector<RecommendItem>& recItemVec
 )
 {
     recItemVec.clear();
 
-    const std::size_t includeNum = std::min(param.includeItemIds.size(),
-                                            static_cast<std::size_t>(param.limit));
+    const std::size_t includeNum = std::min(includeItemIds.size(),
+                                            static_cast<std::size_t>(limitNum));
     RecommendItem recItem;
     recItem.weight_ = 1;
 
     for (std::size_t i = 0; i < includeNum; ++i)
     {
-        recItem.item_.setId(param.includeItemIds[i]);
+        recItem.item_.setId(includeItemIds[i]);
         recItemVec.push_back(recItem);
     }
 
-    param.limit -= includeNum;
+    limitNum -= includeNum;
 }
 
 }
@@ -36,25 +33,24 @@ void copyIncludeItems(
 namespace sf1r
 {
 
-Recommender::Recommender(ItemManager& itemManager)
-    : itemManager_(itemManager)
-{
-}
-
 bool Recommender::recommend(
     RecommendParam& param,
     std::vector<RecommendItem>& recItemVec
 )
 {
-    if (param.limit <= 0)
+    int& limit = param.inputParam.limit;
+    if (limit <= 0)
         return false;
 
-    copyIncludeItems(param, recItemVec);
-    if (param.limit == 0)
+    copyIncludeItems(param.includeItemIds, limit, recItemVec);
+    if (limit == 0)
         return true;
 
-    ItemFilter filter(itemManager_, param);
-    return recommendImpl_(param, filter, recItemVec);
+    ItemFilter& filter = param.inputParam.itemFilter;
+    filter.insert(param.includeItemIds.begin(), param.includeItemIds.end());
+    filter.insert(param.excludeItemIds.begin(), param.excludeItemIds.end());
+
+    return recommendImpl_(param, recItemVec);
 }
 
 } // namespace sf1r

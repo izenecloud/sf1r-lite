@@ -17,15 +17,11 @@ namespace sf1r
 class BAQRecommender : public Recommender
 {
 public:
-    BAQRecommender(
-        ItemManager& itemManager,
-        QueryClickCounter& queryPurchaseCounter
-    );
+    BAQRecommender(QueryClickCounter& queryPurchaseCounter);
 
 protected:
     virtual bool recommendImpl_(
         RecommendParam& param,
-        ItemFilter& filter,
         std::vector<RecommendItem>& recItemVec
     );
 

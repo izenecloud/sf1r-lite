@@ -1,7 +1,6 @@
 #include "BOBRecommender.h"
 #include "UserEventFilter.h"
 #include "../storage/VisitManager.h"
-#include "../common/RecommendParam.h"
 #include <bundles/recommend/RecommendSchema.h>
 
 #include <glog/logging.h>
@@ -10,12 +9,11 @@ namespace sf1r
 {
 
 BOBRecommender::BOBRecommender(
-    ItemManager& itemManager,
     ItemCFManager& itemCFManager,
     const UserEventFilter& userEventFilter,
     VisitManager& visitManager
 )
-    : ItemCFRecommender(itemManager, itemCFManager)
+    : ItemCFRecommender(itemCFManager)
     , userEventFilter_(userEventFilter)
     , visitManager_(visitManager)
 {
@@ -23,7 +21,6 @@ BOBRecommender::BOBRecommender(
 
 bool BOBRecommender::recommendImpl_(
     RecommendParam& param,
-    ItemFilter& filter,
     std::vector<RecommendItem>& recItemVec
 )
 {
@@ -31,13 +28,13 @@ bool BOBRecommender::recommendImpl_(
         return false;
 
     if (!param.userIdStr.empty() &&
-        !userEventFilter_.filter(param.userIdStr, param.inputItemIds, filter))
+        !userEventFilter_.filter(param.userIdStr, param.inputParam.inputItemIds, param.inputParam.itemFilter))
     {
         LOG(ERROR) << "failed to filter user event for user id " << param.userIdStr;
         return false;
     }
 
-    if (! ItemCFRecommender::recommendImpl_(param, filter, recItemVec))
+    if (! ItemCFRecommender::recommendImpl_(param, recItemVec))
         return false;
 
     setReasonEvent_(recItemVec, RecommendSchema::BROWSE_EVENT);
@@ -47,7 +44,8 @@ bool BOBRecommender::recommendImpl_(
 
 bool BOBRecommender::getBrowseItems_(RecommendParam& param) const
 {
-    if (! param.inputItemIds.empty())
+    std::vector<itemid_t>& inputItemIds = param.inputParam.inputItemIds;
+    if (! inputItemIds.empty())
         return true;
 
     if (param.userIdStr.empty() ||
@@ -66,7 +64,8 @@ bool BOBRecommender::getBrowseItems_(RecommendParam& param) const
 
     if (visitSession.sessionId_ == param.sessionIdStr)
     {
-        param.inputItemIds.assign(visitSession.itemSet_.begin(), visitSession.itemSet_.end());
+        inputItemIds.assign(visitSession.itemSet_.begin(),
+                            visitSession.itemSet_.end());
     }
 
     return true;

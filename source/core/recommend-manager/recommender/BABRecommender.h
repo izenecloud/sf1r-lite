@@ -16,15 +16,11 @@ namespace sf1r
 class BABRecommender : public ItemCFRecommender
 {
 public:
-    BABRecommender(
-        ItemManager& itemManager,
-        ItemCFManager& itemCFManager
-    );
+    BABRecommender(ItemCFManager& itemCFManager);
 
 protected:
     virtual bool recommendImpl_(
         RecommendParam& param,
-        ItemFilter& filter,
         std::vector<RecommendItem>& recItemVec
     );
 };

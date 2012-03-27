@@ -14,7 +14,6 @@ namespace sf1r
 {
 
 RecommenderFactory::RecommenderFactory(
-    ItemManager& itemManager,
     ItemIdGenerator& itemIdGenerator,
     VisitManager& visitManager,
     PurchaseManager& purchaseManager,
@@ -39,14 +38,14 @@ RecommenderFactory::RecommenderFactory(
     recTypeMap_["BOR"] = BASED_ON_RANDOM;
     recTypeMap_["BAQ"] = BUY_AFTER_QUERY;
 
-    recommenders_[FREQUENT_BUY_TOGETHER] = new FBTRecommender(itemManager, orderManager);
-    recommenders_[BUY_ALSO_BUY] = new BABRecommender(itemManager, itemCFManager);
-    recommenders_[VIEW_ALSO_VIEW] = new VAVRecommender(itemManager, coVisitManager);
-    recommenders_[BASED_ON_EVENT] = new BOERecommender(itemManager, itemCFManager, userEventFilter_);
-    recommenders_[BASED_ON_BROWSE_HISTORY] = new BOBRecommender(itemManager, itemCFManager, userEventFilter_, visitManager);
-    recommenders_[BASED_ON_SHOP_CART] = new BOSRecommender(itemManager, itemCFManager, userEventFilter_, cartManager);
-    recommenders_[BASED_ON_RANDOM] = new BORRecommender(itemManager, userEventFilter_, itemIdGenerator);
-    recommenders_[BUY_AFTER_QUERY] = new BAQRecommender(itemManager, queryPurchaseCounter);
+    recommenders_[FREQUENT_BUY_TOGETHER] = new FBTRecommender(orderManager);
+    recommenders_[BUY_ALSO_BUY] = new BABRecommender(itemCFManager);
+    recommenders_[VIEW_ALSO_VIEW] = new VAVRecommender(coVisitManager);
+    recommenders_[BASED_ON_EVENT] = new BOERecommender(itemCFManager, userEventFilter_);
+    recommenders_[BASED_ON_BROWSE_HISTORY] = new BOBRecommender(itemCFManager, userEventFilter_, visitManager);
+    recommenders_[BASED_ON_SHOP_CART] = new BOSRecommender(itemCFManager, userEventFilter_, cartManager);
+    recommenders_[BASED_ON_RANDOM] = new BORRecommender(userEventFilter_, itemIdGenerator);
+    recommenders_[BUY_AFTER_QUERY] = new BAQRecommender(queryPurchaseCounter);
 }
 
 RecommenderFactory::~RecommenderFactory()

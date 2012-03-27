@@ -995,8 +995,8 @@ bool RecommendController::parseRecommendParam(RecommendParam& param)
     }
 
     izenelib::driver::Value& resourceValue = request()[Keys::resource];
-    param.limit = asUintOr(resourceValue[Keys::max_count],
-                           kDefaultRecommendCount);
+    param.inputParam.limit = asUintOr(resourceValue[Keys::max_count],
+                                      kDefaultRecommendCount);
 
     if (! (value2ItemIdVec(Keys::input_items, param.inputItems) &&
            value2ItemIdVec(Keys::include_items, param.includeItems) &&

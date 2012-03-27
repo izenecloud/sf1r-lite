@@ -283,7 +283,7 @@ void RecommendBundleActivator::createClickCounter_()
 
 void RecommendBundleActivator::createRecommender_()
 {
-    recommenderFactory_.reset(new RecommenderFactory(*itemManager_, *itemIdGenerator_,
+    recommenderFactory_.reset(new RecommenderFactory(*itemIdGenerator_,
                                                      *visitManager_, *purchaseManager_,
                                                      *cartManager_, *orderManager_,
                                                      *eventManager_, *rateManager_,

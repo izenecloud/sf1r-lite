@@ -1,9 +1,6 @@
 #include "BORRecommender.h"
-#include "ItemFilter.h"
 #include "UserEventFilter.h"
 #include "../item/ItemIdGenerator.h"
-#include "../common/RecommendParam.h"
-#include "../common/RecommendItem.h"
 
 #include <glog/logging.h>
 
@@ -13,12 +10,10 @@ namespace sf1r
 {
 
 BORRecommender::BORRecommender(
-    ItemManager& itemManager,
     const UserEventFilter& userEventFilter,
     const ItemIdGenerator& itemIdGenerator
 )
-    : Recommender(itemManager)
-    , userEventFilter_(userEventFilter)
+    : userEventFilter_(userEventFilter)
     , itemIdGenerator_(itemIdGenerator)
 {
     rand_.seed(std::time(NULL));
@@ -26,15 +21,15 @@ BORRecommender::BORRecommender(
 
 bool BORRecommender::recommendImpl_(
     RecommendParam& param,
-    ItemFilter& filter,
     std::vector<RecommendItem>& recItemVec
 )
 {
-    const std::vector<itemid_t>& inputItemIds = param.inputItemIds;
+    std::vector<itemid_t>& inputItemIds = param.inputParam.inputItemIds;
+    ItemFilter& filter = param.inputParam.itemFilter;
     filter.insert(inputItemIds.begin(), inputItemIds.end());
 
     if (!param.userIdStr.empty() &&
-        !userEventFilter_.filter(param.userIdStr, param.inputItemIds, filter))
+        !userEventFilter_.filter(param.userIdStr, inputItemIds, filter))
     {
         LOG(ERROR) << "failed to filter user event for user id " << param.userIdStr;
         return false;
@@ -48,8 +43,8 @@ bool BORRecommender::recommendImpl_(
     RecommendItem recItem;
     recItem.weight_ = 1;
 
-    const int maxInsertNum = param.limit;
-    const int maxTryNum = param.limit << 1;
+    const int maxInsertNum = param.inputParam.limit;
+    const int maxTryNum = maxInsertNum << 1;
     int insertNum = 0;
     int tryNum = 0;
 

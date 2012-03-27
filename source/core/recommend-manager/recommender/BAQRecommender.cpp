@@ -1,23 +1,15 @@
 #include "BAQRecommender.h"
-#include "ItemFilter.h"
-#include "../common/RecommendParam.h"
-#include "../common/RecommendItem.h"
 
 namespace sf1r
 {
 
-BAQRecommender::BAQRecommender(
-    ItemManager& itemManager,
-    QueryClickCounter& queryPurchaseCounter
-)
-    : Recommender(itemManager)
-    , queryPurchaseCounter_(queryPurchaseCounter)
+BAQRecommender::BAQRecommender(QueryClickCounter& queryPurchaseCounter)
+    : queryPurchaseCounter_(queryPurchaseCounter)
 {
 }
 
 bool BAQRecommender::recommendImpl_(
     RecommendParam& param,
-    ItemFilter& filter,
     std::vector<RecommendItem>& recItemVec
 )
 {
@@ -28,8 +20,9 @@ bool BAQRecommender::recommendImpl_(
 
     std::vector<itemid_t> itemIds;
     std::vector<ClickCounter::freq_type> freqs;
-    clickCounter.getFreqClick(param.limit, itemIds, freqs);
+    clickCounter.getFreqClick(param.inputParam.limit, itemIds, freqs);
 
+    ItemFilter& filter = param.inputParam.itemFilter;
     RecommendItem recItem;
     const int itemNum = itemIds.size();
 

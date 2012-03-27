@@ -17,15 +17,11 @@ class OrderManager;
 class FBTRecommender : public Recommender
 {
 public:
-    FBTRecommender(
-        ItemManager& itemManager,
-        OrderManager& orderManager
-    );
+    FBTRecommender(OrderManager& orderManager);
 
 protected:
     virtual bool recommendImpl_(
         RecommendParam& param,
-        ItemFilter& filter,
         std::vector<RecommendItem>& recItemVec
     );
 

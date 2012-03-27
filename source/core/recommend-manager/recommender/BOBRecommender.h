@@ -19,7 +19,6 @@ class BOBRecommender : public ItemCFRecommender
 {
 public:
     BOBRecommender(
-        ItemManager& itemManager,
         ItemCFManager& itemCFManager,
         const UserEventFilter& userEventFilter,
         VisitManager& visitManager
@@ -28,7 +27,6 @@ public:
 protected:
     virtual bool recommendImpl_(
         RecommendParam& param,
-        ItemFilter& filter,
         std::vector<RecommendItem>& recItemVec
     );
 

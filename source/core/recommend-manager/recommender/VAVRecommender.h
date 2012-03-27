@@ -9,7 +9,6 @@
 #define VAV_RECOMMENDER_H
 
 #include "Recommender.h"
-#include "../common/RecTypes.h"
 
 namespace sf1r
 {
@@ -17,15 +16,11 @@ namespace sf1r
 class VAVRecommender : public Recommender
 {
 public:
-    VAVRecommender(
-        ItemManager& itemManager,
-        CoVisitManager& coVisitManager
-    );
+    VAVRecommender(CoVisitManager& coVisitManager);
 
 protected:
     virtual bool recommendImpl_(
         RecommendParam& param,
-        ItemFilter& filter,
         std::vector<RecommendItem>& recItemVec
     );
 

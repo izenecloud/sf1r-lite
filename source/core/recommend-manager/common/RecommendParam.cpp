@@ -10,8 +10,8 @@ namespace sf1r
 
 RecommendParam::RecommendParam()
     : type(RECOMMEND_TYPE_NUM)
-    , limit(0)
     , queryClickFreq(0)
+    , inputParam(&condition)
 {
     // DOCID property is a must in recommendation result
     selectRecommendProps.push_back(DOCID);
@@ -20,7 +20,7 @@ RecommendParam::RecommendParam()
 
 bool RecommendParam::check(std::string& errorMsg) const
 {
-    if (limit <= 0)
+    if (inputParam.limit <= 0)
     {
         errorMsg = "Require a positive value in request[resource][max_count].";
         return false;

@@ -9,6 +9,7 @@
 
 #include "RecTypes.h"
 #include "ItemCondition.h"
+#include "RecommendInputParam.h"
 
 #include <string>
 #include <vector>
@@ -24,14 +25,11 @@ struct RecommendParam
 
     RecommendType type;
 
-    int limit;
-    std::string sessionIdStr;
-    ItemCondition condition;
-
     std::string query;
     int queryClickFreq;
 
     std::string userIdStr;
+    std::string sessionIdStr;
     std::vector<std::string> inputItems;
     std::vector<std::string> includeItems;
     std::vector<std::string> excludeItems;
@@ -39,9 +37,11 @@ struct RecommendParam
     std::vector<std::string> selectRecommendProps;
     std::vector<std::string> selectReasonProps;
 
-    std::vector<itemid_t> inputItemIds;
     std::vector<itemid_t> includeItemIds;
     std::vector<itemid_t> excludeItemIds;
+
+    ItemCondition condition;
+    RecommendInputParam inputParam;
 };
 
 } // namespace sf1r

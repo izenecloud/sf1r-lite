@@ -1,36 +1,29 @@
 #include "VAVRecommender.h"
-#include "ItemFilter.h"
-#include "../common/RecommendParam.h"
-#include "../common/RecommendItem.h"
 
 #include <glog/logging.h>
 
 namespace sf1r
 {
 
-VAVRecommender::VAVRecommender(
-    ItemManager& itemManager,
-    CoVisitManager& coVisitManager
-)
-    : Recommender(itemManager)
-    , coVisitManager_(coVisitManager)
+VAVRecommender::VAVRecommender(CoVisitManager& coVisitManager)
+    : coVisitManager_(coVisitManager)
 {
 }
 
 bool VAVRecommender::recommendImpl_(
     RecommendParam& param,
-    ItemFilter& filter,
     std::vector<RecommendItem>& recItemVec
 )
 {
-    if (param.inputItemIds.empty())
+    if (param.inputParam.inputItemIds.empty())
     {
         LOG(ERROR) << "failed to recommend for empty input items";
         return false;
     }
 
     std::vector<itemid_t> results;
-    coVisitManager_.getCoVisitation(param.limit, param.inputItemIds[0], results, &filter);
+    coVisitManager_.getCoVisitation(param.inputParam.limit, param.inputParam.inputItemIds[0],
+                                    results, &param.inputParam.itemFilter);
 
     RecommendItem recItem;
     recItem.weight_ = 1;
