@@ -74,8 +74,13 @@ bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bu
             PropertyConfig propertyConfig;
             propertyConfig.propertyName_ = *propertyIter;
             IndexBundleSchema::const_iterator it = bundleConfig.indexSchema_.find(propertyConfig);
+
+            if(!bundleConfig.searchAnalyzer_.empty())
+            {
+                analysisInfo.analyzerId_ = bundleConfig.searchAnalyzer_;
+            }
             if (it != bundleConfig.indexSchema_.end() &&
-                it->isIndex() && it->getIsFilter())
+                it->isIndex() && it->getIsFilter() && !it->isAnalyzed())
             {
                 analysisInfo.analyzerId_ = "la_sia";
                 analysisInfo.tokenizerNameList_.insert("tok_divide");

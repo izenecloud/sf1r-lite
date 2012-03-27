@@ -16,7 +16,7 @@ int main(int argc, char** argv)
         std::cout << "[" << fp.docid << "]{";
         std::ostringstream oss;
         oss << hex << setfill('0');
-        for (uint32_t j = FpType::FP_SIZE - 1; j >= 0; j--)
+        for (uint32_t j = SimHash::FP_SIZE - 1; j >= 0; j--)
             oss << setw(16) << fp.fp.desc[j];
         std::cout << oss.str() << "," << fp.length << "}" << std::endl;
     }

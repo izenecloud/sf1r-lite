@@ -199,7 +199,7 @@
         <!-- T5: minimum match without overlapped segments -->
         <settings mode="label" option="R+S-T5" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
-
+      <Method id="la_sia_without_overlap" analysis="multilang" advoption="default,inner_la_korall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_sa" />
       <Method id="la_sia" analysis="multilang" advoption="default,inner_la_korall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_sia"/>
       <Method id="la_sia_with_unigram" analysis="multilang" advoption="default,inner_la_korall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_ia"/>
 

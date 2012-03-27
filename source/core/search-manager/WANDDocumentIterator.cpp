@@ -100,7 +100,7 @@ void WANDDocumentIterator::set_ub(const UpperBoundInProperties& ubmap)
                 {
                     DocumentIterator* pDocIter = it->second;
                     float ub = term_iter->second;
-                    std::pair<std::string, float> pro_ub = std::make_pair(currentProperty, ub);
+                    std::pair<propertyid_t, float> pro_ub = std::make_pair(index, ub);
                     dociterUb_[pDocIter] = pro_ub;
                 }
             }
@@ -192,7 +192,7 @@ void WANDDocumentIterator::initDocIteratorQueue()
     }
 }
 
-bool WANDDocumentIterator::termUpperBound(DocumentIterator* pDocIter, std::pair<std::string, float>& prop_ub)
+bool WANDDocumentIterator::termUpperBound(DocumentIterator* pDocIter, std::pair<propertyid_t, float>& prop_ub)
 {
     const_dociter_iterator const_iter = dociterUb_.find(pDocIter);
     if(const_iter == dociterUb_.end())
@@ -204,8 +204,8 @@ bool WANDDocumentIterator::termUpperBound(DocumentIterator* pDocIter, std::pair<
 bool WANDDocumentIterator::findPivot()
 {
     float sumUB = 0.0F; //sum of upper bounds of all terms
-    std::multimap<docid_t, std::pair<std::string, float> > docUBPair;
-    typedef std::map<docid_t, std::pair<std::string, float> >::const_iterator const_iter;
+    std::multimap<docid_t, std::pair<propertyid_t, float> > docUBPair;
+    typedef std::map<docid_t, std::pair<propertyid_t, float> >::const_iterator const_iter;
     size_t nIteratorNum = pDocIteratorQueue_->size();
 
     for (size_t i = 0; i < nIteratorNum; ++i)
@@ -214,17 +214,16 @@ bool WANDDocumentIterator::findPivot()
         if(pDocIterator)
         {
             docid_t docId = pDocIterator->doc();
-            std::pair<std::string, float> prop_ub;
+            std::pair<propertyid_t, float> prop_ub;
             termUpperBound(pDocIterator, prop_ub);
-            docUBPair.insert(pair<docid_t, std::pair<std::string, float> >(docId, prop_ub));
+            docUBPair.insert(pair<docid_t, std::pair<propertyid_t, float> >(docId, prop_ub));
         }
     }
 
     const_iter map_iter = docUBPair.begin();
     for(; map_iter != docUBPair.end(); map_iter++)
     {
-        const std::string& currentProperty = (map_iter->second).first;
-        size_t index = getIndexOfProperty_(currentProperty);
+        size_t index = (map_iter->second).first;
         sumUB += (map_iter->second).second * propertyWeightList_[index];
         if(sumUB > currThreshold_)
         {
