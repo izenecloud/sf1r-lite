@@ -63,7 +63,7 @@
                Make sure unigram terms have been indexed for Property (LA for Indexing is "la_sia_with_unigram"), or search(retrieve) may fail.
           -->
           <Sia triggerqa="n" doccachenum="20000" searchcachenum="1000" filtercachenum="1000" mastersearchcachenum="1000" topknum="4000" knntopknum="30" knndist="32" sortcacheupdateinterval="1800"
-               encoding="UTF-8" wildcardtype="unigram" indexunigramproperty="n" unigramsearchmode="n" multilanggranularity="field"/>
+               encoding="UTF-8" wildcardtype="unigram" indexunigramproperty="n" unigramsearchmode="n" multilanggranularity="field" />
 
 
           <LanguageIdentifier dbpath="@ilplib_LANGUAGEIDENTIFIER_DB@"/>
@@ -183,13 +183,20 @@
         <settings mode="label" option="R+S+" specialchar="#" dictionarypath=""/>
       </Method>
 
+      <Method id="inner_la_cnall_sia_2" analysis="chinese" casesensitive="no" >
+        <!-- T2: maximum match (without overlapped segments) -->
+        <settings mode="label" option="R+S-V-T2" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
+      </Method>
       <Method id="inner_la_cnall_sia" analysis="chinese" casesensitive="no" >
+        <!-- T3: minimum match with overlapped segments -->
         <settings mode="label" option="R+S-V-T3" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
       <Method id="inner_la_cnall_ia" analysis="chinese" casesensitive="no" >
+        <!-- T4: minimum match integrated with unigrams -->
         <settings mode="label" option="R+S-V-T4" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
       <Method id="inner_la_cnall_sa" analysis="chinese" casesensitive="no" >
+        <!-- T5: minimum match without overlapped segments -->
         <settings mode="label" option="R+S-T5" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
 
