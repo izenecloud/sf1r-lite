@@ -100,7 +100,8 @@ void WANDDocumentIterator::set_ub(const UpperBoundInProperties& ubmap)
                 {
                     DocumentIterator* pDocIter = it->second;
                     float ub = term_iter->second;
-                    std::pair<propertyid_t, float> pro_ub = std::make_pair(index, ub);
+                    propertyid_t propertyId = indexPropertyIdList_[index];
+                    std::pair<propertyid_t, float> pro_ub = std::make_pair(propertyId, ub);
                     dociterUb_[pDocIter] = pro_ub;
                 }
             }
@@ -223,7 +224,8 @@ bool WANDDocumentIterator::findPivot()
     const_iter map_iter = docUBPair.begin();
     for(; map_iter != docUBPair.end(); map_iter++)
     {
-        size_t index = (map_iter->second).first;
+        propertyid_t prop_id = (map_iter->second).first;
+        size_t index = getIndexOfPropertyId_(prop_id);
         sumUB += (map_iter->second).second * propertyWeightList_[index];
         if(sumUB > currThreshold_)
         {

@@ -127,7 +127,7 @@ protected:
 
     std::vector<double> propertyWeightList_;
 
-    std::vector<std::map<propertyid_t,DocumentIterator*> > docIteratorList_;
+    std::vector<std::map<unsigned int,DocumentIterator*> > docIteratorList_;
 
     DocumentIteratorQueue* pDocIteratorQueue_;
 
