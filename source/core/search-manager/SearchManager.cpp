@@ -465,9 +465,11 @@ bool SearchManager::search(
                 groupFilterBuilder_->createFilter(actionOperation.actionItem_.groupParam_));
     }
 
+    bool ret = false;
+
     try
     {
-        doSearch_(
+        ret = doSearch_(
             isWandSearch,
             actionOperation,
             docIdList,
@@ -527,7 +529,7 @@ bool SearchManager::search(
         return false;
     }
     if(pSorter) delete pSorter;
-    return true;
+    return ret;
 }
 
 
@@ -617,7 +619,7 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
 
         START_PROFILER( inserttoqueue )
         scoreItemQueue->insert(scoreItem);
-        if( isWandSearch && scoreItemQueue->size() == heapSize )
+        if( isWandSearch && scoreItemQueue->size() == (unsigned)heapSize )
             pWandDocIterator->set_threshold((scoreItemQueue->top()).score);
         STOP_PROFILER( inserttoqueue )
 
@@ -692,7 +694,7 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
         std::fill(rankScoreList.begin(), rankScoreList.end(), 1.0F);
     }
 #endif
-    return true;
+    return count > 0? true:false;
 }
 
 
