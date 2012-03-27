@@ -85,7 +85,7 @@ public:
         {
             std::cout<<"Processing "<<*scd_it<<std::endl;
             int type = ScdParser::checkSCDType(*scd_it);
-            if(i_only && type!=INSERT_SCD) continue;
+            //if(i_only && type!=INSERT_SCD) continue;
             parser.load(*scd_it);
             for (ScdParser::iterator doc_iter = parser.begin(propertyNameList_); doc_iter != parser.end(); ++doc_iter, ++n)
             {
@@ -139,19 +139,21 @@ public:
             for( uint32_t i=0;i<value_list.size();i++)
             {
                 ValueType& value = value_list[i];
-                type = value.type;
                 if(value.type==DELETE_SCD)
                 {
                     document.clear();
                     document.property("DOCID") = value.doc.property("DOCID");
+                    type = value.type;
                 }
                 else if(value.type==UPDATE_SCD)
                 {
                     document.copyPropertiesFromDocument(value.doc, true);
+                    type = value.type;
                 }
                 else if(value.type==INSERT_SCD)
                 {
                     document = value.doc;
+                    type = value.type;
                 }
             }
             if(type==INSERT_SCD)
@@ -160,11 +162,21 @@ public:
             }
             else if(type==UPDATE_SCD)
             {
-                u_writer.Append(document);
+                if(i_only)
+                {
+                    i_writer.Append(document);
+                }
+                else
+                {
+                    u_writer.Append(document);
+                }
             }
             else if(type==DELETE_SCD)
             {
-                d_writer.Append(document);
+                if(!i_only)
+                {
+                    d_writer.Append(document);
+                }
             }
         }
         i_writer.Close();
