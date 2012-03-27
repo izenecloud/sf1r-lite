@@ -96,7 +96,7 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
                 p->first.convertString(property_name, izenelib::util::UString::UTF_8);
                 doc[property_name] = p->second;
             }
-            if(doc["Category"].length()==0 || doc["Title"].length()==0)
+            if(doc["Category"].length()==0 || doc["Title"].length()==0 || doc["Source"].length()==0)
             {
                 continue;
             }
@@ -120,6 +120,12 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
             SimilarityMatcherAttach attach;
             attach.category = doc["Category"];
             attach.price = price;
+            UString id_str = doc["Source"];
+            id_str.append(UString("|", UString::UTF_8));
+            id_str.append(doc["Title"]);
+            id_str.append(UString("|", UString::UTF_8));
+            id_str.append(price.ToUString());
+            attach.id = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(id_str);
 
             std::vector<std::string> terms;
             std::vector<double> weights;
