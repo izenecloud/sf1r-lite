@@ -1116,6 +1116,21 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     params.GetString("Sia/encoding", encoding);
     downCase(encoding);
     IndexBundleConfiguration& indexBundleConfig = *collectionMeta.indexBundleConfig_;
+    std::string searchAnalyzer;
+    params.GetString("Sia/searchanalyzer", searchAnalyzer);
+    if(!searchAnalyzer.empty())
+    {
+        if ((SF1Config::get()->laConfigIdNameMap_.find(searchAnalyzer)) == SF1Config::get()->laConfigIdNameMap_.end()) {
+            throw XmlConfigParserException("Undefined analyzer configuration id, " + searchAnalyzer);
+        }
+
+        /// TODO, add a hidden alias here
+        AnalysisInfo analysisInfo;
+        analysisInfo.analyzerId_ = searchAnalyzer;
+        SF1Config::get()->analysisPairList_.insert(analysisInfo);
+    }
+
+    indexBundleConfig.searchAnalyzer_ = searchAnalyzer;
     indexBundleConfig.encoding_ = parseEncodingType(encoding);
     params.GetString("Sia/wildcardtype", indexBundleConfig.wildcardType_, "unigram");
     params.Get("Sia/indexunigramproperty", indexBundleConfig.bIndexUnigramProperty_);
