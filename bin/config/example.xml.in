@@ -47,6 +47,7 @@
 <!--
       <Parameter>
         <IndexStrategy autorebuild="n" logcreateddoc="n" />
+        <Sia searchanalyzer="la_sia_without_overlap"/>
       </Parameter>
 -->
     </IndexBundle>

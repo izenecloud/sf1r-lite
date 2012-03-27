@@ -45,6 +45,11 @@ public:
         std::string& language
     ) const;
 
+    std::string getSearchAnalyzer() const
+    {
+        return searchAnalyzer_;
+    }
+
     std::string indexSCDPath() const
     {
         return collPath_.getScdPath() + "index/";
@@ -154,6 +159,8 @@ public:
 
     /// @brief Configurations for RankingManager
     RankingManagerConfig rankingManagerConfig_;
+
+    std::string searchAnalyzer_;
 };
 }
 
