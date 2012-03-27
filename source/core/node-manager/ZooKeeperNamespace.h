@@ -8,8 +8,12 @@
 #define ZOOKEEPER_NAMESPACE_H_
 
 #include "Sf1rTopology.h"
+
 #include <util/kv2string.h>
+
 #include <sstream>
+
+#include <glog/logging.h>
 
 namespace sf1r {
 

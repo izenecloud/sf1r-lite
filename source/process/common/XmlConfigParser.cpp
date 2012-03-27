@@ -713,7 +713,7 @@ void SF1Config::parseDistributedTopology(
 
         Sf1rTopology& sf1rTopology = topologyConfig.sf1rTopology_;
         sf1rTopology.clusterId_ = distributedCommonConfig_.clusterId_;
-        getAttribute(topology, "nodenum", sf1rTopology.nodeNum_, false);
+        getAttribute(topology, "nodenum", sf1rTopology.nodeNum_);
 
         Sf1rNode& sf1rNode = sf1rTopology.curNode_;
         sf1rNode.userName_ = distributedCommonConfig_.userName_;
@@ -728,10 +728,6 @@ void SF1Config::parseDistributedTopology(
         Sf1rNodeMaster& sf1rNodeMaster = sf1rNode.master_;
         sf1rNodeMaster.masterPort_ = distributedCommonConfig_.masterPort_;
         parseNodeMaster(getUniqChildElement(sf1rNodeElem, "MasterServer", false), sf1rNodeMaster);
-        if (sf1rTopology.nodeNum_ == 0)
-        {
-            sf1rTopology.nodeNum_ =  sf1rNodeMaster.totalShardNum_;
-        }
 
         Sf1rNodeWorker& sf1rNodeWorker = sf1rNode.worker_;
         sf1rNodeWorker.workerPort_ = distributedCommonConfig_.workerPort_;

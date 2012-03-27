@@ -8,7 +8,7 @@ namespace sf1r
 
 RecommendMasterManager::RecommendMasterManager()
 {
-    CLASSNAME = "[RecommendMasterManager]";
+    CLASSNAME = "RecommendMasterManager";
 }
 
 bool RecommendMasterManager::init()

@@ -221,9 +221,11 @@ int MasterManagerBase::detectWorkers()
                         // check if shard id is reduplicated with existed node
                         if (workerMap_[shardid]->nodeId_ != nodeid)
                         {
-                            workerMap_[shardid]->worker_.isGood_ = false;
-                            std::cout <<"Error, shardid "<<shardid<<" for Node "<<nodeid
-                                      <<" is the same with Node "<<workerMap_[shardid]->nodeId_<<std::endl;
+                            std::stringstream ss;
+                            ss << "[" << CLASSNAME << "] conflict detected: shardid " << shardid
+                               << " is configured for both node " << nodeid << " and node" << workerMap_[shardid]->nodeId_ << endl;
+
+                            throw std::runtime_error(ss.str());
                         }
                         else
                         {
@@ -266,7 +268,8 @@ int MasterManagerBase::detectWorkers()
                     }
 
                     // xxx check more info?
-                    std::cout <<CLASSNAME<<" detected "<<workerMap_[shardid]->toString()<<std::endl;
+                    LOG (INFO) << CLASSNAME << " detected worker " << workerMap_[shardid]->worker_.shardId_ << " "
+                               << workerMap_[shardid]->host_ << ":" << workerMap_[shardid]->worker_.workerPort_ << std::endl;
                     detected ++;
                     if (workerMap_[shardid]->worker_.isGood_)
                         good ++;
@@ -290,14 +293,14 @@ int MasterManagerBase::detectWorkers()
     if (detected >= sf1rTopology_.curNode_.master_.totalShardNum_)
     {
         masterState_ = MASTER_STATE_STARTED;
-        std::cout<<CLASSNAME<<" all Workers are detected "<<sf1rTopology_.curNode_.master_.totalShardNum_
-                 <<" (good "<<good<<")"<<std::endl;
+        LOG (INFO) << CLASSNAME << " detected " << sf1rTopology_.curNode_.master_.totalShardNum_
+                   << " all workers (good " << good << ")" << std::endl;
     }
     else
     {
         masterState_ = MASTER_STATE_STARTING_WAIT_WORKERS;
-        std::cout<<CLASSNAME<<" detected "<<detected
-                 <<" worker(s) (good "<<good<<"), all "<<sf1rTopology_.curNode_.master_.totalShardNum_<<" - waiting"<<std::endl;
+        LOG (INFO) << CLASSNAME << " detected " << detected << " workers (good " << good
+                   << "), expected " << sf1rTopology_.curNode_.master_.totalShardNum_ << std::endl;
     }
 
     // update config
