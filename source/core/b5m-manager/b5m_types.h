@@ -139,6 +139,80 @@ namespace sf1r {
         {
         }
     };
+
+    struct BuueFrom
+    {
+        BuueFrom(){}
+
+        BuueFrom(const std::string& p1, const std::string& p2)
+        :docid(p1), from_uuid(p2)
+        {
+        }
+
+        std::string docid;
+        std::string from_uuid;
+    };
+
+    struct UueFromTo
+    {
+        std::string from;
+        std::string to;
+    };
+
+    struct UueItem
+    {
+        std::string docid;
+        UueFromTo from_to;
+    };
+
+    struct CompareUueFrom
+    {
+        bool operator()(const UueItem& u1, const UueItem& u2)
+        {
+            return u1.from_to.from < u2.from_to.from;
+        }
+    };
+
+    struct CompareUueTo
+    {
+        bool operator()(const UueItem& u1, const UueItem& u2)
+        {
+            return u1.from_to.to < u2.from_to.to;
+        }
+    };
+
+    enum {BUUE_APPEND, BUUE_REMOVE};
+
+    struct BuueItem
+    {
+        //BuueItem(){}
+
+
+        //BuueItem(const std::string& p1, const std::string& p2, const std::string& p3)
+        //:to_uuid(p1), from(1, BuueFrom(p2, p3))
+        //{
+        //}
+
+        int type;
+        std::string pid;
+        std::vector<std::string> docid_list;
+
+        //std::string to_uuid;
+        //std::vector<BuueFrom> from;
+        //bool operator<(const BuueItem& other) const
+        //{
+            //return to_uuid<other.to_uuid;
+        //}
+
+        //BuueItem& operator+=(const BuueItem& other)
+        //{
+            //from.insert(from.end(), other.from.begin(), other.from.end());
+            //return *this;
+        //}
+    };
+
+
+
 }
 
 #endif

@@ -3,6 +3,7 @@
 #include "b5m_helper.h"
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <am/sequence_file/ssfr.h>
 #include <glog/logging.h>
 #include <common/ScdParser.h>
@@ -42,33 +43,13 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
     }
 
     namespace bfs = boost::filesystem;
-    if(!bfs::exists(scd_path)) return false;
     std::vector<std::string> scd_list;
-    if( bfs::is_regular_file(scd_path) && boost::algorithm::ends_with(scd_path, ".SCD"))
-    {
-        scd_list.push_back(scd_path);
-    }
-    else if(bfs::is_directory(scd_path))
-    {
-        bfs::path p(scd_path);
-        bfs::directory_iterator end;
-        for(bfs::directory_iterator it(p);it!=end;it++)
-        {
-            if(bfs::is_regular_file(it->path()))
-            {
-                std::string file = it->path().string();
-                if(boost::algorithm::ends_with(file, ".SCD"))
-                {
-                    scd_list.push_back(file);
-                }
-            }
-        }
-    }
+    B5MHelper::GetScdList(scd_path, scd_list);
     if(scd_list.empty()) return false;
 
     std::string work_dir = knowledge_dir+"/work_dir";
 
-    boost::filesystem::remove_all(work_dir);
+    //boost::filesystem::remove_all(work_dir);
     boost::filesystem::create_directories(work_dir);
     std::string dd_container = work_dir +"/dd_container";
     std::string group_table_file = work_dir +"/group_table";
@@ -84,6 +65,8 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
     }
     uint32_t docid = 1;
     std::vector<ValueType> values(1);
+    std::vector<uint32_t> new_id_list;
+    boost::unordered_set<uint32_t> new_id_set;
 
     for(uint32_t i=0;i<scd_list.size();i++)
     {
@@ -91,13 +74,14 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
         LOG(INFO)<<"Processing "<<scd_file<<std::endl;
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
+        int scd_type = ScdParser::checkSCDType(scd_file);
         uint32_t n=0;
         for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
           doc_iter!= parser.end(); ++doc_iter, ++n)
         {
             if(n%10000==0)
             {
-                LOG(INFO)<<"Find Product Documents "<<n<<std::endl;
+                LOG(INFO)<<"Find Documents "<<n<<std::endl;
             }
             izenelib::util::UString oid;
             izenelib::util::UString title;
@@ -112,7 +96,7 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
                 p->first.convertString(property_name, izenelib::util::UString::UTF_8);
                 doc[property_name] = p->second;
             }
-            if(doc["Category"].length()==0 || doc["Title"].length()==0)
+            if(doc["Category"].length()==0 || doc["Title"].length()==0 || doc["Source"].length()==0)
             {
                 continue;
             }
@@ -136,6 +120,12 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
             SimilarityMatcherAttach attach;
             attach.category = doc["Category"];
             attach.price = price;
+            UString id_str = doc["Source"];
+            id_str.append(UString("|", UString::UTF_8));
+            id_str.append(doc["Title"]);
+            id_str.append(UString("|", UString::UTF_8));
+            id_str.append(price.ToUString());
+            attach.id = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(id_str);
 
             std::vector<std::string> terms;
             std::vector<double> weights;
@@ -146,6 +136,8 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
                 continue;
             }
             dd.InsertDoc(docid, terms, weights, attach);
+            //new_id_list.push_back(docid);
+            new_id_set.insert(docid);
             ValueType value;
             doc["DOCID"].convertString(value.soid, UString::UTF_8);
             value.title = doc["Title"];
@@ -160,22 +152,36 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
     for(uint32_t gid=0;gid<group_info.size();gid++)
     {
         const std::vector<uint32_t>& in_group = group_info[gid];
-        if(in_group.size()<2) continue;
-        std::vector<ValueType> vec(in_group.size());
+        //if(in_group.size()<2) continue;
+        std::vector<uint32_t> new_in_group;
         for(uint32_t i=0;i<in_group.size();i++)
         {
-            vec[i] = values[in_group[i]];
+            if(new_id_set.find(in_group[i])!=new_id_set.end())
+            {
+                new_in_group.push_back(in_group[i]);
+            }
+        }
+        if(new_in_group.empty()) continue;
+        std::vector<ValueType> vec(new_in_group.size());
+        for(uint32_t i=0;i<new_in_group.size();i++)
+        {
+            vec[i] = values[new_in_group[i]];
         }
         std::stable_sort(vec.begin(), vec.end());
-        std::string spid = vec[0].soid;
-        std::string sptitle;
-        vec[0].title.convertString(sptitle, UString::UTF_8);
-        for(uint32_t i=1;i<vec.size();i++)
+
+        izenelib::util::UString pid_text("groupid-"+boost::lexical_cast<std::string>(gid), izenelib::util::UString::UTF_8);
+        uint128_t pid = izenelib::util::HashFunction<izenelib::util::UString>::generateHash128(pid_text);
+        std::string pid_str = B5MHelper::Uint128ToString(pid);
+        //std::string spid = vec[0].soid;
+        //std::string sptitle;
+        //vec[0].title.convertString(sptitle, UString::UTF_8);
+        for(uint32_t i=0;i<vec.size();i++)
         {
             std::string soid = vec[i].soid;
             std::string stitle;
             vec[i].title.convertString(stitle, UString::UTF_8);
-            ofs<<soid<<","<<spid<<","<<stitle<<","<<sptitle<<std::endl;
+            boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
+            ofs<<soid<<","<<pid_str<<","<<boost::posix_time::to_iso_string(now)<<","<<stitle<<std::endl;
         }
     }
     ofs.close();

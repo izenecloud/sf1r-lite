@@ -17,6 +17,7 @@ ScdWriter::~ScdWriter()
 void ScdWriter::Open_()
 {
     ofs_.open( (dir_+"/"+filename_).c_str() );
+    output_visitor_.SetOutStream(&ofs_);
 }
 
 std::string ScdWriter::GenSCDFileName( int op)
@@ -51,13 +52,13 @@ std::string ScdWriter::GenSCDFileName( int op)
     return ss.str();
 }
 
-void ScdWriter::Append(const Document& doc)
+bool ScdWriter::Append(const Document& doc)
 {
     const static std::string DOCID = "DOCID";
     Document::property_const_iterator docid_it = doc.findProperty(DOCID);
     if(docid_it == doc.propertyEnd())
     {
-        return;
+        return false;
     }
     if(!ofs_.is_open())
     {
@@ -82,17 +83,12 @@ void ScdWriter::Append(const Document& doc)
 //                 continue;
 //             }
 //         }
-        bool is_ustr = boost::apply_visitor( ustring_visitor_, it->second.getVariant());
-        if(!is_ustr)
-        {
-            ++it;
-            continue;
-        }
-        std::string value;
-        it->second.get<izenelib::util::UString>().convertString(value, izenelib::util::UString::UTF_8);
-        ofs_<<"<"<<it->first<<">"<<value<<std::endl;
+        ofs_<<"<"<<it->first<<">";
+        boost::apply_visitor( output_visitor_, it->second.getVariant());
+        ofs_<<std::endl;
         ++it;
     }
+    return true;
 }
 
 bool ScdWriter::Append(const SCDDoc& doc)

@@ -103,6 +103,10 @@ public:
         return pTermDocReader_->freq();
     }
 
+    void set_ub(float ub){
+        ub_ = ub;
+    }
+
     termid_t termId() {return termId_;}
 
     unsigned int termIndex() {return termIndex_;}
@@ -148,6 +152,9 @@ protected:
     unsigned int df_;
 
     bool readPositions_;
+
+    float ub_;
+    friend class WANDDocumentIterator;
 };
 
 }

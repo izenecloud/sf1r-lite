@@ -4,27 +4,31 @@
 #include <string>
 #include <vector>
 #include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
 #include <boost/regex.hpp>
 #include <configuration-manager/LogServerConnectionConfig.h>
 #include <log-manager/LogServerConnection.h>
+#include "b5m_types.h"
+#include "offer_db.h"
 
 namespace sf1r {
     class LogServerHandler {
     public:
-        LogServerHandler();
+        LogServerHandler(const LogServerConnectionConfig& config, OfferDb* odb, const std::string& work_dir);
 
-        void SetLogServerConfig(const LogServerConnectionConfig& config)
-        {
-            logserver_config_ = config;
-        }
+        bool Open();
 
-        bool Send(const std::string& scd_path, const std::string& work_dir = "");
-        bool QuickSend(const std::string& scd_path);
+        void Process(const BuueItem& item);
 
-    private:
-        void Post_(LogServerConnection& conn, const std::string& suuid, const std::vector<std::string>& sdocname_list);
+        void Finish();
+
     private:
         LogServerConnectionConfig logserver_config_;
+        OfferDb* odb_;
+        std::string work_dir_;
+        boost::unordered_set<std::string> changed_pid_;
+        //bool reindex_;
+        bool open_;
     };
 
 }

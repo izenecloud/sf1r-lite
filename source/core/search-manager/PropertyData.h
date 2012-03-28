@@ -59,6 +59,9 @@ struct PropertyData
             delete[] (double*)data_;
             break;
 
+        case STRING_PROPERTY_TYPE:
+            delete[] (uint32_t*)data_;
+            break;
         default:
             break;
         }

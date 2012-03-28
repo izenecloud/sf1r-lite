@@ -8,25 +8,45 @@
 namespace sf1r
 {
 
-class UStringVisitor : public boost::static_visitor<bool>
+class DocumentOutputVisitor : public boost::static_visitor<void>
 {
 public:
+    DocumentOutputVisitor():os_(NULL) {}
+    DocumentOutputVisitor(std::ostream* os):os_(os) {}
+    void SetOutStream(std::ostream* os) {os_ = os; }
 
     template <typename T>
-    bool operator()(const T& value) const
+    void operator()(const T& value) const
     {
-        return false;
+        *os_ << value;
     }
 
-    bool operator()(const std::string& value) const
+    void operator()(const izenelib::util::UString& value) const
     {
-        return false;
+        std::string str;
+        value.convertString(str, izenelib::util::UString::UTF_8);
+        *os_ << str;
     }
-
-    bool operator()(const izenelib::util::UString& value) const
+    void operator()(const std::vector<izenelib::util::UString>& value) const
     {
-        return true;
+        for(uint32_t i=0;i<value.size();i++)
+        {
+            std::string str;
+            value[i].convertString(str, izenelib::util::UString::UTF_8);
+            if(i>0) *os_ <<",";
+            *os_ << str;
+        }
     }
+    void operator()(const std::vector<uint32_t>& value) const
+    {
+        for(uint32_t i=0;i<value.size();i++)
+        {
+            if(i>0) *os_ <<",";
+            *os_ << value[i];
+        }
+    }
+private:
+    std::ostream* os_;
 };
 
 ///@brief only write UString properties in Document to SCD file.
@@ -47,7 +67,7 @@ public:
 
     static std::string GenSCDFileName( int op);
 
-    void Append(const Document& doc);
+    bool Append(const Document& doc);
 
     bool Append(const SCDDoc& doc);
 
@@ -69,7 +89,7 @@ private:
     int op_;
     std::ofstream ofs_;
 
-    UStringVisitor ustring_visitor_;
+    DocumentOutputVisitor output_visitor_;
 
     PropertyNameFilterType pname_filter_;
 

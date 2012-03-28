@@ -13,18 +13,20 @@ namespace sf1r {
         class SimilarityMatcherAttach
         {
         public:
+            uint32_t id; //id should be different
             izenelib::util::UString category;
             ProductPrice price;
 
             template<class Archive>
             void serialize(Archive& ar, const unsigned int version)
             {
-                ar & category & price;
+                ar & id & category & price;
             }
 
             bool dd(const SimilarityMatcherAttach& other) const
             {
                 if(category!=other.category) return false;
+                if(id==other.id) return false;
                 double mid1;
                 double mid2;
                 if(!price.GetMid(mid1)) return false;
@@ -53,7 +55,7 @@ namespace sf1r {
         };
     public:
         SimilarityMatcher();
-        bool Index(const std::string& scd_file, const std::string& knowledge_dir);
+        bool Index(const std::string& scd_path, const std::string& knowledge_dir);
 
         void SetCmaPath(const std::string& path)
         { cma_path_ = path; }

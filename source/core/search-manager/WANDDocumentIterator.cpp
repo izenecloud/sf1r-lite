@@ -29,7 +29,7 @@ WANDDocumentIterator::~WANDDocumentIterator()
 void WANDDocumentIterator::add(
         propertyid_t propertyId,
         unsigned int termIndex,
-        DocumentIterator* pDocIterator)
+        TermDocumentIterator* pDocIterator)
 {
     size_t index = getIndexOfPropertyId_(propertyId);
     boost::mutex::scoped_lock lock(mutex_);
@@ -90,7 +90,7 @@ void WANDDocumentIterator::set_ub(const UpperBoundInProperties& ubmap)
         size_t index = getIndexOfProperty_(currentProperty);
         if (docIteratorList_.size() >= (index + 1) )
         {
-            const std::map<unsigned int,DocumentIterator*>& termIndexDociter = docIteratorList_[index];
+            const std::map<unsigned int,TermDocumentIterator*>& termIndexDociter = docIteratorList_[index];
             term_index_ub_iterator  term_iter = (prop_iter->second).begin();
             for(; term_iter != (prop_iter->second).end(); ++term_iter )
             {
@@ -98,10 +98,12 @@ void WANDDocumentIterator::set_ub(const UpperBoundInProperties& ubmap)
                 term_index_dociter_iterator it;
                 if( (it = termIndexDociter.find(termIndex)) != termIndexDociter.end() )
                 {
-                    DocumentIterator* pDocIter = it->second;
-                    float ub = term_iter->second;
-                    std::pair<std::string, float> pro_ub = std::make_pair(currentProperty, ub);
-                    dociterUb_[pDocIter] = pro_ub;
+                    TermDocumentIterator* pDocIter = it->second;
+                    pDocIter->set_ub(term_iter->second);
+                    //float ub = term_iter->second;
+                    //propertyid_t propertyId = indexPropertyIdList_[index];
+                    //std::pair<propertyid_t, float> pro_ub = std::make_pair(propertyId, ub);
+                    //dociterUb_[pDocIter] = pro_ub;
                 }
             }
         }
@@ -158,15 +160,15 @@ void WANDDocumentIterator::initDocIteratorQueue()
     if(docIteratorList_.size() < 1)
         return;
     size_t queueSize = 0;
-    typedef std::vector<std::map<unsigned int,DocumentIterator*> >::iterator property_iterator;
-    typedef std::map<unsigned int,DocumentIterator*>::iterator term_index_iterator;
+    typedef std::vector<std::map<unsigned int,TermDocumentIterator*> >::iterator property_iterator;
+    typedef std::map<unsigned int,TermDocumentIterator*>::iterator term_index_iterator;
     property_iterator prop_iter = docIteratorList_.begin();
     for( ; prop_iter != docIteratorList_.end(); ++prop_iter )
     {
         queueSize += (*prop_iter).size();
     }
     pDocIteratorQueue_ = new DocumentIteratorQueue(queueSize);
-    DocumentIterator* pDocIterator;
+    TermDocumentIterator* pDocIterator;
     prop_iter = docIteratorList_.begin();
     size_t i = 0;
     for( ; prop_iter != docIteratorList_.end(); ++prop_iter, ++i)
@@ -192,53 +194,51 @@ void WANDDocumentIterator::initDocIteratorQueue()
     }
 }
 
-bool WANDDocumentIterator::termUpperBound(DocumentIterator* pDocIter, std::pair<std::string, float>& prop_ub)
-{
-    const_dociter_iterator const_iter = dociterUb_.find(pDocIter);
-    if(const_iter == dociterUb_.end())
-        return false;
-    prop_ub = const_iter->second;
-    return true;
-}
-
 bool WANDDocumentIterator::findPivot()
 {
     float sumUB = 0.0F; //sum of upper bounds of all terms
-    std::multimap<docid_t, std::pair<std::string, float> > docUBPair;
-    typedef std::map<docid_t, std::pair<std::string, float> >::const_iterator const_iter;
+    //std::multimap<docid_t, std::pair<propertyid_t, float> > docUBPair;
+    //typedef std::map<docid_t, std::pair<propertyid_t, float> >::const_iterator const_iter;
     size_t nIteratorNum = pDocIteratorQueue_->size();
 
     for (size_t i = 0; i < nIteratorNum; ++i)
     {
-        DocumentIterator* pDocIterator = pDocIteratorQueue_->getAt(i);
+        TermDocumentIterator* pDocIterator = pDocIteratorQueue_->getAt(i);
         if(pDocIterator)
         {
             docid_t docId = pDocIterator->doc();
-            std::pair<std::string, float> prop_ub;
-            termUpperBound(pDocIterator, prop_ub);
-            docUBPair.insert(pair<docid_t, std::pair<std::string, float> >(docId, prop_ub));
+            //std::pair<propertyid_t, float> prop_ub;
+            //termUpperBound(pDocIterator, prop_ub);
+            size_t index = getIndexOfPropertyId_(pDocIterator->propertyId_);
+            sumUB += pDocIterator->ub_ * propertyWeightList_[index];
+            if(sumUB > currThreshold_)
+            {
+                pivotDoc_ = docId;
+                return true;
+            }
+            //docUBPair.insert(pair<docid_t, std::pair<propertyid_t, float> >(docId, prop_ub));
         }
     }
-
+/*
     const_iter map_iter = docUBPair.begin();
     for(; map_iter != docUBPair.end(); map_iter++)
     {
-        const std::string& currentProperty = (map_iter->second).first;
-        size_t index = getIndexOfProperty_(currentProperty);
+        propertyid_t prop_id = (map_iter->second).first;
+        size_t index = getIndexOfPropertyId_(prop_id);
         sumUB += (map_iter->second).second * propertyWeightList_[index];
         if(sumUB > currThreshold_)
         {
             pivotDoc_ = map_iter->first;
             return true;
         }
-    }
+    }*/
     return false;
 }
 
 bool WANDDocumentIterator::processPrePostings(docid_t target)
 {
     docid_t nFoundId = MAX_DOC_ID;
-    DocumentIterator* top = pDocIteratorQueue_->top();
+    TermDocumentIterator* top = pDocIteratorQueue_->top();
 
     while(top != NULL && top->doc() < target)
     {
@@ -273,7 +273,7 @@ bool WANDDocumentIterator::do_next()
             return false;
 
        //////
-        DocumentIterator* top = pDocIteratorQueue_->top();
+        TermDocumentIterator* top = pDocIteratorQueue_->top();
         while (top != NULL && top->isCurrent())
         {
             top->setCurrent(false);
@@ -307,7 +307,7 @@ bool WANDDocumentIterator::do_next()
                     term_index_dociter_iterator term_iter = (*prop_iter).begin();
                     for( ; term_iter != (*prop_iter).end(); ++term_iter )
                     {
-                        DocumentIterator* pEntry = term_iter->second;
+                        TermDocumentIterator* pEntry = term_iter->second;
                         if(pEntry)
                         {
                             if (currDoc_ == pEntry->doc())
@@ -354,7 +354,7 @@ sf1r::docid_t WANDDocumentIterator::do_skipTo(sf1r::docid_t target)
         term_index_dociter_iterator term_iter = (*prop_iter).begin();
         for( ; term_iter != (*prop_iter).end(); ++term_iter )
         {
-            DocumentIterator* pEntry = term_iter->second;
+            TermDocumentIterator* pEntry = term_iter->second;
             if(pEntry)
             {
                 pEntry->setCurrent(false);
@@ -380,7 +380,7 @@ void WANDDocumentIterator::df_cmtf(
     CollectionTermFrequencyInProperties& ctfmap,
     MaxTermFrequencyInProperties& maxtfmap)
 {
-    DocumentIterator* pEntry;
+    TermDocumentIterator* pEntry;
     property_index_term_index_iterator prop_iter = docIteratorList_.begin();
     for( ; prop_iter != docIteratorList_.end(); ++prop_iter )
     {
@@ -402,7 +402,7 @@ double WANDDocumentIterator::score(
     CREATE_PROFILER ( compute_score, "SearchManager", "doSearch_: compute score in WANDDocumentIterator");
     CREATE_PROFILER ( get_doc_item, "SearchManager", "doSearch_: get doc_item");
 
-    DocumentIterator* pEntry = 0;
+    TermDocumentIterator* pEntry = 0;
     double score = 0.0F;
     size_t numProperties = rankQueryProperties.size();
     for (size_t i = 0; i < numProperties; ++i)

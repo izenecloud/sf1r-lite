@@ -24,17 +24,14 @@ namespace sf1r{
 
 class WANDDocumentIterator : public DocumentIterator
 {
-    typedef std::vector<std::map<unsigned int,DocumentIterator*> >::const_iterator property_index_term_index_iterator;
-    typedef std::map<unsigned int,DocumentIterator*>::const_iterator term_index_dociter_iterator;
+    typedef std::vector<std::map<unsigned int,TermDocumentIterator*> >::const_iterator property_index_term_index_iterator;
+    typedef std::map<unsigned int,TermDocumentIterator*>::const_iterator term_index_dociter_iterator;
 
     typedef UpperBoundInProperties::const_iterator property_name_term_index_iterator;
     typedef ID_FREQ_MAP_T::const_iterator term_index_ub_iterator;
 
-    typedef std::map<DocumentIterator*, pair<std::string, float> >::iterator dociter_iterator;
-    typedef std::map<DocumentIterator*, pair<std::string, float> >::const_iterator const_dociter_iterator;
-
 public:
-    class DocumentIteratorQueue : public izenelib::ir::indexmanager::PriorityQueue<DocumentIterator*>
+    class DocumentIteratorQueue : public izenelib::ir::indexmanager::PriorityQueue<TermDocumentIterator*>
     {
     public:
         DocumentIteratorQueue(size_t size)
@@ -42,7 +39,7 @@ public:
             initialize(size,false);
         }
     protected:
-        bool lessThan(DocumentIterator* o1, DocumentIterator* o2)
+        bool lessThan(TermDocumentIterator* o1, TermDocumentIterator* o2)
         {
             return o1->doc() < o2->doc();
         }
@@ -66,7 +63,7 @@ public:
 
     void add(propertyid_t propertyId,
              unsigned int termIndex,
-             DocumentIterator* pDocIterator
+             TermDocumentIterator* pDocIterator
          );
 
     void add(DocumentIterator* pDocIterator) {}
@@ -114,8 +111,6 @@ protected:
 
     bool do_next();
 
-    bool termUpperBound(DocumentIterator* pDocIter, std::pair<std::string, float>& prop_ub);
-
     bool findPivot();
 
     bool processPrePostings(docid_t target);
@@ -127,7 +122,7 @@ protected:
 
     std::vector<double> propertyWeightList_;
 
-    std::vector<std::map<unsigned int,DocumentIterator*> > docIteratorList_;
+    std::vector<std::map<unsigned int,TermDocumentIterator*> > docIteratorList_;
 
     DocumentIteratorQueue* pDocIteratorQueue_;
 
@@ -138,8 +133,6 @@ protected:
     docid_t pivotDoc_;
 
     UpperBoundInProperties ubmap_;
-
-    std::map<DocumentIterator*, pair<std::string, float> > dociterUb_;
 
     boost::mutex mutex_;
 

@@ -882,6 +882,7 @@ void SearchManager::prepare_sorter_customranker_(
             case NOMINAL_PROPERTY_TYPE:
             case UNSIGNED_INT_PROPERTY_TYPE:
             case DOUBLE_PROPERTY_TYPE:
+            case STRING_PROPERTY_TYPE:
             {
                 if (!pSorter) pSorter = new Sorter(pSorterCache_);
                 SortProperty* pSortProperty = new SortProperty(
