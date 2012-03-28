@@ -168,6 +168,7 @@ class ZNode : public izenelib::util::kv2string
 {
 public:
     // ZooKeeper Node data key
+    const static char* KEY_USERNAME;
     const static char* KEY_HOST;
     const static char* KEY_BA_PORT;
     const static char* KEY_DATA_PORT;

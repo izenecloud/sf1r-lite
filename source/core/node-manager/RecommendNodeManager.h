@@ -21,7 +21,7 @@ class RecommendNodeManager : public NodeManagerBase
 public:
     RecommendNodeManager()
     {
-        CLASSNAME = "[RecommendNodeManager]";
+        CLASSNAME = "RecommendNodeManager";
     }
 
     static RecommendNodeManager* get()

@@ -55,7 +55,7 @@ public:
         ss << "[Master]" << std::endl
            << "enabled: " << isEnabled_ << std::endl
            << "alias: " << name_ << std::endl
-           << "port: " << masterPort_ << std::endl
+           << "port: " << port_ << std::endl
            << "total shards: " << totalShardNum_ << std::endl;
 
         std::vector<MasterCollection>::iterator it;
@@ -84,7 +84,7 @@ public:
 public:
     bool isEnabled_;
     std::string name_;
-    port_t masterPort_;
+    port_t port_;
 
     // Each shard resides on one of the Workers,
     // so it's also number of Workers, and shardid are used as workerid;
@@ -118,7 +118,7 @@ public:
 
         ss << "[Worker]" << std::endl
            << "enabled: " << isEnabled_ << std::endl
-           << "port: " << workerPort_ << std::endl
+           << "port: " << port_ << std::endl
            << "shardid (workerid):" << shardId_ << std::endl;
 
         for (size_t i = 0; i < collectionList_.size(); i++)
@@ -132,7 +132,7 @@ public:
 public:
     bool isEnabled_;
     bool isGood_;
-    port_t workerPort_;
+    port_t port_;
     shardid_t shardId_; // id of shard resides on this worker.
 
     std::vector<std::string> collectionList_;

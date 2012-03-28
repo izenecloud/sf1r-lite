@@ -726,11 +726,11 @@ void SF1Config::parseDistributedTopology(
         getAttribute(sf1rNodeElem, "nodeid", sf1rNode.nodeId_);
 
         Sf1rNodeMaster& sf1rNodeMaster = sf1rNode.master_;
-        sf1rNodeMaster.masterPort_ = distributedCommonConfig_.masterPort_;
+        sf1rNodeMaster.port_ = distributedCommonConfig_.masterPort_;
         parseNodeMaster(getUniqChildElement(sf1rNodeElem, "MasterServer", false), sf1rNodeMaster);
 
         Sf1rNodeWorker& sf1rNodeWorker = sf1rNode.worker_;
-        sf1rNodeWorker.workerPort_ = distributedCommonConfig_.workerPort_;
+        sf1rNodeWorker.port_ = distributedCommonConfig_.workerPort_;
         parseNodeWorker(getUniqChildElement(sf1rNodeElem, "WorkerServer", false), sf1rNodeWorker);
 
         //std::cout << topologyConfig.toString() << std::endl;

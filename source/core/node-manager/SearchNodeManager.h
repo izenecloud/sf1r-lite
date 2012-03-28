@@ -20,7 +20,7 @@ class SearchNodeManager : public NodeManagerBase
 public:
     SearchNodeManager()
     {
-        CLASSNAME = "[SearchNodeManager]";
+        CLASSNAME = "SearchNodeManager";
     }
 
     static SearchNodeManager* get()
