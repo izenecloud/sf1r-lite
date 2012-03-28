@@ -1260,6 +1260,39 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
         }
     }
 
+    Iterator<Element> virtualproperty("VirtualProperty");
+    for (virtualproperty = virtualproperty.begin(indexSchemaNode); virtualproperty != virtualproperty.end(); virtualproperty++)
+    {
+        try
+        {
+            string propertyName;
+            getAttribute(virtualproperty.Get(), "name", propertyName);
+
+            string pName = propertyName;
+            boost::to_lower(pName);
+
+            PropertyConfig p;
+            p.setName(propertyName);
+
+            Iterator<Element> subproperty("SubProperty");
+            for (subproperty = subproperty.begin(virtualproperty.Get()); subproperty != subproperty.end(); subproperty++)
+            {
+                string subPropName;
+                getAttribute(subproperty.Get(), "name", subPropName);
+                p.subProperties_.push_back(subPropName);
+            }
+
+            p.setOriginalName(propertyName);
+            p.setIsIndex(true);
+            collectionMeta.indexBundleConfig_->indexSchema_.insert(p);
+        }
+        catch (XmlConfigParserException & e)
+        {
+            throw e;
+        }
+    }
+
+
     ///we update property Id here
     ///It is because that IndexBundle might add properties "xx_unigram", in this case, we must keep the propertyId consistent
     ///between IndexBundle and other bundles
