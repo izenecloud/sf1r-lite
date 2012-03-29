@@ -1,9 +1,9 @@
 require 'rubygems'
 require 'require_all'
-require_rel '../../lib/sf1r_api'
+require 'sf1-driver'
 
-api = Sf1rApi.new("180.153.140.112")
+conn = Sf1Driver.new("180.153.140.112", "18181")
 body = {}
 body["collection"] = "tuanm"
-response = api.send("commands", nil, body)
+response = conn.call("commands/index", body)
 puts response

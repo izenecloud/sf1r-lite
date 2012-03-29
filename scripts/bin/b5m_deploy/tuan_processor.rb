@@ -1,8 +1,9 @@
 require 'rubygems'
 require 'require_all'
 require 'fileutils'
-require_rel '../../lib/scd_parser'
-require_rel '../../lib/scd_writer'
+require 'date'
+require 'sf1-util/scd_parser'
+require 'sf1-util/scd_writer'
 require_rel 'tuan_category'
 
 scd_file = ARGV[0]
