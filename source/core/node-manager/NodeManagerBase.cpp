@@ -3,8 +3,11 @@
 
 #include <sstream>
 
-using namespace sf1r;
+#include <boost/lexical_cast.hpp>
 
+
+namespace sf1r
+{
 
 NodeManagerBase::NodeManagerBase()
     : isDistributionEnabled_(false)
@@ -180,11 +183,16 @@ void NodeManagerBase::enterCluster()
     }
 
     nodeState_ = NODE_STATE_STARTED;
+
+    Sf1rNode& curNode = sf1rTopology_.curNode_;
     LOG (INFO) << CLASSNAME
-               << " started up, cluster[" << sf1rTopology_.clusterId_
-               << "] replication[" << sf1rTopology_.curNode_.replicaId_
-               << "] node[" << sf1rTopology_.curNode_.nodeId_
-               << "]{" << sf1rTopology_.curNode_.userName_ << "@" << sf1rTopology_.curNode_.host_ << "}";
+               << " started, cluster[" << sf1rTopology_.clusterId_
+               << "] replica[" << curNode.replicaId_
+               << "] node[" << curNode.nodeId_
+               << "]{"
+               << (curNode.worker_.isEnabled_ ? (std::string("worker ") + boost::lexical_cast<std::string>(curNode.worker_.shardId_) + " ") : "")
+               << curNode.userName_ << "@" << curNode.host_ << "}";
+
 
     // Start Master manager
     if (sf1rTopology_.curNode_.master_.isEnabled_)
@@ -219,4 +227,6 @@ void NodeManagerBase::leaveCluster()
     {
         zookeeper_->deleteZNode(clusterPath_);
     }
+}
+
 }

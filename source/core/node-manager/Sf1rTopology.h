@@ -48,6 +48,20 @@ public:
         return false;
     }
 
+    bool getShardidList(const std::string& collection, std::vector<shardid_t>& shardidList)
+    {
+        std::vector<MasterCollection>::iterator it;
+        for (it = collectionList_.begin(); it != collectionList_.end(); it++)
+        {
+            if (it->name_ == collection)
+            {
+                shardidList = it->shardList_;
+                return true;
+            }
+        }
+        return false;
+    }
+
     std::string toString()
     {
         std::stringstream ss;

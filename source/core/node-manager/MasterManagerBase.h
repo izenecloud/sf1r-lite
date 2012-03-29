@@ -20,6 +20,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
+using namespace net::aggregator;
 
 namespace sf1r
 {
@@ -55,7 +56,7 @@ public:
      * Register aggregators
      * @param aggregator
      */
-    void registerAggregator(net::aggregator::AggregatorBase* aggregator)
+    void registerAggregator(boost::shared_ptr<AggregatorBase> aggregator)
     {
         aggregatorList_.push_back(aggregator);
     }
@@ -151,8 +152,7 @@ protected:
     WorkerMapT workerMap_;
     boost::mutex workers_mutex_;
 
-    net::aggregator::AggregatorConfig aggregatorConfig_;
-    std::vector<net::aggregator::AggregatorBase*> aggregatorList_;
+    std::vector<boost::shared_ptr<AggregatorBase> > aggregatorList_;
 
     std::string CLASSNAME;
 };
