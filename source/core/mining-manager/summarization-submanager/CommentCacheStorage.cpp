@@ -24,7 +24,7 @@ CommentCacheStorage::CommentCacheStorage(
         dirty_key_db_.open();
     }
     boost::filesystem::create_directories(dbPath + comment_cache_path);
-    comment_cache_drum_.reset(new CommentCacheDrumType(dbPath + comment_cache_path, 64, 32768, 4194304, dispatcher_));
+    comment_cache_drum_.reset(new CommentCacheDrumType(dbPath + comment_cache_path, 64, 2048, 16777216, dispatcher_));
 }
 
 CommentCacheStorage::~CommentCacheStorage()
