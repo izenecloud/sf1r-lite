@@ -156,7 +156,7 @@ bool WANDDocumentIterator::next()
     return do_next();
 }
 
-void WANDDocumentIterator::initDocIteratorSorter(std::multimap<docid_t, TermDocumentIterator*>& docIteratorSorter)
+void WANDDocumentIterator::initDocIteratorSorter(std::vector<TermDocumentIterator*>& docIteratorList)
 {
     if(docIteratorList_.size() < 1)
         return;
@@ -176,7 +176,7 @@ void WANDDocumentIterator::initDocIteratorSorter(std::multimap<docid_t, TermDocu
                 pDocIterator->setCurrent(false);
                 if(pDocIterator->next())
                 {
-                    docIteratorSorter.insert(make_pair(pDocIterator->doc(), pDocIterator));
+                    docIteratorList.push_back(pDocIterator);
                 }
                 else
                 {
@@ -191,24 +191,24 @@ void WANDDocumentIterator::initDocIteratorSorter(std::multimap<docid_t, TermDocu
 bool WANDDocumentIterator::findPivot(docid_t& frontDocId) // multimap sorter as temporary variables
 {
     float sumUB = 0.0F; //sum of upper bounds of all terms
-    std::multimap<docid_t, TermDocumentIterator*> docIteratorSorter;
-    initDocIteratorSorter(docIteratorSorter);
-    if(docIteratorSorter.size() == 0)
+    //std::multimap<docid_t, TermDocumentIterator*> docIteratorSorter;
+    std::vector<TermDocumentIterator*> docIterList;
+    initDocIteratorSorter(docIterList);
+    if(docIterList.size() == 0)
         return false;
 
-    typedef std::multimap<docid_t, TermDocumentIterator*>::const_iterator const_map_iter;
-    const_map_iter iter = docIteratorSorter.begin();
-    frontDocId = iter->first;
-    for(; iter != docIteratorSorter.end(); iter++)
+    std::sort(docIterList.begin(), docIterList.end(), SortPred());
+    frontDocId = docIterList[0]->doc();
+    for(size_t i = 0; i < docIterList.size(); i++)
     {
-        TermDocumentIterator* pDocIterator = iter->second;
+        TermDocumentIterator* pDocIterator = docIterList[i];
         if(pDocIterator)
         {
             size_t index = getIndexOfPropertyId_(pDocIterator->propertyId_);
             sumUB += pDocIterator->ub_ * propertyWeightList_[index];
             if(sumUB > currThreshold_)
             {
-                pivotDoc_ = iter->first;
+                pivotDoc_ = pDocIterator->doc();
                 return true;
             }
         }

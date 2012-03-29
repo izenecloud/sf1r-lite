@@ -30,6 +30,15 @@ class WANDDocumentIterator : public DocumentIterator
     typedef UpperBoundInProperties::const_iterator property_name_term_index_iterator;
     typedef ID_FREQ_MAP_T::const_iterator term_index_ub_iterator;
 
+    struct SortPred
+    {
+        SortPred() {}
+        bool operator() (TermDocumentIterator* t1, TermDocumentIterator* t2)
+        {
+            return t1->doc() < t2->doc();
+        }
+    };
+
 public:
     class DocumentIteratorQueue : public izenelib::ir::indexmanager::PriorityQueue<TermDocumentIterator*>
     {
@@ -105,7 +114,7 @@ protected:
 
     size_t getIndexOfProperty_(const std::string& property);
 
-    void initDocIteratorSorter(std::multimap<docid_t, TermDocumentIterator*>& docIteratorSorter);
+    void initDocIteratorSorter(std::vector<TermDocumentIterator*>& docIteratorList);
 
     void init_(const property_weight_map& propertyWeightMap);
 
