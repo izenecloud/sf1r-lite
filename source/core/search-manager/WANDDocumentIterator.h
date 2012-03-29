@@ -105,14 +105,13 @@ protected:
 
     size_t getIndexOfProperty_(const std::string& property);
 
-   // void initDocIteratorQueue();
-    void initDocIteratorSorter();
+    void initDocIteratorSorter(std::multimap<docid_t, TermDocumentIterator*>& docIteratorSorter);
 
     void init_(const property_weight_map& propertyWeightMap);
 
     bool do_next();
 
-    bool findPivot();
+    bool findPivot(docid_t& frontDocId);
 
     bool processPrePostings(docid_t target);
 
@@ -124,9 +123,6 @@ protected:
     std::vector<double> propertyWeightList_;
 
     std::vector<std::map<unsigned int,TermDocumentIterator*> > docIteratorList_;
-
-   // DocumentIteratorQueue* pDocIteratorQueue_;
-    std::multimap<docid_t, TermDocumentIterator*> DocIteratorSorter_;
 
     docid_t currDoc_;
 
