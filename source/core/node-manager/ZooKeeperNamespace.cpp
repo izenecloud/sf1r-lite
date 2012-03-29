@@ -17,6 +17,7 @@ const std::string ZooKeeperNamespace::server_ = "/Server";
 const std::string ZooKeeperNamespace::Synchro_ = "/Synchro";
 
 /// ZooKeeper Node data key
+const char* ZNode::KEY_USERNAME = "username";
 const char* ZNode::KEY_HOST = "host";
 const char* ZNode::KEY_BA_PORT = "baport";
 const char* ZNode::KEY_DATA_PORT = "dataport";

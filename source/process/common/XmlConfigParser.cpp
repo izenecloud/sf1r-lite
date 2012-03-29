@@ -726,11 +726,11 @@ void SF1Config::parseDistributedTopology(
         getAttribute(sf1rNodeElem, "nodeid", sf1rNode.nodeId_);
 
         Sf1rNodeMaster& sf1rNodeMaster = sf1rNode.master_;
-        sf1rNodeMaster.masterPort_ = distributedCommonConfig_.masterPort_;
+        sf1rNodeMaster.port_ = distributedCommonConfig_.masterPort_;
         parseNodeMaster(getUniqChildElement(sf1rNodeElem, "MasterServer", false), sf1rNodeMaster);
 
         Sf1rNodeWorker& sf1rNodeWorker = sf1rNode.worker_;
-        sf1rNodeWorker.workerPort_ = distributedCommonConfig_.workerPort_;
+        sf1rNodeWorker.port_ = distributedCommonConfig_.workerPort_;
         parseNodeWorker(getUniqChildElement(sf1rNodeElem, "WorkerServer", false), sf1rNodeWorker);
 
         //std::cout << topologyConfig.toString() << std::endl;
@@ -1259,6 +1259,39 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
             throw e;
         }
     }
+
+    Iterator<Element> virtualproperty("VirtualProperty");
+    for (virtualproperty = virtualproperty.begin(indexSchemaNode); virtualproperty != virtualproperty.end(); virtualproperty++)
+    {
+        try
+        {
+            string propertyName;
+            getAttribute(virtualproperty.Get(), "name", propertyName);
+
+            string pName = propertyName;
+            boost::to_lower(pName);
+
+            PropertyConfig p;
+            p.setName(propertyName);
+
+            Iterator<Element> subproperty("SubProperty");
+            for (subproperty = subproperty.begin(virtualproperty.Get()); subproperty != subproperty.end(); subproperty++)
+            {
+                string subPropName;
+                getAttribute(subproperty.Get(), "name", subPropName);
+                p.subProperties_.push_back(subPropName);
+            }
+
+            p.setOriginalName(propertyName);
+            p.setIsIndex(true);
+            collectionMeta.indexBundleConfig_->indexSchema_.insert(p);
+        }
+        catch (XmlConfigParserException & e)
+        {
+            throw e;
+        }
+    }
+
 
     ///we update property Id here
     ///It is because that IndexBundle might add properties "xx_unigram", in this case, we must keep the propertyId consistent
