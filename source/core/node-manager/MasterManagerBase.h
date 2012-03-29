@@ -94,9 +94,14 @@ protected:
 
     void watchAll();
 
+    bool checkZooKeeperService();
+
     void doStart();
 
+protected:
     int detectWorkers();
+
+    void updateWorkerNode(boost::shared_ptr<Sf1rNode>& workerNode, ZNode& znode);
 
     void detectReplicaSet(const std::string& zpath="");
 
@@ -127,24 +132,27 @@ protected:
     void resetAggregatorConfig();
 
 protected:
+    Sf1rTopology sf1rTopology_;
+
     ZooKeeperClientPtr zookeeper_;
+
     // znode paths
     std::string topologyPath_;
     std::string serverParentPath_;
     std::string serverPath_;
     std::string serverRealPath_;
 
-    Sf1rTopology sf1rTopology_;
-
     MasterStateType masterState_;
+    boost::mutex state_mutex_;
+
+    std::vector<replicaid_t> replicaIdList_;
+    boost::mutex replica_mutex_;
 
     WorkerMapT workerMap_;
-    std::vector<replicaid_t> replicaIdList_;
+    boost::mutex workers_mutex_;
 
     net::aggregator::AggregatorConfig aggregatorConfig_;
     std::vector<net::aggregator::AggregatorBase*> aggregatorList_;
-
-    boost::mutex mutex_;
 
     std::string CLASSNAME;
 };

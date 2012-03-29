@@ -2,8 +2,8 @@
 
 require 'rubygems'
 require 'require_all'
-require_rel '../../lib/scd_parser'
-require_rel '../../lib/scd_writer'
+require 'sf1-util/scd_parser'
+require 'sf1-util/scd_writer'
 
 scd_file = ARGV[0]
 

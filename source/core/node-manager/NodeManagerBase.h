@@ -76,9 +76,13 @@ protected:
 
 protected:
     /**
-     * Make sure zookeeper namaspace (znodes) is initialized properly
+     * Make sure Zookeeper namespace is initialized properly
      */
-    void initZkNameSpace();
+    void tryInitZkNameSpace();
+
+    bool checkZooKeeperService();
+
+    void setSf1rNodeData(ZNode& znode);
 
     void enterCluster();
 
@@ -95,7 +99,7 @@ protected:
     bool masterStarted_;
 
     ZooKeeperClientPtr zookeeper_;
-    // znode paths (from root) corresponding current sf1 node
+
     std::string clusterPath_;
     std::string topologyPath_;
     std::string replicaPath_;

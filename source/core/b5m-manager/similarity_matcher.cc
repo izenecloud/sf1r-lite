@@ -63,7 +63,9 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
         std::cout<<"DD open failed"<<std::endl;
         return false;
     }
-    uint32_t docid = 1;
+    uint32_t fp_count = dd.GetFpCount();
+    std::cout<<"fp_count : "<<fp_count<<std::endl;
+    uint32_t docid = fp_count+1;
     std::vector<ValueType> values(1);
     std::vector<uint32_t> new_id_list;
     boost::unordered_set<uint32_t> new_id_set;
