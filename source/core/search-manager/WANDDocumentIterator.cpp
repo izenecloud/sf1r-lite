@@ -197,41 +197,28 @@ void WANDDocumentIterator::initDocIteratorQueue()
 bool WANDDocumentIterator::findPivot()
 {
     float sumUB = 0.0F; //sum of upper bounds of all terms
-    //std::multimap<docid_t, std::pair<propertyid_t, float> > docUBPair;
-    //typedef std::map<docid_t, std::pair<propertyid_t, float> >::const_iterator const_iter;
     size_t nIteratorNum = pDocIteratorQueue_->size();
-
+    std::vector<TermDocumentIterator*> partialDocIterList;
     for (size_t i = 0; i < nIteratorNum; ++i)
     {
-        TermDocumentIterator* pDocIterator = pDocIteratorQueue_->getAt(i);
+        TermDocumentIterator* pDocIterator = pDocIteratorQueue_->pop();
         if(pDocIterator)
         {
-            docid_t docId = pDocIterator->doc();
-            //std::pair<propertyid_t, float> prop_ub;
-            //termUpperBound(pDocIterator, prop_ub);
+            partialDocIterList.push_back(pDocIterator);
             size_t index = getIndexOfPropertyId_(pDocIterator->propertyId_);
             sumUB += pDocIterator->ub_ * propertyWeightList_[index];
             if(sumUB > currThreshold_)
             {
-                pivotDoc_ = docId;
+                //push the partial doc iterator list into the priority queue again
+                for(size_t j = 0; j < partialDocIterList.size(); j++)
+                {
+                    pDocIteratorQueue_->insert(partialDocIterList[j]);
+                }
+                pivotDoc_ = pDocIterator->doc();
                 return true;
             }
-            //docUBPair.insert(pair<docid_t, std::pair<propertyid_t, float> >(docId, prop_ub));
         }
     }
-/*
-    const_iter map_iter = docUBPair.begin();
-    for(; map_iter != docUBPair.end(); map_iter++)
-    {
-        propertyid_t prop_id = (map_iter->second).first;
-        size_t index = getIndexOfPropertyId_(prop_id);
-        sumUB += (map_iter->second).second * propertyWeightList_[index];
-        if(sumUB > currThreshold_)
-        {
-            pivotDoc_ = map_iter->first;
-            return true;
-        }
-    }*/
     return false;
 }
 
