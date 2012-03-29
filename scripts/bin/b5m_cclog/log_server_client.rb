@@ -3,6 +3,7 @@
 
 require 'rubygems'
 require 'require_all'
+require 'yaml'
 require 'json'
 require 'set'
 require 'sf1-driver'
