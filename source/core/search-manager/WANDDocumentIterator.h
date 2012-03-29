@@ -105,7 +105,8 @@ protected:
 
     size_t getIndexOfProperty_(const std::string& property);
 
-    void initDocIteratorQueue();
+   // void initDocIteratorQueue();
+    void initDocIteratorSorter();
 
     void init_(const property_weight_map& propertyWeightMap);
 
@@ -124,7 +125,8 @@ protected:
 
     std::vector<std::map<unsigned int,TermDocumentIterator*> > docIteratorList_;
 
-    DocumentIteratorQueue* pDocIteratorQueue_;
+   // DocumentIteratorQueue* pDocIteratorQueue_;
+    std::multimap<docid_t, TermDocumentIterator*> DocIteratorSorter_;
 
     docid_t currDoc_;
 
@@ -138,7 +140,6 @@ protected:
 
     ///@brief reuse in score() for performance, so score() is not thread-safe
     RankDocumentProperty rankDocumentProperty_;
-
 };
 
 }
