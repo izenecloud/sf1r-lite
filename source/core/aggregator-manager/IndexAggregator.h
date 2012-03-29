@@ -24,9 +24,10 @@ class ScdSharder;
 class IndexAggregator : public Aggregator<IndexAggregator, IndexWorkerCaller>
 {
 public:
-    IndexAggregator(IndexWorker* indexWorker)
+    IndexAggregator(const std::string& collection, const boost::shared_ptr<IndexWorker>& indexWorker)
+        : Aggregator<IndexAggregator, IndexWorkerCaller>(collection)
     {
-        localWorkerCaller_.reset(new IndexWorkerCaller(indexWorker));
+        localWorkerCaller_.reset(new IndexWorkerCaller(indexWorker.get()));
 
         ADD_FUNC_TO_WORKER_CALLER(IndexWorkerCaller, localWorkerCaller_, IndexWorker, index);
     }
@@ -58,6 +59,9 @@ private:
     bool createScdSharder(
             boost::shared_ptr<ScdSharder>& scdSharder,
             const std::vector<std::string>& shardKeyList);
+
+private:
+    std::string collectionName_;
 };
 
 }

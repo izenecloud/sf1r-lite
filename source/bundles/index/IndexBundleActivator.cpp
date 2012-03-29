@@ -523,10 +523,10 @@ IndexBundleActivator::createSearchWorker_()
 boost::shared_ptr<SearchAggregator>
 IndexBundleActivator::createSearchAggregator_() const
 {
-    boost::shared_ptr<SearchAggregator> ret(new SearchAggregator(searchWorker_.get()));
+    boost::shared_ptr<SearchAggregator> ret(new SearchAggregator(config_->collectionName_, searchWorker_));
     ret->TOP_K_NUM = config_->topKNum_;
     // workers will be detected and set by master node manager
-    SearchMasterManager::get()->registerAggregator(ret.get());
+    SearchMasterManager::get()->registerAggregator(ret);
     return ret;
 }
 
@@ -540,8 +540,8 @@ IndexBundleActivator::createIndexWorker_()
 boost::shared_ptr<IndexAggregator>
 IndexBundleActivator::createIndexAggregator_() const
 {
-    boost::shared_ptr<IndexAggregator> ret(new IndexAggregator(indexWorker_.get()));
-    SearchMasterManager::get()->registerAggregator(ret.get());
+    boost::shared_ptr<IndexAggregator> ret(new IndexAggregator(config_->collectionName_, indexWorker_));
+    SearchMasterManager::get()->registerAggregator(ret);
     return ret;
 }
 

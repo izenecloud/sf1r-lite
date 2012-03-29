@@ -26,10 +26,11 @@ typedef WorkerCaller<SearchWorker> SearchWorkerCaller;
 class SearchAggregator : public Aggregator<SearchAggregator, SearchWorkerCaller>
 {
 public:
-    SearchAggregator(SearchWorker* searchWorker)
-        : TOP_K_NUM(4000)
+    SearchAggregator(const std::string& collection, const boost::shared_ptr<SearchWorker>& searchWorker)
+        : Aggregator<SearchAggregator, SearchWorkerCaller>(collection)
+        , TOP_K_NUM(4000)
     {
-        localWorkerCaller_.reset(new SearchWorkerCaller(searchWorker));
+        localWorkerCaller_.reset(new SearchWorkerCaller(searchWorker.get()));
 
         // xxx
         ADD_FUNC_TO_WORKER_CALLER(SearchWorkerCaller, localWorkerCaller_, SearchWorker, getDistSearchInfo);
@@ -41,6 +42,11 @@ public:
         ADD_FUNC_TO_WORKER_CALLER(SearchWorkerCaller, localWorkerCaller_, SearchWorker, getSimilarDocIdList);
         ADD_FUNC_TO_WORKER_CALLER(SearchWorkerCaller, localWorkerCaller_, SearchWorker, clickGroupLabel);
         ADD_FUNC_TO_WORKER_CALLER(SearchWorkerCaller, localWorkerCaller_, SearchWorker, visitDoc);
+    }
+
+    const std::string& collection() const
+    {
+        return collectionName_;
     }
 
 public:
@@ -160,8 +166,10 @@ public:
             std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >& actionItemMap);
 
 private:
-    boost::shared_ptr<MiningManager> miningManager_;
     int TOP_K_NUM;
+    std::string collectionName_;
+    boost::shared_ptr<MiningManager> miningManager_;
+
 
     friend class IndexSearchService;
     friend class IndexBundleActivator;

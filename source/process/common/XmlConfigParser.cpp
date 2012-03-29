@@ -763,8 +763,16 @@ void SF1Config::parseNodeMaster(const ticpp::Element * master, Sf1rNodeMaster& s
                     for(it = tokens.begin(); it != tokens.end(); ++it)
                     {
                         shardid_t shardid;
-                        try {
+                        try
+                        {
                             shardid = boost::lexical_cast<shardid_t>(*it);
+                            if (shardid < 1 || shardid > sf1rNodeMaster.totalShardNum_)
+                            {
+                                std::stringstream ss;
+                                ss << "invalid shardid \"" << shardid << "\" in <MasterServer ...> <Collection name=\""
+                                   << masterCollection.name_ << "\" shardids=\"" << shardids << "\"";
+                                throw std::runtime_error(ss.str());
+                            }
                         }
                         catch (const std::exception& e) {
                             throw std::runtime_error(
