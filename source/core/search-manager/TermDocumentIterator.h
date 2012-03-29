@@ -70,7 +70,7 @@ public:
     {
         if (pTermDocReader_)
             return pTermDocReader_->next();
-    return false;
+        return false;
     }
 
     docid_t doc()
