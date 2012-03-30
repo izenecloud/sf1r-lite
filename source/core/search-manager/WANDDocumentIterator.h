@@ -30,6 +30,8 @@ class WANDDocumentIterator : public DocumentIterator
     typedef UpperBoundInProperties::const_iterator property_name_term_index_iterator;
     typedef ID_FREQ_MAP_T::const_iterator term_index_ub_iterator;
 
+    typedef std::vector<TermDocumentIterator*>::iterator vector_iterator;
+
     struct SortPred
     {
         SortPred() {}
@@ -114,17 +116,19 @@ protected:
 
     size_t getIndexOfProperty_(const std::string& property);
 
-    void initDocIteratorList();
-
-    void sortDocIterList(std::vector<TermDocumentIterator*>& docIteratorList);
+    void initDocIteratorListSorter();
 
     void init_(const property_weight_map& propertyWeightMap);
 
     bool do_next();
 
-    bool findPivot(docid_t& frontDocId);
+    bool findPivot();
 
     bool processPrePostings(docid_t target);
+
+    bool bubble(size_t n);
+
+    void bubble_sort();
 
 protected:
     std::vector<std::string> indexPropertyList_;
@@ -147,6 +151,8 @@ protected:
 
     ///@brief reuse in score() for performance, so score() is not thread-safe
     RankDocumentProperty rankDocumentProperty_;
+
+    vector<TermDocumentIterator*> docIteratorListSorter_;
 };
 
 }
