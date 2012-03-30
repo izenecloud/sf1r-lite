@@ -133,7 +133,8 @@ bool TermDocumentIterator::accept()
 }
 
 void TermDocumentIterator::doc_item(
-    RankDocumentProperty& rankDocumentProperty)
+    RankDocumentProperty& rankDocumentProperty, 
+    unsigned propIndex)
 {
     CREATE_PROFILER ( get_position, "SearchManager", "doSearch_: getting positions");
 
@@ -168,11 +169,7 @@ void TermDocumentIterator::doc_item(
     }
 }
 
-
-void TermDocumentIterator::df_cmtf(
-    DocumentFrequencyInProperties& dfmap,
-    CollectionTermFrequencyInProperties& ctfmap,
-    MaxTermFrequencyInProperties& maxtfmap)
+void TermDocumentIterator::ensureTermDocReader_()
 {
     if (pTermDocReader_ == 0)
     {
@@ -190,6 +187,14 @@ void TermDocumentIterator::df_cmtf(
         else
             pTermDocReader_ = pTermReader_->termDocFreqs();
     }
+}
+
+void TermDocumentIterator::df_cmtf(
+    DocumentFrequencyInProperties& dfmap,
+    CollectionTermFrequencyInProperties& ctfmap,
+    MaxTermFrequencyInProperties& maxtfmap)
+{
+    ensureTermDocReader_();
     if (pTermDocReader_ == 0)
         return;
     ID_FREQ_MAP_T& df = dfmap[property_];

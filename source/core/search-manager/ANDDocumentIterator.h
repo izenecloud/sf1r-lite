@@ -66,7 +66,7 @@ public:
 
     docid_t doc() { return currDoc_; }
 
-    inline void doc_item(RankDocumentProperty& rankDocumentProperty);
+    inline void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0);
 
     void df_cmtf(
             DocumentFrequencyInProperties& dfmap,
@@ -171,6 +171,7 @@ inline bool ANDDocumentIterator::do_next()
         currDoc_ = target;
         return true;
     }
+std::cout<<"AND ITER do_next nMatch "<<nMatch<<" nIteratorNum_ "<<nIteratorNum_<<std::endl;	
     return false;
 
 }
@@ -225,14 +226,15 @@ inline docid_t ANDDocumentIterator::do_skipTo(docid_t target)
 #endif
 
 inline void ANDDocumentIterator::doc_item(
-    RankDocumentProperty& rankDocumentProperty)
+    RankDocumentProperty& rankDocumentProperty,
+    unsigned propIndex)
 {
     DocumentIterator* pEntry;
     std::list<DocumentIterator*>::iterator iter = docIterList_.begin();
     for (; iter != docIterList_.end(); ++iter)
     {
         pEntry = (*iter);
-        pEntry->doc_item(rankDocumentProperty);
+        pEntry->doc_item(rankDocumentProperty, propIndex);
     }
 }
 
