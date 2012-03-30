@@ -114,7 +114,9 @@ protected:
 
     size_t getIndexOfProperty_(const std::string& property);
 
-    void initDocIteratorSorter(std::vector<TermDocumentIterator*>& docIteratorList);
+    void initDocIteratorList();
+
+    void sortDocIterList(std::vector<TermDocumentIterator*>& docIteratorList);
 
     void init_(const property_weight_map& propertyWeightMap);
 

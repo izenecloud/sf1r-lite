@@ -34,7 +34,6 @@ void WANDDocumentIterator::add(
     size_t index = getIndexOfPropertyId_(propertyId);
     boost::mutex::scoped_lock lock(mutex_);
     docIteratorList_[index][termIndex] = pDocIterator;
-    pDocIterator->setCurrent(0);
 }
 
 size_t WANDDocumentIterator::getIndexOfPropertyId_(propertyid_t propertyId)
@@ -142,6 +141,8 @@ void WANDDocumentIterator::init_threshold(float threshold)
     {
         currThreshold_ = maxUB * 0.5;
     }
+
+    initDocIteratorList();
     //LOG(INFO)<<"the initial currThreshold = "<<currThreshold_;
 }
 
@@ -156,7 +157,7 @@ bool WANDDocumentIterator::next()
     return do_next();
 }
 
-void WANDDocumentIterator::initDocIteratorSorter(std::vector<TermDocumentIterator*>& docIteratorList)
+void WANDDocumentIterator::initDocIteratorList()
 {
     if(docIteratorList_.size() < 1)
         return;
@@ -174,14 +175,41 @@ void WANDDocumentIterator::initDocIteratorSorter(std::vector<TermDocumentIterato
             if(pDocIterator)
             {
                 pDocIterator->setCurrent(false);
-                if(pDocIterator->next())
-                {
-                    docIteratorList.push_back(pDocIterator);
-                }
-                else
+                if(pDocIterator->next() == false)
                 {
                     term_iter->second = NULL;
                     delete pDocIterator;
+                }
+            }
+        }
+    }
+}
+
+void WANDDocumentIterator::sortDocIterList(std::vector<TermDocumentIterator*>& docIteratorList)
+{
+    if(docIteratorList_.size() < 1)
+        return;
+    TermDocumentIterator* pDocIterator;
+    typedef std::vector<std::map<unsigned int,TermDocumentIterator*> >::iterator property_iterator;
+    typedef std::map<unsigned int,TermDocumentIterator*>::iterator term_index_iterator;
+
+    property_iterator prop_iter = docIteratorList_.begin();
+    for( ; prop_iter != docIteratorList_.end(); ++prop_iter)
+    {
+        term_index_iterator term_iter = (*prop_iter).begin();
+        for( ; term_iter != (*prop_iter).end(); term_iter++ )
+        {
+            pDocIterator = term_iter->second;
+            if(pDocIterator)
+            {
+                if(MAX_DOC_ID == pDocIterator->doc())
+                {
+                    term_iter->second = NULL;
+                    delete pDocIterator;
+                }
+                else
+                {
+                    docIteratorList.push_back(pDocIterator);
                 }
             }
         }
@@ -193,7 +221,7 @@ bool WANDDocumentIterator::findPivot(docid_t& frontDocId) // multimap sorter as 
     float sumUB = 0.0F; //sum of upper bounds of all terms
     //std::multimap<docid_t, TermDocumentIterator*> docIteratorSorter;
     std::vector<TermDocumentIterator*> docIterList;
-    initDocIteratorSorter(docIterList);
+    sortDocIterList(docIterList);
     if(docIterList.size() == 0)
         return false;
 
