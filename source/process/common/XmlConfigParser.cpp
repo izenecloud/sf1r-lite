@@ -1316,7 +1316,7 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
     {
         if (it->getRankWeight() >= 0.0f)
         {
-            propertyWeightMap.insert(pair<string, float>(it->getName(), it->getRankWeight()));
+            propertyWeightMap[it->getName()] = it->getRankWeight();
         }
         if (! it->subProperties_.empty())
         {
@@ -1325,13 +1325,14 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
             {
                 PropertyConfig p;
                 p.setName(it->subProperties_[i]);
+				
                 IndexBundleSchema::const_iterator pit = indexSchema.find(p);
                 if((pit != indexSchema.end())&&(pit->getRankWeight() >= 0.0f))
                 {
                     weight += pit->getRankWeight();
                 }
             }
-            propertyWeightMap.insert(pair<string, float>(it->getName(), weight));        
+            propertyWeightMap[it->getName()] = weight;
         }
     }
 }
