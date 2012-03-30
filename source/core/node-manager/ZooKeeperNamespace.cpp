@@ -21,6 +21,7 @@ const char* ZNode::KEY_USERNAME = "username";
 const char* ZNode::KEY_HOST = "host";
 const char* ZNode::KEY_BA_PORT = "baport";
 const char* ZNode::KEY_DATA_PORT = "dataport";
+const char* ZNode::KEY_MASTER_NAME = "mastername";
 const char* ZNode::KEY_MASTER_PORT = "masterport";
 const char* ZNode::KEY_WORKER_PORT = "workerport";
 const char* ZNode::KEY_SHARD_ID = "shardid";

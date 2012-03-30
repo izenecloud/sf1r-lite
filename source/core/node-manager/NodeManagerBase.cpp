@@ -117,6 +117,7 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode)
     if (sf1rTopology_.curNode_.master_.isEnabled_)
     {
         znode.setValue(ZNode::KEY_MASTER_PORT, sf1rTopology_.curNode_.master_.port_);
+        znode.setValue(ZNode::KEY_MASTER_NAME, sf1rTopology_.curNode_.master_.name_);
     }
     //if (sf1rTopology_.curNode_.master_.isEnabled_)
     {
