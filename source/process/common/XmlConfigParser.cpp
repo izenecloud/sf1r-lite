@@ -1267,6 +1267,7 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
             throw e;
         }
     }
+    const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
 
     Iterator<Element> virtualproperty("VirtualProperty");
     for (virtualproperty = virtualproperty.begin(indexSchemaNode); virtualproperty != virtualproperty.end(); virtualproperty++)
@@ -1288,6 +1289,14 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
                 string subPropName;
                 getAttribute(subproperty.Get(), "name", subPropName);
                 p.subProperties_.push_back(subPropName);
+                PropertyConfig tmp;
+                tmp.setName(subPropName);
+                IndexBundleSchema::const_iterator pit = indexSchema.find(tmp);
+                if(pit != indexSchema.end())
+                {
+                    ///Ugly here, each property right now should have same analysisinfo
+                    p.setAnalysisInfo(pit->getAnalysisInfo());
+                }
             }
 
             p.setOriginalName(propertyName);
@@ -1309,7 +1318,6 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
 
     // map<property name, weight>
     std::map<string, float>& propertyWeightMap = collectionMeta.indexBundleConfig_->rankingManagerConfig_.propertyWeightMapByProperty_;
-    const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
 
     for (IndexBundleSchema::const_iterator it = indexSchema.begin();
         it != indexSchema.end(); ++it)
