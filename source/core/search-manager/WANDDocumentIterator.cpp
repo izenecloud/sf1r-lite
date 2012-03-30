@@ -142,7 +142,6 @@ void WANDDocumentIterator::init_threshold(float threshold)
         currThreshold_ = maxUB * 0.5;
     }
 
-    initDocIteratorList();
     //LOG(INFO)<<"the initial currThreshold = "<<currThreshold_;
 }
 
@@ -157,7 +156,7 @@ bool WANDDocumentIterator::next()
     return do_next();
 }
 
-void WANDDocumentIterator::initDocIteratorList()
+void WANDDocumentIterator::initDocIteratorListSorter()
 {
     if(docIteratorList_.size() < 1)
         return;
@@ -175,61 +174,27 @@ void WANDDocumentIterator::initDocIteratorList()
             if(pDocIterator)
             {
                 pDocIterator->setCurrent(false);
-                if(pDocIterator->next() == false)
+                if(pDocIterator->next())
                 {
-                    term_iter->second = NULL;
-                    delete pDocIterator;
-                }
-            }
-        }
-    }
-}
-
-void WANDDocumentIterator::sortDocIterList(std::vector<TermDocumentIterator*>& docIteratorList)
-{
-    if(docIteratorList_.size() < 1)
-        return;
-    TermDocumentIterator* pDocIterator;
-    typedef std::vector<std::map<unsigned int,TermDocumentIterator*> >::iterator property_iterator;
-    typedef std::map<unsigned int,TermDocumentIterator*>::iterator term_index_iterator;
-
-    property_iterator prop_iter = docIteratorList_.begin();
-    for( ; prop_iter != docIteratorList_.end(); ++prop_iter)
-    {
-        term_index_iterator term_iter = (*prop_iter).begin();
-        for( ; term_iter != (*prop_iter).end(); term_iter++ )
-        {
-            pDocIterator = term_iter->second;
-            if(pDocIterator)
-            {
-                if(MAX_DOC_ID == pDocIterator->doc())
-                {
-                    term_iter->second = NULL;
-                    delete pDocIterator;
+                    docIteratorListSorter_.push_back(pDocIterator);
                 }
                 else
                 {
-                    docIteratorList.push_back(pDocIterator);
+                    term_iter->second = NULL;
+                    delete pDocIterator;
                 }
             }
         }
     }
+    std::sort(docIteratorListSorter_.begin(), docIteratorListSorter_.end(), SortPred());
 }
 
-bool WANDDocumentIterator::findPivot(docid_t& frontDocId) // multimap sorter as temporary variables
+bool WANDDocumentIterator::findPivot() // multimap sorter as temporary variables
 {
     float sumUB = 0.0F; //sum of upper bounds of all terms
-    //std::multimap<docid_t, TermDocumentIterator*> docIteratorSorter;
-    std::vector<TermDocumentIterator*> docIterList;
-    sortDocIterList(docIterList);
-    if(docIterList.size() == 0)
-        return false;
-
-    std::sort(docIterList.begin(), docIterList.end(), SortPred());
-    frontDocId = docIterList[0]->doc();
-    for(size_t i = 0; i < docIterList.size(); i++)
+    for(size_t i = 0; i < docIteratorListSorter_.size(); i++)
     {
-        TermDocumentIterator* pDocIterator = docIterList[i];
+        TermDocumentIterator* pDocIterator = docIteratorListSorter_[i];
         if(pDocIterator)
         {
             size_t index = getIndexOfPropertyId_(pDocIterator->propertyId_);
@@ -242,28 +207,23 @@ bool WANDDocumentIterator::findPivot(docid_t& frontDocId) // multimap sorter as 
         }
     }
     return false;
-
 }
 
 bool WANDDocumentIterator::processPrePostings(docid_t target)//multimap sorter as temporary variables
 {
-    if(docIteratorList_.size() < 1)
+    if(docIteratorListSorter_.size() < 1)
         return false;
     docid_t nFoundId = MAX_DOC_ID;
     size_t nMatch = 0;
-    property_index_term_index_iterator prop_iter = docIteratorList_.begin();
-    for ( ; prop_iter != docIteratorList_.end(); ++prop_iter)
+
+    for(size_t i = 0; i < docIteratorListSorter_.size(); i++)
     {
-        term_index_dociter_iterator term_iter = (*prop_iter).begin();
-        for( ; term_iter != (*prop_iter).end(); ++term_iter )
+        TermDocumentIterator* pEntry = docIteratorListSorter_[i];
+        if(pEntry != NULL && pEntry->doc() < target)
         {
-            TermDocumentIterator* pEntry = term_iter->second;
-            if(pEntry != NULL && pEntry->doc() < target)
-            {
-                nFoundId = pEntry->skipTo(target);
-                if(MAX_DOC_ID != nFoundId)
-                    nMatch++;
-            }
+            nFoundId = pEntry->skipTo(target);
+            if(MAX_DOC_ID != nFoundId)
+                nMatch++;
         }
     }
 
@@ -273,29 +233,65 @@ bool WANDDocumentIterator::processPrePostings(docid_t target)//multimap sorter a
         return false;
 }
 
+bool WANDDocumentIterator::bubble(size_t n)
+{
+    bool swapped = false;
+    for(size_t i = 0; i < n-1; i++)
+    {
+        if (docIteratorListSorter_[i]->doc() > docIteratorListSorter_[i+1]->doc())
+        {
+            TermDocumentIterator* tempIter = docIteratorListSorter_[i];
+            docIteratorListSorter_[i] = docIteratorListSorter_[i+1];
+            docIteratorListSorter_[i+1] = tempIter;
+            swapped = true;
+        }
+    }
+
+    return swapped;
+}
+
+void WANDDocumentIterator::bubble_sort()//bubble sort for array items
+{
+    size_t size = docIteratorListSorter_.size();
+    std::vector<TermDocumentIterator*> docIteratorList;
+    for(size_t i = 0; i < size; i++)
+    {
+        TermDocumentIterator* pDocIter = docIteratorListSorter_[i];
+        if(MAX_DOC_ID != pDocIter->doc())
+        {
+            docIteratorList.push_back(pDocIter);
+        }
+    }
+    docIteratorListSorter_.swap(docIteratorList);
+    size = docIteratorListSorter_.size();
+    for(size_t i = size; i > 1 && bubble(i); i--);
+}
+
 bool WANDDocumentIterator::do_next()
 {
     do
     {
-        if(docIteratorList_.size() == 0)
+        if(docIteratorListSorter_.size() == 0)
+        {
+            initDocIteratorListSorter();
+        }
+        if(docIteratorListSorter_.size() == 0)
             return false;
 
-        property_index_term_index_iterator prop_iter = docIteratorList_.begin();
-        for ( ; prop_iter != docIteratorList_.end(); ++prop_iter)
+        for(size_t i = 0; i < docIteratorListSorter_.size(); i++)
         {
-            term_index_dociter_iterator term_iter = (*prop_iter).begin();
-            for( ; term_iter != (*prop_iter).end(); ++term_iter )
+            TermDocumentIterator* pDocIter = docIteratorListSorter_[i];
+            if(pDocIter != NULL && pDocIter->isCurrent())
             {
-                TermDocumentIterator* pEntry = term_iter->second;
-                if(pEntry && pEntry->isCurrent())
-                {
-                    pEntry->next();
-                }
+                pDocIter->setCurrent(false);
+                pDocIter->next();
             }
         }
 
-        docid_t frontDocId;
-        if (findPivot(frontDocId) == false)
+        bubble_sort();
+        docid_t frontDocId = docIteratorListSorter_[0]->doc();
+
+        if (findPivot() == false)
             return false;
 
         //std::cout<<std::endl<<"===the pivot document:"<<pivotDoc_<<std::endl;
@@ -347,8 +343,12 @@ sf1r::docid_t WANDDocumentIterator::skipTo(sf1r::docid_t target)
 
 sf1r::docid_t WANDDocumentIterator::do_skipTo(sf1r::docid_t target)
 {
-    if(docIteratorList_.size() == 0)
-        return MAX_DOC_ID;
+    if(docIteratorListSorter_.size() == 0)
+    {
+        initDocIteratorListSorter();
+    }
+    if(docIteratorListSorter_.size() == 0)
+        return false;
 
     property_index_term_index_iterator prop_iter = docIteratorList_.begin();
     for ( ; prop_iter != docIteratorList_.end(); ++prop_iter)
