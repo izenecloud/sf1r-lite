@@ -2,8 +2,6 @@
 #define MULTIPROPERTY_SCORER_H
 
 #include "ORDocumentIterator.h"
-#include <ranking-manager/RankingManager.h>
-#include <ranking-manager/RankQueryProperty.h>
 #include <ranking-manager/RankDocumentProperty.h>
 
 #include <ir/index_manager/index/TermDocFreqs.h>
@@ -42,8 +40,16 @@ public:
 
 public:
     void add(propertyid_t propertyId,
-                     DocumentIterator* pDocIterator,
-                     std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >& termDocReaders)
+                  DocumentIterator* pDocIterator)
+    {
+        size_t index = getIndexOfProperty_(propertyId);
+        boost::mutex::scoped_lock lock(mutex_);
+        docIteratorList_[index] = pDocIterator;
+    }
+	
+    void add(propertyid_t propertyId,
+                  DocumentIterator* pDocIterator,
+                  std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >& termDocReaders)
     {
         size_t index = getIndexOfProperty_(propertyId);
         boost::mutex::scoped_lock lock(mutex_);

@@ -303,7 +303,6 @@ std::string Utilities::uint128ToMD5(const uint128_t& val)
 
     sprintf(tmpstr, "%016llx%016llx", (unsigned long long) (val >> 64), (unsigned long long) val);
     return std::string(reinterpret_cast<const char *>(tmpstr), 32);
-
 }
 
 uint128_t Utilities::md5ToUint128(const std::string& str)

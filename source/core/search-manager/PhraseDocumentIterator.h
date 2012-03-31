@@ -102,7 +102,7 @@ public:
 
     docid_t doc() { return currDoc_; }
 
-    void doc_item(RankDocumentProperty& rankDocumentProperty)
+    void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0)
     {
         for( size_t i = 0; i < termDocReaders_.size(); i++ )
         {

@@ -134,12 +134,6 @@ private:
             HitQueue* scoreItemQueue,
             int heapSize);
 
-    /**
-     * @brief get corresponding id of the property, returns 0 if the property
-     * does not exist.
-     * @see CollectionMeta::numberPropertyConfig
-     */
-    propertyid_t getPropertyIdByName_(const std::string& name) const;
 
     bool getPropertyTypeByName_(
             const std::string& name,
@@ -199,7 +193,7 @@ private:
     boost::shared_ptr<DocumentManager> documentManagerPtr_;
     boost::shared_ptr<RankingManager> rankingManagerPtr_;
     boost::weak_ptr<MiningManager> miningManagerPtr_;
-    boost::shared_ptr<QueryBuilder> queryBuilder_;
+    boost::scoped_ptr<QueryBuilder> queryBuilder_;
     std::map<propertyid_t, float> propertyWeightMap_;
 
     SortPropertyCache* pSorterCache_;

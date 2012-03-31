@@ -87,7 +87,7 @@ public:
     }
 
     /*virtual*/
-    void doc_item(RankDocumentProperty& rankDocumentProperty)
+    void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex)
     {
         if ( isCurrent_ ) {
             TermDocumentIterator::doc_item(rankDocumentProperty);

@@ -16,7 +16,7 @@ INCLUDE_DIRECTORIES(
 # sequences is important for some linker
 #if a depends b, a must precede b
 SET(libs
-  sf1r_query_manager  
+  sf1r_query_manager
   sf1r_search_manager
   sf1r_ranking_manager
   sf1r_document_manager
@@ -30,8 +30,8 @@ SET(libs
   sf1r_index_manager
   sf1r_product_manager
   sf1r_node_manager
-  sf1r_common  
-  
+  sf1r_common
+
   ${ilplib_LIBRARIES}
   ${idmlib_LIBRARIES}
   ${imllib_LIBRARIES}
@@ -48,6 +48,7 @@ SET(libs
   ${xml2_LIBRARIES}
   ${sqlite3_LIBRARIES}
   ${MYSQL_LIBRARIES}
+  ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}
   )
 SET(Boost_USE_STATIC_LIBS OFF)
@@ -60,7 +61,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   )
   ADD_EXECUTABLE(t_search_manager
     Runner.cpp
-    t_Sorter.cpp    
+    t_Sorter.cpp
     t_AndDocumentIterator.cpp
     t_OrDocumentIterator.cpp
     t_PhraseDocumentIterator.cpp
@@ -71,19 +72,19 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     t_FilterDocumentIterator.cpp
     t_AllDocumentIterator.cpp
   )
-  TARGET_LINK_LIBRARIES(t_search_manager 
-    ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} 
-    ${libs}  
+  TARGET_LINK_LIBRARIES(t_search_manager
+    ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+    ${libs}
   )
   SET_TARGET_PROPERTIES(t_search_manager PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
   ADD_TEST(search_manager "${SF1RENGINE_ROOT}/testbin/t_search_manager")
-  
+
   ##
   # test custom ranker, not boost unit test
   ADD_EXECUTABLE(test_custom_ranker
-      test_CustomRanker.cpp 
+      test_CustomRanker.cpp
   )
   TARGET_LINK_LIBRARIES(test_custom_ranker
     ${libs}
@@ -91,5 +92,5 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   SET_TARGET_PROPERTIES(test_custom_ranker PROPERTIES
       RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
   )
-  
+
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
