@@ -166,6 +166,7 @@ bool ORDocumentIterator::do_next()
         DocumentIterator* pEntry = (*iter);
         if(pEntry)
         {
+std::cout<<"pEntry->doc() "<<pEntry->doc()<<" currDoc_ "<<currDoc_<<std::endl;        
             if (currDoc_ == pEntry->doc())
                 pEntry->setCurrent(true);
             else
@@ -215,8 +216,15 @@ docid_t ORDocumentIterator::do_skipTo(docid_t target)
 
         std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();
         for (; iter != docIteratorList_.end(); ++iter)
-            if (*iter && (*iter)->doc() == currDoc_)
-                (*iter)->setCurrent(true);
+        {
+            if (*iter)
+            {
+                if((*iter)->doc() == currDoc_)
+                    (*iter)->setCurrent(true);
+                else
+                    (*iter)->setCurrent(false);					
+            }
+        }
 
         if (currDoc_ >= target)
         {
