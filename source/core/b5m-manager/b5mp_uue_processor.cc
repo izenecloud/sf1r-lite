@@ -138,7 +138,10 @@ void B5MPUueProcessor::Finish()
     uint128_t key;
     std::vector<Document> docs;
     boost::filesystem::create_directories(b5mp_scd_);
-    ScdWriterController b5mp_writer(b5mp_scd_);
+    //ScdWriterController b5mp_writer(b5mp_scd_);
+    ScdWriter b5mp_i(b5mp_scd_, INSERT_SCD);
+    ScdWriter b5mp_u(b5mp_scd_, UPDATE_SCD);
+    ScdWriter b5mp_d(b5mp_scd_, DELETE_SCD);
     uint64_t n = 0;
     while(joiner.Next(key, docs))
     {
@@ -211,7 +214,7 @@ void B5MPUueProcessor::Finish()
             doc.property("itemcount") = (uint64_t)new_product.itemcount;
             doc.eraseProperty("flag");
             doc.eraseProperty("uuid");
-            b5mp_writer.Write(doc, INSERT_SCD);
+            b5mp_i.Append(doc);
             product_db_->insert(pid, new_product);
             
         }
@@ -241,7 +244,8 @@ void B5MPUueProcessor::Finish()
             }
             if(need_update)
             {
-                b5mp_writer.Write(doc, UPDATE_SCD);
+                b5mp_u.Append(doc);
+                //b5mp_writer.Write(doc, UPDATE_SCD);
                 product_db_->update(pid, new_product);
             }
             
@@ -251,11 +255,15 @@ void B5MPUueProcessor::Finish()
         {
             Document doc;
             doc.property("DOCID") = upid;
-            b5mp_writer.Write(doc, DELETE_SCD);
+            b5mp_d.Append(doc);
+            //b5mp_writer.Write(doc, DELETE_SCD);
             product_db_->del(pid);
         }
     }
-    b5mp_writer.Flush();
+    b5mp_i.Close();
+    b5mp_u.Close();
+    b5mp_d.Close();
+    //b5mp_writer.Flush();
     boost::filesystem::remove_all(working_dir);
 }
 
