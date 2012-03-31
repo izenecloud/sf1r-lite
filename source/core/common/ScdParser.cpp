@@ -558,9 +558,12 @@ long ScdParser::iterator::getOffset()
 
 SCDDoc* ScdParser::iterator::getDoc()
 {
-    CREATE_PROFILER ( proScdParsing, "Index:SIAProcess", "Scd Parsing : parse SCD file");
+    CREATE_SCOPED_PROFILER ( proScdParsing, "ScdParser", "ScdParsing::getDoc");
+    CREATE_PROFILER ( proScdParsing1, "ScdParser", "ScdParsing::getDoc::1");
+    CREATE_PROFILER ( proScdParsing2, "ScdParser", "ScdParsing::getDoc::2");
+    CREATE_PROFILER ( proScdParsing3, "ScdParser", "ScdParsing::getDoc::3");
 
-    START_PROFILER ( proScdParsing );
+    START_PROFILER ( proScdParsing1 );
     std::size_t readLen = izenelib::util::izene_read_until(*pfs_, *buffer_, docDelimiter_);
     string str(docDelimiter_);
     if (readLen)
@@ -579,15 +582,19 @@ SCDDoc* ScdParser::iterator::getDoc()
         prevOffset_ = -1;
     }
     SCDDoc* doc = new SCDDoc;
+    STOP_PROFILER ( proScdParsing1 );
     if (str == docDelimiter_)
         return doc;
 
+    START_PROFILER ( proScdParsing2 );
     /// It's recommended to handle this processing in application by which SCD is created.
     preProcessDoc(str);
+    STOP_PROFILER ( proScdParsing2 );
 
+    START_PROFILER ( proScdParsing3 );
     scd_grammar g(*doc, codingType_);
     parse_info<> pi = parse(str.c_str(), g, space_p);
-    STOP_PROFILER ( proScdParsing );
+    STOP_PROFILER ( proScdParsing3 );
 
     return doc;
 }

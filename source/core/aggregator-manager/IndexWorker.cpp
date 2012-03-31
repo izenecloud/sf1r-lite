@@ -282,6 +282,12 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
             indexProgress_.totalFilePos_ = proccessedFileSize;
             indexProgress_.getIndexingStatus(indexStatus_);
             ++indexProgress_.currentFileIdx;
+            //uint32_t scd_index = indexProgress_.currentFileIdx;
+            //if(scd_index%100==0 || (scd_index>3000 && scd_index%20==0))
+            //{
+                //std::string report_file_name = "PerformanceIndexResult.SIAProcess-"+boost::lexical_cast<std::string>(scd_index);
+                //REPORT_PROFILE_TO_FILE(report_file_name.c_str())
+            //}
 
         } // end of loop for scd files of a collection
 
@@ -948,6 +954,7 @@ bool IndexWorker::createInsertDocId_(
         const izenelib::util::UString& scdDocId,
         docid_t& newId)
 {
+    CREATE_SCOPED_PROFILER (proCreateInsertDocId, "IndexWorker", "IndexWorker::createInsertDocId_");
     docid_t docId = 0;
 
     // already converted
@@ -1271,6 +1278,7 @@ bool IndexWorker::prepareDocument_(
                 analysisInfo = iter->getAnalysisInfo();
                 if (!analysisInfo.analyzerId_.empty())
                 {
+                    CREATE_SCOPED_PROFILER (prepare_summary, "IndexWorker", "IndexWorker::prepareDocument_::Summary");
                     unsigned int numOfSummary = 0;
                     if ((iter->getIsSnippet() || iter->getIsSummary()))
                     {
@@ -1324,6 +1332,10 @@ bool IndexWorker::prepareIndexDocument_(
         IndexerDocument& indexDocument)
 {
     CREATE_SCOPED_PROFILER (preparedocument, "IndexWorker", "IndexWorker::prepareIndexDocument_");
+    CREATE_PROFILER (pid_date, "IndexWorker", "IndexWorker::prepareIndexDocument_::DATE");
+    CREATE_PROFILER (pid_string, "IndexWorker", "IndexWorker::prepareIndexDocument_::STRING");
+    CREATE_PROFILER (pid_int, "IndexWorker", "IndexWorker::prepareIndexDocument_::INT");
+    CREATE_PROFILER (pid_float, "IndexWorker", "IndexWorker::prepareIndexDocument_::FLOAT");
 
     docid_t docId = document.getId();//new id;
     izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
@@ -1365,6 +1377,7 @@ bool IndexWorker::prepareIndexDocument_(
         }
         else if (propertyNameL == izenelib::util::UString("date", encoding))
         {
+            START_PROFILER(pid_date);
             /// format <DATE>20091009163011
             izenelib::util::UString dateStr;
             int64_t time = Utilities::convertDate(propertyValueU, encoding, dateStr);
@@ -1375,11 +1388,13 @@ bool IndexWorker::prepareIndexDocument_(
             indexerPropertyConfig.setIsAnalyzed(false);
             indexerPropertyConfig.setIsMultiValue(false);
             indexDocument.insertProperty(indexerPropertyConfig, time);
+            STOP_PROFILER(pid_date);
         }
         else
         {
             if (iter->getType() == STRING_PROPERTY_TYPE)
             {
+                START_PROFILER(pid_string);
                 if (!propertyValueU.empty())
                 {
                     ///process for properties that requires forward index to be created
@@ -1478,9 +1493,11 @@ bool IndexWorker::prepareIndexDocument_(
                                                       propertyValueU);
                     }
                 }
+                STOP_PROFILER(pid_string);
             }
             else if (iter->getType() == INT_PROPERTY_TYPE)
             {
+                START_PROFILER(pid_int);
                 if (iter->isIndex())
                 {
                     if (iter->getIsMultiValue())
@@ -1534,9 +1551,11 @@ bool IndexWorker::prepareIndexDocument_(
                         }
                     }
                 }
+                STOP_PROFILER(pid_int);
             }
             else if (iter->getType() == FLOAT_PROPERTY_TYPE)
             {
+                START_PROFILER(pid_float);
                 if (iter->isIndex())
                 {
                     if (iter->getIsMultiValue())
@@ -1575,6 +1594,7 @@ bool IndexWorker::prepareIndexDocument_(
                         }
                     }
                 }
+                STOP_PROFILER(pid_float);
             }
             else
             {
