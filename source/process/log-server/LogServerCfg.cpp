@@ -16,6 +16,7 @@ namespace sf1r
 static const char* DEFAULT_STORAGE_BASE_DIR = "log_server_storage";
 
 static const unsigned int DEFAULT_RPC_REQUEST_QUEUE_SIZE = 32768;
+static const unsigned int DEFAULT_FLASH_CHECK_INTERVAL = 60; // seconds
 
 static const unsigned int DEFAULT_THREAD_NUM = 30;
 static const unsigned int DEFAULT_DRUM_NUM_BUCKETS = 64;
@@ -162,6 +163,11 @@ void LogServerCfg::parseStorageCfg(properties& props)
         bfs::create_directories(base_dir_);
         bfs::create_directories(base_dir_+"/scd");
         bfs::create_directories(base_dir_+"/cclog");
+    }
+
+    if (!props.getValue("storage.flush_check_interval", flush_check_interval_))
+    {
+        flush_check_interval_ = DEFAULT_FLASH_CHECK_INTERVAL;
     }
 
     // uuid drum

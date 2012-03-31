@@ -79,6 +79,11 @@ public:
         return base_dir_;
     }
 
+    inline unsigned int getFlushCheckInterval() const
+    {
+        return flush_check_interval_;
+    }
+
     inline const std::string& getDrumName(DrumType type) const
     {
         if (type == UUID)
@@ -137,6 +142,7 @@ private:
     std::set<std::string> driverCollections_;
 
     std::string base_dir_;
+    unsigned int flush_check_interval_;
 
     std::string  uuid_drum_name_;
     unsigned int uuid_drum_num_buckets_;
