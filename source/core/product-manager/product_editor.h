@@ -18,10 +18,6 @@ class OperationProcessor;
 class ProductEditor
 {
 public:
-    
-    
-    
-    
     ProductEditor(
             ProductDataSource* data_source,
             OperationProcessor* op_processor,
@@ -50,9 +46,8 @@ public:
     }
 
 private:
-    
     bool AppendToGroup_(const std::vector<PMDocumentType>& doc_list, const PMDocumentType& info);
-    
+
 
 private:
     ProductDataSource* data_source_;

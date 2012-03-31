@@ -9,9 +9,7 @@
 #include <la-manager/LAPool.h>
 
 #include <common/ScdParser.h>
-#ifdef USE_LOG_SERVER
 #include <common/Utilities.h>
-#endif
 #include <idmlib/util/idm_analyzer.h>
 
 #include <boost/filesystem.hpp>
@@ -91,10 +89,6 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 
 void MultiDocSummarizationSubManager::EvaluateSummarization()
 {
-#ifndef USE_LOG_SERVER
-    BuildIndexOfParentKey_();
-#endif
-
     if (schema_.parentKeyLogPath.empty())
     {
         for (uint32_t i = GetLastDocid_() + 1, count = 0; i <= document_manager_->getMaxDocId(); i++)
@@ -111,13 +105,9 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
             const UString& key = kit->second.get<UString>();
             const UString& content = cit->second.get<UString>();
-#ifdef USE_LOG_SERVER
             std::string key_str;
             key.convertString(key_str, UString::UTF_8);
             comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key_str), i, content);
-#else
-            comment_cache_storage_->AppendUpdate(key, i, content);
-#endif
 
             if (++count % 100000 == 0)
             {
@@ -140,15 +130,10 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
                 continue;
 
             const UString& key = kit->second.get<UString>();
-#ifdef USE_LOG_SERVER
             std::string key_str;
             key.convertString(key_str, UString::UTF_8);
             KeyType parent_key;
             if (!parent_key_storage_->GetParent(Utilities::md5ToUint128(key_str), parent_key))
-#else
-            UString parent_key;
-            if (!parent_key_storage_->GetParent(key, parent_key))
-#endif
                 continue;
 
             const UString& content = cit->second.get<UString>();
@@ -207,14 +192,9 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     ilplib::langid::Analyzer* langIdAnalyzer = LAPool::getInstance()->getLangId();
 
     std::string key_str;
-#ifdef USE_LOG_SERVER
     key_str = Utilities::uint128ToUuid(key);
     UString key_ustr(key_str, UString::UTF_8);
     corpus_->start_new_coll(key_ustr);
-#else
-    key.convertString(key_str, UString::UTF_8);
-    corpus_->start_new_coll(key);
-#endif
     corpus_->start_new_doc(); // XXX
 
     for (std::map<uint32_t, UString>::const_iterator it = content_map.begin();
@@ -269,11 +249,7 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 #endif
 
     //XXX store the generated summary list
-#ifdef USE_LOG_SERVER
     std::vector<std::pair<double, UString> >& summary_list = summaries[key_ustr];
-#else
-    std::vector<std::pair<double, UString> >& summary_list = summaries[key];
-#endif
     bool ret = !summary_list.empty();
 
     if (ret)
@@ -298,13 +274,9 @@ bool MultiDocSummarizationSubManager::GetSummarizationByRawKey(
         const UString& rawKey,
         Summarization& result)
 {
-#ifdef USE_LOG_SERVER
     std::string key_str;
     rawKey.convertString(key_str, UString::UTF_8);
     return summarization_storage_->Get(Utilities::uuidToUint128(key_str), result);
-#else
-    return summarization_storage_->Get(rawKey, result);
-#endif
 }
 
 void MultiDocSummarizationSubManager::AppendSearchFilter(
@@ -328,11 +300,7 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
             try
             {
                 const std::string& paramValue = get<std::string>(filterParam[0]);
-#ifdef USE_LOG_SERVER
                 KeyType param = Utilities::uuidToUint128(paramValue);
-#else
-                KeyType param(paramValue, UString::UTF_8);
-#endif
                 std::vector<KeyType> results;
                 if (parent_key_storage_->GetChildren(param, results))
                 {
@@ -343,11 +311,7 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
                     std::vector<KeyType>::const_iterator rit = results.begin();
                     for (; rit != results.end(); ++rit)
                     {
-#ifdef USE_LOG_SERVER
                         UString result(Utilities::uint128ToMD5(*rit), UString::UTF_8);
-#else
-                        const KeyType& result = *rit;
-#endif
                         if (pBTreeIndexer->seek(schema_.foreignKeyPropName, result))
                         {
                             ///Protection
@@ -370,146 +334,6 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
         }
     }
 }
-
-#ifndef USE_LOG_SERVER
-void MultiDocSummarizationSubManager::BuildIndexOfParentKey_()
-{
-    if (schema_.parentKeyLogPath.empty()) return;
-    ScdParser parser(UString::UTF_8);
-    std::vector<std::string> scdList;
-    static const bfs::directory_iterator kItrEnd;
-    for (bfs::directory_iterator itr(schema_.parentKeyLogPath); itr != kItrEnd; ++itr)
-    {
-        if (bfs::is_regular_file(itr->status()))
-        {
-            std::string fileName = itr->path().filename().string();
-            if (parser.checkSCDFormat(fileName))
-            {
-                scdList.push_back(itr->path().string());
-            }
-            else
-            {
-                LOG(WARNING) << "SCD File not valid " << fileName;
-            }
-        }
-    }
-
-    std::vector<std::string>::const_iterator scd_it = scdList.begin();
-
-    for (; scd_it != scdList.end(); ++scd_it)
-    {
-        size_t pos = scd_it->rfind("/") + 1;
-        string filename = scd_it->substr(pos);
-
-        LOG(INFO) << "Processing SCD file. " << bfs::path(*scd_it).stem();
-
-        switch (parser.checkSCDType(*scd_it))
-        {
-        case INSERT_SCD:
-            DoInsertBuildIndexOfParentKey_(*scd_it);
-            LOG(INFO) << "Indexing Finished";
-            break;
-        case DELETE_SCD:
-            DoDelBuildIndexOfParentKey_(*scd_it);
-            LOG(INFO) << "Delete Finished";
-            break;
-        case UPDATE_SCD:
-            DoUpdateIndexOfParentKey_(*scd_it);
-            LOG(INFO) << "Update Finished";
-            break;
-        default:
-            break;
-        }
-        parser.load(*scd_it);
-    }
-    parent_key_storage_->Flush();
-
-    bfs::path bkDir = bfs::path(schema_.parentKeyLogPath) / "backup";
-    bfs::create_directory(bkDir);
-    LOG(INFO) << "moving " << scdList.size() << " SCD files to directory " << bkDir;
-
-    for (scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
-    {
-        try
-        {
-            bfs::rename(*scd_it, bkDir / bfs::path(*scd_it).filename());
-        }
-        catch (bfs::filesystem_error& e)
-        {
-            LOG(WARNING) << "exception in rename file " << *scd_it << ": " << e.what();
-        }
-    }
-}
-
-void MultiDocSummarizationSubManager::DoInsertBuildIndexOfParentKey_(
-        const std::string& fileName)
-{
-    ScdParser parser(UString::UTF_8);
-    if (!parser.load(fileName)) return;
-    for (ScdParser::iterator doc_iter = parser.begin();
-            doc_iter != parser.end(); ++doc_iter)
-    {
-        if (*doc_iter == NULL)
-        {
-            LOG(WARNING) << "SCD File not valid.";
-            return;
-        }
-        SCDDocPtr doc = (*doc_iter);
-        if (!CheckParentKeyLogFormat(doc, parent_key_ustr_name_))
-            continue;
-        parent_key_storage_->Insert((*doc)[1].second, (*doc)[0].second);
-    }
-}
-
-void MultiDocSummarizationSubManager::DoUpdateIndexOfParentKey_(
-        const std::string& fileName)
-{
-    ScdParser parser(UString::UTF_8);
-    if (!parser.load(fileName)) return;
-    for (ScdParser::iterator doc_iter = parser.begin();
-            doc_iter != parser.end(); ++doc_iter)
-    {
-        if (*doc_iter == NULL)
-        {
-            LOG(WARNING) << "SCD File not valid.";
-            return;
-        }
-        SCDDocPtr doc = (*doc_iter);
-        if (!CheckParentKeyLogFormat(doc, parent_key_ustr_name_))
-            continue;
-        parent_key_storage_->Update((*doc)[1].second, (*doc)[0].second);
-    }
-}
-
-void MultiDocSummarizationSubManager::DoDelBuildIndexOfParentKey_(
-        const std::string& fileName)
-{
-    ScdParser parser(UString::UTF_8);
-    if (!parser.load(fileName)) return;
-    static const KeyType no_parent;
-    for (ScdParser::iterator doc_iter = parser.begin();
-            doc_iter != parser.end(); ++doc_iter)
-    {
-        if (*doc_iter == NULL)
-        {
-            LOG(WARNING) << "SCD File not valid.";
-            return;
-        }
-        SCDDocPtr doc = (*doc_iter);
-        switch (doc->size())
-        {
-        case 1:
-            parent_key_storage_->Delete(no_parent, (*doc)[0].second);
-            break;
-        case 2:
-            parent_key_storage_->Delete((*doc)[1].second, (*doc)[0].second);
-            break;
-        default:
-            break;
-        }
-    }
-}
-#endif
 
 uint32_t MultiDocSummarizationSubManager::GetLastDocid_() const
 {

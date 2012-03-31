@@ -21,8 +21,6 @@ class IDMAnalyzer;
 }
 }
 
-#define USE_LOG_SERVER
-
 namespace sf1r
 {
 class DocumentManager;
@@ -35,11 +33,7 @@ class Corpus;
 
 class MultiDocSummarizationSubManager
 {
-#ifdef USE_LOG_SERVER
     typedef uint128_t KeyType;
-#else
-    typedef izenelib::util::UString KeyType;
-#endif
 
 public:
     MultiDocSummarizationSubManager(
@@ -65,16 +59,6 @@ private:
             Summarization& summarization,
             const KeyType& key,
             const std::map<uint32_t, izenelib::util::UString>& content_map);
-
-#ifndef USE_LOG_SERVER
-    void BuildIndexOfParentKey_();
-
-    void DoInsertBuildIndexOfParentKey_(const std::string& fileName);
-
-    void DoDelBuildIndexOfParentKey_(const std::string& fileName);
-
-    void DoUpdateIndexOfParentKey_(const std::string& fileName);
-#endif
 
     uint32_t GetLastDocid_() const;
 
