@@ -312,8 +312,10 @@ void MasterManagerBase::updateWorkerNode(boost::shared_ptr<Sf1rNode>& workerNode
     catch (std::exception& e)
     {
         workerNode->worker_.isGood_ = false;
-        std::cout <<"Error workerPort "<<znode.getStrValue(ZNode::KEY_WORKER_PORT)
-                  <<" from "<<znode.getStrValue(ZNode::KEY_HOST)<<std::endl;
+        LOG (ERROR) << "failed to convert workerPort \"" << znode.getStrValue(ZNode::KEY_WORKER_PORT)
+                    << "\" got from worker " << workerNode->worker_.shardId_
+                    << " on node " << workerNode->nodeId_
+                    << " @" << workerNode->host_;
     }
 
     try
@@ -324,8 +326,10 @@ void MasterManagerBase::updateWorkerNode(boost::shared_ptr<Sf1rNode>& workerNode
     catch (std::exception& e)
     {
         workerNode->worker_.isGood_ = false;
-        std::cout <<"Error dataPort "<<znode.getStrValue(ZNode::KEY_DATA_PORT)
-                  <<" from "<<znode.getStrValue(ZNode::KEY_HOST)<<std::endl;
+        LOG (ERROR) << "failed to convert dataPort \"" << znode.getStrValue(ZNode::KEY_DATA_PORT)
+                    << "\" got from worker " << workerNode->worker_.shardId_
+                    << " on node " << workerNode->nodeId_
+                    << " @" << workerNode->host_;
     }
 
     LOG (INFO) << CLASSNAME << " detected worker " << workerNode->worker_.shardId_ << " "
