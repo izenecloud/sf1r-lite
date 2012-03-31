@@ -86,7 +86,7 @@ public:
     }
 #endif
 
-    void doc_item(RankDocumentProperty& rankDocumentProperty);
+    void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0);
 
     unsigned int df() {return df_;}
 
@@ -122,6 +122,8 @@ private:
     TermDocumentIterator(const TermDocumentIterator&);
     void operator=(const TermDocumentIterator&);
 
+    void ensureTermDocReader_();
+
 protected:
     termid_t termId_;
 
@@ -155,6 +157,7 @@ protected:
 
     float ub_;
     friend class WANDDocumentIterator;
+    friend class VirtualPropertyTermDocumentIterator;
 };
 
 }

@@ -47,7 +47,7 @@ public:
         return nextResponse_;
     }
 
-    void doc_item(RankDocumentProperty& rankDocumentProperty)
+    void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0)
     {
         // ignore
         //cout << " [ PersonalSearchDocumentIterator::doc_item() ] " << endl;

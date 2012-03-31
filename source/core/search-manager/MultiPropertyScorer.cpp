@@ -21,22 +21,29 @@ double MultiPropertyScorer::score(
         if (pEntry && pEntry->isCurrent())
         {
             double weight = propertyWeightList_[i];
-            if (weight != 0.0F)
+            if(pEntry->isScorer())
             {
-                rankDocumentProperty_.reset();
-                rankDocumentProperty_.resize(rankQueryProperties[i].size());
-                pEntry->doc_item(rankDocumentProperty_);
+                score += weight * pEntry->score(rankQueryProperties[i],propertyRankers[i]);
+            }
+            else
+            {
+                if (weight != 0.0F)
+                {
+                    rankDocumentProperty_.reset();
+                    rankDocumentProperty_.resize(rankQueryProperties[i].size());
+                    pEntry->doc_item(rankDocumentProperty_);
 
-                //START_PROFILER ( compute_score )
-                score += weight * propertyRankers[i]->getScore(
-                    rankQueryProperties[i],
-                    rankDocumentProperty_
-                );
-                //STOP_PROFILER ( compute_score )
+                    //START_PROFILER ( compute_score )
+                    score += weight * propertyRankers[i]->getScore(
+                        rankQueryProperties[i],
+                        rankDocumentProperty_
+                    );
+                    //STOP_PROFILER ( compute_score )
 
-                //cout << i << " - " << weight << " * " << propertyRankers[i]->getScore(rankQueryProperties[i], rankDocumentProperty_) <<endl;
+                    //cout << i << " - " << weight << " * " << propertyRankers[i]->getScore(rankQueryProperties[i], rankDocumentProperty_) <<endl;
 
-                pEntry->queryBoosting(score, weight); // if personal search available
+                    pEntry->queryBoosting(score, weight); // if personal search available
+                }
             }
         }
     }

@@ -13,6 +13,8 @@
 #include "DocumentIterator.h"
 #include "MultiPropertyScorer.h"
 #include "WANDDocumentIterator.h"
+#include "VirtualPropertyScorer.h"
+#include "VirtualPropertyTermDocumentIterator.h"
 #include "Filter.h"
 #include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
@@ -85,17 +87,44 @@ public:
 
     void reset_cache();
 
+    /**
+     * @brief get corresponding id of the property, returns 0 if the property
+     * does not exist.
+     * @see CollectionMeta::numberPropertyConfig
+     */
+    propertyid_t getPropertyIdByName(const std::string& name) const;
+
 private:
+    void prefetch_term_doc_readers_(
+        const std::vector<pair<termid_t, string> >& termList,
+        collectionid_t colID,
+        const PropertyConfig& properyConfig,
+        bool readPositions,
+        bool& isNumericFilter,
+        std::map<termid_t, std::vector<TermDocFreqs*> > & termDocReaders
+    );
+	
     void prepare_for_property_(
         MultiPropertyScorer* pScorer,
         size_t & success_properties,
         SearchKeywordOperation& actionOperation,
         collectionid_t colID,
-        const std::string& property,
-        unsigned int propertyId,
+        const PropertyConfig& properyConfig,        
         bool readPositions,
         const std::map<termid_t, unsigned>& termIndexMapInProperty
     );
+
+    void prepare_for_virtual_property_(
+        MultiPropertyScorer* pScorer,
+        size_t & success_properties,
+        SearchKeywordOperation& actionOperation,
+        collectionid_t colID,
+        const PropertyConfig& properyConfig,        
+        bool readPositions,
+        const std::map<termid_t, unsigned>& termIndexMapInProperty,
+        const property_weight_map& propertyWeightMap
+    );
+
 
     void prepare_for_wand_property_(
         WANDDocumentIterator* pWandScorer,
@@ -119,10 +148,13 @@ private:
         bool isNumericFilter,
         bool readPositions,
         const std::map<termid_t, unsigned>& termIndexMapInProperty,
-        DocumentIterator* &pDocIterator,
+        DocumentIteratorPointer& pDocIterator,
+        std::map<termid_t, VirtualPropertyTermDocumentIterator* >& virtualTermIters,
         std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >& termDocReaders,
         bool hasUnigramProperty = true,
         bool isUnigramSearchMode = false,
+        const std::string& virtualProperty = "",
+        bool hasVirtualIterBuilt = false,
         int parentAndOrFlag = -1
     );
 

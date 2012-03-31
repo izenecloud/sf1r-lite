@@ -47,6 +47,7 @@ SET(libs
   ${xml2_LIBRARIES}
   ${sqlite3_LIBRARIES}
   ${MYSQL_LIBRARIES}
+  ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}
   )
 SET(Boost_USE_STATIC_LIBS OFF)

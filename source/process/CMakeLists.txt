@@ -97,6 +97,7 @@ TARGET_LINK_LIBRARIES(CobraProcess
   ${sqlite3_LIBRARIES}
   ${MYSQL_LIBRARIES}
   ${Thrift_LIBS}
+  ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}
 )
 

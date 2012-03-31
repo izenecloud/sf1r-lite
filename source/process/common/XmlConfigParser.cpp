@@ -1267,6 +1267,7 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
             throw e;
         }
     }
+    const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
 
     Iterator<Element> virtualproperty("VirtualProperty");
     for (virtualproperty = virtualproperty.begin(indexSchemaNode); virtualproperty != virtualproperty.end(); virtualproperty++)
@@ -1288,6 +1289,14 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
                 string subPropName;
                 getAttribute(subproperty.Get(), "name", subPropName);
                 p.subProperties_.push_back(subPropName);
+                PropertyConfig tmp;
+                tmp.setName(subPropName);
+                IndexBundleSchema::const_iterator pit = indexSchema.find(tmp);
+                if(pit != indexSchema.end())
+                {
+                    ///Ugly here, each property right now should have same analysisinfo
+                    p.setAnalysisInfo(pit->getAnalysisInfo());
+                }
             }
 
             p.setOriginalName(propertyName);
@@ -1309,14 +1318,29 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
 
     // map<property name, weight>
     std::map<string, float>& propertyWeightMap = collectionMeta.indexBundleConfig_->rankingManagerConfig_.propertyWeightMapByProperty_;
-    const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
 
     for (IndexBundleSchema::const_iterator it = indexSchema.begin();
         it != indexSchema.end(); ++it)
     {
         if (it->getRankWeight() >= 0.0f)
         {
-            propertyWeightMap.insert(pair<string, float>(it->getName(), it->getRankWeight()));
+            propertyWeightMap[it->getName()] = it->getRankWeight();
+        }
+        if (! it->subProperties_.empty())
+        {
+            float weight = 0.0f;
+            for(unsigned i = 0; i < it->subProperties_.size(); ++i)
+            {
+                PropertyConfig p;
+                p.setName(it->subProperties_[i]);
+				
+                IndexBundleSchema::const_iterator pit = indexSchema.find(p);
+                if((pit != indexSchema.end())&&(pit->getRankWeight() >= 0.0f))
+                {
+                    weight += pit->getRankWeight();
+                }
+            }
+            propertyWeightMap[it->getName()] = weight;
         }
     }
 }

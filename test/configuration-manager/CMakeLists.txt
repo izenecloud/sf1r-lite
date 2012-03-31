@@ -34,6 +34,7 @@ SET(libs
   ${xml2_LIBRARIES}
   ${MYSQL_LIBRARIES}
   ${TokyoCabinet_LIBRARIES}
+  ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}
   )
 

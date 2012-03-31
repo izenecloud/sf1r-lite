@@ -252,14 +252,15 @@ docid_t ORDocumentIterator::do_skipTo(docid_t target)
 #endif
 
 void ORDocumentIterator::doc_item(
-    RankDocumentProperty& rankDocumentProperty)
+    RankDocumentProperty& rankDocumentProperty, 
+    unsigned propIndex)
 {
     DocumentIterator* pEntry;
     for (size_t i = 0; i < pDocIteratorQueue_->size(); ++i)
     {
         pEntry = pDocIteratorQueue_->getAt(i);
         if (pEntry->isCurrent())
-            pEntry->doc_item(rankDocumentProperty);
+            pEntry->doc_item(rankDocumentProperty,propIndex);
     }
 }
 

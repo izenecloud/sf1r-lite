@@ -222,7 +222,7 @@ bool SearchManager::search(
             indexPropertyList.begin(),
             indexPropertyList.end(),
             indexPropertyIdList.begin(),
-            boost::bind(&SearchManager::getPropertyIdByName_, this, _1)
+            boost::bind(&QueryBuilder::getPropertyIdByName, queryBuilder_.get(), _1)
     );
 
     if ( actionOperation.noError() == false )
@@ -897,21 +897,6 @@ void SearchManager::prepare_sorter_customranker_(
                 break;
             }
         }
-    }
-}
-
-propertyid_t SearchManager::getPropertyIdByName_(const std::string& name) const
-{
-    typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator
-    iterator;
-    iterator found = schemaMap_.find(name);
-    if (found != schemaMap_.end())
-    {
-        return found->second.getPropertyId();
-    }
-    else
-    {
-        return 0;
     }
 }
 
