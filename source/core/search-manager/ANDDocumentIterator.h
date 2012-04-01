@@ -171,7 +171,6 @@ inline bool ANDDocumentIterator::do_next()
         currDoc_ = target;
         return true;
     }
-std::cout<<"AND ITER do_next nMatch "<<nMatch<<" nIteratorNum_ "<<nIteratorNum_<<std::endl;	
     return false;
 
 }

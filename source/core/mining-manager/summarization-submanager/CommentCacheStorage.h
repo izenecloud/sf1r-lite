@@ -8,8 +8,6 @@
 #include <3rdparty/am/stx/btree_map.h>
 #include <util/izene_serialization.h>
 
-#define USE_LOG_SERVER
-
 namespace sf1r
 {
 
@@ -58,11 +56,7 @@ private:
 class CommentCacheStorage
 {
 public:
-#ifdef USE_LOG_SERVER
     typedef uint128_t KeyType;
-#else
-    typedef izenelib::util::UString KeyType;
-#endif
     typedef izenelib::util::UString ContentType;
 
     typedef std::map<uint32_t, ContentType> CommentCacheItemType;
