@@ -544,13 +544,6 @@ void MasterManagerBase::registerSearchServer()
     }
 }
 
-void MasterManagerBase::deregisterSearchServer()
-{
-    zookeeper_->deleteZNode(serverRealPath_);
-
-    std::cout<<CLASSNAME<<" Master is broken down... " <<std::endl;
-}
-
 void MasterManagerBase::resetAggregatorConfig()
 {
     std::vector<boost::shared_ptr<AggregatorBase> >::iterator agg_it;

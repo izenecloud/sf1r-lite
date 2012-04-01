@@ -1,5 +1,6 @@
 #include "NodeManagerBase.h"
 #include "SuperNodeManager.h"
+#include "SuperMasterManager.h"
 
 #include <sstream>
 
@@ -199,6 +200,8 @@ void NodeManagerBase::enterCluster()
     if (sf1rTopology_.curNode_.master_.isEnabled_)
     {
         startMasterManager();
+        SuperMasterManager::get()->init(sf1rTopology_);
+        SuperMasterManager::get()->start();
         masterStarted_ = true;
     }
 }

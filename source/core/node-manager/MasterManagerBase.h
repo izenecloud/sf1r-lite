@@ -124,11 +124,6 @@ protected:
      */
     void registerSearchServer();
 
-    /**
-     * Deregister SF1 server on failure.
-     */
-    void deregisterSearchServer();
-
     /***/
     void resetAggregatorConfig();
 
