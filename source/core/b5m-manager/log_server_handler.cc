@@ -81,8 +81,8 @@ void LogServerHandler::Finish()
         work_path = "./logserver-update-working";
     }
     OfferDb::cursor_type it = odb_->begin();
-    std::string oid;
-    std::string pid;
+    OfferDb::KeyType oid;
+    OfferDb::ValueType ovalue;
     boost::filesystem::remove_all(work_path);
     boost::filesystem::create_directories(work_path);
     izenelib::am::ssf::Writer<> writer(work_path+"/writer");
@@ -91,16 +91,16 @@ void LogServerHandler::Finish()
     while(true)
     {
         ++n;
-        if(!odb_->fetch(it, oid, pid)) break;
+        if(!odb_->fetch(it, oid, ovalue)) break;
         odb_->iterNext(it);
         //LOG(INFO)<<"find pid "<<pid<<std::endl;
         if(n%1000000==0)
         {
             LOG(INFO)<<"iter "<<n<<" in odb"<<std::endl;
         }
-        if(changed_pid_.find(pid) == changed_pid_.end()) continue;
+        if(changed_pid_.find(ovalue.pid) == changed_pid_.end()) continue;
         //writer.Append( B5MHelper::StringToUint128(pid), B5MHelper::StringToUint128(oid));
-        writer.Append( B5MHelper::StringToUint128(pid), oid);
+        writer.Append( B5MHelper::StringToUint128(ovalue.pid), oid);
     }
     writer.Close();
     izenelib::am::ssf::Sorter<uint32_t, uint128_t>::Sort(writer.GetPath());
@@ -110,6 +110,7 @@ void LogServerHandler::Finish()
     std::vector<uint128_t> ioid_list;
     std::vector<std::string> oid_list;
     uint128_t ipid;
+    std::string pid;
     n = 0;
     while(joiner.Next(ipid, oid_list))
     {

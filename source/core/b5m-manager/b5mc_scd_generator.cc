@@ -22,6 +22,14 @@ B5MCScdGenerator::B5MCScdGenerator(OfferDb* odb): odb_(odb)
 
 bool B5MCScdGenerator::Generate(const std::string& scd_path, const std::string& output_dir)
 {
+    if(odb_->is_open())
+    {
+        if(!odb_->open())
+        {
+            LOG(ERROR)<<"odb open fail"<<std::endl;
+            return false;
+        }
+    }
     typedef izenelib::util::UString UString;
     namespace bfs = boost::filesystem;
     bfs::create_directories(output_dir);
@@ -63,9 +71,10 @@ bool B5MCScdGenerator::Generate(const std::string& scd_path, const std::string& 
             std::string soid;
             oid.convertString(soid, UString::UTF_8);
             //std::string spid = sdocid;
-            std::string spid;
-            if(!odb_->get(soid, spid)) continue;
-            doc.property("uuid") = UString(spid, UString::UTF_8);
+            //std::string spid;
+            OfferDb::ValueType ovalue;
+            if(!odb_->get(soid, ovalue)) continue;
+            doc.property("uuid") = UString(ovalue.pid, UString::UTF_8);
             writer.Write(doc, scd_type);
         }
     }
