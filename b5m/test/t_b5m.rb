@@ -48,8 +48,8 @@ describe "B5M Tester" do
     #Dir.mkdir(@mdb) unless File.exist?(@mdb)
     @matcher_program = B5MPath.matcher
 
-    @o_max = 100
-    @p_max = 20
+    @o_max = 200
+    @p_max = 100
     @price_max = 10000
     @source_list = ["SA", "SB", "SC", "SD", "SE"]
     @logger = Logger.new(STDOUT)

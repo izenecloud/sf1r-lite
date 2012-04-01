@@ -7,6 +7,7 @@
 #include <am/3rdparty/rde_hash.h>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/iterator/iterator_facade.hpp>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -70,6 +71,8 @@ public:
     };
 
 
+
+
     class iterator
     {
     public:
@@ -96,9 +99,7 @@ public:
         iterator& operator+=(unsigned int offset);
 
         SCDDocPtr operator*();
-
         long getOffset();
-
     private:
         SCDDoc* getDoc();
 
@@ -126,11 +127,40 @@ public:
         std::vector<string> propertyNameList_;
     };  // class iterator
 
+    class cached_iterator : public boost::iterator_facade<cached_iterator, SCDDocPtr const, boost::forward_traversal_tag>
+    {
+    public:
+        typedef std::vector<std::pair<SCDDocPtr, long> > cache_type; //the cached offset is the end position of that doc
+        cached_iterator(long offset);
+        cached_iterator(ScdParser* pParser, uint32_t start_doc);
+        cached_iterator(ScdParser* pParser, uint32_t start_doc, const std::vector<std::string>& pname_list);
+        //cached_iterator(const cached_iterator& other);
+        ~cached_iterator();
+        long getOffset();
+        iterator get_iterator() const {return it_;}
+
+    private:
+        friend class boost::iterator_core_access;
+        void increment();
+        const SCDDocPtr dereference() const;
+        bool equal(const cached_iterator& other) const;
+
+    private:
+        iterator it_;
+        long offset_;
+        cache_type cache_;
+        uint32_t cache_index_;
+        static const uint32_t MAX_CACHE_NUM = 1000;
+
+    }; //class cached_iterator
+
     iterator begin(unsigned int start_doc = 0);
-
     iterator begin(const std::vector<string>& propertyNameList, unsigned int start_doc = 0);
-
     iterator end();
+
+    cached_iterator cbegin(unsigned int start_doc = 0);
+    cached_iterator cbegin(const std::vector<string>& propertyNameList, unsigned int start_doc = 0);
+    cached_iterator cend();
 
 private:
     ifstream fs_;
