@@ -9,18 +9,12 @@
 
 #include <vector>
 
-#define USE_LOG_SERVER
-
 namespace sf1r
 {
 
 class SummarizationStorage
 {
-#ifdef USE_LOG_SERVER
     typedef uint128_t KeyType;
-#else
-    typedef izenelib::util::UString KeyType;
-#endif
     typedef izenelib::am::leveldb::Table<KeyType, Summarization> SummarizationDBType;
 
 public:

@@ -1,4 +1,5 @@
 #include "product_db.h"
+#include <sstream>
 using namespace sf1r;
 
 ProductProperty::ProductProperty()
@@ -82,6 +83,7 @@ ProductProperty& ProductProperty::operator-=(const ProductProperty& other)
         else
         {
             it->second -= oit->second;
+            LOG(INFO)<<oit->first<<" reduced from "<<it->second+oit->second<<" to "<<it->second<<std::endl;
             //if(it->second<0)
             //{
                 ////invalid data
@@ -107,4 +109,14 @@ ProductProperty& ProductProperty::operator-=(const ProductProperty& other)
 }
 
 
+std::string ProductProperty::ToString() const
+{
+    std::stringstream ss;
+    ss<<"itemcount:"<<itemcount<<",price:"<<price.ToString()<<",source:";
+    for(SourceMap::const_iterator it = source.begin(); it!=source.end(); ++it)
+    {
+        ss<<"["<<it->first<<"-"<<it->second<<"]";
+    }
+    return ss.str();
+}
 

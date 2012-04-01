@@ -33,7 +33,6 @@ void ANDDocumentIterator::add(DocumentIterator* pDocIterator)
         pNOTDocIterator_->add(pDocIterator);
     }
     else {
-std::cout<<"ANDITER add "<<pDocIterator<<std::endl;		
         docIterList_.push_back(pDocIterator);
         ++nIteratorNum_;
     }

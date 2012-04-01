@@ -3,7 +3,7 @@
 
 #include <common/type_defs.h>
 #include <document-manager/Document.h>
-//#define USE_LOG_SERVER 
+
 namespace sf1r
 {
 
@@ -18,12 +18,12 @@ typedef std::vector<std::pair<float, std::string> > TPCQueue;
 
 struct ProductEditOption
 {
-//     bool backup;
+//  bool backup;
     bool force;
-//     bool ignore_loss;
-    
+//  bool ignore_loss;
+
     ProductEditOption()
-    :force(false)
+        :force(false)
     {
     }
 };

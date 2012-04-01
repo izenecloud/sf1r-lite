@@ -15,6 +15,14 @@ UueGenerator::UueGenerator(OfferDb* odb)
 
 bool UueGenerator::Generate(const std::string& b5mo_scd, const std::string& result)
 {
+    if(!odb_->is_open())
+    {
+        if(!odb_->open())
+        {
+            LOG(ERROR)<<"odb open fail"<<std::endl;
+            return false;
+        }
+    }
     //if(!LogServerClient::Init(logserver_config_))
     //{
         //std::cout<<"log server init failed"<<std::endl;
@@ -75,39 +83,52 @@ bool UueGenerator::Generate(const std::string& b5mo_scd, const std::string& resu
             if( docid.length()==0 ) continue;
             docid.convertString(sdocid, izenelib::util::UString::UTF_8);
             pid.convertString(spid, izenelib::util::UString::UTF_8);
+            OfferDb::ValueType old_ovalue;
             std::string old_spid;
             UueItem uue;
             uue.docid = sdocid;
             if(scd_type==INSERT_SCD)
             {
-                if(odb_->get(sdocid, old_spid)) continue;
+                if(odb_->get(sdocid, old_ovalue)) 
+                {
+                    LOG(WARNING)<<"[I] "<<sdocid<<" already exists in odb"<<std::endl;
+                    continue;
+                }
                 uue.from_to.to = spid;
-                odb_->update(sdocid, spid);
+                //odb_->update(sdocid, spid);
             }
             else if(scd_type==UPDATE_SCD)
             {
-                if(!odb_->get(sdocid, old_spid)) continue;
-                uue.from_to.from = old_spid;
+                if(!odb_->get(sdocid, old_ovalue)) 
+                {
+                    LOG(WARNING)<<"[U] "<<sdocid<<" not exists in odb"<<std::endl;
+                    continue;
+                }
+                uue.from_to.from = old_ovalue.pid;
                 if(spid.length()>0)
                 {
                     uue.from_to.to = spid;
-                    odb_->update(sdocid, spid);
+                    //odb_->update(sdocid, spid);
                 }
                 else
                 {
-                    uue.from_to.to = old_spid; //pid not changed, but flag it as an update.
+                    uue.from_to.to = old_ovalue.pid; //pid not changed, but flag it as an update.
                 }
             }
             else
             {
-                if(!odb_->get(sdocid, old_spid)) continue;
-                uue.from_to.from = old_spid;
-                odb_->del(sdocid);
+                if(!odb_->get(sdocid, old_ovalue)) 
+                {
+                    LOG(WARNING)<<"[D] "<<sdocid<<" not exists in odb"<<std::endl;
+                    continue;
+                }
+                uue.from_to.from = old_ovalue.pid;
+                //odb_->del(sdocid);
             }
             ofs<<uue.docid<<","<<uue.from_to.from<<","<<uue.from_to.to<<std::endl;
         }
     }
-    odb_->flush();
+    //odb_->flush();
     ofs.close();
     return true;
 }

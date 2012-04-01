@@ -39,6 +39,8 @@ namespace sf1r {
         ProductProperty& operator+=(const ProductProperty& other);
 
         ProductProperty& operator-=(const ProductProperty& other);
+
+        std::string ToString() const;
     };
 
     //typedef izenelib::am::tc::BTree<std::string, ProductProperty> ProductDb;

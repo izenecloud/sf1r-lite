@@ -14,38 +14,26 @@
 
 using namespace sf1r;
 
-B5MPUueProcessor::B5MPUueProcessor(const std::string& b5mo_scd, const std::string& b5mp_scd, ProductDb* product_db, const std::string& work_path, bool reindex, bool fast_mode)
-:b5mo_scd_(b5mo_scd), b5mp_scd_(b5mp_scd), product_db_(product_db), work_path_(work_path), reindex_(reindex), fast_mode_(fast_mode)
+B5MPUueProcessor::B5MPUueProcessor(const std::string& b5mo_scd, const std::string& b5mp_scd, OfferDb* odb, ProductDb* product_db, const std::string& work_path, bool reindex, bool fast_mode)
+:b5mo_scd_(b5mo_scd), b5mp_scd_(b5mp_scd), odb_(odb), product_db_(product_db), work_path_(work_path), reindex_(reindex), fast_mode_(fast_mode)
 {
 }
 
 void B5MPUueProcessor::Process(const UueItem& item)
 {
     o2p_map_[item.docid] = item.from_to;
-    //for(uint32_t i=0;i<item.docid_list.size(); i++)
-    //{
-        //const std::string& oid = item.docid_list[i];
-        //if(item.type==BUUE_APPEND)
-        //{
-            //o2p_map_[oid].first = item.uuid;
-        //}
-        //else
-        //{
-            //std::string uuid = item.uuid;
-            //if(uuid=="*")
-            //{
-                //if(!LogServerClient::GetUuid(oid, uuid))
-                //{
-                    //continue;
-                //}
-            //}
-            //o2p_map_[oid].second = uuid;
-        //}
-    //}
 }
 
 void B5MPUueProcessor::Finish()
 {
+    if(!odb_->is_open())
+    {
+        if(!odb_->open())
+        {
+            LOG(ERROR)<<"odb open fail"<<std::endl;
+            return;
+        }
+    }
     std::vector<std::string> scd_list;
     B5MHelper::GetScdList(b5mo_scd_, scd_list);
     if(scd_list.empty()) return;
@@ -67,7 +55,7 @@ void B5MPUueProcessor::Finish()
     for(uint32_t i=0;i<scd_list.size();i++)
     {
         std::string scd_file = scd_list[i];
-        //int scd_type = ScdParser::checkSCDType(scd_file);
+        int scd_type = ScdParser::checkSCDType(scd_file);
         LOG(INFO)<<"Processing "<<scd_file<<std::endl;
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
@@ -104,7 +92,11 @@ void B5MPUueProcessor::Finish()
                 //if(!find_match) continue;
             //}
             std::string sdocid;
-            doc.property("DOCID").get<UString>().convertString(sdocid, UString::UTF_8);
+            UString udocid;
+            doc.getProperty("DOCID", udocid);
+            udocid.convertString(sdocid, UString::UTF_8);
+            std::string old_source;
+            std::string new_source;
             UueFromTo from_to;
             O2PMap::iterator it = o2p_map_.find(sdocid);
             if(it==o2p_map_.end())
@@ -120,14 +112,42 @@ void B5MPUueProcessor::Finish()
             {
                 uint128_t to_id = B5MHelper::StringToUint128(from_to.to);
                 doc.property("flag") = FLAG_APPEND;
+                doc.getString("Source", new_source);
                 writer.Append(to_id, doc);
             }
             if(from_to.from.length()>0)
             {
+                doc.clear();
+                doc.property("DOCID") = udocid;
                 uint128_t from_id = B5MHelper::StringToUint128(from_to.from);
                 doc.property("flag") = FLAG_REMOVE;
+                if(from_to.from!=from_to.to)
+                {
+                    OfferDb::ValueType ovalue;
+                    odb_->get(sdocid, ovalue);
+                    old_source = ovalue.source;
+                    if(new_source.empty()) new_source=old_source;
+                    if(!old_source.empty()) doc.property("Source") = UString(old_source, UString::UTF_8);
+                }
                 writer.Append(from_id, doc);
-
+            }
+            //TODO update odb here;
+            bool need_update_odb = false;
+            if(from_to.to!=from_to.from)
+            {
+                need_update_odb = true;
+            }
+            if(old_source!=new_source)
+            {
+                need_update_odb = true;
+            }
+            if(need_update_odb)
+            {
+                OfferDb::ValueType ovalue;
+                ovalue.pid = from_to.to;
+                ovalue.source = new_source;
+                odb_->update(sdocid, ovalue);
+                //LOG(INFO)<<"odb update "<<sdocid<<","<<ovalue.pid<<"-"<<ovalue.source<<std::endl;
             }
         }
     }
@@ -154,6 +174,7 @@ void B5MPUueProcessor::Finish()
         UString upid(pid, UString::UTF_8);
         ProductProperty product;
         product_db_->get(pid, product);
+        LOG(INFO)<<"pid "<<pid<<" before : "<<product.ToString()<<std::endl;
         ProductProperty new_product(product);
         for(uint32_t i=0;i<docs.size();i++)
         {
@@ -166,9 +187,14 @@ void B5MPUueProcessor::Finish()
             }
             else
             {
+                LOG(INFO)<<"-= on pid "<<pid<<std::endl;
+                LOG(INFO)<<pp.ToString()<<std::endl;
+                LOG(INFO)<<new_product.ToString()<<std::endl;
                 new_product -= pp;
+                LOG(INFO)<<new_product.ToString()<<std::endl;
             }
         }
+        LOG(INFO)<<"pid "<<pid<<" after : "<<new_product.ToString()<<std::endl;
         int op_type = -1;
         if(product.itemcount==0 && new_product.itemcount>0)
         {
@@ -263,7 +289,9 @@ void B5MPUueProcessor::Finish()
     b5mp_i.Close();
     b5mp_u.Close();
     b5mp_d.Close();
-    //b5mp_writer.Flush();
     boost::filesystem::remove_all(working_dir);
+    LOG(INFO)<<"flushing odb.."<<std::endl;
+    odb_->flush();
+    LOG(INFO)<<"flush odb complete"<<std::endl;
 }
 
