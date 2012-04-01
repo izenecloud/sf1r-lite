@@ -398,6 +398,25 @@ ScdParser::iterator ScdParser::end()
     return iterator(-1);
 }
 
+ScdParser::cached_iterator ScdParser::cbegin(unsigned int start_doc)
+{
+    fs_.clear();
+    fs_.seekg(0, ios::beg);
+    return cached_iterator(this, start_doc);
+}
+
+ScdParser::cached_iterator ScdParser::cbegin(const std::vector<string>& propertyNameList, unsigned int start_doc)
+{
+    fs_.clear();
+    fs_.seekg(0, ios::beg);
+    return cached_iterator(this, start_doc, propertyNameList);
+}
+
+ScdParser::cached_iterator ScdParser::cend()
+{
+    return cached_iterator(-1);
+}
+
 bool ScdParser::getDoc(const izenelib::util::UString & docId, SCDDoc& doc)
 {
     long * val = docOffsetList_.find( docId );
@@ -559,12 +578,15 @@ long ScdParser::iterator::getOffset()
 SCDDoc* ScdParser::iterator::getDoc()
 {
     CREATE_SCOPED_PROFILER ( proScdParsing, "ScdParser", "ScdParsing::getDoc");
+    CREATE_PROFILER ( proScdParsing0, "ScdParser", "ScdParsing::getDoc::0");
     CREATE_PROFILER ( proScdParsing1, "ScdParser", "ScdParsing::getDoc::1");
     CREATE_PROFILER ( proScdParsing2, "ScdParser", "ScdParsing::getDoc::2");
     CREATE_PROFILER ( proScdParsing3, "ScdParser", "ScdParsing::getDoc::3");
 
-    START_PROFILER ( proScdParsing1 );
+    START_PROFILER ( proScdParsing0 );
     std::size_t readLen = izenelib::util::izene_read_until(*pfs_, *buffer_, docDelimiter_);
+    STOP_PROFILER ( proScdParsing0 );
+    START_PROFILER ( proScdParsing1 );
     string str(docDelimiter_);
     if (readLen)
     {
@@ -659,3 +681,78 @@ void ScdParser::iterator::preProcessDoc(string& strDoc)
 
     strDoc.swap(tmpStr);
 }
+
+ScdParser::cached_iterator::cached_iterator(long offset):it_(offset)
+{
+    cache_index_ = 0;
+}
+
+ScdParser::cached_iterator::cached_iterator(ScdParser* pParser, uint32_t start_doc):it_(pParser, start_doc)
+{
+    cache_index_ = 0;
+    increment();
+}
+
+ScdParser::cached_iterator::cached_iterator(ScdParser* pParser, uint32_t start_doc, const std::vector<std::string>& pname_list):it_(pParser, start_doc, pname_list)
+{
+    cache_index_ = 0;
+    increment();
+}
+
+//ScdParser::cached_iterator::cached_iterator(const ScdParser::cached_iterator& other):it_(other.get_iterator())
+//{
+//}
+
+ScdParser::cached_iterator::~cached_iterator()
+{
+}
+
+long ScdParser::cached_iterator::getOffset()
+{
+    if(cache_index_<cache_.size())
+    {
+        return cache_[cache_index_].second;
+    }
+    else
+    {
+        return -1;
+    }
+    //return offset_;
+}
+
+void ScdParser::cached_iterator::increment()
+{
+    cache_index_++;
+    if(cache_index_>=cache_.size())
+    {
+        //clear read more
+        cache_.resize(0);
+        cache_index_ = 0;
+        for(uint32_t i=0;i<MAX_CACHE_NUM;i++)
+        {
+            if(it_.getOffset()==-1) break;
+            cache_.push_back(std::make_pair(*it_, it_.getOffset()));
+            ++it_;
+        }
+
+    }
+}
+
+const SCDDocPtr ScdParser::cached_iterator::dereference() const
+{
+    if(cache_index_<cache_.size())
+    {
+        return cache_[cache_index_].first;
+    }
+    else
+    {
+        return SCDDocPtr();
+    }
+}
+
+bool ScdParser::cached_iterator::equal(const ScdParser::cached_iterator& other) const
+{
+    return it_ == other.get_iterator() && cache_index_==other.cache_index_ && cache_.size()==other.cache_.size();
+}
+
+
