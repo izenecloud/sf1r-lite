@@ -7,6 +7,7 @@
 #ifndef INDEX_WORKER_H_
 #define INDEX_WORKER_H_
 
+#include <net/aggregator/BindCallProxyBase.h>                                                                                
 #include <directory-manager/DirectoryRotator.h>
 #include <configuration-manager/PropertyConfig.h>
 #include <configuration-manager/ConfigurationTool.h>
@@ -40,7 +41,7 @@ class ScdWriterController;
 class IndexHooker;
 class SearchWorker;
 
-class IndexWorker
+class IndexWorker : public net::aggregator::BindCallProxyBase<IndexWorker>
 {
     typedef uint32_t CharacterOffset;
 
@@ -53,7 +54,14 @@ public:
     ~IndexWorker();
 
 public:
-    bool index(unsigned int numdoc);
+    virtual bool bindCallProxy(CallProxyType& proxy)                                                                         
+    {                                                                                                                        
+        BIND_CALL_PROXY_BEGIN(IndexWorker, proxy)                                                                           
+        BIND_CALL_PROXY_2(index, unsigned int, bool)
+        BIND_CALL_PROXY_END()                                                                                                
+    } 
+
+    void index(unsigned int numdoc, bool& result);
 
     bool reindex(boost::shared_ptr<DocumentManager>& documentManager);
 

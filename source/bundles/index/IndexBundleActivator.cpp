@@ -12,9 +12,8 @@
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
 #include <la-manager/LAPool.h>
-#include <aggregator-manager/SearchAggregator.h>
+#include <aggregator-manager/SearchMerger.h>
 #include <aggregator-manager/SearchWorker.h>
-#include <aggregator-manager/IndexAggregator.h>
 #include <aggregator-manager/IndexWorker.h>
 #include <node-manager/SearchMasterManager.h>
 #include <util/singleton.h>
@@ -149,7 +148,7 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
         {
             MiningSearchService* service = reinterpret_cast<MiningSearchService*> ( const_cast<IService*>(ref.getService()) );
             cout << "[IndexBundleActivator#addingService] Calling MiningSearchService..." << endl;
-            searchService_->searchAggregator_->miningManager_ = service->GetMiningManager();
+            searchService_->searchMerger_->miningManager_ = service->GetMiningManager();
             searchService_->searchWorker_->miningManager_ = service->GetMiningManager();
             searchManager_->setMiningManager(service->GetMiningManager());
             return true;
@@ -283,6 +282,7 @@ bool IndexBundleActivator::init_()
     searchService_ = new IndexSearchService(config_);
 
     searchService_->searchAggregator_ = searchAggregator_;
+    searchService_->searchMerger_ = searchMerger_.get();
     searchService_->searchWorker_ = searchWorker_;
     searchService_->searchWorker_->laManager_ = laManager_;
     searchService_->searchWorker_->idManager_ = idManager_;
@@ -521,10 +521,24 @@ IndexBundleActivator::createSearchWorker_()
 }
 
 boost::shared_ptr<SearchAggregator>
-IndexBundleActivator::createSearchAggregator_() const
+IndexBundleActivator::createSearchAggregator_()
 {
-    boost::shared_ptr<SearchAggregator> ret(new SearchAggregator(config_->collectionName_, searchWorker_));
-    ret->TOP_K_NUM = config_->topKNum_;
+    boost::shared_ptr<SearchAggregator> ret;
+    searchMerger_.reset(new SearchMerger(config_->topKNum_));
+
+    std::auto_ptr<SearchMergerProxy> mergerProxy(new SearchMergerProxy(searchMerger_.get()));
+    if (!searchMerger_->bindCallProxy(*mergerProxy))
+        return ret;
+
+    std::auto_ptr<SearchWorkerProxy> localWorkerProxy(new SearchWorkerProxy(searchWorker_.get()));
+    if (!searchWorker_->bindCallProxy(*localWorkerProxy))
+        return ret;
+
+    ret.reset(new SearchAggregator(mergerProxy.get(), localWorkerProxy.get(), config_->collectionName_));
+
+    mergerProxy.release();
+    localWorkerProxy.release();
+
     // workers will be detected and set by master node manager
     SearchMasterManager::get()->registerAggregator(ret);
     return ret;
@@ -538,9 +552,24 @@ IndexBundleActivator::createIndexWorker_()
 }
 
 boost::shared_ptr<IndexAggregator>
-IndexBundleActivator::createIndexAggregator_() const
+IndexBundleActivator::createIndexAggregator_()
 {
-    boost::shared_ptr<IndexAggregator> ret(new IndexAggregator(config_->collectionName_, indexWorker_));
+    boost::shared_ptr<IndexAggregator> ret;
+    indexMerger_.reset(new IndexMerger);
+
+    std::auto_ptr<IndexMergerProxy> mergerProxy(new IndexMergerProxy(indexMerger_.get()));
+    if (!indexMerger_->bindCallProxy(*mergerProxy))
+        return ret;
+
+    std::auto_ptr<IndexWorkerProxy> localWorkerProxy(new IndexWorkerProxy(indexWorker_.get()));
+    if (!indexWorker_->bindCallProxy(*localWorkerProxy))
+        return ret;
+
+    ret.reset(new IndexAggregator(mergerProxy.get(), localWorkerProxy.get(), config_->collectionName_));
+
+    mergerProxy.release();
+    localWorkerProxy.release();
+
     SearchMasterManager::get()->registerAggregator(ret);
     return ret;
 }
