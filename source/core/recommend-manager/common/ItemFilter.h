@@ -30,7 +30,7 @@ public:
      * @param itemId the item id to check
      * @return true to filter @p itemId, false to assume @p itemId as recommendation candidate.
      */
-    bool isFiltered(itemid_t itemId);
+    bool isFiltered(itemid_t itemId) const;
 
     /**
      * Insert the item id to filter.

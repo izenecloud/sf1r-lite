@@ -15,7 +15,7 @@ ItemFilter::ItemFilter(const ItemCondition* itemCondition)
 {
 }
 
-bool ItemFilter::isFiltered(itemid_t itemId)
+bool ItemFilter::isFiltered(itemid_t itemId) const
 {
     if (filterSet_.find(itemId) != filterSet_.end())
         return true;
