@@ -6,21 +6,25 @@ namespace sf1r
 {
 
 LogServerWorkThread::LogServerWorkThread()
-    : workThread_(&LogServerWorkThread::run, this)
-    , monitorThread_(&LogServerWorkThread::monitor, this)
-    , monitorInterval_(LogServerCfg::get()->getFlushCheckInterval())
+    : monitorInterval_(LogServerCfg::get()->getFlushCheckInterval())
     , drumRequestQueue_(LogServerCfg::get()->getRpcRequestQueueSize())
+    , workThread_(&LogServerWorkThread::run, this)
+    , monitorThread_(&LogServerWorkThread::monitor, this)
 {
 }
 
 LogServerWorkThread::~LogServerWorkThread()
 {
+    stop();
 }
 
 void LogServerWorkThread::stop()
 {
     workThread_.interrupt();
     workThread_.join();
+
+    monitorThread_.interrupt();
+    monitorThread_.join();
 }
 
 void LogServerWorkThread::putUuidRequestData(const UUID2DocidList& uuid2DocidList)
