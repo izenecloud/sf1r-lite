@@ -101,20 +101,20 @@ TARGET_LINK_LIBRARIES(CobraProcess
   ${ImageMagick_LIBRARIES}
 )
 
-#FIND_PACKAGE(izenelib REQUIRED COMPONENTS
-  #febird
-  #izene_util
-  #luxio
-  #leveldb
-  #json
-  #am
-  #lzo
-  #aggregator
-  #msgpack
-  #zookeeper
-  #snappy
-  #sf1r
-  #)
+FIND_PACKAGE(izenelib REQUIRED COMPONENTS
+  febird
+  izene_util
+  luxio
+  leveldb
+  json
+  am
+  lzo
+  aggregator
+  msgpack
+  zookeeper
+  snappy
+  sf1r
+  )
 
 
 TARGET_LINK_LIBRARIES(LogServerProcess
