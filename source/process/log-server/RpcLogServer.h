@@ -9,7 +9,7 @@
 
 #include <3rdparty/msgpack/rpc/server.h>
 
-#include <boost/thread.hpp>
+#include <boost/scoped_ptr.hpp>
 
 namespace sf1r
 {
@@ -70,7 +70,7 @@ private:
     uint16_t port_;
     uint32_t threadNum_;
 
-    boost::shared_ptr<LogServerWorkThread> workerThread_;
+    boost::scoped_ptr<LogServerWorkThread> workerThread_;
 
     MultiCollectionItemIdGenerator itemIdGenerator_;
 };
