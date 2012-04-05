@@ -101,11 +101,11 @@ IndexWorker::~IndexWorker()
     delete scd_writer_;
 }
 
-bool IndexWorker::index(unsigned int numdoc)
+void IndexWorker::index(unsigned int numdoc, bool& result)
 {
     task_type task = boost::bind(&IndexWorker::buildCollection, this, numdoc);
     JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
-    return true;
+    result = true;
 }
 
 bool IndexWorker::reindex(boost::shared_ptr<DocumentManager>& documentManager)
@@ -282,12 +282,12 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
             indexProgress_.totalFilePos_ = proccessedFileSize;
             indexProgress_.getIndexingStatus(indexStatus_);
             ++indexProgress_.currentFileIdx;
-            //uint32_t scd_index = indexProgress_.currentFileIdx;
-            //if(scd_index%100==0 || (scd_index>3000 && scd_index%20==0))
-            //{
-                //std::string report_file_name = "PerformanceIndexResult.SIAProcess-"+boost::lexical_cast<std::string>(scd_index);
-                //REPORT_PROFILE_TO_FILE(report_file_name.c_str())
-            //}
+            uint32_t scd_index = indexProgress_.currentFileIdx;
+            if(scd_index%50==0)
+            {
+                std::string report_file_name = "PerformanceIndexResult.SIAProcess-"+boost::lexical_cast<std::string>(scd_index);
+                REPORT_PROFILE_TO_FILE(report_file_name.c_str())
+            }
 
         } // end of loop for scd files of a collection
 
@@ -857,6 +857,8 @@ bool IndexWorker::insertOrUpdateSCD_(
 
     uint32_t n = 0;
     long lastOffset = 0;
+    //for (ScdParser::cached_iterator doc_iter = parser.cbegin(propertyList_);
+        //doc_iter != parser.cend(); ++doc_iter, ++n)
     for (ScdParser::iterator doc_iter = parser.begin(propertyList_);
         doc_iter != parser.end(); ++doc_iter, ++n)
     {

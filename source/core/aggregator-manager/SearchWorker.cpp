@@ -33,7 +33,7 @@ SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
 
 /// Index Search
 
-bool SearchWorker::getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem)
+void SearchWorker::getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem)
 {
     DistKeywordSearchResult fakeResultItem;
     fakeResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_GATHER_INFO;
@@ -41,31 +41,30 @@ bool SearchWorker::getDistSearchInfo(const KeywordSearchActionItem& actionItem, 
     getSearchResult_(actionItem, fakeResultItem);
 
     resultItem.swap(fakeResultItem.distSearchInfo_);
-    return true;
 }
 
-bool SearchWorker::getDistSearchResult(const KeywordSearchActionItem& actionItem, DistKeywordSearchResult& resultItem)
+void SearchWorker::getDistSearchResult(const KeywordSearchActionItem& actionItem, DistKeywordSearchResult& resultItem)
 {
     cout << "[SearchWorker::processGetSearchResult] " << actionItem.collectionName_ << endl;
 
-    return getSearchResult_(actionItem, resultItem);
+    getSearchResult_(actionItem, resultItem);
 }
 
-bool SearchWorker::getSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+void SearchWorker::getSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
     cout << "[SearchWorker::processGetSummaryResult] " << actionItem.collectionName_ << endl;
 
-    return getSummaryResult_(actionItem, resultItem);
+    getSummaryResult_(actionItem, resultItem);
 }
 
-bool SearchWorker::getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+void SearchWorker::getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
     cout << "[SearchWorker::processGetSummaryMiningResult] " << actionItem.collectionName_ << endl;
 
-    return getSummaryMiningResult_(actionItem, resultItem);
+    getSummaryMiningResult_(actionItem, resultItem);
 }
 
-bool SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem)
+void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem)
 {
     const izenelib::util::UString::EncodingType kEncodingType =
         izenelib::util::UString::convertEncodingTypeFromStringToEnum(
@@ -120,24 +119,21 @@ bool SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
     if (getResultItem(actionItem, idList, propertyQueryTermList, resultItem))
     {
         resultItem.idList_.swap(idList);
-        return true;
+        return;
     }
 
     resultItem.fullTextOfDocumentInPage_.clear();
     resultItem.snippetTextOfDocumentInPage_.clear();
     resultItem.rawTextOfSummaryInPage_.clear();
-    return false;
 }
 
-bool SearchWorker::getInternalDocumentId(const izenelib::util::UString& scdDocumentId, uint64_t& internalId)
+void SearchWorker::getInternalDocumentId(const izenelib::util::UString& scdDocumentId, uint64_t& internalId)
 {
     uint32_t docid = 0;
     internalId = 0;
-    if (!idManager_->getDocIdByDocName(scdDocumentId, docid, false))
-        return false;
 
-    internalId = docid;
-    return true;
+    if (idManager_->getDocIdByDocName(scdDocumentId, docid, false))
+        internalId = docid;
 }
 
 // local interface
@@ -202,7 +198,7 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
 
 /// Mining Search
 
-bool SearchWorker::getSimilarDocIdList(uint64_t documentId, uint32_t maxNum, SimilarDocIdListType& result)
+void SearchWorker::getSimilarDocIdList(uint64_t documentId, uint32_t maxNum, SimilarDocIdListType& result)
 {
     // todo get all similar docs in global space?
     //return miningManager_->getSimilarDocIdList(documentId, maxNum, result);
@@ -212,7 +208,8 @@ bool SearchWorker::getSimilarDocIdList(uint64_t documentId, uint32_t maxNum, Sim
     sf1r::docid_t docId = wd.second;
 
     std::vector<std::pair<uint32_t, float> > simDocList;
-    bool ret = miningManager_->getSimilarDocIdList(docId, maxNum, simDocList); //get similar docs in current machine.
+    if (!miningManager_->getSimilarDocIdList(docId, maxNum, simDocList)) //get similar docs in current machine.
+        return;
 
     result.resize(simDocList.size());
     for (size_t i = 0; i < simDocList.size(); i ++)
@@ -220,21 +217,19 @@ bool SearchWorker::getSimilarDocIdList(uint64_t documentId, uint32_t maxNum, Sim
         uint64_t wdocid = net::aggregator::Util::GetWDocId(workerId, simDocList[i].first);
         result[i] = std::make_pair(wdocid, simDocList[i].second);
     }
-
-    return ret;
 }
 
-bool SearchWorker::clickGroupLabel(const ClickGroupLabelActionItem& actionItem)
+void SearchWorker::clickGroupLabel(const ClickGroupLabelActionItem& actionItem, bool& result)
 {
-    return miningManager_->clickGroupLabel(
+    result = miningManager_->clickGroupLabel(
             actionItem.queryString_,
             actionItem.propName_,
             actionItem.groupPath_);
 }
 
-bool SearchWorker::visitDoc(const uint32_t& docId)
+void SearchWorker::visitDoc(const uint32_t& docId, bool& result)
 {
-    return miningManager_->visitDoc(docId);
+    result = miningManager_->visitDoc(docId);
 }
 
 void SearchWorker::makeQueryIdentity(

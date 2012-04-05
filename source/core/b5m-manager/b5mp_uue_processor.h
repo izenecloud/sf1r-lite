@@ -7,6 +7,7 @@
 #include <boost/regex.hpp>
 #include "b5m_types.h"
 #include "product_db.h"
+#include "offer_db.h"
 
 namespace sf1r {
     class B5MPUueProcessor{
@@ -16,7 +17,7 @@ namespace sf1r {
         //};
         //typedef boost::unorder_map<std::string, ProductValue> ProductMap;
     public:
-        B5MPUueProcessor(const std::string& b5mo_scd, const std::string& b5mp_scd, ProductDb* product_db, const std::string& work_path, bool reindex = false, bool fast_mode = true);
+        B5MPUueProcessor(const std::string& b5mo_scd, const std::string& b5mp_scd, OfferDb* odb, ProductDb* product_db, const std::string& work_path, bool reindex = false, bool fast_mode = true);
 
         void Process(const UueItem& item);
 
@@ -28,6 +29,7 @@ namespace sf1r {
     private:
         std::string b5mo_scd_;
         std::string b5mp_scd_;
+        OfferDb* odb_;
         ProductDb* product_db_;
         std::string work_path_;
         bool reindex_;

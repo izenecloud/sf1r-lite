@@ -3,6 +3,7 @@
 
 #include "IndexBundleConfiguration.h"
 
+#include <aggregator-manager/IndexAggregator.h>
 #include <directory-manager/DirectoryRotator.h>
 #include <common/Status.h>
 #include <common/ScdParser.h>
@@ -16,9 +17,9 @@ namespace sf1r
 {
 using izenelib::ir::idmanager::IDManager;
 
-class IndexAggregator;
 class IndexWorker;
 class DocumentManager;
+class ScdSharder;
 
 class IndexTaskService : public ::izenelib::osgi::IService
 {
@@ -55,6 +56,15 @@ public:
 
 private:
     bool distributedIndex_(unsigned int numdoc);
+    bool distributedIndexImpl_(
+        unsigned int numdoc,
+        const std::string& collectionName,
+        const std::string& masterScdPath,
+        const std::vector<std::string>& shardKeyList);
+
+    bool createScdSharder(
+        boost::shared_ptr<ScdSharder>& scdSharder,
+        const std::vector<std::string>& shardKeyList);
 
 private:
     IndexBundleConfiguration* bundleConfig_;

@@ -115,6 +115,14 @@ public:
         return true;
     }
 
+    bool getString(const std::string& pname, std::string& value) const
+    {
+        izenelib::util::UString ustr;
+        if(!getProperty(pname, ustr)) return false;
+        ustr.convertString(value, izenelib::util::UString::UTF_8);
+        return true;
+    }
+
     property_iterator propertyBegin()
     {
         return propertyList_.begin();

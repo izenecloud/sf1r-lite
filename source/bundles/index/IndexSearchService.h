@@ -3,6 +3,7 @@
 
 #include "IndexBundleConfiguration.h"
 
+#include <aggregator-manager/SearchAggregator.h>
 #include <common/sf1_serialization_types.h>
 #include <common/type_defs.h>
 #include <common/Status.h>
@@ -18,8 +19,8 @@ namespace sf1r
 {
 using namespace net::aggregator;
 
-class SearchAggregator;
 class SearchCache;
+class SearchMerger;
 class SearchWorker;
 class IndexSearchService : public ::izenelib::osgi::IService
 {
@@ -44,6 +45,7 @@ public:
 private:
     IndexBundleConfiguration* bundleConfig_;
     boost::shared_ptr<SearchAggregator> searchAggregator_;
+    SearchMerger* searchMerger_;
     boost::shared_ptr<SearchWorker> searchWorker_;
 
     boost::scoped_ptr<SearchCache> searchCache_; // for Master Node

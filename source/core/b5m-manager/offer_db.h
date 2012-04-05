@@ -14,23 +14,42 @@
 namespace sf1r {
 
 
+    typedef std::string OfferDbKeyType;
+    
+    struct OfferDbValueType {
+        std::string pid;
+        std::string source;
+        template<class Archive> 
+        void serialize(Archive& ar, const unsigned int version) 
+        {
+            ar & pid & source;
+        }
+
+        bool empty() const
+        {
+            return pid.empty();
+        }
+    };
 
     //typedef izenelib::am::tc::BTree<std::string, std::string> OfferDb;
     //typedef izenelib::am::leveldb::Table<KeyType, ValueType> DbType;
 
     //class OfferDb : public izenelib::am::tc::Hash<std::string, std::string>
-    class OfferDb : public izenelib::am::leveldb::Table<std::string, std::string>
+    class OfferDb : public izenelib::am::leveldb::Table<OfferDbKeyType, OfferDbValueType>
     {
     public:
+        typedef OfferDbKeyType KeyType;
+        typedef OfferDbValueType ValueType;
         //typedef izenelib::am::tc::Hash<std::string, std::string> BaseType;
-        typedef izenelib::am::leveldb::Table<std::string, std::string> BaseType;
-        typedef boost::unordered_map<std::string, std::pair<std::string, bool> > MemType;
-        OfferDb(const std::string& path): BaseType(path)
+        typedef izenelib::am::leveldb::Table<KeyType, ValueType> BaseType;
+        typedef boost::unordered_map<KeyType, std::pair<ValueType, bool> > MemType;
+        OfferDb(const std::string& path): BaseType(path), simple_(false)
         {
         }
 
         bool simple_open()
         {
+            simple_ = true;
             return BaseType::open();
         }
 
@@ -40,12 +59,12 @@ namespace sf1r {
 
             LOG(INFO)<<"odb load to memory.."<<std::endl;
             BaseType::cursor_type it = BaseType::begin();
-            std::string key;
-            std::string value;
+            KeyType key;
+            ValueType value;
             while(true)
             {
                 if(!BaseType::fetch(it, key, value)) break;
-                std::pair<std::string, bool> mem_value(value, false);
+                std::pair<ValueType, bool> mem_value(value, false);
                 mem_db_.insert(std::make_pair(key, mem_value));
                 BaseType::iterNext(it);
             }
@@ -54,24 +73,31 @@ namespace sf1r {
 
         }
 
-        bool get(const std::string& key, std::string& value) const
+        bool get(const KeyType& key, ValueType& value) const
         {
-            MemType::const_iterator it = mem_db_.find(key);
-            if(it==mem_db_.end()) return false;
-            value = it->second.first;
-            if(value.empty()) return false;
-            return true;
+            if(!simple_)
+            {
+                MemType::const_iterator it = mem_db_.find(key);
+                if(it==mem_db_.end()) return false;
+                value = it->second.first;
+                if(value.empty()) return false;
+                return true;
+            }
+            else
+            {
+                return BaseType::get(key, value);
+            }
         }
 
-        bool update(const std::string& key, const std::string& value)
+        bool update(const KeyType& key, const ValueType& value)
         {
             mem_db_[key] = std::make_pair(value, true);
             return true;
         }
 
-        bool del(const std::string& key)
+        bool del(const KeyType& key)
         {
-            return update(key, "");
+            return update(key, ValueType());
         }
 
         bool flush()
@@ -96,6 +122,7 @@ namespace sf1r {
     private:
 
         MemType mem_db_;
+        bool simple_;
     };
 
 }

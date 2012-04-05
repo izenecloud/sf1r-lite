@@ -7,6 +7,7 @@
 #ifndef SEARCH_WORKER_H_
 #define SEARCH_WORKER_H_
 
+#include <net/aggregator/BindCallProxyBase.h>                                                                                
 #include <query-manager/ActionItem.h>
 #include <query-manager/SearchKeywordOperation.h>
 #include <la-manager/AnalysisInformation.h>
@@ -36,12 +37,26 @@ class MiningManager;
 class QueryIdentity;
 class SearchCache;
 
-class SearchWorker
+class SearchWorker : public net::aggregator::BindCallProxyBase<SearchWorker>
 {
 public:
     SearchWorker(IndexBundleConfiguration* bundleConfig);
 
-public:
+    virtual bool bindCallProxy(CallProxyType& proxy)                                                                         
+    {                                                                                                                        
+        BIND_CALL_PROXY_BEGIN(SearchWorker, proxy)                                                                           
+        BIND_CALL_PROXY_2(getDistSearchInfo, KeywordSearchActionItem, DistKeywordSearchInfo)
+        BIND_CALL_PROXY_2(getDistSearchResult, KeywordSearchActionItem, DistKeywordSearchResult)
+        BIND_CALL_PROXY_2(getSummaryResult, KeywordSearchActionItem, KeywordSearchResult)
+        BIND_CALL_PROXY_2(getSummaryMiningResult, KeywordSearchActionItem, KeywordSearchResult)
+        BIND_CALL_PROXY_2(getDocumentsByIds, GetDocumentsByIdsActionItem, RawTextResultFromSIA)
+        BIND_CALL_PROXY_2(getInternalDocumentId, izenelib::util::UString, uint64_t)
+        BIND_CALL_PROXY_3(getSimilarDocIdList, uint64_t, uint32_t, SimilarDocIdListType)
+        BIND_CALL_PROXY_2(clickGroupLabel, ClickGroupLabelActionItem, bool)
+        BIND_CALL_PROXY_2(visitDoc, uint32_t, bool)
+        BIND_CALL_PROXY_END()                                                                                                
+    } 
+
     /**
      * Worker services (interfaces)
      * 1) add to WorkerServer to provide remote procedure call
@@ -50,25 +65,25 @@ public:
      */
 
     /// search
-    bool getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem);
+    void getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem);
 
-    bool getDistSearchResult(const KeywordSearchActionItem& actionItem, DistKeywordSearchResult& resultItem);
+    void getDistSearchResult(const KeywordSearchActionItem& actionItem, DistKeywordSearchResult& resultItem);
 
-    bool getSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
+    void getSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
-    bool getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
+    void getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
     /// documents
-    bool getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem);
+    void getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem);
 
-    bool getInternalDocumentId(const izenelib::util::UString& actionItem, uint64_t& resultItem);
+    void getInternalDocumentId(const izenelib::util::UString& actionItem, uint64_t& resultItem);
 
     /// mining
-    bool getSimilarDocIdList(uint64_t documentId, uint32_t maxNum, SimilarDocIdListType& result);
+    void getSimilarDocIdList(uint64_t documentId, uint32_t maxNum, SimilarDocIdListType& result);
 
-    bool clickGroupLabel(const ClickGroupLabelActionItem& actionItem);
+    void clickGroupLabel(const ClickGroupLabelActionItem& actionItem, bool& result);
 
-    bool visitDoc(const uint32_t& docId);
+    void visitDoc(const uint32_t& docId, bool& result);
 
     /** @} */
 

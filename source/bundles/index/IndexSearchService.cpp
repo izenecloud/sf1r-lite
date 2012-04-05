@@ -1,7 +1,7 @@
 #include "IndexSearchService.h"
 
+#include <aggregator-manager/SearchMerger.h>
 #include <aggregator-manager/SearchWorker.h>
-#include <aggregator-manager/SearchAggregator.h>
 
 #include <common/SearchCache.h>
 #include <common/SFLogger.h>
@@ -12,6 +12,7 @@ namespace sf1r
 
 IndexSearchService::IndexSearchService(IndexBundleConfiguration* config)
     : bundleConfig_(config)
+    , searchMerger_(NULL)
     , searchCache_(new SearchCache(bundleConfig_->masterSearchCacheNum_))
 {
 }
@@ -45,9 +46,9 @@ bool IndexSearchService::getSearchResult(
     if (!bundleConfig_->isMasterAggregator())
     {
         bool ret = searchWorker_->doLocalSearch(actionItem, resultItem);
-        std::vector<std::pair<workerid_t, KeywordSearchResult> > resultList;
-        resultList.push_back(std::make_pair(0, resultItem));
-        searchAggregator_->aggregateMiningResult(resultItem, resultList);
+        net::aggregator::WorkerResults<KeywordSearchResult> workerResults;
+        workerResults.add(0, resultItem);
+        searchMerger_->getMiningResult(workerResults, resultItem);
         return ret;
     }
 
@@ -84,7 +85,7 @@ bool IndexSearchService::getSearchResult(
         typedef std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >::iterator ResultMapIterT;
 
         ResultMapT resultMap;
-        searchAggregator_->splitSearchResultByWorkerid(resultItem, resultMap);
+        searchMerger_->splitSearchResultByWorkerid(resultItem, resultMap);
         RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
         for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
         {
@@ -104,7 +105,7 @@ bool IndexSearchService::getSearchResult(
         typedef std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >::iterator ResultMapIterT;
 
         ResultMapT resultMap;
-        searchAggregator_->splitSearchResultByWorkerid(resultItem, resultMap);
+        searchMerger_->splitSearchResultByWorkerid(resultItem, resultMap);
         RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
         for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
         {
@@ -133,7 +134,8 @@ bool IndexSearchService::getDocumentsByIds(
 {
     if (!bundleConfig_->isMasterAggregator())
     {
-        return searchWorker_->getDocumentsByIds(actionItem, resultItem);
+        searchWorker_->getDocumentsByIds(actionItem, resultItem);
+        return !resultItem.idList_.empty();
     }
 
     /// Perform distributed search by aggregator
@@ -141,7 +143,7 @@ bool IndexSearchService::getDocumentsByIds(
     typedef std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >::iterator ActionItemMapIterT;
 
     ActionItemMapT actionItemMap;
-    if (!searchAggregator_->splitGetDocsActionItemByWorkerid(actionItem, actionItemMap))
+    if (!searchMerger_->splitGetDocsActionItemByWorkerid(actionItem, actionItemMap))
     {
         searchAggregator_->distributeRequest(actionItem.collectionName_, "getDocumentsByIds", actionItem, resultItem);
     }
@@ -167,15 +169,16 @@ bool IndexSearchService::getInternalDocumentId(
     uint64_t& internalId
 )
 {
+    internalId = 0;
     if (!bundleConfig_->isMasterAggregator())
     {
-        return searchWorker_->getInternalDocumentId(scdDocumentId, internalId);
+        searchWorker_->getInternalDocumentId(scdDocumentId, internalId);
     }
-
-    /// Perform distributed search by aggregator
-    internalId = 0;
-    searchAggregator_->distributeRequest<izenelib::util::UString, uint64_t>(
-            collectionName, "getInternalDocumentId", scdDocumentId, internalId);
+    else
+    {
+        searchAggregator_->distributeRequest<izenelib::util::UString, uint64_t>(
+                collectionName, "getInternalDocumentId", scdDocumentId, internalId);
+    }
 
     return (internalId != 0);
 }

@@ -166,7 +166,7 @@ system("#{matcher_program} --b5mo-generate -S #{scd} --b5mo #{b5mo_scd} -K #{mdb
 system("#{matcher_program} --uue-generate --b5mo #{b5mo_scd} --uue #{mdb_instance}/uue --odb #{odb}")
 
 #b5mp generator
-system("#{matcher_program} --b5mp-generate --b5mo #{b5mo_scd} --b5mp #{b5mp_scd} --uue #{mdb_instance}/uue --pdb #{pdb}")
+system("#{matcher_program} --b5mp-generate --b5mo #{b5mo_scd} --b5mp #{b5mp_scd} --uue #{mdb_instance}/uue --odb #{odb} --pdb #{pdb}")
 
 #b5mc generator
 #system("#{matcher_program} --b5mc-generate --b5mc #{b5mc_scd} -S #{comment_scd} --odb #{odb}")

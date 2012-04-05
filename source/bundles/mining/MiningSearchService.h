@@ -8,6 +8,7 @@
 #include <common/sf1_serialization_types.h>
 #include <common/type_defs.h>
 
+#include <aggregator-manager/SearchAggregator.h>
 #include <query-manager/ActionItem.h>
 #include <mining-manager/faceted-submanager/manmade_doc_category_item.h>
 #include <mining-manager/summarization-submanager/Summarization.h>
@@ -18,7 +19,6 @@ namespace sf1r
 {
 
 class SearchWorker;
-class SearchAggregator;
 class MiningManager;
 class MiningSearchService : public ::izenelib::osgi::IService
 {

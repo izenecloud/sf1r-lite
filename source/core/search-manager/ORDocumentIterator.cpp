@@ -166,7 +166,6 @@ bool ORDocumentIterator::do_next()
         DocumentIterator* pEntry = (*iter);
         if(pEntry)
         {
-std::cout<<"pEntry->doc() "<<pEntry->doc()<<" currDoc_ "<<currDoc_<<std::endl;        
             if (currDoc_ == pEntry->doc())
                 pEntry->setCurrent(true);
             else

@@ -248,7 +248,6 @@ int main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
-        if(!odb->open()) return EXIT_FAILURE;
         UueGenerator generator(odb.get());
         if(!generator.Generate(b5mo, uue))
         {
@@ -257,11 +256,11 @@ int main(int ac, char** av)
     }
     else if(vm.count("b5mp-generate"))
     {
-        if( b5mo.empty() || b5mp.empty() || uue.empty() || !pdb )
+        if( b5mo.empty() || b5mp.empty() || uue.empty() || !odb || !pdb )
         {
             return EXIT_FAILURE;
         }
-        boost::shared_ptr<B5MPUueProcessor> processor(new B5MPUueProcessor(b5mo, b5mp, pdb.get(), work_dir));
+        boost::shared_ptr<B5MPUueProcessor> processor(new B5MPUueProcessor(b5mo, b5mp, odb.get(), pdb.get(), work_dir));
         UueWorker<B5MPUueProcessor> worker(processor.get());
         worker.Load(uue);
         if(!worker.Run())
@@ -276,7 +275,6 @@ int main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
-        if(!odb->open()) return EXIT_FAILURE;
         B5MCScdGenerator generator(odb.get());
         if(!generator.Generate(scd_path, b5mc))
         {

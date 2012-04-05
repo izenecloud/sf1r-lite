@@ -52,14 +52,14 @@ private:
     void flushData();
 
 private:
-    boost::thread workThread_;
-
-    boost::thread monitorThread_;
     boost::posix_time::ptime lastProcessTime_;
     boost::posix_time::ptime lastCheckedTime_;
     long monitorInterval_; // in seconds
 
     izenelib::util::concurrent_queue<DrumRequestData> drumRequestQueue_;
+
+    boost::thread workThread_;
+    boost::thread monitorThread_;
 };
 
 }

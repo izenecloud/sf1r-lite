@@ -30,17 +30,6 @@ class WANDDocumentIterator : public DocumentIterator
     typedef UpperBoundInProperties::const_iterator property_name_term_index_iterator;
     typedef ID_FREQ_MAP_T::const_iterator term_index_ub_iterator;
 
-    typedef std::vector<TermDocumentIterator*>::iterator vector_iterator;
-
-    struct SortPred
-    {
-        SortPred() {}
-        bool operator() (TermDocumentIterator* t1, TermDocumentIterator* t2)
-        {
-            return t1->doc() < t2->doc();
-        }
-    };
-
 public:
     class DocumentIteratorQueue : public izenelib::ir::indexmanager::PriorityQueue<TermDocumentIterator*>
     {
@@ -116,7 +105,7 @@ protected:
 
     size_t getIndexOfProperty_(const std::string& property);
 
-    void initDocIteratorListSorter();
+    void initDocIteratorSorter();
 
     void init_(const property_weight_map& propertyWeightMap);
 
@@ -126,10 +115,6 @@ protected:
 
     bool processPrePostings(docid_t target);
 
-    bool bubble(size_t n);
-
-    void bubble_sort();
-
 protected:
     std::vector<std::string> indexPropertyList_;
 
@@ -138,6 +123,8 @@ protected:
     std::vector<double> propertyWeightList_;
 
     std::vector<std::map<unsigned int,TermDocumentIterator*> > docIteratorList_;
+
+    std::multimap<docid_t, TermDocumentIterator*> docIteratorSorter_;
 
     docid_t currDoc_;
 
@@ -151,8 +138,6 @@ protected:
 
     ///@brief reuse in score() for performance, so score() is not thread-safe
     RankDocumentProperty rankDocumentProperty_;
-
-    vector<TermDocumentIterator*> docIteratorListSorter_;
 };
 
 }
