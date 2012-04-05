@@ -1,6 +1,7 @@
 #include <common/ScdParser.h>
 #include <common/ScdWriter.h>
 #include <common/ScdWriterController.h>
+#include <common/Utilities.h>
 #include <document-manager/Document.h>
 #include <iostream>
 #include <string>
@@ -67,7 +68,7 @@ int main(int argc, char** argv)
             if(doc_iter==parser.end()) break;
             SCDDoc doc = *(*doc_iter);
             izenelib::util::UString docname;
-            
+
             std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
 
             for (p = doc.begin(); p != doc.end(); p++)
@@ -81,9 +82,9 @@ int main(int argc, char** argv)
                 }
             }
             uint32_t did = 0;
-            id_manager.getDocIdByDocName(docname, did);
-            //std::string sdocname;
-            //docname.convertString(sdocname, izenelib::util::UString::UTF_8);
+            std::string sdocname;
+            docname.convertString(sdocname, izenelib::util::UString::UTF_8);
+            id_manager.getDocIdByDocName(Utilities::md5ToUint128(sdocname), did);
             //std::cout<<sdocname<<","<<did<<std::endl;
             if(n%100000==0)
             {
@@ -97,6 +98,3 @@ int main(int argc, char** argv)
     }
     LOG(INFO)<<"finished, cost "<<cost<<std::endl;
 }
-
-
-

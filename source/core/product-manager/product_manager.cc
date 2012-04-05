@@ -402,9 +402,11 @@ bool ProductManager::FinishHook()
         {
             uuid_map_writer->Close();
             delete uuid_map_writer;
-            SynchronizeRequest syncReq;
-            conn.asynRequest(syncReq);
         }
+        SynchronizeRequest syncReq;
+        conn.asynRequest(syncReq);
+        conn.flushRequests();
+
         //process the comparison items.
         boost::unordered_map<GroupTableType::GroupIdType, PMDocumentType>::iterator g2doc_it = g2doc_map.begin();
         while (g2doc_it != g2doc_map.end())

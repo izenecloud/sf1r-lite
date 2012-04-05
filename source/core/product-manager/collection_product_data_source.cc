@@ -1,7 +1,9 @@
 #include "collection_product_data_source.h"
+
 #include <document-manager/DocumentManager.h>
 #include <index-manager/IndexManager.h>
 #include <search-manager/SearchManager.h>
+#include <common/Utilities.h>
 
 
 using namespace sf1r;
@@ -44,7 +46,7 @@ void CollectionProductDataSource::GetDocIdList(const izenelib::util::UString& uu
     PropertyType value(uuid);
     index_manager_->getDocsByPropertyValue(1, config_.uuid_property_name, value, docid_list);
     docid_list.erase( std::remove(docid_list.begin(), docid_list.end(), exceptid),docid_list.end());
-    
+
 }
 
 bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_list, const izenelib::util::UString& uuid)
@@ -128,7 +130,7 @@ bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_
             //TODO how to rollback in IM?
         }
     }
-    
+
     return true;
 }
 
@@ -150,17 +152,15 @@ bool CollectionProductDataSource::SetUuid(izenelib::ir::indexmanager::IndexerDoc
     return true;
 }
 
-bool CollectionProductDataSource::GetInternalDocidList(const std::vector<izenelib::util::UString>& sdocid_list, std::vector<uint32_t>& docid_list)
+bool CollectionProductDataSource::GetInternalDocidList(const std::vector<uint128_t>& sdocid_list, std::vector<uint32_t>& docid_list)
 {
     docid_list.resize(sdocid_list.size());
     for(uint32_t i=0;i<sdocid_list.size();i++)
     {
-        if(!id_manager_->getDocIdByDocName(sdocid_list[i], docid_list[i],false))
+        if(!id_manager_->getDocIdByDocName(sdocid_list[i], docid_list[i], false))
         {
             docid_list.clear();
-            std::string sdocid;
-            sdocid_list[i].convertString(sdocid, izenelib::util::UString::UTF_8);
-            SetError_("Can not get docid for "+sdocid);
+            SetError_("Can not get docid for " + Utilities::uint128ToMD5(sdocid_list[i]));
             return false;
         }
     }
@@ -173,4 +173,3 @@ void CollectionProductDataSource::Flush()
     index_manager_->flush();
     search_manager_->reset_all_property_cache();
 }
-

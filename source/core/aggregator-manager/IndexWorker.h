@@ -7,7 +7,7 @@
 #ifndef INDEX_WORKER_H_
 #define INDEX_WORKER_H_
 
-#include <net/aggregator/BindCallProxyBase.h>                                                                                
+#include <net/aggregator/BindCallProxyBase.h>
 #include <directory-manager/DirectoryRotator.h>
 #include <configuration-manager/PropertyConfig.h>
 #include <configuration-manager/ConfigurationTool.h>
@@ -54,12 +54,12 @@ public:
     ~IndexWorker();
 
 public:
-    virtual bool bindCallProxy(CallProxyType& proxy)                                                                         
-    {                                                                                                                        
-        BIND_CALL_PROXY_BEGIN(IndexWorker, proxy)                                                                           
+    virtual bool bindCallProxy(CallProxyType& proxy)
+    {
+        BIND_CALL_PROXY_BEGIN(IndexWorker, proxy)
         BIND_CALL_PROXY_2(index, unsigned int, bool)
-        BIND_CALL_PROXY_END()                                                                                                
-    } 
+        BIND_CALL_PROXY_END()
+    }
 
     void index(unsigned int numdoc, bool& result);
 
@@ -108,14 +108,14 @@ private:
     );
 
     bool createUpdateDocId_(
-            const izenelib::util::UString& scdDocId,
+            const uint128_t& scdDocId,
             bool rType,
             docid_t& oldId,
             docid_t& newId
     );
 
     bool createInsertDocId_(
-            const izenelib::util::UString& scdDocId,
+            const uint128_t& scdDocId,
             docid_t& newId
     );
 

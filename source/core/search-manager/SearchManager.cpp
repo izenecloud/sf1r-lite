@@ -776,8 +776,8 @@ void SearchManager::post_prepare_ranker_(
 }
 
 void SearchManager::prepare_sorter_customranker_(
-    SearchKeywordOperation& actionOperation,	
-    CustomRankerPtr& customRanker, 
+    SearchKeywordOperation& actionOperation,
+    CustomRankerPtr& customRanker,
     Sorter* &pSorter)
 {
     std::vector<std::pair<std::string, bool> >& sortPropertyList

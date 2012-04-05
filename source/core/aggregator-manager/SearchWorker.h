@@ -7,7 +7,7 @@
 #ifndef SEARCH_WORKER_H_
 #define SEARCH_WORKER_H_
 
-#include <net/aggregator/BindCallProxyBase.h>                                                                                
+#include <net/aggregator/BindCallProxyBase.h>
 #include <query-manager/ActionItem.h>
 #include <query-manager/SearchKeywordOperation.h>
 #include <la-manager/AnalysisInformation.h>
@@ -42,20 +42,20 @@ class SearchWorker : public net::aggregator::BindCallProxyBase<SearchWorker>
 public:
     SearchWorker(IndexBundleConfiguration* bundleConfig);
 
-    virtual bool bindCallProxy(CallProxyType& proxy)                                                                         
-    {                                                                                                                        
-        BIND_CALL_PROXY_BEGIN(SearchWorker, proxy)                                                                           
+    virtual bool bindCallProxy(CallProxyType& proxy)
+    {
+        BIND_CALL_PROXY_BEGIN(SearchWorker, proxy)
         BIND_CALL_PROXY_2(getDistSearchInfo, KeywordSearchActionItem, DistKeywordSearchInfo)
         BIND_CALL_PROXY_2(getDistSearchResult, KeywordSearchActionItem, DistKeywordSearchResult)
         BIND_CALL_PROXY_2(getSummaryResult, KeywordSearchActionItem, KeywordSearchResult)
         BIND_CALL_PROXY_2(getSummaryMiningResult, KeywordSearchActionItem, KeywordSearchResult)
         BIND_CALL_PROXY_2(getDocumentsByIds, GetDocumentsByIdsActionItem, RawTextResultFromSIA)
-        BIND_CALL_PROXY_2(getInternalDocumentId, izenelib::util::UString, uint64_t)
+        BIND_CALL_PROXY_2(getInternalDocumentId, uint128_t, uint64_t)
         BIND_CALL_PROXY_3(getSimilarDocIdList, uint64_t, uint32_t, SimilarDocIdListType)
         BIND_CALL_PROXY_2(clickGroupLabel, ClickGroupLabelActionItem, bool)
         BIND_CALL_PROXY_2(visitDoc, uint32_t, bool)
-        BIND_CALL_PROXY_END()                                                                                                
-    } 
+        BIND_CALL_PROXY_END()
+    }
 
     /**
      * Worker services (interfaces)
@@ -76,7 +76,7 @@ public:
     /// documents
     void getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem);
 
-    void getInternalDocumentId(const izenelib::util::UString& actionItem, uint64_t& resultItem);
+    void getInternalDocumentId(const uint128_t& actionItem, uint64_t& resultItem);
 
     /// mining
     void getSimilarDocIdList(uint64_t documentId, uint32_t maxNum, SimilarDocIdListType& result);
