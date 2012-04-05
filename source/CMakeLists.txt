@@ -422,6 +422,15 @@ IF(VERBOSE)
   ELSE(Threads_FOUND)
     MESSAGE(STATUS "Threads Library: none")
   ENDIF(Threads_FOUND)
+
+  IF(LibCURL_FOUND)
+    MESSAGE(STATUS "libcurl:")
+    MESSAGE(STATUS "  header: ${LibCURL_INCLUDE_DIRS}")
+    MESSAGE(STATUS "  lib: ${LibCURL_LIBRARIES}")
+  ELSE(LibCURL_FOUND)
+    MESSAGE(STATUS "libcurl: not found!")
+  ENDIF(LibCURL_FOUND)
+
   MESSAGE(STATUS "========================================")
 
 ENDIF(VERBOSE)

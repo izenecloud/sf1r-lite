@@ -47,16 +47,19 @@ public:
         return nextResponse_;
     }
 
-    void doc_item(RankDocumentProperty& rankDocumentProperty)
+    void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0)
     {
         // ignore
         //cout << " [ PersonalSearchDocumentIterator::doc_item() ] " << endl;
     }
 
-    void df_ctf(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties& ctfmap)
+    void df_cmtf(
+            DocumentFrequencyInProperties& dfmap,
+            CollectionTermFrequencyInProperties& ctfmap,
+            MaxTermFrequencyInProperties& maxtfmap)
     {
         // ignore
-        //cout << " [ PersonalSearchDocumentIterator::df_ctf() ] " << endl;
+        //cout << " [ PersonalSearchDocumentIterator::df_cmtf() ] " << endl;
     }
 
 #if SKIP_ENABLED

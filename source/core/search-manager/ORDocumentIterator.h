@@ -46,9 +46,12 @@ public:
 
     docid_t doc(){ return currDoc_; }
 
-    void doc_item(RankDocumentProperty& rankDocumentProperty);
+    void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0);
 
-    void df_ctf(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties& ctfmap);
+    void df_cmtf(
+            DocumentFrequencyInProperties& dfmap,
+            CollectionTermFrequencyInProperties& ctfmap,
+            MaxTermFrequencyInProperties& maxtfmap);
 
     count_t tf();
 

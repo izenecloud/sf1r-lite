@@ -9,11 +9,8 @@
 #include <common/ScdWriter.h>
 #include <common/Utilities.h>
 
-#define USE_LOG_SERVER
-#ifdef USE_LOG_SERVER
 #include <log-manager/LogServerRequest.h>
 #include <log-manager/LogServerConnection.h>
-#endif
 
 #include <boost/unordered_set.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -263,9 +260,7 @@ bool ProductManager::FinishHook()
         }
         const std::vector<std::vector<GroupTableType::DocIdType> >& group_info = group_table->GetGroupInfo();
         LOG(INFO)<<"Start building group info."<<std::endl;
-#ifdef USE_LOG_SERVER
         LogServerConnection& conn = LogServerConnection::instance();
-#endif
         for (uint32_t gid = 0; gid < group_info.size(); gid++)
         {
             std::vector<GroupTableType::DocIdType> in_group = group_info[gid];
@@ -274,12 +269,8 @@ bool ProductManager::FinishHook()
             std::sort(in_group.begin(), in_group.end());
             izenelib::util::UString docname(in_group[0], izenelib::util::UString::UTF_8);
             UuidType uuid;
-#ifdef USE_LOG_SERVER
             std::string uuidstr;
             UuidGenerator::Gen(uuidstr, uuid);
-#else
-            UuidGenerator::Gen(uuid);
-#endif
             PMDocumentType doc;
             doc.property(config_.docid_property_name) = docname;
             doc.property(config_.price_property_name) = izenelib::util::UString("", izenelib::util::UString::UTF_8);
@@ -289,23 +280,17 @@ bool ProductManager::FinishHook()
             g2doc_map.insert(std::make_pair(gid, doc));
             if (uuid_map_writer)
             {
-#ifdef USE_LOG_SERVER
                 UpdateUUIDRequest uuidReq;
                 uuidReq.param_.uuid_ = Utilities::uuidToUint128(uuidstr);
-#endif
                 for (uint32_t i = 0; i < in_group.size(); i++)
                 {
                     PMDocumentType map_doc;
                     map_doc.property(config_.docid_property_name) = izenelib::util::UString(in_group[i], izenelib::util::UString::UTF_8);
                     map_doc.property(config_.uuid_property_name) = uuid;
                     uuid_map_writer->Append(map_doc);
-#ifdef USE_LOG_SERVER
                     uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128(in_group[i]));
-#endif
                 }
-#ifdef USE_LOG_SERVER
                 conn.asynRequest(uuidReq);
-#endif
             }
         }
         LOG(INFO)<<"Finished building group info."<<std::endl;
@@ -390,12 +375,8 @@ bool ProductManager::FinishHook()
             {
                 UString uuid;
                 //not in any group
-#ifdef USE_LOG_SERVER
                 std::string uuidstr;
                 UuidGenerator::Gen(uuidstr, uuid);
-#else
-                UuidGenerator::Gen(uuid);
-#endif
                 doc.property(config_.uuid_property_name) = uuid;
                 uuid_update_list.push_back(std::make_pair(docid, uuid));
                 PMDocumentType new_doc(doc);
@@ -405,18 +386,14 @@ bool ProductManager::FinishHook()
                 op_processor_->Append(1, new_doc);
                 if (uuid_map_writer)
                 {
-#ifdef USE_LOG_SERVER
                     UpdateUUIDRequest uuidReq;
                     uuidReq.param_.uuid_ = Utilities::uuidToUint128(uuidstr);
-#endif
                     PMDocumentType map_doc;
                     map_doc.property(config_.docid_property_name) = udocid;
                     map_doc.property(config_.uuid_property_name) = uuid;
                     uuid_map_writer->Append(map_doc);
-#ifdef USE_LOG_SERVER
                     uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128(sdocid));
                     conn.asynRequest(uuidReq);
-#endif
                 }
                 ++append_count;
             }
@@ -425,10 +402,8 @@ bool ProductManager::FinishHook()
         {
             uuid_map_writer->Close();
             delete uuid_map_writer;
-#ifdef USE_LOG_SERVER
-        SynchronizeRequest syncReq;
-        conn.asynRequest(syncReq);
-#endif
+            SynchronizeRequest syncReq;
+            conn.asynRequest(syncReq);
         }
         //process the comparison items.
         boost::unordered_map<GroupTableType::GroupIdType, PMDocumentType>::iterator g2doc_it = g2doc_map.begin();

@@ -242,7 +242,7 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
-            <xs:attribute name="nodenum" use="optional">
+            <xs:attribute name="nodenum" use="required">
                 <xs:simpleType>
                     <xs:restriction base="xs:integer">
                         <xs:minInclusive value="1"/>

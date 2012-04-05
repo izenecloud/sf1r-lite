@@ -34,6 +34,7 @@ class RankQueryProperty
         termid_t term;
         float totalTermFreq;
         float documentFreq;
+        float maxTermFreq;
     };
 
 public:
@@ -105,6 +106,12 @@ public:
         BOOST_ASSERT(!attributes_.empty());
         attributes_.back().documentFreq = freq;
     }
+    void setMaxTermFreq(float freq)
+    {
+        BOOST_ASSERT(!attributes_.empty());
+        attributes_.back().maxTermFreq = freq;
+    }
+
     void setTermFreq(unsigned freq)
     {
         BOOST_ASSERT(!freqsOrPositionsVector_.empty());
@@ -146,6 +153,12 @@ public:
     {
         BOOST_ASSERT(i < size());
         return attributes_[i].documentFreq;
+    }
+
+    float maxTermFreqAt(size_type i) const
+    {
+        BOOST_ASSERT(i < size());
+        return attributes_[i].maxTermFreq;
     }
 
     size_type termFreqAt(size_type i) const

@@ -43,10 +43,17 @@
           </Display>
           <Indexing filter="no" multivalue="no" doclen="yes" analyzer="la_sia" tokenizer="tok_divide, tok_unite" rankweight="0.2"/>
         </Property>
+
+        <VirtualProperty name="Combined">
+          <SubProperty name="Title"/>
+          <SubProperty name="Content"/>
+        </VirtualProperty>
+
       </Schema>
 <!--
       <Parameter>
         <IndexStrategy autorebuild="n" logcreateddoc="n" />
+        <Sia searchanalyzer="la_sia_without_overlap"/>
       </Parameter>
 -->
     </IndexBundle>

@@ -34,6 +34,14 @@
                                     <xs:attribute name="name" type="xs:string" use="required"/>
                                 </xs:complexType>
                             </xs:element>
+                            <xs:element name="VirtualProperty" minOccurs="0" maxOccurs="unbounded" >
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="SubProperty" type="PropertyType" minOccurs="1" maxOccurs="unbounded" />
+                                    </xs:sequence>
+                                    <xs:attribute name="name" type="xs:string" use="required"/>
+                                </xs:complexType>
+                            </xs:element>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
@@ -87,7 +95,7 @@
 
     <xs:element name="Sia">
         <xs:complexType>
-            <xs:attribute name="doccachenum" use="required">
+            <xs:attribute name="doccachenum" use="optional">
                 <xs:simpleType>
                     <xs:restriction base="xs:integer">
                         <xs:minInclusive value="100"/>
@@ -95,7 +103,7 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
-            <xs:attribute name="searchcachenum" use="required">
+            <xs:attribute name="searchcachenum" use="optional">
                 <xs:simpleType>
                     <xs:restriction base="xs:integer">
                         <xs:minInclusive value="100"/>
@@ -103,7 +111,7 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
-            <xs:attribute name="filtercachenum" use="required">
+            <xs:attribute name="filtercachenum" use="optional">
                 <xs:simpleType>
                     <xs:restriction base="xs:integer">
                         <xs:minInclusive value="100"/>
@@ -111,7 +119,7 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
-            <xs:attribute name="mastersearchcachenum" use="required">
+            <xs:attribute name="mastersearchcachenum" use="optional">
                 <xs:simpleType>
                     <xs:restriction base="xs:integer">
                         <xs:minInclusive value="100"/>
@@ -119,7 +127,7 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
-            <xs:attribute name="topknum" use="required">
+            <xs:attribute name="topknum" use="optional">
                 <xs:simpleType>
                     <xs:restriction base="xs:integer">
                         <xs:minInclusive value="100"/>
@@ -127,7 +135,7 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
-            <xs:attribute name="knntopknum" use="required">
+            <xs:attribute name="knntopknum" use="optional">
                 <xs:simpleType>
                     <xs:restriction base="xs:integer">
                         <xs:minInclusive value="5"/>
@@ -135,7 +143,7 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
-            <xs:attribute name="knndist" use="required">
+            <xs:attribute name="knndist" use="optional">
                 <xs:simpleType>
                     <xs:restriction base="xs:integer">
                         <xs:minInclusive value="1"/>
@@ -143,7 +151,7 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
-            <xs:attribute name="sortcacheupdateinterval" use="required">
+            <xs:attribute name="sortcacheupdateinterval" use="optional">
                 <xs:simpleType>
                     <xs:restriction base="xs:integer">
                         <xs:minInclusive value="1"/>
@@ -151,9 +159,9 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
-            <xs:attribute name="triggerqa" type="YesNoType" use="required"/>
-            <xs:attribute name="encoding" type="EncodingType" use="required"/>
-            <xs:attribute name="wildcardtype" use="required">
+            <xs:attribute name="triggerqa" type="YesNoType" use="optional"/>
+            <xs:attribute name="encoding" type="EncodingType" use="optional"/>
+            <xs:attribute name="wildcardtype" use="optional">
                 <xs:simpleType>
                     <xs:restriction base="xs:string">
                         <xs:enumeration value="unigram"/>
@@ -161,8 +169,8 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
-            <xs:attribute name="indexunigramproperty" type="YesNoType" use="required"/>
-            <xs:attribute name="unigramsearchmode" type="YesNoType" use="required"/>
+            <xs:attribute name="indexunigramproperty" type="YesNoType" use="optional"/>
+            <xs:attribute name="unigramsearchmode" type="YesNoType" use="optional"/>
             <xs:attribute name="multilanggranularity" use="optional">
                 <xs:simpleType>
                     <xs:restriction base="xs:string">
@@ -180,6 +188,7 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
+            <xs:attribute name="searchanalyzer" type="xs:NCName" use="optional"/>            
         </xs:complexType>
     </xs:element>
 

@@ -6,6 +6,7 @@
 #include <boost/unordered_map.hpp>
 #include <boost/regex.hpp>
 #include <common/ScdWriter.h>
+#include <common/ScdWriterController.h>
 
 namespace sf1r {
     class CategoryScdSpliter {
@@ -13,7 +14,7 @@ namespace sf1r {
         struct ValueType
         {
             boost::regex regex;
-            ScdWriter* writer;
+            ScdWriterController* writer;
         };
 
     public:

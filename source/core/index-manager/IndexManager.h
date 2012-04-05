@@ -119,6 +119,8 @@ public:
         }
     }
 
+    void convertStringPropertyDataForSorting(const string& property, uint32_t* &data, size_t&size);
+
     ///Make range query on BTree index to fill the Filter, which is required by the filter utility of SearchManager
     void makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,
            const std::vector<PropertyValue>& filterParam, boost::shared_ptr<BitVector> docIdSet);

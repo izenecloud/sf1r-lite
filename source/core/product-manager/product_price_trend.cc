@@ -70,7 +70,7 @@ bool ProductPriceTrend::Init()
             }
         }
     }
-    price_history_buffer_.reserve(10000);
+    price_history_buffer_.reserve(5000);
 
     return true;
 }
@@ -117,7 +117,7 @@ bool ProductPriceTrend::Update(
 
 bool ProductPriceTrend::IsBufferFull_()
 {
-    return price_history_buffer_.size() >= 10000;
+    return price_history_buffer_.size() >= 5000;
 }
 
 bool ProductPriceTrend::Flush()

@@ -59,6 +59,7 @@ SET(libs
   ${sqlite3_LIBRARIES}
   ${MYSQL_LIBRARIES}
   ${Thrift_LIBS}
+  ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}
   )
 

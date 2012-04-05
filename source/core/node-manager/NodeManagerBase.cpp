@@ -1,10 +1,14 @@
 #include "NodeManagerBase.h"
 #include "SuperNodeManager.h"
+#include "SuperMasterManager.h"
 
 #include <sstream>
 
-using namespace sf1r;
+#include <boost/lexical_cast.hpp>
 
+
+namespace sf1r
+{
 
 NodeManagerBase::NodeManagerBase()
     : isDistributionEnabled_(false)
@@ -40,11 +44,6 @@ void NodeManagerBase::start()
         nodeState_ = NODE_STATE_STARTING;
         enterCluster();
     }
-    else
-    {
-        // start once
-        return;
-    }
 }
 
 void NodeManagerBase::stop()
@@ -59,15 +58,11 @@ void NodeManagerBase::stop()
 
 void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
 {
-    std::cout<<CLASSNAME<< zkEvent.toString();
+    LOG (INFO) << CLASSNAME << " " << zkEvent.toString();
 
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {
-        if (nodeState_ == NODE_STATE_INIT)
-        {
-
-        }
-        else if (nodeState_ == NODE_STATE_STARTING_WAIT_RETRY)
+        if (nodeState_ == NODE_STATE_STARTING_WAIT_RETRY)
         {
             // retry start
             nodeState_ = NODE_STATE_STARTING;
@@ -80,25 +75,17 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
 
 /// protected ////////////////////////////////////////////////////////////////////
 
-void NodeManagerBase::initZkNameSpace()
+void NodeManagerBase::tryInitZkNameSpace()
 {
-    // Make sure zookeeper namaspace (znodes) is initialized properly
     zookeeper_->createZNode(clusterPath_);
-    // topology
     zookeeper_->createZNode(topologyPath_);
     std::stringstream ss;
     ss << sf1rTopology_.curNode_.replicaId_;
     zookeeper_->createZNode(replicaPath_, ss.str());
 }
 
-void NodeManagerBase::enterCluster()
+bool NodeManagerBase::checkZooKeeperService()
 {
-    boost::unique_lock<boost::mutex> lock(mutex_);
-
-    if (nodeState_ == NODE_STATE_STARTED)
-        return;
-
-    // Ensure connecting to zookeeper
     if (!zookeeper_->isConnected())
     {
         zookeeper_->connect(true);
@@ -108,41 +95,69 @@ void NodeManagerBase::enterCluster()
             // If still not connected, assume zookeeper service was stopped
             // and waiting for later connection after zookeeper recovered.
             nodeState_ = NODE_STATE_STARTING_WAIT_RETRY;
-            LOG (WARNING) << CLASSNAME << " waiting for ZooKeeper Service...";
-            return;
+            return false;
         }
     }
 
-    // xxx Initialize zookeeper namespace for SF1
-    initZkNameSpace();
+    return true;
+}
 
-    // Set zookeeper node data
-    ZNode znode;
-    znode.setValue(ZNode::KEY_HOST, SuperNodeManager::get()->getLocalHostIP());
-    znode.setValue(ZNode::KEY_BA_PORT, SuperNodeManager::get()->getBaPort());
-    znode.setValue(ZNode::KEY_DATA_PORT, SuperNodeManager::get()->getDataReceiverPort());
-    znode.setValue(ZNode::KEY_MASTER_PORT, SuperNodeManager::get()->getMasterPort());
+void NodeManagerBase::setSf1rNodeData(ZNode& znode)
+{
+    znode.setValue(ZNode::KEY_USERNAME, sf1rTopology_.curNode_.userName_);
+    znode.setValue(ZNode::KEY_HOST, sf1rTopology_.curNode_.host_);
+    znode.setValue(ZNode::KEY_BA_PORT, sf1rTopology_.curNode_.baPort_);
+    znode.setValue(ZNode::KEY_DATA_PORT, sf1rTopology_.curNode_.dataPort_);
+
     if (sf1rTopology_.curNode_.worker_.isEnabled_)
     {
-        znode.setValue(ZNode::KEY_WORKER_PORT, SuperNodeManager::get()->getWorkerPort());
+        znode.setValue(ZNode::KEY_WORKER_PORT, sf1rTopology_.curNode_.worker_.port_);
         znode.setValue(ZNode::KEY_SHARD_ID, sf1rTopology_.curNode_.worker_.shardId_);
     }
 
-    std::string collections;
-    std::vector<MasterCollection>& collectionList = sf1rTopology_.curNode_.master_.collectionList_;
-    for (std::vector<MasterCollection>::iterator it = collectionList.begin();
-            it != collectionList.end(); it++)
+    if (sf1rTopology_.curNode_.master_.isEnabled_)
     {
-        if (collections.empty())
-            collections = (*it).name_;
-        else
-            collections += "," + (*it).name_;
+        znode.setValue(ZNode::KEY_MASTER_PORT, sf1rTopology_.curNode_.master_.port_);
+        znode.setValue(ZNode::KEY_MASTER_NAME, sf1rTopology_.curNode_.master_.name_);
     }
-    znode.setValue(ZNode::KEY_COLLECTION, collections);
+    //if (sf1rTopology_.curNode_.master_.isEnabled_)
+    {
+        std::string collections;
+        std::vector<MasterCollection>& collectionList = sf1rTopology_.curNode_.master_.collectionList_;
+        for (std::vector<MasterCollection>::iterator it = collectionList.begin();
+                it != collectionList.end(); it++)
+        {
+            if (collections.empty())
+                collections = (*it).name_;
+            else
+                collections += "," + (*it).name_;
+        }
+        znode.setValue(ZNode::KEY_COLLECTION, collections);
+    }
+}
 
-    // Register node to zookeeper
-    std::string sznode = znode.serialize();
-    if (!zookeeper_->createZNode(nodePath_, sznode, ZooKeeper::ZNODE_EPHEMERAL))
+void NodeManagerBase::enterCluster()
+{
+    boost::unique_lock<boost::mutex> lock(mutex_);
+    if (nodeState_ == NODE_STATE_STARTED)
+    {
+        return;
+    }
+
+    if (!checkZooKeeperService())
+    {
+        // process will be resumed after zookeeper recovered
+        LOG (WARNING) << CLASSNAME << " waiting for ZooKeeper Service ...";
+        return;
+    }
+
+    // ensure base paths
+    tryInitZkNameSpace();
+
+    // register current sf1r node to ZooKeeper
+    ZNode znode;
+    setSf1rNodeData(znode);
+    if (!zookeeper_->createZNode(nodePath_, znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL))
     {
         if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
         {
@@ -163,20 +178,30 @@ void NodeManagerBase::enterCluster()
         else
         {
             nodeState_ = NODE_STATE_STARTING_WAIT_RETRY;
-            std::cout<<CLASSNAME<<" Failed to start ("<<zookeeper_->getErrorString()
-                     <<"), waiting retry ..."<<std::endl;
+            LOG (ERROR) << CLASSNAME << " Failed to start (" << zookeeper_->getErrorString()
+                        << "), waiting for retry ..." << std::endl;
             return;
         }
     }
 
     nodeState_ = NODE_STATE_STARTED;
-    std::cout<<CLASSNAME<<" joined cluster ["<<SuperNodeManager::get()->getClusterId()<<"] - "
-             <<"[Replica "<<sf1rTopology_.curNode_.replicaId_<<", Node "<<sf1rTopology_.curNode_.nodeId_<<"] "<<std::endl;
+
+    Sf1rNode& curNode = sf1rTopology_.curNode_;
+    LOG (INFO) << CLASSNAME
+               << " started, cluster[" << sf1rTopology_.clusterId_
+               << "] replica[" << curNode.replicaId_
+               << "] node[" << curNode.nodeId_
+               << "]{"
+               << (curNode.worker_.isEnabled_ ? (std::string("worker ") + boost::lexical_cast<std::string>(curNode.worker_.shardId_) + " ") : "")
+               << curNode.userName_ << "@" << curNode.host_ << "}";
+
 
     // Start Master manager
     if (sf1rTopology_.curNode_.master_.isEnabled_)
     {
-        startMasterManager(); // virtual
+        startMasterManager();
+        SuperMasterManager::get()->init(sf1rTopology_);
+        SuperMasterManager::get()->start();
         masterStarted_ = true;
     }
 }
@@ -206,4 +231,6 @@ void NodeManagerBase::leaveCluster()
     {
         zookeeper_->deleteZNode(clusterPath_);
     }
+}
+
 }

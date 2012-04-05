@@ -48,6 +48,20 @@ public:
         return false;
     }
 
+    bool getShardidList(const std::string& collection, std::vector<shardid_t>& shardidList)
+    {
+        std::vector<MasterCollection>::iterator it;
+        for (it = collectionList_.begin(); it != collectionList_.end(); it++)
+        {
+            if (it->name_ == collection)
+            {
+                shardidList = it->shardList_;
+                return true;
+            }
+        }
+        return false;
+    }
+
     std::string toString()
     {
         std::stringstream ss;
@@ -55,7 +69,7 @@ public:
         ss << "[Master]" << std::endl
            << "enabled: " << isEnabled_ << std::endl
            << "alias: " << name_ << std::endl
-           << "port: " << masterPort_ << std::endl
+           << "port: " << port_ << std::endl
            << "total shards: " << totalShardNum_ << std::endl;
 
         std::vector<MasterCollection>::iterator it;
@@ -84,7 +98,7 @@ public:
 public:
     bool isEnabled_;
     std::string name_;
-    port_t masterPort_;
+    port_t port_;
 
     // Each shard resides on one of the Workers,
     // so it's also number of Workers, and shardid are used as workerid;
@@ -118,7 +132,7 @@ public:
 
         ss << "[Worker]" << std::endl
            << "enabled: " << isEnabled_ << std::endl
-           << "port: " << workerPort_ << std::endl
+           << "port: " << port_ << std::endl
            << "shardid (workerid):" << shardId_ << std::endl;
 
         for (size_t i = 0; i < collectionList_.size(); i++)
@@ -132,7 +146,7 @@ public:
 public:
     bool isEnabled_;
     bool isGood_;
-    port_t workerPort_;
+    port_t port_;
     shardid_t shardId_; // id of shard resides on this worker.
 
     std::vector<std::string> collectionList_;
@@ -183,14 +197,19 @@ public:
     Sf1rNode curNode_;
 
 public:
-    Sf1rTopology():nodeNum_(0) {}
+    Sf1rTopology()
+        : nodeNum_(0)
+        , replicaNum_(1)
+    {}
 
     std::string toString()
     {
         std::stringstream ss;
 
         ss << "[Sf1rTopology]" << std::endl
-           << "clusterid: " << clusterId_ << std::endl;
+           << "cluster id: " << clusterId_ << std::endl
+           << "node number: " << nodeNum_ << std::endl
+           << "replica number: " << replicaNum_ << std::endl;
 
         ss << curNode_.toString();
 

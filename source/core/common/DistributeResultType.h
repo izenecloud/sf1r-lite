@@ -36,6 +36,9 @@ public:
     /// @brief collection term frequency info of terms for each property
     CollectionTermFrequencyInProperties ctfmap_;
 
+    /// @brief maximal term frequency info of terms for each property
+    MaxTermFrequencyInProperties maxtfmap_;
+
     /// @brief data lists for sort properties of docList.
     std::vector<std::pair<std::string , bool> > sortPropertyList_;
     std::vector<std::pair<std::string, std::vector<int64_t> > > sortPropertyIntDataList_;
@@ -50,13 +53,14 @@ public:
         swap(nodeType_, other.nodeType_);
         dfmap_.swap(other.dfmap_);
         ctfmap_.swap(other.ctfmap_);
+        maxtfmap_.swap(other.maxtfmap_);
         sortPropertyList_.swap(other.sortPropertyList_);
         sortPropertyIntDataList_.swap(other.sortPropertyIntDataList_);
         sortPropertyUIntDataList_.swap(other.sortPropertyUIntDataList_);
         sortPropertyFloatDataList_.swap(other.sortPropertyFloatDataList_);
     }
 
-    MSGPACK_DEFINE(effective_, option_, nodeType_, dfmap_, ctfmap_, sortPropertyList_,
+    MSGPACK_DEFINE(effective_, option_, nodeType_, dfmap_, ctfmap_, maxtfmap_, sortPropertyList_,
         sortPropertyIntDataList_, sortPropertyUIntDataList_, sortPropertyFloatDataList_);
 };
 

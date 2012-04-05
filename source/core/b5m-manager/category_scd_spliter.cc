@@ -53,8 +53,9 @@ bool CategoryScdSpliter::Load_(const std::string& category_dir, const std::strin
             boost::regex r(line);
             ValueType value;
             value.regex = r;
-            ScdWriter* writer = new ScdWriter(category_dir, INSERT_SCD);
-            writer->SetFileName(name+".SCD");
+            std::string scd_dir = category_dir+"/"+name;
+            boost::filesystem::create_directories(scd_dir);
+            ScdWriterController* writer = new ScdWriterController(scd_dir);
             value.writer = writer;
             values_.push_back(value);
         }
@@ -113,12 +114,41 @@ bool CategoryScdSpliter::Split(const std::string& scd_path)
             }
         }
     }
-    if(scd_list.empty()) return false;
+    std::vector<std::string> valid_scd_list;
+    typedef std::map<int, uint16_t> ScdTypeMap;
+    ScdTypeMap scd_type_map;
+    scd_type_map[INSERT_SCD] = 0;
+    scd_type_map[UPDATE_SCD] = 0;
+    scd_type_map[DELETE_SCD] = 0;
+    for(uint32_t i=0;i<scd_list.size();i++)
+    {
+        if(ScdParser::checkSCDFormat(scd_list[i]))
+        {
+            int scd_type = ScdParser::checkSCDType(scd_list[i]);
+            if(scd_type==DELETE_SCD) continue;//D_SCD need not to be split and do product matching
+            scd_type_map[scd_type] += 1;
+            valid_scd_list.push_back(scd_list[i]);
+        }
+    }
+    if(valid_scd_list.empty()) return true;
+    ScdTypeMap::iterator it = scd_type_map.begin();
+    while(it!=scd_type_map.end())
+    {
+        if(it->second>1)
+        {
+            std::cout<<"scd type "<<it->first<<" has "<<it->second<<" SCDs, error!"<<std::endl;
+            return false;
+        } 
+        ++it;
+    }
+    std::sort(valid_scd_list.begin(), valid_scd_list.end(), ScdParser::compareSCD);
+    scd_list.swap(valid_scd_list);
 
     for(uint32_t i=0;i<scd_list.size();i++)
     {
         std::string scd_file = scd_list[i];
         LOG(INFO)<<"Spliting "<<scd_file<<std::endl;
+        int scd_type = ScdParser::checkSCDType(scd_list[i]);
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
         uint32_t n=0;
@@ -149,7 +179,7 @@ bool CategoryScdSpliter::Split(const std::string& scd_path)
             {
                 if(boost::regex_match(scategory, values_[i].regex))
                 {
-                    values_[i].writer->Append(doc);
+                    values_[i].writer->Write(doc, scd_type);
                     break;
                 }
             }
@@ -157,7 +187,7 @@ bool CategoryScdSpliter::Split(const std::string& scd_path)
     }
     for(uint32_t i=0;i<values_.size();i++)
     {
-        values_[i].writer->Close();
+        values_[i].writer->Flush();
     }
     return true;
 }

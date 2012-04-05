@@ -713,7 +713,7 @@ void SF1Config::parseDistributedTopology(
 
         Sf1rTopology& sf1rTopology = topologyConfig.sf1rTopology_;
         sf1rTopology.clusterId_ = distributedCommonConfig_.clusterId_;
-        getAttribute(topology, "nodenum", sf1rTopology.nodeNum_, false);
+        getAttribute(topology, "nodenum", sf1rTopology.nodeNum_);
 
         Sf1rNode& sf1rNode = sf1rTopology.curNode_;
         sf1rNode.userName_ = distributedCommonConfig_.userName_;
@@ -726,15 +726,11 @@ void SF1Config::parseDistributedTopology(
         getAttribute(sf1rNodeElem, "nodeid", sf1rNode.nodeId_);
 
         Sf1rNodeMaster& sf1rNodeMaster = sf1rNode.master_;
-        sf1rNodeMaster.masterPort_ = distributedCommonConfig_.masterPort_;
+        sf1rNodeMaster.port_ = distributedCommonConfig_.masterPort_;
         parseNodeMaster(getUniqChildElement(sf1rNodeElem, "MasterServer", false), sf1rNodeMaster);
-        if (sf1rTopology.nodeNum_ == 0)
-        {
-            sf1rTopology.nodeNum_ =  sf1rNodeMaster.totalShardNum_;
-        }
 
         Sf1rNodeWorker& sf1rNodeWorker = sf1rNode.worker_;
-        sf1rNodeWorker.workerPort_ = distributedCommonConfig_.workerPort_;
+        sf1rNodeWorker.port_ = distributedCommonConfig_.workerPort_;
         parseNodeWorker(getUniqChildElement(sf1rNodeElem, "WorkerServer", false), sf1rNodeWorker);
 
         //std::cout << topologyConfig.toString() << std::endl;
@@ -767,8 +763,16 @@ void SF1Config::parseNodeMaster(const ticpp::Element * master, Sf1rNodeMaster& s
                     for(it = tokens.begin(); it != tokens.end(); ++it)
                     {
                         shardid_t shardid;
-                        try {
+                        try
+                        {
                             shardid = boost::lexical_cast<shardid_t>(*it);
+                            if (shardid < 1 || shardid > sf1rNodeMaster.totalShardNum_)
+                            {
+                                std::stringstream ss;
+                                ss << "invalid shardid \"" << shardid << "\" in <MasterServer ...> <Collection name=\""
+                                   << masterCollection.name_ << "\" shardids=\"" << shardids << "\"";
+                                throw std::runtime_error(ss.str());
+                            }
                         }
                         catch (const std::exception& e) {
                             throw std::runtime_error(
@@ -1116,6 +1120,21 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     params.GetString("Sia/encoding", encoding);
     downCase(encoding);
     IndexBundleConfiguration& indexBundleConfig = *collectionMeta.indexBundleConfig_;
+    std::string searchAnalyzer;
+    params.GetString("Sia/searchanalyzer", searchAnalyzer);
+    if(!searchAnalyzer.empty())
+    {
+        if ((SF1Config::get()->laConfigIdNameMap_.find(searchAnalyzer)) == SF1Config::get()->laConfigIdNameMap_.end()) {
+            throw XmlConfigParserException("Undefined analyzer configuration id, " + searchAnalyzer);
+        }
+
+        /// TODO, add a hidden alias here
+        AnalysisInfo analysisInfo;
+        analysisInfo.analyzerId_ = searchAnalyzer;
+        SF1Config::get()->analysisPairList_.insert(analysisInfo);
+    }
+
+    indexBundleConfig.searchAnalyzer_ = searchAnalyzer;
     indexBundleConfig.encoding_ = parseEncodingType(encoding);
     params.GetString("Sia/wildcardtype", indexBundleConfig.wildcardType_, "unigram");
     params.Get("Sia/indexunigramproperty", indexBundleConfig.bIndexUnigramProperty_);
@@ -1248,6 +1267,48 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
             throw e;
         }
     }
+    const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
+
+    Iterator<Element> virtualproperty("VirtualProperty");
+    for (virtualproperty = virtualproperty.begin(indexSchemaNode); virtualproperty != virtualproperty.end(); virtualproperty++)
+    {
+        try
+        {
+            string propertyName;
+            getAttribute(virtualproperty.Get(), "name", propertyName);
+
+            string pName = propertyName;
+            boost::to_lower(pName);
+
+            PropertyConfig p;
+            p.setName(propertyName);
+
+            Iterator<Element> subproperty("SubProperty");
+            for (subproperty = subproperty.begin(virtualproperty.Get()); subproperty != subproperty.end(); subproperty++)
+            {
+                string subPropName;
+                getAttribute(subproperty.Get(), "name", subPropName);
+                p.subProperties_.push_back(subPropName);
+                PropertyConfig tmp;
+                tmp.setName(subPropName);
+                IndexBundleSchema::const_iterator pit = indexSchema.find(tmp);
+                if(pit != indexSchema.end())
+                {
+                    ///Ugly here, each property right now should have same analysisinfo
+                    p.setAnalysisInfo(pit->getAnalysisInfo());
+                }
+            }
+
+            p.setOriginalName(propertyName);
+            p.setIsIndex(true);
+            collectionMeta.indexBundleConfig_->indexSchema_.insert(p);
+        }
+        catch (XmlConfigParserException & e)
+        {
+            throw e;
+        }
+    }
+
 
     ///we update property Id here
     ///It is because that IndexBundle might add properties "xx_unigram", in this case, we must keep the propertyId consistent
@@ -1257,14 +1318,29 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
 
     // map<property name, weight>
     std::map<string, float>& propertyWeightMap = collectionMeta.indexBundleConfig_->rankingManagerConfig_.propertyWeightMapByProperty_;
-    const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
 
     for (IndexBundleSchema::const_iterator it = indexSchema.begin();
         it != indexSchema.end(); ++it)
     {
         if (it->getRankWeight() >= 0.0f)
         {
-            propertyWeightMap.insert(pair<string, float>(it->getName(), it->getRankWeight()));
+            propertyWeightMap[it->getName()] = it->getRankWeight();
+        }
+        if (! it->subProperties_.empty())
+        {
+            float weight = 0.0f;
+            for(unsigned i = 0; i < it->subProperties_.size(); ++i)
+            {
+                PropertyConfig p;
+                p.setName(it->subProperties_[i]);
+				
+                IndexBundleSchema::const_iterator pit = indexSchema.find(p);
+                if((pit != indexSchema.end())&&(pit->getRankWeight() >= 0.0f))
+                {
+                    weight += pit->getRankWeight();
+                }
+            }
+            propertyWeightMap[it->getName()] = weight;
         }
     }
 }

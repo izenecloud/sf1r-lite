@@ -34,6 +34,25 @@ void IndexManager::convertData(const std::string& property, const PropertyValue&
         boost::apply_visitor(converter, in.getVariant());
 }
 
+void IndexManager::convertStringPropertyDataForSorting(const string& property, uint32_t* &data, size_t&size)
+{
+    BTreeIndexer<izenelib::util::UString>* pBTreeIndexer = 
+        pBTreeIndexer_->getIndexer<izenelib::util::UString>(property);
+    size = getIndexReader()->maxDoc();
+    if(!size)
+    {
+        data = NULL;
+        return;
+    }
+    size += 1;
+    data = new uint32_t[size]();
+    if (pBTreeIndexer->convertAllValue(size,data) == 0)
+    {
+        delete[] data;
+        data = NULL;
+    }
+}
+
 void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,
         const std::vector<PropertyValue>& filterParam, boost::shared_ptr<BitVector> docIdSet)
 {

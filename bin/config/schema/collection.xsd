@@ -59,6 +59,14 @@
             <xs:selector xpath="t:IndexBundle/t:Schema/t:Property"/>
             <xs:field xpath="@name"/>
         </xs:keyref>
+        <xs:key name="IndexSchemaPropertyKey">
+            <xs:selector xpath="t:IndexBundle/t:Schema/t:Property"/>
+            <xs:field xpath="@name"/>
+        </xs:key>
+        <xs:keyref name="IndexBundleSchemaKeyVirtualPropertyRef" refer="IndexSchemaPropertyKey">
+            <xs:selector xpath="t:IndexBundle/t:Schema/t:VirtualProperty/t:SubProperty"/>
+            <xs:field xpath="@name"/>
+        </xs:keyref>
         <xs:keyref name="tgPropertyNameKeyRef" refer="SchemaPropertyKey">
             <xs:selector xpath="t:MiningBundle/t:Schema/t:TaxonomyGeneration/t:Property"/>
             <xs:field xpath="@name"/>

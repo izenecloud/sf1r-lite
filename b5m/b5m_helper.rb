@@ -52,3 +52,15 @@ class CategoryTask
 
 end
 
+class B5MPath
+  def self.scd_merger
+
+    File.join( File.dirname(File.dirname(__FILE__)), "scripts", "ScdMerger")
+  end
+
+  def self.matcher
+
+    File.join( File.dirname(__FILE__), "b5m_matcher")
+  end
+end
+

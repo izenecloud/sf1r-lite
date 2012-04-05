@@ -261,7 +261,9 @@ uint32_t DupDetectorWrapper::getSignatureForText(
     if (!strTermList.empty())
     {
         //  CharikarAlgorithm algo;
-        dd_->GetCharikarAlgo()->generate_document_signature(strTermList, signature);
+        idmlib::dd::SimHash fp;
+        dd_->GetCharikarAlgo()->generate_document_signature(strTermList, fp);
+        signature.assign(fp.desc, fp.desc + idmlib::dd::SimHash::FP_SIZE);
     }
     return strTermList.size();
 }

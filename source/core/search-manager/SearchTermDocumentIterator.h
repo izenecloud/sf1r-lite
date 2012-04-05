@@ -29,13 +29,16 @@ public:
 
 public:
     /*virtual*/
-    void df_ctf(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties& ctfmap)
+    void df_cmtf(
+            DocumentFrequencyInProperties& dfmap,
+            CollectionTermFrequencyInProperties& ctfmap,
+            MaxTermFrequencyInProperties& maxtfmap)
     {
         // do nothing
     }
 
     /*virtual*/
-    void doc_item(RankDocumentProperty& rankDocumentProperty)
+    void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0)
     {
         // do nothing
     }

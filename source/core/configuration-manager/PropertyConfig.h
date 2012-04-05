@@ -441,6 +441,7 @@ public:
         swap(bStoreDocLen_, rhs.bStoreDocLen_);
         swap(analysisInfo_, rhs.analysisInfo_);
         swap(rankWeight_, rhs.rankWeight_);
+        swap(subProperties_,rhs.subProperties_);
     }
 
 private:
@@ -465,6 +466,7 @@ private:
         ar & bStoreDocLen_;
         ar & analysisInfo_;
         ar & rankWeight_;
+        ar & subProperties_;
     }
 
 public:
@@ -505,6 +507,9 @@ public:
 
     /// @brief  The ranking weight value assigned to this Property
     float rankWeight_;
+
+    /// @brief If this property is virtual, it has several sub properties
+    std::vector<std::string> subProperties_;
 };
 
 struct PropertyComp

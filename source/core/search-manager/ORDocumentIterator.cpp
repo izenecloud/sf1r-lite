@@ -215,8 +215,15 @@ docid_t ORDocumentIterator::do_skipTo(docid_t target)
 
         std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();
         for (; iter != docIteratorList_.end(); ++iter)
-            if (*iter && (*iter)->doc() == currDoc_)
-                (*iter)->setCurrent(true);
+        {
+            if (*iter)
+            {
+                if((*iter)->doc() == currDoc_)
+                    (*iter)->setCurrent(true);
+                else
+                    (*iter)->setCurrent(false);					
+            }
+        }
 
         if (currDoc_ >= target)
         {
@@ -252,20 +259,22 @@ docid_t ORDocumentIterator::do_skipTo(docid_t target)
 #endif
 
 void ORDocumentIterator::doc_item(
-    RankDocumentProperty& rankDocumentProperty)
+    RankDocumentProperty& rankDocumentProperty, 
+    unsigned propIndex)
 {
     DocumentIterator* pEntry;
     for (size_t i = 0; i < pDocIteratorQueue_->size(); ++i)
     {
         pEntry = pDocIteratorQueue_->getAt(i);
         if (pEntry->isCurrent())
-            pEntry->doc_item(rankDocumentProperty);
+            pEntry->doc_item(rankDocumentProperty,propIndex);
     }
 }
 
-void ORDocumentIterator::df_ctf(
+void ORDocumentIterator::df_cmtf(
     DocumentFrequencyInProperties& dfmap,
-    CollectionTermFrequencyInProperties& ctfmap)
+    CollectionTermFrequencyInProperties& ctfmap,
+    MaxTermFrequencyInProperties& maxtfmap)
 {
     DocumentIterator* pEntry;
     std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();
@@ -273,7 +282,7 @@ void ORDocumentIterator::df_ctf(
     {
         pEntry = (*iter);
         if(pEntry)
-            pEntry->df_ctf(dfmap, ctfmap);
+            pEntry->df_cmtf(dfmap, ctfmap, maxtfmap);
     }
 }
 

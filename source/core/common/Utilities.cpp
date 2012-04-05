@@ -271,22 +271,30 @@ bool Utilities::convertPropertyDataType(const std::string& property_name, const 
 
 std::string Utilities::uint128ToUuid(const uint128_t& val)
 {
-    const boost::uuids::uuid& uuid = *reinterpret_cast<const boost::uuids::uuid *>(&val);
-    return boost::uuids::to_string(uuid);
+    //const boost::uuids::uuid& uuid = *reinterpret_cast<const boost::uuids::uuid *>(&val);
+    //return boost::uuids::to_string(uuid);
+
+    return uint128ToMD5(val);
 }
 
 uint128_t Utilities::uuidToUint128(const std::string& str)
 {
-    boost::uuids::uuid uuid = boost::lexical_cast<boost::uuids::uuid>(str);
-    return *reinterpret_cast<uint128_t *>(&uuid);
+    if(str.length()==32)
+    {
+        return md5ToUint128(str);
+    }
+    else
+    {
+        boost::uuids::uuid uuid = boost::lexical_cast<boost::uuids::uuid>(str);
+        return *reinterpret_cast<uint128_t *>(&uuid);
+    }
 }
 
 uint128_t Utilities::uuidToUint128(const izenelib::util::UString& ustr)
 {
     std::string str;
     ustr.convertString(str, izenelib::util::UString::UTF_8);
-    boost::uuids::uuid uuid = boost::lexical_cast<boost::uuids::uuid>(str);
-    return *reinterpret_cast<uint128_t *>(&uuid);
+    return uuidToUint128(str);
 }
 
 std::string Utilities::uint128ToMD5(const uint128_t& val)
@@ -295,7 +303,6 @@ std::string Utilities::uint128ToMD5(const uint128_t& val)
 
     sprintf(tmpstr, "%016llx%016llx", (unsigned long long) (val >> 64), (unsigned long long) val);
     return std::string(reinterpret_cast<const char *>(tmpstr), 32);
-
 }
 
 uint128_t Utilities::md5ToUint128(const std::string& str)
@@ -313,40 +320,40 @@ uint128_t Utilities::md5ToUint128(const izenelib::util::UString& ustr)
     return md5ToUint128(str);
 }
 
-void Utilities::uint128ToUuid(const uint128_t& val, std::string& str)
-{
-    const boost::uuids::uuid& uuid = *reinterpret_cast<const boost::uuids::uuid *>(&val);
-    str = boost::uuids::to_string(uuid);
-}
+//void Utilities::uint128ToUuid(const uint128_t& val, std::string& str)
+//{
+    //const boost::uuids::uuid& uuid = *reinterpret_cast<const boost::uuids::uuid *>(&val);
+    //str = boost::uuids::to_string(uuid);
+//}
 
-void Utilities::uuidToUint128(const std::string& str, uint128_t& val)
-{
-    boost::uuids::uuid uuid = boost::lexical_cast<boost::uuids::uuid>(str);
-    val = *reinterpret_cast<uint128_t *>(&uuid);
-}
+//void Utilities::uuidToUint128(const std::string& str, uint128_t& val)
+//{
+    //boost::uuids::uuid uuid = boost::lexical_cast<boost::uuids::uuid>(str);
+    //val = *reinterpret_cast<uint128_t *>(&uuid);
+//}
 
-void Utilities::uuidToUint128(const izenelib::util::UString& ustr, uint128_t& val)
-{
-    std::string str;
-    ustr.convertString(str, izenelib::util::UString::UTF_8);
-    boost::uuids::uuid uuid = boost::lexical_cast<boost::uuids::uuid>(str);
-    val = *reinterpret_cast<uint128_t *>(&uuid);
-}
+//void Utilities::uuidToUint128(const izenelib::util::UString& ustr, uint128_t& val)
+//{
+    //std::string str;
+    //ustr.convertString(str, izenelib::util::UString::UTF_8);
+    //boost::uuids::uuid uuid = boost::lexical_cast<boost::uuids::uuid>(str);
+    //val = *reinterpret_cast<uint128_t *>(&uuid);
+//}
 
-void Utilities::uint128ToMD5(const uint128_t& val, std::string& str)
-{
-    static char tmpstr[33];
+//void Utilities::uint128ToMD5(const uint128_t& val, std::string& str)
+//{
+    //static char tmpstr[33];
 
-    sprintf(tmpstr, "%016llx%016llx", (unsigned long long) (val >> 64), (unsigned long long) val);
-    str.assign(reinterpret_cast<const char *>(tmpstr), 32);
-}
+    //sprintf(tmpstr, "%016llx%016llx", (unsigned long long) (val >> 64), (unsigned long long) val);
+    //str.assign(reinterpret_cast<const char *>(tmpstr), 32);
+//}
 
-void Utilities::md5ToUint128(const std::string& str, uint128_t& val)
-{
-    unsigned long long high = 0, low = 0;
+//void Utilities::md5ToUint128(const std::string& str, uint128_t& val)
+//{
+    //unsigned long long high = 0, low = 0;
 
-    sscanf(str.c_str(), "%016llx%016llx", &high, &low);
-    val = (uint128_t) high << 64 | (uint128_t) low;
-}
+    //sscanf(str.c_str(), "%016llx%016llx", &high, &low);
+    //val = (uint128_t) high << 64 | (uint128_t) low;
+//}
 
 }

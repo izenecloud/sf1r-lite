@@ -70,7 +70,7 @@ public:
     {
         if (pTermDocReader_)
             return pTermDocReader_->next();
-    return false;
+        return false;
     }
 
     docid_t doc()
@@ -86,15 +86,16 @@ public:
     }
 #endif
 
-    void doc_item(RankDocumentProperty& rankDocumentProperty);
+    void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0);
 
     unsigned int df() {return df_;}
 
     void set_df(unsigned int df) {df_ = df;}
 
-    void df_ctf(
+    void df_cmtf(
         DocumentFrequencyInProperties& dfmap,
-        CollectionTermFrequencyInProperties& ctfmap);
+        CollectionTermFrequencyInProperties& ctfmap,
+        MaxTermFrequencyInProperties& maxtfmap);
 
     count_t tf()
     {
@@ -102,7 +103,13 @@ public:
         return pTermDocReader_->freq();
     }
 
+    void set_ub(float ub){
+        ub_ = ub;
+    }
+
     termid_t termId() {return termId_;}
+
+    unsigned int termIndex() {return termIndex_;}
 
     void print(int level=0)
     {
@@ -114,6 +121,8 @@ public:
 private:
     TermDocumentIterator(const TermDocumentIterator&);
     void operator=(const TermDocumentIterator&);
+
+    void ensureTermDocReader_();
 
 protected:
     termid_t termId_;
@@ -145,6 +154,10 @@ protected:
     unsigned int df_;
 
     bool readPositions_;
+
+    float ub_;
+    friend class WANDDocumentIterator;
+    friend class VirtualPropertyTermDocumentIterator;
 };
 
 }

@@ -8,6 +8,9 @@
 #define DOCUMENT_ITERATOR_H
 
 #include <common/type_defs.h>
+
+#include <ranking-manager/RankingManager.h>
+#include <ranking-manager/RankQueryProperty.h>
 #include <ranking-manager/RankDocumentProperty.h>
 
 #define MAX_DOC_ID      0xFFFFFFFF
@@ -22,7 +25,7 @@ namespace sf1r {
 class DocumentIterator
 {
 public:
-    DocumentIterator():current_(false), not_(false){}
+    DocumentIterator():current_(false), not_(false), scorer_(false){}
 
     virtual ~DocumentIterator(){}
 
@@ -33,9 +36,12 @@ public:
 
     virtual docid_t doc() = 0;
 
-    virtual void doc_item(RankDocumentProperty& rankDocumentProperty) = 0;
+    ///propIndex is only used for VirtualTermDocIterator, which is a cross property iterator
+    virtual void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0) = 0;
 
-    virtual void df_ctf(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties& ctfmap) = 0;
+    virtual void df_cmtf(DocumentFrequencyInProperties& dfmap,
+                             CollectionTermFrequencyInProperties& ctfmap,
+                             MaxTermFrequencyInProperties& maxtfmap) = 0;
 
     virtual count_t tf() = 0;
 
@@ -57,6 +63,12 @@ public:
 
     virtual void print(int level = 0) {}
 
+    virtual double score(
+        const RankQueryProperty& rankQueryProperty,
+        const boost::shared_ptr<PropertyRanker>& propertyRanker
+    ){ return 0.0f; }
+
+
     void setCurrent(bool current){ current_ = current; }
 
     bool isCurrent(){ return current_; }
@@ -64,10 +76,14 @@ public:
     void setNot(bool isNot) { not_ = isNot; }
 
     bool isNot() { return not_; }
+
+    bool isScorer() { return scorer_;}
 protected:
     bool current_;
 
     bool not_; ///whether it is NOT iterator
+
+    bool scorer_;
 };
 
 }

@@ -38,6 +38,7 @@ class Sorter;
 class IndexBundleConfiguration;
 class PropertyRanker;
 class MultiPropertyScorer;
+class WANDDocumentIterator;
 class CombinedDocumentIterator;
 class HitQueue;
 
@@ -114,6 +115,7 @@ public:
 
 private:
     bool doSearch_(
+            bool isWandSearch,
             SearchKeywordOperation& actionOperation,
             std::vector<unsigned int>& docIdList,
             std::vector<float>& rankScoreList,
@@ -126,19 +128,12 @@ private:
             Sorter* pSorter,
             CustomRankerPtr customRanker,
             MultiPropertyScorer* pMultiPropertyIterator,
+            WANDDocumentIterator* pWandDocIterator,
             CombinedDocumentIterator* pDocIterator,
             faceted::GroupFilter* groupFilter,
-            HitQueue* scoreItemQueue);
+            HitQueue* scoreItemQueue,
+            int heapSize);
 
-    bool prepareDocIterWithOnlyOrderby_(
-            boost::shared_ptr<EWAHBoolArray<uint32_t> >& pFilterIdSet);
-
-    /**
-     * @brief get corresponding id of the property, returns 0 if the property
-     * does not exist.
-     * @see CollectionMeta::numberPropertyConfig
-     */
-    propertyid_t getPropertyIdByName_(const std::string& name) const;
 
     bool getPropertyTypeByName_(
             const std::string& name,
@@ -152,6 +147,7 @@ private:
             const property_term_info_map& propertyTermInfoMap,
             DocumentFrequencyInProperties& dfmap,
             CollectionTermFrequencyInProperties& ctfmap,
+            MaxTermFrequencyInProperties& maxtfmap,
             bool readTermPosition,
             std::vector<RankQueryProperty>& rankQueryProperties,
             std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers);
@@ -190,13 +186,14 @@ private:
             CollectionTermFrequencyInProperties ctfmap);
 
 private:
+    IndexBundleConfiguration* config_;
     std::string collectionName_;
     boost::unordered_map<std::string, PropertyConfig> schemaMap_;
     boost::shared_ptr<IndexManager> indexManagerPtr_;
     boost::shared_ptr<DocumentManager> documentManagerPtr_;
     boost::shared_ptr<RankingManager> rankingManagerPtr_;
     boost::weak_ptr<MiningManager> miningManagerPtr_;
-    boost::shared_ptr<QueryBuilder> queryBuilder_;
+    boost::scoped_ptr<QueryBuilder> queryBuilder_;
     std::map<propertyid_t, float> propertyWeightMap_;
 
     SortPropertyCache* pSorterCache_;

@@ -5,7 +5,8 @@
 #include "IndexTaskService.h"
 
 #include <common/type_defs.h>
-
+#include <aggregator-manager/SearchAggregator.h>
+#include <aggregator-manager/IndexAggregator.h>
 
 #include <util/osgi/IBundleActivator.h>
 #include <util/osgi/IBundleContext.h>
@@ -13,6 +14,7 @@
 #include <util/osgi/ServiceTracker.h>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 
 namespace ilplib
 {
@@ -31,9 +33,9 @@ class DocumentManager;
 class LAManager;
 class SearchManager;
 class RankingManager;
-class SearchAggregator;
+class SearchMerger;
 class SearchWorker;
-class IndexAggregator;
+class IndexMerger;
 class IndexWorker;
 
 class IndexBundleActivator : public IBundleActivator, public IServiceTrackerCustomizer
@@ -64,8 +66,10 @@ private:
     boost::shared_ptr<RankingManager> rankingManager_;
     boost::shared_ptr<SearchManager> searchManager_;
     boost::shared_ptr<SearchAggregator> searchAggregator_;
+    boost::scoped_ptr<SearchMerger> searchMerger_;
     boost::shared_ptr<SearchWorker> searchWorker_;
     boost::shared_ptr<IndexAggregator> indexAggregator_;
+    boost::scoped_ptr<IndexMerger> indexMerger_;
     boost::shared_ptr<IndexWorker> indexWorker_;
     ilplib::qa::QuestionAnalysis* pQA_;
     DirectoryRotator directoryRotator_;
@@ -92,11 +96,11 @@ private:
 
     boost::shared_ptr<SearchWorker> createSearchWorker_() ;
 
-    boost::shared_ptr<SearchAggregator> createSearchAggregator_() const;
+    boost::shared_ptr<SearchAggregator> createSearchAggregator_();
 
     boost::shared_ptr<IndexWorker> createIndexWorker_() ;
 
-    boost::shared_ptr<IndexAggregator> createIndexAggregator_() const;
+    boost::shared_ptr<IndexAggregator> createIndexAggregator_();
 
     bool initializeQueryManager_() const;
 

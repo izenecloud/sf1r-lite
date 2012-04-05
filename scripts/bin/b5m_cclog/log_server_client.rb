@@ -1,12 +1,13 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 # read json from input file, and send request to Log Server Driver
 
 require 'rubygems'
 require 'require_all'
+require 'yaml'
 require 'json'
 require 'set'
-require_rel '../../libdriver/common'
-require_rel '../../lib/scd_parser'
+require 'sf1-driver'
+require 'sf1-util/scd_parser'
 
 # Sf1r to be updated, pass as command parameter
 # beta: 10.10.1.112, stage: 10.10.1.111
@@ -27,7 +28,15 @@ class LogServerJsonSender
     @filter_map['documents/visit'] = true
     @filter_map['recommend/visit_item'] = true
     @filter_map['recommend/purchase_item'] = true
-    @conn = create_connection
+    top_dir = File.dirname(__FILE__)
+    config_file = File.join(top_dir, "config.yml")
+    unless File.exist? config_file
+      config_file = File.join(top_dir, "config.yml.default")
+    end
+
+    config = YAML::load_file config_file
+
+    @conn = Sf1Driver.new(config["ba"]["ip"], config["ba"]["port"])
   end
   
   def filterCclogRequest(request)

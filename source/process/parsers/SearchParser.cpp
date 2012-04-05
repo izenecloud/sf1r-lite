@@ -71,11 +71,13 @@ using driver::Keys;
  *   - @b kl.@n
  *   If this is omitted, A default ranking model specified in configuration file
  *   is used (In Collection node attribute).
- * - @b searching_mode (@c String): We can choose the searching mode to combine our
+ * - @b searching_mode (@c Object): Searching mode options
+ *   We can choose the searching mode to combine our
  *   query parsed term for supporting different search in different applications.
- *   following searching modes.
+ *   following searching modes are available
  *   - @b and
  *   - @b or
+ *   - @b wand
  *   - @b verbose
  *   - @b knn: TODO@n
  *   If this is omitted, @b and searching mode is used as the default value.
@@ -96,6 +98,10 @@ using driver::Keys;
  *     {"property": "content"}
  *   ],
  *   "ranking_model": "plm",
+ *   "searching_mode": {
+ *     "mode": "wand",
+ *     "threshold": "0.35"
+ *    },
  *   "log_keywords": true,
  *   "analyzer": {
  *     "use_synonym_extension": true,
@@ -231,30 +237,49 @@ bool SearchParser::parse(const Value& search)
     }
 
     //search mode
-    searchingMode_ = SearchingMode::DefaultSearchingMode;
-    if (search.hasKey(Keys::searching_mode))
+    const Value& searching_mode = search[Keys::searching_mode];
+    searchingModeInfo_.mode_ = SearchingMode::DefaultSearchingMode;
+    if ( searching_mode.hasKey(Keys::mode) )
     {
-        Value::StringType mode = asString(search[Keys::searching_mode]);
+        Value::StringType mode = asString(searching_mode[Keys::mode]);
         boost::to_lower(mode);
         if (mode == "and")
         {
-            searchingMode_ = SearchingMode::DefaultSearchingMode;
+            searchingModeInfo_.mode_ = SearchingMode::DefaultSearchingMode;
         }
         else if (mode == "or")
         {
-            searchingMode_ = SearchingMode::OR;
+            searchingModeInfo_.mode_ = SearchingMode::OR;
+        }
+        else if (mode == "wand")
+        {
+            searchingModeInfo_.mode_ = SearchingMode::WAND;
         }
         else if (mode == "verbose")
         {
-            searchingMode_ = SearchingMode::VERBOSE;
+            searchingModeInfo_.mode_ = SearchingMode::VERBOSE;
         }
         else if (mode == "knn")
         {
-            searchingMode_ = SearchingMode::KNN;
+            searchingModeInfo_.mode_ = SearchingMode::KNN;
         }
         else
         {
             warning() = "Unknown searchingMode. Default searching mode is used.";
+        }
+
+        searchingModeInfo_.threshold_ = 0.0F;
+        if( searching_mode.hasKey(Keys::threshold) )
+        {
+            float threshold = (float)asDouble(searching_mode[Keys::threshold]);
+            if(threshold < 1)
+            {
+                searchingModeInfo_.threshold_ = threshold;
+            }
+            else
+            {
+                warning() = "Threshold is invalid. Warning: threshold must be smaller than one";
+            }
         }
     }
 

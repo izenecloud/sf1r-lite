@@ -18,8 +18,11 @@ public:
     ~ScdWriterController();
 
     bool Write(const SCDDoc& doc, int op);
+    bool Write(const Document& doc, int op);
     
     void Flush();
+
+    void SetFlushLimit(int m) {m_ = m;}
     
     
 private:
@@ -34,7 +37,7 @@ private:
     ScdWriter* writer_;
     int last_op_;
     int document_limit_;
-    static const int M = 500;
+    int m_;
 };
 
 

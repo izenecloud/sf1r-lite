@@ -63,7 +63,7 @@
                Make sure unigram terms have been indexed for Property (LA for Indexing is "la_sia_with_unigram"), or search(retrieve) may fail.
           -->
           <Sia triggerqa="n" doccachenum="20000" searchcachenum="1000" filtercachenum="1000" mastersearchcachenum="1000" topknum="4000" knntopknum="30" knndist="32" sortcacheupdateinterval="1800"
-               encoding="UTF-8" wildcardtype="unigram" indexunigramproperty="n" unigramsearchmode="n" multilanggranularity="field"/>
+               encoding="UTF-8" wildcardtype="unigram" indexunigramproperty="n" unigramsearchmode="n" multilanggranularity="field" />
 
 
           <LanguageIdentifier dbpath="@ilplib_LANGUAGEIDENTIFIER_DB@"/>
@@ -183,16 +183,23 @@
         <settings mode="label" option="R+S+" specialchar="#" dictionarypath=""/>
       </Method>
 
+      <Method id="inner_la_cnall_sia_2" analysis="chinese" casesensitive="no" >
+        <!-- T2: maximum match (without overlapped segments) -->
+        <settings mode="label" option="R+S-V-T2" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
+      </Method>
       <Method id="inner_la_cnall_sia" analysis="chinese" casesensitive="no" >
+        <!-- T3: minimum match with overlapped segments -->
         <settings mode="label" option="R+S-V-T3" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
       <Method id="inner_la_cnall_ia" analysis="chinese" casesensitive="no" >
+        <!-- T4: minimum match integrated with unigrams -->
         <settings mode="label" option="R+S-V-T4" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
       <Method id="inner_la_cnall_sa" analysis="chinese" casesensitive="no" >
+        <!-- T5: minimum match without overlapped segments -->
         <settings mode="label" option="R+S-T5" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
-
+      <Method id="la_sia_without_overlap" analysis="multilang" advoption="default,inner_la_korall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_sa" />
       <Method id="la_sia" analysis="multilang" advoption="default,inner_la_korall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_sia"/>
       <Method id="la_sia_with_unigram" analysis="multilang" advoption="default,inner_la_korall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_ia"/>
 
@@ -214,7 +221,8 @@
     <!-- Distributed SF1R
       Global settings (for all sf1r nodes in topology):
         - clusterid: identity of the unique cluster of SF1R nodes for distributed sf1r.
-        - shardnum:  number of data shards (workers) in the cluster. (Master)
+        - nodenum: total number of sf1r nodes in the cluster.
+        - shardnum: total number of data shard servers (workers) in the cluster. (known by Master)
 
       Local settings (for current sf1r node):
         - username:  user name logged on local host
@@ -230,10 +238,10 @@
     <DistributedCommon clusterid="@LOCAL_HOST_USER_NAME@" username="@LOCAL_HOST_USER_NAME@" localhost="172.16.0.36"
                        workerport="18151" masterport="18131" datarecvport="18121" />
 
-    <DistributedTopology enable="n" type="search">
+    <DistributedTopology enable="n" type="search" nodenum="2">
       <CurrentSf1rNode nodeid="1" replicaid="1">
         <!--master names for B5M are www|stage|beta-->
-        <MasterServer enable="n" name="undefined" shardnum="3">          
+        <MasterServer enable="y" name="undefined" shardnum="2">          
           <!--for distributive collection, shardid is set to all as default-->
           <Collection name="web" distributive="n" />
           <Collection name="qa" distributive="n" />
@@ -242,14 +250,14 @@
           <Collection name="b5mp" distributive="y" shardids="1,2" />
         </MasterServer>
 
-        <WorkerServer enable="n" shardid="1">
+        <WorkerServer enable="y" shardid="1">
           <Collection name="web" />
           <Collection name="b5mp" />
         </WorkerServer>
       </CurrentSf1rNode>
     </DistributedTopology>
 
-    <DistributedTopology enable="n" type="recommend">
+    <DistributedTopology enable="n" type="recommend" nodenum="2">
       <CurrentSf1rNode nodeid="1" replicaid="1">
         <MasterServer enable="y" name="undefined" shardnum="1">
           <Collection name="b5mo" distributive="n" />

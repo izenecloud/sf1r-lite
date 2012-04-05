@@ -6,30 +6,23 @@ require 'fileutils'
 require_relative 'b5m_helper'
 
 
-force = false;
-forcet = false;
-forcea = false;
-gen_scd = true;
-ARGV.each do |a|
-  if a=="-F"
-    force = true
-  elsif a=="-FA"
-    forcea = true
-  elsif a=="-FT"
-    forcet = true
-  elsif a=="-NOGEN"
-    gen_scd = false
+top_dir = File.dirname(File.expand_path(__FILE__))
+config = nil
+if !ARGV.empty?
+  config_file = ARGV[0]
+  if File.exist?(config_file)
+    config = YAML::load( File.open(config_file) )
+  end
+else
+  config_file = File.join(top_dir, "config.yml")
+  default_config_file = File.join(top_dir, "config.yml.default")
+  if File.exist?(config_file)
+    config = YAML::load(File.open(config_file))
+  elsif File.exist?(default_config_file)
+    config = YAML::load(File.open(default_config_file))
   end
 end
-
-top_dir = File.dirname(File.expand_path(__FILE__))
-config_file = File.join(top_dir, "config.yml")
-default_config_file = File.join(top_dir, "config.yml.default")
-if File.exist?(config_file)
-  config = YAML::load(File.open(config_file))
-elsif File.exist?(default_config_file)
-  config = YAML::load(File.open(default_config_file))
-else
+if config.nil?
   puts 'config file not found'
   exit(false)
 end
@@ -45,16 +38,34 @@ synonym = match_path['synonym']
 category_file = match_path['category']
 filter_attrib_name = match_path['filter_attrib_name']
 work_dir = match_path['work_dir']
+db_path = File.join(work_dir, 'db')
+odb = File.join(db_path, 'odb')
+pdb = File.join(db_path, 'pdb')
+mdb = File.join(db_path, 'mdb')
 tmp_dir = match_path['tmp']
 result_file = match_path['result']
 train_scd = match_path['train_scd']
 scd = match_path['scd']
+comment_scd = match_path['comment_scd']
 cma = match_path['cma']
 b5mo_scd = File.join(match_path['b5mo'], "scd", "index")
 b5mp_scd = File.join(match_path['b5mp'], "scd", "index")
+b5mc_scd = File.join(match_path['b5mc'], "scd", "index")
+[b5mo_scd, b5mp_scd, b5mc_scd].each do |scd_path|
+  FileUtils.mkdir_p(scd_path) unless File.exist?(scd_path)
+end
 matcher_program = File.join(top_dir, "b5m_matcher")
 FileUtils.rm_rf("#{match_path['b5m_scd']}")
 Dir.mkdir(work_dir) unless File.exist?(work_dir)
+Dir.mkdir(db_path) unless File.exist?(db_path)
+Dir.mkdir(mdb) unless File.exist?(mdb)
+time_str = Time.now.strftime("%Y%m%d%H%M%S")
+mdb_instance = File.join(mdb, time_str)
+if File.exist?(mdb_instance)
+  exit(-1)
+else
+  Dir.mkdir(mdb_instance)
+end
 task_list = []
 
 IO.readlines(category_file).each do |c_line|
@@ -88,20 +99,10 @@ task_list.each do |task|
 
   index_done = File.join(category_dir, "index.done")
   match_done = File.join(category_dir, "match.done")
-  a_scd = File.join(category_dir, "A.SCD")
-  t_scd = File.join(category_dir, "T.SCD")
-  if force
-    FileUtils.rm_rf(index_done) if File.exist?(index_done)
-    FileUtils.rm_rf(match_done) if File.exist?(match_done)
-  end
-
-  if forcea
-    FileUtils.rm_rf(a_scd) if File.exist?(a_scd)
-  end
-
-  if forcet
-    FileUtils.rm_rf(t_scd) if File.exist?(t_scd)
-  end
+  a_scd = File.join(category_dir, "A")
+  t_scd = File.join(category_dir, "T")
+  FileUtils.rm_rf(a_scd) if File.exist?(a_scd)
+  FileUtils.rm_rf(t_scd) if File.exist?(t_scd)
 
   regex_file = File.join(category_dir, "category")
   ofs = File.open(regex_file, 'w')
@@ -122,22 +123,17 @@ task_list.each do |task|
   #FileUtils.cp(filter_attrib_name,fan_file)
 end
 
-if forcea
-  system("#{matcher_program} -P -N A -S #{scd} -K #{work_dir}")
-end
-
-if forcet
-  system("#{matcher_program} -P -N T -S #{train_scd} -K #{work_dir}")
-end
+#split SCDs
+system("#{matcher_program} -P -N T -S #{train_scd} -K #{work_dir}")
+system("#{matcher_program} -P -N A -S #{scd} -K #{work_dir}")
 
 task_list.each do |task|
   next unless task.valid
   category_dir = File.join(work_dir, task.cid)
   #run c++ matcher program
   category_a_scd = File.join(category_dir, "A.SCD")
-  #unless File.exist?(category_a_scd)
-    #system("#{matcher_program} -P -S #{scd} -K #{category_dir}")
-  #end
+  match_file = File.join(category_dir, "match")
+  FileUtils.rm_rf(match_file) if File.exist?(match_file)
 
   if task.type == CategoryTask::COM
     puts "start complete matching #{task.cid}"
@@ -158,18 +154,23 @@ task_list.each do |task|
     system("#{matcher_program} -B -Y #{synonym} -C #{cma} -S #{scd} -K #{category_dir}")
   end
 
-  if gen_scd
-    source_scd = scd
-    source_scd = category_a_scd if File.exist?(category_a_scd)
-    puts "start generate b5mo and b5mp SCDs from #{source_scd}"
-    system("#{matcher_program} -G #{match_path['b5m_scd']} -S #{source_scd} -K #{category_dir} -E")
-  end
 end
 
-if gen_scd
-  system("rm -rf #{b5mo_scd}/*")
-  system("cp #{match_path['b5m_scd']}/b5mo/* #{b5mo_scd}/")
-  system("rm -rf #{b5mp_scd}/*")
-  system("cp #{match_path['b5m_scd']}/b5mp/* #{b5mp_scd}/")
-end
+#merge match file to mdb_instance
+system("cat #{work_dir}/C*/match > #{mdb_instance}/match")
+
+#b5mo generator
+system("#{matcher_program} --b5mo-generate -S #{scd} --b5mo #{b5mo_scd} -K #{mdb_instance}")
+
+#uue generator
+system("#{matcher_program} --uue-generate --b5mo #{b5mo_scd} --uue #{mdb_instance}/uue --odb #{odb}")
+
+#b5mp generator
+system("#{matcher_program} --b5mp-generate --b5mo #{b5mo_scd} --b5mp #{b5mp_scd} --uue #{mdb_instance}/uue --odb #{odb} --pdb #{pdb}")
+
+#b5mc generator
+#system("#{matcher_program} --b5mc-generate --b5mc #{b5mc_scd} -S #{comment_scd} --odb #{odb}")
+
+#logserver update
+system("#{matcher_program} --logserver-update --logserver-config '#{log_server}' --uue #{mdb_instance}/uue --odb #{odb}")
 

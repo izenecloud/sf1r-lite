@@ -8,8 +8,12 @@
 #define ZOOKEEPER_NAMESPACE_H_
 
 #include "Sf1rTopology.h"
+
 #include <util/kv2string.h>
+
 #include <sstream>
+
+#include <glog/logging.h>
 
 namespace sf1r {
 
@@ -164,9 +168,11 @@ class ZNode : public izenelib::util::kv2string
 {
 public:
     // ZooKeeper Node data key
+    const static char* KEY_USERNAME;
     const static char* KEY_HOST;
     const static char* KEY_BA_PORT;
     const static char* KEY_DATA_PORT;
+    const static char* KEY_MASTER_NAME;
     const static char* KEY_MASTER_PORT;
     const static char* KEY_WORKER_PORT;
     const static char* KEY_SHARD_ID;
