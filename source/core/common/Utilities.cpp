@@ -1,5 +1,6 @@
 #include "Utilities.h"
 
+#include <util/hashFunction.h>
 #include <ir/index_manager/utility/StringUtils.h>
 #include <util/mkgmtime.h>
 
@@ -301,16 +302,21 @@ std::string Utilities::uint128ToMD5(const uint128_t& val)
 {
     static char tmpstr[33];
 
-    sprintf(tmpstr, "%016llx%016llx", (unsigned long long) (val >> 64), (unsigned long long) val);
+    sprintf(tmpstr, "%16llx%16llx", (unsigned long long) (val >> 64), (unsigned long long) val);
     return std::string(reinterpret_cast<const char *>(tmpstr), 32);
 }
 
 uint128_t Utilities::md5ToUint128(const std::string& str)
 {
+    if (str.length() != 32)
+        return HashFunction<std::string>::generateHash128(str);
+
     unsigned long long high = 0, low = 0;
 
-    sscanf(str.c_str(), "%016llx%016llx", &high, &low);
-    return (uint128_t) high << 64 | (uint128_t) low;
+    if (sscanf(str.c_str(), "%16llx%16llx", &high, &low) == 2)
+        return (uint128_t) high << 64 | (uint128_t) low;
+    else
+        return HashFunction<std::string>::generateHash128(str);
 }
 
 uint128_t Utilities::md5ToUint128(const izenelib::util::UString& ustr)
