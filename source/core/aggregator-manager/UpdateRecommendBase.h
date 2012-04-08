@@ -19,24 +19,27 @@ class UpdateRecommendBase
 public:
     virtual ~UpdateRecommendBase() {}
 
-    virtual bool updatePurchaseMatrix(
+    virtual void updatePurchaseMatrix(
         const std::list<itemid_t>& oldItems,
-        const std::list<itemid_t>& newItems
+        const std::list<itemid_t>& newItems,
+        bool& result
     ) = 0;
 
-    virtual bool updatePurchaseCoVisitMatrix(
+    virtual void updatePurchaseCoVisitMatrix(
         const std::list<itemid_t>& oldItems,
-        const std::list<itemid_t>& newItems
+        const std::list<itemid_t>& newItems,
+        bool& result
     ) = 0;
 
-    virtual bool buildPurchaseSimMatrix() = 0;
+    virtual void buildPurchaseSimMatrix(bool& result) = 0;
 
-    virtual bool updateVisitMatrix(
+    virtual void updateVisitMatrix(
         const std::list<itemid_t>& oldItems,
-        const std::list<itemid_t>& newItems
+        const std::list<itemid_t>& newItems,
+        bool& result
     ) = 0;
 
-    virtual bool flushRecommendMatrix() = 0;
+    virtual void flushRecommendMatrix(bool& result) = 0;
 };
 
 } // namespace sf1r

@@ -19,18 +19,18 @@ class GetRecommendBase
 public:
     virtual ~GetRecommendBase() {}
 
-    virtual bool recommendPurchase(
-        RecommendInputParam& inputParam,
+    virtual void recommendPurchase(
+        const RecommendInputParam& inputParam,
         idmlib::recommender::RecommendItemVec& results
     ) = 0;
 
-    virtual bool recommendPurchaseFromWeight(
-        RecommendInputParam& inputParam,
+    virtual void recommendPurchaseFromWeight(
+        const RecommendInputParam& inputParam,
         idmlib::recommender::RecommendItemVec& results
     ) = 0;
 
-    virtual bool recommendVisit(
-        RecommendInputParam& inputParam,
+    virtual void recommendVisit(
+        const RecommendInputParam& inputParam,
         std::vector<itemid_t>& results
     ) = 0;
 };

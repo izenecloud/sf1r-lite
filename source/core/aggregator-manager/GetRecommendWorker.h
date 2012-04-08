@@ -9,11 +9,13 @@
 #define SF1R_GET_RECOMMEND_WORKER_H
 
 #include "GetRecommendBase.h"
+#include <net/aggregator/BindCallProxyBase.h>
 
 namespace sf1r
 {
 
 class GetRecommendWorker : public GetRecommendBase
+                         , public net::aggregator::BindCallProxyBase<GetRecommendWorker>
 {
 public:
     GetRecommendWorker(
@@ -21,18 +23,39 @@ public:
         CoVisitManager& coVisitManager
     );
 
-    virtual bool recommendPurchase(
-        RecommendInputParam& inputParam,
+    virtual bool bindCallProxy(CallProxyType& proxy)
+    {
+        BIND_CALL_PROXY_BEGIN(GetRecommendWorker, proxy)
+        BIND_CALL_PROXY_2(
+            recommendPurchase,
+            RecommendInputParam,
+            idmlib::recommender::RecommendItemVec
+        )
+        BIND_CALL_PROXY_2(
+            recommendPurchaseFromWeight,
+            RecommendInputParam,
+            idmlib::recommender::RecommendItemVec
+        )
+        BIND_CALL_PROXY_2(
+            recommendVisit,
+            RecommendInputParam,
+            std::vector<itemid_t>
+        )
+        BIND_CALL_PROXY_END()
+    }
+
+    virtual void recommendPurchase(
+        const RecommendInputParam& inputParam,
         idmlib::recommender::RecommendItemVec& results
     );
 
-    virtual bool recommendPurchaseFromWeight(
-        RecommendInputParam& inputParam,
+    virtual void recommendPurchaseFromWeight(
+        const RecommendInputParam& inputParam,
         idmlib::recommender::RecommendItemVec& results
     );
 
-    virtual bool recommendVisit(
-        RecommendInputParam& inputParam,
+    virtual void recommendVisit(
+        const RecommendInputParam& inputParam,
         std::vector<itemid_t>& results
     );
 

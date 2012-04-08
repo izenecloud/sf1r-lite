@@ -8,37 +8,20 @@
 #ifndef SF1R_GET_RECOMMEND_AGGREGATOR_H
 #define SF1R_GET_RECOMMEND_AGGREGATOR_H
 
-#include "GetRecommendBase.h"
-#include "GetRecommendWorker.h"
+#include <net/aggregator/CallProxy.h>
 #include <net/aggregator/Aggregator.h>
+
+#include "GetRecommendMerger.h"
+#include "GetRecommendWorker.h"
 
 namespace sf1r
 {
 
-typedef net::aggregator::WorkerCaller<GetRecommendWorker> GetRecommendWorkerCaller;
+typedef net::aggregator::CallProxy<GetRecommendMerger> GetRecommendMergerProxy;
 
-class GetRecommendAggregator
-    : public GetRecommendBase
-    , protected net::aggregator::Aggregator<GetRecommendAggregator, GetRecommendWorkerCaller>
-{
-public:
-    GetRecommendAggregator();
+typedef net::aggregator::CallProxy<GetRecommendWorker> GetRecommendWorkerProxy;
 
-    virtual bool recommendPurchase(
-        RecommendInputParam& inputParam,
-        idmlib::recommender::RecommendItemVec& results
-    );
-
-    virtual bool recommendPurchaseFromWeight(
-        RecommendInputParam& inputParam,
-        idmlib::recommender::RecommendItemVec& results
-    );
-
-    virtual bool recommendVisit(
-        RecommendInputParam& inputParam,
-        std::vector<itemid_t>& results
-    );
-};
+typedef net::aggregator::Aggregator<GetRecommendMergerProxy, GetRecommendWorkerProxy> GetRecommendAggregator;
 
 } // namespace sf1r
 

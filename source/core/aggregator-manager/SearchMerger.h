@@ -7,7 +7,7 @@
 #ifndef SF1R_SEARCH_MERGER_H_
 #define SF1R_SEARCH_MERGER_H_
 
-#include <net/aggregator/BindCallProxyBase.h>                                                                                
+#include <net/aggregator/BindCallProxyBase.h>
 #include <net/aggregator/WorkerResults.h>
 #include <common/inttypes.h>
 
@@ -29,9 +29,9 @@ class SearchMerger : public net::aggregator::BindCallProxyBase<SearchMerger>
 public:
     SearchMerger(int topKNum = 4000) : TOP_K_NUM(topKNum) {}
 
-    virtual bool bindCallProxy(CallProxyType& proxy)                                                                         
-    {                                                                                                                        
-        BIND_CALL_PROXY_BEGIN(SearchMerger, proxy)                                                                           
+    virtual bool bindCallProxy(CallProxyType& proxy)
+    {
+        BIND_CALL_PROXY_BEGIN(SearchMerger, proxy)
         BIND_CALL_PROXY_2(getDistSearchInfo, net::aggregator::WorkerResults<DistKeywordSearchInfo>, DistKeywordSearchInfo)
         BIND_CALL_PROXY_2(getDistSearchResult, net::aggregator::WorkerResults<DistKeywordSearchResult>, DistKeywordSearchResult)
         BIND_CALL_PROXY_2(getSummaryResult, net::aggregator::WorkerResults<KeywordSearchResult>, KeywordSearchResult)
@@ -39,8 +39,8 @@ public:
         BIND_CALL_PROXY_2(getDocumentsByIds, net::aggregator::WorkerResults<RawTextResultFromSIA>, RawTextResultFromSIA)
         BIND_CALL_PROXY_2(getInternalDocumentId, net::aggregator::WorkerResults<uint64_t>, uint64_t)
         BIND_CALL_PROXY_2(clickGroupLabel, net::aggregator::WorkerResults<bool>, bool)
-        BIND_CALL_PROXY_END()                                                                                                
-    } 
+        BIND_CALL_PROXY_END()
+    }
 
     void getDistSearchInfo(const net::aggregator::WorkerResults<DistKeywordSearchInfo>& workerResults, DistKeywordSearchInfo& mergeResult);
     void getDistSearchResult(const net::aggregator::WorkerResults<DistKeywordSearchResult>& workerResults, DistKeywordSearchResult& mergeResult);
