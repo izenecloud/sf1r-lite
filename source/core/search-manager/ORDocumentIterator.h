@@ -14,6 +14,7 @@
 #include <ir/index_manager/utility/PriorityQueue.h>
 
 #include <vector>
+#include <bitset>
 
 namespace sf1r{
 class NOTDocumentIterator;
@@ -46,12 +47,9 @@ public:
 
     docid_t doc(){ return currDoc_; }
 
-    void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0);
+    void doc_item(RankDocumentProperty& rankDocumentProperty);
 
-    void df_cmtf(
-            DocumentFrequencyInProperties& dfmap,
-            CollectionTermFrequencyInProperties& ctfmap,
-            MaxTermFrequencyInProperties& maxtfmap);
+    void df_ctf(DocumentFrequencyInProperties& dfmap, CollectionTermFrequencyInProperties& ctfmap);
 
     count_t tf();
 
@@ -71,6 +69,7 @@ protected:
     virtual void initDocIteratorQueue();
 
     bool do_next();
+    bool do_next_bk();
 
 
 private:
@@ -84,6 +83,7 @@ protected:
     docid_t currDoc_;
 
 private:
+    bitset<10000000> doc_set;
 
     bool hasNot_;
 
