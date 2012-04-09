@@ -67,7 +67,7 @@ void GetRecommendMaster::recommendPurchaseFromWeight(
 
 void GetRecommendMaster::recommendVisit(
     const RecommendInputParam& inputParam,
-    std::vector<itemid_t>& results
+    idmlib::recommender::RecommendItemVec& results
 )
 {
     aggregator_->distributeRequest(collection_, "recommendVisit", inputParam, results);

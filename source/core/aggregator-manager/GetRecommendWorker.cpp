@@ -32,7 +32,7 @@ void GetRecommendWorker::recommendPurchaseFromWeight(
 
 void GetRecommendWorker::recommendVisit(
     const RecommendInputParam& inputParam,
-    std::vector<itemid_t>& results
+    idmlib::recommender::RecommendItemVec& results
 )
 {
     coVisitManager_.getCoVisitation(inputParam.limit, inputParam.inputItemIds[0],

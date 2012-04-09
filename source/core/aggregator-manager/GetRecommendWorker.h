@@ -39,7 +39,7 @@ public:
         BIND_CALL_PROXY_2(
             recommendVisit,
             RecommendInputParam,
-            std::vector<itemid_t>
+            idmlib::recommender::RecommendItemVec
         )
         BIND_CALL_PROXY_END()
     }
@@ -56,7 +56,7 @@ public:
 
     virtual void recommendVisit(
         const RecommendInputParam& inputParam,
-        std::vector<itemid_t>& results
+        idmlib::recommender::RecommendItemVec& results
     );
 
 private:

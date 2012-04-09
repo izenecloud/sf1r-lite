@@ -44,7 +44,7 @@ public:
 
     virtual void recommendVisit(
         const RecommendInputParam& inputParam,
-        std::vector<itemid_t>& results
+        idmlib::recommender::RecommendItemVec& results
     );
 
 private:

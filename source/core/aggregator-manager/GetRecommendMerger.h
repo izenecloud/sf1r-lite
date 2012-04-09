@@ -12,8 +12,6 @@
 #include <net/aggregator/WorkerResults.h>
 #include <recommend-manager/common/RecTypes.h>
 
-#include <vector>
-
 namespace sf1r
 {
 
@@ -21,7 +19,6 @@ class GetRecommendMerger : public net::aggregator::BindCallProxyBase<GetRecommen
 {
 public:
     typedef idmlib::recommender::RecommendItemVec RecommendItemVec;
-    typedef std::vector<itemid_t> CoVisitItemVec;
 
     virtual bool bindCallProxy(CallProxyType& proxy)
     {
@@ -38,8 +35,8 @@ public:
         )
         BIND_CALL_PROXY_2(
             recommendVisit,
-            net::aggregator::WorkerResults<CoVisitItemVec>,
-            CoVisitItemVec
+            net::aggregator::WorkerResults<RecommendItemVec>,
+            RecommendItemVec
         )
         BIND_CALL_PROXY_END()
     }
@@ -55,12 +52,12 @@ public:
     );
 
     void recommendVisit(
-        const net::aggregator::WorkerResults<CoVisitItemVec>& workerResults,
-        CoVisitItemVec& mergeResult
+        const net::aggregator::WorkerResults<RecommendItemVec>& workerResults,
+        RecommendItemVec& mergeResult
     );
 
 private:
-    void mergePurchaseRecommend_(
+    void mergeRecommendResult_(
         const net::aggregator::WorkerResults<RecommendItemVec>& workerResults,
         RecommendItemVec& mergeResult
     );

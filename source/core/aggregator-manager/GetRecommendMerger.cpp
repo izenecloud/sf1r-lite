@@ -19,7 +19,7 @@ void GetRecommendMerger::recommendPurchase(
     RecommendItemVec& mergeResult
 )
 {
-    mergePurchaseRecommend_(workerResults, mergeResult);
+    mergeRecommendResult_(workerResults, mergeResult);
 }
 
 void GetRecommendMerger::recommendPurchaseFromWeight(
@@ -27,17 +27,18 @@ void GetRecommendMerger::recommendPurchaseFromWeight(
     RecommendItemVec& mergeResult
 )
 {
-    mergePurchaseRecommend_(workerResults, mergeResult);
+    mergeRecommendResult_(workerResults, mergeResult);
 }
 
 void GetRecommendMerger::recommendVisit(
-    const net::aggregator::WorkerResults<CoVisitItemVec>& workerResults,
-    CoVisitItemVec& mergeResult
+    const net::aggregator::WorkerResults<RecommendItemVec>& workerResults,
+    RecommendItemVec& mergeResult
 )
 {
+    mergeRecommendResult_(workerResults, mergeResult);
 }
 
-void GetRecommendMerger::mergePurchaseRecommend_(
+void GetRecommendMerger::mergeRecommendResult_(
     const net::aggregator::WorkerResults<RecommendItemVec>& workerResults,
     RecommendItemVec& mergeResult
 )

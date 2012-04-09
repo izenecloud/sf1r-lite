@@ -9,7 +9,6 @@
 #define SF1R_GET_RECOMMEND_BASE_H
 
 #include <recommend-manager/common/RecommendInputParam.h>
-#include <vector>
 
 namespace sf1r
 {
@@ -31,7 +30,7 @@ public:
 
     virtual void recommendVisit(
         const RecommendInputParam& inputParam,
-        std::vector<itemid_t>& results
+        idmlib::recommender::RecommendItemVec& results
     ) = 0;
 };
 

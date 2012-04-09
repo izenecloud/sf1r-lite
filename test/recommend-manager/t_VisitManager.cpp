@@ -37,12 +37,19 @@ void checkCoVisitManager(
     split_str_to_items(recItemStr, goldRecItems);
     std::sort(goldRecItems.begin(), goldRecItems.end());
 
-    std::vector<itemid_t> results;
+    idmlib::recommender::RecommendItemVec recItems;
     coVisitManager.getCoVisitation(goldRecItems.size() + 10,
-                                   inputItem, results);
-    std::sort(results.begin(), results.end());
+                                   inputItem, recItems);
 
-    BOOST_CHECK_EQUAL_COLLECTIONS(results.begin(), results.end(),
+    std::vector<itemid_t> itemIds;
+    for (idmlib::recommender::RecommendItemVec::const_iterator it = recItems.begin();
+        it != recItems.end(); ++it)
+    {
+        itemIds.push_back(it->itemId_);
+    }
+    std::sort(itemIds.begin(), itemIds.end());
+
+    BOOST_CHECK_EQUAL_COLLECTIONS(itemIds.begin(), itemIds.end(),
                                   goldRecItems.begin(), goldRecItems.end());
 }
 

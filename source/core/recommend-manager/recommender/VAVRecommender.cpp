@@ -21,18 +21,10 @@ bool VAVRecommender::recommendImpl_(
         return false;
     }
 
-    std::vector<itemid_t> results;
+    idmlib::recommender::RecommendItemVec results;
     coVisitManager_.getCoVisitation(param.inputParam.limit, param.inputParam.inputItemIds[0],
                                     results, &param.inputParam.itemFilter);
-
-    RecommendItem recItem;
-    recItem.weight_ = 1;
-    for (std::vector<itemid_t>::const_iterator it = results.begin();
-        it != results.end(); ++it)
-    {
-        recItem.item_.setId(*it);
-        recItemVec.push_back(recItem);
-    }
+    recItemVec.insert(recItemVec.end(), results.begin(), results.end());
 
     return true;
 }
