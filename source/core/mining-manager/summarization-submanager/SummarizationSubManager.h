@@ -26,7 +26,6 @@ namespace sf1r
 class DocumentManager;
 class IndexManager;
 
-class ParentKeyStorage;
 class SummarizationStorage;
 class CommentCacheStorage;
 class Corpus;
@@ -68,7 +67,6 @@ private:
     std::string last_docid_path_;
 
     SummarizeConfig schema_;
-    izenelib::util::UString parent_key_ustr_name_;
 
     boost::shared_ptr<DocumentManager> document_manager_;
     boost::shared_ptr<IndexManager> index_manager_;
@@ -76,7 +74,6 @@ private:
     idmlib::util::IDMAnalyzer* analyzer_;
 
     CommentCacheStorage* comment_cache_storage_;
-    ParentKeyStorage* parent_key_storage_;
     SummarizationStorage* summarization_storage_;
 
     Corpus* corpus_;

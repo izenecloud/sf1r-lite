@@ -6,11 +6,11 @@
 #include "product_clustering.h"
 #include "product_price_trend.h"
 
-#include <common/ScdWriter.h>
-#include <common/Utilities.h>
-
 #include <log-manager/LogServerRequest.h>
 #include <log-manager/LogServerConnection.h>
+
+#include <common/ScdWriter.h>
+#include <common/Utilities.h>
 
 #include <boost/unordered_set.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -402,9 +402,11 @@ bool ProductManager::FinishHook()
         {
             uuid_map_writer->Close();
             delete uuid_map_writer;
-            SynchronizeRequest syncReq;
-            conn.asynRequest(syncReq);
         }
+        SynchronizeRequest syncReq;
+        conn.asynRequest(syncReq);
+        conn.flushRequests();
+
         //process the comparison items.
         boost::unordered_map<GroupTableType::GroupIdType, PMDocumentType>::iterator g2doc_it = g2doc_map.begin();
         while (g2doc_it != g2doc_map.end())

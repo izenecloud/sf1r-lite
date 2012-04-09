@@ -43,20 +43,6 @@ bool FilteringParser::parse(const Value& conditions)
                                 condition.property();
                 return false;
             }
-				
-        }
-        else
-        {
-            if(isPropertyForeignKey(miningSchema_, condition.property()))
-            {
-                dataType = sf1r::STRING_PROPERTY_TYPE;
-            }
-            else
-            {
-                error() = "Property is not filterable in condition: " +
-                                condition.property();
-                return false;
-            }
         }
         filteringRule.operation_ = toFilteringOperation(condition.op());
         filteringRule.property_ = condition.property();
@@ -133,6 +119,4 @@ QueryFiltering::FilteringOperation FilteringParser::toFilteringOperation(
     return QueryFiltering::NULL_OPERATOR;
 }
 
-
 } // namespace sf1r
-

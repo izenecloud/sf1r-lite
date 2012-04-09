@@ -11,6 +11,7 @@
 #include <bundles/index/IndexTaskService.h>
 #include <bundles/mining/MiningSearchService.h>
 #include <common/Keys.h>
+#include <common/Utilities.h>
 
 namespace sf1r
 {
@@ -521,9 +522,8 @@ void DocumentsController::get_topic()
     Value& input = request()[Keys::resource];
     Value& docid_value = input[Keys::DOCID];
     std::string sdocid = asString(docid_value);
-    izenelib::util::UString udocid(sdocid, izenelib::util::UString::UTF_8);
 
-    bool success = indexSearchService_->getInternalDocumentId(collectionName_, udocid, internal_id);
+    bool success = indexSearchService_->getInternalDocumentId(collectionName_, Utilities::md5ToUint128(sdocid), internal_id);
     if (!success || internal_id==0)
     {
         response().addError("Cannot convert DOCID to internal ID");
@@ -589,10 +589,7 @@ void DocumentsController::get_topic_with_sim()
     Value& input = request()[Keys::resource];
     Value& docid_value = input[Keys::DOCID];
     std::string sdocid = asString(docid_value);
-    izenelib::util::UString udocid(sdocid, izenelib::util::UString::UTF_8);
-    bool success = indexSearchService_->getInternalDocumentId(
-          collectionName_, udocid, internal_id
-      );
+    bool success = indexSearchService_->getInternalDocumentId(collectionName_, Utilities::md5ToUint128(sdocid), internal_id);
     if (!success || internal_id==0)
     {
         response().addError("Cannot convert DOCID to internal ID");
@@ -850,9 +847,8 @@ void DocumentsController::visit()
     uint64_t internalId = 0;
     Value& docidValue = request()[Keys::resource][Keys::DOCID];
     std::string docidStr = asString(docidValue);
-    izenelib::util::UString docidUStr(docidStr, izenelib::util::UString::UTF_8);
 
-    if (indexSearchService_->getInternalDocumentId(collectionName_, docidUStr, internalId)
+    if (indexSearchService_->getInternalDocumentId(collectionName_, Utilities::md5ToUint128(docidStr), internalId)
             && internalId != 0)
     {
         if (!miningSearchService_->visitDoc(collectionName_, internalId))

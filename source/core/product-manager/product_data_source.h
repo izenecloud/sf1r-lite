@@ -18,7 +18,7 @@ class ProductDataSource
 public:
 
     virtual ~ProductDataSource() {}
-    
+
     virtual uint32_t GetMaxDocId() const{return 0; }
 
     virtual bool GetDocument(uint32_t docid, PMDocumentType& doc) { return false;}
@@ -29,8 +29,8 @@ public:
 
     virtual bool SetUuid(izenelib::ir::indexmanager::IndexerDocument& doc, const izenelib::util::UString& uuid) {return false;}
 
-    virtual bool GetInternalDocidList(const std::vector<izenelib::util::UString>& sdocid_list, std::vector<uint32_t>& docid_list) {return false;}
-    
+    virtual bool GetInternalDocidList(const std::vector<uint128_t>& sdocid_list, std::vector<uint32_t>& docid_list) {return false;}
+
     virtual void Flush() {}
 
     const std::string& GetLastError()

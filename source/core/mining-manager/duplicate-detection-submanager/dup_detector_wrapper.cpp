@@ -1,6 +1,7 @@
 #include "dup_detector_wrapper.h"
 
 #include <document-manager/DocumentManager.h>
+#include <common/Utilities.h>
 #include <idmlib/util/idm_analyzer.h>
 
 // #define DUPD_GROUP_DEBUG;
@@ -92,10 +93,10 @@ bool DupDetectorWrapper::Open()
                     std::vector<std::string> vec;
                     boost::algorithm::split(vec, line, boost::algorithm::is_any_of("\t"));
                     //                 std::cout << "XXX " << vec[0] << std::endl;
-                    izenelib::util::UString str_docid(vec[0], izenelib::util::UString::UTF_8);
+                    uint128_t num_docid = Utilities::md5ToUint128(vec[0]);
 
                     uint32_t docid = 0;
-                    if (id_manager_->getDocIdByDocName(str_docid, docid, false))
+                    if (id_manager_->getDocIdByDocName(num_docid, docid, false))
                     {
                         in_group.push_back(docid);
                     }

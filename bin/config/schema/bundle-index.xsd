@@ -188,7 +188,7 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
-            <xs:attribute name="searchanalyzer" type="xs:NCName" use="optional"/>            
+            <xs:attribute name="searchanalyzer" type="xs:NCName" use="optional"/>
         </xs:complexType>
     </xs:element>
 

@@ -1,5 +1,4 @@
 #include "SummarizationSubManager.h"
-#include "ParentKeyStorage.h"
 #include "SummarizationStorage.h"
 #include "CommentCacheStorage.h"
 #include "splm.h"
@@ -7,6 +6,9 @@
 #include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAPool.h>
+
+#include <log-manager/LogServerRequest.h>
+#include <log-manager/LogServerConnection.h>
 
 #include <common/ScdParser.h>
 #include <common/Utilities.h>
@@ -66,22 +68,17 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         idmlib::util::IDMAnalyzer* analyzer)
     : last_docid_path_(homePath + "/last_docid.txt")
     , schema_(schema)
-    , parent_key_ustr_name_(schema_.parentKey, UString::UTF_8)
     , document_manager_(document_manager)
     , index_manager_(index_manager)
     , analyzer_(analyzer)
     , comment_cache_storage_(new CommentCacheStorage(homePath))
-    , parent_key_storage_(new ParentKeyStorage(homePath, comment_cache_storage_))
     , summarization_storage_(new SummarizationStorage(homePath))
     , corpus_(new Corpus())
 {
-    if (!schema_.parentKeyLogPath.empty())
-        bfs::create_directories(schema_.parentKeyLogPath);
 }
 
 MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 {
-    delete parent_key_storage_;
     delete summarization_storage_;
     delete comment_cache_storage_;
     delete corpus_;
@@ -89,62 +86,31 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 
 void MultiDocSummarizationSubManager::EvaluateSummarization()
 {
-    if (schema_.parentKeyLogPath.empty())
+    for (uint32_t i = GetLastDocid_() + 1, count = 0; i <= document_manager_->getMaxDocId(); i++)
     {
-        for (uint32_t i = GetLastDocid_() + 1, count = 0; i <= document_manager_->getMaxDocId(); i++)
+        Document doc;
+        document_manager_->getDocument(i, doc);
+        Document::property_const_iterator kit = doc.findProperty(schema_.uuidPropName);
+        if (kit == doc.propertyEnd())
+            continue;
+
+        Document::property_const_iterator cit = doc.findProperty(schema_.contentPropName);
+        if (cit == doc.propertyEnd())
+            continue;
+
+        const UString& key = kit->second.get<UString>();
+        std::string key_str;
+        key.convertString(key_str, UString::UTF_8);
+
+        const UString& content = cit->second.get<UString>();
+        comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key_str), i, content);
+
+        if (++count % 100000 == 0)
         {
-            Document doc;
-            document_manager_->getDocument(i, doc);
-            Document::property_const_iterator kit = doc.findProperty(schema_.foreignKeyPropName);
-            if (kit == doc.propertyEnd())
-                continue;
-
-            Document::property_const_iterator cit = doc.findProperty(schema_.contentPropName);
-            if (cit == doc.propertyEnd())
-                continue;
-
-            const UString& key = kit->second.get<UString>();
-            const UString& content = cit->second.get<UString>();
-            std::string key_str;
-            key.convertString(key_str, UString::UTF_8);
-            comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key_str), i, content);
-
-            if (++count % 100000 == 0)
-            {
-                LOG(INFO) << "Caching comments: " << count;
-            }
+            LOG(INFO) << "Caching comments: " << count;
         }
     }
-    else
-    {
-        for (uint32_t i = GetLastDocid_() + 1, count = 0; i <= document_manager_->getMaxDocId(); i++)
-        {
-            Document doc;
-            document_manager_->getDocument(i, doc);
-            Document::property_const_iterator kit = doc.findProperty(schema_.foreignKeyPropName);
-            if (kit == doc.propertyEnd())
-                continue;
 
-            Document::property_const_iterator cit = doc.findProperty(schema_.contentPropName);
-            if (cit == doc.propertyEnd())
-                continue;
-
-            const UString& key = kit->second.get<UString>();
-            std::string key_str;
-            key.convertString(key_str, UString::UTF_8);
-            KeyType parent_key;
-            if (!parent_key_storage_->GetParent(Utilities::md5ToUint128(key_str), parent_key))
-                continue;
-
-            const UString& content = cit->second.get<UString>();
-            comment_cache_storage_->AppendUpdate(parent_key, i, content);
-
-            if (++count % 100000 == 0)
-            {
-                LOG(INFO) << "Caching comments: " << count;
-            }
-        }
-    }
     SetLastDocid_(document_manager_->getMaxDocId());
     comment_cache_storage_->Flush(true);
 
@@ -291,7 +257,7 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
 
     typedef std::vector<QueryFiltering::FilteringType>::iterator IteratorType;
     IteratorType it = std::find_if(filtingList.begin(),
-            filtingList.end(), IsParentKeyFilterProperty(schema_.parentKey));
+            filtingList.end(), IsParentKeyFilterProperty(schema_.uuidPropName));
     if (it != filtingList.end())
     {
         const std::vector<PropertyValue>& filterParam = it->values_;
@@ -301,30 +267,35 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
             {
                 const std::string& paramValue = get<std::string>(filterParam[0]);
                 KeyType param = Utilities::uuidToUint128(paramValue);
-                std::vector<KeyType> results;
-                if (parent_key_storage_->GetChildren(param, results))
+
+                LogServerConnection& conn = LogServerConnection::instance();
+                GetDocidListRequest req;
+                UUID2DocidList resp;
+
+                req.param_.uuid_ = param;
+                conn.syncRequest(req, resp);
+                if (req.param_.uuid_ != resp.uuid_) return;
+
+                BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
+                QueryFiltering::FilteringType filterRule;
+                filterRule.operation_ = QueryFiltering::INCLUDE;
+                filterRule.property_ = schema_.docidPropName;
+                for (std::vector<KeyType>::const_iterator rit = resp.docidList_.begin();
+                        rit != resp.docidList_.end(); ++rit)
                 {
-                    BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
-                    QueryFiltering::FilteringType filterRule;
-                    filterRule.operation_ = QueryFiltering::INCLUDE;
-                    filterRule.property_ = schema_.foreignKeyPropName;
-                    std::vector<KeyType>::const_iterator rit = results.begin();
-                    for (; rit != results.end(); ++rit)
+                    UString result(Utilities::uint128ToMD5(*rit), UString::UTF_8);
+                    if (pBTreeIndexer->seek(schema_.docidPropName, result))
                     {
-                        UString result(Utilities::uint128ToMD5(*rit), UString::UTF_8);
-                        if (pBTreeIndexer->seek(schema_.foreignKeyPropName, result))
-                        {
-                            ///Protection
-                            ///Or else, too many unexisted keys are added
-                            PropertyValue v(result);
-                            filterRule.values_.push_back(v);
-                        }
+                        ///Protection
+                        ///Or else, too many unexisted keys are added
+                        PropertyValue v(result);
+                        filterRule.values_.push_back(v);
                     }
-                    //filterRule.logic_ = QueryFiltering::OR;
-                    filtingList.erase(it);
-                    //it->logic_ = QueryFiltering::OR;
-                    filtingList.push_back(filterRule);
                 }
+                //filterRule.logic_ = QueryFiltering::OR;
+                filtingList.erase(it);
+                //it->logic_ = QueryFiltering::OR;
+                filtingList.push_back(filterRule);
             }
             catch (const boost::bad_get &)
             {

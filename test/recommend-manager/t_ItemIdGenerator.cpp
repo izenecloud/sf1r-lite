@@ -74,11 +74,10 @@ BOOST_FIXTURE_TEST_CASE(checkLocal, ItemIdGeneratorTestFixture)
     itemid_t maxItemId = 10;
     for (itemid_t goldId=1; goldId<=maxItemId; ++goldId)
     {
-        std::string str = boost::lexical_cast<std::string>(goldId);
-        izenelib::util::UString ustr(str, ENCODING_UTF8);
         itemid_t id = 0;
+        uint128_t docid = goldId;
 
-        BOOST_CHECK(idManager.getDocIdByDocName(ustr, id) == false);
+        BOOST_CHECK(idManager.getDocIdByDocName(docid, id) == false);
         BOOST_CHECK_EQUAL(id, goldId);
     }
 

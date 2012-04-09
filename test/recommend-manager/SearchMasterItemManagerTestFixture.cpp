@@ -4,6 +4,7 @@
 #include <recommend-manager/item/SearchMasterItemFactory.h>
 #include <index/IndexSearchService.h>
 #include <aggregator-manager/SearchWorker.h>
+#include <common/Utilities.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>
@@ -73,10 +74,9 @@ void SearchMasterItemManagerTestFixture::createIdManager_()
 
 void SearchMasterItemManagerTestFixture::insertItemId_(const std::string& strId, itemid_t goldId)
 {
-    izenelib::util::UString ustr(strId, ENCODING_TYPE);
     itemid_t id = 0;
 
-    idManager_->getDocIdByDocName(ustr, id);
+    idManager_->getDocIdByDocName(Utilities::md5ToUint128(strId), id);
     BOOST_CHECK_EQUAL(id, goldId);
 
     BOOST_CHECK(itemIdGenerator_->strIdToItemId(strId, id));

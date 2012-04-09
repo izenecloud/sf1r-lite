@@ -14,11 +14,9 @@ namespace sf1r
 class SummarizeConfig
 {
 public:
-    /// log path that store parent key logs (SCD format)
-    std::string parentKeyLogPath;
-    std::string parentKey;
     /// property name
-    std::string foreignKeyPropName;
+    std::string docidPropName;
+    std::string uuidPropName;
     std::string contentPropName;
 
     friend class boost::serialization::access;
@@ -26,9 +24,8 @@ public:
     template <typename Archive>
     void serialize( Archive & ar, const unsigned int version )
     {
-        ar & parentKeyLogPath;
-        ar & parentKey;
-        ar & foreignKeyPropName;
+        ar & docidPropName;
+        ar & uuidPropName;
         ar & contentPropName;
     }
 };
