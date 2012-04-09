@@ -32,7 +32,7 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   ticpp
   luxio
   leveldb
-#jemalloc
+  jemalloc
   json
   ticpp
   am
