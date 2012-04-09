@@ -57,7 +57,8 @@ void SuperMasterManager::detectSearchMasters()
 
                     masterMap_[nodeId] = sf1rNode;
 
-                    LOG (INFO) << "detected master, " << sf1rNode->host_ << ":" << sf1rNode->baPort_;
+                    LOG (INFO) << "detected master, node[" << nodeId << "] @ "
+                               << sf1rNode->host_ << ":" << sf1rNode->baPort_;
                 }
             }
         }
