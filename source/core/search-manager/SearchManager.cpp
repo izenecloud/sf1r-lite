@@ -233,8 +233,7 @@ bool SearchManager::search(
     bool isWandStrategy = (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::WAND);
     bool isTFIDFModel = (pTextRankingType == RankingType::BM25
                       ||config_->rankingManagerConfig_.rankingConfigUnit_.textRankingModel_ == RankingType::BM25);
-    bool isWandSearch = (isWandStrategy && isTFIDFModel);
-
+    bool isWandSearch = (isWandStrategy && isTFIDFModel && (!actionOperation.isPhraseOrWildcardQuery_));
 
     // references for property term info
     const property_term_info_map& propertyTermInfoMap =
