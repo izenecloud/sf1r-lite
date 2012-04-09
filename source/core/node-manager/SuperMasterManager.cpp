@@ -56,6 +56,8 @@ void SuperMasterManager::detectSearchMasters()
                     }
 
                     masterMap_[nodeId] = sf1rNode;
+
+                    LOG (INFO) << "detected master, " << sf1rNode->host_ << ":" << sf1rNode->baPort_;
                 }
             }
         }
@@ -67,7 +69,10 @@ void SuperMasterManager::detectSearchMasters()
 void SuperMasterManager::process(ZooKeeperEvent& zkEvent)
 {
     // boost::lock_guard<boost::mutex> lock(mutex_);
-    // re-try performed by NodeManager
+}
+
+void SuperMasterManager::detectRecommendMasters()
+{
 }
 
 }
