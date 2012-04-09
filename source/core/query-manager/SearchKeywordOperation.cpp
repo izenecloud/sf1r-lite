@@ -24,6 +24,7 @@ SearchKeywordOperation::SearchKeywordOperation(
     , queryParser_(laManager, idManager)
     , hasUnigramProperty_(true)
     , isUnigramSearchMode_(false)
+    , isPhraseOrWildcardQuery_(false)
 {
 } // end - SearchKeywordOperation()
 
