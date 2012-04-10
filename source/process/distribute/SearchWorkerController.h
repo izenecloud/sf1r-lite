@@ -46,7 +46,7 @@ public:
 
     WORKER_CONTROLLER_METHOD_2(getDocumentsByIds, searchWorker_->getDocumentsByIds, GetDocumentsByIdsActionItem, RawTextResultFromSIA)
 
-    WORKER_CONTROLLER_METHOD_2(getInternalDocumentId, searchWorker_->getInternalDocumentId, izenelib::util::UString, uint64_t)
+    WORKER_CONTROLLER_METHOD_2(getInternalDocumentId, searchWorker_->getInternalDocumentId, uint128_t, uint64_t)
 
     WORKER_CONTROLLER_METHOD_2(clickGroupLabel, searchWorker_->clickGroupLabel, ClickGroupLabelActionItem, bool)
 

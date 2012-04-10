@@ -133,7 +133,7 @@ bool ProductPriceTrend::Flush()
                 ret = false;
         }
 
-        prop_map_.clear();
+        PropMapType().swap(prop_map_);
     }
 
     if (!price_history_->updateMultiRow(price_history_buffer_))

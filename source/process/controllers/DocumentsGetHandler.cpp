@@ -17,6 +17,7 @@
 #include <common/parsers/ConditionArrayParser.h>
 #include <common/Keys.h>
 #include <common/ResultType.h>
+#include <common/Utilities.h>
 
 #include <configuration-manager/Acl.h>
 
@@ -288,11 +289,8 @@ bool DocumentsGetHandler::parseDocumentId(const Value& inputId)
         scdDocumentId = asString(inputId);
     }
 
-    izenelib::util::UString unicodeScdDocuemntId(
-        scdDocumentId, izenelib::util::UString::UTF_8
-    );
     bool success = indexSearchService_->getInternalDocumentId(
-                       actionItem_.collectionName_, unicodeScdDocuemntId, internalId_
+                       actionItem_.collectionName_, Utilities::md5ToUint128(scdDocumentId), internalId_
                    );
 
     if (!success)

@@ -233,8 +233,7 @@ bool SearchManager::search(
     bool isWandStrategy = (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::WAND);
     bool isTFIDFModel = (pTextRankingType == RankingType::BM25
                       ||config_->rankingManagerConfig_.rankingConfigUnit_.textRankingModel_ == RankingType::BM25);
-    bool isWandSearch = (isWandStrategy && isTFIDFModel);
-
+    bool isWandSearch = (isWandStrategy && isTFIDFModel && (!actionOperation.isPhraseOrWildcardQuery_));
 
     // references for property term info
     const property_term_info_map& propertyTermInfoMap =
@@ -776,8 +775,8 @@ void SearchManager::post_prepare_ranker_(
 }
 
 void SearchManager::prepare_sorter_customranker_(
-    SearchKeywordOperation& actionOperation,	
-    CustomRankerPtr& customRanker, 
+    SearchKeywordOperation& actionOperation,
+    CustomRankerPtr& customRanker,
     Sorter* &pSorter)
 {
     std::vector<std::pair<std::string, bool> >& sortPropertyList

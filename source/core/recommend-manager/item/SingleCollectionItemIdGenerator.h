@@ -27,7 +27,7 @@ public:
     virtual itemid_t maxItemId() const;
 
 private:
-    typedef izenelib::ir::idmanager::_IDManager<std::string, itemid_t,
+    typedef izenelib::ir::idmanager::_IDManager<std::string, std::string, itemid_t,
             izenelib::util::NullLock,
             izenelib::ir::idmanager::EmptyWildcardQueryHandler<std::string, itemid_t>,
             izenelib::ir::idmanager::EmptyIDGenerator<std::string, itemid_t>,

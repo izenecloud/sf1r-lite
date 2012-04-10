@@ -49,6 +49,13 @@ bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bu
     if ( !action.queryParser_.parseQuery( queryUStr, action.rawQueryTree_, action.unigramFlag_, action.hasUnigramProperty_ ) )
         return false;
 
+    if(action.rawQueryTree_->type_ == QueryTree::UNIGRAM_WILDCARD
+            || action.rawQueryTree_->type_ == QueryTree::TRIE_WILDCARD
+            || action.rawQueryTree_->type_ == QueryTree::EXACT
+            || action.rawQueryTree_->type_ == QueryTree::ORDER
+            || action.rawQueryTree_->type_ == QueryTree::NEARBY)
+        action.isPhraseOrWildcardQuery_ = true;
+
     //queryUStr.convertString(action.actionItem_.env_.queryString_, encodingType);
     action.rawQueryTree_->print();
 

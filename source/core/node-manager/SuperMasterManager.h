@@ -47,7 +47,6 @@ public:
 private:
     void detectSearchMasters();
 
-    // todo
     void detectRecommendMasters();
 
 private:

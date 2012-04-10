@@ -16,13 +16,13 @@
 namespace sf1r {
 
 bool getPropertyConfig(
-    const IndexBundleSchema& schema, 
+    const IndexBundleSchema& schema,
     PropertyConfig& config
 );
 
 bool getPropertyConfig(
     const IndexBundleSchema& schema,
-    const std::string& name, 
+    const std::string& name,
     PropertyConfig& type
 );
 
@@ -51,11 +51,6 @@ bool isPropertyFilterable(
 
 sf1r::PropertyDataType getPropertyDataType(
     const IndexBundleSchema& schema,
-    const std::string& property
-);
-
-bool isPropertyForeignKey(
-    const MiningSchema& schema,
     const std::string& property
 );
 

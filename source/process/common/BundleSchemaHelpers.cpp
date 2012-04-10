@@ -11,7 +11,7 @@
 namespace sf1r {
 
 bool getPropertyConfig(
-    const IndexBundleSchema& schema, 
+    const IndexBundleSchema& schema,
     PropertyConfig& config
 )
 {
@@ -182,20 +182,6 @@ sf1r::PropertyDataType getPropertyDataType(
     return sf1r::UNKNOWN_DATA_PROPERTY_TYPE;
 }
 
-bool isPropertyForeignKey(
-    const MiningSchema& schema,
-    const std::string& property
-)
-{
-    if (schema.summarization_enable &&
-            !schema.summarization_schema.parentKey.empty())
-    {
-        return boost::iequals(property,schema.summarization_schema.parentKey);
-    }
-
-    return false;
-}
-
 bool isDocumentProperty(
     const DocumentSchema& schema,
     const std::string& property
@@ -220,5 +206,3 @@ void getDocumentPropertyNames(
 }
 
 } // NAMESPACE sf1r
-
-

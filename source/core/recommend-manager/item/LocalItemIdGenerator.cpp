@@ -1,6 +1,6 @@
 #include "LocalItemIdGenerator.h"
-#include <util/ustring/UString.h>
 
+#include <common/Utilities.h>
 #include <glog/logging.h>
 
 namespace
@@ -18,9 +18,7 @@ LocalItemIdGenerator::LocalItemIdGenerator(IDManagerType& idManager)
 
 bool LocalItemIdGenerator::strIdToItemId(const std::string& strId, itemid_t& itemId)
 {
-    izenelib::util::UString ustr(strId, ENCODING_UTF8);
-
-    if (idManager_.getDocIdByDocName(ustr, itemId, false))
+    if (idManager_.getDocIdByDocName(Utilities::md5ToUint128(strId), itemId, false))
         return true;
 
     LOG(WARNING) << "in strIdToItemId(), str id " << strId << " has not been inserted before";
@@ -29,11 +27,11 @@ bool LocalItemIdGenerator::strIdToItemId(const std::string& strId, itemid_t& ite
 
 bool LocalItemIdGenerator::itemIdToStrId(itemid_t itemId, std::string& strId)
 {
-    izenelib::util::UString ustr;
+    uint128_t intId;
 
-    if (idManager_.getDocNameByDocId(itemId, ustr))
+    if (idManager_.getDocNameByDocId(itemId, intId))
     {
-        ustr.convertString(strId, ENCODING_UTF8);
+        strId = Utilities::uint128ToMD5(intId);
         return true;
     }
 

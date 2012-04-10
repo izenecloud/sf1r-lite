@@ -121,4 +121,3 @@ void LogServerClient::Flush()
     conn.asynRequest(syncReq);
     conn.flushRequests();
 }
-

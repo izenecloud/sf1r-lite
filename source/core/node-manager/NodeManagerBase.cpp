@@ -192,7 +192,8 @@ void NodeManagerBase::enterCluster()
                << "] replica[" << curNode.replicaId_
                << "] node[" << curNode.nodeId_
                << "]{"
-               << (curNode.worker_.isEnabled_ ? (std::string("worker ") + boost::lexical_cast<std::string>(curNode.worker_.shardId_) + " ") : "")
+               << (curNode.worker_.isEnabled_ ?
+                       (std::string("worker ") + boost::lexical_cast<std::string>(curNode.worker_.shardId_) + " ") : "")
                << curNode.userName_ << "@" << curNode.host_ << "}";
 
 

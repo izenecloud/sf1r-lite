@@ -136,10 +136,10 @@ bool PriceHistory::updateMultiRow(const vector<PriceHistoryRow>& row_list)
 {
     if (row_list.empty()) return true;
     if (!is_enabled) return false;
+    map<string, map<string, vector<Mutation> > > mutation_map;
+    time_t timestamp = Utilities::createTimeStamp();
     try
     {
-        map<string, map<string, vector<Mutation> > > mutation_map;
-        time_t timestamp = Utilities::createTimeStamp();
         for (vector<PriceHistoryRow>::const_iterator vit = row_list.begin();
                 vit != row_list.end(); ++vit)
         {
@@ -175,19 +175,19 @@ bool PriceHistory::getMultiSlice(
         bool reversed)
 {
     if (!is_enabled) return false;
+    ColumnParent col_parent;
+    SlicePredicate pred;
+    map<string, vector<ColumnOrSuperColumn> > raw_column_map;
     try
     {
-        ColumnParent col_parent;
         col_parent.__set_column_family(cf_name);
 
-        SlicePredicate pred;
         pred.__isset.slice_range = true;
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);
         pred.slice_range.__set_count(count);
         pred.slice_range.__set_reversed(reversed);
 
-        map<string, vector<ColumnOrSuperColumn> > raw_column_map;
         CassandraConnection::instance().getCassandraClient(keyspace_name_)->getMultiSlice(
                 raw_column_map,
                 key_list,
@@ -220,12 +220,12 @@ bool PriceHistory::getMultiCount(
         const string& finish)
 {
     if (!is_enabled) return false;
+    ColumnParent col_parent;
+    SlicePredicate pred;
     try
     {
-        ColumnParent col_parent;
         col_parent.__set_column_family(cf_name);
 
-        SlicePredicate pred;
         pred.__isset.slice_range = true;
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);
@@ -246,19 +246,26 @@ bool PriceHistory::updateRow(const PriceHistoryRow& row) const
 {
     if (!is_enabled || row.docId_.empty()) return false;
     if (!row.priceHistoryPresent_) return true;
+    map<string, map<string, vector<Mutation> > > mutation_map;
+    time_t timestamp = Utilities::createTimeStamp();
     try
     {
-        for (PriceHistoryType::const_iterator it = row.priceHistory_.begin();
-                it != row.priceHistory_.end(); ++it)
+        vector<Mutation>& mutation_list = mutation_map[row.docId_][cf_name];
+        for (PriceHistoryType::const_iterator mit = row.priceHistory_.begin();
+                mit != row.priceHistory_.end(); ++mit)
         {
-            CassandraConnection::instance().getCassandraClient(keyspace_name_)->insertColumn(
-                    Utilities::toBytes(it->second),
-                    row.docId_,
-                    cf_name,
-                    serializeLong(it->first),
-                    Utilities::createTimeStamp(),
-                    63072000); // Keep the price history for two years at most
+            mutation_list.push_back(Mutation());
+            Mutation& mut = mutation_list.back();
+            mut.__isset.column_or_supercolumn = true;
+            mut.column_or_supercolumn.__isset.column = true;
+            Column& col = mut.column_or_supercolumn.column;
+            col.__set_name(serializeLong(mit->first));
+            col.__set_value(Utilities::toBytes(mit->second));
+            col.__set_timestamp(timestamp);
+            col.__set_ttl(63072000);
         }
+
+        CassandraConnection::instance().getCassandraClient(keyspace_name_)->batchMutate(mutation_map);
     }
     CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
 
@@ -324,19 +331,19 @@ bool PriceHistory::dropColumnFamily() const
 bool PriceHistory::getSlice(PriceHistoryRow& row, const string& start, const string& finish, int32_t count, bool reversed)
 {
     if (!is_enabled || row.docId_.empty()) return false;
+    ColumnParent col_parent;
+    SlicePredicate pred;
+    vector<ColumnOrSuperColumn> raw_column_list;
     try
     {
-        ColumnParent col_parent;
         col_parent.__set_column_family(cf_name);
 
-        SlicePredicate pred;
         pred.__isset.slice_range = true;
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);
         pred.slice_range.__set_count(count);
         pred.slice_range.__set_reversed(reversed);
 
-        vector<ColumnOrSuperColumn> raw_column_list;
         CassandraConnection::instance().getCassandraClient(keyspace_name_)->getRawSlice(
                 raw_column_list,
                 row.docId_,
@@ -359,9 +366,9 @@ bool PriceHistory::getSlice(PriceHistoryRow& row, const string& start, const str
 bool PriceHistory::deleteRow(const std::string& key)
 {
     if (!is_enabled || key.empty()) return false;
+    ColumnPath col_path;
     try
     {
-        ColumnPath col_path;
         col_path.__set_column_family(cf_name);
         CassandraConnection::instance().getCassandraClient(keyspace_name_)->remove(
                 key,
@@ -375,12 +382,12 @@ bool PriceHistory::deleteRow(const std::string& key)
 bool PriceHistory::getCount(int32_t& count, const string& key, const string& start, const string& finish) const
 {
     if (!is_enabled || key.empty()) return false;
+    ColumnParent col_parent;
+    SlicePredicate pred;
     try
     {
-        ColumnParent col_parent;
         col_parent.__set_column_family(cf_name);
 
-        SlicePredicate pred;
         pred.__isset.slice_range = true;
         pred.slice_range.__set_start(start);
         pred.slice_range.__set_finish(finish);

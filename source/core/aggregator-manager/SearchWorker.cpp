@@ -5,6 +5,7 @@
 #include <bundles/recommend/RecommendSearchService.h>
 
 #include <common/SearchCache.h>
+#include <common/Utilities.h>
 #include <index-manager/IndexManager.h>
 #include <search-manager/SearchManager.h>
 #include <search-manager/PersonalizedSearchInfo.h>
@@ -77,13 +78,11 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
 
     // append docIdList_ at the end of idList_.
     typedef std::vector<std::string>::const_iterator docid_iterator;
-    izenelib::util::UString unicodeDocId;
     sf1r::docid_t internalId;
     for (docid_iterator it = actionItem.docIdList_.begin();
             it != actionItem.docIdList_.end(); ++it)
     {
-        unicodeDocId.assign(*it, kEncodingType);
-        if (idManager_->getDocIdByDocName(unicodeDocId, internalId, false))
+        if (idManager_->getDocIdByDocName(Utilities::md5ToUint128(*it), internalId, false))
         {
             idList.push_back(internalId);
         }
@@ -127,7 +126,7 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
     resultItem.rawTextOfSummaryInPage_.clear();
 }
 
-void SearchWorker::getInternalDocumentId(const izenelib::util::UString& scdDocumentId, uint64_t& internalId)
+void SearchWorker::getInternalDocumentId(const uint128_t& scdDocumentId, uint64_t& internalId)
 {
     uint32_t docid = 0;
     internalId = 0;

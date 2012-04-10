@@ -1333,7 +1333,7 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
             {
                 PropertyConfig p;
                 p.setName(it->subProperties_[i]);
-				
+
                 IndexBundleSchema::const_iterator pit = indexSchema.find(p);
                 if((pit != indexSchema.end())&&(pit->getRankWeight() >= 0.0f))
                 {
@@ -1586,43 +1586,44 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
     mining_schema.summarization_enable= false;
     if (task_node)
     {
-        ticpp::Element* parentkeylog_node = getUniqChildElement(task_node, "ParentKeyLog", false);
-        if (parentkeylog_node)
         {
-            getAttribute(parentkeylog_node, "path", mining_schema.summarization_schema.parentKeyLogPath);
-
-            Iterator<Element> it("Property");
-            for (it = it.begin(parentkeylog_node); it != it.end(); it++)
+            Iterator<Element> it("DocidProperty");
+            for (it = it.begin(task_node); it != it.end(); it++)
             {
                 getAttribute(it.Get(), "name", property_name);
-                mining_schema.summarization_schema.parentKey = property_name;
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if (!gottype || property_type != STRING_PROPERTY_TYPE)
+                {
+                    throw XmlConfigParserException("DocidProperty ["+property_name+"] used in Summarization is not string type.");
+                }
+                mining_schema.summarization_schema.docidPropName = property_name;
             }
         }
         {
-        Iterator<Element> it("ForeignKey");
-        for (it = it.begin(task_node); it != it.end(); it++)
-        {
-            getAttribute(it.Get(), "name", property_name);
-            bool gottype = collectionMeta.getPropertyType(property_name, property_type);
-            if (!gottype || property_type != STRING_PROPERTY_TYPE)
+            Iterator<Element> it("UuidPropertyy");
+            for (it = it.begin(task_node); it != it.end(); it++)
             {
-                throw XmlConfigParserException("ForeignKey ["+property_name+"] used in Summarization is not string type.");
+                getAttribute(it.Get(), "name", property_name);
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if (!gottype || property_type != STRING_PROPERTY_TYPE)
+                {
+                    throw XmlConfigParserException("UuidProperty ["+property_name+"] used in Summarization is not string type.");
+                }
+                mining_schema.summarization_schema.uuidPropName = property_name;
             }
-            mining_schema.summarization_schema.foreignKeyPropName = property_name;
-        }
         }
         {
-        Iterator<Element> it("ContentProperty");
-        for (it = it.begin(task_node); it != it.end(); it++)
-        {
-            getAttribute(it.Get(), "name", property_name);
-            bool gottype = collectionMeta.getPropertyType(property_name, property_type);
-            if (!gottype || property_type != STRING_PROPERTY_TYPE)
+            Iterator<Element> it("ContentProperty");
+            for (it = it.begin(task_node); it != it.end(); it++)
             {
-                throw XmlConfigParserException("ContentProperty ["+property_name+"] used in Summarization is not string type.");
+                getAttribute(it.Get(), "name", property_name);
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if (!gottype || property_type != STRING_PROPERTY_TYPE)
+                {
+                    throw XmlConfigParserException("ContentProperty ["+property_name+"] used in Summarization is not string type.");
+                }
+                mining_schema.summarization_schema.contentPropName = property_name;
             }
-            mining_schema.summarization_schema.contentPropName = property_name;
-        }
         }
         mining_schema.summarization_enable = true;
     }
