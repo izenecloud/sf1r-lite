@@ -16,8 +16,6 @@ public:
 
     ~PriceHistoryRow();
 
-    bool updateRow() const;
-
     bool insert(const std::string& name, const std::string& value);
 
     void resetKey(const std::string& newDocId = "");
@@ -25,6 +23,8 @@ public:
     void clear();
 
     void insert(time_t timestamp, ProductPrice price);
+
+    void resetHistory(uint32_t index, time_t timestamp, ProductPrice price);
 
     inline const std::string& getDocId() const
     {

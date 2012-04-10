@@ -30,6 +30,7 @@ ProductPriceTrend::ProductPriceTrend(
     , data_dir_(data_dir)
     , group_prop_vec_(group_prop_vec)
     , time_int_vec_(time_int_vec)
+    , buffer_size_(0)
     , enable_tpc_(!group_prop_vec_.empty() && !time_int_vec_.empty())
 {
 }
@@ -70,7 +71,7 @@ bool ProductPriceTrend::Init()
             }
         }
     }
-    price_history_buffer_.reserve(2000);
+    price_history_buffer_.resize(2000);
 
     return true;
 }
@@ -80,8 +81,9 @@ bool ProductPriceTrend::Insert(
         const ProductPrice& price,
         time_t timestamp)
 {
-    price_history_buffer_.push_back(PriceHistoryRow(docid));
-    price_history_buffer_.back().insert(timestamp, price);
+    price_history_buffer_[buffer_size_].resetKey(docid);
+    price_history_buffer_[buffer_size_].resetHistory(0, timestamp, price);
+    ++buffer_size_;
 
     if (IsBufferFull_())
     {
@@ -97,8 +99,9 @@ bool ProductPriceTrend::Update(
         time_t timestamp,
         map<string, string>& group_prop_map)
 {
-    price_history_buffer_.push_back(PriceHistoryRow(docid));
-    price_history_buffer_.back().insert(timestamp, price);
+    price_history_buffer_[buffer_size_].resetKey(docid);
+    price_history_buffer_[buffer_size_].resetHistory(0, timestamp, price);
+    ++buffer_size_;
 
     if (enable_tpc_ && !group_prop_map.empty() && price.value.first > 0)
     {
@@ -117,7 +120,7 @@ bool ProductPriceTrend::Update(
 
 bool ProductPriceTrend::IsBufferFull_()
 {
-    return price_history_buffer_.size() >= 2000;
+    return buffer_size_ >= 2000;
 }
 
 bool ProductPriceTrend::Flush()
@@ -139,7 +142,7 @@ bool ProductPriceTrend::Flush()
     if (!price_history_->updateMultiRow(price_history_buffer_))
         ret = false;
 
-    price_history_buffer_.clear();
+    buffer_size_ = 0;
 
     return ret;
 }

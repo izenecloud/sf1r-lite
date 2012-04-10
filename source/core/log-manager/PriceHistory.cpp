@@ -102,6 +102,15 @@ void PriceHistoryRow::insert(time_t timestamp, ProductPrice price)
     priceHistory_.push_back(std::make_pair(timestamp, price));
 }
 
+void PriceHistoryRow::resetHistory(uint32_t index, time_t timestamp, ProductPrice price)
+{
+    clear();
+    if (priceHistory_.size() <= index)
+        priceHistory_.resize(index + 1);
+    priceHistory_[index].first = timestamp;
+    priceHistory_[index].second = price;
+}
+
 void PriceHistoryRow::resetKey(const string& newDocId)
 {
     if (newDocId.empty())
