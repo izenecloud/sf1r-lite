@@ -169,7 +169,7 @@ system("#{matcher_program} --uue-generate --b5mo #{b5mo_scd} --uue #{mdb_instanc
 system("#{matcher_program} --b5mp-generate --b5mo #{b5mo_scd} --b5mp #{b5mp_scd} --uue #{mdb_instance}/uue --odb #{odb} --pdb #{pdb}")
 
 #b5mc generator
-#system("#{matcher_program} --b5mc-generate --b5mc #{b5mc_scd} -S #{comment_scd} --odb #{odb}")
+system("#{matcher_program} --b5mc-generate --b5mc #{b5mc_scd} -S #{comment_scd} --odb #{odb}")
 
 #logserver update
 system("#{matcher_program} --logserver-update --logserver-config '#{log_server}' --uue #{mdb_instance}/uue --odb #{odb}")

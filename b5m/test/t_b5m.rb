@@ -194,7 +194,7 @@ describe "B5M Tester" do
 
 
       #reset reindex
-      ran = rand()
+      ran = Random.rand()
       if ran<reindex_prob
         reindex = true
       else
