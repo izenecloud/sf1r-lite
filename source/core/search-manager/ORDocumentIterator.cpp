@@ -112,8 +112,24 @@ bool ORDocumentIterator::move_together_with_not()
     return ret;
 }
 
+bool ORDocumentIterator::do_next(){
+    if(currDoc_ == MAX_DOC_ID){
+        for(std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();
+                iter != docIteratorList_.end(); ++iter){
+            DocumentIterator* pEntry = (*iter);
+            while(pEntry -> next)
+                doc_set.set(pEntry ->  doc());
+        }
+        for(docid_t docid = currDoc_ + 1; docid < doc_set.size(); ++docid){
+            if(doc_set.test(docid){
+                currDoc_ = docid;
+                return true;
+            }
+        }
+        return false;
+}
 
-bool ORDocumentIterator::do_next()
+bool ORDocumentIterator::do_next_bk()
 {
     if (pDocIteratorQueue_ == NULL)
     {
@@ -221,7 +237,7 @@ docid_t ORDocumentIterator::do_skipTo(docid_t target)
                 if((*iter)->doc() == currDoc_)
                     (*iter)->setCurrent(true);
                 else
-                    (*iter)->setCurrent(false);					
+                    (*iter)->setCurrent(false);
             }
         }
 
@@ -259,7 +275,7 @@ docid_t ORDocumentIterator::do_skipTo(docid_t target)
 #endif
 
 void ORDocumentIterator::doc_item(
-    RankDocumentProperty& rankDocumentProperty, 
+    RankDocumentProperty& rankDocumentProperty,
     unsigned propIndex)
 {
     DocumentIterator* pEntry;

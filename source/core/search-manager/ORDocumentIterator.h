@@ -14,6 +14,7 @@
 #include <ir/index_manager/utility/PriorityQueue.h>
 
 #include <vector>
+#include <bitset>
 
 namespace sf1r{
 class NOTDocumentIterator;
@@ -71,6 +72,7 @@ protected:
     virtual void initDocIteratorQueue();
 
     bool do_next();
+    bool do_next_bk();
 
 
 private:
@@ -84,6 +86,7 @@ protected:
     docid_t currDoc_;
 
 private:
+    bitset<10000000> doc_set;
 
     bool hasNot_;
 
