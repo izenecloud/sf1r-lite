@@ -61,7 +61,6 @@ private:
         const net::aggregator::WorkerResults<RecommendItemVec>& workerResults,
         RecommendItemVec& mergeResult
     );
-
 };
 
 } // namespace sf1r

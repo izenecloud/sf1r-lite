@@ -1,7 +1,6 @@
 #include "GetRecommendMaster.h"
 #include <node-manager/RecommendMasterManager.h>
 
-#include <glog/logging.h>
 #include <memory> // for auto_ptr
 
 namespace
