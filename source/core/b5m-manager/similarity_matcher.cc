@@ -4,6 +4,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/unordered_set.hpp>
 #include <am/sequence_file/ssfr.h>
 #include <glog/logging.h>
 #include <common/ScdParser.h>
@@ -47,6 +48,22 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
     B5MHelper::GetScdList(scd_path, scd_list);
     if(scd_list.empty()) return false;
 
+    boost::unordered_set<DocIdType> processed;
+    std::string processed_file = knowledge_dir+"/processed";
+    izenelib::am::ssf::Reader<> processed_reader(processed_file);
+    uint32_t processed_count = 0;
+    if(processed_reader.Open())
+    {
+        std::string str_id;
+        while(processed_reader.Next(str_id))
+        {
+            //processed.insert(B5MHelper::StringToUint128(str_id));
+            processed.insert(str_id);
+            processed_count++;
+        }
+    }
+    processed_reader.Close();
+    LOG(INFO)<<"load "<<processed_count<<" processed_count"<<std::endl;
     std::string work_dir = knowledge_dir+"/work_dir";
 
     //boost::filesystem::remove_all(work_dir);
@@ -63,12 +80,12 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
         std::cout<<"DD open failed"<<std::endl;
         return false;
     }
-    uint32_t fp_count = dd.GetFpCount();
-    std::cout<<"fp_count : "<<fp_count<<std::endl;
-    uint32_t docid = fp_count+1;
-    std::vector<ValueType> values(1);
-    std::vector<uint32_t> new_id_list;
-    boost::unordered_set<uint32_t> new_id_set;
+    //uint32_t fp_count = dd.GetFpCount();
+    //std::cout<<"fp_count : "<<fp_count<<std::endl;
+    //uint32_t docid = fp_count+1;
+    //std::vector<ValueType> values(1);
+    //std::vector<uint32_t> new_id_list;
+    //boost::unordered_set<uint32_t> new_id_set;
 
     for(uint32_t i=0;i<scd_list.size();i++)
     {
@@ -85,10 +102,6 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
             {
                 LOG(INFO)<<"Find Documents "<<n<<std::endl;
             }
-            izenelib::util::UString oid;
-            izenelib::util::UString title;
-            izenelib::util::UString category;
-            izenelib::util::UString attrib_ustr;
             std::map<std::string, UString> doc;
             SCDDoc& scddoc = *(*doc_iter);
             std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
@@ -110,14 +123,17 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
                 continue;
             }
             //std::cout<<"valid category "<<scategory<<std::endl;
-            std::string stitle;
-            title.convertString(stitle, izenelib::util::UString::UTF_8);
+            std::string soid;
+            doc["DOCID"].convertString(soid, izenelib::util::UString::UTF_8);
+            //DocIdType id = B5MHelper::StringToUint128(soid);
+            const DocIdType& id = soid;
             ProductPrice price;
             price.Parse(doc["Price"]);
             if(!price.Valid() || price.value.first<=0.0 )
             {
                 continue;
             }
+            if(processed.find(id)!=processed.end()) continue;
 
             SimilarityMatcherAttach attach;
             attach.category = doc["Category"];
@@ -137,56 +153,79 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
             {
                 continue;
             }
-            dd.InsertDoc(docid, terms, weights, attach);
-            //new_id_list.push_back(docid);
-            new_id_set.insert(docid);
-            ValueType value;
-            doc["DOCID"].convertString(value.soid, UString::UTF_8);
-            value.title = doc["Title"];
-            values.push_back(value);
-            ++docid;
+            //dd.InsertDoc(docid, terms, weights, attach);
+            dd.InsertDoc(id, terms, weights, attach);
+            processed.insert(id);
+            //new_id_set.insert(docid);
+            //ValueType value;
+            //doc["DOCID"].convertString(value.soid, UString::UTF_8);
+            //value.title = doc["Title"];
+            //values.push_back(value);
+            //++docid;
         }
     }
     dd.RunDdAnalysis();
+    //LOG(INFO)<<"values size "<<values.size()<<std::endl;
     std::string match_file = knowledge_dir+"/match";
     std::ofstream ofs(match_file.c_str());
-    const std::vector<std::vector<uint32_t> >& group_info = group_table.GetGroupInfo();
+    const std::vector<std::vector<std::string> >& group_info = group_table.GetGroupInfo();
     for(uint32_t gid=0;gid<group_info.size();gid++)
     {
-        const std::vector<uint32_t>& in_group = group_info[gid];
-        //if(in_group.size()<2) continue;
-        std::vector<uint32_t> new_in_group;
-        for(uint32_t i=0;i<in_group.size();i++)
-        {
-            if(new_id_set.find(in_group[i])!=new_id_set.end())
-            {
-                new_in_group.push_back(in_group[i]);
-            }
-        }
-        if(new_in_group.empty()) continue;
-        std::vector<ValueType> vec(new_in_group.size());
-        for(uint32_t i=0;i<new_in_group.size();i++)
-        {
-            vec[i] = values[new_in_group[i]];
-        }
-        std::stable_sort(vec.begin(), vec.end());
+        const std::vector<std::string>& in_group = group_info[gid];
+        //std::vector<uint32_t> new_in_group;
+        //bool has_new = false;
+        //for(uint32_t i=0;i<in_group.size();i++)
+        //{
+            //if(new_id_set.find(in_group[i])!=new_id_set.end())
+            //{
+                //has_new = true;
+                //break;
+            //}
+        //}
+        //if(has_new)
+        //{
+            //new_in_group.assign(in_group.begin(), in_group.end());
+        //}
+        //if(new_in_group.empty()) continue;
+        //std::vector<ValueType> vec(new_in_group.size());
+        //for(uint32_t i=0;i<new_in_group.size();i++)
+        //{
+            //uint32_t docid = new_in_group[i];
+            ////LOG(INFO)<<"find new docid "<<docid<<std::endl;
+            //uint32_t index = docid-fp_count;
+            //vec[i] = values[index];
+        //}
+        //std::stable_sort(vec.begin(), vec.end());
 
         izenelib::util::UString pid_text("groupid-"+boost::lexical_cast<std::string>(gid), izenelib::util::UString::UTF_8);
         uint128_t pid = izenelib::util::HashFunction<izenelib::util::UString>::generateHash128(pid_text);
         std::string pid_str = B5MHelper::Uint128ToString(pid);
-        //std::string spid = vec[0].soid;
-        //std::string sptitle;
-        //vec[0].title.convertString(sptitle, UString::UTF_8);
-        for(uint32_t i=0;i<vec.size();i++)
+        //for(uint32_t i=0;i<vec.size();i++)
+        //{
+            //std::string soid = vec[i].soid;
+            //std::string stitle;
+            //vec[i].title.convertString(stitle, UString::UTF_8);
+            //boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
+            //ofs<<soid<<","<<pid_str<<","<<boost::posix_time::to_iso_string(now)<<","<<stitle<<std::endl;
+        //}
+        for(uint32_t i=0;i<in_group.size();i++)
         {
-            std::string soid = vec[i].soid;
-            std::string stitle;
-            vec[i].title.convertString(stitle, UString::UTF_8);
             boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
-            ofs<<soid<<","<<pid_str<<","<<boost::posix_time::to_iso_string(now)<<","<<stitle<<std::endl;
+            ofs<<in_group[i]<<","<<pid_str<<","<<boost::posix_time::to_iso_string(now)<<","<<gid<<std::endl;
         }
     }
     ofs.close();
+    boost::filesystem::remove_all(processed_file);
+    processed_count = 0;
+    izenelib::am::ssf::Writer<> processed_writer(processed_file);
+    processed_writer.Open();
+    for(boost::unordered_set<DocIdType>::const_iterator it=processed.begin();it!=processed.end();++it)
+    {
+        processed_writer.Append(*it);
+        processed_count++;
+    }
+    processed_writer.Close();
+    LOG(INFO)<<"write "<<processed_count<<" processed_count"<<std::endl;
 
     {
         std::ofstream ofs(done_file.c_str());
