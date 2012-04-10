@@ -44,6 +44,7 @@ CollectionManager::MutexType* CollectionManager::getCollectionMutex(const std::s
 
 bool CollectionManager::startCollection(const string& collectionName, const std::string& configFileName, bool fixBasePath)
 {
+    try{
     ScopedWriteLock lock(*getCollectionMutex(collectionName));
 
     if(findHandler(collectionName) != NULL)
@@ -138,7 +139,11 @@ bool CollectionManager::startCollection(const string& collectionName, const std:
     }
 
     collectionHandlers_[collectionName] = collectionHandler.release();
-
+    }catch (std::exception& e)
+    {
+        stopCollection(collectionName);
+        throw;
+    }
     return true;
 }
 
