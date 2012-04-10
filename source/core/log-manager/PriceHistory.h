@@ -10,7 +10,7 @@ namespace sf1r {
 class PriceHistoryRow
 {
 public:
-    typedef std::map<time_t, ProductPrice> PriceHistoryType;
+    typedef std::vector<std::pair<time_t, ProductPrice> > PriceHistoryType;
 
     explicit PriceHistoryRow(const std::string& docId = "");
 
@@ -69,7 +69,7 @@ private:
 class PriceHistory
 {
 public:
-    typedef std::map<time_t, ProductPrice> PriceHistoryType;
+    typedef std::vector<std::pair<time_t, ProductPrice> > PriceHistoryType;
 
     explicit PriceHistory(const std::string& keyspace_name);
 
