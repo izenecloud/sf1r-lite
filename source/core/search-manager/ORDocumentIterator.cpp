@@ -114,19 +114,20 @@ bool ORDocumentIterator::move_together_with_not()
 
 bool ORDocumentIterator::do_next(){
     if(currDoc_ == MAX_DOC_ID){
-        for(std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();
+        for (std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();
                 iter != docIteratorList_.end(); ++iter){
             DocumentIterator* pEntry = (*iter);
-            while(pEntry -> next)
-                doc_set.set(pEntry ->  doc());
+            while(pEntry -> next())
+                doc_set.set(pEntry -> doc());
         }
-        for(docid_t docid = currDoc_ + 1; docid < doc_set.size(); ++docid){
-            if(doc_set.test(docid){
-                currDoc_ = docid;
-                return true;
-            }
+    }
+    for(docid_t docid = currDoc_ + 1; docid < doc_set.size(); ++docid){
+        if(doc_set.test(docid)){
+            currDoc_ = docid;
+            return true;
         }
-        return false;
+    }
+    return false;
 }
 
 bool ORDocumentIterator::do_next_bk()
