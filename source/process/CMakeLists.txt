@@ -56,8 +56,6 @@ ADD_DEFINITIONS("-fno-strict-aliasing")
 ADD_EXECUTABLE(CobraProcess ${cobra_process_SRC})
 ADD_EXECUTABLE(LogServerProcess ${log_server_process_SRC})
 
-MESSAGE(STATUS "izenelib---:" ${izenelib_LIBRARIES})
-
 TARGET_LINK_LIBRARIES(CobraProcess
   sf1r_mining_manager
   sf1r_license_manager
