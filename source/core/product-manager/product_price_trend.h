@@ -9,6 +9,7 @@
 #include <am/tc/BTree.h>
 
 #include <boost/unordered_map.hpp>
+#include <boost/pool/pool_alloc.hpp> 
 
 namespace sf1r
 {
@@ -23,7 +24,7 @@ class ProductPriceTrend
     typedef std::map<std::string, std::vector<TPCBTree *> > TPCStorage;
 
     typedef std::pair<ProductPriceType, std::map<std::string, std::string> > PropItemType;
-    typedef boost::unordered_map<std::string, PropItemType> PropMapType;
+    typedef boost::unordered_map<std::string, PropItemType, boost::hash<std::string>, std::equal_to<std::string>, boost::fast_pool_allocator<std::string> > PropMapType;
 
 public:
     ProductPriceTrend(
@@ -74,15 +75,13 @@ public:
 
     bool MigratePriceHistory(
             const std::string& new_keyspace,
-            const std::string& old_prefix,
-            const std::string& new_prefix,
             uint32_t start,
             std::string& error_msg);
 
     bool CronJob();
 
 private:
-    bool IsBufferFull_();
+    bool IsBufferFull_() const;
 
     bool UpdateTPC_(uint32_t time_int, time_t timestamp);
 
