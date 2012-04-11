@@ -10,13 +10,11 @@ namespace sf1r {
 class PriceHistoryRow
 {
 public:
-    typedef std::map<time_t, ProductPrice> PriceHistoryType;
+    typedef std::vector<std::pair<time_t, ProductPrice> > PriceHistoryType;
 
     explicit PriceHistoryRow(const std::string& docId = "");
 
     ~PriceHistoryRow();
-
-    bool updateRow() const;
 
     bool insert(const std::string& name, const std::string& value);
 
@@ -25,6 +23,8 @@ public:
     void clear();
 
     void insert(time_t timestamp, ProductPrice price);
+
+    void resetHistory(uint32_t index, time_t timestamp, ProductPrice price);
 
     inline const std::string& getDocId() const
     {
@@ -69,7 +69,7 @@ private:
 class PriceHistory
 {
 public:
-    typedef std::map<time_t, ProductPrice> PriceHistoryType;
+    typedef std::vector<std::pair<time_t, ProductPrice> > PriceHistoryType;
 
     explicit PriceHistory(const std::string& keyspace_name);
 

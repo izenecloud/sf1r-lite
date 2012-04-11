@@ -97,6 +97,7 @@ private:
     std::vector<uint32_t> time_int_vec_;
 
     std::vector<PriceHistoryRow> price_history_buffer_;
+    uint32_t buffer_size_;
 
     bool enable_tpc_;
     PropMapType prop_map_;
