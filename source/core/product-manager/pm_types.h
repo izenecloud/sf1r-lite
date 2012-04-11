@@ -10,11 +10,11 @@ namespace sf1r
 typedef double ProductPriceType;
 typedef Document PMDocumentType;
 
-typedef std::vector<std::pair<std::string, std::pair<ProductPriceType, ProductPriceType> > > PriceHistoryItem;
-typedef std::vector<std::pair<std::string, PriceHistoryItem> > PriceHistoryList;
-typedef std::vector<std::pair<std::string, std::pair<ProductPriceType, ProductPriceType> > > PriceRangeList;
+typedef std::vector<std::pair<time_t, std::pair<ProductPriceType, ProductPriceType> > > PriceHistoryItem;
+typedef std::vector<std::pair<uint128_t, PriceHistoryItem> > PriceHistoryList;
+typedef std::vector<std::pair<uint128_t, std::pair<ProductPriceType, ProductPriceType> > > PriceRangeList;
 
-typedef std::vector<std::pair<float, std::string> > TPCQueue;
+typedef std::vector<std::pair<float, uint128_t> > TPCQueue;
 
 struct ProductEditOption
 {
@@ -23,11 +23,13 @@ struct ProductEditOption
 //  bool ignore_loss;
 
     ProductEditOption()
-        :force(false)
+        : force(false)
     {
     }
 };
 
 }
+
+MAKE_MEMCPY_TYPE(sf1r::TPCQueue)
 
 #endif

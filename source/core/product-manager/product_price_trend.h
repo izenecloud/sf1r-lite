@@ -9,7 +9,7 @@
 #include <am/tc/BTree.h>
 
 #include <boost/unordered_map.hpp>
-#include <boost/pool/pool_alloc.hpp> 
+#include <boost/pool/pool_alloc.hpp>
 
 namespace sf1r
 {
@@ -18,13 +18,21 @@ class PriceHistory;
 class PriceHistoryRow;
 class DocumentManager;
 
+struct Uint128Hasher
+{
+    std::size_t operator() (const uint128_t& value) const
+    {
+        return std::size_t(value);
+    }
+};
+
 class ProductPriceTrend
 {
     typedef izenelib::am::tc::BTree<std::string, TPCQueue> TPCBTree;
     typedef std::map<std::string, std::vector<TPCBTree *> > TPCStorage;
 
     typedef std::pair<ProductPriceType, std::map<std::string, std::string> > PropItemType;
-    typedef boost::unordered_map<std::string, PropItemType, boost::hash<std::string>, std::equal_to<std::string>, boost::fast_pool_allocator<std::string> > PropMapType;
+    typedef boost::unordered_map<uint128_t, PropItemType, Uint128Hasher, std::equal_to<uint128_t>, boost::fast_pool_allocator<uint128_t> > PropMapType;
 
 public:
     ProductPriceTrend(
@@ -41,26 +49,26 @@ public:
     bool Flush();
 
     bool Insert(
-            const std::string& docid,
+            const uint128_t& docid,
             const ProductPrice& price,
             time_t timestamp);
 
     bool Update(
-            const std::string& docid,
+            const uint128_t& docid,
             const ProductPrice& price,
             time_t timestamp,
             std::map<std::string, std::string>& group_prop_map);
 
     bool GetMultiPriceHistory(
             PriceHistoryList& history_list,
-            const std::vector<std::string>& docid_list,
+            const std::vector<uint128_t>& docid_list,
             time_t from_tt,
             time_t to_tt,
             std::string& error_msg);
 
     bool GetMultiPriceRange(
             PriceRangeList& range_list,
-            const std::vector<std::string>& docid_list,
+            const std::vector<uint128_t>& docid_list,
             time_t from_tt,
             time_t to_tt,
             std::string& error_msg);
