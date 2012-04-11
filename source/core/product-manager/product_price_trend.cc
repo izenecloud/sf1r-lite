@@ -105,7 +105,7 @@ bool ProductPriceTrend::Update(
 
     if (enable_tpc_ && !group_prop_map.empty() && price.value.first > 0)
     {
-        PropItemType& prop_item = prop_map_[docid];
+        PropItemType& prop_item = prop_map_[s_docid];
         prop_item.first = price.value.first;
         prop_item.second.swap(group_prop_map);
     }
@@ -118,7 +118,7 @@ bool ProductPriceTrend::Update(
     return true;
 }
 
-bool ProductPriceTrend::IsBufferFull_()
+bool ProductPriceTrend::IsBufferFull_() const
 {
     return buffer_size_ >= 2000;
 }
@@ -171,7 +171,7 @@ bool ProductPriceTrend::UpdateTPC_(uint32_t time_int, time_t timestamp)
     for (uint32_t i = 0; i < row_list.size(); i++)
     {
         const PropItemType& prop_item = prop_map_.find(row_list[i].getDocId())->second;
-        const pair<time_t, ProductPrice>& price_record = *(row_list[i].getPriceHistory().begin());
+        const pair<time_t, ProductPrice>& price_record = row_list[i].getPriceHistory()[0];
         const ProductPriceType& old_price = price_record.second.value.first;
         float price_cut = old_price == 0 ? 0 : 1 - prop_item.first / old_price;
 
@@ -338,8 +338,6 @@ bool ProductPriceTrend::GetTopPriceCutList(
 
 bool ProductPriceTrend::MigratePriceHistory(
         const string& new_keyspace,
-        const string& old_prefix,
-        const string& new_prefix,
         uint32_t start,
         string& error_msg)
 {
@@ -363,11 +361,6 @@ bool ProductPriceTrend::MigratePriceHistory(
         const UString& key = kit->second.get<UString>();
         docid_list.push_back(string());
         key.convertString(docid_list.back(), UString::UTF_8);
-        if (!old_prefix.empty())
-        {
-            docid_list.back() = old_prefix + "_" + docid_list.back();
-        }
-
         if (docid_list.size() == 1000)
         {
             vector<PriceHistoryRow> row_list;
@@ -377,32 +370,14 @@ bool ProductPriceTrend::MigratePriceHistory(
                 return false;
             }
 
-            if (!old_prefix.empty())
+            for (vector<PriceHistoryRow>::iterator it = row_list.begin();
+                    it != row_list.end(); ++it)
             {
-                std::size_t len = old_prefix.length() + 1;
-                if (!new_prefix.empty())
+                const std::string& old_id = it->getDocId();
+                if (old_id.length() > 16)
                 {
-                    for (vector<PriceHistoryRow>::iterator it = row_list.begin();
-                            it != row_list.end(); ++it)
-                    {
-                        it->setDocId(new_prefix + "_" + it->getDocId().substr(len));
-                    }
-                }
-                else
-                {
-                    for (vector<PriceHistoryRow>::iterator it = row_list.begin();
-                            it != row_list.end(); ++it)
-                    {
-                        it->setDocId(it->getDocId().substr(len));
-                    }
-                }
-            }
-            else if (!new_prefix.empty())
-            {
-                for (vector<PriceHistoryRow>::iterator it = row_list.begin();
-                        it != row_list.end(); ++it)
-                {
-                    it->setDocId(new_prefix + "_" + it->getDocId());
+                    std::string new_id = Utilities::toBytes(Utilities::md5ToUint128(old_id));
+                    it->setDocId(new_id);
                 }
             }
 
@@ -429,34 +404,17 @@ bool ProductPriceTrend::MigratePriceHistory(
             return false;
         }
 
-        if (!old_prefix.empty())
+        for (vector<PriceHistoryRow>::iterator it = row_list.begin();
+                it != row_list.end(); ++it)
         {
-            std::size_t len = old_prefix.length() + 1;
-            if (!new_prefix.empty())
+            const std::string& old_id = it->getDocId();
+            if (old_id.length() > 16)
             {
-                for (vector<PriceHistoryRow>::iterator it = row_list.begin();
-                        it != row_list.end(); ++it)
-                {
-                    it->setDocId(new_prefix + "_" + it->getDocId().substr(len));
-                }
-            }
-            else
-            {
-                for (vector<PriceHistoryRow>::iterator it = row_list.begin();
-                        it != row_list.end(); ++it)
-                {
-                    it->setDocId(it->getDocId().substr(len));
-                }
+                std::string new_id = Utilities::toBytes(Utilities::md5ToUint128(old_id));
+                it->setDocId(new_id);
             }
         }
-        else if (!new_prefix.empty())
-        {
-            for (vector<PriceHistoryRow>::iterator it = row_list.begin();
-                    it != row_list.end(); ++it)
-            {
-                it->setDocId(new_prefix + "_" + it->getDocId());
-            }
-        }
+
         if (!new_price_history->updateMultiRow(row_list))
         {
             error_msg = "Can't update price history to Cassandra.";
