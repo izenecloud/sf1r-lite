@@ -112,10 +112,10 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
                 std::string docid_str;
                 docid.convertString(docid_str, UString::UTF_8);
                 if (timestamp == -1) GetTimestamp_(doc, timestamp);
-                std::map<std::string, std::string> group_prop_map;
-//              task_type task = boost::bind(&ProductPriceTrend::Insert, price_trend_, docid_str, price, timestamp);
-                GetGroupProperties_(doc, group_prop_map);
-                task_type task = boost::bind(&ProductPriceTrend::Update, price_trend_, docid_str, price, timestamp, group_prop_map);
+//              std::map<std::string, std::string> group_prop_map;
+//              GetGroupProperties_(doc, group_prop_map);
+//              task_type task = boost::bind(&ProductPriceTrend::Update, price_trend_, docid_str, price, timestamp, group_prop_map);
+                task_type task = boost::bind(&ProductPriceTrend::Insert, price_trend_, docid_str, price, timestamp);
                 jobScheduler_.addTask(task);
             }
         }
@@ -154,9 +154,10 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
             std::string docid_str;
             docid.convertString(docid_str, UString::UTF_8);
             if (timestamp == -1) GetTimestamp_(to, timestamp);
-            std::map<std::string, std::string> group_prop_map;
-            GetGroupProperties_(to, group_prop_map);
-            task_type task = boost::bind(&ProductPriceTrend::Update, price_trend_, docid_str, to_price, timestamp, group_prop_map);
+//          std::map<std::string, std::string> group_prop_map;
+//          GetGroupProperties_(to, group_prop_map);
+//          task_type task = boost::bind(&ProductPriceTrend::Update, price_trend_, docid_str, to_price, timestamp, group_prop_map);
+            task_type task = boost::bind(&ProductPriceTrend::Insert, price_trend_, docid_str, to_price, timestamp);
             jobScheduler_.addTask(task);
         }
     }

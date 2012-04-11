@@ -92,14 +92,23 @@ bool PriceHistoryRow::insert(const string& name, const string& value)
         cerr << "Bad insert!" << endl;
         return false;
     }
-    priceHistory_[deserializeLong(name)] = Utilities::fromBytes<ProductPrice>(value);
+    priceHistory_.push_back(std::make_pair(deserializeLong(name), Utilities::fromBytes<ProductPrice>(value)));
     return true;
 }
 
 void PriceHistoryRow::insert(time_t timestamp, ProductPrice price)
 {
     clear();
-    priceHistory_[timestamp] = price;
+    priceHistory_.push_back(std::make_pair(timestamp, price));
+}
+
+void PriceHistoryRow::resetHistory(uint32_t index, time_t timestamp, ProductPrice price)
+{
+    clear();
+    if (priceHistory_.size() <= index)
+        priceHistory_.resize(index + 1);
+    priceHistory_[index].first = timestamp;
+    priceHistory_[index].second = price;
 }
 
 void PriceHistoryRow::resetKey(const string& newDocId)
@@ -144,16 +153,16 @@ bool PriceHistory::updateMultiRow(const vector<PriceHistoryRow>& row_list)
                 vit != row_list.end(); ++vit)
         {
             vector<Mutation>& mutation_list = mutation_map[vit->docId_][cf_name];
-            for (PriceHistoryType::const_iterator mit = vit->priceHistory_.begin();
-                    mit != vit->priceHistory_.end(); ++mit)
+            for (PriceHistoryType::const_iterator pit = vit->priceHistory_.begin();
+                    pit != vit->priceHistory_.end(); ++pit)
             {
                 mutation_list.push_back(Mutation());
                 Mutation& mut = mutation_list.back();
                 mut.__isset.column_or_supercolumn = true;
                 mut.column_or_supercolumn.__isset.column = true;
                 Column& col = mut.column_or_supercolumn.column;
-                col.__set_name(serializeLong(mit->first));
-                col.__set_value(Utilities::toBytes(mit->second));
+                col.__set_name(serializeLong(pit->first));
+                col.__set_value(Utilities::toBytes(pit->second));
                 col.__set_timestamp(timestamp);
                 col.__set_ttl(63072000);
             }
@@ -251,16 +260,16 @@ bool PriceHistory::updateRow(const PriceHistoryRow& row) const
     try
     {
         vector<Mutation>& mutation_list = mutation_map[row.docId_][cf_name];
-        for (PriceHistoryType::const_iterator mit = row.priceHistory_.begin();
-                mit != row.priceHistory_.end(); ++mit)
+        for (PriceHistoryType::const_iterator pit = row.priceHistory_.begin();
+                pit != row.priceHistory_.end(); ++pit)
         {
             mutation_list.push_back(Mutation());
             Mutation& mut = mutation_list.back();
             mut.__isset.column_or_supercolumn = true;
             mut.column_or_supercolumn.__isset.column = true;
             Column& col = mut.column_or_supercolumn.column;
-            col.__set_name(serializeLong(mit->first));
-            col.__set_value(Utilities::toBytes(mit->second));
+            col.__set_name(serializeLong(pit->first));
+            col.__set_value(Utilities::toBytes(pit->second));
             col.__set_timestamp(timestamp);
             col.__set_ttl(63072000);
         }

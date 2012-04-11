@@ -22,7 +22,7 @@ B5MCScdGenerator::B5MCScdGenerator(OfferDb* odb): odb_(odb)
 
 bool B5MCScdGenerator::Generate(const std::string& scd_path, const std::string& output_dir)
 {
-    if(odb_->is_open())
+    if(!odb_->is_open())
     {
         if(!odb_->open())
         {
