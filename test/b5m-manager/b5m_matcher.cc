@@ -233,11 +233,11 @@ int main(int ac, char** av)
     }
     else if(vm.count("b5mo-generate"))
     {
-        if( scd_path.empty() || knowledge_dir.empty() || b5mo.empty() )
+        if( scd_path.empty() || knowledge_dir.empty() || b5mo.empty() || !odb)
         {
             return EXIT_FAILURE;
         }
-        B5MOScdGenerator generator;
+        B5MOScdGenerator generator(odb.get());
         generator.Load(knowledge_dir);
         if(!generator.Generate(scd_path, b5mo))
         {

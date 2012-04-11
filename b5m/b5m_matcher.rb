@@ -160,12 +160,12 @@ end
 system("cat #{work_dir}/C*/match > #{mdb_instance}/match")
 
 #b5mo generator
-system("#{matcher_program} --b5mo-generate -S #{scd} --b5mo #{b5mo_scd} -K #{mdb_instance}")
+system("#{matcher_program} --b5mo-generate -S #{scd} --b5mo #{b5mo_scd} -K #{mdb_instance} --odb #{odb}")
 
 #uue generator
 system("#{matcher_program} --uue-generate --b5mo #{b5mo_scd} --uue #{mdb_instance}/uue --odb #{odb}")
 
-#b5mp generator
+#b5mp generator, update odb and pdb here.
 system("#{matcher_program} --b5mp-generate --b5mo #{b5mo_scd} --b5mp #{b5mp_scd} --uue #{mdb_instance}/uue --odb #{odb} --pdb #{pdb}")
 
 #b5mc generator
