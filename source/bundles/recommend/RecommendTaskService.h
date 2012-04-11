@@ -158,6 +158,8 @@ public:
      */
     bool rateItem(const RateParam& param);
 
+    UpdateRecommendWorker* updateRecommendWorker() { return updateRecommendWorker_; }
+
 private:
     void initProps_();
 

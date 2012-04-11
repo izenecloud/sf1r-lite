@@ -338,7 +338,7 @@ void RecommendBundleActivator::createService_()
                                                 *updateRecommendBase_, updateRecommendWorker_.get()));
 
     searchService_.reset(new RecommendSearchService(*userManager_, *itemManager_,
-                                                    *recommenderFactory_, *itemIdGenerator_));
+                                                    *recommenderFactory_, *itemIdGenerator_, getRecommendWorker_.get()));
 
     Properties props;
     props.put("collection", config_->collectionName_);

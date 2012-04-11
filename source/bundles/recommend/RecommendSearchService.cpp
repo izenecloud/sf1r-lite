@@ -19,12 +19,14 @@ RecommendSearchService::RecommendSearchService(
     UserManager& userManager,
     ItemManager& itemManager,
     RecommenderFactory& recommenderFactory,
-    ItemIdGenerator& itemIdGenerator
+    ItemIdGenerator& itemIdGenerator,
+    GetRecommendWorker* getRecommendWorker
 )
     :userManager_(userManager)
     ,itemManager_(itemManager)
     ,recommenderFactory_(recommenderFactory)
     ,itemIdGenerator_(itemIdGenerator)
+    ,getRecommendWorker_(getRecommendWorker)
 {
 }
 
