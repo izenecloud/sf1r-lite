@@ -18,12 +18,16 @@ namespace sf1r {
 
         static uint128_t StringToUint128(const std::string& str)
         {
-            return Utilities::md5ToUint128(str);
+            unsigned long long high = 0, low = 0;
+            sscanf(str.c_str(), "%016llx%016llx", &high, &low);
+            return (uint128_t) high << 64 | (uint128_t) low;
         }
 
-        static std::string Uint128ToString(uint128_t u)
+        static std::string Uint128ToString(const uint128_t& val)
         {
-            return Utilities::uint128ToMD5(u);
+            static char tmpstr[33];
+            sprintf(tmpstr, "%16llx%16llx", (unsigned long long) (val >> 64), (unsigned long long) val);
+            return std::string(reinterpret_cast<const char *>(tmpstr), 32);
         }
 
         static void GetScdList(const std::string& scd_path, std::vector<std::string>& scd_list)
