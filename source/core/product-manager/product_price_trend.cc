@@ -105,7 +105,7 @@ bool ProductPriceTrend::Update(
 
     if (enable_tpc_ && !group_prop_map.empty() && price.value.first > 0)
     {
-        PropItemType& prop_item = prop_map_[s_docid];
+        PropItemType& prop_item = prop_map_[docid];
         prop_item.first = price.value.first;
         prop_item.second.swap(group_prop_map);
     }
