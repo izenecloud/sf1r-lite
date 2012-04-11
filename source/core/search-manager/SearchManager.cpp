@@ -528,6 +528,7 @@ bool SearchManager::search(
         return false;
     }
     if(pSorter) delete pSorter;
+    REPORT_PROFILE_TO_SCREEN();
     return ret;
 }
 
