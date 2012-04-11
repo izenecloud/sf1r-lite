@@ -5,11 +5,12 @@
 #include <vector>
 #include <boost/unordered_map.hpp>
 #include <boost/regex.hpp>
+#include "offer_db.h"
 
 namespace sf1r {
     class B5MOScdGenerator {
     public:
-        B5MOScdGenerator();
+        B5MOScdGenerator(OfferDb* odb);
 
         bool Load(const std::string& category_dir);
 
@@ -27,6 +28,7 @@ namespace sf1r {
         bool exclude_;
         std::vector<boost::regex> category_regex_;
         boost::unordered_map<std::string, std::string> o2p_map_;
+        OfferDb* odb_;
     };
 
 }

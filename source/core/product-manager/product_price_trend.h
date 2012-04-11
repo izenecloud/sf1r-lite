@@ -75,15 +75,13 @@ public:
 
     bool MigratePriceHistory(
             const std::string& new_keyspace,
-            const std::string& old_prefix,
-            const std::string& new_prefix,
             uint32_t start,
             std::string& error_msg);
 
     bool CronJob();
 
 private:
-    bool IsBufferFull_();
+    bool IsBufferFull_() const;
 
     bool UpdateTPC_(uint32_t time_int, time_t timestamp);
 

@@ -89,6 +89,12 @@ namespace sf1r {
             }
         }
 
+        bool has_key(const KeyType& key) const
+        {
+            ValueType value;
+            return get(key, value);
+        }
+
         bool update(const KeyType& key, const ValueType& value)
         {
             mem_db_[key] = std::make_pair(value, true);

@@ -633,8 +633,6 @@ void ProductController::get_top_price_cut_list()
  *
  * - @b collection* (@c String): Collection name.
  * - @b new_keyspace* (@c String): New keyspace name.
- * - @b old_prefix (@c String): Old prefix of Cassandra key.
- * - @b new_prefix (@c String): New prefix of Cassandra key.
  * - @b start (@c Uint): First docid to be processed
  *
  * @section response
@@ -648,8 +646,6 @@ void ProductController::get_top_price_cut_list()
  * {
  *   "collection" : "b5mm",
  *   "new_keyspace" : "B5M",
- *   "old_prefix" : "b5mm",
- *   "new_prefix" : ""
  * }
  * @endcode
  *
@@ -664,16 +660,6 @@ void ProductController::migrate_price_history()
 {
     new_keyspace_ = asString(request()[Keys::new_keyspace]);
 
-    if (!izenelib::driver::nullValue(request()[Keys::old_prefix]))
-    {
-        old_prefix_ = asString(request()[Keys::old_prefix]);
-    }
-
-    if (!izenelib::driver::nullValue(request()[Keys::new_prefix]))
-    {
-        new_prefix_ = asString(request()[Keys::new_prefix]);
-    }
-
     if (!izenelib::driver::nullValue(request()[Keys::start]))
     {
         start_ = asUint(request()[Keys::start]);
@@ -684,7 +670,7 @@ void ProductController::migrate_price_history()
         start_ = 1;
     }
 
-    if (!product_manager_->MigratePriceHistory(new_keyspace_, old_prefix_, new_prefix_, start_))
+    if (!product_manager_->MigratePriceHistory(new_keyspace_, start_))
     {
         response().addError(product_manager_->GetLastError());
     }
