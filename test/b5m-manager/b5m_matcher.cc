@@ -39,6 +39,7 @@ int main(int ac, char** av)
         ("scd-path,S", po::value<std::string>(), "specify scd path")
         ("b5mo", po::value<std::string>(), "specify b5mo scd path")
         ("b5mp", po::value<std::string>(), "specify b5mp scd path")
+        ("b5mc", po::value<std::string>(), "specify b5mc scd path")
         ("uue", po::value<std::string>(), "uue path")
         ("category-regex,R", po::value<std::string>(), "specify category regex string")
         ("output-match,O", po::value<std::string>(), "specify output match path")
@@ -84,7 +85,7 @@ int main(int ac, char** av)
         b5mp = vm["b5mp"].as<std::string>();
     } 
     if (vm.count("b5mc")) {
-        b5mp = vm["b5mc"].as<std::string>();
+        b5mc = vm["b5mc"].as<std::string>();
     } 
     if (vm.count("uue")) {
         uue = vm["uue"].as<std::string>();
