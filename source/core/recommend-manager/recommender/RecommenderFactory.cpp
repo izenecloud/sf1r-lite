@@ -7,6 +7,7 @@
 #include "BOERecommender.h"
 #include "BORRecommender.h"
 #include "BAQRecommender.h"
+#include <aggregator-manager/GetRecommendBase.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
 
@@ -22,8 +23,7 @@ RecommenderFactory::RecommenderFactory(
     EventManager& eventManager,
     RateManager& rateManager,
     QueryClickCounter& queryPurchaseCounter,
-    CoVisitManager& coVisitManager,
-    ItemCFManager& itemCFManager
+    GetRecommendBase& getRecommendBase
 )
     : userEventFilter_(purchaseManager, cartManager, eventManager, rateManager)
     , tibRecommender_(orderManager)
@@ -39,11 +39,11 @@ RecommenderFactory::RecommenderFactory(
     recTypeMap_["BAQ"] = BUY_AFTER_QUERY;
 
     recommenders_[FREQUENT_BUY_TOGETHER] = new FBTRecommender(orderManager);
-    recommenders_[BUY_ALSO_BUY] = new BABRecommender(itemCFManager);
-    recommenders_[VIEW_ALSO_VIEW] = new VAVRecommender(coVisitManager);
-    recommenders_[BASED_ON_EVENT] = new BOERecommender(itemCFManager, userEventFilter_);
-    recommenders_[BASED_ON_BROWSE_HISTORY] = new BOBRecommender(itemCFManager, userEventFilter_, visitManager);
-    recommenders_[BASED_ON_SHOP_CART] = new BOSRecommender(itemCFManager, userEventFilter_, cartManager);
+    recommenders_[BUY_ALSO_BUY] = new BABRecommender(getRecommendBase);
+    recommenders_[VIEW_ALSO_VIEW] = new VAVRecommender(getRecommendBase);
+    recommenders_[BASED_ON_EVENT] = new BOERecommender(getRecommendBase, userEventFilter_);
+    recommenders_[BASED_ON_BROWSE_HISTORY] = new BOBRecommender(getRecommendBase, userEventFilter_, visitManager);
+    recommenders_[BASED_ON_SHOP_CART] = new BOSRecommender(getRecommendBase, userEventFilter_, cartManager);
     recommenders_[BASED_ON_RANDOM] = new BORRecommender(userEventFilter_, itemIdGenerator);
     recommenders_[BUY_AFTER_QUERY] = new BAQRecommender(queryPurchaseCounter);
 }

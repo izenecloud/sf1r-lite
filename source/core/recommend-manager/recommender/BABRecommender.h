@@ -16,7 +16,7 @@ namespace sf1r
 class BABRecommender : public ItemCFRecommender
 {
 public:
-    BABRecommender(ItemCFManager& itemCFManager);
+    BABRecommender(GetRecommendBase& getRecommendBase);
 
 protected:
     virtual bool recommendImpl_(

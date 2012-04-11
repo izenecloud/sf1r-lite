@@ -9,6 +9,7 @@
 #define VISIT_MATRIX_H
 
 #include "RecommendMatrix.h"
+#include <aggregator-manager/UpdateRecommendBase.h>
 
 namespace sf1r
 {
@@ -16,7 +17,7 @@ namespace sf1r
 class VisitMatrix : public RecommendMatrix
 {
 public:
-    VisitMatrix(CoVisitManager& matrix)
+    VisitMatrix(UpdateRecommendBase& matrix)
         : matrix_(matrix)
     {}
 
@@ -25,11 +26,12 @@ public:
         const std::list<itemid_t>& newItems
     )
     {
-        matrix_.visit(oldItems, newItems);
+        bool result = true;
+        matrix_.updateVisitMatrix(oldItems, newItems, result);
     }
 
 private:
-    CoVisitManager& matrix_;
+    UpdateRecommendBase& matrix_;
 };
 
 } // namespace sf1r

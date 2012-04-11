@@ -12,11 +12,12 @@
 
 namespace sf1r
 {
+class GetRecommendBase;
 
 class VAVRecommender : public Recommender
 {
 public:
-    VAVRecommender(CoVisitManager& coVisitManager);
+    VAVRecommender(GetRecommendBase& getRecommendBase);
 
 protected:
     virtual bool recommendImpl_(
@@ -25,7 +26,7 @@ protected:
     );
 
 private:
-    CoVisitManager& coVisitManager_;
+    GetRecommendBase& getRecommendBase_;
 };
 
 } // namespace sf1r

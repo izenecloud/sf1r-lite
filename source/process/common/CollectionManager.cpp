@@ -6,6 +6,7 @@
 #include <bundles/product/ProductBundleActivator.h>
 #include <bundles/mining/MiningBundleActivator.h>
 #include <bundles/recommend/RecommendBundleActivator.h>
+#include <common/JobScheduler.h>
 
 #include <boost/filesystem.hpp>
 #include <memory> // for std::auto_ptr

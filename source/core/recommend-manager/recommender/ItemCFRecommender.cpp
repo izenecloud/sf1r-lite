@@ -5,8 +5,8 @@
 namespace sf1r
 {
 
-ItemCFRecommender::ItemCFRecommender(ItemCFManager& itemCFManager)
-    : itemCFManager_(itemCFManager)
+ItemCFRecommender::ItemCFRecommender(GetRecommendBase& getRecommendBase)
+    : getRecommendBase_(getRecommendBase)
 {
 }
 
@@ -16,8 +16,7 @@ bool ItemCFRecommender::recommendImpl_(
 )
 {
     idmlib::recommender::RecommendItemVec results;
-    itemCFManager_.recommend(param.inputParam.limit, param.inputParam.inputItemIds,
-                             results, &param.inputParam.itemFilter);
+    getRecommendBase_.recommendPurchase(param.inputParam, results);
     recItemVec.insert(recItemVec.end(), results.begin(), results.end());
 
     return true;
@@ -29,8 +28,7 @@ bool ItemCFRecommender::recommendFromItemWeight_(
 )
 {
     idmlib::recommender::RecommendItemVec results;
-    itemCFManager_.recommend(inputParam.limit, inputParam.itemWeightMap,
-                             results, &inputParam.itemFilter);
+    getRecommendBase_.recommendPurchaseFromWeight(inputParam, results);
     recItemVec.insert(recItemVec.end(), results.begin(), results.end());
 
     return true;

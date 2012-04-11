@@ -48,10 +48,10 @@ namespace sf1r
 {
 
 BOERecommender::BOERecommender(
-    ItemCFManager& itemCFManager,
+    GetRecommendBase& getRecommendBase,
     const UserEventFilter& userEventFilter
 )
-    : ItemCFRecommender(itemCFManager)
+    : ItemCFRecommender(getRecommendBase)
     , userEventFilter_(userEventFilter)
 {
 }

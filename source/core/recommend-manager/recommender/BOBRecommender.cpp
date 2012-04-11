@@ -9,11 +9,11 @@ namespace sf1r
 {
 
 BOBRecommender::BOBRecommender(
-    ItemCFManager& itemCFManager,
+    GetRecommendBase& getRecommendBase,
     const UserEventFilter& userEventFilter,
     VisitManager& visitManager
 )
-    : ItemCFRecommender(itemCFManager)
+    : ItemCFRecommender(getRecommendBase)
     , userEventFilter_(userEventFilter)
     , visitManager_(visitManager)
 {

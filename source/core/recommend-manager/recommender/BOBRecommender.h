@@ -19,7 +19,7 @@ class BOBRecommender : public ItemCFRecommender
 {
 public:
     BOBRecommender(
-        ItemCFManager& itemCFManager,
+        GetRecommendBase& getRecommendBase,
         const UserEventFilter& userEventFilter,
         VisitManager& visitManager
     );

@@ -1,5 +1,6 @@
 #include "RecommendBundleActivator.h"
 #include "RecommendBundleConfiguration.h"
+
 #include <recommend-manager/item/LocalItemFactory.h>
 #include <recommend-manager/item/SearchMasterItemFactory.h>
 #include <recommend-manager/item/RemoteItemFactory.h>
@@ -15,6 +16,11 @@
 #include <recommend-manager/storage/OrderManager.h>
 #include <recommend-manager/recommender/RecommenderFactory.h>
 
+#include <aggregator-manager/GetRecommendMaster.h>
+#include <aggregator-manager/GetRecommendWorker.h>
+#include <aggregator-manager/UpdateRecommendMaster.h>
+#include <aggregator-manager/UpdateRecommendWorker.h>
+
 #include <glog/logging.h>
 
 namespace bfs = boost::filesystem;
@@ -24,6 +30,8 @@ namespace sf1r
 
 RecommendBundleActivator::RecommendBundleActivator()
     :context_(NULL)
+    ,getRecommendBase_(NULL)
+    ,updateRecommendBase_(NULL)
 {
 }
 
@@ -84,6 +92,14 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
 
     recommenderFactory_.reset();
 
+    getRecommendBase_ = NULL;
+    getRecommendWorker_.reset();
+    getRecommendMaster_.reset();
+
+    updateRecommendBase_ = NULL;
+    updateRecommendWorker_.reset();
+    updateRecommendMaster_.reset();
+
     coVisitManager_.reset();
     itemCFManager_.reset();
 }
@@ -118,9 +134,15 @@ bool RecommendBundleActivator::init_(IndexSearchService* indexSearchService)
     if (! createDataDir_())
         return false;
 
-    createMining_();
+    const DistributedNodeConfig& nodeConfig = config_->recommendNodeConfig_;
 
-    if (config_->recommendNodeConfig_.isServiceNode())
+    if (nodeConfig.isSingleNode_ || nodeConfig.isWorkerNode_)
+        createWorker_();
+
+    if (nodeConfig.isMasterNode_)
+        createMaster_();
+
+    if (nodeConfig.isServiceNode())
     {
         createSCDDir_();
         createStorage_();
@@ -245,7 +267,7 @@ void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchServic
     itemManager_.reset(factory->createItemManager());
 }
 
-void RecommendBundleActivator::createMining_()
+void RecommendBundleActivator::createWorker_()
 {
     bfs::path miningDir = dataDir_ / "mining";
     bfs::create_directory(miningDir);
@@ -259,6 +281,23 @@ void RecommendBundleActivator::createMining_()
 
     coVisitManager_.reset(new CoVisitManager((miningDir / "covisit").string(),
                                              config_->visitCacheSize_));
+
+    getRecommendWorker_.reset(new GetRecommendWorker(*itemCFManager_, *coVisitManager_));
+    getRecommendBase_ = getRecommendWorker_.get();
+
+    updateRecommendWorker_.reset(new UpdateRecommendWorker(*itemCFManager_, *coVisitManager_));
+    updateRecommendBase_ = updateRecommendWorker_.get();
+}
+
+void RecommendBundleActivator::createMaster_()
+{
+    getRecommendMaster_.reset(
+        new GetRecommendMaster(config_->collectionName_, getRecommendWorker_.get()));
+    getRecommendBase_ = getRecommendMaster_.get();
+
+    updateRecommendMaster_.reset(
+        new UpdateRecommendMaster(config_->collectionName_, updateRecommendWorker_.get()));
+    updateRecommendBase_ = updateRecommendMaster_.get();
 }
 
 void RecommendBundleActivator::createOrder_()
@@ -288,7 +327,7 @@ void RecommendBundleActivator::createRecommender_()
                                                      *cartManager_, *orderManager_,
                                                      *eventManager_, *rateManager_,
                                                      *queryPurchaseCounter_,
-                                                     *coVisitManager_, *itemCFManager_));
+                                                     *getRecommendBase_));
 }
 
 void RecommendBundleActivator::createService_()
@@ -296,7 +335,7 @@ void RecommendBundleActivator::createService_()
     taskService_.reset(new RecommendTaskService(*config_, directoryRotator_, *userManager_, *itemManager_,
                                                 *visitManager_, *purchaseManager_, *cartManager_, *orderManager_,
                                                 *eventManager_, *rateManager_, *itemIdGenerator_, *queryPurchaseCounter_,
-                                                *coVisitManager_, *itemCFManager_));
+                                                *updateRecommendBase_, updateRecommendWorker_.get()));
 
     searchService_.reset(new RecommendSearchService(*userManager_, *itemManager_,
                                                     *recommenderFactory_, *itemIdGenerator_));

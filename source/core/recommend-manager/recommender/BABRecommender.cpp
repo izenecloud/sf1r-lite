@@ -5,8 +5,8 @@
 namespace sf1r
 {
 
-BABRecommender::BABRecommender(ItemCFManager& itemCFManager)
-    : ItemCFRecommender(itemCFManager)
+BABRecommender::BABRecommender(GetRecommendBase& getRecommendBase)
+    : ItemCFRecommender(getRecommendBase)
 {
 }
 

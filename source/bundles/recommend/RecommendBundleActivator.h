@@ -38,6 +38,12 @@ class EventManager;
 class RateManager;
 class RecommenderFactory;
 class ItemIdGenerator;
+class GetRecommendBase;
+class GetRecommendWorker;
+class GetRecommendMaster;
+class UpdateRecommendBase;
+class UpdateRecommendWorker;
+class UpdateRecommendMaster;
 
 class RecommendBundleActivator : public IBundleActivator, public IServiceTrackerCustomizer
 {
@@ -56,7 +62,8 @@ private:
     void createSCDDir_();
     void createStorage_();
     void createItem_(IndexSearchService* indexSearchService);
-    void createMining_();
+    void createWorker_();
+    void createMaster_();
     void createOrder_();
     void createClickCounter_();
     void createRecommender_();
@@ -84,13 +91,20 @@ private:
     boost::scoped_ptr<OrderManager> orderManager_;
     boost::scoped_ptr<EventManager> eventManager_;
     boost::scoped_ptr<RateManager> rateManager_;
+    boost::scoped_ptr<QueryClickCounter> queryPurchaseCounter_;
 
     boost::scoped_ptr<RecommenderFactory> recommenderFactory_;
 
     boost::scoped_ptr<CoVisitManager> coVisitManager_;
     boost::scoped_ptr<ItemCFManager> itemCFManager_;
 
-    boost::scoped_ptr<QueryClickCounter> queryPurchaseCounter_;
+    GetRecommendBase* getRecommendBase_;
+    boost::scoped_ptr<GetRecommendWorker> getRecommendWorker_;
+    boost::scoped_ptr<GetRecommendMaster> getRecommendMaster_;
+
+    UpdateRecommendBase* updateRecommendBase_;
+    boost::scoped_ptr<UpdateRecommendWorker> updateRecommendWorker_;
+    boost::scoped_ptr<UpdateRecommendMaster> updateRecommendMaster_;
 };
 
 } // namespace sf1r

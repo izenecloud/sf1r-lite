@@ -1,5 +1,6 @@
 #include "UpdateRecommendWorker.h"
 
+#include <glog/logging.h>
 #include <boost/bind.hpp>
 
 namespace sf1r
@@ -60,6 +61,9 @@ void UpdateRecommendWorker::flushImpl_()
 {
     coVisitManager_.flush();
     itemCFManager_.flush();
+
+    LOG(INFO) << "flushed [Visit] " << coVisitManager_.matrix();
+    LOG(INFO) << "flushed [Purchase] " << itemCFManager_;
 }
 
 } // namespace sf1r

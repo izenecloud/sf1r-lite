@@ -25,6 +25,7 @@ class OrderManager;
 class EventManager;
 class RateManager;
 class Recommender;
+class GetRecommendBase;
 
 class RecommenderFactory
 {
@@ -38,8 +39,7 @@ public:
         EventManager& eventManager,
         RateManager& rateManager,
         QueryClickCounter& queryPurchaseCounter,
-        CoVisitManager& coVisitManager,
-        ItemCFManager& itemCFManager
+        GetRecommendBase& getRecommendBase
     );
 
     ~RecommenderFactory();

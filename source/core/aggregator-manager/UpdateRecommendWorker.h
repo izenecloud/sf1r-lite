@@ -8,14 +8,14 @@
 #ifndef SF1R_UPDATE_RECOMMEND_WORKER_H
 #define SF1R_UPDATE_RECOMMEND_WORKER_H
 
-#include "GetRecommendBase.h"
+#include "UpdateRecommendBase.h"
 #include <net/aggregator/BindCallProxyBase.h>
 #include <common/JobScheduler.h>
 
 namespace sf1r
 {
 
-class UpdateRecommendWorker : public GetRecommendBase
+class UpdateRecommendWorker : public UpdateRecommendBase
                             , public net::aggregator::BindCallProxyBase<UpdateRecommendWorker>
 {
 public:
@@ -77,6 +77,8 @@ public:
     );
 
     virtual void flushRecommendMatrix(bool& result);
+
+    const ItemCFManager& itemCFManager() const { return itemCFManager_; }
 
 private:
     void flushImpl_();

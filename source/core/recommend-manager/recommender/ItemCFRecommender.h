@@ -9,6 +9,7 @@
 #define ITEM_CF_RECOMMENDER_H
 
 #include "Recommender.h"
+#include <aggregator-manager/GetRecommendBase.h>
 
 #include <vector>
 #include <string>
@@ -19,7 +20,7 @@ namespace sf1r
 class ItemCFRecommender : public Recommender
 {
 public:
-    ItemCFRecommender(ItemCFManager& itemCFManager);
+    ItemCFRecommender(GetRecommendBase& getRecommendBase);
 
 protected:
     virtual bool recommendImpl_(
@@ -38,7 +39,7 @@ protected:
     ) const;
 
 protected:
-    ItemCFManager& itemCFManager_;
+    GetRecommendBase& getRecommendBase_;
 };
 
 } // namespace sf1r

@@ -1,12 +1,13 @@
 #include "VAVRecommender.h"
+#include <aggregator-manager/GetRecommendBase.h>
 
 #include <glog/logging.h>
 
 namespace sf1r
 {
 
-VAVRecommender::VAVRecommender(CoVisitManager& coVisitManager)
-    : coVisitManager_(coVisitManager)
+VAVRecommender::VAVRecommender(GetRecommendBase& getRecommendBase)
+    : getRecommendBase_(getRecommendBase)
 {
 }
 
@@ -22,8 +23,7 @@ bool VAVRecommender::recommendImpl_(
     }
 
     idmlib::recommender::RecommendItemVec results;
-    coVisitManager_.getCoVisitation(param.inputParam.limit, param.inputParam.inputItemIds[0],
-                                    results, &param.inputParam.itemFilter);
+    getRecommendBase_.recommendVisit(param.inputParam, results);
     recItemVec.insert(recItemVec.end(), results.begin(), results.end());
 
     return true;

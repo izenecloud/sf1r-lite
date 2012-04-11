@@ -9,6 +9,7 @@
 #define PURCHASE_MATRIX_H
 
 #include "RecommendMatrix.h"
+#include <aggregator-manager/UpdateRecommendBase.h>
 
 namespace sf1r
 {
@@ -16,7 +17,7 @@ namespace sf1r
 class PurchaseMatrix : public RecommendMatrix
 {
 public:
-    PurchaseMatrix(ItemCFManager& matrix)
+    PurchaseMatrix(UpdateRecommendBase& matrix)
         : matrix_(matrix)
     {}
 
@@ -25,11 +26,12 @@ public:
         const std::list<itemid_t>& newItems
     )
     {
-        matrix_.updateMatrix(oldItems, newItems);
+        bool result = true;
+        matrix_.updatePurchaseMatrix(oldItems, newItems, result);
     }
 
 private:
-    ItemCFManager& matrix_;
+    UpdateRecommendBase& matrix_;
 };
 
 } // namespace sf1r

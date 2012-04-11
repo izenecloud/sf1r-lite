@@ -8,7 +8,7 @@
 #include "VisitManagerTestFixture.h"
 #include "test_util.h"
 #include <recommend-manager/storage/VisitManager.h>
-#include <recommend-manager/storage/VisitMatrix.h>
+#include <recommend-manager/storage/RecommendMatrix.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -26,6 +26,25 @@ const string TEST_DIR_STR = "recommend_test/t_VisitManager";
 const string KEYSPACE_NAME = "test_recommend";
 const string COLLECTION_NAME = "example";
 const string COVISIT_DIR_STR = TEST_DIR_STR + "/covisit";
+
+class VisitMatrixStub : public RecommendMatrix
+{
+public:
+    VisitMatrixStub(CoVisitManager& coVisitManager)
+        : coVisitManager_(coVisitManager)
+    {}
+
+    virtual void update(
+        const std::list<itemid_t>& oldItems,
+        const std::list<itemid_t>& newItems
+    )
+    {
+        coVisitManager_.visit(oldItems, newItems);
+    }
+
+private:
+    CoVisitManager& coVisitManager_;
+};
 
 void checkCoVisitManager(
     CoVisitManager& coVisitManager,
@@ -62,7 +81,7 @@ void testVisit1(
 
     fixture.resetInstance();
 
-    VisitMatrix visitMatrix(coVisitManager);
+    VisitMatrixStub visitMatrix(coVisitManager);
     std::string sessionId = "session_001";
 
     fixture.addVisitItem(sessionId, "1", 10, &visitMatrix);
@@ -103,7 +122,7 @@ void testVisit2(
 
     fixture.resetInstance();
 
-    VisitMatrix visitMatrix(coVisitManager);
+    VisitMatrixStub visitMatrix(coVisitManager);
     std::string sessionId = "session_002";
 
     fixture.addVisitItem(sessionId, "3", 10, &visitMatrix);
@@ -160,7 +179,7 @@ BOOST_FIXTURE_TEST_CASE(checkCassandraNotConnect, VisitManagerTestFixture)
     resetInstance();
 
     CoVisitManager coVisitManager(COVISIT_DIR_STR);
-    VisitMatrix visitMatrix(coVisitManager);
+    VisitMatrixStub visitMatrix(coVisitManager);
 
     string sessionId = "session_001";
     string userId = "aaa";

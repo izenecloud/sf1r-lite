@@ -11,6 +11,8 @@
 #include <recommend-manager/storage/RateManager.h>
 #include <recommend-manager/storage/EventManager.h>
 #include <recommend-manager/storage/OrderManager.h>
+#include <aggregator-manager/UpdateRecommendBase.h>
+#include <aggregator-manager/UpdateRecommendWorker.h>
 #include <log-manager/OrderLogger.h>
 #include <log-manager/ItemLogger.h>
 #include <common/ScdParser.h>
@@ -263,8 +265,8 @@ RecommendTaskService::RecommendTaskService(
     RateManager& rateManager,
     ItemIdGenerator& itemIdGenerator,
     QueryClickCounter& queryPurchaseCounter,
-    CoVisitManager& coVisitManager,
-    ItemCFManager& itemCFManager
+    UpdateRecommendBase& updateRecommendBase,
+    UpdateRecommendWorker* updateRecommendWorker
 )
     :bundleConfig_(bundleConfig)
     ,directoryRotator_(directoryRotator)
@@ -278,11 +280,11 @@ RecommendTaskService::RecommendTaskService(
     ,rateManager_(rateManager)
     ,itemIdGenerator_(itemIdGenerator)
     ,queryPurchaseCounter_(queryPurchaseCounter)
-    ,coVisitManager_(coVisitManager)
-    ,itemCFManager_(itemCFManager)
-    ,visitMatrix_(coVisitManager_)
-    ,purchaseMatrix_(itemCFManager_)
-    ,purchaseCoVisitMatrix_(itemCFManager_)
+    ,updateRecommendBase_(updateRecommendBase)
+    ,updateRecommendWorker_(updateRecommendWorker)
+    ,visitMatrix_(updateRecommendBase)
+    ,purchaseMatrix_(updateRecommendBase)
+    ,purchaseCoVisitMatrix_(updateRecommendBase)
     ,cronJobName_("RecommendTaskService-" + bundleConfig.collectionName_)
 {
     if (cronExpression_.setExpression(bundleConfig_.cronStr_))
@@ -291,7 +293,7 @@ RecommendTaskService::RecommendTaskService(
                                                         60*1000, // each minute
                                                         0, // start from now
                                                         boost::bind(&RecommendTaskService::cronJob_, this));
-        if (!result)
+        if (! result)
         {
             LOG(ERROR) << "failed in izenelib::util::Scheduler::addJob(), cron job name: " << cronJobName_;
         }
@@ -352,11 +354,11 @@ bool RecommendTaskService::visitItem(
     }
 
     itemid_t itemId = 0;
-    if (! itemIdGenerator_.strIdToItemId(itemIdStr, itemId))
+    if (!itemIdGenerator_.strIdToItemId(itemIdStr, itemId) ||
+        !visitManager_.addVisitItem(sessionIdStr, userIdStr, itemId, &visitMatrix_))
+    {
         return false;
-
-    jobScheduler_.addTask(boost::bind(&VisitManager::addVisitItem, &visitManager_,
-                                      sessionIdStr, userIdStr, itemId, &visitMatrix_));
+    }
 
     if (isRecItem && !visitManager_.visitRecommendItem(userIdStr, itemId))
     {
@@ -374,10 +376,7 @@ bool RecommendTaskService::purchaseItem(
     const OrderItemVec& orderItemVec
 )
 {
-    jobScheduler_.addTask(boost::bind(&RecommendTaskService::saveOrder_, this,
-                                       userIdStr, orderIdStr, orderItemVec, &purchaseMatrix_));
-
-    return true;
+    return saveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseMatrix_);
 }
 
 bool RecommendTaskService::updateShoppingCart(
@@ -417,9 +416,32 @@ bool RecommendTaskService::rateItem(const RateParam& param)
                          rateManager_.removeRate(param.userIdStr, itemId);
 }
 
-void RecommendTaskService::buildCollection()
+bool RecommendTaskService::buildCollection()
 {
-    jobScheduler_.addTask(boost::bind(&RecommendTaskService::buildCollectionImpl_, this));
+    LOG(INFO) << "Start building recommend collection...";
+    izenelib::util::ClockTimer timer;
+
+    if (! backupDataFiles(directoryRotator_))
+    {
+        LOG(ERROR) << "Failed in backup data files, exit recommend collection build";
+        return false;
+    }
+
+    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
+    if (! dirGuard)
+    {
+        LOG(ERROR) << "Dirty recommend collection data, exit recommend collection build";
+        return false;
+    }
+
+    if (loadUserSCD_() && loadOrderSCD_())
+    {
+        LOG(INFO) << "End recommend collection build, elapsed time: " << timer.elapsed() << " seconds";
+        return true;
+    }
+
+    LOG(ERROR) << "Failed recommend collection build";
+    return false;
 }
 
 bool RecommendTaskService::loadUserSCD_()
@@ -540,10 +562,11 @@ bool RecommendTaskService::loadOrderSCD_()
     orderManager_.flush();
     purchaseManager_.flush();
 
-    itemCFManager_.buildSimMatrix();
-    itemCFManager_.flush();
-
     buildFreqItemSet_();
+
+    bool result = true;
+    updateRecommendBase_.buildPurchaseSimMatrix(result);
+    updateRecommendBase_.flushRecommendMatrix(result);
 
     backupSCDFiles(scdDir, scdList);
 
@@ -573,10 +596,10 @@ bool RecommendTaskService::parseOrderSCD_(const std::string& scdPath)
     for (ScdParser::iterator docIter = orderParser.begin(orderProps_);
         docIter != orderParser.end(); ++docIter)
     {
-        if (++orderNum % 10000 == 0)
+        if (updateRecommendWorker_ && ++orderNum % 10000 == 0)
         {
             std::cout << "\rloading order[" << orderNum << "], "
-                      << itemCFManager_ << std::flush;
+                      << updateRecommendWorker_->itemCFManager() << std::flush;
         }
 
         SCDDocPtr docPtr = (*docIter);
@@ -599,8 +622,12 @@ bool RecommendTaskService::parseOrderSCD_(const std::string& scdPath)
     }
 
     saveOrderMap_(orderMap);
-    std::cout << "\rloading order[" << orderNum << "], "
-              << itemCFManager_ << std::endl;
+
+    if (updateRecommendWorker_)
+    {
+        std::cout << "\rloading order[" << orderNum << "], "
+                  << updateRecommendWorker_->itemCFManager() << std::endl;
+    }
 
     return true;
 }
@@ -691,7 +718,7 @@ bool RecommendTaskService::insertOrderDB_(
     assert(orderItemVec.empty() == false);
 
     ItemIdSet recItemSet;
-    if (!visitManager_.getRecommendItemSet(userIdStr, recItemSet))
+    if (! visitManager_.getRecommendItemSet(userIdStr, recItemSet))
     {
         LOG(ERROR) << "error in VisitManager::getRecItemSet(), user id: " << userIdStr;
         return false;
@@ -700,8 +727,8 @@ bool RecommendTaskService::insertOrderDB_(
     OrderLogger& orderLogger = OrderLogger::instance();
     ItemLogger& itemLogger = ItemLogger::instance();
     int orderId = 0;
-    if (!orderLogger.insertOrder(orderIdStr, bundleConfig_.collectionName_,
-                                 userIdStr, orderItemVec[0].dateStr_, orderId))
+    if (! orderLogger.insertOrder(orderIdStr, bundleConfig_.collectionName_,
+                                  userIdStr, orderItemVec[0].dateStr_, orderId))
     {
         return false;
     }
@@ -714,8 +741,8 @@ bool RecommendTaskService::insertOrderDB_(
         bool isRecItem = (recItemSet.find(itemId) != recItemSet.end());
         const RecommendTaskService::OrderItem& orderItem = orderItemVec[i];
 
-        if(!itemLogger.insertItem(orderId, orderItem.itemIdStr_,
-                                  orderItem.price_, orderItem.quantity_, isRecItem))
+        if (! itemLogger.insertItem(orderId, orderItem.itemIdStr_,
+                                    orderItem.price_, orderItem.quantity_, isRecItem))
         {
             result = false;
         }
@@ -782,6 +809,13 @@ void RecommendTaskService::buildFreqItemSet_()
     if (! bundleConfig_.freqItemSetEnable_)
         return;
 
+    boost::mutex::scoped_try_lock lock(buildFreqItemMutex_);
+    if (lock.owns_lock() == false)
+    {
+        LOG(INFO) << "exit frequent item set building as it has already been started for collection " << bundleConfig_.collectionName_;
+        return;
+    }
+
     LOG(INFO) << "start building frequent item set for collection " << bundleConfig_.collectionName_;
 
     orderManager_.buildFreqItemsets();
@@ -793,8 +827,9 @@ void RecommendTaskService::cronJob_()
 {
     if (cronExpression_.matches_now())
     {
-        jobScheduler_.addTask(boost::bind(&RecommendTaskService::flush_, this));
-        jobScheduler_.addTask(boost::bind(&RecommendTaskService::buildFreqItemSet_, this));
+        flush_();
+
+        buildFreqItemSet_();
     }
 }
 
@@ -812,40 +847,10 @@ void RecommendTaskService::flush_()
 
     queryPurchaseCounter_.flush();
 
-    coVisitManager_.flush();
-    itemCFManager_.flush();
+    bool flushResult = true;
+    updateRecommendBase_.flushRecommendMatrix(flushResult);
 
-    LOG(INFO) << "flushed [Visit] " << coVisitManager_.matrix();
-    LOG(INFO) << "flushed [Purchase] " << itemCFManager_;
     LOG(INFO) << "finish flushing recommend data for collection " << bundleConfig_.collectionName_;
-}
-
-bool RecommendTaskService::buildCollectionImpl_()
-{
-    LOG(INFO) << "Start building recommend collection...";
-    izenelib::util::ClockTimer timer;
-
-    if(!backupDataFiles(directoryRotator_))
-    {
-        LOG(ERROR) << "Failed in backup data files, exit recommend collection build";
-        return false;
-    }
-
-    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
-    if (!dirGuard)
-    {
-        LOG(ERROR) << "Dirty recommend collection data, exit recommend collection build";
-        return false;
-    }
-
-    if (loadUserSCD_() && loadOrderSCD_())
-    {
-        LOG(INFO) << "End recommend collection build, elapsed time: " << timer.elapsed() << " seconds";
-        return true;
-    }
-
-    LOG(ERROR) << "Failed recommend collection build";
-    return false;
 }
 
 } // namespace sf1r

@@ -19,7 +19,7 @@ class BOSRecommender : public ItemCFRecommender
 {
 public:
     BOSRecommender(
-        ItemCFManager& itemCFManager,
+        GetRecommendBase& getRecommendBase,
         const UserEventFilter& userEventFilter,
         CartManager& cartManager
     );

@@ -14,10 +14,10 @@
 
 #include <util/osgi/IService.h>
 #include <util/cronexpression.h>
-#include <common/JobScheduler.h>
 
 #include <string>
 #include <vector>
+#include <boost/thread/mutex.hpp>
 
 namespace sf1r
 {
@@ -33,6 +33,8 @@ class RateManager;
 class RecommendBundleConfiguration;
 class ItemIdGenerator;
 struct RateParam;
+class UpdateRecommendBase;
+class UpdateRecommendWorker;
 
 namespace directory
 {
@@ -55,8 +57,8 @@ public:
         RateManager& rateManager,
         ItemIdGenerator& itemIdGenerator,
         QueryClickCounter& queryPurchaseCounter,
-        CoVisitManager& coVisitManager,
-        ItemCFManager& itemCFManager
+        UpdateRecommendBase& updateRecommendBase,
+        UpdateRecommendWorker* updateRecommendWorker
     );
 
     ~RecommendTaskService();
@@ -64,7 +66,7 @@ public:
     /**
      * Build collection from 3 types of SCD files: user, item, purchase record.
      */
-    void buildCollection();
+    bool buildCollection();
 
     bool addUser(const User& user);
     bool updateUser(const User& user);
@@ -246,7 +248,6 @@ private:
     void buildFreqItemSet_();
     void cronJob_();
     void flush_();
-    bool buildCollectionImpl_();
 
 private:
     RecommendBundleConfiguration& bundleConfig_;
@@ -268,17 +269,17 @@ private:
 
     QueryClickCounter& queryPurchaseCounter_;
 
-    CoVisitManager& coVisitManager_;
-    ItemCFManager& itemCFManager_;
+    UpdateRecommendBase& updateRecommendBase_;
+    UpdateRecommendWorker* updateRecommendWorker_;
 
     VisitMatrix visitMatrix_;
     PurchaseMatrix purchaseMatrix_;
     PurchaseCoVisitMatrix purchaseCoVisitMatrix_;
 
-    JobScheduler jobScheduler_;
-
     izenelib::util::CronExpression cronExpression_;
     const std::string cronJobName_;
+
+    boost::mutex buildFreqItemMutex_;
 };
 
 } // namespace sf1r

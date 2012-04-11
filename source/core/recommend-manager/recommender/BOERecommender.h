@@ -18,7 +18,7 @@ class BOERecommender : public ItemCFRecommender
 {
 public:
     BOERecommender(
-        ItemCFManager& itemCFManager,
+        GetRecommendBase& getRecommendBase,
         const UserEventFilter& userEventFilter
     );
 

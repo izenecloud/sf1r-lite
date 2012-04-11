@@ -9,11 +9,11 @@ namespace sf1r
 {
 
 BOSRecommender::BOSRecommender(
-    ItemCFManager& itemCFManager,
+    GetRecommendBase& getRecommendBase,
     const UserEventFilter& userEventFilter,
     CartManager& cartManager
 )
-    : ItemCFRecommender(itemCFManager)
+    : ItemCFRecommender(getRecommendBase)
     , userEventFilter_(userEventFilter)
     , cartManager_(cartManager)
 {

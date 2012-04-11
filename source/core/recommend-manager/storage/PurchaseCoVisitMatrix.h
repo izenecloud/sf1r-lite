@@ -9,6 +9,7 @@
 #define PURCHASE_COVISIT_MATRIX_H
 
 #include "RecommendMatrix.h"
+#include <aggregator-manager/UpdateRecommendBase.h>
 
 namespace sf1r
 {
@@ -16,7 +17,7 @@ namespace sf1r
 class PurchaseCoVisitMatrix : public RecommendMatrix
 {
 public:
-    PurchaseCoVisitMatrix(ItemCFManager& matrix)
+    PurchaseCoVisitMatrix(UpdateRecommendBase& matrix)
         : matrix_(matrix)
     {}
 
@@ -25,11 +26,12 @@ public:
         const std::list<itemid_t>& newItems
     )
     {
-        matrix_.updateVisitMatrix(oldItems, newItems);
+        bool result = true;
+        matrix_.updatePurchaseCoVisitMatrix(oldItems, newItems, result);
     }
 
 private:
-    ItemCFManager& matrix_;
+    UpdateRecommendBase& matrix_;
 };
 
 } // namespace sf1r
