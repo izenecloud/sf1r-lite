@@ -80,11 +80,13 @@
           <Property name="Title"/>
           <Property name="Content"/>
         </Faceted>
+<!--
         <Summarization>
           <DocidProperty name="DOCID"/>
           <UuidProperty name="uuid"/>
           <ContentProperty name="Content"/>
         </Summarization>
+-->
       </Schema>
     </MiningBundle>
 
