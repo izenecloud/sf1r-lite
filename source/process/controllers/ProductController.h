@@ -54,7 +54,7 @@ private:
     std::vector<uint32_t> docid_list_;
     Document doc_;
     ProductEditOption option_;
-    std::vector<std::string> str_docid_list_;
+    std::vector<uint128_t> str_docid_list_;
     izenelib::util::UString uuid_;
     izenelib::util::UString from_date_;
     izenelib::util::UString to_date_;

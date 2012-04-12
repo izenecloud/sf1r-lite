@@ -43,7 +43,7 @@ namespace sf1r {
             return (uint128_t) high << 64 | (uint128_t) low;
         }
 
-        static std::string Uint128ToString(const uint128_t& val)
+        static std::string Uint128ToString(uint128_t u)
         {
             static char tmpstr[33];
             sprintf(tmpstr, "%016llx%016llx", (unsigned long long) (val >> 64), (unsigned long long) val);

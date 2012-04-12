@@ -12,13 +12,13 @@ class PriceHistoryRow
 public:
     typedef std::vector<std::pair<time_t, ProductPrice> > PriceHistoryType;
 
-    explicit PriceHistoryRow(const std::string& docId = "");
+    explicit PriceHistoryRow(const uint128_t& docId = 0);
 
     ~PriceHistoryRow();
 
     bool insert(const std::string& name, const std::string& value);
 
-    void resetKey(const std::string& newDocId = "");
+    void resetKey(const uint128_t& newDocId = 0);
 
     void clear();
 
@@ -26,19 +26,14 @@ public:
 
     void resetHistory(uint32_t index, time_t timestamp, ProductPrice price);
 
-    inline const std::string& getDocId() const
+    inline const uint128_t& getDocId() const
     {
         return docId_;
     }
 
-    inline void setDocId(const std::string& docId)
+    inline void setDocId(const uint128_t& docId)
     {
         docId_ = docId;
-    }
-
-    inline bool hasDocId() const
-    {
-        return !docId_.empty();
     }
 
     inline const PriceHistoryType& getPriceHistory() const
@@ -60,7 +55,7 @@ public:
 private:
     friend class PriceHistory;
 
-    std::string docId_;
+    uint128_t docId_;
 
     PriceHistoryType priceHistory_;
     bool priceHistoryPresent_;
@@ -93,15 +88,15 @@ public:
 
     bool getMultiSlice(
             std::vector<PriceHistoryRow>& row_list,
-            const std::vector<std::string>& key_list,
+            const std::vector<uint128_t>& key_list,
             const std::string& start = "",
             const std::string& finish = "",
             int32_t count = 100,
             bool reversed = false);
 
     bool getMultiCount(
-            std::map<std::string, int32_t>& count_map,
-            const std::vector<std::string>& key_list,
+            std::vector<std::pair<uint128_t, int32_t> >& count_list,
+            const std::vector<uint128_t>& key_list,
             const std::string& start = "",
             const std::string& finish = "");
 

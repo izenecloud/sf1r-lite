@@ -8,7 +8,6 @@
 #include <libcassandra/util_functions.h>
 #include <glog/logging.h>
 
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
 #include <algorithm>
 
@@ -77,7 +76,7 @@ bool ProductPriceTrend::Init()
 }
 
 bool ProductPriceTrend::Insert(
-        const string& docid,
+        const uint128_t& docid,
         const ProductPrice& price,
         time_t timestamp)
 {
@@ -94,7 +93,7 @@ bool ProductPriceTrend::Insert(
 }
 
 bool ProductPriceTrend::Update(
-        const string& docid,
+        const uint128_t& docid,
         const ProductPrice& price,
         time_t timestamp,
         map<string, string>& group_prop_map)
@@ -157,7 +156,7 @@ bool ProductPriceTrend::CronJob()
 
 bool ProductPriceTrend::UpdateTPC_(uint32_t time_int, time_t timestamp)
 {
-    vector<string> key_list;
+    vector<uint128_t> key_list;
     Utilities::getKeyList(key_list, prop_map_);
     if (timestamp == -1)
         timestamp = Utilities::createTimeStamp();
@@ -217,7 +216,7 @@ bool ProductPriceTrend::UpdateTPC_(uint32_t time_int, time_t timestamp)
 
 bool ProductPriceTrend::GetMultiPriceHistory(
         PriceHistoryList& history_list,
-        const vector<string>& docid_list,
+        const vector<uint128_t>& docid_list,
         time_t from_tt,
         time_t to_tt,
         string& error_msg)
@@ -242,10 +241,7 @@ bool ProductPriceTrend::GetMultiPriceHistory(
         for (PriceHistory::PriceHistoryType::const_iterator hit = price_history.begin();
                 hit != price_history.end(); ++hit)
         {
-            history_item.push_back(make_pair(string(), hit->second.value));
-            history_item.back().first = boost::posix_time::to_iso_string(
-                    boost::posix_time::from_time_t(hit->first / 1000000 - timezone)
-                    + boost::posix_time::microseconds(hit->first % 1000000));
+            history_item.push_back(make_pair(hit->first, hit->second.value));
         }
         history_list.push_back(make_pair(it->getDocId(), PriceHistoryItem()));
         history_list.back().second.swap(history_item);
@@ -262,7 +258,7 @@ bool ProductPriceTrend::GetMultiPriceHistory(
 
 bool ProductPriceTrend::GetMultiPriceRange(
         PriceRangeList& range_list,
-        const vector<string>& docid_list,
+        const vector<uint128_t>& docid_list,
         time_t from_tt,
         time_t to_tt,
         string& error_msg)
@@ -344,7 +340,7 @@ bool ProductPriceTrend::MigratePriceHistory(
     if (new_keyspace == cassandraConfig_.keyspace)
         return true;
 
-    vector<string> docid_list;
+    vector<uint128_t> docid_list;
     docid_list.reserve(1000);
     boost::shared_ptr<PriceHistory> new_price_history(new PriceHistory(new_keyspace));
     new_price_history->createColumnFamily();
@@ -359,8 +355,9 @@ bool ProductPriceTrend::MigratePriceHistory(
             continue;
 
         const UString& key = kit->second.get<UString>();
-        docid_list.push_back(string());
-        key.convertString(docid_list.back(), UString::UTF_8);
+        string str_docid;
+        key.convertString(str_docid, UString::UTF_8);
+        docid_list.push_back(Utilities::md5ToUint128(str_docid));
         if (docid_list.size() == 1000)
         {
             vector<PriceHistoryRow> row_list;
@@ -368,17 +365,6 @@ bool ProductPriceTrend::MigratePriceHistory(
             {
                 error_msg = "Can't get price history from Cassandra.";
                 return false;
-            }
-
-            for (vector<PriceHistoryRow>::iterator it = row_list.begin();
-                    it != row_list.end(); ++it)
-            {
-                const std::string& old_id = it->getDocId();
-                if (old_id.length() > 16)
-                {
-                    std::string new_id = Utilities::toBytes(Utilities::md5ToUint128(old_id));
-                    it->setDocId(new_id);
-                }
             }
 
             if (!new_price_history->updateMultiRow(row_list))
@@ -402,17 +388,6 @@ bool ProductPriceTrend::MigratePriceHistory(
         {
             error_msg = "Can't get price history from Cassandra.";
             return false;
-        }
-
-        for (vector<PriceHistoryRow>::iterator it = row_list.begin();
-                it != row_list.end(); ++it)
-        {
-            const std::string& old_id = it->getDocId();
-            if (old_id.length() > 16)
-            {
-                std::string new_id = Utilities::toBytes(Utilities::md5ToUint128(old_id));
-                it->setDocId(new_id);
-            }
         }
 
         if (!new_price_history->updateMultiRow(row_list))

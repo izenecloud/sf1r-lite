@@ -1600,7 +1600,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             }
         }
         {
-            Iterator<Element> it("UuidPropertyy");
+            Iterator<Element> it("UuidProperty");
             for (it = it.begin(task_node); it != it.end(); it++)
             {
                 getAttribute(it.Get(), "name", property_name);

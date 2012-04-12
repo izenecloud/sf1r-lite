@@ -114,6 +114,7 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   zookeeper
   snappy
   sf1r
+  procmeminfo
   )
 
 
