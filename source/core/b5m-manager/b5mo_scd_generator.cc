@@ -15,8 +15,8 @@
 
 using namespace sf1r;
 
-B5MOScdGenerator::B5MOScdGenerator(OfferDb* odb)
-:exclude_(false), odb_(odb)
+B5MOScdGenerator::B5MOScdGenerator()
+:exclude_(false)
 {
 }
 
@@ -84,14 +84,6 @@ bool B5MOScdGenerator::Generate(const std::string& scd_path, const std::string& 
     {
         LOG(WARNING)<<"Mapping is empty"<<std::endl;
     }
-    if(!odb_->is_open())
-    {
-        if(!odb_->open())
-        {
-            LOG(ERROR)<<"odb open fail"<<std::endl;
-            return false;
-        }
-    }
     typedef izenelib::util::UString UString;
     namespace bfs = boost::filesystem;
     bfs::create_directories(output_dir);
@@ -113,7 +105,7 @@ bool B5MOScdGenerator::Generate(const std::string& scd_path, const std::string& 
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
         uint32_t n=0;
-        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
+        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5MO_PROPERTY_LIST.value);
           doc_iter!= parser.end(); ++doc_iter, ++n)
         {
             if(n%10000==0)
@@ -148,51 +140,29 @@ bool B5MOScdGenerator::Generate(const std::string& scd_path, const std::string& 
                 }
                 if(!find_match) continue;
             }
-            int doc_type = NOT_SCD;
-            if(scd_type==INSERT_SCD)
-            {
-                if(odb_->has_key(sdocid)) continue;
-                doc_type = INSERT_SCD;
-            }
-            else if(scd_type==UPDATE_SCD)
-            {
-                if(odb_->has_key(sdocid))
-                {
-                    doc_type = UPDATE_SCD;
-                }
-                else
-                {
-                    doc_type = INSERT_SCD;
-                }
-            }
-            else if(scd_type==DELETE_SCD)
-            {
-                if(!odb_->has_key(sdocid)) continue;
-                doc_type = DELETE_SCD;
-            }
             std::string spid;
             boost::unordered_map<std::string, std::string>::iterator it = o2p_map_.find(sdocid);
             if(it!=o2p_map_.end())
             {
                 spid = it->second;
             }
-            if(spid.empty() && doc_type == INSERT_SCD)
+            if(spid.empty() && scd_type == INSERT_SCD)
             {
                 spid = sdocid;
             }
-            if(!spid.empty())
+            if(!spid.empty() && scd_type==INSERT_SCD)
             {
                 doc.property("uuid") = UString(spid, UString::UTF_8);
             }
-            if(doc_type==INSERT_SCD)
+            if(scd_type==INSERT_SCD)
             {
                 b5mo_i.Append(doc);
             }
-            else if(doc_type==UPDATE_SCD)
+            else if(scd_type==UPDATE_SCD)
             {
                 b5mo_u.Append(doc);
             }
-            else if(doc_type==DELETE_SCD)
+            else if(scd_type==DELETE_SCD)
             {
                 b5mo_d.Append(doc);
             }

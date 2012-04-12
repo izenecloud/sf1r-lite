@@ -65,7 +65,7 @@ bool CompleteMatcher::Index(const std::string& scd_path, const std::string& know
     namespace bfs = boost::filesystem;
     if(!bfs::exists(scd_path)) return false;
     std::vector<std::string> scd_list;
-    B5MHelper::GetScdList(scd_path, scd_list);
+    B5MHelper::GetIScdList(scd_path, scd_list);
     if(scd_list.empty()) return false;
     std::string writer_file = knowledge_dir+"/writer";
     boost::filesystem::remove_all(writer_file);
@@ -78,7 +78,7 @@ bool CompleteMatcher::Index(const std::string& scd_path, const std::string& know
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
         uint32_t n=0;
-        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
+        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5MO_PROPERTY_LIST.value);
           doc_iter!= parser.end(); ++doc_iter, ++n)
         {
             if(n%100000==0)

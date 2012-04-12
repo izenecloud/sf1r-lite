@@ -275,14 +275,18 @@ std::string Utilities::uint128ToUuid(const uint128_t& val)
     //const boost::uuids::uuid& uuid = *reinterpret_cast<const boost::uuids::uuid *>(&val);
     //return boost::uuids::to_string(uuid);
 
-    return uint128ToMD5(val);
+    static char tmpstr[33];
+    sprintf(tmpstr, "%016llx%016llx", (unsigned long long) (val >> 64), (unsigned long long) val);
+    return std::string(reinterpret_cast<const char *>(tmpstr), 32);
 }
 
 uint128_t Utilities::uuidToUint128(const std::string& str)
 {
     if(str.length()==32)
     {
-        return md5ToUint128(str);
+        unsigned long long high = 0, low = 0;
+        sscanf(str.c_str(), "%016llx%016llx", &high, &low);
+        return (uint128_t) high << 64 | (uint128_t) low;
     }
     else
     {

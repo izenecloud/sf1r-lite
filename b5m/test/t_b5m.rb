@@ -135,6 +135,7 @@ describe "B5M Tester" do
       mdb_instance = File.join(@mdb, time_str)
       b5mo_scd = File.join(@b5mo_scd, time_str)
       b5mp_scd = File.join(@b5mp_scd, time_str)
+      raw_scd = File.join(mdb_instance, "raw")
       prepare_empty_dir(mdb_instance)
       prepare_empty_dir(b5mo_scd)
       prepare_empty_dir(b5mp_scd)
@@ -174,19 +175,14 @@ describe "B5M Tester" do
         end
         writer.close
       end
-      system("#{@matcher_program} --uue-generate --b5mo #{b5mo_scd} --uue #{mdb_instance}/uue --odb #{@odb}")
+      system("#{@matcher_program} --raw-generate -S #{b5mo_scd} --raw #{raw_scd} --odb #{@odb}")
       $?.success?.should be true
-      system("#{@matcher_program} --b5mp-generate --b5mo #{b5mo_scd} --b5mp #{b5mp_scd} --uue #{mdb_instance}/uue --odb #{@odb} --pdb #{@pdb}")
+      system("#{@matcher_program} --uue-generate --b5mo #{raw_scd} --uue #{mdb_instance}/uue --odb #{@odb}")
       $?.success?.should be true
-      insert_docs.each do |doc|
-        mock_b5m.insert(doc)
-      end
-      update_docs.each do |doc|
-        mock_b5m.update(doc)
-      end
-      delete_docs.each do |doc|
-        mock_b5m.delete(doc)
-      end
+      system("#{@matcher_program} --b5mp-generate --b5mo #{raw_scd} --b5mp #{b5mp_scd} --uue #{mdb_instance}/uue --odb #{@odb} --pdb #{@pdb}")
+      $?.success?.should be true
+
+      mock_b5m.index(raw_scd)
       mock_dmp.index(b5mp_scd)
       puts "mock_dmp count : #{mock_dmp.count}"
 

@@ -75,6 +75,7 @@ void LogServerHandler::Process(const BuueItem& item)
 
 void LogServerHandler::Finish()
 {
+    LOG(INFO)<<"LogServerHandler::Finish"<<std::endl;
     std::string work_path = work_dir_;
     if(work_path.empty())
     {
