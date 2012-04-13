@@ -72,7 +72,7 @@ float BM25Ranker::getScore(
     float score = 0.0F;
     if (0 == queryProperty.getTotalPropertyLength())
     {
-        LOG(INFO) << "TotalPropertyLength is zero ";
+        //LOG(INFO) << "TotalPropertyLength is zero ";
         return score;
     }
 
