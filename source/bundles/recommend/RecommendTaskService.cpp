@@ -847,8 +847,12 @@ void RecommendTaskService::flush_()
 
     queryPurchaseCounter_.flush();
 
-    bool flushResult = true;
-    updateRecommendBase_.flushRecommendMatrix(flushResult);
+    bool result = true;
+    if (updateRecommendBase_.isMasterNode())
+    {
+        updateRecommendBase_.buildPurchaseSimMatrix(result);
+    }
+    updateRecommendBase_.flushRecommendMatrix(result);
 
     LOG(INFO) << "finish flushing recommend data for collection " << bundleConfig_.collectionName_;
 }

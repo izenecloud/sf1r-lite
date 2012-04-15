@@ -44,6 +44,8 @@ class GetRecommendMaster;
 class UpdateRecommendBase;
 class UpdateRecommendWorker;
 class UpdateRecommendMaster;
+class RecommendShardStrategy;
+class RecommendMatrixSharder;
 
 class RecommendBundleActivator : public IBundleActivator, public IServiceTrackerCustomizer
 {
@@ -57,16 +59,21 @@ public:
 
 private:
     bool init_(IndexSearchService* indexSearchService);
+
     bool createDataDir_();
     bool openDataDirectory_(std::string& dataPath);
     void createSCDDir_();
-    void createStorage_();
-    void createItem_(IndexSearchService* indexSearchService);
+
+    void createSharder_();
     void createWorker_();
     void createMaster_();
+
+    void createStorage_();
+    void createItem_(IndexSearchService* indexSearchService);
     void createOrder_();
     void createClickCounter_();
     void createRecommender_();
+
     void createService_();
 
 private:
@@ -97,6 +104,9 @@ private:
 
     boost::scoped_ptr<CoVisitManager> coVisitManager_;
     boost::scoped_ptr<ItemCFManager> itemCFManager_;
+
+    boost::scoped_ptr<RecommendShardStrategy> shardStrategy_;
+    boost::scoped_ptr<RecommendMatrixSharder> matrixSharder_;
 
     GetRecommendBase* getRecommendBase_;
     boost::scoped_ptr<GetRecommendWorker> getRecommendWorker_;

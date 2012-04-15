@@ -20,6 +20,9 @@
 #include <aggregator-manager/GetRecommendWorker.h>
 #include <aggregator-manager/UpdateRecommendMaster.h>
 #include <aggregator-manager/UpdateRecommendWorker.h>
+#include <node-manager/RecommendNodeManager.h>
+#include <node-manager/sharding/RecommendShardStrategy.h>
+#include <node-manager/sharding/RecommendMatrixSharder.h>
 
 #include <glog/logging.h>
 
@@ -100,6 +103,9 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
     updateRecommendWorker_.reset();
     updateRecommendMaster_.reset();
 
+    shardStrategy_.reset();
+    matrixSharder_.reset();
+
     coVisitManager_.reset();
     itemCFManager_.reset();
 }
@@ -135,6 +141,9 @@ bool RecommendBundleActivator::init_(IndexSearchService* indexSearchService)
         return false;
 
     const DistributedNodeConfig& nodeConfig = config_->recommendNodeConfig_;
+
+    if (nodeConfig.isMasterNode_ || nodeConfig.isWorkerNode_)
+        createSharder_();
 
     if (nodeConfig.isSingleNode_ || nodeConfig.isWorkerNode_)
         createWorker_();
@@ -267,6 +276,21 @@ void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchServic
     itemManager_.reset(factory->createItemManager());
 }
 
+void RecommendBundleActivator::createSharder_()
+{
+    const RecommendNodeManager* nodeManager = RecommendNodeManager::get();
+    const Sf1rNode& sf1rNode = nodeManager->getCurrentSf1rNode();
+
+    shardid_t shardNum = sf1rNode.master_.totalShardNum_;
+    shardStrategy_.reset(new RecommendShardMod(shardNum));
+
+    if (config_->recommendNodeConfig_.isWorkerNode_)
+    {
+        shardid_t workerShardId = sf1rNode.worker_.shardId_;
+        matrixSharder_.reset(new RecommendMatrixSharder(workerShardId, shardStrategy_.get()));
+    }
+}
+
 void RecommendBundleActivator::createWorker_()
 {
     bfs::path miningDir = dataDir_ / "mining";
@@ -274,13 +298,16 @@ void RecommendBundleActivator::createWorker_()
 
     bfs::path cfPath = miningDir / "cf";
     bfs::create_directory(cfPath);
+
+    idmlib::recommender::ItemCFParam itemCFParam(cfPath.string());
     const std::size_t matrixSize = config_->purchaseCacheSize_ >> 1;
-    itemCFManager_.reset(new ItemCFManager((cfPath / "covisit").string(), matrixSize,
-                                           (cfPath / "sim").string(), matrixSize,
-                                           (cfPath / "nb.sdb").string(), 30));
+    itemCFParam.coVisitCacheSize = matrixSize;
+    itemCFParam.simMatrixCacheSize = matrixSize;
+
+    itemCFManager_.reset(new ItemCFManager(itemCFParam, matrixSharder_.get()));
 
     coVisitManager_.reset(new CoVisitManager((miningDir / "covisit").string(),
-                                             config_->visitCacheSize_));
+                                             config_->visitCacheSize_, matrixSharder_.get()));
 
     getRecommendWorker_.reset(new GetRecommendWorker(*itemCFManager_, *coVisitManager_));
     getRecommendBase_ = getRecommendWorker_.get();
@@ -292,7 +319,7 @@ void RecommendBundleActivator::createWorker_()
 void RecommendBundleActivator::createMaster_()
 {
     getRecommendMaster_.reset(
-        new GetRecommendMaster(config_->collectionName_, getRecommendWorker_.get()));
+        new GetRecommendMaster(config_->collectionName_, shardStrategy_.get(), getRecommendWorker_.get()));
     getRecommendBase_ = getRecommendMaster_.get();
 
     updateRecommendMaster_.reset(

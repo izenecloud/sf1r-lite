@@ -32,6 +32,8 @@ public:
         UpdateRecommendWorker* localWorker
     );
 
+    virtual bool isMasterNode() const { return true; }
+
     virtual void updatePurchaseMatrix(
         const std::list<itemid_t>& oldItems,
         const std::list<itemid_t>& newItems,

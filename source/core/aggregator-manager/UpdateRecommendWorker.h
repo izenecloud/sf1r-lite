@@ -56,6 +56,8 @@ public:
         BIND_CALL_PROXY_END()
     }
 
+    virtual bool isMasterNode() const { return false; }
+
     virtual void updatePurchaseMatrix(
         const std::list<itemid_t>& oldItems,
         const std::list<itemid_t>& newItems,

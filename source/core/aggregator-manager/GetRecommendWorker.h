@@ -27,18 +27,30 @@ public:
     {
         BIND_CALL_PROXY_BEGIN(GetRecommendWorker, proxy)
         BIND_CALL_PROXY_2(
-            recommendPurchase,
-            RecommendInputParam,
-            idmlib::recommender::RecommendItemVec
-        )
-        BIND_CALL_PROXY_2(
-            recommendPurchaseFromWeight,
-            RecommendInputParam,
-            idmlib::recommender::RecommendItemVec
-        )
-        BIND_CALL_PROXY_2(
             recommendVisit,
             RecommendInputParam,
+            idmlib::recommender::RecommendItemVec
+        )
+        BIND_CALL_PROXY_2(
+            getCandidateSet,
+            std::vector<itemid_t>,
+            std::set<itemid_t>
+        )
+        BIND_CALL_PROXY_3(
+            recommendFromCandidateSet,
+            RecommendInputParam,
+            std::set<itemid_t>,
+            idmlib::recommender::RecommendItemVec
+        )
+        BIND_CALL_PROXY_2(
+            getCandidateSetFromWeight,
+            ItemCFManager::ItemWeightMap,
+            std::set<itemid_t>
+        )
+        BIND_CALL_PROXY_3(
+            recommendFromCandidateSetWeight,
+            RecommendInputParam,
+            std::set<itemid_t>,
             idmlib::recommender::RecommendItemVec
         )
         BIND_CALL_PROXY_END()
@@ -56,6 +68,28 @@ public:
 
     virtual void recommendVisit(
         const RecommendInputParam& inputParam,
+        idmlib::recommender::RecommendItemVec& results
+    );
+
+    void getCandidateSet(
+        const std::vector<itemid_t>& inputItemIds,
+        std::set<itemid_t>& candidateSet
+    );
+
+    void recommendFromCandidateSet(
+        const RecommendInputParam& inputParam,
+        const std::set<itemid_t>& candidateSet,
+        idmlib::recommender::RecommendItemVec& results
+    );
+
+    void getCandidateSetFromWeight(
+        const ItemCFManager::ItemWeightMap& itemWeightMap,
+        std::set<itemid_t>& candidateSet
+    );
+
+    void recommendFromCandidateSetWeight(
+        const RecommendInputParam& inputParam,
+        const std::set<itemid_t>& candidateSet,
         idmlib::recommender::RecommendItemVec& results
     );
 

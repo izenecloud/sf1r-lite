@@ -15,6 +15,9 @@ bool ItemCFRecommender::recommendImpl_(
     std::vector<RecommendItem>& recItemVec
 )
 {
+    if (param.inputParam.inputItemIds.empty())
+        return true;
+
     idmlib::recommender::RecommendItemVec results;
     getRecommendBase_.recommendPurchase(param.inputParam, results);
     recItemVec.insert(recItemVec.end(), results.begin(), results.end());
@@ -27,6 +30,9 @@ bool ItemCFRecommender::recommendFromItemWeight_(
     std::vector<RecommendItem>& recItemVec
 )
 {
+    if (inputParam.itemWeightMap.empty())
+        return true;
+
     idmlib::recommender::RecommendItemVec results;
     getRecommendBase_.recommendPurchaseFromWeight(inputParam, results);
     recItemVec.insert(recItemVec.end(), results.begin(), results.end());

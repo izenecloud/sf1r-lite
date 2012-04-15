@@ -1,7 +1,9 @@
 #include "GetRecommendMaster.h"
 #include <node-manager/RecommendMasterManager.h>
+#include <node-manager/sharding/RecommendShardStrategy.h>
 
 #include <memory> // for auto_ptr
+#include <set>
 
 namespace
 {
@@ -23,9 +25,11 @@ namespace sf1r
 
 GetRecommendMaster::GetRecommendMaster(
     const std::string& collection,
+    RecommendShardStrategy* shardStrategy,
     GetRecommendWorker* localWorker
 )
     : merger_(new GetRecommendMerger)
+    , shardStrategy_(shardStrategy)
 {
     std::auto_ptr<GetRecommendMergerProxy> mergerProxy(new GetRecommendMergerProxy(merger_.get()));
     merger_->bindCallProxy(*mergerProxy);
@@ -51,7 +55,16 @@ void GetRecommendMaster::recommendPurchase(
     idmlib::recommender::RecommendItemVec& results
 )
 {
-    aggregator_->distributeRequest(collection_, "recommendPurchase", inputParam, results);
+    std::set<itemid_t> candidateSet;
+    aggregator_->distributeRequest(collection_, "getCandidateSet",
+                                   inputParam.inputItemIds, candidateSet);
+
+    if (candidateSet.empty())
+        return;
+
+    aggregator_->distributeRequest(collection_, "recommendFromCandidateSet",
+                                   inputParam, candidateSet, results);
+
     limitSize(results, inputParam.limit);
 }
 
@@ -60,7 +73,16 @@ void GetRecommendMaster::recommendPurchaseFromWeight(
     idmlib::recommender::RecommendItemVec& results
 )
 {
-    aggregator_->distributeRequest(collection_, "recommendPurchaseFromWeight", inputParam, results);
+    std::set<itemid_t> candidateSet;
+    aggregator_->distributeRequest(collection_, "getCandidateSetFromWeight",
+                                   inputParam.itemWeightMap, candidateSet);
+
+    if (candidateSet.empty())
+        return;
+
+    aggregator_->distributeRequest(collection_, "recommendFromCandidateSetWeight",
+                                   inputParam, candidateSet, results);
+
     limitSize(results, inputParam.limit);
 }
 
@@ -69,7 +91,9 @@ void GetRecommendMaster::recommendVisit(
     idmlib::recommender::RecommendItemVec& results
 )
 {
-    aggregator_->distributeRequest(collection_, "recommendVisit", inputParam, results);
+    shardid_t workerId = shardStrategy_->getShardId(inputParam.inputItemIds[0]);
+    aggregator_->singleRequest(collection_, "recommendVisit", inputParam, results, workerId);
+
     limitSize(results, inputParam.limit);
 }
 

@@ -23,31 +23,49 @@ public:
     {
         ADD_WORKER_HANDLER_BEGIN(GetRecommendWorkerController, router)
 
-        ADD_WORKER_HANDLER(recommendPurchase)
-        ADD_WORKER_HANDLER(recommendPurchaseFromWeight)
         ADD_WORKER_HANDLER(recommendVisit)
+        ADD_WORKER_HANDLER(getCandidateSet)
+        ADD_WORKER_HANDLER(recommendFromCandidateSet)
+        ADD_WORKER_HANDLER(getCandidateSetFromWeight)
+        ADD_WORKER_HANDLER(recommendFromCandidateSetWeight)
 
         ADD_WORKER_HANDLER_END()
     }
 
     WORKER_CONTROLLER_METHOD_2(
-        recommendPurchase,
-        worker_->recommendPurchase,
-        RecommendInputParam,
-        idmlib::recommender::RecommendItemVec
-    )
-
-    WORKER_CONTROLLER_METHOD_2(
-        recommendPurchaseFromWeight,
-        worker_->recommendPurchaseFromWeight,
-        RecommendInputParam,
-        idmlib::recommender::RecommendItemVec
-    )
-
-    WORKER_CONTROLLER_METHOD_2(
         recommendVisit,
         worker_->recommendVisit,
         RecommendInputParam,
+        idmlib::recommender::RecommendItemVec
+    )
+
+    WORKER_CONTROLLER_METHOD_2(
+        getCandidateSet,
+        worker_->getCandidateSet,
+        std::vector<itemid_t>,
+        std::set<itemid_t>
+    )
+
+    WORKER_CONTROLLER_METHOD_3(
+        recommendFromCandidateSet,
+        worker_->recommendFromCandidateSet,
+        RecommendInputParam,
+        std::set<itemid_t>,
+        idmlib::recommender::RecommendItemVec
+    )
+
+    WORKER_CONTROLLER_METHOD_2(
+        getCandidateSetFromWeight,
+        worker_->getCandidateSetFromWeight,
+        ItemCFManager::ItemWeightMap,
+        std::set<itemid_t>
+    )
+
+    WORKER_CONTROLLER_METHOD_3(
+        recommendFromCandidateSetWeight,
+        worker_->recommendFromCandidateSetWeight,
+        RecommendInputParam,
+        std::set<itemid_t>,
         idmlib::recommender::RecommendItemVec
     )
 

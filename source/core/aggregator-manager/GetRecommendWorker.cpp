@@ -39,4 +39,40 @@ void GetRecommendWorker::recommendVisit(
                                     results, &inputParam.itemFilter);
 }
 
+void GetRecommendWorker::getCandidateSet(
+    const std::vector<itemid_t>& inputItemIds,
+    std::set<itemid_t>& candidateSet
+)
+{
+    itemCFManager_.getCandidateSet(inputItemIds, candidateSet);
+}
+
+void GetRecommendWorker::recommendFromCandidateSet(
+    const RecommendInputParam& inputParam,
+    const std::set<itemid_t>& candidateSet,
+    idmlib::recommender::RecommendItemVec& results
+)
+{
+    itemCFManager_.recommendFromCandidateSet(inputParam.limit, inputParam.inputItemIds,
+                                             candidateSet, results, &inputParam.itemFilter);
+}
+
+void GetRecommendWorker::getCandidateSetFromWeight(
+    const ItemCFManager::ItemWeightMap& itemWeightMap,
+    std::set<itemid_t>& candidateSet
+)
+{
+    itemCFManager_.getCandidateSet(itemWeightMap, candidateSet);
+}
+
+void GetRecommendWorker::recommendFromCandidateSetWeight(
+    const RecommendInputParam& inputParam,
+    const std::set<itemid_t>& candidateSet,
+    idmlib::recommender::RecommendItemVec& results
+)
+{
+    itemCFManager_.recommendFromCandidateSet(inputParam.limit, inputParam.itemWeightMap,
+                                             candidateSet, results, &inputParam.itemFilter);
+}
+
 } // namespace sf1r

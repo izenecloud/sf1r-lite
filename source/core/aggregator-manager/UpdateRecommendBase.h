@@ -19,6 +19,8 @@ class UpdateRecommendBase
 public:
     virtual ~UpdateRecommendBase() {}
 
+    virtual bool isMasterNode() const = 0;
+
     virtual void updatePurchaseMatrix(
         const std::list<itemid_t>& oldItems,
         const std::list<itemid_t>& newItems,

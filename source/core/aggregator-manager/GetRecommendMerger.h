@@ -18,40 +18,51 @@ namespace sf1r
 class GetRecommendMerger : public net::aggregator::BindCallProxyBase<GetRecommendMerger>
 {
 public:
+    typedef std::set<itemid_t> CandidateSet;
     typedef idmlib::recommender::RecommendItemVec RecommendItemVec;
 
     virtual bool bindCallProxy(CallProxyType& proxy)
     {
         BIND_CALL_PROXY_BEGIN(GetRecommendMerger, proxy)
         BIND_CALL_PROXY_2(
-            recommendPurchase,
+            getCandidateSet,
+            net::aggregator::WorkerResults<CandidateSet>,
+            CandidateSet
+        )
+        BIND_CALL_PROXY_2(
+            recommendFromCandidateSet,
             net::aggregator::WorkerResults<RecommendItemVec>,
             RecommendItemVec
         )
         BIND_CALL_PROXY_2(
-            recommendPurchaseFromWeight,
-            net::aggregator::WorkerResults<RecommendItemVec>,
-            RecommendItemVec
+            getCandidateSetFromWeight,
+            net::aggregator::WorkerResults<CandidateSet>,
+            CandidateSet
         )
         BIND_CALL_PROXY_2(
-            recommendVisit,
+            recommendFromCandidateSetWeight,
             net::aggregator::WorkerResults<RecommendItemVec>,
             RecommendItemVec
         )
         BIND_CALL_PROXY_END()
     }
 
-    void recommendPurchase(
+    void getCandidateSet(
+        const net::aggregator::WorkerResults<CandidateSet>& workerResults,
+        CandidateSet& mergeResult
+    );
+
+    void recommendFromCandidateSet(
         const net::aggregator::WorkerResults<RecommendItemVec>& workerResults,
         RecommendItemVec& mergeResult
     );
 
-    void recommendPurchaseFromWeight(
-        const net::aggregator::WorkerResults<RecommendItemVec>& workerResults,
-        RecommendItemVec& mergeResult
+    void getCandidateSetFromWeight(
+        const net::aggregator::WorkerResults<CandidateSet>& workerResults,
+        CandidateSet& mergeResult
     );
 
-    void recommendVisit(
+    void recommendFromCandidateSetWeight(
         const net::aggregator::WorkerResults<RecommendItemVec>& workerResults,
         RecommendItemVec& mergeResult
     );
@@ -60,6 +71,11 @@ private:
     void mergeRecommendResult_(
         const net::aggregator::WorkerResults<RecommendItemVec>& workerResults,
         RecommendItemVec& mergeResult
+    );
+
+    void mergeCandidateSet_(
+        const net::aggregator::WorkerResults<CandidateSet>& workerResults,
+        CandidateSet& mergeResult
     );
 };
 

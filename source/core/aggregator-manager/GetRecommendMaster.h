@@ -19,6 +19,7 @@ namespace sf1r
 {
 
 class GetRecommendWorker;
+class RecommendShardStrategy;
 
 class GetRecommendMaster : public GetRecommendBase
 {
@@ -29,6 +30,7 @@ public:
      */
     GetRecommendMaster(
         const std::string& collection,
+        RecommendShardStrategy* shardStrategy,
         GetRecommendWorker* localWorker
     );
 
@@ -51,6 +53,7 @@ private:
     const std::string collection_;
     boost::scoped_ptr<GetRecommendMerger> merger_;
     boost::shared_ptr<GetRecommendAggregator> aggregator_;
+    RecommendShardStrategy* shardStrategy_;
 };
 
 } // namespace sf1r

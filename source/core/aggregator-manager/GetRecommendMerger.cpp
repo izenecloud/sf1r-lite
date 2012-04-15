@@ -14,7 +14,15 @@ bool itemGreaterThan(
     return item1.weight_ > item2.weight_;
 }
 
-void GetRecommendMerger::recommendPurchase(
+void GetRecommendMerger::getCandidateSet(
+    const net::aggregator::WorkerResults<CandidateSet>& workerResults,
+    CandidateSet& mergeResult
+)
+{
+    mergeCandidateSet_(workerResults, mergeResult);
+}
+
+void GetRecommendMerger::recommendFromCandidateSet(
     const net::aggregator::WorkerResults<RecommendItemVec>& workerResults,
     RecommendItemVec& mergeResult
 )
@@ -22,15 +30,15 @@ void GetRecommendMerger::recommendPurchase(
     mergeRecommendResult_(workerResults, mergeResult);
 }
 
-void GetRecommendMerger::recommendPurchaseFromWeight(
-    const net::aggregator::WorkerResults<RecommendItemVec>& workerResults,
-    RecommendItemVec& mergeResult
+void GetRecommendMerger::getCandidateSetFromWeight(
+    const net::aggregator::WorkerResults<CandidateSet>& workerResults,
+    CandidateSet& mergeResult
 )
 {
-    mergeRecommendResult_(workerResults, mergeResult);
+    mergeCandidateSet_(workerResults, mergeResult);
 }
 
-void GetRecommendMerger::recommendVisit(
+void GetRecommendMerger::recommendFromCandidateSetWeight(
     const net::aggregator::WorkerResults<RecommendItemVec>& workerResults,
     RecommendItemVec& mergeResult
 )
@@ -54,6 +62,23 @@ void GetRecommendMerger::mergeRecommendResult_(
     }
 
     merger.merge(std::back_inserter(mergeResult), itemGreaterThan);
+}
+
+void GetRecommendMerger::mergeCandidateSet_(
+    const net::aggregator::WorkerResults<CandidateSet>& workerResults,
+    CandidateSet& mergeResult
+)
+{
+    std::size_t workerNum = workerResults.size();
+    for (std::size_t i=0; i<workerNum; ++i)
+    {
+        const CandidateSet& candidateSet = workerResults.result(i);
+        for (CandidateSet::const_iterator it = candidateSet.begin();
+            it != candidateSet.end(); ++it)
+        {
+            mergeResult.insert(*it);
+        }
+    }
 }
 
 } // namespace sf1r
