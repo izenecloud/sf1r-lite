@@ -22,7 +22,7 @@ class ProductPrice
   end
 
   def valid
-    @min>=0.0 and @max>=0.0 and @max<=1000000.0
+    @min>=0.0 and @max>=0.0
   end
 
   def add(price)
