@@ -179,10 +179,11 @@ int main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
-        if(!indexer.TrainSVM())
-        {
-            return EXIT_FAILURE;
-        }
+        //std::cout<<"attribute-index end"<<std::endl;
+        //if(!indexer.TrainSVM())
+        //{
+            //return EXIT_FAILURE;
+        //}
     } 
     else if(vm.count("b5m-match"))
     {

@@ -153,7 +153,7 @@ task_list.each do |task|
   a_scd = File.join(category_dir, "A")
   t_scd = File.join(category_dir, "T")
   FileUtils.rm_rf(a_scd) if File.exist?(a_scd)
-  FileUtils.rm_rf(t_scd) if File.exist?(t_scd)
+  #FileUtils.rm_rf(t_scd) if File.exist?(t_scd)
 
   regex_file = File.join(category_dir, "category")
   ofs = File.open(regex_file, 'w')
@@ -200,7 +200,6 @@ task_list.each do |task|
   next unless task.valid
   category_dir = File.join(work_dir, task.cid)
   #run c++ matcher program
-  category_a_scd = File.join(category_dir, "A.SCD")
   index_done = File.join(category_dir, "index.done")
   match_done = File.join(category_dir, "match.done")
   match_file = File.join(category_dir, "match")
