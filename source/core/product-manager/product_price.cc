@@ -51,9 +51,18 @@ bool ProductPrice::GetMid(ProductPriceType& mid) const
 
 bool ProductPrice::Convert_(const std::string& str, ProductPriceType& p)
 {
-    int stat = sscanf(str.c_str(), "%lf", &p);
-    if(stat==0 || stat==EOF) return false;
+    try
+    {
+        p = boost::lexical_cast<ProductPriceType>(str);
+    }
+    catch(std::exception& ex)
+    {
+        return false;
+    }
     return true;
+    //int stat = sscanf(str.c_str(), "%lf", &p);
+    //if(stat==0 || stat==EOF) return false;
+    //return true;
 }
 
 bool ProductPrice::Convert_(ProductPriceType p, std::stringstream& os)
@@ -61,7 +70,8 @@ bool ProductPrice::Convert_(ProductPriceType p, std::stringstream& os)
     char buffer[50];
     int stat = sprintf(buffer, "%.2f", p);
     if(stat==0 || stat==EOF) return false;
-    os<<std::string(buffer);
+    os<<buffer;
+    //os<<std::string(buffer);
     return true;
 }
 
