@@ -24,6 +24,9 @@ class IndexSearchService;
 class MiningSearchService;
 class ProductTaskService;
 class ProductSearchService;
+class GetRecommendWorker;
+class UpdateRecommendWorker;
+
 /**
  * @brief CollectionHandler
  *
@@ -87,6 +90,16 @@ public:
         recommendSearchService_ = service;
     }
 
+    void registerWorker(GetRecommendWorker* worker)
+    {
+        getRecommendWorker_ = worker;
+    }
+
+    void registerWorker(UpdateRecommendWorker* worker)
+    {
+        updateRecommendWorker_ = worker;
+    }
+
     void setBundleSchema(IndexBundleSchema& schema)
     {
         indexSchema_ = schema;
@@ -123,6 +136,10 @@ public:
     RecommendTaskService* recommendTaskService_;
 
     RecommendSearchService* recommendSearchService_;
+
+    GetRecommendWorker* getRecommendWorker_;
+
+    UpdateRecommendWorker* updateRecommendWorker_;
 
     DocumentSchema documentSchema_;
 

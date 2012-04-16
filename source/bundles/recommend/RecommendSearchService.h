@@ -25,7 +25,6 @@ class ItemIdGenerator;
 struct RecommendParam;
 struct TIBParam;
 struct ItemBundle;
-class GetRecommendWorker;
 
 class RecommendSearchService : public ::izenelib::osgi::IService
 {
@@ -34,8 +33,7 @@ public:
         UserManager& userManager,
         ItemManager& itemManager,
         RecommenderFactory& recommenderFactory,
-        ItemIdGenerator& itemIdGenerator,
-        GetRecommendWorker* getRecommendWorker
+        ItemIdGenerator& itemIdGenerator
     );
 
     bool getUser(const std::string& userId, User& user);
@@ -51,8 +49,6 @@ public:
     );
 
     RecommendType getRecommendType(const std::string& typeStr) const;
-
-    GetRecommendWorker* getRecommendWorker() { return getRecommendWorker_; }
 
 private:
     bool convertIds_(RecommendParam& param);
@@ -76,7 +72,6 @@ private:
     ItemManager& itemManager_;
     RecommenderFactory& recommenderFactory_;
     ItemIdGenerator& itemIdGenerator_;
-    GetRecommendWorker* getRecommendWorker_;
 };
 
 } // namespace sf1r

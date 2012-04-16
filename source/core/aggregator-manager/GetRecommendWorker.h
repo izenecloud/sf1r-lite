@@ -10,12 +10,14 @@
 
 #include "GetRecommendBase.h"
 #include <net/aggregator/BindCallProxyBase.h>
+#include <util/osgi/IService.h>
 
 namespace sf1r
 {
 
 class GetRecommendWorker : public GetRecommendBase
                          , public net::aggregator::BindCallProxyBase<GetRecommendWorker>
+                         , public ::izenelib::osgi::IService
 {
 public:
     GetRecommendWorker(

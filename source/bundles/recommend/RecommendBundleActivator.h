@@ -111,10 +111,12 @@ private:
     GetRecommendBase* getRecommendBase_;
     boost::scoped_ptr<GetRecommendWorker> getRecommendWorker_;
     boost::scoped_ptr<GetRecommendMaster> getRecommendMaster_;
+    boost::scoped_ptr<IServiceRegistration> getWorkerReg_;
 
     UpdateRecommendBase* updateRecommendBase_;
     boost::scoped_ptr<UpdateRecommendWorker> updateRecommendWorker_;
     boost::scoped_ptr<UpdateRecommendMaster> updateRecommendMaster_;
+    boost::scoped_ptr<IServiceRegistration> updateWorkerReg_;
 };
 
 } // namespace sf1r

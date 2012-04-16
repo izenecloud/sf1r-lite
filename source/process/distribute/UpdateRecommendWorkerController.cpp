@@ -1,13 +1,12 @@
 #include "UpdateRecommendWorkerController.h"
 #include <process/controllers/CollectionHandler.h>
-#include <bundles/recommend/RecommendTaskService.h>
 
 namespace sf1r
 {
 
 bool UpdateRecommendWorkerController::checkWorker(std::string& error)
 {
-    worker_ = collectionHandler_->recommendTaskService_->updateRecommendWorker();
+    worker_ = collectionHandler_->updateRecommendWorker_;
 
     if (worker_)
         return true;

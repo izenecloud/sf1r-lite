@@ -81,6 +81,18 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
         searchService_.reset();
     }
 
+    if (getWorkerReg_)
+    {
+        getWorkerReg_->unregister();
+        getWorkerReg_.reset();
+    }
+
+    if (updateWorkerReg_)
+    {
+        updateWorkerReg_->unregister();
+        updateWorkerReg_.reset();
+    }
+
     itemManager_.reset();
     itemIdGenerator_.reset();
 
@@ -314,6 +326,11 @@ void RecommendBundleActivator::createWorker_()
 
     updateRecommendWorker_.reset(new UpdateRecommendWorker(*itemCFManager_, *coVisitManager_));
     updateRecommendBase_ = updateRecommendWorker_.get();
+
+    Properties props;
+    props.put("collection", config_->collectionName_);
+    getWorkerReg_.reset(context_->registerService("GetRecommendWorker", getRecommendWorker_.get(), props));
+    updateWorkerReg_.reset(context_->registerService("UpdateRecommendWorker", updateRecommendWorker_.get(), props));
 }
 
 void RecommendBundleActivator::createMaster_()
@@ -365,7 +382,7 @@ void RecommendBundleActivator::createService_()
                                                 *updateRecommendBase_, updateRecommendWorker_.get()));
 
     searchService_.reset(new RecommendSearchService(*userManager_, *itemManager_,
-                                                    *recommenderFactory_, *itemIdGenerator_, getRecommendWorker_.get()));
+                                                    *recommenderFactory_, *itemIdGenerator_));
 
     Properties props;
     props.put("collection", config_->collectionName_);

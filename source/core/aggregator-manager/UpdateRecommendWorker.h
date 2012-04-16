@@ -11,12 +11,14 @@
 #include "UpdateRecommendBase.h"
 #include <net/aggregator/BindCallProxyBase.h>
 #include <common/JobScheduler.h>
+#include <util/osgi/IService.h>
 
 namespace sf1r
 {
 
 class UpdateRecommendWorker : public UpdateRecommendBase
                             , public net::aggregator::BindCallProxyBase<UpdateRecommendWorker>
+                            , public ::izenelib::osgi::IService
 {
 public:
     UpdateRecommendWorker(
