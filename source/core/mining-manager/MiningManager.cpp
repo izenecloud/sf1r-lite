@@ -428,9 +428,9 @@ bool MiningManager::open()
                                                     index_manager_,
                                                     c_analyzer_);
 
-           if (!mining_schema_.summarization_schema.parentKey.empty())
+           if (!mining_schema_.summarization_schema.uuidPropName.empty())
            {
-               searchManager_->set_filter_hook(boost::bind(&MultiDocSummarizationSubManager::AppendSearchFilter, summarizationManager_, _1));
+               //searchManager_->set_filter_hook(boost::bind(&MultiDocSummarizationSubManager::AppendSearchFilter, summarizationManager_, _1));
            }
         }
     }

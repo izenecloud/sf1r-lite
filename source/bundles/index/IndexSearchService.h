@@ -40,7 +40,7 @@ public:
 
     bool getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem);
 
-    bool getInternalDocumentId(const std::string& collectionName, const izenelib::util::UString& scdDocumentId, uint64_t& internalId);
+    bool getInternalDocumentId(const std::string& collectionName, const uint128_t& scdDocumentId, uint64_t& internalId);
 
 private:
     IndexBundleConfiguration* bundleConfig_;

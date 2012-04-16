@@ -165,7 +165,7 @@ bool IndexSearchService::getDocumentsByIds(
 
 bool IndexSearchService::getInternalDocumentId(
     const std::string& collectionName,
-    const izenelib::util::UString& scdDocumentId,
+    const uint128_t& scdDocumentId,
     uint64_t& internalId
 )
 {
@@ -176,7 +176,7 @@ bool IndexSearchService::getInternalDocumentId(
     }
     else
     {
-        searchAggregator_->distributeRequest<izenelib::util::UString, uint64_t>(
+        searchAggregator_->distributeRequest<uint128_t, uint64_t>(
                 collectionName, "getInternalDocumentId", scdDocumentId, internalId);
     }
 

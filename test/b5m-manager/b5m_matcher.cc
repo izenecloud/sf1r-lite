@@ -1,3 +1,4 @@
+#include <b5m-manager/raw_scd_generator.h>
 #include <b5m-manager/attribute_indexer.h>
 #include <b5m-manager/category_scd_spliter.h>
 #include <b5m-manager/b5mo_scd_generator.h>
@@ -23,6 +24,7 @@ int main(int ac, char** av)
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
+        ("raw-generate", "generate standard raw scd")
         ("attribute-index,A", "build attribute index")
         ("b5m-match,B", "make b5m matching")
         ("complete-match,M", "attribute complete matching")
@@ -30,14 +32,17 @@ int main(int ac, char** av)
         ("b5mo-generate", "generate b5mo scd")
         ("uue-generate", "generate uue")
         ("b5mp-generate", "generate b5mp scd")
+        ("b5mc-generate", "generate b5mc scd")
         ("logserver-update", "update logserver")
         ("knowledge-dir,K", po::value<std::string>(), "specify knowledge dir")
         ("pdb", po::value<std::string>(), "specify product db path")
         ("odb", po::value<std::string>(), "specify offer db path")
         ("synonym,Y", po::value<std::string>(), "specify synonym file")
         ("scd-path,S", po::value<std::string>(), "specify scd path")
+        ("raw", po::value<std::string>(), "specify raw scd path")
         ("b5mo", po::value<std::string>(), "specify b5mo scd path")
         ("b5mp", po::value<std::string>(), "specify b5mp scd path")
+        ("b5mc", po::value<std::string>(), "specify b5mc scd path")
         ("uue", po::value<std::string>(), "uue path")
         ("category-regex,R", po::value<std::string>(), "specify category regex string")
         ("output-match,O", po::value<std::string>(), "specify output match path")
@@ -57,6 +62,7 @@ int main(int ac, char** av)
         return 1;
     }
     std::string scd_path;
+    std::string raw;
     std::string b5mo;
     std::string b5mp;
     std::string b5mc;
@@ -76,6 +82,9 @@ int main(int ac, char** av)
         scd_path = vm["scd-path"].as<std::string>();
         std::cout << "scd-path: " << scd_path <<std::endl;
     } 
+    if (vm.count("raw")) {
+        raw = vm["raw"].as<std::string>();
+    } 
     if (vm.count("b5mo")) {
         b5mo = vm["b5mo"].as<std::string>();
     } 
@@ -83,7 +92,7 @@ int main(int ac, char** av)
         b5mp = vm["b5mp"].as<std::string>();
     } 
     if (vm.count("b5mc")) {
-        b5mp = vm["b5mc"].as<std::string>();
+        b5mc = vm["b5mc"].as<std::string>();
     } 
     if (vm.count("uue")) {
         uue = vm["uue"].as<std::string>();
@@ -229,9 +238,21 @@ int main(int ac, char** av)
             return EXIT_FAILURE;
         }
     }
+    else if(vm.count("raw-generate"))
+    {
+        if( scd_path.empty() || raw.empty() || !odb)
+        {
+            return EXIT_FAILURE;
+        }
+        RawScdGenerator generator(odb.get());
+        if(!generator.Generate(scd_path, raw))
+        {
+            return EXIT_FAILURE;
+        }
+    }
     else if(vm.count("b5mo-generate"))
     {
-        if( scd_path.empty() || knowledge_dir.empty() || b5mo.empty() )
+        if( scd_path.empty() || knowledge_dir.empty() || b5mo.empty())
         {
             return EXIT_FAILURE;
         }

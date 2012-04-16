@@ -81,7 +81,7 @@
             - if "enable" is "no", the price trend feature would be disabled, that is, <ProductBundle><Schema><PriceTrend> would be ignored
             - the default value of "keyspace" is "SF1R"
           -->
-          <CassandraStorage enable="yes" keyspace="B5M"/>
+          <CassandraStorage enable="yes" keyspace="B5MO"/>
         </Parameter>
       </ProductBundle>
 
@@ -232,7 +232,7 @@
         - replicaid: id of replication set for current sf1 node
         - shardid:   id of data shard, if current sf1 is enabled as Worker. used as workerid. (Worker)
 
-      notes: 
+      notes:
         1) ids are started at 1
     -->
     <DistributedCommon clusterid="@LOCAL_HOST_USER_NAME@" username="@LOCAL_HOST_USER_NAME@" localhost="172.16.0.36"
@@ -241,7 +241,7 @@
     <DistributedTopology enable="n" type="search" nodenum="2">
       <CurrentSf1rNode nodeid="1" replicaid="1">
         <!--master names for B5M are www|stage|beta-->
-        <MasterServer enable="y" name="undefined" shardnum="2">          
+        <MasterServer enable="y" name="undefined" shardnum="2">
           <!--for distributive collection, shardid is set to all as default-->
           <Collection name="web" distributive="n" />
           <Collection name="qa" distributive="n" />

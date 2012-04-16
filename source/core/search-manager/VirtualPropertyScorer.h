@@ -59,6 +59,9 @@ protected:
     ///@brief reuse in score() for performance, so score() is not thread-safe
     RankDocumentProperty rankDocumentProperty_;
 
+    std::vector<RankQueryProperty> rankQueryProperties_;
+    std::vector<boost::shared_ptr<PropertyRanker> > propertyRankers_;
+    friend class QueryBuilder;
 };
 
 }

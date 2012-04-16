@@ -12,6 +12,7 @@
 #include <recommend-manager/item/SingleCollectionItemIdGenerator.h>
 #include <recommend-manager/item/RemoteItemIdGenerator.h>
 #include <log-manager/LogServerConnection.h>
+#include <common/Utilities.h>
 #include <util/ustring/UString.h>
 
 #include <boost/test/unit_test.hpp>
@@ -74,11 +75,10 @@ BOOST_FIXTURE_TEST_CASE(checkLocal, ItemIdGeneratorTestFixture)
     itemid_t maxItemId = 10;
     for (itemid_t goldId=1; goldId<=maxItemId; ++goldId)
     {
-        std::string str = boost::lexical_cast<std::string>(goldId);
-        izenelib::util::UString ustr(str, ENCODING_UTF8);
         itemid_t id = 0;
+        std::string str = boost::lexical_cast<std::string>(goldId);
 
-        BOOST_CHECK(idManager.getDocIdByDocName(ustr, id) == false);
+        BOOST_CHECK(idManager.getDocIdByDocName(Utilities::md5ToUint128(str), id) == false);
         BOOST_CHECK_EQUAL(id, goldId);
     }
 

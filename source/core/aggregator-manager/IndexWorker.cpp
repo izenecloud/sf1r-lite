@@ -420,7 +420,9 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         }
 
         docid_t newDocId;
-        if (createInsertDocId_(docidValueU, newDocId))
+        std::string docid_str;
+        docidValueU.convertString(docid_str, izenelib::util::UString::UTF_8);
+        if (createInsertDocId_(Utilities::md5ToUint128(docid_str), newDocId))
         {
             //LOG(INFO) << document.getId() << " -> " << newDocId;
             document.setId(newDocId);
@@ -693,10 +695,9 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
     value2SCDDoc(documentValue, scddoc);
 
     docid_t docid;
-    izenelib::util::UString docName(asString(documentValue["DOCID"]),
-                             izenelib::util::UString::UTF_8);
+    uint128_t num_docid = Utilities::md5ToUint128(asString(documentValue["DOCID"]));
 
-    if( idManager_->getDocIdByDocName(docName, docid, false) == false )
+    if( idManager_->getDocIdByDocName(num_docid, docid, false) == false )
         return false;
 
     scd_writer_->Write(scddoc, DELETE_SCD);
@@ -930,7 +931,7 @@ bool IndexWorker::insertOrUpdateSCD_(
 }
 
 bool IndexWorker::createUpdateDocId_(
-        const izenelib::util::UString& scdDocId,
+        const uint128_t& scdDocId,
         bool rType,
         docid_t& oldId,
         docid_t& newId)
@@ -953,7 +954,7 @@ bool IndexWorker::createUpdateDocId_(
 }
 
 bool IndexWorker::createInsertDocId_(
-        const izenelib::util::UString& scdDocId,
+        const uint128_t& scdDocId,
         docid_t& newId)
 {
     CREATE_SCOPED_PROFILER (proCreateInsertDocId, "IndexWorker", "IndexWorker::createInsertDocId_");
@@ -1006,7 +1007,9 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
         iter != rawDocIDList.end(); ++iter)
     {
         docid_t docId;
-        if (idManager_->getDocIdByDocName(*iter, docId, false))
+        std::string docid_str;
+        iter->convertString(docid_str, izenelib::util::UString::UTF_8);
+        if (idManager_->getDocIdByDocName(Utilities::md5ToUint128(docid_str), docId, false))
         {
             docIdList.push_back(docId);
         }
@@ -1227,7 +1230,7 @@ bool IndexWorker::prepareDocument_(
         const izenelib::util::UString & propertyValueU = p->second; // preventing copy
 
         izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
-        std::string fieldValue("");
+        std::string fieldValue;
         propertyValueU.convertString(fieldValue, encoding);
 
         if (!bundleConfig_->productSourceField_.empty()
@@ -1250,11 +1253,11 @@ bool IndexWorker::prepareDocument_(
                     return false;
                 }
 
-                if (! createUpdateDocId_(propertyValueU, rType, oldId, docId))
+                if (! createUpdateDocId_(Utilities::md5ToUint128(fieldValue), rType, oldId, docId))
                     insert = true;
             }
 
-            if (insert && !createInsertDocId_(propertyValueU, docId))
+            if (insert && !createInsertDocId_(Utilities::md5ToUint128(fieldValue), docId))
             {
                 //LOG(WARNING) << "failed to create id for SCD DOC " << fieldValue;
                 return false;
@@ -1785,7 +1788,9 @@ bool IndexWorker::checkRtype_(
 
         if (propertyNameL == izenelib::util::UString("docid", bundleConfig_->encoding_))
         {
-            if (!idManager_->getDocIdByDocName(propertyValueU, docId, false))
+            std::string docid_str;
+            propertyValueU.convertString(docid_str, izenelib::util::UString::UTF_8);
+            if (!idManager_->getDocIdByDocName(Utilities::md5ToUint128(docid_str), docId, false))
                 break;
 
             continue;

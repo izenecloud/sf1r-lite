@@ -89,6 +89,7 @@ public:
 
     bool hasUnigramProperty_;
     bool isUnigramSearchMode_;
+    bool isPhraseOrWildcardQuery_;
 }; // end - class SearchKeywordOperation
 
 } // end - namespace sf1vt

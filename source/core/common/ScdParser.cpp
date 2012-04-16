@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#include <boost/filesystem/path.hpp>
+#include <boost/filesystem.hpp>
 #define BOOST_SPIRIT_THREADSAFE
 #include <boost/spirit/include/classic.hpp>
 #include <boost/spirit/include/classic_while.hpp>
@@ -319,6 +319,33 @@ bool ScdParser::compareSCD(const string & file1, const string & file2)
     }
 
     return date1 < date2;
+}
+
+void ScdParser::getScdList(const std::string& scd_path, std::vector<std::string>& scd_list)
+{
+    namespace bfs = boost::filesystem;
+    if(!bfs::exists(scd_path)) return;
+    if( bfs::is_regular_file(scd_path) && ScdParser::checkSCDFormat(scd_path))
+    {
+        scd_list.push_back(scd_path);
+    }
+    else if(bfs::is_directory(scd_path))
+    {
+        bfs::path p(scd_path);
+        bfs::directory_iterator end;
+        for(bfs::directory_iterator it(p);it!=end;it++)
+        {
+            if(bfs::is_regular_file(it->path()))
+            {
+                std::string file = it->path().string();
+                if(ScdParser::checkSCDFormat(file))
+                {
+                    scd_list.push_back(file);
+                }
+            }
+        }
+    }
+    std::sort(scd_list.begin(), scd_list.end(), ScdParser::compareSCD);
 }
 
 

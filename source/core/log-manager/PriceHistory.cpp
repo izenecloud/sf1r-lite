@@ -56,7 +56,7 @@ const int8_t PriceHistory::cf_replicate_on_write(-1);
 
 const double PriceHistory::cf_merge_shards_chance(0);
 
-const string PriceHistory::cf_key_validation_class("UTF8Type");
+const string PriceHistory::cf_key_validation_class("BytesType");
 
 const string PriceHistory::cf_row_cache_provider("SerializingCacheProvider");
 
@@ -74,7 +74,7 @@ const map<string, string> PriceHistory::cf_compression_options = map_list_of
 
 const double PriceHistory::cf_bloom_filter_fp_chance(0);
 
-PriceHistoryRow::PriceHistoryRow(const string& docId)
+PriceHistoryRow::PriceHistoryRow(const uint128_t& docId)
     : docId_(docId)
     , priceHistoryPresent_(false)
 {
@@ -92,25 +92,32 @@ bool PriceHistoryRow::insert(const string& name, const string& value)
         cerr << "Bad insert!" << endl;
         return false;
     }
-    priceHistory_[deserializeLong(name)] = Utilities::fromBytes<ProductPrice>(value);
+    priceHistory_.push_back(std::make_pair(deserializeLong(name), Utilities::fromBytes<ProductPrice>(value)));
     return true;
 }
 
 void PriceHistoryRow::insert(time_t timestamp, ProductPrice price)
 {
     clear();
-    priceHistory_[timestamp] = price;
+    priceHistory_.push_back(std::make_pair(timestamp, price));
 }
 
-void PriceHistoryRow::resetKey(const string& newDocId)
+void PriceHistoryRow::resetHistory(uint32_t index, time_t timestamp, ProductPrice price)
 {
-    if (newDocId.empty())
+    clear();
+    if (priceHistory_.size() <= index)
+        priceHistory_.resize(index + 1);
+    priceHistory_[index].first = timestamp;
+    priceHistory_[index].second = price;
+}
+
+void PriceHistoryRow::resetKey(const uint128_t& newDocId)
+{
+    docId_ = newDocId;
+    if (newDocId == 0)
     {
-        docId_.clear();
         priceHistoryPresent_ = false;
     }
-    else
-        docId_.assign(newDocId);
 }
 
 void PriceHistoryRow::clear()
@@ -143,17 +150,17 @@ bool PriceHistory::updateMultiRow(const vector<PriceHistoryRow>& row_list)
         for (vector<PriceHistoryRow>::const_iterator vit = row_list.begin();
                 vit != row_list.end(); ++vit)
         {
-            vector<Mutation>& mutation_list = mutation_map[vit->docId_][cf_name];
-            for (PriceHistoryType::const_iterator mit = vit->priceHistory_.begin();
-                    mit != vit->priceHistory_.end(); ++mit)
+            vector<Mutation>& mutation_list = mutation_map[Utilities::toBytes(vit->docId_)][cf_name];
+            for (PriceHistoryType::const_iterator pit = vit->priceHistory_.begin();
+                    pit != vit->priceHistory_.end(); ++pit)
             {
                 mutation_list.push_back(Mutation());
                 Mutation& mut = mutation_list.back();
                 mut.__isset.column_or_supercolumn = true;
                 mut.column_or_supercolumn.__isset.column = true;
                 Column& col = mut.column_or_supercolumn.column;
-                col.__set_name(serializeLong(mit->first));
-                col.__set_value(Utilities::toBytes(mit->second));
+                col.__set_name(serializeLong(pit->first));
+                col.__set_value(Utilities::toBytes(pit->second));
                 col.__set_timestamp(timestamp);
                 col.__set_ttl(63072000);
             }
@@ -168,7 +175,7 @@ bool PriceHistory::updateMultiRow(const vector<PriceHistoryRow>& row_list)
 
 bool PriceHistory::getMultiSlice(
         vector<PriceHistoryRow>& row_list,
-        const vector<string>& key_list,
+        const vector<uint128_t>& key_list,
         const string& start,
         const string& finish,
         int32_t count,
@@ -187,10 +194,17 @@ bool PriceHistory::getMultiSlice(
         pred.slice_range.__set_count(count);
         pred.slice_range.__set_reversed(reversed);
 
+        vector<string> str_key_list;
+        str_key_list.reserve(key_list.size());
+        for (uint32_t i = 0; i < key_list.size(); i++)
+        {
+            str_key_list.push_back(Utilities::toBytes(key_list[i]));
+        }
+
         map<string, vector<ColumnOrSuperColumn> > raw_column_map;
         CassandraConnection::instance().getCassandraClient(keyspace_name_)->getMultiSlice(
                 raw_column_map,
-                key_list,
+                str_key_list,
                 col_parent,
                 pred);
 
@@ -199,7 +213,7 @@ bool PriceHistory::getMultiSlice(
                 mit != raw_column_map.end(); ++mit)
         {
             if (mit->second.empty()) continue;
-            row_list.push_back(PriceHistoryRow(mit->first));
+            row_list.push_back(PriceHistoryRow(Utilities::fromBytes<uint128_t>(mit->first)));
             PriceHistoryRow& price_history = row_list.back();
             for (vector<ColumnOrSuperColumn>::const_iterator vit = mit->second.begin();
                     vit != mit->second.end(); ++vit)
@@ -214,8 +228,8 @@ bool PriceHistory::getMultiSlice(
 }
 
 bool PriceHistory::getMultiCount(
-        map<string, int32_t>& count_map,
-        const vector<string>& key_list,
+        std::vector<std::pair<uint128_t, int32_t> >& count_list,
+        const vector<uint128_t>& key_list,
         const string& start,
         const string& finish)
 {
@@ -231,11 +245,28 @@ bool PriceHistory::getMultiCount(
         pred.slice_range.__set_finish(finish);
         //pred.slice_range.__set_count(numeric_limits<int32_t>::max());
 
+        vector<string> str_key_list;
+        str_key_list.reserve(key_list.size());
+        for (uint32_t i = 0; i < key_list.size(); i++)
+        {
+            str_key_list.push_back(Utilities::toBytes(key_list[i]));
+        }
+
+        map<string, int32_t> count_map;
         CassandraConnection::instance().getCassandraClient(keyspace_name_)->getMultiCount(
                 count_map,
-                key_list,
+                str_key_list,
                 col_parent,
                 pred);
+
+        count_list.resize(count_map.size());
+        uint32_t i = 0;
+        for (map<string, int32_t>::const_iterator it = count_map.begin();
+                it != count_map.end(); ++it)
+        {
+            count_list[i].first = Utilities::fromBytes<uint128_t>(it->first);
+            count_list[i++].second = it->second;
+        }
     }
     CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
 
@@ -244,21 +275,29 @@ bool PriceHistory::getMultiCount(
 
 bool PriceHistory::updateRow(const PriceHistoryRow& row) const
 {
-    if (!is_enabled || row.docId_.empty()) return false;
+    if (!is_enabled || row.docId_ == 0) return false;
     if (!row.priceHistoryPresent_) return true;
     try
     {
-        for (PriceHistoryType::const_iterator it = row.priceHistory_.begin();
-                it != row.priceHistory_.end(); ++it)
+        map<string, map<string, vector<Mutation> > > mutation_map;
+        time_t timestamp = Utilities::createTimeStamp();
+        vector<Mutation>& mutation_list = mutation_map[Utilities::toBytes(row.docId_)][cf_name];
+
+        for (PriceHistoryType::const_iterator pit = row.priceHistory_.begin();
+                pit != row.priceHistory_.end(); ++pit)
         {
-            CassandraConnection::instance().getCassandraClient(keyspace_name_)->insertColumn(
-                    Utilities::toBytes(it->second),
-                    row.docId_,
-                    cf_name,
-                    serializeLong(it->first),
-                    Utilities::createTimeStamp(),
-                    63072000); // Keep the price history for two years at most
+            mutation_list.push_back(Mutation());
+            Mutation& mut = mutation_list.back();
+            mut.__isset.column_or_supercolumn = true;
+            mut.column_or_supercolumn.__isset.column = true;
+            Column& col = mut.column_or_supercolumn.column;
+            col.__set_name(serializeLong(pit->first));
+            col.__set_value(Utilities::toBytes(pit->second));
+            col.__set_timestamp(timestamp);
+            col.__set_ttl(63072000);
         }
+
+        CassandraConnection::instance().getCassandraClient(keyspace_name_)->batchMutate(mutation_map);
     }
     CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
 
@@ -323,7 +362,7 @@ bool PriceHistory::dropColumnFamily() const
 
 bool PriceHistory::getSlice(PriceHistoryRow& row, const string& start, const string& finish, int32_t count, bool reversed)
 {
-    if (!is_enabled || row.docId_.empty()) return false;
+    if (!is_enabled || row.docId_ == 0) return false;
     try
     {
         ColumnParent col_parent;
@@ -339,7 +378,7 @@ bool PriceHistory::getSlice(PriceHistoryRow& row, const string& start, const str
         vector<ColumnOrSuperColumn> raw_column_list;
         CassandraConnection::instance().getCassandraClient(keyspace_name_)->getRawSlice(
                 raw_column_list,
-                row.docId_,
+                Utilities::toBytes(row.docId_),
                 col_parent,
                 pred);
         if (raw_column_list.empty()) return true;

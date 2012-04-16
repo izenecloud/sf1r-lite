@@ -4,7 +4,7 @@ require 'sf1-util/mock_dm'
 require_relative 'product_price'
 require_relative 'product_source'
 
-class MockB5M
+class MockB5M < MockDm
 
   attr_reader :dmo, :dmp
 
@@ -16,6 +16,38 @@ class MockB5M
     #@uuid_map = {}
   end
 
+  def index(path)
+    scd_list = ScdParser.get_scd_list(path)
+    return if scd_list.empty?
+    puts "find #{scd_list.size} scd"
+    scd_list.each do |scd|
+      puts "indexing #{scd}"
+      parser = ScdParser.new(scd)
+      scd_type = ScdParser.scd_type(scd)
+      parser.each do |doc|
+        sdoc = {}
+        doc.each_pair do |k,v|
+          sym = k.to_sym
+          if sym==:Price
+            sdoc[sym] = ProductPrice.new(v.to_i)
+          elsif sym==:Source
+            sdoc[sym] = ProductSource.new(v)
+          else
+            sdoc[sym] = v
+          end
+        end
+        if scd_type==ScdParser::INSERT_SCD
+          insert(sdoc)
+        elsif scd_type==ScdParser::UPDATE_SCD
+          update(sdoc)
+        elsif scd_type==ScdParser::DELETE_SCD
+          delete(sdoc)
+        end
+      end
+    end
+
+  end
+
   def insert(doc)
     oid = doc[:DOCID]
     pid = doc[:uuid]
@@ -23,9 +55,17 @@ class MockB5M
     return false if pid.nil?
     return false unless @dmo.insert(doc)
     pdoc = @dmp.get(pid)
+    unless pdoc.nil?
+      p "mockb5m before insert dmp #{pdoc}"
+    end
     pdoc = make_pdoc(pdoc, [doc], [])
-    p "mockb5m update dmp #{pdoc}"
+    p "mockb5m insert or update dmp #{pdoc}"
     @dmp.update(pdoc)
+  end
+
+  def p(str)
+    return
+    Object.p(str)
   end
 
   #def create_doc(doc, same_group_docid = nil)
@@ -72,6 +112,7 @@ class MockB5M
       new_odoc.merge!(doc)
       @dmo.update(new_odoc)
       old_pdoc = @dmp.get(old_pid)
+      p "mockb5m before update #{old_pdoc}"
       old_pdoc = make_pdoc(old_pdoc, [], [old_odoc])
       pdoc = @dmp.get(pid)
       pdoc = make_pdoc(pdoc, [new_odoc], [])
@@ -101,6 +142,7 @@ class MockB5M
     pid = old_odoc[:uuid]
     @dmo.delete(doc)
     pdoc = @dmp.get(pid)
+    p "mockb5m before delete for update #{pdoc}"
     pdoc = make_pdoc(pdoc, [], [old_odoc])
     if pdoc[:itemcount]>0
       p "mockb5m update dmp #{pdoc}"

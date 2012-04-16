@@ -6,11 +6,11 @@
 #include "product_clustering.h"
 #include "product_price_trend.h"
 
-#include <common/ScdWriter.h>
-#include <common/Utilities.h>
-
 #include <log-manager/LogServerRequest.h>
 #include <log-manager/LogServerConnection.h>
+
+#include <common/ScdWriter.h>
+#include <common/Utilities.h>
 
 #include <boost/unordered_set.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -112,10 +112,11 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
                 std::string docid_str;
                 docid.convertString(docid_str, UString::UTF_8);
                 if (timestamp == -1) GetTimestamp_(doc, timestamp);
-                std::map<std::string, std::string> group_prop_map;
-//              task_type task = boost::bind(&ProductPriceTrend::Insert, price_trend_, docid_str, price, timestamp);
-                GetGroupProperties_(doc, group_prop_map);
-                task_type task = boost::bind(&ProductPriceTrend::Update, price_trend_, docid_str, price, timestamp, group_prop_map);
+                uint128_t num_docid = Utilities::md5ToUint128(docid_str);
+//              std::map<std::string, std::string> group_prop_map;
+//              GetGroupProperties_(doc, group_prop_map);
+//              task_type task = boost::bind(&ProductPriceTrend::Update, price_trend_, num_docid, price, timestamp, group_prop_map);
+                task_type task = boost::bind(&ProductPriceTrend::Insert, price_trend_, num_docid, price, timestamp);
                 jobScheduler_.addTask(task);
             }
         }
@@ -154,9 +155,11 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
             std::string docid_str;
             docid.convertString(docid_str, UString::UTF_8);
             if (timestamp == -1) GetTimestamp_(to, timestamp);
-            std::map<std::string, std::string> group_prop_map;
-            GetGroupProperties_(to, group_prop_map);
-            task_type task = boost::bind(&ProductPriceTrend::Update, price_trend_, docid_str, to_price, timestamp, group_prop_map);
+            uint128_t num_docid = Utilities::md5ToUint128(docid_str);
+//          std::map<std::string, std::string> group_prop_map;
+//          GetGroupProperties_(to, group_prop_map);
+//          task_type task = boost::bind(&ProductPriceTrend::Update, price_trend_, num_docid, to_price, timestamp, group_prop_map);
+            task_type task = boost::bind(&ProductPriceTrend::Insert, price_trend_, num_docid, to_price, timestamp);
             jobScheduler_.addTask(task);
         }
     }
@@ -402,9 +405,11 @@ bool ProductManager::FinishHook()
         {
             uuid_map_writer->Close();
             delete uuid_map_writer;
-            SynchronizeRequest syncReq;
-            conn.asynRequest(syncReq);
         }
+        SynchronizeRequest syncReq;
+        conn.asynRequest(syncReq);
+        conn.flushRequests();
+
         //process the comparison items.
         boost::unordered_map<GroupTableType::GroupIdType, PMDocumentType>::iterator g2doc_it = g2doc_map.begin();
         while (g2doc_it != g2doc_map.end())
@@ -555,7 +560,7 @@ bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint
 
 bool ProductManager::GetMultiPriceHistory(
         PriceHistoryList& history_list,
-        const std::vector<std::string>& docid_list,
+        const std::vector<uint128_t>& docid_list,
         time_t from_tt,
         time_t to_tt)
 {
@@ -570,7 +575,7 @@ bool ProductManager::GetMultiPriceHistory(
 
 bool ProductManager::GetMultiPriceRange(
         PriceRangeList& range_list,
-        const std::vector<std::string>& docid_list,
+        const std::vector<uint128_t>& docid_list,
         time_t from_tt,
         time_t to_tt)
 {
@@ -601,8 +606,6 @@ bool ProductManager::GetTopPriceCutList(
 
 bool ProductManager::MigratePriceHistory(
         const std::string& new_keyspace,
-        const std::string& old_prefix,
-        const std::string& new_prefix,
         uint32_t start)
 {
     if (!has_price_trend_)
@@ -611,7 +614,7 @@ bool ProductManager::MigratePriceHistory(
         return false;
     }
 
-    return price_trend_->MigratePriceHistory(new_keyspace, old_prefix, new_prefix, start, error_);
+    return price_trend_->MigratePriceHistory(new_keyspace, start, error_);
 }
 
 bool ProductManager::GetTimestamp_(const PMDocumentType& doc, time_t& timestamp) const

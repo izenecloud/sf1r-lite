@@ -20,7 +20,7 @@ IndexBundleConfiguration::IndexBundleConfiguration(const std::string& collection
 void IndexBundleConfiguration::setSchema(const DocumentSchema& documentSchema)
 {
     documentSchema_ = documentSchema;
-    
+
     for(DocumentSchema::const_iterator iter = documentSchema_.begin();
         iter != documentSchema_.end(); ++iter)
     {

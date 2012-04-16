@@ -34,7 +34,7 @@ public:
     ~CollectionProductDataSource();
 
     uint32_t GetMaxDocId() const;
-    
+
     bool GetDocument(uint32_t docid, PMDocumentType& doc);
 
     void GetDocIdList(const izenelib::util::UString& uuid, std::vector<uint32_t>& docid_list, uint32_t exceptid);
@@ -43,8 +43,8 @@ public:
 
     bool SetUuid(izenelib::ir::indexmanager::IndexerDocument& doc, const izenelib::util::UString& uuid);
 
-    bool GetInternalDocidList(const std::vector<izenelib::util::UString>& sdocid_list, std::vector<uint32_t>& docid_list);
-    
+    bool GetInternalDocidList(const std::vector<uint128_t>& sdocid_list, std::vector<uint32_t>& docid_list);
+
     void Flush();
 
 private:

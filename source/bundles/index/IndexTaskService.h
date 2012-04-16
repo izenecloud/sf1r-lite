@@ -45,7 +45,7 @@ public:
     bool isAutoRebuild();
 
     uint32_t getDocNum();
-    
+
     uint32_t getKeyCount(const std::string& property_name);
 
     std::string getScdDir() const;

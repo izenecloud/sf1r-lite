@@ -63,13 +63,13 @@ public:
 
     bool GetMultiPriceHistory(
             PriceHistoryList& history_list,
-            const std::vector<std::string>& docid_list,
+            const std::vector<uint128_t>& docid_list,
             time_t from_tt,
             time_t to_tt);
 
     bool GetMultiPriceRange(
             PriceRangeList& range_list,
-            const std::vector<std::string>& docid_list,
+            const std::vector<uint128_t>& docid_list,
             time_t from_tt,
             time_t to_tt);
 
@@ -82,8 +82,6 @@ public:
 
     bool MigratePriceHistory(
             const std::string& new_keyspace,
-            const std::string& old_prefix,
-            const std::string& new_prefix,
             uint32_t start);
 
     inline const std::string& GetLastError() const

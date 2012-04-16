@@ -50,7 +50,7 @@ public:
         BIND_CALL_PROXY_2(getSummaryResult, KeywordSearchActionItem, KeywordSearchResult)
         BIND_CALL_PROXY_2(getSummaryMiningResult, KeywordSearchActionItem, KeywordSearchResult)
         BIND_CALL_PROXY_2(getDocumentsByIds, GetDocumentsByIdsActionItem, RawTextResultFromSIA)
-        BIND_CALL_PROXY_2(getInternalDocumentId, izenelib::util::UString, uint64_t)
+        BIND_CALL_PROXY_2(getInternalDocumentId, uint128_t, uint64_t)
         BIND_CALL_PROXY_3(getSimilarDocIdList, uint64_t, uint32_t, SimilarDocIdListType)
         BIND_CALL_PROXY_2(clickGroupLabel, ClickGroupLabelActionItem, bool)
         BIND_CALL_PROXY_2(visitDoc, uint32_t, bool)
@@ -76,7 +76,7 @@ public:
     /// documents
     void getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem);
 
-    void getInternalDocumentId(const izenelib::util::UString& actionItem, uint64_t& resultItem);
+    void getInternalDocumentId(const uint128_t& actionItem, uint64_t& resultItem);
 
     /// mining
     void getSimilarDocIdList(uint64_t documentId, uint32_t maxNum, SimilarDocIdListType& result);

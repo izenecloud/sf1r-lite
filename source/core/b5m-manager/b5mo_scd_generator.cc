@@ -82,8 +82,7 @@ bool B5MOScdGenerator::Generate(const std::string& scd_path, const std::string& 
 {
     if(o2p_map_.empty())
     {
-        std::cout<<"Mapping is empty, ignore"<<std::endl;
-        return true;
+        LOG(WARNING)<<"Mapping is empty"<<std::endl;
     }
     typedef izenelib::util::UString UString;
     namespace bfs = boost::filesystem;
@@ -93,7 +92,10 @@ bool B5MOScdGenerator::Generate(const std::string& scd_path, const std::string& 
     B5MHelper::GetScdList(scd_path, scd_list);
     if(scd_list.empty()) return false;
 
-    ScdWriterController writer(output_dir);
+    //ScdWriterController writer(output_dir);
+    ScdWriter b5mo_i(output_dir, INSERT_SCD);
+    ScdWriter b5mo_u(output_dir, UPDATE_SCD);
+    ScdWriter b5mo_d(output_dir, DELETE_SCD);
 
     for(uint32_t i=0;i<scd_list.size();i++)
     {
@@ -103,7 +105,7 @@ bool B5MOScdGenerator::Generate(const std::string& scd_path, const std::string& 
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
         uint32_t n=0;
-        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
+        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5MO_PROPERTY_LIST.value);
           doc_iter!= parser.end(); ++doc_iter, ++n)
         {
             if(n%10000==0)
@@ -119,10 +121,14 @@ bool B5MOScdGenerator::Generate(const std::string& scd_path, const std::string& 
                 p->first.convertString(property_name, izenelib::util::UString::UTF_8);
                 doc.property(property_name) = p->second;
             }
+            std::string sdocid;
+            doc.getString("DOCID", sdocid);
+            if(sdocid.empty()) continue;
             if(exclude_)
             {
                 std::string scategory;
-                doc.property("Category").get<UString>().convertString(scategory, UString::UTF_8);
+                doc.getString("Category", scategory);
+                if(scategory.empty()) continue;
                 bool find_match = false;
                 for(uint32_t i=0;i<category_regex_.size();i++)
                 {
@@ -134,9 +140,6 @@ bool B5MOScdGenerator::Generate(const std::string& scd_path, const std::string& 
                 }
                 if(!find_match) continue;
             }
-            std::string sdocid;
-            doc.property("DOCID").get<UString>().convertString(sdocid, UString::UTF_8);
-            //std::string spid = sdocid;
             std::string spid;
             boost::unordered_map<std::string, std::string>::iterator it = o2p_map_.find(sdocid);
             if(it!=o2p_map_.end())
@@ -147,14 +150,27 @@ bool B5MOScdGenerator::Generate(const std::string& scd_path, const std::string& 
             {
                 spid = sdocid;
             }
-            if(!spid.empty())
+            if(!spid.empty() && scd_type==INSERT_SCD)
             {
                 doc.property("uuid") = UString(spid, UString::UTF_8);
             }
-            writer.Write(doc, scd_type);
+            if(scd_type==INSERT_SCD)
+            {
+                b5mo_i.Append(doc);
+            }
+            else if(scd_type==UPDATE_SCD)
+            {
+                b5mo_u.Append(doc);
+            }
+            else if(scd_type==DELETE_SCD)
+            {
+                b5mo_d.Append(doc);
+            }
         }
     }
-    writer.Flush();
+    b5mo_i.Close();
+    b5mo_u.Close();
+    b5mo_d.Close();
     return true;
 }
 

@@ -39,7 +39,8 @@ namespace sf1r {
                 return true;
             }
         };
-        typedef idmlib::dd::DupDetector<uint32_t, uint32_t, SimilarityMatcherAttach> DDType;
+        typedef std::string DocIdType;
+        typedef idmlib::dd::DupDetector<DocIdType, uint32_t, SimilarityMatcherAttach> DDType;
         typedef DDType::GroupTableType GroupTableType;
 
         struct ValueType

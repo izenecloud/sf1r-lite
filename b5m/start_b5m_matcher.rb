@@ -7,25 +7,38 @@ require_relative 'b5m_helper'
 
 
 top_dir = File.dirname(File.expand_path(__FILE__))
+log_dir = File.join(top_dir, "log")
+Dir.mkdir(log_dir) unless File.exists?(log_dir)
+pid_file = File.join(log_dir, "pid")
+File.open(pid_file, 'w') do |f|
+  f.puts(Process.pid)
+end
+at_exit do
+  FileUtils.rm_rf(pid_file)
+end
 config = nil
-if !ARGV.empty?
-  config_file = ARGV[0]
-  if File.exist?(config_file)
-    config = YAML::load( File.open(config_file) )
-  end
-else
-  config_file = File.join(top_dir, "config.yml")
-  default_config_file = File.join(top_dir, "config.yml.default")
-  if File.exist?(config_file)
-    config = YAML::load(File.open(config_file))
-  elsif File.exist?(default_config_file)
-    config = YAML::load(File.open(default_config_file))
-  end
+config_file = File.join(top_dir, "config.yml")
+default_config_file = File.join(top_dir, "config.yml.default")
+if File.exist?(config_file)
+  config = YAML::load(File.open(config_file))
+elsif File.exist?(default_config_file)
+  config = YAML::load(File.open(default_config_file))
 end
 if config.nil?
   puts 'config file not found'
   exit(false)
 end
+
+doreindex = false
+domerge = true
+ARGV.each do |a|
+  if a=="--reindex"
+    doreindex = true
+  elsif a=="--nomerge"
+    domerge = false
+  end
+end
+
 match_config = config["matcher"]
 log_server = match_config["log_server"]
 Dir.chdir(File.dirname(config_file)) do
@@ -55,18 +68,38 @@ b5mc_scd = File.join(match_path['b5mc'], "scd", "index")
   FileUtils.mkdir_p(scd_path) unless File.exist?(scd_path)
 end
 matcher_program = File.join(top_dir, "b5m_matcher")
+merger_program = File.join(File.dirname(top_dir), "scripts", "ScdMerger")
 FileUtils.rm_rf("#{match_path['b5m_scd']}")
+FileUtils.rm_rf(work_dir) if doreindex
 Dir.mkdir(work_dir) unless File.exist?(work_dir)
 Dir.mkdir(db_path) unless File.exist?(db_path)
 Dir.mkdir(mdb) unless File.exist?(mdb)
+mdb_instance_list = []
+Dir.foreach(mdb) do |m|
+  next unless m =~ /\d{14}/
+  m = File.join(mdb, m)
+  next unless File.directory?(m)
+  mdb_instance_list << m
+end
+
+reindex = mdb_instance_list.empty?()?true:false
+
 time_str = Time.now.strftime("%Y%m%d%H%M%S")
 mdb_instance = File.join(mdb, time_str)
+merged_scd = File.join(mdb_instance, "merged")
+raw_scd = File.join(mdb_instance, "raw")
+comment_merged_scd = File.join(mdb_instance, "comment_merged")
 if File.exist?(mdb_instance)
   exit(-1)
 else
   Dir.mkdir(mdb_instance)
+  Dir.mkdir(merged_scd)
+  Dir.mkdir(raw_scd)
+  Dir.mkdir(comment_merged_scd)
 end
 task_list = []
+
+require_relative 'b5m_env.rb'
 
 IO.readlines(category_file).each do |c_line|
   c_line.strip!
@@ -97,8 +130,6 @@ task_list.each do |task|
   category_dir = File.join(work_dir, task.cid)
   Dir.mkdir(category_dir) unless File.exist?(category_dir)
 
-  index_done = File.join(category_dir, "index.done")
-  match_done = File.join(category_dir, "match.done")
   a_scd = File.join(category_dir, "A")
   t_scd = File.join(category_dir, "T")
   FileUtils.rm_rf(a_scd) if File.exist?(a_scd)
@@ -119,21 +150,38 @@ task_list.each do |task|
     ofs.puts("attribute")
   end
   ofs.close
-  #fan_file = File.join(category_dir, "filter_attrib_name")
-  #FileUtils.cp(filter_attrib_name,fan_file)
 end
+
+#do scd merge
+if domerge
+  if reindex
+    puts "reindex!!"
+    system("#{merger_program} #{scd} #{ENV['B5MO_PROPERTY']} #{merged_scd}")
+  else
+    system("#{merger_program} #{scd} #{ENV['B5MO_PROPERTY']} #{merged_scd} --gen-all")
+  end
+else
+  system("cp #{scd}/*.SCD #{merged_scd}/")
+end
+
+#generate raw scds
+system("#{matcher_program} --raw-generate -S #{merged_scd} --raw #{raw_scd} --odb #{odb}")
 
 #split SCDs
 system("#{matcher_program} -P -N T -S #{train_scd} -K #{work_dir}")
-system("#{matcher_program} -P -N A -S #{scd} -K #{work_dir}")
+system("#{matcher_program} -P -N A -S #{raw_scd} -K #{work_dir}")
 
 task_list.each do |task|
   next unless task.valid
   category_dir = File.join(work_dir, task.cid)
   #run c++ matcher program
   category_a_scd = File.join(category_dir, "A.SCD")
+  index_done = File.join(category_dir, "index.done")
+  match_done = File.join(category_dir, "match.done")
   match_file = File.join(category_dir, "match")
   FileUtils.rm_rf(match_file) if File.exist?(match_file)
+  FileUtils.rm_rf(match_done) if File.exist?(match_done)
+  #FileUtils.rm_rf(index_done) if File.exist?(index_done)
 
   if task.type == CategoryTask::COM
     puts "start complete matching #{task.cid}"
@@ -141,17 +189,17 @@ task_list.each do |task|
     ofs = File.open(attrib_file, 'w')
     ofs.puts(task.info['name'])
     ofs.close
-    system("#{matcher_program} -M -S #{scd} -K #{category_dir}")
+    system("#{matcher_program} -M -S #{raw_scd} -K #{category_dir}")
   elsif task.type == CategoryTask::SIM
     #do similarity matching
     puts "start similarity matching #{task.cid}"
-    system("#{matcher_program} -I -C #{cma} -S #{scd} -K #{category_dir}")
+    system("#{matcher_program} -I -C #{cma} -S #{raw_scd} -K #{category_dir}")
   else
     next unless task.info['disable'].nil?
     puts "start building attribute index for #{task.cid}"
     system("#{matcher_program} -A -Y #{synonym} -C #{cma} -S #{train_scd} -K #{category_dir}")
     puts "start matching for #{task.cid}"
-    system("#{matcher_program} -B -Y #{synonym} -C #{cma} -S #{scd} -K #{category_dir}")
+    system("#{matcher_program} -B -Y #{synonym} -C #{cma} -S #{raw_scd} -K #{category_dir}")
   end
 
 end
@@ -159,17 +207,44 @@ end
 #merge match file to mdb_instance
 system("cat #{work_dir}/C*/match > #{mdb_instance}/match")
 
+b5mo_scd_instance = File.join(mdb_instance, "b5mo_scd")
+b5mp_scd_instance = File.join(mdb_instance, "b5mp_scd")
+b5mc_scd_instance = File.join(mdb_instance, "b5mc_scd")
+Dir.mkdir(b5mo_scd_instance)
+Dir.mkdir(b5mp_scd_instance)
+Dir.mkdir(b5mc_scd_instance)
+
+
 #b5mo generator
-system("#{matcher_program} --b5mo-generate -S #{scd} --b5mo #{b5mo_scd} -K #{mdb_instance}")
+system("#{matcher_program} --b5mo-generate -S #{raw_scd} --b5mo #{b5mo_scd_instance} -K #{mdb_instance}")
 
 #uue generator
-system("#{matcher_program} --uue-generate --b5mo #{b5mo_scd} --uue #{mdb_instance}/uue --odb #{odb}")
+system("#{matcher_program} --uue-generate --b5mo #{b5mo_scd_instance} --uue #{mdb_instance}/uue --odb #{odb}")
 
-#b5mp generator
-system("#{matcher_program} --b5mp-generate --b5mo #{b5mo_scd} --b5mp #{b5mp_scd} --uue #{mdb_instance}/uue --odb #{odb} --pdb #{pdb}")
+#b5mp generator, update odb and pdb here.
+system("#{matcher_program} --b5mp-generate --b5mo #{b5mo_scd_instance} --b5mp #{b5mp_scd_instance} --uue #{mdb_instance}/uue --odb #{odb} --pdb #{pdb}")
+odb_in_mdb = File.join(mdb_instance, "odb")
+pdb_in_mdb = File.join(mdb_instance, "pdb")
+FileUtils.cp_r(odb, odb_in_mdb)
+FileUtils.cp_r(pdb, pdb_in_mdb)
+
+#merge comment scd
+if domerge
+  system("#{merger_program} #{comment_scd} #{ENV['B5MC_PROPERTY']} #{comment_merged_scd}")
+else
+  system("cp #{comment_scd}/*.SCD #{comment_merged_scd}/")
+end
 
 #b5mc generator
-#system("#{matcher_program} --b5mc-generate --b5mc #{b5mc_scd} -S #{comment_scd} --odb #{odb}")
+system("#{matcher_program} --b5mc-generate --b5mc #{b5mc_scd_instance} -S #{comment_merged_scd} --odb #{odb}")
+
+#copy generated SCDs
+system("rm -rf #{b5mo_scd}/*")
+system("rm -rf #{b5mp_scd}/*")
+system("rm -rf #{b5mc_scd}/*")
+system("cp #{b5mo_scd_instance}/* #{b5mo_scd}/")
+system("cp #{b5mp_scd_instance}/* #{b5mp_scd}/")
+system("cp #{b5mc_scd_instance}/* #{b5mc_scd}/")
 
 #logserver update
 system("#{matcher_program} --logserver-update --logserver-config '#{log_server}' --uue #{mdb_instance}/uue --odb #{odb}")

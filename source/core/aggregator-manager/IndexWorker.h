@@ -108,14 +108,14 @@ private:
     );
 
     bool createUpdateDocId_(
-            const izenelib::util::UString& scdDocId,
+            const uint128_t& scdDocId,
             bool rType,
             docid_t& oldId,
             docid_t& newId
     );
 
     bool createInsertDocId_(
-            const izenelib::util::UString& scdDocId,
+            const uint128_t& scdDocId,
             docid_t& newId
     );
 

@@ -107,6 +107,7 @@ SearchManager::SearchManager(
                             indexManager,
                             documentManager,
                             idManager,
+                            rankingManager,
                             schemaMap_,
                             config->filterCacheNum_));
     rankingManagerPtr_->getPropertyWeightMap(propertyWeightMap_);
@@ -233,8 +234,7 @@ bool SearchManager::search(
     bool isWandStrategy = (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::WAND);
     bool isTFIDFModel = (pTextRankingType == RankingType::BM25
                       ||config_->rankingManagerConfig_.rankingConfigUnit_.textRankingModel_ == RankingType::BM25);
-    bool isWandSearch = (isWandStrategy && isTFIDFModel);
-
+    bool isWandSearch = (isWandStrategy && isTFIDFModel && (!actionOperation.isPhraseOrWildcardQuery_));
 
     // references for property term info
     const property_term_info_map& propertyTermInfoMap =
@@ -432,7 +432,8 @@ bool SearchManager::search(
 
     std::vector<RankQueryProperty> rankQueryProperties(indexPropertySize);
 
-    post_prepare_ranker_(
+    queryBuilder_->post_prepare_ranker_(
+            "",
             indexPropertyList,
             indexPropertySize,
             propertyTermInfoMap,
@@ -697,87 +698,9 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
     return count > 0? true:false;
 }
 
-
-void SearchManager::post_prepare_ranker_(
-        const std::vector<std::string>& indexPropertyList,
-        unsigned indexPropertySize,
-        const property_term_info_map& propertyTermInfoMap,
-        DocumentFrequencyInProperties& dfmap,
-        CollectionTermFrequencyInProperties& ctfmap,
-        MaxTermFrequencyInProperties& maxtfmap,
-        bool readTermPosition,
-        std::vector<RankQueryProperty>& rankQueryProperties,
-        std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers)
-{
-    static const PropertyTermInfo emptyPropertyTermInfo;
-    for (unsigned i = 0; i < indexPropertySize; ++i)
-    {
-        const std::string& currentProperty = indexPropertyList[i];
-
-        rankQueryProperties[i].setNumDocs(
-                indexManagerPtr_->numDocs()
-        );
-
-        rankQueryProperties[i].setTotalPropertyLength(
-                documentManagerPtr_->getTotalPropertyLength(currentProperty)
-        );
-
-        const PropertyTermInfo::id_uint_list_map_t& termPositionsMap =
-            izenelib::util::getOr(
-                    propertyTermInfoMap,
-                    currentProperty,
-                    emptyPropertyTermInfo
-            ).getTermIdPositionMap();
-
-        typedef PropertyTermInfo::id_uint_list_map_t::const_iterator
-        term_id_position_iterator;
-        unsigned queryLength = 0;
-        unsigned index = 0;
-        for (term_id_position_iterator termIt = termPositionsMap.begin();
-                termIt != termPositionsMap.end(); ++termIt, ++index)
-        {
-            rankQueryProperties[i].addTerm(termIt->first);
-            rankQueryProperties[i].setTotalTermFreq(
-                    ctfmap[currentProperty][termIt->first]
-            );
-            rankQueryProperties[i].setDocumentFreq(
-                    dfmap[currentProperty][termIt->first]
-            );
-
-            rankQueryProperties[i].setMaxTermFreq(
-                    maxtfmap[currentProperty][termIt->first]
-            );
-
-            queryLength += termIt->second.size();
-            if (readTermPosition)
-            {
-                typedef PropertyTermInfo::id_uint_list_map_t::mapped_type
-                uint_list_map_t;
-                typedef uint_list_map_t::const_iterator uint_list_iterator;
-                for (uint_list_iterator posIt = termIt->second.begin();
-                        posIt != termIt->second.end(); ++posIt)
-                {
-                    rankQueryProperties[i].pushPosition(*posIt);
-                }
-            }
-            else
-            {
-                rankQueryProperties[i].setTermFreq(termIt->second.size());
-            }
-        }
-
-        rankQueryProperties[i].setQueryLength(queryLength);
-    }
-
-    for (size_t i = 0; i < indexPropertySize; ++i )
-    {
-        propertyRankers[i]->setupStats(rankQueryProperties[i]);
-    }
-}
-
 void SearchManager::prepare_sorter_customranker_(
-    SearchKeywordOperation& actionOperation,	
-    CustomRankerPtr& customRanker, 
+    SearchKeywordOperation& actionOperation,
+    CustomRankerPtr& customRanker,
     Sorter* &pSorter)
 {
     std::vector<std::pair<std::string, bool> >& sortPropertyList

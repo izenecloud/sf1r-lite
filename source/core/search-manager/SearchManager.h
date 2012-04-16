@@ -25,6 +25,7 @@
 #include <deque>
 #include <set>
 
+using izenelib::ir::idmanager::IDManager;
 
 namespace sf1r
 {
@@ -51,7 +52,6 @@ class GroupFilter;
 
 class SearchManager : public NumericPropertyTableBuilder
 {
-    typedef izenelib::ir::idmanager::IDManager IDManager;
     enum IndexLevel
     {
         DOCLEVEL,  /// position posting does not create
@@ -141,21 +141,9 @@ private:
 
     boost::shared_ptr<PropertyData> getPropertyData_(const std::string& name);
 
-    void post_prepare_ranker_(
-            const std::vector<std::string>& indexPropertyList,
-            unsigned indexPropertySize,
-            const property_term_info_map& propertyTermInfoMap,
-            DocumentFrequencyInProperties& dfmap,
-            CollectionTermFrequencyInProperties& ctfmap,
-            MaxTermFrequencyInProperties& maxtfmap,
-            bool readTermPosition,
-            std::vector<RankQueryProperty>& rankQueryProperties,
-            std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers);
-
-
     void prepare_sorter_customranker_(
-            SearchKeywordOperation& actionOperation,	
-            CustomRankerPtr& customRanker, 
+            SearchKeywordOperation& actionOperation,
+            CustomRankerPtr& customRanker,
             Sorter* &pSorter);
 
     /**
@@ -208,4 +196,3 @@ private:
 } // end - namespace sf1r
 
 #endif // CORE_SEARCH_MANAGER_SEARCH_MANAGER_H
-

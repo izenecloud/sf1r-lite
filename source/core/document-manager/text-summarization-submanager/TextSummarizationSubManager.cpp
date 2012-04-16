@@ -65,7 +65,7 @@ bool TextSummarizationSubManager::getOffsetPairs(
         {
             if (!tokenizer_.isDelimiter())
             {
-                idManager_->getTermIdByTermString(tokenizer_.getToken(), tokenizer_.getLength(), id);
+                idManager_->getTermIdByTermString(izenelib::util::UString(tokenizer_.getToken(), tokenizer_.getLength()), id);
                 sentenceIds.push_back(id);
             }
         }

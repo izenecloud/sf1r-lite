@@ -270,9 +270,12 @@ int MasterManagerBase::detectWorkers()
                 }
                 else
                 {
-                    LOG (ERROR) << "got wrong shardid \""<< shardid <<"\" from node [" <<  nodeid << "] @ "
-                                << znode.getStrValue(ZNode::KEY_HOST)<<std::endl;
-                    continue;
+                    std::stringstream ss;
+                    ss << "shardid \""<< shardid << "\" in node[" << nodeid << "] @ " << znode.getStrValue(ZNode::KEY_HOST)
+                       << " is out of range for current master (max shardid is " << sf1rTopology_.curNode_.master_.totalShardNum_ << ")"; 
+
+                    //throw std::runtime_error(ss.str());
+                    LOG (WARNING) << ss.str();
                 }
             }
         }

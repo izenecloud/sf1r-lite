@@ -60,7 +60,7 @@ void B5MPUueProcessor::Finish()
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
         uint32_t n=0;
-        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5MO_PROPERTY_LIST);
+        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5MO_PROPERTY_LIST.value);
           doc_iter!= parser.end(); ++doc_iter, ++n)
         {
             if(n%10000==0)
@@ -183,15 +183,19 @@ void B5MPUueProcessor::Finish()
             ProductProperty pp(docs[i]);
             if(flag==FLAG_APPEND)
             {
+                //LOG(INFO)<<"+= on pid "<<pid<<std::endl;
+                //LOG(INFO)<<"before += "<<new_product.ToString()<<std::endl;
+                //LOG(INFO)<<"+= "<<pp.ToString()<<std::endl;
                 new_product += pp;
+                //LOG(INFO)<<"after += "<<new_product.ToString()<<std::endl;
             }
             else
             {
-                LOG(INFO)<<"-= on pid "<<pid<<std::endl;
-                LOG(INFO)<<pp.ToString()<<std::endl;
-                LOG(INFO)<<new_product.ToString()<<std::endl;
+                //LOG(INFO)<<"-= on pid "<<pid<<std::endl;
+                //LOG(INFO)<<"before -= "<<new_product.ToString()<<std::endl;
+                //LOG(INFO)<<"-= "<<pp.ToString()<<std::endl;
                 new_product -= pp;
-                LOG(INFO)<<new_product.ToString()<<std::endl;
+                //LOG(INFO)<<"after -= "<<new_product.ToString()<<std::endl;
             }
         }
         LOG(INFO)<<"pid "<<pid<<" after : "<<new_product.ToString()<<std::endl;
@@ -252,26 +256,35 @@ void B5MPUueProcessor::Finish()
             UString new_uprice = new_product.price.ToUString();
             UString usource = product.GetSourceUString();
             UString new_usource = new_product.GetSourceUString();
-            bool need_update = false;
+            bool need_scd_update = false;
+            bool need_db_update = false;
             if(uprice!=new_uprice)
             {
                 doc.property("Price") = new_uprice;
-                need_update = true;
-            }
-            if(usource!=new_usource)
-            {
-                doc.property("Source") = new_usource;
-                need_update = true;
+                need_scd_update = true;
+                need_db_update = true;
             }
             if(product.itemcount!=new_product.itemcount)
             {
                 doc.property("itemcount") = (uint64_t)new_product.itemcount;
-                need_update = true;
+                need_scd_update = true;
+                need_db_update = true;
             }
-            if(need_update)
+            if(usource!=new_usource)
+            {
+                doc.property("Source") = new_usource;
+                need_scd_update = true;
+            }
+            if(product.source!=new_product.source)
+            {
+                need_db_update = true;
+            }
+            if(need_scd_update)
             {
                 b5mp_u.Append(doc);
-                //b5mp_writer.Write(doc, UPDATE_SCD);
+            }
+            if(need_db_update)
+            {
                 product_db_->update(pid, new_product);
             }
             
