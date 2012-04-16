@@ -28,7 +28,8 @@ GetRecommendMaster::GetRecommendMaster(
     RecommendShardStrategy* shardStrategy,
     GetRecommendWorker* localWorker
 )
-    : merger_(new GetRecommendMerger)
+    : collection_(collection)
+    , merger_(new GetRecommendMerger)
     , shardStrategy_(shardStrategy)
 {
     std::auto_ptr<GetRecommendMergerProxy> mergerProxy(new GetRecommendMergerProxy(merger_.get()));

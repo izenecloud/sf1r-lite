@@ -24,7 +24,8 @@ UpdateRecommendMaster::UpdateRecommendMaster(
     const std::string& collection,
     UpdateRecommendWorker* localWorker
 )
-    : merger_(new UpdateRecommendMerger)
+    : collection_(collection)
+    , merger_(new UpdateRecommendMerger)
 {
     std::auto_ptr<UpdateRecommendMergerProxy> mergerProxy(new UpdateRecommendMergerProxy(merger_.get()));
     merger_->bindCallProxy(*mergerProxy);
