@@ -140,6 +140,13 @@ bool B5MOScdGenerator::Generate(const std::string& scd_path, const std::string& 
                 }
                 if(!find_match) continue;
             }
+            UString uprice;
+            if(doc.getProperty("Price", uprice))
+            {
+                ProductPrice pp;
+                pp.Parse(uprice);
+                doc.property("Price") = pp.ToUString();
+            }
             std::string spid;
             boost::unordered_map<std::string, std::string>::iterator it = o2p_map_.find(sdocid);
             if(it!=o2p_map_.end())

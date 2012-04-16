@@ -26,7 +26,7 @@ CategoryScdSpliter::~CategoryScdSpliter()
 
 bool CategoryScdSpliter::Load_(const std::string& category_dir, const std::string& name)
 {
-    LOG(INFO)<<"Loading "<<category_dir<<std::endl;
+    //LOG(INFO)<<"Loading "<<category_dir<<std::endl;
     if(!boost::filesystem::exists(category_dir)) return false;
     std::string scd_file = category_dir+"/"+name+".SCD";
     if(boost::filesystem::exists(scd_file)) return true;
@@ -68,6 +68,7 @@ bool CategoryScdSpliter::Load(const std::string& dir, const std::string& name)
 {
     namespace bfs = boost::filesystem;
     if(!bfs::exists(dir)) return false;
+    LOG(INFO)<<"Loading "<<dir<<std::endl;
     std::string category_file = dir+"/category";
     if(bfs::exists(category_file))
     {

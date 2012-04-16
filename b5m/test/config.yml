@@ -4,15 +4,15 @@ matcher:
         synonym: ../synonym
         cma: ../../../icma/db/icwb/utf8
         category: ../category.rb
-        work_dir: working
+        work_dir: ./b5m_test_dir/working
         tmp_dir: tmp
         result: match_result
-        train_scd: ./T
-        scd: ./A
-        comment_scd: ./C
+        train_scd: ../T
+        scd: ../A
+        comment_scd: ../C
         filter_attrib_name: ../filter_attrib_name.conf
         b5m_scd: b5m_scd
-        b5mo: b5mo
-        b5mp: b5mp
-        b5mc: b5mc
+        b5mo: ./b5m_test_dir/b5mo
+        b5mp: ./b5m_test_dir/b5mp
+        b5mc: ./b5m_test_dir/b5mc
     log_server: localhost|18811|30|18812
