@@ -38,15 +38,17 @@ using izenelib::ir::indexmanager::TermReader;
 namespace sf1r{
 
 QueryBuilder::QueryBuilder(
-        boost::shared_ptr<IndexManager> indexManager,
-        boost::shared_ptr<DocumentManager> documentManager,
-        boost::shared_ptr<IDManager> idManager,
+        const boost::shared_ptr<IndexManager> indexManager,
+        const boost::shared_ptr<DocumentManager> documentManager,
+        const boost::shared_ptr<IDManager> idManager,
+        const boost::shared_ptr<RankingManager>& rankingManager,
         boost::unordered_map<std::string, PropertyConfig>& schemaMap,
         size_t filterCacheNum
 )
     :indexManagerPtr_(indexManager)
     ,documentManagerPtr_(documentManager)
     ,idManagerPtr_(idManager)
+    ,rankingManagerPtr_(rankingManager)
     ,schemaMap_(schemaMap)
 {
     pIndexReader_ = indexManager->pIndexReader_;
@@ -444,6 +446,90 @@ void QueryBuilder::prepare_for_property_(
     }
 }
 
+void QueryBuilder::post_prepare_ranker_(
+	const std::string& virtualProperty,
+        const std::vector<std::string>& indexPropertyList,
+        unsigned indexPropertySize,
+        const property_term_info_map& propertyTermInfoMap,
+        DocumentFrequencyInProperties& dfmap,
+        CollectionTermFrequencyInProperties& ctfmap,
+        MaxTermFrequencyInProperties& maxtfmap,
+        bool readTermPosition,
+        std::vector<RankQueryProperty>& rankQueryProperties,
+        std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers)
+{
+    static const PropertyTermInfo emptyPropertyTermInfo;
+    for (unsigned i = 0; i < indexPropertySize; ++i)
+    {
+        const std::string& currentProperty = indexPropertyList[i];
+
+        rankQueryProperties[i].setNumDocs(
+                indexManagerPtr_->numDocs()
+        );
+
+        rankQueryProperties[i].setTotalPropertyLength(
+                documentManagerPtr_->getTotalPropertyLength(currentProperty)
+        );
+        const PropertyTermInfo::id_uint_list_map_t& termPositionsMap = virtualProperty.empty()?
+            izenelib::util::getOr(
+                    propertyTermInfoMap,
+                    currentProperty,
+                    emptyPropertyTermInfo
+            ).getTermIdPositionMap() 
+            :
+            izenelib::util::getOr(
+                    propertyTermInfoMap,
+                    virtualProperty,
+                    emptyPropertyTermInfo
+            ).getTermIdPositionMap()            
+            ;
+
+        typedef PropertyTermInfo::id_uint_list_map_t::const_iterator
+        term_id_position_iterator;
+        unsigned queryLength = 0;
+        unsigned index = 0;
+        for (term_id_position_iterator termIt = termPositionsMap.begin();
+                termIt != termPositionsMap.end(); ++termIt, ++index)
+        {
+            rankQueryProperties[i].addTerm(termIt->first);
+            rankQueryProperties[i].setTotalTermFreq(
+                    ctfmap[currentProperty][termIt->first]
+            );
+            rankQueryProperties[i].setDocumentFreq(
+                    dfmap[currentProperty][termIt->first]
+            );
+
+            rankQueryProperties[i].setMaxTermFreq(
+                    maxtfmap[currentProperty][termIt->first]
+            );
+
+            queryLength += termIt->second.size();
+            if (readTermPosition)
+            {
+                typedef PropertyTermInfo::id_uint_list_map_t::mapped_type
+                uint_list_map_t;
+                typedef uint_list_map_t::const_iterator uint_list_iterator;
+                for (uint_list_iterator posIt = termIt->second.begin();
+                        posIt != termIt->second.end(); ++posIt)
+                {
+                    rankQueryProperties[i].pushPosition(*posIt);
+                }
+            }
+            else
+            {
+                rankQueryProperties[i].setTermFreq(termIt->second.size());
+            }
+        }
+
+        rankQueryProperties[i].setQueryLength(queryLength);
+    }
+
+    for (size_t i = 0; i < indexPropertySize; ++i )
+    {
+        propertyRankers[i]->setupStats(rankQueryProperties[i]);
+    }
+}
+
 void QueryBuilder::prepare_for_virtual_property_(
         MultiPropertyScorer* pScorer,
         size_t & success_properties,
@@ -506,7 +592,8 @@ void QueryBuilder::prepare_for_virtual_property_(
     }	
     if(pIter)
     {
-        std::vector<propertyid_t> indexSubPropertyIdList(properyConfig.subProperties_.size());
+        size_t indexSubPropertySize = properyConfig.subProperties_.size();
+        std::vector<propertyid_t> indexSubPropertyIdList(indexSubPropertySize);
         std::transform(
             properyConfig.subProperties_.begin(),
             properyConfig.subProperties_.end(),
@@ -515,6 +602,30 @@ void QueryBuilder::prepare_for_virtual_property_(
         );
         VirtualPropertyScorer* pVirtualScorer = new VirtualPropertyScorer(propertyWeightMap, indexSubPropertyIdList);
         pVirtualScorer->add(pIter);
+
+        sf1r::TextRankingType& pTextRankingType = actionOperation.actionItem_.rankingType_;
+        // references for property term info
+        const property_term_info_map& propertyTermInfoMap =
+                actionOperation.getPropertyTermInfoMap();
+
+        DocumentFrequencyInProperties dfmap;
+        CollectionTermFrequencyInProperties ctfmap;
+        MaxTermFrequencyInProperties maxtfmap;
+        rankingManagerPtr_->createPropertyRankers(pTextRankingType, indexSubPropertySize, pVirtualScorer->propertyRankers_);
+
+        bool readTermPosition = pVirtualScorer->propertyRankers_[0]->requireTermPosition();
+        pIter->df_cmtf(dfmap, ctfmap, maxtfmap);	
+        post_prepare_ranker_(
+            properyConfig.getName(),
+            properyConfig.subProperties_,
+            indexSubPropertySize,
+            propertyTermInfoMap,
+            dfmap,
+            ctfmap,
+            maxtfmap,
+            readTermPosition,
+            pVirtualScorer->rankQueryProperties_,
+            pVirtualScorer->propertyRankers_);
         pScorer->add(properyConfig.getPropertyId(), pVirtualScorer);
         ++success_properties;
     }

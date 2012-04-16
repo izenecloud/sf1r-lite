@@ -37,11 +37,14 @@ class FilterCache;
 typedef DocumentIterator* DocumentIteratorPointer;
 class QueryBuilder
 {
+    typedef std::map<std::string, PropertyTermInfo> property_term_info_map;
+
 public:
     QueryBuilder(
-        boost::shared_ptr<IndexManager> indexManager,
-        boost::shared_ptr<DocumentManager> documentManager,
-        boost::shared_ptr<IDManager> idManager,
+        const boost::shared_ptr<IndexManager> indexManager,
+        const boost::shared_ptr<DocumentManager> documentManager,
+        const boost::shared_ptr<IDManager> idManager,
+        const boost::shared_ptr<RankingManager>& rankingManager,
         boost::unordered_map<std::string, PropertyConfig>& schemaMap,
         size_t filterCacheNum
         );
@@ -93,6 +96,18 @@ public:
      * @see CollectionMeta::numberPropertyConfig
      */
     propertyid_t getPropertyIdByName(const std::string& name) const;
+
+    void post_prepare_ranker_(
+	const std::string& virtualProperty,
+        const std::vector<std::string>& indexPropertyList,
+        unsigned indexPropertySize,
+        const property_term_info_map& propertyTermInfoMap,
+        DocumentFrequencyInProperties& dfmap,
+        CollectionTermFrequencyInProperties& ctfmap,
+        MaxTermFrequencyInProperties& maxtfmap,
+        bool readTermPosition,
+        std::vector<RankQueryProperty>& rankQueryProperties,
+        std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers);
 
 private:
     void prefetch_term_doc_readers_(
@@ -172,6 +187,8 @@ private:
     boost::shared_ptr<DocumentManager> documentManagerPtr_;
 
     boost::shared_ptr<IDManager> idManagerPtr_;
+
+    boost::shared_ptr<RankingManager> rankingManagerPtr_;
 
     IndexReader* pIndexReader_;
 
