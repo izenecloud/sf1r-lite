@@ -703,6 +703,7 @@ void SF1Config::parseDistributedTopology(
 
         getAttribute(topology, "enable", topologyConfig.enabled_);
         getAttribute(topology, "type", topologyConfig.type_);
+        topologyConfig.sf1rTopology_.setType(topologyConfig.type_);
 
         Sf1rTopology& sf1rTopology = topologyConfig.sf1rTopology_;
         sf1rTopology.clusterId_ = distributedCommonConfig_.clusterId_;
