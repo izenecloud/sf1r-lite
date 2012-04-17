@@ -10,11 +10,6 @@ ItemFilter::ItemFilter()
 {
 }
 
-ItemFilter::ItemFilter(const ItemCondition* itemCondition)
-    : condition_(itemCondition)
-{
-}
-
 bool ItemFilter::isFiltered(itemid_t itemId) const
 {
     if (filterSet_.find(itemId) != filterSet_.end())

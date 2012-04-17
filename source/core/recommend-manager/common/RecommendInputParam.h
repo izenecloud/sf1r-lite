@@ -20,10 +20,6 @@ struct RecommendInputParam
 {
     RecommendInputParam() : limit(0) {}
 
-    RecommendInputParam(const ItemCondition* itemCondition)
-        : limit(0), itemFilter(itemCondition)
-    {}
-
     int limit;
     ItemFilter itemFilter;
 

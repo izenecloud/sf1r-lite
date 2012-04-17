@@ -1,4 +1,5 @@
 #include "RecommendSearchService.h"
+#include "RecommendBundleConfiguration.h"
 #include <recommend-manager/common/User.h>
 #include <recommend-manager/common/ItemCondition.h>
 #include <recommend-manager/common/RecommendParam.h>
@@ -16,12 +17,14 @@ namespace sf1r
 {
 
 RecommendSearchService::RecommendSearchService(
+    RecommendBundleConfiguration& bundleConfig,
     UserManager& userManager,
     ItemManager& itemManager,
     RecommenderFactory& recommenderFactory,
     ItemIdGenerator& itemIdGenerator
 )
-    :userManager_(userManager)
+    :bundleConfig_(bundleConfig)
+    ,userManager_(userManager)
     ,itemManager_(itemManager)
     ,recommenderFactory_(recommenderFactory)
     ,itemIdGenerator_(itemIdGenerator)
@@ -41,7 +44,9 @@ bool RecommendSearchService::recommend(
     if (!convertIds_(param))
         return false;
 
-    param.condition.itemManager_ = &itemManager_;
+    if (bundleConfig_.searchNodeConfig_.isSingleNode_)
+        param.enableItemCondition(&itemManager_);
+
     Recommender* recommender = recommenderFactory_.getRecommender(param.type);
 
     if (recommender && recommender->recommend(param, recItemVec))

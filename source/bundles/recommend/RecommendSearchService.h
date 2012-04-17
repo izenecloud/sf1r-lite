@@ -25,11 +25,13 @@ class ItemIdGenerator;
 struct RecommendParam;
 struct TIBParam;
 struct ItemBundle;
+class RecommendBundleConfiguration;
 
 class RecommendSearchService : public ::izenelib::osgi::IService
 {
 public:
     RecommendSearchService(
+        RecommendBundleConfiguration& bundleConfig,
         UserManager& userManager,
         ItemManager& itemManager,
         RecommenderFactory& recommenderFactory,
@@ -68,6 +70,7 @@ private:
     ) const;
 
 private:
+    RecommendBundleConfiguration& bundleConfig_;
     UserManager& userManager_;
     ItemManager& itemManager_;
     RecommenderFactory& recommenderFactory_;

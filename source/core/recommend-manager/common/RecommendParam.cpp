@@ -11,7 +11,6 @@ namespace sf1r
 RecommendParam::RecommendParam()
     : type(RECOMMEND_TYPE_NUM)
     , queryClickFreq(0)
-    , inputParam(&condition)
 {
     // DOCID property is a must in recommendation result
     selectRecommendProps.push_back(DOCID);
@@ -96,6 +95,12 @@ bool RecommendParam::check(std::string& errorMsg) const
     }
 
     return true;
+}
+
+void RecommendParam::enableItemCondition(ItemManager* itemManager)
+{
+    condition.itemManager_ = itemManager;
+    inputParam.itemFilter.setItemCondition(&condition);
 }
 
 } // namespace sf1r

@@ -381,7 +381,7 @@ void RecommendBundleActivator::createService_()
                                                 *eventManager_, *rateManager_, *itemIdGenerator_, *queryPurchaseCounter_,
                                                 *updateRecommendBase_, updateRecommendWorker_.get()));
 
-    searchService_.reset(new RecommendSearchService(*userManager_, *itemManager_,
+    searchService_.reset(new RecommendSearchService(*config_, *userManager_, *itemManager_,
                                                     *recommenderFactory_, *itemIdGenerator_));
 
     Properties props;

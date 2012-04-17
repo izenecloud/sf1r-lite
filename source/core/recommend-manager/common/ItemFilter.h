@@ -21,7 +21,6 @@ class ItemFilter : public idmlib::recommender::ItemRescorer
 {
 public:
     ItemFilter();
-    ItemFilter(const ItemCondition* itemCondition);
 
     float rescore(itemid_t itemId, float originalScore) { return 0; }
 
@@ -47,6 +46,8 @@ public:
     {
         filterSet_.insert(first, last);
     }
+
+    void setItemCondition(const ItemCondition* condition) { condition_ = condition; }
 
     MSGPACK_DEFINE(filterSet_);
 

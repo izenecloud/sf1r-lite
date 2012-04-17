@@ -42,6 +42,8 @@ struct RecommendParam
 
     ItemCondition condition;
     RecommendInputParam inputParam;
+
+    void enableItemCondition(ItemManager* itemManager);
 };
 
 } // namespace sf1r
