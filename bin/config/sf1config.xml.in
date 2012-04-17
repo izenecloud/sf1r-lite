@@ -220,7 +220,7 @@
 
     <!-- Distributed SF1R
       Global settings (for all sf1r nodes in topology):
-        - clusterid: identity of the unique cluster of SF1R nodes for distributed sf1r.
+        - clusterid: identity of a unique cluster of distributed sf1r, for all nodes (conflicts should be avoided!).
         - nodenum: total number of sf1r nodes in the cluster.
         - shardnum: total number of data shard servers (workers) in the cluster. (known by Master)
 
