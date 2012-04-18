@@ -71,9 +71,6 @@ bool IndexSearchService::getSearchResult(
     if (!searchCache_->get(identity, resultItem))
     {
         // Get and aggregate keyword search results from mutliple nodes
-        distResultItem.start_ = actionItem.pageInfo_.start_;
-        distResultItem.count_ = actionItem.pageInfo_.count_;
-
         searchAggregator_->distributeRequest(
                 actionItem.collectionName_, "getDistSearchResult", actionItem, distResultItem);
 
