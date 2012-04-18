@@ -133,7 +133,7 @@ bool ScdGenerator::Generate(const std::string& scd_path, const std::string& outp
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
         uint32_t n=0;
-        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
+        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5MO_PROPERTY_LIST.value);
           doc_iter!= parser.end(); ++doc_iter, ++n)
         {
             if(n%10000==0)

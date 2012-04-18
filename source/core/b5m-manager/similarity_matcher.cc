@@ -45,25 +45,25 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
 
     namespace bfs = boost::filesystem;
     std::vector<std::string> scd_list;
-    B5MHelper::GetScdList(scd_path, scd_list);
+    B5MHelper::GetIScdList(scd_path, scd_list);
     if(scd_list.empty()) return false;
 
-    boost::unordered_set<DocIdType> processed;
-    std::string processed_file = knowledge_dir+"/processed";
-    izenelib::am::ssf::Reader<> processed_reader(processed_file);
-    uint32_t processed_count = 0;
-    if(processed_reader.Open())
-    {
-        std::string str_id;
-        while(processed_reader.Next(str_id))
-        {
-            //processed.insert(B5MHelper::StringToUint128(str_id));
-            processed.insert(str_id);
-            processed_count++;
-        }
-    }
-    processed_reader.Close();
-    LOG(INFO)<<"load "<<processed_count<<" processed_count"<<std::endl;
+    //boost::unordered_set<DocIdType> processed;
+    //std::string processed_file = knowledge_dir+"/processed";
+    //izenelib::am::ssf::Reader<> processed_reader(processed_file);
+    //uint32_t processed_count = 0;
+    //if(processed_reader.Open())
+    //{
+        //std::string str_id;
+        //while(processed_reader.Next(str_id))
+        //{
+            ////processed.insert(B5MHelper::StringToUint128(str_id));
+            //processed.insert(str_id);
+            //processed_count++;
+        //}
+    //}
+    //processed_reader.Close();
+    //LOG(INFO)<<"load "<<processed_count<<" processed_count"<<std::endl;
     std::string work_dir = knowledge_dir+"/work_dir";
 
     //boost::filesystem::remove_all(work_dir);
@@ -93,9 +93,9 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
         LOG(INFO)<<"Processing "<<scd_file<<std::endl;
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
-        int scd_type = ScdParser::checkSCDType(scd_file);
+        //int scd_type = ScdParser::checkSCDType(scd_file);
         uint32_t n=0;
-        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
+        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5MO_PROPERTY_LIST.value);
           doc_iter!= parser.end(); ++doc_iter, ++n)
         {
             if(n%10000==0)
@@ -133,7 +133,7 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
             {
                 continue;
             }
-            if(processed.find(id)!=processed.end()) continue;
+            //if(processed.find(id)!=processed.end()) continue;
 
             SimilarityMatcherAttach attach;
             attach.category = doc["Category"];
@@ -155,7 +155,7 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
             }
             //dd.InsertDoc(docid, terms, weights, attach);
             dd.InsertDoc(id, terms, weights, attach);
-            processed.insert(id);
+            //processed.insert(id);
             //new_id_set.insert(docid);
             //ValueType value;
             //doc["DOCID"].convertString(value.soid, UString::UTF_8);
@@ -215,17 +215,17 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
         }
     }
     ofs.close();
-    boost::filesystem::remove_all(processed_file);
-    processed_count = 0;
-    izenelib::am::ssf::Writer<> processed_writer(processed_file);
-    processed_writer.Open();
-    for(boost::unordered_set<DocIdType>::const_iterator it=processed.begin();it!=processed.end();++it)
-    {
-        processed_writer.Append(*it);
-        processed_count++;
-    }
-    processed_writer.Close();
-    LOG(INFO)<<"write "<<processed_count<<" processed_count"<<std::endl;
+    //boost::filesystem::remove_all(processed_file);
+    //processed_count = 0;
+    //izenelib::am::ssf::Writer<> processed_writer(processed_file);
+    //processed_writer.Open();
+    //for(boost::unordered_set<DocIdType>::const_iterator it=processed.begin();it!=processed.end();++it)
+    //{
+        //processed_writer.Append(*it);
+        //processed_count++;
+    //}
+    //processed_writer.Close();
+    //LOG(INFO)<<"write "<<processed_count<<" processed_count"<<std::endl;
 
     {
         std::ofstream ofs(done_file.c_str());

@@ -7,6 +7,7 @@ VirtualPropertyScorer::VirtualPropertyScorer(
         const std::vector<unsigned int>& propertyIds)
     :pIter_(NULL)
     ,indexPropertyIdList_(propertyIds)
+    ,rankQueryProperties_(propertyIds.size())
 {
     DocumentIterator::scorer_ = true;
     init_(propertyWeightMap);
@@ -47,10 +48,10 @@ double VirtualPropertyScorer::score(
         if(weight != 0.0F)
         {
             rankDocumentProperty_.reset();
-            rankDocumentProperty_.resize(rankQueryProperty.size());
+            rankDocumentProperty_.resize(rankQueryProperties_[i].size());
             pIter_->doc_item(rankDocumentProperty_,i);
-            score += weight * propertyRanker->getScore(
-                    rankQueryProperty,
+            score += weight * propertyRankers_[i]->getScore(
+                    rankQueryProperties_[i],
                     rankDocumentProperty_
                 );
         }

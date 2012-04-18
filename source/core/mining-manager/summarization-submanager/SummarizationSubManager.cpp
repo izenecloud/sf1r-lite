@@ -111,6 +111,23 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         }
     }
 
+    std::vector<docid_t> del_docid_list;
+    document_manager_->getDeletedDocIdList(del_docid_list);
+    for(unsigned int i = 0; i < del_docid_list.size();++i)
+    {
+        Document doc;
+        document_manager_->getDocument(i, doc);
+        Document::property_const_iterator kit = doc.findProperty(schema_.uuidPropName);
+        if (kit == doc.propertyEnd())
+            continue;
+
+        const UString& key = kit->second.get<UString>();
+        std::string key_str;
+        key.convertString(key_str, UString::UTF_8);
+    
+        comment_cache_storage_->ExpelUpdate(Utilities::md5ToUint128(key_str), i);
+    }
+
     SetLastDocid_(document_manager_->getMaxDocId());
     comment_cache_storage_->Flush(true);
 

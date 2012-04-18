@@ -112,10 +112,11 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
                 std::string docid_str;
                 docid.convertString(docid_str, UString::UTF_8);
                 if (timestamp == -1) GetTimestamp_(doc, timestamp);
+                uint128_t num_docid = Utilities::md5ToUint128(docid_str);
 //              std::map<std::string, std::string> group_prop_map;
 //              GetGroupProperties_(doc, group_prop_map);
-//              task_type task = boost::bind(&ProductPriceTrend::Update, price_trend_, docid_str, price, timestamp, group_prop_map);
-                task_type task = boost::bind(&ProductPriceTrend::Insert, price_trend_, docid_str, price, timestamp);
+//              task_type task = boost::bind(&ProductPriceTrend::Update, price_trend_, num_docid, price, timestamp, group_prop_map);
+                task_type task = boost::bind(&ProductPriceTrend::Insert, price_trend_, num_docid, price, timestamp);
                 jobScheduler_.addTask(task);
             }
         }
@@ -154,10 +155,11 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
             std::string docid_str;
             docid.convertString(docid_str, UString::UTF_8);
             if (timestamp == -1) GetTimestamp_(to, timestamp);
+            uint128_t num_docid = Utilities::md5ToUint128(docid_str);
 //          std::map<std::string, std::string> group_prop_map;
 //          GetGroupProperties_(to, group_prop_map);
-//          task_type task = boost::bind(&ProductPriceTrend::Update, price_trend_, docid_str, to_price, timestamp, group_prop_map);
-            task_type task = boost::bind(&ProductPriceTrend::Insert, price_trend_, docid_str, to_price, timestamp);
+//          task_type task = boost::bind(&ProductPriceTrend::Update, price_trend_, num_docid, to_price, timestamp, group_prop_map);
+            task_type task = boost::bind(&ProductPriceTrend::Insert, price_trend_, num_docid, to_price, timestamp);
             jobScheduler_.addTask(task);
         }
     }
@@ -558,7 +560,7 @@ bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint
 
 bool ProductManager::GetMultiPriceHistory(
         PriceHistoryList& history_list,
-        const std::vector<std::string>& docid_list,
+        const std::vector<uint128_t>& docid_list,
         time_t from_tt,
         time_t to_tt)
 {
@@ -573,7 +575,7 @@ bool ProductManager::GetMultiPriceHistory(
 
 bool ProductManager::GetMultiPriceRange(
         PriceRangeList& range_list,
-        const std::vector<std::string>& docid_list,
+        const std::vector<uint128_t>& docid_list,
         time_t from_tt,
         time_t to_tt)
 {

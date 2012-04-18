@@ -10,15 +10,21 @@ class ProductPrice
   def self.parse(str)
     
     if str.index('-').nil?
-      min = str.to_f
+      min = str_to_f(str)
       max = min
     else
       s = str.split('-')
-      min = s[0].to_f
-      max = s[1].to_f
+      min = str_to_f(s[0])
+      max = str_to_f(s[1])
     end
 
     ProductPrice.new(min, max)
+  end
+
+  def self.str_to_f(str)
+    f = Float(str) rescue -1.0
+
+    f
   end
 
   def valid

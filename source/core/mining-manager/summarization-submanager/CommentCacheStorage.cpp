@@ -46,6 +46,21 @@ void CommentCacheStorage::AppendUpdate(const KeyType& key, uint32_t docid, const
         Flush();
 }
 
+void CommentCacheStorage::ExpelUpdate(const KeyType& key, uint32_t docid)
+{
+    if (op_type_ != EXPEL_UPDATE)
+    {
+        Flush(true);
+        op_type_ = EXPEL_UPDATE;
+    }
+
+    buffer_db_[key][docid];
+
+    ++buffer_size_;
+    if (IsBufferFull_())
+        Flush();
+}
+
 void CommentCacheStorage::Delete(const KeyType& key)
 {
     if (op_type_ != DELETE)
@@ -73,6 +88,14 @@ void CommentCacheStorage::Flush(bool needSync)
                 it != buffer_db_.end(); ++it)
         {
             comment_cache_drum_->Append(it->first, it->second);
+        }
+        break;
+
+    case EXPEL_UPDATE:
+        for (BufferType::iterator it = buffer_db_.begin();
+                it != buffer_db_.end(); ++it)
+        {
+            comment_cache_drum_->Expel(it->first, it->second);
         }
         break;
 

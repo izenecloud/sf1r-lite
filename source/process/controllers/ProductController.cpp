@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <boost/unordered_set.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace sf1r
 {
@@ -57,7 +58,7 @@ bool ProductController::require_str_docid_list_()
     {
         Value& resource = resources(i);
         std::string str_docid = asString(resource);
-        str_docid_list_.push_back(str_docid);
+        str_docid_list_.push_back(Utilities::md5ToUint128(str_docid));
     }
     if (str_docid_list_.empty())
     {
@@ -513,16 +514,18 @@ void ProductController::get_multi_price_history()
         for (Value::UintType i = 0; i < history_list.size(); ++i)
         {
             Value& doc_item = price_history_list();
-            doc_item[Keys::docid] = history_list[i].first;
+            doc_item[Keys::docid] = Utilities::uint128ToMD5(history_list[i].first);
             Value& price_history = doc_item[Keys::price_history];
-            PriceHistoryItem& history = history_list[i].second;
-            for (Value::UintType j = 0; j < history.size(); ++j)
+            for (PriceHistoryItem::const_iterator hit = history_list[i].second.begin();
+                    hit != history_list[i].second.end(); ++hit)
             {
                 Value& history_item = price_history();
-                history_item[Keys::timestamp] = history[j].first;
+                history_item[Keys::timestamp] =  boost::posix_time::to_iso_string(
+                        boost::posix_time::from_time_t(hit->first / 1000000 - timezone)
+                        + boost::posix_time::microseconds(hit->first % 1000000));
                 Value& price_range = history_item[Keys::price_range];
-                price_range[Keys::price_low] = history[j].second.first;
-                price_range[Keys::price_high] = history[j].second.second;
+                price_range[Keys::price_low] = hit->second.first;
+                price_range[Keys::price_high] = hit->second.second;
             }
         }
     }
@@ -539,7 +542,7 @@ void ProductController::get_multi_price_history()
         for (Value::UintType i = 0; i < range_list.size(); ++i)
         {
             Value& doc_item = price_range_list();
-            doc_item[Keys::docid] = range_list[i].first;
+            doc_item[Keys::docid] = Utilities::uint128ToMD5(range_list[i].first);
             Value& price_range = doc_item[Keys::price_range];
             price_range[Keys::price_low] = range_list[i].second.first;
             price_range[Keys::price_high] = range_list[i].second.second;
@@ -622,7 +625,7 @@ void ProductController::get_top_price_cut_list()
     {
         Value& tpc_item = tpc_list();
         tpc_item[Keys::price_cut] = tpc_queue[i].first;
-        tpc_item[Keys::docid] = tpc_queue[i].second;
+        tpc_item[Keys::docid] = Utilities::uint128ToMD5(tpc_queue[i].second);
     }
 }
 

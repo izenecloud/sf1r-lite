@@ -494,7 +494,7 @@ void MasterManagerBase::recover(const std::string& zpath)
         boost::shared_ptr<Sf1rNode>& sf1rNode = it->second;
         if (zpath == getNodePath(sf1rTopology_.curNode_.replicaId_, sf1rNode->nodeId_))
         {
-            LOG (INFO) << "Recovering, node " << sf1rNode->nodeId_
+            LOG (INFO) << "recover: node " << sf1rNode->nodeId_
                        << " recovered in current replica " << sf1rTopology_.curNode_.replicaId_;
 
             ZNode znode;

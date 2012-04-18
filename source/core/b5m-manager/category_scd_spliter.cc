@@ -26,10 +26,10 @@ CategoryScdSpliter::~CategoryScdSpliter()
 
 bool CategoryScdSpliter::Load_(const std::string& category_dir, const std::string& name)
 {
-    LOG(INFO)<<"Loading "<<category_dir<<std::endl;
+    //LOG(INFO)<<"Loading "<<category_dir<<std::endl;
     if(!boost::filesystem::exists(category_dir)) return false;
-    std::string scd_file = category_dir+"/"+name+".SCD";
-    if(boost::filesystem::exists(scd_file)) return true;
+    std::string scd_dir = category_dir+"/"+name;
+    if(boost::filesystem::exists(scd_dir)) return true;
     std::string type = "";
     {
         std::string file = category_dir+"/type";
@@ -53,7 +53,6 @@ bool CategoryScdSpliter::Load_(const std::string& category_dir, const std::strin
             boost::regex r(line);
             ValueType value;
             value.regex = r;
-            std::string scd_dir = category_dir+"/"+name;
             boost::filesystem::create_directories(scd_dir);
             ScdWriterController* writer = new ScdWriterController(scd_dir);
             value.writer = writer;
@@ -68,6 +67,7 @@ bool CategoryScdSpliter::Load(const std::string& dir, const std::string& name)
 {
     namespace bfs = boost::filesystem;
     if(!bfs::exists(dir)) return false;
+    LOG(INFO)<<"Loading "<<dir<<std::endl;
     std::string category_file = dir+"/category";
     if(bfs::exists(category_file))
     {
@@ -90,59 +90,17 @@ bool CategoryScdSpliter::Load(const std::string& dir, const std::string& name)
 
 bool CategoryScdSpliter::Split(const std::string& scd_path)
 {
+    if(values_.empty())
+    {
+        LOG(INFO)<<"No target to output split SCD"<<std::endl;
+        return true;
+    }
     typedef izenelib::util::UString UString;
     namespace bfs = boost::filesystem;
     if(!bfs::exists(scd_path)) return false;
     std::vector<std::string> scd_list;
-    if( bfs::is_regular_file(scd_path) && boost::algorithm::ends_with(scd_path, ".SCD"))
-    {
-        scd_list.push_back(scd_path);
-    }
-    else if(bfs::is_directory(scd_path))
-    {
-        bfs::path p(scd_path);
-        bfs::directory_iterator end;
-        for(bfs::directory_iterator it(p);it!=end;it++)
-        {
-            if(bfs::is_regular_file(it->path()))
-            {
-                std::string file = it->path().string();
-                if(boost::algorithm::ends_with(file, ".SCD"))
-                {
-                    scd_list.push_back(file);
-                }
-            }
-        }
-    }
-    std::vector<std::string> valid_scd_list;
-    typedef std::map<int, uint16_t> ScdTypeMap;
-    ScdTypeMap scd_type_map;
-    scd_type_map[INSERT_SCD] = 0;
-    scd_type_map[UPDATE_SCD] = 0;
-    scd_type_map[DELETE_SCD] = 0;
-    for(uint32_t i=0;i<scd_list.size();i++)
-    {
-        if(ScdParser::checkSCDFormat(scd_list[i]))
-        {
-            int scd_type = ScdParser::checkSCDType(scd_list[i]);
-            if(scd_type==DELETE_SCD) continue;//D_SCD need not to be split and do product matching
-            scd_type_map[scd_type] += 1;
-            valid_scd_list.push_back(scd_list[i]);
-        }
-    }
-    if(valid_scd_list.empty()) return true;
-    ScdTypeMap::iterator it = scd_type_map.begin();
-    while(it!=scd_type_map.end())
-    {
-        if(it->second>1)
-        {
-            std::cout<<"scd type "<<it->first<<" has "<<it->second<<" SCDs, error!"<<std::endl;
-            return false;
-        } 
-        ++it;
-    }
-    std::sort(valid_scd_list.begin(), valid_scd_list.end(), ScdParser::compareSCD);
-    scd_list.swap(valid_scd_list);
+    B5MHelper::GetIScdList(scd_path, scd_list);
+    if(scd_list.empty()) return false;
 
     for(uint32_t i=0;i<scd_list.size();i++)
     {
@@ -152,7 +110,7 @@ bool CategoryScdSpliter::Split(const std::string& scd_path)
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
         uint32_t n=0;
-        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
+        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5MO_PROPERTY_LIST.value);
           doc_iter!= parser.end(); ++doc_iter, ++n)
         {
             if(n%10000==0)

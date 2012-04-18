@@ -3,11 +3,6 @@
 
 using namespace sf1r;
 
-UueGenerator::UueGenerator(const LogServerConnectionConfig& config, OfferDb* odb)
-:logserver_config_(config), odb_(odb)
-{
-}
-
 UueGenerator::UueGenerator(OfferDb* odb)
 :odb_(odb)
 {
@@ -58,7 +53,7 @@ bool UueGenerator::Generate(const std::string& b5mo_scd, const std::string& resu
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
         uint32_t n=0;
-        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5MO_PROPERTY_LIST);
+        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5MO_PROPERTY_LIST.value);
           doc_iter!= parser.end(); ++doc_iter, ++n)
         {
             if(n%10000==0)

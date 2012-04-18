@@ -22,7 +22,7 @@ using namespace idmlib::sim;
 #define B5M_DEBUG
 
 AttributeIndexer::AttributeIndexer()
-:is_open_(false), index_(NULL), id_manager_(NULL), analyzer_(NULL), char_analyzer_(NULL)
+:is_open_(false), index_(NULL), id_manager_(NULL), name_index_(NULL), name_id_manager_(NULL), analyzer_(NULL), char_analyzer_(NULL)
 {
 }
 
@@ -131,6 +131,7 @@ bool AttributeIndexer::Index(const std::string& scd_file, const std::string& kno
     //}
     //izenelib::am::ssf::Util<>::Save(fanid_path, filter_anid_list);
     GenClassiferInstance();
+    if(!TrainSVM()) return false;
     std::ofstream ofs(done_file.c_str());
     ofs<<"done"<<std::endl;
     ofs.close();
@@ -931,7 +932,7 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
         std::string scd_file = scd_list[i];
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
-        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
+        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5MO_PROPERTY_LIST.value);
           doc_iter!= parser.end(); ++doc_iter, ++n)
         {
             if(n%counting==0)
@@ -1128,7 +1129,7 @@ void AttributeIndexer::ProductMatchingLR(const std::string& scd_file)
     ScdParser parser(izenelib::util::UString::UTF_8);
     parser.load(scd_file);
     uint32_t n=0;
-    for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
+    for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5MO_PROPERTY_LIST.value);
       doc_iter!= parser.end(); ++doc_iter, ++n)
     {
         ProductDocument product_doc;
@@ -1230,7 +1231,7 @@ bool AttributeIndexer::SplitScd(const std::string& scd_file)
     uint32_t n=0;
     ScdWriter writer(knowledge_dir_, INSERT_SCD);
     writer.SetFileName("A.SCD");
-    for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
+    for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5MO_PROPERTY_LIST.value);
       doc_iter!= parser.end(); ++doc_iter, ++n)
     {
         if(n%10000==0)
@@ -1363,7 +1364,7 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_path)
     ScdParser parser(izenelib::util::UString::UTF_8);
     parser.load(scd_file);
     uint32_t n=0;
-    for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5M_PROPERTY_LIST);
+    for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5MO_PROPERTY_LIST.value);
       doc_iter!= parser.end(); ++doc_iter, ++n)
     {
         if(n%counting==0)
