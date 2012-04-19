@@ -475,35 +475,44 @@ bool DocumentManager::getRawTextOfDocuments(
 {
     try
     {
-        std::vector<izenelib::util::UString> snippetList;
-        std::vector<izenelib::util::UString> rawSummaryList;
-        std::vector<izenelib::util::UString> fullTextList;
+        unsigned int docListSize = docIdList.size();
+        std::vector<izenelib::util::UString> snippetList(docListSize);
+        std::vector<izenelib::util::UString> rawSummaryList(docListSize);
+        std::vector<izenelib::util::UString> fullTextList(docListSize);
 
         izenelib::util::UString rawText; // raw text
         izenelib::util::UString result; // output variable to store return value
 
-        typedef std::vector<docid_t>::const_iterator doc_iterator;
-        for (doc_iterator docIt = docIdList.begin(), docItEnd = docIdList.end(); docIt
-                != docItEnd; ++docIt)
+        bool ret = true;
+        for (unsigned int listId = 0; listId != docListSize; ++listId) 
         {
+            docid_t docId = docIdList[listId];
             result.clear();
-            if (!getPropertyValue(*docIt, propertyName, rawText))
-                return false;
-            fullTextList.push_back(rawText);
+
+            if (!getPropertyValue(docId, propertyName, rawText))
+            {
+                ret = false;
+                continue;
+            }
+
+            fullTextList[listId] = rawText;
 
             std::string sentenceProperty = propertyName + PROPERTY_BLOCK_SUFFIX;
             std::vector<CharacterOffset> sentenceOffsets;
-            if (!getPropertyValue(*docIt, sentenceProperty, sentenceOffsets))
-                return false;
+            if (!getPropertyValue(docId, sentenceProperty, sentenceOffsets))
+            {
+                ret = false;
+                continue;
+            }
 
             maxSnippetLength_ = getDisplayLength_(propertyName);
             processOptionForRawText(option, queryTerms, rawText,
                                     sentenceOffsets, result);
 
             if (result.size()> 0 )
-                snippetList.push_back(result);
+                snippetList[listId] = result;
             else
-                snippetList.push_back(rawText);
+                snippetList[listId] = rawText;
 
             //process only if summary is ON
             unsigned int numSentences = summaryNum <= 0 ? 1 : summaryNum;
@@ -513,7 +522,7 @@ bool DocumentManager::getRawTextOfDocuments(
                 getSummary(rawText, sentenceOffsets, numSentences,
                            option, queryTerms, summary);
 
-                rawSummaryList.push_back(summary);
+                rawSummaryList[listId] = summary;
             }
         }
         outSnippetList.swap(snippetList);
@@ -521,7 +530,7 @@ bool DocumentManager::getRawTextOfDocuments(
         if (summaryOn)
             outRawSummaryList.swap(rawSummaryList);
 
-        return true;
+        return ret;
     }
     catch (std::exception& e)
     {
@@ -586,16 +595,16 @@ bool DocumentManager::getRawTextOfDocuments(
     //make getRawTextOfOneDocument_(...) called in the order of docid
     //    map<docid_t, int>::iterator
     it = doc_idx_map.begin();
+    bool ret = true;
     for (; it != doc_idx_map.end(); it++)
     {
-        if (getRawTextOfOneDocument_(it->first, propertyName, option,
-                                     queryTerms, rawTextList[it->second], fullTextList[it->second])
-                == false)
+        if (!getRawTextOfOneDocument_(it->first, propertyName, option,
+                                      queryTerms, rawTextList[it->second], fullTextList[it->second]))
         {
-            return false;
+            ret = false;
         }
     }
-    return true;
+    return ret;
 }
 
 bool DocumentManager::getRawTextOfOneDocument_(

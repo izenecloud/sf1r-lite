@@ -118,12 +118,7 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
     if (getResultItem(actionItem, idList, propertyQueryTermList, resultItem))
     {
         resultItem.idList_.swap(idList);
-        return;
     }
-
-    resultItem.fullTextOfDocumentInPage_.clear();
-    resultItem.snippetTextOfDocumentInPage_.clear();
-    resultItem.rawTextOfSummaryInPage_.clear();
 }
 
 void SearchWorker::getInternalDocumentId(const uint128_t& scdDocumentId, uint64_t& internalId)
