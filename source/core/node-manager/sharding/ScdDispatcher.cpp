@@ -200,10 +200,7 @@ std::ostream& operator<<(std::ostream& out, SCDDoc& scdDoc)
 
 bool BatchScdDispatcher::dispatch_impl(shardid_t shardid, SCDDoc& scdDoc)
 {
-    //std::cout<<"BatchScdDispatcher::dispatch_impl shardid: "<<shardid<<std::endl;
-
     std::ofstream*& rof = ofList_[shardid];
-
     (*rof) << scdDoc;
 
     // add shardid property?
@@ -275,8 +272,8 @@ bool BatchScdDispatcher::initTempDir(const std::string& tempDir)
 
 bool InstantScdDispatcher::dispatch_impl(shardid_t shardid, SCDDoc& scdDoc)
 {
-    // TODO, Send scd doc to shard server corresponding to shardid
-    // scdDoc format? through open api (client)?
+    // Here intended to directly dispatch the scdDoc to Worker identified by shardid,
+    // this can be done by perform a createDocument request through Sf1Driver client.
 
     return false;
 }
