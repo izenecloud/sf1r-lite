@@ -102,6 +102,9 @@ Dir.foreach(mdb) do |m|
   mdb_instance_list << m
 end
 
+mdb_instance_list.sort!
+last_mdb_instance = mdb_instance_list.last
+
 reindex = mdb_instance_list.empty?()?true:false
 
 time_str = Time.now.strftime("%Y%m%d%H%M%S")
@@ -272,10 +275,25 @@ if dob5mc
   end
 
   #b5mc generator
-  system("#{matcher_program} --b5mc-generate --b5mc #{b5mc_scd_instance} -S #{comment_merged_scd} --odb #{odb}")
+  cmd = "#{matcher_program} --b5mc-generate --b5mc #{b5mc_scd_instance} -S #{comment_merged_scd} --odb #{odb} --uue #{mdb_instance}/uue"
+  unless last_mdb_instance.nil?
+    last_b5mc_scd = File.join(last_mdb_instance, "b5mc_scd")
+    cmd += " --old-scd-path #{last_b5mc_scd}"
+  end
+  puts cmd
+  system(cmd)
   abort("b5mc generate failed") unless $?.success?
   system("rm -rf #{b5mc_scd}/*")
   system("cp #{b5mc_scd_instance}/* #{b5mc_scd}/")
+  unless last_mdb_instance.nil?
+    last_b5mc_scd = File.join(last_mdb_instance, "b5mc_scd")
+    system("cp #{last_b5mc_scd}/* #{b5mc_scd_instance}/")
+    b5mc_merging = File.join(mdb_instance, "b5mc_merging")
+    Dir.mkdir b5mc_merging
+    system("#{merger_program} #{b5mc_scd_instance} #{ENV['B5MC_PROPERTY']} #{b5mc_merging}")
+    FileUtils.rm_rf(b5mc_scd_instance)
+    FileUtils.mv(b5mc_merging, b5mc_scd_instance)
+  end
 end
 
 if dologserver
