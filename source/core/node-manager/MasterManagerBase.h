@@ -73,6 +73,8 @@ public:
             std::string& host,
             unsigned int& recvPort);
 
+    void registerIndexStatus(const std::string& collection, bool isIndexing);
+
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
 
