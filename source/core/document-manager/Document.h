@@ -146,9 +146,9 @@ public:
         propertyList_.clear();
     }
 
-    bool isEmpty()
+    bool isEmpty() const
     {
-        return ( propertyList_.size() == 0 );
+        return propertyList_.empty();
     }
 
     void swap(Document& rhs)

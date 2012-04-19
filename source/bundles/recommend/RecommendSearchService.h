@@ -64,6 +64,8 @@ private:
         std::vector<RecommendItem>& recItemVec
     ) const;
 
+    void getReasonItems_(std::vector<ReasonItem>& reasonItems) const;
+
     bool getBundleItems_(
         const std::vector<std::string>& selectProps,
         std::vector<ItemBundle>& bundleVec

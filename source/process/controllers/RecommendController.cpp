@@ -72,13 +72,40 @@ void renderItem(
     }
 }
 
+void renderReasonItems(
+    const std::vector<sf1r::ReasonItem>& reasonItems,
+    const std::vector<std::string>& selectProps,
+    izenelib::driver::Value& reasonsValue
+)
+{
+    for (std::vector<sf1r::ReasonItem>::const_iterator reasonIt = reasonItems.begin();
+        reasonIt != reasonItems.end(); ++reasonIt)
+    {
+        const sf1r::Document& reasonItem = reasonIt->item_;
+
+        // empty doc means it has been removed
+        if (reasonItem.isEmpty())
+            continue;
+
+        izenelib::driver::Value& value = reasonsValue();
+        value[sf1r::driver::Keys::event] = reasonIt->event_;
+
+        renderItem(reasonItem, selectProps, value);
+
+        if(! reasonIt->value_.empty())
+        {
+            value[sf1r::driver::Keys::value] = reasonIt->value_;
+        }
+    }
+}
+
 }
 
 namespace sf1r
 {
 
 using namespace izenelib::driver;
-using driver::Keys;
+using sf1r::driver::Keys;
 
 RecommendController::RecommendController()
     : recommendTaskService_(NULL)
@@ -1033,29 +1060,23 @@ void RecommendController::renderRecommendResult(const RecommendParam& param, con
     for (std::vector<RecommendItem>::const_iterator recIt = recItemVec.begin();
         recIt != recItemVec.end(); ++recIt)
     {
+        const sf1r::Document& item = recIt->item_;
+
+        // empty doc means it has been removed
+        if (item.isEmpty())
+            continue;
+
         Value& itemValue = resources();
         itemValue[Keys::weight] = recIt->weight_;
 
-        renderItem(recIt->item_, param.selectRecommendProps, itemValue);
+        renderItem(item, param.selectRecommendProps, itemValue);
 
         const std::vector<ReasonItem>& reasonItems = recIt->reasonItems_;
         // BAB need not reason results
-        if (param.type != BUY_ALSO_BUY && reasonItems.empty() == false)
+        if (param.type != BUY_ALSO_BUY)
         {
             Value& reasonsValue = itemValue[Keys::reasons];
-            for (std::vector<ReasonItem>::const_iterator reasonIt = reasonItems.begin();
-                reasonIt != reasonItems.end(); ++reasonIt)
-            {
-                Value& value = reasonsValue();
-                value[Keys::event] = reasonIt->event_;
-
-                renderItem(reasonIt->item_, param.selectReasonProps, value);
-
-                if(! reasonIt->value_.empty())
-                {
-                    value[Keys::value] = reasonIt->value_;
-                }
-            }
+            renderReasonItems(reasonItems, param.selectReasonProps, reasonsValue);
         }
     }
 }

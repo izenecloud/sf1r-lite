@@ -13,6 +13,11 @@
 
 #include <glog/logging.h>
 
+namespace
+{
+const std::string DOCID("DOCID");
+}
+
 namespace sf1r
 {
 
@@ -88,25 +93,33 @@ bool RecommendSearchService::getRecommendItems_(
     for (std::vector<RecommendItem>::iterator it = recItemVec.begin();
         it != recItemVec.end(); ++it)
     {
-        if (! itemManager_.getItem(it->item_.getId(), param.selectRecommendProps, it->item_))
+        itemid_t itemId = it->item_.getId();
+        if (! itemManager_.getItem(itemId, param.selectRecommendProps, it->item_))
         {
-            LOG(ERROR) << "error in ItemManager::getItem(), item id: " << it->item_.getId();
-            return false;
+            LOG(ERROR) << "error in ItemManager::getItem(), item id: " << itemId;
+            continue;
         }
 
-        std::vector<ReasonItem>& reasonItems = it->reasonItems_;
-        for (std::vector<ReasonItem>::iterator reasonIt = reasonItems.begin();
-            reasonIt != reasonItems.end(); ++reasonIt)
-        {
-            if (! itemManager_.getItem(reasonIt->item_.getId(), param.selectReasonProps, reasonIt->item_))
-            {
-                LOG(ERROR) << "error in ItemManager::getItem(), item id: " << reasonIt->item_.getId();
-                return false;
-            }
-        }
+        getReasonItems_(it->reasonItems_);
     }
 
     return true;
+}
+
+void RecommendSearchService::getReasonItems_(std::vector<ReasonItem>& reasonItems) const
+{
+    for (std::vector<ReasonItem>::iterator it = reasonItems.begin();
+        it != reasonItems.end(); ++it)
+    {
+        Document& reasonItem = it->item_;
+        std::string strItemId;
+
+        if (! itemIdGenerator_.itemIdToStrId(reasonItem.getId(), strItemId))
+            continue;
+
+        izenelib::util::UString ustr(strItemId, izenelib::util::UString::UTF_8);
+        reasonItem.property(DOCID) = ustr;
+    }
 }
 
 bool RecommendSearchService::topItemBundle(
